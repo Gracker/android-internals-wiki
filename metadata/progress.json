@@ -849,8 +849,8 @@
   "total_review_sections": 111,
   "next_review_candidates": [],
   "ready_for_review": 83,
-  "last_updated": "2026-05-15T05:33:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-15T05:50:05+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-15T05:15:00+08:00",
     "log": "logs/review/2026-05-15-05-review.md",
@@ -865,7 +865,7 @@
     "auto_promotions": 0,
     "result": "needs-rework"
   },
-  "task9_last_review": "2026-05-15T04:28:44+08:00",
+  "task9_last_review": "2026-05-15T05:50:05+08:00",
   "ready_to_publish": 185,
   "rework_history": [
     {
@@ -2142,12 +2142,16 @@
     },
     "20.7": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "pending",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-15T05:33:00+08:00",
-      "last_task2a_file": "src/part5-app/ch20-stability/07-exception-architecture.md"
+      "last_task2a_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-15T05:50:05+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-05-deep-review.md",
+      "task9_review_notes": "2026-05-15 Task9：needs-rework。P0 1、P1 3、P2 1。已写入 logs/deep-review/2026-05-15-05-deep-review.md。"
     }
   },
   "task2b_rounds": [
@@ -2169,35 +2173,35 @@
   "last_task2a_processed_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T04:28:44+08:00",
-    "log": "logs/deep-review/2026-05-15-04-deep-review.md",
+    "at": "2026-05-15T05:50:05+08:00",
+    "log": "logs/deep-review/2026-05-15-05-deep-review.md",
     "sections": [
-      "26.6"
+      "20.7"
     ],
     "files": [
-      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+      "src/part5-app/ch20-stability/07-exception-architecture.md"
     ],
-    "p0": 0,
+    "p0": 1,
     "p1": 3,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-04-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-05-deep-review.md",
   "last_task9_sections": [
-    "26.6"
+    "20.7"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T04:28:44+08:00",
-    "log": "logs/deep-review/2026-05-15-04-deep-review.md",
+    "at": "2026-05-15T05:50:05+08:00",
+    "log": "logs/deep-review/2026-05-15-05-deep-review.md",
     "sections": [
-      "26.6"
+      "20.7"
     ],
     "files": [
-      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+      "src/part5-app/ch20-stability/07-exception-architecture.md"
     ],
-    "p0": 0,
+    "p0": 1,
     "p1": 3,
     "p2": 1,
     "p3": 0,
@@ -2205,7 +2209,7 @@
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+    "src/part5-app/ch20-stability/07-exception-architecture.md"
   ],
   "total_review_files": 111,
   "last_task2a_at": "2026-05-15T05:33:00+08:00",
@@ -2237,7 +2241,7 @@
     "auto_promotions": 0
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+    "src/part5-app/ch20-stability/07-exception-architecture.md"
   ],
-  "last_task9_at": "2026-05-15T04:28:44+08:00"
+  "last_task9_at": "2026-05-15T05:50:05+08:00"
 }

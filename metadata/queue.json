@@ -5839,6 +5839,81 @@
         "task9-deep-tech-review",
         "task6-draft-review"
       ]
+    },
+    {
+      "id": "task9-20.7-webview-renderer-process-model",
+      "section": "20.7",
+      "section_title": "异常处理架构设计",
+      "priority": 95,
+      "title": "WebView renderer 进程模型描述错误",
+      "description": "章节把 WebView renderer 独立进程写成可安装 App Crash handler 的普通应用进程，和 WebViewClient.onRenderProcessGone() 契约不一致。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/07-exception-architecture.md"
+      ],
+      "material_paths": [
+        "src/part5-app/ch20-stability/07-exception-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/原理错误",
+          "location": "L216-L224 多进程异常隔离：WebView 独立进程",
+          "detail": "正文把 WebView 独立进程放进“每个进程都有自己的 Application、默认 handler”的模型，并暗示只在主进程注册 Crash handler 会漏掉 WebView 独立进程。Android WebView renderer 是 WebView 提供方管理的渲染进程，App 不能在其中安装自己的 Application 或 Thread.UncaughtExceptionHandler。AOSP WebViewClient.onRenderProcessGone() 的契约是 renderer 退出后回调宿主 App；返回 true 表示宿主已清理受影响 WebView，否则 App 会崩溃或被系统杀死。",
+          "suggestion": "把“WebView 独立进程”从 App 自有多进程 Crash handler 表中拆出，单独写 WebView renderer crash 策略：实现 WebViewClient.onRenderProcessGone()，销毁并移除受影响 WebView，记录 detail.didCrash()/rendererPriorityAtExit()/页面 URL 摘要，切换页面兜底或重建容器；App 自有 :web/:h5 进程再按普通多进程 handler 处理。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T05:50:05+08:00"
+    },
+    {
+      "id": "task9-20.7-safemode-exitinfo-persistence-chain",
+      "section": "20.7",
+      "section_title": "异常处理架构设计",
+      "priority": 85,
+      "title": "SafeMode 退出补偿与崩溃样本持久化链路不完整",
+      "description": "章节缺少 ApplicationExitInfo native tombstone API 边界、启动状态机补偿链路，以及 crash 文件 fsync/rename 完整持久化协议。",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/07-exception-architecture.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "src/part5-app/ch20-stability/07-exception-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L102-L104 ApplicationExitInfo trace 字段",
+          "detail": "章节写成 Android 11+ 的 ApplicationExitInfo 可补 Java/Native handler 没拿到的 trace。源码注释显示 getTraceInputStream() 对 REASON_CRASH_NATIVE 返回 tombstone trace 是 API 31(Android 12)+；API 30 只有历史退出原因能力，不能按通用 native tombstone trace 口径写。trace 还可能因为全局环形缓冲被覆盖而返回 null。",
+          "suggestion": "拆成两层版本边界：API 30+ 可读 reason/status/importance/processStateSummary；API 31+ 才能对 REASON_CRASH_NATIVE 读取 tombstone protobuf trace；ANR trace 与 native tombstone trace 分开说明，并补 null fallback。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L120-L148 SafeMode 判定模型",
+          "detail": "SafeMode 判定只从 crashStore.recentCrashes() 读取崩溃记录并按 stackFingerprint 聚合，缺少启动状态机。实际崩溃循环检测还要覆盖 handler 未注册前退出、native crash、ANR、初始化失败、低内存杀进程、用户强杀/升级等路径；只看本地 crash envelope 会漏掉“启动未完成但没有端侧样本”的设备。",
+          "suggestion": "补 launch marker 状态机：启动最早期写入 launch_started，首帧/首页 ready 后标记 launch_succeeded；下次启动结合 elapsedRealtime/bootCount、版本号、进程名、ApplicationExitInfo 的 REASON_CRASH/CRASH_NATIVE/ANR/INITIALIZATION_FAILURE/LOW_MEMORY 判断未完成启动；过滤 PACKAGE_UPDATED、USER_REQUESTED 等非故障退出。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L227 多进程记录文件原子写入",
+          "detail": "正文只写“临时文件 + rename 的原子替换”。rename 只保证同一文件系统内目录项切换原子，不保证文件内容已持久化；崩溃/断电边界下可能出现空文件、旧内容或目录项未落盘。Crash SDK 的最小样本存储链路还缺 fsync 文件、rename 后 fsync 父目录、完成目录扫描规则和 partial 文件清理。",
+          "suggestion": "补完整持久化协议：每个进程写独立 tmp 目录，写完 flush + fsync(fd)，同卷 rename 到 completed，fsync(parent dir)；下次只扫描 completed，校验 schema/hash/长度，tmp/partial 按保留期清理。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T05:50:05+08:00"
     }
   ],
   "metadata": {
@@ -5851,7 +5926,7 @@
     "last_updated_by": "task6-review",
     "pending": 110
   },
-  "last_updated": "2026-05-15T05:15:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 110
+  "last_updated": "2026-05-15T05:50:05+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 112
 }
