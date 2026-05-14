@@ -115,7 +115,8 @@
     "26.4",
     "19.23",
     "26.2",
-    "26.5"
+    "26.5",
+    "26.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -226,9 +227,10 @@
     "src/part5-app/ch26-observability/04-anr-monitoring.md",
     "src/part3-tools/ch19-apm/23-network-apm-internals.md",
     "src/part5-app/ch26-observability/02-crash-reporting.md",
-    "src/part5-app/ch26-observability/05-online-troubleshooting.md"
+    "src/part5-app/ch26-observability/05-online-troubleshooting.md",
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
-  "review_summary": "Task6 2026-05-15 03:11：review 26.5；L1/L2 小修 4 处；无新增回炉项；等待 Task9 技术复审。",
+  "review_summary": "Task9 2026-05-15 04:28：review 26.6；P0 0 / P1 3 / P2 1；样本量统计模型、FrameTimingMetric API 31+ 边界、P90 归因公式需 Task2B 回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 549,
     "l3_issues": 29,
@@ -857,7 +859,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-15T02:35:06+08:00",
+  "task9_last_review": "2026-05-15T04:28:44+08:00",
   "ready_to_publish": 185,
   "rework_history": [
     {
@@ -2108,6 +2110,23 @@
       "last_task6_at": "2026-05-15T03:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-03-review.md",
       "task2b_state": "pending"
+    },
+    "26.6": {
+      "title": "A/B Test 与性能回归防护",
+      "file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-15T04:28:44+08:00",
+      "task2b_state": "pending",
+      "p0": 0,
+      "p1": 3,
+      "p2": 1,
+      "deep_review_log": "logs/deep-review/2026-05-15-04-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -2129,59 +2148,43 @@
   "last_task2a_processed_file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T02:35:06+08:00",
-    "log": "logs/deep-review/2026-05-15-02-deep-review.md",
+    "at": "2026-05-15T04:28:44+08:00",
+    "log": "logs/deep-review/2026-05-15-04-deep-review.md",
     "sections": [
-      "20.1",
-      "22.2",
-      "26.2"
+      "26.6"
     ],
     "files": [
-      "src/part5-app/ch20-stability/01-stability-overview.md",
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "src/part5-app/ch26-observability/02-crash-reporting.md"
+      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
     ],
-    "p0": 1,
+    "p0": 0,
     "p1": 3,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [
-      "22.2"
-    ]
+    "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-02-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-04-deep-review.md",
   "last_task9_sections": [
-    "20.1",
-    "22.2",
-    "26.2"
+    "26.6"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T02:35:06+08:00",
-    "log": "logs/deep-review/2026-05-15-02-deep-review.md",
+    "at": "2026-05-15T04:28:44+08:00",
+    "log": "logs/deep-review/2026-05-15-04-deep-review.md",
     "sections": [
-      "20.1",
-      "22.2",
-      "26.2"
+      "26.6"
     ],
     "files": [
-      "src/part5-app/ch20-stability/01-stability-overview.md",
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "src/part5-app/ch26-observability/02-crash-reporting.md"
+      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
     ],
-    "p0": 1,
+    "p0": 0,
     "p1": 3,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [
-      "22.2"
-    ]
+    "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch20-stability/01-stability-overview.md",
-    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-    "src/part5-app/ch26-observability/02-crash-reporting.md"
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
   "total_review_files": 109,
   "last_task2a_at": "2026-05-15T04:09:00+08:00",
@@ -2210,9 +2213,7 @@
     "notes": "26.5 小修 outline 扩展占位与 3 处措辞；写作层通过，等待 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch20-stability/01-stability-overview.md",
-    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-    "src/part5-app/ch26-observability/02-crash-reporting.md"
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
-  "last_task9_at": "2026-05-15T02:35:06+08:00"
+  "last_task9_at": "2026-05-15T04:28:44+08:00"
 }

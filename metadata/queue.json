@@ -5764,19 +5764,67 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T03:25:00+08:00"
+    },
+    {
+      "id": "task9-20260515-26.6-abtest-statistics-quantile-boundary",
+      "section": "26.6",
+      "section_title": "A/B Test 与性能回归防护",
+      "priority": 85,
+      "title": "性能 A/B Test 统计模型与分位值归因边界缺失",
+      "description": "P1：章节适用范围覆盖 Android 10-16，但 Macrobenchmark `frameOverrunMs` 未标 API 31+ 边界；性能实验样本量缺少方差/分布/检验对象；P90 归因使用“样本量 × P90 delta”这一非线性统计量不成立的公式。",
+      "reason": "[Deep Tech Review] 26.6 的 A/B Test 样本量、Macrobenchmark 帧指标版本边界、P90 分群贡献算法存在重要技术缺口，需 Task2B 回炉补统计模型和版本说明。",
+      "issue_type": "statistics-version-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "related_files": [
+        "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-04-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L116 Macrobenchmark `FrameTimingMetric` 指标口径",
+          "detail": "章节适用范围写到 Android 10-16，但把 `FrameTimingMetric` 的 `frameOverrunMs` 与 `frameDurationCpuMs` 并列为通用输出。官方资料显示 `frameDurationCpuMs` 是基础输出，`frameOverrunMs` 在 Android 12(API 31)+ 才可用；Android 10/11 的 CI 或实验室基线不能直接依赖 overrun 口径。",
+          "suggestion": "在 Macrobenchmark 段落补版本边界：API 31+ 优先使用 `frameOverrunMs` 判断超预算；API 29/30 退回 `frameDurationCpuMs`、slow/frozen frame rate 或自定义 trace section。门禁配置要把设备 API level 写入维度。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L91-L98 性能实验样本量字段",
+          "detail": "正文说 `baseline_value`、`minimum_detectable_effect`、`alpha`、`power` 决定样本量，但连续性能指标/长尾分位值还必须依赖历史方差或完整分布、统计检验对象（均值/比例/分位值）、分桶后的 allocation ratio 和最低分群样本。只列四个字段会让读者误以为没有波动估计也能算样本量。",
+          "suggestion": "补一层统计模型边界：均值类指标需要方差/标准差，比例类指标需要 baseline rate，P90/P99 需要 quantile CI、bootstrap 或阈值违约率替代；分设备/版本后要重新计算每个关键分群的最小样本量。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L177 自动归因贡献度排序",
+          "detail": "“样本量 × P90 变化幅度 = 对全量退化的贡献”对分位值不成立。P90 是非线性统计量，分群 P90 的加权变化不能相加还原全量 P90；这个公式只适合均值、计数或比例类指标的近似贡献。",
+          "suggestion": "把归因算法分成两类：均值/比例用 `样本量 × delta` 排序；P90/P99 用原始样本重算 counterfactual 分布、tail violation count（超过阈值样本数）、mean excess over threshold 或 bootstrap 估计分群贡献。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T04:28:44+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 180,
+    "total_entries": 181,
     "p0_count": 93,
-    "last_updated": "2026-05-15T03:25:00+08:00",
+    "last_updated": "2026-05-15T04:28:44+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 109,
+    "pending_entries": 110,
     "updated_date": "2026-05-15",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 109
+    "pending": 110
   },
-  "last_updated": "2026-05-15T03:25:00+08:00",
+  "last_updated": "2026-05-15T04:28:44+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 109
+  "pending": 110
 }
