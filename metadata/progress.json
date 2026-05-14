@@ -1,10 +1,10 @@
 {
-  "total": 269,
+  "total": 271,
   "draft": 8,
-  "ready-for-review": 83,
-  "finalized": 178,
-  "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-14",
+  "ready-for-review": 81,
+  "finalized": 182,
+  "task9_result": "pass-tech-review",
+  "task9_reviewed_date": "2026-05-15",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -110,7 +110,8 @@
     "25.7",
     "25.8",
     "25.9",
-    "26.1"
+    "26.1",
+    "26.3"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -216,9 +217,10 @@
     "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
-    "src/part5-app/ch26-observability/01-observability-architecture.md"
+    "src/part5-app/ch26-observability/01-observability-architecture.md",
+    "src/part5-app/ch26-observability/03-performance-collection.md"
   ],
-  "review_summary": "Task6 2026-05-14 23:13：review 26.1 App 可观测性架构设计，pass-light-edit，进入 Task9。",
+  "review_summary": "Task9 2026-05-15 00:20：review 26.1 App 可观测性架构设计、26.3 性能指标采集与上报；P0=0、P1=0、P2=4；26.1 自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 533,
     "l3_issues": 29,
@@ -804,13 +806,33 @@
       "reviewed_at": "2026-05-14T21:20:00+08:00",
       "log": "logs/deep-review/2026-05-14-21-deep-review.md",
       "summary": "P0 1：AOSP 行号锚点错误；P1 2：bundletool --modules 体积门禁口径、国内渠道 split APK 安装边界缺失；P2 1：PAD 资源定位/更新状态机边界。"
+    },
+    "26.1": {
+      "task9_result": "pass-tech-review",
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T00:20:00+08:00",
+      "log": "logs/deep-review/2026-05-15-00-deep-review.md",
+      "summary": "P2 1：发布态章节引用 26.2/26.4/26.5 draft，需标注后续规划或等成稿后恢复。"
+    },
+    "26.3": {
+      "task9_result": "pass-tech-review",
+      "p0": 0,
+      "p1": 0,
+      "p2": 3,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T00:20:00+08:00",
+      "log": "logs/deep-review/2026-05-15-00-deep-review.md",
+      "summary": "P2 3：Trace.beginSection sectionName 长度/高基数边界、P90/P99 样本量阈值口径、26.4/26.5 draft 交叉引用。"
     }
   },
-  "total_review_sections": 103,
+  "total_review_sections": 105,
   "next_review_candidates": [],
-  "ready_for_review": 72,
-  "last_updated": "2026-05-14T23:13:00+08:00",
-  "last_updated_by": "task6-draft-review",
+  "ready_for_review": 81,
+  "last_updated": "2026-05-15T00:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -822,8 +844,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T22:31:06+08:00",
-  "ready_to_publish": 178,
+  "task9_last_review": "2026-05-15T00:20:00+08:00",
+  "ready_to_publish": 182,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",

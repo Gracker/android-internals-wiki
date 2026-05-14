@@ -1057,3 +1057,26 @@
 - **位置**：L225 / frontmatter sources
 - **问题**：正文以 `[已验证]` 引用了 `developer.android.com/topic/performance/vitals/wakeup`，但 frontmatter `sources` 未列出该官方来源，source-index 难以追踪 excessive wakeup alarm 依据。
 - **建议**：在 sources 中补 `https://developer.android.com/topic/performance/vitals/wakeup`，或改成引用 §25.3 已覆盖的 AlarmManager 文档。
+## [Task9 Deep Review] 26.1 App 可观测性架构设计 — 2026-05-15
+- **类型**：交叉引用
+- **位置**：L64、L175
+- **问题**：正文把 26.2、26.4、26.5 写成后续可承接章节，但这三个文件当前仍是 draft；26.1 本轮会晋升发布态，发布后会指向未成稿章节。
+- **建议**：发布前把这些引用标成“后续规划/待成稿”，或等 26.2、26.4、26.5 进入 ready-for-review 后再恢复正式交叉引用。
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：L114-L130
+- **问题**：自定义 Trace 示例直接把业务 trace name 传给 `Trace.beginSection(name)`，但 Android `Trace.beginSection()` 的 sectionName 上限是 127 Unicode code units，超长名称会触发 `IllegalArgumentException`；高基数字段也会污染 Perfetto 切片聚合。
+- **建议**：在示例或说明中补充 trace section name 的 sanitize/truncate/hash 策略：限制长度、禁止动态 ID/URL/用户输入进入 sectionName，并把高基数字段放入 metrics attributes。
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-05-15
+- **类型**：数据缺失
+- **位置**：L162
+- **问题**：“P90 至少数百级样本、P99 通常需要更高样本量”是经验阈值，当前没有说明统计口径；不同分桶、分布形状、采样率和置信区间会让所需样本量差异很大。
+- **建议**：把这句话标成工程经验，并补充最低样本量与置信度/误差范围的关系，或给出团队门禁示例：如 P90/P99 分别需要的窗口样本量、灰度比例、连续异常窗口数。
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-05-15
+- **类型**：交叉引用
+- **位置**：L209
+- **问题**：小结指向 26.4、26.5，但这两个文件当前仍是 draft；如果 26.3 先通过 Task9，读者会被导向未完成章节。
+- **建议**：在 26.4、26.5 成稿前，把引用改成“后续章节计划处理”，或暂时指向已 finalized 的 15.3/15.9 作为可读延伸。
