@@ -4547,10 +4547,12 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T07:24:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
-      ]
+      ],
+      "completed_date": "2026-05-15T07:27:04+08:00",
+      "completed_reason": "Task 2B 回炉修复: TRIGGER_TYPE_APP_FULLY_DRAWN 从 API 37 新增项移回 API 36; 比较表中 ProfilingManager 行拆分 API 36/37 触发器集合"
     },
     {
       "id": "task6-2.9-16kb-page-size-evidence-20260514",
@@ -5065,7 +5067,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/01-power-diagnosis.md"
@@ -5086,7 +5088,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T14:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T14:20:00+08:00"
+      "last_reviewed_at": "2026-05-14T14:20:00+08:00",
+      "completed_date": "2026-05-15T07:27:04+08:00",
+      "completed_reason": "Task 2B 回炉修复: BatteryUsageStatsProvider 源码路径从 core/java/com/android/internal/os/ 修正为 services/core/java/com/android/server/power/stats/"
     },
     {
       "id": "task9-25-1-vitals-wakelock-threshold-boundary-20260514",
@@ -5136,7 +5140,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/02-background-power.md"
@@ -5157,7 +5161,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T15:33:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T15:33:00+08:00"
+      "last_reviewed_at": "2026-05-14T15:33:00+08:00",
+      "completed_date": "2026-05-15T07:27:04+08:00",
+      "completed_reason": "Task 2B 回炉修复: setBackoffCriteria 示例从 kotlin.time.Duration(30.minutes) 修正为 (BackoffPolicy, 30, TimeUnit.MINUTES) 三参数重载"
     },
     {
       "id": "task9-21-1-startup-framecommit-ttid-sp-version-20260514",

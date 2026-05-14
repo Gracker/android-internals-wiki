@@ -38,14 +38,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: needs-rework
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-11T19:14:00+08:00"
+last_task2b_at: "2026-05-15T07:22:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
 task9_reviewed_by: openclaw-task9
@@ -74,7 +72,7 @@ review_type: task6-writing-quality-review
 | 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
 |:---|:---|:---|:---|
 | MessageQueue | 单锁 + 单链表 | DeliQueue:Treiber Stack + min-heap | 有,见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
-| ProfilingManager triggers | 需要手动注册,触发器集合较小 | 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器 | 官方未给统一 benchmark |
+| ProfilingManager triggers | 需要手动注册,触发器集合较小;API 36 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 37 新增 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 等触发器 | 官方未给统一 benchmark |
 | JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 reference 新增 `getPendingJobReasonStats(int)`,聚合 pending reason 时长;AOSP android-16.0.0_r1 未包含,需以 API 37 reference / preview 分支核验 | 官方未给统一 benchmark |
 | 大屏 / 安全配置 / 16KB 页面 | 适配要求已在推进 | targetSdk 37 后约束更强、排障入口更明确 | 官方未给统一 benchmark |
 
@@ -228,7 +226,7 @@ ProfilingManager 在 Android 15(API 35)引入,提供运行时请求 heap dump、
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证:上述三个触发器常量名称与 Android 17 API reference 一致。API 37 还新增了 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器;reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口,不要自行收窄成某一类 Binder 或内存事件。]
+[已验证:上述三个触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36,不属于 API 37 新增项;API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口,不要自行收窄成某一类 Binder 或内存事件。]
 
 ### 注册流程和适配建议
 
