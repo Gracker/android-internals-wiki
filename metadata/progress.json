@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 17,
-  "ready-for-review": 75,
+  "draft": 16,
+  "ready-for-review": 76,
   "finalized": 177,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -748,9 +748,9 @@
   },
   "total_review_sections": 95,
   "next_review_candidates": [],
-  "ready_for_review": 71,
-  "last_updated": "2026-05-14T15:33:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "ready_for_review": 72,
+  "last_updated": "2026-05-14T16:10:44+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-14T15:12:00+08:00",
     "log": "logs/review/2026-05-14-15-review.md",
@@ -1725,6 +1725,16 @@
       "task2b_state": "pending",
       "file": "src/part5-app/ch25-power-size/02-background-power.md",
       "title": "后台功耗治理"
+    },
+    "25.3": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "last_task2a_at": "2026-05-14T16:10:44+08:00",
+      "file": "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
+      "title": "WakeLock 与 Alarm 管理"
     }
   },
   "task2b_rounds": [
@@ -1742,9 +1752,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.2 后台功耗治理",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/02-background-power.md",
-  "last_task2a_processed_date": "2026-05-14T15:04:00+08:00",
+  "last_task2a_processed": "25.3 WakeLock 与 Alarm 管理",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
+  "last_task2a_processed_date": "2026-05-14T16:10:44+08:00",
   "task9_last_review_detail": {
     "at": "2026-05-14T14:20:00+08:00",
     "log": "logs/deep-review/2026-05-14-14-deep-review.md",
@@ -1785,9 +1795,9 @@
     "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
   "total_review_files": 95,
-  "last_task2a_at": "2026-05-14T15:04:00+08:00",
-  "last_task2a_section": "25.2",
-  "last_task2a_file": "src/part5-app/ch25-power-size/02-background-power.md",
+  "last_task2a_at": "2026-05-14T16:10:44+08:00",
+  "last_task2a_section": "25.3",
+  "last_task2a_file": "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
   "last_task6_review": "logs/review/2026-05-14-15-review.md",
   "last_task6_sections": [
     "25.1",
