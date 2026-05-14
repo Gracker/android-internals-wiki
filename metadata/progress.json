@@ -228,10 +228,10 @@
   ],
   "review_summary": "Task9 2026-05-15 01:36：review 26.4、19.13、19.23；P0 2 / P1 0 / P2 3；26.4 自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 539,
+    "l1_l2_fixes": 545,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 564,
+    "total_issues": 570,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -834,22 +834,22 @@
       "summary": "P2 3：Trace.beginSection sectionName 长度/高基数边界、P90/P99 样本量阈值口径、26.4/26.5 draft 交叉引用。"
     }
   },
-  "total_review_sections": 107,
+  "total_review_sections": 108,
   "next_review_candidates": [],
-  "ready_for_review": 80,
-  "last_updated": "2026-05-15T01:36:05+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "ready_for_review": 81,
+  "last_updated": "2026-05-15T02:12:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "task6_last_review": {
-    "at": "2026-05-15T01:12:00+08:00",
-    "log": "logs/review/2026-05-15-01-review.md",
+    "at": "2026-05-15T02:12:00+08:00",
+    "log": "logs/review/2026-05-15-02-review.md",
     "sections": [
-      "26.3",
-      "26.4",
-      "19.13"
+      "26.2",
+      "19.23",
+      "22.2"
     ],
     "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "auto_promotions": 1
+    "auto_promotions": 0
   },
   "task9_last_review": "2026-05-15T01:36:05+08:00",
   "ready_to_publish": 184,
@@ -1308,12 +1308,18 @@
     },
     "22.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "queue_priority": 95,
       "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task6_at": "2026-05-15T02:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-02-review.md"
     },
     "22.1": {
       "status": "ready-for-review",
@@ -2061,7 +2067,20 @@
       "last_task9_review_log": "logs/deep-review/2026-05-15-01-deep-review.md",
       "queue_priority": 95,
       "task2b_state": "pending",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-15T02:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-02-review.md"
+    },
+    "26.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-15T02:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-02-review.md"
     }
   },
   "task2b_rounds": [
@@ -2137,39 +2156,39 @@
     "src/part3-tools/ch19-apm/13-tracing-sdk.md",
     "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
-  "total_review_files": 107,
+  "total_review_files": 108,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-  "last_task6_review": "logs/review/2026-05-15-01-review.md",
+  "last_task6_review": "logs/review/2026-05-15-02-review.md",
   "last_task6_sections": [
-    "26.3",
-    "26.4",
-    "19.13"
+    "26.2",
+    "19.23",
+    "22.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/03-performance-collection.md",
-    "src/part5-app/ch26-observability/04-anr-monitoring.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+    "src/part5-app/ch26-observability/02-crash-reporting.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
   ],
-  "last_task6_at": "2026-05-15T01:12:00+08:00",
+  "last_task6_at": "2026-05-15T02:12:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-15T01:12:00+08:00",
-    "log": "logs/review/2026-05-15-01-review.md",
+    "at": "2026-05-15T02:12:00+08:00",
+    "log": "logs/review/2026-05-15-02-review.md",
     "sections": [
-      "26.3",
-      "26.4",
-      "19.13"
+      "26.2",
+      "19.23",
+      "22.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/03-performance-collection.md",
-      "src/part5-app/ch26-observability/04-anr-monitoring.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "src/part5-app/ch26-observability/02-crash-reporting.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
     ],
     "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "auto_promotions": 1,
-    "notes": "Task6 本轮审查 3 节：26.3 L1/L2 小修 5 处后满足 Task6+Task9+queue 三条件，自动晋升 finalized；26.4 写作层通过，转 Task9；19.13 revisiting 写作层通过，保留既有 async trace 技术回炉项。"
+    "auto_promotions": 0,
+    "notes": "26.2 小修 3 处；19.23 写作层复审 clean，既有 Task9 技术项等待 Task2B；22.2 修正文首元叙述并清理重复 frontmatter，等待 Task9 复核。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch26-observability/04-anr-monitoring.md",
