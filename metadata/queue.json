@@ -5261,6 +5261,126 @@
         }
       ],
       "updated_at": "2026-05-14T18:30:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-8.8-media-source-anchors",
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "title": "多媒体管线 Codec2 / atrace / 版本锚点错误",
+      "description": "ACodec/Codec2/tunneled playback、atrace.cpp 路径与 MediaCodec output Surface 版本口径存在源码或版本错误",
+      "reason": "[Deep Tech Review] ACodec/Codec2/tunneled playback、atrace.cpp 路径与 MediaCodec output Surface 版本口径存在源码或版本错误",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
+      ],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L214、L539-L549、L571",
+          "detail": "正文把 Codec2 路径写成 ACodec 适配，并引用不存在的 ACodec::setupTunneledPlayback()/ACodec::setupNode()。AOSP main 中 ACodec.cpp 未定义 setupTunneledPlayback/setupNode；Codec2 tunneled 逻辑在 media/codec2/sfplugin/CCodec.cpp 的 configureTunneledVideoPlayback 路径。",
+          "suggestion": "将 OMX/ACodec 与 Codec2/CCodec 两条路径拆开：OMX 使用 ACodec::configureTunneledVideoPlayback；Codec2 使用 CCodec::configureTunneledVideoPlayback + CCodecBufferChannel/sideband handle。删除 ACodec 同时承载 OMX/Codec2 的表述。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L454",
+          "detail": "AOSP atrace 分类源码路径写成 system/core/cpio/atrace.cpp，该路径不存在；atrace_categories 定义在 frameworks/native/cmds/atrace/atrace.cpp。",
+          "suggestion": "修正源码路径与验证口径；保留“audio/video/camera/gfx/view/sched/freq，无 media/codec 分类”的结论，但改用正确文件锚点。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L505-L510、L561-L564",
+          "detail": "版本演进把 MediaCodec output Surface/零拷贝路径归到 Android 4.3；MediaCodec.configure(format, Surface, ...) 自 API 16 起存在，Android 4.3 更关键的是 createInputSurface 等编码输入 Surface 能力。",
+          "suggestion": "拆分 Android 4.1/API16 output Surface 与 Android 4.3/API18 encoder input Surface；避免把输出 Surface 历史写晚。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L510、L563",
+          "detail": "Codec2 “Android 10 正式替代 OMX / Android 11 补齐 tunneled playback”写成确定边界，但正文未给出对应 commit、release note 或 CCodec 版本锚点。",
+          "suggestion": "补 CCodec tunneled playback 首次可用版本与提交锚点；找不到则标为“Android 10+ Codec2 路径逐步支持，设备实现依赖 vendor component”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T19:29:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-9.5-anr-source-anchors",
+      "section": "9.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "ANR 案例 QueuedWork / Freezer 源码锚点错误",
+      "description": "QueuedWork 生命周期等待点与 InputDispatcher freezer 方法名存在源码错误",
+      "reason": "[Deep Tech Review] QueuedWork 生命周期等待点与 InputDispatcher freezer 方法名存在源码错误",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "src/part2-performance/ch09-anr/05-case-studies.md"
+      ],
+      "related_files": [
+        "src/part2-performance/ch09-anr/05-case-studies.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L242-L247",
+          "detail": "正文称 BroadcastReceiver 与 ContentProvider 等待点分别在 ActivityThread.handleReceiver()/handleRelaunchActivity()。AOSP android-14 ActivityThread 中 QueuedWork.waitToFinish() 出现在 handleServiceArgs、handleStopService、pre-Honeycomb handlePauseActivity、非 pre-Honeycomb handleStopActivity；BroadcastReceiver.finish() 相关逻辑在 android.content.BroadcastReceiver.PendingResult 中使用 QueuedWork.queue() 延后 sendFinished，不是 handleReceiver 直接 waitToFinish。",
+          "suggestion": "按 Activity / Service / Broadcast 三条路径重写 waitToFinish/QueuedWork.queue 的源码链；不要把 BroadcastReceiver 写成 handleReceiver 直接等待。ContentProvider 如需保留，必须补对应源码锚点，否则删除。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L298-L302",
+          "detail": "正文称 Android 15+ 通过 InputDispatcher::setFrozen 检查连接状态避免冻结活跃 Input 连接。AOSP android-15/android-16/main 的 InputDispatcher.cpp 未定义 setFrozen；文件中只有全局 input dispatch freeze 状态（mDispatchFrozen）和 WaitQueue/oq/wq 计数。Cached Apps Freezer 属于 ActivityManager/CachedAppOptimizer 侧，不应归到 InputDispatcher::setFrozen。",
+          "suggestion": "删除 InputDispatcher::setFrozen 说法；将 freezer 规避链路改为 ActivityManager/CachedAppOptimizer、ProcessCachedOptimizerRecord 与 am_freeze/am_cached_process_freeze_status 日志验证。若要写 Android 15+ 豁免，必须补真实 AOSP commit 或标为 OEM 差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T19:29:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-25.6-native-lib-source-anchors",
+      "section": "25.6",
+      "section_title": "APK 体积分析与瘦身",
+      "priority": 95,
+      "title": "native library ABI 安装源码锚点错误",
+      "description": "frontmatter AOSP cs.android.com 行号与正文 native library 安装链路不匹配",
+      "reason": "[Deep Tech Review] frontmatter AOSP cs.android.com 行号与正文 native library 安装链路不匹配",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources L28-L31、正文 L199-L201",
+          "detail": "metadata 中 PackageParser.java;l=3878-3885 指向 static-shared-lib/library manifest 解析，InstallPackageHelper.java;l=1070 指向 releaseWakeLock()，都不是 native library ABI 解析或安装路径。当前 AOSP master 的关键链路应落在 services/core/java/com/android/server/pm/PackageAbiHelperImpl.java 与 core/java/com/android/internal/content/NativeLibraryHelper.java（findSupportedAbi/copyNativeBinariesForSupportedAbi/extractNativeLibs）。",
+          "suggestion": "替换 sources 中两个错误 cs.android.com 行锚点；正文把“PackageParser/InstallPackageHelper 可追到”改成 PackageAbiHelperImpl.derivePackageAbi() → NativeLibraryHelper.findSupportedAbi()/copyNativeBinariesForSupportedAbi()，并区分安装期 ABI 选择与运行时 linker 搜索 nativeLibraryDir。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T19:29:00+08:00"
     }
   ],
   "metadata": {
