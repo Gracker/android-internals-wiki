@@ -5,7 +5,7 @@ section: '9.5'
 status: ready-for-review
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-05'
+reviewed_date: "2026-05-14"
 reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-21'
@@ -46,7 +46,7 @@ related_chapters:
 - '9.4'
 - '1.4'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
@@ -62,11 +62,17 @@ review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
 task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
 last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
+task6_reviewed_at: "2026-05-14T20:10:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-14T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-14-20-review.md"
+task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。"
+
 ---
 
 # 案例集
 
-> **阅读本章前，你需要了解：** §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法论、§9.4 特殊场景的 ANR。
+> **阅读本章前建议先了解：** §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法论、§9.4 特殊场景的 ANR。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -91,9 +97,9 @@ last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
 
 ## 为什么要看案例
 
-前四节我们分别讲了 ANR 的设计思想、类型分类、分析方法论和特殊场景。这些是分析 ANR 的"工具箱"。但真实世界中，ANR 很少按照教科书的方式出现——trace 中的主线程堆栈可能指向 `nativePollOnce`（看起来什么都没做），负载可能处于正常范围，甚至 ANR 发生的进程本身没有任何问题。
+前四节已经介绍 ANR 的设计思想、类型分类、分析方法论和特殊场景。这些是分析 ANR 的"工具箱"。但真实世界中，ANR 很少按照教科书的方式出现——trace 中的主线程堆栈可能指向 `nativePollOnce`（看起来什么都没做），负载可能处于正常范围，甚至 ANR 发生的进程本身没有任何问题。
 
-案例集存在的意义就在这里：我们用六个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，阅读时可以先判断原因，再对照后面的分析。
+案例集的作用是用六个从真实产品环境中提取的案例，呈现一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，阅读时可以先判断原因，再对照后面的分析。
 
 这六个案例覆盖了 ANR 中最常见的根因类型：
 
@@ -102,7 +108,7 @@ last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
 - **案例 3：SharedPreferences 等待导致 Broadcast ANR** — `QueuedWork.waitToFinish()` 把主线程卡住了
 - **案例 4：进程冻结导致 Input ANR** — 系统冻结了 Gesture Monitor 进程，事件无人消费
 - **案例 5：应用启动超时导致焦点窗口缺失 ANR** — 目标应用启动失败，焦点无处可去
-- **案例 6：synchronized 锁顺序颠倒导致 Service ANR** — 主线程与后台线程争抢两把锁，形成经典死锁
+- **案例 6：synchronized 锁顺序颠倒导致 Service ANR** — 主线程与后台线程争抢两把锁，形成典型死锁
 
 ## 案例 1：系统负载过高 — I/O 压力导致的 Input ANR
 
@@ -396,7 +402,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
   at com.example.app.sync.SyncWorker.syncContacts(SyncWorker.java:134)
 ```
 
-经典死锁的轮廓已经出来了：
+死锁关系已经明确：
 
 - **主线程**：持有 `DataManager` 的锁（`0x0a1b7d43`），等待 `DatabaseHelper` 的锁（`0x0f3c2a81`）
 - **SyncWorker-2**：持有 `DatabaseHelper` 的锁（`0x0f3c2a81`），等待 `DataManager` 的锁（`0x0a1b7d43`）
@@ -454,7 +460,7 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 
 ## 分析方法总结
 
-通过这六个案例，提炼出高效的分析路径：
+这些案例可以归纳出一条分析路径：
 
 1. **判断 ANR 类型** — 从 `am_anr` 确认是 Input/Service/Broadcast/ContentProvider ANR
 2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧。Android 11+ 还可通过 `ActivityManager.getHistoricalProcessExitReasons()` + `ApplicationExitInfo.getTraceInputStream()` 获取官方 ANR trace 文件，无需依赖隐藏 API（详见下方"线上 ANR 聚合分析"一节）
@@ -486,7 +492,7 @@ WaitQueue 长度作为辅助信号的用法（需结合其他证据，不能单�
 
 ### 为什么需要聚合
 
-ANR 的原始堆栈信息噪音很大。很多 ANR trace 会命中 `nativePollOnce` 这样的"无效堆栈"。聚合分析的思路是：将相似堆栈的 ANR 合并成同一组，计算每组的发生频率和影响面，优先修复影响最大的问题。
+ANR 的原始堆栈信息噪声很大。很多 ANR trace 会命中 `nativePollOnce` 这样的"无效堆栈"。聚合分析的思路是：将相似堆栈的 ANR 合并成同一组，计算每组的发生频率和影响面，优先修复影响最大的问题。
 
 Shopee 团队的 MDAP LooperMonitor 方案是一个参考实践。做法是**记录主线程过去 10 秒的消息调度历史**，而不是只抓 ANR 瞬间的堆栈。当 ANR 发生时，上报过去 10 秒内所有消息的执行情况，即使 ANR 瞬间堆栈是 `nativePollOnce`，也能从调度历史中找到耗时的大消息。
 

@@ -22,7 +22,7 @@ related_chapters:
 - '8.4'
 - '14.9'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-20'
+reviewed_date: "2026-05-14"
 section: '8.8'
 sources:
 - path: https://developer.android.com/reference/android/media/MediaCodec
@@ -50,9 +50,9 @@ tags:
 task2b_result: pending
 task2b_state: pending
 task6_result: pass-light-edit
-task6_reviewed_at: '2026-05-10T10:17:22.880357'
+task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-14'
@@ -60,6 +60,10 @@ task9_state: reviewed
 title: Android 多媒体管线性能
 task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
 last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
+last_task6_at: "2026-05-14T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-14-20-review.md"
+task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。"
+
 ---
 
 
@@ -89,11 +93,11 @@ last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
 
 ## 为什么要了解多媒体管线性能
 
-如果你做过视频播放、音频录制或者 Camera 预览相关的开发，你大概率遇到过这些问题：视频首帧加载慢、播放过程中偶发卡顿、音频出现断续的"嘟嘟"声（underrun）、或者后台播放时耗电飙升。
+视频播放、音频录制或者 Camera 预览开发里，很容易遇到这些问题：视频首帧加载慢、播放过程中偶发卡顿、音频出现断续的"嘟嘟"声（underrun），或者后台播放时耗电飙升。
 
 这类问题的共同点是：Android 多媒体管线横跨 App 框架、硬件编解码器（VPU/DSP）、AudioFlinger、SurfaceFlinger 以及内核驱动，路径很长，参与组件也多。只要其中任何一个环节处理不及时，用户就会直接感知到，比如视频掉帧、音频爆音，或者后台播放耗电升高。
 
-理解这条管线的架构和性能特征，可以让我们在 Perfetto 中精准定位问题发生在哪个环节：是解码慢、渲染慢、还是合成慢？是音频 buffer 供给不上、还是 CPU 调度不够及时？本节的目标就是帮我们建立这种端到端的定位能力。
+理解这条管线的架构和性能特征，能把问题定位到解码、渲染、合成、音频 buffer 供给或 CPU 调度这些环节，建立端到端的排查路径。
 
 多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项分析怎么对应到具体问题。
 
@@ -105,7 +109,7 @@ Android 的多媒体处理围绕 MediaCodec 这个核心 API 展开。从数据�
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec]
 
-这类输出路径都尽量避免 CPU 逐像素拷贝。MediaCodec 解码后的帧通常放在由 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，真正的消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
+这类输出路径都尽量避免 CPU 逐像素拷贝。MediaCodec 解码后的帧通常放在由 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，具体消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
 
 | 输出方式 | producer → consumer | App / GPU 参与方式 | Overlay / 合成条件 | 排查观察点 |
 |------|------|------|------|------|
@@ -178,7 +182,7 @@ codec.setCallback(new MediaCodec.Callback() {
 
 当 MediaCodec 配置了 output Surface 时，解码后的帧通过 BufferQueue 传递给 SurfaceFlinger。但这里有一个时序问题：GPU 可能还在使用上一帧的 buffer 进行合成操作。如何确保不会出现一方还在写、另一方已经在读的情况？
 
-答案是 Sync Fence（参见 §2.16）。BufferQueue 的 `queueBuffer()` 操作会携带一个 acquire fence，表示"当这个 fence signal 时，buffer 的写入已完成，消费者可以安全读取"。SurfaceFlinger 在合成时等待这个 acquire fence，确保解码器已经完成写入。合成完成后，SurfaceFlinger 通过 release fence 通知"我已经用完这个 buffer 了"，解码器可以重新使用它。
+这里依赖 Sync Fence（参见 §2.16）。BufferQueue 的 `queueBuffer()` 操作会携带一个 acquire fence，表示"当这个 fence signal 时，buffer 的写入已完成，消费者可以安全读取"。SurfaceFlinger 在合成时等待这个 acquire fence，确保解码器已经完成写入。合成完成后，SurfaceFlinger 通过 release fence 通知"我已经用完这个 buffer 了"，解码器可以重新使用它。
 
 [已验证: 官方文档, source.android.com/docs/core/graphics — Explicit Sync]
 
@@ -320,7 +324,7 @@ AAudio 的核心使用模式是**异步回调**：App 注册一个回调函数�
 
 [已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio]
 
-### AAudio MMAP 路径：极致低延迟
+### AAudio MMAP 路径：低延迟数据路径
 
 Android 8.1 进一步引入了 MMAP（Memory Mapped）数据路径，可以将延迟降到最低。在 MMAP EXCLUSIVE 模式下，App 直接写入一块与 ALSA 驱动共享的内存映射 buffer，数据不会再经过 AudioFlinger 的 normal mixer，因此额外排队开销最小。
 
@@ -384,7 +388,7 @@ WHERE
 ORDER BY timestamp_ns;
 ```
 
-这个查询会返回所有 MediaCodec 解码相关的 slice，包括时间戳、耗时、所属进程和线程。通过分析 `duration_ns` 列，我们可以判断解码是否成为瓶颈——如果单帧解码耗时超过一个 VSync 周期（如 120Hz 设备上超过 8.33ms），解码器就是瓶颈。
+这个查询会返回所有 MediaCodec 解码相关的 slice，包括时间戳、耗时、所属进程和线程。通过 `duration_ns` 列可以判断解码是否成为瓶颈——如果单帧解码耗时超过一个 VSync 周期（如 120Hz 设备上超过 8.33ms），解码器就是瓶颈。
 
 [已验证: Perfetto 官方文档, ui.perfetto.dev — SQL Reference]
 
@@ -458,7 +462,7 @@ atrace audio,video,camera,gfx,view,sched,freq
 
 ### 首帧解码延迟过高
 
-视频播放启动时，用户感知到的"首帧时间"由以下环节构成：网络请求（如果是流媒体）→ 解复用 → 编解码器初始化 → 首帧解码 → 渲染。其中编解码器初始化是隐藏的性能杀手。
+视频播放启动时，用户感知到的"首帧时间"由以下环节构成：网络请求（如果是流媒体）→ 解复用 → 编解码器初始化 → 首帧解码 → 渲染。其中编解码器初始化是主要耗时来源。
 
 创建一个 MediaCodec 实例并完成配置/启动，通常需要 30-80ms（硬件解码器）到 100-200ms（软件解码器）。如果每次播放都创建新实例，这个开销无法避免。解决方案是**解码器池化**：维护一个预热好的 MediaCodec 实例池，新播放请求直接从池中取出已初始化的实例。Media3 的 Player 池化模式就是基于这个思路。
 
