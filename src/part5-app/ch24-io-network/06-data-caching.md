@@ -8,7 +8,10 @@ last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + RFC 9110/9111 + AOSP android-35 SDK sources"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/training/data-storage/app-specific"
@@ -38,10 +41,10 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [compression, caching, gzip, brotli, offline-sync]
 related_chapters: ["24.4", "24.7", "12.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-14T11:04:00+08:00"
 ---
 
@@ -85,11 +88,11 @@ HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encodi
 压缩选型按数据形态判断：
 
 - 文本响应：JSON、HTML、XML、GraphQL 这类重复字段多的文本适合 gzip / brotli。服务端需要同时返回正确的 `Content-Encoding` 和 `Vary: Accept-Encoding`，否则 CDN 或中间缓存可能把某个编码版本误发给不支持的客户端。[已验证: RFC 9110]
-- 已压缩资源：JPEG、WebP、AVIF、MP4、ZIP、protobuf 里已经压缩过的大字段，二次 gzip 收益很低，还会增加 CPU 和耗电。图片和视频应优先从编码格式、尺寸、码率、分片下载处理，详见 24.5 和 12.2 节。
+- 已压缩资源：JPEG、WebP、AVIF、MP4、ZIP、protobuf 里已经压缩过的大字段，二次 gzip 收益很低，还会增加 CPU 和耗电。图片和视频应优先从编码格式、尺寸、码率、分片下载等方向处理，详见 24.5 和 12.2 节。
 - 小响应：几十到几百字节的响应不适合强行压缩。压缩头、字典初始化和解压 CPU 可能抵消传输收益。
 - 请求体：客户端上传压缩需要服务端明确支持请求 `Content-Encoding`。日志、埋点批量上报、大 JSON 上传可以评估压缩；普通表单、小 POST 请求不建议默认压缩。
 
-压缩上线前要记录四个指标：原始字节数、线上传输字节数、解压耗时、端到端请求耗时。只看压缩率容易误判，低端机上解压 CPU 占用、主线程错误解析、重试放大流量，都会把省下的网络时间还回去。[已验证: Android Developers Optimize network access]
+压缩上线前要记录四个指标：原始字节数、线上传输字节数、解压耗时、端到端请求耗时。只看压缩率容易误判，低端机上的解压 CPU 占用、主线程上的解压或解析、重试放大的流量，都会把省下的网络时间还回去。[已验证: Android Developers Optimize network access]
 
 ## 多级缓存设计：内存 / 磁盘 / 网络
 
@@ -104,7 +107,7 @@ HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encodi
 
 AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。[已验证: AOSP android-35, android/content/Context.java, android/os/storage/StorageManager.java]
 
-这段代码展示 OkHttp 磁盘 HTTP 缓存的最小接入方式，重点看缓存目录放在 `cacheDir`，并且容量有明确上限。
+这段代码展示 OkHttp 磁盘 HTTP 缓存的最小接入方式。这里需要确认两点：缓存目录放在 `cacheDir`，容量有明确上限。
 
 ```kotlin
 val httpCache = Cache(
@@ -119,7 +122,7 @@ val client = OkHttpClient.Builder()
 
 OkHttp 文档把缓存命中分为直接命中、未命中和条件命中。条件命中会向服务端发起验证请求，如果服务端返回 `304 Not Modified`，客户端继续使用本地响应体，只更新响应元数据。[已验证: OkHttp Caching docs]
 
-[自动发现] 缓存命中率应成为埋点指标，而不只是代码结构。可按“命中次数 / 读取次数”记录图片、接口响应、Room 查询、预取列表四类指标。低命中率时先看访问模式：一次性大图、临时活动页、短期热榜，可能会挤掉首页头像、会话列表、配置项这类更高复用价值的数据。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+[自动发现] 缓存命中率要接入埋点；只有缓存层代码，不代表线上有有效命中。可以按“命中次数 / 读取次数”记录图片、接口响应、Room 查询、预取列表四类指标。命中率低时，从访问模式查起：一次性大图、临时活动页、短期热榜，可能会挤掉首页头像、会话列表、配置项这类更高复用价值的数据。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 ## 缓存失效策略与一致性
 
