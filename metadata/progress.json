@@ -1,8 +1,8 @@
 {
   "total": 269,
   "draft": 24,
-  "ready-for-review": 71,
-  "finalized": 174,
+  "ready-for-review": 70,
+  "finalized": 175,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
@@ -184,13 +184,13 @@
     "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
     "src/part5-app/ch24-io-network/03-serialization-performance.md"
   ],
-  "review_summary": "Task9 2026-05-14 08: reviewed 22.2/20.1/22.3/24.3; P0 6 / P1 4 / P2 5; 24.3 pass-tech-review pending Task6; auto-finalized none.",
+  "review_summary": "Task6 2026-05-14 09: reviewed 22.5/24.3; L1/L2 fixes 13; L3/L4 0; auto-finalized 24.3.",
   "task6_review_summary": {
-    "l1_l2_fixes": 396,
+    "l1_l2_fixes": 409,
     "l3_issues": 28,
     "l4_issues": 5,
-    "total_issues": 433,
-    "auto_promotions": 8
+    "total_issues": 446,
+    "auto_promotions": 9
   },
   "issues_by_section": {
     "1.6": {
@@ -650,21 +650,22 @@
   },
   "total_review_sections": 87,
   "next_review_candidates": [],
-  "ready_for_review": 67,
-  "last_updated": "2026-05-14T08:47:50+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 66,
+  "last_updated": "2026-05-14T09:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T07:09:44+08:00",
-    "log": "logs/review/2026-05-14-07-review.md",
+    "at": "2026-05-14T09:06:00+08:00",
+    "log": "logs/review/2026-05-14-09-review.md",
     "sections": [
-      "24.1"
+      "22.5",
+      "24.3"
     ],
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 13,
     "l3_l4_issues": 0,
     "auto_promotions": 1
   },
   "task9_last_review": "2026-05-14T08:47:50+08:00",
-  "ready_to_publish": 171,
+  "ready_to_publish": 172,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1143,8 +1144,8 @@
       "file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
       "title": "动画性能优化",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-13T08:13:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-08-review.md"
+      "last_task6_at": "2026-05-14T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-09-review.md"
     },
     "8.6": {
       "status": "ready-for-review",
@@ -1488,12 +1489,18 @@
       "title": "数据库性能优化（SQLite/Room）"
     },
     "24.3": {
-      "status": "ready-for-review",
-      "pipeline_stage": "ready-for-review",
-      "task6_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
       "task9_result": "pass-tech-review",
       "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "last_task6_at": "2026-05-14T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-09-review.md",
+      "file": "src/part5-app/ch24-io-network/03-serialization-performance.md",
+      "title": "序列化性能对比与选型"
     }
   },
   "task2b_rounds": [

@@ -2,13 +2,16 @@
 title: "序列化性能对比与选型"
 chapter: "24.3"
 section: "24.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + upstream library docs"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/Parcel.java"
@@ -25,6 +28,12 @@ sources:
   - type: official
     path: "https://github.com/Kotlin/kotlinx.serialization/blob/master/README.md"
   - type: official
+    path: "https://kotlinlang.org/docs/serialization.html"
+  - type: official
+    path: "https://square.github.io/moshi/"
+  - type: official
+    path: "https://android.googlesource.com/platform/external/kotlinx.serialization/+/refs/heads/upstream-1.2.0-release/docs/json.md"
+  - type: official
     path: "https://protobuf.dev/overview/"
   - type: official
     path: "https://github.com/google/flatbuffers/blob/master/README.md"
@@ -36,10 +45,9 @@ sources:
     path: "Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md"
 tags: [serialization, json, protobuf, parcelable, flatbuffers]
 related_chapters: ["24.4", "1.4", "21.1"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
 last_task2a_at: "2026-05-14T08:20:00+08:00"
 task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
@@ -78,7 +86,7 @@ task9_review_notes: "2026-05-14 Task9：pass-tech-review。P0 0 / P1 0 / P2 2；
 
 序列化选型会同时影响 CPU、分配量、包体积、混淆稳定性和协议演进。它不像数据库慢查询那样容易在 trace 里留下一个醒目的 slice，更多时候表现为冷启动阶段的短时 CPU 峰值、一次网络响应后的对象洪峰、Binder 调用前后多出来的复制成本，或者线上只在混淆包里复现的字段丢失。
 
-24.3 只处理应用侧选择：JSON 库怎么选，什么时候换成 Protocol Buffers 或 FlatBuffers，进程间传对象该用 Parcelable 还是 Serializable，序列化工作怎么从启动路径和 Binder 路径里移出去。Binder 事务模型和线程池竞争详见 1.4 节；启动阶段的 TTID/TTFD 观测详见 21.1 节；连接池、弱网重试和协议层设计详见 24.4 节。
+应用侧选型要回答几个问题：JSON 库怎么选，什么时候换成 Protocol Buffers 或 FlatBuffers，进程间传对象该用 Parcelable 还是 Serializable，序列化工作怎么从启动路径和 Binder 路径里移出去。Binder 事务模型和线程池竞争详见 1.4 节；启动阶段的 TTID/TTFD 观测详见 21.1 节；连接池、弱网重试和协议层设计详见 24.4 节。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
@@ -90,7 +98,7 @@ JSON 的优势是可读、调试方便、后端兼容成本低。它的代价来
 
 Gson 的主要问题不只在速度。Gson README 已明确说明，它不推荐作为 Android JSON 方案；原因是运行时开放反射与 shrink/optimization/obfuscation 不好配合，Android 场景更适合 Kotlin Serialization 或 Moshi Codegen 这类代码生成方案。已有 Gson 存量项目可以保留在非关键路径，但新模型不要继续把 Gson 放进启动、列表首屏或大批量缓存恢复路径。[已验证: 官方文档, github.com/google/gson/blob/main/README.md]
 
-Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。这里的收益不是“所有场景一定最快”，而是把字段访问和构造逻辑前移到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
+Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。它不保证所有场景最快；主要收益是把字段访问和构造逻辑前移到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
 
 kotlinx.serialization 的定位是 Kotlin 多平台、多格式、无反射序列化。它通过 `@Serializable` 和编译器插件生成序列化器，JSON 只是其中一种格式。纯 Kotlin 模块、共享模型、需要同时支持 JSON/CBOR/ProtoBuf 的场景更适合这条路线。代价是模型要遵守插件约束，第三方 Java bean 或动态字段很多的接口迁移成本较高。[已验证: 官方文档, kotlinlang.org/docs/serialization.html]
 
@@ -104,7 +112,7 @@ kotlinx.serialization 的定位是 Kotlin 多平台、多格式、无反射序�
 | 大响应、只读取少数字段 | streaming reader 或拆接口 | 避免把完整 JSON 树和全部 DTO 一次性建出来 |
 | 端到端协议可控 | Protocol Buffers | 二进制 schema 更适合高频网络与磁盘缓存 |
 
-这段代码表达 JSON 选型后的性能基线写法。重点不是比较库名，而是固定同一份 payload、同一组模型、同一台设备和同一套混淆配置后再看 parse/encode 时间与分配量。
+这段代码表达 JSON 选型后的性能基线写法。先固定同一份 payload、同一组模型、同一台设备和同一套混淆配置，再看 parse/encode 时间与分配量。
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -182,9 +190,9 @@ class UserServiceProxy(private val remote: IUserService) {
 
 启动阶段的序列化问题通常来自四类路径：`Application` 同步读取配置、ContentProvider 初始化时解析缓存、首屏接口返回后一次性构建大 DTO、AB 实验/灰度配置在主线程展开。这些路径都会把 CPU 解析、对象分配和类加载放进 TTID/TTFD 前后。启动分析方法详见 21.1 节；24.3 的处理动作是把大 payload 延后、拆小、缓存已解析结果，或者换成生成代码/二进制 schema。
 
-不要在启动路径里创建大量一次性 parser、adapter 或 `Json` 实例。kotlinx.serialization 文档建议复用自定义 format 实例，因为 format 实现可能缓存和 class 相关的额外信息；Moshi 的 adapter 也应按类型复用。这里的收益不是“缓存对象就一定快”，而是减少冷启动里重复建立元数据和 adapter 查找。[已验证: 官方文档, android.googlesource.com/platform/external/kotlinx.serialization/+/refs/heads/upstream-1.2.0-release/docs/json.md][已验证: 官方文档, square.github.io/moshi]
+不要在启动路径里创建大量一次性 parser、adapter 或 `Json` 实例。kotlinx.serialization 文档建议复用自定义 format 实例，因为 format 实现可能缓存和 class 相关的额外信息；Moshi 的 adapter 也应按类型复用。复用不会自动解决所有性能问题，但能减少冷启动里重复建立元数据和 adapter 查找。[已验证: 官方文档, android.googlesource.com/platform/external/kotlinx.serialization/+/refs/heads/upstream-1.2.0-release/docs/json.md][已验证: 官方文档, square.github.io/moshi]
 
-IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
+IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1 MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
 
 序列化问题在 Perfetto 里可以从三个方向定位：
 
@@ -205,3 +213,15 @@ IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException
 | IPC 压测 | Parcel 大小、调用频率、TransactionTooLargeException | 判断是否要分页或传 key |
 
 如果三组基线指向不同结论，以用户路径优先。启动慢就先处理启动路径里的解析；Binder 失败就先拆事务；后台同步耗电再看批量 encode/decode 的 CPU 和分配量。库替换是工程动作，选型依据必须来自目标路径。
+
+## 参考资料
+
+- [已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/Parcel.java]
+- [已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
+- [引用: developer.android.com/reference/android/os/Parcelable]
+- [引用: developer.android.com/topic/performance/benchmarking/microbenchmark-overview]
+- [引用: github.com/google/gson/blob/main/README.md]
+- [引用: github.com/square/moshi/blob/master/README.md]
+- [引用: kotlinlang.org/docs/serialization.html]
+- [引用: protobuf.dev/overview]
+- [引用: github.com/google/flatbuffers/blob/master/README.md]
