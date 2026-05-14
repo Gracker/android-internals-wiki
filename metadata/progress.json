@@ -1,7 +1,7 @@
 {
   "total": 271,
-  "draft": 4,
-  "ready-for-review": 82,
+  "draft": 3,
+  "ready-for-review": 83,
   "finalized": 185,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -116,7 +116,8 @@
     "19.23",
     "26.2",
     "26.5",
-    "26.6"
+    "26.6",
+    "20.7"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -228,7 +229,8 @@
     "src/part3-tools/ch19-apm/23-network-apm-internals.md",
     "src/part5-app/ch26-observability/02-crash-reporting.md",
     "src/part5-app/ch26-observability/05-online-troubleshooting.md",
-    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md",
+    "src/part5-app/ch20-stability/07-exception-architecture.md"
   ],
   "review_summary": "Task6 2026-05-15 05:15：review 26.6；L1/L2 小修 4 处，L3 技术/证据边界 3 处已标注并写入 queue(priority 90)。",
   "task6_review_summary": {
@@ -844,11 +846,11 @@
       "p3": 0
     }
   },
-  "total_review_sections": 109,
+  "total_review_sections": 111,
   "next_review_candidates": [],
-  "ready_for_review": 82,
-  "last_updated": "2026-05-15T05:15:00+08:00",
-  "last_updated_by": "task6-review",
+  "ready_for_review": 83,
+  "last_updated": "2026-05-15T05:33:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-15T05:15:00+08:00",
     "log": "logs/review/2026-05-15-05-review.md",
@@ -2137,6 +2139,15 @@
       "last_task6_review_log": "logs/review/2026-05-15-05-review.md",
       "task6_l1_l2_fixes": 4,
       "task6_l3_issues": 3
+    },
+    "20.7": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "last_task2a_at": "2026-05-15T05:33:00+08:00",
+      "last_task2a_file": "src/part5-app/ch20-stability/07-exception-architecture.md"
     }
   },
   "task2b_rounds": [
@@ -2154,8 +2165,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "26.6 A/B Test 与性能回归防护",
-  "last_task2a_processed_file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
+  "last_task2a_processed": "20.7 异常处理架构设计",
+  "last_task2a_processed_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "at": "2026-05-15T04:28:44+08:00",
@@ -2196,10 +2207,10 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
-  "total_review_files": 109,
-  "last_task2a_at": "2026-05-15T04:09:00+08:00",
-  "last_task2a_section": "26.6",
-  "last_task2a_file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
+  "total_review_files": 111,
+  "last_task2a_at": "2026-05-15T05:33:00+08:00",
+  "last_task2a_section": "20.7",
+  "last_task2a_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
   "last_task6_review": "logs/review/2026-05-15-05-review.md",
   "last_task6_sections": [
     "26.6"
