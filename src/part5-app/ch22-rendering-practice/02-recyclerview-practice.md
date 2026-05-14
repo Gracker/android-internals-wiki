@@ -3,11 +3,6 @@ title: "RecyclerView 最佳实践"
 chapter: "22.2"
 section: "22.2"
 status: ready-for-review
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
@@ -49,24 +44,26 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-14T08:11:00+08:00"
-last_task6_review_log: logs/review/2026-05-14-08-review.md
-task6_review_notes: "2026-05-14 Task6：复审通过；确认 Task2B 已修复 DiffUtil payload 示例，写作层无新增回炉项，送 Task9 复核。"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_reviewed_date: "2026-05-15"
+last_task6_at: "2026-05-15T02:12:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-02-review.md
+task6_reviewed_at: "2026-05-15T02:12:00+08:00"
+task6_reviewed_by: openclaw-task6
+task6_review_notes: "2026-05-15 Task6：metadata 去重并复审通过；写作层无新增回炉项，既有 Task2B 修复完成，等待 Task9 复核。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T08:47:50+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
-task9_review_notes: "2026-05-14 Task9：completed。RecyclerPool→RecycledViewPool 类名修正已落地。"
+task9_review_notes: "2026-05-14 Task9：completed。RecyclerPool→RecycledViewPool 类名已修正。"
 ---
 
 # RecyclerView 最佳实践
@@ -94,7 +91,7 @@ task9_review_notes: "2026-05-14 Task9：completed。RecyclerPool→RecycledViewP
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这一节只把机制转成应用侧写法、验收方法和取舍边界。
+RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]

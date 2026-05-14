@@ -6,8 +6,8 @@ confidence: high
 drafted_by: gemini
 drafted_date: '2026-04-24'
 last_task2b_at: '2026-05-14T23:25:54+08:00'
-last_task6_at: '2026-05-05T14:10:00+08:00'
-last_task6_review_log: logs/review/2026-05-05-14-review.md
+last_task6_at: "2026-05-15T02:12:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-02-review.md
 last_task9_at: "2026-05-15T01:36:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-01-deep-review.md"
 last_verified: '2026-04-24'
@@ -23,7 +23,7 @@ review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no 
   previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05
   task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-05'
+reviewed_date: "2026-05-15"
 section: '19.23'
 sources:
 - https://square.github.io/okhttp/features/events/
@@ -40,15 +40,16 @@ tags:
 task2b_result: "pending"
 task2b_state: "pending"
 task6_result: pass-light-edit
-task6_reviewed_at: '2026-05-10T10:17:22.870988'
+task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-15"
 task9_state: "reviewed"
 title: 网络 APM 底层捕获原理
 task9_review_notes: "2026-05-13 Task9：P0 2 / P1 0，代码示例存在可编译性/签名错误，转 Task2B 修复。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；OkHttp EventListener 示例 activeExchange 状态机仍会拆错 responseBodyEnd。"
+task6_review_notes: '2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。'
 ---
 
 

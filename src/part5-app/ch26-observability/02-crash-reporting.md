@@ -44,10 +44,18 @@ sources:
     path: "system/core/debuggerd/crash_dump.cpp"
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
 related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+last_task6_at: "2026-05-15T02:12:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-02-review.md
+task6_reviewed_at: "2026-05-15T02:12:00+08:00"
+task6_reviewed_by: openclaw-task6
+task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 3 处（结构性元叙述 1、抽象词风险 2）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
 ---
 
 # Crash 上报体系搭建
@@ -75,7 +83,7 @@ task2b_state: pending
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-Crash 上报体系解决的是“进程已经要退出，证据还要留下来”这件事。它不负责解释 Java Crash、Native Crash 的底层捕获机制，那部分详见 20.2、20.3 和 19.24；本节只讨论 App 侧和服务端怎样把崩溃样本稳定送到分析系统，并让值班同学尽快判断影响面。
+Crash 上报体系解决的是“进程已经要退出，证据还要留下来”这件事。Java Crash、Native Crash 的底层捕获机制详见 20.2、20.3 和 19.24；这里聚焦 App 侧和服务端怎样把崩溃样本稳定送到分析系统，并让值班同学尽快判断影响面。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
 
@@ -113,7 +121,7 @@ Native Crash 的入口通常是 `sigaction`、Breakpad / Crashpad client 或厂�
 | `process_name` / `pid` / `thread_name` | 区分主进程、推送进程、WebView 进程和后台 Service | Java 入口可直接拿线程名；Native 样本优先取 tombstone / minidump 字段 |
 | `exception_type` / `signal` | 区分 Java 异常、`SIGSEGV`、`SIGABRT`、`SIGBUS` 等 | 不在端侧做复杂归因 |
 | `top_frame` / `raw_stack` | 服务端聚合和符号化输入 | Java 保留原始堆栈；Native 保留地址、so 名、Build ID |
-| `build_version` / `version_code` / `git_sha` | 对齐发布记录、mapping 和符号文件 | 这组字段必须来自构建产物，不从运行时拼接 |
+| `build_version` / `version_code` / `git_sha` | 匹配发布记录、mapping 和符号文件 | 这组字段必须来自构建产物，不从运行时拼接 |
 | `breadcrumbs` | 崩溃前最近操作、页面、网络请求摘要 | 使用固定大小环形缓冲区，避免崩溃时扩容 |
 | `device_context` | 机型、Android 版本、ABI、前后台、内存水位、磁盘水位 | 不采集用户明文输入和完整 URL |
 
@@ -186,7 +194,7 @@ R8 retrace 官方文档说明，`retrace` 通过 mapping 文件把混淆后的�
 服务端 mapping 管理建议绑定四个键：
 
 - `application_id`：区分不同 App 或白标包。
-- `version_code` + `version_name`：对齐线上版本。
+- `version_code` + `version_name`：匹配线上版本。
 - `build_id` / `git_sha`：区分同版本号下的重打包。
 - `minify_config_hash`：识别 R8 规则变化。
 
