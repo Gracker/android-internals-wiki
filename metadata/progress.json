@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 22,
-  "ready-for-review": 71,
+  "draft": 21,
+  "ready-for-review": 72,
   "finalized": 176,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -95,7 +95,8 @@
     "22.2",
     "24.3",
     "24.4",
-    "24.5"
+    "24.5",
+    "24.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -186,7 +187,8 @@
     "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
     "src/part5-app/ch24-io-network/03-serialization-performance.md",
     "src/part5-app/ch24-io-network/04-network-architecture.md",
-    "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+    "src/part5-app/ch24-io-network/05-protocol-optimization.md",
+    "src/part5-app/ch24-io-network/06-data-caching.md"
   ],
   "review_summary": "Task9 2026-05-14 10: reviewed 22.5/24.4/24.5; P0 0 / P1 2 / P2 4; auto-finalized 24.5; 22.5、24.4 回 task2b_pending。",
   "task6_review_summary": {
