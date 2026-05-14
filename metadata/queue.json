@@ -5102,19 +5102,105 @@
       "added_at": "2026-05-14T14:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T14:20:00+08:00"
+    },
+    {
+      "id": "task9-25-2-workmanager-backoff-duration-api-20260514",
+      "section": "25.2",
+      "section_title": "后台功耗治理",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-api-signature",
+      "title": "WorkManager setBackoffCriteria 示例使用了错误 Duration 类型",
+      "description": "L147-L150 的 OneTimeWorkRequest 示例把 setBackoffCriteria 第二参写成 30.minutes；AndroidX WorkRequest.Builder 公开重载是 (BackoffPolicy, Long, TimeUnit) 或 (BackoffPolicy, java.time.Duration)，Kotlin 30.minutes 是 kotlin.time.Duration，示例按原样不可编译。",
+      "reason": "[Deep Tech Review] WorkManager backoff 示例存在 API 签名错误，复制后无法通过编译。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/02-background-power.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-15-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 签名错误",
+          "location": "L147-L150 WorkManager setBackoffCriteria 示例",
+          "detail": "AndroidX androidx-main `WorkRequest.kt` 中 `setBackoffCriteria` 只有 `(BackoffPolicy, Long, TimeUnit)` 和 `@RequiresApi(26) (BackoffPolicy, java.time.Duration)` 两个公开重载；`30.minutes` 来自 `kotlin.time.Duration`，不能传给 `java.time.Duration` 参数。",
+          "suggestion": "改成 `setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)`；或显式使用 `java.time.Duration.ofMinutes(30)` 并标注 API 26+ / Android 10+ 可用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T15:33:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T15:33:00+08:00"
+    },
+    {
+      "id": "task9-21-1-startup-framecommit-ttid-sp-version-20260514",
+      "section": "21.1",
+      "section_title": "启动全链路分析（App 视角）",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "title": "启动分析章节首帧回调 API、TTID 终点和 SharedPreferences 版本口径仍需修正",
+      "description": "章节仍有 1 个 P0 与 2 个 P1：ViewTreeObserver 不存在 removeFrameCommitCallback；TTID 终点不应近似为 performTraversals 结束；SharedPreferences 并非 Android 7.0+ 才改成 XML 解析。",
+      "reason": "[Deep Tech Review] 21.1 回炉后仍存在首帧回调 API 名、启动指标终点、SharedPreferences 版本差异三类技术问题。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/01-startup-analysis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-15-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 名称错误",
+          "location": "L286 `registerFrameCommitCallback()` 描述",
+          "detail": "AOSP android-16.0.0_r1 `ViewTreeObserver` 公开方法是 `registerFrameCommitCallback(Runnable)` 和 `unregisterFrameCommitCallback(Runnable)`，不存在 `removeFrameCommitCallback()`；实现里 `captureFrameCommitCallbacks()` 会把待回调列表置空，已提交帧回调本身也是一次性消费语义。",
+          "suggestion": "删除 `removeFrameCommitCallback()`；若需要取消尚未提交的回调，写 `unregisterFrameCommitCallback(callback)`。同时补一句“只在硬件渲染下生效，回调表示帧已提交到 swap chain，不等于已显示”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/观测口径错误",
+          "location": "L381 TTID 终点定位",
+          "detail": "正文把 `performTraversals` 结束时间近似为 TTID 终点，但首帧还要经过 RenderThread `DrawFrame`、buffer 提交、ViewRootImpl/WindowSession 的 draw-finished 上报，Android launch-time 文档中的 `Displayed`/TTID 是系统记录的首帧显示耗时。用 `performTraversals` 结束会漏掉 RenderThread/GPU/提交阶段，容易低估首帧。",
+          "suggestion": "Perfetto 实战里改成：主线程 `performTraversals` 只定位首帧 CPU traversal；TTID 终点优先对齐 logcat `Displayed`、`am start -W`、`reportDrawFinished`/`DrawFrame`/frame commit 相关事件；无法精确时说明这是下界近似。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异错误",
+          "location": "L144 SharedPreferences 首次读取",
+          "detail": "正文写“Android 7.0+ 改为 xml 解析模式”。AOSP android-6.0.1_r81、android-7.0.0_r1、android-16.0.0_r1 的 `SharedPreferencesImpl` 都通过 `FileInputStream` + `XmlUtils.readMapXml()` 读取 XML，Android 7.0 不是 XML 解析的分界点。",
+          "suggestion": "改成“SharedPreferences 底层长期是 XML 文件读取与解析；首次访问可能触发异步加载并在 `awaitLoadedLocked()` 等待结果。Android 16 这类当前实现可引用 `SharedPreferencesImpl#loadFromDisk()`，不要写 Android 7.0+ 分界”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T15:33:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T15:33:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 160,
-    "p0_count": 81,
-    "last_updated": "2026-05-14T13:30:11+08:00",
+    "total_entries": 164,
+    "p0_count": 84,
+    "last_updated": "2026-05-14T15:33:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 96,
+    "pending_entries": 98,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 96
+    "pending": 98
   },
-  "last_updated": "2026-05-14T13:30:11+08:00",
+  "last_updated": "2026-05-14T15:33:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 96
+  "pending": 98
 }
