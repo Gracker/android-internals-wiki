@@ -1,7 +1,7 @@
 {
   "total": 271,
-  "draft": 3,
-  "ready-for-review": 83,
+  "draft": 2,
+  "ready-for-review": 84,
   "finalized": 185,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -2222,9 +2222,9 @@
     "src/part5-app/ch20-stability/07-exception-architecture.md"
   ],
   "total_review_files": 111,
-  "last_task2a_at": "2026-05-15T05:33:00+08:00",
-  "last_task2a_section": "20.7",
-  "last_task2a_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
+  "last_task2a_at": "2026-05-15T06:18:00+08:00",
+  "last_task2a_section": "26.7",
+  "last_task2a_file": "src/part5-app/ch26-observability/07-release-quality-gate.md",
   "last_task6_review": "logs/review/2026-05-15-06-review.md",
   "last_task6_sections": [
     "20.7"
@@ -2253,5 +2253,6 @@
   "last_task9_reviewed_files": [
     "src/part5-app/ch20-stability/07-exception-architecture.md"
   ],
-  "last_task9_at": "2026-05-15T05:50:05+08:00"
+  "last_task9_at": "2026-05-15T05:50:05+08:00",
+  "last_task2a_result": "ready-for-review"
 }
