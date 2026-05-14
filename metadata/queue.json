@@ -5219,19 +5219,57 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T17:20:00+08:00"
+    },
+    {
+      "id": "task9-20260514-25.5-location-permission-fgs-boundary",
+      "section": "25.5",
+      "priority": 85,
+      "title": "后台定位/传感器前台服务与权限版本边界缺失",
+      "description": "FLP 后台/弱可见批量定位，以及持续传感器采样段落缺少 Android 10+/12+/14+/16 的权限、精度、前台服务类型和采样率限制前置条件。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "created_at": "2026-05-14T18:30:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T18:30:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/05-location-sensor.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L128-L139 后台或弱可见场景的 batched FLP 请求",
+          "detail": "章节展示后台/弱可见批量定位参数，但没有把 Android 10+ ACCESS_BACKGROUND_LOCATION、Android 12 approximate location、Android 14+ location foreground service type / while-in-use foreground-service 启动限制作为前置条件写清楚。读者可能把 LocationRequest 参数误解为可独立绕过后台定位权限和前台服务边界。",
+          "suggestion": "在该代码块前补一段版本矩阵：API 29+ 后台定位需 ACCESS_BACKGROUND_LOCATION；API 31+ 用户可降为 approximate location，高精度业务要检查 granularity/permission；Android 14+ 长时前台定位需声明 location FGS type 并满足 while-in-use 权限启动限制。后台限制细节可交叉引用 §25.2。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L220-L224 传感器后台持续采样与采样率上限",
+          "detail": "章节只写后台持续采样需要前台服务，并把 getMinDelay() 作为最快采样能力提示；但 Android 12+ 对 accelerometer/gyroscope/geomagnetic 等 motion/position sensors 的 registerListener 采样率限制为 200Hz，高采样需 HIGH_SAMPLING_RATE_SENSORS；Android 14+ 健康/运动类长时前台服务还涉及 health FGS type、BODY_SENSORS/ACTIVITY_RECOGNITION 以及 Android 16 READ_HEALTH_DATA_IN_BACKGROUND 等 while-in-use 边界。",
+          "suggestion": "在传感器边界列表中补版本矩阵：普通前台交互按生命周期注册/注销；Android 12+ 高于 200Hz 需声明 HIGH_SAMPLING_RATE_SENSORS；运动/健康长时后台采样需 health FGS type 和对应 runtime/background permission，普通姿态/摇一摇不要误用健康类后台采样路径。"
+        }
+      ],
+      "updated_at": "2026-05-14T18:30:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 164,
+    "total_entries": 166,
     "p0_count": 84,
-    "last_updated": "2026-05-14T15:33:00+08:00",
+    "last_updated": "2026-05-14T18:30:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 98,
+    "pending_entries": 100,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 98
+    "pending": 100
   },
-  "last_updated": "2026-05-14T16:14:00+08:00",
-  "last_updated_by": "task6-draft-review",
-  "pending": 98
+  "last_updated": "2026-05-14T18:30:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 100
 }
