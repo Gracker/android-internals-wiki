@@ -43,12 +43,22 @@ sources:
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
 related_chapters: ["25.6", "25.7", "12.1"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: reviewed
 last_task9_review_log: logs/deep-review/2026-05-14-21-deep-review.md
 last_task9_at: 2026-05-14T21:20:00+08:00
 task9_result: needs-rework
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+task6_reviewed_at: "2026-05-14T22:10:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-14T22:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-14-22-review.md"
+task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 3 处后通过；无新增 L3/L4 回炉项；既有 Task9 P0/P1 队列保留，等待 Task2B。"
+task2b_result: pending
+
 ---
 
 # App Bundle 与按需分发
@@ -80,7 +90,7 @@ task2b_state: pending
 
 25.6 和 25.7 节已经处理了包体积治理的两类基础工作：把 dex、资源、`.so`、`assets` 的体积账算清楚，再用 R8、资源缩减、图片格式和 ABI 策略压小产物。25.8 节处理另一类问题：同一份产物是否应该发给所有用户。
 
-Android App Bundle（AAB）不是设备上直接安装的文件格式，而是交给 Google Play 或 `bundletool` 的发布格式。分发侧会根据设备 ABI、屏幕密度、语言、功能模块和资产包生成一组 APK。对用户来说，下载目标从“拿完整安装包”变成“拿这台设备需要的 base APK、配置 APK、功能 APK 或资产包”。
+Android App Bundle（AAB）是交给 Google Play 或 `bundletool` 的发布格式，设备最终安装的是分发侧生成的 APK 组合。分发侧会根据设备 ABI、屏幕密度、语言、功能模块和资产包生成一组 APK。对用户来说，下载目标从“拿完整安装包”变成“拿这台设备需要的 base APK、配置 APK、功能 APK 或资产包”。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
 
@@ -88,7 +98,7 @@ Android App Bundle（AAB）不是设备上直接安装的文件格式，而是�
 
 [已验证: 官方文档, developer.android.com/guide/app-bundle；developer.android.com/guide/app-bundle/app-bundle-format]
 
-AAB 的价值来自分包，而不是压缩算法。一个 AAB 通常包含 base module、dynamic feature module、asset pack 和元数据。Google Play 根据这些内容生成 base APK、configuration APK、feature module APK、asset APK 或面向旧设备的 multi-APK。官方文档明确说明，用户设备只下载运行应用所需的代码和资源；语言、密度和 ABI 这三类配置资源会按设备裁剪。
+AAB 的主要收益来自分包：把不同设备需要的代码、资源和资产拆成可选择的 APK 组合。一个 AAB 通常包含 base module、dynamic feature module、asset pack 和元数据。Google Play 根据这些内容生成 base APK、configuration APK、feature module APK、asset APK 或面向旧设备的 multi-APK。官方文档明确说明，用户设备只下载运行应用所需的代码和资源；语言、密度和 ABI 这三类配置资源会按设备裁剪。
 
 工程里要区分三种体积口径：
 
@@ -110,7 +120,7 @@ bundletool get-size total \
 
 `build-apks` 复现 Google Play 的服务端拆包过程，`get-size total` 给出某台设备需要下载的 APK 组合大小。CI 里应保存几个代表性设备配置：主流 arm64 高密度设备、低密度设备、多语言设备、平板或折叠屏设备。只用 universal APK 做体积门禁，会把 AAB 分发收益全部抹掉。[已验证: 官方文档, developer.android.com/tools/bundletool]
 
-Android 平台侧安装的是 APK 组合，不是 `.aab`。`PackageInstaller` 提供 session 写入与提交接口，安装会进入 `PackageInstallerSession` 和 Package Manager 的解析、校验、复制流程；AOSP 代码里能追到 split APK 的会话安装与包解析路径。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java; frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java]
+Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 session 写入与提交接口，安装会进入 `PackageInstallerSession` 和 Package Manager 的解析、校验、复制流程；AOSP 代码里能追到 split APK 的会话安装与包解析路径。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java; frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java]
 
 AAB 对包体积治理有两个边界。第一，AAB 不会替代 R8 和资源缩减；无用代码如果留在 base module，仍会进入所有用户的基础包。第二，AAB 不能自动判断业务功能冷热；模块边界、资源归属和下载时机仍由工程决定。详见 25.6、25.7 节。
 

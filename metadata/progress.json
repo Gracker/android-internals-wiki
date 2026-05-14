@@ -218,10 +218,10 @@
   ],
   "review_summary": "Task2A 2026-05-14 22:04：加工 25.9 功耗与包体积案例集，status → ready-for-review，进入 Task6。",
   "task6_review_summary": {
-    "l1_l2_fixes": 514,
+    "l1_l2_fixes": 521,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 539,
+    "total_issues": 546,
     "auto_promotions": 10
   },
   "issues_by_section": {
@@ -807,8 +807,8 @@
   "total_review_sections": 102,
   "next_review_candidates": [],
   "ready_for_review": 72,
-  "last_updated": "2026-05-14T22:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-14T22:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -1944,7 +1944,7 @@
     "25.8": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T21:20:00+08:00",
@@ -1953,17 +1953,23 @@
       "task2b_result": "pending",
       "queue_priority": 95,
       "file": "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
-      "title": "App Bundle 与按需分发"
+      "title": "App Bundle 与按需分发",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-14T22:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-22-review.md"
     },
     "25.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
       "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
       "title": "功耗与包体积案例集",
-      "last_task2a_at": "2026-05-14T22:04:00+08:00"
+      "last_task2a_at": "2026-05-14T22:04:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-14T22:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-22-review.md"
     }
   },
   "task2b_rounds": [
@@ -2027,35 +2033,31 @@
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-  "last_task6_review": "logs/review/2026-05-14-20-review.md",
+  "last_task6_review": "logs/review/2026-05-14-22-review.md",
   "last_task6_sections": [
-    "25.7",
-    "8.8",
-    "9.5"
+    "25.8",
+    "25.9"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
-    "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
-    "src/part2-performance/ch09-anr/05-case-studies.md"
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
-  "last_task6_at": "2026-05-14T20:10:00+08:00",
+  "last_task6_at": "2026-05-14T22:10:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-14T20:10:00+08:00",
-    "log": "logs/review/2026-05-14-20-review.md",
+    "at": "2026-05-14T22:10:00+08:00",
+    "log": "logs/review/2026-05-14-22-review.md",
     "sections": [
-      "25.7",
-      "8.8",
-      "9.5"
+      "25.8",
+      "25.9"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
-      "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
-      "src/part2-performance/ch09-anr/05-case-studies.md"
+      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
     ],
-    "l1_l2_fixes": 14,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "notes": "25.7 写作层通过转 Task9；8.8/9.5 写作层复审通过，既有 Task9 P0 队列保留。"
+    "notes": "本轮可审充分内容仅 2 节。25.8 写作层通过，既有 Task9 P0/P1 队列保留；25.9 写作层通过，转 Task9。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
