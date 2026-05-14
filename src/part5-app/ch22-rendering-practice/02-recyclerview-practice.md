@@ -3,6 +3,11 @@ title: "RecyclerView 最佳实践"
 chapter: "22.2"
 section: "22.2"
 status: ready-for-review
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
@@ -61,7 +66,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T08:47:50+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 0 / P2 0；RecyclerView 预取源码锚点 `RecyclerView.RecyclerPool` 类名错误，应为 `RecyclerView.RecycledViewPool`。"
+task9_review_notes: "2026-05-14 Task9：completed。RecyclerPool→RecycledViewPool 类名修正已落地。"
 ---
 
 # RecyclerView 最佳实践
@@ -208,7 +213,7 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径会调用 `mGapWorker.postFromTraversal()`，记录滚动方向和距离，再把 GapWorker 作为 Runnable 投到主线程队列。执行时，GapWorker 根据下一帧 deadline 尝试预取目标 position；创建和绑定前会分别经过 `willCreateInTime()`、`willBindInTime()` 预算判断。
 
-[已验证: AndroidX `RecyclerView.java#postFromTraversal`, `GapWorker.java`, `RecyclerView.RecyclerPool#willCreateInTime/willBindInTime`]
+[已验证: AndroidX `RecyclerView.java#postFromTraversal`, `GapWorker.java`, `RecyclerView.RecycledViewPool#willCreateInTime/willBindInTime`]
 
 `LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次出现时的 initial prefetch 数量。官方文档对它的定义是：当这个 LayoutManager 的 RecyclerView 嵌套在另一个 RecyclerView 中时，设置要预取的内部 item 数量。它不能当作“越大越流畅”的开关；item inflate 或 bind 很重时，GapWorker 会因为 deadline 不够而提前放弃。
 
