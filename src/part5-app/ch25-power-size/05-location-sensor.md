@@ -35,7 +35,7 @@ sources:
 tags: [location, fused-location, geofencing, sensor-batching, power]
 related_chapters: ["25.1", "25.2", "11.2"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-05-14T18:30:00+08:00"
@@ -44,6 +44,12 @@ task9_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 task2b_state: pending
 task2b_result: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-14T19:10:00+08:00"
+last_task6_review_log: logs/review/2026-05-14-19-review.md
+task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
 ---
 
 # 定位与传感器功耗优化
@@ -73,7 +79,7 @@ task2b_result: pending
 
 ## 为什么要了解定位与传感器功耗优化
 
-定位和传感器功耗的治理对象很明确：减少 GNSS、Wi-Fi 扫描、蜂窝定位、传感器采样和 App 进程唤醒次数。§11.2 已经讲过 App 耗电入口，§25.1 负责诊断工具，§25.2 负责后台限制。本节只处理落到代码里的参数、生命周期和验证口径。
+定位和传感器功耗的治理对象很明确：减少 GNSS、Wi-Fi 扫描、蜂窝定位、传感器采样和 App 进程唤醒次数。§11.2 已经讲过 App 耗电入口，§25.1 负责诊断工具，§25.2 负责后台限制；后文围绕代码参数、生命周期和验证口径展开。
 
 Clippings 的《Android 性能优化》没有单独展开定位或传感器，但它给出的组织方式适合迁移到本节：先把硬件资源、系统调度和 App 业务放在同一张表里，再按场景决定使用频率。定位和传感器的写法也是这样，先问业务要什么精度、多久交付、能否延迟，再选择 FLP、Geofencing、被动定位或传感器批处理。
 
@@ -131,7 +137,7 @@ fun stopForegroundTracking() {
 
 [已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery/optimize]
 
-后台或弱可见场景要优先批量交付。下面这段请求每 10 分钟计算一次位置，但允许系统每小时批量交付一次，App 唤醒次数从 6 次降到 1 次。业务拿到的是一组带时间戳的位置点，适合低频轨迹补点、门店推荐候选刷新、地理内容预热。
+后台或弱可见场景要优先批量交付。这段请求以 10 分钟作为期望计算间隔，并允许系统在 1 小时窗口内批量交付；实际回调合并效果受设备、权限、系统策略和其他客户端请求影响。业务拿到的是一组带时间戳的位置点，适合低频轨迹补点、门店推荐候选刷新、地理内容预热。
 
 ```kotlin
 private val batchedBackgroundRequest = LocationRequest.Builder(

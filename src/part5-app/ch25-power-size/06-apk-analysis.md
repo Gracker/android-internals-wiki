@@ -40,10 +40,17 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-14T19:10:00+08:00"
+last_task6_review_log: logs/review/2026-05-14-19-review.md
+task6_review_notes: "2026-05-14 Task6：L1/L2 小修 3 处；写作层通过，等待 Task9 技术复核。"
+task2b_result: pending
 ---
 
 # APK 体积分析与瘦身
@@ -56,7 +63,7 @@ task2b_state: pending
 - 🔹 APK Analyzer 与体积构成分析
 - 🔹 代码瘦身：ProGuard / R8 规则优化
 - 🔹 资源瘦身：无用资源移除、资源混淆
-- 🔹 So 库瘦身：ABI 过滤、动态下发
+- 🔹 `.so` 库瘦身：ABI 过滤、动态下发
 
 ### 扩展（可选深入）
 
@@ -83,7 +90,7 @@ task2b_state: pending
 
 APK Analyzer 适合做包体积排查的基线工具。Android Studio 文档确认它可以查看 APK 或 App Bundle 中各文件的绝对大小和相对大小，查看 dex 文件结构，查看最终打包后的 `AndroidManifest.xml`、资源和二进制文件，并支持两个 APK 或 App Bundle 的并排对比。
 
-一次有效的体积分析要同时记录两组口径：
+一次有效的体积分析要同时记录几组口径：
 
 - **Raw File Size**：ZIP entry 解压后的原始大小，用来判断某类产物自身是否膨胀，例如 dex 代码、图片、`.so`、`assets` 原文件。
 - **Download Size**：按 Google Play 分发时的压缩下载大小估算，用来判断用户下载包的变化。图片、文本、dex、`.so` 的压缩表现不同，只看原始大小容易误判收益。
@@ -163,7 +170,7 @@ AGP 8.12 / 8.13 支持手动开启优化版资源缩减；AGP 9.0 起，在 `isS
 
 [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
 
-## So 库瘦身：ABI 过滤、动态下发
+## `.so` 库瘦身：ABI 过滤、动态下发
 
 [已验证: 官方文档, developer.android.com/ndk/guides/abis]
 

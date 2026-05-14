@@ -105,7 +105,8 @@
     "25.3",
     "25.4",
     "1.0",
-    "25.5"
+    "25.5",
+    "25.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -206,14 +207,15 @@
     "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
     "src/part5-app/ch25-power-size/04-workmanager-practice.md",
     "src/part1-fundamentals/ch01-architecture/README.md",
-    "src/part5-app/ch25-power-size/05-location-sensor.md"
+    "src/part5-app/ch25-power-size/05-location-sensor.md",
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
-  "review_summary": "Task6 2026-05-14 18:15：审查 25.4；小修 12 处，无新增 L3/L4 回炉；保留 Task9 UIDT P1 队列，未自动晋升。",
+  "review_summary": "Task6 2026-05-14 19:10：审查 25.5、25.6；小修 5 处，无新增 L3/L4 回炉；25.5 保留 Task9 P1 队列，25.6 进入 Task9 pending，未自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 495,
+    "l1_l2_fixes": 500,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 520,
+    "total_issues": 525,
     "auto_promotions": 10
   },
   "issues_by_section": {
@@ -770,21 +772,21 @@
       "task6_new_rework": false
     }
   },
-  "total_review_sections": 99,
+  "total_review_sections": 100,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T18:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T19:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T18:15:00+08:00",
-    "log": "logs/review/2026-05-14-18-review.md",
+    "at": "2026-05-14T19:10:00+08:00",
+    "log": "logs/review/2026-05-14-19-review.md",
     "sections": [
-      "25.4"
+      "25.5",
+      "25.6"
     ],
-    "l1_l2_fixes": 12,
+    "l1_l2_fixes": 5,
     "l3_l4_issues": 0,
-    "auto_promotions": 0,
-    "note": "本轮仅 25.4 满足 task6_state=pending；写作质量通过，Task9 UIDT P1/P2 技术回炉保持 task2b_pending。"
+    "auto_promotions": 0
   },
   "task9_last_review": "2026-05-14T18:30:00+08:00",
   "ready_to_publish": 178,
@@ -1819,7 +1821,7 @@
     "25.5": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T18:30:00+08:00",
@@ -1828,17 +1830,28 @@
       "task2b_result": "pending",
       "queue_priority": 85,
       "file": "src/part5-app/ch25-power-size/05-location-sensor.md",
-      "title": "定位与传感器功耗优化"
+      "title": "定位与传感器功耗优化",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-14",
+      "last_task6_at": "2026-05-14T19:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-19-review.md"
     },
     "25.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-14T19:04:00+08:00",
       "file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-      "title": "APK 体积分析与瘦身"
+      "title": "APK 体积分析与瘦身",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-14",
+      "last_task6_at": "2026-05-14T19:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-19-review.md",
+      "task2b_result": "pending"
     }
   },
   "task2b_rounds": [
@@ -1908,33 +1921,34 @@
     "src/part1-fundamentals/ch01-architecture/README.md",
     "src/part5-app/ch25-power-size/05-location-sensor.md"
   ],
-  "total_review_files": 99,
+  "total_review_files": 100,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-  "last_task6_review": "logs/review/2026-05-14-16-review.md",
+  "last_task6_review": "logs/review/2026-05-14-19-review.md",
   "last_task6_sections": [
-    "21.1",
-    "22.3",
-    "25.3"
+    "25.5",
+    "25.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch21-startup/01-startup-analysis.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch25-power-size/03-wakelock-alarm.md"
+    "src/part5-app/ch25-power-size/05-location-sensor.md",
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
-  "last_task6_at": "2026-05-14T16:14:00+08:00",
+  "last_task6_at": "2026-05-14T19:10:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-14T16:14:00+08:00",
-    "log": "logs/review/2026-05-14-16-review.md",
+    "at": "2026-05-14T19:10:00+08:00",
+    "log": "logs/review/2026-05-14-19-review.md",
     "sections": [
-      "21.1",
-      "22.3",
-      "25.3"
+      "25.5",
+      "25.6"
     ],
-    "l1_l2_fixes": 18,
+    "files": [
+      "src/part5-app/ch25-power-size/05-location-sensor.md",
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+    ],
+    "l1_l2_fixes": 5,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "note": "21.1、22.3 已有 Task9 pending 技术回炉，Task6 本轮只做文稿小修并保持 task2b_pending；25.3 通过写作质检，送 Task9。"
+    "notes": "25.5 写作层通过但保留 Task9 P1 队列；25.6 写作层通过，等待 Task9。"
   }
 }
