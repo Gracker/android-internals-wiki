@@ -13,7 +13,7 @@ polish_count: 1
 task2b_result: fixed
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 pipeline_stage: task2b_pending
 reviewed_date: "2026-05-14"
 reviewed_by: openclaw-task6
@@ -32,12 +32,12 @@ last_task6_at: "2026-05-14T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-12-review.md"
 task6_review_notes: "2026-05-14 Task6：revisiting 复审；L1/L2 小修完成。ANR timeout/弹窗边界仍需 Task2B 补齐。"
 task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T08:47:50+08:00"
-task9_review_notes: "2026-05-14 Task9：completed。ART 堆栈帧 kMaxSavedFrames 描述修正、ANR service 链路源码方法修正、ANR trace 路径修正、Crashlytics ANR 支持更新已完成。"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T02:35:06+08:00"
+task9_review_notes: "2026-05-15 Task9：needs-rework。新增 P0：Android 线程默认栈大小写成 Linux 8MB；既有 ANR timeout/弹窗边界仍待补齐。"
 task6_reviewed_date: "2026-05-14"
-last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
 task2b_state: pending
 ---
 

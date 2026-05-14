@@ -1098,3 +1098,9 @@
 - **位置**：L432-L450 attempt / exchange 阶段表与 L281-L282 responseBodyEnd 示例
 - **问题**：正文使用 `responseHeadersStart → responseBodyEnd` 表示 Response 接收，示例也未记录 `responseBodyStart`。OkHttp EventListener 提供 `responseBodyStart/End`，如果看大包下载或弱网下行，应把 header 接收和 body 接收分开。
 - **建议**：增加 `responseBodyStartNs` 字段；`response_header_ms=responseHeadersStart→responseHeadersEnd`，`response_body_ms=responseBodyStart→responseBodyEnd`，看板上再按需要汇总为 response_receive_ms。
+
+## [Task9 Deep Review] 20.1 应用稳定性全景 — 2026-05-15
+- **类型**：数据缺失
+- **位置**：L190-L200 行业实践中的度量维度
+- **问题**：`Crash Rate 0.2%`、`Crash-Free Session Rate ≥99.5%`、`ANR Rate 0.1%`、`Native Crash Rate ≤0.05%`、`OOM ≤5%` 被写成行业/大厂门禁，但缺少来源、统计口径、采样窗口、前后台范围和适用业务规模。
+- **建议**：补官方/厂商/团队一手基线；没有来源的数值降级为示例，并标注“按 DAU、会话定义、版本阶段和业务场景调整”。

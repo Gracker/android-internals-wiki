@@ -2,7 +2,7 @@
 title: "RecyclerView 最佳实践"
 chapter: "22.2"
 section: "22.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
@@ -44,9 +44,9 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task6_result: pass-light-edit
@@ -58,12 +58,12 @@ last_task6_review_log: logs/review/2026-05-15-02-review.md
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-05-15 Task6：metadata 去重并复审通过；写作层无新增回炉项，既有 Task2B 修复完成，等待 Task9 复核。"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T08:47:50+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
-task9_review_notes: "2026-05-14 Task9：completed。RecyclerPool→RecycledViewPool 类名已修正。"
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T02:35:06+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
+task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0/P1=0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # RecyclerView 最佳实践

@@ -44,9 +44,9 @@ sources:
     path: "system/core/debuggerd/crash_dump.cpp"
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
 related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -56,6 +56,12 @@ last_task6_review_log: logs/review/2026-05-15-02-review.md
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 3 处（结构性元叙述 1、抽象词风险 2）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T02:35:06+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
+task9_result: needs-rework
+task9_review_notes: "2026-05-15 Task9：needs-rework。Native signal-safe 持久化边界与 ApplicationExitInfo 补偿链路缺失，需 Task2B 回炉。"
 ---
 
 # Crash 上报体系搭建

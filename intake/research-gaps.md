@@ -194,3 +194,19 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 24.4、24.5、12.3
+
+## [2026-05-15] 26.2 Crash 上报体系搭建 — Native Crash / ApplicationExitInfo 补偿链路
+
+### 盲区描述
+26.2 目前把 Java Crash、Native Crash 的崩溃当下落盘写成同一套最小 envelope 流程，缺少 Native signal handler 的 async-signal-safe / out-of-process handler 边界；下次启动扫描只覆盖 SDK 本地 crash store，未纳入 Android 11+ `ApplicationExitInfo` 对 ANR trace 与 native tombstone protobuf 的系统补偿入口。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Crashpad / Breakpad Android client 的 signal handler、minidump 写入和 handler 进程模型。
+- 复核 Android `ApplicationExitInfo#getTraceInputStream()` 在 API 30/31+ 对 `REASON_ANR`、`REASON_CRASH_NATIVE` 的返回条件、环形缓冲覆盖和 `null` 边界。
+- 设计 SDK envelope 与系统 exit reason 的去重键：pid、timestamp、process_name、reason、tombstone/build id、top frame。
+
+### 关联章节
+26.2, 20.2, 20.3, 19.24, 15.3
