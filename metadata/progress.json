@@ -1,7 +1,7 @@
 {
   "total": 271,
-  "draft": 2,
-  "ready-for-review": 84,
+  "draft": 1,
+  "ready-for-review": 85,
   "finalized": 185,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -865,9 +865,9 @@
   },
   "total_review_sections": 112,
   "next_review_candidates": [],
-  "ready_for_review": 83,
-  "last_updated": "2026-05-15T07:15:00+08:00",
-  "last_updated_by": "task6-review",
+  "ready_for_review": 84,
+  "last_updated": "2026-05-15T07:17:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "at": "2026-05-15T07:15:00+08:00",
     "log": "logs/review/2026-05-15-07-review.md",
@@ -2170,6 +2170,17 @@
       "last_task9_at": "2026-05-15T05:50:05+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-15-05-deep-review.md",
       "queue_priority": 95
+    },
+    "26.8": {
+      "title": "可观测性案例集",
+      "file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "last_task2a_at": "2026-05-15T07:17:00+08:00",
+      "task2a_result": "drafted"
     }
   },
   "task2b_rounds": [
@@ -2187,8 +2198,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "20.7 异常处理架构设计",
-  "last_task2a_processed_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
+  "last_task2a_processed": "26.8 可观测性案例集",
+  "last_task2a_processed_file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "at": "2026-05-15T06:28:00+08:00",
@@ -2230,9 +2241,9 @@
     "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
   "total_review_files": 112,
-  "last_task2a_at": "2026-05-15T06:18:00+08:00",
-  "last_task2a_section": "26.7",
-  "last_task2a_file": "src/part5-app/ch26-observability/07-release-quality-gate.md",
+  "last_task2a_at": "2026-05-15T07:17:00+08:00",
+  "last_task2a_section": "26.8",
+  "last_task2a_file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
   "last_task6_review": "logs/review/2026-05-15-07-review.md",
   "last_task6_sections": [
     "26.7"
