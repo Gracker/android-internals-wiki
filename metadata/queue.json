@@ -5724,19 +5724,59 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T02:35:06+08:00"
+    },
+    {
+      "id": "task9-20260515-26.5-versioned-diagnostics-gap",
+      "section": "26.5",
+      "section_title": "线上问题排查方法论",
+      "priority": 85,
+      "title": "线上诊断证据链缺少 Android 11/15/16 版本化能力边界",
+      "description": "P1：章节把线上系统 Trace 主要写成人工协助/adb/系统工具路径，未覆盖 Android 15+ ProfilingManager 显式采集系统 trace、Android 16+ ProfilingTrigger 事件触发采集；证据包模板也未纳入 Android 11+ ApplicationExitInfo 作为 ANR/Native Crash/LMK/系统杀进程的下次启动补偿入口。",
+      "reason": "[Deep Tech Review] 26.5 适用范围写到 Android 16，但线上 Trace 与问题证据链遗漏 Android 11/15/16 官方诊断 API，当前正文会让读者以为发布版 App 只能依赖人工导出系统 Trace。",
+      "issue_type": "version-differences-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "related_files": [
+        "src/part5-app/ch26-observability/05-online-troubleshooting.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-15-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L130-L134 线上 Trace 抓取与分析",
+          "detail": "正文写“完整系统 Trace 通常依赖 adb、系统工具、用户操作或特定权限”，并把系统 Trace 归到“人工协助”层。Android 15(API 35)+ `ProfilingManager.requestProfiling()` 已支持 App 程序化请求 system trace、heap dump、heap profile、stack sampling，结果写入请求 App 数据目录；Android 16(API 36)+ `ProfilingTrigger` 支持 ANR、fully drawn、app-request running trace 等事件触发。当前章节适用范围到 Android 16，但没有给出这条官方线上采集路径及其 rate limit/触发延迟/结果读取边界。",
+          "suggestion": "在线上 Trace 能力分级中增加“Android 15+ App-driven profiling”一层：显式 `SystemTraceRequestBuilder`/`requestProfiling()` 适用于少量用户临时诊断；Android 16+ 再补 `ProfilingTrigger` 事件触发；同时保留 Android 10-14 仍以 Perfetto/bug report/人工协助为主的边界。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区",
+          "location": "L171-L179 证据包模板；L111-L120 用户反馈与问题复现",
+          "detail": "证据包只列 Crash/ANR report、bug report、Trace，没有把 Android 11(API 30)+ `ActivityManager.getHistoricalProcessExitReasons()` / `ApplicationExitInfo` 纳入下次启动补偿证据。该 API 能返回退出 reason、timestamp、importance、PSS/RSS，`getTraceInputStream()` 通常可拿到 ANR trace；对 native crash / LMK / excessive resource usage 也能提供系统级退出原因。",
+          "suggestion": "在证据模板增加“ApplicationExitInfo 快照”：reason、timestamp、processName、importance、pss/rss、traceInputStream 是否存在、与 Crash SDK event/sessionId 的去重规则；标注 Android 10 无此能力，历史记录会被系统环形缓冲覆盖，trace 可能为 null。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T03:25:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 177,
-    "p0_count": 92,
-    "last_updated": "2026-05-15T01:36:05+08:00",
+    "total_entries": 180,
+    "p0_count": 93,
+    "last_updated": "2026-05-15T03:25:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 107,
+    "pending_entries": 109,
     "updated_date": "2026-05-15",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 107
+    "pending": 109
   },
-  "last_updated": "2026-05-15T01:36:05+08:00",
+  "last_updated": "2026-05-15T03:25:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 107
+  "pending": 109
 }

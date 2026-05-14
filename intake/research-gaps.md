@@ -210,3 +210,20 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 26.2, 20.2, 20.3, 19.24, 15.3
+
+## [2026-05-15] 26.5 线上问题排查方法论 — Android 版本化线上诊断能力
+
+### 盲区描述
+26.5 的线上 Trace 与证据包模板没有按 Android 版本拆分官方诊断入口：Android 11(API 30)+ `ApplicationExitInfo` 可作为下次启动补偿证据；Android 15(API 35)+ `ProfilingManager` 支持 App-driven system trace / heap / stack profiling；Android 16(API 36)+ `ProfilingTrigger` 支持事件触发采集。需要把这些能力与 Android 10-14 的 Perfetto/bug report/人工协助路径放到同一张版本边界表里。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 `ActivityManager.getHistoricalProcessExitReasons()` / `ApplicationExitInfo` 的 reason、traceInputStream、历史记录保留与去重边界。
+- 复核 `ProfilingManager.requestProfiling()` 的 system trace 参数、rate limiter、结果文件目录、取消/超时行为。
+- 复核 `ProfilingTrigger` 在 Android 16/API 36 及后续 API 36.1/37 中的 trigger 类型差异，把 ANR、fully drawn、app-request running trace 分开说明。
+- 给 26.5 增加 Android 10-14 / 15 / 16+ 三档线上诊断能力表，并回连 13.2、15.5、20.3、26.2。
+
+### 关联章节
+26.5、13.2、15.5、20.3、26.2
