@@ -36,10 +36,18 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 4 处（outline 扩展占位 1、措辞精修 3）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-15T03:11:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-03-review.md
+last_task6_at: "2026-05-15T03:11:00+08:00"
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 ---
 
 # 线上问题排查方法论
@@ -56,7 +64,7 @@ task2b_state: pending
 
 ### 扩展（可选深入）
 
-- 🔸 （待扩展）
+- 🔸 证据包模板：把线上反馈、日志、Trace、变更和处置记录收束到同一张问题单
 
 ### OpenClaw 加工指引
 
@@ -71,7 +79,7 @@ task2b_state: pending
 
 线上排障处理的是复现概率低、现场容易丢、影响面会变化的问题。排障效率取决于三件事：事发前有没有埋好证据，事发时能不能把证据按用户、版本、设备和时间聚到一起，事发后能不能把风险限制在小范围内。
 
-26.1 节已经定义 Metrics、Logs、Traces 的分工，15.5 节已经覆盖线上性能监控，13.2 节已经说明 Perfetto 抓取方式。排障实战落在四个动作上：接到反馈后拿证据、复现问题、打开临时观测、用灰度环境缩小问题范围。
+26.1 节已经定义 Metrics、Logs、Traces 的分工，15.5 节已经覆盖线上性能监控，13.2 节已经说明 Perfetto 抓取方式。排障实战落在四个动作上：接到反馈后拿证据、复现问题、打开临时日志或诊断开关、用灰度环境缩小问题范围。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 
@@ -89,7 +97,7 @@ task2b_state: pending
 - **脱敏与合规层**：日志里不能写手机号、精确位置、完整 token、支付信息、联系人内容。确需关联用户时，只保留内部用户 ID、匿名设备 ID 或 hash 后的请求 ID，并在上报前做字段级清洗。
 - **拉取与主动上报层**：用户反馈、Crash、ANR、严重业务失败可以触发主动上报；排障人员也可以对指定用户下发一次性拉取任务。拉取任务要带过期时间、文件大小上限和网络条件，避免把排障动作变成新的性能问题。
 
-参考书里的 Xlog、Logan、Holmes 分别代表三种思路：高性能本地日志、统一日志平台、动态补充执行路径。这里借鉴的是组织方式，不照搬实现。普通团队可以先做小版本：会话 ID、请求 ID、页面路径、关键业务状态、错误码、设备/系统/版本字段齐全，已经能解决大量偶发问题。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+参考素材里的 Xlog、Logan、Holmes 分别代表三种思路：高性能本地日志、统一日志平台、动态补充执行路径。这里借鉴的是组织方式，不照搬实现。普通团队可以先做小版本：会话 ID、请求 ID、页面路径、关键业务状态、错误码、设备/系统/版本字段齐全，已经能解决大量偶发问题。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 
 动态日志级别要控制三类成本。CPU 成本来自字符串拼接、序列化和压缩；I/O 成本来自频繁写文件和落盘；流量成本来自批量上传。可执行的边界是：开关按 tag 生效，最多持续几个小时；DEBUG 日志只对少量用户生效；单次上报限定大小；敏感字段通过统一接口写入，业务代码不能绕过清洗层。
 
@@ -152,7 +160,7 @@ Trace 适合回答“时间花在哪里”和“线程为什么没跑”。线�
 - **版本隔离**：按 App 版本、配置版本、资源版本、热修复版本切分。适合发版后指标异常或配置下发事故。
 - **功能隔离**：用远程配置关闭可疑功能、切回旧实现、降采样、降低图片质量、停用高风险实验。适合无法立刻发版但可以止损的场景。
 
-Google Play 的 staged rollout 支持暂停发布；Firebase Remote Config rollout 支持按比例下发并在同一 rollout 内把比例降到 0，让用户回到模板默认值。这类能力说明灰度既要能慢慢放量，也要能快速停住。自建发布平台也要有同样的按钮：暂停、回滚、扩大、只读审计、事故备注。
+Google Play 的 staged rollout 支持暂停发布；Firebase Remote Config rollout 支持按比例下发并在同一 rollout 内把比例降到 0，让用户回到模板默认值。这类能力说明灰度既要能逐步放量，也要能快速停止。自建发布平台也要有同样的按钮：暂停、回滚、扩大、只读审计、事故备注。
 
 灰度期间只看崩溃率不够。Android vitals 会评估 user-perceived crash rate、user-perceived ANR rate、启动、慢渲染、耗电、LMK 等质量指标；业务侧还要看登录、支付、播放、下载等路径指标。排障期间的判断要同时满足两条线：技术指标没有继续恶化，用户路径指标没有出现新异常。
 

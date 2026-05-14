@@ -114,7 +114,8 @@
     "26.3",
     "26.4",
     "19.23",
-    "26.2"
+    "26.2",
+    "26.5"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -224,14 +225,15 @@
     "src/part5-app/ch26-observability/03-performance-collection.md",
     "src/part5-app/ch26-observability/04-anr-monitoring.md",
     "src/part3-tools/ch19-apm/23-network-apm-internals.md",
-    "src/part5-app/ch26-observability/02-crash-reporting.md"
+    "src/part5-app/ch26-observability/02-crash-reporting.md",
+    "src/part5-app/ch26-observability/05-online-troubleshooting.md"
   ],
-  "review_summary": "Task9 2026-05-15 02:35：review 20.1、22.2、26.2；P0 1 / P1 3 / P2 1；22.2 自动晋升 finalized。",
+  "review_summary": "Task6 2026-05-15 03:11：review 26.5；L1/L2 小修 4 处；无新增回炉项；等待 Task9 技术复审。",
   "task6_review_summary": {
-    "l1_l2_fixes": 545,
+    "l1_l2_fixes": 549,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 570,
+    "total_issues": 574,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -840,20 +842,18 @@
       "p3": 0
     }
   },
-  "total_review_sections": 108,
+  "total_review_sections": 109,
   "next_review_candidates": [],
   "ready_for_review": 81,
-  "last_updated": "2026-05-15T03:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-15T03:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-15T02:12:00+08:00",
-    "log": "logs/review/2026-05-15-02-review.md",
+    "at": "2026-05-15T03:11:00+08:00",
+    "log": "logs/review/2026-05-15-03-review.md",
     "sections": [
-      "26.2",
-      "19.23",
-      "22.2"
+      "26.5"
     ],
-    "l1_l2_fixes": 6,
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
@@ -2098,6 +2098,16 @@
       "task9_reviewed_by": "openclaw-task9",
       "task2b_state": "pending",
       "queue_priority": 85
+    },
+    "26.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-15T03:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-03-review.md",
+      "task2b_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -2173,39 +2183,31 @@
     "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
     "src/part5-app/ch26-observability/02-crash-reporting.md"
   ],
-  "total_review_files": 108,
+  "total_review_files": 109,
   "last_task2a_at": "2026-05-15T03:04:00+08:00",
   "last_task2a_section": "26.5 线上问题排查方法论",
   "last_task2a_file": "src/part5-app/ch26-observability/05-online-troubleshooting.md",
-  "last_task6_review": "logs/review/2026-05-15-02-review.md",
+  "last_task6_review": "logs/review/2026-05-15-03-review.md",
   "last_task6_sections": [
-    "26.2",
-    "19.23",
-    "22.2"
+    "26.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/02-crash-reporting.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md",
-    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
+    "src/part5-app/ch26-observability/05-online-troubleshooting.md"
   ],
-  "last_task6_at": "2026-05-15T02:12:00+08:00",
+  "last_task6_at": "2026-05-15T03:11:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-15T02:12:00+08:00",
-    "log": "logs/review/2026-05-15-02-review.md",
+    "at": "2026-05-15T03:11:00+08:00",
+    "log": "logs/review/2026-05-15-03-review.md",
     "sections": [
-      "26.2",
-      "19.23",
-      "22.2"
+      "26.5"
     ],
     "files": [
-      "src/part5-app/ch26-observability/02-crash-reporting.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md",
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
+      "src/part5-app/ch26-observability/05-online-troubleshooting.md"
     ],
-    "l1_l2_fixes": 6,
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "notes": "26.2 小修 3 处；19.23 写作层复审 clean，既有 Task9 技术项等待 Task2B；22.2 修正文首元叙述并清理重复 frontmatter，等待 Task9 复核。"
+    "notes": "26.5 小修 outline 扩展占位与 3 处措辞；写作层通过，等待 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch20-stability/01-stability-overview.md",
