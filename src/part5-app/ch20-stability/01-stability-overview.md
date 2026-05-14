@@ -15,7 +15,7 @@ reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 pipeline_stage: task2b_pending
 sources:
@@ -34,10 +34,11 @@ last_task6_review_log: "logs/review/2026-05-13-09-review.md"
 task6_review_notes: "2026-05-13 Task6：revisiting 复审；L1/L2 小修后通过。已知 task9 技术回炉项继续交 Task9/Task2B，Task6 不做技术裁决。"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T04:39:00+08:00"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；ApplicationExitInfo、ANR 版本口径、Crashlytics ANR 支持需回炉。"
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T08:47:50+08:00"
+task9_review_notes: "2026-05-14 Task9：needs-rework。P0 2 / P1 2 / P2 0；ART 堆栈 256 帧上限、ANR service 链路源码方法错误，既有 ANR trace 路径/Crashlytics ANR 支持队列仍未闭环。"
 task6_reviewed_date: "2026-05-13"
+last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
 ---
 
 # 应用稳定性全景
