@@ -2,20 +2,59 @@
 title: "网络架构与连接管理"
 chapter: "24.4"
 section: "24.4"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-10"
-last_verified_against: "待验证"
-confidence: low
-drafted_date: "2026-05-10"
+last_verified: "2026-05-14"
+last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources"
+confidence: medium
+drafted_date: "2026-05-14"
 polish_count: 0
-sources: []
-tags: [okhttp, connection-pool, httpdns, weak-network]
+sources:
+  - type: official
+    path: "https://square.github.io/okhttp/features/connections/"
+  - type: official
+    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection-pool/"
+  - type: official
+    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/"
+  - type: official
+    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/"
+  - type: official
+    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback.html"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/network-ops/connecting"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/network-ops/managing"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/minimize-effect-regular-updates"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
+  - type: aosp
+    path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
+  - type: aosp
+    path: "/Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java"
+  - type: aosp
+    path: "/Users/gracker/Android/sources/android-35/android/os/StrictMode.java"
+  - type: aosp
+    path: "/Users/gracker/Android/sources/android-35/android/net/DnsResolver.java"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
+tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
 pipeline_stage: draft
 task6_state: pending
 task9_state: pending
 task2b_state: pending
+last_task2a_at: "2026-05-14T09:21:00+08:00"
 ---
 
 # 网络架构与连接管理
@@ -45,5 +84,224 @@ task2b_state: pending
 
 ## 为什么要了解网络架构与连接管理
 
-（待加工）
+网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量，都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节，本节站在 App 架构侧，重点回答四个工程问题：客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
 
+这一节的判断依据来自三类材料：OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 相关官方文档，以及本地 Android 35 SDK sources 中的 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver`。参考书只用于组织知识点顺序：先拆速度来源，再看线程/调度，再看缓存和命中率，不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+
+## 先把网络架构拆成四个控制面
+
+App 网络层至少要分成四个控制面：连接、解析、调度、容错。
+
+| 控制面 | 负责的问题 | 常见故障 | 主要观测点 |
+|---|---|---|---|
+| 连接 | TCP/TLS/HTTP 连接怎样创建和复用 | 每次请求重新建连、TLS 握手占比高、HTTP/2 复用失败 | `connectStart`、`secureConnectStart`、`connectionAcquired` |
+| 解析 | 域名怎样变成可连接 IP | DNS 慢、单 IP 故障、IPv6/IPv4 回退慢、HTTPDNS 与 TLS 校验冲突 | `dnsStart`、`dnsEnd`、返回 IP 列表、失败 IP |
+| 调度 | 哪些请求先发、哪些请求排队或取消 | 首页被低优先级请求挤占、同域名并发过高、后台同步耗电 | Dispatcher 队列、业务优先级、生命周期取消 |
+| 容错 | 网络差时怎样重试、降级、缓存 | 重试风暴、接口雪崩、弱网白屏、离线不可用 | 超时类型、重试次数、缓存命中、NetworkCapabilities |
+
+这四个面要分开设计。连接复用解决的是建连成本；DNS 解决的是可达性和首段延迟；调度解决的是资源竞争；弱网策略解决的是失败后的用户体验。把所有逻辑塞进一个 `Interceptor`，后续很难判断一条请求到底慢在哪一段。
+
+[已验证: 官方文档, https://square.github.io/okhttp/features/connections/] [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/connecting]
+
+## OkHttp 连接池与复用策略
+
+OkHttp 的连接复用边界是 `Address`。官方文档把请求拆成 URL、Address、Route 三层：URL 描述资源；Address 描述 scheme、host、port、TLS、代理、协议等静态连接配置；Route 描述 DNS 返回的具体 IP、代理和 TLS 版本等动态选择。多个 URL 只要共享同一个 Address，就有机会共享底层连接。HTTP/1.x 复用空闲连接，HTTP/2 在同一连接上做多路复用。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+
+工程上最稳的做法是按网络策略复用 `OkHttpClient`，而不是每个业务模块都 new 一个 client。`OkHttpClient` 持有自己的 `ConnectionPool`、`Dispatcher`、DNS、TLS 配置和拦截器。随手创建 client 会带来三个问题：连接池被切碎、Dispatcher 并发不可控、Cookie/Auth/证书策略容易分叉。
+
+一个可维护的组织方式如下：
+
+```kotlin
+object NetworkClients {
+    private val apiDispatcher = Dispatcher().apply {
+        maxRequests = 64
+        maxRequestsPerHost = 8
+    }
+
+    val api: OkHttpClient = OkHttpClient.Builder()
+        .dispatcher(apiDispatcher)
+        .connectionPool(ConnectionPool(10, 5, TimeUnit.MINUTES))
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .fastFallback(true)
+        .eventListenerFactory { NetworkEventListener() }
+        .build()
+}
+```
+
+这段配置只表达方向，不代表所有 App 都该使用相同数字。`maxRequests` 控制总并发，`maxRequestsPerHost` 控制单 host 并发；超出限制的异步请求会在 Dispatcher 内存队列等待。OkHttp 文档也提醒，单 host 限制按 URL host 计算，共享同一 IP 或代理时仍可能在网络侧汇聚。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/] [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/max-requests.html] [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/max-requests-per-host.html]
+
+连接池参数要跟业务形态匹配：
+
+| App 形态 | 建议方向 | 判断依据 |
+|---|---|---|
+| 首页短请求多、域名集中 | 共享 client，保留适量空闲连接 | 降低重复 TCP/TLS 建连成本 |
+| 图片/视频与 API 域名分离 | API、图片、下载可分 client 或至少分 Dispatcher | 避免大文件请求占满 API 并发 |
+| 登录态和匿名态共存 | 同一 host 下谨慎分 client，Cookie/Auth 策略要明确 | 防止连接池、CookieJar、Authenticator 行为不一致 |
+| 大文件上传下载 | 独立 Dispatcher，限制并发，支持取消和断点 | 避免长连接占住普通 API 请求槽 |
+
+预连接要克制。对首屏必用域名，可以通过轻量请求或业务启动阶段的真实请求建立连接；对低概率页面提前建连，可能只是在消耗电量和服务器连接数。预连接收益要用 EventListener 统计：如果 `connect + secureConnect` 占比低，继续预连接不会改善主要瓶颈。
+
+```kotlin
+class NetworkEventListener : EventListener() {
+    override fun dnsStart(call: Call, domainName: String) {}
+    override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {}
+    override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {}
+    override fun secureConnectStart(call: Call) {}
+    override fun connectionAcquired(call: Call, connection: Connection) {}
+    override fun responseHeadersStart(call: Call) {}
+    override fun callFailed(call: Call, ioe: IOException) {}
+}
+```
+
+`connectionAcquired` 前后的时间能区分“复用了已有连接”还是“重新建连”。这比只看接口总耗时更有用；总耗时慢可能是服务端慢，也可能是 DNS、建连、TLS 或排队慢。详见 12.3 节。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+
+## DNS 优化与 HTTPDNS
+
+OkHttp 默认使用系统 DNS。`Dns` 接口允许业务提供自定义实现：返回某个 hostname 对应的 `InetAddress` 列表，OkHttp 会按返回顺序尝试连接；某个地址失败时，会继续尝试后续地址，直到连接成功或候选地址耗尽。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/]
+
+HTTPDNS 的价值在于绕开本地 DNS 污染、缩短解析耗时、按运营商或区域选择更合适的 IP。但接入 HTTPDNS 时要保留三条边界：
+
+1. **不要把 HTTPS URL 改成 IP URL。** OkHttp 的自定义 `Dns` 应该返回 IP，URL 仍然保留原始 hostname。这样 SNI、证书校验、HostnameVerifier、Cookie 域名规则仍按域名工作。
+2. **保留系统 DNS 兜底。** HTTPDNS 服务不可用、返回空列表、返回不可达 IP 时，必须回退到 `Dns.SYSTEM` 或平台解析结果。
+3. **遵守 TTL 与失败隔离。** DNS 缓存不是越久越好。移动网络切换、CDN 调度、灰度发布都会改变最优 IP；单个 IP 连接失败后要短时间隔离，不能在每次请求里反复尝试同一个坏地址。
+
+一个安全的自定义 DNS 骨架如下：
+
+```kotlin
+class HttpDns(
+    private val httpDns: HttpDnsService,
+    private val fallback: Dns = Dns.SYSTEM,
+) : Dns {
+    override fun lookup(hostname: String): List<InetAddress> {
+        val records = httpDns.query(hostname)
+            .filter { it.isNotExpired && !it.isQuarantined }
+            .mapNotNull { it.toInetAddressOrNull() }
+
+        return records.ifEmpty { fallback.lookup(hostname) }
+    }
+}
+```
+
+DNS 结果还要跟 Android 网络状态结合。`NetworkCapabilities` 文档写明，`NET_CAPABILITY_INTERNET` 只表示网络配置上可访问互联网；`NET_CAPABILITY_VALIDATED` 表示系统最近一次确认过实际互联网可达；`NET_CAPABILITY_NOT_METERED` 表示网络不按字节计费，适合推迟大下载到该能力出现时再执行。 [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities] [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java]
+
+```kotlin
+fun NetworkCapabilities.isUsableForApi(): Boolean {
+    return hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+}
+
+fun NetworkCapabilities.isGoodForBulkDownload(): Boolean {
+    return isUsableForApi() &&
+        hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+}
+```
+
+不要用 “Wi-Fi 就一定适合大下载、蜂窝网络就一定不适合” 这种判断。AOSP 注释也提示，是否计费应看 `NET_CAPABILITY_NOT_METERED`，不要直接看 transport；可能存在计费 Wi-Fi，也可能存在不计费蜂窝连接。 [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java]
+
+OkHttp 5 的 `fastFallback(true)` 默认开启，它会并发尝试多个 TCP 连接并保留最先成功的连接，用来平衡 IPv6/IPv4 或多 IP 场景下的连接延迟和资源浪费。HTTPDNS 返回多 IP 时，不要只返回一个“看起来最优”的地址；保留候选列表，才能让连接层有回退空间。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback.html]
+
+## 网络请求优先级与调度
+
+OkHttp Dispatcher 控制的是并发执行，不提供业务优先级队列。首页接口、图片预加载、埋点、日志上报、文件上传如果直接丢进同一个 client，Dispatcher 只能按进入队列的顺序和 host 限制执行。业务优先级要放在 OkHttp 之上。
+
+一套可执行的分层如下：
+
+| 层级 | 负责内容 | 示例 |
+|---|---|---|
+| UI / ViewModel | 生命周期、取消、去重 | 页面销毁取消请求；同一个 pull-to-refresh 合并 |
+| Repository | 数据来源选择 | 先读缓存，再决定是否请求网络 |
+| RequestScheduler | 业务优先级、限流、降级 | 首屏接口高优先级；埋点延迟批量发 |
+| OkHttp Dispatcher | 总并发和单 host 并发 | `maxRequests`、`maxRequestsPerHost` |
+| WorkManager / JobScheduler | 后台任务约束 | 仅在不计费网络、低电量保护外执行同步 |
+
+前台请求的原则是“少排队、可取消、可去重”。页面进入时只发首屏必要请求；同一资源正在请求时复用结果；页面退出后取消 tag 绑定的 call。OkHttp 支持给 Request 设置 tag，调度层可以按页面、业务或请求类型统一取消。
+
+```kotlin
+val request = Request.Builder()
+    .url(url)
+    .tag(PageScope::class.java, pageScope)
+    .build()
+
+fun cancelPageCalls(client: OkHttpClient, pageScope: PageScope) {
+    (client.dispatcher.queuedCalls() + client.dispatcher.runningCalls())
+        .filter { it.request().tag(PageScope::class.java) == pageScope }
+        .forEach { it.cancel() }
+}
+```
+
+后台请求的原则是“可延迟、可批量、可约束”。Android 官方文档把网络请求视为耗电影响较大的行为，因为无线电从低功耗状态切到活跃状态有启动延迟和 tail time。把多次零散请求合并成一次批量请求，通常比每隔十几秒唤醒一次网络更省电。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/network-access-optimization] [已验证: 官方文档, https://developer.android.com/develop/connectivity/minimize-effect-regular-updates]
+
+非用户触发的同步、日志、配置拉取，应优先交给 WorkManager 这类受系统约束管理的调度工具，设置网络类型、低电量保护和退避重试。用户正在等待结果的请求才走前台 Dispatcher。后台请求一旦跟前台请求共用并发槽，用户会感知到“页面慢”，但根因在调度策略。
+
+[已验证: 官方文档, https://developer.android.com/develop/connectivity/minimize-effect-regular-updates]
+
+## 弱网优化策略
+
+弱网策略不能只写成“加大超时时间 + 多重试”。超时越长，用户等待越久；重试越多，网络越差时越容易放大排队和电量消耗。弱网要按失败类型处理。
+
+| 失败类型 | 典型信号 | 处理方式 |
+|---|---|---|
+| 无可用网络 | `getActiveNetwork() == null` 或 NetworkCallback `onLost` | 直接返回离线态，等待网络恢复后再刷新 |
+| 未验证互联网可达 | 缺少 `NET_CAPABILITY_VALIDATED` | 提示网络不可用，保留本地缓存，不做密集重试 |
+| DNS 慢或失败 | `dnsStart` 到 `dnsEnd` 长、UnknownHostException | HTTPDNS / 系统 DNS 互为兜底，失败 IP 短时隔离 |
+| 连接慢 | `connectStart` 后长时间无响应 | 缩短 connectTimeout，启用 fast fallback，保留多 IP 候选 |
+| TLS 慢 | `secureConnectStart` 后长时间无响应 | 检查 TLS 版本、证书链、连接复用率；详见 12.4 节 |
+| 服务端慢 | 已连上但 TTFB 高 | 服务端容量、CDN、缓存、接口拆分，不在客户端盲目重试 |
+| 大响应慢 | headers 已到，body 下载慢 | 分页、压缩、断点续传、图片降级；详见 24.6 节 |
+
+Android 要求网络操作离开主线程。官方文档说明，在主线程执行网络操作会抛出 `NetworkOnMainThreadException`；AOSP `StrictMode` 中 `detectNetwork()` 对应 `BlockGuard.Policy.onNetwork()`，在启用网络检测并设置 death penalty 时会抛出同一异常。弱网下更要避免任何同步网络调用进入主线程，否则一次 DNS 或连接超时就可能拖住 UI。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/connecting] [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/os/StrictMode.java]
+
+重试只适合幂等请求，且必须有上限和退避。GET、HEAD、部分可安全重试的查询接口可以做指数退避加随机抖动；POST/支付/下单/写操作必须依赖服务端幂等键，客户端不能因为超时就无条件重发。
+
+```kotlin
+fun nextDelayMs(attempt: Int): Long {
+    val base = 300L * (1 shl attempt.coerceAtMost(5))
+    val jitter = Random.nextLong(0, 250)
+    return (base + jitter).coerceAtMost(10_000L)
+}
+```
+
+弱网体验还要有产品侧降级：列表页优先展示缓存和骨架屏；图片加载从低清到高清；非必要模块延迟加载；上传任务进入后台队列；需要用户确认的操作给出明确状态。技术层能收敛失败，不能把所有网络问题都变成“转圈等待”。
+
+## [自动发现] 连接池边界也决定账号和安全边界
+
+连接池复用看起来是性能问题，但它也影响账号、证书和代理策略。不同业务如果使用不同证书固定策略、不同代理、不同 Authenticator、不同 CookieJar，就不应该强行合并到一个 client；相同 host、相同安全策略、相同登录态的 API 请求才适合共享连接池。
+
+建议把 client 拆分标准写进网络层设计文档：
+
+- `apiClient`：普通业务 API，共享 Cookie/Auth、统一 EventListener。
+- `imageClient`：图片请求，独立 Dispatcher，可配更大的读超时和缓存策略。
+- `downloadClient`：大文件下载，独立并发限制，支持断点和后台约束。
+- `uploadClient`：上传请求，独立写超时、重试和幂等策略。
+- `noAuthClient`：登录前或公开资源，避免污染登录态 Cookie。
+
+拆分不是越多越好。每多一个 client，就多一份连接池、Dispatcher 和配置维护成本。以“安全策略是否不同、请求时延模型是否不同、是否会互相挤占”为拆分条件，比按业务团队拆分更稳定。
+
+[已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+
+## 工程检查清单
+
+加工网络架构时，可以按下面的清单做一次自检：
+
+- App 内是否存在多个无理由创建的 `OkHttpClient`？
+- `maxRequests`、`maxRequestsPerHost` 是否按业务场景设置，而不是沿用默认值？
+- 首页 API、图片、埋点、下载是否共用同一组并发槽？
+- DNS 是否保留系统兜底、TTL、失败隔离、多 IP 回退？
+- HTTPS 是否仍使用原始 hostname，避免 IP URL 破坏 SNI 和证书校验？
+- 是否通过 EventListener 采集 DNS、连接、TLS、TTFB、失败类型？
+- 页面销毁、刷新去重、重复点击是否会取消或复用请求？
+- 后台同步是否使用 WorkManager / JobScheduler 约束网络和电量？
+- 弱网重试是否限制幂等性、次数、退避和随机抖动？
+- 大下载是否推迟到不计费网络或用户明确触发？
+
+## 扩展
+
+### CDN、HTTP/2、HTTP/3 与 gRPC 的协议选型
+
+本节只讲连接和调度边界。HTTP/2 多路复用、HTTP/3/QUIC、gRPC 与协议兼容策略放到 24.5 节展开，避免在两个章节重复解释协议细节。 [待补充: 24.5 加工时补齐协议选型与客户端接入边界]
+
+### 网络缓存与离线优先
+
+缓存策略、HTTP cache header、多级缓存、离线队列与冲突解决放到 24.6、24.7 节展开。本节只保留架构接口：请求层要暴露缓存命中、网络失败、可重试状态，给上层决定展示缓存还是进入离线队列。 [待补充: 24.6/24.7 加工时补齐缓存与离线写入策略]

@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 24,
-  "ready-for-review": 70,
+  "draft": 23,
+  "ready-for-review": 71,
   "finalized": 175,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -93,7 +93,8 @@
     "24.1",
     "24.2",
     "22.2",
-    "24.3"
+    "24.3",
+    "24.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -182,7 +183,8 @@
     "src/part5-app/ch24-io-network/01-file-io-optimization.md",
     "src/part5-app/ch24-io-network/02-database-optimization.md",
     "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-    "src/part5-app/ch24-io-network/03-serialization-performance.md"
+    "src/part5-app/ch24-io-network/03-serialization-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "review_summary": "Task6 2026-05-14 09: reviewed 22.5/24.3; L1/L2 fixes 13; L3/L4 0; auto-finalized 24.3.",
   "task6_review_summary": {
@@ -648,11 +650,11 @@
       "p3": 0
     }
   },
-  "total_review_sections": 87,
+  "total_review_sections": 88,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-14T09:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T09:21:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-14T09:06:00+08:00",
     "log": "logs/review/2026-05-14-09-review.md",
@@ -1501,6 +1503,16 @@
       "last_task6_review_log": "logs/review/2026-05-14-09-review.md",
       "file": "src/part5-app/ch24-io-network/03-serialization-performance.md",
       "title": "序列化性能对比与选型"
+    },
+    "24.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "draft",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+      "title": "网络架构与连接管理",
+      "last_task2a_at": "2026-05-14T09:21:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -1518,9 +1530,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "24.2 数据库性能优化（SQLite/Room）",
-  "last_task2a_processed_file": "src/part5-app/ch24-io-network/02-database-optimization.md",
-  "last_task2a_processed_date": "2026-05-14T07:12:00+08:00",
+  "last_task2a_processed": "24.4 网络架构与连接管理",
+  "last_task2a_processed_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+  "last_task2a_processed_date": "2026-05-14T09:21:00+08:00",
   "task9_last_review_detail": {
     "at": "2026-05-14T08:47:50+08:00",
     "log": "logs/deep-review/2026-05-14-08-deep-review.md",
@@ -1574,8 +1586,8 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch24-io-network/03-serialization-performance.md"
   ],
-  "total_review_files": 87,
-  "last_task2a_at": "2026-05-14T08:20:00+08:00",
-  "last_task2a_section": "24.3",
-  "last_task2a_file": "src/part5-app/ch24-io-network/03-serialization-performance.md"
+  "total_review_files": 88,
+  "last_task2a_at": "2026-05-14T09:21:00+08:00",
+  "last_task2a_section": "24.4",
+  "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md"
 }
