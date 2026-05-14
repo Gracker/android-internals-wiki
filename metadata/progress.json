@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 25,
-  "ready-for-review": 70,
+  "draft": 24,
+  "ready-for-review": 71,
   "finalized": 174,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -1539,5 +1539,8 @@
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "total_review_files": 85
+  "total_review_files": 85,
+  "last_task2a_at": "2026-05-14T08:20:00+08:00",
+  "last_task2a_section": "24.3",
+  "last_task2a_file": "src/part5-app/ch24-io-network/03-serialization-performance.md"
 }
