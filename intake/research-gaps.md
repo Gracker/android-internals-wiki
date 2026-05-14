@@ -227,3 +227,21 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 26.5、13.2、15.5、20.3、26.2
+
+## [2026-05-15] 26.6 A/B Test 与性能回归防护 — 知识盲区
+
+### 盲区描述
+性能 A/B Test 章节需要补齐统计模型边界：连续耗时/功耗/帧耗时这类长尾指标的样本量不能只由 baseline、MDE、alpha、power 决定，还需要历史方差或完整分布、检验对象（均值/比例/分位值）、分群后的 allocation ratio；P90/P99 的分群归因也不能用“样本量 × 分位值变化”线性相加。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理性能指标的三类实验检验：均值/比例、阈值违约率、P90/P99 分位值，并给出各自所需字段。
+- 为分位值实验补 quantile confidence interval、bootstrap 或 tail violation rate 的工程实现路径。
+- 补充多分群、多护栏指标和频繁中途看数时的假阳性控制：预注册检查窗口、sequential testing / alpha spending、FDR。
+- 对齐 Macrobenchmark `FrameTimingMetric` 在 API 29/30 与 API 31+ 的指标可用性，明确 CI 门禁如何降级。
+
+### 关联章节
+26.3, 15.6, 26.7
+

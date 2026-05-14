@@ -32,10 +32,15 @@ sources:
     path: "https://firebase.google.com/docs/ab-testing/abtest-config"
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
-pipeline_stage: ready-for-review
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-15"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-15T04:28:44+08:00"
+task9_review_notes: "2026-05-15 Task9 04:28：needs-rework。P0 0 / P1 3 / P2 1；样本量统计模型、FrameTimingMetric API 31+ 边界、P90 归因公式需 Task2B 回炉。"
 ---
 
 # A/B Test 与性能回归防护
