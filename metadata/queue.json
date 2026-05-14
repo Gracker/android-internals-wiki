@@ -5533,19 +5533,79 @@
       "added_at": "2026-05-14T21:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T21:20:00+08:00"
+    },
+    {
+      "id": "task9-20260514-25.9-apkanalyzer-cli-option-order",
+      "section": "25.9",
+      "priority": 95,
+      "title": "apkanalyzer 命令参数顺序错误",
+      "description": "正文示例写成 `apkanalyzer apk file-size -h app-release.apk` / `apkanalyzer apk download-size -h app-release.apk`。Android Developers apkanalyzer 语法是 `apkanalyzer [global-options] subject verb [options] apk-file`，官方示例为 `apkanalyzer -h apk file-size myapk.apk`；`-h` 是 global option，应放在 subject 前。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T22:31:06+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L153-L155 APK 体积账本命令",
+          "detail": "正文示例写成 `apkanalyzer apk file-size -h app-release.apk` / `apkanalyzer apk download-size -h app-release.apk`。Android Developers apkanalyzer 语法是 `apkanalyzer [global-options] subject verb [options] apk-file`，官方示例为 `apkanalyzer -h apk file-size myapk.apk`；`-h` 是 global option，应放在 subject 前。",
+          "suggestion": "改为 `apkanalyzer -h apk file-size app-release.apk` 和 `apkanalyzer -h apk download-size app-release.apk`；如果要保留当前写法，需实测当前 SDK cmdline-tools 是否兼容该位置。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260514-25.9-vitals-excessive-wakelock-threshold",
+      "section": "25.9",
+      "priority": 85,
+      "title": "Android Vitals excessive wake lock 阈值缺少 2 小时/24 小时条件",
+      "description": "正文只写 excessive partial wake lock “关注 28 天内超过 5% session 的坏行为阈值”，遗漏官方定义的前置条件：所有 partial wake lock 累计在 24 小时内运行 2 小时或以上，且只统计后台或前台服务期间的非豁免锁。缺少该条件会把任意时长的后台 wake lock 都误读成坏行为。",
+      "issue_type": "data-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T22:31:06+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据缺失",
+          "location": "L213 WakeLock 泄漏导致的电量投诉治理",
+          "detail": "正文只写 excessive partial wake lock “关注 28 天内超过 5% session 的坏行为阈值”，遗漏官方定义的前置条件：所有 partial wake lock 累计在 24 小时内运行 2 小时或以上，且只统计后台或前台服务期间的非豁免锁。缺少该条件会把任意时长的后台 wake lock 都误读成坏行为。",
+          "suggestion": "把定义拆成两句：① excessive session 的判定是非豁免 partial wake lock 累计 ≥2h/24h，统计后台或 FGS 场景；② 若该行为在 28 天内超过 5% app sessions，会影响 Play 可见性（按当前指标状态说明 beta/生效边界）。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 166,
-    "p0_count": 84,
-    "last_updated": "2026-05-14T18:30:00+08:00",
+    "total_entries": 175,
+    "p0_count": 90,
+    "last_updated": "2026-05-14T22:31:06+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 100,
+    "pending_entries": 107,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 100
+    "pending": 107
   },
-  "last_updated": "2026-05-14T18:30:00+08:00",
+  "last_updated": "2026-05-14T22:31:06+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 100
+  "pending": 107
 }

@@ -1051,3 +1051,9 @@
 - **位置**：L207-L212 Play Asset Delivery 风险列表
 - **问题**：PAD 风险只写弱网、版本一致性、磁盘占用和观测指标，缺少官方文档里的 asset pack 运行时边界：install-time asset pack 作为 split APK 分发；fast-follow/on-demand 作为 archive 展开到内部存储，App 不能假设文件长期存在或路径稳定，文件可能被用户删除或被 Play Asset Delivery Library 跨 session 移动，且应按只读资源处理。更新时 fast-follow/on-demand pack 还会被 invalidated，资源未就绪时要有“update in progress”兜底。
 - **建议**：在 PAD 小节补一段“资源定位与更新状态机”：每次使用前通过 PAD API 查询 pack location/status；不要缓存绝对路径作为长期契约；对更新中、被清理、未下载、下载失败分别给 UI/降级路径；asset pack 内容不要作为可写业务缓存。
+
+## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-14
+- **类型**：交叉引用错误
+- **位置**：L225 / frontmatter sources
+- **问题**：正文以 `[已验证]` 引用了 `developer.android.com/topic/performance/vitals/wakeup`，但 frontmatter `sources` 未列出该官方来源，source-index 难以追踪 excessive wakeup alarm 依据。
+- **建议**：在 sources 中补 `https://developer.android.com/topic/performance/vitals/wakeup`，或改成引用 §25.3 已覆盖的 AlarmManager 文档。
