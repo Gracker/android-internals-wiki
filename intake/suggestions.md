@@ -805,6 +805,47 @@
 - **位置**：L156 指向 24.2
 - **问题**：24.2 当前仍是 draft，正文把“多表查询、分页、事务关系交给 Room/SQLite，见 24.2 节”写成可读延伸章节，发布态不成立。
 - **建议**：24.2 成稿前删除“见 24.2 节”，或改为内部待补引用；发布前再恢复交叉链接。
+## [Task14 参考书扫描] 23.2 Bitmap 与图片内存优化 — 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+- **建议补充**：ASM/Lancet 字节码插桩 Hook Bitmap.createBitmap 的实战方案，用于线上大图检测。ch23.2 已覆盖 Bitmap 内存计算和 inSampleSize，但缺少通过插桩拦截 Bitmap 创建进行阈值监控的具体实现代码。
+- **参考书覆盖深度**：中等（有代码示例，但 Lancet 框架已较老）
+
+## [Task14 参考书扫描] 25.6 APK 体积分析与瘦身 — 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **建议补充**：(1) gc-sections (-ffunction-sections -fdata-sections + -Wl,--gc-sections) 编译配置移除无用 Native 代码；(2) LTO 链接阶段优化 (-flto -O3)；(3) 去符号表(strip)可减少 so 体积 50%+，以及 -Wl,--exclude-libs,ALL 删除静态库引入的符号；(4) extractNativeLibs=true 开启 so 压缩的收益与代价（安装时间增加）；(5) 自定义 zstd/7z 压缩 + 运行时按需解压的完整方案（含 Lancet hook System.loadLibrary）
+- **参考书覆盖深度**：深入（有完整代码示例和流程图）
+
+## [Task14 参考书扫描] 25.6 APK 体积分析与瘦身 — 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **建议补充**：CPU 架构精简策略——仅需 arm64-v8a + armeabi-v7a，当 32 位设备占比 <1% 时可直接只保留 64 位 so。参考书提出了「精简/压缩/动态化」三种包体积优化方法论，可作为 ch25.6 的组织框架。
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 5.1 Linux 进程调度基础 — 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- **建议补充**：Process.setThreadPriority（Android API）vs Thread.setThreadPriority（Java API）的对比，推荐使用前者（后者有子线程时序 bug 可能误设主线程优先级）。ch5.1 已覆盖 nice/sched_setaffinity 原理，但缺少 API 选型的实践指导。
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 21.1 启动全链路分析（App 视角）— 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- **建议补充**：(1) 启动时提升主线程优先级（Application.attach 中调用 Process.setThreadPriority(-19)）的实战方案；(2) 通过 /proc/pid/task 遍历找到 RenderThread tid 并提升其优先级的具体代码实现；(3) 提升核心线程优先级 + 降低非核心线程优先级的配合策略
+- **参考书覆盖深度**：深入（有完整代码）
+
+## [Task14 参考书扫描] 4.1 Android 内存模型全景 — 2026-05-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **建议补充**：(1) Graphics 内存的三部分细分：Gfx dev（已映射到进程的 GPU 内存，高通芯片在 /dev/kgsl-3d0）、GL mtrack（纹理/顶点数据，未映射）、EGL mtrack（Layer Surface via gralloc，未映射）；(2) Android 10+ 对 /proc/pid/smaps 读取加了 5 分钟频控，线上监控需注意此限制；(3) 高通 GPU 内存节点 /d/kgsl/proc/pid/mem 的数据格式与用途
+- **参考书覆盖深度**：深入（有源码分析和实际数据样本）
+
+## [Task14 参考书扫描] 23.2 Bitmap 与图片内存优化 — 2026-05-14
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+- **过时内容**：参考书使用 Gradle Transform API 进行 ASM 插桩，但 Gradle 7.0+ 已移除 Transform API，需改用 AndroidComponentsExtension
+- **建议更新至**：Android 16/17 使用 ArtifactTransform / AsmClassVisitorFactory 替代 Transform API，或使用官方 Instrumentation API
 
 ## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-05-14
 - **类型**：源码准确性/AndroidX 源码锚点
@@ -823,6 +864,14 @@
 - **位置**：L122 WAL 检查项
 - **问题**：“16KB page size 设备上，100 页 checkpoint 对应的数据量比 4KB page size 更大”容易把 Linux/设备页大小与 SQLite `PRAGMA page_size` 直接绑定。AOSP `SQLiteGlobal.getDefaultPageSize()` 从 `/data` block size 取默认值，最终数据库页大小仍应以实际库的 `PRAGMA page_size` 为准。
 - **建议**：改成“如果该库的 `PRAGMA page_size` 为 16KB，则 100 页约 1.6MB；默认值需在目标设备/数据库上查询确认”，并给出 `PRAGMA page_size; PRAGMA wal_autocheckpoint;` 的验证命令。
+
+## [Task6 Review] 2.9 渲染机制的版本演进 — 2026-05-14
+- **类型**：需补充素材
+- **位置**：版本演进时间线总览｜16KB 页行
+- **问题**：时间线保留“TLB 命中率提升约 9%，渲染管线有效带宽增益”的数据化表述，但缺少设备、page size 配置、测试 workload、引用来源和适用边界。
+- **建议**：Task2B 补来源和测试条件；补不齐时改成定性边界表述，再交 Task9 复核。
+- **review 日志**：logs/review/2026-05-14-08-review.md
+
 
 ## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-14
 - **类型**：源码准确性/状态读取阶段
@@ -879,6 +928,7 @@
 - **建议**：补充 Perfetto 观测口径的版本分支：API 31+ 看 FrameTimeline / Jank，API 29-30 用 UI Thread、RenderThread、SurfaceFlinger 和帧间隔推断卡顿。
 
 
+
 ## [Task9 Deep Review] 24.6 数据压缩与缓存策略 — 2026-05-14
 - **类型**：源码准确性/版本边界
 - **位置**：L86 OkHttp CompressionInterceptor / BrotliInterceptor 描述
@@ -897,6 +947,7 @@
 - **问题**：BroadcastReceiver timeout 仍写成固定前台 10 秒 / 后台 60 秒，缺少 Android 14+ CPU-starved 场景 10-20 秒 / 60-120 秒口径；“向用户弹出应用无响应对话框”表述也缺少前台可见、后台 / silent ANR 的边界。
 - **建议**：Task 2B 按 Task9 技术结论和官方文档补版本边界；无法确认时降级为“典型前台场景”，并标注设备 / 系统差异。
 - **review 日志**：logs/review/2026-05-14-12-review.md
+
 ## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-14
 - **类型**：源码准确性
 - **位置**：L138-L149 Manifest 声明
@@ -957,6 +1008,8 @@
 - **问题**：正文列出 `DeviceIdle`、多约束叠加和 backoff，但未说明 `requiresDeviceIdle()` 与 `setBackoffCriteria()` 不能同时设置。AndroidX `OneTimeWorkRequest.Builder.buildInternal()` 与 `PeriodicWorkRequest.Builder.buildInternal()` 都会在 `backoffCriteriaSet && constraints.requiresDeviceIdle()` 时抛出 `IllegalArgumentException("Cannot set backoff criteria on an idle mode job")`。这会影响读者把“空闲 + 退避”组合到同一个请求的实战代码。
 - **建议**：在约束段补一条兼容性规则：idle 任务不要设置 backoff；如果需要失败退避，改用 charging/network/battery-not-low 等约束，或拆成 idle 触发的粗粒度任务与内部重试逻辑。
 
+
+
 ## [Task9 Deep Review] 1.0 第 1 章：系统架构全景 — 2026-05-14
 - **类型**：交叉引用
 - **位置**：frontmatter `related_chapters` / L63、L65、L71
@@ -992,3 +1045,9 @@
 - **位置**：L38、L71 `ConcurrentMessageQueue` / DeliQueue 摘要
 - **问题**：README 写“Android 17 已确认的平台行为包括 `ConcurrentMessageQueue` 无锁投递、DeliQueue 命令调度”，但入口页没有同步 §1.13 中的 targetSdk 37+ 默认启用边界；读者可能理解为所有 Android 17 上运行的 App 都自动进入新 MessageQueue 路径。
 - **建议**：在摘要里补“面向 targetSdk 37+ 应用默认启用”的限定，并指向 §1.13 的版本/targetSdk 细节。
+
+## [Task9 Deep Review] 25.8 App Bundle 与按需分发 — 2026-05-14
+- **类型**：知识盲区/PAD 运行时边界
+- **位置**：L207-L212 Play Asset Delivery 风险列表
+- **问题**：PAD 风险只写弱网、版本一致性、磁盘占用和观测指标，缺少官方文档里的 asset pack 运行时边界：install-time asset pack 作为 split APK 分发；fast-follow/on-demand 作为 archive 展开到内部存储，App 不能假设文件长期存在或路径稳定，文件可能被用户删除或被 Play Asset Delivery Library 跨 session 移动，且应按只读资源处理。更新时 fast-follow/on-demand pack 还会被 invalidated，资源未就绪时要有“update in progress”兜底。
+- **建议**：在 PAD 小节补一段“资源定位与更新状态机”：每次使用前通过 PAD API 查询 pack location/status；不要缓存绝对路径作为长期契约；对更新中、被清理、未下载、下载失败分别给 UI/降级路径；asset pack 内容不要作为可写业务缓存。

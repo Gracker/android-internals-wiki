@@ -42,9 +42,12 @@ sources:
     path: "Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md"
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
 related_chapters: ["25.6", "25.7", "12.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
+last_task9_review_log: logs/deep-review/2026-05-14-21-deep-review.md
+last_task9_at: 2026-05-14T21:20:00+08:00
+task9_result: needs-rework
 task2b_state: pending
 ---
 
