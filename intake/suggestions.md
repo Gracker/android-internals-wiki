@@ -1135,3 +1135,31 @@
 - **位置**：L160 Android Vitals 与 SafeMode 价值
 - **问题**：SafeMode 对 Google Play Vitals user-perceived crash rate 的改善链路写得过直；该指标按 DAU 中至少一次前台 crash 的用户计数，首次 crash 已发生的设备当天不会因为 SafeMode 退出而从分子移除。
 - **建议**：补充指标边界：SafeMode 直接降低重复崩溃、启动循环和 crash-free sessions 损失；对 Vitals 用户感知崩溃率的改善依赖远程配置、灰度暂停或跨天避免再次命中。
+
+## [Task6 Review] 20.7 异常处理架构设计 — 2026-05-15
+- **类型**：需确认
+- **位置**：§全局异常捕获框架设计 / `ApplicationExitInfo`
+- **问题**：Task9 已指出 native tombstone trace 的 API 边界和空 trace fallback 未写清；Task6 已在正文加 `[需确认]` 标注，不做技术裁决。
+- **建议**：由 Task2B 按 Task9 问题单拆分 API 30+ 退出原因、API 31+ native tombstone trace、ANR trace 与 null fallback。
+- **review 日志**：logs/review/2026-05-15-06-review.md
+
+## [Task6 Review] 20.7 异常处理架构设计 — 2026-05-15
+- **类型**：需补充素材
+- **位置**：§安全气囊（SafeMode）机制
+- **问题**：SafeMode 判定只有 crashStore 聚合，缺 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路；Task6 已标注回炉。
+- **建议**：由 Task2B 补启动状态机和 ApplicationExitInfo 结合规则，再交 Task9 复核。
+- **review 日志**：logs/review/2026-05-15-06-review.md
+
+## [Task6 Review] 20.7 异常处理架构设计 — 2026-05-15
+- **类型**：需确认
+- **位置**：§多进程异常隔离 / WebView 独立进程
+- **问题**：Task9 指出 WebView renderer 进程不能按 App 自有多进程 Crash handler 模型处理；Task6 已在正文标注区分 App 自有容器进程与系统 WebView renderer。
+- **建议**：由 Task2B 补 `WebViewClient.onRenderProcessGone()` 处理边界、记录字段和页面兜底策略。
+- **review 日志**：logs/review/2026-05-15-06-review.md
+
+## [Task6 Review] 20.7 异常处理架构设计 — 2026-05-15
+- **类型**：需补充素材
+- **位置**：§多进程异常隔离 / crash 文件写入
+- **问题**：正文只写“临时文件 + rename”，缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描与 partial 清理规则；Task6 已标注回炉。
+- **建议**：由 Task2B 补完整 crash 样本持久化协议，并让 Task9 复核崩溃/断电边界。
+- **review 日志**：logs/review/2026-05-15-06-review.md

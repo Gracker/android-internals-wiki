@@ -5858,7 +5858,8 @@
         "src/part5-app/ch20-stability/07-exception-architecture.md"
       ],
       "material_paths": [
-        "src/part5-app/ch20-stability/07-exception-architecture.md"
+        "src/part5-app/ch20-stability/07-exception-architecture.md",
+        "intake/suggestions.md"
       ],
       "review_issues": [
         {
@@ -5866,16 +5867,26 @@
           "location": "L216-L224 多进程异常隔离：WebView 独立进程",
           "detail": "正文把 WebView 独立进程放进“每个进程都有自己的 Application、默认 handler”的模型，并暗示只在主进程注册 Crash handler 会漏掉 WebView 独立进程。Android WebView renderer 是 WebView 提供方管理的渲染进程，App 不能在其中安装自己的 Application 或 Thread.UncaughtExceptionHandler。AOSP WebViewClient.onRenderProcessGone() 的契约是 renderer 退出后回调宿主 App；返回 true 表示宿主已清理受影响 WebView，否则 App 会崩溃或被系统杀死。",
           "suggestion": "把“WebView 独立进程”从 App 自有多进程 Crash handler 表中拆出，单独写 WebView renderer crash 策略：实现 WebViewClient.onRenderProcessGone()，销毁并移除受影响 WebView，记录 detail.didCrash()/rendererPriorityAtExit()/页面 URL 摘要，切换页面兜底或重建容器；App 自有 :web/:h5 进程再按普通多进程 handler 处理。"
+        },
+        {
+          "type": "需确认",
+          "location": "§多进程异常隔离 / WebView 独立进程",
+          "detail": "Task6 已在正文标注：WebView renderer 进程不能按 App 自有多进程 Crash handler 模型处理，需区分 App 自有 :web/:h5 进程与系统 WebView renderer。",
+          "suggestion": "沿用 Task9 建议，补 WebViewClient.onRenderProcessGone() 的处理边界、记录字段和兜底页策略。",
+          "source": "task6-review-2026-05-15-06"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T05:50:05+08:00"
+      "added_at": "2026-05-15T05:50:05+08:00",
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-15T06:05:00+08:00",
+      "original_review_log": "logs/review/2026-05-15-06-review.md"
     },
     {
       "id": "task9-20.7-safemode-exitinfo-persistence-chain",
       "section": "20.7",
       "section_title": "异常处理架构设计",
-      "priority": 85,
+      "priority": 90,
       "title": "SafeMode 退出补偿与崩溃样本持久化链路不完整",
       "description": "章节缺少 ApplicationExitInfo native tombstone API 边界、启动状态机补偿链路，以及 crash 文件 fsync/rename 完整持久化协议。",
       "issue_type": "principle-chain",
@@ -5890,7 +5901,8 @@
       ],
       "material_paths": [
         "intake/research-gaps.md",
-        "src/part5-app/ch20-stability/07-exception-architecture.md"
+        "src/part5-app/ch20-stability/07-exception-architecture.md",
+        "intake/suggestions.md"
       ],
       "review_issues": [
         {
@@ -5910,10 +5922,20 @@
           "location": "L227 多进程记录文件原子写入",
           "detail": "正文只写“临时文件 + rename 的原子替换”。rename 只保证同一文件系统内目录项切换原子，不保证文件内容已持久化；崩溃/断电边界下可能出现空文件、旧内容或目录项未落盘。Crash SDK 的最小样本存储链路还缺 fsync 文件、rename 后 fsync 父目录、完成目录扫描规则和 partial 文件清理。",
           "suggestion": "补完整持久化协议：每个进程写独立 tmp 目录，写完 flush + fsync(fd)，同卷 rename 到 completed，fsync(parent dir)；下次只扫描 completed，校验 schema/hash/长度，tmp/partial 按保留期清理。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§全局异常捕获 / §SafeMode / §多进程记录文件",
+          "detail": "Task6 已在正文标注 3 处：ApplicationExitInfo native tombstone API 边界、SafeMode launch marker/退出补偿链路、crash 文件 flush/fsync/rename 持久化协议。",
+          "suggestion": "交 Task2B 按 Task9 问题单补版本边界、状态机与持久化协议；Task6 不裁决源码/API 真伪。",
+          "source": "task6-review-2026-05-15-06"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T05:50:05+08:00"
+      "added_at": "2026-05-15T05:50:05+08:00",
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-15T06:05:00+08:00",
+      "original_review_log": "logs/review/2026-05-15-06-review.md"
     }
   ],
   "metadata": {

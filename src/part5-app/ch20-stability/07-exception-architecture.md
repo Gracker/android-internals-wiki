@@ -8,7 +8,7 @@ last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
 confidence: medium
 drafted_date: "2026-05-15"
-polish_count: 0
+polish_count: 1
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md"
@@ -20,6 +20,8 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
   - type: aosp
     path: "art/runtime/thread.cc"
+  - type: aosp
+    path: "system/core/debuggerd/crash_dump.cpp"
   - type: official
     path: "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - type: official
@@ -32,10 +34,18 @@ sources:
     path: "kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.kt"
   - type: source
     path: "kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt"
+  - type: source
+    path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_result: needs-rework
+last_task6_at: "2026-05-15T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-15-06-review.md"
+task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
 task9_state: reviewed
 task2b_state: pending
 last_task2a_at: "2026-05-15T05:33:00+08:00"
@@ -73,7 +83,7 @@ task9_review_notes: "2026-05-15 Task9：needs-rework。P0 1：WebView renderer �
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-异常处理架构解决的不是“把异常都 catch 掉”，而是在进程可能退出、功能可能不可用、版本可能已经放量的情况下，尽量保留现场、限制影响面，并给下一次启动留下恢复路径。
+异常处理架构解决的不是“把异常都捕获后吞掉”，而是在进程可能退出、功能可能不可用、版本可能已经放量的情况下，尽量保留现场、限制影响面，并给下一次启动留下恢复路径。
 
 20.2、20.3 已经分别讲过 Java Crash 和 Native Crash 的系统机制，26.2 讲 Crash 上报体系。本节聚焦 App 侧架构：捕获入口怎样接入，SafeMode 怎样避免崩溃循环，降级和热修复怎样接入发布系统。
 
@@ -108,6 +118,8 @@ Native 入口通常交给 Crashpad、Breakpad 或厂商 APM SDK。信号处理�
 | `exit_reason` | Android 11+ 下次启动 | `ApplicationExitInfo` 的 reason、status、importance、trace | 用于补 Java/Native handler 没拿到的退出原因 |
 
 Android 11 引入 `ApplicationExitInfo`，应用可通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史进程退出原因。它适合补偿“进程被系统杀死、handler 没来得及执行、Native crash 只留下系统 trace”的场景，但不能替代 Crash handler；它拿到的是系统记录，不保证包含业务上下文。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
+
+[需确认: `ApplicationExitInfo.getTraceInputStream()` 对 native tombstone 的 API 边界、空 trace fallback 需按 Task9 问题单补齐。]
 
 全局捕获框架的边界要写进 SDK 契约：
 
@@ -152,6 +164,8 @@ class SafeModeController(
 ```
 
 这段代码只描述判定流程。生产实现还要处理文件损坏、跨进程并发写入、系统时间回拨、版本升级后清理旧记录等边界。
+
+[需补充素材: SafeMode 判定还缺 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路，交 Task2B 按 Task9 问题单补齐。]
 
 SafeMode 打开的内容要分级，避免“一进保护模式就什么都不能用”：
 
@@ -210,7 +224,7 @@ SafeMode 打开的内容要分级，避免“一进保护模式就什么都不�
 
 SafeMode 与热修复的关系可以这样设计：
 
-1. SafeMode 先把崩溃循环压住，保证用户能启动应用。
+1. SafeMode 先抑制崩溃循环，保证用户能启动应用。
 2. 远程配置关闭高风险功能，降低继续触发的概率。
 3. 热修复或新包解决代码缺陷。
 4. 连续稳定启动后退出 SafeMode，恢复功能开关。
@@ -220,6 +234,8 @@ SafeMode 与热修复的关系可以这样设计：
 ## 多进程异常隔离
 
 多进程架构能把故障限制在某个进程里，但也会让异常捕获变复杂。每个进程都有自己的 `Application`、默认 handler、文件锁和初始化路径；只在主进程注册 Crash handler，会漏掉远程服务、WebView 独立进程、播放器进程和推送进程的崩溃。
+
+[需确认: WebView renderer 进程不等同于 App 可控进程，正文需区分 App 自有 `:web` / `:h5` 进程与系统 WebView renderer；renderer 退出策略应按 Task9 问题单补 `WebViewClient.onRenderProcessGone()` 边界。]
 
 多进程异常隔离建议按进程角色设计：
 
@@ -232,13 +248,15 @@ SafeMode 与热修复的关系可以这样设计：
 
 记录文件要带进程名和 pid。跨进程写同一个文件容易损坏，建议按进程分文件，再由下次启动的主进程或上传进程汇总。文件写入用临时文件 + rename 的原子替换方式，避免崩溃发生在写入中间导致记录不可解析。
 
+[需补充素材: crash 文件持久化协议只写“临时文件 + rename”不够，需补 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描与 partial 清理规则。]
+
 多进程重启要限制次数。远程服务进程崩溃后立刻拉起，可能形成后台崩溃风暴；更稳的策略是指数退避、本地计数、达到阈值后关闭该服务入口，并把“重启被抑制”作为事件上报。[待验证: 具体重启策略需要结合业务保活要求和厂商后台限制验证]
 
-[自动发现] 线程监控也要纳入异常架构。参考书给出通过 ASM 字节码插桩把无名 `Thread()` 改成带调用来源的 `Thread(String)` 的思路。这个能力可以帮助异常记录区分 `Thread-7` 这类匿名线程，减少崩溃归因成本。现代 Android Gradle Plugin 下需要用当前项目可用的 ASM 接入点实现，不能沿用已废弃的 Transform API 方案。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
+[自动发现] 线程监控也要纳入异常架构。参考书给出通过 ASM 字节码插桩把无名 `Thread()` 改成带调用来源的 `Thread(String)` 的思路。这个能力可以帮助异常记录区分 `Thread-7` 这类匿名线程，减少崩溃归因成本。现代 Android Gradle Plugin 下需要用当前项目可用的 ASM 接入点实现，不能沿用已废弃的 Transform API 方案。[待验证: AGP 版本与可用 ASM 接入点需按当前项目确认][结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
 
 ## Kotlin Coroutine 异常处理
 
-协程异常不能只靠 `Thread.UncaughtExceptionHandler` 接住。Kotlin 官方文档把协程异常分成两类：`launch` 根协程的未捕获异常会向外报告；`async` 会把异常保存在 `Deferred` 中，直到调用 `await()` 时抛出。`CoroutineExceptionHandler` 只处理没有传播路径的异常，不能当成普通 `try/catch` 使用。[已验证: Kotlin 官方文档, kotlinlang.org/docs/exception-handling.html]
+协程异常不能只依赖 `Thread.UncaughtExceptionHandler`。Kotlin 官方文档把协程异常分成两类：`launch` 根协程的未捕获异常会向外报告；`async` 会把异常保存在 `Deferred` 中，直到调用 `await()` 时抛出。`CoroutineExceptionHandler` 只处理没有传播路径的异常，不能当成普通 `try/catch` 使用。[已验证: Kotlin 官方文档, kotlinlang.org/docs/exception-handling.html]
 
 协程异常路径可以按创建方式区分：
 
@@ -257,10 +275,10 @@ SafeMode 与热修复的关系可以这样设计：
 - 页面生命周期：`viewModelScope`、`lifecycleScope` 的异常要带页面和状态，方便判断是否与页面销毁时序有关。
 - 结构化并发边界：`supervisorScope`、`SupervisorJob` 会改变异常传播方式，Crash 记录里要能看出作用域类型。
 
-协程 handler 里仍然不能做重操作。它可能运行在主线程、IO 线程或自定义 Dispatcher 上，执行耗时逻辑会扩大故障影响。更稳的做法是写最小记录，然后把上报交给统一 Crash SDK。
+协程 handler 里仍然不能做重操作。它可能运行在主线程、IO 线程或自定义 Dispatcher 上，执行耗时逻辑会扩大故障影响。建议只写最小记录，然后把上报交给统一 Crash SDK。
 
 ## 小结
 
 异常处理架构的目标是把故障分层处理：入口层保留证据，SafeMode 防止崩溃循环，降级层限制影响范围，灰度和热修复层控制版本风险。Java、Native、协程、多进程各有不同入口，但最终都要汇入同一套本地记录、上报聚合和发布控制系统。
 
-本节没有重复 20.2、20.3 的底层机制，也没有展开 26.2 的服务端上报实现。接下来 review 时应重点核对三件事：SafeMode 阈值是否符合业务现状，多进程文件写入是否具备原子性，热修复框架边界是否和当前项目一致。
+本节没有重复 20.2、20.3 的底层机制，也没有展开 26.2 的服务端上报实现。实际接入前还要核对三件事：SafeMode 阈值是否符合业务现状，多进程文件写入是否具备原子性，热修复框架边界是否和当前项目一致。
