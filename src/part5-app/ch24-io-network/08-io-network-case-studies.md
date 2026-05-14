@@ -8,7 +8,7 @@ last_verified: "2026-05-14"
 last_verified_against: "AOSP android-35 SDK sources + Android Developers docs + OkHttp 5.x docs + Clippings 结构参考"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+polish_count: 1
 sources:
   - type: aosp
     path: "/Users/gracker/Android/sources/android-35/android/app/SharedPreferencesImpl.java"
@@ -43,7 +43,12 @@ sources:
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-14
+last_task6_at: "2026-05-14T14:09:00+08:00"
+task6_review_notes: "L1/L2 轻量修复 11 处；写作质量通过。Task9 已有 P1 代码竞态回炉，保持 task2b_pending。"
 task9_state: reviewed
 task2b_state: pending
 last_task2a_at: "2026-05-14T13:14:00+08:00"
@@ -81,9 +86,9 @@ last_task9_at: "2026-05-14T13:30:11+08:00"
 
 I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生命周期收尾时可能卡在 `QueuedWork.waitToFinish()`；接口耗时看起来是服务端慢，细拆后可能是 DNS、建连、Dispatcher 排队或缓存命中率低；大文件上传下载看起来只是“放后台”，上线后却占满 API 并发、耗电、失败重传、进度丢失。
 
-24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。本节保留三个综合案例：SP ANR、页面网络慢、大文件传输。每个案例都按“现象 → 观测 → 根因 → 改法 → 验收”组织，方便在项目里复用排查路径。
+24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。本节保留三个综合案例：SP ANR、页面网络慢、大文件传输。每个案例都沿着“现象 → 观测 → 根因 → 改法 → 验收”展开，方便在项目里复用排查路径。
 
-参考书用于确定案例顺序：速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。正文不使用参考书原文，也不复用参考书代码。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+参考资料只用来校准案例顺序：速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。正文不使用参考书原文，也不复用参考书代码。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 ## SharedPreferences ANR 治理实战
 
@@ -91,7 +96,7 @@ I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生�
 
 一个常见现场是页面退出、切后台或服务停止时出现 ANR，主线程堆栈停在 `QueuedWork.waitToFinish()`，后台线程堆栈能看到 `SharedPreferencesImpl.writeToFile()`、`FileUtils.sync()` 或 XML 写入。业务侧通常会说“这里只是 `apply()`，不是 `commit()`”，但 ANR 发生点已经离调用点很远。
 
-SP 的风险分两段。读取时，首次访问可能等待 XML 加载；写入时，`apply()` 会更新内存并排队写磁盘，生命周期收尾可能等待队列清空。AOSP `SharedPreferencesImpl` 和 `QueuedWork` 能把这条路径串起来：`apply()` 创建写入任务，`QueuedWork` 保存 pending work，框架在部分组件收尾路径调用 `waitToFinish()`。[已验证: AOSP android-35 SDK sources, android/app/SharedPreferencesImpl.java, android/app/QueuedWork.java]
+SP 的风险分两段。读取时，首次访问可能等待 XML 加载；写入时，`apply()` 会更新内存并排队写磁盘，生命周期收尾可能等待队列清空。AOSP `SharedPreferencesImpl` 和 `QueuedWork` 可以说明这条路径：`apply()` 创建写入任务，`QueuedWork` 保存 pending work，框架在部分组件收尾路径调用 `waitToFinish()`。[已验证: AOSP android-35 SDK sources, android/app/SharedPreferencesImpl.java, android/app/QueuedWork.java]
 
 ### 观测路径
 
@@ -126,7 +131,7 @@ SP ANR 往往是三类模式叠加：
 | 结构化对象 | JSON 字符串塞进 XML，文件膨胀 | 迁移到 Proto DataStore、Room 或专用文件 |
 | 交易类状态 | 异步写入失败不可感知 | 使用可确认的持久化方案，写入结果进入业务状态机 |
 
-这段代码展示轻量合并写入器的形态。重点不是照抄类名，而是把多次小写合并成一次后台刷盘，并把调用点从页面生命周期里移出去。
+这段代码展示轻量合并写入器的形态：把多次小写合并成一次后台刷盘，并把调用点从页面生命周期里移出去。类名和调度方式可以按项目替换，写入合并和生命周期外刷盘这两个边界要保留。
 
 ```kotlin
 class PreferenceWriteBuffer(
@@ -188,9 +193,9 @@ OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；�
 
 ### 根因
 
-这个案例里的症结是网络层没有分资源等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。参考书里提到速度优化要区分 CPU、缓存和任务调度，放到网络层就是：别让低优先级请求抢占首屏等待窗口。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
+这个案例的问题在于网络层没有隔离请求等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。参考资料把速度问题拆成 CPU、缓存和任务调度；放到网络层，对应的治理动作是限制低优先级请求，不让它抢占首屏等待窗口。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
 
-HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。这个缺口已在 24.4 的 Task9 记录里标出，本节不重复展开原理。
+HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。24.4 负责展开 HTTPDNS 的完整设计边界，这里保留案例处置动作。
 
 ### 改法
 
@@ -253,7 +258,7 @@ object HttpClients {
 
 Android 官方网络优化文档给出的典型方向是把完整下载安排到 Wi-Fi，必要时还要求设备充电；WorkManager 文档支持 `NetworkType.UNMETERED`、充电等约束。AOSP `DownloadManager` 也提供系统级下载入口，适合交给系统通知、网络和重试策略管理的公开下载任务。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization][已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work][已验证: AOSP android-35 SDK sources, android/app/DownloadManager.java]
 
-这段 WorkManager 配置表达后台大文件下载的约束边界。重点看非计费网络、充电和唯一任务名，避免同一资源被重复下载。
+这段 WorkManager 配置表达后台大文件下载的约束边界：非计费网络、充电和唯一任务名共同避免同一资源被重复下载。
 
 ```kotlin
 val constraints = Constraints.Builder()
@@ -284,7 +289,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 - 幂等：上传会被重试，服务端要用 uploadId、chunk index、checksum 去重。
 - 取消与恢复：用户取消、网络切换、进程重启后，客户端能从本地状态表恢复。
 
-这段代码只展示流式 `RequestBody` 的关键形态。生产环境还要补 MIME、进度回调、取消检查、错误映射和分片状态。
+这段代码只保留流式 `RequestBody` 的写入路径。生产环境还要补 MIME、进度回调、取消检查、错误映射和分片状态。
 
 ```kotlin
 class FileStreamingBody(
@@ -306,7 +311,7 @@ class FileStreamingBody(
 
 ### 验收
 
-大文件优化要用场景矩阵验收：
+大文件优化要用场景表验收：
 
 | 场景 | 验收点 |
 | --- | --- |
