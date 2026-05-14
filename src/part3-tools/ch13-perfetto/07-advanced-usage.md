@@ -810,6 +810,14 @@ data_sources {
 
 ## 参考资料
 
+### Perfetto SPAN_JOIN 与窗口函数交叉分析算法引擎深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级解析 Perfetto Trace Processor 的 SPAN_JOIN 自定义算子表：C++ 层实现时间跨度交集，支持 PARTITIONED 分区键避免 O(n×m) 全量比较。详解 SPAN_LEFT_JOIN/SPAN_OUTER_JOIN 变体，以及窗口函数 LEAD() 在 counter→span 视图转换中的核心用法（闭区间转开区间技巧）。
+- 注入时间：2026-05-14
+- 价值：这是 Perfetto SQL 高级分析的核心能力，掌握后可大幅提升帧×GC/Binder/锁交叉分析效率
+
+
 ### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
 - 来源：https://github.com/google/perfetto/releases
 - 类型：article

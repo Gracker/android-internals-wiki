@@ -2,6 +2,14 @@
 
 ## 参考资料
 
+### Android 安装优化机制与厂商定制边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：深度解析 AOSP staged install 全链路源码：从 PackageInstallerSession→PMS→installd→dex2oat 的关键路径，以及厂商（vivo Turbo/小米 HyperOS）在 BackgroundDexOptService 编译策略、idle 窗口、compiler filter 上的定制边界。核心发现厂商优化不涉及内核修改，全在用户态调度层。
+- 注入时间：2026-05-14
+- 价值：含完整 AOSP 安装管线源码路径和厂商 diff 对比，对理解存储与安装性能优化有直接参考价值
+
+
 ### Android 嵌入式照片选择器，让体验更加丝滑
 - 来源：https://juejin.cn/post/7599963665039081522
 - 类型：技术文章

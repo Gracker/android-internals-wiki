@@ -2,7 +2,7 @@
 title: "WakeLock 与 Alarm 管理"
 chapter: "25.3"
 section: "25.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers wake lock / alarm docs + Clippings structure references"
@@ -38,9 +38,14 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [wakelock, alarm, exact-alarm, wakelock-leak, power]
 related_chapters: ["25.2", "11.5", "5.6", "25.4"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+last_task9_review_log: "logs/deep-review/2026-05-14-16-deep-review.md"
+last_task9_at: "2026-05-14T16:30:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-14"
+task9_result: pass-tech-review
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"

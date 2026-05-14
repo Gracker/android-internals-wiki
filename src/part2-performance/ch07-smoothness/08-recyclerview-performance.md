@@ -582,6 +582,75 @@ MATCH_CONSTRAINT_SPREAD 和 MATCH_CONSTRAINT_WRAP 需要 2 轮迭代，每轮都
 此研究 Gap 已通过源码级深度调研确认，建议在后续的 GapWorker 和 ConstraintLayout 版本中考虑上述改进方案。
 <!-- end AIW-源码调研-2026-05-04 -->
 
+<!-- AIW-源码调研-2026-05-14 -->
+## Android 17 DeliQueue 与 RecyclerView 预取版本边界验证
+
+**来源**：每日推荐选题 id=8，`cs.android.com/platform/superproject/+/main:frameworks/base/core/java/android/os/MessageQueue.java`
+
+### 核心发现
+
+Android 17 引入的 **DeliQueue** 是一种无锁 MessageQueue 实现（targetSdk >= 37 生效），通过分离消息入队与消息处理彻底消除主线程锁竞争。**DeliQueue 并非 RecyclerView 特有组件**，其性能收益对 RecyclerView 预取的影响是间接的——来自 MessageQueue 调度延迟降低。
+
+### DeliQueue 核心设计
+
+**数据结构（Google 官方博客源码片段）**：
+
+```java
+// Treiber Stack - 无锁栈，任何线程可无竞争推送新消息
+public class TreiberStack<E> {
+    AtomicReference<Node<E>> top = new AtomicReference<>();
+    
+    public void push(E item) {
+        Node<E> newHead = new Node<>(item);
+        Node<E> oldHead;
+        do {
+            oldHead = top.get();
+            newHead.next = oldHead;
+        } while (!top.compareAndSet(oldHead, newHead));
+    }
+    
+    public E pop() {
+        Node<E> oldHead;
+        Node<E> newHead;
+        do {
+            oldHead = top.get();
+            if (oldHead == null) return null;
+            newHead = oldHead.next;
+        } while (!top.compareAndSet(oldHead, newHead));
+        return oldHead.item;
+    }
+}
+```
+
+**与 RecyclerView 的交互**：`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 MessageQueue。DeliQueue 消除了 `post()` 路径上的锁竞争，使 `GapWorker` 的执行时机更可预测。
+
+### 版本边界
+
+| 版本 | MessageQueue 实现 | 锁竞争 | RecyclerView 预取稳定性 |
+|------|-------------------|--------|------------------------|
+| Android 16 (API 36) | 单锁链表 | 存在 | 受后台线程干扰 |
+| Android 17 (API 37)+ targetSdk 37+ | DeliQueue 无锁 | 消除 | 更稳定 |
+
+### 反射兼容性警告
+
+DeliQueue 改变 MessageQueue 内部字段结构。基于反射 hook `dispatchMessage` 的监控库（如部分 Espresso/Robolectric 场景），在 Android 17 上可能失效。推荐使用官方 `FrameMetrics` / `JankStats` 方案。
+
+### 源码位置
+
+- `frameworks/base/core/java/com/android/internal/widget/GapWorker.java` - GapWorker 预取实现
+- `frameworks/base/core/java/com/android/internal/widget/RecyclerView.java` - RecyclerView 集成
+- `frameworks/base/core/jni/android_os_MessageQueue.cpp` - Native 层 JNI
+
+### 验证状态
+
+- ✅ DeliQueue Treiber Stack + Min-Heap 架构：Google 官方博客源码确认
+- ✅ targetSdk >= 37 生效条件：官方文档确认
+- ⚠️ 4%/7.7%/9.1% 性能数字：来自 Google 官方博客，未找到 AOSP commit 一手源码
+- ⚠️ DeliQueue 与 RecyclerView 预取的具体交互细节：需要实机验证
+
+<!-- end AIW-源码调研-2026-05-14 -->
+
+
 ### RecyclerView 列表滑动性能深度优化 — Android 17 DeliQueue 与 MessageQueue 版本口径
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md
 - 类型：DeepResearch 调研结果
