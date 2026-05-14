@@ -5381,6 +5381,50 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T19:29:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-25.7-r8-keep-resource-version-boundary",
+      "section": "25.7",
+      "section_title": "R8 与资源优化",
+      "priority": 95,
+      "title": "R8 keep 规则示例与资源缩减版本边界需修正",
+      "description": "JSON 字段 keep 规则允许裁剪、JNI 示例缺少 includedescriptorclasses，且缺 AGP 8.12/9.0 optimized resource shrinking 与 Gson 2.11 consumer rules 版本边界",
+      "reason": "[Deep Tech Review] JSON 字段 keep 规则允许裁剪、JNI 示例缺少 includedescriptorclasses，且缺 AGP 8.12/9.0 optimized resource shrinking 与 Gson 2.11 consumer rules 版本边界",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "src/part5-app/ch25-power-size/07-r8-resource-optimization.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/07-r8-resource-optimization.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/Keep 规则错误",
+          "location": "L129-L132 JSON 字段 keep 示例",
+          "detail": "示例使用 `-keepclassmembers,allowshrinking class com.example.api.** { <fields>; }`，并解释为“字段名不能混淆；不用的模型仍可删除”。Android Developers `add-keep-rules` 文档明确 `keepclassmembernames` 等价于 `-keepclassmembers,allowshrinking`，只防止重命名，不防止成员被删除。JSON 反射字段通常没有静态引用，这条规则可能让字段在 release 包中被裁剪，导致反序列化缺字段。",
+          "suggestion": "按协议形态拆成两类示例：字段名即 wire name 时用 `-keepclassmembers class com.example.api.** { <fields>; }`，不要加 `allowshrinking`；全量使用 `@SerializedName` 时用 `-keepclassmembers,allowobfuscation class * { @com.google.gson.annotations.SerializedName <fields>; }`，并说明 annotation/consumer rules 的版本边界。"
+        },
+        {
+          "type": "源码错误/JNI keep 规则缺项",
+          "location": "L124-L127 JNI keep 示例",
+          "detail": "示例写成 `-keepclasseswithmembernames,allowoptimization class * { native <methods>; }`，缺少官方默认规则中的 `includedescriptorclasses`。Android Developers `keep-rule-examples` 文档给出的 native 方法规则是 `-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }`；当 native 方法或 native upcall 的签名包含应用自定义类型时，descriptor class 被改名会破坏 JNI 查找或回调。",
+          "suggestion": "把 JNI 示例改为官方默认规则形态，并补一句：若 native 层通过反射/FindClass/Call<type>Method 回调 Java/Kotlin 方法，还要为桥接类、回调方法和参数/返回值类型补 `includedescriptorclasses` 或更窄的 keep 规则。"
+        },
+        {
+          "type": "版本差异/工具链版本边界",
+          "location": "frontmatter L6、L89-L102、L145-L155",
+          "detail": "章节把适用范围写成 Android 10-16，但 R8 full mode、keep 规则语义和资源缩减主要由 AGP/R8/库版本决定。官方文档口径是：R8 full mode 从 AGP 8.0 默认；AGP 8.12/8.13 可通过 `android.r8.optimizedResourceShrinking=true` 启用 optimized resource shrinking，AGP 9.0+ 在 `isShrinkResources=true` 时自动启用；Gson 2.11.0 起随库提供 full mode 所需 keep rules。当前正文未覆盖这些版本边界。",
+          "suggestion": "在版本边界表中拆开 Android API、AGP/R8、库版本：AGP 8.0 full mode 默认；AGP 8.12/8.13 optimized resource shrinking 需显式开关；AGP 9.0+ 自动；Gson 2.11.0+ 优先依赖 consumer rules，旧版才补 app 侧 TypeToken/Signature 规则。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T20:31:00+08:00"
     }
   ],
   "metadata": {

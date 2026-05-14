@@ -36,9 +36,9 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -49,6 +49,13 @@ last_task6_at: "2026-05-14T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：写作层通过；未发现需直接修复的 L1/L2 正文问题；无新增回炉项，转 Task9 技术复核。"
 
+task2b_result: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-14
+last_task9_at: '2026-05-14T20:31:00+08:00'
+last_task9_review_log: 'logs/deep-review/2026-05-14-20-deep-review.md'
+task9_review_notes: '2026-05-14 20:31 Task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
 ---
 
 # R8 与资源优化
