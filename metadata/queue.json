@@ -2260,6 +2260,12 @@
           "location": "L544-L569 ProfilingManager 触发器内部判断逻辑",
           "detail": "Task9 复核公开 API reference 后，只能确认 ProfilingTrigger 常量与公开 artifact 口径；正文给出的 ProfilingManagerService.detectAnomalousBehavior()、PackageStats 字段和“至少两个条件”判断没有可核对的 API37 源码锚点。",
           "suggestion": "删除函数名、阈值和组合判断伪代码，或补 API37 源码/提交链接；保留为示意时必须明确“非平台源码”。"
+        },
+        {
+          "type": "原理断裂/待验证源码锚点",
+          "location": "L539-L569 ProfilingManager 触发器内部判断逻辑",
+          "detail": "2026-05-15 复审确认：L539-L569 仍保留 detectAnomalousBehavior()、PackageStats 字段、阈值与组合判断伪代码；L564 的 cold start 3 秒/stack sampling 也缺 API37 reference 锚点。",
+          "suggestion": "删除源码级函数名、阈值和组合判断，或补 API37 源码/提交链接；无法核实时改为“示意流程”，并以 ProfilingTrigger reference 为准。"
         }
       ],
       "added_by": "task6-review",
@@ -2270,7 +2276,10 @@
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T07:24:00+08:00"
+      "last_reviewed_at": "2026-05-15T07:35:58+08:00",
+      "severity": "P1",
+      "issue_type": "source-anchor-missing",
+      "last_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
     },
     {
       "id": "task6-review-21.5-installSplashScreen-order-2026-05-13",
@@ -5120,12 +5129,20 @@
           "location": "L172 Android Vitals excessive/stuck wake lock 定义",
           "detail": "Android Developers 2025-2026 文档把 excessive partial wake locks 口径限定在 non-exempt partial wake lock，并说明 audio、location、JobScheduler user-initiated 等系统持有且有明确用户收益的 wakelock 计算豁免；Play 质量门槛还涉及 28 天内 >5% sessions。正文缺少这些边界，容易把可豁免场景或前台用户可感知任务误判为 vitals 问题。",
           "suggestion": "补一段“Vitals 口径 vs 本地诊断口径”：本地仍可排查所有 Partial WakeLock；引用 Android Vitals 时必须写 non-exempt、后台/息屏条件、1h/2h 阈值、5% sessions/28 天门槛和豁免类别。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/指标口径缺失",
+          "location": "L176 Android Vitals excessive/stuck wake lock 定义",
+          "detail": "2026-05-15 复审确认：L176 仍只写 24h/2h 与单次 1h，未写 non-exempt、screen-off/background 或 FGS、5% sessions/28 天、audio/location/JobScheduler user-initiated 豁免。",
+          "suggestion": "补“Vitals 口径 vs 本地诊断口径”：本地可排查所有 Partial WakeLock；引用 Vitals 时必须写 non-exempt、后台/息屏或 FGS 条件、1h/2h 阈值、5% sessions/28 天门槛和豁免类别。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T14:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T14:20:00+08:00"
+      "last_reviewed_at": "2026-05-15T07:35:58+08:00",
+      "last_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
     },
     {
       "id": "task9-25-2-workmanager-backoff-duration-api-20260514",
@@ -6169,7 +6186,7 @@
     "last_updated_by": "task6-review",
     "pending": 120
   },
-  "last_updated": "2026-05-15T07:15:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 120
+  "last_updated": "2026-05-15T07:35:58+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 117
 }

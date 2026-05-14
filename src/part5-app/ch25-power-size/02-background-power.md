@@ -2,7 +2,7 @@
 title: "后台功耗治理"
 chapter: "25.2"
 section: "25.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
@@ -48,9 +48,9 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
@@ -61,12 +61,12 @@ task6_reviewed_date: "2026-05-14"
 last_task6_at: "2026-05-14T15:12:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 回炉项，送 Task9 技术复审。"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T15:33:00+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-15-deep-review.md
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 0 / P2 0；WorkManager setBackoffCriteria 示例使用 kotlin.time.Duration，API 签名不匹配。"
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T07:35:58+08:00"
+last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
+task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；WorkManager setBackoffCriteria 签名复核通过，FGS/后台定位/Job 配额口径与官方文档一致；满足 Task6 pass + queue 无 pending，自动晋升 finalized。"
 ---
 
 # 后台功耗治理

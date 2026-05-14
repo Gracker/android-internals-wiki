@@ -34,14 +34,20 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: "task6_pending"
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。"
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T07:35:58+08:00"
+last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
+task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 0；Android Vitals WakeLock 阈值仍缺 non-exempt、screen-off/background、5% sessions/28 天与豁免口径。"
 ---
 
 # 功耗诊断与分析方法

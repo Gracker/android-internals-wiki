@@ -1222,3 +1222,9 @@
 - **问题**：当前引用能支撑 staged rollout 的 `inProgress` → `halted`，但已全量后的 halt 能力、限制和既有安装用户不会自动降级的边界还缺官方资料；Task6 已标注回炉。
 - **建议**：由 Task2B 补 Play Console / Publishing API 资料；如果资料不足，把动作改为“修复包 + 服务端降级”为主。
 - **review 日志**：logs/review/2026-05-15-07-review.md
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-15
+- **类型**：数据缺失
+- **位置**：L600 / DeliQueue 实际数据结构补充
+- **问题**：`内存开销 ... 比旧单链表多约 20-30%` 给出了具体百分比，但 Android Developers Blog 和当前章节引用的 AOSP 路径没有提供这组量化口径。
+- **建议**：删除 20-30% 数字，或补充可复现测量条件（设备、队列长度、消息对象数量、heap/stack 统计方式）和来源链接。
