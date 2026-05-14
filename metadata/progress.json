@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 10,
-  "ready-for-review": 81,
+  "draft": 9,
+  "ready-for-review": 82,
   "finalized": 178,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -216,7 +216,7 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
-  "review_summary": "Task2A 2026-05-14 22:04：加工 25.9 功耗与包体积案例集，status → ready-for-review，进入 Task6。",
+  "review_summary": "Task2A 2026-05-14 23:08：加工 26.1 App 可观测性架构设计，status → ready-for-review，进入 Task6。",
   "task6_review_summary": {
     "l1_l2_fixes": 521,
     "l3_issues": 29,
@@ -807,8 +807,8 @@
   "total_review_sections": 102,
   "next_review_candidates": [],
   "ready_for_review": 72,
-  "last_updated": "2026-05-14T22:31:06+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T23:08:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -1976,6 +1976,14 @@
       "last_task9_at": "2026-05-14T22:31:06+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-22-deep-review.md",
       "task9_review_notes": "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。"
+    },
+    "26.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_task2a_at": "2026-05-14T23:08:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "file": "src/part5-app/ch26-observability/01-observability-architecture.md"
     }
   },
   "task2b_rounds": [
