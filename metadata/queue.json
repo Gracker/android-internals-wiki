@@ -4850,11 +4850,20 @@
           "location": "ANR 超时阈值表 / ANR 发生后的系统行为",
           "detail": "BroadcastReceiver timeout 缺少 Android 14+ CPU-starved 场景 10-20 秒 / 60-120 秒口径；ANR 后“向用户弹出对话框”的表述缺少前台可见、后台 / silent ANR 边界。",
           "suggestion": "按 Task9 技术结论和官方文档补齐版本与可见性边界；无法确认时降级为典型前台场景并标注系统差异。"
+        },
+        {
+          "type": "版本差异/可见性边界",
+          "location": "L102-L117 ANR timeout 阈值表与 ANR 后系统行为",
+          "detail": "本轮复核确认该缺口仍存在：BroadcastReceiver timeout 未覆盖 Android 14+ CPU-starved 10-20 秒 / 60-120 秒区间；ANR 后弹窗/kill 行为未区分前台可见、后台和 silent ANR。",
+          "suggestion": "按官方 ANR 文档与 AOSP TimeoutRecord/AnrHelper 路径补齐版本、前后台和可见性边界。"
         }
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-14T12:07:00+08:00",
-      "original_review_log": "logs/review/2026-05-14-12-review.md"
+      "original_review_log": "logs/review/2026-05-14-12-review.md",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-15T02:35:06+08:00",
+      "review_log": "logs/deep-review/2026-05-15-02-deep-review.md"
     },
     {
       "id": "task9-8-9-game-performance-gc-perfetto-trace-20260514",
@@ -5642,6 +5651,77 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T01:36:05+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task9-20260515-20.1-thread-stack-size-android",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 95,
+      "title": "Android 线程默认栈大小写成 Linux 8MB",
+      "description": "L131 将虚拟内存耗尽场景写成“每个线程占用 ~8MB 栈空间”。AOSP bionic android-16.0.0_r1 的 PTHREAD_STACK_SIZE_DEFAULT 为 (1MiB - signal stack)，不能用 Linux/glibc 8MB 默认值描述 Android。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/数据错误",
+          "location": "L131 虚拟内存耗尽：线程数过多（每个线程占用 ~8MB 栈空间）",
+          "detail": "Android bionic 默认线程栈不是 Linux/glibc 常见 8MB。android-16.0.0_r1 bionic/libc/bionic/pthread_internal.h 定义 PTHREAD_STACK_SIZE_DEFAULT 为 (1 * 1024 * 1024) - SIGNAL_STACK_SIZE_WITHOUT_GUARD。",
+          "suggestion": "改为 Android 默认线程栈约 1MiB（再扣除 alternate signal stack），并说明主线程、Java Thread 自定义 stackSize、native pthread_attr_setstacksize 以及厂商/版本差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T02:35:06+08:00"
+    },
+    {
+      "id": "task9-20260515-26.2-native-signal-applicationexitinfo",
+      "section": "26.2",
+      "section_title": "Crash 上报体系搭建",
+      "priority": 85,
+      "title": "Native Crash 持久化安全边界与 ApplicationExitInfo 补偿链路缺失",
+      "description": "P1：章节把 Java UncaughtExceptionHandler 与 Native signal handler 的落盘路径写成同一套“崩溃当下 fsync + rename”；同时下次启动扫描只覆盖 SDK crash store，遗漏 Android 11+ ApplicationExitInfo 对 ANR/native tombstone trace 的补偿入口。",
+      "issue_type": "principle-chain-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/02-crash-reporting.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L141-L155 持久化 / 上报路径",
+          "detail": "“崩溃当下只做原子写入”适合 Java handler 的最小 envelope，但 Native signal handler 不能按普通 SDK 路径做 JSON 构造、加锁、复杂分配或网络；Crashpad/Breakpad 通常走 minidump/out-of-process handler 或极小 async-signal-safe 路径。",
+          "suggestion": "把 Java Crash、Native Crash、ANR/系统杀进程分成三条落盘路径：Java handler 可写最小文件并委托原 handler；Native 使用 Crashpad/Breakpad 或系统 tombstone；复杂补上下文放到下次启动。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/版本差异",
+          "location": "L153-L166 下次启动扫描 crash store",
+          "detail": "Android 11(API 30)+ ApplicationExitInfo 可在下次启动查询历史退出；getTraceInputStream 通常可取 ANR trace，REASON_CRASH_NATIVE 可返回 tombstone protobuf（API/缓冲覆盖有边界）。章节没有把该系统补偿入口纳入 Crash 上报闭环。",
+          "suggestion": "补充 API 30+ getHistoricalProcessExitReasons()/ApplicationExitInfo 的扫描、去重和与 SDK envelope 合并规则；说明 Android 10 无该能力、trace 可能为 null。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T02:35:06+08:00"
     }
   ],
   "metadata": {

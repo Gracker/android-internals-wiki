@@ -1,8 +1,8 @@
 {
   "total": 271,
   "draft": 6,
-  "ready-for-review": 81,
-  "finalized": 184,
+  "ready-for-review": 80,
+  "finalized": 185,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
   "task9_reviewed_by": "openclaw-task9",
@@ -226,7 +226,7 @@
     "src/part3-tools/ch19-apm/23-network-apm-internals.md",
     "src/part5-app/ch26-observability/02-crash-reporting.md"
   ],
-  "review_summary": "Task9 2026-05-15 01:36：review 26.4、19.13、19.23；P0 2 / P1 0 / P2 3；26.4 自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-15 02:35：review 20.1、22.2、26.2；P0 1 / P1 3 / P2 1；22.2 自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 545,
     "l3_issues": 29,
@@ -446,9 +446,9 @@
       "p3": 0
     },
     "20.1": {
-      "p0": 2,
-      "p1": 3,
-      "p2": 0,
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
       "p3": 0
     },
     "14.9": {
@@ -678,7 +678,7 @@
       "p3": 0
     },
     "22.2": {
-      "p0": 1,
+      "p0": 0,
       "p1": 0,
       "p2": 0,
       "p3": 0
@@ -832,13 +832,19 @@
       "reviewed_at": "2026-05-15T00:20:00+08:00",
       "log": "logs/deep-review/2026-05-15-00-deep-review.md",
       "summary": "P2 3：Trace.beginSection sectionName 长度/高基数边界、P90/P99 样本量阈值口径、26.4/26.5 draft 交叉引用。"
+    },
+    "26.2": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 0,
+      "p3": 0
     }
   },
   "total_review_sections": 108,
   "next_review_candidates": [],
-  "ready_for_review": 81,
-  "last_updated": "2026-05-15T02:12:00+08:00",
-  "last_updated_by": "task6-draft-review",
+  "ready_for_review": 80,
+  "last_updated": "2026-05-15T02:35:06+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-15T02:12:00+08:00",
     "log": "logs/review/2026-05-15-02-review.md",
@@ -851,8 +857,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-15T01:36:05+08:00",
-  "ready_to_publish": 184,
+  "task9_last_review": "2026-05-15T02:35:06+08:00",
+  "ready_to_publish": 185,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1211,13 +1217,16 @@
       "pipeline_stage": "task2b_pending",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-15T02:35:06+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
       "task6_state": "reviewed",
       "task2b_state": "pending",
       "last_task6_at": "2026-05-14T12:07:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-12-review.md"
+      "last_task6_review_log": "logs/review/2026-05-14-12-review.md",
+      "task9_state": "reviewed",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "21.7": {
       "status": "ready-for-review",
@@ -1307,19 +1316,20 @@
       "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md"
     },
     "22.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "queue_priority": 95,
-      "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-15T02:35:06+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task6_at": "2026-05-15T02:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-02-review.md"
+      "last_task6_review_log": "logs/review/2026-05-15-02-review.md",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "22.1": {
       "status": "ready-for-review",
@@ -2075,12 +2085,19 @@
     },
     "26.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task6_at": "2026-05-15T02:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-02-review.md"
+      "last_task6_review_log": "logs/review/2026-05-15-02-review.md",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-15T02:35:06+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9",
+      "task2b_state": "pending",
+      "queue_priority": 85
     }
   },
   "task2b_rounds": [
@@ -2102,59 +2119,59 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
-    "at": "2026-05-15T01:36:05+08:00",
-    "log": "logs/deep-review/2026-05-15-01-deep-review.md",
+    "at": "2026-05-15T02:35:06+08:00",
+    "log": "logs/deep-review/2026-05-15-02-deep-review.md",
     "sections": [
-      "26.4",
-      "19.13",
-      "19.23"
+      "20.1",
+      "22.2",
+      "26.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/04-anr-monitoring.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+      "src/part5-app/ch20-stability/01-stability-overview.md",
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+      "src/part5-app/ch26-observability/02-crash-reporting.md"
     ],
-    "p0": 2,
-    "p1": 0,
-    "p2": 3,
+    "p0": 1,
+    "p1": 3,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": [
-      "26.4"
+      "22.2"
     ]
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-01-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-02-deep-review.md",
   "last_task9_sections": [
-    "26.4",
-    "19.13",
-    "19.23"
+    "20.1",
+    "22.2",
+    "26.2"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T01:36:05+08:00",
-    "log": "logs/deep-review/2026-05-15-01-deep-review.md",
+    "at": "2026-05-15T02:35:06+08:00",
+    "log": "logs/deep-review/2026-05-15-02-deep-review.md",
     "sections": [
-      "26.4",
-      "19.13",
-      "19.23"
+      "20.1",
+      "22.2",
+      "26.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/04-anr-monitoring.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+      "src/part5-app/ch20-stability/01-stability-overview.md",
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+      "src/part5-app/ch26-observability/02-crash-reporting.md"
     ],
-    "p0": 2,
-    "p1": 0,
-    "p2": 3,
+    "p0": 1,
+    "p1": 3,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": [
-      "26.4"
+      "22.2"
     ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch26-observability/04-anr-monitoring.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "src/part5-app/ch20-stability/01-stability-overview.md",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+    "src/part5-app/ch26-observability/02-crash-reporting.md"
   ],
   "total_review_files": 108,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
@@ -2191,9 +2208,9 @@
     "notes": "26.2 小修 3 处；19.23 写作层复审 clean，既有 Task9 技术项等待 Task2B；22.2 修正文首元叙述并清理重复 frontmatter，等待 Task9 复核。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch26-observability/04-anr-monitoring.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "src/part5-app/ch20-stability/01-stability-overview.md",
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+    "src/part5-app/ch26-observability/02-crash-reporting.md"
   ],
-  "last_task9_at": "2026-05-15T01:36:05+08:00"
+  "last_task9_at": "2026-05-15T02:35:06+08:00"
 }
