@@ -5766,14 +5766,14 @@
       "added_at": "2026-05-15T03:25:00+08:00"
     },
     {
-      "id": "task9-20260515-26.6-abtest-statistics-quantile-boundary",
+      "id": "task6-20260515-26.6-ab-testing-regression-l3-rework",
       "section": "26.6",
       "section_title": "A/B Test 与性能回归防护",
-      "priority": 85,
-      "title": "性能 A/B Test 统计模型与分位值归因边界缺失",
-      "description": "P1：章节适用范围覆盖 Android 10-16，但 Macrobenchmark `frameOverrunMs` 未标 API 31+ 边界；性能实验样本量缺少方差/分布/检验对象；P90 归因使用“样本量 × P90 delta”这一非线性统计量不成立的公式。",
-      "reason": "[Deep Tech Review] 26.6 的 A/B Test 样本量、Macrobenchmark 帧指标版本边界、P90 分群贡献算法存在重要技术缺口，需 Task2B 回炉补统计模型和版本说明。",
-      "issue_type": "statistics-version-boundary",
+      "priority": 90,
+      "title": "A/B Test 与性能回归防护：统计模型与分位值归因边界回炉",
+      "description": "Task6 文稿审查不裁决技术真伪，已将 Task9 的 P1 风险转成正文标注：样本量统计模型缺历史波动/检验对象，FrameTimingMetric API 31+ 边界需补，P90 贡献度算法需重做为可复核口径。",
+      "reason": "[review回炉] Task6 草稿审查发现 L3 内容支撑问题；26.6 的样本量统计模型、FrameTimingMetric 版本边界、P90/P99 归因算法需 Task2B 结合 Task9 意见回炉。",
+      "issue_type": "task6-l3-content-support",
       "severity": "P1",
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
@@ -5783,8 +5783,8 @@
         "src/part5-app/ch26-observability/06-ab-testing-regression.md"
       ],
       "material_paths": [
-        "intake/research-gaps.md",
         "intake/suggestions.md",
+        "logs/review/2026-05-15-05-review.md",
         "logs/deep-review/2026-05-15-04-deep-review.md"
       ],
       "review_issues": [
@@ -5808,23 +5808,50 @@
           "location": "L177 自动归因贡献度排序",
           "detail": "“样本量 × P90 变化幅度 = 对全量退化的贡献”对分位值不成立。P90 是非线性统计量，分群 P90 的加权变化不能相加还原全量 P90；这个公式只适合均值、计数或比例类指标的近似贡献。",
           "suggestion": "把归因算法分成两类：均值/比例用 `样本量 × delta` 排序；P90/P99 用原始样本重算 counterfactual 分布、tail violation count（超过阈值样本数）、mean excess over threshold 或 bootstrap 估计分群贡献。"
+        },
+        {
+          "severity": "P1",
+          "type": "需补充素材",
+          "location": "§性能 A/B Test 的设计与统计方法 / 样本量字段",
+          "detail": "正文只列 baseline_value、minimum_detectable_effect、alpha、power，缺历史方差或完整分布、统计检验对象、allocation ratio 与关键分群最小样本量。",
+          "suggestion": "Task2B 结合 Task9 意见补统计模型边界；均值、比例、P90/P99 分开说明，不在 Task6 中补写技术结论。"
+        },
+        {
+          "severity": "P1",
+          "type": "需确认",
+          "location": "§性能回归自动检测 / Macrobenchmark 指标口径",
+          "detail": "适用范围覆盖 Android 10-16，但 `frameOverrunMs` 版本边界未在正文写清。",
+          "suggestion": "Task2B/Task9 核对并补充 API 31+ 说明，以及 Android 10/11 的替代门禁指标。"
+        },
+        {
+          "severity": "P1",
+          "type": "需确认",
+          "location": "§性能劣化的自动归因 / 贡献度排序",
+          "detail": "“样本量 × P90 delta”用于分位值贡献归因存在统计口径风险，当前文本容易误导读者。",
+          "suggestion": "Task2B/Task9 补可复核的尾部贡献算法，如阈值违约数、原始样本 counterfactual 或 bootstrap 口径。"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T04:28:44+08:00"
+      "added_by": "task6-review",
+      "added_at": "2026-05-15T05:15:00+08:00",
+      "original_review_log": "logs/review/2026-05-15-05-review.md",
+      "supersedes_queue_id": "task9-20260515-26.6-abtest-statistics-quantile-boundary",
+      "review_sources": [
+        "task9-deep-tech-review",
+        "task6-draft-review"
+      ]
     }
   ],
   "metadata": {
     "total_entries": 181,
     "p0_count": 93,
-    "last_updated": "2026-05-15T04:28:44+08:00",
-    "updated_by": "task9-deep-tech-review",
+    "last_updated": "2026-05-15T05:15:00+08:00",
+    "updated_by": "task6-review",
     "pending_entries": 110,
     "updated_date": "2026-05-15",
-    "last_updated_by": "task9-deep-tech-review",
+    "last_updated_by": "task6-review",
     "pending": 110
   },
-  "last_updated": "2026-05-15T04:28:44+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-15T05:15:00+08:00",
+  "last_updated_by": "task6-review",
   "pending": 110
 }

@@ -1111,3 +1111,22 @@
 - **问题**：正文已经提醒“边看边停会抬高误判概率”，但没有给出频繁看数、多分群、多护栏指标同时检查时的校正办法；性能实验上线后很容易每天看数并按设备、系统、国家多维拆分，假阳性会被放大。
 - **建议**：补充预注册中途检查窗口、sequential testing / alpha spending，或至少要求多重比较校正/FDR 与连续异常窗口；A/A Test 除主指标无系统性差异外，也应检查关键分群的 SRM 和假阳性率。
 
+## [Task6 Review] 26.6 A/B Test 与性能回归防护 — 2026-05-15
+- **类型**：需补充素材
+- **位置**：§性能 A/B Test 的设计与统计方法 / 样本量字段
+- **问题**：样本量计算只列 `baseline_value`、`minimum_detectable_effect`、`alpha`、`power`，缺历史方差或完整分布、统计检验对象、allocation ratio 与关键分群最小样本量。
+- **建议**：Task2B 结合 Task9 意见补统计模型边界；均值、比例、P90/P99 分开说明。
+- **review 日志**：logs/review/2026-05-15-05-review.md
+
+- **类型**：需确认
+- **位置**：§性能回归自动检测 / Macrobenchmark 指标口径
+- **问题**：适用范围覆盖 Android 10-16，但 `FrameTimingMetric.frameOverrunMs` 的 Android 12/API 31+ 边界未在正文写清。
+- **建议**：Task2B/Task9 核对后补版本边界；Android 10/11 门禁口径补替代指标。
+- **review 日志**：logs/review/2026-05-15-05-review.md
+
+- **类型**：需确认
+- **位置**：§性能劣化的自动归因 / 贡献度排序
+- **问题**：`样本量 × P90 delta` 用于 P90/P99 分位值归因存在统计口径风险，当前文本容易误导读者。
+- **建议**：Task2B/Task9 补可复核的尾部贡献算法，如阈值违约数、原始样本 counterfactual 或 bootstrap 口径。
+- **review 日志**：logs/review/2026-05-15-05-review.md
+
