@@ -196,12 +196,12 @@
     "src/part5-app/ch20-stability/09-stability-case-studies.md",
     "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-14 13:30: reviewed 20.8, 20.9, 24.8; P0 1, P1 7, P2 0; auto-finalized 0; all returned to Task2B.",
+  "review_summary": "Task6 2026-05-14 14:09: reviewed 24.8; L1/L2 fixes 11; no new Task6 rework; Task9 P1 remains pending in queue.",
   "task6_review_summary": {
-    "l1_l2_fixes": 446,
+    "l1_l2_fixes": 457,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 471,
+    "total_issues": 482,
     "auto_promotions": 10
   },
   "issues_by_section": {
@@ -716,23 +716,31 @@
       "p3": 0,
       "reviewed_at": "2026-05-14T13:30:11+08:00",
       "log": "logs/deep-review/2026-05-14-13-deep-review.md",
-      "summary": "P1 1：PreferenceWriteBuffer 示例存在竞态，可能清掉并发新增的偏好写入。"
+      "summary": "P1 1：PreferenceWriteBuffer 示例存在竞态，可能清掉并发新增的偏好写入。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-14T14:09:00+08:00",
+      "task6_log": "logs/review/2026-05-14-14-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；Task9 既有 P1 代码竞态仍由 Task2B 处理。"
     }
   },
   "total_review_sections": 93,
   "next_review_candidates": [],
   "ready_for_review": 70,
-  "last_updated": "2026-05-14T13:30:11+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-14T14:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T13:06:00+08:00",
-    "log": "logs/review/2026-05-14-13-review.md",
+    "at": "2026-05-14T14:09:00+08:00",
+    "log": "logs/review/2026-05-14-14-review.md",
     "sections": [
-      "24.7"
+      "24.8"
     ],
-    "l1_l2_fixes": 13,
+    "l1_l2_fixes": 11,
     "l3_l4_issues": 0,
-    "auto_promotions": 1
+    "auto_promotions": 0,
+    "note": "本轮仅 24.8 满足 task6_state=pending；无新增 Task6 回炉，Task9 P1 queue 保持 pending。"
   },
   "task9_last_review": "2026-05-14T13:30:11+08:00",
   "ready_to_publish": 177,
@@ -1655,7 +1663,15 @@
       "last_task9_at": "2026-05-14T13:30:11+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "queue_priority": 85,
-      "task2b_state": "pending"
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-14",
+      "last_task6_at": "2026-05-14T14:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-14-review.md",
+      "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "title": "I/O 与网络优化案例集"
     }
   },
   "task2b_rounds": [
@@ -1719,15 +1735,27 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part5-app/ch24-io-network/07-offline-first.md"
   ],
-  "total_review_files": 91,
+  "total_review_files": 93,
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
   "last_task2a_section": "24.4",
   "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
-  "last_task6_review": "logs/review/2026-05-14-12-review.md",
+  "last_task6_review": "logs/review/2026-05-14-14-review.md",
   "last_task6_sections": [
-    "20.1"
+    "24.8"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch20-stability/01-stability-overview.md"
-  ]
+    "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
+  ],
+  "last_task6_at": "2026-05-14T14:09:00+08:00",
+  "last_task6_review_detail": {
+    "at": "2026-05-14T14:09:00+08:00",
+    "log": "logs/review/2026-05-14-14-review.md",
+    "sections": [
+      "24.8"
+    ],
+    "l1_l2_fixes": 11,
+    "l3_l4_issues": 0,
+    "auto_promotions": 0,
+    "note": "本轮仅 24.8 满足 task6_state=pending；无新增 Task6 回炉，Task9 P1 queue 保持 pending。"
+  }
 }
