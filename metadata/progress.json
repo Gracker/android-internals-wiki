@@ -234,12 +234,12 @@
     "src/part5-app/ch20-stability/07-exception-architecture.md",
     "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
-  "review_summary": "Task6 2026-05-15 06:05：review 20.7；L1/L2 小修 6 处，Task9 风险信号 4 处已标注并合并 queue(priority 90/95)。",
+  "review_summary": "Task6 2026-05-15 07: review 26.7；L1/L2 小修 2 处，Task9 风险信号 3 处已标注并合并 queue(priority 90)。",
   "task6_review_summary": {
-    "l1_l2_fixes": 559,
-    "l3_issues": 36,
+    "l1_l2_fixes": 561,
+    "l3_issues": 39,
     "l4_issues": 5,
-    "total_issues": 591,
+    "total_issues": 596,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -866,19 +866,19 @@
   "total_review_sections": 112,
   "next_review_candidates": [],
   "ready_for_review": 83,
-  "last_updated": "2026-05-15T06:28:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-15T07:15:00+08:00",
+  "last_updated_by": "task6-review",
   "task6_last_review": {
-    "at": "2026-05-15T06:05:00+08:00",
-    "log": "logs/review/2026-05-15-06-review.md",
+    "at": "2026-05-15T07:15:00+08:00",
+    "log": "logs/review/2026-05-15-07-review.md",
     "sections": [
-      "20.7"
+      "26.7"
     ],
     "files": [
-      "src/part5-app/ch20-stability/07-exception-architecture.md"
+      "src/part5-app/ch26-observability/07-release-quality-gate.md"
     ],
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 4,
+    "l1_l2_fixes": 2,
+    "l3_l4_issues": 3,
     "auto_promotions": 0,
     "result": "needs-rework"
   },
@@ -2233,29 +2233,29 @@
   "last_task2a_at": "2026-05-15T06:18:00+08:00",
   "last_task2a_section": "26.7",
   "last_task2a_file": "src/part5-app/ch26-observability/07-release-quality-gate.md",
-  "last_task6_review": "logs/review/2026-05-15-06-review.md",
+  "last_task6_review": "logs/review/2026-05-15-07-review.md",
   "last_task6_sections": [
-    "20.7"
+    "26.7"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch20-stability/07-exception-architecture.md"
+    "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
-  "last_task6_at": "2026-05-15T06:05:00+08:00",
+  "last_task6_at": "2026-05-15T07:15:00+08:00",
   "last_task6_review_detail": {
     "sections": [
-      "20.7"
+      "26.7"
     ],
     "files": [
-      "src/part5-app/ch20-stability/07-exception-architecture.md"
+      "src/part5-app/ch26-observability/07-release-quality-gate.md"
     ],
     "mode": "首次 review",
     "result": "needs-rework",
-    "l1_l2_fixes": 6,
-    "l3_issues": 4,
+    "l1_l2_fixes": 2,
+    "l3_issues": 3,
     "l4_issues": 0,
     "queue_priority": 90,
-    "review_log": "logs/review/2026-05-15-06-review.md",
-    "at": "2026-05-15T06:05:00+08:00",
+    "review_log": "logs/review/2026-05-15-07-review.md",
+    "at": "2026-05-15T07:15:00+08:00",
     "auto_promotions": 0
   },
   "last_task9_reviewed_files": [

@@ -8,7 +8,7 @@ last_verified: "2026-05-15"
 last_verified_against: "Android Developers docs + Google Play docs + Clippings structure references"
 confidence: medium
 drafted_date: "2026-05-15"
-polish_count: 0
+polish_count: 1
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
@@ -33,7 +33,13 @@ sources:
 tags: [quality-gate, release, canary, rollback]
 related_chapters: ["26.6", "26.3", "15.10"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_result: needs-rework
+last_task6_at: "2026-05-15T07:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-15-07-review.md"
+task6_review_notes: "2026-05-15 Task6 07: needs-rework。完成 L1/L2 小修 2 处；沿用 Task9 风险信号标注 3 处并合并 queue，交 Task2B。"
 task9_state: reviewed
 task2b_state: pending
 task9_reviewed_date: '2026-05-15'
@@ -41,7 +47,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-15T06:28:00+08:00'
 last_task9_review_log: logs/deep-review/2026-05-15-06-deep-review.md
 task9_result: needs-rework
-task9_review_notes: 2026-05-15 Task9 06: needs-rework。P1 1：Macrobenchmark TTFD / FrameTimingMetric overrun 版本边界未写清；P2 2：Vitals 慢信号口径、全量 halt 资料与限制。已写入 logs/deep-review/2026-05-15-06-deep-review.md。
+task9_review_notes: "2026-05-15 Task9 06: needs-rework。P1 1：Macrobenchmark TTFD / FrameTimingMetric overrun 版本边界未写清；P2 2：Vitals 慢信号口径、全量 halt 资料与限制。已写入 logs/deep-review/2026-05-15-06-deep-review.md。"
 ---
 
 # 发版质量门禁
@@ -98,7 +104,9 @@ checklist 的阈值要按版本阶段分层。release candidate 阶段可以用�
 
 官方 benchmark CI 文档说明，benchmark 库会输出测量 JSON，并在设备目录里生成 profiling trace；Macrobenchmark 会按测量迭代输出 Perfetto trace。CI 要把这些产物按 commit、build id、设备、场景和测试名归档，后端才有条件做趋势对比。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
 
-Macrobenchmark 指标适合做候选包卡点：`StartupTimingMetric` 观察 TTID / TTFD，`FrameTimingMetric` 观察帧耗时和 overrun，`TraceSectionMetric` 观察业务自定义阶段，`PowerMetric` 在支持设备上观察能耗。26.6 节已经展开回归检测，本节只把它接入发版流程。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+Macrobenchmark 指标适合做候选包卡点：`StartupTimingMetric` 观察 TTID / TTFD，`FrameTimingMetric` 观察帧耗时和 overrun，`TraceSectionMetric` 观察业务自定义阶段，`PowerMetric` 在支持设备上观察能耗。26.6 节已经展开回归检测，这里关注这些指标进入发版流程后的门禁位置。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+
+[需确认: `StartupTimingMetric` 的 TTFD 采集前提、Android 10 / API 29 可用性，以及 `FrameTimingMetric.frameOverrunMs` 的 API 31+ 边界需按 Task9 问题单补齐；Task6 不裁决指标可用性。]
 
 这段配置只演示发布门禁的表达方式：每条规则都绑定场景、设备组、基线和动作。
 
@@ -150,6 +158,8 @@ Google Play staged rollout 支持把更新先发布给一部分用户，然后�
 | 5%-20% | 1-2 个核心流量周期 | 低端机、老系统、弱网分群通过 | 限制渠道或设备范围 |
 | 50%-100% | 至少覆盖高峰时段 | Vitals / APM / 客服反馈没有同源异常 | halt rollout 或发修复包 |
 
+[需补充素材: Vitals 使用 28 天窗口，属于慢信号；灰度升档 / 暂停应优先用 APM、Crash / ANR 上报、启动和帧率分群等快信号。Task2B 需按 Task9 问题单补 fast signals / slow signals 边界。]
+
 APM 数据要和发布平台双向对账。发布平台告诉 APM 当前 version、rollout fraction、渠道和实验参数；APM 把核心指标、异常分群和上报质量回写到发布单。缺少这一步，release owner 会在几个看板之间人工对数，决策会变慢。
 
 [自动发现] 灰度指标还要保护数据质量。上报组件章节把采样、存储、上报、容灾拆成四块；发布门禁里要把上传成功率、事件丢弃数、配置命中率、采样版本纳入护栏。数据管道异常时，正确动作是暂停判断，而不是继续放量。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
@@ -169,6 +179,8 @@ Google Play Developer API 的 track release 模型包含 `draft`、`inProgress`�
 | 低端机启动或慢帧明显退化 | 可通过设备 / 渠道限制降低影响 | 暂停升档，只对安全分群继续观察 |
 | 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户仍会拿到问题版本 | 使用商店 halt 能力或尽快发修复包，配合服务端降级 |
 | 监控数据异常但客服和 Vitals 未同步异常 | 可能是采样或上报故障 | 先修数据管道，不用问题指标触发回滚 |
+
+[需确认: 已 100% 发布后的商店 halt 能力、限制和既有安装用户不会自动降级的边界，需要 Task2B 补官方资料；否则应改为“修复包 + 服务端降级”为主。]
 
 版本回滚要有证据包。证据包至少包含：版本、build id、rollout fraction、异常指标、基线值、当前值、样本量、影响用户数、Top 分群、Top crash / ANR 组、trace / 日志样本、配置快照、已执行动作和下一步 owner。
 
