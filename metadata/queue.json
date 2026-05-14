@@ -4680,19 +4680,80 @@
       "added_at": "2026-05-14T08:47:50+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+    },
+    {
+      "id": "task9-22-5-scalex-example-state-20260514",
+      "section": "22.5",
+      "priority": 85,
+      "title": "scaleX 替代宽高动画示例缺少初始/目标状态",
+      "description": "L116-L122 示例从默认 scaleX=1f 直接 animate().scaleX(1.0f)，复制后通常不会产生展开动画，无法证明“用 transform 替代每帧改宽高”的建议。",
+      "issue_type": "code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/05-animation-performance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "代码示例错误",
+          "location": "L116-L122 属性动画 scaleX 示例",
+          "detail": "示例没有设置起始 scaleX 或明确当前 View 已处于 collapsed 状态，默认状态下 scaleX(1.0f) 是 no-op。",
+          "suggestion": "补成可执行示例：先设置 view.scaleX = 0f / 记录 collapsed 状态，再 animate().scaleX(1f)；或改成 animate().scaleX(targetScale) 并说明初始状态。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T10:20:00+08:00"
+    },
+    {
+      "id": "task9-24-4-httpdns-sync-lookup-boundary-20260514",
+      "section": "24.4",
+      "priority": 85,
+      "title": "HTTPDNS 自定义 Dns 同步查询边界缺失",
+      "description": "L176-L185 的 Dns.lookup() 骨架直接调用 httpDns.query(hostname)，但 OkHttp Dns.lookup 是同步回调且要求并发安全；若这里实时发 HTTPDNS 网络请求，可能阻塞 OkHttp 建连、递归使用同一 client 或放大弱网延迟。",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/04-network-architecture.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L173-L188 HTTPDNS 自定义 Dns 骨架",
+          "detail": "缺少“lookup 只读本地缓存 / 异步刷新 HTTPDNS / 独立 bootstrap client 或系统 DNS 启动路径 / 并发安全”的执行边界。",
+          "suggestion": "把示例改为读取内存/磁盘缓存并兜底 Dns.SYSTEM；另起异步预取与失败隔离流程，说明 HTTPDNS 服务自身不能依赖同一个自定义 Dns 递归解析。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T10:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 149,
-    "p0_count": 75,
-    "last_updated": "2026-05-14T08:11:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 89,
+    "total_entries": 154,
+    "p0_count": 78,
+    "last_updated": "2026-05-14T10:20:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 94,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task6-review",
-    "pending": 89
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 94
   },
-  "last_updated": "2026-05-14T08:11:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 89
+  "last_updated": "2026-05-14T10:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 94
 }

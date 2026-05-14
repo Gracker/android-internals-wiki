@@ -1,8 +1,8 @@
 {
   "total": 269,
   "draft": 22,
-  "ready-for-review": 72,
-  "finalized": 175,
+  "ready-for-review": 71,
+  "finalized": 176,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
@@ -188,7 +188,7 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md",
     "src/part5-app/ch24-io-network/05-protocol-optimization.md"
   ],
-  "review_summary": "Task6 2026-05-14 10: reviewed 24.4/24.5; L1/L2 fixes 15; L3/L4 0; auto-finalized 0; both remain task9_pending.",
+  "review_summary": "Task9 2026-05-14 10: reviewed 22.5/24.4/24.5; P0 0 / P1 2 / P2 4; auto-finalized 24.5; 22.5、24.4 回 task2b_pending。",
   "task6_review_summary": {
     "l1_l2_fixes": 424,
     "l3_issues": 28,
@@ -438,9 +438,9 @@
       "p3": 0
     },
     "22.5": {
-      "p0": 1,
-      "p1": 0,
-      "p2": 0,
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
       "p3": 0
     },
     "22.6": {
@@ -650,13 +650,36 @@
       "p1": 0,
       "p2": 2,
       "p3": 0
+    },
+    "24.4": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0
+    },
+    "24.5": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
     }
   },
   "total_review_sections": 89,
-  "next_review_candidates": [],
-  "ready_for_review": 66,
-  "last_updated": "2026-05-14T10:11:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "next_review_candidates": [
+    {
+      "section": "20.8",
+      "title": "崩溃聚合与归因分析",
+      "file": "src/part5-app/ch20-stability/08-crash-aggregation.md"
+    },
+    {
+      "section": "20.9",
+      "title": "稳定性治理案例集",
+      "file": "src/part5-app/ch20-stability/09-stability-case-studies.md"
+    }
+  ],
+  "ready_for_review": 71,
+  "last_updated": "2026-05-14T10:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-14T10:11:00+08:00",
     "log": "logs/review/2026-05-14-10-review.md",
@@ -668,8 +691,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T08:47:50+08:00",
-  "ready_to_publish": 172,
+  "task9_last_review": "2026-05-14T10:20:00+08:00",
+  "ready_to_publish": 176,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1551,57 +1574,55 @@
   "last_task2a_processed_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
   "last_task2a_processed_date": "2026-05-14T09:21:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T08:47:50+08:00",
-    "log": "logs/deep-review/2026-05-14-08-deep-review.md",
+    "at": "2026-05-14T10:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-10-deep-review.md",
     "sections": [
-      "22.2",
-      "20.1",
-      "22.3",
-      "24.3"
+      "22.5",
+      "24.4",
+      "24.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "src/part5-app/ch20-stability/01-stability-overview.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part5-app/ch24-io-network/03-serialization-performance.md"
+      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md",
+      "src/part5-app/ch24-io-network/05-protocol-optimization.md"
     ],
-    "p0": 6,
-    "p1": 4,
-    "p2": 5,
-    "auto_finalized": []
+    "p0": 0,
+    "p1": 2,
+    "p2": 4,
+    "auto_finalized": [
+      "24.5"
+    ]
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-08-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-10-deep-review.md",
   "last_task9_sections": [
-    "22.2",
-    "20.1",
-    "22.3",
-    "24.3"
+    "22.5",
+    "24.4",
+    "24.5"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T08:47:50+08:00",
-    "log": "logs/deep-review/2026-05-14-08-deep-review.md",
+    "at": "2026-05-14T10:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-10-deep-review.md",
     "sections": [
-      "22.2",
-      "20.1",
-      "22.3",
-      "24.3"
+      "22.5",
+      "24.4",
+      "24.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "src/part5-app/ch20-stability/01-stability-overview.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part5-app/ch24-io-network/03-serialization-performance.md"
+      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md",
+      "src/part5-app/ch24-io-network/05-protocol-optimization.md"
     ],
-    "p0": 6,
-    "p1": 4,
-    "p2": 5,
-    "auto_finalized": []
+    "p0": 0,
+    "p1": 2,
+    "p2": 4,
+    "auto_finalized": [
+      "24.5"
+    ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-    "src/part5-app/ch20-stability/01-stability-overview.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch24-io-network/03-serialization-performance.md"
+    "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md",
+    "src/part5-app/ch24-io-network/05-protocol-optimization.md"
   ],
   "total_review_files": 89,
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
