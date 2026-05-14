@@ -33,7 +33,12 @@ sources:
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_result: needs-rework
+last_task6_at: "2026-05-15T05:15:00+08:00"
+task6_review_notes: "2026-05-15 Task6 05:15：needs-rework。完成 L1/L2 小修 4 处；L3 技术/证据边界已标注并合并 queue，交 Task2B。"
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
@@ -95,6 +100,8 @@ Firebase A/B Testing 的 Remote Config 实验提供了一个可参照的产品�
 
 性能实验的统计口径建议采用四个字段描述：
 
+[需补充素材: 样本量计算还缺历史方差或完整分布、统计检验对象、allocation ratio 与关键分群最小样本量，需 Task2B 结合 Task9 意见补齐边界。]
+
 - `baseline_value`: 对照组当前值，例如首页冷启动 TTFD P90 为 1800 ms。
 - `minimum_detectable_effect`: 业务上值得采用的最小变化，例如 P90 降低 5% 才算有效收益。
 - `alpha`: 显著性水平，常见取值 0.05，用来限制误判“有差异”的概率。
@@ -119,6 +126,8 @@ Android 官方性能测试文档把 runtime performance 分成 local testing 和
 | 分群异常 | Android 13 + 4 GB 内存设备慢帧率翻倍 | 全量指标被平均值盖住的设备问题 | 限制放量范围，派发给相关模块 |
 
 Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 会输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`；`FrameTimingMetric` 会输出 `frameOverrunMs` 和 `frameDurationCpuMs`；`TraceSectionMetric` 可以按自定义 trace section 统计次数和耗时；`PowerMetric` 可以在支持的 Pixel 设备上记录测试期间的能耗变化。官方文档明确 benchmark 会输出 JSON 和 Perfetto trace 文件，这些产物应该进入 CI 存档，而不是只留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
+
+[需确认: `FrameTimingMetric` 的 `frameOverrunMs` 需标注 Android 12/API 31+ 边界；Android 10/11 的门禁口径需 Task2B/Task9 补充替代指标。]
 
 线上回归检测要沿用 26.3 节的分位值和采样字段。检测任务至少按 `metric_name`、`scene_id`、`app_version`、`experiment_id`、`variant_id`、`device_tier`、`android_version` 分桶。没有分桶的 P90 只代表混合分布，不能支持版本决策。
 
@@ -161,13 +170,13 @@ performance_gates:
     action: pause_rollout
 ```
 
-配置里的 `baseline` 不能总指向上一轮测试。上一轮测试本身可能已经退化，连续小退化会被“温水煮青蛙”式放过。更稳的做法是同时保留 `last_green_release`、`main_branch_7d_median` 和 `manual_pinned_baseline` 三种基线，报告里展示命中了哪一种。
+配置里的 `baseline` 不能总指向上一轮测试。上一轮测试本身可能已经退化，连续小退化会被逐次放过。更稳的做法是同时保留 `last_green_release`、`main_branch_7d_median` 和 `manual_pinned_baseline` 三种基线，报告里展示命中了哪一种。
 
 性能卡点还要允许人工豁免，但豁免必须可追踪。常见豁免理由包括：新功能主动增加首屏内容、测试设备温度异常、外部服务波动、实验包只影响内部灰度。豁免单至少记录责任人、过期时间、指标变化和补偿计划；过期后自动恢复门禁。
 
 ## 性能劣化的自动归因
 
-自动归因的目标不是一次给出“谁写坏了”，而是把排查范围缩小到可验证的候选。性能告警应该带着证据进入排查：哪个版本、哪个实验、哪个场景、哪个设备分群、哪条 trace section 变慢、样本列表在哪里。
+自动归因的目标是把排查范围缩小到可验证的候选，不负责一次性裁定“谁写坏了”。性能告警应该带着证据进入排查：哪个版本、哪个实验、哪个场景、哪个设备分群、哪条 trace section 变慢、样本列表在哪里。
 
 归因输入建议固定成五类字段：
 
@@ -181,7 +190,9 @@ performance_gates:
 
 自动归因可以按贡献度排序：某个分群的样本量乘以指标变化幅度，得到它对全量退化的贡献。一个 2% 用户分群的 P90 上升 2000 ms，可能比 40% 用户分群的 P90 上升 40 ms 更值得处理；贡献度能把这种差异排出来。
 
-TraceSectionMetric 和业务 trace 名称要提前对齐。线下 benchmark 里 `home.bind_data` 变慢，线上同名摘要也变慢，归因系统就能把告警指到首页数据绑定阶段；如果线下叫 `HomeBind`，线上叫 `feed_first_render`，后端只能靠人工猜。26.3 节已经建议自定义 Trace 和线上摘要使用同名阶段，这里直接复用该规则。
+[需确认: P90/P99 是非线性分位值，不能直接用“样本量 × P90 delta”归因；需 Task2B/Task9 补充可复核的尾部贡献算法。]
+
+TraceSectionMetric 和业务 trace 名称要提前统一。线下 benchmark 里 `home.bind_data` 变慢，线上同名摘要也变慢，归因系统就能把告警指到首页数据绑定阶段；如果线下叫 `HomeBind`，线上叫 `feed_first_render`，后端只能靠人工猜。26.3 节已经建议自定义 Trace 和线上摘要使用同名阶段，这里直接复用该规则。
 
 自动归因的排查顺序可以写成固定流程：
 
@@ -189,7 +200,7 @@ TraceSectionMetric 和业务 trace 名称要提前对齐。线下 benchmark 里 
 2. 比对新版本和上一 green release，确认退化是否随包体发布出现。
 3. 按设备档位和 Android 版本排序贡献度，确认是否只影响特定设备群。
 4. 拉取 Top 慢样本的 trace section、启动入口、网络错误和日志摘要。
-5. 如果 trace 指向业务阶段，派给业务模块；如果指向系统阶段，回连 13.2、15.6、21.x、22.x、23.x 对应章节做线下复现。
+5. 如果 trace 指向业务阶段，派给业务模块；如果指向系统阶段，关联到 13.2、15.6、21.x、22.x、23.x 对应章节做线下复现。
 
 这套流程不会消除人工分析，但能避免每次告警都从群里问“最近谁改了”。工程团队拿到的是可复核的候选清单，而不是单个结论。
 

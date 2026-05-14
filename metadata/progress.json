@@ -230,12 +230,12 @@
     "src/part5-app/ch26-observability/05-online-troubleshooting.md",
     "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
-  "review_summary": "Task9 2026-05-15 04:28：review 26.6；P0 0 / P1 3 / P2 1；样本量统计模型、FrameTimingMetric API 31+ 边界、P90 归因公式需 Task2B 回炉。",
+  "review_summary": "Task6 2026-05-15 05:15：review 26.6；L1/L2 小修 4 处，L3 技术/证据边界 3 处已标注并写入 queue(priority 90)。",
   "task6_review_summary": {
-    "l1_l2_fixes": 549,
-    "l3_issues": 29,
+    "l1_l2_fixes": 553,
+    "l3_issues": 32,
     "l4_issues": 5,
-    "total_issues": 574,
+    "total_issues": 581,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -847,17 +847,21 @@
   "total_review_sections": 109,
   "next_review_candidates": [],
   "ready_for_review": 82,
-  "last_updated": "2026-05-15T04:09:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-15T05:15:00+08:00",
+  "last_updated_by": "task6-review",
   "task6_last_review": {
-    "at": "2026-05-15T03:11:00+08:00",
-    "log": "logs/review/2026-05-15-03-review.md",
+    "at": "2026-05-15T05:15:00+08:00",
+    "log": "logs/review/2026-05-15-05-review.md",
     "sections": [
-      "26.5"
+      "26.6"
+    ],
+    "files": [
+      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
     ],
     "l1_l2_fixes": 4,
-    "l3_l4_issues": 0,
-    "auto_promotions": 0
+    "l3_l4_issues": 3,
+    "auto_promotions": 0,
+    "result": "needs-rework"
   },
   "task9_last_review": "2026-05-15T04:28:44+08:00",
   "ready_to_publish": 185,
@@ -2116,7 +2120,7 @@
       "file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-15",
@@ -2126,7 +2130,13 @@
       "p0": 0,
       "p1": 3,
       "p2": 1,
-      "deep_review_log": "logs/deep-review/2026-05-15-04-deep-review.md"
+      "deep_review_log": "logs/deep-review/2026-05-15-04-deep-review.md",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_at": "2026-05-15T05:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-05-review.md",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_issues": 3
     }
   },
   "task2b_rounds": [
@@ -2190,27 +2200,30 @@
   "last_task2a_at": "2026-05-15T04:09:00+08:00",
   "last_task2a_section": "26.6",
   "last_task2a_file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
-  "last_task6_review": "logs/review/2026-05-15-03-review.md",
+  "last_task6_review": "logs/review/2026-05-15-05-review.md",
   "last_task6_sections": [
-    "26.5"
+    "26.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/05-online-troubleshooting.md"
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md"
   ],
-  "last_task6_at": "2026-05-15T03:11:00+08:00",
+  "last_task6_at": "2026-05-15T05:15:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-15T03:11:00+08:00",
-    "log": "logs/review/2026-05-15-03-review.md",
     "sections": [
-      "26.5"
+      "26.6"
     ],
     "files": [
-      "src/part5-app/ch26-observability/05-online-troubleshooting.md"
+      "src/part5-app/ch26-observability/06-ab-testing-regression.md"
     ],
+    "mode": "首次 review",
+    "result": "needs-rework",
     "l1_l2_fixes": 4,
-    "l3_l4_issues": 0,
-    "auto_promotions": 0,
-    "notes": "26.5 小修 outline 扩展占位与 3 处措辞；写作层通过，等待 Task9 技术复审。"
+    "l3_issues": 3,
+    "l4_issues": 0,
+    "queue_priority": 90,
+    "review_log": "logs/review/2026-05-15-05-review.md",
+    "at": "2026-05-15T05:15:00+08:00",
+    "auto_promotions": 0
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch26-observability/06-ab-testing-regression.md"
