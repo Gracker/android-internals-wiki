@@ -45,12 +45,13 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: '2026-05-14T19:19:00+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
@@ -466,15 +467,17 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 
 InputDispatcher 内部维护了每个连接（connection）的 WaitQueue，存放已分发但尚未被消费（finish）的 Input 事件。这个队列长度可以通过以下途径观察：
 
-- **dumpsys input**：`dumpsys input` 输出中每个 Connection 的 `WaitQueue` 字段直接显示队列中待确认的事件数量
-- **Perfetto counter**：`android.input.input_event_waiting_duration` track 可以观察事件等待时长
+- **dumpsys input**：`dumpsys input` 输出中每个 Connection 的 `WaitQueue` 字段直接显示队列中待确认的事件数量，是最可靠的观察手段
+- **atrace counter**：AOSP InputDispatcher 暴露 atrace counter `iq`（inbound queue）、`oq:<InputChannel>`（outbound queue per connection）、`wq:<InputChannel>`（wait queue per connection），可以观察每个连接的事件排队情况
 
-WaitQueue 长度作为定性判据的用法：
+注意：未在 AOSP InputDispatcher 或 Perfetto 公开源码中找到 `android.input.input_event_waiting_duration` track。如需观察等待时长，应使用 `dumpsys input` WaitQueue 配合 `wq:<InputChannel>` atrace counter 的时间序列。
 
-- **WaitQueue length ≈ 1**：主线程被单个长耗时任务卡死（对应案例 3、案例 6 的模式），排查方向是定位那个耗时调用
-- **WaitQueue length 远大于 1**：主线程消息处理整体吞吐不足，事件在排队（对应案例 1 的系统负载模式），排查方向是系统资源竞争和消息调度频率
+WaitQueue 长度作为辅助信号的用法（需结合其他证据，不能单独定性根因）：
 
-这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因。注意 WaitQueue 是 InputDispatcher 内部状态，不是 ProfilingManager 或 ANR trace 的结构化字段。
+- **WaitQueue length ≈ 1**：倾向“主线程被单个长耗时任务卡住”（对应案例 3、案例 6 的模式），但需要结合主线程 trace 确认
+- **WaitQueue length 远大于 1**：倾向“主线程消息处理整体吞吐不足”（对应案例 1 的系统负载模式），但 MOVE 合并、事件频率、输入类型和 timeout 都会影响队列长度
+
+排查时应结合主线程 trace、InputDispatcher timeout reason、`wq/oq` counter 时间序列和 sched slices 综合判断，不要单独用 WaitQueue 长度下结论。注意 WaitQueue 是 InputDispatcher 内部状态，不是 ProfilingManager 或 ANR trace 的结构化字段。
 
 ## 线上 ANR 聚合分析实践 [扩展]
 
