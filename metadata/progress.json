@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 14,
-  "ready-for-review": 77,
+  "draft": 13,
+  "ready-for-review": 78,
   "finalized": 178,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -1829,6 +1829,16 @@
       "queue_priority": 85,
       "file": "src/part5-app/ch25-power-size/05-location-sensor.md",
       "title": "定位与传感器功耗优化"
+    },
+    "25.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "last_task2a_at": "2026-05-14T19:04:00+08:00",
+      "file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
+      "title": "APK 体积分析与瘦身"
     }
   },
   "task2b_rounds": [
@@ -1846,8 +1856,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.4",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/04-workmanager-practice.md",
+  "last_task2a_processed": "25.6",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
     "at": "2026-05-14T18:30:00+08:00",
@@ -1899,9 +1909,9 @@
     "src/part5-app/ch25-power-size/05-location-sensor.md"
   ],
   "total_review_files": 99,
-  "last_task2a_at": "2026-05-14T17:09:00+08:00",
-  "last_task2a_section": "25.4",
-  "last_task2a_file": "src/part5-app/ch25-power-size/04-workmanager-practice.md",
+  "last_task2a_at": "2026-05-14T19:04:00+08:00",
+  "last_task2a_section": "25.6",
+  "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task6_review": "logs/review/2026-05-14-16-review.md",
   "last_task6_sections": [
     "21.1",
