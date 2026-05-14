@@ -27,8 +27,11 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
 task9_state: pending
 task2b_state: pending
 ---
@@ -58,7 +61,7 @@ task2b_state: pending
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-App 可观测性解决的不是“看板有没有图”，而是线上问题出现时，团队能不能判断影响面、拿到现场、找到责任方向，并把修复结果再拉回线上验证。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，这里只讲总架构。
+App 可观测性要解决线上问题处理里的四件事：判断影响面、拿到现场证据、找到责任方向，并把修复结果拉回线上验证。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，本文聚焦总架构。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 
@@ -74,9 +77,9 @@ Metrics、Logs、Traces 是三类不同粒度的证据，混在一起设计会�
 
 Android Vitals 侧重 Metrics：Google Play 会收集稳定性、性能、电量和权限等质量数据，核心指标包括 user-perceived crash rate、user-perceived ANR rate、excessive partial wake locks；Play 用最近 28 天数据评估应用质量。它适合做外部质量基线，但不提供业务场景、用户操作路径和内部日志。团队仍要建设自己的端侧可观测性系统，把页面、场景、版本、渠道、设备等维度接进来。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
-Firebase Performance Monitoring 的模型更接近 App 内部性能观测：自动采集启动、网络请求、屏幕渲染等 trace，并允许自定义 code trace、custom metrics 和 attributes。这里的 trace 不是 Perfetto 文件，而是一段任务的起止时间与附加指标；attributes 用来按国家、设备、版本、系统等维度筛选。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
+Firebase Performance Monitoring 的模型更接近 App 内部性能观测：自动采集启动、网络请求、屏幕渲染等 trace，并允许自定义 code trace、custom metrics 和 attributes。这里的 trace 指一段任务的起止时间与附加指标，区别于 Perfetto 文件；attributes 用来按国家、设备、版本、系统等维度筛选。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
 
-App 自建体系要把两者结合：Vitals 给外部质量结果，自建 Metrics 给内部维度，Logs 和 Traces 给现场证据。单看 Vitals 只能知道“坏了”；没有 Logs 和 Traces，仍然很难知道“为什么坏”。
+App 自建体系要把两者结合：Vitals 给外部质量结果，自建 Metrics 给内部维度，Logs 和 Traces 给现场证据。单看 Vitals 只能知道质量已经变差；没有 Logs 和 Traces，仍然很难解释变差发生在哪个场景、由什么触发。
 
 ## App 侧监控体系分层设计
 
@@ -98,8 +101,8 @@ graph TD
 端侧至少分成五层：
 
 - 采集层：接入 Crash、ANR、启动、卡顿、内存、网络、耗电、业务场景等信号。采集代码只做时间戳、场景 ID、错误码、摘要字段，不能同步写文件或发网络请求。
-- 缓冲层：使用有界队列或 RingBuffer 承接高频事件。队列满时按事件等级丢弃，丢弃数进入 SDK 自监控字段。
-- 存储层：普通性能样本进入小块分片文件；Crash、ANR、Hprof、Perfetto trace 这类大文件走独立目录和配额。详见 19.27 节的端侧 APM 存储设计。
+- 缓冲层：使用有界队列或 `RingBuffer`（环形缓冲区）承接高频事件。队列满时按事件等级丢弃，丢弃数进入 SDK 自监控字段。
+- 存储层：普通性能样本进入小块分片文件；Crash、ANR、HPROF、Perfetto trace 这类大文件走独立目录和配额。详见 19.27 节的端侧 APM 存储设计。
 - 上传层：按事件优先级、网络类型、前后台状态和服务端限流批量上传。弱网下优先上传摘要，延后上传大文件。
 - 控制层：服务端下发采样率、事件开关、远程诊断命令和熔断规则；每条配置带版本号、过期时间和作用范围。
 
@@ -117,13 +120,13 @@ graph TD
 | 上报 | 合并小事件，优先发送高价值摘要，保留失败重试和服务端限流处理 | 崩溃后数据丢失，弱网下低价值事件挤占通道 |
 | 存储 | 明细、聚合、索引分开；大文件单独配额和保留期 | 查询慢、成本高、敏感文件长期留存 |
 | 分析 | 按版本、机型、Android 版本、渠道、页面、用户分群看分布和趋势 | 全局均值正常，重点机型已经恶化 |
-| 告警 | 绑定可行动阈值，例如某版本 user-perceived ANR rate、启动 TTFD P95、慢会话比例 | 告警噪音多，工程团队不再信任 |
+| 告警 | 绑定可行动阈值，例如某版本 user-perceived ANR rate、启动 TTFD（Time to full display）P95、慢会话比例 | 告警噪音多，工程团队不再信任 |
 | 回查 | 从指标跳到样本，再跳到日志、trace、崩溃栈和发布记录 | 看得到异常，看不到现场 |
 | 验证 | 修复版本上线后，对比线上指标和基准测试结果 | 修复效果只能靠主观判断 |
 
 Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧出现，TTFD 更接近用户可交互的完整状态。启动监控不能只看一个总耗时，要把“用户看到东西”和“用户能开始操作”分开记录；Macrobenchmark 的 `StartupTimingMetric` 可用于线下基准测试，线上再用端侧指标观测真实分布。[已验证: 官方文档, developer.android.com/topic/performance/appstartup/analysis-optimization；developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
 
-渲染也要区分指标和现场。Android 官方文档把 slow frames、frozen frames、ANR 归为不同 jank 形态；FrameTimeline in Perfetto 可用于追踪慢帧或冻帧原因。线上 Metrics 负责告诉团队哪些版本、页面、机型变差；Perfetto / 会话 trace 负责解释某个样本为何变差。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+渲染也要区分指标和现场。Android 官方文档把 slow frames、frozen frames、ANR 归为不同 jank 形态；Perfetto 中的 FrameTimeline 可用于追踪慢帧或冻帧原因。线上 Metrics 负责告诉团队哪些版本、页面、机型变差；Perfetto / 会话 trace 负责解释某个样本为何变差。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 服务端分析层要保留几类稳定连接键：`session_id`、`trace_id`、`scene_id`、`build_version`、`device_model`、`android_version`、`network_type`。这些字段让 Crash、ANR、性能指标、用户日志和发布记录能够互相跳转。详见 15.9 节的采集到治理过程设计。
 
@@ -134,9 +137,9 @@ Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧�
 常用策略可以分成四类：
 
 - 基线全量：Crash 摘要、ANR 摘要、版本号、设备维度、关键页面启动指标。事件少、价值高，优先保证完整。
-- 用户级采样：对高频性能事件按用户分桶，而不是每次事件随机。命中用户在一个时间窗内保持同一策略，便于拼出会话时间线。
+- 用户级采样：对高频性能事件按用户分桶，避免每次事件随机采样造成会话时间线断裂。命中用户在一个时间窗内保持同一策略，便于拼出会话时间线。
 - 异常补采：基线指标发现异常后，对目标版本、机型、渠道短期开启更高采样率或 trace 采集。
-- 大文件限额：Hprof、Perfetto trace、完整日志包必须限制单设备次数、文件大小、上传网络和保留时间。
+- 大文件限额：HPROF、Perfetto trace、完整日志包必须限制单设备次数、文件大小、上传网络和保留时间。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
@@ -146,7 +149,7 @@ Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧�
 
 ## [自动发现] 用户日志与远程诊断是现场证据层
 
-Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。参考书把用户日志、动态调试、远程诊断放在疑难问题排查章节里，这对 26.1 很有价值：可观测性架构不只是一组指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
+Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。高爷课程素材把用户日志、动态调试、远程诊断放在疑难问题排查章节里。放到 26.1，这部分补上了指标之外的现场证据层：可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 
@@ -156,11 +159,11 @@ Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场�
 - 远程诊断命令：对网络、存储、权限、配置、缓存状态做只读检查，结果以结构化字段上报。命令必须带过期时间、设备配额和服务端签名。
 - 异常触发补采：Crash、ANR、冻帧、启动超阈值后，下一次启动优先上传摘要；命中灰度策略时再补传 trace 或更详细日志。
 
-Firebase Performance Monitoring 文档明确提到 HTTP network request 监控会用不含 URL parameters 的 URL 生成聚合模式，且不永久保存个人可识别信息。自建系统也应采用类似原则：采集前就做脱敏和字段分级，而不是等数据进库后再清洗。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
+Firebase Performance Monitoring 文档明确提到 HTTP network request 监控会用不含 URL parameters 的 URL 生成聚合模式，且不永久保存个人可识别信息。自建系统也应采用类似原则：采集前就做脱敏和字段分级，避免把清洗延后到入库之后。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
 
 ## 最小可用架构
 
-团队不必一开始建设完整平台。一个现实版本可以从下面几项开始：
+团队不必一开始建设完整平台。最小版本可以从下面几项开始：
 
 1. Crash / ANR 摘要：进程、线程、堆栈、版本、设备、前后台、最近场景。
 2. 启动与渲染指标：TTID、TTFD、慢帧 / 冻帧、关键页面场景 ID。
