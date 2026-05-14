@@ -1,8 +1,8 @@
 {
   "total": 269,
   "draft": 20,
-  "ready-for-review": 73,
-  "finalized": 176,
+  "ready-for-review": 72,
+  "finalized": 177,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
@@ -194,11 +194,11 @@
   ],
   "review_summary": "Task9 2026-05-14 12:37: reviewed 8.9, 24.7; P0 1, P1 2, P2 5; auto-finalized 0; 8.9 returned to Task2B, 24.7 waiting Task6.",
   "task6_review_summary": {
-    "l1_l2_fixes": 433,
+    "l1_l2_fixes": 446,
     "l3_issues": 29,
     "l4_issues": 5,
     "total_issues": 471,
-    "auto_promotions": 9
+    "auto_promotions": 10
   },
   "issues_by_section": {
     "1.6": {
@@ -677,26 +677,31 @@
       "p0": 0,
       "p1": 0,
       "p2": 3,
-      "p3": 1
+      "p3": 1,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 13,
+      "task6_reviewed_at": "2026-05-14T13:06:00+08:00",
+      "task6_log": "logs/review/2026-05-14-13-review.md",
+      "auto_finalized": true
     }
   },
   "total_review_sections": 91,
   "next_review_candidates": [],
-  "ready_for_review": 71,
-  "last_updated": "2026-05-14T12:37:27+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 70,
+  "last_updated": "2026-05-14T13:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T12:07:00+08:00",
-    "log": "logs/review/2026-05-14-12-review.md",
+    "at": "2026-05-14T13:06:00+08:00",
+    "log": "logs/review/2026-05-14-13-review.md",
     "sections": [
-      "20.1"
+      "24.7"
     ],
-    "l1_l2_fixes": 3,
-    "l3_l4_issues": 1,
-    "auto_promotions": 0
+    "l1_l2_fixes": 13,
+    "l3_l4_issues": 0,
+    "auto_promotions": 1
   },
   "task9_last_review": "2026-05-14T12:37:27+08:00",
-  "ready_to_publish": 176,
+  "ready_to_publish": 177,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1573,6 +1578,20 @@
       "task2b_state": "fixed",
       "file": "src/part5-app/ch24-io-network/06-data-caching.md",
       "title": "数据压缩与缓存策略"
+    },
+    "24.7": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "last_task6_at": "2026-05-14T13:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-13-review.md",
+      "file": "src/part5-app/ch24-io-network/07-offline-first.md",
+      "title": "离线优先架构",
+      "auto_finalized_by": "openclaw-task6"
     }
   },
   "task2b_rounds": [
