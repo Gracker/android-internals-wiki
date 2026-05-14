@@ -5425,6 +5425,114 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T20:31:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-25.8-aosp-source-line-anchors",
+      "section": "25.8",
+      "section_title": "App Bundle 与按需分发",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "AAB 章节 AOSP 源码行号锚点指向错误",
+      "description": "frontmatter 中 PackageInstaller.java;l=407 与 InstallPackageHelper.java;l=1070 均未指向 split APK/session 安装链路，当前 AOSP main 上分别落在 unarchive 状态常量与 releaseWakeLock。",
+      "reason": "[Deep Tech Review] AAB 章节引用的 AOSP 行号锚点与正文“PackageInstaller session / split APK 解析安装链路”不匹配。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-21-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "frontmatter sources L28、L32；正文 L110 AOSP 安装链路说明",
+          "detail": "AOSP main 中 `PackageInstaller.java;l=407` 位于 `EXTRA_UNARCHIVE_STATUS` 注释段，不是 `createSession/openSession/write/commit`；`InstallPackageHelper.java;l=1070` 位于 `releaseWakeLock()`，也不是安装解析或 split 校验逻辑。正文说“能追到 split APK 的会话安装与包解析路径”，但行号锚点会把读者带到无关代码。",
+          "suggestion": "改用稳定 tag 并锚到真实入口：`PackageInstaller.createSession/openSession`、`PackageInstaller.Session.write()/commit()`、`PackageInstallerSession.installNonStaged()`、`ApkLiteParseUtils.composePackageLiteFromApks()` / `INSTALL_FAILED_MISSING_SPLIT` 校验；如果使用 AOSP master，删除易漂移的行号或在正文标注 commit/tag。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T21:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T21:20:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-25.8-bundletool-modules-size-gate",
+      "section": "25.8",
+      "section_title": "App Bundle 与按需分发",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "tool-boundary-data-support",
+      "title": "按需模块体积门禁缺少 bundletool --modules 口径",
+      "description": "章节要求统计每个 on-demand module 的下载大小，但只写 `bundletool get-size total`；bundletool 默认测 first download/install-time 模块，不会覆盖单个按需模块。",
+      "reason": "[Deep Tech Review] feature download size 门禁按当前命令会漏算 on-demand module。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-21-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "数据缺失/工具口径错误",
+          "location": "L247-L254 按需分发体积门禁",
+          "detail": "Android Developers bundletool 文档说明 `get-size total` 默认测量 first download 中安装的模块；要测某个动态特性模块，需要传 `--modules=<module>`，bundletool 会自动包含依赖模块。正文把 `feature download size` 列为门禁项，但命令只给了裸 `get-size total`，CI 会漏掉 on-demand feature 的下载大小。",
+          "suggestion": "在门禁示例中补 `bundletool get-size total --apks=app-release.apks --device-spec=... --modules=camera_editor`；CI 按代表设备 × on-demand module 迭代统计，并单独保留 base first-download、feature download、asset pack 与 universal fallback 四类口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T21:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T21:20:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-25.8-domestic-split-install-boundary",
+      "section": "25.8",
+      "section_title": "App Bundle 与按需分发",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-boundary-distribution",
+      "title": "国内渠道 AAB 替代方案缺少 split APK 安装边界",
+      "description": "章节建议用 bundletool 生成面向 ABI/密度/语言的渠道 APK，但未说明没有 split delivery/session 安装能力时不能把 base/config split 当独立 APK 分发；Android 10+ 缺 split 安装会失败。",
+      "reason": "[Deep Tech Review] 国内渠道方案需要补 split APK / universal APK / 多 APK 的分发能力边界。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-21-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/分发边界缺失",
+          "location": "L224、L228-L239 国内渠道 bundletool 生成 APK 方案",
+          "detail": "Android Developers app-bundle 文档说明：sideload 场景如果缺少一个或多个 required split APK，所有 Google-certified 设备以及 Android 10/API 29+ 设备都会安装失败。正文写“从同一 AAB 生成面向 ABI、密度、语言的 APK 或 universal APK，再按渠道上传”，但没有区分 single APK 渠道、支持 split APK session 的渠道、以及 universal APK。读者可能把配置 split 当成可独立上传的渠道包。",
+          "suggestion": "改成三类路径：渠道只收单 APK 时使用 `--mode=universal` 或传统 productFlavor/ABI split 产出独立 APK；渠道/企业安装器支持 split session 时必须一次提交 base + required config splits；否则不要把 device-specific split 拆成独立渠道包。补 Android 10+ partial sideload failure 作为版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T21:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T21:20:00+08:00"
     }
   ],
   "metadata": {

@@ -790,12 +790,22 @@
       "reviewed_at": "2026-05-14T20:31:00+08:00",
       "log": "logs/deep-review/2026-05-14-20-deep-review.md",
       "summary": "P0 1：JSON 字段 keep 规则允许裁剪；P1 2：JNI keep 缺 includedescriptorclasses、AGP/R8/Gson 版本边界缺失。"
+    },
+    "25.8": {
+      "task9_result": "needs-rework",
+      "p0": 1,
+      "p1": 2,
+      "p2": 1,
+      "p3": 1,
+      "reviewed_at": "2026-05-14T21:20:00+08:00",
+      "log": "logs/deep-review/2026-05-14-21-deep-review.md",
+      "summary": "P0 1：AOSP 行号锚点错误；P1 2：bundletool --modules 体积门禁口径、国内渠道 split APK 安装边界缺失；P2 1：PAD 资源定位/更新状态机边界。"
     }
   },
-  "total_review_sections": 101,
+  "total_review_sections": 102,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T20:31:00+08:00",
+  "last_updated": "2026-05-14T21:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
@@ -808,7 +818,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T20:31:00+08:00",
+  "task9_last_review": "2026-05-14T21:20:00+08:00",
   "ready_to_publish": 178,
   "rework_history": [
     {
@@ -1928,6 +1938,20 @@
       "reviewed_date": "2026-05-14",
       "last_task6_at": "2026-05-14T20:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-14-20-review.md"
+    },
+    "25.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T21:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-21-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "file": "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
+      "title": "App Bundle 与按需分发"
     }
   },
   "task2b_rounds": [
@@ -1949,45 +1973,45 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
-    "at": "2026-05-14T20:31:00+08:00",
-    "log": "logs/deep-review/2026-05-14-20-deep-review.md",
+    "at": "2026-05-14T21:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-21-deep-review.md",
     "sections": [
-      "25.7"
+      "25.8"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/07-r8-resource-optimization.md"
+      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
     ],
     "p0": 1,
     "p1": 2,
-    "p2": 0,
-    "p3": 2,
+    "p2": 1,
+    "p3": 1,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-20-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-21-deep-review.md",
   "last_task9_sections": [
-    "25.7"
+    "25.8"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T20:31:00+08:00",
-    "log": "logs/deep-review/2026-05-14-20-deep-review.md",
+    "at": "2026-05-14T21:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-21-deep-review.md",
     "sections": [
-      "25.7"
+      "25.8"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/07-r8-resource-optimization.md"
+      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
     ],
     "p0": 1,
     "p1": 2,
-    "p2": 0,
-    "p3": 2,
+    "p2": 1,
+    "p3": 1,
     "result": "needs-rework",
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch25-power-size/07-r8-resource-optimization.md"
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
-  "total_review_files": 101,
+  "total_review_files": 102,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -2020,5 +2044,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0,
     "notes": "25.7 写作层通过转 Task9；8.8/9.5 写作层复审通过，既有 Task9 P0 队列保留。"
-  }
+  },
+  "last_task9_reviewed_files": [
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+  ]
 }
