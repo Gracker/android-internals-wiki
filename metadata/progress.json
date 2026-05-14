@@ -807,8 +807,8 @@
   "total_review_sections": 102,
   "next_review_candidates": [],
   "ready_for_review": 72,
-  "last_updated": "2026-05-14T22:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T22:31:06+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -820,7 +820,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T21:20:00+08:00",
+  "task9_last_review": "2026-05-14T22:31:06+08:00",
   "ready_to_publish": 178,
   "rework_history": [
     {
@@ -1960,16 +1960,22 @@
     },
     "25.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
       "title": "功耗与包体积案例集",
       "last_task2a_at": "2026-05-14T22:04:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-14T22:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-22-review.md"
+      "last_task6_review_log": "logs/review/2026-05-14-22-review.md",
+      "task9_result": "needs-rework",
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-14T22:31:06+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-22-deep-review.md",
+      "task9_review_notes": "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。"
     }
   },
   "task2b_rounds": [
@@ -1991,43 +1997,43 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
-    "at": "2026-05-14T21:20:00+08:00",
-    "log": "logs/deep-review/2026-05-14-21-deep-review.md",
+    "at": "2026-05-14T22:31:06+08:00",
+    "log": "logs/deep-review/2026-05-14-22-deep-review.md",
     "sections": [
-      "25.8"
+      "25.9"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
     ],
     "p0": 1,
-    "p1": 2,
+    "p1": 1,
     "p2": 1,
-    "p3": 1,
+    "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-21-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-22-deep-review.md",
   "last_task9_sections": [
-    "25.8"
+    "25.9"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T21:20:00+08:00",
-    "log": "logs/deep-review/2026-05-14-21-deep-review.md",
+    "at": "2026-05-14T22:31:06+08:00",
+    "log": "logs/deep-review/2026-05-14-22-deep-review.md",
     "sections": [
-      "25.8"
+      "25.9"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
     ],
     "p0": 1,
-    "p1": 2,
+    "p1": 1,
     "p2": 1,
-    "p3": 1,
+    "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
   "total_review_files": 102,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
@@ -2060,6 +2066,7 @@
     "notes": "本轮可审充分内容仅 2 节。25.8 写作层通过，既有 Task9 P0/P1 队列保留；25.9 写作层通过，转 Task9。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
-  ]
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+  ],
+  "last_task9_at": "2026-05-14T22:31:06+08:00"
 }
