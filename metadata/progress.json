@@ -190,12 +190,12 @@
     "src/part5-app/ch24-io-network/05-protocol-optimization.md",
     "src/part5-app/ch24-io-network/06-data-caching.md"
   ],
-  "review_summary": "Task9 2026-05-14 10: reviewed 22.5/24.4/24.5; P0 0 / P1 2 / P2 4; auto-finalized 24.5; 22.5、24.4 回 task2b_pending。",
+  "review_summary": "Task6 2026-05-14 11: reviewed 24.6; L1/L2 fixes 6; L3/L4 0; auto-finalized 0; pending Task9.",
   "task6_review_summary": {
-    "l1_l2_fixes": 424,
+    "l1_l2_fixes": 430,
     "l3_issues": 28,
     "l4_issues": 5,
-    "total_issues": 461,
+    "total_issues": 467,
     "auto_promotions": 9
   },
   "issues_by_section": {
@@ -667,29 +667,17 @@
     }
   },
   "total_review_sections": 89,
-  "next_review_candidates": [
-    {
-      "section": "20.8",
-      "title": "崩溃聚合与归因分析",
-      "file": "src/part5-app/ch20-stability/08-crash-aggregation.md"
-    },
-    {
-      "section": "20.9",
-      "title": "稳定性治理案例集",
-      "file": "src/part5-app/ch20-stability/09-stability-case-studies.md"
-    }
-  ],
+  "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T10:20:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T11:13:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T10:11:00+08:00",
-    "log": "logs/review/2026-05-14-10-review.md",
+    "at": "2026-05-14T11:13:00+08:00",
+    "log": "logs/review/2026-05-14-11-review.md",
     "sections": [
-      "24.4",
-      "24.5"
+      "24.6"
     ],
-    "l1_l2_fixes": 15,
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
@@ -1555,6 +1543,18 @@
       "task2b_state": "fixed",
       "file": "src/part5-app/ch24-io-network/05-protocol-optimization.md",
       "title": "网络协议优化（HTTP/2、HTTP/3、gRPC）"
+    },
+    "24.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-14T11:13:00+08:00",
+      "task6_review_log": "logs/review/2026-05-14-11-review.md",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "file": "src/part5-app/ch24-io-network/06-data-caching.md",
+      "title": "数据压缩与缓存策略"
     }
   },
   "task2b_rounds": [
