@@ -34,11 +34,17 @@ sources:
     path: "kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 last_task2a_at: "2026-05-15T05:33:00+08:00"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-15"
+last_task9_at: "2026-05-15T05:50:05+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-15-05-deep-review.md"
+task9_review_notes: "2026-05-15 Task9：needs-rework。P0 1：WebView renderer 进程模型误写为可安装 Crash handler 的 App 进程；P1 3：ApplicationExitInfo native tombstone API 边界、SafeMode launch marker/退出补偿链路、崩溃文件 fsync/rename 持久化边界。"
 ---
 
 # 异常处理架构设计

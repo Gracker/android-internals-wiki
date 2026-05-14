@@ -1130,3 +1130,8 @@
 - **建议**：Task2B/Task9 补可复核的尾部贡献算法，如阈值违约数、原始样本 counterfactual 或 bootstrap 口径。
 - **review 日志**：logs/review/2026-05-15-05-review.md
 
+## [Task9 Deep Review] 20.7 异常处理架构设计 — 2026-05-15
+- **类型**：数据与指标口径
+- **位置**：L160 Android Vitals 与 SafeMode 价值
+- **问题**：SafeMode 对 Google Play Vitals user-perceived crash rate 的改善链路写得过直；该指标按 DAU 中至少一次前台 crash 的用户计数，首次 crash 已发生的设备当天不会因为 SafeMode 退出而从分子移除。
+- **建议**：补充指标边界：SafeMode 直接降低重复崩溃、启动循环和 crash-free sessions 损失；对 Vitals 用户感知崩溃率的改善依赖远程配置、灰度暂停或跨天避免再次命中。

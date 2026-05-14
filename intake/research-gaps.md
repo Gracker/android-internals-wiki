@@ -245,3 +245,19 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 ### 关联章节
 26.3, 15.6, 26.7
 
+## [2026-05-15] 20.7 异常处理架构设计 — SafeMode 崩溃循环判定与退出补偿链路
+
+### 盲区描述
+章节缺少 SafeMode 在真实启动链路中的一手验证：handler 未注册前退出、native crash、ANR、初始化失败、低内存杀进程、WebView renderer 退出与用户强杀/升级之间的判定边界尚未形成闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 11-16 `ApplicationExitInfo` 的 reason/status/processStateSummary 与 `getTraceInputStream()` 行为，区分 API 30 exit reason、API 31+ native tombstone trace、ANR trace 与 null fallback。
+- 设计并验证 launch marker 状态机：`launch_started`、首帧/首页 ready、版本升级清理、bootCount/elapsedRealtime、连续成功启动退出规则。
+- 补充 crash 文件存储协议的一手实现：tmp 写入、`fsync(fd)`、同卷 `rename`、`fsync(parent dir)`、completed 扫描与 partial 清理。
+- 单独整理 WebView renderer crash 恢复路径：`WebViewClient.onRenderProcessGone()`、受影响 WebView 清理、页面兜底和上报字段。
+
+### 关联章节
+20.7、20.2、20.3、26.2、20.6
