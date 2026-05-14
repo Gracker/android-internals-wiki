@@ -5142,7 +5142,7 @@
     {
       "id": "task9-21-1-startup-framecommit-ttid-sp-version-20260514",
       "section": "21.1",
-      "section_title": "启动全链路分析（App 视角）",
+      "section_title": "启动完整路径分析（App 视角）",
       "priority": 95,
       "severity": "P0",
       "issue_type": "source-code-accuracy-principle-chain-version-differences",
@@ -5200,7 +5200,7 @@
     "last_updated_by": "task9-deep-tech-review",
     "pending": 98
   },
-  "last_updated": "2026-05-14T15:33:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T16:14:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "pending": 98
 }

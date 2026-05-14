@@ -1,5 +1,5 @@
 ---
-title: "启动全链路分析（App 视角）"
+title: "启动完整路径分析（App 视角）"
 chapter: "21.1"
 section: "21.1"
 status: ready-for-review
@@ -8,19 +8,20 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium
 drafted_date: "2026-05-12"
-sources: 
-- type: aosp
-path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
+sources:
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: pending
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
+last_task6_review_log: logs/review/2026-05-14-16-review.md
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
@@ -29,14 +30,14 @@ last_task9_review_log: logs/deep-review/2026-05-14-15-deep-review.md
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首帧回调 API 名、TTID 终点近似、SharedPreferences 版本口径仍需回炉。"
 ---
 
-# 启动全链路分析（App 视角）
+# 启动完整路径分析（App 视角）
 
 <!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
 
-- 🔹 冷 / 温 / 热启动在 App 侧的耗时拆解
+- 🔹 冷 / 温 / 热启动在 App 侧的耗时划分
 - 🔹 Application.onCreate、Activity.onCreate、首帧渲染各阶段耗时分布
 - 🔹 启动耗时的度量方法：TTID / TTFD / 自定义埋点
 - 🔹 Perfetto 启动分析实战
@@ -56,7 +57,7 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首�
 
 ## 本节定位
 
-8.2 节从系统层面拆解了冷启动的完整流程——从用户点击到首帧绘制的每一步系统行为。本节切换到 App 开发者的视角，回答一个更实际的问题：**拿到一个启动慢的 App，从哪里下手分析？**
+8.2 节从系统层面说明了冷启动的完整流程——从用户点击到首帧绘制的每一步系统行为。本节切换到 App 开发者的视角，回答一个更实际的问题：**拿到一个启动慢的 App，从哪里下手分析？**
 
 两种视角的分工：8.2 节告诉你"每一步在干什么、为什么需要这一步"，本节告诉你"每一步耗时多少、怎么量、怎么从 Perfetto 里读出来"。
 
@@ -64,7 +65,7 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
-三种启动状态的定义和系统级行为在 8.2 节已经讲过。这里只从 App 侧能看到的时间段来做拆解。
+三种启动状态的定义和系统级行为在 8.2 节已经讲过。这里只从 App 侧能看到的时间段来划分。
 
 ### 冷启动：App 侧的四个耗时阶段
 
@@ -80,7 +81,7 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首�
 
 Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶段 App 开发者几乎没有可控的代码介入点——从 fork 到 `attachBaseContext` 之间的耗时完全由系统决定。主要开销在 ART 运行时初始化、主线程 Looper 创建、以及 `attachApplication` 的 Binder 调用。
 
-在 Perfetto 中，这个阶段对应 App 进程从出现到 `ActivityThreadMain` slice 开始之间的一段空白。典型耗时 50-150ms，与设备性能和 so 库数量相关。App 侧无法优化，但可以间接加速：减少不必要的配置项解析和 `loadLibrary` 调用数量。
+在 Perfetto 中，这个阶段对应 App 进程从出现到 `ActivityThreadMain` slice 开始之间的一段空白。典型耗时 50-150ms，与设备性能和 `.so` 库数量相关。App 侧无法优化，但可以间接加速：减少不必要的配置项解析和 `loadLibrary` 调用数量。
 
 **阶段 2：Application.attachBaseContext 到 Application.onCreate 结束**
 
@@ -112,7 +113,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 
 下一个 VSync 信号到来时，`Choreographer` 回调触发 `ViewRootImpl.performTraversals()`，执行 `measure` → `layout` → `draw` 三步。使用硬件加速（Android 4.0+ 默认开启）时，draw 阶段生成 `DisplayList` 并交给 `RenderThread` 处理。
 
-`RenderThread` 通过 GPU 执行绘制命令，完成后通过 `queueBuffer` 将帧提交给 `SurfaceFlinger`。从 `performTraversals` 开始到帧提交完成，典型耗时 10-50ms。
+`RenderThread` 通过 GPU 执行绘制命令，完成后通过 `queueBuffer()` 将帧提交给 `SurfaceFlinger`。从 `performTraversals` 开始到帧提交完成，典型耗时 10-50ms。
 
 首帧绘制完成的时刻就是 TTID（Time To Initial Display）的终点。从用户视角看，这就是屏幕上第一次出现 App 内容的时刻。
 
@@ -212,7 +213,7 @@ ActivityTaskManager: Displayed com.example/.MainActivity: +1s234ms
 
 这个 `+1s234ms` 就是 TTID。系统通过 `ActivityMetricsLogger` 在 `startActivity` 时记录起点，在 `reportDrawFinished` 时记录终点。
 
-TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示了一个纯色背景，TTID 会很漂亮，但用户还在等真正的内容。
+TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示了一个纯色背景，TTID 会很漂亮，但用户还在等有效内容。
 
 ### TTFD（Time To Fully Drawn）
 
@@ -408,7 +409,7 @@ App 主线程:
 
 RenderThread:
   └── DrawFrame                          ← GPU 渲染首帧
-      └── queueBuffer                    ← 帧提交给 SurfaceFlinger
+      └── queueBuffer()                  ← 帧提交给 SurfaceFlinger
 ```
 
 ### 常见异常模式

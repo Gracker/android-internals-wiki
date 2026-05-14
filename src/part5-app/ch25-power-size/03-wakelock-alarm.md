@@ -38,10 +38,14 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [wakelock, alarm, exact-alarm, wakelock-leak, power]
 related_chapters: ["25.2", "11.5", "5.6", "25.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+last_task6_review_log: logs/review/2026-05-14-16-review.md
 ---
 
 # WakeLock 与 Alarm 管理
@@ -81,7 +85,7 @@ Clippings 的《Android 性能优化》没有单独写 WakeLock / Alarm 章节�
 
 App 侧常用的 WakeLock 只有一个：`PARTIAL_WAKE_LOCK`。它保持 CPU 运行，允许屏幕关闭，适合短时间完成用户已经触发的后台收尾工作，例如一段上传、一次加密写盘、一个必须落完的本地索引更新。屏幕相关的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK`、`FULL_WAKE_LOCK` 已废弃；保持屏幕常亮应交给 `FLAG_KEEP_SCREEN_ON` 或具体组件能力。 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java] [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
 
-WakeLock 的默认规则可以压成四条：少用、短持有、命名稳定、异常路径必释放。Android Developers 明确要求只有没有合适替代 API 时才使用 WakeLock，并且持有时间越短越好；tag 推荐包含包名、类名或方法名，不要包含个人信息，也不要加随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
+WakeLock 的默认规则可以归纳成四条：少用、短持有、命名稳定、异常路径必释放。Android Developers 明确要求只有没有合适替代 API 时才使用 WakeLock，并且持有时间越短越好；tag 推荐包含包名、类名或方法名，不要包含个人信息，也不要加随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
 
 | 场景 | 推荐做法 | 不建议的做法 |
 |------|----------|--------------|
@@ -263,7 +267,7 @@ Exact Alarm 的工程审查清单可以写成六项：
 
 ## 扩展：功耗回归守门
 
-WakeLock 和 Alarm 的问题不能只靠代码 review。它们经常在功能上线几天后才出现：某个推送策略调大频率、某个异常路径不断重试、某个机型在 Doze 下延迟更长。发布前应把功耗回归守门接进 CI 和灰度监控。
+WakeLock 和 Alarm 的问题不能只靠代码审查。它们经常在功能上线几天后才出现：某个推送策略调大频率、某个异常路径不断重试、某个机型在 Doze 下延迟更长。发布前应把功耗回归守门接进 CI 和灰度监控。
 
 | 守门项 | 检查方式 | 失败处理 |
 |--------|----------|----------|
