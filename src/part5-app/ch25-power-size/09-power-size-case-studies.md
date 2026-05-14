@@ -52,10 +52,19 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
 related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+task6_reviewed_at: "2026-05-14T22:10:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-14T22:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-14-22-review.md"
+task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 4 处后通过；无新增 L3/L4 回炉项，转 Task9 技术复核。"
+
 ---
 
 # 功耗与包体积案例集
@@ -84,7 +93,7 @@ task2b_state: pending
 
 ## 为什么要看功耗与包体积案例集
 
-前面几节已经把功耗诊断、后台限制、WakeLock / Alarm、WorkManager、定位、APK 分析、R8、AAB 分发分别讲完。本节只做一件事：把这些工具放进几个完整场景里，展示排查顺序、取舍点和发布守门方式。
+前面几节已经把功耗诊断、后台限制、WakeLock / Alarm、WorkManager、定位、APK 分析、R8、AAB 分发分别讲完。现在需要把这些工具放进几个完整场景，说明排查顺序、取舍点和发布守门方式。
 
 案例写法保持一个边界：不编造某个项目的真实收益，不把参考书里的例子改头换面放进正文。这里给的是可复现的排查账本和判断模板，项目里的实际数字要用自己的 release 包、bugreport、Perfetto、Play Console Vitals 和灰度数据填进去。
 
@@ -187,7 +196,7 @@ android {
 
 配置打开后要跑 release smoke test。需要覆盖反射、JSON / protobuf、Room、Hilt、Retrofit、深链、推送、JNI、换肤、通知图标、WebView bridge、动态页面和多语言。包体积案例里最危险的事故，是 shrink 后下载体积降了，但运行时入口被删或动态资源丢失。
 
-一份“100MB 到 50MB”的计划可以写成预算表，而不是写成承诺收益：
+一份“100MB 到 50MB”的计划更适合写成预算表，避免写成承诺收益：
 
 | 阶段 | 交付物 | 通过标准 | 风险 |
 |------|--------|----------|------|
@@ -197,7 +206,7 @@ android {
 | 分发拆分 | AAB / dynamic feature / asset pack / 渠道 APK | 代表设备安装、首启、按需下载都通过 | 国内渠道不支持 split session，误把 config split 当独立 APK |
 | 发布守门 | CI 体积阈值、模块 owner、版本 diff 报告 | 新增大文件必须说明来源和下发策略 | 只在版本末期突击瘦身 |
 
-这个案例的收尾标准不是“文件变小”四个字，而是每个大项都有 owner、阈值、测试用例和回滚方案。体积治理一旦接入发版流程，后续版本只处理增量；不接门禁，几个月后还会回到 100MB。
+这个案例的收尾标准不能停在“文件变小”四个字。每个大项都要有 owner、阈值、测试用例和回滚方案。体积治理一旦接入发版流程，后续版本只处理增量；不接门禁，几个月后还会回到 100MB。
 
 ## WakeLock 泄漏导致的电量投诉治理
 
@@ -242,4 +251,4 @@ WakeLock 治理的代码审查清单要比“有没有 release”更细：
 
 功耗与体积案例的共性是“先建账，再修代码”。功耗账本记录时间窗口、UID、硬件入口、业务触发源和回归指标；体积账本记录 dex、资源、assets、`.so`、分发形态和版本 diff。没有账本，优化只能靠经验猜。
 
-本节产出的三个模板可以直接放进团队流程：后台功耗排查表、APK 体积预算表、WakeLock 审计表。后续 Task6 / Task9 复核时，重点看两件事：是否有未验证的技术断言，是否把项目实测数据和示例模板混在一起。
+本节产出的三个模板可以直接放进团队流程：后台功耗排查表、APK 体积预算表、WakeLock 审计表。落到团队流程后，重点看两件事：是否有未验证的技术断言，是否把项目实测数据和示例模板混在一起。
