@@ -117,7 +117,8 @@
     "26.2",
     "26.5",
     "26.6",
-    "20.7"
+    "20.7",
+    "26.7"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -230,7 +231,8 @@
     "src/part5-app/ch26-observability/02-crash-reporting.md",
     "src/part5-app/ch26-observability/05-online-troubleshooting.md",
     "src/part5-app/ch26-observability/06-ab-testing-regression.md",
-    "src/part5-app/ch20-stability/07-exception-architecture.md"
+    "src/part5-app/ch20-stability/07-exception-architecture.md",
+    "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
   "review_summary": "Task6 2026-05-15 06:05：review 20.7；L1/L2 小修 6 处，Task9 风险信号 4 处已标注并合并 queue(priority 90/95)。",
   "task6_review_summary": {
@@ -853,13 +855,19 @@
       "reviewed_at": "2026-05-15T06:05:00+08:00",
       "log": "logs/review/2026-05-15-06-review.md",
       "summary": "Task6 标注 4 处：WebView renderer 进程模型、ApplicationExitInfo native tombstone API 边界、SafeMode launch marker、crash 文件持久化协议。"
+    },
+    "26.7": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0
     }
   },
-  "total_review_sections": 111,
+  "total_review_sections": 112,
   "next_review_candidates": [],
   "ready_for_review": 83,
-  "last_updated": "2026-05-15T06:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-15T06:28:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-15T06:05:00+08:00",
     "log": "logs/review/2026-05-15-06-review.md",
@@ -874,7 +882,7 @@
     "auto_promotions": 0,
     "result": "needs-rework"
   },
-  "task9_last_review": "2026-05-15T05:50:05+08:00",
+  "task9_last_review": "2026-05-15T06:28:00+08:00",
   "ready_to_publish": 185,
   "rework_history": [
     {
@@ -2183,45 +2191,45 @@
   "last_task2a_processed_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T05:50:05+08:00",
-    "log": "logs/deep-review/2026-05-15-05-deep-review.md",
+    "at": "2026-05-15T06:28:00+08:00",
+    "log": "logs/deep-review/2026-05-15-06-deep-review.md",
     "sections": [
-      "20.7"
+      "26.7"
     ],
     "files": [
-      "src/part5-app/ch20-stability/07-exception-architecture.md"
+      "src/part5-app/ch26-observability/07-release-quality-gate.md"
     ],
-    "p0": 1,
-    "p1": 3,
-    "p2": 1,
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-05-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-06-deep-review.md",
   "last_task9_sections": [
-    "20.7"
+    "26.7"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T05:50:05+08:00",
-    "log": "logs/deep-review/2026-05-15-05-deep-review.md",
+    "at": "2026-05-15T06:28:00+08:00",
+    "log": "logs/deep-review/2026-05-15-06-deep-review.md",
     "sections": [
-      "20.7"
+      "26.7"
     ],
     "files": [
-      "src/part5-app/ch20-stability/07-exception-architecture.md"
+      "src/part5-app/ch26-observability/07-release-quality-gate.md"
     ],
-    "p0": 1,
-    "p1": 3,
-    "p2": 1,
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch20-stability/07-exception-architecture.md"
+    "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
-  "total_review_files": 111,
+  "total_review_files": 112,
   "last_task2a_at": "2026-05-15T06:18:00+08:00",
   "last_task2a_section": "26.7",
   "last_task2a_file": "src/part5-app/ch26-observability/07-release-quality-gate.md",
@@ -2251,8 +2259,8 @@
     "auto_promotions": 0
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch20-stability/07-exception-architecture.md"
+    "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
-  "last_task9_at": "2026-05-15T05:50:05+08:00",
+  "last_task9_at": "2026-05-15T06:28:00+08:00",
   "last_task2a_result": "ready-for-review"
 }

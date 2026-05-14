@@ -5841,6 +5841,126 @@
       ]
     },
     {
+      "section": "17.1",
+      "section_title": "OEM定制与适配",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.859524",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM定制与适配",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7587845752681807935"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2025 年终醒悟，AI 让我误以为自己很强，未来程序员的转型之路 — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.863490",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM定制与适配",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7614897667961143347"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "什么 AI 写 Android 最好用？官方做了一个基准测试排名 — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.866783",
+      "status": "pending"
+    },
+    {
+      "section": "4.1",
+      "section_title": "内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7605097326727266350"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了 — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.870049",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM定制与适配",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612812060795093002"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.873268",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM定制与适配",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — 作者陆业聪深度分析了2026年Android开发趋势，包括AI集成、鸿蒙OS崛起、跨平台技术演进、性能优化等关键变化。文章详细阐述了Android Studio智能化、Jetpack Compose优...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-15T05:42:00.876768",
+      "status": "pending"
+    },
+    {
       "id": "task9-20.7-webview-renderer-process-model",
       "section": "20.7",
       "section_title": "异常处理架构设计",
@@ -5936,19 +6056,58 @@
       "last_reviewed_by": "task6-review",
       "last_reviewed_at": "2026-05-15T06:05:00+08:00",
       "original_review_log": "logs/review/2026-05-15-06-review.md"
+    },
+    {
+      "id": "task9-26.7-macrobenchmark-metric-version-boundaries",
+      "section": "26.7",
+      "section_title": "发版质量门禁",
+      "priority": 85,
+      "title": "Macrobenchmark 门禁指标缺少版本与采集前提边界",
+      "description": "章节把 TTFD 和 FrameTimingMetric overrun 写成 Android 10-16 通用门禁口径，缺少 reportFullyDrawn、API 29 和 API 31+ 边界。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/07-release-quality-gate.md"
+      ],
+      "material_paths": [
+        "src/part5-app/ch26-observability/07-release-quality-gate.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L95 / L101-L104 Macrobenchmark StartupTimingMetric 与 TTFD 门禁",
+          "detail": "正文把 StartupTimingMetric 直接写成可观察 TTID / TTFD，并在示例中使用 home_cold_start_tffd_p90_ms 作为 release candidate 门禁；但官方文档中 timeToFullDisplayMs 依赖应用调用 Activity.reportFullyDrawn()，且 Android 10(API 29)及以下可能不可用。章节 applicable_versions 覆盖 Android 10-16，当前写法没有说明 TTFD 采集前提、缺失时的 fallback 和 API 29 边界。",
+          "suggestion": "补一段版本/采集契约：TTID 可作为默认启动门禁；TTFD 只有在关键 Activity 正确调用 reportFullyDrawn()、Macrobenchmark 场景等待业务内容完成后才纳入门禁；Android 10/API 29 设备单独标记 TTFD unavailable 或回落到 TTID + 自定义 TraceSectionMetric。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L79 / L95 FrameTimingMetric overrun",
+          "detail": "正文把 FrameTimingMetric 的帧耗时和 overrun 放在同一通用口径里。AndroidX Benchmark 文档/变更记录显示 frameOverrunMs 需要 Android 12(API 31)+；Android 10/11 场景只能稳定使用 frameDurationCpuMs 等输出或回到 Perfetto trace 分析。若把 overrun 写成 Android 10-16 通用门禁，低版本设备的渲染门禁会出现指标缺失或口径不一致。",
+          "suggestion": "把渲染门禁拆成 API 31+ 的 frameOverrunMs 与 API 29-30 的 frameDurationCpuMs/慢帧率/Perfetto fallback；报告中保留 metric_available 标记，避免不同 Android 版本混算同一阈值。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T06:28:00+08:00",
+      "original_review_log": "logs/deep-review/2026-05-15-06-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 181,
-    "p0_count": 93,
-    "last_updated": "2026-05-15T05:15:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 110,
+    "total_entries": 190,
+    "p0_count": 94,
+    "last_updated": "2026-05-15T06:28:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 119,
     "updated_date": "2026-05-15",
-    "last_updated_by": "task6-review",
-    "pending": 110
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 119
   },
-  "last_updated": "2026-05-15T05:50:05+08:00",
+  "last_updated": "2026-05-15T06:28:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 112
+  "pending": 119
 }
