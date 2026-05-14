@@ -24,14 +24,18 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
 task6_review_notes: 2026-05-12 task6 review: 完成格式规范统一、术语一致性修复、标点标准化；L1/L2 通过，无新增 L3/L4 回炉项。
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: 2026-05-14
+last_task9_at: "2026-05-14T13:30:11+08:00"
 ---
 
 # 稳定性治理案例集
