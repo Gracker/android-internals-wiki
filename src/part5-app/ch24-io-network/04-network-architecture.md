@@ -8,7 +8,10 @@ last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: official
     path: "https://square.github.io/okhttp/features/connections/"
@@ -50,10 +53,10 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-14T09:21:00+08:00"
 ---
 
@@ -88,7 +91,7 @@ last_task2a_at: "2026-05-14T09:21:00+08:00"
 
 这一节的判断依据来自三类材料：OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 相关官方文档，以及本地 Android 35 SDK sources 中的 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver`。参考书只用于组织知识点顺序：先拆速度来源，再看线程/调度，再看缓存和命中率，不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
-## 先把网络架构拆成四个控制面
+## 网络架构的四个控制面
 
 App 网络层至少要分成四个控制面：连接、解析、调度、容错。
 
@@ -300,8 +303,8 @@ fun nextDelayMs(attempt: Int): Long {
 
 ### CDN、HTTP/2、HTTP/3 与 gRPC 的协议选型
 
-本节只讲连接和调度边界。HTTP/2 多路复用、HTTP/3/QUIC、gRPC 与协议兼容策略放到 24.5 节展开，避免在两个章节重复解释协议细节。 [待补充: 24.5 加工时补齐协议选型与客户端接入边界]
+HTTP/2 多路复用、HTTP/3/QUIC、gRPC 与协议兼容策略详见 24.5。这里保留和连接/调度相关的接口边界：网络层要把协议、连接复用、fallback 结果暴露给上层和 APM，避免协议细节在 24.4、24.5 两处重复。
 
 ### 网络缓存与离线优先
 
-缓存策略、HTTP cache header、多级缓存、离线队列与冲突解决放到 24.6、24.7 节展开。本节只保留架构接口：请求层要暴露缓存命中、网络失败、可重试状态，给上层决定展示缓存还是进入离线队列。 [待补充: 24.6/24.7 加工时补齐缓存与离线写入策略]
+24.6、24.7 负责展开缓存策略、HTTP 缓存头、多级缓存、离线队列与冲突解决。这里保留架构接口：请求层要暴露缓存命中、网络失败、可重试状态，给上层决定展示缓存还是进入离线队列。

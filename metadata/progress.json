@@ -188,12 +188,12 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md",
     "src/part5-app/ch24-io-network/05-protocol-optimization.md"
   ],
-  "review_summary": "Task6 2026-05-14 09: reviewed 22.5/24.3; L1/L2 fixes 13; L3/L4 0; auto-finalized 24.3. Task2A 2026-05-14 10: processed 24.5; status ready-for-review; Task6 pending.",
+  "review_summary": "Task6 2026-05-14 10: reviewed 24.4/24.5; L1/L2 fixes 15; L3/L4 0; auto-finalized 0; both remain task9_pending.",
   "task6_review_summary": {
-    "l1_l2_fixes": 409,
+    "l1_l2_fixes": 424,
     "l3_issues": 28,
     "l4_issues": 5,
-    "total_issues": 446,
+    "total_issues": 461,
     "auto_promotions": 9
   },
   "issues_by_section": {
@@ -652,21 +652,21 @@
       "p3": 0
     }
   },
-  "total_review_sections": 88,
+  "total_review_sections": 89,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-14T09:21:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-14T10:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T09:06:00+08:00",
-    "log": "logs/review/2026-05-14-09-review.md",
+    "at": "2026-05-14T10:11:00+08:00",
+    "log": "logs/review/2026-05-14-10-review.md",
     "sections": [
-      "22.5",
-      "24.3"
+      "24.4",
+      "24.5"
     ],
-    "l1_l2_fixes": 13,
+    "l1_l2_fixes": 15,
     "l3_l4_issues": 0,
-    "auto_promotions": 1
+    "auto_promotions": 0
   },
   "task9_last_review": "2026-05-14T08:47:50+08:00",
   "ready_to_publish": 172,
@@ -1508,13 +1508,28 @@
     },
     "24.4": {
       "status": "ready-for-review",
-      "pipeline_stage": "draft",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "file": "src/part5-app/ch24-io-network/04-network-architecture.md",
       "title": "网络架构与连接管理",
-      "last_task2a_at": "2026-05-14T09:21:00+08:00"
+      "last_task2a_at": "2026-05-14T09:21:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-14T10:11:00+08:00",
+      "task6_review_log": "logs/review/2026-05-14-10-review.md"
+    },
+    "24.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-14T10:11:00+08:00",
+      "task6_review_log": "logs/review/2026-05-14-10-review.md",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "file": "src/part5-app/ch24-io-network/05-protocol-optimization.md",
+      "title": "网络协议优化（HTTP/2、HTTP/3、gRPC）"
     }
   },
   "task2b_rounds": [
@@ -1588,8 +1603,17 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch24-io-network/03-serialization-performance.md"
   ],
-  "total_review_files": 88,
+  "total_review_files": 89,
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
   "last_task2a_section": "24.4",
-  "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md"
+  "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+  "last_task6_review": "logs/review/2026-05-14-10-review.md",
+  "last_task6_sections": [
+    "24.4",
+    "24.5"
+  ],
+  "last_task6_reviewed_files": [
+    "src/part5-app/ch24-io-network/04-network-architecture.md",
+    "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+  ]
 }

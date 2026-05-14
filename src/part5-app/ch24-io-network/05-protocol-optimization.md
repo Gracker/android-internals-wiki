@@ -8,7 +8,10 @@ last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + IETF RFC 9000/9114 + gRPC docs + AOSP android-35 SDK sources"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/cronet"
@@ -50,10 +53,10 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [http2, http3, quic, grpc, protocol]
 related_chapters: ["24.4", "12.3", "12.4"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-14T10:04:00+08:00"
 ---
 
@@ -84,9 +87,9 @@ last_task2a_at: "2026-05-14T10:04:00+08:00"
 
 ## 为什么要了解网络协议优化（HTTP/2、HTTP/3、gRPC）
 
-24.4 已经把网络层拆成连接、解析、调度和容错四个控制面。本节只处理协议选择：同一组 API 继续用 HTTP/1.1，升级到 HTTP/2，切到 HTTP/3/QUIC，或者改成 gRPC，性能收益和兼容成本完全不同。
+24.4 已经把网络层拆成连接、解析、调度和容错四个控制面。到了协议层，同一组 API 继续用 HTTP/1.1、升级到 HTTP/2、切到 HTTP/3/QUIC，或者改成 gRPC，性能收益和兼容成本完全不同。
 
-协议优化的目标不是追新，而是减少等待段。HTTP/2 主要减少同域名并发请求的连接数量；HTTP/3/QUIC 主要降低丢包、网络切换和建连恢复的损耗；gRPC 适合强契约、高频内部 RPC 和长连接流式场景。TLS、证书、连接池和 DNS 的细节详见 12.3、12.4，本节只保留选型时要用到的工程结论。
+协议优化的目标是减少等待段，不是追新。HTTP/2 主要减少同域名并发请求的连接数量；HTTP/3/QUIC 主要降低丢包、网络切换和建连恢复的损耗；gRPC 适合强契约、高频内部 RPC 和长连接流式场景。TLS、证书、连接池和 DNS 的细节详见 12.3、12.4，这里把它们压缩成选型时要用到的工程结论。
 
 本节参考书用于组织分析顺序：先拆速度来源，再看线程等待和缓存命中，再回到网络请求的协议成本。正文不使用参考书原文，也不复用参考书代码。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
@@ -131,7 +134,7 @@ HTTP/3 的工程价值主要在三类场景：
 | 网络切换 | connection ID 支持 Wi-Fi / 蜂窝切换时保留连接上下文 | 网络切换后的失败率、重连次数、恢复耗时 |
 | 高频短请求 | 结合会话恢复降低重复建连成本 | 首包耗时、握手耗时、复用率 |
 
-Android 端的公开接入路径有两条。API 34 起，`android.net.http.HttpEngine` 是平台暴露的 HTTP 引擎；本地 Android 35 SDK source 中，`HttpEngine.Builder` 注释写明默认配置启用 HTTP/2 和 QUIC，HTTP cache 默认关闭。Cronet 是以库形式提供给 App 的 Chromium 网络栈，Android 官方文档说明 Cronet 原生支持 HTTP、HTTP/2、HTTP/3 over QUIC。 [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/http/HttpEngine.java] [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet]
+Android 端的公开接入路径有两条。API 34 起，`android.net.http.HttpEngine` 是平台暴露的 HTTP 引擎；本地 Android 35 SDK source 中，`HttpEngine.Builder` 注释写明默认配置启用 HTTP/2 和 QUIC，HTTP 缓存默认关闭。Cronet 是以库形式提供给 App 的 Chromium 网络栈，Android 官方文档说明 Cronet 原生支持 HTTP、HTTP/2、HTTP/3 over QUIC。 [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/http/HttpEngine.java] [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet]
 
 媒体场景还有一个明确口径：Media3 文档写明，API 34（或 S extensions 7）起，HttpEngine 是 Android 上推荐的默认网络栈；多数情况下它内部使用 Cronet，并支持 HTTP、HTTP/2、HTTP/3 over QUIC。视频、音频、长下载这类吞吐敏感场景，可以优先评估 HttpEngine / Cronet，而不是只在 OkHttp 上继续调连接池。 [已验证: 官方文档, https://developer.android.com/media/media3/exoplayer/network-stacks]
 
@@ -222,9 +225,9 @@ class ProtocolEvent(
 
 因此，迁移时要把“传输栈替换”和“业务网络层契约”分开：
 
-- Auth header、trace id、灰度 header、压缩策略要在新栈里逐项对齐。
+- Auth header、trace id、灰度 header、压缩策略要在新栈里逐项核对。
 - 证书固定、Network Security Config、代理和抓包开关要有测试用例。
-- HTTP cache、业务缓存、CDN cache 的命中口径要重新核对。
+- HTTP 缓存、业务缓存、CDN 缓存的命中口径要重新核对。
 - APM 里的 DNS、connect、handshake、TTFB 字段要能兼容新栈。
 - 灰度开关要支持按 host、接口、网络类型和 App 版本回滚。
 
@@ -234,7 +237,7 @@ class ProtocolEvent(
 
 ### 服务端推送的替代方案
 
-HTTP/2 Server Push 不建议作为移动端默认方案。可替代方案包括首屏聚合接口、客户端显式预取、HTTP cache、CDN cache、离线缓存和服务端按页面维度返回资源清单。每种方案都比 server push 更容易观测命中率和浪费率。 [已验证: 官方文档, https://developer.chrome.com/blog/removing-push]
+HTTP/2 Server Push 不建议作为移动端默认方案。可替代方案包括首屏聚合接口、客户端显式预取、HTTP 缓存、CDN 缓存、离线缓存和服务端按页面维度返回资源清单。每种方案都比 server push 更容易观测命中率和浪费率。 [已验证: 官方文档, https://developer.chrome.com/blog/removing-push]
 
 ### 协议灰度实验设计
 
