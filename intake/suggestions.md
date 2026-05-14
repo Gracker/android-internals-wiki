@@ -1163,3 +1163,16 @@
 - **问题**：正文只写“临时文件 + rename”，缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描与 partial 清理规则；Task6 已标注回炉。
 - **建议**：由 Task2B 补完整 crash 样本持久化协议，并让 Task9 复核崩溃/断电边界。
 - **review 日志**：logs/review/2026-05-15-06-review.md
+
+
+## [Task9 Deep Review] 26.7 发版质量门禁 — 2026-05-15
+- **类型**：数据缺失 / 发布信号口径
+- **位置**：L85、L145、L169 Android Vitals 作为灰度门禁信号
+- **问题**：正文已经写到 Vitals 使用 28 天窗口，但灰度状态机又把 Vitals 放进 50%-100% 阶段的同源异常判断，缺少“慢信号”边界。Play Vitals 更适合做外部质量守门、上架风险和回滚后长期确认，不能和分钟级 APM / Crash 上报混成同一放量判定窗口。
+- **建议**：把门禁信号拆成 fast signals（APM、Crash/ANR 上报、启动/帧率分群、客服/日志）和 slow signals（Vitals 28 天窗口、Play warning、商店可见性影响）。状态机里说明 50%-100% 阶段以 fast signals 决定是否升档/暂停，Vitals 用于发布后复核和外部质量红线。
+
+## [Task9 Deep Review] 26.7 发版质量门禁 — 2026-05-15
+- **类型**：数据缺失 / 官方资料边界
+- **位置**：L153-L164 全量发布后的 halt 能力
+- **问题**：正文引用 `edits.tracks` / `tracks` 说明 `inProgress` staged release 可更新为 `halted`，但 L164 又写“已 100% 发布后使用商店 halt 能力”。全量 halt 是 Play Console 另一个能力，当前参考资料没有覆盖；且 halt 只能阻止更多用户拿到问题版本，不能让已安装用户自动降级。
+- **建议**：如果保留“全量 halt”结论，补充 Play Console Help 的 fully rolled-out release halt 资料与限制（排除 internal test track、通过 Play Console/Publishing API、不会修复既有安装）；否则把 L164 改成“已全量后以修复包 + 服务端降级为主，仍处于 staged rollout 时才 halt”。

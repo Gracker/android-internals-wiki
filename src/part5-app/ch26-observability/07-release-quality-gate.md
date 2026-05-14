@@ -32,10 +32,16 @@ sources:
     path: "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
 tags: [quality-gate, release, canary, rollback]
 related_chapters: ["26.6", "26.3", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_reviewed_date: '2026-05-15'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-15T06:28:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-15-06-deep-review.md
+task9_result: needs-rework
+task9_review_notes: 2026-05-15 Task9 06: needs-rework。P1 1：Macrobenchmark TTFD / FrameTimingMetric overrun 版本边界未写清；P2 2：Vitals 慢信号口径、全量 halt 资料与限制。已写入 logs/deep-review/2026-05-15-06-deep-review.md。
 ---
 
 # 发版质量门禁
