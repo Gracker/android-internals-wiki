@@ -14,26 +14,26 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_result: needs-rework
+reviewed_date: "2026-05-14"
+task6_result: pass-light-edit
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T08:47:50+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 3 / P1 2 / P2 3；Strong Skipping 默认版本、@Immutable 契约、LazyLayoutCacheWindow API 示例仍需回炉；Compose Profiler/benchmark 来源仍缺。"
-last_task6_review_log: "logs/review/2026-05-13-16-review.md"
+last_task6_review_log: "logs/review/2026-05-14-16-review.md"
 ---
 
 # Jetpack Compose 性能优化
 
-Compose 渲染管线的原理和机制在 §7.7 已详细拆解。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
+Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
 本文使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。滚动性能与 View 系统性能对等、Google 内部长列表滚动基准测试卡顿率降至 0.2% 这两个判断，需要补齐官方声明链接、测试条件和 Foundation 版本边界。[待验证: Google 官方声明、测试条件与 Foundation 版本] 在可用且启用 Pausable Composition 的版本里，长列表组合阻塞主线程的风险由 Compose 运行时分担一部分；开发者仍要关注组合范围控制、状态读取阶段和互操作开销。
 
@@ -54,7 +54,7 @@ Compose 运行时的跳过（skip）机制：如果一个 `@Composable` 函数�
 
 ### Strong Skipping Mode（Kotlin 2.0 起默认启用）
 
-Compose compiler 从 Kotlin 2.0 起默认启用 Strong Skipping Mode。这个变化直接改写了 Compose 性能优化的最佳实践。
+Compose compiler 从 Kotlin 2.0 起默认启用 Strong Skipping Mode。这个变化改变了 Compose 性能优化的优先级。
 
 **Strong Skipping 之前**：只有参数类型被标记为 `@Stable` 或 `@Immutable` 的 Composable 函数才会被跳过。Lambda 参数默认不被 memoize，每次父 Composable 重组时，lambda 参数都是新对象（引用不等），导致接收 lambda 的子 Composable 无法跳过。
 
@@ -75,7 +75,7 @@ fun MyScreen(viewModel: ViewModel) {
 // 不需要手动 remember { { viewModel.doSomething() } }
 ```
 
-**代价**：自动 memoize 会增加 `remember` 缓存的内存占用。在 lambda 数量极多（数百个）的 Composable 树中，这部分开销需要关注。但对比减少的重组次数，绝大多数场景下是正收益。
+**代价**：自动 memoize 会增加 `remember` 缓存的内存占用。在 lambda 数量极多（数百个）的 Composable 树中，这部分开销需要关注。但和减少的重组次数相比，绝大多数场景下是正收益。
 
 **对已有代码的影响**：很多以前必须手写的 `remember { }` 包裹 lambda 的优化代码，现在可以删掉了。如果项目已经升级到 Kotlin 2.0+，手动 `remember` lambda 的代码不会出错，但属于冗余操作。
 
@@ -112,8 +112,7 @@ class ScrollState(
 `@Immutable` 比 `@Stable` 更严格：要求类的所有属性在构造后不可变。用于 data class 或 val-only 的类，是一个编译器承诺而非运行时检查——标注了 `@Immutable` 但实际有可变字段，运行时不会报错，但可能导致应该跳过的重组没有跳过。
 
 
-
-## 状态读取阶段：性能差距的分水岭
+## 状态读取阶段：性能差异的来源
 
 ### Composition、Layout、Draw 三阶段的状态读取
 
@@ -142,7 +141,7 @@ fun AnimatedBox() {
 }
 ```
 
-场景 B 的性能优势在动画场景下非常明显：一个 60fps 的颜色动画，如果走 Composition 阶段，每秒触发 60 次重组；如果走 Draw 阶段，每秒只触发 60 次绘制——绘制本身是 GPU 操作，比重新执行 Composable 函数函数体的 CPU 开销小一到两个数量级。
+场景 B 的性能优势在动画场景下非常明显：一个 60fps 的颜色动画，如果走 Composition 阶段，每秒触发 60 次重组；如果走 Draw 阶段，每秒只触发 60 次绘制——绘制本身是 GPU 操作，比重新执行 Composable 函数体的 CPU 开销小一到两个数量级。
 
 **实战判断规则**：
 - 如果状态变化只影响视觉效果（颜色、透明度、位移、缩放），用 `Modifier.graphicsLayer` 或 `Modifier.drawBehind` 在 Draw 阶段读取。
@@ -184,7 +183,7 @@ fun BadUsage(scrollState: LazyListState) {
 }
 ```
 
-`derivedStateOf` 内部维护了一套依赖监听机制，有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式：把所有状态操作都包一层 `derivedStateOf`，以为能"自动优化"。实际效果是增加了 `SnapshotStateObserver` 的订阅数量，没有减少任何重组。
+`derivedStateOf` 内部维护了一套依赖监听机制，有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式：把所有状态操作都包一层 `derivedStateOf`，以为能"自动优化"。实际效果是增加 `SnapshotStateObserver` 的订阅数量，却没有减少重组。
 
 [已验证: AOSP Compose Runtime, DerivedState.kt]
 

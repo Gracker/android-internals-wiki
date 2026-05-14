@@ -101,7 +101,8 @@
     "20.9",
     "24.8",
     "25.1",
-    "25.2"
+    "25.2",
+    "25.3"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -198,14 +199,15 @@
     "src/part5-app/ch20-stability/09-stability-case-studies.md",
     "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
     "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-    "src/part5-app/ch25-power-size/02-background-power.md"
+    "src/part5-app/ch25-power-size/02-background-power.md",
+    "src/part5-app/ch25-power-size/03-wakelock-alarm.md"
   ],
-  "review_summary": "Task9 2026-05-14 15:33：审计 25.2、21.1；发现 P0 2 / P1 2 / P2 0，均回炉 Task2B；本轮无自动晋升。",
+  "review_summary": "Task6 2026-05-14 16:14：审查 21.1、22.3、25.3；完成 18 处 L1/L2 小修；无新增 L3/L4 回炉；无自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 465,
+    "l1_l2_fixes": 483,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 490,
+    "total_issues": 508,
     "auto_promotions": 10
   },
   "issues_by_section": {
@@ -746,11 +748,11 @@
       "p3": 0
     }
   },
-  "total_review_sections": 95,
+  "total_review_sections": 96,
   "next_review_candidates": [],
   "ready_for_review": 72,
-  "last_updated": "2026-05-14T16:10:44+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-14T16:14:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "task6_last_review": {
     "at": "2026-05-14T15:12:00+08:00",
     "log": "logs/review/2026-05-14-15-review.md",
@@ -1356,11 +1358,18 @@
     "22.3": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "queue_priority": 95,
       "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "title": "Jetpack Compose 性能优化",
+      "last_task6_at": "2026-05-14T16:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
     },
     "1.3": {
       "status": "finalized",
@@ -1728,13 +1737,32 @@
     },
     "25.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-14T16:10:44+08:00",
       "file": "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
-      "title": "WakeLock 与 Alarm 管理"
+      "title": "WakeLock 与 Alarm 管理",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-14T16:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
+    },
+    "21.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 95,
+      "file": "src/part5-app/ch21-startup/01-startup-analysis.md",
+      "title": "启动完整路径分析（App 视角）",
+      "last_task9_at": "2026-05-14T15:33:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-15-deep-review.md",
+      "last_task6_at": "2026-05-14T16:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
     }
   },
   "task2b_rounds": [
@@ -1794,30 +1822,33 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
-  "total_review_files": 95,
+  "total_review_files": 96,
   "last_task2a_at": "2026-05-14T16:10:44+08:00",
   "last_task2a_section": "25.3",
   "last_task2a_file": "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
-  "last_task6_review": "logs/review/2026-05-14-15-review.md",
+  "last_task6_review": "logs/review/2026-05-14-16-review.md",
   "last_task6_sections": [
-    "25.1",
-    "25.2"
+    "21.1",
+    "22.3",
+    "25.3"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-    "src/part5-app/ch25-power-size/02-background-power.md"
+    "src/part5-app/ch21-startup/01-startup-analysis.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch25-power-size/03-wakelock-alarm.md"
   ],
-  "last_task6_at": "2026-05-14T15:12:00+08:00",
+  "last_task6_at": "2026-05-14T16:14:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-14T15:12:00+08:00",
-    "log": "logs/review/2026-05-14-15-review.md",
+    "at": "2026-05-14T16:14:00+08:00",
+    "log": "logs/review/2026-05-14-16-review.md",
     "sections": [
-      "25.1",
-      "25.2"
+      "21.1",
+      "22.3",
+      "25.3"
     ],
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 18,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "note": "本轮仅 25.1、25.2 满足 task6_state=pending；25.1 保留 Task9 P0/P1 回炉，25.2 送 Task9。"
+    "note": "21.1、22.3 已有 Task9 pending 技术回炉，Task6 本轮只做文稿小修并保持 task2b_pending；25.3 通过写作质检，送 Task9。"
   }
 }
