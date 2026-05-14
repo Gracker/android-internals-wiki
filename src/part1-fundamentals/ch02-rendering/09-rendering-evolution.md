@@ -15,14 +15,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-13T23:35:47+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -42,13 +42,13 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T02:37:00+08:00"
 task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 3;Vulkan profile 口径仍混淆,另有 RenderThread/FrameTimeline 表述、BLAST 版本总结和 16KB 页数据支撑需修正。"
-task6_review_notes: "2026-05-14 task6 review: 移除第一人称叙述、结构性过渡和冗余强调词;四层质检通过,无新增 L3/L4 回炉项,送 Task9 复审既有修复。"
-last_task6_review_log: "logs/review/2026-05-14-02-review.md"
-last_task6_at: "2026-05-14T02:13:00+08:00"
+task6_review_notes: "2026-05-14 Task6：L1/L2 小修（Vulkan profile 术语、BLAST 版本总结、标点）；发现 16KB Page Size 收益数据缺少测试条件/来源，已标注并写入 queue 回炉。"
+last_task6_review_log: "logs/review/2026-05-14-08-review.md"
+last_task6_at: "2026-05-14T08:11:00+08:00"
 ---
 # 渲染机制的版本演进
 
-打开 Perfetto 抓一份 Trace,通常会看到 `RenderThread` 在主线程旁边执行 GPU 命令,`VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列--这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线,经历了十多个 Android 大版本的持续重构。
+打开 Perfetto 抓一份 Trace,通常会看到 `RenderThread` 在主线程旁边执行 GPU 命令,`VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线,经历了十多个 Android 大版本的持续重构。
 
 理解这段演进历史,是性能分析的前置知识:Perfetto 中的每一个 Track 名称、每一项 API 行为,都带着版本烙印。面对一份来自 Android 12 设备的 Trace 时,如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`,就可能对着一个不存在的概念去排查问题。
 
@@ -66,7 +66,7 @@ Android 3.0(API 11,2011 年)引入了基于 OpenGL ES 2.0 的硬件加速渲染�
 
 HWUI 带来了三个核心概念:
 
-1. **DisplayList(后更名为 RenderNode)**:将 `View` 的绘制操作录制为一份命令列表,而非直接执行。当一个 `View` 只有位置变化(平移、旋转、缩放)时,无需重新录制所有 draw 命令,只需修改变换配置即可。这在 Perfetto 中体现为:同一个 `View` 的连续帧,主线程 `draw` 阶段的耗时会明显减少--因为只需修改配置参数,跳过了整个命令录制过程。
+1. **DisplayList(后更名为 RenderNode)**:将 `View` 的绘制操作录制为一份命令列表,而非直接执行。当一个 `View` 只有位置变化(平移、旋转、缩放)时,无需重新录制所有 draw 命令,只需修改变换配置即可。这在 Perfetto 中体现为:同一个 `View` 的连续帧,主线程 `draw` 阶段的耗时会明显减少——因为只需修改配置参数,跳过了整个命令录制过程。
 
 2. **硬件层(Hardware Layer)**:将复杂的 `View` 内容缓存为 GPU 纹理,后续帧只需做纹理合成,不再重复光栅化。适合频繁做动画但内容不变的 `View`。
 
@@ -80,7 +80,7 @@ HWUI 带来了三个核心概念:
 
 Android 4.0 Ice Cream Sandwich(API 14,2011 年)将硬件加速设为 **所有 targetSdk ≥ 14 应用的默认行为**。开发者不再需要手动添加 `android:hardwareAccelerated="true"`,GPU 渲染成为 Android UI 的标准路径。
 
-Android 4.0 同时要求搭载该版本的设备在硬件层面支持 GPU 加速的 2D 绘制--这部分取决于 SoC 的 GPU 能力,而非单纯由 Android 版本决定。对 `targetSdk ≥ 14` 的应用,硬件加速是默认行为;对更低 targetSdk 的应用,仍需手动开启或依赖设备兼容策略。
+Android 4.0 同时要求搭载该版本的设备在硬件层面支持 GPU 加速的 2D 绘制——这部分取决于 SoC 的 GPU 能力,而非单纯由 Android 版本决定。对 `targetSdk ≥ 14` 的应用,硬件加速是默认行为;对更低 targetSdk 的应用,仍需手动开启或依赖设备兼容策略。
 
 > [已验证: L2 - developer.android.com/about/versions/android-4.0-highlights]
 
@@ -104,7 +104,7 @@ Android 4.1 Jelly Bean(API 16,2012 年)的 **Project Butter** 是渲染流畅度
 
 `DispSync` 的实现方式是:SurfaceFlinger 从 HWC 接收硬件 VSync 中断,用软件模型(基于历史时间戳的线性回归)推导出两路带 offset 的软件节拍。这个模型在 VSync 周期稳定时工作良好,但在刷新率动态切换(如 ARR)或 VSync 偏移需要频繁调整的场景下,线性回归的收敛速度和精度都有限。
 
-Android 12 开始逐步将 `DispSync` 替换为 `VsyncPredictor`。`VsyncPredictor` 使用更灵活的预测算法(支持非线性和突变适应),能更快跟上刷新率切换带来的 VSync 周期变化,这在 Android 15+ 的 ARR 设备上尤为重要。对外接口不变--Perfetto 中仍然是 `VSYNC-app` 和 `VSYNC-sf` 两路节拍,变的是内部预测器的实现。排查 Trace 时不需要区分 `DispSync` 和 `VsyncPredictor`,但读到旧版 AOSP 源码时要知道实现已换。
+Android 12 开始逐步将 `DispSync` 替换为 `VsyncPredictor`。`VsyncPredictor` 使用更灵活的预测算法(支持非线性和突变适应),能更快跟上刷新率切换带来的 VSync 周期变化,这在 Android 15+ 的 ARR 设备上尤为重要。对外接口不变——Perfetto 中仍然是 `VSYNC-app` 和 `VSYNC-sf` 两路节拍,变的是内部预测器的实现。排查 Trace 时不需要区分 `DispSync` 和 `VsyncPredictor`,但读到旧版 AOSP 源码时要知道实现已换。
 
 [图:VSync 信号分发时序图,展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
 
@@ -124,7 +124,7 @@ Android 12 开始逐步将 `DispSync` 替换为 `VsyncPredictor`。`VsyncPredict
 
 ### RenderThread 的工作方式
 
-Android 5.0 Lollipop(API 21,2014 年)引入了 **RenderThread**--一个系统管理的专用渲染线程。
+Android 5.0 Lollipop(API 21,2014 年)引入了 **RenderThread**——一个系统管理的专用渲染线程。
 
 新的流程变成:
 
@@ -133,7 +133,7 @@ Android 5.0 Lollipop(API 21,2014 年)引入了 **RenderThread**--一个系统管
 3. **RenderThread** 独立执行 GPU 命令:遍历 `RenderNode` 树,将 Skia draw 命令转为 GL/Vulkan 调用,提交给 GPU
 4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
 
-在 Perfetto 中,`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后,`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长,但 `UI Thread` 已经空闲,说明 GPU 是瓶颈,而非主线程代码问题。反过来,如果 `DrawFrame` 还没开始,`UI Thread` 上的 `performTraversals` 就已经超了帧预算,那瓶颈在主线程的 measure/layout/draw--RenderThread 再快也救不回来。
+在 Perfetto 中,`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后,`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长,但 `UI Thread` 已经空闲,说明 GPU 是瓶颈,而非主线程代码问题。反过来,如果 `DrawFrame` 还没开始,`UI Thread` 上的 `performTraversals` 就已经超了帧预算,那瓶颈在主线程的 measure/layout/draw——RenderThread 再快也救不回来。
 
 [图:Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图,标注 performTraversals 和 DrawFrame 的时序关系]
 
@@ -192,10 +192,10 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 
 ### BLASTBufferQueue 的核心改进
 
-1. **Buffer 与 Transaction 绑定提交**:BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交,改善了几何变化(位置/大小/裁剪)与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定--当 slot 耗尽或 release fence 未 signal 时,App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住。
+1. **Buffer 与 Transaction 绑定提交**:BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交,改善了几何变化(位置/大小/裁剪)与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定——当 slot 耗尽或 release fence 未 signal 时,App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住。
 2. **多进程同步优化**:当多个 App 进程向同一个 SurfaceFlinger 提交内容时,`BLASTBufferQueue` 提供了更健壮的同步机制
 
-在 Perfetto 中,这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果仍沿用 Android 11 及之前的 `BufferQueue` Track 经验,在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中,如果 Android 12+ 设备的 Trace 里出现 `dequeueBuffer` 等待时间异常拉长,不要急着按旧经验去查 BufferQueue slot 状态--先确认走的是 BLAST 路径还是旧路径,再决定排查方向。
+在 Perfetto 中,这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果仍沿用 Android 11 及之前的 `BufferQueue` Track 经验,在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中,如果 Android 12+ 设备的 Trace 里出现 `dequeueBuffer` 等待时间异常拉长,不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径,再决定排查方向。
 
 [图:Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
@@ -216,7 +216,7 @@ Android 16 在图形 API 方面有几个变化,但需要把不同层面拆开看
 **ANGLE 的实际部署情况。** ANGLE(Almost Native Graphics Layer Engine)是一个将 OpenGL ES 调用翻译为 Vulkan 的兼容层,Google 在多个版本中持续推动其集成。但截至 Android 16,ANGLE 的系统级启用仍受设备白名单和系统属性控制,不是所有 OpenGL ES App 的调用都默认经过 ANGLE 翻译。排查时可通过 `adb shell getprop persist.graphics.angle.enabled` 和 `adb shell dumpsys gfxinfo` 确认当前设备的 ANGLE 状态。
 
 对开发者的影响:
-- 新设备需要满足 VPA16 的 Vulkan 能力要求
+- 新设备需要满足 `VP_ANDROID_16_minimums` 的 Vulkan 最低能力要求
 - 游戏和图形密集型应用应优先使用 Vulkan API
 - OpenGL ES App 不需要改代码,但不要假设系统已自动切换到 ANGLE/Vulkan 后端
 - 可通过 `VP_ANDROID_vulkan_profile_2025`（Android Vulkan Profile 2025）确保跨版本设备兼容性
@@ -266,7 +266,7 @@ ARR 将**显示刷新率与内容帧率解耦**:内容只有 30 FPS 时,系统�
 
 ### Choreographer 的版本变化
 
-从 Android 4.1 引入到 Android 16,Choreographer 的核心职责未变--在 VSync 信号到来时调度帧工作。但实现细节在持续优化:
+从 Android 4.1 引入到 Android 16,Choreographer 的核心职责未变——在 VSync 信号到来时调度帧工作。但实现细节在持续优化:
 
 - Android 4.1:引入 `Choreographer`,VSync 信号通过 `DisplayEventReceiver` 的 native 层接收
 - Android 5.0:与 RenderThread 协作,`doFrame()` 的 `CALLBACK_COMMIT` 阶段将帧提交给 RenderThread
@@ -274,7 +274,7 @@ ARR 将**显示刷新率与内容帧率解耦**:内容只有 30 FPS 时,系统�
 
 ### FrameMetrics API:量化每一帧的"慢"在哪里
 
-分析卡顿时,核心冲突在于:"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具--它把一帧的完整生命周期划分为多个阶段,标出时间究竟花在哪里。
+分析卡顿时,核心冲突在于:"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期划分为多个阶段,标出时间究竟花在哪里。
 
 FrameMetrics 在 Android 7.0(API 24)引入,通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调,系统会在每帧渲染完成后回调一次,附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点,就能拿到完整的帧耗时分布。
 
@@ -297,7 +297,7 @@ FrameMetrics 将一帧的渲染划分为以下阶段:
 
 第一是**单帧瓶颈定位**。如果 `LAYOUT_MEASURE_DURATION` 占比最高,说明 View 层级过深或 layout 逻辑过重;如果 `COMMANDS_DURATION` 高,说明 GPU 是瓶颈;如果 `SYNC_DURATION` 异常,可能是主线程和 RenderThread 之间的同步出了问题(常见于大量 RenderNode 变更的场景)。
 
-第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据,可以建立帧耗时的时间线,发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点--每一帧都有"预期完成时间"和"实际完成时间"的对比,绿色表示准时,红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来,就能精确定位 Jank 的根因。
+第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据,可以建立帧耗时的时间线,发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比,绿色表示准时,红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来,就能精确定位 Jank 的根因。
 
 FrameMetrics 只在 App 进程内可用(它是 per-window 的 API)。如果要分析系统级的帧率问题(如 SurfaceFlinger 合成延迟),需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
 
@@ -442,7 +442,7 @@ Unreal Engine 已集成 Swappy。
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升;自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | VP_ANDROID_16_minimums Vulkan 最低要求 profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 1.4 新设备准入 + VP_ANDROID_16_minimums 强制扩展集；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
-| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上实现 | TLB 命中率提升约 9%,渲染管线有效带宽增益 |
+| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上实现 | TLB 命中率提升约 9%，渲染管线有效带宽增益 [需补充素材: 16KB Page Size 对 TLB 命中率和渲染管线有效带宽增益的测试条件、数据来源] |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布(稳定版 BP2A.250605.031.A2),确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
@@ -450,25 +450,25 @@ Unreal Engine 已集成 Swappy。
 
 ## 常见问题与误区
 
-### "硬件加速从 Android 4.0 才开始"--不准确
+### "硬件加速从 Android 4.0 才开始"——不准确
 
-Android 3.0 就引入了 HWUI 硬件加速,4.0 只是将它设为默认开启。如果分析的是 targetSdk < 14 的老应用,它可能仍在走 CPU 软件渲染路径--在 Perfetto 中表现为 `draw` 阶段没有对应的 GPU 工作,主线程负责全部光栅化。
+Android 3.0 就引入了 HWUI 硬件加速,4.0 只是将它设为默认开启。如果分析的是 targetSdk < 14 的老应用,它可能仍在走 CPU 软件渲染路径——在 Perfetto 中表现为 `draw` 阶段没有对应的 GPU 工作,主线程负责全部光栅化。
 
-### "RenderThread 是 App 自己创建的线程"--不是
+### "RenderThread 是 App 自己创建的线程"——不是
 
 RenderThread 是 `hwui` 库内部管理的系统线程,每个拥有硬件加速 Window 的进程都会自动创建一个。它不是 `Thread` 的子类,而是通过 native 代码(`renderthread::RenderThread.cpp`)实现的。在 Perfetto 中它的线程名通常是 `RenderThread`。
 
-### "BLASTBufferQueue 在 Android 12 就完全替代了 BufferQueue"--部分替代,且起点是 Android 11
+### "BLASTBufferQueue 在 Android 12 就完全替代了 BufferQueue"——部分替代,且起点是 Android 11
 
 BLASTBufferQueue 的主窗口迁移从 Android 11 就开始了(`ViewRootImpl.mBlastBufferQueue`),Android 12 扩展到更多 Surface 类型并引入 FrameTimeline 观测。BLAST 替代的是 **App 端**与 SurfaceFlinger 之间的 Buffer 流转。SurfaceFlinger 内部以及系统服务之间的 Buffer 管理仍然使用 `BufferQueue`。在 Perfetto 中,两者的 Track 共存是正常的。
 
-**BLAST 与旧 BufferQueue 的关键机制差异**:旧 BufferQueue 中,buffer 的几何属性(位置、大小、裁剪)通过独立的 `setGeometryAppliesWithResize` / `setCrop` 等调用传递,与 buffer 本身的提交是分离的--窗口旋转或 resize 时,几何变化可能比 buffer 内容早到或晚到,导致短暂的帧不一致。BLAST 将 buffer 和 `SurfaceControl.Transaction` 绑定到同一帧边界:几何属性和 buffer 内容在同一个 Transaction 中原子提交,SurfaceFlinger 按帧边界对齐处理。Buffer 生命周期管理也有差异:旧 BufferQueue 的 `dequeueBuffer` 阻塞条件由 slot 数量和 consumer 的 release 速度决定;BLAST 的 `dequeueBuffer` 仍受 slot/fence 约束,但通过 Transaction 绑定,release 时机与 SF 的合成节奏更紧密地耦合--SF 完成一帧合成后才 release 对应的 Transaction 和 buffer。
+**BLAST 与旧 BufferQueue 的关键机制差异**:旧 BufferQueue 中,buffer 的几何属性(位置、大小、裁剪)通过独立的 `setGeometryAppliesWithResize` / `setCrop` 等调用传递,与 buffer 本身的提交是分离的——窗口旋转或 resize 时,几何变化可能比 buffer 内容早到或晚到,导致短暂的帧不一致。BLAST 将 buffer 和 `SurfaceControl.Transaction` 绑定到同一帧边界:几何属性和 buffer 内容在同一个 Transaction 中原子提交,SurfaceFlinger 按帧边界对齐处理。Buffer 生命周期管理也有差异:旧 BufferQueue 的 `dequeueBuffer` 阻塞条件由 slot 数量和 consumer 的 release 速度决定;BLAST 的 `dequeueBuffer` 仍受 slot/fence 约束,但通过 Transaction 绑定,release 时机与 SF 的合成节奏更紧密地耦合——SF 完成一帧合成后才 release 对应的 Transaction 和 buffer。
 
-### "VSync 信号间隔永远固定"--ARR 打破了这个假设
+### "VSync 信号间隔永远固定"——ARR 打破了这个假设
 
 在支持 ARR 的设备上(Android 15+),`VSYNC-app` 的间隔会随内容帧率动态调整。分析 Perfetto Trace 时,如果看到 `VSYNC-app` 间隔在 8.33ms 和 33.3ms 之间跳变,这不是异常,而是 ARR 在工作。需要结合 `FrameTimeline` Track 来判断帧是否准时完成,而非单纯看 VSync 间距。
 
-### "FrameMetrics 能分析系统级问题"--不能
+### "FrameMetrics 能分析系统级问题"——不能
 
 FrameMetrics 是 per-window、per-process 的 API,只能报告当前 App 进程内某一帧的各阶段耗时。如果要分析 SurfaceFlinger 合成延迟、HWC 行为等系统级问题,必须使用 Perfetto Trace。两者的定位完全不同:FrameMetrics 用于 App 端自省,Perfetto 用于全系统分析。
 
@@ -503,16 +503,16 @@ FrameMetrics 是 per-window、per-process 的 API,只能报告当前 App 进程�
 
 回看这段从 Android 3.0 到 16 的渲染演进,有一条清晰的线索:**把更多工作交给 GPU,把主线程解放出来**。
 
-最初,CPU 包揽了从 Measure/Layout/Draw 到像素生成的全部工作。OpenGL ES 硬件加速把像素生成交给了 GPU;RenderThread 把 GPU 命令提交从主线程剥离出去;SkiaGL/SkiaVulkan 统一了 GPU 后端;BLASTBufferQueue 让 Buffer 提交变成异步操作。每一步都在减轻主线程的负担--这也是为什么在 Perfetto 中,现代 Android 的主线程 `performTraversals` 可以非常短:它只需要录制 RenderNode,GPU 工作全部在 `RenderThread` Track 上执行。
+最初,CPU 包揽了从 Measure/Layout/Draw 到像素生成的全部工作。OpenGL ES 硬件加速把像素生成交给了 GPU;RenderThread 把 GPU 命令提交从主线程剥离出去;SkiaGL/SkiaVulkan 统一了 GPU 后端;BLASTBufferQueue 让 Buffer 提交变成异步操作。每一步都在减轻主线程的负担——这也是为什么在 Perfetto 中,现代 Android 的主线程 `performTraversals` 可以非常短:它只需要录制 RenderNode,GPU 工作全部在 `RenderThread` Track 上执行。
 
 另一条线索是**渲染节奏从固定到自适应**。Project Butter 确立了 VSync 驱动 60 FPS 的模型,但固定刷新率在高帧率设备上浪费功耗。ARR 让刷新率跟随内容帧率动态调整,`VSYNC-app` 不再是均匀的节拍器。Perfetto 分析也需要相应调整:不能只看 VSync 间隔是否均匀,还要结合 `FrameTimeline` 判断帧是否在预期时间内完成。
 
 理解这些版本差异,是分析 Perfetto Trace 的前提条件。下面是几个在实战中踩过的版本认知坑。
 
-**坑 1:对着 Android 12+ 的 Trace 找 "BufferQueue" slice。** Android 12 起主窗口 Buffer 流转走 BLASTBufferQueue,旧版 Perfetto 教程里提到的 `BufferQueue` Track 在新设备上可能只剩副窗口或系统内部路径。如果盯着一个已经不存在的 Track 做分析,结论必然跑偏。排查时先确认设备版本,再决定用哪个 Buffer 管理概念去解读 Trace。
+**坑 1：对着 Android 12+ 的 Trace 找 "BufferQueue" slice。** Android 11 起主窗口路径逐步迁移到 BLASTBufferQueue，Android 12 后覆盖范围扩大。旧版 Perfetto 教程里提到的 `BufferQueue` Track 在新设备上可能只剩副窗口或系统内部路径。如果盯着一个已经不存在的 Track 做分析，结论必然跑偏。排查时先确认设备版本，再决定用哪个 Buffer 管理概念去解读 Trace。
 
 **坑 2:认为 VSYNC-app 间隔永远是固定值。** 在支持 ARR 的设备(Android 15+)上,当 App 请求 30 FPS 时,`VSYNC-app` 间隔会从 8.33ms(120Hz)跳到 33.3ms(30Hz)。如果仍然按"每 16.67ms 一个 VSync"的经验去判断是否掉帧,会把 ARR 正常的帧率切换误判为渲染异常。遇到 VSync 间隔不均匀时,先检查 `FrameTimeline` Track 里对应帧的 `PRESENT_ON_TIME` 状态,再下结论。
 
-**坑 3:在 Android 4.x 的 Trace 里找 RenderThread。** RenderThread 从 Android 5.0 才引入。如果分析的是一台跑 Android 4.4 的老设备,GPU 命令提交仍在主线程上。这时候 `performTraversals` 里面会包含 `eglSwapBuffers` 的等待--这是 Android 4.x 架构下 GPU 同步的必然行为,拿 Android 5.0+ 的 RenderThread 模型去套就会误判。
+**坑 3:在 Android 4.x 的 Trace 里找 RenderThread。** RenderThread 从 Android 5.0 才引入。如果分析的是一台跑 Android 4.4 的老设备,GPU 命令提交仍在主线程上。这时候 `performTraversals` 里面会包含 `eglSwapBuffers` 的等待——这是 Android 4.x 架构下 GPU 同步的必然行为,拿 Android 5.0+ 的 RenderThread 模型去套就会误判。
 
-`RenderThread` Track 从 Android 5.0 才存在;`BLASTBufferQueue` 从 Android 12 开始取代 `BufferQueue`;ARR 设备上的 `VSYNC-app` 间隔会动态变化--拿到一份 Trace 的第一件事,是确认设备系统版本,再决定用哪套概念模型去解读。
+`RenderThread` Track 从 Android 5.0 才存在；`BLASTBufferQueue` 主窗口迁移从 Android 11 开始，Android 12 后覆盖范围扩大；ARR 设备上的 `VSYNC-app` 间隔会动态变化。拿到一份 Trace 的第一件事，是确认设备系统版本，再决定用哪套概念模型解读。
