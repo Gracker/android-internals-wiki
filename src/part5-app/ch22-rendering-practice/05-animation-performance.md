@@ -10,13 +10,17 @@ confidence: medium
 drafted_date: "2026-05-13"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-polish_count: 0
+reviewed_date: "2026-05-14"
+polish_count: 1
 sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
     path: "Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md"
+  - type: research
+    path: "Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md"
+  - type: source
+    path: "intake/external-resources/blog-gracker-series.md"
   - type: aosp
     path: "frameworks/base/core/java/android/view/ViewPropertyAnimator.java"
   - type: aosp
@@ -33,9 +37,9 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
@@ -73,7 +77,7 @@ last_task9_at: 2026-05-13T08:40:35+08:00
 
 动画问题很少只属于动画库。一次掉帧可能来自主线程每帧执行属性 setter，也可能来自 `RenderThread` 的纹理上传、`RenderEffect` 的离屏渲染，或者转场期间触发整棵 View 树重新测量。
 
-本节把动画优化拆成四类决策：选哪种动画模型、哪些视觉效果会推高 GPU 成本、主线程每帧要做多少事、转场是否扩大了布局和绘制范围。具体的渲染管线原理详见 2.5 节，本节只保留实战判断和检查项。
+动画优化可以拆成四类决策：选哪种动画模型、哪些视觉效果会推高 GPU 成本、主线程每帧要做多少事、转场是否扩大了布局和绘制范围。具体的渲染管线原理详见 2.5 节；动画侧的排查重点是模型选择、GPU 成本、主线程工作量和转场范围。
 
 
 ## 属性动画 vs 帧动画的性能差异
@@ -186,7 +190,7 @@ fun View.applyBlurIfSupported(radiusPx: Float, enabled: Boolean) {
 
 ## 动画与主线程的关系
 
-动画帧由 Choreographer 驱动。每个 VSync 周期里，主线程处理 input、animation、traversal 等阶段；RenderThread 再同步 RenderNode 状态并执行绘制。2.5 节已经展开主线程和 RenderThread 的协作，本节只看动画侧的实操判断。
+动画帧由 Choreographer 驱动。每个 VSync 周期里，主线程处理 input、animation、traversal 等阶段；RenderThread 再同步 RenderNode 状态并执行绘制。2.5 节已经展开主线程和 RenderThread 的协作；动画侧排查时，重点看每帧有多少工作留在 UI Thread，以及哪些绘制成本转移到了 RenderThread。
 
 [详见 2.5 节]
 
@@ -277,7 +281,7 @@ MotionLayout 适合复杂的多属性协同动画：一个进度值同时驱动�
 2. **是否每帧触发布局**：动画中改变 `layout_width/height`、约束关系、文本内容，都会扩大主线程成本；能用 transform 表达的效果不要改约束。
 3. **是否容易降级**：复杂首屏动效要有简化版 MotionScene 或直接跳过动画的路径，尤其是低端机和省电模式。
 
-MotionLayout 的调试重点不是“动画能不能跑”，而是 trace 里每帧成本是否稳定。发现 `performTraversals` 跟着 MotionLayout 进度稳定拉长时，先减少参与动画的子 View 数量，再把尺寸变化改成 scale / translation；如果仍然超时，再拆成多个小的 MotionLayout。
+MotionLayout 的调试重点放在 trace 里每帧成本是否稳定；动画能跑只是最低要求。发现 `performTraversals` 跟着 MotionLayout 进度稳定拉长时，先减少参与动画的子 View 数量，再把尺寸变化改成 scale / translation；如果仍然超时，再拆成多个小的 MotionLayout。
 
 ## 上线前检查清单
 
