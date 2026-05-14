@@ -434,7 +434,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
@@ -454,7 +454,9 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T08:47:50+08:00",
       "original_review_log": "logs/review/2026-05-13-16-review.md",
-      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "completed_date": "2026-05-14T15:32:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充 Android Studio Compose Profiler 工具入口/使用边界说明(Ladybug 2024.2.1+ Feature Drop, Debug 构建体限制); 修正自动发现项(后台文本布局预热→TextMeasurer API, 标注需主动使用非自动生效)"
     },
     {
       "id": "task9-17.2-oryon-cache-error",
@@ -1892,7 +1894,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/01-startup-analysis.md"
@@ -1938,7 +1940,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T20:54:00+08:00"
+      "added_at": "2026-05-12T20:54:00+08:00",
+      "completed_date": "2026-05-14T15:32:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 TTFD/SplashScreen/FullyDrawnReporter 口径修正(SplashScreen 生命周期与 reportFullyDrawn 分离, FullyDrawnReporter 标注为 AndroidX 库组件), P0 first_frame API 替换(Window.OnFrameRenderedListener→registerFrameCommitCallback 等 4 种可验证方案), P0 Perfetto SQL 修正(slice_name→slice.name, process_name→JOIN process, thread_state 用 utid), P1 ViewRootImpl 创建时机修正(onResume 内→handleResumeActivity addView 阶段), P1 retrace 工具替换(profman); 扩大战果: 禁用词清理(可以看到×3, 本质上×1)"
     },
     {
       "id": "task9-21-2-thread-priority-api-20260512",

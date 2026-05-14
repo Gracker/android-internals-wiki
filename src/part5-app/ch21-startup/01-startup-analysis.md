@@ -13,10 +13,11 @@ sources:
 path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -102,7 +103,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 
 在 `Activity.onCreate` 中，`setContentView` 触发 XML 布局的 inflate——同步的 XML 解析 + View 对象创建过程。复杂布局层级（嵌套超过 10 层、包含大量自定义 View）的 inflate 耗时可能达到 50-200ms。
 
-`onResume` 中创建 `ViewRootImpl` 并注册 `Choreographer` 回调，为主线程接收 VSync 信号做准备。但此时还没有绘制任何像素——第一帧的绘制要等下一个 VSync 到来。
+`onResume` 返回后，`ActivityThread.handleResumeActivity()` 在 `addView` 阶段创建 `ViewRootImpl` 并通过 `setView` 触发后续 traversal 调度。`ViewRootImpl` 构造时注册 `Choreographer` 回调，为主线程接收 VSync 信号做准备。但此时还没有绘制任何像素——第一帧的绘制要等下一个 VSync 到来。
 
 **阶段 4：首帧绘制（First Draw）**
 
@@ -234,9 +235,9 @@ Android 12（API 31）之前，`reportFullyDrawn()` 会在 logcat 中输出：
 ActivityTaskManager: Fully drawn com.example/.MainActivity: +2s567ms
 ```
 
-Android 12+ 引入了 `SplashScreen` API，系统会保持启动画面直到 `reportFullyDrawn()` 被调用或超时。这让 TTFD 有了更强的用户可感知性：启动画面消失的时刻就是 TTFD。
+Android 12+ 引入了 `SplashScreen` API，启动画面的生命周期由首帧绘制、`keepOnScreenCondition` 和退出动画控制——不是由 `reportFullyDrawn()` 直接控制。TTFD 的上报由 `Activity.reportFullyDrawn()` 触发，这是一个独立的诊断/优化度量，不改变 SplashScreen 的显示时机。两个机制可以配合使用：SplashScreen 负责视觉过渡，`reportFullyDrawn()` 负责标记内容完整加载的时间点。
 
-Android 15（API 35）为 `reportFullyDrawn()` 增加了 `FullyDrawnReporter` 机制，支持多个组件分别注册完成回调，全部完成后再上报。这对于需要等待多个异步操作（网络请求 + 本地缓存 + 配置加载）才能展示完整内容的页面更实用。
+AndroidX `activity:activity:1.7.0+` 提供了 `FullyDrawnReporter`，支持多个组件分别注册完成回调，全部完成后再调用 `reportFullyDrawn()`。这对于需要等待多个异步操作（网络请求 + 本地缓存 + 配置加载）才能展示完整内容的页面更实用。注意 `FullyDrawnReporter` 是 AndroidX 库组件，不是 Android 15 平台 API。
 
 ### 度量方法对比
 
@@ -278,9 +279,16 @@ object StartupTracer {
 | `activity_create_start` | `Activity.onCreate` | `super.onCreate()` 之前 |
 | `view_created` | `Activity.onCreate` | `setContentView()` 之后 |
 | `activity_resume` | `Activity.onResume` | 方法第一行 |
-| `first_frame` | `Window.OnFrameRenderedListener` | 首帧回调 |
+| `first_frame` | `ViewTreeObserver.registerFrameCommitCallback()` | 帧提交回调 |
 
-`first_frame` 埋点需要通过 `View.getWindowVisibleDisplayFrame()` 或 `Choreographer.postFrameCallback()` 的首次回调来触发。Android 10+ 可以用 `ViewTreeObserver.addOnDrawListener` 监听首次 draw。
+`first_frame` 埋点有几种实现方式，观测点各不相同：
+
+- **`ViewTreeObserver.registerFrameCommitCallback()`**：在帧绘制完成后回调，最接近"帧已提交"语义。Android 10+ 可用，回调后需调用 `removeFrameCommitCallback()` 避免重复触发。
+- **`Choreographer.postFrameCallback()` 的首次回调**：回调时 VSync 已到达，`performTraversals` 即将开始或刚开始。观测点在帧绘制前，比 `registerFrameCommitCallback` 早。
+- **`Window.OnFrameMetricsAvailableListener`**：Android 7.0+ 提供，可以获取帧的绘制、布局、GPU 处理等分阶段耗时。适合线上监控，不适合做单次首帧标记。
+- **`ViewTreeObserver.OnPreDrawListener` / `OnDrawListener`**：分别在 `onPreDraw` 和 `onDraw` 阶段触发。注意 `OnDrawListener` 不能在 `onDraw()` 内调用 `removeOnDrawListener()`，否则会抛 `IllegalStateException`。
+
+选择建议：开发阶段用 `registerFrameCommitCallback()` 做首帧标记最直接；线上监控用 `OnFrameMetricsAvailableListener` 获取完整帧指标。
 
 ### 线上监控注意事项
 
@@ -332,8 +340,8 @@ EOF
 - `am`：Activity Manager 相关事件，包含 `BindApplication`、`activityStart`、`activityResume` 等 slice
 - `view`：View 系统事件，包含 `performTraversals`、`measure`、`layout`、`draw` 等 slice
 - `dalvik`：ART 虚拟机事件，包含 GC、class loading 等 slice
-- `sched`：CPU 调度事件，可以看到线程在哪个 CPU 核上执行
-- `binder_driver`：Binder 事务，可以看到跨进程调用的耗时
+- `sched`：CPU 调度事件，显示线程在哪个 CPU 核上执行
+- `binder_driver`：Binder 事务，显示跨进程调用的耗时
 
 抓取启动 Trace 的触发方式：
 
@@ -429,16 +437,19 @@ Perfetto 的 SQL 模式可以批量分析多次启动的耗时分布。以下查
 ```sql
 -- 提取 Application 初始化耗时
 SELECT
-  slice_name,
-  dur / 1e6 as dur_ms
-FROM slice
-WHERE process_name = 'com.example.app'
-  AND slice_name IN (
+  s.name as slice_name,
+  s.dur / 1e6 as dur_ms
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+JOIN process p ON t.upid = p.upid
+WHERE p.name = 'com.example.app'
+  AND s.name IN (
     'bindApplication',
     'activityCreate',
     'performTraversals'
   )
-ORDER BY ts;
+ORDER BY s.ts;
 ```
 
 ```sql
@@ -447,23 +458,25 @@ SELECT
   state,
   sum(dur) / 1e6 as total_ms
 FROM thread_state
-WHERE tid = (
-  SELECT tid FROM thread
-  WHERE name = 'main' AND upid = (
-    SELECT upid FROM process
-    WHERE name = 'com.example.app'
-  )
+WHERE utid = (
+  SELECT t.utid FROM thread t
+  JOIN process p ON t.upid = p.upid
+  WHERE t.name = 'main' AND p.name = 'com.example.app'
 )
 AND ts BETWEEN (
-  SELECT ts FROM slice
-  WHERE slice_name = 'bindApplication'
-    AND process_name = 'com.example.app'
+  SELECT s.ts FROM slice s
+  JOIN thread_track tt ON s.track_id = tt.id
+  JOIN thread t ON tt.utid = t.utid
+  JOIN process p ON t.upid = p.upid
+  WHERE s.name = 'bindApplication' AND p.name = 'com.example.app'
   LIMIT 1
 )
 AND (
-  SELECT ts + dur FROM slice
-  WHERE slice_name = 'performTraversals'
-    AND process_name = 'com.example.app'
+  SELECT s.ts + s.dur FROM slice s
+  JOIN thread_track tt ON s.track_id = tt.id
+  JOIN thread t ON tt.utid = t.utid
+  JOIN process p ON t.upid = p.upid
+  WHERE s.name = 'performTraversals' AND p.name = 'com.example.app'
   LIMIT 1
 )
 GROUP BY state;
@@ -492,7 +505,7 @@ Android 的类加载在首次使用时触发（lazy loading）。`Application.on
 
 ART 在加载 dex 中的类时，如果类的定义在 dex 文件中分布过于分散，会导致 CPU cache 命中率降低。通过将启动阶段需要加载的类集中排列在 dex 文件的前部，可以提升 L1/L2 cache 的命中率。
 
-这本质上是利用了局部性原理：相邻的类定义在加载时会被一起读入 cache line。Android 的 Dex Layout 优化工具（`retrace` + `profile`）和 Baseline Profile 机制都在做这件事。
+这是局部性原理的直接应用：相邻的类定义在加载时会被一起读入 cache line。Android 的 Dex Layout 优化工具（`profman` + dex layout 优化）和 Baseline Profile 机制都在做这件事。
 
 Baseline Profile 通过在安装时指定 AOT 编译的类和方法列表，让这些类在启动前已经被编译成机器码，跳过了运行时的 dex 解释和 JIT 编译。这比 dex 重排更进一步——不仅减少了类查找开销，还消除了首次执行时的解释开销。
 
@@ -500,7 +513,7 @@ Baseline Profile 的制作和使用在 21.4 节详细介绍。从 dex 加载角�
 
 ### 如何观测类加载耗时
 
-在 Perfetto 的 `dalvik` category 中可以看到类加载事件。但 Perfetto 默认不记录每次类加载的详细信息——需要开启 `art::ClassLinker` 的 trace 点。
+在 Perfetto 的 `dalvik` category 中能看到类加载事件。但 Perfetto 默认不记录每次类加载的详细信息——需要开启 `art::ClassLinker` 的 trace 点。
 
 一种替代方案是使用 `Debug.startMethodTracingSampling()` 在启动阶段做采样 profiling，然后分析采样结果中 `ClassLoader.loadClass` 的出现频率。高频出现说明类加载是瓶颈。
 

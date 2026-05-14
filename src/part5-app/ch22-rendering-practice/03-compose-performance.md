@@ -14,10 +14,10 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
@@ -334,6 +334,12 @@ skippable       — 函数可以被跳过（所有参数都是 Stable）
 - 重组次数高的节点是优化目标。
 - 支持 Live Edit 模式下实时查看重组情况。
 
+**Compose Profiler（Android Studio Ladybug 2024.2.1+ Feature Drop）**：
+- Android Studio 的 Profiler 工具窗口中新增 Compose 专项性能分析视图。
+- 入口：View → Tool Windows → Profiler，选择目标进程后，在 CPU 时间线视图中查看 Compose activity。
+- 显示每个 Composable 函数的重组次数、跳过次数和耗时，按重组频率排序后高亮不必要的重组。
+- 使用边界：需要连接真机或模拟器运行 Debug 构建体；Compose Profiler 依赖运行时注入的重组追踪代码，Release 构建体不包含追踪钩子，无法使用。
+
 **Perfetto**：
 - Compose 的组合工作在主线程上表现为 `composition` 相关的 slice。
 - Pausable Composition 可能表现为被切分的多个短 slice，中间穿插其他系统回调。
@@ -447,4 +453,4 @@ AndroidView(
 | Compose-View 混合 | ComposeView 的 ViewCompositionStrategy 是否正确 | 代码审查 |
 | Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda；2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 
-[自动发现]：Compose 1.9 引入的后台文本布局预热功能，可以在后台线程预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。对长列表中包含大量文本的场景有显著帮助，无需开发者额外配置。[待验证: 需补充官方文档或 release notes 来源]
+[自动发现]：Compose 1.9+ 的 `TextMeasurer` API 支持在后台线程（`TextMeasurer.measure`）预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。开发者需要主动使用 `TextMeasurer` 并在 Composable 之外调用 `measure()`，不是自动生效的后台预热。[待验证: 需确认具体 Compose Foundation 版本引入的 TextMeasurer API 稳定化时间和后台线程调用约束]
