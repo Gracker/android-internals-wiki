@@ -2064,7 +2064,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
@@ -2111,7 +2111,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T22:15:00+08:00"
+      "added_at": "2026-05-12T22:15:00+08:00",
+      "completed_date": "2026-05-14T19:26:50+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 低延迟解码 API 修正(setKeyMaxOutputFramesForLateDecode→KEY_LOW_LATENCY/PARAMETER_KEY_LOW_LATENCY, FEATURE_LowLatency), P0 atrace 分类修正(media/codec→audio/video/camera/gfx/view/sched/freq, 补 atrace --list_categories 验证步骤), P1 Fast Mixer 准入条件补充(采样率/格式/声道匹配, 回退 Normal Mixer 路径), P1 Media3 ABR 降级为[待验证](删除无证据的主动预测模型/亚100ms), P1 tunneled playback 版本边界修正(补 OMX→Codec2 演进线, 澄清 tunneled 非 Android 11 首次)"
     },
     {
       "id": "task9-9-5-anr-case-source-waitqueue-freezer-20260512",
@@ -2126,7 +2128,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/05-case-studies.md"
@@ -2166,7 +2168,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T22:15:00+08:00"
+      "added_at": "2026-05-12T22:15:00+08:00",
+      "completed_date": "2026-05-14T19:26:50+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 QueuedWork.waitToFinish() 等待点修正(handleReceiver 不直接调用, BR finish 延后, 删除 ContentProvider/handleRelaunchActivity 错误引用), P0 InputDispatcher freezer 修正(setFrozen 不存在→setInputDispatchMode + CachedAppOptimizer + binder freezer 协同), P0 WaitQueue Perfetto 观察口径修正(android.input.input_event_waiting_duration→dumpsys input + wq/oq atrace counter), P1 WaitQueue 判据从确定性改为辅助信号(补 MOVE 合并/事件频率/timeout 影响说明)"
     },
     {
       "id": "task6-20260512-23-2.10-structure-evidence",

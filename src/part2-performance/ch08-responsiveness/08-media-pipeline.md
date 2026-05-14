@@ -9,11 +9,11 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
-last_task2b_at: '2026-05-10T10:26:46+08:00'
+last_task2b_at: '2026-05-14T19:19:00+08:00'
 last_task9_at: '2026-05-12T22:15:00+08:00'
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -48,15 +48,15 @@ tags:
 - 音频延迟
 - ExoPlayer
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: '2026-05-10T10:17:22.880357'
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
-task9_state: reviewed
+task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: '2026-05-12 22:15 Task9 deep-review: needs-rework。P0 2 / P1 3 / P2 2；低延迟视频 API、atrace 分类、Codec2/tunneled 版本边界、Fast Mixer 条件与 Media3 ABR 断言需回炉。'
 ---
@@ -211,9 +211,9 @@ fence 链确保从硬件解码器到 GPU 合成再到显示控制器的整个流
 
 这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价也很明确：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
 
-从 Codec2 / OMX 的实现看，组件会为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在。排查时可以把它理解成“保留了一个窗口位置，但像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU”。
+从实现路径看，tunneled playback 在 OMX 时代（Android 4.x-9）就已存在，通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点。Android 10 起 Codec2 作为 OMX 的替代路径，逐步补齐了 tunneled playback 的对应能力（`ACodec::setupTunneledPlayback()` 封装相同语义）。排查时不要误读为“Android 11 才支持 tunneled”——OMX 路径更早就有。组件为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在，像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU。
 
-[已验证: AOSP 文档与实现, tunneled playback / sideband stream 机制]
+[已验证: AOSP 文档与实现, tunneled playback / sideband stream 机制, OMX tunneled → Codec2 tunneled 版本线]
 [待验证: 具体哪些 SoC/设备支持 tunneled mode，不同设备的支持情况差异较大]
 
 ### HDR 与杜比视界的渲染开销
@@ -250,9 +250,11 @@ ABR 的性能影响体现在两个极端：
 - **切换太慢**：带宽已经下降但还在请求高质量流，导致 buffer 耗尽和 rebuffering
 - **切换太频繁**：带宽波动时频繁切换码率，每次切换都可能导致短暂的视频质量跳变
 
-Media3 近期版本在带宽估算上做了改进，引入了更主动的预测模型，可以在带宽下降之前预判并提前降低质量，将 adaptation decision 的时间缩短到亚 100ms 级别。
+[待验证] Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实现。带宽估算使用指数平滑窗口，每次 chunk 下载完成后更新；决策触发在检测到带宽下降时立即执行回调。决策延迟（采样时延 + 评估计算 + 切换触发）通常在 50-200ms 量级，具体取决于 chunk 大小和网络抖动。
 
-[已验证: Media3 官方文档, developer.android.com/media/media3 — Adaptive Streaming]
+"主动预测模型"和"亚 100ms adaptation decision"未能在 Media3 release notes / DefaultLoadControl / AdaptiveTrackSelection 公开资料中找到对应版本和测试条件。读者可以参考 `DefaultBandwidthMeter` 和 `AdaptiveTrackSelection` 源码了解决策链路，但不要把固定数值当作通用结论。
+
+[来源: androidx/media3/exoplayer/.../AdaptiveTrackSelection.java + DefaultBandwidthMeter.java]
 
 ### LoadControl 缓冲策略
 
@@ -295,9 +297,11 @@ AudioFlinger 内部有两种 mixer thread：
 
 **Normal Mixer Thread**：服务于大多数 `AudioTrack` 客户端，每约 20ms 执行一次混合操作。它支持完整的音频处理功能——多路混音（最多 32 路）、采样率转换、音效处理等。但它的延迟相对较高，因为 20ms 的调度间隔加上 buffer 深度，端到端延迟通常在 40-80ms。
 
-**Fast Mixer Thread**：Android 4.1（Project Butter）引入，专门为低延迟场景设计。它运行频率更高、每次处理的数据量更小，CPU 开销也比 Normal Mixer 低。使用条件是 AudioTrack 必须携带 `AUDIO_OUTPUT_FLAG_FAST` 标志。Fast Mixer 跳过了采样率转换和应用处理器音效等耗时操作，走的是一条精简的处理路径。
+**Fast Mixer Thread**：Android 4.1（Project Butter）引入，专门为低延迟场景设计。它运行频率更高、每次处理的数据量更小，CPU 开销也比 Normal Mixer 低。Fast Mixer 走的是一条精简的处理路径——跳过采样率转换（SRC）和应用处理器音效。
 
-[已验证: 官方文档, source.android.com/docs/core/audio — AudioFlinger]
+但 Fast Mixer 不是只要设置 `AUDIO_OUTPUT_FLAG_FAST` 就一定能命中。AudioFlinger 在创建 AudioTrack 时会检查一系列准入条件：采样率必须与输出设备匹配（不需要 SRC）、格式和声道数与 mixer 配置兼容、不依赖应用处理器上的音效处理链。任何一项不满足，AudioTrack 就会回退到 Normal Mixer，即使 App 端请求了 FAST flag。排查音频延迟时，如果发现 Fast Mixer 的延迟收益没有生效，优先检查这些准入条件——在 Perfetto 或 `dumpsys media.audio_flinger` 中能看到实际命中的 mixer thread 类型。
+
+[已验证: 官方文档, source.android.com/docs/core/audio — AudioFlinger / Fast Mixer]
 
 ### AAudio：面向低延迟的 C API
 
@@ -327,11 +331,11 @@ MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败�
 
 ### 低延迟解码模式
 
-Android 11 引入了 `FEATURE_LowLatency` 视频解码支持。在支持该特性的设备上，通过 `MediaFormat.setKeyMaxOutputFramesForLateDecode()` 或设置 `KEY_LOW_LATENCY` 为 `1`，可以减少解码器内部的排队深度，降低首帧输出延迟。这对视频通话、云游戏、实时屏幕共享等场景有直接帮助。
+Android 11 引入了低延迟视频解码支持。在支持该特性的设备上，通过 `MediaFormat.KEY_LOW_LATENCY` 或运行时 `MediaCodec.PARAMETER_KEY_LOW_LATENCY`（通过 `setParameters` 或 configure 阶段 `setInteger`）设为 `1`，可以减少解码器内部的排队深度，降低首帧输出延迟。能力检测使用 `MediaCodecInfo.CodecCapabilities.isFeatureSupported(MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency)`。这对视频通话、云游戏、实时屏幕共享等场景有直接帮助。
 
-排查低延迟解码是否生效时，先检查设备是否声明 `PackageManager.FEATURE_LOW_LATENCY_VIDEO`，再对比开启 `KEY_LOW_LATENCY` 前后的首帧 decode slice 耗时。不支持该特性的设备会静默忽略这个参数，不会报错但也没有收益。
+排查低延迟解码是否生效时，先通过 `MediaCodecInfo.CodecCapabilities` 检查设备是否支持 `FEATURE_LowLatency`，再对比开启 `KEY_LOW_LATENCY` 前后的首帧 decode slice 耗时。不支持该特性的设备会静默忽略这个参数，不会报错但也没有收益。
 
-[已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio — MMAP Mode]
+[已验证: 官方文档, developer.android.com/reference/android/media/MediaFormat#KEY_LOW_LATENCY, developer.android.com/reference/android/media/MediaCodec#PARAMETER_KEY_LOW_LATENCY]
 
 ### 音频延迟的构成
 
@@ -431,18 +435,23 @@ ORDER BY avg_duration_ms DESC;
 要抓取完整的 MediaCodec 和 AudioFlinger 信息，需要启用以下 atrace 分类：
 
 ```bash
-# [待验证] 具体命令格式需按设备和抓取方式核对
-# 需要启用的 atrace 分类：
-media,codec,audio,view,gfx,am
+# 启用多媒体相关 atrace 分类的示例
+# 实际可用分类以 atrace --list_categories 输出为准
+atrace --stop
+atrace audio,video,camera,gfx,view,sched,freq
 ```
 
-- `media`：MediaCodec、ACodec 相关事件
-- `codec`：编解码器内部事件
 - `audio`：AudioFlinger mixer 活动、音频 underrun 事件
-- `view`：Surface 渲染相关事件
-- `gfx`：SurfaceFlinger 合成事件
+- `video`：视频编解码相关事件
+- `camera`：Camera 管线事件
+- `gfx`：SurfaceFlinger 合成、RenderEngine、HWC 事件
+- `view`：Surface 渲染、View 系统事件
+- `sched`：CPU 调度（线程状态、唤醒、迁移）
+- `freq`：CPU 频率变化
 
-[待验证: 不同 Android 版本上 atrace 分类的可用性差异]
+注意：AOSP `atrace.cpp` 中没有 `media` 或 `codec` 分类。如果需要覆盖编解码器的内部 trace，应依赖 `video` 分类以及 MediaCodec 组件自身暴露的 atrace/dumpsys 信息。不同 Android 版本上分类可用性有差异，抓取前建议先运行 `atrace --list_categories` 确认。
+
+[已验证: AOSP android-14/16 system/core/cpio/atrace.cpp — atrace_categories]
 
 ## 常见问题与最佳实践
 
@@ -498,7 +507,7 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Android 5.0**：引入 async mode (`setCallback`)，MediaCodec 从同步轮询变为异步回调驱动
 - **Android 8.0**：引入 AAudio API，提供 C 语言级别的低延迟音频接口
 - **Android 8.1**：AAudio 支持 MMAP 路径，延迟可降至 10ms 以下
-- **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持），支持 tunneled playback via Codec2
+- **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持）；Codec2 框架路径补齐 tunneled playback 支持（OMX 时代已支持 tunneled，Android 10+ 起 Codec2 作为 OMX 的替代路径逐步补齐对应能力）
 - **Android 10+**：媒体模块（`com.android.media`）通过 APEX 格式可独立更新，不再依赖系统 OTA
 - **Media3 1.6.0 (2025-03)**：引入 `MediaCodecVideoRenderer` 预热支持，减少连续媒体项切换延迟
 - **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
