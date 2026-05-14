@@ -726,13 +726,23 @@
       "task6_log": "logs/review/2026-05-14-14-review.md",
       "task6_new_rework": false,
       "task6_note": "写作质量通过；Task9 既有 P1 代码竞态仍由 Task2B 处理。"
+    },
+    "25.1": {
+      "task9_result": "needs-rework",
+      "p0": 1,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0,
+      "reviewed_at": "2026-05-14T14:20:00+08:00",
+      "log": "logs/deep-review/2026-05-14-14-deep-review.md",
+      "summary": "P0 1：BatteryUsageStatsProvider AOSP 路径错误；P1 1：Android Vitals WakeLock 口径缺豁免/5% sessions/28天边界；P2 2：PowerMetric/ODPM 支持边界、25.x draft 交叉引用。"
     }
   },
   "total_review_sections": 93,
   "next_review_candidates": [],
   "ready_for_review": 70,
-  "last_updated": "2026-05-14T14:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T14:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T14:09:00+08:00",
     "log": "logs/review/2026-05-14-14-review.md",
@@ -744,7 +754,7 @@
     "auto_promotions": 0,
     "note": "本轮仅 24.8 满足 task6_state=pending；无新增 Task6 回炉，Task9 P1 queue 保持 pending。"
   },
-  "task9_last_review": "2026-05-14T13:30:11+08:00",
+  "task9_last_review": "2026-05-14T14:20:00+08:00",
   "ready_to_publish": 177,
   "rework_history": [
     {
@@ -1674,6 +1684,19 @@
       "last_task6_review_log": "logs/review/2026-05-14-14-review.md",
       "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
       "title": "I/O 与网络优化案例集"
+    },
+    "25.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T14:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-14-deep-review.md",
+      "queue_priority": 95,
+      "task2b_state": "pending",
+      "task6_state": "pending",
+      "file": "src/part5-app/ch25-power-size/01-power-diagnosis.md",
+      "title": "功耗诊断与分析方法"
     }
   },
   "task2b_rounds": [
@@ -1695,26 +1718,23 @@
   "last_task2a_processed_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
   "last_task2a_processed_date": "2026-05-14T09:21:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T12:37:27+08:00",
-    "log": "logs/deep-review/2026-05-14-12-deep-review.md",
+    "at": "2026-05-14T14:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-14-deep-review.md",
     "sections": [
-      "8.9",
-      "24.7"
+      "25.1"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/09-game-performance.md",
-      "src/part5-app/ch24-io-network/07-offline-first.md"
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
     "p0": 1,
-    "p1": 2,
-    "p2": 5,
+    "p1": 1,
+    "p2": 2,
     "auto_promotions": 0,
-    "notes": "8.9 blocked by ADPF/GC fact error and Perfetto GPU counter/GC trace issues; 24.7 passed tech review with P2 suggestions only."
+    "notes": "仅 25.1 符合本轮可审条件；发现 BatteryUsageStatsProvider 路径错误与 Vitals WakeLock 统计口径缺失。"
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-12-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-14-deep-review.md",
   "last_task9_sections": [
-    "8.9",
-    "24.7"
+    "25.1"
   ],
   "last_task9_review_detail": {
     "at": "2026-05-14T12:37:27+08:00",
@@ -1734,8 +1754,7 @@
     "notes": "8.9 blocked by ADPF/GC fact error and Perfetto GPU counter/GC trace issues; 24.7 passed tech review with P2 suggestions only."
   },
   "task9_last_reviewed_files": [
-    "src/part2-performance/ch08-responsiveness/09-game-performance.md",
-    "src/part5-app/ch24-io-network/07-offline-first.md"
+    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
   "total_review_files": 93,
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
