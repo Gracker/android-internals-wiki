@@ -2847,7 +2847,7 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
@@ -2856,7 +2856,9 @@
       "added_at": "2026-05-13T04:39:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T08:47:50+08:00",
-      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "completed_date": "2026-05-14T11:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复(扩大战果): ANR trace 路径从 /data/anr/trace 修正为 ANR_TRACE_DIR/anr_* 前缀，补充旧版 traces.txt 设备差异说明"
     },
     {
       "id": "task9-2026-05-13-20.1-crashlytics-anr-support",
@@ -2881,7 +2883,7 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
@@ -2890,7 +2892,9 @@
       "added_at": "2026-05-13T04:39:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T08:47:50+08:00",
-      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "completed_date": "2026-05-14T11:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复(扩大战果): Firebase Crashlytics ANR 支持从 ❌ 更新为 ✅，补充 ANR tags 能力说明和上下文粒度边界"
     },
     {
       "id": "task6-21-9-startup-case-evidence-20260513-0509",
@@ -4581,7 +4585,7 @@
       ],
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
@@ -4589,7 +4593,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T08:47:50+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "completed_date": "2026-05-14T11:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: RecyclerView.RecyclerPool → RecyclerView.RecycledViewPool 源码锚点类名修正"
     },
     {
       "id": "task9-20260514-20.1-art-anr-source-chain-errors",
@@ -4620,7 +4626,7 @@
       ],
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
@@ -4628,7 +4634,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T08:47:50+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "completed_date": "2026-05-14T11:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: ART kMaxSavedFrames=256 从硬截断修正为首轮缓存大小+重新遍历; ANR service 链路从 processTimeout/appNotRespondingDialog 修正为 serviceTimeout/appNotResponding"
     },
     {
       "id": "task9-20260514-22.3-compose-version-api-contract-errors",
@@ -4746,14 +4754,14 @@
   "metadata": {
     "total_entries": 154,
     "p0_count": 78,
-    "last_updated": "2026-05-14T10:20:00+08:00",
+    "last_updated": "2026-05-14T11:30:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 94,
+    "pending_entries": 90,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 94
+    "pending": 90
   },
-  "last_updated": "2026-05-14T10:20:00+08:00",
+  "last_updated": "2026-05-14T11:30:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 94
+  "pending": 90
 }
