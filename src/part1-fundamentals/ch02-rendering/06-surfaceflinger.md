@@ -33,12 +33,14 @@ related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-15T03:17:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T02:40:00+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
 task6_reviewed_date: "2026-05-09"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。"
 ---
 
 # SurfaceFlinger 与合成
@@ -142,7 +144,7 @@ HWC（Hardware Composer）在 Android 里表示 SurfaceFlinger 与厂商显示�
 
 不过 HWC 也有其限制。Overlay plane 数量、缩放能力、旋转支持和颜色格式约束都强依赖 SoC 的 DPU 实现，不能把某台设备的 4 个、8 个或 16 个 plane 当成通用基线。排查时以 `dumpsys SurfaceFlinger`、厂商显示文档和实际 Trace 为准；一旦超出设备能力，相关 Layer 就会退回 Client 合成。
 
-Android 16 强制要求 HWC 3 V4 通过 `DisplayLuts` 接口下发 HDR 色调映射查找表。此前 HDR 合成链路中的 tone mapping 依赖软件库（如 libui 中的 Skia 路径），需要在 GPU client 合成阶段做色彩空间转换，占用 GPU 算力和带宽。V4 之后，HDR LUT 直接交给 DPU / display controller 的硬件单元执行，SurfaceFlinger 只负责把 LUT 数据通过 HWC 接口传给 HAL，实际的色调映射发生在显示硬件内部。HDR 场景下 SurfaceFlinger 的 client 合成耗时因此下降（tone mapping 不再走 GPU），功耗也有改善。排查 HDR 相关合成耗时异常时，要区分是软件 tone mapping 时代的行为还是硬件 LUT 时代的行为。
+[待验证] Android 16 HWC 3 V4 是否强制通过 `DisplayLuts` 接口下发 HDR 色调映射查找表，当前在 AOSP `android-16.0.0_r1` 的 `composer3/DisplayCommand.aidl` 与 `Composition.aidl` 中未找到 `DisplayLuts` 接口定义。HDR 合成链路中，tone mapping 可能仍依赖软件库（如 libui 中的 Skia 路径）在 GPU client 合成阶段做色彩空间转换。排查 HDR 相关合成耗时异常时，先通过 `dumpsys SurfaceFlinger` 和 vendor composer 日志确认当前设备走的是软件 tone mapping 还是硬件 LUT 路径，再针对性分析。
 
 ### 合成方式的选择逻辑
 
@@ -154,7 +156,7 @@ SurfaceFlinger 与 HWC 的协商可以按这条路径读：
 4. SurfaceFlinger 调用 `acceptDisplayChanges()` 接受本轮 HWC 决策，随后进入 `presentDisplay()`；部分实现支持 `presentOrValidateDisplay()`，可在一次调用里完成 present 或回退到 validate。
 5. HWC 返回 present fence，SurfaceFlinger 再根据 release fence 管理前一批 buffer 的复用。
 
-Android 16 的 AIDL Composer V4 引入了 `CLIENT_BYPASS` 模式。当 Layer 满足特定条件（不需要 HWC overlay 合成、格式和变换在 DRM 驱动直通范围内）时，`CLIENT_BYPASS` 允许该 Layer 跳过 HWC 内部逻辑，直达底层 DRM 驱动提交，减少一层处理级数。这个模式对低延迟视频管线和 VR 场景有明显收益——省掉了 HWC HAL 的一次进程内路由。判断某个 Layer 是否走了 `CLIENT_BYPASS`，需要看 `dumpsys SurfaceFlinger` 中对应 Layer 的 composition type 或 HWC 日志。
+[待验证] 正文此前描述了 Android 16 AIDL Composer V4 引入 `CLIENT_BYPASS` 模式，但在 AOSP `android.hardware.graphics.composer3.Composition` 枚举中只有 INVALID / CLIENT / DEVICE / SOLID_COLOR / CURSOR / SIDEBAND / DISPLAY_DECORATION 等类型，未找到 `CLIENT_BYPASS`。该 composition type 可能来自厂商私有扩展而非 AOSP 公开接口。排查时以 `dumpsys SurfaceFlinger` 实际输出的 composition type 为准；如果某设备确实出现了 `CLIENT_BYPASS`，应标注为 vendor-specific 并给出设备/日志证据。
 
 Android 12-16 都能按这组阶段理解，只是接口承载形式不同：Android 12 常见 HIDL composer@2.x，Android 13 起 AIDL `android.hardware.graphics.composer3` 进入主线。读 `dumpsys SurfaceFlinger`、vendor composer 日志或 Perfetto 时，Device / Client composition 要放回这组协商步骤里判断。
 
@@ -172,7 +174,7 @@ Android 12-16 都能按这组阶段理解，只是接口承载形式不同：And
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 // @ AOSP android-12.0.0_r1
 void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId,
-                                       nsecs_t expected VSync Time) {
+                                       nsecs_t expectedVSyncTime) {
     switch (what) {
         case MessageQueue::INVALIDATE: {
             onMessageInvalidate(vsyncId, expected VSync Time);
@@ -212,7 +214,7 @@ void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
 
 `android-14.0.0_r1` 的 `SurfaceFlinger::commit(TimePoint, VsyncId, TimePoint)` 和 `SurfaceFlinger::composite(TimePoint, VsyncId)` 已经不再走旧版 `onMessageReceived()`。到 `android-16.0.0_r1`，这两个阶段继续保留，只是签名扩展成多显示场景使用的 `PhysicalDisplayId`、`FrameTargets` 和 `FrameTargeters`。
 
-Android 16 引入 Pacesetter Display 模式，通过独立的 `FrameTargeter` 为每个物理屏幕计算 VSync ID 和 present 截止时间。在多显示器场景下（外接显示器 + 内屏、桌面模式），每个 display 拥有自己的 `FrameTargeter`，独立追踪 VSync 时序和 Buffer latch 进度，不再共享单一时钟基准。SurfaceFlinger 在一次 `commit()` 中为多个 display 分别完成 latch 和合成决策，`composite()` 也可能按 display 并行触发。在 Perfetto 中，多屏设备能看到 SurfaceFlinger 主线程上按 display 分组的 commit/composite slice，外接屏的帧节奏可能与内屏不同步——这是 Pacesetter 架构的设计意图，不是异常。排查多屏掉帧时，要先按 display 隔离再分析。
+Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`FrameTargeter` 与 `commit(PhysicalDisplayId, FrameTargets)` / `composite(...FrameTargeters)` 主签名在 Android 15 起进入主路径，Android 16 继续沿用并调整。每个物理屏幕拥有独立的 `FrameTargeter`，各自计算 VSync ID 和 present 截止时间。在多显示器场景下（外接显示器 + 内屏、桌面模式），每个 display 拥有自己的 `FrameTargeter`，独立追踪 VSync 时序和 Buffer latch 进度，不再共享单一时钟基准。SurfaceFlinger 在一次 `commit()` 中为多个 display 分别完成 latch 和合成决策，`composite()` 也可能按 display 并行触发。在 Perfetto 中，多屏设备能看到 SurfaceFlinger 主线程上按 display 分组的 commit/composite slice，外接屏的帧节奏可能与内屏不同步——这是 Pacesetter 架构的设计意图，不是异常。排查多屏掉帧时，要先按 display 隔离再分析。
 
 读代码和读 Trace 时，可以先建立一组近似关系：`commit()` 更接近旧版 `INVALIDATE` 的职责，负责收事务、latch Buffer、更新本帧状态；`composite()` 更接近旧版 `REFRESH` 的职责，负责组织合成并提交到显示设备。这样对照 Android 12 到 Android 16 的资料时，不会把不同版本的入口混成一条线。
 
