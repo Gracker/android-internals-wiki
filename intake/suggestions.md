@@ -853,3 +853,27 @@
 - **位置**：frontmatter `last_verified_against`、Parcel / TransactionTooLargeException 段
 - **问题**：章节适用 Android 10-16，但 `last_verified_against` 写 AOSP master snapshot；`Parcel.java` 与 `TransactionTooLargeException.java` 应 pin 到稳定 release tag，避免 master 随 Android 17+ 开发漂移。
 - **建议**：把源码锚点改成 `android-16.0.0_r1`；如保留 master 观察，单独标为 Android 17+ 待验证材料。
+
+## [Task9 Deep Review] 22.5 动画性能优化 — 2026-05-14
+- **类型**：数据缺失
+- **位置**：L129 帧动画内存估算
+- **问题**：正文写“30 张 1080p RGBA 图片接近 240MB”，并标注 `[待验证]`；该数字需要明确 1920×1080×4×30 的计算口径、MB/MiB 差异、Bitmap.Config 与采样策略边界。
+- **建议**：补公式和单位；若按 MiB 表达应约 237MiB，按十进制 MB 约 249MB，并说明硬件位图、压缩包体积与解码后内存不是同一个指标。
+
+## [Task9 Deep Review] 24.4 网络架构与连接管理 — 2026-05-14
+- **类型**：源码准确性 / 原理链
+- **位置**：L111 OkHttp 连接复用边界
+- **问题**：正文把复用边界概括为 `Address`，只覆盖同 host 基本复用；OkHttp HTTP/2 还存在 connection coalescing：非 host 配置相同、HTTP/2、路由 IP 匹配、证书覆盖新 host、HostnameVerifier / CertificatePinner 通过时，不同 hostname 也可能复用同一连接。
+- **建议**：把“边界是 Address”改成“同 Address 是基本复用条件”，补充 HTTP/2 coalescing 的源码条件和安全边界；引用 `RealConnection.isEligible()` / `supportsUrl()`。
+
+## [Task9 Deep Review] 24.5 网络协议优化（HTTP/2、HTTP/3、gRPC） — 2026-05-14
+- **类型**：版本差异
+- **位置**：frontmatter `applicable_versions` / `last_verified_against`，以及 L137-L146 HttpEngine / ConnectionMigrationOptions 段
+- **问题**：章节适用范围写 Android 10-16，但源码锚点主要是 Android 35 SDK sources；HttpEngine / QUIC / ConnectionMigrationOptions 属于版本敏感 API，Android 16/API36 口径尚未在正文闭环。
+- **建议**：若继续声明 Android 16，补 API36 / android-16.0.0_r1 对应文档或源码锚点；否则把源码验证口径明确限定为 Android 35，并说明 API34+ / S extensions 7 的运行时 guard。
+
+## [Task9 Deep Review] 22.5 动画性能优化 — 2026-05-14（FrameTimeline 版本边界）
+- **类型**：版本差异 / 观测口径
+- **位置**：L150-L154、工程检查清单中的 `FrameTimeline`
+- **问题**：章节适用 Android 10-16，但 `FrameTimeline` 主要对应 Android 12/API 31+ 的帧时间线观测；Android 10/11 设备上需要退回 `Choreographer#doFrame`、`SurfaceFlinger`/`gfx`、`sched`、`RenderThread DrawFrame` 等信号。
+- **建议**：补充 Perfetto 观测口径的版本分支：API 31+ 看 FrameTimeline / Jank，API 29-30 用 UI Thread、RenderThread、SurfaceFlinger 和帧间隔推断卡顿。

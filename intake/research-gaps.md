@@ -178,3 +178,19 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 22.3、7.7、22.2、18.2
+
+## [2026-05-14] 24.4 网络架构与连接管理 — HTTPDNS / OkHttp Dns 执行边界
+
+### 盲区描述
+章节已经覆盖 HTTPDNS、TTL、失败隔离和系统 DNS 兜底，但缺少 OkHttp `Dns.lookup()` 的执行边界：该回调同步参与 route planning，必须并发安全；如果在 `lookup()` 内实时发 HTTPDNS 网络请求，可能阻塞建连、递归依赖同一个 `OkHttpClient`、在弱网下放大延迟，甚至让 HTTPDNS 服务自身解析失败。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 OkHttp 5 `Dns` 文档与 `RoutePlanner` / `RealRoutePlanner` 源码，确认 `lookup()` 的同步调用位置、并发安全要求和失败传播方式。
+- 补一套 HTTPDNS 接入模式：异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP quarantine、bootstrap client / system DNS 启动路径。
+- 补弱网验证口径：HTTPDNS 服务不可达、返回空列表、单 IP 失败、多 IP + fast fallback、网络切换后的缓存刷新。
+
+### 关联章节
+24.4、24.5、12.3

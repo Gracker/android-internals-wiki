@@ -53,11 +53,18 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 last_task2a_at: "2026-05-14T09:21:00+08:00"
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T10:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
+task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 1；HTTPDNS 自定义 Dns 同步查询边界缺失，OkHttp HTTP/2 connection coalescing 条件需补。"
+
 ---
 
 # 网络架构与连接管理

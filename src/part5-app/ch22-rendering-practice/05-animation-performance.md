@@ -37,15 +37,18 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-13"
-last_task9_at: 2026-05-13T08:40:35+08:00
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T10:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
+task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。"
+
 ---
 
 # 动画性能优化
