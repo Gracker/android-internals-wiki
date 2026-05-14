@@ -27,27 +27,19 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
   - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/BatteryUsageStatsProvider.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
   - type: blog
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
   - type: blog
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-14"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T14:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-14-14-deep-review.md"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_reviewed_date: "2026-05-14"
-last_task6_at: "2026-05-14T15:12:00+08:00"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-15T07:22:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。"
 ---
@@ -128,7 +120,7 @@ Power Profiler 的用法更贴近日常开发：让测试场景在 Android Studi
 
 ## `dumpsys batterystats` 解读
 
-`dumpsys batterystats` 是 Battery Historian 背后的原始数据入口。它的价值不在于可视化，而在于能按 UID 追到具体统计项。系统侧服务入口在 `BatteryStatsService`，持久统计与事件记录由 `BatteryStatsImpl` 管理，App 级电量汇总再进入 `BatteryUsageStatsProvider` 和各类 `PowerCalculator`。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/BatteryUsageStatsProvider.java]
+`dumpsys batterystats` 是 Battery Historian 背后的原始数据入口。它的价值不在于可视化，而在于能按 UID 追到具体统计项。系统侧服务入口在 `BatteryStatsService`，持久统计与事件记录由 `BatteryStatsImpl` 管理，App 级电量汇总再进入 `BatteryUsageStatsProvider` 和各类 `PowerCalculator`。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java]
 
 读文本输出时，先找目标包名对应的 UID，再看四组数据：CPU 时间、WakeLock、网络流量、传感器和定位。不要只看总耗电百分比；百分比会受设备电池容量、采样窗口、屏幕亮度和其他 App 行为影响。
 

@@ -48,11 +48,12 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-15T07:22:00+08:00"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -151,9 +152,11 @@ val constraints = Constraints.Builder()
 
 val request = OneTimeWorkRequestBuilder<InboxSyncWorker>()
     .setConstraints(constraints)
+    // import java.util.concurrent.TimeUnit
     .setBackoffCriteria(
         BackoffPolicy.EXPONENTIAL,
-        30.minutes
+        30,
+        TimeUnit.MINUTES
     )
     .addTag("inbox-sync")
     .build()
