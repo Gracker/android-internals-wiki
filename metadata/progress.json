@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 18,
-  "ready-for-review": 74,
+  "draft": 17,
+  "ready-for-review": 75,
   "finalized": 177,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -100,7 +100,8 @@
     "24.7",
     "20.9",
     "24.8",
-    "25.1"
+    "25.1",
+    "25.2"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -196,9 +197,10 @@
     "src/part5-app/ch24-io-network/07-offline-first.md",
     "src/part5-app/ch20-stability/09-stability-case-studies.md",
     "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
-    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+    "src/part5-app/ch25-power-size/01-power-diagnosis.md",
+    "src/part5-app/ch25-power-size/02-background-power.md"
   ],
-  "review_summary": "Task2A 2026-05-14 14:13：draft 25.1 加工完成，status -> ready-for-review，进入 Task6 队列。",
+  "review_summary": "Task2A 2026-05-14 15:04：draft 25.2 加工完成，status -> ready-for-review，进入 Task6 队列。",
   "task6_review_summary": {
     "l1_l2_fixes": 457,
     "l3_issues": 29,
@@ -738,11 +740,11 @@
       "summary": "P0 1：BatteryUsageStatsProvider AOSP 路径错误；P1 1：Android Vitals WakeLock 口径缺豁免/5% sessions/28天边界；P2 2：PowerMetric/ODPM 支持边界、25.x draft 交叉引用。"
     }
   },
-  "total_review_sections": 93,
+  "total_review_sections": 94,
   "next_review_candidates": [],
-  "ready_for_review": 70,
-  "last_updated": "2026-05-14T14:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 71,
+  "last_updated": "2026-05-14T15:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-14T14:09:00+08:00",
     "log": "logs/review/2026-05-14-14-review.md",
@@ -1714,9 +1716,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "24.4 网络架构与连接管理",
-  "last_task2a_processed_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
-  "last_task2a_processed_date": "2026-05-14T09:21:00+08:00",
+  "last_task2a_processed": "25.2 后台功耗治理",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/02-background-power.md",
+  "last_task2a_processed_date": "2026-05-14T15:04:00+08:00",
   "task9_last_review_detail": {
     "at": "2026-05-14T14:20:00+08:00",
     "log": "logs/deep-review/2026-05-14-14-deep-review.md",
@@ -1756,10 +1758,10 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
-  "total_review_files": 93,
-  "last_task2a_at": "2026-05-14T09:21:00+08:00",
-  "last_task2a_section": "24.4",
-  "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+  "total_review_files": 94,
+  "last_task2a_at": "2026-05-14T15:04:00+08:00",
+  "last_task2a_section": "25.2",
+  "last_task2a_file": "src/part5-app/ch25-power-size/02-background-power.md",
   "last_task6_review": "logs/review/2026-05-14-14-review.md",
   "last_task6_sections": [
     "24.8"
