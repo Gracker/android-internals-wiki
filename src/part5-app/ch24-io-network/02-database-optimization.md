@@ -2,7 +2,7 @@
 title: "数据库性能优化（SQLite/Room）"
 chapter: "24.2"
 section: "24.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + AndroidX Room source"
@@ -38,16 +38,24 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [sqlite, room, wal, database-index, query-optimization]
 related_chapters: ["24.1", "10.7", "6.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: 2026-05-14T07:24:00+08:00
 task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；源码锚点需 pin 到稳定 tag，16KB page size 与 SQLite page_size/checkpoint 数据量关系需补 PRAGMA 验证。"
-task2b_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-14T07:12:00+08:00"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_reviewed_date: "2026-05-14"
+last_task6_at: "2026-05-14T08:11:00+08:00"
+last_task6_review_log: logs/review/2026-05-14-08-review.md
+task6_review_notes: "2026-05-14 Task6：四层质检通过；L1/L2 无需正文改动。满足 task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending，自动晋升 finalized。"
+
 ---
 
 # 数据库性能优化（SQLite/Room）

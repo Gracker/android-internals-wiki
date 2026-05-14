@@ -4525,19 +4525,44 @@
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ]
+    },
+    {
+      "id": "task6-2.9-16kb-page-size-evidence-20260514",
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 90,
+      "reason": "[review回炉] 16KB Page Size 时间线保留了 TLB 命中率提升约 9% 与渲染管线有效带宽增益，但缺少测试条件、数据来源和适用边界。",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "版本演进时间线总览｜16KB 页行",
+          "detail": "当前单元格写有“TLB 命中率提升约 9%，渲染管线有效带宽增益”，但没有说明数据来自哪类设备、内核/page size 配置、测试 workload 或引用来源。Task6 不裁决技术真伪，先标注为需补充素材。",
+          "suggestion": "Task2B 补充来源和测试条件；如果无法补齐，将该收益改成定性边界表述，并交 Task9 复核。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-14T08:11:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-14-08-review.md",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 148,
+    "total_entries": 149,
     "p0_count": 75,
-    "last_updated": "2026-05-14T07:24:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 88,
+    "last_updated": "2026-05-14T08:11:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 89,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 88
+    "last_updated_by": "task6-review",
+    "pending": 89
   },
-  "last_updated": "2026-05-14T07:24:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 88
+  "last_updated": "2026-05-14T08:11:00+08:00",
+  "last_updated_by": "task6-review",
+  "pending": 89
 }
