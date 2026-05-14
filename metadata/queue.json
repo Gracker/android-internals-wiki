@@ -6061,7 +6061,7 @@
       "id": "task9-26.7-macrobenchmark-metric-version-boundaries",
       "section": "26.7",
       "section_title": "发版质量门禁",
-      "priority": 85,
+      "priority": 90,
       "title": "Macrobenchmark 门禁指标缺少版本与采集前提边界",
       "description": "章节把 TTFD 和 FrameTimingMetric overrun 写成 Android 10-16 通用门禁口径，缺少 reportFullyDrawn、API 29 和 API 31+ 边界。",
       "issue_type": "version-difference",
@@ -6090,24 +6090,80 @@
           "location": "L79 / L95 FrameTimingMetric overrun",
           "detail": "正文把 FrameTimingMetric 的帧耗时和 overrun 放在同一通用口径里。AndroidX Benchmark 文档/变更记录显示 frameOverrunMs 需要 Android 12(API 31)+；Android 10/11 场景只能稳定使用 frameDurationCpuMs 等输出或回到 Perfetto trace 分析。若把 overrun 写成 Android 10-16 通用门禁，低版本设备的渲染门禁会出现指标缺失或口径不一致。",
           "suggestion": "把渲染门禁拆成 API 31+ 的 frameOverrunMs 与 API 29-30 的 frameDurationCpuMs/慢帧率/Perfetto fallback；报告中保留 metric_available 标记，避免不同 Android 版本混算同一阈值。"
+        },
+        {
+          "type": "需确认",
+          "location": "§自动化性能测试集成 / Macrobenchmark 指标段与示例配置",
+          "detail": "Task9 已指出 TTFD / frameOverrunMs 版本与采集前提缺少边界。Task6 已在正文标注；写作侧需要 Task2B 在修技术问题时同步补清 API / 采集条件，否则章节的门禁口径容易被读者误用。",
+          "suggestion": "按 Task9 问题单补 TTID/TTFD、reportFullyDrawn()、API 29、API 31+、metric_available / fallback 边界。",
+          "source": "task6-review-2026-05-15-07"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§灰度发布与性能监控联动 / 50%-100% 状态机",
+          "detail": "Vitals 已写明 28 天窗口，但灰度状态机把 Vitals 和分钟级 APM / Crash / ANR 信号放在同一放量条件里，快慢信号边界不清。Task6 已在正文标注。",
+          "suggestion": "把 fast signals（APM、Crash/ANR 上报、启动/帧率分群、客服/日志）和 slow signals（Vitals 28 天窗口、Play warning、商店可见性影响）拆开。",
+          "source": "task6-review-2026-05-15-07"
+        },
+        {
+          "type": "需确认",
+          "location": "§版本回滚决策流程 / 已 100% 发布后的 halt 动作",
+          "detail": "当前官方引用支撑 staged rollout 的 inProgress → halted，但“已 100% 发布后使用商店 halt 能力”还缺 fully rolled-out release halt 官方资料与限制。Task6 已在正文标注。",
+          "suggestion": "由 Task2B 补 Play Console / Publishing API 对 fully rolled-out release halt 的资料与限制；若资料不足，改成修复包 + 服务端降级为主。",
+          "source": "task6-review-2026-05-15-07"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T06:28:00+08:00",
-      "original_review_log": "logs/deep-review/2026-05-15-06-deep-review.md"
+      "original_review_log": "logs/review/2026-05-15-07-review.md",
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-15T07:15:00+08:00"
+    },
+    {
+      "id": "DR-2026-05-15-001",
+      "section": "ch13/10",
+      "section_title": "Perfetto SQL 实战手册",
+      "priority": 80,
+      "title": "[DeepResearch 注入] Perfetto SPAN_JOIN 与窗口函数交叉分析",
+      "description": "新增高价值调研材料：Perfetto Trace Processor 的 SPAN_JOIN 自定义算子表，C++ 层实现时间跨度交集计算。支持 PARTITIONED 分区键、SPAN_LEFT_JOIN/SPAN_OUTER_JOIN 变体。窗口函数 LEAD() 用于 counter→span 视图转换。",
+      "issue_type": "新增参考材料",
+      "severity": "enhancement",
+      "created_date": "2026-05-15",
+      "assigned_to": "",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null,
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-15T06:30:00+08:00",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Perfetto SPAN_JOIN 与窗口函数交叉分析算法引擎深度解析 — Perfetto Trace Processor 的 SPAN_JOIN 是 C++ 层自定义算子表，实现时间跨度交集计算。支持 PARTITIONED 分区",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 190,
+    "total_entries": 191,
     "p0_count": 94,
-    "last_updated": "2026-05-15T06:28:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 119,
+    "last_updated": "2026-05-15T07:15:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 120,
     "updated_date": "2026-05-15",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 119
+    "last_updated_by": "task6-review",
+    "pending": 120
   },
-  "last_updated": "2026-05-15T06:28:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 119
+  "last_updated": "2026-05-15T07:15:00+08:00",
+  "last_updated_by": "task6-review",
+  "pending": 120
 }

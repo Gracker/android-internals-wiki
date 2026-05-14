@@ -1176,3 +1176,49 @@
 - **位置**：L153-L164 全量发布后的 halt 能力
 - **问题**：正文引用 `edits.tracks` / `tracks` 说明 `inProgress` staged release 可更新为 `halted`，但 L164 又写“已 100% 发布后使用商店 halt 能力”。全量 halt 是 Play Console 另一个能力，当前参考资料没有覆盖；且 halt 只能阻止更多用户拿到问题版本，不能让已安装用户自动降级。
 - **建议**：如果保留“全量 halt”结论，补充 Play Console Help 的 fully rolled-out release halt 资料与限制（排除 internal test track、通过 Play Console/Publishing API、不会修复既有安装）；否则把 L164 改成“已全量后以修复包 + 服务端降级为主，仍处于 staged rollout 时才 halt”。
+
+
+## [Task14 参考书扫描] 8.3 启动优化 — 2026-05-15
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
+- **建议补充**：ThreadPoolExecutor 构造函数 7 个参数的工程解读（corePoolSize、maximumPoolSize、keepAliveTime、workQueue 类型选择：LinkedBlockingDeque 用于 CPU 线程池、SynchronousQueue 用于 IO 线程池），以及 execute() 源码中「队列满才创建非核心线程」的调度顺序。AIW §8.3 仅有一句「分为 CPU 线程池和 IO 线程池」，缺少参数级指导。
+- **参考书覆盖深度**：深入（含源码分析和参数对比表）
+
+## [Task14 参考书扫描] 7.5 卡顿优化 / 2.5 MainThread 与 RenderThread — 2026-05-15
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- **建议补充**：(1) Process.setThreadPriority 的 Nice 值常量表（THREAD_PRIORITY_DEFAULT=0, THREAD_PRIORITY_DISPLAY=-4, THREAD_PRIORITY_URGENT_DISPLAY=-8 等），AIW §7.5 提到 PRIORITY_DISPLAY 但无完整对照表；(2) Thread.setPriority 不推荐用于子线程的原因（时序 Bug：子线程未创建成功时设置到主线程）；(3) 通过 /proc/pid/task 遍历找到 RenderThread TID 的具体方法。AIW §7.5 已确认 AOSP 不做 cgroup 绑核，但缺少 Nice 值表和找 TID 的工程路径。
+- **参考书覆盖深度**：中等（API 使用指导为主，AOSP 源码层较浅）
+
+## [Task14 参考书扫描] 8.1 响应速度原理 / 25.1 功耗诊断 — 2026-05-15
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+- **建议补充**：(1) /proc/stat 各列字段含义（user/nice/system/idle/iowait/irq/softirq）和 CPU 总运行时间计算方法；(2) /proc/pid/stat 前 24 项字段含义（pid/state/ppid/utime/stime 等）；(3) 基于以上数据的 CPU 占用率计算公式。AIW §25.1 引用了此文件但正文未展开 proc 文件节点的数据读取方法。
+- **参考书覆盖深度**：中等（proc 节点字段解读详细，但 times() 方案未展开）
+
+## [Task14 参考书扫描] 10.3 内存增长治理 — 2026-05-15
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：冷热端分离的 LruCache 改造方案——按访问频率将缓存拆分为热端（高频数据，按频率排序）和冷端（低频数据，仍用 LRU），热端满时将队尾降级到冷端头部，冷端满时淘汰队尾。AIW §10.3 详细介绍了 LruCache 基本原理和 trim 策略，但未讨论「最近最少使用 ≠ 不频繁使用」的问题和冷热分离淘汰策略。该方案对低内存设备上的图片缓存命中率有显著提升。
+- **参考书覆盖深度**：概述（思路和图解清晰，无代码实现）
+
+## [Task6 Review] 26.7 发版质量门禁 — 2026-05-15
+- **类型**：需确认
+- **位置**：§自动化性能测试集成 / Macrobenchmark 指标段与示例配置
+- **问题**：Task9 指出 TTFD / `frameOverrunMs` 版本与采集前提缺少边界；Task6 已在正文标注回炉，不裁决指标可用性。
+- **建议**：由 Task2B 补 `reportFullyDrawn()`、Android 10 / API 29、API 31+、`metric_available` / fallback 边界，再交 Task9 复核。
+- **review 日志**：logs/review/2026-05-15-07-review.md
+
+## [Task6 Review] 26.7 发版质量门禁 — 2026-05-15
+- **类型**：需补充素材
+- **位置**：§灰度发布与性能监控联动 / 50%-100% 状态机
+- **问题**：Vitals 是 28 天窗口的慢信号，但当前状态机把它和分钟级 APM / Crash / ANR 信号混在同一放量条件里；Task6 已标注回炉。
+- **建议**：由 Task2B 拆清 fast signals / slow signals 的用途：快信号决定升档或暂停，Vitals 用于外部质量红线和发布后复核。
+- **review 日志**：logs/review/2026-05-15-07-review.md
+
+## [Task6 Review] 26.7 发版质量门禁 — 2026-05-15
+- **类型**：需确认
+- **位置**：§版本回滚决策流程 / 已 100% 发布后的 halt 动作
+- **问题**：当前引用能支撑 staged rollout 的 `inProgress` → `halted`，但已全量后的 halt 能力、限制和既有安装用户不会自动降级的边界还缺官方资料；Task6 已标注回炉。
+- **建议**：由 Task2B 补 Play Console / Publishing API 资料；如果资料不足，把动作改为“修复包 + 服务端降级”为主。
+- **review 日志**：logs/review/2026-05-15-07-review.md
