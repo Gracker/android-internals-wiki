@@ -5028,6 +5028,76 @@
       "added_at": "2026-05-14T13:30:11+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T13:30:11+08:00"
+    },
+    {
+      "id": "task9-25-1-batteryusage-provider-path-20260514",
+      "section": "25.1",
+      "section_title": "功耗诊断与分析方法",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "BatteryUsageStatsProvider AOSP 路径错误",
+      "description": "frontmatter 与正文把 BatteryUsageStatsProvider 标到 frameworks/base/core/java/com/android/internal/os/，但 android-16.0.0_r1 中该类位于 services/core/java/com/android/server/power/stats/。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-14-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L30 / L119 BatteryUsageStatsProvider 源码锚点",
+          "detail": "android-16.0.0_r1 目录 listing 中 `core/java/com/android/internal/os/` 只有 BatteryStatsHistory/PowerProfile/PowerStats 等文件；`BatteryUsageStatsProvider.java`、`PowerCalculator` 族和 `BatteryStatsImpl.java` 均在 `services/core/java/com/android/server/power/stats/`。当前 `[已验证]` 路径会让读者按错误包定位源码。",
+          "suggestion": "把 frontmatter 与正文源码锚点改为 `frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java @ android-16.0.0_r1`；保留 BatteryStatsService 路径不变。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T14:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T14:20:00+08:00"
+    },
+    {
+      "id": "task9-25-1-vitals-wakelock-threshold-boundary-20260514",
+      "section": "25.1",
+      "section_title": "功耗诊断与分析方法",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-boundary-metric-definition",
+      "title": "Android Vitals WakeLock 阈值缺少豁免与统计口径",
+      "description": "章节只写 24 小时后台 Partial WakeLock 累计 2 小时/单次 1 小时，但未交代 non-exempt、screen-off/background、音频/定位/JobScheduler user-initiated 豁免，以及 5% sessions/28 天的 Play 技术质量门槛。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-14-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/指标口径缺失",
+          "location": "L172 Android Vitals excessive/stuck wake lock 定义",
+          "detail": "Android Developers 2025-2026 文档把 excessive partial wake locks 口径限定在 non-exempt partial wake lock，并说明 audio、location、JobScheduler user-initiated 等系统持有且有明确用户收益的 wakelock 计算豁免；Play 质量门槛还涉及 28 天内 >5% sessions。正文缺少这些边界，容易把可豁免场景或前台用户可感知任务误判为 vitals 问题。",
+          "suggestion": "补一段“Vitals 口径 vs 本地诊断口径”：本地仍可排查所有 Partial WakeLock；引用 Android Vitals 时必须写 non-exempt、后台/息屏条件、1h/2h 阈值、5% sessions/28 天门槛和豁免类别。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T14:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T14:20:00+08:00"
     }
   ],
   "metadata": {

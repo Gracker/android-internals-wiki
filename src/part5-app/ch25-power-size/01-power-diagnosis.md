@@ -34,10 +34,15 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, energy-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: "ready-for-review"
+pipeline_stage: "task2b_pending"
 task6_state: "pending"
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-14"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-14T14:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-14-14-deep-review.md"
 ---
 
 # 功耗诊断与分析方法
