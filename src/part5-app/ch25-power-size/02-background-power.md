@@ -48,10 +48,11 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task2b_result: pending
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -59,6 +60,12 @@ task6_reviewed_date: "2026-05-14"
 last_task6_at: "2026-05-14T15:12:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 回炉项，送 Task9 技术复审。"
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T15:33:00+08:00"
+last_task9_review_log: logs/deep-review/2026-05-14-15-deep-review.md
+task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 0 / P2 0；WorkManager setBackoffCriteria 示例使用 kotlin.time.Duration，API 签名不匹配。"
 ---
 
 # 后台功耗治理

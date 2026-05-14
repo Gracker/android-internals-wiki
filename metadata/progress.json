@@ -200,7 +200,7 @@
     "src/part5-app/ch25-power-size/01-power-diagnosis.md",
     "src/part5-app/ch25-power-size/02-background-power.md"
   ],
-  "review_summary": "Task2A 2026-05-14 15:04：draft 25.2 加工完成，status -> ready-for-review，进入 Task6 队列。",
+  "review_summary": "Task9 2026-05-14 15:33：审计 25.2、21.1；发现 P0 2 / P1 2 / P2 0，均回炉 Task2B；本轮无自动晋升。",
   "task6_review_summary": {
     "l1_l2_fixes": 465,
     "l3_issues": 29,
@@ -318,9 +318,9 @@
       "p3": 0
     },
     "21.1": {
-      "p0": 3,
+      "p0": 1,
       "p1": 2,
-      "p2": 1,
+      "p2": 0,
       "p3": 0
     },
     "21.2": {
@@ -738,13 +738,19 @@
       "reviewed_at": "2026-05-14T14:20:00+08:00",
       "log": "logs/deep-review/2026-05-14-14-deep-review.md",
       "summary": "P0 1：BatteryUsageStatsProvider AOSP 路径错误；P1 1：Android Vitals WakeLock 口径缺豁免/5% sessions/28天边界；P2 2：PowerMetric/ODPM 支持边界、25.x draft 交叉引用。"
+    },
+    "25.2": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
     }
   },
   "total_review_sections": 95,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T15:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T15:33:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-14T15:12:00+08:00",
     "log": "logs/review/2026-05-14-15-review.md",
@@ -757,7 +763,7 @@
     "auto_promotions": 0,
     "note": "本轮仅 25.1、25.2 满足 task6_state=pending；25.1 保留 Task9 P0/P1 回炉，25.2 送 Task9。"
   },
-  "task9_last_review": "2026-05-14T14:20:00+08:00",
+  "task9_last_review": "2026-05-14T15:33:00+08:00",
   "ready_to_publish": 177,
   "rework_history": [
     {
