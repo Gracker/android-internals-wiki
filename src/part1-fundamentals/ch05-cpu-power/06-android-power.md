@@ -13,15 +13,15 @@ reviewed_date: "2026-05-05"
 task6_reviewed_date: "2026-05-05"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending  
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T16:20:00+08:00"
-task2b_state: fixed
+last_task9_at: "2026-05-14T11:34:00+08:00"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-10T13:15:46+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
 review_round: 4
 related_chapters:
@@ -29,6 +29,7 @@ related_chapters:
   - "5.2"
   - "5.4"
 
+---
 
 # Android 功耗管理
 

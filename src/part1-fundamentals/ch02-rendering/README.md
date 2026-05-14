@@ -2,7 +2,7 @@
 title: "渲染系统总纲"
 chapter: "2.0"
 section: "2.0"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-23"
 drafted_by: "openclaw-task2b"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
@@ -10,19 +10,19 @@ last_verified: "2026-04-23"
 last_verified_against: "ch02-rendering 目录结构、AOSP android-16.0.0_r1 渲染流程说明、external review 资产"
 confidence: medium
 tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 last_task2b_at: "2026-05-09T22:40:00+08:00"
 task6_state: reviewed
 reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
-last_task9_at: "2026-04-28T14:33:59+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-05-14T11:34:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
+task9_reviewed_date: "2026-05-14"
 ---
 
 # 第 2 章：渲染系统

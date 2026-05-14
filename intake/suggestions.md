@@ -877,3 +877,16 @@
 - **位置**：L150-L154、工程检查清单中的 `FrameTimeline`
 - **问题**：章节适用 Android 10-16，但 `FrameTimeline` 主要对应 Android 12/API 31+ 的帧时间线观测；Android 10/11 设备上需要退回 `Choreographer#doFrame`、`SurfaceFlinger`/`gfx`、`sched`、`RenderThread DrawFrame` 等信号。
 - **建议**：补充 Perfetto 观测口径的版本分支：API 31+ 看 FrameTimeline / Jank，API 29-30 用 UI Thread、RenderThread、SurfaceFlinger 和帧间隔推断卡顿。
+
+
+## [Task9 Deep Review] 24.6 数据压缩与缓存策略 — 2026-05-14
+- **类型**：源码准确性/版本边界
+- **位置**：L86 OkHttp CompressionInterceptor / BrotliInterceptor 描述
+- **问题**：正文没有固定 OkHttp 5.x 具体版本，把默认 `BridgeInterceptor` 的 gzip 透明解压、`okhttp-brotli` 的 Brotli 拦截器、`CompressionInterceptor` 的可配置算法列表和请求体压缩放在一起描述，容易让读者误以为请求/响应压缩都由同一个拦截器自动处理。
+- **建议**：拆成三段：默认 OkHttp 只在未显式设置 `Accept-Encoding` 时透明处理 gzip；接入 `okhttp-brotli` 后再说明 br/gzip 协商，并标注核对的 OkHttp tag；请求体 `Content-Encoding` 压缩需业务自定义并确认服务端支持。
+
+## [Task9 Deep Review] 2.0 渲染系统总纲 — 2026-05-14
+- **类型**：版本差异/交叉引用
+- **位置**：本章内容中 2.14、2.18、2.19 的 Android 16/17 能力摘要
+- **问题**：总纲标注适用到 Android 17，但 `last_verified_against` 仍停在 AOSP android-16.0.0_r1；部分小节摘要使用“Vulkan 1.4 必选扩展”“ANGLE 强制化”“Android 15/16 ARR”等较新的版本判断，总纲没有说明这些判断来自对应子章节而非本节独立复核。
+- **建议**：发布前与 2.14、2.18、2.19 的最终 Task9 结论同步一轮；总纲只写已被子章节验证的稳定结论，对 Android 17 仍在 DP/Beta 的行为标注来源或降级为“关注点”。

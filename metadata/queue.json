@@ -4749,19 +4749,80 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T10:20:00+08:00"
+    },
+    {
+      "id": "task9-5-6-power-wakelock-hwc-energy-20260514",
+      "section": "5.6",
+      "section_title": "Android 功耗管理",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-version-differences",
+      "title": "功耗管理章节 WakeLock 记账、onVsyncIdle、Android 17 能量限额口径错误",
+      "description": "章节存在 WakeLock→BatteryStats 调用链、HWC/onVsyncIdle 与 PMS suspend 关系、Android 17 Energy Limiter、WorkManager expedited quota 等关键技术口径错误。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/06-android-power.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-11-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L97 WakeLock 事件如何流向 BatteryStats",
+          "detail": "正文写 PMS 在 acquireWakeLockInternal() 中创建 BatteryStatsImpl.WakeLock 并调用 stats.noteWakeLockAcquired(uid,pid,lockFlags)。AOSP main/android-16 路径实际是 PMS 创建自身 WakeLock 记录，随后 Notifier.onWakeLockAcquired() 通过 IBatteryStats.noteStartWakelock()/noteStartWakelockFromSource() 记账；不存在该处所写的 noteWakeLockAcquired 调用，也不是由 BatteryService 中的 stats 对象直接承载。",
+          "suggestion": "按 PowerManagerService.acquireWakeLockInternal() → notifyWakeLockAcquiredLocked() → Notifier.onWakeLockAcquired() → IBatteryStats.noteStartWakelock* → BatteryStatsService/BatteryStatsImpl 重写，并保留 WorkSource/historyTag/AppOps 分支。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码行为错误",
+          "location": "L123-L127 HWC 4.0 与 onVsyncIdle",
+          "detail": "正文写 onVsyncIdle 由 SurfaceFlinger 检测静态内容后通知 PMS，并让 PMS 提前释放显示 WakeLock/Power HAL interactive mode、驱动 suspend。AOSP/SF main 中 IComposerCallback.onVsyncIdle 的语义是 display idle 导致 refresh/vsync cadence 改变，SurfaceFlinger.onComposerHalVsyncIdle() 仅调用 Scheduler.forceNextResync()；未看到 PMS 收到该回调或释放 WakeLock/interactive 的路径。",
+          "suggestion": "删除“PMS 收到 onVsyncIdle 后提前 suspend”的链路，改为 HWC idle timer/panel idle/vsync cadence 变化 → SurfaceFlinger resync；如要谈 suspend，另找 PowerManagerService/DisplayPowerController/Power HAL 证据。"
+        },
+        {
+          "severity": "P0",
+          "type": "数据/版本错误",
+          "location": "L127、L506 Android 16/17 onVsyncIdle 续航 10%-15% 与版本表",
+          "detail": "正文把 onVsyncIdle 与“静态阅读续航收益 10%-15%”“Android 17 HWC 4.0”绑定，但未给出官方 benchmark、设备、面板、刷新率和测试方法；公开 HWC AIDL 文档只说明 display idle/vsync cadence 回调，不能推出该收益或 PMS suspend 行为。",
+          "suggestion": "将 10%-15% 改为 [待验证] 或删除；版本表只保留有官方/AOSP 证据的 idle timer/onVsyncIdle 语义，不写成 Android 17 功耗框架确定变化。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/来源错误",
+          "location": "L453-L463 Android 17 Energy Limiter",
+          "detail": "正文把 Android 17 “Energy Limiter”写成已验证平台能力：按 App 统计后台 μJ、超过配额强杀进程，并与 Standby Bucket 绑定。当前可检索的 Android 17 官方特性页强调 JobDebugInfo 等调试能力，source.android power/docs 未能支撑“每 App μJ 配额强杀”的公开结论。",
+          "suggestion": "在拿到 Android 17 官方文档、AOSP service/PowerStats/ODPM 调用链或 CTS 证据前，删除该段或整体降为 [待验证] 研究假设；不要在版本演进表中列为确定能力。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 行为错误",
+          "location": "L398 WorkManager Expedited Job",
+          "detail": "正文写 expedited work“不受 App Standby Bucket 限制”。Android Developers 文档说明 expedited work 也使用基于 App Standby Bucket 的配额，并在配额耗尽时按 OutOfQuotaPolicy 降级或丢弃。",
+          "suggestion": "改成“可请求尽快执行，但受 expedited quota 约束；配额与 App Standby Bucket/前台状态相关，WorkManager 需配置 OutOfQuotaPolicy”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T11:34:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 154,
+    "total_entries": 155,
     "p0_count": 78,
-    "last_updated": "2026-05-14T11:30:00+08:00",
+    "last_updated": "2026-05-14T11:34:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 90,
+    "pending_entries": 91,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 90
+    "pending": 91
   },
-  "last_updated": "2026-05-14T11:30:00+08:00",
+  "last_updated": "2026-05-14T11:34:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 90
+  "pending": 91
 }
