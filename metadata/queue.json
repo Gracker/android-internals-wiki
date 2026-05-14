@@ -3479,7 +3479,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T17:55:27+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-15T01:36:05+08:00",
+      "completed_by": "task9-deep-tech-review",
+      "completion_note": "Task9 2026-05-15复核：beginAsyncSection 已移到 launch 前，executor/mainHandler 示例 items 作用域已修复；本轮另开 Trace ThreadLocal 源码事实项。"
     },
     {
       "id": "task9-20260513-19.26-flutter-timestamp-calibration",
@@ -5595,19 +5598,63 @@
           "suggestion": "把定义拆成两句：① excessive session 的判定是非豁免 partial wake lock 累计 ≥2h/24h，统计后台或 FGS 场景；② 若该行为在 28 天内超过 5% app sessions，会影响 Play 可见性（按当前指标状态说明 beta/生效边界）。"
         }
       ]
+    },
+    {
+      "id": "task9-20260515-19.13-trace-threadlocal-source",
+      "section": "19.13",
+      "section_title": "androidx.tracing（Tracing SDK）",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Trace.beginSection/endSection 被写成依赖 Java ThreadLocal，和 android.os.Trace 源码不符。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L284 协程 trace 边界说明",
+          "detail": "正文说 Trace.beginSection()/endSection() 内部依赖线程本地（ThreadLocal）的栈结构。AOSP android.os.Trace.java 没有 ThreadLocal 维护；公开 API 只要求 begin/end 在同一线程嵌套配对，平台路径是 nativeTraceBegin/nativeTraceEnd 写入 atrace/ftrace 事件，Perfetto 按线程轨道重建嵌套。",
+          "suggestion": "把“ThreadLocal 栈结构”改为“同步 slice 是线程轨道内的嵌套事件，begin/end 必须在同一线程配对”；保留协程挂起点会污染线程轨道的结论，但不要给出不存在的源码实现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T01:36:05+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260515-19.23-active-exchange-response-body",
+      "section": "19.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] OkHttp EventListener 示例 activeExchange() 状态机错误，responseBodyEnd 会写入新 Exchange。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "代码逻辑错误",
+          "location": "L165-L170 activeExchange() / L226-L282 responseHeadersEnd→responseBodyEnd",
+          "detail": "activeExchange() 只有在 last.responseBodyEndNs == null 且 last.responseHeadersEndNs == null 时复用当前 Exchange。responseHeadersEnd() 写入 responseHeadersEndNs 后，后续 responseBodyEnd() 会创建新 Exchange，导致同一次请求的 header 与 body 被拆到两条 exchange，TTFB/下载耗时计算错误。",
+          "suggestion": "activeExchange() 只应在上一条 exchange 已完成（responseBodyEndNs、responseFailed 或明确结束标记）后创建新对象；responseHeadersEnd 后仍应复用当前 exchange。建议增加 responseBodyStartNs 字段，并用单元测试覆盖 normal、redirect、no-body、responseFailed 四条事件序列。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T01:36:05+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
-    "total_entries": 175,
-    "p0_count": 90,
-    "last_updated": "2026-05-14T22:31:06+08:00",
+    "total_entries": 177,
+    "p0_count": 92,
+    "last_updated": "2026-05-15T01:36:05+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 107,
-    "updated_date": "2026-05-14",
+    "updated_date": "2026-05-15",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 107
   },
-  "last_updated": "2026-05-14T22:31:06+08:00",
+  "last_updated": "2026-05-15T01:36:05+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": 107
 }
