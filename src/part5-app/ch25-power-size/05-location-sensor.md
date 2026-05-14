@@ -34,10 +34,16 @@ sources:
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
 tags: [location, fused-location, geofencing, sensor-batching, power]
 related_chapters: ["25.1", "25.2", "11.2"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-05-14T18:30:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-14"
+last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 task2b_state: pending
+task2b_result: pending
 ---
 
 # 定位与传感器功耗优化

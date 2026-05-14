@@ -956,3 +956,39 @@
 - **位置**：L86-L106 约束和退避策略说明
 - **问题**：正文列出 `DeviceIdle`、多约束叠加和 backoff，但未说明 `requiresDeviceIdle()` 与 `setBackoffCriteria()` 不能同时设置。AndroidX `OneTimeWorkRequest.Builder.buildInternal()` 与 `PeriodicWorkRequest.Builder.buildInternal()` 都会在 `backoffCriteriaSet && constraints.requiresDeviceIdle()` 时抛出 `IllegalArgumentException("Cannot set backoff criteria on an idle mode job")`。这会影响读者把“空闲 + 退避”组合到同一个请求的实战代码。
 - **建议**：在约束段补一条兼容性规则：idle 任务不要设置 backoff；如果需要失败退避，改用 charging/network/battery-not-low 等约束，或拆成 idle 触发的粗粒度任务与内部重试逻辑。
+
+## [Task9 Deep Review] 1.0 第 1 章：系统架构全景 — 2026-05-14
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` / L63、L65、L71
+- **问题**：正文和 `last_verified_against` 已引用 `1.15`、`1.17`，但 frontmatter `related_chapters` 只列到 `1.16` 且漏掉 `1.15`、`1.17`。后续自动图谱或发布索引会把 JNI/NDK 与 IPC 全景从本章关联中丢掉。
+- **建议**：把 `related_chapters` 补齐到 `1.1`-`1.17`，至少加入 `"1.15"` 和 `"1.17"`；同步核对 `src/SUMMARY.md`。
+
+## [Task9 Deep Review] 1.0 第 1 章：系统架构全景 — 2026-05-14
+- **类型**：数据/源码锚点
+- **位置**：L38 Android 15/16 平台变化摘要
+- **问题**：`Parallel Module Loading` 只在 README 总览中出现，当前 ch01 子章节没有对应展开或来源锚点；同句其他能力多数能跳到 `1.6`、`1.7`、`1.9`、`1.12`、`16.5` 等章节。
+- **建议**：给 `Parallel Module Loading` 补官方 release note / AOSP 入口并在 `1.6` 或 `1.2` 展开；补不齐时从总览中删除或标为待验证关注点。
+
+## [Task9 Deep Review] 25.5 定位与传感器功耗优化 — 2026-05-14
+- **类型**：数据缺失/技术断言过宽
+- **位置**：L128-L139 `setMaxUpdateDelayMillis(1h)` 批量定位示例
+- **问题**：正文写“App 唤醒次数从 6 次降到 1 次”，但 Google Play services `LocationRequest.Builder#setMaxUpdateDelayMillis()` 文档只承诺“may save power by delivering locations in batches”，且 batching 支持会随硬件/设备实现变化。
+- **建议**：把该数字改成“理想情况下最多从每小时 6 次降到 1 次”，并补 `dumpsys location`/回调日志/电量场景作为验证口径；不要把 batching 写成所有设备必然行为。
+
+## [Task9 Deep Review] 25.5 定位与传感器功耗优化 — 2026-05-14
+- **类型**：知识盲区
+- **位置**：L94-L181 FLP / Geofencing / 被动定位
+- **问题**：章节把 Fused Location Provider 作为主要实现，但 FLP 属于 Google Play services；AOSP-only、无 GMS、国内 OEM 或企业管控设备上可能需要平台 `LocationManager`、OEM 定位服务或业务降级策略。
+- **建议**：补一段运行环境边界：有 GMS 时优先 FLP；无 GMS 时退回平台 `LocationManager`/OEM SDK，并明确 geofence、passive request、批量能力和耗电表现需要重新验证。
+
+## [Task9 Deep Review] 25.5 定位与传感器功耗优化 — 2026-05-14（跨章节命名）
+- **类型**：交叉引用一致性
+- **位置**：25.5 L165-L177；25.2 L231、L239、L252
+- **问题**：25.5 使用当前 Google Play services `Priority.PRIORITY_PASSIVE`，但 §25.2 仍使用旧口径 `PRIORITY_NO_POWER`。两节都在讲被动/机会主义定位，命名不一致会让读者误以为是两个策略。
+- **建议**：统一到 `Priority.PRIORITY_PASSIVE`；如保留 `PRIORITY_NO_POWER`，明确标注为旧版 Google Play services / 旧 API 名称。
+
+## [Task9 Deep Review] 1.0 第 1 章：系统架构全景 — 2026-05-14（Android 17 MessageQueue 边界）
+- **类型**：版本差异/源码准确性
+- **位置**：L38、L71 `ConcurrentMessageQueue` / DeliQueue 摘要
+- **问题**：README 写“Android 17 已确认的平台行为包括 `ConcurrentMessageQueue` 无锁投递、DeliQueue 命令调度”，但入口页没有同步 §1.13 中的 targetSdk 37+ 默认启用边界；读者可能理解为所有 Android 17 上运行的 App 都自动进入新 MessageQueue 路径。
+- **建议**：在摘要里补“面向 targetSdk 37+ 应用默认启用”的限定，并指向 §1.13 的版本/targetSdk 细节。

@@ -2,7 +2,7 @@
 title: "第 1 章：系统架构全景"
 chapter: "1.0"
 section: "1.0"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-08"
 last_verified_against: "src/SUMMARY.md, 子节 1.7/1.9/1.10/1.13/1.14/1.16/1.17 applicable_versions, AOSP android-17.0.0_r1"
@@ -16,19 +16,20 @@ sources:
     path: "https://developer.android.com/about/versions/16/release-cycle"
 tags: ['architecture', 'overview', 'chapter-intro']
 related_chapters: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.16"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-task9_state: "pending"
+task9_state: "reviewed"
 last_task2b_at: "2026-05-09T09:44:52"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 task6_result: "pass-light-edit"
-task9_result: needs-rework
-last_task9_at: "2026-05-09T01:25:25+08:00"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-14T18:30:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-09"
+task9_reviewed_date: "2026-05-14"
+last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 ---
 
 # 第 1 章：系统架构全景
