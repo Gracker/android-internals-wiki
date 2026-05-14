@@ -318,6 +318,14 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
 
 ## 参考资料
 
+### Android 17 RefreshRateSelector 多维度评分算法与 ARR 实现机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-refreshrate-selector-arr.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级解析 Android 15 引入的 ARR（Adaptive Refresh Rate）机制：RefreshRateSelector 多维度评分算法（帧率 divisor 匹配、亮度阈值、场景优先级、功耗预算），DisplayModeDirector 核心编排逻辑，HWC HAL v3 帧率提示接口。厘清 ARR 与传统 VRR 的本质差异（单模内动态调整 vs 模式切换）。
+- 注入时间：2026-05-14
+- 价值：对理解 Android 自适应刷新率完整架构和 VSync 解耦机制有直接帮助，填补 ARR 概念盲区
+
+
 - AOSP 源码路径：
   - `frameworks/base/core/java/android/view/Display.java`
   - `frameworks/base/core/java/android/view/View.java`

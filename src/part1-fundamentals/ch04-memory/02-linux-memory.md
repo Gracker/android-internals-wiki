@@ -549,6 +549,14 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 
 ## 参考资料
 
+### MTE ASYMM 模式与 android:memtagMode 源码级验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级闭环验证 Android MTE 实现多层机制：应用层 android:memtagMode 仅支持 off/sync/async（ASYMM 非 Java API 选项）；Zygote 始终以 ASYNC MTE 运行（因 MTE 只能在进程初始化后禁用）；decideTaggingLevel()→SpecializeCommon→mallopt 完整调用链；Linux Kernel per-CPU mte_tcf_preferred 覆盖机制。
+- 注入时间：2026-05-14
+- 价值：首次完成 MTE ASYMM 与 Java API 对应关系的源码级闭环验证，对内存安全章节有重要补充价值
+
+
 - Linux kernel / Android common kernel 路径：
   - `mm/page_alloc.c` — Buddy 分配器实现
   - `mm/slub.c` — SLUB 分配器实现

@@ -291,6 +291,35 @@ fun nextDelayMs(attempt: Int): Long {
 
 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
 
+
+
+## [自动发现] Wi-Fi Scoring 与 ConnectivityService 集成机制
+
+Android 的 Wi-Fi 评分系统控制网络切换决策，评分范围 0-60（0-20 Poor 触发切换）。
+
+**关键组件调用链**：
+```
+WifiNetworkSelector.evaluateNetworks()
+  → calculateNetworkScore()
+    → ScoringStrategy.calculateScore()
+      → mScoringStrategy.calculateCandidateScore()
+        → RSSI(0-50) + 链路速度(0-30) + 信道干扰(-10~0)
+```
+
+**评分与网络切换**：
+- `ConnectivityService.registerNetworkAgent()` 注册 WifiNetworkAgent
+- `ConnectivityService.updateNetworkScore()` 驱动网络切换决策
+- 当 Wi-Fi 评分 < 20 时，自动切换到 Cellular
+- `NetworkMonitor` 并行探测（TCP/HTTP/DNS）生成 NetworkQualityUpdate
+
+**源码位置**：
+- `WifiNetworkSelector.java`：`packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java`
+- `ConnectivityService.java`：`frameworks/base/services/core/java/com/android/server/ConnectivityService.java`（约 line 4364）
+- `NetworkMonitor.java`：`packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java`
+- `NetworkAgent.java`：`frameworks/base/core/java/android/net/NetworkAgent.java`
+
+[AIW-源码调研-2026-05-14: Wi-Fi Scoring 与 ConnectivityService 集成机制深度验证]
+
 ## 工程检查清单
 
 加工网络架构时，可以按下面的清单做一次自检：

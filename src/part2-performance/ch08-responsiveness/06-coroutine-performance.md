@@ -619,3 +619,76 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - [android.os.Trace API](https://developer.android.com/reference/android/os/Trace)
 - [Flow — Backpressure and Buffering](https://kotlinlang.org/docs/flow.html#buffering)
 - [Testing Coroutines on Android](https://developer.android.com/kotlin/coroutines/test)
+
+## ADPF Session 线程绑定的工程化边界 [自动发现]
+
+本节补充自每日源码调研（2026-05-14），聚焦 `PerformanceHintManager.Session` 与协程调度器协同的工程化边界。
+
+### Session 线程绑定的核心约束
+
+Session 通过 TID（线程 ID）而非协程 ID 绑定线程。`createHintSession(int[] tids, long initialTargetWorkDurationNanos)` 传入的 TID 列表在 Session 内部静态化，后续通过 `setThreads(int[] tids)` 动态更新。
+
+关键约束（源码验证）：
+```java
+// PerformanceHintManager.Session.setThreads()
+public void setThreads(@NonNull int[] tids) {
+    if (mNativeSessionPtr == 0) return;  // Session 已 close 时静默忽略
+    // SecurityException: tid 不属于调用进程
+    // IllegalStateException: hint session 不在前台
+    nativeSetThreads(mNativeSessionPtr, tids);
+}
+```
+
+JNI 层（`android_os_PerformanceHintManager.cpp`）错误码映射：
+- `EINVAL` → `IllegalArgumentException`
+- `EPERM` → `SecurityException`（TID 归属校验失败）
+- 其他 → `RuntimeException`
+
+### 协程线程迁移与 Session 失效
+
+Kotlin 协程在 `Dispatchers.Default` 上执行时，线程不固定。`CoroutineScheduler` 的 worker 线程执行任务窃取，协程 suspend 后恢复可能迁移到不同 TID：
+
+```kotlin
+// 协程 A 在 TID=12001 创建 Session
+val session = manager.createHintSession(intArrayOf(12001), 16_666_666L)
+
+// 协程 A suspend 后，协程 B 在 TID=12002 执行
+// TID=12002 不在 Session 的绑定列表中，不受 hint 影响
+```
+
+**工程解法**：
+
+1. **固定线程 Dispatcher**：使用 `Dispatchers.Main` 或 `newSingleThreadContext` 创建独占线程，将该 TID 纳入 Session
+2. **定期同步 TID 列表**：在协程入口处调用 `session.setThreads()` 更新绑定（需捕获 `IllegalStateException`）
+3. **避开 Dispatchers.Default 高频路径**：ADPF hint 上报是 Binder 调用，单次开销约 1ms，不适合 120Hz 渲染循环内的每个帧
+
+### GPU 负载上报（Android 16 FlaggedApi）
+
+Android 16 引入分离 CPU/GPU 时长的上报 API：
+```java
+@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)
+public void reportActualWorkDuration(@NonNull WorkDuration workDuration) {
+    // 验证：workPeriodStartTimestampNanos > 0, totalDuration > 0, CPU+GPU > 0
+    nativeReportActualWorkDuration(mNativeSessionPtr,
+        workDuration.mWorkPeriodStartTimestampNanos,
+        workDuration.mActualTotalDurationNanos,
+        workDuration.mActualCpuDurationNanos,
+        workDuration.mActualGpuDurationNanos);
+}
+```
+
+需启用 `FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION` 特性标志才能调用。
+
+### 电源效率模式的协程集成
+
+`setPreferPowerEfficiency(boolean)` 是 `FLAG_ADPF_PREFER_POWER_EFFICIENCY` FlaggedApi，Android 15+ 可用。启用后系统将线程调度到能效核（E-core）或允许更激进的休眠策略。
+
+对于 `CoroutineWorker`（WorkManager）和后台轮询协程，建议显式开启：
+```kotlin
+hintSession?.setPreferPowerEfficiency(true)
+// 系统在 E-core 上完成低优先级任务，减少对前台大核的资源争抢
+```
+
+详见：[DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md](DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md)
+
+<!-- AIW-源码调研-2026-05-14 -->

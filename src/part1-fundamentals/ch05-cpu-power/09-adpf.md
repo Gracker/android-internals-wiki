@@ -558,3 +558,12 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 这个 4 倍代差决定了跨设备调优策略不能一刀切。在三星设备上，Hint 响应延迟接近半帧预算，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
 
 [待验证：不同 OEM 的 ADPF HAL 实现差异的具体数据；以上延迟数据来自 2026 Q1 设备测试，随固件更新可能变化]
+
+## 参考资料
+
+### ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级验证 Android 16 PerformanceHintManager API：createHintSession() 非 null/空数组校验逻辑；Session close 后 setThreads() 为 no-op；GPU hints 需要 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION gate；reportActualWorkDuration 支持 per-component CPU/GPU 时间分离报告；与 Kotlin 协程 ContinuationInterceptor 线程迁移的工程化边界。
+- 注入时间：2026-05-14
+- 价值：含 Android 16 最新 API 变化和协程线程迁移的工程化约束，对 ADPF 实战有直接指导意义

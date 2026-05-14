@@ -842,3 +842,81 @@ public class CompilerFallback {
 
 ### 深入阅读
 - Android Authority: Android 16 Cloud Compilation（外部报道，适合补背景，不适合单独当作平台契约）
+
+<!-- AIW-源码调研-2026-05-13 -->
+## 🔍 源码调研勘误：§1.9 Android 16 云端编译 / SDM 深度段
+
+**调研日期**：2026-05-13
+**调研人**：AIW · 每日源码调研（research-gaps 驱动）
+**报告位置**：DeepResearch/2026-05-13-android16-cloud-compilation-sdm-verification.md
+
+### 核心发现
+
+经源码级验证，§1.9 原文中「Android 16 云端编译与 SDM 机制深度分析」一节存在多处**P0 级技术错误**——引用了 AOSP android-16.0.0_r1 中不存在的类和方法。错误根源是选题提案中假设了 `CloudCompilationService` 等类名，而 AOSP 实际实现机制完全不同。
+
+#### 原文引用但实际不存在的类（需删除/替换）
+
+| 原文引用（错误） | 实际状态 |
+|----------------|---------|
+| `PackageSnapshotCompiler` | ❌ AOSP 中不存在 |
+| `frameworks/base/services/core/java/com/android/server/pm/SDM.java` | ❌ AOSP 中不存在 |
+| `CloudCompilerNetworkService` | ❌ AOSP 中不存在 |
+| `CompilerFallback` | ❌ AOSP 中不存在 |
+| `PackageManagerService.snapshotCompiler()` | ❌ 方法不存在 |
+
+#### 实际存在的机制（应替换为）
+
+| 实际类/方法 | 文件路径 | 说明 |
+|-----------|---------|------|
+| `BackgroundDexOptService` | `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` | 设备空闲时执行后台 dexopt |
+| `PackageManager.getCloudPackageInfo()` | `frameworks/base/core/java/android/content/pm/PackageManager.java` | 读取 .dm (dex metadata) 文件 |
+| Dex Metadata (`.dm`) | Play Store 分发 | 包含聚合 Cloud Profile 数据 |
+| `system/extras/sdm/` | 目录 | System Dexopt Manager 实际位置（工具类，非服务） |
+| `ArtManagerLocal` | `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` | ART Service 编译调度 |
+
+### 实际云编译机制
+
+Android 16 的"云编译"是以下组件的组合：
+
+1. **Dex Metadata (`.dm`)**：Play Store 分发的元数据文件，包含聚合的 Cloud Profile
+2. **PackageManager.getCloudPackageInfo()**：设备侧读取 .dm 文件
+3. **BackgroundDexOptService**：在设备 idle 时调度后台编译
+4. **ART Service** (`ArtManagerLocal` / `ArtShellCommand`)：控制面，管理编译任务
+5. **artd**：ART 守护进程
+6. **dex2oat**：实际编译执行进程（speed-profile）
+
+实际调用链：
+```
+Play Store (.dm file) → PackageManager.getCloudPackageInfo()
+  → BackgroundDexOptService.scheduleCompile()
+  → ArtManagerLocal.compileDex()
+  → artd → dex2oat (speed-profile)
+```
+
+### 实际 SDM 位置
+
+SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含：
+- `DexoptUtils.java`
+- `PackageDexoptUsageRecord.java`
+
+这是 OTA 场景下的设备级编译策略工具类，与 Cloud Compilation 是**两个独立的机制**：
+- Cloud Compilation = 云端 Profile 引导的后台编译（来源：Play Store）
+- SDM = 本地系统级编译调度管理（来源：OTA 场景）
+
+### 性能数据的可信度
+
+原文引用的性能数据（"减少首次安装时间 30-50%"、"提升运行性能 15-25%"、"减少网络流量 60-80%"）**未经一手源码验证**，属于外部报道推断，不应作为 AIW 定稿结论。
+
+### 修正方向
+
+1. 删除「Android 16 云端编译与 SDM 机制深度分析」整节（595-810 行）
+2. 在「版本演进」表中为 Android 16 列补充正确的实现机制描述
+3. 在「关键源码文件」表中替换为实际存在的文件路径
+4. 或将存疑段落的 [存疑] 标注升级为「以下内容已被源码调研证实为不存在的类，详见 DeepResearch/2026-05-13-...」
+
+### 参考资料
+
+- AOSP android-16.0.0_r1 `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java`（已验证存在）
+- AOSP android-16.0.0_r1 `frameworks/base/core/java/android/content/pm/PackageManager.java`（已验证存在）
+- AOSP android-16.0.0_r1 `system/extras/sdm/`（已验证目录存在）
+- AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（已验证存在）
