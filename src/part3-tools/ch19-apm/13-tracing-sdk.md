@@ -27,10 +27,10 @@ sources:
   path: https://developer.android.com/ndk/reference/group/tracing
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-07'
 task6_result: pass-light-edit
@@ -38,8 +38,8 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T17:55:27+08:00'
-task2b_result: pending
-last_task2b_at: '2026-05-07T21:47:07+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-05-14T23:25:54+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task9_review_notes: '2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5
@@ -309,6 +309,9 @@ Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行�
 ```kotlin
 val cookie = nextCookie.getAndIncrement()
 val spanClosed = java.util.concurrent.atomic.AtomicBoolean(false)
+// 先注册 beginAsyncSection，再启动协程：避免 Main.immediate dispatcher
+// 同步执行协程体并在 finally 中 endAsyncSection 时出现 end-before-begin
+Trace.beginAsyncSection("Home#loadData", cookie)
 val job = viewModelScope.launch {
     try {
         // 切到 I/O 线程，同步 slice 只包住该线程内的阻塞工作
@@ -334,7 +337,6 @@ job.invokeOnCompletion {
         Trace.endAsyncSection("Home#loadData", cookie)
     }
 }
-Trace.beginAsyncSection("Home#loadData", cookie)
 ```
 
 修正后，`withContext(Dispatchers.IO)` 保证 `trace("Home#fetchData")` 在 I/O 线程内部执行，不跨挂起点；主线程的 `trace("Home#renderData")` 只覆盖 `submitList` 的同步部分。async trace 把两端串成同一个业务 span，不会出现同步 slice 跨挂起点导致的视图污染。
@@ -344,7 +346,7 @@ Trace.beginAsyncSection("Home#loadData", cookie)
 - 协程 body 因 scope 取消而未执行：`invokeOnCompletion` 关闭 span。
 - 协程 body 已启动后被 `withContext` 内取消：`finally` 块关闭 span。
 
-`beginAsyncSection` 放在 `invokeOnCompletion` 注册之后调用，确保无论哪条路径都能找到关闭回调。
+`beginAsyncSection` 放在 `viewModelScope.launch` 之前调用。原因：`viewModelScope` 默认使用 `Main.immediate` dispatcher，`launch` 创建的协程可能在 `launch` 调用返回前同步执行协程体；如果先 `launch` 再 `beginAsyncSection`，协程的 `finally` 可能在 `begin` 之前运行，产生 end-before-begin 的 trace 错误。
 
 跨线程任务要分两层标注：
 
@@ -364,9 +366,9 @@ fun loadFirstFeed() {
     try {
         ioExecutor.execute {
             try {
-                trace("Home#requestFirstFeed") {
+                val items = trace("Home#requestFirstFeed") {
                     val response = api.loadFirstFeed()
-                    val items = parser.parse(response)
+                    parser.parse(response)
                 }
                 val posted = mainHandler.post {
                     try {
