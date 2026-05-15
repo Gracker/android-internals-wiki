@@ -6295,7 +6295,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/09-application-exit-info.md"
@@ -6307,7 +6307,9 @@
         "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]",
         "https://developer.android.com/reference/android/app/ApplicationExitInfo",
         "https://developer.android.com/topic/performance/vitals/anr"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 已加工为空 draft，status=ready-for-review，进入 Task6 审查队列"
     },
     {
       "id": "task9-26.8-applicationexitinfo-native-tombstone-api-boundary",
