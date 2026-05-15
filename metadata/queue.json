@@ -2292,7 +2292,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/05-splash-screen.md"
@@ -2316,7 +2316,8 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T01:20:00+08:00",
-      "original_review_log": "logs/review/2026-05-13-01-review.md"
+      "original_review_log": "logs/review/2026-05-13-01-review.md",
+      "completed_date": "2026-05-15T11:23:22+08:00"
     },
     {
       "id": "task9-22-4-custom-view-dirty-rect-rendernode-20260513",
@@ -3005,13 +3006,14 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T05:26:00+08:00"
+      "added_at": "2026-05-13T05:26:00+08:00",
+      "completed_date": "2026-05-15T11:23:22+08:00"
     },
     {
       "id": "task9-2026-05-13-18.2-compose-gc-android17-evidence",
@@ -3036,14 +3038,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md",
         "intake/research-gaps.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T05:26:00+08:00"
+      "added_at": "2026-05-13T05:26:00+08:00",
+      "completed_date": "2026-05-15T11:23:22+08:00"
     },
     {
       "id": "task9-deep-review-20.4-20260513-binder-broadcast",
