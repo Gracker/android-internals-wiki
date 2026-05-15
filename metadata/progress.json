@@ -1,8 +1,8 @@
 {
   "total": 286,
   "draft": 1,
-  "ready-for-review": 89,
-  "finalized": 189,
+  "ready-for-review": 88,
+  "finalized": 190,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -134,7 +134,8 @@
     "1.18",
     "16.6",
     "22.11",
-    "20.11"
+    "20.11",
+    "25.11"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -264,15 +265,16 @@
     "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
     "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
     "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
-    "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+    "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
+    "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
   ],
-  "review_summary": "Task6 2026-05-16 01: review 20.11；L1/L2 小修 6；无回炉，进入 Task9。",
+  "review_summary": "Task6 2026-05-16 02: review 22.11、25.11；L1/L2 小修 22；无回炉；22.11 自动晋升 finalized，25.11 进入 Task9。",
   "task6_review_summary": {
-    "l1_l2_fixes": 648,
+    "l1_l2_fixes": 670,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 675,
-    "auto_promotions": 12
+    "total_issues": 697,
+    "auto_promotions": 13
   },
   "issues_by_section": {
     "1.6": {
@@ -1033,11 +1035,11 @@
       "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
     }
   },
-  "total_review_sections": 128,
+  "total_review_sections": 129,
   "next_review_candidates": [],
-  "ready_for_review": 88,
-  "last_updated": "2026-05-16T02:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "ready_for_review": 87,
+  "last_updated": "2026-05-16T02:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "01:12",
@@ -1053,7 +1055,7 @@
     "log": "logs/review/2026-05-16-01-review.md"
   },
   "task9_last_review": "2026-05-16T01:26:00+08:00",
-  "ready_to_publish": 189,
+  "ready_to_publish": 190,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2700,26 +2702,35 @@
     "22.11": {
       "title": "AnimatedVectorDrawable 线程退化与动画卡顿",
       "file": "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "pass-tech-review",
       "task9_reviewed_date": "2026-05-16",
-      "last_task9_at": "2026-05-16T01:26:00+08:00"
+      "last_task9_at": "2026-05-16T01:26:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-16T02:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-02-review.md",
+      "auto_promoted_by": "task6-review",
+      "auto_promoted_at": "2026-05-16T02:11:00+08:00"
     },
     "25.11": {
       "title": "ADPF Hint Session 与协程线程迁移",
       "file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_source": "素材驱动/官方文档",
       "last_task2a_at": "2026-05-16T02:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-16T02:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-02-review.md"
     }
   },
   "task2b_rounds": [
@@ -2792,18 +2803,20 @@
     "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "total_review_files": 128,
+  "total_review_files": 129,
   "last_task2a_at": "2026-05-16T02:04:00+08:00",
   "last_task2a_section": "25.11",
   "last_task2a_file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
-  "last_task6_review": "2026-05-16T01:12:00+08:00",
+  "last_task6_review": "2026-05-16T02:11:00+08:00",
   "last_task6_sections": [
-    "20.11"
+    "22.11",
+    "25.11"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+    "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
+    "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
   ],
-  "last_task6_at": "2026-05-16T01:12:00+08:00",
+  "last_task6_at": "2026-05-16T02:11:00+08:00",
   "last_task6_review_detail": {
     "reviewed_at": "2026-05-16T01:12:00+08:00",
     "log": "logs/review/2026-05-16-01-review.md",
@@ -2825,38 +2838,50 @@
   ],
   "last_task9_at": "2026-05-16T01:26:00+08:00",
   "last_task2a_result": "drafted",
-  "ready-to-publish": 189,
+  "ready-to-publish": 190,
   "last_task2a_processed_section": "25.11",
-  "task6_last_review_at": "2026-05-16T01:12:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-01-review.md",
+  "task6_last_review_at": "2026-05-16T02:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-02-review.md",
   "task6_last_review_sections": [
-    "20.11"
+    "22.11",
+    "25.11"
   ],
   "sections_status": {
     "22.11": {
       "title": "AnimatedVectorDrawable 线程退化与动画卡顿",
       "file": "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "last_task2a_at": "2026-05-16T01:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task6_at": "2026-05-16T02:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-02-review.md",
+      "auto_promoted_by": "task6-review",
+      "auto_promoted_at": "2026-05-16T02:11:00+08:00"
     },
     "25.11": {
       "title": "ADPF Hint Session 与协程线程迁移",
       "file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_source": "素材驱动/官方文档",
       "last_task2a_at": "2026-05-16T02:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-16T02:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-02-review.md"
     }
   }
 }
