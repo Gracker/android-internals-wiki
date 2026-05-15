@@ -6567,7 +6567,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
@@ -6578,7 +6578,9 @@
         "intake/research-feeds/2026-04-14-07-perfetto-v53-rust-sdk-pprof-simpleperf-custom-sorting.md",
         "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-15T14:04:00+08:00",
+      "completed_reason": "Task 2A 已加工为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task2a-gap-24.9-09-wifi-connectivity-selection-20260515",
@@ -6776,7 +6778,7 @@
     "last_updated_by": "openclaw-task9",
     "pending": 127
   },
-  "last_updated": "2026-05-15T13:30:28+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 127
+  "last_updated": "2026-05-15T14:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 126
 }

@@ -1,7 +1,7 @@
 {
   "total": 279,
-  "draft": 4,
-  "ready-for-review": 88,
+  "draft": 3,
+  "ready-for-review": 89,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -941,9 +941,9 @@
   },
   "total_review_sections": 119,
   "next_review_candidates": [],
-  "ready_for_review": 84,
-  "last_updated": "2026-05-15T13:30:28+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 85,
+  "last_updated": "2026-05-15T14:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "12:11",
@@ -2381,6 +2381,20 @@
       "queue_priority": 95,
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15"
+    },
+    "13.12": {
+      "title": "Perfetto Profile 导入与 Flamegraph 分析",
+      "file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "last_task2a_at": "2026-05-15T14:04:00+08:00",
+      "task2a_result": "drafted",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方发布说明"
     }
   },
   "task2b_rounds": [
@@ -2398,8 +2412,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "知识缺口挖掘：13.11, 17.4, 20.10, 22.10, 26.9",
-  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
+  "last_task2a_processed": "13.12 Perfetto Profile 导入与 Flamegraph 分析",
+  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "at": "2026-05-15T13:30:28+08:00",
@@ -2441,9 +2455,9 @@
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
   "total_review_files": 119,
-  "last_task2a_at": "2026-05-15T08:20:00+08:00",
-  "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
-  "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
+  "last_task2a_at": "2026-05-15T14:04:00+08:00",
+  "last_task2a_section": "13.12",
+  "last_task2a_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
   "last_task6_review": "logs/review/2026-05-15-12-review.md",
   "last_task6_sections": [
     "18.2",
@@ -2473,6 +2487,6 @@
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
   "last_task9_at": "2026-05-15T13:30:28+08:00",
-  "last_task2a_result": "gap-mining",
+  "last_task2a_result": "drafted",
   "ready-to-publish": 187
 }
