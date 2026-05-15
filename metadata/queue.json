@@ -6963,19 +6963,61 @@
       "completed_date": "2026-05-15",
       "completed_reason": "Task 2A 已加工为空 draft，章节状态更新为 ready-for-review，进入 Task 6 review 管线。",
       "completed_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+    },
+    {
+      "id": "task9-20260515-25.10-hybrid-webview-power-version-review",
+      "section": "25.10",
+      "priority": 85,
+      "title": "Hybrid/WebView 功耗采集与 Renderer 监控版本边界需补齐",
+      "description": "网络流量采样仍按 legacy xt_qtaguid 命令给出，且 WebViewRenderProcessClient 未标 API 29+ 边界；会误导 Android 8-17 的功耗基准测试与线上监控实现。",
+      "reason": "[Deep Tech Review] 网络流量采样 qtaguid/eBPF 版本边界、WebViewRenderProcessClient API 29+ 边界需回炉。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "related_files": [
+        "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-19-deep-review.md",
+        "https://source.android.com/docs/core/data/kernel-overview",
+        "https://source.android.com/docs/core/data/ebpf-traffic-monitor",
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/网络采样口径",
+          "location": "L152 / L162 网络采集：/proc/net/xt_qtaguid/stats 与 qtaguid/eBPF 行",
+          "detail": "章节适用 Android 8(API 26)-Android 17(API 37)，但基准测试命令直接读取 /proc/net/xt_qtaguid/stats。AOSP kernel overview 明确 xt_qtaguid 从 Android 9 起 phased out；eBPF traffic monitor 文档说明 Android 9 起，kernel 4.9+ 且 P 首发设备必须用 eBPF traffic monitoring 替代 xt_qtaguid。现代 Android 10-17 设备上该 /proc 路径可能不存在或不再代表官方网络统计主线，按正文命令会让读者拿不到样本或把旧内核口径当成新设备口径。",
+          "suggestion": "把网络采集拆成版本分支：API 26-28/legacy 设备可注明 xt_qtaguid 仅作兼容路径；Android 9+ P 首发或更高版本优先走 NetworkStatsService / dumpsys netstats / 端侧 TrafficStats-APM 网络埋点 / Perfetto 网络相关 counter，并在表格中说明 qtaguid 与 eBPF 不能混算。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/交叉引用一致性",
+          "location": "L195 WebViewRenderProcessClient.onRenderProcessUnresponsive() 监控建议",
+          "detail": "正文把 WebViewClient.onRenderProcessGone() 与 WebViewRenderProcessClient.onRenderProcessUnresponsive() 放在同一句监控建议里，没有标出 API level。官方 WebViewRenderProcessClient 文档显示该类 Added in API level 29；章节 frontmatter 覆盖 Android 8(API 26)+，API 26-28 没有 WebViewRenderProcessClient，只能使用 onRenderProcessGone() 和页面 ready 超时、JSBridge 心跳、PixelCopy/DOM 采样等降级信号。相关 7.11、19.26、20.10 已明确写出 API 26+/API 29+ 边界，25.10 当前说法与交叉章节口径不一致。",
+          "suggestion": "把 Renderer 监控段改成两层：API 26+ 使用 WebViewClient.onRenderProcessGone() 处理退出；API 29+ 才能使用 WebViewRenderProcessClient 观察 unresponsive/responsive，并补 API 26-28 的降级观测方式，避免线上埋点在 Android 8/9 直接按不存在 API 设计。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T19:35:08+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 212,
+    "total_entries": 213,
     "p0_count": 43,
-    "last_updated": "2026-05-15T17:28:33+08:00",
+    "last_updated": "2026-05-15T19:36:56+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 125,
+    "pending_entries": 126,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
-    "pending": 125
+    "pending": 126
   },
-  "last_updated": "2026-05-15T17:28:33+08:00",
+  "last_updated": "2026-05-15T19:36:56+08:00",
   "last_updated_by": "openclaw-task9",
-  "pending": 125
+  "pending": 126
 }

@@ -258,7 +258,7 @@
     "src/part5-app/ch26-observability/09-application-exit-info.md",
     "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
-  "review_summary": "Task9 2026-05-15 16: review 24.9；P0 0 / P1 1 / P2 2，需回炉。",
+  "review_summary": "Task9 2026-05-15 19: review 25.10；P0 0 / P1 2 / P2 1，需回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 622,
     "l3_issues": 41,
@@ -974,13 +974,22 @@
       "reviewed_at": "2026-05-15T16:20:00+08:00",
       "log": "logs/deep-review/2026-05-15-16-deep-review.md",
       "summary": "P1 1：Android 10/11 与 Android 12+ Connectivity 选网策略未拆分；P2 2：NetworkCallback 示例同步读 capabilities、OEM external scorer 缺失。"
+    },
+    "25.10": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T19:35:08+08:00",
+      "log": "logs/deep-review/2026-05-15-19-deep-review.md",
+      "summary": "P1 2：xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界；P2 1：Macrobenchmark PowerMetric system-wide 与设备限制。"
     }
   },
   "total_review_sections": 124,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T19:11:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-15T19:35:08+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "19:11",
@@ -995,7 +1004,7 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-15-19-review.md"
   },
-  "task9_last_review": "2026-05-15T17:28:33+08:00",
+  "task9_last_review": "2026-05-15T19:35:08+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2514,11 +2523,11 @@
     },
     "25.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task2a_at": "2026-05-15T19:04:00+08:00",
       "task2a_result": "drafted",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
       "title": "Hybrid/WebView 功耗与原生化取舍",
       "sources": [
@@ -2532,7 +2541,20 @@
       "task6_reviewed_date": "2026-05-15",
       "task6_reviewed_by": "openclaw-task6",
       "last_task6_at": "2026-05-15T19:11:00+08:00",
-      "last_task6_log": "logs/review/2026-05-15-19-review.md"
+      "last_task6_log": "logs/review/2026-05-15-19-review.md",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-15",
+      "last_task9_at": "2026-05-15T19:35:08+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-19-deep-review.md",
+      "task9_issues": {
+        "p0": 0,
+        "p1": 2,
+        "p2": 1,
+        "p3": 0
+      },
+      "task9_review_notes": "2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 1；需补 xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界，以及 PowerMetric system-wide/设备限制。"
     }
   },
   "task2b_rounds": [
@@ -2554,43 +2576,43 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-15T17:28:33+08:00",
-    "log": "logs/deep-review/2026-05-15-17-deep-review.md",
+    "reviewed_at": "2026-05-15T19:35:08+08:00",
+    "log": "logs/deep-review/2026-05-15-19-deep-review.md",
     "sections": [
-      "26.9"
+      "25.10"
     ],
     "files": [
-      "src/part5-app/ch26-observability/09-application-exit-info.md"
+      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
     ],
     "p0": 0,
-    "p1": 1,
-    "p2": 2,
-    "p3": 1,
+    "p1": 2,
+    "p2": 1,
+    "p3": 0,
     "result": "needs-rework",
-    "summary": "目标池仅 1 个 task9 pending 候选。26.9 发现 ApplicationExitInfo reason/subReason 版本矩阵缺失，另有 PSS/RSS 采样语义和 processStateSummary 限制需要补充。"
+    "summary": "25.10 需要回炉：xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界；PowerMetric system-wide/Pixel 设备限制作为 P2 补充。"
   },
-  "last_task9_review": "2026-05-15 17:28 review 26.9",
+  "last_task9_review": "2026-05-15 19:27 review 25.10",
   "last_task9_sections": [
-    "26.9"
+    "25.10"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-15T17:28:33+08:00",
-    "log": "logs/deep-review/2026-05-15-17-deep-review.md",
+    "reviewed_at": "2026-05-15T19:35:08+08:00",
+    "log": "logs/deep-review/2026-05-15-19-deep-review.md",
     "sections": [
-      "26.9"
+      "25.10"
     ],
     "files": [
-      "src/part5-app/ch26-observability/09-application-exit-info.md"
+      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
     ],
     "p0": 0,
-    "p1": 1,
-    "p2": 2,
-    "p3": 1,
+    "p1": 2,
+    "p2": 1,
+    "p3": 0,
     "result": "needs-rework",
-    "summary": "目标池仅 1 个 task9 pending 候选。26.9 发现 ApplicationExitInfo reason/subReason 版本矩阵缺失，另有 PSS/RSS 采样语义和 processStateSummary 限制需要补充。"
+    "summary": "25.10 需要回炉：xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界；PowerMetric system-wide/Pixel 设备限制作为 P2 补充。"
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch26-observability/09-application-exit-info.md"
+    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
   "total_review_files": 124,
   "last_task2a_at": "2026-05-15T19:04:00+08:00",
@@ -2620,9 +2642,9 @@
     "summary": "25.10 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch26-observability/09-application-exit-info.md"
+    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
-  "last_task9_at": "2026-05-15T17:28:33+08:00",
+  "last_task9_at": "2026-05-15T19:35:08+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
   "last_task2a_processed_section": "25.10",

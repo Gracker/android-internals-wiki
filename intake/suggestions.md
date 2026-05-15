@@ -1359,3 +1359,9 @@
 - **位置**：L252 `process_state_summary`
 - **问题**：正文建议保存 `ActivityManager.setProcessStateSummary()` 摘要，但没有说明官方限制：最大 128 bytes、不要包含 PII/SPII，系统可能 throttle 过高频调用并抛 `RuntimeException`；它也不应用来恢复 UI 状态。
 - **建议**：把该字段限定为短小、低频、非敏感的状态标签，例如实验组、关键页面/阶段 ID、启动阶段码；不要放完整 JSON、URL、用户标识或恢复状态。
+
+## [Task9 Deep Review] 25.10 Hybrid/WebView 功耗与原生化取舍 — 2026-05-15
+- **类型**：数据缺失/工具边界
+- **位置**：L156-L162 Macrobenchmark PowerMetric 口径
+- **问题**：Macrobenchmark PowerMetric 被列为能耗估算采集方式，但缺少官方限制：结果是 system-wide consumption，不是 per-app attribution；官方文档限定 Pixel 6 / Pixel 6 Pro 及后续设备。Hybrid/WebView 实验中，WebView provider、浏览器、后台账号同步和温控都可能污染 system-wide 数据。
+- **建议**：补 PowerMetric 可用设备、system-wide 属性和干扰控制；per-app 判断回到 BatteryStats / Power Profiler / Perfetto / APM 的 CPU time、网络、PSS/RSS 与页面会话字段。

@@ -17,8 +17,8 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: 'reviewed'
+pipeline_stage: 'task2b_pending'
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2308.16734"
@@ -48,6 +48,13 @@ sources:
     path: "Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md"
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
+task9_result: 'needs-rework'
+task2b_state: 'pending'
+task9_reviewed_date: '2026-05-15'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-15T19:35:08+08:00'
+last_task9_review_log: 'logs/deep-review/2026-05-15-19-deep-review.md'
+task9_review_notes: '2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 1；需补 xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界，以及 Macrobenchmark PowerMetric system-wide/设备限制。'
 ---
 
 # 25.10 Hybrid/WebView 功耗与原生化取舍
