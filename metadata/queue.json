@@ -3529,7 +3529,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T17:55:27+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-16T03:24:36+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 FrameTiming.timestampInMicroseconds epoch 断言修正——删除'与 DateTime 共享同一时间基准'断言(官方文档明确 epoch may not match DateTime epoch), 校准方案从 DateTime.now() 桥接改为 Native MethodChannel 接收时间锚点, clock_source 从 calibrated_approx 改为 native_receive_time, 删除 sendCalibrationEvent 校准对代码"
     },
     {
       "id": "task9-20260513-2.3-vsync-source-identifiers-vsyncmodulator",
@@ -3544,7 +3546,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/03-vsync.md"
@@ -3576,7 +3578,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T18:28:00+08:00"
+      "added_at": "2026-05-13T18:28:00+08:00",
+      "completed_date": "2026-05-16T03:25:08+08:00",
+      "completed_reason": "Task 2B 回炉修复(前轮已完成，queue 遗漏): 源码路径/方法名空格已修正(VSyncPredictor.cpp/VSyncReactor.cpp/VSyncDispatchTimerQueue.cpp/nextAnticipatedVSyncTimeFrom), IVsyncTrackerCallback 不存在的接口已删除, VsyncModulator 三相动态调整与 onTransactionCommit 行为已按 AOSP android-16.0.0_r1 重写(Late=常态, onTransactionCommit=退出显式 early schedule)"
     },
     {
       "id": "task9-2.6-hwc16-interface-and-sf-version-errors",
