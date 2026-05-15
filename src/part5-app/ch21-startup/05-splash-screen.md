@@ -24,13 +24,13 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
-task2b_state: pending
+task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
@@ -191,7 +191,9 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-`installSplashScreen()` 必须在 `setContentView()` 之前调用。当前代码示例把它放在 `super.onCreate()` 之前，文字说明不能再写成之后。[存疑: 需 Task 9 复核 AndroidX core-splashscreen 当前版本对 `installSplashScreen()` 与 `super.onCreate()` 顺序的要求]
+`installSplashScreen()` 必须在 `super.onCreate()` 之前调用。AndroidX `SplashScreen.kt` 的 Usage 文档明确要求："call installSplashScreen just before super.onCreate()"。代码示例中的顺序已正确。`setContentView()` 放在 `super.onCreate()` 之后即可。
+
+[已验证: AndroidX `core-splashscreen` SplashScreen.kt Usage 段落 — call installSplashScreen() just before super.onCreate()]
 
 ### 版本行为差异
 
