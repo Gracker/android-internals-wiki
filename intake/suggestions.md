@@ -1365,3 +1365,15 @@
 - **位置**：L156-L162 Macrobenchmark PowerMetric 口径
 - **问题**：Macrobenchmark PowerMetric 被列为能耗估算采集方式，但缺少官方限制：结果是 system-wide consumption，不是 per-app attribution；官方文档限定 Pixel 6 / Pixel 6 Pro 及后续设备。Hybrid/WebView 实验中，WebView provider、浏览器、后台账号同步和温控都可能污染 system-wide 数据。
 - **建议**：补 PowerMetric 可用设备、system-wide 属性和干扰控制；per-app 判断回到 BatteryStats / Power Profiler / Perfetto / APM 的 CPU time、网络、PSS/RSS 与页面会话字段。
+
+## [Task9 Deep Review] 20.4 ANR 治理策略 — 2026-05-15
+- **类型**：源码准确性/数据支撑
+- **位置**：L154 WorkManager 后台任务模式
+- **问题**：WorkManager 示例后标注的验证来源是 AOSP ActiveServices.java，无法支撑 AndroidX WorkManager 的调度语义；读者会误以为 WorkManager 行为由 ActiveServices 直接定义。
+- **建议**：改引 AndroidX WorkManager 官方文档或 androidx.work 源码；补一句 WorkManager 受约束、配额和后台调度策略影响，不保证立即执行。
+
+## [Task9 Deep Review] 20.4 ANR 治理策略 — 2026-05-15
+- **类型**：数据缺失/风险过滤
+- **位置**：L586-L596 系统负载 ANR 识别与过滤
+- **问题**：“nativePollOnce 更可能是系统侧阻塞”“CPU iowait >30%”“标记但不上报”缺少可复现实验或线上统计支撑；nativePollOnce 单独不能证明系统原因，直接不上报会丢失排障样本。
+- **建议**：改为多信号判定：ANR reason、waitQueue head age、system_server trace、CPU/iowait、LMK/event log 同时满足才标记 likely_system_caused；策略改成“上报并标记/降权”，不要直接丢弃。
