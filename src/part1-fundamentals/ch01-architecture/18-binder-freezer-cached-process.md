@@ -13,7 +13,7 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-15"
@@ -22,7 +22,13 @@ reviewed_date: "2026-05-15"
 last_task6_at: "2026-05-15T22:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-15-22-review.md"
 task6_review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 7 处；无 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: pending
+task9_state: reviewed
+last_task9_review_log: "logs/deep-review/2026-05-15-22-deep-review.md"
+last_task9_at: "2026-05-15T22:35:05+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-15"
+task9_result: needs-rework
+task2b_state: pending
 sources:
   - type: official
     path: "https://source.android.com/docs/core/perf/cached-apps-freezer"

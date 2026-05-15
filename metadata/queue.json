@@ -7211,21 +7211,69 @@
         "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md",
         "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
       ]
+    },
+    {
+      "id": "task9-20260515-1.18-binder-freezer-policy-version-api",
+      "section": "1.18",
+      "section_title": "Binder Freezer 与缓存进程冻结性能",
+      "priority": 85,
+      "title": "Binder Freezer 冻结资格、退出归因与 callback API 版本边界需补齐",
+      "description": "P1：冻结资格漏掉 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；IBinder.addFrozenStateChangeCallback 缺 API/flag/低版本边界。",
+      "reason": "[Deep Tech Review] 1.18 覆盖 Android 11 QPR3-17，但当前正文按 AOSP main/最新文档统一描述 freezer 资格、退出归因和 Binder frozen callback，缺少关键源码分支与版本边界。",
+      "issue_type": "principle-chain-version-difference-api-surface",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/源码准确性",
+          "location": "L108-L119 冻结资格伪代码；L249 组件状态→adj→freezer 说明",
+          "detail": "正文把冻结资格简化成 curAdj >= FREEZER_CUTOFF_ADJ 且非 isFreezeExempt。AOSP main OomAdjuster.getFreezePolicy() 在 curAdj 判断前还会先看 PROCESS_CAPABILITY_CPU_TIME（useCpuTimeCapability flag）或 ProcessCachedOptimizerRecord.shouldNotFreeze()，再检查 isFreezeExempt。当前伪代码漏掉 CPU capability / shouldNotFreeze 这条主保护链，会让前台服务、绑定重要进程、正在执行关键交互等豁免来源只剩“adj 变化”的解释。",
+          "suggestion": "把 getFreezePolicy() 伪代码补成三层：CPU_TIME capability/shouldNotFreeze → isFreezeExempt → curAdj >= FREEZER_CUTOFF_ADJ。扩展表中增加“组件状态如何转成 curCapability / shouldNotFreeze / adj”的边界，避免把所有豁免都解释成 adj。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/交叉引用一致性",
+          "location": "L187-L200 ApplicationExitInfo；L226-L240 命令与版本表",
+          "detail": "章节覆盖 Android 11 QPR3-17，但把 REASON_FREEZER=14 写成通用归因口径，并在版本表中归到 Android 14/15。AOSP tag 复核：android-11.0.0_r1 无 REASON_FREEZER；android-12.0.0_r1 只有 freezer 相关 hidden subreason 注释但无 REASON_FREEZER；android-13.0.0_r35 才新增 REASON_FREEZER=14；android-14.0.0_r1 新增 REASON_PACKAGE_STATE_CHANGE/UPDATED；android-15.0.0_r1 才有 SUBREASON_FREEZER_BINDER_ASYNC_FULL=31。当前写法会误导 API 30-32 的线上归因和 26.9 章节的版本矩阵。",
+          "suggestion": "补 API 30-32 / 33 / 34 / 35+ 的 reason/subReason 矩阵：低版本 fallback 到 REASON_OTHER/description 或内部 subreason；API 33 标 REASON_FREEZER；API 35+ 再写 ASYNC_FULL。同步引用 26.9 当前 pending 的 ApplicationExitInfo 版本修正项。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/API 可用性",
+          "location": "L183 IBinder.addFrozenStateChangeCallback 建议",
+          "detail": "正文直接把 IBinder.addFrozenStateChangeCallback 作为避免向 frozen 远端派发 callback 的方向。AOSP main IBinder.java 中该方法标注 @FlaggedApi(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)，且 default 实现会抛 UnsupportedOperationException；android-15.0.0_r1 的 IBinder.java 未包含该 API。对覆盖 Android 11-17 的章节，当前表述缺少 Added/API flag/平台代码与普通应用可用性边界。",
+          "suggestion": "把该建议改成“Android 最新 API / flag 可用时使用 addFrozenStateChangeCallback，并捕获 UnsupportedOperationException；低版本或 flag 不可用时依赖生命周期状态、注册/退订策略、事件合并和 Binder death 等降级方案”。补官方 API Added level 或 release branch 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T22:35:05+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 213,
+    "total_entries": 222,
     "p0_count": 43,
-    "last_updated": "2026-05-15T19:36:56+08:00",
+    "last_updated": "2026-05-15T22:35:05+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 126,
+    "pending_entries": 131,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
-    "pending": 126
+    "pending": 131
   },
-  "last_updated": "2026-05-15T21:09:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 125,
+  "last_updated": "2026-05-15T22:35:05+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 131,
   "last_task2a_completed": "1.18",
   "last_task2a_completed_at": "2026-05-15T21:09:00+08:00"
 }

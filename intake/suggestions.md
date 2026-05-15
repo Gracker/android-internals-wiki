@@ -1377,3 +1377,15 @@
 - **位置**：L586-L596 系统负载 ANR 识别与过滤
 - **问题**：“nativePollOnce 更可能是系统侧阻塞”“CPU iowait >30%”“标记但不上报”缺少可复现实验或线上统计支撑；nativePollOnce 单独不能证明系统原因，直接不上报会丢失排障样本。
 - **建议**：改为多信号判定：ANR reason、waitQueue head age、system_server trace、CPU/iowait、LMK/event log 同时满足才标记 likely_system_caused；策略改成“上报并标记/降权”，不要直接丢弃。
+
+## [Task9 Deep Review] 1.18 Binder Freezer 与缓存进程冻结性能 — 2026-05-15
+- **类型**：交叉引用/来源路径
+- **位置**：L50 sources 与 L270 参考资料
+- **问题**：frontmatter 写 DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md，但该路径不在 Android-Internal-Wiki 项目根内；实测文件位于 Obsidian/DeepResearch/ 同级目录。
+- **建议**：把来源路径改成可点击/可复核的 Obsidian 相对路径（如 ../DeepResearch/...）或在 sources 中标明它不是项目内路径。
+
+## [Task9 Deep Review] 1.18 Binder Freezer 与缓存进程冻结性能 — 2026-05-15
+- **类型**：源码准确性/观测点
+- **位置**：L212 Perfetto Freezer track 事件名
+- **问题**：正文写事件名包含 Freeze process:pid / Unfreeze process:pid reason；AOSP main traceAppFreeze() 实际写入 "Freeze " 或 "Unfreeze " + processName + ":" + pid + " " + reason，另有 reschedule 事件 "Reschedule freeze <process>:<pid> timeout=..., reason=..."。
+- **建议**：按源码改成精确事件名模板，并补充 reschedule freeze 是 Binder outstanding transaction/新 pending transaction 场景的重要观察点。
