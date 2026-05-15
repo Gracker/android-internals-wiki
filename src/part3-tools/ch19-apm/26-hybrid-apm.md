@@ -10,7 +10,7 @@ last_task9_at: '2026-05-13T17:55:27+08:00'
 last_verified: '2026-04-25'
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 related_chapters:
 - '19.0'
 - '19.01'
@@ -29,8 +29,8 @@ tags:
 - webview
 - flutter
 - hybrid
-task2b_result: pending
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
 task6_review_notes: '2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核
   Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。'
@@ -260,41 +260,32 @@ void installFlutterFrameReporter(String sessionId) {
 
 工程上分三步做近似校准：
 
-1. **初始化时建立校准对**：Flutter Engine 启动后、首帧渲染前，通过 MethodChannel 发一次校准事件。Native 端收到时记录 `nativeElapsedRealtimeMs = SystemClock.elapsedRealtime()`，Flutter 端在发送时附带 `dartTimestampUs = DateTime.now().microsecondsSinceEpoch`。校准偏移量 `offsetMs = nativeElapsedRealtimeMs - dartTimestampUs / 1000`。
+1. **用 MethodChannel 接收时间作为帧事件锚点**：`FrameTiming.timestampInMicroseconds` 的 epoch 与 Dart `DateTime` epoch 不保证一致（官方文档明确标注"the epoch may not match DateTime epoch"），不能通过 `DateTime.now()` 建立可靠校准对。替代方案：Native 端以 MethodChannel 收到帧事件回调的时间（`SystemClock.elapsedRealtime()`）作为这批帧的观测锚点；帧内部的 `buildMs` / `rasterMs` / `totalMs` 用作相对时长。如果需要把帧事件放在 Session Timeline 上，写入的是"Native 收到这批帧回调的时刻"，而不是从 raw timestamp 换算出的伪精确时间。
 
-   注意：`DateTime.now()` 是 wall-clock，`elapsedRealtime()` 是单调时钟。两者在设备 NTP 校时后会偏移。校准偏移只在"本次进程生命周期内相对稳定"的前提下成立——如果设备在 App 运行期间做了大幅时钟调整（极少见但不可排除），校准精度会劣化。Session Timeline 中应记录校准对的采集时刻，供后续分析时判断偏移是否可能过期。
+2. **帧内部用 raw timestamp 推算相对时序**：`buildMs` / `rasterMs` / `totalMs` 是 Flutter 引擎保证的相对时长，可以直接使用。如果需要帧内部的时序关系（如 build 开始到 raster 结束的间隔），可以用 `rawVsyncStartUs`、`rawBuildStartUs`、`rawRasterFinishUs`（来自 `FrameTiming.timestampInMicroseconds(FramePhase)`）做差值计算——这些 raw timestamp 在同一 Engine 进程内是自洽的，只是 epoch 不等于 Native monotonic clock。不要尝试把它们换算为 `elapsed_realtime_ms`。
 
-2. **帧事件用校准偏移换算**：上报每帧时附带 `rawVsyncStartUs`、`rawBuildStartUs`、`rawRasterFinishUs`（来自 `FrameTiming.timestampInMicroseconds(FramePhase)`），Native 端收到后换算为 `elapsed_realtime_ms = rawTimestampUs / 1000 + offsetMs`。`FrameTiming.timestampInMicroseconds` 返回的是 Flutter 引擎内部的微秒计数，与 Dart `DateTime` epoch 的关系是：两者在同一个 Flutter Engine 进程内共享同一时间基准，因此校准对中用 `DateTime.now()` 作为桥接是可行的——但只能换算相对时长，不能当作绝对时间戳。
-
-3. **标注误差来源和范围**：误差来自三方面。一是 MethodChannel 传输延迟（异步调用，通常 1-5ms），二是 `addTimingsCallback` 的批量延迟（引擎攒一批帧后才触发回调，极端情况下 50ms+），三是 `DateTime.now()` 与 `elapsedRealtime()` 的时钟类型差异（wall-clock vs 单调时钟）。Session Timeline 中 Flutter 帧事件应标注 `clock_source: "calibrated_approx"` 和估计误差范围：常规场景 <20ms，滑动高峰或 GC 频繁时 50ms+。只做粗粒度分析（按秒聚合丢帧率）时，可以直接用 `buildMs` / `rasterMs` 时长指标，不需要精确时间轴协调。
+3. **标注误差来源和范围**：误差来自两方面。一是 MethodChannel 传输延迟（异步调用，通常 1-5ms），二是 `addTimingsCallback` 的批量延迟（引擎攒一批帧后才触发回调，极端情况下 50ms+）。Session Timeline 中 Flutter 帧事件的时间戳是 Native 接收回调的时刻，不是帧实际发生的时间，应标注 `clock_source: "native_receive_time"` 和估计误差范围：常规场景 <20ms，批量攒帧较多时 50ms+。只做粗粒度分析（按秒聚合丢帧率）时，直接用 `buildMs` / `rasterMs` 时长指标即可。
 
 **进程挂起边界**：App 进入后台后系统可能冻结进程（CachedAppOptimizer / cgroup freezer），恢复后 `elapsedRealtime()` 持续计时但 `DateTime.now()` 可能跳变。如果校准对是在挂起前采集的，恢复后应重新发送一次校准对。实现方式：监听 `WidgetsBindingObserver.didChangeAppLifecycleState`，在 `resumed` 时重发校准事件。
 
 ```dart
-// 校准对示例：在 Flutter 初始化后、首帧前发送；App resume 时重发
-void sendCalibrationEvent() {
-  final dartNow = DateTime.now().microsecondsSinceEpoch;
-  _apmChannel.invokeMethod('calibrate', {
-    'dart_timestamp_us': dartNow,
-    // Native 端收到后补上 SystemClock.elapsedRealtime()
-  });
-}
-
-// 帧事件中附上 raw timestamp，Native 端用校准偏移换算
+// 帧事件中附上 raw timestamp 用于帧内部相对时序，不做 epoch 换算
+// Native 端以 MethodChannel 收到回调的时刻作为 Session Timeline 锚点
 final payload = timings.map((timing) => {
   'sessionId': sessionId,
   'buildMs': timing.buildDuration.inMicroseconds / 1000.0,
   'rasterMs': timing.rasterDuration.inMicroseconds / 1000.0,
   'totalMs': timing.totalSpan.inMicroseconds / 1000.0,
+  // raw timestamp 仅用于帧内部的差值计算，epoch 不等于 Native monotonic clock
   'rawVsyncStartUs': timing.timestampInMicroseconds(FramePhase.vsyncStart),
   'rawBuildStartUs': timing.timestampInMicroseconds(FramePhase.buildStart),
   'rawRasterFinishUs': timing.timestampInMicroseconds(FramePhase.rasterFinish),
   'frameNumber': timing.frameNumber,
-  'clockSource': 'calibrated_approx',
+  'clockSource': 'native_receive_time',
 }).toList();
 ```
 
-Native 端收到帧事件后，用校准偏移把 `rawVsyncStartUs` / `rawRasterFinishUs` 换算为 `elapsed_realtime_ms`，写入 Session Timeline。如果只做粗粒度分析（按秒聚合丢帧率），可以直接用时长指标（`buildMs` / `rasterMs`），不需要精确时间轴协调。需要精确协调的场景主要是：Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件的时序关联分析。
+Native 端收到帧事件后，以回调接收时刻作为 Session Timeline 锚点，`buildMs` / `rasterMs` 用作帧耗时指标。如果只做粗粒度分析（按秒聚合丢帧率），直接用时长指标即可。需要时序关联的场景（Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件）主要依赖 Native 接收时间做粗粒度对齐，不能依赖 raw timestamp 的 epoch 换算。
 
 Native 收到数据后，按页面、路由、设备刷新率、前后台和引擎后端聚合。Flutter 3.x 之后，Impeller 在部分平台替代或补充 Skia 路径，着色器编译和栅格化表现会变化。APM 样本里保留 Flutter 版本、渲染后端和设备 GPU 信息，才能解释同一页面在不同设备上的差异。
 
