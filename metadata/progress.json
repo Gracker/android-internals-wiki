@@ -1,6 +1,6 @@
 {
-  "total": 286,
-  "draft": 0,
+  "total": 287,
+  "draft": 1,
   "ready-for-review": 94,
   "finalized": 192,
   "task9_result": "needs-rework",
@@ -1040,8 +1040,8 @@
   "total_review_sections": 130,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T03:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-16T04:10:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "03:16",
@@ -2759,6 +2759,18 @@
       "task2b_result": "pending",
       "queue_priority": 95,
       "queue_entry": "task9-20260516-26.10-legacy-exit-reason-api-mapping"
+    },
+    "1.19": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "title": "Zygote 图形驱动预加载与启动性能",
+      "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "素材驱动/AOSP结构",
+      "last_task2a_at": "2026-05-16T04:10:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -2776,8 +2788,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.11",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
+  "last_task2a_processed": "1.19",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
     "reviewed_at": "2026-05-16T03:30:00+08:00",
@@ -2821,9 +2833,9 @@
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
   ],
   "total_review_files": 130,
-  "last_task2a_at": "2026-05-16T02:04:00+08:00",
-  "last_task2a_section": "25.11",
-  "last_task2a_file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
+  "last_task2a_at": "2026-05-16T04:10:00+08:00",
+  "last_task2a_section": "1.19",
+  "last_task2a_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
   "last_task6_review": "2026-05-16T03:16:00+08:00",
   "last_task6_sections": [
     "26.10"
@@ -2851,9 +2863,9 @@
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
   ],
   "last_task9_at": "2026-05-16T03:30:00+08:00",
-  "last_task2a_result": "drafted",
+  "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 192,
-  "last_task2a_processed_section": "25.11",
+  "last_task2a_processed_section": "1.19",
   "task6_last_review_at": "2026-05-16T03:16:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-03-review.md",
   "task6_last_review_sections": [
@@ -2927,13 +2939,25 @@
       "task2b_result": "pending",
       "queue_priority": 95,
       "queue_entry": "task9-20260516-26.10-legacy-exit-reason-api-mapping"
+    },
+    "1.19": {
+      "title": "Zygote 图形驱动预加载与启动性能",
+      "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "素材驱动/AOSP结构",
+      "last_task2a_at": "2026-05-16T04:10:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2a_last_processed": {
-    "section": "26.10",
-    "file": "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md",
-    "processed_at": "2026-05-16T03:04:00+08:00",
-    "status": "ready-for-review",
-    "mode": "content-processing"
+    "section": "1.19",
+    "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "processed_at": "2026-05-16T04:10:00+08:00",
+    "status": "draft",
+    "mode": "gap-mining"
   }
 }

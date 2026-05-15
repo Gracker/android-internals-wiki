@@ -7451,21 +7451,47 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T03:30:00+08:00"
+    },
+    {
+      "id": "task2a-gap-1-19",
+      "section": "1.19",
+      "priority": 80,
+      "title": "Zygote 图形驱动预加载与启动性能",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      ],
+      "gap_source": "素材驱动/AOSP结构",
+      "sources": [
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md",
+        "cs.android.com frameworks/base/core/java/com/android/internal/os/ZygoteInit.java",
+        "cs.android.com frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp",
+        "cs.android.com frameworks/base/core/java/android/os/GraphicsEnvironment.java"
+      ],
+      "created_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-16T04:10:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 226,
+    "total_entries": 227,
     "p0_count": 38,
-    "last_updated": "2026-05-16T03:30:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 126,
+    "last_updated": "2026-05-16T04:10:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 127,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 126
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 127
   },
-  "last_updated": "2026-05-16T03:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 126,
+  "last_updated": "2026-05-16T04:10:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 127,
   "last_task2a_completed": "20.11",
   "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }
