@@ -36,6 +36,7 @@ tags:
   - [1.15 JNI/NDK 性能优化](part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)
   - [1.16 Audio Pipeline 延迟与性能](part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md)
   - [1.17 IPC 全景：Android 进程间通信机制对比与性能选型](part1-fundamentals/ch01-architecture/17-ipc-panorama.md)
+  - [1.18 Binder Freezer 与缓存进程冻结性能](part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
