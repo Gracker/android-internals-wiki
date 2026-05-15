@@ -202,6 +202,7 @@ tags:
   - [13.8 Perfetto 输入延迟 SQL 深度分析](part3-tools/ch13-perfetto/08-input-latency-sql.md)
   - [13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理](part3-tools/ch13-perfetto/09-tracing-infrastructure.md)
   - [13.10 Perfetto SQL 性能分析实战手册](part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)
+  - [13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数](part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -274,6 +275,7 @@ tags:
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
   - [17.2 SoC 平台差异](part4-system/ch17-oem/02-soc-differences.md)
   - [17.3 行业案例](part4-system/ch17-oem/03-industry-cases.md)
+  - [17.4 sched_ext 与 OEM BPF 调度器](part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md)
 
 ---
 
@@ -289,6 +291,7 @@ tags:
   - [20.7 异常处理架构设计](part5-app/ch20-stability/07-exception-architecture.md)
   - [20.8 崩溃聚合与归因分析](part5-app/ch20-stability/08-crash-aggregation.md)
   - [20.9 稳定性治理案例集](part5-app/ch20-stability/09-stability-case-studies.md)
+  - [20.10 WebView Renderer OOM 与白屏恢复](part5-app/ch20-stability/10-webview-renderer-oom-recovery.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -311,6 +314,7 @@ tags:
   - [22.7 WebView 性能优化实战](part5-app/ch22-rendering-practice/07-webview-optimization.md)
   - [22.8 帧率监控与线上卡顿治理](part5-app/ch22-rendering-practice/08-frame-monitoring.md)
   - [22.9 渲染优化案例集](part5-app/ch22-rendering-practice/09-rendering-case-studies.md)
+  - [22.10 RenderEffect 与 RuntimeShader 性能实践](part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
@@ -352,6 +356,7 @@ tags:
   - [26.6 A/B Test 与性能回归防护](part5-app/ch26-observability/06-ab-testing-regression.md)
   - [26.7 发版质量门禁](part5-app/ch26-observability/07-release-quality-gate.md)
   - [26.8 可观测性案例集](part5-app/ch26-observability/08-observability-case-studies.md)
+  - [26.9 ApplicationExitInfo 与进程退出归因](part5-app/ch26-observability/09-application-exit-info.md)
 
 ---
 
