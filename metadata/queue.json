@@ -6931,6 +6931,31 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T17:28:33+08:00",
       "original_review_log": "logs/deep-review/2026-05-15-17-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-25.10-hybrid-webview-power",
+      "section": "25.10",
+      "priority": 80,
+      "title": "Hybrid/WebView 功耗与原生化取舍",
+      "description": "补齐原生 App、Web App 与 Hybrid/WebView 页面在能耗、CPU、内存、网络和监控上的取舍方法。素材来自 Native vs Web Apps 能耗论文、Android WebView 管理文档与功耗分析官方文档。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "priority_reason": "Part 5 功耗与包体积章节缺少 Hybrid/WebView 能耗取舍；已有论文素材评分 18/20，且与 WebView 性能、Hybrid APM、功耗治理多章交叉。",
+      "related_files": [
+        "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+      ],
+      "sources": [
+        "https://arxiv.org/abs/2308.16734",
+        "Obsidian/论文/Android-2026-05-08-Native-vs-Web-Energy/03-analysis.md",
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://developer.android.com/topic/performance/power/setup-battery-historian",
+        "https://developer.android.com/topic/performance/vitals"
+      ]
     }
   ],
   "metadata": {
