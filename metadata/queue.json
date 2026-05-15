@@ -6236,7 +6236,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md"
@@ -6247,7 +6247,9 @@
         "[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]",
         "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
         "https://developer.android.com/reference/android/webkit/WebViewClient"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 加工完成：WebView Renderer OOM 与白屏恢复，status 更新为 ready-for-review"
     },
     {
       "id": "task2a-gap-2026-05-15-22.10-10-rendereffect-runtime-shader-performance",
