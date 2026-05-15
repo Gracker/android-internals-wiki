@@ -6211,7 +6211,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
@@ -6221,7 +6221,9 @@
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md",
         "https://cs.android.com/android/platform/superproject/+/master:kernel/configs",
         "https://cs.android.com/android/_/android/kernel/common/+/8d5dd0a5a458f951f0fdc25aba0cb8329b121d51"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线。"
     },
     {
       "id": "task2a-gap-2026-05-15-20.10-10-webview-renderer-oom-recovery",
