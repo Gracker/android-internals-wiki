@@ -1,6 +1,7 @@
 ---
 title: "RenderEffect 与 RuntimeShader 性能实践"
 chapter: "22.10"
+section: "22.10"
 status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -12,6 +13,15 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
+pipeline_stage: task9_pending
+task6_state: reviewed
+last_task6_at: '2026-05-15T15:11:00+08:00'
+task6_result: pass-light-edit
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
+task9_state: pending
+last_task6_review_log: 'logs/review/2026-05-15-15-review.md'
+task6_review_notes: '2026-05-15 Task6 15:11：pass-light-edit。L1/L2 小修 10 处：补 section/审查元数据、删除结构性元叙述和正文编辑痕迹、标准化 GPU Headroom 待验证标注；无新增 L3/L4 回炉项，转入 Task9 技术复审。'
 sources:
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java"
@@ -29,14 +39,20 @@ sources:
     path: "https://developer.android.com/develop/ui/views/graphics/agsl/using-agsl"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
+  - type: official
+    path: "https://gpuinspector.dev"
+  - type: official
+    path: "https://developer.android.com/agi/frame-trace/frame-profiler"
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md"
   - type: clippings
-    path: "[结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]"
+    path: "Clippings/Android 性能优化 - Android 性能优化总结.md"
   - type: clippings
-    path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
+    path: "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
   - type: clippings
-    path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]"
+    path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
+  - type: clippings
+    path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
@@ -87,13 +103,9 @@ sources:
 
 <!-- outline-end -->
 
-RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13 之后的 AGSL 自定义像素处理。它不是“免费特效”。一旦效果需要把节点内容先画进中间层，再读取这块纹理做处理，成本就会落到 RenderThread、GPU 填充率、纹理带宽和 GPU 内存上。
+RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。一旦效果需要把节点内容先画进中间层，再读取这块纹理做处理，成本就会落到 RenderThread、GPU 填充率、纹理带宽和 GPU 内存上。
 
-本节只讲应用侧怎么选型、怎么降级、怎么验证。RenderNode、Hardware Layer、标准 View 渲染管线和 GPU 瓶颈分类分别详见 2.7、18.2、2.10 节；这里不重复展开原理。
-
-[结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 Trace 和 GPU 工具验证。RenderNode、Hardware Layer、标准 View 渲染管线和 GPU 瓶颈分类分别详见 2.7、18.2、2.10 节。
 
 ## RenderEffect 的适用场景
 
@@ -145,9 +157,7 @@ fun View.applyBlurEffectIfSupported(
 
 `RenderEffect` 的成本不只来自 API 调用本身。对 blur 这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立 layer，再对这个 layer 做处理。换成性能语言，就是多了一块中间纹理，以及对这块纹理的读写。
 
-一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，理论像素数据约 9.9 MB。实际 GPU 内存还会受到 stride、对齐、tile buffer、驱动池化和格式影响，所以这个数字只能当下限估算。Clippings 的内存模型材料把 graphic / GL / EGL mtrack 拆开看，这个思路可以直接用于 RenderEffect：不要只看 Java heap，要同时看 Graphics、GL mtrack、EGL mtrack 和 GPU memory track。
-
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，理论像素数据约 9.9 MB。实际 GPU 内存还会受到 stride、内存对齐、tile buffer、驱动池化和格式影响，所以这个数字只能当下限估算。做图形内存分析时，可以把 Graphics / GL / EGL mtrack 拆开看：不要只看 Java heap，要同时看 Graphics、GL mtrack、EGL mtrack 和 GPU memory track。
 
 成本主要有四类：
 
@@ -160,7 +170,7 @@ fun View.applyBlurEffectIfSupported(
 
 ## RuntimeShader / AGSL 的实践边界
 
-`RuntimeShader` 从 Android 13（API 33）开始提供。AOSP `RuntimeShader` 注释说明，AGSL 不是在写一个完整 GPU 管线阶段，而是在 Canvas 或 RenderNode 绘制管线里的某个阶段计算每个像素颜色。官方文档也说明，shader uniform 可以通过 `eval()` 按坐标读取输入 shader；`RenderEffect.createRuntimeShaderEffect(shader, uniformShaderName)` 会把安装该效果的 RenderNode 内容绑定到指定 uniform 上。
+`RuntimeShader` 从 Android 13（API 33）开始提供。AOSP `RuntimeShader` 注释说明，AGSL 用于在 Canvas 或 RenderNode 绘制管线的某个阶段计算每个像素颜色，并不定义完整 GPU 管线阶段。官方文档也说明，shader uniform 可以通过 `eval()` 按坐标读取输入 shader；`RenderEffect.createRuntimeShaderEffect(shader, uniformShaderName)` 会把安装该效果的 RenderNode 内容绑定到指定 uniform 上。
 
 [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
 [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
@@ -237,18 +247,16 @@ AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把
 
 ## 优化清单
 
-上线前把 RenderEffect 当成一个可降级的 GPU 功能，而不是普通 View 属性。
+上线前把 RenderEffect 作为可降级的 GPU 功能处理，不要把它当普通 View 属性。
 
 - **限制区域**：优先给最小子 View 设置效果，不要把根 View、整页容器、RecyclerView 作为默认作用对象。
 - **限制半径**：blur 半径做成配置项，按设备档位和刷新率分级；120Hz 下的帧预算只有 8.33ms，原本 60Hz 勉强可接受的效果可能直接掉帧。
 - **限制时长**：转场结束后清空 `setRenderEffect(null)`；页面不可见、进入后台、列表 item 离屏时释放效果引用。
 - **减少输入变化**：内容每帧变化时，优先拆成两层：静态背景层做效果，动态内容层直接绘制。
 - **避免链式叠加**：blur、color filter、RuntimeShader、alpha、clip 同时叠加时，每加一层都要重新跑一轮 Trace 对照。
-- **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；Clippings 的资源优化材料也强调图片压缩、格式选择和按使用频率决定资源策略。
-- **建立降级开关**：[自动发现] Android 16+ 可结合 2.10 节的 GPU Headroom 做运行时质量降级；旧版本用设备档位、温控状态、帧耗时和灰度开关兜底。
+- **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；资源策略也要按图片压缩、格式选择和使用频率拆开考虑。
+- **建立降级开关**：Android 16+ 可结合 2.10 节的 GPU Headroom 做运行时质量降级 [待验证: 需 Task 9 核对 GPU Headroom 的版本边界、采样口径和稳定性]；旧版本用设备档位、温控状态、帧耗时和灰度开关兜底。
 - **写清版本边界**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。API guard 要包住所有调用点，包括清空效果。
-
-[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
 
 ## 扩展
 
@@ -284,7 +292,7 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。�
 - [已验证: 官方文档, developer.android.com/reference/android/graphics/RuntimeShader]
 - [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/agsl/using-agsl]
 - [已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
-- [结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-- [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
+- [结构参考] Clippings/Android 性能优化 - Android 性能优化总结.md
+- [结构参考] Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md
+- [结构参考] Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md
+- [结构参考] Clippings/Android 性能优化 - 资源文件的体积优化实战.md

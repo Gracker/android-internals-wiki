@@ -254,7 +254,7 @@
   ],
   "review_summary": "Task9 2026-05-15 14: review 13.12；P0 1 / P1 1 / P2 1，需回炉。",
   "task6_review_summary": {
-    "l1_l2_fixes": 596,
+    "l1_l2_fixes": 606,
     "l3_issues": 41,
     "l4_issues": 6,
     "total_issues": 633,
@@ -955,8 +955,8 @@
   "total_review_sections": 120,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T14:27:34+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-15T15:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "14:12",
@@ -2345,13 +2345,21 @@
     "22.10": {
       "title": "RenderEffect 与 RuntimeShader 性能实践",
       "file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
-      "status": "draft",
-      "pipeline_stage": "draft",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_score": 17,
-      "gap_source": "素材驱动/AOSP结构"
+      "gap_source": "素材驱动/AOSP结构",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T15:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-15-review.md",
+      "task6_review_notes": "2026-05-15 Task6：pass-light-edit。L1/L2 小修 10 处；无新增 L3/L4 回炉项；进入 Task9 技术复审。"
     },
     "26.9": {
       "title": "ApplicationExitInfo 与进程退出归因",
@@ -2493,28 +2501,25 @@
   "last_task2a_at": "2026-05-15T14:04:00+08:00",
   "last_task2a_section": "13.12",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
-  "last_task6_review": "2026-05-15 14:12 review 4.9、13.12",
+  "last_task6_review": "2026-05-15 15:11 review 22.10",
   "last_task6_sections": [
-    "4.9",
-    "13.12"
+    "22.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
-  "last_task6_at": "2026-05-15T14:12:00+08:00",
+  "last_task6_at": "2026-05-15T15:11:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-15T14:12:00+08:00",
-    "log": "logs/review/2026-05-15-14-review.md",
+    "reviewed_at": "2026-05-15T15:11:00+08:00",
+    "log": "logs/review/2026-05-15-15-review.md",
     "sections": [
-      "4.9",
-      "13.12"
+      "22.10"
     ],
     "mode": "first review",
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 10,
     "rework_sections": [],
     "auto_promotions": [],
-    "summary": "本轮仅 2 个待 review 章节。4.9 写作层通过轻修，Task9 既有 P0/P1 技术队列继续由 Task2B 处理；13.12 补齐 outline 并通过轻修，进入 Task9。"
+    "summary": "本轮仅 1 个新进入 Task6 的 ready-for-review 章节。22.10 写作质量通过轻修；GPU Headroom 降级口径已保留待验证标注，进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
     "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
