@@ -78,6 +78,7 @@ tags:
   - [4.6 内存相关的版本演进](part1-fundamentals/ch04-memory/06-memory-evolution.md)
   - [4.7 16KB Page Size 与 Android 性能](part1-fundamentals/ch04-memory/07-16kb-page-size.md)
   - [4.8 ART 分代垃圾回收与 GC 暂停优化](part1-fundamentals/ch04-memory/08-art-generational-gc.md)
+  - [4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界](part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -203,6 +204,7 @@ tags:
   - [13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理](part3-tools/ch13-perfetto/09-tracing-infrastructure.md)
   - [13.10 Perfetto SQL 性能分析实战手册](part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)
   - [13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数](part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md)
+  - [13.12 Perfetto Profile 导入与 Flamegraph 分析](part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -335,6 +337,7 @@ tags:
   - [24.6 数据压缩与缓存策略](part5-app/ch24-io-network/06-data-caching.md)
   - [24.7 离线优先架构](part5-app/ch24-io-network/07-offline-first.md)
   - [24.8 I/O 与网络优化案例集](part5-app/ch24-io-network/08-io-network-case-studies.md)
+  - [24.9 Wi-Fi 评分、网络选择与连接切换性能](part5-app/ch24-io-network/09-wifi-connectivity-selection.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
