@@ -6601,19 +6601,132 @@
         "https://developer.android.com/reference/android/net/ConnectivityManager"
       ],
       "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "id": "task9-20260515-2.6-deep-tech-review",
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 与合成",
+      "priority": 95,
+      "title": "SurfaceFlinger 代码块与 BLASTBufferQueue 源码路径错误",
+      "description": "Android 12 SurfaceFlinger 示例代码仍含非法标识符，BLASTBufferQueue 源码路径写成带空格的不存在文件。",
+      "reason": "[Deep Tech Review] Android 12 SurfaceFlinger 示例代码仍含非法标识符，BLASTBufferQueue 源码路径写成带空格的不存在文件。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 调用",
+          "location": "L176-L180 Android 12 onMessageReceived 代码块",
+          "detail": "代码块调用 `onMessageInvalidate(vsyncId, expected VSync Time)`，`expected VSync Time` 是非法 C++ 标识符。AOSP android-12.0.0_r1 实际调用为 `onMessageInvalidate(vsyncId, expectedVSyncTime)`。",
+          "suggestion": "把调用处改为 `expectedVSyncTime`，并保留签名 `void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId, nsecs_t expectedVSyncTime)`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/路径错误",
+          "location": "L337、L409 BLAST BufferQueue 源码路径",
+          "detail": "文中把 native 文件写成 `frameworks/native/libs/gui/BLAST BufferQueue.cpp`，AOSP 实际文件名为 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，空格会导致源码锚点不可用。",
+          "suggestion": "统一改为 `BLASTBufferQueue.cpp`；类名/概念可写 BLAST BufferQueue，但路径必须使用真实文件名。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T12:31:59+08:00"
+    },
+    {
+      "id": "task9-20260515-5.3-deep-tech-review",
+      "section": "5.3",
+      "section_title": "大小核架构",
+      "priority": 95,
+      "title": "Perfetto 调度 SQL 与 schedutil 频率公式错误",
+      "description": "核心迁移 SQL 使用 thread_state.cpu 的错误 schema，schedutil 频率映射公式遗漏现代内核 headroom/uclamp/bw_min 等关键修正。",
+      "reason": "[Deep Tech Review] 核心迁移 SQL 使用 thread_state.cpu 的错误 schema，schedutil 频率映射公式遗漏现代内核 headroom/uclamp/bw_min 等关键修正。",
+      "issue_type": "tool-sql-and-scheduler-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "工具 SQL 错误",
+          "location": "L227-L238、L375-L384 Perfetto 核心迁移 SQL",
+          "detail": "两处 SQL 都从 `thread_state` 读取 `cpu` 字段并用 `state = 'Running'` 统计运行核心；Perfetto 官方调度运行片段应使用 `sched`/`sched_slice` 表，关键列是 `cpu, utid, ts, dur, end_state`。按现有写法在常见 Trace Processor schema 下不可运行或统计口径错误。",
+          "suggestion": "改用 `sched` 表，例如 `SELECT s.cpu, COUNT(*) slices, SUM(s.dur)/1e6 total_ms FROM sched s JOIN thread t USING(utid) WHERE t.tid=<target_tid> GROUP BY s.cpu ORDER BY s.cpu;`；全局 CPU 分布同样从 `sched` 聚合。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/源码准确性",
+          "location": "L257-L258 schedutil 线性映射公式",
+          "detail": "正文写 `target_freq = max_freq * util / capacity`，并举 60% util → 60% max_freq。Linux schedutil 实际会经过 `map_util_perf()`/`sugov_effective_cpu_perf()` 等路径加入性能裕量、uclamp、RT/DL 带宽下限、rate limit 和 driver 约束；经典文档口径也包含约 1.25 的 headroom。当前公式会让读者低估 schedutil 的升频策略。",
+          "suggestion": "把该公式改成“教学近似”，紧接说明现代内核会加入 headroom/uclamp/bw_min 等修正；若给公式，写成近似 `next_freq ≈ 1.25 * max_freq * util / capacity`，并标注会受 policy/driver/thermal 限制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T12:31:59+08:00"
+    },
+    {
+      "id": "task9-20260515-11.5-deep-tech-review",
+      "section": "11.5",
+      "section_title": "Wakelock 机制与功耗分析",
+      "priority": 95,
+      "title": "SystemSuspend dumpsys 服务名错误",
+      "description": "SystemSuspend 排查命令使用接口描述符而非 dumpsys 服务名，按文中命令无法查看 suspend_control 状态。",
+      "reason": "[Deep Tech Review] SystemSuspend 排查命令使用接口描述符而非 dumpsys 服务名，按文中命令无法查看 suspend_control 状态。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch11-power/05-wakelock.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "工具命令/服务名错误",
+          "location": "L294-L300、L369-L375 SystemSuspend dumpsys 命令",
+          "detail": "正文两处写 `adb shell dumpsys android.system.suspend.ISuspendControlService`。AOSP `system/hardware/interfaces/suspend/1.0/default/main.cpp` 注册到 service manager 的 dumpsys 名称是 `suspend_control`（另有 `suspend_control_internal`），不是接口描述符。按正文命令排查会找不到服务。",
+          "suggestion": "改为 `adb shell dumpsys suspend_control`，并补一句不同厂商可能裁剪输出；framework 活跃 WakeLock 仍用 `adb shell dumpsys power` / `dumpsys batterystats --history` 交叉确认。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T12:31:59+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 201,
-    "p0_count": 34,
-    "last_updated": "2026-05-15T11:41:46+08:00",
+    "total_entries": 207,
+    "p0_count": 42,
+    "last_updated": "2026-05-15T12:31:59+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 121,
+    "pending_entries": 127,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
-    "pending": 121
+    "pending": 127
   },
-  "last_updated": "2026-05-15T11:41:46+08:00",
+  "last_updated": "2026-05-15T12:31:59+08:00",
   "last_updated_by": "openclaw-task9",
-  "pending": 121
+  "pending": 127
 }

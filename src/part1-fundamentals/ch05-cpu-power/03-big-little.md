@@ -29,19 +29,21 @@ task6_result: needs-rework
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: "2026-05-03T19:40:00+08:00"
 task2b_state: pending
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: task2b_pending
 task9_result: needs-rework
-task9_reviewed_date: 2026-05-02
+task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-02T10:20:00+08:00"
+last_task9_at: "2026-05-15T12:31:59+08:00"
 review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T10:05:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
+task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
 ---
 
 # 大小核架构
