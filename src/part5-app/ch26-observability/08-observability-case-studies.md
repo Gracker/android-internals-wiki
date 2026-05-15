@@ -42,12 +42,19 @@ sources:
     path: "https://developer.android.com/ndk/guides/debug"
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+last_task6_at: "2026-05-15T08:10:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-08-review.md
+review_type: task6-writing-quality-review
+task6_review_notes: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
 ---
 
 # 可观测性案例集
@@ -74,7 +81,7 @@ task2a_result: drafted
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-可观测性案例集不再重复 26.1 的架构分层，也不展开 26.5 的排障方法论。本节只回答三个工程问题：一个团队怎样从零搭建可用的 APM，怎样把性能回归挡在发布前后，遇到线上疑难问题时怎样把指标、日志、Trace 和发布记录拼成证据链。
+可观测性案例集承接 26.1 的架构分层和 26.5 的排障方法论，聚焦三个工程问题：一个团队怎样从零搭建可用的 APM，怎样把性能回归挡在发布前后，遇到线上疑难问题时怎样把指标、日志、Trace 和发布记录拼成证据链。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 
@@ -111,7 +118,7 @@ Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃�
 
 ### 第 2 周：让端侧上报不影响业务线程
 
-上报组件常见失败不是“没有网络”，而是采集和上报本身拖慢业务。可用的第一版需要满足四条约束：
+上报组件经常败在采集和上报本身拖慢业务；网络不可用只是其中一类故障。可用的第一版需要满足四条约束：
 
 - 采集入口只做对象构造和入队，主线程不写文件、不压缩、不发网络请求。
 - 内存队列有上限，队列满时保留 Crash、ANR、启动和告警触发事件，丢弃普通性能样本，并把丢弃计数写入 SDK 自监控。

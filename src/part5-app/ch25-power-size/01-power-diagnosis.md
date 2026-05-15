@@ -35,19 +35,24 @@ sources:
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
-last_task6_review_log: logs/review/2026-05-14-15-review.md
-task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。"
+last_task6_review_log: logs/review/2026-05-15-08-review.md
+task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。 | 2026-05-15 Task6：pass-light-edit。写作质量复审通过；无新增 L3/L4 回炉问题。Task9 已有 WakeLock 口径 P1 pending，保持 task2b_pending。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T07:35:58+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 0；Android Vitals WakeLock 阈值仍缺 non-exempt、screen-off/background、5% sessions/28 天与豁免口径。"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+last_task6_at: "2026-05-15T08:10:00+08:00"
+review_type: task6-writing-quality-review
 ---
 
 # 功耗诊断与分析方法

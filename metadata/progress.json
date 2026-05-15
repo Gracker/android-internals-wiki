@@ -236,10 +236,10 @@
   ],
   "review_summary": "Task9 2026-05-15 07: review 16.5、25.1、25.2；P0 0 / P1 2 / P2 1；25.2 自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 561,
+    "l1_l2_fixes": 565,
     "l3_issues": 39,
     "l4_issues": 5,
-    "total_issues": 596,
+    "total_issues": 600,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -872,21 +872,25 @@
   "total_review_sections": 112,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T07:35:58+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-15T08:10:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "task6_last_review": {
-    "at": "2026-05-15T07:15:00+08:00",
-    "log": "logs/review/2026-05-15-07-review.md",
+    "at": "2026-05-15T08:10:00+08:00",
+    "log": "logs/review/2026-05-15-08-review.md",
     "sections": [
-      "26.7"
+      "26.8",
+      "16.5",
+      "25.1"
     ],
     "files": [
-      "src/part5-app/ch26-observability/07-release-quality-gate.md"
+      "src/part5-app/ch26-observability/08-observability-case-studies.md",
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
-    "l1_l2_fixes": 2,
-    "l3_l4_issues": 3,
+    "l1_l2_fixes": 4,
+    "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "result": "needs-rework"
+    "result": "pass-light-edit"
   },
   "task9_last_review": "2026-05-15T07:35:58+08:00",
   "ready_to_publish": 186,
@@ -1181,13 +1185,20 @@
     "16.5": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T23:18:00+08:00",
-      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-15T08:10:00+08:00",
+      "task6_result": "pass-light-edit",
       "queue_priority": 90,
       "last_task9_at": "2026-05-15T07:35:58+08:00",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
     },
     "21.5": {
       "status": "ready-for-review",
@@ -1860,9 +1871,9 @@
       "title": "功耗诊断与分析方法",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-14",
-      "last_task6_at": "2026-05-14T15:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-15-review.md"
+      "reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T08:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
     },
     "25.2": {
       "status": "finalized",
@@ -2188,12 +2199,17 @@
       "title": "可观测性案例集",
       "file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-15T07:17:00+08:00",
-      "task2a_result": "drafted"
+      "task2a_result": "drafted",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T08:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
     }
   },
   "task2b_rounds": [
@@ -2273,29 +2289,37 @@
   "last_task2a_at": "2026-05-15T07:17:00+08:00",
   "last_task2a_section": "26.8",
   "last_task2a_file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
-  "last_task6_review": "logs/review/2026-05-15-07-review.md",
+  "last_task6_review": "logs/review/2026-05-15-08-review.md",
   "last_task6_sections": [
-    "26.7"
+    "26.8",
+    "16.5",
+    "25.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/07-release-quality-gate.md"
+    "src/part5-app/ch26-observability/08-observability-case-studies.md",
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
-  "last_task6_at": "2026-05-15T07:15:00+08:00",
+  "last_task6_at": "2026-05-15T08:10:00+08:00",
   "last_task6_review_detail": {
     "sections": [
-      "26.7"
+      "26.8",
+      "16.5",
+      "25.1"
     ],
     "files": [
-      "src/part5-app/ch26-observability/07-release-quality-gate.md"
+      "src/part5-app/ch26-observability/08-observability-case-studies.md",
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
-    "mode": "首次 review",
-    "result": "needs-rework",
-    "l1_l2_fixes": 2,
-    "l3_issues": 3,
+    "mode": "首次 review + revisiting 复审",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 4,
+    "l3_issues": 0,
     "l4_issues": 0,
-    "queue_priority": 90,
-    "review_log": "logs/review/2026-05-15-07-review.md",
-    "at": "2026-05-15T07:15:00+08:00",
+    "queue_priority": null,
+    "review_log": "logs/review/2026-05-15-08-review.md",
+    "at": "2026-05-15T08:10:00+08:00",
     "auto_promotions": 0
   },
   "last_task9_reviewed_files": [

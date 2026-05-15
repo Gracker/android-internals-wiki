@@ -39,21 +39,24 @@ created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-12'
+reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。 | 2026-05-12 task6 review: needs-rework。修复 frontmatter 缩进与 sources 列表、标题标点和 1 处禁用句式；ProfilingManager 源码级补充缺可核对锚点，已写入 queue。"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。 | 2026-05-12 task6 review: needs-rework。修复 frontmatter 缩进与 sources 列表、标题标点和 1 处禁用句式；ProfilingManager 源码级补充缺可核对锚点，已写入 queue。 | 2026-05-15 task6 review: pass-light-edit。修复中英文标点与少量结构性表达；无新增写作回炉问题。Task9 已有 P1/P2 pending，保持 task2b_pending。"
 last_task9_at: "2026-05-15T07:35:58+08:00"
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 1；ProfilingManagerService anomaly 伪代码仍缺 API37 源码锚点，DeliQueue 内存开销量化缺来源。"
 review_type: task6-writing-quality-review
 task9_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
+task6_result: pass-light-edit
+last_task6_at: "2026-05-15T08:10:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-08-review.md
 ---
 
 
@@ -73,9 +76,9 @@ last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 
 | 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
 |:---|:---|:---|:---|
-| MessageQueue | 单锁 + 单链表 | DeliQueue:Treiber Stack + min-heap | 有,见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
-| ProfilingManager triggers | 需要手动注册,触发器集合较小;API 36 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 37 新增 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 等触发器 | 官方未给统一 benchmark |
-| JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 reference 新增 `getPendingJobReasonStats(int)`,聚合 pending reason 时长;AOSP android-16.0.0_r1 未包含,需以 API 37 reference / preview 分支核验 | 官方未给统一 benchmark |
+| MessageQueue | 单锁 + 单链表 | DeliQueue：Treiber Stack + min-heap | 有，见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
+| ProfilingManager triggers | 需要手动注册，触发器集合较小；API 36 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 37 新增 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 等触发器 | 官方未给统一 benchmark |
+| JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 reference 新增 `getPendingJobReasonStats(int)`，聚合 pending reason 时长；AOSP android-16.0.0_r1 未包含，需以 API 37 reference / preview 分支核验 | 官方未给统一 benchmark |
 | 大屏 / 安全配置 / 16KB 页面 | 适配要求已在推进 | targetSdk 37 后约束更强、排障入口更明确 | 官方未给统一 benchmark |
 
 ---
@@ -129,24 +132,24 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存:`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`,负责兼容层与实现选择;`ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。根据 Android Developers Blog 的官方描述,DeliQueue 的核心数据结构是:
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
 
-- **Treiber Stack**（无锁栈）:写入端使用 `AtomicReference` + CAS 实现并发入队,任何线程都可以无竞争地 push 消息
-- **min-heap**（最小堆）:读取端由 Looper 线程独占访问,按消息的 `when` 排序。博客明确指出这是堆结构,不是 `ConcurrentSkipListSet` 排序集合
-- **tombstoning**（墓碑标记）:移除操作通过 CAS 原子设置移除标记（逻辑移除）,物理移除由 Looper 线程延迟完成
+- **Treiber Stack**（无锁栈）：写入端使用 `AtomicReference` + CAS 实现并发入队，任何线程都可以无竞争地 push 消息
+- **min-heap**（最小堆）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。博客明确指出这是堆结构，不是 `ConcurrentSkipListSet` 排序集合
+- **tombstoning**（墓碑标记）：移除操作通过 CAS 原子设置移除标记（逻辑移除），物理移除由 Looper 线程延迟完成
 
-AOSP 实现为同步屏障场景维护了异步消息的专门处理路径,同步屏障语义仍由队列实现维护。排障时不要把这次变化简化成"某个字段改名"。
+AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同步屏障语义仍由队列实现维护。排障时不要把这次变化简化成“某个字段改名”。
 
-从性能复杂度看,旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置）,min-heap 的插入和移除都是 O(log n),两者各有优劣。DeliQueue 的收益集中在并发侧:写入端通过 lock-free Treiber Stack 消除锁竞争,多线程同时入队时不再相互阻塞,插入是 O(1) 的 CAS 操作;Looper 侧的 drain 批量搬运和读取是独占操作,不受写入端干扰。博客特别指出,min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时,单链表的 O(n) 插入会让尾部延迟急剧恶化,min-heap 的 O(log n) 更稳定。排障时,Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短,说明 DeliQueue 在当前场景下起效了。
+从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 批量搬运和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
 
-把源码层再拆开看,会更准确:
+源码层可以拆成三点：
 
 - `CombinedMessageQueue/MessageQueue.java` 还保留 legacy 视角下可见的字段和选择逻辑。
 - `ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。
 - 因此这次变化的实质是"保留兼容字段 + 切换底层实现";不要按"`mMessages` 改名"理解。
-- 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后,`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护;业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
+- 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
 
-如果你的项目中有以下情况,需要检查:
+如果你的项目中有以下情况，需要检查：
 
 1. 反射访问 `MessageQueue.mMessages` 或其他私有字段
 2. 通过 JNI 直接操作 `MessageQueue` 的 native 层结构
@@ -157,7 +160,7 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径,同�
 
 - Espresso 升级到 **3.7.0+**,改用 `TestLooperManager` 路径
 - Robolectric 升级到 **4.17+**,并把 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`
-- 如果怀疑问题就是新的 `MessageQueue` 导致,可先在 Developer Options 的 App Compatibility Changes 里关闭该变更,或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
+- 如果怀疑问题就是新的 `MessageQueue` 导致，可先在 Developer Options 的 App Compatibility Changes 里关闭该变更，或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
 
 ---
 
@@ -165,30 +168,30 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径,同�
 
 ### 从 Concurrent Copying 到 Generational CMC
 
-ART 的垃圾回收器经历过多次演进。「Android 8」（Oreo）将 Concurrent Copying(CC)作为默认 GC，解决了 Compact GC 的长暂停问题。「Android 10」引入了分代 CC(Generational Concurrent Copying)，将堆空间分为 young generation 和 old generation，优先回收存活时间短的 young 对象。
+ART 的垃圾回收器经历过多次演进。「Android 8」（Oreo）将 Concurrent Copying (CC)作为默认 GC，解决了 Compact GC 的长暂停问题。「Android 10」引入了分代 CC (Generational Concurrent Copying)，将堆空间分为 young generation 和 old generation，优先回收存活时间短的 young 对象。
 
-Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact(CMC)** 收集器中。CMC 的特点是:标记和压缩都是并发执行的,应用线程只需要在标记开始和结束时经历极短的暂停。分代 CMC 在此基础上增加了 young generation 的快速回收路径，**但实际启用需要满足多个条件**：
+Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact (CMC)** 收集器中。CMC 的特点是：标记和压缩都是并发执行的，应用线程只需要在标记开始和结束时经历极短的暂停。分代 CMC 在此基础上增加了 young generation 的快速回收路径，**但实际启用需要满足多个条件**：
 
-- `generational_cmc_supported` 系统属性检查通过——在 `Runtime::Init()` 阶段评估设备硬件能力,不满足则直接跳过后续检查
-- `gUseUserfaultfd` 系统属性开启（编译期常量,取决于内核是否编译了 userfaultfd 支持）
+- `generational_cmc_supported` 系统属性检查通过——在 `Runtime::Init()` 阶段评估设备硬件能力，不满足则直接跳过后续检查
+- `gUseUserfaultfd` 系统属性开启（编译期常量，取决于内核是否编译了 userfaultfd 支持）
 - `use_generational_cmc` flag 启用
 - `persist.device_config.runtime_native_boot.use_generational_gc` 设备配置支持
 - AOSP android-16.0.0_r1/main 已存在 `YoungMarkCompact` 和相关 gating 逻辑
 
-因此不能简单把分代 CMC 写成 Android 17 的"统一行为"，而是要根据设备配置和 trace 验证具体启用情况。
+因此不能简单把分代 CMC 写成 Android 17 的“统一行为”，而是要根据设备配置和 trace 验证具体启用情况。
 
 ### 分代回收的工作原理
 
-分代 GC 的基本假设是"弱分代假说"(Weak Generational Hypothesis):大多数对象在创建后很快就变成垃圾。在 Android App 的实际运行中,这个假设非常成立--方法中的局部变量、临时构建的 `Message` 对象、`RecyclerView` 中滑出屏幕的 `ViewHolder` 绑定数据,这些对象的存活时间通常只有几毫秒到几秒。
+分代 GC 的基本假设是"弱分代假说"(Weak Generational Hypothesis)：大多数对象在创建后很快就变成垃圾。在 Android App 的实际运行中，这个假设非常成立——方法中的局部变量、临时构建的 `Message` 对象、`RecyclerView` 中滑出屏幕的 `ViewHolder` 绑定数据，这些对象的存活时间通常只有几毫秒到几秒。
 
 分代 CMC 的工作方式:
 
 1. 新创建的对象分配在 **young generation** 空间
-2. 当 young generation 空间达到阈值时,触发一次 **young GC**--只扫描和回收 young generation 中的垃圾对象,忽略 old generation
-3. 经历了若干次 young GC 仍然存活的对象,被**提升(promote)**到 old generation
-4. 当 old generation 空间不足时,才触发一次 **full GC**--扫描整个堆
+2. 当 young generation 空间达到阈值时，触发一次 **young GC**--只扫描和回收 young generation 中的垃圾对象，忽略 old generation
+3. 经历了若干次 young GC 仍然存活的对象，被**提升（promote）**到 old generation
+4. 当 old generation 空间不足时，才触发一次 **full GC**--扫描整个堆
 
-关键区别在于:young GC 只扫描一小部分堆空间,速度远快于 full GC。这直接减少了 GC 暂停对主线程的影响。
+关键区别在于：young GC 只扫描一小部分堆空间，速度远快于 full GC。这直接减少了 GC 暂停对主线程的影响。
 
 > **注意**：实际启用分代 CMC 需要满足上述 gating 条件，不是所有 Android 17 设备都会启用此功能。
 
@@ -200,15 +203,15 @@ Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact(CMC)** �
 
 ### 对 RecyclerView 滑动的实际影响
 
-RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中,`onBindViewHolder()` 会为每个即将显示的 item 创建临时对象(字符串、Drawable、Bitmap 相关的配置对象等)。这些对象在 item 滑出屏幕后就变成垃圾。
+RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`onBindViewHolder()` 会为每个即将显示的 item 创建临时对象(字符串、Drawable、Bitmap 相关的配置对象等)。这些对象在 item 滑出屏幕后就变成垃圾。
 
-在旧的非分代 GC 中,这些 young 对象会在 full GC 时才被回收。如果 full GC 恰好在 `doFrame()` 期间触发,就会造成帧延迟。在分代 GC 中,这些短命对象被 young GC 快速回收,full GC 的触发频率大幅降低。
+在旧的非分代 GC 中，这些 young 对象会在 full GC 时才被回收。如果 full GC 恰好在 `doFrame()` 期间触发，就会造成帧延迟。在分代 GC 中，这些短命对象被 young GC 快速回收，full GC 的触发频率大幅降低。
 
-公开资料没有给出可直接复用的统一 RecyclerView 基准图,因此更稳妥的做法是在同一列表场景下自己对比 GC 事件频率、暂停分布和掉帧率,而不是套一个脱离设备前提的固定毫秒数。更完整的方法在 **4.8 ART 分代垃圾回收** 里展开。
+公开资料没有给出可直接复用的统一 RecyclerView 基准图，因此更稳妥的做法是在同一列表场景下自己对比 GC 事件频率、暂停分布和掉帧率，而不是套一个脱离设备前提的固定毫秒数。更完整的方法在 **4.8 ART 分代垃圾回收** 里展开。
 
 ### 与 4.8 ART 分代 GC 章节的关系
 
-本节概述了 Android 17 中分代 GC 的变更和对性能的影响。关于 ART GC 的完整机制(Concurrent Mark-Compact 的工作原理、GC 暂停的产生机制、在不同 Android 版本中的演进),详见 **4.8 ART 分代垃圾回收**。
+本节概述了 Android 17 中分代 GC 的变更和对性能的影响。关于 ART GC 的完整机制(Concurrent Mark-Compact 的工作原理、GC 暂停的产生机制、在不同 Android 版本中的演进)，详见 **4.8 ART 分代垃圾回收**。
 
 ---
 
@@ -216,25 +219,25 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中,`onBi
 
 ### 从手动埋点到系统自动触发
 
-ProfilingManager 在 Android 15(API 35)引入,提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17(API 37)新增了 cold start、OOM、kill、anomaly 等系统触发器,可以把采集条件交给系统事件驱动--但 ProfilingManager 仍是一套 trigger-based capture API,不是默认全局开启的自动抓取。
+ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17 (API 37)新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
 
-要用这套能力,App 仍要完成两步:先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调,再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`,产物交付仍由 ProfilingManager 完成。[已验证:Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力,而不是无需代码的默认抓取]
+要用这套能力，App 仍要完成两步：先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调，再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`，产物交付仍由 ProfilingManager 完成。[已验证：Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力，而不是无需代码的默认抓取]
 
 ### 触发器类型与产物
 
 | 触发器 | 触发时机 | 产物类型 | 典型用途 |
 |--------|---------|---------|---------|
-| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 系统触发的 profiling artifact;running trace snapshot / stack sample 的最终组合按 API 37 reference 核验 | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 系统触发的 profiling artifact；running trace snapshot / stack sample 的最终组合按 API 37 reference 核验 | 定位冷启动瓶颈 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证:上述三个触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36,不属于 API 37 新增项;API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口,不要自行收窄成某一类 Binder 或内存事件。]
+[已验证：上述三个触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口，不要自行收窄成某一类 Binder 或内存事件。]
 
 ### 注册流程和适配建议
 
-冷启动触发器的文档口径是"app cold start 时尽早触发"。使用时先把它看作采样入口;产物类型以 API 37 reference 的 `ProfilingResult` 为准,不能固定写成 "newly started system trace"。[待验证:API37 reference 对 cold start artifact 的最终描述]
+冷启动触发器的文档口径是"app cold start 时尽早触发"。使用时先把它看作采样入口；产物类型以 API 37 reference 的 `ProfilingResult` 为准，不能固定写成 "newly started system trace"。[待验证：API37 reference 对 cold start artifact 的最终描述]
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程,结果更接近 call stack sample,不应写成 system trace。排障时,可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture,再在 Perfetto、heap dump 或采样结果上继续分析。
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
@@ -244,17 +247,17 @@ ProfilingManager 在 Android 15(API 35)引入,提供运行时请求 heap dump、
 
 ### 为什么需要这组 API
 
-`JobScheduler` 是 Android 后台任务调度的核心机制。过去排查"job 为什么没跑"时,很多信息只能从 `dumpsys jobscheduler` 里翻。Android 16 之后,公开 API 已经开始覆盖 current reason 和有限历史;Android 17 进一步把 pending reason 的聚合时长放到参考文档口径中。这里没有独立的 `JobDebugInfo` 类,诊断入口仍在 `JobScheduler` 上。
+`JobScheduler` 是 Android 后台任务调度的核心机制。过去排查"job 为什么没跑"时，很多信息只能从 `dumpsys jobscheduler` 里翻。Android 16 之后，公开 API 已经开始覆盖 current reason 和有限历史；Android 17 进一步把 pending reason 的聚合时长放到参考文档口径中。这里没有独立的 `JobDebugInfo` 类，诊断入口仍在 `JobScheduler` 上。
 
 ### API 边界
 
 | 方法 | since | 返回类型 | 用途 | 核验状态 |
 |:---|:---|:---|:---|:---|
 | `JobScheduler.getPendingJobReasons(int jobId)` | API 36 | `int[]` | 返回当前可能导致该 job pending 的 reason code | AOSP android-16.0.0_r1 已检出 |
-| `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图,包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
-| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证:API37 preview/reference;AOSP android-16.0.0_r1 未检出] |
+| `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图，包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
+| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证：API37 preview/reference；AOSP android-16.0.0_r1 未检出] |
 
-这几组接口合在一起,才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler,调试时最好先拿到对应的 jobId,再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
+这几组接口合在一起，才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler，调试时最好先拿到对应的 jobId，再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
 
 与 **5.10 JobScheduler/WorkManager 性能** 章节交叉引用。
 
@@ -264,20 +267,20 @@ ProfilingManager 在 Android 15(API 35)引入,提供运行时请求 heap dump、
 
 ### 变更内容
 
-从 Android 17(API 37)开始,平台强化 `static final` 字段的不可变约束。反射路径和 JNI 路径的失败形态不同:
+从 Android 17 (API 37)开始，平台强化 `static final` 字段的不可变约束。反射路径和 JNI 路径的失败形态不同:
 
-- Java 反射:`Field.set()`、`Field.setInt()` 等 `Field.set*()` 路径会抛出可捕获的 `IllegalAccessException`。
-- JNI:`SetStatic<FieldType>Field` 系列可能触发 ART 层不可恢复的 abort / crash,不能按普通 Java 异常处理。
+- Java 反射：`Field.set()`、`Field.setInt()` 等 `Field.set*()` 路径会抛出可捕获的 `IllegalAccessException`。
+- JNI：`SetStatic<FieldType>Field` 系列可能触发 ART 层不可恢复的 abort / crash，不能按普通 Java 异常处理。
 
-旧版本里,通过 `Field.setAccessible(true)` 绕过访问控制修改 `static final` 字段本来就不受 Java 规范保证。Android 17 把这类灰色路径收紧后,测试代码和 Native 注入代码要分开迁移。
+旧版本里，通过 `Field.setAccessible(true)` 绕过访问控制修改 `static final` 字段本来就不受 Java 规范保证。Android 17 强化这类灰色路径限制后，测试代码和 Native 注入代码要分开迁移。
 
 ### 对性能的意义
 
 为什么 Android 要强制这个限制?答案是 **ART 的常量折叠优化**。
 
-当 ART 编译器确认一个 `static final` 字段的值在运行时不会改变时,它可以在编译时将所有引用该字段的代码直接替换为常量值(内联)。这消除了字段访问的开销,也使得后续的优化 pass(如死代码消除、循环优化)有更大的发挥空间。
+当 ART 编译器确认一个 `static final` 字段的值在运行时不会改变时，它可以在编译时将所有引用该字段的代码直接替换为常量值(内联)。这消除了字段访问的开销，也使得后续的优化 pass(如死代码消除、循环优化)有更大的发挥空间。
 
-如果允许运行时修改 `static final` 字段,ART 就不能做这个优化--它必须假设字段值可能被修改,每次访问都要从内存中读取。
+如果允许运行时修改 `static final` 字段，ART 就不能做这个优化——它必须假设字段值可能被修改，每次访问都要从内存中读取。
 
 ### 受影响的场景
 
@@ -300,8 +303,8 @@ try {
 
 ### 适配建议
 
-1. **测试代码改成显式注入**:把测试值通过构造函数参数、接口实现、非 final 配置对象或 `@VisibleForTesting` 暴露的内部 API 传入,不再 patch 编译期常量。
-2. **Native 测试代码移除 `SetStatic*Field` 注入**:把待注入值放到 JNI 方法参数、Native 配置结构或 Java 层测试开关里,避免触发不可恢复崩溃。
+1. **测试代码改成显式注入**:把测试值通过构造函数参数、接口实现、非 final 配置对象或 `@VisibleForTesting` 暴露的内部 API 传入，不再 patch 编译期常量。
+2. **Native 测试代码移除 `SetStatic*Field` 注入**:把待注入值放到 JNI 方法参数、Native 配置结构或 Java 层测试开关里，避免触发不可恢复崩溃。
 3. **升级依赖注入与序列化库**:重点检查老版本 DI / JSON / XML 框架是否仍依赖修改 `final` 字段完成对象构造。
 
 ---
@@ -310,13 +313,13 @@ try {
 
 ### 变更内容
 
-对于 `targetSdkVersion` ≥ 37 的 App,在 smallest width ≥ 600dp 的设备上,以下 Manifest 属性将被忽略:
+对于 `targetSdkVersion` ≥ 37 的 App，在 smallest width ≥ 600dp 的设备上，以下 Manifest 属性将被忽略:
 
 - `android:screenOrientation`(锁屏方向)
 - `android:resizeableActivity="false"`(禁止调整大小)
 - 宽高比限制
 
-方向和 resize 限制被忽略后,配置变化仍然走 Android 现有的配置变更机制。默认情况下,屏幕尺寸或方向变化会触发 Activity 销毁重建;只有 App 在 manifest 中通过 `android:configChanges` 声明了对应配置类型,并在代码中正确处理 `onConfigurationChanged()`,才能避免重建导致的中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以进一步减少对 `configChanges` 声明的依赖。Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。
+方向和 resize 限制被忽略后，配置变化仍然走 Android 现有的配置变更机制。默认情况下，屏幕尺寸或方向变化会触发 Activity 销毁重建；只有 App 在 manifest 中通过 `android:configChanges` 声明了对应配置类型，并在代码中正确处理 `onConfigurationChanged()`，才能避免重建导致的中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以进一步减少对 `configChanges` 声明的依赖。Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。
 
 ### 对渲染性能的影响
 
@@ -324,21 +327,21 @@ try {
 
 **1. 多窗口和折叠屏场景下的 Surface 数量变化**
 
-当 App 被强制要求支持多方向和多窗口时,系统可能在生命周期中创建和销毁更多的 Surface。在折叠屏设备上,铰链展开/折叠时 App 需要在不同尺寸间切换。如果 App 的布局层级较深,每次配置变更时的 measure/layout 开销会累加。
+当 App 被强制要求支持多方向和多窗口时，系统可能在生命周期中创建和销毁更多的 Surface。在折叠屏设备上，铰链展开/折叠时 App 需要在不同尺寸间切换。如果 App 的布局层级较深，每次配置变更时的 measure/layout 开销会累加。
 
-在 Perfetto 中,你可以在 Main Thread Track 中观察到 `Choreographer#doFrame` 下 `performTraversal` 的执行时间。如果配置变更后布局耗时明显增加,说明布局需要优化。
+在 Perfetto 中，你可以在 Main Thread Track 中观察到 `Choreographer#doFrame` 下 `performTraversal` 的执行时间。如果配置变更后布局耗时明显增加，说明布局需要优化。
 
 **2. Configuration Change 的过渡路径**
 
-屏幕方向或尺寸变化触发配置变更后,走哪条路径取决于 App 的 manifest 声明:如果 App 在 `<activity>` 中通过 `android:configChanges` 声明了 `screenSize|smallestScreenSize|screenLayout|orientation`,并在代码中正确处理 `onConfigurationChanged()`,可以在不销毁 Activity 的情况下完成布局切换--在 Perfetto 中表现为连续的帧序列。如果 App 没有声明对应的 configChanges,系统仍然会销毁并重建 Activity,在 Trace 中表现为生命周期中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以减少对 configChanges 声明的依赖,但前提是布局本身能响应尺寸变化。
+屏幕方向或尺寸变化触发配置变更后，走哪条路径取决于 App 的 manifest 声明：如果 App 在 `<activity>` 中通过 `android:configChanges` 声明了 `screenSize|smallestScreenSize|screenLayout|orientation`，并在代码中正确处理 `onConfigurationChanged()`，可以在不销毁 Activity 的情况下完成布局切换——在 Perfetto 中表现为连续的帧序列。如果 App 没有声明对应的 configChanges，系统仍然会销毁并重建 Activity，在 Trace 中表现为生命周期中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以减少对 configChanges 声明的依赖，但前提是布局本身能响应尺寸变化。
 
 ### 适配建议
 
-如果你的 App 尚未适配大屏和折叠屏:
+如果你的 App 尚未适配大屏和折叠屏：
 
 1. 使用 `WindowMetrics` API 替代硬编码的屏幕尺寸
-2. 在 `onConfigurationChanged()` 中处理布局变更,而非依赖 Activity 重建
-3. 在 Perfetto 中对比新旧模式下的帧时间分布,确认过渡是否平滑
+2. 在 `onConfigurationChanged()` 中处理布局变更，而非依赖 Activity 重建
+3. 在 Perfetto 中对比新旧模式下的帧时间分布，确认过渡是否平滑
 
 ---
 
@@ -346,7 +349,7 @@ try {
 
 ### 明文流量迁移到 Network Security Configuration
 
-Android 17 持续收紧明文流量策略,`android:usesCleartextTraffic` 的 manifest 级全局开关在 targetSdk 递增过程中逐步退出推荐路径。当前更稳妥的做法是优先通过 Network Security Configuration 按域名管理明文例外,把必须保留的 HTTP 端点迁到 `network_security_config.xml` 的 `<domain-config>` 白名单中。Android 17 官方 behavior changes 页面没有明确标注 `usesCleartextTraffic` 为 deprecated;ECH `<domainEncryption>` 和 CT 默认行为是这版更确定的网络层变更。
+Android 17 持续提高明文流量约束，`android:usesCleartextTraffic` 的 manifest 级全局开关在 targetSdk 递增过程中逐步退出推荐路径。当前更稳妥的做法是优先通过 Network Security Configuration 按域名管理明文例外，把必须保留的 HTTP 端点迁到 `network_security_config.xml` 的 `<domain-config>` 白名单中。Android 17 官方 behavior changes 页面没有明确标注 `usesCleartextTraffic` 为 deprecated；ECH `<domainEncryption>` 和 CT 默认行为是这版更确定的网络层变更。
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
@@ -357,9 +360,9 @@ Android 17 持续收紧明文流量策略,`android:usesCleartextTraffic` 的 man
 </network-security-config>
 ```
 
-如果项目还留着 HTTP 端点,当前更实际的动作是两件事:先确认哪些域名必须保留明文访问,再把例外放到按域名配置的白名单里。这样即使未来 target SDK gate 继续收紧,迁移成本也更可控。
+如果项目还留着 HTTP 端点，当前更实际的动作是两件事：先确认哪些域名必须保留明文访问，再把例外放到按域名配置的白名单里。这样即使未来 target SDK gate 继续提高要求，迁移成本也更可控。
 
-Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncryption>` 可按域名声明 ECH 策略;具体属性名以最终 API 37 SDK schema 为准,迁移时不要只看 manifest 里的全局开关。
+Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncryption>` 可按域名声明 ECH 策略；具体属性名以最终 API 37 SDK schema 为准，迁移时不要只看 manifest 里的全局开关。
 
 ```xml
 <!-- API 37 示意:以最终 SDK schema 为准 -->
@@ -373,35 +376,35 @@ Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncr
 
 ### Encrypted Client Hello(ECH)
 
-Android 17 支持 ECH(Encrypted Client Hello)。ECH 是 TLS 1.3 扩展,加密 TLS 握手中的 SNI(Server Name Indication),防止网络观察者识别 App 连接的域名。
+Android 17 支持 ECH (Encrypted Client Hello)。ECH 是 TLS 1.3 扩展，加密 TLS 握手中的 SNI(Server Name Indication)，防止网络观察者识别 App 连接的域名。
 
-这一版平台先补了 ECH 所需 API,包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录,以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App,ECH 更接近 opportunistic 使用:库和服务端都支持时启用,失败时回退到普通 TLS。具体到 HttpEngine、WebView、OkHttp 等库,要看各自版本何时接入这些平台 API。平台支持和库已经可用,是两回事。
+这一版平台先补了 ECH 所需 API，包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录，以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App，ECH 更接近 opportunistic 使用：库和服务端都支持时启用，失败时回退到普通 TLS。具体到 HttpEngine、WebView、OkHttp 等库，要看各自版本何时接入这些平台 API。平台支持和库已经可用，是两回事。
 
-从性能角度看,ECH 的额外成本取决于 DNS / HTTPS 记录查询、库实现和服务端部署方式。连接协商失败时会回退到普通 TLS 握手,不适合给一个固定的延迟数字。
+从性能角度看，ECH 的额外成本取决于 DNS / HTTPS 记录查询、库实现和服务端部署方式。连接协商失败时会回退到普通 TLS 握手，不适合给一个固定的延迟数字。
 
 ### Certificate Transparency 默认启用
 
-对于 `targetSdkVersion` ≥ 37 的 App,Certificate Transparency(CT)默认启用。系统会增加证书和 SCT(Signed Certificate Timestamp)校验约束。如果证书链或服务器提供的 SCT 不满足要求,连接会被拒绝。localhost / 本地调试域名通常不按公网证书链处理,排障时要把本地例外和公网域名分开。
+对于 `targetSdkVersion` ≥ 37 的 App，Certificate Transparency (CT)默认启用。系统会增加证书和 SCT(Signed Certificate Timestamp)校验约束。如果证书链或服务器提供的 SCT 不满足要求，连接会被拒绝。localhost / 本地调试域名通常不按公网证书链处理，排障时要把本地例外和公网域名分开。
 
-排障时不要把 CT 理解成"每次 HTTPS 建连都会额外请求一次 CT Log 服务器"。更常见的路径是校验证书里内嵌或握手携带的 SCT;是否出现额外网络往返,取决于证书链和服务器交付方式。
+排障时不要把 CT 理解成"每次 HTTPS 建连都会额外请求一次 CT Log 服务器"。更常见的路径是校验证书里内嵌或握手携带的 SCT；是否出现额外网络往返，取决于证书链和服务器交付方式。
 
 ### HPKE 混合加密 SPI
 
-Android 17 新增了 HPKE(Hybrid Public Key Encryption)的加密服务提供者接口(SPI)。HPKE 是一种标准化的公钥加密方案,设计目标是简化和标准化加密消息的发送。这个 API 主要用于端到端加密场景,对大多数 App 的性能没有直接影响,但如果你在实现自定义加密协议,可以考虑使用平台提供的 HPKE 实现来替代自研方案。
+Android 17 新增了 HPKE (Hybrid Public Key Encryption)的加密服务提供者接口(SPI)。HPKE 是一种标准化的公钥加密方案，设计目标是简化和标准化加密消息的发送。这个 API 主要用于端到端加密场景，对大多数 App 的性能没有直接影响，但如果你在实现自定义加密协议，可以考虑使用平台提供的 HPKE 实现来替代自研方案。
 
 ---
 
-## 编译链背景:与 API 37 同期演进,但不属于强制行为变更
+## 编译链背景：与 API 37 同期演进，但不属于强制行为变更
 
-Baseline Profiles、Startup Profiles、Cloud Profiles、JIT 和系统侧 AutoFDO,会影响安装后首启、热点代码编译和整体运行时表现,但它们不属于"targetSdk 升到 37 就会立刻切换"的兼容行为。把这部分和前面的 DeliQueue、ProfilingTrigger、JobScheduler 诊断 API 放在同一层,容易把适配优先级看错。
+Baseline Profiles、Startup Profiles、Cloud Profiles、JIT 和系统侧 AutoFDO，会影响安装后首启、热点代码编译和整体运行时表现，但它们不属于"targetSdk 升到 37 就会立刻切换"的兼容行为。把这部分和前面的 DeliQueue、ProfilingTrigger、JobScheduler 诊断 API 放在同一层，容易把适配优先级看错。
 
-做排障时,优先分清三件事:
+排障时先分清三件事：
 
 - App 自带了什么 Baseline / Startup Profiles
 - 分发路径是否提供 cloud profile 或预编译产物
 - 系统镜像 / 内核是否带平台级编译优化
 
-如果观察到同一 APK 在不同设备、不同安装方式上的启动差异,这一层值得继续往下查。更完整的背景放到 **1.7 ART 编译机制**、**1.12 AutoFDO 优化**、**8.7 Baseline Profiles** 里看会更合适。
+如果观察到同一 APK 在不同设备、不同安装方式上的启动差异，这一层值得继续往下查。更完整的背景放到 **1.7 ART 编译机制**、**1.12 AutoFDO 优化**、**8.7 Baseline Profiles** 里看会更合适。
 
 ---
 
@@ -409,46 +412,46 @@ Baseline Profiles、Startup Profiles、Cloud Profiles、JIT 和系统侧 AutoFDO
 
 ### 16KB 页面大小对原生库的影响
 
-Android 继续推动 16KB 页面大小的适配,这个变更对使用 NDK 的原生库有直接影响。某些原生库存在对 4KB 页面大小的硬编码假设,在 16KB 页面设备上可能导致问题:
+Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的原生库有直接影响。某些原生库存在对 4KB 页面大小的硬编码假设，在 16KB 页面设备上可能导致以下问题：
 
-**受影响的原生库类型:**
-- **游戏引擎**:特别是较老版本的 Unity、Unreal Engine 可能在内存分配和 mmap 操作中使用硬编码的 PAGE_SIZE 常量
-- **图像处理库**:OpenCV、Skia 等库在处理图像数据分配时可能假设 4KB 页面匹配
-- **数据库引擎**:SQLite、RocksDB 等存储引擎在内存映射文件时可能使用 4KB 匹配
-- **音视频编解码器**:FFmpeg、MediaCodec 等在处理 Buffer 时可能有内存匹配假设
+**受影响的原生库类型：**
+- **游戏引擎**：特别是较老版本的 Unity、Unreal Engine 可能在内存分配和 mmap 操作中使用硬编码的 PAGE_SIZE 常量
+- **图像处理库**：OpenCV、Skia 等库在处理图像数据分配时可能假设 4KB 页面匹配
+- **数据库引擎**：SQLite、RocksDB 等存储引擎在内存映射文件时可能使用 4KB 匹配
+- **音视频编解码器**：FFmpeg、MediaCodec 等在处理 Buffer 时可能有内存匹配假设
 
-**具体问题和解决方案:**
-1. **mmap offset 匹配问题**:使用 `mmap()` 时 `offset` 参数必须是 16KB 匹配,而非传统的 4KB 匹配。受影响的典型场景包括 SQLite 的 WAL 模式文件映射、RocksDB 的 SSTable mmap 读取
-2. **PAGE_SIZE 常量硬编码**:原生代码中直接使用 `4096` 而非 `sysconf(_SC_PAGESIZE)` 运行时查询。已知案例:FFmpeg 的某些编解码器模块在 buffer 分配时硬编码 4096 匹配;OpenCV 的 `Mat` 数据分配在特定版本中假设 4KB 页面
-3. **ELF 段匹配**:共享库需要使用 NDK r28+ 编译,确保 ELF 段按 16KB 匹配。未匹配的 .so 文件在 16KB 页面设备上加载时会抛出 `UnsatisfiedLinkError`
+**具体问题和解决方案：**
+1. **mmap offset 匹配问题**：使用 `mmap()` 时 `offset` 参数必须是 16KB 匹配，而非传统的 4KB 匹配。受影响的典型场景包括 SQLite 的 WAL 模式文件映射、RocksDB 的 SSTable mmap 读取
+2. **PAGE_SIZE 常量硬编码**：原生代码中直接使用 `4096` 而非 `sysconf(_SC_PAGESIZE)` 运行时查询。已知案例：FFmpeg 的某些编解码器模块在 buffer 分配时硬编码 4096 匹配；OpenCV 的 `Mat` 数据分配在特定版本中假设 4KB 页面
+3. **ELF 段匹配**：共享库需要使用 NDK r28+ 编译，确保 ELF 段按 16KB 匹配。未匹配的 .so 文件在 16KB 页面设备上加载时会抛出 `UnsatisfiedLinkError`
 
-**官方文档与工具链配置:**
-- 官方指南:[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
-- Google Play 强制要求:2025 年 11 月 1 日起,新 App 和更新必须支持 16KB 页面大小
-- AOSP 构建:`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
-- NDK 编译:使用 `-Wl,-z,max-page-size=16384` 链接标志(NDK r27 及以下版本)
-- 运行时检测:使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
-- 验证工具:`readelf -l lib.so` 检查 ELF 段匹配;Android Studio APK Analyzer 可自动识别未匹配的 .so 文件
+**官方文档与工具链配置：**
+- 官方指南：[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
+- Google Play 强制要求:2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
+- AOSP 构建：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
+- NDK 编译：使用 `-Wl,-z,max-page-size=16384` 链接标志(NDK r27 及以下版本)
+- 运行时检测：使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
+- 验证工具：`readelf -l lib.so` 检查 ELF 段匹配；Android Studio APK Analyzer 可自动识别未匹配的 .so 文件
 
 详见 **4.7 16KB 页面大小**章节。
 
 ### 后台音频限制加强
 
-Android 17 对所有 App(无论 `targetSdkVersion`)强制执行后台音频限制。当 App 不在有效生命周期状态时,音频播放和音量调节 API 会静默失败;`AudioManager.requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`,而不是静默丢弃。targetSdk 37 的应用还面临更严格的 FGS 约束:后台音频相关的 foreground service 需要 while-in-use capability,或同时持有 exact alarm schedule 权限并使用 `USAGE_ALARM` 用途。这对音乐播放器和语音通话类 App 有影响。
+Android 17 对所有 App（无论 `targetSdkVersion`）强制执行后台音频限制。当 App 不在有效生命周期状态时，音频播放和音量调节 API 会静默失败；`AudioManager.requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`，而不是静默丢弃。targetSdk 37 的应用还面临更严格的 FGS 约束：后台音频相关的 foreground service 需要 while-in-use capability，或同时持有 exact alarm schedule 权限并使用 `USAGE_ALARM` 用途。这对音乐播放器和语音通话类 App 有影响。
 
 ### 更安全的 Native 动态代码加载
 
-DCL(Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `System.load()` 加载的所有 native 文件必须标记为只读,否则抛出 `UnsatisfiedLinkError`。如果你有动态下载 .so 文件并加载的逻辑,需要确保在加载前调用 `chmod` 设置只读权限。
+DCL (Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `System.load()` 加载的所有 native 文件必须标记为只读，否则抛出 `UnsatisfiedLinkError`。如果你有动态下载 .so 文件并加载的逻辑，需要确保在加载前调用 `chmod` 设置只读权限。
 
 ---
 
 ## 迁移检查清单
 
-从 Android 16 升级到 Android 17 的性能相关必检项:
+从 Android 16 升级到 Android 17 的性能相关必检项：
 
-- [ ] 搜索代码中所有 `MessageQueue` 的反射访问,确认是否有依赖 `mMessages` 等私有字段的逻辑
-- [ ] 搜索 `Field.setAccessible(true)` + `static final` 的组合,确认测试代码是否需要重构
-- [ ] 检查所有明文 HTTP 端点,尽量迁移到 HTTPS,并把必须保留的例外迁到 Network Security Configuration
+- [ ] 搜索代码中所有 `MessageQueue` 的反射访问，确认是否有依赖 `mMessages` 等私有字段的逻辑
+- [ ] 搜索 `Field.setAccessible(true)` + `static final` 的组合，确认测试代码是否需要重构
+- [ ] 检查所有明文 HTTP 端点，尽量迁移到 HTTPS，并把必须保留的例外迁到 Network Security Configuration
 - [ ] 在 600dp+ 设备上测试 App 的方向和多窗口行为
 - [ ] 检查 JNI 代码中是否有直接操作 `MessageQueue` native 层的逻辑
 - [ ] 确认 NDK 原生库在 16KB 页面大小设备上的兼容性
@@ -487,10 +490,10 @@ DCL(Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `Sy
 - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` (android-16.0.0_r1)
 - `frameworks/base/core/java/android/os/Looper.java`
 
-**关键发现**:
-DeliQueue 的 drain 过程在 Android Developers Blog 中有明确描述:Looper 的 `next()` 方法在准备取下一条消息时,从 Treiber Stack 的顶部开始向下遍历,直到遇到上次处理过的消息。遍历过程中,每遇到一条新消息就将其插入 min-heap（按 `when` 排序）。同时,遍历过程中会建立反向链接,形成双向链表,以支持 O(1) 的任意位置移除。
+**关键发现**：
+DeliQueue 的 drain 过程在 Android Developers Blog 中有明确描述：Looper 的 `next()` 方法在准备取下一条消息时，从 Treiber Stack 的顶部开始向下遍历，直到遇到上次处理过的消息。遍历过程中，每遇到一条新消息就将其插入 min-heap（按 `when` 排序）。同时，遍历过程中会建立反向链接，形成双向链表，以支持 O(1) 的任意位置移除。
 
-drain 的触发时机是 Looper 需要下一条消息时——按需触发,不是基于阈值或定时器。drain 的频率取决于消息消费速度和投递速度的差值:当 Looper 消费完当前堆中所有消息后,下一次 `next()` 调用会触发 drain。
+drain 的触发时机是 Looper 需要下一条消息时——按需触发，不是基于阈值或定时器。drain 的频率取决于消息消费速度和投递速度的差值：当 Looper 消费完当前堆中所有消息后，下一次 `next()` 调用会触发 drain。
 
 ```java
 // DeliQueue drain 过程（基于 Android Developers Blog 描述）
@@ -504,7 +507,7 @@ drain 的触发时机是 Looper 需要下一条消息时——按需触发,不�
 **与 Looper 主循环的集成**:
 drain 是 Looper 主循环的一部分，不是独立线程。`Looper.loop()` 每次迭代调用 `MessageQueue.next()`，`next()` 内部在堆为空或需要下一条消息时执行 drain。也就是说，drain 的执行在主线程上，如果 Treiber Stack 中积压了大量消息，drain 本身也会占用主线程时间——但这个成本通常远小于它消除的锁竞争收益。
 
-AOSP 实现在此基础上增加了同步屏障和异步消息的专门处理路径。当存在 barrier 时,drain 过程会优先处理异步消息。
+AOSP 实现在此基础上增加了同步屏障和异步消息的专门处理路径。当存在 barrier 时，drain 过程会优先处理异步消息。
 
 ### Generational CMC 具体 gating 条件
 
@@ -572,7 +575,7 @@ private boolean detectAnomalousBehavior(@NonNull String packageName) {
 - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
 
 **关键数据结构发现**：
-根据 Android Developers Blog 官方描述,DeliQueue 使用 Treiber Stack + min-heap 的混合结构,不是 `ConcurrentSkipListSet` 排序集合:
+根据 Android Developers Blog 官方描述，DeliQueue 使用 Treiber Stack + min-heap 的混合结构，不是 `ConcurrentSkipListSet` 排序集合：
 
 ```java
 // DeliQueue 核心结构（基于 Android Developers Blog 官方描述）
@@ -596,10 +599,10 @@ public class TreiberStack<E> {
 ```
 
 **性能影响**：
-- 消息入队: O(1) CAS 操作（Treiber Stack push）
-- 消息出队: O(log n)（min-heap extract-min）,尾部延迟优于旧单链表的 O(n) 最坏情况
-- 移除操作: O(1) CAS 设置墓碑标记 + Looper 延迟物理移除
-- 内存开销: Treiber Stack 的 Node 对象 + min-heap 数组,比旧单链表多约 20-30%
+- 消息入队：O(1) CAS 操作（Treiber Stack push）
+- 消息出队：O(log n)（min-heap extract-min），尾部延迟优于旧单链表的 O(n) 最坏情况
+- 移除操作：O(1) CAS 设置墓碑标记 + Looper 延迟物理移除
+- 内存开销：Treiber Stack 的 Node 对象 + min-heap 数组，比旧单链表多约 20-30%
 
 **兼容性影响**：
 `mMessages` 字段保留二进制兼容性，但永远返回 null，反射依赖的测试框架需升级到 Espresso 3.7+ 和 Robolectric 4.17+。
