@@ -1,8 +1,8 @@
 {
   "total": 286,
   "draft": 0,
-  "ready-for-review": 89,
-  "finalized": 190,
+  "ready-for-review": 94,
+  "finalized": 192,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -270,12 +270,12 @@
     "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
   ],
-  "review_summary": "Task6 2026-05-16 02: review 22.11、25.11；L1/L2 小修 22；无回炉；22.11 自动晋升 finalized，25.11 进入 Task9。",
+  "review_summary": "Task6 2026-05-16 03: review 26.10；L1/L2 小修 8；无回炉；进入 Task9。",
   "task6_review_summary": {
-    "l1_l2_fixes": 670,
+    "l1_l2_fixes": 678,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 697,
+    "total_issues": 705,
     "auto_promotions": 13
   },
   "issues_by_section": {
@@ -1037,27 +1037,27 @@
       "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
     }
   },
-  "total_review_sections": 129,
+  "total_review_sections": 130,
   "next_review_candidates": [],
-  "ready_for_review": 87,
-  "last_updated": "2026-05-16T02:11:00+08:00",
+  "ready_for_review": 94,
+  "last_updated": "2026-05-16T03:16:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "01:12",
+    "time": "03:16",
     "sections": [
-      "20.11"
+      "26.10"
     ],
     "files": [
-      "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
     ],
-    "l1_l2_fixes": 6,
+    "l1_l2_fixes": 8,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "log": "logs/review/2026-05-16-01-review.md"
+    "log": "logs/review/2026-05-16-03-review.md"
   },
   "task9_last_review": "2026-05-16T01:26:00+08:00",
-  "ready_to_publish": 190,
+  "ready_to_publish": 192,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2733,6 +2733,25 @@
       "task9_state": "pending",
       "last_task6_at": "2026-05-16T02:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-02-review.md"
+    },
+    "26.10": {
+      "title": "Android 11 以下进程退出归因方案",
+      "file": "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "gap_source": "素材驱动/官方文档/章节深挖",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T03:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-03-review.md",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 8 处；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2b_rounds": [
@@ -2799,47 +2818,44 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
   ],
-  "total_review_files": 129,
+  "total_review_files": 130,
   "last_task2a_at": "2026-05-16T02:04:00+08:00",
   "last_task2a_section": "25.11",
   "last_task2a_file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
-  "last_task6_review": "2026-05-16T02:11:00+08:00",
+  "last_task6_review": "2026-05-16T03:16:00+08:00",
   "last_task6_sections": [
-    "22.11",
-    "25.11"
+    "26.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
-    "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
+    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
   ],
-  "last_task6_at": "2026-05-16T02:11:00+08:00",
+  "last_task6_at": "2026-05-16T03:16:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-16T01:12:00+08:00",
-    "log": "logs/review/2026-05-16-01-review.md",
+    "reviewed_at": "2026-05-16T03:16:00+08:00",
+    "log": "logs/review/2026-05-16-03-review.md",
     "sections": [
-      "20.11"
+      "26.10"
     ],
     "files": [
-      "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
     ],
     "mode": "first review",
-    "l1_l2_fixes": 6,
+    "l1_l2_fixes": 8,
     "rework_sections": [],
     "auto_promotions": [],
-    "summary": "20.11 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
+    "summary": "26.10 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
   ],
   "last_task9_at": "2026-05-16T02:30:40+08:00",
   "last_task2a_result": "drafted",
-  "ready-to-publish": 190,
+  "ready-to-publish": 192,
   "last_task2a_processed_section": "25.11",
-  "task6_last_review_at": "2026-05-16T02:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-02-review.md",
+  "task6_last_review_at": "2026-05-16T03:16:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-03-review.md",
   "task6_last_review_sections": [
-    "22.11",
-    "25.11"
+    "26.10"
   ],
   "sections_status": {
     "22.11": {
@@ -2883,6 +2899,25 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-20260516-25.11-adpf-session-api-version-boundary"
+    },
+    "26.10": {
+      "title": "Android 11 以下进程退出归因方案",
+      "file": "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "gap_source": "素材驱动/官方文档/章节深挖",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T03:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-03-review.md",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 8 处；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2a_last_processed": {
