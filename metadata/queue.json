@@ -6383,6 +6383,55 @@
       "last_reviewed_by": "openclaw-task6",
       "last_reviewed_at": "2026-05-15T10:10:00+08:00",
       "original_review_log": "logs/deep-review/2026-05-15-09-deep-review.md"
+    },
+    {
+      "id": "task9-17.4-sched-ext-android612-version-boundary",
+      "section": "17.4",
+      "section_title": "sched_ext 与 OEM BPF 调度器",
+      "priority": 95,
+      "title": "sched_ext Android 6.12 源码锚点与版本口径混用",
+      "description": "章节把 torvalds/linux master、Android common android16-6.12 和 OEM hmbird_sched 线索混成同一组已验证口径，导致 ext_internal.h、BYPASS DSQ/slice、partial mode 影响范围在 Android 6.12 上不可直接成立。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      ],
+      "material_paths": [
+        "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-10-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L20-L25 / L147 / L300-L303 源码来源与已验证锚点",
+          "detail": "章节适用范围写 Android 16(GKI 6.12)-Android 17，但 frontmatter 与参考资料把 torvalds/linux master 标为 aosp，并引用 `kernel/sched/ext_internal.h` 作为已验证锚点。实际 Android common `refs/heads/android16-6.12` 的 `kernel/sched/` 下只有 `ext.c`、`ext.h`，不存在 `kernel/sched/ext_internal.h`；`struct sched_ext_ops` 相关宏在 `kernel/sched/ext.c`，公开常量在 `include/linux/sched/ext.h`。同一段还把 upstream master 与 Android common 6.12 混在一起，会让读者以为 Android 16 设备源码就是 master 形态。",
+          "suggestion": "把源码锚点拆成两组：Android common 6.12 使用 `kernel/sched/ext.c`、`kernel/sched/ext.h`、`include/linux/sched/ext.h`、`tools/sched_ext/scx_simple.bpf.c`；upstream master 作为“后续 mainline”单独标注。frontmatter 中 torvalds/linux 链接不要标 `type: aosp`，并删除或降级 `ext_internal.h` 的 Android 6.12 已验证口径。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L153-L160 DSQ 与 slice 常量",
+          "detail": "正文列出 `SCX_DSQ_BYPASS`、`SCX_SLICE_BYPASS = 5ms`，这在当前 torvalds/linux master 可见，但 Android common `android16-6.12` 的 `include/linux/sched/ext.h` 只定义 `SCX_DSQ_INVALID/GLOBAL/LOCAL/LOCAL_ON` 和 `SCX_SLICE_DFL`，没有 BYPASS DSQ / BYPASS slice。章节如果面向 Android 16 GKI 6.12，这一段会把 mainline 新接口当成 Android 6.12 已有能力。",
+          "suggestion": "在正文中拆出版本表：Android common 6.12 可写 `SCX_DSQ_GLOBAL`、`SCX_DSQ_LOCAL`、`SCX_DSQ_LOCAL_ON`、`SCX_SLICE_DFL=20ms`；`SCX_DSQ_BYPASS`、`SCX_SLICE_BYPASS` 只作为后续 upstream/mainline 差异或待 Android 分支落地后再写。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L170 / L253-L263 partial enable 与普通 App 线程影响范围",
+          "detail": "章节提到 OPPO `partial_ctrl`，但没有解释 Linux sched_ext 的接管范围语义：默认情况下 BPF scheduler 可接管 `SCHED_OTHER/BATCH/IDLE/EXT` 等普通任务；设置 `SCX_OPS_SWITCH_PARTIAL` 后只接管显式切到 `SCHED_EXT` 的任务。这个分支直接决定“普通 App 线程是否受 sched_ext 影响”，也是判断 `/proc/hmbird_sched/partial_ctrl` 和 vendor 开关的关键。",
+          "suggestion": "补一段生命周期/接管范围：加载 BPF scheduler 后默认管理哪些 policy，partial switch 后哪些任务仍留在 fair class；把 `partial_ctrl` 与 `SCX_OPS_SWITCH_PARTIAL` 的关系标成“厂商控制面线索，需用 `/proc/<pid>/sched`、tracepoint 或源码确认实际切换”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T10:27:02+08:00",
+      "original_review_log": "logs/deep-review/2026-05-15-10-deep-review.md"
     }
   ],
   "metadata": {

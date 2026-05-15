@@ -882,13 +882,22 @@
       "reviewed_at": "2026-05-15T09:27:23+08:00",
       "log": "logs/deep-review/2026-05-15-09-deep-review.md",
       "summary": "P0 1：帧 × CPU 频率统计未按 frame 边界裁剪 joined.dur；P1 1：GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束；P2 1：缺 Trace Processor/PerfettoSQL 工具版本边界。"
+    },
+    "17.4": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T10:27:02+08:00",
+      "log": "logs/deep-review/2026-05-15-10-deep-review.md",
+      "summary": "P0 1：Android common 6.12 源码锚点与 torvalds/linux master 混用；P1 2：BYPASS DSQ/slice 版本边界缺失、partial mode 接管范围未解释；P2 1：OPPO scx tracepoint/symbol 线索缺可复核锚点。"
     }
   },
   "total_review_sections": 115,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T10:10:00+08:00",
-  "last_updated_by": "openclaw-task6-review",
+  "last_updated": "2026-05-15T10:27:02+08:00",
+  "last_updated_by": "openclaw-task9-deep-review",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "10:10",
@@ -907,7 +916,7 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-15-10-review.md"
   },
-  "task9_last_review": "2026-05-15T09:27:23+08:00",
+  "task9_last_review": "2026-05-15T10:27:02+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2245,14 +2254,19 @@
       "title": "sched_ext 与 OEM BPF 调度器",
       "file": "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-15",
       "last_review_log": "logs/review/2026-05-15-10-review.md",
-      "queue_priority": 80
+      "queue_priority": 95,
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-10-deep-review.md"
     },
     "20.10": {
       "title": "WebView Renderer OOM 与白屏恢复",
@@ -2322,43 +2336,43 @@
   "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T09:27:23+08:00",
-    "log": "logs/deep-review/2026-05-15-09-deep-review.md",
+    "at": "2026-05-15T10:27:02+08:00",
+    "log": "logs/deep-review/2026-05-15-10-deep-review.md",
     "sections": [
-      "13.11"
+      "17.4"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
     ],
     "p0": 1,
-    "p1": 1,
+    "p1": 2,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-09-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-10-deep-review.md",
   "last_task9_sections": [
-    "13.11"
+    "17.4"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T09:27:23+08:00",
-    "log": "logs/deep-review/2026-05-15-09-deep-review.md",
+    "at": "2026-05-15T10:27:02+08:00",
+    "log": "logs/deep-review/2026-05-15-10-deep-review.md",
     "sections": [
-      "13.11"
+      "17.4"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
     ],
     "p0": 1,
-    "p1": 1,
+    "p1": 2,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
   "total_review_files": 115,
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
@@ -2393,9 +2407,9 @@
     "summary": "13.11 已标注 Task9 技术阻塞并追加 outline 缺失回炉项；17.4 通过轻修进入 Task9；8.1 finalized 抽检通过。"
   },
   "last_task9_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task9_at": "2026-05-15T09:27:23+08:00",
+  "last_task9_at": "2026-05-15T10:27:02+08:00",
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 186
 }
