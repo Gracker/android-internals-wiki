@@ -261,3 +261,20 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 20.7、20.2、20.3、26.2、20.6
+
+## [2026-05-15] 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界 — Cleaner / CloseGuard 版本边界与 daemon 路径
+
+### 盲区描述
+4.9 同时讨论 finalizer、ReferenceQueue、Cleaner、CloseGuard，但还缺少面向 Android 8-16 的版本矩阵和源码路径区分：`sun.misc.Cleaner` 在 `ReferenceQueue.enqueuePending()` 分支由 `ReferenceQueueDaemon` 直接执行；`java.lang.ref.Cleaner.Cleanable` 在 `FinalizerDaemon.processReference()` 中走 `doClean()`；`android.util.CloseGuard` 官方 API Added in API 30，`java.lang.ref.Cleaner` Added in API 33。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 AOSP `android-16.0.0_r1`：`ReferenceQueue.java` L236-L278、`Daemons.java` L363-L405、`FinalizerReference.java` L33-L69。
+- 补 API level 表：API 26-29、30-32、33+ 分别可用的 CloseGuard / Cleaner / StrictMode 方案。
+- 核实 core library desugaring 对 `java.lang.ref.Cleaner` 的支持边界，避免把 API 33 平台类建议直接写给 Android 8-12。
+
+### 关联章节
+4.9, 10.2, 23.1
+

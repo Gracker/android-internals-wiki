@@ -6716,19 +6716,67 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T12:31:59+08:00"
+    },
+    {
+      "id": "task9-2026-05-15-4.9-finalizer-referencequeue-lifecycle",
+      "section": "4.9",
+      "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "priority": 95,
+      "reason": "[Deep Tech Review] FinalizerReference 生命周期时机写错，并缺 Cleaner 双路径/API level 边界",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "原理断裂/源码准确性",
+          "location": "L125-L132 从 GC 标记到 finalize 执行的路径",
+          "detail": "正文写成“对象不可达后才被包装成 FinalizerReference”。AOSP android-16.0.0_r1 中 FinalizerReference.add() 在 finalizable 对象进入堆时就为其建立 FinalizerReference 链表节点；GC 后续只是把 referent 移到 zombie 并把既有 reference 放入 ReferenceQueue.unenqueued。当前描述把注册时机后移到了 GC 后，和 FinalizerReference.java L33-L45、L60-L69 的模型相反。",
+          "suggestion": "改成“分配/构造阶段注册 FinalizerReference → GC 判定不可达后 referent→zombie → ReferenceQueue.unenqueued → ReferenceQueueDaemon.enqueuePending() → FinalizerDaemon.doFinalize()”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L82-L83、L169、L299-L330 Cleaner 相关路径",
+          "detail": "章节没有区分两条 Cleaner 路径：ReferenceQueue.enqueuePending() 对 sun.misc.Cleaner 分支直接执行 cl.clean()；FinalizerDaemon.processReference() 还会处理 java.lang.ref.Cleaner.Cleanable 并调用 doClean()。当前只写“ReferenceQueueDaemon 处理 Cleaner 特殊路径 / FinalizerDaemon 执行 finalize()”，会让读者误以为所有 Cleaner 都在同一路径。",
+          "suggestion": "补一张小表区分 sun.misc.Cleaner、java.lang.ref.Cleaner.Cleanable、FinalizerReference，分别标出 daemon、源码方法和 API 面向对象。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L244、L295、L299、L321-L330 CloseGuard / Cleaner 使用建议",
+          "detail": "章节适用范围写 Android 8-16，但没有给 API level 边界：android.util.CloseGuard 官方 API Added in API 30，java.lang.ref.Cleaner Added in API 33。Android 8-12/13 前后的应用可用性、core library desugaring 或替代方案没有闭环。",
+          "suggestion": "补版本矩阵：API 26-29、30-32、33+ 分别可用的 CloseGuard/Cleaner/StrictMode 方案；如果依赖 desugaring，写明 Gradle/coreLibraryDesugaring 条件和不保证运行时语义的边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T13:30:28+08:00",
+      "status": "pending",
+      "title": "FinalizerReference 生命周期与 Cleaner API 边界修正",
+      "description": "4.9 需修正 finalizable 对象注册时机、sun.misc.Cleaner/java.lang.ref.Cleaner.Cleanable 两条路径，以及 CloseGuard/Cleaner API level 适用边界。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 207,
-    "p0_count": 42,
-    "last_updated": "2026-05-15T12:31:59+08:00",
+    "total_entries": 208,
+    "p0_count": 43,
+    "last_updated": "2026-05-15T13:30:28+08:00",
     "updated_by": "openclaw-task9",
     "pending_entries": 127,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
     "pending": 127
   },
-  "last_updated": "2026-05-15T12:31:59+08:00",
+  "last_updated": "2026-05-15T13:30:28+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": 127
 }

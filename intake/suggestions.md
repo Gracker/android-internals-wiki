@@ -1297,3 +1297,19 @@
 - **问题**：附录仍保留 AIW 每日源码调研、来源、注入时间、价值等加工记录，读起来像素材 dump；内容与正文和参考资料重复，且部分技术点已被 Task9 标记为高风险。
 - **建议**：Task2B 先按 Task9 复核技术口径，再把可用内容整合进 BLAST 生命周期或 Compose/GC 小节；发布稿不保留 AIW 注入记录和未核验结论。
 - **review 日志**：logs/review/2026-05-15-12-review.md
+## [Task9 Deep Review] 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：L119 ReferenceQueue.remove() 描述
+- **问题**：“remove() 阻塞在队列锁上”容易被理解成等待期间一直持有 queue.lock。源码里 remove() 进入 synchronized(lock) 后调用 lock.wait(timeout)，等待期间会释放 monitor，唤醒后再重新竞争锁并 poll。
+- **建议**：改成“remove() 在同一把 lock 下检查队列；无元素时 wait() 释放 monitor 并等待 notify/timeout”。
+
+- **类型**：源码引用/版本细节
+- **位置**：L283-L285 FinalizerWatchdogDaemon 超时说明
+- **问题**：引用行号 Daemons.java 414-449 只覆盖 watchdog 类头和 TOLERATED_REFERENCE_QUEUE_TIMEOUTS 常量，真正的 waitForProgress()/timedOut() 行为在约 L561-L735。ReferenceQueueDaemon 超时也不是一次阈值即异常，而是 observedReferenceQueueTimeouts > 5 后才返回 refQueueTimeoutException。
+- **建议**：修正源码锚点，并补“FinalizerDaemon 单对象超时”和“ReferenceQueueDaemon 连续多次无进展才升级”的区别。
+
+- **类型**：源码路径规范
+- **位置**：frontmatter L15-L18 sources.path
+- **问题**：AOSP tag 不应作为 platform/libcore 下的目录段。正文 L71-L72 的写法是可复核的；frontmatter 中 platform/libcore/android-16.0.0_r1/... 不是 Gitiles/AOSP 实际路径。
+- **建议**：统一成 platform/libcore/ojluni/... @ android-16.0.0_r1，或写完整 Gitiles URL refs/tags/android-16.0.0_r1。
+
