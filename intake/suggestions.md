@@ -1468,3 +1468,15 @@
 - **问题**：`DeepResearch/...` 相对 Android-Internal-Wiki 项目根目录不存在，实际文件位于 Obsidian 根目录的 `DeepResearch/`；列出的 `Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 *.md` 在当前 Obsidian vault 中未找到。材料链无法本地复核。
 - **建议**：将 DeepResearch source 改成可解析的绝对路径或 vault-root 相对路径；恢复 Clippings 文件，或把这些引用标为“结构参考、非技术证据”，并为技术断言补官方/AOSP/开源项目锚点。
 
+## [Task9 Deep Review] 1.19 Zygote 图形驱动预加载与启动性能 — 2026-05-16
+- **类型**：版本差异
+- **位置**：§AppProcess HAL 预加载当前落在 GraphicBufferMapper
+- **问题**：正文引用 AOSP main 的 `GraphicBufferMapper::preloadHal()` 写 Gralloc 2/3/4/5，但 Android 13 tag 只有 Gralloc 2/3/4，Android 14+ 才包含 Gralloc 5。当前版本表只写“mapper 实现可能变化”，粒度偏粗。
+- **建议**：补一行版本边界：Android 13 预加载 Gralloc 2/3/4；Android 14/15/16 与 AOSP main 预加载 Gralloc 2/3/4/5；设备最终版本仍以 vendor mapper 是否加载成功为准。
+
+## [Task9 Deep Review] 1.19 Zygote 图形驱动预加载与启动性能 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：§图形驱动预加载解决首帧前的冷路径成本 / §App 启动 trace 要拆成四段看
+- **问题**：正文多次使用“首帧附近的抖动会小一些”“预热收益”等判断，但没有给出同一设备 boot trace、App trace 或属性开关对照样例。
+- **建议**：补一个最小证据口径：同设备记录 `PreloadGraphicsDriver` boot trace 耗时、App 进程 `setupGpuLayers/setupAngle/chooseDriver` 与首次 EGL/Vulkan 调用耗时；如能安全切换 `ro.zygote.disable_gl_preload`，再给开启/关闭对照。没有实测时，把收益描述限制为“可能减少公共冷路径成本”。
+

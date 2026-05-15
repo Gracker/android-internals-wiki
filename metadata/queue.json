@@ -7505,21 +7505,54 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-16T06:04:00+08:00"
+    },
+    {
+      "id": "task9-20260516-1.19-zygote-graphics-native-version-gap",
+      "section": "1.19",
+      "section_title": "Zygote 图形驱动预加载与启动性能",
+      "priority": 85,
+      "title": "Zygote 图形驱动预加载 native 实现与 Android 15 版本差异缺失",
+      "description": "章节已覆盖 ZygoteInit、JNI 和 GraphicsEnvironment，但没有闭合 zygote_preload_graphics() 的 HWUI native 实现，也遗漏 Android 15 起 initializeGlAlways() 导致 Vulkan 后端仍可能额外预加载 GL 的版本差异。",
+      "reason": "[Deep Tech Review][原理断裂/版本差异] Zygote graphics preload 的 native 实现和 Android 13/14 vs 15/16 差异未进入正文，作为 1.19 核心机制需要回炉补齐。",
+      "issue_type": "principle-chain-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T06:31:25+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/版本差异",
+          "location": "§Graphics driver 预加载由系统属性兜底；§版本、设备和验证边界",
+          "detail": "正文到 JNI zygote_preload_graphics() 入口后停止，并把 native graphics runtime 内部实现标为待验证；但 AOSP 可直接核到 frameworks/base/libs/hwui/apex/jni_runtime.cpp。Android 13/14 的 Vulkan 分支只调用 vkEnumerateInstanceVersion()，Android 15/16 增加 Properties::initializeGlAlways()，在 Vulkan 后端下也可能额外 eglGetDisplay(EGL_DEFAULT_DISPLAY) 预加载 GL。该差异影响“预加载了哪类 driver”的版本边界。",
+          "suggestion": "补上 libs/hwui/apex/jni_runtime.cpp 源码锚点；在版本表里区分 Android 13/14 与 Android 15+：SkiaGL 分支走 eglGetDisplay，Vulkan 分支走 vkEnumerateInstanceVersion，Android 15+ 还要说明 initializeGlAlways() 触发 GL 兜底预加载；删除“未追到 native graphics runtime”的待验证尾巴。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 227,
+    "total_entries": 228,
     "p0_count": 38,
-    "last_updated": "2026-05-16T04:10:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 127,
+    "last_updated": "2026-05-16T06:31:25+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 128,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 127
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 128
   },
-  "last_updated": "2026-05-16T04:10:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 127,
+  "last_updated": "2026-05-16T06:31:25+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 128,
   "last_task2a_completed": "20.11",
   "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }
