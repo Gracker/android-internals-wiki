@@ -260,7 +260,7 @@
     "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
     "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
   ],
-  "review_summary": "Task6 2026-05-15 22: review 1.18；小修 7 处，无新增回炉；未自动晋升。",
+  "review_summary": "Task9 2026-05-15 22: review 1.18；P1 3 / P2 2；写入 queue P85，等待 Task2B。",
   "task6_review_summary": {
     "l1_l2_fixes": 636,
     "l3_issues": 41,
@@ -1011,8 +1011,8 @@
     },
     "1.18": {
       "p0": 0,
-      "p1": 0,
-      "p2": 0,
+      "p1": 3,
+      "p2": 2,
       "p3": 0,
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 7,
@@ -1020,14 +1020,18 @@
       "task6_reviewed_at": "2026-05-15T22:12:00+08:00",
       "task6_log": "logs/review/2026-05-15-22-review.md",
       "task6_new_rework": false,
-      "task6_note": "首次 review 通过；修正标题、少量措辞和中英文/斜杠格式，补齐 Task6 frontmatter。Task9 pending，未自动晋升。"
+      "task6_note": "首次 review 通过；修正标题、少量措辞和中英文/斜杠格式，补齐 Task6 frontmatter。Task9 pending，未自动晋升。",
+      "task9_result": "needs-rework",
+      "reviewed_at": "2026-05-15T22:35:05+08:00",
+      "log": "logs/deep-review/2026-05-15-22-deep-review.md",
+      "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
     }
   },
-  "total_review_sections": 124,
+  "total_review_sections": 125,
   "next_review_candidates": [],
   "ready_for_review": 87,
-  "last_updated": "2026-05-15T22:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-15T22:35:05+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "20:08",
@@ -1044,7 +1048,7 @@
     "auto_promotions": 1,
     "log": "logs/review/2026-05-15-20-review.md"
   },
-  "task9_last_review": "2026-05-15T19:35:08+08:00",
+  "task9_last_review": "2026-05-15T22:35:05+08:00",
   "ready_to_publish": 187,
   "rework_history": [
     {
