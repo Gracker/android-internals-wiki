@@ -1,6 +1,7 @@
 ---
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
+section: "16.6"
 status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
@@ -29,13 +30,24 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+review_type: task6-writing-quality-review
+task6_result: pass-light-edit
+last_task6_at: "2026-05-15T23:21:00+08:00"
+last_task6_review_log: logs/review/2026-05-15-23-review.md
+review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
+
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
 
 Android 14 之后，应用侧 AOT 编译的控制面转到 ART Service。到 Android 16，公开源码已经出现 SDM 相关的产物管理路径，外部报道也把它和 Play 分发侧的 Cloud Compilation 放在一起讨论。
 
-这一节只把能核对的边界写清楚：Cloud Profile、Baseline Profile、Startup Profile、Dex Metadata 和 SDM 处在同一套 ART 编译体系里，但它们解决的问题不同。应用开发者能稳定控制的是 Baseline Profile、Startup Profile、`.dm` 验证和本地编译状态检查；云端编译是否命中，取决于安装渠道、Play 分发策略、设备端 ART 支持和产物校验结果。
+Cloud Profile、Baseline Profile、Startup Profile、Dex Metadata 和 SDM 处在同一套 ART 编译体系里，但解决的问题不同。应用开发者能稳定控制的是 Baseline Profile、Startup Profile、`.dm` 验证和本地编译状态检查；云端编译是否命中，取决于安装渠道、Play 分发策略、设备端 ART 支持和产物校验结果。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -57,7 +69,7 @@ Android 14 之后，应用侧 AOT 编译的控制面转到 ART Service。到 And
 
 ## 三类 Profile 分别解决什么问题
 
-把安装优化和启动优化混在一起，最容易读错 Baseline Profile 和 Cloud Profile 的关系。Profile 本身只是“哪些类和方法更该被优化”的输入，能否变成更快的启动，要看安装渠道和 ART Service 是否把它用于 `speed-profile` 编译。
+安装优化和启动优化混在一起时，Baseline Profile 和 Cloud Profile 的关系容易被读错。Profile 本身只是“哪些类和方法更该被优化”的输入，能否变成更快的启动，要看安装渠道和 ART Service 是否把它用于 `speed-profile` 编译。
 
 | 类型 | 生产者 | 分发位置 | 主要作用 | 开发者控制度 |
 |------|--------|----------|----------|--------------|
@@ -135,18 +147,18 @@ AOSP main 的 `ArtFileManager` 已经把 SDM 纳入可写与可用产物列表�
 
 因此，写性能结论时只能给出这个边界：Android 16 具备接收和管理 SDM / cloud dexopt artifacts 的设备端基础；Play 分发是否命中云端编译，需要用实际安装包、设备版本和 `dumpsys package dexopt` 结果确认。不能把“支持 SDM”写成“所有安装都会跳过设备端 dex2oat”。
 
-## System Dexopt Manager 更适合理解成分发侧能力边界
+## System Dexopt Manager 的分发侧边界
 
 目前公开 AOSP 中可稳定引用的设备端入口是 ART Service、`artd`、`pm compile`、`BackgroundDexoptJob` 和 `ArtManagerLocal`。如果材料里出现 System Dexopt Manager 或 SDM 管理器这类叫法，写正文时不要把它们包装成一个可在 AOSP 中搜索到的系统服务类。
 
-更稳妥的分工方式是：
+公开资料能支撑的边界可以拆成四部分：
 
 - Play / 安装来源：决定是否提供 Cloud Profile 或 SDM 产物，也决定用户额外下载多少编译元数据。
 - Package Manager / Installer：完成 APK、split、`.dm` 的安装配对和基础校验。
 - ART Service：根据安装原因、profile 可用性、系统属性和设备状态决定 compiler filter，并管理 OAT / VDEX / ART / SDM / SDC 等产物。
 - `artd` / `dex2oat`：执行本地编译，或在已有可用产物时跳过不必要的本地工作。
 
-这样写能避免两个误判：把 Play 侧能力说成 AOSP 设备端类名；把 Cloud Profile 和 Cloud Compilation 合并成同一件事。Cloud Profile 是 profile 输入，Cloud Compilation / SDM 更接近预生成编译产物的分发和管理路径。
+这个分工能避免两个误判：把 Play 侧能力说成 AOSP 设备端类名；把 Cloud Profile 和 Cloud Compilation 合并成同一件事。Cloud Profile 是 profile 输入，Cloud Compilation / SDM 更接近预生成编译产物的分发和管理路径。
 
 ## 开发者能控制什么
 
@@ -188,4 +200,4 @@ Profile 体系经常同时影响安装、首次启动和后续启动，但三个
 - PMS 安装路径、`PackageInstallerSession`、`InstallPackageHelper` 和 `DexOptHelper` 的位置详见 1.9 节。
 - 启动优化实战中如何把 profile 结果转成 TTID / TTFD 收益，详见 21.4 节。
 
-本节的判断边界是：设备端 ART Service 和 SDM 管理路径已有可核对源码；Play 云端编译的分发策略仍要以官方文档、实机安装和 `dumpsys package dexopt` 结果为准。
+可确认的边界是：设备端 ART Service 和 SDM 管理路径已有可核对源码；Play 云端编译的分发策略仍要以官方文档、实机安装和 `dumpsys package dexopt` 结果为准。
