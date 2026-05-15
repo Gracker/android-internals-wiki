@@ -1449,3 +1449,22 @@
 - **位置**：frontmatter sources L34-L35 与 L43 结构参考
 - **问题**：`Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md` 在当前 Obsidian vault 中未找到；可找到的相近材料是 `Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md`。结构参考路径失效会削弱材料链可复核性。
 - **建议**：把 sources 和正文结构参考改成实际存在的 Cubox 路径，或恢复原 Clippings 材料；如果只是结构启发，标明它不是技术证据来源。
+
+## [Task9 Deep Review] 26.10 Android 11 以下进程退出归因方案 — 2026-05-16
+- **类型**：源码路径/版本锚点
+- **位置**：frontmatter L9、L31-L32 `last_verified_against` 与 `system/core/lmkd/`
+- **问题**：章节声明按 “AOSP master paths” 验证，但 `system/core/lmkd/` 是 Android 10 及更早分支常见路径；AOSP 当前主线/资料索引已迁到 `platform/system/memory/lmkd`。如果不标分支，读者按 master 复核会找不到路径。
+- **建议**：把 source 写成版本化锚点，例如 “android10-release: system/core/lmkd/；current main: system/memory/lmkd/”，并把 `last_verified_against` 改成按 Android 5-10 分支验证，而不是泛称 master。
+
+## [Task9 Deep Review] 26.10 Android 11 以下进程退出归因方案 — 2026-05-16
+- **类型**：权限/API 边界
+- **位置**：L144 JVMTI 段落
+- **问题**：ART TI/JVMTI 在 Android 8.0+ 的 agent 接入受 debuggable 等限制；AOSP ART TI 文档明确 ActivityManager 和 runtime 只允许 agent attach 到 debuggable app。当前只写“可用于调试和监控类工具”，容易被理解成普通线上 APM SDK 可稳定使用 JVMTI 采集退出证据。
+- **建议**：补一句生产边界：JVMTI 只放在 debuggable/profileable、实验室或厂商授权场景；普通发布包不要把 JVMTI 作为默认退出归因证据来源。
+
+## [Task9 Deep Review] 26.10 Android 11 以下进程退出归因方案 — 2026-05-16
+- **类型**：交叉引用/来源路径
+- **位置**：frontmatter sources L33-L48 与正文结构参考 L74/L102/L128/L195
+- **问题**：`DeepResearch/...` 相对 Android-Internal-Wiki 项目根目录不存在，实际文件位于 Obsidian 根目录的 `DeepResearch/`；列出的 `Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 *.md` 在当前 Obsidian vault 中未找到。材料链无法本地复核。
+- **建议**：将 DeepResearch source 改成可解析的绝对路径或 vault-root 相对路径；恢复 Clippings 文件，或把这些引用标为“结构参考、非技术证据”，并为技术断言补官方/AOSP/开源项目锚点。
+

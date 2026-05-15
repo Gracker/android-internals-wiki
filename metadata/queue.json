@@ -7409,21 +7409,63 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T02:30:40+08:00"
+    },
+    {
+      "id": "task9-20260516-26.10-legacy-exit-reason-api-mapping",
+      "section": "26.10",
+      "section_title": "Android 11 以下进程退出归因方案",
+      "priority": 95,
+      "title": "低版本退出归因映射使用不存在的 REASON_OOM，且升级类 reason 版本边界需补齐",
+      "description": "P0：ApplicationExitInfo 无公开 REASON_OOM 常量；P1：DEVICE_REBOOT_OR_UPDATE 映射遗漏 API 34+ 的 REASON_PACKAGE_UPDATED / REASON_PACKAGE_STATE_CHANGE 与 API 30-33 的 USER_REQUESTED 旧口径。",
+      "reason": "[Deep Tech Review] 26.10 的低版本 reason 映射表需要按真实 ApplicationExitInfo 公共常量和 API 30-33/API 34+ 版本差异回炉。",
+      "issue_type": "source-code-accuracy-and-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-16-03-deep-review.md",
+        "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 错误",
+          "location": "L181 低版本 reason 映射表：LOW_MEMORY_SUSPECTED → REASON_LOW_MEMORY / REASON_OOM",
+          "detail": "AOSP public ApplicationExitInfo 常量中没有 REASON_OOM；公开 reason 是 REASON_LOW_MEMORY=3。OOM kill 细分在 AOSP main 中对应 hidden/internal 的 SUBREASON_OOM_KILL，普通 App 不能把它当作公开 reason 使用。",
+          "suggestion": "删除 REASON_OOM；低版本推断统一映射到 REASON_LOW_MEMORY，并在说明中把 Java heap OOM/线程或 fd 耗尽/LMKD kill 作为 evidence 或 internal subReason 处理。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L181-L183 低版本 reason 与 Android 11+ 分析维度映射",
+          "detail": "表格把 DEVICE_REBOOT_OR_UPDATE 统一映射到 REASON_OTHER，遗漏 Android 14/API 34 起公开的 REASON_PACKAGE_UPDATED / REASON_PACKAGE_STATE_CHANGE；AOSP 注释也说明 Android 14 以前包更新会落到 REASON_USER_REQUESTED。当前写法会让统一宽表在 API 30-33 与 API 34+ 的“升级/组件状态变化”口径混在一起。",
+          "suggestion": "把“设备重启”和“包更新/组件状态变化”拆开：API 30-33 标注可能是 REASON_USER_REQUESTED/OTHER，API 34+ 对齐 REASON_PACKAGE_UPDATED 或 REASON_PACKAGE_STATE_CHANGE；低版本 legacy_reason 保留 DEVICE_REBOOT 与 PACKAGE_UPDATED 两类推断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T03:30:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 225,
+    "total_entries": 226,
     "p0_count": 38,
-    "last_updated": "2026-05-16T02:30:40+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 128,
+    "last_updated": "2026-05-16T03:30:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 126,
     "updated_date": "2026-05-16",
-    "last_updated_by": "openclaw-task9",
-    "pending": 128
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 126
   },
-  "last_updated": "2026-05-16T02:30:40+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 128,
+  "last_updated": "2026-05-16T03:30:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 126,
   "last_task2a_completed": "20.11",
   "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }
