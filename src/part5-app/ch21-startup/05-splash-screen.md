@@ -25,7 +25,7 @@ sources:
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -33,11 +33,14 @@ task9_reviewed_date: '2026-05-15'
 task2b_state: pending
 created_by: "task2a-content-processing"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_reviewed_date: "2026-05-13"
-task6_result: needs-rework
+reviewed_date: "2026-05-15"
+task6_reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
 last_task9_at: '2026-05-15T11:41:46+08:00'
 task9_review_notes: '2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。Baseline Profile DSL 与 core-splashscreen 兼容模式需回炉。'
+task6_review_notes: "2026-05-15 task6 revisiting review: pass-light-edit。小修2处（运行时译法、禁用句式替换）；写作质量通过。Task9 既有 P0/P1 队列继续由 Task2B 处理。"
+last_task6_review_log: "logs/review/2026-05-15-12-review.md"
+last_task6_at: "2026-05-15T12:11:00+08:00"
 last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 ---
 
@@ -75,7 +78,7 @@ last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 
 ### 系统侧在做什么
 
-冷启动时，Launcher 把点击事件交给 system_server，ATMS 判断目标 App 进程不存在，走冷启动路径。在 fork 进程、初始化 Runtime、执行 `Application.onCreate()` 这整段时间里，用户的屏幕上没有任何来自 App 的视觉内容。Starting Window 的作用就是在这段空白期给用户一个反馈——它的创建和绘制由系统完成，不依赖 App 进程。
+冷启动时，Launcher 把点击事件交给 system_server，ATMS 判断目标 App 进程不存在，走冷启动路径。在 fork 进程、初始化运行时、执行 `Application.onCreate()` 这整段时间里，用户的屏幕上没有任何来自 App 的视觉内容。Starting Window 的作用就是在这段空白期给用户一个反馈——它的创建和绘制由系统完成，不依赖 App 进程。
 
 Android 12 之后，Starting Window 的决策和创建分在两侧：ATMS/WMS 判断是否需要 starting surface，`StartingSurfaceController` 生成 starting data；WM Shell 的 starting-surface 组件（`SplashscreenWindowCreator.java` / `StartingSurfaceDrawer.java`）负责创建窗口并挂到对应 Task 上。App 进程完成首帧后，`reportDrawFinished` 信号传回服务端，再由 `removeStartingWindow` 通知 Shell 移除 starting surface。
 
@@ -400,7 +403,7 @@ App 在 Android 12+ 上不适配 SplashScreen API 时，启动流程可能出现
 
 ### 兼容库在低版本上的限制
 
-`androidx.core:core-splashscreen` 在 Android 5-11 上通过在 App 内部创建一个 Activity 级别的启动页来模拟 SplashScreen 行为。这意味着：
+`androidx.core:core-splashscreen` 在 Android 5-11 上通过在 App 内部创建一个 Activity 级别的启动页来模拟 SplashScreen 行为。因此：
 
 - 退出动画和图标动画不可用。
 - `KeepOnScreenCondition` 的行为和 Android 12+ 一致。

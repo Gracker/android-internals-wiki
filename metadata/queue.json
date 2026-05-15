@@ -6489,6 +6489,12 @@
           "location": "Compose/GC 影响 L292、L416、L428",
           "detail": "正文虽在 L294 标 [待验证]，但 L428 摘要又写成“Young GC 显著减少渲染卡顿”的结论，缺少 ART GC trace、Compose benchmark、设备和 jank 指标。",
           "suggestion": "把收益改为假设或潜在方向；补充 Perfetto/ART GC 日志和 Compose 场景 A/B 数据后再写量化结论。"
+        },
+        {
+          "type": "需整合素材",
+          "location": "附：源码调研补充 — ART Generational CC 与 BLAST BufferQueue 协同机制",
+          "detail": "附录仍保留 AIW 每日源码调研、来源、注入时间、价值等加工记录，读起来像素材 dump；内容与正文和参考资料重复，且部分技术点已被 Task9 标记为高风险。",
+          "suggestion": "Task2B 先按 Task9 复核技术口径，再把可用内容整合进 BLAST 生命周期或 Compose/GC 小节；发布稿不保留 AIW 注入记录和未核验结论。"
         }
       ],
       "added_by": "task9-deep-tech-review",

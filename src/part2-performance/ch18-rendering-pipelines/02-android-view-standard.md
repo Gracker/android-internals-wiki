@@ -1,5 +1,4 @@
 ---
-
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
@@ -9,6 +8,17 @@ last_verified: '2026-05-05'
 last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
   of a frame + 2026-04-29 external review
 confidence: medium
+sources:
+- type: aosp
+  path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+- type: aosp
+  path: "frameworks/base/libs/hwui/"
+- type: aosp
+  path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
+- type: official
+  path: "https://developer.android.com/develop/ui/compose/phases"
+- type: research
+  path: "DeepResearch/2026-05-15-android-view-blast-art-gc.md"
 tags:
 - BLAST
 - RenderThread
@@ -27,24 +37,28 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-15T11:23:41+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-05'
-task6_result: pass-light-edit
-task6_reviewed_date: '2026-05-05'
-last_task6_at: '2026-05-05T05:05:00+08:00'
+reviewed_date: "2026-05-15"
+task6_result: needs-rework
+task6_reviewed_date: "2026-05-15"
+last_task6_at: "2026-05-15T12:11:00+08:00"
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-15'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-15T11:41:46+08:00'
 task9_review_notes: '2026-05-15 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0。HWUI Sync、BLAST 回调、ART Generational CMC 源码口径需回炉。'
+task6_review_notes: "2026-05-15 task6 revisiting review: needs-rework。小修5处（补H1、sources、运行时译法、未验证收益降调）；L3/L4 1项：源码调研附录仍是素材 dump，需 Task2B 整合。Task9 既有 P0/P1 队列继续处理。"
+last_task6_review_log: "logs/review/2026-05-15-12-review.md"
 last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 ---
 
+
+# Android View 标准管线（BLAST 深入）
 
 <!-- outline-start -->
 
@@ -291,7 +305,7 @@ Compose 一帧在 MainThread 侧分三个阶段：
 
 **运行时层演进**：Android 17 的 Generational CMC（分代并发标记压缩）对 Compose Composition 阶段的 GC 停顿有潜在优化空间。Composition 阶段会产生大量 `Snapshot` 状态快照对象，属于短生命周期分配。分代 CMC 把这些对象划入 young generation，回收时只扫描这一代，停顿时间从 CC（Concurrent Copying）的全堆扫描缩小到 young generation 扫描。
 
-注意：Slot Table 条目不是简单的每帧短生命周期临时对象——它们在重组间持续存在，生命周期与 Composition group 绑定。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART runtime 版本、堆大小和具体 Composable 复杂度，需要按场景实测确认。[待验证: 目前缺少 ART generational CMC 与 Compose Composition 阶段的一手 benchmark 数据（设备、模型、量化配置和 jank 指标），无法确认具体收益幅度]
+注意：Slot Table 条目不是简单的每帧短生命周期临时对象——它们在重组间持续存在，生命周期与 Composition group 绑定。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART 运行时版本、堆大小和具体 Composable 复杂度，需要按场景实测确认。[待验证: 目前缺少 ART generational CMC 与 Compose Composition 阶段的一手 benchmark 数据（设备、模型、量化配置和 jank 指标），无法确认具体收益幅度]
 
 [已验证: AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java` + Compose 官方文档 "Phases of a frame"]
 
@@ -309,7 +323,7 @@ Compose 性能分析最先要盯的是**重组**（recomposition）——状态�
 
 启用 Compose tracing（`androidx.compose.runtime:runtime-tracing`；具体环境门槛以官方 Compose tooling 文档为准）后，MainThread 上能看到几类 Compose 特有 slice：
 
-- **重组阶段相关 slice**（具体命名随 Compose runtime 版本，常见 `Recomposer` / `Composition` / `ComposerImpl.doCompose`）。
+- **重组阶段相关 slice**（具体命名随 Compose 运行时版本，常见 `Recomposer` / `Composition` / `ComposerImpl.doCompose`）。
 - **Composable 函数调用 slice**（开启 source information 后能看到具体 `@Composable` 名字和位置）。
 - **Layout 阶段 slice**（Compose 自己的 measure policy 执行）。
 - **Drawing 阶段 slice**（录入 DisplayList，与 View 的 `onDraw` 共享 HWUI 底层）。
@@ -425,6 +439,6 @@ Compose Composition 阶段的 `Snapshot` 状态快照属于短生命周期分配
 ### Android View 标准管线 — BLASTBufferQueue 与 ART 分代 GC 协同机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-android-view-blast-art-gc.md
 - 类型：DeepResearch 调研结果
-- 摘要：解析 BLASTBufferQueue 与 ViewRootImpl 的异步 buffer 提交流程，以及 ART Generational CC 分代 GC 如何降低 View 渲染分配的 GC 压力。核心发现：BLASTBufferQueue 持有 IGraphicBufferProducer，通过 onFrameAvailable 驱动异步提交；ART 分代 GC 的 Young GC 仅常数级停顿，显著减少渲染卡顿。
+- 摘要：解析 BLASTBufferQueue 与 ViewRootImpl 的异步 buffer 提交流程，以及 ART Generational CC 分代 GC 对 View 渲染分配压力的影响。核心内容：整理 BLASTBufferQueue 的 buffer 回调路径和 ART 分代 GC 的停顿边界；Compose / View 渲染阶段的收益仍需实测。
 - 注入时间：2026-05-15
-- 价值：提供 BLASTBufferQueue→SurfaceFlinger→ART GC 完整链路源码级分析，补强渲染管线的 GC 协同理解
+- 价值：提供后续核对 BLASTBufferQueue 与 ART GC 关系的素材索引，待 Task2B 整合进正文
