@@ -1389,3 +1389,51 @@
 - **位置**：L212 Perfetto Freezer track 事件名
 - **问题**：正文写事件名包含 Freeze process:pid / Unfreeze process:pid reason；AOSP main traceAppFreeze() 实际写入 "Freeze " 或 "Unfreeze " + processName + ":" + pid + " " + reason，另有 reschedule 事件 "Reschedule freeze <process>:<pid> timeout=..., reason=..."。
 - **建议**：按源码改成精确事件名模板，并补充 reschedule freeze 是 Binder outstanding transaction/新 pending transaction 场景的重要观察点。
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：L188 / L568 / L582 / L624 启动收益与 preload 覆盖率数字
+- **问题**：16KB page size 3.16%、Baseline Profile 冷启动缩短 20%-40%、10 个 ContentProvider 50-100ms、Zygote preload 覆盖 80%+ 类加载需求都缺设备、应用规模、版本、样本量或官方原文口径。
+- **建议**：给每组数字补来源链接、测试设备、Android 版本、App 规模和指标定义；无法补证的数字降级为定性描述或标 `[待验证]`。
+
+## [Task9 Deep Review] 21.2 启动框架设计与任务编排 — 2026-05-16
+- **类型**：数据缺失/原理边界
+- **位置**：L388-L397 CPU 线程池配置与 CallerRunsPolicy
+- **问题**：`cpuCount + 1`、队列 64、CallerRunsPolicy 被写成通用 CPU 线程池方案，但没有给 SoC/任务类型/提交线程口径；如果主线程提交任务且队列满，CallerRunsPolicy 会把 CPU 任务带回主线程执行，可能反向拉长 TTID。
+- **建议**：把这组参数标为示例配置，补充“提交线程不能是首帧关键主线程”或增加专门 backpressure 策略；用 Perfetto sched、任务等待时间、TTID P90/P99 验证线程池参数。
+
+## [Task9 Deep Review] 20.11 MTE memtagMode 与 Native 崩溃治理 — 2026-05-16
+- **类型**：知识盲区/版本边界
+- **位置**：L136/L148/L176 MTE 生效边界
+- **问题**：正文覆盖硬件能力、manifest、compat change 和设备侧 mte_tcf_preferred，但没有把 64-bit/arm64 进程作为生效前提写进灰度筛选。AOSP Zygote.getMemorySafetyRuntimeFlags() 只有 instructionSet 为 null 或 arm64 时才合入 tagging level；32-bit 子进程不会启用 MTE。
+- **建议**：在设备筛选和 APM 字段中补充 ABI/进程位数：只把 arm64 进程纳入 MTE 灰度；32-bit 进程单独标记为不可用或降级。
+
+## [Task9 Deep Review] 20.11 MTE memtagMode 与 Native 崩溃治理 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：L158 性能成本描述
+- **问题**：正文判断 SYNC 成本高于 ASYNC，但没有给出设备、模式、allocator 栈记录开关、benchmark 类型和量化区间。读者无法据此制定灰度阈值。
+- **建议**：补一组官方或自测数据：Pixel 8/9、Android 14-16、sync/async/asymm、启动/帧耗时/native 分配密集场景；无法补证时把“成本高于”保留为定性边界。
+
+## [Task9 Deep Review] 20.11 MTE memtagMode 与 Native 崩溃治理 — 2026-05-16
+- **类型**：交叉引用/证据路径
+- **位置**：frontmatter sources + L119/L187 DeepResearch 引用
+- **问题**：`DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md` 在仓库中不存在，ASYMM 归因和 BIONIC_MEMTAG_UPGRADE_SECS 线索无法从本地材料复核。
+- **建议**：恢复该材料文件，或把相关结论只锚到 source.android.com/AOSP 源码；BIONIC_MEMTAG_UPGRADE_SECS 保持 `[待验证]` 并补源码路径后再展开。
+
+## [Task9 Deep Review] 22.11 AnimatedVectorDrawable 线程退化与动画卡顿 — 2026-05-16
+- **类型**：知识盲区/源码边界
+- **位置**：L82-L84 资源写法优化策略
+- **问题**：正文提到 path、颜色、pathData、clipPath 成本，但没有覆盖 VectorDrawableAnimatorRT 的属性支持边界。AOSP parseAnimatorSet() 只处理 AnimatorSet/ObjectAnimator；ValueAnimator 会被忽略；group/path/root 支持的属性集合不同，部分非法属性在 targetSdk N+ 会抛异常。
+- **建议**：补一张“RT 可支持/需验证/不支持”表：group transform、full path fill/stroke、pathData、root alpha、ValueAnimator、自定义属性；把资源审计和线程退化排查分开。
+
+## [Task9 Deep Review] 22.11 AnimatedVectorDrawable 线程退化与动画卡顿 — 2026-05-16
+- **类型**：数据缺失/Trace 观察点
+- **位置**：L67-L72 Perfetto 识别步骤
+- **问题**：观察步骤没有给出一条真实 trace 样本或稳定 slice 名映射；`ViewRootImpl#doTraversal` 与 Perfetto 常见 trace 名（`performTraversals`、RenderThread `DrawFrame`）需要对齐，否则读者按名称搜索可能找不到。
+- **建议**：补一个最小复现实验：普通 ImageView vs Bitmap Canvas/software layer，列出 UI thread、RenderThread、FrameTimeline 的实际 slice 名和帧耗时对比。
+
+## [Task9 Deep Review] 22.11 AnimatedVectorDrawable 线程退化与动画卡顿 — 2026-05-16
+- **类型**：交叉引用/证据路径
+- **位置**：frontmatter sources + 参考资料 DeepResearch 引用
+- **问题**：`DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md` 在仓库中不存在，线程退化材料链无法本地复核。
+- **建议**：恢复该材料文件，或把对应结论直接锚到 AOSP `AnimatedVectorDrawable.java` 行为和 Android Developers 文档。
