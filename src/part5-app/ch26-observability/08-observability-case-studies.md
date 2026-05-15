@@ -42,9 +42,9 @@ sources:
     path: "https://developer.android.com/ndk/guides/debug"
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
@@ -55,6 +55,10 @@ last_task6_at: "2026-05-15T08:10:00+08:00"
 last_task6_review_log: logs/review/2026-05-15-08-review.md
 review_type: task6-writing-quality-review
 task6_review_notes: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
+task9_result: needs-rework
+last_task9_at: "2026-05-15T08:32:31+08:00"
+last_task9_review_log: logs/deep-review/2026-05-15-08-deep-review.md
+task9_review_notes: 2026-05-15 Task9：needs-rework。P1：ApplicationExitInfo native tombstone trace 需拆 API 30/API 31+ 边界；另有 CI 门禁阈值与 APM/profile 数据治理 P2 建议。
 ---
 
 # 可观测性案例集
