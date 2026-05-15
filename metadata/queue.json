@@ -6330,19 +6330,62 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T08:32:31+08:00",
       "original_review_log": "logs/deep-review/2026-05-15-08-deep-review.md"
+    },
+    {
+      "id": "task9-13.11-span-join-frame-clipping-gc-overlap",
+      "section": "13.11",
+      "section_title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+      "priority": 95,
+      "title": "SPAN_JOIN 示例 SQL 存在帧边界裁剪与 GC span 重叠风险",
+      "description": "帧 × CPU 频率示例未按 frame 边界裁剪 joined.dur，会产生错误 per-frame 指标；GC pause 示例把全局 GC slice 合并到同一 utid 分区，可能违反 SPAN_JOIN 同分区不重叠约束。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-15-09-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "代码逻辑错误 / 数据口径",
+          "location": "L256-L274 案例：按帧统计主线程 CPU 运行时间与加权平均频率",
+          "detail": "示例把 sched_with_freq 与 frame_span 用普通 JOIN 做重叠判断后，直接 SUM(joined.dur) 和 SUM(joined.dur * joined.freq_khz)。只要某个 sched/cpufreq 交集段跨过 frame 边界，查询会把 frame 外的 duration 也计入该帧，main_cpu_ms、avg_freq_khz、low_freq_pct 都会被放大或偏移。",
+          "suggestion": "把普通 JOIN 后的度量改成 clipped overlap：overlap_dur = MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts)，所有 SUM 使用 overlap_dur；或创建 frame_sched_freq = SPAN_JOIN(frame_span PARTITIONED utid, sched_with_freq PARTITIONED utid)，再按 frame_id 聚合。补充 SUM(overlap_dur)=0 的防除零处理。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂 / SPAN_JOIN 输入约束",
+          "location": "L321-L348 GC pause 与主线程帧窗口关联示例",
+          "detail": "gc_pause_span 从全局 slice 中筛 `*GC*` / `*Garbage*` 后 CROSS JOIN 到 target_main_thread.utid，再以 utid 作为 SPAN_JOIN 分区。这样会把不同 track、不同 ART 阶段、可能互相嵌套或重叠的 GC slice 塞进同一个分区，违反 Perfetto 文档“同一表、同一分区 span 不能重叠”的限制；SPAN_JOIN 不会报错，会静默产生错误行。",
+          "suggestion": "先把 GC 事件整理成同分区不重叠的 pause window，再与 frame_span 关联；若要保留多重 GC 阶段，改用 intervals.intersect / intervals.overlap 或先按 ts/end 合并区间。正文还应区分“GC 与 frame 时间重叠”和“主线程被 STW 阻塞”：后者需要 thread_state、ART pause 事件和多线程同时停顿证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T09:27:23+08:00",
+      "last_reviewed_by": "openclaw-task9",
+      "last_reviewed_at": "2026-05-15T09:27:23+08:00",
+      "original_review_log": "logs/deep-review/2026-05-15-09-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 197,
-    "p0_count": 31,
-    "last_updated": "2026-05-15T08:32:31+08:00",
+    "total_entries": 198,
+    "p0_count": 32,
+    "last_updated": "2026-05-15T09:27:23+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 123,
     "updated_date": "2026-05-15",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 123
   },
-  "last_updated": "2026-05-15T08:32:31+08:00",
+  "last_updated": "2026-05-15T09:27:23+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": 123
 }
