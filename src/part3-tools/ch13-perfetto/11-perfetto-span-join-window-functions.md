@@ -29,7 +29,11 @@ related_chapters: ["13.10", "13.6", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
-task6_state: pending
+task6_state: reviewed
+task6_result: needs-rework
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_reviewed_date: "2026-05-15"
 pipeline_stage: task2b_pending
 task9_state: reviewed
 task9_result: needs-rework
@@ -261,6 +265,8 @@ USING SPAN_JOIN(main_sched_span PARTITIONED cpu, cpu_freq_span PARTITIONED cpu);
 
 `sched_with_freq` 的每一行都表示：主线程在某个 CPU 上运行的一小段时间，以及这段时间内该 CPU 的频率。再把它裁进帧窗口：
 
+[存疑: Task9 已指出本段 SQL 需要按 frame 边界裁剪 overlap_dur；当前写法直接汇总 joined.dur，可能把 frame 外时间计入该帧。]
+
 ```sql
 -- 按帧统计主线程实际运行时间、加权平均频率和低频运行占比
 SELECT
@@ -325,6 +331,8 @@ LIMIT 20;
 如果某些帧的 `binder_ms` 高，不要直接下结论说 Binder 慢。Binder slice 可能包含服务端处理、客户端等待、线程调度和锁等待等多种成本，下一步应回到 Binder 章节或服务端线程 trace 做调用关系确认。
 
 锁竞争与 GC 也可以用同样的模型。锁竞争通常来自 `monitor contention` 或应用自定义 trace；GC pause 在 ART 相关 slice 中体现。写查询时要把事件名收窄到具体来源，避免把无关 slice 一并统计进去。
+
+[存疑: Task9 已指出全局 GC slice 直接 CROSS JOIN 到目标 utid 可能产生同分区重叠；需先合并为互斥 pause window 或改用 interval 模块。]
 
 ```sql
 -- 示例：把 GC pause 与主线程帧窗口关联，事件名需按目标 trace 校验
