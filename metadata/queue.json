@@ -6293,19 +6293,54 @@
         "https://developer.android.com/reference/android/app/ApplicationExitInfo",
         "https://developer.android.com/topic/performance/vitals/anr"
       ]
+    },
+    {
+      "id": "task9-26.8-applicationexitinfo-native-tombstone-api-boundary",
+      "section": "26.8",
+      "section_title": "可观测性案例集",
+      "priority": 85,
+      "title": "ApplicationExitInfo native tombstone API 边界写成 Android 11+ 通用能力",
+      "description": "章节把 Android 11(API 30)+ ApplicationExitInfo 退出原因能力与 API 31+ native tombstone trace 能力混在同一口径，容易误导 Android 11 设备的 Native Crash 补偿方案。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/08-observability-case-studies.md"
+      ],
+      "material_paths": [
+        "src/part5-app/ch26-observability/08-observability-case-studies.md",
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-08-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L115 / L311 ApplicationExitInfo native tombstone 版本边界",
+          "detail": "正文把 Android 11(API 30)+ 的 ApplicationExitInfo 退出原因能力，与 native crash tombstone 通过 getTraceInputStream() 读取写在同一口径里。官方 API 参考显示 ApplicationExitInfo added in API 30，但 getTraceInputStream() 对 REASON_CRASH_NATIVE 返回 tombstone trace 是从 API 31(Android 12)+ 开始，且由于全局 circular buffer 可能被覆盖而返回 null。当前写法会让读者在 Android 11 设备上误以为可读取 native tombstone protobuf。",
+          "suggestion": "拆成两层版本边界：API 30+ 只能稳定依赖 reason/status/timestamp/importance/pss/rss/processStateSummary 等退出原因字段；API 31+ 才说明 REASON_CRASH_NATIVE 可能通过 getTraceInputStream() 返回 tombstone protobuf。表格中把“Native Crash 补偿证据”改成“退出原因补偿”，另起一行或在边界列补 API 31+ tombstone trace 与 null fallback。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T08:32:31+08:00",
+      "original_review_log": "logs/deep-review/2026-05-15-08-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 196,
+    "total_entries": 197,
     "p0_count": 31,
-    "last_updated": "2026-05-15T08:20:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 122,
+    "last_updated": "2026-05-15T08:32:31+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 123,
     "updated_date": "2026-05-15",
-    "last_updated_by": "task6-review",
-    "pending": 120
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 123
   },
-  "last_updated": "2026-05-15T08:20:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 122
+  "last_updated": "2026-05-15T08:32:31+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 123
 }
