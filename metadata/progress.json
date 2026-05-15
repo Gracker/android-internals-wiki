@@ -1,6 +1,6 @@
 {
-  "total": 271,
-  "draft": 1,
+  "total": 276,
+  "draft": 6,
   "ready-for-review": 84,
   "finalized": 186,
   "task9_result": "needs-rework",
@@ -872,8 +872,8 @@
   "total_review_sections": 112,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T08:10:00+08:00",
-  "last_updated_by": "task6-draft-review",
+  "last_updated": "2026-05-15T08:20:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "at": "2026-05-15T08:10:00+08:00",
     "log": "logs/review/2026-05-15-08-review.md",
@@ -2210,6 +2210,61 @@
       "reviewed_date": "2026-05-15",
       "last_task6_at": "2026-05-15T08:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
+    },
+    "13.11": {
+      "title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+      "file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
+      "status": "draft",
+      "pipeline_stage": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_score": 19,
+      "gap_source": "素材驱动/研究素材"
+    },
+    "17.4": {
+      "title": "sched_ext 与 OEM BPF 调度器",
+      "file": "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+      "status": "draft",
+      "pipeline_stage": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_score": 18,
+      "gap_source": "素材驱动/AOSP结构"
+    },
+    "20.10": {
+      "title": "WebView Renderer OOM 与白屏恢复",
+      "file": "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md",
+      "status": "draft",
+      "pipeline_stage": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_score": 18,
+      "gap_source": "素材驱动/官方文档"
+    },
+    "22.10": {
+      "title": "RenderEffect 与 RuntimeShader 性能实践",
+      "file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+      "status": "draft",
+      "pipeline_stage": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_score": 17,
+      "gap_source": "素材驱动/AOSP结构"
+    },
+    "26.9": {
+      "title": "ApplicationExitInfo 与进程退出归因",
+      "file": "src/part5-app/ch26-observability/09-application-exit-info.md",
+      "status": "draft",
+      "pipeline_stage": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_score": 19,
+      "gap_source": "素材驱动/官方文档"
     }
   },
   "task2b_rounds": [
@@ -2227,8 +2282,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "26.8 可观测性案例集",
-  "last_task2a_processed_file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
+  "last_task2a_processed": "知识缺口挖掘：13.11, 17.4, 20.10, 22.10, 26.9",
+  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "at": "2026-05-15T07:35:58+08:00",
@@ -2286,9 +2341,9 @@
     "src/part5-app/ch25-power-size/02-background-power.md"
   ],
   "total_review_files": 112,
-  "last_task2a_at": "2026-05-15T07:17:00+08:00",
-  "last_task2a_section": "26.8",
-  "last_task2a_file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
+  "last_task2a_at": "2026-05-15T08:20:00+08:00",
+  "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
+  "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
   "last_task6_review": "logs/review/2026-05-15-08-review.md",
   "last_task6_sections": [
     "26.8",
@@ -2328,5 +2383,5 @@
     "src/part5-app/ch25-power-size/02-background-power.md"
   ],
   "last_task9_at": "2026-05-15T07:35:58+08:00",
-  "last_task2a_result": "ready-for-review"
+  "last_task2a_result": "gap-mining"
 }

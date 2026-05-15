@@ -6174,19 +6174,138 @@
           "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-2026-05-15-13.11-11-perfetto-span-join-window-functions",
+      "section": "13.11",
+      "priority": 80,
+      "title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+      "description": "知识缺口挖掘新增章节，评分 19/20；加工时需按大纲补齐并验证。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+      ],
+      "gap_source": "素材驱动/研究素材",
+      "source_materials": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md",
+        "https://perfetto.dev/docs/analysis/stdlib-docs",
+        "https://perfetto.dev/docs/analysis/perfetto-sql-getting-started"
+      ]
+    },
+    {
+      "id": "task2a-gap-2026-05-15-17.4-04-sched-ext-oem-bpf-scheduler",
+      "section": "17.4",
+      "priority": 80,
+      "title": "sched_ext 与 OEM BPF 调度器",
+      "description": "知识缺口挖掘新增章节，评分 18/20；加工时需按大纲补齐并验证。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      ],
+      "gap_source": "素材驱动/AOSP结构",
+      "source_materials": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md",
+        "https://cs.android.com/android/platform/superproject/+/master:kernel/configs",
+        "https://cs.android.com/android/_/android/kernel/common/+/8d5dd0a5a458f951f0fdc25aba0cb8329b121d51"
+      ]
+    },
+    {
+      "id": "task2a-gap-2026-05-15-20.10-10-webview-renderer-oom-recovery",
+      "section": "20.10",
+      "priority": 80,
+      "title": "WebView Renderer OOM 与白屏恢复",
+      "description": "知识缺口挖掘新增章节，评分 18/20；加工时需按大纲补齐并验证。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md"
+      ],
+      "gap_source": "素材驱动/官方文档",
+      "source_materials": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md",
+        "[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]",
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://developer.android.com/reference/android/webkit/WebViewClient"
+      ]
+    },
+    {
+      "id": "task2a-gap-2026-05-15-22.10-10-rendereffect-runtime-shader-performance",
+      "section": "22.10",
+      "priority": 80,
+      "title": "RenderEffect 与 RuntimeShader 性能实践",
+      "description": "知识缺口挖掘新增章节，评分 17/20；加工时需按大纲补齐并验证。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      ],
+      "gap_source": "素材驱动/AOSP结构",
+      "source_materials": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md",
+        "[结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]",
+        "https://developer.android.com/reference/android/graphics/RenderEffect",
+        "https://developer.android.com/reference/android/graphics/RuntimeShader"
+      ]
+    },
+    {
+      "id": "task2a-gap-2026-05-15-26.9-09-application-exit-info",
+      "section": "26.9",
+      "priority": 80,
+      "title": "ApplicationExitInfo 与进程退出归因",
+      "description": "知识缺口挖掘新增章节，评分 19/20；加工时需按大纲补齐并验证。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/09-application-exit-info.md"
+      ],
+      "gap_source": "素材驱动/官方文档",
+      "source_materials": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+        "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/topic/performance/vitals/anr"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 191,
-    "p0_count": 94,
-    "last_updated": "2026-05-15T07:15:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 120,
+    "total_entries": 196,
+    "p0_count": 31,
+    "last_updated": "2026-05-15T08:20:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 122,
     "updated_date": "2026-05-15",
     "last_updated_by": "task6-review",
     "pending": 120
   },
-  "last_updated": "2026-05-15T07:35:58+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 117
+  "last_updated": "2026-05-15T08:20:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 122
 }
