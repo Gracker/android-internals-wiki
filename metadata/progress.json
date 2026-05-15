@@ -1,7 +1,7 @@
 {
   "total": 288,
-  "draft": 1,
-  "ready-for-review": 95,
+  "draft": 0,
+  "ready-for-review": 96,
   "finalized": 192,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -2853,7 +2853,7 @@
     }
   ],
   "last_task2a_processed": "1.19",
-  "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
     "timestamp": "2026-05-16T06:31:25+08:00",
@@ -2895,9 +2895,9 @@
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "total_review_files": 131,
-  "last_task2a_at": "2026-05-16T04:10:00+08:00",
-  "last_task2a_section": "1.19",
-  "last_task2a_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+  "last_task2a_at": "2026-05-16T07:17:00+08:00",
+  "last_task2a_section": "22.12",
+  "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task6_review": "2026-05-16T06:09:00+08:00",
   "last_task6_sections": [
     "1.19",
@@ -2933,9 +2933,9 @@
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "last_task9_at": "2026-05-16T06:31:25+08:00",
-  "last_task2a_result": "gap-mining-created-draft",
+  "last_task2a_result": "ready-for-review",
   "ready-to-publish": 192,
-  "last_task2a_processed_section": "1.19",
+  "last_task2a_processed_section": "22.12",
   "task6_last_review_at": "2026-05-16T06:09:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-06-review.md",
   "task6_last_review_sections": [
