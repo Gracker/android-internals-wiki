@@ -13,13 +13,13 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 last_task6_at: '2026-05-15T15:11:00+08:00'
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: pending
+task9_state: reviewed
 last_task6_review_log: 'logs/review/2026-05-15-15-review.md'
 task6_review_notes: '2026-05-15 Task6 15:11：pass-light-edit。L1/L2 小修 10 处：补 section/审查元数据、删除结构性元叙述和正文编辑痕迹、标准化 GPU Headroom 待验证标注；无新增 L3/L4 回炉项，转入 Task9 技术复审。'
 sources:
@@ -53,6 +53,13 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: "2026-05-15"
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-15T15:27:00+08:00'
+last_task9_review_log: 'logs/deep-review/2026-05-15-15-deep-review.md'
+task9_review_notes: '2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 3；RuntimeShader uniform 动画缺 redraw 触发，gpu_busy / GPU Headroom / 厂商 blur 数据口径需修正。'
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践

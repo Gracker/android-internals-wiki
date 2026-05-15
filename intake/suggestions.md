@@ -1318,3 +1318,19 @@
 - **位置**：`src/part3-tools/ch13-perfetto/README.md` L7-L18、L49-L60；13.12 frontmatter `related_chapters`
 - **问题**：`src/SUMMARY.md` 已包含 13.11/13.12，但 ch13 README 仍停在 13.1-13.10，`last_verified_against` 也写 13.1-13.10；13.12 正文 L227 引用 13.11，但 frontmatter `related_chapters` 没有列 13.11。
 - **建议**：同步 ch13 README 的章节列表、阅读顺序和 `related_chapters` 到 13.12，并在 13.12 frontmatter 增加 13.11，避免读者按章节入口找不到新增 SQL/Profile 内容。
+
+## [Task9 Deep Review] 22.10 RenderEffect 与 RuntimeShader 性能实践 — 2026-05-15
+- **类型**：版本差异/API 边界
+- **位置**：L123 页面级毛玻璃 / backdrop effect
+- **问题**：表格把 View.setRenderEffect() 与 backdrop effect 放在同一行。View.setRenderEffect() 处理的是 View/RenderNode 自身绘制结果；真正的 backdrop blur 需要隐藏 API setBackdropRenderEffect() 一类能力，普通应用不能依赖。SDK sources 中 android-31~34 无 setBackdropRenderEffect，android-35 才可见 @hide 入口。
+- **建议**：拆成“自身内容 blur”和“背后内容 blur”两种语义：普通应用用 RenderEffect 只能处理自己掌控的背景/截图/子树；backdrop effect 标为 hidden API、版本不稳定，不作为工程推荐路径。
+
+- **类型**：版本差异/数据缺失
+- **位置**：L258 GPU Headroom 降级口径
+- **问题**：Android 16 官方说明提供 SystemHealthManager + CpuHeadroomParams/GpuHeadroomParams，用于在 supported devices 上估算可用 CPU/GPU 资源；当前正文仍保留待验证标注，且未说明 supported devices、采样窗口、average/min resource availability 等参数边界。
+- **建议**：补成“Android 16+ 且设备支持时可用 GPU Headroom 辅助质量降级；不支持或返回无效值时回退到帧耗时/温控/灰度开关”。若引用 2.10，需等 2.10 的 GPU Headroom/gpu_busy pending 项修正后再同步。
+
+- **类型**：数据缺失
+- **位置**：L279-L283 厂商 GPU blur / AGSL 成本曲线
+- **问题**：“同一段 AGSL 在旗舰设备上可能只增加 1-2ms，在低端机或温控状态下可能跨过整帧预算”是量化判断，但正文没有给设备型号、刷新率、效果面积、blur 半径/采样次数、Perfetto/AGI 采样条件。
+- **建议**：要么降级为定性风险提示；要么补一张最小实测表：Adreno/Mali/低端机各一台，记录无效果、小半径、大半径、AGSL 的 P50/P90/P99、jank、Graphics/GL mtrack 与可用 GPU counter。
