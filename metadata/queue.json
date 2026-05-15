@@ -7158,7 +7158,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
@@ -7168,7 +7168,9 @@
         "cs.android.com frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java",
         "DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md",
         "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
-      ]
+      ],
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 内容加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task2a-gap-25-11",
@@ -7268,6 +7270,92 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T22:35:05+08:00"
+    },
+    {
+      "id": "task9-20260516-8.2-applicationstartinfo-zygote-preload",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 95,
+      "title": "ApplicationStartInfo 示例类型错误与 Zygote preload 源码路径错误",
+      "description": "Android 15 ApplicationStartInfo 示例仍把 getStartupTimestamps() 写成 Bundle，Java 代码不可编译；Zygote preload drawable 路径引用了不存在的 frameworks/base/config/preloaded-drawables。",
+      "reason": "[Deep Tech Review] ApplicationStartInfo 公开 API 类型与 Zygote preload 源码路径需回炉。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-16-00-deep-review.md",
+        "frameworks/base/core/java/android/app/ApplicationStartInfo.java",
+        "frameworks/base/core/res/res/values/arrays.xml"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 错误",
+          "location": "L325-L350 Android 15 ApplicationStartInfo timestamp 示例",
+          "detail": "AOSP android-15.0.0_r1 中 ApplicationStartInfo#getStartupTimestamps() 返回 Map<Integer, Long>，不是 Bundle。当前字段表、说明文字和 Java 示例都按 Bundle#getLong() 编写，会导致示例无法编译，也会误导读者按不存在的 Bundle 语义处理缺失 timestamp。",
+          "suggestion": "改成 Map<Integer, Long> timestamps = latest.getStartupTimestamps(); 用 timestamps.get(ApplicationStartInfo.START_TIMESTAMP_*) 读取，并对可能缺失的 START_TIMESTAMP_FULLY_DRAWN / SURFACEFLINGER_COMPOSITION_COMPLETE 做 null 判断。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L622 Zygote preload 资源路径",
+          "detail": "AOSP android-15.0.0_r1 不存在 frameworks/base/config/preloaded-drawables。预加载 drawable / color state list 定义在 frameworks/base/core/res/res/values/arrays.xml 的 preloaded_drawables / preloaded_color_state_lists；preloaded classes 才在 frameworks/base/config/preloaded-classes。",
+          "suggestion": "把路径拆成 preloaded-classes 与 core/res/res/values/arrays.xml，并避免把 drawable 资源写成独立 config 文件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T00:30:00+08:00"
+    },
+    {
+      "id": "task9-20260516-21.2-alpha-thread-priority-source-review",
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 95,
+      "title": "Alpha 框架源码口径与线程优先级建议需修正",
+      "description": "Alpha 段落仍把 API / 默认线程池写错；启动关键线程设置 THREAD_PRIORITY_FOREGROUND 的建议与 AOSP Process.java 注释边界不一致。",
+      "reason": "[Deep Tech Review] Alpha 源码准确性与 Android 线程优先级 API 边界需回炉。",
+      "issue_type": "source-code-accuracy-and-api-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-16-00-deep-review.md",
+        "https://github.com/alibaba/alpha",
+        "frameworks/base/core/java/android/os/Process.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 错误",
+          "location": "L253-L265 Alpha 核心概念与执行流程",
+          "detail": "alibaba/alpha 源码不是 dependsOn / isMainThread / AlphaManager.Builder 这组 API。Task 通过 Task(String, boolean isInUiThread) 表达 UI 线程任务，Project.Builder 使用 add(...).after(...) 组织依赖；AlphaConfig 默认 ExecutorService 是 corePoolSize=CPU 核数、maximumPoolSize=CPU 核数、无界 LinkedBlockingQueue，并 allowCoreThreadTimeOut(true)，不是单线程池。当前文本会误导读者按不存在 API 接入，并错误判断默认并行度。",
+          "suggestion": "按 README / Task.java / Project.java / AlphaConfig.java 重写 Alpha 代码口径：Project.Builder.add/after、Task(String, boolean isInUiThread)、AlphaManager.getInstance(context).addProject(project).start()；默认线程池写成 CPU 核数固定线程池 + 无界队列。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 边界/版本语义",
+          "location": "L419-L431 线程优先级策略",
+          "detail": "正文建议关键启动线程直接调用 Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)。AOSP Process.java 对 THREAD_PRIORITY_FOREGROUND(-2) 的注释是“Applications can not normally change to this priority; the system will automatically adjust…”，当前正文只对 THREAD_PRIORITY_DISPLAY(-4) 做不可配置提醒，遗漏 FOREGROUND 同样不是普通应用可稳定依赖的手动优先级。",
+          "suggestion": "把 -2 调整为需要实机验证 / 可能失败的边界说明，示例代码增加 try/catch SecurityException 或移除直接推荐；普通启动后台任务优先给 THREAD_PRIORITY_BACKGROUND，关键路径线程优先级收益需用 Perfetto sched + TTID 实测证明。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T00:30:00+08:00"
     }
   ],
   "metadata": {
