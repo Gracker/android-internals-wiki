@@ -1,8 +1,8 @@
 {
   "total": 276,
   "draft": 2,
-  "ready-for-review": 88,
-  "finalized": 186,
+  "ready-for-review": 87,
+  "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
   "task9_reviewed_by": "openclaw-task9",
@@ -121,7 +121,8 @@
     "26.7",
     "13.11",
     "17.4",
-    "8.1"
+    "8.1",
+    "20.10"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -238,9 +239,10 @@
     "src/part5-app/ch26-observability/07-release-quality-gate.md",
     "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
+    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+    "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md"
   ],
-  "review_summary": "Task6 2026-05-15 10: review 13.11、17.4，抽检 8.1；小修 10；回炉 13.11；自动晋升 0。",
+  "review_summary": "Task9 2026-05-15 11: review 18.2、20.10、21.5；20.10 无 P0/P1 并自动晋升 finalized；18.2 与 21.5 需回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 582,
     "l3_issues": 40,
@@ -403,10 +405,13 @@
       "p3": 0
     },
     "21.5": {
-      "p0": 0,
+      "p0": 1,
       "p1": 1,
-      "p2": 0,
-      "p3": 0
+      "p2": 2,
+      "p3": 2,
+      "reviewed_at": "2026-05-15T11:41:46+08:00",
+      "log": "logs/deep-review/2026-05-15-11-deep-review.md",
+      "summary": "P0 1 / P1 1 / P2 2 / P3 2。[P0] L355-L358 — baselineProfileRulesRewrite 不是官方 Baseline Profile DSL；示例可能无法编译。; [P1] L200-L207/L400-L406 — AndroidX core-splashscreen 低版本实现仍写成“创建 Activity/退出动画不支持”。"
     },
     "22.4": {
       "p0": 2,
@@ -475,10 +480,13 @@
       "p3": 0
     },
     "18.2": {
-      "p0": 1,
-      "p1": 1,
-      "p2": 2,
-      "p3": 0
+      "p0": 3,
+      "p1": 2,
+      "p2": 0,
+      "p3": 1,
+      "reviewed_at": "2026-05-15T11:41:46+08:00",
+      "log": "logs/deep-review/2026-05-15-11-deep-review.md",
+      "summary": "P0 3 / P1 2 / P2 0 / P3 1。[P0] L86-L90 — Sync 阶段版本口径自相矛盾，且源码锚点应为 DrawFrameTask.cpp / mSignal.signal()。; [P0] L364-L371 — BLASTBufferQueue 回调注释和 transactionCommittedCallback 签名/语义错误。"
     },
     "19.21": {
       "p0": 0,
@@ -891,9 +899,18 @@
       "reviewed_at": "2026-05-15T10:27:02+08:00",
       "log": "logs/deep-review/2026-05-15-10-deep-review.md",
       "summary": "P0 1：Android common 6.12 源码锚点与 torvalds/linux master 混用；P1 2：BYPASS DSQ/slice 版本边界缺失、partial mode 接管范围未解释；P2 1：OPPO scx tracepoint/symbol 线索缺可复核锚点。"
+    },
+    "20.10": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 3,
+      "p3": 2,
+      "reviewed_at": "2026-05-15T11:41:46+08:00",
+      "log": "logs/deep-review/2026-05-15-11-deep-review.md",
+      "summary": "P0 0 / P1 0 / P2 3 / P3 2。[P2] L124/L213 — rendererPriorityAtExit() 需要说明多 WebView 共用 Renderer 时取最终优先级。; [P2] L245 — ApplicationExitInfo 段落应引用 ActivityManager/ApplicationExitInfo 文档，而不是 WebViewClient。"
     }
   },
-  "total_review_sections": 115,
+  "total_review_sections": 116,
   "next_review_candidates": [],
   "ready_for_review": 84,
   "last_updated": "2026-05-15T11:11:00+08:00",
@@ -2376,7 +2393,7 @@
   "task9_last_reviewed_files": [
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "total_review_files": 115,
+  "total_review_files": 116,
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
   "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
@@ -2411,7 +2428,7 @@
   "last_task9_reviewed_files": [
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task9_at": "2026-05-15T10:27:02+08:00",
+  "last_task9_at": "2026-05-15T11:41:46+08:00",
   "last_task2a_result": "gap-mining",
-  "ready-to-publish": 186
+  "ready-to-publish": 187
 }

@@ -2,7 +2,7 @@
 title: "WebView Renderer OOM 与白屏恢复"
 chapter: "20.10"
 section: "20.10"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP master frameworks/base, Android Developers docs, Clippings structure reference"
@@ -37,8 +37,14 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-05-15'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-15T11:41:46+08:00'
+task9_review_notes: '2026-05-15 task9 deep-review: pass-tech-review。无 P0/P1；P2 3；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。'
+last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 ---
 
 # 20.10 WebView Renderer OOM 与白屏恢复

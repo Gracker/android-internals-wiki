@@ -4014,9 +4014,9 @@
       "review_issues": [
         {
           "type": "源码错误",
-          "location": "版本行为差异表 L199-L202；兼容库限制 L395-L398",
-          "detail": "正文把 Android 5-11 写成“App 侧创建 Activity 模拟”，并写“退出动画不支持/退出动画和图标动画不可用”。AndroidX SplashScreen.kt 的说明是 API 31 以下复制平台行为，例外是 launch screen 上的 Animated Vector Drawable；Impl#setOnExitAnimationListener 在兼容实现中创建 SplashScreenViewProvider 并回调退出动画，不会创建新的 Activity。",
-          "suggestion": "改成：API<31 由 AndroidX 在当前启动 Activity 内用主题、OnPreDrawListener 与 SplashScreenViewProvider 模拟；AnimatedVectorDrawable 启动图标不支持动画，setOnExitAnimationListener 仍可用于退出动画（需实机验证视觉一致性）。"
+          "location": "版本行为差异表 L200-L207；迁移检查 L263；兼容库限制 L400-L406",
+          "detail": "正文仍把 Android 5-11 写成 App 侧创建 Activity 模拟，并写退出动画不可用/不是系统 Starting Window。AndroidX SplashScreen.kt 说明 API<31 复制平台行为，例外主要是启动图标 AVD 动画；Impl#setOnExitAnimationListener 在兼容实现中可创建 SplashScreenViewProvider 并回调退出动画。低版本还会借助启动主题/windowBackground 参与 legacy starting window，不能一概写成独立 Activity 或完全 App 进程绘制。",
+          "suggestion": "改成：API<31 由 AndroidX 在启动 Activity 内通过 Theme.SplashScreen、windowBackground/OnPreDrawListener/SplashScreenViewProvider 复制行为；AnimatedVectorDrawable 启动图标不播放，setOnExitAnimationListener 仍可做退出动画；Starting Window 与 App overlay 的边界需分开写。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -6437,19 +6437,107 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T10:27:02+08:00",
       "original_review_log": "logs/deep-review/2026-05-15-10-deep-review.md"
+    },
+    {
+      "id": "task9-18.2-hwui-blast-art-source-errors-20260515",
+      "section": "18.2",
+      "section_title": "Android View 标准管线（BLAST 深入）",
+      "priority": 95,
+      "reason": "[Deep Tech Review] HWUI Sync、BLASTBufferQueue 与 ART Generational CMC 多处源码锚点/版本语义不准确。",
+      "description": "HWUI Sync、BLASTBufferQueue 与 ART Generational CMC 多处源码锚点/版本语义不准确。",
+      "title": "18.2 HWUI/BLAST/ART 源码口径需回炉",
+      "issue_type": "source-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Sync 阶段 L86-L90",
+          "detail": "Android 14 同时落入“及以下/及以上”；AOSP android11-16/main 的 DrawFrameTask 均存在 postAndWait、syncFrameState、canUnblockUiThread/unblockUiThread 逻辑。源码锚点也不是 RenderProxy.cpp，信号字段是 mSignal.signal()。",
+          "suggestion": "移除 Android 14 分界；改成跨版本描述：UI 线程 postAndWait 等 RenderThread，syncFrameState 后可通过 unblockUiThread 提前释放；源码引用改为 frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp。"
+        },
+        {
+          "type": "源码错误",
+          "location": "BLASTBufferQueue 附录 L364-L371",
+          "detail": "onFrameAvailable 不是“SurfaceFlinger 产生新 frame”回调，而是 producer queueBuffer 后 BBQ 作为 consumer 收到的 BufferQueue 回调；transactionCommittedCallback 不是驱动提交给 SF 的入口，Transaction.apply 发生在 acquireNextBufferLocked，committed callback 发生在提交后用于清理 synced frame/flush shadow queue；文中签名也不是 AOSP 当前签名。",
+          "suggestion": "按 BLASTBufferQueue.cpp 的 onFrameAvailable、acquireNextBufferLocked、transactionCommittedCallback 重写注释与伪代码。"
+        },
+        {
+          "type": "源码错误",
+          "location": "ART Generational CMC 附录 L381-L396",
+          "detail": "Generational CMC 的源码锚点写成 art/runtime/gc/collector/semi_space.cc，并使用 generational_ 伪代码与 -Xgc:generational_cc 口径；这混用了旧 generational CC 与 Android 17 Concurrent Mark-Compact generational GC。",
+          "suggestion": "改用 ART CMC/MarkCompact 相关源码与 Android 17 release note 口径；若无法确认 Runtime::Init / generational_cmc_supported 条件，标注 [待验证]，不要给出伪代码。"
+        },
+        {
+          "type": "版本差异",
+          "location": "版本差异表 L407-L412",
+          "detail": "表格把 Android 10 generational CC、Android 11+ 默认启用、Android 17 generational CMC 串成单一演进线，缺少版本和启用条件边界。",
+          "suggestion": "拆成“历史 generational CC”与“Android 17 CMC generational support”两段，并补充 target/device/runtime 条件或标注 [待验证]。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "Compose/GC 影响 L292、L416、L428",
+          "detail": "正文虽在 L294 标 [待验证]，但 L428 摘要又写成“Young GC 显著减少渲染卡顿”的结论，缺少 ART GC trace、Compose benchmark、设备和 jank 指标。",
+          "suggestion": "把收益改为假设或潜在方向；补充 Perfetto/ART GC 日志和 Compose 场景 A/B 数据后再写量化结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T11:41:46+08:00"
+    },
+    {
+      "id": "task9-21.5-baseline-profile-dsl-20260515",
+      "section": "21.5",
+      "section_title": "Splash Screen 与感知启动速度",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Baseline Profile 示例使用 baselineProfileRulesRewrite，未见官方 AGP/AndroidX DSL 支持，可能导致构建失败。",
+      "description": "Baseline Profile 示例使用 baselineProfileRulesRewrite，未见官方 AGP/AndroidX DSL 支持，可能导致构建失败。",
+      "title": "Baseline Profile Gradle DSL 示例需修正",
+      "issue_type": "api-semantics",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/05-splash-screen.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API 错误",
+          "location": "Baseline Profile 配置 L355-L358",
+          "detail": "官方 Startup Profile / Baseline Profile 文档只要求 AGP 8.1-8.2 在 app 模块 baselineProfile {} 中设置 dexLayoutOptimization = true，AGP 8.3 起默认启用；未找到 baselineProfileRulesRewrite 这个公开 DSL 属性。",
+          "suggestion": "删除 baselineProfileRulesRewrite；保留 dexLayoutOptimization = true（仅 AGP 8.1-8.2 需要），Startup Profile 采集侧用 rule.collect(includeInStartupProfile = true)。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T11:41:46+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 198,
-    "p0_count": 32,
-    "last_updated": "2026-05-15T10:10:00+08:00",
-    "updated_by": "openclaw-task6-review",
-    "pending_entries": 123,
+    "total_entries": 201,
+    "p0_count": 34,
+    "last_updated": "2026-05-15T11:41:46+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 121,
     "updated_date": "2026-05-15",
-    "last_updated_by": "openclaw-task6-review",
-    "pending": 123
+    "last_updated_by": "openclaw-task9",
+    "pending": 121
   },
-  "last_updated": "2026-05-15T10:10:00+08:00",
-  "last_updated_by": "openclaw-task6-review",
-  "pending": 123
+  "last_updated": "2026-05-15T11:41:46+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 121
 }
