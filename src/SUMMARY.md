@@ -273,6 +273,7 @@ tags:
   - [16.3 AOSP 源码编译与调试环境](part4-system/ch16-aosp/03-aosp-build.md)
   - [16.4 Android 17 + Kernel 6.12 系统级性能优化](part4-system/ch16-aosp/04-android17-kernel612-performance.md)
   - [16.5 Android 17 (API 37) 性能行为变更与适配指南](part4-system/ch16-aosp/05-android17-api37-performance-changes.md)
+  - [16.6 Android 16 云端 Profile 与 dexopt 安装优化](part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
@@ -295,6 +296,7 @@ tags:
   - [20.8 崩溃聚合与归因分析](part5-app/ch20-stability/08-crash-aggregation.md)
   - [20.9 稳定性治理案例集](part5-app/ch20-stability/09-stability-case-studies.md)
   - [20.10 WebView Renderer OOM 与白屏恢复](part5-app/ch20-stability/10-webview-renderer-oom-recovery.md)
+  - [20.11 MTE memtagMode 与 Native 崩溃治理](part5-app/ch20-stability/11-mte-memtag-native-crash.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -318,6 +320,7 @@ tags:
   - [22.8 帧率监控与线上卡顿治理](part5-app/ch22-rendering-practice/08-frame-monitoring.md)
   - [22.9 渲染优化案例集](part5-app/ch22-rendering-practice/09-rendering-case-studies.md)
   - [22.10 RenderEffect 与 RuntimeShader 性能实践](part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md)
+  - [22.11 AnimatedVectorDrawable 线程退化与动画卡顿](part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
@@ -351,6 +354,7 @@ tags:
   - [25.8 App Bundle 与按需分发](part5-app/ch25-power-size/08-app-bundle-delivery.md)
   - [25.9 功耗与包体积案例集](part5-app/ch25-power-size/09-power-size-case-studies.md)
   - [25.10 Hybrid/WebView 功耗与原生化取舍](part5-app/ch25-power-size/10-hybrid-webview-power.md)
+  - [25.11 ADPF Hint Session 与协程线程迁移](part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
@@ -362,6 +366,7 @@ tags:
   - [26.7 发版质量门禁](part5-app/ch26-observability/07-release-quality-gate.md)
   - [26.8 可观测性案例集](part5-app/ch26-observability/08-observability-case-studies.md)
   - [26.9 ApplicationExitInfo 与进程退出归因](part5-app/ch26-observability/09-application-exit-info.md)
+  - [26.10 Android 11 以下进程退出归因方案](part5-app/ch26-observability/10-legacy-process-exit-attribution.md)
 
 ---
 
