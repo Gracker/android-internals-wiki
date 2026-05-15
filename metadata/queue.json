@@ -7101,7 +7101,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md"
@@ -7111,7 +7111,9 @@
         "cs.android.com frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java",
         "cs.android.com frameworks/base/core/java/android/content/pm/PackageManager.java",
         "DeepResearch/2026-05-13-android16-cloud-compilation-sdm-verification.md"
-      ]
+      ],
+      "completed_date": "2026-05-15T23:04:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成，章节 status -> ready-for-review，进入 Task 6 审查管线。"
     },
     {
       "id": "task2a-gap-20-11",
@@ -7264,16 +7266,16 @@
   "metadata": {
     "total_entries": 222,
     "p0_count": 43,
-    "last_updated": "2026-05-15T22:35:05+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 131,
+    "last_updated": "2026-05-15T23:04:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 130,
     "updated_date": "2026-05-15",
-    "last_updated_by": "openclaw-task9",
-    "pending": 131
+    "last_updated_by": "openclaw-task2a",
+    "pending": 130
   },
-  "last_updated": "2026-05-15T22:35:05+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 131,
-  "last_task2a_completed": "1.18",
-  "last_task2a_completed_at": "2026-05-15T21:09:00+08:00"
+  "last_updated": "2026-05-15T23:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 130,
+  "last_task2a_completed": "16.6",
+  "last_task2a_completed_at": "2026-05-15T23:04:00+08:00"
 }
