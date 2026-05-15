@@ -12,8 +12,12 @@ polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
+task9_state: pending
 sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md"
@@ -97,9 +101,7 @@ related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
 
 ApplicationExitInfo 解决的是稳定性看板里最容易缺的一块：进程没有给 Crash SDK 留下正常回调机会，但系统仍然知道它为什么退出。Android 11 之后，应用可以在下次启动时读取历史退出记录，把 ANR、native crash、LMK、用户强停、包更新、权限变更这类事件纳入同一套归因口径。
 
-本节只讨论“退出后补偿观测”。Java Crash、Native Crash、ANR 的捕获机制分别详见 20.2、20.3、20.4 和 19.24；这里关注它们退出后怎样被串到同一份证据包里。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
+Java Crash、Native Crash、ANR 的捕获机制分别详见 20.2、20.3、20.4 和 19.24；这里关注进程结束之后，三类现场如何进入同一份证据包。
 
 ## 进程退出归因的观测目标
 
@@ -112,7 +114,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 | 哪个进程退出 | `processName`、`pid`、`packageName` | 区分主进程、推送进程、WebView 进程和独立上传进程 |
 | 为什么退出 | `reason`、`subReason`、`status` | 区分 Java crash、native crash、ANR、LMK、用户强停、包更新等场景 |
 | 退出时处于什么优先级 | `importance`、前后台状态、是否前台服务 | 判断用户可感知程度，避免把后台缓存进程回收误报为严重事故 |
-| 退出发生在什么时候 | `timestamp`、本地启动标记、server time offset | 与发版、灰度、配置变更和用户反馈时间线对齐 |
+| 退出发生在什么时候 | `timestamp`、本地启动标记、服务端时间偏移量 | 把发版、灰度、配置变更和用户反馈合并到同一条时间线 |
 | 当时资源水位怎样 | `pss`、`rss`、端侧内存/FD/线程数快照 | 判断低内存、线程爆炸、FD 泄漏是否参与退出 |
 | 是否有系统现场附件 | `traceInputStream`、tombstone protobuf、ANR traces | 作为 Crash / ANR 样本的补偿证据 |
 
@@ -179,7 +181,7 @@ private fun copyTraceIfPresent(
 
 `importance` 记录退出前的进程重要性。它不等价于页面状态，但能帮助区分“前台用户正在操作时退出”和“后台缓存进程被系统回收”。端侧还应保存自己的生命周期标记，例如最近 Activity resume 时间、是否存在前台服务、是否完成首帧、是否处于升级迁移窗口。
 
-`timestamp` 是系统记录的进程死亡时间，适合与本地 crash envelope、server 配置下发、灰度批次、用户反馈时间合并。多进程应用要把 `processName + pid + timestamp + reason` 作为基础去重键，再结合 crash top frame 或 tombstone build id 做二次归并。
+`timestamp` 是系统记录的进程死亡时间，适合与本地 crash envelope、服务端配置下发、灰度批次、用户反馈时间合并。多进程应用要把 `processName + pid + timestamp + reason` 作为基础去重键，再结合 crash top frame 或 tombstone build id 做二次归并。
 
 ## ANR 与 native crash 的现场拼接
 
@@ -203,8 +205,6 @@ Native crash 样本的拼接方式：
 3. 服务端用 build id、崩溃线程、signal、fault address、top native frame 合并 minidump 与 tombstone。
 4. 如果 SDK 现场缺失，tombstone 可作为补偿；如果 tombstone 被覆盖或 `null`，仍保留 SDK 的 minidump 路径。Native crash 机制详见 20.3 和 19.24。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
-
 Play Console、Crashlytics、自研 APM 的数据口径不同。Play Console 更偏用户可感知的稳定性指标；Crashlytics 偏 SDK 可捕获的 Java / native crash；ApplicationExitInfo 是系统保留的进程死亡记录。三者不能直接相加，否则同一次 native crash 可能被重复计算。推荐做法是保留原始来源字段，在服务端建立统一事件：`exit_event_id` 归并多个来源，告警和报表读取归并后的事件。
 
 ## Android 11 以下的替代路径
@@ -221,12 +221,9 @@ Android 10 及以下没有公开的历史退出原因 API。端侧只能自己�
 | LMK / 系统回收 | 启动标记、前后台状态、内存水位采样、`/proc/self/status` 快照 | `SIGKILL` 不可捕获；只能通过下次启动和历史采样推断 |
 | Java heap OOM 现场 | KOOM 一类 fork dump：SuspendVM → fork → Resume → 子进程 dump hprof | 依赖 ART 内部行为和兼容性处理；适合灰度和高价值样本 |
 
-[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md]
-[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md]
-
 低版本方案的主线是“预先留下足够轻的状态”。比如应用启动时写 `launch_started`，首帧或首页 ready 后改成 `launch_finished`；进程主动退出前写 `exit_self`；Java crash handler 写 `crash_pending`；下次启动发现 `launch_started` 未清理，就把它归入启动异常退出候选，再结合前后台、内存水位、上次页面和是否升级做分类。
 
-这套状态机不能把 LMK、用户划掉、系统重启、厂商管控完全分开。它的价值是发现异常退出趋势，而不是给每条样本打出绝对原因。到了 API 30+，同样的状态机仍然保留，但它从“主判断”变成 ApplicationExitInfo 的交叉验证材料。
+这套状态机不能把 LMK、用户从最近任务移除、系统重启、厂商管控完全分开。它的价值是发现异常退出趋势，而不是给每条样本打出绝对原因。到了 API 30+，同样的状态机仍然保留，但它从“主判断”变成 ApplicationExitInfo 的交叉验证材料。
 
 ## 端侧存储与上报设计
 
@@ -278,7 +275,7 @@ ExitEnvelope 建议固定字段：
 
 ## 退出原因与稳定性指标体系的映射
 
-[自动发现] ApplicationExitInfo 可以补齐 26.2 Crash 上报体系和 26.5 线上排障证据包之间的缺口。建议服务端把退出事件分成四层：
+ApplicationExitInfo 可以补齐 26.2 Crash 上报体系和 26.5 线上排障证据包之间的缺口。建议服务端把退出事件分成四层：
 
 | 层级 | 事件 | 进入指标方式 |
 | --- | --- | --- |
@@ -291,7 +288,7 @@ ExitEnvelope 建议固定字段：
 
 ## ApplicationExitInfo 与 GWP-ASan / MTE 报告拼接
 
-[自动发现] GWP-ASan、MTE、HWASan 这类内存安全工具经常以 native crash 或 abort 形式结束进程。端侧可以把工具开关、采样命中状态、allocator 报告 ID 写入 crash envelope；下次启动再用 `REASON_CRASH_NATIVE` 和 tombstone protobuf 补系统视角。
+GWP-ASan、MTE、HWASan 这类内存安全工具经常以 native crash 或 abort 形式结束进程。端侧可以把工具开关、采样命中状态、allocator 报告 ID 写入 crash envelope；下次启动再用 `REASON_CRASH_NATIVE` 和 tombstone protobuf 补系统视角。
 
 拼接键建议使用 `timestamp ± 5s + processName + signal + fault address + top native frame + build id`。如果 MTE 报告和 tombstone 同时存在，服务端以工具报告解释内存错误类型，以 tombstone 补线程、寄存器和系统上下文。GWP-ASan / MTE 原理详见 14.13、19.24 和 20.3。
 

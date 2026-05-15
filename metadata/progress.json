@@ -128,7 +128,8 @@
     "4.9",
     "13.12",
     "22.10",
-    "24.9"
+    "24.9",
+    "26.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -252,14 +253,15 @@
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
     "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
     "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
-    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md",
+    "src/part5-app/ch26-observability/09-application-exit-info.md"
   ],
   "review_summary": "Task9 2026-05-15 16: review 24.9；P0 0 / P1 1 / P2 2，需回炉。",
   "task6_review_summary": {
-    "l1_l2_fixes": 614,
+    "l1_l2_fixes": 622,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 641,
+    "total_issues": 649,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -2391,13 +2393,22 @@
     "26.9": {
       "title": "ApplicationExitInfo 与进程退出归因",
       "file": "src/part5-app/ch26-observability/09-application-exit-info.md",
-      "status": "draft",
-      "pipeline_stage": "draft",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_score": 19,
-      "gap_source": "素材驱动/官方文档"
+      "gap_source": "素材驱动/官方文档",
+      "last_task6_at": "2026-05-15T17:13:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_review_log": "logs/review/2026-05-15-17-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；结构性元叙述、禁用词、编辑痕迹和中英文表达已轻量修复。Task9 尚未技术审核。"
     },
     "8.1": {
       "title": "响应速度原理",
@@ -2578,5 +2589,10 @@
   "last_task9_at": "2026-05-15T16:20:00+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
-  "last_task2a_processed_section": "22.10"
+  "last_task2a_processed_section": "22.10",
+  "task6_last_review_at": "2026-05-15T17:13:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-15-17-review.md",
+  "task6_last_review_sections": [
+    "26.9"
+  ]
 }
