@@ -29,6 +29,13 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
 tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-15"
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-15"
+task9_state: pending
+pipeline_stage: task9_pending
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器
@@ -135,7 +142,7 @@ flowchart TD
 
 `select_cpu()` 这一点容易被写重。Linux 文档说得很明确：它返回的 CPU 是优化提示，内核可以在后续调度阶段把任务放到其它允许的 CPU 上。如果 BPF 程序在 `select_cpu()` 中把任务直接插入 `SCX_DSQ_LOCAL`，`enqueue()` 会被跳过；如果没有直接插入，任务会继续走 `enqueue()`。
 
-`tools/sched_ext/scx_simple.bpf.c` 是理解这套接口的参考实现。它在 `select_cpu()` 中调用 `scx_bpf_select_cpu_dfl()`，如果拿到空闲 CPU，就把任务插入 `SCX_DSQ_LOCAL`；否则在 `enqueue()` 中把任务放入共享 DSQ，并在 `dispatch()` 中把共享 DSQ 的任务移动到 CPU local DSQ。这个例子足够解释大多数 Perfetto 现象：线程不是“凭空”换 CPU，而是在 wakeup、入队、分发几个阶段里不断被重新放置。
+`tools/sched_ext/scx_simple.bpf.c` 是理解这套接口的参考实现。它在 `select_cpu()` 中调用 `scx_bpf_select_cpu_dfl()`，如果拿到空闲 CPU，就把任务插入 `SCX_DSQ_LOCAL`；否则在 `enqueue()` 中把任务放入共享 DSQ，并在 `dispatch()` 中把共享 DSQ 的任务移动到 CPU local DSQ。这个例子足够解释大多数 Perfetto 现象：线程换 CPU，通常发生在 wakeup、入队、分发几个阶段的重新放置过程中。
 
 [已验证: Linux kernel/sched/ext_internal.h；Linux tools/sched_ext/scx_simple.bpf.c]
 
@@ -180,7 +187,7 @@ Linux 源码里还定义了 `SCX_SLICE_DFL = 20ms` 和 `SCX_SLICE_BYPASS = 5ms`�
 
 **频率策略可能和调度策略一起变化。** 如果 vendor 同时调整 `scx_gov_ctrl`、`cpuctrl_high/low` 这类参数，Perfetto 中会出现“线程迁移变少 + 频率响应更快”的组合。分析时不能只盯 `sched` 表，也要看 `cpufreq`、CPU idle、thermal、binder transaction 和 frame timeline。
 
-误配的症状通常不是单点异常，而是一组信号同时出现：前台线程 runnable 时间变长、binder reply 延迟上升、CPU 频率长期维持高位、温度触发降频、后台任务 tail latency 变差。遇到这类设备差异，先确认是否存在 `sched_ext` 或 vendor proc 节点，再把 trace 和同 SoC 不同 ROM、同 ROM 不同开关状态做对比。
+误配通常表现为一组信号同时出现：前台线程 runnable 时间变长、binder reply 延迟上升、CPU 频率长期维持高位、温度触发降频、后台任务 tail latency 变差。遇到这类设备差异，先确认是否存在 `sched_ext` 或 vendor proc 节点，再把 trace 和同 SoC 不同 ROM、同 ROM 不同开关状态做对比。
 
 [已验证: Linux sched_ext scheduling cycle；OPPO hmbird_sched proc 参数；性能影响部分需结合实机 trace 验证]
 
@@ -286,7 +293,7 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 - **公开源码与固件策略分开写**：procfs 控制面能说明有哪些开关，不能还原 BPF scheduler 的完整算法。
 - **现象与因果分开写**：Perfetto 中看到 CPU 迁移减少、频率更高、帧率更稳，只能作为相关性证据；要写因果，需要开关前后对照或源码级策略证明。
 
-这套边界也适用于其它 vendor 调度功能。性能文章里最危险的不是承认未知，而是把单一厂商、单一固件版本的行为写成 Android 通用规律。
+这套边界也适用于其它 vendor 调度功能。性能文章里要避免把单一厂商、单一固件版本的行为写成 Android 通用规律；承认未知反而更稳。
 
 ## 参考资料
 

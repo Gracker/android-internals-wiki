@@ -1247,3 +1247,10 @@
 - **问题**：章节把适用范围写成 Android 12-17，但 `SPAN_JOIN`、`CREATE PERFETTO TABLE/MACRO`、`intervals.*` / `slices.*` 标准库模块属于 Trace Processor / PerfettoSQL 能力，和分析端的 Perfetto 版本绑定，不由被分析设备的 Android API level 决定。Android 版本只影响 trace 里有没有 Frame Timeline、cpufreq counter、ART slice 等输入数据。当前口径会让读者误以为 Android 12 以下不能用 SPAN_JOIN，或忽略旧 Android Studio / AGI 内置 Trace Processor 不支持新 stdlib 的风险。
 - **建议**：补一段“工具版本前提”：使用当前 `trace_processor_shell` 或 ui.perfetto.dev，并确认支持 `SPAN_JOIN`、`CREATE PERFETTO TABLE/MACRO`、`INCLUDE PERFETTO MODULE intervals.*`；旧工具不支持时导出 trace 到新 Trace Processor 分析。Android 12+ 只作为 Frame Timeline / 采集数据示例的边界，不作为 SPAN_JOIN 本身的适用版本。
 
+## [Task6 Review] 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数 — 2026-05-15
+- **类型**：需确认 / 结构补齐
+- **位置**：帧 × CPU 频率统计 SQL；GC pause 与 frame overlap SQL；全文大纲
+- **问题**：Task9 已指出两个技术阻塞点：帧 × CPU 频率示例未按 frame 边界裁剪 `joined.dur`，GC pause 示例可能把全局 GC slice 合并进同一 `utid` 分区。Task6 不做技术裁决，已在正文加 `[存疑]` 标注。另发现本节缺少 `outline-start` / `outline-end` 大纲块，Task6 无法按锚点做覆盖核验。
+- **建议**：Task2B 按 Task9 队列项修正 SQL 口径；同时补齐本节锚点大纲，覆盖 SPAN_JOIN 定义、counter 转 span、PARTITIONED 约束、帧 × CPU 频率、Binder/GC 交叉分析、标准库配合、CI 复用和排查清单。
+- **review 日志**：logs/review/2026-05-15-10-review.md
+

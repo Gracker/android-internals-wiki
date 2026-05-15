@@ -6352,7 +6352,8 @@
       ],
       "material_paths": [
         "logs/deep-review/2026-05-15-09-deep-review.md",
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "logs/review/2026-05-15-10-review.md"
       ],
       "review_issues": [
         {
@@ -6368,26 +6369,33 @@
           "location": "L321-L348 GC pause 与主线程帧窗口关联示例",
           "detail": "gc_pause_span 从全局 slice 中筛 `*GC*` / `*Garbage*` 后 CROSS JOIN 到 target_main_thread.utid，再以 utid 作为 SPAN_JOIN 分区。这样会把不同 track、不同 ART 阶段、可能互相嵌套或重叠的 GC slice 塞进同一个分区，违反 Perfetto 文档“同一表、同一分区 span 不能重叠”的限制；SPAN_JOIN 不会报错，会静默产生错误行。",
           "suggestion": "先把 GC 事件整理成同分区不重叠的 pause window，再与 frame_span 关联；若要保留多重 GC 阶段，改用 intervals.intersect / intervals.overlap 或先按 ts/end 合并区间。正文还应区分“GC 与 frame 时间重叠”和“主线程被 STW 阻塞”：后者需要 thread_state、ART pause 事件和多线程同时停顿证据。"
+        },
+        {
+          "severity": "P2",
+          "type": "结构完整性 / 锚点覆盖缺失",
+          "location": "全文：缺少 outline-start/outline-end 大纲块",
+          "detail": "Task6 无法按本书锚点机制做覆盖核验；章节正文内容较完整，但缺少流水线要求的锚点大纲，后续回炉和维护时难以定位覆盖关系。",
+          "suggestion": "Task2B 回炉时补齐 outline 块，至少覆盖 SPAN_JOIN 定义、counter 转 span、PARTITIONED 约束、帧 × CPU 频率、Binder/GC 交叉分析、标准库配合、CI 复用和排查清单。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T09:27:23+08:00",
-      "last_reviewed_by": "openclaw-task9",
-      "last_reviewed_at": "2026-05-15T09:27:23+08:00",
+      "last_reviewed_by": "openclaw-task6",
+      "last_reviewed_at": "2026-05-15T10:10:00+08:00",
       "original_review_log": "logs/deep-review/2026-05-15-09-deep-review.md"
     }
   ],
   "metadata": {
     "total_entries": 198,
     "p0_count": 32,
-    "last_updated": "2026-05-15T09:27:23+08:00",
-    "updated_by": "task9-deep-tech-review",
+    "last_updated": "2026-05-15T10:10:00+08:00",
+    "updated_by": "openclaw-task6-review",
     "pending_entries": 123,
     "updated_date": "2026-05-15",
-    "last_updated_by": "task9-deep-tech-review",
+    "last_updated_by": "openclaw-task6-review",
     "pending": 123
   },
-  "last_updated": "2026-05-15T09:27:23+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-15T10:10:00+08:00",
+  "last_updated_by": "openclaw-task6-review",
   "pending": 123
 }

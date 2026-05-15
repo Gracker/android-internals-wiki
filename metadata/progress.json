@@ -119,7 +119,9 @@
     "26.6",
     "20.7",
     "26.7",
-    "13.11"
+    "13.11",
+    "17.4",
+    "8.1"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -234,14 +236,16 @@
     "src/part5-app/ch26-observability/06-ab-testing-regression.md",
     "src/part5-app/ch20-stability/07-exception-architecture.md",
     "src/part5-app/ch26-observability/07-release-quality-gate.md",
-    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
+    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
   ],
-  "review_summary": "Task9 2026-05-15 09: review 13.11；P0 1 / P1 1 / P2 1；无自动晋升。",
+  "review_summary": "Task6 2026-05-15 10: review 13.11、17.4，抽检 8.1；小修 10；回炉 13.11；自动晋升 0。",
   "task6_review_summary": {
-    "l1_l2_fixes": 565,
-    "l3_issues": 39,
+    "l1_l2_fixes": 575,
+    "l3_issues": 40,
     "l4_issues": 5,
-    "total_issues": 600,
+    "total_issues": 611,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -880,28 +884,28 @@
       "summary": "P0 1：帧 × CPU 频率统计未按 frame 边界裁剪 joined.dur；P1 1：GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束；P2 1：缺 Trace Processor/PerfettoSQL 工具版本边界。"
     }
   },
-  "total_review_sections": 113,
+  "total_review_sections": 115,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T09:27:23+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-15T10:10:00+08:00",
+  "last_updated_by": "openclaw-task6-review",
   "task6_last_review": {
-    "at": "2026-05-15T08:10:00+08:00",
-    "log": "logs/review/2026-05-15-08-review.md",
+    "date": "2026-05-15",
+    "time": "10:10",
     "sections": [
-      "26.8",
-      "16.5",
-      "25.1"
+      "13.11",
+      "17.4",
+      "8.1"
     ],
     "files": [
-      "src/part5-app/ch26-observability/08-observability-case-studies.md",
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+      "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+      "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
     ],
-    "l1_l2_fixes": 4,
-    "l3_l4_issues": 0,
+    "l1_l2_fixes": 10,
+    "l3_l4_issues": 1,
     "auto_promotions": 0,
-    "result": "pass-light-edit"
+    "log": "logs/review/2026-05-15-10-review.md"
   },
   "task9_last_review": "2026-05-15T09:27:23+08:00",
   "ready_to_publish": 186,
@@ -2225,24 +2229,30 @@
     "13.11": {
       "title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
       "file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
-      "status": "draft",
-      "pipeline_stage": "draft",
-      "created_by": "task2a-knowledge-gap",
-      "created_date": "2026-05-15",
-      "queue_priority": 80,
-      "gap_score": 19,
-      "gap_source": "素材驱动/研究素材"
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_review_log": "logs/review/2026-05-15-10-review.md",
+      "queue_priority": 95
     },
     "17.4": {
       "title": "sched_ext 与 OEM BPF 调度器",
       "file": "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-      "status": "draft",
-      "pipeline_stage": "draft",
-      "created_by": "task2a-knowledge-gap",
-      "created_date": "2026-05-15",
-      "queue_priority": 80,
-      "gap_score": 18,
-      "gap_source": "素材驱动/AOSP结构"
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_review_log": "logs/review/2026-05-15-10-review.md",
+      "queue_priority": 80
     },
     "20.10": {
       "title": "WebView Renderer OOM 与白屏恢复",
@@ -2276,6 +2286,21 @@
       "queue_priority": 80,
       "gap_score": 19,
       "gap_source": "素材驱动/官方文档"
+    },
+    "8.1": {
+      "title": "响应速度原理",
+      "file": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-01",
+      "spotcheck_date": "2026-05-15",
+      "spotcheck_result": "pass-light-edit",
+      "last_review_log": "logs/review/2026-05-15-10-review.md"
     }
   },
   "task2b_rounds": [
@@ -2335,46 +2360,42 @@
   "task9_last_reviewed_files": [
     "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
   ],
-  "total_review_files": 113,
+  "total_review_files": 115,
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
   "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
-  "last_task6_review": "logs/review/2026-05-15-08-review.md",
+  "last_task6_review": "logs/review/2026-05-15-10-review.md",
   "last_task6_sections": [
-    "26.8",
-    "16.5",
-    "25.1"
+    "13.11",
+    "17.4",
+    "8.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/08-observability-case-studies.md",
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
   ],
-  "last_task6_at": "2026-05-15T08:10:00+08:00",
+  "last_task6_at": "2026-05-15T10:10:00+08:00",
   "last_task6_review_detail": {
+    "reviewed_at": "2026-05-15T10:10:00+08:00",
+    "log": "logs/review/2026-05-15-10-review.md",
     "sections": [
-      "26.8",
-      "16.5",
-      "25.1"
+      "13.11",
+      "17.4",
+      "8.1"
     ],
-    "files": [
-      "src/part5-app/ch26-observability/08-observability-case-studies.md",
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+    "mode": "首次 review + finalized 抽检",
+    "l1_l2_fixes": 10,
+    "rework_sections": [
+      "13.11"
     ],
-    "mode": "首次 review + revisiting 复审",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 4,
-    "l3_issues": 0,
-    "l4_issues": 0,
-    "queue_priority": null,
-    "review_log": "logs/review/2026-05-15-08-review.md",
-    "at": "2026-05-15T08:10:00+08:00",
-    "auto_promotions": 0
+    "auto_promotions": [],
+    "summary": "13.11 已标注 Task9 技术阻塞并追加 outline 缺失回炉项；17.4 通过轻修进入 Task9；8.1 finalized 抽检通过。"
   },
   "last_task9_reviewed_files": [
     "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
   ],
   "last_task9_at": "2026-05-15T09:27:23+08:00",
-  "last_task2a_result": "gap-mining"
+  "last_task2a_result": "gap-mining",
+  "ready-to-publish": 186
 }

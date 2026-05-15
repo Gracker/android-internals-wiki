@@ -21,12 +21,7 @@ sources:
   - type: cubox
     path: "Cubox/华为-交互流畅体验设计-2025-02-18.md"
   - type: cubox
-    path: "Cubox/评估性能 - Android 开源项目
-status: ready-for-review
-drafted_by: legacy-manual
-drafted_date: '2026-05-12'
-section: '08.01'
---- Evaluating Performance  - ...-2024-01-10.md"
+    path: "Cubox/评估性能 - Android 开源项目 --- Evaluating Performance - ...-2024-01-10.md"
   - type: cubox
     path: "Cubox/Android Vitals - Tap Response Time 👉 - DEV Community-2022-01-17.md"
   - type: web
@@ -39,6 +34,8 @@ task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
 task6_reviewed_date: "2026-05-01"
+task6_spotcheck_date: "2026-05-15"
+task6_spotcheck_result: pass-light-edit
 review_round: 1
 status: finalized
 pipeline_stage: ready-to-publish
@@ -94,7 +91,7 @@ task9_review_notes: "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1�
 
 响应速度（Responsiveness）是指**从用户执行操作（点击、滑动、按键），到系统产生对应的视觉反馈之间的时间间隔**。这个时间间隔越短，用户感觉系统"越跟手"。
 
-这里有一个关键区分：响应速度不等于处理速度。一个操作可能后台处理需要 500ms，但如果我们在 50ms 内给了用户一个视觉反馈（比如按钮变色、进度条出现），用户的感知就是这个系统"很快"。后面我们会详细讨论这个感知速度的问题。
+响应速度和处理速度要分开看。一个操作可能后台处理需要 500ms，但如果 50ms 内已经给出视觉反馈（比如按钮变色、进度条出现），用户的感知就是这个系统"很快"。感知速度部分会展开这个问题。
 
 ### 响应速度的度量维度
 
