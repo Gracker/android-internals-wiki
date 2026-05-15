@@ -7089,6 +7089,128 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T20:23:00+08:00"
+    },
+    {
+      "id": "task2a-gap-16-6",
+      "section": "16.6",
+      "priority": 80,
+      "title": "Android 16 云端 Profile 与 dexopt 安装优化",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md"
+      ],
+      "gap_source": "素材驱动/AOSP结构/官方文档",
+      "sources": [
+        "cs.android.com frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java",
+        "cs.android.com frameworks/base/core/java/android/content/pm/PackageManager.java",
+        "DeepResearch/2026-05-13-android16-cloud-compilation-sdm-verification.md"
+      ]
+    },
+    {
+      "id": "task2a-gap-20-11",
+      "section": "20.11",
+      "priority": 80,
+      "title": "MTE memtagMode 与 Native 崩溃治理",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+      ],
+      "gap_source": "素材驱动/官方文档",
+      "sources": [
+        "source.android.com/docs/security/test/memory-safety/arm-mte",
+        "source.android.com/docs/security/test/memory-safety/mte-configuration",
+        "cs.android.com frameworks/base/core/java/com/android/internal/os/Zygote.java",
+        "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md",
+        "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
+      ]
+    },
+    {
+      "id": "task2a-gap-22-11",
+      "section": "22.11",
+      "priority": 80,
+      "title": "AnimatedVectorDrawable 线程退化与动画卡顿",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
+      ],
+      "gap_source": "素材驱动/AOSP结构",
+      "sources": [
+        "cs.android.com frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java",
+        "DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
+      ]
+    },
+    {
+      "id": "task2a-gap-25-11",
+      "section": "25.11",
+      "priority": 80,
+      "title": "ADPF Hint Session 与协程线程迁移",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
+      ],
+      "gap_source": "素材驱动/官方文档",
+      "sources": [
+        "developer.android.com/games/optimize/adpf",
+        "developer.android.com/reference/android/os/PerformanceHintManager",
+        "developer.android.com/ndk/reference/group/a-performance-hint",
+        "DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md",
+        "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
+      ]
+    },
+    {
+      "id": "task2a-gap-26-10",
+      "section": "26.10",
+      "priority": 80,
+      "title": "Android 11 以下进程退出归因方案",
+      "description": "Task 2A 知识缺口挖掘创建的新章节，待内容加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      ],
+      "gap_source": "素材驱动/官方文档/章节深挖",
+      "sources": [
+        "developer.android.com/reference/android/app/ApplicationExitInfo",
+        "developer.android.com/topic/performance/vitals/anr",
+        "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md",
+        "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
+      ]
     }
   ],
   "metadata": {
