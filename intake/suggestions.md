@@ -1346,3 +1346,16 @@
 - **位置**：L380-L388 OEM Wi-Fi 评分差异
 - **问题**：OEM 差异漏掉官方 Wi-Fi network selection 文档中的 `WifiConnectedNetworkScorer` / external scorer 扩展点。
 - **建议**：在 OEM 差异表补 external scorer：注册 API、输入的 Wi-Fi usability stats、输出 score，以及 dumpsys/overlay/包名等验证材料。
+
+
+## [Task9 Deep Review] 26.9 ApplicationExitInfo 与进程退出归因 — 2026-05-15
+- **类型**：数据支撑 / 字段语义边界
+- **位置**：L118、L154-L155、L252 `pss` / `rss`
+- **问题**：正文把 `pss` / `rss` 当作“当时资源水位”。AOSP `ApplicationExitInfo#getPss()` / `getRss()` 注释说明它们是进程最后一次采样值，不是死亡前精确内存；系统来不及采样时可能为 0。
+- **建议**：改成“last sampled PSS/RSS”，并在 ExitEnvelope 增加 sample_age / 是否系统采样为空；低内存归因要结合端侧自采样、`isLowMemoryKillReportSupported()`、importance 与前后台状态。
+
+## [Task9 Deep Review] 26.9 ApplicationExitInfo 与进程退出归因 — 2026-05-15
+- **类型**：API 使用边界
+- **位置**：L252 `process_state_summary`
+- **问题**：正文建议保存 `ActivityManager.setProcessStateSummary()` 摘要，但没有说明官方限制：最大 128 bytes、不要包含 PII/SPII，系统可能 throttle 过高频调用并抛 `RuntimeException`；它也不应用来恢复 UI 状态。
+- **建议**：把该字段限定为短小、低频、非敏感的状态标签，例如实验组、关键页面/阶段 ID、启动阶段码；不要放完整 JSON、URL、用户标识或恢复状态。

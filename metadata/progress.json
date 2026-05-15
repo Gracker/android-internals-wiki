@@ -977,8 +977,8 @@
   "total_review_sections": 121,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T16:15:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-15T17:28:33+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "14:12",
@@ -995,7 +995,7 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-15-14-review.md"
   },
-  "task9_last_review": "2026-05-15T16:20:00+08:00",
+  "task9_last_review": "2026-05-15T17:28:33+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2394,21 +2394,32 @@
       "title": "ApplicationExitInfo 与进程退出归因",
       "file": "src/part5-app/ch26-observability/09-application-exit-info.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
-      "queue_priority": 80,
+      "queue_priority": 85,
       "gap_score": 19,
       "gap_source": "素材驱动/官方文档",
       "last_task6_at": "2026-05-15T17:13:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task6_l1_l2_fixes": 8,
       "task6_l3_l4_issues": 0,
       "task6_review_log": "logs/review/2026-05-15-17-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作质量通过；结构性元叙述、禁用词、编辑痕迹和中英文表达已轻量修复。Task9 尚未技术审核。"
+      "task6_note": "写作质量通过；Task9 已技术审核，发现 reason/subReason 版本矩阵 P1，需要 Task2B 回炉。",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-15T17:28:33+08:00",
+      "task2b_state": "pending",
+      "task9_review_log": "logs/deep-review/2026-05-15-17-deep-review.md",
+      "task9_p0": 0,
+      "task9_p1": 1,
+      "task9_p2": 2,
+      "task9_p3": 1,
+      "task9_note": "Task9 发现 ApplicationExitInfo reason/subReason 版本矩阵缺失：API 30-33 与 API 34+ 的 package update/freezer 归因口径不同；另有 PSS/RSS 与 processStateSummary API 边界建议。"
     },
     "8.1": {
       "title": "响应速度原理",
@@ -2521,43 +2532,43 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-15T16:20:00+08:00",
-    "log": "logs/deep-review/2026-05-15-16-deep-review.md",
+    "reviewed_at": "2026-05-15T17:28:33+08:00",
+    "log": "logs/deep-review/2026-05-15-17-deep-review.md",
     "sections": [
-      "24.9"
+      "26.9"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+      "src/part5-app/ch26-observability/09-application-exit-info.md"
     ],
     "p0": 0,
     "p1": 1,
     "p2": 2,
-    "p3": 0,
+    "p3": 1,
     "result": "needs-rework",
-    "summary": "目标池仅 1 个 task9 pending 候选。24.9 发现 Connectivity 选网版本分支缺失，另有 NetworkCallback 示例 race 边界与 OEM external scorer 盲区。"
+    "summary": "目标池仅 1 个 task9 pending 候选。26.9 发现 ApplicationExitInfo reason/subReason 版本矩阵缺失，另有 PSS/RSS 采样语义和 processStateSummary 限制需要补充。"
   },
-  "last_task9_review": "2026-05-15 16:20 review 24.9",
+  "last_task9_review": "2026-05-15 17:28 review 26.9",
   "last_task9_sections": [
-    "24.9"
+    "26.9"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-15T16:20:00+08:00",
-    "log": "logs/deep-review/2026-05-15-16-deep-review.md",
+    "reviewed_at": "2026-05-15T17:28:33+08:00",
+    "log": "logs/deep-review/2026-05-15-17-deep-review.md",
     "sections": [
-      "24.9"
+      "26.9"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+      "src/part5-app/ch26-observability/09-application-exit-info.md"
     ],
     "p0": 0,
     "p1": 1,
     "p2": 2,
-    "p3": 0,
+    "p3": 1,
     "result": "needs-rework",
-    "summary": "目标池仅 1 个 task9 pending 候选。24.9 发现 Connectivity 选网版本分支缺失，另有 NetworkCallback 示例 race 边界与 OEM external scorer 盲区。"
+    "summary": "目标池仅 1 个 task9 pending 候选。26.9 发现 ApplicationExitInfo reason/subReason 版本矩阵缺失，另有 PSS/RSS 采样语义和 processStateSummary 限制需要补充。"
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+    "src/part5-app/ch26-observability/09-application-exit-info.md"
   ],
   "total_review_files": 121,
   "last_task2a_at": "2026-05-15T14:04:00+08:00",
@@ -2584,9 +2595,9 @@
     "summary": "24.9 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+    "src/part5-app/ch26-observability/09-application-exit-info.md"
   ],
-  "last_task9_at": "2026-05-15T16:20:00+08:00",
+  "last_task9_at": "2026-05-15T17:28:33+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
   "last_task2a_processed_section": "22.10",

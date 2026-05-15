@@ -6896,19 +6896,54 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T16:20:00+08:00"
+    },
+    {
+      "id": "task9-20260515-26.9-exit-reason-version-taxonomy",
+      "section": "26.9",
+      "section_title": "ApplicationExitInfo 与进程退出归因",
+      "priority": 85,
+      "title": "ApplicationExitInfo 退出原因枚举缺少 Android 13/14 版本边界",
+      "description": "P1：章节把 ApplicationExitInfo 的退出原因分类写成 API 30+ 通用口径，遗漏 REASON_FREEZER、REASON_PACKAGE_STATE_CHANGE、REASON_PACKAGE_UPDATED 及相关 subReason 在 Android 13/14 的版本分叉。",
+      "reason": "[Deep Tech Review] 26.9 适用范围覆盖 Android 11-17，但正文按 AOSP main 解释包更新/freezer 等退出原因，API 30-33 会落到不同 reason/subReason 口径，影响稳定性指标归类。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/09-application-exit-info.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-15-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L102 / L124 / L263 / L284-L285 退出原因分类",
+          "detail": "章节适用范围覆盖 Android 11(API 30)-Android 17(API 37)，但把用户强停、包更新、权限变更、freezer 等退出原因按 AOSP main 的同一套枚举口径处理。AOSP android-11.0.0_r1 / android-12.0.0_r1 的 ApplicationExitInfo 只到 REASON_OTHER=13；android-13.0.0_r1 才出现 REASON_FREEZER=14 和 force-stop/remove-task/package-update 等细分 subReason；android-14.0.0_r1 起新增 REASON_PACKAGE_STATE_CHANGE=15、REASON_PACKAGE_UPDATED=16，源码注释明确 Android 14 之前包更新/组件状态变化使用 REASON_USER_REQUESTED 口径。当前写法会让 API 30-33 的解析与指标归类误用 REASON_PACKAGE_UPDATED。",
+          "suggestion": "补一张 reason/subReason 版本矩阵：API 30-32 以核心 reason + UNKNOWN/系统内部 subReason 为主；API 33 标出 REASON_FREEZER 与细分 subReason；API 34+ 才使用 REASON_PACKAGE_STATE_CHANGE / REASON_PACKAGE_UPDATED。采样策略和指标表中把“包更新、权限变更、freezer”按版本拆开，低版本 fallback 到 REASON_USER_REQUESTED/REASON_OTHER + description/subReason。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T17:28:33+08:00",
+      "original_review_log": "logs/deep-review/2026-05-15-17-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 211,
+    "total_entries": 212,
     "p0_count": 43,
-    "last_updated": "2026-05-15T16:20:00+08:00",
+    "last_updated": "2026-05-15T17:28:33+08:00",
     "updated_by": "openclaw-task9",
     "pending_entries": 125,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
     "pending": 125
   },
-  "last_updated": "2026-05-15T16:20:00+08:00",
+  "last_updated": "2026-05-15T17:28:33+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": 125
 }
