@@ -16,9 +16,9 @@ confidence: high
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task9_reviewed_date: "2026-05-13"
+task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T19:47:40+08:00"
+last_task9_at: "2026-05-15T12:31:59+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -33,14 +33,15 @@ related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-05-15T03:17:00+08:00"
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: "2026-04-27T02:40:00+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
 task6_reviewed_date: "2026-05-09"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
+last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
 ---
 
 # SurfaceFlinger 与合成
