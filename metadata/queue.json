@@ -6599,7 +6599,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
@@ -6610,7 +6610,9 @@
         "DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md",
         "https://developer.android.com/reference/android/net/ConnectivityManager"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A draft 加工完成，status → ready-for-review"
     },
     {
       "id": "task9-20260515-2.6-deep-tech-review",

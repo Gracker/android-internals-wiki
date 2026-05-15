@@ -1,7 +1,7 @@
 {
   "total": 279,
-  "draft": 2,
-  "ready-for-review": 90,
+  "draft": 1,
+  "ready-for-review": 91,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -127,7 +127,8 @@
     "11.5",
     "4.9",
     "13.12",
-    "22.10"
+    "22.10",
+    "24.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -250,7 +251,8 @@
     "src/part2-performance/ch11-power/05-wakelock.md",
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
     "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
   ],
   "review_summary": "Task9 2026-05-15 15: review 22.10；P0 0 / P1 2 / P2 3，需回炉。",
   "task6_review_summary": {
