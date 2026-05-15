@@ -7359,21 +7359,65 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T00:30:00+08:00"
+    },
+    {
+      "id": "task9-20260516-25.11-adpf-session-api-version-boundary",
+      "section": "25.11",
+      "section_title": "ADPF Hint Session 与协程线程迁移",
+      "priority": 85,
+      "title": "ADPF Session API 版本矩阵与 setThreads/WorkDuration 边界需补齐",
+      "description": "P1：章节覆盖 API 31-36，但 setThreads 被写成通用更新手段且 WorkDuration/setPreferPowerEfficiency/GPU hint 的 API35/Android16 flag 边界混写，容易误导 Android 12-16 的接入方案。",
+      "reason": "[Deep Tech Review] ADPF Session API 版本矩阵、setThreads API34+、WorkDuration/setPreferPowerEfficiency API35+ 与 Android 16 flagged GPU hint 边界需回炉。",
+      "issue_type": "version-difference-api-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-16-02-deep-review.md",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager.Session",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager",
+        "https://developer.android.com/ndk/reference/group/a-performance-hint"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/API 边界",
+          "location": "L58/L67/L110/L114 setThreads 使用与更新策略",
+          "detail": "章节适用 Android 12(API 31)-Android 16(API 36)，但正文把 setThreads() 作为通用线程列表更新手段展开。Android Developers Session 文档标注 setThreads(int[]) Added in API level 34；Android 12/13 只能在 createHintSession(int[] tids, ...) 创建时传入线程集合，不能用公开 Java API 事后替换。",
+          "suggestion": "补 API 版本矩阵：API 31-33 需要等固定线程全部启动并采集 tid 后再 createHintSession，线程池重建时关闭并重建 session；API 34+ 才能用 setThreads() 做低频生命周期更新，代码需 SDK_INT >= 34 guard。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/交叉章节一致性",
+          "location": "L118/L122-L126 WorkDuration、setPreferPowerEfficiency 与 GPU hint 段落",
+          "detail": "本节把 reportActualWorkDuration(WorkDuration) 主要写成 Android 16 源码能力，并把 Android 15/16 flagged API 混在一起；公开 Session 文档显示 reportActualWorkDuration(WorkDuration) 与 setPreferPowerEfficiency(boolean) Added in API level 35，而 5.9 节也按 Android 15 增强讲 GPU 工作时长与能效模式。当前表述会让读者误以为 Android 15 只能走 long 上报，或 Android 16 才需要考虑这些 API。",
+          "suggestion": "把发布矩阵拆清：API 31+ create/update/report(long)；API 34+ setThreads；API 35+ WorkDuration 与 setPreferPowerEfficiency；Android 16 源码里的 GPU_LOAD_* / sendHint 等再单独标为 source/flag-gated 线索，避免和已进入公开 SDK 的 API 混写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T02:30:40+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 222,
-    "p0_count": 43,
-    "last_updated": "2026-05-16T00:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 127,
+    "total_entries": 225,
+    "p0_count": 38,
+    "last_updated": "2026-05-16T02:30:40+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 128,
     "updated_date": "2026-05-16",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 127
+    "last_updated_by": "openclaw-task9",
+    "pending": 128
   },
-  "last_updated": "2026-05-16T00:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 127,
+  "last_updated": "2026-05-16T02:30:40+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 128,
   "last_task2a_completed": "20.11",
   "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }

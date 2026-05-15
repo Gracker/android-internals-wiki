@@ -1437,3 +1437,15 @@
 - **位置**：frontmatter sources + 参考资料 DeepResearch 引用
 - **问题**：`DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md` 在仓库中不存在，线程退化材料链无法本地复核。
 - **建议**：恢复该材料文件，或把对应结论直接锚到 AOSP `AnimatedVectorDrawable.java` 行为和 Android Developers 文档。
+
+## [Task9 Deep Review] 25.11 ADPF Hint Session 与协程线程迁移 — 2026-05-16
+- **类型**：源码/API 风险
+- **位置**：L80-L83 示例 ThreadFactory 中 THREAD_PRIORITY_DISPLAY
+- **问题**：示意代码直接调用 `Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY)`。`Process.setThreadPriority()` 文档说明调用方没有权限修改线程或使用该优先级时会抛 `SecurityException`；普通 App 在部分设备/版本上可能不能提升到该优先级。
+- **建议**：示例中去掉强行提升到 `THREAD_PRIORITY_DISPLAY`，或 catch `SecurityException` 后降级；若保留线程优先级讨论，单独说明它不是 ADPF 的替代品，也不能作为跨设备稳定收益假设。
+
+## [Task9 Deep Review] 25.11 ADPF Hint Session 与协程线程迁移 — 2026-05-16
+- **类型**：交叉引用/来源路径
+- **位置**：frontmatter sources L34-L35 与 L43 结构参考
+- **问题**：`Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md` 在当前 Obsidian vault 中未找到；可找到的相近材料是 `Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md`。结构参考路径失效会削弱材料链可复核性。
+- **建议**：把 sources 和正文结构参考改成实际存在的 Cubox 路径，或恢复原 Clippings 材料；如果只是结构启发，标明它不是技术证据来源。
