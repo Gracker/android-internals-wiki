@@ -52,14 +52,14 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: 'task2b_pending'
+pipeline_stage: 'task6_pending'
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: 'reviewed'
-task9_result: 'needs-rework'
-task2b_state: 'pending'
+task9_state: 'pending'
+task9_result: 'pending'
+task2b_state: 'fixed'
 task2b_result: fixed
-last_task2b_at: '2026-04-20T18:33:00+08:00'
+last_task2b_at: '2026-05-15T23:30:32+08:00'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-13T02:51:35+08:00'
@@ -238,13 +238,13 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。绘制操
 
 **performDraw**：在硬件加速开启的情况下（Android 4.4+ 默认开启），View 的 onDraw() 并不真正执行绘制命令，而是将绘制指令记录到 DisplayList 中。然后 ViewRootImpl 向 RenderThread post 一个 DrawFrameTask，由 RenderThread 统一执行 OpenGL 绘制命令。
 
-RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回并不等同于 TTID 终点——TTID 终点是 WMS/ActivityRecord 的 windows drawn 回调。当 SurfaceFlinger 完成合成后，通过 WindowManagerService 通知 ActivityRecord 记录界面完全就绪的时间戳，这才是系统统计的 TTID 终点。
+RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回后，系统在 WMS/ActivityRecord 中记录 windows drawn 时间戳，这就是系统统计的 TTID 终点。SurfaceFlinger 在下一个 VSync-sf 信号到来时完成合成和送显，用户才能在屏幕上看到画面。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time, AOSP ActivityRecord.java]
 
 [图：冷启动完整时序图——从用户点击到首帧显示，标注 system_server、Zygote、App 主线程、RenderThread、SurfaceFlinger 各进程的参与环节]
 
-> 注意：queueBuffer 返回并不等于用户在屏幕上看到了画面。SurfaceFlinger 还需要等到下一个 VSync-sf 信号到来时，进行合成（compose）和送显。这中间还有一到两个 VSync 周期的延迟。但从系统度量角度，TTID 统计到 queueBuffer 完成就结束了。
+> 注意：queueBuffer 返回 ≠ 用户看到画面。SurfaceFlinger 合成和物理送显还有一到两个 VSync 周期的延迟。如果需要追踪完整送显链路，Android 15 的 ApplicationStartInfo 提供了 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE`，可以和 `START_TIMESTAMP_FIRST_FRAME` 搭配使用。
 
 ## TTID 与 TTFD：两个关键的启动指标
 
@@ -254,7 +254,7 @@ RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将�
 
 ### TTID（Time To Initial Display）
 
-TTID 是从用户触发启动（点击图标）到应用界面完全显示完成的时间。它涵盖了冷启动的完整路径：进程创建、Application 初始化、Activity 创建和首帧绘制到 SurfaceFlinger 合成完成。系统通过 ActivityMetricsLogger 自动统计这个时间，我们可以在 logcat 中通过过滤 "Displayed" 关键字看到：
+TTID 是从用户触发启动（点击图标）到首帧绘制完成的时间。系统通过 ActivityMetricsLogger 自动统计这个时间，logcat 中的 "Displayed" 行和 `am start -W` 的 TotalTime 都对应这个口径：
 
 ```
 ActivityTaskManager: Displayed com.example.app/.MainActivity: +1s234ms
@@ -316,50 +316,70 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 
 #### 关键字段与含义
 
+获取入口：`ActivityManager.getHistoricalProcessStartReasons(int maxCount)` 返回 `List<ApplicationStartInfo>`，API 35（Android 15）新增。
+
 | 字段 | 类型 | 含义 |
 |---|---|---|
-| `getLaunchType()` | int | 启动类型：`LAUNCH_TYPE_COLD`(1)、`LAUNCH_TYPE_WARM`(2)、`LAUNCH_TYPE_HOT`(3) |
-| `getStartTimestamp()` | long | 进程 fork 开始的 elapsedRealtime 时间戳，这是能拿到的最早系统时间点 |
-| `getApplicationInitializationDurationMillis()` | long | 从 Application 创建到 `onCreate()` 返回的耗时 |
-| `getFirstDrawDurationMillis()` | long | 从启动触发到首帧绘制的总耗时（对应 TTID） |
-| `getFullyDrawnDurationMillis()` | long | 从启动触发到 `reportFullyDrawn()` 的总耗时（对应 TTFD），未调用则为 -1 |
-| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED` / `FIRST_FRAME_DRAWN` / `FULLY_DRAWN` |
-| `getProcessStartupTimestamp()` | long | Zygote 完成子进程创建的时间戳 |
+| `getStartType()` | int | 启动类型：`START_TYPE_COLD`(1)、`START_TYPE_WARM`(2)、`START_TYPE_HOT`(3) |
+| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_NOT_STARTED` / `STARTED` / `FIRST_FRAME_DRAWN` / `FULLY_DRAWN` |
+| `getStartupTimestamps()` | Bundle | 返回各阶段时间戳（monotonic nanoseconds），通过常量 key 读取（见下表） |
+| `getReason()` | int | 启动原因：`START_REASON_CHANGED` / `START_REASON_ALARM` 等 |
 
-#### getStartTimestamp() 与 getLaunchType() 的联动分析
+`getStartupTimestamps()` 返回的 Bundle 中可用的 timestamp key：
 
-这两个字段组合使用可以回答一个之前无法回答的问题：系统从点击到 fork 花了多久？
+| 常量 | 含义 |
+|---|---|
+| `START_TIMESTAMP_LAUNCH` | 系统发起启动的时间点 |
+| `START_TIMESTAMP_FORK` | Zygote fork 子进程的时间点 |
+| `START_TIMESTAMP_BIND_APPLICATION` | 开始绑定 Application 的时间点 |
+| `START_TIMESTAMP_APPLICATION_ONCREATE` | Application.onCreate() 的时间点 |
+| `START_TIMESTAMP_FIRST_FRAME` | 首帧绘制完成的时间点 |
+| `START_TIMESTAMP_FULLY_DRAWN` | reportFullyDrawn() 调用的时间点（未调用时 Bundle 中不含此 key） |
+| `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE` | SurfaceFlinger 合成完成的时间点（API 35+） |
+
+#### 各阶段耗时计算
+
+通过 `getStartupTimestamps()` 中的多个时间戳，可以拆解启动各阶段的耗时：
 
 ```java
-ActivityTaskManager atm = ActivityTaskManager.getInstance();
-List<ApplicationStartInfo> history = atm.getHistoricalApplicationStartInfo();
+// API 35+ / Android 15+
+ActivityManager am = getSystemService(ActivityManager.class);
+List<ApplicationStartInfo> history = am.getHistoricalProcessStartReasons(1);
 if (history != null && !history.isEmpty()) {
     ApplicationStartInfo latest = history.get(0);
-    long forkStart = latest.getStartTimestamp();
-    long processReady = latest.getProcessStartupTimestamp();
-    long systemOverhead = processReady - forkStart;
-    long appInitOverhead = latest.getApplicationInitializationDurationMillis();
-    
-    Log.d("Startup", "Launch type: " + launchTypeName(latest.getLaunchType()));
-    Log.d("Startup", "System fork→ready: " + systemOverhead + "ms");
-    Log.d("Startup", "App init (Application.onCreate): " + appInitOverhead + "ms");
-    Log.d("Startup", "TTID: " + latest.getFirstDrawDurationMillis() + "ms");
+    Bundle timestamps = latest.getStartupTimestamps();
+    if (timestamps != null) {
+        long launch = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
+        long fork = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_FORK);
+        long bindApp = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
+        long oncreate = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE);
+        long firstFrame = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME);
+        
+        long systemForkMs = (fork - launch) / 1_000_000;
+        long bindToOncreateMs = (oncreate - bindApp) / 1_000_000;
+        long ttidMs = (firstFrame - launch) / 1_000_000;
+        
+        Log.d("Startup", "Start type: " + latest.getStartType());
+        Log.d("Startup", "System launch→fork: " + systemForkMs + "ms");
+        Log.d("Startup", "Bind→onCreate: " + bindToOncreateMs + "ms");
+        Log.d("Startup", "TTID: " + ttidMs + "ms");
+    }
 }
 ```
 
 #### 与 Perfetto 的联动
 
-在 Perfetto 中，`getStartTimestamp()` 可以与 system_server 的 `launchingActivity#...` slice 的起点对齐。`getProcessStartupTimestamp()` 可以与 App 进程的第一个可见 slice（`BindApplication`）对齐。两者的差值就是 Zygote fork + 进程初始化的系统开销——这段在 Perfetto 中往往是一个"空白"区域（App 进程还没开始跑任何业务代码），通过 ApplicationStartInfo 可以量化它。
+ApplicationStartInfo 的 timestamp 是 monotonic nanoseconds（`System.nanoTime()` 时基），Perfetto 的 trace 时间轴也是 monotonic clock，两者可以直接对齐。
 
-一个推荐的分析流程：
+推荐的分析流程：
 
 1. 在 Perfetto 中找到 `launchingActivity#...` 的起点（system_server 侧），这是系统视角的启动起点
-2. 读取 `ApplicationStartInfo.getStartTimestamp()`，对齐到同一时间轴
-3. 读取 `getProcessStartupTimestamp()`，得到 fork 完成 + 进程初始化的时间点
-4. 在 Perfetto 中定位 App 进程的 `BindApplication` slice 开始位置
-5. 三者对比，就能把"系统调度"和"应用初始化"的耗时拆开
+2. 用 `START_TIMESTAMP_LAUNCH` 对齐到同一时间轴
+3. 用 `START_TIMESTAMP_FORK` 与 `START_TIMESTAMP_BIND_APPLICATION` 的差值，量化 Zygote fork + 进程初始化的系统开销
+4. 在 Perfetto 中定位 App 进程的 `BindApplication` slice 开始位置，验证两者一致性
+5. 用 `START_TIMESTAMP_FIRST_FRAME` 与 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE` 拆分首帧绘制和送显两个阶段
 
-[已验证: AOSP android-15.0.0_r1, android.app.ApplicationStartInfo]
+[已验证: AOSP android-15.0.0_r1, android.app.ApplicationStartInfo, API 35]
 
 ## 启动耗时的度量方法
 
@@ -648,3 +668,9 @@ ContentProvider 的初始化发生在 Application.onCreate 之前，是启动流
 - [Jetpack App Startup | Android Developers](https://developer.android.com/topic/libraries/app-startup) [已验证: 官方文档]
 - [AOSP ActivityThread.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java) [已验证: AOSP android-15.0.0_r1]
 - [AOSP TransactionExecutor.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/servertransaction/TransactionExecutor.java) [已验证: AOSP android-15.0.0_r1]
+### Android 安装优化机制与厂商定制边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 安装优化存在两套并行机制：AOSP 标准 staged install 和厂商私有实现。核心路径链从 PackageInstallerSession.commit() 到 dex2oat，厂商在用户态调度层面介入（vivo 缩短 idle 等待窗口、小米强制 speed 全量 AOT），不涉及内核级修改。
+- 注入时间：2026-05-15
+- 价值：首次系统梳理安装优化完整路径链与厂商差异点，补充 ch08 启动前序环节的安装耗时分析
