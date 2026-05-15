@@ -1259,3 +1259,34 @@
 - **位置**：L260 Android common kernel OPPO scx tracepoint / symbol list 线索
 - **问题**：正文写“搜索结果中也能看到 OPPO 相关 scx tracepoint / symbol list 线索”，但没有给出具体 Android common 路径、commit、symbol 名或搜索 URL。该句现在无法复核，也无法区分是 Android common 通用代码、厂商提交残留，还是搜索噪声。
 - **建议**：补具体源码锚点或删除该判断；如果只能保留为线索，应改成 `[待验证]` 并给出搜索关键词、commit id 或 Gerrit 链接。
+
+
+## [Task9 Deep Review] 20.10 WebView Renderer OOM 与白屏恢复 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：`rendererPriorityAtExit()` 说明（L124 / L213）
+- **问题**：正文只写“返回退出时 Renderer 优先级”，未说明多个 WebView 共用 Renderer 时该值可能高于当前 WebView 自己请求的优先级。
+- **建议**：补充“rendererPriorityAtExit 反映 Renderer 最终优先级；多 WebView 共用时由 attached WebViews 的最大优先级决定，不能直接反推当前 view 的 policy”。
+
+## [Task9 Deep Review] 20.10 WebView Renderer OOM 与白屏恢复 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：ApplicationExitInfo 归因段（L245）
+- **问题**：结论方向正确，但依据标成 WebViewClient 文档；WebViewClient 只能证明 return false 的 crash/kill 行为，不能证明 ApplicationExitInfo 的进程退出归因能力边界。
+- **建议**：引用 `ActivityManager#getHistoricalProcessExitReasons()` 与 `ApplicationExitInfo` 文档；明确它是宿主进程死亡后的补偿信号，不是 Renderer gone 的实时事件源。
+
+## [Task9 Deep Review] 20.10 WebView Renderer OOM 与白屏恢复 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：Provider 版本采集建议（L255）
+- **问题**：`WebViewCompat.getCurrentWebViewPackage()` 写成无参调用；AndroidX 版本需要 `Context` 参数，framework `WebView.getCurrentWebViewPackage()` 才是 API 26+ 无参。
+- **建议**：本章适用 API 26+ 时优先写 `WebView.getCurrentWebViewPackage()`；若保留 AndroidX，改成 `WebViewCompat.getCurrentWebViewPackage(context)`。
+
+## [Task9 Deep Review] 21.5 Splash Screen 与感知启动速度 — 2026-05-15
+- **类型**：源码准确性
+- **位置**：`postSplashScreenTheme` 说明（L164）
+- **问题**：正文写“缺失或指向不存在主题，Activity 会崩溃”过于绝对；缺失通常导致 Activity 继续使用启动主题或样式不正确，资源不存在更多是编译/资源解析问题。
+- **建议**：拆开说明：必须配置正确的 `postSplashScreenTheme` 才能切回正常主题；缺失会造成主题残留/视觉异常；引用不存在资源应按构建或资源解析错误处理。
+
+## [Task9 Deep Review] 21.5 Splash Screen 与感知启动速度 — 2026-05-15
+- **类型**：数据缺失
+- **位置**：`reportFullyDrawn()` 度量说明（L416）
+- **问题**：`PowerTube` 不是公开可核验的 Android 启动度量入口；该段缺少官方指标名和采集面边界。
+- **建议**：改为 Logcat `Displayed` / `Fully drawn`、Perfetto/FrameTimeline、Play Console Android Vitals（如适用）等可核验入口；删除或标注 `PowerTube` 来源。

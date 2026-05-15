@@ -24,18 +24,21 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-task2b_state: fixed
+task9_reviewed_date: '2026-05-15'
+task2b_state: pending
 created_by: "task2a-content-processing"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
 task6_result: needs-rework
+last_task9_at: '2026-05-15T11:41:46+08:00'
+task9_review_notes: '2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。Baseline Profile DSL 与 core-splashscreen 兼容模式需回炉。'
+last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 ---
 
 # Splash Screen 与感知启动速度
