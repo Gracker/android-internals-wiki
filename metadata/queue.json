@@ -7018,7 +7018,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "priority_reason": "source-index 存在 20/20 高质量 DeepResearch 素材；AOSP/官方文档已有 cached apps freezer 与 binder freezer 入口；现有章节覆盖进程模型、Binder 和后台限制，但缺少冻结机制的独立性能分析。",
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
@@ -7033,7 +7033,10 @@
       "material_paths": [
         "DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
         "intake/research-gaps.md"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 已加工为 ready-for-review，进入 Task6 审查管线。",
+      "result_file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
     },
     {
       "id": "task9-deep-review-20.4-20260515-fgs-provider-broadcast",
@@ -7098,7 +7101,9 @@
     "last_updated_by": "openclaw-task9",
     "pending": 126
   },
-  "last_updated": "2026-05-15T19:36:56+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 126
+  "last_updated": "2026-05-15T21:09:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 125,
+  "last_task2a_completed": "1.18",
+  "last_task2a_completed_at": "2026-05-15T21:09:00+08:00"
 }

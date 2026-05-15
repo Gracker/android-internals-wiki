@@ -1,7 +1,7 @@
 {
   "total": 281,
-  "draft": 1,
-  "ready-for-review": 86,
+  "draft": 0,
+  "ready-for-review": 87,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -1010,9 +1010,9 @@
   },
   "total_review_sections": 124,
   "next_review_candidates": [],
-  "ready_for_review": 86,
-  "last_updated": "2026-05-15T20:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 87,
+  "last_updated": "2026-05-15T21:09:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "20:08",
@@ -2591,6 +2591,20 @@
         "p3": 0
       },
       "task9_review_notes": "2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 1；需补 xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界，以及 PowerMetric system-wide/设备限制。"
+    },
+    "1.18": {
+      "title": "Binder Freezer 与缓存进程冻结性能",
+      "file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15",
+      "queue_priority": 80,
+      "gap_source": "素材驱动/AOSP结构/官方文档",
+      "last_task2a_at": "2026-05-15T21:09:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -2608,8 +2622,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.10",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
+  "last_task2a_processed": "1.18",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "reviewed_at": "2026-05-15T19:35:08+08:00",
@@ -2651,9 +2665,9 @@
     "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
   "total_review_files": 124,
-  "last_task2a_at": "2026-05-15T19:04:00+08:00",
-  "last_task2a_section": "25.10",
-  "last_task2a_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
+  "last_task2a_at": "2026-05-15T21:09:00+08:00",
+  "last_task2a_section": "1.18",
+  "last_task2a_file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
   "last_task6_review": "2026-05-15 19:11 review 25.10",
   "last_task6_sections": [
     "25.10"
@@ -2683,7 +2697,7 @@
   "last_task9_at": "2026-05-15T19:35:08+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
-  "last_task2a_processed_section": "25.10",
+  "last_task2a_processed_section": "1.18",
   "task6_last_review_at": "2026-05-15T19:11:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-15-19-review.md",
   "task6_last_review_sections": [
