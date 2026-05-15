@@ -130,7 +130,8 @@
     "22.10",
     "24.9",
     "26.9",
-    "25.10"
+    "25.10",
+    "1.18"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -256,14 +257,15 @@
     "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
     "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md",
     "src/part5-app/ch26-observability/09-application-exit-info.md",
-    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
   ],
-  "review_summary": "Task6 2026-05-15 20: review 20.4、21.8；小修 7 处，无新增回炉；21.8 自动晋升 finalized。",
+  "review_summary": "Task6 2026-05-15 22: review 1.18；小修 7 处，无新增回炉；未自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 629,
+    "l1_l2_fixes": 636,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 656,
+    "total_issues": 663,
     "auto_promotions": 12
   },
   "issues_by_section": {
@@ -1006,13 +1008,26 @@
       "auto_finalized": true,
       "auto_promoted_at": "2026-05-15T20:08:00+08:00",
       "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
+    },
+    "1.18": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 7,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-15T22:12:00+08:00",
+      "task6_log": "logs/review/2026-05-15-22-review.md",
+      "task6_new_rework": false,
+      "task6_note": "首次 review 通过；修正标题、少量措辞和中英文/斜杠格式，补齐 Task6 frontmatter。Task9 pending，未自动晋升。"
     }
   },
   "total_review_sections": 124,
   "next_review_candidates": [],
   "ready_for_review": 87,
-  "last_updated": "2026-05-15T21:09:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-15T22:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "20:08",
@@ -1893,14 +1908,18 @@
       "title": "文件 I/O 优化"
     },
     "24.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-14T07:12:00+08:00",
       "file": "src/part5-app/ch24-io-network/02-database-optimization.md",
-      "title": "数据库性能优化（SQLite/Room）"
+      "title": "数据库性能优化（SQLite/Room）",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "reviewed_date": "2026-05-14",
+      "metadata_sync_note": "2026-05-15 Task6：源文件已 finalized/ready-to-publish，修正 progress 中陈旧 task6_pending 记录。"
     },
     "24.3": {
       "status": "finalized",
@@ -2596,15 +2615,22 @@
       "title": "Binder Freezer 与缓存进程冻结性能",
       "file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_source": "素材驱动/AOSP结构/官方文档",
       "last_task2a_at": "2026-05-15T21:09:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
-      "task9_state": "pending"
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "task6_reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T22:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-22-review.md",
+      "task6_review_notes": "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 7 处；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2b_rounds": [
@@ -2668,28 +2694,28 @@
   "last_task2a_at": "2026-05-15T21:09:00+08:00",
   "last_task2a_section": "1.18",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-  "last_task6_review": "2026-05-15 19:11 review 25.10",
+  "last_task6_review": "2026-05-15 22: review 1.18",
   "last_task6_sections": [
-    "25.10"
+    "1.18"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
   ],
-  "last_task6_at": "2026-05-15T19:11:00+08:00",
+  "last_task6_at": "2026-05-15T22:12:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-15T19:11:00+08:00",
-    "log": "logs/review/2026-05-15-19-review.md",
+    "reviewed_at": "2026-05-15T22:12:00+08:00",
+    "log": "logs/review/2026-05-15-22-review.md",
     "sections": [
-      "25.10"
+      "1.18"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md"
     ],
     "mode": "first review",
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 7,
     "rework_sections": [],
     "auto_promotions": [],
-    "summary": "25.10 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
+    "summary": "1.18 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
@@ -2698,9 +2724,9 @@
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
   "last_task2a_processed_section": "1.18",
-  "task6_last_review_at": "2026-05-15T19:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-15-19-review.md",
+  "task6_last_review_at": "2026-05-15T22:12:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-15-22-review.md",
   "task6_last_review_sections": [
-    "25.10"
+    "1.18"
   ]
 }
