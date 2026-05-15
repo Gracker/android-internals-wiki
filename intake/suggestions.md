@@ -1334,3 +1334,15 @@
 - **位置**：L279-L283 厂商 GPU blur / AGSL 成本曲线
 - **问题**：“同一段 AGSL 在旗舰设备上可能只增加 1-2ms，在低端机或温控状态下可能跨过整帧预算”是量化判断，但正文没有给设备型号、刷新率、效果面积、blur 半径/采样次数、Perfetto/AGI 采样条件。
 - **建议**：要么降级为定性风险提示；要么补一张最小实测表：Adreno/Mali/低端机各一台，记录无效果、小半径、大半径、AGSL 的 P50/P90/P99、jank、Graphics/GL mtrack 与可用 GPU counter。
+
+## [Task9 Deep Review] 24.9 Wi-Fi 评分、网络选择与连接切换性能 — 2026-05-15
+- **类型**：公开 API 使用边界
+- **位置**：L253-L270 DefaultNetworkTracker 示例
+- **问题**：`onAvailable()` 内经 `publish(network)` 同步读取 `getNetworkCapabilities(network)`，与 Android NetworkCallback 官方文档的 race 条件提示冲突。
+- **建议**：`onAvailable()` 只记录事件和 current network；能力快照从 `onCapabilitiesChanged(network, caps)` 发布，`publish()` 不要在回调内默认同步查询 capabilities。
+
+## [Task9 Deep Review] 24.9 Wi-Fi 评分、网络选择与连接切换性能 — 2026-05-15
+- **类型**：知识盲区 / OEM Wi-Fi scoring
+- **位置**：L380-L388 OEM Wi-Fi 评分差异
+- **问题**：OEM 差异漏掉官方 Wi-Fi network selection 文档中的 `WifiConnectedNetworkScorer` / external scorer 扩展点。
+- **建议**：在 OEM 差异表补 external scorer：注册 API、输入的 Wi-Fi usability stats、输出 score，以及 dumpsys/overlay/包名等验证材料。
