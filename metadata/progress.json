@@ -928,12 +928,21 @@
       "reviewed_at": "2026-05-15T11:41:46+08:00",
       "log": "logs/deep-review/2026-05-15-11-deep-review.md",
       "summary": "P0 0 / P1 0 / P2 3 / P3 2。[P2] L124/L213 — rendererPriorityAtExit() 需要说明多 WebView 共用 Renderer 时取最终优先级。; [P2] L245 — ApplicationExitInfo 段落应引用 ActivityManager/ApplicationExitInfo 文档，而不是 WebViewClient。"
+    },
+    "4.9": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 3,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T13:30:28+08:00",
+      "log": "logs/deep-review/2026-05-15-13-deep-review.md",
+      "summary": "P0 1：FinalizerReference 创建时机写反；P1 2：Cleaner 双路径未区分、CloseGuard/Cleaner API level 边界缺失；P2 3：remove() wait 语义、watchdog 行号/阈值、AOSP path 规范。"
     }
   },
-  "total_review_sections": 118,
+  "total_review_sections": 119,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T12:31:59+08:00",
+  "last_updated": "2026-05-15T13:30:28+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-15",
@@ -951,7 +960,7 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-15-12-review.md"
   },
-  "task9_last_review": "2026-05-15T12:31:59+08:00",
+  "task9_last_review": "2026-05-15T13:30:28+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2356,6 +2365,22 @@
       "spotcheck_date": "2026-05-15",
       "spotcheck_result": "pass-light-edit",
       "last_review_log": "logs/review/2026-05-15-10-review.md"
+    },
+    "4.9": {
+      "title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "file": "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-13-deep-review.md",
+      "queue_priority": 95,
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-15"
     }
   },
   "task2b_rounds": [
@@ -2377,57 +2402,45 @@
   "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T12:31:59+08:00",
-    "log": "logs/deep-review/2026-05-15-12-deep-review.md",
+    "at": "2026-05-15T13:30:28+08:00",
+    "log": "logs/deep-review/2026-05-15-13-deep-review.md",
     "sections": [
-      "2.6",
-      "5.3",
-      "11.5"
+      "4.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-      "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-      "src/part2-performance/ch11-power/05-wakelock.md"
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
     ],
-    "p0": 4,
-    "p1": 1,
-    "p2": 0,
-    "p3": 3,
+    "p0": 1,
+    "p1": 2,
+    "p2": 3,
+    "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-12-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-13-deep-review.md",
   "last_task9_sections": [
-    "2.6",
-    "5.3",
-    "11.5"
+    "4.9"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T12:31:59+08:00",
-    "log": "logs/deep-review/2026-05-15-12-deep-review.md",
+    "at": "2026-05-15T13:30:28+08:00",
+    "log": "logs/deep-review/2026-05-15-13-deep-review.md",
     "sections": [
-      "2.6",
-      "5.3",
-      "11.5"
+      "4.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-      "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-      "src/part2-performance/ch11-power/05-wakelock.md"
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
     ],
-    "p0": 4,
-    "p1": 1,
-    "p2": 0,
-    "p3": 3,
+    "p0": 1,
+    "p1": 2,
+    "p2": 3,
+    "p3": 0,
     "result": "needs-rework",
     "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part2-performance/ch11-power/05-wakelock.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
-  "total_review_files": 118,
+  "total_review_files": 119,
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
   "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
@@ -2457,11 +2470,9 @@
     "summary": "18.2 写作层发现源码调研附录仍是素材 dump，已合并进既有高优先级回炉队列；21.5 通过轻修，Task9 既有技术队列继续由 Task2B 处理。"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part2-performance/ch11-power/05-wakelock.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
-  "last_task9_at": "2026-05-15T12:31:59+08:00",
+  "last_task9_at": "2026-05-15T13:30:28+08:00",
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 187
 }

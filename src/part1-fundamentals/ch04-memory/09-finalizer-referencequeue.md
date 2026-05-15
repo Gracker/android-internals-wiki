@@ -27,8 +27,16 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task6_pending"
+pipeline_stage: task2b_pending
 task6_state: "pending"
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: 2026-05-15
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-15T13:30:28+08:00'
+task9_review_notes: '2026-05-15 task9 deep-review: P0 1 / P1 2 / P2 3，需 Task2B 修正 FinalizerReference 生命周期、Cleaner 路径与 API level 边界。'
+last_task9_review_log: 'logs/deep-review/2026-05-15-13-deep-review.md'
 ---
 
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
