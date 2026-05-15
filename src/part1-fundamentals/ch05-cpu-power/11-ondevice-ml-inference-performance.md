@@ -282,6 +282,48 @@ AOT 的适用条件：
 - **§14.1 Android Studio Profiler**：ML Profiler 可视化推理性能
 
 
+
+
+## 源码索引（2026-05-15 调研补充）
+
+本节涉及的关键源码路径，供进一步溯源：
+
+| 组件 | 源码路径（AOSP） | 关键内容 |
+|------|-----------------|---------|
+| NNAPI HAL 1.3 | `hardware/interfaces/neuralnetworks/1.3/` | IDevice 接口、OperandType 枚举、ExecutionPreference |
+| NNAPI 类型定义 | `hardware/interfaces/neuralnetworks/1.3/types.hal` | 模型、执行上下文、数据布局 |
+| LiteRT QNN Dispatch | `external/litert/runtime/dispatch/dispatch_delegate.cc` | QNN vendor ID、API version、capability 查询 |
+| LiteRT CompiledModel | `external/litert/runtime/compiled_model.cc` | V2 API 实现、硬件绑定、异步执行 |
+| LiteRT AOT 编译 | `external/litert/aot/` | AI Pack 导出、target SoC 指定 |
+| Qualcomm QNN | `external/android-nn-driver/` | 厂商 NPU 驱动、Setup 选项 |
+| NPU Feature 声明 | `frameworks/base/data/etc/platform.xml` | `android.hardware.neural_processing_unit` |
+| AICore System Service | `frameworks/ml/nn/runtime/` | AICore 调度、多租户路由 |
+
+**关键调用链（LiteRT NPU 推理）**：
+
+```
+CompiledModel.create(Accelerator.NPU)
+  └─ LiteRT Runtime → QNN Dispatch Delegate
+      └─ QNN API (厂商 SDK) → NPU Driver (HAL 1.3)
+          └─ fallback: CPU (XNNPACK) / GPU (OpenCL/OpenGL ES)
+```
+
+**Android 17 NPU Feature 声明要求**（API 36+）：
+
+```xml
+<!-- AndroidManifest.xml 中声明 -->
+<uses-feature android:name="android.hardware.neural_processing_unit" />
+```
+
+未声明此 feature 的应用在 Android 17+ 设备上无法直接访问 NPU，系统会拒绝 NPU 调度请求并回退到 CPU/GPU。此要求确保用户对高功耗硬件的知情权。
+
+**LiteRT QNN Accelerator 关键数据**（来源：developer blog，未一手验证）：
+- 支持 90+ LiteRT op，64/72 benchmark 模型实现完整 NPU delegation
+- Snapdragon 8 Elite Gen 5：NPU 加速最高 100x（对比 CPU）、10x（对比 GPU）
+- FastVLM-0.5B：TTFT 0.12s，prefill >11000 tokens/s，decode >100 tokens/s
+
+<!-- AIW-源码调研-2026-05-15 -->
+
 ## 延伸阅读
 ### 从 NNAPI 到 LiteRT：Android NPU 性能优化全景
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/从 NNAPI 到 LiteRT：Android NPU 性能优化全景 .md

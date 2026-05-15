@@ -5066,6 +5066,791 @@
       ],
       "summary": "MotionLayout复杂动画效果实现和最佳实践",
       "scored_at": "2026-05-14T09:20:36.912986"
+    },
+    {
+      "title": "test",
+      "path": "test.md",
+      "score": 10,
+      "scored_at": "2026-05-15T05:54:37.211459"
+    },
+    {
+      "title": "2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md",
+      "path": "DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md",
+      "score": 10,
+      "scored_at": "2026-05-15T05:55:45.930130"
+    },
+    {
+      "title": "2026-05-14-android-generational-cmc-verification.md",
+      "path": "DeepResearch/2026-05-14-android-generational-cmc-verification.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107932",
+      "scored_at": "2026-05-15T05:55:58.392854"
+    },
+    {
+      "title": "2026-05-14-android-install-optimization-aosp-mechanism.md",
+      "path": "DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107933",
+      "scored_at": "2026-05-15T05:55:58.392865"
+    },
+    {
+      "title": "2026-05-14-android-mte-async-asymm-verification.md",
+      "path": "DeepResearch/2026-05-14-android-mte-async-asymm-verification.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107935",
+      "scored_at": "2026-05-15T05:55:58.392868"
+    },
+    {
+      "title": "2026-05-14-android-wifi-scoring-connectivity-service.md",
+      "path": "DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107936",
+      "scored_at": "2026-05-15T05:55:58.392869"
+    },
+    {
+      "title": "2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md",
+      "path": "DeepResearch/2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107937",
+      "scored_at": "2026-05-15T05:55:58.392870"
+    },
+    {
+      "title": "2026-05-14-okhttp-dns-lookup-httpdns-engineering.md",
+      "path": "DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107938",
+      "scored_at": "2026-05-15T05:55:58.392872"
+    },
+    {
+      "title": "2026-05-15-android-view-blast-art-gc.md",
+      "path": "DeepResearch/2026-05-15-android-view-blast-art-gc.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107939",
+      "scored_at": "2026-05-15T05:55:58.392873"
+    },
+    {
+      "title": "2026-05-15-ClawFeed24小时高价值一览.md",
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-05-15-ClawFeed24小时高价值一览.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107939",
+      "scored_at": "2026-05-15T05:55:58.392874"
+    },
+    {
+      "title": "2026-05-15-Gracker的Rss订阅.md",
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-05-15-Gracker的Rss订阅.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107940",
+      "scored_at": "2026-05-15T05:55:58.392876"
+    },
+    {
+      "title": "2026-05-14-Obsidian新增文件与今日总结（22点）.md",
+      "path": "OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-05-14-Obsidian新增文件与今日总结（22点）.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107942",
+      "scored_at": "2026-05-15T05:55:58.445153"
+    },
+    {
+      "title": "2026-05-14-Perfetto每日提交监控.md",
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-05-14-Perfetto每日提交监控.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107942",
+      "scored_at": "2026-05-15T05:55:58.445161"
+    },
+    {
+      "title": "2026-05-14-Perfetto提交解读.md",
+      "path": "OpenClaw定时任务/Perfetto每日提交解读/2026-05-14-Perfetto提交解读.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107943",
+      "scored_at": "2026-05-15T05:55:58.445163"
+    },
+    {
+      "title": "2026-05-12-SmartPerfetto日报.md",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/2026-05-12-SmartPerfetto日报.md",
+      "score": 10,
+      "scores": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107944",
+      "scored_at": "2026-05-15T05:55:58.445165"
+    },
+    {
+      "title": "2026-05-14-X草稿.md",
+      "path": "OpenClaw定时任务/X每日草稿/2026-05-14-X草稿.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107945",
+      "scored_at": "2026-05-15T05:55:58.445166"
+    },
+    {
+      "title": "2026-05-14-今天干了啥日报（OpenClaw）.md",
+      "path": "OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-05-14-今天干了啥日报（OpenClaw）.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107946",
+      "scored_at": "2026-05-15T05:55:58.445168"
+    },
+    {
+      "title": "2026-05-15-掘金Android技术文章抓取.md",
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-05-15-掘金Android技术文章抓取.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107947",
+      "scored_at": "2026-05-15T05:55:58.445169"
+    },
+    {
+      "title": "2026-05-15-时效性巡检.md",
+      "path": "OpenClaw定时任务/时效性巡检/2026-05-15-时效性巡检.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107948",
+      "scored_at": "2026-05-15T05:55:58.445170"
+    },
+    {
+      "title": "2026-05-14-每日Task巡检与自修复.md",
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-05-14-每日Task巡检与自修复.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107949",
+      "scored_at": "2026-05-15T05:55:58.445172"
+    },
+    {
+      "title": "2026-05-15-每日内容流水线选题提案.md",
+      "path": "OpenClaw定时任务/每日内容流水线选题提案/2026-05-15-每日内容流水线选题提案.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107950",
+      "scored_at": "2026-05-15T05:55:58.445173"
+    },
+    {
+      "title": "2026-05-14-每日冥想流程.md",
+      "path": "OpenClaw定时任务/每日冥想流程/2026-05-14-每日冥想流程.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107951",
+      "scored_at": "2026-05-15T05:55:58.498688"
+    },
+    {
+      "title": "2026-05-14-每日深度研究选题.md",
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-05-14-每日深度研究选题.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107952",
+      "scored_at": "2026-05-15T05:55:58.498696"
+    },
+    {
+      "title": "2026-05-14-论文.md",
+      "path": "OpenClaw定时任务/每日论文速报/2026-05-14-论文.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107953",
+      "scored_at": "2026-05-15T05:55:58.498699"
+    },
+    {
+      "title": "2026-05-14-06-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-06-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107954",
+      "scored_at": "2026-05-15T05:55:58.498700"
+    },
+    {
+      "title": "2026-05-14-07-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-07-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107955",
+      "scored_at": "2026-05-15T05:55:58.498702"
+    },
+    {
+      "title": "2026-05-14-08-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-08-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107956",
+      "scored_at": "2026-05-15T05:55:58.498703"
+    },
+    {
+      "title": "2026-05-14-08-知识加工(新).md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-08-知识加工(新).md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107957",
+      "scored_at": "2026-05-15T05:55:58.498704"
+    },
+    {
+      "title": "2026-05-14-10-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-10-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107958",
+      "scored_at": "2026-05-15T05:55:58.498705"
+    },
+    {
+      "title": "2026-05-14-11-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-11-深度技术Review.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107958",
+      "scored_at": "2026-05-15T05:55:58.498707"
+    },
+    {
+      "title": "2026-05-14-12-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-12-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107959",
+      "scored_at": "2026-05-15T05:55:58.498708"
+    },
+    {
+      "title": "2026-05-14-13-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-13-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107960",
+      "scored_at": "2026-05-15T05:55:58.554936"
+    },
+    {
+      "title": "2026-05-14-14-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-14-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107961",
+      "scored_at": "2026-05-15T05:55:58.554950"
+    },
+    {
+      "title": "2026-05-14-15-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-15-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107962",
+      "scored_at": "2026-05-15T05:55:58.554952"
+    },
+    {
+      "title": "2026-05-14-15-知识加工(新).md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-15-知识加工(新).md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107963",
+      "scored_at": "2026-05-15T05:55:58.554953"
+    },
+    {
+      "title": "2026-05-14-16-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-16-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107964",
+      "scored_at": "2026-05-15T05:55:58.554955"
+    },
+    {
+      "title": "2026-05-14-17-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-17-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107965",
+      "scored_at": "2026-05-15T05:55:58.554956"
+    },
+    {
+      "title": "2026-05-14-18-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-18-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107966",
+      "scored_at": "2026-05-15T05:55:58.554957"
+    },
+    {
+      "title": "2026-05-14-18-知识加工(新).md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-18-知识加工(新).md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107967",
+      "scored_at": "2026-05-15T05:55:58.554958"
+    },
+    {
+      "title": "2026-05-14-19-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-19-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107968",
+      "scored_at": "2026-05-15T05:55:58.554960"
+    },
+    {
+      "title": "2026-05-14-20-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-20-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107969",
+      "scored_at": "2026-05-15T05:55:58.554961"
+    },
+    {
+      "title": "2026-05-14-21-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-21-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107970",
+      "scored_at": "2026-05-15T05:55:58.603999"
+    },
+    {
+      "title": "2026-05-14-22-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-22-深度技术Review.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107971",
+      "scored_at": "2026-05-15T05:55:58.604008"
+    },
+    {
+      "title": "2026-05-14-23-知识加工(新).md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-14-23-知识加工(新).md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107972",
+      "scored_at": "2026-05-15T05:55:58.604010"
+    },
+    {
+      "title": "2026-05-15-00-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-00-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107973",
+      "scored_at": "2026-05-15T05:55:58.604011"
+    },
+    {
+      "title": "2026-05-15-01-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-01-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107974",
+      "scored_at": "2026-05-15T05:55:58.604013"
+    },
+    {
+      "title": "2026-05-15-01-知识加工(新).md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-01-知识加工(新).md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107974",
+      "scored_at": "2026-05-15T05:55:58.604014"
+    },
+    {
+      "title": "2026-05-15-02-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-02-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107975",
+      "scored_at": "2026-05-15T05:55:58.604015"
+    },
+    {
+      "title": "2026-05-15-03-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-03-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107976",
+      "scored_at": "2026-05-15T05:55:58.604017"
+    },
+    {
+      "title": "2026-05-15-04-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-04-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107977",
+      "scored_at": "2026-05-15T05:55:58.604018"
+    },
+    {
+      "title": "2026-05-15-05-深度技术Review.md",
+      "path": "OpenClaw定时任务/知识加工/2026-05-15-05-深度技术Review.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107978",
+      "scored_at": "2026-05-15T05:55:58.604019"
+    },
+    {
+      "title": "2026-05-15_RSS_1a30cf984e.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_1a30cf984e.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107979",
+      "scored_at": "2026-05-15T05:55:58.652705"
+    },
+    {
+      "title": "2026-05-15_RSS_93f1815833.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_93f1815833.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107980",
+      "scored_at": "2026-05-15T05:55:58.652715"
+    },
+    {
+      "title": "2026-05-15_RSS_9dc222ed5c.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_9dc222ed5c.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107981",
+      "scored_at": "2026-05-15T05:55:58.652717"
+    },
+    {
+      "title": "2026-05-15_RSS_ab04753e9e.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_ab04753e9e.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "indexed_at": "2026-05-15T05:55:13.107982",
+      "scored_at": "2026-05-15T05:55:58.652718"
+    },
+    {
+      "title": "2026-05-15_RSS_b960bc46ea.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_b960bc46ea.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107983",
+      "scored_at": "2026-05-15T05:55:58.652720"
+    },
+    {
+      "title": "2026-05-15_RSS_f6dd8f1797.md",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-15_RSS_f6dd8f1797.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107984",
+      "scored_at": "2026-05-15T05:55:58.652721"
+    },
+    {
+      "title": "2026-05-15-每日深度研究选题.md",
+      "path": "每日深度研究选题/2026-05-15-每日深度研究选题.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "indexed_at": "2026-05-15T05:55:13.107985",
+      "scored_at": "2026-05-15T05:55:58.652722"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-android-view-blast-art-gc.md",
+      "title": "Android View 标准管线 — BLASTBufferQueue 与 ART 分代 GC 协同机制",
+      "summary": "解析 BLASTBufferQueue 与 ViewRootImpl 的异步 buffer 提交流程，以及 ART Generational CC 分代 GC 如何降低 View 渲染分配的 GC 压力。",
+      "section_mapping": "ch18/02",
+      "processed_at": "2026-05-15T06:30:00+08:00",
+      "action": "inject",
+      "added_by": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md",
+      "title": "Kotlin 协程线程迁移与 ADPF Hint Session 工程化边界验证",
+      "summary": "ADPF PerformanceHintManager.Session 基于 TID 而非协程 ID 绑定线程，协程在 Dispatchers.Default 线程池迁移时若新 TID 未纳入 Session 会导致 hint 失效。",
+      "section_mapping": "ch05/09",
+      "processed_at": "2026-05-15T06:30:00+08:00",
+      "action": "inject",
+      "added_by": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md",
+      "title": "Android 安装优化机制与厂商定制边界",
+      "summary": "Android 安装优化存在两套并行机制：AOSP 标准 staged install 和厂商私有实现。核心路径链从 PackageInstallerSession.commit() 到 dex2oat。",
+      "section_mapping": "ch08/02",
+      "processed_at": "2026-05-15T06:30:00+08:00",
+      "action": "inject",
+      "added_by": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md",
+      "title": "Perfetto SPAN_JOIN 与窗口函数交叉分析算法引擎深度解析",
+      "summary": "Perfetto Trace Processor 的 SPAN_JOIN 是 C++ 层自定义算子表，实现时间跨度交集计算。支持 PARTITIONED 分区键和 SPAN_LEFT_JOIN/SPAN_OUTER_JOIN 变体。",
+      "section_mapping": "ch13/10",
+      "processed_at": "2026-05-15T06:30:00+08:00",
+      "action": "queue",
+      "added_by": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-refreshrate-selector-arr.md",
+      "title": "Android 17 RefreshRateSelector 多维度评分算法与 ARR 实现机制",
+      "summary": "Android 15 ARR 机制允许刷新率在单一显示模式内动态调整，核心组件为 RefreshRateSelector 和 DisplayModeDirector，评分算法综合帧率匹配度、亮度、场景、功耗、温度多维度权重。",
+      "section_mapping": "ch02/18",
+      "processed_at": "2026-05-15T06:30:00+08:00",
+      "action": "inject",
+      "added_by": "task-deepresearch-injector"
     }
   ]
 }

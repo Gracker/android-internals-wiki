@@ -320,6 +320,77 @@ WifiNetworkSelector.evaluateNetworks()
 
 [AIW-源码调研-2026-05-14: Wi-Fi Scoring 与 ConnectivityService 集成机制深度验证]
 
+
+
+## [AIW-源码调研-2026-05-15] OkHttp Dns.lookup() 同步阻塞边界与死锁风险
+
+> 来源：每日源码调研 `2026-05-15-okhttp-dns-lookup-sync-httpdns-async-prefetch.md`
+
+### 核心发现
+
+OkHttp `Dns` 接口的 `lookup(hostname)` 方法是**同步阻塞调用**，发生在建连线程中。如果在 `lookup()` 内发起 HTTPDNS HTTP 请求，且该请求使用同一个 `OkHttpClient`，可能引发死锁：DNS 请求需要从连接池获取 HTTP session，但连接池为空且等待 DNS 结果释放。
+
+### 源码锚点
+
+**Dns 接口定义**：`okhttp/okhttp/src/main/kotlin/okhttp3/Dns.kt` (square/okhttp master)
+
+```kotlin
+fun interface Dns {
+  @Throws(UnknownHostException::class)
+  fun lookup(hostname: String): List<InetAddress>
+}
+```
+
+官方文档明确要求："Implementations of this interface **must be safe for concurrent use**."
+
+**RouteSelector 调用路径**：`okhttp/okhttp/src/main/java/okhttp3/internal/http/RouteSelector.java` L124-L146
+
+```java
+// Try each address for best behavior in mixed IPv4/IPv6 environments.
+List<InetAddress> addresses = address.dns().lookup(socketHost);
+for (int i = 0, size = addresses.size(); i < size; i++) {
+  InetAddress inetAddress = addresses.get(i);
+  inetSocketAddresses.add(new InetSocketAddress(inetAddress, socketPort));
+}
+```
+
+调用链：
+1. `RouteSelector.next()` → `resetNextProxy()` → `resetNextInetSocketAddress()`
+2. `address.dns().lookup(socketHost)` 在当前建连线程同步执行
+3. 如果 `lookup()` 内部发起网络请求，该线程被阻塞
+
+### 正确工程模式：异步预取 + 两级缓存
+
+```
+[App Startup / Background Thread]
+    → WorkManager / Coroutine Dispatchers.IO
+        → HTTPDNS SDK.query(domain)
+            → HTTP GET to HTTPDNS Service
+            → Parse { ips: ["1.2.3.4", ...], ttl: 600 }
+            → Write to Memory Cache (LruCache)
+            → Write to Disk Cache (SharedPreferences / SQLite)
+
+[OkHttp Dns.lookup() call]
+    → Check Memory Cache (L1)
+        → HIT: return immediately
+        → MISS: check Disk Cache (L2)
+            → HIT: return + async refresh
+            → MISS: fallback to Dns.SYSTEM.lookup()
+```
+
+关键设计点：
+- **同步路径只读缓存**：绝对不能在 `lookup()` 内发起网络请求
+- **HTTPDNS 服务使用独立 OkHttpClient**：与业务请求隔离，避免死锁
+- **TTL 管理**：缓存 TTL 建议设为 HTTPDNS 服务 TTL 的 80%
+- **失败隔离**：HTTPDNS 不可达时自动 fallback 到 `Dns.SYSTEM`
+
+### 信息源
+
+- [okhttp/okhttp/src/main/kotlin/okhttp3/Dns.kt](https://github.com/square/okhttp/blob/master/okhttp/src/main/kotlin/okhttp3/Dns.kt) — 一手
+- [okhttp/RouteSelector.java L124-L146](https://github.com/square/okhttp/blob/db9c2db40b0b89a1853715fd52e2748463d9cc9c/okhttp/src/main/java/okhttp3/internal/http/RouteSelector.java) — 一手
+- [square.github.io Dns interface docs](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/index.html) — 一手（官方文档）
+
+
 ## 工程检查清单
 
 加工网络架构时，可以按下面的清单做一次自检：

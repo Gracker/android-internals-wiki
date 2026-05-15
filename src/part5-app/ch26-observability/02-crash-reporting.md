@@ -292,3 +292,78 @@ Crash 看板至少保留三组指标：
 ## 本节小结
 
 Crash 上报体系的主线是：崩溃当下只写最小现场，下次启动或独立上传进程补齐上下文，服务端完成符号化、聚合、告警和分派。Java / Native 的捕获机制在 20.2、20.3、19.24 已经展开；26.2 更关注工程系统的可靠性边界：多进程不漏报，mapping 和 symbols 不缺失，告警能直接服务发版决策。
+
+
+---
+
+## 附录：源码调研补充 — Android 线上诊断能力版本边界（2026-05-15）
+
+*来源：AIW 每日源码调研 | 关联章节：§26.5、§13.2、§15.5、§20.3*
+
+### A.1 ApplicationExitInfo 版本行为差异
+
+| API Level | ANR Trace | Native Tombstone | 备注 |
+|-----------|-----------|------------------|------|
+| 30 | `getTraceInputStream()` ✅ | ❌ | 仅 Java ANR trace |
+| 31+ | ✅ | ✅ (`tombstone.proto`) | `REASON_CRASH_NATIVE` 返回 protobuf |
+
+**SDK envelope 与系统 exit reason 去重键**：pid + timestamp + process_name + reason + tombstone/build_id + top_frame
+
+### A.2 ProfilingManager（API 35+）
+
+Android 15 `ProfilingManager.requestProfiling()` 支持 App-driven system trace / heap / stack profiling：
+
+```java
+public void requestProfiling(
+    int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | HEAP_DUMP | HEAP_PROFILE | STACK_TRACE
+    Bundle options,
+    String packageName,
+    CancellationSignal signal,
+    Executor executor,
+    Consumer<ProfilingResult> resultCallback
+)
+```
+
+**Result 回调**：
+```java
+ProfilingResult#getResultFilePath()  // trace 文件路径（系统管理，应用只读）
+ProfilingResult#getResultStatus()    // 状态码
+```
+
+**限制**：Rate limiter 存在（结果去重、频率控制）；连续 profiling 类型建议提前开始、及时取消
+
+### A.3 ProfilingTrigger（API 36+）
+
+Android 16 事件触发采集：
+
+**Trigger 类型**：
+- `TRIGGER_TYPE_APP_FULLY_DRAWN`：app 报告首帧完成并可交互
+- `TRIGGER_TYPE_APP_REQUESTED`：app 主动请求
+- `TRIGGER_TYPE_ANR`：ANR 发生时（推测）
+- `TRIGGER_TYPE_CRASH`：crash 发生时（推测）
+
+**使用模式**：
+```java
+val triggerBuilder = ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+    .setRateLimitingPeriodHours(1)
+profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
+```
+
+### A.4 Android 线上诊断能力版本表
+
+| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
+|------|---------------------------|---------------------|----------------------|
+| 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
+| ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
+| Native Tombstone | ✅ (API 31+) | ✅ | ✅ |
+| App-driven Profiling | ❌ | `ProfilingManager` ✅ | ✅ |
+| Trigger-based Profiling | ❌ | ❌ | `ProfilingTrigger` ✅ |
+| 系统 trace 路径 | Perfetto / bugreport | ✅ | ✅ |
+
+### A.5 Native Crash Signal Handler 边界（未经一手验证）
+
+- Signal handler 必须是 async-signal-safe：不能调用 `malloc`/`free`、不能使用锁、不能分配内存
+- Crashpad Android client 使用 out-of-process handler 模型
+- `sigaction()` 设置 `SA_SIGINFO` 获取 signal number 和 siginfo_t 地址
+
+<!-- AIW-源码调研-2026-05-15 -->

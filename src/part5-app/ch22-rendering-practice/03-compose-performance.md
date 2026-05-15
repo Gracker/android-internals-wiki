@@ -453,3 +453,60 @@ AndroidView(
 | Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda；2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 
 [自动发现]：Compose 1.9+ 的 `TextMeasurer` API 支持在后台线程（`TextMeasurer.measure`）预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。开发者需要主动使用 `TextMeasurer` 并在 Composable 之外调用 `measure()`，不是自动生效的后台预热。[待验证: 需确认具体 Compose Foundation 版本引入的 TextMeasurer API 稳定化时间和后台线程调用约束]
+
+
+## 源码调研补充（2026-05-15）
+
+### Pausable Composition 源码级细节
+
+**源码位置**（已验证）：
+- 接口定义：`androidx.compose.runtime.PausableComposition`（AOSP）
+- 实现：`CompositionImpl` 内部类
+- 工厂函数：`public fun PausableComposition(applier: Applier<*>, parent: CompositionContext): PausableComposition`
+
+**关键接口方法**：
+```kotlin
+public sealed interface PausedComposition {
+    public val isComplete: Boolean
+    public val isApplied: Boolean  
+    public val isCancelled: Boolean
+    public fun resume(shouldPause: ShouldPauseCallback): Boolean
+    public fun apply()
+    public fun cancel()
+}
+```
+
+**Compiler 支持状态**：根据官方 release notes，**PausableComposition 的 compiler 支持仍在开发中**，当前需要 feature flag 启用：
+```kotlin
+ComposeFeatureFlag.Companion.PausableComposition
+```
+这不是一个用户可简单启用的 feature flag，而是 compiler plugin 层面的代码生成支持。
+
+**版本注意**：Compose Foundation 1.10.0-alpha05 曾默认启用，但 1.10.6 因稳定性问题默认禁用。
+
+### LazyLayoutCacheWindow 源码级细节
+
+**源码位置**（已验证）：
+`androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow`
+- 文件：`frameworks/support/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt`
+
+**两种构造方式**（1.9.0 稳定化）：
+```kotlin
+// 方式 1: Dp 单位
+LazyLayoutCacheWindow(ahead = 3.dp, behind = 1.dp)
+
+// 方式 2: viewport fraction
+LazyLayoutCacheWindow(aheadFraction = 0.5f, behindFraction = 0.3f)
+```
+
+**接口定义**：
+```kotlin
+@ExperimentalFoundationApi
+@Stable
+interface LazyLayoutCacheWindow {
+    fun Density.calculateAheadWindow(viewport: Int): Int = 0
+    fun Density.calculateBehindWindow(viewport: Int): Int = 0
+}
+```
+
+[AIW-源码调研-2026-05-15]
