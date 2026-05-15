@@ -6814,19 +6814,62 @@
       "related_files": [
         "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
       ]
+    },
+    {
+      "id": "task9-2026-05-15-22.10-rendereffect-runtime-shader-review",
+      "section": "22.10",
+      "section_title": "RenderEffect 与 RuntimeShader 性能实践",
+      "priority": 95,
+      "title": "RuntimeShader uniform 动画失效风险与 gpu_busy 观测口径错误",
+      "description": "RuntimeShader 示例复用同一 RenderEffect 时缺少显式 invalidate，gpu_busy 又被写成 Android 16+ 标准化 counter。",
+      "reason": "[Deep Tech Review] RuntimeShader 示例复用同一 RenderEffect 时缺少显式 invalidate，gpu_busy 又被写成 Android 16+ 标准化 counter。",
+      "issue_type": "rendering-api-and-observability-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "frameworks/base/core/java/android/view/View.java",
+        "frameworks/base/graphics/java/android/graphics/RenderNode.java",
+        "protos/perfetto/common/gpu_counter_descriptor.proto"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "API 行为/原理断裂",
+          "location": "L181-L208 RuntimeShader 示例",
+          "detail": "示例复用同一个 RenderEffect，帧内只更新 RuntimeShader uniform 后再次调用 view.setRenderEffect(effect)。AOSP View.setRenderEffect() 只有在 mRenderNode.setRenderEffect(renderEffect) 返回 true 时才调用 invalidateViewProperty(true, true)；RenderNode.setRenderEffect() 文档说明相同值会返回 false。也就是说，同一个 RenderEffect 指针重复设置通常不会触发 View 重绘。若没有 ValueAnimator/Choreographer 侧显式 invalidate，progress/size uniform 更新可能不会出现在下一帧。",
+          "suggestion": "把示例改成“初始化时 setRenderEffect 一次；每帧更新 uniform 后调用 view.postInvalidateOnAnimation()/invalidate()”。同时说明如果动画框架本身已经驱动重绘，可以复用该帧调度；不要依赖重复 setRenderEffect(effect) 触发失效。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/观测口径",
+          "location": "L240、L281 gpu_busy 观测指标",
+          "detail": "正文写“Android 16+ 优先看标准化 gpu_busy”，并在设备验证指标中直接列 gpu_busy。复核 Android 16 CDD 只要求 GPU counters/RenderStages 输出符合 Perfetto protobuf schema；Perfetto GpuCounterDescriptor 只有 counter_id/name/unit/group 等字段，没有公开的 gpu_busy 标准别名约束。2.10 章节当前也已有同类 pending 队列。按现有写法会让读者在很多设备上寻找不存在的统一 counter 名称。",
+          "suggestion": "改成“先枚举设备 producer 暴露的 GPU counter name/id；如果存在 busy/utilization 类 counter 再纳入对照”。删除“Android 16+ 标准化 gpu_busy”表述，或补 CDD/Perfetto producer/厂商文档证据后再保留。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T15:27:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 208,
+    "total_entries": 210,
     "p0_count": 43,
-    "last_updated": "2026-05-15T13:30:28+08:00",
+    "last_updated": "2026-05-15T15:27:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 127,
+    "pending_entries": 125,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
-    "pending": 127
+    "pending": 125
   },
-  "last_updated": "2026-05-15T14:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 126
+  "last_updated": "2026-05-15T15:27:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 125
 }
