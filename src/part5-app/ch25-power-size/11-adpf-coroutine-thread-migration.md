@@ -2,13 +2,20 @@
 title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task9_state: pending
+task9_state: reviewed
 last_task6_at: "2026-05-16T02:11:00+08:00"
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T02:30:40+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-02-deep-review.md"
+task2b_state: pending
+task2b_result: pending
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
@@ -33,7 +40,6 @@ sources:
     path: "DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md"
   - type: structure
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
-
 ---
 
 # 25.11 ADPF Hint Session 与协程线程迁移
