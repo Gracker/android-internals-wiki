@@ -6186,7 +6186,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
@@ -6196,7 +6196,9 @@
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md",
         "https://perfetto.dev/docs/analysis/stdlib-docs",
         "https://perfetto.dev/docs/analysis/perfetto-sql-getting-started"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task2a-gap-2026-05-15-17.4-04-sched-ext-oem-bpf-scheduler",
