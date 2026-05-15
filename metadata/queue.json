@@ -7898,6 +7898,76 @@
           "suggestion": "补上 libs/hwui/apex/jni_runtime.cpp 源码锚点；在版本表里区分 Android 13/14 与 Android 15+：SkiaGL 分支走 eglGetDisplay，Vulkan 分支走 vkEnumerateInstanceVersion，Android 15+ 还要说明 initializeGlAlways() 触发 GL 兜底预加载；删除“未追到 native graphics runtime”的待验证尾巴。"
         }
       ]
+    },
+    {
+      "id": "task9-20260516-149-camera3-path-textureview",
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 95,
+      "severity": "P0/P1",
+      "title": "Camera camera3.h 源码路径与 TextureView 成本机制需修正",
+      "description": "[Deep Tech Review] camera3.h 引用路径仍指向不存在的 hardware/interfaces 路径；TextureView/SurfaceTexture 成本被写成每帧 YUV 上传，机制口径不准确。",
+      "reason": "[Deep Tech Review] 14.9 仍有 camera3.h 源码路径错误，并把 SurfaceTexture/TextureView 成本写成每帧 YUV 上传，需按 GraphicBuffer 外部纹理导入与 GPU 合成/采样成本修正。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L475",
+          "detail": "`[已验证: AOSP hardware/interfaces/camera/device/3.6/default/include/camera3.h]` 路径在 AOSP android-16.0.0_r1 不存在。camera3.h 的稳定锚点在 `hardware/libhardware/include_all/hardware/camera3.h`（`include/hardware/camera3.h` 是到 include_all 的链接/转发）。",
+          "suggestion": "把源码锚点改为 `hardware/libhardware/include_all/hardware/camera3.h` 或说明 `include/hardware/camera3.h` 的转发关系；保留 `request_stream_buffers` / `return_stream_buffers` 属于 device HAL 3.6 callback 的版本说明。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L389/L464-L468",
+          "detail": "文中把 SurfaceTexture/TextureView 的成本写成“每帧 YUV 数据上传为 GL 纹理 / GPU 纹理上传”。Camera 预览通常是 HAL 写 GraphicBuffer，SurfaceTexture/GLConsumer 将 Buffer 作为外部纹理导入并由 GPU/HWC 采样、合成；不是 App 每帧把 YUV 重新上传到 GL 纹理。",
+          "suggestion": "改成“TextureView 通常失去 SurfaceView 直送/overlay 的机会，增加外部纹理采样、颜色转换/合成和 View 树合成成本”；5-10ms 数字只在有具体设备、分辨率、trace 样本时保留。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T07:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260516-2212-fragment-version-runoncommit",
+      "section": "22.12",
+      "section_title": "FragmentTransaction 提交链路与页面切换性能",
+      "priority": 85,
+      "severity": "P1",
+      "title": "FragmentTransaction 源码版本锚点与 runOnCommit 时序边界需补齐",
+      "description": "[Deep Tech Review] 章节使用 androidx-main 源码覆盖 Fragment 1.4-1.8+，缺少稳定版本矩阵；runOnCommit 被写成“绘制之前”钩子，API 保证过强。",
+      "reason": "[Deep Tech Review] 22.12 需要把 AndroidX 源码锚点绑定到稳定 Fragment 版本，并修正 runOnCommit 的绘制时序边界。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L6-L16/L180-L231/L341-L350",
+          "detail": "frontmatter 声明覆盖 AndroidX Fragment 1.4-1.8+，但源码锚点全部来自 `androidx-main`。当前 main 的 `execPendingActions()` 已包含 predictive back 相关 `mTransitioningOp` 取消/重提交路径；正文骨架没有纳入该分支，且无法代表 1.4/1.6 的实现。",
+          "suggestion": "将源码验证锚点改为稳定 tag / Maven source（至少 1.4.x、1.7.x、1.8.x 各取一个关键点），或把适用范围收窄到实际验证的 Fragment 版本；在 1.7+ 版本差异里补 `mTransitioningOp` / predictive back 对执行路径和 trace 的影响。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L271-L282",
+          "detail": "标题把 `runOnCommit()` 定位成“事务结束后，绘制之前”。AndroidX 只保证 Runnable 在 transaction committed/executed 后运行；启用 reordering 时还可能在后续事务执行之后运行。它不是稳定的 pre-draw 或 first-draw hook。",
+          "suggestion": "把标题和结论改为“事务执行完成后的回调，不保证首帧完成/也不保证可作为绘制前钩子”；如需绘制前/首帧后信号，应引导到 OnPreDraw、Choreographer、FrameMetrics / JankStats 或 ReportDrawn 类能力。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T07:30:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {

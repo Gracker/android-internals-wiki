@@ -1480,3 +1480,15 @@
 - **问题**：正文多次使用“首帧附近的抖动会小一些”“预热收益”等判断，但没有给出同一设备 boot trace、App trace 或属性开关对照样例。
 - **建议**：补一个最小证据口径：同设备记录 `PreloadGraphicsDriver` boot trace 耗时、App 进程 `setupGpuLayers/setupAngle/chooseDriver` 与首次 EGL/Vulkan 调用耗时；如能安全切换 `ro.zygote.disable_gl_preload`，再给开启/关闭对照。没有实测时，把收益描述限制为“可能减少公共冷路径成本”。
 
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：L381/L389/L468/L499-L501
+- **问题**：预览帧间隔标准差 2-3ms/5ms、TextureView 5-10ms 成本、CameraX 冷启动额外 80-150ms 与 “cameraserver 流程更简洁”均缺少设备型号、分辨率、刷新率、CameraX 版本和 Trace/benchmark 样本。
+- **建议**：补 1-2 组同机 Camera2 vs CameraX / SurfaceView vs TextureView 的 Perfetto 样本；没有样本前，把数字降级为示例范围或删除，只保留观测方法。
+
+## [Task9 Deep Review] 22.12 FragmentTransaction 提交链路与页面切换性能 — 2026-05-16
+- **类型**：源码准确性 / 版本差异
+- **位置**：L172/L180-L231
+- **问题**：`executePendingTransactions()` 实际调用 `execPendingActions(true)` 后再 `forcePostponedTransactions()`；表格只写“会强制开始 postponed transaction”，没有说明它对已排队事务执行时会绕过 state-loss 检查，容易和 `commitNow()` 的 state-saved 行为混在一起。
+- **建议**：在 API 边界表补一列或脚注：`executePendingTransactions()` 不新建事务，但会以 `allowStateLoss=true` 执行当前 pending actions，并强制开始 postponed transactions；不要把它当作安全的同步提交替代品。
+
