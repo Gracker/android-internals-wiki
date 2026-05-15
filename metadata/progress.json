@@ -1,6 +1,6 @@
 {
-  "total": 287,
-  "draft": 0,
+  "total": 288,
+  "draft": 1,
   "ready-for-review": 95,
   "finalized": 192,
   "task9_result": "needs-rework",
@@ -2959,5 +2959,17 @@
     "processed_at": "2026-05-16T04:10:00+08:00",
     "status": "draft",
     "mode": "gap-mining"
+  },
+  "task2a_last_gap_mining": {
+    "date": "2026-05-16",
+    "created_sections": [
+      "22.12"
+    ],
+    "created_files": [
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+    ],
+    "candidate_count": 5,
+    "qualified_count": 1,
+    "note": "Phase 0 未发现空 draft；基于 source-index、research-gaps、官方 Fragment 文档与 AndroidX/AOSP 源码搜索创建新小节。"
   }
 }
