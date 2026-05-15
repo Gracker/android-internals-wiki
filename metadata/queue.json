@@ -6944,7 +6944,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "priority_reason": "Part 5 功耗与包体积章节缺少 Hybrid/WebView 能耗取舍；已有论文素材评分 18/20，且与 WebView 性能、Hybrid APM、功耗治理多章交叉。",
       "related_files": [
         "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
@@ -6955,7 +6955,10 @@
         "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
         "https://developer.android.com/topic/performance/power/setup-battery-historian",
         "https://developer.android.com/topic/performance/vitals"
-      ]
+      ],
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 已加工为空 draft，章节状态更新为 ready-for-review，进入 Task 6 review 管线。",
+      "completed_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
     }
   ],
   "metadata": {

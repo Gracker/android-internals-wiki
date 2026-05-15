@@ -1,7 +1,7 @@
 {
   "total": 280,
-  "draft": 1,
-  "ready-for-review": 92,
+  "draft": 0,
+  "ready-for-review": 93,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -129,7 +129,8 @@
     "13.12",
     "22.10",
     "24.9",
-    "26.9"
+    "26.9",
+    "25.10"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -254,7 +255,8 @@
     "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
     "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
     "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md",
-    "src/part5-app/ch26-observability/09-application-exit-info.md"
+    "src/part5-app/ch26-observability/09-application-exit-info.md",
+    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
   "review_summary": "Task9 2026-05-15 16: review 24.9；P0 0 / P1 1 / P2 2，需回炉。",
   "task6_review_summary": {
@@ -974,11 +976,11 @@
       "summary": "P1 1：Android 10/11 与 Android 12+ Connectivity 选网策略未拆分；P2 2：NetworkCallback 示例同步读 capabilities、OEM external scorer 缺失。"
     }
   },
-  "total_review_sections": 121,
+  "total_review_sections": 124,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T17:28:33+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-15T19:04:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "14:12",
@@ -2511,6 +2513,23 @@
         "p3": 0
       },
       "task9_review_notes": "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 2；需拆分 Android 10/11 legacy integer score 与 Android 12+ NetworkRanker/NetworkScore flags，NetworkCallback 示例与 OEM external scorer 口径需补。"
+    },
+    "25.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_task2a_at": "2026-05-15T19:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
+      "title": "Hybrid/WebView 功耗与原生化取舍",
+      "sources": [
+        "arXiv:2308.16734",
+        "Android Developers WebView docs",
+        "Android Developers power docs",
+        "AOSP WebView loader",
+        "Clippings/Android 性能优化"
+      ]
     }
   },
   "task2b_rounds": [
@@ -2528,8 +2547,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "22.10 RenderEffect 与 RuntimeShader 性能实践",
-  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+  "last_task2a_processed": "25.10",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "reviewed_at": "2026-05-15T17:28:33+08:00",
@@ -2570,10 +2589,10 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch26-observability/09-application-exit-info.md"
   ],
-  "total_review_files": 121,
-  "last_task2a_at": "2026-05-15T14:04:00+08:00",
-  "last_task2a_section": "13.12",
-  "last_task2a_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
+  "total_review_files": 124,
+  "last_task2a_at": "2026-05-15T19:04:00+08:00",
+  "last_task2a_section": "25.10",
+  "last_task2a_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
   "last_task6_review": "2026-05-15 16:15 review 24.9",
   "last_task6_sections": [
     "24.9"
@@ -2600,7 +2619,7 @@
   "last_task9_at": "2026-05-15T17:28:33+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
-  "last_task2a_processed_section": "22.10",
+  "last_task2a_processed_section": "25.10",
   "task6_last_review_at": "2026-05-15T17:13:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-15-17-review.md",
   "task6_last_review_sections": [
