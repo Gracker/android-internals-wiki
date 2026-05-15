@@ -13,6 +13,12 @@ related_chapters: ["7.11", "10.3", "11.1", "19.26", "20.10", "25.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2308.16734"
@@ -28,6 +34,8 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
   - type: official
     path: "https://developer.android.com/develop/ui/views/layout/webapps/debug-webview-devtools-app"
+  - type: official
+    path: "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
   - type: official
     path: "https://source.android.com/docs/core/power"
   - type: official
@@ -221,6 +229,7 @@ Hybrid/WebView 的功耗治理从页面级账本开始：同内容对照、同�
 - [Android Developers: Build web apps in WebView](https://developer.android.com/develop/ui/views/layout/webapps/webview)
 - [Android Developers: Profile battery usage with Batterystats and Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - [Android Developers: Android vitals](https://developer.android.com/topic/performance/vitals)
+- [Android Developers: WebViewRenderProcessClient](https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient)
 - [AOSP: Power profiles for Android](https://source.android.com/docs/core/power)
 - [AOSP: Measure power values](https://source.android.com/docs/core/power/values)
 - [AOSP: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/master/native/webview/loader/loader.cpp)

@@ -979,23 +979,21 @@
   "total_review_sections": 124,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T19:04:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-15T19:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
-    "time": "14:12",
+    "time": "19:11",
     "sections": [
-      "4.9",
-      "13.12"
+      "25.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
+      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
     ],
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "log": "logs/review/2026-05-15-14-review.md"
+    "log": "logs/review/2026-05-15-19-review.md"
   },
   "task9_last_review": "2026-05-15T17:28:33+08:00",
   "ready_to_publish": 186,
@@ -2516,10 +2514,10 @@
     },
     "25.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task2a_at": "2026-05-15T19:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
       "title": "Hybrid/WebView 功耗与原生化取舍",
@@ -2529,7 +2527,12 @@
         "Android Developers power docs",
         "AOSP WebView loader",
         "Clippings/Android 性能优化"
-      ]
+      ],
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-05-15",
+      "task6_reviewed_by": "openclaw-task6",
+      "last_task6_at": "2026-05-15T19:11:00+08:00",
+      "last_task6_log": "logs/review/2026-05-15-19-review.md"
     }
   },
   "task2b_rounds": [
@@ -2593,25 +2596,28 @@
   "last_task2a_at": "2026-05-15T19:04:00+08:00",
   "last_task2a_section": "25.10",
   "last_task2a_file": "src/part5-app/ch25-power-size/10-hybrid-webview-power.md",
-  "last_task6_review": "2026-05-15 16:15 review 24.9",
+  "last_task6_review": "2026-05-15 19:11 review 25.10",
   "last_task6_sections": [
-    "24.9"
+    "25.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+    "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
-  "last_task6_at": "2026-05-15T16:15:00+08:00",
+  "last_task6_at": "2026-05-15T19:11:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-15T16:15:00+08:00",
-    "log": "logs/review/2026-05-15-16-review.md",
+    "reviewed_at": "2026-05-15T19:11:00+08:00",
+    "log": "logs/review/2026-05-15-19-review.md",
     "sections": [
-      "24.9"
+      "25.10"
+    ],
+    "files": [
+      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
     ],
     "mode": "first review",
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 2,
     "rework_sections": [],
     "auto_promotions": [],
-    "summary": "24.9 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
+    "summary": "25.10 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch26-observability/09-application-exit-info.md"
@@ -2620,9 +2626,9 @@
   "last_task2a_result": "drafted",
   "ready-to-publish": 187,
   "last_task2a_processed_section": "25.10",
-  "task6_last_review_at": "2026-05-15T17:13:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-15-17-review.md",
+  "task6_last_review_at": "2026-05-15T19:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-15-19-review.md",
   "task6_last_review_sections": [
-    "26.9"
+    "25.10"
   ]
 }
