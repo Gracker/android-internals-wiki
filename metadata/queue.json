@@ -6531,6 +6531,76 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T11:41:46+08:00"
+    },
+    {
+      "id": "task2a-gap-4.9-09-finalizer-referencequeue-20260515",
+      "section": "4.9",
+      "priority": 80,
+      "title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "description": "知识缺口挖掘录入：素材驱动/章节深挖，评分 16/20，已有素材 2 条；待按大纲加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      ],
+      "material_paths": [
+        "Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
+        "art/runtime/daemon.cc; art/runtime/reference_queue.cc（待源码版本复核）"
+      ],
+      "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "id": "task2a-gap-13.12-12-perfetto-profiles-flamegraph-20260515",
+      "section": "13.12",
+      "priority": 80,
+      "title": "Perfetto Profile 导入与 Flamegraph 分析",
+      "description": "知识缺口挖掘录入：研究素材/官方发布说明，评分 18/20，已有素材 4 条；待按大纲加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
+      ],
+      "material_paths": [
+        "https://github.com/google/perfetto/releases/tag/v53.0",
+        "https://github.com/google/perfetto/releases/tag/v54.0",
+        "intake/research-feeds/2026-04-14-07-perfetto-v53-rust-sdk-pprof-simpleperf-custom-sorting.md",
+        "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
+      ],
+      "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "id": "task2a-gap-24.9-09-wifi-connectivity-selection-20260515",
+      "section": "24.9",
+      "priority": 80,
+      "title": "Wi-Fi 评分、网络选择与连接切换性能",
+      "description": "知识缺口挖掘录入：AOSP结构/研究素材，评分 15/20，已有素材 3 条；待按大纲加工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+      ],
+      "material_paths": [
+        "packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java",
+        "frameworks/base/services/core/java/com/android/server/ConnectivityService.java",
+        "DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md",
+        "https://developer.android.com/reference/android/net/ConnectivityManager"
+      ],
+      "created_by": "task2a-knowledge-gap"
     }
   ],
   "metadata": {
