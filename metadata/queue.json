@@ -6766,6 +6766,48 @@
       "related_files": [
         "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
       ]
+    },
+    {
+      "id": "task9-2026-05-15-13.12-perfetto-profile-review",
+      "section": "13.12",
+      "section_title": "Perfetto Profile 导入与 Flamegraph 分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] v54 UI 能力命名错误，并缺 Perfetto linux.perf Android 版本/权限边界",
+      "material_paths": [
+        "intake/suggestions.md",
+        "https://github.com/google/perfetto/releases/tag/v54.0",
+        "https://raw.githubusercontent.com/google/perfetto/main/docs/getting-started/cpu-profiling.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/版本事实",
+          "location": "L58、L200-L215 v54 Data Explorer / SQL 标准库补充",
+          "detail": "章节把 v54 UI 能力写成 Data Explorer，并在 outline、章节标题和结论句中使用该名称；但 Perfetto v54.0 release notes / CHANGELOG 只写了 DataGrid（table viewer component）、pivot table、glob/contains/not-contains filters、snap-to-boundaries，没有 Data Explorer 这个功能名。当前说法会让读者按不存在的 UI 入口查找功能。",
+          "suggestion": "把 Data Explorer 统一改为 DataGrid / SQL table viewer / pivot table / filter；如果确有 Data Explorer 来源，补官方链接或 commit，并同步修正 intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md 的命名口径。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/采集前提",
+          "location": "frontmatter L8、L112-L154 linux.perf data source 示例、L228 结论边界",
+          "detail": "章节适用范围写 Android 10-17，但 Perfetto CPU profiling 官方文档的 Android command line 前提是 Android 15+ 设备；在 user build 上还要求目标 App profileable/debuggable，或使用 userdebug/eng 系统。正文只给 linux.perf 配置和 100Hz 建议，没有把 Android 15+ 与 profileable/debuggable 作为采集前提写在示例前，Android 10-14 读者会误以为该路径可直接复现。",
+          "suggestion": "把版本矩阵拆开：Simpleperf 导入路径适用于 Android 上的 simpleperf profile；Perfetto linux.perf callstack sampling 路径按当前官方文档标注 Android 15+、profileable/debuggable/userdebug 前提；Android 10-14 建议走 simpleperf protobuf / Firefox Profiler JSON 导入，或仅采 system trace 不采 perf callstack。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T14:27:34+08:00",
+      "status": "pending",
+      "title": "Perfetto Profile v54 命名与 linux.perf 版本边界修正",
+      "description": "13.12 需修正 v54 Data Explorer 命名为官方 DataGrid/SQL table viewer 口径，并补 linux.perf callstack sampling 在 Android 15+、profileable/debuggable/userdebug 下的采集边界。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
+      ]
     }
   ],
   "metadata": {
