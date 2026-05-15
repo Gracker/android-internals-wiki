@@ -7034,6 +7034,58 @@
         "DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
         "intake/research-gaps.md"
       ]
+    },
+    {
+      "id": "task9-deep-review-20.4-20260515-fgs-provider-broadcast",
+      "section": "20.4",
+      "priority": 95,
+      "title": "ANR 治理策略：FGS 超时、Provider 初始化与广播超时版本口径错误",
+      "description": "P0: startForegroundService→startForeground 宽限期按 Android 12+ 约 5s 描述错误；AppComponentFactory 不能控制 ContentProvider 初始化时机。P1: Broadcast/Service 常量名与 Android 14+/16 版本口径需对齐。",
+      "issue_type": "source-code-accuracy-version-differences-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L422 Service 超时补充",
+          "detail": "正文写“Android 12+ startForegroundService 后 AOSP 默认约 5s 调用 startForeground”，与当前源码/既有 9.2 口径不一致。android-14/16 ActivityManagerConstants 中 DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS 为 30s，另有 DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS 10s；Android 8/9-12/13+ 需要分版本说明，不能统一写 Android 12+ 约 5s。",
+          "suggestion": "按版本拆成 FGS 晋升宽限期表，并区分普通 Service 生命周期执行超时（20s/200s）与 startForegroundService→startForeground 晋升超时。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/API 能力错误",
+          "location": "L385 ContentProvider 延迟初始化",
+          "detail": "AppComponentFactory 不是 Android 11+ 的 Provider 初始化时机控制能力。AOSP AppComponentFactory.instantiateProvider() 注释明确它只提供实例化 hook，返回对象尚无 Context，不能提前使用；ActivityThread 仍会在 callApplicationOnCreate() 前 installContentProviders() 并触发 attachInfo()/onCreate()。",
+          "suggestion": "删除“AppComponentFactory 可以控制 ContentProvider 初始化时机”的治理建议；改为 Provider.onCreate 只做轻量注册、业务 lazy init、移除/禁用第三方自动初始化 Provider，或使用 AndroidX App Startup 的 initializer 管理。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码常量/版本差异",
+          "location": "L79-L87、L372、L398 BroadcastReceiver 超时",
+          "detail": "正文使用 BROADCAST_FG_TIMEOUT/BROADCAST_BG_TIMEOUT 作为 Android 16 AOSP 常量名，但 android-16 源码中广播超时在 BroadcastConstants.KEY_TIMEOUT/TIMEOUT 及前后台配置实例中管理，未见这两个常量名。章节还把广播窗口固定写成前台 10s/后台 60s，遗漏 Android 14+ 官方诊断口径中的窗口拉长、CPU-starved、冷启动时间计入等边界。",
+          "suggestion": "与 9.2 节对齐：Android 13 及以下按 10s/60s 排查，Android 14+ 补 10-20s/60-120s 或源码配置口径；goAsync 段也同步改成“不新增预算，只延续同一广播超时窗口”。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码常量命名错误",
+          "location": "L82 Service（前台）阈值表",
+          "detail": "20s Service 生命周期执行超时在 android-16 ActivityManagerConstants 中对应 SERVICE_TIMEOUT / DEFAULT_SERVICE_TIMEOUT，不是 SERVICE_FOREGROUND_TIMEOUT。后者容易与 ActiveServices 中 FGS 未及时 startForeground 的 SERVICE_FOREGROUND_TIMEOUT_* 消息混淆。",
+          "suggestion": "把表格常量名改为 ActivityManagerConstants.SERVICE_TIMEOUT（默认 20s）和 SERVICE_BACKGROUND_TIMEOUT（默认 200s），并单列 FGS 晋升超时。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T20:23:00+08:00"
     }
   ],
   "metadata": {
