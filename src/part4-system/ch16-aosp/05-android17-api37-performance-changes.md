@@ -38,10 +38,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 reviewed_by: openclaw-task6
@@ -539,35 +539,24 @@ bool Runtime::useGenerationalCMC() const {
 - 需要 `persist.device_config.runtime_native_boot.use_generational_gc` 属性设置为 true
 - 必须在编译时启用 `kUseUserfaultfd` 特性
 
-[存疑: 本小节包含 `ProfilingManagerService` 内部判断伪代码和触发器行为差异，但当前只给出源码文件路径，缺少可核对的 API 37 源码锚点或官方文档。需 Task 9 复核；复核前应降级为“示意流程”，不要作为定稿实现细节。]
+[注意: Generational CMC gating 代码块基于 AOSP android-16.0.0_r1 源码核验；ProfilingManager 触发器内部判断逻辑未在 API 37 公开文档或 AOSP preview 中给出，上文已按公开 API 口径重写，不给未验证的伪代码。]
 
 ### ProfilingManager 触发器内部判断逻辑
 
-**源码位置**:
-- `frameworks/base/services/core/java/com/android/server/am/ProfilingManagerService.java`
+API 37 公开文档只给出了触发器常量和注册入口，**没有公开服务端内部判断逻辑**。`ProfilingManagerService` 的源码在当前 AOSP preview 中不可直接核验，因此本节只描述已确认的 API 口径，不给未验证的内部伪代码。
 
-**TRIGGER_TYPE_ANOMALY 判断逻辑**：
-```java
-private boolean detectAnomalousBehavior(@NonNull String packageName) {
-    PackageStats stats = mPackageStats.get(packageName);
-    if (stats == null) return false;
-    
-    // 多维度异常判断标准（非单一阈值）
-    boolean highCpuUsage = stats.cpuUsagePercent > 95;
-    boolean frequentCrashes = stats.crashCount > 10;
-    boolean memoryPressure = stats.memoryPressureLevel > 2;
-    
-    // 需要同时满足至少两个条件才算异常
-    return (highCpuUsage && frequentCrashes) || 
-           (highCpuUsage && memoryPressure) ||
-           (frequentCrashes && memoryPressure);
-}
-```
+**已确认的 API 口径**（`android.os.ProfilingTrigger` reference）：
 
-**触发器行为差异**：
-- `TRIGGER_TYPE_APP_FULLY_DRAWN`：关注启动尾段，running trace snapshot
-- `TRIGGER_TYPE_COLD_START`：关注整个启动窗口，3 秒默认 duration，附带 stack sampling
-- `TRIGGER_TYPE_ANOMALY`：多维度指标触发，实时性要求高
+| 触发器常量 | Added in | 公开口径 | 排障定位 |
+|-----------|----------|---------|----------|
+| `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 36 | App 完成首次绘制后触发 | 启动尾段 |
+| `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | 整个启动窗口 |
+| `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | 系统侧异常判断入口 |
+| `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | 后台 CPU 诊断 |
+| `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
+
+[待验证：API 37 reference 对 cold start artifact 的最终描述；anomaly 触发器内部的多维度判断阈值和组合条件未公开]
 
 ### ConcurrentMessageQueue 实际数据结构
 
