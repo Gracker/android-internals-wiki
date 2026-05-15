@@ -34,9 +34,16 @@ reviewed_by: openclaw-task6
 review_round: 1
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: "reviewed"
+pipeline_stage: "task2b_pending"
 task6_review_notes: "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审。"
+task9_result: "needs-rework"
+task2b_state: "pending"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T06:31:25+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-06-deep-review.md"
+task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
 ---
 
 # 1.19 Zygote 图形驱动预加载与启动性能

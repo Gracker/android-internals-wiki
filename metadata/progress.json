@@ -1037,13 +1037,19 @@
       "reviewed_at": "2026-05-15T22:35:05+08:00",
       "log": "logs/deep-review/2026-05-15-22-deep-review.md",
       "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
+    },
+    "1.19": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0
     }
   },
   "total_review_sections": 131,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T06:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-16T06:31:25+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "06:09",
@@ -1062,7 +1068,7 @@
     "auto_promotions": [],
     "log": "logs/review/2026-05-16-06-review.md"
   },
-  "task9_last_review": "2026-05-16T03:30:00+08:00",
+  "task9_last_review": "2026-05-16T06:31:25+08:00",
   "ready_to_publish": 192,
   "rework_history": [
     {
@@ -2768,25 +2774,31 @@
     },
     "1.19": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
-      "queue_priority": 80,
+      "queue_priority": 85,
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
       "task2a_result": "gap-created",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审."
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审.",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-16T06:31:25+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -2844,45 +2856,43 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T03:30:00+08:00",
-    "log": "logs/deep-review/2026-05-16-03-deep-review.md",
+    "timestamp": "2026-05-16T06:31:25+08:00",
     "sections": [
-      "26.10"
+      "1.19"
     ],
     "files": [
-      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
     ],
-    "p0": 1,
-    "p1": 1,
-    "p2": 3,
-    "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [],
-    "summary": "26.10 命中 ApplicationExitInfo reason 映射 P0：不存在公开 REASON_OOM；同时需补 API 30-33/API 34+ 包更新 reason 版本边界，未自动晋升。"
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
+    "p3": 0,
+    "log": "logs/deep-review/2026-05-16-06-deep-review.md",
+    "auto_promoted": []
   },
-  "last_task9_review": "2026-05-16 03:30 review 26.10",
+  "last_task9_review": "2026-05-16 06: deep review 1.19",
   "last_task9_sections": [
-    "26.10"
+    "1.19"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T03:30:00+08:00",
-    "log": "logs/deep-review/2026-05-16-03-deep-review.md",
+    "timestamp": "2026-05-16T06:31:25+08:00",
     "sections": [
-      "26.10"
+      "1.19"
     ],
     "files": [
-      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
     ],
-    "p0": 1,
-    "p1": 1,
-    "p2": 3,
-    "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [],
-    "summary": "26.10 命中 ApplicationExitInfo reason 映射 P0：不存在公开 REASON_OOM；同时需补 API 30-33/API 34+ 包更新 reason 版本边界，未自动晋升。"
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
+    "p3": 0,
+    "log": "logs/deep-review/2026-05-16-06-deep-review.md",
+    "auto_promoted": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "total_review_files": 131,
   "last_task2a_at": "2026-05-16T04:10:00+08:00",
@@ -2920,9 +2930,9 @@
     "notes": "1.19 首次 Task6；1.10/2.21 为超过 7 天的 stale recheck。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
-  "last_task9_at": "2026-05-16T03:30:00+08:00",
+  "last_task9_at": "2026-05-16T06:31:25+08:00",
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 192,
   "last_task2a_processed_section": "1.19",
@@ -3006,23 +3016,29 @@
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
-      "queue_priority": 80,
+      "queue_priority": 85,
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
       "task2a_result": "gap-created",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审."
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审.",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-16T06:31:25+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
