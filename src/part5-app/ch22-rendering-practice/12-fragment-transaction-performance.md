@@ -1,6 +1,7 @@
 ---
 title: "FragmentTransaction 提交链路与页面切换性能"
 chapter: "22.12"
+section: "22.12"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
@@ -33,6 +34,16 @@ related_chapters: ["7.4", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T07:30:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-07-deep-review.md"
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。"
 ---
 
 # 22.12 FragmentTransaction 提交链路与页面切换性能
