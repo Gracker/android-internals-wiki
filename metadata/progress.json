@@ -1,7 +1,7 @@
 {
   "total": 281,
   "draft": 1,
-  "ready-for-review": 93,
+  "ready-for-review": 86,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -258,13 +258,13 @@
     "src/part5-app/ch26-observability/09-application-exit-info.md",
     "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
   ],
-  "review_summary": "Task9 2026-05-15 19: review 25.10；P0 0 / P1 2 / P2 1，需回炉。",
+  "review_summary": "Task6 2026-05-15 20: review 20.4、21.8；小修 7 处，无新增回炉；21.8 自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 622,
+    "l1_l2_fixes": 629,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 649,
-    "auto_promotions": 11
+    "total_issues": 656,
+    "auto_promotions": 12
   },
   "issues_by_section": {
     "1.6": {
@@ -304,7 +304,14 @@
       "p0": 4,
       "p1": 2,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-15T20:08:00+08:00",
+      "task6_log": "logs/review/2026-05-15-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；修正导读动词、开头结构元叙述、标题层级、编辑标记和“这意味着”填充句。Task9 仍 pending，未自动晋升。"
     },
     "22.3": {
       "p0": 3,
@@ -983,29 +990,47 @@
       "reviewed_at": "2026-05-15T19:35:08+08:00",
       "log": "logs/deep-review/2026-05-15-19-deep-review.md",
       "summary": "P1 2：xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界；P2 1：Macrobenchmark PowerMetric system-wide 与设备限制。"
+    },
+    "21.8": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task9_result": "pass-tech-review",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-15T20:08:00+08:00",
+      "task6_log": "logs/review/2026-05-15-20-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-15T20:08:00+08:00",
+      "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
     }
   },
   "total_review_sections": 124,
   "next_review_candidates": [],
-  "ready_for_review": 85,
-  "last_updated": "2026-05-15T19:35:08+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 86,
+  "last_updated": "2026-05-15T20:08:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
-    "time": "19:11",
+    "time": "20:08",
     "sections": [
-      "25.10"
+      "20.4",
+      "21.8"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/10-hybrid-webview-power.md"
+      "src/part5-app/ch20-stability/04-anr-governance.md",
+      "src/part5-app/ch21-startup/08-startup-monitoring.md"
     ],
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "auto_promotions": 0,
-    "log": "logs/review/2026-05-15-19-review.md"
+    "auto_promotions": 1,
+    "log": "logs/review/2026-05-15-20-review.md"
   },
   "task9_last_review": "2026-05-15T19:35:08+08:00",
-  "ready_to_publish": 186,
+  "ready_to_publish": 187,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1254,9 +1279,16 @@
     "20.4": {
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-12T21:56:00+08:00",
+      "last_task6_at": "2026-05-15T20:08:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending"
+      "task9_state": "pending",
+      "task6_state": "reviewed",
+      "task9_result": "pending",
+      "last_task6_review_log": "logs/review/2026-05-15-20-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "file": "src/part5-app/ch20-stability/04-anr-governance.md",
+      "title": "ANR 治理策略"
     },
     "21.4": {
       "status": "finalized",
@@ -1419,18 +1451,22 @@
       "source_file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
     },
     "21.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T04:17:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-04-review.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-15T20:08:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-15-20-review.md",
       "task9_state": "reviewed",
       "task9_result": "pass-tech-review",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/08-startup-monitoring.md",
-      "title": "启动监控与度量"
+      "title": "启动监控与度量",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "auto_promoted": true,
+      "auto_promoted_at": "2026-05-15T20:08:00+08:00"
     },
     "21.9": {
       "status": "ready-for-review",

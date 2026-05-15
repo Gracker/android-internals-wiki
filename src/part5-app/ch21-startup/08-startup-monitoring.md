@@ -2,7 +2,7 @@
 title: "启动监控与度量"
 chapter: "21.8"
 section: "21.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "Android Developers docs, Google Play Android Vitals, Clippings structure refs"
@@ -26,17 +26,21 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_reviewed_date: "2026-05-13"
-task6_result: needs-rework
+reviewed_date: "2026-05-15"
+task6_reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-15T20:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-15-20-review.md"
+auto_promoted_by: openclaw-task6
+auto_promoted_at: "2026-05-15T20:08:00+08:00"
 
 ---
 

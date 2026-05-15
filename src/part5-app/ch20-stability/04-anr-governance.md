@@ -28,20 +28,21 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-12"
+reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-12T21:56:00+08:00"
-task6_reviewed_date: "2026-05-12"
+last_task6_at: "2026-05-15T20:08:00+08:00"
+task6_reviewed_date: "2026-05-15"
 task9_result: pending
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T06:25:00+08:00"
+last_task6_review_log: "logs/review/2026-05-15-20-review.md"
 
 ---
 
@@ -61,14 +62,14 @@ last_task9_at: "2026-05-13T06:25:00+08:00"
 - 🔹 前后台 ANR 与系统负载过滤
 
 ### 导读
-本节从系统超时窗口出发，按主线程、Binder、锁、组件回调和应用侧 Watchdog 几条路径拆解 ANR 治理动作。
+本节从系统超时窗口出发，沿主线程、Binder、锁、组件回调和应用侧 Watchdog 几条路径说明 ANR 治理动作。
 <!-- outline-end -->
 
 ANR 的分析和定位方法在 9.1-9.3 节已经讲过。这一节回答一个不同的问题：已知 ANR 的成因，怎么在工程里系统性地消除它。
 
-ANR 治理的底层逻辑只有一条——让主线程在超时窗口内完成所有系统要求它响应的工作。这条约束拆开来看，涉及五个独立的治理方向：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理、以及兜底的 Watchdog 搭建。这五个方向各自有独立的治理手段和验证方法，下面逐个展开。
+ANR 治理围绕一条约束：主线程要在对应超时窗口内完成系统要求的响应。工程上主要对应五个方向：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理，以及应用侧 Watchdog 搭建。每个方向都需要明确治理手段和验证方法。
 
-### ANR 触发场景与超时阈值
+## ANR 触发场景与超时阈值
 
 不同组件类型的 ANR 超时阈值不同，系统的检测机制也各不相同。治理 ANR 的第一步是区分自己面对的是哪种类型的 ANR：
 
@@ -549,8 +550,6 @@ Binder 调用在主线程上的阻塞时间直接影响 ANR 风险。通过 `Bin
 
 ## 后台 ANR 与前台 ANR 的差异化治理
 
-[自动发现]
-
 ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以直接感知（弹出对话框），治理优先级最高。后台 ANR 用户看不到对话框（系统静默处理），但在 Android 10+，后台 ANR 同样会被 Google Play Console 统计并影响应用评分。
 
 ### 前台 ANR
@@ -578,15 +577,13 @@ ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以�
 
 ## 系统负载导致的 ANR 识别与过滤
 
-[自动发现]
-
 不是所有 ANR 都是应用代码的问题。在低端设备、内存紧张、或者系统服务繁忙时，应用的正常操作也可能被系统拖慢到触发 ANR。这类 ANR 如果当成应用 bug 治理，投入产出比极低。
 
 ### 系统负载 ANR 的特征
 
 在 traces.txt 和 event log 中，以下特征暗示系统负载是主因：
 
-- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在做任何工作。这意味着 ANR 发生的时刻，主线程处于空闲等待状态——是系统侧的某个操作（如 Binder 调用到 system_server）阻塞了，导致系统认为应用无响应。
+- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在做任何工作。此时更可能是系统侧操作（如 Binder 调用到 system_server）阻塞，导致系统认为应用无响应。
 - **event log 中 `am_anr` 前后有大量 `am_proc_died` / `am_kill`**：系统在密集杀进程，内存压力极大。
 - **CPU iowait > 30%**：设备存储 I/O 瓶颈严重，所有进程都在等磁盘。
 - **ANR 发生在设备启动后的前 2 分钟**：系统启动阶段各服务初始化集中，响应速度普遍偏慢。
