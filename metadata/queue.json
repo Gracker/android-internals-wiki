@@ -2686,7 +2686,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/08-startup-monitoring.md"
@@ -2710,7 +2710,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T04:17:00+08:00",
-      "original_review_log": "logs/review/2026-05-13-04-review.md"
+      "original_review_log": "logs/review/2026-05-13-04-review.md",
+      "completed_date": "2026-05-15T19:25:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: ApplicationStartInfo [需确认] 标注移除, 补充 Task9 确认结论(API 35, getHistoricalProcessStartReasons 入口, 核心字段和 timestamp 常量)"
     },
     {
       "id": "task9-2026-05-13-2.9-graphics-java-source-paths",
@@ -3061,7 +3063,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/04-anr-governance.md"
@@ -3114,7 +3116,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T06:25:00+08:00"
+      "added_at": "2026-05-13T06:25:00+08:00",
+      "completed_date": "2026-05-15T19:25:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 Input dispatch 超时常量修正(Settings.System.ANR_INPUT_DISPATCH_TIMEOUT→DEFAULT_INPUT_DISPATCHING_TIMEOUT/per-window timeout), P0 Binder.setCallingWorkSource/allowBlocking 超时控制描述删除(平台无通用调用超时 API), P0 Binder.getStackTrace()不存在→改为线程栈采样/BinderProxy.transactNative 帧检测, P0 动态广播 ANR 豁免修正(仍受超时限制), P1 goAsync 段前后矛盾修正(补完整链路), P1 FGS 超时触发顺序修正(startForegroundService→startForeground, 补 Android 12+ FGS 启动限制)"
     },
     {
       "id": "task9-19-23-eventlistener-signature-fields-20260513",

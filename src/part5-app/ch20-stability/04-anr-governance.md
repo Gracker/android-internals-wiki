@@ -28,21 +28,21 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task2b_pending
-task2b_result: pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-12"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-12T21:56:00+08:00"
 task6_reviewed_date: "2026-05-12"
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T06:25:00+08:00"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 4 / P1 2 / P2 1；详见 logs/deep-review/2026-05-13-06-deep-review.md。"
+
 ---
 
 # ANR 治理策略
@@ -74,7 +74,7 @@ ANR 治理的底层逻辑只有一条——让主线程在超时窗口内完成�
 
 | ANR 类型 | 超时阈值（AOSP 默认值） | 检测机制 | 典型成因 |
 |----------|------------------------|---------|---------|
-| Input dispatch | 5s（`Settings.System.ANR_INPUT_DISPATCH_TIMEOUT`） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
+| Input dispatch | 5s（AOSP `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，可通过 per-window/per-application timeout 调整） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
 | BroadcastReceiver（前台） | 10s（`BROADCAST_FG_TIMEOUT`） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
 | BroadcastReceiver（后台） | 60s（`BROADCAST_BG_TIMEOUT`） | 同上 | 后台广播处理链过长 |
 | ContentProvider publish | 10s（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
@@ -301,7 +301,7 @@ Binder 是 Android 进程间通信的基础设施。应用通过 Binder 和系�
 - **ActivityManager 进程查询**：`getRunningAppProcesses()` 在 Android 10+ 已经不返回其他应用的信息，不要依赖它做业务判断。
 - **WindowManager 的同步事务**：`WindowManager.addView()` / `updateViewLayout()` 内部走 Binder 调用到 WindowManagerService。如果 WMS 处理队列繁忙，调用可能阻塞。
 
-**设置 Binder 调用超时。** 在 Android 11+，可以通过 `Binder.setCallingWorkSource()` 和 Service 的 `Binder.allowBlocking()` 控制阻塞行为。`setCallingWorkSource()` 用于绑定调用来源和资源计数，`allowBlocking()` 允许在特定场景下放宽 Binder 调用的阻塞限制。更实用的做法是在异步调用外部 Service 时，用带超时的 `Future.get(timeout)` 而不是无限等待：
+**设置 Binder 调用超时。** Android 平台的同步 Binder 调用本身没有通用的调用超时 API。`Binder.setCallingWorkSourceUid(int)` 只做调用方 UID 归因，不提供超时控制；`Binder.allowBlocking(IBinder)` 只关闭 blocking warning 日志，也不提供超时控制。应用层能做的是在异步调用外部 Service 时，用带超时的 `Future.get(timeout)` 或协程 `withTimeout` 降级，而不是无限等待：
 
 ```java
 Future<String> result = executor.submit(() -> remoteService.getData());
@@ -389,13 +389,13 @@ ContentProvider 的超时发生在 `ActivityManagerService` 等待应用 publish
 
 ### BroadcastReceiver 超时治理
 
-BroadcastReceiver 的 ANR 发生在 `onReceive()` 执行超过阈值时。关键约束：`onReceive()` 在主线程执行，系统不允许在其中做异步操作（Android 11+ 的 `AbortBackgroundExecution` 限制更严格）。
+BroadcastReceiver 的 ANR 发生在 `onReceive()` 执行超过阈值时。关键约束：`onReceive()` 在主线程执行。`goAsync()` 允许在 `onReceive()` 中调用 `PendingResult` 把工作移到其他线程，但广播执行超时仍覆盖到 `PendingResult.finish()` 为止——超时窗口不会因为 `goAsync()` 而消失。
 
 治理手段：
 
 - **onReceive() 只做转发**：收到广播后，把实际处理逻辑交给 `JobScheduler` / `WorkManager` / `Coroutine` 在后台执行。`onReceive()` 本身只做参数解析和任务调度。
 - **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 允许把处理时间延长到 10 秒（前台）或 60 秒（后台）。但 `goAsync()` 不消除超时风险——它只是给了更多时间，处理仍然不能无限长。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
-- **静态广播 → 动态广播**：如果不需要在应用未运行时接收广播，把静态注册的 `BroadcastReceiver` 改为动态注册。动态注册的 `onReceive()` 不受系统的 ANR 超时监控。
+- **静态广播 → 动态广播**：如果不需要在应用未运行时接收广播，把静态注册的 `BroadcastReceiver` 改为动态注册。动态注册可以减少应用未运行时被唤醒的广播面，但 `onReceive()` / `goAsync()` 仍受广播执行时间限制——系统不因注册方式不同而豁免超时。
 
 ```kotlin
 // goAsync 的正确用法
@@ -418,7 +418,7 @@ override fun onReceive(context: Context, intent: Intent) {
 Service 的前台超时是 20 秒，后台 200 秒。治理要点：
 
 - `onCreate()` 和 `onStartCommand()` 都在主线程执行。如果 `onStartCommand()` 需要做耗时操作，启动一个后台线程来处理，然后立即返回 `START_STICKY` 或 `START_NOT_STICKY`。
-- Android 12+ 对前台 Service 启动有新的约束：应用必须在 `Service.startForeground()` 后的一定时间内调用，否则会触发 `ForegroundServiceDidNotStartInTimeException`（实质上是 ANR 的另一种形式）。
+- Android 12+ 对前台 Service 启动有新的约束：应用在调用 `Context.startForegroundService()` 后，必须在限定时间内（AOSP 默认约 5s，`SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`）调用 `Service.startForeground()`，否则会触发 `ForegroundServiceDidNotStartInTimeException`。触发顺序是 startForegroundService → startForeground，不是 startForeground 之后的操作。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
 
@@ -502,7 +502,7 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 - 阻塞时长估算（检测间隔 × 确认次数）
 - 当时进程的 CPU 使用率（通过 `/proc/self/stat` 读取）
 - 内存状态（`Debug.getMemoryInfo()`）
-- 是否有正在进行的 Binder 调用（通过 `Binder.getStackTrace()` 间接判断）
+- 是否有正在进行的 Binder 调用（通过线程栈采样中 `BinderProxy.transactNative` / `Binder.execTransact` 帧的出现频率间接判断，或在具备权限时用 SIGQUIT / debuggerd 获取完整线程状态）
 
 这些数据聚合后，按堆栈签名聚类，就能看到哪些代码路径是高频的 ANR 嫌疑点。
 
