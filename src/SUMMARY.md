@@ -37,6 +37,7 @@ tags:
   - [1.16 Audio Pipeline 延迟与性能](part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md)
   - [1.17 IPC 全景：Android 进程间通信机制对比与性能选型](part1-fundamentals/ch01-architecture/17-ipc-panorama.md)
   - [1.18 Binder Freezer 与缓存进程冻结性能](part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md)
+  - [1.19 Zygote 图形驱动预加载与启动性能](part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
