@@ -1,9 +1,9 @@
 {
   "total": 286,
   "draft": 2,
-  "ready-for-review": 89,
-  "finalized": 188,
-  "task9_result": "needs-rework",
+  "ready-for-review": 88,
+  "finalized": 189,
+  "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
@@ -1035,9 +1035,9 @@
   },
   "total_review_sections": 128,
   "next_review_candidates": [],
-  "ready_for_review": 88,
-  "last_updated": "2026-05-16T01:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 87,
+  "last_updated": "2026-05-16T01:26:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "01:12",
@@ -1052,8 +1052,8 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-16-01-review.md"
   },
-  "task9_last_review": "2026-05-16T00:30:00+08:00",
-  "ready_to_publish": 188,
+  "task9_last_review": "2026-05-16T01:26:00+08:00",
+  "ready_to_publish": 189,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2684,15 +2684,29 @@
       "task2b_state": "pending"
     },
     "20.11": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "title": "MTE memtagMode 与 Native 崩溃治理",
+      "file": "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "last_task6_at": "2026-05-16T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-01-review.md",
-      "title": "MTE memtagMode 与 Native 崩溃治理",
-      "file": "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-16",
+      "last_task9_at": "2026-05-16T01:26:00+08:00",
+      "finalized_date": "2026-05-16",
+      "finalized_by": "openclaw-task9"
+    },
+    "22.11": {
+      "title": "AnimatedVectorDrawable 线程退化与动画卡顿",
+      "file": "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-16",
+      "last_task9_at": "2026-05-16T01:26:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -2714,56 +2728,51 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T00:30:00+08:00",
-    "log": "logs/deep-review/2026-05-16-00-deep-review.md",
+    "reviewed_at": "2026-05-16T01:26:00+08:00",
+    "log": "logs/deep-review/2026-05-16-01-deep-review.md",
     "sections": [
-      "8.2",
-      "16.6",
-      "21.2"
+      "20.11",
+      "22.11"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
+      "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
     ],
-    "p0": 3,
-    "p1": 1,
-    "p2": 2,
-    "p3": 1,
-    "result": "needs-rework",
+    "p0": 0,
+    "p1": 0,
+    "p2": 6,
+    "p3": 0,
+    "result": "pass-tech-review",
     "auto_promotions": [
-      "16.6"
+      "20.11"
     ],
-    "summary": "8.2 需回炉：ApplicationStartInfo getStartupTimestamps 类型、Zygote preload drawable 路径；16.6 无 P0/P1 自动晋升 finalized；21.2 需回炉：Alpha API/默认线程池、Process 线程优先级边界。"
+    "summary": "20.11/22.11 无 P0/P1；20.11 因 Task6 已通过且 queue 无 pending，自动晋升 finalized。22.11 已完成 Task9，等待 Task6。"
   },
-  "last_task9_review": "2026-05-16 00:30 review 8.2/16.6/21.2",
+  "last_task9_review": "2026-05-16 01:26 review 20.11/22.11",
   "last_task9_sections": [
-    "8.2",
-    "16.6",
-    "21.2"
+    "20.11",
+    "22.11"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T00:30:00+08:00",
-    "log": "logs/deep-review/2026-05-16-00-deep-review.md",
+    "reviewed_at": "2026-05-16T01:26:00+08:00",
+    "log": "logs/deep-review/2026-05-16-01-deep-review.md",
     "sections": [
-      "8.2",
-      "16.6",
-      "21.2"
+      "20.11",
+      "22.11"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
+      "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
     ],
-    "p0": 3,
-    "p1": 1,
-    "p2": 2,
-    "p3": 1,
-    "result": "needs-rework",
+    "p0": 0,
+    "p1": 0,
+    "p2": 6,
+    "p3": 0,
+    "result": "pass-tech-review",
     "auto_promotions": [
-      "16.6"
+      "20.11"
     ],
-    "summary": "8.2 需回炉：ApplicationStartInfo getStartupTimestamps 类型、Zygote preload drawable 路径；16.6 无 P0/P1 自动晋升 finalized；21.2 需回炉：Alpha API/默认线程池、Process 线程优先级边界。"
+    "summary": "20.11/22.11 无 P0/P1；20.11 因 Task6 已通过且 queue 无 pending，自动晋升 finalized。22.11 已完成 Task9，等待 Task6。"
   },
   "task9_last_reviewed_files": [
     "src/part2-performance/ch08-responsiveness/02-app-launch.md",
@@ -2798,13 +2807,12 @@
     "summary": "20.11 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
   },
   "last_task9_reviewed_files": [
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
+    "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md"
   ],
-  "last_task9_at": "2026-05-16T00:30:00+08:00",
+  "last_task9_at": "2026-05-16T01:26:00+08:00",
   "last_task2a_result": "drafted",
-  "ready-to-publish": 188,
+  "ready-to-publish": 189,
   "last_task2a_processed_section": "22.11",
   "task6_last_review_at": "2026-05-16T01:12:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-01-review.md",

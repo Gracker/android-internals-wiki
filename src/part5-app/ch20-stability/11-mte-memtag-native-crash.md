@@ -2,7 +2,7 @@
 title: "MTE memtagMode 与 Native 崩溃治理"
 chapter: "20.11"
 section: "20.11"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-16"
@@ -32,12 +32,19 @@ sources:
     path: "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md"
   - type: structure
     path: "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-16T01:26:00+08:00"
+finalized_date: "2026-05-16"
+finalized_by: openclaw-task9
+
 ---
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
