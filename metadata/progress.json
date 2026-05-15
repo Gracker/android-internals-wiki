@@ -244,10 +244,10 @@
   ],
   "review_summary": "Task9 2026-05-15 11: review 18.2、20.10、21.5；20.10 无 P0/P1 并自动晋升 finalized；18.2 与 21.5 需回炉。",
   "task6_review_summary": {
-    "l1_l2_fixes": 582,
-    "l3_issues": 40,
-    "l4_issues": 5,
-    "total_issues": 618,
+    "l1_l2_fixes": 589,
+    "l3_issues": 41,
+    "l4_issues": 6,
+    "total_issues": 626,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -411,7 +411,14 @@
       "p3": 2,
       "reviewed_at": "2026-05-15T11:41:46+08:00",
       "log": "logs/deep-review/2026-05-15-11-deep-review.md",
-      "summary": "P0 1 / P1 1 / P2 2 / P3 2。[P0] L355-L358 — baselineProfileRulesRewrite 不是官方 Baseline Profile DSL；示例可能无法编译。; [P1] L200-L207/L400-L406 — AndroidX core-splashscreen 低版本实现仍写成“创建 Activity/退出动画不支持”。"
+      "summary": "P0 1 / P1 1 / P2 2 / P3 2。[P0] L355-L358 — baselineProfileRulesRewrite 不是官方 Baseline Profile DSL；示例可能无法编译。; [P1] L200-L207/L400-L406 — AndroidX core-splashscreen 低版本实现仍写成“创建 Activity/退出动画不支持”。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-15T12:11:00+08:00",
+      "task6_log": "logs/review/2026-05-15-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；运行时译法和禁用句式已修。Task9 既有 Baseline Profile DSL / core-splashscreen 兼容模式问题仍由 Task2B 处理。"
     },
     "22.4": {
       "p0": 2,
@@ -486,7 +493,14 @@
       "p3": 1,
       "reviewed_at": "2026-05-15T11:41:46+08:00",
       "log": "logs/deep-review/2026-05-15-11-deep-review.md",
-      "summary": "P0 3 / P1 2 / P2 0 / P3 1。[P0] L86-L90 — Sync 阶段版本口径自相矛盾，且源码锚点应为 DrawFrameTask.cpp / mSignal.signal()。; [P0] L364-L371 — BLASTBufferQueue 回调注释和 transactionCommittedCallback 签名/语义错误。"
+      "summary": "P0 3 / P1 2 / P2 0 / P3 1。[P0] L86-L90 — Sync 阶段版本口径自相矛盾，且源码锚点应为 DrawFrameTask.cpp / mSignal.signal()。; [P0] L364-L371 — BLASTBufferQueue 回调注释和 transactionCommittedCallback 签名/语义错误。",
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-15T12:11:00+08:00",
+      "task6_log": "logs/review/2026-05-15-12-review.md",
+      "task6_new_rework": true,
+      "task6_note": "源码调研附录仍是素材 dump，并保留 AIW 注入记录；需 Task2B 在 Task9 技术复核后整合进正文或移出发布稿。"
     },
     "19.21": {
       "p0": 0,
@@ -913,21 +927,23 @@
   "total_review_sections": 116,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T11:11:00+08:00",
+  "last_updated": "2026-05-15T12:11:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
-    "time": "11:11",
+    "time": "12:11",
     "sections": [
-      "20.10"
+      "18.2",
+      "21.5"
     ],
     "files": [
-      "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md"
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "src/part5-app/ch21-startup/05-splash-screen.md"
     ],
     "l1_l2_fixes": 7,
-    "l3_l4_issues": 0,
+    "l3_l4_issues": 1,
     "auto_promotions": 0,
-    "log": "logs/review/2026-05-15-11-review.md"
+    "log": "logs/review/2026-05-15-12-review.md"
   },
   "task9_last_review": "2026-05-15T10:27:02+08:00",
   "ready_to_publish": 186,
@@ -2397,33 +2413,30 @@
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
   "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
-  "last_task6_review": "logs/review/2026-05-15-10-review.md",
+  "last_task6_review": "logs/review/2026-05-15-12-review.md",
   "last_task6_sections": [
-    "13.11",
-    "17.4",
-    "8.1"
+    "18.2",
+    "21.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+    "src/part5-app/ch21-startup/05-splash-screen.md"
   ],
-  "last_task6_at": "2026-05-15T10:10:00+08:00",
+  "last_task6_at": "2026-05-15T12:11:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-15T10:10:00+08:00",
-    "log": "logs/review/2026-05-15-10-review.md",
+    "reviewed_at": "2026-05-15T12:11:00+08:00",
+    "log": "logs/review/2026-05-15-12-review.md",
     "sections": [
-      "13.11",
-      "17.4",
-      "8.1"
+      "18.2",
+      "21.5"
     ],
-    "mode": "首次 review + finalized 抽检",
-    "l1_l2_fixes": 10,
+    "mode": "revisiting review",
+    "l1_l2_fixes": 7,
     "rework_sections": [
-      "13.11"
+      "18.2"
     ],
     "auto_promotions": [],
-    "summary": "13.11 已标注 Task9 技术阻塞并追加 outline 缺失回炉项；17.4 通过轻修进入 Task9；8.1 finalized 抽检通过。"
+    "summary": "18.2 写作层发现源码调研附录仍是素材 dump，已合并进既有高优先级回炉队列；21.5 通过轻修，Task9 既有技术队列继续由 Task2B 处理。"
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"

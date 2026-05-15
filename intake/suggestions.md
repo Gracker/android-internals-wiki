@@ -1290,3 +1290,10 @@
 - **位置**：`reportFullyDrawn()` 度量说明（L416）
 - **问题**：`PowerTube` 不是公开可核验的 Android 启动度量入口；该段缺少官方指标名和采集面边界。
 - **建议**：改为 Logcat `Displayed` / `Fully drawn`、Perfetto/FrameTimeline、Play Console Android Vitals（如适用）等可核验入口；删除或标注 `PowerTube` 来源。
+
+## [Task6 Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-15
+- **类型**：需整合素材 / 发布稿编辑痕迹
+- **位置**：附录「源码调研补充 — ART Generational CC 与 BLAST BufferQueue 协同机制」
+- **问题**：附录仍保留 AIW 每日源码调研、来源、注入时间、价值等加工记录，读起来像素材 dump；内容与正文和参考资料重复，且部分技术点已被 Task9 标记为高风险。
+- **建议**：Task2B 先按 Task9 复核技术口径，再把可用内容整合进 BLAST 生命周期或 Compose/GC 小节；发布稿不保留 AIW 注入记录和未核验结论。
+- **review 日志**：logs/review/2026-05-15-12-review.md
