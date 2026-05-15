@@ -1,19 +1,29 @@
 ---
 title: "Android 11 以下进程退出归因方案"
 chapter: "26.10"
+section: "26.10"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 5.0 (API 21) - Android 10 (API 29)"
 last_verified: "2026-05-16"
 last_verified_against: "Android Developers 2026-03 docs; AOSP master paths; KOOM master README"
 confidence: medium
+polish_count: 1
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-16"
+task6_result: pass-light-edit
+task9_state: pending
+last_task6_at: "2026-05-16T03:16:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-03-review.md"
 sources:
   - type: official
-    path: "developer.android.com/reference/android/app/ApplicationExitInfo"
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
-    path: "developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons"
+    path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons"
   - type: official
-    path: "developer.android.com/topic/performance/vitals/anr"
+    path: "https://developer.android.com/topic/performance/vitals/anr"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
   - type: aosp
@@ -45,9 +55,9 @@ gap_source: "素材驱动/官方文档/章节深挖"
 
 # 26.10 Android 11 以下进程退出归因方案
 
-Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出记录。APM SDK 要做的不是还原一个完整的系统事实库，而是在下一次启动时，把崩溃文件、ANR 线索、内存压力、上次心跳、进程状态快照放到同一个证据模型里，给出有置信度的退出原因。
+Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出记录。APM SDK 需要在下一次启动时把崩溃文件、ANR 线索、内存压力、上次心跳、进程状态快照放到同一个证据模型里，给出带置信度的退出原因。
 
-本节只覆盖 Android 5.0 到 Android 10。Android 11 及以上的系统能力详见 26.9 节；Crash 上报的 envelope 和去重详见 26.2 节；ANR 触发机制详见 9.3 节；低内存治理详见 23.7 节。
+这里的范围限定在 Android 5.0 到 Android 10。Android 11 及以上的系统能力详见 26.9 节；Crash 上报的 envelope 和去重详见 26.2 节；ANR 触发机制详见 9.3 节；低内存治理详见 23.7 节。
 
 ## 要点
 
@@ -72,7 +82,7 @@ Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出�
 | 疑似低内存退出 | LMKD、Java heap OOM 前置预警、线程/fd/虚拟内存耗尽 | 上次心跳、内存快照、`/proc/self/status`、KOOM dump、系统内存桶 | 中 |
 | 未知退出 | 用户划掉、系统回收、升级、设备重启、ROM 策略 | session marker、boot id、版本号、启动耗时、前后台状态 | 低 |
 
-这一层分档决定后面的产品口径：低版本不要把“疑似 LMKD”写成“系统确认 LMK kill”。更稳的做法是输出 `reason_guess + confidence + evidence[]`，把判断和证据一起上报。
+这一层分档决定后面的产品口径：低版本不要把“疑似 LMKD”写成“系统确认 LMK kill”。更稳妥的做法是输出 `reason_guess + confidence + evidence[]`，把判断和证据一起上报。
 
 ### 🔹 Signal Handler、ANR traces、LMKD、dumpsys 的能力对照
 
@@ -91,7 +101,7 @@ Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出�
 
 Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。参考书在 Breakpad 章节强调了文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径；低版本退出归因可以复用这个风险清单，但实现要以当前 SDK 的 crash 组件为准。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md]
 
-ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳妥的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
 
 LMKD 也不能写成“应用监听到系统杀进程”。LMKD 结束进程时使用的是不可捕获的 kill 路径，应用侧只能在进程还活着时采样 `PSS/RSS/VSS`、Java heap、线程数、fd 数、前后台状态、最近心跳；下次启动发现 marker 未闭合，再结合设备内存桶、上次前后台、OOM 前置预警判断。详见 23.7 节。
 
@@ -172,7 +182,7 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 | `USER_OR_SYSTEM_KILL_UNKNOWN` | `REASON_USER_REQUESTED` / `REASON_OTHER` | marker 未闭合但证据不足 |
 | `DEVICE_REBOOT_OR_UPDATE` | `REASON_OTHER` | boot id 变化、版本升级、安装时间变化 |
 
-规则引擎要允许“多证据并存”。例如进程退出前保存了 native minidump，同时下次启动发现 marker 未闭合，这不是两个事件，而是一个 native crash 事件附带异常退出 marker。去重键可参考 26.2 节：`process_name + pid + timestamp_bucket + top_frame/signature + session_id`。
+规则引擎要允许“多证据并存”。例如进程退出前保存了 native minidump，同时下次启动发现 marker 未闭合，这种情况应归并为一个 native crash 事件，并把异常退出 marker 作为附加证据。去重键可参考 26.2 节：`process_name + pid + timestamp_bucket + top_frame/signature + session_id`。
 
 和 26.9 的连接方式是同一张宽表分两条路径写入：API 30+ 使用系统 `ApplicationExitInfo` 填 `system_reason`，低版本使用 SDK 推断填 `legacy_reason`。查询时优先系统字段；没有系统字段再看低版本字段。这样图表可以按“确认退出原因”和“推断退出原因”分开展示。
 
@@ -212,7 +222,7 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 
 ### 🔸 自建 Process Exit Info 表结构建议
 
-这张表用于把 Android 11+ 系统记录和低版本推断记录放到同一查询面。字段不必一次做满，但要保留扩展空间。
+这张表用于把 Android 11+ 系统记录和低版本推断记录放到同一查询面。字段可以分阶段补齐，但要保留扩展空间。
 
 最小表结构可以按以下方式拆：
 
