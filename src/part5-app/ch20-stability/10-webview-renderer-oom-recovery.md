@@ -33,6 +33,12 @@ related_chapters: ["7.11", "18.13", "22.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 ---
 
 # 20.10 WebView Renderer OOM 与白屏恢复
@@ -73,13 +79,16 @@ gap_source: "素材驱动/官方文档"
 ## 扩展
 
 ### 🔸 WebViewRenderProcessClient 的提前降载策略
-[待补充]
+- Renderer 无响应 / 恢复回调的治理边界
+- 主动终止前必须具备 `onRenderProcessGone()` 兜底
 
 ### 🔸 WebView Provider 版本差异跟踪
-[待补充]
+- provider package / version / Chromium milestone 上报
+- 按 provider version 聚合白屏恢复与二次 gone 指标
 
 ### 🔸 Renderer OOM 与页面内存预算
-[待补充]
+- 页面资源、并发 WebView 与后台保活的预算边界
+- 分阶段采集基线，用 p95 / p99 找异常页面
 
 <!-- outline-end -->
 
@@ -120,7 +129,7 @@ WebView 多进程模式下，宿主 App 进程承载 `WebView` Java 对象、Act
 
 恢复流程要短，且每一步都有明确目的：移除旧 View，释放引用，重建实例，恢复可接受的页面状态。代码里不要在旧 WebView 上继续补救。
 
-下面是 Activity 中最小恢复骨架的示意代码，关注 `removeView()`、`destroy()`、引用置空和状态恢复的顺序。
+Activity 中的最小恢复骨架可以只保留四个动作：`removeView()`、`destroy()`、引用置空和状态恢复。
 
 ```kotlin
 class H5Activity : AppCompatActivity() {
@@ -249,8 +258,8 @@ WebView provider 独立于系统镜像更新，Renderer OOM 问题常常只集�
 
 ## Renderer OOM 与页面内存预算
 
-Renderer OOM 治理最终要落到页面内存预算。客户端可提供三条约束：限制单页图片解码尺寸，限制长列表预加载窗口，限制后台 WebView 保活时长。H5 侧要配合控制首屏资源大小、视频自动播放、Canvas / WebGL 场景和大对象缓存。
+Renderer OOM 治理要回到页面内存预算。客户端可提供三条约束：限制单页图片解码尺寸，限制长列表预加载窗口，限制后台 WebView 保活时长。H5 侧要配合控制首屏资源大小、视频自动播放、Canvas / WebGL 场景和大对象缓存。
 
-预算不要写成固定 MB 结论。设备内存档位、WebView provider、页面内容和并发 WebView 数都会改变阈值。更稳妥的做法是按页面类型建立基线：记录进入页面后 5 秒、首屏完成、滚动 30 秒、后台 5 分钟四个阶段的 Renderer gone 率与宿主 PSS，再用线上分位数找异常页面。[待验证: Renderer 侧精确内存采集方案需结合 provider / Chromium 调试能力]
+预算不要写成固定 MB 结论。设备内存档位、WebView provider、页面内容和并发 WebView 数都会改变阈值。更稳妥的做法是按页面类型建立基线：记录进入页面后 5 秒、首屏完成、滚动 30 秒、后台 5 分钟四个阶段的 Renderer gone 率与宿主 PSS，再用线上 p95 / p99 找异常页面。[待验证: Renderer 侧精确内存采集方案需结合 provider / Chromium 调试能力]
 
-[自动发现] 测试环境要保留故障演练入口。`chrome://crash` 可触发 Renderer crash，用于验证 `onRenderProcessGone()` 的清理路径；低内存 kill 需要结合压力工具或真机内存场景演练，不能只用 crash 场景代替 OOM 场景。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+测试环境要保留故障演练入口。`chrome://crash` 可触发 Renderer crash，用于验证 `onRenderProcessGone()` 的清理路径；低内存 kill 需要结合压力工具或真机内存场景演练，不能只用 crash 场景代替 OOM 场景。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
