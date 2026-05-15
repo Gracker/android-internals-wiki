@@ -1,7 +1,7 @@
 {
   "total": 279,
-  "draft": 3,
-  "ready-for-review": 89,
+  "draft": 2,
+  "ready-for-review": 90,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -126,7 +126,8 @@
     "5.3",
     "11.5",
     "4.9",
-    "13.12"
+    "13.12",
+    "22.10"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -248,7 +249,8 @@
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
     "src/part2-performance/ch11-power/05-wakelock.md",
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
+    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "review_summary": "Task9 2026-05-15 14: review 13.12；P0 1 / P1 1 / P2 1，需回炉。",
   "task6_review_summary": {
@@ -2443,8 +2445,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "13.12 Perfetto Profile 导入与 Flamegraph 分析",
-  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
+  "last_task2a_processed": "22.10 RenderEffect 与 RuntimeShader 性能实践",
+  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
     "at": "2026-05-15T14:27:34+08:00",
@@ -2519,5 +2521,6 @@
   ],
   "last_task9_at": "2026-05-15T14:27:34+08:00",
   "last_task2a_result": "drafted",
-  "ready-to-publish": 187
+  "ready-to-publish": 187,
+  "last_task2a_processed_section": "22.10"
 }
