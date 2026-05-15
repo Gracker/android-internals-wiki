@@ -32,8 +32,12 @@ sources:
     path: "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md"
   - type: structure
     path: "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_result: pass-light-edit
+task9_state: pending
 ---
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
@@ -104,7 +108,7 @@ Gradle 工程里，更常见的做法是只给 debug 或 canary build 合并一�
 </manifest>
 ```
 
-这段配置只说明“这个包请求 SYNC”。它不能保证所有设备都具备 MTE，也不能保证线上所有进程都按同一模式运行。Zygote 会结合硬件能力、compat change、系统属性和进程级配置再决策。[已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
+这段配置只表示这个包请求 SYNC。它不能保证所有设备都具备 MTE，也不能保证线上所有进程都按同一模式运行。Zygote 会结合硬件能力、compat change、系统属性和进程级配置再决策。[已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
 
 ## ASYMM 为什么不是应用 API
 
@@ -145,7 +149,7 @@ MTE 灰度的目标是“让疑难内存破坏变成可聚合的 Native Crash”
 - **构建分层**：debug 使用 `sync`，canary 可用 `sync` 或 `async`，大流量生产只考虑 `async`。官方配置文档明确提醒不要在生产 manifest 或 Android.bp 中直接使用 `sync`。
 - **回滚开关**：每个进程单独控制，命中异常崩溃率阈值后能按进程关闭。Native Crash 归因详见 20.3 节。
 
-MTE 崩溃进入 APM 后，不能只按 top frame 聚合。ASYNC 模式的崩溃点可能滞后，top frame 可能是下一次 syscall、timer interrupt 或 unrelated native call。聚合时要把 `si_code`、进程名、ABI、设备、build id、so load bias、MTE 模式请求值、业务入口和近邻 native 线程状态一起使用。
+MTE 崩溃进入 APM 后，不能只按栈顶帧聚合。ASYNC 模式的崩溃点可能滞后，栈顶帧可能是下一次 syscall、定时器中断或无关 native 调用。聚合时要把 `si_code`、进程名、ABI、设备、build id、so load bias、MTE 模式请求值、业务入口和近邻 native 线程状态一起使用。
 
 SYNC 命中更适合做根因定位。`SEGV_MTESERR` 通常给出更接近真实访问点的上下文；ASYNC 命中后，下一步是把同一灰度桶切到 SYNC 或构造复现包，争取拿到更精确的 tombstone。[已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
 
@@ -161,11 +165,11 @@ MTE 也有漏检边界。tag 空间有限，某些释放后访问可能碰巧命
 
 MTE 报告仍然以 `SIGSEGV` 进入 Native Crash 体系。应用内已有 Breakpad、Crashpad、xCrash 或自研 signal handler 时，要复用现有信号链约束：handler 内只做 async-signal-safe 的最小记录，把复杂解析交给 handler 进程或下次启动补偿。
 
-20.3 节已经展开 Android SignalChain、debuggerd、tombstone 和 handler 传递顺序。本节只补充 MTE 场景的处理原则：不要在 signal handler 中分配堆内存，不要试图在崩溃现场做完整符号化，不要吞掉信号导致 debuggerd 拿不到 tombstone。APM 侧应记录 MTE `si_code` 后继续传递给原 handler 或系统默认处理器。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
+20.3 节已经展开 Android SignalChain、debuggerd、tombstone 和 handler 传递顺序。放到 MTE 场景，处理原则是：signal handler 内不分配堆内存，不在崩溃现场做完整符号化，不吞掉信号导致 debuggerd 拿不到 tombstone。APM 侧记录 MTE `si_code` 后，继续传递给原 handler 或系统默认处理器。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
 
 ## MTE 报告进入 APM 后的聚合字段
 
-MTE 崩溃的 envelope 至少保留这些字段：
+MTE 崩溃事件记录至少保留这些字段：
 
 - `signal` / `si_code`：区分普通 `SIGSEGV`、`SEGV_MTESERR`、`SEGV_MTEAERR`。
 - `requested_memtag_mode`：manifest 或 compat change 请求值，取 `off/default/sync/async`。
@@ -174,10 +178,10 @@ MTE 崩溃的 envelope 至少保留这些字段：
 - `native_identity`：so 名、build id、load bias、pc relative offset、符号化结果。
 - `report_quality`：SYNC/ASYNC、是否有 fault address、是否有分配/释放栈、是否来自 tombstone 或 APM handler。
 
-聚合规则建议把 `si_code + so build id + pc relative offset + requested_memtag_mode + device family` 作为第一层，再用业务入口和线程名做二次拆分。ASYNC 报告缺少精确访问点时，不能把单个 top frame 当成唯一 fingerprint；同一个 heap corruption 可能在不同延迟点崩溃。
+聚合规则建议把 `si_code + so build id + pc relative offset + requested_memtag_mode + device family` 作为第一层，再用业务入口和线程名做二次拆分。ASYNC 报告缺少精确访问点时，不能把单个栈顶帧当成唯一 fingerprint；同一个 heap corruption 可能在不同延迟点崩溃。
 
 ## 版本边界与待验证项
 
 - Android Developers 文档把 MTE 支持设备列到 Pixel 8/9 系列；其他厂商设备是否支持、是否启用、是否做 ASYMM per-CPU 配置，需要按设备采集。
 - ASYMM 由设备侧 `mte_tcf_preferred` 控制，应用层没有公开 API 直接请求。线上报告里不要把 `async` 请求值写成“实际 ASYMM”。
-- `BIONIC_MEMTAG_UPGRADE_SECS` 这类系统服务重启后升级诊断机制，本节只作为后续研究线索，不写成应用侧可用能力。[待验证]
+- `BIONIC_MEMTAG_UPGRADE_SECS` 这类系统服务重启后升级诊断机制，本节只作为后续研究线索，不写成应用侧可用能力。[待验证: 需确认该机制在应用侧观测和归因中的适用边界]
