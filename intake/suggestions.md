@@ -1313,3 +1313,8 @@
 - **问题**：AOSP tag 不应作为 platform/libcore 下的目录段。正文 L71-L72 的写法是可复核的；frontmatter 中 platform/libcore/android-16.0.0_r1/... 不是 Gitiles/AOSP 实际路径。
 - **建议**：统一成 platform/libcore/ojluni/... @ android-16.0.0_r1，或写完整 Gitiles URL refs/tags/android-16.0.0_r1。
 
+## [Task9 Deep Review] 13.12 Perfetto Profile 导入与 Flamegraph 分析 — 2026-05-15
+- **类型**：交叉引用一致性
+- **位置**：`src/part3-tools/ch13-perfetto/README.md` L7-L18、L49-L60；13.12 frontmatter `related_chapters`
+- **问题**：`src/SUMMARY.md` 已包含 13.11/13.12，但 ch13 README 仍停在 13.1-13.10，`last_verified_against` 也写 13.1-13.10；13.12 正文 L227 引用 13.11，但 frontmatter `related_chapters` 没有列 13.11。
+- **建议**：同步 ch13 README 的章节列表、阅读顺序和 `related_chapters` 到 13.12，并在 13.12 frontmatter 增加 13.11，避免读者按章节入口找不到新增 SQL/Profile 内容。

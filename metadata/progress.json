@@ -250,7 +250,7 @@
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
     "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
   ],
-  "review_summary": "Task9 2026-05-15 11: review 18.2、20.10、21.5；20.10 无 P0/P1 并自动晋升 finalized；18.2 与 21.5 需回炉。",
+  "review_summary": "Task9 2026-05-15 14: review 13.12；P0 1 / P1 1 / P2 1，需回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 596,
     "l3_issues": 41,
@@ -939,13 +939,22 @@
       "reviewed_at": "2026-05-15T13:30:28+08:00",
       "log": "logs/deep-review/2026-05-15-13-deep-review.md",
       "summary": "P0 1：FinalizerReference 创建时机写反；P1 2：Cleaner 双路径未区分、CloseGuard/Cleaner API level 边界缺失；P2 3：remove() wait 语义、watchdog 行号/阈值、AOSP path 规范。"
+    },
+    "13.12": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T14:27:34+08:00",
+      "log": "logs/deep-review/2026-05-15-14-deep-review.md",
+      "summary": "P0 1：v54 Data Explorer 功能名无官方来源；P1 1：linux.perf Android 版本/权限前提缺失；P2 1：ch13 交叉引用未同步。"
     }
   },
   "total_review_sections": 120,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T14:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-15T14:27:34+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "14:12",
@@ -962,7 +971,7 @@
     "auto_promotions": 0,
     "log": "logs/review/2026-05-15-14-review.md"
   },
-  "task9_last_review": "2026-05-15T13:30:28+08:00",
+  "task9_last_review": "2026-05-15T14:27:34+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2392,9 +2401,9 @@
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
       "file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task2a_at": "2026-05-15T14:04:00+08:00",
       "task2a_result": "drafted",
       "created_by": "task2a-knowledge-gap",
@@ -2404,7 +2413,19 @@
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-15",
-      "last_task6_at": "2026-05-15T14:12:00+08:00"
+      "last_task6_at": "2026-05-15T14:12:00+08:00",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task9_at": "2026-05-15T14:27:34+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-15",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-14-deep-review.md",
+      "task9_issues": {
+        "p0": 1,
+        "p1": 1,
+        "p2": 1,
+        "p3": 0
+      }
     }
   },
   "task2b_rounds": [
@@ -2426,43 +2447,45 @@
   "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T13:30:28+08:00",
-    "log": "logs/deep-review/2026-05-15-13-deep-review.md",
+    "at": "2026-05-15T14:27:34+08:00",
+    "log": "logs/deep-review/2026-05-15-14-deep-review.md",
     "sections": [
-      "4.9"
+      "13.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
     ],
     "p0": 1,
-    "p1": 2,
-    "p2": 3,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": []
+    "auto_promotions": [],
+    "summary": "13.12 存在 v54 Data Explorer 命名事实错误，且缺 Perfetto linux.perf Android 15+/profileable 采集边界；另有 ch13 README/related_chapters 交叉引用待同步。"
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-13-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-14-deep-review.md",
   "last_task9_sections": [
-    "4.9"
+    "13.12"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T13:30:28+08:00",
-    "log": "logs/deep-review/2026-05-15-13-deep-review.md",
+    "at": "2026-05-15T14:27:34+08:00",
+    "log": "logs/deep-review/2026-05-15-14-deep-review.md",
     "sections": [
-      "4.9"
+      "13.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
     ],
     "p0": 1,
-    "p1": 2,
-    "p2": 3,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": []
+    "auto_promotions": [],
+    "summary": "13.12 存在 v54 Data Explorer 命名事实错误，且缺 Perfetto linux.perf Android 15+/profileable 采集边界；另有 ch13 README/related_chapters 交叉引用待同步。"
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
   ],
   "total_review_files": 120,
   "last_task2a_at": "2026-05-15T14:04:00+08:00",
@@ -2492,9 +2515,9 @@
     "summary": "本轮仅 2 个待 review 章节。4.9 写作层通过轻修，Task9 既有 P0/P1 技术队列继续由 Task2B 处理；13.12 补齐 outline 并通过轻修，进入 Task9。"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
   ],
-  "last_task9_at": "2026-05-15T13:30:28+08:00",
+  "last_task9_at": "2026-05-15T14:27:34+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 187
 }

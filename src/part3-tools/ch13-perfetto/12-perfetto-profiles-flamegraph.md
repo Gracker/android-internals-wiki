@@ -29,13 +29,20 @@ related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 last_task6_at: '2026-05-15T14:12:00+08:00'
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: 2026-05-15
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-15T14:27:34+08:00'
+task9_review_notes: '2026-05-15 task9 deep-review: P0 1 / P1 1 / P2 1，需 Task2B 修正 v54 Data Explorer 命名、linux.perf Android 版本/权限边界与 ch13 交叉引用。'
+last_task9_review_log: 'logs/deep-review/2026-05-15-14-deep-review.md'
 ---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
