@@ -45,13 +45,19 @@ related_chapters: ["12.2", "12.3", "24.4", "24.5", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "AOSP结构/研究素材"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-15"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 ---
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能
 
-App 看到的“网络可用”，通常已经经过系统侧两层筛选：Wi-Fi 模块先在候选 AP 里选一个，Connectivity 模块再在 Wi-Fi、蜂窝、VPN 等网络之间选默认网络。本节只处理工程上最容易误判的部分：Wi-Fi 信号还在，为什么请求突然变慢、断开、切到蜂窝，App 侧该怎样采集证据和降级。
+App 看到的“网络可用”，通常已经经过系统侧两层筛选：Wi-Fi 模块先在候选 AP 里选一个，Connectivity 模块再在 Wi-Fi、蜂窝、VPN 等网络之间选默认网络。工程上最容易误判的是：Wi-Fi 信号还在，请求却突然变慢、断开或切到蜂窝；App 侧要把系统选择、请求阶段和降级策略分开记录。
 
-Part 5 里不要重复网络协议细节。连接池、TLS、HTTP/2、HTTP/3 详见 12.2、12.3、24.4、24.5；本节聚焦系统网络选择和 App 观测。
+连接池、TLS、HTTP/2、HTTP/3 的协议细节详见 12.2、12.3、24.4、24.5；这里讨论系统网络选择和 App 侧观测。
 
 ## 要点
 
@@ -73,7 +79,7 @@ Wi-Fi 模块回答“连哪个 AP”。Connectivity 模块回答“当前请求�
 
 AOSP `WifiNetworkSelector` 的 `filterScanResults()` 会过滤 RSSI 低于 entry threshold 的 BSSID、被 blocklist 命中的 BSSID、被管理策略限制的 SSID，以及部分 deprecated security type。之后 `selectNetwork()` 使用 `WifiCandidates.CandidateScorer` 对分组候选评分，并把选中的 scan result 写回 `WifiConfigManager.setNetworkCandidateScanResult()`。[已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
 
-Connectivity 侧已经从传统整数分数演进到 policy 规则。source.android.com 的 network selection 文档说明，现代 Android 的网络选择策略位于 Connectivity 模块的 `NetworkRanker` 及其 helper；设备厂商不能直接替换选择代码，只能通过 `NetworkScore` 的 flags 表达网络属性。[已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
+Connectivity 侧已经从传统整数分数演进到策略规则。source.android.com 的 network selection 文档说明，现代 Android 的网络选择策略位于 Connectivity 模块的 `NetworkRanker` 及其辅助类；设备厂商不能直接替换选择代码，只能通过 `NetworkScore` 的 flags 表达网络属性。[已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
 
 `NetworkRanker.getBestNetworkByPolicy()` 的排序不是简单“分数越大越好”。代码先处理 invincible network、VPN、用户显式选择并接受未验证网络、validated / accept-unvalidated，再处理 exiting、primary transport、transport preference 和 current satisfier。当前已满足请求的网络在策略等价时会被保留，避免默认网络在边界条件下频繁跳变。[已验证: AOSP main, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
 
@@ -198,7 +204,7 @@ class NetTimingListener(
 
 这里的 `networkSnapshot()` 建议记录 active network id、transport、`INTERNET`、`VALIDATED`、`NOT_METERED`、VPN 状态和网络切换事件序号。单独记录 OkHttp 耗时还不够；切网前后的 DNS 慢、连接慢和服务端慢，在 HTTP 层看到的错误形态很像。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] 参考其“等待 I/O 会拉长主流程耗时”的组织方式。本节没有复用原文和代码，只把网络请求拆成可观测阶段。
+[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] 这里借用“等待 I/O 会拉长主流程耗时”的组织方式，把网络请求拆成可观测阶段。
 
 ### 🔹 弱网与多网络并存场景
 
@@ -354,7 +360,7 @@ adb shell dumpsys wifi > wifi.txt
 adb bugreport bugreport-wifi-switch.zip
 ```
 
-bugreport 适合复盘系统决策。它能同时包含 connectivity、wifi、netd、NetworkStack、系统日志和部分配置。线上复现难的切网问题，至少保留问题发生前后 2 分钟的时间戳、网络状态快照和请求 call id，后续才能把 App 日志和系统日志对齐。
+bugreport 适合复盘系统决策。它能同时包含 connectivity、wifi、netd、NetworkStack、系统日志和部分配置。线上复现难的切网问题，至少保留问题发生前后 2 分钟的时间戳、网络状态快照和请求 call id，后续才能把 App 日志和系统日志关联起来。
 
 #### Perfetto
 
@@ -379,7 +385,7 @@ AOSP 的 Connectivity 网络选择策略被 Mainline 模块约束，但 OEM 仍�
 | OEM 配置 | `dumpsys wifi`、overlay、vendor log、机型实验 | 只能覆盖该厂商 / 该版本 |
 | firmware / driver | 厂商 bugreport、内核日志、芯片文档 | 没有材料时只能标 `[待验证]` |
 
-本节不把“评分多少会切蜂窝”写成固定结论。AOSP master 已经能确认筛选维度和 Connectivity 排序策略，但具体机型上的漫游、MLO、双 Wi-Fi、链路聚合阈值，需要实机 trace 或厂商材料。[待验证: OEM scoring、roaming threshold、dual Wi-Fi / link aggregation 策略]
+不要把“评分多少会切蜂窝”写成固定结论。AOSP main 已经能确认筛选维度和 Connectivity 排序策略，但具体机型上的漫游、MLO、双 Wi-Fi、链路聚合阈值，需要实机 trace 或厂商材料。[待验证: OEM scoring、roaming threshold、dual Wi-Fi / link aggregation 策略]
 
 如果要排查厂商差异，可以做一组最小实验：同一地点、同一 SSID、同一业务请求，分别记录 Pixel / 目标厂商机型在 RSSI 从 -55dBm 降到 -80dBm 时的 default network、validated 状态、DNS/TTFB 分位数、切换次数和电量曲线。没有这组数据，不要把单机观察写成平台规律。
 
@@ -394,7 +400,7 @@ App 侧可以把 HTTP/3 作为灰度能力处理：
 - 切网前后单独统计长连接恢复时长，不把 HTTP/3 和 HTTP/2 的指标混在一个分位数里。
 - 对支付、下单、上传这类请求保留幂等设计，不能把协议迁移当成业务一致性的替代品。
 
-协议细节详见 24.5。本节只给 App 网络切换视角的观测口径。
+协议细节详见 24.5；这里保留 App 网络切换视角的观测口径。
 
 ## 工程检查清单
 
@@ -405,7 +411,7 @@ App 侧可以把 HTTP/3 作为灰度能力处理：
 - 切网时是否记录 network id、transport、VPN、validated、DNS server、proxy、MTU？
 - HTTPDNS 是否避免在 `Dns.lookup()` 内实时发阻塞请求？详见 24.4。
 - 是否把首屏 API、图片、埋点、上传放进不同优先级队列，避免弱网互相挤占？
-- bugreport / Perfetto 是否能用 call id 对齐系统网络事件和 App 请求事件？
+- bugreport / Perfetto 是否能用 call id 关联系统网络事件和 App 请求事件？
 
 ## 参考资料
 
