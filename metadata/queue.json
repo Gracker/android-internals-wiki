@@ -6265,7 +6265,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
@@ -6276,7 +6276,9 @@
         "[结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]",
         "https://developer.android.com/reference/android/graphics/RenderEffect",
         "https://developer.android.com/reference/android/graphics/RuntimeShader"
-      ]
+      ],
+      "completed_date": "2026-05-15T15:04:00+08:00",
+      "completed_reason": "Task 2A 加工完成，章节状态改为 ready-for-review"
     },
     {
       "id": "task2a-gap-2026-05-15-26.9-09-application-exit-info",
