@@ -2975,13 +2975,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T05:26:00+08:00"
+      "added_at": "2026-05-13T05:26:00+08:00",
+      "completed_date": "2026-05-15T15:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: HAL buffer management 修正——device API 版本从 3_5 修正为 3_6(CAMERA_DEVICE_API_VERSION_3_6)，正常输出 buffer 归还路径从 returnStreamBuffers 修正为 process_capture_result，returnStreamBuffers 仅用于未随 result 返回的 buffer/flush 场景，补 HIDL 3_5 vs device API 3_6 命名差异说明"
     },
     {
       "id": "task9-2026-05-13-18.2-nonblocking-sync-version",
@@ -3434,13 +3436,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T15:31:00+08:00"
+      "added_at": "2026-05-13T15:31:00+08:00",
+      "completed_date": "2026-05-15T15:30:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: FrameMetrics TOTAL_DURATION 从 GPU 执行时间描述中移除(TOTAL_DURATION=总帧时长 API 24+, GPU_DURATION=GPU 时长 API 31+)，ARM64 icache flush 序列补第二个 dsb ish(ARM 推荐序列: dc cvau→dsb ish→ic ivau→dsb ish→isb)，标注编译器内建实现不承诺固定指令文本"
     },
     {
       "id": "task9-20260513-18.10-surfacecontrol-lifecycle",
