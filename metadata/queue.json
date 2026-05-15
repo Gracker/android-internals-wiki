@@ -6859,19 +6859,54 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T15:27:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-15-24.9-wifi-network-selection-version-review",
+      "section": "24.9",
+      "section_title": "Wi-Fi 评分、网络选择与连接切换性能",
+      "priority": 85,
+      "title": "Android 10/11 与 Android 12+ Connectivity 选网策略需拆分",
+      "description": "章节适用 Android 10-17，但默认网络选择主线只按 Android 12+ NetworkRanker / NetworkScore flags 描述，缺 Android 10/11 legacy integer score 分支。",
+      "reason": "[Deep Tech Review] Android 10/11 与 Android 12+ Connectivity 默认网络选择策略未拆分，可能误导旧版本线上问题判断。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-15",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/09-wifi-connectivity-selection.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "https://source.android.com/docs/core/connect/network-selection",
+        "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Connectivity 网络选择",
+          "location": "L68-L86 ConnectivityService / NetworkRanker 默认网络选择",
+          "detail": "章节 frontmatter 标注适用 Android 10-17，但正文把 Connectivity 默认网络选择主线写成 NetworkRanker / NetworkScore flags。source.android.com network-selection 文档明确区分：Android 12+ 使用 NetworkScore flags 和 NetworkRanker；Android 11 及以下仍基于 NetworkAgent 上报的整数 score，并叠加 validated、VPN 等 bonus / penalty，且同分行为 undefined。当前写法会让 Android 10/11 读者按 Android 12+ 策略解释线上切网。",
+          "suggestion": "在本节开头或版本差异小节补一张 Android 10-11 vs Android 12+ 对照：10/11 为 legacy integer score + bonuses/penalties；12+ 为 NetworkScore flags + NetworkRanker policy。流程图中将 “ConnectivityService / NetworkRanker” 改成带版本条件，或拆成旧版 ConnectivityService score 与新版 NetworkRanker 两条分支。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-15T16:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 210,
+    "total_entries": 211,
     "p0_count": 43,
-    "last_updated": "2026-05-15T15:27:00+08:00",
+    "last_updated": "2026-05-15T16:20:00+08:00",
     "updated_by": "openclaw-task9",
     "pending_entries": 125,
     "updated_date": "2026-05-15",
     "last_updated_by": "openclaw-task9",
     "pending": 125
   },
-  "last_updated": "2026-05-15T15:27:00+08:00",
+  "last_updated": "2026-05-15T16:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": 125
 }

@@ -49,8 +49,14 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-15
+last_task9_at: 2026-05-15T16:20:00+08:00
+last_task9_review_log: logs/deep-review/2026-05-15-16-deep-review.md
 ---
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能
