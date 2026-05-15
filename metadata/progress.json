@@ -1,7 +1,7 @@
 {
   "total": 279,
-  "draft": 5,
-  "ready-for-review": 87,
+  "draft": 4,
+  "ready-for-review": 88,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -124,7 +124,8 @@
     "8.1",
     "20.10",
     "5.3",
-    "11.5"
+    "11.5",
+    "4.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -244,7 +245,8 @@
     "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
     "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part2-performance/ch11-power/05-wakelock.md"
+    "src/part2-performance/ch11-power/05-wakelock.md",
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
   "review_summary": "Task9 2026-05-15 11: review 18.2、20.10、21.5；20.10 无 P0/P1 并自动晋升 finalized；18.2 与 21.5 需回炉。",
   "task6_review_summary": {

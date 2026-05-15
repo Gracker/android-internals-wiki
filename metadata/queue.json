@@ -6543,7 +6543,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
@@ -6552,7 +6552,9 @@
         "Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
         "art/runtime/daemon.cc; art/runtime/reference_queue.cc（待源码版本复核）"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-15",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线。"
     },
     {
       "id": "task2a-gap-13.12-12-perfetto-profiles-flamegraph-20260515",
