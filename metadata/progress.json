@@ -1,7 +1,7 @@
 {
   "total": 286,
-  "draft": 5,
-  "ready-for-review": 87,
+  "draft": 4,
+  "ready-for-review": 88,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
@@ -1029,9 +1029,9 @@
   },
   "total_review_sections": 125,
   "next_review_candidates": [],
-  "ready_for_review": 87,
-  "last_updated": "2026-05-15T22:35:05+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 88,
+  "last_updated": "2026-05-15T23:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-15",
     "time": "20:08",
