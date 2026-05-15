@@ -349,6 +349,7 @@ tags:
   - [25.7 R8 与资源优化](part5-app/ch25-power-size/07-r8-resource-optimization.md)
   - [25.8 App Bundle 与按需分发](part5-app/ch25-power-size/08-app-bundle-delivery.md)
   - [25.9 功耗与包体积案例集](part5-app/ch25-power-size/09-power-size-case-studies.md)
+  - [25.10 Hybrid/WebView 功耗与原生化取舍](part5-app/ch25-power-size/10-hybrid-webview-power.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
