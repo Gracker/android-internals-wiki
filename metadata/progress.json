@@ -118,7 +118,8 @@
     "26.5",
     "26.6",
     "20.7",
-    "26.7"
+    "26.7",
+    "13.11"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -232,9 +233,10 @@
     "src/part5-app/ch26-observability/05-online-troubleshooting.md",
     "src/part5-app/ch26-observability/06-ab-testing-regression.md",
     "src/part5-app/ch20-stability/07-exception-architecture.md",
-    "src/part5-app/ch26-observability/07-release-quality-gate.md"
+    "src/part5-app/ch26-observability/07-release-quality-gate.md",
+    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
   ],
-  "review_summary": "Task9 2026-05-15 07: review 16.5、25.1、25.2；P0 0 / P1 2 / P2 1；25.2 自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-15 09: review 13.11；P0 1 / P1 1 / P2 1；无自动晋升。",
   "task6_review_summary": {
     "l1_l2_fixes": 565,
     "l3_issues": 39,
@@ -867,13 +869,22 @@
       "p1": 1,
       "p2": 2,
       "p3": 0
+    },
+    "13.11": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-15T09:27:23+08:00",
+      "log": "logs/deep-review/2026-05-15-09-deep-review.md",
+      "summary": "P0 1：帧 × CPU 频率统计未按 frame 边界裁剪 joined.dur；P1 1：GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束；P2 1：缺 Trace Processor/PerfettoSQL 工具版本边界。"
     }
   },
-  "total_review_sections": 112,
+  "total_review_sections": 113,
   "next_review_candidates": [],
   "ready_for_review": 84,
-  "last_updated": "2026-05-15T08:20:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-15T09:27:23+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-15T08:10:00+08:00",
     "log": "logs/review/2026-05-15-08-review.md",
@@ -892,7 +903,7 @@
     "auto_promotions": 0,
     "result": "pass-light-edit"
   },
-  "task9_last_review": "2026-05-15T07:35:58+08:00",
+  "task9_last_review": "2026-05-15T09:27:23+08:00",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -2286,61 +2297,45 @@
   "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
   "last_task2a_processed_date": "2026-05-15",
   "task9_last_review_detail": {
-    "at": "2026-05-15T07:35:58+08:00",
-    "log": "logs/deep-review/2026-05-15-07-deep-review.md",
+    "at": "2026-05-15T09:27:23+08:00",
+    "log": "logs/deep-review/2026-05-15-09-deep-review.md",
     "sections": [
-      "16.5",
-      "25.1",
-      "25.2"
+      "13.11"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-      "src/part5-app/ch25-power-size/02-background-power.md"
+      "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
     ],
-    "p0": 0,
-    "p1": 2,
+    "p0": 1,
+    "p1": 1,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [
-      "25.2"
-    ]
+    "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-15-07-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-09-deep-review.md",
   "last_task9_sections": [
-    "16.5",
-    "25.1",
-    "25.2"
+    "13.11"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-15T07:35:58+08:00",
-    "log": "logs/deep-review/2026-05-15-07-deep-review.md",
+    "at": "2026-05-15T09:27:23+08:00",
+    "log": "logs/deep-review/2026-05-15-09-deep-review.md",
     "sections": [
-      "16.5",
-      "25.1",
-      "25.2"
+      "13.11"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-      "src/part5-app/ch25-power-size/02-background-power.md"
+      "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
     ],
-    "p0": 0,
-    "p1": 2,
+    "p0": 1,
+    "p1": 1,
     "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": [
-      "25.2"
-    ]
+    "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-    "src/part5-app/ch25-power-size/02-background-power.md"
+    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
   ],
-  "total_review_files": 112,
+  "total_review_files": 113,
   "last_task2a_at": "2026-05-15T08:20:00+08:00",
   "last_task2a_section": "13.11, 17.4, 20.10, 22.10, 26.9",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md, src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md, src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md, src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md, src/part5-app/ch26-observability/09-application-exit-info.md",
@@ -2378,10 +2373,8 @@
     "auto_promotions": 0
   },
   "last_task9_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-    "src/part5-app/ch25-power-size/02-background-power.md"
+    "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md"
   ],
-  "last_task9_at": "2026-05-15T07:35:58+08:00",
+  "last_task9_at": "2026-05-15T09:27:23+08:00",
   "last_task2a_result": "gap-mining"
 }

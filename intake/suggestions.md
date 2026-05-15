@@ -1241,3 +1241,9 @@
 - **问题**：章节列出了 URL 模板、文件路径 hash、操作日志、Trace/profile 等证据，但没有定义脱敏、加密、保留期、上传授权和字段 allowlist。APM/线上 profile 很容易带出 URL query、header、堆对象、文件路径、用户操作序列等敏感信息，缺少数据治理边界会影响线上可用性。
 - **建议**：在 APM 第一版验收或 Runbook 模板里补“数据治理”栏：只采 URL 模板不采 raw URL/query；header/body 默认禁采、按 allowlist 开；日志/trace/profile 本地加密并设置 TTL；大文件上传需远程开关、采样和用户/地区合规策略；服务端索引对 session_id/request_id 做权限隔离。
 
+## [Task9 Deep Review] 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数 — 2026-05-15
+- **类型**：版本差异 / 工具版本边界
+- **位置**：frontmatter L8-L10；L352-L359 Trace Processor 标准库与宏能力
+- **问题**：章节把适用范围写成 Android 12-17，但 `SPAN_JOIN`、`CREATE PERFETTO TABLE/MACRO`、`intervals.*` / `slices.*` 标准库模块属于 Trace Processor / PerfettoSQL 能力，和分析端的 Perfetto 版本绑定，不由被分析设备的 Android API level 决定。Android 版本只影响 trace 里有没有 Frame Timeline、cpufreq counter、ART slice 等输入数据。当前口径会让读者误以为 Android 12 以下不能用 SPAN_JOIN，或忽略旧 Android Studio / AGI 内置 Trace Processor 不支持新 stdlib 的风险。
+- **建议**：补一段“工具版本前提”：使用当前 `trace_processor_shell` 或 ui.perfetto.dev，并确认支持 `SPAN_JOIN`、`CREATE PERFETTO TABLE/MACRO`、`INCLUDE PERFETTO MODULE intervals.*`；旧工具不支持时导出 trace 到新 Trace Processor 分析。Android 12+ 只作为 Frame Timeline / 采集数据示例的边界，不作为 SPAN_JOIN 本身的适用版本。
+
