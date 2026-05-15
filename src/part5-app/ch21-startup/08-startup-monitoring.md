@@ -26,13 +26,13 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -216,7 +216,9 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 ### Android 15+ 的平台启动信息
 
-Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`），用于提供启动类型、启动原因、时间戳等信息。它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖较新系统版本，线上监控仍需要保留 Android 10-14 的兼容采集路径。[需确认: ApplicationStartInfo 的字段名称、启动原因枚举和 Android 15/16 可用性需 Task9 复核]
+Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。[已验证: Android Developers reference, API 35; Task9 确认 2026-05-14]
+
+它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖 Android 15+ 设备，线上监控仍需要保留 Android 10-14 的兼容采集路径。
 
 这个能力更适合作为校准源：在 Android 15+ 设备上对比平台时间戳和自建埋点，确认 TTID / TTFD 的端侧口径是否偏移；不要把它当成替代全版本启动监控的方案。
 
