@@ -1,4 +1,5 @@
 ---
+
 title: "sched_ext 与 OEM BPF 调度器"
 chapter: "17.4"
 section: "17.4"
@@ -34,8 +35,12 @@ reviewed_date: "2026-05-15"
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-15"
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-15
+task9_reviewed_by: openclaw-task9
+task2b_state: pending
+pipeline_stage: task2b_pending
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器

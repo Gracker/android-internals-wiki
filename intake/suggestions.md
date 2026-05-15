@@ -1254,3 +1254,8 @@
 - **建议**：Task2B 按 Task9 队列项修正 SQL 口径；同时补齐本节锚点大纲，覆盖 SPAN_JOIN 定义、counter 转 span、PARTITIONED 约束、帧 × CPU 频率、Binder/GC 交叉分析、标准库配合、CI 复用和排查清单。
 - **review 日志**：logs/review/2026-05-15-10-review.md
 
+## [Task9 Deep Review] 17.4 sched_ext 与 OEM BPF 调度器 — 2026-05-15
+- **类型**：源码锚点缺失
+- **位置**：L260 Android common kernel OPPO scx tracepoint / symbol list 线索
+- **问题**：正文写“搜索结果中也能看到 OPPO 相关 scx tracepoint / symbol list 线索”，但没有给出具体 Android common 路径、commit、symbol 名或搜索 URL。该句现在无法复核，也无法区分是 Android common 通用代码、厂商提交残留，还是搜索噪声。
+- **建议**：补具体源码锚点或删除该判断；如果只能保留为线索，应改成 `[待验证]` 并给出搜索关键词、commit id 或 Gerrit 链接。
