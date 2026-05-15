@@ -40,9 +40,9 @@ task9_result: 'needs-rework'
 task2b_state: 'pending'
 task2b_result: fixed
 last_task2b_at: '2026-04-28T02:40:00+08:00'
-reviewed_date: '2026-04-28'
+reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
-review_round: 6
+review_round: 7
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-11'
 last_task9_at: '2026-05-11T10:20:00+08:00'
@@ -55,6 +55,7 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: 'logs/deep-review/2026-05-11-10-deep-review.md'
 
+task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。"
 ---
 
 
@@ -100,7 +101,7 @@ ContentProvider 的设计初衷是解决一个核心问题:**不同进程之间�
 
 [已验证:来源见 developer.android.com/guide/topics/providers/content-provider-basics]
 
-那为什么不直接用 Binder 传数据?Binder 确实是 Android IPC 的基础,但它的设计面向的是"小数据量的命令式调用"--每个 Binder 事务的缓冲区只有 1MB,而且是所有并发事务共享的。如果要跨进程传输一个几万行的查询结果,直接用 Binder 序列化会把事务缓冲区撑爆。ContentProvider 在 Binder 之上构建了一层更高级的抽象:
+那为什么不直接用 Binder 传数据?Binder 是 Android IPC 的基础,但它的设计面向的是"小数据量的命令式调用"--每个 Binder 事务的缓冲区只有 1MB,而且是所有并发事务共享的。如果要跨进程传输一个几万行的查询结果,直接用 Binder 序列化会把事务缓冲区撑爆。ContentProvider 在 Binder 之上构建了一层更高级的抽象:
 
 - **URI 寻址**:每份数据用一个 `content://authority/path` 格式的 URI 标识,调用方不需要知道数据来自哪个数据库、哪张表
 - **标准化 CRUD 接口**:`query()`、`insert()`、`update()`、`delete()` 四个方法,语义清晰,跨语言可用
@@ -212,7 +213,7 @@ CursorWindow 容量有限,查询结果可能远大于当前窗口。SQLiteCursor
 
 即使单个 ContentProvider 调用的数据量远小于 1MB,如果同时有多个 ContentProvider 调用在并发进行(比如列表页同时请求多个数据源),它们的 Binder 事务数据也会累积超过缓冲区上限,触发 `TransactionTooLargeException`。在实践中,数据载荷达到约 0.5MB 时就可能触发此异常,因为缓冲区还需要留空间给其他系统 Binder 调用。
 
-优化策略很直接:**始终指定 projection(只查需要的列),使用 selection 过滤行,避免在 ContentProvider 中传输大量数据。** 如果确实需要传输大数据(如图片、文件),应该使用文件描述符(`openFile()` / `openAssetFile()`)或 `MemoryFile`,让数据走单独的共享内存通道,不占用 Binder 事务缓冲区。
+优化策略很直接:**始终指定 projection(只查需要的列),使用 selection 过滤行,避免在 ContentProvider 中传输大量数据。** 如果需要传输大数据(如图片、文件),应该使用文件描述符(`openFile()` / `openAssetFile()`)或 `MemoryFile`,让数据走单独的共享内存通道,不占用 Binder 事务缓冲区。
 
 ## ContentProvider ANR 机制
 
@@ -230,7 +231,7 @@ ContentProvider 的 ANR 涉及三个不同的超时机制,容易混淆:
 
 [已验证:AOSP android-16.0.0_r1, `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT` = 10s;CRUD 操作无独立超时常量,ANR 由调用方组件超时机制触发]
 
-这三类超时中最容易误判的是"CRUD 操作超时"。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**--常见误解是 ContentProvider 有一套类似 Service 的独立超时,但 AOSP 中并不存在这样的常量。当我们在 traces.txt 中看到 ContentProvider 调用导致了 ANR,真正的超时来源是调用方所在的组件(比如 Activity 的 Input dispatching timeout 5 秒)。
+这三类超时中最容易误判的是"CRUD 操作超时"。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**--常见误解是 ContentProvider 有一套类似 Service 的独立超时,但 AOSP 中并不存在这样的常量。当我们在 traces.txt 中看到 ContentProvider 调用导致了 ANR,超时来源是调用方所在的组件(比如 Activity 的 Input dispatching timeout 5 秒)。
 
 ### 远程 ContentProvider 的 Binder 线程池模型与线程耗尽
 
@@ -320,7 +321,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 
 步骤 2-4 的耗时直接叠加在调用方的 ContentProvider 请求上。如果 Provider 进程的 Application.onCreate() 耗时 500ms、Provider.onCreate() 耗时 200ms,调用方的首次 query() 至少需要等待 700ms+(加上进程创建和 IPC 开销)。
 
-在 Perfetto 中观察这个冷启动过程:调用方主线程出现一个长 binder transaction 切片,同一时间段可以看到 Provider 进程从无到有的启动轨迹,包括 `handleBindApplication` 和 `installContentProviders` 两个关键切片。
+在 Perfetto 中观察这个冷启动过程:调用方主线程出现一个长 binder transaction 切片,同一时间段能看到 Provider 进程从无到有的启动轨迹,包括 `handleBindApplication` 和 `installContentProviders` 两个关键切片。
 
 ### 进程间 CursorWindow 的实际行为
 
@@ -431,7 +432,7 @@ public ContentProviderResult[] applyBatch(ArrayList<ContentProviderOperation> op
 
 3. **避免大 BLOB/JSON 存为单列**:单列数据过大会导致一行占满整个 CursorWindow,使翻页频繁触发。大文件应该存路径,数据走文件描述符。
 
-4. **大数据量用 keyset 分页替代 OFFSET**:前面讲过 SQLiteCursor 的 OFFSET 性能陷阱。如果确实需要深度分页,使用 keyset 分页(`WHERE id > last_id ORDER BY id LIMIT N`),让数据库通过索引直接定位,避免全表扫描。
+4. **大数据量用 keyset 分页替代 OFFSET**:前面讲过 SQLiteCursor 的 OFFSET 性能陷阱。如果需要深度分页,使用 keyset 分页(`WHERE id > last_id ORDER BY id LIMIT N`),让数据库通过索引直接定位,避免全表扫描。
 
 ## 在 Perfetto 中的表现
 
@@ -439,7 +440,7 @@ ContentProvider 相关的性能问题在 Perfetto 中有几个典型的观测点
 
 ### 启动阶段的 ContentProvider 初始化
 
-在冷启动 Trace 中,主线程 track 上可以看到一个名为 `installContentProviders` 的切片(slice),它对应 `ActivityThread.installContentProviders()` 的执行区间。这个切片内部会包含每个 ContentProvider 的 `onCreate()` 执行时间。
+在冷启动 Trace 中,主线程 track 上会出现一个名为 `installContentProviders` 的切片(slice),它对应 `ActivityThread.installContentProviders()` 的执行区间。这个切片内部会包含每个 ContentProvider 的 `onCreate()` 执行时间。
 
 如果这个区间特别长(比如超过 50ms),说明有 ContentProvider 在 `onCreate()` 中做了重操作。我们可以展开这个切片,看具体是哪个 CP 的初始化最耗时。
 
@@ -447,17 +448,17 @@ ContentProvider 相关的性能问题在 Perfetto 中有几个典型的观测点
 
 ### 跨进程 ContentProvider 调用
 
-当 App A 调用 App B 的 ContentProvider 时,在 Perfetto 中可以看到:
+当 App A 调用 App B 的 ContentProvider 时,Perfetto 中有三类关键轨道:
 
 - **App A 的主线程 track**:出现一个 `binder transaction` 切片,表示正在等待远端返回
-- **Binder track**:可以看到从 App A 到 App B 的 Binder 调用
+- **Binder track**:记录从 App A 到 App B 的 Binder 调用
 - **App B 的 Binder 线程 track**:出现 `ContentProvider$Transport.query` 栈帧对应的执行区间
 
 这里要把两类超时分开看:如果 App B 的 ContentProvider 发布超时(10 秒),App A 会收到 system_server 的 `contentProviderTimeout` 信号。如果 App B 已发布但 CRUD 执行慢,App A 的 ANR 来自调用方自身的组件超时(如 Input dispatching 5 秒),不是 ContentProvider 的独立 10 秒阈值。
 
 ### ContentProvider ANR 时间线
 
-ContentProvider ANR 在 system_server 的 track 中可以看到以下事件序列:
+ContentProvider ANR 在 system_server 的 track 中通常有以下事件序列:
 
 1. system_server 发出 `contentProviderTimeout` 消息
 2. 对应的 App 进程收到 ANR 回调
@@ -533,7 +534,7 @@ Scoped Storage 对 ContentProvider 的影响主要体现在存储访问方式的
 
 ### Android 11(API 30):framework 内部的 Provider ANR 监测接口
 
-AOSP android-11.0.0_r1 的 `ContentProviderClient` 确实加入了 `setDetectNotResponding()`,但这个方法带有 `@hide`、`@SystemApi`、`@TestApi` 标记,并要求 `REMOVE_TASKS` 权限。它面向 framework / system test 场景,普通应用编译时拿不到这个方法,不能把它写成公开 SDK 能力。
+AOSP android-11.0.0_r1 的 `ContentProviderClient` 加入了 `setDetectNotResponding()`,但这个方法带有 `@hide`、`@SystemApi`、`@TestApi` 标记,并要求 `REMOVE_TASKS` 权限。它面向 framework / system test 场景,普通应用编译时拿不到这个方法,不能把它写成公开 SDK 能力。
 
 应用侧能做的还是调用方自管:
 
@@ -607,7 +608,7 @@ ContentProvider 不仅是系统的数据共享接口,更是一种通用的 IPC �
 
 ### 误区三:"App Startup 能完全消除 ContentProvider 的启动开销"
 
-App Startup 减少的是 ContentProvider 的**数量**(从 N 个变为 1 个),但初始化逻辑本身的执行时间并没有减少。如果合并后的 `InitializationProvider` 中有某个 `Initializer` 的 `create()` 方法耗时 100ms,这 100ms 仍然在启动路径上。真正的优化应该是**将非必要的初始化延迟到使用时再执行**(懒初始化),而不仅仅是合并。
+App Startup 减少的是 ContentProvider 的**数量**(从 N 个变为 1 个),但初始化逻辑本身的执行时间并没有减少。如果合并后的 `InitializationProvider` 中有某个 `Initializer` 的 `create()` 方法耗时 100ms,这 100ms 仍然在启动路径上。优化重点应该是**将非必要的初始化延迟到使用时再执行**(懒初始化),不能只停留在合并。
 
 ### 误区四:"CursorWindow 的翻页是高效的"
 

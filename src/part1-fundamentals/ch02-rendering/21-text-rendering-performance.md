@@ -4,7 +4,7 @@ title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
 drafted_date: '2026-04-09'
-reviewed_date: '2026-04-23'
+reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
@@ -61,6 +61,8 @@ last_task2b_at: '2026-05-09T17:52:02+08:00'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-13T21:57:00+08:00'
+review_round: 2
+task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。"
 ---
 
 
@@ -144,7 +146,7 @@ FontCollection(字体集合)
 - CJK 文字(中文、日文、韩文):整形规则比拉丁复杂,且字符集庞大(CJK Unified Ideographs 有数万个字符),字体查找开销更高。
 - 复杂文字(阿拉伯语、印地语、泰语):整形规则极度复杂,字符形态取决于上下文位置和连字规则。一个 Unicode 码点可能对应多个 glyph,也可能多个码点合并为一个 glyph。整形开销显著高于拉丁文字。
 
-Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了大量优化：阿拉伯语 Nastaliq 塑形提速约 45%，Apple Advanced Typography (AAT) 路径提速约 60%。对出海应用来说，这意味着中东、南亚、东南亚语系的文字测量开销有了明显的下降——这些语系在旧版本中往往是 measure 阶段的 CPU 热点。如果 Perfetto 中观察到阿拉伯语或印地语文本的 `TextView.onMeasure()` 耗时异常，升级到 Android 16+ 设备后应有可测量的改善。
+Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了大量优化：阿拉伯语 Nastaliq 塑形提速约 45%，Apple Advanced Typography (AAT) 路径提速约 60%。对出海应用来说，中东、南亚、东南亚语系的文字测量开销会明显下降——这些语系在旧版本中往往是 measure 阶段的 CPU 热点。如果 Perfetto 中观察到阿拉伯语或印地语文本的 `TextView.onMeasure()` 耗时异常，升级到 Android 16+ 设备后应有可测量的改善。
 
 [已验证: AOSP android-16.0.0_r1, external/harfbuzz/ — HarfBuzz 10.x changelog]
 
@@ -214,7 +216,7 @@ StaticLayout 本身不做缓存--每次创建新的 StaticLayout 实例都是重
 1. **TextView 内部**:如果 `setText()` 传入的文本和参数都没变,TextView 会复用上次创建的 Layout 对象,跳过测量。
 2. **Minikin 层**:即使创建了新的 StaticLayout,如果 Minikin 的 Layout cache 能命中(文本 hash + 参数相同),整形步骤可以跳过。
 
-所以真正慢的场景是:**新文本 + 新宽度 + 复杂 Span**。这在 RecyclerView 滑动中频繁发生--每个 Item 的文本不同、Span 不同,缓存几乎全 miss。
+慢路径通常出现在:**新文本 + 新宽度 + 复杂 Span**。这在 RecyclerView 滑动中频繁发生--每个 Item 的文本不同、Span 不同,缓存几乎全 miss。
 
 ## Emoji 渲染性能
 
@@ -277,7 +279,7 @@ textView.setTextFuture(future);
 
 ### BoringLayout:单行场景的最优选择
 
-如果 TextView 确实只显示单行文字(比如列表项的标题、按钮文字),且不含 Span,系统通常会自动选择 BoringLayout。但有时候因为 XML 中设置了某些属性(如 `maxLines`),系统可能误选 StaticLayout。
+如果 TextView 只显示单行文字(比如列表项的标题、按钮文字),且不含 Span,系统通常会自动选择 BoringLayout。但有时候因为 XML 中设置了某些属性(如 `maxLines`),系统可能误选 StaticLayout。
 
 可以通过以下方式帮助系统选择 BoringLayout:
 
@@ -297,7 +299,7 @@ BoringLayout 的测量只调用一次 `Paint.measureText()`,开销远低于 Stat
 
 ### 避免误开 Hyphenation
 
-默认 `TextView` 已经是 `HYPHENATION_FREQUENCY_NONE`。真正需要处理的是:项目样式、富文本阅读页,或者某些排版组件把 hyphenation 显式开成 `normal` / `full`。如果场景是短文本、列表项或 CJK 为主的内容,把它关回 `none` 往往更稳。
+默认 `TextView` 已经是 `HYPHENATION_FREQUENCY_NONE`。需要处理的是:项目样式、富文本阅读页,或者某些排版组件把 hyphenation 显式开成 `normal` / `full`。如果场景是短文本、列表项或 CJK 为主的内容,把它关回 `none` 往往更稳。
 
 ```java
 // XML 方式
@@ -426,7 +428,7 @@ StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint,
 
 **误区:TextView.setText() 很轻量,不需要优化。**
 
-setText() 本身只是设置 CharSequence 引用,确实很快。但 setText() 会触发 `checkForRelayout()`,最终在下一个 VSync 周期的 `performTraversals()` 中执行 measure → layout → draw。如果你在 `onBindViewHolder()` 中调用了 setText(),那么 measure 的开销就计入了这一帧。
+setText() 本身只是设置 CharSequence 引用,开销很低。但 setText() 会触发 `checkForRelayout()`,最终在下一个 VSync 周期的 `performTraversals()` 中执行 measure → layout → draw。如果你在 `onBindViewHolder()` 中调用了 setText(),那么 measure 的开销就计入了这一帧。
 
 **误区:PrecomputedText 能解决所有文字测量问题。**
 

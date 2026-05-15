@@ -136,7 +136,8 @@
     "22.11",
     "20.11",
     "25.11",
-    "26.10"
+    "26.10",
+    "1.19"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -268,15 +269,16 @@
     "src/part5-app/ch22-rendering-practice/11-animated-vector-drawable-performance.md",
     "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md",
     "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md",
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
-  "review_summary": "Task6 2026-05-16 03: review 26.10；L1/L2 小修 8；无回炉；进入 Task9。",
+  "review_summary": "Task6 2026-05-16 06: review 1.19 / 1.10 / 2.21；L1/L2 小修 16；无新增回炉；无自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 678,
-    "l3_issues": 41,
-    "l4_issues": 6,
-    "total_issues": 705,
-    "auto_promotions": 13
+    "l1_l2_fixes": 16,
+    "l3_issues": 0,
+    "l4_issues": 0,
+    "total_issues": 0,
+    "auto_promotions": []
   },
   "issues_by_section": {
     "1.6": {
@@ -1037,24 +1039,28 @@
       "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
     }
   },
-  "total_review_sections": 130,
+  "total_review_sections": 131,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T04:10:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-16T06:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "03:16",
+    "time": "06:09",
     "sections": [
-      "26.10"
+      "1.19",
+      "1.10",
+      "2.21"
     ],
     "files": [
-      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
     ],
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 16,
     "l3_l4_issues": 0,
-    "auto_promotions": 0,
-    "log": "logs/review/2026-05-16-03-review.md"
+    "auto_promotions": [],
+    "log": "logs/review/2026-05-16-06-review.md"
   },
   "task9_last_review": "2026-05-16T03:30:00+08:00",
   "ready_to_publish": 192,
@@ -2761,8 +2767,8 @@
       "queue_entry": "task9-20260516-26.10-legacy-exit-reason-api-mapping"
     },
     "1.19": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "created_by": "task2a-knowledge-gap",
@@ -2770,7 +2776,53 @@
       "queue_priority": 80,
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审."
+    },
+    "1.10": {
+      "title": "ContentProvider 性能与优化",
+      "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；无新增 L3/L4 回炉项；保留既有 Task9 needs-rework."
+    },
+    "2.21": {
+      "title": "文字渲染性能",
+      "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
     }
   },
   "task2b_rounds": [
@@ -2832,32 +2884,40 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
   ],
-  "total_review_files": 130,
+  "total_review_files": 131,
   "last_task2a_at": "2026-05-16T04:10:00+08:00",
   "last_task2a_section": "1.19",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-  "last_task6_review": "2026-05-16T03:16:00+08:00",
+  "last_task6_review": "2026-05-16T06:09:00+08:00",
   "last_task6_sections": [
-    "26.10"
+    "1.19",
+    "1.10",
+    "2.21"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
   ],
-  "last_task6_at": "2026-05-16T03:16:00+08:00",
+  "last_task6_at": "2026-05-16T06:09:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-16T03:16:00+08:00",
-    "log": "logs/review/2026-05-16-03-review.md",
+    "reviewed_at": "2026-05-16T06:09:00+08:00",
+    "log": "logs/review/2026-05-16-06-review.md",
     "sections": [
-      "26.10"
+      "1.19",
+      "1.10",
+      "2.21"
     ],
     "files": [
-      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
     ],
-    "mode": "first review",
-    "l1_l2_fixes": 8,
-    "rework_sections": [],
+    "mode": "first-review+stale-recheck",
+    "l1_l2_fixes": 16,
+    "l3_l4_issues": 0,
     "auto_promotions": [],
-    "summary": "26.10 写作质量通过轻修；本轮无 L3/L4 回炉项，已进入 Task9 技术复审。"
+    "notes": "1.19 首次 Task6；1.10/2.21 为超过 7 天的 stale recheck。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
@@ -2866,10 +2926,12 @@
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 192,
   "last_task2a_processed_section": "1.19",
-  "task6_last_review_at": "2026-05-16T03:16:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-03-review.md",
+  "task6_last_review_at": "2026-05-16T06:09:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-06-review.md",
   "task6_last_review_sections": [
-    "26.10"
+    "1.19",
+    "1.10",
+    "2.21"
   ],
   "sections_status": {
     "22.11": {
@@ -2943,14 +3005,60 @@
     "1.19": {
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审."
+    },
+    "1.10": {
+      "title": "ContentProvider 性能与优化",
+      "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；无新增 L3/L4 回炉项；保留既有 Task9 needs-rework."
+    },
+    "2.21": {
+      "title": "文字渲染性能",
+      "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
     }
   },
   "task2a_last_processed": {
