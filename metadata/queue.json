@@ -2270,7 +2270,7 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T23:18:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-12-23-review.md",
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
@@ -2279,7 +2279,9 @@
       "last_reviewed_at": "2026-05-15T07:35:58+08:00",
       "severity": "P1",
       "issue_type": "source-anchor-missing",
-      "last_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
+      "last_review_log": "logs/deep-review/2026-05-15-07-deep-review.md",
+      "completed_date": "2026-05-16T07:13:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: 删除 detectAnomalousBehavior()/PackageStats 伪代码和具体阈值，改为按公开 ProfilingTrigger API 口径给出触发器常量表，标注待验证项"
     },
     {
       "id": "task6-review-21.5-installSplashScreen-order-2026-05-13",
@@ -2507,11 +2509,13 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T03:19:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-13-03-review.md",
       "related_files": [
         "src/part5-app/ch21-startup/07-multiprocess-startup.md"
-      ]
+      ],
+      "completed_date": "2026-05-16T07:13:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: MODE_MULTI_PROCESS 引用路径从 Application 文档修正为 Context#MODE_MULTI_PROCESS + SharedPreferences API reference，[需确认] 标注移除（Task9 已确认结论成立）"
     },
     {
       "id": "task9-2026-05-13-8.6-performancehint-session-api",
@@ -7481,6 +7485,296 @@
       "completed_reason": "Task 2A 内容加工完成：status 更新为 ready-for-review，进入 Task 6 管线。"
     },
     {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "聊聊2026年Android开发会是什么样",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：聊聊2026年Android开发会是什么样",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。。本文详细分析了聊聊2026年Android开发会是什么样的具体实",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.143351",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch14-other-tools",
+      "section_title": "2026年了，Android开发该如何调试布局",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：2026年了，Android开发该如何调试布局",
+      "description": "新增参考文章，建议补充到章节 ch14-other-tools",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch14-other-tools/ch14-other-tools.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026年了，Android开发该如何调试布局 — Android开发工具介绍，使用Layout Inspector、AYA可以提升布局分析速度。其中AYA可以辅助排查UI问题。本文详细分析了2026年了，Android开发该如何调试布局的具体实现和最",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.147995",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了 — 借手机给朋友看个照片，心里却在默念\"千万别乱翻\"——这种焦虑，Android 用户应该都体会过。 小米、三星等厂商早就给出了答案：应用锁。但原生 Android？一直缺席。 现在，Android 17",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.152247",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch04-memory",
+      "section_title": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
+      "priority": 60,
+      "title": "[素材注入] 新增参考文章：Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
+      "description": "新增参考文章，建议补充到章节 ch04-memory",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch04-memory/ch04-memory.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了 — 每次换电脑、拉新项目，最让 Android 开发者头疼的是什么？ 不是 Gradle 同步慢，不是模拟器卡——是 JDK 版本又不对了。 明明本地装了 JDK 17，但项目要 JDK 21；CI 机器",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.156428",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.161126",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android17 为什么重写 MessageQueue",
+      "priority": 60,
+      "title": "[素材注入] 新增参考文章：Android17 为什么重写 MessageQueue",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — Android 的消息机制，从第一个版本到 Android 16，核心实现没怎么变过。 一个 synchronized 锁，守着一条单链表，所有线程排队等着往里塞消息。跑了二十年，终于在 Androi",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.165347",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android 要变天：桌面端这次真的来了！",
+      "priority": 60,
+      "title": "[素材注入] 新增参考文章：Android 要变天：桌面端这次真的来了！",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 要变天：桌面端这次真的来了！ — 键盘、鼠标、多窗口、外接显示器。 这些词放在一起，你会想到什么？Windows？macOS？ 不，Google 说：这是 Android 的未来。 上周，Android 官方博客发布了一篇重磅文章，正",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.169536",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android 17 来了！新特性介绍与适配建议",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：Android 17 来了！新特性介绍与适配建议",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 来了！新特性介绍与适配建议 — Android 17（API level 37，代号 CinnamonBun）的 Beta 2 已经发布，目前正快速推进到 Platform Stability 阶段。本文详细分析了Android 1",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.173705",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本",
+      "priority": 64,
+      "title": "[素材注入] 新增参考文章：2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本 — 本来已经 2026 ，感觉这种 Flutter VS React Native 的场景其实没什么太大对比意义，因为两个框架现在都比较成熟，也都大规模在各种消费级应用里被使用，但是这时候 Shorebi",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.177903",
+      "completed_reason": null
+    },
+    {
+      "id": "task8-20260516-053453",
+      "section": "ch17-oem",
+      "section_title": "Android Room 3.0 来了，这次改得有点狠",
+      "priority": 60,
+      "title": "[素材注入] 新增参考文章：Android Room 3.0 来了，这次改得有点狠",
+      "description": "新增参考文章，建议补充到章节 ch17-oem",
+      "issue_type": "material-injection",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/ch17-oem/ch17-oem.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Room 3.0 来了，这次改得有点狠 — 用了这么多年 Room，你可能已经很习惯它的那套 API 了。 但这次 3.0，Google 直接换了包名、砍了 Java 代码生成、干掉了 KAPT，连同步 DAO 方法都不让写了。 是是的，这是一",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-16T05:34:53.182529",
+      "completed_reason": null
+    },
+    {
       "id": "task2a-gap-22-12",
       "section": "22.12",
       "priority": 80,
@@ -7505,6 +7799,69 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-16T06:04:00+08:00"
+    },
+    {
+      "id": "dr-inject-2026-05-16-generational-cmc-userefaultfd",
+      "section": "4.8",
+      "section_title": "ART 分代 GC",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 Generational CMC 机制源码与设备能力判断路径验证",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Generational CMC 机制源码与设备能力判断路径验证 — Generational CC + userfaultfd 驱动的并发压缩 GC 组合机制，含版本差异矩阵、gUseUserfaultfd 初始化逻辑、分代 GC 与 Compose 性能因果链",
+          "suggestion": "判断是否适合补充为 ch04/08-art-generational-gc.md 章节的参考资料或正文中 userfaultfd CMC 的版本边界说明"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-16T06:18:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "dr-inject-2026-05-16-hci-input-latency",
+      "section": "3.4",
+      "section_title": "输入延迟预测",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，HCI 感知阈值与 Android 端到端延迟映射关系",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "HCI 感知阈值与 Android 端到端延迟映射 — 直接触摸 JND 2ms、50-100ms 明显感知阈值、Android 设备 50-200ms 延迟分布、端到端延迟预算分配表、厂商实现差异对比",
+          "suggestion": "判断是否适合补充为 ch03/04-input-latency-prediction.md 的参考资料或正文中 HCI 阈值与性能目标的映射框架"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-16T06:18:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "dr-inject-2026-05-16-userfaultfd-cmc-gc",
+      "section": "4.8",
+      "section_title": "ART 分代 GC",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，userfaultfd 在 ART CMC GC 中的具体应用与零停顿 compaction 机制",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-userfaultfd-cmc-gc.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "userfaultfd 在 ART CMC GC 中的具体应用 — mremap(MREMAP_DONTUNUNMAP) 页面迁移、SIGBUS handler 查表机制、Minor Fault vs SIGBUS Copy 两种模式、moving_pages_status_ 原子状态机",
+          "suggestion": "判断是否适合补充为 ch04/08-art-generational-gc.md 的参考资料，尤其 userfaultfd 零停顿 compaction 的源码级实现细节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-16T06:18:00+08:00",
+      "status": "pending"
     },
     {
       "id": "task9-20260516-1.19-zygote-graphics-native-version-gap",
@@ -7541,18 +7898,18 @@
     }
   ],
   "metadata": {
-    "total_entries": 228,
-    "p0_count": 38,
+    "total_entries": 242,
+    "p0_count": 42,
     "last_updated": "2026-05-16T06:31:25+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 128,
+    "pending_entries": 141,
     "updated_date": "2026-05-16",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 128
+    "pending": 141
   },
   "last_updated": "2026-05-16T06:31:25+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 128,
+  "pending": 141,
   "last_task2a_completed": "20.11",
   "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }
