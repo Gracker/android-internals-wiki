@@ -29,12 +29,44 @@ related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+last_task6_at: '2026-05-15T14:12:00+08:00'
+task6_result: pass-light-edit
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
 task9_state: pending
 ---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
+
+<!-- outline-start -->
+## 要点
+
+### 🔹 Profile 与 system trace 的数据边界
+区分 system trace、pprof、Simpleperf protobuf、Firefox Profiler 和 Collapsed Stack 的证据口径，避免用聚合 profile 替代帧级诊断。
+
+### 🔹 pprof / Simpleperf 导入流程
+说明 Perfetto v53/v54 对 pprof、Simpleperf protobuf 和 `traceconv profile` 的支持，以及调用链、符号和 mapping 的输入条件。
+
+### 🔹 选区 Flamegraph 与 TrackEvent callstack
+解释动态 flamegraph、TrackEvent callstack 和 CPU sample profile 的差异，强调必须按时间窗、线程和场景收窄。
+
+### 🔹 符号化、inline function 与 R8 retracing
+梳理 native 符号、Build ID、inline frame、R8 mapping 的还原边界，避免在符号缺失时下结论。
+
+### 🔹 Data Explorer / SQL / 大 Trace 工作流
+把 Data Explorer、SQL 标准库、FrameTimeline、Binder、GC 与 profile 样本联动起来，形成可复现的诊断流程。
+
+## 扩展
+
+### 🔸 Firefox Profiler / Collapsed Stack 互通
+标注历史 profile 资产迁移能保留的信息与会丢失的 Android trace 语义。
+
+### 🔸 Profile 与 FrameTimeline / Binder / GC 交叉分析
+给出按照异常帧、跨进程等待和 GC 窗口回看 sample 的使用模板。
+
+<!-- outline-end -->
 
 Perfetto 过去更像系统 trace 的工作台：调度、Binder、FrameTimeline、GC、counter 都在同一条时间轴上。v53 之后，pprof profile 和 Simpleperf protobuf 也能直接进入 Perfetto UI，CPU sample profile 不再只停留在独立的火焰图工具里。本节讨论三件事：不同 profile 格式各自回答什么问题，导入 Perfetto 后怎样读 flamegraph，以及怎样把 sample 热点放回 trace 时间窗里验证。
 
@@ -119,9 +151,9 @@ data_sources {
 }
 ```
 
-这份 trace 打开后，sample 会显示在进程 track 组内。选中包含 sample 的时间区域，底部面板会按选区聚合出 dynamic flamegraph。它的优势不是“火焰图更漂亮”，而是能把热点限定在某一帧、某次 Binder 往返或某段 GC 前后。[已验证: Perfetto cpu-profiling docs]
+这份 trace 打开后，sample 会显示在进程 track 组内。选中包含 sample 的时间区域，底部面板会按选区聚合出 dynamic flamegraph。选区聚合的价值在于把热点限定在某一帧、某次 Binder 往返或某段 GC 前后。[已验证: Perfetto cpu-profiling docs]
 
-导入失败通常不是 Perfetto UI 本身的问题，而是输入文件缺关键字段：
+导入失败通常要先检查输入文件是否缺关键字段：
 
 - **只有一层函数**：录制时没有采集调用链，或 unwind 失败。先检查 simpleperf 是否用了 `-g`，Perfetto perf config 是否启用了 `callstack_sampling`。
 - **函数名全是地址**：缺 unstripped ELF、Breakpad symbol 或 Build ID 不匹配。优先用 `traceconv bundle` 打包符号。

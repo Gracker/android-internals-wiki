@@ -28,7 +28,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
 pipeline_stage: task2b_pending
-task6_state: "pending"
+task6_state: reviewed
+last_task6_at: '2026-05-15T14:12:00+08:00'
+task6_result: pass-light-edit
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
@@ -220,7 +224,7 @@ public static void enqueuePending(Reference<?> list,
 
 这段实现给出三个排查结论：
 
-- 高并发分配很多可终结对象时，问题通常不是“GC 不工作”，而是引用入队和 finalizer 执行速度跟不上对象产生速度。
+- 高并发分配很多可终结对象时，排查重点通常不在“GC 有没有工作”，而在引用入队和 finalizer 执行速度是否跟得上对象产生速度。
 - `queue.lock` 是每个 `ReferenceQueue` 的实例锁，不同队列之间可以分开处理，同一个队列仍可能出现竞争。
 - `ConcurrentMessageQueue` 这类消息队列优化不能直接外推到 `ReferenceQueue`。在 Android 16 libcore 源码里，没有看到 `ReferenceQueue` 接入无锁队列的证据。
 
@@ -343,7 +347,7 @@ CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/�
 
 ## Native 资源释放与 Java wrapper 生命周期
 
-Native 资源问题通常不是 Java heap 最大的对象导致的，而是“小 wrapper 持有大资源”。Java wrapper 只有几十字节，却可能指向一个 FD、ashmem、GraphicBuffer、Bitmap native allocation 或 JNI global ref。wrapper 生命周期稍微拉长，native 侧就会积压。
+Native 资源问题通常来自“小 wrapper 持有大资源”，不一定对应 Java heap 里最大的对象。Java wrapper 只有几十字节，却可能指向一个 FD、ashmem、GraphicBuffer、Bitmap native allocation 或 JNI global ref。wrapper 生命周期稍微拉长，native 侧就会积压。
 
 排查时要把所有权写成表格：
 
