@@ -2477,7 +2477,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T02:51:35+08:00",
-      "status": "pending"
+      "status": "completed",
+      "id": "task9-8.2-applicationstartinfo-api-20260513",
+      "completed_date": "2026-05-15T23:30:56+08:00",
+      "completed_reason": "Task 2B 回炉修复: ApplicationStartInfo API 全面修正——API 表从不存在的 getStartTimestamp/getLaunchType/getFirstDrawDurationMillis 替换为 getStartType/getStartupState/getStartupTimestamps(timestamp 常量)，获取入口从 ActivityTaskManager.getHistoricalApplicationStartInfo 改为 ActivityManager.getHistoricalProcessStartReasons，代码示例按真实 API 重写(Bundle + timestamp 常量 + nanosecond→ms 换算)，TTID 定义统一为'首帧绘制完成'口径，SurfaceFlinger composition complete 作为独立链路说明"
     },
     {
       "id": "task6-review-21.7-mode-multi-process-source-20260513",
@@ -3203,13 +3206,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T08:40:35+08:00"
+      "added_at": "2026-05-13T08:40:35+08:00",
+      "completed_date": "2026-05-15T23:30:32+08:00",
+      "completed_reason": "Task 2B 回炉修复: Alpha 框架描述按 alibaba/alpha v1.2.0 源码重写——核心概念从 TaskGraph/TaskExecutor 改为 Task/Project/AlphaManager，执行流程补充默认单线程池 + 主线程 Handler，删除注解处理器生成 DAG 的错误断言，App Startup 选型表从'单向链式依赖'改为'静态依赖 DAG'，Alpha 动态配置列更新为'Builder/XML 本地配置'"
     },
     {
       "id": "task9-22-5-rendereffect-api31-guard-20260513",

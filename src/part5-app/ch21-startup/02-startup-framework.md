@@ -22,18 +22,19 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: 2026-05-13T08:40:35+08:00
+last_task2b_at: 2026-05-15T23:30:32+08:00
 task6_reviewed_date: "2026-05-13"
 ---
 
@@ -182,14 +183,22 @@ Jetpack App Startup 采用这种方式。优点是编译期就能检查依赖是
 
 自研框架常采用这种方式。优点是可以通过远程配置动态调整任务编排，缺点是失去了编译期类型安全。
 
-**3. 注解声明（编译期处理）**
+**3. Builder 声明（运行时构建）**
 
 ```java
-@StartupTask(id = "analytics", depends = ["crash_report", "network_config"], thread = ThreadMode.IO)
-public class AnalyticsInitializer implements TaskInitializer<Analytics> { }
+// Alpha 框架的配置方式（基于 alibaba/alpha v1.2.0）
+Project project = new Project.Builder("app_init")
+    .add(new AnalyticsTask())       // Task 可设置 isMainThread / threadPriority
+    .add(new CrashReportTask())
+    .add(new NetworkConfigTask())
+    .create();
+
+AlphaManager.getInstance()
+    .addProject(project)
+    .start();
 ```
 
-注解处理器在编译期生成 DAG，兼顾了类型安全和代码简洁度。Alpha 框架采用类似的注解方式。
+Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。
 
 ### 依赖的边界情况
 
@@ -235,24 +244,27 @@ App Startup 解决的核心问题：**消除启动阶段多个 SDK 各自注册 
 
 ### Alpha 框架
 
-[已验证: GitHub alibaba/alpha v1.2.0 源码]
+[已验证: GitHub alibaba/alpha v1.2.0 README + Task.java / Project.java / AlphaConfig.java]
 
 Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个基于 DAG 的异步任务调度器。
 
-**核心概念**：
+**核心概念**（基于 alibaba/alpha v1.2.0 源码）：
 
-- `Task`：最小调度单位，声明依赖关系、执行线程和优先级。
-- `TaskGraph`：DAG 容器，负责拓扑排序和环检测。
-- `TaskExecutor`：执行器，维护多个线程池（主线程、IO 线程池、CPU 线程池）。
+- `Task`：最小调度单位，声明依赖关系（`dependsOn`）、执行线程（`isMainThread`）、优先级（`executePriority` / `threadPriority`）。
+- `Project`：Task 的容器，对应一个启动阶段（如"Application 初始化""首屏准备"），Project 之间可以串行或并行。
+- `AlphaManager`：入口类，接收 Project 配置，内部构建 DAG 并调度执行。支持 Java Builder 和 XML 两种配置方式。
 
-**执行流程**：
+**执行流程**（基于 `AlphaManager.start()` 源码）：
 
 ```
-1. 注册所有 Task 到 TaskGraph
-2. TaskGraph 做拓扑排序 + 环检测
-3. 按排序结果分发任务到对应线程池
-4. 任务完成后通知下游任务检查是否可执行
-5. 所有任务完成后回调 onAllTaskComplete
+1. 通过 AlphaManager.Builder 或 XML 解析注册所有 Project/Task
+2. 内部构建 DAG 并做拓扑排序 + 环检测
+3. 按拓扑排序结果分发任务到对应线程池
+   - isMainThread=true 的 Task 通过主线程 Handler 执行
+   - isMainThread=false 的 Task 通过配置的 ExecutorService 执行
+   - 默认 ExecutorService 为单线程池，可通过 AlphaConfig 替换
+4. 任务完成后检查下游任务的依赖是否全部满足，满足则调度执行
+5. 所有任务完成后回调 onProjectFinish
 ```
 
 **适用场景**：
@@ -264,8 +276,9 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 **限制**：
 
 - 框架层面无超时控制（需要业务自行实现）
-- 无动态配置能力（任务图在编译期确定）
-- API 设计偏重，接入成本高于 App Startup
+- Java Builder 配置在编译期确定，运行时无法远程下发
+- 默认 ExecutorService 为单线程池，需要手动配置才能充分利用多核
+- 项目社区活跃度一般，最近一次发布距今较久
 
 ### 自研方案：什么时候需要造轮子
 
@@ -305,10 +318,10 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 | 维度 | App Startup | Alpha | 自研 |
 |------|-------------|-------|------|
 | 接入成本 | 低（几行配置） | 中（继承 Task 类） | 高（需设计 API + 测试） |
-| DAG 支持 | 单向链式依赖 | 完整 DAG | 完整 DAG |
+| DAG 支持 | 静态依赖 DAG（同步主线程） | 完整 DAG | 完整 DAG |
 | 异步执行 | 不支持 | 支持 | 支持 |
 | 超时控制 | 无 | 无 | 可自定义 |
-| 动态配置 | 不支持 | 不支持 | 可自定义 |
+| 动态配置 | 不支持 | Builder/XML 本地配置 | 可自定义 |
 | 监控集成 | 无 | 基础回调 | 可自定义 |
 | 维护成本 | 低（Google 维护） | 低（社区维护） | 高（团队自行维护） |
 | 适用规模 | <15 个初始化任务 | 15-50 个 | >50 个或需要动态配置 |
