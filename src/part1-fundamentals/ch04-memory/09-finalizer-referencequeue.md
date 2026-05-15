@@ -345,6 +345,60 @@ CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/�
 
 [已验证: 官方文档, developer.android.com/reference/android/os/StrictMode]
 
+
+
+## Cleaner / CloseGuard 的版本矩阵与源码路径
+
+三个机制在不同 API level 的可用性有明确边界，源码路径也不同。`dalvik.system.CloseGuard`（非公开）和 `android.util.CloseGuard`（API 30 公开）是两套独立的 CloseGuard 实现，分别服务于虚拟机层和应用层；`sun.misc.Cleaner`（API 26+）和 `java.lang.ref.Cleaner`（API 33 公开）是两条 Cleaner 路径，前者由 `CleanerDaemon` 独立执行，后者通过 `FinalizerReference.doClean()` 触发。
+
+**版本对照表**:
+
+| 机制 | API 26-29 | API 30-32 | API 33+ |
+|------|-----------|-----------|---------|
+| `dalvik.system.CloseGuard` | ✅ 非公开 | ✅ 非公开 | ✅ 非公开 |
+| `android.util.CloseGuard` | ❌ | ✅ 公开 | ✅ 公开 |
+| `sun.misc.Cleaner` | ✅ | ✅ | ⚠️ 已废弃（推荐迁移） |
+| `java.lang.ref.Cleaner` | ❌（需 desugaring） | ❌（需 desugaring） | ✅ 公开 |
+| `FinalizerDaemon` | ✅ | ✅ | ✅ |
+| `CleanerDaemon` | ✅ | ✅ | ✅（处理 `sun.misc.Cleaner`） |
+
+**源码路径**:
+
+- `libcore/libart/src/main/java/java/lang/Daemons.java` — `FinalizerDaemon`、`CleanerDaemon` 定义，L41 定义五个 daemon，L295-L401 `FinalizerDaemon.runInternal()`
+- `libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java` — `enqueuePending()` 批量入队逻辑，L236-L278
+- `libcore/ojluni/src/main/java/java/lang/ref/FinalizerReference.java` — `doClean()` 执行路径
+- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` — 旧版 Cleaner，`CleanerDaemon` 独立触发
+- `libcore/ojluni/src/main/java/java/lang/ref/Cleaner.java` — API 33 公开 Cleaner，`Cleaner.Cleanable` 接口
+- `frameworks/base/core/java/android/util/CloseGuard.java` — API 30 公开 CloseGuard，应用层泄漏检测
+- `libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java` — API 26+ 非公开 CloseGuard，Dalvik 内部使用
+
+**Cleaner 两条执行路径**:
+
+路径 A — `sun.misc.Cleaner`（`CleanerDaemon` 独立执行）:
+```
+CleanerDaemon.run()
+  → Cleaner.clean()
+    → sun.misc.Cleaner.invoke()
+      → thunk.run()
+```
+路径 B — `java.lang.ref.Cleaner`（`FinalizerDaemon` 触发）:
+```
+FinalizerDaemon.processReference()
+  → FinalizerReference.doClean()
+    → Cleaner.Cleanable.clean()
+      → Cleaner.invokeCleaners()
+        → thunk.run()
+```
+
+关键区别：旧 `sun.misc.Cleaner` 由 `CleanerDaemon` 独立线程执行，不经过 `FinalizerReference`；新 `java.lang.ref.Cleaner` 复用 `FinalizerDaemon` 的 `processReference()` 循环，通过 `Cleaner.Cleanable` 接口执行清理。
+
+**Core Library Desugaring 影响**: API 33 的 `java.lang.ref.Cleaner` 可通过 AGP 8.0+ desugaring 在低 API level 使用，但每次清理调用增加桥接层开销；对 FD、GraphicBuffer 这类高频资源，建议用 `AutoCloseable` 显式关闭，不依赖 desugared Cleaner。
+
+[已验证: AOSP android-16.0.0_r1, Daemons.java L41, L295-L401]
+[已验证: AOSP android-16.0.0_r1, ReferenceQueue.java L236-L278]
+[已验证: 官方文档, developer.android.com/reference/android/util/CloseGuard — Added in API 30]
+[待验证: `java.lang.ref.Cleaner` 在 API 33 的具体添加版本，建议交叉核 android-developer-preview 文档]
+
 ## Native 资源释放与 Java wrapper 生命周期
 
 Native 资源问题通常来自“小 wrapper 持有大资源”，不一定对应 Java heap 里最大的对象。Java wrapper 只有几十字节，却可能指向一个 FD、ashmem、GraphicBuffer、Bitmap native allocation 或 JNI global ref。wrapper 生命周期稍微拉长，native 侧就会积压。

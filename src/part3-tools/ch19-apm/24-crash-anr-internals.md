@@ -517,3 +517,93 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
 - API 30+：优先使用 `ApplicationExitInfo`
 - API 21-29：Signal Handler 覆盖 native crash；KOOM fork-dump 覆盖 Java OOM；ANR 和 LMK 主要靠下次启动补拉
 - < API 21：同 API 21-29，KOOM 可能需要额外适配
+
+
+---
+
+## 12. 源码调研补充：Android 线上诊断能力版本边界（2026-05-15）
+
+*来源：AIW 每日源码调研 | 关联章节：§26.5、§26.2*
+
+### 12.1 ApplicationExitInfo 版本行为差异
+
+| API Level | ANR Trace | Native Tombstone | 备注 |
+|-----------|-----------|------------------|------|
+| 30 | `getTraceInputStream()` ✅ | ❌ | 仅 Java ANR trace |
+| 31+ | ✅ | ✅ (`tombstone.proto`) | `REASON_CRASH_NATIVE` 返回 protobuf |
+
+关键源码路径：
+- `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
+- `system/core/debuggerd/tombstone_proto.cc`
+
+### 12.2 ProfilingManager（API 35+）
+
+Android 15 引入 `ProfilingManager.requestProfiling()`，支持 App-driven profiling：
+
+**关键方法**：
+```java
+public void requestProfiling(
+    int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | HEAP_DUMP | HEAP_PROFILE | STACK_TRACE
+    Bundle options,
+    String packageName,
+    CancellationSignal signal,
+    Executor executor,
+    Consumer<ProfilingResult> resultCallback
+)
+```
+
+**结果获取**：
+```java
+ProfilingResult#getResultFilePath()  // trace 文件路径
+ProfilingResult#getResultStatus()    // 状态码
+```
+
+关键限制：
+- Rate limiter 存在（结果去重、频率控制）
+- 连续 profiling 类型建议提前开始、及时取消
+- 结果文件路径由系统管理，应用只读
+
+源码路径：`frameworks/base/core/java/android/os/ProfilingManager.java`
+
+### 12.3 ProfilingTrigger（API 36+）
+
+Android 16 引入 `ProfilingTrigger` 事件触发采集：
+
+**Trigger 类型**：
+- `TRIGGER_TYPE_APP_FULLY_DRAWN`：app 报告首帧完成并可交互
+- `TRIGGER_TYPE_APP_REQUESTED`：app 主动请求
+- `TRIGGER_TYPE_ANR`：ANR 发生时（推测）
+- `TRIGGER_TYPE_CRASH`：crash 发生时（推测）
+
+**使用模式**：
+```java
+val triggerBuilder = ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+    .setRateLimitingPeriodHours(1)
+val trigger = triggerBuilder.build()
+profilingManager.registerTrigger(trigger, executor, callback)
+```
+
+源码路径：`frameworks/base/core/java/android/os/ProfilingTrigger.java`
+
+### 12.4 Android 10-16 线上诊断能力版本表
+
+| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
+|------|---------------------------|---------------------|----------------------|
+| 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
+| ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
+| Native Tombstone | ✅ (API 31+) | ✅ | ✅ |
+| App-driven Profiling | ❌ | `ProfilingManager` ✅ | ✅ |
+| Trigger-based Profiling | ❌ | ❌ | `ProfilingTrigger` ✅ |
+| 系统 trace 路径 | Perfetto / bugreport | ✅ | ✅ |
+
+### 12.5 Native Crash Signal Handler 边界（未经一手验证）
+
+- Signal handler 必须是 async-signal-safe：不能调用 `malloc`/`free`、不能使用锁、不能分配内存
+- Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程，写入 minidump
+- `sigaction()` 设置 `SA_SIGINFO` 获取 signal number 和 siginfo_t 地址
+
+源码路径（未经一手验证）：
+- `external/crashpad/client/crashpad_client.cc`
+- `bionic/libc/include/signal.h`
+
+<!-- AIW-源码调研-2026-05-15 -->

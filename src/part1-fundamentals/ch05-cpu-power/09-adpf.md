@@ -567,3 +567,9 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 - 摘要：源码级验证 Android 16 PerformanceHintManager API：createHintSession() 非 null/空数组校验逻辑；Session close 后 setThreads() 为 no-op；GPU hints 需要 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION gate；reportActualWorkDuration 支持 per-component CPU/GPU 时间分离报告；与 Kotlin 协程 ContinuationInterceptor 线程迁移的工程化边界。
 - 注入时间：2026-05-14
 - 价值：含 Android 16 最新 API 变化和协程线程迁移的工程化约束，对 ADPF 实战有直接指导意义
+### Kotlin 协程线程迁移与 ADPF Hint Session 工程化边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md
+- 类型：DeepResearch 调研结果
+- 摘要：ADPF PerformanceHintManager.Session 基于 TID 而非协程 ID 绑定线程，协程在 Dispatchers.Default 线程池迁移时若新 TID 未纳入 Session 会导致 hint 失效。Android 16 新增 GPU 负载上报 API reportActualWorkDuration(WorkDuration)，需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION 特性标志。
+- 注入时间：2026-05-15
+- 价值：揭示 ADPF Session 与 Kotlin 协程调度器的协同边界问题，为高并发场景 ADPF 集成提供源码级指导
