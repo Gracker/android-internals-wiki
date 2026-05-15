@@ -7131,7 +7131,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/11-mte-memtag-native-crash.md"
@@ -7143,7 +7143,9 @@
         "cs.android.com frameworks/base/core/java/com/android/internal/os/Zygote.java",
         "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md",
         "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
-      ]
+      ],
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 内容加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task2a-gap-22-11",
@@ -7271,16 +7273,16 @@
   "metadata": {
     "total_entries": 222,
     "p0_count": 43,
-    "last_updated": "2026-05-15T23:04:00+08:00",
+    "last_updated": "2026-05-16T00:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 130,
-    "updated_date": "2026-05-15",
+    "pending_entries": 127,
+    "updated_date": "2026-05-16",
     "last_updated_by": "openclaw-task2a",
-    "pending": 130
+    "pending": 127
   },
-  "last_updated": "2026-05-15T23:04:00+08:00",
+  "last_updated": "2026-05-16T00:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 130,
-  "last_task2a_completed": "16.6",
-  "last_task2a_completed_at": "2026-05-15T23:04:00+08:00"
+  "pending": 127,
+  "last_task2a_completed": "20.11",
+  "last_task2a_completed_at": "2026-05-16T00:04:00+08:00"
 }
