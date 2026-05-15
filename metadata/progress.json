@@ -125,7 +125,8 @@
     "20.10",
     "5.3",
     "11.5",
-    "4.9"
+    "4.9",
+    "13.12"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -246,14 +247,15 @@
     "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
     "src/part2-performance/ch11-power/05-wakelock.md",
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
   ],
   "review_summary": "Task9 2026-05-15 11: review 18.2、20.10、21.5；20.10 无 P0/P1 并自动晋升 finalized；18.2 与 21.5 需回炉。",
   "task6_review_summary": {
-    "l1_l2_fixes": 589,
+    "l1_l2_fixes": 596,
     "l3_issues": 41,
     "l4_issues": 6,
-    "total_issues": 626,
+    "total_issues": 633,
     "auto_promotions": 11
   },
   "issues_by_section": {
@@ -939,26 +941,26 @@
       "summary": "P0 1：FinalizerReference 创建时机写反；P1 2：Cleaner 双路径未区分、CloseGuard/Cleaner API level 边界缺失；P2 3：remove() wait 语义、watchdog 行号/阈值、AOSP path 规范。"
     }
   },
-  "total_review_sections": 119,
+  "total_review_sections": 120,
   "next_review_candidates": [],
   "ready_for_review": 85,
-  "last_updated": "2026-05-15T14:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-15T14:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-15",
-    "time": "12:11",
+    "time": "14:12",
     "sections": [
-      "18.2",
-      "21.5"
+      "4.9",
+      "13.12"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-      "src/part5-app/ch21-startup/05-splash-screen.md"
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
     ],
     "l1_l2_fixes": 7,
-    "l3_l4_issues": 1,
+    "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "log": "logs/review/2026-05-15-12-review.md"
+    "log": "logs/review/2026-05-15-14-review.md"
   },
   "task9_last_review": "2026-05-15T13:30:28+08:00",
   "ready_to_publish": 186,
@@ -2371,7 +2373,7 @@
       "file": "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
@@ -2380,21 +2382,29 @@
       "last_task9_review_log": "logs/deep-review/2026-05-15-13-deep-review.md",
       "queue_priority": 95,
       "created_by": "task2a-knowledge-gap",
-      "created_date": "2026-05-15"
+      "created_date": "2026-05-15",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T14:12:00+08:00"
     },
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
       "file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2a_at": "2026-05-15T14:04:00+08:00",
       "task2a_result": "drafted",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
-      "gap_source": "研究素材/官方发布说明"
+      "gap_source": "研究素材/官方发布说明",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-15",
+      "last_task6_at": "2026-05-15T14:12:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -2454,34 +2464,32 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
   ],
-  "total_review_files": 119,
+  "total_review_files": 120,
   "last_task2a_at": "2026-05-15T14:04:00+08:00",
   "last_task2a_section": "13.12",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
-  "last_task6_review": "logs/review/2026-05-15-12-review.md",
+  "last_task6_review": "2026-05-15 14:12 review 4.9、13.12",
   "last_task6_sections": [
-    "18.2",
-    "21.5"
+    "4.9",
+    "13.12"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-    "src/part5-app/ch21-startup/05-splash-screen.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
   ],
-  "last_task6_at": "2026-05-15T12:11:00+08:00",
+  "last_task6_at": "2026-05-15T14:12:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-15T12:11:00+08:00",
-    "log": "logs/review/2026-05-15-12-review.md",
+    "reviewed_at": "2026-05-15T14:12:00+08:00",
+    "log": "logs/review/2026-05-15-14-review.md",
     "sections": [
-      "18.2",
-      "21.5"
+      "4.9",
+      "13.12"
     ],
-    "mode": "revisiting review",
+    "mode": "first review",
     "l1_l2_fixes": 7,
-    "rework_sections": [
-      "18.2"
-    ],
+    "rework_sections": [],
     "auto_promotions": [],
-    "summary": "18.2 写作层发现源码调研附录仍是素材 dump，已合并进既有高优先级回炉队列；21.5 通过轻修，Task9 既有技术队列继续由 Task2B 处理。"
+    "summary": "本轮仅 2 个待 review 章节。4.9 写作层通过轻修，Task9 既有 P0/P1 技术队列继续由 Task2B 处理；13.12 补齐 outline 并通过轻修，进入 Task9。"
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
