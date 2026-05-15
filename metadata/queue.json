@@ -7183,7 +7183,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md"
@@ -7195,7 +7195,10 @@
         "developer.android.com/ndk/reference/group/a-performance-hint",
         "DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md",
         "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
-      ]
+      ],
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 已加工为 ready-for-review，进入 Task6 管线",
+      "last_task2a_at": "2026-05-16T02:04:00+08:00"
     },
     {
       "id": "task2a-gap-26-10",
