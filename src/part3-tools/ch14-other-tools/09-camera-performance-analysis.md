@@ -3,11 +3,11 @@
 title: Android Camera 性能与 Perfetto 分析
 chapter: '14.9'
 section: '14.9'
-status: draft
+status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
-last_task2b_at: '2026-04-26T11:51:00+08:00'
+last_task2b_at: '2026-05-15T15:30:00+08:00'
 reviewed_date: '2026-05-01'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
@@ -33,7 +33,7 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: draft
+pipeline_stage: ready-for-review
 task6_state: reviewed
 task6_result: pass-light-edit
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
@@ -146,9 +146,9 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Processor）处理成 YUV/RGB 格式，写入 GraphicBuffer。这个 Buffer 通过 BufferQueue 机制流转给消费端。以预览为例：
 
-1. 支持 Buffer Management 的 Camera HAL 3.5 设备会通过 `requestStreamBuffers` 向 Framework 请求输出 Buffer
+1. 支持 HAL Buffer Management（`ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` + device API ≥ `CAMERA_DEVICE_API_VERSION_3_6`）的设备，HAL 可通过 `request_stream_buffers` 向 Framework 按需请求输出 Buffer
 2. Framework 从对应的 Camera3OutputStream 中 dequeue 一个空闲 Buffer 给 HAL
-3. HAL 将 ISP 处理完的帧数据写入这个 Buffer，通过 `returnStreamBuffers` 归还
+3. HAL 将 ISP 处理完的帧数据写入 Buffer，随 `process_capture_result()` 携带 release fence 返回 Framework；`return_stream_buffers()` 仅用于归还未随 capture result 返回的 Buffer（如 flush 场景）
 4. Framework 收到帧后，通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger
 5. SurfaceFlinger 在下一个 VSync-sf 时 latch 这个 Buffer 并合成上屏
 
@@ -469,9 +469,10 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 
-**HAL Buffer 管理策略**：Camera HAL 3.5 在 Android 10 分支定义了 `requestStreamBuffers`/`returnStreamBuffers` 接口，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
+**HAL Buffer 管理策略**：AOSP `camera3.h` 将 `request_stream_buffers` / `return_stream_buffers` 归入 `CAMERA_DEVICE_API_VERSION_3_6`（与 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 命名存在历史差异：3_5 是 HIDL 服务端版本，3_6 是 device API 版本）。这套接口允许 HAL 按需请求 Buffer，而不是在 Session 配置时一次性分配。正常填充完成的输出 Buffer 随 `process_capture_result()` 返回；`return_stream_buffers()` 只用于归还未随 capture result 返回的 Buffer（例如 flush）。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
 
-这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`requestStreamBuffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `requestStreamBuffers`、`returnStreamBuffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。
+这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`request_stream_buffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `request_stream_buffers`、`return_stream_buffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。n
+[已验证: AOSP hardware/interfaces/camera/device/3.6/default/include/camera3.h, android-16.0.0_r1]
 
 **功耗度量**：在 Perfetto 中可以用 `android_cpu` Metric 查看 Camera 相关进程的 CPU 时间。如果 `cameraserver` 的 CPU 时间异常高，说明 HAL 的处理负载很重；如果 App 进程的 CPU 时间高，说明可能在主线程做了过多处理（如直接在 `onPreviewFrame` 中做图像处理）。将 Camera 操作移到后台线程，或者把 CPU 软处理替换为 CameraX ImageAnalysis / YUV 转换、RenderScript Intrinsics Replacement Toolkit（只覆盖旧 intrinsics）、OpenGL ES / Vulkan compute、NDK / MediaCodec 或厂商 HAL 能力。RenderScript 已在 Android 12 deprecated，不能再作为 Android 12-17 的主推荐；每条替代路径都要按分辨率、帧率和 SoC 做同机实测。
 

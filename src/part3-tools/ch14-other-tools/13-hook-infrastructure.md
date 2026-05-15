@@ -39,14 +39,14 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
+pipeline_stage: ready-for-review
 task6_state: "reviewed"
 task9_state: reviewed
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: "2026-05-09T06:51:32+08:00"
+task2b_state: fixed
+last_task2b_at: '2026-05-15T15:30:00+08:00'
 task9_review_notes: "2026-05-09 Task9 06:20：needs-rework。P0 2：FrameMetrics GPU_DURATION 被并入 Android 7+；ApplicationExitInfo 被写成 Android 10+，实际 API 30/Android 11+。P2 1：ARM64 cache flush 完整序列已有 suggestions 既有项。→ 已于 2026-05-09 Task2B 修复：GPU_DURATION 拆为 API 24+/API 31+ 两段；ApplicationExitInfo 修正为 Android 11/API 30+。"
 last_task6_at: "2026-05-09T07:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-07-review.md"
@@ -116,7 +116,7 @@ last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
 
 典型例子包括：
 
-- `FrameMetrics`：每帧渲染耗时、输入延迟、布局/绘制阶段的分项耗时（Android 7 / API 24+）；GPU 执行时间（`TOTAL_DURATION`、`GPU_DURATION`）从 API 31 (Android 12) 起可用
+- `FrameMetrics`：每帧渲染耗时、输入延迟、布局/绘制阶段的分项耗时（Android 7 / API 24+，含 `TOTAL_DURATION`）；GPU 执行时间（`GPU_DURATION`）与帧截止时间（`DEADLINE`）从 API 31 (Android 12) 起可用
 - `JankStats`：基于 FrameMetrics 的卡顿检测与归因库（AndroidX）
 - `ApplicationExitInfo`：系统记录的进程退出原因（ANR、crash、LMK 等，Android 11 / API 30+）
 - `Choreographer.FrameCallback`：VSync 回调接口，用于帧时间对齐和自定义帧调度
@@ -402,11 +402,12 @@ Inline Hook 修改的是已映射的代码页，不能只用一句“Bionic Link
 | 指令 | 作用 | 备注 |
 |------|------|------|
 | `dc cvau` | Clean Data Cache to point of Unification | 将 dcache 中的修改推送到一致点，确保内存中的新代码对 icache 可见 |
-| `dsb sy` | Data Synchronization Barrier | 等待所有前面的内存访问完成，确保 dcache clean 完成 |
+| `dsb ish` | Data Synchronization Barrier (Inner Shareable) | 等待 dcache clean 完成并传播到所有 PE |
 | `ic ivau` | Invalidate Instruction Cache to point of Unification | 失效 icache 中可能缓存的旧指令 |
-| `isb sy` | Instruction Synchronization Barrier | 刷新流水线，确保后续指令从内存/icache 获取 |
+| `dsb ish` | Data Synchronization Barrier (Inner Shareable) | 确保 icache invalidation 完成并传播到所有 PE |
+| `isb` | Instruction Synchronization Barrier | 刷新流水线，确保后续指令从内存/icache 获取 |
 
-这一序列可以在用户态（EL0）无需系统调用直接执行，是 Inline Hook 修改代码后必须执行的标准步骤。
+ARM 自修改代码推荐序列包含两次 DSB：dcache clean 后一次，icache invalidate 后一次。`__builtin___clear_cache()` 由编译器/运行时封装，具体指令文本可能因编译器版本和目标微架构不同而略有差异，上表给出的是 ARM 推荐的规范序列。
 
 ### Android 14 对动态代码加载的强制要求
 
@@ -634,7 +635,7 @@ Inline Hook 修改被保护页面时：
 1. `mprotect(addr, size, PROT_READ|PROT_WRITE)` 去除写保护
 2. 修改指令（bl/jmp 等）
 3. `mprotect(addr, size, PROT_READ|PROT_EXEC)`
-4. `__builtin___clear_cache()` → ARM64: `dc cvau → dsb → ic ivau → isb`
+4. `__builtin___clear_cache()` → ARM64: `dc cvau → dsb ish → ic ivau → dsb ish → isb`
 
 **16KB 页面下的 `mprotect` 约束**：`addr` 必须按 16KB 边界对齐（通过 `addr & ~(page_size - 1)` 计算）；`size` 参数指定覆盖范围，内核自动按页粒度向上取整，不需要调用方手动凑成页大小整数倍。如果 `addr` 没有按实际页大小对齐，`mprotect()` 会返回 `EINVAL`。
 
