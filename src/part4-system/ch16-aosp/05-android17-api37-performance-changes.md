@@ -38,25 +38,26 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
+reviewed_date: "2026-05-16"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。 | 2026-05-12 task6 review: needs-rework。修复 frontmatter 缩进与 sources 列表、标题标点和 1 处禁用句式；ProfilingManager 源码级补充缺可核对锚点，已写入 queue。 | 2026-05-15 task6 review: pass-light-edit。修复中英文标点与少量结构性表达；无新增写作回炉问题。Task9 已有 P1/P2 pending，保持 task2b_pending。"
+review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 last_task9_at: "2026-05-15T07:35:58+08:00"
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 1；ProfilingManagerService anomaly 伪代码仍缺 API37 源码锚点，DeliQueue 内存开销量化缺来源。"
 review_type: task6-writing-quality-review
-task9_result: needs-rework
+task9_result: pending
 last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task6_result: pass-light-edit
-last_task6_at: "2026-05-15T08:10:00+08:00"
-last_task6_review_log: logs/review/2026-05-15-08-review.md
+last_task6_at: "2026-05-16T08:16:00+08:00"
+last_task6_review_log: logs/review/2026-05-16-08-review.md
+
 ---
 
 
@@ -211,7 +212,7 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`on
 
 ### 与 4.8 ART 分代 GC 章节的关系
 
-本节概述了 Android 17 中分代 GC 的变更和对性能的影响。关于 ART GC 的完整机制(Concurrent Mark-Compact 的工作原理、GC 暂停的产生机制、在不同 Android 版本中的演进)，详见 **4.8 ART 分代垃圾回收**。
+Android 17 的分代 GC 变化会改变 GC 切片模式和暂停分布。Concurrent Mark-Compact 的工作原理、GC 暂停的产生机制和版本演进，详见 **4.8 ART 分代垃圾回收**。
 
 ---
 
@@ -479,8 +480,7 @@ DCL (Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `S
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
-<!-- AIW-源码调研-2026-05-10 -->
-## 补充：DeliQueue drain 触发机制和 Generational CMC gating 条件深度验证
+## 附录：DeliQueue drain 触发机制与 Generational CMC gating 条件
 
 这组补充核对 §16.5 中提到的 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 ConcurrentMessageQueue 数据结构的实际实现：
 
@@ -543,7 +543,7 @@ bool Runtime::useGenerationalCMC() const {
 
 ### ProfilingManager 触发器内部判断逻辑
 
-API 37 公开文档只给出了触发器常量和注册入口，**没有公开服务端内部判断逻辑**。`ProfilingManagerService` 的源码在当前 AOSP preview 中不可直接核验，因此本节只描述已确认的 API 口径，不给未验证的内部伪代码。
+API 37 公开文档只给出了触发器常量和注册入口，**没有公开服务端内部判断逻辑**。`ProfilingManagerService` 的源码在当前 AOSP preview 中不可直接核验，因此正文保留已确认的 API 口径，不给未验证的内部伪代码。
 
 **已确认的 API 口径**（`android.os.ProfilingTrigger` reference）：
 
@@ -591,7 +591,7 @@ public class TreiberStack<E> {
 - 消息入队：O(1) CAS 操作（Treiber Stack push）
 - 消息出队：O(log n)（min-heap extract-min），尾部延迟优于旧单链表的 O(n) 最坏情况
 - 移除操作：O(1) CAS 设置墓碑标记 + Looper 延迟物理移除
-- 内存开销：Treiber Stack 的 Node 对象 + min-heap 数组，比旧单链表多约 20-30%
+- 内存开销：Treiber Stack 的 Node 对象 + min-heap 数组通常高于旧单链表；具体比例取决于队列长度、消息生命周期和实现细节，需要用同一 workload 下的 heap / trace 数据验证
 
 **兼容性影响**：
 `mMessages` 字段保留二进制兼容性，但永远返回 null，反射依赖的测试框架需升级到 Espresso 3.7+ 和 Robolectric 4.17+。
@@ -604,5 +604,3 @@ public class TreiberStack<E> {
 | Generational CMC | 不可用 | 需满足 gating 条件 | 通过 device_config 验证配置状态 |
 | ProfilingManager | API 36 基础触发器 | API 37 新增 3 个触发器 | 按版本注册不同触发器集合 |
 | ConcurrentMessageQueue | 存在但不默认启用 | 默认启用 | 反射代码需适配 null 值 |
-
-<!-- AIW-源码调研-2026-05-10 END -->

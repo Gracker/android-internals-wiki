@@ -44,6 +44,14 @@ task2b_state: pending
 task2b_result: pending
 pipeline_stage: task2b_pending
 task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。"
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+last_task6_at: "2026-05-16T08:16:00+08:00"
+last_task6_review_log: logs/review/2026-05-16-08-review.md
+task6_review_notes: "2026-05-16 task6 review: pass-light-edit。修复结构性元叙述、runOnCommit 标题过强和 2 处否定-纠正式表达；Task9 既有版本锚点/runOnCommit/executePendingTransactions 技术项仍由 Task2B 处理。"
+
 ---
 
 # 22.12 FragmentTransaction 提交链路与页面切换性能
@@ -84,7 +92,7 @@ task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 
 Fragment 页面切换的耗时，不能只看 `commit()` 调用点。`commit()` 多数时候只把事务放进 `FragmentManager` 的待执行队列；页面是否创建 View、何时触发布局、是否挤占下一帧，取决于后续 `execPendingActions()` 这段主线程工作。做页面切换性能排查时，要把 Fragment 事务、View inflate / layout、动画和 FrameTimeline 放到同一条时间线上看。
 
-本节只讨论 AndroidX Fragment。平台 `android.app.Fragment` 已废弃，现代应用应以 `androidx.fragment.app` 为准。速度优化的组织方式参考了《Android 性能优化》中“速度 = CPU 执行、缓存命中、任务调度共同决定”的结构，但正文结论以 AndroidX 源码与官方文档为准。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+现代应用的 Fragment 性能排查应以 AndroidX Fragment 为准。平台 `android.app.Fragment` 已废弃，不再作为新代码优化对象。速度优化的组织方式参考了《Android 性能优化》中“速度 = CPU 执行、缓存命中、任务调度共同决定”的结构，但正文结论以 AndroidX 源码与官方文档为准。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## `commit()` 只排队，事务执行在后一个主线程消息里
 
@@ -168,7 +176,7 @@ void scheduleCommit() {
 
 [已验证: AndroidX `FragmentManager.java`，`enqueueAction()` / `scheduleCommit()`]
 
-这里有两个性能结论：
+从性能排查看，有两个结论：
 
 - `commit()` 返回快，不代表页面切换便宜。View 创建、生命周期推进、动画准备、特殊效果控制器执行，都在后面的主线程消息里发生。
 - 多次连续 `commit()` 可能被同一个 `execPendingActions()` 批处理。排查 trace 时，不能只找某个业务点击回调中的 `commit()`，还要找后续主线程消息中的生命周期和 inflate 耗时。
@@ -241,7 +249,7 @@ boolean execPendingActions(boolean allowStateLoss) {
 
 [已验证: AndroidX `FragmentManager.java`，`execPendingActions()` / `generateOpsForPendingActions()` / `ensureExecReady()`]
 
-这段代码对应到性能排查，重点不是“FragmentManager 慢”，而是它把哪些操作集中到了同一个主线程消息里：`onCreate()`、`onCreateView()`、ViewBinding inflate、RecyclerView adapter 初始化、图片首批 decode、`onViewCreated()` 里的同步 I/O、child Fragment 的嵌套事务，都会被这个消息一起吞掉。
+这段代码对应到性能排查，重点不该停在“FragmentManager 慢”这个结论，而要继续拆它把哪些操作集中到了同一个主线程消息里：`onCreate()`、`onCreateView()`、ViewBinding inflate、RecyclerView adapter 初始化、图片首批 decode、`onViewCreated()` 里的同步 I/O、child Fragment 的嵌套事务，都会被这个消息一起吞掉。
 
 ## Fragment 事务与一帧渲染的时序
 
@@ -279,7 +287,7 @@ Perfetto FrameTimeline 的官方定义是：Expected Timeline 表示系统给 Ap
 - 后续 `Choreographer#doFrame`：看 traversal 内的 measure / layout / draw 是否因为新页面 View 树过重而超时，详见 §18.2。
 - RenderThread / FrameTimeline：看提交后的 `syncFrameState`、`dequeueBuffer`、GPU work 或 SurfaceFlinger 合成是否继续放大卡顿，详见 §13.3。
 
-## `runOnCommit()` 的位置：事务结束后，绘制之前
+## `runOnCommit()` 的边界：事务执行完成，不等于帧已绘制
 
 `runOnCommit()` 常被用来“等 Fragment 提交完成后再做事”。它的边界比名字更窄：它只保证 transaction 已经执行，不保证这一帧已经完成绘制，也不保证 Fragment 已经完成异步数据加载。
 
@@ -294,7 +302,7 @@ AndroidX 文档写得很清楚：如果事务启用了 reordering，`runOnCommit
 
 ## `setReorderingAllowed(true)` 不是简单的加速开关
 
-官方 Fragment transaction 文档建议每个事务使用 `setReorderingAllowed(true)`。它的作用不是把某个生命周期回调变快，而是允许 `FragmentManager` 在一批事务中消除冗余操作，并调整 Fragment 状态变化顺序，让动画和 transition 更一致。[已验证: 官方文档, `developer.android.com/guide/fragments/transactions`]
+官方 Fragment transaction 文档建议每个事务使用 `setReorderingAllowed(true)`。它不会让某个生命周期回调直接变快；价值在于允许 `FragmentManager` 在一批事务中消除冗余操作，并调整 Fragment 状态变化顺序，让动画和 transition 更一致。[已验证: 官方文档, `developer.android.com/guide/fragments/transactions`]
 
 AndroidX 源码中的注释给了典型例子：事务 A 添加 Fragment A，随后事务 B 用 Fragment B 替换它。允许 reordering 时，A 的 add / remove 可以被优化掉，A 可能不会经历完整 create / destroy 生命周期；多个 pop 操作也可能合并执行。
 
