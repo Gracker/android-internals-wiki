@@ -145,7 +145,8 @@
     "3.9",
     "13.14",
     "20.12",
-    "24.10"
+    "24.10",
+    "5.13"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -286,15 +287,16 @@
     "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
     "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-    "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
+    "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+    "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md"
   ],
   "review_summary": "Task9 2026-05-16 16: review 24.10 / 11.5；24.10 pass-tech-review 并自动晋升 finalized；11.5 命中 ADPF/GameManager API 语义 P1，转 Task2B。",
   "task6_review_summary": {
-    "l1_l2_fixes": 14,
-    "l3_issues": 1,
+    "l1_l2_fixes": 7,
+    "l3_issues": 0,
     "l4_issues": 0,
     "technical_risk_markers": 1,
-    "total_issues": 1,
+    "total_issues": 0,
     "auto_promotions": []
   },
   "issues_by_section": {
@@ -1149,34 +1151,32 @@
       "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
     }
   },
-  "total_review_sections": 139,
+  "total_review_sections": 140,
   "next_review_candidates": [],
-  "ready_for_review": 99,
-  "last_updated": "2026-05-16T18:08:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "ready_for_review": 100,
+  "last_updated": "2026-05-16T19:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "16:10",
-    "reviewed_at": "2026-05-16T16:10:00+08:00",
+    "time": "19:11",
+    "reviewed_at": "2026-05-16T19:11:00+08:00",
     "sections": [
-      "24.10",
-      "11.5",
-      "20.1"
+      "5.13",
+      "13.14"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "src/part2-performance/ch11-power/05-wakelock.md",
-      "src/part5-app/ch20-stability/01-stability-overview.md"
+      "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
+      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
     ],
-    "mode": "mixed-first-and-revisit-review",
-    "l1_l2_fixes": 14,
-    "l3_l4_issues": 1,
+    "mode": "first-review-with-metadata-repair",
+    "l1_l2_fixes": 7,
+    "l3_l4_issues": 0,
     "technical_risk_markers": 1,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-16-review.md",
-    "notes": "本轮按吞吐规则处理 3 章：24.10 首次 review 通过，11.5 Task2B 修复后复审通过，20.1 既有 ANR 技术边界回炉项确认仍待 Task2B。",
-    "small_fixes": 14,
-    "rework_items": 1,
+    "log": "logs/review/2026-05-16-19-review.md",
+    "notes": "本轮扫描无严格 task6_state=pending 章节；选取 2 个 status=ready-for-review 但缺 Task6 元数据的新草稿做写作 review，未强行补足 3 章。13.14 既有 Task9 技术回炉队列仍 pending。",
+    "small_fixes": 7,
+    "rework_items": 0,
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-16T15:38:55+08:00",
@@ -3077,7 +3077,7 @@
       "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -3087,7 +3087,15 @@
       "task2a_result": "draft-ready-for-review",
       "drafted_date": "2026-05-16",
       "last_verified": "2026-05-16",
-      "confidence": "medium"
+      "confidence": "medium",
+      "last_task6_at": "2026-05-16T19:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-19-review.md",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task6_review_notes": "2026-05-16 Task6：写作 review 通过；修复开头否定-纠正式表达与验证标注格式 2 处；既有 Task9 技术队列仍 pending，保持 task2b_pending。"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
@@ -3177,15 +3185,24 @@
     "5.13": {
       "title": "移动端 LLM 推理的 DVFS 与能效边界",
       "file": "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "素材驱动/研究素材/官方文档",
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T18:08:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "draft-ready-for-review",
+      "drafted_date": "2026-05-16",
+      "last_verified": "2026-05-16",
+      "confidence": "medium",
+      "last_task6_at": "2026-05-16T19:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-19-review.md",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task6_review_notes": "2026-05-16 Task6：首次写作 review 通过；补齐 section/task6 元数据，修复 2 处否定-纠正式表达；未新增 L3/L4 回炉项，送 Task9 技术复核。"
     }
   },
   "task2b_rounds": [
@@ -3263,45 +3280,41 @@
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "total_review_files": 139,
+  "total_review_files": 140,
   "last_task2a_at": "2026-05-16T18:08:00+08:00",
   "last_task2a_section": "5.13",
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-  "last_task6_review": "2026-05-16T16:10:00+08:00",
+  "last_task6_review": "2026-05-16T19:11:00+08:00",
   "last_task6_sections": [
-    "24.10",
-    "11.5",
-    "20.1"
+    "5.13",
+    "13.14"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-    "src/part2-performance/ch11-power/05-wakelock.md",
-    "src/part5-app/ch20-stability/01-stability-overview.md"
+    "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
+    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
   ],
-  "last_task6_at": "2026-05-16T16:10:00+08:00",
+  "last_task6_at": "2026-05-16T19:11:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-16",
-    "time": "16:10",
-    "reviewed_at": "2026-05-16T16:10:00+08:00",
+    "time": "19:11",
+    "reviewed_at": "2026-05-16T19:11:00+08:00",
     "sections": [
-      "24.10",
-      "11.5",
-      "20.1"
+      "5.13",
+      "13.14"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "src/part2-performance/ch11-power/05-wakelock.md",
-      "src/part5-app/ch20-stability/01-stability-overview.md"
+      "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
+      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
     ],
-    "mode": "mixed-first-and-revisit-review",
-    "l1_l2_fixes": 14,
-    "l3_l4_issues": 1,
+    "mode": "first-review-with-metadata-repair",
+    "l1_l2_fixes": 7,
+    "l3_l4_issues": 0,
     "technical_risk_markers": 1,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-16-review.md",
-    "notes": "本轮按吞吐规则处理 3 章：24.10 首次 review 通过，11.5 Task2B 修复后复审通过，20.1 既有 ANR 技术边界回炉项确认仍待 Task2B。",
-    "small_fixes": 14,
-    "rework_items": 1,
+    "log": "logs/review/2026-05-16-19-review.md",
+    "notes": "本轮扫描无严格 task6_state=pending 章节；选取 2 个 status=ready-for-review 但缺 Task6 元数据的新草稿做写作 review，未强行补足 3 章。13.14 既有 Task9 技术回炉队列仍 pending。",
+    "small_fixes": 7,
+    "rework_items": 0,
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
@@ -3312,12 +3325,11 @@
   "last_task2a_result": "gap-created",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "13.14",
-  "task6_last_review_at": "2026-05-16T16:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-16-review.md",
+  "task6_last_review_at": "2026-05-16T19:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-19-review.md",
   "task6_last_review_sections": [
-    "24.10",
-    "11.5",
-    "20.1"
+    "5.13",
+    "13.14"
   ],
   "sections_status": {
     "22.11": {

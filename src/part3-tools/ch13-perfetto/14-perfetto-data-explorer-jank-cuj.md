@@ -30,6 +30,11 @@ related_chapters: ["7.3", "7.4", "13.3", "13.8", "13.10", "13.11", "13.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_result: pass-light-edit
+task6_state: reviewed
+last_task6_at: "2026-05-16T19:11:00+08:00"
 pipeline_stage: task2b_pending
 task9_state: reviewed
 task9_result: needs-rework
@@ -72,7 +77,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 
 <!-- outline-end -->
 
-Perfetto v54 对 Android 性能分析的改变不在“多了一个按钮”，而在三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”升级为“这次卡顿有多重”。
+Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”继续追到“这次卡顿有多重”。
 
 这类能力最适合处理一种常见问题：一段滑动、展开、返回或者 Launcher 动画看上去只是“偶尔卡一下”，单看 FrameTimeline 能定位异常帧，但还不能判断异常来自 App、SurfaceFlinger、GPU completion、HWC release，还是调度等待。CUJ 把这段交互切成窗口，DataGrid 把结果筛出来，SQL 把判断口径固定下来。
 
@@ -234,4 +239,4 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 5. 用 `thread_state` 判断线程是在执行、抢 CPU、睡眠、I/O 等待还是阻塞。
 6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
 
-这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[自动发现]
+这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
