@@ -300,7 +300,7 @@
     "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
-  "review_summary": "Task6 2026-05-17 01: review 13.15 / 26.11；两章写作质量通过，小修结构性元叙述、否定-纠正句式、标点和 frontmatter；无新增回炉，转 Task9 复核。",
+  "review_summary": "Task9 2026-05-17 04: review 1.20；P1 2 / P2 1，入口条件与点击恢复回调链路需 Task2B 回炉；仅 1 个章节符合待审条件，未强行重审 3 天内已审章节。",
   "task6_review_summary": {
     "l1_l2_fixes": 10,
     "l3_issues": 0,
@@ -1212,12 +1212,21 @@
       "task6_log": "logs/review/2026-05-17-01-review.md",
       "task6_new_rework": false,
       "task6_note": "写作质量通过；修正标点/比喻化表达、结尾否定-纠正句式和 frontmatter，转 Task9 技术复核。"
+    },
+    "1.20": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-17T04:33:15+08:00",
+      "log": "logs/deep-review/2026-05-17-04-deep-review.md",
+      "summary": "P1 2：requestArchive 前置条件缺 installer/opt-out/system-app/launcher activity 等失败路径；Activity start unarchive listener 误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与 4.2/16.2 回跳不一致。"
     }
   },
-  "total_review_sections": 144,
+  "total_review_sections": 145,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T01:36:14+08:00",
+  "last_updated": "2026-05-17T04:33:15+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
@@ -1241,7 +1250,7 @@
       "26.11": "pass-light-edit / task9_pending"
     }
   },
-  "task9_last_review": "2026-05-17T01:36:14+08:00",
+  "task9_last_review": "2026-05-17T04:33:15+08:00",
   "ready_to_publish": 196,
   "rework_history": [
     {
@@ -3350,6 +3359,22 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-2026-05-17-13-15-buffer-release-channel-version"
+    },
+    "1.20": {
+      "title": "App Archiving 机制与恢复性能",
+      "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T04:33:15+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
+      "queue_priority": 85
     }
   },
   "task2b_rounds": [
@@ -3371,61 +3396,53 @@
   "last_task2a_processed_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-17T00:32:12+08:00",
-    "log": "logs/deep-review/2026-05-17-00-deep-review.md",
+    "at": "2026-05-17T04:33:15+08:00",
+    "log": "logs/deep-review/2026-05-17-04-deep-review.md",
     "sections": [
-      "4.3",
-      "5.14",
-      "26.10"
+      "1.20"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-      "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
     ],
-    "p0": 1,
-    "p1": 3,
-    "p2": 6,
-    "p3": 0,
-    "auto_finalized": [
-      "26.10"
-    ],
-    "queue_added": [
-      "task9-2026-05-17-5-14-tech-review"
-    ],
-    "queue_merged": [
-      "task9-2026-05-14-4-3-tech-review"
-    ],
-    "suggestions_added": 1,
-    "notes": "本轮处理 3 节；26.10 为 Task2B 修复后的复审并自动晋升 finalized。"
-  },
-  "last_task9_review": "2026-05-17T01:36:14+08:00",
-  "last_task9_sections": [
-    "13.15",
-    "26.11"
-  ],
-  "last_task9_review_detail": {
-    "at": "2026-05-17T01:36:14+08:00",
-    "log": "logs/deep-review/2026-05-17-01-deep-review.md",
-    "sections": [
-      "13.15",
-      "26.11"
-    ],
-    "files": [
-      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-      "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
-    ],
-    "p0": 1,
+    "p0": 0,
     "p1": 2,
     "p2": 1,
+    "p3": 0,
     "auto_promoted": [],
-    "summary": "13.15 命中 BUFFER_RELEASE_CHANNEL release 分支版本口径错误；26.11 命中 Android 17/API36 元数据错误与 WDBind reply 语义链断裂。"
+    "queue_added": [
+      "task9-2026-05-17-1-20-archive-conditions-callback"
+    ],
+    "suggestions_added": 1,
+    "notes": "仅 1.20 符合 task9 pending/未审条件；未强行重审 3 天内已审章节。"
+  },
+  "last_task9_review": "2026-05-17T04:33:15+08:00",
+  "last_task9_sections": [
+    "1.20"
+  ],
+  "last_task9_review_detail": {
+    "at": "2026-05-17T04:33:15+08:00",
+    "log": "logs/deep-review/2026-05-17-04-deep-review.md",
+    "sections": [
+      "1.20"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    ],
+    "p0": 0,
+    "p1": 2,
+    "p2": 1,
+    "p3": 0,
+    "auto_promoted": [],
+    "queue_added": [
+      "task9-2026-05-17-1-20-archive-conditions-callback"
+    ],
+    "suggestions_added": 1,
+    "notes": "仅 1.20 符合 task9 pending/未审条件；未强行重审 3 天内已审章节。"
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
-  "total_review_files": 142,
+  "total_review_files": 145,
   "last_task2a_at": "2026-05-17T01:12:00+08:00",
   "last_task2a_section": "26.11",
   "last_task2a_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
@@ -3470,7 +3487,7 @@
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "last_task9_at": "2026-05-16T15:38:55+08:00",
+  "last_task9_at": "2026-05-17T04:33:15+08:00",
   "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
@@ -3963,6 +3980,22 @@
       "confidence": "medium",
       "task6_state": "pending",
       "task9_state": "pending"
+    },
+    "1.20": {
+      "title": "App Archiving 机制与恢复性能",
+      "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T04:33:15+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
+      "queue_priority": 85
     }
   },
   "task2a_last_processed": {
@@ -3990,18 +4023,15 @@
     ]
   },
   "task9_last_sections": [
-    "13.15",
-    "26.11"
+    "1.20"
   ],
   "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
   "last_task9_files": [
-    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-17-01-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-17-04-deep-review.md",
   "task9_last_files": [
-    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2
