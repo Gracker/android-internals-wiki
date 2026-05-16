@@ -8807,7 +8807,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
@@ -8818,7 +8818,10 @@
         "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
         "src/part1-fundamentals/ch01-architecture/04-binder.md"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-17",
+      "completed_at": "2026-05-17T01:12:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成，章节 status 已更新为 ready-for-review，进入 Task 6 管线。"
     },
     {
       "id": "task9-2026-05-17-5-14-tech-review",
@@ -8864,16 +8867,16 @@
   "metadata": {
     "total_entries": 266,
     "p0_count": 44,
-    "last_updated": "2026-05-17T00:32:12+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 144,
-    "updated_date": "2026-05-16",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 141
+    "last_updated": "2026-05-17T01:12:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 140,
+    "updated_date": "2026-05-17",
+    "last_updated_by": "openclaw-task2a",
+    "pending": 140
   },
-  "last_updated": "2026-05-17T00:32:12+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 141,
-  "last_task2a_completed": "13.14",
-  "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
+  "last_updated": "2026-05-17T01:12:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 140,
+  "last_task2a_completed": "26.11",
+  "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }
