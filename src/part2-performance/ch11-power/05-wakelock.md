@@ -2,7 +2,6 @@
 title: "Wakelock 机制与功耗分析"
 section: "11.5"
 chapter: "11.5"
-status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [wakelock, power, battery, alarmmanager, doze, batterystats, kernel-wakelock]
 related_chapters: ["5.6", "5.8", "11.1", "11.2", "11.3"]
@@ -37,29 +36,32 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
-reviewed_date: "2026-05-06"
-reviewed_by: openclaw-task6
-task6_result: needs-rework
-pipeline_stage: task6_pending
 reviewed_at: "2026-05-11T19:05:00+08:00"
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
-task9_result: needs-rework
-task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T12:31:59+08:00"
 last_task2b_at: "2026-05-06T14:51:22+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-review_round: 4
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
-last_task6_at: "2026-05-06T17:26:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-17-review.md"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
-task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1 轻修 3 处（闭环禁用词、AI 中英文空格）；发现 2 个 L3/L4/技术边界问题，已写入 queue.json 交 Task2B。"
+status: ready-for-review
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-16T16:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-16-review.md"
+task6_l1_l2_fixes: 4
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
+review_round: 5
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -68,7 +70,7 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 
 2026 年 3 月起，Play Store 对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
 
-这篇文章要搞清楚几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及怎么避免 wakelock 变成功耗灾难。
+本节要回答几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及怎么避免 wakelock 变成功耗灾难。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -116,7 +118,7 @@ Android 提供了以下 CPU/屏幕类 wake-lock level，后三种屏幕相关的
 | `FULL_WAKE_LOCK` | CPU + 屏幕全亮 | API 17 废弃 |
 | `PROXIMITY_SCREEN_OFF_WAKE_LOCK` | 配合距离传感器控制屏幕开关 | 可用 |
 
-`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 用于通话等场景：距离传感器检测到物体靠近时关闭屏幕，远离时重新点亮。它不参与 CPU 保活，走的是屏幕/传感器控制路径。屏幕类 wake-lock（`SCREEN_DIM`、`SCREEN_BRIGHT`、`FULL`）废弃的原因很简单：屏幕是否点亮应该由系统电源策略统一管理，而不是让 App 自行决定。现在如果需要保持屏幕常亮，正确做法是使用 `FLAG_KEEP_SCREEN_ON`（Window Flag）或 `android:keepScreenOn`（XML 属性），由 WindowManager 统一处理。
+`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 用于通话等场景：距离传感器检测到物体靠近时关闭屏幕，远离时重新点亮。它不参与 CPU 保活，走的是屏幕/传感器控制路径。屏幕类 wake-lock（`SCREEN_DIM`、`SCREEN_BRIGHT`、`FULL`）废弃的原因是：屏幕是否点亮应该由系统电源策略统一管理，而不是让 App 自行决定。现在如果需要保持屏幕常亮，正确做法是使用 `FLAG_KEEP_SCREEN_ON`（Window Flag）或 `android:keepScreenOn`（XML 属性），由 WindowManager 统一处理。
 
 开发者主要关注的是 `PARTIAL_WAKE_LOCK`。它让 CPU 在屏幕关闭后仍然运行——这正是功耗问题的高发区，因为用户看不到屏幕亮着，不知道 App 还在消耗电量。
 
@@ -796,7 +798,7 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 - `getRailInfo()` — 获取功耗轨元信息（名称、测量类型）
 - `getEnergyData()` — 获取自启动以来的累计能耗数据
 
-[已确认: Task9 结论已落地——Perfetto 数据源名称统一为 `android.power` + `collect_power_rails: true`；`android_power_rails_counters` 仅作为 Trace Processor SQL 表名，不写成 data source name。]
+[已确认: 已按 Task9 结论修正——Perfetto 数据源名称统一为 `android.power` + `collect_power_rails: true`；`android_power_rails_counters` 仅作为 Trace Processor SQL 表名，不写成 data source name。]
 
 主要消费者：Statsd（功耗归因）、Perfetto（`android.power` 数据源）、Batterystats（电池分析）。
 

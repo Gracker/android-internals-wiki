@@ -4903,6 +4903,13 @@
           "location": "L102-L117 ANR timeout 阈值表与 ANR 后系统行为",
           "detail": "本轮复核确认该缺口仍存在：BroadcastReceiver timeout 未覆盖 Android 14+ CPU-starved 10-20 秒 / 60-120 秒区间；ANR 后弹窗/kill 行为未区分前台可见、后台和 silent ANR。",
           "suggestion": "按官方 ANR 文档与 AOSP TimeoutRecord/AnrHelper 路径补齐版本、前后台和可见性边界。"
+        },
+        {
+          "type": "需确认",
+          "location": "ANR timeout 阈值表 / ANR 发生后的系统行为",
+          "detail": "2026-05-16 Task6 复审确认正文仍保留 [需确认]：Android 14+ CPU-starved BroadcastReceiver timeout 版本口径与前台可见、后台、silent ANR 的弹窗/kill 边界未补齐。Task6 不裁决技术真伪，继续交 Task2B / Task9。",
+          "suggestion": "按 Task9 技术结论和官方文档补齐版本、前后台和可见性边界；无法确认时降级为典型前台 ANR 场景并标注系统差异。",
+          "review_log": "logs/review/2026-05-16-16-review.md"
         }
       ],
       "added_by": "task6-review",
@@ -4910,7 +4917,9 @@
       "original_review_log": "logs/review/2026-05-14-12-review.md",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-15T02:35:06+08:00",
-      "review_log": "logs/deep-review/2026-05-15-02-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
+      "updated_at": "2026-05-16T16:10:00+08:00",
+      "last_review_log": "logs/review/2026-05-16-16-review.md"
     },
     {
       "id": "task9-8-9-game-performance-gc-perfetto-trace-20260514",
@@ -8553,15 +8562,15 @@
   "metadata": {
     "total_entries": 256,
     "p0_count": 42,
-    "last_updated": "2026-05-16T14:07:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
+    "last_updated": "2026-05-16T16:10:00+08:00",
+    "updated_by": "task6-review",
     "pending_entries": 144,
     "updated_date": "2026-05-16",
-    "last_updated_by": "openclaw-task2a",
+    "last_updated_by": "task6-review",
     "pending": 143
   },
-  "last_updated": "2026-05-16T15:38:55+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-16T16:10:00+08:00",
+  "last_updated_by": "task6-review",
   "pending": 141,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
