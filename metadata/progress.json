@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 6,
-  "ready-for-review": 95,
+  "draft": 5,
+  "ready-for-review": 96,
   "finalized": 194,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -2918,15 +2918,17 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/源码结构",
       "gap_score": 18,
-      "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-16T11:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
@@ -3310,15 +3312,17 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/源码结构",
       "gap_score": 18,
-      "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-16T11:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
