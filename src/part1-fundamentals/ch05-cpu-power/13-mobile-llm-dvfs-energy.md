@@ -2,7 +2,7 @@
 title: "移动端 LLM 推理的 DVFS 与能效边界"
 chapter: "5.13"
 section: "5.13"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -14,13 +14,18 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/研究素材/官方文档"
 gap_score: 17
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 last_task6_at: "2026-05-16T19:11:00+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-05-16T19:31:25+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-16"
+last_task9_review_log: "logs/deep-review/2026-05-16-19-deep-review.md"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2507.02135"
