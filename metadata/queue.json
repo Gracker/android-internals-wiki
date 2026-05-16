@@ -7968,6 +7968,37 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T07:30:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-13.13-cpu-frequency-dvfs-analysis",
+      "section": "13.13",
+      "priority": 80,
+      "title": "Perfetto CPU 频率与 DVFS 关联分析",
+      "description": "从高质量未映射素材中挖掘出的 Perfetto CPU 频率、空闲状态与 DVFS 关联分析缺口，适合补齐线程 Running、频率轨道、EAS/DVFS 判断之间的工具方法。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+      ],
+      "material_paths": [
+        "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md",
+        "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md",
+        "https://perfetto.dev/docs/data-sources/cpu-freq",
+        "https://developer.android.com/agi/sys-trace/system-profiler",
+        "https://developer.android.com/tools/perfetto"
+      ],
+      "gap_score": 17,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4
+      }
     }
   ],
   "metadata": {
