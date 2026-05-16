@@ -276,7 +276,7 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
-  "review_summary": "Task9 2026-05-16 08: review 16.5 / 19.26；P1 1（16.5 MessageQueue 锁竞争机制），P2 4；19.26 自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-16 09: review 13.13；P1 2（采集配置缺 sched 事件、SQL cpu/ucpu schema 口径），P2 2；无自动晋升。",
   "task6_review_summary": {
     "l1_l2_fixes": 10,
     "l3_issues": 0,
@@ -1095,10 +1095,10 @@
       "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
     }
   },
-  "total_review_sections": 132,
+  "total_review_sections": 133,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T08:33:00+08:00",
+  "last_updated": "2026-05-16T09:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
@@ -1122,7 +1122,7 @@
     ],
     "log": "logs/review/2026-05-16-08-review.md"
   },
-  "task9_last_review": "2026-05-16T08:33:00+08:00",
+  "task9_last_review": "2026-05-16T09:20:00+08:00",
   "ready_to_publish": 194,
   "rework_history": [
     {
@@ -2945,57 +2945,47 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T08:33:00+08:00",
-    "log": "logs/deep-review/2026-05-16-08-deep-review.md",
+    "reviewed_at": "2026-05-16T09:20:00+08:00",
+    "log": "logs/deep-review/2026-05-16-09-deep-review.md",
     "sections": [
-      "16.5",
-      "19.26"
+      "13.13"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
     ],
     "p0": 0,
-    "p1": 1,
-    "p2": 4,
+    "p1": 2,
+    "p2": 2,
     "p3": 0,
-    "auto_finalized": [
-      "19.26"
-    ],
+    "auto_finalized": [],
     "queue_added": 1,
-    "suggestions_added": 4
+    "suggestions_added": 2
   },
-  "last_task9_review": "2026-05-16 08: deep review 16.5 / 19.26",
+  "last_task9_review": "2026-05-16 09: deep review 13.13",
   "last_task9_sections": [
-    "16.5",
-    "19.26"
+    "13.13"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T08:33:00+08:00",
-    "log": "logs/deep-review/2026-05-16-08-deep-review.md",
+    "reviewed_at": "2026-05-16T09:20:00+08:00",
+    "log": "logs/deep-review/2026-05-16-09-deep-review.md",
     "sections": [
-      "16.5",
-      "19.26"
+      "13.13"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
     ],
     "p0": 0,
-    "p1": 1,
-    "p2": 4,
+    "p1": 2,
+    "p2": 2,
     "p3": 0,
-    "auto_finalized": [
-      "19.26"
-    ],
+    "auto_finalized": [],
     "queue_added": 1,
-    "suggestions_added": 4
+    "suggestions_added": 2
   },
   "task9_last_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
-  "total_review_files": 132,
+  "total_review_files": 133,
   "last_task2a_at": "2026-05-16T07:17:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
@@ -3037,10 +3027,9 @@
     "notes": "19.26/16.5/21.7 为 Task2B fixed 后复审；22.12 为首次 Task6 写作 review。22.12 既有 Task9 技术回炉项未由 Task6 裁决。"
   },
   "last_task9_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
-  "last_task9_at": "2026-05-16T08:33:00+08:00",
+  "last_task9_at": "2026-05-16T09:20:00+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 194,
   "last_task2a_processed_section": "22.12",

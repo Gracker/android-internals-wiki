@@ -1515,3 +1515,15 @@
 - **位置**：src/part3-tools/ch19-apm/26-hybrid-apm.md:L268
 - **问题**：MethodChannel 延迟“通常 1-5ms”、`addTimingsCallback` 批量延迟“50ms+”、常规误差“<20ms”等数字缺少设备、Flutter 版本、采样方式或 trace 证据。它们会被读者当成可复用误差边界。
 - **建议**：补一组同设备 Flutter release/profile trace 或删除固定数字，改成“受 MethodChannel 排队、帧批量上报和主线程负载影响；只作为粗粒度 Session Timeline 锚点”。
+
+## [Task9 Deep Review] 13.13 Perfetto CPU 频率与 DVFS 关联分析 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：§端侧 AI 推理里的 governor 错配
+- **问题**：正文引用 arXiv 2507.02135 的 40.4%、TTFT 7.0%-16.9%、TPOT 25.4%-36.8% 等数字，但只写了 Pixel 7 / Pixel 7 Pro 与 Tensor G2，缺少论文实验条件：Android 13、root/open 设备、battery bypass、Monsoon 0.2 ms 功耗采样、screen off、ShareGPT 数据集、模型/框架与固定频率搜索口径。
+- **建议**：在数字前后补一行“实验条件与外推边界”；发布稿中不要把论文 controlled-frequency 结果写成普通用户态 App 可直接复现的收益。
+
+## [Task9 Deep Review] 13.13 Perfetto CPU 频率与 DVFS 关联分析 — 2026-05-16
+- **类型**：知识盲区 / 版本口径
+- **位置**：§识别大小核和 cluster
+- **问题**：正文主要靠 `cpu_freq` 频点集合识别 cluster。当前 Perfetto `cpu` 表已经暴露 `cluster_id` 与 `capacity`（有数据时），只靠频点集合在同频异构、厂商拆 policy 或频点裁剪场景下可能误分 cluster。
+- **建议**：把识别顺序改成：优先读 `cpu.cluster_id` / `capacity`，再用 `cpu_freq` 频点集合和同步变频现象交叉验证；缺字段时退回 sysfs `policy*/affected_cpus`。
