@@ -40,13 +40,13 @@ sources:
 reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 reviewed_at: "2026-05-11T19:05:00+08:00"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T12:31:59+08:00"
@@ -294,7 +294,7 @@ Android 10 引入 `SystemSuspend` 服务（`system_suspend` HIDL/AIDL 服务）�
 排查时可以先看 SystemSuspend 服务状态：
 
 ```bash
-adb shell dumpsys android.system.suspend.ISuspendControlService
+adb shell dumpsys suspend_control
 ```
 
 输出能看到 active wakelock / suspend blocker 相关计数时，先把这些名字和 `/sys/kernel/debug/wakeup_sources`、`dumpsys batterystats --history` 放到同一时间窗口里比较。前者回答“用户态谁还在阻止 suspend”，后者回答“内核最终被哪个 wakeup_source 唤醒或阻止”。不同厂商可能裁剪字段名，字段缺失时回到 debugfs 和 bugreport。
@@ -369,7 +369,7 @@ Android 10+ 的 autosuspend 主体在 `SystemSuspend.cpp`。它围绕 `wakeup_co
 这套握手避免了“刚准备 suspend，硬件唤醒事件已经到达”的竞态。调试时可以先看 SystemSuspend 服务：
 
 ```bash
-adb shell dumpsys android.system.suspend.ISuspendControlService
+adb shell dumpsys suspend_control
 ```
 
 如果输出里能看到 active wakelock 或 suspend blocker 计数，把这些名称和 `/sys/kernel/debug/wakeup_sources`、`dumpsys batterystats --history` 放到同一时间窗口比较。SystemSuspend 回答“用户态谁还在阻止 suspend”，debugfs 回答“内核最终被哪个 wakeup_source 唤醒或阻止”。

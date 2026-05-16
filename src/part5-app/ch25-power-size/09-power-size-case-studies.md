@@ -52,10 +52,10 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
 related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -64,7 +64,7 @@ task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-14T22:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-22-review.md"
 task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 4 处后通过；无新增 L3/L4 回炉项，转 Task9 技术复核。"
-task2b_result: pending
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
@@ -158,8 +158,8 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 体积账本要同时记录 raw file size、download size、安装后占用和功能覆盖范围。APK Analyzer 文档说明它会展示 zipped / raw file size 与 download file size；命令行可以用 `apkanalyzer` 和 `bundletool` 生成 CI 可读结果。 [已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer] [已验证: 官方文档, developer.android.com/tools/apkanalyzer]
 
 ```bash
-apkanalyzer apk file-size -h app-release.apk
-apkanalyzer apk download-size -h app-release.apk
+apkanalyzer -h apk file-size app-release.apk
+apkanalyzer -h apk download-size app-release.apk
 
 bundletool build-apks --bundle=app-release.aab --output=app-release.apks
 bundletool get-size total --apks=app-release.apks --device-spec=pixel-8.json

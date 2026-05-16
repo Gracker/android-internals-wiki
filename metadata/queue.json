@@ -5618,7 +5618,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
@@ -5635,7 +5635,9 @@
           "detail": "正文示例写成 `apkanalyzer apk file-size -h app-release.apk` / `apkanalyzer apk download-size -h app-release.apk`。Android Developers apkanalyzer 语法是 `apkanalyzer [global-options] subject verb [options] apk-file`，官方示例为 `apkanalyzer -h apk file-size myapk.apk`；`-h` 是 global option，应放在 subject 前。",
           "suggestion": "改为 `apkanalyzer -h apk file-size app-release.apk` 和 `apkanalyzer -h apk download-size app-release.apk`；如果要保留当前写法，需实测当前 SDK cmdline-tools 是否兼容该位置。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-16T15:24:34+08:00",
+      "completed_reason": "Task 2B 回炉修复: apkanalyzer 命令参数顺序修正(-h 从 subject 后移到 global option 位置: apkanalyzer -h apk file-size app-release.apk)"
     },
     {
       "id": "task9-20260514-25.9-vitals-excessive-wakelock-threshold",
@@ -5723,7 +5725,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/01-stability-overview.md"
@@ -5741,7 +5743,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T02:35:06+08:00"
+      "added_at": "2026-05-15T02:35:06+08:00",
+      "completed_date": "2026-05-16T15:24:34+08:00",
+      "completed_reason": "Task 2B 回炉修复: 线程默认栈大小从 Linux/glibc ~8MB 修正为 Android bionic ~1MiB(PTHREAD_STACK_SIZE_DEFAULT), 补充主线程/自定义 stackSize 差异说明"
     },
     {
       "id": "task9-20260515-26.2-native-signal-applicationexitinfo",
@@ -6736,7 +6740,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch11-power/05-wakelock.md"
@@ -6754,7 +6758,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T12:31:59+08:00"
+      "added_at": "2026-05-15T12:31:59+08:00",
+      "completed_date": "2026-05-16T15:24:34+08:00",
+      "completed_reason": "Task 2B 回炉修复: SystemSuspend dumpsys 服务名从 android.system.suspend.ISuspendControlService 修正为 suspend_control, 两处命令统一更新"
     },
     {
       "id": "task9-2026-05-15-4.9-finalizer-referencequeue-lifecycle",
