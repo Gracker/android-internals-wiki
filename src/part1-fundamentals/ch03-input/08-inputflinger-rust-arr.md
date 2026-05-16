@@ -56,6 +56,10 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
+task6_state: reviewed
+task6_result: needs-rework
+reviewed_date: "2026-05-16"
+reviewed_by: "openclaw-task6"
 ---
 
 # 3.8 InputFlinger Rust 组件与自适应刷新率协同
@@ -64,37 +68,37 @@ gap_source: "研究素材/AOSP结构"
 ## 要点
 
 ### 🔹 InputFlinger 中 Rust 组件的引入边界
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+说明 Rust 只落在 InputFilter wrapper 与 accessibility filters，不替换 InputReader / InputDispatcher。
 
 ### 🔹 bounce / slow / sticky keys filter 的位置
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+区分 Bounce / Slow / Sticky Keys 的处理对象、等待或丢弃策略，以及对按键延迟的影响。
 
 ### 🔹 C++ 与 Rust 之间的 FFI 调用边界
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+说明 cxxbridge、IInputFlingerRust、IInputFilterCallbacks 与 InputFilterThread 的回传路径。
 
 ### 🔹 触摸事件触发刷新率策略的入口
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+说明 MotionEvent 触发 user activity、interaction boost 和 Scheduler touch hint，而不是进入 Rust filter。
 
 ### 🔹 输入事件、RefreshRatePolicy 与 SurfaceFlinger 的关系
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+拆开 WindowManager frame-rate vote、Power touch hint 与 SurfaceFlinger RefreshRateSelector 的职责。
 
 ### 🔹 版本适用范围与可观测信号
-补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。
+标注 Android 15-QPR1 / Android 16 / Android 17 的适用范围和 Perfetto / dump 观察入口。
 
 ## 扩展
 
 ### 🔸 辅助功能输入过滤对延迟的影响
-待结合素材验证后展开。
+说明 Slow Keys 的有意等待与普通分发阻塞的判读边界。
 
 ### 🔸 桌面模式和外接输入设备的刷新率策略
-待结合素材验证后展开。
+说明外接键盘、鼠标、触控板和多显示场景下的输入 / 刷新率边界。
 <!-- outline-end -->
 
 ## 为什么要把这两个话题放在一起
 
 InputFlinger Rust 和 ARR 经常被放在同一个“输入系统重构”的话题里，但它们不在同一条事件处理路径上。Rust 进入的是 InputFlinger 里的辅助功能输入过滤层，当前主要处理键盘类 KeyEvent；ARR 的触摸升频路径走的是 user activity / power boost / SurfaceFlinger Scheduler。把这两件事分开，才能判断一次输入延迟到底发生在按键过滤、事件分发，还是显示刷新节奏变化上。
 
-本节只讨论已核到源码和官方文档的边界：InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体；Rust 组件是 InputFilter 的实现之一；触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票，不能把 `DisplayPolicy.onUserActivityEventTouch()` 写成刷新率选择入口。[已验证: AOSP main, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP main, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
+这里按已核到源码和官方文档的边界展开：InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体；Rust 组件是 InputFilter 的实现之一；触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票，不能把 `DisplayPolicy.onUserActivityEventTouch()` 写成刷新率选择入口。[已验证: AOSP main, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP main, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
 
 [图：InputFlinger Rust 与 ARR 两条路径对照图。左侧为 KeyEvent：InputReader → UnwantedInteractionBlocker → InputFilter(C++ wrapper) → Rust bounce/slow/sticky filters → InputDispatcher。右侧为 Touch：InputDispatcher 标记 USER_ACTIVITY_EVENT_TOUCH → PowerManagerService 发送 Boost.INTERACTION → SurfaceFlinger.notifyPowerBoost → Scheduler.onTouchHint → RefreshRateSelector / FrameRate vote。]
 
@@ -102,7 +106,7 @@ InputFlinger Rust 和 ARR 经常被放在同一个“输入系统重构”的话
 
 AOSP `InputManager.cpp` 里的事件流注释给了这条 Native 管线：`InputReader → UnwantedInteractionBlocker → InputFilter → PointerChoreographer → InputProcessor → InputDeviceMetricsCollector → InputDispatcher`。Rust 组件挂在 `InputFilter` 这个节点，不替换 InputReader 或 InputDispatcher。[已验证: AOSP main, frameworks/native/services/inputflinger/InputManager.cpp]
 
-`InputManager` 构造时会创建 `mInputFlingerRust`，再根据 `input_flags::enable_input_filter_rust_impl()` 决定是否把 C++ `InputFilter` wrapper 插入事件流。这个 wrapper 的说明也很直白：`InputFilter` 是围绕 Rust 实现的一层 C++ 包装。[已验证: AOSP main, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.h]
+`InputManager` 构造时会创建 `mInputFlingerRust`，再根据 `input_flags::enable_input_filter_rust_impl()` 决定是否把 C++ `InputFilter` wrapper 插入事件流。`InputFilter` wrapper 的注释写明：它是围绕 Rust 实现的一层 C++ 包装。[已验证: AOSP main, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.h]
 
 这给出三个边界：
 
@@ -208,7 +212,7 @@ Bounce Keys 和 Sticky Keys 对延迟的影响较小：前者按阈值丢弃重�
 
 ## 桌面模式和外接输入设备的刷新率策略
 
-外接键盘、鼠标、触控板会让输入类型更复杂，但当前 Rust filter 只在 `Source::KEYBOARD` 和 supported keyboard devices 上生效；鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力，而不是某个输入设备是否经过 Rust filter。[已验证: AOSP main, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp]
+外接键盘、鼠标、触控板会让输入类型更复杂。当前这一段的生效范围需要拆开描述：Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制，Sticky Keys 的 modifier KeyEvent 行为还需要按源码单独确认。[存疑: Task9 已指出 Sticky Keys 作用范围不能和 Bounce / Slow Keys 一起写成 supported keyboard devices 限制，待 Task2B 按源码修正。] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力，而不是某个输入设备是否经过 Rust filter。[已验证: AOSP main, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp]
 
 桌面模式或多显示器下还要看 pacesetter display、display group、WindowManager 对不同显示的策略。当前章节只覆盖默认显示和主输入路径；外接显示刷新率仲裁建议放到 2.18 / 2.19 的多显示扩展里继续核源码。[待补充]
 
