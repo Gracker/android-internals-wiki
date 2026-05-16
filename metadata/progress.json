@@ -1,7 +1,7 @@
 {
   "total": 299,
-  "draft": 3,
-  "ready-for-review": 100,
+  "draft": 2,
+  "ready-for-review": 101,
   "finalized": 196,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -3220,8 +3220,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "13.14",
-  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+  "last_task2a_processed": "5.14",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
     "reviewed_at": "2026-05-16T15:38:55+08:00",
@@ -3779,5 +3779,6 @@
   "task9_last_sections": [
     "20.12",
     "5.8"
-  ]
+  ],
+  "last_task2a_processed_at": "2026-05-16T23:04:00+08:00"
 }
