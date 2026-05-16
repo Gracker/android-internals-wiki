@@ -8371,7 +8371,7 @@
       "section": "3.8",
       "section_title": "InputFlinger Rust 组件与自适应刷新率协同",
       "title": "Sticky Keys 作用范围被误写成 supported keyboard devices 限制",
-      "priority": 85,
+      "priority": 90,
       "reason": "[Deep Tech Review] 3.8 L204 将所有 Rust filter 的生效范围统一写成 Source::KEYBOARD + supported keyboard devices，和 StickyKeysFilter 源码行为不一致。",
       "description": "3.8 的桌面模式/外接输入设备段需要区分 Bounce/Slow 与 Sticky Keys 的作用范围，避免把 Sticky Keys 的 modifier KeyEvent 行为误归到 supported keyboard devices 检查下。",
       "issue_type": "source-code-accuracy",
@@ -8390,7 +8390,8 @@
         "frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs",
         "frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs",
         "frameworks/native/services/inputflinger/rust/slow_keys_filter.rs",
-        "frameworks/native/services/inputflinger/InputFilter.cpp"
+        "frameworks/native/services/inputflinger/InputFilter.cpp",
+        "intake/suggestions.md"
       ],
       "review_issues": [
         {
@@ -8398,8 +8399,18 @@
           "location": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md:L204",
           "detail": "正文把当前 Rust filter 统一写成只在 Source::KEYBOARD 与 supported keyboard devices 上生效。AOSP main 中这个限制只适用于 BounceKeysFilter / SlowKeysFilter；StickyKeysFilter.notify_key() 没有 supported_devices 或 Source::KEYBOARD 检查，而是按 KeyEvent 的 modifier keycode 维护 down_key_map、modifier_state 和 locked_modifier_state。",
           "suggestion": "改成分层描述：Bounce/Slow Keys 受 supported keyboard devices + Source::KEYBOARD 限制；Sticky Keys 作用于 modifier KeyEvent；MotionEvent（鼠标移动、触控板 pointer motion、触摸屏滑动）不进入当前 Rust InputFilter。"
+        },
+        {
+          "type": "需确认",
+          "location": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md:桌面模式和外接输入设备的刷新率策略",
+          "detail": "Task6 已按 Task9 结论在正文加 [存疑]；Sticky Keys 作用范围需要与 Bounce / Slow Keys 拆开描述。",
+          "suggestion": "由 Task2B 按 Task9 源码审查意见修正，Task6 不裁决源码真伪。",
+          "added_by": "task6-review",
+          "added_at": "2026-05-16T13:11:00+08:00",
+          "original_review_log": "logs/review/2026-05-16-13-review.md"
         }
-      ]
+      ],
+      "original_review_log": "logs/review/2026-05-16-13-review.md"
     }
   ],
   "metadata": {

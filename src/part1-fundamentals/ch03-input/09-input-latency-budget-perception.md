@@ -1,6 +1,7 @@
 ---
 title: "端到端输入延迟预算与感知阈值"
 chapter: "3.9"
+section: "3.9"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -37,13 +38,19 @@ related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: "2026-05-16"
+reviewed_by: "openclaw-task6"
+task9_state: pending
+pipeline_stage: task9_pending
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值
 
 输入延迟不能只按 InputDispatcher 或主线程耗时判断。用户感知到的是从手指动作到屏幕反馈之间的端到端距离，这段距离同时受触控硬件、输入分发、应用处理、渲染提交、SurfaceFlinger 合成和显示刷新影响。
 
-本节把 HCI 感知阈值、Android 输入路径和 Perfetto 指标放在同一个口径下，给后续排查留一张预算表。3.2 节已经讲触摸响应路径，3.4 节已经讲重采样和预测输入，本节只补“多少算慢、慢在哪一段、怎样和用户体感对上”。
+本节把 HCI 感知阈值、Android 输入路径和 Perfetto 指标放在同一个口径下，给后续排查留一张预算表。3.2 节已经讲触摸响应路径，3.4 节已经讲重采样和预测输入；这里补齐“多少算慢、慢在哪一段、怎样和用户体感对上”这三个问题。
 
 [已验证: 官方文档, source.android.com/docs/core/interaction/input] [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features] [来源: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md]
 
@@ -56,7 +63,7 @@ Android 官方输入文档给出的路径是：物理设备产生信号，Linux 
 - **输入到应用消费**：从触控样本进入内核，到应用主线程开始处理 `MotionEvent`。这部分受硬件采样率、EventHub 读取、InputReader 坐标转换、InputDispatcher 队列和 Binder/socket 传输影响。
 - **应用消费到画面呈现**：从应用处理输入，到新画面被 SurfaceFlinger 合成并在显示设备上呈现。这里受 Choreographer 回调、主线程工作、RenderThread、BufferQueue、SurfaceFlinger 合成和 VSync 节奏影响。
 
-一条滑动如果“跟手性差”，不要急着把责任归到输入系统。输入阶段只决定事件何时交给应用；用户看到的反馈还要等应用提交新 buffer，并且等到对应 present 时刻。
+一条滑动出现“跟手性差”时，先把输入交付和画面呈现拆开看。输入阶段只决定事件何时交给应用；用户看到的反馈还要等应用提交新 buffer，并且等到对应 present 时刻。
 
 [已验证: 官方文档, source.android.com/docs/core/interaction/input] [已验证: 官方文档, source.android.com/docs/core/graphics/implement-vsync]
 
@@ -98,7 +105,7 @@ HCI 研究报告过 2 ms 级别的触摸延迟差异可被感知，也有研究�
 这段预算要重点看三件事：
 
 - **样本是否稳定进入系统**：触控硬件采样不稳、驱动上报抖动、设备配置错误，会让后续所有平滑策略都只能补救视觉轨迹，不能补回原始样本质量。
-- **InputDispatcher 是否排队**：如果目标窗口没有及时 ACK，dispatcher 的 outbound / wait queue 会增长，后续输入会被拖住。这里和 ANR 有关系，但不要把几十毫秒的输入长尾等同于 ANR。
+- **InputDispatcher 是否排队**：如果目标窗口没有及时 ACK，dispatcher 的 outbound / wait queue 会增长，后续输入会被拖住。这里和 ANR 有关系，但几十毫秒的输入长尾不能等同于 ANR。
 - **应用主线程何时拿到事件**：`ViewRootImpl` 收到输入后，事件还要经过输入阶段、动画阶段、遍历阶段。主线程上一段同步 I/O、锁等待或重布局都会推迟消费时间。
 
 输入重采样属于这一段的特殊处理。AOSP `InputConsumer.cpp` 和 `Resampler.cpp` 中定义了 `RESAMPLE_LATENCY = 5ms`、`RESAMPLE_MIN_DELTA = 2ms`、`RESAMPLE_MAX_PREDICTION = 8ms` 等参数，用插值或外推把触摸坐标贴近 VSync 时刻。它改善的是轨迹平滑和视觉贴合，不等于把端到端延迟减少 5 ms。
@@ -152,14 +159,14 @@ Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应�
 
 厂商游戏模式、触控增强、低延迟渲染通常会同时改动刷新率、触控采样率、CPU/GPU 频率和调度策略。标准 AOSP GameMode 主要管理 GameMode 状态、帧率策略和 Power HAL `Mode.GAME`，没有公开的“输入优先级提升”API。焦点窗口机制、`requestDisallowInterceptTouchEvent(true)`、游戏窗口的刷新率选择优先级，是公开框架里能确认的能力。
 
-验证低延迟模式时，不要只看开关前后 FPS。更稳的办法是抓两组同场景 Perfetto：
+验证低延迟模式时，FPS 不是唯一指标。更稳的办法是抓两组同场景 Perfetto：
 
 1. 固定刷新率、亮度、温控状态和操作脚本，分别记录普通模式与低延迟模式。
 2. 对比 InputDispatcher dispatch / ACK、主线程 `deliverInputEvent`、FrameTimeline present、SurfaceFlinger 合成耗时。
 3. 对比 P50、P90、P95，不只看某一次滑动的最小值。
 4. 如果低延迟模式只改善 present 等待，结论应写成“渲染呈现延迟降低”；如果 InputDispatcher 队列也下降，才讨论输入分发侧收益。
 
-厂商私有 HAL 或 Framework 修改没有公开源码时，只能标成 `[待验证]`。不要把营销名词写成 AOSP 机制。
+厂商私有 HAL 或 Framework 修改没有公开源码时，只能标成 `[待验证]`。营销名词不能写成 AOSP 机制。
 
 [已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java; frameworks/base/services/core/java/com/android/server/wm/RefreshRatePolicy.java; frameworks/base/core/java/android/view/ViewGroup.java] [来源: DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md]
 
@@ -201,7 +208,7 @@ ANR 是系统容错机制，处理的是秒级无响应。输入体验通常在�
 - 3.2 节讲触摸响应路径，本节给路径加预算和体感阈值。
 - 3.4 节讲重采样、MotionPredictor 和低延迟图形，本节解释这些技术放在端到端预算里的位置。
 - 7.9 节讲感知流畅性，本节补输入到画面呈现之间的延迟口径。
-- 13.8 节给 Perfetto SQL，本节只定义指标边界。
+- 13.8 节给 Perfetto SQL，这里定义指标边界。
 - 15.3 节讲指标体系，本节把 click-to-display / input-to-present 纳入响应速度指标。
 
 ## 参考资料

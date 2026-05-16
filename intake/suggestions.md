@@ -1600,3 +1600,11 @@
 - **位置**：src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md:L155
 - **问题**：正文说 PowerManagerService 发 `Boost.INTERACTION` 后 SurfaceFlinger 收到 `notifyPowerBoost()`，结论正确，但源码锚点缺少 native bridge：`PowerManagerService.setPowerBoostInternal()` 通过 `nativeSetPowerBoost()` 进入 `com_android_server_power_PowerManagerService.cpp::setPowerBoost()`，后者同时调用 Power HAL 和 `SurfaceComposerClient::notifyPowerBoost()`。
 - **建议**：补两个锚点：`frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp` 与 `frameworks/native/libs/gui/SurfaceComposerClient.cpp`，避免读者误以为 Java `PowerManagerService` 直接调用 SurfaceFlinger。
+
+
+## [Task6 Review] 3.8 InputFlinger Rust 组件与自适应刷新率协同 — 2026-05-16
+- **类型**：需确认 / 源码准确性
+- **位置**：桌面模式和外接输入设备的刷新率策略
+- **问题**：Task9 已指出正文把 Sticky Keys、Bounce Keys、Slow Keys 的作用范围合并成 supported keyboard devices + `Source::KEYBOARD` 限制，存在源码准确性风险。Task6 不裁决技术真伪，已在正文加 `[存疑]`。
+- **建议**：Task2B 按 queue.json `task9-3.8-sticky-keys-scope-20260516` 修正：Bounce / Slow Keys 与 Sticky Keys 分开描述，并保留 MotionEvent 不进入当前 Rust InputFilter 的边界。
+- **review 日志**：logs/review/2026-05-16-13-review.md

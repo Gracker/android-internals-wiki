@@ -282,7 +282,7 @@
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
     "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
   ],
-  "review_summary": "Task6 2026-05-16 12: review 5.1/5.7；L1/L2 已轻修，Task9 技术风险已标注并保持 Task2B 回炉。",
+  "review_summary": "Task6 2026-05-16 13: review 3.8/3.9；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 风险标注并保持 Task2B 回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 25,
     "l3_issues": 0,
@@ -1110,29 +1110,41 @@
       "p1": 3,
       "p2": 3,
       "p3": 0
-    }
+    },
+    "3.8": [
+      {
+        "type": "需确认",
+        "location": "桌面模式和外接输入设备的刷新率策略",
+        "detail": "Sticky Keys 作用范围需与 Bounce / Slow Keys 分开描述；Task6 已加 [存疑]，Task2B 按 Task9 issue 修正。",
+        "source": "task6-review",
+        "log": "logs/review/2026-05-16-13-review.md"
+      }
+    ]
   },
-  "total_review_sections": 135,
+  "total_review_sections": 136,
   "next_review_candidates": [],
-  "ready_for_review": 93,
-  "last_updated": "2026-05-16T12:31:00+08:00",
-  "last_updated_by": "task9-deep-review",
+  "ready_for_review": 97,
+  "last_updated": "2026-05-16T13:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "12:20",
+    "time": "13:11",
+    "reviewed_at": "2026-05-16T13:11:00+08:00",
     "sections": [
-      "5.1",
-      "5.7"
+      "3.8",
+      "3.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
     ],
-    "l1_l2_fixes": 25,
+    "mode": "first-review-metadata-backfill",
+    "l1_l2_fixes": 14,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 6,
+    "technical_risk_markers": 1,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-12-review.md"
+    "log": "logs/review/2026-05-16-13-review.md",
+    "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。"
   },
   "task9_last_review": "2026-05-16T12:31:00+08:00",
   "ready_to_publish": 195,
@@ -2980,7 +2992,7 @@
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T12:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-16",
@@ -2988,20 +3000,30 @@
       "task2b_state": "pending",
       "p0": 0,
       "p1": 1,
-      "p2": 2
+      "p2": 2,
+      "task6_result": "needs-rework",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6",
+      "last_task6_at": "2026-05-16T13:11:00+08:00"
     },
     "3.9": {
       "title": "端到端输入延迟预算与感知阈值",
       "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/官方文档",
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6",
+      "last_task6_at": "2026-05-16T13:11:00+08:00",
+      "task9_state": "pending"
     },
     "13.14": {
       "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
@@ -3118,37 +3140,42 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
-  "total_review_files": 135,
+  "total_review_files": 136,
   "last_task2a_at": "2026-05-16T10:04:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-  "last_task6_review": "2026-05-16T12:20:36+08:00",
+  "last_task6_review": "2026-05-16T13:11:00+08:00",
   "last_task6_sections": [
-    "5.1",
-    "5.7"
+    "3.8",
+    "3.9"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+    "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
   ],
-  "last_task6_at": "2026-05-16T12:20:36+08:00",
+  "last_task6_at": "2026-05-16T13:11:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-16T12:20:36+08:00",
-    "log": "logs/review/2026-05-16-12-review.md",
+    "date": "2026-05-16",
+    "time": "13:11",
+    "reviewed_at": "2026-05-16T13:11:00+08:00",
     "sections": [
-      "5.1",
-      "5.7"
+      "3.8",
+      "3.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
     ],
-    "mode": "revisit-review",
-    "l1_l2_fixes": 25,
+    "mode": "first-review-metadata-backfill",
+    "l1_l2_fixes": 14,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 6,
+    "technical_risk_markers": 1,
     "auto_promotions": [],
-    "notes": "本轮仅有 2 个 task6_state=revisiting 章节；5.1 极长且含 Task9 P0/P1 技术风险，按吞吐规则降回 2 个。L1/L2 已轻修，技术风险已转写 [存疑] 并确认 queue.json pending。"
+    "log": "logs/review/2026-05-16-13-review.md",
+    "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。",
+    "small_fixes": 14,
+    "rework_items": 1,
+    "auto_finalized": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
@@ -3157,11 +3184,11 @@
   "last_task2a_result": "gap-mining-created-drafts",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "22.12",
-  "task6_last_review_at": "2026-05-16T12:20:36+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-12-review.md",
+  "task6_last_review_at": "2026-05-16T13:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-13-review.md",
   "task6_last_review_sections": [
-    "5.1",
-    "5.7"
+    "3.8",
+    "3.9"
   ],
   "sections_status": {
     "22.11": {
@@ -3389,28 +3416,40 @@
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
       "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/AOSP结构",
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task6_result": "needs-rework",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6"
     },
     "3.9": {
       "title": "端到端输入延迟预算与感知阈值",
       "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/官方文档",
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6",
+      "task9_state": "pending"
     },
     "13.14": {
       "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
