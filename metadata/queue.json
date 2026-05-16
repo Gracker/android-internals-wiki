@@ -9062,21 +9062,124 @@
       "added_at": "2026-05-17T05:21:00+08:00",
       "completed_date": "2026-05-17",
       "completed_reason": "Task 2A 加工完成：status=ready-for-review，进入 Task6 复审队列"
+    },
+    {
+      "section": "ch04",
+      "section_title": "章节 ch04",
+      "priority": 75,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 Generational CMC 机制源码与设备能力判断路径验证 — Android ART 的 Generational CMC 是分代堆 + userfaultfd 驱动的并发压缩 GC 组合。Android 12 通过 commit 854cb7d 将 userf...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-17T05:36:40.492308",
+      "status": "pending"
+    },
+    {
+      "section": "ch04",
+      "section_title": "章节 ch04",
+      "priority": 75,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-userfaultfd-cmc-gc.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "userfaultfd 在 ART CMC GC 中的具体应用 — CMC GC 通过 userfaultfd 将 compaction 期间页面访问异常分流入 SIGBUS handler，GC 线程用 mremap(MREMAP_DONTUNMAP) 迁移页面，m...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-17T05:36:40.498784",
+      "status": "pending"
+    },
+    {
+      "section": "ch14（安全相关）",
+      "section_title": "章节 ch14（安全相关）",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://arxiv.org/abs/2605.06894"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "McNdroid: 多模态纵向基准揭示 Android 恶意软件检测器的 12 年退化规律 — McNdroid 是目前已知规模最大的纵向多模态 Android 恶意软件基准，858,859 样本/1,354 恶意家族/12 年跨度（2013-2025），每个样本具备静态+动态+图结构三类对齐特...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-17T05:36:40.504687",
+      "status": "pending"
+    },
+    {
+      "id": "task9-2026-05-17-26-12-versioned-diagnostics-api-boundaries",
+      "section": "26.12",
+      "section_title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+      "priority": 85,
+      "title": "版本化诊断 API 边界不完整",
+      "description": "ApplicationExitInfo reason 的 API 级别差异和 Android 15 ApplicationStartInfo 启动诊断入口未覆盖，影响 Android 11-17 版本化诊断决策表。",
+      "reason": "[Deep Tech Review] 26.12 缺少 ApplicationExitInfo reason API 级别差异与 Android 15 ApplicationStartInfo 启动追溯入口。",
+      "issue_type": "version-difference-and-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessStartReasons(int)",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L180-L188 ApplicationExitInfo reason 分组",
+          "detail": "章节把 REASON_USER_REQUESTED、REASON_PACKAGE_STATE_CHANGE、REASON_PACKAGE_UPDATED、REASON_FREEZER 放在同一张归因表里，但没有标明 API 级别：REASON_FREEZER 是 API 33，REASON_PACKAGE_STATE_CHANGE / REASON_PACKAGE_UPDATED 是 API 34；API 30-33 上包更新和组件状态变化仍可能落到 REASON_USER_REQUESTED。当前写法会让 Android 11-13 线上样本按 Android 14+ 口径误分组。",
+          "suggestion": "在 ApplicationExitInfo reason 表或 Android 11-14 段补 API 级别列：API 30 基础 reason、API 33 REASON_FREEZER、API 34 package-state/package-updated；同时写明 API 34 之前 package update/state change 使用 REASON_USER_REQUESTED 兜底。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "L118-L128 三条诊断路径；L253-L258 排障决策表",
+          "detail": "章节把版本化诊断入口限定为退出追溯、ProfilingManager 主动采集和 ProfilingTrigger，但慢启动诊断漏掉 Android 15 / API 35 的 ApplicationStartInfo：ActivityManager#getHistoricalProcessStartReasons()、addApplicationStartInfoCompletionListener()、ApplicationStartInfo.START_TYPE_COLD / START_TIMESTAMP_*。Android 17 COLD_START trigger 的前提也引用 ApplicationStartInfo.getStartType()==START_TYPE_COLD。",
+          "suggestion": "补一条“启动追溯/启动历史”能力或在慢启动决策表 Android 15 列加入 ApplicationStartInfo；说明它提供启动原因、启动类型、关键时间戳，和 requestProfiling(SYSTEM_TRACE) / TRIGGER_TYPE_COLD_START 的分工。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T06:36:36+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 271,
+    "total_entries": 276,
     "p0_count": 115,
-    "last_updated": "2026-05-17T05:21:00+08:00",
+    "last_updated": "2026-05-17T06:36:36+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 141,
+    "pending_entries": 145,
     "updated_date": "2026-05-17",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 142
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 145
   },
-  "last_updated": "2026-05-17T05:21:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 142,
+  "last_updated": "2026-05-17T06:36:36+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 145,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }

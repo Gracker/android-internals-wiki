@@ -302,7 +302,7 @@
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
     "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
   ],
-  "review_summary": "Task9 2026-05-17 04: review 1.20；P1 2 / P2 1，入口条件与点击恢复回调链路需 Task2B 回炉；仅 1 个章节符合待审条件，未强行重审 3 天内已审章节。",
+  "review_summary": "Task9 2026-05-17 06: review 26.12；P1 2 / P2 3。需补 ApplicationExitInfo reason API 级别差异与 Android 15 ApplicationStartInfo 启动诊断入口；本轮仅 1 个章节符合 task9 pending 条件。",
   "task6_review_summary": {
     "l1_l2_fixes": 10,
     "l3_issues": 0,
@@ -1223,13 +1223,26 @@
       "reviewed_at": "2026-05-17T04:33:15+08:00",
       "log": "logs/deep-review/2026-05-17-04-deep-review.md",
       "summary": "P1 2：requestArchive 前置条件缺 installer/opt-out/system-app/launcher activity 等失败路径；Activity start unarchive listener 误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与 4.2/16.2 回跳不一致。"
+    },
+    "26.12": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 3,
+      "p3": 1,
+      "reviewed_at": "2026-05-17T06:36:36+08:00",
+      "log": "logs/deep-review/2026-05-17-06-deep-review.md",
+      "summary": "P1 2：ApplicationExitInfo reason API 级别差异未覆盖；Android 15 ApplicationStartInfo 启动诊断入口缺失。P2 3：ProfilingTrigger 常量短名、OOM trigger handler 前提、requestRunningSystemTrace 入口说明不足。",
+      "task6_result": "pass-light-edit",
+      "task6_log": "logs/review/2026-05-17-06-review.md",
+      "task6_reviewed_at": "2026-05-17T06:16:00+08:00",
+      "task6_new_rework": false
     }
   },
-  "total_review_sections": 145,
+  "total_review_sections": 146,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T06:16:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-17T06:36:36+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "06:16",
@@ -1249,7 +1262,7 @@
       "26.12": "pass-light-edit / task9_pending"
     }
   },
-  "task9_last_review": "2026-05-17T04:33:15+08:00",
+  "task9_last_review": "2026-05-17T06:36:36+08:00",
   "ready_to_publish": 196,
   "rework_history": [
     {
