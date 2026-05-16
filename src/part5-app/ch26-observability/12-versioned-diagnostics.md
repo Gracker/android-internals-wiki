@@ -60,8 +60,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: 18
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+last_task6_review_log: "logs/review/2026-05-17-06-review.md"
+last_task6_at: "2026-05-17T06:16:00+08:00"
+reviewed_date: "2026-05-17"
+reviewed_by: "openclaw-task6"
+task9_state: pending
+task6_result: pass-light-edit
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T06:04:00+08:00"
 ---
@@ -84,7 +90,7 @@ last_task2a_at: "2026-05-17T06:04:00+08:00"
 覆盖 Android 15+ `ProfilingManager` / AndroidX Profiling 的 system trace、heap dump、heap profile、stack sampling 四类采集，说明结果回调、文件归档、限流和采集成本。
 
 ### 🔹 ProfilingTrigger 与 Extension 版本
-覆盖 Android 16/API 36、extension 36.1、Android 17/API 37 的 trigger 差异，区分 `APP_FULLY_DRAWN`、`ANR`、`COLD_START`、`OOM`、`ANOMALY` 等触发器的返回物和使用场景。
+覆盖 Android 16/API 36、Extension 36.1、Android 17/API 37 的 trigger 差异，区分 `APP_FULLY_DRAWN`、`ANR`、`COLD_START`、`OOM`、`ANOMALY` 等触发器的返回物和使用场景。
 
 ### 🔹 证据归档与去重字段
 设计一套线上证据归档字段：pid、timestamp、processName、reason、triggerType、profilingType、resultFilePath、caseId、sessionId、appVersion、device、API level。说明 Java crash、native crash、ANR、OOM 和用户手动杀进程如何去重。
@@ -105,9 +111,9 @@ last_task2a_at: "2026-05-17T06:04:00+08:00"
 
 <!-- outline-end -->
 
-本节把线上诊断入口按 Android 版本重新排一遍。26.5 讲排障流程，14.7 和 8.10 讲 ProfilingManager 工具机制；这里只回答一个问题：线上问题发生在不同系统版本时，App 能从系统拿到哪类证据，证据该怎么归档，哪些情况必须降级。
+本节按 Android 版本重新整理线上诊断入口。26.5 负责排障流程，14.7 和 8.10 负责 ProfilingManager 工具机制；这里只回答一个问题：线上问题发生在不同系统版本时，App 能从系统拿到哪类证据，证据该怎么归档，哪些情况必须降级。
 
-参考书把线上问题拆成崩溃现场、卡顿现场、用户日志、上报组件和动态诊断几类，本节借鉴这个组织方式，但材料全部按 Android 10-17 的公开 API 和 AOSP 路径重写，不复用原文段落。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+参考材料把线上问题拆成崩溃现场、卡顿现场、用户日志、上报组件和动态诊断几类，本节借鉴这个组织方式，但材料全部按 Android 10-17 的公开 API 和 AOSP 路径重写，不复用原文段落。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 
 ## 三条诊断路径：退出追溯、运行时采集、事件触发
 
@@ -189,14 +195,14 @@ Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复�
 
 | profiling type | 适合场景 | 主要风险 | 结果处理 |
 |---|---|---|---|
-| `PROFILING_TYPE_SYSTEM_TRACE` | 慢启动、转场卡顿、ANR 前后线程时序 | 文件大，buffer 会覆盖或丢弃 | 归档 `.perfetto-trace`，用 Perfetto UI / SQL 分析 |
+| `PROFILING_TYPE_SYSTEM_TRACE` | 慢启动、转场卡顿、ANR 前后线程时序 | 文件大，缓冲区会覆盖或丢弃 | 归档 `.perfetto-trace`，用 Perfetto UI / SQL 分析 |
 | `PROFILING_TYPE_JAVA_HEAP_DUMP` | 泄漏、Java 堆顶满、OOM 复盘 | 采集期间暂停和内存抖动明显 | 归档 `.hprof`，进入 heap dump 工具链 |
 | `PROFILING_TYPE_HEAP_PROFILE` | 分配增长、内存抖动来源 | 采样有偏差，时间窗口要提前覆盖 | 归档 heap profile trace |
 | `PROFILING_TYPE_STACK_SAMPLING` | CPU 消耗热点、较长窗口低成本观察 | 采样不保证覆盖短函数 | 归档 stack sample trace |
 
 `requestProfiling()` 的结果通过 `ProfilingResult` 回调返回。成功时读取 `getResultFilePath()`，失败时读取 `getErrorCode()` 和 `getErrorMessage()`。AOSP `ProfilingResult` 把失败分成 system rate limit、process rate limit、profiling already in progress、执行失败、post-processing 失败、磁盘不足、请求非法等。线上系统不能只记录“采集失败”，要把这些错误码落库，否则值班同学无法判断是系统保护、并发采集、磁盘空间还是参数错误。[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingResult.java]
 
-官方文档说明，ProfilingManager 存在 rate limiter，用来降低重复 profiling 对设备性能的影响；调试时可以用 `device_config put profiling_testing rate_limiter.disabled true` 关闭 App process 和 system rate limiter。线上版本不能依赖调试开关，必须有自己的远程开关、采样比例、单用户频率上限和文件大小上限。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected][已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/debug-mode]
+官方文档说明，ProfilingManager 存在 rate limiter，用来降低重复 profiling 对设备性能的影响；调试时可以用 `device_config put profiling_testing rate_limiter.disabled true` 关闭 App 进程级和系统级 rate limiter。线上版本不能依赖调试开关，必须有自己的远程开关、采样比例、单用户频率上限和文件大小上限。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected][已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/debug-mode]
 
 结果文件路径也不要硬编码。官方文档给过类似 `/data/user/0/<app>/files/profiling/profile_<tag>_<datetime>.perfetto-trace` 的示例，同时明确要求用 `ProfilingResult#getResultFilePath()` 找文件，因为目录结构可能变化。归档层只保存返回路径、文件摘要、大小、采集类型、tag、caseId 和上传状态。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze]
 
@@ -208,7 +214,7 @@ Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“�
 |---|---|---|---|---|
 | API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `COLD_START` |
 | API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 前后线程、Binder、锁等待 | 不是 ANR 文本 trace 的替代品 |
-| Extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | 要用 extension version gating |
+| Extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | 要用 Extension 版本做运行时判断 |
 | API 37 | `TRIGGER_TYPE_COLD_START` | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 无 `reportFullyDrawn()` 时按系统默认窗口截止 |
 | API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场 |
 | API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 公开文档没有给出阈值 |
@@ -218,7 +224,7 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 
 `TRIGGER_TYPE_OOM` 处理的是 Java `OutOfMemoryError`，返回 Java heap dump。它不覆盖系统内存压力下的 LMK，也不等同于 `ApplicationExitInfo.REASON_LOW_MEMORY`。OOM 治理策略详见 20.5；这里的重点是把 heap dump 文件归档到同一份 case 里，和异常时间、版本、设备、前后台状态关联。[已验证: 官方文档, developer.android.com/about/versions/17/features]
 
-`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的 artifact 不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[待验证: Android 17 最终 API 37 SDK 发布后复核 trigger 常量和 artifact 细节]
+`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[待验证: Android 17 最终 API 37 SDK 发布后复核 trigger 常量和结果产物细节]
 
 ## 证据归档与去重字段
 
@@ -260,7 +266,7 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 
 Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库路径、URL 片段和用户操作时序；heap dump 可能包含对象字段、缓存内容、请求参数和页面状态。采集前要满足四个条件：远程开关可关、用户或合规策略允许、字段经过脱敏、文件在 App 私有目录加密或受访问控制保护。[已验证: 官方文档, developer.android.com/privacy-and-security/risks/log-info-disclosure]
 
-采集成本也要显式落到配置。System trace 受 buffer 大小和时长影响，stack sampling 受频率影响，heap dump 会带来暂停和内存峰值。建议默认只对灰度用户或指定 case 开启；单用户单日限制次数；Wi-Fi / 充电条件作为可选约束；上传前检查文件大小；服务端设置保留期限和访问审计。
+采集成本也要显式落到配置。System trace 受缓冲区大小和时长影响，stack sampling 受频率影响，heap dump 会带来暂停和内存峰值。建议默认只对灰度用户或指定 case 开启；单用户单日限制次数；Wi-Fi / 充电条件作为可选约束；上传前检查文件大小；服务端设置保留期限和访问审计。
 
 对排障系统来说，最危险的设计是“问题越多，采集越多”。系统 rate limiter 会挡掉一部分 ProfilingManager 请求，但 App 自己也要在 case、用户、版本、设备四个维度限流。命中限流时，仍然要上报一条轻量事件，写明跳过原因，避免值班同学误判为设备没有发生问题。
 
@@ -272,6 +278,6 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 ## 待复核项
 
-- `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 AOSP main 未确认该 public constant，后续以正式 SDK 文档为准。
-- Android 17 `ANOMALY` / `APP_COMPAT`：本轮按官方 features 和 8.10 既有复核写入，API 37 final 后复核常量值、tag 规则和 artifact 类型。
-- Extension 36.1：实际接入时必须在运行时检查 extension version，本节不写死具体设备覆盖率。
+- `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 AOSP main 未确认该公开常量，后续以正式 SDK 文档为准。
+- Android 17 `ANOMALY` / `APP_COMPAT`：本轮按官方 features 和 8.10 既有复核写入，API 37 final 后复核常量值、tag 规则和结果产物类型。
+- Extension 36.1：实际接入时必须在运行时检查 Extension 版本，本节不写死具体设备覆盖率。
