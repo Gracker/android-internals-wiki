@@ -12,7 +12,7 @@ tags: [perfetto, cpu-frequency, dvfs, power, scheduling]
 related_chapters: ["5.2", "5.4", "11.1", "13.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
-gap_source: "素材驱动/官方文档/AOSP结构"
+gap_source: "素材驱动/官方文档/AOSP 结构"
 material_paths:
   - "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
@@ -33,7 +33,15 @@ sources:
   - type: obsidian
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
 pipeline_stage: "task2b_pending"
-task6_state: "pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-16"
+last_task6_at: "2026-05-16T10:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-10-review.md"
+task6_l1_l2_fixes: 7
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 7 处；无新增 L3/L4 回炉项，既有 Task9 技术回炉项不由 Task6 裁决。"
 task9_state: "reviewed"
 task2b_state: "pending"
 task9_result: "needs-rework"
@@ -64,7 +72,7 @@ last_task9_review_log: "logs/deep-review/2026-05-16-09-deep-review.md"
 覆盖短突发任务、连续渲染负载、后台批处理三类场景，说明频率爬升、降频滞后和空闲状态恢复成本如何影响性能判断。
 
 ### 🔹 Perfetto SQL：从 counter 表重建频率时间线
-给出 `counter` + `cpu_counter_track` 的查询方向，后续正文补充可直接复用的 SQL 模板和结果解释方式。
+给出 `counter` + `cpu_counter_track` 的查询方向，正文提供可直接复用的 SQL 模板和结果解释方式。
 
 ### 🔹 端侧 AI 推理中的 CPU/GPU governor 协同问题
 基于移动端 LLM DVFS 论文素材，说明 CPU、GPU、内存 governor 分开调节时可能出现的能效错配，并标注设备与模型边界。
@@ -81,7 +89,7 @@ last_task9_review_log: "logs/deep-review/2026-05-16-09-deep-review.md"
 对比本地 Perfetto、Android Studio System Profiler、ProfilingManager 返回 trace 的字段可见性和隐私裁剪边界。
 
 ### 🔸 典型 SQL 模板集
-后续可拆出 CPU 频率分布、Running 时间加权频率、cluster 迁移前后频率变化、渲染帧窗口内频率统计四类模板。
+可拆出 CPU 频率分布、Running 时间加权频率、cluster 迁移前后频率变化、渲染帧窗口内频率统计四类模板。
 
 <!-- outline-end -->
 
@@ -175,7 +183,7 @@ FROM cpu_freq
 ORDER BY cpu, freq;
 ```
 
-结果读法很直接：把每个 `cpu` 的频点集合做横向对比。集合完全相同且频率变化同步的一组 CPU，可作为同一 cluster 处理；只有最高频率高低差异时，再结合设备 SoC 拓扑确认小核、大核和超大核的编号。
+结果要按频点集合读：把每个 `cpu` 的频点集合做横向对比。集合完全相同且频率变化同步的一组 CPU，可作为同一 cluster 处理；只有最高频率高低差异时，再结合设备 SoC 拓扑确认小核、大核和超大核的编号。
 
 如果 trace 里没有 `cpu_freq` 表数据，可以退回设备 sysfs：
 
@@ -207,7 +215,7 @@ DVFS 的目标是在性能和功耗之间选频率。Linux 文档把这件事拆
 
 后台压缩、数据库迁移、日志整理这类任务对单帧时序不敏感，但会拉长 CPU active 时间。频率过低时，单次任务耗时拉长，CPU 更晚回到 idle；频率过高时，任务结束更快，但瞬时功耗和热量上升。哪种更省电，取决于任务类型、cluster 能效曲线和 idle state 恢复成本。
 
-CPUIdle 文档把 idle state 的两个参数拆得很清楚：target residency 表示进入该状态至少要停留多久才划算，exit latency 表示从该状态恢复执行的最坏时间。后台任务如果频繁把 CPU 从深 idle 拉醒，问题常常不在单次 CPU 频率，而在唤醒频率和任务批量化策略。
+CPUIdle 文档列出两个和性能判断直接相关的参数：target residency 表示进入该状态至少要停留多久才划算，exit latency 表示从该状态恢复执行的最坏时间。后台任务如果频繁把 CPU 从深 idle 拉醒，问题常常不在单次 CPU 频率，而在唤醒频率和任务批量化策略。
 
 [已验证: 官方文档, docs.kernel.org/admin-guide/pm/cpuidle.html]
 
@@ -298,7 +306,7 @@ ORDER BY running_ms DESC;
 
 这组结论不能外推成“LLM 推理都要锁高频”。它的设备边界是 Pixel 7 / Pixel 7 Pro，SoC 是 Google Tensor G2，模型和框架以论文实验为准。放到 Android 性能分析里，更稳的用法是把它当成一个提醒：端侧 AI 推理要同时看 CPU 频率、GPU 频率、内存带宽、温控和每 token 延迟；只看 CPU Frequency 轨，会漏掉多组件 governor 之间的错配。
 
-[自动发现] 对端侧 AI trace，建议额外记录 GPU counter、thermal 事件、CPU sched、`cpufreq`、内存带宽或厂商可用的 DDR 频率数据。若设备不暴露 GPU/DDR 频率，CPU 侧结论只能标成局部证据。
+分析端侧 AI 推理 trace 时，建议额外记录 GPU counter、thermal 事件、CPU sched、`cpufreq`、内存带宽或厂商可用的 DDR 频率数据。若设备不暴露 GPU/DDR 频率，CPU 侧结论只能标成局部证据。
 
 ## 误判清单
 
@@ -331,7 +339,7 @@ Perfetto CPU Frequency 分析只覆盖“观察到的频率结果”。要解释
 
 ## SQL 模板集
 
-这组模板适合后续单独整理为查询片段。
+这组模板可作为独立查询片段维护。
 
 | 模板 | 回答的问题 | 依赖表 |
 |---|---|---|

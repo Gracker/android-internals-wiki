@@ -276,15 +276,13 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
-  "review_summary": "Task9 2026-05-16 09: review 13.13；P1 2（采集配置缺 sched 事件、SQL cpu/ucpu schema 口径），P2 2；无自动晋升。",
+  "review_summary": "Task6 2026-05-16 10: review 13.13；L1/L2 小修 7 处；无新增 L3/L4 回炉项；既有 Task9 queue 保持 task2b_pending；无自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 7,
     "l3_issues": 0,
     "l4_issues": 0,
     "total_issues": 0,
-    "auto_promotions": [
-      "21.7"
-    ]
+    "auto_promotions": []
   },
   "issues_by_section": {
     "1.6": {
@@ -1098,29 +1096,21 @@
   "total_review_sections": 133,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T10:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-16T10:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "08:16",
+    "time": "10:10",
     "sections": [
-      "19.26",
-      "16.5",
-      "21.7",
-      "22.12"
+      "13.13"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/26-hybrid-apm.md",
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch21-startup/07-multiprocess-startup.md",
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
     ],
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "auto_promotions": [
-      "21.7"
-    ],
-    "log": "logs/review/2026-05-16-08-review.md"
+    "auto_promotions": [],
+    "log": "logs/review/2026-05-16-10-review.md"
   },
   "task9_last_review": "2026-05-16T09:20:00+08:00",
   "ready_to_publish": 194,
@@ -3002,6 +2992,16 @@
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "13.13": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-16T10:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 85,
+      "last_task6_review_log": "logs/review/2026-05-16-10-review.md"
     }
   },
   "task2b_rounds": [
@@ -3067,42 +3067,28 @@
   "last_task2a_at": "2026-05-16T10:04:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-  "last_task6_review": "2026-05-16T08:16:00+08:00",
+  "last_task6_review": "2026-05-16T10:10:00+08:00",
   "last_task6_sections": [
-    "19.26",
-    "16.5",
-    "21.7",
-    "22.12"
+    "13.13"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch19-apm/26-hybrid-apm.md",
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part5-app/ch21-startup/07-multiprocess-startup.md",
-    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
-  "last_task6_at": "2026-05-16T08:16:00+08:00",
+  "last_task6_at": "2026-05-16T10:10:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-16T08:16:00+08:00",
-    "log": "logs/review/2026-05-16-08-review.md",
+    "reviewed_at": "2026-05-16T10:10:00+08:00",
+    "log": "logs/review/2026-05-16-10-review.md",
     "sections": [
-      "19.26",
-      "16.5",
-      "21.7",
-      "22.12"
+      "13.13"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/26-hybrid-apm.md",
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part5-app/ch21-startup/07-multiprocess-startup.md",
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
     ],
-    "mode": "task2b-fixed-recheck+first-review",
-    "l1_l2_fixes": 10,
+    "mode": "first-review",
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "auto_promotions": [
-      "21.7"
-    ],
-    "notes": "19.26/16.5/21.7 为 Task2B fixed 后复审；22.12 为首次 Task6 写作 review。22.12 既有 Task9 技术回炉项未由 Task6 裁决。"
+    "auto_promotions": [],
+    "notes": "仅 13.13 符合 status=ready-for-review 且 task6_state=pending 的待审条件；Task9 已写入技术回炉队列，Task6 本轮只做写作质量审查与轻量小修。"
   },
   "last_task9_reviewed_files": [
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
@@ -3111,13 +3097,10 @@
   "last_task2a_result": "gap-mining-created-drafts",
   "ready-to-publish": 194,
   "last_task2a_processed_section": "22.12",
-  "task6_last_review_at": "2026-05-16T08:16:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-08-review.md",
+  "task6_last_review_at": "2026-05-16T10:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-10-review.md",
   "task6_last_review_sections": [
-    "19.26",
-    "16.5",
-    "21.7",
-    "22.12"
+    "13.13"
   ],
   "sections_status": {
     "22.11": {
@@ -3401,6 +3384,32 @@
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "13.13": {
+      "title": "Perfetto CPU 频率与 DVFS 关联分析",
+      "file": "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "gap_source": "素材驱动/官方文档/AOSP 结构",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T10:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-10-review.md",
+      "task6_l1_l2_fixes": 7,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 7 处；无新增 L3/L4 回炉项，既有 Task9 技术回炉项不由 Task6 裁决。",
+      "last_task9_at": "2026-05-16T09:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-09-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 85,
+      "queue_entry": "task9-13.13-perfetto-sched-sql-schema"
     }
   },
   "task2a_last_processed": {
