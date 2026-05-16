@@ -42,8 +42,15 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: "2026-05-16"
+reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-16"
+last_task6_at: "2026-05-16T15:12:00+08:00"
+task6_review_notes: "2026-05-16 task6 review: 完成 L1/L2 轻修 4 处；无 Task2B 回炉项，进入 Task9 技术审查。"
+task9_state: pending
 ---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
@@ -94,7 +101,7 @@ marker 字段只保留判定所需的信息：
 | `session_id` | 关联本次启动、本地 crash envelope 和后续补偿记录 | UUID 或递增号，不含用户标识 |
 | `version_code` / `version_name` | 版本升级后切断旧计数 | 版本升级可清理旧 SafeMode 状态 |
 | `process_name` / `pid` | 区分主进程与子进程 | pid 只能作为辅助，进程重启后会变化 |
-| `started_elapsed_ms` / `started_wall_time_ms` | 判断 marker 是否过期，并与 `ApplicationExitInfo.timestamp` 对齐 | `elapsedRealtime()` 用于本地过期判断，墙上时间只用于系统记录匹配 |
+| `started_elapsed_ms` / `started_wall_time_ms` | 判断 marker 是否过期，并与 `ApplicationExitInfo.timestamp` 匹配 | `elapsedRealtime()` 用于本地过期判断，墙钟时间只用于系统记录匹配 |
 | `startup_route` | 区分不同拉起路径 | 只写枚举，不写 URL、订单号、搜索词 |
 | `stage` | `launching`、`started`、`degraded` 等状态 | 状态变化必须原子落盘 |
 | `safe_mode_level` | 本次是否降级启动 | 用于恢复后复盘 |
@@ -160,7 +167,7 @@ ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `Applicati
 | 字段 / API | 用途 | 边界 |
 | --- | --- | --- |
 | `reason` / `status` / `importance` | 判断 Java Crash、Native Crash、ANR、LMK、用户请求等退出类型 | reason 只能说明系统分类，不能替代业务归因 |
-| `timestamp` / `pid` / `processName` | 与启动 marker 对齐 | pid 复用风险低但仍要结合时间窗口 |
+| `timestamp` / `pid` / `processName` | 与启动 marker 匹配 | pid 复用风险低但仍要结合时间窗口 |
 | `getProcessStateSummary()` | 读取进程死亡前写入的 128 字节状态摘要 | 官方要求不要写 PII / SPII，只适合放枚举和短摘要 |
 | `getTraceInputStream()` | 读取 ANR trace；API 31+ Native tombstone protobuf | trace 保存在全局环形缓冲里，可能返回 null |
 
@@ -274,7 +281,7 @@ SafeMode 事件本身也要进入 Crash 上报体系。建议至少包含：进�
 4. rename 到正式文件名。
 5. 下次读取时忽略残留 `.new`，必要时保留 `.bak` 做恢复。
 
-Android `AtomicFile` 已覆盖主要路径，但它不替你解决多进程并发。多进程写 marker 时要加文件锁，或按进程拆文件后由主进程汇总。Crash handler 里不要争用全局锁；锁被崩溃线程持有时，handler 再尝试加锁会卡死。
+Android `AtomicFile` 已覆盖主要路径；多进程写 marker 时要加文件锁，或按进程拆文件后由主进程汇总。Crash handler 里不要争用全局锁；锁被崩溃线程持有时，handler 再尝试加锁会卡死。
 
 Native signal handler 的落盘边界更窄。安全做法是提前准备固定大小缓冲区和文件描述符，崩溃时只写最小二进制摘要；完整日志、符号化、压缩和上传都放到下次启动。
 
