@@ -58,17 +58,17 @@ related_chapters:
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: 2026-05-14T07:24:00+08:00
-task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1；API 37 pending reason 只提供聚合 DEVICE_STATE 常量，getAppStandbyBucket() 查询自身不需要 PACKAGE_USAGE_STATS；WorkManager 调度器示例需补 AndroidX 源码锚点。"
+task9_review_notes: "2026-05-14 task9 deep-review completed-by-task2b。P0 已修复：API 37 pending reason 改为 PENDING_JOB_REASON_DEVICE_STATE 聚合常量，getAppStandbyBucket() 权限描述修正（查询自身无需权限）；禁用词清理（真正×1）。"
 <!-- AIW-源码调研-2026-05-16 -->
 **勘误**：第 524 行"需要 `PACKAGE_USAGE_STATS` 权限"描述不准确。`UsageStatsManager.getAppStandbyBucket()` 在 API 28 引入，**查询自身 App 的 Standby Bucket 不需要任何权限**。`PACKAGE_USAGE_STATS` 权限的设计目的是允许 App 查询第三方 App 的使用统计数据（用于"屏幕使用时间"类功能）。当 App 查询自身的 Bucket 时，系统通过 `Binder.getCallingUid()` 直接返回该 UID 对应的 Standby Bucket，不触发权限检查。
 
-正确表述：`UsageStatsManager.getAppStandbyBucket()` 查询自身 App 的 Bucket 不需要任何权限；查询其他 App 的 Bucket 才需要 `PACKAGE_USAGE_STATS` 权限（需用户在设置页面手动授权）。
+正确表述：`UsageStatsManager.getAppStandbyBucket()` 查询自身 App 的 Bucket 不需要任何权限；查询其他 App 的 Bucket 才需要 `PACKAGE_USAGE_STATS` 权限（需用户在设置页面手动授权）。L529 正文已同步修正。
 -->
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
@@ -148,7 +148,7 @@ JobScheduler 在 Android 16 的代码已经搬到 `frameworks/base/apex/jobsched
 
 当某个 Controller 检测到状态变化时（比如设备开始充电），它会通知 JobSchedulerService 重新评估所有符合条件的任务。
 
-**JobStore** 负责任务的持久化。带 `setPersisted(true)` 的 job 会以 XML 形式存储在 `/data/system/job/jobs.xml` 中，系统重启后可以由 JobStore 恢复。这一点是 JobScheduler 相比 AlarmManager 方案的一条实际差异。alarm 本身不会跨 reboot 保留，App 通常要在 `BOOT_COMPLETED` 之后自行重建调度；`BroadcastReceiver` 组件不会因为 `PendingIntent` 而“丢失”，真正消失的是系统里那条已经注册的 alarm。
+**JobStore** 负责任务的持久化。带 `setPersisted(true)` 的 job 会以 XML 形式存储在 `/data/system/job/jobs.xml` 中，系统重启后可以由 JobStore 恢复。这一点是 JobScheduler 相比 AlarmManager 方案的一条实际差异。alarm 本身不会跨 reboot 保留，App 通常要在 `BOOT_COMPLETED` 之后自行重建调度；`BroadcastReceiver` 组件不会因为 `PendingIntent` 而“丢失”，消失的是系统里那条已经注册的 alarm。
 
 Android 16 的真实源码路径按方法名看更稳，下面是流程摘要，不把它写成可编译源码片段：
 
@@ -526,7 +526,7 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 
 1. 避免在后台过度活动（这是被分到低 Bucket 的根本原因）
 2. 用户交互触发临时 Bucket 提升，利用这个窗口执行积压任务
-3. 通过 `UsageStatsManager.getAppStandbyBucket()` 监控自己的 Bucket 状态（需要 `PACKAGE_USAGE_STATS` 权限）
+3. 通过 `UsageStatsManager.getAppStandbyBucket()` 监控自己的 Bucket 状态（查询自身无需权限）
 
 ## 版本差异与兼容性
 
@@ -587,18 +587,11 @@ Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 
 
 **能效与设备状态相关挂起原因**
 
-API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中，除了前文提到的 `PENDING_JOB_REASON_QUOTA`（配额耗尽），还有几个和能效、设备状态直接相关的挂起原因：
+API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中，除了前文提到的 `PENDING_JOB_REASON_QUOTA`（配额耗尽），还有和能效、设备状态相关的挂起原因。
 
-- `PENDING_JOB_REASON_DEVICE_STATE_THERMAL`：设备处于热限流状态，系统暂停后台 job 以降温
-<!-- AIW-源码调研-2026-05-16 -->
-**勘误**（Task9 P0 回炉项）：第 587-588 行描述 `PENDING_JOB_REASON_DEVICE_STATE_THERMAL` 和 `PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER` 为独立设备状态常量，但 API 37 `getPendingJobReasonStats()` 返回的是聚合 DEVICE_STATE 原因（key 为 DEVICE_STATE 聚合常量），不是独立设备状态。原文"分别提供每个 DEVICE_STATE_* 原因"的表述存在歧义，实际 API 返回的是 DEVICE_STATE 分类下的累计时长，而非每个设备状态的独立原因数组。
+`PENDING_JOB_REASON_DEVICE_STATE` 是 API 37 的聚合常量，覆盖了 Doze、省电模式、内存压力、热限流等多种设备状态。API 返回的 map 中以 `DEVICE_STATE` 作为 key，值是累计 pending 时长，不是按 `THERMAL`/`BATTERY_SAVER` 等细分原因拆开的独立数组。
 
-来源：`developer.android.com/about/versions/17/features` 描述该 API "returns a map of reasons why the job was in a pending execution state and their respective cumulative pending durations"——聚合原因 + 累计时长 map，而非独立状态数组。
--->
-- `PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER`：省电模式开启，后台任务被挂起
-- `PENDING_JOB_REASON_QUOTA`：App 在当前 standby bucket 下的执行配额已用尽
-
-在诊断"job 为什么一直不跑"时，如果这些设备状态相关 reason 对应的 Duration 很长，瓶颈不在 job 自身的约束设置，而是系统级的能效策略。应对方向是降低后台任务的总 CPU 和网络开销，或等待设备状态恢复。
+在诊断"job 为什么一直不跑"时，如果 DEVICE_STATE 相关 reason 对应的 Duration 很长，瓶颈不在 job 自身的约束设置，而是系统级的能效策略。应对方向是降低后台任务的总 CPU 和网络开销，或等待设备状态恢复。
 
 **聚合调试统计**
 

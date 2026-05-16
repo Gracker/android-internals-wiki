@@ -4348,7 +4348,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/03-art-memory.md"
@@ -4376,7 +4376,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T05:50:18+08:00",
       "reason": "[Deep Tech Review] 4.3 仍有 ART CC/CMC 源码口径问题：Brooks pointer 误写、Generational CMC 配置/比例缺公开源码锚点。",
-      "last_reviewed_at": "2026-05-17T00:32:12+08:00"
+      "last_reviewed_at": "2026-05-17T00:32:12+08:00",
+      "completed_date": "2026-05-17T03:16:51",
+      "completed_reason": "Task 2B 回炉修复: P0 CC 读屏障从 Brooks pointer 修正为 Baker read barrier(kUseBakerReadBarrier), generational_cmc_supported 未核实变量名删除改为通用描述, 年轻代 25%-40% 比例降级为待验证"
     },
     {
       "id": "task9-2026-05-14-4-5-tech-review",
@@ -4587,10 +4589,12 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T07:24:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
-      ]
+      ],
+      "completed_date": "2026-05-17T03:16:51",
+      "completed_reason": "Task 2B 回炉修复: P0 DEVICE_STATE_THERMAL/BATTERY_SAVER 替换为 PENDING_JOB_REASON_DEVICE_STATE 聚合常量, P0 getAppStandbyBucket 权限描述修正(查询自身无需 PACKAGE_USAGE_STATS), 删除勘误注释块, 禁用词清理(真正×1)"
     },
     {
       "id": "task9-20260514-16.5-profilingtrigger-api-level",
