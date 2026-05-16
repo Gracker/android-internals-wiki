@@ -1,6 +1,6 @@
 {
-  "total": 300,
-  "draft": 0,
+  "total": 301,
+  "draft": 1,
   "ready-for-review": 103,
   "finalized": 197,
   "task9_result": "needs-rework",
@@ -1226,8 +1226,8 @@
   "total_review_sections": 145,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T04:33:15+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-17T05:21:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "01:15",
@@ -3381,6 +3381,18 @@
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T05:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
+    },
+    "26.12": {
+      "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+      "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "gap_source": "研究素材/官方文档/章节深挖",
+      "gap_score": 18,
+      "queue_priority": 80,
+      "material_count": 5
     }
   },
   "task2b_rounds": [
@@ -3449,9 +3461,9 @@
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "total_review_files": 145,
-  "last_task2a_at": "2026-05-17T01:12:00+08:00",
-  "last_task2a_section": "26.11",
-  "last_task2a_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
+  "last_task2a_at": "2026-05-17T05:21:00+08:00",
+  "last_task2a_section": "26.12",
+  "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
     "1.20"
@@ -3490,7 +3502,7 @@
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
   "last_task9_at": "2026-05-17T04:33:15+08:00",
-  "last_task2a_result": "draft-ready-for-review",
+  "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-17T05:10:00+08:00",
@@ -4002,6 +4014,18 @@
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T05:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
+    },
+    "26.12": {
+      "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+      "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "gap_source": "研究素材/官方文档/章节深挖",
+      "gap_score": 18,
+      "queue_priority": 80,
+      "material_count": 5
     }
   },
   "task2a_last_processed": {
@@ -4012,21 +4036,13 @@
     "mode": "gap-mining"
   },
   "task2a_last_gap_mining": {
-    "at": "2026-05-16T18:08:00+08:00",
+    "date": "2026-05-17",
     "created_sections": [
-      "5.13"
+      "26.12"
     ],
-    "created_files": [
-      "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md"
-    ],
-    "candidate_count": 5,
-    "qualified_count": 1,
-    "rejected_as_duplicate_or_existing": [
-      "Generational CMC/userfaultfd -> 4.8/4.3",
-      "ApplicationExitInfo/ProfilingManager -> 26.5/26.9/26.10/8.10",
-      "MTE ASYMM -> 20.11/14.3",
-      "安装优化/dexopt -> 1.9/16.6"
-    ]
+    "qualified_candidates": 1,
+    "candidate_count": 4,
+    "mode": "gap-mining"
   },
   "task9_last_sections": [
     "1.20"
