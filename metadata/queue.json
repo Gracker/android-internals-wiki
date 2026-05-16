@@ -8411,6 +8411,38 @@
         }
       ],
       "original_review_log": "logs/review/2026-05-16-13-review.md"
+    },
+    {
+      "id": "task9-3.9-perfetto-input-stdlib-schema-20260516",
+      "section": "3.9",
+      "section_title": "端到端输入延迟预算与感知阈值",
+      "priority": 85,
+      "title": "Perfetto android.input stdlib 字段口径错误",
+      "description": "正文把 android_input_event_dispatch 写成包含 display/window/dispatch 起止字段的延迟表；实际延迟字段在 android_input_events，display_id 在 motion/key 原始事件视图，dispatch 视图只补 window_id/vsync_id。",
+      "issue_type": "source-code-accuracy-metric-schema-cross-reference",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+      ],
+      "reason": "[Deep Tech Review] Perfetto android.input stdlib 表字段口径错误，需与 13.8 输入延迟 SQL 章节对齐。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "指标口径/Perfetto stdlib schema",
+          "location": "L131；交叉引用 13.8「android_input_events 表族」",
+          "detail": "正文把 display、window、dispatch 开始与结束字段归到 android_input_event_dispatch。Perfetto stdlib 当前公开口径中，android_input_event_dispatch 仅包含 id/event_id/arg_set_id/vsync_id/window_id；dispatch_ts/dispatch_dur、total_latency_dur、end_to_end_latency_dur 属于 android_input_events，display_id 来自 android_motion_events/android_key_events。",
+          "suggestion": "改成以 android_input_events 作为输入延迟主表；android_input_event_dispatch 只用于窗口 ID 与 vsync 决策补充；display/source/action 走 motion/key 事件表，并与 13.8 的字段表保持一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T13:20:00+08:00"
     }
   ],
   "metadata": {

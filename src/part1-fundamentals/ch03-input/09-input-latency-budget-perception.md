@@ -42,8 +42,12 @@ task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: openclaw-task9
+task2b_state: pending
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值

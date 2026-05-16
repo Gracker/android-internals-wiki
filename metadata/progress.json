@@ -282,7 +282,7 @@
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
     "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
   ],
-  "review_summary": "Task6 2026-05-16 13: review 3.8/3.9；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 风险标注并保持 Task2B 回炉。",
+  "review_summary": "Task9 2026-05-16 13: review 3.9；发现 1 个 P1 Perfetto stdlib schema/交叉引用口径错误，另有 2 个 P2 数据支撑建议。",
   "task6_review_summary": {
     "l1_l2_fixes": 25,
     "l3_issues": 0,
@@ -1119,13 +1119,26 @@
         "source": "task6-review",
         "log": "logs/review/2026-05-16-13-review.md"
       }
-    ]
+    ],
+    "3.9": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0,
+      "reviewed_at": "2026-05-16T13:20:00+08:00",
+      "log": "logs/deep-review/2026-05-16-13-deep-review.md",
+      "summary": "P1 1：L131 android_input_event_dispatch 字段口径错误，需改为 android_input_events 主表并与 13.8 对齐；P2 2：预算表与 HCI 阈值缺来源条件。",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-16T13:11:00+08:00",
+      "task6_log": "logs/review/2026-05-16-13-review.md",
+      "task6_new_rework": false
+    }
   },
   "total_review_sections": 136,
   "next_review_candidates": [],
   "ready_for_review": 97,
-  "last_updated": "2026-05-16T13:11:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-16T13:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "13:11",
@@ -1146,7 +1159,7 @@
     "log": "logs/review/2026-05-16-13-review.md",
     "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。"
   },
-  "task9_last_review": "2026-05-16T12:31:00+08:00",
+  "task9_last_review": "2026-05-16T13:20:00+08:00",
   "ready_to_publish": 195,
   "rework_history": [
     {
@@ -3010,10 +3023,10 @@
       "title": "端到端输入延迟预算与感知阈值",
       "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
-      "queue_priority": 80,
+      "queue_priority": 85,
       "gap_source": "研究素材/官方文档",
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
@@ -3023,7 +3036,12 @@
       "reviewed_date": "2026-05-16",
       "reviewed_by": "openclaw-task6",
       "last_task6_at": "2026-05-16T13:11:00+08:00",
-      "task9_state": "pending"
+      "task9_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-16-13-review.md",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-16T13:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-13-deep-review.md",
+      "task2b_state": "pending"
     },
     "13.14": {
       "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
