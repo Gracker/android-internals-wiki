@@ -8862,21 +8862,94 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T00:32:12+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-13-15-buffer-release-channel-version",
+      "section": "13.15",
+      "section_title": "BufferQueue 阻塞的 Perfetto 识别",
+      "title": "BufferQueue 阻塞的 Perfetto 识别",
+      "priority": 85,
+      "reason": "[Deep Tech Review][版本差异] §Android 14 BUFFER_RELEASE_CHANNEL 影响与 AOSP release branch 不一致；android14-release/android15-release 未包含该 flag，android16-release/main 才包含。",
+      "description": "[Deep Tech Review][版本差异] §Android 14 BUFFER_RELEASE_CHANNEL 影响与 AOSP release branch 不一致；android14-release/android15-release 未包含该 flag，android16-release/main 才包含。",
+      "issue_type": "deep-tech-review",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L76、L105、L182-L186 Android 14 BUFFER_RELEASE_CHANNEL 影响",
+          "detail": "章节引用 android14-release 作为已验证锚点，同时写“Android 14 之后部分分支会走 BUFFER_RELEASE_CHANNEL”。复核 AOSP release branch：android14-release 与 android15-release 的 BufferQueueProducer.cpp 均无 BUFFER_RELEASE_CHANNEL，android16-release/main 才出现该 flag。当前版本口径会把 Android 14/15 设备的 BufferQueue 唤醒机制讲错。",
+          "suggestion": "把标题和正文改为“Android 16+/main BUFFER_RELEASE_CHANNEL 待验证”或给出 release branch 矩阵；正文只把 android14-release 作为传统 mDequeueCondition 路径锚点，删除“Android 14 引入”口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T01:36:14+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-26-11-ebpf-binder-version-reply",
+      "section": "26.11",
+      "section_title": "eBPF 在线追踪与 Binder 语义重建",
+      "title": "eBPF 在线追踪与 Binder 语义重建",
+      "priority": 95,
+      "reason": "[Deep Tech Review][版本差异/原理断裂] frontmatter 把 Android 17 标成 API 36；ANR 段落把 WDBind 写成可直接给出 request/reply 时间差，但引用材料说明 reply 事务解析未覆盖。",
+      "description": "[Deep Tech Review][版本差异/原理断裂] frontmatter 把 Android 17 标成 API 36；ANR 段落把 WDBind 写成可直接给出 request/reply 时间差，但引用材料说明 reply 事务解析未覆盖。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异",
+          "location": "L6 applicable_versions",
+          "detail": "frontmatter 写为 Android 12 (API 31) - Android 17 (API 36)。项目内 Android 16 对应 API 36，Android 17 对应 API 37；该元数据会误导版本适用范围。",
+          "suggestion": "若只覆盖已验证公开材料，改为 Android 12 (API 31) - Android 16 (API 36)；若保留 Android 17，改为 API 37 并补 Android 17/GKI/BPF 行为验证来源。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/数据支撑",
+          "location": "L147、L181 WDBind reply 边界与 ANR 场景",
+          "detail": "正文先写 WDBind 对 reply 事务可能解析不完整，随后又说 Binder 事务日志可以补“请求和 reply 的时间差”。本地 WOOTdroid 精读材料明确“当前实现不处理 transaction reply”，论文摘要也只承诺捕获 Binder parcels 并按签名表解码，不足以支撑 reply 语义或 request/reply 端到端耗时结论。",
+          "suggestion": "把 ANR 段落改成“可记录 outgoing transaction 元数据 + ioctl enter/exit 阻塞时长”；reply payload/语义解析单独标 [待验证]，如要保留 request/reply latency，需要补 raw_syscalls:sys_exit、BR_REPLY 或 binder driver 事件的证据链。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T01:36:14+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 266,
-    "p0_count": 44,
-    "last_updated": "2026-05-17T01:12:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 140,
+    "total_entries": 269,
+    "p0_count": 115,
+    "last_updated": "2026-05-17T01:36:14+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 142,
     "updated_date": "2026-05-17",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 140
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 142
   },
-  "last_updated": "2026-05-17T01:12:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 140,
+  "last_updated": "2026-05-17T01:36:14+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 142,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }

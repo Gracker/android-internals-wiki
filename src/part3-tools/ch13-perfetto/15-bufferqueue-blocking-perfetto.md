@@ -9,12 +9,12 @@ applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
 confidence: medium
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
@@ -46,6 +46,12 @@ source_refs:
   - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
   - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
   - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueConsumer.cpp
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_at: "2026-05-17T01:36:14+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
+task2b_state: pending
+task2b_result: pending
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别

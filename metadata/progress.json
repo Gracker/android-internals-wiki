@@ -1215,8 +1215,8 @@
   "total_review_sections": 144,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T01:15:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-17T01:36:14+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "01:15",
@@ -1239,7 +1239,7 @@
       "26.11": "pass-light-edit / task9_pending"
     }
   },
-  "task9_last_review": "2026-05-17T00:32:12+08:00",
+  "task9_last_review": "2026-05-17T01:36:14+08:00",
   "ready_to_publish": 196,
   "rework_history": [
     {
@@ -3300,7 +3300,7 @@
       "title": "eBPF 在线追踪与 Binder 语义重建",
       "file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "gap_source": "研究素材/素材驱动",
@@ -3312,16 +3312,22 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
       "task6_log": "logs/review/2026-05-17-01-review.md",
-      "task9_state": "pending",
-      "queue_priority": 80,
+      "task9_state": "reviewed",
+      "queue_priority": 95,
       "last_task2a_at": "2026-05-17T01:12:00+08:00",
-      "task2a_result": "draft-ready-for-review"
+      "task2a_result": "draft-ready-for-review",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T01:36:14+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-01-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-2026-05-17-26-11-ebpf-binder-version-reply"
     },
     "13.15": {
       "title": "BufferQueue 阻塞的 Perfetto 识别",
       "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "gap_source": "素材驱动/章节深挖",
@@ -3333,9 +3339,15 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
       "task6_log": "logs/review/2026-05-17-01-review.md",
-      "task9_state": "pending",
-      "queue_priority": 80,
-      "material_count": 4
+      "task9_state": "reviewed",
+      "queue_priority": 85,
+      "material_count": 4,
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T01:36:14+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-01-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-2026-05-17-13-15-buffer-release-channel-version"
     }
   },
   "task2b_rounds": [
@@ -3385,39 +3397,31 @@
     "suggestions_added": 1,
     "notes": "本轮处理 3 节；26.10 为 Task2B 修复后的复审并自动晋升 finalized。"
   },
-  "last_task9_review": "2026-05-17T00:32:12+08:00",
+  "last_task9_review": "2026-05-17T01:36:14+08:00",
   "last_task9_sections": [
-    "4.3",
-    "5.14",
-    "26.10"
+    "13.15",
+    "26.11"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T15:38:55+08:00",
-    "log": "logs/deep-review/2026-05-16-15-deep-review.md",
+    "at": "2026-05-17T01:36:14+08:00",
+    "log": "logs/deep-review/2026-05-17-01-deep-review.md",
     "sections": [
-      "20.12",
-      "5.8"
+      "13.15",
+      "26.11"
     ],
     "files": [
-      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
+      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
     ],
     "p0": 1,
     "p1": 2,
-    "p2": 0,
-    "p3": 1,
-    "auto_finalized": [
-      "20.12"
-    ],
-    "queue_added": [
-      "task9-20260516-5.8-binder-freezer-api-surface"
-    ],
-    "suggestions_added": 0,
-    "notes": "本轮处理 2 节：20.12 为显式 task9_pending；5.8 frontmatter 缺少有效 task9_state 且上次 Task9 已超过 3 天，按缺省 pending 复审。其余显式 pending 章节仍在 3 天去重窗口或已有 pending 队列。"
+    "p2": 1,
+    "auto_promoted": [],
+    "summary": "13.15 命中 BUFFER_RELEASE_CHANNEL release 分支版本口径错误；26.11 命中 Android 17/API36 元数据错误与 WDBind reply 语义链断裂。"
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
   ],
   "total_review_files": 142,
   "last_task2a_at": "2026-05-17T01:12:00+08:00",
@@ -3984,20 +3988,17 @@
     ]
   },
   "task9_last_sections": [
-    "4.3",
-    "5.14",
-    "26.10"
+    "13.15",
+    "26.11"
   ],
   "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-17-00-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-17-01-deep-review.md",
   "task9_last_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-    "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
   ]
 }
