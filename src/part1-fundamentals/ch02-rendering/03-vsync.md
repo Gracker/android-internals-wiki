@@ -46,15 +46,17 @@ review_round: 4
 repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
-status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-13"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T18:28:00+08:00"
-task2b_state: fixed
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-16T18:20:00+08:00"
+task2b_state: "pending"
 last_task2b_at: "2026-05-15T03:17:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-18-deep-review.md"
+task9_review_notes: "2026-05-16 Task9 18:20：needs-rework。P0 2：mNumVsyncsForFrame 版本归属提前到 Android 14；historySize/outlier tolerance 被写成 Android 16 才修订但 android-13/14/15/16 tag 均为 20/20。P1 1：ARR/刷新率切换未接上 Scheduler/VsyncModulator/VSyncPredictor 当前调用链。P2 1：ARR/Perfetto 数据支撑不足。"
 ---
 
 # VSync 机制

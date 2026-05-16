@@ -8619,21 +8619,108 @@
         "读者需求度": 5,
         "时效性": 4
       }
+    },
+    {
+      "id": "task9-20260516-2.3-vsync-predictor-version-drift",
+      "section": "2.3",
+      "section_title": "VSync 机制",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-version-drift",
+      "title": "VSyncPredictor 版本归属与 ARR 调度链需回炉",
+      "description": "章节把 mNumVsyncsForFrame/multi-frame sampling 写成 Android 14+，并把 historySize/outlier tolerance 写成 Android 16 才修订；这些说法与 android-13/14/15/16 公开 tag 不一致。",
+      "reason": "[Deep Tech Review] VSyncPredictor 版本差异与 ARR 调度链存在源码级漂移，需按 android-16.0.0_r1 及相邻 tag 重新校准。",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/03-vsync.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/源码准确性",
+          "location": "十二 11.3「多帧采样（Android 14+）」",
+          "detail": "android-14.0.0_r75 的 VSyncPredictor.h/cpp 中未出现 mNumVsyncsForFrame / numVsyncsPerFrame；这些字段与 numVsyncsPerFrame(displayModePtr) 路径在 android-15.0.0_r1 与 android-16.0.0_r1 中存在。当前写成“Android 14 引入”会把版本边界提前。",
+          "suggestion": "改为 Android 15+（或明确写“android-15.0.0_r1/16.0.0_r1 验证”）；如果要覆盖 Android 14，只保留 minFramePeriod()/VRR config 相关描述，不把 mNumVsyncsForFrame 归到 14。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/源码准确性",
+          "location": "十二 11.1/11.2：historySize 与 outlier tolerance 版本说明",
+          "detail": "VsyncSchedule::createTracker 在 android-13.0.0_r1、android-14.0.0_r1/r75、android-15.0.0_r1、android-16.0.0_r1 均使用 kHistorySize=20、kDiscardOutlierPercent=20。正文“Android 16 修订后 historySize=20，早期版本为 32；tolerance 10%→20%”缺少可复核 tag，且与上述公开版本不一致。",
+          "suggestion": "删除“Android 16 才修订/早期 32/10%”断言；如需保留历史演进，补充具体 commit 或旧分支 tag，并把公开稳定 tag 的实际常量列清楚。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/版本差异",
+          "location": "9.5/10.1 ARR 与刷新率切换说明",
+          "detail": "正文提到 VsyncConfiguration 更新、临时 early 配置与稳定后恢复，但没有接上当前源码链：SurfaceFlinger 模式/渲染率切换触发 resyncToHardwareVsync、Scheduler::updatePhaseConfiguration()、VsyncModulator::onRefreshRateChangeInitiated/Completed，以及 VSyncPredictor::setDisplayModePtr()/mNumVsyncsForFrame。读者无法据此复核 Perfetto 中周期变化与 phase config 切换。",
+          "suggestion": "补一段 android-16.0.0_r1 调用链，把 mode switch、ARR discrete VSync steps、VsyncModulator 配置切换、Predictor 重新采样的边界分开。"
+        }
+      ],
+      "created_date": "2026-05-16",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T18:20:00+08:00"
+    },
+    {
+      "id": "task9-20260516-14.13-bytehook-wx-namespace-risk",
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "title": "ByteHook W^X 风险分类与 classloader namespace 流程需修正",
+      "description": "章节把 ByteHook 归为“无 W^X 问题”，并把 classloader namespace 描述成只允许少数目录加载，遗漏 ByteHook upstream 的 RWX trampoline/dlopen 监控与 libnativeloader 的 public libs link 逻辑。",
+      "reason": "[Deep Tech Review] Hook 基础设施章节对 ByteHook W^X/execmem 风险和 Android classloader namespace 可见性边界描述不准确。",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/风险分类",
+          "location": "W^X 适配表与 ByteDance Hook 对比表（约 L416-L423、L516-L523）",
+          "detail": "正文写“ByteHook：PLT Hook 不修改代码段，无 W^X 问题”。但 upstream ByteHook v1.1.1 的 CMakeLists 在 arm/arm64 链接 shadowhook；bh_trampo.c 使用 mmap(PROT_READ|PROT_WRITE|PROT_EXEC) 分配 trampoline 页；bh_dl_monitor.c 还维护 dlopen/android_dlopen_ext/__loader_dlopen 监控路径。PLT 替换本身不改目标函数 text page，但框架自身的 trampoline/新 ELF 监控仍可能触发 execmem/RWX 约束。",
+          "suggestion": "把“无 W^X 问题”改成“PLT/GOT 改写不 patch 目标代码页；但 ByteHook upstream 在 ARM/ARM64 的 trampoline 与 dlopen 监控实现仍需验证 execmem/RWX 可用性”。表格拆分“目标函数代码页风险”和“框架自身可执行 trampoline 风险”。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码/namespace 逻辑",
+          "location": "classloader-namespace 分配流程（L460-L468）",
+          "detail": "流程图写该 namespace “只能从 /data、/mnt/expand、应用私有目录加载 SO”。android-16.0.0_r1 的 art/libnativeloader/library_namespaces.cpp 实际会为 app 创建 isolated clns，search path 来自 app library_path，同时通过 app_ns->Link() 链接 system namespace 与 APEX public libraries（public.libraries.txt / apex_public_libraries），permitted_path 只是绝对路径加载 workaround 的一部分。当前图把 search path、permitted path 和 namespace link 混在一起。",
+          "suggestion": "重画流程：app 本地 JNI search path + permitted path 约束 + linked public system/APEX libs 三层分开写；强调私有系统库仍不可见，但 NDK/public libs 通过 namespace link 可见。"
+        }
+      ],
+      "created_date": "2026-05-16",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T18:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 261,
-    "p0_count": 42,
-    "last_updated": "2026-05-16T18:08:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 142,
+    "total_entries": 263,
+    "p0_count": 44,
+    "last_updated": "2026-05-16T18:20:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 144,
     "updated_date": "2026-05-16",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 142
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 144
   },
-  "last_updated": "2026-05-16T18:08:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 142,
+  "last_updated": "2026-05-16T18:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 144,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
 }
