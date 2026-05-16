@@ -1,7 +1,7 @@
 {
   "total": 301,
-  "draft": 1,
-  "ready-for-review": 103,
+  "draft": 0,
+  "ready-for-review": 104,
   "finalized": 197,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -151,7 +151,8 @@
     "5.8",
     "26.11",
     "13.15",
-    "1.20"
+    "1.20",
+    "26.12"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -298,7 +299,8 @@
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
     "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
     "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
+    "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
   ],
   "review_summary": "Task9 2026-05-17 04: review 1.20；P1 2 / P2 1，入口条件与点击恢复回调链路需 Task2B 回炉；仅 1 个章节符合待审条件，未强行重审 3 天内已审章节。",
   "task6_review_summary": {
