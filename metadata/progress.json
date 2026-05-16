@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 1,
-  "ready-for-review": 99,
+  "draft": 0,
+  "ready-for-review": 100,
   "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -144,7 +144,8 @@
     "3.8",
     "3.9",
     "13.14",
-    "20.12"
+    "20.12",
+    "24.10"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -284,7 +285,8 @@
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
     "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
     "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
+    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+    "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
   ],
   "review_summary": "Task6 2026-05-16 15: review 20.12；L1/L2 轻修 4 处，无回炉项，进入 Task9。",
   "task6_review_summary": {

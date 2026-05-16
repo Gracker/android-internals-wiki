@@ -8253,7 +8253,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
@@ -8269,7 +8269,9 @@
         "与全书目标相关性": 5,
         "读者需求度": 5,
         "时效性": 4
-      }
+      },
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 加工完成，章节状态已更新为 ready-for-review"
     },
     {
       "id": "task9-5.1-uclamp-proc-perfetto-sql-20260516",
