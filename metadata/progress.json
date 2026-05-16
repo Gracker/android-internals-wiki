@@ -1,7 +1,7 @@
 {
   "total": 289,
-  "draft": 1,
-  "ready-for-review": 94,
+  "draft": 0,
+  "ready-for-review": 95,
   "finalized": 194,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -138,7 +138,8 @@
     "25.11",
     "26.10",
     "1.19",
-    "22.12"
+    "22.12",
+    "13.13"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -272,7 +273,8 @@
     "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
     "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md",
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
   "review_summary": "Task9 2026-05-16 08: review 16.5 / 19.26；P1 1（16.5 MessageQueue 锁竞争机制），P2 4；19.26 自动晋升 finalized。",
   "task6_review_summary": {
