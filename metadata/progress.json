@@ -1,7 +1,7 @@
 {
   "total": 299,
-  "draft": 2,
-  "ready-for-review": 101,
+  "draft": 1,
+  "ready-for-review": 102,
   "finalized": 196,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -3317,8 +3317,8 @@
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
   "total_review_files": 142,
-  "last_task2a_at": "2026-05-16T18:08:00+08:00",
-  "last_task2a_section": "5.13",
+  "last_task2a_at": "2026-05-17T00:04:00+08:00",
+  "last_task2a_section": "13.15",
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
   "last_task6_review": "2026-05-16T23:15:00+08:00",
   "last_task6_sections": [
