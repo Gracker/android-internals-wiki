@@ -279,6 +279,27 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 4.9, 10.2, 23.1
 
 
+## [2026-05-16] 23.3/23.6 虚拟内存黑科技优化 — WebView reservation 释放与 ART 备份栈释放
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
+
+### 知识点
+1. 释放 WebView 预留虚拟内存：Android 系统为每个进程预留 1G（64位）/130M（32位）虚拟内存给 WebView，即使应用不使用 WebView 也会占用。通过解析 /proc/self/maps 找到 [anon:libwebview reservation] 并调用 munmap 释放（Android 10+）；Android 9 以下需通过 PLT Hook android_dlopen_ext 获取 gReservedAddress。
+2. 释放 ART 虚拟机备份栈空间：Android 5-7 系统中 ART 创建 main space + main space 1（共 1G），备份空间用于 HomogeneousSpaceCompact GC。通过 GetPrimitiveArrayCritical 禁用拷贝回收 GC，再 munmap 释放未使用的 512M 空间（抖音线上验证 OOM 率未升高）。
+
+### 重要程度
+中（WebView reservation 释放仅影响 32 位设备；ART 备份栈仅 Android 5-7，已过时）
+
+### 建议加工方向
+- 23.6 大内存与多进程策略中补充 WebView reservation 释放方案作为虚拟内存优化补充
+- 23.3 Native 内存管理中补充 munmap 释放预留空间的思路
+- 注意标注版本限制：WebView reservation 释放适用于 32 位设备；ART 备份栈仅适用于 Android 5-7
+- 补充字节 mSponge 方案索引（Hook num_bytes_allocated_ 扩展 Java 堆至 1G）
+
+### 关联章节
+23.3、23.4、23.6、20.5
+
 ## [2026-05-16] 13.14 Perfetto DataGrid 与 Jank CUJ 标准库 — 知识盲区
 
 ### 盲区描述
@@ -294,3 +315,4 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 
 ### 关联章节
 7.3, 7.4, 13.8, 13.10, 13.14
+

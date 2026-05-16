@@ -1143,3 +1143,19 @@ InputFlinger::handlePredictiveBack()
 - 注入时间：2026-05-13
 - 价值：补充 InputDevice SOURCE 常量体系和 ViewGroup 拦截机制的源码级分析，完善输入分发章节参考资料
 
+
+
+### InputDispatcher 反压机制与目标窗口无响应降级策略
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputdispatcher-backpressure.md
+- 类型：DeepResearch 调研结果
+- 摘要：InputDispatcher 通过 Unix pipe WOULD_BLOCK 实现自然背压，应用处理延迟时 waitQueue 累积触发 ANR 超时检测。无响应连接通过 responsive 标记隔离、shouldPruneInboundQueueLocked 实现跨应用切换优化，CancelationOptions 执行全局事件取消。包含完整的 startDispatchCycleLocked → publishMotionEvent → WOULD_BLOCK 处理链源码分析。
+- 注入时间：2026-05-16
+- 价值：补充 InputDispatcher 反压机制和无响应降级策略的源码级分析，对理解输入事件 ANR 触发和恢复机制有直接参考价值
+
+
+### InputFlinger Rust 组件与 ARR 协同（Android 15/16）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 15/16 输入系统引入 Rust 组件（bounce_keys_filter / slow_keys_filter / sticky_keys_filter），通过 cxxbridge FFI 与 C++ 互操作，IInputFlingerRust AIDL 本地接口暴露服务。RefreshRatePolicy 在 DisplayPolicy.java 中实现触摸事件触发的自适应刷新率切换。包含 InputFilter C++/Rust 边界的完整调用链。
+- 注入时间：2026-05-16
+- 价值：补充 Android 15/16 输入系统架构重构的源码级分析，涵盖 Rust 组件引入和 ARR 协同机制，是输入系统章节的重要演进材料

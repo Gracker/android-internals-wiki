@@ -658,3 +658,51 @@ DeliQueue 改变 MessageQueue 内部字段结构。基于反射 hook `dispatchMe
 - 注入时间：2026-05-13
 - 价值：DeliQueue 架构与 GapWorker 交互机制的源码级验证，补充了版本差异表和性能数字可靠性评估
 
+
+<!-- AIW-源码调研-2026-05-16 -->
+### DeliQueue 锁竞争消除的 Perfetto 诊断特征（补充）
+
+**来源**：Android Developers Blog 官方一手资料
+
+在 Perfetto 中，旧 MessageQueue 锁竞争的特征切片：
+- 切片名称：`monitor contention with MessageQueue`
+- 等待线程：Sleeping 状态
+- 持有锁线程：正在执行 Handler 相关代码
+- 典型等待时间：1-5ms，多次累积可超过 16.6ms 帧预算
+
+**诊断用 PerfettoSQL**（来源：Android Developers Blog）：
+
+```sql
+INCLUDE PERFETTO MODULE android.monitor_contention;
+INCLUDE PERFETTO MODULE android.frames.jank_type;
+
+SELECT
+  process_name,
+  SUM(dur) / 1000000 AS sum_dur_ms,
+  COUNT(*) AS count_contention
+FROM android_monitor_contention
+WHERE is_blocked_thread_main
+  AND short_blocked_method LIKE "%MessageQueue%"
+  AND upid IN (
+    SELECT DISTINCT(upid)
+    FROM actual_frame_timeline_slice
+    WHERE android_is_app_jank_type(jank_type) = TRUE
+  )
+GROUP BY process_name
+ORDER BY SUM(dur) DESC;
+```
+
+**Priority Inversion 典型场景**（来源：Android Developers Blog 实机 trace 案例）：
+1. 低优先级 BackgroundExecutor 获取 MessageQueue 锁，投递工作结果
+2. 中优先级相机 worker 线程抢走 CPU，BackgroundExecutor 被 preempt
+3. 高优先级 UI 线程想从队列取消息，被锁阻塞
+4. 中优先级线程间接阻塞了高优先级线程（Priority Inversion）
+
+**DeliQueue 对 RecyclerView 滑动性能的间接影响路径**：
+- RecyclerView 滑动时 `onBindViewHolder()` 创建大量临时对象
+- 旧实现：主线程在 `doFrame()` 期间可能因锁竞争等待，GC 暂停叠加超过帧预算
+- 新实现：消息投递不阻塞主线程，`doFrame()` 有更多余量
+- 注意：DeliQueue 不直接优化 RecyclerView 渲染管线，滑动卡顿更多取决于 layout 层级、binding 耗时、overdraw
+
+来源：DeepResearch 调研 2026-05-16
+<!-- end AIW-源码调研-2026-05-16 -->

@@ -367,3 +367,45 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 - `sigaction()` 设置 `SA_SIGINFO` 获取 signal number 和 siginfo_t 地址
 
 <!-- AIW-源码调研-2026-05-15 -->
+
+
+---
+
+<!-- AIW-源码调研-2026-05-16 -->
+## 补充：Native Crash 与 ApplicationExitInfo 补偿链路（源码级验证）
+
+### 关键源码路径
+
+| 组件 | 源码路径 |
+|------|----------|
+| ApplicationExitInfo Java API | `frameworks/base/core/java/android/app/ApplicationExitInfo.java` |
+| AMS 历史退出原因服务 | `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` |
+| Google Breakpad crash 客户端 | `external/google-breakpad/client/crashpad_client.cc` |
+| Crashpad (后续版本) | `external/crashpad/client/crashpad_client.cc` |
+
+### 退出原因常量（API 30+）
+
+- `REASON_SIGNAL` (5)：Native 信号退出
+- `REASON_CRASH_NATIVE` (8)：Native 代码崩溃——补偿链路核心
+- `REASON_CRASH` (7)：Java 未捕获异常
+
+### Native Crash 信号捕获链路
+
+1. **信号注册**：crashpad_client 在进程启动时注册 `SIGSEGV`、`SIGABRT` 等信号处理器
+2. **minidump 生成**：崩溃时 `CrashpadHandler` 生成 minidump 到 `/data/data/<package>/databases/crashpad/`
+3. **进程退出**：通过 `Process.exit(code)` 退出
+4. **AMS 感知**：Zygote 通知 AMS，AMS 通过 `appDiedLocked()` 记录退出原因
+5. **补偿读取**：下次启动通过 `getHistoricalProcessExitReasons()` 拉取 `REASON_CRASH_NATIVE`
+
+### 版本差异
+
+| 版本 | API Level | 变化 |
+|------|-----------|------|
+| Android 11 | 30 | 引入 `ApplicationExitInfo`，`REASON_CRASH_NATIVE`=8 |
+| Android 12 | 31 | `REASON_CRASH_NATIVE` 可通过 `traceInputStream` 读取 tombstone protobuf |
+
+### 已知未验证项
+
+- crashpad_client 信号注册具体时机（需进一步源码确认）
+- minidump 路径与 `ApplicationExitInfo` 的字段关联
+- Android 15+ 是否从 Breakpad 完全迁移到 crashpad 官方仓库

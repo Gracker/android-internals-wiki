@@ -15,9 +15,9 @@
     11,
     12
   ],
-  "indexed_links": 360,
+  "indexed_links": 368,
   "skipped_links": 143,
-  "fetch_failures": 97,
+  "fetch_failures": 96,
   "attempted_issues": [
     6,
     6,
@@ -29,6 +29,6 @@
     12
   ],
   "last_attempted_issue": 12,
-  "last_attempt_date": "2026-05-15",
-  "access_issues_count": 18
+  "last_attempt_date": "2026-05-16",
+  "access_issues_count": 17
 }

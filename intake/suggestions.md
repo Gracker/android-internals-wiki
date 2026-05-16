@@ -1671,3 +1671,38 @@
 - **位置**：`src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md`「DVFS governor 在 CPU、GPU、内存之间的独立决策」第一段
 - **问题**：正文把 Thermal HAL 写成“把温度约束反馈给框架与内核”。Android Thermal HAL 的稳定职责更准确地说是向 framework thermal service 暴露温度、severity、cooling device 等状态/回调；实际限频、cooling device 生效通常在 kernel thermal framework、vendor thermal daemon 和 Power HAL/驱动策略侧完成。
 - **建议**：改成“Thermal HAL 向框架暴露热状态与 cooling 信息，内核/vendor thermal 策略负责把温度约束落实到 cooling device、频率/功率限制”，避免读者误解为 HAL 直接向内核下发约束。
+
+## [Task2A Gap Mining] 2026-05-16 20:04 — 无新章节创建
+- **检查结论**：本轮未发现需要新建章节的知识缺口。评分 ≥14 的方向已被现有章节承接，适合进入回炉/补证据，而不是追加新小节。
+- **已覆盖方向**：Android 17 Profiling Triggers → 8.10；端侧 AI 推理公开/preview 边界 → 5.11；Codec2 / tunneled playback / Media3 ABR → 8.8；Android 17 大屏 resizability/orientation → 2.20。
+- **低分方向**：Android Studio Panda 内置泄漏检测、Android 恶意软件检测长期漂移、Android AI OS / Gemini API 趋势。低于 14 分，暂不创建章节。
+- **后续建议**：`5.11`、`8.10`、`8.8` 按 Task 2B/Task 6 补源码、官方文档和版本边界证据。
+
+## [2026-05-16 21:08] Task 2A 缺口挖掘：无新章节创建
+
+本轮 Phase 0 未发现空 draft 章节。Phase 1 对 source-index 高分未映射素材、recent research-feeds、daily-info、research-gaps、AOSP / Android Developers 公开资料做了对照。
+
+未创建新章节，原因如下：
+
+- Perfetto v53/v54、SPAN_JOIN、Jank CUJ、Profile 导入等方向已由 13.8、13.11、13.12、13.14 承接。
+- ProfilingManager / ProfilingTrigger / ApplicationExitInfo 版本边界已由 14.7、16.2、16.5、26.2、26.8、26.9、26.10 承接。
+- BufferQueue dequeueBuffer 阻塞识别已由 2.13、2.16、7.15 承接。
+- InputDispatcher 反压、InputFlinger Rust、输入延迟阈值已由 3.7、3.8、3.9 承接。
+- ART Generational CMC / userfaultfd 已由 4.8 承接。
+- McNdroid Android 恶意软件检测漂移基准偏安全研究，与本书性能优化主线相关性不足，未入队。
+
+建议下一轮继续从 Android 17/18 官方性能行为变更和 Part 5 Clippings 未覆盖知识点中寻找真正独立的小节机会。
+
+## [Task6 Review] 5.8 后台执行限制与优化 — 2026-05-16
+- **类型**：需重写
+- **位置**：源码调研补充（2026-04-27/04-28）与 AIW 注入标记附近
+- **问题**：多段源码调研记录以时间戳和调研口吻直接进入正文，发布稿会显得像素材堆叠，影响主线阅读。
+- **建议**：Task2B 将调研内容融合到“Android 16 的进程冻结流程”和“Binder Freezer Driver 协同机制”主线，删除编辑痕迹和重复调研标题。
+- **review 日志**：logs/review/2026-05-16-23-review.md
+
+## [Task6 Review] 5.9 ADPF 自适应性能框架 — 2026-05-16
+- **类型**：需重写
+- **位置**：源码调研补充（2026-05-01/05-07）与常见问题后半段
+- **问题**：源码调研补充段落保留大量调研记录、版本修正和隐藏 API 说明，正文主线被素材块打断。
+- **建议**：Task2B 先修 Task9 API/版本问题，再把可保留内容融合到 Performance Hint、Headroom、非游戏场景三个小节，删除调研记录口吻。
+- **review 日志**：logs/review/2026-05-16-23-review.md
