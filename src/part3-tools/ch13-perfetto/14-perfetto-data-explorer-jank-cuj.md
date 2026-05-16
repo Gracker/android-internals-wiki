@@ -30,7 +30,13 @@ related_chapters: ["7.3", "7.4", "13.3", "13.8", "13.10", "13.11", "13.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-16T14:20:00+08:00"
+task2b_state: pending
 ---
 
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
