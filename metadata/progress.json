@@ -146,7 +146,9 @@
     "13.14",
     "20.12",
     "24.10",
-    "5.13"
+    "5.13",
+    "5.14",
+    "5.8"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -288,16 +290,22 @@
     "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-    "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md"
+    "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
   "review_summary": "Task9 2026-05-16 16: review 24.10 / 11.5；24.10 pass-tech-review 并自动晋升 finalized；11.5 命中 ADPF/GameManager API 语义 P1，转 Task2B。",
   "task6_review_summary": {
-    "l1_l2_fixes": 7,
-    "l3_issues": 0,
-    "l4_issues": 0,
-    "technical_risk_markers": 1,
-    "total_issues": 0,
-    "auto_promotions": []
+    "l1_l2_fixes": 12,
+    "l3_issues": 1,
+    "l4_issues": 1,
+    "technical_risk_markers": 6,
+    "total_issues": 8,
+    "reviewed_sections": [
+      "5.14",
+      "5.8",
+      "5.9"
+    ]
   },
   "issues_by_section": {
     "1.6": {
@@ -714,7 +722,9 @@
       "p0": 3,
       "p1": 1,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "task6_l3_l4": 1,
+      "task9_pending": 4
     },
     "23.6": {
       "p0": 0,
@@ -1149,35 +1159,41 @@
       "reviewed_at": "2026-05-16T14:20:00+08:00",
       "log": "logs/deep-review/2026-05-16-14-deep-review.md",
       "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
+    },
+    "5.8": {
+      "task6_l3_l4": 1,
+      "task9_pending": 3
     }
   },
-  "total_review_sections": 140,
+  "total_review_sections": 142,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-16T19:11:00+08:00",
+  "last_updated": "2026-05-16T23:15:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "19:11",
-    "reviewed_at": "2026-05-16T19:11:00+08:00",
+    "time": "23:15",
+    "reviewed_at": "2026-05-16T23:15:00+08:00",
     "sections": [
-      "5.13",
-      "13.14"
+      "5.14",
+      "5.8",
+      "5.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
     ],
-    "mode": "first-review-with-metadata-repair",
-    "l1_l2_fixes": 7,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 1,
-    "auto_promotions": [],
-    "log": "logs/review/2026-05-16-19-review.md",
-    "notes": "本轮扫描无严格 task6_state=pending 章节；选取 2 个 status=ready-for-review 但缺 Task6 元数据的新草稿做写作 review，未强行补足 3 章。13.14 既有 Task9 技术回炉队列仍 pending。",
-    "small_fixes": 7,
-    "rework_items": 0,
-    "auto_finalized": []
+    "log": "logs/review/2026-05-16-23-review.md",
+    "mode": "首次 review / 复审抽查",
+    "l1_l2_fixes": 12,
+    "l3_l4_issues": 2,
+    "technical_risk_markers": 6,
+    "results": {
+      "5.14": "pass-light-edit / task9_pending",
+      "5.8": "needs-rework / task2b_pending",
+      "5.9": "needs-rework / task2b_pending"
+    }
   },
   "task9_last_review": "2026-05-16T15:38:55+08:00",
   "ready_to_publish": 195,
@@ -2041,7 +2057,9 @@
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
       "task6_state": "reviewed",
-      "task6_result": "pass-light-edit"
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
     },
     "23.7": {
       "status": "finalized",
@@ -3161,7 +3179,14 @@
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-16T15:38:55+08:00",
       "task9_state": "reviewed",
-      "task2b_state": "pending"
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "queue_priority": 95,
+      "file": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "title": "后台执行限制与优化",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
     },
     "11.5": {
       "title": "Wakelock 机制与功耗分析",
@@ -3203,6 +3228,17 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task6_review_notes": "2026-05-16 Task6：首次写作 review 通过；补齐 section/task6 元数据，修复 2 处否定-纠正式表达；未新增 L3/L4 回炉项，送 Task9 技术复核。"
+    },
+    "5.14": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "title": "Android 17 ML Runtime 与 NPU 访问边界",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
     }
   },
   "task2b_rounds": [
@@ -3280,42 +3316,46 @@
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "total_review_files": 140,
+  "total_review_files": 142,
   "last_task2a_at": "2026-05-16T18:08:00+08:00",
   "last_task2a_section": "5.13",
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-  "last_task6_review": "2026-05-16T19:11:00+08:00",
+  "last_task6_review": "2026-05-16T23:15:00+08:00",
   "last_task6_sections": [
-    "5.13",
-    "13.14"
+    "5.14",
+    "5.8",
+    "5.9"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
   ],
-  "last_task6_at": "2026-05-16T19:11:00+08:00",
+  "last_task6_at": "2026-05-16T23:15:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-16",
-    "time": "19:11",
-    "reviewed_at": "2026-05-16T19:11:00+08:00",
+    "time": "23:15",
+    "reviewed_at": "2026-05-16T23:15:00+08:00",
     "sections": [
-      "5.13",
-      "13.14"
+      "5.14",
+      "5.8",
+      "5.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
     ],
-    "mode": "first-review-with-metadata-repair",
-    "l1_l2_fixes": 7,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 1,
-    "auto_promotions": [],
-    "log": "logs/review/2026-05-16-19-review.md",
-    "notes": "本轮扫描无严格 task6_state=pending 章节；选取 2 个 status=ready-for-review 但缺 Task6 元数据的新草稿做写作 review，未强行补足 3 章。13.14 既有 Task9 技术回炉队列仍 pending。",
-    "small_fixes": 7,
-    "rework_items": 0,
-    "auto_finalized": []
+    "log": "logs/review/2026-05-16-23-review.md",
+    "mode": "首次 review / 复审抽查",
+    "l1_l2_fixes": 12,
+    "l3_l4_issues": 2,
+    "technical_risk_markers": 6,
+    "results": {
+      "5.14": "pass-light-edit / task9_pending",
+      "5.8": "needs-rework / task2b_pending",
+      "5.9": "needs-rework / task2b_pending"
+    }
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
@@ -3325,11 +3365,12 @@
   "last_task2a_result": "gap-created",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "13.14",
-  "task6_last_review_at": "2026-05-16T19:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-19-review.md",
+  "task6_last_review_at": "2026-05-16T23:15:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-23-review.md",
   "task6_last_review_sections": [
-    "5.13",
-    "13.14"
+    "5.14",
+    "5.8",
+    "5.9"
   ],
   "sections_status": {
     "22.11": {
@@ -3696,7 +3737,11 @@
       "last_task9_review_log": "logs/deep-review/2026-05-16-15-deep-review.md",
       "task2b_state": "pending",
       "task2b_result": "pending",
-      "queue_entry": "task9-20260516-5.8-binder-freezer-api-surface"
+      "queue_entry": "task9-20260516-5.8-binder-freezer-api-surface",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
     },
     "11.5": {
       "title": "Wakelock 机制与功耗分析",
@@ -3750,6 +3795,30 @@
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T18:08:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "5.14": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "title": "Android 17 ML Runtime 与 NPU 访问边界",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
+    },
+    "5.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "title": "ADPF 自适应性能框架",
+      "last_task6_at": "2026-05-16T23:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
     }
   },
   "task2a_last_processed": {

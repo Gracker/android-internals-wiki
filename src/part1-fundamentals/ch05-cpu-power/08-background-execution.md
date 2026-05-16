@@ -70,8 +70,8 @@ related_chapters:
 - '8.4'
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task6_result: pass-light-edit
-task6_reviewed_date: 2026-05-12
+task6_result: needs-rework
+task6_reviewed_date: 2026-05-16
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: '2026-05-16'
 task9_reviewed_by: openclaw-task9
@@ -85,6 +85,10 @@ last_task9_review_log: logs/deep-review/2026-05-16-15-deep-review.md
 queue_entry: task9-20260516-5.8-binder-freezer-api-surface
 task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；Binder freezer API 签名、RemoteCallbackList
   策略与 AVF pVM 配额豁免口径需回炉。详见 logs/deep-review/2026-05-16-15-deep-review.md。'
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+last_task6_at: "2026-05-16T23:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-23-review.md"
 ---
 
 
@@ -122,7 +126,7 @@ task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。P0 1 / P1 2 / 
 
 当我们在 Perfetto 里看到灭屏后某个进程还在持续跑 CPU，或者在 Battery Historian 里看到后台 alarm、job、network 活动一直冒出来，排查往往会卡在同一个问题上：这是应用代码没收住，还是系统已经开始限流了。
 
-Android 的后台限制是一套逐步收紧的制度。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更硬的运行时规则，Android 16 补上了 JobScheduler 的待执行原因观测接口。
+Android 的后台限制是一套逐步收紧的制度。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更明确的运行时规则，Android 16 补上了 JobScheduler 的待执行原因观测接口。
 
 理解这套机制，主要是为了解决两类问题。第一，后台任务没按预期执行时，先判断它是被系统延后了，还是代码本身有 bug。第二，真有后台需求时，选对 API，别拿前台服务、精确闹钟或者轮询把系统拖热。
 
@@ -140,7 +144,7 @@ Android 6.0 同时引入了 **Doze** 和 **App Standby**。Doze 盯的是设备�
 
 Android 7.0（API 24）又加了 **Light Doze**。设备只要灭屏，就会先进入更温和的 idle 流程，不必等到“长时间静止”才开始限流。它没有 Deep Doze 那么狠，但已经会推迟一部分后台工作。
 
-### Android 8.0：后台 service 真正被掐住
+### Android 8.0：后台 service 被系统限制
 
 Android 8.0（API 26，Oreo）是后台执行模型的分水岭。后台 App 再直接调 `startService()`，系统会抛 `IllegalStateException`。如果必须在后台拉起持续工作，就要改成 `startForegroundService()`，并在很短时间内调用 `startForeground()` 把通知挂出来。
 
@@ -243,11 +247,11 @@ Perfetto 更适合回答“后台工作有没有把前台拖慢、有没有在�
 
 [图：Doze 等价证据对照图。左侧是 `dumpsys deviceidle` 的 idle / idle maintenance 状态切换，右侧是 Battery Historian 中 `cpu_running`、`job`、`alarm` 条带只在短窗口出现。]
 
-[图：后台任务延后对照图。上方是 `dumpsys jobscheduler <package>` 的 pending reason / quota 信息，下方是 Battery Historian 或 Perfetto 中任务真正开始执行的延后时间点。]
+[图：后台任务延后对照图。上方是 `dumpsys jobscheduler <package>` 的 pending reason / quota 信息，下方是 Battery Historian 或 Perfetto 中任务实际开始执行的延后时间点。]
 
 ## 前台服务：后台工作的“合法通行证”
 
-当 App 确实要在后台持续做用户可感知的事情，前台服务（Foreground Service，FGS）仍然是最直接的手段。代价也很明确，系统要求它对用户可见，并且越来越严格地校验“你为什么要开这个 FGS”。
+当 App 需要在后台持续做用户可感知的事情，前台服务（Foreground Service，FGS）仍然是最直接的手段。代价也很明确，系统要求它对用户可见，并且越来越严格地校验“你为什么要开这个 FGS”。
 
 ### 前台服务类型体系
 
@@ -329,7 +333,7 @@ JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你�
 
 对性能排查，`getPendingJobReasonsHistory()` 的价值在于：它把“最近一段时间为什么一直没跑”这件事变成可读数据，不必只靠 `dumpsys jobscheduler` 和零散日志猜。
 
-### AlarmManager：只留给真正需要精确时刻的事情
+### AlarmManager：只留给需要精确时刻的事情
 
 AlarmManager 的强项是精确时间点触发，代价是最难和系统的省电批处理和平共处。只要你开始频繁调 `setExact()` / `setExactAndAllowWhileIdle()`，就等于主动放弃系统帮你合并唤醒窗口的机会。
 
@@ -350,7 +354,7 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 - **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
 - **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
 
-- **AVF pVM 任务配额豁免**：通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，不再消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。任务在 pVM 内独立调度，宿主 App 的 bucket、quota 和 Doze 约束不影响 pVM 内部。
+- **AVF pVM 任务配额豁免**：[需确认: Task9 未核验到官方 quota 豁免来源，需补官方/AOSP 锚点后再保留该结论] 通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，不再消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。任务在 pVM 内独立调度，宿主 App 的 bucket、quota 和 Doze 约束不影响 pVM 内部。
 
 因此，看到“受限状态下任务还是执行了”，先核对它是不是走了这些例外入口。
 
@@ -460,6 +464,8 @@ CachedAppOptimizer 对单个进程执行冻结时，严格按以下顺序操作�
 
 ### FrozenStateChangeCallback 的实际使用模式
 
+[需确认: Task9 已标记 public API 签名风险，需按 API reference 复核 Executor 参数与 state 回调形态。]
+
 `IBinder.addFrozenStateChangeCallback()`（API 36）让系统服务在远端进程冻结/解冻时收到通知。典型使用：
 
 ```java
@@ -477,6 +483,8 @@ binder.addFrozenStateChangeCallback((b, frozen) -> {
 **源码路径**：`libs/binder/include/binder/IBinder.h`
 
 ### RemoteCallbackList 的 frozen 策略
+
+[需确认: Task9 已标记 frozen policy 枚举不完整，需补 `FROZEN_CALLEE_POLICY_ENQUEUE_ALL` 与使用边界。]
 
 `RemoteCallbackList` 提供了两种内置策略处理发往 frozen 进程的回调：
 
@@ -547,7 +555,7 @@ WorkManager 不保证精确时间。它定义的是"约束条件"，系统会在
 
 ### 误区 2："前台服务不会被系统杀掉"
 
-前台服务的进程优先级确实很高，但不是不可杀。内存极度紧张时系统仍然可能杀掉前台服务进程。另外，从 Android 15 开始，`dataSync` 和 `mediaProcessing` 类型有 6 小时的超时限制。
+前台服务的进程优先级很高，但不是不可杀。内存极度紧张时系统仍然可能杀掉前台服务进程。另外，从 Android 15 开始，`dataSync` 和 `mediaProcessing` 类型有 6 小时的超时限制。
 
 ### 误区 3："我的 JobScheduler 不执行一定是系统 bug"
 

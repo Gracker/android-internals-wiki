@@ -35,6 +35,14 @@ created_date: "2026-05-16"
 gap_source: "素材驱动/官方文档/AOSP结构"
 gap_score: 18
 material_count: 5
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-16T23:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-23-review.md"
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
@@ -72,7 +80,7 @@ material_count: 5
 
 Android 17 把端侧 AI 推理从“能不能调用加速器”推进到“调用边界是否被系统显式管理”。对性能工程师来说，NPU 不再只是 NNAPI 或厂商 delegate 背后的一个加速选项，还会受清单声明、目标 SDK、运行时分发和厂商栈覆盖率共同约束。
 
-这一节只处理新增边界：Android 17 的 NPU feature 声明、LiteRT CompiledModel / AOT 的执行路径、NNAPI HAL 与厂商 NPU delegate 的关系，以及哪些能力属于公开 Android API，哪些能力只能按 Google Play services、AICore 或厂商 SDK 的文档口径判断。端侧推理的一般性能分析流程见 5.11 节，持续推理的 DVFS 和热衰减见 5.13 节。
+内容聚焦新增边界：Android 17 的 NPU feature 声明、LiteRT CompiledModel / AOT 的执行路径、NNAPI HAL 与厂商 NPU delegate 的关系，以及哪些能力属于公开 Android API，哪些能力只能按 Google Play services、AICore 或厂商 SDK 的文档口径判断。端侧推理的一般性能分析流程见 5.11 节，持续推理的 DVFS 和热衰减见 5.13 节。
 
 ## NPU feature 声明：Android 17 开始的访问门槛
 
@@ -110,7 +118,7 @@ val hasNpu = appContext.packageManager.hasSystemFeature(
 
 LiteRT Next 文档把 NPU 路径收敛到 `CompiledModel` 和 accelerator 选择上，支持通过 NPU、GPU、CPU 组合描述执行偏好。Qualcomm AI Engine Direct 与 MediaTek NeuroPilot 文档都明确写到：LiteRT 通过 `CompiledModel` API 支持 AOT 编译和设备侧编译。[已验证: 官方文档, ai.google.dev/edge/litert/next/npu; ai.google.dev/edge/litert/next/qualcomm; ai.google.dev/edge/litert/next/mediatek]
 
-可以把 `CompiledModel` 理解成三个阶段：
+`CompiledModel` 可以按三个阶段看：
 
 | 阶段 | 输入 | 输出 | 性能风险 |
 |------|------|------|----------|
@@ -245,6 +253,6 @@ Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能�
 
 ## 小结
 
-Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；LiteRT CompiledModel 和 AOT 则把硬件选择、编译产物和分发策略推到工程流程前面。NPU 加速是否成立，要同时满足清单声明、设备 feature、runtime 可用、模型算子覆盖和功耗预算五个条件。
+Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；LiteRT CompiledModel 和 AOT 则把硬件选择、编译产物和分发策略推到工程流程前面。NPU 加速是否成立，要同时满足清单声明、设备 feature、运行时可用、模型算子覆盖和功耗预算五个条件。
 
 写这类内容时，最安全的分法是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。

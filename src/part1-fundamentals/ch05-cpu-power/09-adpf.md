@@ -50,13 +50,15 @@ task2b_state: pending
 task2b_result: pending
 last_task2b_at: '2026-05-09T13:40:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-20'
-task6_result: pass-light-edit
+reviewed_date: "2026-05-16"
+task6_result: needs-rework
 task9_result: needs-rework
 last_task9_at: "2026-05-14T04:36:12+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
+last_task6_at: "2026-05-16T23:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-23-review.md"
 ---
 
 
@@ -121,7 +123,7 @@ Native 层的公开入口仍在 `frameworks/base/native/android/performance_hint
 
 Android 15 为 Performance Hint API 引入了两个重要增强。
 
-第一个是 GPU 工作时长上报。之前的 ADPF 只能上报 CPU 工作时长，系统据此只能调整 CPU 频率。Android 15 允许 App 在同一个 HintSession 中同时上报 CPU 和 GPU 的工作时长，系统可以据此同时调整 CPU 和 GPU 的频率。这对 GPU-bound 的游戏场景尤为重要——如果系统只根据 CPU 耗时来调频，而瓶颈在 GPU 上，ADPF 的调频就完全打偏了。
+第一个是 GPU 工作时长上报。之前的 ADPF 只能上报 CPU 工作时长，系统据此只能调整 CPU 频率。Android 15 允许 App 在同一个 HintSession 中同时上报 CPU 和 GPU 的工作时长，系统可以据此同时调整 CPU 和 GPU 的频率。这对 GPU-bound 的游戏场景尤为重要——如果系统只根据 CPU 耗时来调频，而瓶颈在 GPU 上，调频方向就会偏。
 
 第二个是能效模式（power-efficiency mode）。HintSession 可以设置能效优先模式，让系统将关联线程调度到效率核（E-core）上，优先功耗而非性能。这个模式适合后台长时间运行的任务，比如游戏加载场景中的资源解压——不需要极致性能，但希望功耗尽可能低。
 
@@ -140,6 +142,8 @@ Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal he
 [已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager]
 
 ### Android 17 的 `setPreferIdle`
+
+[存疑: Task9 已标记当前公开 API 文档未核验到 `setPreferIdle(boolean)`，此小节需回炉复核。]
 
 API 37 在 `PerformanceHintManager.Session` 上引入了 `setPreferIdle(boolean)` 方法。应用调用 `setPreferIdle(true)` 后，系统会将该 session 关联的线程优先调度到效率核，或允许进入低功耗休眠状态。与 Android 15 的 `setPreferPowerEfficiency(true)` 不同，`setPreferIdle` 的语义更偏向“当前任务可以暂停”，系统在极端负载下可以更激进地压制这些线程的资源分配。
 
@@ -202,7 +206,7 @@ if (!Float.isNaN(headroom) && headroom >= 1.0f) {
 }
 ```
 
-这里的判断只是示意。真正的分档阈值要结合设备的 `getThermalHeadroomThresholds()`、机型散热能力和业务自己的帧率目标来定，不能把单一阈值当成通用规则。
+这里的判断只是示意。分档阈值要结合设备的 `getThermalHeadroomThresholds()`、机型散热能力和业务自己的帧率目标来定，不能把单一阈值当成通用规则。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager#getThermalHeadroom]
 
@@ -380,6 +384,8 @@ pm.registerForAllProfilingResults(executor, result -> {
 
 ### Hint 信号体系：sendHint() 的完整语义
 
+[需确认: Task9 已标记 Java `sendHint()` 属于 @TestApi/@hide，普通 App 不能按 public SDK 路径使用。]
+
 `PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
 
 **源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（AOSP master）
@@ -517,6 +523,8 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 ### 误区四：ADPF 只对游戏有用
 
 虽然 ADPF 的主要场景是游戏，但任何帧率敏感的应用都可以从中受益。Camera 应用在录制高帧率视频时、视频编辑 App 在实时预览时、AR 应用在渲染时，都可以通过 Performance Hint API 向系统预告性能需求。Android 16 的 Headroom API 更是降低了非游戏场景的使用门槛——不需要建立完整的 HintSession 反馈循环，直接查询当前性能余量即可。
+
+[需确认: Task9 已标记 RecyclerView 1.4 “内置 ADPF HintSession 管理”缺少公开 release notes 依据，需回炉复核。]
 
 **RecyclerView 1.4 的原生 ADPF 集成**进一步降低了门槛。从 RecyclerView 1.4 起，库内部已自动管理 HintSession：快速滑动时创建 session 并上报 work duration，滑动停止后关闭 session。应用侧只需要把 RecyclerView 依赖升级到 1.4+，不需要额外写 ADPF 接入代码，列表滚动场景的掉帧改善就能体现出来。这对非游戏应用（新闻信息流、商品列表、聊天记录）是最简单的 ADPF 收益入口。
 
