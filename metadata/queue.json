@@ -8304,15 +8304,23 @@
           "location": "L787-L792 UClamp/cpuset 生效验证",
           "detail": "sched_wakeup/sched_switch 不直接暴露进程组从 foreground 到 top-app 的变化，进程名也不会因此改变。",
           "suggestion": "改为检查 /proc/<pid>/cgroup、cgroup 事件/trace（若采集）、ActivityManager setProcessGroup trace/log，或通过 cpuset 文件和 CPU/frequency 结果间接验证。"
+        },
+        {
+          "type": "Task6 标注",
+          "location": "正文 [存疑] 标注",
+          "detail": "Task6 本轮不裁决技术真伪，已将 Task9 高风险信号转写为正文 [存疑] 提示，确保发布前不会漏过回炉项。",
+          "suggestion": "Task2B 按本条 queue 的 Task9 review_issues 逐项修正，修完后重新进入 Task6 / Task9。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T11:31:00+08:00"
+      "added_at": "2026-05-16T11:31:00+08:00",
+      "task6_review_confirmed_at": "2026-05-16T12:20:36+08:00",
+      "task6_review_log": "logs/review/2026-05-16-12-review.md"
     },
     {
       "id": "task9-5.7-standby-bucket-android17-wakelock-20260516",
       "section": "5.7",
-      "priority": 85,
+      "priority": 90,
       "title": "Standby Bucket 版本边界与 Android 17 idle alarm 语义需修正",
       "description": "5.7 把 Restricted bucket 写进 Android 9 演进段，并把 Android 17 Reduced Wakelocks for Idle Alarms 解释成平台压缩既有 wakelock 持有时间，均需回炉修正。",
       "issue_type": "version-difference",
@@ -8343,10 +8351,18 @@
           "location": "L331-L335 与 L388 Android 17 Reduced Wakelocks for Idle Alarms",
           "detail": "官方描述是新增 OnAlarmListener 版 setExactAndAllowWhileIdle，减少需要持续 partial wakelock 的场景；不是平台自动压缩既有 PendingIntent idle alarm 的 WakeLock 持有时长。",
           "suggestion": "改成“新增 callback-based allow-while-idle exact alarm，帮助 messaging/socket 类任务减少长 partial wakelock”，避免写成系统强制缩短 wakelock。"
+        },
+        {
+          "type": "Task6 标注",
+          "location": "正文 [存疑] 标注",
+          "detail": "Task6 本轮不裁决技术真伪，已将 Task9 高风险信号转写为正文 [存疑] 提示，确保发布前不会漏过回炉项。",
+          "suggestion": "Task2B 按本条 queue 的 Task9 review_issues 逐项修正，修完后重新进入 Task6 / Task9。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T11:31:00+08:00"
+      "added_at": "2026-05-16T11:31:00+08:00",
+      "task6_review_confirmed_at": "2026-05-16T12:20:36+08:00",
+      "task6_review_log": "logs/review/2026-05-16-12-review.md"
     }
   ],
   "metadata": {
@@ -8359,8 +8375,8 @@
     "last_updated_by": "task2a-knowledge-gap",
     "pending": 148
   },
-  "last_updated": "2026-05-16T10:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-16T12:20:36+08:00",
+  "last_updated_by": "task6-review",
   "pending": 148,
   "last_task2a_completed": "22.12",
   "last_task2a_completed_at": "2026-05-16T07:17:00+08:00"
