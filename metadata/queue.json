@@ -8589,21 +8589,51 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T16:30:00+08:00"
+    },
+    {
+      "id": "task2a-gap-5-13-13-mobile-llm-dvfs-energy",
+      "section": "5.13",
+      "priority": 80,
+      "title": "移动端 LLM 推理的 DVFS 与能效边界",
+      "description": "补齐移动端 LLM 推理中 CPU/GPU/内存 DVFS governor 独立决策带来的 TTFT、TPOT 与 energy-per-token 取舍，并明确 ADPF 与普通 App 可控边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md"
+      ],
+      "material_paths": [
+        "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md",
+        "https://arxiv.org/abs/2507.02135",
+        "https://source.android.com/docs/core/power/performance",
+        "https://developer.android.com/games/optimize/adpf"
+      ],
+      "gap_score": 17,
+      "gap_score_detail": {
+        "素材丰富度": 3,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4
+      }
     }
   ],
   "metadata": {
-    "total_entries": 260,
+    "total_entries": 261,
     "p0_count": 42,
-    "last_updated": "2026-05-16T16:30:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 141,
+    "last_updated": "2026-05-16T18:08:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 142,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 141
+    "last_updated_by": "openclaw-task2a",
+    "pending": 142
   },
-  "last_updated": "2026-05-16T16:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 141,
+  "last_updated": "2026-05-16T18:08:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 142,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
 }

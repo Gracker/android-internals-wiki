@@ -98,6 +98,7 @@ tags:
   - [5.10 JobScheduler/WorkManager 调度与后台任务性能](part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md)
   - [5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线](part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md)
   - [5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频](part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md)
+  - [5.13 移动端 LLM 推理的 DVFS 与能效边界](part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
