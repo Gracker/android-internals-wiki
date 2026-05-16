@@ -2245,13 +2245,15 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T23:18:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-12-23-review.md",
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T03:44:00+08:00"
+      "last_reviewed_at": "2026-05-14T03:44:00+08:00",
+      "completed_date": "2026-05-17T07:15:14",
+      "completed_reason": "Task 2B 回炉修复: WebGPU 90%-95% Vulkan 吞吐量从量化断言降级为定性描述(删除无来源基准数据), 补充 Dawn command buffer 转写结构解释"
     },
     {
       "id": "task6-20260512-23-16.5-profilingmanager-source-anchor",
@@ -2416,11 +2418,13 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T02:12:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-13-02-review.md",
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
-      ]
+      ],
+      "completed_date": "2026-05-17T07:15:14",
+      "completed_reason": "Task 2B 回炉修复: WorkManager 2.10 掉帧率下降约 4% 降级为定性描述(删除无来源数值), Power Check 阈值分段(5分钟/25%/10%/2%)降级为待验证(删除无来源数值)"
     },
     {
       "id": "task6-2026-05-13-17.2-sched-ext-integration",
