@@ -44,14 +44,20 @@ source_refs:
   - https://arxiv.org/abs/2604.27830
   - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T01:12:00+08:00"
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_at: "2026-05-17T01:36:14+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
+task2b_state: pending
+task2b_result: pending
 ---
 
 # 26.11 eBPF 在线追踪与 Binder 语义重建

@@ -1712,3 +1712,9 @@
 - **位置**：L63、L223-L231
 - **问题**：正文同时出现 `QNN/Neuron`、`Google Tensor / EdgeTPU`。公开 LiteRT Next 页面当前写的是 Qualcomm AI Engine Direct、MediaTek NeuroPilot、Google Tensor SDK experimental access；“EdgeTPU”容易被理解成 Coral Edge TPU 或独立硬件路径，不应和 Pixel Tensor / Tensor ML SDK 混写。
 - **建议**：把厂商后端统一改成 Qualcomm QNN / MediaTek NeuroPilot；Google 部分改为 “Google Tensor / Tensor ML SDK experimental access”，只有引用 Coral Edge TPU 文档时才使用 Edge TPU。
+
+## [Task9 Deep Review] 26.11 eBPF 在线追踪与 Binder 语义重建 — 2026-05-17
+- **类型**：数据缺失/来源路径
+- **位置**：frontmatter sources；L94、L101、L191
+- **问题**：`Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6/13/35.md` 在当前 Obsidian `Clippings/` 下未找到，正文又把这些文件作为结构参考引用，导致相关判断无法复核到原始材料。
+- **建议**：替换成实际存在的笔记路径，或把这些引用降级为非技术结构参考；与 eBPF/Binder 结论相关的依据保留论文、AOSP 文档和已有章节交叉引用。
