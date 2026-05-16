@@ -4340,11 +4340,11 @@
       "id": "task9-2026-05-14-4-3-tech-review",
       "section": "4.3",
       "section_title": "ART 虚拟机内存管理",
-      "priority": 85,
+      "priority": 95,
       "title": "ART 虚拟机内存管理 Task9 技术审计回炉",
-      "description": "[Deep Tech Review] P1 1：Generational CMC 配置/比例缺源码锚点；P2 2：LOS 架构边界、CC/TLAB 性能数据来源。",
+      "description": "[Deep Tech Review] P0 1：CC 读屏障误写为 Brooks pointer；P1 1：Generational CMC 配置/比例缺源码锚点；P2 既有建议保留。",
       "issue_type": "deep-tech-review",
-      "severity": "P1",
+      "severity": "P0",
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 2,
@@ -4354,19 +4354,29 @@
         "src/part1-fundamentals/ch04-memory/03-art-memory.md"
       ],
       "material_paths": [
-        "logs/deep-review/2026-05-14-05-deep-review.md"
+        "logs/deep-review/2026-05-14-05-deep-review.md",
+        "logs/deep-review/2026-05-17-00-deep-review.md"
       ],
       "review_issues": [
         {
           "type": "版本差异/源码锚点不足",
           "severity": "P1",
           "location": "L295-L298 Generational CMC 配置",
-          "detail": "`use_generational_cmc`、`generational_cmc_supported`、年轻代占堆 25%-40% 等实现细节缺少可复核 AOSP tag/commit；已核实 AOSP 仅能确认 `gUseUserfaultfd`、`xgc_option.generational_gc`、`ShouldUseGenerationalGC()` 等路径，当前变量名/比例仍不足以作为已验证事实。",
-          "suggestion": "补 Android 16 QPR2 / Android 17 对应 tag 或 commit；补不到则整体标 `[待验证]` 或删去具体变量名与比例。"
+          "detail": "`use_generational_cmc`、`generational_cmc_supported`、年轻代占堆 25%-40% 仍缺可复核 tag/commit。AOSP main 可确认的是 `com::android::art::flags::use_generational_cmc()`、`persist.device_config.runtime_native_boot.use_generational_gc`、`xgc_option.generational_gc` 与 `ShouldUseGenerationalGC()`；未核到 `generational_cmc_supported` 变量和 25%-40% 比例。",
+          "suggestion": "按 AOSP main / Android 16 QPR2 / Android 17 final tag 重写配置清单；删掉未核实变量名和比例，或全部降为 `[待验证]`。"
+        },
+        {
+          "type": "源码错误/原理错误",
+          "severity": "P0",
+          "location": "L289 Generational CMC 与传统 CC 的实现差异",
+          "detail": "正文把 ART CC 读屏障写成 Brooks pointer。复核 AOSP android-15/main：`runtime/read_barrier_config.h` 只保留 Baker / table-lookup 读屏障配置，`runtime.cc` 也以 `kUseBakerReadBarrier` 判定分代 CC 兼容性；Brooks pointer 不是当前 ART 主线口径。",
+          "suggestion": "把 “Brooks pointer” 改为 “Baker read barrier（或按具体 tag 标注 table-lookup）”；CMC/UFFD 对比时写成 “CC 依赖引用读取屏障，CMC 主要依赖 UFFD/page fault 协调对象迁移”，不要把 ART 当前实现归为 Brooks pointer。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T05:50:18+08:00"
+      "added_at": "2026-05-14T05:50:18+08:00",
+      "reason": "[Deep Tech Review] 4.3 仍有 ART CC/CMC 源码口径问题：Brooks pointer 误写、Generational CMC 配置/比例缺公开源码锚点。",
+      "last_reviewed_at": "2026-05-17T00:32:12+08:00"
     },
     {
       "id": "task9-2026-05-14-4-5-tech-review",
@@ -8809,21 +8819,61 @@
         "src/part1-fundamentals/ch01-architecture/04-binder.md"
       ],
       "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "id": "task9-2026-05-17-5-14-tech-review",
+      "section": "5.14",
+      "section_title": "Android 17 ML Runtime 与 NPU 访问边界",
+      "priority": 85,
+      "title": "Android 17 ML Runtime 与 NPU 访问边界 Task9 技术审计回炉",
+      "description": "[Deep Tech Review] P1 2：Android 17 NPU feature 字符串/SDK 常量未闭环；Android 14-17 NN HAL 版本口径遗漏 AIDL。",
+      "reason": "[Deep Tech Review] 5.14 存在 Android 17 NPU feature 字符串与 NN HAL AIDL 版本边界问题。",
+      "issue_type": "deep-tech-review",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API 锚点不足",
+          "severity": "P1",
+          "location": "L87-L103、L213、L231 NPU feature 字符串",
+          "detail": "Android 17 release notes 当前公开文本写的是 `FEATURE_NEURAL_PROCESSING_UNIT`；AOSP main `PackageManager.java` 未核到该常量和值。正文把公开 feature 名直接写成 `android.hardware.neural_processing_unit`，并给出 manifest / `hasSystemFeature()` 可执行示例，源码锚点不足。",
+          "suggestion": "在 final SDK stub / `PackageManager` 常量值未落地前，把 literal string 和 manifest 示例标为 `[待验证]`；若 final SDK 已发布，则补 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 的源码行和常量值。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L24、L63、L165、L215 NN HAL 1.3",
+          "detail": "章节适用 Android 14-17，却只锚 `hardware/interfaces/neuralnetworks/1.3/`。source.android NNAPI Runtime 文档明确 Android 12+ NNAPI HAL revision uses AIDL instead of HIDL，AOSP main 也有 `hardware/interfaces/neuralnetworks/aidl/`。只写 HIDL 1.3 会把 Android 14-17 的当前 HAL 口径写旧。",
+          "suggestion": "拆成 “HIDL NN HAL 1.3（Android 11 及更早/历史说明）” 与 “AIDL NN HAL（Android 12+，Android 14-17 主口径）”；frontmatter source 同时补 `hardware/interfaces/neuralnetworks/aidl/` 与 NNAPI Runtime module 文档。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T00:32:12+08:00"
     }
   ],
   "metadata": {
     "total_entries": 266,
     "p0_count": 44,
-    "last_updated": "2026-05-16T22:04:00+08:00",
+    "last_updated": "2026-05-17T00:32:12+08:00",
     "updated_by": "task2a-knowledge-gap",
     "pending_entries": 144,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 144
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 141
   },
-  "last_updated": "2026-05-16T22:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 144,
+  "last_updated": "2026-05-17T00:32:12+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 141,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
 }

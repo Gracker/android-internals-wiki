@@ -1706,3 +1706,9 @@
 - **问题**：源码调研补充段落保留大量调研记录、版本修正和隐藏 API 说明，正文主线被素材块打断。
 - **建议**：Task2B 先修 Task9 API/版本问题，再把可保留内容融合到 Performance Hint、Headroom、非游戏场景三个小节，删除调研记录口吻。
 - **review 日志**：logs/review/2026-05-16-23-review.md
+
+## [Task9 Deep Review] 5.14 Android 17 ML Runtime 与 NPU 访问边界 — 2026-05-17（Google Tensor / 厂商后端命名）
+- **类型**：术语边界/来源边界
+- **位置**：L63、L223-L231
+- **问题**：正文同时出现 `QNN/Neuron`、`Google Tensor / EdgeTPU`。公开 LiteRT Next 页面当前写的是 Qualcomm AI Engine Direct、MediaTek NeuroPilot、Google Tensor SDK experimental access；“EdgeTPU”容易被理解成 Coral Edge TPU 或独立硬件路径，不应和 Pixel Tensor / Tensor ML SDK 混写。
+- **建议**：把厂商后端统一改成 Qualcomm QNN / MediaTek NeuroPilot；Google 部分改为 “Google Tensor / Tensor ML SDK experimental access”，只有引用 Coral Edge TPU 文档时才使用 Edge TPU。
