@@ -1639,3 +1639,15 @@
 - **位置**：`src/part2-performance/ch11-power/05-wakelock.md:L771-L773, L819-L823`
 - **问题**：`setPreferPowerEfficiency(true)` 被写成系统会降低 CPU/GPU 频率、完整路径里也写成“系统调整 CPU/GPU 频率策略”。AOSP `PerformanceHintManager.Session#setPreferPowerEfficiency()` 注释只承诺“these threads can be safely scheduled to prefer power efficiency over performance”，是线程调度偏好，不是 CPU/GPU 降频保证。
 - **建议**：改为“声明 hint session 关联线程可优先能效调度，具体是否迁移到效率核、降频或联动 GPU 由设备 Power HAL / scheduler 实现决定”；不要把 GPU 频率调整写成 API 直接语义。
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-05-16
+- **类型**：数据缺失/Trace 支撑
+- **位置**：6.3、9.5、10.1（Perfetto VSync 观察与 ARR 行为）
+- **问题**：章节仍保留 `[待补充:Perfetto Trace 截图]`，ARR/刷新率切换部分也缺少可复核的 trace 或 dumpsys 样例。`VSYNC-app`/`VSYNC-sf` 周期变化、`HW_VSYNC` 重新采样、active mode / render rate 切换之间的对应关系没有数据支撑。
+- **建议**：补一组 Android 15/16 设备上的 Perfetto + `dumpsys SurfaceFlinger` 样例：刷新率切换前后 VSYNC 间隔、phase/duration 配置、active mode/render rate、FrameTimeline expected present time；没有样例前避免写成确定的性能结论。
+
+## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-16
+- **类型**：数据缺失/来源支撑
+- **位置**：16KB Page Size、主流 Hook 库版本表与 Google Play 截止日期
+- **问题**：章节列出 ByteHook/ShadowHook 版本、16KB `p_align`/compat mode、Google Play 2025-11-01 截止日期，但部分断言没有紧邻官方文档、release tag 或源码文件作为证据。
+- **建议**：在该小节补官方 Android 16KB page-size 文档、ByteHook/ShadowHook release/CMakeLists、`linker_phdr_16kib_compat.cpp`、`readelf -l` 输出示例；若截止日期无法用官方来源复核，应降级为待验证。

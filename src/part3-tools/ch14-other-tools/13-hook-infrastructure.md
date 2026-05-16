@@ -2,7 +2,7 @@
 title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -39,15 +39,15 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: ready-for-review
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_state: reviewed
+task9_state: "reviewed"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 last_task2b_at: '2026-05-15T15:30:00+08:00'
-task9_review_notes: "2026-05-09 Task9 06:20：needs-rework。P0 2：FrameMetrics GPU_DURATION 被并入 Android 7+；ApplicationExitInfo 被写成 Android 10+，实际 API 30/Android 11+。P2 1：ARM64 cache flush 完整序列已有 suggestions 既有项。→ 已于 2026-05-09 Task2B 修复：GPU_DURATION 拆为 API 24+/API 31+ 两段；ApplicationExitInfo 修正为 Android 11/API 30+。"
+task9_review_notes: "2026-05-16 Task9 18:20：needs-rework。P0 1：ByteHook 被写成“无 W^X 问题”，但 upstream arm/arm64 链接 shadowhook 且 bh_trampo.c 分配 RWX trampoline。P1 1：classloader namespace 流程混淆 search path/permitted path/public libs namespace link。P2 1：16KB/Play 截止日期与版本表需补官方证据。"
 last_task6_at: "2026-05-09T07:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-07-review.md"
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 1，P1 1，P2 0；问题已写入 queue/suggestions，等待 Task2B 回炉。'
@@ -55,11 +55,11 @@ task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-09"
 task6_review_notes: "2026-05-09 Task6 07:12：Task2B 修复后写作复审；轻修 17 处（结构性元叙述、形容词冒号起手式、翻译腔动词、章节收束段），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
-task9_result: needs-rework
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T15:31:00+08:00'
-last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-16T18:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-18-deep-review.md"
 ---
 
 
