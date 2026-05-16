@@ -5,6 +5,7 @@ section: "26.11"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 36)"
 drafted_date: "2026-05-17"
+drafted_by: "openclaw-task2a"
 last_verified: "2026-05-17"
 last_verified_against: "arXiv:2604.27830 / source.android eBPF docs / Android Developers ProfilingManager docs / AIW 1.4、14.10、26.5"
 confidence: medium
@@ -43,8 +44,11 @@ source_refs:
   - https://arxiv.org/abs/2604.27830
   - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-17"
+task6_result: pass-light-edit
 task9_state: pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T01:12:00+08:00"
@@ -123,7 +127,7 @@ WOOTdroid 的 syscall 追踪路径可以拆成五步：
 
 [已验证: 论文, arXiv:2604.27830]
 
-对应用工程师来说，不必把 eBPF 当成另一个 “strace”。它更像一层内核侧预聚合器：先在内核侧判断事件是否值得记录，再把少量结构化事件交给用户态。越靠近线上，越要减少字符串、堆栈和大 payload；越靠近实验室，越可以临时打开更细的参数和堆栈采集。
+对应用工程师来说，不必把 eBPF 当成另一个 strace。它的作用更接近一层内核侧预聚合器：先在内核侧判断事件是否值得记录，再把少量结构化事件交给用户态。越靠近线上，越要减少字符串、堆栈和大 payload；越靠近实验室，越可以临时打开更细的参数和堆栈采集。
 
 ## Binder 语义重建的关键问题
 
@@ -186,7 +190,7 @@ WOOTdroid 的案例覆盖短信、电话、权限、账户等安全相关 Binder
 
 冷启动慢经常混合了文件 I/O、dex / oat 读取、资源加载、Binder 查询、权限检查、ContentProvider 初始化和网络预热。参考书的 I/O 监控章节把线上 I/O 证据拆成文件名、线程、调用栈、buffer、连续读写时间和异常规则；eBPF syscall 追踪可以把这套思路下沉到内核边界，用 `openat`、`mmap`、`read`、`futex`、`ioctl` 的时间线还原启动前几秒发生了什么。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
 
-冷启动回溯不要替代 Perfetto。更稳的做法是：App 内阶段埋点负责业务阶段名，Perfetto 负责线程和系统轨道，eBPF 负责长期开启的 syscall / Binder 摘要。三者用同一个 sessionId、启动 ID 和时间戳关联。
+冷启动回溯不要替代 Perfetto。组合使用时，App 内阶段埋点负责业务阶段名，Perfetto 负责线程和系统轨道，eBPF 负责长期开启的 syscall / Binder 摘要。三者用同一个 sessionId、启动 ID 和时间戳关联。
 
 ## 部署边界与合规风险
 
@@ -234,4 +238,4 @@ Binder 参数脱敏不能只做字符串替换。解码器已经知道接口名�
 
 ## 小结
 
-eBPF 在线追踪适合补齐“应用层日志拿不到、短窗口 Trace 没抓到、Binder 调用缺语义”的证据缺口。它不是普通线上监控的替代品，而是一套高权限诊断能力：在受控设备上，把 syscall、Binder、App 阶段名和日志放到同一条时间线上，再用明确的开销、完整性和合规指标约束它。
+eBPF 在线追踪适合补齐“应用层日志拿不到、短窗口 Trace 没抓到、Binder 调用缺语义”的证据缺口。它属于高权限诊断能力，不能替代普通线上监控：在受控设备上，把 syscall、Binder、App 阶段名和日志放到同一条时间线上，再用明确的开销、完整性和合规指标约束它。
