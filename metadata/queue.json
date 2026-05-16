@@ -8601,7 +8601,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md"
@@ -8618,7 +8618,9 @@
         "与全书目标相关性": 5,
         "读者需求度": 5,
         "时效性": 4
-      }
+      },
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 加工完成，status 已切换为 ready-for-review，进入 Task 6 评审管线"
     },
     {
       "id": "task9-20260516-2.3-vsync-predictor-version-drift",
