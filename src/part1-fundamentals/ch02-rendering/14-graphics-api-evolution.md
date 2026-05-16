@@ -53,7 +53,7 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
@@ -342,9 +342,9 @@ Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定
 
 需要把 WebGPU 和 ANGLE 分开看。ANGLE 是 GLES 到 Vulkan 的翻译层，WebGPU 是另一套 API 语义和 WGSL shader 体系。AndroidX WebGPU 的 release notes 已经写明它会持续更新内部 Dawn source commit，Dawn 项目本身也是 Chromium 中 WebGPU 的底层实现。分析 WebView / WebGL / WebGPU 问题时，要先确认 Chromium / Dawn 这一层的 backend，再去解释系统 ANGLE policy。两者观察路径不同。
 
-Jetpack WebGPU 在 Android 17 上的计算管线（compute pipeline）基准测试达到了 Vulkan 原生实现 90%-95% 的吞吐量，API 代码量比 Vulkan 少一个数量级。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。在 Perfetto 中对比 WebGPU 和原生 Vulkan 的 GPU Activity 时，计算任务的 slice 分布接近，渲染任务的差距仍然明显。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，这组基准数据有直接参考价值。
+Jetpack WebGPU 的 API 代码量比 Vulkan 少一个数量级。计算管线的抽象开销低于渲染管线——这是 Dawn 内部做 command buffer 转写时的结构决定的。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，可以预期 GPU 活动的开销比例较低。
 
-[需确认: Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量这一数字需要补充基准来源、设备、测试 workload 和 API/库版本；补不齐时应改成定性描述，避免把单一 benchmark 写成通用结论。]
+[待验证: 此前版本中“Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量”缺少基准来源、设备、测试 workload 和 API/库版本，已改为定性描述。]
 
 [已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
 

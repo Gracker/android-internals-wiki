@@ -55,7 +55,7 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -309,7 +309,7 @@ WorkManager.getInstance(context)
 
 ### WorkManager 2.10 与 Android 17 的协同优化
 
-Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时减少主线程对消息队列的锁等待，使掉帧率下降约 4%。[需补充素材: 这组 WorkManager 2.10 / Android 17 协同收益需要补充官方发布说明、benchmark 条件或实测记录，否则只能保留为待验证观察。]
+Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时减少主线程对消息队列的锁等待，理论上可以减少主线程因消息队列锁竞争导致的卡顿。[待验证: WorkManager 2.10 与 DeliQueue 的具体协同收益需要补充官方发布说明、benchmark 条件或实测记录，当前无可靠量化数据支撑“掉帧率下降约 4%”的结论，已删除该数值。]
 
 对开发者来说，升级 WorkManager 到 2.10+ 即可在 Android 17 设备上获得 UI 响应性的间接提升，不需要修改业务代码。Perfetto 中验证方法：在 `enqueue` 密集调用场景下，对比升级前后主线程的 `MessageQueue` lock 等待时间。
 
@@ -574,12 +574,9 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 
 **Power Check：后台 CPU 占用自动熔断**
 
-Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 5 分钟检查一次后台进程的 CPU 使用率，按阶梯式阈值判定：
+Android 17 引入了针对缓存态应用的 CPU 占用分级熔断机制。
 
-- 缓存态前 10 分钟：CPU 均值需低于 25%
-- 后续阶段：阶梯降至 10% 和 2%
-
-[需补充素材: Power Check 的检查周期、阈值分段和 ProfilingTrace 生成条件需要补充 Android 17 官方文档或实测来源，避免把口径写成无条件事实。]
+[待验证: Power Check 的检查周期、阈值分段和 ProfilingTrace 生成条件尚未获得 Android 17 官方文档或实机验证确认。此前版本中给出的“5 分钟检查周期”“25%/10%/2% 阶梯阈值”等具体数值无法可靠溯源，已删除。排查“后台任务莫名被杀”时，建议先用 dumpsys jobscheduler 和 getPendingJobReasonStats() 排查常规原因，再检查是否有 Power Check 触发记录。]
 
 超限后系统强制终止应用进程，并自动生成 `ProfilingTrace` 记录当时的 CPU 和线程状态。这个机制和 App Standby Bucket 的 quota 限制形成互补：quota 管的是"能跑多久"，Power Check 管的是"CPU 占了多少"。
 
