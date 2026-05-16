@@ -99,6 +99,7 @@ tags:
   - [5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线](part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md)
   - [5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频](part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md)
   - [5.13 移动端 LLM 推理的 DVFS 与能效边界](part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md)
+  - [5.14 Android 17 ML Runtime 与 NPU 访问边界](part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
@@ -213,6 +214,7 @@ tags:
   - [13.12 Perfetto Profile 导入与 Flamegraph 分析](part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md)
   - [13.13 Perfetto CPU 频率与 DVFS 关联分析](part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md)
   - [13.14 Perfetto DataGrid 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
+  - [13.15 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -377,6 +379,7 @@ tags:
   - [26.8 可观测性案例集](part5-app/ch26-observability/08-observability-case-studies.md)
   - [26.9 ApplicationExitInfo 与进程退出归因](part5-app/ch26-observability/09-application-exit-info.md)
   - [26.10 Android 11 以下进程退出归因方案](part5-app/ch26-observability/10-legacy-process-exit-attribution.md)
+  - [26.11 eBPF 在线追踪与 Binder 语义重建](part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md)
 
 ---
 
