@@ -1587,3 +1587,16 @@
 - **问题**：Task9 已指出版本边界与官方语义风险；Task6 不裁决技术真伪，已在正文加 `[存疑]` 标注。
 - **建议**：Task2B 按 queue.json 中 `task9-5.7-standby-bucket-android17-wakelock-20260516` 修正版本拆分与官方语义；修完后重新进入 Task6/Task9。
 - **review 日志**：logs/review/2026-05-16-12-review.md
+
+
+## [Task9 Deep Review] 3.8 InputFlinger Rust 组件与自适应刷新率协同 — 2026-05-16
+- **类型**：交叉引用一致性
+- **位置**：3.8 关联 3.1；src/part1-fundamentals/ch03-input/01-input-dispatch.md:L251-L257、L1092-L1130
+- **问题**：3.8 已把 InputFlinger Rust 与触摸驱动 ARR 拆成两条路径，但 3.1 仍写着“Rust 重构的 InputFlinger 为 ARR 提供更好支持”“无 GC 减少事件处理抖动”“input_filter_thread 减少主线程阻塞”，并出现 ARR 节省功耗 10-15% 的无来源数字。两节对 Rust/ARR 关系的描述不一致。
+- **建议**：3.1 后续回炉时删除 Rust 直接支撑 ARR 的表述；改为引用 3.8 的边界：Rust InputFilter 主要处理键盘辅助功能 KeyEvent，触摸 ARR 走 user activity / Boost.INTERACTION / SurfaceFlinger Scheduler / FrameRate vote；功耗数字必须补来源或删除。
+
+## [Task9 Deep Review] 3.8 InputFlinger Rust 组件与自适应刷新率协同 — 2026-05-16
+- **类型**：源码锚点补强
+- **位置**：src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md:L155
+- **问题**：正文说 PowerManagerService 发 `Boost.INTERACTION` 后 SurfaceFlinger 收到 `notifyPowerBoost()`，结论正确，但源码锚点缺少 native bridge：`PowerManagerService.setPowerBoostInternal()` 通过 `nativeSetPowerBoost()` 进入 `com_android_server_power_PowerManagerService.cpp::setPowerBoost()`，后者同时调用 Power HAL 和 `SurfaceComposerClient::notifyPowerBoost()`。
+- **建议**：补两个锚点：`frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp` 与 `frameworks/native/libs/gui/SurfaceComposerClient.cpp`，避免读者误以为 Java `PowerManagerService` 直接调用 SurfaceFlinger。
