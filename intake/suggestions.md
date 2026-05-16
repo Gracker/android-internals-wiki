@@ -1608,3 +1608,15 @@
 - **问题**：Task9 已指出正文把 Sticky Keys、Bounce Keys、Slow Keys 的作用范围合并成 supported keyboard devices + `Source::KEYBOARD` 限制，存在源码准确性风险。Task6 不裁决技术真伪，已在正文加 `[存疑]`。
 - **建议**：Task2B 按 queue.json `task9-3.8-sticky-keys-scope-20260516` 修正：Bounce / Slow Keys 与 Sticky Keys 分开描述，并保留 MotionEvent 不进入当前 Rust InputFilter 的边界。
 - **review 日志**：logs/review/2026-05-16-13-review.md
+
+## [Task9 Deep Review] 3.9 端到端输入延迟预算与感知阈值 — 2026-05-16
+- **类型**：数据支撑/指标口径
+- **位置**：L70-L82「一张预算表：从触摸到上屏」
+- **问题**：表中 4-16ms、1-5ms、1-8ms、1-16ms 等预算值没有给出设备、刷新率、触控采样率、Trace 样本或 HCI 来源。虽然正文声明“不用于固定 SLO”，但这些数字仍会被读者当成通用经验阈值。
+- **建议**：补 1 份同机 Perfetto/高速相机样本或公开资料出处；补不到时改成“按采样周期/刷新周期推导的估算范围”，并把 InputReader/InputDispatcher 阶段改为以 P50/P90 观察为主。
+
+## [Task9 Deep Review] 3.9 端到端输入延迟预算与感知阈值 — 2026-05-16
+- **类型**：数据支撑/HCI 引用边界
+- **位置**：L87-L103「HCI 阈值和 Android 工程指标的换算」
+- **问题**：2ms 级可感知、20-50ms、50-100ms 等阈值被整理成工程分层，但没有标注对应论文实验任务、设备、样本和交互类型。不同研究的 click、drag、stylus、touchscreen 条件不能直接合并成同一张阈值表。
+- **建议**：给每个区间补来源脚注和适用条件；如果只作为产品排查启发，明确标为启发式分层，不要写成 Android 平台通用阈值。
