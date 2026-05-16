@@ -39,10 +39,21 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
 last_task6_at: "2026-05-16T23:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-23-review.md"
+task9_state: reviewed
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-17T00:32:12+08:00"
+last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+p0: 0
+p1: 2
+p2: 1
+task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU feature 字符串/SDK 常量未闭环；Android 14-17 NN HAL 只写 HIDL 1.3，遗漏 AIDL HAL。P2 1：Google Tensor/EdgeTPU 与厂商后端命名需拆清。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界

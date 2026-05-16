@@ -2,21 +2,16 @@
 title: "Android 11 以下进程退出归因方案"
 chapter: "26.10"
 section: "26.10"
-status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 5.0 (API 21) - Android 10 (API 29)"
 last_verified: "2026-05-16"
 last_verified_against: "Android Developers 2026-03 docs; AOSP master paths; KOOM master README"
 confidence: medium
 polish_count: 1
-pipeline_stage: task6_pending
-task2b_result: fixed
-task2b_state: fixed
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task9_state: pending
 last_task6_at: "2026-05-16T03:16:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-03-review.md"
 sources:
@@ -53,13 +48,20 @@ related_chapters: ["9.3", "19.24", "20.8", "23.7", "26.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档/章节深挖"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-16"
+task9_state: reviewed
+task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-16T03:30:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-16-03-deep-review.md"
-task2b_state: pending
-
+last_task9_at: "2026-05-17T00:32:12+08:00"
+last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
+status: finalized
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task2b_state: fixed
+task2b_result: fixed
+p0: 0
+p1: 0
+p2: 3
+task9_review_notes: "2026-05-17 Task9 00: pass-tech-review。Task2B 已修复 P0/P1；本轮仅保留既有 P2 来源路径/JVMTI 权限边界建议。Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
 ---
 
 # 26.10 Android 11 以下进程退出归因方案
