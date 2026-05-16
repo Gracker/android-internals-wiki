@@ -1573,3 +1573,17 @@
 - **位置**：L331-L341 Android 17 已确认变化来源
 - **问题**：App memory limits 属于 behavior changes all-apps；Reduced Wakelocks for Idle Alarms 属于 features/release notes；Profiling trigger 属于 features/release notes。正文把来源合并成 behavior changes all-apps / target-37，证据边界不清。
 - **建议**：按条目拆来源，避免把 feature/API 新增和 behavior change 强约束混在一个证据口径里。
+
+## [Task6 Review] 5.1 Linux 进程调度基础 — 2026-05-16
+- **类型**：需确认
+- **位置**：UClamp per-task 示例、vlag 替代 SQL、`sched_base_slice_ns` 判断、UClamp/cpuset 生效验证
+- **问题**：Task9 已指出源码/API、Perfetto SQL 和观察口径风险；Task6 不裁决技术真伪，已在正文加 `[存疑]` 标注。
+- **建议**：Task2B 按 queue.json 中 `task9-5.1-uclamp-proc-perfetto-sql-20260516` 逐条修正；修完后重新进入 Task6/Task9。
+- **review 日志**：logs/review/2026-05-16-12-review.md
+
+## [Task6 Review] 5.7 CPU 相关的版本演进 — 2026-05-16
+- **类型**：需确认
+- **位置**：Android 9 App Standby Buckets 表、Android 17 Reduced Wakelocks for Idle Alarms
+- **问题**：Task9 已指出版本边界与官方语义风险；Task6 不裁决技术真伪，已在正文加 `[存疑]` 标注。
+- **建议**：Task2B 按 queue.json 中 `task9-5.7-standby-bucket-android17-wakelock-20260516` 修正版本拆分与官方语义；修完后重新进入 Task6/Task9。
+- **review 日志**：logs/review/2026-05-16-12-review.md

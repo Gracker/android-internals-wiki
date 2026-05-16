@@ -3,6 +3,10 @@ title: CPU 相关的版本演进
 chapter: '5.7'
 section: '5.7'
 status: ready-for-review
+reviewed_at: '2026-05-16T12:20:36+08:00'
+last_task6_at: '2026-05-16T12:20:36+08:00'
+review_round: 2
+task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 版本边界风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
 applicable_versions: Android 5.0 - Android 17
 last_verified: '2026-04-29'
 last_verified_against: developer.android.com + source.android.com + AOSP android-16.0.0_r1
@@ -60,11 +64,11 @@ related_chapters:
 repaired_date: '2026-04-30'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复(Task9/External 问题单)
-reviewed_date: '2026-05-05'
+reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-05-05'
-task6_result: pass-light-edit
-task6_state: revisiting
+task6_reviewed_date: '2026-05-16'
+task6_result: needs-rework
+task6_state: reviewed
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: needs-rework
@@ -110,25 +114,25 @@ task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/de
 
 ## 为什么要了解 CPU 相关的版本演进
 
-做过 Android 性能优化的工程师,很可能遇到过这种情况:App 在 Android 10 上跑得很好,到了 Android 12 突然后台任务不执行了;或者用 AlarmManager 设了一个精确闹钟,结果在 Android 13 上根本不响。这些行为的变化是 Google 在每个版本中逐步收紧后台行为限制的结果。
+做过 Android 性能优化的工程师，很可能遇到过这种情况：App 在 Android 10 上跑得很好，到了 Android 12 突然后台任务不执行了；或者用 AlarmManager 设了一个精确闹钟，结果在 Android 13 上没有触发。这些行为的变化来自 Google 在不同版本里逐步加严后台行为限制。
 
 从 Android 5.0 到 Android 16,Google 围绕 CPU 和功耗管理做了一系列层层递进的改动。这些改动覆盖了三个层面:
 
-1. **内核调度层面**:从传统 CFS 到 EAS (Energy Aware Scheduling),再到 GKI 对调度定制化的约束
-2. **系统策略层面**:Doze 模式、App Standby Buckets、Adaptive Battery--系统越来越"聪明"地决定哪些 App 可以用 CPU,哪些必须等着
-3. **应用约束层面**:JobScheduler 引入 → 后台服务限制 → 精确闹钟管控 → 前台服务类型化--App 能做的事情越来越受限
+1. **内核调度层面**：从传统 CFS 到 EAS（Energy Aware Scheduling），再到 GKI 对调度定制化的约束
+2. **系统策略层面**：Doze 模式、App Standby Buckets、Adaptive Battery——系统越来越“聪明”地决定哪些 App 可以用 CPU，哪些必须等着
+3. **应用约束层面**：JobScheduler 引入 → 后台服务限制 → 精确闹钟管控 → 前台服务类型化——App 能做的事情越来越受限
 
-理解这条演进线,我们就能回答:为什么我的后台任务在某个版本突然不工作了?为什么同样的代码在不同设备上表现不一样?做功耗优化时,应该关注哪些系统机制的变化?
+理解这条演进线，我们就能回答：为什么我的后台任务在某个版本突然不工作了？为什么同样的代码在不同设备上表现不一样？做功耗优化时，应该关注哪些系统机制的变化？
 
-我们按时间线逐个版本看下来。
+这条时间线从 Android 5.0 的 JobScheduler 开始。
 
 > **交叉引用**:本节聚焦版本间的变化脉络。EAS 的调度原理详见 §5.2,Android 整体功耗管理框架详见 §5.6,后台执行限制的实战分析详见 §5.8。
 
-## Android 5.0:JobScheduler--后台任务批处理的开端
+## Android 5.0：JobScheduler —— 后台任务批处理的开端
 
 在 Android 5.0 之前,开发者要做后台工作,主要有两个选择:用 `AlarmManager` 定时唤醒,或者直接起一个 `Service` 在后台跑。这两种方式有个共同的问题:每个 App 各自为政,系统无法协调。结果就是十个 App 可能在同一时刻被闹钟唤醒,CPU 从深度休眠中醒来,一起抢 CPU 时间片,忙完之后各自又进入空闲,CPU 再次休眠。这种"集体醒来又集体睡觉"的模式,对电池的消耗远大于把这些任务合并处理。
 
-Android 5.0 引入了 `JobScheduler`（API 21），它的核心思路是让系统来决定后台任务什么时候跑。开发者只需要告诉系统:"我有个任务,需要在充电时、网络连接时执行",系统就会在合适的时机把多个 App 的任务打包在一起执行。
+Android 5.0 引入了 `JobScheduler`（API 21），它的核心思路是让系统来决定后台任务什么时候跑。开发者只需要告诉系统：“我有个任务，需要在充电时、网络连接时执行”，系统就会在合适的时机把多个 App 的任务打包在一起执行。
 
 ```java
 // 示例:通过 JobScheduler 注册一个后台任务
@@ -144,7 +148,7 @@ JobScheduler 并没有强制禁止旧的后台工作方式,它只是一个"更�
 
 [已验证: 官方文档, developer.android.com/reference/android/app/job/JobScheduler]
 
-## Android 6.0:Doze 模式--设备静止时的深度管控
+## Android 6.0：Doze 模式 —— 设备静止时的深度管控
 
 Android 6.0 引入了 Doze 模式,这是 Android 功耗管理的第一个里程碑。它的触发条件是设备拔掉电源、屏幕关闭、保持静止(通过加速度传感器判断)。当这些条件同时满足一段时间后,设备进入 Doze 状态。
 
@@ -164,7 +168,7 @@ Android 6.0 引入了 Doze 模式,这是 Android 功耗管理的第一个里程�
 
 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
-### Android 7.0:Doze on the Go--Doze 模式的扩展
+### Android 7.0：Doze on the Go —— Doze 模式的扩展
 
 Android 7.0 对 Doze 做了一个重要改进:不再要求设备静止。只要设备拔掉电源、屏幕关闭,就会进入一种较轻的 Doze 状态(通常称为 "Light Doze" 或 "Doze on the Go")。完整版 Doze(Level 2)仍然需要设备静止才能触发。
 
@@ -174,7 +178,7 @@ Android 7.0 对 Doze 做了一个重要改进:不再要求设备静止。只要�
 
 [已验证: 官方文档, developer.android.com/about/versions/nougat/android-7.0-changes]
 
-### Android 8.0:后台执行限制--后台服务开始受限
+### Android 8.0：后台执行限制 —— 后台服务开始受限
 
 Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执行限制"(Background Execution Limits),核心变化有两个:
 
@@ -186,7 +190,7 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 [已验证: 官方文档, developer.android.com/about/versions/oreo/background]
 
-## Android 9.0:Adaptive Battery 与 App Standby Buckets--ML 驱动的功耗管理
+## Android 9.0：Adaptive Battery 与 App Standby Buckets —— ML 驱动的功耗管理
 
 如果说 Android 6.0 的 Doze 是"一刀切"的静态管控,Android 9.0 引入的 Adaptive Battery 则是"因人而异"的动态策略。Google 与 DeepMind 合作,用一个设备端的机器学习模型来预测用户在未来几小时内会使用哪些 App。
 
@@ -198,7 +202,9 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 | Working Set | 最近用过,未来几小时仍可能被用到 | Job 和 Alarm 会有轻度延后 |
 | Frequent | 最近几天用过,但不是高频 App | Job、Alarm 延后更明显,部分后台网络会受限 |
 | Rare | 多天未使用 | 只在较少的维护窗口中运行后台任务 |
-| Restricted | 长时间不活跃,或者资源消耗异常、行为异常 | 约束最重,Job、Alarm、网络访问都会进一步收紧 |
+| Restricted | 长时间不活跃，或者资源消耗异常、行为异常 | 约束最重，Job、Alarm、网络访问都会进一步加严 |
+
+[存疑: Task9 2026-05-16 已指出 Android 9 公共 bucket 不包含 `Restricted`，当前表格混入了后续版本常量，交 Task2B 按版本边界拆分。]
 
 这里最容易写错的地方有两个。第一,Restricted 不是"从未运行",这个语义属于 Never bucket。第二,Restricted 的触发条件在不同 Android 版本里有调整,既看最近是否被使用,也看系统是否认定它存在异常耗电或异常行为,所以文档里更适合把它写成"更严格的后台限制状态",不要写成单一原因。
 
@@ -253,11 +259,11 @@ MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设
 
 ## [自动发现] Android 11-15:schedtune 退场,uclamp 与 task profiles 进入主线
 
-如果只记住 EAS 和 GKI,中间会少掉最关键的一层,线程的性能意图怎么真正传到调度器。Android 10 之前,很多设备习惯用 schedtune 和一组厂商自定义 cgroup boost 做前台、后台、Top App 的差异化调度。到 Android 11 之后,AOSP 开始把这类策略收敛到 `libprocessgroup` 和 `task_profiles.json` 这一套统一接口里。
+如果只记住 EAS 和 GKI,中间会少掉最关键的一层,线程的性能意图怎么传到调度器。Android 10 之前,很多设备习惯用 schedtune 和一组厂商自定义 cgroup boost 做前台、后台、Top App 的差异化调度。到 Android 11 之后,AOSP 开始把这类策略收敛到 `libprocessgroup` 和 `task_profiles.json` 这一套统一接口里。
 
 `task_profiles.json` 的作用很直接,框架给进程或线程打上 profile,`libprocessgroup` 再把这个 profile 展开成具体的 cgroup、cpuset、timer slack 和 uclamp 操作。到了 android-16.0.0_r1,文件里已经能直接看到 `UClampMin -> cpu.uclamp.min`、`UClampMax -> cpu.uclamp.max` 这样的映射。也就是说,线程"至少要拿到多高的算力""最多只能吃到多少 CPU",在这一层就已经被写成了调度器能直接消费的参数。
 
-这段演进把 §5.2 和 §5.9 串了起来。§5.2 讲的是 EAS 怎么做 CPU 选择,§5.9 讲的是 ADPF / PerformanceHint 怎么让 App 报告自己的工作节奏。它们之间还隔着一层系统策略,hint session、task profile、uclamp、cpuset。PerformanceHintManager / ADPF 提供的是 work duration hint,本身不等于调度参数。系统或厂商策略需要把这些 hint 转成更低层的线程分组、uclamp 调整或 cpuset 选择,调度器才会真正看到差异。
+这段演进把 §5.2 和 §5.9 串了起来。§5.2 讲的是 EAS 怎么做 CPU 选择,§5.9 讲的是 ADPF / PerformanceHint 怎么让 App 报告自己的工作节奏。它们之间还隔着一层系统策略,hint session、task profile、uclamp、cpuset。PerformanceHintManager / ADPF 提供的是 work duration hint,本身不等于调度参数。系统或厂商策略需要把这些 hint 转成更低层的线程分组、uclamp 调整或 cpuset 选择,调度器才会看到差异。
 
 对排查工作也有直接帮助。如果一个线程明明负载不高,却总被放在大核上,或者一直被压在小核,别只盯着 EAS 算法。先看它当前属于什么 task profile,再看对应 profile 有没有给 `cpu.uclamp.min`、`cpu.uclamp.max` 或 cpuset 施加限制。很多"调度器好像失灵了"的问题，通常不是 `fair.c` 算错，而是策略层先把范围框好了。
 
@@ -267,7 +273,7 @@ MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设
 
 从 Android 12 开始,Google 对后台行为的管控进入了一个新的阶段--不再是大框架的改变,而是对每一个"后门"逐一封堵。这一阶段的特征是:权限管控精细化、前台服务类型化、后台网络访问受限。
 
-### Android 12:精确闹钟进入特殊访问控制
+### Android 12：精确闹钟进入特殊访问控制
 
 Android 12 把精确闹钟纳入 "Alarms & reminders" 特殊访问。走 `PendingIntent` 形态的 exact alarm,比如 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`,通常需要声明 `SCHEDULE_EXACT_ALARM`,并在运行时确认 `canScheduleExactAlarms()` 为 `true`。缺少这项访问时,相关调用会失败。
 
@@ -279,17 +285,17 @@ Android 13 起,闹钟类、日历类这类场景还可以声明 `USE_EXACT_ALARM
 
 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms;developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission]
 
-### Android 13:USE_EXACT_ALARM 权限 + FGS Task Manager
+### Android 13：USE_EXACT_ALARM 权限 + FGS Task Manager
 
 Android 13 新增了 `USE_EXACT_ALARM` 普通权限(安装时授予),面向闹钟、日历等特定类别应用，作为 `SCHEDULE_EXACT_ALARM` 的替代路径。但 Google Play 政策限制该权限的使用范围，不能当成通用方案。
 
 Android 13 同时引入了前台服务任务管理器(FGS Task Manager),用户可以在通知栏直接看到哪些 App 正在运行前台服务,并且可以手动停止。这让用户对后台活动有了更高的可见性和控制力。
 
-Android 14 起对精确闹钟进一步收紧:`SCHEDULE_EXACT_ALARM` 权限对大多数新安装且 targetSdkVersion >= 33 的 App **默认拒绝**。App 需要通过 `AlarmManager.canScheduleExactAlarms()` 检查权限状态,如果未授予,引导用户到系统设置页面手动开启。此前在 Android 13 中,`SCHEDULE_EXACT_ALARM` 仍默认授予——Android 12 引入的是特殊访问控制(需声明),Android 14 才将默认授予改为默认拒绝。
+Android 14 起，精确闹钟权限默认更严格：`SCHEDULE_EXACT_ALARM` 权限对大多数新安装且 targetSdkVersion >= 33 的 App **默认拒绝**。App 需要通过 `AlarmManager.canScheduleExactAlarms()` 检查权限状态,如果未授予,引导用户到系统设置页面手动开启。此前在 Android 13 中,`SCHEDULE_EXACT_ALARM` 仍默认授予——Android 12 引入的是特殊访问控制(需声明),Android 14 才将默认授予改为默认拒绝。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#schedule-exact-alarms;developer.android.com/develop/background-work/services/alarms]
 
-### Android 14:前台服务类型化 + 后台 Activity 启动需显式 opt-in
+### Android 14：前台服务类型化 + 后台 Activity 启动需显式 opt-in
 
 Android 14 要求前台服务必须声明**至少一个类型**(foreground service type),比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为,系统也能据此更细地管理服务。如果一个声称在做媒体播放的前台服务并没有在播放音频,系统就可能终止它。
 
@@ -301,7 +307,7 @@ Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14]
 
-### Android 15:后台网络请求跟随 valid process lifecycle,Doze 进入更快
+### Android 15：后台网络请求跟随 valid process lifecycle，Doze 进入更快
 
 Android 15 新增了后台网络访问限制。官方文档的边界写法是 `valid process lifecycle`:App 在有效进程生命周期之外发起网络请求时,会收到 `UnknownHostException` 或其他 socket 相关 `IOException`。文档没有给出 "`Activity.onStop()` 之后固定几秒必现" 这样的时间承诺,因此排查时应以生命周期边界为准,不要写死秒数。
 
@@ -311,7 +317,7 @@ Android 15 还让设备更快进入 Doze。官方行为变更页强调了这个�
 
 [已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-all]
 
-### [自动发现: 来源 web search - Android developer docs] Android 16:JobScheduler 配额优化
+### [自动发现：来源 web search - Android developer docs] Android 16：JobScheduler 配额优化
 
 Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job 的执行时间配额(runtime quota)现在不仅取决于 App 的 Standby Bucket,还取决于:
 
@@ -323,15 +329,17 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 [已验证: developer.android.com/about/versions/16/behavior-changes-all;developer.android.com/reference/android/app/job/JobScheduler]
 
-### [自动发现] Android 17:已确认的功耗行为变更
+### [自动发现] Android 17：已确认的功耗行为变更
 
 Android 17 (API 37) 在功耗管理方面的已确认变化(截至官方 behavior changes all-apps / target-37 页面):
 
 - **App memory limits**:系统可按进程设置内存上限,超出即终止。这和之前的 `android:largeHeap` 不同,是一个强制硬限制。
-- **Reduced Wakelocks for Idle Alarms**:idle alarm 触发的 WakeLock 持有时间被进一步压缩,减少闹钟唤醒后的 CPU 活动窗口。
-- **ProfilingManager KILL_EXCESSIVE_CPU_USAGE**:`ProfilingManager` 新增 `KILL_EXCESSIVE_CPU_USAGE` trigger,系统可在检测到 App 长时间高 CPU 占用时主动终止进程。这是一个可观测性入口,也给了系统更强的干预手段。
+- **Reduced Wakelocks for Idle Alarms**：idle alarm 触发的 WakeLock 持有时间被进一步压缩，减少闹钟唤醒后的 CPU 活动窗口。
+- **ProfilingManager KILL_EXCESSIVE_CPU_USAGE**：`ProfilingManager` 新增 `KILL_EXCESSIVE_CPU_USAGE` trigger，系统可在检测到 App 长时间高 CPU 占用时主动终止进程。这是一个可观测性入口，也给了系统更强的干预手段。
 
-这三项变化延续了前面版本的演进方向:逐步收紧 App 对 CPU 的自主使用权,同时提供更好的可观测性。
+[存疑: Task9 2026-05-16 已指出 `Reduced Wakelocks for Idle Alarms` 的官方语义不是压缩既有 idle alarm WakeLock 持有时长，而是新增 `OnAlarmListener` 版 allow-while-idle exact alarm，交 Task2B 修正。]
+
+这三项变化延续了前面版本的演进方向：逐步减少 App 对 CPU 的自主使用权，同时提供更好的可观测性。
 
 > ⚠️ **未核实研究线索**:有 external review 提到 Android 17 可能引入基于 ODPM/μJ 计量的"Energy Limiter"机制(按 App 统计后台能量消耗,超配额强杀)。该机制未在官方 behavior changes 页面中找到对应条目,目前不能作为确定平台特性。如果后续被官方确认,可在此处补充。
 
@@ -348,7 +356,7 @@ GKI 对 CPU 调度的影响,主要体现在厂商还能在哪里放自己的策�
 
 1. **通用调度器代码更收敛了**。厂商不能再长期依赖直接改 CFS/EAS 主干代码的方式维护自家分支,新增策略更适合通过 vendor modules、vendor hooks,或者推动上游合入。
 
-2. **Vendor Hook 仍然是厂商插策略的常用位置**。在 android15-6.6 的调度 hook 里,可以直接看到 `android_rvh_cpu_overutilized`、`android_rvh_sched_balance_rt`、`android_rvh_uclamp_eff_get` 这类入口。它们比文档式的伪名字更重要,因为你在设备差异分析里真正会碰到的就是这些符号。
+2. **Vendor Hook 仍然是厂商插策略的常用位置**。在 android15-6.6 的调度 hook 里,可以直接看到 `android_rvh_cpu_overutilized`、`android_rvh_sched_balance_rt`、`android_rvh_uclamp_eff_get` 这类入口。它们比文档式的伪名字更重要,因为你在设备差异分析里实际会碰到的就是这些符号。
 
 3. **`sched_ext` 还不是 Android 15 GKI 6.6 的现成能力**。它在 upstream Linux 6.12 才合入,更适合写成后续可能进入 Android common kernel 的实验方向。今天在 Android 15 设备上谈调度定制,主角仍然是 vendor hooks、uclamp、cpuset 和 task profiles,不是 `sched_ext`。
 
@@ -366,7 +374,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 
 ## 版本演进全景时间线
 
-把以上内容放到一条时间线上,Google 在 CPU 和功耗管理上的策略是一脉相承的:**逐步限制 App 对 CPU 的自主使用权,让系统来做决策**。
+把以上内容放到一条时间线上，Google 在 CPU 和功耗管理上的策略是一脉相承的：**逐步限制 App 对 CPU 的自主使用权，让系统来做决策**。
 
 | 版本 | 核心变化 | 约束层面 |
 |------|---------|---------|
@@ -379,7 +387,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 | 11 | task profiles 开始统一 cgroup / 调度策略入口 | Framework ↔ kernel |
 | 12 | Performance Hint API 引入 + 精确闹钟权限化 | API 层 + 应用层 |
 | 13 | USE_EXACT_ALARM 权限 + FGS Task Manager | 应用层(用户可见) |
-| 14 | 精确闹钟默认拒绝 + FGS 类型化 + 后台 Activity opt-in | 应用层(权限收紧 + 类型化) |
+| 14 | 精确闹钟默认拒绝 + FGS 类型化 + 后台 Activity opt-in | 应用层（权限加严 + 类型化） |
 | 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 进入更快 | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
 | 17 | App memory limits + idle alarm wakelock 降低 + ProfilingManager KILL_EXCESSIVE_CPU_USAGE + sched_ext 实验方向 | 应用层（资源硬限制） + 内核层（可插拔） |
@@ -415,10 +423,10 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 EAS 可能会让某些场景下的单次执行时间变长,因为任务被放到了小核,但整体功耗下降。App 侧没有公开 API 直接写 `cpu.uclamp.min` / `cpu.uclamp.max`。延迟敏感工作应优先使用 ADPF / `PerformanceHintManager` 创建 hint session,持续上报 target / actual work duration;系统组件或 OEM 策略再把 hint、task profile、cpuset 和 uclamp 连接到调度器。直接操作 uclamp 属于系统组件、root / 调试环境或厂商策略范围。
 
 ### "Doze 模式下我的推送收不到"
-FCM(Firebase Cloud Messaging)高优先级消息可以绕过 Doze。如果推送走的是自有长连接,在 Doze 下确实会被延迟。建议将关键推送迁移到 FCM 高优先级通道。
+FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推送走的是自有长连接，在 Doze 下通常会被延迟。建议将关键推送迁移到 FCM 高优先级通道。
 
-### "不同厂商的设备,后台限制不一样"
-确实如此。虽然 AOSP 定义了基础规则,但很多厂商(尤其是中国市场的厂商)会在 AOSP 基础上叠加自己的省电策略。这就是为什么同一个 App 在 Pixel 上表现正常,在某些国产设备上后台被杀。可以参考 [dontkillmyapp.com](https://dontkillmyapp.com/) 了解各厂商的差异。
+### “不同厂商的设备，后台限制不一样”
+会有差异。AOSP 定义了基础规则，但很多厂商（尤其是中国市场的厂商）会在 AOSP 基础上叠加自己的省电策略。这就是为什么同一个 App 在 Pixel 上表现正常,在某些国产设备上后台被杀。可以参考 [dontkillmyapp.com](https://dontkillmyapp.com/) 了解各厂商的差异。
 
 ## 参考资料
 
