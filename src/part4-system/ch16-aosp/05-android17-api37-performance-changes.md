@@ -38,22 +38,22 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-16"
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
-last_task9_at: "2026-05-15T07:35:58+08:00"
-task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 1；ProfilingManagerService anomaly 伪代码仍缺 API37 源码锚点，DeliQueue 内存开销量化缺来源。"
+last_task9_at: "2026-05-16T08:33:00+08:00"
+task9_review_notes: "2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；P1 为旧 MessageQueue 锁竞争机制描述与 AOSP/官方 DeliQueue 说明不一致，已写入 queue。"
 review_type: task6-writing-quality-review
-task9_result: pending
-last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
+task9_result: "needs-rework"
+last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task6_review_log: logs/review/2026-05-16-08-review.md

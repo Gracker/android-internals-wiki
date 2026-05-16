@@ -1,16 +1,16 @@
 ---
-status: ready-for-review
+status: "finalized"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '19'
 confidence: high
 drafted_by: gemini
 drafted_date: '2026-04-24'
 last_task6_at: "2026-05-16T08:16:00+08:00"
-last_task9_at: '2026-05-13T17:55:27+08:00'
+last_task9_at: "2026-05-16T08:33:00+08:00"
 last_verified: '2026-04-25'
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 related_chapters:
 - '19.0'
 - '19.01'
@@ -36,18 +36,17 @@ task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatt
 task6_reviewed_at: "2026-05-16T08:16:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: pending
-task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback
-  requestId 语义与 AOSP API 文档不一致。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0
-  0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法进入统一 Session Timeline。'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-13'
-task9_state: pending
+task9_result: "pass-tech-review"
+task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-16"
+task9_state: "reviewed"
 title: 混合栈与跨平台 APM (WebView / Flutter)
-last_task9_review_log: 'logs/deep-review/2026-05-13-17-deep-review.md'
+last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
 
 ---
+
 
 
 # 混合栈与跨平台 APM (WebView / Flutter)

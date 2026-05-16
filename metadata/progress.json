@@ -1,8 +1,8 @@
 {
   "total": 289,
   "draft": 1,
-  "ready-for-review": 95,
-  "finalized": 193,
+  "ready-for-review": 94,
+  "finalized": 194,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -274,7 +274,7 @@
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
   ],
-  "review_summary": "Task6 2026-05-16 08: review 19.26 / 16.5 / 21.7 / 22.12；L1/L2 小修 10 处；无新增 L3/L4 回炉；21.7 自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-16 08: review 16.5 / 19.26；P1 1（16.5 MessageQueue 锁竞争机制），P2 4；19.26 自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 10,
     "l3_issues": 0,
@@ -1095,9 +1095,9 @@
   },
   "total_review_sections": 132,
   "next_review_candidates": [],
-  "ready_for_review": 95,
-  "last_updated": "2026-05-16T08:16:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 94,
+  "last_updated": "2026-05-16T08:33:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "08:16",
@@ -1120,8 +1120,8 @@
     ],
     "log": "logs/review/2026-05-16-08-review.md"
   },
-  "task9_last_review": "2026-05-16T06:31:25+08:00",
-  "ready_to_publish": 193,
+  "task9_last_review": "2026-05-16T08:33:00+08:00",
+  "ready_to_publish": 194,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2943,43 +2943,55 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "timestamp": "2026-05-16T06:31:25+08:00",
+    "reviewed_at": "2026-05-16T08:33:00+08:00",
+    "log": "logs/deep-review/2026-05-16-08-deep-review.md",
     "sections": [
-      "1.19"
+      "16.5",
+      "19.26"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part3-tools/ch19-apm/26-hybrid-apm.md"
     ],
-    "result": "needs-rework",
     "p0": 0,
     "p1": 1,
-    "p2": 2,
+    "p2": 4,
     "p3": 0,
-    "log": "logs/deep-review/2026-05-16-06-deep-review.md",
-    "auto_promoted": []
+    "auto_finalized": [
+      "19.26"
+    ],
+    "queue_added": 1,
+    "suggestions_added": 4
   },
-  "last_task9_review": "2026-05-16 06: deep review 1.19",
+  "last_task9_review": "2026-05-16 08: deep review 16.5 / 19.26",
   "last_task9_sections": [
-    "1.19"
+    "16.5",
+    "19.26"
   ],
   "last_task9_review_detail": {
-    "timestamp": "2026-05-16T06:31:25+08:00",
+    "reviewed_at": "2026-05-16T08:33:00+08:00",
+    "log": "logs/deep-review/2026-05-16-08-deep-review.md",
     "sections": [
-      "1.19"
+      "16.5",
+      "19.26"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part3-tools/ch19-apm/26-hybrid-apm.md"
     ],
-    "result": "needs-rework",
     "p0": 0,
     "p1": 1,
-    "p2": 2,
+    "p2": 4,
     "p3": 0,
-    "log": "logs/deep-review/2026-05-16-06-deep-review.md",
-    "auto_promoted": []
+    "auto_finalized": [
+      "19.26"
+    ],
+    "queue_added": 1,
+    "suggestions_added": 4
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
   ],
   "total_review_files": 132,
   "last_task2a_at": "2026-05-16T07:17:00+08:00",
@@ -3023,11 +3035,12 @@
     "notes": "19.26/16.5/21.7 为 Task2B fixed 后复审；22.12 为首次 Task6 写作 review。22.12 既有 Task9 技术回炉项未由 Task6 裁决。"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
   ],
-  "last_task9_at": "2026-05-16T06:31:25+08:00",
+  "last_task9_at": "2026-05-16T08:33:00+08:00",
   "last_task2a_result": "ready-for-review",
-  "ready-to-publish": 193,
+  "ready-to-publish": 194,
   "last_task2a_processed_section": "22.12",
   "task6_last_review_at": "2026-05-16T08:16:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-08-review.md",

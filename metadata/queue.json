@@ -7999,21 +7999,53 @@
         "读者需求度": 4,
         "时效性": 4
       }
+    },
+    {
+      "id": "task9-16.5-messagequeue-lock-mechanism-20260516",
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 85,
+      "title": "旧 MessageQueue 锁竞争机制描述不准确",
+      "description": "[Deep Tech Review][原理断裂] 旧 MessageQueue 的 monitor 持有时机、UI 线程等待点和官方 DeliQueue priority inversion 模型不一致。",
+      "reason": "[Deep Tech Review][原理断裂] 旧 MessageQueue 的 monitor 持有时机、UI 线程等待点和官方 DeliQueue priority inversion 模型不一致。",
+      "issue_type": "principle-chain/source-code-accuracy",
+      "severity": "P1",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码准确性",
+          "location": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md:L91-L101",
+          "detail": "旧 MessageQueue 的锁竞争机制描述把“主线程执行布局”写成导致所有投递线程阻塞，并把主线程等待点写成 enqueueMessage()。AOSP legacy MessageQueue 只在 enqueueMessage()/next() 的队列维护阶段持有 monitor，Looper 取出 Message 后执行业务/布局时不会继续持有该锁；官方 DeliQueue 文章的典型问题是低优先级生产者持锁导致高优先级 UI 线程在 MessageQueue.next()/monitor contention 上等待。",
+          "suggestion": "按官方 priority inversion 模型重写：producer enqueue 和 Looper next 共享同一 monitor；主线程等待点应描述为 next()/monitor contention，或主线程自身 post 时才是 enqueueMessage；不要把布局执行期写成持有 MessageQueue 锁。Perfetto 观察点改为 monitor contention with MessageQueue + blocked main thread/owner thread，而不是“主线程 enqueueMessage 等待”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "created_date": "2026-05-16",
+      "added_at": "2026-05-16T08:33:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 242,
+    "total_entries": 246,
     "p0_count": 42,
-    "last_updated": "2026-05-16T07:17:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 140,
+    "last_updated": "2026-05-16T08:33:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 142,
     "updated_date": "2026-05-16",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 140
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 142
   },
-  "last_updated": "2026-05-16T07:17:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 140,
+  "last_updated": "2026-05-16T08:33:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 142,
   "last_task2a_completed": "22.12",
   "last_task2a_completed_at": "2026-05-16T07:17:00+08:00"
 }
