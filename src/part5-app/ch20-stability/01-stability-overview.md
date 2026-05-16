@@ -12,9 +12,9 @@ drafted_date: "2026-05-11"
 polish_count: 1
 task2b_result: fixed
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 reviewed_date: "2026-05-14"
 reviewed_by: openclaw-task6
 sources:
@@ -128,7 +128,7 @@ OOM 在 Android 上有两层含义：
 
 `Runtime.maxMemory()` 返回值取决于 Manifest 配置：未设置 `largeHeap` 时返回 `dalvik.vm.heapgrowthlimit`（通常 256MB ~ 384MB），设置 `android:largeHeap="true"` 时返回 `dalvik.vm.heapsize`（通常 512MB）。但 `largeHeap` 不等于无限分配——最终仍受物理内存和系统整体内存压力约束。
 
-**虚拟内存耗尽**：进程的虚拟地址空间被耗尽（64 位 ARM 上理论值约 256TB，但实际受 `vm.max_map_count`、文件描述符限制等约束）。典型场景：线程数过多（每个线程占用 ~8MB 栈空间）、内存映射文件过多、JNI 层连续 malloc 但不释放。
+**虚拟内存耗尽**：进程的虚拟地址空间被耗尽（64 位 ARM 上理论值约 256TB，但实际受 `vm.max_map_count`、文件描述符限制等约束）。典型场景：线程数过多（Android bionic 默认线程栈约 1 MiB，`PTHREAD_STACK_SIZE_DEFAULT` 定义在 `bionic/libc/bionic/pthread_internal.h`，主线程和自定义 `stackSize` 的 Java Thread 可能更大）、内存映射文件过多、JNI 层连续 malloc 但不释放。
 
 OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的设计意图是 Error 不应被应用层捕获——但实际工程中，部分团队会在 `UncaughtExceptionHandler` 中做差异化处理：只上报 Java 堆 OOM 并尝试恢复（如释放缓存、降低图片分辨率），虚拟内存耗尽则直接放弃。20.5 节展开 OOM 的分类治理。
 
