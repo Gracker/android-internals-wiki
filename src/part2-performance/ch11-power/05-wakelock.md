@@ -38,24 +38,24 @@ sources:
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-05-15T12:31:59+08:00"
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T16:30:00+08:00"
 last_task2b_at: "2026-05-06T14:51:22+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: task9_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 4

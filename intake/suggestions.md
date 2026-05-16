@@ -1633,3 +1633,9 @@
 - **问题**：Task6 复审确认正文仍保留 `[需确认]`：Android 14+ CPU-starved BroadcastReceiver timeout 版本口径与前台可见、后台、silent ANR 的弹窗/kill 边界未补齐。
 - **建议**：按 Task9 技术结论和官方文档补齐版本、前后台和可见性边界；无法确认时降级为典型前台 ANR 场景并标注系统差异。
 - **review 日志**：logs/review/2026-05-16-16-review.md
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-05-16
+- **类型**：源码准确性 / API 语义边界
+- **位置**：`src/part2-performance/ch11-power/05-wakelock.md:L771-L773, L819-L823`
+- **问题**：`setPreferPowerEfficiency(true)` 被写成系统会降低 CPU/GPU 频率、完整路径里也写成“系统调整 CPU/GPU 频率策略”。AOSP `PerformanceHintManager.Session#setPreferPowerEfficiency()` 注释只承诺“these threads can be safely scheduled to prefer power efficiency over performance”，是线程调度偏好，不是 CPU/GPU 降频保证。
+- **建议**：改为“声明 hint session 关联线程可优先能效调度，具体是否迁移到效率核、降频或联动 GPU 由设备 Power HAL / scheduler 实现决定”；不要把 GPU 频率调整写成 API 直接语义。

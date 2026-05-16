@@ -38,21 +38,26 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/研究素材"
 last_task2a_at: "2026-05-16T16:04:00+08:00"
-status: ready-for-review
+status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T16:30:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
+task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。"
 ---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
