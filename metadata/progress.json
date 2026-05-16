@@ -1,8 +1,8 @@
 {
   "total": 295,
   "draft": 5,
-  "ready-for-review": 96,
-  "finalized": 194,
+  "ready-for-review": 95,
+  "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -278,7 +278,7 @@
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
-  "review_summary": "Task6 2026-05-16 11: review 3.7；L1/L2 小修 12 处；无新增 L3/L4 回炉项；无自动晋升。",
+  "review_summary": "Task9 2026-05-16 11: review 3.7/5.1/5.7；3.7 自动晋升 finalized；5.1/5.7 写入 Task2B 回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 12,
     "l3_issues": 0,
@@ -391,7 +391,7 @@
     "5.7": {
       "p0": 0,
       "p1": 2,
-      "p2": 1,
+      "p2": 2,
       "p3": 0
     },
     "4.6": {
@@ -1093,13 +1093,25 @@
       "auto_finalized": true,
       "auto_promoted_at": "2026-05-16T08:16:00+08:00",
       "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
+    },
+    "3.7": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
+    },
+    "5.1": {
+      "p0": 1,
+      "p1": 3,
+      "p2": 3,
+      "p3": 0
     }
   },
   "total_review_sections": 134,
   "next_review_candidates": [],
-  "ready_for_review": 94,
-  "last_updated": "2026-05-16T11:13:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 93,
+  "last_updated": "2026-05-16T11:31:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "11:13",
@@ -1114,8 +1126,8 @@
     "auto_promotions": [],
     "log": "logs/review/2026-05-16-11-review.md"
   },
-  "task9_last_review": "2026-05-16T09:20:00+08:00",
-  "ready_to_publish": 194,
+  "task9_last_review": "2026-05-16T11:31:00+08:00",
+  "ready_to_publish": 195,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1275,9 +1287,13 @@
     "5.7": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task9_at": "2026-05-12T17:09:00+08:00",
+      "last_task9_at": "2026-05-16T11:31:00+08:00",
       "task9_result": "needs-rework",
-      "queue_priority": 85
+      "queue_priority": 85,
+      "title": "CPU 相关的版本演进",
+      "file": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "task9_state": "reviewed",
+      "task2b_state": "pending"
     },
     "4.6": {
       "status": "ready-for-review",
@@ -1345,8 +1361,14 @@
       "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-12T20:10:00+08:00",
       "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-12-20-review.md"
+      "queue_priority": 95,
+      "last_task6_review_log": "logs/review/2026-05-12-20-review.md",
+      "title": "Linux 进程调度基础",
+      "file": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task9_at": "2026-05-16T11:31:00+08:00"
     },
     "5.11": {
       "status": "ready-for-review",
@@ -2920,8 +2942,8 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -2929,8 +2951,11 @@
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T11:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
-      "task9_state": "pending"
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-16T11:31:00+08:00"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
@@ -3027,45 +3052,67 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T09:20:00+08:00",
-    "log": "logs/deep-review/2026-05-16-09-deep-review.md",
+    "reviewed_at": "2026-05-16T11:31:00+08:00",
+    "log": "logs/deep-review/2026-05-16-11-deep-review.md",
     "sections": [
-      "13.13"
+      "3.7",
+      "5.1",
+      "5.7"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+      "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
     ],
-    "p0": 0,
-    "p1": 2,
-    "p2": 2,
+    "p0": 1,
+    "p1": 5,
+    "p2": 5,
     "p3": 0,
-    "auto_finalized": [],
-    "queue_added": 1,
-    "suggestions_added": 2
+    "auto_finalized": [
+      "3.7"
+    ],
+    "queue_added": [
+      "task9-5.1-uclamp-proc-perfetto-sql-20260516",
+      "task9-5.7-standby-bucket-android17-wakelock-20260516"
+    ],
+    "suggestions_added": 5
   },
-  "last_task9_review": "2026-05-16 09: deep review 13.13",
+  "last_task9_review": "2026-05-16 11: deep review 3.7, 5.1, 5.7",
   "last_task9_sections": [
-    "13.13"
+    "3.7",
+    "5.1",
+    "5.7"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T09:20:00+08:00",
-    "log": "logs/deep-review/2026-05-16-09-deep-review.md",
+    "reviewed_at": "2026-05-16T11:31:00+08:00",
+    "log": "logs/deep-review/2026-05-16-11-deep-review.md",
     "sections": [
-      "13.13"
+      "3.7",
+      "5.1",
+      "5.7"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+      "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
     ],
-    "p0": 0,
-    "p1": 2,
-    "p2": 2,
+    "p0": 1,
+    "p1": 5,
+    "p2": 5,
     "p3": 0,
-    "auto_finalized": [],
-    "queue_added": 1,
-    "suggestions_added": 2
+    "auto_finalized": [
+      "3.7"
+    ],
+    "queue_added": [
+      "task9-5.1-uclamp-proc-perfetto-sql-20260516",
+      "task9-5.7-standby-bucket-android17-wakelock-20260516"
+    ],
+    "suggestions_added": 5
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
   ],
   "total_review_files": 134,
   "last_task2a_at": "2026-05-16T10:04:00+08:00",
@@ -3095,11 +3142,13 @@
     "notes": "仅 3.7 符合 status=ready-for-review 且 task6_state=pending 的待审条件；本轮无新增 L3/L4 回炉项，已转入 Task9 pending。"
   },
   "last_task9_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
   ],
-  "last_task9_at": "2026-05-16T09:20:00+08:00",
+  "last_task9_at": "2026-05-16T11:31:00+08:00",
   "last_task2a_result": "gap-mining-created-drafts",
-  "ready-to-publish": 194,
+  "ready-to-publish": 195,
   "last_task2a_processed_section": "22.12",
   "task6_last_review_at": "2026-05-16T11:13:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-11-review.md",
@@ -3314,8 +3363,8 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -3323,8 +3372,11 @@
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T11:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
-      "task9_state": "pending"
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-16T11:31:00+08:00"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",

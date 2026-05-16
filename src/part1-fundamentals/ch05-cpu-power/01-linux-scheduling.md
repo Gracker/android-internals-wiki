@@ -3,7 +3,7 @@ title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
 reviewed_by: openclaw-task6
@@ -18,13 +18,13 @@ task2b_fixed_issues:
   - eevdf-sysctl-params-and-rt-version-timeline-added
   - diagnostic-decision-framework-added
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、代码围栏语言、标点和轻量措辞；L3/L4 回炉问题已写入 queue.json。'
-task9_state: pending
-task9_result: pending
-task9_reviewed_date: '2026-04-29'
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-29T18:48:00+08:00'
-task2b_state: fixed
-task2b_result: fixed
+last_task9_at: '2026-05-16T11:31:00+08:00'
+task2b_state: pending
+task2b_result: pending
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
 last_verified: '2026-04-14'
 last_verified_against: Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers,
@@ -67,6 +67,7 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 review_type: post-polish-quality-gate
+task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/deep-review/2026-05-16-11-deep-review.md。'
 ---
 
 <!-- outline-start -->

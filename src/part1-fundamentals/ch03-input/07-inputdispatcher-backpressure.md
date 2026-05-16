@@ -1,7 +1,7 @@
 ---
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -26,11 +26,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-05-16
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-16T11:31:00+08:00'
+task9_review_notes: '2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。'
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级

@@ -8251,6 +8251,96 @@
         "读者需求度": 5,
         "时效性": 4
       }
+    },
+    {
+      "id": "task9-5.1-uclamp-proc-perfetto-sql-20260516",
+      "section": "5.1",
+      "priority": 95,
+      "title": "UClamp 接口与 Perfetto SQL 示例存在技术错误",
+      "description": "5.1 存在 per-task UClamp /proc 路径错误、thread_state.thread_name 字段错误、EEVDF base_slice 方向矛盾、sched 事件观察进程组方法错误。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
+      ],
+      "material_paths": [
+        "https://docs.kernel.org/scheduler/sched-util-clamp.html",
+        "https://man7.org/linux/man-pages/man1/uclampset.1.html",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+        "https://raw.githubusercontent.com/google/perfetto/main/src/trace_processor/perfetto_sql/stdlib/android/job_scheduler_states.sql"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API错误",
+          "location": "L656-L661 UClamp per-task 示例",
+          "detail": "Linux/Android 标准 per-task UClamp 入口不是 /proc/<pid>/task/<tid>/util_clamp_min/max；per-task 应通过 sched_setattr()/uclampset 设置 sched_util_min/max，Android 产品路径多为 task profiles 写 cpu.uclamp.* cgroup 文件。",
+          "suggestion": "删除 /proc echo 示例，改为 sched_setattr/uclampset 伪代码；Android 侧另列 /dev/cgroot/cpu/.../cpu.uclamp.min/max 或 task_profiles.json 路径。"
+        },
+        {
+          "type": "Perfetto SQL 字段错误",
+          "location": "L505-L515 vlag 替代查询",
+          "detail": "thread_state 表没有 thread_name 字段，当前 SQL 无法直接运行。",
+          "suggestion": "先从 thread/process 表取 utid，再在 thread_state 中按 utid 与 state='R' 过滤。"
+        },
+        {
+          "type": "原理错误/前后矛盾",
+          "location": "L538 与 L800 sched_base_slice_ns 判断",
+          "detail": "L538 写“sched_base_slice_ns 偏大导致频繁微秒级切换”，与 EEVDF slice 语义和 L800“偏小”判断相反。",
+          "suggestion": "统一为：大量短切换优先排查 base_slice 偏小、频繁唤醒/抢占、RT 干扰；base_slice 偏大更可能增加单次驻留和响应延迟。"
+        },
+        {
+          "type": "观察方法错误",
+          "location": "L787-L792 UClamp/cpuset 生效验证",
+          "detail": "sched_wakeup/sched_switch 不直接暴露进程组从 foreground 到 top-app 的变化，进程名也不会因此改变。",
+          "suggestion": "改为检查 /proc/<pid>/cgroup、cgroup 事件/trace（若采集）、ActivityManager setProcessGroup trace/log，或通过 cpuset 文件和 CPU/frequency 结果间接验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T11:31:00+08:00"
+    },
+    {
+      "id": "task9-5.7-standby-bucket-android17-wakelock-20260516",
+      "section": "5.7",
+      "priority": 85,
+      "title": "Standby Bucket 版本边界与 Android 17 idle alarm 语义需修正",
+      "description": "5.7 把 Restricted bucket 写进 Android 9 演进段，并把 Android 17 Reduced Wakelocks for Idle Alarms 解释成平台压缩既有 wakelock 持有时间，均需回炉修正。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/topic/performance/appstandby",
+        "frameworks/base/core/java/android/app/usage/UsageStatsManager.java",
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/release-notes"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L196-L217 Android 9 App Standby Buckets",
+          "detail": "Android 9 公共 bucket 不包含 Restricted；AOSP android-9.0.0_r61 UsageStatsManager.java 也没有 STANDBY_BUCKET_RESTRICTED。正文把 Android 16 常量表直接塞进 Android 9 演进段，会误导版本边界。",
+          "suggestion": "Android 9 段只写 Active / Working Set / Frequent / Rare（Never 作为特殊桶）；Restricted 单独移到 Android 11/12+ 版本差异段，并标明当前 AOSP 常量值 45。"
+        },
+        {
+          "type": "功能语义错误",
+          "location": "L331-L335 与 L388 Android 17 Reduced Wakelocks for Idle Alarms",
+          "detail": "官方描述是新增 OnAlarmListener 版 setExactAndAllowWhileIdle，减少需要持续 partial wakelock 的场景；不是平台自动压缩既有 PendingIntent idle alarm 的 WakeLock 持有时长。",
+          "suggestion": "改成“新增 callback-based allow-while-idle exact alarm，帮助 messaging/socket 类任务减少长 partial wakelock”，避免写成系统强制缩短 wakelock。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T11:31:00+08:00"
     }
   ],
   "metadata": {

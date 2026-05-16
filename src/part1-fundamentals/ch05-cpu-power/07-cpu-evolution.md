@@ -68,17 +68,14 @@ task6_state: revisiting
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: needs-rework
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: task6_pending
-task9_reviewed_date: '2026-05-12'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-12T17:09:00+08:00'
-task9_review_notes: '2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29
-  task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。；2026-05-05 01:36
-  task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；详见 logs/deep-review/2026-05-05-01-deep-review.md。'
-
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: 2026-05-16
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-16T11:31:00+08:00'
+task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/deep-review/2026-05-16-11-deep-review.md。'
 ---
 
 

@@ -1480,6 +1480,25 @@
 - **问题**：正文多次使用“首帧附近的抖动会小一些”“预热收益”等判断，但没有给出同一设备 boot trace、App trace 或属性开关对照样例。
 - **建议**：补一个最小证据口径：同设备记录 `PreloadGraphicsDriver` boot trace 耗时、App 进程 `setupGpuLayers/setupAngle/chooseDriver` 与首次 EGL/Vulkan 调用耗时；如能安全切换 `ro.zygote.disable_gl_preload`，再给开启/关闭对照。没有实测时，把收益描述限制为“可能减少公共冷路径成本”。
 
+
+## [Task14 参考书扫描] 23.4 Java Heap 优化策略 — 2026-05-16
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：冷热端分离 LruCache 策略——在缓存容量受限场景下（如低端设备），传统 LRU 可能淘汰高频使用数据。建议补充基于使用频率的冷热端分离缓存方案：将缓存分为热端（高频数据，按使用次数排序）和冷端（低频数据，LRU 淘汰），提升命中率。同时补充缓存命中率监控方法论：命中率 = 成功取到数据/请求次数。
+- **参考书覆盖深度**：中等（有完整算法描述和图解，无代码实现）
+
+## [Task14 参考书扫描] 21.1/25.6 启动分析/APK体积 — Dex 类文件重排序 — 2026-05-16
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：Dex 类文件重排序优化——基于 CPU cache line（64字节）和空间局部性原理，通过 Facebook Redex 工具的 InterDexPass 对 dex 中类文件按启动加载顺序重排，提升高速缓存命中率从而加速启动。21.1 目前仅将 dex 重排作为 Baseline Profile 的对比项提及，建议补充完整的 Redex 使用流程（hprof 采集类加载顺序 → InterDexPass 重排）及 cache line 原理背景。
+- **参考书覆盖深度**：中等（有完整 Redex 使用流程和 cache line 原理）
+
+## [Task14 参考书扫描] 23.3/23.6 虚拟内存优化 — ART 备份栈释放（过时提醒） — 2026-05-16
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
+- **过时内容**：释放 ART 备份栈空间方案（通过 GetPrimitiveArrayCritical 禁用 HomogeneousSpaceCompact GC 并 munmap 释放 main space 1 的 512M）仅适用于 Android 5-7，因为 Android 8+ 使用 ConcurrentCopying (CC) 回收器，不再创建 main space 1 备份空间。
+- **建议更新至**：Android 16/17 标注该方案仅历史参考，现代 64 位设备虚拟内存空间充裕（128TB），32 位设备已极少。建议在 23.6 中仅作历史方案记录，重点转向多进程架构和线程治理等通用方案。
+
 ## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-16
 - **类型**：数据缺失
 - **位置**：L381/L389/L468/L499-L501
@@ -1491,6 +1510,8 @@
 - **位置**：L172/L180-L231
 - **问题**：`executePendingTransactions()` 实际调用 `execPendingActions(true)` 后再 `forcePostponedTransactions()`；表格只写“会强制开始 postponed transaction”，没有说明它对已排队事务执行时会绕过 state-loss 检查，容易和 `commitNow()` 的 state-saved 行为混在一起。
 - **建议**：在 API 边界表补一列或脚注：`executePendingTransactions()` 不新建事务，但会以 `allowStateLoss=true` 执行当前 pending actions，并强制开始 postponed transactions；不要把它当作安全的同步提交替代品。
+
+
 
 ## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-16
 - **类型**：数据缺失 / 版本口径
@@ -1516,6 +1537,7 @@
 - **问题**：MethodChannel 延迟“通常 1-5ms”、`addTimingsCallback` 批量延迟“50ms+”、常规误差“<20ms”等数字缺少设备、Flutter 版本、采样方式或 trace 证据。它们会被读者当成可复用误差边界。
 - **建议**：补一组同设备 Flutter release/profile trace 或删除固定数字，改成“受 MethodChannel 排队、帧批量上报和主线程负载影响；只作为粗粒度 Session Timeline 锚点”。
 
+
 ## [Task9 Deep Review] 13.13 Perfetto CPU 频率与 DVFS 关联分析 — 2026-05-16
 - **类型**：数据缺失
 - **位置**：§端侧 AI 推理里的 governor 错配
@@ -1527,3 +1549,27 @@
 - **位置**：§识别大小核和 cluster
 - **问题**：正文主要靠 `cpu_freq` 频点集合识别 cluster。当前 Perfetto `cpu` 表已经暴露 `cluster_id` 与 `capacity`（有数据时），只靠频点集合在同频异构、厂商拆 policy 或频点裁剪场景下可能误分 cluster。
 - **建议**：把识别顺序改成：优先读 `cpu.cluster_id` / `capacity`，再用 `cpu_freq` 频点集合和同步变频现象交叉验证；缺字段时退回 sysfs `policy*/affected_cpus`。
+
+## [Task9 Deep Review] 5.1 Linux 进程调度基础 — 2026-05-16
+- **类型**：数据缺失
+- **位置**：L351 硬件迁移效率数据
+- **问题**：`1.5μs - 3.5μs`、`10μs+` 是强量化断言，但正文没有给出 SoC、内核、测试方法、样本来源。
+- **建议**：补 vendor / 论文 / 实测 Perfetto+ftrace 数据源；无法补证据时标为 `[待验证]` 并降低为定性描述。
+- **类型**：Perfetto SQL 示例
+- **位置**：L725-L732 RenderThread 大小核运行时间查询
+- **问题**：SQL `GROUP BY core_type` 同时 `SELECT cpu`，SQLite 会返回任意 cpu，结果容易被误读。
+- **建议**：若要按 big/LITTLE 汇总，去掉 `cpu` 字段；若要逐核展示，改为 `GROUP BY cpu, core_type`。
+- **类型**：版本/默认值边界
+- **位置**：L522-L526 `sched_base_slice_ns` 默认值
+- **问题**：Linux v6.6 源码初始值为 750000ns，并按 tunable scaling 随 CPU 数缩放；正文直接写 3ms 容易被当成通用默认值。
+- **建议**：写成“8 核设备 LOG scaling 下常见约 3ms；源码 normalized default 为 750µs”。
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-05-16
+- **类型**：数据/案例支撑
+- **位置**：L317-L327 Android 16 JobScheduler 配额优化
+- **问题**：正文提到“API 查询 Job 为什么没执行或被停止”，但没有落到具体 API 和 trace 采集入口。
+- **建议**：补 `JobScheduler.getPendingJobReasonsHistory()`，并给出 Perfetto `android.statsd` + `ATOM_SCHEDULED_JOB_STATE_CHANGED` / `android_job_scheduler_states` 的采集说明。
+- **类型**：来源边界
+- **位置**：L331-L341 Android 17 已确认变化来源
+- **问题**：App memory limits 属于 behavior changes all-apps；Reduced Wakelocks for Idle Alarms 属于 features/release notes；Profiling trigger 属于 features/release notes。正文把来源合并成 behavior changes all-apps / target-37，证据边界不清。
+- **建议**：按条目拆来源，避免把 feature/API 新增和 behavior change 强约束混在一个证据口径里。
