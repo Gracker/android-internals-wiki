@@ -8724,7 +8724,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
@@ -8736,7 +8736,10 @@
         "https://developer.android.com/blog/posts/the-second-beta-of-android-17",
         "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-16T23:04:00+08:00",
+      "completed_reason": "Task 2A 加工完成：章节 status 改为 ready-for-review，进入 Task 6 审阅管线。",
+      "output_file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
     },
     {
       "id": "task2a-gap-13-15-15-bufferqueue-blocking-perfetto",
