@@ -277,7 +277,8 @@
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
-    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
+    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
   "review_summary": "Task6 2026-05-16 12: review 5.1/5.7；L1/L2 已轻修，Task9 技术风险已标注并保持 Task2B 回炉。",
   "task6_review_summary": {
@@ -1109,11 +1110,11 @@
       "p3": 0
     }
   },
-  "total_review_sections": 134,
+  "total_review_sections": 135,
   "next_review_candidates": [],
   "ready_for_review": 93,
-  "last_updated": "2026-05-16T12:20:36+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-16T12:31:00+08:00",
+  "last_updated_by": "task9-deep-review",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "12:20",
@@ -1131,7 +1132,7 @@
     "auto_promotions": [],
     "log": "logs/review/2026-05-16-12-review.md"
   },
-  "task9_last_review": "2026-05-16T11:31:00+08:00",
+  "task9_last_review": "2026-05-16T12:31:00+08:00",
   "ready_to_publish": 195,
   "rework_history": [
     {
@@ -2969,7 +2970,7 @@
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
       "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -2977,7 +2978,15 @@
       "gap_score": 17,
       "last_task2a_at": "2026-05-16T12:04:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending"
+      "task6_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-05-16",
+      "last_task9_at": "2026-05-16T12:31:00+08:00",
+      "task2b_state": "pending",
+      "p0": 0,
+      "p1": 1,
+      "p2": 2
     },
     "3.9": {
       "title": "端到端输入延迟预算与感知阈值",
@@ -3061,69 +3070,53 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T11:31:00+08:00",
-    "log": "logs/deep-review/2026-05-16-11-deep-review.md",
+    "reviewed_at": "2026-05-16T12:31:00+08:00",
+    "log": "logs/deep-review/2026-05-16-12-deep-review.md",
     "sections": [
-      "3.7",
-      "5.1",
-      "5.7"
+      "3.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
     ],
-    "p0": 1,
-    "p1": 5,
-    "p2": 5,
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
     "p3": 0,
-    "auto_finalized": [
-      "3.7"
-    ],
+    "auto_finalized": [],
     "queue_added": [
-      "task9-5.1-uclamp-proc-perfetto-sql-20260516",
-      "task9-5.7-standby-bucket-android17-wakelock-20260516"
+      "task9-3.8-sticky-keys-scope-20260516"
     ],
-    "suggestions_added": 5
+    "suggestions_added": 2,
+    "notes": "本轮仅 3.8 处于 task9 待审（task9_state 缺省按 pending 处理）；其余 task9_state=pending 候选为空。"
   },
-  "last_task9_review": "2026-05-16 11: deep review 3.7, 5.1, 5.7",
+  "last_task9_review": "2026-05-16 12: deep review 3.8",
   "last_task9_sections": [
-    "3.7",
-    "5.1",
-    "5.7"
+    "3.8"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T11:31:00+08:00",
-    "log": "logs/deep-review/2026-05-16-11-deep-review.md",
+    "reviewed_at": "2026-05-16T12:31:00+08:00",
+    "log": "logs/deep-review/2026-05-16-12-deep-review.md",
     "sections": [
-      "3.7",
-      "5.1",
-      "5.7"
+      "3.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
     ],
-    "p0": 1,
-    "p1": 5,
-    "p2": 5,
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
     "p3": 0,
-    "auto_finalized": [
-      "3.7"
-    ],
+    "auto_finalized": [],
     "queue_added": [
-      "task9-5.1-uclamp-proc-perfetto-sql-20260516",
-      "task9-5.7-standby-bucket-android17-wakelock-20260516"
+      "task9-3.8-sticky-keys-scope-20260516"
     ],
-    "suggestions_added": 5
+    "suggestions_added": 2,
+    "notes": "本轮仅 3.8 处于 task9 待审（task9_state 缺省按 pending 处理）；其余 task9_state=pending 候选为空。"
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
-  "total_review_files": 134,
+  "total_review_files": 135,
   "last_task2a_at": "2026-05-16T10:04:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
@@ -3156,11 +3149,9 @@
     "notes": "本轮仅有 2 个 task6_state=revisiting 章节；5.1 极长且含 Task9 P0/P1 技术风险，按吞吐规则降回 2 个。L1/L2 已轻修，技术风险已转写 [存疑] 并确认 queue.json pending。"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
-  "last_task9_at": "2026-05-16T11:31:00+08:00",
+  "last_task9_at": "2026-05-16T12:31:00+08:00",
   "last_task2a_result": "gap-mining-created-drafts",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "22.12",
