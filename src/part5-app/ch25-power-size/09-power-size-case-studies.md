@@ -8,7 +8,7 @@ last_verified: "2026-05-14"
 last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-16.0.0_r1 + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-14"
-polish_count: 0
+polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
@@ -18,6 +18,8 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/excessive-wakelock"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/stuck-wakelock"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/wakeup"
   - type: official
     path: "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls"
   - type: official
@@ -52,19 +54,19 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
 related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task6_reviewed_at: "2026-05-14T22:10:00+08:00"
+task6_reviewed_at: "2026-05-16T17:08:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-14T22:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-14-22-review.md"
-task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 4 处后通过；无新增 L3/L4 回炉项，转 Task9 技术复核。"
-task2b_result: fixed
+last_task6_at: "2026-05-16T17:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-17-review.md"
+task6_review_notes: "2026-05-16 17:08 Task6：复审小修 11 处；写作质量通过。保留既有 Task9 P1 队列（Vitals excessive wake lock 阈值口径），pipeline 保持 task2b_pending。"
+task2b_result: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
@@ -82,7 +84,7 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apka
 ### 锚点（必须覆盖）
 
 - 🔹 后台功耗异常排查实战
-- 🔹 APK 体积从 100MB 到 50MB 的优化路径
+- 🔹 APK 体积从 100 MB 到 50 MB 的优化路径
 - 🔹 WakeLock 泄漏导致的电量投诉治理
 
 ### 扩展（可选深入）
@@ -121,7 +123,7 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apka
 | 采集系统证据 | `bugreport.zip`、`batterystats.txt`、Perfetto trace | 异常归到 CPU、网络、GPS、WakeLock、Alarm 中哪一类 | UID 级统计或时间线出现明显差异 |
 | 对齐业务事件 | 任务平台日志、网络日志、定位日志、前台服务日志 | 哪个业务动作触发后台活动 | 事件时间与系统功耗信号重合 |
 | 修改代码 | 调度约束、重试退避、取消条件、批处理 | 是否减少无用户价值的后台活动 | 候选包复测指标回到基线附近 |
-| 建守门 | nightly / 灰度功耗看板 | 后续版本是否复发 | 指标能按版本、设备、业务 owner 拆分 |
+| 建守门 | nightly / 灰度功耗看板 | 后续版本是否复发 | 指标能按版本、设备、业务负责人拆分 |
 
 采集命令只保留最小集合。它们负责把证据拿回来，判断仍要放到时间线里完成。
 
@@ -148,9 +150,9 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 
 [自动发现] 背景功耗案例的复盘报告应该同时记录“没有发现什么”。例如 CPU 没上升、GPS 没活跃、WakeLock 未命中，但 network radio active 增多。排除项能减少下一轮排查分歧，也能防止把所有耗电投诉都归到 WakeLock。
 
-## APK 体积从 100MB 到 50MB 的优化路径
+## APK 体积从 100 MB 到 50 MB 的优化路径
 
-“100MB 到 50MB”不能靠单个开关承诺。正确做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。 [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] [结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+“100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。 [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] [结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
 
 [已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer]
 [已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
@@ -173,7 +175,7 @@ bundletool get-size total --apks=app-release.apks --device-spec=pixel-8.json
 | `res/` 与 `resources.arsc` | 多密度图片、重复图片、未使用资源、多语言、多主题 | APK Analyzer、lint、资源缩减报告 | `isShrinkResources`、WebP / AVIF、VectorDrawable、`tools:keep`、密度 / 语言过滤 | 由项目填写 |
 | `assets/` | 离线包、模型、字体、Web 资源、配置大文件 | APK Analyzer、文件 hash、业务访问日志 | 按需下载、字体子集化、首启后加载、CDN / asset pack | 由项目填写 |
 | `lib/<abi>/` | 多 ABI 副本、debug symbol、低频 native 能力 | APK Analyzer、NDK symbol 文件、ABI 占比 | App Bundle / split、strip symbol、低频功能动态下发、16 KB 对齐检查 | 由项目填写 |
-| 分发形态 | universal APK、国内渠道单 APK、Google Play AAB | bundletool、渠道安装验证 | AAB、dynamic feature、universal fallback、多 APK | 由项目填写 |
+| 分发形态 | universal APK、国内渠道单 APK、Google Play AAB | bundletool、渠道安装验证 | AAB、dynamic feature、universal APK 回退方案、多 APK | 由项目填写 |
 
 实际执行按风险从低到高排列。
 
@@ -201,19 +203,19 @@ android {
 }
 ```
 
-配置打开后要跑 release smoke test。需要覆盖反射、JSON / protobuf、Room、Hilt、Retrofit、深链、推送、JNI、换肤、通知图标、WebView bridge、动态页面和多语言。包体积案例里最危险的事故，是 shrink 后下载体积降了，但运行时入口被删或动态资源丢失。
+配置打开后要跑 release 冒烟测试。需要覆盖反射、JSON / protobuf、Room、Hilt、Retrofit、深链、推送、JNI、换肤、通知图标、WebView bridge、动态页面和多语言。包体积案例里最危险的事故，是 shrink 后下载体积降了，但运行时入口被删或动态资源丢失。
 
-一份“100MB 到 50MB”的计划更适合写成预算表，避免写成承诺收益：
+一份“100 MB 到 50 MB”的计划更适合写成预算表，避免写成承诺收益：
 
 | 阶段 | 交付物 | 通过标准 | 风险 |
 |------|--------|----------|------|
 | 账本阶段 | APK / AAB 体积分解、版本 diff、top 增长文件 | 能解释 90% 以上体积来源 | 只看 APK raw size，忽略 download size 和安装后占用 |
-| 低风险清理 | 无用资源、重复资源、废弃 assets、明显多余 ABI | release 包 smoke test 通过，下载体积下降 | 动态资源名误删 |
+| 低风险清理 | 无用资源、重复资源、废弃 assets、明显多余 ABI | release 冒烟测试通过，下载体积下降 | 动态资源名误删 |
 | 规则收窄 | R8 keep、consumer rules、依赖替换 | `usage.txt` 和线上功能覆盖一致 | 反射、序列化、JNI 失败 |
 | 分发拆分 | AAB / dynamic feature / asset pack / 渠道 APK | 代表设备安装、首启、按需下载都通过 | 国内渠道不支持 split session，误把 config split 当独立 APK |
-| 发布守门 | CI 体积阈值、模块 owner、版本 diff 报告 | 新增大文件必须说明来源和下发策略 | 只在版本末期突击瘦身 |
+| 发布守门 | CI 体积阈值、模块负责人、版本 diff 报告 | 新增大文件必须说明来源和下发策略 | 只在版本末期突击瘦身 |
 
-这个案例的收尾标准不能停在“文件变小”四个字。每个大项都要有 owner、阈值、测试用例和回滚方案。体积治理一旦接入发版流程，后续版本只处理增量；不接门禁，几个月后还会回到 100MB。
+这个案例的收尾标准不能停在“文件变小”四个字。每个大项都要有负责人、阈值、测试用例和回滚方案。体积治理一旦接入发版流程，后续版本只处理增量；不接门禁，几个月后还会回到 100 MB。
 
 ## WakeLock 泄漏导致的电量投诉治理
 
@@ -236,7 +238,7 @@ Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `Power
 1. **先确认 tag**：Vitals 或 `dumpsys power` 中的 tag 是否能映射到业务模块。无意义 tag 先改命名规范，否则下一轮仍难归因。
 2. **再看生命周期**：持锁开始时间、释放时间、场景结束时间是否成对。重点查异常、取消、超时、进程切后台、网络回调丢失。
 3. **区分直接锁和系统归因锁**：直接锁查 `PowerManager.WakeLock` 封装；系统归因锁查 WorkManager、Alarm、下载、定位和媒体 API。
-4. **修持锁模型**：能交给 WorkManager 的任务不要手写 WakeLock；必须手写时固定 tag、带超时、`try/finally` 释放、封装在单一 owner 里。
+4. **修持锁模型**：能交给 WorkManager 的任务不要手写 WakeLock；必须手写时固定 tag、带超时、`try/finally` 释放、封装在单一负责人里。
 5. **接发布守门**：新增 WakeLock、Exact Alarm、长时间后台 worker 都要进入 review；灰度看 Vitals 和自建 APM 的趋势。
 
 AOSP 侧可以用 §25.3 已验证的入口理解责任边界：`PowerManagerService` 负责系统 WakeLock 状态管理，`BatteryStatsService` / BatteryStats 体系记录归因统计，`AlarmManagerService` 负责 Alarm 触发与唤醒相关行为。正文只引用路径，不在本节展开实现。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java]
@@ -246,13 +248,13 @@ WakeLock 治理的代码审查清单要比“有没有 release”更细：
 | 检查项 | 合格写法 | 失败信号 |
 |--------|----------|----------|
 | tag | 包名或模块名前缀 + 稳定业务名 | `wakelock`、`service`、随机数、用户信息 |
-| owner | 单一模块创建、释放、上报 | 多模块共享一把全局锁 |
+| 负责人 | 单一模块创建、释放、上报 | 多模块共享一把全局锁 |
 | 超时 | `acquire(timeout)` 只作兜底，业务完成仍主动释放 | 只依赖超时释放，任务失败时不记录原因 |
 | 异常路径 | `finally`、取消回调、超时回调都释放 | 网络回调、协程取消、线程池拒绝后锁仍 held |
 | 替代 API | WorkManager / JobScheduler / DownloadManager / FGS 能覆盖时优先使用 | 后台同步、周期任务、下载都手写锁 |
 | 观测字段 | tag、owner、trigger、acquire / release uptime、timeout、visible_to_user | 线上只看到耗电，无法映射业务 |
 
-[自动发现] WakeLock 案例不要只修一处泄漏。更有价值的改动是把 WakeLock 变成平台能力：统一封装、统一 tag 规范、统一上报字段、统一发布门禁。这样 Play Console 下次出现某个 tag，就能直接找到模块 owner、触发源和最近版本改动。
+[自动发现] WakeLock 案例不要只修一处泄漏。更有价值的改动是把 WakeLock 变成平台能力：统一封装、统一 tag 规范、统一上报字段、统一发布门禁。这样 Play Console 下次出现某个 tag，就能直接找到模块负责人、触发源和最近版本改动。
 
 ## 本节小结
 

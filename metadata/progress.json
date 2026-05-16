@@ -2416,14 +2416,15 @@
       "title": "功耗与包体积案例集",
       "last_task2a_at": "2026-05-14T22:04:00+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-14T22:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-22-review.md",
+      "last_task6_at": "2026-05-16T17:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-17-review.md",
       "task9_result": "needs-rework",
       "task2b_result": "pending",
-      "queue_priority": 95,
+      "queue_priority": 85,
       "last_task9_at": "2026-05-14T22:31:06+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-22-deep-review.md",
-      "task9_review_notes": "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。"
+      "task9_review_notes": "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。",
+      "task6_note": "2026-05-16 Task6：复审小修 11 处，写作质量通过；既有 Task9 P1（Vitals excessive wake lock 阈值口径）仍在 queue，保持 task2b_pending。"
     },
     "26.1": {
       "status": "ready-for-review",
