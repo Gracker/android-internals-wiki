@@ -8495,6 +8495,57 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T14:20:00+08:00",
       "reason": "[Deep Tech Review] Jank CUJ weighted counter 口径与默认适用范围需要回炉修正。"
+    },
+    {
+      "id": "task9-20260516-5.8-binder-freezer-api-surface",
+      "section": "5.8",
+      "section_title": "后台执行限制与优化",
+      "priority": 95,
+      "title": "Binder freezer API 示例与 frozen callback 策略口径需修正",
+      "reason": "[Deep Tech Review] 5.8 的 FrozenStateChangeCallback 示例、RemoteCallbackList 策略列表，以及 AVF pVM 任务配额豁免表述存在高风险技术问题。",
+      "description": "Binder freezer API 的 public 签名、callback state 语义与 RemoteCallbackList frozen policy 需要按 AOSP/API reference 修正；AVF pVM 任务不消耗宿主 JobScheduler quota 的说法缺少官方来源。",
+      "issue_type": "source-code-accuracy-version-boundary",
+      "severity": "P0/P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
+      ],
+      "material_paths": [
+        "frameworks/base/core/java/android/os/IBinder.java",
+        "frameworks/base/core/java/android/os/RemoteCallbackList.java",
+        "https://source.android.com/docs/core/architecture/ipc/binder-freezer",
+        "https://developer.android.com/topic/performance/power/power-details",
+        "https://source.android.com/docs/core/virtualization"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 签名错误",
+          "location": "Android 16 的进程冻结流程 / FrozenStateChangeCallback 注册路径与实际使用代码",
+          "detail": "正文写成 IBinder.addFrozenStateChangeCallback(callback)，示例用 if (frozen) 判断布尔值。AOSP master 的 public API 是 addFrozenStateChangeCallback(Executor, FrozenStateChangeCallback)，callback 回调为 onFrozenStateChanged(IBinder who, @State int state)，状态值为 STATE_FROZEN / STATE_UNFROZEN；单参数 overload 是 @hide/internal。",
+          "suggestion": "改为 public 示例：binder.addFrozenStateChangeCallback(executor, (who, state) -> { if (state == IBinder.FrozenStateChangeCallback.STATE_FROZEN) ... }); 如果讲 system_server 内部 @hide overload，必须单独标注内部 API，不要放进公开 API 口径。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/策略枚举缺失",
+          "location": "RemoteCallbackList 的 frozen 策略",
+          "detail": "正文写 RemoteCallbackList 只有 DROP 与 ENQUEUE_MOST_RECENT 两种策略。AOSP/API docs 还包含 FROZEN_CALLEE_POLICY_ENQUEUE_ALL；官方文档同时提示 ENQUEUE_ALL 可能导致 buffer overflow 或 stale events。",
+          "suggestion": "补成三种策略：DROP、ENQUEUE_MOST_RECENT、ENQUEUE_ALL，并说明 ENQUEUE_ALL 只适合必须保留完整事件历史的场景，默认推荐 DROP 或 MOST_RECENT。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据/来源缺失",
+          "location": "例外与豁免 / 版本演进中的 AVF pVM 任务配额豁免",
+          "detail": "正文断言“AVF pVM 任务不再消耗宿主 App 的 JobScheduler 运行时配额，宿主 bucket/quota/Doze 不影响 pVM 内部”。本轮在 Android Developers power-details、Android 17 changes 与 AOSP AVF docs 中未核验到该豁免口径。该说法会直接影响后台任务选型。",
+          "suggestion": "补官方来源或 AOSP 代码锚点；若无法核验，删除该豁免项，或降级为 [待验证] 并从选型决策中移除。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T15:38:55+08:00"
     }
   ],
   "metadata": {
@@ -8507,9 +8558,9 @@
     "last_updated_by": "openclaw-task2a",
     "pending": 143
   },
-  "last_updated": "2026-05-16T14:07:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 143,
+  "last_updated": "2026-05-16T15:38:55+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 141,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
 }

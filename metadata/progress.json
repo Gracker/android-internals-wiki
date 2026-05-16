@@ -1150,8 +1150,8 @@
   "total_review_sections": 138,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-16T15:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-16T15:38:55+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "13:11",
@@ -1172,7 +1172,7 @@
     "log": "logs/review/2026-05-16-13-review.md",
     "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。"
   },
-  "task9_last_review": "2026-05-16T13:20:00+08:00",
+  "task9_last_review": "2026-05-16T15:38:55+08:00",
   "ready_to_publish": 195,
   "rework_history": [
     {
@@ -3075,8 +3075,8 @@
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
       "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -3090,7 +3090,9 @@
       "last_task6_review_log": "logs/review/2026-05-16-15-review.md",
       "reviewed_date": "2026-05-16",
       "reviewed_by": "openclaw-task6",
-      "task9_state": "pending"
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-16T15:38:55+08:00"
     },
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
@@ -3114,6 +3116,14 @@
       "task2b_state": "pending",
       "queue_priority": 85,
       "last_task6_review_log": "logs/review/2026-05-16-10-review.md"
+    },
+    "5.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-16T15:38:55+08:00",
+      "task9_state": "reviewed",
+      "task2b_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -3135,51 +3145,61 @@
   "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-16T12:31:00+08:00",
-    "log": "logs/deep-review/2026-05-16-12-deep-review.md",
+    "reviewed_at": "2026-05-16T15:38:55+08:00",
+    "log": "logs/deep-review/2026-05-16-15-deep-review.md",
     "sections": [
-      "3.8"
+      "20.12",
+      "5.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
     ],
-    "p0": 0,
-    "p1": 1,
-    "p2": 2,
-    "p3": 0,
-    "auto_finalized": [],
+    "p0": 1,
+    "p1": 2,
+    "p2": 0,
+    "p3": 1,
+    "auto_finalized": [
+      "20.12"
+    ],
     "queue_added": [
-      "task9-3.8-sticky-keys-scope-20260516"
+      "task9-20260516-5.8-binder-freezer-api-surface"
     ],
-    "suggestions_added": 2,
-    "notes": "本轮仅 3.8 处于 task9 待审（task9_state 缺省按 pending 处理）；其余 task9_state=pending 候选为空。"
+    "suggestions_added": 0,
+    "notes": "本轮处理 2 节：20.12 为显式 task9_pending；5.8 frontmatter 缺少有效 task9_state 且上次 Task9 已超过 3 天，按缺省 pending 复审。其余显式 pending 章节仍在 3 天去重窗口或已有 pending 队列。"
   },
-  "last_task9_review": "2026-05-16 12: deep review 3.8",
+  "last_task9_review": "2026-05-16T15:38:55+08:00",
   "last_task9_sections": [
-    "3.8"
+    "20.12",
+    "5.8"
   ],
   "last_task9_review_detail": {
-    "reviewed_at": "2026-05-16T12:31:00+08:00",
-    "log": "logs/deep-review/2026-05-16-12-deep-review.md",
+    "reviewed_at": "2026-05-16T15:38:55+08:00",
+    "log": "logs/deep-review/2026-05-16-15-deep-review.md",
     "sections": [
-      "3.8"
+      "20.12",
+      "5.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
     ],
-    "p0": 0,
-    "p1": 1,
-    "p2": 2,
-    "p3": 0,
-    "auto_finalized": [],
+    "p0": 1,
+    "p1": 2,
+    "p2": 0,
+    "p3": 1,
+    "auto_finalized": [
+      "20.12"
+    ],
     "queue_added": [
-      "task9-3.8-sticky-keys-scope-20260516"
+      "task9-20260516-5.8-binder-freezer-api-surface"
     ],
-    "suggestions_added": 2,
-    "notes": "本轮仅 3.8 处于 task9 待审（task9_state 缺省按 pending 处理）；其余 task9_state=pending 候选为空。"
+    "suggestions_added": 0,
+    "notes": "本轮处理 2 节：20.12 为显式 task9_pending；5.8 frontmatter 缺少有效 task9_state 且上次 Task9 已超过 3 天，按缺省 pending 复审。其余显式 pending 章节仍在 3 天去重窗口或已有 pending 队列。"
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
   "total_review_files": 138,
   "last_task2a_at": "2026-05-16T14:07:00+08:00",
@@ -3215,9 +3235,10 @@
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "last_task9_at": "2026-05-16T12:31:00+08:00",
+  "last_task9_at": "2026-05-16T15:38:55+08:00",
   "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "13.14",
@@ -3506,8 +3527,8 @@
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
       "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -3521,7 +3542,12 @@
       "last_task6_review_log": "logs/review/2026-05-16-15-review.md",
       "reviewed_date": "2026-05-16",
       "reviewed_by": "openclaw-task6",
-      "task9_state": "pending"
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-16T15:38:55+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-15-deep-review.md",
+      "auto_promoted_by": "task9-deep-tech-review",
+      "auto_promoted_at": "2026-05-16T15:38:55+08:00"
     },
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
@@ -3561,6 +3587,19 @@
       "task2b_result": "pending",
       "queue_priority": 85,
       "queue_entry": "task9-13.13-perfetto-sched-sql-schema"
+    },
+    "5.8": {
+      "title": "后台执行限制与优化",
+      "file": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-16T15:38:55+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-15-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-20260516-5.8-binder-freezer-api-surface"
     }
   },
   "task2a_last_processed": {
@@ -3590,5 +3629,9 @@
     ],
     "candidate_count": 6,
     "qualified_count": 6
-  }
+  },
+  "task9_last_sections": [
+    "20.12",
+    "5.8"
+  ]
 }
