@@ -52,7 +52,7 @@ related_chapters:
 - '4.8'
 - '7.1'
 - '7.7'
-last_task2b_at: '2026-05-12T03:17:57'
+last_task2b_at: '2026-05-16T23:34:10'
 p1: 2
 p2: 3
 task9_review_notes: 2026-05-14 Task9 05: needs-rework。P1 1：Generational CMC 配置/比例缺源码锚点；P2 2：LOS 架构边界、CC/TLAB 性能数据来源。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
@@ -64,10 +64,10 @@ last_task6_at: '2026-05-12T16:15:00+08:00'
 last_task6_review_log: logs/review/2026-05-12-16-review.md
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
 task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。
 ---
@@ -344,17 +344,24 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
-### Android 17：`MessageQueue` 并发优化与 ART ReferenceQueue 边界 [待验证]
+### ART FinalizerDaemon 与 ReferenceQueue 的锁边界
 
-> **边界说明**：Android 16 AOSP `android-16.0.0_r1` 引入了 `ConcurrentMessageQueue`（使用 `ConcurrentSkipListSet` 与 Atomic 组合）和 `CombinedMessageQueue`（由 `Flags.forceConcurrentMessageQueue()` 控制），作为 `LegacyMessageQueue` 的替代路径。`DeliQueue` 这一命名在当前公开 AOSP 源码中未出现，不应作为已确认的类名或数据结构引用。
+ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。GC 完成标记后，通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon。这条路径依赖 `synchronized(lock)` 同步——`ReferenceQueue.enqueue()` 的入口和 `enqueuePending()` 的批处理循环（`MAX_ITERS=100`）都在同一个 object monitor 内执行。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 `TimeoutException`，极端情况下引发 ANR。
 
-ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。在 Android 16 及之前，GC 完成标记后需要通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon，这条路径涉及同步锁。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 FinalizerDaemon 出现 `TimeoutException`，极端情况下引发 ANR。
+Android 16 引入了 `ConcurrentMessageQueue`（无锁 Treiber 栈 + VarHandle 原子操作），但这条优化路径属于 `android.os` 层的 Handler/Looper 路径，与 ART 内部的 `ReferenceQueue` 是两条独立的调用链。源码级验证结论：
 
-`ConcurrentMessageQueue` 的无锁投递优化属于 `android.os` 层的 Handler/Looper 路径，与 ART 内部的 `ReferenceQueue` / FinalizerDaemon 锁竞争是两条独立的调用路径。当前 AOSP 源码中 `libcore ReferenceQueue.java` 仍有 `private final Object lock`，`reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 `ConcurrentMessageQueue` 或任何无锁队列接入 `ReferenceQueue` 的证据。`ReferenceQueue` 是否会在后续 Android 版本中移除同步锁，需要等正式 tag 或 release note 确认。
+- ✅ `libcore ReferenceQueue.java` 仍使用 `private final Object lock`，所有核心方法（`enqueue`/`poll`/`remove`）都在 `synchronized(lock)` 内
+- ✅ `ConcurrentMessageQueue` 的无锁 Treiber 架构仅用于 UI 消息分发，未接入 `ReferenceQueue`
+- ✅ `reference_processor.cc` 的 `kAsyncReferenceQueueAdd = false` 未变
 
-MessageQueue 并发优化的实现细节见 `1.13 MessageQueue 机制与无锁优化`。
+`ReferenceQueue` 是否会在后续 Android 版本中移除同步锁，需要等正式 tag 或 release note 确认。
 
-在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是锁竞争路径的表征。
+在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是锁竞争路径的表征。定位步骤：
+
+1. 在 `HeapTaskDaemon` track 上确认 GC 频率和耗时
+2. 在 `FinalizerDaemon` track 上查找 `Object.wait()` slice，观察等待时长
+3. 对比 GC 完成时间与 `FinalizerDaemon` 处理时间——如果 GC 频繁但 FinalizerDaemon 处理跟不上，锁竞争就是瓶颈
+4. 检查应用是否大量使用 `finalize()`（已废弃但仍存在于部分库），如果是，优先迁移到 `Cleaner` API
 
 ## 对象分配路径：从 TLAB 到 Full GC
 
@@ -591,138 +598,3 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] ART 内存分配器演进（dlmalloc → RosAlloc → RegionTLAB）
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
-
-
-[需重写: 以下源码调研材料目前位于参考资料之后，需由 Task 2B 整合回「Android 17：MessageQueue 并发优化与 ART ReferenceQueue 边界」小节，或整理成附录；正文不应在参考资料后继续展开。]
-
-### ART FinalizerDaemon 与 ReferenceQueue 并发优化边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md
-- 类型：DeepResearch 调研结果
-- 摘要：验证了 ART FinalizerDaemon 与 ReferenceQueue 仍使用传统 synchronized(lock) 机制，未发现 ConcurrentMessageQueue 集成。ReferenceQueue 所有核心方法均使用 object monitor 同步，FinalizerDaemon 采用 poll(非阻塞)/remove(阻塞)双路径设计。enqueuePending() 的批处理优化（MAX_ITERS=100）仍以 synchronized(queue.lock) 为边界。
-- 注入时间：2026-05-10
-- 价值：源码级验证了 ART FinalizerDaemon 锁机制现状，明确否定了 ConcurrentMessageQueue 集成的猜测，对 ART 内存管理章节有精确的补充价值
-
-<!-- AIW-源码调研-2026-05-10 -->
-## Android 16 ReferenceQueue 与 ConcurrentMessageQueue 并发边界源码级验证
-
-基于 AOSP android-16-release 源码分析，本研究验证了 ART FinalizerDaemon 线程与 ReferenceQueue 的并发优化边界。核心发现：Android 16 的 `libcore ReferenceQueue.java` 仍使用传统 `synchronized` 锁机制，而 `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 采用无锁 Treiber 架构，两者无直接集成。
-
-### ReferenceQueue 锁机制验证
-
-**源码位置**：`libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java`
-
-**关键函数**：`ReferenceQueue.enqueue()`
-
-**调用链**：
-1. `Reference.process()` → 
-2. `ReferenceQueue.enqueue()` → 
-3. `synchronized (lock)` 块
-
-**关键代码段**：
-```java
-// 文件: libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java, 行 86-95
-private final Object lock = new Object();
-
-boolean enqueue(Reference<? extends T> reference) {
-    synchronized (lock) {
-        if (reference instanceof sun.misc.Cleaner cl) {
-            // Cleaners 直接执行清理，不入队
-            cl.clean();
-            reference.queueNext = sQueueNextUnenqueued;
-            return true;
-        }
-
-        if (enqueueLocked(reference)) {
-            lock.notifyAll();  // 仍然使用 notifyAll 唤醒等待线程
-            return true;
-        }
-        return false;
-    }
-}
-```
-
-### ConcurrentMessageQueue 无锁架构
-
-**源码位置**：`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
-
-**关键函数**：`ConcurrentMessageQueue.enqueueMessage()`
-
-**调用链**：
-1. `Handler.sendMessage()` → 
-2. `MessageQueue.enqueueMessage()` → 
-3. `VarHandle.compareAndSet()` 原子操作
-
-**关键代码段**：
-```java
-// 文件: frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java, 行 887-920
-private boolean enqueueMessageUnchecked(@NonNull Message msg, long when) {
-    long seq = when != 0 ? ((long)sNextInsertSeq.getAndAdd(this, 1L) + 1L)
-            : ((long)sNextFrontInsertSeq.getAndAdd(this, -1L) - 1L);
-    MessageNode node = new MessageNode(msg, seq);
-    
-    while (true) {
-        StackNode old = (StackNode) sState.getVolatile(this);
-        node.mNext = old;
-        
-        // 无锁 Treiber 栈插入 - 使用 VarHandle 原子操作
-        if (sState.compareAndSet(this, old, node)) {
-            if (inactive) {
-                if (wakeNeeded) {
-                    nativeWake(mPtr);  // 原子唤醒
-                } else {
-                    mMessageCounts.incrementQueued();
-                }
-            }
-            return true;
-        }
-    }
-}
-```
-
-### FinalizerDaemon 与 ReferenceQueue 交互
-
-**源码位置**：`libcore/ojluni/src/main/java/java/lang/ref/Reference.java`
-
-**关键函数**：`Reference.process()`
-
-**调用链**：
-1. `GarbageCollector` 扫描 → 
-2. `Reference.process()` → 
-3. `ReferenceQueue.enqueue()` → 
-4. `FinalizerDaemon` 处理
-
-**关键代码段**：
-```java
-// 文件: libcore/ojluni/src/main/java/java/lang/ref/Reference.java, 行 146-152
-boolean process(boolean includeReferent) {
-    ReferenceQueue queue = this.queue;
-    if (queue != null) {
-        // 直接调用 ReferenceQueue.enqueue，绕过并发优化
-        queue.enqueue(this);
-    }
-    return true;
-}
-```
-
-### 性能边界分析
-
-**无锁优化范围**：
-- `ConcurrentMessageQueue`：无锁架构，针对 UI 消息分发优化，减少 Handler 场景下的锁竞争
-- `ReferenceQueue`：传统 `synchronized` 锁，ART GC 路径未受影响
-
-**锁竞争瓶颈**：
-- `FinalizerDaemon` 通过 `ReferenceQueue.enqueue()` 直接阻塞在 `synchronized (lock)`
-- 批量处理优化（`MAX_ITERS=100`）仍以 `synchronized(queue.lock)` 为边界
-
-### 结论与验证状态
-
-**证实事项**：
-1. ✅ Android 16 ReferenceQueue 仍使用传统锁机制（`private final Object lock`）
-2. ✅ ConcurrentMessageQueue 采用无锁 Treiber 架构（VarHandle + ConcurrentSkipListSet）
-3. ✅ 优化系统独立运行，无集成证据
-
-**未验证事项**：
-- ⚠️ Android 17 是否计划 ReferenceQueue 无锁重构
-- ⚠️ ART 编译时优化（如逃逸分析）是否影响锁竞争
-
-> **版本差异**：Android 16 的 ConcurrentMessageQueue 属于 UI 层优化，对 ART GC 性能无直接影响。FinalizerDaemon 的锁竞争问题在 Android 16 中仍存在，需关注 Android 17+ 是否引入无锁 ReferenceQueue 机制。

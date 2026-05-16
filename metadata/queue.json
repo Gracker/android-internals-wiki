@@ -1295,7 +1295,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/03-art-memory.md"
@@ -1328,7 +1328,9 @@
       "original_review_log": "logs/review/2026-05-12-16-review.md",
       "supersedes_queue_ids": [
         "task6-4.3-art-memory-practical"
-      ]
+      ],
+      "completed_date": "2026-05-16T23:34:10",
+      "completed_reason": "Task 2B 回炉修复: 将参考资料后 FinalizerDaemon/ReferenceQueue 调研材料整合进正文对应小节（删除重复内容，保留源码级验证结论和 Perfetto 定位步骤）"
     },
     {
       "id": "task6-4-5-review-rework-20260512-1615",
@@ -1342,7 +1344,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
@@ -1372,7 +1374,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T16:15:00+08:00",
-      "original_review_log": "logs/review/2026-05-12-16-review.md"
+      "original_review_log": "logs/review/2026-05-12-16-review.md",
+      "completed_date": "2026-05-16T23:34:10",
+      "completed_reason": "Task 2B 回炉修复: 量化描述降级为定性（3-5倍→定性, 80%→定性）, 新增 Perfetto 内存观察 Track 说明（Java Heap/GC Event/Native Heap/dmabuf 四类）"
     },
     {
       "id": "task9-4.2-mglru-source-snippets-20260512",
