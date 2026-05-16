@@ -7980,7 +7980,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
@@ -7998,7 +7998,9 @@
         "与全书目标相关性": 5,
         "读者需求度": 4,
         "时效性": 4
-      }
+      },
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 加工完成，章节 status → ready-for-review，进入 Task6 写作质检管线"
     },
     {
       "id": "task9-16.5-messagequeue-lock-mechanism-20260516",
