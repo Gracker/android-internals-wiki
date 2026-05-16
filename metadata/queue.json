@@ -7322,7 +7322,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/02-app-launch.md"
@@ -7350,7 +7350,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T00:30:00+08:00"
+      "added_at": "2026-05-16T00:30:00+08:00",
+      "completed_date": "2026-05-16T19:24:23+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 ApplicationStartInfo.getStartupTimestamps() 类型从 Bundle 修正为 Map<Integer, Long>, 代码示例按真实 API 重写(get→null 判断); P0 Zygote preload 路径从 frameworks/base/config/preloaded-drawables 修正为 core/res/res/values/arrays.xml (preloaded_drawables/preloaded_color_state_lists)"
     },
     {
       "id": "task9-20260516-21.2-alpha-thread-priority-source-review",
@@ -7452,7 +7454,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/10-legacy-process-exit-attribution.md"
@@ -7479,7 +7481,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T03:30:00+08:00"
+      "added_at": "2026-05-16T03:30:00+08:00",
+      "completed_date": "2026-05-16T19:24:23+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 REASON_OOM 删除(ApplicationExitInfo 无此公开常量), LOW_MEMORY_SUSPECTED 统一映射到 REASON_LOW_MEMORY, OOM/LMKD 细节作为 evidence 处理; P1 DEVICE_REBOOT_OR_UPDATE 映射拆分(API 34+: REASON_PACKAGE_UPDATED/STATE_CHANGE, API 30-33: REASON_USER_REQUESTED/OTHER)"
     },
     {
       "id": "task2a-gap-1-19",

@@ -1,5 +1,5 @@
 ---
-status: 'ready-for-review'
+status: "ready-for-review"
 title: App 启动全流程
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
@@ -52,18 +52,18 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: 'task6_pending'
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: 'pending'
-task9_result: 'pending'
-task2b_state: 'fixed'
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
 task2b_result: fixed
 last_task2b_at: '2026-05-15T23:30:32+08:00'
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-13T02:51:35+08:00'
-task9_review_notes: '2026-05-13 02:51 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；ApplicationStartInfo 公开 API 写错；TTID / SurfaceFlinger composition 口径需统一。'
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-16T00:30:00+08:00"
+task9_review_notes: "2026-05-16 00:30 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1；ApplicationStartInfo getStartupTimestamps 类型仍写错，Zygote preload drawable 路径不存在。"
 ---
 
 
@@ -322,10 +322,10 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 |---|---|---|
 | `getStartType()` | int | 启动类型：`START_TYPE_COLD`(1)、`START_TYPE_WARM`(2)、`START_TYPE_HOT`(3) |
 | `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_NOT_STARTED` / `STARTED` / `FIRST_FRAME_DRAWN` / `FULLY_DRAWN` |
-| `getStartupTimestamps()` | Bundle | 返回各阶段时间戳（monotonic nanoseconds），通过常量 key 读取（见下表） |
+| `getStartupTimestamps()` | Map<Integer, Long> | 返回各阶段时间戳（monotonic nanoseconds），通过常量 key 读取（见下表） |
 | `getReason()` | int | 启动原因：`START_REASON_CHANGED` / `START_REASON_ALARM` 等 |
 
-`getStartupTimestamps()` 返回的 Bundle 中可用的 timestamp key：
+`getStartupTimestamps()` 返回的 Map 中可用的 timestamp key：
 
 | 常量 | 含义 |
 |---|---|
@@ -334,7 +334,7 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 | `START_TIMESTAMP_BIND_APPLICATION` | 开始绑定 Application 的时间点 |
 | `START_TIMESTAMP_APPLICATION_ONCREATE` | Application.onCreate() 的时间点 |
 | `START_TIMESTAMP_FIRST_FRAME` | 首帧绘制完成的时间点 |
-| `START_TIMESTAMP_FULLY_DRAWN` | reportFullyDrawn() 调用的时间点（未调用时 Bundle 中不含此 key） |
+| `START_TIMESTAMP_FULLY_DRAWN` | reportFullyDrawn() 调用的时间点（未调用时 Map 中不含此 key） |
 | `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE` | SurfaceFlinger 合成完成的时间点（API 35+） |
 
 #### 各阶段耗时计算
@@ -347,22 +347,24 @@ ActivityManager am = getSystemService(ActivityManager.class);
 List<ApplicationStartInfo> history = am.getHistoricalProcessStartReasons(1);
 if (history != null && !history.isEmpty()) {
     ApplicationStartInfo latest = history.get(0);
-    Bundle timestamps = latest.getStartupTimestamps();
+    Map<Integer, Long> timestamps = latest.getStartupTimestamps();
     if (timestamps != null) {
-        long launch = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
-        long fork = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_FORK);
-        long bindApp = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
-        long oncreate = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE);
-        long firstFrame = timestamps.getLong(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME);
+        long launch = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
+        long fork = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FORK);
+        long bindApp = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
+        long oncreate = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE);
+        Long firstFrameObj = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME);
         
         long systemForkMs = (fork - launch) / 1_000_000;
         long bindToOncreateMs = (oncreate - bindApp) / 1_000_000;
-        long ttidMs = (firstFrame - launch) / 1_000_000;
         
         Log.d("Startup", "Start type: " + latest.getStartType());
         Log.d("Startup", "System launch→fork: " + systemForkMs + "ms");
         Log.d("Startup", "Bind→onCreate: " + bindToOncreateMs + "ms");
-        Log.d("Startup", "TTID: " + ttidMs + "ms");
+        if (firstFrameObj != null) {
+            long ttidMs = (firstFrameObj - launch) / 1_000_000;
+            Log.d("Startup", "TTID: " + ttidMs + "ms");
+        }
     }
 }
 ```
@@ -619,7 +621,7 @@ class MySdkInitializer : Initializer<MySdk> {
 
 [待验证: Zygote preload 列表在不同 Android 版本上的变化]
 
-Android 系统启动时，Zygote 进程会预加载一批常用的类和资源（定义在 frameworks/base/config/preloaded-classes 和 frameworks/base/config/preloaded-drawables 中）。当 Zygote fork 出 App 进程时，这些预加载的类和资源通过 Copy-on-Write 机制共享给子进程。
+Android 系统启动时，Zygote 进程会预加载一批常用的类和资源。预加载类列表定义在 `frameworks/base/config/preloaded-classes`；预加载 Drawable 和 ColorStateList 定义在 `frameworks/base/core/res/res/values/arrays.xml` 的 `preloaded_drawables` 和 `preloaded_color_state_lists` 数组中。当 Zygote fork 出 App 进程时，这些预加载的类和资源通过 Copy-on-Write 机制共享给子进程。
 
 这意味着应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说，Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段（fork + init）通常只需要几十到一百多毫秒——如果每次都从零加载所有类，这个时间会翻好几倍。
 
