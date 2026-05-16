@@ -64,13 +64,13 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 pipeline_stage: task2b_pending
 p0: 1
 p1: 1
 p2: 2
-task9_review_notes: "2026-05-17 Task9 00: needs-rework。P0 1：CC 读屏障误写为 Brooks pointer；P1 1：Generational CMC 配置/比例缺源码锚点仍未闭环；P2 既有建议保留。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
+task9_review_notes: "2026-05-17 Task9 00 completed-by-task2b。P0 已修复：CC Brooks pointer→Baker read barrier（L290/L309）；P1 部分：generational_cmc_supported 变量名删除，年轻代比例降级为待验证；P2 保留。"
 ---
 
 # ART 虚拟机内存管理
@@ -287,7 +287,7 @@ Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环�
 
 Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键实现点上与传统 CC（Concurrent Copying）有本质区别。
 
-**读屏障的处理方式不同**。CC GC 的读屏障（Brooks pointer）插在每次对象引用读取路径上，无论 GC 是否在运行，这层开销始终存在。Generational CMC 利用 userfaultfd（UFFD）把对象迁移的同步问题从"每条引用读取"降到了"页级别"——只有当应用线程访问到正在迁移的页时才会触发 page fault，由 ART 处理完后恢复执行。两者都在并发标记阶段需要屏障，但 CMC 的屏障触发频率远低于 CC 的 Brooks pointer 方案。
+**读屏障的处理方式不同**。CC GC 使用 Baker read barrier（`kUseBakerReadBarrier`），在每次对象引用读取路径上插入屏障检查，无论 GC 是否在运行，这层开销始终存在。Generational CMC 利用 userfaultfd（UFFD）把对象迁移的同步问题从"每条引用读取"降到了"页级别"——只有当应用线程访问到正在迁移的页时才会触发 page fault，由 ART 处理完后恢复执行。两者都需要并发标记阶段的屏障配合，但 CMC 的 UFFD 页级屏障触发频率远低于 CC 的逐引用 Baker read barrier。
 
 **内存开销不同**。CC GC 需要 from-space 和 to-space 两个空间交替使用，物理内存峰值接近堆大小的两倍。CMC 的压缩是在原地（in-place）通过 UFFD 协调完成的，不需要预留一整块拷贝目标空间。这对内存紧张的设备（如低 RAM 机型）更友好。
 
@@ -295,8 +295,8 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 - **`gUseUserfaultfd`**：运行时开关，在 `art/runtime/runtime.cc` 的 `Init()` 阶段判断设备是否支持 UFFD。如果内核不支持 `userfaultfd` 系统调用（某些旧内核或受限配置），CMC 路径不会被启用
 - **`use_generational_cmc`**：系统属性 `persist.device_config.runtime_native_boot.use_generational_gc`，控制是否启用分代策略。设为 `false` 时退回到不分代的 CMC
-- **`generational_cmc_supported`**：在 `Runtime::Init()` 阶段检查的硬件能力标志，评估设备的硬件条件是否满足 Generational CMC 的运行要求（包括 UFFD 支持和 mremap 可用性）
-- **年轻代大小**：由 `Heap` 内部的分代参数控制，年轻代通常占堆的 25%-40%。新分配的对象优先进入年轻代，Young GC 只扫描这部分空间
+- **硬件能力检查**：`Runtime::Init()` 阶段会探测设备是否支持 UFFD（`userfaultfd` 系统调用）和 `mremap`，满足条件才会启用 CMC 路径
+- **年轻代大小**：由 `Heap` 内部的分代参数控制。[待验证：年轻代占堆比例的具体数值需补 AOSP commit/tag 锚点] 新分配的对象优先进入年轻代，Young GC 只扫描这部分空间
 
 **分代策略与 Perfetto 观察的对应关系**。在 Generational CMC 下，Perfetto 中仍然可以区分 Young GC 和 Full GC，但 slice 名称可能与 CC 路径不同。CC 路径下 Young GC 的 slice 通常标记为 `ConcurrentCopying`（partial / sticky），CMC 路径下则标记为 `MarkCompact` 相关名称。分析时需要先确认设备使用的 collector 类型，再对应 slice 名称。
 
@@ -306,7 +306,7 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 分代回收这件事，本身比底层 collector 更稳定。它依赖的判断很朴素：新分配对象大多活不久，先把回收工作集中在年轻对象上，通常能用更短的暂停时间拿到更高的回收收益。
 
-在 Android 8.0-9 的 CC 路径里，分代回收还处于早期阶段；Android 10-14 的 CC 路径有了更成熟的 generational CC 实现，新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，Generational CMC 取代了 generational CC 的角色——同样优先回收年轻对象，但底层 collector 从 CC 的 Brooks pointer + from/to-space 双缓冲换成了 UFFD + 原地压缩（见上方对比）。观察口径不变：Young GC 负责快速回收短命对象，Full GC 负责全局压缩。
+在 Android 8.0-9 的 CC 路径里，分代回收还处于早期阶段；Android 10-14 的 CC 路径有了更成熟的 generational CC 实现，新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，Generational CMC 取代了 generational CC 的角色——同样优先回收年轻对象，但底层 collector 从 CC 的 Baker read barrier + from/to-space 双缓冲换成了 UFFD + 原地压缩（见上方对比）。观察口径不变：Young GC 负责快速回收短命对象，Full GC 负责全局压缩。
 
 在 Perfetto 中，仍然可以用相同的观察方式区分这两类活动：
 - **Young / minor collection**：持续时间短、频率更高，通常出现在对象快速创建和销毁的场景
