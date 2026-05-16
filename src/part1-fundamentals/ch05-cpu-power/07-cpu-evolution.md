@@ -64,14 +64,14 @@ reviewed_date: '2026-05-05'
 reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-05-05'
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: '2026-05-12'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-12T17:09:00+08:00'
@@ -282,13 +282,15 @@ Android 13 起,闹钟类、日历类这类场景还可以声明 `USE_EXACT_ALARM
 
 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms;developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission]
 
-### Android 13:精确闹钟默认拒绝 + FGS Task Manager
+### Android 13:USE_EXACT_ALARM 权限 + FGS Task Manager
 
-Android 13 把精确闹钟的管控又推进了一步:对于 `targetSdkVersion >= 33` 的 App,`SCHEDULE_EXACT_ALARM` 权限**默认拒绝**。App 需要通过 `AlarmManager.canScheduleExactAlarms()` 检查权限状态,如果未授予,引导用户到系统设置页面手动开启。
+Android 13 新增了 `USE_EXACT_ALARM` 普通权限(安装时授予),面向闹钟、日历等特定类别应用，作为 `SCHEDULE_EXACT_ALARM` 的替代路径。但 Google Play 政策限制该权限的使用范围，不能当成通用方案。
 
-此外,Android 13 引入了前台服务任务管理器(FGS Task Manager),用户可以在通知栏直接看到哪些 App 正在运行前台服务,并且可以手动停止。这让用户对后台活动有了前所未有的可见性和控制力。
+Android 13 同时引入了前台服务任务管理器(FGS Task Manager),用户可以在通知栏直接看到哪些 App 正在运行前台服务,并且可以手动停止。这让用户对后台活动有了更高的可见性和控制力。
 
-[已验证: 官方文档, developer.android.com/about/versions/13/behavior-changes-13]
+Android 14 起对精确闹钟进一步收紧:`SCHEDULE_EXACT_ALARM` 权限对大多数新安装且 targetSdkVersion >= 33 的 App **默认拒绝**。App 需要通过 `AlarmManager.canScheduleExactAlarms()` 检查权限状态,如果未授予,引导用户到系统设置页面手动开启。此前在 Android 13 中,`SCHEDULE_EXACT_ALARM` 仍默认授予——Android 12 引入的是特殊访问控制(需声明),Android 14 才将默认授予改为默认拒绝。
+
+[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#schedule-exact-alarms;developer.android.com/develop/background-work/services/alarms]
 
 ### Android 14:前台服务类型化 + 后台 Activity 启动需显式 opt-in
 
@@ -355,7 +357,7 @@ GKI 对 CPU 调度的影响,主要体现在厂商还能在哪里放自己的策�
 
 ### [自动发现] sched_ext:BPF 可编程调度的演进蓝图
 
-Linux 6.12 合入的 `sched_ext` 为调度器提供了一条 BPF 插件化路径。通过加载一个 eBPF 程序,可以在不修改内核调度器源码的前提下,替换或增强任务选核、负载均衡、时间片分配等核心决策。Android 17 (GKI 6.12) 已具备 sched_ext 的内核基础设施,但 AOSP 尚未将其纳入默认调度链。
+Linux 6.12 合入的 `sched_ext` 为调度器提供了一条 BPF 插件化路径。通过加载一个 eBPF 程序,可以在不修改内核调度器源码的前提下,替换或增强任务选核、负载均衡、时间片分配等核心决策。Linux 6.12 / Android common 6.12 分支包含 sched_ext 基础设施;Android 17 设备是否可用取决于具体 kernel tag 和 `CONFIG_SCHED_CLASS_EXT` 配置,AOSP 默认调度链尚未切换到 sched_ext。
 
 sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF 程序实现"游戏模式用激进绑核策略、阅读模式用节能策略"的动态切换,而不再需要维护厂商独占的调度器补丁。这和 vendor hooks 的区别是,vendor hooks 只能在调度器内部决策点插入回调,sched_ext 允许完全替换调度策略主体。
 
@@ -379,15 +381,15 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 | 10 | EAS 成为主流路线（取决于 EM + kernel 支持）+ 后台 Activity 限制 | 内核层 + 应用层 |
 | 11 | task profiles 开始统一 cgroup / 调度策略入口 | Framework ↔ kernel |
 | 12 | Performance Hint API 引入 + 精确闹钟权限化 | API 层 + 应用层 |
-| 13 | 精确闹钟默认拒绝 + FGS Task Manager | 应用层(用户可见) |
-| 14 | FGS 类型化 + 后台 Activity opt-in | 应用层(类型化) |
+| 13 | USE_EXACT_ALARM 权限 + FGS Task Manager | 应用层(用户可见) |
+| 14 | 精确闹钟默认拒绝 + FGS 类型化 + 后台 Activity opt-in | 应用层(权限收紧 + 类型化) |
 | 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 进入更快 | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
 | 17 | App memory limits + idle alarm wakelock 降低 + ProfilingManager KILL_EXCESSIVE_CPU_USAGE + sched_ext 实验方向 | 应用层（资源硬限制） + 内核层（可插拔） |
 
 这条演进线背后有三个趋势:
 
-1. **约束越来越严格**:从推荐使用 JobScheduler（5.0）,到限制后台服务(8.0),到限制精确闹钟(12-13),到限制后台网络(15)。每一步都在封堵"App 自己控制 CPU"的路径。
+1. **约束越来越严格**:从推荐使用 JobScheduler（5.0）,到限制后台服务(8.0),到限制精确闹钟(12-14),到限制后台网络(15)。每一步都在封堵"App 自己控制 CPU"的路径。
 2. **策略越来越智能**:从静态的 Doze(6.0),到 ML 驱动的 Adaptive Battery(9.0),再到按 Standby Bucket、前后台状态和 Job 配额做动态控制(16)。系统越来越擅长根据用户行为和设备状态做决策。
 3. **用户可见性越来越高**:前台服务通知(8.0)→ FGS Task Manager(13)→ Play listing / Vitals 警告。Android 15 的后台网络限制属于平台约束,常见表现是 App 侧 `UnknownHostException` 或 socket `IOException`,不写成通用用户提示。
 

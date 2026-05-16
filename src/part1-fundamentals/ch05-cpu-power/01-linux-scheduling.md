@@ -3,8 +3,8 @@ title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
@@ -12,14 +12,19 @@ reviewed_at: '2026-05-12T20:10:00+08:00'
 last_task6_at: '2026-05-12T20:10:00+08:00'
 task6_reviewed_date: '2026-05-12'
 review_round: 4
+task2b_fixed_date: '2026-05-16T11:26:08+08:00'
+task2b_fixed_issues:
+  - oom-adj-section-trimmed-to-cross-reference
+  - eevdf-sysctl-params-and-rt-version-timeline-added
+  - diagnostic-decision-framework-added
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、代码围栏语言、标点和轻量措辞；L3/L4 回炉问题已写入 queue.json。'
-task9_state: reviewed
+task9_state: pending
 task9_result: pending
 task9_reviewed_date: '2026-04-29'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-29T18:48:00+08:00'
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
 last_verified: '2026-04-14'
 last_verified_against: Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers,
@@ -510,6 +515,43 @@ ORDER BY ts
 LIMIT 100;
 ```
 
+### 调度器关键可调参数
+
+EEVDF 将 CFS 的多个启发式 sysctl 参数收敛为 `sched_base_slice_ns` 一个核心参数。Linux 6.6+ fair class 的关键可调项:
+
+| 参数 | 默认值 | 作用 | 对 Android 性能分析的意义 |
+|------|--------|------|--------------------------|
+| `sched_base_slice_ns` | 3 000 000 (3ms) | 替代旧 `sched_min_granularity_ns`，定义调度实体申请的基本时间片长度 | 直接影响任务在 CPU 上的最短驻留时间；调大→吞吐优先，调小→响应优先 |
+| `sched_wakeup_granularity_ns` | 已移除 (EEVDF) | 旧 CFS 参数，控制唤醒抢占粒度 | EEVDF 下通过 lag/virtual deadline 自动处理唤醒抢占，不再需要手动调整 |
+| `sched_latency_ns` | 已弱化 (EEVDF) | 旧 CFS 参数，定义调度周期的目标延迟 | EEVDF 用 `sched_base_slice_ns` × runnable 数量推导，不再作为独立 tunable |
+| `sched_nr_migrate` | 8 | 控制 RT 任务迁移时最多移动多少个 fair class 任务 | 大核负载均衡场景下可能影响迁移效率，一般不需要调整 |
+
+检查设备实际值:
+
+```bash
+# 查看当前调度器参数（需要 root）
+cat /proc/sys/kernel/sched_base_slice_ns
+# EEVDF 内核 6.6+ 查看 sched 特色参数
+ls /proc/sys/kernel/sched_*
+```
+
+在 Perfetto 中观察调度行为时，如果发现大量短时间 Runnable→Running→Runnable 切换(微秒级),可能是 `sched_base_slice_ns` 偏大导致 EEVDF 在 eligible entity 之间频繁切换。这类分析需要对齐 `sched_switch` 事件的时间间隔与 `sched_base_slice_ns` 的关系。
+
+### Real-time 调度在 Android 版本中的演进
+
+Real-time 线程(SCHED_FIFO/SCHED_RR)在 Android 中的使用策略随版本逐步收紧:
+
+| Android 版本 | RT 调度关键变化 |
+|---|---|
+| Android 4.1 (Project Butter) | AudioFlinger FastMixer 引入 SCHED_FIFO，音频管线首次获得 RT 保证 |
+| Android 7.0 | 后台进程 nice 值统一提升至 10+，减少后台调度干扰 |
+| Android 9 | `Process.setThreadPriority()` 中 THREAD_PRIORITY_DISPLAY(-4) 标注 "Applications can not normally change to this priority" |
+| Android 12 | GKI 5.10 迁移到 UClamp，SchedTune 退场；RT 线程管理从 vendor 调度器统一到主线 cgroup |
+| Android 14+ | 后台执行限制进一步收紧，`cpuset/background` 收窄到小核子集，RT 线程几乎只存在于系统服务 |
+| Android 16 (GKI 6.1) | 默认 fair class 调度仍为 CFS 逻辑；sched_ext 基础设施在 common kernel 6.12 中可用但未默认启用 |
+
+[来源: AOSP Process.java 各版本注释、task_profiles.json 版本对比、Android 版本发布说明]
+
 ### 对 Android 性能分析的预期影响
 
 目前(截至 Android 16),主流 Android 设备的内核版本尚未大规模采用 EEVDF。但考虑到:
@@ -714,22 +756,51 @@ ORDER BY core_type;
 不一定。Runnable 状态本身是正常的——线程不可能永远在 Running。只有当 Runnable 时间在关键路径(如主线程的 doFrame 期间)中占比过高时，才需要关注。
 
 
-[需确认: 本段更接近 §7.3 内存回收/进程优先级内容，需由 Task 2B 判断是否保留为跨章节补充，或移回 §7.3 后在本章只保留调度相关交叉引用。]
-<!-- AIW-源码调研-2026-04-20: Android LMK/OOM Adj 机制源码补充 -->
-### Android OOM Adj 与 TrimMemory 机制(跨章节引用:§7.3)
+### 进程优先级与内存回收的衔接
 
-Android 的进程优先级体系与 Linux kernel 的 cgroup/oom_score_adj 紧密协作，但内存压力响应的核心在 userspace。关键源码验证(android14-release):
+调度优先级(nice 值、RT priority)与进程内存回收优先级(oom_score_adj)是两套独立但联动的体系。前台进程同时拥有更低的 nice 值和更低的 oom_score_adj，后台进程则两方面都被降级。两者通过 Android Framework 的 `ActivityManagerService.updateOomAdjLocked()` 协调：进程状态变化时，AMS 同时更新 cgroup cpuset/cpu profile(影响调度)和 oom_score_adj(影响 lmkd 杀进程决策)。
 
-**lmkd**(`platform/system/memory/lmkd/lmkd.cpp`,Android 14):userspace Low Memory Killer daemon,已从 C 迁移至 C++。默认使用 **PSI(Pressure Stall Information)** 监控内存压力(Android 10+),关键参数：`PSI_WINDOW_SIZE_MS=1000`、`PSI_POLL_PERIOD_SHORT_MS=10`。AMS 与 lmkd 通过 socket 通信，命令码定义在 `ProcessList.java` 中的 `enum lmk_cmd`(`LMK_TARGET=0`、`LMK_PROCPRIO=1`、`LMK_PROCKILL=6`)。
+Android OOM Adj 分数体系、lmkd PSI 监控机制和 TrimMemory 回调的完整源码分析见 §7.3「内存回收」。本节只覆盖与调度直接相关的交叉点：进程从 `top-app` 降到 `background` 时，cpuset 可用 CPU 集合收窄、cpu.uclamp.min 归零、nice 值提升，三者叠加让后台进程对前台调度的干扰降到最低。
 
-**OOM Adj 分数**(`services/core/java/com/android/server/am/ProcessList.java`):Android 进程优先级体系，FOREGROUND_APP_ADJ=0 到 NATIVE_ADJ=-1000(共约20档)。`mOomMinFree` 数组定义 6 档内存阈值(单位 KB),从高端设备(1280x800, ~1GB)的 `mOomMinFreeHigh` 到低端设备(HVGA, <512MB)的 `mOomMinFreeLow`。
 
-**TrimMemory 机制**(`ComponentCallbacks2.java`,`ActivityThread.java`,`ActivityManagerService.java`):系统通过 `onTrimMemory(level)` 回调通知应用释放内存。level 范围 5~80(`TRIM_MEMORY_RUNNING_MODERATE` ~ `TRIM_MEMORY_COMPLETE`),由 AMS 在 `updateOomAdjLocked()` 期间计算，经 `IApplicationThread.scheduleTrimMemory()` 派发。
+## 调度问题的诊断决策框架
 
-详细分析见 §7.3「卡顿分析方法论」。
+在 Perfetto 中发现调度相关性能问题时，按以下路径逐步定位:
 
-[源码验证: ProcessList.java, ComponentCallbacks2.java, ActivityThread.java, lmkd.cpp (android14-release/android-14.0.0_r44)]
+**Step 1：确认问题是否在调度层。** 选中关键路径切片(如 `doFrame`)，对比 Wall 时间与 CPU 时间。如果 `Wall ≈ CPU`，瓶颈是计算过重而非调度；如果 `Wall >> CPU`，差异来自 Runnable 等待或 Sleep 阻塞。
 
+**Step 2：区分 Runnable 等待与 Sleep 阻塞。** Runnable(浅绿色)是调度延迟——线程准备好但没拿到 CPU；Sleep(白色)是线程在等锁、I/O、Binder 回复。两者的优化方向完全不同。
+
+**Step 3：Runnable 等待→检查系统负载。** 用 Perfetto SQL 统计对应时间段内各 CPU 的利用率。如果多数 CPU > 90% 满载，调度延迟是系统级负载问题；如果 CPU 有空闲但线程仍在等，检查线程的 cpuset 限制和 affinity mask。
+
+```sql
+-- 检查特定时间窗口内 CPU 负载
+SELECT
+  cpu,
+  SUM(dur) / (MAX(ts + dur) - MIN(ts)) * 100 AS cpu_util_pct
+FROM sched
+WHERE ts BETWEEN ${start_ts} AND ${end_ts}
+GROUP BY cpu
+ORDER BY cpu;
+```
+
+**Step 4：检查 UClamp / cpuset 配置是否生效。** 前台应用主线程和 RenderThread 应该在 `top-app` cpuset 中(可访问大核)。用以下信号验证:
+
+- 线程运行在哪些 CPU 编号上(`sched` 表按 `cpu` 分组)
+- CPU 频率是否在关键时刻拉起(CPU Frequency Track)
+- 进程组是否从 `foreground` 升级到 `top-app`（`sched_wakeup` / `sched_switch` 中的进程名变化）
+
+**Step 5：决定优化动作。**
+
+| 诊断结果 | 优化方向 |
+|----------|----------|
+| CPU 满载 + 关键线程 Runnable 等待长 | 减少非关键线程的 CPU 占用（降低 nice 值、裁剪后台任务） |
+| 关键线程被困在小核 | 检查 cpuset profile 是否正确应用到 top-app 组 |
+| CPU 频率爬升慢 | 检查 UClamp_MIN 是否配置、schedutil governor 是否生效 |
+| 大量短时间 Runnable↔Running 切换 | 检查 `sched_base_slice_ns` 是否偏小，EEVDF 内核下考虑调整 |
+| RenderThread 在关键帧期间被抢占 | 绑核到大核(需 Perfetto 对比绑核前后 wall time 差异) |
+
+> ⚠️ 本框架覆盖的是基于 Perfetto 可观测信号的诊断路径。针对特定应用场景的调度优化经验（如大型社交应用的消息队列线程调度策略、游戏引擎的渲染线程调度配置等）需要结合具体应用架构和实测数据，不在本节讨论范围内。
 
 ## 参考资料
 

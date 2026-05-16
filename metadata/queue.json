@@ -252,7 +252,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
@@ -262,7 +262,9 @@
       ],
       "original_review_log": "logs/review/2026-05-12-20-review.md",
       "last_reviewed_by": "task6-review",
-      "last_reviewed_at": "2026-05-12T20:10:00+08:00"
+      "last_reviewed_at": "2026-05-12T20:10:00+08:00",
+      "completed_date": "2026-05-16T11:26:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充调度器关键可调参数表(sched_base_slice_ns/wakeup_granularity 等), 新增 Real-time 调度在 Android 版本中的演进时间线"
     },
     {
       "id": "task6-5.1-linux-scheduling-practical",
@@ -272,7 +274,7 @@
       "description": "L4级问题：缺少作者在实际 Android 调度问题解决中的经验分享、如何在大型应用中进行调度优化的具体实践建议",
       "issue_type": "content-practical",
       "severity": "P2",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
@@ -283,7 +285,9 @@
       ],
       "original_review_log": "logs/review/2026-05-12-20-review.md",
       "last_reviewed_by": "task6-review",
-      "last_reviewed_at": "2026-05-12T20:10:00+08:00"
+      "last_reviewed_at": "2026-05-12T20:10:00+08:00",
+      "completed_date": "2026-05-16T11:26:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: 新增调度问题诊断决策框架(5 步定位路径 + SQL 示例 + 优化动作对照表); 标注特定应用场景调度优化经验需结合具体应用架构"
     },
     {
       "id": "task9-4.3-art-memory-generational-cmc",
@@ -1451,7 +1455,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
@@ -1466,7 +1470,9 @@
           "detail": "Android 13 段落称 targetSdkVersion >= 33 的 App `SCHEDULE_EXACT_ALARM` 权限默认拒绝；本地资料 `Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！` 写明“从 Android 14 开始，系统不再向以 Android 13 及更高版本为目标平台的大多数新安装应用预先授予”。",
           "suggestion": "将默认拒绝移动到 Android 14 段；Android 13 只保留 USE_EXACT_ALARM/政策边界和权限检查适配。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-16T11:28:53+08:00",
+      "completed_reason": "Task 2B 回炉修复: 精确闹钟默认拒绝从 Android 13 修正为 Android 14(13 引入 USE_EXACT_ALARM + FGS Task Manager，14 才将 SCHEDULE_EXACT_ALARM 改为默认拒绝); 时间线表和演进趋势同步修正"
     },
     {
       "id": "task9-5.7-sched-ext-version-anchor-20260512",
@@ -1479,7 +1485,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
@@ -1494,7 +1500,9 @@
           "detail": "“Android 17 (GKI 6.12) 已具备”把平台版本、common-kernel 分支和设备 config 混成一个确定事实；此前审计可核验锚点是 android16-6.12 common-kernel 的 `kernel/sched/ext.c`，量产设备是否启用还要看 `CONFIG_SCHED_CLASS_EXT`。",
           "suggestion": "改为“Linux 6.12 / Android common 6.12 分支包含 sched_ext 基础设施；Android 17 设备是否可用取决于具体 kernel tag/config，AOSP 默认调度链尚未切换”。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-16T11:28:53+08:00",
+      "completed_reason": "Task 2B 回炉修复: sched_ext 版本锚点从'Android 17 (GKI 6.12) 已具备'修正为'Linux 6.12 / Android common 6.12 分支包含; 设备是否可用取决于 kernel tag/CONFIG_SCHED_CLASS_CORE'"
     },
     {
       "id": "task6-20.5-oom-governance-tech-risk-202605121802",
@@ -1812,7 +1820,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
@@ -1830,7 +1838,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T20:10:00+08:00",
-      "original_review_log": "logs/review/2026-05-12-20-review.md"
+      "original_review_log": "logs/review/2026-05-12-20-review.md",
+      "completed_date": "2026-05-16T11:26:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: OOM Adj/TrimMemory 源码调研段裁剪为调度-内存回收交叉引用段落, 保留 cgroup/cpuset 联动说明, 完整分析指向 §7.3"
     },
     {
       "id": "task6-review-5.11-20260512-tech-evidence",
