@@ -8118,7 +8118,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
@@ -8126,7 +8126,10 @@
       "material_paths": [
         "intake/daily-info/2026-05-16.md",
         "DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md",
-        "frameworks/native/services/inputflinger/"
+        "frameworks/native/services/inputflinger/",
+        "frameworks/native/services/surfaceflinger/Scheduler/",
+        "developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "source.android.com/docs/core/graphics/arr"
       ],
       "gap_score": 17,
       "gap_score_detail": {
@@ -8134,7 +8137,10 @@
         "与全书目标相关性": 4,
         "读者需求度": 4,
         "时效性": 5
-      }
+      },
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 内容加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线",
+      "completed_by": "openclaw-task2a"
     },
     {
       "id": "task2a-gap-3-9-09-input-latency-budget-perception",

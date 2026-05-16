@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 5,
-  "ready-for-review": 95,
+  "draft": 4,
+  "ready-for-review": 96,
   "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -140,7 +140,8 @@
     "1.19",
     "22.12",
     "13.13",
-    "3.7"
+    "3.7",
+    "3.8"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -2960,15 +2961,16 @@
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
       "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/AOSP结构",
       "gap_score": 17,
-      "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-16T12:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending"
     },
     "3.9": {
       "title": "端到端输入延迟预算与感知阈值",
