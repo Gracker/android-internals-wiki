@@ -1640,6 +1640,14 @@
 - **问题**：`setPreferPowerEfficiency(true)` 被写成系统会降低 CPU/GPU 频率、完整路径里也写成“系统调整 CPU/GPU 频率策略”。AOSP `PerformanceHintManager.Session#setPreferPowerEfficiency()` 注释只承诺“these threads can be safely scheduled to prefer power efficiency over performance”，是线程调度偏好，不是 CPU/GPU 降频保证。
 - **建议**：改为“声明 hint session 关联线程可优先能效调度，具体是否迁移到效率核、降频或联动 GPU 由设备 Power HAL / scheduler 实现决定”；不要把 GPU 频率调整写成 API 直接语义。
 
+## [Task2A Gap Mining] 2026-05-16 17:04 — 本轮未创建新章节
+
+- **类型**：知识缺口挖掘记录
+- **结论**：未发现去重后评分 ≥ 14 且适合独立成节的新缺口。
+- **已检查方向**：ADPF Power Efficiency Mode + PowerMonitor、Android 版本化线上诊断能力、16KB Page Size 与 Hook / 三方 native 库、InputDispatcher / InputFlinger Rust / HCI 延迟、Perfetto SPAN_JOIN / DataGrid / Jank CUJ、WOOTdroid、McNdroid。
+- **去重依据**：上述高分素材已被 3.7、3.8、3.9、4.7、5.9、8.10、11.1、11.5、13.11、13.14、14.11、26.5、26.9、26.10 等章节覆盖，或更适合作为 Task2B / Task6 的内容补强素材。
+- **后续建议**：下轮缺口挖掘优先避开这些方向，除非出现新的官方 API、AOSP 入口或 ≥3 篇高质量独立素材支撑。
+
 ## [Task9 Deep Review] 2.3 VSync 机制 — 2026-05-16
 - **类型**：数据缺失/Trace 支撑
 - **位置**：6.3、9.5、10.1（Perfetto VSync 观察与 ARR 行为）
@@ -1651,3 +1659,15 @@
 - **位置**：16KB Page Size、主流 Hook 库版本表与 Google Play 截止日期
 - **问题**：章节列出 ByteHook/ShadowHook 版本、16KB `p_align`/compat mode、Google Play 2025-11-01 截止日期，但部分断言没有紧邻官方文档、release tag 或源码文件作为证据。
 - **建议**：在该小节补官方 Android 16KB page-size 文档、ByteHook/ShadowHook release/CMakeLists、`linker_phdr_16kib_compat.cpp`、`readelf -l` 输出示例；若截止日期无法用官方来源复核，应降级为待验证。
+
+## [Task9 Deep Review] 5.13 移动端 LLM 推理的 DVFS 与能效边界 — 2026-05-16
+- **类型**：数据支撑 / Perfetto 采集口径
+- **位置**：`src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md`「端侧 AI 推理的验证方法」TraceConfig 示例
+- **问题**：正文说这段配置用于采集 Android 电源数据，但示例只设置了 `battery_poll_ms` 和 `collect_power_rails: true`，没有列出 `battery_counters`。Perfetto 官方样例中，电池电流/电压/电量计数器需要显式声明 `BATTERY_COUNTER_CURRENT`、`BATTERY_COUNTER_VOLTAGE`、`BATTERY_COUNTER_CHARGE` 等；`collect_power_rails` 只覆盖设备支持 ODPM/power rails 的路径。
+- **建议**：如果目标是估算 energy-per-token，补齐 battery counters 或把示例语义收窄为“仅尝试采集 power rails”；同时说明外接功耗仪、power rails、电池计数器三种口径的优先级与误差边界。
+
+## [Task9 Deep Review] 5.13 移动端 LLM 推理的 DVFS 与能效边界 — 2026-05-16
+- **类型**：原理链 / Thermal 架构边界
+- **位置**：`src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md`「DVFS governor 在 CPU、GPU、内存之间的独立决策」第一段
+- **问题**：正文把 Thermal HAL 写成“把温度约束反馈给框架与内核”。Android Thermal HAL 的稳定职责更准确地说是向 framework thermal service 暴露温度、severity、cooling device 等状态/回调；实际限频、cooling device 生效通常在 kernel thermal framework、vendor thermal daemon 和 Power HAL/驱动策略侧完成。
+- **建议**：改成“Thermal HAL 向框架暴露热状态与 cooling 信息，内核/vendor thermal 策略负责把温度约束落实到 cooling device、频率/功率限制”，避免读者误解为 HAL 直接向内核下发约束。
