@@ -211,7 +211,7 @@ tags:
   - [13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数](part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md)
   - [13.12 Perfetto Profile 导入与 Flamegraph 分析](part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md)
   - [13.13 Perfetto CPU 频率与 DVFS 关联分析](part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md)
-  - [13.14 Perfetto Data Explorer 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
+  - [13.14 Perfetto DataGrid 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)

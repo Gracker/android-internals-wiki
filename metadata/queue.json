@@ -8177,14 +8177,14 @@
       "id": "task2a-gap-13-14-14-perfetto-data-explorer-jank-cuj",
       "section": "13.14",
       "priority": 80,
-      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
-      "description": "Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。",
+      "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
+      "description": "Perfetto v54 的 DataGrid、Jank CUJ metric、relevant threads 与 weighted jank counter 工作流，补齐无代码筛选和标准库化 jank 量化。",
       "issue_type": "knowledge-gap",
       "severity": "P2",
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
@@ -8200,7 +8200,10 @@
         "与全书目标相关性": 5,
         "读者需求度": 5,
         "时效性": 5
-      }
+      },
+      "completed_at": "2026-05-16T14:07:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "result": "draft-ready-for-review"
     },
     {
       "id": "task2a-gap-20-12-12-safemode-crash-loop-recovery",
@@ -8448,16 +8451,16 @@
   "metadata": {
     "total_entries": 256,
     "p0_count": 42,
-    "last_updated": "2026-05-16T12:31:00+08:00",
+    "last_updated": "2026-05-16T14:07:00+08:00",
     "updated_by": "task2a-knowledge-gap",
     "pending_entries": 144,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 144
+    "last_updated_by": "openclaw-task2a",
+    "pending": 143
   },
-  "last_updated": "2026-05-16T12:31:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 144,
-  "last_task2a_completed": "22.12",
-  "last_task2a_completed_at": "2026-05-16T07:17:00+08:00"
+  "last_updated": "2026-05-16T14:07:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 143,
+  "last_task2a_completed": "13.14",
+  "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"
 }

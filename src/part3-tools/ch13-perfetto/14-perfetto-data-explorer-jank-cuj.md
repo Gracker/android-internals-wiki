@@ -1,46 +1,231 @@
 ---
-title: "Perfetto Data Explorer 与 Jank CUJ 标准库"
+title: "Perfetto DataGrid 与 Jank CUJ 标准库"
 chapter: "13.14"
-status: draft
+section: "13.14"
+status: ready-for-review
+drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
-tags: [perfetto, data-explorer, jank, cuj, sql]
-related_chapters: ["13.3", "13.8", "13.10", "13.11", "7.3"]
+last_verified: "2026-05-16"
+last_verified_against: "Perfetto v54.0 release notes + google/perfetto main ab21398 + FrameTimeline docs"
+confidence: medium
+sources:
+  - type: official
+    path: "https://github.com/google/perfetto/releases/tag/v54.0"
+  - type: source
+    path: "google/perfetto src/trace_processor/metrics/sql/android/jank/android_jank_cuj_init.sql @ ab21398"
+  - type: source
+    path: "google/perfetto src/trace_processor/metrics/sql/android/jank/internal/counters.sql @ ab21398"
+  - type: source
+    path: "google/perfetto src/trace_processor/metrics/sql/android/android_jank_cuj.sql @ ab21398"
+  - type: source
+    path: "google/perfetto src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql @ ab21398"
+  - type: source
+    path: "google/perfetto src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql @ ab21398"
+  - type: official
+    path: "https://raw.githubusercontent.com/google/perfetto/main/docs/data-sources/frametimeline.md"
+  - type: research
+    path: "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
+tags: [perfetto, datagrid, jank, cuj, sql, frametimeline]
+related_chapters: ["7.3", "7.4", "13.3", "13.8", "13.10", "13.11", "13.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
+pipeline_stage: task6_pending
 ---
 
-# 13.14 Perfetto Data Explorer 与 Jank CUJ 标准库
+# 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
 <!-- outline-start -->
 ## 要点
 
-### 🔹 Data Explorer 的适用场景
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+### 🔹 DataGrid 的适用场景
+Perfetto v54 的官方发布说明写的是 DataGrid table viewer、pivot table 和筛选能力，不是独立的 Data Explorer 工作流。DataGrid 适合把 SQL 结果变成可筛选、可透视的表格，用来收窄异常帧、异常 CUJ 和异常线程。
 
 ### 🔹 从手写 SQL 到可视化分析管线
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+手写 SQL 仍然负责定义证据口径；DataGrid 负责交互式过滤、排序和分组；标准库负责把 FrameTimeline、CUJ、线程和 counter 这些高频分析对象封装成可复用入口。
 
 ### 🔹 Jank CUJ 标准库模块
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+v54 引入 relevant threads jank CUJ 相关能力，配合 `android.cujs.*` 标准库和 `android/android_jank_cuj.sql` metric，可以把一个交互场景里的主线程、RenderThread、GPU completion、HWC release、SurfaceFlinger 线程放到同一张分析表里。
 
 ### 🔹 counter-based weighted jank metrics
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+FrameTracker 在 CUJ 结束后会写出 total frames、missed frames、weighted jank 等 counter。Perfetto 的 jank CUJ pipeline 会把这些 counter 映射回对应 CUJ，避免只按掉帧数量判断卡顿严重程度。
 
 ### 🔹 与 FrameTimeline / thread_state 的联合分析
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+Jank CUJ 给出场景窗口，FrameTimeline 给出 app missed / SF missed 的帧级判定，`thread_state` 给出线程是在 Running、Runnable、Sleeping 还是 uninterruptible sleep。三者合在一起，才能判断是 App 执行超时、SF 合成超时、GPU/HWC 等待，还是线程调度问题。
 
 ### 🔹 v54 schema 变更与旧 SQL 迁移
-Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。
+v54 删除 `slice.stack_id` 和 `slice.parent_stack_id`，把相关能力迁移到 `slices.stack` 标准库；`machine_id` 变为非空；`metadata` 表加入 multi-trace / multi-machine 语义。旧 SQL 要按 schema 变更逐条迁移，不能只改字段名。
 
 ## 扩展
 
 ### 🔸 heap_graph_stats 与 dmabuf 分析入口
-待结合素材验证后展开。
+`android.memory.heap_graph.heap_graph_stats` 把 Java heap graph、NativeAllocationRegistry、RSS / swap、OOM score 和 DMA-BUF RSS 放到一张统计表里，适合用于 ch10 内存分析和图形内存问题。
 
 ### 🔸 Collapsed Stack / Firefox Profiler 格式导入
-待结合素材验证后展开。
+v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON 导入。它适合迁移历史 profile 资产，但这类格式通常缺少 Android trace 的 FrameTimeline、Binder 和调度上下文。
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+Perfetto v54 对 Android 性能分析的改变不在“多了一个按钮”，而在三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”升级为“这次卡顿有多重”。
+
+这类能力最适合处理一种常见问题：一段滑动、展开、返回或者 Launcher 动画看上去只是“偶尔卡一下”，单看 FrameTimeline 能定位异常帧，但还不能判断异常来自 App、SurfaceFlinger、GPU completion、HWC release，还是调度等待。CUJ 把这段交互切成窗口，DataGrid 把结果筛出来，SQL 把判断口径固定下来。
+
+[已验证: Perfetto v54.0 Release Notes + google/perfetto ab21398]
+
+## DataGrid 适合做什么
+
+Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。节点式数据流不属于 v54 release notes 描述的功能。
+
+DataGrid 的价值在三类场景里最明显：
+
+- 异常帧筛选：把 SQL 查出的帧结果按 `app_missed`、`sf_missed`、`jank_score`、`dur_ms` 排序，先找最重的一批帧。
+- CUJ 聚合：按 `cuj_name`、进程名、状态和 weighted jank 做透视，判断问题集中在哪个交互场景。
+- 线程证据核对：把 UI 线程、RenderThread、SurfaceFlinger main / RenderEngine、GPU completion 和 HWC release 的 slice 结果放在一起，检查同一 CUJ 里谁先超预算。
+
+这种工作流不替代手写 SQL。SQL 决定表里有哪些列、每列怎么计算、跨表 join 的时间窗怎么取；DataGrid 只负责把结果变成可观察的表格。团队里多人复盘同一类卡顿时，应该把 SQL 留在文档或仓库里，把 DataGrid 当成交互式验证入口。[已验证: Perfetto v54.0 Release Notes]
+
+## 从手写 SQL 到可视化分析管线
+
+PerfettoSQL 的稳定工作方式是先写出一个“窄表”：每一行对应一个可解释对象，例如一个 CUJ、一个 frame、一个 slice 或一个线程状态区间；每一列对应一个判断维度，例如是否 app missed、是否 SF missed、帧耗时、线程状态、blocked function、counter 值。窄表进入 DataGrid 后，排序、过滤、分组才有意义。
+
+下面这段查询用于把 Jank CUJ metric 初始化，并列出 weighted jank 最重的 CUJ。重点看 `weighted_missed_frames`、`missed_app_frames` 和 `missed_sf_frames` 三组字段：
+
+```sql
+SELECT RUN_METRIC('android/android_jank_cuj.sql');
+
+SELECT
+  cuj_id,
+  cuj_name,
+  state,
+  total_frames,
+  missed_frames,
+  missed_app_frames,
+  missed_sf_frames,
+  weighted_missed_frames,
+  weighted_missed_app_frames,
+  weighted_missed_sf_frames,
+  frame_dur_max / 1e6 AS frame_dur_max_ms
+FROM android_jank_cuj_counter_metrics
+ORDER BY weighted_missed_frames DESC
+LIMIT 20;
+```
+
+这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_frames` 回答“掉帧有多重”，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。[已验证: google/perfetto src/trace_processor/metrics/sql/android/android_jank_cuj.sql @ ab21398]
+
+## Jank CUJ 标准库模块怎样组织线程
+
+CUJ 分析的难点在于把同一段交互里的相关线程找齐。Perfetto 的 jank CUJ 初始化脚本会创建主线程、RenderThread、GPU completion、HWC release、SurfaceFlinger main、SurfaceFlinger GPU completion、RenderEngine 等表。`android.cujs.threads` 标准库里也提供了 `android_jank_cuj_app_thread(thread_name)` 这类入口，用线程名把 CUJ 和进程内线程关联起来。
+
+下面这段查询用于检查每个 CUJ 是否能匹配到 RenderThread。读者只需要看 `cuj_id`、`cuj_name`、`utid` 和 `track_id`，后续追 slice 时会用到这些 ID：
+
+```sql
+INCLUDE PERFETTO MODULE android.cujs.base;
+INCLUDE PERFETTO MODULE android.cujs.threads;
+
+SELECT
+  c.cuj_id,
+  c.cuj_name,
+  c.process_name,
+  r.utid AS render_thread_utid,
+  r.track_id AS render_thread_track_id
+FROM android_jank_cuj AS c
+LEFT JOIN android_jank_cuj_render_thread AS r USING (cuj_id)
+ORDER BY c.ts;
+```
+
+`LEFT JOIN` 保留下没有 RenderThread 的 CUJ，避免把“采集缺口”误判成“线程没有参与”。如果某类 CUJ 总是缺 RenderThread，需要回到 trace config 和 App 场景确认：可能是场景本身不走 HWUI，也可能是 trace 缺少相关 track。[已验证: google/perfetto src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql @ ab21398]
+
+## weighted jank counter 解决什么问题
+
+只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedJank`、`weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成浮点值。
+
+这类 counter 有两个使用边界：
+
+- 它依赖 CUJ 结束后的 counter 写入，短时间内同名 CUJ 连续出现时，脚本会用下一个同名 CUJ 的结束时间限制 counter 匹配范围。
+- 它适合给排序和告警做权重，不适合单独解释根因。根因仍要回到 FrameTimeline、slice 和 `thread_state`。
+
+Perfetto 的 metric 输出里同时保留 counter metrics、trace metrics 和 timeline metrics。counter metrics 来自 FrameTracker 的汇总，trace / timeline metrics 来自 trace 中逐帧数据。两者不一致时，先检查 trace 是否缺 frame 数据、CUJ marker 是否完整、采集窗口是否截断。[已验证: google/perfetto src/trace_processor/metrics/sql/android/jank/internal/counters.sql @ ab21398]
+
+## 与 FrameTimeline 和 thread_state 联合分析
+
+FrameTimeline 从 Android 12 开始提供 expected / actual timeline。App actual timeline 的结束时间取 `max(gpu time, post time)`，SurfaceFlinger actual timeline 覆盖 main thread 到屏幕更新的路径。Perfetto 文档把 jank 分成 AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、DisplayHAL、PredictionError 等类型。CUJ 级别分析应该顺着这些分类找证据。
+
+下面这段查询从 Jank CUJ metric 生成的帧表里抽出异常帧。重点看 `app_missed`、`sf_missed` 和 `jank_score`：
+
+```sql
+SELECT RUN_METRIC('android/android_jank_cuj.sql');
+
+SELECT
+  cuj_id,
+  frame_number,
+  vsync,
+  dur / 1e6 AS dur_ms,
+  dur_expected / 1e6 AS expected_ms,
+  app_missed,
+  sf_missed,
+  jank_score,
+  sf_callback_missed,
+  hwui_callback_missed
+FROM android_jank_cuj_frame
+WHERE app_missed OR sf_missed
+ORDER BY jank_score DESC, dur DESC
+LIMIT 50;
+```
+
+这张表只给出“哪一帧异常”。下一步要回到异常帧对应的时间窗，查看 UI 线程和 RenderThread 的 `thread_state`：Running 时间长说明 CPU 执行占满预算；Runnable 时间长说明线程想跑但没拿到 CPU；uninterruptible sleep 且 `io_wait = 1` 更像 I/O 或内核等待；blocked function 非空时要继续查锁、futex 或 Binder 等待。[已验证: Perfetto FrameTimeline docs + PerfettoSQL thread_state schema]
+
+## v54 schema 变更与旧 SQL 迁移
+
+v54 的 Trace Processor 有几处会直接影响旧 SQL：
+
+| 变化 | 旧写法风险 | 迁移方向 |
+|---|---|---|
+| `slice.stack_id` / `slice.parent_stack_id` 被删除 | 旧 SQL 直接查字段会失败 | 使用 `slices.stack` 标准库里的 stack 关系函数 |
+| `machine_id` 变为非空 | 用 `NULL` 表示 host machine 的判断会失效 | host machine 按 0 处理，多机器 trace 显式过滤 `machine_id` |
+| `metadata` 支持 `trace_id` / `machine_id` | 旧 SQL 默认单 trace，合并 trace 时会混数据 | join 时带上 `trace_id` 和 `machine_id` |
+| `--add-sql-module` / `--override-sql-module` 移除 | 旧脚本启动 Trace Processor 会失败 | 改用 `--add-sql-package` / `--override-sql-package` |
+
+迁移旧 SQL 时，先把查询拆成三层：原始表读取、标准库派生表、业务筛选条件。字段改名或移除只应该影响前两层，业务筛选条件不要和 schema 细节混在一段 SQL 里。这样同一套卡顿规则从 v53 迁到 v54 时，只需要替换入口表或标准库模块。[已验证: Perfetto v54.0 Release Notes]
+
+## heap_graph_stats 与 dmabuf 分析入口
+
+v54 还新增了 `heap_graph_stats` 模块，并加入 DMA-BUF 支持。源码里 `android_heap_graph_stats` 每行对应一次 ART heap graph sample，字段包括 Java heap 总大小、reachable heap、NativeAllocationRegistry、对象数量、OOM score、anon RSS + swap，以及 `dmabuf_rss_size`。
+
+下面这段查询用于把 Java heap 和图形内存放到同一张表里。重点看 `reachable_heap_mb` 和 `dmabuf_rss_mb` 是否同时上涨：
+
+```sql
+INCLUDE PERFETTO MODULE android.memory.heap_graph.heap_graph_stats;
+
+SELECT
+  process.name AS process_name,
+  graph_sample_ts,
+  reachable_heap_size / 1024.0 / 1024.0 AS reachable_heap_mb,
+  reachable_native_alloc_registry_size / 1024.0 / 1024.0 AS native_registry_mb,
+  anon_rss_and_swap_size / 1024.0 / 1024.0 AS anon_rss_swap_mb,
+  dmabuf_rss_size / 1024.0 / 1024.0 AS dmabuf_rss_mb,
+  oom_score_adj
+FROM android_heap_graph_stats
+JOIN process USING (upid)
+ORDER BY graph_sample_ts;
+```
+
+这类数据适合接到图片、视频、Camera、SurfaceView 或 Compose 大图场景。Java heap 没涨但 `dmabuf_rss_size` 涨，排查方向应转向图形 buffer、解码缓存、Surface 生命周期和跨进程持有；Java heap 与 DMA-BUF 同时涨，才考虑对象持有和图形资源释放两个方向一起查。[已验证: google/perfetto src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql @ ab21398]
+
+## Collapsed Stack / Firefox Profiler 格式导入
+
+v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 JSON。Collapsed Stack 是 `main;foo;bar 100` 这类火焰图输入，适合把 Brendan Gregg FlameGraph 生态里的历史数据导入 Perfetto；Firefox Profiler JSON 适合跨工具查看已有 profile。
+
+这两类格式的使用边界要写清：它们能保留调用栈聚合信息，但通常没有 Android system trace 里的 FrameTimeline、Binder、调度、counter 和 CUJ marker。用它们做 CPU 热点归因可以，用它们解释“某一帧为什么掉了”证据不够。遇到具体卡顿，仍要重新采带 FrameTimeline、sched、freq、binder、gfx / view 相关 atrace category 的 Perfetto trace。[已验证: Perfetto v54.0 Release Notes]
+
+## 排障顺序
+
+一条可复用的 Jank CUJ 分析顺序如下：
+
+1. 用 `android/android_jank_cuj.sql` 生成 CUJ metric，按 `weighted_missed_frames` 找最重的 CUJ。
+2. 在 DataGrid 里按 `cuj_name`、进程、`missed_app_frames`、`missed_sf_frames` 分组，确认问题集中在哪类场景。
+3. 展开 `android_jank_cuj_frame`，找 `jank_score` 最高的帧。
+4. 回到该帧时间窗，看 UI 线程、RenderThread、GPU completion、HWC release、SurfaceFlinger main / RenderEngine 的 slice。
+5. 用 `thread_state` 判断线程是在执行、抢 CPU、睡眠、I/O 等待还是阻塞。
+6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
+
+这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[自动发现]

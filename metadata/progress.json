@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 3,
-  "ready-for-review": 97,
+  "draft": 2,
+  "ready-for-review": 98,
   "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -1136,9 +1136,9 @@
   },
   "total_review_sections": 136,
   "next_review_candidates": [],
-  "ready_for_review": 97,
-  "last_updated": "2026-05-16T13:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 98,
+  "last_updated": "2026-05-16T14:07:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "13:11",
@@ -3044,17 +3044,20 @@
       "task2b_state": "pending"
     },
     "13.14": {
-      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
+      "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/官方文档",
       "gap_score": 20,
-      "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-16T14:07:00+08:00",
+      "task2a_result": "draft-ready-for-review",
+      "drafted_date": "2026-05-16",
+      "last_verified": "2026-05-16",
+      "confidence": "medium"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
@@ -3108,8 +3111,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "1.19",
-  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+  "last_task2a_processed": "13.14",
+  "last_task2a_processed_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
   "last_task2a_processed_date": "2026-05-16",
   "task9_last_review_detail": {
     "reviewed_at": "2026-05-16T12:31:00+08:00",
@@ -3159,9 +3162,9 @@
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
   "total_review_files": 136,
-  "last_task2a_at": "2026-05-16T10:04:00+08:00",
-  "last_task2a_section": "22.12",
-  "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+  "last_task2a_at": "2026-05-16T14:07:00+08:00",
+  "last_task2a_section": "13.14",
+  "last_task2a_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
   "last_task6_review": "2026-05-16T13:11:00+08:00",
   "last_task6_sections": [
     "3.8",
@@ -3199,9 +3202,9 @@
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
   "last_task9_at": "2026-05-16T12:31:00+08:00",
-  "last_task2a_result": "gap-mining-created-drafts",
+  "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
-  "last_task2a_processed_section": "22.12",
+  "last_task2a_processed_section": "13.14",
   "task6_last_review_at": "2026-05-16T13:11:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-16-13-review.md",
   "task6_last_review_sections": [
@@ -3470,17 +3473,20 @@
       "task9_state": "pending"
     },
     "13.14": {
-      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
+      "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "研究素材/官方文档",
       "gap_score": 20,
-      "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-16T14:07:00+08:00",
+      "task2a_result": "draft-ready-for-review",
+      "drafted_date": "2026-05-16",
+      "last_verified": "2026-05-16",
+      "confidence": "medium"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
