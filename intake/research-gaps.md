@@ -316,3 +316,21 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 ### 关联章节
 7.3, 7.4, 13.8, 13.10, 13.14
 
+## [2026-05-17] 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger — 知识盲区
+
+### 盲区描述
+26.12 当前覆盖 ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger，但版本化诊断表漏掉两类会影响线上归因的边界：
+1. ApplicationExitInfo reason 常量的 API 级别差异：`REASON_FREEZER` 为 API 33；`REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` 为 API 34；API 34 之前包更新和组件状态变化可能仍落到 `REASON_USER_REQUESTED`。
+2. Android 15 / API 35 的 `ApplicationStartInfo` 启动追溯能力：`ActivityManager#getHistoricalProcessStartReasons()`、`addApplicationStartInfoCompletionListener()`、`START_TYPE_COLD` 与 `START_TIMESTAMP_*` 应进入慢启动诊断决策表，并与 Android 17 `TRIGGER_TYPE_COLD_START` 的触发前提对齐。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android Developers `ApplicationExitInfo` API reference 中各 `REASON_*` 的 Added in API level，并补一张 API 30 / 33 / 34 的 reason 差异表。
+- 复核 AOSP `frameworks/base/core/java/android/app/ApplicationStartInfo.java` 与 `ActivityManager#getHistoricalProcessStartReasons()`，整理 Android 15 可拿到的启动原因、启动类型和关键时间戳。
+- 对齐 8.10：`TRIGGER_TYPE_COLD_START` 的前提是 `ApplicationStartInfo.getStartType() == START_TYPE_COLD`，说明它和 Android 15 启动历史记录的分工。
+
+### 关联章节
+26.12、26.9、8.10、8.2、14.7
+

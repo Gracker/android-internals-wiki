@@ -1719,9 +1719,41 @@
 - **问题**：`Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6/13/35.md` 在当前 Obsidian `Clippings/` 下未找到，正文又把这些文件作为结构参考引用，导致相关判断无法复核到原始材料。
 - **建议**：替换成实际存在的笔记路径，或把这些引用降级为非技术结构参考；与 eBPF/Binder 结论相关的依据保留论文、AOSP 文档和已有章节交叉引用。
 
+## [Task2A Gap Mining] 2026-05-17 02:04 — 无新章节创建
+
+- **检查结论**：Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的空草稿；Phase 1 未发现去重后评分 ≥ 14 且适合独立成节的新缺口。
+- **已检查方向**：Android 17 ProfilingTrigger / memory limit anomaly、Android 17 desktop windowing / resizability、Android 17 lock-free MessageQueue / DeliQueue、16KB page size NDK 兼容、Perfetto v53/v54 SDK / pprof / DataGrid / Jank CUJ、WOOTdroid、Android Studio Panda 内置泄漏检测、AOSP packages/modules Wi-Fi / Bluetooth / Media 结构缺口。
+- **去重依据**：上述方向已由 2.20、4.7、8.10、13.12、13.14、14.1、14.7、16.5、19.16、22.10、24.9、26.5、26.9、26.10 等章节承接，或更适合作为 Task2B / Task6 的证据补强素材。
+- **低分方向**：Android Studio Panda 内置泄漏检测、Android AI OS / Gemini API 趋势、Android 恶意软件检测漂移基准与本书性能优化主线相关性不足，暂不创建章节。
+- **后续建议**：下轮优先从官方 Android 17/18 性能行为变更、Part 5 Clippings 中尚未映射的实战知识点，以及 `packages/modules` 中与性能强相关但现有章节未覆盖的模块继续挖掘。
+
 ## [Task9 Deep Review] 1.20 App Archiving 机制与恢复性能 — 2026-05-17
 - **类型**：交叉引用
 - **位置**：frontmatter L11 / 正文 L88、L209
 - **问题**：正文两次引用 4.2 Linux 内存回收，但 related_chapters 未列出 4.2；frontmatter 列出 16.2，正文版本表未显式回连 16.2。
 - **建议**：补齐 related_chapters 与正文回跳：要么把 4.2 加入 related_chapters，要么减少正文引用；版本边界处建议显式回连 16.2。
+
+
+## [Task6 Review] 1.20 App Archiving 机制与恢复性能 — 2026-05-17
+- **类型**：需补充素材
+- **位置**：「恢复链路的性能口径」开头与观测点表之前
+- **问题**：章节已经拆出 Launcher 点击、ActivityStarter 归档分支、PackageArchiver、安装器、PackageInstaller session、恢复后首帧等环节，但缺少一张时序图或 Trace 对照说明。按 writing-guide.md，多组件交互和时序流程必须配图或 Trace 描述。
+- **建议**：Task2B 先修 Task9 已登记的两个 P1 技术问题，再补一张“点击归档图标 → 归档分支 → 安装器恢复 → session commit → 首帧”的时序图，并在图后解释对应的 logcat / Perfetto 观察点。
+- **review 日志**：logs/review/2026-05-17-05-review.md
+
+## [Task9 Deep Review] 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger — 2026-05-17
+- **类型**：源码准确性 / API 常量命名
+- **位置**：L217、L221、L261 ProfilingTrigger 常量表
+- **问题**：表格使用 `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER`、`APP_COMPAT`、`KILL_EXCESSIVE_CPU_USAGE`、`ANOMALY` 等短名；公开 API 常量全名是 `TRIGGER_TYPE_*`。
+- **建议**：统一改成完整常量名，或在表头明确说明已省略 `TRIGGER_TYPE_` 前缀。
+
+- **类型**：版本差异 / 接入边界
+- **位置**：L219、L225 `TRIGGER_TYPE_OOM`
+- **问题**：官方文档要求自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认 handler，否则 OOM trigger 不能生效；正文只写了 Java OOM 与 LMK 的区别。
+- **建议**：在 OOM 行补接入前提，并和 8.10 / 14.7 的同类说明保持一致。
+
+- **类型**：原理链 / Extension 36.1
+- **位置**：L217 Extension 36.1 行；L253-L261 排障决策表
+- **问题**：`TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 实际由 `ProfilingManager#requestRunningSystemTrace(String tag)` 触发，并要求先注册该 trigger 才能收到结果；当前只写“App 请求”，缺少入口方法和注册前提。
+- **建议**：补 `requestRunningSystemTrace(tag)` 与 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 的关系，并区分它和 Android 15 `requestProfiling(PROFILING_TYPE_SYSTEM_TRACE)`。
 
