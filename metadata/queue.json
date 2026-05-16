@@ -9165,6 +9165,27 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T06:36:36+08:00"
+    },
+    {
+      "id": "task2a-gap-13.16-agent-perfetto-analysis-protocol",
+      "section": "13.16",
+      "priority": 80,
+      "title": "Agent 辅助 Perfetto 分析协议",
+      "description": "基于 android/skills/profilers 官方仓库与 DeepResearch 材料，新增 Agent 辅助 Perfetto 分析协议章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      ],
+      "source_materials": [
+        "https://github.com/android/skills/tree/main/profilers",
+        "DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
+      ]
     }
   ],
   "metadata": {
