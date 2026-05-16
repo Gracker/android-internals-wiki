@@ -9,8 +9,12 @@ applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
 confidence: medium
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-17"
+task6_result: pass-light-edit
+task9_state: pending
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
@@ -58,7 +62,7 @@ source_refs:
 ### 🔹 BLASTBufferQueue 与 QueuedBuffer 轨道
 解释 Android 12+ BLAST 路径中 QueuedBuffer 计数变化和 release callback 对 App 侧的影响。
 
-### 🔹 Producer/Consumer 两端的因果链
+### 🔹 Producer / Consumer 两端的因果链
 把 App queueBuffer、SurfaceFlinger latch、HWC present、releaseBuffer 串成可验证时间线。
 
 ### 🔹 视频列表与 SurfaceView 的场景化判断
@@ -79,7 +83,7 @@ source_refs:
 
 Perfetto 里出现 `Buffer Stuffing` 时，不能直接下结论说 App 绘制超时。这个标签描述的是队列状态：App 仍在提交新帧，但前一批 buffer 还没有按时 present，BufferQueue 内部已经产生积压。结果可能是帧率看起来还平稳，触摸到上屏的延迟却越来越长。
 
-本节只处理现场识别问题：怎样从 FrameTimeline、RenderThread、BLASTBufferQueue 轨道和 SurfaceFlinger 时间线确认 BufferQueue 背压。BufferQueue 的 slot、fence 和 BLAST 机制详见 2.13、2.16；跨渲染路径的场景选择详见 18.20。
+现场识别的重点是从 FrameTimeline、RenderThread、BLASTBufferQueue 轨道和 SurfaceFlinger 时间线确认 BufferQueue 背压。BufferQueue 的 slot、fence 和 BLAST 机制可回到 2.13、2.16；跨渲染路径的场景选择见 18.20。
 
 ## 从 FrameTimeline 定位 Buffer Stuffing
 
@@ -146,13 +150,13 @@ App / Producer
   下一次 dequeueBuffer 解除等待
 ```
 
-这条线的价值在于给每个判断找证据：App 侧看 `queueBuffer` 和 `dequeueBuffer`；SF 侧看 latch、composition、present；显示侧看 present fence；回到 App 侧看 release 后下一次 dequeue 是否恢复。AOSP `BufferQueueConsumer::releaseBuffer()` 会把 slot 状态释放，并通过条件变量或 release 通知唤醒等待 producer；`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers`、`mQueue` 这些状态集合。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueConsumer.cpp; frameworks/native/libs/gui/include/gui/BufferQueueCore.h]
+这条线可以给每个判断找到对应证据：App 侧看 `queueBuffer` 和 `dequeueBuffer`；SF 侧看 latch、composition、present；显示侧看 present fence；回到 App 侧看 release 后下一次 dequeue 是否恢复。AOSP `BufferQueueConsumer::releaseBuffer()` 会把 slot 状态释放，并通过条件变量或 release 通知唤醒等待 producer；`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers`、`mQueue` 这些状态集合。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueConsumer.cpp; frameworks/native/libs/gui/include/gui/BufferQueueCore.h]
 
 排查时可以按时间窗做反证：如果 `dequeueBuffer` 长，但 SF 对应帧很快 present 且 release 及时，原因可能不是 BufferQueue 积压，而是 release fence 未 signal、线程调度延迟或应用层锁等待。如果 `queueBuffer` 之后很久才被 SF latch，且 `QueuedBuffer` 高位，才更接近 BufferQueue 背压。
 
 ## 视频列表与 SurfaceView 的场景化判断
 
-视频列表、Camera 预览和混合渲染页面最容易把问题看串。它们往往不是单一窗口 buffer，而是多个 Surface 同时参与合成。
+视频列表、Camera 预览和混合渲染页面最容易把问题看串。它们通常由多个 Surface 同时参与合成，不能按单一窗口 buffer 判断。
 
 | 场景 | 典型 trace 形态 | 判断重点 |
 |---|---|---|

@@ -149,7 +149,8 @@
     "5.13",
     "5.14",
     "5.8",
-    "26.11"
+    "26.11",
+    "13.15"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -294,19 +295,19 @@
     "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
     "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
+    "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md"
   ],
-  "review_summary": "Task9 2026-05-17 00: review 4.3 / 5.14 / 26.10；4.3 命中 ART read barrier / Generational CMC P0/P1；5.14 命中 NPU feature 字符串与 NN HAL AIDL P1；26.10 pass-tech-review 并自动晋升 finalized。",
+  "review_summary": "Task6 2026-05-17 01: review 13.15 / 26.11；两章写作质量通过，小修结构性元叙述、否定-纠正句式、标点和 frontmatter；无新增回炉，转 Task9 复核。",
   "task6_review_summary": {
-    "l1_l2_fixes": 12,
-    "l3_issues": 1,
-    "l4_issues": 1,
-    "technical_risk_markers": 6,
-    "total_issues": 8,
+    "l1_l2_fixes": 10,
+    "l3_issues": 0,
+    "l4_issues": 0,
+    "technical_risk_markers": 2,
+    "total_issues": 0,
     "reviewed_sections": [
-      "5.14",
-      "5.8",
-      "5.9"
+      "13.15",
+      "26.11"
     ]
   },
   "issues_by_section": {
@@ -1183,36 +1184,59 @@
       "reviewed_at": "2026-05-17T00:32:00+08:00",
       "log": "logs/deep-review/2026-05-17-00-deep-review.md",
       "summary": "Task2B 已修复 P0/P1；既有 P2 建议保留；自动晋升 finalized。"
+    },
+    "13.15": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
+      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；修正结构性元叙述、否定-纠正句式计数、锚点标题一致性和 frontmatter，转 Task9 技术复核。"
+    },
+    "26.11": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
+      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；修正标点/比喻化表达、结尾否定-纠正句式和 frontmatter，转 Task9 技术复核。"
     }
   },
-  "total_review_sections": 142,
+  "total_review_sections": 144,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T01:12:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-17T01:15:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-16",
-    "time": "23:15",
-    "reviewed_at": "2026-05-16T23:15:00+08:00",
+    "date": "2026-05-17",
+    "time": "01:15",
+    "reviewed_at": "2026-05-17T01:15:00+08:00",
     "sections": [
-      "5.14",
-      "5.8",
-      "5.9"
+      "13.15",
+      "26.11"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md"
     ],
-    "log": "logs/review/2026-05-16-23-review.md",
-    "mode": "首次 review / 复审抽查",
-    "l1_l2_fixes": 12,
-    "l3_l4_issues": 2,
-    "technical_risk_markers": 6,
+    "log": "logs/review/2026-05-17-01-review.md",
+    "mode": "首次 review",
+    "l1_l2_fixes": 10,
+    "l3_l4_issues": 0,
+    "technical_risk_markers": 2,
     "results": {
-      "5.14": "pass-light-edit / task9_pending",
-      "5.8": "needs-rework / task2b_pending",
-      "5.9": "needs-rework / task2b_pending"
+      "13.15": "pass-light-edit / task9_pending",
+      "26.11": "pass-light-edit / task9_pending"
     }
   },
   "task9_last_review": "2026-05-17T00:32:12+08:00",
@@ -3276,19 +3300,42 @@
       "title": "eBPF 在线追踪与 Binder 语义重建",
       "file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
-      "queue_priority": 80,
       "gap_source": "研究素材/素材驱动",
       "gap_score": 17,
-      "last_task2a_at": "2026-05-17T01:12:00+08:00",
-      "task2a_result": "draft-ready-for-review",
       "drafted_date": "2026-05-17",
       "last_verified": "2026-05-17",
       "confidence": "medium",
-      "task6_state": "pending",
-      "task9_state": "pending"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
+      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task9_state": "pending",
+      "queue_priority": 80,
+      "last_task2a_at": "2026-05-17T01:12:00+08:00",
+      "task2a_result": "draft-ready-for-review"
+    },
+    "13.15": {
+      "title": "BufferQueue 阻塞的 Perfetto 识别",
+      "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "gap_source": "素材驱动/章节深挖",
+      "gap_score": 19,
+      "drafted_date": "2026-05-17",
+      "last_verified": "2026-05-17",
+      "confidence": "medium",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
+      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task9_state": "pending",
+      "queue_priority": 80,
+      "material_count": 4
     }
   },
   "task2b_rounds": [
