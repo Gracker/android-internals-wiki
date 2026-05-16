@@ -9,12 +9,14 @@ last_verified: "2026-05-16"
 last_verified_against: "Android Developers 2026-03 docs; AOSP master paths; KOOM master README"
 confidence: medium
 polish_count: 1
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 last_task6_at: "2026-05-16T03:16:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-03-review.md"
 sources:
@@ -185,9 +187,9 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 | `JAVA_CRASH_CONFIRMED` | `REASON_CRASH` | 未捕获异常文件完整，包含线程、栈、时间戳 |
 | `NATIVE_CRASH_CONFIRMED` | `REASON_CRASH_NATIVE` | minidump 或 signal report 完整 |
 | `ANR_SUSPECTED` | `REASON_ANR` | watchdog 主线程卡住、前台、无 crash 文件、后续重启；有 Play Vitals/bugreport 时升级 |
-| `LOW_MEMORY_SUSPECTED` | `REASON_LOW_MEMORY` / `REASON_OOM` | 未闭合 marker + 内存/线程/fd/KOOM 证据 |
+| `LOW_MEMORY_SUSPECTED` | `REASON_LOW_MEMORY` | 未闭合 marker + 内存/线程/fd/KOOM 证据；Java heap OOM、线程/fd 耗尽、LMKD kill 等细节作为 evidence 或 internal subReason 处理，不使用不存在的 `REASON_OOM` 公开常量 |
 | `USER_OR_SYSTEM_KILL_UNKNOWN` | `REASON_USER_REQUESTED` / `REASON_OTHER` | marker 未闭合但证据不足 |
-| `DEVICE_REBOOT_OR_UPDATE` | `REASON_OTHER` | boot id 变化、版本升级、安装时间变化 |
+| `DEVICE_REBOOT_OR_UPDATE` | API 34+: `REASON_PACKAGE_UPDATED` / `REASON_PACKAGE_STATE_CHANGE`；API 30-33: 可能落到 `REASON_USER_REQUESTED` / `REASON_OTHER` | boot id 变化、版本升级、安装时间变化；设备重启映射到 `REASON_OTHER`，包更新/组件状态变化按 API 版本区分 |
 
 规则引擎要允许“多证据并存”。例如进程退出前保存了 native minidump，同时下次启动发现 marker 未闭合，这种情况应归并为一个 native crash 事件，并把异常退出 marker 作为附加证据。去重键可参考 26.2 节：`process_name + pid + timestamp_bucket + top_frame/signature + session_id`。
 
