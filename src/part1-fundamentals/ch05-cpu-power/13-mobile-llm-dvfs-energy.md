@@ -1,6 +1,7 @@
 ---
 title: "移动端 LLM 推理的 DVFS 与能效边界"
 chapter: "5.13"
+section: "5.13"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -13,6 +14,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/研究素材/官方文档"
 gap_score: 17
+pipeline_stage: task9_pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+last_task6_at: "2026-05-16T19:11:00+08:00"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2507.02135"
@@ -60,7 +68,7 @@ prefill 和 decode 的差异还会改变 trace 解读方式。单看 GPU utiliza
 
 Android 设备上的频率控制通常分散在多个层级：CPU 由 cpufreq 与调度器信号驱动，GPU 常由厂商 devfreq / GPU governor 管理，内存频率由内存控制器与厂商策略决定。EAS 负责 CPU 选核与能量估算，Power HAL 接收系统模式和性能提示，Thermal HAL 再把温度约束反馈给框架与内核。各部分共享同一块电池和散热空间，却未必共享同一个推理任务目标。[已验证: 官方文档, source.android.com/docs/core/power/performance]
 
-AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。这说明公开 API 的设计单位是“线程组 + 目标时长”，并非“指定某个 CPU/GPU 频点”。[已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP main, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
+AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。公开 API 的设计单位是“线程组 + 目标时长”，不能指定某个 CPU/GPU 频点。[已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP main, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
 
 LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙闲判断频率，CPU 调度器根据 CPU 近期负载判断算力需求，内存频率策略又按带宽和访问模式响应。decode 阶段如果 GPU kernel 很短，GPU 侧可能判断负载偏低；CPU 侧又因为周期性等待 GPU 或内存而看起来不够忙。两个判断叠在一起，就可能把频率组合推到不适合 decode 的位置。
 
@@ -70,7 +78,7 @@ LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙�
 
 FUSE 论文在 Pixel 7 / Pixel 7 Pro（Google Tensor G2，Mali-G710 MP7）上测到一个典型现象：默认 governor 在 decode 阶段给 GPU 选择较低频率，TPOT 明显变长；把 GPU 固定到更高频率后，TPOT 下降，能耗接近不变。论文给出的 TinyLlama 数据是 GPU 424.4MHz 时 TPOT 215.1ms，固定到 848MHz 后 TPOT 126.9ms，单 token 能耗从 396.5mJ 到 402.7mJ。[来源: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md][引用: https://arxiv.org/abs/2507.02135]
 
-CPU 侧也有类似现象。论文记录 TinyLlama decode 阶段 CPU 运行在约 1130.8MHz，而对应的较优频点是 2252MHz；StableLM 从约 1038.8MHz 提到 2401MHz 后，TPOT 也下降。这里的结论不是“频率越高越好”，而是默认 governor 使用的局部利用率信号没有表达 decode 的跨硬件依赖。
+CPU 侧也有类似现象。论文记录 TinyLlama decode 阶段 CPU 运行在约 1130.8MHz，而对应的较优频点是 2252MHz；StableLM 从约 1038.8MHz 提到 2401MHz 后，TPOT 也下降。这组数据的结论要收窄：默认 governor 使用的局部利用率信号没有表达 decode 的跨硬件依赖，不能直接推出“频率越高越好”。
 
 | 论文场景 | 默认频率表现 | 调整后表现 | 论文给出的变化 |
 |---|---|---|---:|
