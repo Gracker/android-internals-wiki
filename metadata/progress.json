@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 2,
-  "ready-for-review": 98,
+  "draft": 1,
+  "ready-for-review": 99,
   "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -143,7 +143,8 @@
     "3.7",
     "3.8",
     "3.9",
-    "13.14"
+    "13.14",
+    "20.12"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -282,7 +283,8 @@
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
     "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
-    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
   ],
   "review_summary": "Task9 2026-05-16 14: review 13.14；发现 2 个 P1（weighted counter 总量/中间表口径、Jank CUJ 默认适用范围）和 1 个 P2（最小 TraceConfig/采集条件缺失）。",
   "task6_review_summary": {
