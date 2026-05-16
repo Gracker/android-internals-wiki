@@ -8557,20 +8557,52 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T15:38:55+08:00"
+    },
+    {
+      "id": "task9-20260516-11.5-adpf-gamestate-boundary",
+      "section": "11.5",
+      "section_title": "Wakelock 机制与功耗分析",
+      "priority": 85,
+      "title": "ADPF 非游戏场景误用 GameManager/GameState.MODE_CONTENT 边界",
+      "reason": "[Deep Tech Review] 非游戏 ADPF 场景把 GameManager.setGameState(GameState.MODE_CONTENT) 写成通用优化入口，与 AOSP GameManager/GameState API 语义不符。",
+      "description": "非游戏应用的 ADPF/能效验证路径应以 PerformanceHintManager、PowerMonitor 与 Perfetto 为主；GameManager.setGameState() 是面向游戏状态上报的 API，MODE_CONTENT 表示游戏中的非 gameplay 内容，不应写成通用非游戏内容类型声明。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch11-power/05-wakelock.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/版本差异",
+          "location": "src/part2-performance/ch11-power/05-wakelock.md:L833-L853",
+          "detail": "“非游戏应用可通过 GameManager.setGameState(GameState.MODE_CONTENT) 声明当前内容类型、系统据此应用 Game Mode 优化策略”，并进一步写 GameManager 影响进程级调度优先级和 OOM 策略。AOSP GameManager.setGameState() 注释是“Called by games”，GameState.MODE_CONTENT 语义是游戏当前显示的非 gameplay 内容；GameManager 文档也以 isGame/appCategory=game 为前提。把该路径写成非游戏 App 的通用 ADPF 入口，会误导视频剪辑、AI 推理、后台批处理等非游戏应用接入错误 API。",
+          "suggestion": "将 GameManager/GameState.MODE_CONTENT 收窄为“游戏或声明为 game category 的应用用于报告当前内容状态”；非游戏工作负载只保留 PerformanceHintManager hint session + PowerMonitor/Perfetto 验证路径。删除“GameManager 影响 OOM 策略”的断言，除非补到 GameManagerService / ActivityManager / device_config 中的一手源码证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T16:30:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 256,
+    "total_entries": 260,
     "p0_count": 42,
-    "last_updated": "2026-05-16T16:10:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 144,
+    "last_updated": "2026-05-16T16:30:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 141,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task6-review",
-    "pending": 143
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 141
   },
-  "last_updated": "2026-05-16T16:10:00+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-16T16:30:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": 141,
   "last_task2a_completed": "13.14",
   "last_task2a_completed_at": "2026-05-16T14:07:00+08:00"

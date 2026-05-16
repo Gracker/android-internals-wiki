@@ -1,8 +1,8 @@
 {
   "total": 295,
   "draft": 0,
-  "ready-for-review": 100,
-  "finalized": 195,
+  "ready-for-review": 99,
+  "finalized": 196,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -288,7 +288,7 @@
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
   ],
-  "review_summary": "Task6 2026-05-16 15: review 20.12；L1/L2 轻修 4 处，无回炉项，进入 Task9。",
+  "review_summary": "Task9 2026-05-16 16: review 24.10 / 11.5；24.10 pass-tech-review 并自动晋升 finalized；11.5 命中 ADPF/GameManager API 语义 P1，转 Task2B。",
   "task6_review_summary": {
     "l1_l2_fixes": 14,
     "l3_issues": 1,
