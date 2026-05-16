@@ -8033,6 +8033,37 @@
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ]
+    },
+    {
+      "id": "task9-13.13-perfetto-sched-sql-schema",
+      "section": "13.13",
+      "section_title": "Perfetto CPU 频率与 DVFS 关联分析",
+      "title": "Perfetto 采集配置与 SQL schema 需修正",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Perfetto 采集配置与 SQL schema 存在闭环风险：缺少 sched 事件，`cpu`/`ucpu` 口径需按当前 Trace Processor schema 修正。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "§采集入口：事件、轮询和系统信息；§Running、频率和空闲态不能混读；§用 SQL 重建频率时间线",
+          "detail": "正文给出的 TraceConfig 只启用了 `power/cpu_frequency`、`power/cpu_idle`、`power/suspend_resume`、`linux.sys_stats` 和 `linux.system_info`，但后续排查路径依赖 `sched` / `thread_state`、Runnable/Sleeping/D 状态和 UI/RenderThread slice。Perfetto CPU scheduling 文档要求启用 `sched/sched_switch`，延迟分析还需要 `sched/sched_wakeup_new` / `sched/sched_waking`，并通常配合 `linux.process_stats`。读者直接复制当前配置会得到空的 `sched`/`thread_state` 结果，核心 SQL 无法闭环。",
+          "suggestion": "把采集配置拆成“频率最小配置”和“卡顿/线程状态联合分析配置”：后者补 `sched/sched_switch`、`sched/sched_wakeup_new`、`sched/sched_waking`、`linux.process_stats`，若要定位 `Choreographer#doFrame` / `DrawFrame`，再补 app atrace / track_event 来源。"
+        },
+        {
+          "type": "源码准确性",
+          "location": "§识别大小核和 cluster 的 `SELECT cpu, freq FROM cpu_freq`；§用 SQL 重建频率时间线的 `SELECT ts, dur, cpu, utid FROM sched`",
+          "detail": "当前 PerfettoSQL Prelude（2026-05-16 抓取的 `perfetto.dev/docs/analysis/sql-tables` 与 google/perfetto master 表定义）中，`cpu_freq` 暴露 `ucpu`/`freq`，`sched` 暴露 `ucpu`，逻辑 CPU 编号在 `cpu` 表的 `cpu` 列。正文 SQL 使用 `cpu` 直接查询 `cpu_freq`/`sched`，在新 schema 下存在不可运行风险；同时没有声明 Trace Processor 版本或兼容旧示例的前提。",
+          "suggestion": "按当前 schema 改成 `cpu_freq cf JOIN cpu c ON cf.ucpu = c.id`，`sched s JOIN cpu c ON s.ucpu = c.id` 后输出 `c.cpu AS cpu`；或在正文明确“旧 Trace Processor 示例可直接用 `cpu`，新 Prelude 使用 `ucpu`”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T09:20:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {

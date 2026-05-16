@@ -32,10 +32,18 @@ sources:
     path: "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - type: obsidian
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "pending"
-task9_state: "not-started"
-task2b_state: "not-started"
+task9_state: "reviewed"
+task2b_state: "pending"
+task9_result: "needs-rework"
+task2b_result: "pending"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-16"
+last_task9_at: "2026-05-16T09:20:00+08:00"
+task9_review_notes: "2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；P1 为采集配置缺少 sched 事件、SQL 使用 cpu/ucpu 口径需按当前 Trace Processor schema 复核，已写入 queue。"
+last_task9_review_log: "logs/deep-review/2026-05-16-09-deep-review.md"
+
 ---
 
 # 13.13 Perfetto CPU 频率与 DVFS 关联分析
