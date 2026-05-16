@@ -1,8 +1,8 @@
 {
   "total": 288,
   "draft": 0,
-  "ready-for-review": 96,
-  "finalized": 192,
+  "ready-for-review": 95,
+  "finalized": 193,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
   "task9_reviewed_by": "openclaw-task9",
@@ -274,13 +274,15 @@
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
   ],
-  "review_summary": "Task9 2026-05-16 07: review 14.9 / 22.12；P0 1 / P1 3 / P2 2；无自动晋升。",
+  "review_summary": "Task6 2026-05-16 08: review 19.26 / 16.5 / 21.7 / 22.12；L1/L2 小修 10 处；无新增 L3/L4 回炉；21.7 自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 10,
     "l3_issues": 0,
     "l4_issues": 0,
     "total_issues": 0,
-    "auto_promotions": []
+    "auto_promotions": [
+      "21.7"
+    ]
   },
   "issues_by_section": {
     "1.6": {
@@ -308,7 +310,14 @@
       "p3": 0,
       "reviewed_at": "2026-05-15T07:35:58+08:00",
       "log": "logs/deep-review/2026-05-15-07-deep-review.md",
-      "summary": "P1 1：ProfilingManagerService anomaly 伪代码缺 API37 源码锚点；P2 1：DeliQueue 内存开销 20-30% 缺测量口径。"
+      "summary": "P1 1：ProfilingManagerService anomaly 伪代码缺 API37 源码锚点；P2 1：DeliQueue 内存开销 20-30% 缺测量口径。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-16T08:16:00+08:00",
+      "task6_log": "logs/review/2026-05-16-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task2B fixed 后复审通过；修复结构性元叙述、AIW 编辑标记和无来源量化口径，转 Task9 复核。"
     },
     "17.2": {
       "p0": 3,
@@ -608,7 +617,14 @@
       "p0": 1,
       "p1": 0,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-16T08:16:00+08:00",
+      "task6_log": "logs/review/2026-05-16-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task2B fixed 后复审通过；清理 frontmatter 填充副词，转 Task9 复核。"
     },
     "1.3": {
       "p0": 0,
@@ -1056,34 +1072,56 @@
       "p3": 0,
       "reviewed_at": "2026-05-16T07:30:00+08:00",
       "log": "logs/deep-review/2026-05-16-07-deep-review.md",
-      "summary": "P1 2：AndroidX 源码锚点使用 androidx-main 却声明覆盖 Fragment 1.4-1.8+，且 1.7+ predictive back 的 mTransitioningOp 分支未进入主链路；runOnCommit 被标题化为“绘制之前”过强。P2 1：executePendingTransactions 的 allowStateLoss/forcePostponed 边界需补齐。"
+      "summary": "P1 2：AndroidX 源码锚点使用 androidx-main 却声明覆盖 Fragment 1.4-1.8+，且 1.7+ predictive back 的 mTransitioningOp 分支未进入主链路；runOnCommit 被标题化为“绘制之前”过强。P2 1：executePendingTransactions 的 allowStateLoss/forcePostponed 边界需补齐。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-16T08:16:00+08:00",
+      "task6_log": "logs/review/2026-05-16-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "首次 Task6 写作 review 通过；既有 Task9 技术回炉项仍由 Task2B 处理。"
+    },
+    "21.7": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-16T08:16:00+08:00",
+      "task6_log": "logs/review/2026-05-16-08-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-16T08:16:00+08:00",
+      "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
     }
   },
-  "total_review_sections": 131,
+  "total_review_sections": 132,
   "next_review_candidates": [],
-  "ready_for_review": 94,
-  "last_updated": "2026-05-16T06:31:25+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 95,
+  "last_updated": "2026-05-16T08:16:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "06:09",
+    "time": "08:16",
     "sections": [
-      "1.19",
-      "1.10",
-      "2.21"
+      "19.26",
+      "16.5",
+      "21.7",
+      "22.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
+      "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part5-app/ch21-startup/07-multiprocess-startup.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
     ],
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 10,
     "l3_l4_issues": 0,
-    "auto_promotions": [],
-    "log": "logs/review/2026-05-16-06-review.md"
+    "auto_promotions": [
+      "21.7"
+    ],
+    "log": "logs/review/2026-05-16-08-review.md"
   },
   "task9_last_review": "2026-05-16T06:31:25+08:00",
-  "ready_to_publish": 192,
+  "ready_to_publish": 193,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1387,21 +1425,21 @@
     },
     "16.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-15T08:10:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
       "task6_result": "pass-light-edit",
-      "queue_priority": 90,
       "last_task9_at": "2026-05-15T07:35:58+08:00",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
       "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md",
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
+      "reviewed_date": "2026-05-16",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task2b_result": "fixed"
     },
     "21.5": {
       "status": "ready-for-review",
@@ -1478,18 +1516,25 @@
       "task9_reviewed_by": "openclaw-task9"
     },
     "21.7": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T03:19:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-03-review.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
       "task9_state": "reviewed",
       "task9_result": "pass-tech-review",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/07-multiprocess-startup.md",
-      "title": "多进程启动优化"
+      "title": "多进程启动优化",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "task2b_state": "fixed",
+      "last_task9_at": "2026-05-14T00:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-00-deep-review.md",
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-16T08:16:00+08:00"
     },
     "2.11": {
       "status": "finalized",
@@ -1767,12 +1812,21 @@
     },
     "19.26": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-13T17:55:27+08:00",
-      "task9_result": "needs-rework",
-      "task9_state": "reviewed",
-      "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
+      "task9_result": "pending",
+      "task9_state": "pending",
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
+      "file": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "1.4": {
       "status": "finalized",
@@ -2849,6 +2903,25 @@
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
+    },
+    "22.12": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "title": "FragmentTransaction 提交链路与页面切换性能",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 85,
+      "last_task9_at": "2026-05-16T07:30:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -2908,54 +2981,61 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
-  "total_review_files": 131,
+  "total_review_files": 132,
   "last_task2a_at": "2026-05-16T07:17:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-  "last_task6_review": "2026-05-16T06:09:00+08:00",
+  "last_task6_review": "2026-05-16T08:16:00+08:00",
   "last_task6_sections": [
-    "1.19",
-    "1.10",
-    "2.21"
+    "19.26",
+    "16.5",
+    "21.7",
+    "22.12"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part5-app/ch21-startup/07-multiprocess-startup.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
   ],
-  "last_task6_at": "2026-05-16T06:09:00+08:00",
+  "last_task6_at": "2026-05-16T08:16:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-16T06:09:00+08:00",
-    "log": "logs/review/2026-05-16-06-review.md",
+    "reviewed_at": "2026-05-16T08:16:00+08:00",
+    "log": "logs/review/2026-05-16-08-review.md",
     "sections": [
-      "1.19",
-      "1.10",
-      "2.21"
+      "19.26",
+      "16.5",
+      "21.7",
+      "22.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
+      "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part5-app/ch21-startup/07-multiprocess-startup.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
     ],
-    "mode": "first-review+stale-recheck",
-    "l1_l2_fixes": 16,
+    "mode": "task2b-fixed-recheck+first-review",
+    "l1_l2_fixes": 10,
     "l3_l4_issues": 0,
-    "auto_promotions": [],
-    "notes": "1.19 首次 Task6；1.10/2.21 为超过 7 天的 stale recheck。"
+    "auto_promotions": [
+      "21.7"
+    ],
+    "notes": "19.26/16.5/21.7 为 Task2B fixed 后复审；22.12 为首次 Task6 写作 review。22.12 既有 Task9 技术回炉项未由 Task6 裁决。"
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "last_task9_at": "2026-05-16T06:31:25+08:00",
   "last_task2a_result": "ready-for-review",
-  "ready-to-publish": 192,
+  "ready-to-publish": 193,
   "last_task2a_processed_section": "22.12",
-  "task6_last_review_at": "2026-05-16T06:09:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-06-review.md",
+  "task6_last_review_at": "2026-05-16T08:16:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-08-review.md",
   "task6_last_review_sections": [
-    "1.19",
-    "1.10",
-    "2.21"
+    "19.26",
+    "16.5",
+    "21.7",
+    "22.12"
   ],
   "sections_status": {
     "22.11": {
@@ -3089,6 +3169,78 @@
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
+    },
+    "19.26": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "file": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
+    },
+    "16.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
+    },
+    "21.7": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "file": "src/part5-app/ch21-startup/07-multiprocess-startup.md",
+      "title": "多进程启动优化",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-14T00:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-00-deep-review.md",
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-16T08:16:00+08:00"
+    },
+    "22.12": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "title": "FragmentTransaction 提交链路与页面切换性能",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T08:16:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 85,
+      "last_task9_at": "2026-05-16T07:30:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
     }
   },
   "task2a_last_processed": {

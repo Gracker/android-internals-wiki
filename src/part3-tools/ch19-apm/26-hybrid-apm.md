@@ -5,18 +5,18 @@ chapter: '19'
 confidence: high
 drafted_by: gemini
 drafted_date: '2026-04-24'
-last_task6_at: '2026-05-07T23:13:13+08:00'
+last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task9_at: '2026-05-13T17:55:27+08:00'
 last_verified: '2026-04-25'
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 related_chapters:
 - '19.0'
 - '19.01'
 review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-07'
+reviewed_date: "2026-05-16"
 section: '19.26'
 sources:
 - https://developer.android.com/reference/android/view/PixelCopy
@@ -32,20 +32,21 @@ tags:
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
-task6_review_notes: '2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核
-  Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。'
-task6_reviewed_at: '2026-05-10T10:17:22.875562'
+task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatter 中 1 处填充副词；正文锚点覆盖完整，无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
+task6_reviewed_at: "2026-05-16T08:16:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: needs-rework
+task9_result: pending
 task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback
   requestId 语义与 AOSP API 文档不一致。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0
-  0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法真正进入统一 Session Timeline。'
+  0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法进入统一 Session Timeline。'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-13'
-task9_state: reviewed
+task9_state: pending
 title: 混合栈与跨平台 APM (WebView / Flutter)
 last_task9_review_log: 'logs/deep-review/2026-05-13-17-deep-review.md'
+last_task6_review_log: logs/review/2026-05-16-08-review.md
+
 ---
 
 
