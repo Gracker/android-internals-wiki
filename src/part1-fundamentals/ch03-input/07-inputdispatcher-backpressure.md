@@ -25,8 +25,12 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: pending
+task6_result: pass-light-edit
+reviewed_date: "2026-05-16"
+reviewed_by: "openclaw-task6"
+pipeline_stage: task9_pending
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
@@ -35,36 +39,36 @@ pipeline_stage: task6_pending
 ## 要点
 
 ### 🔹 输入通道的天然反压点
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+说明 `InputChannel` 写入、`WOULD_BLOCK` 与 `waitQueue` 之间的反压关系。
 
 ### 🔹 waitQueue、inboundQueue 与 ANR 计时边界
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+区分 `inboundQueue`、`outboundQueue`、`waitQueue` 的含义，并说明 Input ANR 从交付后等待回执开始计时。
 
 ### 🔹 目标窗口无响应后的连接隔离
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+说明连接进入 `responsive=false` 后如何被跳过、取消事件如何生成，以及恢复条件。
 
 ### 🔹 跨应用切换时的队列裁剪策略
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+说明 no focused window 等待期间，新触摸目标如何触发队列裁剪，避免旧应用拖住新目标。
 
 ### 🔹 Perfetto / dumpsys input 的观察入口
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+列出 `dumpsys input` 与 Perfetto counter 中可观察的字段、轨道和判读边界。
 
 ### 🔹 与应用主线程卡顿、Binder 阻塞的归因边界
-补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。
+说明 `waitQueue` 只能作为症状入口，根因仍需回到 App 主线程、Binder、调度和窗口状态。
 
 ## 扩展
 
 ### 🔸 游戏/高频触控场景下的反压放大
-待结合素材验证后展开。
+说明高频触控如何放大队列现象，并区分 AOSP 能确认的机制与厂商差异。
 
 ### 🔸 厂商输入调度策略与可验证边界
-待结合素材验证后展开。
+说明厂商定制结论需要哪些实机证据，避免把宣传或主观手感写成通用机制。
 
 <!-- outline-end -->
 
 ## 为什么单独看 InputDispatcher 反压
 
-第 3.1 节已经给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。本节只处理一个更窄的问题：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、怎样判定 Input ANR、怎样避免一个无响应窗口拖住新的输入目标。
+第 3.1 节已经给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。这里把视角收窄到 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、怎样判定 Input ANR，怎样避免一个无响应窗口拖住新的输入目标。
 
 这类问题在 trace 里常被误判。`WaitQueue` 变长只能说明事件已经发给目标连接、还没收到 App 侧 `Finished` 回执；它不能直接等同于 App 主线程 MessageQueue 变长，也不能证明 Binder 调用就是根因。分析时要把 InputDispatcher 的队列状态、App 主线程栈、Binder 线程、CPU 调度和窗口焦点变化放到同一个时间窗口里看。详见 9.3 节。
 
@@ -93,7 +97,7 @@ InputDispatcher 内部至少要区分三类队列：
 
 ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliveryTime` 和 `timeoutTime` 会被记录，条目从 `outboundQueue` 移入 `waitQueue`，`mAnrTracker` 记录最近的超时时间。App 侧返回 `Finished` 后，`handleReceiveCallback()` 读取回执，`finishDispatchCycleLocked()` 投递命令，`doDispatchCycleFinishedCommand()` 按 `seq` 从 `connection->waitQueue` 移除对应条目，并同步从 `mAnrTracker` 删除。
 
-这条边界很重要：Input ANR 不是从事件进入 `inboundQueue` 的瞬间开始计时，也不是按 App 主线程 MessageQueue 的长度计时。只有事件已经交给目标连接、等待回执超过窗口或应用的 dispatch timeout，InputDispatcher 才会把该连接判为无响应。Android Developers 的 ANR 文档也把 Input dispatching timed out 描述为应用没有在约 5 秒内响应按键或触摸事件。具体超时时间在系统内可由 window/application 的 dispatching timeout 影响，不要把 5 秒写成所有设备、所有窗口都不可变的常量。
+这条边界决定了排查顺序：Input ANR 不是从事件进入 `inboundQueue` 的瞬间开始计时，也不是按 App 主线程 MessageQueue 的长度计时。只有事件已经交给目标连接、等待回执超过窗口或应用的 dispatch timeout，InputDispatcher 才会把该连接判为无响应。Android Developers 的 ANR 文档也把 Input dispatching timed out 描述为应用没有在约 5 秒内响应按键或触摸事件。具体超时时间在系统内可由 window/application 的 dispatching timeout 影响，不要把 5 秒写成所有设备、所有窗口都不可变的常量。
 
 > [已验证: AOSP android-16.0.0_r1, `InputDispatcher.cpp` — `mAnrTracker.insert()` / `handleReceiveCallback()` / `doDispatchCycleFinishedCommand()`]
 > [已验证: 官方文档, `developer.android.com/topic/performance/vitals/anr`]
@@ -151,7 +155,7 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 ## 扩展：游戏/高频触控场景下的反压放大
 
-高频触控会放大队列现象。240Hz / 480Hz 报点下，单位时间进入系统的 MOVE 更多；如果 App 主线程一段时间不读 channel，`waitQueue` 的增长更快，`WOULD_BLOCK` 更容易出现。反过来，只要 App 侧能按帧批量消费，InputDispatcher 侧未必成为瓶颈，真正的延迟可能出现在 `InputConsumer` batching、`Choreographer`、渲染线程或 GPU 队列。
+高频触控会放大队列现象。240Hz / 480Hz 报点下，单位时间进入系统的 MOVE 更多；如果 App 主线程一段时间不读 channel，`waitQueue` 的增长更快，`WOULD_BLOCK` 更容易出现。反过来，只要 App 侧能按帧批量消费，InputDispatcher 侧未必成为瓶颈，延迟瓶颈可能出现在 `InputConsumer` batching、`Choreographer`、渲染线程或 GPU 队列。
 
 游戏场景还有一个分析边界：公开 Android API 没有提供“把某个 App 的 InputDispatcher 优先级提高”这样的能力。`View.requestUnbufferedDispatch()` 影响的是 App 侧 MotionEvent batching 行为，不等于提升触控 IC 报点率，也不等于绕过 InputDispatcher 的 `waitQueue` / ANR 机制。厂商 ROM 可能有游戏模式或触控调度定制，但没有公开源码或实机 trace 时，只能标为 OEM 差异，不能写成 AOSP 通用行为。
 
@@ -166,7 +170,7 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 ## 小结
 
-InputDispatcher 反压不是单点机制，而是 channel 可写性、`outboundQueue`、`waitQueue`、`mAnrTracker`、`responsive` 标记和跨应用队列裁剪共同构成的保护网。分析时抓住一个判断：`waitQueue` 表示“已交付、未回执”，它是 Input ANR 的计时基础，也是继续追 App 主线程、Binder、CPU 调度和窗口状态的入口。
+InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`mAnrTracker`、`responsive` 标记和跨应用队列裁剪共同构成。排查时先确认一个边界：`waitQueue` 表示“已交付、未回执”，它是 Input ANR 的计时基础，也是继续追 App 主线程、Binder、CPU 调度和窗口状态的入口。
 
 ## References
 
