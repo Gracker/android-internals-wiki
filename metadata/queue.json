@@ -4320,10 +4320,17 @@
           "location": "5.9 L380-L417",
           "detail": "Java sendHint() 段落虽标注 @TestApi/@hide，但后文把它描述成可与 reportActualWorkDuration 组合使用的优化路径，容易误导普通 App 走隐藏 API。NDK 公开面对应的是 notifyWorkloadIncrease/Reset/Spike 等 workload hints。",
           "suggestion": "明确 Java sendHint() 不是 public SDK API；若面向 NDK 游戏/引擎，改用 APerformanceHint_notifyWorkloadIncrease/Reset/Spike，并补 rate limiter 与适用 API 版本。"
+        },
+        {
+          "type": "需重写",
+          "location": "源码调研补充（2026-05-01/05-07）与常见问题后半段",
+          "detail": "源码调研补充段落保留大量调研记录、版本修正和隐藏 API 说明，正文主线被素材块打断。",
+          "suggestion": "Task2B 先修 Task9 API/版本问题，再把可保留内容融合到 Performance Hint、Headroom、非游戏场景三个小节，删除调研记录口吻。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T04:36:12+08:00"
+      "added_at": "2026-05-14T04:36:12+08:00",
+      "original_review_log": "logs/review/2026-05-16-23-review.md"
     },
     {
       "id": "task9-2026-05-14-4-3-tech-review",
@@ -8557,10 +8564,17 @@
           "location": "例外与豁免 / 版本演进中的 AVF pVM 任务配额豁免",
           "detail": "正文断言“AVF pVM 任务不再消耗宿主 App 的 JobScheduler 运行时配额，宿主 bucket/quota/Doze 不影响 pVM 内部”。本轮在 Android Developers power-details、Android 17 changes 与 AOSP AVF docs 中未核验到该豁免口径。该说法会直接影响后台任务选型。",
           "suggestion": "补官方来源或 AOSP 代码锚点；若无法核验，删除该豁免项，或降级为 [待验证] 并从选型决策中移除。"
+        },
+        {
+          "type": "需重写",
+          "location": "源码调研补充（2026-04-27/04-28）与 AIW 注入标记附近",
+          "detail": "多段源码调研记录以时间戳和调研口吻直接进入正文，发布稿会显得像素材堆叠，影响主线阅读。",
+          "suggestion": "Task2B 将调研内容融合到“Android 16 的进程冻结流程”和“Binder Freezer Driver 协同机制”主线，删除编辑痕迹和重复调研标题。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T15:38:55+08:00"
+      "added_at": "2026-05-16T15:38:55+08:00",
+      "original_review_log": "logs/review/2026-05-16-23-review.md"
     },
     {
       "id": "task9-20260516-11.5-adpf-gamestate-boundary",
