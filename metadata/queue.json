@@ -8153,7 +8153,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
@@ -8169,7 +8169,9 @@
         "与全书目标相关性": 5,
         "读者需求度": 4,
         "时效性": 4
-      }
+      },
+      "completed_date": "2026-05-16",
+      "completed_reason": "Task 2A 加工完成，status 改为 ready-for-review，进入 Task 6 复审清单"
     },
     {
       "id": "task2a-gap-13-14-14-perfetto-data-explorer-jank-cuj",

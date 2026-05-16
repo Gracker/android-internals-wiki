@@ -1,7 +1,7 @@
 {
   "total": 295,
-  "draft": 4,
-  "ready-for-review": 96,
+  "draft": 3,
+  "ready-for-review": 97,
   "finalized": 195,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-16",
@@ -141,7 +141,8 @@
     "22.12",
     "13.13",
     "3.7",
-    "3.8"
+    "3.8",
+    "3.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -278,7 +279,8 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+    "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
   ],
   "review_summary": "Task6 2026-05-16 12: review 5.1/5.7；L1/L2 已轻修，Task9 技术风险已标注并保持 Task2B 回炉。",
   "task6_review_summary": {
