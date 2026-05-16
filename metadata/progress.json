@@ -3374,7 +3374,13 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
-      "queue_priority": 85
+      "queue_priority": 90,
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "last_task6_at": "2026-05-17T05:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
     }
   },
   "task2b_rounds": [
@@ -3446,18 +3452,14 @@
   "last_task2a_at": "2026-05-17T01:12:00+08:00",
   "last_task2a_section": "26.11",
   "last_task2a_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
-  "last_task6_review": "2026-05-16T23:15:00+08:00",
+  "last_task6_review": "2026-05-17",
   "last_task6_sections": [
-    "5.14",
-    "5.8",
-    "5.9"
+    "1.20"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
-  "last_task6_at": "2026-05-16T23:15:00+08:00",
+  "last_task6_at": "2026-05-17T05:10:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-16",
     "time": "23:15",
@@ -3491,12 +3493,10 @@
   "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-16T23:15:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-23-review.md",
+  "task6_last_review_at": "2026-05-17T05:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-17-05-review.md",
   "task6_last_review_sections": [
-    "5.14",
-    "5.8",
-    "5.9"
+    "1.20"
   ],
   "sections_status": {
     "22.11": {
@@ -3995,7 +3995,13 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
-      "queue_priority": 85
+      "queue_priority": 90,
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "last_task6_at": "2026-05-17T05:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
     }
   },
   "task2a_last_processed": {
@@ -4034,5 +4040,20 @@
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
-  "task2b_sections_fixed": 2
+  "task2b_sections_fixed": 2,
+  "task6_last_review_detail": {
+    "mode": "首次 review（Task6 state missing treated as pending）",
+    "sections": [
+      "1.20"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    ],
+    "small_fixes": 10,
+    "major_issue_marks": 3,
+    "queue_updates": [
+      "1.20 priority 90"
+    ],
+    "auto_finalized": []
+  }
 }
