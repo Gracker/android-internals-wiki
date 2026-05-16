@@ -278,3 +278,19 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 ### 关联章节
 4.9, 10.2, 23.1
 
+
+## [2026-05-16] 13.14 Perfetto DataGrid 与 Jank CUJ 标准库 — 知识盲区
+
+### 盲区描述
+Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com.android.*` / `com.google.android*` 进程纳入 `android_jank_cuj`。章节目前缺少第三方 App、自定义 CUJ marker、AndroidX JankStats 与系统 FrameTracker CUJ 之间的适用范围边界，读者可能把系统 CUJ SQL 直接套到普通业务 App 滑动 trace 上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Perfetto v54 `android.cujs.base` / `threads` / `android_jank_cuj.sql` 对进程名、CUJ slice 名、FrameTracker counter 的过滤条件。
+- 找一个系统 UI / Launcher trace 与一个第三方 App trace 对比，确认 `android_jank_cuj`、`android_jank_cuj_frame`、`android_jank_cuj_counter_metrics` 在两类 trace 中的表是否为空或字段差异。
+- 梳理第三方 App 可执行方案：AndroidX JankStats、自定义 atrace/track event marker、自写 SQL 扩展 `_is_jank_slice` 过滤口径，以及与 FrameTimeline 的 join 边界。
+
+### 关联章节
+7.3, 7.4, 13.8, 13.10, 13.14

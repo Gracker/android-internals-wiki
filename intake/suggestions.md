@@ -1620,3 +1620,10 @@
 - **位置**：L87-L103「HCI 阈值和 Android 工程指标的换算」
 - **问题**：2ms 级可感知、20-50ms、50-100ms 等阈值被整理成工程分层，但没有标注对应论文实验任务、设备、样本和交互类型。不同研究的 click、drag、stylus、touchscreen 条件不能直接合并成同一张阈值表。
 - **建议**：给每个区间补来源脚注和适用条件；如果只作为产品排查启发，明确标为启发式分层，不要写成 Android 平台通用阈值。
+
+## [Task9 Deep Review] 13.14 Perfetto DataGrid 与 Jank CUJ 标准库 — 2026-05-16
+- **类型**：数据与案例支撑
+- **位置**：L149-L175 / L220-L231 FrameTimeline + thread_state 联合分析与排障顺序
+- **问题**：章节给出了 `android_jank_cuj_frame`、`thread_state`、`android_heap_graph_stats` 的排障顺序，但没有列出最小采集条件。缺少 `android.surfaceflinger.frametimeline`、sched/thread_state、CPU freq、Binder、gfx/view atrace、ART heap graph、DMA-BUF 等数据源的必选/可选边界时，示例 SQL 可能直接空表，读者无法判断是机制不适用还是 trace 缺采集。
+- **建议**：补一个最小 TraceConfig / Perfetto UI recording preset checklist：逐项标明 CUJ counter、FrameTimeline、thread_state、GPU/HWC fence、heap_graph_stats、dmabuf 各自依赖的数据源；同时给一条“表为空时先检查什么”的排查清单。
+

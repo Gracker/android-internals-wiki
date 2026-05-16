@@ -8446,6 +8446,47 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T13:20:00+08:00"
+    },
+    {
+      "id": "task9-13.14-cuj-weighted-scope",
+      "section": "13.14",
+      "section_title": "Perfetto DataGrid 与 Jank CUJ 标准库",
+      "priority": 85,
+      "title": "Perfetto Jank CUJ weighted counter 口径与适用范围缺失",
+      "description": "P1：weighted_missed_frames 中间表口径被当作总严重度；P1：android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用范围边界。",
+      "issue_type": "metric-semantics-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "指标语义/源码行为",
+          "location": "L91-L113 / L140-L147 / L224",
+          "detail": "正文把 android_jank_cuj_counter_metrics.weighted_missed_frames 直接当作“本次 CUJ 卡顿有多重”并按它排序。Perfetto counters.sql 先把 weightedJank/weightedAppJank/weightedSfJank counter 除以 1000；android_jank_cuj.sql 的最终 metric 输出还会乘以 anim_duration_ms / 1000，转换为总 weighted missed frames。直接按中间表原始列排序会把“率/中间值”当成总严重度，可能误排短 CUJ 与长 CUJ。",
+          "suggestion": "示例 SQL 增加 anim_duration_ms，并计算 weighted_missed_frames * anim_duration_ms / 1000 AS weighted_missed_frames_total；正文同步区分 counter 中间表、最终 metric 输出、trace/timeline metrics 三套口径。"
+        },
+        {
+          "severity": "P1",
+          "type": "适用范围/知识盲区",
+          "location": "L47-L54 / L69-L83 / L117-L136",
+          "detail": "正文把 Jank CUJ 标准库描述成通用 App/CUJ 分析入口，但 android.cujs.base 的 _is_jank_slice 只收集 name GLOB J<*> 且 process.name GLOB com.google.android* 或 com.android.* 的 CUJ slice。默认 android_jank_cuj 表更偏 SystemUI/Launcher/Android/Google 进程 CUJ，不覆盖普通第三方 App 的任意滑动场景。",
+          "suggestion": "补充适用范围：默认 Jank CUJ pipeline 面向系统/Launcher/Google 进程的 J<...> FrameTracker CUJ；第三方 App 需要自定义 trace marker/JankStats/自写 SQL 或扩展过滤口径，不能直接套用本节 SQL。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-16T14:20:00+08:00",
+      "reason": "[Deep Tech Review] Jank CUJ weighted counter 口径与默认适用范围需要回炉修正。"
     }
   ],
   "metadata": {

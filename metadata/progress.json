@@ -142,7 +142,8 @@
     "13.13",
     "3.7",
     "3.8",
-    "3.9"
+    "3.9",
+    "13.14"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -280,9 +281,10 @@
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-    "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+    "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
+    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
   ],
-  "review_summary": "Task9 2026-05-16 13: review 3.9；发现 1 个 P1 Perfetto stdlib schema/交叉引用口径错误，另有 2 个 P2 数据支撑建议。",
+  "review_summary": "Task9 2026-05-16 14: review 13.14；发现 2 个 P1（weighted counter 总量/中间表口径、Jank CUJ 默认适用范围）和 1 个 P2（最小 TraceConfig/采集条件缺失）。",
   "task6_review_summary": {
     "l1_l2_fixes": 25,
     "l3_issues": 0,
@@ -1132,6 +1134,15 @@
       "task6_reviewed_at": "2026-05-16T13:11:00+08:00",
       "task6_log": "logs/review/2026-05-16-13-review.md",
       "task6_new_rework": false
+    },
+    "13.14": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-16T14:20:00+08:00",
+      "log": "logs/deep-review/2026-05-16-14-deep-review.md",
+      "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
     }
   },
   "total_review_sections": 136,
