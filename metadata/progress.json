@@ -290,11 +290,11 @@
   ],
   "review_summary": "Task6 2026-05-16 15: review 20.12；L1/L2 轻修 4 处，无回炉项，进入 Task9。",
   "task6_review_summary": {
-    "l1_l2_fixes": 29,
-    "l3_issues": 0,
+    "l1_l2_fixes": 14,
+    "l3_issues": 1,
     "l4_issues": 0,
-    "technical_risk_markers": 6,
-    "total_issues": 6,
+    "technical_risk_markers": 1,
+    "total_issues": 1,
     "auto_promotions": []
   },
   "issues_by_section": {
@@ -1149,30 +1149,35 @@
       "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
     }
   },
-  "total_review_sections": 138,
+  "total_review_sections": 139,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-16T15:38:55+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-16T16:10:00+08:00",
+  "last_updated_by": "task6-review",
   "task6_last_review": {
     "date": "2026-05-16",
-    "time": "13:11",
-    "reviewed_at": "2026-05-16T13:11:00+08:00",
+    "time": "16:10",
+    "reviewed_at": "2026-05-16T16:10:00+08:00",
     "sections": [
-      "3.8",
-      "3.9"
+      "24.10",
+      "11.5",
+      "20.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-      "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+      "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+      "src/part2-performance/ch11-power/05-wakelock.md",
+      "src/part5-app/ch20-stability/01-stability-overview.md"
     ],
-    "mode": "first-review-metadata-backfill",
+    "mode": "mixed-first-and-revisit-review",
     "l1_l2_fixes": 14,
-    "l3_l4_issues": 0,
+    "l3_l4_issues": 1,
     "technical_risk_markers": 1,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-13-review.md",
-    "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。"
+    "log": "logs/review/2026-05-16-16-review.md",
+    "notes": "本轮按吞吐规则处理 3 章：24.10 首次 review 通过，11.5 Task2B 修复后复审通过，20.1 既有 ANR 技术边界回炉项确认仍待 Task2B。",
+    "small_fixes": 14,
+    "rework_items": 1,
+    "auto_finalized": []
   },
   "task9_last_review": "2026-05-16T15:38:55+08:00",
   "ready_to_publish": 195,
@@ -1576,11 +1581,20 @@
       "last_task9_review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
       "task6_state": "reviewed",
       "task2b_state": "pending",
-      "last_task6_at": "2026-05-14T12:07:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-12-review.md",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
       "task9_state": "reviewed",
       "task9_reviewed_date": "2026-05-15",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "title": "应用稳定性全景",
+      "file": "src/part5-app/ch20-stability/01-stability-overview.md",
+      "task2b_result": "pending",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "queue_entry": "task6-20.1-anr-timeout-dialog-boundary-20260514",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "task6_review_notes": "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。"
     },
     "21.7": {
       "status": "finalized",
@@ -3099,15 +3113,28 @@
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
       "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "章节深挖/研究素材",
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_l1_l2_fixes": 9,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
+      "task6_review_notes": "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
     },
     "13.13": {
       "status": "ready-for-review",
@@ -3126,6 +3153,25 @@
       "last_task9_at": "2026-05-16T15:38:55+08:00",
       "task9_state": "reviewed",
       "task2b_state": "pending"
+    },
+    "11.5": {
+      "title": "Wakelock 机制与功耗分析",
+      "file": "src/part2-performance/ch11-power/05-wakelock.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
+      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
     }
   },
   "task2b_rounds": [
@@ -3203,37 +3249,45 @@
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "total_review_files": 138,
+  "total_review_files": 139,
   "last_task2a_at": "2026-05-16T14:07:00+08:00",
   "last_task2a_section": "13.14",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-  "last_task6_review": "2026-05-16T15:12:00+08:00",
+  "last_task6_review": "2026-05-16T16:10:00+08:00",
   "last_task6_sections": [
-    "20.12"
+    "24.10",
+    "11.5",
+    "20.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
+    "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+    "src/part2-performance/ch11-power/05-wakelock.md",
+    "src/part5-app/ch20-stability/01-stability-overview.md"
   ],
-  "last_task6_at": "2026-05-16T15:12:00+08:00",
+  "last_task6_at": "2026-05-16T16:10:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-16",
-    "time": "15:12",
-    "reviewed_at": "2026-05-16T15:12:00+08:00",
+    "time": "16:10",
+    "reviewed_at": "2026-05-16T16:10:00+08:00",
     "sections": [
-      "20.12"
+      "24.10",
+      "11.5",
+      "20.1"
     ],
     "files": [
-      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
+      "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+      "src/part2-performance/ch11-power/05-wakelock.md",
+      "src/part5-app/ch20-stability/01-stability-overview.md"
     ],
-    "mode": "first-review",
-    "l1_l2_fixes": 4,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
+    "mode": "mixed-first-and-revisit-review",
+    "l1_l2_fixes": 14,
+    "l3_l4_issues": 1,
+    "technical_risk_markers": 1,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-15-review.md",
-    "notes": "本轮只有 1 个符合 task6_state: pending 的 ready-for-review 候选；完成文风与格式轻修，未发现需要 Task2B 回炉的问题。",
-    "small_fixes": 4,
-    "rework_items": 0,
+    "log": "logs/review/2026-05-16-16-review.md",
+    "notes": "本轮按吞吐规则处理 3 章：24.10 首次 review 通过，11.5 Task2B 修复后复审通过，20.1 既有 ANR 技术边界回炉项确认仍待 Task2B。",
+    "small_fixes": 14,
+    "rework_items": 1,
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
@@ -3244,10 +3298,12 @@
   "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "13.14",
-  "task6_last_review_at": "2026-05-16T15:12:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-15-review.md",
+  "task6_last_review_at": "2026-05-16T16:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-16-review.md",
   "task6_last_review_sections": [
-    "20.12"
+    "24.10",
+    "11.5",
+    "20.1"
   ],
   "sections_status": {
     "22.11": {
@@ -3554,15 +3610,28 @@
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
       "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "章节深挖/研究素材",
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_l1_l2_fixes": 9,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
+      "task6_review_notes": "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
     },
     "13.13": {
       "title": "Perfetto CPU 频率与 DVFS 关联分析",
@@ -3602,6 +3671,46 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-20260516-5.8-binder-freezer-api-surface"
+    },
+    "11.5": {
+      "title": "Wakelock 机制与功耗分析",
+      "file": "src/part2-performance/ch11-power/05-wakelock.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
+      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
+    },
+    "20.1": {
+      "title": "应用稳定性全景",
+      "file": "src/part5-app/ch20-stability/01-stability-overview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "queue_priority": 95,
+      "queue_entry": "task6-20.1-anr-timeout-dialog-boundary-20260514",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-16",
+      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
+      "task6_review_notes": "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。"
     }
   },
   "task2a_last_processed": {

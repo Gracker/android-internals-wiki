@@ -1,22 +1,13 @@
 ---
-
 title: "应用稳定性全景"
 chapter: "20.1"
 section: "20.1"
-status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 1
-task2b_result: fixed
-task6_result: needs-rework
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-reviewed_date: "2026-05-14"
-reviewed_by: openclaw-task6
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -28,17 +19,27 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
-last_task6_at: "2026-05-14T12:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-14-12-review.md"
-task6_review_notes: "2026-05-14 Task6：revisiting 复审；L1/L2 小修完成。ANR timeout/弹窗边界仍需 Task2B 补齐。"
-task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T02:35:06+08:00"
 task9_review_notes: "2026-05-15 Task9：needs-rework。新增 P0：Android 线程默认栈大小写成 Linux 8MB；既有 ANR timeout/弹窗边界仍待补齐。"
 task6_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
+status: ready-for-review
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+last_task6_at: "2026-05-16T16:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-16-review.md"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 1
+task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。"
 ---
 
 # 应用稳定性全景

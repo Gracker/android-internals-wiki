@@ -2,7 +2,6 @@
 title: "HTTPDNS 与 OkHttp Dns 执行边界"
 chapter: "24.10"
 section: "24.10"
-status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
 last_verified: "2026-05-16"
@@ -38,9 +37,22 @@ related_chapters: ["12.2", "12.3", "24.4", "24.5", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/研究素材"
-pipeline_stage: task6_pending
-task6_state: pending
 last_task2a_at: "2026-05-16T16:04:00+08:00"
+status: ready-for-review
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-16"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-16T16:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-16-16-review.md"
+task6_l1_l2_fixes: 9
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
 ---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
@@ -49,26 +61,26 @@ last_task2a_at: "2026-05-16T16:04:00+08:00"
 ## 要点
 
 ### 🔹 OkHttp Dns.lookup() 的调用位置
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明 `Dns.lookup()` 在 `RealRoutePlanner` / `RouteSelector` 中同步参与 route 生成，返回前请求无法进入 connect。
 
 ### 🔹 HTTPDNS 同步查询的阻塞风险
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明在 `lookup()` 内发起 HTTPDNS 请求会把弱网、递归解析和 Dispatcher 挤占带进建连路径。
 
 ### 🔹 异步预取与缓存读取模型
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明 HTTPDNS 网络请求应前置到后台刷新，`lookup()` 只读取缓存并在失败时兜底系统 DNS。
 
 ### 🔹 失败 IP 隔离与系统 DNS 兜底
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明按 hostname + IP + network 做失败隔离，避免单点失败污染整个域名。
 
 ### 🔹 网络切换后的 TTL 与缓存刷新
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明 Wi-Fi、蜂窝和 VPN 切换后如何保留短时兜底并刷新高价值域名。
 
 ### 🔹 弱网验证与线上指标设计
-补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。
+说明用 EventListener、弱网演练和线上指标验证 DNS 优化没有拉高尾延迟。
 
 ## 扩展
 
-### 🔸 DoH / HTTPDNS / 系统 DNS 的选型矩阵
+### 🔸 DoH / HTTPDNS / 系统 DNS 的选型对照表
 待结合素材验证后展开。
 
 ### 🔸 多 IP fast fallback 与连接池复用边界
@@ -300,7 +312,7 @@ OkHttp EventListener 能采集 `dnsStart/dnsEnd`、`connectStart/connectEnd`、`
 |---|---|---|
 | 解析路径 | `dns_source`、`cache_hit`、`record_age_ms`、`ip_count` | 判断命中 HTTPDNS、磁盘、系统 DNS 的比例 |
 | 等待段 | `dns_ms`、`connect_ms`、`tls_ms`、`ttfb_ms` | 区分解析慢、建连慢、TLS 慢、服务端慢 |
-| 失败分布 | `UnknownHostException`、`connect_timeout`、`ssl_error`、`httpdns_empty`、`fallback_used` | 判断兜底策略是否压住故障 |
+| 失败分布 | `UnknownHostException`、`connect_timeout`、`ssl_error`、`httpdns_empty`、`fallback_used` | 判断兜底策略是否降低故障影响 |
 
 弱网压测至少覆盖下面几类场景：
 
@@ -313,7 +325,7 @@ OkHttp EventListener 能采集 `dnsStart/dnsEnd`、`connectStart/connectEnd`、`
 
 验收标准可以这样写：HTTPDNS 上线后，`dns_ms` 的 P90/P99 不应恶化；`UnknownHostException` 率不应高于系统 DNS baseline；HTTPDNS 服务故障演练期间，请求成功率由系统 DNS 兜底保持在可接受范围内；切网后 30 秒内的 DNS 失败率和建连失败率不能出现明显尖刺。没有这些数据，HTTPDNS 只能算功能接入，不能算性能优化。
 
-## DoH、HTTPDNS、系统 DNS 的选型矩阵
+## DoH、HTTPDNS、系统 DNS 的选型对照表
 
 | 方案 | 优点 | 代价 | 适用场景 |
 |---|---|---|---|

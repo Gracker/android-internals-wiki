@@ -1627,3 +1627,9 @@
 - **问题**：章节给出了 `android_jank_cuj_frame`、`thread_state`、`android_heap_graph_stats` 的排障顺序，但没有列出最小采集条件。缺少 `android.surfaceflinger.frametimeline`、sched/thread_state、CPU freq、Binder、gfx/view atrace、ART heap graph、DMA-BUF 等数据源的必选/可选边界时，示例 SQL 可能直接空表，读者无法判断是机制不适用还是 trace 缺采集。
 - **建议**：补一个最小 TraceConfig / Perfetto UI recording preset checklist：逐项标明 CUJ counter、FrameTimeline、thread_state、GPU/HWC fence、heap_graph_stats、dmabuf 各自依赖的数据源；同时给一条“表为空时先检查什么”的排查清单。
 
+## [Task6 Review] 20.1 应用稳定性全景 — 2026-05-16
+- **类型**：需确认
+- **位置**：ANR timeout 阈值表 / ANR 发生后的系统行为
+- **问题**：Task6 复审确认正文仍保留 `[需确认]`：Android 14+ CPU-starved BroadcastReceiver timeout 版本口径与前台可见、后台、silent ANR 的弹窗/kill 边界未补齐。
+- **建议**：按 Task9 技术结论和官方文档补齐版本、前后台和可见性边界；无法确认时降级为典型前台 ANR 场景并标注系统差异。
+- **review 日志**：logs/review/2026-05-16-16-review.md
