@@ -1718,3 +1718,10 @@
 - **位置**：frontmatter sources；L94、L101、L191
 - **问题**：`Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6/13/35.md` 在当前 Obsidian `Clippings/` 下未找到，正文又把这些文件作为结构参考引用，导致相关判断无法复核到原始材料。
 - **建议**：替换成实际存在的笔记路径，或把这些引用降级为非技术结构参考；与 eBPF/Binder 结论相关的依据保留论文、AOSP 文档和已有章节交叉引用。
+
+## [Task9 Deep Review] 1.20 App Archiving 机制与恢复性能 — 2026-05-17
+- **类型**：交叉引用
+- **位置**：frontmatter L11 / 正文 L88、L209
+- **问题**：正文两次引用 4.2 Linux 内存回收，但 related_chapters 未列出 4.2；frontmatter 列出 16.2，正文版本表未显式回连 16.2。
+- **建议**：补齐 related_chapters 与正文回跳：要么把 4.2 加入 related_chapters，要么减少正文引用；版本边界处建议显式回连 16.2。
+

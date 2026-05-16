@@ -8975,21 +8975,59 @@
       "added_at": "2026-05-17T03:08:00+08:00",
       "completed_date": "2026-05-17",
       "completed_reason": "Task 2A 加工完成：基于 Android 15 官方文档、AOSP PackageInstaller/PackageArchiver/ActivityStarter/ArchiveState 验证归档与恢复路径，章节状态改为 ready-for-review。"
+    },
+    {
+      "id": "task9-2026-05-17-1-20-archive-conditions-callback",
+      "section": "1.20",
+      "section_title": "App Archiving 机制与恢复性能",
+      "title": "App Archiving 入口条件与恢复回调链路补齐",
+      "description": "[Deep Tech Review] P1 2：requestArchive 前置条件漏掉 installer/opt-out/system-app/launcher activity 等失败路径；点击恢复回调误写为 Launcher 侧 IntentSender。",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.20 App Archiving 入口条件和 ActivityStarter 恢复回调链路需要补齐源码锚点。",
+      "issue_type": "principle-chain/source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T04:33:15+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-04-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L108 / AOSP PackageArchiver.java L475-L490、L659-L692、L695-L708、L750-L765",
+          "detail": "入口条件只写 UID/cross-user/DELETE_PACKAGES 或 REQUEST_DELETE_PACKAGES 三层校验，漏掉 createAndStoreArchiveState() 里的关键归档前置条件：目标不能是 system/updated-system app、目标用户态必须 installed、responsible installer 必须存在且能接收 ACTION_UNARCHIVE_PACKAGE、用户不能通过 unused-app/auto-revoke AppOps 关闭 archiving、目标必须有可归档 Launcher activity。",
+          "suggestion": "在 requestArchive 入口条件节补一个“归档前置条件”表，把权限校验、目标包状态、installer 支持、opt-out、launcher activity 五类失败路径分别列出，并标注对应源码锚点。"
+        },
+        {
+          "type": "源码准确性",
+          "location": "L168 / AOSP PackageArchiver.java L313-L318、L461-L471、L1519-L1535",
+          "detail": "正文写“复用 Launcher 侧的 IntentSender 接收恢复状态”不准确。Activity start 路径调用 requestUnarchive(packageName, callerPackageName, getOrCreateLauncherListener(...))，该 IntentSender 是 PackageArchiver 内部缓存的 UnarchiveIntentSender，用于接收状态并拉起系统对话框；不是 Launcher 传入或持有的回调。公开 requestUnarchive() 的 caller-provided statusReceiver 是另一条 API 路径。",
+          "suggestion": "把点击恢复链路拆成两条：Launcher 点击路径使用 PackageArchiver 内部 listener；应用/商店主动 requestUnarchive() 才使用调用方传入的 statusReceiver。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 269,
+    "total_entries": 271,
     "p0_count": 115,
-    "last_updated": "2026-05-17T01:36:14+08:00",
+    "last_updated": "2026-05-17T04:33:15+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 142,
+    "pending_entries": 141,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 142
+    "pending": 141
   },
-  "last_updated": "2026-05-17T01:36:14+08:00",
+  "last_updated": "2026-05-17T04:33:15+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 142,
+  "pending": 141,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }

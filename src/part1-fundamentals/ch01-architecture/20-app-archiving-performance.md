@@ -1,6 +1,7 @@
 ---
 title: "App Archiving 机制与恢复性能"
 chapter: "1.20"
+section: "1.20"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
@@ -32,6 +33,20 @@ sources:
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-17T04:33:15+08:00"
+last_task9_review_log: logs/deep-review/2026-05-17-04-deep-review.md
+task2b_state: pending
+task2b_result: pending
+queue_entry: task9-2026-05-17-1-20-archive-conditions-callback
+p0: 0
+p1: 2
+p2: 1
+task9_review_notes: "2026-05-17 Task9 04: needs-rework。P1 2：requestArchive 入口条件漏掉 installer/opt-out/system-app/launcher activity 等失败路径；ActivityStarter 点击恢复回调误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与正文 4.2/16.2 回跳不一致。"
 ---
 
 # 1.20 App Archiving 机制与恢复性能
