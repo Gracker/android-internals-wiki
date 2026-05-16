@@ -2,7 +2,7 @@
 title: "SafeMode 崩溃循环判定与启动补偿链路"
 chapter: "20.12"
 section: "20.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -42,7 +42,7 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
@@ -50,7 +50,14 @@ reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T15:12:00+08:00"
 task6_review_notes: "2026-05-16 task6 review: 完成 L1/L2 轻修 4 处；无 Task2B 回炉项，进入 Task9 技术审查。"
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-05-16
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-16T15:38:55+08:00"
+last_task9_review_log: logs/deep-review/2026-05-16-15-deep-review.md
+auto_promoted_by: task9-deep-tech-review
+auto_promoted_at: "2026-05-16T15:38:55+08:00"
 ---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
