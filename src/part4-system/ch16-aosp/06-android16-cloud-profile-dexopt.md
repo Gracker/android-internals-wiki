@@ -2,7 +2,7 @@
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
 section: "16.6"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
 last_verified: "2026-05-15"
@@ -30,9 +30,9 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task9_state: pending
+task9_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 review_type: task6-writing-quality-review
@@ -40,7 +40,13 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-15T23:21:00+08:00"
 last_task6_review_log: logs/review/2026-05-15-23-review.md
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
-
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-16T00:30:00+08:00"
+task9_review_notes: "2026-05-16 00:30 Task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
+finalized_date: "2026-05-16"
+finalized_by: "openclaw-task9"
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化

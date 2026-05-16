@@ -65,6 +65,11 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: 2026-05-14T07:24:00+08:00
 task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1；API 37 pending reason 只提供聚合 DEVICE_STATE 常量，getAppStandbyBucket() 查询自身不需要 PACKAGE_USAGE_STATS；WorkManager 调度器示例需补 AndroidX 源码锚点。"
+<!-- AIW-源码调研-2026-05-16 -->
+**勘误**：第 524 行"需要 `PACKAGE_USAGE_STATS` 权限"描述不准确。`UsageStatsManager.getAppStandbyBucket()` 在 API 28 引入，**查询自身 App 的 Standby Bucket 不需要任何权限**。`PACKAGE_USAGE_STATS` 权限的设计目的是允许 App 查询第三方 App 的使用统计数据（用于"屏幕使用时间"类功能）。当 App 查询自身的 Bucket 时，系统通过 `Binder.getCallingUid()` 直接返回该 UID 对应的 Standby Bucket，不触发权限检查。
+
+正确表述：`UsageStatsManager.getAppStandbyBucket()` 查询自身 App 的 Bucket 不需要任何权限；查询其他 App 的 Bucket 才需要 `PACKAGE_USAGE_STATS` 权限（需用户在设置页面手动授权）。
+-->
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -585,6 +590,11 @@ Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 
 API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中，除了前文提到的 `PENDING_JOB_REASON_QUOTA`（配额耗尽），还有几个和能效、设备状态直接相关的挂起原因：
 
 - `PENDING_JOB_REASON_DEVICE_STATE_THERMAL`：设备处于热限流状态，系统暂停后台 job 以降温
+<!-- AIW-源码调研-2026-05-16 -->
+**勘误**（Task9 P0 回炉项）：第 587-588 行描述 `PENDING_JOB_REASON_DEVICE_STATE_THERMAL` 和 `PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER` 为独立设备状态常量，但 API 37 `getPendingJobReasonStats()` 返回的是聚合 DEVICE_STATE 原因（key 为 DEVICE_STATE 聚合常量），不是独立设备状态。原文"分别提供每个 DEVICE_STATE_* 原因"的表述存在歧义，实际 API 返回的是 DEVICE_STATE 分类下的累计时长，而非每个设备状态的独立原因数组。
+
+来源：`developer.android.com/about/versions/17/features` 描述该 API "returns a map of reasons why the job was in a pending execution state and their respective cumulative pending durations"——聚合原因 + 累计时长 map，而非独立状态数组。
+-->
 - `PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER`：省电模式开启，后台任务被挂起
 - `PENDING_JOB_REASON_QUOTA`：App 在当前 standby bucket 下的执行配额已用尽
 

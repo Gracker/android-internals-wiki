@@ -362,6 +362,76 @@ Compose 与 View 系统可以互相嵌入：
 > - SurfaceControl 与 Transaction 的底层实现详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
 
 <!-- AIW-源码调研-2026-05-15 -->
+
+<!-- AIW-源码调研-2026-05-16 -->
+## 源码调研补充（2026-05-16）
+
+**关联章节**：§18.2
+**调研目标**：HWUI Sync、BLAST 回调机制源码闭环；DeliQueue 版本边界确认
+
+### MessageQueue.DeliQueue 源码验证
+
+**文件**：`frameworks/base/core/java/android/os/MessageQueue.java`（AOSP master）
+
+DeliQueue（Treiber Stack 实现）是 Android 17 (API 37) 为 targetSdk >= 37 应用引入的 MessageQueue 优化：
+
+| 特性 | 说明 |
+|:---|:---|
+| **类型** | Treiber Stack（无锁栈） |
+| **启用条件** | targetSdk >= 37（Android 17+） |
+| **核心改进** | CAS 无锁入队/出队，减少同步开销 |
+| **native 层** | `nativePollOnce()` 通过 epoll_wait 阻塞，不占用 CPU |
+
+旧版 Message 使用单向链表，按 `when`（消息触发时间）排序插入。DeliQueue 用无锁栈替代链表，在高消息频率场景下减少锁竞争。
+
+### BLASTBufferQueue TransactionCompleted 回调链
+
+**文件**：
+- Java：`frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java`
+- Native：`frameworks/native/libs/gui/BLASTBufferQueue.cpp`
+
+关键回调链：
+```
+SurfaceFlinger 合成完成
+    ↓ TransactionCompletedListener（跨进程 Binder 回调）
+BLASTBufferQueue.releaseBufferCallbackCallback
+    ↓
+BLASTBufferItemConsumer::releaseBuffer()
+    ↓
+ACQUIRED → FREE（槽位释放）
+```
+
+`dequeueBuffer` 长等待的排查方向：除看 RenderThread 侧，还要看 release 链后段是否顺畅（SF 回调是否及时到达）。
+
+### View mAttachInfo / mWindowAttachCount 渲染生命周期
+
+**文件**：`frameworks/base/core/java/android/view/View.java`
+
+| 字段 | 作用 |
+|:---|:---|
+| `mAttachInfo` | View 附着信息，attach 时从 ViewRootImpl 传入；决定 View 能否参与当前帧 |
+| `mWindowAttachCount` | 记录 attach/detach 次数，判断 View 是否在当前窗口树中 |
+
+detached View 的 `invalidate()`/`requestLayout()` 会被忽略或延迟到下次 attach。
+
+### canUnblockUiThread 机制确认
+
+**文件**：`frameworks/base/libs/hwui/RenderProxy.cpp`（DrawFrameTask::postAndWait）
+
+- 存在于 Android 14/15/16（android-14+ 保持一致）
+- 满足 `canUnblockUiThread` 条件时，RenderThread 通过 `mSyncCond.signal()` 提前释放 UI 线程
+- 不满足时（如 AVP 视频播放场景），UI 线程等待完整绘制完成
+
+### ART Generational CMC 与 Compose（待验证）
+
+**已知源码路径**：
+- `art/runtime/gc/collector/mark_compact.cc`
+- `art/runtime/gc/heap.cc`
+- `build/flags/art-flags.aconfig`
+
+Compose Composition 阶段产生的 `Snapshot`/`SlotTable` 对象生命周期与 Generational CMC 的交互缺乏一手 benchmark 数据，章节中 `对象分配开销降低 20%+` 暂无版本/设备/场景支撑，应标注为「待验证」或删除具体数字。
+
+<!-- AIW-源码调研-2026-05-16 -->
 ## 附：源码调研补充 — ART Generational CC 与 BLAST BufferQueue 协同机制
 
 *来源：AIW 每日源码调研 · 2026-05-15 · 关联 §18.2*

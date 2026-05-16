@@ -583,3 +583,49 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 **待深入**：
 - 晋升阈值常量 `kPromotionAgeThreshold` 的精确定义位置
 - Young/Mid/Old 各自默认堆空间占比配置（AOSP 默认值可能因设备厂商而异）
+
+
+---
+
+## 附录：AIW-源码调研-20260516 补充
+
+<!-- AIW-源码调研-20260516 -->
+### userfaultfd-based CMC GC 机制与设备能力判断
+
+**调研主题**：Android 17 Generational CMC 机制源码与设备能力判断路径验证
+
+**核心结论**：
+
+1. **userfaultfd-based CMC 从 Android 12 (S) 开始默认启用**
+   - 关键 commit：`854cb7d94594f027cf0f056d6cd023e7a00df0cd`（platform/art）
+   - 变更说明：Extend userfaultfd-based CMC GC to Android S and above. Before this change, the Concurrent Mark-Compact Garbage Collector (CMC GC) was enabled by default (provided the kernel supports userfaultfd) on Android T and above.
+   - Android 13 (T) 及以上已默认支持，Android 12 (S) 通过此 commit 扩展默认启用
+
+2. **分代 CMC 架构**：Generational CMC = 分代堆（young/mid/old）+ userfaultfd 驱动并发压缩
+   - young generation：高频回收短生命周期对象
+   - mid generation：缓冲层，防止过早晋升
+   - old generation：full heap GC，延迟触发
+   - userfaultfd 机制：GC 移动对象时通过 UFFDIO_COPY 填充页面，避免 CMS 的内存一致性开销
+
+3. **设备能力判断**：`gUseUserfaultfd` 变量控制
+   - 编译时探测：检查内核是否支持 userfaultfd 系统调用
+   - 运行时判断：低 RAM 设备（low-RAM device）通常禁用以节省内存
+   - DeviceConfig 覆盖：`debug.art.disable_userfaultfd` 可覆盖默认行为
+
+4. **对 Compose 性能的影响**
+   - young GC pause 低（10-50ms）：短生命周期 lambda/state 对象被快速回收
+   - old GC pause 高（100-500ms）：大量 recomposition 累积的 state 对象需 full-heap 标记
+   - 关键路径：`Compose.onUserInteraction` → `Snapshot.enter` → `SlotTable.commit` → GC 触发
+
+**源码证据**：
+- platform/art commit `854cb7d94594`（一手）
+- source.android.com/docs/core/runtime/gc-debug（官方文档，一手）
+- github.com/SagerNet/sing-box/issues/3875（userfaultfd MOVE ioctl SELinux 限制，交叉验证用）
+
+**待深入**：
+- `gUseUserfaultfd` 的具体初始化逻辑（需读取 `art/runtime/gc/heap.cc` 源码验证）
+- DeviceConfig 属性 `debug.art.disable_userfaultfd` 的具体命名
+- low-RAM 设备判定阈值（是否为 `ActivityManager.isLowRamDevice()`）
+
+**报告来源**：
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md`

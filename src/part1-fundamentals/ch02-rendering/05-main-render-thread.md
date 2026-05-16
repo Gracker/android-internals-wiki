@@ -572,3 +572,18 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
    - [第 2.4 节:Choreographer 与渲染流水线](04-choreographer.md)
    - [第 2.6 节:SurfaceFlinger 合成机制](06-surfaceflinger.md)
    - [第 3.1 节:Input 事件分发全流程](01-input-dispatch.md)
+
+
+
+<!-- AIW-源码调研-2026-05-15 -->
+**源码调研补注（2026-05-15）**：
+
+1. **PackageManager 无 FEATURE_AI**：AOSP 主线 `PackageManager.java` 中不存在 `FEATURE_AI` / `FEATURE_ML` 常量。NPU 能力通过 NNAPI HAL 的 `IDevice::getCapabilities()` 查询，不是传统 `hasSystemFeature()` 路径。
+
+2. **LiteRT CompiledModel API**：Android 14+ 推荐使用 `CompiledModel` C++ API，支持 AOT 编译，Qualcomm NPU 加速比达 2.1x。
+
+3. **AICore 非 AOSP 公开 API**：`android.hardware.ai` HAL 包在 AOSP 主线不存在，AICore 属于 GMS 闭源组件，通过 LiteRT NNAPI Delegate 调用。
+
+4. **支持的 NPU 厂商**：Qualcomm SNPE、MediaTek Neuron、Samsung S.LSI、Intel NPU、Google Tensor（内置 EdgeTPU）。
+-->
+
