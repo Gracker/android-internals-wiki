@@ -70,6 +70,9 @@ tags:
   - [3.4 输入延迟与预测输入技术](part1-fundamentals/ch03-input/04-input-latency-prediction.md)
   - [3.5 输入事件拦截与安全机制](part1-fundamentals/ch03-input/05-input-interception-security.md)
   - [3.6 手势识别算法与性能优化](part1-fundamentals/ch03-input/06-gesture-recognition-performance.md)
+  - [3.7 InputDispatcher 反压与无响应窗口降级](part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md)
+  - [3.8 InputFlinger Rust 组件与自适应刷新率协同](part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md)
+  - [3.9 端到端输入延迟预算与感知阈值](part1-fundamentals/ch03-input/09-input-latency-budget-perception.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
@@ -208,6 +211,7 @@ tags:
   - [13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数](part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md)
   - [13.12 Perfetto Profile 导入与 Flamegraph 分析](part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md)
   - [13.13 Perfetto CPU 频率与 DVFS 关联分析](part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md)
+  - [13.14 Perfetto Data Explorer 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -299,6 +303,7 @@ tags:
   - [20.9 稳定性治理案例集](part5-app/ch20-stability/09-stability-case-studies.md)
   - [20.10 WebView Renderer OOM 与白屏恢复](part5-app/ch20-stability/10-webview-renderer-oom-recovery.md)
   - [20.11 MTE memtagMode 与 Native 崩溃治理](part5-app/ch20-stability/11-mte-memtag-native-crash.md)
+  - [20.12 SafeMode 崩溃循环判定与启动补偿链路](part5-app/ch20-stability/12-safemode-crash-loop-recovery.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -345,6 +350,7 @@ tags:
   - [24.7 离线优先架构](part5-app/ch24-io-network/07-offline-first.md)
   - [24.8 I/O 与网络优化案例集](part5-app/ch24-io-network/08-io-network-case-studies.md)
   - [24.9 Wi-Fi 评分、网络选择与连接切换性能](part5-app/ch24-io-network/09-wifi-connectivity-selection.md)
+  - [24.10 HTTPDNS 与 OkHttp Dns 执行边界](part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)

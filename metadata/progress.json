@@ -1,6 +1,6 @@
 {
-  "total": 289,
-  "draft": 0,
+  "total": 295,
+  "draft": 6,
   "ready-for-review": 95,
   "finalized": 194,
   "task9_result": "needs-rework",
@@ -1098,8 +1098,8 @@
   "total_review_sections": 133,
   "next_review_candidates": [],
   "ready_for_review": 94,
-  "last_updated": "2026-05-16T09:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-16T10:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "08:16",
@@ -2924,6 +2924,84 @@
       "queue_priority": 85,
       "last_task9_at": "2026-05-16T07:30:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
+    },
+    "3.7": {
+      "title": "InputDispatcher 反压与无响应窗口降级",
+      "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/源码结构",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "3.8": {
+      "title": "InputFlinger Rust 组件与自适应刷新率协同",
+      "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/AOSP结构",
+      "gap_score": 17,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "3.9": {
+      "title": "端到端输入延迟预算与感知阈值",
+      "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档",
+      "gap_score": 17,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "13.14": {
+      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
+      "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档",
+      "gap_score": 20,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "20.12": {
+      "title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "章节深挖/参考书素材",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "24.10": {
+      "title": "HTTPDNS 与 OkHttp Dns 执行边界",
+      "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "章节深挖/研究素材",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -2986,7 +3064,7 @@
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
   "total_review_files": 133,
-  "last_task2a_at": "2026-05-16T07:17:00+08:00",
+  "last_task2a_at": "2026-05-16T10:04:00+08:00",
   "last_task2a_section": "22.12",
   "last_task2a_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task6_review": "2026-05-16T08:16:00+08:00",
@@ -3030,7 +3108,7 @@
     "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
   "last_task9_at": "2026-05-16T09:20:00+08:00",
-  "last_task2a_result": "ready-for-review",
+  "last_task2a_result": "gap-mining-created-drafts",
   "ready-to-publish": 194,
   "last_task2a_processed_section": "22.12",
   "task6_last_review_at": "2026-05-16T08:16:00+08:00",
@@ -3245,6 +3323,84 @@
       "queue_priority": 85,
       "last_task9_at": "2026-05-16T07:30:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
+    },
+    "3.7": {
+      "title": "InputDispatcher 反压与无响应窗口降级",
+      "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/源码结构",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "3.8": {
+      "title": "InputFlinger Rust 组件与自适应刷新率协同",
+      "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/AOSP结构",
+      "gap_score": 17,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "3.9": {
+      "title": "端到端输入延迟预算与感知阈值",
+      "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档",
+      "gap_score": 17,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "13.14": {
+      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
+      "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档",
+      "gap_score": 20,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "20.12": {
+      "title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "章节深挖/参考书素材",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
+    },
+    "24.10": {
+      "title": "HTTPDNS 与 OkHttp Dns 执行边界",
+      "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-16",
+      "queue_priority": 80,
+      "gap_source": "章节深挖/研究素材",
+      "gap_score": 18,
+      "last_task2a_at": "2026-05-16T10:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2a_last_processed": {
@@ -3255,15 +3411,24 @@
     "mode": "gap-mining"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-05-16",
+    "at": "2026-05-16T10:04:00+08:00",
     "created_sections": [
-      "22.12"
+      "3.7",
+      "3.8",
+      "3.9",
+      "13.14",
+      "20.12",
+      "24.10"
     ],
     "created_files": [
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
+      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
+      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
+      "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
     ],
-    "candidate_count": 5,
-    "qualified_count": 1,
-    "note": "Phase 0 未发现空 draft；基于 source-index、research-gaps、官方 Fragment 文档与 AndroidX/AOSP 源码搜索创建新小节。"
+    "candidate_count": 6,
+    "qualified_count": 6
   }
 }

@@ -8064,21 +8064,195 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T09:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-3-7-07-inputdispatcher-backpressure",
+      "section": "3.7",
+      "priority": 80,
+      "title": "InputDispatcher 反压与无响应窗口降级",
+      "description": "补齐 InputDispatcher 在输入管道拥塞时的 waitQueue 积压、WOULD_BLOCK、无响应连接隔离与跨应用切换降级策略。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-16.md",
+        "DeepResearch/2026-05-10-inputdispatcher-backpressure.md",
+        "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+      ],
+      "gap_score": 18,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4
+      }
+    },
+    {
+      "id": "task2a-gap-3-8-08-inputflinger-rust-arr",
+      "section": "3.8",
+      "priority": 80,
+      "title": "InputFlinger Rust 组件与自适应刷新率协同",
+      "description": "补齐 Android 15/16 输入系统中 Rust accessibility filters 与触摸驱动自适应刷新率策略的协作路径。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-16.md",
+        "DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md",
+        "frameworks/native/services/inputflinger/"
+      ],
+      "gap_score": 17,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 5
+      }
+    },
+    {
+      "id": "task2a-gap-3-9-09-input-latency-budget-perception",
+      "section": "3.9",
+      "priority": 80,
+      "title": "端到端输入延迟预算与感知阈值",
+      "description": "把 HCI 感知阈值、Android 端到端输入路径和工程指标放到同一张预算表中，补齐输入延迟章节的用户感知口径。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-16.md",
+        "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md",
+        "developer.android.com/topic/performance/vitals/render"
+      ],
+      "gap_score": 17,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4
+      }
+    },
+    {
+      "id": "task2a-gap-13-14-14-perfetto-data-explorer-jank-cuj",
+      "section": "13.14",
+      "priority": 80,
+      "title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
+      "description": "Perfetto v54 引入 Data Explorer、Jank CUJ 模块和 weighted jank metrics，适合独立成节补齐无代码分析和标准库化 jank 量化。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      ],
+      "material_paths": [
+        "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md",
+        "https://github.com/google/perfetto/releases/tag/v54.0",
+        "https://perfetto.dev/docs/analysis/stdlib-docs"
+      ],
+      "gap_score": 20,
+      "gap_score_detail": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 5
+      }
+    },
+    {
+      "id": "task2a-gap-20-12-12-safemode-crash-loop-recovery",
+      "section": "20.12",
+      "priority": 80,
+      "title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "description": "围绕启动期连续崩溃、Native 退出、ANR、低内存杀进程和 WebView renderer 退出，补齐 SafeMode 判定与补偿证据链。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "Clippings/Android 应用稳定性剖析与优化 - 异常退出：如何解决循环崩溃？.md",
+        "developer.android.com/reference/android/app/ApplicationExitInfo"
+      ],
+      "gap_score": 18,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4
+      }
+    },
+    {
+      "id": "task2a-gap-24-10-10-httpdns-okhttp-dns-boundary",
+      "section": "24.10",
+      "priority": 80,
+      "title": "HTTPDNS 与 OkHttp Dns 执行边界",
+      "description": "补齐 OkHttp Dns.lookup() 同步参与路由规划的执行边界，避免 HTTPDNS 接入把弱网延迟和递归依赖带进建连路径。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-16",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md",
+        "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/"
+      ],
+      "gap_score": 18,
+      "gap_score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4
+      }
     }
   ],
   "metadata": {
-    "total_entries": 246,
+    "total_entries": 253,
     "p0_count": 42,
-    "last_updated": "2026-05-16T08:33:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 142,
+    "last_updated": "2026-05-16T10:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 148,
     "updated_date": "2026-05-16",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 142
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 148
   },
-  "last_updated": "2026-05-16T08:33:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 142,
+  "last_updated": "2026-05-16T10:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 148,
   "last_task2a_completed": "22.12",
   "last_task2a_completed_at": "2026-05-16T07:17:00+08:00"
 }
