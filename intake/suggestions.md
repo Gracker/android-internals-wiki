@@ -1492,3 +1492,26 @@
 - **问题**：`executePendingTransactions()` 实际调用 `execPendingActions(true)` 后再 `forcePostponedTransactions()`；表格只写“会强制开始 postponed transaction”，没有说明它对已排队事务执行时会绕过 state-loss 检查，容易和 `commitNow()` 的 state-saved 行为混在一起。
 - **建议**：在 API 边界表补一列或脚注：`executePendingTransactions()` 不新建事务，但会以 `allowStateLoss=true` 执行当前 pending actions，并强制开始 postponed transactions；不要把它当作安全的同步提交替代品。
 
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-16
+- **类型**：数据缺失 / 版本口径
+- **位置**：src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md:L231-L239、L559
+- **问题**：`TRIGGER_TYPE_COLD_START` 的产物仍标为待验证，但 Android 17 features 页已给出公开口径：cold start 触发器返回 call stack sample 和 system trace。当前正文与附录的待验证标记会让发布稿留下已可核验的空洞。
+- **建议**：把 cold start 产物写成“call stack sample + system trace”，并把待验证标记收敛为“最终字段名/交付文件形态以 API 37 SDK reference 为准”。
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-16
+- **类型**：知识盲区 / 源码准确性
+- **位置**：src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md:L235、L553-L557
+- **问题**：正文只说 `TRIGGER_TYPE_ANOMALY` 不要收窄成 Binder 或内存事件，缺少 Android 17 features 页已经公开的可执行口径：excessive binder calls、excessive memory usage、memory limit breach 对应 heap dump，binder spam 对应 stack sampling profile，且回调发生在系统强制处理前。
+- **建议**：在主表或注册流程中补一行 anomaly：触发条件按“OS-defined/system-detected”表述，示例写 Binder spam / memory limit，产物写 heap dump 或 stack sampling profile；同时保留“内部阈值未公开”的边界。
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-05-16
+- **类型**：源码准确性 / 版本口径
+- **位置**：src/part3-tools/ch19-apm/26-hybrid-apm.md:L158
+- **问题**：`WebViewClient.onPageCommitVisible()` 被写成“当前导航的新内容首次绘制到屏幕时回调”。官方语义是旧导航内容不再绘制，下一次 draw 可能显示 WebView 背景色或新内容；它不能证明有效新内容已经绘制。
+- **建议**：改成“旧内容不再绘制 / 适合作为页面切换边界”，并明确白屏判断仍需 `postVisualStateCallback`、业务 ready、DOM 或 PixelCopy 继续确认有效内容。
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-05-16
+- **类型**：数据缺失
+- **位置**：src/part3-tools/ch19-apm/26-hybrid-apm.md:L268
+- **问题**：MethodChannel 延迟“通常 1-5ms”、`addTimingsCallback` 批量延迟“50ms+”、常规误差“<20ms”等数字缺少设备、Flutter 版本、采样方式或 trace 证据。它们会被读者当成可复用误差边界。
+- **建议**：补一组同设备 Flutter release/profile trace 或删除固定数字，改成“受 MethodChannel 排队、帧批量上报和主线程负载影响；只作为粗粒度 Session Timeline 锚点”。
