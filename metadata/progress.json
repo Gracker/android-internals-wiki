@@ -286,9 +286,9 @@
     "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
     "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
   ],
-  "review_summary": "Task9 2026-05-16 14: review 13.14；发现 2 个 P1（weighted counter 总量/中间表口径、Jank CUJ 默认适用范围）和 1 个 P2（最小 TraceConfig/采集条件缺失）。",
+  "review_summary": "Task6 2026-05-16 15: review 20.12；L1/L2 轻修 4 处，无回炉项，进入 Task9。",
   "task6_review_summary": {
-    "l1_l2_fixes": 25,
+    "l1_l2_fixes": 29,
     "l3_issues": 0,
     "l4_issues": 0,
     "technical_risk_markers": 6,
@@ -1147,11 +1147,11 @@
       "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
     }
   },
-  "total_review_sections": 136,
+  "total_review_sections": 138,
   "next_review_candidates": [],
-  "ready_for_review": 98,
-  "last_updated": "2026-05-16T14:07:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "ready_for_review": 99,
+  "last_updated": "2026-05-16T15:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-16",
     "time": "13:11",
@@ -3075,15 +3075,22 @@
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
       "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "章节深挖/参考书素材",
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "last_task6_at": "2026-05-16T15:12:00+08:00",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-16-15-review.md",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6",
+      "task9_state": "pending"
     },
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
@@ -3174,41 +3181,37 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md"
   ],
-  "total_review_files": 136,
+  "total_review_files": 138,
   "last_task2a_at": "2026-05-16T14:07:00+08:00",
   "last_task2a_section": "13.14",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-  "last_task6_review": "2026-05-16T13:11:00+08:00",
+  "last_task6_review": "2026-05-16T15:12:00+08:00",
   "last_task6_sections": [
-    "3.8",
-    "3.9"
+    "20.12"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-    "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+    "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
   ],
-  "last_task6_at": "2026-05-16T13:11:00+08:00",
+  "last_task6_at": "2026-05-16T15:12:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-16",
-    "time": "13:11",
-    "reviewed_at": "2026-05-16T13:11:00+08:00",
+    "time": "15:12",
+    "reviewed_at": "2026-05-16T15:12:00+08:00",
     "sections": [
-      "3.8",
-      "3.9"
+      "20.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-      "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+      "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
     ],
-    "mode": "first-review-metadata-backfill",
-    "l1_l2_fixes": 14,
+    "mode": "first-review",
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 1,
+    "technical_risk_markers": 0,
     "auto_promotions": [],
-    "log": "logs/review/2026-05-16-13-review.md",
-    "notes": "本轮处理 2 个缺少 Task6 frontmatter 的 ready-for-review 章节；3.9 L1/L2 轻修后进入 Task9，3.8 按 Task9 源码风险加 [存疑] 并保持 Task2B 回炉。",
-    "small_fixes": 14,
-    "rework_items": 1,
+    "log": "logs/review/2026-05-16-15-review.md",
+    "notes": "本轮只有 1 个符合 task6_state: pending 的 ready-for-review 候选；完成文风与格式轻修，未发现需要 Task2B 回炉的问题。",
+    "small_fixes": 4,
+    "rework_items": 0,
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
@@ -3218,11 +3221,10 @@
   "last_task2a_result": "draft-ready-for-review",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "13.14",
-  "task6_last_review_at": "2026-05-16T13:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-16-13-review.md",
+  "task6_last_review_at": "2026-05-16T15:12:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-16-15-review.md",
   "task6_last_review_sections": [
-    "3.8",
-    "3.9"
+    "20.12"
   ],
   "sections_status": {
     "22.11": {
@@ -3504,15 +3506,22 @@
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
       "file": "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
       "gap_source": "章节深挖/参考书素材",
       "gap_score": 18,
       "last_task2a_at": "2026-05-16T10:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "last_task6_at": "2026-05-16T15:12:00+08:00",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-16-15-review.md",
+      "reviewed_date": "2026-05-16",
+      "reviewed_by": "openclaw-task6",
+      "task9_state": "pending"
     },
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
