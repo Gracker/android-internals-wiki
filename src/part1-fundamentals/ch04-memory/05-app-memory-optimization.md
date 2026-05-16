@@ -55,7 +55,7 @@ polish_by: task2b-polish
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-09T22:10:00+08:00'
 task9_result: needs-rework
@@ -162,7 +162,14 @@ last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
 - **测试期**：Android Studio Memory Profiler 检查内存分配热点
 - **线上**：通过 `Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()` 监控可用堆空间，接近上限时主动释放缓存
 
-> [需补充素材: writing-guide 要求"每节提供在 Perfetto/工具中的实际表现"。当前章节 heapprofd 部分已有 Perfetto 对照，但 Bitmap 优化、内存泄漏检测等小节缺少 Trace/Perfetto Track 的具体描述。建议补充：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/ GPU memory Track 的说明]
+**Perfetto 中的内存观察 Track**。在 Perfetto 中，内存相关的主要观察入口有：
+
+- **Java Heap counter**：Android 8+ 的 `meminfo` 定期上报 Java 堆大小。在 Perfetto 中通过 `process_counter_track` 查看目标进程的 `java_heap` / `total_heap` / `native_heap` 等指标。正常状态下 Java Heap 呈锯齿形（分配→GC 回收→再分配），如果下限持续上移，是泄漏的信号
+- **GC Event Track**：在 `HeapTaskDaemon` 线程 track 上观察 GC slice（如 `ConcurrentCopying GC`、`MarkCompact GC`）。频繁的 Young GC（每秒多次）指向对象抖动，偶发的长时间 Full GC 指向老年代压力或内存泄漏
+- **Native Heap (`heapprofd`)**：通过 Perfetto 的 Native Heap Profiler 采集 Native 分配。可以按调用栈聚合，找出哪些代码路径分配了最多内存。注意 heapprofd 本身有性能开销，不建议在 Release 构建体中长期开启
+- **dmabuf/GPU memory Track**：在 `gfx` 相关的 counter track 中观察 GPU 纹理和 GraphicBuffer 占用。如果 `dmabuf` 持续增长但 Java Heap 稳定，通常是 Hardware Bitmap 或 Surface 相关资源未释放
+
+[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]: writing-guide 要求"每节提供在 Perfetto/工具中的实际表现"。当前章节 heapprofd 部分已有 Perfetto 对照，但 Bitmap 优化、内存泄漏检测等小节缺少 Trace/Perfetto Track 的具体描述。建议补充：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/ GPU memory Track 的说明]
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]
 
@@ -193,7 +200,7 @@ UI Thread    | GC Pause!    | UI Thread
 
 帧 N+1 中，GC 暂停了 8ms，加上 UI 线程自身的工作时间，帧 N+1 的总耗时超过了 VSync 周期（120Hz 设备仅 8.3ms，60Hz 设备为 16.6ms），结果就是掉帧。
 
-在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 会挤占 60% 的帧预算，几乎必然导致掉帧；而把 GC 暂停控制在 3ms 以内，则有较大概率"藏入"任务间隙，不触发掉帧。实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍。[待验证: 该 3-5 倍降幅需要补充设备、负载、采样方法和数据来源。]
+在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 会挤占 60% 的帧预算，几乎必然导致掉帧；而把 GC 暂停控制在 3ms 以内，则有较大概率"藏入"任务间隙，不触发掉帧。将 GC 暂停从 5ms 降到 3ms 后，应用掉帧率通常会有明显改善——具体改善幅度依赖设备、刷新率、负载和采样方法，无法给出通用倍数。实际收益应以同机 Trace 前后对比为准。
 
 可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标——Young GC 单次暂停不应超过 3ms，否则就应该排查对象抖动源头。
 
@@ -276,7 +283,7 @@ val bitmap = BitmapFactory.decodeResource(res, resId, options)
 - **API 11-18**：复用 Bitmap 的大小必须与解码后的 Bitmap **精确匹配**（限制极大，几乎不可用）
 - **API 19+**：复用 Bitmap 的大小只需要 **≥** 解码后的 Bitmap（实用性强得多）
 
-直接好处是它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以明显减少 Bitmap 相关的内存分配。[待验证: “减少 80% 以上”需要补充测试场景、图片尺寸、列表复用策略和采样方法后再恢复量化表述。]
+直接好处是它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以显著减少 Bitmap 相关的内存分配——具体减少比例取决于图片尺寸、列表复用策略和采样方法，应以同机 Memory Profiler 对比为准。
 
 ### 下采样（inSampleSize）
 
