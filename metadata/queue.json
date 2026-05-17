@@ -9790,6 +9790,32 @@
           "suggestion": "版本表拆成两行：Android 14 起 HWUI/RenderThread 使用 ADPF hint session 上报帧工作时长；Android 16 新增 app-facing CPU/GPU headroom 查询。不要写“RenderThread 在 Android 16 才接入 ADPF”；若保留“系统结合 GPU Headroom 动态调整”需补 AOSP/官方闭环证据。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-12.6-netd-dnsresolver-network-diagnostics",
+      "section": "12.6",
+      "priority": 80,
+      "title": "netd 与 DnsResolver：DNS 解析性能和故障诊断",
+      "description": "官方 DNS Resolver 模块、netd 源码结构与近期网络诊断素材显示，现有 12.2/12.3/12.5/24.10 尚缺系统 DNS 解析链路、网络切换后的 DNS 诊断和应用层 DNS 优化边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md"
+      ],
+      "source_refs": [
+        "https://source.android.com/docs/core/ota/modular-system/dns-resolver",
+        "https://source.android.com/docs/core/architecture/hidl/network-stack",
+        "https://developer.android.com/develop/connectivity/troubleshoot-network-issues",
+        "https://developer.android.com/develop/connectivity/network-ops/connecting",
+        "packages/modules/Connectivity/netd/"
+      ],
+      "gap_score": 16,
+      "created_by": "task2a-knowledge-gap"
     }
   ],
   "metadata": {
