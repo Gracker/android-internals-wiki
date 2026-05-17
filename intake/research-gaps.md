@@ -351,3 +351,36 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 
 ### 关联章节
 5.10、5.6、5.8、26.9
+
+
+## [2026-05-17] 7.6 案例集 — HWC Overlay plane 能力与 SF 合成降级证据
+
+### 盲区描述
+案例六需要证明“某设备因 Overlay plane 不足退回 CLIENT 合成”时，不能只写中端/高端 SoC 的通用 plane 数。需要设备级 HWC 能力、Layer composition type 和 FrameTimeline/SF jank 证据闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 收集目标设备的 `dumpsys SurfaceFlinger`、Layer trace / Winscope、Perfetto `android.surfaceflinger.frametimeline` 与 SurfaceFlinger slices。
+- 对照 AOSP `CompositionEngine::Output::composeSurfaces()`、`RenderEngine::drawLayers()` 与 HWC `presentOrValidate()/validate()` 路径。
+- 如引用 plane 数，必须来自厂商文档、HWC 日志或实机验证，不使用“中端通常 4 个 / 高端 6-8 个”的泛化结论。
+
+### 关联章节
+7.6、7.15、17.1
+
+## [2026-05-17] 7.15 场景化性能作战手册 — 功耗/发热伴随卡顿排障入口
+
+### 盲区描述
+场景化手册覆盖启动、滑动、输入、SurfaceView、WebView、前后台、ANR 等入口，但缺“耗电/发热伴随卡顿”的独立路径。线上投诉常把掉帧、发热和掉电混在一起，需要先分辨 CPU/GPU 持续负载、热限频、wakelock、后台任务、网络重试和渲染负载。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 Perfetto power rails、CPU/GPU frequency、thermal status、sched、FrameTimeline 的联合抓取模板。
+- 补 Battery Historian / batterystats 与 wakelock、JobScheduler/WorkManager、网络重试的归因路径。
+- 与 5.10、25.2 交叉引用，避免把后台任务功耗和前台渲染发热混成同一类。
+
+### 关联章节
+7.15、5.10、25.2

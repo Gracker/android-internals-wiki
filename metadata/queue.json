@@ -9485,21 +9485,117 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T11:28:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-12-7-6-sf-hwc-thermal-api-boundary",
+      "section": "7.6",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "SF/HWC 合成与热状态案例的源码/API 锚点需修正",
+      "description": "[Deep Tech Review] P0 2：android-16 源码无 handleMessageRefresh/doComposition，ThermalManager 示例 API 不存在。P1 1：Overlay plane 数量与 DisplayManager 检测能力缺公开 API 和设备证据。",
+      "issue_type": "source-accuracy/api-boundary/data-evidence",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-12-deep-review.md",
+        "https://raw.githubusercontent.com/google/perfetto/master/docs/data-sources/frametimeline.md",
+        "AOSP android-16.0.0_r1: SurfaceFlinger.cpp / CompositionEngine/src/Output.cpp / PowerManager.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Trace 锚点错误",
+          "location": "L526-L544、L569 案例六 SF/HWC 合成降级",
+          "detail": "正文要求看 surfaceflinger 主线程 onMessageInvalidate → handleMessageRefresh，并用 doComposition 拉长对应 FrameTimeline missed；但 android-14/15/16 SurfaceFlinger.cpp 均无 handleMessageRefresh/doComposition。Perfetto FrameTimeline 文档也说明 SF token 显示在 onMessageReceived，SQL 表为 actual/expected_frame_timeline_slice。",
+          "suggestion": "将锚点改为 SurfaceFlinger::composite() → CompositionEngine::present() → Output::present() → Output::composeSurfaces() → RenderEngine::drawLayers()；FrameTimeline 证据使用 SurfaceFlingerCpuDeadlineMissed / SurfaceFlingerGpuDeadlineMissed / DisplayHAL / PredictionError 等实际 jank type。"
+        },
+        {
+          "severity": "P0",
+          "type": "API 错误",
+          "location": "L627-L645 ThermalManager 代码示例与已验证说明",
+          "detail": "AOSP android-16.0.0_r1 的公开应用热状态 API 在 android.os.PowerManager：addThermalStatusListener()、OnThermalStatusChangedListener、THERMAL_STATUS_*；PowerManager.java 中不存在 ThermalManager 类或 registerThermalStatusChangeListener()。当前 Kotlin 示例无法编译。",
+          "suggestion": "改为 getSystemService(PowerManager::class.java) + powerManager.addThermalStatusListener(...)；常量使用 PowerManager.THERMAL_STATUS_MODERATE / SEVERE，并把源码说明改为 PowerManager 通过 IThermalService 获取状态。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/数据支撑",
+          "location": "L538-L557 Overlay plane 数量、setRelativeLayer、DisplayManager 检测 HWC 能力",
+          "detail": "“中端 SoC 通常 4 个 plane / 高端 6-8 个”和“通过 DisplayManager 获取 Overlay Plane 不足”缺公开来源。Android 应用侧没有稳定 public API 查询 HWC overlay plane 数量；setRelativeLayer 也不能写成普通业务可用的 HWC plane 分配手段。",
+          "suggestion": "把固定 plane 数改为设备实测/厂商文档口径；可执行验证改为 Perfetto SurfaceFlinger/Layer trace、dumpsys SurfaceFlinger、Winscope 或厂商 HWC 日志。App 侧建议限定为减少 Layer、控制 SurfaceView Z-order、降低 overlay UI 复杂度。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T12:32:07+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-12-7-15-frametimeline-atrace-sql-power",
+      "section": "7.15",
+      "section_title": "场景化性能作战手册",
+      "priority": 95,
+      "title": "FrameTimeline / atrace / SQL 口径与功耗排障入口需修正",
+      "description": "[Deep Tech Review] P0 2：atrace 0x200 不是 gfx+view，frame_timeline_event/graphics.frametimeline/SurfaceFlingerDeadlined 等口径错误。P1 1：功耗/发热投诉入口缺独立排障链。",
+      "issue_type": "source-accuracy/version-boundary/knowledge-gap",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-12-deep-review.md",
+        "https://raw.githubusercontent.com/google/perfetto/master/docs/data-sources/frametimeline.md",
+        "AOSP main: libcutils/include/cutils/trace.h"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/命令错误",
+          "location": "L66-L69 FrameTimeline fallback 与 gfx/view trace tag",
+          "detail": "debug.atrace.tags.enableflags 0x200 对应 ATRACE_TAG_VIDEO(1<<9)，不是 gfx + view；gfx 是 0x2，view 是 0x8，组合应为 0xA。L69 的 composeDisplay / handleMessageRefresh 也不是 android-14/15/16 的稳定 SF 源码锚点。",
+          "suggestion": "优先改成 Perfetto 配置 atrace_categories: gfx、view、sched；若保留 setprop，写 0xA 并说明只适合临时调试。SF fallback 锚点改为 onMessageReceived token / SurfaceFlinger::composite / Output::present / Output::composeSurfaces。"
+        },
+        {
+          "severity": "P0",
+          "type": "Perfetto SQL / 数据源错误",
+          "location": "L66、L97、L335、L481-L486 FrameTimeline/BufferStuffing 查询",
+          "detail": "Perfetto 官方文档给出的 SQL 表是 expected_frame_timeline_slice 与 actual_frame_timeline_slice，不是 frame_timeline_event；TraceConfig data source 是 android.surfaceflinger.frametimeline，不是 graphics.frametimeline；SurfaceFlingerDeadlined 不是官方 jank type。",
+          "suggestion": "SQL 改为查询 actual_frame_timeline_slice.jank_type；BufferStuffing 字符串按 trace_processor 实际输出校验（文档示例为 Buffer Stuffing）；jank type 列表改为 AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、DisplayHAL、PredictionError、Unknown。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区",
+          "location": "L157 大纲要求的功耗/发热投诉入口",
+          "detail": "正文已标注需补素材，但没有独立说明耗电/发热伴随卡顿时的第一观察点、trace 配置和优先排查路径。作为场景化手册，这会让“卡 + 热 + 掉电”的线上投诉缺少入口。",
+          "suggestion": "补一个“耗电/发热伴随卡顿”场景，至少覆盖 Battery Historian / batterystats、Perfetto power rails、Thermal/CPU frequency、wakelock、JobScheduler/WorkManager、网络重试与后台同步。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T12:32:07+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 283,
-    "p0_count": 38,
-    "last_updated": "2026-05-17T11:28:00+08:00",
+    "total_entries": 285,
+    "p0_count": 40,
+    "last_updated": "2026-05-17T12:32:07+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 146,
+    "pending_entries": 147,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 146
+    "pending": 147
   },
-  "last_updated": "2026-05-17T11:28:00+08:00",
+  "last_updated": "2026-05-17T12:32:07+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 146,
+  "pending": 147,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }
