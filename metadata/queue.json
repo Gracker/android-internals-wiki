@@ -10438,22 +10438,55 @@
       "completed_date": "2026-05-18T02:22:00+08:00",
       "completed_reason": "Task 2A 加工完成，章节状态已改为 ready-for-review，进入 Task 6 管线。",
       "drafted_file": "src/part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md"
+    },
+    {
+      "id": "task2a-gap-26.13-application-start-info-20260518",
+      "section": "26.13",
+      "section_title": "ApplicationStartInfo 与启动归因上报",
+      "priority": 80,
+      "title": "ApplicationStartInfo 与启动归因上报",
+      "description": "Android 15+ ApplicationStartInfo 已能提供启动原因、启动类型和阶段时间戳；Android 17 ProfilingTrigger 又新增冷启动触发。现有 26.12 是版本化总表，缺少面向线上 SDK 的启动归因上报协议。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-18T03:04:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/13-application-start-info.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+        "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 5,
+        "total": 19
+      }
     }
   ],
   "metadata": {
-    "total_entries": 302,
+    "total_entries": 303,
     "p0_count": 45,
-    "last_updated": "2026-05-18T00:09:00+08:00",
-    "updated_by": "task2a-content-processing",
-    "pending_entries": 142,
+    "last_updated": "2026-05-18T03:04:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 143,
     "updated_date": "2026-05-18",
     "last_updated_by": "task2a-content-processing",
     "pending": 142,
     "completed_entries": 158
   },
-  "last_updated": "2026-05-18T00:09:00+08:00",
-  "last_updated_by": "task2a-content-processing",
-  "pending": 142,
+  "last_updated": "2026-05-18T03:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 143,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }

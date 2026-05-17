@@ -1,6 +1,6 @@
 {
-  "total": 311,
-  "draft": 0,
+  "total": 312,
+  "draft": 1,
   "ready-for-review": 112,
   "finalized": 199,
   "task9_result": "needs-rework",
@@ -1239,8 +1239,8 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T01:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-18T03:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "01:08",
@@ -3571,6 +3571,18 @@
       "reviewed_date": "2026-05-18",
       "task9_state": "pending",
       "task9_result": "needs-rework"
+    },
+    "26.13": {
+      "title": "ApplicationStartInfo 与启动归因上报",
+      "file": "src/part5-app/ch26-observability/13-application-start-info.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
+      "gap_score": 19,
+      "queue_priority": 80,
+      "material_count": 4
     }
   },
   "task2b_rounds": [
@@ -3631,7 +3643,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T02:22:00+08:00",
+  "last_task2a_at": "2026-05-18T03:04:00+08:00",
   "last_task2a_section": "2.22",
   "last_task2a_file": "src/part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md",
   "last_task6_review": "2026-05-17",
@@ -3676,7 +3688,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-17T14:20:00+08:00",
-  "last_task2a_result": "processed-draft",
+  "last_task2a_result": "gap-mining",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-17T12:11:00+08:00",
@@ -4326,6 +4338,18 @@
       "gap_score": 14,
       "queue_priority": 80,
       "material_count": 3
+    },
+    "26.13": {
+      "title": "ApplicationStartInfo 与启动归因上报",
+      "file": "src/part5-app/ch26-observability/13-application-start-info.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
+      "gap_score": 19,
+      "queue_priority": 80,
+      "material_count": 4
     }
   },
   "task2a_last_processed": {
@@ -4336,13 +4360,16 @@
     "mode": "gap-mining"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-05-17",
+    "created_at": "2026-05-18T03:04:00+08:00",
     "created_sections": [
-      "16.7"
+      "26.13"
     ],
-    "qualified_candidates": 1,
-    "candidate_count": 3,
-    "mode": "official-doc-gap-mining"
+    "created_files": [
+      "src/part5-app/ch26-observability/13-application-start-info.md"
+    ],
+    "candidate_count": 5,
+    "qualified_count": 1,
+    "mode": "gap-mining"
   },
   "task9_last_sections": [
     "2.5"
