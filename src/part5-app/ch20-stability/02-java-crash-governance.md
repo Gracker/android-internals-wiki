@@ -2,22 +2,22 @@
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: '2026-05-11'
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
-task2b_result: "fixed"
+task2b_result: fixed
 reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "reviewed"
-task9_result: needs-rework
-task9_state: "pending"
-task2b_state: "fixed"
-pipeline_stage: "task9_pending"
+task6_state: revisiting
+task9_result: "needs-rework"
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -36,13 +36,13 @@ related_chapters:
 - '20.1'
 - '20.7'
 - '1.7'
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T18:20:00+08:00"
+last_task9_at: "2026-05-18T01:31:55+08:00"
 last_task9_audit: "2026-05-17"
-task9_review_notes: "2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
-last_task9_review_log: "logs/deep-review/2026-05-17-18-audit.md"
-reviewed_at: "2026-05-18T01:08:00+08:00"
+task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。UncaughtExceptionHandler 崩溃上报持久化链路不完整；RuntimeInit 异常类型与 Crash 分布数据需补证据。已写入 queue.json / suggestions.md。 | 2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
+last_task9_review_log: "logs/deep-review/2026-05-18-01-deep-review.md"
+reviewed_at: "2026-05-18T01:31:55+08:00"
 last_task6_at: "2026-05-18T01:08:00+08:00"
 task6_reviewed_date: "2026-05-18"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
@@ -114,16 +114,25 @@ Thread.UncaughtExceptionHandler defaultHandler =
 
 // 2. 注册自定义 handler
 Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-    // 收集 crash 信息并上报
-    CrashReport report = CrashReport.fromThrowable(thread, throwable);
-    CrashReporter.upload(report);
+    // 收集 crash 信息，生成最小 crash record
+    CrashRecord record = CrashRecord.fromThrowable(thread, throwable);
 
-    // 必须调用上一个 handler，否则进程不会正常退出
+    // 有界同步落盘——写入本地文件（如 app 私有目录或 DropBox）
+    // 注意：不能写入内存缓存，因为 KillApplicationHandler.finally 会
+    // 调用 Process.killProcess() + System.exit(10)，进程内存不会保留
+    CrashStore.persistSync(record);
+
+    // 如果有独立 crash 上报进程，可通过 IPC 转发
+    // CrashReporterService.forward(record);
+
+    // 必须链式调用上一个 handler，否则进程不会正常退出
     if (defaultHandler != null) {
         defaultHandler.uncaughtException(thread, throwable);
     }
 });
 ```
+
+[已验证: AOSP RuntimeInit.KillApplicationHandler finally 会执行 Process.killProcess() + System.exit(10)，崩溃进程内存不会保留，所以 crash 信息必须在 handler 内同步持久化到磁盘或转发给独立进程。]
 
 实操中三个容易踩的坑：
 
@@ -133,7 +142,13 @@ Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 
 **2. handler 中不能做耗时操作**
 
-自定义 handler 执行完后才会到 `KillApplicationHandler` 的 `System.exit(10)`。在 handler 中做磁盘 IO 或网络同步请求，会延迟进程退出时间，可能触发系统的 ANR watchdog。正确做法：crash 信息写入内存缓存，由独立进程或下次启动时上报。
+自定义 handler 执行完后才会到 `KillApplicationHandler` 的 `System.exit(10)`。在 handler 中做磁盘 IO 或网络同步请求，会延迟进程退出时间，可能触发系统的 ANR watchdog。`KillApplicationHandler.finally` 会执行 `Process.killProcess(Process.myPid())` 和 `System.exit(10)`——崩溃进程的内存不会保留到“下次启动”。所以 crash 信息的持久化策略只有三条路：
+
+1. **有界同步落盘**：在 handler 内将最小 crash record 写入本地文件（控制写入量和超时），下次启动时读取并上报
+2. **独立进程接力**：通过 ContentProvider / Binder / Socket 将 crash record 转发给常驻的 crash 上报进程，由该进程负责异步网络上报
+3. **DropBox 代持**：调用 `DropBoxManager.addData()` 写入系统 DropBox，进程退出后数据仍在磁盘
+
+不能把 crash 信息放在“内存缓存”里指望下次启动读取——进程被 kill 后内存内容全部丢失。
 
 **3. 初始化时机**
 
