@@ -5,7 +5,7 @@ section: "14.1"
 status: ready-for-review
 polish_count: 1
 drafted_date: "2026-04-03"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-17"
 reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -27,19 +27,21 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
-task6_result: needs-rework
+task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
-last_task6_at: "2026-05-05T19:14:00+08:00"
-task6_review_notes: "L1/L2 小修 12 处；新增 Network Profiler 锚点覆盖不足问题，已并入 queue.json；未自动晋升"
+last_task6_at: "2026-05-17T16:11:00+08:00"
+task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。L1/L2 小修 8 处，清理第一人称和填充式提示语；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 1 / P1 2；ProfilingManager trigger API、Network Inspector 入口与 profileable 能力边界需回炉。"
+last_task6_review_log: "logs/review/2026-05-17-16-review.md"
+
 ---
 
 
@@ -72,7 +74,7 @@ task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 1 / P
 
 ## 为什么需要了解 Android Studio Profiler
 
-当我们遇到一个性能问题——App 滑动卡顿、启动慢、内存泄漏、耗电快——脑子里冒出的第一个问题往往是："问题出在哪里？"在不知道问题位置的情况下，所有的优化方案都是盲猜。Android Studio Profiler 就是帮我们从"不知道"到"知道"的第一个工具。
+遇到 App 滑动卡顿、启动慢、内存泄漏、耗电快这类性能问题时，第一件事是确认问题位置。在不知道问题位置的情况下，所有优化方案都是盲猜。Android Studio Profiler 提供了从"不知道"走到"知道"的第一个入口。
 
 这个工具把 Google 已有的多个性能分析工具（Perfetto、Simpleperf、JVMTI 等）集成到 Android Studio 的 IDE 中，提供统一的界面和交互方式。它的优势在于：能在 IDE 里直接看到 CPU、内存、网络、功耗的实时数据，并在同一个窗口中点击跳转到源码，分析效率比在命令行和网页工具之间来回切换高得多。
 
@@ -138,9 +140,9 @@ Callstack Sample 最适合找"CPU 热点"——那些长时间占用 CPU 的方�
 
 把这三种模式放在一个决策框架中，选择逻辑是这样的：
 
-当面对一个性能问题、不知道问题出在哪里时，第一步永远用 System Trace。它的开销最低、数据最可信，能快速告诉我们：卡顿发生在主线程的哪个阶段？是 input 处理慢、动画计算慢、还是 measure/layout/draw 慢？是线程调度的问题（线程被挂起或者跑在了小核上），还是本身的执行就慢？
+面对一个性能问题、还不知道问题位置时，第一步永远用 System Trace。它的开销最低、数据最可信，能快速回答：卡顿发生在主线程的哪个阶段？是 input 处理慢、动画计算慢、还是 measure/layout/draw 慢？是线程调度的问题（线程被挂起或者跑在了小核上），还是本身的执行就慢？
 
-System Trace 定位到大致范围后，如果需要进一步看某个方法内部的调用关系和层级，第二步用 Callstack Sample。它能在可接受的开销下告诉我们：那个耗时很长的 draw 阶段，到底是哪个方法在吃 CPU？
+System Trace 定位到大致范围后，如果需要进一步看某个方法内部的调用关系和层级，第二步用 Callstack Sample。它能在可接受的开销下定位：那个耗时很长的 draw 阶段，到底是哪个方法在吃 CPU？
 
 只有当需要确认某个方法的具体调用链（比如"这个方法内部到底调了哪些子方法"），才使用 Method Trace。而且必须记住：Method Trace 报告的时间数据因为开销太大不能直接参考，它的主要价值是调用关系的全量记录。
 
@@ -168,15 +170,15 @@ Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一�
 
 Heap Dump 的分析有两个关键视角。第一个是按类名查看：找到实例数量异常多的类，比如 `MainActivity` 在堆中出现了 5 个实例——正常情况应该只有 1 个。第二个是按引用链查看：选中一个可疑对象，Profiler 会展示它的 GC Root 引用链，指明是哪条引用阻止了对象被回收——这是定位泄漏根因的关键信息。
 
-Profiler 还提供了自动检测 Activity 和 Fragment 泄漏的功能。它会标记出那些已经调用了 `onDestroy()` 但仍然在堆中存活的 Activity/Fragment 实例，帮我们快速定位最常见的一类泄漏。
+Profiler 还提供了自动检测 Activity 和 Fragment 泄漏的功能。它会标记出那些已经调用了 `onDestroy()` 但仍然在堆中存活的 Activity/Fragment 实例，帮助快速定位最常见的一类泄漏。
 
-需要注意，抓取 Heap Dump 的瞬间会暂停应用（stop-the-world），所以不要在生产环境或性能测试期间使用。
+抓取 Heap Dump 的瞬间会暂停应用（stop-the-world），所以不要在生产环境或性能测试期间使用。
 
 ### Allocation Tracking（分配追踪）
 
 Allocation Tracking 关注另一个问题："谁在频繁分配"。当在 Perfetto 中看到 GC 事件特别密集，或者 Memory Profiler 的实时曲线上出现锯齿状的快速波动，说明有大量的短生命周期对象被频繁创建和销毁——这就是内存抖动（Memory Churn）。
 
-点击 "Track Memory Consumption"（Java/Kotlin Allocations）任务，Profiler 会开始记录每个对象的分配事件：在哪个线程上、通过哪个调用栈、分配了多大的内存。这些信息能直接指引我们找到产生抖动的代码位置。
+点击 "Track Memory Consumption"（Java/Kotlin Allocations）任务，Profiler 会开始记录每个对象的分配事件：在哪个线程上、通过哪个调用栈、分配了多大的内存。这些信息会直接指向产生抖动的代码位置。
 
 Allocation Tracking 有两种模式：Full 和 Sampled。Full 模式记录所有分配事件，数据完整但开销较大；Sampled 模式按间隔采样，开销更低但可能遗漏。对于内存抖动这种"大量重复分配"的场景，Sampled 模式通常就足够了——因为抖动的来源是高频重复的模式，采样不会错过它。
 
@@ -188,7 +190,7 @@ Allocation Tracking 有两种模式：Full 和 Sampled。Full 模式记录所有
 
 CPU 方面的开销对比前文已有详细分析，此处不再重复。
 
-Memory 方面的开销也需要注意。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
+Memory 方面也有开销边界。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
 
 一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来 profiling。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许 Profiler 进行基本的性能分析，但跳过了 debug 构建中的额外检查和 hook。根据 Google 的测试数据，`profileable` 构建相比 `debuggable` 构建约有 28% 的性能提升，profiling 数据也更接近真实发布版本的表现。
 
@@ -235,7 +237,7 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 ## 使用 Profiler API 在代码中触发 profiling
 
-在某些场景下，我们希望 profiling 由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
+在某些场景下，profiling 需要由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
 
 `ProfilingManager` 允许 App 注册系统级的 profiling 触发器。Android 16 API 36 中公开的触发器类型包括：
 

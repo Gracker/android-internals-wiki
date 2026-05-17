@@ -47,23 +47,31 @@ related_chapters:
 section: '8.2'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-21'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-17"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: needs-rework
-task2b_state: "fixed"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T15:18:41+08:00"
 task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T13:20:00+08:00"
-task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1；ApplicationStartInfo 常量、setContentView 语义、App Startup 版本边界需回炉。"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-17T15:29:34+08:00"
+task9_review_notes: "2026-05-17 15 Task9 re-review: needs-rework。P0 1 / P1 1 / P2 1；ApplicationStartInfo startup state 数值与 START_REASON_CHANGED 仍错误，示例代码缺 timestamp key 判空；Zygote preload 80% 仍缺统计口径。"
+last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
+p0: 1
+p1: 1
+p2: 1
+last_task6_at: "2026-05-17T16:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-17-16-review.md"
+task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。L1/L2 小修 22 处，清理第一人称、结构性元叙述和填充词；既有 Task9 P0 队列仍 pending，未新增回炉项。"
+
 ---
 
 
@@ -98,11 +106,11 @@ task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 3 / P
 
 ## 为什么要了解 App 启动流程
 
-我们在 Perfetto 中打开一个冷启动的 Trace，看到的是一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长长的时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而我们能优化的部分只占其中一段。
+在 Perfetto 中打开一个冷启动 Trace，会看到一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而应用侧能优化的部分只占其中一段。
 
-这就是我们需要完整理解启动流程的原因。如果我们只知道 Application.onCreate 里不能做太多事，那我们能优化的范围就很有限。但如果我们知道从点击到首帧的完整路径，就能找到所有可能的优化切入点：哪些是系统开销我们无法改变的，哪些是应用侧可以加速的，哪些是可以通过缓存机制绕过的。
+这就是完整理解启动流程的原因。如果只知道 Application.onCreate 里不能做太多事，优化范围就很有限。掌握从点击到首帧的完整路径后，才能找到所有可能的优化切入点：哪些是系统开销无法改变，哪些是应用侧可以加速，哪些是可以通过缓存机制绕过。
 
-了解完整流程之后，我们能做之前做不到的事：在 Perfetto 中精确定位启动耗时的瓶颈环节，区分系统耗时和应用耗时，有针对性地制定优化策略，而不是盲目地在 Application.onCreate 里删几行代码。
+完整理解这条路径后，Perfetto 中的启动耗时才能被拆成具体瓶颈：区分系统耗时和应用耗时，针对不同环节制定优化策略，而不是盲目地在 Application.onCreate 里删几行代码。
 
 ## 冷启动、温启动、热启动：三种启动状态
 
@@ -139,7 +147,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 判断条件从代码层面看：system_server 中有目标进程的 ProcessRecord（`hasThread()` 返回 true，表示 ActivityThread 已绑定），但没有目标 Activity 的 ActivityRecord（或者 ActivityRecord 不可复用）。
 
-温启动的路径从上面的第 7 步开始，省去了 fork 进程、创建 Application 的开销。在 Perfetto 中我们会看到没有 "BindApplication" 这段，对于一个中等复杂度的应用，温启动通常比冷启动快 30%-50%。
+温启动的路径从上面的第 7 步开始，省去了 fork 进程、创建 Application 的开销。在 Perfetto 中不会看到 "BindApplication" 这段，对于一个中等复杂度的应用，温启动通常比冷启动快 30%-50%。
 
 ### 热启动：进程和 Activity 都在
 
@@ -151,7 +159,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 ### 在 Perfetto 中区分三种启动
 
-在 Perfetto 中，我们可以通过以下方式判断启动类型：
+在 Perfetto 中可以通过以下方式判断启动类型：
 
 - **冷启动**：存在 "BindApplication" slice，且能看到新进程的创建
 - **温启动**：没有 "BindApplication"，但有 "activityStart" 或 "launching" 标记
@@ -161,7 +169,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 ## 冷启动完整流程详解
 
-我们以冷启动为线索，把从用户点击到首帧绘制的完整路径走一遍。这不是源码级的堆栈追踪——那是 Debug 工具做的事——而是一个工程师给另一个工程师讲"每一步在干什么、为什么需要这一步、耗时大头在哪里"。
+以冷启动为线索，把从用户点击到首帧绘制的完整路径走一遍。这里关注工程化理解：每一步在干什么、为什么需要这一步、耗时大头在哪里；源码级堆栈追踪交给 Debug 工具。
 
 [来源: obsidian/Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md]
 
@@ -169,13 +177,13 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 用户在桌面上点击应用图标，Launcher 的 onClick 回调被触发。这看似一个简单的函数调用，背后却涉及多个系统组件的协调。
 
-Launcher 调用 startActivity()，经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService（ATMS）。ATMS 的 ActivityStarter 收到请求后，首先通过 ActivityMetricsLogger 记录一个时间戳——这个时间戳就是后续所有启动耗时度量的起点（TTID 的起点）。
+Launcher 调用 startActivity()，经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService（ATMS）。ATMS 的 ActivityStarter 收到请求后，会通过 ActivityMetricsLogger 记录一个时间戳——这个时间戳就是后续所有启动耗时度量的起点（TTID 的起点）。
 
 然后 ATMS 创建 ActivityRecord 和 Task（旧版本/Android 10 前后资料中常写 TaskRecord，Android 15 源码中任务容器类为 `services/core/java/com/android/server/wm/Task.java`），检查是否有可以复用的 Activity。冷启动场景下，答案是没有。ATMS 接着会向前一个处于 Resumed 状态的 Activity（通常是 Launcher）发送 Pause 请求。这个 Pause 请求通过 ClientLifecycleManager 机制发送到 Launcher 进程，Launcher 处理 onPause 后通过 Binder 通知 ATMS 完成。
 
 ATMS 确认 Pause 完成后，检查目标进程是否存在。冷启动场景下，目标进程不存在，于是通过 Local Socket 向 Zygote 发送 fork 请求。Zygote fork 出子进程后，将 PID 返回给 system_server。
 
-这一阶段的开销主要是：Binder IPC（2 次跨进程调用）、Zygote fork（创建新进程）、以及 system_server 内部的调度逻辑。在 Perfetto 中，我们可以在 system_server 进程中看到 "launching: xxx" 的 slice，在 app 进程中看到 "BindApplication" 的开始。
+这一阶段的开销主要是：Binder IPC（2 次跨进程调用）、Zygote fork（创建新进程）、以及 system_server 内部的调度逻辑。在 Perfetto 中，可以在 system_server 进程中看到 "launching: xxx" 的 slice，在 app 进程中看到 "BindApplication" 的开始。
 
 #### 16KB Page Size 对启动 I/O 的削峰作用
 
@@ -197,14 +205,14 @@ fork 出来的子进程从 ActivityThread.main() 开始执行。这个 main() �
 
 **通知 system_server 进程已就绪**。通过 Binder 调用 ATMS 的 attachApplication() 和 AMS 的 attachApplication()。ATMS 收到通知后，会继续后续的 Activity 启动流程。注意，这个时候主线程的 Looper.loop() 还没开始循环（或者刚开始），因为 attachApplication 的调用是在 main() 函数中同步完成的，而后续的消息处理要等 loop() 跑起来才行。
 
-AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一条 BIND_APPLICATION 消息。Looper 开始循环后处理这条消息时，创建 Application 对象。如果我们在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
+AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一条 BIND_APPLICATION 消息。Looper 开始循环后处理这条消息时，创建 Application 对象。如果 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
 
-1. Application.attachBaseContext()——这是我们能最早介入的回调
+1. Application.attachBaseContext()——这是应用侧最早能介入的回调
 2. Application.onCreate()——大多数 SDK 初始化代码放在这里
 
 [已验证: AOSP android-15.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java: handleBindApplication]
 
-这个阶段是应用侧启动耗时的重灾区。一个中等规模的应用可能在 Application.onCreate 中初始化 10-20 个 SDK（埋点、推送、网络、图片加载、数据库等），每个 SDK 几十到几百毫秒，加起来可能超过 1 秒。我们在后面的章节会专门讨论 Application.onCreate 的优化策略。
+这个阶段是应用侧启动耗时的重灾区。一个中等规模的应用可能在 Application.onCreate 中初始化 10-20 个 SDK（埋点、推送、网络、图片加载、数据库等），每个 SDK 几十到几百毫秒，加起来可能超过 1 秒。后续 8.3 会专门讨论 Application.onCreate 的优化策略。
 
 ### 第三阶段：Activity 创建与生命周期
 
@@ -236,7 +244,7 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。绘制操
 
 **performLayout**：从 DecorView 开始递归布局，确定每个 View 在父容器中的位置。
 
-**performDraw**：在硬件加速开启的情况下（Android 4.4+ 默认开启），View 的 onDraw() 并不真正执行绘制命令，而是将绘制指令记录到 DisplayList 中。然后 ViewRootImpl 向 RenderThread post 一个 DrawFrameTask，由 RenderThread 统一执行 OpenGL 绘制命令。
+**performDraw**：在硬件加速开启的情况下（Android 4.4+ 默认开启），View 的 onDraw() 并不直接执行绘制命令，而是将绘制指令记录到 DisplayList 中。然后 ViewRootImpl 向 RenderThread post 一个 DrawFrameTask，由 RenderThread 统一执行 OpenGL 绘制命令。
 
 RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回后，系统在 WMS/ActivityRecord 中记录 windows drawn 时间戳，这就是系统统计的 TTID 终点。SurfaceFlinger 在下一个 VSync-sf 信号到来时完成合成和送显，用户才能在屏幕上看到画面。
 
@@ -250,7 +258,7 @@ RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
-理解了启动流程之后，我们来看如何度量启动性能。Android 定义了两个关键指标：
+启动流程明确之后，下一步是度量启动性能。Android 定义了两个关键指标：
 
 ### TTID（Time To Initial Display）
 
@@ -385,7 +393,7 @@ ApplicationStartInfo 的 timestamp 是 monotonic nanoseconds（`System.nanoTime(
 
 ## 启动耗时的度量方法
 
-了解了指标定义之后，我们来看具体的度量工具。不同的工具有不同的精度和适用场景。
+指标定义明确之后，还要选择合适的度量工具。不同的工具有不同的精度和适用场景。
 
 ### adb am start -W：最直接的线下测量
 
@@ -431,7 +439,7 @@ adb logcat | grep -E "Displayed|Fully drawn"
 
 ### Perfetto：精确定位每个阶段
 
-Perfetto 是分析启动性能最重要的工具，因为它能让我们看到启动过程中每个阶段的精确耗时。
+Perfetto 是分析启动性能最重要的工具，因为它能展示启动过程中每个阶段的精确耗时。
 
 抓取启动 Perfetto 的推荐配置：
 
@@ -464,7 +472,7 @@ EOF
 
 system_server 和应用进程的采集条件要分开看。`atrace_categories: "am"` 负责拿到 system_server 里的启动切片；应用侧的 `performTraversals`、`DrawFrame`、`queueBuffer`、自定义 `Trace` marker 要靠 `atrace_apps` 打开目标进程的 atrace 通道。只配 category 不配 app，App 进程里的 `view` / `gfx` / `dalvik` slice 往往不会稳定出现。排查单个应用时填包名，做通用模板时可以改成 `atrace_apps: "*"`。
 
-在 Perfetto 中，我们应该关注这些关键 slice：
+在 Perfetto 中应关注这些关键 slice：
 
 | Slice 名称 | 所在进程 | 含义 |
 |---|---|---|
@@ -491,7 +499,7 @@ system_server 和应用进程的采集条件要分开看。`atrace_categories: "
 
 ## Application.onCreate 中常见的耗时操作
 
-理解了度量方法，我们来看应用侧优化的重点区域。Application.onCreate 是应用启动流程中开发者能控制的第一个回调，也是最常见的性能瓶颈所在。
+度量方法明确之后，再看应用侧优化的重点区域。Application.onCreate 是应用启动流程中开发者能控制的第一个回调，也是最常见的性能瓶颈所在。
 
 ### SDK 初始化：最大的耗时黑洞
 
@@ -523,7 +531,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 ### ContentProvider 初始化的隐藏陷阱
 
-[自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化，而 ContentProvider 的初始化发生在 Application.onCreate 之前（在 installContentProviders 中）。这意味着即使我们没有在 Application.onCreate 中显式初始化某个 SDK，它可能已经通过 ContentProvider 悄悄初始化了。来源: Android Developers Blog]
+[自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化，而 ContentProvider 的初始化发生在 Application.onCreate 之前（在 installContentProviders 中）。即使应用没有在 Application.onCreate 中显式初始化某个 SDK，它也可能已经通过 ContentProvider 悄悄初始化。来源: Android Developers Blog]
 
 这个问题可以通过 AndroidX App Startup（`startup-runtime`，支持 API 14+）来统一管理（见扩展小节）。App Startup 是 Jetpack 库，不是 Android 11 的平台能力，在 Android 11 之前同样可以使用。但它基于单个 `InitializationProvider`，无法自动接管未适配的三方 ContentProvider，未适配的 SDK 仍然需要手动排查 Manifest。
 
@@ -545,7 +553,7 @@ measure 阶段从 DecorView 开始递归调用每个 View/ViewGroup 的 onMeasur
 
 这两个阶段的开销取决于 View 树的复杂度。嵌套的 LinearLayout（尤其是 weight 属性）会导致多次 measure，RelativeLayout 也可能触发二次测量。优化布局结构（使用 ConstraintLayout 替代嵌套布局）可以显著减少这部分的耗时。
 
-### draw：真正画出像素
+### draw：记录与提交绘制命令
 
 measure 和 layout 完成后，就进入 draw 阶段。在硬件加速开启的情况下，这个过程分为两步：
 
@@ -615,7 +623,7 @@ class MySdkInitializer : Initializer<MySdk> {
 </provider>
 ```
 
-对于已经通过 ContentProvider 初始化的第三方 SDK，我们可以通过 App Startup 的手动初始化模式来接管它们的初始化时机，从而将初始化推迟到需要的时候。
+对于已经通过 ContentProvider 初始化的第三方 SDK，可以通过 App Startup 的手动初始化模式来接管它们的初始化时机，从而将初始化推迟到需要的时候。
 
 ## Zygote Preload 的贡献
 
@@ -623,7 +631,7 @@ class MySdkInitializer : Initializer<MySdk> {
 
 Android 系统启动时，Zygote 进程会预加载一批常用的类和资源。预加载类列表定义在 `frameworks/base/config/preloaded-classes`；预加载 Drawable 和 ColorStateList 定义在 `frameworks/base/core/res/res/values/arrays.xml` 的 `preloaded_drawables` 和 `preloaded_color_state_lists` 数组中。当 Zygote fork 出 App 进程时，这些预加载的类和资源通过 Copy-on-Write 机制共享给子进程。
 
-这意味着应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说，Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段（fork + init）通常只需要几十到一百多毫秒——如果每次都从零加载所有类，这个时间会翻好几倍。
+这些预加载内容让应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说，Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段（fork + init）通常只需要几十到一百多毫秒——如果每次都从零加载所有类，这个时间会翻好几倍。
 
 Zygote preload 的局限性在于：它只预加载系统级的类和资源，不会预加载应用自身的代码。Application 类、Activity 类、第三方 SDK 的类，都需要在 fork 后由子进程自己加载。这就是 Baseline Profile 的优化空间所在——通过提前编译应用侧的热点代码，减少类加载和 JIT 编译的开销。
 
