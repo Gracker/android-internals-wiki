@@ -1,6 +1,7 @@
 ---
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
+section: "13.16"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -13,7 +14,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-17"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-17T09:06:00+08:00"
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
@@ -30,11 +35,11 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/analysis/sql-tables"
   - type: research
-    path: "DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
+    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
   - type: material
-    path: "DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
+    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
   - type: material
-    path: "DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
+    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -58,10 +63,10 @@ sources:
 把开放式 trace 分析拆成可执行的 domain hints，说明每类问题的起手查询、下一跳和常见误判。
 
 ### 🔹 Wall time 与 CPU time 分离
-建立长耗时 slice 的基本判断流程：先查 `thread_state`，再区分 Running、Runnable、Sleeping、UninterruptibleSleep，避免把等待时间误判为计算开销。
+建立长耗时 slice 的基本判断流程：先查 `thread_state`，再区分 Running、Runnable、Sleeping、Uninterruptible Sleep，避免把等待时间误判为计算开销。
 
 ### 🔹 从局部异常到全局复核
-说明找到疑似瓶颈后，仍要检查全局 longest slice、D-state、Binder、FrameTimeline 和关键 counter，避免第一个异常被误认为根因。
+说明找到疑似瓶颈后，仍要检查全局最长 slice、D-state、Binder、FrameTimeline 和关键 counter，避免第一个异常被误认为根因。
 
 ### 🔹 输出模板：证据表、阻塞方、边界与补采建议
 定义最终报告结构：问题窗口、核心证据、根因链、排除项、可信度、补采字段、下一步优化动作。
@@ -84,7 +89,7 @@ sources:
 
 Agent 辅助 Perfetto 分析解决的不是“怎么打开 trace”，而是“怎么让一次 trace 调查能复查”。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的思路改写成 AIW 的工作协议：输入要收齐，SQL 要查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
 
-13.2 节已经覆盖 Trace 抓取，13.10 节已经覆盖 Perfetto SQL 常用模板，13.15 节展示了 BufferQueue 阻塞案例。本节只处理 Agent 调查流程本身：怎样提问、怎样取证、怎样避免早停。[来源: DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
+13.2 节已经覆盖 Trace 抓取，13.10 节已经覆盖 Perfetto SQL 常用模板，13.15 节展示了 BufferQueue 阻塞案例。在这三节基础上，13.16 聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免早停。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
 
 ## 协议定位：Perfetto 教程之外的调查规范
 
@@ -116,7 +121,7 @@ Agent 分析 trace 前必须拿到最小输入。输入越含糊，后面的查�
 
 `perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: android/skills profilers/perfetto-trace-analysis/SKILL.md]
 
-下面的模板用于约束 scratchpad 内容。重点不是排版，而是每条记录都能回到一次查询或一次 UI 观察。
+下面的模板用于约束 scratchpad 内容。排版只是附带要求，每条记录都要能回到一次查询或一次 UI 观察。
 
 ```markdown
 # trace.perfetto-trace_analysis.md
@@ -206,7 +211,7 @@ ORDER BY dur_ms DESC;
 
 ## 六类调查域：把开放问题拆成可执行动作
 
-`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: perfetto-trace-analysis/references/hints_*.md]
+`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/references/hints_*.md]
 
 | 调查域 | 触发条件 | 起手证据 | 下一跳 | 常见误判 |
 |---|---|---|---|---|
@@ -233,7 +238,7 @@ ORDER BY dur_ms DESC;
 
 `Running` 表示线程正在 CPU 上执行，后续要看子 slice、CPU 频率、采样栈和是否跑在慢核；`Runnable` 表示线程醒着但没拿到 CPU，后续要看同 CPU 竞争、IRQ、RT 线程和 idle 情况；`Sleeping` 常对应等事件、锁、Binder 回复或 futex；`Uninterruptible Sleep` 常指向 I/O 或内核不可中断等待，需要结合 `blocked_function`、kworker 和 block 事件判断。
 
-这里最容易错的是把等待时间写成“函数慢”。函数名出现在 slice 上，只说明这段时间处于该函数范围内；线程状态决定这段时间有没有在 CPU 上做计算。报告里应写成“`bindApplication` wall time 200ms，其中 Running 40ms、Runnable 20ms、Sleeping 140ms，主要等待发生在 Binder 返回前”，而不是简单写“`bindApplication` 耗时 200ms”。
+常见错误是把等待时间写成“函数慢”。函数名出现在 slice 上，只说明这段时间处于该函数范围内；线程状态决定这段时间有没有在 CPU 上做计算。报告里应写成“`bindApplication` wall time 200ms，其中 Running 40ms、Runnable 20ms、Sleeping 140ms，主要等待发生在 Binder 返回前”，不要只写“`bindApplication` 耗时 200ms”。
 
 ## 从局部异常到全局复核
 

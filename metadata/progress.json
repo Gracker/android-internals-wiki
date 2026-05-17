@@ -306,14 +306,13 @@
   ],
   "review_summary": "Task9 2026-05-17 08: review 13.16；P1 2 / P2 3。需补 thread_state raw 状态口径映射与 FrameTimeline/android.frames Android 10-17 版本边界；本轮仅 1 个章节符合 task9 pending 条件。",
   "task6_review_summary": {
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 7,
     "l3_issues": 0,
     "l4_issues": 0,
     "technical_risk_markers": 2,
     "total_issues": 0,
     "reviewed_sections": [
-      "13.15",
-      "26.11"
+      "13.16"
     ]
   },
   "issues_by_section": {
@@ -1249,28 +1248,28 @@
       "summary": "P1 2：thread_state raw state 与解释标签不一致；FrameTimeline/android.frames Android 10/11 与 12+ 版本边界未明确。P2 3：来源路径、stdlib 模块名、ch13 README 目录。"
     }
   },
-  "total_review_sections": 146,
+  "total_review_sections": 147,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T08:23:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-17T09:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-17",
-    "time": "06:16",
-    "reviewed_at": "2026-05-17T06:16:00+08:00",
+    "time": "09:06",
+    "reviewed_at": "2026-05-17T09:06:00+08:00",
     "sections": [
-      "26.12"
+      "13.16"
     ],
     "files": [
-      "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "log": "logs/review/2026-05-17-06-review.md",
+    "log": "logs/review/2026-05-17-09-review.md",
     "mode": "首次 review",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
     "technical_risk_markers": 2,
     "results": {
-      "26.12": "pass-light-edit / task9_pending"
+      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
     }
   },
   "task9_last_review": "2026-05-17T08:23:00+08:00",
@@ -3423,6 +3422,19 @@
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T06:16:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-06-review.md"
+    },
+    "13.16": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-17T09:06:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 85,
+      "last_task6_review_log": "logs/review/2026-05-17-09-review.md",
+      "last_task9_at": "2026-05-17T08:23:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-08-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -3490,41 +3502,35 @@
   "task9_last_reviewed_files": [
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
-  "total_review_files": 145,
+  "total_review_files": 147,
   "last_task2a_at": "2026-05-17T05:21:00+08:00",
   "last_task2a_section": "26.12",
   "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
-    "26.12"
+    "13.16"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
-  "last_task6_at": "2026-05-17T06:16:00+08:00",
+  "last_task6_at": "2026-05-17T09:06:00+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-16",
-    "time": "23:15",
-    "reviewed_at": "2026-05-16T23:15:00+08:00",
+    "date": "2026-05-17",
+    "time": "09:06",
+    "reviewed_at": "2026-05-17T09:06:00+08:00",
     "sections": [
-      "5.14",
-      "5.8",
-      "5.9"
+      "13.16"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-      "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "log": "logs/review/2026-05-16-23-review.md",
-    "mode": "首次 review / 复审抽查",
-    "l1_l2_fixes": 12,
-    "l3_l4_issues": 2,
-    "technical_risk_markers": 6,
+    "log": "logs/review/2026-05-17-09-review.md",
+    "mode": "首次 review",
+    "l1_l2_fixes": 7,
+    "l3_l4_issues": 0,
+    "technical_risk_markers": 2,
     "results": {
-      "5.14": "pass-light-edit / task9_pending",
-      "5.8": "needs-rework / task2b_pending",
-      "5.9": "needs-rework / task2b_pending"
+      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
     }
   },
   "last_task9_reviewed_files": [
@@ -3535,10 +3541,10 @@
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-17T06:16:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-17-06-review.md",
+  "task6_last_review_at": "2026-05-17T09:06:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-17-09-review.md",
   "task6_last_review_sections": [
-    "26.12"
+    "13.16"
   ],
   "sections_status": {
     "22.11": {
@@ -4063,6 +4069,27 @@
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T06:16:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-06-review.md"
+    },
+    "13.16": {
+      "title": "Agent 辅助 Perfetto 分析协议",
+      "file": "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "queue_priority": 85,
+      "gap_source": "研究素材+官方仓库",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "last_task6_at": "2026-05-17T09:06:00+08:00",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task9_at": "2026-05-17T08:23:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-09-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-08-deep-review.md"
     }
   },
   "task2a_last_processed": {
@@ -4096,21 +4123,27 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-17",
-    "time": "06:16",
-    "reviewed_at": "2026-05-17T06:16:00+08:00",
+    "time": "09:06",
+    "reviewed_at": "2026-05-17T09:06:00+08:00",
     "sections": [
-      "26.12"
+      "13.16"
     ],
     "files": [
-      "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "log": "logs/review/2026-05-17-06-review.md",
+    "log": "logs/review/2026-05-17-09-review.md",
     "mode": "首次 review",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
     "technical_risk_markers": 2,
     "results": {
-      "26.12": "pass-light-edit / task9_pending"
+      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
     }
-  }
+  },
+  "task6_last_review_files": [
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+  ],
+  "task6_last_reviewed_files": [
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+  ]
 }
