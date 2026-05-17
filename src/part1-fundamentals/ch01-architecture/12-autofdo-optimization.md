@@ -53,6 +53,7 @@ task2b_result: fixed
 last_task2b_at: "2026-04-29T12:42:48.185623"
 task2b_state: fixed
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-17"
 task9_result: pass-tech-review
 ---
 
