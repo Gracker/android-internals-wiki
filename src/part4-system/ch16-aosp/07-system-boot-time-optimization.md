@@ -1,8 +1,29 @@
 ---
 title: "Android 系统启动耗时优化与 bootanalyze"
 chapter: "16.7"
-status: draft
+status: ready-for-review
+drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-05-17"
+last_verified_against: "AOSP main; source.android.com 2025-07/2026-02; developer.android.com 2026-02"
+confidence: medium
+sources:
+  - type: official
+    path: "https://source.android.com/docs/core/perf/boot-times"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/kernel/boot-time-opt"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/boot-image-profiles"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: aosp
+    path: "system/extras/boottime_tools/bootanalyze/README.md"
+  - type: aosp
+    path: "system/extras/boottime_tools/bootio/README.md"
+  - type: aosp
+    path: "system/core/init/README.md"
+  - type: aosp
+    path: "system/core/bootstat/README.md"
 tags: [aosp, boot, boot-time, perfetto, performance]
 related_chapters: ["1.2", "8.2", "13.2", "16.1"]
 created_by: "task2a-knowledge-gap"
@@ -12,38 +33,157 @@ gap_source: "官方文档/AOSP结构"
 
 # 16.7 Android 系统启动耗时优化与 bootanalyze
 
-<!-- outline-start -->
-## 要点
+系统启动耗时优化处理的是平台启动路径：bootloader 把控制权交给 kernel，kernel 拉起 `init`，`init` 按 rc 规则挂载分区、启动 native service、拉起 Zygote，Zygote 再启动 `system_server`，直到系统服务和桌面进入可用状态。它和 App cold launch 的目标不同：前者关心设备从上电到可用的基线，后者关心单个应用进程从被调度到首帧提交的耗时。混用这两个口径，容易把系统分区 I/O、Zygote 预加载、Launcher 首帧、三方应用自启动算进同一个指标里，最终得不到可回归的结论。
 
-### 🔹 系统启动耗时的分段口径
-从 bootloader、kernel、init、Zygote、system_server 到 launcher ready 拆分系统启动耗时，区分平台侧 boot time 与 App cold launch 的统计边界。
+[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
 
-### 🔹 bootanalyze 与 boot_trace 的观察入口
-整理 AOSP `system/extras/boottime_tools` 中的 bootanalyze / boot_trace 使用场景，说明它们分别适合拆启动阶段耗时、文件读取和早期 I/O 访问。
+## 系统启动耗时的分段口径
 
-### 🔹 init rc、service class 与并行启动约束
-分析 init 服务启动顺序、class 分组、属性触发和关键服务依赖，解释系统启动阶段哪些路径能并行，哪些路径必须串行等待。
+平台侧 boot time 至少要拆成六段记录，单看总耗时只能回答“慢了多少”，回答不了“慢在哪里”。
 
-### 🔹 Zygote 与 system_server 的启动成本
-连接 1.2、1.11 和 16.6 节已有内容，聚焦 Zygote 预加载、system_server 服务初始化和 dexopt/profile 状态对系统 boot time 的影响。
+| 阶段 | 主要观察对象 | 常见指标 | 不能混入的内容 |
+|---|---|---|---|
+| Bootloader | UART log、kernel/ramdisk 加载、镜像解压 | bootloader duration、kernel entry time | Android userspace service |
+| Kernel | driver probe、模块加载、dm-verity、文件系统准备 | `init` 前 kernel uptime、driver probe time | Zygote / system_server |
+| First stage init | ramdisk、first stage mount、SELinux 初始策略 | 分区可挂载时间、早期 `init` action | `/data` 依赖的 service |
+| Second stage init | rc action、property trigger、service class | action 执行时间、service start time | App 冷启动 |
+| Zygote / system_server | class preload、system service 初始化、dexopt 状态 | Zygote ready、system_server ready | Launcher 自身业务初始化 |
+| Launcher ready | Launcher process、SystemUI、boot animation stop | `sys.boot_completed`、首屏可交互时间 | OTA 后首次编译成本的常态化归因 |
 
-### 🔹 I/O、page fault 与存储预热
-把启动早期文件读取、page fault、fsync / checkpoint、apex / odex 访问放到同一条分析线，给出 Perfetto 与 boot_trace 的互证方式。
+这张表的作用是统一口径。ROM 团队看版本回归时，应该固定起点、终点和排除项：例如 “power key → `sys.boot_completed=1`” 是用户可感知指标，“kernel start → `boot_complete` bootstat event” 更适合平台内部看 userspace 基线。OTA 后首次启动、数据分区加密状态变化、首次 dexopt、A/B checkpoint 都要单独打标签，否则同一台设备也会出现不可比较的样本。
 
-### 🔹 bootstat 与指标落库
-梳理 bootstat 记录的阶段指标、系统属性和统计口径，说明 ROM / 平台团队如何把单次 boot trace 变成可回归的版本指标。
+## bootanalyze、bootio 与启动 trace 的观察入口
 
-### 🔹 系统启动优化的安全边界
-列出不应牺牲的边界：安全策略初始化、存储解密、SELinux、关键系统服务可用性、OTA 后首次启动差异。
+AOSP 公开树里有三类入口：`bootanalyze` 拆 logcat / dmesg 中的阶段事件，`bootio` 记录启动期间进程 I/O，`io_analysis` 辅助检查文件读取、I/O trace 和 verity。当前 `system/extras/boottime_tools/` 目录没有名为 `boot_trace` 的固定工具；很多团队把“启动阶段采集 ftrace / Perfetto trace”的脚本简称为 boot trace，落到 AOSP 目录时要和 `bootio`、`io_analysis` 区分开。[已验证: AOSP main, system/extras/boottime_tools/]
 
-## 扩展
+`bootanalyze` 更适合回答“某个阶段从第几秒到第几秒”。它通过配置 `config.yaml` 里的 stop event 和事件匹配规则，从重启后的 logcat / dmesg 里抽取时间点。AOSP README 还保留了 userdebug、root、Linux、Python 和 bootchart 依赖的前置条件，因此它更像平台 bring-up 和实验室回归工具，不适合作为用户版本常驻采集方案。[已验证: AOSP main, system/extras/boottime_tools/bootanalyze/README.md]
 
-### 🔸 Android 16/17 AutoFDO、16KB page size 对 boot time 的间接影响
-对照 1.12、4.7 和 16.6 节，只记录系统级优化如何改变启动基线，不重复展开机制。
+这段配置只表达一个用法：把启动过程里的业务相关 log message 变成统一事件名，再让 `bootanalyze` 多轮采集取分布。
 
-### 🔸 OEM 定制启动阶段的可观测性缺口
-记录厂商定制服务、预装应用和私有守护进程对启动耗时的影响，后续可结合实机 trace 补证。
+```yaml
+stop_event: "sys.boot_completed"
+events:
+  zygote_start: "Starting service 'zygote'"
+  system_server_start: "SystemServer: Entered the Android system server"
+  boot_complete: "boot_complete"
+```
 
-<!-- outline-end -->
+事件名要贴合产品自己的日志，不要套用别的设备输出。不同 Android 版本、不同 init rc、不同 Launcher 都可能改变 log message，配置落库前要和原始 logcat / dmesg 对一次。
 
-> 本节内容待加工。
+`bootio` 更适合回答“哪个进程在启动期间读写了多少”。AOSP README 要求 kernel 打开 `CONFIG_TASKSTATS`、`CONFIG_TASK_DELAY_ACCT`、`CONFIG_TASK_XACCT` 和 `CONFIG_TASK_IO_ACCOUNTING`，并通过 `/data/misc/bootio/start` 控制采样窗口和样本数；采集完成后用 `adb shell bootio -p` 查看记录。[已验证: AOSP main, system/extras/boottime_tools/bootio/README.md]
+
+Perfetto 或 systrace 适合回答“某段等待发生在哪条线程、哪个 block/ext4 事件、哪个调度空洞”。AOSP 官方 boot time 文档仍以 systrace / ftrace 讲启动期分析，并给出 `trace_event=block,ext4` 的 kernel cmdline 方向；在现代分析工作流里，可以把相同的 ftrace 事件接入 Perfetto，再用 UI 或 `trace_processor` 查时序。[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
+
+工具选择可以按问题反推：
+
+- 阶段耗时漂移：用 `bootanalyze` 或产品内统一 boot event，从多轮样本看 P50 / P90。
+- 早期 I/O 变重：用 `bootio` 找进程维度，再用 ftrace / Perfetto 定位 block、ext4、page fault。
+- 某个 service 启动慢：从 init log、`init.svc.*` property、Perfetto 线程切片一起看，确认它是在执行、等待依赖，还是被 class / property trigger 推迟。
+- 回归指标落库：用 `bootstat` 记录命名事件，再按版本、设备、启动类型聚合。
+
+## init rc、service class 与并行启动约束
+
+`init` 的并行能力受 rc 语言模型限制。AOSP init README 明确把语言分成 Actions、Commands、Services、Options、Imports：Action 被 trigger 命中后进入队列；队列中的 action 依次出队，action 内 command 也按顺序执行；`init` 会在 command 之间处理设备创建、属性设置和进程重启等工作。[已验证: AOSP main, system/core/init/README.md]
+
+这个模型带来三个判断：
+
+- action 内的 `exec` 会阻塞后续 command，`exec_background` 不会阻塞；把长耗时检查放进 `exec`，会直接拉长 init 队列。
+- `class_start <serviceclass>` 启动同一 class 下尚未运行的 service，但 `disabled` service 不会随 class 自动启动，必须显式 `start`、`enable` 或由接口命令触发。
+- property trigger 只在条件满足时入队。类似 `on boot && property:x=y` 的组合里，如果 `boot` 事件已经过去，之后 property 才变成目标值，不会补执行这条 action。
+
+系统启动优化里，`init.rc` 常见瓶颈多半出在等待位置，单纯减少 service 数量解决不了。平台 service 如果必须在 `post-fs-data` 之后访问 `/data`，提前启动没有意义；只依赖 vendor 分区和设备节点的守护进程，放到过晚的 class 里会浪费并行窗口；调试或厂商统计 service 如果占住 `exec`，会把本可异步的准备工作变成串行等待。
+
+判断一条 rc 改动是否安全，要同时看依赖和失败后果：
+
+| 改动方向 | 可能收益 | 风险边界 |
+|---|---|---|
+| 拆分长 action | 缩短 init 队列被单个 command 占用的时间 | 拆错会改变 property 设置顺序 |
+| 把服务放入更早 class | 提前初始化硬件或 native daemon | 可能早于 SELinux、分区挂载、APEX 激活 |
+| 把阻塞检查改成后台执行 | 释放 init command 队列 | 后续服务可能读到未准备好的状态 |
+| 延后非首屏 service | 减少 boot completed 前资源竞争 | 可能影响 SystemUI、Launcher 或车机场景关键功能 |
+
+`updatable` service 还要单独看。AOSP README 描述了 APEX 场景：标记为 `updatable` 的服务如果在 APEX 激活完成前被启动，执行会被延迟到激活完成；未标记的服务不能被 APEX 覆盖。Android Q 之后主线模块增加，APEX 内 rc 和版本化 rc 文件会改变 service 出现的位置，boot time 回归分析不能只看 `/system/etc/init/hw/init.rc`。[已验证: AOSP main, system/core/init/README.md]
+
+## Zygote 与 system_server 的启动成本
+
+Zygote 和 `system_server` 的成本来自两类动作：一类是启动本身必须完成的初始化，另一类是为了后续 App 或系统服务运行更快而提前支付的成本。把这两类混到一起，会把“预加载导致 boot 变慢”和“预加载减少后续 App 成本”简单对立起来。
+
+ART 的 boot image profile 文档给出了更精确的入口。Android 11 之后，boot image profiles 会记录 boot classpath、Zygote 预加载类、system server 组件 profile 等信息，ART 用这些信息优化系统级 Java 代码；文档同时提醒，纳入过多方法或类会损害性能，需要基于关键用户旅程收集 profile 后筛选。[已验证: 官方文档, source.android.com/docs/core/runtime/boot-image-profiles]
+
+落到 boot time 分析，Zygote / `system_server` 不能只看“启动多久”。要分三项：
+
+- Zygote preload：预加载类和资源会增加启动阶段 CPU / I/O / page fault，但能减少后续进程重复初始化和内存占用。
+- system_server profile：`frameworks/base/services/art-profile` 影响 system server 方法编译、boot image 布局和执行效率。
+- dexopt / profile 状态：OTA 后首次启动、profile 缺失、system server jar 变化，都可能把编译或布局成本放到本次 boot 里。
+
+分析时应回连 1.2 节的进程模型和 16.1 节的源码阅读方法：如果 `system_server` 的某个服务初始化拖长，不要在本节重复讲服务机制，只记录它在 boot timeline 上的开始、结束、依赖和等待对象；服务内部原理放回对应机制章节。
+
+## I/O、page fault 与存储预热
+
+AOSP 官方 boot time 文档把 I/O efficiency 放在很高的位置，原因很直接：启动期间会读取大量系统、vendor、APEX、odex、资源和配置文件，任何无关读取都会和关键路径抢 flash 带宽、页缓存和 CPU 解压时间。文档中的 Pixel 示例提到，启动期读数据量可到 GB 级，filesystem tuning、dm-verity prefetch、read ahead、I/O scheduler 都可能改变启动表现。[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
+
+I/O 问题要分三层看：
+
+| 层级 | 现象 | 观察入口 | 处理方向 |
+|---|---|---|---|
+| 文件层 | 某些 apk、jar、apex、odex 被过早读取 | ftrace 文件访问、`bootio` 进程统计 | 延后读取、减少扫描、修正预加载清单 |
+| 块设备层 | block queue 等待、读放大、verity 校验成本 | `block` / `ext4` trace event | 调整 read ahead、verity prefetch、文件布局 |
+| 内存层 | major page fault、page cache 未命中、映射抖动 | Perfetto page fault / sched 关联 | 预热热点页、减少冷路径 mmap、检查 16 KB page size 差异 |
+
+早期存储优化不能只追求减少读取量。有些预热会让 boot completed 前的指标变差，但会减少 Launcher、SystemUI 或第一个关键应用的首屏等待；有些延后读取会让 boot 指标好看，却把成本转移到用户解锁后。平台指标要同时保留 “boot complete 前” 和 “first interactive path” 两个窗口。
+
+`fsync`、checkpoint 和 OTA 场景要单独标记。A/B OTA 后，metadata 更新、checkpoint 提交、dexopt 状态和 verity 校验都可能改变启动期 I/O；把 OTA 后首次启动样本混进普通冷启动，会让版本回归误判。`bootstat` 和产品内 metrics 至少要记录启动原因、是否 OTA 首启、是否 factory reset 后首启、是否加密状态变化。
+
+## bootstat 与指标落库
+
+`bootstat` 负责把 boot event 转成可聚合的指标。AOSP README 描述了四个常用能力：`-r` 记录命名事件的相对时间，`-p` 打印已经持久化的 boot event，`-l` 把事件写入 EventLog / Tron histogram，`--record_boot_reason` 记录启动原因。[已验证: AOSP main, system/core/bootstat/README.md]
+
+这段命令只展示最小工作流：记录事件，打印本机事件，再交给系统日志聚合。
+
+```bash
+adb shell bootstat -r boot_complete
+adb shell bootstat -p
+adb shell bootstat -l
+```
+
+`bootstat` 记录的是系统 uptime 下的相对时间，和 wall clock 不同。这个设计避开了早期时间未校准的问题，也意味着事件之间必须使用同一台设备、同一次启动里的 uptime 做比较。跨设备聚合时，字段至少包含 build fingerprint、branch、boot reason、启动类型、是否 OTA 首启、是否 userdebug、是否打开 bootchart / trace，否则实验采集本身会影响结果。
+
+平台团队把单次 trace 变成版本指标时，可以用三层数据：
+
+- 标准事件：`boot_complete`、Zygote start、system_server ready、boot animation stop 等，适合版本看板。
+- 阶段分解：bootloader、kernel、init、Zygote、system_server、Launcher ready，适合定位回归段。
+- 证据 trace：Perfetto / ftrace / bootio / logcat 原始文件，适合回放一次具体慢启动。
+
+指标落库的目标是保证每个回归点能回到一份原始证据，字段数量服务于这个目标。没有原始 trace 的 P90 漂移只能提示有问题，不能支撑改 rc、改 profile 或改 kernel 参数。
+
+## 系统启动优化的安全边界
+
+系统启动优化不能用“越早启动越好”做原则。下列路径不能为了数字牺牲：
+
+- 安全策略：SELinux policy、keystore / keymint、gatekeeper、verified boot 相关状态必须在依赖它们的服务前完成。
+- 存储与加密：`/data` 解密、metadata、checkpoint、A/B OTA 状态改变 service 可用性，不能把依赖 `/data` 的服务提前到未挂载窗口。
+- 关键系统服务：ActivityManager、PackageManager、PowerManager、SurfaceFlinger、SystemUI、Launcher 之间有可用性顺序，延后任何一个都要看用户可交互路径。
+- 硬件初始化：display、touch、audio、radio、camera、sensor 的 probe 与 HAL 启动可能影响首屏或车机场景安全需求，不能只按手机桌面场景评估。
+- 可观测性：关闭日志、trace 或统计能减少耗时，但如果让后续回归无法定位，收益要重新评估。
+
+官方 kernel boot time 文档里的建议也带着边界：strip module symbol、使用 LZ4、减少 driver logging、选择性启用 asynchronous probing、尽早 probe CPUfreq，都要求结合具体硬件验证；异步 probe 不能全量打开，官方文档说明 fork 线程和 probe 本身成本接近时收益会消失，慢总线、固件加载和大量硬件初始化才是优先对象。[已验证: 官方文档, source.android.com/docs/core/architecture/kernel/boot-time-opt]
+
+## 扩展：Android 16/17 AutoFDO、16 KB page size 对 boot time 的间接影响
+
+16 KB page size 已经有官方公开数据。Android Developers 文档写到，16 KB page size 设备平均会带来更快 App launch、较低 App launch 功耗、更快 camera launch，并给出系统 boot time 平均提升 8%、约 950 ms 的测试结果；文档也说明实际设备结果会不同，应用侧需要检查 native library 的 ELF segment 对齐。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+
+对平台 boot time 来说，16 KB page size 影响的是基线，单点 service 解释不了这种变化。page size 改变会影响页表、mmap、page fault、文件映射和 native library 对齐要求，因此同一条 boot trace 不能直接跨 4 KB / 16 KB 设备比较。AOSP 还提供 16 KB developer option 的配置路径，包括 `PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`、`BOARD_KERNEL_PATH_16K`、`BOARD_KERNEL_MODULES_16K` 和 4 KB / 16 KB boot OTA 切换包；这个开关用于兼容性测试，不能代表量产 16 KB 设备的性能表现。[已验证: 官方文档, source.android.com/docs/core/architecture/16kb-page-size/16kb-developer-option]
+
+AutoFDO 对 Android 16/17 boot time 的公开官方材料，本轮没有找到可直接引用的 AOSP / Android Developers 数字。[待验证] 工程上可以把它归入“编译与布局优化改变 CPU 热路径”的观察项：如果 kernel、ART 或系统 native binary 引入新的 profile-guided 优化，回归看板应把 build 配置、profile 版本和设备分支一起记录，避免把编译策略变化误判成 rc 或 I/O 优化。
+
+## 扩展：OEM 定制启动阶段的可观测性缺口
+
+OEM 定制启动慢，常见缺口通常出在私有服务没有统一事件名，单纯增加 trace 也不够。厂商守护进程、预装应用、私有 HAL、region config、开机广告、合规检查、安全 SDK 都可能出现在 boot completed 前；如果只看 AOSP 标准事件，这些成本会被归到“init 慢”或“system_server 慢”。
+
+可观测性要提前约定三件事：
+
+- 每个私有 service 在 start、ready、failed 三个位置写稳定 log tag，并把事件名接入 bootanalyze / bootstat 或内部 metrics。
+- 预装应用和私有守护进程要标注是否影响首屏可交互；不影响首屏的任务延后到 boot completed 后，再用后台调度策略控资源。
+- 每次 boot time 回归保留原始 logcat、dmesg、Perfetto、bootio 输出和 build 配置，避免只留下汇总数字。
+
+系统启动优化要落到一条原则：用统一口径拆阶段，再用工具把阶段变成证据，只改能被证据支持的等待、读取和初始化路径。没有证据的“提前启动”和“延后启动”，都可能把问题从 boot time 转移到首屏、稳定性或安全边界。
