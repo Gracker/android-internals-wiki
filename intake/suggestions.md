@@ -1824,3 +1824,17 @@
 - **位置**：frontmatter sources、L115、L126 Android Vitals 文档
 - **问题**：`support.google.com/googleplay/android-developer/answer/9844476` 当前不可访问；可验证页面是 `answer/9844486`，其中包含 user-perceived ANR/crash thresholds 与 input dispatching timed out 口径。
 - **建议**：把来源 URL 改为 `https://support.google.com/googleplay/android-developer/answer/9844486`，并在引用处补 28 天窗口、overall/per-device threshold。
+
+## [Task6 Review] 2.10 GPU 渲染深入 — 2026-05-17
+- **类型**：需补充素材
+- **位置**：实战案例：社交应用图片滚动中的 GPU 瓶颈定位
+- **问题**：正文仍保留 [需补充素材] 标注；案例包含设备、帧耗时、帧率和优化收益，但缺真实 Perfetto/AGI 截图、采样条件或匿名复现说明。
+- **建议**：补一手 Trace/AGI 证据与测试条件；如果只是示意案例，改成“示例场景”并删除固定收益数值。
+- **review 日志**：logs/review/2026-05-17-12-review.md
+
+## [Task6 Review] 20.6 稳定性度量与指标体系 — 2026-05-17
+- **类型**：需补充素材
+- **位置**：“行业参考值”“行业对标参考”两张表
+- **问题**：正文仍保留 [需补充素材] 标注；“微信公开分享”“头部电商”等对标值缺具体出处，且容易被读者当成公开事实。
+- **建议**：补公开演讲、官方文档或内部指标口径；补不到则删公司名和确定数值，改成匿名经验区间并标注适用边界。
+- **review 日志**：logs/review/2026-05-17-12-review.md

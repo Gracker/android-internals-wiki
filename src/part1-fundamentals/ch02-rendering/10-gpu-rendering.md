@@ -36,7 +36,7 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-12'
+reviewed_date: '2026-05-17'
 reviewed_by: openclaw-task6
 rework_date: '2026-04-21'
 rework_by: openclaw-task2b
@@ -45,12 +45,12 @@ last_polish_notes: 第2轮出版级精修：修复applicable_versions范围、AN
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: needs-rework
 task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-05-11T23:28:02+08:00"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处；参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据，已写入 queue。"
 review_type: task6-writing-quality-review
@@ -60,6 +60,8 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-14T03:44:00+08:00'
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
 last_task2b_at: "2026-05-17T11:26:41"
+last_task6_at: "2026-05-17T12:11:00+08:00"
+task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（代码围栏标语言 2 处、清嗓式\"问题是\"规避 1 处）；实战案例仍缺一手 Trace/AGI 证据，已合并到 queue。"
 ---
 
 
@@ -499,7 +501,7 @@ unlock(BufferHandle) -> release_fence
 
 **完整对象链**：
 
-```
+```text
 App (Java/Kotlin)
     ├── android.graphics.Bitmap (HARDWARE)
     │    mNativeBitmap = AHardwareBuffer*（无 Java heap，像素全在 GPU 显存）
@@ -929,7 +931,7 @@ AGI 是一个**离线分析工具**，工作模式：
 使用边界如下：
 - **AGI 不能用于实时生产监控**：无法在已上线应用上持续监控 GPU 状态
 - **AGI 适合开发阶段和预发布测试**：在受控环境中录制典型场景的 GPU Trace，再做深度分析
-- **AGI 需要可复现的场景**：GPU 问题是偶发的还是稳定的，决定了录制策略
+- **AGI 需要可复现的场景**：GPU 问题偶发还是稳定，决定录制策略
 
 #### AGI vs Perfetto：分工定位
 
@@ -1022,7 +1024,7 @@ Mali 的 `gpu_render_stages` 在 Perfetto 中通常比 Adreno 更细粒度——
 
 #### 完整排查流程
 
-```
+```text
 问题现象：掉帧 / 卡顿 / 发热
     │
     ├─ 主线程 doFrame 耗时正常

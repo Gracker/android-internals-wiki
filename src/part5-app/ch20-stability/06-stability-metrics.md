@@ -19,12 +19,12 @@ sources:
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: pending
+task2b_result: pending
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: 2026-05-17
 task6_result: needs-rework
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
@@ -37,6 +37,8 @@ last_task2b_at: "2026-05-17T11:26:41"
 p0: 0
 p1: 3
 p2: 1
+last_task6_at: "2026-05-17T12:11:00+08:00"
+task6_review_notes: "2026-05-17 Task6 12: L1/L2 无正文改动；正文仍有行业对标来源待补，且 Task9 已有 needs-rework 队列项，本轮确认并合并回炉。"
 ---
 
 # 稳定性度量与指标体系

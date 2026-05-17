@@ -157,7 +157,8 @@
     "13.17",
     "4.3",
     "5.10",
-    "20.6"
+    "20.6",
+    "12.5"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -310,18 +311,20 @@
     "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
     "src/part1-fundamentals/ch04-memory/03-art-memory.md",
     "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md"
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
   "review_summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 19,
-    "l3_issues": 0,
+    "l1_l2_fixes": 6,
+    "l3_issues": 2,
     "l4_issues": 0,
-    "technical_risk_markers": 7,
-    "total_issues": 0,
+    "technical_risk_markers": 2,
+    "total_issues": 2,
     "reviewed_sections": [
-      "4.3",
-      "5.10"
+      "2.10",
+      "20.6",
+      "12.5"
     ]
   },
   "issues_by_section": {
@@ -490,7 +493,13 @@
       "p0": 2,
       "p1": 1,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "needs-rework",
+      "l3": 1,
+      "l4": 0,
+      "reviewed_at": "2026-05-17T12:11:00+08:00",
+      "log": "logs/review/2026-05-17-12-review.md",
+      "summary": "实战案例仍缺一手 Trace/AGI 证据；Task9 另有源码路径/Perfetto counter pending。"
     },
     "21.5": {
       "p0": 1,
@@ -778,9 +787,12 @@
       "p0": 0,
       "p1": 3,
       "p2": 1,
-      "reviewed_at": "2026-05-17T11:28:00+08:00",
-      "log": "logs/deep-review/2026-05-17-11-deep-review.md",
-      "summary": "P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。"
+      "reviewed_at": "2026-05-17T12:11:00+08:00",
+      "log": "logs/review/2026-05-17-12-review.md",
+      "summary": "行业对标/阈值来源仍未闭合；Task9 needs-rework 队列继续 pending。",
+      "task6_result": "needs-rework",
+      "l3": 1,
+      "l4": 0
     },
     "23.8": {
       "p0": 0,
@@ -1266,32 +1278,36 @@
       "p3": 1
     }
   },
-  "total_review_sections": 151,
+  "total_review_sections": 152,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T11:28:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-17T12:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-17",
-    "time": "11:14",
-    "reviewed_at": "2026-05-17T11:14:00+08:00",
+    "time": "12:11",
+    "reviewed_at": "2026-05-17T12:11:00+08:00",
     "sections": [
-      "4.3",
-      "5.10"
+      "2.10",
+      "20.6",
+      "12.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch20-stability/06-stability-metrics.md",
+      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
     ],
-    "log": "logs/review/2026-05-17-11-review.md",
-    "mode": "Task2B 回炉修复后复审",
-    "l1_l2_fixes": 19,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 7,
+    "log": "logs/review/2026-05-17-12-review.md",
+    "mode": "首次 review / 回炉复查混合批次",
+    "l1_l2_fixes": 6,
+    "l3_l4_issues": 2,
+    "technical_risk_markers": 2,
     "results": {
-      "4.3": "pass-light-edit / task9_pending",
-      "5.10": "pass-light-edit / task9_pending"
-    }
+      "2.10": "needs-rework / queue_pending",
+      "20.6": "needs-rework / queue_pending",
+      "12.5": "pass-light-edit / task9_pending"
+    },
+    "auto_promoted": []
   },
   "task9_last_review": "2026-05-17T11:28:00+08:00",
   "ready_to_publish": 196,
@@ -1510,10 +1526,10 @@
     "20.6": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T19:12:00+08:00",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
       "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-12-19-review.md",
+      "queue_priority": 95,
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md",
       "title": "稳定性度量与指标体系",
       "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
       "task9_state": "reviewed",
@@ -1521,7 +1537,8 @@
       "last_task9_at": "2026-05-17T11:28:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
       "task2b_state": "pending",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task6_state": "reviewed"
     },
     "21.2": {
       "status": "ready-for-review",
@@ -1611,12 +1628,18 @@
     "2.10": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T23:18:00+08:00",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 95,
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T03:44:00+08:00"
+      "last_task9_at": "2026-05-14T03:44:00+08:00",
+      "title": "GPU 渲染深入",
+      "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     },
     "2.14": {
       "status": "ready-for-review",
@@ -3499,6 +3522,17 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries"
+    },
+    "12.5": {
+      "title": "ConnectivityService 与网络状态监听性能",
+      "file": "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     }
   },
   "task2b_rounds": [
@@ -3572,41 +3606,47 @@
     "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "total_review_files": 151,
+  "total_review_files": 152,
   "last_task2a_at": "2026-05-17T05:21:00+08:00",
   "last_task2a_section": "26.12",
   "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
-    "4.3",
-    "5.10"
+    "2.10",
+    "20.6",
+    "12.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
-  "last_task6_at": "2026-05-17T11:14:00+08:00",
+  "last_task6_at": "2026-05-17T12:11:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-17",
-    "time": "11:14",
-    "reviewed_at": "2026-05-17T11:14:00+08:00",
+    "time": "12:11",
+    "reviewed_at": "2026-05-17T12:11:00+08:00",
     "sections": [
-      "4.3",
-      "5.10"
+      "2.10",
+      "20.6",
+      "12.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch20-stability/06-stability-metrics.md",
+      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
     ],
-    "log": "logs/review/2026-05-17-11-review.md",
-    "mode": "Task2B 回炉修复后复审",
-    "l1_l2_fixes": 19,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 7,
+    "log": "logs/review/2026-05-17-12-review.md",
+    "mode": "首次 review / 回炉复查混合批次",
+    "l1_l2_fixes": 6,
+    "l3_l4_issues": 2,
+    "technical_risk_markers": 2,
     "results": {
-      "4.3": "pass-light-edit / task9_pending",
-      "5.10": "pass-light-edit / task9_pending"
-    }
+      "2.10": "needs-rework / queue_pending",
+      "20.6": "needs-rework / queue_pending",
+      "12.5": "pass-light-edit / task9_pending"
+    },
+    "auto_promoted": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch04-memory/03-art-memory.md",
@@ -3617,11 +3657,12 @@
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-17T11:14:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-17-11-review.md",
+  "task6_last_review_at": "2026-05-17T12:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-17-12-review.md",
   "task6_last_review_sections": [
-    "4.3",
-    "5.10"
+    "2.10",
+    "20.6",
+    "12.5"
   ],
   "sections_status": {
     "22.11": {
@@ -4214,16 +4255,43 @@
       "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md"
     },
     "20.6": {
-      "title": "稳定性度量与指标体系",
-      "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
+      "task6_result": "needs-rework",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md",
+      "title": "稳定性度量与指标体系",
+      "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-17T11:28:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
       "task2b_state": "pending",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task6_state": "reviewed"
+    },
+    "2.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
+      "task6_result": "needs-rework",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "title": "GPU 渲染深入",
+      "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
+    },
+    "12.5": {
+      "title": "ConnectivityService 与网络状态监听性能",
+      "file": "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-17T12:11:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     }
   },
   "task2a_last_processed": {
@@ -4263,32 +4331,38 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-17",
-    "time": "11:14",
-    "reviewed_at": "2026-05-17T11:14:00+08:00",
+    "time": "12:11",
+    "reviewed_at": "2026-05-17T12:11:00+08:00",
     "sections": [
-      "4.3",
-      "5.10"
+      "2.10",
+      "20.6",
+      "12.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch20-stability/06-stability-metrics.md",
+      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
     ],
-    "log": "logs/review/2026-05-17-11-review.md",
-    "mode": "Task2B 回炉修复后复审",
-    "l1_l2_fixes": 19,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 7,
+    "log": "logs/review/2026-05-17-12-review.md",
+    "mode": "首次 review / 回炉复查混合批次",
+    "l1_l2_fixes": 6,
+    "l3_l4_issues": 2,
+    "technical_risk_markers": 2,
     "results": {
-      "4.3": "pass-light-edit / task9_pending",
-      "5.10": "pass-light-edit / task9_pending"
-    }
+      "2.10": "needs-rework / queue_pending",
+      "20.6": "needs-rework / queue_pending",
+      "12.5": "pass-light-edit / task9_pending"
+    },
+    "auto_promoted": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ]
 }

@@ -4158,7 +4158,8 @@
       ],
       "material_paths": [
         "intake/suggestions.md",
-        "logs/deep-review/2026-05-14-03-deep-review.md"
+        "logs/deep-review/2026-05-14-03-deep-review.md",
+        "intake/suggestions.md（含 review 意见）"
       ],
       "review_issues": [
         {
@@ -4181,8 +4182,17 @@
           "location": "L811-L828：Android 16 标准化 gpu_busy 与 GpuCounterConfig 示例",
           "detail": "复核 android16-qpr2 Perfetto GpuCounterConfig 仅有 counter_period_ns、repeated counter_ids、instrumented_sampling、fix_gpu_clock；无 gpu_id 字段。正文还声称 Android 16 要求所有厂商提供 gpu_busy 标准别名，但缺 CDD/Perfetto producer 证据。",
           "suggestion": "删除 gpu_id；配置示例改为 counter_period_ns + counter_ids。gpu_busy 改成“若设备/producer 暴露统一名称则可用”，并补充从 data source descriptor 枚举 counter ID/name 的方法。"
+        },
+        {
+          "severity": "P2",
+          "type": "需补充素材",
+          "location": "实战案例：社交应用图片滚动中的 GPU 瓶颈定位",
+          "detail": "Task6 2026-05-17 复查发现正文仍保留 [需补充素材] 标注；案例给出设备、帧耗时、帧率和优化收益，但缺真实 Perfetto/AGI 截图或可匿名复现测试条件。",
+          "suggestion": "Task2B 补一手 Trace/AGI 证据与测试条件；如果只是示意案例，改为“示例场景”并删除固定收益数值。"
         }
-      ]
+      ],
+      "last_task6_reviewed_at": "2026-05-17T12:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     },
     {
       "id": "task9-20260514-2.14-vulkan-version-proto-sources",
@@ -4474,7 +4484,8 @@
       ],
       "material_paths": [
         "logs/deep-review/2026-05-14-05-deep-review.md",
-        "logs/deep-review/2026-05-17-11-deep-review.md"
+        "logs/deep-review/2026-05-17-11-deep-review.md",
+        "intake/suggestions.md（含 review 意见）"
       ],
       "review_issues": [
         {
@@ -4532,10 +4543,19 @@
           "location": "L65、L177-L184、L287-L297 稳定性行业阈值",
           "detail": "Firebase Crashlytics 官方 crash-free metrics 文档定义了 Crash-Free Users/Sessions 的计算口径，但没有把 99.5% 写成官方发版门禁；“微信公开分享”“头部电商”“中型应用/长尾应用”仍是未溯源对标值。正文虽加了“匿名行业经验区间”，但表格继续给具体公司/产品级别数字，容易被读者当成公开事实。",
           "suggestion": "把 99.5/99.8/0.1/0.2 统一降级为“示例 SLO/匿名经验区间”，或补公开演讲/内部看板口径；不要把 Firebase metrics 定义写成 Firebase 推荐阈值。"
+        },
+        {
+          "severity": "P2",
+          "type": "需补充素材",
+          "location": "“行业参考值”“行业对标参考”两张表",
+          "detail": "Task6 2026-05-17 复查发现正文仍保留 [需补充素材] 标注；“微信公开分享”“头部电商”等对标值缺具体出处或需要统一降级为匿名经验区间。",
+          "suggestion": "Task2B 补公开演讲/官方文档/内部指标口径；补不到则删除公司名和确定数值，改成匿名经验区间并标注适用边界。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T05:50:18+08:00"
+      "added_at": "2026-05-14T05:50:18+08:00",
+      "last_task6_reviewed_at": "2026-05-17T12:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     },
     {
       "id": "task6-23.8-memory-case-studies-case-evidence-20260514",
