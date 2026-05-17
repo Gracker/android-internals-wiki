@@ -1857,3 +1857,16 @@
 - **位置**：L195 `profileable` 相比 `debuggable` 约 28% 性能提升
 - **问题**：正文把“28% 性能提升”写成 Google 测试数据，但本节参考资料没有给出对应 release note、benchmark 场景、设备、指标或链接。该数值会直接影响读者选择 profiling 构建类型。
 - **建议**：补 Android Studio / Android Developers 原始出处和测试条件；若来源实际是 Koala Profiler 任务启动速度“up to 60% faster”等其他指标，应改成正确对象；补不齐则删除 28% 数值，只保留 profileable 低扰动的定性判断。
+
+
+## [Task9 Deep Review] 13.3 Perfetto View 解读 — 2026-05-17
+- **类型**：源码准确性
+- **位置**：Counter Track（约第 238 行）
+- **问题**：正文把 Counter Track 的 Java 侧来源写成 `Trace.traceCounter()`；在 AOSP android-16.0.0_r1 中该方法是 `@hide` / `@SystemApi(client = MODULE_LIBRARIES)`，普通 App 可用的公开入口是 `Trace.setCounter(String, long)`。
+- **建议**：改成“App 侧用 `Trace.setCounter()`，平台/系统模块可见 `Trace.traceCounter()`，native 侧用 `ATRACE_INT` / `ATRACE_INT64`”，避免读者按隐藏 API 写示例。
+
+## [Task9 Deep Review] 13.3 Perfetto View 解读 — 2026-05-17
+- **类型**：版本差异
+- **位置**：FrameTimeline Track（约第 201 行）
+- **问题**：正文列举 `Jank Type` 时使用空格化名称，并把 `Dropped Frame` 与 jank type 并列；Perfetto 官方 FrameTimeline 文档中的类型名是 `AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError`，蓝色 Dropped frame 明确标注为“Not related to jank”。
+- **建议**：保留中文解释，但在括号中补官方枚举名；把 Dropped frame 单独放到“帧状态/颜色”说明里，不作为 `Jank Type` 枚举。

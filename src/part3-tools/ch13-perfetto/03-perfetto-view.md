@@ -41,16 +41,18 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_result: pass-tech-review
+task9_result: "needs-rework"
 last_task2b_at: "2026-04-26T01:40:00+08:00"
 task2b_fixed_by: openclaw-task2b
-updated_date: "2026-04-26"
-updated_by: openclaw-task2b
+updated_date: "2026-05-17"
+updated_by: "openclaw-task9-audit"
+last_task9_audit: "2026-05-17"
+last_task9_at: "2026-05-17T17:27:00+08:00"
 ---
 
 
