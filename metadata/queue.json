@@ -9248,7 +9248,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
@@ -9261,7 +9261,9 @@
       ],
       "gap_score": 16,
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-17T09:14:00+08:00"
+      "added_at": "2026-05-17T09:14:00+08:00",
+      "completed_date": "2026-05-17",
+      "completed_reason": "Task 2A 加工完成：Perfetto SDK 应用内追踪章节 status → ready-for-review"
     }
   ],
   "metadata": {
