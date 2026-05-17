@@ -1,7 +1,7 @@
 {
   "total": 311,
-  "draft": 1,
-  "ready-for-review": 111,
+  "draft": 0,
+  "ready-for-review": 112,
   "finalized": 199,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -3631,8 +3631,8 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-17T16:04:00+08:00",
-  "last_task2a_section": "12.6",
+  "last_task2a_at": "2026-05-18T02:22:00+08:00",
+  "last_task2a_section": "2.22",
   "last_task2a_file": "src/part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
@@ -3676,7 +3676,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-17T14:20:00+08:00",
-  "last_task2a_result": "drafted",
+  "last_task2a_result": "processed-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-17T12:11:00+08:00",
