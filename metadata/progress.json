@@ -1,7 +1,7 @@
 {
   "total": 305,
-  "draft": 1,
-  "ready-for-review": 106,
+  "draft": 0,
+  "ready-for-review": 107,
   "finalized": 198,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -3439,8 +3439,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "26.11",
-  "last_task2a_processed_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
+  "last_task2a_processed": "16.7",
+  "last_task2a_processed_file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
     "sections": [
@@ -4262,5 +4262,6 @@
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md",
     "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
-  ]
+  ],
+  "last_task2a_date": "2026-05-17"
 }

@@ -9616,7 +9616,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md"
@@ -9634,7 +9634,10 @@
         "时效性": 3
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-17T13:04:00+08:00"
+      "added_at": "2026-05-17T13:04:00+08:00",
+      "completed_date": "2026-05-17",
+      "completed_by": "task2a-content-processing",
+      "completed_reason": "空 draft 章节已加工，status 更新为 ready-for-review"
     },
     {
       "id": "task9-20260517-14.1-profiler-profilingmanager-api",
