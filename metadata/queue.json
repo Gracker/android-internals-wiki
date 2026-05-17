@@ -10214,6 +10214,36 @@
       "last_reviewed_at": "2026-05-17T20:11:00+08:00",
       "review_log": "logs/deep-review/2026-05-17-19-deep-review.md",
       "task6_review_log": "logs/review/2026-05-17-20-review.md"
+    },
+    {
+      "id": "task9-audit-21.8-application-start-info-fully-drawn",
+      "section": "21.8",
+      "priority": 85,
+      "title": "ApplicationStartInfo completion listener 的 FULLY_DRAWN 语义缺失",
+      "description": "正文未说明 addApplicationStartInfoCompletionListener() 在首帧完成时回调、不等待 reportFullyDrawn；用于 Android 15+ TTFD/FULLY_DRAWN 校准时可能读不到 START_TIMESTAMP_FULLY_DRAWN。",
+      "issue_type": "version-differences-api-semantics",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "created_at": "2026-05-17T20:29:00+08:00",
+      "added_by": "task9-deep-tech-review-audit",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/08-startup-monitoring.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-20-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API 语义",
+          "location": "L221-L227 Android 15+ 的平台启动信息",
+          "detail": "AOSP android-15.0.0_r1 ActivityManager.addApplicationStartInfoCompletionListener 文档写明 startup 在 first frame drawn 时即 considered complete；callback 不等待 Activity.reportFullyDrawn。如需 START_TIMESTAMP_FULLY_DRAWN，必须在 reportFullyDrawn 之后再取 ApplicationStartInfo 副本。正文把 getHistoricalProcessStartReasons() 和 completion listener 并列为启动信息入口，但未说明 FULLY_DRAWN/TTFD 的读取限制，容易误导线上用 listener 直接校准 TTFD。",
+          "suggestion": "补充：completion listener 只保证首帧完成；TTFD/FULLY_DRAWN 校准必须先让业务调用 Activity.reportFullyDrawn()，再通过 getHistoricalProcessStartReasons() 或完成后的 ApplicationStartInfo 副本读取 START_TIMESTAMP_FULLY_DRAWN；同时保留 Android 15/API 35+ 适用范围。"
+        }
+      ]
     }
   ],
   "metadata": {

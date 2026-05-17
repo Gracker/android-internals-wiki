@@ -1885,3 +1885,8 @@
 - **建议**：Task2B 在 Task9 技术复核后，把可用内容整合进“厂商调度策略差异”或“与其他机制的关系”，不可验证的 vendor 路径/OEM 名称降级为待验证或移出正文。
 - **review 日志**：logs/review/2026-05-17-20-review.md
 
+## [Task9 Idle Audit] 21.8 启动监控与度量 — 2026-05-17
+- **类型**：源码引用 / 官方文档链接新鲜度
+- **位置**：frontmatter `sources` L15-L16
+- **问题**：`https://developer.android.com/topic/performance/appstartup` 当前返回 404；同一文档族的 `appstartup/analysis-optimization` 与 `appstartup/best-practices` 可访问。frontmatter 继续保留父路径会让后续复核无法定位官方证据。
+- **建议**：把父路径替换为 `https://developer.android.com/topic/performance/appstartup/analysis-optimization`，如需最佳实践再补 `https://developer.android.com/topic/performance/appstartup/best-practices`；`vitals/launch-time` 继续保留用于 TTID 与 Vitals 阈值。

@@ -26,13 +26,16 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-task2b_state: fixed
+task9_reviewed_date: "2026-05-17"
+last_task9_at: "2026-05-17T20:29:00+08:00"
+last_task9_audit: "2026-05-17"
+last_task9_review_log: "logs/deep-review/2026-05-17-20-audit.md"
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_reviewed_date: "2026-05-15"
