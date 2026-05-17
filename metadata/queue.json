@@ -9957,6 +9957,36 @@
         "时效性": 4
       },
       "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "id": "task9-audit-13.3-surfaceflinger-version-boundary-20260517",
+      "section": "13.3",
+      "priority": 85,
+      "title": "Perfetto View 解读-SurfaceFlinger 版本边界错误",
+      "description": "P1: SurfaceFlinger Track 的 Android 12-13/14+ 版本分界不准确；Android 13 已进入 commit/composite 主流程，不能与 Android 12/12L 的 onMessageReceived/INVALIDATE/REFRESH 归为同一类。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "SurfaceFlinger Track（约第 216-224 行）",
+          "detail": "正文把 Android 12-13 合并为 onMessageReceived/INVALIDATE/REFRESH 旧消息模型，但 AOSP android-13.0.0_r1 已在 Scheduler/MessageQueue.cpp::Handler::handleMessage 中按 commit() → composite() → sample() 组织；Android 12/12L 才保留 SurfaceFlinger::onMessageReceived/onMessageInvalidate/onMessageRefresh。现有版本边界会误导读者在 Android 13 trace 中寻找旧入口。",
+          "suggestion": "拆成 Android 12/12L：onMessageReceived / INVALIDATE / REFRESH；Android 13：MessageQueue::Handler 直接调用 commit/composite；Android 14+：Scheduler::onFrameSignal 组织 commit/composite，present 继续落到 CompositionEngine::Output::present / presentFrameAndReleaseLayers。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T17:27:00+08:00"
     }
   ],
   "metadata": {
