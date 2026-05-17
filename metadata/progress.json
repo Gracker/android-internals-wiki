@@ -180,13 +180,13 @@
   ],
   "review_summary": "Task9 2026-05-18 03: 深审 1.1/1.11/20.2；1.1 命中 SurfaceFlinger Android16 旧 doComposition 残留 P0，转 Task2B；1.11 与 20.2 无 P0/P1，自动晋升 finalized；新增 1 条 P2 suggestion。",
   "task6_review_summary": {
-    "l1_l2_fixes": 9,
-    "l3_issues": 1,
-    "l4_issues": 1,
+    "l1_l2_fixes": 18,
+    "l3_issues": 0,
+    "l4_issues": 0,
     "technical_risk_markers": 1,
-    "total_issues": 2,
+    "total_issues": 1,
     "reviewed_sections": [
-      "5.8"
+      "1.1"
     ]
   },
   "issues_by_section": {
@@ -1220,12 +1220,12 @@
     },
     "1.1": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 8,
+      "task6_l1_l2_fixes": 18,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-18T01:08:00+08:00",
-      "task6_log": "logs/review/2026-05-18-01-review.md",
+      "task6_reviewed_at": "2026-05-18T04:08:40+08:00",
+      "task6_log": "logs/review/2026-05-18-04-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；修正标题比喻、填充词和调度器比喻。Task9 仍需复核，未自动晋升。",
+      "task6_note": "复审通过；清理第一人称、比喻化标题/表述和单位空格。既有 Task9 P0（SF doComposition 残留）仍在 queue pending，未自动晋升。",
       "task9_result": "needs-rework",
       "task9_p0": 1,
       "task9_p1": 0,
@@ -1266,35 +1266,27 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T03:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-18T04:08:40+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "01:08",
-    "reviewed_at": "2026-05-18T01:08:00+08:00",
+    "time": "04:08",
+    "reviewed_at": "2026-05-18T04:08:40+08:00",
     "sections": [
-      "1.1",
-      "5.1",
-      "20.2"
+      "1.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "src/part5-app/ch20-stability/02-java-crash-governance.md"
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
     ],
-    "log": "logs/review/2026-05-18-01-review.md",
-    "mode": "回炉复查批次",
-    "l1_l2_fixes": 41,
+    "log": "logs/review/2026-05-18-04-review.md",
+    "mode": "回炉复审批次",
+    "l1_l2_fixes": 18,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
+    "technical_risk_markers": 1,
     "results": {
-      "1.1": "pass-light-edit / task9_pending",
-      "5.1": "pass-light-edit / auto_finalized",
-      "20.2": "pass-light-edit / task9_pending"
+      "1.1": "pass-light-edit / task2b_pending（既有 Task9 P0）"
     },
-    "auto_promoted": [
-      "5.1"
-    ]
+    "auto_promoted": []
   },
   "task9_last_review": "2026-05-17",
   "ready_to_publish": 198,
@@ -3573,17 +3565,18 @@
     },
     "1.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-18T01:08:00+08:00",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-18T04:08:40+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "last_task6_review_log": "logs/review/2026-05-18-01-review.md",
+      "last_task6_review_log": "logs/review/2026-05-18-04-review.md",
       "title": "Android 分层架构",
       "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-18",
-      "task9_state": "pending",
-      "task9_result": "needs-rework"
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending"
     },
     "20.2": {
       "status": "ready-for-review",
