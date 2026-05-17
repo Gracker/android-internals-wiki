@@ -129,6 +129,7 @@ tags:
   - [7.13 SystemUI 性能分析](part2-performance/ch07-smoothness/13-systemui-performance.md)
   - [7.14 GAPS：Android 动态分析目标可达性路径重建](part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md)
   - [7.15 场景化性能作战手册](part2-performance/ch07-smoothness/15-scenario-playbooks.md)
+  - [7.16 耗电/发热伴随卡顿排障入口](part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
