@@ -217,6 +217,7 @@ tags:
   - [13.14 Perfetto DataGrid 与 Jank CUJ 标准库](part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)
   - [13.15 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)
   - [13.16 Agent 辅助 Perfetto 分析协议](part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)
+  - [13.17 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
