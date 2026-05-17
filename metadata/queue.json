@@ -10707,6 +10707,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T03:31:27+08:00",
       "review_log": "logs/deep-review/2026-05-18-03-deep-review.md"
+    },
+    {
+      "id": "task9-audit-3.6-velocitytracker-version-matrix",
+      "section": "3.6",
+      "section_title": "手势识别算法与性能优化",
+      "priority": 85,
+      "title": "VelocityTracker 策略矩阵缺少 Android 10-13 版本分段",
+      "description": "[Deep Tech Review][版本差异] DEFAULT_STRATEGY_BY_AXIS 轴级策略矩阵仅覆盖 Android 14+，当前章节 applicable_versions 写到 Android 10-16，需补 Android 10-13 默认策略差异。",
+      "reason": "[Deep Tech Review] VelocityTracker 速度策略在 Android 10-13 与 Android 14+ 源码结构不同，正文当前把 Android 14+ 轴级矩阵泛化到 10-16。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T04:37:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-04-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "VelocityTracker：速度计算算法 / Java wrapper + JNI + native strategy matrix",
+          "detail": "正文把 DEFAULT_STRATEGY_BY_AXIS 轴级策略矩阵作为 Android 10-16 的通用描述。源码抽检显示 Android 10/11 使用 const char* DEFAULT_STRATEGY = \"lsq2\"，Android 12/13 的 Strategy::DEFAULT 仍映射到 DEFAULT_STRATEGY，均没有 DEFAULT_STRATEGY_BY_AXIS；Android 14-16 才出现 X/Y=LSQ2、AXIS_SCROLL=IMPULSE 的轴级默认策略矩阵。",
+          "suggestion": "补一张版本分段表：Android 10-11 字符串默认 lsq2；Android 12-13 enum DEFAULT→LSQ2；Android 14+ 按 axis 选择 X/Y=LSQ2、SCROLL=IMPULSE。正文中“native strategy matrix”“scroll 轴默认 IMPULSE”等结论限定为 Android 14+。"
+        }
+      ]
     }
   ],
   "metadata": {

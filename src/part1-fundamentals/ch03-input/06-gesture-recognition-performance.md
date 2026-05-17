@@ -2,7 +2,7 @@
 title: 手势识别算法与性能优化
 chapter: '3.6'
 section: '3.6'
-status: finalized
+status: ready-for-review
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 confidence: medium
@@ -35,21 +35,22 @@ related_chapters:
 - '3.3'
 - '3.4'
 - '2.4'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: 2026-04-20
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T10:22:00+08:00"
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
   3/5·元数据 4/5。'
+last_task9_audit: "2026-05-18"
 ---
 
 # 手势识别算法与性能优化
