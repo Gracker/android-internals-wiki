@@ -296,6 +296,7 @@ tags:
   - [17.2 SoC 平台差异](part4-system/ch17-oem/02-soc-differences.md)
   - [17.3 行业案例](part4-system/ch17-oem/03-industry-cases.md)
   - [17.4 sched_ext 与 OEM BPF 调度器](part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md)
+  - [17.5 OEM 游戏模式输入优先级与触控调度](part4-system/ch17-oem/05-oem-game-mode-input-priority.md)
 
 ---
 

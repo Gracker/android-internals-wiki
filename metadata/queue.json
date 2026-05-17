@@ -10024,6 +10024,31 @@
           "suggestion": "改为：CreateInternalStackTrace() 先用 256 个 saved_frames 做快速路径；深度小于 256 时复用缓存，深度达到或超过 256 时二次 WalkStack 构建结果。不要写“最大深度 256 帧”，除非另有版本源码能证明截断上限。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-17.5-oem-game-mode-input-priority",
+      "section": "17.5",
+      "priority": 80,
+      "title": "OEM 游戏模式输入优先级与触控调度",
+      "description": "AOSP GameMode 不包含独立输入优先级提升机制；需要拆清焦点窗口、帧率优先级、DISALLOW_INTERCEPT、Power HAL GAME 档位与厂商专有修改的边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-17",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/05-oem-game-mode-input-priority.md"
+      ],
+      "gap_source": "研究素材/AOSP结构/官方文档",
+      "gap_score": 17,
+      "source_refs": [
+        "DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/app/GameManagerService.java",
+        "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
+      ]
     }
   ],
   "metadata": {
