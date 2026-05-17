@@ -10074,7 +10074,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/05-oem-game-mode-input-priority.md"
@@ -10085,7 +10085,9 @@
         "DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md",
         "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/app/GameManagerService.java",
         "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
-      ]
+      ],
+      "completed_date": "2026-05-17",
+      "completed_reason": "Task 2A 加工完成：AOSP GameMode 边界、InputDispatcher 焦点/触摸分发、刷新率优先级、View 层触摸完整性、OEM 私有路径与 Perfetto 验证口径已成稿。"
     },
     {
       "id": "task9-2.18-arr-frametimeline-refreshselector-20260517",
