@@ -49,20 +49,23 @@ pipeline_stage: task2b_pending
 last_task9_at: "2026-05-17T19:30:43+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
+reviewed_date: "2026-05-17"
+task6_result: needs-rework
 task9_result: needs-rework
 task2b_result: fixed
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；FrameTimeline SQL 字段、RefreshRateSelector 源码路径和 ARR 决策层归属需回炉。"
-task6_reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-17"
 last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
+last_task6_at: "2026-05-17T20:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-17-20-review.md"
+task6_review_notes: "2026-05-17 Task6：小修 L1/L2 9 处；参考资料后 DeepResearch/源码调研附录仍是素材堆放，且含 Task9 已标记的 SQL/源码路径/决策层风险，已并入 queue.json priority 95。"
 ---
 
 
@@ -101,9 +104,9 @@ last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
 
 ## 为什么要了解 ARR
 
-在固定刷新率设备上，我们习惯把 60Hz 看成 16.67ms、120Hz 看成 8.33ms，然后用这个固定周期去判断是否掉帧。到了支持 ARR 的设备，这个前提不再稳定。滚动时面板可能跑到较高刷新率，静止后又降到更低值，VSYNC-app 和 VSYNC-sf 的间隔会跟着变化。我们如果还用“超过 16.67ms 就一定异常”的老办法看 Trace，很容易把正常降频看成故障。
+在固定刷新率设备上，60Hz 可以按 16.67ms、120Hz 按 8.33ms 理解，然后用这个固定周期判断是否掉帧。到了支持 ARR 的设备，这个前提不再稳定。滚动时面板可能跑到较高刷新率，静止后又降到更低值，VSYNC-app 和 VSYNC-sf 的间隔会跟着变化。如果还用“超过 16.67ms 就一定异常”的老办法看 Trace，很容易把正常降频看成故障。
 
-ARR 解决的问题也很直接。内容只有 24fps、30fps 或静态页面时，面板没有必要一直以 120Hz 工作。系统把刷新率压到更合适的档位，可以少做无效刷新，显示子系统的功耗也会跟着下降。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+ARR 解决的是内容节奏和面板刷新率不匹配的问题。内容只有 24fps、30fps 或静态页面时，面板没有必要一直以 120Hz 工作。系统把刷新率压到更合适的档位，可以少做无效刷新，显示子系统的功耗也会跟着下降。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
 [图：Perfetto 对比图。左侧为固定高刷场景，VSYNC-app 间隔稳定在 8.33ms；右侧为 ARR 场景，滑动时保持 8.33ms，静止后拉长到 16.67ms 或更长。重点标出 VSYNC-app、VSYNC-sf、FrameTimeline 三个观察点。]
 
@@ -111,7 +114,7 @@ ARR 解决的问题也很直接。内容只有 24fps、30fps 或静态页面时�
 
 Android 11 起，系统已经支持多刷新率和 `Surface.setFrameRate()`。这时设备通常在几个固定 Display Mode 之间切换，比如 60Hz 和 120Hz。它能解决一部分场景，但本质还是“切模式”，不是在同一模式里按内容节奏细调刷新周期。
 
-官方 ARR 文档把正式能力收在 Android 15-QPR1 及以上，并要求设备实现对应 HAL API。也就是说，我们要把“Android 11-14 的多刷新率背景”和“Android 15-QPR1+ 的 ARR 正式能力”分开看。前者让系统学会在多个模式之间做选择，后者才让支持的面板在更细的刷新档位里跟着内容变化。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+官方 ARR 文档把正式能力收在 Android 15-QPR1 及以上，并要求设备实现对应 HAL API。分析时要把“Android 11-14 的多刷新率背景”和“Android 15-QPR1+ 的 ARR 正式能力”分开看。前者让系统学会在多个模式之间做选择，后者才让支持的面板在更细的刷新档位里跟着内容变化。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
 LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到高频的宽范围调节。但有没有 LTPO 不是 App 能直接假定的前提。**该检查的是设备是否公开支持 ARR**，以及当前系统给出的刷新率范围。
 
@@ -123,7 +126,7 @@ DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP androi
 
 到了 SurfaceFlinger 这一层，`mScheduler->chooseRefreshRateForContent(...)` 才开始根据当前可见 Layer 的内容节奏做 content-based selection。这里的输入已经带着前面那层收窄后的 allowed ranges，所以 Battery Saver、用户峰值刷新率和 App 请求范围会先影响候选集合，再交给 Scheduler 做评分。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGl / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以我们在 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGl / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
 ## App 侧可以用的 ARR API
 
@@ -147,7 +150,7 @@ if (display != null && display.hasArrSupport()) {
 }
 ```
 
-如果业务真的在意 45fps 这种具体目标，我们应该把它当成“内容自己的生产节奏”，再结合设备支持档位、系统建议值和 Surface / View 投票结果去决定策略，而不是把这个判断塞给 `getSuggestedFrameRate()`。
+如果业务真的在意 45fps 这种具体目标，应该把它当成“内容自己的生产节奏”，再结合设备支持档位、系统建议值和 Surface / View 投票结果去决定策略，而不是把这个判断塞给 `getSuggestedFrameRate()`。
 
 ### View / RecyclerView / Compose 这一层才是主入口
 
@@ -193,7 +196,7 @@ choreographer.postVsyncCallback(frameData -> {
 });
 ```
 
-如果我们想在 App 里判断“系统当前更接近 60Hz 还是 120Hz”，做法通常有两类：
+App 如果要判断“系统当前更接近 60Hz 还是 120Hz”，做法通常有两类：
 
 1. 通过 `Display` / `View` 的公开 API 读取系统建议值和自己的投票结果。
 2. 结合 `FrameData` 的时间线信息，或者在 Trace 里直接看 VSYNC-app 间隔。
@@ -221,7 +224,7 @@ ARR 场景最值得看的对象有四个：
 - `FrameTimeline`：看 preferred timeline 和实际提交是否一致。
 - `SurfaceFlinger` 主线程或工作线程上的 refresh-rate selection 相关 slice。
 
-如果滑动时 `VSYNC-app` 长期保持 8.33ms，停止后逐步拉长到 16.67ms 或更长，同时 `FrameTimeline` 没有明显 missed frame，这通常是 ARR 在正常工作。相反，如果我们看到刷新率切换前后伴随一两个明显的长间隔，再加上 mode change 相关 slice，就更像是传统多刷新率设备在做模式切换。
+如果滑动时 `VSYNC-app` 长期保持 8.33ms，停止后逐步拉长到 16.67ms 或更长，同时 `FrameTimeline` 没有明显 missed frame，这通常是 ARR 在正常工作。相反，如果看到刷新率切换前后伴随一两个明显的长间隔，再加上 mode change 相关 slice，就更像是传统多刷新率设备在做模式切换。
 
 SQL 入口更适合先看 Frame Timeline。Perfetto 官方文档公开了 `expected_frame_timeline_slice` 和 `actual_frame_timeline_slice` 两张表，它们分别表示目标时间线和实际时间线，比把 `VSYNC-app` 当成固定 slice 名更稳。`VSYNC-app` 在 Perfetto UI 里更像轨道语义，常见显示名是 `VSYNC-app` 或 `FrameDisplayEventReceiver.onVsync`，不同版本和 trace 配置下名字会变。分析时先在 UI 里确认轨道，再决定要不要按 `track.id` 继续查。[已验证: Perfetto 官方文档, perfetto.dev/docs/data-sources/frametimeline] [已验证: Perfetto 官方文档, perfetto.dev/docs/analysis/stdlib-docs]
 
@@ -281,7 +284,7 @@ LIMIT 100;
 
 高刷新率会让显示面板、显示子系统和合成节奏都更忙。页面长时间静止时继续保持高刷，收益很小，功耗却不会白白消失。ARR 的价值就在这里，它让系统在不牺牲当前体验的前提下，把无效刷新压下去。
 
-这里不直接给固定百分比。不同面板、亮度、分辨率、OEM 策略和测试场景差异很大，离开测试条件去写“60Hz 到 120Hz 一定增加多少功耗”，说服力不够。对我们做性能分析来说，更实用的结论是：滚动、动画和游戏需要更高刷新率，静态阅读、AOD、低帧率视频更适合较低刷新率，是否切得准要回到 Trace 和电流数据里判断。
+这里不直接给固定百分比。不同面板、亮度、分辨率、OEM 策略和测试场景差异很大，离开测试条件去写“60Hz 到 120Hz 一定增加多少功耗”，说服力不够。做性能分析时，更实用的结论是：滚动、动画和游戏需要更高刷新率，静态阅读、AOD、低帧率视频更适合较低刷新率，是否切得准要回到 Trace 和电流数据里判断。
 
 ### 低频闪烁与 Gamma 补偿
 
@@ -295,7 +298,7 @@ LTPO 面板可以把刷新率压到极低（1Hz 甚至更低），用于 AOD 或
 - **Android 15-QPR1 及以上**：官方 ARR 文档把 ARR 支持放在这个窗口，并要求设备实现对应 HAL API。这一阶段的重点是“刷新率能更细地跟着内容变化”。
 - **Android 16（API 36）**：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 这组公开查询 API 让 App 更容易知道设备能力和系统建议值。ARR 系统能力与 App 可见 API 的版本边界需要分开写。[已验证: 官方文档, developer.android.com/reference/android/view/Display]
 
-按这个时间线区分，适用范围就很明确。我们谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
+按这个时间线区分，适用范围就很明确。谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
 
 ## 常见误区
 
@@ -348,6 +351,8 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `https://perfetto.dev/docs/analysis/stdlib-docs`
 
 
+
+[需重写: 以下 DeepResearch 卡片和源码调研附录仍是素材堆放，且 Task9 已标记其中的 FrameTimeline SQL、RefreshRateSelector 路径和 ARR 决策层归属风险。Task2B 需要把可用内容整合进正文或移出发布稿。]
 
 ---
 

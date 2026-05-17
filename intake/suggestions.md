@@ -1870,3 +1870,18 @@
 - **位置**：FrameTimeline Track（约第 201 行）
 - **问题**：正文列举 `Jank Type` 时使用空格化名称，并把 `Dropped Frame` 与 jank type 并列；Perfetto 官方 FrameTimeline 文档中的类型名是 `AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError`，蓝色 Dropped frame 明确标注为“Not related to jank”。
 - **建议**：保留中文解释，但在括号中补官方枚举名；把 Dropped frame 单独放到“帧状态/颜色”说明里，不作为 `Jank Type` 枚举。
+
+## [Task6 Review] 2.18 Adaptive Refresh Rate 与动态帧率控制 — 2026-05-17
+- **类型**：需重写/素材整合
+- **位置**：参考资料后的 DeepResearch 卡片与“附录：RefreshRateSelector 多维度评分算法”
+- **问题**：该段仍是调研素材堆放/重复卡片，破坏参考资料收束；Task9 已标记其中的 FrameTimeline SQL、RefreshRateSelector 源码路径和 ARR 决策层归属风险。
+- **建议**：Task2B 在 Task9 技术口径修正后，只保留可验证内容并融入“系统里谁在做什么 / SurfaceFlinger 怎样做刷新率选择”，删除重复 DeepResearch 卡片和 AIW 注入标记。
+- **review 日志**：logs/review/2026-05-17-20-review.md
+
+## [Task6 Review] 17.2 SoC 平台差异 — 2026-05-17
+- **类型**：需重写/素材整合
+- **位置**：常见问题之后的 AIW 源码调研补充与 Game Mode 素材块
+- **问题**：该段仍是加工记录式素材块，未融入正文叙述；Task9 已标记 Dimensity vendor 路径和 sched_ext OEM 名称证据风险。
+- **建议**：Task2B 在 Task9 技术复核后，把可用内容整合进“厂商调度策略差异”或“与其他机制的关系”，不可验证的 vendor 路径/OEM 名称降级为待验证或移出正文。
+- **review 日志**：logs/review/2026-05-17-20-review.md
+

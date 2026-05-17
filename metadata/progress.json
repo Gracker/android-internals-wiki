@@ -171,19 +171,19 @@
     "17.5"
   ],
   "review_files": [
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part4-system/ch17-oem/02-soc-differences.md"
   ],
-  "review_summary": "Task9 2026-05-17 16: 复核 14.1；P0 1 / P1 2 / P2 1，ProfilingTrigger API 示例仍不可编译，Network/profileable 边界需回炉。",
+  "review_summary": "Task6 2026-05-17 20: 复审 2.18、17.2；完成 L1/L2 小修 24 处，新增 2 个素材整合回炉问题并入 queue.json priority 95。",
   "task6_review_summary": {
-    "l1_l2_fixes": 30,
-    "l3_issues": 0,
+    "l1_l2_fixes": 24,
+    "l3_issues": 2,
     "l4_issues": 0,
     "technical_risk_markers": 2,
-    "total_issues": 0,
+    "total_issues": 2,
     "reviewed_sections": [
-      "14.1",
-      "8.2",
-      "7.6"
+      "2.18",
+      "17.2"
     ]
   },
   "issues_by_section": {
@@ -225,7 +225,14 @@
       "p0": 3,
       "p1": 4,
       "p2": 5,
-      "p3": 2
+      "p3": 2,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 15,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-17T20:11:00+08:00",
+      "task6_log": "logs/review/2026-05-17-20-review.md",
+      "task6_new_rework": true,
+      "task6_note": "复审小修通过；常见问题后的源码调研/Game Mode 素材仍是素材块，且 Task9 已标记 Dimensity/sched_ext 证据风险，已并入 queue.json priority 95。"
     },
     "20.4": {
       "p0": 4,
@@ -281,7 +288,14 @@
       "p0": 0,
       "p1": 1,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 9,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-17T20:11:00+08:00",
+      "task6_log": "logs/review/2026-05-17-20-review.md",
+      "task6_new_rework": true,
+      "task6_note": "复审小修通过；参考资料后 DeepResearch/源码调研附录仍是素材堆放，且 Task9 已标记 SQL/源码路径/决策层风险，已并入 queue.json priority 95。"
     },
     "4.2": {
       "p0": 1,
