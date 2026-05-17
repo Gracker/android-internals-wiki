@@ -154,7 +154,10 @@
     "1.20",
     "26.12",
     "13.16",
-    "13.17"
+    "13.17",
+    "4.3",
+    "5.10",
+    "20.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -304,9 +307,12 @@
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
     "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "review_summary": "Task6 2026-05-17 11: 复审 4.3、5.10；L1/L2 小修 19 处；无新增 L3/L4 回炉项，送 Task9 技术复审。因本轮章节较长且均为 Task2B 回炉后复审，按规则降为 2 个章节。",
+  "review_summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
   "task6_review_summary": {
     "l1_l2_fixes": 19,
     "l3_issues": 0,
@@ -752,11 +758,11 @@
     "4.3": {
       "task9_result": "needs-rework",
       "p0": 1,
-      "p1": 1,
+      "p1": 2,
       "p2": 2,
-      "reviewed_at": "2026-05-17T00:32:00+08:00",
-      "log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "summary": "P0 1：CC 读屏障误写为 Brooks pointer；P1 1：Generational CMC 配置/比例缺源码锚点。"
+      "reviewed_at": "2026-05-17T11:28:00+08:00",
+      "log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "summary": "P0 1：LargeObjectSpace FreeList/Map 选择条件仍写成 arm64/非 arm64；P1 2：Android 15+ CMC/BumpPointerSpace 版本线写得过满，Generational CMC 开关源码锚点与命名不准；JIT Code Cache 默认容量口径与 AOSP 不符。P2 2：GC 基线/Trace 案例缺数据。"
     },
     "4.5": {
       "task9_result": "needs-rework",
@@ -769,12 +775,12 @@
     },
     "20.6": {
       "task9_result": "needs-rework",
-      "p0": 1,
-      "p1": 4,
-      "p2": 2,
-      "reviewed_at": "2026-05-14T05:50:18+08:00",
-      "log": "logs/deep-review/2026-05-14-05-deep-review.md",
-      "summary": "P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。"
+      "p0": 0,
+      "p1": 3,
+      "p2": 1,
+      "reviewed_at": "2026-05-17T11:28:00+08:00",
+      "log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "summary": "P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。"
     },
     "23.8": {
       "p0": 0,
@@ -799,10 +805,13 @@
       "p3": 0
     },
     "5.10": {
-      "p0": 2,
-      "p1": 0,
-      "p2": 1,
-      "p3": 0
+      "task9_result": "needs-rework",
+      "p0": 0,
+      "p1": 2,
+      "p2": 2,
+      "reviewed_at": "2026-05-17T11:28:00+08:00",
+      "log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "summary": "P1 2：WorkManager 调度器源码锚点仍是示意方法，未 pin AndroidX 版本；Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2：周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。"
     },
     "24.2": {
       "p0": 0,
@@ -1257,11 +1266,11 @@
       "p3": 1
     }
   },
-  "total_review_sections": 148,
+  "total_review_sections": 151,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T11:14:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-17T11:28:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "11:14",
@@ -1284,7 +1293,7 @@
       "5.10": "pass-light-edit / task9_pending"
     }
   },
-  "task9_last_review": "2026-05-17T10:20:00+08:00",
+  "task9_last_review": "2026-05-17T11:28:00+08:00",
   "ready_to_publish": 196,
   "rework_history": [
     {
@@ -1415,15 +1424,15 @@
     },
     "4.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-17T11:14:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "last_task9_at": "2026-05-17T00:32:12+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
       "title": "ART 虚拟机内存管理",
       "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
       "reviewed_by": "openclaw-task6",
@@ -1504,7 +1513,15 @@
       "last_task6_at": "2026-05-12T19:12:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-12-19-review.md"
+      "last_task6_review_log": "logs/review/2026-05-12-19-review.md",
+      "title": "稳定性度量与指标体系",
+      "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
     },
     "21.2": {
       "status": "ready-for-review",
@@ -1681,7 +1698,7 @@
     },
     "5.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-17T11:14:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-05-17-11-review.md",
@@ -1690,10 +1707,12 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-17",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md"
     },
     "20.1": {
       "status": "ready-for-review",
@@ -3501,51 +3520,59 @@
   "last_task2a_processed_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
-    "at": "2026-05-17T10:20:00+08:00",
-    "log": "logs/deep-review/2026-05-17-10-deep-review.md",
+    "reviewed_at": "2026-05-17T11:28:00+08:00",
+    "log": "logs/deep-review/2026-05-17-11-deep-review.md",
     "sections": [
-      "13.17"
+      "4.3",
+      "5.10",
+      "20.6"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "src/part5-app/ch20-stability/06-stability-metrics.md"
     ],
-    "p0": 0,
-    "p1": 3,
-    "p2": 0,
-    "p3": 1,
+    "p0": 1,
+    "p1": 7,
+    "p2": 5,
     "result": "needs-rework",
-    "queue_entries": [
-      "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries"
-    ],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
+    "external_review_active_files": 0
   },
-  "last_task9_review": "2026-05-17T10:20:00+08:00",
+  "last_task9_review": "2026-05-17T11:28:00+08:00",
   "last_task9_sections": [
-    "13.17"
+    "4.3",
+    "5.10",
+    "20.6"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-17T10:20:00+08:00",
-    "log": "logs/deep-review/2026-05-17-10-deep-review.md",
+    "reviewed_at": "2026-05-17T11:28:00+08:00",
+    "log": "logs/deep-review/2026-05-17-11-deep-review.md",
     "sections": [
-      "13.17"
+      "4.3",
+      "5.10",
+      "20.6"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "src/part5-app/ch20-stability/06-stability-metrics.md"
     ],
-    "p0": 0,
-    "p1": 3,
-    "p2": 0,
-    "p3": 1,
+    "p0": 1,
+    "p1": 7,
+    "p2": 5,
     "result": "needs-rework",
-    "queue_entries": [
-      "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries"
-    ],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
+    "external_review_active_files": 0
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "total_review_files": 148,
+  "total_review_files": 151,
   "last_task2a_at": "2026-05-17T05:21:00+08:00",
   "last_task2a_section": "26.12",
   "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
@@ -3582,9 +3609,11 @@
     }
   },
   "last_task9_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "last_task9_at": "2026-05-17T10:20:00+08:00",
+  "last_task9_at": "2026-05-17T11:28:00+08:00",
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
@@ -4049,13 +4078,13 @@
     },
     "4.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "last_task9_at": "2026-05-17T00:32:12+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
       "title": "ART 虚拟机内存管理",
       "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
       "reviewed_by": "openclaw-task6",
@@ -4170,17 +4199,31 @@
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
       "file": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-17",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-17T11:14:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-11-review.md",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md"
+    },
+    "20.6": {
+      "title": "稳定性度量与指标体系",
+      "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T11:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
     }
   },
   "task2a_last_processed": {
@@ -4200,15 +4243,21 @@
     "mode": "gap-mining"
   },
   "task9_last_sections": [
-    "13.17"
+    "4.3",
+    "5.10",
+    "20.6"
   ],
   "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
   "last_task9_files": [
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-17-10-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-17-11-deep-review.md",
   "task9_last_files": [
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,

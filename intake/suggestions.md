@@ -1759,6 +1759,36 @@
 
 
 
+## [Task14 参考书扫描] 23.6 大内存与多进程策略 — 2026-05-17
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]
+- **建议补充**：释放 WebView 预留虚拟内存的完整方案（32位设备可回收约130M）。方案1：Android 10+ 通过解析 /proc/self/maps 中 anon:libwebview reservation 获取首尾地址后 munmap；方案2：Android 9 以下通过 PLT Hook webviewchromium_loader.so 的 android_dlopen_ext，从 android_dlextinfo 结构体中提取 gReservedAddress 和 gReservedSize，然后 munmap。方案2 需要在 Native 层通过 JNI 反射调用 WebViewLibraryLoader.nativeLoadWithRelroFile 来触发 hook 点。微信已在线上验证此方案。
+- **参考书覆盖深度**：深入（含完整代码流程和版本兼容方案）
+
+## [Task14 参考书扫描] 23.6 大内存与多进程策略 — 2026-05-17
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]
+- **建议补充**：释放 ART 虚拟机备份栈空间（main space 1，约512M）的方案。仅适用于 Android 5-7（ART 使用拷贝回收 GC）。原理：ART 创建 main space 和 main space 1 供 HomogeneousSpaceCompact 使用，通过主动调用 GetPrimitiveArrayCritical 而不调用 ReleasePrimitiveArrayCritical，使 disable_moving_gc_count_ 维持为1，禁用拷贝回收 GC，然后 munmap 未使用的那块 main space。抖音已在线上验证，OOM 率未升高。
+- **参考书覆盖深度**：深入（含 AOSP 源码级分析，heap.cc PerformHomogeneousSpaceCompact 流程）
+
+## [Task14 参考书扫描] 25.6 APK 体积分析与瘦身 — 2026-05-17
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
+- **建议补充**：国内市场多 dpi 资源去重策略——只保留市占率最高的 xxhdpi 一套资源，低 dpi 手机通过系统自动缩放适配。海外市场通过 AAB 按设备 dpi 下发。这一策略在参考书中有完整的 dpi 概念解释和换算公式（px = dp * (dpi / 160)）以及各 dpi 级别对照表。
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 25.6 APK 体积分析与瘦身 — 2026-05-17
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
+- **建议补充**：assets 目录资源压缩策略——音频、HTML、JS、数据文件等 assets 资源使用 7z 压缩（压缩率优于 zip），运行时通过 7z SDK（LZMA）解压使用。7z SDK 为开源库，可通过 NDK 编译集成。此外，低频 assets 资源可通过埋点统计使用频率后改为网络按需下载。
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 25.7 R8 与资源优化 — 2026-05-17
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
+- **建议补充**：resources.arsc 二进制文件结构详解——6个 Chunk 数据段（RES_TABLE_TYPE 头部、RES_STRING_POOL_TYPE 字符串常量池、RES_TABLE_PACKAGE_TYPE 资源头、资源类型/名称字符串池、RES_TABLE_TYPE_SPEC_TYPE 类型规范、RES_TABLE_TYPE_TYPE 资源类型项）。参考书给出完整的 Kotlin 解析示例代码，引用 AOSP ResourceTypes.h 数据结构。理解此结构是图片去重（修改字符串常量池索引）和文件名混淆的技术基础。推荐开源工具 android-chunk-utils（Java）和 resourcesAnalyzer（Kotlin）。
+- **参考书覆盖深度**：深入（含完整文件结构图和解析代码）
+
 ## [Task9 Deep Review] 13.16 Agent 辅助 Perfetto 分析协议 — 2026-05-17
 - **类型**：来源路径/证据可复查性
 - **位置**：frontmatter sources L18-L32；正文 L82、L112、L140；本地 source path
@@ -1774,3 +1804,23 @@
 - **位置**：src/part3-tools/ch13-perfetto/README.md “本章内容”
 - **问题**：第 13 章 README 仍只列到 13.10，未纳入 13.11-13.16；本节已引用 13.15，但读者从章节入口无法发现本节和相邻新增章节。
 - **建议**：更新 ch13 README 的本章内容和 related_chapters，补齐 13.11-13.16，并把 13.16 放到 13.10 SQL 与 13.15 BufferQueue 案例之后。
+
+
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-05-17
+- **类型**：数据缺失
+- **位置**：L309-L324、L527-L545 GC pause / throughput / normal-vs-abnormal baseline
+- **问题**：Young GC 1-3ms、Pause 1-5ms、GC 吞吐量 >98%/95%、Young GC 每 2-5 秒一次等基线缺设备、collector、刷新率、堆上限、采样窗口和 trace 样本。
+- **建议**：补一组 Perfetto/GC log 样例，明确 Android 版本、collector、heap 上限、场景和刷新率；补不齐时把这些数值标为示例阈值，要求读者按业务基线重定。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-05-17
+- **类型**：数据缺失 / 来源边界
+- **位置**：L279、L293-L301、L455-L470 Periodic/Chained Work 开销与 excessive partial wake locks policy
+- **问题**：周期/链式 Work 的“几十毫秒”“几十到几百毫秒”缺 WorkManager 版本、设备、数据库规模、任务数量和 trace 采样方法；WakeLock policy 段落没有给出可追溯 URL，且 24h/background/FGS/screen-off 与 beta/正式执行口径需要统一。
+- **建议**：补 AndroidX WorkManager microbenchmark 或 trace；补 developer.android.com excessive-wakelock 与 Google blog 原文 URL。无数据时把调度开销改为定性描述。
+
+## [Task9 Deep Review] 20.6 稳定性度量与指标体系 — 2026-05-17
+- **类型**：来源路径
+- **位置**：frontmatter sources、L115、L126 Android Vitals 文档
+- **问题**：`support.google.com/googleplay/android-developer/answer/9844476` 当前不可访问；可验证页面是 `answer/9844486`，其中包含 user-perceived ANR/crash thresholds 与 input dispatching timed out 口径。
+- **建议**：把来源 URL 改为 `https://support.google.com/googleplay/android-developer/answer/9844486`，并在引用处补 28 天窗口、overall/per-device threshold。

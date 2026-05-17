@@ -334,3 +334,20 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 ### 关联章节
 26.12、26.9、8.10、8.2、14.7
 
+
+
+## [2026-05-17] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — Android 17 excessive CPU / Power Check 机制边界
+
+### 盲区描述
+章节把 Android 17 “Power Check”写成缓存态应用 CPU 占用分级熔断、强制终止并自动生成 ProfilingTrace，但公开 Android 17 release notes 目前只能支撑 ProfilingManager 新增 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`。缺少 framework/service 源码、官方 behavior changes 或实机触发记录来确认触发条件、阈值、kill 路径、trace 产物和 JobScheduler quota 的关系。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 17 `ProfilingManager`、ActivityManager/PowerStats/JobScheduler 相关 framework 源码与 API reference。
+- 搜索官方 behavior changes / release notes 中 excessive CPU kill 的精确定义，区分采集触发器与系统强杀策略。
+- 在 Android 17 设备上构造 cached/background CPU hog，记录 logcat、ApplicationExitInfo、ProfilingManager 产物和 dumpsys jobscheduler 状态。
+
+### 关联章节
+5.10、5.6、5.8、26.9
