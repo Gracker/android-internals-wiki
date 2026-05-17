@@ -2,7 +2,7 @@
 title: "Android 分层架构"
 chapter: "1.1"
 section: "1.1"
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
@@ -31,23 +31,23 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: pending
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-17"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_reviewed_date: "2026-05-18"
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T22:27:35+08:00"
-task9_review_notes: "2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
+last_task9_at: "2026-05-18T01:31:55+08:00"
+task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。SurfaceFlinger Android 16 trace/源码切片名称仍使用旧路径；HAL 调用段落仍把 Treble 后 HAL 泛化成每次 Binder IPC。已写入 queue.json。 | 2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
 last_task6_at: "2026-05-18T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。小修 8 处（标题比喻、填充词、调度器比喻、frontmatter）；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
 last_task9_audit: "2026-05-17"
-task9_review_log: "logs/deep-review/2026-05-17-22-audit.md"
-reviewed_at: "2026-05-18T01:08:00+08:00"
+task9_review_log: "logs/deep-review/2026-05-18-01-deep-review.md"
+reviewed_at: "2026-05-18T01:31:55+08:00"
 task6_reviewed_date: "2026-05-18"
 ---
 
@@ -179,7 +179,7 @@ private void run() {
 
 SurfaceFlinger 是一个独立的 Native 进程，它的职责很单一：把各个 App 产生的 Surface 合成为最终的画面，交给屏幕显示。它不属于 SystemServer，但与 SystemServer 中的 WMS 紧密协作——WMS 负责决定窗口的层级和位置，SurfaceFlinger 负责把这些窗口画出来。
 
-SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到，`handleMessageRefresh` 和 `doComposition` 是两个关键的 CPU 切片。
+SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。Android 16 的主路径切片是 `commit`（WorkloadTracer Commit）→ `composite`（Composition）→ `postComposition`；旧版本（Android 14 及之前）的切片名是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。排查时先确认设备版本，再按对应名称搜索。
 
 ### Zygote：应用进程 fork 入口
 
@@ -309,7 +309,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 **Framework 层**主要体现在 `system_server` 进程中。展开它会看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，Trace 中会出现一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
 
-`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。它的主线程上能看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
+`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。旧版本（Android 14 及之前）的主路径是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
 
 **Native/HAL 层**的表现比较分散。Treble 之后的 HAL Service 按 transport 区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到 client 进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在 client 进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
@@ -342,7 +342,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 误区：HAL 层不影响性能，因为只是"接口封装"
 
-HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，HAL Service 是独立进程，每次 HAL 调用都涉及一次完整的 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。对于高频 HAL 操作（如 Camera 预览回调、Audio 数据流），这个 IPC 开销可以成为显著瓶颈。一些关键 HAL（如 Graphics HAL）因此设计了零拷贝的共享内存通道来绕过 Binder 的数据拷贝。
+HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，binderized HAL（AIDL HAL 和部分 HIDL HAL）作为独立进程运行，控制面调用走 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。passthrough HAL（仅限 HIDL C++ 实现）以共享库形式加载到 client 进程内，不走跨进程 Binder。对于高频数据面操作（如 Camera 预览回调、Audio 数据流），即使控制面走 Binder，数据面通常使用 FMQ、共享内存、BufferQueue/dmabuf 等零拷贝通道，不走 Binder 数据拷贝。排查 HAL 延迟时，先按 transport（binderized / passthrough）区分，再判断瓶颈在控制面 IPC 还是数据面吞吐。
 
 ### 误区：App 的性能问题一定在 App 层
 

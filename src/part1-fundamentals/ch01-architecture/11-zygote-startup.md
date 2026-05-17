@@ -1,8 +1,9 @@
 ---
+
 title: "Zygote 机制与启动性能优化"
 chapter: "1.11"
 section: "1.11"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-18"
@@ -42,16 +43,16 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
-last_task9_at: '2026-04-20T16:33:00+08:00'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-04-20'
+task9_state: pending
+task9_result: needs-rework
+last_task9_at: '2026-05-18T02:32:00+08:00'
+task9_reviewed_by: 'openclaw-task9-audit'
+task9_reviewed_date: '2026-05-18'
 task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
@@ -65,15 +66,16 @@ last_task6_audit: "2026-05-17"
 <!-- outline-start -->
 
 <!-- AIW-源码调研-2026-05-07 -->
-### PreloadAppProcessHALs 与 PreloadGraphicsDriver（Android 13+）
+### PreloadAppProcessHALs 与 PreloadGraphicsDriver
 
-ZygoteInit.preload() 包含两条关键预加载路径，分别对应 HAL 和 GPU 驱动的 zygote 期初始化：
+ZygoteInit.preload() 包含两条关键预加载路径，分别对应 gralloc mapper HAL 和 GPU 驱动的 zygote 期初始化：
 
 #### nativePreloadAppProcessHALs()
 
 - **源码**：`core/jni/com_android_internal_os_ZygoteInit.cpp` 行 19-22
-- **当前实现**：`GraphicBufferMapper::preloadHal()` —— 预加载 IGBP (Ion Buffer Posting) HAL
-- **设计意图**：在 fork 前建立 ashmem/dmabuf fd 映射，子进程继承已映射的图形缓冲区地址空间，避免重复映射开销
+- **当前实现**：`GraphicBufferMapper::preloadHal()` —— 预加载 gralloc mapper HAL（passthrough 库）
+- **实际链路**：`ZygoteInit.nativePreloadAppProcessHALs()` → `GraphicBufferMapper::preloadHal()` → `Gralloc2/3/4/5Mapper::preload()`，加载 gralloc mapper 的 passthrough 共享库，让 fork 后的子进程直接继承已加载的 gralloc 库，避免冷启动时重复 dlopen + HAL 初始化开销
+- **引入版本**：Android 9（`PreloadAppProcessHALs` 在 `android-9.0.0_r1` 已存在，同时还有 `preloadOpenGL`）
 
 ```cpp
 void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(JNIEnv* env, jclass) {
@@ -88,6 +90,7 @@ void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(JNIEnv* env, jcl
 - **源码**：`core/jni/com_android_internal_os_ZygoteInit.cpp` 行 24-26
 - **实现**：`zygote_preload_graphics()` —— 内部执行 OpenGL/Vulkan 纯函数调用，触发 GPU 驱动加载
 - **控制开关**：`ro.zygote.disable_gl_preload` 系统属性（默认 false，即启用预加载）
+- **引入版本**：Android 10（`PreloadGraphicsDriver` 在 `android-10.0.0_r1` 已存在）
 
 ```java
 private static void maybePreloadGraphicsDriver() {
@@ -101,7 +104,7 @@ private static void maybePreloadGraphicsDriver() {
 
 - **包名**：`com.android.graphics.driver`
 - **选择框架**：`core/java/android/os/GraphicsEnvironment.java`
-- **sphal 库列表**：`sphal_libraries.txt` —— 指定必须通过 sphal (single pointer hole) 机制加载的 GL 库，实现驱动的懒加载和版本隔离
+- **sphal 库列表**：`sphal_libraries.txt` —— 指定必须通过 SP-HAL（Same-Process HAL）命名空间加载的 GL 库，实现驱动的版本隔离和懒加载
 - **Driver 类型**：
   - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_PRODUCTION_DRIVER (1)` → 生产 updatable driver
   - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_PRERELEASE_DRIVER (2)` → 预发布 driver
@@ -114,8 +117,8 @@ private static void maybePreloadGraphicsDriver() {
 2. `preloadClasses()` → `/system/etc/preloaded-classes`
 3. `cacheNonBootClasspathClassLoaders()` → 非启动类路径 ClassLoader 缓存
 4. `preloadResources()` → `Resources.preloadResources()`
-5. `nativePreloadAppProcessHALs()` → **[Android 13+]** IGBP HAL 预加载
-6. `maybePreloadGraphicsDriver()` → **[关键]** GPU 驱动预加载
+5. `nativePreloadAppProcessHALs()` → gralloc mapper HAL 预加载（Android 9 引入）
+6. `maybePreloadGraphicsDriver()` → GPU 驱动预加载（Android 10 引入）
 7. `preloadSharedLibraries()` → libandroid.so / libjnigraphics.so / libcompiler_rt.so
 8. `preloadTextResources()` → Hyphenator.init() + TextView.preloadFontCache()
 9. `HttpEngine.preload()` (Android 16 可选)
@@ -372,9 +375,11 @@ ZygoteServer() {
 | 版本段 | preload / 观测口径 | 进程创建能力边界 | 阅读本章时的默认口径 |
 | --- | --- | --- | --- |
 | Android 5-7 | 以传统 `preloadClasses()`、资源和共享库预热为主 | 还没有 WebViewZygote、App Zygote、USAP | 先把 Zygote 看成主 zygote + 普通 fork 路径 |
-| Android 8-9 | 增加 WebViewZygote | 仍没有 App Zygote 和 USAP | WebView 相关进程开始脱离主 zygote 单独预热 |
-| Android 10-15 | 引入 USAP pool，以及 App Zygote / `ZygotePreload` | 普通 App 可能命中 USAP；isolated service 可能走 App Zygote | 先分清 primary / secondary 主线和 child zygote 支线 |
-| Android 16 | 本章验证过的 preload slice 名是 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver` | USAP、App Zygote、WebViewZygote 仍然共存 | Perfetto 里按 android-16 命名查 slice，并把 `launching: <package>` 当作覆盖整段启动的 span |
+| Android 8 | 增加 WebViewZygote | 仍没有 App Zygote 和 USAP | WebView 相关进程开始脱离主 zygote 单独预热 |
+| Android 9 | `PreloadAppProcessHALs` 引入（gralloc mapper HAL 预加载）+ `preloadOpenGL` | WebViewZygote，还没有 USAP | gralloc HAL 库开始在 zygote 期预热 |
+| Android 10 | `PreloadGraphicsDriver` + `CacheNonBootClasspathClassLoaders` 引入 | 开始出现 App Zygote 雏形 | GPU 驱动预加载和非启动类路径 ClassLoader 缓存上线 |
+| Android 11-15 | USAP pool 成熟，App Zygote / `ZygotePreload` 稳定 | 普通 App 可能命中 USAP；isolated service 可能走 App Zygote | 先分清 primary / secondary 主线和 child zygote 支线 |
+| Android 16 | 本章验证过的 preload slice 名是 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`；新增 `HttpEngine.preload()` 可选 | USAP、App Zygote、WebViewZygote 仍然共存 | Perfetto 里按 android-16 命名查 slice，并把 `launching: <package>` 当作覆盖整段启动的 span |
 
 `DeliQueue` 属于 MessageQueue / Looper 的实现演进，应用侧默认生效的版本边界是 Android 17 / targetSdk 37，不属于本章验证的 Android 16 Zygote 机制本体。本章只在交叉引用里保留这个名词，具体实现和版本差异放到 §1.13 讨论。
 

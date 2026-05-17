@@ -10440,6 +10440,205 @@
       "drafted_file": "src/part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md"
     },
     {
+      "id": "task9-1.1-surfaceflinger-android16-trace-names-20260518",
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 95,
+      "title": "SurfaceFlinger Android 16 Trace/源码切片名称过时",
+      "description": "[Deep Tech Review] P0: 正文在 L182/L312 使用 handleMessageRefresh/doComposition/onMessageReceived 作为 Android 16 SurfaceFlinger 关键 CPU 切片/调用链，但 AOSP android-16.0.0_r1 SurfaceFlinger.cpp 已无这些函数；当前主路径是 commit()/composite()/postComposition 及 WorkloadTracer 的 Commit/Composition。P1: L345 把 Treble 后 HAL 调用泛化为每次完整 Binder IPC，遗漏 HIDL passthrough 与 FMQ/共享内存/BufferQueue 等数据通道边界。",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T01:31:55+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L182、L312 SurfaceFlinger 关键 CPU 切片/调用链",
+          "detail": "正文写 handleMessageRefresh、doComposition、onMessageReceived；AOSP android-16.0.0_r1 frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 中这些符号不存在。当前可核对路径包括 SurfaceFlinger::commit()（SFTRACE_NAME(__func__) / WorkloadTracer Commit）、SurfaceFlinger::composite()（Composition async track）和 postComposition。",
+          "suggestion": "把 Android 16 口径改为 commit/composite/postComposition 与 WorkloadTracer 的 Commit/Composition；若保留 handleMessageRefresh/doComposition，只能标注为旧版本 trace 名称并给出对应版本。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/版本差异",
+          "location": "L345 HAL 层性能误区",
+          "detail": "正文写“Treble 之后，HAL Service 是独立进程，每次 HAL 调用都涉及完整 Binder IPC”。同篇前文已说明 HIDL 同时存在 binderized 与 passthrough；官方 HIDL 文档也说明 passthrough mode available。该句会把 passthrough HAL、FMQ、共享内存、BufferQueue/dmabuf 等高频数据通道误读成统一 Binder 往返。",
+          "suggestion": "收窄为“binderized HAL / Stable AIDL HAL 的控制面调用走 Binder”；另补一句高吞吐数据面常用 FMQ、共享内存、BufferQueue/dmabuf，Trace 排查需按 transport 区分。"
+        }
+      ],
+      "completed_date": "2026-05-18T03:24:42.833980",
+      "completed_reason": "Task 2B 回炉修复: P0 SF trace 名称从 handleMessageRefresh/doComposition 修正为 Android 16 commit/composite/postComposition + 版本区分说明; P1 HAL 误区段落收窄为 binderized HAL 控制面走 Binder + 数据面 FMQ/共享内存/BufferQueue"
+    },
+    {
+      "id": "task9-20.2-crash-handler-persistence-20260518",
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 85,
+      "title": "UncaughtExceptionHandler 崩溃上报持久化链路不完整",
+      "description": "[Deep Tech Review] P1: 自定义 UncaughtExceptionHandler 示例在 handler 中直接 upload，后文又建议写入内存缓存并下次启动上报；但 RuntimeInit.KillApplicationHandler finally 会 killProcess + System.exit(10)，崩溃进程内存不会保留。需要补最小同步持久化/独立进程接力/下次启动读取的闭环边界。",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T01:31:55+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/02-java-crash-governance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L116-L136 自定义 UncaughtExceptionHandler 示例与“handler 中不能做耗时操作”",
+          "detail": "示例直接调用 CrashReporter.upload(report)，容易被理解为在崩溃线程同步网络上报；后文建议“写入内存缓存，由独立进程或下次启动时上报”。AOSP RuntimeInit.KillApplicationHandler 在 finally 中执行 Process.killProcess(Process.myPid()) 和 System.exit(10)，崩溃进程内存无法支撑“下次启动”。",
+          "suggestion": "把示例改为“生成最小 crash record → 有界同步落本地文件/DropBox/独立 crash 进程 IPC → 立即链式调用 defaultHandler”；说明网络上传放到独立进程或下次启动读取持久化记录，避免阻塞崩溃退出。"
+        }
+      ],
+      "completed_date": "2026-05-18T03:24:42.833980",
+      "completed_reason": "Task 2B 回炉修复: P1 UncaughtExceptionHandler 示例从直接 upload 改为有界同步落盘+链式调用; 崩溃持久化策略补充三条路径(落盘/独立进程接力/DropBox); 删除内存缓存建议(KillApplicationHandler.finally 会 killProcess)"
+    },
+    {
+      "id": "freshness-check-high-priority-2026-05-18",
+      "section": "multiple",
+      "priority": 95,
+      "title": "时效性巡检发现的高优先级更新",
+      "description": "版本演进章节过期，影响API37和版本演进历史信息",
+      "issue_type": "freshness-outdated",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 6,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+        "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+        "src/part1-fundamentals/ch04-memory/06-memory-evolution.md"
+      ],
+      "freshness_issues": [
+        {
+          "file": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+          "title": "Android 版本演进中的架构变化",
+          "last_verified": "2026-03-31",
+          "days_overdue": 48,
+          "threshold_days": 30,
+          "reason": "版本演进章节需要跟踪最新Android 17 (API 37)变化"
+        },
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "last_verified": "2026-04-14",
+          "days_overdue": 34,
+          "threshold_days": 30,
+          "reason": "版本演进章节需要更新Android 17存储架构变化"
+        },
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "last_verified": "2026-03-31",
+          "days_overdue": 48,
+          "threshold_days": 30,
+          "reason": "内存章节需补充Android 17的App Memory Limiter和GC演进"
+        }
+      ],
+      "urgent_features": [
+        "App Memory Limiter (API 37)",
+        "ART Generational GC稳定版",
+        "AutoFDO kernel 6.18扩展",
+        "Lock-free MessageQueue (API 37)",
+        "ProfilingManager异常检测触发器"
+      ],
+      "action_required": "立即更新三个版本演进章节，补充Android 17 Beta 4/正式版的新功能"
+    },
+    {
+      "id": "task9-version-evolution-refresh-2026-05-18",
+      "section": "1.6, 4.6, 6.4",
+      "priority": 90,
+      "title": "版本演进章节系统化更新",
+      "description": "根据时效性巡检结果，更新架构、内存、存储三大核心章节的版本演进部分",
+      "issue_type": "version-evolution-updates",
+      "severity": "P2",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 8,
+      "status": "pending",
+      "dependencies": [
+        "freshness-check-high-priority-2026-05-18"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+        "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+        "src/part1-fundamentals/ch06-storage/04-storage-evolution.md"
+      ],
+      "update_plan": "1. 补充Android 17 API 37新功能描述 2. 更新适用版本范围 3. 源码路径修正 4. 与最新AOSP代码同步",
+      "notes": "重点关注ART内存管理、存储架构、应用内存限制等Android 17新特性"
+    },
+    {
+      "id": "task9-audit-20260518-1.11-zygote-gralloc-version-errors",
+      "section": "1.11",
+      "section_title": "Zygote 机制与启动性能优化",
+      "priority": 95,
+      "title": "Zygote preload HAL 类型与 Android 9/10 版本边界错误",
+      "description": "章节把 nativePreloadAppProcessHALs() 写成 IGBP/Ion Buffer Posting HAL 与 ashmem/dmabuf 映射继承，并把 PreloadAppProcessHALs 标注为 Android 13+；AOSP 复核显示实际为 gralloc mapper HAL 预加载，且 PreloadAppProcessHALs/PreloadGraphicsDriver 分别已在 Android 9/10 出现。",
+      "reason": "[Deep Tech Review][闲时抽检] Zygote preload 源码语义和版本边界存在 P0/P1，需要 Task 2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-02-audit.md",
+        "frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp",
+        "frameworks/native/libs/ui/GraphicBufferMapper.cpp",
+        "frameworks/native/libs/ui/Gralloc2.cpp",
+        "frameworks/native/libs/ui/Gralloc3.cpp",
+        "frameworks/native/libs/ui/Gralloc4.cpp",
+        "frameworks/native/libs/ui/Gralloc5.cpp"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L75-L76、L104、L117：PreloadAppProcessHALs / sphal 说明",
+          "detail": "android-16.0.0_r1 中 ZygoteInit.cpp 只是调用 GraphicBufferMapper::preloadHal()；frameworks/native/libs/ui/GraphicBufferMapper.cpp:53-58 继续调用 Gralloc2/3/4/5Mapper::preload()。这条链对应 gralloc mapper HAL / mapper 库预加载，不是 “IGBP (Ion Buffer Posting) HAL”，也没有源码支撑“fork 前建立 ashmem/dmabuf fd 映射、子进程继承已映射图形缓冲区地址空间”。同段把 sphal 展开成 single pointer hole 也错误；Android 文档语境中 SP-HAL 是 Same-Process HAL。",
+          "suggestion": "把 nativePreloadAppProcessHALs() 改写为“预加载 gralloc mapper HAL / mapper passthrough 库”，删除 IGBP、Ion Buffer Posting、ashmem/dmabuf fd 映射继承这组断言；sphal 改为 Same-Process HAL，并把证据锚到 ZygoteInit.cpp + GraphicBufferMapper.cpp + Gralloc2/3/4/5.cpp。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L68、L117、L376-L377：Android 13+ 与版本演进表",
+          "detail": "跨版本源码抽查显示：android-9.0.0_r1 已存在 PreloadAppProcessHALs/nativePreloadAppProcessHALs，但仍使用 preloadOpenGL；android-10.0.0_r1 已存在 PreloadGraphicsDriver/nativePreloadGraphicsDriver，并出现 cacheNonBootClasspathClassLoaders。正文把 PreloadAppProcessHALs 标成 Android 13+，并在版本表里只把 android-16 的 slice 名作为新口径，遗漏 Android 9/10 的引入边界。",
+          "suggestion": "版本表拆出 Android 9：PreloadAppProcessHALs + preloadOpenGL；Android 10+：PreloadGraphicsDriver、CacheNonBootClasspathClassLoaders、USAP/App Zygote；Android 16：额外标注 HttpEngine.preload() 可选。正文 L68/L117 删除 Android 13+ 标注。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T02:32:00+08:00",
+      "completed_date": "2026-05-18T03:24:42.833980",
+      "completed_reason": "Task 2B 回炉修复: P0 nativePreloadAppProcessHALs 从 IGBP(Ion Buffer Posting)修正为 gralloc mapper HAL passthrough 库预加载; sphal 从 single pointer hole 修正为 Same-Process HAL; P1 版本表拆分 Android 9(PreloadAppProcessHALs)/10(PreloadGraphicsDriver)引入边界"
+    },
+    {
       "id": "task2a-gap-26.13-application-start-info-20260518",
       "section": "26.13",
       "section_title": "ApplicationStartInfo 与启动归因上报",
@@ -10474,19 +10673,19 @@
     }
   ],
   "metadata": {
-    "total_entries": 303,
-    "p0_count": 45,
+    "total_entries": 310,
+    "p0_count": 113,
     "last_updated": "2026-05-18T03:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 143,
+    "pending_entries": 149,
     "updated_date": "2026-05-18",
-    "last_updated_by": "task2a-content-processing",
+    "last_updated_by": "freshness-check",
     "pending": 142,
     "completed_entries": 158
   },
   "last_updated": "2026-05-18T03:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 143,
+  "pending": 149,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
