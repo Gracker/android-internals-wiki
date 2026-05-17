@@ -69,9 +69,9 @@ related_chapters:
 - '11.2'
 - '8.4'
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: needs-rework
-task6_reviewed_date: 2026-05-16
+task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
@@ -85,9 +85,9 @@ last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
 task9_review_notes: "2026-05-18 Task9 00:25 → needs-rework；P1：16KB/GC 联动压缩被写成 Android 16/17 引入且绑定 16KB，官方 cached-apps-freezer 口径是 Android 14 起 cached/freeze 前 GC 与冻结后 compaction，需回炉修正。"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-last_task6_at: "2026-05-16T23:15:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-23-review.md"
+reviewed_date: "2026-05-18"
+last_task6_at: "2026-05-18T02:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-02-review.md"
 ---
 
 
@@ -377,12 +377,10 @@ Android 16 在这里补了一层约 10 秒的 debounce。进程刚进入 cached 
 Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
 
 
-<!-- AIW-源码调研-2026-04-27 -->
 
-<!-- AIW-源码调研-2026-04-28 -->
-### BINDER_FREEZE ioctl 内部结构与 race condition 修复补充
+### BINDER_FREEZE ioctl 与竞态处理
 
-2026-04-28 调研进一步核验了以下细节：
+和排查 freezer 相关问题直接相关的细节主要有三类：
 
 **BINDER_FREEZE ioctl 结构体**（`kernel/common/drivers/android/binder.c`）：
 ```c
@@ -397,18 +395,18 @@ struct binder_freeze_info {
 ```c
 struct binder_frozen_status_info {
     __u32 pid;
-    __u32 sync_recv;   // Bit0=冻结后收到同步事务; Bit1=race window内新事务
+    __u32 sync_recv;   // bit 0 = 冻结后收到同步事务；bit 1 = race window 内新事务
     __u32 async_recv;  // 异步事务接收计数
 };
 ```
 
-**race condition 修复**（commit `58a9e28781be68`）：
+**竞态修复**（commit `58a9e28781be68`）：
 - 两步冻结之间检测到新同步事务 → 允许回滚 cgroup freeze
-- 若响应在回滚前到达 → treat 为 oneway，等解冻后处理
+- 若响应在回滚前到达 → 按 oneway 事务处理，等解冻后处理
 
 **FrozenStateChangeCallback 注册路径（API 36+）**：
 ```
-IBinder.addFrozenStateChangeCallback(callback)
+IBinder.addFrozenStateChangeCallback(executor, callback)
   → BpBinder::addFrozenStateChangeCallback()  // libs/binder/BpBinder.cpp:962
     → IPCThreadState::addFrozenStateChangeCallback(handle, proxy)  // IPCThreadState.cpp:1714
       → mOut.writeInt32(BC_REQUEST_FREEZE_NOTIFICATION)  // 写入 kernel driver
@@ -421,8 +419,9 @@ IBinder.addFrozenStateChangeCallback(callback)
 - `libs/binder/BpBinder.cpp` L962-1010 — addFrozenStateChangeCallback 转发
 - `libs/binder/IPCThreadState.cpp` L1714-1730 — BC_REQUEST_FREEZE_NOTIFICATION 发送
 - `services/core/java/com/android/server/am/CachedAppOptimizer.java` L4230-4270 — 冻结编排完整流程
-<!-- AIW-源码调研-2026-04-28 -->
 ### 16KB 页环境下的 GC 联动压缩
+
+[存疑: Task9 2026-05-18 已指出该段的 Android 16/17 版本边界与 16KB 专属收益缺少官方或源码锚点，需回炉改成 Android 14+ cached app freezer 的 GC / compaction 口径。]
 
 Android 16 引入了系统压缩期间联动触发应用 GC 的机制。当系统判定需要回收物理内存时（CachedAppOptimizer 执行压缩前或 lmkd 压力增大），会先向目标进程发送 GC 请求，让应用侧主动释放可回收的 Java 堆对象，再由系统层利用 16KB 大页做更高效的物理内存释放。
 
@@ -430,7 +429,7 @@ Android 16 引入了系统压缩期间联动触发应用 GC 的机制。当系�
 
 ## Binder Freezer Driver 协同机制：源码级补充
 
-本节在 2026-04-27 通过 AOSP 源码核验了 CachedAppOptimizer 与 Binder Driver 协同冻结的完整链路，以下为关键实现细节补充。
+CachedAppOptimizer 与 Binder Driver 协同冻结时，关键实现细节集中在 Binder 冻结、cgroup freezer 和回调策略这几处。
 
 ### 两步冻结的原子性问题
 
@@ -492,7 +491,6 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 
 **源码路径**：`frameworks/base/core/java/android/os/RemoteCallbackList.java`
 
-<!-- AIW-源码调研-2026-04-27 -->
 
 ## 后台执行对前台性能的影响
 
@@ -544,7 +542,7 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
 | Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
-| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；系统压缩期间联动触发应用 GC | 后台保活路径进一步收窄；16KB 页环境下 GC 联动更高效 |
+| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；[存疑: 系统压缩期间联动触发应用 GC 的版本边界待 Task2B 回炉] | 后台保活路径进一步收窄；[存疑: 16KB 页收益口径待补官方或源码锚点] |
 
 ## 常见问题与误区
 
@@ -604,7 +602,6 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 
 ### Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析.md
-- 类型：DeepResearch 调研结果
+- 类型：源码级调研资料
 - 摘要：这篇源码级调研聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。
-- 注入时间：2026-04-18
 - 价值：直接补到 5.8 的系统实现层，避免后台限制章节只停留在策略说明。

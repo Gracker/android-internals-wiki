@@ -10373,9 +10373,9 @@
       "id": "task9-20260518-5.8-freezer-gc-version-boundary",
       "section": "5.8",
       "section_title": "后台执行限制与优化",
-      "priority": 85,
-      "title": "16KB/GC 联动压缩的版本与机制边界需修正",
-      "description": "正文把“系统压缩期间联动触发应用 GC”写成 Android 16 引入，并在版本表归到 Android 17，同时绑定 16KB 页收益；source.android.com cached-apps-freezer 的可核验口径是 Android 14 起 cached/freeze 前可能请求 app runtime GC，冻结后可能发生 memory compaction（dirty pages backing storage / anonymous pages to ZRAM），未说明这是 Android 16/17 或 16KB 专属机制。",
+      "priority": 90,
+      "title": "5.8 后台执行限制残留回炉项：GC 边界与 freezer 叙述整合",
+      "description": "Task9 已登记 16KB/GC 联动压缩版本边界问题；Task6 本轮复审另确认 freezer 源码调研块仍需融合，避免发布稿出现素材堆叠和重复叙述。",
       "reason": "[Deep Tech Review] 5.8 16KB/GC 联动压缩存在版本差异与原理链边界错误：Android 16/17 引入 + 16KB 专属收益的断言缺官方/源码锚点，且与 cached-apps-freezer 官方口径不一致。",
       "issue_type": "version-difference-principle-chain",
       "severity": "P1",
@@ -10390,7 +10390,9 @@
         "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
       ],
       "material_paths": [
-        "intake/research-gaps.md"
+        "intake/research-gaps.md",
+        "intake/suggestions.md",
+        "logs/review/2026-05-18-02-review.md"
       ],
       "review_issues": [
         {
@@ -10398,8 +10400,17 @@
           "location": "L426-L430 “16KB 页环境下的 GC 联动压缩”；L548 Android 17 版本表",
           "detail": "正文声称 Android 16 引入“系统压缩期间联动触发应用 GC”，版本表又放到 Android 17；同时把收益绑定到 16KB 大页。官方 cached-apps-freezer 页面描述的是：starting in Android 14，进程进入 cached 后系统可能请求 app runtime 执行 GC，为后续冻结做准备；进程冻结后可能发生 additional memory compaction（dirty pages 写回、匿名页 swap 到 ZRAM）。该口径未证明 Android 16/17 专属，也未证明 16KB 页是机制成立条件。",
           "suggestion": "回炉时改成“cached app freezer 的 Android 14+ GC/compaction 配套机制”，拆掉 Android 16/17 引入断言和 16KB 专属收益；若确有 Android 16/17 或 16KB 专属增强，必须补 source.android / AOSP commit / CachedAppOptimizer 或 ART/runtime 源码锚点。"
+        },
+        {
+          "type": "需重写",
+          "location": "Android 16 的进程冻结流程 / BINDER_FREEZE ioctl / Binder Freezer Driver 协同机制",
+          "detail": "Task6 本轮已做 L1/L2 小修，删除可见 AIW 注入标记并把调研口吻改成正文口吻；但该区域仍是多个源码调研块串接，Binder freeze、FrozenStateChangeCallback 和两步冻结内容在主线里重复出现，发布前需要合并成一条叙述线。",
+          "suggestion": "Task2B 按“cached 进程进入 freezer → Binder 冻结 → cgroup.freeze → FrozenStateChangeCallback / RemoteCallbackList 策略”重组；ioctl 结构体和 commit 细节保留最小必要片段，或移到源码索引/附录。"
         }
-      ]
+      ],
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-18T02:15:00+08:00",
+      "task6_review_log": "logs/review/2026-05-18-02-review.md"
     },
     {
       "id": "task2a-gap-2.22-surfaceflinger-frontend-requestedlayerstate",

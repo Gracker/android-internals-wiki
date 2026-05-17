@@ -1890,3 +1890,17 @@
 - **位置**：frontmatter `sources` L15-L16
 - **问题**：`https://developer.android.com/topic/performance/appstartup` 当前返回 404；同一文档族的 `appstartup/analysis-optimization` 与 `appstartup/best-practices` 可访问。frontmatter 继续保留父路径会让后续复核无法定位官方证据。
 - **建议**：把父路径替换为 `https://developer.android.com/topic/performance/appstartup/analysis-optimization`，如需最佳实践再补 `https://developer.android.com/topic/performance/appstartup/best-practices`；`vitals/launch-time` 继续保留用于 TTID 与 Vitals 阈值。
+
+
+## [Task6 Review] 5.8 后台执行限制与优化 — 2026-05-18
+- **类型**：需确认 / 版本差异
+- **位置**：`16KB 页环境下的 GC 联动压缩`；版本演进 Android 17 行
+- **问题**：Task9 2026-05-18 已指出该段把 GC/compaction 写成 Android 16/17 引入并绑定 16KB 页收益，缺少官方或源码锚点；本轮 Task6 已在正文加 `[存疑]` 标注，但不裁决技术口径。
+- **建议**：Task2B 回炉时改成 Android 14+ cached app freezer 的 GC / compaction 配套机制；若确有 Android 16/17 或 16KB 专属增强，补 source.android / AOSP commit / CachedAppOptimizer 或 ART runtime 锚点。
+- **review 日志**：logs/review/2026-05-18-02-review.md
+
+- **类型**：需重写
+- **位置**：`Android 16 的进程冻结流程` / `BINDER_FREEZE ioctl` / `Binder Freezer Driver 协同机制`
+- **问题**：本轮只做了 L1/L2 小修，删除可见 AIW 注入标记并把调研口吻改成正文口吻；该区域仍是多个源码调研块串接，内容重复，主线会被实现细节打断。
+- **建议**：Task2B 按“cached 进程进入 freezer → Binder 冻结 → cgroup.freeze → FrozenStateChangeCallback / RemoteCallbackList 策略”合并成一条叙述线，ioctl 结构体和 commit 细节只保留对排查有用的最小片段。
+- **review 日志**：logs/review/2026-05-18-02-review.md
