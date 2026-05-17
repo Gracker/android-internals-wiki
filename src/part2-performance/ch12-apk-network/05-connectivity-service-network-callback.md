@@ -2,7 +2,7 @@
 title: "ConnectivityService 与网络状态监听性能"
 chapter: "12.5"
 section: "12.5"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-17"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-05-17"
@@ -33,11 +33,17 @@ reviewed_date: "2026-05-17"
 reviewed_by: openclaw-task6
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 review_type: task6-writing-quality-review
 last_task6_at: "2026-05-17T12:11:00+08:00"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元数据、弱化口语化表述 2 处）；无回炉项，待 Task9 技术审查。"
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-17T12:32:07+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
+task9_result: "pass-tech-review"
+task9_review_notes: "2026-05-17 Task9 12: pass-tech-review。未发现 P0/P1；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码路径、100 outstanding request 限额、CONNECTIVITY_ACTION 限制和 5G slicing 边界与 AOSP main / 官方文档一致；Task6 已通过且无 pending queue，自动晋升 finalized。"
 ---
 
 # 12.5 ConnectivityService 与网络状态监听性能

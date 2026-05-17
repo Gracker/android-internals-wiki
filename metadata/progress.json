@@ -1,8 +1,8 @@
 {
   "total": 304,
   "draft": 0,
-  "ready-for-review": 107,
-  "finalized": 197,
+  "ready-for-review": 106,
+  "finalized": 198,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -158,6 +158,8 @@
     "4.3",
     "5.10",
     "20.6",
+    "7.6",
+    "7.15",
     "12.5"
   ],
   "review_files": [
@@ -312,9 +314,11 @@
     "src/part1-fundamentals/ch04-memory/03-art-memory.md",
     "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
     "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
-  "review_summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
+  "review_summary": "Task9 2026-05-17 12: 深审 7.6、7.15、12.5；发现 P0 4 / P1 2 / P2 1 / P3 1；12.5 pass-tech-review 且 Task6 已通过、无 pending queue，自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 6,
     "l3_issues": 2,
@@ -442,10 +446,13 @@
       "p3": 0
     },
     "7.6": {
-      "p0": 1,
+      "p0": 2,
       "p1": 1,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "reviewed_at": "2026-05-17T12:32:07+08:00",
+      "log": "logs/deep-review/2026-05-17-12-deep-review.md",
+      "summary": "P0 2：SF/HWC trace 源码锚点 handleMessageRefresh/doComposition 不存在；ThermalManager 示例 API 不存在。P1 1：Overlay plane 能力/API 边界缺设备证据。P2 1：案例数值证据包未归档。"
     },
     "20.5": {
       "p0": 3,
@@ -1276,13 +1283,31 @@
       "p1": 3,
       "p2": 0,
       "p3": 1
+    },
+    "7.15": {
+      "p0": 2,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-17T12:32:07+08:00",
+      "log": "logs/deep-review/2026-05-17-12-deep-review.md",
+      "summary": "P0 2：atrace 0x200、FrameTimeline SQL/data source/jank type、SF slice 锚点错误。P1 1：功耗/发热场景入口缺失。"
+    },
+    "12.5": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 1,
+      "reviewed_at": "2026-05-17T12:32:07+08:00",
+      "log": "logs/deep-review/2026-05-17-12-deep-review.md",
+      "summary": "pass-tech-review；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码和官方文档口径一致。P3：可后续补 dumpsys/cmd connectivity 观测样例。自动晋升 finalized。"
     }
   },
-  "total_review_sections": 152,
+  "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T12:11:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-17T12:32:07+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "12:11",
@@ -1309,8 +1334,8 @@
     },
     "auto_promoted": []
   },
-  "task9_last_review": "2026-05-17T11:28:00+08:00",
-  "ready_to_publish": 196,
+  "task9_last_review": "2026-05-17T12:32:07+08:00",
+  "ready_to_publish": 197,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -3554,25 +3579,32 @@
   "last_task2a_processed_file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
-    "reviewed_at": "2026-05-17T11:28:00+08:00",
-    "log": "logs/deep-review/2026-05-17-11-deep-review.md",
+    "date": "2026-05-17",
+    "time": "12:20",
+    "reviewed_at": "2026-05-17T12:32:07+08:00",
     "sections": [
-      "4.3",
-      "5.10",
-      "20.6"
+      "7.6",
+      "7.15",
+      "12.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
-      "src/part5-app/ch20-stability/06-stability-metrics.md"
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
+      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
     ],
-    "p0": 1,
-    "p1": 7,
-    "p2": 5,
-    "result": "needs-rework",
-    "auto_promoted": [],
-    "summary": "Task9 2026-05-17 11: 深审 4.3、5.10、20.6；发现 P0 1 / P1 7 / P2 5；3 节均 needs-rework，未自动晋升。",
-    "external_review_active_files": 0
+    "log": "logs/deep-review/2026-05-17-12-deep-review.md",
+    "p0": 4,
+    "p1": 2,
+    "p2": 1,
+    "p3": 1,
+    "results": {
+      "7.6": "needs-rework / task2b_pending",
+      "7.15": "needs-rework / task2b_pending",
+      "12.5": "pass-tech-review / finalized"
+    },
+    "auto_promoted": [
+      "12.5"
+    ]
   },
   "last_task9_review": "2026-05-17T11:28:00+08:00",
   "last_task9_sections": [
