@@ -10802,6 +10802,26 @@
       ]
     },
     {
+      "section": "ch13-perfetto",
+      "section_title": "第perfetto章 性能分析工具",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "SmartPerfetto 两周更新：从 Perfetto AI Assistant 到可复用的 T... — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-18T05:30:00",
+      "status": "pending"
+    },
+    {
       "id": "task2a-gap-22.13-predictive-back-performance-20260518",
       "section": "22.13",
       "section_title": "Predictive Back 动画与页面切换性能",
@@ -10841,22 +10861,136 @@
         "AndroidX Activity 1.12.0-alpha05 已依赖 Navigation Event 1.0.0-alpha06，NavigationEvent release notes 将 system back 和 predictive back 独立成库。",
         "现有 22.12 关注 FragmentTransaction 执行语义，未覆盖返回手势进度驱动动画时的每帧性能约束。"
       ]
+    },
+    {
+      "section": "1.6",
+      "section_title": "Android 16 Cloud Profile & Dexopt",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-cloud-compilation-sdm-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 16 云编译与 SDM 机制深度分析 — Android 16 云编译基于 DexMetadata(DM)文件与 ART Service 协同，cloud profile 实现 profile-guided 编译，新增 getEnableEm",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-17T22:17:13.397739+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-generational-cmc-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Generational CMC 三代分代模型源码验证 — 验证 AOSP 中 Generational CMC 完整代码路径：配置开关 use_generational_cmc、三代 Young/Mid/Old 模型、YoungMarkCompact::Ru",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-17T22:17:13.397739+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.11",
+      "section_title": "MTE/MemTag 与 Native Crash",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-mte-async-asymm-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "MTE ASYMM 在 Android 15/16 memtagMode=async 源码闭环验证 — 厘清 bionic heap_tagging.cpp 中 async 模式通过 PR_MTE_TCF_ASYNC|SYNC 标志允许 kernel 升级、Scudo allocation stack ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-17T22:17:13.397739+00:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-audit-20.3-native-crash-source-api-20260518",
+      "section": "20.3",
+      "section_title": "Native Crash 分析与治理",
+      "priority": 95,
+      "title": "Native Crash 章节源码锚点、崩溃链路与 API 版本错误",
+      "description": "P0: AOSP 源码路径/函数锚点错误、ApplicationExitInfo API 名称错误、Native crash 传递到 UncaughtExceptionHandler 的流程错误；P1: Android 16 crash_dump 启动链路与 API 31+ tombstone trace 边界、Breakpad 符号 ID 协议需修正。",
+      "reason": "[Deep Tech Audit] 20.3 Native Crash 章节在 android-16.0.0_r1 下存在源码锚点与版本边界错误，需要 Task 2B 回炉。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-06-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "frontmatter sources；正文 SignalChain / debuggerd / tombstone 已验证标注",
+          "detail": "android-16.0.0_r1 下 `art/runtime/signal_chain.cc`、`system/core/debuggerd/tombstone.cpp`、`bionic/linker/debuggerd/handler.cpp` 均无法作为有效源码锚点；`_print_thread_info()` / `_print_memory_and_code()` 也未在 Android 16 debuggerd tombstone 文本路径中命中。",
+          "suggestion": "改锚到 `art/sigchainlib/sigchain.cc` + `art/runtime/fault_handler.cc`、`system/core/debuggerd/handler/debuggerd_handler.cpp`、`system/core/debuggerd/libdebuggerd/tombstone.cpp` / `tombstone_proto_to_text.cpp` / `tombstone_proto.cpp`，并重新核对函数名。"
+        },
+        {
+          "severity": "P0",
+          "type": "API错误/版本差异",
+          "location": "线上获取 tombstone 的途径",
+          "detail": "`ApplicationExitInfo.getProcessExitInfo()` 在 Android 16 `ApplicationExitInfo.java` 中不存在；native tombstone 通过 `getTraceInputStream()` 获取，且源码注释写明 native tombstone trace 从 API 31 开始返回，不是 API 30+。",
+          "suggestion": "改成 API 30+ 可查询 `getHistoricalProcessExitReasons()`；API 31+ 的 `REASON_CRASH_NATIVE` 才可能通过 `ApplicationExitInfo.getTraceInputStream()` 返回 tombstone protobuf，并标注全局循环缓冲区覆盖时可能为 null。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码行为错误",
+          "location": "崩溃收集流程第 1-7 步",
+          "detail": "正文写成 debuggerd 守护进程 fork crash_dump，且 ActivityManagerService 将崩溃信息传给应用层 `UncaughtExceptionHandler`。Android 16 源码中 handler 侧 pseudothread `execle(CRASH_DUMP_PATH, ...)` 启动 `/apex/com.android.runtime/bin/crash_dump64`；`crash_dump.cpp` 通过 `/data/system/ndebugsocket` 通知 ActivityManager，原进程不会回到 Java `UncaughtExceptionHandler`。",
+          "suggestion": "把流程改为 bionic/debuggerd handler → pseudothread/pipe → exec crash_dump → ptrace/unwind/engrave tombstone → tombstoned/ActivityManager 记录；删除 Native crash 进入 Java UncaughtExceptionHandler 的说法。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码引用/符号协议错误",
+          "location": "Breakpad 符号文件格式与目录查找协议",
+          "detail": "`external/google-breakpad/docs/symbol_file_format.md` 在 AOSP tag 下不是有效文档路径，实际为 `docs/symbol_files.md`；正文把 MODULE id 写成 16 字符并称 Breakpad 截取前 16 字符，与示例 32 hex 及 `module_cache.cc` 的 160-bit → 128-bit Breakpad ID 重排逻辑不一致。",
+          "suggestion": "改用 `docs/symbol_files.md` 的 `MODULE <os> <arch> <id> <name>` 定义；目录层级使用 MODULE 行中的 Breakpad debug-id，说明 Android/Linux 会做字节重排并追加 age，不写“截取前 16 字符”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T06:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 311,
-    "p0_count": 113,
-    "last_updated": "2026-05-18T06:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 150,
+    "total_entries": 319,
+    "p0_count": 133,
+    "last_updated": "2026-05-18T06:20:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 154,
     "updated_date": "2026-05-18",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 143,
-    "completed_entries": 158
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 154,
+    "completed_entries": 163
   },
-  "last_updated": "2026-05-18T06:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 150,
+  "last_updated": "2026-05-18T06:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 154,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
