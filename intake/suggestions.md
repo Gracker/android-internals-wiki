@@ -1929,3 +1929,20 @@
 - **位置**：VelocityThreshold：Fling 判定的速度门槛
 - **问题**：正文只摘了 `ViewConfiguration.MINIMUM_FLING_VELOCITY = 50` / `MAXIMUM_FLING_VELOCITY = 8000` 常量，容易让读者以为运行时阈值只由 Java 常量决定。Android 10-16 的实际构造路径会读取 `config_viewMinFlingVelocity` / `config_viewMaxFlingVelocity` dimen，Android 14+ 还提供 `getScaledMinimumFlingVelocity(inputDeviceId, axis, source)` / `getScaledMaximumFlingVelocity(...)`，对 `SOURCE_ROTARY_ENCODER` 会走 `config_viewMinRotaryEncoderFlingVelocity` / `config_viewMaxRotaryEncoderFlingVelocity`，默认 `-1dp` 表示不支持 fling。
 - **建议**：把 Fling 阈值段落改成“fallback 常量 → framework config dimen → device overlay → Android 14+ inputDevice/axis/source overload”的层次，避免和 TouchSlop 段落的资源/overlay 解释不一致。
+
+---
+
+## [Task2A 缺口挖掘检查] 2026-05-18 05:15
+- **结论**：本轮未发现评分 ≥ 14 且尚未覆盖的新增章节缺口，跳过新章节创建。
+- **Phase 0**：`src/` 中 `status: draft` 章节数为 0；无空 draft 可加工。
+- **已检查方向**：
+  1. Android 17 App memory limits / `MemoryLimiter` / `TRIGGER_TYPE_ANOMALY`：已在 4.1、4.4、8.10、14.14、16.5、26.12 等章节覆盖，不作为新小节创建。
+  2. Android 17 后台音频强化：已在 1.16、5.8、16.5 等章节覆盖，不作为新小节创建。
+  3. Agent 辅助 Perfetto / `android/skills/profilers` / SmartPerfetto：13.16 已创建并成稿，不作为新小节创建。
+  4. `ApplicationStartInfo` 启动归因：26.13 已创建并成稿，8.2/26.12 已交叉覆盖。
+  5. ADPF Hint Session 与 Kotlin 协程线程迁移：25.11 已创建，8.6/5.9 已覆盖。
+  6. Jetpack Telecom VoIP 原生可见性、Wear OS 跨设备发现、KMP 默认模块结构：与本书性能优化主线相关性不足，本轮评分未达 14。
+  7. Intent-Driven Storage Systems 论文：存储调优思路有参考价值，但 Android 落地证据不足；本轮记录为观察方向，暂不创建章节。
+  8. SELinux.isEnforced 机制：偏系统安全/调试链路，性能相关性不足，本轮评分未达 14。
+- **建议**：下一轮优先继续从 `daily-info/2026-05-18.md` 和 Android 17 官方文档中筛选“已有官方 API/行为变更 + 尚无 AIW 小节”的主题，避免重复创建已覆盖章节。
+
