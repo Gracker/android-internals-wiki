@@ -2,6 +2,7 @@
 title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
+section_title: "Native Crash 分析与治理"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
@@ -22,17 +23,41 @@ tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: completed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-11"
+last_task6_at: "2026-05-11T08:00:00+08:00"
+last_task6_audit: "2026-05-18"
 ---
 
 # Native Crash 分析与治理
 
-Native Crash 与 Java Crash 的根本区别：Java Crash 的异常信息由 ART 虚拟机在进程内部生成，调用栈完整、格式统一；Native Crash 由 Linux 信号触发，堆栈解析依赖独立的崩溃收集机制，排查链路更长。
+Native Crash 与 Java Crash 的区别：Java Crash 的异常信息由 ART 虚拟机在进程内部生成，调用栈完整、格式统一；Native Crash 由 Linux 信号触发，堆栈解析依赖独立的崩溃收集机制，排查路径更长。
 
-在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 crash 堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不知道 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒一样，很难定位问题的根本原因。
+在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 crash 堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不知道 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒一样，很难定位问题原因。
 
-本节覆盖四件事：信号怎么产生、tombstone 怎么读、堆栈怎么还原到源码行号、线上监控怎么搭。掌握了这些知识，我们就能独立分析 Native Crash 问题，而不是仅仅依赖系统生成的 tombstone 文件。
+分析 Native Crash 时，四条线最容易影响定位效率：信号怎么产生、tombstone 怎么读、堆栈怎么还原到源码行号、线上监控怎么搭。掌握这几条线，排查时就不必只盯着系统生成的 tombstone 文件。
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **信号与收集路径**：说明 SIGSEGV、SIGABRT、SIGBUS 等信号如何进入 SignalChain、debuggerd 和 crash_dump
+- 🔹 **tombstone 解读**：覆盖头部信息、寄存器、backtrace、stack dump 和线上获取路径
+- 🔹 **符号化链路**：说明 addr2line、ndk-stack、Breakpad `.sym` 文件、目录查找协议和 minidump_stackwalk 流程
+- 🔹 **常见崩溃模式**：区分空指针、野指针、SIGABRT、SIGBUS 与 JNI 边界崩溃的排查方向
+- 🔹 **线上监控方案**：比较系统 tombstone、Breakpad、第三方 SDK、APM 信号捕获策略的边界
+- 🔹 **线程级安全点**：说明 sigsetjmp/siglongjmp、mooner、ByteHook、shadowhook 和 mutex use-after-destroy 检测
+
+### 扩展（可选深入）
+
+- 🔸 **符号文件治理**：CI 归档未 strip so、Build ID 查找、服务端离线符号化
+- 🔸 **交叉引用**：JNI 类型安全与异常边界问题回到 §1.15 展开
+<!-- outline-end -->
 
 ## Linux 信号机制与 Native 崩溃产生流程
 
@@ -132,7 +157,7 @@ stack:
 
 - `pc`（Program Counter）：崩溃时的执行地址，用于定位出问题的代码行
 - `lr`（Link Register / x30）：函数返回地址，帮助理解调用来源
-- `x0-x7`：ARM64 的前 8 个参数寄存器，可以看到传给崩溃函数的参数值
+- `x0-x7`：ARM64 的前 8 个参数寄存器，用来确认传给崩溃函数的参数值
 - `sp`（Stack Pointer）：栈指针，配合 stack dump 分析栈上数据
 
 **backtrace**：
@@ -511,7 +536,7 @@ static void sig_handler(int sig, struct siginfo *info, void *ptr) {
 }
 ```
 
-`handleFlag` 在 pthread_create_auto 中设为 1，在 pthread() wrapper 退出时设为 0。这意味着：**只有真正在被 hook 的 start_routine 执行期间发生的 crash 才会被拦截**。另一个线程 crash 时，handleFlag=0 会透传；pthread wrapper 之外的代码 crash 时，也会透传。
+`handleFlag` 在 pthread_create_auto 中设为 1，在 pthread() wrapper 退出时设为 0。因此，**只有被 hook 的 start_routine 执行期间发生的 crash 才会被拦截**。另一个线程 crash 时，handleFlag=0 会透传；pthread wrapper 之外的代码 crash 时，也会透传。
 
 #### sigaltstack：独立的信号栈
 
