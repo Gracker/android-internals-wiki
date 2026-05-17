@@ -59,6 +59,8 @@ task9_result: pass-tech-review
 last_task9_at: "2026-04-20T04:20:38+08:00"
 task2b_state: fixed
 task2b_result: fixed
+last_task6_audit: "2026-05-18"
+
 ---
 
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
@@ -479,8 +481,8 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 | Android 版本 | GC 变化 | 对分析的影响 |
 |---|---|---|
 | 8.0 (Oreo) | CC 成为默认 moving collector，pause time 明显短于 Android 7.0。 | 流畅性问题开始更多表现为短 pause 与 CPU 争抢，不再只有几十毫秒的长停顿。 |
-| 10 前后 | CC 路径进入分代模式，`ConcurrentCopying` 已区分 `young_gen` 和 non-young collector。首次落地的精确 tag 待补源码核对。 | 分析 GC 时要区分 young collection 和 whole-heap collection，不能把所有 GC 都当成 full GC。 |
-| 15+ | CMC 路径里可以看到 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`。 | 设备是否真的在跑 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
+| 10 前后 | CC 路径进入分代模式，`ConcurrentCopying` 已区分 `young_gen` 和 non-young collector。首次对应的精确 tag 待补源码核对。 | 分析 GC 时要区分 young collection 和 whole-heap collection，不能把所有 GC 都当成 full GC。 |
+| 15+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`。 | 设备是否真的在跑 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
 | 17 Beta | Android 17 对外把 “Concurrent Mark-Compact collector enhanced with generational GC” 当成性能特性来讲。 | 做问题归因时，先确认设备是否已启用这条路径，再决定是否把观测到的行为套用到更早版本。 |
 
 [已验证: AOSP main, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
@@ -491,7 +493,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ### "System.gc() 能帮助减少 GC 卡顿"
 
-恰恰相反。`System.gc()` 强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收、回收哪一代。手动触发 GC 只会打乱这个调度。如果发现自己需要手动触发 GC 来"缓解"问题，真正的根因通常是内存泄漏或对象抖动。
+`System.gc()` 不能减少 GC 卡顿。它会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收、回收哪一代。手动触发 GC 只会打乱这个调度。如果发现自己需要手动触发 GC 来"缓解"问题，根因通常是内存泄漏或对象抖动。
 
 ### "GC 暂停只有 1-3ms，不可能导致掉帧"
 
