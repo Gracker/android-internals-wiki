@@ -24,15 +24,15 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-05-07"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-18"
+reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -42,11 +42,13 @@ task2b_result: "fixed"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T22:27:35+08:00"
 task9_review_notes: "2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
-last_task6_at: "2026-05-07T09:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-09-review.md"
-task6_review_notes: "2026-05-07 task6 finalized 抽检：pass-light-edit。清理正文 8 处禁用/模板化表达和 SystemServer 注释；状态保持 finalized / ready-to-publish。"
+last_task6_at: "2026-05-18T01:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-01-review.md"
+task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。小修 8 处（标题比喻、填充词、调度器比喻、frontmatter）；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
 last_task9_audit: "2026-05-17"
 task9_review_log: "logs/deep-review/2026-05-17-22-audit.md"
+reviewed_at: "2026-05-18T01:08:00+08:00"
+task6_reviewed_date: "2026-05-18"
 ---
 
 # Android 分层架构
@@ -113,7 +115,7 @@ graph TB
 
 [图：Android 五层架构图，每层用不同颜色标注，标注关键组件归属]
 
-这个架构的根本设计哲学是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。在性能分析中，每一层都可能成为瓶颈，瓶颈的表现形式取决于它所在的层次。
+这个架构的设计取舍是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。在性能分析中，每一层都可能成为瓶颈，瓶颈的表现形式取决于它所在的层次。
 
 ### 各层职责：从 Kernel 到 App 的"责任链"
 
@@ -144,7 +146,7 @@ Zygote 进程也在这一层扮演关键角色：所有 App 进程都由 Zygote 
 
 分层架构能长期稳定运行，靠的是清晰的职责边界。每一层都有自己的“管辖范围”，越界调用往往会带来性能问题。拆到单层看时，重点是三个问题：有哪些关键组件、为什么这样设计、性能分析时对应哪些观察点。
 
-### SystemServer：系统服务的"大管家"
+### SystemServer：系统服务启动与管理入口
 
 SystemServer 是 Android 启动过程中由 Zygote fork 出的第一个重要进程。它启动并管理着几乎所有核心系统服务——AMS、WMS、PMS、PowerManager 等几十个服务都在这里运行。
 
@@ -173,15 +175,15 @@ private void run() {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/java/com/android/server/SystemServer.java]
 
-### SurfaceFlinger：渲染管线的"合成大师"
+### SurfaceFlinger：独立合成服务
 
 SurfaceFlinger 是一个独立的 Native 进程，它的职责很单一：把各个 App 产生的 Surface 合成为最终的画面，交给屏幕显示。它不属于 SystemServer，但与 SystemServer 中的 WMS 紧密协作——WMS 负责决定窗口的层级和位置，SurfaceFlinger 负责把这些窗口画出来。
 
 SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到，`handleMessageRefresh` 和 `doComposition` 是两个关键的 CPU 切片。
 
-### Zygote：应用进程的"孵化器"
+### Zygote：应用进程 fork 入口
 
-Zygote 的设计是 Android 启动速度优化中最聪明的一笔。系统启动时，Zygote 进程预加载了 ART 运行时、常用 Java 类、系统资源（drawable、字符串等）。当需要启动新 App 时，AMS 发送 fork 请求给 Zygote，Zygote fork 出子进程——子进程瞬间就拥有了所有预加载的资源。
+Zygote 是 Android 启动速度优化中的关键设计。系统启动时，Zygote 进程预加载了 ART 运行时、常用 Java 类、系统资源（drawable、字符串等）。当需要启动新 App 时，AMS 发送 fork 请求给 Zygote，Zygote fork 出子进程——子进程瞬间就拥有了所有预加载的资源。
 
 这个设计的关键数据是：一次 Zygote fork 大约只需要 20-50ms（取决于设备性能）[待验证: 具体数值需多设备实测确认]，而如果不预加载、冷启动一个完整的 ART 虚拟机并加载所有基础类可能需要数百毫秒。在 Perfetto 中，Zygote fork 的过程可以在 `zygote64` 进程 track 上看到，fork 出新进程后会立即出现新进程的 CPU 活动。
 
@@ -206,7 +208,7 @@ Treble 和 Project Mainline 负责的事情不同。Treble 解决 framework/vend
 
 HIDL（Hardware Interface Definition Language）是 Treble 早期为 HAL 引入的接口定义语言。它的传输模型本身就分成两类：binderized 服务用于跨进程 IPC，passthrough 只适用于 C++ client / implementation，常用来包住 legacy HAL。这个区分很重要，因为它决定了我们在 Trace 里是去找独立 HAL service 进程，还是在 client 进程内继续追踪。
 
-随着 Android 版本演进，Google 把新 HAL 接口逐步收敛到 Stable AIDL。AIDL HAL 需要 `@VintfStability` 标注和 `stability: "vintf"` 声明，并进入 VINTF manifest，运行形态是 binderized service。到 Android 13，HIDL 在官方文档里已经标为 deprecated，旧 HIDL HAL 继续兼容，新接口主线则转到 AIDL。
+Android 版本演进过程中，Google 把新 HAL 接口逐步收敛到 Stable AIDL。AIDL HAL 需要 `@VintfStability` 标注和 `stability: "vintf"` 声明，并进入 VINTF manifest，运行形态是 binderized service。到 Android 13，HIDL 在官方文档里已经标为 deprecated，旧 HIDL HAL 继续兼容，新接口主线则转到 AIDL。
 
 底层传输也随之简化。HIDL HAL 常见 `hwbinder`（`/dev/hwbinder`）与 passthrough 两条路；AIDL HAL 使用标准 `binder`（`/dev/binder`）。在 Perfetto 里，AIDL HAL 的 IPC 会和 App ↔ `system_server` 的 Binder 事件出现在同一组观测面里，排查时要靠目标进程名和 transaction 方向区分。
 
@@ -322,7 +324,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 **正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6ms @60Hz 或 8.3ms @120Hz）。Binder 调用箭头短而快。SurfaceFlinger 的 `doComposition` 耗时稳定。
 
 **异常情况（举例）：**
-- 如果 App 主线程出现长时间 "Runnable" 但没有 CPU 切片，说明线程被调度器"晾"着——可能是 CPU 被其他高优先级线程占满，或者系统处于 Thermal 降频状态。
+- 如果 App 主线程出现长时间 "Runnable" 但没有 CPU 切片，说明线程已经就绪但迟迟没拿到 CPU——可能是 CPU 被其他高优先级线程占满，或者系统处于 Thermal 降频状态。
 - 如果 App 主线程的 Binder 调用箭头指向 `system_server` 后长时间没有返回，说明 SystemServer 在处理请求时被其他工作阻塞——可能是锁竞争，也可能是某个服务初始化慢。
 - 如果 `surfaceflinger` 的 `doComposition` 突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
 
@@ -344,12 +346,12 @@ HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访�
 
 ### 误区：App 的性能问题一定在 App 层
 
-很多性能问题确实出在 App 层（主线程做了耗时操作），但有不少场景根因在系统层。比如：
+很多性能问题出在 App 层（主线程做了耗时操作），但有不少场景根因在系统层。比如：
 - **启动慢**：可能是因为 SystemServer 在处理多个启动请求时发生锁竞争，AMS 的 `ActivityManagerService.attachApplication()` 被阻塞。
 - **渲染卡顿**：根因也可能落在 SurfaceFlinger 的 `doComposition` 耗时过长，也就是 GPU 合成负担过重。
 - **ANR**：Input ANR 的根因也可能出在 SystemServer 端的 InputDispatcher 被其他工作拖慢。
 
-在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。理解分层架构是性能分析的基本功：每一层都可能是瓶颈所在。
+在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能定位根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。理解分层架构是性能分析的基本功：每一层都可能是瓶颈所在。
 
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
@@ -363,7 +365,7 @@ HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访�
 
 ### 误区：Binder 调用很快，不需要关注
 
-Binder 确实通过 `mmap()` 实现了单次数据拷贝，设计目标是高效 IPC。但"高效"不等于"免费"——同步 Binder 调用会阻塞调用线程。如果在 Main Thread 上执行同步 Binder 调用，而 `system_server` 端恰好忙于处理其他请求（比如后台 App 在做 `dex2oat`），App 侧就会看到 Main Thread 上一个持续的 "binder" slice，等待时间可能从几毫秒涨到几十甚至上百毫秒，直接导致掉帧甚至 ANR。
+Binder 通过 `mmap()` 实现了单次数据拷贝，设计目标是高效 IPC。但"高效"不等于"免费"——同步 Binder 调用会阻塞调用线程。如果在 Main Thread 上执行同步 Binder 调用，而 `system_server` 端恰好忙于处理其他请求（比如后台 App 在做 `dex2oat`），App 侧就会看到 Main Thread 上一个持续的 "binder" slice，等待时间可能从几毫秒涨到几十甚至上百毫秒，直接导致掉帧甚至 ANR。
 
 关键不在于 Binder 本身快不快，而在于 **Binder 调用链的端到端延迟取决于目标进程的处理速度**。目标进程忙、排队、被锁阻塞，都会传导为调用方的阻塞。分析 Binder 延迟时，永远要同时看调用方和被调用方。
 
