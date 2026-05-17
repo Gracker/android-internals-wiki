@@ -2,7 +2,7 @@
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: '2026-05-11'
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com
@@ -14,10 +14,10 @@ reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: revisiting
-task9_result: "needs-rework"
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -38,15 +38,18 @@ related_chapters:
 - '1.7'
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-18T01:31:55+08:00"
+last_task9_at: "2026-05-18T03:31:27+08:00"
 last_task9_audit: "2026-05-17"
-task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。UncaughtExceptionHandler 崩溃上报持久化链路不完整；RuntimeInit 异常类型与 Crash 分布数据需补证据。已写入 queue.json / suggestions.md。 | 2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
-last_task9_review_log: "logs/deep-review/2026-05-18-01-deep-review.md"
-reviewed_at: "2026-05-18T01:31:55+08:00"
+task9_review_notes: "2026-05-18 task9 deep-review: pass-tech-review。P0 0 / P1 0；UncaughtExceptionHandler 持久化链路已闭合。既有 P2 数据/异常类型建议不重复写入。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-18 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。UncaughtExceptionHandler 崩溃上报持久化链路不完整；RuntimeInit 异常类型与 Crash 分布数据需补证据。已写入 queue.json / suggestions.md。 | 2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
+last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+reviewed_at: "2026-05-18T03:31:27+08:00"
 last_task6_at: "2026-05-18T01:08:00+08:00"
 task6_reviewed_date: "2026-05-18"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。补齐 outline 锚点、去重来源、小修 Kotlin 协程段落间距并补验证标注；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
+task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+finalized_date: "2026-05-18"
+finalized_by: openclaw-task9-auto-promote
 ---
 
 # Java Crash 治理

@@ -1,10 +1,10 @@
 {
   "total": 312,
   "draft": 1,
-  "ready-for-review": 112,
-  "finalized": 199,
+  "ready-for-review": 110,
+  "finalized": 201,
   "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-17",
+  "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -170,12 +170,15 @@
     "14.1",
     "17.5",
     "1.1",
-    "20.2"
+    "20.2",
+    "1.11"
   ],
   "review_files": [
-    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
+    "src/part5-app/ch20-stability/02-java-crash-governance.md"
   ],
-  "review_summary": "Task6 2026-05-18 02: 复审 5.8；完成 L1/L2 小修 9 处，标注 2 个回炉点（GC/compaction 版本边界、freezer 源码调研结构整合），未自动晋升。",
+  "review_summary": "Task9 2026-05-18 03: 深审 1.1/1.11/20.2；1.1 命中 SurfaceFlinger Android16 旧 doComposition 残留 P0，转 Task2B；1.11 与 20.2 无 P0/P1，自动晋升 finalized；新增 1 条 P2 suggestion。",
   "task6_review_summary": {
     "l1_l2_fixes": 9,
     "l3_issues": 1,
@@ -1223,7 +1226,14 @@
       "task6_log": "logs/review/2026-05-18-01-review.md",
       "task6_new_rework": false,
       "task6_note": "复审通过；修正标题比喻、填充词和调度器比喻。Task9 仍需复核，未自动晋升。",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task9_p0": 1,
+      "task9_p1": 0,
+      "task9_p2": 0,
+      "task9_p3": 0,
+      "task9_reviewed_at": "2026-05-18T03:31:27+08:00",
+      "task9_log": "logs/deep-review/2026-05-18-03-deep-review.md",
+      "task9_summary": "P0 1：Android 16 SurfaceFlinger 后续示例仍使用旧 doComposition trace 名；前文已修正为 commit/composite/postComposition。"
     },
     "20.2": {
       "task6_result": "pass-light-edit",
@@ -1233,7 +1243,24 @@
       "task6_log": "logs/review/2026-05-18-01-review.md",
       "task6_new_rework": false,
       "task6_note": "复审通过；补齐 outline 锚点、去重来源、修正 Kotlin 协程段落间距并补验证标注。Task9 仍需复核，未自动晋升。",
-      "task9_result": "needs-rework"
+      "task9_result": "pass-tech-review",
+      "task9_p0": 0,
+      "task9_p1": 0,
+      "task9_p2": 2,
+      "task9_p3": 0,
+      "task9_reviewed_at": "2026-05-18T03:31:27+08:00",
+      "task9_log": "logs/deep-review/2026-05-18-03-deep-review.md",
+      "task9_summary": "无 P0/P1；UncaughtExceptionHandler 持久化链路已闭合；既有 P2 为 DeadObjectException 异常类型边界与 crash 分布数据来源。自动晋升 finalized。"
+    },
+    "1.11": {
+      "task9_result": "pass-tech-review",
+      "task9_p0": 0,
+      "task9_p1": 0,
+      "task9_p2": 1,
+      "task9_p3": 0,
+      "task9_reviewed_at": "2026-05-18T03:31:27+08:00",
+      "task9_log": "logs/deep-review/2026-05-18-03-deep-review.md",
+      "task9_summary": "无 P0/P1；P2 1：16KB 页与 VMA 数量边界需修正；自动晋升 finalized。"
     }
   },
   "total_review_sections": 156,
@@ -3689,7 +3716,7 @@
   ],
   "last_task9_at": "2026-05-17T14:20:00+08:00",
   "last_task2a_result": "gap-mining",
-  "ready-to-publish": 195,
+  "ready-to-publish": 197,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-17T12:11:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-17-12-review.md",

@@ -1891,6 +1891,19 @@
 - **问题**：`https://developer.android.com/topic/performance/appstartup` 当前返回 404；同一文档族的 `appstartup/analysis-optimization` 与 `appstartup/best-practices` 可访问。frontmatter 继续保留父路径会让后续复核无法定位官方证据。
 - **建议**：把父路径替换为 `https://developer.android.com/topic/performance/appstartup/analysis-optimization`，如需最佳实践再补 `https://developer.android.com/topic/performance/appstartup/best-practices`；`vitals/launch-time` 继续保留用于 TTID 与 Vitals 阈值。
 
+## [Task9 Deep Review] 20.2 Java Crash 治理 — 2026-05-18
+- **类型**：源码准确性 / 异常类型边界
+- **位置**：L104 `KillApplicationHandler` 通知 AMS 失败路径
+- **问题**：正文把 “Binder buffer 已满或 AMS 异常” 归为 `DeadObjectException`。AOSP android-16.0.0_r1 `RuntimeInit.KillApplicationHandler` 是 `catch (Throwable t2)`，其中 `DeadObjectException` 只是 system_server 死亡时的特殊分支；其他 Binder/AMS 异常会进入日志记录后再执行 `finally` 杀进程。
+- **建议**：改成“`handleApplicationCrash()` 可能抛 `RemoteException` / 运行时异常；`DeadObjectException` 只代表系统进程死亡场景，其他异常会被 RuntimeInit 记录后进入 kill 流程”。
+
+## [Task9 Deep Review] 20.2 Java Crash 治理 — 2026-05-18
+- **类型**：数据缺失
+- **位置**：L154 Top 5 覆盖 80%+、L272 第三方 SDK crash 20-30%
+- **问题**：两个比例会直接影响治理优先级判断，但正文只标注“待验证/待补充”，缺公开报告、业务样本窗口、App 类型、版本范围和统计口径。
+- **建议**：补内部 crash 平台统计或公开稳定性报告；补不齐时把数值降级为“示例/常见经验”，并保留业务差异边界。
+
+
 
 ## [Task6 Review] 5.8 后台执行限制与优化 — 2026-05-18
 - **类型**：需确认 / 版本差异
@@ -1904,3 +1917,10 @@
 - **问题**：本轮只做了 L1/L2 小修，删除可见 AIW 注入标记并把调研口吻改成正文口吻；该区域仍是多个源码调研块串接，内容重复，主线会被实现细节打断。
 - **建议**：Task2B 按“cached 进程进入 freezer → Binder 冻结 → cgroup.freeze → FrozenStateChangeCallback / RemoteCallbackList 策略”合并成一条叙述线，ioctl 结构体和 commit 细节只保留对排查有用的最小片段。
 - **review 日志**：logs/review/2026-05-18-02-review.md
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-05-18
+- **类型**：源码准确性 / 原理边界
+- **位置**：L178 `16KB Page Size` 与 fork/COW 描述
+- **问题**：段落把 16KB 页导致 PTE/page-table 规模下降，进一步写成 “fork 期间需要遍历和复制的 VMA 链表条目减少”。VMA 数量由 `mmap` 区间决定，page size 不会直接减少 VMA 条目；`dup_mmap` 遍历 VMA 与复制 page table 是不同成本项。
+- **建议**：改成“16KB 页减少 PTE/page-table 规模，可能降低页表相关开销和 TLB 压力”；同时补充边界：VMA 数量不因 page size 变化，COW 粒度增大也可能带来小对象/dirty page 放大。
+
