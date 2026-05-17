@@ -1,7 +1,7 @@
 ---
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
@@ -44,18 +44,18 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-18"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-18T22:20:00+08:00"
-task2b_state: fixed
-task2b_result: fixed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-18T05:21:00+08:00"
+task2b_state: pending
+task2b_result: pending
 last_task6_audit: "2026-05-17"
 last_task6_at: "2026-05-17T23:12:06+08:00"
 ---

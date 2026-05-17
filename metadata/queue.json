@@ -10739,6 +10739,67 @@
           "suggestion": "补一张版本分段表：Android 10-11 字符串默认 lsq2；Android 12-13 enum DEFAULT→LSQ2；Android 14+ 按 axis 选择 X/Y=LSQ2、SCROLL=IMPULSE。正文中“native strategy matrix”“scroll 轴默认 IMPULSE”等结论限定为 Android 14+。"
         }
       ]
+    },
+    {
+      "id": "task9-1.14-lock-contention-pi-futex-source-20260518",
+      "section": "1.14",
+      "section_title": "锁竞争与同步性能分析",
+      "priority": 95,
+      "title": "PI-Futex / bionic pthread / DeliQueue 版本与源码锚点错误",
+      "description": "[Deep Tech Review][源码错误/版本差异] PI mutex API、32 位 PID 限制、SurfaceFlinger/InputDispatcher PI-futex 启用、DeliQueue 官方来源和适用版本存在 P0/P1 问题。",
+      "reason": "[Deep Tech Review][源码错误/版本差异] 1.14 抽检发现多个源码与版本事实错误，需要 Task 2B 回炉修复。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_at": "2026-05-18T05:21:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-05-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 符号错误",
+          "location": "L391-L399 PI-Mutex 协议配置接口",
+          "detail": "正文列出 `PTHREAD_PRIO_PROTECT` 并称 bionic 从 android-9.0.0_r1 起提供完整 PI-Mutex 属性接口。AOSP android-9.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1 的 `pthread.h` 只定义 `PTHREAD_PRIO_NONE` 与 `PTHREAD_PRIO_INHERIT`；`pthread_mutexattr_setprotocol()` 也只接受这两者，传入其他 protocol 返回 EINVAL。",
+          "suggestion": "删除 `PTHREAD_PRIO_PROTECT` 与“完整接口”表述；改为“Android API 28 / Android 9 起公开 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`，bionic 未暴露 `PTHREAD_PRIO_PROTECT`”。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L418-L430 32 位架构 PID 回绕问题",
+          "detail": "正文称 32 位系统 `pid_t` 上限 32767，并称 Android 12+ 引入 `typedef int64_t android_pid_t` / `ANDROID_PID_MAX 999999`。AOSP bionic `sys/types.h` 标注 gids/uids/pids 均为 32-bit；公开源码检索不到 `android_pid_t` / `ANDROID_PID_MAX` 这组符号。bionic 官方 32-bit ABI 文档描述的问题是 32 位 `pthread_mutex_t` 总共 32 bit，只剩 16 bit 存 owner thread id，设备 `/proc/sys/kernel/pid_max` 通常较小以避开该限制。",
+          "suggestion": "按 bionic 32-bit ABI 文档重写：说明 32 位 pthread mutex owner tid 编码限制与 pid_max 约束；删除 Android 12+ 64-bit PID 修复和伪符号。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L192、L274、L432-L443 SurfaceFlinger / InputDispatcher PI-Futex 启用确认",
+          "detail": "正文称 Android 14+ SurfaceFlinger 主线程和 InputDispatcher 核心锁全面启用 PI-futex，并据此给出诊断结论。但 AOSP android-14.0.0_r1 / android-16.0.0_r1 中 SurfaceFlinger `mStateLock` 走 `android::Mutex`，`system/core/libutils/include/utils/Mutex.h` 仅 `pthread_mutex_init(&mMutex, nullptr)`，没有设置 `PTHREAD_PRIO_INHERIT`；InputDispatcher 使用 `std::mutex mLock`。在引用文件中未见 `pthread_mutexattr_setprotocol(PTHREAD_PRIO_INHERIT)`。",
+          "suggestion": "删除“全面启用 PI-futex”与“优先排查第三方路径”的确定结论；如要保留，必须补真实源码锚点（实际设置 PI protocol 的锁包装/构造路径）和对应版本。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码引用/资料 URL 错误",
+          "location": "frontmatter sources L37-L38；L262 DeliQueue 数据来源",
+          "detail": "frontmatter 引用 `https://android-developers.googleblog.com/2026/03/android-17-lock-free-messagequeue.html`，该 URL 返回 404；正文写“Android Developers Blog, 2026-03 DeliQueue”。官方可访问文章为 2026-02-17 `under-hood-android-17s-lock-free.html`，Android 17 behavior change 文档还限定 targetSdk 37+ 应用获得 lock-free MessageQueue。",
+          "suggestion": "修正官方 URL 与日期；在 DeliQueue 段补 `targetSdk 37+` 适用范围，并把 15% / missed frames 数据绑定到官方文章的测试口径。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L5 applicable_versions；L266-L275 版本演进表",
+          "detail": "`applicable_versions: Android 1.0 - Android 17` 覆盖过宽。正文主要讨论 ART monitor（Android 5.0+）、现代 Perfetto `android.monitor_contention`、bionic API 28+ PI mutex、Android 17 targetSdk 37+ DeliQueue；没有覆盖 Dalvik/早期 MessageQueue/Binder 的对应实现边界。",
+          "suggestion": "按机制拆版本范围：Java monitor 区分 Dalvik/ART，PI mutex 标 API 28+，DeliQueue 标 Android 17 + targetSdk 37+；或收窄 frontmatter applicability，避免读者把现代结论套到 Android 1.x-4.x。"
+        }
+      ]
     }
   ],
   "metadata": {
