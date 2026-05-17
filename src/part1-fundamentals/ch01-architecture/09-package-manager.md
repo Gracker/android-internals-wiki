@@ -13,8 +13,8 @@ reviewed_by: openclaw-task6
 reviewed_at: '2026-05-12T21:56:00+08:00'
 task6_result: pending
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: ready-for-review
+task9_state: reviewed
+pipeline_stage: task2b_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
 last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview
@@ -60,17 +60,17 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: pending
-last_task9_at: '2026-05-13T20:35:00+08:00'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-13'
+task9_result: needs-rework
+last_task9_at: "2026-05-17T19:30:43+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-17"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
-task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 1 / P1 1 / P2 0；Android 16 云端编译/SDM 深度段引用多个 android-16.0.0_r1 不存在的类、方法和性能数据。'
+task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；Android 16 Cloud Compilation / SDM 段再次出现不存在方法、错误文件格式和无来源性能数据。"
 last_task6_at: '2026-05-12T21:56:00+08:00'
 task6_reviewed_date: '2026-05-12'
-last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
+last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能

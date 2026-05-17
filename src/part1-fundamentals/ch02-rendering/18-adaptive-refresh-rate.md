@@ -45,23 +45,24 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: ready-for-review
-last_task9_at: "2026-05-13T04:39:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-13"
+pipeline_stage: task2b_pending
+last_task9_at: "2026-05-17T19:30:43+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-17"
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-task9_result: pending
+task9_result: needs-rework
 task2b_result: fixed
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；getSupportedRefreshRates API 36 语义需修正。"
+task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；FrameTimeline SQL 字段、RefreshRateSelector 源码路径和 ARR 决策层归属需回炉。"
 task6_reviewed_date: "2026-05-13"
+last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
 ---
 
 

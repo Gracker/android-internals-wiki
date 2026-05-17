@@ -30,19 +30,20 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pending
 task6_state: revisiting
-pipeline_stage: ready-for-review
-task9_state: pending
-task9_result: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-10"
-last_task9_at: "2026-05-10T16:30:00+08:00"
-task9_review_notes: "2026-05-10 Task9深度审计：P1级问题：联发科全大核调度策略证据不足；P2级问题：GPU差异的trace表现描述不够具体。此前 Task9 还记录 Oryon cache / Perfetto PMU / SQL 查询风险，Task2B 已部分修复，仍保留实机数据与素材整合回炉项。"
-task2b_state: fixed
+task9_reviewed_date: "2026-05-17"
+last_task9_at: "2026-05-17T19:30:43+08:00"
+task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；Tensor G4 CPU 核心、Dimensity 9400 vendor 路径和 sched_ext OEM 名称需回炉。"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-13T02:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-13-02-review.md"
 task6_review_notes: "2026-05-13 Task6：修复 frontmatter YAML 结构；发现 sched_ext 调研素材仍以卡片形式堆在 FAQ 后，需 Task2B 整合到 OEM 调度策略叙述。"
+last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
 ---
 
 # SoC 平台差异
