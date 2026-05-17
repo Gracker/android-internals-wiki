@@ -10985,22 +10985,76 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T06:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-1.8-ams-source-version-20260518",
+      "section": "1.8",
+      "section_title": "Activity Manager Service 与性能分析",
+      "priority": 95,
+      "title": "AMS 章节源码锚点、API 名称与版本归属错误",
+      "description": "P0: oom_adj 表 TOP_SLEEPING 数值错误、ProcessList 常量版本归属错误、Service ANR 代码块与 android-16 源码不一致、ApplicationStartInfo API/类名写错；P1: ModernBroadcastQueue 源码路径与 Android 14/15/16 类名差异需修正。",
+      "reason": "[Deep Tech Audit] 1.8 AMS 章节在 android-16.0.0_r1 与跨版本核查中存在源码锚点/API/版本归属错误，需要 Task 2B 回炉。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-07-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码行为错误/版本差异",
+          "location": "L174、L189：进程优先级表与 ProcessList 版本说明",
+          "detail": "正文把 TOP_SLEEPING 写成 oom_adj=200，并把 PERCEPTIBLE_MEDIUM_APP_ADJ=225、CACHED_APP_LMK_FIRST_ADJ=950 写成 Android 17 (Baklava) 新增。AOSP android-16.0.0_r1 的 OomAdjuster 在 top-sleeping 分支把 adj 设为 FOREGROUND_APP_ADJ=0；ProcessList 中 PERCEPTIBLE_MEDIUM_APP_ADJ 至少从 Android 12 起存在，CACHED_APP_LMK_FIRST_ADJ 至少从 Android 10 起存在，且 Baklava 对应 Android 16 口径，不应标成 Android 17 新增。",
+          "suggestion": "把 TOP_SLEEPING 从 oom_adj 表中移出或改成“进程状态/importance”语义；版本说明改为“android-16.0.0_r1 已存在”，并补 Android 10/12/14/16 的常量演进边界。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码片段错误",
+          "location": "L285-L311：Service ANR 的 realStartServiceLocked()/scheduleServiceTimeoutLocked() 代码块",
+          "detail": "代码块标注 AOSP android-16.0.0_r1，但实际 ActiveServices.realStartServiceLocked() 签名为 ServiceRecord、ProcessRecord、IApplicationThread、pid、UidRecord、execInFg、enqueueOomAdj、serviceBindingOomAdjPolicy；scheduleServiceTimeoutLocked() 使用 mActiveServiceAnrTimer.start(proc, delay)，不是 mAm.mHandler.obtainMessage(SERVICE_TIMEOUT_MSG) 后 sendMessageDelayed。",
+          "suggestion": "改为 android-16.0.0_r1 的真实代码骨架，或明确标注为旧版本/伪代码；保留“onCreate() 位于计时窗口内”的结论，但源码锚点要更新到 AnrTimer 路径。"
+        },
+        {
+          "severity": "P0",
+          "type": "API/源码锚点错误",
+          "location": "L387-L399：冷启动归因 getStartComponent()",
+          "detail": "正文写 `ActivityManager.getStartRequestOverrideTime()` 配合 `AppStartInfo`，并把源码锚点写成 android.app.AppStartInfo；AOSP android-16.0.0_r1 不存在 AppStartInfo.java，ActivityManager.java 中也没有 getStartRequestOverrideTime()。实际类为 android.app.ApplicationStartInfo，getStartComponent() 在该类中，ActivityManager 提供 getHistoricalProcessStartReasons() 与 addApplicationStartInfoCompletionListener()。",
+          "suggestion": "改为 ApplicationStartInfo#getStartComponent()（API 36 / Android 16），并说明通过 ActivityManager#getHistoricalProcessStartReasons() 或 completion listener 获取；删除 getStartRequestOverrideTime 与 AppStartInfo。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码路径/版本差异",
+          "location": "L526-L528：ModernBroadcastQueue 架构与源码路径",
+          "detail": "正文标注 android-16.0.0_r1 的 ModernBroadcastQueue.java，但该路径不存在；android-16.0.0_r1 下对应的是 BroadcastQueueImpl.java + BroadcastProcessQueue.java。Android 14/15 tag 中现代实现类名又是 BroadcastQueueModernImpl.java，Android 16 才表现为 BroadcastQueueImpl.java。",
+          "suggestion": "把源码锚点改成 android-16 的 BroadcastQueueImpl.java / BroadcastProcessQueue.java，并在版本演进里标注 Android 14/15 与 Android 16 的类名差异，避免读者按 ModernBroadcastQueue.java 查源码。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T07:21:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 319,
-    "p0_count": 133,
-    "last_updated": "2026-05-18T06:20:00+08:00",
+    "total_entries": 320,
+    "p0_count": 134,
+    "last_updated": "2026-05-18T07:21:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 154,
+    "pending_entries": 155,
     "updated_date": "2026-05-18",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 154,
+    "pending": 155,
     "completed_entries": 163
   },
-  "last_updated": "2026-05-18T06:20:00+08:00",
+  "last_updated": "2026-05-18T07:21:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 154,
+  "pending": 155,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
