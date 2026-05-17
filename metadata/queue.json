@@ -10257,7 +10257,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/14-android-studio-leakcanary-profiler.md"
@@ -10275,7 +10275,9 @@
         "book_relevance": 4,
         "reader_demand": 4,
         "timeliness": 5
-      }
+      },
+      "completed_date": "2026-05-17",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线。"
     }
   ],
   "metadata": {
