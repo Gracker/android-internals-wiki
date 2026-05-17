@@ -10835,7 +10835,7 @@
       "added_at": "2026-05-18T06:04:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/13-predictive-back-performance.md"
@@ -10860,7 +10860,9 @@
         "Android Developers 已拆出 predictive back animations / Views / Fragment / NavigationEvent 文档，覆盖 View、Fragment、Activity、Compose 多路径。",
         "AndroidX Activity 1.12.0-alpha05 已依赖 Navigation Event 1.0.0-alpha06，NavigationEvent release notes 将 system back 和 predictive back 独立成库。",
         "现有 22.12 关注 FragmentTransaction 执行语义，未覆盖返回手势进度驱动动画时的每帧性能约束。"
-      ]
+      ],
+      "completed_date": "2026-05-18T07:08:00+08:00",
+      "completed_reason": "Task 2A 加工完成：Predictive Back 动画与页面切换性能，status → ready-for-review，进入 Task 6 管线。"
     },
     {
       "section": "1.6",
