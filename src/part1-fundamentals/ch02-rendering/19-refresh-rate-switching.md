@@ -10,9 +10,9 @@ task6_result: "needs-rework"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -191,19 +191,15 @@ Display HAL（通过 Composer HAL / HWC 接口）在收到 SurfaceFlinger 的模
 
 [图：Display HAL 模式切换状态机流程图，展示从 SurfaceFlinger 请求到 HAL 确认的完整时序]
 
-### HWC 4.0 预判式切换（Android 16）
+### Composer AIDL expectedPresentTime 与预判式切换
 
-[存疑: Task9 2026-05-13 已指出 `expectedPresentTime` 的版本归属和源码锚点需要复核，本段不在 Task6 中裁决，交 Task2B 按 queue.json 修正。]
+`expectedPresentTime` 字段位于 Composer AIDL 的 `DisplayCommand.aidl`，android-13.0.0_r1 已存在。SurfaceFlinger 在提交合成请求时把预期的呈现时间戳一并告诉 Display HAL，让 HAL 能提前启动硬件配置，把部分过渡开销隐藏在合成流水线的等待时间里。
 
-Android 16 强制要求 AIDL V4 Composer HAL。V4 接口引入了 `expectedPresentTime` 字段，SurfaceFlinger 在提交合成请求时把预期的呈现时间戳一并告诉 Display HAL。
+Android 16 强制要求 AIDL V4 Composer HAL，进一步巩固了这条路径。但 `expectedPresentTime` 本身不是 Android 16 引入的。
 
-这改变了硬件切换的时间预算。在 V3 及更早的接口中，Display HAL 收到模式切换指令后才开始重锁 PLL——从收到请求到 PLL 稳定，整个过程计入切换延迟。V4 的 `expectedPresentTime` 让 Display HAL 在收到请求时就能知道"下一帧什么时候要显示"，从而提前启动 PLL 重配置，把重锁过程的一部分隐藏在合成流水线的等待时间里。
+在支持 dual-PLL 的高端平台上，预判式切换可以把硬件过渡从"1-2 帧冻结"压到"0-1 帧"。预判式切换的前提是 SurfaceFlinger 能准确预测下一帧的呈现时间。如果 VSync 调度出现抖动（比如 ARR 刚好在切换点调整了步进），预测偏差可能导致 Display HAL 提前完成的 PLL 重锁与实际呈现时间之间出现间隙。
 
-实际效果：切换瞬时的第一帧黑屏被大幅压缩甚至消除。在支持 dual-PLL 的高端平台上，预判式切换可以把硬件过渡从"1-2 帧冻结"压到"0-1 帧"，用户几乎感知不到。
-
-预判式切换的前提是 SurfaceFlinger 能准确预测下一帧的呈现时间。如果 VSync 调度出现抖动（比如 ARR 刚好在切换点调整了步进），预测偏差可能导致 Display HAL 提前完成的 PLL 重锁与实际呈现时间之间出现间隙。这种情况下，切换仍然能完成，但"提前量"的部分收益会打折扣。
-
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl — expectedPresentTime 字段]
+[已验证: AOSP android-13.0.0_r1, hardware/interfaces/graphics/composer/aidl/.../DisplayCommand.aidl — expectedPresentTime 字段已存在]
 
 ## 在 Perfetto 中识别刷新率切换卡顿
 
@@ -300,17 +296,13 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
-### VsyncModulator 原子化相位切换（Android 16）
+### VsyncModulator 的 phase offset 切换机制
 
-[存疑: Task9 2026-05-13 已指出 android-16.0.0_r1 中 `VsyncModulator` 原子化相位切换声明与源码不符，本段不在 Task6 中裁决，交 Task2B 按 queue.json 修正。]
+刷新率切换时，`VsyncModulator` 需要把新的 VSync phase offset 应用到调度器。当前 android-16.0.0_r1 的实现中，`setVsyncConfigSet()` 通过 `std::lock_guard<std::mutex>` 保护 `mVsyncConfigSet` 的写入，按值替换整个 config set。VSync 线程在每次唤醒时读取当前 config set 来计算唤醒偏移。
 
-刷新率切换时，`VsyncModulator` 需要把新的 VSync phase offset 应用到调度器。在 Android 16 之前，这个操作依赖 `mVsyncConfigSet` 的互斥锁保护——Binder 线程提交 Transaction 时会触发 `setVsyncConfigSet()`，而 VSync 线程在每次唤醒时需要读取当前 config set 来计算唤醒偏移。两条线程竞争同一把锁，在刷新率切换的瞬间，VSync 线程可能拿到一个"半更新"的 config set，导致那一帧的唤醒时点偏离预期。
+Binder 线程（提交 Transaction）和 VSync 线程共享这把锁。锁持有时间很短（一次结构体赋值），但刷新率切换瞬间如果两条线程恰好竞争，VSync 线程可能等一垒锁后才能拿到新配置，导致那一帧的唤醒时点有微秒级抖动。在 120Hz 设备上，一次 VSync 周期只有 8.33ms，相位偏移的抖动如果超过 1ms 就可能被用户感知。当前实现的锁持有方差对大多数场景影响有限，但在极端压力场景下仍有改进空间。
 
-Android 16 把 `mVsyncConfigSet` 的访问改成了 `std::atomic<std::shared_ptr<VsyncConfigSet>>`。写入侧（Binder 线程）通过 `atomic_store` 一次性替换整个 config set 指针；读取侧（VSync 线程）通过 `atomic_load` 拿到的要么是旧的完整 config，要么是新的完整 config，不存在中间状态。
-
-这消除了刷新率切换瞬间的锁等待，使相位切换的抖动从微秒级的锁持有时间方差降到了原子操作本身的纳秒级确定性。在 120Hz 设备上，一次 VSync 周期只有 8.33ms，相位偏移哪怕抖动 1ms 都会被用户感知为画面撕裂或跳帧。原子化切换把这个抖动压到了可以忽略的程度。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp — setVsyncConfigSet() 使用 std::lock_guard<std::mutex>]
 
 ### 精确 fps 请求、category 请求和 range 请求怎么选
 
@@ -324,7 +316,7 @@ Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Androi
 | 普通 View 动画 | `View.setRequestedFrameRate(120f)` 或 `View.REQUESTED_FRAME_RATE_CATEGORY_HIGH` | 只想表达“这里需要更高刷新率”，不想把值绑死到某个 mode | category 请求更适合 ARR 设备 |
 | Compose 动画 | `Modifier.preferredFrameRate(...)` | Compose 组件的局部动画、滚动和过渡 | 语义和 View 侧一致 |
 | 自定义滚动控件 | `View.setFrameContentVelocity(...)` | 刷新率应该跟着 fling / smooth scroll 速度变化 | 系统按速度决定是否升降刷新率 |
-| 底层 Surface 需要范围提示 | `Surface.setFrameRate(new Surface.FrameRateParams.Builder().setDesiredRateRange(min, max).setFixedSourceRate(fps).build())` | 渲染管线自己掌握 Surface，希望给出范围或固定片源的组合约束 | 更适合视频引擎、游戏引擎、自定义渲染 |
+| 底层 Surface 需要范围提示 | `Surface.setFrameRate(new Surface.FrameRateParams.Builder().setDesiredRateRange(min, max).setFixedSourceRate(fps).build())` | 渲染管线自己掌握 Surface，希望给出范围或固定片源的组合约束 | Flagged API（`FLAG_ARR_SETFRAMERATE_API`），Android 16 需设备与 SDK 开关启用；普通三方 App 的稳定路径仍以 `Surface.setFrameRate(float,int[,int])`、`View.setRequestedFrameRate()`、`Display.getSuggestedFrameRate()` 为主 |
 
 Android 16（API 36）才公开 `Display.getSuggestedFrameRate(int category)`。调用时要传 `Display.FRAME_RATE_CATEGORY_NORMAL` 或 `Display.FRAME_RATE_CATEGORY_HIGH`，不要和 `View.REQUESTED_FRAME_RATE_CATEGORY_*` 混用，也不要在低版本直接调用。它返回的是系统给 normal / high 两类场景的建议刷新率，不负责回答“45fps 该映射到 60Hz 还是 90Hz”。45fps 这类具体映射仍然要交给 `RefreshRateSelector`、Display policy 和设备支持的刷新率集合去决定。
 
@@ -384,7 +376,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 | Android 11-14 | 多刷新率 mode switching 成为常见实现，`Surface.setFrameRate()` 用来表达固定帧源或显式 fps 提示 |
 | Android 15-QPR1+ | 支持对应 HAL API 的设备开始提供 ARR，刷新率可以在单一 mode 内跟随内容节奏变化 |
 | Android 16 公开接口 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 让 App 能直接读取设备能力和系统建议值 |
-| Android 16 | `VsyncModulator` 采用 `std::atomic` 管理 VSync phase offset，消除 Binder 线程与 VSync 线程间的锁竞争，实现相位切换的确定性 |
+| Android 16 | `VsyncModulator` 的 `setVsyncConfigSet()` 通过 `std::lock_guard<std::mutex>` 保护 config set 写入，锁持有时间短，极端压力场景下仍有微秒级抖动空间 |
 | Android 17 | 缩减 SurfaceFlinger `mGlobalLock` 范围并引入 DeliQueue，副屏刷新率切换不再干扰主屏渲染节奏，实现多屏"性能主权隔离" |
 | Android 16 | 16KB 页面大小推广，图形缓冲区分配需考虑页对齐影响 |
 | AndroidX / Compose | RecyclerView 1.4、AndroidX core 1.15、Compose `preferredFrameRate()` 把滚动和局部动画的 ARR 适配放到更高层 API 里 |
