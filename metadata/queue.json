@@ -10423,7 +10423,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md"
@@ -10434,7 +10434,10 @@
         "frameworks/native/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h",
         "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
       ],
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-18T02:22:00+08:00",
+      "completed_reason": "Task 2A 加工完成，章节状态已改为 ready-for-review，进入 Task 6 管线。",
+      "drafted_file": "src/part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md"
     }
   ],
   "metadata": {
