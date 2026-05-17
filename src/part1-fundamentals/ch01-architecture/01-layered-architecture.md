@@ -31,13 +31,13 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-18T03:31:27+08:00"
@@ -322,12 +322,12 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 正常 vs 异常的表现对比
 
-**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的 `doComposition` 耗时稳定。
+**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的合成阶段（Android 16 为 `composite`，旧版本为 `doComposition`）耗时稳定。
 
 **异常情况（举例）：**
 - 如果 App 主线程出现长时间 "Runnable" 但没有 CPU 切片，说明线程已经就绪但迟迟没拿到 CPU——可能是 CPU 被其他高优先级线程占满，或者系统处于 Thermal 降频状态。
 - 如果 App 主线程的 Binder 调用箭头指向 `system_server` 后长时间没有返回，说明 SystemServer 在处理请求时被其他工作阻塞——可能是锁竞争，也可能是某个服务初始化慢。
-- 如果 `surfaceflinger` 的 `doComposition` 突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
+- 如果 `surfaceflinger` 的合成阶段（`composite` / 旧版 `doComposition`）突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
 
 [待补充：Trace 截图——正常帧 vs 掉帧对比]
 
@@ -349,7 +349,7 @@ HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访�
 
 很多性能问题出在 App 层（主线程做了耗时操作），但有不少场景根因在系统层。比如：
 - **启动慢**：可能是因为 SystemServer 在处理多个启动请求时发生锁竞争，AMS 的 `ActivityManagerService.attachApplication()` 被阻塞。
-- **渲染卡顿**：根因也可能落在 SurfaceFlinger 的 `doComposition` 耗时过长，也就是 GPU 合成负担过重。
+- **渲染卡顿**：根因也可能落在 SurfaceFlinger 的合成阶段耗时过长（Android 16 看 `composite`，旧版本看 `doComposition`），也就是 GPU 合成负担过重。
 - **ANR**：Input ANR 的根因也可能出在 SystemServer 端的 InputDispatcher 被其他工作拖慢。
 
 在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能定位根因。Main Thread 上如果有一个持续几十毫秒的 Binder slice，下一步应先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程；问题可能不在 App 本身，而在系统服务排队等待。理解分层架构是性能分析的基本功：每一层都可能是瓶颈所在。
