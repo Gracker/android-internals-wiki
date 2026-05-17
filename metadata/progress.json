@@ -166,14 +166,13 @@
     "2.10",
     "14.1",
     "8.2",
-    "7.6"
+    "7.6",
+    "14.1"
   ],
   "review_files": [
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+    "src/part3-tools/ch14-other-tools/01-as-profiler.md"
   ],
-  "review_summary": "Task6 2026-05-17 16: 正常 review 14.1/8.2/7.6；L1/L2 小修 30 处，无新增 L3/L4 回炉；8.2 与 7.6 仍有既有 Task9 pending 队列，未自动晋升。",
+  "review_summary": "Task9 2026-05-17 16: 复核 14.1；P0 1 / P1 2 / P2 1，ProfilingTrigger API 示例仍不可编译，Network/profileable 边界需回炉。",
   "task6_review_summary": {
     "l1_l2_fixes": 30,
     "l3_issues": 0,
@@ -1172,20 +1171,24 @@
       "summary": "pass-tech-review；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码和官方文档口径一致。P3：可后续补 dumpsys/cmd connectivity 观测样例。自动晋升 finalized。"
     },
     "14.1": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-17T16:20:00+08:00",
+      "log": "logs/deep-review/2026-05-17-16-deep-review.md",
+      "summary": "P0 1：ProfilingTrigger Builder/registerForAllProfilingResults 示例仍不可编译；P1 2：Network Inspector 入口/时间轴口径、profileable Java Method Trace 能力边界需重查；P2 1：28% 性能提升缺来源。",
+      "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 8,
-      "task6_l3_l4_issues": 0,
       "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
-      "task6_log": "logs/review/2026-05-17-16-review.md",
-      "task6_new_rework": false,
-      "task6_note": "复审通过；清理第一人称和填充式提示语，锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
+      "task6_log": "logs/review/2026-05-17-16-review.md"
     }
   },
   "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T16:11:00+08:00",
-  "last_updated_by": "task6-draft-review",
+  "last_updated": "2026-05-17T16:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "16:11",
@@ -3448,6 +3451,23 @@
       "gap_score": 14,
       "queue_priority": 80,
       "material_count": 3
+    },
+    "14.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-05-17T16:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-16-deep-review.md",
+      "last_task6_at": "2026-05-17T16:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-16-review.md",
+      "queue_priority": 95,
+      "title": "Android Studio Profiler",
+      "file": "src/part3-tools/ch14-other-tools/01-as-profiler.md"
     }
   },
   "task2b_rounds": [
@@ -4270,5 +4290,22 @@
     "src/part5-app/ch20-stability/06-stability-metrics.md",
     "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
-  "last_task2a_date": "2026-05-17"
+  "last_task2a_date": "2026-05-17",
+  "task9_last_review_summary": {
+    "date": "2026-05-17",
+    "time": "16:20",
+    "reviewed_at": "2026-05-17T16:20:00+08:00",
+    "sections": [
+      "14.1"
+    ],
+    "files": [
+      "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+    ],
+    "log": "logs/deep-review/2026-05-17-16-deep-review.md",
+    "p0": 1,
+    "p1": 2,
+    "p2": 1,
+    "p3": 0,
+    "auto_promoted": []
+  }
 }

@@ -9649,50 +9649,54 @@
       "id": "task9-20260517-14.1-profiler-profilingmanager-api",
       "section": "14.1",
       "section_title": "Android Studio Profiler",
-      "title": "Android Studio Profiler 触发式 Profiling API 与工具入口版本口径错误",
+      "title": "Android Studio Profiler ProfilingTrigger 示例与工具入口边界仍需回炉",
       "priority": 95,
-      "reason": "[Deep Tech Review] ProfilingManager/ProfilingTrigger 示例使用不存在或过时的启动触发 API，Network Profiler 与 profileable 能力边界也未按当前 Android Studio/官方文档拆清。",
-      "description": "将 ProfilingManager 拆成 Android 15 app-driven profiling 与 Android 16 system-triggered profiling；修正 addProfilingTriggers/registerForAllProfilingResults、TRIGGER_TYPE_APP_FULLY_DRAWN/ANR 示例；补当前 Network Inspector 与 profileable/debbugable 能力矩阵。",
-      "issue_type": "api-version-observability",
+      "reason": "[Deep Tech Review] Task2B 修复后仍残留 ProfilingTrigger Builder/registerForAllProfilingResults API 签名错误；Network Inspector 时间轴口径和 profileable Java Method Trace 能力边界仍需按官方文档复核。",
+      "description": "修正 Android 16 trigger-based profiling 示例为可编译 API；拆清 Android Studio 2020.3.1+ Network Inspector 入口与 Profiler timeline；复核 profileable/debuggable 对 Java/Kotlin Method Recording 的支持边界。",
+      "issue_type": "api-signature-version-observability",
       "severity": "P0",
       "created_date": "2026-05-17",
-      "added_at": "2026-05-17T13:20:00+08:00",
+      "added_at": "2026-05-17T16:20:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
         "src/part3-tools/ch14-other-tools/01-as-profiler.md"
       ],
       "material_paths": [
-        "logs/deep-review/2026-05-17-13-deep-review.md"
+        "logs/deep-review/2026-05-17-16-deep-review.md"
       ],
       "review_issues": [
         {
           "severity": "P0",
-          "type": "API 签名/版本事实",
-          "location": "L224-L242 ProfilingManager / ProfilingTrigger 示例",
-          "detail": "正文写 ProfilingManager 是 Android 16/API 36 新增，并使用 ProfilingManager.registerTrigger()、ProfilingTrigger.Builder().setTriggerType(TRIGGER_TYPE_STARTUP)。官方 Android 16 trigger-based profiling 示例使用 ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN).setRateLimitingPeriodHours(...).build()、registerForAllProfilingResults(...)、addProfilingTriggers(...)；Android 15 已有 app-driven ProfilingManager，Android 16 增加 system-triggered profiling。",
-          "suggestion": "拆分 Android 15/16 能力边界；示例改成 TRIGGER_TYPE_APP_FULLY_DRAWN / TRIGGER_TYPE_ANR + addProfilingTriggers，并说明结果只能通过 registerForAllProfilingResults 接收。删除 STARTUP/OOM/CPU 高占用等未证实触发器。"
+          "type": "API 签名错误",
+          "location": "L247-L264 ProfilingManager / ProfilingTrigger 注册示例",
+          "detail": "正文仍使用 `ProfilingTrigger.Builder().setTriggerType(...)` 和 `registerForAllProfilingResults { ... }`。公开 API 是 `ProfilingTrigger.Builder(int triggerType)` + `setRateLimitingPeriodHours()` + `build()`；`registerForAllProfilingResults` 的签名是 `(Executor, Consumer<ProfilingResult>)`，没有单 lambda 重载。官方 trigger-based capture 示例还先注册全局结果 listener，再调用 `addProfilingTriggers()`。当前代码按 Android 16 API 36 不能编译。",
+          "suggestion": "改成 `ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN).setRateLimitingPeriodHours(1).build()`；用 `val executor = Executors.newSingleThreadExecutor()` 与 `Consumer<ProfilingResult>` 调 `registerForAllProfilingResults(executor, callback)`，再 `addProfilingTriggers(triggers)`；`TRIGGER_TYPE_APP_FULLY_DRAWN` 的触发条件写成冷启动中调用 `Activity.reportFullyDrawn()` 后，不要写成自动“首帧绘制”。"
         },
         {
           "severity": "P1",
-          "type": "工具入口/版本差异",
-          "location": "L88-L95 Profiler 四模块、L212-L220 Power Profiler",
-          "detail": "正文把 Network Profiler 列为当前 Profiler 核心模块。Android Studio 2020.3.1+ 网络抓包入口已迁移到 App Inspection > Network Inspector；Power Profiler/ODPM 又是 Android Studio Profiler 内的受设备支持能力。当前写法会让读者在 Koala/Meerkat 之后的 IDE 中找错入口。",
-          "suggestion": "补一张版本/入口矩阵：CPU/Memory/Power 属 Profiler；Network 使用 App Inspection > Network Inspector；旧版 Network Profiler 只作为历史入口说明。"
+          "type": "版本差异 / 工具入口",
+          "location": "L89-L99 Profiler 四模块与共享时间轴描述",
+          "detail": "正文已在 L95 说明 Network Profiler 迁移到 App Inspection > Network Inspector，但 L89 仍写“Profiler 的核心是四个分析模块”，L99 又写“四个模块共享同一个时间轴”。在 Android Studio 2020.3.1+，Network Inspector 位于 App Inspection，不是当前 Profiler 时间轴中的同级模块；该段会让 Koala/Meerkat 之后的读者继续按旧版 Profiler 入口和共享 timeline 理解。",
+          "suggestion": "拆成当前入口矩阵：Profiler 负责 CPU/Memory/Power 等任务；Network 走 View > Tool Windows > App Inspection > Network Inspector；旧版 Network Profiler 只保留历史说明。删除“这四个模块共享同一个时间轴”或限定为旧版 Profiler。"
         },
         {
           "severity": "P1",
-          "type": "观测前提缺失",
-          "location": "L154-L190 Memory Profiler、L192-L194 profileable、L246-L252 FAQ",
-          "detail": "正文推荐 profileable 构建，但 Memory Profiler 段落未说明 profileable 与 debuggable 的能力差异。官方文档要求需要 Java/Kotlin allocations 或 heap dump 时使用 debuggable；正文只写 profileable 不能做 Java Method Trace 和 Full Allocation Tracking，漏掉 heap dump/Java/Kotlin allocation 的关键限制。",
-          "suggestion": "按 build type 补能力矩阵：profileable 适合低扰动 CPU/System Trace/Callstack Sample 等；heap dump、Java/Kotlin allocation recording 等需要 debuggable。Java Method Trace 支持边界以当前 Android Studio 文档复核后再写。"
+          "type": "观测前提 / profileable 能力边界",
+          "location": "L199-L208 能力矩阵、L275 FAQ",
+          "detail": "正文把 Java Method Trace 标为 `profileable` 不可用。当前 Android Studio profile 文档明确要求改用 debuggable 的场景是 Java/Kotlin allocations、heap dump，以及部分 task view 的 Interaction timeline；`<profileable>` manifest 文档还列出 simpleperf、am profile commands、Perfetto CPU/Java memory 等本地 profiling 能力。Java/Kotlin Method Recording 是否在当前 Studio/profileable 组合下受限需要单独版本证据，不能直接写成通用 ❌。",
+          "suggestion": "复核 Android Studio 当前版本的 Java/Kotlin Method Recording 支持矩阵；如果只能在某些 IDE/设备/API 组合下使用，按版本列条件。无一手证据前，把表格改成“需按 Studio 版本验证”，并保留官方确定限制：Java/Kotlin Allocation Recording、Heap Dump 需 debuggable。"
         }
       ],
-      "completed_date": "2026-05-17T15:18:41+08:00",
-      "completed_reason": "Task 2B 回炉修复: ProfilingManager API 修正为 addProfilingTriggers + TRIGGER_TYPE_APP_FULLY_DRAWN/ANR(P0), Network Profiler→Network Inspector 入口补版本(P1), profileable/debuggable 能力矩阵(P1)"
+      "reopened_from_completed": {
+        "completed_date": "2026-05-17T15:18:41+08:00",
+        "completed_reason": "Task 2B 回炉修复: ProfilingManager API 修正为 addProfilingTriggers + TRIGGER_TYPE_APP_FULLY_DRAWN/ANR(P0), Network Profiler→Network Inspector 入口补版本(P1), profileable/debuggable 能力矩阵(P1)"
+      },
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-17T16:20:00+08:00"
     },
     {
       "id": "task9-20260517-8.2-app-start-api-lifecycle-version",
@@ -9828,22 +9832,113 @@
       "created_by": "task2a-knowledge-gap",
       "completed_date": "2026-05-17T16:04:00+08:00",
       "completed_reason": "Task 2A 内容加工完成：系统 DNS Resolver、netd/ConnectivityService 调用关系、DNS 诊断路径和应用层 DNS 优化边界已补齐，章节状态改为 ready-for-review。"
+    },
+    {
+      "id": "task9-20260517-8.2-applicationstartinfo-recheck",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "title": "ApplicationStartInfo 常量与示例代码复修仍不完整",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ApplicationStartInfo startup state 数值、START_REASON_CHANGED 与示例 timestamp 判空仍需修正。",
+      "description": "[Deep Tech Review] P0 1 / P1 1：ApplicationStartInfo startup state 常量值仍写错，START_REASON_CHANGED 不存在；示例代码未按 startup state / timestamp key 做判空，可能 NPE。",
+      "issue_type": "source-code-accuracy/version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T15:29:34+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-15-deep-review.md",
+        "AOSP android-15.0.0_r1: frameworks/base/core/java/android/app/ApplicationStartInfo.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 常量错误",
+          "location": "L321-L327 ApplicationStartInfo 关键字段表",
+          "detail": "AOSP android-15.0.0_r1 ApplicationStartInfo 中 STARTUP_STATE_STARTED=0、STARTUP_STATE_ERROR=1、STARTUP_STATE_FIRST_FRAME_DRAWN=2；正文写成 1/2/3。START_REASON_CHANGED 不在 @StartReason 枚举中，实际公开 reason 包括 ALARM、BACKUP、BOOT_COMPLETE、BROADCAST、CONTENT_PROVIDER、JOB、LAUNCHER、LAUNCHER_RECENTS、OTHER、PUSH、SERVICE、START_ACTIVITY。",
+          "suggestion": "改成 AOSP/API 35 实际常量表；删除 START_REASON_CHANGED，并用 START_REASON_* 枚举说明启动来源。"
+        },
+        {
+          "severity": "P1",
+          "type": "示例代码健壮性/原理链",
+          "location": "L344-L369 各阶段耗时计算示例",
+          "detail": "ApplicationStartInfo 文档说明 STARTUP_STATE_ERROR 不保证额外 timestamp；STARTUP_STATE_STARTED 只保证 LAUNCH。当前示例只判断 Map 非空，随后直接 unbox LAUNCH/FORK/BIND_APPLICATION/APPLICATION_ONCREATE，遇到未完成或 error record 会 NPE。",
+          "suggestion": "先判断 latest.getStartupState()，再用 containsKey()/Long 判空读取每个 timestamp；只在 FIRST_FRAME_DRAWN 时计算 TTID 与 SF composition。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260517-7.6-sf-hwc-recheck",
+      "section": "7.6",
+      "section_title": "案例集",
+      "title": "SF/HWC 案例源码锚点与应用侧修复边界仍需修正",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 案例六仍引用 android-16 不存在的 handleMessageRefresh，且 HWC plane 数与 setRelativeLayer 公共 API 边界未闭环。",
+      "description": "[Deep Tech Review] P0 1 / P1 2：SurfaceFlinger handleMessageRefresh 锚点不存在；HWC plane 数来源自相矛盾；setRelativeLayer 是 @hide API，不能作为普通 App 修复方案。",
+      "issue_type": "source-code-accuracy/api-boundary/evidence-gap",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T15:29:34+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-15-deep-review.md",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp",
+        "AOSP android-16.0.0_r1: frameworks/base/core/java/android/view/SurfaceControl.java",
+        "intake/research-gaps.md#7.6"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Trace 锚点错误",
+          "location": "L526-L538 SurfaceFlinger 合成降级案例",
+          "detail": "正文先列出 SurfaceFlinger::composite() → CompositionEngine::present() → Output::present() → Output::composeSurfaces() → RenderEngine::drawLayers()，但下一步仍要求在 surfaceflinger 主线程找 handleMessageRefresh slice。AOSP android-16.0.0_r1 SurfaceFlinger.cpp 无 handleMessageRefresh / doComposition 符号。",
+          "suggestion": "统一改成 android-16 可验证链路与 Perfetto slice：SurfaceFlinger::composite()/CompositionEngine/Output::present()/composeSurfaces()/RenderEngine::drawLayers()；如保留旧符号必须标旧版本来源。"
+        },
+        {
+          "severity": "P1",
+          "type": "证据链/数据来源",
+          "location": "L540-L547 Overlay Plane 数量来源",
+          "detail": "正文 L540 标注“中端 SoC 通常 4 个 plane / 高端 6-8 个”待补证据，但 L547 又写“已验证: source.android.com - 中端芯片通常 4 个”。当前 research-gaps.md 已明确该点必须来自厂商文档、HWC 日志或实机 dumpsys/Layer trace，不能用泛化结论。",
+          "suggestion": "删除“已验证 source.android.com 中端 4 个”的断言；改成设备级待验证，并补 dumpsys SurfaceFlinger / Winscope / Layer trace 证据。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 边界/修复建议不可执行",
+          "location": "L555-L559 修复方案",
+          "detail": "正文建议“使用 setRelativeLayer 控制叠放”。AOSP android-16 SurfaceControl.Transaction#setRelativeLayer 标注 @hide，普通 App 不能把它当作稳定 public API；应用侧更可执行的是减少 Surface/Layer 数、调整 SurfaceView/TextureView 选择、使用 setZOrderMediaOverlay()/setZOrderOnTop() 等公开能力，并用 trace 验证合成类型。",
+          "suggestion": "把 setRelativeLayer 降级为系统/特权层能力；普通 App 修复方案改成公开 SurfaceView Z-order、合并 overlay、减少独立 Surface，并说明没有 public API 查询 overlay plane 数。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 289,
-    "p0_count": 40,
-    "last_updated": "2026-05-17T14:20:00+08:00",
+    "total_entries": 292,
+    "p0_count": 45,
+    "last_updated": "2026-05-17T15:30:35+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 150,
+    "pending_entries": 148,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 150,
-    "completed_entries": 137
+    "pending": 148,
+    "completed_entries": 142
   },
-  "last_updated": "2026-05-17T14:20:00+08:00",
+  "last_updated": "2026-05-17T15:30:35+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 150,
+  "pending": 148,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }
