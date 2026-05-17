@@ -1,7 +1,7 @@
 {
   "total": 303,
-  "draft": 1,
-  "ready-for-review": 105,
+  "draft": 0,
+  "ready-for-review": 106,
   "finalized": 197,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -153,7 +153,8 @@
     "13.15",
     "1.20",
     "26.12",
-    "13.16"
+    "13.16",
+    "13.17"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -302,7 +303,8 @@
     "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
     "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
     "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
   ],
   "review_summary": "Task9 2026-05-17 08: review 13.16；P1 2 / P2 3。需补 thread_state raw 状态口径映射与 FrameTimeline/android.frames Android 10-17 版本边界；本轮仅 1 个章节符合 task9 pending 条件。",
   "task6_review_summary": {
