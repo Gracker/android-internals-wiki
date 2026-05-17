@@ -10400,6 +10400,30 @@
           "suggestion": "回炉时改成“cached app freezer 的 Android 14+ GC/compaction 配套机制”，拆掉 Android 16/17 引入断言和 16KB 专属收益；若确有 Android 16/17 或 16KB 专属增强，必须补 source.android / AOSP commit / CachedAppOptimizer 或 ART/runtime 源码锚点。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-2.22-surfaceflinger-frontend-requestedlayerstate",
+      "section": "2.22",
+      "priority": 80,
+      "title": "SurfaceFlinger FrontEnd 与 RequestedLayerState",
+      "description": "Android 15+ SurfaceFlinger FrontEnd 将 RequestedLayerState、LayerLifecycleManager、LayerHierarchyBuilder 与 TransactionHandler 拆成独立状态处理层，需要独立小节解释事务吞吐、层级构建和合成线程交接边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md"
+      ],
+      "source_refs": [
+        "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
+        "frameworks/native/services/surfaceflinger/FrontEnd/RequestedLayerState.h",
+        "frameworks/native/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h",
+        "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
+      ],
+      "created_by": "task2a-knowledge-gap"
     }
   ],
   "metadata": {

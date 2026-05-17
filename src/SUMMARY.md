@@ -63,6 +63,7 @@ tags:
   - [2.19 刷新率切换与帧率适配性能](part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md)
   - [2.20 多窗口与桌面模式渲染性能](part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)
   - [2.21 文字渲染性能](part1-fundamentals/ch02-rendering/21-text-rendering-performance.md)
+  - [2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState](part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
