@@ -195,6 +195,7 @@ tags:
   - [12.2 网络性能优化](part2-performance/ch12-apk-network/02-network-performance.md)
   - [12.3 网络性能深入：连接池、TLS 与传输优化](part2-performance/ch12-apk-network/03-network-performance-deep.md)
   - [12.4 Android 网络安全与 TLS 性能优化](part2-performance/ch12-apk-network/04-network-security-tls-performance.md)
+  - [12.5 ConnectivityService 与网络状态监听性能](part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md)
 
 ---
 
