@@ -1851,3 +1851,9 @@
 - **位置**：L624-L626 Zygote Preload 的贡献
 - **问题**：正文写“Zygote preload 覆盖 80% 以上的类加载需求”，但未给出设备、Android 版本、类加载统计方法或官方来源；该数值容易被当成通用事实。
 - **建议**：补基于 class loading trace / ART log / AOSP preload 列表的统计口径；补不到时删除 80% 数值，改成定性描述“覆盖大量 framework 常用类与资源”。
+
+## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-05-17
+- **类型**：数据缺失 / 来源口径
+- **位置**：L195 `profileable` 相比 `debuggable` 约 28% 性能提升
+- **问题**：正文把“28% 性能提升”写成 Google 测试数据，但本节参考资料没有给出对应 release note、benchmark 场景、设备、指标或链接。该数值会直接影响读者选择 profiling 构建类型。
+- **建议**：补 Android Studio / Android Developers 原始出处和测试条件；若来源实际是 Koala Profiler 任务启动速度“up to 60% faster”等其他指标，应改成正确对象；补不齐则删除 28% 数值，只保留 profileable 低扰动的定性判断。
