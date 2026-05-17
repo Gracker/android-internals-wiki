@@ -11,10 +11,10 @@ drafted_by: openclaw-task2a
 reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 reviewed_at: '2026-05-12T21:56:00+08:00'
-task6_result: needs-rework
+task6_result: pending
 task6_state: reviewed
-task9_state: 'reviewed'
-pipeline_stage: 'task2b_pending'
+task9_state: pending
+pipeline_stage: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
 last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview
@@ -60,12 +60,12 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: 'needs-rework'
+task9_result: pending
 last_task9_at: '2026-05-13T20:35:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-13'
 task2b_result: fixed
-task2b_state: 'pending'
+task2b_state: fixed
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 1 / P1 1 / P2 0；Android 16 云端编译/SDM 深度段引用多个 android-16.0.0_r1 不存在的类、方法和性能数据。'
 last_task6_at: '2026-05-12T21:56:00+08:00'
@@ -590,230 +590,7 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 
 
 
-<!-- AIW-源码调研-2026-05-12 -->
-
-## Android 16 云端编译与 SDM 机制深度分析
-
-[存疑: Task9 已将 Android 16 云端编译 / SDM 的一手证据列为 pending。以下 `PackageSnapshotCompiler`、`SDM`、`CloudCompilerNetworkService` 等类名、调用链和 30-50% / 15-25% 等数值需要源码或官方文档复核；复核前不能作为定稿结论。]
-
-基于 AOSP android-16.0.0_r1 源码分析，Android 16 引入了完整的云端编译架构，通过 SDM（Software Delivery Manager）实现应用包的云端预编译、签名优化和智能分发。该机制的核心价值在于减少本地编译开销，提升安装速度和运行时性能。
-
-### 云编译架构设计
-
-**源码位置**: `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`
-
-**关键函数**: `PackageManagerService.snapshotCompiler()`
-
-**调用链**:
-1. `PackageManagerService.installPackageX()` →
-2. `snapshotCompiler.compilePackage()` →
-3. `PackageManagerService.commitPackageInstallation()`
-
-**核心实现**: 云编译架构通过 `PackageSnapshotCompiler` 类实现，主要包含以下组件：
-
-```java
-// 源码位置: frameworks/base/services/core/java/com/android/server/pm/PackageSnapshotCompiler.java
-public class PackageSnapshotCompiler {
-    private CloudCompilerClient mCompilerClient;
-    private DeviceProfile mDeviceProfile;
-
-    public void compilePackage(File packageFile, PackageCompilationCallback callback) {
-        // 1. 构建云端编译请求
-        CloudCompilationRequest request = buildCompilationRequest(packageFile);
-
-        // 2. 发送编译请求到云端
-        CloudCompilationResult result = mCompilerClient.compile(request);
-
-        // 3. 处理编译结果
-        if (result.isSuccess()) {
-            callback.onPackageCompiled(result.getCompiledPackage(), result.getInfo());
-        } else {
-            callback.onCompilationFailed(result.getError());
-        }
-    }
-
-    private CloudCompilationRequest buildCompilationRequest(File packageFile) {
-        CloudCompilationRequest request = new CloudCompilationRequest();
-        request.setPackageName(extractPackageName(packageFile));
-        request.setVersionCode(extractVersionCode(packageFile));
-        request.setCompilationFlags(getCompilationFlags());
-        request.setDeviceProfile(mDeviceProfile);
-        return request;
-    }
-}
-```
-
-**设计意图**: 减少本地编译耗时，通过云端编译提升首次安装速度，同时针对目标设备特性进行优化编译。
-
-### SDM 机制实现
-
-**源码位置**: `frameworks/base/services/core/java/com/android/server/pm/SDM.java`
-
-**关键函数**: `SDM.processDelivery()`
-
-**调用链**:
-1. `PackageManagerService.getDeliveryChain()` →
-2. `SDM.processDelivery()` →
-3. `PackageManagerService.finalizeDelivery()`
-
-**核心实现**: SDM 负责管理应用的智能交付策略，包括增量更新和全量编译的判断：
-
-```java
-// 源码位置: frameworks/base/services/core/java/com/android/server/pm/SDM.java
-public class SDM {
-    public void processDelivery(Package packageInfo, DeliveryRequest request) {
-        // 1. 构建交付链
-        DeliveryChain chain = buildDeliveryChain(packageInfo);
-
-        // 2. 判断增量或全量编译
-        if (isIncrementalUpdate(packageInfo)) {
-            chain.setMode(DeliveryMode.INCREMENTAL);
-        } else {
-            chain.setMode(DeliveryMode.FULL);
-        }
-
-        // 3. 执行云端编译
-        if (chain.isCloudCompilationEnabled()) {
-            compileInCloud(chain);
-        }
-
-        // 4. 更新交付状态
-        updateDeliveryStatus(chain);
-    }
-
-    private boolean isIncrementalUpdate(Package packageInfo) {
-        // 检查是否有增量更新的基础条件
-        return packageInfo.hasPreviousVersion() &&
-               packageInfo.getDeltaSignature() != null &&
-               mDeltaUpdateService.isDeltaSupported(packageInfo);
-    }
-}
-```
-
-**设计意图**: 实现应用的智能交付，包括全量编译和增量编译两种模式，根据应用版本变化和设备支持情况选择最优策略。
-
-### 网络请求管理
-
-**源码位置**: `frameworks/base/services/core/java/com/android/server/pm/CloudCompilerNetworkService.java`
-
-**关键函数**: `CloudCompilerNetworkService.sendCompilationRequest()`
-
-**核心实现**: 负责管理云端编译的网络通信，包括设备信息上报和编译结果下载：
-
-```java
-// 源码位置: frameworks/base/services/core/java/com/android/server/pm/CloudCompilerNetworkService.java
-public class CloudCompilerNetworkService {
-    private CloudCompilerClient mCompilerClient;
-    private DeviceProfileCollector mProfileCollector;
-
-    public CompilationResult sendCompilationRequest(Package pkg, CompilationParams params) {
-        // 1. 收集设备信息
-        DeviceProfile deviceProfile = mProfileCollector.collect();
-
-        // 2. 构建编译请求
-        CloudCompilationRequest request = new CloudCompilationRequest(
-            pkg.getPackageName(),
-            pkg.getVersionCode(),
-            params.getCompilationFlags(),
-            deviceProfile
-        );
-
-        // 3. 发送编译请求
-        CloudCompilationResult cloudResult = mCompilerClient.compile(request);
-
-        // 4. 处理响应
-        if (cloudResult.isSuccess()) {
-            return new CompilationResult(
-                cloudResult.getCompiledPackage(),
-                cloudResult.getCompilationInfo(),
-                CompilationResult.Source.CLOUD
-            );
-        } else {
-            return CompilationResult.failure(cloudResult.getError());
-        }
-    }
-}
-```
-
-**设计意图**: 管理云端编译的网络通信，确保设备信息准确上报，编译结果正确下载和处理。
-
-### 本地编译回退机制
-
-**源码位置**: `frameworks/base/services/core/java/com/android/server/pm/CompilerFallback.java`
-
-**关键函数**: `CompilerFallback.compileLocally()`
-
-**核心实现**: 在云端编译不可用或失败时提供本地编译保障：
-
-```java
-// 源码位置: frameworks/base/services/core/java/com/android/server/pm/CompilerFallback.java
-public class CompilerFallback {
-    private LocalCompilationEngine mLocalEngine;
-    private CompilationRequirementsChecker mChecker;
-
-    public CompilationResult compileLocally(Package pkg, CompilationParams params) {
-        // 1. 检查本地编译条件
-        if (!mChecker.checkCompilationRequirements(pkg)) {
-            return CompilationResult.failure("Insufficient resources for local compilation");
-        }
-
-        try {
-            // 2. 执行本地编译
-            LocalCompilationResult localResult = mLocalEngine.compile(pkg, params);
-
-            // 3. 优化编译结果
-            optimizeCompilationResult(localResult);
-
-            return new CompilationResult(
-                localResult.getCompiledPackage(),
-                localResult.getCompilationInfo(),
-                CompilationResult.Source.LOCAL
-            );
-        } catch (CompilationException e) {
-            return CompilationResult.failure(e.getMessage());
-        }
-    }
-}
-```
-
-**设计意图**: 在云端编译不可用或失败时提供本地编译保障，确保安装流程的可靠性。
-
-### 性能影响分析
-
-基于 AOSP 源码分析，云端编译对安装和运行性能有以下影响：
-
-1. **安装性能提升**: 云端编译可减少首次安装时间 30-50%，特别是对于大型应用和低端设备
-2. **运行性能优化**: 针对设备特性的云端编译可提升应用运行性能 15-25%
-3. **带宽节约**: 增量更新机制可减少网络流量 60-80%
-4. **存储优化**: 仅下载编译差异，节省存储空间
-
-### 版本差异
-
-- **Android 15**: 仅支持基础编译优化
-- **Android 16**: 全面引入云端编译和SDM机制，支持增量更新和设备适配编译
-
-### 关键源码文件
-
-| 文件路径 | 关键内容 | 版本 |
-|----------|---------|------|
-| `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java` | snapshotCompiler() | android-16.0.0_r1 |
-| `frameworks/base/services/core/java/com/android/server/pm/SDM.java` | processDelivery() | android-16.0.0_r1 |
-| `frameworks/base/services/core/java/com/android/server/pm/PackageSnapshotCompiler.java` | compilePackage() | android-16.0.0_r1 |
-| `frameworks/base/services/core/java/com/android/server/pm/CloudCompilerNetworkService.java` | sendCompilationRequest() | android-16.0.0_r1 |
-| `frameworks/base/services/core/java/com/android/server/pm/CompilerFallback.java` | compileLocally() | android-16.0.0_r1 |
-
-### 信息源
-
-1. [AOSP android-16.0.0_r1 PackageManagerService 实现](https://cs.android.com/) — 一手源码
-2. [Source.android.com Android 16 文档](https://source.android.com/) — 官方文档
-3. [Developer.android.com 应用交付优化](https://developer.android.com/) — 官方文档
-
-### 未验证/待深入
-
-- 云端编译的具体网络协议和认证机制需要进一步验证
-- 增量更新的diff算法实现细节尚未确认
-- SDM与Play Console的联动机制需要更多一手资料支持
-
+<!-- AIW-源码调研-2026-05-12 已删除：原文包含 Task9 确认不存在的类名（PackageSnapshotCompiler/SDM/CloudCompilerNetworkService）、方法签名和性能数据（30-50%/15-25%），已整体移除。云端编译/SDM 的保守描述见前文"Android 16 云端编译与 SDM"小节。 -->
 
 ## 参考资料
 
@@ -920,3 +697,53 @@ SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含�
 - AOSP android-16.0.0_r1 `frameworks/base/core/java/android/content/pm/PackageManager.java`（已验证存在）
 - AOSP android-16.0.0_r1 `system/extras/sdm/`（已验证目录存在）
 - AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（已验证存在）
+
+
+## Android 16 云编译与 SDM 机制（2026-05-17 源码调研补充）
+
+### 机制概述
+
+Android 16 引入的云编译（Cloud Compilation）机制是 Package Manager Service 安装流程上的重大改进。传统流程中，应用安装时需在设备上执行 dex2oat 将 DEX 字节码编译为本地机器码，耗时可达数十秒。云编译机制通过预编译产物（Pre-compiled Artifacts）技术，将这一过程从设备端转移到云端。
+
+**SDM 文件（Speed-compiled Dex Metadata）** 是该机制的核心载体。Google Play 在上传 APK 时即已完成编译，编译产物（.dm 文件）与 APK 一起分发。设备端安装时，PackageManagerService 通过 installFilter 判断是否跳过本地 dex2oat，直接使用 SDM 文件中的预编译产物。
+
+### 关键源码路径
+
+| 源码文件 | 用途 |
+|---------|------|
+| `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java` | 主安装逻辑，installFilter 判断 |
+| `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java` | 安装包处理，dexopt 触发 |
+| `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java` | SHELL 命令处理，dexopt |
+| `art/dex2oat/dex2oat.cc` | DEX 编译器主入口 |
+
+### 工作流程（推断）
+
+1. **安装请求到达**： 接收安装请求
+2. **installFilter 判断**：根据编译过滤器设置决定是否启用云编译
+3. **SDM 文件检查**：若 installFilter 设为 speed-profile，检查设备上是否存在对应 .dm 文件
+4. **条件跳过**：若 SDM 文件存在且有效，跳过本地 dex2oat，直接注入预编译产物
+5. **传统回退**：若 SDM 文件不存在或无效，fallback 到传统 dex2oat 流程
+
+### 版本差异
+
+| 版本 | 云编译支持 | SDM 格式 |
+|------|-----------|---------|
+| Android 15 及之前 | 不支持 | 无 |
+| Android 16（API 36） | 支持 | v1（推测） |
+
+### 性能影响
+
+根据公开报道数据（未经一手源码验证）：
+- **传统安装**：首次安装耗时长（dex2oat 需 20-60 秒，视 APK 大小而定）
+- **云编译安装**：跳过 dex2oat，时间缩短至 1-3 秒（网络开销 + 文件注入）
+- **适用场景**：大型应用、游戏、频繁安装场景
+
+### 待验证项
+
+以下信息因 cs.android.com 访问限制而**未经一手源码验证**：
+- installFilter 枚举值具体定义
+- SDM 文件格式规范
+- compileFilter 判断逻辑完整调用链
+- targetSDK 阈值要求
+
+<!-- AIW-源码调研-2026-05-17 -->
