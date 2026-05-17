@@ -1,6 +1,7 @@
 ---
 title: "Perfetto SDK 与应用内 Trace 数据源"
 chapter: "13.17"
+section: "13.17"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；system backend 依赖设备侧 traced 服务，低版本按设备能力降级"
@@ -27,9 +28,51 @@ created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
 gap_score: 16
 material_count: 4
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-17"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-17T10:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-17-10-review.md"
+task9_state: pending
+task9_result: pending
 ---
 
 # 13.17 Perfetto SDK 与应用内 Trace 数据源
+
+<!-- outline-start -->
+## 要点
+
+### 🔹 Perfetto SDK 和 AndroidX Tracing 的边界
+说明 `androidx.tracing`、平台 `android.os.Trace` 与 Perfetto SDK 的适用范围，帮助读者判断 Java / Kotlin 标记、Native `track_event` 和 custom data source 的边界。
+
+### 🔹 in-process 后端的最小采集路径
+覆盖 in-process backend 的初始化、`TrackEvent` 注册、采集配置、停止导出和事件写入，强调它只采集本应用事件。
+
+### 🔹 system 后端与系统 Perfetto service 协作
+解释应用作为 producer 与系统 Perfetto daemon 协作的方式，说明 system backend 能合并时间轴，但不能绕过系统级 trace 权限。
+
+### 🔹 自定义 data source 的适用场景
+区分 `track_event` 适合的时间轴问题与 custom data source 适合的结构化状态问题，给出 schema、消费工具和数据量三项检查。
+
+### 🔹 启动早期 trace 与线上触发式采集
+说明 startup tracing、短窗口触发和环形缓冲适合的场景，并把应用内事件与系统级事件的权限边界拆开。
+
+### 🔹 构建、体积和版本兼容边界
+覆盖 Perfetto SDK 的接入形态、C++17、ABI、初始化时机、低版本降级，以及 C SDK / C++ SDK 的选择依据。
+
+### 🔹 隐私和数据治理
+说明 trace 数据的隐私风险，约束 category、event、调试注解、counter、导出流程和系统 trace 的数据边界。
+
+### 🔹 Perfetto SDK、ProfilingManager、APM 自定义 trace 的组合方案
+按开发期、性能专项、灰度线上、系统内测四种环境拆分采集方式、适用数据和产物。
+
+## 扩展
+
+### 🔸 待复核项
+记录 Android 17 上 Perfetto SDK 与 `ProfilingManager` 的 session 关系、C SDK 包体积增量、自定义 data source 的 PerfettoSQL 样例三类后续验证点。
+<!-- outline-end -->
 
 Perfetto SDK 解决的是应用内部事件如何进入 Perfetto trace 的问题。它适合把 C / C++ 模块、游戏引擎、Native 渲染管线、端侧推理模块的区间和计数器放进同一份 `.pftrace`，让系统调度、Binder、渲染和应用自定义事件能在同一条时间轴上分析。读完这一节，应该能判断什么时候继续用 `android.os.Trace` / `androidx.tracing`，什么时候引入 Perfetto SDK，以及线上采集时不能越过哪些权限和隐私边界。
 
@@ -53,7 +96,7 @@ Perfetto SDK 的入口在 Native 侧。官方文档把它定义为 C++17 userspa
 | 场景 | 更合适的工具 | 判断依据 |
 | --- | --- | --- |
 | Java / Kotlin 方法耗时、页面生命周期、启动阶段普通标记 | `androidx.tracing` / `android.os.Trace` | 平台 API 足够，Macrobenchmark 可自动收集，接入成本最低 |
-| Native 模块区间、游戏引擎帧阶段、C++ 推理 pipeline | Perfetto SDK `track_event` | 事件源在 Native 侧，想要 category、counter、debug annotation 和 PerfettoSQL 分析 |
+| Native 模块区间、游戏引擎帧阶段、C++ 推理管线 | Perfetto SDK `track_event` | 事件源在 Native 侧，想要 category、counter、debug annotation（调试注解）和 PerfettoSQL 分析 |
 | 应用事件要和 ftrace、调度、Binder 放在同一条时间轴 | Perfetto SDK system backend 或平台 atrace | 采集由外部 Perfetto consumer 控制，应用只提供 producer 事件 |
 | 需要写入自定义 protobuf，后续用 Trace Processor 或自研解析器分析 | Perfetto SDK custom data source | `track_event` 的区间和计数器表达不够，需要强类型数据 |
 | 普通线上 SDK 想远程读取整机 ftrace、logcat、其他进程信息 | 不应承诺为应用内能力 | 这些属于系统级诊断边界，详见 26.12 节 |
@@ -154,18 +197,18 @@ duration_ms: 10000
 write_into_file: true
 ```
 
-这份配置的前提是设备侧有权限启动系统级 trace session。普通三方应用不应把 system backend 解读成“应用可以读取整机 trace”。它能提供事件，不能替代 adb、系统签名、profileable/debuggable、Android 15+ `ProfilingManager` 等权限模型。线上诊断方案要在协议里写清 capability check、失败回执和降级路径，详见 26.12 节。
+这份配置的前提是设备侧有权限启动系统级 trace session。普通第三方应用不应把 system backend 解读成“应用可以读取整机 trace”。它能提供事件，不能替代 adb、系统签名、`profileable` / `debuggable`、Android 15+ `ProfilingManager` 等权限模型。线上诊断方案要在协议里写清能力检查、失败回执和降级路径，详见 26.12 节。
 
 ## 自定义 data source 的适用场景
 
-`track_event` 适合时间轴问题：某段代码什么时候开始、持续多久、当时 counter 是多少。custom data source 适合状态问题：队列里有多少任务、调度器把帧分到哪个阶段、推理 runtime 选择了哪个 delegate、缓存池水位如何变化。
+`track_event` 适合时间轴问题：某段代码什么时候开始、持续多久、当时 counter 是多少。custom data source 适合状态问题：队列里有多少任务、调度器把帧分到哪个阶段、推理运行时选择了哪个 delegate、缓存池水位如何变化。
 
 [已验证: AOSP external/perfetto/docs/instrumentation/tracing-sdk.md]
 
 引入 custom data source 前先过三条检查：
 
 - 数据必须有稳定 schema：字段名、枚举值、单位和版本兼容规则要能长期维护，不能把它当成任意日志字符串。
-- 数据要能被 Trace Processor 或内部工具消费：如果后续仍靠人工肉眼读文本，`track_event` 的 debug annotation 往往更省成本。
+- 数据要能被 Trace Processor 或内部工具消费：如果后续仍靠人工肉眼读文本，`track_event` 的 `debug annotation` 往往更省成本。
 - 数据量要可控：高频状态快照会挤占 trace buffer，必须按 category、采样率或触发窗口限制。
 
 适合 custom data source 的例子是 Native 渲染引擎的帧调度状态：每帧包含 frame id、stage、queue depth、target timestamp、deadline miss reason。`track_event` 能画出阶段耗时，但很难把这些字段作为强类型列稳定查询。custom data source 能把字段写进 protobuf，再用 PerfettoSQL 做聚合。
@@ -180,7 +223,7 @@ write_into_file: true
 
 这类能力适合三种问题：
 
-- 冷启动首屏：Native runtime、引擎初始化、资源预热在 Java 层 trace 建立前已经发生，需要把它们补进启动时间轴。
+- 冷启动首屏：Native 运行时、引擎初始化、资源预热在 Java 层 trace 建立前已经发生，需要把它们补进启动时间轴。
 - 短窗口触发：只在卡顿、超时、异常前后开启数秒 trace，减少常开成本。
 - 环形缓冲：低频记录关键状态，高危事件发生后停止并导出窗口内数据。
 
@@ -199,7 +242,7 @@ Perfetto SDK 发布包通常以两个 amalgamated 文件接入：`perfetto.h` �
 - 初始化时机：`Tracing::Initialize()` 和 `TrackEvent::Register()` 要早于事件写入。启动期采集要把初始化放到 Native 模块入口或进程早期初始化位置。
 - 低版本降级：Android 10 以后系统 trace 文件使用 Perfetto 格式；系统 backend 还依赖设备上的 `traced` 能力和抓取权限。低版本或权限不足时，保留 `android.os.Trace` / `ATrace_*` 标记，保证线下工具仍能看到基础区间。
 
-C SDK 和 C++ SDK 的差异可以按团队语言栈判断。纯 C / Rust FFI / 需要最小 ABI 面的模块倾向 C SDK；已有 C++17 工程、需要 `TrackEvent` category、counter、debug annotation、custom data source 的模块倾向 C++ SDK。不要为了“统一工具”把 Java/Kotlin 业务层全部迁到 Perfetto SDK，平台 trace API 已经能覆盖大部分应用层区间。
+C SDK 和 C++ SDK 的差异可以按团队语言栈判断。纯 C / Rust FFI / 需要最小 ABI 面的模块倾向 C SDK；已有 C++17 工程、需要 `TrackEvent` category、counter、`debug annotation`、custom data source 的模块倾向 C++ SDK。不要为了“统一工具”把 Java/Kotlin 业务层全部迁到 Perfetto SDK，平台 trace API 已经能覆盖大部分应用层区间。
 
 ## 隐私和数据治理
 
@@ -211,13 +254,13 @@ trace 数据比日志更容易暴露上下文，因为它把时间、线程、�
 
 - category 名称只描述技术模块，例如 `rendering`、`network_scheduler`、`ml_runtime`，不包含用户、租户、实验组或业务单号。
 - event 名称保持稳定，避免拼接动态参数。`DrawFrame` 比 `DrawFrame_user_123` 安全，也更适合 PerfettoSQL 聚合。
-- debug annotation 只写低敏技术值，例如 frame id、queue depth、buffer size、stage enum。URL、手机号、token、地理位置、原始请求体不能写入 trace。
+- `debug annotation` 只写低敏技术值，例如 frame id、queue depth、buffer size、stage enum。URL、手机号、token、地理位置、原始请求体不能写入 trace。
 - counter 要有单位和范围。没有单位的 `cost=123` 在后续分析里价值很低，也容易被误读。
 - 线上导出 trace 前做大小限制、脱敏、加密传输、保留期控制和用户授权记录。
 
 系统 trace 的权限边界更严。合并 ftrace 和其他进程数据的 `.pftrace` 可能包含全设备行为，普通应用不能把它当作自身数据读取、上传或长期保存。
 
-## Perfetto SDK、ProfilingManager、APM custom trace 的组合方案
+## Perfetto SDK、ProfilingManager、APM 自定义 trace 的组合方案
 
 Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto 原生数据；APM 负责采样、触发、上传、去重、归档和告警；`ProfilingManager` / `ProfilingTrigger` 负责 Android 15+ 的平台公开 profiling 入口。三者组合时按环境拆分：
 
