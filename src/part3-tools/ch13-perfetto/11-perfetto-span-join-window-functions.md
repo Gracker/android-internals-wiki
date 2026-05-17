@@ -29,12 +29,12 @@ related_chapters: ["13.10", "13.6", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_reviewed_date: "2026-05-15"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -42,14 +42,30 @@ task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T09:27:23+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-09-deep-review.md
 task9_review_notes: "2026-05-15 Task9 09: needs-rework。P0 1 / P1 1 / P2 1；帧 × CPU 频率统计未按 frame 裁剪 joined.dur，GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束。"
-task2b_state: pending
----
+task2b_state: fixed
+
+task2b_result: fixed---
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
 
 Perfetto SQL 里最容易写错的一类查询，是把两个时间区间表按重叠关系关联起来。帧在一段时间内运行，线程调度在另一组时间段内发生，CPU 频率又是一组离散 counter；如果只用普通 `JOIN` 加 `ts` 条件，很快会遇到重复行、漏算边界和全表扫描。
 
 `SPAN_JOIN` 是 Trace Processor 提供的 operator table，专门计算两个 span 表的时间交集。本节把它和窗口函数放在一起讲：窗口函数负责把离散事件整理成 `ts + dur` 的 span，`SPAN_JOIN` 负责把两组 span 按时间切成可统计的小段。
+
+<!-- outline-start -->
+
+- **SPAN_JOIN 处理的是区间交集**：span 的定义，与普通 JOIN 的区别，`SPAN_JOIN` 的语法与语义
+- **用窗口函数把 counter 变成 span**：`LEAD` 补 duration，`counter → span` 的通用模板
+- **PARTITIONED 的约束比语法更要紧**：分区键、同分区不重叠、违反约束的后果
+- **案例：把每帧运行时间拆到 CPU 频率上**：frame × CPU 频率的完整查询，帧边界裁剪
+- **帧 × Binder / 锁 / GC 的交叉分析**：Binder 重叠、GC pause window 合并与帧关联
+- **与 Trace Processor 标准库配合**：标准库模块化视图，减少手写 JOIN
+- **SPAN_LEFT_JOIN 与 SPAN_OUTER_JOIN**：左连接与外连接的适用场景
+- **查询成本与索引策略**：大 trace 性能优化
+- **在 CI 中复用复杂 Perfetto SQL**：CI 集成模式
+- **排查清单**：常见错误与自查项
+
+<!-- outline-end -->
 
 ## SPAN_JOIN 处理的是区间交集
 
@@ -265,17 +281,36 @@ USING SPAN_JOIN(main_sched_span PARTITIONED cpu, cpu_freq_span PARTITIONED cpu);
 
 `sched_with_freq` 的每一行都表示：主线程在某个 CPU 上运行的一小段时间，以及这段时间内该 CPU 的频率。再把它裁进帧窗口：
 
-[存疑: Task9 已指出本段 SQL 需要按 frame 边界裁剪 overlap_dur；当前写法直接汇总 joined.dur，可能把 frame 外时间计入该帧。]
-
 ```sql
 -- 按帧统计主线程实际运行时间、加权平均频率和低频运行占比
+-- 关键：用 overlap_dur 裁剪到帧边界，避免跨帧 sched 段污染指标
 SELECT
   frame.frame_id,
   ROUND(frame.dur / 1e6, 3) AS frame_wall_ms,
-  ROUND(SUM(joined.dur) / 1e6, 3) AS main_cpu_ms,
-  ROUND(SUM(joined.dur * joined.freq_khz) * 1.0 / SUM(joined.dur)) AS avg_freq_khz,
+  ROUND(SUM(
+    MIN(joined.ts + joined.dur, frame.ts + frame.dur)
+    - MAX(joined.ts, frame.ts)
+  ) / 1e6, 3) AS main_cpu_ms,
   ROUND(
-    SUM(CASE WHEN joined.freq_khz < 1000000 THEN joined.dur ELSE 0 END) * 100.0 / SUM(joined.dur),
+    SUM(
+      (MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts))
+      * joined.freq_khz
+    ) * 1.0
+    / SUM(
+      MIN(joined.ts + joined.dur, frame.ts + frame.dur)
+      - MAX(joined.ts, frame.ts)
+    )
+  ) AS avg_freq_khz,
+  ROUND(
+    SUM(CASE
+      WHEN joined.freq_khz < 1000000
+      THEN MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts)
+      ELSE 0
+    END) * 100.0
+    / SUM(
+      MIN(joined.ts + joined.dur, frame.ts + frame.dur)
+      - MAX(joined.ts, frame.ts)
+    ),
     2
   ) AS low_freq_pct
 FROM frame_span AS frame
@@ -288,7 +323,7 @@ GROUP BY frame.frame_id
 ORDER BY frame.frame_id;
 ```
 
-这里仍然用了普通 `JOIN` 把 `sched_with_freq` 裁进 frame，因为 `sched_with_freq` 已经是主线程按 CPU 与频率切碎后的结果，数据量比原始 `sched × counter` 小得多。如果帧量很大，也可以继续把 frame 与 `sched_with_freq` 做一个按 `utid` 的 `SPAN_JOIN`。
+这里用普通 `JOIN` 做重叠判断，但所有度量（运行时间、加权频率、低频占比）都基于 `overlap_dur = MIN(joined.end, frame.end) - MAX(joined.start, frame.start)` 裁剪到帧边界。如果某个 `sched` 段跨越帧边界，只有落在帧内的部分被计入，不会把帧外时间污染进该帧指标。如果帧量很大，也可以把 `frame` 与 `sched_with_freq` 做一个按 `utid` 的 `SPAN_JOIN`，`SPAN_JOIN` 内部会自动做边界裁剪。
 
 这个统计能回答两个问题：帧的墙上时间里主线程占用 CPU 跑了多久；主线程运行期间 CPU 频率处在哪个区间。如果 `frame_wall_ms` 很高但 `main_cpu_ms` 很低，瓶颈更可能是等锁、等 Binder、等 I/O 或调度排队，详见 §13.6。若 `main_cpu_ms` 高且 `avg_freq_khz` 长期偏低，需要继续看温控、后台功耗限制、线程优先级和厂商调度策略，eBPF 侧的频率驻留统计可作为补充，详见 §14.10。
 
@@ -332,28 +367,54 @@ LIMIT 20;
 
 锁竞争与 GC 也可以用同样的模型。锁竞争通常来自 `monitor contention` 或应用自定义 trace；GC pause 在 ART 相关 slice 中体现。写查询时要把事件名收窄到具体来源，避免把无关 slice 一并统计进去。
 
-[存疑: Task9 已指出全局 GC slice 直接 CROSS JOIN 到目标 utid 可能产生同分区重叠；需先合并为互斥 pause window 或改用 interval 模块。]
-
 ```sql
--- 示例：把 GC pause 与主线程帧窗口关联，事件名需按目标 trace 校验
-CREATE PERFETTO TABLE gc_pause_span AS
+-- Step 1: 收集 GC 事件，先按 ts 合并为同线程内互不重叠的 pause window
+-- 目的：避免不同 GC 阶段/嵌套 GC 的重叠 slice 违反 SPAN_JOIN 同分区不重叠约束
+CREATE PERFETTO TABLE gc_pause_window AS
+WITH raw_gc AS (
+  SELECT
+    thread_track.utid,
+    slice.ts,
+    slice.ts + slice.dur AS end_ts,
+    slice.name
+  FROM slice
+  JOIN thread_track
+    ON slice.track_id = thread_track.id
+  WHERE slice.dur > 0
+    AND (slice.name GLOB '*GC*' OR slice.name GLOB '*Garbage*')
+),
+merged AS (
+  SELECT
+    utid,
+    ts,
+    end_ts,
+    name,
+    -- 标记每个合并组的起点：与前一个 interval 不连续
+    CASE WHEN ts <= LAG(end_ts) OVER (PARTITION BY utid ORDER BY ts)
+      THEN 0 ELSE 1 END AS is_start
+  FROM raw_gc
+),
+groups AS (
+  SELECT
+    *,
+    SUM(is_start) OVER (PARTITION BY utid ORDER BY ts) AS grp
+  FROM merged
+)
 SELECT
-  slice.ts,
-  slice.dur,
-  target_main_thread.utid,
-  slice.name
-FROM slice
-CROSS JOIN target_main_thread
-WHERE slice.dur > 0
-  AND (slice.name GLOB '*GC*' OR slice.name GLOB '*Garbage*');
+  utid,
+  MIN(ts) AS ts,
+  MAX(end_ts) - MIN(ts) AS dur
+FROM groups
+GROUP BY utid, grp;
 
+-- Step 2: 与主线程帧窗口做 SPAN_JOIN（数据已保证同 utid 不重叠）
 CREATE VIRTUAL TABLE frame_gc_overlap
-USING SPAN_JOIN(frame_span PARTITIONED utid, gc_pause_span PARTITIONED utid);
+USING SPAN_JOIN(frame_span PARTITIONED utid, gc_pause_window PARTITIONED utid);
 
+-- Step 3: 按帧聚合 GC 重叠时长
 SELECT
   frame_id,
-  ROUND(SUM(dur) / 1e6, 3) AS gc_overlap_ms,
-  GROUP_CONCAT(DISTINCT name) AS gc_events
+  ROUND(SUM(dur) / 1e6, 3) AS gc_overlap_ms
 FROM frame_gc_overlap
 WHERE dur > 0
 GROUP BY frame_id
@@ -361,7 +422,7 @@ ORDER BY gc_overlap_ms DESC
 LIMIT 20;
 ```
 
-这段 SQL 把 GC 事件复制到目标主线程分区，目的是回答“GC 与这条主线程的帧窗口是否重叠”。它不代表 GC 一定发生在主线程上。若要判断主线程是否被 STW pause 阻塞，需要继续看 `thread_state`、ART slice 和应用线程是否同时出现停顿。
+这段 SQL 先把 GC 事件按线程内时间顺序合并为互不重叠的 pause window，再与帧窗口做 `SPAN_JOIN`。合并步骤避免了不同 GC 阶段（如并发标记、STW pause）的嵌套/重叠 slice 违反 `SPAN_JOIN` 的同分区不重叠约束。它回答的是“GC 活动与主线程帧窗口在时间上重叠了多久”，不代表 GC 一定阻塞了主线程。若要判断主线程是否被 STW pause 阻塞，需要继续看 `thread_state`、ART slice 和应用线程是否同时出现停顿。
 
 ## 与 Trace Processor 标准库配合
 

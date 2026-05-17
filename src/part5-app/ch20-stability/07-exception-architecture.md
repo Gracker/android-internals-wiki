@@ -38,8 +38,8 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: needs-rework
@@ -47,7 +47,7 @@ last_task6_at: "2026-05-15T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-15-06-review.md"
 task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
@@ -55,7 +55,8 @@ task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T05:50:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-05-deep-review.md"
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 1：WebView renderer 进程模型误写为可安装 Crash handler 的 App 进程；P1 3：ApplicationExitInfo native tombstone API 边界、SafeMode launch marker/退出补偿链路、崩溃文件 fsync/rename 持久化边界。"
----
+
+task2b_result: fixed---
 
 # 异常处理架构设计
 
@@ -233,9 +234,7 @@ SafeMode 与热修复的关系可以这样设计：
 
 ## 多进程异常隔离
 
-多进程架构能把故障限制在某个进程里，但也会让异常捕获变复杂。每个进程都有自己的 `Application`、默认 handler、文件锁和初始化路径；只在主进程注册 Crash handler，会漏掉远程服务、WebView 独立进程、播放器进程和推送进程的崩溃。
-
-[需确认: WebView renderer 进程不等同于 App 可控进程，正文需区分 App 自有 `:web` / `:h5` 进程与系统 WebView renderer；renderer 退出策略应按 Task9 问题单补 `WebViewClient.onRenderProcessGone()` 边界。]
+多进程架构能把故障限制在某个进程里，但也会让异常捕获变复杂。每个进程都有自己的 `Application`、默认 handler、文件锁和初始化路径；只在主进程注册 Crash handler，会漏掉远程服务进程、播放器进程和推送进程的崩溃。
 
 多进程异常隔离建议按进程角色设计：
 
@@ -243,8 +242,31 @@ SafeMode 与热修复的关系可以这样设计：
 |------|----------|----------|
 | 主进程 | UI、路由、账号、基础业务 | 捕获完整上下文，触发 SafeMode 判定 |
 | 远程服务进程 | 下载、播放、长任务 | 独立记录 crash，失败后由主进程决定是否重启 |
-| WebView / 容器进程 | H5、动态页面 | 页面级兜底优先，必要时销毁容器进程 |
+| App 自有 WebView 进程（`:web` / `:h5`） | H5、动态页面 | 页面级兜底优先，必要时销毁容器进程 |
 | 上传进程 | Crash 样本上传 | 只做补偿上传，不能依赖主进程内存状态 |
+
+这里要区分两类 WebView 进程：App 在 `AndroidManifest.xml` 中声明的自有 `:web` / `:h5` 进程，和 Android 系统为 WebView 渲染创建的 renderer 进程。自有进程走上面的 Crash handler 注册逻辑，与主进程类似。系统 WebView renderer 进程则不同：它由 WebView 提供方（Android System WebView 或 Chrome）管理，App 不能在 renderer 进程里安装 Crash handler，也不能控制它的生命周期。App 侧通过 `WebViewClient.onRenderProcessGone()` 接收 renderer 退出通知：
+
+```java
+@Override
+public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+    // 1. 记录崩溃信息
+    if (detail.didCrash()) {
+        // renderer 崩溃退出，记录堆栈上下文
+        crashReporter.log("WebView renderer crashed");
+    } else {
+        // renderer 被 OS 杀死（OOM / 内存压力），不是崩溃
+        crashReporter.log("WebView renderer killed by OS");
+    }
+    // 2. 销毁受影响的 WebView 实例
+    view.destroy();
+    // 3. 显示兜底页或重建 WebView
+    showFallbackPage();
+    return true; // 已处理，不让系统走默认行为
+}
+```
+
+`onRenderProcessGone()` 返回 `true` 表示 App 已处理 renderer 退出；返回 `false` 会让系统杀掉 App 进程。renderer 退出后，受影响的 `WebView` 实例不可再用，必须调用 `destroy()` 释放资源后再重建。如果是 OOM 导致的 renderer 被杀（`didCrash()` 返回 `false`），兜底页应避免再次创建 WebView，而是提示用户稍后重试。[已验证: Android Developer Docs, developer.android.com/reference/android/webkit/WebViewClient.html#onRenderProcessGone]
 
 记录文件要带进程名和 pid。跨进程写同一个文件容易损坏，建议按进程分文件，再由下次启动的主进程或上传进程汇总。文件写入用临时文件 + rename 的原子替换方式，避免崩溃发生在写入中间导致记录不可解析。
 

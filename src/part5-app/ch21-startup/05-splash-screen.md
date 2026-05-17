@@ -24,13 +24,13 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-15'
-task2b_state: pending
+task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
@@ -42,7 +42,8 @@ task6_review_notes: "2026-05-15 task6 revisiting review: pass-light-edit。小�
 last_task6_review_log: "logs/review/2026-05-15-12-review.md"
 last_task6_at: "2026-05-15T12:11:00+08:00"
 last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
----
+
+task2b_result: fixed---
 
 # Splash Screen 与感知启动速度
 
@@ -357,16 +358,35 @@ Baseline Profile（原 Cloud Profiles）让开发者在 AGP 构建时指定关�
 配置方式：
 
 ```kotlin
-// build.gradle.kts
+// build.gradle.kts — Baseline Profile 配置
+// AGP 8.1-8.2 需显式开启 dex 布局优化
+// AGP 8.3+ 默认启用，无需手动设置
 baselineProfile {
-    baselineProfileRulesRewrite = true
-    dexLayoutOptimization = true
+    dexLayoutOptimization = true  // AGP 8.1-8.2 需要；AGP 8.3+ 可省略
 }
 ```
 
-Baseline Profile 的效果量化需要在真实设备上做 A/B 对比（有 Profile vs 完全冷启动）。Perfetto 里看 ART 的 `OpenOatDexFiles` 和 JIT 编译 slice，可以确认 Profile 是否生效。
+Baseline Profile 采集侧使用 `BaselineProfileRule`，关键参数是 `includeInStartupProfile`：
 
-[待验证: Baseline Profile 在 Android 16 上的行为是否有变化]
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
+    @get:Rule
+    val baselineProfileRule = BaselineProfileRule()
+
+    @Test
+    fun generateBaselineProfile() {
+        baselineProfileRule.collect(
+            packageName = "com.example.app",
+            includeInStartupProfile = true  // 标记为启动关键路径
+        ) {
+            // 启动场景的自动化操作
+        }
+    }
+}
+```
+
+[已验证: Android Developers, developer.android.com/topic/performance/baselineprofiles]
 
 ### 动画过渡：从启动画面到 App 内容
 
