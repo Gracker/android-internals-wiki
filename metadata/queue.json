@@ -9923,22 +9923,56 @@
           "suggestion": "把 setRelativeLayer 降级为系统/特权层能力；普通 App 修复方案改成公开 SurfaceView Z-order、合并 overlay、减少独立 Surface，并说明没有 public API 查询 overlay plane 数。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-11.6-bluetooth-scan-connection-power",
+      "section": "11.6",
+      "priority": 80,
+      "title": "Bluetooth 扫描与连接功耗分析",
+      "description": "AOSP Bluetooth 模块、官方 BLE 扫描/后台通信文档与功耗归因文档显示，现有 11.1/11.2/11.5/19.25 只零散提到蓝牙耗电，缺少独立的扫描、连接保持、后台限制和诊断路径小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch11-power/06-bluetooth-scan-connection-power.md"
+      ],
+      "source_refs": [
+        "https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices",
+        "https://developer.android.com/develop/connectivity/bluetooth/ble/background",
+        "https://developer.android.com/develop/connectivity/bluetooth/bt-permissions",
+        "https://source.android.com/docs/core/connect/bluetooth",
+        "https://source.android.com/docs/core/power/values",
+        "packages/modules/Bluetooth",
+        "packages/apps/Bluetooth/src/com/android/bluetooth/gatt/ScanManager.java"
+      ],
+      "gap_score": 16,
+      "score_detail": {
+        "素材丰富度": 4,
+        "相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4
+      },
+      "created_by": "task2a-knowledge-gap"
     }
   ],
   "metadata": {
-    "total_entries": 292,
+    "total_entries": 293,
     "p0_count": 45,
-    "last_updated": "2026-05-17T15:30:35+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 148,
+    "last_updated": "2026-05-17T17:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 149,
     "updated_date": "2026-05-17",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 148,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 149,
     "completed_entries": 142
   },
-  "last_updated": "2026-05-17T15:30:35+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 148,
+  "last_updated": "2026-05-17T17:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 149,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }
