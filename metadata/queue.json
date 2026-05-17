@@ -10652,7 +10652,7 @@
       "added_at": "2026-05-18T03:04:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/13-application-start-info.md"
@@ -10669,7 +10669,10 @@
         "读者需求度": 5,
         "时效性": 5,
         "total": 19
-      }
+      },
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成：26.13 ApplicationStartInfo 与启动归因上报，status → ready-for-review",
+      "last_task2a_at": "2026-05-18T04:14:00+08:00"
     },
     {
       "id": "task9-1.1-sf-residual-docomposition-20260518",
