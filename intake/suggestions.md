@@ -1924,3 +1924,8 @@
 - **问题**：段落把 16KB 页导致 PTE/page-table 规模下降，进一步写成 “fork 期间需要遍历和复制的 VMA 链表条目减少”。VMA 数量由 `mmap` 区间决定，page size 不会直接减少 VMA 条目；`dup_mmap` 遍历 VMA 与复制 page table 是不同成本项。
 - **建议**：改成“16KB 页减少 PTE/page-table 规模，可能降低页表相关开销和 TLB 压力”；同时补充边界：VMA 数量不因 page size 变化，COW 粒度增大也可能带来小对象/dirty page 放大。
 
+## [Task9 Audit] 3.6 手势识别算法与性能优化 — 2026-05-18
+- **类型**：源码准确性/版本差异
+- **位置**：VelocityThreshold：Fling 判定的速度门槛
+- **问题**：正文只摘了 `ViewConfiguration.MINIMUM_FLING_VELOCITY = 50` / `MAXIMUM_FLING_VELOCITY = 8000` 常量，容易让读者以为运行时阈值只由 Java 常量决定。Android 10-16 的实际构造路径会读取 `config_viewMinFlingVelocity` / `config_viewMaxFlingVelocity` dimen，Android 14+ 还提供 `getScaledMinimumFlingVelocity(inputDeviceId, axis, source)` / `getScaledMaximumFlingVelocity(...)`，对 `SOURCE_ROTARY_ENCODER` 会走 `config_viewMinRotaryEncoderFlingVelocity` / `config_viewMaxRotaryEncoderFlingVelocity`，默认 `-1dp` 表示不支持 fling。
+- **建议**：把 Fling 阈值段落改成“fallback 常量 → framework config dimen → device overlay → Android 14+ inputDevice/axis/source overload”的层次，避免和 TouchSlop 段落的资源/overlay 解释不一致。
