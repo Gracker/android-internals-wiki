@@ -9,7 +9,7 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: 'reviewed'
-pipeline_stage: 'task2b_pending'
+pipeline_stage: 'task6_pending'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -56,13 +56,13 @@ task9_result: 'needs-rework'
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: 'pending'
+task2b_state: 'fixed'
 last_task2b_at: '2026-05-09T17:52:02+08:00'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-13T21:57:00+08:00'
 review_round: 2
-task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。"
+task6_review_notes: "2026-05-16 Task6 stale-recheck:修复文风禁令/冗余副词 5 处;未新增 L3/L4 回炉项;保留既有 Task9 needs-rework。"
 ---
 
 
@@ -80,13 +80,13 @@ task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余�
 
 ## 为什么要了解文字渲染
 
-打开手机上任何一个 App——微信聊天、微博信息流、新闻客户端——占据屏幕面积最大的元素是什么？文字。
+打开手机上任何一个 App--微信聊天、微博信息流、新闻客户端--占据屏幕面积最大的元素是什么?文字。
 
-文字看起来简单，像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝，而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
+文字看起来简单,像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
-对于列表类 App（聊天、社交、新闻），一屏可能同时存在几十个 TextView。在滑动过程中，每个 TextView 都需要在 8.33ms (120Hz) 或 16.67ms (60Hz) 的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
+对于列表类 App(聊天、社交、新闻),一屏可能同时存在几十个 TextView。在滑动过程中,每个 TextView 都需要在 8.33ms (120Hz) 或 16.67ms (60Hz) 的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
 
-我们在 Perfetto 中经常看到这样的场景：主线程上一大片 "measure" slice 占了大半个 VSync 周期，展开一看全是 TextView.onMeasure()。这种情况在列表类 App 里很常见。
+我们在 Perfetto 中经常看到这样的场景:主线程上一大片 "measure" slice 占了大半个 VSync 周期,展开一看全是 TextView.onMeasure()。这种情况在列表类 App 里很常见。
 
 了解文字渲染的性能特征,能让我们在分析这类 jank 时更快定位到根因,不必在 View 层级里盲目猜测。
 
@@ -96,13 +96,13 @@ task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余�
 
 当 App 调用 `TextView.setText()` 时,TextView 会根据文本内容选择一种 Layout 实现来管理文字的测量和布局。Android 提供了三种 Layout:
 
-- **BoringLayout**：用于单行、纯文字、无 Span 的简单场景。它的测量逻辑最简单——直接调用 `Paint.measureText()` 拿到宽度，基本不做额外计算。如果 TextView 设置了 `setSingleLine(true)` 或 `maxLines=1`,且文本中没有任何 Span,大概率走这条路径。
+- **BoringLayout**:用于单行、纯文字、无 Span 的简单场景。它的测量逻辑最简单--直接调用 `Paint.measureText()` 拿到宽度,基本不做额外计算。如果 TextView 设置了 `setSingleLine(true)` 或 `maxLines=1`,且文本中没有任何 Span,大概率走这条路径。
 
-- **StaticLayout**：用于多行文字。这是最常见的 Layout。StaticLayout 的构建过程包括:将文本按行切分(line breaking)、处理 Span 样式、计算每行的基线偏移、最终确定整体高度。这个过程涉及 Minikin 的文字整形和换行算法,CPU 开销显著高于 BoringLayout。
+- **StaticLayout**:用于多行文字。这是最常见的 Layout。StaticLayout 的构建过程包括:将文本按行切分(line breaking)、处理 Span 样式、计算每行的基线偏移、最终确定整体高度。这个过程涉及 Minikin 的文字整形和换行算法,CPU 开销显著高于 BoringLayout。
 
-- **DynamicLayout**：用于可编辑文本(EditText)。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
+- **DynamicLayout**:用于可编辑文本(EditText)。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
 
-选好 Layout 之后,主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。public API 和 HWUI 内部提交层要分开看。API 31 起，`Canvas.drawGlyphs()` 已经提供了"按 glyph id + 坐标绘制"的公开入口；但在 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 里，HWUI 这一层的 `SkiaCanvas::drawGlyphs()` 仍然是先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
+选好 Layout 之后,主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。public API 和 HWUI 内部提交层要分开看。API 31 起,`Canvas.drawGlyphs()` 已经提供了"按 glyph id + 坐标绘制"的公开入口;但在 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 里,HWUI 这一层的 `SkiaCanvas::drawGlyphs()` 仍然是先把 glyph 和坐标写进 `SkTextBlobBuilder`,再调用 `mCanvas->drawTextBlob()` 交给 Skia。
 
 ```cpp
 // frameworks/base/libs/hwui/SkiaCanvas.cpp @ android-16.0.0_r1
@@ -146,9 +146,9 @@ FontCollection(字体集合)
 - CJK 文字(中文、日文、韩文):整形规则比拉丁复杂,且字符集庞大(CJK Unified Ideographs 有数万个字符),字体查找开销更高。
 - 复杂文字(阿拉伯语、印地语、泰语):整形规则极度复杂,字符形态取决于上下文位置和连字规则。一个 Unicode 码点可能对应多个 glyph,也可能多个码点合并为一个 glyph。整形开销显著高于拉丁文字。
 
-Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了大量优化：阿拉伯语 Nastaliq 塑形提速约 45%，Apple Advanced Typography (AAT) 路径提速约 60%。对出海应用来说，中东、南亚、东南亚语系的文字测量开销会明显下降——这些语系在旧版本中往往是 measure 阶段的 CPU 热点。如果 Perfetto 中观察到阿拉伯语或印地语文本的 `TextView.onMeasure()` 耗时异常，升级到 Android 16+ 设备后应有可测量的改善。
+Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了显著优化，包括阿拉伯语 Nastaliq 塑形和 Apple Advanced Typography (AAT) 路径的性能改进。对出海应用来说，中东、南亚、东南亚语系的文字测量开销会下降——这些语系在旧版本中往往是 measure 阶段的 CPU 热点。如果 Perfetto 中观察到阿拉伯语或印地语文本的 `TextView.onMeasure()` 耗时异常，升级到 Android 16+ 设备后应有可测量的改善。
 
-[已验证: AOSP android-16.0.0_r1, external/harfbuzz/ — HarfBuzz 10.x changelog]
+[已验证: AOSP android-16.0.0_r1, external/harfbuzz/ — HarfBuzz 10.2.0; 具体加速百分比因 shaping / subsetting / loading 口径不同而无法给出单一数字，保留“显著优化”的定性描述]
 
 **LineBreaker** 负责多行文字的换行计算。它调用 ICU 的换行算法,根据语言规则决定在哪里断行。换行算法的复杂度与文本长度线性相关,但 ICU 的实现中涉及大量的字典查找(特别是 CJK,因为中文没有空格作为天然断点),所以 CJK 文本的换行开销明显高于拉丁文本。
 
@@ -331,11 +331,9 @@ textView.setIncludeFontPadding(false);
 
 可变字体（Variable Fonts）通过 Variation Axes 控制字重、宽度、倾斜等参数，避免为每种样式打包独立字体文件。但每次改变轴值都需要重新计算 glyph 的插值位置，开销远高于静态字体。
 
-Android 16 对 Variation Axes 的中间计算结果引入了缓存。当轴值在两个离散点之间反复切换时（比如动画中字重在 300-700 之间渐变），Minikin 会复用上一次的插值结果，只重算实际变化的部分。实测数据显示，动态改变字重的开销降低约 40%，接近静态字体的性能水平。
+[待验证: 正文原先宣称“Android 16 Minikin 为 Variation Axes 中间计算结果引入缓存、动态字重开销降低约 40%”，但当前可核验材料只显示 Minikin 支持 variation family/axis；缓存机制和定量收益缺少 AOSP commit 或 benchmark 条件佐证，降级为待验证]
 
-这对高刷场景下的文本动画有直接意义。在 120Hz 设备上，8.33ms 的帧预算内完成"测量 → 布局 → 绘制"已经很紧张，如果动画涉及字重变化，轴向缓存能把 measure 阶段的额外开销压缩到可接受范围。不过缓存的前提是轴值在短时间内有重复，如果是单次跳变（从 300 直接跳到 700 且不再回退），缓存命中率会很低，优化效果有限。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/minikin/ — Variation Axes caching]
+如果该缓存机制确实存在，对高刷场景下的文本动画会有直接意义。在 120Hz 设备上，8.33ms 的帧预算内完成“测量 → 布局 → 绘制”已经很紧张，如果动画涉及字重变化，轴向缓存能把 measure 阶段的额外开销压缩到可接受范围。不过缓存的前提是轴值在短时间内有重复，如果是单次跳变（从 300 直接跳到 700 且不再回退），缓存命中率会很低，优化效果有限。
 
 ### 文字缓存策略
 
@@ -393,8 +391,8 @@ RenderThread / HWUI 侧当然也可能有文字相关成本,但要分清"能推�
 | Android 9.0 (API 28) | framework 引入 `PrecomputedText` | Android Developers `PrecomputedText` reference(Added in API 28) |
 | Android 15 (API 35) | 16 KB page size 进入兼容面;自带 native 文字 / 字体库不能再写死 4 KB 页大小 | Android Developers page size guide |
 | AndroidX core / appcompat | `PrecomputedTextCompat.getTextFuture()` 配合 `AppCompatTextView.setTextFuture()` 提供异步预计算接入 | androidx-main `PrecomputedTextCompat.java` / `AppCompatTextView.java` |
-| Android 16 (API 36) | HarfBuzz 10.x 引擎升级：阿拉伯语 Nastaliq 塑形提速约 45%，AAT 路径提速约 60%；可变字体 Variation Axes 中间计算结果引入缓存，动态字重变更开销降低约 40% | AOSP external/harfbuzz/; frameworks/minikin/ |
-| Android 17 (API 37) | 排版 API 突破：引入 `shiftDrawingOffsetForStartOverhang` 解决斜体字起始位置的剪裁问题；引入 `useBoundsForWidth` 修正复杂字形的对齐偏差。开发者不再需要用 Padding 等视觉修补手段来掩盖剪裁缺陷 | AOSP frameworks/base/core/java/android/text/ — StaticLayout.Builder 新增方法 |
+| Android 16 (API 36) | HarfBuzz 10.x 引擎升级：复杂脚本整形性能显著改善；可变字体 Variation Axes 缓存机制待验证 | AOSP external/harfbuzz/ NEWS 10.2.0; frameworks/minikin/ |
+| Android 15 (API 35) | 排版 API 突破：`StaticLayout.Builder` 引入 `setUseBoundsForWidth(boolean)` 和 `setShiftDrawingOffsetForStartOverhang(boolean)`，解决斜体字起始位置剪裁和复杂字形对齐偏差 | Android Developers StaticLayout.Builder reference (Added in API 35) |
 | AndroidX emoji / emoji2 | `EmojiCompat` 通过 `EmojiSpan` / `TypefaceEmojiSpan` 兼容新 emoji,字体来源可选 bundled 或 downloadable font provider | Android Developers EmojiCompat 文档;androidx-main `TypefaceEmojiSpan.java` |
 
 ### Android 15 的 16 KB page size 影响范围
@@ -403,26 +401,26 @@ RenderThread / HWUI 侧当然也可能有文字相关成本,但要分清"能推�
 
 如果工程里只有 framework `TextView` 和 AndroidX 文字组件,风险更多落在依赖库兼容性;如果有自研字体引擎、native atlas 或 text cache,就要按 16 KB 设备重新核对页大小、映射和内存保护逻辑。把这件事写成"TextView API 发生版本分叉"会偏题,完全不提又会漏掉 Android 15 之后的 native 兼容边界。
 
-### Android 17 排版 API：解决悬挂剪裁与对齐偏差
+### Android 15 的排版 API：解决悬挂剪裁与对齐偏差
 
 斜体文字的起始位置（start overhang）和复杂字形的实际占用宽度（glyph bounds vs advance width），长期以来是排版系统的两个视觉缺陷。开发者的常见 workaround 是给 TextView 加额外的 Padding，补偿剪裁或对齐偏差。但 Padding 是静态的，不同字体、字号、语言下需要的补偿量不同，无法一劳永逸。
 
-Android 17 在 `StaticLayout.Builder` 中引入了两个新方法：
+Android 15（API 35）在 `StaticLayout.Builder` 中引入了两个新方法：
 
-- **`shiftDrawingOffsetForStartOverhang(boolean)`**：启用后，Layout 会把绘制起点向左偏移 start overhang 的量，确保斜体字的起始笔画不被容器左边界裁掉。这比手动加 left padding 更精确，因为偏移量是按实际 glyph 轮廓计算的，不是估计值。
-- **`useBoundsForWidth(boolean)`**：启用后，Layout 在计算行宽时使用 glyph 的实际 bounding box 而不是 advance width。对于 Arabic、Devanagari 等字形实际占用宽度与 advance width 差异较大的脚本，这能修正水平对齐偏差。
+- **`setUseBoundsForWidth(boolean)`**：启用后，Layout 在计算行宽时使用 glyph 的实际 bounding box 而不是 advance width。对于 Arabic、Devanagari 等字形实际占用宽度与 advance width 差异较大的脚本，这能修正水平对齐偏差。
+- **`setShiftDrawingOffsetForStartOverhang(boolean)`**：启用后，Layout 会把绘制起点向左偏移 start overhang 的量，确保斜体字的起始笔画不被容器左边界裁掉。这比手动加 left padding 更精确，因为偏移量是按实际 glyph 轮廓计算的，不是估计值。
 
 ```java
-// Android 17+ (API 37)
+// Android 15+ (API 35)
 StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, maxWidth)
-    .setShiftDrawingOffsetForStartOverhang(true)  // 斜体起始剪裁补偿
     .setUseBoundsForWidth(true)                     // 复杂字形对齐修正
+    .setShiftDrawingOffsetForStartOverhang(true)  // 斜体起始剪裁补偿
     .build();
 ```
 
 对性能的影响：这两个选项在 measure 阶段会增加少量计算（需要读取 glyph 的实际轮廓数据），但开销在微秒量级，对帧预算几乎无影响。在全球化应用中，尤其是支持中东和南亚语系的 App，建议在列表类 TextView 上启用这两个选项，避免视觉 Bug 修复带来的手动 Padding 维护成本。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/text/StaticLayout.java — Builder 新增方法]
+[已验证: Android Developers StaticLayout.Builder 文档 — setUseBoundsForWidth / setShiftDrawingOffsetForStartOverhang, Added in API 35]
 
 ## 常见问题与误区
 

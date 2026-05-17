@@ -14,7 +14,7 @@ reviewed_at: '2026-05-12T21:56:00+08:00'
 task6_result: pending
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
 last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview
@@ -65,7 +65,7 @@ last_task9_at: "2026-05-17T19:30:43+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；Android 16 Cloud Compilation / SDM 段再次出现不存在方法、错误文件格式和无来源性能数据。"
 last_task6_at: '2026-05-12T21:56:00+08:00'
@@ -646,7 +646,6 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 | 实际类/方法 | 文件路径 | 说明 |
 |-----------|---------|------|
 | `BackgroundDexOptService` | `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` | 设备空闲时执行后台 dexopt |
-| `PackageManager.getCloudPackageInfo()` | `frameworks/base/core/java/android/content/pm/PackageManager.java` | 读取 .dm (dex metadata) 文件 |
 | Dex Metadata (`.dm`) | Play Store 分发 | 包含聚合 Cloud Profile 数据 |
 | `system/extras/sdm/` | 目录 | System Dexopt Manager 实际位置（工具类，非服务） |
 | `ArtManagerLocal` | `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` | ART Service 编译调度 |
@@ -656,19 +655,12 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 Android 16 的"云编译"是以下组件的组合：
 
 1. **Dex Metadata (`.dm`)**：Play Store 分发的元数据文件，包含聚合的 Cloud Profile
-2. **PackageManager.getCloudPackageInfo()**：设备侧读取 .dm 文件
-3. **BackgroundDexOptService**：在设备 idle 时调度后台编译
-4. **ART Service** (`ArtManagerLocal` / `ArtShellCommand`)：控制面，管理编译任务
-5. **artd**：ART 守护进程
-6. **dex2oat**：实际编译执行进程（speed-profile）
+2. **BackgroundDexOptService**：在设备 idle 时调度后台编译
+3. **ART Service** (`ArtManagerLocal` / `ArtShellCommand`)：控制面，管理编译任务
+4. **artd**：ART 守护进程
+5. **dex2oat**：实际编译执行进程（speed-profile）
 
-实际调用链：
-```
-Play Store (.dm file) → PackageManager.getCloudPackageInfo()
-  → BackgroundDexOptService.scheduleCompile()
-  → ArtManagerLocal.compileDex()
-  → artd → dex2oat (speed-profile)
-```
+设备侧的调用链为 Play Store 分发 `.dm` 文件 → `BackgroundDexoptJob` 调度 → `ArtManagerLocal` 编译 → `artd` → `dex2oat`。`.dm` 文件中的 Profile 数据让安装时 `speed-profile` 编译有实际覆盖，而不是退回 `verify`。
 
 ### 实际 SDM 位置
 
@@ -699,51 +691,4 @@ SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含�
 - AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（已验证存在）
 
 
-## Android 16 云编译与 SDM 机制（2026-05-17 源码调研补充）
-
-### 机制概述
-
-Android 16 引入的云编译（Cloud Compilation）机制是 Package Manager Service 安装流程上的重大改进。传统流程中，应用安装时需在设备上执行 dex2oat 将 DEX 字节码编译为本地机器码，耗时可达数十秒。云编译机制通过预编译产物（Pre-compiled Artifacts）技术，将这一过程从设备端转移到云端。
-
-**SDM 文件（Speed-compiled Dex Metadata）** 是该机制的核心载体。Google Play 在上传 APK 时即已完成编译，编译产物（.dm 文件）与 APK 一起分发。设备端安装时，PackageManagerService 通过 installFilter 判断是否跳过本地 dex2oat，直接使用 SDM 文件中的预编译产物。
-
-### 关键源码路径
-
-| 源码文件 | 用途 |
-|---------|------|
-| `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java` | 主安装逻辑，installFilter 判断 |
-| `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java` | 安装包处理，dexopt 触发 |
-| `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java` | SHELL 命令处理，dexopt |
-| `art/dex2oat/dex2oat.cc` | DEX 编译器主入口 |
-
-### 工作流程（推断）
-
-1. **安装请求到达**： 接收安装请求
-2. **installFilter 判断**：根据编译过滤器设置决定是否启用云编译
-3. **SDM 文件检查**：若 installFilter 设为 speed-profile，检查设备上是否存在对应 .dm 文件
-4. **条件跳过**：若 SDM 文件存在且有效，跳过本地 dex2oat，直接注入预编译产物
-5. **传统回退**：若 SDM 文件不存在或无效，fallback 到传统 dex2oat 流程
-
-### 版本差异
-
-| 版本 | 云编译支持 | SDM 格式 |
-|------|-----------|---------|
-| Android 15 及之前 | 不支持 | 无 |
-| Android 16（API 36） | 支持 | v1（推测） |
-
-### 性能影响
-
-根据公开报道数据（未经一手源码验证）：
-- **传统安装**：首次安装耗时长（dex2oat 需 20-60 秒，视 APK 大小而定）
-- **云编译安装**：跳过 dex2oat，时间缩短至 1-3 秒（网络开销 + 文件注入）
-- **适用场景**：大型应用、游戏、频繁安装场景
-
-### 待验证项
-
-以下信息因 cs.android.com 访问限制而**未经一手源码验证**：
-- installFilter 枚举值具体定义
-- SDM 文件格式规范
-- compileFilter 判断逻辑完整调用链
-- targetSDK 阈值要求
-
-<!-- AIW-源码调研-2026-05-17 -->
+<!-- AIW-源码调研-2026-05-17：原“Android 16 云编译与 SDM 机制（2026-05-17 源码调研补充）”段已删除。该段仍包含未经验证的内容：SDM 被错误描述为“Speed-compiled Dex Metadata”（实际为 Secure Dex Metadata，扩展名 .sdm）、installFilter 判断机制缺少 AOSP 佐证、性能数据“20-60s to 1-3s”无来源。云端编译的保守描述见前文“Android 16 云端编译与 SDM”小节。 -->
