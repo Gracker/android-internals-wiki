@@ -4461,7 +4461,7 @@
       "section_title": "稳定性度量与指标体系",
       "priority": 95,
       "title": "稳定性度量与指标体系 Task9 技术审计回炉",
-      "description": "[Deep Tech Review] P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。",
+      "description": "[Deep Tech Review] P1 3：Crash-Free 示例计算仍错；ANR 超时表仍混淆系统阈值/内部目标/版本差异；Vitals/Firebase/行业阈值来源仍需闭合。",
       "issue_type": "deep-tech-review",
       "severity": "P0",
       "created_date": "2026-05-14",
@@ -4473,7 +4473,8 @@
         "src/part5-app/ch20-stability/06-stability-metrics.md"
       ],
       "material_paths": [
-        "logs/deep-review/2026-05-14-05-deep-review.md"
+        "logs/deep-review/2026-05-14-05-deep-review.md",
+        "logs/deep-review/2026-05-17-11-deep-review.md"
       ],
       "review_issues": [
         {
@@ -4510,6 +4511,27 @@
           "location": "L121-L127 ANR 类型阈值表",
           "detail": "Broadcast Queue 在 Android 14+ 有 soft/hard timeout 口径，Foreground Service 启动超时与执行超时也需拆分，当前表格按固定阈值写法覆盖不足。",
           "suggestion": "补 Android 10-13 与 14+ 差异，或把表格标成团队内部监控阈值而非系统超时常量。"
+        },
+        {
+          "severity": "P1",
+          "type": "指标计算错误",
+          "location": "L172-L175 Crash-Free Users vs PV 崩溃率示例",
+          "detail": "App B 公式 `(5 万 + 1000×49) / 200 万` 的结果是 99,000 / 2,000,000 = 4.95%，不是 ≈0.50%。即使按“1000 人总共 50 次”理解，也无法让 5 万受影响用户在 200 万 session 下维持 0.5% PV 崩溃率。当前示例反而证明 PV 差异很大，不能支撑“PV 差距可能很小”的结论。",
+          "suggestion": "重新构造可复算样例：要么降低 App B 受影响用户数、提高总 Session 分母；要么保留“Users 控影响面、Sessions 控频率”的结论，删除错误算例。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/指标口径",
+          "location": "L134-L139 ANR 类型阈值表",
+          "detail": "表格仍把系统 ANR 超时常量和团队内部目标混在一列。Android 官方文档对 BroadcastReceiver 写的是 foreground intents 约 10-20 秒、background 约 60-120 秒；Android 14+ broadcast 有 soft/hard 超时与 CPU-starved 情况。Foreground Service 也要拆 startForeground、JobService onStart/onStop、shortService/dataSync/mediaProcessing 等类型/版本。",
+          "suggestion": "拆成两张表：系统触发阈值/版本差异表 + 团队内部监控目标表；补 developer.android.com ANR/FGS troubleshooting 与 AOSP BroadcastQueue/ActiveServices 源码锚点。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据来源",
+          "location": "L65、L177-L184、L287-L297 稳定性行业阈值",
+          "detail": "Firebase Crashlytics 官方 crash-free metrics 文档定义了 Crash-Free Users/Sessions 的计算口径，但没有把 99.5% 写成官方发版门禁；“微信公开分享”“头部电商”“中型应用/长尾应用”仍是未溯源对标值。正文虽加了“匿名行业经验区间”，但表格继续给具体公司/产品级别数字，容易被读者当成公开事实。",
+          "suggestion": "把 99.5/99.8/0.1/0.2 统一降级为“示例 SLO/匿名经验区间”，或补公开演讲/内部看板口径；不要把 Firebase metrics 定义写成 Firebase 推荐阈值。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -9349,21 +9371,113 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-17T11:04:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-11-4-3-art-cmc-los-code-cache",
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 95,
+      "title": "ART 内存管理 CMC/LOS/JIT Code Cache 源码口径修正",
+      "description": "[Deep Tech Review] P0 1：LargeObjectSpace FreeList/Map 选择条件错误。P1 2：Android 15+ CMC/BumpPointerSpace 版本线过满；Generational CMC 开关源码锚点/命名不准；JIT Code Cache 默认容量口径与 AOSP 不符。",
+      "issue_type": "source-accuracy/version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性",
+          "location": "L173-L176 Large Object Space 实现选择",
+          "detail": "正文把 FreeListSpace 写成“arm64 设备”、LargeObjectMapSpace 写成“非 arm64 设备”。AOSP android-15/16 的默认选择在 Heap::kDefaultLargeObjectSpaceType 中由 USE_ART_LOW_4G_ALLOCATOR 决定：true→kFreeList，false→kMap；不是简单 arm64/非 arm64 二分。",
+          "suggestion": "改为按 USE_ART_LOW_4G_ALLOCATOR / kDefaultLargeObjectSpaceType 说明；如要解释常见设备落点，另补构建宏与 ABI/产品配置的对应证据。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码准确性",
+          "location": "L151-L159、L260-L268 Android 15+ CMC/BumpPointerSpace",
+          "detail": "正文多处暗示 Android 15+ 已切到 CMC + BumpPointerSpace，但 AOSP Runtime::Init 仍按 gUseUserfaultfd、sysprop、kernel userfaultfd/MREMAP_DONTUNMAP 能力和命令行 GC 类型决定；不满足条件时仍可能走 CC/RegionSpace。",
+          "suggestion": "把“Android 15+ 使用 CMC”改为“Android 15 AOSP 具备更完整 CMC/BumpPointerSpace 路径，启用取决于 gUseUserfaultfd/系统属性/内核能力/构建配置”；补 mark_compact.cc::ShouldUseUserfaultfd、runtime.cc 选择 background_gc 的源码锚点。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性",
+          "location": "L296-L299 Generational CMC 配置",
+          "detail": "`gUseUserfaultfd` 不是 runtime.cc Init 阶段的局部开关，而是 mark_compact.cc 中由 ShouldUseUserfaultfd() 静态初始化的全局常量；`use_generational_cmc` 也不是系统属性名。AOSP android-16 中 Runtime::Init 使用变量 `use_generational_gc`，ShouldUseGenerationalGC() 先看 ART flag `use_generational_cmc()`，再读 `persist.device_config.runtime_native_boot.use_generational_gc`。",
+          "suggestion": "按实际符号重写：mark_compact.cc::ShouldUseUserfaultfd / KernelSupportsUffd / ShouldUseGenerationalGC，runtime.cc 中 `use_generational_gc = (kUseBakerReadBarrier || gUseUserfaultfd) && xgc_option.generational_gc && ShouldUseGenerationalGC()`。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性/数据口径",
+          "location": "L451-L458 JIT Code Cache",
+          "detail": "正文写“默认大小约 4-16MB”。AOSP android-16 `runtime/jit/jit_code_cache.h` 中 `JitCodeCache::GetInitialCapacity()` release 默认约 64KB（至少 2*page size），`kMaxCapacity = 64 * MB`，runtime options 默认使用 initial/max 两个值。4-16MB 缺源码或设备配置来源。",
+          "suggestion": "改为“初始容量很小，运行中按需增长，上限默认 64MB（可由 -Xjitcodecachesize / runtime option 调整）”；如保留 4-16MB，必须补设备属性或实测 dumpsys/trace 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T11:28:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-17-11-5-10-workmanager-powercheck-source",
+      "section": "5.10",
+      "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "priority": 85,
+      "title": "WorkManager 源码锚点与 Android 17 Power Check 机制补证",
+      "description": "[Deep Tech Review] P1 2：WorkManager 调度器选择代码块未 pin AndroidX 真实源码；Android 17 Power Check/ProfilingTrace 强终止机制缺官方/源码闭环。",
+      "issue_type": "source-accuracy/knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性",
+          "location": "L249-L269 WorkManager 调度器选择代码块",
+          "detail": "代码块标注 `androidx/work/impl/WorkManagerImpl.java` 和 `createSchedulers()`，但现代 WorkManager 调度器选择应落到 AndroidX `androidx.work.impl.Schedulers`、`SystemJobScheduler`、`SystemAlarmScheduler`、`GreedyScheduler` 的具体实现；当前片段像概念伪代码，未 pin WorkManager 2.10.x tag。",
+          "suggestion": "补 AndroidX WorkManager 2.10.x 的 Gitiles tag/commit；将代码块改为“示意”或替换为 `Schedulers.createBestAvailableBackgroundScheduler(...)` / `WorkManagerImpl` 初始化时注册 schedulers 的真实路径。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/版本差异",
+          "location": "L568-L578 Android 17 Power Check",
+          "detail": "正文仍直接断言 Android 17 有“缓存态应用 CPU 占用分级熔断”、超限后强杀并自动生成 ProfilingTrace。当前公开 Android 17 release notes 只能支撑 ProfilingManager 新增 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`，不足以支撑 Power Check 的触发周期、阈值、强杀条件、ProfilingTrace 自动生成与 JobScheduler quota 的关系。",
+          "suggestion": "补 Android 17 framework/service 源码、官方 behavior changes 或实机触发记录；补不到时改成“ProfilingManager 提供过度 CPU 使用 kill 的采集触发器”，删除 Power Check 分级熔断机制描述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T11:28:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 276,
-    "p0_count": 115,
-    "last_updated": "2026-05-17T06:36:36+08:00",
+    "total_entries": 283,
+    "p0_count": 38,
+    "last_updated": "2026-05-17T11:28:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 145,
+    "pending_entries": 146,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 145
+    "pending": 146
   },
-  "last_updated": "2026-05-17T11:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 145,
+  "last_updated": "2026-05-17T11:28:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 146,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }

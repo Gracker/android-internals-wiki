@@ -55,16 +55,16 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-task9_result: pending
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-14
-last_task9_at: 2026-05-14T07:24:00+08:00
-task9_review_notes: "2026-05-14 task9 deep-review completed-by-task2b。P0 已修复：API 37 pending reason 改为 PENDING_JOB_REASON_DEVICE_STATE 聚合常量，getAppStandbyBucket() 权限描述修正（查询自身无需权限）；禁用词清理（1 处）。"
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-17"
+last_task9_at: "2026-05-17T11:28:00+08:00"
+task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 2：WorkManager 调度器源码锚点仍是示意方法，未 pin AndroidX 版本；Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2：周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -73,6 +73,10 @@ task6_result: pass-light-edit
 last_task6_at: '2026-05-17T11:14:00+08:00'
 last_task6_review_log: "logs/review/2026-05-17-11-review.md"
 task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；修复 frontmatter 注释残留与 L1/L2 文风问题 14 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
+last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
+p0: 0
+p1: 2
+p2: 2
 ---
 
 

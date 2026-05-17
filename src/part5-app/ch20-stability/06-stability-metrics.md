@@ -18,22 +18,25 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: needs-rework
-task9_reviewed_date: '2026-05-14'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-14T05:50:18+08:00'
-last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
-task9_result: needs-rework
-task9_review_notes: 2026-05-14 Task9 05: needs-rework。P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-17T11:28:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
+task9_result: "needs-rework"
+task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
 rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
 last_task2b_at: "2026-05-17T11:26:41"
+p0: 0
+p1: 3
+p2: 1
 ---
 
 # 稳定性度量与指标体系
