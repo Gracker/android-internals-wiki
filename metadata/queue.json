@@ -10278,6 +10278,41 @@
       },
       "completed_date": "2026-05-17",
       "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线。"
+    },
+    {
+      "id": "task9-1.1-selinux-avc-instance-error",
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 95,
+      "title": "SELinux AVC 缓存实例描述错误",
+      "description": "正文称 /dev/binder、/dev/vndbinder、/dev/hwbinder 各自独立 AVC 实例；AOSP kernel/common android16-6.12 中 SELinux AVC 是单个全局缓存，三路 binder 只对应独立 binder context/context manager。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-22-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/SELinux AVC 机制",
+          "location": "L260 “/dev/binder、/dev/vndbinder、/dev/hwbinder 各自独立 Context Manager 和 AVC 实例”",
+          "detail": "AOSP kernel/common android16-6.12 中 Binder 三路设备确实有各自 binder_context/context manager；但 SELinux AVC 在 security/selinux/avc.c 中是单个全局 static struct selinux_avc selinux_avc，缓存键是 ssid/tsid/tclass/perm，不按 binder/vndbinder/hwbinder 设备拆成独立 AVC 实例。当前表述把 Binder context 隔离误写成 AVC cache 实例隔离。",
+          "suggestion": "改为“三路 binder 设备隔离提供独立 binder context/context manager，并通过 SELinux type/权限边界限制跨域访问；SELinux AVC 本身是全局访问向量缓存，不是每个 binder 设备一套独立实例”。保留 selinux_binder_transaction()/avc_has_perm() 检查链，但删除“各自独立 AVC 实例”和“因此降低 AVC 检查频率”的因果。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T22:27:35+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-17T22:27:35+08:00",
+      "review_log": "logs/deep-review/2026-05-17-22-audit.md"
     }
   ],
   "metadata": {
