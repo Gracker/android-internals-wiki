@@ -12,9 +12,14 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+last_task9_at: "2026-05-17T08:23:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-17"
 sources:
   - type: official
     path: "https://github.com/android/skills/tree/main/profilers"
