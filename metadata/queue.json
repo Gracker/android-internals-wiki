@@ -9264,6 +9264,51 @@
       "added_at": "2026-05-17T09:14:00+08:00",
       "completed_date": "2026-05-17",
       "completed_reason": "Task 2A 加工完成：Perfetto SDK 应用内追踪章节 status → ready-for-review"
+    },
+    {
+      "id": "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries",
+      "section": "13.17",
+      "section_title": "Perfetto SDK 与应用内 Trace 数据源",
+      "priority": 85,
+      "title": "Perfetto SDK backend / ProfilingManager 能力边界需修正",
+      "description": "startup tracing 的 kSystemBackend 限制、Perfetto C API 稳定性、ProfilingManager 脱敏与进程边界未写清，容易造成线上诊断能力误判。",
+      "issue_type": "principle-chain/version-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+      ],
+      "material_paths": [
+        "https://raw.githubusercontent.com/google/perfetto/main/examples/sdk/example_startup_trace.cc",
+        "https://raw.githubusercontent.com/google/perfetto/main/docs/design-docs/api-and-abi.md",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/能力边界",
+          "location": "L220-L230 启动早期 trace 与线上触发式采集",
+          "detail": "Perfetto 官方 example_startup_trace.cc 明确写明 startup tracing 只能使用 kSystemBackend，in-process backend 不支持。正文只说“官方示例把它放在 system backend 场景下使用”，并把 startup tracing、短窗口触发、环形缓冲放在同一能力段里，读者容易误以为 in-process backend 也能缓存 session 建立前事件。",
+          "suggestion": "补一句硬边界：startup tracing only works with kSystemBackend；in-process 场景只能尽早 StartTracing，不能获得 pre-session 缓存。把短窗口/环形缓冲作为普通 trace 配置能力单独说明。"
+        },
+        {
+          "type": "源码/API 稳定性",
+          "location": "L245 C SDK 和 C++ SDK 的选择依据",
+          "detail": "Perfetto 官方 getting-started 主路径是 C++17 SDK（perfetto.h/perfetto.cc）。API/ABI 设计文档仍标注 include/perfetto/public 下的新 C API/ABI “is not stable yet”。正文把 C SDK 与 C++ SDK 并列成生产选择，缺少稳定性和版本锁定边界。",
+          "suggestion": "改成：公开文档主推 C++ SDK；C API/ABI 若用于纯 C/Rust FFI，需要明确当前稳定性、锁定 Perfetto revision、补编译/ABI 回归测试，不应作为默认推荐路径。"
+        },
+        {
+          "type": "权限/数据边界",
+          "location": "L230、L265-L272 ProfilingManager 与系统级 trace 边界",
+          "detail": "Android ProfilingManager 文档说明结果会交付到请求应用数据目录，且“Results are redacted and contain specific information about the requesting process only”。正文把 Android 15+ 公开 profiling API 与 adb、系统签名、bug report 并列作为获取系统调度/ftrace/全进程信息的路径，容易高估 ProfilingManager 能力。",
+          "suggestion": "明确 ProfilingManager 可请求 system trace 类型，但结果按请求进程脱敏/裁剪、受限流约束；全设备/全进程 trace 仍应归到 adb、系统签名工具或用户显式 bug report。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T10:20:00+08:00"
     }
   ],
   "metadata": {
