@@ -9812,7 +9812,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md"
@@ -9825,7 +9825,9 @@
         "packages/modules/Connectivity/netd/"
       ],
       "gap_score": 16,
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-17T16:04:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成：系统 DNS Resolver、netd/ConnectivityService 调用关系、DNS 诊断路径和应用层 DNS 优化边界已补齐，章节状态改为 ready-for-review。"
     }
   ],
   "metadata": {
