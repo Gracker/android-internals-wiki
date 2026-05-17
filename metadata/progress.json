@@ -1,7 +1,7 @@
 {
   "total": 312,
-  "draft": 1,
-  "ready-for-review": 110,
+  "draft": 0,
+  "ready-for-review": 111,
   "finalized": 201,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -3663,9 +3663,9 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T03:04:00+08:00",
-  "last_task2a_section": "2.22",
-  "last_task2a_file": "src/part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md",
+  "last_task2a_at": "2026-05-18T04:14:00+08:00",
+  "last_task2a_section": "26.13",
+  "last_task2a_file": "src/part5-app/ch26-observability/13-application-start-info.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
     "2.10",
@@ -4478,5 +4478,6 @@
       ],
       "summary": "5 sections reworked: SELinux AVC, Throwable stack depth, UClamp/SQL/base_slice_ns, Binder freezer API, VSyncPredictor version drift"
     }
-  ]
+  ],
+  "task2a_result": "processed 26.13 ready-for-review"
 }
