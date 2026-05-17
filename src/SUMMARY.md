@@ -392,6 +392,7 @@ tags:
   - [26.10 Android 11 以下进程退出归因方案](part5-app/ch26-observability/10-legacy-process-exit-attribution.md)
   - [26.11 eBPF 在线追踪与 Binder 语义重建](part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md)
   - [26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger](part5-app/ch26-observability/12-versioned-diagnostics.md)
+  - [26.13 ApplicationStartInfo 与启动归因上报](part5-app/ch26-observability/13-application-start-info.md)
 
 ---
 
