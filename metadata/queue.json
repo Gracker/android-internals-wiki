@@ -10244,6 +10244,38 @@
           "suggestion": "补充：completion listener 只保证首帧完成；TTFD/FULLY_DRAWN 校准必须先让业务调用 Activity.reportFullyDrawn()，再通过 getHistoricalProcessStartReasons() 或完成后的 ApplicationStartInfo 副本读取 START_TIMESTAMP_FULLY_DRAWN；同时保留 Android 15/API 35+ 适用范围。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-14.14-android-studio-leakcanary-profiler",
+      "section": "14.14",
+      "priority": 80,
+      "title": "Android Studio LeakCanary Profiler 与堆转储分析",
+      "description": "Android Studio Panda 将 LeakCanary 分析接入 Profiler，适合独立成节说明 HPROF、retained path、IDE 源码联动、设备端/开发机端分析边界，以及与 Native 内存诊断的分工。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-17",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/14-android-studio-leakcanary-profiler.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/studio/preview/features",
+        "https://developer.android.com/studio/profile/capture-heap-dump",
+        "https://android-developers.googleblog.com/2026/04/the-fourth-beta-of-android-17.html",
+        "https://source.android.com/docs/core/tests/debug/native-memory",
+        "intake/daily-info/2026-05-17.md"
+      ],
+      "score": 17,
+      "score_breakdown": {
+        "material_richness": 4,
+        "book_relevance": 4,
+        "reader_demand": 4,
+        "timeliness": 5
+      }
     }
   ],
   "metadata": {
