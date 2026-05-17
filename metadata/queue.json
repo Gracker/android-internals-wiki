@@ -8547,7 +8547,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
@@ -8565,7 +8565,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T13:20:00+08:00"
+      "added_at": "2026-05-16T13:20:00+08:00",
+      "completed_date": "2026-05-17T15:18:41+08:00",
+      "completed_reason": "Task 2B 回炉修复: android_input_events 作为主表, dispatch 表只含 window_id/vsync_id(P85)"
     },
     {
       "id": "task9-13.14-cuj-weighted-scope",
@@ -9428,7 +9430,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/03-art-memory.md"
@@ -9467,7 +9469,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-17T11:28:00+08:00"
+      "added_at": "2026-05-17T11:28:00+08:00",
+      "completed_date": "2026-05-17T15:18:41+08:00",
+      "completed_reason": "Task 2B 回炉修复: LOS 选择条件改按 USE_ART_LOW_4G_ALLOCATOR 说明(P0), CMC 版本线修正为条件启用(P1), Generational CMC 配置参数按实际符号重写(P1), JIT Code Cache 容量改为初始 64KB/上限 64MB(P1)"
     },
     {
       "id": "task9-2026-05-17-11-5-10-workmanager-powercheck-source",
@@ -9520,7 +9524,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/06-case-studies.md"
@@ -9554,7 +9558,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-17T12:32:07+08:00"
+      "added_at": "2026-05-17T12:32:07+08:00",
+      "completed_date": "2026-05-17T15:18:41+08:00",
+      "completed_reason": "Task 2B 回炉修复: SF 源码锚点改为 composite()→present()→composeSurfaces()(P0), ThermalManager→PowerManager API(P0), HWC plane 数量和检测方式标注待验证(P1)"
     },
     {
       "id": "task9-2026-05-17-12-7-15-frametimeline-atrace-sql-power",
@@ -9653,7 +9659,7 @@
       "added_at": "2026-05-17T13:20:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
@@ -9684,7 +9690,9 @@
           "detail": "正文推荐 profileable 构建，但 Memory Profiler 段落未说明 profileable 与 debuggable 的能力差异。官方文档要求需要 Java/Kotlin allocations 或 heap dump 时使用 debuggable；正文只写 profileable 不能做 Java Method Trace 和 Full Allocation Tracking，漏掉 heap dump/Java/Kotlin allocation 的关键限制。",
           "suggestion": "按 build type 补能力矩阵：profileable 适合低扰动 CPU/System Trace/Callstack Sample 等；heap dump、Java/Kotlin allocation recording 等需要 debuggable。Java Method Trace 支持边界以当前 Android Studio 文档复核后再写。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-17T15:18:41+08:00",
+      "completed_reason": "Task 2B 回炉修复: ProfilingManager API 修正为 addProfilingTriggers + TRIGGER_TYPE_APP_FULLY_DRAWN/ANR(P0), Network Profiler→Network Inspector 入口补版本(P1), profileable/debuggable 能力矩阵(P1)"
     },
     {
       "id": "task9-20260517-8.2-app-start-api-lifecycle-version",
@@ -9700,7 +9708,7 @@
       "added_at": "2026-05-17T13:20:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
@@ -9738,7 +9746,9 @@
           "detail": "章节 last_verified_against 标注 android-15.0.0_r1，但 current AOSP wm 包中已无 TaskRecord.java，任务容器类为 services/core/java/com/android/server/wm/Task.java；TaskRecord 是旧版本命名。",
           "suggestion": "写成“ActivityRecord 与 Task（旧版本/Android 10 前后资料中常写 TaskRecord）”，并在版本表或脚注中标注命名迁移，避免读者按 Android 15 源码查不到类。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-17T15:18:41+08:00",
+      "completed_reason": "Task 2B 回炉修复: ApplicationStartInfo 常量修正(P0), setContentView 语义修正(P0), App Startup 版本修正为 API 14+ Jetpack(P0), TaskRecord→Task 命名(P1)"
     },
     {
       "id": "task9-20260517-2-5-renderthread-sync-deliqueue-adpf",

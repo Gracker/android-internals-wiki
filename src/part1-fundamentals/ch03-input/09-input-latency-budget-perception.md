@@ -38,16 +38,16 @@ related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: "fixed"
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值
@@ -132,7 +132,7 @@ FrameTimeline 对这段很有用。Perfetto 文档把 high latency state 标成�
 
 ## Perfetto 中怎样关联输入事件和帧
 
-Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应用 ACK 之间的阶段整理成表。`android_input_event_dispatch` 记录 Android 输入事件分发信息，相关列里有 display、window、dispatch 开始与结束等字段；标准库还暴露 `total_latency_dur` 和 `end_to_end_latency_dur` 这类时间。
+Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应用 ACK 之间的阶段整理成表。`android_input_events` 是输入延迟的主表，包含事件 ID、时间戳等核心字段。`android_input_event_dispatch` 作为补充表，提供窗口 ID（`window_id`）和 vsync 决策（`vsync_id`）等信息，但不包含 display、dispatch 开始与结束等字段——这些字段分布在 `android_input_event_motion` / `android_input_event_key` 等事件子表中。标准库还暴露 `total_latency_dur` 和 `end_to_end_latency_dur` 这类时间。
 
 这几个指标的边界要分清：
 

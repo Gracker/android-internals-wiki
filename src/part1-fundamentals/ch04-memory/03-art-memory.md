@@ -49,24 +49,24 @@ related_chapters:
 - '4.8'
 - '7.1'
 - '7.7'
-last_task2b_at: '2026-05-16T23:34:10'
+last_task2b_at: "2026-05-17T15:18:41+08:00"
 reviewed_date: '2026-05-17'
 reviewed_by: openclaw-task6
 last_task6_at: '2026-05-17T11:14:00+08:00'
 last_task6_review_log: logs/review/2026-05-17-11-review.md
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
 task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-17T11:28:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
-pipeline_stage: "task2b_pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+pipeline_stage: "task6_pending"
 p0: 1
 p1: 2
 p2: 2
@@ -151,7 +151,7 @@ Allocation Space（也叫 Main Space）是应用运行期间绝大多数对象�
 Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 - 在 Android 8.0–14 中使用 CC（Concurrent Copying）GC 时，Allocation Space 的数据结构是 `RegionSpace`，堆被划分为 256KB 固定大小的 Region
-- 在 Android 15+ 使用 CMC（Concurrent Mark-Compact）GC 时，Allocation Space 的数据结构切换为 `BumpPointerSpace`，结构更简单，更有利于全局压缩。
+- 在 Android 15+ 的 CMC（Concurrent Mark-Compact）GC 路径上，Allocation Space 可以使用 `BumpPointerSpace`，结构更简单，更有利于全局压缩。但启用取决于 `gUseUserfaultfd`、内核 userfaultfd/MREMAP_DONTUNMAP 能力、系统属性和构建配置，不满足条件时仍走 CC/RegionSpace 路径
 
 Android 15 针对 16KB 页环境改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐（`RoundUp(capacity, kPageSize)`）。从 `android-15.0.0_r1` 起，改为动态获取当前页大小（`RoundUp(capacity, gPageSize)`），全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置，对应源码位于 `art/runtime/gc/space/bump_pointer_space.cc`。
 
@@ -172,8 +172,12 @@ Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8
 
 Large Object Space 有两种实现：
 
-- **FreeListSpace**（arm64 设备）：在初始化时 `mmap` 一块与堆上限（`HeapGrowthLimit`）大小一致的内存，通过空闲链表管理页的分配和回收。相同大小的页可以被复用
-- **LargeObjectMapSpace**（非 arm64 设备）：每次分配时直接 `mmap` 一块新的匿名内存，释放时 `munmap`
+- **FreeListSpace**：在初始化时 `mmap` 一块与堆上限（`HeapGrowthLimit`）大小一致的内存，通过空闲链表管理页的分配和回收。相同大小的页可以被复用
+- **LargeObjectMapSpace**：每次分配时直接 `mmap` 一块新的匿名内存，释放时 `munmap`
+
+两者的选择不是按 arm64 / 非 arm64 划分，而是由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定：启用时使用 `FreeListSpace`，不启用时使用 `LargeObjectMapSpace`。这个宏与设备的堆地址空间布局相关（4GB 压缩引用窗口），不是简单的架构区分。`Heap::kDefaultLargeObjectSpaceType` 定义在 `art/runtime/gc/heap.h` 中，最终值取决于这个宏。
+
+[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.h, art/runtime/gc/space/large_object_space.cc]
 
 在 Perfetto 中，如果大对象分配很频繁，通常说明应用在持续创建大量 `byte[]` 或大 `String`。这种情况常见于图片处理、网络数据解析等场景。Large Object Space 持续增长时，要进一步检查是否存在大对象泄漏。
 
@@ -293,9 +297,9 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 **分代策略的配置**。Generational CMC 的分代策略有几个关键参数：
 
-- **`gUseUserfaultfd`**：运行时开关，在 `art/runtime/runtime.cc` 的 `Init()` 阶段判断设备是否支持 UFFD。如果内核不支持 `userfaultfd` 系统调用（某些旧内核或受限配置），CMC 路径不会被启用
-- **`use_generational_cmc`**：系统属性 `persist.device_config.runtime_native_boot.use_generational_gc`，控制是否启用分代策略。设为 `false` 时退回到不分代的 CMC
-- **硬件能力检查**：`Runtime::Init()` 阶段会探测设备是否支持 UFFD（`userfaultfd` 系统调用）和 `mremap`，满足条件才会启用 CMC 路径
+- **`gUseUserfaultfd`**：由 `mark_compact.cc` 中 `ShouldUseUserfaultfd()` 静态初始化的全局常量（不是 `runtime.cc` 的局部开关），在 ART 启动时根据内核是否支持 `userfaultfd` 系统调用和 `MREMAP_DONTUNMAP` 来设置。如果内核不支持，CMC 路径不会被启用
+- **`use_generational_gc`**：`Runtime::Init()` 中使用的变量名（不是 `use_generational_cmc`），由 `mark_compact.cc::ShouldUseGenerationalGC()` 判断是否启用分代策略。判断条件包括 `kUseBakerReadBarrier || gUseUserfaultfd` 以及命令行 GC 类型选项
+- **硬件能力检查**：`ShouldUseUserfaultfd()` 在 `mark_compact.cc` 中检测 `userfaultfd` 系统调用和 `KernelSupportsUffd()`，`ShouldUseGenerationalGC()` 检查分代条件
 - **年轻代大小**：由 `Heap` 内部的分代参数控制。[待验证：年轻代占堆比例的具体数值需补 AOSP commit/tag 锚点] 新分配的对象优先进入年轻代，Young GC 只扫描这部分空间
 
 **分代策略与 Perfetto 观察的对应关系**。在 Generational CMC 下，Perfetto 中仍然可以区分 Young GC 和 Full GC，但 slice 名称可能与 CC 路径不同。CC 路径下 Young GC 的 slice 通常标记为 `ConcurrentCopying`（partial / sticky），CMC 路径下则标记为 `MarkCompact` 相关名称。分析时需要先确认设备使用的 collector 类型，再对应 slice 名称。
@@ -453,7 +457,7 @@ Cloud Profiles 解决了 Baseline Profiles 无法覆盖的问题：开发者可�
 AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通过 `mmap` 映射到进程地址空间。这些文件的大小直接影响了应用的内存占用：
 
 - **过度 AOT 编译**：如果 Profile 包含了太多方法，`.oat` 文件会很大，mmap 后占用大量虚拟地址空间
-- **JIT Code Cache**：运行时 JIT 编译的代码存在内存中的 Code Cache 里，默认大小约 4-16MB（取决于设备配置）。如果 Code Cache 满了，旧的编译结果会被淘汰，对应的方法回退到解释执行
+- **JIT Code Cache**：运行时 JIT 编译的代码存在内存中的 Code Cache 里，初始容量很小（`JitCodeCache::GetInitialCapacity()` 在 release 构建中约 64KB），运行中按需增长，上限默认 64MB（可由 `-Xjitcodecachesize` 或 runtime option 调整，定义在 `art/runtime/jit/jit_code_cache.h` 的 `kMaxCapacity`）。如果 Code Cache 满了，旧的编译结果会被淘汰，对应的方法回退到解释执行
 
 在 Perfetto 中可以通过 `art_jit_*` 相关的事件来观察 JIT 编译活动。
 

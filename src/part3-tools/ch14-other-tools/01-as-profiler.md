@@ -27,10 +27,10 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task6_result: needs-rework
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
@@ -90,7 +90,7 @@ CPU Profiler 解决"App 慢在哪里"的问题。它提供了三种 CPU 分析�
 
 Memory Profiler 解决"App 的内存怎么了"的问题。它可以实时展示 Java 堆和 Native 堆的内存变化曲线，支持 Heap Dump（堆快照）分析对象引用关系，还支持 Allocation Tracking 追踪对象的分配来源。当怀疑有内存泄漏或者内存抖动时，Memory Profiler 是最直接的切入点。
 
-Network Profiler 展示 App 的网络活动——请求的时间、大小、响应状态。虽然它的深度不如专业的网络抓包工具（如 Charles、mitmproxy），但对于快速确认"是不是网络请求太慢导致了卡顿"这类问题非常方便。
+Network Inspector（Android Studio 2020.3.1+ 从 Profiler 内的 Network Profiler 迁移到 App Inspection > Network Inspector）展示 App 的网络活动——请求的时间、大小、响应状态。虽然它的深度不如专业的网络抓包工具（如 Charles、mitmproxy），但对于快速确认"是不是网络请求太慢导致了卡顿"这类问题非常方便。旧版本 Android Studio（2020.3.1 之前）的 Network Profiler 仍在 Profiler 面板中显示。
 
 Energy Profiler（在 Android Studio Hedgehog 之后升级为 Power Profiler）展示 App 的功耗来源。它分别展示 CPU、网络、GPS 等子系统的电量消耗，帮助定位高耗电的行为。
 
@@ -192,6 +192,19 @@ Memory 方面的开销也需要注意。实时内存曲线的监控开销很低�
 
 一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来 profiling。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许 Profiler 进行基本的性能分析，但跳过了 debug 构建中的额外检查和 hook。根据 Google 的测试数据，`profileable` 构建相比 `debuggable` 构建约有 28% 的性能提升，profiling 数据也更接近真实发布版本的表现。
 
+两种构建类型的能力边界：
+
+| 能力 | `profileable` | `debuggable` |
+|------|:---:|:---:|
+| System Trace / CPU Trace | ✅ | ✅ |
+| Callstack Sample | ✅ | ✅ |
+| Java Method Trace | ❌ | ✅ |
+| Java/Kotlin Allocation Recording | ❌ | ✅ |
+| Heap Dump | ❌ | ✅ |
+| Native Allocation Tracking | ✅ | ✅ |
+
+需要 Heap Dump 或 Java/Kotlin Allocation Recording 时，仍然要使用 `debuggable` 构建。
+
 在 Android Studio 中，可以通过在 Manifest 中添加 `<profileable android:shell="true"/>` 来启用。推荐在 release 构建的基础上加上 `profileable` 标志来做性能分析，这样得到的数据最有参考价值。
 
 [已验证: 官方文档, developer.android.com/topic/performance/tracing/on-device]
@@ -222,33 +235,42 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 ## 使用 Profiler API 在代码中触发 profiling
 
-在某些场景下，我们希望 profiling 由特定条件自动触发。Android 提供了 `ProfilingManager` API（Android 16，API 36 新增）来支持这种程序化的 profiling 触发。
+在某些场景下，我们希望 profiling 由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
 
-`ProfilingManager` 允许 App 注册系统级的 profiling 触发器，当系统检测到特定事件（如 App 冷启动、ANR、OOM、CPU 占用过高）时，自动抓取对应的性能数据。这些触发器包括：
+`ProfilingManager` 允许 App 注册系统级的 profiling 触发器。Android 16 API 36 中公开的触发器类型包括：
 
-- `ProfilingTrigger.TRIGGER_TYPE_STARTUP`：App 启动时自动抓取 System Trace
-- `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时自动抓取 Trace
+- `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN`：App 完成首帧绘制时触发
+- `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时触发
 
-Android 16 开发者预览版中定义的触发器类型为 `ProfilingTrigger` 常量（API 36），通过 `ProfilingManager.registerTrigger()` 注册。注册示例：
+注册使用 `addProfilingTriggers()` 方法（不是 `registerTrigger()`），结果通过 `registerForAllProfilingResults()` 接收。注册示例：
 
 ```kotlin
 val profilingManager = getSystemService(ProfilingManager::class.java)
-profilingManager.registerTrigger(
-    ProfilingTrigger.Builder()
-        .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_STARTUP)
-        .build()
+profilingManager.addProfilingTriggers(
+    listOf(
+        ProfilingTrigger.Builder()
+            .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+            .build(),
+        ProfilingTrigger.Builder()
+            .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_ANR)
+            .build()
+    )
 )
+// 注册回调接收 profiling 结果
+profilingManager.registerForAllProfilingResults { result ->
+    // 处理 profiling 结果
+}
 ```
 
-[已验证: API 36 ProfilingTrigger 常量名为 TRIGGER_TYPE_STARTUP / TRIGGER_TYPE_ANR，非 TRIGGER_TYPE_COLD_START]
+[已验证: Android 16 API 36, android.os.ProfilingManager — addProfilingTriggers / registerForAllProfilingResults]
 
-这种系统触发的 profiling 方式对于捕获难以复现的问题特别有价值——很多 ANR 或 OOM 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
+这种系统触发的 profiling 方式对于捕获难以复现的问题特别有价值——很多 ANR 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
 
 ## 常见问题与误区
 
 **"Method Trace 报告的方法耗时就是真实的耗时。"** 不是。Method Trace 的插桩开销非常大，对于短方法（< 10ms）可能导致耗时膨胀 10 倍以上。只有 System Trace 给出的时间数据接近真实情况。Method Trace 的价值在于看调用关系，不是看绝对时间。
 
-**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建性能更好（约 28% 提升），数据更接近真实发布版。唯一的限制是 profileable 构建不能做 Java Method Trace 和 Full Allocation Tracking——但 System Trace 和 Callstack Sample 都支持。
+**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建性能更好（约 28% 提升），数据更接近真实发布版。限制是 profileable 构建不能做 Java Method Trace、Java/Kotlin Allocation Recording 和 Heap Dump——但 System Trace、Callstack Sample 和 Native Allocation Tracking 都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
 
 **"Profiler 能分析系统性能问题。"** Profiler 的视角是 App-centric 的，它主要展示单个 App 的 CPU、内存、网络数据。要分析系统级的性能问题（如调度延迟、多进程竞争、SurfaceFlinger 合成慢），需要使用 Perfetto 的全局视图。
 

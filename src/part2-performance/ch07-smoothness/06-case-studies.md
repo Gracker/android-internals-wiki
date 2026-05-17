@@ -56,16 +56,16 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: pending
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task2b_rework_date: '2026-05-09'
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 task9_result: "needs-rework"
-last_task2b_at: '2026-05-09T15:40:00+08:00'
+last_task2b_at: "2026-05-17T15:18:41+08:00"
 task9_review_notes: "2026-05-17 Task9 12: needs-rework。P0 2 / P1 1 / P2 1；SF/HWC 案例仍有 android-16 不存在的 handleMessageRefresh/doComposition 锚点；ThermalManager 示例 API 不存在；Overlay plane 能力与案例数据需补设备证据。"
 last_task6_at: '2026-05-12T18:02:31+08:00'
 task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 2 处：修正“七个案例/五个案例”不一致和方法论段第一人称；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
@@ -525,7 +525,7 @@ App 侧线程都在预算内、但帧仍然超时--瓶颈在 App 进程下游。
 
 使用 Perfetto 时额外启用 `gfx` 分类(`SurfaceFlinger` 轨道)。需要关注的 Track:
 
-- `surfaceflinger` 进程的主线程(`onMessageInvalidate` → `handleMessageRefresh` → `composite()` → `Output::present()`)
+- `surfaceflinger` 进程的主线程（`SurfaceFlinger::composite()` → `CompositionEngine::present()` → `Output::present()` → `Output::composeSurfaces()` → `RenderEngine::drawLayers()`）
 - 每个 Layer 的合成类型(`DEVICE` = HWC Overlay,`CLIENT` = GPU 渲染)
 - `FrameTimeline` 中 SF 的帧预测误差
 
@@ -535,11 +535,13 @@ App 侧线程都在预算内、但帧仍然超时--瓶颈在 App 进程下游。
 
 **第二步:看 SF 的帧耗时。** 在 Perfetto 中展开 `surfaceflinger` 进程,找到主线程的 `handleMessageRefresh` slice。示例观察:部分帧的 CLIENT 合成阶段（`composeSurfaces()` → `RenderEngine::drawLayers()`）耗时明显拉长(从正常的 1-3ms 拉到 6-10ms),超过了 SF 的 VSync 周期预算。[待验证:需补原始 trace]
 
-**第三步:查合成类型。** HWC 通过 `validateDisplay()` 向 SF 报告每个 Layer 应走哪条合成路径。HWC 的决策不仅看 Layer 数量，还受像素格式、transform、dataspace、alpha 混合、受保护内容、缩放比例、带宽和 plane capability 等约束影响。当这些约束导致部分 Layer 无法走 Overlay Plane（中端 SoC 通常 4 个 plane）时，HWC 会将它们标记为 `CLIENT` 合成类型——SF 必须用 `RenderEngine::drawLayers()` 把这些 Layer 渲染到一个中间 Buffer，再交给 HWC 输出。
+**第三步:查合成类型。** HWC 通过 `validateDisplay()` 向 SF 报告每个 Layer 应走哪条合成路径。HWC 的决策不仅看 Layer 数量，还受像素格式、transform、dataspace、alpha 混合、受保护内容、缩放比例、带宽和 plane capability 等约束影响。当这些约束导致部分 Layer 无法走 Overlay Plane 时，HWC 会将它们标记为 `CLIENT` 合成类型——SF 必须用 `RenderEngine::drawLayers()` 把这些 Layer 渲染到一个中间 Buffer，再交给 HWC 输出。
+
+Overlay Plane 数量因 SoC 和显示管线配置而异，没有统一的公开参数。[待验证："中端 SoC 通常 4 个 plane / 高端 6-8 个"需补充厂商文档或 `dumpsys SurfaceFlinger` 实测证据]
 
 视频通话场景的 Layer 堆叠:远端视频 SurfaceView + 本地预览 SurfaceView + App UI overlay + 系统状态栏 + 导航栏。总共 5 层,超过了 4 个 Overlay Plane。其中一层被迫走 `CLIENT` 合成,SF 每帧多了一次 GPU 渲染。
 
-**第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `doComposition` 拉长的帧一一对应。
+**第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `composeSurfaces()` 拉长的帧一一对应。
 
 [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 调用 `CompositionEngine` 链路: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
 [已验证: source.android.com - HWC Overlay Plane 数量因 SoC 而异,中端芯片通常 4 个]
@@ -548,13 +550,13 @@ App 侧线程都在预算内、但帧仍然超时--瓶颈在 App 进程下游。
 
 视频通话场景的 Layer 数量超过了 HWC Overlay Plane 容量（且 Layer 属性组合不满足 HWC 的 Overlay 约束），多余的 Layer 被 HWC 退回给 SF 做 GPU 合成（`CLIENT` composition）。SF 的 `composeSurfaces()` 多了一次 `RenderEngine::drawLayers()` GPU 渲染 Pass,帧耗时从正常的 1-3ms 拉到 6-10ms,超过了 SF 的 VSync 预算,导致帧呈现延迟。
 
-高端设备不受影响,是因为高端 SoC 的 HWC 支持更多 Overlay Plane(通常 6-8 个),同样的 5 层全部能走 `DEVICE` 合成。
+高端设备通常受影响更小，是因为高端 SoC 的 HWC 通常支持更多 Overlay Plane，同样的 5 层有更高概率全部走 `DEVICE` 合成。[待验证：高端 SoC plane 数量需补厂商文档证据]
 
 ### 修复方案
 
 1. **减少 Layer 数量**:把 App UI overlay 合并到主 Surface,避免额外的 Layer。用 `SurfaceView` 的 Z-order 排列让 HWC 直接叠加视频和预览窗口
 2. **使用 `setRelativeLayer` 控制叠放**:让本地预览窗口和远端视频走不同的 Overlay Plane,避免两者竞争同一个 Plane
-3. **检测 HWC 能力做降级**:通过 `DisplayManager` 获取屏幕信息,在 Overlay Plane 不足的设备上降低 UI 复杂度(比如隐藏不必要的悬浮控件)
+3. **用 Perfetto/dumpsys 确认 HWC 合成类型**:Android 应用侧没有稳定的 public API 查询 HWC overlay plane 数量。可通过 Perfetto 的 SurfaceFlinger/Layer trace、`dumpsys SurfaceFlinger` 输出或 Winscope 观察 Layer 合成类型（`DEVICE`/`CLIENT`），据此决定是否降低 UI 复杂度
 
 ```kotlin
 // 视频通话场景:合并 UI overlay 到主 Surface,减少 Layer 数量
@@ -626,23 +628,26 @@ Perfetto 中启用以下 Track:
 
 ```kotlin
 // 监听热状态变化,动态调整渲染质量
-val thermalManager = getSystemService(ThermalManager::class.java)
-thermalManager?.registerThermalStatusChangeListener { status ->
-    when (status) {
-        ThermalManager.THERMAL_STATUS_MODERATE -> {
-            // 降低滤镜复杂度
-            filterResolution = FilterResolution.MEDIUM
-        }
-        ThermalManager.THERMAL_STATUS_SEVERE -> {
-            // 关闭非核心滤镜
-            filterResolution = FilterResolution.LOW
+// 热状态 API 在 PowerManager 上，不是独立的 ThermalManager 类
+val powerManager = getSystemService(PowerManager::class.java)
+powerManager?.addThermalStatusListener(object : PowerManager.OnThermalStatusChangedListener {
+    override fun onThermalStatusChanged(status: Int) {
+        when (status) {
+            PowerManager.THERMAL_STATUS_MODERATE -> {
+                // 降低滤镜复杂度
+                filterResolution = FilterResolution.MEDIUM
+            }
+            PowerManager.THERMAL_STATUS_SEVERE -> {
+                // 关闭非核心滤镜
+                filterResolution = FilterResolution.LOW
+            }
         }
     }
-}
+})
 ```
 
-[已验证: developer.android.com - ThermalManager API 和热状态等级定义]
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/os/PowerManager.java` - ThermalManager 基于 PowerManager 的 IThermalService 回调]
+[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/os/PowerManager.java` — `addThermalStatusListener()` / `OnThermalStatusChangedListener` / `THERMAL_STATUS_*` 常量均定义在 PowerManager 中，PowerManager 通过 `IThermalService` 获取热状态]
+[已验证: developer.android.com — 应用侧热状态 API 入口是 `PowerManager.addThermalStatusListener()`]
 
 ### 效果对比
 
