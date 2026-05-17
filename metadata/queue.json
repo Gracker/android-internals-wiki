@@ -10670,6 +10670,40 @@
         "时效性": 5,
         "total": 19
       }
+    },
+    {
+      "id": "task9-1.1-sf-residual-docomposition-20260518",
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 95,
+      "title": "SurfaceFlinger doComposition 残留旧 Trace 名称",
+      "reason": "[Deep Tech Review] Android 16 SurfaceFlinger 路径已修正前文，但后续示例仍把 doComposition 当成当前通用锚点。",
+      "description": "P0: L324/L329/L351 残留旧 SurfaceFlinger trace/source 名称；Android 16 AOSP 已无 doComposition/handleMessageRefresh/onMessageReceived。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L324、L329、L351 SurfaceFlinger 正常/异常示例与常见问题",
+          "detail": "正文前文已把 Android 16 SurfaceFlinger 主路径修正为 commit/composite/postComposition，但后续示例仍用 doComposition 作为通用 Perfetto 切片/根因描述。AOSP android-16.0.0_r1 frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 中 doComposition、handleMessageRefresh、onMessageReceived 均不存在；可核对符号为 SurfaceFlinger::commit()、SurfaceFlinger::composite()、postComposition。",
+          "suggestion": "把这三处改成按版本分支的口径：Android 16 使用 composite / postComposition；Android 14 及更早可括注旧切片 doComposition / handleMessageRefresh。避免在适用版本覆盖 Android 16 的章节里单独把 doComposition 写成当前通用锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T03:31:27+08:00",
+      "review_log": "logs/deep-review/2026-05-18-03-deep-review.md"
     }
   ],
   "metadata": {
