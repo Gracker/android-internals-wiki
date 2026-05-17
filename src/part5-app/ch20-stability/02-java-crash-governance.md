@@ -10,21 +10,19 @@ confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
 task2b_result: "fixed"
-reviewed_date: '2026-05-11'
-reviewed_by: 'openclaw-task6'
-task6_result: 'pass-light-edit'
-task6_state: "revisiting"
+reviewed_date: "2026-05-18"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+task6_state: "reviewed"
 task9_result: needs-rework
 task9_state: "pending"
 task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md
-- type: aosp
-  path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java
 - type: official
@@ -44,10 +42,24 @@ last_task9_at: "2026-05-17T18:20:00+08:00"
 last_task9_audit: "2026-05-17"
 task9_review_notes: "2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
 last_task9_review_log: "logs/deep-review/2026-05-17-18-audit.md"
+reviewed_at: "2026-05-18T01:08:00+08:00"
+last_task6_at: "2026-05-18T01:08:00+08:00"
+task6_reviewed_date: "2026-05-18"
+last_task6_review_log: "logs/review/2026-05-18-01-review.md"
+task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。补齐 outline 锚点、去重来源、小修 Kotlin 协程段落间距并补验证标注；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
 ---
+
 # Java Crash 治理
 
-Java Crash 在线上稳定性问题中占比最高，也是工程师日常接触最多的崩溃类型。本节从异常分类出发，讲清楚 UncaughtExceptionHandler 的正确用法，给出 Top Crash 模式的排查思路和治理优先级判定方法。
+<!-- outline-start -->
+- 🔹 Java 异常分类体系：Exception / RuntimeException / Error 的治理差异
+- 🔹 UncaughtExceptionHandler 机制：系统默认处理链、自定义 handler 链式调用与退出路径
+- 🔹 堆栈获取代价：Throwable 栈回溯、saved_frames 阈值与高频采集风险
+- 🔹 Top Crash 模式：NPE、越界、类型转换、生命周期异常的排查要点
+- 🔹 治理优先级：影响面、严重度、修复成本与监控反馈流程
+<!-- outline-end -->
+
+Java Crash 在线上稳定性问题中通常占比较高 [待验证: 需补充具体业务或公开报告数据来源]，也是工程师日常接触最多的崩溃类型。本节从异常分类出发，讲清楚 UncaughtExceptionHandler 的正确用法，给出 Top Crash 模式的排查思路和治理优先级判定方法。
 
 ## Java 异常分类体系
 
@@ -265,19 +277,19 @@ Java 异常在 ART 中的传递路径：`art::Thread::SetException()` 设置异�
 
 [待补充: 第三方 SDK crash 隔离的具体实现方案]
 
-### Kotlin协程异常与UncaughtExceptionHandler的关系
+### Kotlin 协程异常与 UncaughtExceptionHandler 的关系
 
 > 源码调研补充，2026-05-11，详见 §20.7 扩展章节或 [DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md](../DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md)
 
-Kotlin协程异常处理与Java的UncaughtExceptionHandler形成级联体系：
+Kotlin 协程异常处理与 Java 的 UncaughtExceptionHandler 形成级联体系：
 
-1. **Context中的CoroutineExceptionHandler**（最高优先级）— 协程创建者明确指定
-2. **ServiceLoader注册的全局handler** — `kotlinx-coroutines-android`通过META-INF注册`AndroidExceptionPreHandler`
-3. **Thread.uncaughtExceptionHandler**（兜底）— 最终触发RuntimeInit的LoggingHandler/KillApplicationHandler
+1. **Context 中的 CoroutineExceptionHandler**（最高优先级）— 协程创建者明确指定
+2. **ServiceLoader 注册的全局 handler** — `kotlinx-coroutines-android` 通过 `META-INF` 注册 `AndroidExceptionPreHandler`
+3. **Thread.uncaughtExceptionHandler**（兜底）— 最终触发 RuntimeInit 的 LoggingHandler / KillApplicationHandler
 
-**关键区别**：CoroutineExceptionHandler只处理"无传播路径"的协程异常。在`coroutineScope`中，异常会通过结构化并发传播给父协程，不需要CoroutineExceptionHandler介入。在`supervisorScope`或`GlobalScope`中，异常没有传播路径，必须由CoroutineExceptionHandler处理。
+**关键区别**：CoroutineExceptionHandler 只处理“无传播路径”的协程异常。在 `coroutineScope` 中，异常会通过结构化并发传播给父协程，不需要 CoroutineExceptionHandler 介入。在 `supervisorScope` 或 `GlobalScope` 中，异常没有传播路径，必须由 CoroutineExceptionHandler 处理。
 
-Android 8.0/8.1存在pre-handler丢失问题（协程直接调用uncaughtExceptionHandler绕过了pre-handler），`kotlinx-coroutines-android`通过反射调用修复了这个问题。
+Android 8.0/8.1 存在 pre-handler 丢失问题（协程直接调用 uncaughtExceptionHandler 绕过了 pre-handler），`kotlinx-coroutines-android` 通过反射调用修复了这个问题。
 
 详细分析见 §20.7 扩展章节。
 

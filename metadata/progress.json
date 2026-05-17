@@ -1,8 +1,8 @@
 {
   "total": 311,
   "draft": 1,
-  "ready-for-review": 112,
-  "finalized": 198,
+  "ready-for-review": 111,
+  "finalized": 199,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -168,22 +168,26 @@
     "8.2",
     "7.6",
     "14.1",
-    "17.5"
+    "17.5",
+    "1.1",
+    "20.2"
   ],
   "review_files": [
-    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-    "src/part4-system/ch17-oem/02-soc-differences.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+    "src/part5-app/ch20-stability/02-java-crash-governance.md"
   ],
-  "review_summary": "Task6 2026-05-17 20: 复审 2.18、17.2；完成 L1/L2 小修 24 处，新增 2 个素材整合回炉问题并入 queue.json priority 95。",
+  "review_summary": "Task6 2026-05-18 01: 复审 1.1、5.1、20.2；完成 L1/L2 小修 41 处，无新增 L3/L4 回炉；5.1 满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 24,
-    "l3_issues": 2,
+    "l1_l2_fixes": 41,
+    "l3_issues": 0,
     "l4_issues": 0,
-    "technical_risk_markers": 2,
-    "total_issues": 2,
+    "technical_risk_markers": 0,
+    "total_issues": 0,
     "reviewed_sections": [
-      "2.18",
-      "17.2"
+      "1.1",
+      "5.1",
+      "20.2"
     ]
   },
   "issues_by_section": {
@@ -1049,7 +1053,17 @@
       "p0": 1,
       "p1": 3,
       "p2": 3,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 18,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-18T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-18-01-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-18T01:08:00+08:00",
+      "task6_note": "复审通过；L1/L2 标点、间距和 SQL 别名清理完成。Task9 已 pass-tech-review 且 queue.json 无 pending，自动晋升 finalized。",
+      "task9_result": "pass-tech-review"
     },
     "3.8": [
       {
@@ -1197,41 +1211,63 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
       "task6_log": "logs/review/2026-05-17-16-review.md"
+    },
+    "1.1": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-18T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-18-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；修正标题比喻、填充词和调度器比喻。Task9 仍需复核，未自动晋升。",
+      "task9_result": "needs-rework"
+    },
+    "20.2": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 13,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-18T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-18-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；补齐 outline 锚点、去重来源、修正 Kotlin 协程段落间距并补验证标注。Task9 仍需复核，未自动晋升。",
+      "task9_result": "needs-rework"
     }
   },
-  "total_review_sections": 154,
+  "total_review_sections": 156,
   "next_review_candidates": [],
-  "ready_for_review": 100,
-  "last_updated": "2026-05-18T00:09:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "ready_for_review": 99,
+  "last_updated": "2026-05-18T01:08:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-17",
-    "time": "16:11",
-    "reviewed_at": "2026-05-17T16:11:00+08:00",
+    "date": "2026-05-18",
+    "time": "01:08",
+    "reviewed_at": "2026-05-18T01:08:00+08:00",
     "sections": [
-      "14.1",
-      "8.2",
-      "7.6"
+      "1.1",
+      "5.1",
+      "20.2"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "src/part5-app/ch20-stability/02-java-crash-governance.md"
     ],
-    "log": "logs/review/2026-05-17-16-review.md",
-    "mode": "首次 review / 回炉复查批次",
-    "l1_l2_fixes": 30,
+    "log": "logs/review/2026-05-18-01-review.md",
+    "mode": "回炉复查批次",
+    "l1_l2_fixes": 41,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 2,
+    "technical_risk_markers": 0,
     "results": {
-      "14.1": "pass-light-edit / task9_pending",
-      "8.2": "pass-light-edit / existing_queue_pending",
-      "7.6": "pass-light-edit / existing_queue_pending"
+      "1.1": "pass-light-edit / task9_pending",
+      "5.1": "pass-light-edit / auto_finalized",
+      "20.2": "pass-light-edit / task9_pending"
     },
-    "auto_promoted": []
+    "auto_promoted": [
+      "5.1"
+    ]
   },
   "task9_last_review": "2026-05-17",
-  "ready_to_publish": 197,
+  "ready_to_publish": 198,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1484,18 +1520,24 @@
       "last_task6_review_log": "logs/review/2026-05-13-04-review.md"
     },
     "5.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-16T12:20:36+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 95,
-      "last_task6_review_log": "logs/review/2026-05-16-12-review.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-18T01:08:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-18-01-review.md",
       "title": "Linux 进程调度基础",
       "file": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "last_task9_at": "2026-05-16T11:31:00+08:00"
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "last_task9_at": "2026-05-18T00:25:00+08:00",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "auto_promoted": true,
+      "auto_promoted_at": "2026-05-18T01:08:00+08:00",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-05-18-00-deep-review.md"
     },
     "5.11": {
       "status": "ready-for-review",
@@ -3498,6 +3540,34 @@
       "queue_priority": 80,
       "gap_score": 18,
       "gap_source": "章节深挖/研究素材/官方文档"
+    },
+    "1.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-18T01:08:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-18-01-review.md",
+      "title": "Android 分层架构",
+      "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "task9_state": "pending",
+      "task9_result": "needs-rework"
+    },
+    "20.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-18T01:08:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-18-01-review.md",
+      "title": "Java Crash 治理",
+      "file": "src/part5-app/ch20-stability/02-java-crash-governance.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "task9_state": "pending",
+      "task9_result": "needs-rework"
     }
   },
   "task2b_rounds": [
