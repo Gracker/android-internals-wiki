@@ -1644,7 +1644,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/06-stability-metrics.md"
@@ -1668,7 +1668,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T19:12:00+08:00",
-      "original_review_log": "logs/review/2026-05-12-19-review.md"
+      "original_review_log": "logs/review/2026-05-12-19-review.md",
+      "completed_date": "2026-05-17T11:27:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间+来源标注, P1 PV=Session 术语说明, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集区分 debuggerd/minidump, P2 引用从 26.1 改为 15.3"
     },
     {
       "id": "task6-21-2-review-rework-20260512-1912",
@@ -2211,11 +2213,13 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T23:18:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-12-23-review.md",
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
-      ]
+      ],
+      "completed_date": "2026-05-17T11:27:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(## 附录：GPU 源码调研补充材料), 正文收束于参考资料, 附录标注为按需参考材料"
     },
     {
       "id": "task6-20260512-23-2.14-webgpu-benchmark-evidence",
