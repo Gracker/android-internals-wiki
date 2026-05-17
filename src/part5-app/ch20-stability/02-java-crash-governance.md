@@ -14,10 +14,10 @@ reviewed_date: '2026-05-11'
 reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
 task6_state: reviewed
-task9_result: 'pass-tech-review'
-task9_state: 'finalized'
-task2b_state: 'fixed'
-pipeline_stage: 'ready-to-publish'
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -38,6 +38,12 @@ related_chapters:
 - '20.1'
 - '20.7'
 - '1.7'
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-17T18:20:00+08:00"
+last_task9_audit: "2026-05-17"
+task9_review_notes: "2026-05-17 18:20 Task9 idle audit: needs-rework。P0 1：Throwable stack trace 的 256 帧上限说法与 AOSP CreateInternalStackTrace 不符，256 只是 saved_frames 优化阈值。"
+last_task9_review_log: "logs/deep-review/2026-05-17-18-audit.md"
 ---
 # Java Crash 治理
 

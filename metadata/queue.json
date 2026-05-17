@@ -9989,6 +9989,41 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T17:27:00+08:00"
+    },
+    {
+      "id": "task9-audit-20.2-throwable-stack-depth-20260517",
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "title": "Throwable 堆栈深度 256 帧说法与 ART 源码不符",
+      "priority": 95,
+      "reason": "[Deep Tech Review][闲时抽检] `CreateInternalStackTrace()` 中 256 是 saved_frames 优化阈值，不是 `Throwable` 最大堆栈深度；正文当前表述会误导深栈崩溃分析。",
+      "description": "[Deep Tech Review][闲时抽检] P0 1：`new Throwable()` 堆栈获取段落把 ART `kMaxSavedFrames = 256` 误写为最大深度 256 帧；需按 AOSP android-16.0.0_r1 修正为快速路径缓存阈值。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T18:20:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/02-java-crash-governance.md"
+      ],
+      "material_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/thread.cc#3136",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/native/java_lang_Throwable.cc#28",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java#814"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/ART 堆栈行为错误",
+          "location": "L129 `new Throwable()` 堆栈获取代价",
+          "detail": "正文把 ART CreateInternalStackTrace() 中的 256 写成“最大深度 256 帧”。AOSP android-16.0.0_r1 的 art/runtime/thread.cc 实际是 `constexpr size_t kMaxSavedFrames = 256`，先缓存最多 256 帧以避免二次 walk；当 depth >= 256 时会执行 `build_trace_visitor.WalkStack()` 重新遍历并构建完整 internal stack trace。256 是 saved_frames 优化阈值，不是 Java 堆栈最大深度。",
+          "suggestion": "改为：CreateInternalStackTrace() 先用 256 个 saved_frames 做快速路径；深度小于 256 时复用缓存，深度达到或超过 256 时二次 WalkStack 构建结果。不要写“最大深度 256 帧”，除非另有版本源码能证明截断上限。"
+        }
+      ]
     }
   ],
   "metadata": {
