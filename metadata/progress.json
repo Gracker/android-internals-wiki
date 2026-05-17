@@ -1,7 +1,7 @@
 {
   "total": 310,
-  "draft": 1,
-  "ready-for-review": 111,
+  "draft": 0,
+  "ready-for-review": 112,
   "finalized": 198,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -1202,8 +1202,8 @@
   "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T16:20:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-18T00:09:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "16:11",
@@ -3483,6 +3483,21 @@
       "queue_priority": 95,
       "title": "Android Studio Profiler",
       "file": "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+    },
+    "7.16": {
+      "title": "耗电/发热伴随卡顿排障入口",
+      "file": "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "last_task2a_at": "2026-05-18T00:09:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "queue_priority": 80,
+      "gap_score": 18,
+      "gap_source": "章节深挖/研究素材/官方文档"
     }
   },
   "task2b_rounds": [
