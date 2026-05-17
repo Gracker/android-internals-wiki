@@ -2,8 +2,13 @@
 title: "Bluetooth 扫描与连接功耗分析"
 chapter: "11.6"
 section: "11.6"
-status: draft
+status: ready-for-review
+drafted_date: "2026-05-17"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
+last_verified: "2026-05-17"
+last_verified_against: "AOSP refs/heads/main + Android Developers / source.android.com docs fetched 2026-05-17"
+confidence: medium
 tags: [bluetooth, ble, power, batterystats, connectivity, app-standby]
 related_chapters: ["11.1", "11.2", "11.5", "19.25", "25.5"]
 created_by: "task2a-knowledge-gap"
@@ -17,13 +22,19 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/bluetooth/bt-permissions"
   - type: official
+    path: "https://developer.android.com/reference/android/bluetooth/le/ScanSettings"
+  - type: official
     path: "https://source.android.com/docs/core/connect/bluetooth"
   - type: official
     path: "https://source.android.com/docs/core/power/values"
   - type: aosp
-    path: "packages/modules/Bluetooth"
+    path: "packages/modules/Bluetooth/framework/java/android/bluetooth/le/BluetoothLeScanner.java"
   - type: aosp
     path: "packages/apps/Bluetooth/src/com/android/bluetooth/gatt/ScanManager.java"
+  - type: aosp
+    path: "packages/apps/Bluetooth/src/com/android/bluetooth/gatt/AppScanStats.java"
+  - type: aosp
+    path: "packages/apps/Bluetooth/src/com/android/bluetooth/gatt/GattService.java"
 ---
 
 # 11.6 Bluetooth 扫描与连接功耗分析
@@ -62,4 +73,182 @@ sources:
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 这一节解决什么问题
+
+Bluetooth 耗电排查最容易被混成一句话：蓝牙开着费电。工程排查不能这么粗。蓝牙功耗要拆成活动类型、持续时间、回调频率、系统是否能替应用归因，以及 controller 是否真的在空口收发。
+
+本节关注两类高频问题：BLE 扫描把设备持续唤醒，GATT 连接和重连逻辑把后台任务拉长。读完这一节，应该能把“蓝牙耗电”拆成可验证的问题：哪个 App 发起扫描、扫描有没有过滤条件、是否在后台继续跑、系统有没有把它降级或暂停、BatteryStats 里记录到了什么。
+
+## Bluetooth 功耗问题的分类
+
+Bluetooth 相关耗电至少分五类，排查时要分开看：
+
+- 经典 Bluetooth 连接：常见于耳机、车机、键盘、手柄等已配对设备，耗电来自连接维持、profile 数据传输、音频编解码和重连。这里的主线不是 BLE 扫描，而是连接状态和音频/输入 profile 的活跃时间。
+- BLE 扫描：App 主动调用 `BluetoothLeScanner.startScan()` 查找广播包。扫描窗口越密、持续越久、过滤条件越弱，controller 和应用进程被唤醒的次数越多。
+- BLE 广播：设备主动发广播，成本在广播间隔、payload 大小、是否 connectable、是否需要周期性更新广播数据。
+- GATT 连接保持：穿戴、IoT、车载配件常见。连接本身不一定费电，成本通常来自频繁读写 characteristic、过短的连接间隔、失败后无退避重连。
+- 音频链路：A2DP、HFP、LE Audio 还会牵涉 audio DSP、Codec、Surface/AudioTrack 线程和传感器。功耗归因不能只看 Bluetooth 统计，详见 8.8 节。
+
+这几类活动的诊断入口不同。BLE 扫描优先看扫描发起方、过滤条件和扫描时长；连接保持看 GATT client/server 状态、重连间隔和 wakelock；音频链路还要看 audio、sensor、display 和网络播放状态。[已验证: 官方文档, source.android.com/docs/core/connect/bluetooth]
+
+## BLE 扫描为什么容易放大耗电
+
+Android 官方文档把 BLE 扫描标为 battery-intensive，并给了两条直接规则：找到目标设备后停止扫描；不要循环扫描，必须设置时间上限。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices]
+
+BLE 扫描的成本来自四个变量：
+
+- 扫描模式：`SCAN_MODE_LOW_POWER`、`SCAN_MODE_BALANCED`、`SCAN_MODE_LOW_LATENCY` 对应不同 duty cycle。`LOW_LATENCY` 的发现速度快，代价是接收窗口更密，适合用户正在等待配对的短时场景，不适合后台常驻。
+- 过滤条件：带 `ScanFilter` 的扫描能把匹配条件下沉到 Bluetooth 栈和硬件能力范围内处理；无过滤扫描会把更多广播结果带到上层，系统也会把这类扫描当成更高风险对象处理。
+- 回调类型和上报延迟：`CALLBACK_TYPE_ALL_MATCHES` 会为每个匹配广播触发回调；`FIRST_MATCH` / `MATCH_LOST` 更适合存在明确目标设备的后台发现；`reportDelayMillis` 能把结果批量返回，减少应用进程被唤醒次数。
+- 生命周期：页面退出、进程进入后台、屏幕关闭后仍保留扫描，是移动端最常见的 Bluetooth 耗电形态。用户已经离开配网页面，应用还在持续找设备，BatteryStats 会把这段时间算到应用头上。
+
+`BluetoothLeScanner.startScan(callback)` 的源码注释直接写明：无过滤扫描会在屏幕关闭时停止以省电，屏幕点亮后恢复；如果要避开这条行为，应该使用带 `ScanFilter` 的 `startScan(List<ScanFilter>, ScanSettings, ScanCallback)`。[已验证: AOSP refs/heads/main, packages/modules/Bluetooth/framework/java/android/bluetooth/le/BluetoothLeScanner.java]
+
+短时配网可以用高 duty cycle，前提是有明确的停止条件。后台存在性检测应该反过来设计：尽量用过滤条件、批量上报、`PendingIntent` 或 Companion Device Manager，让系统在匹配到目标时唤醒应用，而不是让应用用定时任务反复拉起扫描。
+
+## 后台扫描与权限边界
+
+Android 后台 BLE 发现有两个约束：应用进程是否存活，扫描结果是否涉及位置。官方后台 Bluetooth 文档给出的建议是，应用不可见但进程仍在时，可以继续使用 `BluetoothLeScanner`；进程不在时，`startScan()` 应使用 `PendingIntent`，匹配到设备后再通知应用。文档同时明确不鼓励定时周期扫描，因为它会在设备不在附近时也周期性拉起应用进程。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/ble/background]
+
+Android 12 开始，Bluetooth 权限拆成 `BLUETOOTH_SCAN`、`BLUETOOTH_ADVERTISE`、`BLUETOOTH_CONNECT` 三个运行时权限。扫描设备用 `BLUETOOTH_SCAN`，连接已配对设备用 `BLUETOOTH_CONNECT`。如果应用会从扫描结果推导物理位置，还要声明位置权限；如果能声明不会从扫描结果推导位置，可以给 `BLUETOOTH_SCAN` 加 `android:usesPermissionFlags="neverForLocation"` 并把 `ACCESS_FINE_LOCATION` 限制到 `maxSdkVersion="30"`。官方文档也写明，使用 `neverForLocation` 后，部分 BLE beacon 会从扫描结果中过滤掉。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/bt-permissions]
+
+`neverForLocation` 不是性能开关，它是隐私声明。它可能改变扫描结果集合，不能拿来当“省电参数”。省电收益仍然来自过滤条件、扫描窗口、上报节奏和生命周期控制。
+
+## AOSP 中的扫描归因路径
+
+从应用侧看，调用入口是 `BluetoothLeScanner.startScan()`；进入系统后，调用会跨 Binder 到 Bluetooth 进程中的 `GattService`，再由 `ScanManager` 管理常规扫描、批量扫描、暂停和恢复。扫描统计记录在 `AppScanStats`，BatteryStats 和 Bluetooth stats 都从这里拿到开始、停止、结果数和扫描类型。
+
+```mermaid
+sequenceDiagram
+    participant App as App 进程
+    participant Scanner as BluetoothLeScanner
+    participant Gatt as GattService / Bluetooth 进程
+    participant Scan as ScanManager
+    participant Stats as AppScanStats
+    participant Ctrl as Bluetooth controller
+    App->>Scanner: startScan(filters, settings, callback / PendingIntent)
+    Scanner->>Gatt: Binder 调用 startScan / startScanForIntent
+    Gatt->>Scan: 注册 ScanClient
+    Scan->>Stats: recordScanStart(settings, filters)
+    Scan->>Ctrl: 配置扫描参数与 filter
+    Ctrl-->>Gatt: 广播结果
+    Gatt->>Stats: addResult(scannerId)
+    Gatt-->>App: callback / PendingIntent
+    App->>Scanner: stopScan(...)
+    Scanner->>Gatt: Binder 调用 stopScan
+    Gatt->>Scan: 停止 ScanClient
+    Scan->>Stats: recordScanStop(scannerId)
+```
+
+`ScanManager` 里有三类和功耗直接相关的保护：
+
+- 无过滤扫描的暂停：`requiresScreenOn()` 对非 opportunistic 且无 filter 的扫描返回 true；屏幕关闭时，这类扫描会进入 suspended 列表，并在条件满足后恢复。[已验证: AOSP refs/heads/main, packages/apps/Bluetooth/src/com/android/bluetooth/gatt/ScanManager.java]
+- 位置开关约束：`requiresLocationOn()` 对未声明 disavowed location 且无 filter 的扫描返回 true；位置关闭时，扫描会暂停到位置开启后恢复。[已验证: AOSP refs/heads/main, packages/apps/Bluetooth/src/com/android/bluetooth/gatt/ScanManager.java]
+- 长时间扫描降级：常规扫描启动后，`ScanManager` 会按 `AppScanStats.getScanTimeoutMillis()` 投递超时消息；超过阈值且未豁免时，扫描被改成 `SCAN_MODE_OPPORTUNISTIC`，并记录 timeout。[已验证: AOSP refs/heads/main, packages/apps/Bluetooth/src/com/android/bluetooth/gatt/ScanManager.java]
+
+`GattService.registerScanner()` 还会检查 `AppScanStats.isScanningTooFrequently()`。同一个 App 在 quota 窗口内扫描次数过多时，非特权调用会拿到 `SCAN_FAILED_SCANNING_TOO_FREQUENTLY`。[已验证: AOSP refs/heads/main, packages/apps/Bluetooth/src/com/android/bluetooth/gatt/GattService.java]
+
+`AppScanStats.recordScanStart()` 会区分 filter scan、background scan、opportunistic scan 和 batch scan，并调用 `BatteryStatsManager.reportBleScanStarted()`。没有过滤、不是后台 first-match、也不是 opportunistic 的扫描会被标记为 unoptimized。结果数每累计 100 个才上报一次 BatteryStats，以降低 Binder 事务成本。[已验证: AOSP refs/heads/main, packages/apps/Bluetooth/src/com/android/bluetooth/gatt/AppScanStats.java]
+
+这条路径给排查带来一个判断：BatteryStats 看到的是系统侧归因，不等于 controller 每一毫秒的射频耗电实测。它能告诉你“哪个 UID 发起了多久的扫描、是否 unoptimized、结果数大概多少”，不能单独证明射频侧消耗了多少 mAh。射频电量仍要结合 11.1 节的功耗模型、设备 `power_profile` 和厂商 power rail 数据判断。
+
+## 诊断入口：每个工具回答一个问题
+
+BLE 耗电排查建议按“发起方 → 持续时间 → 系统归因 → 硬件证据”的顺序看。不要只盯一个工具。
+
+| 入口 | 能回答的问题 | 不能回答的问题 |
+| --- | --- | --- |
+| `adb shell dumpsys bluetooth_manager` | 当前 Bluetooth 服务状态、GATT scanner/client/server 注册情况；部分版本会输出 LE scan 统计、ongoing scans、last scans 和 suspended time。 | 不能给出跨充电周期的耗电占比，也不能证明 controller 真实电流。 |
+| `adb shell dumpsys batterystats --charged` | 哪些 UID 有 Bluetooth scan 归因、扫描时间、部分结果统计；适合和 wakeup、wakelock、job/alarm 放在一起看。 | 依赖系统归因模型，不等于硬件实测。 |
+| Battery Historian | 把 batterystats 可视化，便于把 Bluetooth scan、wakelock、屏幕、网络、进程状态放到时间轴上对齐。 | 不提供比 batterystats 更底层的 Bluetooth controller 证据。 |
+| Perfetto | 能把应用生命周期、wakelock、调度、power rails 放在同一条时间线上；Pixel 等设备可用 power rail 验证功耗变化。 | Bluetooth 事件和 power rail 可用性依赖设备、系统版本和 trace 配置；通用机型上常要标注待验证。 |
+
+用于定位发起方时，先拉 Bluetooth 和 BatteryStats：
+
+```bash
+adb shell dumpsys bluetooth_manager > /tmp/bluetooth_manager.txt
+adb shell dumpsys batterystats --charged > /tmp/batterystats.txt
+```
+
+在 `bluetooth_manager.txt` 里找 `GATT Scanner Map`、`LE scans`、`Ongoing scans`、`AppScanStats` 一类字段；在 `batterystats.txt` 里找目标包名、UID、`Bluetooth scan`、`ble`。不同 Android 版本和厂商 ROM 的字段名不完全一致，脚本不要写死单一字段。
+
+用于确认生命周期时，再采 Perfetto。关注三组轨道：应用主进程/前台服务是否仍活着；是否有 wakelock、job、alarm 或 foreground service 把进程留在后台；power rails 中 Bluetooth、SoC 或 RF 相关轨道是否和扫描区间同步抬升。[待验证: Perfetto 中 Bluetooth 专用事件名称和 power rail 命名依赖设备，需按实机 trace 确认]
+
+## App 侧治理策略
+
+Bluetooth 扫描优化不是把扫描模式一律改成 low power。应用要把“什么时候找、找谁、找多久、找不到怎么办”写清楚。
+
+### 短周期按需扫描
+
+用户正在配对设备时，可以使用较快扫描模式，但必须有硬停止条件。官方示例用 10 秒停止扫描，工程里还要补上页面退出、权限撤销、Bluetooth 关闭和目标设备找到后的停止逻辑。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices]
+
+```kotlin
+private const val SCAN_TIMEOUT_MS = 10_000L
+private val handler = Handler(Looper.getMainLooper())
+private var scanning = false
+
+fun startPairingScan() {
+    if (scanning) return
+
+    val filters = listOf(
+        ScanFilter.Builder()
+            .setServiceUuid(ParcelUuid(MY_DEVICE_SERVICE_UUID))
+            .build()
+    )
+    val settings = ScanSettings.Builder()
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+        .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+        .build()
+
+    scanning = true
+    bluetoothLeScanner.startScan(filters, settings, scanCallback)
+    handler.postDelayed(::stopPairingScan, SCAN_TIMEOUT_MS)
+}
+
+fun stopPairingScan() {
+    if (!scanning) return
+    scanning = false
+    handler.removeCallbacks(::stopPairingScan)
+    bluetoothLeScanner.stopScan(scanCallback)
+}
+```
+
+这段代码的重点是有 filter、有时间上限、有幂等停止。`LOW_LATENCY` 只包住用户正在等待的短窗口，不能带到后台常驻任务。
+
+### 明确过滤条件
+
+优先用 service UUID、manufacturer data、service data、device address 这类能稳定匹配目标设备的条件。过滤条件越明确，上层回调越少，系统也更容易把无关广播挡在应用进程外。没有稳定广播字段的设备，要把协议设计一起改：配件端给出可过滤的 service UUID 或 manufacturer data，比 App 端长时间无过滤扫描更可控。
+
+### 后台使用 `PendingIntent` 或 Companion Device Manager
+
+后台只需要“目标设备出现时叫醒我”的场景，不要用 WorkManager/AlarmManager 周期启动扫描。官方文档建议用 `BluetoothLeScanner.startScan(..., PendingIntent)`，匹配到 filter 后再唤醒应用；伴随设备场景还可以评估 Companion Device Manager。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/ble/background]
+
+`PendingIntent` 版本仍然要配 filter。没有 filter 的后台扫描会扩大唤醒面，也更容易被系统暂停、降级或被厂商策略限制。
+
+### 重连失败要退避
+
+GATT 连接失败后立刻重新扫描、重新连接，会把射频、Bluetooth 进程和应用进程一起拉长。重连应该有指数退避、最大重试次数和网络/位置/Bluetooth 状态检查。用户不可见时，重连频率要比前台低；业务允许时，缓存上一次设备地址和服务发现结果，避免每次都从无过滤扫描开始。
+
+### 前台服务不是省电豁免
+
+前台服务能提高任务存活概率，但不会把耗电变小。Bluetooth 前台任务要有用户可理解的 notification、明确的停止入口和业务边界。配网完成、设备断开超过阈值、用户退出页面后，扫描和连接都要停止或降级。
+
+### 隐私和脱敏
+
+Bluetooth 扫描结果可能包含设备名、地址、manufacturer data 和可关联用户位置的信号。日志和上报里不要保留完整 MAC、设备名和原始 payload；需要排查时，用 hash、截断、白名单字段和采样。声明 `neverForLocation` 的应用要保证业务上不从扫描结果推导位置，否则权限声明和数据处理会冲突。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/bt-permissions]
+
+## 扩展：BLE Audio 与空间音频功耗
+
+BLE Audio、空间音频和头动追踪的耗电不能只归到 Bluetooth。播放链路会同时涉及 Bluetooth controller、audio DSP、Codec、传感器和渲染线程。排查时要把 Bluetooth 连接时间、audio activity、sensor activity、CPU 调度和 power rails 放在同一条时间线上看，避免把音频渲染或传感器成本误判成 BLE 连接成本。详见 8.8 节和 11.1 节。[待补充: 需要结合实机 BLE Audio trace 和设备 power rail 命名补证]
+
+## 扩展：Companion Device Manager 何时替代扫描循环
+
+穿戴、配件、IoT 设备如果具备明确配对关系，可以评估 Companion Device Manager。它适合“用户选择或关联设备后，系统帮助维持伴随关系”的场景；它不适合需要复杂自定义 filter、随机 MAC 策略不兼容、或必须持续扫描大量匿名广播的场景。官方后台 Bluetooth 文档也提示，Companion Device Manager 有过滤能力和随机 MAC 支持方面的限制，选型时要把配件广播协议一起检查。[已验证: 官方文档, developer.android.com/develop/connectivity/bluetooth/ble/background]
+
+## 扩展：厂商 ROM 限制差异
+
+厂商 ROM 往往会对后台扫描频率、前台服务展示、白名单和电池优化入口做额外限制。没有实机证据时，不要在文章里写“某厂商一定会杀扫描”。可记录三类待验证项：后台 `PendingIntent` 扫描是否按预期唤醒；屏幕关闭后的无过滤扫描是否被暂停或延后；电池优化白名单、伴随设备关联、前台服务三者对扫描行为的影响是否一致。[待验证: 需要不同厂商 Android 14-17 设备实测]
+
+## 小结
+
+Bluetooth 扫描耗电的排查顺序很固定：先确认活动类型，再确认发起 UID、过滤条件、扫描时长和后台状态，随后用 BatteryStats 看系统归因，用 Perfetto 或设备 power rail 补硬件侧证据。应用侧的优化动作也很固定：短时、带 filter、有停止条件；后台用事件唤醒替代周期轮询；连接失败做退避；日志里处理好隐私字段。
