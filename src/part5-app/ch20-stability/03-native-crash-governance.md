@@ -3,7 +3,7 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -21,12 +21,16 @@ sources:
     path: "bionic/linker/debuggerd/handler.cpp"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: completed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-18T06:20:00+08:00"
+task2b_state: pending
+task2b_result: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-11"
 last_task6_at: "2026-05-11T08:00:00+08:00"
