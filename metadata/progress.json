@@ -4322,5 +4322,26 @@
     "p2": 1,
     "p3": 0,
     "auto_promoted": []
-  }
+  },
+  "task2b_history": [
+    {
+      "date": "2026-05-18T00:17:19.407328",
+      "task": "task2b-rework",
+      "sections": [
+        "1.1",
+        "20.2",
+        "5.1",
+        "5.8",
+        "2.3"
+      ],
+      "queue_ids_completed": [
+        "task9-1.1-selinux-avc-instance-error",
+        "task9-audit-20.2-throwable-stack-depth-20260517",
+        "task9-5.1-uclamp-proc-perfetto-sql-20260516",
+        "task9-20260516-5.8-binder-freezer-api-surface",
+        "task9-20260516-2.3-vsync-predictor-version-drift"
+      ],
+      "summary": "5 sections reworked: SELinux AVC, Throwable stack depth, UClamp/SQL/base_slice_ns, Binder freezer API, VSyncPredictor version drift"
+    }
+  ]
 }

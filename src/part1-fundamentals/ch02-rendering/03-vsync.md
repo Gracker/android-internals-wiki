@@ -39,7 +39,7 @@ sources:
     path: "https://developer.android.com/about/versions/16/features"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-09"
 review_round: 4
@@ -47,17 +47,18 @@ repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-16T18:20:00+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 last_task2b_at: "2026-05-15T03:17:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-18-deep-review.md"
-task9_review_notes: "2026-05-16 Task9 18:20：needs-rework。P0 2：mNumVsyncsForFrame 版本归属提前到 Android 14；historySize/outlier tolerance 被写成 Android 16 才修订但 android-13/14/15/16 tag 均为 20/20。P1 1：ARR/刷新率切换未接上 Scheduler/VsyncModulator/VSyncPredictor 当前调用链。P2 1：ARR/Perfetto 数据支撑不足。"
----
+task9_review_notes: "2026-05-16 Task9 18:20 → 2026-05-18 Task2B fixed: mNumVsyncsForFrame 归属修正为 Android 15+；historySize/ tolerance 删除错误版本断言；补 ARR 刷新率切换调用链。"
+
+task2b_result: "fixed"---
 
 # VSync 机制
 
@@ -718,7 +719,7 @@ AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Schedul
 
 ### 11.1 核心算法
 
-VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（Android 16 修订后默认 `historySize=20`，早期版本为 32），记录最近的硬件 VSync 时间戳。计算周期时使用线性回归：
+VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（`kHistorySize=20`），记录最近的硬件 VSync 时间戳。android-13.0.0_r1 至 android-16.0.0_r1 各版本 `VsyncSchedule::createTracker()` 均使用 `kHistorySize=20`、`kDiscardOutlierPercent=20`，未发现"早期版本为 32"或"tolerance 10%"的证据。计算周期时使用线性回归：
 
 ```
 slope = Σ((X_i - mean(X)) × (Y_i - mean(Y))) / Σ((X_i - mean(X))²)
@@ -755,7 +756,7 @@ for (size_t i = 0; i < numSamples; i++) {
 
 ### 11.2 异常值过滤
 
-新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `20% ~ 80%` 区间时（Android 16 将 `kOutlierTolerancePercent` 从 10% 修订为 20%，同时 `historySize` 从 32 缩减为 20）,表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本。放宽容差、缩短窗口的策略意图是：容忍小抖动以换取模型稳定性,避免因少数异常样本频繁触发重新学习。
+新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `20% ~ 80%` 区间时（`kDiscardOutlierPercent=20`），表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本。放宽容差、缩短窗口的策略意图是：容忍小抖动以换取模型稳定性,避免因少数异常样本频繁触发重新学习。
 
 ```cpp
 // services/surfaceflinger/Scheduler/VSyncPredictor.cpp
@@ -770,17 +771,30 @@ if (percent >= kOutlierTolerancePercent &&
 
 `validate()` 还会检查重复时间戳：新时间戳如果离历史样本太近,会被当作 duplicate timestamp 拒绝。被拒绝的样本不会进入 `mTimestamps` 环形缓冲区；学习期样本不足时,预测器会清空时间戳并重新开始学习。样本已经足够时,预测器更新 `mKnownTimestamp`,保留现有时间线,避免单次硬件抖动直接改写后续 `nextAnticipatedVSyncTimeFrom()` 的预测结果。
 
-### 11.3 多帧采样（Android 14+）
+### 11.3 多帧采样（Android 15+）
 
-Android 14 引入了 `mNumVsyncsPerFrame` 参数，支持多帧采样预测：
+`mNumVsyncsPerFrame` 参数支持多帧采样预测，在 android-15.0.0_r1 和 android-16.0.0_r1 的 `VSyncPredictor.h/cpp` 中可见（`numVsyncsPerFrame(displayModePtr)` 路径）；android-14.0.0_r75 中未发现该字段。
 
 ```cpp
-// VSyncPredictor.h
+// VSyncPredictor.h (android-15.0.0_r1 / android-16.0.0_r1)
 nsecs_t minFramePeriod() const;
 nsecs_t minFramePeriodLocked() const;
+// mNumVsyncsForFrame: 在 VRR / 多速率显示模式下，每帧对应的 VSync 数量
 ```
 
-这使得预测更加稳定，减少了单帧抖动的影响。
+多帧采样让预测在 VRR 场景下更稳定，减少单帧抖动对周期估计的影响。
+
+### 刷新率切换与 VSyncPredictor 的重新校准
+
+当 SurfaceFlinger 切换显示模式（刷新率变化）时，VSyncPredictor 需要重新校准。android-16.0.0_r1 的调用链：
+
+1. SurfaceFlinger mode/render rate 切换触发 `resyncToHardwareVsync()`
+2. `Scheduler::updatePhaseConfiguration()` 更新 phase offset
+3. `VsyncModulator::onRefreshRateChangeInitiated()` / `onRefreshRateChangeCompleted()` 控制临时 early 配置与稳定后恢复
+4. `VSyncPredictor::setDisplayModePtr()` 更新显示模式；`mNumVsyncsForFrame` 根据 `numVsyncsPerFrame(displayModePtr)` 重新计算
+5. ARR discrete VSync steps 按 minFramePeriod 生成不同的 VSync 间隔
+
+在 Perfetto 中，刷新率切换期间 VSync 周期变化和 phase config 切换可以通过 `VsyncTimeline` 轨道和 `SurfaceFlinger` 的 `setVsyncEnabled`/`resyncToHardwareVsync` slice 观察。
 
 ### 11.4 VsyncModulator 的三相动态调整
 
