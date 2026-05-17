@@ -45,19 +45,19 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task2b_pending
+pipeline_stage: ready-for-review
 last_task9_at: "2026-05-13T04:39:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pending
 task2b_result: fixed
-last_task2b_at: '2026-05-12T23:39:00+08:00'
+last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；getSupportedRefreshRates API 36 语义需修正。"
@@ -131,7 +131,7 @@ DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP androi
 想知道“这台设备支不支持 ARR、系统建议用什么档位”，入口在 `Display`。这组查询 API 属于 Android 16（API 36）公开接口；Android 15-QPR1 先提供系统侧 ARR 能力，App 可见查询晚到 API 36。
 
 - `Display.hasArrSupport()`：检查显示设备是否支持 ARR。
-- `Display.getSupportedRefreshRates()`：返回当前显示的默认刷新率列表。
+- `Display.getSupportedRefreshRates()`：Android 16+（API 36）返回 display supported render rates；Android 15 及以下旧行为只返回默认 mode 的 refresh rates，需要更多选项时用 `getSupportedModes()`。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]
 - `Display.getSuggestedFrameRate(int category)`：按类别获取系统建议值，入参只接受 `FRAME_RATE_CATEGORY_NORMAL` 和 `FRAME_RATE_CATEGORY_HIGH`。
 
 `getSuggestedFrameRate()` 的语义不能写成“给 45fps，系统返回 90Hz 或 60Hz”。AOSP `Display.java` 里它只接受类别型参数，内部也是按 `FRAME_RATE_CATEGORY_NORMAL` / `FRAME_RATE_CATEGORY_HIGH` 去取系统给出的建议值，不处理任意 fps 到任意 Hz 的映射。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]

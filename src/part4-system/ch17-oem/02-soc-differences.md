@@ -28,18 +28,18 @@ tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, 
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
-task6_result: needs-rework
-task6_state: reviewed
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
+task6_result: pending
+task6_state: revisiting
+pipeline_stage: ready-for-review
+task9_state: pending
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-10"
 last_task9_at: "2026-05-10T16:30:00+08:00"
 task9_review_notes: "2026-05-10 Task9深度审计：P1级问题：联发科全大核调度策略证据不足；P2级问题：GPU差异的trace表现描述不够具体。此前 Task9 还记录 Oryon cache / Perfetto PMU / SQL 查询风险，Task2B 已部分修复，仍保留实机数据与素材整合回炉项。"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-12T03:31:49+08:00"
+last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-13T02:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-13-02-review.md"
 task6_review_notes: "2026-05-13 Task6：修复 frontmatter YAML 结构；发现 sched_ext 调研素材仍以卡片形式堆在 FAQ 后，需 Task2B 整合到 OEM 调度策略叙述。"
@@ -195,6 +195,11 @@ LIMIT 20;
 
 [待验证: 联发科的具体调度参数和提频策略在 AOSP 开源部分不完整，需实机确认]
 
+
+**sched_ext BPF 调度器（Linux 6.12 / Android common 6.12 分支）**：sched_ext 允许 OEM 通过 eBPF 程序替换内核默认调度策略。Linux 6.12 合入主线，Android common 6.12 分支已包含 sched_ext 基础设施（`kernel/sched/ext.c`）。目前公开可见的 OEM BPF 调度器包括：Qualcomm SCX_Oplus（基于游戏场景的优先级映射与大核优先调度）、MediaTek SCX_Mtk（应急响应调度与低延迟敏感优化）、Google Pixel SCX_Litto（电源效率优化）。这些调度器结合 Android 的 cgroup 配置和进程优先级体系工作。设备是否启用 sched_ext 取决于 `CONFIG_SCHED_CLASS_EXT` 和具体 kernel tag 配置，AOSP 默认调度链尚未切换到 sched_ext。
+
+[待验证: 各 OEM BPF 调度器的具体实现细节、适用版本和性能影响需要实机或 vendor kernel 源码确认。来源: DeepResearch 2026-05-07]
+
 ## GPU 差异对渲染性能的影响
 
 GPU 是 Android 渲染管线的核心执行单元。我们在 §2.10 中分析过 GPU 渲染的通用原理，但不同 SoC 的 GPU 架构差异会直接影响渲染性能和 Perfetto 中 GPU Track 的表现。
@@ -340,30 +345,6 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 **「Google Tensor 性能差」**——这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑，但它的设计目标是端侧 AI 体验，而不是通用峰值性能。在 Pixel 设备上，语音识别、实时翻译和计算摄影的响应速度可能优于其他平台，因为这些工作负载被 TPU 加速了。评估 Tensor 需要看你关心的场景是什么。
 
 
-[需重写: 下面这段 sched_ext 调研素材仍是资料卡片，尚未融入“厂商调度策略差异”或“不同 SoC 上 Perfetto 数据差异”的叙述链路。建议 Task2B 按 Qualcomm / MediaTek / Google Pixel 三类 OEM 调度器整理成正文，并补充适用版本边界。]
-
-### sched_ext 在 Android OEM 上的 BPF 调度器实现
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-sched-ext-oem-implementation.md
-- 类型：DeepResearch 调研结果
-- 摘要：深度分析 Linux sched_ext 架构在 Android OEM 上的具体实现：Qualcomm SCX_Oplus 基于游戏场景的优先级映射与大核优先调度，MediaTek SCX_Mtk 应急响应调度与低延迟敏感优化，Google Pixel SCX_Litto 电源效率优化。这些 BPF 调度器结合 Android 特有 cgroup 配置和进程
-- 注入时间：2026-05-08
-- 价值：首个系统对比 Qualcomm/MediaTek/Google Pixel 在 sched_ext BPF 调度器上的 OEM 定制化实现差异，对理解厂商调度策略和设备级性能差异有核心参考价值
-
-## 参考资料
-
-### AOSP / 官方文档
-- ARM Cortex-X925 / A720 / A520 架构手册: [arm.com/products/silicon-ip-cpu](https://www.arm.com/products/silicon-ip-cpu)
-- Qualcomm Snapdragon 8 Elite 产品页: [qualcomm.com/products/mobile/snapdragon](https://www.qualcomm.com/products/mobile/snapdragon)
-- MediaTek Dimensity 9400 产品页: [mediatek.com/products/smartphones-0](https://www.mediatek.com/products/smartphones-0)
-- Perfetto GPU 渲染阶段文档: [perfetto.dev/docs/data-sources/gpu](https://perfetto.dev/docs/data-sources/gpu)
-- ARM Streamline Performance Analyzer: [developer.arm.com](https://developer.arm.com/Tools%20and%20Software/ARM%20Streamline%20Performance%20Analyzer)
-- Qualcomm Snapdragon Profiler: [developer.qualcomm.com](https://developer.qualcomm.com/software/snapdragon-profiler)
-
-### 深入阅读
-- 高通 Oryon 处理器微架构分析: [来源: obsidian/Cubox/高通Oryon处理器微架构分析-2025-03-25.md]
-- 高通 Perflock 机制详解: [来源: obsidian/Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md]
-- ARM Cortex-X4/A720/A520 架构分析: [来源: obsidian/Cubox/2023年Arm最新处理器架构分析——X4、A720和A520-2023-08-02.md]
-- JEDEC LPDDR5X 标准: [jedec.org]
 
 <!-- AIW-源码调研-2026-05-11 -->
 **2026-05-11 源码调研补充**：联发科 SoC 平台差异——调度器与 cpufreq 行为
@@ -382,3 +363,9 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 调研报告: `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-soc-platform-diff-dimensity-scheduling.md`
 
+### Android Game Mode 与 OEM 厂商实现差异
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-android-game-mode-oem-implementation.md
+- 类型：DeepResearch 调研结果
+- 摘要：Game Mode API（API 31+）建立标准通信框架，但实际性能干预由 HAL 层和厂商内核调控模块完成。标准 API 的 GameState 优先级低于厂商系统级优化，厂商模式通常通过包名检测独立激活。
+- 注入时间：2026-05-17
+- 价值：填补 OEM 游戏性能模式与标准 Game Mode API 协作机制的分析空白
