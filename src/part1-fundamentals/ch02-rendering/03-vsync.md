@@ -46,19 +46,20 @@ review_round: 4
 repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-16"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-16T18:20:00+08:00"
+last_task9_at: "2026-05-18T00:25:00+08:00"
 task2b_state: "fixed"
 last_task2b_at: "2026-05-15T03:17:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-16-18-deep-review.md"
-task9_review_notes: "2026-05-16 Task9 18:20 → 2026-05-18 Task2B fixed: mNumVsyncsForFrame 归属修正为 Android 15+；historySize/ tolerance 删除错误版本断言；补 ARR 刷新率切换调用链。"
+last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
+task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；无新增 P0/P1；既有 P2（Perfetto/ARR trace 样例）不重复入 suggestions；Task6 已 pass 且 queue 无 pending，自动晋升 finalized。"
 
-task2b_result: "fixed"---
+task2b_result: "fixed"
+---
 
 # VSync 机制
 

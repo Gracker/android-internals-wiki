@@ -10368,6 +10368,38 @@
       "material_paths": [
         "intake/research-gaps.md"
       ]
+    },
+    {
+      "id": "task9-20260518-5.8-freezer-gc-version-boundary",
+      "section": "5.8",
+      "section_title": "后台执行限制与优化",
+      "priority": 85,
+      "title": "16KB/GC 联动压缩的版本与机制边界需修正",
+      "description": "正文把“系统压缩期间联动触发应用 GC”写成 Android 16 引入，并在版本表归到 Android 17，同时绑定 16KB 页收益；source.android.com cached-apps-freezer 的可核验口径是 Android 14 起 cached/freeze 前可能请求 app runtime GC，冻结后可能发生 memory compaction（dirty pages backing storage / anonymous pages to ZRAM），未说明这是 Android 16/17 或 16KB 专属机制。",
+      "reason": "[Deep Tech Review] 5.8 16KB/GC 联动压缩存在版本差异与原理链边界错误：Android 16/17 引入 + 16KB 专属收益的断言缺官方/源码锚点，且与 cached-apps-freezer 官方口径不一致。",
+      "issue_type": "version-difference-principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T00:25:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L426-L430 “16KB 页环境下的 GC 联动压缩”；L548 Android 17 版本表",
+          "detail": "正文声称 Android 16 引入“系统压缩期间联动触发应用 GC”，版本表又放到 Android 17；同时把收益绑定到 16KB 大页。官方 cached-apps-freezer 页面描述的是：starting in Android 14，进程进入 cached 后系统可能请求 app runtime 执行 GC，为后续冻结做准备；进程冻结后可能发生 additional memory compaction（dirty pages 写回、匿名页 swap 到 ZRAM）。该口径未证明 Android 16/17 专属，也未证明 16KB 页是机制成立条件。",
+          "suggestion": "回炉时改成“cached app freezer 的 Android 14+ GC/compaction 配套机制”，拆掉 Android 16/17 引入断言和 16KB 专属收益；若确有 Android 16/17 或 16KB 专属增强，必须补 source.android / AOSP commit / CachedAppOptimizer 或 ART/runtime 源码锚点。"
+        }
+      ]
     }
   ],
   "metadata": {

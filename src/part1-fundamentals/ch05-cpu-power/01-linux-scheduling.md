@@ -18,11 +18,11 @@ task2b_fixed_issues:
   - eevdf-sysctl-params-and-rt-version-timeline-added
   - diagnostic-decision-framework-added
 task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 技术风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
-task9_state: "pending"
-task9_result: needs-rework
-task9_reviewed_date: 2026-05-16
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-16T11:31:00+08:00'
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T00:25:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
@@ -67,7 +67,8 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 review_type: post-polish-quality-gate
-task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/deep-review/2026-05-16-11-deep-review.md。'
+task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 已修复，剩余 P2（SoC 迁移数据、SQL 聚合、sched_base_slice 默认值边界）沿用既有 suggestions，不重复入队；等待 Task6 回炉。"
+last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 ---
 
 <!-- outline-start -->
