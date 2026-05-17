@@ -52,14 +52,14 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-last_task2b_at: '2026-05-15T23:30:32+08:00'
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-17T15:18:41+08:00"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
@@ -171,7 +171,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 Launcher 调用 startActivity()，经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService（ATMS）。ATMS 的 ActivityStarter 收到请求后，首先通过 ActivityMetricsLogger 记录一个时间戳——这个时间戳就是后续所有启动耗时度量的起点（TTID 的起点）。
 
-然后 ATMS 创建 ActivityRecord 和 TaskRecord，检查是否有可以复用的 Activity。冷启动场景下，答案是没有。ATMS 接着会向前一个处于 Resumed 状态的 Activity（通常是 Launcher）发送 Pause 请求。这个 Pause 请求通过 ClientLifecycleManager 机制发送到 Launcher 进程，Launcher 处理 onPause 后通过 Binder 通知 ATMS 完成。
+然后 ATMS 创建 ActivityRecord 和 Task（旧版本/Android 10 前后资料中常写 TaskRecord，Android 15 源码中任务容器类为 `services/core/java/com/android/server/wm/Task.java`），检查是否有可以复用的 Activity。冷启动场景下，答案是没有。ATMS 接着会向前一个处于 Resumed 状态的 Activity（通常是 Launcher）发送 Pause 请求。这个 Pause 请求通过 ClientLifecycleManager 机制发送到 Launcher 进程，Launcher 处理 onPause 后通过 Binder 通知 ATMS 完成。
 
 ATMS 确认 Pause 完成后，检查目标进程是否存在。冷启动场景下，目标进程不存在，于是通过 Local Socket 向 Zygote 发送 fork 请求。Zygote fork 出子进程后，将 PID 返回给 system_server。
 
@@ -212,7 +212,7 @@ Application 初始化完成后，system_server 通过 ClientLifecycleManager 向
 
 App 的 ActivityThread 在主线程处理 EXECUTE_TRANSACTION 消息。TransactionExecutor 按顺序执行：
 
-**先执行 callback**：LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象（通过反射），调用 Activity.attach() 初始化（创建 PhoneWindow），然后调用 Activity.onCreate()。在 onCreate 中我们必须调用 setContentView()，否则后续绘制会报错。setContentView 的本质是创建 DecorView（根 View），并将布局文件 inflate 后挂载到 DecorView 下面的 mContentParent 中。
+**先执行 callback**：LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象（通过反射），调用 Activity.attach() 初始化（创建 PhoneWindow），然后调用 Activity.onCreate()。常规有 UI 的 Activity 通常在 onCreate 中调用 `setContentView()`（或 Compose 的 `setContent {}`）来安装首屏内容。`setContentView` 的本质是将布局文件 inflate 后挂载到 `PhoneWindow` 的 `mContentParent` 中。Activity 框架并不强制要求调用 `setContentView`——不调用时 Activity 会显示空窗口；无 UI Activity（如只做后台操作的 Activity）或延迟安装内容的设计也是合法的。
 
 **然后执行生命周期路径补全**：从 ON_CREATE 到 ON_RESUME，中间需要补 ON_START。依次调用 Activity.onStart()、Activity.onResume()。
 
@@ -321,9 +321,9 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 | 字段 | 类型 | 含义 |
 |---|---|---|
 | `getStartType()` | int | 启动类型：`START_TYPE_COLD`(1)、`START_TYPE_WARM`(2)、`START_TYPE_HOT`(3) |
-| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_NOT_STARTED` / `STARTED` / `FIRST_FRAME_DRAWN` / `FULLY_DRAWN` |
+| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED`(1) / `STARTUP_STATE_FIRST_FRAME_DRAWN`(2) / `STARTUP_STATE_ERROR`(3)。没有 `NOT_STARTED` 和 `FULLY_DRAWN` 状态——"fully drawn"通过 `START_TIMESTAMP_FULLY_DRAWN` timestamp key 表达，不是 startup state |
 | `getStartupTimestamps()` | Map<Integer, Long> | 返回各阶段时间戳（monotonic nanoseconds），通过常量 key 读取（见下表） |
-| `getReason()` | int | 启动原因：`START_REASON_CHANGED` / `START_REASON_ALARM` 等 |
+| `getReason()` | int | 启动原因：`START_REASON_CHANGED` 等（`START_REASON_CHANGED` 表示启动原因发生了变化，不是指"因为变更而启动"） |
 
 `getStartupTimestamps()` 返回的 Map 中可用的 timestamp key：
 
@@ -525,7 +525,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 [自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化，而 ContentProvider 的初始化发生在 Application.onCreate 之前（在 installContentProviders 中）。这意味着即使我们没有在 Application.onCreate 中显式初始化某个 SDK，它可能已经通过 ContentProvider 悄悄初始化了。来源: Android Developers Blog]
 
-这个问题在 Android 11（API 30）开始可以通过声明工具 androidx.startup 来统一管理（见扩展小节），但在之前的版本上需要手动排查 Manifest 中声明的 ContentProvider。
+这个问题可以通过 AndroidX App Startup（`startup-runtime`，支持 API 14+）来统一管理（见扩展小节）。App Startup 是 Jetpack 库，不是 Android 11 的平台能力，在 Android 11 之前同样可以使用。但它基于单个 `InitializationProvider`，无法自动接管未适配的三方 ContentProvider，未适配的 SDK 仍然需要手动排查 Manifest。
 
 ## 首帧绘制的关键路径
 
