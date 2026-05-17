@@ -50,23 +50,23 @@ related_chapters:
 - '7.1'
 - '7.7'
 last_task2b_at: '2026-05-16T23:34:10'
-reviewed_date: '2026-05-12'
+reviewed_date: '2026-05-17'
 reviewed_by: openclaw-task6
-last_task6_at: '2026-05-12T16:15:00+08:00'
-last_task6_review_log: logs/review/2026-05-12-16-review.md
+last_task6_at: '2026-05-17T11:14:00+08:00'
+last_task6_review_log: logs/review/2026-05-17-11-review.md
 task6_state: reviewed
-task6_result: needs-rework
+task6_result: pass-light-edit
 review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
-task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。
-task9_state: reviewed
+task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
+task9_state: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
-task9_result: needs-rework
+task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 p0: 1
 p1: 1
 p2: 2
@@ -112,7 +112,7 @@ task9_review_notes: "2026-05-17 Task9 00 completed-by-task2b。P0 已修复：CC
 2. 判断 Allocation Stall 的触发原因，而不是简单归结为"内存不足"
 3. 在面对内存泄漏或抖动时，快速定位到具体的分配模式或 GC 策略问题
 
-最终目标是让读者读完这节，能够独立分析 ART 内存相关的性能问题，而不是仅仅会使用 `dumpsys meminfo`。
+这节要解决的是更具体的 Trace 判断问题：看到 GC slice、Allocation Stall 或 `HeapTaskDaemon` 活跃时，能判断它们分别指向哪一类内存压力，而不是只会读 `dumpsys meminfo` 的汇总数字。
 
 [已验证: 官方文档, https://source.android.com/docs/core/runtime/gc-debug]
 
@@ -199,7 +199,7 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 一个容易忽略的细节是，ART 的主要托管堆和相关 card table 布局会尽量放在 low 4GB 区间。`heap.cc` 里能直接看到 `/* low_4gb= */ true` 的映射请求，以及“card table 覆盖 whole low_4gb”的注释。这样做，是为了让 `CompressedReference` / `HeapReference` 继续用 32 位压缩引用表示 Java 对象引用，在 64 位进程里减少引用字段的内存开销，并减轻缓存压力。
 
-所以这里说的“4GB 限制”更准确地讲，是 ART 为托管堆保留的低地址窗口，而不是 64 位进程只能使用 4GB 虚拟地址空间。Native heap、Code Cache 和其他映射并不受这条约束。
+这里说的“4GB 限制”指的是 ART 为托管堆保留的低地址窗口，而不是 64 位进程只能使用 4GB 虚拟地址空间。Native heap、Code Cache 和其他映射并不受这条约束。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
 [已验证: AOSP android-15.0.0_r1, art/runtime/mirror/object_reference.h]
@@ -248,7 +248,7 @@ Object readReference(Object holder, Field field) {
 
 上面的伪代码只是概念示意。Read Barrier 由编译器在每次对象引用读取时自动插入，开发者通常无感知。代价是每次引用读取都会多一次条件判断，大约带来 1-3% 的性能开销。
 
-CC GC 引入后的关键性能提升：
+CC GC 带来的性能变化主要落在三处：
 - **堆大小**：比 Android 7.0 平均减少 32%（不再需要预留碎片空间）
 - **GC 暂停时间**：减少 85%（大部分工作并发完成）
 - **对象分配速度**：比 Android 7.0 快 70%
@@ -522,11 +522,11 @@ ORDER BY slice.dur DESC
 LIMIT 20;
 ```
 
-这些 SQL 查询的结果可以直接指导优化方向：如果 Young GC 平均耗时超过 5ms，需要排查对象抖动；如果 Allocation Stall 频繁出现，说明堆空间需要优化或增大。
+SQL 结果可以直接转成排查动作：Young GC 平均耗时超过 5ms 时，先排查对象抖动；Allocation Stall 频繁出现时，先看堆上限、峰值分配和大对象路径。
 
 ### 正常 vs 异常的 GC 模式
 
-正常情况下，一个中等复杂度的应用：
+中等复杂度应用的常见基线可以这样看：
 - Young GC 频率：每 2-5 秒一次，每次 1-3ms
 - Full GC 频率：每几分钟一次（甚至更少）
 - GC 吞吐量：> 98%
