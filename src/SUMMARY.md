@@ -287,6 +287,7 @@ tags:
   - [16.4 Android 17 + Kernel 6.12 系统级性能优化](part4-system/ch16-aosp/04-android17-kernel612-performance.md)
   - [16.5 Android 17 (API 37) 性能行为变更与适配指南](part4-system/ch16-aosp/05-android17-api37-performance-changes.md)
   - [16.6 Android 16 云端 Profile 与 dexopt 安装优化](part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md)
+  - [16.7 Android 系统启动耗时优化与 bootanalyze](part4-system/ch16-aosp/07-system-boot-time-optimization.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)

@@ -9581,6 +9581,38 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T12:32:07+08:00"
+    },
+    {
+      "id": "task2a-gap-16.7-system-boot-time-optimization",
+      "section": "16.7",
+      "section_title": "Android 系统启动耗时优化与 bootanalyze",
+      "priority": 80,
+      "title": "Android 系统启动耗时优化与 bootanalyze",
+      "description": "source.android.com 已有 Optimize boot times 官方文档和 AOSP boottime_tools/bootstat 入口；现有 1.2 更偏启动流程，8.x 更偏 App 启动，16 章缺少系统 boot time 的平台侧优化与可观测章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/core/perf/boot-times",
+        "https://cs.android.com/android/platform/superproject/+/master:system/extras/boottime_tools/bootanalyze/bootanalyze.py",
+        "https://cs.android.com/android/platform/superproject/+/master:system/core/bootstat/"
+      ],
+      "gap_score": 14,
+      "score_detail": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 3,
+        "时效性": 3
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-17T13:04:00+08:00"
     }
   ],
   "metadata": {

@@ -1,6 +1,6 @@
 {
-  "total": 304,
-  "draft": 0,
+  "total": 305,
+  "draft": 1,
   "ready-for-review": 106,
   "finalized": 198,
   "task9_result": "needs-rework",
@@ -1306,8 +1306,8 @@
   "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T12:32:07+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-17T13:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-17",
     "time": "12:11",
@@ -3558,6 +3558,18 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
+    },
+    "16.7": {
+      "title": "Android 系统启动耗时优化与 bootanalyze",
+      "file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "gap_source": "官方文档/AOSP结构",
+      "gap_score": 14,
+      "queue_priority": 80,
+      "material_count": 3
     }
   },
   "task2b_rounds": [
@@ -3639,9 +3651,9 @@
     "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-17T05:21:00+08:00",
-  "last_task2a_section": "26.12",
-  "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+  "last_task2a_at": "2026-05-17T13:04:00+08:00",
+  "last_task2a_section": "16.7",
+  "last_task2a_file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
     "2.10",
@@ -4324,6 +4336,18 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
+    },
+    "16.7": {
+      "title": "Android 系统启动耗时优化与 bootanalyze",
+      "file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-17",
+      "gap_source": "官方文档/AOSP结构",
+      "gap_score": 14,
+      "queue_priority": 80,
+      "material_count": 3
     }
   },
   "task2a_last_processed": {
@@ -4336,11 +4360,11 @@
   "task2a_last_gap_mining": {
     "date": "2026-05-17",
     "created_sections": [
-      "26.12"
+      "16.7"
     ],
     "qualified_candidates": 1,
-    "candidate_count": 4,
-    "mode": "gap-mining"
+    "candidate_count": 3,
+    "mode": "official-doc-gap-mining"
   },
   "task9_last_sections": [
     "4.3",
