@@ -10344,7 +10344,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
@@ -10362,23 +10362,28 @@
         "reader_demand": 5,
         "timeliness": 4,
         "total": 18
-      }
+      },
+      "completed_date": "2026-05-18T00:09:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成：章节 status 改为 ready-for-review，进入 Task 6 审查管线。",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 293,
+    "total_entries": 302,
     "p0_count": 45,
-    "last_updated": "2026-05-17T17:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 149,
-    "updated_date": "2026-05-17",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 149,
-    "completed_entries": 142
+    "last_updated": "2026-05-18T00:09:00+08:00",
+    "updated_by": "task2a-content-processing",
+    "pending_entries": 142,
+    "updated_date": "2026-05-18",
+    "last_updated_by": "task2a-content-processing",
+    "pending": 142,
+    "completed_entries": 158
   },
-  "last_updated": "2026-05-17T17:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 149,
-  "last_task2a_completed": "26.11",
-  "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
+  "last_updated": "2026-05-18T00:09:00+08:00",
+  "last_updated_by": "task2a-content-processing",
+  "pending": 142,
+  "last_task2a_completed": "7.16",
+  "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
