@@ -2,9 +2,9 @@
 title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
-status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-16'
@@ -18,13 +18,13 @@ task2b_fixed_issues:
   - eevdf-sysctl-params-and-rt-version-timeline-added
   - diagnostic-decision-framework-added
 task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 技术风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-16T11:31:00+08:00'
-task2b_state: pending
-task2b_result: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
 last_verified: '2026-04-14'
 last_verified_against: Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers,
@@ -503,17 +503,16 @@ vlag 是 EEVDF 调度器的内部字段，stock Linux v6.6 / v6.12 和 Android c
 
 如果需要读取 vlag，需要通过 vendor tracepoint、BPF 程序或 kprobe 自行采集，这不是 Perfetto 默认支持的数据源。
 
-[存疑: Task9 2026-05-16 已指出下方 SQL 使用的 `thread_state.thread_name` 字段需改为 join `thread` / `process` 表取 `utid`，交 Task2B 按 queue.json 修正。]
-
 ```sql
 -- 观察 Runnable 等待时间分布(替代 vlag 的实战方法)
 -- 替换 '目标线程名'
 SELECT
   ts,
   dur / 1e6 AS runnable_ms
-FROM thread_state
-WHERE thread_name = '目标线程名'
-  AND state = 'R'
+FROM thread_state ts
+JOIN thread t ON ts.utid = t.utid
+WHERE t.name = '目标线程名'
+  AND ts.state = 'R'
 ORDER BY ts
 LIMIT 100;
 ```
@@ -538,9 +537,7 @@ cat /proc/sys/kernel/sched_base_slice_ns
 ls /proc/sys/kernel/sched_*
 ```
 
-在 Perfetto 中观察调度行为时，如果发现大量短时间 Runnable→Running→Runnable 切换（微秒级），可能是 `sched_base_slice_ns` 偏大导致 EEVDF 在 eligible entity 之间频繁切换。这类分析需要对照 `sched_switch` 事件的时间间隔与 `sched_base_slice_ns` 的关系。
-
-[存疑: Task9 2026-05-16 已指出这里关于 `sched_base_slice_ns` 偏大/偏小的方向判断与后文不一致，不在 Task6 裁决，交 Task2B 统一修正。]
+在 Perfetto 中观察调度行为时，如果发现大量短时间 Runnable→Running→Runnable 切换（微秒级），先检查 `sched_base_slice_ns` 是否偏小——slice 偏小会让 EEVDF 更频繁地在 eligible entity 之间切换。`sched_base_slice_ns` 偏大则倾向于增加单次驻留和响应延迟。这类分析需要对照 `sched_switch` 事件的时间间隔与 `sched_base_slice_ns` 的关系。
 
 ### Real-time 调度在 Android 版本中的演进
 
@@ -660,11 +657,22 @@ UClamp 为任务或任务组提供两个核心参数:
 
 Linux 既支持按任务接口设置，也支持按 cgroup controller 设置。单线程实验时，内核通常会暴露类似下面的 per-task 接口：
 
-[存疑: Task9 2026-05-16 已指出下方 `/proc/<pid>/task/<tid>/util_clamp_*` 示例不是标准 Linux / Android per-task UClamp 接口，应由 Task2B 改为 `sched_setattr()` / `uclampset` 或 cgroup `cpu.uclamp.*` 路径。]
+```bash
+# per-task UClamp 通过 sched_setattr() 设置，命令行可用 uclampset:
+uclampset -m 256 -M 512 <command>
+
+# 或在代码中使用 sched_setattr()（需 CAP_SYS_NICE 或 root）:
+# sched_attr.sched_util_min = 256;
+# sched_attr.sched_util_max = 512;
+# sched_setattr(pid, &sched_attr, 0);
+```
+
+Android 产品机上更常见的入口是 cgroup controller 或 task profiles，而不是手动调用 `sched_setattr`：
 
 ```bash
-echo 256 > /proc/<pid>/task/<tid>/util_clamp_min
-echo 512 > /proc/<pid>/task/<tid>/util_clamp_max
+# cgroup cpu controller（Android 12+ / GKI 5.10+）
+echo 256 > /dev/cgroot/cpu/<cgroup>/cpu.uclamp.min
+echo 512 > /dev/cgroot/cpu/<cgroup>/cpu.uclamp.max
 ```
 
 Android 产品机上更常见的入口是 task profiles,而不是手写 `/proc`。
@@ -795,9 +803,7 @@ ORDER BY cpu;
 
 - 线程运行在哪些 CPU 编号上(`sched` 表按 `cpu` 分组)
 - CPU 频率是否在关键时刻拉起(CPU Frequency Track)
-- 进程组是否从 `foreground` 升级到 `top-app`（`sched_wakeup` / `sched_switch` 中的进程名变化）
-
-[存疑: Task9 2026-05-16 已指出 `sched_wakeup` / `sched_switch` 不直接暴露进程组变化，交 Task2B 改成可观测的 cgroup / task profile 证据。]
+- 进程是否从 `foreground` cpuset 迁移到 `top-app` cpuset——通过 `/proc/<pid>/cgroup` 查看 cgroup 归属，或在 Perfetto 中观察线程迁移到更大 CPU 集合的时间点
 
 **Step 5：决定优化动作。**
 

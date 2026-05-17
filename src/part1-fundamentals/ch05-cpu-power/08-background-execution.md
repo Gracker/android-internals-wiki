@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: "ready-for-review"
 title: 后台执行限制与优化
 chapter: '5.8'
 section: '5.8'
@@ -68,18 +68,18 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: needs-rework
 task6_reviewed_date: 2026-05-16
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: '2026-05-16'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-16T15:38:55+08:00'
-task2b_state: pending
-task2b_result: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-09T18:44:33+08:00'
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-05-16-15-deep-review.md
 queue_entry: task9-20260516-5.8-binder-freezer-api-surface
@@ -354,7 +354,7 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 - **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
 - **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
 
-- **AVF pVM 任务配额豁免**：[需确认: Task9 未核验到官方 quota 豁免来源，需补官方/AOSP 锚点后再保留该结论] 通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，不再消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。任务在 pVM 内独立调度，宿主 App 的 bucket、quota 和 Doze 约束不影响 pVM 内部。
+- **AVF pVM 任务配额豁免**：[待验证] 通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，可能不消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。该豁免口径当前未在 Android Developers power-details、Android 17 changes 或 AOSP AVF 文档中核验到，补齐官方来源前不应作为选型决策依据。
 
 因此，看到“受限状态下任务还是执行了”，先核对它是不是走了这些例外入口。
 
@@ -464,32 +464,32 @@ CachedAppOptimizer 对单个进程执行冻结时，严格按以下顺序操作�
 
 ### FrozenStateChangeCallback 的实际使用模式
 
-[需确认: Task9 已标记 public API 签名风险，需按 API reference 复核 Executor 参数与 state 回调形态。]
-
-`IBinder.addFrozenStateChangeCallback()`（API 36）让系统服务在远端进程冻结/解冻时收到通知。典型使用：
+`IBinder.addFrozenStateChangeCallback()`（API 36）让系统服务在远端进程冻结/解冻时收到通知。公开 API 签名要求传入 `Executor` 和 `FrozenStateChangeCallback`，回调参数是 `(IBinder who, @State int state)`，状态值为 `STATE_FROZEN` / `STATE_UNFROZEN`：
 
 ```java
-// 系统服务在获取 IBinder 代理后注册回调
-binder.addFrozenStateChangeCallback((b, frozen) -> {
-    if (frozen) {
+// 公开 API (API 36+): 需要传入 Executor
+binder.addFrozenStateChangeCallback(executor, (who, state) -> {
+    if (state == IBinder.FrozenStateChangeCallback.STATE_FROZEN) {
         // 暂停向该进程发送非关键 callback
         // 或改用 FROZEN_CALLEE_POLICY_DROP
     } else {
-        // 恢复发送
+        // STATE_UNFROZEN：恢复发送
     }
 });
+// 单参数 overload (callback only) 是 @hide / internal，不在公开 API 中
 ```
 
-**源码路径**：`libs/binder/include/binder/IBinder.h`
+**源码路径**：`frameworks/base/core/java/android/os/IBinder.java`
 
 ### RemoteCallbackList 的 frozen 策略
 
-[需确认: Task9 已标记 frozen policy 枚举不完整，需补 `FROZEN_CALLEE_POLICY_ENQUEUE_ALL` 与使用边界。]
-
-`RemoteCallbackList` 提供了两种内置策略处理发往 frozen 进程的回调：
+`RemoteCallbackList` 提供三种内置策略处理发往 frozen 进程的回调：
 
 - `FROZEN_CALLEE_POLICY_DROP`：静默丢弃，节省 buffer 避免溢出崩溃
 - `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新一条，解冻后送达
+- `FROZEN_CALLEE_POLICY_ENQUEUE_ALL`：保留全部事件，解冻后依次送达。适用于必须保留完整事件历史的场景，但可能导致 buffer overflow 或 stale events，默认不推荐
+
+大多数场景推荐 `DROP` 或 `ENQUEUE_MOST_RECENT`。
 
 **源码路径**：`frameworks/base/core/java/android/os/RemoteCallbackList.java`
 
@@ -545,7 +545,7 @@ binder.addFrozenStateChangeCallback((b, frozen) -> {
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
 | Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
-| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；AVF pVM 计算任务豁免宿主 JobScheduler 配额；系统压缩期间联动触发应用 GC | 后台保活路径进一步收窄；隔离计算不再挤占宿主配额；16KB 页环境下 GC 联动更高效 |
+| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；系统压缩期间联动触发应用 GC | 后台保活路径进一步收窄；16KB 页环境下 GC 联动更高效 |
 
 ## 常见问题与误区
 

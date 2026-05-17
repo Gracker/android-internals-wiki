@@ -2,22 +2,22 @@
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
-status: finalized
+status: "ready-for-review"
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: '2026-05-11'
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
-task2b_result: fixed
+task2b_result: "fixed"
 reviewed_date: '2026-05-11'
 reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
-task6_state: reviewed
+task6_state: "revisiting"
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task9_state: "pending"
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -42,7 +42,7 @@ task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T18:20:00+08:00"
 last_task9_audit: "2026-05-17"
-task9_review_notes: "2026-05-17 18:20 Task9 idle audit: needs-rework。P0 1：Throwable stack trace 的 256 帧上限说法与 AOSP CreateInternalStackTrace 不符，256 只是 saved_frames 优化阈值。"
+task9_review_notes: "2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
 last_task9_review_log: "logs/deep-review/2026-05-17-18-audit.md"
 ---
 # Java Crash 治理
@@ -132,11 +132,11 @@ Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 
 ### 堆栈获取的代价
 
-`new Throwable()` 在构造函数中调用 `nativeFillInStackTrace()`，触发 ART 栈回溯。回溯过程遍历 `ManagedStack` 链表中的 `ShadowFrame`/`QuickFrame`，解析每个 `ArtMethod` 指针，最大深度 256 帧。
+`new Throwable()` 在构造函数中调用 `nativeFillInStackTrace()`，触发 ART 栈回溯。回溯过程遍历 `ManagedStack` 链表中的 `ShadowFrame`/`QuickFrame`，解析每个 `ArtMethod` 指针。ART `CreateInternalStackTrace()` 内部用 `kMaxSavedFrames = 256` 做快速路径缓存——深度小于 256 时复用 saved_frames，达到或超过 256 时执行二次 `WalkStack()` 构建完整 internal stack trace。256 是 saved_frames 优化阈值，不是 Java 堆栈的最大深度。
 
 堆栈捕获有性能开销。不能在高频路径上频繁创建 `Throwable` 对象。如需在性能敏感位置采集调用栈，考虑用 `Thread.getStackTrace()` 替代，或做采样（如每 100 次采集 1 次）。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc CreateInternalStackTrace]
+[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc CreateInternalStackTrace; art/runtime/native/java_lang_Throwable.cc]
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md]
 
 ## Top Crash 模式与根因分析

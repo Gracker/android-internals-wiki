@@ -8439,7 +8439,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
@@ -8485,7 +8485,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T11:31:00+08:00",
       "task6_review_confirmed_at": "2026-05-16T12:20:36+08:00",
-      "task6_review_log": "logs/review/2026-05-16-12-review.md"
+      "task6_review_log": "logs/review/2026-05-16-12-review.md",
+      "completed_date": "2026-05-18T00:17:04",
+      "completed_reason": "Task 2B 回炉修复: (1) UClamp per-task 示例从 /proc echo 改为 sched_setattr/uclampset + cgroup cpu.uclamp 路径; (2) Perfetto SQL thread_name 字段改为 JOIN thread 表取 utid; (3) sched_base_slice_ns 方向修正为偏小导致频繁切换; (4) 进程组变化观测方法改为 /proc/<pid>/cgroup"
     },
     {
       "id": "task9-5.7-standby-bucket-android17-wakelock-20260516",
@@ -8668,7 +8670,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
@@ -8711,7 +8713,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T15:38:55+08:00",
-      "original_review_log": "logs/review/2026-05-16-23-review.md"
+      "original_review_log": "logs/review/2026-05-16-23-review.md",
+      "completed_date": "2026-05-18T00:17:04",
+      "completed_reason": "Task 2B 回炉修复: (1) FrozenStateChangeCallback 公开 API 签名修正(补 Executor 参数, state 回调改为 STATE_FROZEN/STATE_UNFROZEN); (2) RemoteCallbackList 补 ENQUEUE_ALL 第三种策略; (3) AVF pVM 配额豁免降级为[待验证]"
     },
     {
       "id": "task9-20260516-11.5-adpf-gamestate-boundary",
@@ -8789,7 +8793,7 @@
       "reason": "[Deep Tech Review] VSyncPredictor 版本差异与 ARR 调度链存在源码级漂移，需按 android-16.0.0_r1 及相邻 tag 重新校准。",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/03-vsync.md"
@@ -8822,7 +8826,9 @@
       ],
       "created_date": "2026-05-16",
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T18:20:00+08:00"
+      "added_at": "2026-05-16T18:20:00+08:00",
+      "completed_date": "2026-05-18T00:17:04",
+      "completed_reason": "Task 2B 回炉修复: (1) historySize/tolerance 删除'Android 16 才修订/早期 32/10%'错误断言; (2) mNumVsyncsPerFrame 版本归属从 Android 14 修正为 Android 15+; (3) 补 ARR 刷新率切换调用链(resyncToHardwareVsync→updatePhaseConfiguration→VsyncModulator→VSyncPredictor)"
     },
     {
       "id": "task9-20260516-14.13-bytehook-wx-namespace-risk",
@@ -10050,7 +10056,7 @@
       "added_by": "task9-deep-tech-review",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/02-java-crash-governance.md"
@@ -10068,7 +10074,9 @@
           "detail": "正文把 ART CreateInternalStackTrace() 中的 256 写成“最大深度 256 帧”。AOSP android-16.0.0_r1 的 art/runtime/thread.cc 实际是 `constexpr size_t kMaxSavedFrames = 256`，先缓存最多 256 帧以避免二次 walk；当 depth >= 256 时会执行 `build_trace_visitor.WalkStack()` 重新遍历并构建完整 internal stack trace。256 是 saved_frames 优化阈值，不是 Java 堆栈最大深度。",
           "suggestion": "改为：CreateInternalStackTrace() 先用 256 个 saved_frames 做快速路径；深度小于 256 时复用缓存，深度达到或超过 256 时二次 WalkStack 构建结果。不要写“最大深度 256 帧”，除非另有版本源码能证明截断上限。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-18T00:17:04",
+      "completed_reason": "Task 2B 回炉修复: Throwable 堆栈深度 256 帧修正——256 是 ART CreateInternalStackTrace 的 saved_frames 快速路径缓存阈值，不是最大深度"
     },
     {
       "id": "task2a-gap-17.5-oem-game-mode-input-priority",
@@ -10299,7 +10307,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
@@ -10320,7 +10328,9 @@
       "added_at": "2026-05-17T22:27:35+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-17T22:27:35+08:00",
-      "review_log": "logs/deep-review/2026-05-17-22-audit.md"
+      "review_log": "logs/deep-review/2026-05-17-22-audit.md",
+      "completed_date": "2026-05-18T00:17:04",
+      "completed_reason": "Task 2B 回炉修复: SELinux AVC 全局缓存描述修正——三路 binder 设备有独立 Context Manager/binder context，但 SELinux AVC 是全局访问向量缓存，不按 binder 设备拆分"
     },
     {
       "id": "task2a-gap-7.16-power-thermal-jank-playbook",
