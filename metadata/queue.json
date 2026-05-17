@@ -9739,20 +9739,71 @@
           "suggestion": "写成“ActivityRecord 与 Task（旧版本/Android 10 前后资料中常写 TaskRecord）”，并在版本表或脚注中标注命名迁移，避免读者按 Android 15 源码查不到类。"
         }
       ]
+    },
+    {
+      "id": "task9-20260517-2-5-renderthread-sync-deliqueue-adpf",
+      "section": "2.5",
+      "section_title": "MainThread 与 RenderThread 协作",
+      "title": "RenderThread syncFrameState、DeliQueue 与 ADPF 版本口径修正",
+      "priority": 85,
+      "reason": "[Deep Tech Review][闲时抽检] syncFrameState 归因过窄；DeliQueue 被误归到 RenderThread WorkQueue；RenderThread ADPF 版本线应从 Android 14 拆起。",
+      "description": "[Deep Tech Review] P1 3：syncFrameState 不能直接判定 GPU 上一帧未完成；Android 17 DeliQueue 是 MessageQueue 变化不是 HWUI RenderThread WorkQueue 替换；RenderThread ADPF hint session 在 Android 14 已存在，Android 16 headroom API 需拆开。",
+      "issue_type": "source-accuracy/version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T14:20:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-14-audit.md",
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html",
+        "AOSP android-16.0.0_r1: frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp",
+        "AOSP main/android-16.0.0_r1: frameworks/base/libs/hwui/thread/WorkQueue.h",
+        "AOSP android-14/15/16: frameworks/base/libs/hwui/renderthread/CanvasContext.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/诊断语义",
+          "location": "L351-L355、L404 syncFrameState 归因",
+          "detail": "正文把 UI Thread 上 syncFrameState 变长直接解释为“上一帧 GPU 工作没完成”。AOSP android-16.0.0_r1 DrawFrameTask::run() 的顺序是 syncFrameState(info) 后在 canUnblockUiThread 为真时 unblockUiThread()，随后才进入 CanvasContext::draw()。因此该等待只能说明 RenderThread 同步阶段、队列积压、资源准备或 buffer/fence 反压占用，不能单凭该 slice 判定 GPU 上一帧未完成。",
+          "suggestion": "把 L353/L404 改成候选瓶颈表述：syncFrameState 变长表示 UI Thread 正在等 RenderThread 完成本帧同步；下一步需要结合 RenderThread DrawFrame、dequeueBuffer/release fence、GPU counter、FrameTimeline missed reason 再拆 GPU/buffer/同步准备。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码归属",
+          "location": "L185-L191、L522 Android 17 DeliQueue",
+          "detail": "正文写 DeliQueue 替代 RenderThread 内部互斥锁消息队列，并把收益落到 UI Thread → RenderThread 的 postAndWait 路径。Android Developers Blog 描述的是 Android 17 中 targetSdk 37+ 应用收到新的 android.os.MessageQueue lock-free 实现；AOSP main 与 android-16.0.0_r1 的 HWUI libs/hwui/thread/WorkQueue.h 仍是 std::mutex + vector WorkQueue，DrawFrameTask::postAndWait() 仍向 mRenderThread->queue().post()。当前归属会把 Java Looper MessageQueue 变更误读成 HWUI RenderThread WorkQueue 变更。",
+          "suggestion": "将 DeliQueue 段改为“Android 17 UI Looper/MessageQueue 锁竞争优化，适用于 targetSdk 37+ 的 MessageQueue 行为变化”，不要写成 RenderThread WorkQueue 替换；如要讨论 postAndWait，需另找 HWUI WorkQueue/Drawing pipeline 的 AOSP change。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码锚点",
+          "location": "L225-L229、L515-L521 ADPF 反馈闭环",
+          "detail": "正文把 RenderThread 接入 PerformanceHintManager/reportActualWorkDuration 写成 Android 16+ 能力。AOSP CanvasContext.cpp 在 android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 均已有 HintSessionWrapper、updateTargetWorkDuration() 和 reportActualWorkDuration()。Android 16 新增的是 SystemHealthManager 的 getCpuHeadroom/getGpuHeadroom 等 headroom API；当前写法把 HWUI hint session 版本线和 Android 16 headroom API 混在了一起。",
+          "suggestion": "版本表拆成两行：Android 14 起 HWUI/RenderThread 使用 ADPF hint session 上报帧工作时长；Android 16 新增 app-facing CPU/GPU headroom 查询。不要写“RenderThread 在 Android 16 才接入 ADPF”；若保留“系统结合 GPU Headroom 动态调整”需补 AOSP/官方闭环证据。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 288,
+    "total_entries": 289,
     "p0_count": 40,
-    "last_updated": "2026-05-17T13:20:00+08:00",
+    "last_updated": "2026-05-17T14:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 150,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 150,
-    "completed_entries": 136
+    "completed_entries": 137
   },
-  "last_updated": "2026-05-17T13:20:00+08:00",
+  "last_updated": "2026-05-17T14:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": 150,
   "last_task2a_completed": "26.11",

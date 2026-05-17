@@ -170,7 +170,7 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md",
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
   ],
-  "review_summary": "Task9 2026-05-17 12: 深审 7.6、7.15、12.5；发现 P0 4 / P1 2 / P2 1 / P3 1；12.5 pass-tech-review 且 Task6 已通过、无 pending queue，自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-17 14: 闲时抽检 2.5；发现 P0 0 / P1 3 / P2 0，已写入 queue，章节转 task2b_pending。",
   "task6_review_summary": {
     "l1_l2_fixes": 6,
     "l3_issues": 2,
@@ -1158,7 +1158,7 @@
   "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T13:20:00+08:00",
+  "last_updated": "2026-05-17T14:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-17",
@@ -3443,51 +3443,43 @@
   "last_task2a_processed_file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
+    "mode": "idle-audit",
+    "reviewed_at": "2026-05-17T14:20:00+08:00",
     "sections": [
-      "14.1",
-      "8.2",
-      "2.10"
+      "2.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
     ],
+    "p0": 0,
+    "p1": 3,
+    "p2": 0,
+    "p3": 0,
     "result": "needs-rework",
-    "p0": 7,
-    "p1": 6,
-    "p2": 1,
-    "log": "logs/deep-review/2026-05-17-13-deep-review.md",
-    "at": "2026-05-17T13:20:00+08:00"
+    "log": "logs/deep-review/2026-05-17-14-audit.md"
   },
   "last_task9_review": "2026-05-17",
   "last_task9_sections": [
-    "14.1",
-    "8.2",
-    "2.10"
+    "2.5"
   ],
   "last_task9_review_detail": {
+    "mode": "idle-audit",
+    "reviewed_at": "2026-05-17T14:20:00+08:00",
     "sections": [
-      "14.1",
-      "8.2",
-      "2.10"
+      "2.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
     ],
+    "p0": 0,
+    "p1": 3,
+    "p2": 0,
+    "p3": 0,
     "result": "needs-rework",
-    "p0": 7,
-    "p1": 6,
-    "p2": 1,
-    "log": "logs/deep-review/2026-05-17-13-deep-review.md",
-    "at": "2026-05-17T13:20:00+08:00"
+    "log": "logs/deep-review/2026-05-17-14-audit.md"
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "total_review_files": 152,
   "last_task2a_at": "2026-05-17T13:04:00+08:00",
@@ -3532,11 +3524,9 @@
     "auto_promoted": []
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md"
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
-  "last_task9_at": "2026-05-17T13:20:00+08:00",
+  "last_task9_at": "2026-05-17T14:20:00+08:00",
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
@@ -4206,24 +4196,15 @@
     "mode": "official-doc-gap-mining"
   },
   "task9_last_sections": [
-    "4.3",
-    "5.10",
-    "20.6",
-    "14.1",
-    "8.2",
-    "2.10"
+    "2.5"
   ],
   "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
   "last_task9_files": [
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-17-13-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-17-14-audit.md",
   "task9_last_files": [
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,

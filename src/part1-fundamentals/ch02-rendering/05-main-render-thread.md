@@ -16,6 +16,12 @@ confidence: high
 reviewed_date: "2026-04-20"
 reviewed_by: openclaw-task6
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
+last_task9_at: "2026-05-17T14:20:00+08:00"
+last_task9_audit: "2026-05-17"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-17"
+last_task9_review_log: logs/deep-review/2026-05-17-14-audit.md
+task9_review_notes: 2026-05-17 Task9 idle-audit 14:20:needs-rework。P0 0 / P1 3 / P2 0;syncFrameState、DeliQueue、ADPF 版本口径需 Task2B 回炉。
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -29,12 +35,12 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 ---
 
