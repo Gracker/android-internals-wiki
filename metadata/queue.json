@@ -10800,22 +10800,63 @@
           "suggestion": "按机制拆版本范围：Java monitor 区分 Dalvik/ART，PI mutex 标 API 28+，DeliQueue 标 Android 17 + targetSdk 37+；或收窄 frontmatter applicability，避免读者把现代结论套到 Android 1.x-4.x。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-22.13-predictive-back-performance-20260518",
+      "section": "22.13",
+      "section_title": "Predictive Back 动画与页面切换性能",
+      "priority": 80,
+      "title": "Predictive Back 动画与页面切换性能",
+      "description": "Android 官方 predictive back 文档、AndroidX NavigationEvent / Activity 版本演进已经形成独立的页面切换性能主题；现有 22.12 只覆盖 FragmentTransaction 提交链路，缺少手势进度驱动动画、取消回滚和 Perfetto 观察点。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-18T06:04:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/13-predictive-back-performance.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/guide/navigation/custom-back/support-animations",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations-views",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/guide/fragments/animate",
+        "https://developer.android.com/jetpack/androidx/releases/navigationevent",
+        "https://developer.android.com/jetpack/androidx/releases/activity",
+        "https://android-developers.googleblog.com/2024/05/a-developers-roadmap-to-predictive-back.html"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 17
+      },
+      "gap_evidence": [
+        "Android Developers 已拆出 predictive back animations / Views / Fragment / NavigationEvent 文档，覆盖 View、Fragment、Activity、Compose 多路径。",
+        "AndroidX Activity 1.12.0-alpha05 已依赖 Navigation Event 1.0.0-alpha06，NavigationEvent release notes 将 system back 和 predictive back 独立成库。",
+        "现有 22.12 关注 FragmentTransaction 执行语义，未覆盖返回手势进度驱动动画时的每帧性能约束。"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 310,
+    "total_entries": 311,
     "p0_count": 113,
-    "last_updated": "2026-05-18T03:04:00+08:00",
+    "last_updated": "2026-05-18T06:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 149,
+    "pending_entries": 150,
     "updated_date": "2026-05-18",
-    "last_updated_by": "freshness-check",
-    "pending": 142,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 143,
     "completed_entries": 158
   },
-  "last_updated": "2026-05-18T03:04:00+08:00",
+  "last_updated": "2026-05-18T06:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 149,
+  "pending": 150,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
