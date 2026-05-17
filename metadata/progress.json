@@ -306,15 +306,15 @@
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
     "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
   ],
-  "review_summary": "Task9 2026-05-17 08: review 13.16；P1 2 / P2 3。需补 thread_state raw 状态口径映射与 FrameTimeline/android.frames Android 10-17 版本边界；本轮仅 1 个章节符合 task9 pending 条件。",
+  "review_summary": "Task6 2026-05-17 10: review 13.17；L1/L2 小修 8 处；无 L3/L4 回炉项，送 Task9 技术复审。本轮仅 1 个未审章节符合条件。",
   "task6_review_summary": {
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 8,
     "l3_issues": 0,
     "l4_issues": 0,
-    "technical_risk_markers": 2,
+    "technical_risk_markers": 0,
     "total_issues": 0,
     "reviewed_sections": [
-      "13.16"
+      "13.17"
     ]
   },
   "issues_by_section": {
@@ -1253,25 +1253,25 @@
   "total_review_sections": 147,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T09:06:00+08:00",
+  "last_updated": "2026-05-17T10:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-17",
-    "time": "09:06",
-    "reviewed_at": "2026-05-17T09:06:00+08:00",
+    "time": "10:10",
+    "reviewed_at": "2026-05-17T10:10:00+08:00",
     "sections": [
-      "13.16"
+      "13.17"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
     ],
-    "log": "logs/review/2026-05-17-09-review.md",
+    "log": "logs/review/2026-05-17-10-review.md",
     "mode": "首次 review",
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 8,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 2,
+    "technical_risk_markers": 0,
     "results": {
-      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
+      "13.17": "pass-light-edit / task9_pending"
     }
   },
   "task9_last_review": "2026-05-17T08:23:00+08:00",
@@ -3437,6 +3437,20 @@
       "last_task6_review_log": "logs/review/2026-05-17-09-review.md",
       "last_task9_at": "2026-05-17T08:23:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-08-deep-review.md"
+    },
+    "13.17": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "file": "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "title": "Perfetto SDK 与应用内 Trace 数据源",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "last_task6_at": "2026-05-17T10:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-10-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending"
     }
   },
   "task2b_rounds": [
@@ -4092,6 +4106,23 @@
       "last_task9_at": "2026-05-17T08:23:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-17-09-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-17-08-deep-review.md"
+    },
+    "13.17": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "file": "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "title": "Perfetto SDK 与应用内 Trace 数据源",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "last_task6_at": "2026-05-17T10:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-10-review.md",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-17 Task6：补齐 section/frontmatter、outline 大纲与中英文术语小修；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "task9_state": "pending",
+      "task9_result": "pending"
     }
   },
   "task2a_last_processed": {
