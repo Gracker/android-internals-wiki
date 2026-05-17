@@ -173,21 +173,17 @@
     "20.2"
   ],
   "review_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-    "src/part5-app/ch20-stability/02-java-crash-governance.md"
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md"
   ],
-  "review_summary": "Task6 2026-05-18 01: 复审 1.1、5.1、20.2；完成 L1/L2 小修 41 处，无新增 L3/L4 回炉；5.1 满足 Task6+Task9+queue 条件，自动晋升 finalized。",
+  "review_summary": "Task6 2026-05-18 02: 复审 5.8；完成 L1/L2 小修 9 处，标注 2 个回炉点（GC/compaction 版本边界、freezer 源码调研结构整合），未自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 41,
-    "l3_issues": 0,
-    "l4_issues": 0,
-    "technical_risk_markers": 0,
-    "total_issues": 0,
+    "l1_l2_fixes": 9,
+    "l3_issues": 1,
+    "l4_issues": 1,
+    "technical_risk_markers": 1,
+    "total_issues": 2,
     "reviewed_sections": [
-      "1.1",
-      "5.1",
-      "20.2"
+      "5.8"
     ]
   },
   "issues_by_section": {
@@ -1098,7 +1094,14 @@
     },
     "5.8": {
       "task6_l3_l4": 1,
-      "task9_pending": 3
+      "task9_pending": 1,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 9,
+      "task6_l3_l4_issues": 2,
+      "task6_reviewed_at": "2026-05-18T02:15:00+08:00",
+      "task6_log": "logs/review/2026-05-18-02-review.md",
+      "task6_new_rework": true,
+      "task6_note": "复审小修完成；GC/compaction 版本边界仍待 Task2B/Task9 处理，freezer 源码调研块仍需主线融合；queue pending 已合并 priority 90。"
     },
     "5.14": {
       "task9_result": "needs-rework",
