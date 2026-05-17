@@ -69,8 +69,10 @@ task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-04"
 task6_reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
+last_task6_audit: "2026-05-17"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-04
@@ -82,6 +84,25 @@ task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 
 
 ---
 # 2.12 Window Manager Service 与窗口管理
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **WMS 的定位**：说明 WMS 位于 App、Input 系统、SurfaceFlinger 之间，并解释 system_server 多线程与 `mGlobalLock` 的排查意义
+- 🔹 **Window 与 Surface 的关系**：区分 `WindowState`、`SurfaceControl`、`Surface`、SurfaceFlinger layer 和 BLASTBufferQueue 的职责边界
+- 🔹 **StartingWindow 与启动性能**：说明 Android 12+ SplashScreen / TaskSnapshot starting window 在 ATMS/WMS、WM Shell、App 三侧的分工
+- 🔹 **relayoutWindow 触发条件与内部流程**：区分纯 App traversal、同步 relayout、`relayoutAsync()` 和 WMS surface placement 的成本来源
+- 🔹 **窗口动画与 Predictive Back**：说明现代 transition 路径、Shell / remote transition、leash transaction 和 SurfaceFlinger present 的排查顺序
+- 🔹 **多窗口、折叠屏与 Desktop Mode**：解释自由窗口、caption bar、外接显示器和大屏适配如何提高 relayout / resize 频率
+- 🔹 **Perfetto 综合分析与误区**：按 App、system_server、Shell、SurfaceFlinger 分段分析 WMS 相关性能问题
+
+### 扩展（可选深入）
+
+- 🔸 **WindowInsets 与布局性能**：说明 Insets 分发和 `requestLayout()` 如何放大布局成本
+- 🔸 **WMS 与 Input 系统协作**：说明 Window Z-order、可见区域和 focus 信息如何影响 InputDispatcher hit-test
+<!-- outline-end -->
 
 ## 为什么要了解 WMS
 
@@ -365,7 +386,7 @@ Predictive Back 的版本线要拆开读：
 
 ## 多窗口、折叠屏与 Desktop Mode
 
-Android 的多窗口能力经历了从实验性功能到核心特性的演变。如今 Split-screen、Freeform、Picture-in-Picture（PiP）已经全面铺开，Android 16 更是将 Desktop Windowing 推向了 GA（Generally Available）。这些模式对 WMS 的工作方式产生了深远影响。
+Android 的多窗口能力经历了从实验性功能到核心特性的演变。如今 Split-screen、Freeform、Picture-in-Picture（PiP）已经全面铺开，Android 16 更是将 Desktop Windowing 推向了 GA（Generally Available）。这些模式会让 WMS 同时处理更多可见窗口、更多 bounds 变化和更多 relayout 请求。
 
 ### 多窗口模式下的 WMS 工作量
 
@@ -486,7 +507,7 @@ WindowInsets 是 WMS 向 App 传递系统 UI 元素（状态栏、导航栏、�
 
 分发路径是这样的：WMS 计算每个 Window 的 Insets → 通过 `relayoutWindow` 的返回值传递给 ViewRootImpl → ViewRootImpl 触发 View hierarchy 的 `dispatchApplyWindowInsets` → 各 View 根据 Insets 调整自己的 padding/margin。
 
-性能风险在于：如果 App 在 Insets 处理中调用了 `requestLayout()`，会触发整棵 View 树的 measure/layout pass。如果 WindowInsets 频繁变化（如动画过程中），这个开销可能很可观。Android 15 强制 Edge-to-Edge 后，更多 App 需要主动处理 Insets，这个问题变得更加普遍。
+性能风险在于：如果 App 在 Insets 处理中调用了 `requestLayout()`，会触发整棵 View 树的 measure/layout pass。如果 WindowInsets 频繁变化（如动画过程中），这个开销会在 Insets 动画期间被放大。Android 15 强制 Edge-to-Edge 后，更多 App 需要主动处理 Insets，这个问题变得更加普遍。
 
 优化建议：使用 Compose 的 `Modifier.windowInsetsPadding()` 替代手动 padding 计算；在 View 系统中使用 `setOnApplyWindowInsetsListener` 精确处理，避免使用 `fitsSystemWindows="true"` 的盲目全局处理；处理完 Insets 后调用 `WindowInsets.CONSUMED` 防止不必要的向下分发。
 

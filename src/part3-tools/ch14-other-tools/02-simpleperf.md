@@ -42,6 +42,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T03:17:47+08:00"
 last_task2b_at: "2026-04-22T08:06:44+08:00"
+last_task6_audit: "2026-05-17"
+last_task6_audit_log: "logs/review/2026-05-17-15-audit.md"
 ---
 # Simpleperf
 
@@ -82,13 +84,13 @@ Simpleperf 是 Android NDK 中自带的 CPU profiling 工具，它的设计思�
 
 ## Simpleperf 的工作原理
 
-在讲具体用法之前，我们需要理解 Simpleperf 是怎么工作的，这样才能在分析结果时做出正确判断。
+理解 Simpleperf 的采样机制，有助于判断分析结果的边界。
 
 Simpleperf 基于 Linux 内核的 `perf_event_open` 系统调用。这个系统调用允许用户态程序请求内核定期采样 CPU 的状态——具体来说，内核会以一定的频率（比如每秒 4000 次）中断正在运行的线程，记录当前的调用栈和程序计数器（PC）。采样的频率越高，结果越精确，但开销也越大。
 
 整个流程是这样的：Simpleperf 向内核注册采样事件，内核按频率触发中断，中断处理函数收集当前 CPU 状态（PC、调用栈），Simpleperf 将收集到的样本写入 `perf.data` 文件。最后我们用 `simpleperf report` 分析这个文件，就能看到各个函数被采样到的频率——频率越高，说明 CPU 在这个函数上花的时间越多。
 
-这里有一个关键点需要理解：Simpleperf 是**统计性采样**，不是全量追踪。它记录的是"CPU 在哪些函数上花了时间"的概率分布，而不是每一次函数调用的精确耗时。这意味着对于执行频率非常低但每次都很慢的函数，Simpleperf 可能采样不到。如果我们需要精确追踪每一帧每个函数的耗时，应该用 AS Profiler 的 Java Method Trace（详见 14.1 节）。
+Simpleperf 是**统计性采样**，不是全量追踪。它记录的是"CPU 在哪些函数上花了时间"的概率分布，而不是每一次函数调用的精确耗时。对于执行频率非常低但每次都很慢的函数，Simpleperf 可能采样不到。如果需要精确追踪每一帧每个函数的耗时，应该用 AS Profiler 的 Java Method Trace（详见 14.1 节）。
 
 [已验证: 官方文档, android.googlesource.com/platform/system/extras/+/master/simpleperf/README.md]
 
@@ -194,7 +196,7 @@ Overhead  Command    Shared Object        Symbol
    ...
 ```
 
-从这个结果我们一眼就能看到：`Renderer::drawFrame()` 占了 35% 的 CPU 时间，是最值得关注的热点函数。`--symfs binary_cache` 参数告诉 Simpleperf 去哪里找带调试符号的二进制文件，这对于获得有意义的函数名至关重要。
+从这个结果可以直接定位首要热点：`Renderer::drawFrame()` 占了 35% 的 CPU 时间。`--symfs binary_cache` 参数告诉 Simpleperf 去哪里找带调试符号的二进制文件，这决定报告能否显示有意义的函数名。
 
 不过命令行报告对于复杂的调用关系不够直观。实际分析中我们更多使用火焰图或 HTML 报告，后面会详细讲。
 
@@ -320,7 +322,7 @@ python <ndk-path>/simpleperf/report_sample.py \
 
 Simpleperf 是**深度型**工具。它专注于回答"CPU 时间花在了哪里"这一个问题。它的采样更灵活（支持各种 PMU 事件），符号解析更完善（尤其是 Native 代码），火焰图是原生输出。当我们需要深入分析某个函数的热点、对比不同编译选项的性能差异、或者用 cache-misses 等硬件事件做微架构级分析时，Simpleperf 是更好的选择。
 
-Perfetto 是**广度型**工具。它的 callstack sampling 只是众多数据源之一，可以和 ftrace、atrace、proc stats 等数据放在同一条时间线上查看。这意味着我们不仅能看到"CPU 花在了哪里"，还能同时看到"这时候系统在做什么"、"GC 是否在运行"、"是否发生了调度切换"。当我们需要理解一个性能问题的上下文——比如"这个函数慢是因为它在和另一个进程的 Binder 调用竞争 CPU"——Perfetto 提供的全景视角无可替代。
+Perfetto 是**广度型**工具。它的 callstack sampling 只是众多数据源之一，可以和 ftrace、atrace、proc stats 等数据放在同一条时间线上查看。分析时不仅能看到"CPU 花在了哪里"，还能同时看到"这时候系统在做什么"、"GC 是否在运行"、"是否发生了调度切换"。当需要理解一个性能问题的上下文——比如"这个函数慢是因为它在和另一个进程的 Binder 调用竞争 CPU"——Perfetto 提供的全景视角无可替代。
 
 | 维度 | Simpleperf | Perfetto Callstack Sampling |
 |------|-----------|---------------------------|
@@ -355,9 +357,9 @@ Simpleperf 最初是为 Native（C/C++）代码 profiling 设计的，在 Native
 
 ### 符号解析
 
-Native 代码 profiling 最常见的问题是：火焰图中只看到一堆十六进制地址，看不到函数名。这通常是因为符号信息缺失。
+Native 代码 profiling 最常见的障碍是：火焰图中只看到一堆十六进制地址，看不到函数名。这通常是因为符号信息缺失。
 
-解决方法是确保 Simpleperf 能找到带调试符号的 so 文件。如果我们用的是 `app_profiler.py`，它会自动在 `binary_cache/` 目录中收集需要的文件。如果需要手动指定：
+解决方法是确保 Simpleperf 能找到带调试符号的 so 文件。如果使用的是 `app_profiler.py`，它会自动在 `binary_cache/` 目录中收集需要的文件。如果需要手动指定：
 
 ```bash
 # 构建 binary_cache
@@ -418,15 +420,15 @@ python <ndk-path>/simpleperf/report.py \
 
 ### 误区二：Simpleperf 只能分析 C/C++ 代码
 
-这是一个过时的认知。从 Android 9（API 28）开始，Simpleperf 已经支持对 JIT 编译和解释执行的 Java/Kotlin 代码进行采样。这意味着 Java 方法在火焰图中也能看到——虽然因为 JIT 内联和去优化等原因，Java 代码的调用栈可能不如 C++ 代码那么清晰完整，但对于定位 Java 层的 CPU 热点已经足够。
+这是一个过时的认知。从 Android 9（API 28）开始，Simpleperf 已经支持对 JIT 编译和解释执行的 Java/Kotlin 代码进行采样。因此，Java 方法在火焰图中也能看到——虽然因为 JIT 内联和去优化等原因，Java 代码的调用栈可能不如 C++ 代码那么清晰完整，但对于定位 Java 层的 CPU 热点已经足够。
 
 ### 误区三：采样开销可以忽略不计
 
-Simpleperf 的默认采样频率是 4000 Hz（每秒 4000 次）。在大多数情况下这个开销确实可以接受（通常 < 5%），但如果同时启用 DWARF 调用栈展开（`-g`）和 PMU 事件，开销可能上升到 10-15%。对于延迟极度敏感的场景（如游戏渲染、实时音频处理），建议降低采样频率（如 `-f 1000`）或使用 frame-pointer-based 展开方式来减小开销。
+Simpleperf 的默认采样频率是 4000 Hz（每秒 4000 次）。在大多数情况下这个开销可以接受（通常 < 5%），但如果同时启用 DWARF 调用栈展开（`-g`）和 PMU 事件，开销可能上升到 10-15%。对于延迟极度敏感的场景（如游戏渲染、实时音频处理），建议降低采样频率（如 `-f 1000`）或使用 frame-pointer-based 展开方式来减小开销。
 
 ### 误区四：profileable 和 debuggable 的 profiling 结果一样
 
-profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 Java/Kotlin 的内存分配（allocation tracking）、无法抓取 heap dump。这些功能需要 debuggable 模式。但对于 CPU profiling 来说，profileable 模式下的结果确实和 debuggable 模式一样准确，而且因为跳过了调试器的额外开销，profileable 模式下的数据反而更接近真实性能。
+profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 Java/Kotlin 的内存分配（allocation tracking）、无法抓取 heap dump。这些功能需要 debuggable 模式。但对于 CPU profiling 来说，profileable 模式下的结果和 debuggable 模式一样准确；因为跳过了调试器的额外开销，profileable 模式下的数据反而更接近真实性能。
 
 ## 在 Perfetto 中的表现
 

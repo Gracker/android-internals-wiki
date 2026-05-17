@@ -1,6 +1,6 @@
 {
-  "current_book": 1,
-  "current_offset": 16,
+  "current_book": 2,
+  "current_offset": 0,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -10,7 +10,7 @@
     {
       "prefix": "Android 性能优化",
       "total_files": 21,
-      "completed_files": 16
+      "completed_files": 21
     },
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
@@ -18,9 +18,9 @@
       "completed_files": 0
     }
   ],
-  "last_scan_date": "2026-05-16",
-  "total_knowledge_points": 75,
-  "total_suggestions": 24,
+  "last_scan_date": "2026-05-17",
+  "total_knowledge_points": 87,
+  "total_suggestions": 29,
   "total_gaps": 5,
   "skipped": [
     {

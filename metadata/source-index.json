@@ -7655,6 +7655,134 @@
       ],
       "summary": "Android 性能优化“基石”是什么？ Fps,Memory,Cpu如何采集？",
       "scored_at": "2026-05-16T09:05:49.933924"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-17-deliqueue-recyclerview-scroll-performance.md",
+      "title": "源码调研：Android 17 DeliQueue 与 RecyclerView 滑动性能",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.419387",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-art-gc-compose-recomposition.md",
+      "title": "源码调研：Android 17 ART分代GC与Compose Composition性能因果链",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.524862",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-jobscheduler-workmanager-api-version-verification.md",
+      "title": "源码调研：JobScheduler/WorkManager Android 17 API 行为验证",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.684775",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-native-crash-applicationexitinfo.md",
+      "title": "源码调研：Native Crash 与 ApplicationExitInfo 补偿链路",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.792472",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-selinux-isenforced-mechanism.md",
+      "title": "源码调研：Android SELinux.isEnforced() 机制与系统属性链路",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.897335",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-view-standard-pipeline-blast-source-verification.md",
+      "title": "源码调研：Android View 标准管线 BLAST 深入 — 关键机制源码闭环",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:29.995742",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-17-android-17-deli-queue-source-analysis.md",
+      "title": "源码调研：Android 17 DeliQueue 与 MessageQueue 锁-free 机制",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:30.095299",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md",
+      "title": "2026-05-16-android-skills-profilers-深度调研",
+      "score": 10,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "scored_at": "2026-05-17T05:48:30.196665",
+      "quality": "medium"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md",
+      "title": "Kotlin Coroutine 线程迁移与 ADPF Hint 工程化边界",
+      "summary": "ADPF hint session 基于 TID 绑定，Kotlin 协程线程迁移导致无法精确绑定 hint。API 33 只能重建 session，API 34 支持 setThreads 动态调整。评估了 Dispatchers.Default/IO 场景下 ADPF IPC 开销与工程化约束。",
+      "chapter": "ch05, ch25",
+      "processed_at": "2026-05-17 06:27",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-mte-asymm-memtag-mode-analysis.md",
+      "title": "MTE ASYMM 在 Android App memtagMode=async 下的自动启用机制",
+      "summary": "MTE ASYMM/SYMM 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYMM 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。",
+      "chapter": "ch20",
+      "processed_at": "2026-05-17 06:27",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md",
+      "title": "Kotlin 协程异常处理与 UncaughtExceptionHandler 三层级联体系",
+      "summary": "Kotlin 协程异常处理形成 CoroutineExceptionHandler（Context级）→ ServiceLoader 全局 handler → Thread.uncaughtExceptionHandler 三层级联。Android 8.0/8.1 存在 AndroidExceptionPreHandler 反射兼容问题，协程可能绕过 pre-handler。",
+      "chapter": "ch20",
+      "processed_at": "2026-05-17 06:27",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-android-game-mode-oem-implementation.md",
+      "title": "Android Game Mode 与 OEM 厂商实现差异",
+      "summary": "Game Mode API（API 31+）建立标准通信框架，但实际性能干预由 HAL 层和厂商内核调控模块完成。标准 API 的 GameState 优先级低于厂商系统级优化，厂商模式通常通过包名检测独立激活。",
+      "chapter": "ch17",
+      "processed_at": "2026-05-17 06:27",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-oom-art-heap-analysis.md",
+      "title": "OOM 治理 — ART 堆内存分区与黑科技扩量",
+      "summary": "ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制。黑科技扩量在 OOM 风险时动态扩展堆内存，延长应用存活 2-3 秒为后台任务和内存清理提供缓冲，涉及 GC、内存监控和动态扩展三个模块。",
+      "chapter": "ch20",
+      "processed_at": "2026-05-17 06:27",
+      "type": "deepresearch-inject"
     }
   ]
 }

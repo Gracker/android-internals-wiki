@@ -70,6 +70,7 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T18:28:00+08:00"
+last_task6_audit: "2026-05-17"
 ---
 
 # 进程模型与生命周期管理

@@ -28,6 +28,7 @@ gap_source: "研究素材/源码结构"
 task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-17"
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
 pipeline_stage: ready-to-publish
