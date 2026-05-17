@@ -45,11 +45,11 @@ last_polish_notes: 第2轮出版级精修：修复applicable_versions范围、AN
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-11T23:28:02+08:00"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处；参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据，已写入 queue。"
@@ -58,6 +58,8 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-05-14'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-14T03:44:00+08:00'
+rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
+last_task2b_at: "2026-05-17T11:26:41"
 ---
 
 
@@ -792,10 +794,14 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 - Snapdragon Profiler：<https://developer.qualcomm.com/software/snapdragon-profiler>
 - ARM Streamline：<https://developer.arm.com/tools-and-software/streamline-performance-analyzer>
 
-[需重写: 以下源码调研材料目前位于参考资料之后，需由 Task 2B 整合回「GPU 内存管理」或「GPU 性能问题系统性排查流程」等正文小节，或整理成附录；正文不应在参考资料后继续展开。]
+---
+
+## 附录：GPU 源码调研补充材料
+
+以下内容基于 AOSP 源码和 DeepResearch 调研补充，为正文「GPU 内存管理」和「GPU 性能问题系统性排查流程」提供源码级佐证。读者可按需参考。
 
 <!-- AIW-源码调研-2026-05-04 -->
-## GPU 内存管理与对象边界（源码级补充）
+### A.1 GPU 内存管理与对象边界
 
 ### App 可见对象与系统内部图形缓冲对象的边界
 
@@ -859,8 +865,7 @@ status_t BufferQueue Producer::waitForFreeSlotThenRelock(
 - 注入时间：2026-05-10
 - 价值：RenderEffect 到 Skia 底层的完整链路分析，包含 offscreen buffer 触发条件和性能代价量化，对 GPU 渲染深入章节有直接补充价值
 
-<!-- AIW-源码调研-2026-05-11 -->
-## GPU 性能问题系统性排查流程
+### A.2 GPU 性能问题系统性排查流程
 
 ### 方法论缺口与补全
 

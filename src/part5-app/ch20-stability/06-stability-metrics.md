@@ -18,10 +18,11 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: needs-rework
@@ -31,6 +32,8 @@ last_task9_at: '2026-05-14T05:50:18+08:00'
 last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
 task9_result: needs-rework
 task9_review_notes: 2026-05-14 Task9 05: needs-rework。P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
+rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
+last_task2b_at: "2026-05-17T11:26:41"
 ---
 
 # 稳定性度量与指标体系
@@ -53,7 +56,7 @@ UV 崩溃率衡量：**崩溃影响了多少比例的用户**。分子是"发生
 
 $$\text{PV 崩溃率} = \frac{\text{崩溃次数}}{\text{总会话数（Session 数）}}$$
 
-PV 崩溃率也叫 Session 崩溃率，用来衡量：**平均多少次会话会出现一次崩溃**。它消除了用户使用时长带来的偏差，适合做跨应用、跨版本的横向对比。
+PV 崩溃率也叫 Session 崩溃率（本节中 PV 和 Session 等价使用，指一次完整的使用会话），用来衡量：**平均多少次会话会出现一次崩溃**。它消除了用户使用时长带来的偏差，适合做跨应用、跨版本的横向对比。
 
 Firebase Crashlytics 报告中的 "Crash-Free Sessions" 就是基于这个口径的变形：
 
@@ -103,9 +106,13 @@ $$\text{User-Perceived Crash Rate} = \frac{\text{在前台经历过至少一次�
 
 **User-Perceived ANR Rate（用户感知 ANR 率）**
 
-$$\text{User-Perceived ANR Rate} = \frac{\text{在前台经历过至少一次 ANR 的用户数}}{\text{每日活跃用户数}}$$
+$$\text{User-Perceived ANR Rate} = \frac{\text{在前台经历过至少一次用户可感知 ANR 的用户数}}{\text{每日活跃用户数}}$$
 
 两个指标都限定"前台"——后台崩溃或后台 ANR 不计入分子。这是因为用户只感知到前台异常。
+
+> **Android Vitals 的"用户感知 ANR"口径**：Google Play Vitals 只把 `Input dispatching timed out` 类型的 ANR 计入 User-Perceived ANR Rate，Service ANR、Broadcast ANR 等类型即使发生在前台也不计入。团队内部度量通常会统计所有前台 ANR，口径比 Vitals 更宽，做内外数据对比时要注意这个差异。
+
+[已验证: Android Vitals 文档, support.google.com/googleplay/android-developer/answer/9844476]
 
 Google Play 的不良行为阈值（Bad Behavior Threshold）：
 
@@ -127,8 +134,8 @@ Google Play 的阈值是面向所有开发者的底线。团队内部度量 ANR�
 | ANR 类型 | 超时阈值 | 内部目标 |
 |----------|---------|---------|
 | Input dispatching | 5 秒 | P90 < 2 秒 |
-| 前台 Service | 20 秒 | P90 < 10 秒 |
-| 前台 Broadcast | 10 秒 | P90 < 5 秒 |
+| 前台 Service | 20 秒（启动与执行分别计时） | P90 < 10 秒 |
+| 前台 Broadcast | 10 秒（Android 14+ 有 soft/hard 两级超时机制，前台广播 soft timeout 更短） | P90 < 5 秒 |
 | ContentProvider | 10 秒 | P90 < 5 秒 |
 
 单独看总 ANR 率会掩盖结构性问题。比如总 ANR 率 0.3% 看起来不错，但其中 80% 是 Input ANR——主线程卡了 5 秒以上用户才会触发 ANR 对话框，实际卡顿问题远比数字显示的严重。
@@ -148,7 +155,7 @@ Google Play 的阈值是面向所有开发者的底线。团队内部度量 ANR�
 | `Handler` 超时检测 | 可在 App 内检测主线程卡顿 | 无法确认是否触发系统 ANR 对话框，属于卡顿监控 |
 | 自建 APM SDK + `ActivityManager.getHistoricalProcessExitReasons()` | API 30+ 可获取退出原因和 ANR trace | 仅 API 30+，需与 Firebase / Crashlytics 互补 |
 
-推荐组合：Google Play Console（海外）+ 自建 SDK `ApplicationExitInfo` 采集（API 30+）+ 主线程卡顿监控。详见 26.1 节可观测性架构和 15.3 节 `ApplicationExitInfo` 的使用方式。
+推荐组合：Google Play Console（海外）+ 自建 SDK `ApplicationExitInfo` 采集（API 30+）+ 主线程卡顿监控。详见 15.3 节 `ApplicationExitInfo` 的使用方式。
 
 ## 无崩溃用户占比（Crash-Free Users）
 
@@ -162,21 +169,19 @@ Firebase Crashlytics 默认展示这个指标。它的含义直白：每天有�
 
 Crash-Free Users 度量的是"有多少用户的体验完全不受影响"。PV 崩溃率度量的是"会话级别的崩溃频率"。两者的差异在长尾场景：
 
-- App A：100 万 DAU，1 万用户各崩溃 1 次。Crash-Free Users = 99%，PV 崩溃率 = 0.5%
-- App B：100 万 DAU，5 万用户各崩溃 1 次，其中 1000 人崩溃了 50 次。Crash-Free Users = 95%，PV 崩溃率 = 0.75%
+- App A：100 万 DAU，人均 2 次 Session（200 万总 Session），1 万用户各崩溃 1 次。Crash-Free Users = 99%，PV 崩溃率 = 1 万次 / 200 万 = 0.5%
+- App B：100 万 DAU，人均 2 次 Session（200 万总 Session），5 万用户各崩溃 1 次，其中 1000 人又崩溃了 50 次。Crash-Free Users = 95%，PV 崩溃率 = (5 万 + 1000×49) / 200 万 ≈ 0.50%
 
-App B 的 Crash-Free Users 明显更差（95% vs 99%），说明崩溃影响面更广。但 PV 崩溃率的差距较小（0.75% vs 0.5%），因为少数用户的集中崩溃拉高了 App B 的 PV 值。如果只看 PV 崩溃率做门禁，会放过影响面大的问题。
+App B 的 Crash-Free Users 明显更差（95% vs 99%），说明崩溃影响面更广。但 PV 崩溃率的差距可能很小（取决于少数用户的集中崩溃程度），容易误判。如果只看 PV 崩溃率做门禁，会放过影响面大的问题——这正是两个指标需要配合使用的原因。
 
 ### 行业参考值
 
-[需补充素材: 行业参考值、头部 App 目标与 Firebase 推荐基线需要补公开来源或内部口径说明。]
-
 | 应用级别 | Crash-Free Users 目标 | 说明 |
 |----------|----------------------|------|
-| Play Store 不良行为线 | < 98.91%（即 User-Perceived Crash Rate > 1.09%） | 超过此值 Play Store 展示警告 |
-| 行业及格线 | ≥ 99.0% | 大部分中大型 App 的最低标准 |
-| 发版门禁 | ≥ 99.5% | Firebase Crashlytics 的推荐基线 |
-| 头部 App 目标 | ≥ 99.8% | 微信、支付宝等超级 App 的内控标准 |
+| Play Store 不良行为线 | < 98.91%（即 User-Perceived Crash Rate > 1.09%） | 超过此值 Play Store 展示警告 [来源: Google Play Console Android Vitals] |
+| 行业经验及格线 | ≥ 99.0% | 中大型 App 的常见最低标准 [匿名行业经验区间] |
+| 发版门禁 | ≥ 99.5% | Crashlytics 文档建议的 Crash-Free Users 基线 [来源: Firebase Crashlytics best practices] |
+| 头部 App 目标 | ≥ 99.8% | 超级 App 的内控标准 [匿名行业经验区间，各团队实际目标因应用类型和用户分布差异较大] |
 
 实际操作中，Crash-Free Users 需要和 Crash-Free Session 配合使用。前者控制影响面，后者控制频率。两者同时满足才算达标。
 
@@ -235,7 +240,7 @@ Crash Rate 按 Android 版本和机型的热力图。用于发现特定设备上
 
 **端侧采集**：
 - Java Crash：`UncaughtExceptionHandler` 上报堆栈 + 设备信息 + 用户状态
-- Native Crash：信号处理器上报 tombstone，服务端做堆栈还原（需要符号表，详见 20.3 节）
+- Native Crash：系统 debuggerd 生成 tombstone + `ApplicationExitInfo` 获取退出原因；App 侧也可自建 minidump 采集（需要符号表做堆栈还原，详见 20.3 节）
 - ANR：`ApplicationExitInfo`（API 30+）读取 `REASON_ANR` 退出记录，配合 `getTraceInputStream()` 获取 ANR traces
 
 **服务端聚合**：
