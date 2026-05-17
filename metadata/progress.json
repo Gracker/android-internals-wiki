@@ -306,15 +306,16 @@
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
     "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
   ],
-  "review_summary": "Task6 2026-05-17 10: review 13.17；L1/L2 小修 8 处；无 L3/L4 回炉项，送 Task9 技术复审。本轮仅 1 个未审章节符合条件。",
+  "review_summary": "Task6 2026-05-17 11: 复审 4.3、5.10；L1/L2 小修 19 处；无新增 L3/L4 回炉项，送 Task9 技术复审。因本轮章节较长且均为 Task2B 回炉后复审，按规则降为 2 个章节。",
   "task6_review_summary": {
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 19,
     "l3_issues": 0,
     "l4_issues": 0,
-    "technical_risk_markers": 0,
+    "technical_risk_markers": 7,
     "total_issues": 0,
     "reviewed_sections": [
-      "13.17"
+      "4.3",
+      "5.10"
     ]
   },
   "issues_by_section": {
@@ -1259,25 +1260,28 @@
   "total_review_sections": 148,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T10:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-17T11:14:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-17",
-    "time": "10:10",
-    "reviewed_at": "2026-05-17T10:10:00+08:00",
+    "time": "11:14",
+    "reviewed_at": "2026-05-17T11:14:00+08:00",
     "sections": [
-      "13.17"
+      "4.3",
+      "5.10"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
     ],
-    "log": "logs/review/2026-05-17-10-review.md",
-    "mode": "首次 review",
-    "l1_l2_fixes": 8,
+    "log": "logs/review/2026-05-17-11-review.md",
+    "mode": "Task2B 回炉修复后复审",
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
+    "technical_risk_markers": 7,
     "results": {
-      "13.17": "pass-light-edit / task9_pending"
+      "4.3": "pass-light-edit / task9_pending",
+      "5.10": "pass-light-edit / task9_pending"
     }
   },
   "task9_last_review": "2026-05-17T10:20:00+08:00",
@@ -1411,17 +1415,21 @@
     },
     "4.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T16:15:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 95,
-      "task9_state": "reviewed",
-      "task9_result": "needs-rework",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-17T11:14:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_entry": "task9-2026-05-14-4-3-tech-review"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "title": "ART 虚拟机内存管理",
+      "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "task6_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-17-11-review.md"
     },
     "4.5": {
       "status": "ready-for-review",
@@ -1673,11 +1681,19 @@
     },
     "5.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T02:12:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-02-review.md"
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-17T11:14:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-17-11-review.md",
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "file": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "20.1": {
       "status": "ready-for-review",
@@ -3535,29 +3551,34 @@
   "last_task2a_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
   "last_task6_review": "2026-05-17",
   "last_task6_sections": [
-    "13.16"
+    "4.3",
+    "5.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
   ],
-  "last_task6_at": "2026-05-17T09:06:00+08:00",
+  "last_task6_at": "2026-05-17T11:14:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-17",
-    "time": "09:06",
-    "reviewed_at": "2026-05-17T09:06:00+08:00",
+    "time": "11:14",
+    "reviewed_at": "2026-05-17T11:14:00+08:00",
     "sections": [
-      "13.16"
+      "4.3",
+      "5.10"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
     ],
-    "log": "logs/review/2026-05-17-09-review.md",
-    "mode": "首次 review",
-    "l1_l2_fixes": 7,
+    "log": "logs/review/2026-05-17-11-review.md",
+    "mode": "Task2B 回炉修复后复审",
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 2,
+    "technical_risk_markers": 7,
     "results": {
-      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
+      "4.3": "pass-light-edit / task9_pending",
+      "5.10": "pass-light-edit / task9_pending"
     }
   },
   "last_task9_reviewed_files": [
@@ -3567,10 +3588,11 @@
   "last_task2a_result": "gap-mining-created-draft",
   "ready-to-publish": 195,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-17T09:06:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-17-09-review.md",
+  "task6_last_review_at": "2026-05-17T11:14:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-17-11-review.md",
   "task6_last_review_sections": [
-    "13.16"
+    "4.3",
+    "5.10"
   ],
   "sections_status": {
     "22.11": {
@@ -4027,15 +4049,21 @@
     },
     "4.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
-      "task9_result": "needs-rework",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
+      "task9_result": "pending",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_priority": 95,
-      "queue_entry": "task9-2026-05-14-4-3-tech-review"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "title": "ART 虚拟机内存管理",
+      "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-17T11:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-11-review.md"
     },
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
@@ -4137,6 +4165,22 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries"
+    },
+    "5.10": {
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "file": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-17",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-17T11:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-17-11-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     }
   },
   "task2a_last_processed": {
@@ -4170,27 +4214,32 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-17",
-    "time": "09:06",
-    "reviewed_at": "2026-05-17T09:06:00+08:00",
+    "time": "11:14",
+    "reviewed_at": "2026-05-17T11:14:00+08:00",
     "sections": [
-      "13.16"
+      "4.3",
+      "5.10"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
     ],
-    "log": "logs/review/2026-05-17-09-review.md",
-    "mode": "首次 review",
-    "l1_l2_fixes": 7,
+    "log": "logs/review/2026-05-17-11-review.md",
+    "mode": "Task2B 回炉修复后复审",
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 2,
+    "technical_risk_markers": 7,
     "results": {
-      "13.16": "pass-light-edit / task2b_pending（Task9 pending）"
+      "4.3": "pass-light-edit / task9_pending",
+      "5.10": "pass-light-edit / task9_pending"
     }
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
   ]
 }

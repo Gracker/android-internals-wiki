@@ -9,7 +9,7 @@ polish_date: '2026-04-09'
 polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-27'
-reviewed_date: '2026-05-13'
+reviewed_date: '2026-05-17'
 reviewed_by: openclaw-task6
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
   stdlib docs, Android Vitals docs
@@ -55,29 +55,24 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: 2026-05-14T07:24:00+08:00
-task9_review_notes: "2026-05-14 task9 deep-review completed-by-task2b。P0 已修复：API 37 pending reason 改为 PENDING_JOB_REASON_DEVICE_STATE 聚合常量，getAppStandbyBucket() 权限描述修正（查询自身无需权限）；禁用词清理（真正×1）。"
-<!-- AIW-源码调研-2026-05-16 -->
-**勘误**：第 524 行"需要 `PACKAGE_USAGE_STATS` 权限"描述不准确。`UsageStatsManager.getAppStandbyBucket()` 在 API 28 引入，**查询自身 App 的 Standby Bucket 不需要任何权限**。`PACKAGE_USAGE_STATS` 权限的设计目的是允许 App 查询第三方 App 的使用统计数据（用于"屏幕使用时间"类功能）。当 App 查询自身的 Bucket 时，系统通过 `Binder.getCallingUid()` 直接返回该 UID 对应的 Standby Bucket，不触发权限检查。
-
-正确表述：`UsageStatsManager.getAppStandbyBucket()` 查询自身 App 的 Bucket 不需要任何权限；查询其他 App 的 Bucket 才需要 `PACKAGE_USAGE_STATS` 权限（需用户在设置页面手动授权）。L529 正文已同步修正。
--->
+task9_review_notes: "2026-05-14 task9 deep-review completed-by-task2b。P0 已修复：API 37 pending reason 改为 PENDING_JOB_REASON_DEVICE_STATE 聚合常量，getAppStandbyBucket() 权限描述修正（查询自身无需权限）；禁用词清理（1 处）。"
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复（Task9 问题单）
-task6_result: needs-rework
-last_task6_at: '2026-05-13T02:12:00+08:00'
-last_task6_review_log: "logs/review/2026-05-13-02-review.md"
-task6_review_notes: "2026-05-13 Task6：L1/L2 小修完成；WorkManager 2.10 DeliQueue 4%收益与 Android 17 Power Check 阈值缺少可验证口径，已标注并回炉 Task2B。"
+task6_result: pass-light-edit
+last_task6_at: '2026-05-17T11:14:00+08:00'
+last_task6_review_log: "logs/review/2026-05-17-11-review.md"
+task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；修复 frontmatter 注释残留与 L1/L2 文风问题 14 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
 ---
 
 
@@ -124,11 +119,11 @@ JobScheduler 和 WorkManager 是 Google 推荐的后台任务方案。JobSchedul
 
 ### 从 AlarmManager 到 JobScheduler
 
-在 JobScheduler 出现之前，Android 开发者通常用 AlarmManager + WakeLock 的组合做周期性后台任务。这种模式有一个根本问题：每个 App 各自为政，各自唤醒设备，系统没有机会做批量优化。
+在 JobScheduler 出现之前，Android 开发者通常用 AlarmManager + WakeLock 的组合做周期性后台任务。这种模式有一个直接问题：每个 App 各自为政，各自唤醒设备，系统没有机会做批量优化。
 
 假设设备上有 10 个 App 都设置了每 15 分钟一次的 AlarmManager 唤醒，最坏情况下，系统每 1.5 分钟就要被唤醒一次。而如果系统有全局视野，它可以把这些任务攒在一起，每隔 15 分钟集中执行一批，中间让 CPU 安静地休眠。
 
-这就是 JobScheduler 的核心设计思想：**把调度权交给系统**。开发者声明"我的任务需要什么条件才能跑"，系统在全局范围内优化执行时机。
+JobScheduler 的设计目标是：**把调度权交给系统**。开发者声明"我的任务需要什么条件才能跑"，系统在全局范围内优化执行时机。
 
 ### JobScheduler 的内部架构
 
@@ -197,9 +192,9 @@ JobScheduler 不是“先 schedule 先执行”。系统会同时看 job priorit
 
 `QuotaController` 负责把“这个 App 现在还能不能继续跑后台 job”这件事编码成可执行规则。它看的不是单个 job 的 CPU 时间，而是调用方在滚动时间窗口里的执行历史、所在 bucket，以及当前系统状态。
 
-App Standby Bucket 的时间线也要写清楚。Android 9（API 28）引入的起点是四档：`ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`。`STANDBY_BUCKET_RESTRICTED` 是 API 30 新增常量，`UsageStatsManager` 文档还专门标注它在 Android 11（R）默认未启用。实践里可以把它理解成“系统已经开始明显收紧这个 App 的后台额度”，但不要把它回写到 Android 9 的起点表里。
+App Standby Bucket 的时间线也要写清楚。Android 9（API 28）引入的起点是四档：`ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`。`STANDBY_BUCKET_RESTRICTED` 是 API 30 新增常量，`UsageStatsManager` 文档还专门标注它在 Android 11（R）默认未启用。实践里可以把它理解成“系统已经开始明显压缩这个 App 的后台额度”，但不要把它回写到 Android 9 的起点表里。
 
-Android 16 把 quota 规则又收紧了一层。regular job 和 expedited job 的 runtime quota 除了看 standby bucket，还看 job 是不是在 App 处于 top state 时启动、是否与 Foreground Service 并发执行。连 `ACTIVE` bucket 也进入了“较宽松但有限”的额度模型。用户明确发起的数据传输，更适合改用 UIDT job。
+Android 16 让 quota 规则更严格。regular job 和 expedited job 的运行时配额除了看 standby bucket，还看 job 是否在 App 处于 top 状态时启动、是否与 Foreground Service 并发执行。连 `ACTIVE` bucket 也进入了“较宽松但有限”的额度模型。用户明确发起的数据传输，更适合改用 UIDT job。
 
 ```java
 // frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java
@@ -281,7 +276,7 @@ WorkManager 有两种 WorkRequest：
 
 **PeriodicWorkRequest** 用于周期性任务。最小周期是 15 分钟（与 JobScheduler 的最小周期一致），有一个 flex interval 参数控制"在周期末尾的哪个时间窗口内可以执行"。例如 `PeriodicWorkRequest.Builder(workerClass, 30, TimeUnit.MINUTES, 15, TimeUnit.MINUTES)` 表示每 30 分钟执行一次，但实际执行时间会在第 15-30 分钟之间。
 
-性能差异的关键点：PeriodicWorkRequest 底层不是一个永远运行的 Job，而是在每个周期结束时重新 schedule 一个新的 Job。所以每次周期执行后，WorkManager 需要写入数据库记录下次执行时间，然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销大约是几十毫秒，对于大多数场景可以忽略，但如果 PeriodicWorkRequest 的周期非常短（接近 15 分钟下限）且 Worker 执行本身也很快（几秒），调度开销的占比就会变得显著。
+PeriodicWorkRequest 的成本主要来自重新调度：它底层不是一个永远运行的 Job，而是在每个周期结束时重新 schedule 一个新的 Job。所以每次周期执行后，WorkManager 需要写入数据库记录下次执行时间，然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销大约是几十毫秒，对于大多数场景可以忽略，但如果 PeriodicWorkRequest 的周期非常短（接近 15 分钟下限）且 Worker 执行本身也很快（几秒），调度开销的占比就会变得显著。
 
 ### 链式任务（Chained Work）的调度开销
 
@@ -309,9 +304,9 @@ WorkManager.getInstance(context)
 
 ### WorkManager 2.10 与 Android 17 的协同优化
 
-Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时减少主线程对消息队列的锁等待，理论上可以减少主线程因消息队列锁竞争导致的卡顿。[待验证: WorkManager 2.10 与 DeliQueue 的具体协同收益需要补充官方发布说明、benchmark 条件或实测记录，当前无可靠量化数据支撑“掉帧率下降约 4%”的结论，已删除该数值。]
+Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进，但 WorkManager 2.10 与 DeliQueue 的协同收益目前只能写成待验证的优化方向：如果后续官方材料确认这条路径，大规模任务入队时有机会减少主线程对消息队列锁的等待。[待验证: WorkManager 2.10 与 DeliQueue 的具体协同收益需要补充官方发布说明、benchmark 条件或实测记录，当前无可靠量化数据支撑“掉帧率下降约 4%”的结论，已删除该数值。]
 
-对开发者来说，升级 WorkManager 到 2.10+ 即可在 Android 17 设备上获得 UI 响应性的间接提升，不需要修改业务代码。Perfetto 中验证方法：在 `enqueue` 密集调用场景下，对比升级前后主线程的 `MessageQueue` lock 等待时间。
+验证方式也要按实测来写：在 `enqueue` 密集调用场景下，对比升级前后主线程的 `MessageQueue` lock 等待时间；没有官方发布说明或 benchmark 前，不写确定收益。
 
 任务提交后为什么没执行？这是后台任务调试中最常见的问题。Android 16 / 17 提供了新的调试接口来回答这个问题。
 
@@ -340,7 +335,7 @@ Duration quotaWait = stats.getOrDefault(
         Duration.ZERO);
 ```
 
-这三个接口放在一起用，信息层级很清楚：`getPendingJobReasons()` 看“现在卡在哪”，`getPendingJobReasonsHistory()` 看“刚才怎么变过”，`getPendingJobReasonStats()` 看“整个等待期里哪一种原因最耗时”。把 API 36 的方法全压到 Android 17，读者会误以为 Android 16 之前完全没有这条诊断路径。
+这三个接口放在一起用，信息层级很清楚：`getPendingJobReasons()` 看“现在卡在哪”，`getPendingJobReasonsHistory()` 看“刚才怎么变过”，`getPendingJobReasonStats()` 看“整个等待期里哪一种原因最耗时”。如果把 API 36 的方法全压到 Android 17，会把版本线写错：Android 16 已经有当前原因和历史窗口，Android 17 补的是聚合统计。
 
 [已验证: developer.android.com/reference/android/app/job/JobScheduler]
 
@@ -357,7 +352,7 @@ Android 17 的 ProfilingManager 增加了三个新的系统触发器：
 [已验证: 官方文档, developer.android.com/about/versions/17/features]
 [待验证: TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 的触发阈值]
 
-理解了调度机制和调试 API 后，接下来要看的是：在 Perfetto 和其他工具中，我们怎么观察这些后台任务的实际行为？本节从工具实践角度展开。
+调度机制和调试 API 只是入口，排查还要落到工具侧。Perfetto、Battery Historian 和 WorkManager Inspector 分别回答不同层级的问题。
 
 ## 后台任务的性能分析实践
 
@@ -407,9 +402,9 @@ WHERE package_name = 'com.example.app'
 ORDER BY ts;
 ```
 
-Perfetto 官方文档写得很直接：`android_job_scheduler_events` 由 ATrace 的 `ss` 类别生成；`android_job_scheduler_states` 来自 `ScheduledJobStateChanged` atom。两者不要混着写，也不要把 `jobscheduler` 当成必须开启的标准 atrace 类别。如果还要对照 WakeLock，再额外打开 `power` 类别。
+Perfetto 官方文档把两条来源分开：`android_job_scheduler_events` 由 ATrace 的 `ss` 类别生成；`android_job_scheduler_states` 来自 `ScheduledJobStateChanged` atom。两者不要混着写，也不要把 `jobscheduler` 当成必须开启的标准 atrace 类别。如果还要对照 WakeLock，再额外打开 `power` 类别。
 
-一个够用的复现实验是：调度一个同时带 `setMinimumLatency()` 和 `setRequiredNetworkType()` 的 job，然后在断网、联网两种状态各抓一段 trace。statsd 视角会给出 constraint 状态切换；atrace 视角会给出 system_server 中实际的 schedule / run 事件。再把结果和 `dumpsys jobscheduler` 对照，通常就能判断是约束没满足、quota 用尽，还是 system_server 里根本还没开始跑。
+一个够用的复现实验是：调度一个同时带 `setMinimumLatency()` 和 `setRequiredNetworkType()` 的 job，然后在断网、联网两种状态各抓一段 trace。statsd 视角会给出 constraint 状态切换；atrace 视角会给出 system_server 中实际的 schedule / run 事件。再把结果和 `dumpsys jobscheduler` 对照，通常就能判断是约束没满足、quota 用尽，还是 system_server 里尚未开始执行。
 
 [待补充: Perfetto 中 JobScheduler state / event 对照截图]
 [已验证: perfetto.dev/docs/analysis/stdlib-docs]
@@ -466,7 +461,7 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 
 豁免场景包括：音频播放、位置访问服务、用户主动发起的数据传输（通过 UIDT API）。
 
-这个政策的信号很明确：Google 正在从系统限制（Doze、App Standby、后台执行限制）转向生态治理（Play Store 惩罚），倒逼开发者使用系统推荐的调度方式。
+这个政策把约束从系统侧延伸到分发侧：Google 正在从系统限制（Doze、App Standby、后台执行限制）转向生态治理（Play Store 惩罚），倒逼开发者使用系统推荐的调度方式。
 
 [已验证: googleblog.com + android.com, 2026-03-01]
 
@@ -524,7 +519,7 @@ JobScheduler / AlarmManager 触发频率不是 Vitals 的指标名。它更适�
 
 App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应对策略：
 
-1. 避免在后台过度活动（这是被分到低 Bucket 的根本原因）
+1. 避免在后台过度活动（这是被分到低 Bucket 的直接原因）
 2. 用户交互触发临时 Bucket 提升，利用这个窗口执行积压任务
 3. 通过 `UsageStatsManager.getAppStandbyBucket()` 监控自己的 Bucket 状态（查询自身无需权限）
 
@@ -551,7 +546,7 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 ### Android 12（API 31）：Expedited Job
 
 - `JobInfo.Builder.setExpedited(true)` 成为公开入口
-- 前台服务启动限制收紧，部分“需要快开始但不必长期前台驻留”的工作可以改走 Expedited Job
+- 前台服务启动限制更严格，部分“需要快开始但不必长期前台驻留”的工作可以改走 Expedited Job
 
 ### Android 13（API 33）：公开 priority API
 
@@ -565,7 +560,7 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 
 ### Android 16（API 36）：quota 优化 + pending 原因历史
 
-- regular / expedited job 的 runtime quota 继续细化，`ACTIVE` bucket 也进入“较宽松但有限”的额度模型
+- regular / expedited job 的运行时配额继续细化，`ACTIVE` bucket 也进入“较宽松但有限”的额度模型
 - job 如果在 App 可见时启动，转到后台后仍继续按 quota 计时；与 Foreground Service 并发执行的 job 也会被计入 quota
 - `getPendingJobReasons(int)` 返回当前 pending 原因数组
 - `getPendingJobReasonsHistory(int)` 返回有限历史窗口，元素类型是 `PendingJobReasonsInfo`
