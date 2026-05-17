@@ -1,6 +1,7 @@
 ---
 title: "ConnectivityService 与网络状态监听性能"
 chapter: "12.5"
+section: "12.5"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -28,6 +29,15 @@ sources:
     path: "packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java"
   - type: aosp
     path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
+reviewed_date: "2026-05-17"
+reviewed_by: openclaw-task6
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+review_type: task6-writing-quality-review
+last_task6_at: "2026-05-17T12:11:00+08:00"
+task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元数据、弱化口语化表述 2 处）；无回炉项，待 Task9 技术审查。"
 ---
 
 # 12.5 ConnectivityService 与网络状态监听性能
@@ -161,7 +171,7 @@ sequenceDiagram
     CM-->>App: onCapabilitiesChanged / onLost
 ```
 
-排查性能问题时，抓这几个点就够：应用是否重复注册、系统是否存在大量 outstanding request、回调是否在主线程做重活、`VALIDATED` 是否频繁抖动、VPN 或多网络是否改变了默认路径。更底层的 TCP、TLS、HTTP/2 多路复用和连接池复用，回到 12.2、12.3、12.4 分析。
+排查性能问题时，重点看五类信号：应用是否重复注册、系统是否存在大量 outstanding request、回调是否在主线程做重活、`VALIDATED` 是否频繁抖动、VPN 或多网络是否改变了默认路径。更底层的 TCP、TLS、HTTP/2 多路复用和连接池复用，回到 12.2、12.3、12.4 分析。
 
 ## 5G Network Slicing 的适用边界
 
@@ -197,4 +207,4 @@ Network Slicing 适合低延迟、专用带宽这类明确网络质量诉求，�
 
 ## 小结
 
-ConnectivityService 和 `NetworkCallback` 的性能价值在于提供平台级网络画像，让应用把预取、同步、降级、重试和后台任务调度建立在同一份状态上。注册回调要少而稳，后台任务交给系统调度，计费与验证状态要参与请求策略，连接池和 HTTPDNS 仍由网络栈独立处理。这样写出来的网络层，既能减少无效唤醒，也能让弱网归因更接近真实故障位置。
+ConnectivityService 和 `NetworkCallback` 的性能价值在于提供平台级网络画像，让应用把预取、同步、降级、重试和后台任务调度建立在同一份状态上。注册回调要少而稳，后台任务交给系统调度，计费与验证状态要参与请求策略，连接池和 HTTPDNS 仍由网络栈独立处理。这样的网络层既能减少无效唤醒，也能让弱网归因更接近真实故障位置。
