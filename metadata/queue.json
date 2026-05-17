@@ -9235,6 +9235,33 @@
           "suggestion": "补一张版本兼容表：Android 10/11 回退到 Choreographer#doFrame、RenderThread、SurfaceFlinger slice 与 sched/thread_state；Android 12+ 优先 FrameTimeline / android.frames.timeline；厂商 ROM 缺字段时报告可信度降级并给出补采字段。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-13.17-perfetto-sdk-in-app-tracing",
+      "section": "13.17",
+      "section_title": "Perfetto SDK 与应用内 Trace 数据源",
+      "priority": 80,
+      "title": "Perfetto SDK 与应用内 Trace 数据源",
+      "description": "source-index 中存在高质量 Perfetto SDK 应用内追踪素材；现有 13.2/19.13 只覆盖系统抓取与 AndroidX tracing，缺少 Perfetto SDK producer、in-process/system backend、自定义 data source 和线上触发式采集的独立章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md",
+        "https://perfetto.dev/docs/instrumentation/tracing-sdk",
+        "https://perfetto.dev/docs/getting-started/in-app-tracing",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/heads/main/docs/instrumentation/tracing-sdk.md"
+      ],
+      "gap_score": 16,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-17T09:14:00+08:00"
     }
   ],
   "metadata": {
