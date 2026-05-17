@@ -79,6 +79,7 @@ reviewed_date: "2026-04-30"
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 task6_state: reviewed
+last_task6_audit: "2026-05-17"
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
@@ -98,7 +99,7 @@ review_round: 3
 
 **用 Perfetto 分析启动耗时、进程被杀、ANR、前台服务超时这些问题时，Trace 里看到的 `am_proc_start`、`am_anr`、`am_crash` 这些事件，全部来自 AMS。** 不了解 AMS 的工作方式，这些事件就是 Trace 里的"黑盒"——你看到它发生了，但不知道为什么、怎么追。
 
-读完本节，我们将能够在 Perfetto 中识别 AMS 的关键 Track 和事件，理解进程优先级的动态调整逻辑，以及各类 ANR 的触发路径。这不是为了让你成为 AMS 的开发者，而是让你在分析性能问题时知道"该往哪里看"。
+读完本节，可以在 Perfetto 中识别 AMS 的关键 Track 和事件，理解进程优先级的动态调整逻辑，以及各类 ANR 的触发路径。目标是让性能分析时知道“该往哪里看”，不是把读者变成 AMS 的开发者。
 
 > 阅读本节之前，建议先了解 §1.3 进程模型和 §1.4 Binder IPC，因为 AMS 的几乎所有操作都涉及跨进程调用和进程生命周期管理。
 
@@ -243,7 +244,7 @@ ANR 检测的核心模式可以用三个字概括：**埋雷、拆雷、爆雷**
 
 > [来源: 掘金《Android ANR的设计原理》]
 
-这个"埋雷-拆雷-爆雷"模式贯穿了所有 ANR 类型。下面我们逐一拆解。
+这个“埋雷-拆雷-爆雷”模式贯穿所有 ANR 类型，后面按类型说明。
 
 ### Input ANR
 
@@ -305,7 +306,7 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 }
 ```
 
-"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`，把 Service 真正创建出来，然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`onCreate()` 本身就在 Service ANR 的计时窗口里；如果这里阻塞太久，AMS 会把这段时间直接算进超时。
+"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`，完成 Service 创建，然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`onCreate()` 本身就在 Service ANR 的计时窗口里；如果这里阻塞太久，AMS 会把这段时间直接算进超时。
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()` 与 `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()`]
 
@@ -352,7 +353,7 @@ LIMIT 10;
 
 ### Activity 栈与 Task 管理
 
-如果你看的还是早期 Android 文章，很容易把这部分记成 `TaskStack` + `Task`。这个说法放在历史版本里不算错，但放到 Android 10 之后就会把旧模型和现行实现混在一起。当前 AOSP 里，Activity 与 Task 的容器管理已经从 AMS 主类拆到 `ActivityTaskManagerService`（ATMS）和 `WindowManager` 侧。`ActivityManagerService.startActivity()` 现在只是把请求转给 `mActivityTaskManager.startActivity()`，真正决定“这个 Activity 落到哪个任务、哪个显示区域、是否复用已有任务”的，是 `ActivityStarter`、`RootWindowContainer`、`TaskDisplayArea` 和 `Task` 这一套容器。
+如果你看的还是早期 Android 文章，很容易把这部分记成 `TaskStack` + `Task`。这个说法放在历史版本里不算错，但放到 Android 10 之后就会把旧模型和现行实现混在一起。当前 AOSP 里，Activity 与 Task 的容器管理已经从 AMS 主类拆到 `ActivityTaskManagerService`（ATMS）和 `WindowManager` 侧。`ActivityManagerService.startActivity()` 现在只是把请求转给 `mActivityTaskManager.startActivity()`；“这个 Activity 落到哪个任务、哪个显示区域、是否复用已有任务”，由 `ActivityStarter`、`RootWindowContainer`、`TaskDisplayArea` 和 `Task` 这一套容器决定。
 
 从容器层级看，现代实现更接近下面这个结构：
 
@@ -381,7 +382,7 @@ RootWindowContainer
 5. `Application.onCreate()` 与 `Activity.onCreate()` → `onResume()`
 6. 第一帧 `doFrame`：首帧渲染完成
 
-冷启动场景下，我们真正关心的是“启动请求发出”到首帧 `doFrame` 之间的总时间；`am_proc_start` 只是其中的进程创建起点，不等于完整启动耗时。
+冷启动场景下，要衡量的是“启动请求发出”到首帧 `doFrame` 之间的总时间；`am_proc_start` 只是其中的进程创建起点，不等于完整启动耗时。
 
 ### 冷启动归因：getStartComponent()
 
@@ -454,7 +455,7 @@ Android 16+ 上，用 `getStartComponent()` 直接获取组件类型，不再需
 - **Android 16**：后台 Job 配额执行。
 - **Android 17**：后台音频 API 强制限制。
 
-Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台任务，只在真正需要用户可感知的长时间运行时才使用 FGS。
+Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台任务，只在需要用户可感知的长时间运行时才使用 FGS。
 
 ---
 
@@ -530,7 +531,7 @@ AMS 仍然负责广播匹配、调度和 ANR 判责，但源码入口不能只�
 
 静态广播（在 Manifest 中声明）和动态广播（代码中 `registerReceiver()`）的主要区别在于：
 
-- **静态广播**：即使 App 进程不在，系统也会通过 AMS 启动 App 进程来接收广播。这意味着一次静态广播的触发可能导致进程冷启动，性能开销大。
+- **静态广播**：即使 App 进程不在，系统也会通过 AMS 启动 App 进程来接收广播。因此一次静态广播触发可能导致进程冷启动，性能开销大。
 - **动态广播**：只在进程存活时有效，不需要冷启动，性能开销小。
 
 从系统性能的角度，大量注册静态广播的 App 会在系统事件（如 `BOOT_COMPLETED`、`CONNECTIVITY_CHANGE`）触发时引发"进程创建风暴"——AMS 需要同时启动大量进程。这也是 Android 逐步限制静态广播的原因之一。
@@ -539,7 +540,7 @@ AMS 仍然负责广播匹配、调度和 ANR 判责，但源码入口不能只�
 
 Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时机**和**动态注册边界**。
 
-第一层变化发生在进程处于 cached state 时。官方行为变更文档明确写到，`context-registered broadcasts` 可以在应用进入 cached state 后被放进队列，等应用回到前台或离开 cached state 再投递。Manifest 中声明的广播不走这套排队逻辑，系统甚至会把应用从 cached state 拉出来立即投递。这会直接改变我们在 Perfetto 里理解“广播什么时候真正执行”的方式：发送时刻和 `onReceive()` 真正跑起来的时刻，Android 14 之后不一定重合。
+第一层变化发生在进程处于 cached state 时。官方行为变更文档明确写到，`context-registered broadcasts` 可以在应用进入 cached state 后被放进队列，等应用回到前台或离开 cached state 再投递。Manifest 中声明的广播不走这套排队逻辑，系统甚至会把应用从 cached state 拉出来立即投递。这会直接改变 Perfetto 里理解广播执行时机的方式：发送时刻和 `onReceive()` 开始执行的时刻，Android 14 之后不一定重合。
 
 第二层变化是动态注册 Receiver 的导出属性。面向 Android 14+ 的应用在调用 `Context.registerReceiver()` 时，需要显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`，除非它只接收 system broadcast。这个改动是安全收口，不是性能优化本身，但它会影响旧代码能不能顺利走到广播分发路径。
 
@@ -637,7 +638,7 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 前台 Service 不是固定的 `100` 档。常规 non-short FGS 在 AOSP android-16.0.0_r1 的 `OomAdjuster` 里通常落在 perceptible 档（`PERCEPTIBLE_APP_ADJ = 200`），只有 recent-top → FGS 的短期宽限窗口才会临时抬到 `50`。如果系统极端缺内存，或者 Service 本身出现 ANR / Crash，FGS 仍然会被杀；而且 Android 12+ 对后台启动 FGS 有严格限制，不是想用就能用的。
 
 **误区 4："`am_proc_start` 时间就是冷启动耗时"**
-`am_proc_start` 只标记了 AMS 向 Zygote 发起 fork 请求的时刻。真正的冷启动耗时应该从用户点击 Launcher 图标（或系统发起启动 Intent）开始，到首帧 `doFrame` 结束。中间还包括 Zygote fork、Application 初始化、Activity 生命周期执行、首帧渲染等多个阶段。
+`am_proc_start` 只标记了 AMS 向 Zygote 发起 fork 请求的时刻。完整冷启动耗时应该从用户点击 Launcher 图标（或系统发起启动 Intent）开始，到首帧 `doFrame` 结束。中间还包括 Zygote fork、Application 初始化、Activity 生命周期执行、首帧渲染等多个阶段。
 
 **误区 5："后台 App 的广播不影响前台性能"**
 影响。如果大量后台 App 注册了静态广播，系统事件触发时 AMS 会尝试启动多个进程，这会抢占 CPU 和 I/O 资源，间接影响前台 App 的性能。在低端设备上尤其明显。
