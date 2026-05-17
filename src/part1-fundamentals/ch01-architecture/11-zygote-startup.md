@@ -57,6 +57,7 @@ task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-29T12:42:48.185623"
+last_task6_audit: "2026-05-17"
 ---
 
 # 1.11 Zygote 机制与启动性能优化
@@ -157,9 +158,9 @@ private static void maybePreloadGraphicsDriver() {
 
 ## 为什么要了解 Zygote
 
-如果只把 Zygote 理解成“fork 一个新进程的地方”，冷启动 trace 很容易看错。真正的冷启动至少分两段：前半段是 Launcher / App 通过 Binder 进入 `system_server`，由 ATMS / AMS 决定是否需要新进程；后半段才是 `system_server` 把建进程请求交给 Zygote。把这两段混在一起，后面就会把 Binder、zygote socket、`bindApplication`、首帧渲染全写乱。
+如果只把 Zygote 理解成“fork 一个新进程的地方”，冷启动 trace 很容易看错。完整冷启动至少分两段：前半段是 Launcher / App 通过 Binder 进入 `system_server`，由 ATMS / AMS 决定是否需要新进程；后半段才是 `system_server` 把建进程请求交给 Zygote。把这两段混在一起，后面就会把 Binder、zygote socket、`bindApplication`、首帧渲染全写乱。
 
-Zygote 对性能的价值，也不是“fork 一次只要几毫秒”这么简单。它真正做的事，是在系统启动阶段预先装好 ART 运行时、framework 常用类、系统资源和部分共享库，然后让后续子进程通过 Copy-on-Write 共享这些只读页面。这样，冷启动时我们就不用在每个 App 里重复做一遍相同的初始化。
+Zygote 对性能的价值，也不是“fork 一次只要几毫秒”这么简单。它做的事，是在系统启动阶段预先装好 ART 运行时、framework 常用类、系统资源和部分共享库，然后让后续子进程通过 Copy-on-Write 共享这些只读页面。这样，冷启动时我们就不用在每个 App 里重复做一遍相同的初始化。
 
 所以理解 Zygote，有三个直接收益：第一，能把“进程创建慢”和“App 初始化慢”分开看；第二，能解释为什么 framework 类加载通常很快，但 `Application.onCreate()` 仍然可能成为瓶颈；第三，能在 Perfetto 里用 `launching: pkg` 圈出整段启动窗口，并把 `am_proc_start`、`PostFork`、`bindApplication` 这些锚点放到同一时间窗观察。
 
@@ -179,7 +180,7 @@ Zygote 的思路很直接：把所有“几乎每个进程都会用到”的公�
 
 从用户点击图标到新进程出现，Launcher / App 到 `system_server` 的通信走 Binder；`system_server` 到 Zygote 的建进程请求走 zygote socket / LocalSocket。
 
-按 AOSP android-16 的实际代码路径，`ProcessList.startProcess(...)` 在 `system_server` 里准备好 UID、GID、ABI、seInfo 等参数后，会调用 `Process.start(...)`。接下来真正把参数组装成启动命令并发给 Zygote 的，是 `android.os.ZygoteProcess`：
+按 AOSP android-16 的实际代码路径，`ProcessList.startProcess(...)` 在 `system_server` 里准备好 UID、GID、ABI、seInfo 等参数后，会调用 `Process.start(...)`。接下来把参数组装成启动命令并发给 Zygote 的，是 `android.os.ZygoteProcess`：
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ProcessList.java
@@ -221,7 +222,7 @@ maybePreloadGraphicsDriver();
 
 这个命名口径只对应本章验证过的 android-16 基线。回看 Android 5-9 或 10-15 时，要按对应版本的 `ZygoteInit.java` 重新确认 preload slice 名，不要直接套用这里的名称。
 
-`PreloadGraphicsDriver` 的边界需要单独说明。`ZygoteInit.java` 对它的注释写得很直白：它通过一次 OpenGL 或 Vulkan 调用把图形驱动装进内存并完成初始化，如果驱动已经在内存里，后续调用基本就是 no-op。**这表示的是驱动 / EGL 层面的预热，不等于“每个 App 的 GPU context 已经创建完成”。** App 侧的 RenderThread、EGL context、Surface 以及真正的首帧绘制，仍然发生在各自进程启动之后。
+`PreloadGraphicsDriver` 的边界需要单独说明。`ZygoteInit.java` 对它的注释写得很直白：它通过一次 OpenGL 或 Vulkan 调用把图形驱动装进内存并完成初始化，如果驱动已经在内存里，后续调用基本就是 no-op。**这表示的是驱动 / EGL 层面的预热，不等于“每个 App 的 GPU context 已经创建完成”。** App 侧的 RenderThread、EGL context、Surface 以及首帧绘制，仍然发生在各自进程启动之后。
 
 同样不要把 `preloaded-classes` 想成“所有常用 UI 类都在里面”。它主要是 bootclasspath / framework 侧的高频类。至少在 android-16 的 `frameworks/base/config/preloaded-classes` 里，并没有 `androidx.recyclerview.widget.RecyclerView` 这种 AndroidX 控件。也就是说，framework 预热和应用侧库预热是两回事。
 
@@ -229,7 +230,7 @@ maybePreloadGraphicsDriver();
 
 ## fork 之后到 Application.onCreate() 之前，实际发生了什么
 
-如果只说“Zygote fork 之后进入 `ActivityThread.main()`”，还是太粗了。真正能指导 Perfetto 分析的路径，先要把普通 zygote fork 和 USAP specialization 分开。
+如果只说“Zygote fork 之后进入 `ActivityThread.main()`”，还是太粗了。能指导 Perfetto 分析的路径，先要把普通 zygote fork 和 USAP specialization 分开。
 
 | 路径 | Java 入口 | native 调用 | 是否产生新 PID | `PostFork` 在 trace 里的含义 |
 | --- | --- | --- | --- | --- |
@@ -252,7 +253,7 @@ if (pid == 0) {
 
 如果 system_server 命中了 USAP pool，Zygote 取出的已经是一个现成的 unspecialized 进程。后面的工作重点是 UID / GID / SELinux / nice name 等特化。普通 fork 路径和 USAP 路径在进入 `ZygoteInit.zygoteInit()` 之后汇合。
 
-接下来，目标应用进程会走 `ZygoteInit.zygoteInit()`、`RuntimeInit.applicationInit()`，并进入 `ActivityThread.main()`。这条链把“刚创建或刚特化的进程”推进成“真正能跑 Android 应用主线程的进程”。
+接下来，目标应用进程会走 `ZygoteInit.zygoteInit()`、`RuntimeInit.applicationInit()`，并进入 `ActivityThread.main()`。这条链把“刚创建或刚特化的进程”推进成“可以运行 Android 应用主线程的进程”。
 
 `ActivityThread.main()` 不会立刻执行 `Application.onCreate()`。它会先把主线程 Looper 准备好，然后通过 Binder 调 `attachApplication` 回到 `system_server`。在 android-16 的 `ActivityThread.java` 里，能看到这一步：
 
@@ -364,7 +365,7 @@ ZygoteServer() {
 **USAP Pool 在 AOSP 16 中的默认状态：** 即使在 Primary Zygote 上，USAP Pool 也默认关闭（`mUsapPoolEnabled = false`）。OEM 可以通过 `persist.device_config.activity_manager_native_boot.usap_pool_enabled` 系统属性开启。此外，USAP 明确不支持 App Zygote、WebViewZygote 等 Child Zygote 派生的子孵化器——这些路径必须走传统 fork，不能从 USAP pool 拿现成进程。
 
 
-## 版本演进里真正和 Zygote 相关的变化
+## 版本演进里和 Zygote 相关的变化
 
 把版本线收成下面这张表更稳，能避免把 android-16 的 trace 名和能力边界套到老版本上。
 
