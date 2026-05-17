@@ -52,18 +52,18 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: "task2b_pending"
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task9_result: "needs-rework"
-task2b_state: "pending"
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-15T23:30:32+08:00'
-task9_reviewed_date: "2026-05-16"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-16T00:30:00+08:00"
-task9_review_notes: "2026-05-16 00:30 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1；ApplicationStartInfo getStartupTimestamps 类型仍写错，Zygote preload drawable 路径不存在。"
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-17T13:20:00+08:00"
+task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1；ApplicationStartInfo 常量、setContentView 语义、App Startup 版本边界需回炉。"
 ---
 
 

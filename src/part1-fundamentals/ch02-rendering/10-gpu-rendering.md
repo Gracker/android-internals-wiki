@@ -48,20 +48,21 @@ polish_by: task2b-polish
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: pending
 last_task2b_at: "2026-05-11T23:28:02+08:00"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处；参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据，已写入 queue。"
 review_type: task6-writing-quality-review
 task9_result: needs-rework
-task9_reviewed_date: '2026-05-14'
+task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-14T03:44:00+08:00'
+last_task9_at: "2026-05-17T13:20:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
 last_task2b_at: "2026-05-17T11:26:41"
 last_task6_at: "2026-05-17T12:11:00+08:00"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（代码围栏标语言 2 处、清嗓式\"问题是\"规避 1 处）；实战案例仍缺一手 Trace/AGI 证据，已合并到 queue。"
+task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并；新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
 ---
 
 

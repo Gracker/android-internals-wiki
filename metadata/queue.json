@@ -4140,10 +4140,10 @@
       "id": "task9-20260514-2.10-gpu-source-paths-perfetto-counters",
       "section": "2.10",
       "section_title": "GPU 渲染深入",
-      "title": "GPU 渲染源码路径与 Perfetto GPU counter 口径错误",
+      "title": "GPU 渲染源码路径、BufferQueue 等待语义与 Perfetto GPU counter 口径错误",
       "priority": 95,
-      "reason": "[Deep Tech Review] 章节多处 AOSP graphics/java 路径、BufferQueue/GraphicBuffer/HWC2 文件名与 Perfetto GpuCounterConfig 字段写错，并把 gpu_busy 标准化说成无条件保证。",
-      "description": "Canvas/BaseCanvas/Shader/GraphicBuffer Java 路径应在 frameworks/base/graphics/java/android/graphics/；BufferQueue/GraphicBufferMapper/HWC2 等 native 文件名不能带空格；Android 16 Perfetto GpuCounterConfig 无 gpu_id 字段，gpu_busy 统一别名需要公开 CDD/Perfetto 证据。",
+      "reason": "[Deep Tech Review] 章节仍存在 AOSP graphics/native 路径、BufferQueue 等待/通知语义、Perfetto GpuCounterConfig 字段与 gpu_busy 标准化口径错误，并保留缺一手证据的 GPU 实战案例。",
+      "description": "除已记录的 Canvas/GraphicBuffer/BufferQueue/HWC2 路径、GpuCounterConfig/gpu_busy 问题外，需修正 waitForFreeSlotThenRelock timeout/BUFFER_RELEASE_CHANNEL 语义，以及 dumpsys SurfaceFlinger --latency 的可观测范围。",
       "issue_type": "source-code-accuracy-observability",
       "severity": "P0",
       "created_date": "2026-05-14",
@@ -4159,7 +4159,8 @@
       "material_paths": [
         "intake/suggestions.md",
         "logs/deep-review/2026-05-14-03-deep-review.md",
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md（含 review 意见）",
+        "logs/deep-review/2026-05-17-13-deep-review.md"
       ],
       "review_issues": [
         {
@@ -4189,6 +4190,27 @@
           "location": "实战案例：社交应用图片滚动中的 GPU 瓶颈定位",
           "detail": "Task6 2026-05-17 复查发现正文仍保留 [需补充素材] 标注；案例给出设备、帧耗时、帧率和优化收益，但缺真实 Perfetto/AGI 截图或可匿名复现测试条件。",
           "suggestion": "Task2B 补一手 Trace/AGI 证据与测试条件；如果只是示意案例，改为“示例场景”并删除固定收益数值。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码行为错误",
+          "location": "L552-L556、L839-L858 Buffer Stuffing / waitForFreeSlotThenRelock()",
+          "detail": "正文写 BufferQueue mFreeBuffers 为空时 waitForFreeSlotThenRelock() “进入无限期等待（无超时）”，并把 Android 14 BUFFER_RELEASE_CHANNEL 写成替代全局 notify_all。android-16.0.0_r1 的 BufferQueueProducer.cpp 维护 mDequeueTimeout；waitForFreeSlotThenRelock() 可返回 TIMED_OUT，BUFFER_RELEASE_CHANNEL 路径下会调用 waitForBufferRelease(lock, mDequeueTimeout)，fallback 也有 wait_for(timeout) 分支。",
+          "suggestion": "改成“默认 mDequeueTimeout < 0 时可无限等待；调用方设置 timeout 后可能返回 TIMED_OUT”。BUFFER_RELEASE_CHANNEL 只描述为 release 通知路径优化/flag 控制，不写成无条件替代所有 notify_all。"
+        },
+        {
+          "severity": "P1",
+          "type": "观测口径错误",
+          "location": "L559-L564 GPU 内存追踪可观测性表",
+          "detail": "表格写 `dumpsys surfaceflinger --latency` 可见 BufferQueue 各槽位状态、mSlots 列表。SurfaceFlinger latency 命令主要输出指定 layer 的帧时间戳/latency 数据，不是 BufferQueue slot/mSlots 状态 dump。",
+          "suggestion": "把 slot/mSlots 观测改为 `dumpsys SurfaceFlinger` 的 layer dump/BufferQueue 信息，`--latency <layer>` 只保留为帧时间戳观测入口；必要时补 `dumpsys SurfaceFlinger --list` 查 layer 名。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本/图形栈口径",
+          "location": "L229-L255、L599-L604、L1059-L1066 Android 16 Vulkan/ANGLE 叙述",
+          "detail": "正文多处仍写“Android 16 将 Vulkan 定为默认图形 API”或“SPIR-V 预编译大幅减少 OpenGL ES/ANGLE 编译卡顿”。公开资料能支撑的是新出货设备的 Vulkan 1.4/VPA16/Host Image Copy 基线与 ANGLE-on-Vulkan 可选/配置策略；不能推出所有 Android 16 UI/GLES 应用默认 Vulkan 或默认 ANGLE。",
+          "suggestion": "统一改成“Android 16 提升新设备 Vulkan 基线，并扩大 Vulkan-first/ANGLE-on-Vulkan 的配置空间”。Shader 编译收益分别限定在原生 Vulkan、启用 ANGLE 的 GLES、传统 GLES 三种路径。"
         }
       ],
       "last_task6_reviewed_at": "2026-05-17T12:11:00+08:00",
@@ -9613,21 +9635,123 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-17T13:04:00+08:00"
+    },
+    {
+      "id": "task9-20260517-14.1-profiler-profilingmanager-api",
+      "section": "14.1",
+      "section_title": "Android Studio Profiler",
+      "title": "Android Studio Profiler 触发式 Profiling API 与工具入口版本口径错误",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ProfilingManager/ProfilingTrigger 示例使用不存在或过时的启动触发 API，Network Profiler 与 profileable 能力边界也未按当前 Android Studio/官方文档拆清。",
+      "description": "将 ProfilingManager 拆成 Android 15 app-driven profiling 与 Android 16 system-triggered profiling；修正 addProfilingTriggers/registerForAllProfilingResults、TRIGGER_TYPE_APP_FULLY_DRAWN/ANR 示例；补当前 Network Inspector 与 profileable/debbugable 能力矩阵。",
+      "issue_type": "api-version-observability",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T13:20:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "API 签名/版本事实",
+          "location": "L224-L242 ProfilingManager / ProfilingTrigger 示例",
+          "detail": "正文写 ProfilingManager 是 Android 16/API 36 新增，并使用 ProfilingManager.registerTrigger()、ProfilingTrigger.Builder().setTriggerType(TRIGGER_TYPE_STARTUP)。官方 Android 16 trigger-based profiling 示例使用 ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN).setRateLimitingPeriodHours(...).build()、registerForAllProfilingResults(...)、addProfilingTriggers(...)；Android 15 已有 app-driven ProfilingManager，Android 16 增加 system-triggered profiling。",
+          "suggestion": "拆分 Android 15/16 能力边界；示例改成 TRIGGER_TYPE_APP_FULLY_DRAWN / TRIGGER_TYPE_ANR + addProfilingTriggers，并说明结果只能通过 registerForAllProfilingResults 接收。删除 STARTUP/OOM/CPU 高占用等未证实触发器。"
+        },
+        {
+          "severity": "P1",
+          "type": "工具入口/版本差异",
+          "location": "L88-L95 Profiler 四模块、L212-L220 Power Profiler",
+          "detail": "正文把 Network Profiler 列为当前 Profiler 核心模块。Android Studio 2020.3.1+ 网络抓包入口已迁移到 App Inspection > Network Inspector；Power Profiler/ODPM 又是 Android Studio Profiler 内的受设备支持能力。当前写法会让读者在 Koala/Meerkat 之后的 IDE 中找错入口。",
+          "suggestion": "补一张版本/入口矩阵：CPU/Memory/Power 属 Profiler；Network 使用 App Inspection > Network Inspector；旧版 Network Profiler 只作为历史入口说明。"
+        },
+        {
+          "severity": "P1",
+          "type": "观测前提缺失",
+          "location": "L154-L190 Memory Profiler、L192-L194 profileable、L246-L252 FAQ",
+          "detail": "正文推荐 profileable 构建，但 Memory Profiler 段落未说明 profileable 与 debuggable 的能力差异。官方文档要求需要 Java/Kotlin allocations 或 heap dump 时使用 debuggable；正文只写 profileable 不能做 Java Method Trace 和 Full Allocation Tracking，漏掉 heap dump/Java/Kotlin allocation 的关键限制。",
+          "suggestion": "按 build type 补能力矩阵：profileable 适合低扰动 CPU/System Trace/Callstack Sample 等；heap dump、Java/Kotlin allocation recording 等需要 debuggable。Java Method Trace 支持边界以当前 Android Studio 文档复核后再写。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260517-8.2-app-start-api-lifecycle-version",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "title": "ApplicationStartInfo 常量、setContentView 语义与 App Startup 版本口径错误",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ApplicationStartInfo 表格包含不存在的 state/reason 常量，Activity setContentView 被写成必调且否则报错，App Startup 被误写为 Android 11 起可用。",
+      "description": "修正 Android 15 ApplicationStartInfo 公开常量；把 setContentView 描述为常见内容安装动作而非框架强制要求；把 AndroidX App Startup 版本边界改为 Jetpack 库/API 14+，并补 current AOSP Task 命名。",
+      "issue_type": "api-version-lifecycle",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T13:20:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "API 常量错误",
+          "location": "L317-L338 ApplicationStartInfo 关键字段表",
+          "detail": "android-15.0.0_r1 的 ApplicationStartInfo 只有 STARTUP_STATE_STARTED / STARTUP_STATE_ERROR / STARTUP_STATE_FIRST_FRAME_DRAWN；没有 STARTUP_STATE_NOT_STARTED 和 STARTUP_STATE_FULLY_DRAWN。START_REASON_CHANGED 也不存在，公开 reason 常量包括 START_REASON_ALARM、LAUNCHER、START_ACTIVITY 等。当前表格按这些名字写示例会直接编译失败。",
+          "suggestion": "按 AOSP/SDK 常量重建表格；把 fully drawn 表达为 START_TIMESTAMP_FULLY_DRAWN 这个 timestamp key，不要写成 startup state。"
+        },
+        {
+          "severity": "P0",
+          "type": "生命周期语义错误",
+          "location": "L213-L217 Activity 创建与 setContentView 描述",
+          "detail": "正文写“onCreate 中必须调用 setContentView()，否则后续绘制会报错”。Activity 框架并不强制必须调用 setContentView；不调用通常只是没有应用内容视图/显示空窗口，仍可自行管理 Window 或做无 UI Activity。setContentView 的作用是把内容 View 安装到 PhoneWindow 的 content parent。",
+          "suggestion": "改成“常规有 UI Activity 通常在 onCreate 中调用 setContentView/Compose setContent 安装首屏内容”；删除“否则报错”的断言，并补充无 UI Activity/延迟安装内容的边界。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异错误",
+          "location": "L528、L578-L618 App Startup Library",
+          "detail": "正文写“Android 11（API 30）开始可以通过声明工具 androidx.startup 统一管理”。AndroidX App Startup 是 Jetpack 库，2020 年发布，支持 API 14+，不是 Android 11 平台能力；Android 11 之前同样可以使用。",
+          "suggestion": "改为“通过 AndroidX App Startup（startup-runtime，支持 API 14+）统一 Initializer”；删除 Android 11 起可用的说法，并说明它仍基于单个 InitializationProvider，无法自动接管未适配的三方 ContentProvider。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码命名/版本边界",
+          "location": "L172-L176 ATMS 创建 ActivityRecord 和 TaskRecord",
+          "detail": "章节 last_verified_against 标注 android-15.0.0_r1，但 current AOSP wm 包中已无 TaskRecord.java，任务容器类为 services/core/java/com/android/server/wm/Task.java；TaskRecord 是旧版本命名。",
+          "suggestion": "写成“ActivityRecord 与 Task（旧版本/Android 10 前后资料中常写 TaskRecord）”，并在版本表或脚注中标注命名迁移，避免读者按 Android 15 源码查不到类。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 285,
+    "total_entries": 288,
     "p0_count": 40,
-    "last_updated": "2026-05-17T12:32:07+08:00",
+    "last_updated": "2026-05-17T13:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 147,
+    "pending_entries": 150,
     "updated_date": "2026-05-17",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 147
+    "pending": 150,
+    "completed_entries": 136
   },
-  "last_updated": "2026-05-17T12:32:07+08:00",
+  "last_updated": "2026-05-17T13:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 147,
+  "pending": 150,
   "last_task2a_completed": "26.11",
   "last_task2a_completed_at": "2026-05-17T01:12:00+08:00"
 }

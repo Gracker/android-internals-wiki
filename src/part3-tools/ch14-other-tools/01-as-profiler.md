@@ -34,11 +34,12 @@ task2b_state: pending
 task6_result: needs-rework
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-30T00:20:00+08:00"
+last_task9_at: "2026-05-17T13:20:00+08:00"
 last_task6_at: "2026-05-05T19:14:00+08:00"
 task6_review_notes: "L1/L2 小修 12 处；新增 Network Profiler 锚点覆盖不足问题，已并入 queue.json；未自动晋升"
+task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0 1 / P1 2；ProfilingManager trigger API、Network Inspector 入口与 profileable 能力边界需回炉。"
 ---
 
 
