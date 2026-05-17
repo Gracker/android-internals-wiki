@@ -35,6 +35,7 @@ tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 task6_state: reviewed
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-17"
 section: "10.1"
 status: finalized
 pipeline_stage: ready-to-publish
@@ -120,9 +121,7 @@ Android 15 开始，设备可以使用 16KB page size。页大小会改变 PSS/R
 `dumpsys meminfo` 的输出按内存类别展示了进程的完整内存布局：
 
 ```
-** MEMINFO in pid 12345 [com.example
-
-.app] **
+** MEMINFO in pid 12345 [com.example.app] **
                    Pss    Private  Private     Swap     Heap     Heap     Heap
                  Total    Dirty    Clean    Dirty     Size    Alloc     Free
                 ------   ------   ------   ------   ------   ------   ------
@@ -153,13 +152,13 @@ Memory Profiler 是 Android Studio 内置的内存分析工具，它提供三种
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
-**分配追踪（Allocation Tracking）**：记录一段时间内所有 Java/Kotlin 对象的分配事件，包括分配的对象类型、大小、分配线程和调用栈。这对于定位"内存抖动"（短时间内大量创建和销毁对象）特别有用。我们可以看到哪些方法在频繁分配临时对象，然后针对性地优化——比如用对象池替换频繁 new 出的临时对象，或者将不必要的对象分配移到初始化阶段。
+**分配追踪（Allocation Tracking）**：记录一段时间内所有 Java/Kotlin 对象的分配事件，包括分配的对象类型、大小、分配线程和调用栈。这对于定位"内存抖动"（短时间内大量创建和销毁对象）特别有用。借助这份记录，能定位哪些方法在频繁分配临时对象，再针对性优化——比如用对象池替换频繁 new 出的临时对象，或者将不必要的对象分配移到初始化阶段。
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
-**Heap Dump**：捕获当前 Java Heap 的完整快照，可以看到所有存活对象及其引用关系。Memory Profiler 会自动标记出可能的 Activity/Fragment 泄漏（已 destroyed 但仍被引用的实例）。但 Memory Profiler 的 Heap Dump 分析能力相对有限，对于复杂的引用链分析，我们通常将 `.hprof` 文件导出后用 MAT 做更深入的分析。
+**Heap Dump**：捕获当前 Java Heap 的完整快照，用于查看所有存活对象及其引用关系。Memory Profiler 会自动标记出可能的 Activity/Fragment 泄漏（已 destroyed 但仍被引用的实例）。但 Memory Profiler 的 Heap Dump 分析能力相对有限，对于复杂的引用链分析，我们通常将 `.hprof` 文件导出后用 MAT 做更深入的分析。
 
-在抓取 Heap Dump 之前，先手动触发一次 GC（点击 Memory Profiler 中的垃圾桶图标）。这样可以排除 Unreachable 对象——可以被 GC 回收但还没来得及回收的对象，它们会干扰真正的泄漏分析。
+在抓取 Heap Dump 之前，先手动触发一次 GC（点击 Memory Profiler 中的垃圾桶图标）。这样可以排除 Unreachable 对象——可以被 GC 回收但还没来得及回收的对象，它们会干扰泄漏分析。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
@@ -192,7 +191,7 @@ Dominator Tree 是 MAT 中最重要的分析视图。它的核心思想是：如
 
 ### MAT 的关键操作
 
-MAT 提供了几个对内存泄漏排查至关重要的操作，每个工程师都应该熟练掌握：
+MAT 提供了几个内存泄漏排查常用操作，这些操作需要熟练掌握：
 
 **Histogram**：按类维度统计对象数量和内存占用。如果我们怀疑某个类的实例数量异常（比如某个 Bean 类有几千个实例），用 Histogram 按 Percentage 排序可以快速发现。还可以按 Package 分组，只看自己 App 的类。
 
@@ -439,9 +438,7 @@ benchmarkRule.measureRepeated(
 | Java 对象分配追踪 | Memory Profiler | Allocation Tracking | 开发 |
 | Java 泄漏引用链 | MAT | Heap Dump → Dominator Tree → GC Roots | 开发/测试 |
 | Native 内存分析 | heapprofd | Perfetto UI / `heap_profile` | 开发/测试 |
-| Native 内存调试 | malloc debug | `setprop libc.debug
-
-.malloc.*` | 开发 |
+| Native 内存调试 | malloc debug | `setprop libc.debug.malloc.*` | 开发 |
 | Native 内存错误 | ASan/HWASan | 编译选项 + wrap.sh | 开发 |
 | GPU/ Graphics 内存 | dumpsys gpu | `adb shell dumpsys gpu` | 开发/测试 |
 | 自动泄漏检测 | LeakCanary | 依赖集成 + UI 测试 | 开发/CI |
@@ -461,11 +458,11 @@ benchmarkRule.measureRepeated(
 
 **误区一："Java Heap 大就是有泄漏"**
 
-Java Heap 使用量大不一定等于泄漏。可能是正常的内存需求（如大量图片缓存），也可能是 GC 还没来得及回收。判断泄漏的关键是**内存是否能回落**——操作后触发 GC，如果 Heap 使用量没有回落到操作前的水平，才是泄漏。
+Java Heap 使用量大不一定等于泄漏。可能是正常的内存需求（如大量图片缓存），也可能是 GC 还没来得及回收。判断泄漏要看**内存是否能回落**——操作后触发 GC，如果 Heap 使用量没有回落到操作前的水平，才是泄漏。
 
 **误区二："Native Heap 不用管，系统会处理"**
 
-Native 内存没有 GC，分配了不释放就是真的泄漏。随着 App 使用 JNI、音视频 SDK、Flutter 等，Native 内存占比越来越高。线上很多 OOM 崩溃实际上是 Native 内存耗尽了 Java Heap 的预算空间。
+Native 内存没有 GC，分配了不释放就是真的泄漏。随着 App 使用 JNI、音视频 SDK、Flutter 等，Native 内存占比越来越高。线上很多 OOM 崩溃是 Native 内存耗尽了 Java Heap 的预算空间。
 
 **误区三："MAT 中 Retained Size 最大的一定是泄漏"**
 

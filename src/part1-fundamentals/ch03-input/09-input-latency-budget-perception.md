@@ -2,7 +2,7 @@
 title: "端到端输入延迟预算与感知阈值"
 chapter: "3.9"
 section: "3.9"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -42,12 +42,18 @@ task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-16"
-task9_reviewed_by: openclaw-task9
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-17"
+task9_reviewed_by: "openclaw-task9"
 task2b_state: "fixed"
+last_task9_at: "2026-05-17T15:29:34+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
+task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。Perfetto android.input stdlib schema 已修正；AOSP Resampler/GameMode/RefreshRatePolicy 边界复核通过。预算表与 HCI 阈值 P2 既有 suggestions 保留。自动晋升 finalized。"
+p0: 0
+p1: 0
+p2: 2
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值

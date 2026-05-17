@@ -406,3 +406,12 @@ static void* pthread_wrapper(void* arg) {
 | `TRIM_MEMORY_COMPLETE` | 后台应用，内存极度紧张 | 释放所有可释放的资源 |
 
 关键点：`onTrimMemory` 在主线程回调，释放操作必须快速。耗时操作（如写磁盘、序列化）放到子线程异步执行。
+
+## 参考资料
+
+### OOM 治理 — ART 堆内存分区与黑科技扩量
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-oom-art-heap-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制。黑科技扩量在 OOM 风险时动态扩展堆内存，延长应用存活 2-3 秒为后台任务和内存清理提供缓冲，涉及 GC、内存监控和动态扩展三个模块。
+- 注入时间：2026-05-17
+- 价值：补充 ART 堆分区与 OOM 区域映射关系，以及 OOM 时堆增量技术的实现机制

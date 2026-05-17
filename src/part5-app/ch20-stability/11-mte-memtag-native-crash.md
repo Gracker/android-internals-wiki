@@ -192,3 +192,12 @@ MTE 崩溃事件记录至少保留这些字段：
 - Android Developers 文档把 MTE 支持设备列到 Pixel 8/9 系列；其他厂商设备是否支持、是否启用、是否做 ASYMM per-CPU 配置，需要按设备采集。
 - ASYMM 由设备侧 `mte_tcf_preferred` 控制，应用层没有公开 API 直接请求。线上报告里不要把 `async` 请求值写成“实际 ASYMM”。
 - `BIONIC_MEMTAG_UPGRADE_SECS` 这类系统服务重启后升级诊断机制，本节只作为后续研究线索，不写成应用侧可用能力。[待验证: 需确认该机制在应用侧观测和归因中的适用边界]
+
+## 参考资料
+
+### MTE ASYMM 在 Android App memtagMode=async 下的自动启用机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-mte-asymm-memtag-mode-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：MTE ASYMM/SYMM 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYMM 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。
+- 注入时间：2026-05-17
+- 价值：补充 MTE ASYMM/SYMM 启用链路的源码级闭环，覆盖 bionic、Zygote、Manifest 完整路径

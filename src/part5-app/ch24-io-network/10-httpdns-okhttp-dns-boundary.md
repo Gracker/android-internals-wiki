@@ -348,6 +348,78 @@ HTTPDNS 返回结果时不要只给“最优单 IP”。单 IP 看起来减少�
 
 连接池复用和 DNS 也有边界。OkHttp 找到可复用连接时，不一定触发 DNS；新建连接、连接不健康、连接池没有可用连接、HTTP/2 coalescing 需要更多 route 信息时，才会进入路由规划。线上分析不要把“没有 dnsStart 事件”误判成 DNS 模块失效，它也可能只是连接池命中。
 
+
+
+<!-- AIW-源码调研-2026-05-17 -->
+## 源码补充：DnsOverHttps 同步化机制（2026-05-17 验证）
+
+> 以下补充于 2026-05-17 每日源码调研，基于 OkHttp 官方源码验证。
+
+### DnsOverHttps 内部 CountDownLatch 同步化
+
+`DnsOverHttps.lookup()` 虽然内部使用 `client.newCall(...).enqueue(callback)` 发起**异步 HTTP 请求**，但通过 `CountDownLatch.await()` 将其同步化，调用线程仍被阻塞：
+
+```kotlin
+// okhttp-dnsoverhttps/DnsOverHttps.kt
+private fun executeRequests(...): List<InetAddress> {
+    val latch = CountDownLatch(networkRequests.size)
+    for (call in networkRequests) {
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) { ... latch.countDown() }
+            override fun onResponse(call: Call, response: Response) { ... latch.countDown() }
+        })
+    }
+    try {
+        latch.await()  // ← 调用线程被阻塞，直到所有 DOH 查询完成
+    } catch (e: InterruptedException) {
+        failures.add(e)
+    }
+}
+```
+
+**影响**：在弱网下，这会导致连接池调度线程被阻塞数秒，而非快速失败切换系统 DNS。
+
+### 完整调用链（源码堆栈重建）
+
+```
+StreamAllocation.findConnection
+  → RouteSelector.next()
+    → RouteSelector.nextProxy()
+      → RouteSelector.resetNextInetSocketAddress()
+        → address.dns().lookup(hostname)   // ← 同步阻塞点
+```
+
+堆栈来源：GitHub issues #3122、#3919 的 `UnknownHostException` 堆栈，重建了 OkHttp 4.x 的 `Dns$1.lookup()` → `RouteSelector.resetNextInetSocketAddress()` 路径。
+
+### OkHttp 5 AsyncDns 草案状态
+
+GitHub issue #8318（2024-03）讨论了 OkHttp 5 引入 `AsyncDns` 接口的可能性，允许真正的异步 DNS 查询：
+
+```kotlin
+interface AsyncDns {
+    fun onAddresses(hasMore: Boolean, hostname: String, addresses: List<InetAddress>)
+    fun onFailure(hasMore: Boolean, hostname: String, e: IOException)
+}
+```
+
+但截至目前（OkHttp 5.0.x 正式 release 前），**标准 `Dns` 接口仍为同步阻塞**，AsyncDns 未进入正式版。
+
+### Dns 接口类型（Kotlin SAM）
+
+OkHttp 4.x/5.x 使用 `fun interface Dns`，编译后等价于 Java 抽象类：
+
+```kotlin
+fun interface Dns {
+    @Throws(UnknownHostException::class)
+    fun lookup(hostname: String): List<InetAddress>
+}
+```
+
+`fun interface` = Kotlin SAM（Single Abstract Method）接口，只能有一个抽象方法，编译后生成 `$DefaultImpls` 静态内部类。实现可以是 lambda：`Dns { hostname -> Dns.SYSTEM.lookup(hostname) }`。
+
+来源：`github.com/square/okhttp/blob/master/okhttp/src/main/kotlin/okhttp3/Dns.kt`
+
+<!-- AIW-源码调研-2026-05-17 end -->
 ## 工程检查清单
 
 - `Dns.lookup()` 内是否只读内存/磁盘缓存，不发 HTTP 请求。

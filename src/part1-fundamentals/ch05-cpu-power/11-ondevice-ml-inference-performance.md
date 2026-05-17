@@ -332,3 +332,31 @@ CompiledModel.create(Accelerator.NPU)
 - 注入时间：2026-04-19
 - 价值：对 AI 手机时代的 NPU 路线迁移和性能选型很有参考价值。
 
+## 源码调研补充（2026-05-17）
+
+### AICore 版本澄清
+
+daily-topics #5 研究发现：题目描述"AICore 为 Android 17 端侧 AI 推理性能"存在版本错误。
+
+**关键事实**：
+- **AICore 起源于 Android 14（API 34）**，非 Android 17 新特性
+- Android 17 的 AI feature 变化主要是 LiteRT NPU delegate 支持和 Android 14+ 既有的 AICore 能力延续
+- AICore 通过 `com.google.ai.edge.aicore` 包对外暴露 API，包含 `InferenceSession`、`GenerativeAIException.ErrorCode` 等接口（来源：developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary）
+
+**架构分层（确认）**：
+```
+ML Kit GenAI APIs → Google AI Edge SDK → AICore System Service
+                                           ├─ Model Distribution (Gemini Nano)
+                                           ├─ Safety Filters
+                                           └─ Hardware Routing → NPU/TPU
+```
+
+**LiteRT 即 TensorFlow Lite 品牌重命名**，属于 Google AI Edge SDK 的一部分，非 Android 17 新功能
+
+**NNAPI 废弃（确认，一手源码）**：
+- `frameworks/ml/nn/runtime/include/NeuralNetworks.h`（AOSP）- NNAPI NDK 头文件，Android 15 起 deprecated
+- `hardware/interfaces/neuralnetworks/1.3/types.hal`（AOSP）- NN HAL 接口仍受支持，驱动层仍可用
+
+**AICore Developer Preview**（2026-04-02）新增 Gemini Nano 4 和 Gemma 4 支持——这是真正的 Android 17 时间点更新
+
+<!-- AIW-源码调研-2026-05-17 -->

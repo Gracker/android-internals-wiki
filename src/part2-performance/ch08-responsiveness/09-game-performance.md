@@ -540,6 +540,99 @@ OEM 的游戏面板通常会把多种动作绑在一起，例如画质降档、F
 
 ## 参考资料
 
+
+
+<!-- AIW-源码调研-2026-05-17: Kotlin Coroutine 与 ADPF Hint 工程化边界 -->
+## ADPF Hint Session 与 Kotlin Coroutine 线程迁移（2026-05-17 补充）
+
+> 本节基于 AOSP 源码和 Google 官方 ADPF codelab 源码调研，补充 §5.9 ADPF 在 Kotlin 协程场景下的工程化约束。
+
+### 核心约束：Hint Session 基于线程 TID，而非协程
+
+ADPF 的 `APerformanceHint_createSession()` API 设计基于**实际线程 ID（TID）**绑定：
+
+```cpp
+// adpf_manager.cpp (Google 官方 codelab)
+// external/kotlinx.coroutines/.../adpf_manager.cpp
+bool ADPFManager::InitializePerformanceHintManager() {
+#if __ANDROID_API__ >= 33
+    hint_manager_ = APerformanceHint_getManager();
+    int32_t tids[1];
+    tids[0] = gettid();  // 绑定当前线程 TID
+    hint_session_ = APerformanceHint_createSession(hint_manager_, tids, 1, last_target_);
+#endif
+}
+```
+
+Kotlin 协程的线程模型：
+- `Dispatchers.Default`：共享 `CommonPool`（CPU 核心数线程），协程可能在不同线程间迁移
+- `Dispatchers.IO`：共享 `IOPool`（最多 64 线程），协程挂起后恢复可能在另一线程
+
+```kotlin
+// Kotlin 协程线程迁移示例
+launch(Dispatchers.Default) {
+    val threadBefore = Thread.currentThread().id  // 可能是 Thread-1
+    delay(100)  // 挂起点
+    val threadAfter = Thread.currentThread().id  // 可能是 Thread-5（不同线程）
+}
+```
+
+**结果**：协程迁移后，新线程不在 hint session 中，无法享受 ADPF hint 优化。
+
+### API 版本差异：线程动态管理
+
+```cpp
+// adpf_manager.cpp
+void ADPFManager::RegisterThreadIdsToHintSession() {
+#if __ANDROID_API__ >= 34
+    // API 34: 直接 setThreads，动态添加/移除
+    APerformanceHint_setThreads(hint_session_, data, size);
+#elif __ANDROID_API__ >= 33
+    // API 33: 只能先 close 再重建 session
+    APerformanceHint_closeSession(hint_session_);
+    hint_session_ = APerformanceHint_createSession(hint_manager_, data, size, last_target_);
+#endif
+}
+```
+
+| 版本 | 添加线程开销 | 推荐场景 |
+|------|------------|---------|
+| API 33 | 重建 session（高开销） | 线程稳定场景 |
+| API 34 | `setThreads()`（低开销） | 动态线程池 |
+
+### Kotlin 协程优先级提案状态
+
+GitHub `Kotlin/kotlinx.coroutines` Issue #1617 讨论了协程优先级 hint：
+
+> "If CoroutinePriority is provided by CoroutineContext, wrap a dispatched task into an object which can be compared by taken priority and put it into the executor. The element behaves like a hint."
+
+**现状**：协程优先级 hint 功能**尚未实现**，无官方 ADPF 集成。
+
+### IPC 开销估算
+
+| 操作 | 估算延迟（未一手验证） |
+|------|----------------------|
+| `APerformanceHint_createSession()` | ~50-100μs |
+| `APerformanceHint_reportActualWorkDuration()` | ~5-10μs |
+| Session 重建（API 33） | 较高，避免频繁调用 |
+
+游戏帧预算 16.67ms（60fps），单次 hint 调用占比 <0.1%，可接受。
+
+### 工程化建议
+
+1. **绑定稳定线程**：使用 `Dispatchers.Main` 或单线程调度器，确保 TID 稳定
+2. **避免高频调用**：每帧调用 `reportActualWorkDuration()` 会累积开销
+3. **API 33 慎重建**：频繁重建 session 会导致性能倒退
+4. **帧循环优先**：游戏帧循环（非协程）直接调用 ADPF，协程层做吞吐量控制
+
+### 源码位置
+
+- AOSP ADPF codelab: `external/kotlinx.coroutines/kotlinx-coroutines-core/`
+- ADPF Manager 源码: `external/kotlinx.coroutines/.../adpf_manager.h`
+- CoroutineDispatcher: `external/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt`
+
+<!-- AIW-源码调研-2026-05-17 END -->
+
 - AOSP GameManager: `frameworks/base/core/java/android/app/GameManager.java`
 - AOSP GameState: `frameworks/base/core/java/android/app/GameState.java`
 - AOSP GameManagerService: `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`

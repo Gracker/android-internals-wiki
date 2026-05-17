@@ -282,3 +282,12 @@ SafeMode 与热修复的关系可以这样设计：
 异常处理架构的目标是把故障分层处理：入口层保留证据，SafeMode 防止崩溃循环，降级层限制影响范围，灰度和热修复层控制版本风险。Java、Native、协程、多进程各有不同入口，但最终都要汇入同一套本地记录、上报聚合和发布控制系统。
 
 本节没有重复 20.2、20.3 的底层机制，也没有展开 26.2 的服务端上报实现。实际接入前还要核对三件事：SafeMode 阈值是否符合业务现状，多进程文件写入是否具备原子性，热修复框架边界是否和当前项目一致。
+
+## 参考资料
+
+### Kotlin 协程异常处理与 UncaughtExceptionHandler 三层级联体系
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：Kotlin 协程异常处理形成 CoroutineExceptionHandler（Context级）→ ServiceLoader 全局 handler → Thread.uncaughtExceptionHandler 三层级联。Android 8.0/8.1 存在 AndroidExceptionPreHandler 反射兼容问题，协程可能绕过 pre-handler。
+- 注入时间：2026-05-17
+- 价值：源码级梳理协程异常三级分发机制，解决协程崩溃归因与 UncaughtExceptionHandler 关系模糊的问题

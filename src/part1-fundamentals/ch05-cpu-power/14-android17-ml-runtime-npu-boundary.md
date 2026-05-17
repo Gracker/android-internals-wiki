@@ -267,3 +267,25 @@ Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能�
 Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；LiteRT CompiledModel 和 AOT 则把硬件选择、编译产物和分发策略推到工程流程前面。NPU 加速是否成立，要同时满足清单声明、设备 feature、运行时可用、模型算子覆盖和功耗预算五个条件。
 
 写这类内容时，最安全的分法是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
+
+## 源码调研补充（2026-05-17）
+
+### AICore 版本归属纠错
+
+研究发现：AICore 系统服务于 **Android 14（API 34）** 即已引入，而非 Android 17 新增。"Android 17 端侧 AI 推理性能边界"题目存在版本误解——Android 17 的 AI 栈变化主要是 LiteRT NPU delegate 的正式支持（Qualcomm QNN / MediaTek NDSS 等），以及 AICore Developer Preview 持续迭代。
+
+**AICore 源码路径（需进一步确认）**：
+- 推测位置：frameworks/ml/nn/（NNAPI 运行时复用路径）或 packages/modules/（AOSP 模块结构）
+- 核心 API：`com.google.ai.edge.aicore`（package-summary: developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary）
+- NNHAL 源码：hardware/interfaces/neuralnetworks/1.3/（AOSP，仍活跃维护）
+
+**LiteRT ≠ Android 新功能**：LiteRT 是 TensorFlow Lite 的品牌重命名，通过 Google AI Edge SDK 分发，与 Android 版本无直接绑定。
+
+**AICore vs LiteRT 定位区别**：
+| | AICore | LiteRT (TFLite in Play Services) |
+|---|---|---|
+| 用途 | GenAI 基础模型（Gemma/Gemini Nano） | 自定义 ML 模型推理 |
+| 更新方式 | 系统级 OTA（Gemini Nano 下载） | Play Services runtime OTA |
+| 适用场景 | 文本/图像/音频生成 AI | 物体检测、NLP、ASR 等传统 ML |
+
+<!-- AIW-源码调研-2026-05-17 -->

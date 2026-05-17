@@ -179,3 +179,12 @@ Perfetto 查询重点放在三个事实是否同时成立：登记的 tid 正在
 ## 小结
 
 ADPF 与 Coroutine 可以组合，但前提是把“协程代码”落到稳定线程身份上。Session 绑定的是 Linux tid，适合长期线程和周期性 deadline；默认协程调度器的弹性迁移会让 tid 信号失真。非游戏业务接入前，先确认周期、线程、目标耗时和验证工具都成立；否则继续用常规任务调度、渲染优化和功耗治理，收益更可控。
+
+## 参考资料
+
+### Kotlin Coroutine 线程迁移与 ADPF Hint 工程化边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md
+- 类型：DeepResearch 调研结果
+- 摘要：ADPF hint session 基于 TID 绑定，Kotlin 协程线程迁移导致无法精确绑定 hint。API 33 只能重建 session，API 34 支持 setThreads 动态调整。评估了 Dispatchers.Default/IO 场景下 ADPF IPC 开销与工程化约束。
+- 注入时间：2026-05-17
+- 价值：建立 ADPF TID 绑定与协程调度的工程化边界，指导 ADPF 在 Kotlin 协程场景下的正确使用策略
