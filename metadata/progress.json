@@ -163,24 +163,27 @@
     "12.5",
     "14.1",
     "8.2",
-    "2.10"
+    "2.10",
+    "14.1",
+    "8.2",
+    "7.6"
   ],
   "review_files": [
     "src/part3-tools/ch14-other-tools/01-as-profiler.md",
     "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-17 14: 闲时抽检 2.5；发现 P0 0 / P1 3 / P2 0，已写入 queue，章节转 task2b_pending。",
+  "review_summary": "Task6 2026-05-17 16: 正常 review 14.1/8.2/7.6；L1/L2 小修 30 处，无新增 L3/L4 回炉；8.2 与 7.6 仍有既有 Task9 pending 队列，未自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 6,
-    "l3_issues": 2,
+    "l1_l2_fixes": 30,
+    "l3_issues": 0,
     "l4_issues": 0,
     "technical_risk_markers": 2,
-    "total_issues": 2,
+    "total_issues": 0,
     "reviewed_sections": [
-      "2.10",
-      "20.6",
-      "12.5"
+      "14.1",
+      "8.2",
+      "7.6"
     ]
   },
   "issues_by_section": {
@@ -253,7 +256,14 @@
       "p0": 1,
       "p1": 1,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 22,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
+      "task6_log": "logs/review/2026-05-17-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；清理第一人称、结构性元叙述、否定-纠正结构和填充词。既有 ApplicationStartInfo Task9 P0 队列仍 pending，未新增 Task6 回炉。"
     },
     "1.5": {
       "p0": 0,
@@ -304,7 +314,14 @@
       "p3": 0,
       "reviewed_at": "2026-05-17T12:32:07+08:00",
       "log": "logs/deep-review/2026-05-17-12-deep-review.md",
-      "summary": "P0 2：SF/HWC trace 源码锚点 handleMessageRefresh/doComposition 不存在；ThermalManager 示例 API 不存在。P1 1：Overlay plane 能力/API 边界缺设备证据。P2 1：案例数值证据包未归档。"
+      "summary": "P0 2：SF/HWC trace 源码锚点 handleMessageRefresh/doComposition 不存在；ThermalManager 示例 API 不存在。P1 1：Overlay plane 能力/API 边界缺设备证据。P2 1：案例数值证据包未归档。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
+      "task6_log": "logs/review/2026-05-17-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；未新增 L1/L2 文风问题。既有 SF/HWC Task9 P0/P1 队列仍 pending，未新增 Task6 回炉。"
     },
     "20.5": {
       "p0": 3,
@@ -1153,36 +1170,45 @@
       "reviewed_at": "2026-05-17T12:32:07+08:00",
       "log": "logs/deep-review/2026-05-17-12-deep-review.md",
       "summary": "pass-tech-review；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码和官方文档口径一致。P3：可后续补 dumpsys/cmd connectivity 观测样例。自动晋升 finalized。"
+    },
+    "14.1": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
+      "task6_log": "logs/review/2026-05-17-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；清理第一人称和填充式提示语，锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
     }
   },
   "total_review_sections": 154,
   "next_review_candidates": [],
   "ready_for_review": 100,
-  "last_updated": "2026-05-17T14:20:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-17T16:11:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "task6_last_review": {
     "date": "2026-05-17",
-    "time": "12:11",
-    "reviewed_at": "2026-05-17T12:11:00+08:00",
+    "time": "16:11",
+    "reviewed_at": "2026-05-17T16:11:00+08:00",
     "sections": [
-      "2.10",
-      "20.6",
-      "12.5"
+      "14.1",
+      "8.2",
+      "7.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch20-stability/06-stability-metrics.md",
-      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
-    "log": "logs/review/2026-05-17-12-review.md",
-    "mode": "首次 review / 回炉复查混合批次",
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 2,
+    "log": "logs/review/2026-05-17-16-review.md",
+    "mode": "首次 review / 回炉复查批次",
+    "l1_l2_fixes": 30,
+    "l3_l4_issues": 0,
     "technical_risk_markers": 2,
     "results": {
-      "2.10": "needs-rework / queue_pending",
-      "20.6": "needs-rework / queue_pending",
-      "12.5": "pass-light-edit / task9_pending"
+      "14.1": "pass-light-edit / task9_pending",
+      "8.2": "pass-light-edit / existing_queue_pending",
+      "7.6": "pass-light-edit / existing_queue_pending"
     },
     "auto_promoted": []
   },

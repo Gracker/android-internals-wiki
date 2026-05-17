@@ -5,8 +5,8 @@ chapter: '7.6'
 section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-12'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-17"
+reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-05-03'
 last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
@@ -18,7 +18,7 @@ polish_by: task2b-polish
 confidence: medium-high
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T12:32:07+08:00"
+last_task9_at: "2026-05-17T15:29:34+08:00"
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md
@@ -56,21 +56,25 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
 task2b_rework_date: '2026-05-09'
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 task9_result: "needs-rework"
 last_task2b_at: "2026-05-17T15:18:41+08:00"
-task9_review_notes: "2026-05-17 Task9 12: needs-rework。P0 2 / P1 1 / P2 1；SF/HWC 案例仍有 android-16 不存在的 handleMessageRefresh/doComposition 锚点；ThermalManager 示例 API 不存在；Overlay plane 能力与案例数据需补设备证据。"
-last_task6_at: '2026-05-12T18:02:31+08:00'
-task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 2 处：修正“七个案例/五个案例”不一致和方法论段第一人称；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
-last_task6_review_log: logs/review/2026-05-12-18-review.md
-last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
+task9_review_notes: "2026-05-17 15 Task9 re-review: needs-rework。P0 1 / P1 2 / P2 1；案例六仍保留 android-16 不存在的 handleMessageRefresh 锚点；HWC plane 数来源与 setRelativeLayer 公共 API 边界仍需修正；案例数据证据既有 P2 保留。"
+last_task6_at: "2026-05-17T16:11:00+08:00"
+task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。未发现新增 L1/L2 文风问题；锚点覆盖完整。既有 Task9 P0/P1 队列仍 pending，未自动晋升。"
+last_task6_review_log: "logs/review/2026-05-17-16-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
+p0: 1
+p1: 2
+p2: 1
+
 ---
 
 
