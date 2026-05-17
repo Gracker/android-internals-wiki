@@ -1757,3 +1757,20 @@
 - **问题**：`TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 实际由 `ProfilingManager#requestRunningSystemTrace(String tag)` 触发，并要求先注册该 trigger 才能收到结果；当前只写“App 请求”，缺少入口方法和注册前提。
 - **建议**：补 `requestRunningSystemTrace(tag)` 与 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 的关系，并区分它和 Android 15 `requestProfiling(PROFILING_TYPE_SYSTEM_TRACE)`。
 
+
+
+## [Task9 Deep Review] 13.16 Agent 辅助 Perfetto 分析协议 — 2026-05-17
+- **类型**：来源路径/证据可复查性
+- **位置**：frontmatter sources L18-L32；正文 L82、L112、L140；本地 source path
+- **问题**：sources 使用 DeepResearch/... 相对路径，但该目录不在 Android-Internal-Wiki 根目录下；实际文件位于 Obsidian/DeepResearch/android-skills-profilers/...。当前路径从项目根解析会失败，影响已验证材料复查。
+- **建议**：改成可解析的绝对路径，或统一成相对 Obsidian vault 根的约定并在项目规范中说明；至少把本节引用的两个 SKILL.md 和深度调研文件路径修正。
+
+- **类型**：标准库模块名/SQL 可执行性
+- **位置**：L148 stdlib 优先规则
+- **问题**：表格写 android.startup、android.frames 作为“优先查”的模块名，容易被照抄成 INCLUDE PERFETTO MODULE android.frames；实际常用入口是 android.startup.startups、android.frames.timeline / android.frames.per_frame_metrics 等具体模块。
+- **建议**：把这一行改成具体 include 示例，并说明 android.frames 是 package 名，不是可直接 include 的模块名。
+
+- **类型**：交叉引用/目录一致性
+- **位置**：src/part3-tools/ch13-perfetto/README.md “本章内容”
+- **问题**：第 13 章 README 仍只列到 13.10，未纳入 13.11-13.16；本节已引用 13.15，但读者从章节入口无法发现本节和相邻新增章节。
+- **建议**：更新 ch13 README 的本章内容和 related_chapters，补齐 13.11-13.16，并把 13.16 放到 13.10 SQL 与 13.15 BufferQueue 案例之后。

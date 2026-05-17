@@ -9192,6 +9192,49 @@
       ],
       "completed_date": "2026-05-17",
       "completed_reason": "Task 2A 加工完成：13.16 Agent 辅助 Perfetto 分析协议，status 已改为 ready-for-review，进入 Task 6 管线。"
+    },
+    {
+      "id": "task9-2026-05-17-13-16-agent-perfetto-state-version",
+      "section": "13.16",
+      "section_title": "Agent 辅助 Perfetto 分析协议",
+      "title": "Perfetto thread_state 状态口径与 FrameTimeline 版本边界补齐",
+      "priority": 85,
+      "reason": "[Deep Tech Review] thread_state raw state 与正文人类标签口径不一致；Android 10-17 范围下 FrameTimeline/android.frames 版本边界未明确。",
+      "description": "[Deep Tech Review] P1 2：thread_state 状态统计 SQL 与解释标签不一致；FrameTimeline/android.frames 在 Android 10/11 与 Android 12+ 的可用性边界不完整。",
+      "issue_type": "principle-chain/version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-17",
+      "added_at": "2026-05-17T08:23:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-17-08-deep-review.md",
+        "intake/suggestions.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/references/perfetto-stdlib.md",
+        "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/SQL 语义",
+          "location": "L155-L200、L217-L231 thread_state 状态统计与解释",
+          "detail": "示例 SQL 直接 GROUP BY thread_state.state，Perfetto raw state 会返回 Running、R/R+、S、D 等编码；正文和报告模板却按 Running/Runnable/Sleeping/Uninterruptible Sleep 人类可读标签解释。若 Agent 按正文标签查找或聚合，会漏掉 R+、S、D，导致 wall time / CPU time 归因口径不一致。项目内 13.10 已把常见值写为 Running / R / R+ / S / D。",
+          "suggestion": "在 SQL 中用 CASE 或 sched_state_to_human_readable_string 显式映射：R/R+→Runnable，S→Sleeping，D→Uninterruptible Sleep；或把正文、模板和示例结果统一改成 raw code 口径，并补 R+ preempted runnable 的解释。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L108、L148、L217-L242、L328-L338 FrameTimeline / android.frames 版本边界",
+          "detail": "章节适用范围写 Android 10-17，并多次把 FrameTimeline / android.frames 作为标准调查入口，但正文只笼统写“旧版本或厂商 ROM 字段不完整”，没有明确 Android 10/11 无 FrameTimeline、Android 12(API 31/S) 起才有 expected/actual FrameTimeline 及 android.frames.timeline 可用性的边界。",
+          "suggestion": "补一张版本兼容表：Android 10/11 回退到 Choreographer#doFrame、RenderThread、SurfaceFlinger slice 与 sched/thread_state；Android 12+ 优先 FrameTimeline / android.frames.timeline；厂商 ROM 缺字段时报告可信度降级并给出补采字段。"
+        }
+      ]
     }
   ],
   "metadata": {
