@@ -1,7 +1,7 @@
 {
   "total": 308,
-  "draft": 1,
-  "ready-for-review": 109,
+  "draft": 0,
+  "ready-for-review": 110,
   "finalized": 198,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-17",
@@ -167,7 +167,8 @@
     "14.1",
     "8.2",
     "7.6",
-    "14.1"
+    "14.1",
+    "17.5"
   ],
   "review_files": [
     "src/part3-tools/ch14-other-tools/01-as-profiler.md"
