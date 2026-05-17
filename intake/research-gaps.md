@@ -384,3 +384,36 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 
 ### 关联章节
 7.15、5.10、25.2
+
+
+## [2026-05-17] 1.9 Package Manager Service 与应用安装性能 — Android 16 SDM / Cloud Compilation 源码链复核
+
+### 盲区描述
+章节需要把 Android 16 SDM / Cloud Compilation 的安装链路重新对齐到 AOSP：`.dm`、profile、`.sdm`、`.sdc` 的角色边界，以及 PackageInstallerSession、ArtManagedInstallFileHelper、ART Service、artd 之间的职责分工仍未形成可发布口径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 AOSP android-16.0.0_r1 `PackageInstallerSession.verifySdmSignatures()`、`ArtManagedInstallFileHelper`、`ArtFileManager`、`Dexopter`、`PrimaryDexopter`。
+- 区分 `cloudCompilationVerification()` / `cloudCompilationPm()` flag、`.dm` dex metadata、`.sdm` secure dex metadata、`.sdc` companion 文件。
+- 用 Play 安装 Trace + `cmd package art dump` / `dumpsys package dexopt` 建立可观测边界，不写无来源收益数字。
+
+### 关联章节
+1.9、1.7、16.5
+
+## [2026-05-17] 17.2 SoC 平台差异 — sched_ext OEM 调度器公开证据
+
+### 盲区描述
+章节列出的 Qualcomm SCX_Oplus、MediaTek SCX_Mtk、Google Pixel SCX_Litto 缺少公开可核对来源；sched_ext 在 Android common 6.12 中的存在不等于具体 OEM 设备默认启用，也不等于已有公开调度器实现可引用。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android common 6.12 `kernel/sched/ext.c`、`CONFIG_SCHED_CLASS_EXT` 与目标设备 kernel config。
+- 查找 Qualcomm / MediaTek / Pixel vendor kernel tag 中可公开引用的 sched_ext BPF 程序名称和实现。
+- 收集 Perfetto / ftrace / sysfs 证据，确认设备是否启用 sched_ext 以及对 top-app/game workload 的影响。
+
+### 关联章节
+17.2、5.1、5.4、17.1

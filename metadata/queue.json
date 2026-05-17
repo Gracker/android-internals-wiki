@@ -970,19 +970,52 @@
     {
       "id": "task9-1.9-cloud-compilation-evidence",
       "section": "1.9",
-      "priority": 85,
-      "title": "Android 16 云编译实现细节缺乏一手证据",
-      "description": "SDM 机制描述模糊，缺乏 AOSP 源码直接证据",
-      "issue_type": "knowledge-gap",
-      "severity": "P1",
-      "created_date": "2026-05-12",
+      "priority": 95,
+      "title": "Android 16 云编译 / SDM 源码口径错误",
+      "description": "P0: `PackageManager.getCloudPackageInfo()` 不存在；P0: 补充段把 SDM 写成 `.dm`/installFilter/direct artifact 注入；P1: 性能数字和版本表缺少一手证据。",
+      "issue_type": "source-code-accuracy-version-differences-data-support",
+      "severity": "P0",
+      "created_date": "2026-05-17",
       "assigned_to": "research-team",
-      "estimated_hours": 3,
+      "estimated_hours": 4,
       "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/09-package-manager.md"
-      ]
+      ],
+      "section_title": "Package Manager Service 与应用安装性能",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-17-19-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/不存在 API",
+          "location": "L648-L650 勘误表 `PackageManager.getCloudPackageInfo()`",
+          "detail": "AOSP android-16.0.0_r1 `frameworks/base/core/java/android/content/pm/PackageManager.java` 中未找到 `getCloudPackageInfo()`。当前勘误表把不存在方法写成“实际存在的机制”。",
+          "suggestion": "删除该方法名；如需描述云编译/SDM，锚到 `PackageInstallerSession.verifySdmSignatures()`、`ArtManagedInstallFileHelper`、ART Service / artd 相关路径。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码语义错误",
+          "location": "L702-L725 “Android 16 云编译与 SDM 机制”补充段",
+          "detail": "段落把 SDM 写成 `.dm`/Speed-compiled Dex Metadata，并称 PMS 通过 `installFilter` 判断后直接注入预编译产物。AOSP 证据显示 `.sdm` 是 secure dex metadata，`PackageInstallerSession` 只负责 staging 与签名校验；后续 artifact location / dexopt 由 ART Service/artd 处理，未见 `installFilter` 这个源码锚点。",
+          "suggestion": "重写为 PackageInstallerSession staging/verify `.sdm` → ART-managed install files → ART Service/artd 消费/回退；区分 `.dm`、profile、`.sdm`、`.sdc`。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/版本边界",
+          "location": "L727-L739 版本表与性能影响",
+          "detail": "“Android 16 支持 v1”“20-60 秒缩短到 1-3 秒”等结论没有官方 benchmark、设备条件或源码字段支撑；L741-L747 又承认关键项未经一手验证。",
+          "suggestion": "删除固定收益数字，保留“可能减少本机 dex2oat 压力”的可观测边界；补充可验证命令/Trace 观察点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T19:30:43+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-17T19:30:43+08:00",
+      "review_log": "logs/deep-review/2026-05-17-19-deep-review.md"
     },
     {
       "id": "task9-1.9-pms-computer-principle",
@@ -10053,6 +10086,106 @@
         "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/app/GameManagerService.java",
         "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
       ]
+    },
+    {
+      "id": "task9-2.18-arr-frametimeline-refreshselector-20260517",
+      "section": "2.18",
+      "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+      "priority": 95,
+      "title": "ARR FrameTimeline SQL 与 RefreshRateSelector 源码路径错误",
+      "description": "P0: `actual_frame_timeline_slice.vsync_id` 不存在；P0: 附录引用不存在的 Java RefreshRateSelector 路径；P1: ARR 决策层归属与正文冲突。",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-17-19-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/SQL 字段错误",
+          "location": "L259-L272 `actual.vsync_id` 查询",
+          "detail": "Perfetto `actual_frame_timeline_slice` 标准库表没有 `vsync_id` 字段；官方列名是 `display_frame_token` / `surface_frame_token`，其中 display frame token 才标注为 vsync id。当前 SQL 不能执行。",
+          "suggestion": "改用 `display_frame_token`（并区分 display frame / surface frame），或先查询表结构后再做连续性判断。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L366-L395 附录关键源码路径",
+          "detail": "`frameworks/base/services/core/java/com/android/server/display/RefreshRateSelector.java` 在 AOSP android-16.0.0_r1 下不存在；实际 refresh-rate content selection 代码在 `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`。",
+          "suggestion": "删除 Java `RefreshRateSelector.java` 路径，改为 native `RefreshRateSelector.cpp/.h`；Java 侧只保留 `DisplayModeDirector.java` 的 policy/range 角色。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理链断裂",
+          "location": "L364-L380 附录“核心组件架构/评分算法”",
+          "detail": "附录把 `DisplayModeDirector` 写成 ARR 核心评分/最优模式决策者，和正文 L119-L123 的正确链路冲突。AOSP 中 DisplayManager/DMD 主要收敛 policy/range，SurfaceFlinger Scheduler/RefreshRateSelector 做内容刷新率选择。",
+          "suggestion": "把附录改成“Framework policy range → SF RefreshRateSelector content selection → HWC/面板执行”三段，或移除未验证的 DeepResearch 注入段。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T19:30:43+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-17T19:30:43+08:00",
+      "review_log": "logs/deep-review/2026-05-17-19-deep-review.md"
+    },
+    {
+      "id": "task9-17.2-soc-source-errors-20260517",
+      "section": "17.2",
+      "section_title": "SoC 平台差异",
+      "priority": 95,
+      "title": "SoC 平台差异中的 Tensor/Dimensity/sched_ext 证据错误",
+      "description": "P0: Tensor G4 CPU 核心写成非标准 Cortex；P0: Dimensity 9400 vendor dtsi 写成 MT6989；P1: sched_ext OEM 调度器名称缺少公开证据。",
+      "issue_type": "source-code-accuracy-knowledge-gap",
+      "severity": "P0",
+      "created_date": "2026-05-17",
+      "assigned_to": "research-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-17-19-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "事实错误/SoC 规格",
+          "location": "L115、L131 Tensor G4 CPU 描述",
+          "detail": "正文称 Tensor G4 使用“三星定制 ARM 核心（非标准公版 Cortex）”。公开规格与拆解资料一致显示 Tensor G4 为 1×Cortex-X4 + 3×Cortex-A720 + 4×Cortex-A520，属于 Arm 公版 Cortex 核心组合。",
+          "suggestion": "改为“Tensor G4 使用 Arm Cortex-X4/A720/A520，Google/Samsung 在 SoC 集成、频率、调度和 TPU/NPU 侧做定制”。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码/芯片代号错误",
+          "location": "L360 Dimensity 9400 vendor dtsi 路径",
+          "detail": "正文把 Dimensity 9400 的频率表路径写成 `mt6989.dtsi`。公开芯片代号中 Dimensity 9400 对应 MT6991，MT6989 对应上一代 Dimensity 9300 系列；该路径不能作为 9400 证据。",
+          "suggestion": "删除具体 dtsi 文件名，或在确认 vendor kernel tag 后改为 MT6991 对应路径；未拿到源码前只写“需 vendor kernel / 实机 OPP 表验证”。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/公开证据不足",
+          "location": "L199-L201 sched_ext OEM 调度器",
+          "detail": "正文列出 Qualcomm SCX_Oplus、MediaTek SCX_Mtk、Google Pixel SCX_Litto，并称“公开可见”。公开检索未找到这些名称的可核对来源；AOSP 默认调度链是否启用 sched_ext也要按 kernel config / vendor tag 验证。",
+          "suggestion": "保留 Linux 6.12 / Android common 6.12 sched_ext 背景，把 OEM 调度器名称降级为待验证；补 vendor kernel 链接、config 和 trace 证据后再写确定结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-17T19:30:43+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-17T19:30:43+08:00",
+      "review_log": "logs/deep-review/2026-05-17-19-deep-review.md"
     }
   ],
   "metadata": {
