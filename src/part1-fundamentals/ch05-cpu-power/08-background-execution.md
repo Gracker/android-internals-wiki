@@ -68,23 +68,22 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_result: needs-rework
 task6_reviewed_date: 2026-05-16
 task6_reviewed_by: openclaw-task6
-task9_reviewed_date: '2026-05-16'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-16T15:38:55+08:00'
-task2b_state: "fixed"
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T00:25:00+08:00"
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: '2026-05-09T18:44:33+08:00'
-task9_state: "pending"
-task9_result: needs-rework
-last_task9_review_log: logs/deep-review/2026-05-16-15-deep-review.md
-queue_entry: task9-20260516-5.8-binder-freezer-api-surface
-task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；Binder freezer API 签名、RemoteCallbackList
-  策略与 AVF pVM 配额豁免口径需回炉。详见 logs/deep-review/2026-05-16-15-deep-review.md。'
+task9_state: "reviewed"
+task9_result: "needs-rework"
+last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
+queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
+task9_review_notes: "2026-05-18 Task9 00:25 → needs-rework；P1：16KB/GC 联动压缩被写成 Android 16/17 引入且绑定 16KB，官方 cached-apps-freezer 口径是 Android 14 起 cached/freeze 前 GC 与冻结后 compaction，需回炉修正。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T23:15:00+08:00"

@@ -417,3 +417,19 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 
 ### 关联章节
 17.2、5.1、5.4、17.1
+
+## [2026-05-18] 5.8 后台执行限制与优化 — 16KB/GC/freezer 版本边界
+
+### 盲区描述
+5.8 当前把“系统压缩期间联动触发应用 GC”写成 Android 16/17 引入并绑定 16KB 页收益；已核到 source.android.com cached-apps-freezer 的基础口径是 Android 14+ cached/freeze 前 GC 与冻结后 compaction，但缺少 Android 16/17 或 16KB 专属增强的一手证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`、`Freezer.java`、ART runtime GC 触发路径与 Android 14/15/16/17 tag 差异。
+- 查找 source.android.com / AOSP release notes / commit 中是否存在 16KB page size 与 cached app compaction/GC 的直接关联。
+- 若只存在 Android 14+ freezer 配套 GC，应回写为版本边界说明，不再作为 Android 16/17 或 16KB 专属变化。
+
+### 关联章节
+5.8、4.2、4.3、5.6
