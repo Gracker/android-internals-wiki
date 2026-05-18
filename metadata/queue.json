@@ -11854,6 +11854,28 @@
           "suggestion": "补“实验性/高风险/不建议通用线上兜底”的边界，并明确只适合隔离线程和受控实验，不应作为稳定性治理主方案。"
         }
       ]
+    },
+    {
+      "id": "task9-20260518-19.13-androidx-tracing-reflection-methods",
+      "section": "19.13",
+      "section_title": "androidx.tracing（Tracing SDK）",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AndroidX Tracing compat 版本表仍有源码/版本错误：API 18-28 fallback 方法名不存在，tracing/tracing-ktx 能力归属与 1.2.0 lazy traceAsync 签名需修正。",
+      "material_paths": [
+        "logs/deep-review/2026-05-18-20-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/版本错误",
+          "location": "L237 / L245-L246 AndroidX Tracing compat 行为与版本表",
+          "detail": "正文称 API 28 及以下由 AndroidX 反射调用内部 Trace.__setArg / Trace.__endTraceAsync 实现 async trace compat，并把 beginAsyncSection/endAsyncSection compat 归到 tracing-ktx。AndroidX tracing 1.0.0/1.2.0 源码显示，API <29 fallback 反射调用的是 android.os.Trace.asyncTraceBegin(long,String,int) / asyncTraceEnd(long,String,int)；beginAsyncSection/endAsyncSection 位于 androidx.tracing:tracing 主 artifact，tracing-ktx 1.0.0 提供的是 trace/traceAsync 扩展。1.2.0 新增的是 lambda 形式的 lazy label/cookie 重载与 begin 失败跳过 end。",
+          "suggestion": "删除不存在的 Trace.__setArg / Trace.__endTraceAsync；改为 “API 18-28 通过反射调用 android.os.Trace.asyncTraceBegin/asyncTraceEnd，API 29+ 调公开 beginAsyncSection/endAsyncSection”。版本表拆清 tracing 主库与 tracing-ktx：tracing 1.0.0 已有 begin/end async compat，tracing-ktx 1.0.0 已有 traceAsync；1.2.0 仅标为 lazy lambda 重载和异常安全修正。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T20:30:46+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
