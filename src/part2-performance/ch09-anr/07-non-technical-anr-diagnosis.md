@@ -56,23 +56,26 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
 section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task2b_result: rework-fixed
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-16.0.0_r1
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T01:15:00+08:00"
-review_notes: "2026-05-05 task6 re-review: pass-light-edit。L1 禁用词零命中，L2 无需正文改写；task9_result=pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-05-18"
+last_task9_at: "2026-05-18T21:20:00+08:00"
+review_notes: "2026-05-18 task9 idle audit: needs-rework。P1 2（ContentProvider timeout/source semantics；Android 15+ 16KB page-size version boundary），P2 1（InputDispatcher Android 8-10 path note）；已写入 queue/suggestions，等待 Task2B 回炉。"
 auto_promoted: true
+last_task9_audit: "2026-05-18"
+last_task9_review_log: "logs/deep-review/2026-05-18-21-audit.md"
+task9_review_notes: "2026-05-18 Task9 闲时抽检：needs-rework。P1 2：ContentProvider timeout 表混写 publish/call 预算；Android 15+/API35+ 16KB 页大小与 VMA 锁诊断建议缺少设备/内核前提。P2 1：InputDispatcher 旧版本路径需补注。"
 ---
 
 # ANR 非技术故障诊断
