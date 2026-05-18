@@ -2,7 +2,7 @@
 title: "帧率监控与线上卡顿治理"
 chapter: "22.8"
 section: "22.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, AndroidX JankStats docs, Android FrameMetrics docs"
@@ -44,15 +44,17 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-13"
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-05-19'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T10:22:00+08:00"
+last_task9_at: '2026-05-19T07:31:24+08:00'
 task2b_result: "fixed"
+last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
+task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
 ---
 
 # 帧率监控与线上卡顿治理
