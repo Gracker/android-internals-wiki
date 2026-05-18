@@ -2,7 +2,7 @@
 title: "图片加载与显示优化"
 chapter: "22.6"
 section: "22.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
@@ -44,9 +44,9 @@ sources:
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
@@ -55,12 +55,12 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-13T09:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-13-09-review.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（术语、指标中文化、兜底表述）；四层质检通过，无新增回炉项，转入 Task9。"
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
-task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=0, P1=1），转入 Task2B 回炉。"
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-19'
+last_task9_at: '2026-05-19T07:31:24+08:00'
+last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
+task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
 task2b_result: "fixed"
 ---
 

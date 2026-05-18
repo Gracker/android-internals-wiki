@@ -2,7 +2,7 @@
 title: 线程 CPU 状态分析
 section: '13.6'
 chapter: '13.6'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-04-22'
@@ -35,18 +35,19 @@ related_chapters:
 - '5.1'
 - '13.1'
 - '13.5'
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: needs-rework
-task9_reviewed_date: '2026-05-13'
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-05-19'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T04:11:19+08:00'
+last_task9_at: '2026-05-19T07:31:24+08:00'
 task2b_result: "fixed"
 last_task2b_at: '2026-04-28T01:40:00+08:00'
-task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
+task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
+last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
 ---
 
 
