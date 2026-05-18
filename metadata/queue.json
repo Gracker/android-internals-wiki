@@ -12277,6 +12277,23 @@
       "related_files": [
         "src/part3-tools/ch19-apm/12-framemetrics.md"
       ]
+    },
+    {
+      "id": "task2a-18.22-android-xr-spatial-ui-rendering",
+      "section": "18.22",
+      "priority": 80,
+      "title": "Android XR 空间 UI 与环境资产渲染性能",
+      "description": "官方 Android XR / Jetpack XR 文档已形成空间 UI、环境资产、质量分级和 XR 开发工具体系，现有渲染链路章节未覆盖 XR 场景的资源与帧预算。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/22-android-xr-spatial-ui-rendering.md"
+      ]
     }
   ],
   "metadata": {
