@@ -11431,7 +11431,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md"
@@ -11449,7 +11449,9 @@
       ],
       "created_by": "task2a-knowledge-gap",
       "added_at": "2026-05-18T14:04:00+08:00",
-      "gap_score": 18
+      "gap_score": 18,
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成：status ready-for-review，补齐 16KB Page Size native 兼容性治理、NDK/AGP 升级、线上归因与验证流水线。"
     }
   ],
   "metadata": {
