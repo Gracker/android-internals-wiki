@@ -172,7 +172,8 @@
     "1.1",
     "20.2",
     "1.11",
-    "20.13"
+    "20.13",
+    "2.23"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -181,17 +182,17 @@
   "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-18",
-    "time": "13:12",
+    "time": "19:12",
     "sections": [
-      "25.6"
+      "2.23"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 0,
+    "small_fixes": 3,
     "new_rework_items": 0,
-    "note": "Task6 写作层复审通过；无 L1/L2 正文小修；因 Task9 needs-rework 与 queue pending，未自动晋升 finalized。"
+    "note": "Task6 写作层 review 通过；修正 3 处 L1/L2 文风问题。FrameRateEligibility 同名实现路径保留待验证标注，转 Task9 复核。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1308,30 +1309,40 @@
       "task6_log": "logs/review/2026-05-18-12-review.md",
       "task6_new_rework": false,
       "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
+    },
+    "2.23": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-18T19:12:00+08:00",
+      "task6_log": "logs/review/2026-05-18-19-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作质量通过；清理“对齐”、形容词起手和否定-纠正结构。既有 FrameRateEligibility 路径待验证标注交 Task9 复核，未新增 Task2B 回炉。"
     }
   },
-  "total_review_sections": 156,
+  "total_review_sections": 157,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-18T19:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "13:12",
-    "reviewed_at": "2026-05-18T13:12:59+08:00",
+    "time": "19:12",
+    "reviewed_at": "2026-05-18T19:12:00+08:00",
     "sections": [
-      "25.6"
+      "2.23"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
     ],
-    "log": "logs/review/2026-05-18-13-review.md",
-    "mode": "首次 review（revisiting）",
-    "l1_l2_fixes": 0,
+    "log": "logs/review/2026-05-18-19-review.md",
+    "mode": "首次 review",
+    "l1_l2_fixes": 3,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
+    "technical_risk_markers": 1,
     "results": {
-      "25.6": "pass-light-edit / task2b_pending"
+      "2.23": "pass-light-edit / task9_pending"
     },
     "auto_promoted": []
   },
@@ -3722,6 +3733,19 @@
       "file": "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-18"
+    },
+    "2.23": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "title": "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略",
+      "file": "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-18T19:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-19-review.md",
+      "task9_state": "pending"
     }
   },
   "task2b_rounds": [
