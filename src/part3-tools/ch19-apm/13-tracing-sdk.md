@@ -29,12 +29,12 @@ sources:
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "pending"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_result: pass-light-edit
+reviewed_date: "2026-05-18"
+task6_result: "needs-rework"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
@@ -44,9 +44,12 @@ last_task2b_at: '2026-05-14T23:25:54+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler 示例异常路径仍可能遗留 async span。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。Top: AndroidX Tracing 版本表混淆平台 API 与 AndroidX compat，协程 async 示例仍有取消路径不闭合。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；旧 async trace 两项已复核为 fixed，新增 Trace ThreadLocal 源码事实错误。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 0 / P2 0；AndroidX Tracing compat 与版本表仍有源码错误（traceAsync 起始版本、pre-29 fallback、TraceEventCache）。"
-task6_review_notes: '2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。 | 2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知 async trace 技术项仍在 queue，等待 Task9/Task2B 复审，未自动晋升。'
-last_task6_at: "2026-05-15T01:12:00+08:00"
+task6_review_notes: "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。 | 2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知 async trace 技术项仍在 queue，等待 Task9/Task2B 复审，未自动晋升。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
+last_task6_at: "2026-05-18T12:26:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
+task6_reviewed_at: "2026-05-18T12:26:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_review_log: "logs/review/2026-05-18-12-review.md"
 ---
 # androidx.tracing（Tracing SDK）
 
@@ -228,6 +231,8 @@ trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看�
 AndroidX `Trace.forceEnableAppTracing()` 在 API 18-30 上为 non-debuggable 进程尝试打开 app tracing 通道。从 API 31 起，平台默认开启 app tracing，该调用不再有实际效果。
 
 `androidx.tracing` 的 `trace {}` 和 `traceAsync {}` Kotlin 扩展函数从 1.2.0 起可用，内部根据 API 版本走平台 `Trace` 或 `NoOp` 降级。异步 trace 配对 (`beginAsyncSection`/`endAsyncSection`) 在 API 29+ 走平台原生实现，API 28 及以下由 AndroidX 提供 compat 实现（基于 `TraceEventCache`）。
+
+[需确认: Task9 复审指出 `traceAsync` 起始版本、API 28 及以下 compat 行为与 `TraceEventCache` 说法仍需按 AndroidX Tracing 源码复核。Task6 暂不裁决技术真伪，交由 Task2B/Task9 复核。]
 
 AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在 non-debuggable process 中启用 app tracing；从 Android 12 开始，应用代码写入的 custom trace 在所有应用里都默认开启。用正式包抓性能数据时，优先使用 profileable 或接近发布态的构建，避免把 debuggable 包的调试开销带进结论。
 

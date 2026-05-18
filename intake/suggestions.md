@@ -1946,3 +1946,40 @@
   8. SELinux.isEnforced 机制：偏系统安全/调试链路，性能相关性不足，本轮评分未达 14。
 - **建议**：下一轮优先继续从 `daily-info/2026-05-18.md` 和 Android 17 官方文档中筛选“已有官方 API/行为变更 + 尚无 AIW 小节”的主题，避免重复创建已覆盖章节。
 
+## [Task6 Review] 9.5 案例集 — 2026-05-18
+
+- **类型**：需确认
+
+- **位置**：案例 4「进程冻结导致 Gesture Monitor 无法响应」版本边界段
+
+- **问题**：Task9 已指出 Android 15+ 活跃 Input 连接冻结豁免、am_cached_process_freeze_status 日志口径，以及 Cached Apps Freezer 引入版本仍缺 AOSP 证据。Task6 不裁决技术真伪，只在正文加风险标记并保留回炉。
+
+- **建议**：Task2B 按 Task9 queue 条目补 AOSP / OEM 分支证据，必要时改为 Android 11+ freezer 基线 + Android 14+ robust 行为，并把 OEM 策略单独标注。
+
+- **review 日志**：logs/review/2026-05-18-12-review.md
+
+
+## [Task6 Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-18
+
+- **类型**：需确认
+
+- **位置**：「AndroidX Tracing compat 行为」与版本差异表
+
+- **问题**：Task9 已指出 traceAsync 起始版本、API 28 及以下 compat 实现、TraceEventCache 说法存在源码/版本风险。Task6 只追加风险标记，不改写技术结论。
+
+- **建议**：Task2B 按 AndroidX Tracing 1.0/1.2/1.3 源码与 release note 重新核对版本表，删除未证实的 TraceEventCache 表述。
+
+- **review 日志**：logs/review/2026-05-18-12-review.md
+
+
+## [Task6 Review] 19.23 网络 APM 底层捕获原理 — 2026-05-18
+
+- **类型**：需确认
+
+- **位置**：指标模型「Response 接收」阶段
+
+- **问题**：Task9 已指出 OkHttp responseBodyEnd 代表应用消费/关闭 ResponseBody 的边界尚未说明，可能把应用侧慢消费误归因到网络接收。Task6 只追加风险标记，不裁决指标口径。
+
+- **建议**：Task2B 补 responseBodyStart/responseBodyEnd 的 OkHttp 语义边界，必要时拆分网络下载、应用消费、流式响应口径。
+
+- **review 日志**：logs/review/2026-05-18-12-review.md

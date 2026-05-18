@@ -3,10 +3,10 @@
 title: 案例集
 chapter: '9.5'
 section: '9.5'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-21'
@@ -47,8 +47,8 @@ related_chapters:
 - '9.4'
 - '1.4'
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_result: "needs-rework"
 task9_state: "reviewed"
 task2b_state: "pending"
 task2b_result: "pending"
@@ -63,11 +63,11 @@ review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
 task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
-task6_reviewed_at: "2026-05-14T20:10:00+08:00"
+task6_reviewed_at: "2026-05-18T12:26:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-14T20:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。"
+last_task6_at: "2026-05-18T12:26:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-12-review.md"
+task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
 ---
 
 # 案例集
@@ -104,7 +104,7 @@ task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1
 这六个案例覆盖了 ANR 中最常见的根因类型：
 
 - **案例 1：系统负载过高导致 Input ANR** — 设备全局 I/O 压力过高，所有进程都在等磁盘
-- **案例 2：SystemServer 主线程耗时导致 Input ANR** — 根因不在 App 侧，而在 system_server 的 Notifier 处理
+- **案例 2：system_server 主线程耗时导致 Input ANR** — 根因不在 App 侧，而在 system_server 的 Notifier 处理
 - **案例 3：SharedPreferences 等待导致 Broadcast ANR** — `QueuedWork.waitToFinish()` 把主线程卡住了
 - **案例 4：进程冻结导致 Input ANR** — 系统冻结了 Gesture Monitor 进程，事件无人消费
 - **案例 5：应用启动超时导致焦点窗口缺失 ANR** — 目标应用启动失败，焦点无处可去
@@ -181,7 +181,7 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 ---
 
-## 案例 2：SystemServer 主线程耗时 — server 端不响应导致的 Input ANR
+## 案例 2：system_server 主线程耗时 — server 端不响应导致的 Input ANR
 
 ### 问题现象
 
@@ -226,7 +226,7 @@ system_server 的主线程在处理 `Notifier$NotifierHandler` 的消息时花�
 
 ### 举一反三
 
-Input ANR 中"(server) is not responding"子类型，根因几乎一定在 system_server 端。分析方法不是看 App trace，而是找 system_server 的主线程耗时日志。
+Input ANR 中 "(server) is not responding" 子类型，根因几乎一定在 system_server 端。分析方法不是看 App trace，而是找 system_server 的主线程耗时日志。
 
 ---
 
@@ -303,6 +303,8 @@ Android 14 设备，使用手势导航时偶发 ANR：
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
 [版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。冻结逻辑由 `ActivityManager` 侧的 `CachedAppOptimizer` / `ProcessCachedOptimizerRecord` 驱动，不在 `InputDispatcher` 中。Android 15+ 在 `CachedAppOptimizer` 中增加了对活跃 Input 连接进程的冻结豁免判断。不同 OEM 机型上豁免覆盖范围仍有差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态，结合 `ProcessCachedOptimizerRecord` 的冻结状态字段判断豁免是否生效]
+
+[需确认: Task9 复审指出 Android 15+ 活跃 Input 连接冻结豁免、`am_cached_process_freeze_status` 日志口径，以及 Cached Apps Freezer 引入版本仍需补 AOSP 证据。Task6 暂不裁决技术真伪，交由 Task2B/Task9 复核。]
 
 ### 修复方案
 
@@ -507,7 +509,7 @@ Android 11 (API 30) 引入的 `ActivityManager.getHistoricalProcessExitReasons()
 
 ### 关键技术点
 
-1. **Trace 获取**：Android 30+ 优先使用 `ApplicationExitInfo.getTraceInputStream()`，这是公开 API，不需要绕过 Hidden API 限制
+1. **Trace 获取**：Android 11（API 30）及以上优先使用 `ApplicationExitInfo.getTraceInputStream()`，这是公开 API，不需要绕过 Hidden API 限制
 2. **主线程监控**：需要更细粒度的消息级耗时数据时，Android 28+ 使用 `Looper.Observer`（需绕过 Hidden API 限制），低版本降级到 `Looper.setMessageLogging(Printer)` 方案
 3. **消息分类**：区分系统消息和业务消息，分别记录
 4. **内存控制**：使用滚动淘汰策略，只保留最近 10 秒数据

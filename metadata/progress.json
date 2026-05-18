@@ -178,15 +178,17 @@
     "src/part3-tools/ch19-apm/23-network-apm-internals.md",
     "src/part2-performance/ch09-anr/05-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-18 11: 深审 19.13/19.23/9.5；19.13 命中 AndroidX Tracing compat/版本表 P0，19.23 命中 OkHttp responseBodyEnd 指标口径 P1，9.5 命中 Cached Apps Freezer AOSP 版本边界 P0/P1；新增 queue 3 条，无自动晋升。",
+  "review_summary": "Task6 2026-05-18 12: 复审 9.5/19.13/19.23；L1/L2 小修 6 处，承接 Task9 技术边界项 3 个并在正文标注，queue 保持 pending；无自动晋升。",
   "task6_review_summary": {
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 6,
     "l3_issues": 0,
     "l4_issues": 0,
-    "technical_risk_markers": 0,
-    "total_issues": 0,
+    "technical_risk_markers": 3,
+    "total_issues": 3,
     "reviewed_sections": [
-      "1.1"
+      "9.5",
+      "19.13",
+      "19.23"
     ]
   },
   "issues_by_section": {
@@ -383,7 +385,15 @@
       "p3": 0,
       "reviewed_at": "2026-05-18T11:42:46+08:00",
       "log": "logs/deep-review/2026-05-18-11-deep-review.md",
-      "summary": "P0 1/P1 1：Cached Apps Freezer AOSP Input 豁免与日志锚点缺证据，Android 11+ 版本边界需修正。"
+      "summary": "P0 1/P1 1：Cached Apps Freezer AOSP Input 豁免与日志锚点缺证据，Android 11+ 版本边界需修正。",
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-18T12:26:00+08:00",
+      "task6_log": "logs/review/2026-05-18-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
     },
     "2.10": {
       "p0": 2,
@@ -559,7 +569,15 @@
       "p3": 0,
       "reviewed_at": "2026-05-18T11:42:46+08:00",
       "log": "logs/deep-review/2026-05-18-11-deep-review.md",
-      "summary": "P0 1：traceAsync 起始版本、pre-29 fallback 与 TraceEventCache 源码事实错误。"
+      "summary": "P0 1：traceAsync 起始版本、pre-29 fallback 与 TraceEventCache 源码事实错误。",
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-18T12:26:00+08:00",
+      "task6_log": "logs/review/2026-05-18-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
     },
     "19.26": {
       "p0": 1,
@@ -1275,13 +1293,21 @@
       "p3": 0,
       "reviewed_at": "2026-05-18T11:42:46+08:00",
       "log": "logs/deep-review/2026-05-18-11-deep-review.md",
-      "summary": "P1 1：responseBodyEnd 是应用消费/关闭完成边界，不等同纯网络下载完成。"
+      "summary": "P1 1：responseBodyEnd 是应用消费/关闭完成边界，不等同纯网络下载完成。",
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-18T12:26:00+08:00",
+      "task6_log": "logs/review/2026-05-18-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
     }
   },
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T08:15:18+08:00",
+  "last_updated": "2026-05-18T12:26:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
@@ -3683,29 +3709,39 @@
   "last_task2a_file": "src/part5-app/ch26-observability/13-application-start-info.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
-    "1.1"
+    "9.5",
+    "19.13",
+    "19.23"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
-  "last_task6_at": "2026-05-18T08:15:18+08:00",
+  "last_task6_at": "2026-05-18T12:26:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-18",
-    "time": "08:15",
-    "reviewed_at": "2026-05-18T08:15:18+08:00",
+    "time": "12:26",
+    "reviewed_at": "2026-05-18T12:26:00+08:00",
     "sections": [
-      "1.1"
+      "9.5",
+      "19.13",
+      "19.23"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
     ],
-    "log": "logs/review/2026-05-18-08-review.md",
-    "mode": "回炉复审",
-    "l1_l2_fixes": 10,
+    "log": "logs/review/2026-05-18-12-review.md",
+    "mode": "回炉复审 / Task9 技术边界承接",
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
+    "technical_risk_markers": 3,
     "results": {
-      "1.1": "pass-light-edit / task9_pending"
+      "9.5": "needs-rework / queue_pending",
+      "19.13": "needs-rework / queue_pending",
+      "19.23": "needs-rework / queue_pending"
     },
     "auto_promoted": []
   },
@@ -3716,10 +3752,12 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 197,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-18T08:15:18+08:00",
-  "task6_last_review_log": "logs/review/2026-05-18-08-review.md",
+  "task6_last_review_at": "2026-05-18T12:26:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-18-12-review.md",
   "task6_last_review_sections": [
-    "1.1"
+    "9.5",
+    "19.13",
+    "19.23"
   ],
   "sections_status": {
     "22.11": {
@@ -4373,6 +4411,42 @@
       "gap_score": 19,
       "queue_priority": 80,
       "material_count": 4
+    },
+    "9.5": {
+      "title": "案例集",
+      "file": "src/part2-performance/ch09-anr/05-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-18T12:26:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-12-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
+    },
+    "19.13": {
+      "title": "androidx.tracing（Tracing SDK）",
+      "file": "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-18T12:26:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-12-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
+    },
+    "19.23": {
+      "title": "网络 APM 底层捕获原理",
+      "file": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-18T12:26:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-12-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
     }
   },
   "task2a_last_processed": {
@@ -4408,38 +4482,40 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "date": "2026-05-17",
-    "time": "12:11",
-    "reviewed_at": "2026-05-17T12:11:00+08:00",
+    "date": "2026-05-18",
+    "time": "12:26",
+    "reviewed_at": "2026-05-18T12:26:00+08:00",
     "sections": [
-      "2.10",
-      "20.6",
-      "12.5"
+      "9.5",
+      "19.13",
+      "19.23"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch20-stability/06-stability-metrics.md",
-      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
     ],
-    "log": "logs/review/2026-05-17-12-review.md",
-    "mode": "首次 review / 回炉复查混合批次",
+    "log": "logs/review/2026-05-18-12-review.md",
+    "mode": "回炉复审 / Task9 技术边界承接",
     "l1_l2_fixes": 6,
-    "l3_l4_issues": 2,
-    "technical_risk_markers": 2,
+    "l3_l4_issues": 0,
+    "technical_risk_markers": 3,
     "results": {
-      "2.10": "needs-rework / queue_pending",
-      "20.6": "needs-rework / queue_pending",
-      "12.5": "pass-light-edit / task9_pending"
+      "9.5": "needs-rework / queue_pending",
+      "19.13": "needs-rework / queue_pending",
+      "19.23": "needs-rework / queue_pending"
     },
     "auto_promoted": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md",
-    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
   "last_task2a_date": "2026-05-17",
   "task9_last_review_summary": {
@@ -4493,25 +4569,40 @@
     "section": "19.13",
     "title": "androidx.tracing（Tracing SDK）",
     "last_task2b_at": "2026-05-18T11:27:58+08:00",
-    "task2b_result": "fixed",
-    "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "task2b_result": "pending",
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-05-18T12:26:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-12-review.md"
   },
   "section_19_23": {
     "section": "19.23",
     "title": "网络 APM 底层捕获原理",
     "last_task2b_at": "2026-05-18T11:27:58+08:00",
-    "task2b_result": "fixed",
-    "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "task2b_result": "pending",
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-05-18T12:26:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-12-review.md"
   },
   "section_9_5": {
     "section": "9.5",
     "title": "案例集",
     "last_task2b_at": "2026-05-18T11:27:58+08:00",
-    "task2b_result": "fixed",
-    "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "task2b_result": "pending",
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-05-18T12:26:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-12-review.md"
   },
   "section_25_8": {
     "section": "25.8",
