@@ -44,6 +44,8 @@ task9_result: pass-tech-review
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T14:30:00+08:00'
+last_task6_audit: "2026-05-19"
+last_task6_audit_log: "logs/review/2026-05-19-02-audit.md"
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -54,7 +56,7 @@ last_task9_at: '2026-04-22T14:30:00+08:00'
 ### 锚点（必须覆盖）
 
 - 🔹 **GPU 工具分层与选型**：[已验证：developer.android.com/agi，perfetto.dev/docs/data-sources/gpu，renderdoc.org]
-  先区分系统级追踪、帧级分析和厂商专用工具，再按“先确认 GPU 是否是瓶颈，再下钻具体环节”的路径选工具。
+  先区分系统级追踪、帧级分析和厂商专用工具，再按“先确认 GPU 是否是瓶颈，再定位具体环节”的路径选工具。
 
 - 🔹 **AGI 的两种模式与适用场景**：[已验证：developer.android.com/agi]
   System Profiler 用来观察 GPU 利用率、频率、计数器和进程级 GPU 时间；Frame Profiler 用来定位单帧中的慢 Draw Call、Shader 和资源热点。
@@ -140,7 +142,7 @@ AGI 提供两种分析模式，覆盖不同的分析需求：
 
 **System Profiler** 是系统级分析模式。在一段时间内追踪 GPU 的整体行为，包括 GPU 利用率、GPU 频率、显存使用量和各进程的 GPU 时间。它不深入单个 Draw Call，但能快速判断 GPU 是不是瓶颈，以及 GPU 时间花在了哪个进程。在 Perfetto 中看到的 GPU 信息只是 System Profiler 的子集，AGI 提供的 GPU 硬件计数器更丰富。
 
-**Frame Profiler** 帧级分析。捕获一个应用的单帧，记录所有 GPU 命令（Vulkan 或 GLES），然后逐 Draw Call 分析 GPU 时间。我们可以看到每个 Draw Call 占了多少 GPU 时间、绑定了什么 Shader、使用了什么纹理、产生了多少 Overdraw。
+**Frame Profiler** 帧级分析。捕获一个应用的单帧，记录所有 GPU 命令（Vulkan 或 GLES），然后逐 Draw Call 分析 GPU 时间。它会显示每个 Draw Call 占了多少 GPU 时间、绑定了什么 Shader、使用了什么纹理、产生了多少 Overdraw。
 
 ### System Profiler 的使用
 
@@ -152,7 +154,7 @@ System Profiler 的使用比较直观：
 4. 配置追踪时长和 GPU 计数器
 5. 开始追踪
 
-追踪完成后，AGI 展示一个时间轴视图，上面有 GPU 利用率曲线、GPU 频率曲线、各进程的 GPU 时间切片。如果某个时间段 GPU 利用率接近 100% 但帧率还是上不去，说明 GPU 确实是瓶颈。
+追踪完成后，AGI 展示一个时间轴视图，上面有 GPU 利用率曲线、GPU 频率曲线、各进程的 GPU 时间切片。如果某个时间段 GPU 利用率接近 100% 但帧率还是上不去，说明瓶颈在 GPU 侧。
 
 AGI 支持的 GPU 计数器因 GPU 厂商而异：
 
@@ -198,7 +200,7 @@ Frame Profiler 的核心视图：
 
 **命令列表**：按时间顺序列出所有 GPU 命令（vkCmdDraw、vkCmdDrawIndexed 等），每个命令旁边显示 GPU 执行时间。通过排序 GPU 时间列，可以快速找到最耗时的 Draw Call。
 
-**管线状态（Pipeline State）**：选中一个 Draw Call 后，可以看到完整的渲染管线状态，包括 Vertex Shader、Fragment Shader、Blend State、Rasterizer State 等。如果某个 Draw Call 特别慢，先看它的 Shader 复杂度和纹理分辨率，通常最容易找到突破口。
+**管线状态（Pipeline State）**：选中一个 Draw Call 后，会展开完整的渲染管线状态，包括 Vertex Shader、Fragment Shader、Blend State、Rasterizer State 等。如果某个 Draw Call 特别慢，先看它的 Shader 复杂度和纹理分辨率，通常最容易找到突破口。
 
 **资源查看器**：查看每个 Draw Call 的输入纹理和输出 render target。如果一个 4096×4096 的纹理被一个只画 100×100 像素的 Draw Call 采样，这就是一个明显的优化点，缩小纹理通常就能减少带宽消耗。
 
@@ -429,7 +431,7 @@ Shader 太复杂会吃满 GPU 的 ALU（算术逻辑单元）。判断 Shader �
 
 ### 案例 2：Shader 编译导致的间歇性卡顿
 
-**现象**：3D 游戏在运行过程中，每隔 30-60 秒出现一次 2-3 帧的掉帧。Perfetto 中可以看到掉帧期间 GPU 时间从正常的 8ms 飙升到 40ms。
+**现象**：3D 游戏在运行过程中，每隔 30-60 秒出现一次 2-3 帧的掉帧。Perfetto 中显示掉帧期间 GPU 时间从正常的 8ms 飙升到 40ms。
 
 **分析过程**：
 
@@ -638,5 +640,5 @@ Android 15 开始，ANGLE 已经从“可选实验路径”走到“系统内可
 - 类型：DeepResearch 调研结果
 - 摘要：系统梳理 AGI、Perfetto、RenderDoc、Sokatoa 与 Arm/Qualcomm 厂商工具的分层关系，明确 System Profiler 本质是 Perfetto 封装、Frame Profiler 与帧级调试边界，并给出 2025-2026 年 GPU 分析工作流与兼容性判断。
 - 注入时间：2026-04-21
-- 价值：能把“先 Perfetto 定位，再帧级或厂商工具下钻”的工具链方法论讲清。
+- 价值：能把“先 Perfetto 定位，再用帧级或厂商工具定位细节”的工具链方法论讲清。
 
