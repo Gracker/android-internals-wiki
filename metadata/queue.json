@@ -12160,22 +12160,62 @@
         "intake/suggestions.md"
       ],
       "reason": "[Deep Tech Review idle audit] Native memory tooling commands/version boundaries and PSS-vs-largeHeap metric semantics need rework."
+    },
+    {
+      "id": "task9-audit-20260519-10.3-debug-getrss-version",
+      "section": "10.3",
+      "section_title": "内存持续增长",
+      "priority": 85,
+      "title": "Debug.getRss() 监控建议缺少 Android 版本边界",
+      "description": "P1：章节适用 Android 8-16，但线上 RSS 指标建议直接使用 Debug.getRss()；该公开 API 在 Android 13/14 current API 中不存在，Android 15/16 中仍标为 remove_app_profiler_pss_collection FlaggedApi，需要版本守卫和低版本替代路径。",
+      "issue_type": "version-differences-api-availability",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "added_at": "2026-05-19T02:27:04+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-19-02-audit.md"
+      ],
+      "reason": "[Deep Tech Review idle audit] Debug.getRss() availability and Debug.getPss()/SmapsOrRollup source semantics need rework.",
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/API 可用性",
+          "location": "L305-L309 内存增长监控指标：RSS / Debug.getRss()",
+          "detail": "正文把 RSS 写成“用 Debug.getRss() 或 dumpsys meminfo 看驻留页变化”，但章节 applicable_versions 覆盖 Android 8.0-16。AOSP core/api/current 在 android-13.0.0_r1、android-14.0.0_r1 中没有 public Debug.getRss()；android-15.0.0_r1、android-16.0.0_r1 中该方法出现，但仍标注 @FlaggedApi(\"android.os.remove_app_profiler_pss_collection\")。不加版本边界会让 Android 8-14 的 App 侧实现走到不存在的 API，或在多版本 SDK 上误以为这是全版本能力。",
+          "suggestion": "把 RSS 采集拆成版本表：Android 15/16（且编译 SDK/flag 能力满足）可用 Debug.getRss()；Android 8-14 使用 /proc/self/status 的 VmRSS、/proc/self/statm、低频 dumpsys meminfo 或 Debug.MemoryInfo/PSS 作为替代。示例代码必须加 Build.VERSION.SDK_INT 守卫，并说明低版本 fallback。"
+        },
+        {
+          "severity": "P2",
+          "type": "源码表述精度",
+          "location": "L299-L311 PSS 趋势 / Debug.getPss()",
+          "detail": "正文仍写 Debug.getPss() “直接读 smaps”。android-16.0.0_r1 frameworks/base/core/jni/android_os_Debug.cpp 中 getPssPid() 先读 memtrack graphics/gl/other，再通过 ProcMemInfo.SmapsOrRollup(&stats) 汇总 pss/uss/rss/swap_pss；这不是简单固定读取 /proc/<pid>/smaps。",
+          "suggestion": "改成“Debug.getPss() 走 ProcMemInfo.SmapsOrRollup() 聚合 smaps_rollup/smaps，并叠加 memtrack 与 swapPss；因此适合低频校准，不适合高频轮询”。如果保留“Android 14+ 节流/历史值”判断，需要明确它指系统侧 PSS 采集或 ActivityManager 口径，而不是把同进程 Debug.getPss() 一概写成缓存值。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 349,
+    "total_entries": 350,
     "p0_count": 149,
-    "last_updated": "2026-05-19T01:31:06+08:00",
+    "last_updated": "2026-05-19T02:27:04+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 151,
+    "pending_entries": 152,
     "updated_date": "2026-05-19",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 151,
+    "pending": 152,
     "completed_entries": 196
   },
-  "last_updated": "2026-05-19T01:31:06+08:00",
+  "last_updated": "2026-05-19T02:27:04+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 151,
+  "pending": 152,
   "last_task2a_completed": "3.10",
   "last_task2a_completed_at": "2026-05-18T23:04:00+08:00",
   "last_task2a_gap_mining": "4.10",
