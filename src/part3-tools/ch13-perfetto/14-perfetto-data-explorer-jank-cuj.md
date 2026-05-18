@@ -75,6 +75,63 @@ v54 删除 `slice.stack_id` 和 `slice.parent_stack_id`，把相关能力迁移�
 ### 🔸 Collapsed Stack / Firefox Profiler 格式导入
 v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON 导入。它适合迁移历史 profile 资产，但这类格式通常缺少 Android trace 的 FrameTimeline、Binder 和调度上下文。
 
+
+
+<!-- AIW-源码调研-2026-05-18 -->
+
+## 补充：系统 CUJ 与第三方 App 适用范围边界（源码验证）
+
+**来源**：Perfetto DataGrid 与 Jank CUJ 标准库 · 源码调研（2026-05-18）  
+**验证状态**：一手源码验证完成（部分细节待进一步确认）
+
+### 关键发现
+
+1. **`android_jank_cuj` 表默认只包含系统进程**
+   - `android.cujs.base` 模块（`external/perfetto/src/trace_processor/metrics/sql/android/jank/`）中的 `android_jank_cuj` 表默认按进程名过滤
+   - `com.android.*` / `com.google.android*` 进程数据进入 CUJ 分析，第三方 App 的 CUJ marker 不自动进入该表
+   - 第三方 App 需要使用 AndroidX JankStats API 或自定义 SQL 扩展
+
+2. **FrameTracker 与 CUJ 的数据流**
+   ```
+   Choreographer#doFrame()
+     → ViewRootImpl.doTraversals()  (L1713)
+       → JankTracker.doFrame(jankInfo)  // frameworks/base/libs/hwui/JankTracker.cpp
+         → SurfaceFlinger FrameTimeline
+           → Perfetto trace → android_jank_cuj 表
+   ```
+   - JankTracker 在 doFrame 回调中记录帧耗时，计算 actual vs expected timeline 差值
+   - CUJ marker 通过 `Choreographer#doFrame` slice 对齐 vsync ID
+
+3. **CUJ SQL 模块的关键表**
+   - `android_jank_cuj_vsync_boundary`：每个 CUJ 的 vsync 边界（通过 `_android_jank_cuj_do_frames` 关联）
+   - `android_jank_cuj_main_thread_frame_boundary`：基于预期帧时间线的帧边界
+   - `android_jank_cuj_boundary`：整体 CUJ 边界（app process 级别）
+
+4. **第三方 App 扩展路径**
+   - **AndroidX JankStats**（API 30+）：`androidx.performance:performance-jankstats` → `JankStats.createJankStats()`
+   - **自定义 atrace marker**：使用 `Trace.beginSection()` 标记 CUJ，配合 Perfetto SQL 扩展 `_is_jank_slice`
+   - **FrameTimeline direct join**：直接 join `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 计算自定义帧耗时
+
+### 源码锚点
+
+| 文件 | 说明 |
+|------|------|
+| `frameworks/base/libs/hwui/JankTracker.cpp` | FrameTracker jank 跟踪器实现 |
+| `frameworks/native/libs/gui/include/gui/JankInfo.h` | JankInfo 类型定义（含 JANK_TYPE_*） |
+| `frameworks/base/core/java/android/view/ViewRootImpl.java` (L1713) | doFrame 调用链入口 |
+| `external/perfetto/src/trace_processor/metrics/sql/android/jank/cujs_boundaries.sql` | CUJ 边界计算核心逻辑 |
+| `build/soong/cuj/` | AOSP CUJ marker 定义 |
+
+### 版本参考
+
+| Android 版本 | CUJ 支持 |
+|--------------|---------|
+| Android 10 (API 29) | FrameTimeline 引入 |
+| Android 11 (API 30) | JankStats API 加入 |
+| Android 12 (API 31) | FrameTracker 增强 |
+| Android 13+ | InteractionJankMonitor 稳定化 |
+
+<!-- AIW-源码调研-2026-05-18 -->
 <!-- outline-end -->
 
 Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”继续追到“这次卡顿有多重”。
