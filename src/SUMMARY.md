@@ -253,7 +253,7 @@ tags:
   - [15.6 性能测试最佳实践](part3-tools/ch15-methodology/06-testing-best-practices.md)
   - [15.7 AOSP 代码阅读](part3-tools/ch15-methodology/07-aosp-reading.md)
   - [15.8 Android 性能问题实证：真实世界的分类与代码模式](part3-tools/ch15-methodology/08-empirical-performance-issues.md)
-  - [15.9 从采集到治理的闭环](part3-tools/ch15-methodology/09-observability-closed-loop.md)
+  - [15.9 从采集到治理的反馈回路](part3-tools/ch15-methodology/09-observability-closed-loop.md)
   - [15.10 性能治理工程化](part3-tools/ch15-methodology/10-performance-governance.md)
 
 - [第 19 章：APM 工具与性能监控生态](part3-tools/ch19-apm/README.md)
