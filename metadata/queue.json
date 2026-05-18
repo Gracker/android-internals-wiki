@@ -11567,22 +11567,49 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T16:30:11+08:00"
+    },
+    {
+      "id": "task2a-gap-20260518-2.23-vsync-scheduler-displayframerate",
+      "section": "2.23",
+      "priority": 80,
+      "title": "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略",
+      "description": "新增空 draft：补齐 SurfaceFlinger VSync 调度、VSyncPredictor、DisplayFrameRate / ARR 与 Perfetto 诊断的系统化章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
+      ],
+      "material_paths": [
+        "DeepResearch/2026-05-17-surfaceflinger-vsync-scheduler-frame-rate.md",
+        "https://source.android.com/docs/core/graphics/frame-pacing",
+        "https://source.android.com/docs/core/graphics/arr",
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ],
+      "created_by": "task2a-knowledge-gap",
+      "gap_score": 16
     }
   ],
   "metadata": {
-    "total_entries": 332,
+    "total_entries": 334,
     "p0_count": 142,
-    "last_updated": "2026-05-18T16:05:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 148,
+    "last_updated": "2026-05-18T17:04:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 150,
     "updated_date": "2026-05-18",
-    "last_updated_by": "task6-review",
-    "pending": 157,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 150,
     "completed_entries": 182
   },
-  "last_updated": "2026-05-18T16:05:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 148,
+  "last_updated": "2026-05-18T17:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 150,
   "last_task2a_completed": "7.16",
-  "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
+  "last_task2a_completed_at": "2026-05-18T00:09:00+08:00",
+  "last_task2a_gap_mining": "2.23",
+  "last_task2a_gap_mining_at": "2026-05-18T17:04:00+08:00"
 }
