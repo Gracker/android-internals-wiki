@@ -31,10 +31,10 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task2b_state: fixed
@@ -42,9 +42,9 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-18T03:31:27+08:00"
 task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。Android 16 SurfaceFlinger 旧 trace 名 doComposition 在正常/异常示例中残留，已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。SurfaceFlinger Android 16 trace/源码切片名称仍使用旧路径；HAL 调用段落仍把 Treble 后 HAL 泛化成每次 Binder IPC。已写入 queue.json。 | 2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
-last_task6_at: "2026-05-18T04:08:40+08:00"
-last_task6_review_log: "logs/review/2026-05-18-04-review.md"
-task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。小修 18 处（第一人称、比喻化标题/表述、单位空格、中英文括号）；无新增 B 类问题。既有 Task9 P0（SurfaceFlinger doComposition 残留）仍在 queue pending，未自动晋升。"
+last_task6_at: "2026-05-18T08:15:18+08:00"
+last_task6_review_log: "logs/review/2026-05-18-08-review.md"
+task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。小修 10 处（结构性标题、代码省略注释、传输模式术语、编辑标记、中英文间距）；无新增 B 类问题。queue.json 中 1.1 无 pending 条目，但 task9_result 尚非 pass-tech-review，未自动晋升，转 Task9 复核。"
 last_task9_audit: "2026-05-17"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 reviewed_at: "2026-05-18T03:31:27+08:00"
@@ -80,7 +80,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 开头：为什么要了解 Android 分层架构
+## 为什么要了解 Android 分层架构
 
 打开 Perfetto，随便抓一条系统级 Trace，会看到密密麻麻的进程、线程、彩色的 CPU 切片、Binder 调用箭头、VSync 信号线。这些可视化信息背后，是 Android 分层架构的“结构映射”：每个进程对应架构中的一层或一个组件，每条 Binder 箭头对应一次跨层调用，每段 CPU 切片对应某个层次的执行时间。
 
@@ -161,14 +161,14 @@ public static void main(String[] args) {
 private void run() {
     // 初始化系统属性、时区、日志等基础环境
     TimingsTraceAndSlog t = new TimingsTraceAndSlog();
-    // ...
+    // 省略部分基础环境初始化逻辑
     System.loadLibrary("android_servers");  // 加载 JNI native 方法
-    // ...
+    // 省略服务启动前的检查和准备逻辑
     try {
         startBootstrapServices(t);  // 先启动最基础的服务（AMS、PMS 等）
         startCoreServices(t);       // 再启动核心服务
         startOtherServices(t);      // 启动其他服务
-    } catch (Throwable ex) { /* ... */ }
+    } catch (Throwable ex) { /* 省略异常处理 */ }
 }
 ```
 
@@ -200,14 +200,14 @@ Project Treble 的目标，是把 framework 和 vendor 侧实现之间的兼容�
 
 Treble 和 Project Mainline 负责的事情不同。Treble 解决 framework/vendor 解耦与兼容性，Mainline 解决部分系统组件的模块化更新。二者可以叠加，但职责不同。
 
-这个架构变化对性能分析的影响也要分 transport 看。Treble 时代的 HIDL 既可以是 passthrough，也可以是 binderized。passthrough 模式下，HAL 代码以共享库形式被 client 进程加载；binderized 模式下，HAL 作为独立服务进程通过 Binder 暴露能力。到 Stable AIDL HAL，这条调用链统一收敛到 binderized 服务。看 Trace 时，先确认 HAL 属于哪一种 transport，再判断延迟是在调用方进程内，还是在跨进程 Binder 往返里。
+这个架构变化对性能分析的影响也要按传输模式区分。Treble 时代的 HIDL 既可以是 passthrough，也可以是 binderized。passthrough 模式下，HAL 代码以共享库形式被调用方进程加载；binderized 模式下，HAL 作为独立服务进程通过 Binder 暴露能力。到 Stable AIDL HAL，这条调用链统一收敛到 binderized 服务。看 Trace 时，先确认 HAL 属于哪一种传输模式，再判断延迟是在调用方进程内，还是在跨进程 Binder 往返里。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal]
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/vintf]
 
 ### HIDL 到 AIDL 的迁移
 
-HIDL（Hardware Interface Definition Language）是 Treble 早期为 HAL 引入的接口定义语言。它的传输模型本身就分成两类：binderized 服务用于跨进程 IPC，passthrough 只适用于 C++ client / implementation，常用来包住 legacy HAL。这个区分决定了排查时是在 Trace 里找独立 HAL service 进程，还是留在 client 进程内继续追踪。
+HIDL（Hardware Interface Definition Language）是 Treble 早期为 HAL 引入的接口定义语言。它的传输模型本身就分成两类：binderized 服务用于跨进程 IPC，passthrough 只适用于 C++ 调用方 / 实现方，常用来包住 legacy HAL。这个区分决定了排查时是在 Trace 里找独立 HAL 服务进程，还是留在调用方进程内继续追踪。
 
 Android 版本演进过程中，Google 把新 HAL 接口逐步收敛到 Stable AIDL。AIDL HAL 需要 `@VintfStability` 标注和 `stability: "vintf"` 声明，并进入 VINTF manifest，运行形态是 binderized service。到 Android 13，HIDL 在官方文档里已经标为 deprecated，旧 HIDL HAL 继续兼容，新接口主线则转到 AIDL。
 
@@ -221,7 +221,7 @@ Android 版本演进过程中，Google 把新 HAL 接口逐步收敛到 Stable A
 
 Treble 之后，HAL 追踪最容易出错的地方，是把它理解成“所有 HAL 都分家了”。Treble 之前就存在独立 native service / daemon；Treble 时代的 HIDL 也同时存在 passthrough 和 binderized 两种形态；AIDL HAL 才统一收敛到 binderized 服务。所以，Trace 里能不能直接看到独立 HAL 进程，取决于这次调用走的是哪条传输路径。
 
-排查方法也要跟着 transport 选。遇到 binderized HAL，先在 Framework client 线程找到调用起点，再沿 Binder transaction 跳到 HAL service 进程，看它是在执行、等锁还是等 I/O。遇到 passthrough HAL，则更多要在 client 所在进程里继续看 native slice、锁竞争和系统调用。把两种路径混成一套固定剧本，定位很容易跑偏。
+排查方法也要跟着传输模式选。遇到 binderized HAL，先在 Framework 调用方线程找到调用起点，再沿 Binder transaction 跳到 HAL 服务进程，看它是在执行、等锁还是等 I/O。遇到 passthrough HAL，则更多要在调用方进程里继续看 native slice、锁竞争和系统调用。把两种路径混成一套固定剧本，定位很容易跑偏。
 
 如果设备构建开启了对应 trace 类别，AIDL 层事件可以和 Binder 事务一起看；只盯着 Framework 侧的调用发起时间不够，需要把完整调用路径串起来。
 
@@ -256,7 +256,7 @@ Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与
 **优化方向：** 减少不必要的 Binder 调用频率（合并多个小调用为一个批量调用），使用异步 Binder 调用避免阻塞，利用 SharedMemory 传输大数据减少拷贝。
 
 
-> **[自动发现] SELinux 开销对 Binder 性能的影响**
+> **SELinux 开销对 Binder 性能的影响**
 > 
 > Binder 每次 transaction 均触发 SELinux LSM 钩子 `selinux_binder_transaction()`，执行 `avc_has_perm()` 权限检查。该检查在 `kernel/common/security/selinux/hooks.c` 中实现，判断调用方 SID 是否有 `BINDER__CALL` 或 `BINDER__IMPERSONATE` 权限。
 > 
@@ -312,11 +312,11 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 `surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。旧版本（Android 14 及之前）的主路径是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
 
-**Native/HAL 层**的表现比较分散。Treble 之后的 HAL Service 按 transport 区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到 client 进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在 client 进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
+**Native/HAL 层**的表现比较分散。Treble 之后的 HAL 服务按传输模式区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到调用方进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在调用方进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
 **内核层**在 Perfetto 中表现为底层的 CPU 调度 Track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）记录跨进程通信的发起方、目标方和数据大小。这是唯一一个横跨所有架构层的数据源——无论跨的是哪两层，Binder 事务都会在这里留下记录。
 
-[图：Perfetto Trace 截图示意，标注 App/system_server/surfaceflinger 进程，标注 Binder 调用箭头，标注 VSync 信号线，标注三种数据源的对应区域]
+[图：Perfetto Trace 截图示意，标注 App / system_server / surfaceflinger 进程，标注 Binder 调用箭头，标注 VSync 信号线，标注三种数据源的对应区域]
 
 [已验证: 官方文档, https://perfetto.dev/docs/data-sources/atrace]
 
@@ -343,7 +343,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 误区：HAL 层不影响性能，因为只是"接口封装"
 
-HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，binderized HAL（AIDL HAL 和部分 HIDL HAL）作为独立进程运行，控制面调用走 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。passthrough HAL（仅限 HIDL C++ 实现）以共享库形式加载到 client 进程内，不走跨进程 Binder。对于高频数据面操作（如 Camera 预览回调、Audio 数据流），即使控制面走 Binder，数据面通常使用 FMQ、共享内存、BufferQueue/dmabuf 等零拷贝通道，不走 Binder 数据拷贝。排查 HAL 延迟时，先按 transport（binderized / passthrough）区分，再判断瓶颈在控制面 IPC 还是数据面吞吐。
+HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，binderized HAL（AIDL HAL 和部分 HIDL HAL）作为独立进程运行，控制面调用走 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。passthrough HAL（仅限 HIDL C++ 实现）以共享库形式加载到调用方进程内，不走跨进程 Binder。对于高频数据面操作（如 Camera 预览回调、Audio 数据流），即使控制面走 Binder，数据面通常使用 FMQ、共享内存、BufferQueue/dmabuf 等零拷贝通道，不走 Binder 数据拷贝。排查 HAL 延迟时，先按传输模式（binderized / passthrough）区分，再判断瓶颈在控制面 IPC 还是数据面吞吐。
 
 ### 误区：App 的性能问题一定在 App 层
 

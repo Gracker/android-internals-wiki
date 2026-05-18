@@ -180,11 +180,11 @@
   ],
   "review_summary": "Task9 2026-05-18 03: 深审 1.1/1.11/20.2；1.1 命中 SurfaceFlinger Android16 旧 doComposition 残留 P0，转 Task2B；1.11 与 20.2 无 P0/P1，自动晋升 finalized；新增 1 条 P2 suggestion。",
   "task6_review_summary": {
-    "l1_l2_fixes": 18,
+    "l1_l2_fixes": 10,
     "l3_issues": 0,
     "l4_issues": 0,
-    "technical_risk_markers": 1,
-    "total_issues": 1,
+    "technical_risk_markers": 0,
+    "total_issues": 0,
     "reviewed_sections": [
       "1.1"
     ]
@@ -1220,12 +1220,12 @@
     },
     "1.1": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 18,
+      "task6_l1_l2_fixes": 10,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-18T04:08:40+08:00",
-      "task6_log": "logs/review/2026-05-18-04-review.md",
+      "task6_reviewed_at": "2026-05-18T08:15:18+08:00",
+      "task6_log": "logs/review/2026-05-18-08-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；清理第一人称、比喻化标题/表述和单位空格。既有 Task9 P0（SF doComposition 残留）仍在 queue pending，未自动晋升。",
+      "task6_note": "复审通过；修正结构性标题、代码省略注释、传输模式术语、编辑标记和中英文间距。queue.json 中 1.1 无 pending 条目，但 task9_result 尚非 pass-tech-review，转 Task9 复核。",
       "task9_result": "needs-rework",
       "task9_p0": 1,
       "task9_p1": 0,
@@ -1266,25 +1266,25 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T04:08:40+08:00",
+  "last_updated": "2026-05-18T08:15:18+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "04:08",
-    "reviewed_at": "2026-05-18T04:08:40+08:00",
+    "time": "08:15",
+    "reviewed_at": "2026-05-18T08:15:18+08:00",
     "sections": [
       "1.1"
     ],
     "files": [
       "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
     ],
-    "log": "logs/review/2026-05-18-04-review.md",
-    "mode": "回炉复审批次",
-    "l1_l2_fixes": 18,
+    "log": "logs/review/2026-05-18-08-review.md",
+    "mode": "回炉复审",
+    "l1_l2_fixes": 10,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 1,
+    "technical_risk_markers": 0,
     "results": {
-      "1.1": "pass-light-edit / task2b_pending（既有 Task9 P0）"
+      "1.1": "pass-light-edit / task9_pending"
     },
     "auto_promoted": []
   },
@@ -3666,41 +3666,31 @@
   "last_task2a_at": "2026-05-18T04:14:00+08:00",
   "last_task2a_section": "26.13",
   "last_task2a_file": "src/part5-app/ch26-observability/13-application-start-info.md",
-  "last_task6_review": "2026-05-17",
+  "last_task6_review": "2026-05-18",
   "last_task6_sections": [
-    "2.10",
-    "20.6",
-    "12.5"
+    "1.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md",
-    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
   ],
-  "last_task6_at": "2026-05-17T12:11:00+08:00",
+  "last_task6_at": "2026-05-18T08:15:18+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-17",
-    "time": "12:11",
-    "reviewed_at": "2026-05-17T12:11:00+08:00",
+    "date": "2026-05-18",
+    "time": "08:15",
+    "reviewed_at": "2026-05-18T08:15:18+08:00",
     "sections": [
-      "2.10",
-      "20.6",
-      "12.5"
+      "1.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch20-stability/06-stability-metrics.md",
-      "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
     ],
-    "log": "logs/review/2026-05-17-12-review.md",
-    "mode": "首次 review / 回炉复查混合批次",
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 2,
-    "technical_risk_markers": 2,
+    "log": "logs/review/2026-05-18-08-review.md",
+    "mode": "回炉复审",
+    "l1_l2_fixes": 10,
+    "l3_l4_issues": 0,
+    "technical_risk_markers": 0,
     "results": {
-      "2.10": "needs-rework / queue_pending",
-      "20.6": "needs-rework / queue_pending",
-      "12.5": "pass-light-edit / task9_pending"
+      "1.1": "pass-light-edit / task9_pending"
     },
     "auto_promoted": []
   },
@@ -3711,12 +3701,10 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 197,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-17T12:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-17-12-review.md",
+  "task6_last_review_at": "2026-05-18T08:15:18+08:00",
+  "task6_last_review_log": "logs/review/2026-05-18-08-review.md",
   "task6_last_review_sections": [
-    "2.10",
-    "20.6",
-    "12.5"
+    "1.1"
   ],
   "sections_status": {
     "22.11": {
@@ -4436,9 +4424,7 @@
     "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md",
-    "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
   ],
   "last_task2a_date": "2026-05-17",
   "task9_last_review_summary": {
