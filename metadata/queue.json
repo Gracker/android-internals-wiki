@@ -11384,22 +11384,57 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T12:44:40+08:00"
+    },
+    {
+      "id": "task9-20260518-14.7-profilingresult-platform-import",
+      "section": "14.7",
+      "section_title": "ProfilingManager",
+      "priority": 95,
+      "title": "ProfilingResult 结果类型导入口径错误",
+      "description": "显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包；官方 AndroidX 签名实际回调平台 android.os.ProfilingResult，当前 import 说明会让示例不可编译。",
+      "reason": "[Deep Tech Review] 14.7 显式请求示例的结果类型包名口径错误，影响 ProfilingManager 接入示例可编译性。",
+      "issue_type": "api-signature-source-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/07-profiling-manager.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-13-audit.md",
+        "https://developer.android.com/reference/androidx/core/os/Profiling",
+        "https://developer.android.com/reference/android/os/ProfilingResult"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 签名错误",
+          "location": "L85-L97 显式请求的公共骨架",
+          "detail": "正文写“涉及的类都来自 androidx.core.os”，但示例使用的 ProfilingResult 不是 AndroidX 类。AndroidX Profiling.requestProfiling(Context, ProfilingRequest, Executor, Consumer<ProfilingResult>) 的 listener 泛型链接到平台 android.os.ProfilingResult；ERROR_NONE、getErrorCode()、getResultFilePath() 也来自 android.os.ProfilingResult。按当前说明导入 androidx.core.os.ProfilingResult 会找不到类，示例无法编译。",
+          "suggestion": "把 import 说明拆开：Profiling、ProfilingRequest、SystemTraceRequestBuilder、BufferFillPolicy 来自 androidx.core.os；ProfilingResult 来自 android.os。代码块前补明 `import android.os.ProfilingResult;`，或把文字改成“构造请求的类来自 AndroidX，结果类型是平台 android.os.ProfilingResult”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T13:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 320,
-    "p0_count": 134,
-    "last_updated": "2026-05-18T11:27:39+08:00",
+    "total_entries": 321,
+    "p0_count": 135,
+    "last_updated": "2026-05-18T13:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 146,
+    "pending_entries": 147,
     "updated_date": "2026-05-18",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 155,
+    "pending": 156,
     "completed_entries": 175
   },
-  "last_updated": "2026-05-18T11:27:39+08:00",
-  "last_updated_by": "openclaw-task2b",
-  "pending": 155,
+  "last_updated": "2026-05-18T13:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 156,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
