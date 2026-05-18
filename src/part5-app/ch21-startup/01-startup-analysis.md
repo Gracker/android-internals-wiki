@@ -143,7 +143,7 @@ Application.onCreate 在主线程同步执行。很多开发者习惯在这里�
 典型问题模式：
 
 - **串行初始化**：10 个 SDK 各耗时 20-50ms，串行执行就是 200-500ms
-- **IO 操作**：`SharedPreferences` 第一次 `getSharedPreferences()` 会触发磁盘读取，虽然 Android 7.0+ 改为 `xml` 解析模式，但大文件仍有 5-20ms 开销
+- **IO 操作**：`SharedPreferences` 第一次 `getSharedPreferences()` 会触发磁盘 XML 文件读取和解析（`SharedPreferencesImpl#loadFromDisk()`），首次访问可能触发异步加载并在 `awaitLoadedLocked()` 等待结果；大文件仍有 5-20ms 开销
 - **数据库操作**：`SQLiteOpenHelper.getReadableDatabase()` 首次调用可能触发 `onCreate` 或 `onUpgrade`，涉及磁盘 IO
 - **Class 加载**：某些 SDK 通过反射加载类，首次加载触发 dex 的 class 查找和验证
 
@@ -285,7 +285,7 @@ object StartupTracer {
 
 `first_frame` 埋点有几种实现方式，观测点各不相同：
 
-- **`ViewTreeObserver.registerFrameCommitCallback()`**：在帧绘制完成后回调，最接近"帧已提交"语义。Android 10+ 可用，回调后需调用 `removeFrameCommitCallback()` 避免重复触发。
+- **`ViewTreeObserver.registerFrameCommitCallback()`**：在帧绘制完成后回调，最接近"帧已提交"语义。Android 10+ 可用，只对硬件渲染生效；回调表示帧已提交到 swap chain，不等于已显示。回调是一次性消费语义，如需取消尚未触发的回调，使用 `unregisterFrameCommitCallback(callback)`。
 - **`Choreographer.postFrameCallback()` 的首次回调**：回调时 VSync 已到达，`performTraversals` 即将开始或刚开始。观测点在帧绘制前，比 `registerFrameCommitCallback` 早。
 - **`Window.OnFrameMetricsAvailableListener`**：Android 7.0+ 提供，可以获取帧的绘制、布局、GPU 处理等分阶段耗时。适合线上监控，不适合做单次首帧标记。
 - **`ViewTreeObserver.OnPreDrawListener` / `OnDrawListener`**：分别在 `onPreDraw` 和 `onDraw` 阶段触发。注意 `OnDrawListener` 不能在 `onDraw()` 内调用 `removeOnDrawListener()`，否则会抛 `IllegalStateException`。
@@ -380,7 +380,7 @@ EOF
 
 **定位 TTID 终点**：
 
-`performTraversals` 结束时间 ≈ TTID 终点。精确的 TTID 终点是 `reportDrawFinished` 的 Binder 调用完成时刻，但 Perfetto 中通常用 `performTraversals` 结束时间作为近似值。
+`performTraversals` 结束只定位了首帧 CPU traversal 的完成。首帧还要经过 RenderThread `DrawFrame`、buffer 提交和 `ViewRootImpl`/`WindowSession` 的 draw-finished 上报。系统侧的 TTID 终点是 `Displayed` 时间，可通过 logcat `ActivityManager: Displayed` 或 `am start -W` 观测。Perfetto 中如无法精确匹配 `reportDrawFinished` / frame commit 相关事件，用 `performTraversals` 结束作为 TTID 下界近似，并标注这是 CPU 侧终点，不含 RenderThread/GPU/提交阶段。
 
 ### 常见的启动 Trace 图谱
 

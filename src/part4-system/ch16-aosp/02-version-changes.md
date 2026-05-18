@@ -539,7 +539,7 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - Game Mode API: developer.android.com/about/versions/12/features/game-mode
 
 ### AOSP 源码路径
-- ProfilingManager: frameworks/base/core/java/android/os/ProfilingManager.java
+- ProfilingManager: packages/modules/Profiling/framework/java/android/os/ProfilingManager.java
 - SystemHealthManager: frameworks/base/core/java/android/os/health/SystemHealthManager.java
 - Display: frameworks/base/core/java/android/view/Display.java
 - ApplicationStartInfo: frameworks/base/core/java/android/app/ApplicationStartInfo.java
