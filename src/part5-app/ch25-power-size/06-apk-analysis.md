@@ -41,15 +41,15 @@ sources:
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-18"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-14T19:10:00+08:00"
-last_task6_review_log: logs/review/2026-05-14-19-review.md
-task6_review_notes: "2026-05-14 Task6：L1/L2 小修 3 处；写作层通过，等待 Task9 技术复核。"
+last_task6_at: "2026-05-18T13:12:59+08:00"
+last_task6_review_log: logs/review/2026-05-18-13-review.md
+task6_review_notes: "2026-05-18 Task6：复审写作层；L1/L2 无需正文小修，四个 outline 锚点覆盖；保留 Task9 已登记的技术回炉项，等待 Task2B。"
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9

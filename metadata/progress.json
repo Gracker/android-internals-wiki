@@ -179,16 +179,18 @@
   ],
   "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 6,
-    "l3_issues": 0,
-    "l4_issues": 0,
-    "technical_risk_markers": 3,
-    "total_issues": 3,
-    "reviewed_sections": [
-      "9.5",
-      "19.13",
-      "19.23"
-    ]
+    "date": "2026-05-18",
+    "time": "13:12",
+    "sections": [
+      "25.6"
+    ],
+    "files": [
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+    ],
+    "result": "pass-light-edit",
+    "small_fixes": 0,
+    "new_rework_items": 0,
+    "note": "Task6 写作层复审通过；无 L1/L2 正文小修；因 Task9 needs-rework 与 queue pending，未自动晋升 finalized。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1310,25 +1312,25 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T12:26:00+08:00",
+  "last_updated": "2026-05-18T13:12:59+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "08:15",
-    "reviewed_at": "2026-05-18T08:15:18+08:00",
+    "time": "13:12",
+    "reviewed_at": "2026-05-18T13:12:59+08:00",
     "sections": [
-      "1.1"
+      "25.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
     ],
-    "log": "logs/review/2026-05-18-08-review.md",
-    "mode": "回炉复审",
-    "l1_l2_fixes": 10,
+    "log": "logs/review/2026-05-18-13-review.md",
+    "mode": "首次 review（revisiting）",
+    "l1_l2_fixes": 0,
     "l3_l4_issues": 0,
     "technical_risk_markers": 0,
     "results": {
-      "1.1": "pass-light-edit / task9_pending"
+      "25.6": "pass-light-edit / task2b_pending"
     },
     "auto_promoted": []
   },
@@ -2525,13 +2527,13 @@
       "title": "APK 体积分析与瘦身",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-14",
-      "last_task6_at": "2026-05-14T19:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-19-review.md",
+      "reviewed_date": "2026-05-18",
+      "last_task6_at": "2026-05-18T13:12:59+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-13-review.md",
       "task2b_result": "pending",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T19:29:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-19-deep-review.md",
+      "last_task9_at": "2026-05-18T12:44:40+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-18-12-deep-review.md",
       "queue_priority": 95
     },
     "8.8": {
@@ -3721,41 +3723,26 @@
   "last_task2a_file": "src/part5-app/ch26-observability/13-application-start-info.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
-    "9.5",
-    "19.13",
-    "19.23"
+    "25.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch09-anr/05-case-studies.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
-  "last_task6_at": "2026-05-18T12:26:00+08:00",
+  "last_task6_at": "2026-05-18T13:12:59+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-18",
-    "time": "12:26",
-    "reviewed_at": "2026-05-18T12:26:00+08:00",
-    "sections": [
-      "9.5",
-      "19.13",
-      "19.23"
-    ],
-    "files": [
-      "src/part2-performance/ch09-anr/05-case-studies.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
-    ],
-    "log": "logs/review/2026-05-18-12-review.md",
-    "mode": "回炉复审 / Task9 技术边界承接",
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 3,
-    "results": {
-      "9.5": "needs-rework / queue_pending",
-      "19.13": "needs-rework / queue_pending",
-      "19.23": "needs-rework / queue_pending"
-    },
-    "auto_promoted": []
+    "section": "25.6",
+    "title": "APK 体积分析与瘦身",
+    "file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
+    "mode": "首次 review（revisiting）",
+    "result": "pass-light-edit",
+    "log": "logs/review/2026-05-18-13-review.md",
+    "small_fixes": 0,
+    "new_rework_items": 0,
+    "auto_finalized": false,
+    "blocked_by": [
+      "task9_result=needs-rework",
+      "queue.json 中 25.6 仍有 pending 条目"
+    ]
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
@@ -3764,12 +3751,10 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-18T12:26:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-18-12-review.md",
+  "task6_last_review_at": "2026-05-18T13:12:59+08:00",
+  "task6_last_review_log": "logs/review/2026-05-18-13-review.md",
   "task6_last_review_sections": [
-    "9.5",
-    "19.13",
-    "19.23"
+    "25.6"
   ],
   "sections_status": {
     "22.11": {
@@ -4498,39 +4483,29 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-18",
-    "time": "12:26",
-    "reviewed_at": "2026-05-18T12:26:00+08:00",
+    "time": "13:12",
+    "reviewed_at": "2026-05-18T13:12:59+08:00",
     "sections": [
-      "9.5",
-      "19.13",
-      "19.23"
+      "25.6"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/05-case-studies.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
     ],
-    "log": "logs/review/2026-05-18-12-review.md",
-    "mode": "回炉复审 / Task9 技术边界承接",
-    "l1_l2_fixes": 6,
+    "log": "logs/review/2026-05-18-13-review.md",
+    "mode": "首次 review（revisiting）",
+    "l1_l2_fixes": 0,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 3,
+    "technical_risk_markers": 0,
     "results": {
-      "9.5": "needs-rework / queue_pending",
-      "19.13": "needs-rework / queue_pending",
-      "19.23": "needs-rework / queue_pending"
+      "25.6": "pass-light-edit / task2b_pending"
     },
     "auto_promoted": []
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch09-anr/05-case-studies.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch09-anr/05-case-studies.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
   "last_task2a_date": "2026-05-17",
   "task9_last_review_summary": {
@@ -4583,8 +4558,20 @@
     "title": "APK 体积分析与瘦身",
     "last_task2b_at": "2026-05-18T11:27:58+08:00",
     "task2b_result": "fixed",
-    "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-18",
+    "last_task6_at": "2026-05-18T13:12:59+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-13-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-18T12:44:40+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-18-12-deep-review.md",
+    "file": "src/part5-app/ch25-power-size/06-apk-analysis.md"
   },
   "section_19_13": {
     "section": "19.13",
