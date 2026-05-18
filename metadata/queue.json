@@ -11579,7 +11579,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
@@ -11591,7 +11591,10 @@
         "https://developer.android.com/media/optimize/performance/frame-rate"
       ],
       "created_by": "task2a-knowledge-gap",
-      "gap_score": 16
+      "gap_score": 16,
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成：章节状态改为 ready-for-review，进入 Task6 管线。",
+      "pipeline_stage": "task6_pending"
     },
     {
       "id": "task9-audit-4.8-20260518-uffd-property-version",
