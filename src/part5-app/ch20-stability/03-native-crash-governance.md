@@ -3,7 +3,7 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -22,8 +22,8 @@ sources:
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
@@ -31,10 +31,14 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T19:44:00+08:00"
 task2b_state: "pending"
 task2b_result: "pending"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-11"
-last_task6_at: "2026-05-11T08:00:00+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-18"
+last_task6_at: "2026-05-18T20:16:50+08:00"
 last_task6_audit: "2026-05-18"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_at: "2026-05-18T20:16:50+08:00"
+last_task6_review_log: "logs/review/2026-05-18-20-review.md"
+task6_review_notes: "2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 1 项（为 7 个无语言代码块补充 text 标记）；既有 Task9/Task2B pending 技术项 2 个保留，不在 Task6 裁决。"
 ---
 
 # Native Crash 分析与治理
@@ -87,7 +91,7 @@ Android 应用进程中，信号处理不是直接注册到 Linux 内核，而�
 
 SignalChain 的核心设计：维护一个信号处理器的链表，保证 ART 虚拟机自身的异常处理（如 null pointer 的隐式 null 检查优化）优先于应用注册的信号处理器。链表结构：
 
-```
+```text
 chains[SIGSEGV] → [art::HandleSigsegvFault] → [应用注册的 handler 1] → [应用注册的 handler 2] → ...
 ```
 
@@ -118,7 +122,7 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 
 tombstone 文件位于 `/data/tombstones/`，每个 Native Crash 生成一个，文件名格式 `tombstone_XX`（XX 从 00 到 09 循环覆盖）。一份典型的 tombstone 包含以下部分：
 
-```
+```text
 *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 Build fingerprint: 'samsung/beyond1qlzh/beyond1q:15/AP3A.241005.015/S10...'
 Revision: '12'
@@ -272,7 +276,7 @@ PUBLIC 41510 0 _ZN7NativeC1Ev
 
 真实 .sym 文件样本（来自 AOSP 测试数据）：
 
-```
+```text
 MODULE Linux arm DA7778FB66018A4E9B4110ED06E730D00 breakpad_unittests
 FILE 0 /s/clank/src/.../crash_generation_client.cc
 ...
@@ -286,7 +290,7 @@ FUNC 31424 1c 0 google_breakpad::synth_elf::SymbolTable::~SymbolTable
 
 符号文件必须按固定目录层次存放，这是 `minidump_stackwalk` 和 `minidump_dump` 工具的查找协议：
 
-```
+```text
 symbols/
   libnative.so/
     DA7778FB66018A4E9B4110ED06E730D00/
@@ -343,7 +347,7 @@ Google Breakpad 是跨平台的崩溃收集库，Android 上主要用于应用�
 
 **空指针解引用**：
 
-```
+```text
 signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 ```
 
@@ -358,7 +362,7 @@ node->value = 42;  // SIGSEGV, fault addr = offset of value
 
 **野指针 / Use-After-Free**：
 
-```
+```text
 signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x7abc123456
 ```
 
@@ -445,7 +449,7 @@ Java 侧声明了 `native void process(byte[] data)`，但 C/C++ 侧的函数签
 
 在 native 循环中大量创建 JNI 局部引用（`NewStringUTF`、`NewObjectArray` 等）而不释放。默认局部引用表上限 512 个（Android 8.0+）。溢出时：
 
-```
+```text
 JNI ERROR (app bug): local reference table overflow (max=512)
 ```
 

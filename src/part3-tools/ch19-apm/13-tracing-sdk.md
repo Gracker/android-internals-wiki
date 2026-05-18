@@ -13,6 +13,10 @@ last_verified_against: Android tracing docs / AndroidX tracing reference / JankS
 confidence: medium
 tags:
 - apm
+- tracing
+- perfetto
+- androidx
+- performance-tools
 related_chapters:
 - '19.0'
 sources:
@@ -28,13 +32,13 @@ sources:
   path: https://developer.android.com/ndk/reference/group/tracing
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-18"
-task6_result: "needs-rework"
+task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
@@ -44,12 +48,12 @@ last_task2b_at: '2026-05-14T23:25:54+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler 示例异常路径仍可能遗留 async span。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。Top: AndroidX Tracing 版本表混淆平台 API 与 AndroidX compat，协程 async 示例仍有取消路径不闭合。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；旧 async trace 两项已复核为 fixed，新增 Trace ThreadLocal 源码事实错误。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 0 / P2 0；AndroidX Tracing compat 与版本表仍有源码错误（traceAsync 起始版本、pre-29 fallback、TraceEventCache）。"
-task6_review_notes: "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。 | 2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知 async trace 技术项仍在 queue，等待 Task9/Task2B 复审，未自动晋升。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
-last_task6_at: "2026-05-18T12:26:00+08:00"
+task6_review_notes: "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。 | 2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知 async trace 技术项仍在 queue，等待 Task9/Task2B 复审，未自动晋升。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 1 项（补全 frontmatter tags，覆盖 tracing / Perfetto / AndroidX 主题）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
+last_task6_at: "2026-05-18T20:16:50+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
-task6_reviewed_at: "2026-05-18T12:26:00+08:00"
-task6_reviewed_by: openclaw-task6
-last_task6_review_log: "logs/review/2026-05-18-12-review.md"
+task6_reviewed_at: "2026-05-18T20:16:50+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-18-20-review.md"
 ---
 # androidx.tracing（Tracing SDK）
 

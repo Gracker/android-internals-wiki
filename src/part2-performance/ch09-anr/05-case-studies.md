@@ -7,7 +7,7 @@ status: "ready-for-review"
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-18"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-21'
 last_verified_against: AOSP android-14.0.0_r1
@@ -46,9 +46,9 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "needs-rework"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -63,11 +63,11 @@ review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
 task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
-task6_reviewed_at: "2026-05-18T12:26:00+08:00"
-task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-18T12:26:00+08:00"
-last_task6_review_log: "logs/review/2026-05-18-12-review.md"
-task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
+task6_reviewed_at: "2026-05-18T20:16:50+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-18T20:16:50+08:00"
+last_task6_review_log: "logs/review/2026-05-18-20-review.md"
+task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 0 项（未改正文，仅更新 review 元数据）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
 ---
 
 # 案例集
