@@ -12033,7 +12033,7 @@
       "severity": "P2",
       "created_date": "2026-05-19",
       "created_by": "task2a-knowledge-gap",
-      "status": "pending",
+      "status": "completed",
       "related_files": [
         "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md"
       ],
@@ -12042,7 +12042,9 @@
         "https://source.android.com/docs/core/perf/lmkd",
         "https://developer.android.com/topic/performance/memory-management",
         "kernel/common/mm/compaction.c"
-      ]
+      ],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 已加工为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task9-20260519-2.15-graphics-memory-boundary",
