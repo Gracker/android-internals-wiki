@@ -53,16 +53,16 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task6_pending
+pipeline_stage: "task6_pending"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
 task6_result: needs-rework
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-14'
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 last_task9_at: '2026-05-14T03:44:00+08:00'
 task9_reviewed_by: openclaw-task9
@@ -111,12 +111,12 @@ Vulkan 同样由 Khronos Group 制定，2016 年发布 1.0 版本。与 OpenGL E
 
 Android 对 Vulkan 的版本基线可以直接看官方 `implement-vulkan` 文档。它给出的对应关系是：
 
-| Vulkan 版本 | Android 版本基线（官方表） | 关键能力 |
-|---|---|---|
-| 1.0 | Android 7 | 显式 API、Command Buffer、多线程命令录制 |
-| 1.1 | Android 9 | subgroup 操作、YCbCr 转换、多视图渲染 |
-| 1.3 | Android 13 | 动态渲染、Synchronization 2、更多现代 Vulkan 能力进入主流基线 |
-| 1.4 | Android 16 | 更多此前可选的现代能力进入 core，平台继续向更完整的 Vulkan 功能集收敛 |
+| Vulkan 版本 | 平台 API 可用性 | 新设备 Launch Requirement | 关键能力 |
+|---|---|---|---|
+| 1.0 | Android 7.0 (API 24) | Android 7.0+ | 显式 API、Command Buffer、多线程命令录制 |
+| 1.1 | Android 7.0 (API 24) | Android 10 新 64 位设备 | subgroup 操作、YCbCr 转换、多视图渲染 |
+| 1.3 | Android 13 (API 33) | Android 13+ launch devices | 动态渲染、Synchronization 2、更多现代 Vulkan 能力进入主流基线 |
+| 1.4 | Android 16 (API 36) | Android 16+ launch devices | 更多此前可选的现代能力进入 core，平台继续向更完整的 Vulkan 功能集收敛 |
 
 [已验证: 官方文档, source.android.com/docs/core/graphics/implement-vulkan]
 
@@ -395,12 +395,16 @@ data_sources {
     config {
         name: "gpu.counters"
         gpu_counter_config {
-            counter_ids: [1, 2, 3]  // 按需选择 GPU counter ID
-            sampling_period_ns: 1000000  // 1ms 采样间隔
+            counter_period_ns: 1000000  // 1ms 采样间隔
+            counter_ids: 1  // 按需选择 GPU counter ID
+            counter_ids: 2
+            counter_ids: 3
         }
     }
 }
 ```
+
+注意：`counter_period_ns` 是 Perfetto `GpuCounterConfig` 的正确字段名；`counter_ids` 为 repeated 字段，每个 ID 单独一行。如果 GPU producer 支持 `counter_names`，也可以用名称代替 ID，但需要确认目标设备的 producer 实现。
 
 因此，`gpu.counters` 更适合回答“这一段 GPU 忙不忙、频率高不高”，不适合单独回答“到底是 GLES 还是 Vulkan”。只有在我们已经通过进程 maps、driver selection 或 app 侧日志确认了 API 路径之后，这些 counters 才能作为性能分析证据继续往下用。
 
@@ -634,16 +638,7 @@ RenderThread SCHED_FIFO 的早期实现曾导致显著性能回退：
 
 ### RenderThread 架构确认
 
-```java
-// android.graphics.HardwareRenderer (API 29+)
-public class HardwareRenderer {
-    // 所有 HardwareRenderer 实例共享同一个 RenderThread
-    private final RenderThread mRenderThread;
-    
-    // RenderThread 在进程内是唯一的，负责所有 GPU 命令提交
-    // 线程生命周期独立于任何一个 ViewRootImpl
-}
-```
+Android SDK 文档明确说明：所有 `HardwareRenderer` 实例共享同一个 render thread。源码路径为 `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java`。如果需要追踪 native 层线程行为，对应的实现路径是 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 和 `RenderProxy.cpp`——`RenderProxy` 在 native 层持有 `RenderThread` 引用，由 `RenderThread::create()` 保证进程内单例。
 
 > **待核实声明**：AOSP 中未找到 Android 15+ 新增"更激进的 CPU 大核绑定"相关 API 或参数。该说法来源为外部讨论，未经一手源码验证。
 

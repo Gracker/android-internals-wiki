@@ -58,16 +58,16 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T19:47:40+08:00"
-task2b_state: pending
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0；AHardwareBuffer options API、allocate2/additionalOptions 版本线、libdmabufheap pooling、Binder FDA 收益声明需回炉。"
 last_task6_at: '2026-05-13T20:10:00+08:00'
@@ -177,7 +177,7 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 
 ### 用户空间池化：libdmabufheap
 
-Android 16/17 在 DMA-BUF Heaps 之上引入了用户空间池化机制。当一块 DMA-BUF 被释放时，libdmabufheap 可以选择把它缓存起来，而不是立即通过 `ioctl` 归还给内核。下一次分配请求到来时，如果缓存中有尺寸匹配的 buffer，直接复用，跳过内核分配路径。
+**[待验证]** Android 16/17 在 DMA-BUF Heaps 之上引入了用户空间池化机制。官方 DMA-BUF Heaps 文档把 `libdmabufheap` 描述为 ION → DMA-BUF heaps 迁移抽象层；android-12 到 android-16/main 的 libdmabufheap 源码中未找到通用的“释放后缓存并按尺寸复用” pooling 路径。正文此前将池化写成已确认的 Android 16/17 机制，证据不充分。如果后续能在 `system/memory/libdmabufheap` 或具体 vendor allocator 实现中找到复用代码，可以重新补入正文。
 
 对图形管线来说，这个机制主要影响首次分配和 buffer 重建场景。正常运转时 BufferQueue 的 slot 复用已经规避了大部分分配开销，但 Surface 尺寸变化、format 变更、或者 App 从后台恢复触发 buffer 重建时，池化能减少这些路径上的延迟。
 
@@ -215,9 +215,7 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 ### `allocate2()` 与对齐协商
 
-Android 16 的 `IAllocator.aidl` 新增了 `allocate2()` 入口，对应的 `BufferDescriptorInfo` 引入了 `additionalOptions` 字段。这个字段允许调用方显式传递硬件对齐约束，比如 16KB 页对齐。在此之前，对齐需求只能靠 Gralloc 实现自行推断，16KB 页设备上容易出现分配失败或静默降级。
-
-NDK 层对应的入口是 `AHardwareBuffer_allocateWithOptions()`。当 `reservedSize` 或 stride 刚好跨过 16KB 页边界时，显式传入对齐要求能避免尾部空洞被放大（参见「16KB 页面模式下的分配预算」小节的计算例子）。
+Android 16 的 `IAllocator.aidl` 包含了 `allocate2()` 入口和 `BufferDescriptorInfo` 的 `additionalOptions` 字段。`allocate2()` 和 `additionalOptions` 在 android-15.0.0_r1 已存在，不是 Android 16 新增。`additionalOptions` 允许调用方显式传递硬件约束，比如 compression level（如 EGL_EXT_surface_compression）等；AIDL 注释给出的示例是 compression level，并非 16KB 页对齐。NDK 层的公开入口仍是 `AHardwareBuffer_allocate()`，不存在 `AHardwareBuffer_allocateWithOptions()`。如果需要影响 allocator AIDL 的 `additionalOptions`，应明确这不是公开 NDK `AHardwareBuffer` 入口，而是内部 HAL 层的描述符扩展。
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
@@ -271,9 +269,7 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 ### Binder FDA 批量传输优化
 
-`GraphicBuffer::unflatten()` 在 Android 16 上利用了 Binder 的 FDA（File Descriptor Array）机制。此前，native handle 里的每个 fd 需要逐个通过 Binder 驱动安装到目标进程。FDA 允许一次性提交所有 fd，Binder 驱动批量完成安装。
-
-SurfaceFlinger 处理多图层提交时，这个优化效果最明显。一帧有 5-10 个 Layer 同时提交 buffer 时，`unflatten` 的 CPU 开销能降低 20%-40%（具体数值取决于 Layer 数量和厂商 Binder 实现）。排查 SurfaceFlinger 合成耗时异常时，如果 `unflatten` 相关的 CPU 开销突然上升，可以先确认设备的 Binder 实现是否支持 FDA，以及是否有 Layer 的 buffer handle 携带了异常多的 fd。
+**[待验证]** `GraphicBuffer::unflatten()` 在 Android 16 上利用了 Binder 的 FDA（File Descriptor Array）机制。此前，native handle 里的每个 fd 需要逐个通过 Binder 驱动安装到目标进程。FDA 允许一次性提交所有 fd，Binder 驱动批量完成安装。正文此前称 SurfaceFlinger 处理多图层提交时 CPU 开销降低 20%-40%，但 android-16.0.0_r1 的 `GraphicBuffer.cpp` flatten/unflatten 路径仍是 transport fd 数组拷贝与 handle 重建，未找到直接利用 FDA 的源码锚点，20%-40% 的收益也缺少测试条件。如果后续能在 Binder/Parcel 层找到 FDA 真实调用链和 benchmark 数据，可以重新补入。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
@@ -432,9 +428,9 @@ Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Grall
 
 Android 16 同时引入了三项影响图形内存效率的增强：
 
-- **对齐协商**：`allocate2()` 的 `additionalOptions` 字段让调用方显式传递 16KB 对齐约束，避免 Gralloc 实现在大页环境下的静默降级
-- **用户空间池化**：libdmabufheap 在用户进程缓存释放的 DMA-BUF，Surface 尺寸变化等 buffer 重建场景下跳过内核分配路径
-- **Binder FDA 批量传输**：`GraphicBuffer::unflatten()` 利用 FDA 一次性安装所有 fd，SurfaceFlinger 处理多图层提交的 CPU 开销降低 20%-40%
+- **对齐协商**：`allocate2()` 的 `additionalOptions` 字段（Android 15+ 已存在）让调用方显式传递约束信息
+- **用户空间池化**：**[待验证]** libdmabufheap 在用户进程缓存释放的 DMA-BUF，源码证据尚不充分
+- **Binder FDA 批量传输**：**[待验证]** `GraphicBuffer::unflatten()` 利用 FDA 一次性安装所有 fd，20%-40% 收益缺少测试条件
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
