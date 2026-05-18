@@ -5,7 +5,7 @@ section: "13.12"
 status: ready-for-review
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+applicable_versions: "Android 10-17（Simpleperf 导入）；Android 15+（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
 last_verified: "2026-05-15"
 last_verified_against: "Perfetto v53/v54 release notes, perfetto.dev profiling/import/symbolization docs, Android simpleperf public docs snippets"
 confidence: high
@@ -29,15 +29,15 @@ related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_at: '2026-05-15T14:12:00+08:00'
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: 2026-05-15
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-15T14:27:34+08:00'
@@ -62,8 +62,8 @@ last_task9_review_log: 'logs/deep-review/2026-05-15-14-deep-review.md'
 ### 🔹 符号化、inline function 与 R8 retracing
 梳理 native 符号、Build ID、inline frame、R8 mapping 的还原边界，避免在符号缺失时下结论。
 
-### 🔹 Data Explorer / SQL / 大 Trace 工作流
-把 Data Explorer、SQL 标准库、FrameTimeline、Binder、GC 与 profile 样本联动起来，形成可复现的诊断流程。
+### 🔹 DataGrid / SQL / 大 Trace 工作流
+把 DataGrid、SQL 标准库、FrameTimeline、Binder、GC 与 profile 样本联动起来，形成可复现的诊断流程。
 
 ## 扩展
 
@@ -160,6 +160,8 @@ data_sources {
 
 这份 trace 打开后，sample 会显示在进程 track 组内。选中包含 sample 的时间区域，底部面板会按选区聚合出 dynamic flamegraph。选区聚合的价值在于把热点限定在某一帧、某次 Binder 往返或某段 GC 前后。[已验证: Perfetto cpu-profiling docs]
 
+`linux.perf` data source 的采集前提需要单独说明：Perfetto 官方文档标注 Android command line 路径要求 **Android 15+** 设备；在 user build 上还要求目标 App 声明 `profileable` 或 `debuggable`，或使用 userdebug/eng 系统镜像。Android 10-14 不支持 `linux.perf`，这个版本段的 CPU profiling 应走 Simpleperf protobuf 导入路径（`simpleperf report-sample --protobuf`），再在 Perfetto UI 中打开。章节适用范围因此要拆成两段：**Simpleperf 导入路径适用于 Android 10-17**；**Perfetto `linux.perf` callstack sampling 路径按官方文档标注 Android 15+、profileable/debuggable/userdebug 前提**。
+
 导入失败通常要先检查输入文件是否缺关键字段：
 
 - **只有一层函数**：录制时没有采集调用链，或 unwind 失败。先检查 simpleperf 是否用了 `-g`，Perfetto perf config 是否启用了 `callstack_sampling`。
@@ -204,7 +206,7 @@ traceconv bundle \
 
 阅读混合栈时按这个顺序排查：native 地址是否已符号化，APK/JAR mapping 是否还原，inline frame 是否展开，再判断热点属于 Java/Kotlin、JNI 边界、native library 还是系统库。不要在符号缺失时急着下结论；缺符号的火焰图只能说明“某个映射里有热点”，还不能说明是哪段代码。
 
-## Data Explorer 与 SQL 标准库补充
+## DataGrid 与 SQL 标准库补充
 
 v54 把 profile 相关的输入格式和 SQL 能力又向前推了一步：Trace Processor 支持 Collapsed Stack、Firefox Profiler preprocessed JSON；SQL 标准库新增 `heap_graph_stats`、Jank CUJ、counter-based weighted jank metrics；UI 侧则增强 DataGrid、pivot table、glob filter 和 snap-to-boundaries。
 
@@ -219,7 +221,7 @@ v54 把 profile 相关的输入格式和 SQL 能力又向前推了一步：Trace
 | Jank CUJ 与 weighted jank metrics | 把 profile 热点和 CUJ 级 jank 指标放到同一分析框架 | 和 7.x、13.8、13.10 联动，用标准库替代手写重复 SQL |
 | DataGrid / pivot / filter | 降低 SQL 结果探索成本 | 适合先快速分组，再把稳定查询固化到 13.10 的 SQL 模板 |
 
-这些能力不替代 SQL 工作流。Data Explorer 和 pivot table 适合探索数据结构，最终要复用的诊断结论仍应落成 SQL：目标进程、时间窗、线程、sample 数、帧预算和证据截图要能重复生成。
+这些能力不替代 SQL 工作流。DataGrid（SQL table viewer）和 pivot table 适合探索数据结构，最终要复用的诊断结论仍应落成 SQL：目标进程、时间窗、线程、sample 数、帧预算和证据截图要能重复生成。
 
 ## 大 Trace 分析工作流
 

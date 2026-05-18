@@ -570,3 +570,32 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - 类型：技术文章
 - 摘要：Android 16主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
 - 入库时间：2026-04-06
+
+
+<!-- AIW-源码调研-2026-05-18 -->
+## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
+
+**调研时间**：2026-05-18
+**来源选题**：daily-topics.json id=4
+
+### 关键源码发现
+
+**DeviceConfig 属性名**：`enable_uffd_gc_2`（非题目中的 gUseUserfaultfd）
+
+```cpp
+// art/runtime/gc/heap.cc DeviceConfig 读取逻辑
+bool phenotype_enable = GetCachedBoolProperty(
+    cached_properties, "persist.device_config.runtime_native_boot.enable_uffd_gc_2", false);
+bool phenotype_force_disable = GetCachedBoolProperty(
+    cached_properties, "persist.device_config.runtime_native_boot.force_disable_uffd_gc", false);
+bool build_enable = GetBoolProperty("ro.dalvik.vm.enable_uffd_gc", false);
+return (phenotype_enable || build_enable) && !phenotype_force_disable;
+```
+
+**版本历史**：
+- Android T（API 33）+：CMC GC 默认启用（需要 kernel userfaultfd 支持）
+- Android S（API 31）+：CMC GC 扩展为默认启用（commit 854cb7d）
+
+**userfaultfd 用途**：ART runtime 利用 Linux userfaultfd 系统调用在 GC 压缩期间延迟复制页面，实现并发压缩而不 stop-the-world。
+
+**信息源**：AOSP platform/art commit 854cb7d、8222aa2d；platform/build commit 53dd895

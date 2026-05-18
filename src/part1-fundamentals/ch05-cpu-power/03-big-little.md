@@ -29,12 +29,12 @@ task6_result: needs-rework
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task2b_result: pending
-last_task2b_at: "2026-05-03T19:40:00+08:00"
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task2b_result: fixed
+last_task2b_at: "2026-05-18T15:23:37+08:00"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
@@ -231,13 +231,13 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 3. **SQL 查询**：
 
 ```sql
--- 查看某线程的迁移次数和分布
-SELECT ts.cpu, COUNT(*) as slices
-FROM thread_state ts
-JOIN thread t ON ts.utid = t.utid
-WHERE t.tid = <target_tid> AND ts.state = 'Running'
-GROUP BY ts.cpu
-ORDER BY ts.cpu;
+-- 查看某线程在各 CPU 上的调度片段数和累计运行时间
+SELECT s.cpu, COUNT(*) AS slices, SUM(s.dur) / 1e6 AS total_running_ms
+FROM sched s
+JOIN thread t USING (utid)
+WHERE t.tid = <target_tid>
+GROUP BY s.cpu
+ORDER BY s.cpu;
 ```
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
@@ -257,7 +257,7 @@ ORDER BY ts.cpu;
 schedutil 的调频决策可以简化为以下步骤：
 
 1. **获取 CPU 利用率**：调度器在每次调度事件（唤醒、迁移、负载均衡等）时，会计算目标 CPU 的总利用率——即该 CPU 上所有 runnable 线程的 `util` 之和。
-2. **线性映射到频率**：schedutil 使用一个简单的线性公式把利用率映射到频率：`target_freq = max_freq * util / capacity`。如果 CPU 上所有线程的总利用率是 capacity 的 60%，目标频率就是最高频率的 60%。
+2. **线性映射到频率**：schedutil 使用一个近似线性映射把利用率换算成目标频率：`next_freq ≈ 1.25 × max_freq × util / capacity`（这里的 1.25 是 `map_util_perf()` 加的性能裕量 / headroom）。实际频率还要经过 `sugov_effective_cpu_perf()` 综合 uclamp 约束、deadline 带宽下限（`bw_min`）、`rate_limit_us` 和 cpufreq driver 约束后才能确定，不能把上面的近似公式当作最终输出。
 3. **应用 rate_limit**：为了避免频率抖动（短时间内频繁升降频），schedutil 有一个 `rate_limit_us` 参数（通常为 1-2ms），限制两次调频之间的最小间隔。
 4. **特殊处理**：
    - **实时任务（RT/DL）**：现代内核（v6.6/android16-6.12）中，schedutil 已不再对 RT/DL 任务直接置顶频率。实际路径是 `effective_cpu_util()` 将 RT/DL 带宽需求纳入 `bw_min` 计算，`sugov_update_single_freq()` / `sugov_update_shared()` 在检测到 `bw_min > 0` 时把频率下限锁定到满足带宽的最低值。当 RT/DL 带宽占满 CPU 时，频率自然会映射到最高，但这走的是带宽约束路径，不是“直接置顶”。
@@ -374,16 +374,14 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 也可以使用以下 SQL 查询来辅助判断：
 
 ```sql
--- 按 CPU 分组，查看每个 CPU 上线程的 Running 时长分布
+-- 按 CPU 分组，查看全局调度片段的时长分布
 SELECT
-  cpu,
-  COUNT(*) as num_slices,
-  SUM(dur) / 1e6 as total_running_ms
-FROM thread_state
-WHERE state = 'Running'
-  AND dur > 0
-GROUP BY cpu
-ORDER BY cpu;
+  s.cpu,
+  COUNT(*) AS num_slices,
+  SUM(s.dur) / 1e6 AS total_running_ms
+FROM sched s
+GROUP BY s.cpu
+ORDER BY s.cpu;
 ```
 
 通常，大核上会有更多前台关键线程（如主线程、RenderThread）的运行时间，而小核上更多是后台进程。

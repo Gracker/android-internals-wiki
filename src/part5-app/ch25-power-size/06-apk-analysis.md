@@ -40,10 +40,10 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
 task6_result: pass-light-edit
@@ -98,7 +98,7 @@ APK Analyzer 适合做包体积排查的基线工具。Android Studio 文档确�
 
 一次有效的体积分析要同时记录几组口径：
 
-- **Raw File Size**：ZIP entry 解压后的原始大小，用来判断某类产物自身是否膨胀，例如 dex 代码、图片、`.so`、`assets` 原文件。
+- **Raw File Size**：实体在 APK ZIP 中对总包大小的贡献（即 zipped file size），用来判断某类产物在包内占了多少空间。它不是解压后的大小——如果需要分析解压后占用，应单独用 ZIP uncompressed size 或安装后占用口径。
 - **Download Size**：按 Google Play 分发时的压缩下载大小估算，用来判断用户下载包的变化。图片、文本、dex、`.so` 的压缩表现不同，只看原始大小容易误判收益。
 - **按目录归因**：`classes*.dex` 对应 Kotlin / Java 代码和依赖；`res/` 与 `resources.arsc` 对应编译资源；`assets/` 多见于字体、离线包、模型、Web 资源；`lib/<abi>/` 对应 native 库副本。
 - **按版本对比**：发版前把当前 release 包和上一版 release 包放进 APK Analyzer 对比，优先处理增长项，而不是重新扫全包。

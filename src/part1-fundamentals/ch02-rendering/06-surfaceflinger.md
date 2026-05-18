@@ -3,7 +3,7 @@ title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -30,14 +30,14 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-05-15T03:17:00+08:00"
-task2b_result: pending
-last_task2b_at: "2026-04-27T02:40:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-18T15:23:37+08:00"
+task2b_result: fixed
+last_task2b_at: "2026-05-18T15:23:37+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
 task6_reviewed_date: "2026-05-09"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
@@ -178,7 +178,7 @@ void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId,
                                        nsecs_t expectedVSyncTime) {
     switch (what) {
         case MessageQueue::INVALIDATE: {
-            onMessageInvalidate(vsyncId, expected VSync Time);
+            onMessageInvalidate(vsyncId, expectedVSyncTime);
             break;
         }
         case MessageQueue::REFRESH: {
@@ -335,7 +335,7 @@ Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 F
 
 ### 代码锚点与 transaction 合并顺序
 
-主窗口侧入口在 `frameworks/base/core/java/android/view/ViewRootImpl.java`。一次 draw 完成后，ViewRootImpl 会把新 Buffer 的提交与本轮窗口几何、裁剪、位置、大小等 `SurfaceControl.Transaction` 组织到同一帧边界上。native 侧对应 `frameworks/native/libs/gui/BLAST BufferQueue.cpp`：
+主窗口侧入口在 `frameworks/base/core/java/android/view/ViewRootImpl.java`。一次 draw 完成后，ViewRootImpl 会把新 Buffer 的提交与本轮窗口几何、裁剪、位置、大小等 `SurfaceControl.Transaction` 组织到同一帧边界上。native 侧对应 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`：
 
 1. `BLAST BufferQueue::onFrameAvailable()` 收到 producer queue 进来的 `BufferItem`，进入 `acquireNextBufferLocked()`。
 2. `acquireNextBufferLocked()` 取出 buffer、acquire fence、dataspace、surface damage、transform、crop、frame number 等元数据。
@@ -407,7 +407,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 - `frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp` / `OutputLayer.cpp` — 显示输出层规划、可见区域、裁剪和 composition type 计算入口
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — 主窗口 BLAST 接入路径
-- `frameworks/native/libs/gui/BLAST BufferQueue.cpp` — BLAST BufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
+- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLAST BufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
 - `frameworks/native/libs/gui/SurfaceComposerClient.cpp` — SurfaceControl.Transaction / SurfaceComposerClient::Transaction 的 native 实现
 - `hardware/interfaces/graphics/composer/` — HWC HAL 接口定义（HIDL @2.x 和 AIDL composer3）
 - `frameworks/native/libs/renderengine/` — RenderEngine 实现（OpenGL ES / Vulkan 后端）

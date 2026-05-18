@@ -1440,9 +1440,30 @@
       ],
       "verification": "L1 禁用词扫描通过（落地→已修正为实现）, 高频词均在安全范围",
       "status": "done"
+    },
+    {
+      "date": "2026-05-18T15:24:05+08:00",
+      "task": "task2b-content-processing-rework",
+      "sections_fixed": [
+        "25.6",
+        "14.7",
+        "2.6",
+        "5.3",
+        "13.12"
+      ],
+      "queue_ids_completed": [
+        "task9-2026-05-18-25.6-apk-analyzer-raw-size",
+        "task9-20260518-14.7-profilingresult-platform-import",
+        "task9-20260515-2.6-deep-tech-review",
+        "task9-20260515-5.3-deep-tech-review",
+        "task9-2026-05-15-13.12-perfetto-profile-review"
+      ],
+      "total_issues_fixed": 8,
+      "auto_promoted": [],
+      "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-14T03:23:23+08:00",
+  "last_task2b_at": "2026-05-18T15:24:05+08:00",
   "last_task2b_sections": [
     "4.2",
     "7.6"

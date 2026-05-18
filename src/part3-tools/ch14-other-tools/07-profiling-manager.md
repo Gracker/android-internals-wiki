@@ -32,14 +32,14 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-04-25T15:40:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-18T15:23:37+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 last_task9_at: "2026-05-18T13:20:00+08:00"
@@ -84,7 +84,7 @@ ProfilingManager 解决的是量产设备上“问题发生时没有开工具”
 
 ## 显式请求的公共骨架
 
-下面代码省略 import，涉及的类都来自 `androidx.core.os`。正文只保留请求构造、提交和结果消费这三段。
+下面代码省略 import。构造请求的类（`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder`、`BufferFillPolicy`）来自 `androidx.core.os`；结果类 `ProfilingResult` 来自平台包 `android.os`。正文只保留请求构造、提交和结果消费这三段。
 
 ```java
 ProfilingRequest request = new SystemTraceRequestBuilder()
