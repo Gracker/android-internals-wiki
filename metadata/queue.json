@@ -11979,24 +11979,57 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T22:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260518-3.10-inputdispatcher-stale-event",
+      "section": "3.10",
+      "priority": 80,
+      "title": "InputDispatcher stale event 判定与事件丢弃",
+      "description": "InputDispatcher stale event 高分素材已积累，但 AIW 只有输入分发、反压和延迟预算，没有单独说明 stale 丢弃、ANR 分工和排查口径。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-18",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md"
+      ],
+      "gap_score": 16,
+      "score_breakdown": {
+        "material_richness": 4,
+        "book_relevance": 4,
+        "reader_demand": 4,
+        "timeliness": 4
+      },
+      "source_candidates": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-input-dispatcher-stale-event-versions.md",
+        "https://cs.android.com/android/platform/superproject/+/main:frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://source.android.com/docs/core/interaction/input"
+      ],
+      "added_at": "2026-05-18T23:04:00+08:00",
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 新章节创建并加工完成：status 已改为 ready-for-review，进入 Task6 管线。"
     }
   ],
   "metadata": {
-    "total_entries": 338,
+    "total_entries": 339,
     "p0_count": 142,
-    "last_updated": "2026-05-18T21:10:00+08:00",
+    "last_updated": "2026-05-18T23:04:00+08:00",
     "updated_by": "openclaw-task2a",
     "pending_entries": 153,
     "updated_date": "2026-05-18",
     "last_updated_by": "openclaw-task2a",
     "pending": 153,
-    "completed_entries": 183
+    "completed_entries": 184
   },
-  "last_updated": "2026-05-18T21:10:00+08:00",
+  "last_updated": "2026-05-18T23:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "pending": 153,
-  "last_task2a_completed": "7.16",
-  "last_task2a_completed_at": "2026-05-18T00:09:00+08:00",
-  "last_task2a_gap_mining": "13.18",
-  "last_task2a_gap_mining_at": "2026-05-18T21:10:00+08:00"
+  "last_task2a_completed": "3.10",
+  "last_task2a_completed_at": "2026-05-18T23:04:00+08:00",
+  "last_task2a_gap_mining": "3.10",
+  "last_task2a_gap_mining_at": "2026-05-18T23:04:00+08:00"
 }
