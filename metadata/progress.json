@@ -1,6 +1,6 @@
 {
-  "total": 317,
-  "draft": 0,
+  "total": 318,
+  "draft": 1,
   "ready-for-review": 115,
   "finalized": 202,
   "task9_result": "needs-rework",
@@ -1358,8 +1358,8 @@
   "total_review_sections": 161,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T20:16:50+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-18T21:10:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "20:16",
@@ -3789,6 +3789,18 @@
       "last_task6_at": "2026-05-18T19:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-18-19-review.md",
       "task9_state": "pending"
+    },
+    "13.18": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "queue_priority": 80,
+      "title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "每日信息/素材驱动/章节深挖",
+      "gap_score": 17,
+      "material_count": 4
     }
   },
   "task2b_rounds": [
@@ -3858,9 +3870,9 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T19:04:00+08:00",
-  "last_task2a_section": "20.13",
-  "last_task2a_file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
+  "last_task2a_at": "2026-05-18T21:10:00+08:00",
+  "last_task2a_section": "13.18",
+  "last_task2a_file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
     "2.6",
@@ -3892,7 +3904,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-18T12:44:40+08:00",
-  "last_task2a_result": "gap-mining-created",
+  "last_task2a_result": "phase1-gap-mining",
   "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-18T16:05:00+08:00",
@@ -4603,7 +4615,19 @@
       "queue_priority": 80,
       "material_count": 6
     },
-    "17.6": "draft"
+    "17.6": "draft",
+    "13.18": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "queue_priority": 80,
+      "title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "每日信息/素材驱动/章节深挖",
+      "gap_score": 17,
+      "material_count": 4
+    }
   },
   "task2a_last_processed": {
     "date": "2026-05-18",
@@ -4614,12 +4638,12 @@
   "task2a_last_gap_mining": {
     "date": "2026-05-18",
     "created_sections": [
-      "17.6"
+      "13.18"
     ],
     "created_files": [
-      "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
     ],
-    "candidate_count": 6,
+    "candidate_count": 4,
     "qualified_count": 1,
     "mode": "phase1-gap-mining"
   },
