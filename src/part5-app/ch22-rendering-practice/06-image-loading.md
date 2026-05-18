@@ -44,10 +44,10 @@ sources:
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -61,6 +61,7 @@ task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T09:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
 task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=0, P1=1），转入 Task2B 回炉。"
+task2b_result: "fixed"
 ---
 
 # 图片加载与显示优化
@@ -204,7 +205,7 @@ fun decodeTile(
 }
 ```
 
-官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。当前文档还列出 JPEG、PNG、WebP、HEIF、AVIF 等格式支持范围。API 31 起部分 `newInstance()` 入口标记 deprecated，`ImageDecoder.setCrop()` 文档同时说明它不是 `BitmapRegionDecoder.decodeRegion()` 的替代品，只是对输出做裁剪。[已验证: 官方文档, BitmapRegionDecoder][已验证: 官方文档, ImageDecoder]
+官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。当前文档列出 JPEG、PNG、WebP、HEIF 等格式支持范围；AVIF 平台解码从 Android 12（API 31）起可用，Android 10 / 11 的 `BitmapRegionDecoder` 不保证 AVIF 支持，需准备 WebP / JPG fallback。API 31 起部分 `newInstance()` 入口标记 deprecated，`ImageDecoder.setCrop()` 文档同时说明它不是 `BitmapRegionDecoder.decodeRegion()` 的替代品，只是对输出做裁剪。[已验证: 官方文档, BitmapRegionDecoder][已验证: 官方文档, ImageDecoder]
 
 因此，大图展示不要只写成“用 ImageDecoder 裁一下”。如果业务需要平移缩放长图，仍要按 tile 设计数据结构；如果目标只是在解码时裁掉边缘区域，`ImageDecoder.setCrop()` 才合适。
 

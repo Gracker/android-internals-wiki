@@ -341,3 +341,10 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 - [已验证: OPPO/OnePlus `hmbird_sched` proc 控制面, `hmbird_sched_proc_main.c`](https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c)
 - [来源: AIW AutoResearchClaw 调研报告, `2026-05-04-sched-ext-oplus-impl.md`]
 - [待验证: Android common kernel `android16-6.12` 分支与各 OEM user build 默认启用状态]
+
+### Android 17 sched_ext / EEVDF 调度器 OEM 落地机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-sched-ext-eevdf-oom-research.md
+- 类型：DeepResearch 调研结果
+- 摘要：分析 Linux 6.12 EEVDF 取代 CFS 的结构性转变，sched_ext 框架允许 OEM 通过 BPF map 注入定制调度策略。详细追踪 GameManagerService→BPF map→kernel SCX 的三层联动链路，以及厂商定制化输入优先级绑定机制。
+- 注入时间：2026-05-19
+- 价值：源码级追踪 EEVDF/SCX 三层联动链路，补充 GameManagerService BPF 交互与 OEM 定制化输入

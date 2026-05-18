@@ -65,6 +65,7 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-25T22:29:14+08:00'
+last_task6_audit: '2026-05-19'
 ---
 
 
@@ -73,7 +74,7 @@ last_task9_at: '2026-04-25T22:29:14+08:00'
 
 ## 为什么要了解系统触发式性能追踪
 
-线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时根本没开 Trace。ProfilingManager 的 system-triggered profiling 解决的正是这个空档。我们先把关心的系统事件注册给系统，等事件真的发生时，再由系统把结果放到应用目录，回调给应用自己处理。
+线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时没有开启 Trace。ProfilingManager 的 system-triggered profiling 解决的正是这个空档。我们先把关心的系统事件注册给系统，等事件发生时，再由系统把结果放到应用目录，回调给应用自己处理。
 
 对启动优化来说，这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说，我们拿到的也不再只是 `traces.txt` 的定格画面，而是一份围绕触发时刻保存下来的 trace。对 OOM 来说，返回物是 Java heap dump，与其他 trigger 返回的 trace 不同。
 
@@ -135,7 +136,7 @@ system-triggered profiling 有一个容易写错的地方，结果只会发给�
 拿到 `ProfilingResult` 之后，我们先看两件事：
 
 1. `getTriggerType()`，分辨是 `APP_FULLY_DRAWN`、`ANR`、`OOM` 还是别的触发器
-2. `getResultFilePath()`，拿到真正的结果文件路径
+2. `getResultFilePath()`，拿到结果文件路径
 
 如果这两个字段都没先看清，后面的分析工具就很容易选错。
 

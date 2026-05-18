@@ -44,14 +44,15 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T10:22:00+08:00"
+task2b_result: "fixed"
 ---
 
 # 帧率监控与线上卡顿治理
@@ -232,7 +233,12 @@ JankStats 的阈值口径也要进入配置系统。默认启发式会用当前�
 
 ## [自动发现] FrameMetrics 负责阶段归因
 
-当 JankStats 报告某个页面慢帧率升高，但没有足够信息判断原因时，可以对小流量打开 FrameMetrics。`FrameMetrics` 提供 `INPUT_HANDLING_DURATION`、`ANIMATION_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`GPU_DURATION`、`TOTAL_DURATION`、`DEADLINE` 等字段，用来区分主线程、RenderThread、GPU 和 deadline 命中情况。详见 19.12 节。
+当 JankStats 报告某个页面慢帧率升高，但没有足够信息判断原因时，可以对小流量打开 FrameMetrics。`FrameMetrics` 提供多种阶段耗时字段，按 API 级别分层：
+
+- **API 24+**（基础指标）：`UNKNOWN_DELAY_DURATION`、`INPUT_HANDLING_DURATION`、`ANIMATION_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`TOTAL_DURATION`、`FIRST_DRAW_FRAME` 等。
+- **API 31+**（扩展指标）：`GPU_DURATION`（GPU 渲染耗时）、`DEADLINE`（帧截止时间戳）。Android 10 / 11 上调用 `FrameMetrics.getMetric()` 传入这两个 id 会返回 `-1`，不能用于 GPU 阶段归因和 deadline miss 统计。
+
+API 29 / 30 的帧预算判断可以用 `TOTAL_DURATION`、`VSYNC_TIMESTAMP` / `INTENDED_VSYNC_TIMESTAMP`、当前刷新率预算或 `JankStats` 的 `isJank` 口径兜底。详见 19.12 节。[已验证: AOSP `FrameMetrics.java`, Added in API level 标注]
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 [已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/view/FrameMetrics.java`]

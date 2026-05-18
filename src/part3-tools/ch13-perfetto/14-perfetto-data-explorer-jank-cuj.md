@@ -297,3 +297,10 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
+
+### Perfetto DataGrid 与 Jank CUJ 第三方 App 适用范围边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-perfetto-jank-cuj-datagrid-scope-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：厘清 Perfetto android.cujs.base 默认仅纳入 com.android.*/com.google.android.* 进程的限制，分析系统 FrameTracker 与 Perfetto SQL 模块的两级数据源架构，提供第三方 App 扩展 CUJ 分析的三种方案（JankStats/自定义 atrace/FrameTimeline join）。
+- 注入时间：2026-05-19
+- 价值：填补第三方 App CUJ 分析方案的空白，厘清系统级与 App 级 CUJ 数据源边界

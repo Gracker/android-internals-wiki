@@ -35,16 +35,16 @@ related_chapters:
 - '5.1'
 - '13.1'
 - '13.5'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T04:11:19+08:00'
-task2b_result: pending
+task2b_result: "fixed"
 last_task2b_at: '2026-04-28T01:40:00+08:00'
 task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
 ---
@@ -390,11 +390,9 @@ Running 状态的绿色色块未必都是应用代码在忙。如果线程陷入
 
 ## [自动发现] irq/softirq 对线程调度的影响
 
-硬件中断和软件中断的执行是在当前进程的上下文上，意味着共享进程的堆栈。当硬件中断或 softirq 频繁触发时，正在执行的线程会被"偷走"CPU 时间——虽然 Perfetto 中线程仍显示为 Running，但实际的有效执行时间被压缩了。
+硬中断（hard IRQ）在 interrupt context 中执行，ARM64 平台通常使用独立的 IRQ 栈，不共享当前进程的用户态栈。softirq 可能在被中断任务的上下文中执行，也可能由 `ksoftirqd` 内核线程处理。当硬中断或 softirq 频繁触发时，当前 CPU 上正在运行的线程会被抢占——Perfetto 中线程仍显示为 Running，但有效执行时间被中断处理压缩。
 
-这种影响在 Perfetto 中不太容易直接观察到。一种间接的判断方式是：如果线程的 CPU 时间（火焰图上的执行时间）明显少于对应 Running 色块的时间跨度，差异可能来自中断处理。部分 Perfetto 配置可以启用 IRQ 轨道来直接观察中断活动。
-
-[已验证: 来源见 android-systrace-cpu-state-sleep.md §中断讨论]
+这种影响在 Perfetto 中不太容易直接观察到。间接判断方法：如果线程的 CPU 时间（火焰图上的用户态执行时间）明显少于对应 Running 色块的时间跨度，差异可能来自中断处理。更直接的证据需要启用 `irq` / `softirq` ftrace 事件或 `irq/` 轨道来观察中断活动；`ksoftirqd` 线程的 CPU 占用也能间接反映 softirq 负载。[已修正: ARM64 hard IRQ 使用独立栈, softirq 可由 ksoftirqd 执行][已验证: 来源见 android-systrace-cpu-state-sleep.md §中断讨论]
 
 ## 从线程状态分析性能瓶颈的方法论
 

@@ -490,3 +490,10 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
   - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - Linux 内核文档：
   - [DMA-BUF documentation](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html)
+
+### Android 16/17 图形内存优化 DMA-BUF/Gralloc 16KB 页边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证 libdmabufheap pooling、Gralloc4 IMapper additionalOptions、Binder FDA 批量 fd 安装在 16KB 页大小下的版本实现边界。涵盖 ION→DMA-BUF heap 迁移路径、BufferQueue 分配链路，以及厂商 gralloc 实现对物理对齐的决定性作用。
+- 注入时间：2026-05-19
+- 价值：源码级验证 16KB 页下 DMA-BUF/Gralloc 版本边界与厂商差异，补充 BufferQueue 分配链路细节

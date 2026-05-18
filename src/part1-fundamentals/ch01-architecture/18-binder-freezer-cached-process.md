@@ -274,3 +274,10 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj 和 capability �
 - [Linux: Binder driver UAPI](https://github.com/torvalds/linux/blob/master/include/uapi/linux/android/binder.h)
 - [Linux: cgroup freezer](https://github.com/torvalds/linux/blob/master/kernel/cgroup/freezer.c)
 - [来源: Obsidian/DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md]
+
+### Android Cached App Freezer 机制与 GC 触发路径
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md
+- 类型：DeepResearch 调研结果
+- 摘要：深入分析 CachedAppOptimizer 的冻结/解冻触发链路，厘清 Freezer 与 LMK、GC 三者的独立决策机制。涵盖 OOM Adj 边界（CACHED_APP_MIN_ADJ=900）、Binder freezer 协作、30+ 种解冻原因，以及 16KB 页大小对内存分配粒度的影响。
+- 注入时间：2026-05-19
+- 价值：源码级厘清 Freezer/LMK/GC 三机制独立决策关系，补充冻结解冻触发链与 Binder 协作细节

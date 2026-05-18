@@ -32,10 +32,10 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [case-study, rendering, optimization, recyclerview, compose, jank]
 related_chapters: ["22.1", "22.2", "22.3", "22.8", "7.8", "13.6", "19.18"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: needs-rework
@@ -45,6 +45,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-14T06:32:15+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
 task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 1：FrameTimingMetric 验收建议补 frameOverrunMs / deadline miss 口径。未自动晋升：Task6/queue 仍有 pending。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
+task2b_result: "fixed"
 ---
 
 
@@ -71,9 +72,11 @@ task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 1：
 > 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
-## 为什么要了解渲染优化案例集
+## 为什么要了解渲染优化排查框架
 
-渲染问题很少只由一个点造成。列表滑动卡顿可能同时来自 `onBindViewHolder()` 过重、图片解码抢占 CPU、主线程等待 I/O、局部刷新退化成整项刷新；Compose 迁移后的卡顿也可能来自频繁重组、缺少 `key`、过度使用 Lazy 容器、主线程 Binder 调用。案例集的价值，是把 22.1 到 22.8 节里的单点技术放进同一条排查路径里：量化帧耗时，定位主线程、RenderThread、GPU 或后台线程干扰，再用同一组指标验收。
+渲染问题很少只由一个点造成。列表滑动卡顿可能同时来自 `onBindViewHolder()` 过重、图片解码抢占 CPU、主线程等待 I/O、局部刷新退化成整项刷新；Compose 迁移后的卡顿也可能来自频繁重组、缺少 `key`、过度使用 Lazy 容器、主线程 Binder 调用。本节的价值，是把 22.1 到 22.8 节里的单点技术放进同一条排查路径里：量化帧耗时，定位主线程、RenderThread、GPU 或后台线程干扰，再用同一组指标验收。
+
+> **定位说明**：本节当前提供的是排查框架和复盘模板，覆盖列表滑动、Compose 迁移和复杂页面三个高频场景的排查路径。团队拿到自己的 Macrobenchmark / JankStats / Perfetto 数据后，按末尾“案例复盘模板”填写即可产出可复查的优化记录。如果有可脱敏分享的真实案例，后续版本可以补充。[Task2B: 缺少真实案例证据链，已将“案例集”降级为“排查框架”]
 
 Android 官方把慢帧定义为渲染时间超过设备刷新周期的帧。60Hz 设备的单帧预算约 16ms，90Hz 约 11ms，120Hz 约 8ms；超过 700ms 的帧会被 Android vitals 单独归为 frozen frame。线上排查不能只看平均帧率，至少要看 P90/P95/P99、慢帧比例、frozen frame 数量和用户场景标签。`JankStats` 适合端侧带场景标签采集，`Macrobenchmark` 的 `FrameTimingMetric` 适合回归测试，Perfetto 负责解释为什么某几帧变慢。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render][已验证: 官方文档, developer.android.com/topic/performance/jankstats][已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 

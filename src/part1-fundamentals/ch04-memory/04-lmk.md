@@ -514,6 +514,22 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 - 注入时间：2026-04-24（首次），后续 2026-04-28/29/30 追加摘要更新
 - 价值：源码级贯通 PSI→LMKD 完整信号链，填补 AIW ch04-lmk 的 PSI 机制源码分析空白
 
+
+
+### Cached App Freezer 与 GC 触发路径独立验证（AIW-源码调研-2026-05-19）
+
+- 来源：`DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md`
+- 类型：DeepResearch 调研结果
+- 摘要：本题验证了 Android Cached App Freezer 与 GC 触发路径的独立性。关键发现：
+  - `CachedAppOptimizer.java` 的 `FREEZER_CUTOFF_ADJ = CACHED_APP_MIN_ADJ = 900`，决定哪些 adj ≥ 900 的进程可被冻结
+  - Freezer 与 LMK 共用同一 Adj 范围但独立决策：`CACHED_APP_LMK_FIRST_ADJ` (950) 以上由 LMK 先杀，900 及以上由 freezer 可能冻结
+  - 解冻原因（`UNFREEZE_REASON_*`）共 30+ 种，包括 ACTIVITY, BIND_SERVICE, START_SERVICE, UI_VISIBILITY, FILE_LOCKS, BINDER_TXNS 等
+  - GC 触发由 `art/runtime/gc/heap.cc` 的 `NeedGC()` 独立判断，与 freezer 完全解耦
+  - 16KB 页大小影响内存分配粒度（页对齐），不影响 freezer 决策和 GC 触发阈值
+  - Android 14 引入 `FrozenStateChangeCallback` API，允许系统服务感知进程冻结状态
+
+[源码验证: AOSP android-14.0.0_r1 / android-16.0.0_r1, `CachedAppOptimizer.java`, `ProcessList.java`, `OomAdjuster.java`]
+
 ## 参考资料
 
 ### AOSP 源码
