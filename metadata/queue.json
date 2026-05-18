@@ -11540,6 +11540,33 @@
       "assigned_to": "content-team",
       "estimated_hours": 2,
       "dependencies": []
+    },
+    {
+      "id": "task9-audit-14.2-simpleperf-proto-callchain",
+      "section": "14.2",
+      "priority": 85,
+      "title": "Simpleperf proto 导出命令缺少 --show-callchain",
+      "description": "Perfetto simpleperf proto 导出命令缺少 --show-callchain，导致调用栈信息无法进入导出结果",
+      "issue_type": "source-command-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/02-simpleperf.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/命令准确性",
+          "location": "src/part3-tools/ch14-other-tools/02-simpleperf.md:438",
+          "detail": "Perfetto simpleperf proto 导出示例缺少 --show-callchain。Perfetto external format 文档明确说明该 flag is required to include call stack information；NDK view_the_profile.md 示例也使用 simpleperf report-sample --show-callchain --protobuf。当前命令虽然能导出 proto，但用于 Callstack Sampling / flamegraph 时会丢失调用栈信息。",
+          "suggestion": "将命令修正为 simpleperf report-sample --protobuf --show-callchain -i perf.data -o report_sample.trace；如需符号解析，再补 --symdir /path/to/symbols。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T16:30:11+08:00"
     }
   ],
   "metadata": {
