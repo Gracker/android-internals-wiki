@@ -31,12 +31,12 @@ related_chapters:
 - '13.2'
 - '13.6'
 - '14.1'
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: "needs-rework"
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
@@ -44,6 +44,8 @@ last_task9_at: "2026-04-20T03:17:47+08:00"
 last_task2b_at: "2026-04-22T08:06:44+08:00"
 last_task6_audit: "2026-05-17"
 last_task6_audit_log: "logs/review/2026-05-17-15-audit.md"
+last_task9_audit: "2026-05-18"
+last_task9_audit_log: "logs/deep-review/2026-05-18-16-audit.md"
 ---
 # Simpleperf
 
