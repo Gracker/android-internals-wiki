@@ -1,8 +1,8 @@
 {
   "total": 314,
   "draft": 0,
-  "ready-for-review": 113,
-  "finalized": 201,
+  "ready-for-review": 112,
+  "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -174,11 +174,10 @@
     "1.11"
   ],
   "review_files": [
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/23-network-apm-internals.md",
-    "src/part2-performance/ch09-anr/05-case-studies.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md",
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
-  "review_summary": "Task6 2026-05-18 12: 复审 9.5/19.13/19.23；L1/L2 小修 6 处，承接 Task9 技术边界项 3 个并在正文标注，queue 保持 pending；无自动晋升。",
+  "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 6,
     "l3_issues": 0,
@@ -862,10 +861,14 @@
       "task6_new_rework": false
     },
     "25.6": {
+      "task9_result": "needs-rework",
       "p0": 1,
-      "p1": 0,
+      "p1": 1,
       "p2": 0,
-      "p3": 1
+      "p3": 0,
+      "reviewed_at": "2026-05-18T12:44:40+08:00",
+      "log": "logs/deep-review/2026-05-18-12-deep-review.md",
+      "summary": "P0 1：APK Analyzer Raw File Size 口径写反；P1 1：低频 native 库误列 PAD，与 PAD no executable code 边界冲突。"
     },
     "25.7": {
       "task9_result": "needs-rework",
@@ -878,14 +881,14 @@
       "summary": "P0 1：JSON 字段 keep 规则允许裁剪；P1 2：JNI keep 缺 includedescriptorclasses、AGP/R8/Gson 版本边界缺失。"
     },
     "25.8": {
-      "task9_result": "needs-rework",
-      "p0": 1,
-      "p1": 2,
-      "p2": 1,
-      "p3": 1,
-      "reviewed_at": "2026-05-14T21:20:00+08:00",
-      "log": "logs/deep-review/2026-05-14-21-deep-review.md",
-      "summary": "P0 1：AOSP 行号锚点错误；P1 2：bundletool --modules 体积门禁口径、国内渠道 split APK 安装边界缺失；P2 1：PAD 资源定位/更新状态机边界。"
+      "task9_result": "pass-tech-review",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-18T12:44:40+08:00",
+      "log": "logs/deep-review/2026-05-18-12-deep-review.md",
+      "summary": "上一轮 AOSP 锚点、bundletool --modules、sideload split 边界均已修复；本轮 P0/P1/P2 0，自动晋升 finalized。"
     },
     "26.1": {
       "task9_result": "pass-tech-review",
@@ -1329,8 +1332,8 @@
     },
     "auto_promoted": []
   },
-  "task9_last_review": "2026-05-17",
-  "ready_to_publish": 198,
+  "task9_last_review": "2026-05-18",
+  "ready_to_publish": 199,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -3665,24 +3668,32 @@
   "last_task2a_processed_file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
   "last_task2a_processed_date": "2026-05-17",
   "task9_last_review_detail": {
-    "mode": "idle-audit",
-    "reviewed_at": "2026-05-17T14:20:00+08:00",
+    "date": "2026-05-18",
+    "time": "12:44",
+    "reviewed_at": "2026-05-18T12:44:40+08:00",
+    "mode": "normal",
     "sections": [
-      "2.5"
+      "25.6",
+      "25.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+      "src/part5-app/ch25-power-size/06-apk-analysis.md",
+      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
     ],
-    "p0": 0,
-    "p1": 3,
+    "log": "logs/deep-review/2026-05-18-12-deep-review.md",
+    "p0": 1,
+    "p1": 1,
     "p2": 0,
     "p3": 0,
     "result": "needs-rework",
-    "log": "logs/deep-review/2026-05-17-14-audit.md"
+    "auto_promoted": [
+      "25.8"
+    ]
   },
-  "last_task9_review": "2026-05-17",
+  "last_task9_review": "2026-05-18",
   "last_task9_sections": [
-    "2.5"
+    "25.6",
+    "25.8"
   ],
   "last_task9_review_detail": {
     "mode": "idle-audit",
@@ -3701,7 +3712,8 @@
     "log": "logs/deep-review/2026-05-17-14-audit.md"
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md",
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
   "last_task2a_at": "2026-05-18T04:14:00+08:00",
@@ -3748,9 +3760,9 @@
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
-  "last_task9_at": "2026-05-17T14:20:00+08:00",
+  "last_task9_at": "2026-05-18T12:44:40+08:00",
   "last_task2a_result": "gap-mining",
-  "ready-to-publish": 197,
+  "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-18T12:26:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-18-12-review.md",
@@ -4469,15 +4481,18 @@
     "mode": "gap-mining"
   },
   "task9_last_sections": [
-    "2.5"
+    "25.6",
+    "25.8"
   ],
   "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md",
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-17-14-audit.md",
+  "last_task9_log": "logs/deep-review/2026-05-18-12-deep-review.md",
   "task9_last_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part5-app/ch25-power-size/06-apk-analysis.md",
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
@@ -4519,21 +4534,27 @@
   ],
   "last_task2a_date": "2026-05-17",
   "task9_last_review_summary": {
-    "date": "2026-05-17",
-    "time": "16:20",
-    "reviewed_at": "2026-05-17T16:20:00+08:00",
+    "date": "2026-05-18",
+    "time": "12:44",
+    "reviewed_at": "2026-05-18T12:44:40+08:00",
+    "mode": "normal",
     "sections": [
-      "14.1"
+      "25.6",
+      "25.8"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+      "src/part5-app/ch25-power-size/06-apk-analysis.md",
+      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
     ],
-    "log": "logs/deep-review/2026-05-17-16-deep-review.md",
+    "log": "logs/deep-review/2026-05-18-12-deep-review.md",
     "p0": 1,
-    "p1": 2,
-    "p2": 1,
+    "p1": 1,
+    "p2": 0,
     "p3": 0,
-    "auto_promoted": []
+    "result": "needs-rework",
+    "auto_promoted": [
+      "25.8"
+    ]
   },
   "task2b_history": [
     {
