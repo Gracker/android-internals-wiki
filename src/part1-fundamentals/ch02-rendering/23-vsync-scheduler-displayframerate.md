@@ -43,8 +43,14 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: "task6_pending"
-task6_state: "pending"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-18"
+task6_result: "pass-light-edit"
+task9_state: "pending"
+last_task6_at: "2026-05-18T19:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-19-review.md"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
@@ -62,7 +68,7 @@ task6_state: "pending"
 把输入处理、主线程遍历、RenderThread 提交、SurfaceFlinger latch / compose / present 放到同一条时间线里，说明 offset 为什么会改变端到端延迟。
 
 ### 🔹 DisplayFrameRate 请求与系统刷新率选择
-对齐 `Surface.setFrameRate()` / `Window.setFrameRate()`、兼容性参数、video / game / UI 场景的差异，以及 SurfaceFlinger 如何在多 layer 请求之间选择刷新率。
+对应 `Surface.setFrameRate()` / `Window.setFrameRate()`、兼容性参数、video / game / UI 场景的差异，以及 SurfaceFlinger 如何在多 layer 请求之间选择刷新率。
 
 ### 🔹 Android 15+ ARR 与 FrameRateEligibility 边界
 整理 adaptive refresh rate、离散 VSync step、应用声明能力、GameManager 介入和设备策略之间的关系，避免把内容帧率、目标帧率和显示刷新率混成一个概念。
@@ -117,7 +123,7 @@ sequenceDiagram
 
 ## 二、VSyncDispatch：把目标 VSync 反推成唤醒时间
 
-`VSyncDispatchTimerQueueEntry::schedule()` 的计算方式很直接：先找出不早于 `lastVsync`、当前时间、工作时长和 ready 时长约束的下一个 VSync，再把唤醒时间设成 `nextVsyncTime - workDuration - readyDuration`。
+`VSyncDispatchTimerQueueEntry::schedule()` 的计算过程分三步：先找出不早于 `lastVsync`、当前时间、工作时长和 ready 时长约束的下一个 VSync，再把唤醒时间设成 `nextVsyncTime - workDuration - readyDuration`。
 
 ```text
 nextVsyncTime = predictor.nextAnticipatedVSyncTimeFrom(max(lastVsync, now + workDuration + readyDuration))
@@ -169,7 +175,7 @@ Android 11 起，应用可以通过 `Surface.setFrameRate()` 告诉平台某个 
 
 SurfaceFlinger 侧，`SurfaceFlinger.cpp` 会把前端 snapshot 中的 `frameRate` 写入 `LayerProps.setFrameRateVote`，再通过 Scheduler 的 layer history 汇总成 content requirements。`Scheduler::chooseRefreshRateForContent()` 调用 `LayerHistory::summarize()`，随后 `RefreshRateSelector::getRankedFrameRates()` 对候选刷新率排序。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp] [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp] [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp]
 
-`RefreshRateSelector` 里能看到几类输入：layer 的 vote 类型、owner UID、touch signal、power-on signal、pacesetter display、当前 active mode。源码还专门处理了游戏通过 `setFrameRate()` 限制帧率后不应被 touch boost 拉高的场景。由此可知，刷新率选择不是“最高 layer 胜出”这么简单，而是 layer 投票、全局信号和设备策略共同排序。
+`RefreshRateSelector` 里能看到几类输入：layer 的 vote 类型、owner UID、touch signal、power-on signal、pacesetter display、当前 active mode。源码还专门处理了游戏通过 `setFrameRate()` 限制帧率后不应被 touch boost 拉高的场景。刷新率选择不会让“最高 layer”单独胜出；系统会把 layer 投票、全局信号和设备策略放在一起排序。
 
 ## 六、ARR 和 FrameRateEligibility 的边界
 
