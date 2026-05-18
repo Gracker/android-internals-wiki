@@ -16,8 +16,16 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-18"
+task6_result: pass-light-edit
+task6_l1_l2_fixes: 6
+task6_l3_l4_issues: 0
+task9_state: pending
+last_task6_at: "2026-05-18T22:15:21+08:00"
+last_task6_review_log: "logs/review/2026-05-18-22-review.md"
 sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md"
@@ -55,7 +63,7 @@ sources:
 ### 🔹 多 Trace 对比与性能回归判断
 说明实时 reference trace 对比和 analysis result snapshot 对比的差异，覆盖 baseline / candidates、标准化指标、缺失指标回填、显著变化阈值和报告复核方式。
 
-### 🔹 Provider Manager 与双 runtime 边界
+### 🔹 Provider Manager 与双运行时边界
 说明 provider profile、active profile、env fallback、Claude Agent SDK、OpenAI Agents SDK 的职责划分；重点写清模型配置和 SmartPerfetto 后端连接不是同一个概念。
 
 ### 🔹 运行分发、权限和隐私边界
@@ -83,9 +91,9 @@ SmartPerfetto 解决的是 trace 调查的工程化问题：SQL 能重跑，证�
 
 传统 trace 分析容易停在一次对话里：打开 Perfetto UI，问一个问题，复制几段 SQL，截图给同事。SmartPerfetto 的变化在于把每轮分析拆成四类产物：聊天答案、SQL / Skill 表格、HTML 报告、analysis result snapshot。聊天答案适合快速读结论；SQL 和表格适合复核证据；HTML 报告适合贴到 issue 或复盘文档；snapshot 适合和另一条 trace 的分析结果比较。
 
-这四类产物的生命周期不同。一次性问答只服务当前窗口，结果快照要保存关键指标、证据引用和报告入口，HTML 报告要能离开对话上下文阅读，多 Trace 对比要能把 baseline 与 candidates 放到同一张指标表里。对于团队性能治理，保存“分析结果”比保存“模型回答”更有价值，因为后者很难判断数据从哪里来。
+这四类产物的生命周期不同。一次性问答只服务当前窗口，结果快照要保存关键指标、证据引用和报告入口，HTML 报告要能离开对话上下文阅读，多 Trace 对比要能把 baseline 与 candidates 放到同一张指标表里。对于团队性能治理，保存“分析结果”比保存“模型回答”更有价值，因为前者保留了指标、证据引用和报告入口，后者很难判断数据从哪里来。
 
-[自动发现] SmartPerfetto 在 AIW 体系里更接近 26.3 节的“性能证据采集与上报”工具，而不只是 13.3 节 Perfetto UI 的插件。它把线下 trace 证据和线上指标治理连起来：线下用 trace 定位原因，线上用 P90 / P99、慢帧率、启动耗时判断范围和趋势，回归时再把两边的证据放进同一份复盘材料。
+在 AIW 体系里，SmartPerfetto 更接近 26.3 节的“性能证据采集与上报”工具，而不只是 13.3 节 Perfetto UI 的插件。它把线下 trace 证据和线上指标治理连起来：线下用 trace 定位原因，线上用 P90 / P99、慢帧率、启动耗时判断范围和趋势，回归时再把两边的证据放进同一份复盘材料。
 
 ## Perfetto AI Assistant 的最小工作流
 
@@ -125,7 +133,7 @@ SmartPerfetto 有两类对比对象。实时 reference trace 对比要求当前�
 
 ## Provider Manager 与双运行时边界
 
-SmartPerfetto 的模型配置分成三层：Connection、Provider、运行时。Connection 配 SmartPerfetto 后端地址和可选后端访问 token；Provider profile 配模型服务的 Base URL、API key / token、模型 ID 和协议类型；运行时决定后端用 Claude Agent SDK 还是 OpenAI Agents SDK 编排工具调用。这三层混在一起时，排障会变得很乱。[来源: https://github.com/Gracker/SmartPerfetto]
+SmartPerfetto 的模型配置分成三层：Connection、Provider、运行时。Connection 配 SmartPerfetto 后端地址和可选后端访问 token；Provider profile 配模型服务的 Base URL、API key / token、模型 ID 和协议类型；运行时决定后端用 Claude Agent SDK 还是 OpenAI Agents SDK 编排工具调用。这三层混在一起时，排障很难判断问题出在后端连接、模型凭证还是工具编排。[来源: https://github.com/Gracker/SmartPerfetto]
 
 | 配置项 | 作用 | 常见误解 |
 | --- | --- | --- |
@@ -147,7 +155,7 @@ trace 文件默认包含业务路径、进程名、线程名、URL 片段、用�
 
 ## 和原生 Perfetto / Perfetto SDK / APM 平台的组合关系
 
-SmartPerfetto 不替代 Perfetto。Perfetto UI 仍是时间轴观察和手工验证入口，`trace_processor_shell` 仍是确定性查询引擎，Perfetto SDK 负责把应用内事件写进 trace，APM 平台负责长期采集线上指标和异常。SmartPerfetto 夹在这些工具之间，负责把分析过程组织成可复用的证据产物。
+SmartPerfetto 不替代 Perfetto。Perfetto UI 仍是时间轴观察和手工验证入口，`trace_processor_shell` 仍是确定性查询引擎，Perfetto SDK 负责把应用内事件写进 trace，APM 平台负责长期采集线上指标和异常。SmartPerfetto 位于这些工具之间，负责把分析过程组织成可复用的证据产物。
 
 | 工具 | 更适合的问题 | 产物 |
 | --- | --- | --- |
@@ -166,7 +174,7 @@ Skill 一旦进入团队工作流，就要按代码质量管理。最小测试�
 
 推荐把 Skill 测试分成四档：SQL 能执行；输出列符合 contract；关键指标和 golden 值在阈值内；报告里的 evidence id 能回到表格行列。启动、滑动、ANR、Binder、I/O、内存、功耗这些高频场景至少要有一条成功样本和一条缺字段样本。缺字段样本用来验证降级逻辑：报告应写“缺 FrameTimeline”，不能把帧分析写成确定结论。
 
-[自动发现] AIW 可以提供一批通用测试口径。13.10 节的 SQL 模板、13.16 节的调查协议、13.14 节的 Jank CUJ 查询和 26.14 节的回归判定表，都可以转成 Skill contract。每个 contract 都应写清输入、输出列、证据解释、适用版本和失败分支。
+AIW 可以提供一批通用测试口径。13.10 节的 SQL 模板、13.16 节的调查协议、13.14 节的 Jank CUJ 查询和 26.14 节的回归判定表，都可以转成 Skill contract。每个 contract 都应写清输入、输出列、证据解释、适用版本和失败分支。
 
 ## 企业内部 Trace 分析平台接入清单
 
