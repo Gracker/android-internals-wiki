@@ -11592,6 +11592,46 @@
       ],
       "created_by": "task2a-knowledge-gap",
       "gap_score": 16
+    },
+    {
+      "id": "task9-audit-4.8-20260518-uffd-property-version",
+      "section": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "priority": 95,
+      "title": "ART 分代 GC 版本边界与 UFFD 配置属性错误",
+      "description": "P0: `debug.art.disable_userfaultfd` 属性名未在 AOSP 验证到；P1: 主时间线未整合 Android 12+ ART Mainline/UFFD CMC 与 Android 17 Gen-CMC 的版本边界。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md"
+      ],
+      "reason": "[Deep Tech Review Audit] UFFD CMC 属性名与 Android 12+/17 版本边界需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-18-17-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "附录“AIW-源码调研-20260516 补充”，行 612-615",
+          "detail": "正文写“DeviceConfig 覆盖：`debug.art.disable_userfaultfd` 可覆盖默认行为”，但 AOSP main 的 `art/runtime/gc/collector/mark_compact.cc` 实际读取 `persist.device_config.runtime_native_boot.force_disable_uffd_gc` 与 `persist.device_config.runtime_native_boot.enable_uffd_gc_2`；相关提交测试命令也是 `device_config put runtime_native_boot force_disable_uffd_gc true` 或 `setprop persist.device_config.runtime_native_boot.force_disable_uffd_gc true`。未验证到 `debug.art.disable_userfaultfd` 这个属性。",
+          "suggestion": "把属性名改为 `runtime_native_boot.force_disable_uffd_gc` / `persist.device_config.runtime_native_boot.force_disable_uffd_gc`，并补上与 `enable_uffd_gc_2`、`ro.dalvik.vm.enable_uffd_gc`、`KernelSupportsUffd()` 的关系；低 RAM 设备禁用的说法若无源码锚点，应降为 `[待验证]`。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "“ART 分代 GC 的版本时间线”行 142、“版本演进”表行 481-486，与附录行 601-604",
+          "detail": "主文把 CMC 路径写成 “Android 15+ / Android 17 Beta”，版本表只列 15+ 和 17 Beta；但 Android 17 Beta 官方博客同时说明该 ART 优化会通过 Google Play System updates 覆盖 Android 12/API 31+ 设备，AOSP commit `854cb7d94594...` 也写明 userfaultfd-based CMC GC 扩展为 Android S 及以上默认启用（需内核/属性条件）。附录已写 Android 12 起默认启用，但没有回填到主时间线，导致读者无法区分平台版本、ART Mainline 下发和设备 flag。",
+          "suggestion": "重拆版本矩阵：Android 8 默认 CC；Android 10+ Gen-CC；Android 12+/13+ 可通过 ART Mainline + UFFD 条件进入 CMC；Android 17/API 37 对外发布 Gen-CMC 性能特性。正文应要求用 logcat collector 类型、DeviceConfig/sysprop 和 `ShouldUseGenerationalGC()` 条件验证实机路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T17:28:39+08:00"
     }
   ],
   "metadata": {
