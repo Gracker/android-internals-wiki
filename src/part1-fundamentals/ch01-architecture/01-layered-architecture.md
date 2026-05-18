@@ -31,25 +31,25 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
-task2b_state: fixed
+task2b_state: "pending"
 task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-18T03:31:27+08:00"
-task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。Android 16 SurfaceFlinger 旧 trace 名 doComposition 在正常/异常示例中残留，已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。SurfaceFlinger Android 16 trace/源码切片名称仍使用旧路径；HAL 调用段落仍把 Treble 后 HAL 泛化成每次 Binder IPC。已写入 queue.json。 | 2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T08:31:45+08:00"
+task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。SurfaceFlinger 旧版本边界仍误写到 Android 14-；Android 15 起强制 memfd 说法与 AOSP android-16.0.0_r1 不符；SELinux AVC 性能因果仍需删除/补证。已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。Android 16 SurfaceFlinger 旧 trace 名 doComposition 在正常/异常示例中残留，已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。SurfaceFlinger Android 16 trace/源码切片名称仍使用旧路径；HAL 调用段落仍把 Treble 后 HAL 泛化成每次 Binder IPC。已写入 queue.json。 | 2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
 last_task6_at: "2026-05-18T08:15:18+08:00"
 last_task6_review_log: "logs/review/2026-05-18-08-review.md"
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。小修 10 处（结构性标题、代码省略注释、传输模式术语、编辑标记、中英文间距）；无新增 B 类问题。queue.json 中 1.1 无 pending 条目，但 task9_result 尚非 pass-tech-review，未自动晋升，转 Task9 复核。"
 last_task9_audit: "2026-05-17"
-task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
-reviewed_at: "2026-05-18T03:31:27+08:00"
+task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
+reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-05-18"
-last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
 ---
 
 # Android 分层架构

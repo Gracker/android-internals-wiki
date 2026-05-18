@@ -11039,6 +11039,55 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T07:21:00+08:00"
+    },
+    {
+      "id": "task9-1.1-sf-memfd-version-errors-20260518-0830",
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 95,
+      "title": "Android 分层架构 SurfaceFlinger / memfd 版本口径错误",
+      "description": "[Deep Tech Review] P0: SurfaceFlinger 旧版本 trace/source 名称版本边界错误；P0: Android 15 起强制 memfd 说法与 AOSP android-16.0.0_r1 libcutils/init.rc 不符；P1: Treble 隔离降低 AVC 检查频率的性能因果缺少源码/数据支撑。",
+      "issue_type": "source-code-accuracy-version-differences-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T08:31:45+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-08-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L183、L313、L325、L330、L352 SurfaceFlinger 旧版本 trace/source 名称",
+          "detail": "正文把 `onMessageReceived → handleMessageRefresh → doComposition` 标成“Android 14 及之前”的旧版本路径；AOSP frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 实测：Android 13/14/15/16 均存在 `SurfaceFlinger::commit()` / `SurfaceFlinger::composite()`，且无 `doComposition` / `handleMessageRefresh` / `onMessageReceived`；Android 11/12 仅保留 `onMessageReceived`，也无 `handleMessageRefresh` / `doComposition`；这组三段函数只覆盖 Android 8-10。",
+          "suggestion": "按版本拆分 SurfaceFlinger 观测锚点：Android 8-10 可写 `onMessageReceived → handleMessageRefresh → doComposition`；Android 11-12 需单独核对 `onMessageReceived` 后的 refresh/composition 路径，不要写 `doComposition`；Android 13-16 使用 `commit/composite/postComposition`。同步修正文中所有“旧版本=Android 14 及之前 / 旧版 doComposition”表述。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L123 Linux 内核层：`Android 15 起强制使用 memfd 作为共享内存后端`",
+          "detail": "AOSP android-16.0.0_r1 `system/core/rootdir/init.rc` 仍设置 `setprop sys.use_memfd false`；`system/core/libcutils/ashmem-dev.cpp` 中 `ashmem_create_region()` 只有在 Treble 设备、`sys.use_memfd=true`、kernel memfd 与 ashmem ioctl 兼容检查通过时才走 `memfd_create_region()`，否则回退到 `/dev/ashmem`。因此不能把 Android 15/16 概括成“强制使用 memfd 作为共享内存后端”。",
+          "suggestion": "改为“Linux mainline 5.18 移除了 ashmem 驱动，Android 正在从 ashmem 向 memfd / ashmemd / compat shim 迁移；AOSP android-16.0.0_r1 的 libcutils 仍保留受 `sys.use_memfd` 与兼容性检查控制的 memfd 路径和 ashmem fallback”。如果要写强制要求，需补 CDD / release note / kernel config 的一手来源。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/数据支撑",
+          "location": "L265 与 L449 SELinux AVC / Treble 隔离性能因果",
+          "detail": "正文已修正 AVC 是全局缓存，但仍写 Treble 三路 binder 隔离“降低了需要 AVC 检查的跨域 transaction 频率”。`selinux_binder_transaction()` 对 Binder transaction 执行权限检查；三路 binder 设备提供的是 binder context/context manager 与 SELinux type 边界，并不能从源码推出每次调用的 AVC 检查频率下降。该句把隔离边界写成性能收益因果，缺少源码或数据支撑。",
+          "suggestion": "删除“从而降低 AVC 检查频率/跨域 transaction 频率”的因果；保留“隔离限制跨域访问、降低误用风险”。如要保留性能收益，需要补 workload 前后对比数据。"
+        }
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-18T08:31:45+08:00",
+      "review_log": "logs/deep-review/2026-05-18-08-deep-review.md"
     }
   ],
   "metadata": {
