@@ -76,6 +76,7 @@ tags:
   - [3.7 InputDispatcher 反压与无响应窗口降级](part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md)
   - [3.8 InputFlinger Rust 组件与自适应刷新率协同](part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md)
   - [3.9 端到端输入延迟预算与感知阈值](part1-fundamentals/ch03-input/09-input-latency-budget-perception.md)
+  - [3.10 InputDispatcher stale event 判定与事件丢弃](part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)

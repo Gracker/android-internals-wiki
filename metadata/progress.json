@@ -1,7 +1,7 @@
 {
-  "total": 318,
+  "total": 319,
   "draft": 0,
-  "ready-for-review": 116,
+  "ready-for-review": 117,
   "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -1370,9 +1370,9 @@
   },
   "total_review_sections": 161,
   "next_review_candidates": [],
-  "ready_for_review": 99,
-  "last_updated": "2026-05-18T22:15:21+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 100,
+  "last_updated": "2026-05-18T23:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -3815,6 +3815,19 @@
       "last_task6_at": "2026-05-18T22:15:21+08:00",
       "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
       "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
+    },
+    "3.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "title": "InputDispatcher stale event 判定与事件丢弃",
+      "file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-18",
+      "last_task2a_at": "2026-05-18T23:04:00+08:00",
+      "gap_score": 16,
+      "confidence": "medium"
     }
   },
   "task2b_rounds": [
@@ -3832,9 +3845,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "16.7",
-  "last_task2a_processed_file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
-  "last_task2a_processed_date": "2026-05-17",
+  "last_task2a_processed": "3.10",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+  "last_task2a_processed_date": "2026-05-18",
   "task9_last_review_detail": {
     "date": "2026-05-18",
     "time": "12:44",
@@ -3884,9 +3897,9 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T22:04:00+08:00",
-  "last_task2a_section": "13.18",
-  "last_task2a_file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+  "last_task2a_at": "2026-05-18T23:04:00+08:00",
+  "last_task2a_section": "3.10",
+  "last_task2a_file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
     "2.6",
@@ -3918,9 +3931,9 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-18T12:44:40+08:00",
-  "last_task2a_result": "phase1-gap-mining",
+  "last_task2a_result": "processed-new-gap",
   "ready-to-publish": 198,
-  "last_task2a_processed_section": "26.11",
+  "last_task2a_processed_section": "3.10",
   "task6_last_review_at": "2026-05-18T22:15:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-18-22-review.md",
   "task6_last_review_sections": [
@@ -4649,31 +4662,31 @@
       "last_task6_at": "2026-05-18T22:15:21+08:00",
       "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
       "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
-    }
+    },
+    "3.10": "ready-for-review"
   },
   "task2a_last_processed": {
-    "date": "2026-05-18",
-    "section": "2.23",
-    "file": "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-    "result": "ready-for-review"
+    "section": "3.10",
+    "title": "InputDispatcher stale event 判定与事件丢弃",
+    "file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+    "status": "ready-for-review",
+    "processed_at": "2026-05-18T23:04:00+08:00",
+    "processed_by": "openclaw-task2a",
+    "mode": "gap-mining-and-processing"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-05-18",
-    "created_sections": [
-      "13.18"
-    ],
-    "created_files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
-    ],
-    "candidate_count": 4,
-    "qualified_count": 1,
-    "mode": "phase1-gap-mining"
+    "section": "3.10",
+    "title": "InputDispatcher stale event 判定与事件丢弃",
+    "file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+    "created_at": "2026-05-18T23:04:00+08:00",
+    "gap_score": 16,
+    "mode": "processed-new-gap"
   },
   "task9_last_sections": [
     "25.6",
     "25.8"
   ],
-  "last_task2a_processed_at": "2026-05-17T01:12:00+08:00",
+  "last_task2a_processed_at": "2026-05-18T23:04:00+08:00",
   "last_task9_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
@@ -4704,7 +4717,7 @@
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
     "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
-  "last_task2a_date": "2026-05-17",
+  "last_task2a_date": "2026-05-18",
   "task9_last_review_summary": {
     "date": "2026-05-18",
     "time": "12:44",
@@ -4749,7 +4762,7 @@
       "summary": "5 sections reworked: SELinux AVC, Throwable stack depth, UClamp/SQL/base_slice_ns, Binder freezer API, VSyncPredictor version drift"
     }
   ],
-  "task2a_result": "processed 26.13 ready-for-review",
+  "task2a_result": "processed-new-gap",
   "section_25_6": {
     "status": "ready-for-review",
     "pipeline_stage": "task2b_pending",
