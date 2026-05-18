@@ -5081,7 +5081,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/09-game-performance.md"
@@ -5116,7 +5116,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T12:37:27+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T12:37:27+08:00"
+      "last_reviewed_at": "2026-05-14T12:37:27+08:00",
+      "completed_date": "2026-05-19T03:24:33+08:00",
+      "completed_reason": "Task 2B 回炉修复: (P0) ADPF Thermal API 不提供 GC 堆调控能力→改为降 CPU/GPU 负载/减少分配; (P1) GC 暂停识别修正-RUNNABLE 空洞优先按 sched latency 分析; (P1) gpu.counters 数据源缺失说明"
     },
     {
       "id": "task9-20-8-crash-grouping-exception-chain-20260514",
@@ -5386,7 +5388,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/01-startup-analysis.md"
@@ -5421,7 +5423,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T15:33:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T15:33:00+08:00"
+      "last_reviewed_at": "2026-05-14T15:33:00+08:00",
+      "completed_date": "2026-05-19T03:24:33+08:00",
+      "completed_reason": "Task 2B 回炉修复: (P0) removeFrameCommitCallback→unregisterFrameCommitCallback+一次性消费语义; (P1) TTID 终点补充 RenderThread/GPU/提交阶段说明; (P1) SharedPreferences Android 7.0 版本错误删除"
     },
     {
       "id": "task9-25.4-uidt-api34-boundary",
@@ -11665,7 +11669,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/02-version-changes.md"
@@ -11682,7 +11686,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-18T18:30:00+08:00"
+      "added_at": "2026-05-18T18:30:00+08:00",
+      "completed_date": "2026-05-19T03:24:33+08:00",
+      "completed_reason": "Task 2B 回炉修复: ProfilingManager AOSP 源码路径修正 frameworks/base→packages/modules/Profiling/，补充 ProfilingTrigger/ProfilingResult 路径"
     },
     {
       "id": "task2a-gap-20260518-17.6-media-performance-class",
@@ -11725,7 +11731,7 @@
       "added_by": "task9-deep-tech-review",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
@@ -11737,7 +11743,9 @@
           "detail": "android-16.0.0_r1 current.txt 中 Surface 有 setFrameRate()，View 有 setRequestedFrameRate()，Window 只有 setFrameRateBoostOnTouchEnabled()/setFrameRatePowerSavingsBalanced()，没有 Window.setFrameRate()。",
           "suggestion": "把入口改为 Surface.setFrameRate() / View.setRequestedFrameRate() / SurfaceControl.Transaction.setFrameRate()；Window 只保留 touch boost 与 power-savings 策略开关，不写成帧率请求 API。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-19T03:24:33+08:00",
+      "completed_reason": "Task 2B 回炉修复: outline 中 Window.setFrameRate() 修正为 Surface.setFrameRate() / View.setRequestedFrameRate() / SurfaceControl.Transaction.setFrameRate()；Window 只保留 touch boost / power-savings 策略开关"
     },
     {
       "id": "task9-20260518-1.8-oom-service-anr-source",

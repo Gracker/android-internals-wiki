@@ -55,8 +55,8 @@ task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T19:44:00+08:00"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
@@ -74,7 +74,7 @@ task2b_result: "pending"
 把输入处理、主线程遍历、RenderThread 提交、SurfaceFlinger latch / compose / present 放到同一条时间线里，说明 offset 为什么会改变端到端延迟。
 
 ### 🔹 DisplayFrameRate 请求与系统刷新率选择
-对应 `Surface.setFrameRate()` / `Window.setFrameRate()`、兼容性参数、video / game / UI 场景的差异，以及 SurfaceFlinger 如何在多 layer 请求之间选择刷新率。
+对应 `Surface.setFrameRate()` / `View.setRequestedFrameRate()` / `SurfaceControl.Transaction.setFrameRate()`、兼容性参数、video / game / UI 场景的差异，以及 SurfaceFlinger 如何在多 layer 请求之间选择刷新率。
 
 ### 🔹 Android 15+ ARR 与 FrameRateEligibility 边界
 整理 adaptive refresh rate、离散 VSync step、应用声明能力、GameManager 介入和设备策略之间的关系，避免把内容帧率、目标帧率和显示刷新率混成一个概念。

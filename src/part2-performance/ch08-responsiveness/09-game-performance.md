@@ -49,7 +49,7 @@ pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
-task2b_result: fixed
+task2b_result: "fixed-v2"
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-05-11
 task6_result: pass-light-edit
@@ -334,7 +334,7 @@ EOF
 相比普通 App 的 Trace 配置，游戏场景需要额外关注：
 - **`power` 和 `freq` category**：追踪 CPU/GPU 频率变化，这是判断热降频和调度问题的核心数据
 - **更大的 buffer**：游戏持续满负载，30 秒的 Trace 数据量可能达到 100MB+
-- **GPU counters / render stages**：GPU counter 适合看 busy、频率和带宽趋势；`gpu.renderstages` 适合把 Vulkan / OpenGL ES 的 RenderPass、binning、rendering、clears 等阶段放到时间轴上看。两类数据都依赖驱动和设备权限，userdebug/root 设备上还要确认 `security.perfetto.gpu_counters.privileged` 等开关是否允许采集
+- **GPU counters / render stages**：上方配置只启用了 `gpu.renderstages`，没有启用 Perfetto `gpu.counters` 数据源。如果需要观察 GPU busy、GPU 频率和带宽趋势，要在支持设备上额外启用 `gpu.counters`：`data_sources { config { name: "gpu.counters" gpu_counter_config { ... } } }`。`gpu.renderstages` 把 Vulkan / OpenGL ES 的 RenderPass、binning、rendering、clears 等阶段放到时间轴上看。两类数据都依赖驱动和设备权限，userdebug/root 设备上还要确认 `security.perfetto.gpu_counters.privileged` 等开关是否允许采集
 
 ### 关键分析路径
 
@@ -482,11 +482,11 @@ GROUP BY process.name;
 
 ART 的 GC 暂停是游戏卡顿的常见来源之一。游戏通常在每帧的渲染循环中分配大量临时对象（坐标变换数据、碰撞检测中间结果等），导致 GC 频繁触发。GC 的 STW（Stop-The-World）暂停会中断游戏主线程，导致帧时间飙升。
 
-在 Perfetto 中识别 GC 影响：搜索 `art::gc` 相关的 slice，或者观察主线程在渲染循环中出现的不明原因的空闲段——如果主线程在 `RUNNABLE` 状态但没有执行任何代码（slice 为空），很可能是被 GC 暂停了。
+在 Perfetto 中识别 GC 影响：先搜索 `art::gc` / heap task / allocation stall 相关的 slice，确认是否有 STW GC 暂停。主线程 `RUNNABLE` 状态但未执行代码的空洞，更常见的原因是调度等待或 CPU 竞争（查看 sched latency），不应直接归因为 GC 暂停。STW GC 的判断需要结合线程 suspend 信号和 `art::gc` slice，不能只靠 RUNNABLE 空洞。
 
 应对策略：
 1. 减少渲染循环中的对象分配，使用对象池复用
-2. 利用 §5.9 中 ADPF 的 Thermal API，在热状态安全时允许更大的 GC 堆，减少 GC 触发频率
+2. 根据 ADPF thermal/headroom 反馈提前降 CPU/GPU 负载、降低画质或减少分配压力；对象池、加载期预分配、避免每帧 Java/Kotlin 分配、复用 native buffers 是更直接的 GC 控制手段
 3. 在游戏加载阶段预分配所有需要的内存，避免在战斗场景中触发 GC
 4. 在支持新版 ART 分代 GC 的设备上，观察短生命周期对象是否带来更少的 STW 暂停；具体收益受 ART 版本、堆大小、对象分配模式和场景负载影响，不能把固定毫秒区间当成通用结论
 
