@@ -1,8 +1,9 @@
 ---
+
 title: 专题解读
 chapter: '13.5'
 section: '13.5'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
@@ -47,20 +48,24 @@ related_chapters:
 - '8.1'
 - '9.1'
 task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
-task2b_result: fixed
+task2b_state: pending
+task9_result: "needs-rework"
+task2b_result: "pending"
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
-last_task9_at: '2026-04-21T07:38:43+08:00'
+last_task9_at: "2026-05-19T05:36:10+08:00"
 last_task6_at: '2026-05-18T11:10:37+08:00'
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
+last_task9_audit: "2026-05-19"
+last_task9_audit_result: "p0-source-accuracy"
+last_task9_review_log: "logs/deep-review/2026-05-19-05-audit.md"
+task9_review_notes: "2026-05-19 Task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0；Perfetto process_stats RSS/PSS SQL 与 sched_blocked_reason 字段口径错误，已写入 queue。"
 ---
 
 # 专题解读

@@ -631,3 +631,10 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md`
+
+### Android 16 ART Generational CMC / userfaultfd GC 机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 并非独立开关而是描述性概念。
+- 注入时间：2026-05-19
+- 价值：源码级闭环 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径

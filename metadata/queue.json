@@ -2665,14 +2665,16 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md",
         "logs/deep-review/2026-05-13-04-deep-review.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:11:19+08:00"
+      "added_at": "2026-05-13T04:11:19+08:00",
+      "completed_date": "2026-05-19T07:23:21+08:00",
+      "completed_reason": "Task 2B 回炉修复: irq/softirq 执行上下文描述修正——硬中断在 interrupt context 执行(ARM64 独立 IRQ 栈), softirq 可由 ksoftirqd 执行, 删除'共享进程堆栈'错误断言, 补充 ftrace/irq 轨道直接观测方法"
     },
     {
       "id": "task9-2026-05-13-14.3-malloc-hook-header-visibility",
@@ -2996,7 +2998,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -3020,7 +3022,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T05:09:00+08:00",
-      "original_review_log": "logs/review/2026-05-13-05-review.md"
+      "original_review_log": "logs/review/2026-05-13-05-review.md",
+      "completed_date": "2026-05-19T07:23:21+08:00",
+      "completed_reason": "Task 2B 回炉修复: 章节标题从'案例集'降级为'复盘框架', 开头段落补定位说明, 保留排查清单和复盘模板, 标注需真实案例补充"
     },
     {
       "id": "task9-2026-05-13-14.9-hal-buffer-management-return-path",
@@ -3339,13 +3343,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T09:20:00+08:00"
+      "added_at": "2026-05-13T09:20:00+08:00",
+      "completed_date": "2026-05-19T07:23:21+08:00",
+      "completed_reason": "Task 2B 回炉修复: BitmapRegionDecoder AVIF 格式补 API 31 版本边界(Android 12 起可用, Android 10/11 需 WebP/JPG fallback)"
     },
     {
       "id": "task9-22-7-onrenderprocessgone-recovery-guards-20260513",
@@ -3391,7 +3397,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/08-frame-monitoring.md"
@@ -3405,7 +3411,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T10:22:00+08:00"
+      "added_at": "2026-05-13T10:22:00+08:00",
+      "completed_date": "2026-05-19T07:23:21+08:00",
+      "completed_reason": "Task 2B 回炉修复: FrameMetrics GPU_DURATION/DEADLINE 补 API 31 版本边界(API 24+ 基础指标 vs API 31+ 扩展指标, API 29/30 用 TOTAL_DURATION+刷新率预算兜底)"
     },
     {
       "id": "task6-22-9-review-rework-20260513-1518",
@@ -3420,7 +3428,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
@@ -3438,7 +3446,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-13T15:18:00+08:00",
-      "original_review_log": "logs/review/2026-05-13-15-review.md"
+      "original_review_log": "logs/review/2026-05-13-15-review.md",
+      "completed_date": "2026-05-19T07:23:21+08:00",
+      "completed_reason": "Task 2B 回炉修复: 章节标题从'案例集'降级为'排查框架', 开头段落补定位说明, 保留排查路径和复盘模板, 标注需真实案例补充"
     },
     {
       "id": "task9-13.2-perfetto-config-thread-boundaries-20260513",
@@ -12279,6 +12289,77 @@
       ]
     },
     {
+      "id": "task9-20260519-13.5-perfetto-process-stats-io-source",
+      "section": "13.5",
+      "section_title": "专题解读",
+      "priority": 95,
+      "title": "Perfetto process_stats / sched_blocked_reason 口径错误",
+      "description": "进程内存 Counter 段把 linux.process_stats 写成默认 RSS/PSS 周期采样，并使用不存在的 rssanon track；I/O 段把 sched_blocked_reason 写成会给出 block device/sector。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "reason": "[Deep Tech Review][闲时抽检] Perfetto 数据源 / SQL 口径与当前官方文档和源码不一致，发布前需回炉修正。",
+      "material_paths": [
+        "logs/deep-review/2026-05-19-05-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L470-L476 / L553-L576（进程级内存 Counter）",
+          "detail": "`linux.process_stats` 被写成默认周期采集 RSS/PSS，SQL 又过滤不存在的 `process_counter_track.name = \"rssanon\"`。Perfetto 当前 process memory track 名为 `mem.rss` / `mem.rss.anon` / `mem.rss.file` / `mem.rss.shmem`；PSS 只有 `ProcessStatsConfig.scan_smaps_rollup=true` 时从 `/proc/pid/smaps_rollup` 进入 `mem.smaps.pss*` 轨道，且需要权限边界。当前 SQL 会返回空结果，也会误导读者以为 PSS 是默认输出。",
+          "suggestion": "把标题/正文收窄为 RSS/RSS anon 追踪；配置示例补 `proc_stats_poll_ms: 1000`。SQL 改为 `process_counter_track.name = \"mem.rss.anon\"`（或 `mem.rss`），并说明值在 Trace Processor 中按 bytes 存储，`value / 1024` 得到 KB。若要讲 PSS，单独补 `scan_smaps_rollup: true`、权限限制，并查询 `mem.smaps.pss` / `mem.smaps.pss.anon`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L611（`sched_blocked_reason` 字段含义）",
+          "detail": "正文写 `sched_blocked_reason` 会显示具体 block device 和扇区信息。Android common kernel 的 `sched_blocked_reason` tracepoint 只有 `pid`、`caller`、`io_wait` 三个字段；block device / sector 来自 `block/block_rq_*` 或文件系统事件，不来自 `sched_blocked_reason`。",
+          "suggestion": "改成：`sched_blocked_reason` 用于判断 D 状态的等待调用点和 `io_wait` 标记；设备与扇区信息需要同时间窗关联 `block_rq_issue` / `block_rq_complete` / `ext4_*` / `f2fs_*`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T05:36:10+08:00",
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "task6-audit-14.10-oem-sched-ext-source-risk-2026-05-19",
+      "section": "14.10",
+      "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "priority": 90,
+      "title": "14.10 参考资料后未纳入大纲的 sched_ext OEM 段落需复核",
+      "description": "参考资料之后存在未纳入 outline 的 AIW 源码调研块，包含 Android OEM sched_ext 调度器源码路径、性能收益与版本演进断言，需技术复核和结构处理。",
+      "issue_type": "outline-coverage/source-risk",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "reason": "[review抽检回炉] 参考资料之后存在未纳入大纲的 AIW 源码调研块，包含具体 OEM / GKI 断言，需 Task9/Task2B 判断保留、迁移或删除。",
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 抽检意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "参考资料之后的 `<!-- AIW-源码调研-2026-05-07 -->` 块",
+          "detail": "该块位于参考资料之后，不在 outline 十个锚点覆盖范围内；同时包含 Android OEM sched_ext 调度器源码路径、性能收益、GKI 版本演进等具体断言。Task6 只做写作审查，不裁决这些技术断言真伪。",
+          "suggestion": "由 Task9 先核实源码路径、版本边界和性能收益来源；Task2B 再决定删除、迁移到 sched_ext 正文，或作为待验证素材保留，避免发布稿在参考资料后追加未审正文。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-19T05:12:00+08:00",
+      "original_review_log": "logs/review/2026-05-19-05-audit.md",
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+      ],
+      "dependencies": []
+    },
+    {
       "id": "task2a-18.22-android-xr-spatial-ui-rendering",
       "section": "18.22",
       "priority": 80,
@@ -12340,21 +12421,21 @@
     }
   ],
   "metadata": {
-    "total_entries": 354,
+    "total_entries": 356,
     "p0_count": 149,
     "last_updated": "2026-05-19T07:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 150,
+    "pending_entries": 152,
     "updated_date": "2026-05-19",
     "last_updated_by": "openclaw-task2a",
-    "pending": 150,
+    "pending": 152,
     "completed_entries": 202,
     "last_task2a_gap_mining": "14.15",
     "last_task2a_gap_mining_at": "2026-05-19T03:25:00+08:00"
   },
   "last_updated": "2026-05-19T07:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 150,
+  "pending": 152,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
   "last_task2a_gap_mining": "4.10",

@@ -55,6 +55,7 @@ polish_by: "task2b-polish"
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-30"
+last_task6_audit: "2026-05-19"
 task6_result: "pass-light-edit"
 task2b_result: "fixed"
 last_task2b_at: "2026-04-27T03:40:00+08:00"
@@ -76,7 +77,6 @@ p2: 2
 updated_by: "openclaw-task9"
 updated_date: "2026-04-30"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
-task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -195,7 +195,7 @@ eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编
 
 Simpleperf 的 `--kprobe` / `--uprobe` 通过 tracefs 的 `kprobe_events` / `uprobe_events` 创建动态探针，再通过 `perf_event_open()` 采样。这条路径与 eBPF 探针共享内核中的 kprobe / uprobe 挂载点，但 Simpleperf 侧的实现在 `system/extras/simpleperf/ProbeEvents.cpp` 中并没有加载 eBPF program 或操作 BPF map——它走的是 perf_event 子系统，不是 eBPF 子系统。两者的区别在于：perf_event 路径以采样（sampling）为主，事件写入 ring buffer 后由用户态读取；eBPF 路径可以在内核态做过滤、聚合、map 更新等逻辑。本章前面介绍的 UprobeStats 才是 Android 上真正的 eBPF 动态埋点方案（由 bpfloader 加载 BPF 程序，通过 BPF map 输出统计结果）。
 
-下面先看 Simpleperf 的 perf_event 动态 probe 用法，再在下一节看 eBPF 路径的 UprobeStats。
+Simpleperf 的 perf_event 动态 probe 用法用于定位探针定义和录制方式；UprobeStats 则代表 eBPF 路径的动态埋点方案。
 
 
 ### uprobe：追踪用户态函数
@@ -517,7 +517,7 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 
 
 <!-- AIW-源码调研-2026-05-07 -->
-## sched_ext 在 Android OEM 中的实际落地策略
+## sched_ext 在 Android OEM 中的实际应用策略
 
 ### Qualcomm SCX_Oplus 调度器
 **源码位置**：`kernel/sched/oplus-sched.c`

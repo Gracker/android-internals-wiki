@@ -38,16 +38,17 @@ sources:
     path: "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
 tags: [case-study, startup, optimization, baseline-profile, startup-framework]
 related_chapters: ["21.1", "21.2", "21.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
-task2b_state: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
 ---
 
 # 启动优化案例集
@@ -74,13 +75,13 @@ task2b_state: pending
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要看启动优化案例
+## 为什么要看启动优化复盘框架
 
-21.1 到 21.8 已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控拆开讲过。本章收束到案例视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复盘的优化过程。
+21.1 到 21.8 已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控拆开讲过。本章收束到复盘框架视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复用的优化过程。
 
-本节不重复前文原理，重点放在三个工程场景：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
+本节不重复前文原理，重点放在三个工程场景的排查框架：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
 
-[需补充素材: 本节定位为案例集，但现有 `Application` 初始化、启动框架演进和 Baseline Profile 三段更像通用复盘框架，缺少真实设备、Android 版本、Perfetto 截图或匿名化 TTID / TTFD 数据。建议 Task 2B 补至少 1 个完整启动优化案例的证据链；补不齐时，将“案例”表述降级为“复盘模板”。]
+> **定位说明**：本节当前提供的是排查框架和复盘模板，而非脱敏后的真实案例。团队拿到自己的 Perfetto trace 和线上指标后，按末尾“启动案例复盘模板”填写即可产出可复查的优化记录。如果有可脱敏分享的真实案例，后续版本可以补充。[Task2B: 缺少真实案例证据链，已将“案例集”降级为“复盘框架”]
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
