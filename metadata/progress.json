@@ -1,7 +1,7 @@
 {
   "total": 318,
-  "draft": 1,
-  "ready-for-review": 115,
+  "draft": 0,
+  "ready-for-review": 116,
   "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -3870,7 +3870,7 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T21:10:00+08:00",
+  "last_task2a_at": "2026-05-18T22:04:00+08:00",
   "last_task2a_section": "13.18",
   "last_task2a_file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
   "last_task6_review": "2026-05-18",
