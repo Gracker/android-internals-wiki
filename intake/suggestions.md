@@ -1946,6 +1946,73 @@
   8. SELinux.isEnforced 机制：偏系统安全/调试链路，性能相关性不足，本轮评分未达 14。
 - **建议**：下一轮优先继续从 `daily-info/2026-05-18.md` 和 Android 17 官方文档中筛选“已有官方 API/行为变更 + 尚无 AIW 小节”的主题，避免重复创建已覆盖章节。
 
+
+
+## [Task14 参考书扫描] 4.1 Android 内存模型全景 — 2026-05-18
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md]
+- **建议补充**：LPDDR RAM 特性与演进（LPDDR3→LPDDR4→LPDDR4X 带宽/功耗对比），手机 vs PC 内存差异（低功耗、体积约束），"内存越大越好"误区（需考虑 LPDDR 代际而非单纯容量）
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 4.3 ART 虚拟机内存管理 — 2026-05-18
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md]
+- **建议补充**：NativeAllocationRegistry 机制详解——如何同时满足"Native 内存分配+对象关联快速释放+GC 感知防滥用"三需求；Hardware Bitmap 减少内存并提升绘制效率
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 19.24 崩溃与ANR捕获机制 — 2026-05-18
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
+- **建议补充**：Breakpad 技术细节——重新封装 Linux Syscall Support 避免直接调 libc；fork 子进程/孙进程隔离策略；minidump 格式优缺点（含 gdb 调试、传参等高级特性）；Crashpad 作为继任者的定位
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 14.3 内存分析工具 — 2026-05-18
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md]
+- **建议补充**：AS Allocation Tracker 三个缺点（信息分散、无法自动化、stop时卡死）及自定义 Allocation Tracker 思路；Android P+ Malloc 钩子（拦截所有分配/释放）；Android 8.0+ 非root Malloc 调试（wrap.sh）；AddressSanitize 在 Android 8.0+ 的使用
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 10.4 低内存对系统性能的影响 — 2026-05-18
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md]
+- **建议补充**：内存问题的两类影响——异常（OOM/分配失败/被杀/重启）和卡顿（Java堆不足→频繁GC、物理内存不足→lmk→系统负载高）；"2GB以下设备崩溃率是2GB以上的数倍"的经验数据；ART vs Dalvik GC 性能提升 5-10 倍对比
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 23.02 Bitmap与图片内存优化 — 2026-05-18
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 4.md]
+- **过时内容**：Fresco 在 Android 5.0-7.0 通过 libandroid_runtime.so 构造 Native Bitmap 再"偷龙转凤"的黑科技方案（兼容性差、易内存抖动）
+- **建议更新至**：Android 8.0+ 已通过 NativeAllocationRegistry 原生支持 Native Bitmap，无需此 hack；建议标注为"历史方案"或移除
+
+## [Task14 参考书扫描] 多章节 — 2026-05-18
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1~4.md]
+- **过时内容**：2018年设备数据（Mate 20 Pro 8GB作为高端标杆、512MB设备描述）、"Google Play 2019年8月要求64位"、Crashpad "too early to mobile"（现已成熟）
+- **建议更新至**：更新为 2025-2026 年主流设备内存基准（8-16GB）；Google Play 64位要求已成历史；Crashpad 已被广泛采用
+
+
+## [Task2A 知识缺口检查] 2026-05-18 08
+- **类型**：知识缺口挖掘记录
+- **结论**：未发现评分 ≥ 14 且尚未覆盖的新增章节缺口；本轮不创建新小节。
+- **已检查方向**：Android 17 MemoryLimiter / excessive resource usage、Compose Pausable Composition、Android 16 云编译与 SDM、Android 17 DeliQueue + RecyclerView 预取、OkHttp Dns.lookup / HTTPDNS、MTE ASYMM memtagMode、SmartPerfetto / Agent 辅助 Perfetto。
+- **处理建议**：上述方向均已有对应章节，后续进入 Task2B/Task14 补充或回炉即可，避免重复建节。
+
+
+## [Task2A Gap Scan] 2026-05-18 09:04 — 无新增章节
+- **类型**：知识缺口挖掘记录
+- **检查范围**：src/SUMMARY.md、metadata/source-index.json、intake/research-feeds 最近 5 个文件、intake/daily-info 最近 3 天、research-gaps.md、AOSP/Android Developers 公开页面搜索
+- **结果**：未发现评分 ≥ 14 且尚未被章节覆盖的新增小节缺口。
+- **已覆盖但素材仍可用于回炉的方向**：Perfetto v53/v54、ApplicationStartInfo/ProfilingTrigger、Android 17 DeliQueue、Codec2/tunneled playback、Android 16 SDM/Cloud Compilation、OkHttp Dns、Compose Pausable Composition、sched_ext/EEVDF、MTE ASYMM。
+- **建议**：本轮不创建新章节；后续由 Task 2B/Task 9 消化已有章节的证据补强项，避免重复建章。
+
+## [Task2A Gap Scan] 2026-05-18 10:04 — 无新增章节
+- **类型**：知识缺口挖掘记录
+- **Phase 0**：`src/` 中未发现 `status: draft` 且正文实质内容 < 15 行的章节。
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、`intake/research-feeds/` 最近 5 个文件、`intake/daily-info/` 最近 3 天、`intake/research-gaps.md`、Android 17 官方 behavior/features/release notes 搜索、AOSP 模块搜索。
+- **结果**：未发现评分 ≥ 14 且尚未被章节覆盖的新增小节缺口，本轮不创建新章节。
+- **已覆盖但可进入 Task2B/Task14 的方向**：Android 17 App memory limits / `MemoryLimiter:AnonSwap`、`ProfilingTrigger.TRIGGER_TYPE_ANOMALY`、Reduced Wakelocks for Idle Alarms、Perfetto v53/v54、SmartPerfetto / Agent 辅助 Perfetto、ApplicationStartInfo、Codec2 / tunneled playback / Media3 ABR、Compose Pausable Composition、Android 17 DeliQueue、MTE ASYMM、OkHttp Dns / HTTPDNS。
+- **处理建议**：继续由 Task2B/Task9 修复已有章节证据与版本边界；Task2A 暂不重复建章。
+
 ## [Task6 Review] 9.5 案例集 — 2026-05-18
 
 - **类型**：需确认
@@ -1983,6 +2050,54 @@
 - **建议**：Task2B 补 responseBodyStart/responseBodyEnd 的 OkHttp 语义边界，必要时拆分网络下载、应用消费、流式响应口径。
 
 - **review 日志**：logs/review/2026-05-18-12-review.md
+
+
+
+## [Task2A Gap Mining] 2026-05-18 13:04
+- **类型**：知识缺口巡检记录
+- **检查范围**：空 draft、source-index 高分未映射素材、research-feeds 最近 5 条、daily-info 最近 3 天、官方性能文档与 AOSP 结构方向
+- **结论**：本轮未发现评分 ≥ 14 的新章节候选，未创建新章节。
+- **已评估但未建节**：
+  - SmartPerfetto 两周更新 / AI Trace 分析平台：已由 13.16「Agent 辅助 Perfetto 分析协议」覆盖，建议后续补充到现有章节。
+  - App Performance Score 与 Vitals 质量建议：与 26.7「发版质量门禁」重合，建议 Task2B 回炉 26.7 时补官方链接 `https://developer.android.com/topic/performance/app-score`。
+  - Android 16 power management resource limits / Job 配额：已由 1.8、5.10、11.x 覆盖。
+  - Performance Class / Media Performance Class：19.21 已作为设备分层口径提及，暂不独立建节。
+  - RK3562 Android 平板 Linux 工作站与 NPU 推理：更偏硬件改造/端侧 AI 资讯，暂不纳入 AIW 新章节。
+- **报告**：`OpenClaw定时任务/知识加工/2026-05-18-13-知识加工(新).md`
+
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-05-18
+- **类型**：版本差异/源码准确性
+- **位置**：L218 多显示 Pacesetter / FrameTargeter 段落
+- **问题**：正文写 `composite()` “可能按 display 并行触发”，并说 Perfetto 主线程能看到按 display 分组的 commit/composite slice。AOSP android-16.0.0_r1 的 `SurfaceFlinger::composite(PhysicalDisplayId, const FrameTargeters&)` 是收集多个 output 后调用一次 `mCompositionEngine->present(refreshArgs)`；未见 SF 主路径按 display 并行触发的源码依据。Perfetto 中可能出现 CompositionEngine/output 级别信息，但不应写成主线程 commit/composite 按 display 并行。
+- **建议**：改为“Android 15+ 使用 `FrameTargeter`/`FrameTargets` 为不同 physical display 计算目标；`composite()` 在一次 refreshArgs 中携带多个 output，分析时按 display/output 区分”，删除“并行触发”或补具体源码/trace 证据。
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-05-18
+- **类型**：数据缺失/版本边界
+- **位置**：L154 骁龙 8 Elite capacity≈837 / 18% 级差
+- **问题**：`Performance 核 capacity≈837、Prime 核 1024、级差约 18%` 缺少设备 kernel `cpu_capacity` 输出、厂商公开资料或实机 trace 锚点。该数值可能来自单机型估算，不能直接写成骁龙 8 Elite 通用事实。
+- **建议**：补目标设备 `/sys/devices/system/cpu/cpu*/cpu_capacity`、kernel DT/EM 或公开技术资料；补不到时改成“Prime 与 Performance 核仍有 capacity 级差，但远小于传统小核/大核差距”的定性描述。
+
+## [Task6 Review] 5.3 大小核架构 — 2026-05-18
+- **类型**：需补充素材
+- **位置**：扩展：GPU + NPU 的协同调度概念
+- **问题**：该扩展仍只有一条占位式 `[需补充素材]`，缺少任务卸载策略、GPU/NPU 在异构计算中的角色，以及这些任务对 CPU 调度影响的可靠素材，当前不能作为成稿小节。
+- **建议**：Task2B 补充可靠素材后再决定保留、合并到 §5.11，或删除该扩展，避免空壳扩展留在发布稿。
+- **review 日志**：logs/review/2026-05-18-16-review.md
+
+
+## [Task2A Gap Mining] 2026-05-18 16:17 — 无新增章节
+- **类型**：知识缺口巡检记录
+- **检查范围**：空 draft 章节（0 个）、`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、`intake/research-feeds/` 最近 5 条、`intake/daily-info/` 最近 3 天、`intake/research-gaps.md`、Android Developers 官方性能/版本文档搜索、AOSP Code Search 方向搜索。
+- **结论**：本轮未发现评分 ≥ 14 且尚未覆盖的新增章节候选，未创建新小节。
+- **已覆盖但可进入 Task2B/Task14 的方向**：
+  - App Performance Score / Android Vitals：官方文档已可补 26.7「发版质量门禁」、26.3「性能指标采集与上报」、15.5「线上性能监控」，不单独建章。
+  - Android 17 `ProfilingManager` triggers、`TRIGGER_TYPE_ANOMALY`、OOM / excessive CPU 触发：已由 26.12、14.7、19.16、5.10、16.5 覆盖，后续只需补版本边界和官方链接。
+  - Android 16/17 power management resource limits、JobScheduler / WorkManager quota：已由 5.10、25.4、11.x 覆盖，不重复建章。
+  - Perfetto v53/v54 Data Explorer、Jank CUJ、pprof / Simpleperf、heap_graph_stats：已由 13.12、13.14、13.17 等章节覆盖，作为回炉素材处理。
+  - SmartPerfetto / Agent 辅助 Trace 分析平台：已由 13.16「Agent 辅助 Perfetto 分析协议」覆盖。
+  - Clippings 新增参考书知识点（Breakpad、ANR 监控、崩溃现场信息、Bitmap 版本演进、Allocation Tracker）：对应 ch20、ch23、ch26 的内容补强，不构成新章节。
+- **处理建议**：本轮不创建章节；后续由 Task2B/Task14 消化上述补充项，避免重复建节。
 
 ## [Task9 Idle Audit] 9.7 ANR 非技术故障诊断 — 2026-05-18
 - **类型**：源码锚点 / 版本差异

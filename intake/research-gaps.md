@@ -433,3 +433,30 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 
 ### 关联章节
 5.8、4.2、4.3、5.6
+
+
+## [2026-05-18] 极客时间·线上疑难问题排查 — 参考书素材（文件 1-4）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1~4.md]
+
+### 知识点
+1. **Native 崩溃捕获四大难点**：fd 泄漏（需预留 fd）、栈溢出（需 signalstack）、堆内存耗尽（需绕过 libc/STL 用 Linux Syscall）、二次崩溃（Breakpad fork 子进程收集） → ch20.03 Native Crash分析与治理
+2. **ANR 检测两种方案对比**：FileObserver 监听 /data/anr/traces.txt（高版本 ROM 权限受限）；监控消息队列运行时间（无法准确判定 ANR，更偏卡顿范畴） → ch26.04 ANR 监控体系
+3. **崩溃现场信息采集五层框架**：崩溃信息（进程/线程/堆栈/类型）→ 系统信息（Logcat/机型/厂商/CPU）→ 内存信息（系统剩余/Java/RSS/PSS/虚拟内存）→ 资源信息（fd/线程数/JNI引用）→ 应用信息（场景/操作路径/自定义） → ch26.05 线上问题排查方法论
+4. **崩溃分析三步法**：确定重点（严重程度+类型+Logcat+资源）→ 查找共性（机型/系统/ROM/ABI/应用维度聚合）→ 尝试复现 → ch20.08 崩溃聚合与归因分析
+5. **系统崩溃 Hook 解法**：以 Android 7.0 Toast BadTokenException 为例，通过代理 Toast.mTN handler 捕获异常，参考 Android 8.0 源码做法 → ch20.09 稳定性治理案例集
+6. **TimeoutException 根因与 Hook**：由 FinalizerWatchdogDaemon 抛出，通过源码分析→尝试 Stop()→寻找其他 Hook 点三步解决 → ch20.09
+7. **Bitmap 内存分配版本演进**：Android 3.0 前（Java堆对象+Native像素）→ 3.0-7.0（统一Java堆）→ 8.0+（NativeAllocationRegistry+Hardware Bitmap）→ ch23.02 Bitmap与图片内存优化
+8. **自定义 Allocation Tracker**：绕过 AS 限制实现自动化内存分析，Dalvik/ART 差异大（dvmEnableAllocTracker vs setAllocTrackingEnabled），兼容到 Android 8.1 → ch23.07 内存监控与线上治理
+
+### 重要程度
+中
+
+### 建议加工方向
+- ch20.03 可补充 Breakpad 四大难点的技术细节作为"实现原理"素材
+- ch26.05 可补充"崩溃现场五层信息采集"作为排查方法论的结构化检查清单
+- ch20.09 可收录 Toast BadTokenException 和 TimeoutException 两个经典系统崩溃案例
+- ch23.02 可用 Bitmap 版本演进时间线作为"历史背景"段落
+- ch26.04 可补充 FileObserver vs 消息队列两种 ANR 检测方案的对比分析
+
