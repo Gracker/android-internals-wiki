@@ -189,7 +189,7 @@
     "src/part5-app/ch20-stability/03-native-crash-governance.md",
     "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
   ],
-  "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-18 22: 深审 13.18；P1 1：多 Trace 对比标准指标/回填能力与当前 SmartPerfetto 实现不一致，转 Task2B。",
   "task6_review_summary": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -1352,16 +1352,20 @@
     },
     "13.18": {
       "p0": 0,
-      "p1": 0,
+      "p1": 1,
       "p2": 0,
-      "p3": 0,
+      "p3": 1,
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 6,
       "task6_l3_l4_issues": 0,
       "task6_reviewed_at": "2026-05-18T22:15:21+08:00",
       "task6_log": "logs/review/2026-05-18-22-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作层 review 通过；无新增回炉项，送 Task9。"
+      "task6_note": "写作层 review 通过；无新增回炉项，送 Task9。",
+      "reviewed_at": "2026-05-18T22:20:00+08:00",
+      "log": "logs/deep-review/2026-05-18-22-deep-review.md",
+      "summary": "P1 1：多 Trace 对比标准指标/回填能力写得超出当前实现；P3 1：related_chapters 可补 13.3/26.12 元数据。",
+      "task9_result": "needs-rework"
     }
   },
   "total_review_sections": 161,

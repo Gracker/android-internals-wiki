@@ -11947,6 +11947,38 @@
         "intake/suggestions.md"
       ],
       "reason": "[Deep Tech Review idle audit] ContentProvider timeout/source semantics and Android 15+ 16KB page-size version boundary need rework."
+    },
+    {
+      "id": "task9-13.18-multitrace-metric-coverage",
+      "section": "13.18",
+      "section_title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "priority": 85,
+      "title": "SmartPerfetto 多 Trace 对比指标覆盖范围写得超出当前实现",
+      "description": "P1：正文把 TTID/TTFD、内存/PSS/dmabuf/bitmap 等写成当前多 Trace result comparison 可标准化比较/回填的指标；与 main@67ffc43 标准指标与 backfill 实现不一致。",
+      "issue_type": "version-differences-implementation-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/实现边界",
+          "location": "“多 Trace 对比与性能回归判断”小节：标准化指标、缺失指标回填、内存指标示例",
+          "detail": "正文把 TTID/TTFD、主线程状态分布、max frame overrun、JankStats、PSS/Native/Java Heap/dmabuf/bitmap/RSS/swap 写成可直接标准化比较/回填的指标集合。但 SmartPerfetto main@67ffc43 的 STANDARD_COMPARISON_METRICS 只定义 startup.total_ms、startup.first_frame_ms、bind_application/activity_start/main_thread_blocked、scrolling FPS/Jank/frame percentiles、CPU 与 trace metadata；standardMetricBackfillService 只支持回填 startup.total_ms 与 scrolling avg_fps/frame_count/jank_count/jank_rate。当前没有 TTFD 或内存/PSS/dmabuf/bitmap 标准指标/回填实现。",
+          "suggestion": "重写该段，明确“当前已标准化/可回填”的指标范围；TTID/TTFD、内存、dmabuf、bitmap 等只能作为 Skill/报告自定义证据或后续扩展目标，不能写成当前多 Trace result comparison 的通用标准指标。补充缺失指标时应显示 metric_backfill_not_supported / metric_not_found，而不是暗示自动回填。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T22:20:00+08:00"
     }
   ],
   "metadata": {
