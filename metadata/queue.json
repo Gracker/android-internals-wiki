@@ -12241,6 +12241,38 @@
         "时效性": 4,
         "total": 16
       }
+    },
+    {
+      "id": "task9-audit-2026-05-19-19-12-framemetrics-version-boundary",
+      "section": "19.12",
+      "section_title": "FrameMetrics",
+      "priority": 85,
+      "title": "FrameMetrics GPU/SWAP 指标版本边界缺失",
+      "description": "API 31/32 与 API 33+ 的 GPU_DURATION 源码端点不同，Android 7-11 与 12+ 的 SWAP_BUFFERS_DURATION 端点也不同；现文只写 API 31+，跨版本聚合容易误判。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "reason": "[Deep Tech Review] FrameMetrics 指标口径存在关键版本边界缺失。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L94-L99 `GPU_DURATION` / `SWAP_BUFFERS_DURATION` 指标表与 API 31+ 说明",
+          "detail": "AOSP FrameMetrics 的阶段端点在 Android 12/12L 与 Android 13+ 不一致：android-12.0.0_r1 / android-12.1.0_r1 中 `GPU_DURATION` = `SWAP_BUFFERS -> GPU_COMPLETED`，android-13.0.0_r1 起变为 `COMMAND_SUBMISSION_COMPLETED -> GPU_COMPLETED`；同时 Android 7-11 的 `SWAP_BUFFERS_DURATION` = `SWAP_BUFFERS -> FRAME_COMPLETED`，Android 12+ 为 `SWAP_BUFFERS -> SWAP_BUFFERS_COMPLETED`。现文只写 `GPU_DURATION` API 31+，会让读者把 API 31/32 与 API 33+ 的 GPU/SWAP 指标当成同一口径横向比较。",
+          "suggestion": "在指标表后补一个版本边界：API 24-30 无 `GPU_DURATION` / `DEADLINE`，且 `SWAP_BUFFERS_DURATION` 端点到 `FRAME_COMPLETED`；API 31-32 的 `GPU_DURATION` 从 `SWAP_BUFFERS` 到 `GPU_COMPLETED`；API 33+ 从 `COMMAND_SUBMISSION_COMPLETED` 到 `GPU_COMPLETED`。线上聚合按 API bucket 分开，或避免跨这些边界直接比较 raw GPU/SWAP 时长。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T03:30:00+08:00",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/12-framemetrics.md"
+      ]
     }
   ],
   "metadata": {

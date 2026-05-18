@@ -16,21 +16,25 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-04-24'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-24T19:59:52+08:00'
-task2b_result: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-19"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-19T03:30:00+08:00"
+task2b_result: "pending"
 last_task2b_at: '2026-04-25T04:45:04+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
+last_task9_audit: "2026-05-19"
+last_task9_review_log: "logs/deep-review/2026-05-19-03-audit.md"
+queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
+task9_review_notes: "2026-05-19 Task9 idle-audit 03:30：needs-rework。P0 0 / P1 1 / P2 0；GPU_DURATION 与 SWAP_BUFFERS_DURATION 的 API31/33 源码边界需 Task2B 回炉。"
 ---
 
 # FrameMetrics
