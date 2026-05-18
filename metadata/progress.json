@@ -1,7 +1,7 @@
 {
   "total": 315,
-  "draft": 1,
-  "ready-for-review": 112,
+  "draft": 0,
+  "ready-for-review": 113,
   "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -171,7 +171,8 @@
     "17.5",
     "1.1",
     "20.2",
-    "1.11"
+    "1.11",
+    "20.13"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
