@@ -46,12 +46,12 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "needs-rework"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-14T19:19:00+08:00'
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
@@ -302,9 +302,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。冻结逻辑由 `ActivityManager` 侧的 `CachedAppOptimizer` / `ProcessCachedOptimizerRecord` 驱动，不在 `InputDispatcher` 中。Android 15+ 在 `CachedAppOptimizer` 中增加了对活跃 Input 连接进程的冻结豁免判断。不同 OEM 机型上豁免覆盖范围仍有差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态，结合 `ProcessCachedOptimizerRecord` 的冻结状态字段判断豁免是否生效]
-
-[需确认: Task9 复审指出 Android 15+ 活跃 Input 连接冻结豁免、`am_cached_process_freeze_status` 日志口径，以及 Cached Apps Freezer 引入版本仍需补 AOSP 证据。Task6 暂不裁决技术真伪，交由 Task2B/Task9 复核。]
+[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。冻结逻辑由 `ActivityManager` 侧的 `CachedAppOptimizer` / `ProcessCachedOptimizerRecord` 驱动，不在 `InputDispatcher` 中。Cached Apps Freezer 自 Android 11（API 30）起在 AOSP 中支持；Android 14 补充了 10 秒后冻结、生命周期事件立即解冻、`UI_HIDDEN` / `GC` 等 robust 行为。不同设备是否默认启用仍受系统配置、开发者选项和 OEM 策略影响。生产环境排查冻结 ANR 时，应通过 event log 的 `am_freeze` / `am_unfreeze`、Perfetto ActivityManager Freezer track 或 `dumpsys activity processes` 的 frozen 状态字段确认目标进程的冻结状态]
 
 ### 修复方案
 
@@ -312,7 +310,7 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
 
 ### 举一反三
 
-遇到 Input ANR 且 trace 中主线程空闲、负载正常时，要检查 `am_freeze` 日志。进程冻结是 Android 12+ 引入的重要省电机制，可能导致 trace 和负载都看不出异常的 ANR。
+遇到 Input ANR 且 trace 中主线程空闲、负载正常时，要检查 `am_freeze` 日志。Cached Apps Freezer 自 Android 11（API 30）起可用，Android 14 补充了更稳健的冻结/解冻行为，可能导致 trace 和负载都看不出异常的 ANR。
 
 ---
 

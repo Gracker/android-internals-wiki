@@ -10975,7 +10975,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/03-native-crash-governance.md"
@@ -11014,7 +11014,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T06:20:00+08:00"
+      "added_at": "2026-05-18T06:20:00+08:00",
+      "completed_date": "2026-05-18T19:16:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: 源码路径修正(art/runtime/signal_chain.cc→art/sigchainlib/sigchain.cc, bionic/linker/debuggerd/handler.cpp→system/core/debuggerd/handler/debuggerd_handler.cpp), 崩溃收集流程修正(debuggerd fork→tombstoned exec crash_dump + pseudothread, 删除 UncaughtExceptionHandler), API 修正(getProcessExitInfo→getTraceInputStream API 31+), Breakpad 符号文档路径修正(symbol_file_format.md→symbol_files.md), MODULE 行格式修正"
     },
     {
       "id": "task9-audit-1.8-ams-source-version-20260518",
@@ -11029,7 +11031,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
@@ -11068,7 +11070,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T07:21:00+08:00"
+      "added_at": "2026-05-18T07:21:00+08:00",
+      "completed_date": "2026-05-18T19:16:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: TOP_SLEEPING adj=200 补充与 PERCEPTIBLE 同档位说明, PERCEPTIBLE_MEDIUM/CACHED_APP_LMK_FIRST 版本从 Android 17 新增修正为 android-16.0.0_r1 已存在, Service ANR 源码片段改为伪代码标注, getStartComponent API 修正(AppStartInfo→ApplicationStartInfo, getStartRequestOverrideTime→getHistoricalProcessStartReasons), ModernBroadcastQueue 源码路径修正(ModernBroadcastQueue.java→BroadcastQueueImpl.java+BroadcastProcessQueue.java)"
     },
     {
       "id": "task9-1.1-sf-memfd-version-errors-20260518-0830",
@@ -11200,7 +11204,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/13-tracing-sdk.md"
@@ -11230,7 +11234,9 @@
       "added_at": "2026-05-18T11:42:46+08:00",
       "original_review_log": "logs/review/2026-05-18-12-review.md",
       "last_reviewed_by": "task6-review",
-      "last_reviewed_at": "2026-05-18T12:26:00+08:00"
+      "last_reviewed_at": "2026-05-18T12:26:00+08:00",
+      "completed_date": "2026-05-18T19:16:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: traceAsync 起始版本修正(1.2.0→tracing-ktx 1.0.0 已含基础扩展), 删除不存在的 TraceEventCache, API 28 及以下 compat 改为反射调用内部 API, 版本表 1.0-1.1 补充 tracing-ktx 说明"
     },
     {
       "id": "task9-20260518-19.23-okhttp-response-body-boundary",
@@ -11288,7 +11294,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/05-case-studies.md"
@@ -11325,7 +11331,9 @@
       "added_at": "2026-05-18T11:42:46+08:00",
       "original_review_log": "logs/review/2026-05-18-12-review.md",
       "last_reviewed_by": "task6-review",
-      "last_reviewed_at": "2026-05-18T12:26:00+08:00"
+      "last_reviewed_at": "2026-05-18T12:26:00+08:00",
+      "completed_date": "2026-05-18T19:16:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: Freezer 引入版本从 Android 12 修正为 Android 11(API 30), 删除无 AOSP 证据的 Android 15+ Input 豁免断言, am_cached_process_freeze_status 日志锚点改为 am_freeze/am_unfreeze + Perfetto Freezer track + dumpsys"
     },
     {
       "id": "task9-2026-05-18-25.6-apk-analyzer-raw-size",

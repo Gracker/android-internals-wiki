@@ -28,10 +28,10 @@ sources:
   path: https://developer.android.com/ndk/reference/group/tracing
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
 task6_result: "needs-rework"
@@ -39,7 +39,7 @@ task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T11:42:46+08:00"
-task2b_result: "pending"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-14T23:25:54+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
@@ -230,9 +230,7 @@ trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看�
 
 AndroidX `Trace.forceEnableAppTracing()` 在 API 18-30 上为 non-debuggable 进程尝试打开 app tracing 通道。从 API 31 起，平台默认开启 app tracing，该调用不再有实际效果。
 
-`androidx.tracing` 的 `trace {}` 和 `traceAsync {}` Kotlin 扩展函数从 1.2.0 起可用，内部根据 API 版本走平台 `Trace` 或 `NoOp` 降级。异步 trace 配对 (`beginAsyncSection`/`endAsyncSection`) 在 API 29+ 走平台原生实现，API 28 及以下由 AndroidX 提供 compat 实现（基于 `TraceEventCache`）。
-
-[需确认: Task9 复审指出 `traceAsync` 起始版本、API 28 及以下 compat 行为与 `TraceEventCache` 说法仍需按 AndroidX Tracing 源码复核。Task6 暂不裁决技术真伪，交由 Task2B/Task9 复核。]
+异步 trace 配对（`beginAsyncSection` / `endAsyncSection`）在 API 29+ 走平台原生实现；API 28 及以下由 AndroidX 通过反射调用内部 `Trace.__setArg` / `Trace.__endTraceAsync` 实现 compat，不依赖任何公开的 cache 类。`trace {}` Kotlin 扩展函数从 `tracing-ktx` 1.0.0 起可用；1.2.0 新增了 lazy string/cookie 的 `trace(name) { }` / `traceAsync(name, cookie) { }` 重载，以及 `beginSection` 失败时自动跳过 `endSection` 的异常安全修正。
 
 AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在 non-debuggable process 中启用 app tracing；从 Android 12 开始，应用代码写入的 custom trace 在所有应用里都默认开启。用正式包抓性能数据时，优先使用 profileable 或接近发布态的构建，避免把 debuggable 包的调试开销带进结论。
 
@@ -240,8 +238,8 @@ AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在
 
 | 版本 | 关键能力 |
 |---|---|
-| 1.0-1.1 | 纯兼容封装，API < 18 时降级为空操作 |
-| 1.2.0 | 新增 lazy string/cookie 的 `trace()` / `traceAsync()` Kotlin 扩展函数；`beginSection` 失败时自动跳过 `endSection`，防止异常路径下 trace 栈失配 |
+| 1.0-1.1 | 纯兼容封装，API < 18 时降级为空操作；`tracing-ktx` 1.0.0 提供 `trace {}` Kotlin 扩展和 `beginAsyncSection` / `endAsyncSection` 反射 compat |
+| 1.2.0 | 新增 lazy string/cookie 的 `trace(name) { }` / `traceAsync(name, cookie) { }` Kotlin 扩展重载；`beginSection` 失败时自动跳过 `endSection`，防止异常路径下 trace 栈失配 |
 | 1.3.0 | Trace API 转 Kotlin；`tracing-ktx` 合并入主 artifact；当前最新 stable（2025-04 发布） |
 | 2.0.0-alpha | 新增 `traceCoroutine` API，支持协程上下文传播；引入可插拔 backend 接口（仍为 alpha） |
 

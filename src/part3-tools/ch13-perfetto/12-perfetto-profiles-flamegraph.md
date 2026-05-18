@@ -2,7 +2,7 @@
 title: "Perfetto Profile 导入与 Flamegraph 分析"
 chapter: "13.12"
 section: "13.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10-17（Simpleperf 导入）；Android 15+（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
@@ -29,20 +29,20 @@ related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 last_task6_at: '2026-05-15T14:12:00+08:00'
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
-task9_reviewed_date: 2026-05-15
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-15T14:27:34+08:00'
-task9_review_notes: '2026-05-15 task9 deep-review: P0 1 / P1 1 / P2 1，需 Task2B 修正 v54 Data Explorer 命名、linux.perf Android 版本/权限边界与 ch13 交叉引用。'
-last_task9_review_log: 'logs/deep-review/2026-05-15-14-deep-review.md'
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T15:25:00+08:00"
+task9_review_notes: "2026-05-15 task9 deep-review: P0 1 / P1 1 / P2 1，需 Task2B 修正 v54 Data Explorer 命名、linux.perf Android 版本/权限边界与 ch13 交叉引用。；2026-05-18 task9 deep-review: P0 0 / P1 0 / P2 1（既有 ch13 README/related_chapters 交叉引用建议已在 suggestions.md 记录）；无阻塞技术问题，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 ---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析

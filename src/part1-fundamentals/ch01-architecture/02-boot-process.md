@@ -87,7 +87,9 @@ related_chapters:
   - "8.3"
 review_notes: "2026-05-06T16:04 Task2B：P0 module.layout 修正为 modules.load / BOARD_VENDOR_KERNEL_MODULES_LOAD / BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD + MODULE_SOFTDEP() + async_probe=1。送 Task6 复审。 | 2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
 task9_review_notes: "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4（沿用既有 suggestions：Zygote slice、bootstat/GBL、Pixel 8 数据、dm-verity 版本边界）。Kernel 模块加载顺序已由 module.layout 修为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task6_at: "2026-05-06T16:24:00+08:00"
+last_task6_at: "2026-05-18T17:14:29+08:00"
+last_task6_audit: "2026-05-18"
+last_task6_audit_result: pass-no-edit
 task6_review_notes: "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-06-16-review.md"
 ---
