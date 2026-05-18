@@ -1,4 +1,5 @@
 ---
+
 title: 案例集
 chapter: '9.5'
 section: '9.5'
@@ -45,29 +46,28 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task2b_at: '2026-05-14T19:19:00+08:00'
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-14'
-last_task9_at: '2026-05-14T19:29:00+08:00'
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-18"
+last_task9_at: "2026-05-18T11:42:46+08:00"
 review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。
   | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task
   2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
-task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
-last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
+task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。"
+last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-14T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。"
-
 ---
 
 # 案例集

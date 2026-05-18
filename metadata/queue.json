@@ -11176,6 +11176,109 @@
         "https://firebase.google.com/docs/ab-testing/abtest-config",
         "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
       ]
+    },
+    {
+      "id": "task9-20260518-19.13-androidx-tracing-compat-version",
+      "section": "19.13",
+      "section_title": "androidx.tracing（Tracing SDK）",
+      "priority": 95,
+      "title": "AndroidX Tracing compat 与版本表源码错误",
+      "description": "traceAsync 起始版本、1.2.0 变化以及 API 28- async trace compat 实现写错；正文引用不存在的 TraceEventCache。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/版本错误",
+          "location": "L217-L229 / L233-L244 AndroidX Tracing compat 与版本表",
+          "detail": "正文把 trace()/traceAsync() 写成从 1.2.0 起可用，并称 API 28 及以下的 async trace compat 基于 TraceEventCache。AndroidX tracing-ktx 1.0.0 已包含 traceAsync；1.2.0 新增的是 lazy string/cookie 变体和 begin 失败时跳过 end。AndroidX 1.2/1.3 的 pre-29 fallback 通过反射调用 android.os.Trace.asyncTraceBegin/asyncTraceEnd（API 18+），源码中没有 TraceEventCache。",
+          "suggestion": "重写 API/AndroidX 版本表：区分平台公开 android.os.Trace.beginAsyncSection（API 29+）与 AndroidX Trace.beginAsyncSection 的 API 18+ 反射 compat；删除 TraceEventCache；把 1.2.0 表述改为“新增 lazy 变体与异常安全修正”，traceAsync 基础扩展标到 tracing-ktx 1.0.0。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T11:42:46+08:00"
+    },
+    {
+      "id": "task9-20260518-19.23-okhttp-response-body-boundary",
+      "section": "19.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 85,
+      "title": "OkHttp responseBodyEnd 指标口径缺少应用消费边界",
+      "description": "正文未说明 responseBodyEnd 在 OkHttp 中代表 body 被应用读完或关闭，容易把应用消费/流式读取节奏误归因为网络接收耗时。",
+      "issue_type": "principle-chain-metric-definition",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "指标口径/原理断裂",
+          "location": "L152-L162 / L281-L286 / L440-L449 OkHttp response body 阶段",
+          "detail": "正文的数据结构没有记录 responseBodyStart，阶段表把 Response 接收定义为 responseHeadersStart → responseBodyEnd。OkHttp 源码中 responseBodyEnd 在 ResponseBodySource 读到 EOF 或 close() 时触发，代表应用把 body 消费/关闭完成，不等同于 socket 已完成网络下载；流式响应、调用方延迟读取、边读边解析或提前 close 都会把应用消费节奏混进“网络接收”指标。",
+          "suggestion": "补 responseBodyStartNs，并在指标模型里拆开 header wait、body first byte/body start、body consumed/closed。说明 responseBodyEnd 的 OkHttp 语义是“应用层 body 消费完成或关闭”，网络下载耗时需结合字节数、读取模式、流式接口和 Interceptor/转换器边界解释；对 streaming/download 场景单独建口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T11:42:46+08:00"
+    },
+    {
+      "id": "task9-20260518-9.5-freezer-version-boundary",
+      "section": "9.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "Cached Apps Freezer AOSP 版本边界与日志锚点错误",
+      "description": "正文把 OEM/未证实的活跃 Input 连接冻结豁免写成 Android 15+ AOSP 行为，并把 freezer 引入版本写成 Android 12+。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/05-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/版本错误",
+          "location": "L305 Cached Apps Freezer 版本边界与日志锚点",
+          "detail": "正文称 Android 15+ 在 CachedAppOptimizer 中增加“活跃 Input 连接进程冻结豁免判断”，并建议用 am_cached_process_freeze_status 日志确认冻结状态。AOSP android-15.0.0_r1、android-16.0.0_r1 与 master 的 CachedAppOptimizer.java / ProcessCachedOptimizerRecord.java 没有 input 相关冻结豁免逻辑；EventLogTags.logtags 中只有 am_freeze / am_unfreeze，未见 am_cached_process_freeze_status。CachedAppOptimizer 的 traceAppFreeze 只是向 ActivityManager trace 的 Freezer track 写入 “Freeze/Unfreeze process:pid reason”。",
+          "suggestion": "删除“AOSP Android 15+ 已有活跃 Input 连接豁免”的确定说法；如来自 MTK/OEM 分支，标成 OEM patch 并给出分支/commit 证据。排查锚点改为 event log 的 am_freeze/am_unfreeze、Perfetto ActivityManager Freezer track、dumpsys activity/process freezer 状态和 ProcessCachedOptimizerRecord.isFrozen()/isPendingFreeze()。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L313 Cached Apps Freezer 引入版本",
+          "detail": "正文写“进程冻结是 Android 12+ 引入”。AOSP 官方 Cached apps freezer 文档口径是 Android 11（API 30）及以上支持；Android 14+ 进一步补了 10 秒后冻结、生命周期事件立即解冻、UI_HIDDEN/GC 等 robust 行为。",
+          "suggestion": "把版本边界改为 Android 11+ 支持 cached apps freezer；单独列 Android 14+ robust 行为变化，并说明不同设备是否启用仍受系统配置、开发者选项和 OEM 策略影响。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T11:42:46+08:00"
     }
   ],
   "metadata": {
