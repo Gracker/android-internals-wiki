@@ -2104,3 +2104,22 @@
 - **位置**：frontmatter sources / lines 40、116、334：InputDispatcher.cpp 路径
 - **问题**：frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp 在 Android 11+ 标签存在；Android 8.1/10.0 的路径是 frameworks/native/services/inputflinger/InputDispatcher.cpp。正文引用明确标注 android-16，技术结论可用，但 applicable_versions 覆盖 Android 8-17，参考资料处缺少旧版本路径提示。
 - **建议**：参考资料或脚注补一句：Android 8-10 请查 services/inputflinger/InputDispatcher.cpp，Android 11+ 查 services/inputflinger/dispatcher/InputDispatcher.cpp。
+
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略 — 2026-05-19
+- **类型**：原理边界/数据缺失
+- **位置**：L270、L329-L345、L355
+- **问题**：Command Buffer 复用被直接套到 Android View 静态 UI；ADPF thermal/headroom 信号与 ANGLE driver 选择的关系写成策略耦合；WebGPU 计算管线“开销比例较低”缺 Dawn/WebGPU benchmark 或官方实现证据；OpenGL ES driver“自动调整 GPU 频率”容易混淆 driver 与 PowerHAL/DVFS 职责。
+- **建议**：把 Command Buffer 复用限定在自管 Vulkan renderer；ADPF 只作为热/功耗降级信号，不写成 ANGLE 选路依据；WebGPU 性能判断补设备/workload/库版本，补不到则改为定性边界；GPU 调频改为系统 DVFS/PowerHAL/driver hint 协同。
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-05-19
+- **类型**：源码表述/观测口径
+- **位置**：L303、L327、L416
+- **问题**：`BufferQueueCore` 被标为“可跨进程共享”容易被读成共享内存对象；实际应强调 core 位于创建端进程，跨进程的是 producer/consumer Binder 端点与 native handle/fence。Perfetto slice/counter 名称也受 Android 版本和厂商 producer 影响，当前缺一组真实 trace 或 trace config 佐证。
+- **建议**：把架构图注释改为“producer/consumer 可跨进程访问同一队列语义，core 不作为共享内存暴露”；Perfetto 小节补目标版本的 trace config、SQL 表名或截图，避免把 slice/counter 名称写成无条件稳定接口。
+
+## [Task9 Deep Review] 20.5 OOM 治理 — 2026-05-19
+- **类型**：源码准确性/术语边界
+- **位置**：L328、L92
+- **问题**：`mallopt(M_PURGE, 1)` 中 value 在 bionic `malloc.h` 注释里为 ignored，官方示例常写 `mallopt(M_PURGE, 0)`；`growth limit` 来源写成 ActivityManager 通过 processinfo 配置也偏粗，应回到 Zygote/Runtime heap 参数与 `largeHeap`/系统属性边界。
+- **建议**：将示例改成 `mallopt(M_PURGE, 0)` 并标注只影响 RSS/dirty page；`growth limit` 改为“由进程启动时传入 ART 的 heap 参数决定，受设备配置与 largeHeap 影响”。

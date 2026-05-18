@@ -460,3 +460,20 @@ Perfetto v54 的 `android.cujs.base` 默认只把 `J<...>` CUJ slice 中的 `com
 - ch23.02 可用 Bitmap 版本演进时间线作为"历史背景"段落
 - ch26.04 可补充 FileObserver vs 消息队列两种 ANR 检测方案的对比分析
 
+
+
+## [2026-05-19] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — Android 16/17 图形内存优化公开边界
+
+### 盲区描述
+libdmabufheap pooling、Binder FDA 批量 fd 安装、allocator AIDL `additionalOptions` / 16KB 页大小对图形 buffer 成本的关系需要重新拆分：哪些是 AOSP 通用能力，哪些是 Binder/Parcel 层实现细节，哪些只是 vendor allocator 或设备策略。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 `system/memory/libdmabufheap` 是否存在通用释放后缓存/按尺寸复用路径；若只有 vendor allocator 行为，必须限定实现来源。
+- 追 Binder / Parcel native handle 传递路径，确认 FDA 是否参与 `GraphicBuffer::flatten/unflatten` 的 fd 安装，并补可定位源码路径。
+- 用 android-15/16 tag 对比 `IAllocator.allocate2()`、`BufferDescriptorInfo.additionalOptions` 与 16KB page size 文档，拆清接口存在时间和实际用途。
+
+### 关联章节
+2.15、2.13、2.16、4.2
