@@ -11686,7 +11686,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md"
@@ -11696,7 +11696,11 @@
         "https://source.android.com/docs/compatibility/16/android-16-cdd",
         "https://source.android.com/docs/compatibility/cts/media-cts",
         "https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html"
-      ]
+      ],
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成：status 更新为 ready-for-review，进入 Task 6 写作复审管线。",
+      "last_processed_by": "task2a-content-processing",
+      "last_processed_at": "2026-05-18T20:04:00+08:00"
     },
     {
       "id": "task9-20260518-2.23-window-setframerate-api",
