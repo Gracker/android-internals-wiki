@@ -11164,7 +11164,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
@@ -11175,7 +11175,9 @@
         "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md",
         "https://firebase.google.com/docs/ab-testing/abtest-config",
         "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
-      ]
+      ],
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成，章节状态更新为 ready-for-review，进入 Task 6 审查管线"
     },
     {
       "id": "task9-20260518-19.13-androidx-tracing-compat-version",
