@@ -54,16 +54,17 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_result: "pass-light-edit"
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
+task2b_state: pending
+task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T18:52:00+08:00"
+last_task9_audit: "2026-05-18"
 review_round: 1
 ---
 

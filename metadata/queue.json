@@ -11088,6 +11088,49 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-18T08:31:45+08:00",
       "review_log": "logs/deep-review/2026-05-18-08-deep-review.md"
+    },
+    {
+      "id": "task9-audit-20260518-2.13-bufferqueue-version-trace-source-errors",
+      "section": "2.13",
+      "section_title": "图形缓冲区管理 (BufferQueue)",
+      "priority": 95,
+      "title": "BufferQueue Android 16 版本表与源码片段错误",
+      "description": "闲时抽检发现：Android 16 BLASTBufferQueue 默认 buffer 数、queueBuffer trace vsyncId 口径，以及 BufferQueueCore.h 源码路径/片段与 AOSP 不一致。",
+      "issue_type": "source-code-accuracy-version-differences-trace-semantics",
+      "severity": "P0",
+      "reason": "[Deep Tech Review][闲时抽检] 2.13 BufferQueue 存在 Android 16 版本表与 AOSP 源码/Trace 口径错误。",
+      "material_paths": [
+        "logs/deep-review/2026-05-18-10-audit.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/源码行为错误",
+          "location": "L170 / L439（BLASTBufferQueue maxDequeuedBufferCount）",
+          "detail": "正文写 android-16.0.0_r1 将 BLASTBufferQueue 默认 maxDequeuedBufferCount 从 2 提升到 3。实测 AOSP android-16.0.0_r1 BLASTBufferQueue.cpp L262-L264、AOSP main L268-L270 仍为 mProducer->setMaxDequeuedBufferCount(2)；Android 14 L160-L161 也是 2。Android 16 没有该默认值提升。",
+          "suggestion": "删除“Android 16 默认提升至 3 / 三缓冲余量增大”的结论；如需保留缓冲数量变化，必须重新锚定到实际 commit、设备分支或 Surface 类型条件，并在版本表中区分 AOSP tag 与厂商实现。"
+        },
+        {
+          "severity": "P0",
+          "type": "Trace 名称/版本差异错误",
+          "location": "L376 / L439（queueBuffer trace vsyncId）",
+          "detail": "正文写 Android 16 起 queueBuffer trace 名称新增 vsyncId 后缀（queueBuffer - <vsyncId>）。AOSP android-16.0.0_r1 Surface.cpp 的 Surface::queueBuffer() 仍是 ATRACE_CALL()，未生成该名称；BLASTBufferQueue 的 mQueuedBufferTrace 仍是 QueuedBuffer - {name}BLAST#{producerId}。vsyncId 出现在 BLASTBufferQueue::acquireNextBufferLocked() 的 ATRACE_FORMAT 中，且 Android 14 已存在。",
+          "suggestion": "把 Perfetto 读法改成：queueBuffer 本身不带 vsyncId 名称；BLAST acquireNextBufferLocked / FrameTimeline 可提供 vsyncId 关联。删除“Android 16 起新增 queueBuffer - <vsyncId>”这一版本表项。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码路径/代码片段错误",
+          "location": "L240-L248 / L304（BufferQueueCore.h 代码块）",
+          "detail": "代码块标成 platform/frameworks/native/libs/gui/BufferQueueCore.h (android14-release)，该路径不存在；真实路径是 frameworks/native/libs/gui/include/gui/BufferQueueCore.h。片段还把 mutable std::mutex mMutex 写成 mutable Mutex mMutex、把 mSlots 写成 BufferSlot mSlots[NUM_BUFFER_SLOTS]、把 mFrameCounter 写成 int64_t；android-14.0.0_r1/main 实际分别是 std::mutex、BufferQueueDefs::SlotsType、uint64_t。",
+          "suggestion": "修正源码路径和代码片段为当前 AOSP 精确声明；frontmatter sources 同步补 `frameworks/native/libs/gui/include/gui/BufferQueueCore.h`，避免只列 BufferQueueCore.cpp。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T10:20:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
