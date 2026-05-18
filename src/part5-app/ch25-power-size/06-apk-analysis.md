@@ -1,4 +1,5 @@
 ---
+
 title: "APK 体积分析与瘦身"
 chapter: "25.6"
 section: "25.6"
@@ -40,23 +41,23 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-18T13:12:59+08:00"
-last_task6_review_log: logs/review/2026-05-18-13-review.md
-task6_review_notes: "2026-05-18 Task6：复审写作层；L1/L2 无需正文小修，四个 outline 锚点覆盖；保留 Task9 已登记的技术回炉项，等待 Task2B。"
+last_task6_at: "2026-05-18T16:05:00+08:00"
+last_task6_review_log: logs/review/2026-05-18-16-review.md
+task6_review_notes: "2026-05-18 Task6：复审写作层；修正 3 处否定纠正式表达和口语化措辞，四个 outline 锚点覆盖；保留 Task9 已登记的 native 分发边界回炉项，等待 Task2B。"
 task2b_result: fixed
 task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-18"
-last_task9_at: "2026-05-18T12:44:40+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-18-12-deep-review.md"
-task9_review_notes: "2026-05-18 12:44 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；已写入 queue.json，等待 Task2B 回炉。"
+last_task9_at: "2026-05-18T15:25:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
+task9_review_notes: "2026-05-18 12:44 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；已写入 queue.json，等待 Task2B 回炉。；2026-05-18 15:25 Task9 deep-review: P0 raw/download size 口径已修；P1 低频 native 库误列 Play Asset Delivery 仍未闭环，保留 task2b_pending。"
 ---
 
 # APK 体积分析与瘦身
@@ -86,7 +87,7 @@ task9_review_notes: "2026-05-18 12:44 Task9 deep-review: needs-rework。P0 1 / P
 
 ## 为什么要了解 APK 体积分析与瘦身
 
-包体积治理的第一步不是改 Gradle 配置，而是把体积账算清楚。一个 release 包里通常有 dex、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、`AndroidManifest.xml` 和签名文件；它们进入安装、启动和内存映射路径的方式不同，对应的优化手段也不同。APK 结构、`resources.arsc` 作用、dex / res / lib 三类产物的基础原理，详见 12.1 节。这里处理实战流程：怎么定位体积来源，怎么评估改动收益，怎么把 R8、资源缩减和 ABI 策略纳入发版检查。
+包体积治理先要把体积账算清楚，再决定是否改 Gradle 配置。一个 release 包里通常有 dex、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、`AndroidManifest.xml` 和签名文件；它们进入安装、启动和内存映射路径的方式不同，对应的优化手段也不同。APK 结构、`resources.arsc` 作用、dex / res / lib 三类产物的基础原理，详见 12.1 节。这里处理实战流程：怎么定位体积来源，怎么评估改动收益，怎么把 R8、资源缩减和 ABI 策略纳入发版检查。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
 
@@ -180,7 +181,7 @@ AGP 8.12 / 8.13 支持手动开启优化版资源缩减；AGP 9.0 起，在 `isS
 
 [已验证: 官方文档, developer.android.com/ndk/guides/abis]
 
-`.so` 体积问题通常不是单个库大，而是同一套库按多个 ABI 重复打包。NDK 文档说明 fat APK 会明显大于只包含单一 ABI 二进制的 APK，并建议使用 App Bundle 或 APK Splits，在保持设备兼容性的同时减少用户实际下载大小。
+`.so` 体积问题通常来自同一套库按多个 ABI 重复打包，单个库过大反而不是最常见原因。NDK 文档说明 fat APK 会明显大于只包含单一 ABI 二进制的 APK，并建议使用 App Bundle 或 APK Splits，在保持设备兼容性的同时减少用户实际下载大小。
 
 排查 `.so` 先看三件事：
 
@@ -200,7 +201,7 @@ android {
 }
 ```
 
-这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果一刀切删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
+这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果直接删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
 
 Android 平台安装 native 库时，会按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到时再看 secondary ABI。安装期 ABI 选择链路为 `PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索 `.so`。[已验证: AOSP master, frameworks/base/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java; frameworks/base/core/java/com/android/internal/content/NativeLibraryHelper.java]
 

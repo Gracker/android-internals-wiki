@@ -23,7 +23,7 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
 polish_count: 1
@@ -31,19 +31,21 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-05-18T15:23:37+08:00"
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task2b_state: pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: task2b_pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-15"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-15T12:31:59+08:00"
-review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。"
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T10:05:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
-task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T15:25:00+08:00"
+review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。；2026-05-18 task6 revisiting: L1/L2 小修完成；GPU + NPU 扩展仍为占位，已合并写入 queue/suggestions，等待 Task2B 补素材或裁剪。"
+task6_reviewed_date: "2026-05-18"
+last_task6_at: "2026-05-18T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-16-review.md"
+task6_review_notes: "2026-05-18 Task6：修正口语化迁移描述和结构性过渡语；GPU + NPU 协同调度扩展仍缺素材，已投递 Task2B 回炉。"
+last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
+task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；android16-6.12 sugov_get_util() 代码块与实际源码不一致，需 Task2B 修正；骁龙 8 Elite capacity 数值需补一手锚点。"
 ---
 
 # 大小核架构
@@ -51,7 +53,7 @@ task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ## 为什么要了解大小核架构
 
-打开 Perfetto 的 CPU 视图，我们会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
+Perfetto 的 CPU 视图会列出 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里的 `cpu` 字段会标出这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
 
 现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
@@ -164,8 +166,8 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 核心配置的多样化意味着性能分析时不能简单地套用一个通用的"大核 = CPU 7"规则。分析时需要注意：
 
-1. **先搞清楚目标设备的核心布局**。不同设备的核心编号、频率、capacity 值都不同。在 Perfetto 中可以通过 CPU Frequency 轨道和 CPU Scheduling 轨道来推断。
-2. **关注线程在核心间的迁移模式**。一个线程如果频繁在小核和大核之间反复横跳，可能意味着调度器的 upmigrate/downmigrate 阈值设置不合理，或者线程本身的负载波动很大。
+1. **确认目标设备的核心布局**。不同设备的核心编号、频率、capacity 值都不同。在 Perfetto 中可以通过 CPU Frequency 轨道和 CPU Scheduling 轨道来推断。
+2. **关注线程在核心间的迁移模式**。一个线程如果频繁在小核和大核之间反复迁移，可能意味着调度器的 upmigrate/downmigrate 阈值设置不合理，或者线程本身的负载波动很大。
 3. **理解不同 SoC 厂商的客制化策略差异很大**。OEM 厂商通常会对调度器做大量定制（比如 OPPO 的蜂鸟引擎、小米的 MIUI 调度策略），导致同样的负载在不同手机上的调度行为完全不同。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
@@ -325,7 +327,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 ## 不同核心对单线程性能和多线程吞吐量的差异
 
-前面讨论了核心迁移和调频机制，接下来我们看一个更基础的问题：不同类型的核心在同样频率下，性能差距到底有多大？
+核心迁移和调频机制之后，还有一个更基础的问题：不同类型的核心在同样频率下，性能差距到底有多大？
 
 ### "同频不同效"——频率不是衡量性能的唯一标准
 
@@ -432,7 +434,7 @@ ORDER BY s.cpu;
 - **线程亲和性**：通过 `sched_setaffinity` 系统调用直接指定线程可以运行在哪些核心上。这在系统级开发和 OEM 定制中很常见（比如绑定 RenderThread 到大核上，参见高爷的文章"Android性能优化之绑定RenderThread到大核CPU"）。
 - **cgroup 和 cpuset**：Android 使用 cgroup 来划分前台/后台进程组，前台组的线程更容易被调度到大核上。
 
-### 误区 5："绑核（affinity）是万能的优化手段"
+### 误区 5："绑核（affinity）能解决所有选核问题"
 
 绑核能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
 
