@@ -12117,22 +12117,65 @@
           "suggestion": "把该段限定为受控 native 子系统的实验性隔离策略，默认建议改为 minidump/现场采集 + 安全退出；如保留需说明 async-signal-safe 限制、主线程/共享状态/堆损坏场景不得恢复。"
         }
       ]
+    },
+    {
+      "id": "task9-audit-10.1-native-tools-largeheap-semantics",
+      "section": "10.1",
+      "priority": 95,
+      "title": "App 内存分析：Native 调试工具命令与 largeHeap/PSS 口径需修正",
+      "description": "P0: malloc debug 示例命令包含无效选项和错误 program 目标；P1: ASan 支持版本写成 Android 8.0/API26，官方 NDK 文档为 API27/O MR1 起；P1: PSS 被拿来按 largeHeap 上限做比例阈值，混淆进程 PSS 与 Java heap 预算。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "malloc debug：lines 237-245",
+          "detail": "`libc.debug.malloc.options` 官方选项中没有 `enable_on_start`；`backtrace` 本身即启用分配栈记录，按信号切换应使用 `backtrace_enable_on_signal`。`libc.debug.malloc.program` 匹配 executable/program（官方示例为 `ls`、`app_process`），不能用 package name `com.example.app` 精准选择应用。App 开发侧 API 26+ 推荐 wrap.sh / `wrap.<APP>` 搭配 `LIBC_DEBUG_MALLOC_OPTIONS=backtrace`。",
+          "suggestion": "删除当前两行示例，改成两套可执行路径：root/platform 场景用 `libc.debug.malloc.program app_process`（说明会影响 zygote apps）或具体可执行名；App debuggable 场景使用 NDK wrap.sh / `wrap.<package>` + `LIBC_DEBUG_MALLOC_OPTIONS=backtrace`，并补 Android 12 wrap property bug 提示。"
+        },
+        {
+          "type": "版本差异",
+          "location": "ASan / HWASan：line 253",
+          "detail": "正文写“从 Android 8.0 开始支持在非 root 设备上使用 ASan 调试应用”。当前 Android NDK 官方 ASan 文档写明 AddressSanitizer beginning with API level 27 (Android O MR1)，即 Android 8.1，而不是 Android 8.0/API26。",
+          "suggestion": "改为“NDK ASan 从 API 27/Android 8.1 起支持；生产设备/非 root 调试通常依赖 debuggable + wrap.sh；Android 14+ ARM64 优先考虑 HWASan（或 Pixel Android 10 专用镜像）。”"
+        },
+        {
+          "type": "源码准确性",
+          "location": "线上内存监控：lines 413-415、428；开头 line 81",
+          "detail": "`Debug.MemoryInfo.getTotalPss()` 返回 total PSS memory usage in kB；`ActivityManager.getLargeMemoryClass()` 返回 large heap 下的 approximate per-application memory class。PSS 包含 Java/native/graphics/code/stack 等进程常驻内存分摊，不能直接除以 `largeHeap` 得到“接近上限”比例。该口径会把 Graphics/Native 增长误判成 Java heap 接近 OOM，或反过来掩盖 Java heap alloc 接近 `Runtime.maxMemory()` 的风险。",
+          "suggestion": "线上指标拆成两类：Java heap 使用率用 `Runtime.totalMemory()-freeMemory()` / `Runtime.maxMemory()` 或 memoryClass/largeMemoryClass；进程总内存压力用 PSS/RSS/Private Dirty 与同设备/同 page size 基线、LMK/oom_adj 上下文对比。删除 `PSS > largeHeap 的 80%` 作为触发条件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T01:30:19+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "reason": "[Deep Tech Review idle audit] Native memory tooling commands/version boundaries and PSS-vs-largeHeap metric semantics need rework."
     }
   ],
   "metadata": {
-    "total_entries": 346,
-    "p0_count": 142,
-    "last_updated": "2026-05-19T00:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 149,
+    "total_entries": 349,
+    "p0_count": 149,
+    "last_updated": "2026-05-19T01:31:06+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 151,
     "updated_date": "2026-05-19",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 149,
-    "completed_entries": 195
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 151,
+    "completed_entries": 196
   },
-  "last_updated": "2026-05-19T00:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 149,
+  "last_updated": "2026-05-19T01:31:06+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 151,
   "last_task2a_completed": "3.10",
   "last_task2a_completed_at": "2026-05-18T23:04:00+08:00",
   "last_task2a_gap_mining": "4.10",

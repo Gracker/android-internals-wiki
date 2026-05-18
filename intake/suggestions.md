@@ -2123,3 +2123,9 @@
 - **位置**：L328、L92
 - **问题**：`mallopt(M_PURGE, 1)` 中 value 在 bionic `malloc.h` 注释里为 ignored，官方示例常写 `mallopt(M_PURGE, 0)`；`growth limit` 来源写成 ActivityManager 通过 processinfo 配置也偏粗，应回到 Zygote/Runtime heap 参数与 `largeHeap`/系统属性边界。
 - **建议**：将示例改成 `mallopt(M_PURGE, 0)` 并标注只影响 RSS/dirty page；`growth limit` 改为“由进程启动时传入 ART 的 heap 参数决定，受设备配置与 largeHeap 影响”。
+
+## [Task9 Idle Audit] 10.1 App 内存分析 — 2026-05-19
+- **类型**：版本差异
+- **位置**：line 279「Android 8.0 之前 Bitmap 像素数据存储在 Java Heap」
+- **问题**：Android 官方 Bitmap 内存文档把历史分为三段：API 10 及以下 pixel data 在 native memory；API 11-25 在 Dalvik heap；API 26+ 在 native heap。当前“Android 8.0 之前”覆盖过宽，会把 API 10 及以下历史行为写错。
+- **建议**：改为“API 11-25 的 Bitmap 像素数据在 Dalvik/ART heap；API 26+ 回到 native heap；API 10 及以下历史机型另行说明或直接标注不在本书适用版本范围内。”
