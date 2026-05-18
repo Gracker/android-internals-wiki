@@ -11635,6 +11635,36 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T17:28:39+08:00"
+    },
+    {
+      "id": "task9-audit-16.2-profilingmanager-source-path-20260518",
+      "section": "16.2",
+      "priority": 95,
+      "title": "ProfilingManager AOSP 源码路径错误",
+      "description": "参考资料将 ProfilingManager 标为 frameworks/base/core/java/android/os/ProfilingManager.java；android-16.0.0_r1 中该路径不存在，实际在 packages/modules/Profiling/framework/java/android/os/ProfilingManager.java。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/02-version-changes.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-18-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "参考资料 > AOSP 源码路径 > ProfilingManager",
+          "detail": "章节把 ProfilingManager 的 AOSP 路径写成 frameworks/base/core/java/android/os/ProfilingManager.java。android-16.0.0_r1 下该路径返回 404；实际源码位于 platform/packages/modules/Profiling/framework/java/android/os/ProfilingManager.java，同模块还包含 ProfilingTrigger.java 与 ProfilingResult.java。",
+          "suggestion": "把参考资料中的 ProfilingManager 源码路径改为 packages/modules/Profiling/framework/java/android/os/ProfilingManager.java；如保留 ProfilingTrigger / ProfilingResult 的 API 说明，也补充 packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java 与 ProfilingResult.java。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-18T18:30:00+08:00"
     }
   ],
   "metadata": {

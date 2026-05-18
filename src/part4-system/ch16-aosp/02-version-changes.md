@@ -44,14 +44,15 @@ reviewed_date: "2026-04-17"
 last_task6_audit: "2026-05-18"
 section: "16.2"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
-task2b_result: fixed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T13:57:22+08:00"
+last_task9_at: "2026-05-18T18:30:00+08:00"
+last_task9_audit: "2026-05-18"
 ---
 
 # 各 Android 版本性能变更追踪
