@@ -15,6 +15,7 @@ last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-04-20"
 reviewed_by: openclaw-task6
+last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
 last_task9_at: "2026-05-17T14:20:00+08:00"
 last_task9_audit: "2026-05-17"
@@ -76,7 +77,7 @@ task2b_result: fixed
 
 在 Perfetto 里打开一个滑动场景的 Trace,我们会看到主线程(UI Thread)和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常,它们像齿轮一样精密咬合--主线程画完蓝图,RenderThread 拿去执行,一帧接一帧流畅运转。如果出了问题,我们会看到一条 Track 延迟、另一条 Track 饥饿等待,最终帧超时掉帧。
 
-Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"执行 GPU 命令"拆分到两个线程上并行执行。在此之前,measure、layout、draw 和 GPU 渲染全部在主线程完成,意味着 App 的 UI 逻辑和 GPU 的渲染工作互相阻塞。引入 RenderThread 后,主线程只负责构建 DisplayList(一份绘制指令清单),真正的 GPU 渲染工作交给了 RenderThread,从而让 CPU 和 GPU 实现流水线式并行。
+Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"执行 GPU 命令"拆分到两个线程上并行执行。在此之前,measure、layout、draw 和 GPU 渲染全部在主线程完成,意味着 App 的 UI 逻辑和 GPU 的渲染工作互相阻塞。引入 RenderThread 后,主线程只负责构建 DisplayList(一份绘制指令清单),GPU 渲染工作交给了 RenderThread,从而让 CPU 和 GPU 实现流水线式并行。
 
 理解这两个线程如何协作--尤其是它们之间的同步点在哪里、耗时如何分布、什么情况下会互相阻塞--是分析渲染类性能问题的基本功。无论是滑动卡顿、动画掉帧还是 GPU 过载,答案都藏在主线程和 RenderThread 的交互过程里。
 
@@ -90,9 +91,9 @@ Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"
 
 **Layout(布局)**--根据测量结果,父 View 为每个子 View 分配精确的位置和大小(left、top、right、bottom)。
 
-**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 被调用时传入的 Canvas 并不是一块真正的画布,而是 `RecordingCanvas`。它不会产生任何像素,而是将绘制调用(画圆、画文字、画图片)记录到一个叫 **DisplayList**(也叫 **RenderNode**)的数据结构中。
+**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 被调用时传入的 Canvas 并不是一块会直接绘制像素的画布,而是 `RecordingCanvas`。它不会产生任何像素,而是将绘制调用(画圆、画文字、画图片)记录到一个叫 **DisplayList**(也叫 **RenderNode**)的数据结构中。
 
-我们可以把 DisplayList 类比成一份"施工图纸"--它精确记录了"在什么位置画什么形状、什么颜色",但还没有变成真正的像素。这份图纸将在稍后交给 RenderThread,由它来指挥 GPU 把图纸变成真正的画面。
+我们可以把 DisplayList 类比成一份"施工图纸"--它精确记录了"在什么位置画什么形状、什么颜色",但还没有变成屏幕像素。这份图纸将在稍后交给 RenderThread,由它来指挥 GPU 生成最终画面。
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -184,7 +185,7 @@ int DrawFrameTask::drawFrame() {
 
 1. **UI Thread 阻塞点**:主线程等的是 RenderThread 把本帧同步阶段做完,这段时间落在主线程的 `syncFrameState` slice 上。
 2. **RenderThread 同步阶段**:`syncFrameState()` 会刷新 VSync 信息、`makeCurrent()`、应用 layer update、执行 `prepareTree()`,把本帧需要的 RenderNode 状态、脏区和纹理准备好。
-3. **GPU / buffer 反压**:真正会把 RenderThread 后续 `draw()` 拖慢的,常见是 `dequeueBuffer()`、release fence 和 GPU command submit 之后的消费节奏。这部分主要发生在 `CanvasContext::draw()`,不该和主线程上的 `syncFrameState` 画等号。
+3. **GPU / buffer 反压**:会把 RenderThread 后续 `draw()` 拖慢的,常见是 `dequeueBuffer()`、release fence 和 GPU command submit 之后的消费节奏。这部分主要发生在 `CanvasContext::draw()`,不该和主线程上的 `syncFrameState` 画等号。
 
 同步完成后，UI Thread 就能继续处理输入、动画和下一轮 traversal，RenderThread 再独立进入 `draw()`。所以 `syncFrameState` 很长时，含义通常是"RenderThread 还在处理本帧同步，或者前面的 buffer / fence 反压已经把它拖慢"，范围比"上一帧 GPU 没结束"更宽。
 
@@ -228,11 +229,11 @@ void CanvasContext::draw() {
 
 GPU 命令的提交是**异步的**。CPU(RenderThread)把命令扔给 GPU 后,GPU 在后台执行渲染,两者可以并行。RenderThread 通过 **Fence** 机制来跟踪 GPU 的工作状态。
 
-### [自动发现] ADPF 性能反馈闭环（Android 16+）
+### [自动发现] ADPF 性能反馈机制（Android 16+）
 
-RenderThread 在 Android 16 中接入了 ADPF（Adaptive Performance Framework）的反馈闭环。RenderThread 通过 `PerformanceHintManager` 的 session 调用 `reportActualWorkDuration()`，向系统反馈每一帧渲染的实际耗时。系统结合 GPU Headroom 信息（`getGpuHeadroom()`），动态调整 CPU/GPU 频率和渲染负载——如果连续多帧负载偏低，可以降频省电；如果接近超时，则提前提频或触发渲染降级（如降低分辨率）。
+RenderThread 在 Android 16 中接入了 ADPF（Adaptive Performance Framework）的反馈机制。RenderThread 通过 `PerformanceHintManager` 的 session 调用 `reportActualWorkDuration()`，向系统反馈每一帧渲染的实际耗时。系统结合 GPU Headroom 信息（`getGpuHeadroom()`），动态调整 CPU/GPU 频率和渲染负载——如果连续多帧负载偏低，可以降频省电；如果接近超时，则提前提频或触发渲染降级（如降低分辨率）。
 
-这条反馈环让 RenderThread 从单纯的"执行者"变成了具备负载感知能力的管道。在 Perfetto 中，`ADPF` 相关的 slice 和 CPU frequency counter 的联动可以观察到这个闭环的运作。
+这条反馈环让 RenderThread 从单纯的"执行者"变成了具备负载感知能力的管道。在 Perfetto 中，`ADPF` 相关的 slice 和 CPU frequency counter 的联动可以观察到这条反馈路径的运作。
 
 ### 分片 GPU 并行提交（Adreno 830+）
 
@@ -246,7 +247,7 @@ Fence 是 Android 图形系统里的核心同步原语,表现为一个文件描�
 
 **`queueBuffer()` 输入的 fence(到 consumer 一侧叫 acquire fence)**:RenderThread 提交一帧时,会把"GPU 可能还没完全写完这个 buffer"的 fence 一起交给 BufferQueue。这个 fd 到了 SurfaceFlinger / HWC 一侧,就表示"读之前先等 producer 写完",所以 consumer 会把它当 acquire fence。
 
-**`dequeueBuffer()` 返回的 fence(consumer 返回来的 release fence)**:RenderThread 下一次拿回旧 buffer 时,如果 SurfaceFlinger / HWC 还没彻底用完上一帧,就会同时拿到一条 release fence。这个 fence 表示"写之前先等 consumer 读完",所以 RenderThread 在重新写这个 buffer 前必须先等它 signal。
+**`dequeueBuffer()` 返回的 fence(consumer 返回来的 release fence)**:RenderThread 下一次拿回旧 buffer 时,如果 SurfaceFlinger / HWC 还没用完上一帧,就会同时拿到一条 release fence。这个 fence 表示"写之前先等 consumer 读完",所以 RenderThread 在重新写这个 buffer 前必须先等它 signal。
 
 ```
 时间线:
@@ -257,7 +258,7 @@ SurfaceFlinger:                     ←── 收到 Buffer + acquire fence
                                      等 acquire fence ──→ 合成 / 上屏 ──→ 返回 release fence
 ```
 
-这个异步机制解释了一个常见的 Perfetto 现象:`queueBuffer()` 结束得很快,不代表 GPU 已经画完;真正拖长 RenderThread 的,往往是下一次 `dequeueBuffer()` 之前等待 release fence 的时间,也就是等旧 buffer 可重用。如果 Triple Buffering 被耗尽,这个等待会非常明显。
+这个异步机制解释了一个常见的 Perfetto 现象:`queueBuffer()` 结束得很快,不代表 GPU 已经画完;拖长 RenderThread 的通常是下一次 `dequeueBuffer()` 之前等待 release fence 的时间,也就是等旧 buffer 可重用。如果 Triple Buffering 被耗尽,这个等待会非常明显。
 
 
 
@@ -283,7 +284,7 @@ DrawFrameTask::run()
 
 当 Bitmap 尚未上传到 GPU 时,`syncFrameState` 期间会触发同步 upload,在 Perfetto 中表现为 **"Upload `<w>x<h>` Texture"** Slice 出现在 syncFrameState 调用栈内。此 Slice 的耗时(几毫秒到几十毫秒不等)会直接阻塞 RenderThread,造成掉帧。
 
-**1090p RGBA Bitmap 同步 upload 约 4-8ms,4K Bitmap 可达 20ms+**--这些数字直接叠加到帧时间,超出 16.67ms(60Hz)就会掉帧。
+**1080p RGBA Bitmap 同步 upload 约 4-8ms,4K Bitmap 可达 20ms+**--这些数字直接叠加到帧时间,超出 16.67ms(60Hz)就会掉帧。
 
 ### 两级优化机制
 
@@ -295,7 +296,7 @@ Android O 引入 `Bitmap.Config.HARDWARE`,像素数据直接存储于图形内�
 
 **机制二:Bitmap.prepareToDraw()(API 24+,Android N+ 增强)**
 
-Android N 增强 `prepareToDraw()` 行为:调用后系统向 RenderThread 消息队列 post 异步任务,在 RenderThread 空闲时(帧间)执行真正的像素上传,使 upload 不出现在 critical rendering path 上。
+Android N 增强 `prepareToDraw()` 行为:调用后系统向 RenderThread 消息队列 post 异步任务,在 RenderThread 空闲时(帧间)执行像素上传,使 upload 不出现在 critical rendering path 上。
 
 ```java
 Bitmap bitmap = BitmapFactory.decodeResource(res, R.drawable.large_image);
@@ -423,7 +424,7 @@ LIMIT 20;
 
 最典型的表现是 `performTraversals` 中 measure/layout 阶段占据了大部分帧时间。当 View 层级嵌套超过 10 层(尤其是多层 RelativeLayout 互相嵌套),或者自定义 View 的 `onMeasure` 实现中多次调用 `requestLayout`,measure 阶段的递归遍历开销会呈指数增长--每多一层嵌套,measure 的调用次数就可能翻倍。
 
-在 Perfetto 中展开 `performTraversals` 的 `measure` / `layout` 子切片,可以直接看到耗时分布。如果 measure 阶段出现明显的红色条带(超过 8ms),基本可以确认是布局复杂度的问题。Layout Inspector 是另一把利器--它可以可视化展示 View 树的深度,帮助我们快速定位嵌套过深的区域。
+在 Perfetto 中展开 `performTraversals` 的 `measure` / `layout` 子切片,能直接看到耗时分布。如果 measure 阶段出现明显的红色条带(超过 8ms),基本可以确认是布局复杂度的问题。Layout Inspector 是另一把利器--它可以可视化展示 View 树的深度,帮助我们快速定位嵌套过深的区域。
 
 优化方向很直接:用 ConstraintLayout 替代多层嵌套,减少 View 树深度;避免在 `onMeasure` 中创建对象(这个方法可能在一帧内被调用多次);对于内容固定的列表,`RecyclerView.setHasFixedSize(true)` 可以跳过不必要的 measure 请求。
 
@@ -456,7 +457,7 @@ GPU 过载的优化方向是"减少 GPU 的工作量":降低过度绘制(在开�
 - GPU counter 或 GPU busy track
 - 是否伴随 `trimMemory`、buffer 重新分配、纹理上传突增
 
-**优化建议**:同进程弹层优先用 Fragment / View 复用同一棵 View 树,减少真正的多 Window;分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU,别把所有锅都甩给主线程。
+**优化建议**:同进程弹层优先用 Fragment / View 复用同一棵 View 树,减少独立 Window;分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU,别把所有锅都甩给主线程。
 
 [图:同进程双窗口与跨进程分屏的 RenderThread 时序对比。上半部分显示同进程两个窗口共用一条 UI Thread 和一条 RenderThread;下半部分显示双进程各自渲染,竞争汇合到 SurfaceFlinger、GPU 和 fence。]
 
@@ -524,14 +525,14 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 | **Android 11 (API 30)** | BLASTBufferQueue 进入 AOSP 主线 | 窗口状态与 buffer 提交更容易一起提交并保持同步,底层 BufferQueue 机制仍保留 |
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比,Jank 检测更直接 |
 | **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围继续扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
-| **Android 16 (API 36)** | ADPF 闭环反馈、分片 GPU 并行提交 | RenderThread 接入 `PerformanceHintManager` 反馈闭环，Adreno 830+ 驱动支持多分片并行命令提交 |
+| **Android 16 (API 36)** | ADPF 反馈机制、分片 GPU 并行提交 | RenderThread 接入 `PerformanceHintManager` 反馈机制，Adreno 830+ 驱动支持多分片并行命令提交 |
 | **Android 17 (API 37)** | DeliQueue 无锁消息队列 | UI Thread 与 RenderThread 之间的任务投递不再有锁竞争，掉帧率下降约 4%-7.7% |
 
 ## 常见误区
 
 **误区一:"掉帧都是主线程的问题"**
 
-不全对。主线程确实是最常见的瓶颈来源,但 RenderThread 的 GPU 过载同样会导致掉帧。如果 `syncFrameState` 占了 doFrame 的很大比例,说明问题在 RenderThread 侧。必须同时看两条 Track。
+不全对。主线程是最常见的瓶颈来源之一,但 RenderThread 的 GPU 过载同样会导致掉帧。如果 `syncFrameState` 占了 doFrame 的很大比例,说明问题在 RenderThread 侧。必须同时看两条 Track。
 
 **误区二:"RenderThread 不受主线程影响"**
 
@@ -543,7 +544,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 
 **误区四:"queueBuffer 耗时等于 GPU 渲染耗时"**
 
-不是。GPU 渲染是异步的,RenderThread 提交命令后 GPU 会在后台继续执行。真正容易把 RenderThread 卡住的,通常是下一次 `dequeueBuffer()` 时等待 release fence,也就是等旧 buffer 被 SurfaceFlinger / HWC 用完后再回收。
+不是。GPU 渲染是异步的,RenderThread 提交命令后 GPU 会在后台继续执行。更容易把 RenderThread 卡住的通常是下一次 `dequeueBuffer()` 时等待 release fence,也就是等旧 buffer 被 SurfaceFlinger / HWC 用完后再回收。
 
 ## 总结
 
