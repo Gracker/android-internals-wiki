@@ -27,10 +27,10 @@ sources:
   path: https://developer.android.com/ndk/reference/group/tracing
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
@@ -38,7 +38,7 @@ task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-15T01:36:05+08:00"
-task2b_result: "pending"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-14T23:25:54+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
@@ -276,7 +276,7 @@ trace("Home#loadFirstFeed") {
 
 这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。
 
-协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。`Trace.beginSection()` / `endSection()` 内部依赖线程本地（ThreadLocal）的栈结构维护嵌套关系。挂起时协程让出线程，但 `endSection()` 还没被调用；线程转去执行其他协程或系统任务时，后续所有 `beginSection()` 调用都会被压入这条未关闭的 slice 下面——Perfetto 里不仅出现跨线程的错误长区间，后续 trace 事件也全部变成这条 slice 的子节点，导致整个 trace 视图被污染。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
+协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。同步 slice 是线程轨道内的嵌套事件，`beginSection()` / `endSection()` 必须在同一线程配对。挂起时协程让出线程，但 `endSection()` 还没被调用；线程转去执行其他协程或系统任务时，后续所有 `beginSection()` 调用都会被压入这条未关闭的 slice 下面——Perfetto 里不仅出现跨线程的错误长区间，后续 trace 事件也全部变成这条 slice 的子节点，导致整个 trace 视图被污染。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
 
 这类写法会在 Perfetto 里产生"视图污染"，可以改成按线程和异步跨度分层标记：
 

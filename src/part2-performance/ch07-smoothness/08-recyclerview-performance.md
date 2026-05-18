@@ -462,6 +462,14 @@ GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout �
 
 ## 参考资料
 
+
+### Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 DeliQueue 采用 Treiber Stack + Min-Heap 无锁设计，targetSdk>=37 启用。RecyclerView GapWorker 预取机制无变化，但受益于 MessageQueue 锁竞争消除，主线程延迟降低。Google 官方博客一手参考。
+- 注入时间：2026-05-18
+- 价值：Google 官方博客一手参考，DeliQueue Treiber Stack 设计与 RecyclerView 预取性能关联分析
+
 - **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java`
 - **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java`
 - **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java`

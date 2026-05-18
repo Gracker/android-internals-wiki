@@ -25,9 +25,9 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/bundletool"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/content/pm/PackageParser.java;l=3878-3885"
+    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java;l=1070"
+    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/com/android/internal/content/NativeLibraryHelper.java"
   - type: aosp
     path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h"
   - type: book-structure
@@ -40,17 +40,17 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-14T19:10:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 3 处；写作层通过，等待 Task9 技术复核。"
-task2b_result: pending
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-14'
@@ -202,7 +202,7 @@ android {
 
 这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果一刀切删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
 
-Android 平台安装 native 库时，会按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到时再看 secondary ABI；相关解析与安装路径可在 `PackageParser`、`InstallPackageHelper` 和 native library helper 相关代码中追到。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageParser.java; frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java]
+Android 平台安装 native 库时，会按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到时再看 secondary ABI。安装期 ABI 选择链路为 `PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索 `.so`。[已验证: AOSP master, frameworks/base/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java; frameworks/base/core/java/com/android/internal/content/NativeLibraryHelper.java]
 
 `android:extractNativeLibs` 和 AGP 的 native library packaging 策略会影响 `.so` 是否从 APK 解压到文件系统。Android 6.0+ 支持未压缩且页对齐的 native 库直接从 APK 加载；这能减少磁盘副本，但 APK 内 `.so` 可能不再经过 ZIP 压缩。工程上不能只看 APK 文件大小，要同时比较下载大小、安装后占用、启动加载成本和崩溃还原能力。更细的 AAB / 动态特性分发策略详见 25.8 节。
 

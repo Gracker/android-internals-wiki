@@ -41,6 +41,7 @@ task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
+last_task6_audit: "2026-05-18"
 section: "16.2"
 status: finalized
 pipeline_stage: ready-to-publish
@@ -82,13 +83,13 @@ last_task9_at: "2026-04-21T13:57:22+08:00"
 
 ## 为什么要关注版本变更
 
-每个 Android 版本发布时，开发者注意力通常集中在新 API 和新功能上。但真正影响 App 性能表现的，往往是那些藏在 Behavior Changes 文档角落里的"小字"——后台执行限制收紧了、前台服务的超时变短了、某个性能 API 的行为改了。如果你的 App 还在用旧版本的假设跑在新系统上，性能表现可能在你不知不觉中退化。
+每个 Android 版本发布时，开发者注意力通常集中在新 API 和新功能上。但影响 App 性能表现的，往往是那些藏在 Behavior Changes 文档角落里的"小字"——后台执行限制变多了、前台服务的超时变短了、某个性能 API 的行为改了。如果你的 App 还在用旧版本的假设跑在新系统上，性能表现可能在你不知不觉中退化。
 
 这一节不是简单罗列 Release Notes（你可以直接去 developer.android.com 看）。我们要做的是把这些变更**按对性能的实际影响**组织起来，告诉你在分析性能问题时，哪些版本行为差异是你需要考虑的变量。
 
 本章按两条线展开：先按版本走一遍性能相关的关键变更（从 Android 12 到 Android 16），再按主题（后台限制、性能 API、废弃 API、迁移策略）横向梳理，方便你带着具体问题来查。
 
-## Android 12（API 31）：后台执行开始收紧
+## Android 12（API 31）：后台执行限制增多
 
 Android 12 在性能方面的影响，主要集中在**后台执行限制**和**前台服务约束**上。这些变化通常不提升 App 运行速度，但会改变它"在后台能做多少事"。
 
@@ -152,9 +153,9 @@ Android 13 将 `TextView` 的断字（hyphenation）性能提升了约 200%。�
 
 ### Choreographer API 的关键里程碑
 
-Android 13 在 Choreographer 的演进中是一个重要节点。它引入了 `Choreographer.VsyncCallback` 和 NDK 端的 `AChoreographer_postVsyncCallback`，允许 App 接收更详细的帧时间信息。更重要的是，`AChoreographerFrameCallbackData` 负载提供了多个候选帧时间线（frame timelines），App 可以根据渲染截止时间和期望呈现时间选择合适的时间线。
+Android 13 在 Choreographer 的演进中是一个重要节点。它引入了 `Choreographer.VsyncCallback` 和 NDK 端的 `AChoreographer_postVsyncCallback`，允许 App 接收更详细的帧时间信息。`AChoreographerFrameCallbackData` 负载还提供了多个候选帧时间线（frame timelines），App 可以根据渲染截止时间和期望呈现时间选择合适的时间线。
 
-这意味着在 Android 13+ 上，App 可以在渲染截止时间过近时动态简化渲染（比如跳过某些非关键绘制），而不必总是努力在下一个 VSync 前完成所有工作。这个能力是后续版本中 Frame Pacing 和自适应刷新率的基础。
+在 Android 13+ 上，App 可以在渲染截止时间过近时动态简化渲染（比如跳过某些非关键绘制），而不必总是努力在下一个 VSync 前完成所有工作。这个能力是后续版本中 Frame Pacing 和自适应刷新率的基础。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.VsyncCallback]
 [来源: intake/research-feeds/2026-04-02-11-ch02-choreographer-api-evolution-history.md]
@@ -169,7 +170,7 @@ Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进
 
 这对性能分析有直接意义：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
 
-冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。这意味着如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
+冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#freeze-cached-apps]
 
@@ -184,7 +185,7 @@ Android 14 要求每个前台服务声明至少一个 `foregroundServiceType`，
 
 ### JobScheduler 对 ANR 的惩罚
 
-Android 14 引入了新的限制：如果一个 App 的 `JobService` 在 `onStartJob()`、`onStopJob()` 或 `onBind()` 中反复导致 ANR，系统会将该 App 的所有 Job 放入受限的 standby bucket。这意味着你的后台任务执行窗口会被大幅压缩。如果你的性能分析框架使用 `JobScheduler`，需要确保 `onStartJob()` 在主线程上的工作量极小，耗时操作放到后台线程。
+Android 14 引入了新的限制：如果一个 App 的 `JobService` 在 `onStartJob()`、`onStopJob()` 或 `onBind()` 中反复导致 ANR，系统会将该 App 的所有 Job 放入受限的 standby bucket。你的后台任务执行窗口会被大幅压缩。如果你的性能分析框架使用 `JobScheduler`，需要确保 `onStartJob()` 在主线程上的工作量极小，耗时操作放到后台线程。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#jobScheduler-anr]
 
@@ -196,13 +197,13 @@ Android 14 支持字体缩放至 200%，但对大字号采用非线性缩放—�
 
 ## Android 15（API 35）：ADPF 深化与 ProfilingManager 诞生
 
-Android 15 引入了两个对性能分析工作流有深远影响的 API：**ProfilingManager** 和 **ApplicationStartInfo**，同时继续深化 ADPF。
+Android 15 引入了两个会改变性能分析工作流的 API：**ProfilingManager** 和 **ApplicationStartInfo**，同时继续深化 ADPF。
 
 ### ProfilingManager：App 内性能数据采集
 
 Android 15 首次引入 `ProfilingManager` API。在此之前，获取 Perfetto trace 或 heap dump 需要通过 `adb` 命令或 `Debug` 类的方法，只能在开发阶段使用。`ProfilingManager` 让 App 可以在运行时请求系统采集 profiling 数据，包括 Java heap dump、stack sample 和 system trace。
 
-这个 API 的核心价值是**线上性能诊断**。你可以在 App 的性能监控框架中集成 `ProfilingManager`，当检测到异常指标（如帧时间突然飙高）时，自动触发一次 trace 采集。采集到的数据保存在 App 的 data 目录，可以在后续启动时上传分析。
+这个 API 更适合做**线上性能诊断**。你可以在 App 的性能监控框架中集成 `ProfilingManager`，当检测到异常指标（如帧时间突然飙高）时，自动触发一次 trace 采集。采集到的数据保存在 App 的 data 目录，可以在后续启动时上传分析。
 
 ```java
 // API 35 基础用法：手动触发
@@ -289,9 +290,9 @@ pm.addProfilingTriggers(
 
 Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法，返回触发进程启动的具体组件类型（Activity / BroadcastReceiver / ContentProvider / Service / Other）。
 
-这个信息对启动优化至关重要。
+启动优化需要先区分触发组件。
 
-多数开发者假设冷启动由 Activity 触发，但实际上 ContentProvider 初始化（多个 SDK 各自注册的 ContentProvider）和 BroadcastReceiver 也会触发进程创建。不同触发路径的初始化逻辑和优化策略差异很大。
+多数开发者假设冷启动由 Activity 触发，但 ContentProvider 初始化（多个 SDK 各自注册的 ContentProvider）和 BroadcastReceiver 也会触发进程创建。不同触发路径的初始化逻辑和优化策略差异很大。
 
 有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
 
@@ -302,7 +303,7 @@ Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法�
 
 Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 runtime API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
 
-从性能角度看，这意味着 Activity 因窗口尺寸变化会更频繁地 recreate。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
+从性能角度看，Activity 因窗口尺寸变化会更频繁地 recreate。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
 
 [已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#adaptive-apps]
 [来源: intake/research-feeds/2026-04-03-11-android16-adaptive-apps-orientation-resize.md]

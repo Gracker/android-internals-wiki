@@ -4465,5 +4465,45 @@
       "summary": "5 sections reworked: SELinux AVC, Throwable stack depth, UClamp/SQL/base_slice_ns, Binder freezer API, VSyncPredictor version drift"
     }
   ],
-  "task2a_result": "processed 26.13 ready-for-review"
+  "task2a_result": "processed 26.13 ready-for-review",
+  "section_25_6": {
+    "section": "25.6",
+    "title": "APK 体积分析与瘦身",
+    "last_task2b_at": "2026-05-18T11:27:58+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "section_19_13": {
+    "section": "19.13",
+    "title": "androidx.tracing（Tracing SDK）",
+    "last_task2b_at": "2026-05-18T11:27:58+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "section_19_23": {
+    "section": "19.23",
+    "title": "网络 APM 底层捕获原理",
+    "last_task2b_at": "2026-05-18T11:27:58+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "section_9_5": {
+    "section": "9.5",
+    "title": "案例集",
+    "last_task2b_at": "2026-05-18T11:27:58+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "section_25_8": {
+    "section": "25.8",
+    "title": "App Bundle 与按需分发",
+    "last_task2b_at": "2026-05-18T11:27:58+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  }
 }

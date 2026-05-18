@@ -432,3 +432,13 @@ fun interface Dns {
 - 网络切换后是否刷新高价值域名，同时保留旧缓存短时兜底。
 - 是否通过 EventListener 同时采集 DNS、connect、TLS、TTFB、失败类型。
 - 弱网演练是否覆盖 HTTPDNS 服务不可达、返回空、多 IP 失败、网络切换和 Dispatcher 挤占。
+
+## 延伸阅读
+
+
+### OkHttp Dns.lookup() 执行边界与 HTTPDNS 工程化陷阱
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md
+- 类型：DeepResearch 调研结果
+- 摘要：OkHttp Dns.lookup() 同步阻塞，RouteSelector 在建连前调用。HTTPDNS 在 lookup() 内实时请求会递归依赖同一 OkHttpClient 形成死锁。Square 推荐 bootstrap client 独立实例模式。OkHttp 5.0+ 支持 Happy Eyeballs。
+- 注入时间：2026-05-18
+- 价值：源码级分析 OkHttp DNS 调用链与 HTTPDNS 递归依赖陷阱，bootstrap client 最佳实践

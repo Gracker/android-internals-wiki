@@ -300,6 +300,38 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 
 这套边界也适用于其它 vendor 调度功能。性能文章里要避免把单一厂商、单一固件版本的行为写成 Android 通用规律；承认未知反而更稳。
 
+
+
+<!-- AIW-源码调研-2026-05-18 -->
+## 补充：2026-05-18 每日调研
+
+**选题来源：** daily-topics.json §17.4  
+**核心发现（待一手验证）：**
+
+1. **EEVDF 全面取代 CFS**：Linux 6.12 内核中 EEVDF（Earliest Eligible Virtual Deadline First）成为唯一 fair-class 调度策略，完全移除了 CFS 的 `weight` 权重体系。关键源码路径：`kernel/common/sched/core.c` 的 `pick_eevdf()` 函数依赖 `vruntime` + `eligibility` 双边界机制。
+
+2. **sched_ext（SCX）三层联动**：
+   - 用户态：`GameManagerService.java` L616-682 提供 `writeGameStateToBpMap()`，通过 `game_state_map` BPF map 推送游戏优先级
+   - BPF 加载：`BpfLoader.cpp` L117, L250 负责加载 BPF 程序
+   - 内核态：`kernel/common/sched/ext.c` 注册 `sched_ext_sched_class`，OEM 可通过 `struct sched_ext_ops` 注入自定义调度逻辑
+
+3. **版本差异**：Android 14 引入 sched_ext 预览，Android 15 官方支持，Android 16 EEVDF 混用，Android 17 EEVDF only + SCX 完整框架
+
+**源码位置（待深入）：**
+- `kernel/common/sched/core.c` - EEVDF pick path（需验证）
+- `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java` L616-682 - BPF map 写入
+- `system/bpf/bpfloader/BpfLoader.cpp` L117, L250 - BPF 程序加载
+- `packages/modules/Connectivity/bpf_progs/bpf_shared.h` - BPF map 结构共享
+
+**未验证项（标注未经一手验证）：**
+- `kernel/common/sched/ext.c` 实际内容，基于 upstream kernel 6.12 推测
+- `ext_bpf.c` BPF map 结构体定义，AOSP master 未找到
+- 高通/联发科 OEM SCX 模块实现案例
+
+**关联报告：** `2026-05-18-android-17-sched-ext-eevdf-oom-research.md`（DeepResearch/）
+<!-- AIW-源码调研-2026-05-18 -->
+
+
 ## 参考资料
 
 - [已验证: Linux sched_ext 官方文档, `Documentation/scheduler/sched-ext.rst`](https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst)
