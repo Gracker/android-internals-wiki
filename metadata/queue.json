@@ -12294,23 +12294,62 @@
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/22-android-xr-spatial-ui-rendering.md"
       ]
+    },
+    {
+      "id": "task9-audit-18.16-api-version-matrix",
+      "section": "18.16",
+      "priority": 85,
+      "title": "游戏引擎渲染链路 API 版本矩阵错误",
+      "description": "ADPF、Frame Rate API、Game Mode API 三处版本边界与官方 Android API 文档不一致，可能导致错误的 API level guard 或运行时分支。",
+      "issue_type": "version-differences-api-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API 版本错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md:214",
+          "detail": "ADPF 段把 PerformanceHintManager 的 updateTargetWorkDuration 写成 Android 13 才增加，并写入 Android 14+ CPU load up/down hint。官方 PerformanceHintManager.Session 文档显示 updateTargetWorkDuration(long) 自 API 31 可用；AOSP Performance Hint API 文档区分 Android 12 Java PerformanceHintManager、Android 13 NDK API、Android 15 DP1 reportActualWorkDuration/AWorkDuration 演进；当前公开 API 文档未对应到 Android 14 CPU load up/down hint 这一命名。",
+          "suggestion": "改成版本矩阵：API 31 Java PerformanceHintManager + updateTargetWorkDuration/reportActualWorkDuration(long)；API 33 NDK APerformanceHint；API 34 setThreads；API 35 setPreferPowerEfficiency；若要写 AWorkDuration/CPU-GPU 拆分或 auto timing/surface binding，需要按当前 NDK 文档单独标版本并避免写成 Android 14 CPU load up/down。"
+        },
+        {
+          "type": "版本差异/API 签名错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md:222-226",
+          "detail": "Frame Rate API 标为 Android 11+，但 Java 侧列出的 Surface.setFrameRate(float, int, int) 是 API 31；Android 11/API 30 对应的是 Surface.setFrameRate(float, int)。",
+          "suggestion": "拆成 API 30：Surface.setFrameRate(float, int) / ANativeWindow_setFrameRate；API 31：带 changeFrameRateStrategy 的 Java 三参数和 native change strategy 入口；若正文覆盖 API 36，再补 FRAME_RATE_COMPATIBILITY_AT_LEAST 的边界。"
+        },
+        {
+          "type": "版本差异/API 返回值错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md:233-242",
+          "detail": "GameManager#getGameMode() 被写成 Android 12+ 返回四种状态，并把 GAME_MODE_CUSTOM 放在同一组。官方 GameManager 文档显示 getGameMode() 返回值还包括 GAME_MODE_UNSUPPORTED；GAME_MODE_CUSTOM 是 API 34，并且 targetSdkVersion <= TIRAMISU 时 CUSTOM 会为兼容返回 STANDARD。",
+          "suggestion": "将 Android 12+ 基础状态写为 UNSUPPORTED/STANDARD/PERFORMANCE/BATTERY；另列 API 34 CUSTOM 及 targetSdk 兼容返回规则，避免读者在 Android 12/13 或低 targetSdk 游戏上按 CUSTOM 分支写判断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T06:29:22+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 350,
+    "total_entries": 354,
     "p0_count": 149,
-    "last_updated": "2026-05-19T04:11:00+08:00",
-    "updated_by": "openclaw-task2a",
+    "last_updated": "2026-05-19T06:29:22+08:00",
+    "updated_by": "openclaw-task9",
     "pending_entries": 151,
     "updated_date": "2026-05-19",
-    "last_updated_by": "openclaw-task2a",
+    "last_updated_by": "openclaw-task9",
     "pending": 151,
-    "completed_entries": 197,
+    "completed_entries": 201,
     "last_task2a_gap_mining": "14.15",
     "last_task2a_gap_mining_at": "2026-05-19T03:25:00+08:00"
   },
-  "last_updated": "2026-05-19T04:11:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-19T06:29:22+08:00",
+  "last_updated_by": "openclaw-task9",
   "pending": 151,
   "last_task2a_completed": "14.15",
   "last_task2a_completed_at": "2026-05-19T04:11:00+08:00",
