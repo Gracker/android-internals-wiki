@@ -11317,6 +11317,73 @@
       "original_review_log": "logs/review/2026-05-18-12-review.md",
       "last_reviewed_by": "task6-review",
       "last_reviewed_at": "2026-05-18T12:26:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-18-25.6-apk-analyzer-raw-size",
+      "section": "25.6",
+      "section_title": "APK 体积分析与瘦身",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "tool-metric-source-accuracy",
+      "title": "APK Analyzer Raw File Size 口径写反",
+      "description": "正文把 APK Analyzer 的 Raw File Size 定义成 ZIP entry 解压后的原始大小；官方文档定义为 zipped/raw file size，即该实体对 APK 总大小的贡献，Download Size 才是 Google Play 分发压缩估算。",
+      "reason": "[Deep Tech Review] APK Analyzer 核心体积指标口径与官方文档不一致，会误导 CI 门禁和增长归因。",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-12-deep-review.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "数据口径/官方文档不一致",
+          "location": "L98-L102「Raw File Size」定义",
+          "detail": "Android Developers《Analyze your build with the APK Analyzer》说明 APK Analyzer shows the zipped file size (or raw file size) and download file size；Raw File Size represents the contribution of the entity to the total APK size。正文写成“ZIP entry 解压后的原始大小”，把未压缩大小与 APK Analyzer 原始口径混淆。",
+          "suggestion": "改为“Raw File Size：实体在 APK ZIP 中对总包大小的贡献 / zipped raw size；Download Size：Google Play 分发压缩估算”。如需讨论解压后大小，单独用 ZIP uncompressed size / 安装后占用口径说明，不要并入 APK Analyzer Raw File Size。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T12:44:40+08:00"
+    },
+    {
+      "id": "task9-2026-05-18-25.6-pad-native-code-boundary",
+      "section": "25.6",
+      "section_title": "APK 体积分析与瘦身",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "distribution-boundary-cross-reference",
+      "title": "低频 native 库下发方案误列 Play Asset Delivery",
+      "description": "正文建议将低频 .so 放到 Play Asset Delivery；官方 PAD asset pack 由 textures/shaders/sounds 等资产组成，不包含 executable code。25.8 已写明 PAD 不处理可执行代码，两个章节口径冲突。",
+      "reason": "[Deep Tech Review] 原生库是可执行代码，不能按 PAD 资产包方案作为常规推荐；应改为 Dynamic Feature Module / Play Feature Delivery 或自研下载并明确加载与政策边界。",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-12-deep-review.md"
+      ],
+      "related_files": [
+        "src/part5-app/ch25-power-size/06-apk-analysis.md",
+        "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "分发边界/交叉引用不一致",
+          "location": "25.6 L190-L193「native 库是否属于低频功能」；25.8 L206-L218「PAD 处理大资源」",
+          "detail": "25.6 把 OCR、地图、音视频编辑等低频 native 库列为适合 PAD；Android Developers PAD 文档明确 asset packs contain assets such as textures, shaders, and sounds, but no executable code。25.8 已写“PAD 处理大资源，不处理可执行代码”，与 25.6 冲突。",
+          "suggestion": "把 .so 代码下发建议收窄为 Dynamic Feature Module / Play Feature Delivery；PAD 只保留模型、纹理、地图数据、素材等非可执行资源。国内自研动态代码下载需另列安全、审核、System.load 路径和回滚边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T12:44:40+08:00"
     }
   ],
   "metadata": {
