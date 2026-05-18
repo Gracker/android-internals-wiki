@@ -56,6 +56,10 @@ task2b_result: fixed
 last_task9_at: "2026-04-28T09:21:00+08:00"
 task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
+last_task6_at: "2026-05-18T18:06:00+08:00"
+last_task6_audit: "2026-05-18"
+last_task6_audit_result: l1-light-edit
+last_task6_audit_log: "logs/review/2026-05-18-18-audit.md"
 ---
 
 # Choreographer 与渲染流水线
@@ -119,7 +123,7 @@ graph LR
 
 3. **保证响应性**：通过合理的回调优先级，确保用户的输入能够得到最快的响应。
 
-在 Android 12 及以上版本中，Choreographer 还承担了更复杂的任务，包括高刷新率屏幕的帧调度、自适应刷新率的支持等。它不仅仅是一个简单的同步器，更是一个智能的帧率管理器。
+在 Android 12 及以上版本中，Choreographer 还承担了更复杂的任务，包括高刷新率屏幕的帧调度、自适应刷新率的支持等。这些能力让它在同步 VSync 之外，也参与高刷新率场景下的帧节奏协调。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer]
 
@@ -167,7 +171,7 @@ sequenceDiagram
 
 ## doFrame() 的完整执行流程
 
-`doFrame()` 是 Choreographer 在一帧里真正执行调度的地方。我们分析主线程 slice 时，看到的 `Choreographer#doFrame <vsyncId>` 就从这里开始。
+`doFrame()` 是 Choreographer 在一帧里执行调度的地方。我们分析主线程 slice 时，看到的 `Choreographer#doFrame <vsyncId>` 就从这里开始。
 
 ### android-16.0.0_r1 中与帧调度直接相关的源码摘录
 
@@ -403,7 +407,7 @@ Choreographer#doFrame [  12.345ms]  # 红色表示超时
 
 Perfetto 作为现代 Android 性能分析工具，提供了更强大的 Choreographer 事件可视化：
 
-1. **Timeline View**：可以看到每个 `Choreographer#doFrame` 事件的完整时序
+1. **Timeline View**：展示每个 `Choreographer#doFrame` 事件的完整时序
 2. **Frame Timeline**：显示实际的帧完成时间线 vs. 期望的帧时间线
 3. **SQL 查询**：可以通过 `WHERE name LIKE 'Choreographer#doFrame%'` 查主线程帧切片；如果要看 Actual / Expected Timeline，就查 Frame Timeline 专用表
 
@@ -629,7 +633,7 @@ Compose 1.7 在内部引入了 `PausableComposition`，1.10 将其设为默认�
 
 Choreographer 的设计哲学——VSync 同步、回调优先级、同步屏障——都是围绕一个目标服务的：让每一帧都能在预算内完成从用户输入到像素呈现的完整旅程。而 FrameCallback 和 FrameMetrics 这套监控体系，以及 Perfetto 中那些精确的 Trace 标记，则是我们验证这段旅程是否顺利的工具。
 
-在下一节中，我们将沿着渲染管线继续向下走，看看 MainThread 和 RenderThread 是如何协作完成一帧的实际渲染的——Choreographer 发令之后，真正的绘制工作才刚刚开始。
+在下一节中，我们将沿着渲染管线继续向下走，看看 MainThread 和 RenderThread 是如何协作完成一帧的实际渲染的——Choreographer 发令之后，绘制工作才刚刚开始。
 
 **厂商级优化实践**
 
@@ -657,7 +661,7 @@ Project Butter 引入 Choreographer。最早的职责就是让 UI 线程的输�
 **Android 13（API 33）**  
 `doFrame()` 接入 `DisplayEventReceiver.VsyncEventData`，公开 API 也同步增加 `postVsyncCallback(VsyncCallback)`、`FrameData` 和 `FrameTimeline`。应用侧从 `FrameData.getPreferredFrameTimeline()`、`FrameTimeline.getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()` 读取这组帧时间线信息，Perfetto 里的 Frame Timeline 也从这一版开始更容易和 App 主线程 slice 关联起来。
 
-后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标和 trace 可观测性上继续补细节。本节真正需要记住的分界线有四个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION`，API 33 看 `VsyncCallback` / `FrameData` / `FrameTimeline` 这组公开入口。
+后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标和 trace 可观测性上继续补细节。本节需要记住的分界线有四个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION`，API 33 看 `VsyncCallback` / `FrameData` / `FrameTimeline` 这组公开入口。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/android/view/Surface; developer.android.com/reference/android/view/WindowInsetsAnimation; developer.android.com/reference/android/view/Choreographer.VsyncCallback; developer.android.com/reference/android/view/Choreographer.FrameData; developer.android.com/reference/android/view/Choreographer.FrameTimeline; AOSP android-16.0.0_r1, Choreographer.java]
 
@@ -670,7 +674,7 @@ Project Butter 引入 Choreographer。最早的职责就是让 UI 线程的输�
 
 ### "doFrame 超时就是卡顿吗？"
 
-不一定。`doFrame` 耗时超过帧预算（60Hz 下 16.6ms）是一个强烈的信号，但要确认是否构成用户可感知的卡顿，还需要看这帧是否真的被延迟呈现了。在 API 33+ 的 Frame Timeline 机制下，即使 doFrame 耗时较长，如果帧最终在期望的呈现时间之前完成，用户不会感知到卡顿。反过来，如果帧虽然很快完成，但因为 SurfaceFlinger 合成延迟导致实际呈现延迟了一帧，用户依然会感知到卡顿。所以“doFrame 超时”是分析卡顿的起点，不是终点。
+不一定。`doFrame` 耗时超过帧预算（60Hz 下 16.6ms）是一个强烈的信号，但要确认是否构成用户可感知的卡顿，还需要看这帧是否已经延迟呈现。在 API 33+ 的 Frame Timeline 机制下，即使 doFrame 耗时较长，如果帧最终在期望的呈现时间之前完成，用户不会感知到卡顿。反过来，如果帧虽然很快完成，但因为 SurfaceFlinger 合成延迟导致实际呈现延迟了一帧，用户依然会感知到卡顿。所以“doFrame 超时”是分析卡顿的起点，不是终点。
 
 ### "postFrameCallback 和 invalidate 的关系是什么？"
 
