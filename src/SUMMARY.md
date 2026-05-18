@@ -243,6 +243,7 @@ tags:
   - [14.12 APM / 可观测性平台与 SDK 选型](part3-tools/ch14-other-tools/12-apm-observability.md)
   - [14.13 Hook 基础设施与性能工具实现原理](part3-tools/ch14-other-tools/13-hook-infrastructure.md)
   - [14.14 Android Studio LeakCanary Profiler 与堆转储分析](part3-tools/ch14-other-tools/14-android-studio-leakcanary-profiler.md)
+  - [14.15 Winscope 与窗口/合成状态可视化调试](part3-tools/ch14-other-tools/15-winscope-window-composition-debugging.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)

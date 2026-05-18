@@ -12208,6 +12208,39 @@
           "suggestion": "改成“Debug.getPss() 走 ProcMemInfo.SmapsOrRollup() 聚合 smaps_rollup/smaps，并叠加 memtrack 与 swapPss；因此适合低频校准，不适合高频轮询”。如果保留“Android 14+ 节流/历史值”判断，需要明确它指系统侧 PSS 采集或 ActivityManager 口径，而不是把同进程 Debug.getPss() 一概写成缓存值。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-14.15-winscope-window-composition",
+      "section": "14.15",
+      "priority": 80,
+      "title": "Winscope 与窗口/合成状态可视化调试",
+      "description": "官方 Winscope 文档和每日信息显示，窗口状态、SurfaceFlinger layer、transaction、transition、ViewCapture 的可视化调试尚未在工具篇单独覆盖。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/15-winscope-window-composition-debugging.md"
+      ],
+      "sources": [
+        "https://source.android.com/docs/core/graphics/tracing-win-transitions",
+        "https://source.android.com/docs/core/graphics/winscope/capture/winscope",
+        "https://source.android.com/docs/core/graphics/winscope/capture/adb",
+        "https://source.android.com/docs/core/graphics/winscope/analyze/sf",
+        "https://source.android.com/docs/core/graphics/winscope/analyze/search",
+        "intake/daily-info/2026-05-19.md"
+      ],
+      "score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      }
     }
   ],
   "metadata": {
@@ -12219,7 +12252,9 @@
     "updated_date": "2026-05-19",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 152,
-    "completed_entries": 196
+    "completed_entries": 196,
+    "last_task2a_gap_mining": "14.15",
+    "last_task2a_gap_mining_at": "2026-05-19T03:25:00+08:00"
   },
   "last_updated": "2026-05-19T02:27:04+08:00",
   "last_updated_by": "task9-deep-tech-review",
