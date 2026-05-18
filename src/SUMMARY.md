@@ -195,6 +195,7 @@ tags:
   - [18.19 可变刷新率渲染管线](part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md)
   - [18.20 链路分析方法论](part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
   - [18.21 EyeDropper API 与跨设备协作性能](part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md)
+  - [18.22 Android XR 空间 UI 与环境资产渲染性能](part2-performance/ch18-rendering-pipelines/22-android-xr-spatial-ui-rendering.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
