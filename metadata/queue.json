@@ -11908,6 +11908,43 @@
         "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
       ],
       "added_at": "2026-05-18T21:10:00+08:00"
+    },
+    {
+      "id": "task9-audit-9.7-provider-timeout-16kb-version",
+      "section": "9.7",
+      "priority": 85,
+      "title": "ANR 非技术故障诊断：ContentProvider timeout 与 16KB 页大小版本边界需修正",
+      "description": "P1: ContentProvider publish/provider call timeout 被混写为 10s；P1: Android 15+/API35+ 16KB 页大小与 VMA 锁诊断优先级缺少设备/内核前提。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "第 1 步类型表 / line 105：ContentProvider 行",
+          "detail": "正文把 “Provider publish / provider call timeout” 合并写成“常见预算 10s”。AOSP android-16 中 10s 对应 ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS；等待 provider ready 是 publish+10s；远端 provider call 的 ANR 检测来自 ContentProviderClient.setDetectNotResponding(timeoutMillis)，并不是通用 10s 预算。",
+          "suggestion": "拆成两类：provider publish 超时约 10s（受 HW_TIMEOUT_MULTIPLIER 影响）；等待 ready 约 20s；provider call ANR 要写成由 setDetectNotResponding 配置，不能默认说 10s。"
+        },
+        {
+          "type": "版本差异",
+          "location": "CPU 饥饿、reclaim、freezer / line 237：Android 15+ 16KB 页大小段",
+          "detail": "正文把“Android 15+”和“API 35+ 设备”写成默认 16KB 页大小，并进一步推导 mmap/munmap VMA 锁竞争降低、D 状态优先转向驱动锁。官方 AOSP 文档只说明 Android 15 起支持构建 16KB page size，且 Android 15 默认未启用；16KB 只在 arm64 16KB kernel/设备配置下成立。VMA 锁诊断优先级缺少源码或实测支撑。",
+          "suggestion": "改为以 getconf PAGE_SIZE=16384 或 kernel page size 证据为前提；保留“页表大小约为 4KB 系统的 1/4”这类有来源的描述，删除或标注待验证的 VMA 锁/驱动锁优先级判断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T21:20:00+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "reason": "[Deep Tech Review idle audit] ContentProvider timeout/source semantics and Android 15+ 16KB page-size version boundary need rework."
     }
   ],
   "metadata": {

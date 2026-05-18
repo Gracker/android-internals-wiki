@@ -1983,3 +1983,9 @@
 - **建议**：Task2B 补 responseBodyStart/responseBodyEnd 的 OkHttp 语义边界，必要时拆分网络下载、应用消费、流式响应口径。
 
 - **review 日志**：logs/review/2026-05-18-12-review.md
+
+## [Task9 Idle Audit] 9.7 ANR 非技术故障诊断 — 2026-05-18
+- **类型**：源码锚点 / 版本差异
+- **位置**：frontmatter sources / lines 40、116、334：InputDispatcher.cpp 路径
+- **问题**：frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp 在 Android 11+ 标签存在；Android 8.1/10.0 的路径是 frameworks/native/services/inputflinger/InputDispatcher.cpp。正文引用明确标注 android-16，技术结论可用，但 applicable_versions 覆盖 Android 8-17，参考资料处缺少旧版本路径提示。
+- **建议**：参考资料或脚注补一句：Android 8-10 请查 services/inputflinger/InputDispatcher.cpp，Android 11+ 查 services/inputflinger/dispatcher/InputDispatcher.cpp。
