@@ -16,14 +16,22 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 6
 task6_l3_l4_issues: 0
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T22:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-18-22-deep-review.md"
+task9_review_notes: "2026-05-18 22: Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Top: 多 Trace 对比标准指标/回填能力写得超出当前实现。"
 last_task6_at: "2026-05-18T22:15:21+08:00"
 last_task6_review_log: "logs/review/2026-05-18-22-review.md"
 sources:
