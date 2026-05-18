@@ -58,6 +58,9 @@ pipeline_stage: ready-to-publish
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
 last_task9_at: '2026-04-21T07:38:43+08:00'
+last_task6_at: '2026-05-18T11:10:37+08:00'
+last_task6_audit: '2026-05-18'
+last_task6_audit_result: l1-light-edit
 ---
 
 # 专题解读
@@ -87,7 +90,7 @@ last_task9_at: '2026-04-21T07:38:43+08:00'
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-当一个 Trace 同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 时，真正难的不是把 Perfetto 打开，而是知道先看哪里、看到什么算异常、下一步该追哪条线索。
+当一个 Trace 同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 时，把 Perfetto 打开只是开始；难点在于知道先看哪里、看到什么算异常、下一步该追哪条线索。
 
 本节把日常最常见的五类分析场景，即启动、流畅性、Binder、内存、I/O，整理成独立的专题工作流。每个专题都按“问题现象 → 抓取配置 → Trace 中的定位步骤 → 关键判读方法”的顺序展开，拿到问题后可以直接照着走一遍。
 
@@ -409,9 +412,9 @@ LIMIT 20;
 
 **步骤二：用同一时间窗把 client 和 server 串起来**
 
-在 UI 里点中 client 侧的 Binder slice 后，先看同一时间窗里的 Flow 箭头和 server Binder thread。trace 里有 AIDL slice 时，`binder reply` 这一段下面通常还能看到接口名对应的子 slice；没有 AIDL slice 时，就退回 `binder_transaction` / `binder_transaction_received` 事件，加 `thread_state` 看 server thread 何时真正拿到 CPU。
+在 UI 里点中 client 侧的 Binder slice 后，先看同一时间窗里的 Flow 箭头和 server Binder thread。trace 里有 AIDL slice 时，`binder reply` 这一段下面通常还能看到接口名对应的子 slice；没有 AIDL slice 时，就退回 `binder_transaction` / `binder_transaction_received` 事件，加 `thread_state` 看 server thread 何时被调度到 CPU。
 
-这里的核心，不是去找一个神奇轨道，而是把一笔 transaction 的 client 发起时间、server 开始处理时间、server 处理完成时间放到同一时间轴里。三段时间一旦落稳，问题在 client、调度还是 server 端逻辑，基本就分出来了。
+这一步要把一笔 transaction 的 client 发起时间、server 开始处理时间、server 处理完成时间放到同一时间轴里。三段时间一旦落稳，问题在 client、调度还是 server 端逻辑，基本就分出来了。
 
 **步骤三：继续拆调度、锁竞争和服务端工作**
 
@@ -464,7 +467,7 @@ LIMIT 20;
 
 ### Perfetto 中的内存观测层次
 
-内存专题最容易混淆的地方，是“分配调用栈”“对象保留关系”“进程 RSS / PSS 曲线”其实是三套不同工具。
+内存专题最容易混淆的地方，是“分配调用栈”“对象保留关系”“进程 RSS / PSS 曲线”对应三套不同工具。
 
 - `linux.process_stats` 采样的是进程级 RSS、PSS 等指标，适合看宏观趋势
 - `android.heapprofd` 采的是分配调用栈，主战场是 native heap；Android 12+ 还能把 Java allocation sampling 记到同一条 `Heap Profile` 轨道里

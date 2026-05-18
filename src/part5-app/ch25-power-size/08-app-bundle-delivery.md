@@ -25,11 +25,11 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/bundletool"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/content/pm/PackageInstaller.java;l=407"
+    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/content/pm/PackageInstaller.java"
   - type: aosp
     path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java;l=1070"
+    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java"
   - type: book-structure
     path: "Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md"
   - type: book-structure
@@ -42,13 +42,13 @@ sources:
     path: "Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md"
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
 related_chapters: ["25.6", "25.7", "12.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 last_task9_review_log: logs/deep-review/2026-05-14-21-deep-review.md
 last_task9_at: 2026-05-14T21:20:00+08:00
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -57,7 +57,7 @@ task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-14T22:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-22-review.md"
 task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 3 处后通过；无新增 L3/L4 回炉项；既有 Task9 P0/P1 队列保留，等待 Task2B。"
-task2b_result: pending
+task2b_result: fixed
 
 ---
 
@@ -120,7 +120,7 @@ bundletool get-size total \
 
 `build-apks` 复现 Google Play 的服务端拆包过程，`get-size total` 给出某台设备需要下载的 APK 组合大小。CI 里应保存几个代表性设备配置：主流 arm64 高密度设备、低密度设备、多语言设备、平板或折叠屏设备。只用 universal APK 做体积门禁，会把 AAB 分发收益全部抹掉。[已验证: 官方文档, developer.android.com/tools/bundletool]
 
-Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 session 写入与提交接口，安装会进入 `PackageInstallerSession` 和 Package Manager 的解析、校验、复制流程；AOSP 代码里能追到 split APK 的会话安装与包解析路径。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java; frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java]
+Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 `createSession()` / `openSession()` / `write()` / `commit()` 接口，安装会进入 `PackageInstallerSession.installNonStaged()` → Package Manager 的解析、split 校验（`ApkLiteParseUtils.composePackageLiteFromApks()`）、复制流程；缺少 required split 时返回 `INSTALL_FAILED_MISSING_SPLIT`。这些入口在 AOSP `PackageInstaller.java` 和 `PackageInstallerSession.java` 中。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java]
 
 AAB 对包体积治理有两个边界。第一，AAB 不会替代 R8 和资源缩减；无用代码如果留在 base module，仍会进入所有用户的基础包。第二，AAB 不能自动判断业务功能冷热；模块边界、资源归属和下载时机仍由工程决定。详见 25.6、25.7 节。
 
@@ -234,7 +234,13 @@ PAD 的风险主要在可用性与缓存一致性：
 
 可选方案按风险从低到高排列：
 
-1. **用 `bundletool` 生成渠道 APK**：从同一 AAB 生成面向 ABI、密度、语言的 APK 或 universal APK，再按渠道上传。收益来自配置裁剪，风险低；缺点是渠道包数量、签名和回归范围会变大。
+1. **用 `bundletool` 生成渠道 APK**：从同一 AAB 按渠道能力生成不同产物，三类路径要分开：
+
+   - **渠道只收单 APK**：使用 `bundletool build-apks --mode=universal` 或传统 `productFlavor` / ABI split 产出独立 APK。不要把 device-specific split 拆成独立渠道包。
+   - **渠道 / 企业安装器支持 split APK session**：一次提交 base + required config splits。Android 10（API 29）+ 和所有 Google-certified 设备上，缺少 required split APK 会导致安装失败（sideload protection）。
+   - **universal APK 兜底**：国内渠道和 sideload 场景保留 universal APK 作为 fallback，但要单独记录大小，避免 Play 渠道的分发包收益掩盖其他渠道的实际下载成本。
+
+   收益来自配置裁剪，风险低；缺点是渠道包数量、签名和回归范围会变大。
 2. **自研大资源按需下载**：把模型、离线包、皮肤、模板和大媒体资源放到 CDN，由 App 做下载、校验、解压和缓存。收益清晰；成本集中在版本一致性、弱网恢复、磁盘清理和安全校验。
 3. **插件化或动态代码下载**：把低频代码拆成插件包或动态 dex / native 组件。收益可能高，但兼容性、稳定性、启动成本、安全审核和线上回滚都更难。Google Play 对动态可执行代码有明确政策要求，国内渠道也可能在加固或审核阶段拦截这类方案。[待验证: 具体渠道政策]
 
@@ -260,7 +266,17 @@ bundletool install-apks --apks=app-release.apks
 AAB、Dynamic Feature Module 和 PAD 上线后，CI 体积门禁要从“单包大小”改成“多设备、多路径、多时机”。至少保留四类检查：
 
 - **base download size**：代表用户首次安装成本，按主流设备配置记录 P50 / P90 下载大小。
-- **feature download size**：每个 on-demand module 的下载大小、首次使用等待时间和失败率。
+- **feature download size**：每个 on-demand module 的下载大小、首次使用等待时间和失败率。`bundletool get-size total` 默认只测量 base first-download；要测量某个动态特性模块，需传 `--modules=<module>`，bundletool 会自动包含依赖模块：
+
+```bash
+# 测量 on-demand module 的下载大小
+bundletool get-size total \
+  --apks=app-release.apks \
+  --device-spec=pixel-arm64-zh-xxhdpi.json \
+  --modules=camera_editor
+```
+
+CI 中按代表设备 × on-demand module 迭代统计，单独保留 base first-download、feature download、asset pack 和 universal fallback 四类口径。
 - **asset pack size**：install-time、fast-follow、on-demand 三类资源包分别记录下载大小、磁盘占用和清理状态。
 - **universal fallback size**：国内渠道或 sideload 需要 universal APK 时，记录完整包大小，避免 Play 渠道收益掩盖其他渠道成本。
 

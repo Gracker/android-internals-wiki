@@ -4,6 +4,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
+section: "5.12"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
@@ -45,6 +46,7 @@ gap_score: "18/20"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_date: "2026-04-20"
+last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_state: reviewed

@@ -45,12 +45,12 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: '2026-05-14T19:19:00+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -250,7 +250,7 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
-3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-14.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。BroadcastReceiver 和 ContentProvider 的写入等待点分别在 `ActivityThread.handleReceiver()` 和 `ActivityThread.handleRelaunchActivity()` 中
+3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-14.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。Service 的写入等待点在 `ActivityThread.handleServiceArgs()` 和 `handleStopService()` 中；`handleStopActivity()`（非 pre-Honeycomb）也会调用 `waitToFinish()`。BroadcastReceiver 侧，`PendingResult.sendFinished()` 通过 `QueuedWork.queue()` 延后执行，不是 `handleReceiver()` 直接调用 `waitToFinish()`
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
@@ -302,7 +302,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，通过 `InputDispatcher::setFrozen` 检查连接状态避免冻结活跃 Input 连接的进程。但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上仍存在差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态]
+[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。冻结逻辑由 `ActivityManager` 侧的 `CachedAppOptimizer` / `ProcessCachedOptimizerRecord` 驱动，不在 `InputDispatcher` 中。Android 15+ 在 `CachedAppOptimizer` 中增加了对活跃 Input 连接进程的冻结豁免判断。不同 OEM 机型上豁免覆盖范围仍有差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态，结合 `ProcessCachedOptimizerRecord` 的冻结状态字段判断豁免是否生效]
 
 ### 修复方案
 

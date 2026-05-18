@@ -37,6 +37,7 @@ task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task9_audit: "2026-05-18"
+last_task6_audit: "2026-05-18"
 ---
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
@@ -124,7 +125,7 @@ private void awaitLoadedLocked() {
 
 ### 路径二：`apply()` 只对调用方异步
 
-`apply()` 会先把修改写进内存，再把真正的磁盘 I/O 放进 `QueuedWork`。调用栈从 `apply()` 返回时不会阻塞，但组件收尾时系统会把这笔等待要回来。
+`apply()` 会先把修改写进内存，再把磁盘 I/O 放进 `QueuedWork`。调用栈从 `apply()` 返回时不会阻塞，但组件收尾时系统会把这笔等待要回来。
 
 在 android-16.0.0_r1 里，等待点分成四类：
 
@@ -182,7 +183,7 @@ private static void processPendingWork() {
 }
 ```
 
-`sWork` 是真正的写盘任务，`sFinishers` 才是 `awaitCommit` 这一类收尾等待。`waitToFinish()` 先执行 `processPendingWork()`，意味着主线程有时会自己把 `writeToDiskRunnable` 跑掉；如果写盘已经在后台线程里开始了，主线程随后又会在 `sFinishers` 里卡到 `CountDownLatch.await()`。
+`sWork` 是实际写盘任务，`sFinishers` 才是 `awaitCommit` 这一类收尾等待。`waitToFinish()` 先执行 `processPendingWork()`，意味着主线程有时会自己把 `writeToDiskRunnable` 跑掉；如果写盘已经在后台线程里开始了，主线程随后又会在 `sFinishers` 里卡到 `CountDownLatch.await()`。
 
 这也是很多文章把 ANR 栈写错的地方。现代 App 更常见的栈顶是 `handleStopActivity()`，不是 `handlePauseActivity()`。`handlePauseActivity()` 里的等待只保留给 pre-Honeycomb Activity。Service 和 BroadcastReceiver 也各有自己的收尾路径，不能都折叠成一个 `onPause()` 场景。
 
@@ -260,7 +261,7 @@ private void enqueueDiskWrite(final MemoryCommitResult mcr,
 
 这里有两个常被写错的点。
 
-第一，写盘锁是 `mWritingToDiskLock`，不是 `SharedPreferencesImpl.this`。`writeToFile()` 真正串行化的对象就是这把锁。
+第一，写盘锁是 `mWritingToDiskLock`，不是 `SharedPreferencesImpl.this`。`writeToFile()` 负责串行化写盘的对象就是这把锁。
 
 第二，`commit()` 也不是每次都在当前线程 inline 执行。只有 `postWriteRunnable == null` 且 `mDiskWritesInFlight == 1` 时，当前这次同步提交才会直接 `writeToDiskRunnable.run()`。如果前面已经有未完成写盘，`commit()` 一样会走 `QueuedWork.queue(...)`。
 
@@ -331,7 +332,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 2. 迁移是一次性的。迁移完成后还继续读写旧 SP，会形成数据分叉，因为 DataStore 不会在每次启动时重新把旧值覆盖回来。
 3. 迁移后的 cleanup 会把已迁走的 key 从旧 SP 里移除；只有旧文件被清空后，旧 XML 才可能被删除。
 
-所以迁移的真正收尾动作不是“第一次访问成功”就结束，而是“第一次访问成功后，代码里彻底停掉旧 SP 的读写”。这一步如果没做，线上最容易出现的现象就是新旧两份配置同时存在，排查时看起来像随机丢数据。
+所以迁移的收尾动作不是“第一次访问成功”就结束，而是“第一次访问成功后，代码里停掉旧 SP 的读写”。这一步如果没做，线上最容易出现的现象就是新旧两份配置同时存在，排查时看起来像随机丢数据。
 
 [已验证: 官方文档 `https://developer.android.com/topic/libraries/architecture/datastore`]
 
@@ -397,7 +398,7 @@ at android.app.ActivityThread$H.handleMessage(ActivityThread.java:XXXX)
 
 ### 案例 3：BroadcastReceiver 收尾路径
 
-BroadcastReceiver 没有直接调用 `QueuedWork.waitToFinish()`。真正的收尾逻辑在 `BroadcastReceiver.PendingResult.finish()`：
+BroadcastReceiver 没有直接调用 `QueuedWork.waitToFinish()`。收尾逻辑在 `BroadcastReceiver.PendingResult.finish()`：
 
 ```java
 // frameworks/base/core/java/android/content/BroadcastReceiver.java
@@ -456,7 +457,7 @@ at android.app.QueuedWork.waitToFinish(QueuedWork.java:XXX)
 at android.app.ActivityThread.handleServiceArgs(ActivityThread.java:XXXX)
 ```
 
-这说明真正的写盘已经在 `queued-work-looper` 或其他后台线程里进行，主线程只是 drain `sFinishers` 时卡在 `awaitCommit` 上。
+这说明写盘已经在 `queued-work-looper` 或其他后台线程里进行，主线程只是 drain `sFinishers` 时卡在 `awaitCommit` 上。
 
 ## 迁移策略与最佳实践
 

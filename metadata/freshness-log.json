@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-05-08T02:00:00+08:00",
+  "last_check": "2026-05-18T02:00:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -488,6 +488,90 @@
         "Update ProfilingManager chapter to add TRIGGER_TYPE_ANOMALY trigger capability",
         "Consider adding Jetpack Compose 1.11 testing API changes to rendering chapters"
       ]
+    },
+    {
+      "date": "2026-05-18",
+      "timestamp": "2026-05-18T02:00:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "Beta 4 released April 2026, stable release expected June-July 2026",
+        "recent_updates": [
+          "AutoFDO expanded to android17-6.18 kernel branch with 26.4% benchmark improvement",
+          "ART Generational GC now stable in Android 17 Beta 4",
+          "App Memory Limiter introduced for per-app memory limits based on device RAM",
+          "Lock-free MessageQueue stable in API 37, improves performance but affects reflection",
+          "ProfilingManager adds TRIGGER_TYPE_ANOMALY for anomaly detection"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 per-app memory limits based on device RAM (API 37)",
+          "generational_gc_stable": "ART Generational GC now stable in Android 17 Beta 4",
+          "autofdo_kernel_618": "AutoFDO expanded to android17-6.18 with 26.4% benchmark gains",
+          "lock_free_messagequeue": "API 37 lock-free MessageQueue stable, performance improved",
+          "profiling_anomaly_trigger": "ProfilingManager TRIGGER_TYPE_ANOMALY now available"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 351,
+        "files_with_metadata": 289,
+        "files_ending_at_api36": 117,
+        "files_needing_api37_update": 117,
+        "files_verified_under_14_days": 103,
+        "files_verified_under_30_days": 160,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 3,
+        "high_risk_files": 3,
+        "medium_risk_files": 0,
+        "low_risk_files": 0
+      },
+      "key_findings": [
+        "3 high-risk outdated version evolution chapters (all > 30-day threshold)",
+        "117 files still end at API 36 instead of including API 37",
+        "Android 17 Beta 4 features not yet reflected in version evolution chapters",
+        "No files verified over 90 days ago - content is relatively fresh",
+        "Version evolution chapters need urgent update before Android 17 stable release"
+      ],
+      "action_items": [
+        "Update version evolution chapters with Android 17 Beta 4 features",
+        "Add App Memory Limiter coverage to memory management chapters",
+        "Update applicable_versions for core chapters to include API 37",
+        "Add AutoFDO 6.18 performance data to kernel optimization sections",
+        "Update ProfilingManager chapter with TRIGGER_TYPE_ANOMALY trigger"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+          "title": "Android 版本演进中的架构变化",
+          "last_verified": "2026-03-31",
+          "days_overdue": 48,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "Android 17 API 37架构特性，App Memory Limiter，GKI 6.12变更"
+        },
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "last_verified": "2026-04-14",
+          "days_overdue": 34,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "Android 17存储架构更新，新文件系统特性"
+        },
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "last_verified": "2026-03-31",
+          "days_overdue": 48,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "ART Generational GC稳定版，内存管理新机制"
+        }
+      ],
+      "queue_updates": [
+        "freshness-check-high-priority-2026-05-18 (priority 95, 6 hours)",
+        "task9-version-evolution-refresh-2026-05-18 (priority 90, 8 hours)"
+      ],
+      "appendix_updates_needed": true,
+      "next_scheduled_check": "2026-05-20"
     }
   ]
 }

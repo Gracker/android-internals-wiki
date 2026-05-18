@@ -585,3 +585,18 @@ mutableStateOf<T>.value = newValue
 
 
 [AIW-源码调研-2026-05-15]
+
+## 补充：工具链版本细节（2026-05-18 源码调研）
+
+**Pausable Composition 默认启用状态已确认分层**：
+- Compose Foundation **1.10.0-alpha05**：默认启用
+- Compose Foundation **1.10.6**：因稳定性问题默认禁用
+- 稳定版（1.10.x）：启用状态取决于具体版本，非强制默认开启
+
+这意味着 Android 16 + Compose 1.10 的组合**不一定默认启用 Pausable Composition**，需要确认目标 Foundation 版本。
+
+**Android Studio Compose Profiler 入口**（Ladybug 2024.2.1+ Feature Drop）：
+- 路径：View → Tool Windows → Profiler → 选择进程 → CPU 时间线 → 主线程 Compose activity
+- 依赖：Debug 构建体 + `androidx.compose.runtime:runtime-tracing`
+
+[AIW-源码调研补充-2026-05-18]

@@ -11,7 +11,7 @@ last_task6_review_log: logs/review/2026-05-15-02-review.md
 last_task9_at: "2026-05-15T01:36:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-01-deep-review.md"
 last_verified: '2026-04-24'
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 related_chapters:
 - '19.0'
 - '19.08'
@@ -37,16 +37,16 @@ tags:
 - okhttp
 - asm
 - cronet
-task2b_result: "pending"
-task2b_state: "pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-15"
-task9_state: "reviewed"
+task9_state: "pending"
 title: 网络 APM 底层捕获原理
 task9_review_notes: "2026-05-13 Task9：P0 2 / P1 0，代码示例存在可编译性/签名错误，转 Task2B 修复。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；OkHttp EventListener 示例 activeExchange 状态机仍会拆错 responseBodyEnd。"
 task6_review_notes: '2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。'
@@ -163,11 +163,14 @@ private class NetworkMetricEventListener(
         val exchanges: MutableList<Exchange> = mutableListOf(),
         var failure: String? = null
     ) {
-        // 当前活跃 exchange：如果上一个 exchange 已有 responseBodyEnd，说明它结束
-        // 了，需要新建一个。redirect / follow-up 会触发新一轮 requestHeadersStart。
+        // 当前活跃 exchange：responseBodyEnd 标志 exchange 结束。
+        // redirect / follow-up 会触发新一轮 requestHeadersStart，此时上一个
+        // exchange 的 responseBodyEnd 已调用（即使 body 为空），responseBodyEndNs
+        // 非空，activeExchange() 会正确创建新 exchange。
+        // 不检查 responseHeadersEndNs：header 完成后 body 仍属于同一个 exchange。
         fun activeExchange(): Exchange {
             val last = exchanges.lastOrNull()
-            if (last != null && last.responseBodyEndNs == null && last.responseHeadersEndNs == null) {
+            if (last != null && last.responseBodyEndNs == null) {
                 return last
             }
             return Exchange().also { exchanges += it }
