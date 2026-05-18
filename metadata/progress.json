@@ -177,7 +177,8 @@
     "1.8",
     "9.5",
     "19.13",
-    "20.3"
+    "20.3",
+    "13.18"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -185,28 +186,23 @@
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
     "src/part2-performance/ch09-anr/05-case-studies.md",
     "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part5-app/ch20-stability/03-native-crash-governance.md"
+    "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
   ],
   "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-18",
-    "time": "20:16",
+    "time": "22:15",
     "sections": [
-      "1.8",
-      "9.5",
-      "19.13",
-      "20.3"
+      "13.18"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "src/part2-performance/ch09-anr/05-case-studies.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 4,
+    "small_fixes": 6,
     "new_rework_items": 0,
-    "note": "Task6 写作层 review 通过；修复 outline 位置、代码块语言标记与 Tracing SDK 元数据覆盖。既有 Task9/Task2B 技术项保留，未新增回炉。"
+    "note": "Task6 写作层 review 通过；修复 outline 命名、AI 加工标记和少量抽象/口语化表达。Task9 尚未通过，未自动晋升。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1353,39 +1349,43 @@
       "task6_log": "logs/review/2026-05-18-20-review.md",
       "task6_new_rework": false,
       "task6_note": "写作层通过；既有 pending 技术/素材队列项保留。"
+    },
+    "13.18": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-18T22:15:21+08:00",
+      "task6_log": "logs/review/2026-05-18-22-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作层 review 通过；无新增回炉项，送 Task9。"
     }
   },
   "total_review_sections": 161,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T21:10:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-18T22:15:21+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "20:16",
-    "reviewed_at": "2026-05-18T20:16:50+08:00",
+    "time": "22:15",
+    "reviewed_at": "2026-05-18T22:15:21+08:00",
     "sections": [
-      "1.8",
-      "9.5",
-      "19.13",
-      "20.3"
+      "13.18"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "src/part2-performance/ch09-anr/05-case-studies.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
     ],
-    "log": "logs/review/2026-05-18-20-review.md",
-    "mode": "首次 review / revisiting 复审",
-    "l1_l2_fixes": 4,
+    "log": "logs/review/2026-05-18-22-review.md",
+    "mode": "首次 review",
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 3,
+    "technical_risk_markers": 0,
     "results": {
-      "1.8": "pass-light-edit / task2b_pending",
-      "9.5": "pass-light-edit / task9_pending",
-      "19.13": "pass-light-edit / task9_pending",
-      "20.3": "pass-light-edit / task2b_pending"
+      "13.18": "pass-light-edit / task9_pending"
     },
     "auto_promoted": []
   },
@@ -3791,8 +3791,8 @@
       "task9_state": "pending"
     },
     "13.18": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "queue_priority": 80,
       "title": "SmartPerfetto 与可复用 Trace 分析平台",
       "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
@@ -3800,7 +3800,17 @@
       "created_date": "2026-05-18",
       "gap_source": "每日信息/素材驱动/章节深挖",
       "gap_score": 17,
-      "material_count": 4
+      "material_count": 4,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-18T22:15:21+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
+      "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2b_rounds": [
@@ -3907,12 +3917,10 @@
   "last_task2a_result": "phase1-gap-mining",
   "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
-  "task6_last_review_at": "2026-05-18T16:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-18-16-review.md",
+  "task6_last_review_at": "2026-05-18T22:15:21+08:00",
+  "task6_last_review_log": "logs/review/2026-05-18-22-review.md",
   "task6_last_review_sections": [
-    "2.6",
-    "5.3",
-    "25.6"
+    "13.18"
   ],
   "sections_status": {
     "22.11": {
@@ -4617,8 +4625,8 @@
     },
     "17.6": "draft",
     "13.18": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "queue_priority": 80,
       "title": "SmartPerfetto 与可复用 Trace 分析平台",
       "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
@@ -4626,7 +4634,17 @@
       "created_date": "2026-05-18",
       "gap_source": "每日信息/素材驱动/章节深挖",
       "gap_score": 17,
-      "material_count": 4
+      "material_count": 4,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-18",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-18T22:15:21+08:00",
+      "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
+      "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2a_last_processed": {
@@ -4664,24 +4682,18 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "revisiting-review",
+    "mode": "first-review",
     "sections": [
-      "2.6",
-      "5.3",
-      "25.6"
+      "13.18"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-      "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
     ],
-    "log": "logs/review/2026-05-18-16-review.md",
-    "summary": "3 个 revisiting 章节完成 Task6 写作层复审；2.6/25.6 pass-light-edit，5.3 因 GPU+NPU 扩展空壳保留 needs-rework。"
+    "log": "logs/review/2026-05-18-22-review.md",
+    "summary": "13.18 SmartPerfetto 与可复用 Trace 分析平台完成 Task6 写作层 review：pass-light-edit，6 处 L1/L2 小修，无回炉，Task9 pending。"
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part5-app/ch25-power-size/06-apk-analysis.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
   ],
   "task6_last_reviewed_files": [
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
