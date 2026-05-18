@@ -1,6 +1,6 @@
 {
-  "total": 314,
-  "draft": 0,
+  "total": 315,
+  "draft": 1,
   "ready-for-review": 112,
   "finalized": 202,
   "task9_result": "needs-rework",
@@ -1312,8 +1312,8 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T13:12:59+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-18T14:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "13:12",
@@ -3649,6 +3649,18 @@
       "gap_score": 19,
       "queue_priority": 80,
       "material_count": 4
+    },
+    "20.13": {
+      "title": "16KB Page Size 兼容性与 Native 崩溃治理",
+      "file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "素材驱动/官方文档/AOSP结构/Clippings结构参考",
+      "gap_score": 18,
+      "queue_priority": 80,
+      "material_count": 6
     }
   },
   "task2b_rounds": [
@@ -3718,9 +3730,9 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T04:14:00+08:00",
-  "last_task2a_section": "26.13",
-  "last_task2a_file": "src/part5-app/ch26-observability/13-application-start-info.md",
+  "last_task2a_at": "2026-05-18T14:04:00+08:00",
+  "last_task2a_section": "20.13",
+  "last_task2a_file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
     "25.6"
@@ -3748,7 +3760,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-18T12:44:40+08:00",
-  "last_task2a_result": "gap-mining",
+  "last_task2a_result": "gap-created",
   "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-18T13:12:59+08:00",
@@ -4444,6 +4456,18 @@
       "last_task6_review_log": "logs/review/2026-05-18-12-review.md",
       "task2b_state": "pending",
       "task2b_result": "pending"
+    },
+    "20.13": {
+      "title": "16KB Page Size 兼容性与 Native 崩溃治理",
+      "file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18",
+      "gap_source": "素材驱动/官方文档/AOSP结构/Clippings结构参考",
+      "gap_score": 18,
+      "queue_priority": 80,
+      "material_count": 6
     }
   },
   "task2a_last_processed": {
@@ -4454,16 +4478,16 @@
     "mode": "gap-mining"
   },
   "task2a_last_gap_mining": {
-    "created_at": "2026-05-18T03:04:00+08:00",
+    "date": "2026-05-18",
     "created_sections": [
-      "26.13"
+      "20.13"
     ],
     "created_files": [
-      "src/part5-app/ch26-observability/13-application-start-info.md"
+      "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md"
     ],
-    "candidate_count": 5,
+    "candidate_count": 24,
     "qualified_count": 1,
-    "mode": "gap-mining"
+    "dedupe_note": "source-index high/unmapped 24 条中，多数已由 4.7、17.5、20.10、20.11、22.10、22.11、22.12、26.9、26.10、26.12、26.13 等章节覆盖；本轮去重后仅 16KB Page Size native 兼容治理达到创建阈值。"
   },
   "task9_last_sections": [
     "25.6",

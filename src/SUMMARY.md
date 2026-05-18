@@ -318,6 +318,7 @@ tags:
   - [20.10 WebView Renderer OOM 与白屏恢复](part5-app/ch20-stability/10-webview-renderer-oom-recovery.md)
   - [20.11 MTE memtagMode 与 Native 崩溃治理](part5-app/ch20-stability/11-mte-memtag-native-crash.md)
   - [20.12 SafeMode 崩溃循环判定与启动补偿链路](part5-app/ch20-stability/12-safemode-crash-loop-recovery.md)
+  - [20.13 16KB Page Size 兼容性与 Native 崩溃治理](part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
