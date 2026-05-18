@@ -11889,7 +11889,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
@@ -11907,7 +11907,9 @@
         "https://github.com/Gracker/SmartPerfetto",
         "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
       ],
-      "added_at": "2026-05-18T21:10:00+08:00"
+      "added_at": "2026-05-18T21:10:00+08:00",
+      "completed_date": "2026-05-18",
+      "completed_reason": "Task 2A 加工完成：status 已改为 ready-for-review，进入 Task6 管线"
     },
     {
       "id": "task9-audit-9.7-provider-timeout-16kb-version",
