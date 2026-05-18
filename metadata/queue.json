@@ -12022,24 +12022,45 @@
       "added_at": "2026-05-18T23:04:00+08:00",
       "completed_date": "2026-05-18",
       "completed_reason": "Task 2A 新章节创建并加工完成：status 已改为 ready-for-review，进入 Task6 管线。"
+    },
+    {
+      "id": "task2a-gap-4.10-memory-compaction-direct-reclaim",
+      "section": "4.10",
+      "priority": 80,
+      "title": "内存规整与直接回收性能边界",
+      "description": "补齐内存规整、direct reclaim、PSI/lmkd 与 App 卡顿/OOM 之间的性能边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "created_by": "task2a-knowledge-gap",
+      "status": "pending",
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md"
+      ],
+      "source_evidence": [
+        "Cubox/不懂 内存规整，别说你会 Linux 内存调优-2026-05-13.md",
+        "https://source.android.com/docs/core/perf/lmkd",
+        "https://developer.android.com/topic/performance/memory-management",
+        "kernel/common/mm/compaction.c"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 339,
+    "total_entries": 346,
     "p0_count": 142,
-    "last_updated": "2026-05-18T23:04:00+08:00",
+    "last_updated": "2026-05-19T00:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 153,
-    "updated_date": "2026-05-18",
+    "pending_entries": 149,
+    "updated_date": "2026-05-19",
     "last_updated_by": "openclaw-task2a",
-    "pending": 153,
-    "completed_entries": 184
+    "pending": 149,
+    "completed_entries": 195
   },
-  "last_updated": "2026-05-18T23:04:00+08:00",
+  "last_updated": "2026-05-19T00:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 153,
+  "pending": 149,
   "last_task2a_completed": "3.10",
   "last_task2a_completed_at": "2026-05-18T23:04:00+08:00",
-  "last_task2a_gap_mining": "3.10",
-  "last_task2a_gap_mining_at": "2026-05-18T23:04:00+08:00"
+  "last_task2a_gap_mining": "4.10",
+  "last_task2a_gap_mining_at": "2026-05-19T00:04:00+08:00"
 }

@@ -88,6 +88,7 @@ tags:
   - [4.7 16KB Page Size 与 Android 性能](part1-fundamentals/ch04-memory/07-16kb-page-size.md)
   - [4.8 ART 分代垃圾回收与 GC 暂停优化](part1-fundamentals/ch04-memory/08-art-generational-gc.md)
   - [4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界](part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md)
+  - [4.10 内存规整与直接回收性能边界](part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
