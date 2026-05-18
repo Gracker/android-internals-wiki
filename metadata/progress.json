@@ -1,7 +1,7 @@
 {
   "total": 316,
-  "draft": 1,
-  "ready-for-review": 113,
+  "draft": 0,
+  "ready-for-review": 114,
   "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4529,11 +4529,10 @@
     }
   },
   "task2a_last_processed": {
-    "section": "1.19",
-    "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "processed_at": "2026-05-16T04:10:00+08:00",
-    "status": "draft",
-    "mode": "gap-mining"
+    "date": "2026-05-18",
+    "section": "2.23",
+    "file": "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
+    "result": "ready-for-review"
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-18",
