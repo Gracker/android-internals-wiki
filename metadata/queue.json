@@ -11876,24 +11876,56 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T20:30:46+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-20260518-13.18-smartperfetto-platform",
+      "section": "13.18",
+      "priority": 80,
+      "title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "description": "SmartPerfetto 已从 Perfetto AI Assistant 扩展为包含 Skill、SQL guardrail、证据索引、多 Trace 对比和报告复用的 Trace 分析平台，AIW 缺少面向工程落地的独立小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-18",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+      ],
+      "gap_score": 17,
+      "score_breakdown": {
+        "material_richness": 3,
+        "book_relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 5
+      },
+      "source_candidates": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md",
+        "https://androidperformance.com/2026/05/17/SmartPerfetto-Two-Week-Update/",
+        "https://github.com/Gracker/SmartPerfetto",
+        "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      ],
+      "added_at": "2026-05-18T21:10:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 337,
+    "total_entries": 338,
     "p0_count": 142,
-    "last_updated": "2026-05-18T19:04:00+08:00",
+    "last_updated": "2026-05-18T21:10:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 152,
+    "pending_entries": 153,
     "updated_date": "2026-05-18",
     "last_updated_by": "openclaw-task2a",
-    "pending": 152,
+    "pending": 153,
     "completed_entries": 183
   },
-  "last_updated": "2026-05-18T19:04:00+08:00",
+  "last_updated": "2026-05-18T21:10:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 152,
+  "pending": 153,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00",
-  "last_task2a_gap_mining": "17.6",
-  "last_task2a_gap_mining_at": "2026-05-18T19:04:00+08:00"
+  "last_task2a_gap_mining": "13.18",
+  "last_task2a_gap_mining_at": "2026-05-18T21:10:00+08:00"
 }
