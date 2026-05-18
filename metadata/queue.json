@@ -11131,6 +11131,30 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T10:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-26.14-performance-experiment-statistics",
+      "section": "26.14",
+      "priority": 80,
+      "title": "性能实验统计与分位值回归判定",
+      "description": "从 26.6 A/B Test 回炉问题拆出的独立章节：补齐性能实验样本量、P90/P99 分位值置信区间、SRM、分群归因与线上/CI 门禁证据对齐。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
+      ],
+      "source_refs": [
+        "intake/research-gaps.md#2026-05-15-26.6",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md",
+        "https://firebase.google.com/docs/ab-testing/abtest-config",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ]
     }
   ],
   "metadata": {
