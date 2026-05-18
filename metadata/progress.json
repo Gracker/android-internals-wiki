@@ -1,6 +1,6 @@
 {
-  "total": 316,
-  "draft": 0,
+  "total": 317,
+  "draft": 1,
   "ready-for-review": 114,
   "finalized": 202,
   "task9_result": "needs-rework",
@@ -1313,8 +1313,8 @@
   "total_review_sections": 156,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T16:05:00+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-18T19:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "13:12",
@@ -3713,6 +3713,15 @@
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending"
+    },
+    "17.6": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "queue_priority": 80,
+      "title": "Media Performance Class 与设备能力分级",
+      "file": "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-18"
     }
   },
   "task2b_rounds": [
@@ -3782,7 +3791,7 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T14:04:00+08:00",
+  "last_task2a_at": "2026-05-18T19:04:00+08:00",
   "last_task2a_section": "20.13",
   "last_task2a_file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
   "last_task6_review": "2026-05-18",
@@ -3816,7 +3825,7 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task9_at": "2026-05-18T12:44:40+08:00",
-  "last_task2a_result": "gap-created",
+  "last_task2a_result": "gap-mining-created",
   "ready-to-publish": 198,
   "last_task2a_processed_section": "26.11",
   "task6_last_review_at": "2026-05-18T16:05:00+08:00",
@@ -4526,7 +4535,8 @@
       "gap_score": 18,
       "queue_priority": 80,
       "material_count": 6
-    }
+    },
+    "17.6": "draft"
   },
   "task2a_last_processed": {
     "date": "2026-05-18",
@@ -4537,14 +4547,14 @@
   "task2a_last_gap_mining": {
     "date": "2026-05-18",
     "created_sections": [
-      "20.13"
+      "17.6"
     ],
     "created_files": [
-      "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md"
+      "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md"
     ],
-    "candidate_count": 24,
+    "candidate_count": 6,
     "qualified_count": 1,
-    "dedupe_note": "source-index high/unmapped 24 条中，多数已由 4.7、17.5、20.10、20.11、22.10、22.11、22.12、26.9、26.10、26.12、26.13 等章节覆盖；本轮去重后仅 16KB Page Size native 兼容治理达到创建阈值。"
+    "mode": "phase1-gap-mining"
   },
   "task9_last_sections": [
     "25.6",
