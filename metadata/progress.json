@@ -173,26 +173,40 @@
     "20.2",
     "1.11",
     "20.13",
-    "2.23"
+    "2.23",
+    "1.8",
+    "9.5",
+    "19.13",
+    "20.3"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md"
   ],
   "review_summary": "Task9 2026-05-18 12: 深审 25.6/25.8；25.6 发现 P0 1 / P1 1，转 Task2B；25.8 P0/P1/P2 0，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-18",
-    "time": "19:12",
+    "time": "20:16",
     "sections": [
-      "2.23"
+      "1.8",
+      "9.5",
+      "19.13",
+      "20.3"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
+      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 3,
+    "small_fixes": 4,
     "new_rework_items": 0,
-    "note": "Task6 写作层 review 通过；修正 3 处 L1/L2 文风问题。FrameRateEligibility 同名实现路径保留待验证标注，转 Task9 复核。"
+    "note": "Task6 写作层 review 通过；修复 outline 位置、代码块语言标记与 Tracing SDK 元数据覆盖。既有 Task9/Task2B 技术项保留，未新增回炉。"
   },
   "issues_by_section": {
     "1.6": {
@@ -389,14 +403,14 @@
       "reviewed_at": "2026-05-18T11:42:46+08:00",
       "log": "logs/deep-review/2026-05-18-11-deep-review.md",
       "summary": "P0 1/P1 1：Cached Apps Freezer AOSP Input 豁免与日志锚点缺证据，Android 11+ 版本边界需修正。",
-      "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 4,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_technical_risk_markers": 1,
-      "task6_reviewed_at": "2026-05-18T12:26:00+08:00",
-      "task6_log": "logs/review/2026-05-18-12-review.md",
+      "task6_technical_risk_markers": 0,
+      "task6_reviewed_at": "2026-05-18T20:16:50+08:00",
+      "task6_log": "logs/review/2026-05-18-20-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
+      "task6_note": "写作层通过；未新增回炉项，等待 Task9 复审。"
     },
     "2.10": {
       "p0": 2,
@@ -573,14 +587,14 @@
       "reviewed_at": "2026-05-18T11:42:46+08:00",
       "log": "logs/deep-review/2026-05-18-11-deep-review.md",
       "summary": "P0 1：traceAsync 起始版本、pre-29 fallback 与 TraceEventCache 源码事实错误。",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_technical_risk_markers": 1,
-      "task6_reviewed_at": "2026-05-18T12:26:00+08:00",
-      "task6_log": "logs/review/2026-05-18-12-review.md",
+      "task6_technical_risk_markers": 0,
+      "task6_reviewed_at": "2026-05-18T20:16:50+08:00",
+      "task6_log": "logs/review/2026-05-18-20-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task6 复审写作层通过；承接既有 Task9 技术边界 queue，并在正文标注 [需确认]。"
+      "task6_note": "写作层通过；未新增回炉项，等待 Task9 复审。"
     },
     "19.26": {
       "p0": 1,
@@ -1319,30 +1333,59 @@
       "task6_log": "logs/review/2026-05-18-19-review.md",
       "task6_new_rework": false,
       "task6_note": "写作质量通过；清理“对齐”、形容词起手和否定-纠正结构。既有 FrameRateEligibility 路径待验证标注交 Task9 复核，未新增 Task2B 回炉。"
+    },
+    "1.8": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-18T20:16:50+08:00",
+      "task6_log": "logs/review/2026-05-18-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作层通过；既有 pending 技术/素材队列项保留。"
+    },
+    "20.3": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 2,
+      "task6_reviewed_at": "2026-05-18T20:16:50+08:00",
+      "task6_log": "logs/review/2026-05-18-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作层通过；既有 pending 技术/素材队列项保留。"
     }
   },
-  "total_review_sections": 157,
+  "total_review_sections": 161,
   "next_review_candidates": [],
   "ready_for_review": 99,
-  "last_updated": "2026-05-18T19:12:00+08:00",
+  "last_updated": "2026-05-18T20:16:50+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
-    "time": "19:12",
-    "reviewed_at": "2026-05-18T19:12:00+08:00",
+    "time": "20:16",
+    "reviewed_at": "2026-05-18T20:16:50+08:00",
     "sections": [
-      "2.23"
+      "1.8",
+      "9.5",
+      "19.13",
+      "20.3"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
+      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
-    "log": "logs/review/2026-05-18-19-review.md",
-    "mode": "首次 review",
-    "l1_l2_fixes": 3,
+    "log": "logs/review/2026-05-18-20-review.md",
+    "mode": "首次 review / revisiting 复审",
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
-    "technical_risk_markers": 1,
+    "technical_risk_markers": 3,
     "results": {
-      "2.23": "pass-light-edit / task9_pending"
+      "1.8": "pass-light-edit / task2b_pending",
+      "9.5": "pass-light-edit / task9_pending",
+      "19.13": "pass-light-edit / task9_pending",
+      "20.3": "pass-light-edit / task2b_pending"
     },
     "auto_promoted": []
   },
@@ -4691,15 +4734,20 @@
   "section_19_13": {
     "section": "19.13",
     "title": "androidx.tracing（Tracing SDK）",
-    "last_task2b_at": "2026-05-18T11:27:58+08:00",
-    "task2b_result": "pending",
-    "task2b_state": "pending",
-    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
     "task6_state": "reviewed",
-    "task6_result": "needs-rework",
-    "last_task6_at": "2026-05-18T12:26:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-18-12-review.md"
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-05-18T20:16:50+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
+    "pipeline_stage": "task9_pending",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-18T11:42:46+08:00",
+    "task9_reviewed_date": "2026-05-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-14T23:25:54+08:00"
   },
   "section_19_23": {
     "section": "19.23",
@@ -4717,15 +4765,20 @@
   "section_9_5": {
     "section": "9.5",
     "title": "案例集",
-    "last_task2b_at": "2026-05-18T11:27:58+08:00",
-    "task2b_result": "pending",
-    "task2b_state": "pending",
-    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
     "task6_state": "reviewed",
-    "task6_result": "needs-rework",
-    "last_task6_at": "2026-05-18T12:26:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-18-12-review.md"
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-05-18T20:16:50+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
+    "pipeline_stage": "task9_pending",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-18T11:42:46+08:00",
+    "task9_reviewed_date": "2026-05-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-14T19:19:00+08:00"
   },
   "section_25_8": {
     "section": "25.8",
@@ -4734,5 +4787,39 @@
     "task2b_result": "fixed",
     "task2b_state": "fixed",
     "pipeline_stage": "task6_pending"
+  },
+  "section_1_8": {
+    "section": "1.8",
+    "title": "Activity Manager Service 与性能分析",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-05-18T20:16:50+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-18T19:44:00+08:00",
+    "task9_reviewed_date": "2026-05-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task2b_state": "pending",
+    "task2b_result": "pending"
+  },
+  "section_20_3": {
+    "section": "20.3",
+    "title": "Native Crash 分析与治理",
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-05-18T20:16:50+08:00",
+    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-18T19:44:00+08:00",
+    "task9_reviewed_date": "2026-05-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task2b_state": "pending",
+    "task2b_result": "pending"
   }
 }

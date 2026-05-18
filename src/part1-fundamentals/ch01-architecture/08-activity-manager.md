@@ -74,11 +74,11 @@ created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-30"
-task6_result: pass-light-edit
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-18"
+task6_result: "pass-light-edit"
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 last_task6_audit: "2026-05-17"
 task9_state: "reviewed"
 task9_result: "needs-rework"
@@ -89,10 +89,42 @@ task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 review_round: 4
 last_task9_audit: "2026-05-18"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_at: "2026-05-18T20:16:50+08:00"
+last_task6_at: "2026-05-18T20:16:50+08:00"
+last_task6_review_log: "logs/review/2026-05-18-20-review.md"
+task6_review_notes: "2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 2 项（移动 outline 块到正文前，恢复流水线可识别结构；为 4 个无语言代码块补充 text 标记）；既有 Task9/Task2B pending 技术项 1 个保留，不在 Task6 裁决。"
 ---
 
 
 # 1.8 Activity Manager Service 与性能分析
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点(必须覆盖)
+
+- 🔹 **AMS / ATMS 分工与 Perfetto 入口**:[已验证: AOSP android-16.0.0_r1]
+  AMS 负责进程管理、ANR、Service / Broadcast / Provider 调度;Activity / Task 容器管理在 ATMS / WindowManager。Perfetto 入口看 `system_server` 的 `ActivityManager` 线程和 `am_*` 事件。
+
+- 🔹 **进程优先级、启动与回收链路**:[已验证: AOSP android-16.0.0_r1]
+  关注 `oom_adj`、`am_proc_start`、`am_proc_bound`、lmkd 协作与冷启动关键时间点。
+
+- 🔹 **ANR 类型与超时差异**:[已验证: AOSP + 官方文档]
+  Input / Broadcast / Service / ContentProvider 有不同超时和埋雷位置,不能用"ANR = 5 秒"一把梭。
+
+- 🔹 **现代 Activity 任务容器模型**:[已验证: AOSP android-16.0.0_r1]
+  现代层级是 `RootWindowContainer → DisplayContent → TaskDisplayArea → Task → ActivityRecord`,不能再把 `TaskStack` 当成当前主术语。
+
+- 🔹 **Android 14+ 广播与配置变更差异**:[已验证: developer.android.com + AOSP]
+  Android 14 对 cached state 下的 context-registered broadcast 引入排队,并要求动态注册 Receiver 显式声明导出属性;`recreateOnConfigChanges` 的公开可验证语义是 Android O+ 下 `mcc/mnc` 场景的显式重建。
+
+### 扩展(可选深入)
+
+- 🔸 **system_server 侧瓶颈排查**:Binder 线程池饱和、AMS 全局锁竞争、Task 切换与窗口动画联动
+- 🔸 **Trace 实战脚本化**:用 SQL 把 `am_*` 事件与主线程首帧、Binder 调用链、Process Stats 串起来
+<!-- outline-end -->
+
 
 ## 为什么要了解 AMS
 
@@ -121,7 +153,7 @@ AMS 运行在 `system_server` 进程中,是 Android 最核心的系统服务之�
 
 应用进程通过 `ActivityManager`(客户端代理类)与 AMS 通信。这层通信走的是 Binder IPC,`IActivityManager.aidl` 定义接口,`ActivityManagerService` 实现接口。需要区分的是,`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上,但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用,往往只是系统服务链路的起点,不是全部。
 
-```
+```text
 [图:AMS 在系统架构中的位置,展示 system_server 内 AMS 与 PMS/WMS 的关系,以及 App 进程通过 Binder 与 AMS 通信的路径]
 [待高爷补充:系统架构图]
 ```
@@ -226,7 +258,7 @@ AMS 与 lmkd 的协作在 §4.4 中有详细讲解,这里简要提一下:当系�
 
 在 Perfetto 中,我们可以通过 `Process Stats` Track 观察 `oom_score_adj` 的变化:当一个 App 从前台切到后台,你会看到它的 oom_score_adj 从 0 逐步升到 900+。如果随后出现 `am_kill` 事件,说明该进程被 lmkd 回收了。
 
-```
+```text
 [图:Perfetto 中 oom_score_adj 变化时序图,展示 App 从前台→后台→被杀的完整过程]
 [待高爷补充:Trace 截图]
 ```
@@ -399,7 +431,7 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 > [已验证: Android 16 / API 36,`android.app.ApplicationStartInfo#getStartComponent()`;获取入口为 `ActivityManager#getHistoricalProcessStartReasons(int)`]
 
-```
+```text
 [图:Perfetto 中冷启动的完整 Trace 片段,标注上述 6 个关键时间节点]
 [待高爷补充:Trace 截图]
 ```
@@ -591,7 +623,7 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 3. `android_logs` 里出现 `am_kill`
 4. 目标进程的所有线程消失
 
-```
+```text
 [图:三种典型场景的 Perfetto Trace 对比截图]
 [待高爷补充:Trace 截图]
 ```
@@ -692,30 +724,3 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 ---
 
 > [自动发现] AMS 内部的锁竞争(`mService` 全局锁)和 `system_server` Binder 线程池饱和问题,是分析 system_server 侧性能瓶颈时的重要切入点。这部分内容计划在扩展章节中详细展开。
-
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 **AMS / ATMS 分工与 Perfetto 入口**:[已验证: AOSP android-16.0.0_r1]
-  AMS 负责进程管理、ANR、Service / Broadcast / Provider 调度;Activity / Task 容器管理在 ATMS / WindowManager。Perfetto 入口看 `system_server` 的 `ActivityManager` 线程和 `am_*` 事件。
-
-- 🔹 **进程优先级、启动与回收链路**:[已验证: AOSP android-16.0.0_r1]
-  关注 `oom_adj`、`am_proc_start`、`am_proc_bound`、lmkd 协作与冷启动关键时间点。
-
-- 🔹 **ANR 类型与超时差异**:[已验证: AOSP + 官方文档]
-  Input / Broadcast / Service / ContentProvider 有不同超时和埋雷位置,不能用"ANR = 5 秒"一把梭。
-
-- 🔹 **现代 Activity 任务容器模型**:[已验证: AOSP android-16.0.0_r1]
-  现代层级是 `RootWindowContainer → DisplayContent → TaskDisplayArea → Task → ActivityRecord`,不能再把 `TaskStack` 当成当前主术语。
-
-- 🔹 **Android 14+ 广播与配置变更差异**:[已验证: developer.android.com + AOSP]
-  Android 14 对 cached state 下的 context-registered broadcast 引入排队,并要求动态注册 Receiver 显式声明导出属性;`recreateOnConfigChanges` 的公开可验证语义是 Android O+ 下 `mcc/mnc` 场景的显式重建。
-
-### 扩展(可选深入)
-
-- 🔸 **system_server 侧瓶颈排查**:Binder 线程池饱和、AMS 全局锁竞争、Task 切换与窗口动画联动
-- 🔸 **Trace 实战脚本化**:用 SQL 把 `am_*` 事件与主线程首帧、Binder 调用链、Process Stats 串起来
-<!-- outline-end -->
