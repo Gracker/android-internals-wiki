@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-26'
 last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -58,21 +58,22 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: "pending"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-13"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_date: 2026-05-19
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T19:47:40+08:00"
-task2b_state: "fixed"
+last_task9_at: "2026-05-19T00:30:02+08:00"
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0；AHardwareBuffer options API、allocate2/additionalOptions 版本线、libdmabufheap pooling、Binder FDA 收益声明需回炉。"
+task9_review_notes: "2026-05-19 Task9 00:20：needs-rework。P1 2：libdmabufheap pooling / Binder FDA 仍停留在待验证但被放进 Android 16 版本增强与参考资料，需拆成已确认能力与研究线索。"
 last_task6_at: '2026-05-13T20:10:00+08:00'
 last_task6_review_log: logs/review/2026-05-13-20-review.md
 task6_review_notes: '2026-05-13 Task6 20:10：needs-rework。L1/L2 小修 17 处：去第一人称/元叙述、压缩填充词、修正 chapter 元数据；正文仍含 Task9 已入队 P0/P1 技术风险，Task6 不裁决技术真伪，交 Task2B/Task9 回炉。'
+last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享

@@ -2,7 +2,7 @@
 title: "OOM 治理"
 chapter: "20.5"
 section: "20.5"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, art/runtime/heap.cc"
@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 created_by: "task2a"
 reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
@@ -34,14 +34,14 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-13T21:32:00+08:00"
 last_task6_review_log: logs/review/2026-05-13-21-review.md
 task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
-task9_result: needs-rework
+task9_result: "needs-rework"
 task2b_result: "fixed"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
-last_task9_at: '2026-05-13T22:26:00+08:00'
+last_task9_at: "2026-05-19T00:30:02+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-13'
-last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
-task9_review_notes: "2026-05-13 Task9 22:26：needs-rework。P0 1 / P1 3 / P2 1；Debug.getMemoryInfo 示例无法编译，ART free bytes 诊断、mallopt 虚拟内存治理与线程创建来源监控需回炉。"
+task9_reviewed_date: 2026-05-19
+last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
+task9_review_notes: "2026-05-19 Task9 00:20：needs-rework。P1 2：FD 耗尽不应直接归入 ART OOME；sigsetjmp/siglongjmp Native Crash 兜底缺 signal-safety 与进程状态边界。"
 ---
 
 # OOM 治理

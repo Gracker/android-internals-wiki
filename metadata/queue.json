@@ -12043,6 +12043,78 @@
         "https://developer.android.com/topic/performance/memory-management",
         "kernel/common/mm/compaction.c"
       ]
+    },
+    {
+      "id": "task9-20260519-2.15-graphics-memory-boundary",
+      "section": "2.15",
+      "priority": 85,
+      "title": "DMA-BUF/Gralloc Android 16 图形内存优化边界仍未闭环",
+      "description": "libdmabufheap pooling 与 Binder FDA 仍被放在 Android 16 版本增强和参考资料中，但正文同时承认缺少 AOSP 源码锚点，需拆成已确认能力、待验证线索和 vendor 实现。",
+      "issue_type": "version-differences-source-evidence",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "added_at": "2026-05-19T00:30:02+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/证据边界",
+          "location": "L178-L184、L429-L433",
+          "detail": "libdmabufheap pooling 与 Binder FDA 已标 [待验证]，但版本演进仍写“Android 16 同时引入三项影响图形内存效率的增强”，会把未证实机制读成平台事实。",
+          "suggestion": "版本表只保留已核实的 allocator AIDL / mapper stable-C / additionalOptions 边界；pooling 与 FDA 移到待验证或 research-gaps，补到具体 AOSP/vendor/Binder/Parcel 源码后再回正文。"
+        },
+        {
+          "type": "源码引用准确性",
+          "location": "L482 参考资料 `GraphicBuffer.cpp — Binder FDA 批量传输优化`",
+          "detail": "正文承认 android-16.0.0_r1 `GraphicBuffer.cpp` flatten/unflatten 未找到 FDA 直接调用链，但参考资料仍把该文件标成 Binder FDA 优化锚点。",
+          "suggestion": "删除该参考资料锚点，或补 Binder/Parcel 层 FDA 源码路径与 benchmark 后再恢复。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260519-20.5-oom-resource-boundary",
+      "section": "20.5",
+      "priority": 85,
+      "title": "OOM 治理中 FD 耗尽与 Native Crash 兜底边界不清",
+      "description": "FD 泄漏被归入 OOM 来源、sigsetjmp/siglongjmp 被写成 Native Crash 兜底方案，缺少 ART OOME 与资源耗尽崩溃的边界，以及 signal-safety / 进程状态不可恢复的限制。",
+      "issue_type": "principle-chain-safety-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "added_at": "2026-05-19T00:30:02+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/05-oom-governance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/资源分类",
+          "location": "L232-L242 FD 泄漏导致的 OOM",
+          "detail": "FD 耗尽通常表现为 open/socket/pipe/epoll/eventfd 失败、Looper/InputChannel 初始化失败或 FORTIFY abort，不等价于 ART `OutOfMemoryError` 投递路径。正文将其作为 OOM 类型会混淆 Java Heap / Native VA / FD 资源三类故障。",
+          "suggestion": "改为“FD 耗尽导致的资源型崩溃/初始化失败”，并说明放在 OOM 治理章是因为排查资源预算同源，而不是因为会稳定抛 OOME。L250 的 Binder 连接也不要归入 Socket FD 示例，可单列 Binder driver / `/dev/binder` 相关句柄。"
+        },
+        {
+          "type": "安全边界",
+          "location": "L227、L360-L378 sigsetjmp/siglongjmp 线程级兜底",
+          "detail": "从 SIGSEGV/SIGABRT 信号处理路径 `siglongjmp` 回业务线程不能写成通用兜底；异步信号安全、锁/堆/JNI 状态、崩溃线程持有资源都可能让进程处在不可恢复状态。",
+          "suggestion": "把该段限定为受控 native 子系统的实验性隔离策略，默认建议改为 minidump/现场采集 + 安全退出；如保留需说明 async-signal-safe 限制、主线程/共享状态/堆损坏场景不得恢复。"
+        }
+      ]
     }
   ],
   "metadata": {
