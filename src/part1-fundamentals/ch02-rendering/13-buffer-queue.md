@@ -54,13 +54,13 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_result: "pass-light-edit"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: "fixed"
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T18:52:00+08:00"
@@ -168,7 +168,7 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 "三缓冲"是最常见的窗口表现,不是唯一合法配置。对 App 窗口来说,我们经常会看到 producer 最多同时 dequeue 两块 buffer,consumer 再持有一块正在显示或等待 release 的 buffer,于是整体表现成三缓冲。
 
-在 BLAST 路径里,`BLASTBufferQueue::onFirstRef()` 设置 `maxDequeuedBufferCount`。Android 14 及更早版本默认值为 2,配上 consumer 侧的一块已 acquire buffer,形成三缓冲工作形态。android-16.0.0_r1 将默认值提升至 3,提高了应对 GPU 抖动的缓冲余量,对 120Hz+ 场景尤为明显。但这个值不是固定的,不同 Surface 类型、async mode、consumer 约束都可能让上限变化。
+在 BLAST 路径里,`BLASTBufferQueue::onFirstRef()` 设置 `maxDequeuedBufferCount`。Android 14 及更早版本默认值为 2,配上 consumer 侧的一块已 acquire buffer,形成三缓冲工作形态。android-16.0.0_r1 的默认值仍为 2,并未提升至 3;不同 Surface 类型、async mode、consumer 约束都可能让上限变化。
 
 ## Sync Fence 决定"状态变了"和"真的能碰这块内存"不是一回事
 
@@ -238,16 +238,16 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 `BufferQueueCore` 是 producer 和 consumer 共享的底层队列核心,持有所有共享状态。`mMutex` 是这些状态的唯一保护锁:
 
 ```cpp
-// platform/frameworks/native/libs/gui/BufferQueueCore.h (android14-release)
+// frameworks/native/libs/gui/include/gui/BufferQueueCore.h (android-14)
 class BufferQueueCore {
-    mutable Mutex mMutex; // 声明为 mutable,允许 const 方法内加锁
+    mutable std::mutex mMutex;
 
     // 共享数据结构
-    BufferSlot mSlots[NUM_BUFFER_SLOTS]; // NUM_BUFFER_SLOTS = 64
-    std::set<int> mFreeSlots;     // FREE 态但无 GraphicBuffer 的 slot
-    std::list<int> mFreeBuffers;  // FREE 态且已有 GraphicBuffer 的 slot
-    int64_t mFrameCounter;
-    std::condition_variable mDequeueCondition; // producer 阻塞等待
+    BufferQueueDefs::SlotsType mSlots; // NUM_BUFFER_SLOTS = 64
+    std::set<int> mFreeSlots;
+    std::list<int> mFreeBuffers;
+    uint64_t mFrameCounter;
+    std::condition_variable mDequeueCondition;
     // ...
 };
 ```
@@ -374,7 +374,7 @@ BufferQueue 的等待时间强依赖刷新率、Surface 类型和系统负载。
 
 正常情况下,App 这边 `queueBuffer()` 之后,consumer 会在接下来的合成周期里把它消费掉。BLAST 路径下,AOSP 还会把 trace 名字拼成 `QueuedBuffer - {windowName}BLAST#{producerId}`,这给我们把 app 侧提交和窗口消费对应起来提供了一个很实用的锚点。
 
-Android 16 起,`queueBuffer` trace 名称新增了 vsyncId 后缀（如 `queueBuffer - <vsyncId>`）。有了 vsyncId,我们可以把 App 侧的 `queueBuffer`、BLAST 的 `QueuedBuffer`、SurfaceFlinger 的合成周期、以及 FrameTimeline 的实际呈现时间串到同一个 vsync 周期上,实现跨进程帧数据的精准对齐。排查"App 以为自己交了帧但 SF 没合成"这类问题时,vsyncId 比时间戳对齐更可靠。
+在 Perfetto 中排查帧对齐问题时,可以利用 vsyncId 关联不同轨道的数据。vsyncId 出现在 `BLASTBufferQueue::acquireNextBufferLocked()` 的 `ATRACE_FORMAT` 中（Android 14 已存在）,配合 FrameTimeline 可以把 App 侧提交、SurfaceFlinger 合成周期和实际呈现时间串到同一个 vsync 周期。排查“App 以为自己交了帧但 SF 没合成”这类问题时,vsyncId 比时间戳对齐更可靠。注意 `queueBuffer` 本身的 trace 名称不会携带 vsyncId 后缀；vsyncId 关联入口在 BLAST 层和 FrameTimeline。
 
 如果同机型的平滑滑动 trace 里,`QueuedBuffer - ...BLAST#...` 到 FrameTimeline 实际呈现之间通常只隔一个合成周期,而某次卡顿 trace 连续跨了多个周期,这就说明问题已经不只是"这一帧画慢了",而是 buffer 提交之后在下游又堆住了。
 
@@ -437,7 +437,7 @@ AOSP 源码里,Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRe
 | Android 11 (API 30) | `android-11.0.0_r48` 已存在 `BLASTBufferQueue.cpp`,`ViewRootImpl.java` 已创建 `new BLASTBufferQueue(...)` | BLAST 代码进入窗口提交流程,但常规 Activity 窗口是否默认使用要按具体分支和设备实现核对 |
 | Android 12 (API 31) | 常规 Activity 窗口默认转向 BLAST 路径 | 读 trace 时应优先按 App 进程内 `BLASTBufferItemConsumer` + `SurfaceControl.Transaction::setBuffer()` 模型分析 |
 | Android 14 (API 34) | `BLASTBufferQueue.cpp` 引入 `AsyncProducerListener` 包装 `IProducerListener` 回调 | producer dequeue 路径与 listener 执行解耦,降低同步回调造成锁等待的风险 |
-| Android 16 (API 36) | `BLASTBufferQueue` 默认 `maxDequeuedBufferCount` 从 2 提升至 3;`queueBuffer` trace 名称新增 vsyncId 后缀 | 三缓冲余量增大,对 120Hz+ 场景的 GPU 抖动吸收能力增强;vsyncId 支持跨进程帧对齐精准追踪 |
+| Android 16 (API 36) | vsyncId 关联入口在 `BLASTBufferQueue::acquireNextBufferLocked()` (Android 14 已存在),`queueBuffer` 本身不携带 vsyncId 名称 | 跨进程帧对齐追踪仍依赖 BLAST 层 + FrameTimeline,`queueBuffer` slice 不变 |
 
 Android 12 之后还有持续演进,但 `frame rate override`、`maxBufferCount`、以及"无锁 MessageQueue 与 BLAST 协同优化"这些说法,必须分别拿 release note、commit 或源码落点来支撑,不能因为它们听起来合理就先写进版本表。当前素材还不足以把这些结论稳稳地归因到 BufferQueue 本身,所以这里先不展开。
 

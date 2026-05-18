@@ -3716,7 +3716,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
@@ -3762,7 +3762,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T19:47:40+08:00"
+      "added_at": "2026-05-13T19:47:40+08:00",
+      "completed_date": "2026-05-18T23:31:04",
+      "completed_reason": "Task 2B 回炉修复: P0 删除不存在的AHardwareBuffer_allocateWithOptions(), P1 allocate2/additionalOptions版本修正(Android 16新增→Android 15已存在), P1 libdmabufheap池化降级为待验证, P1 Binder FDA 20%-40%收益降级为待验证"
     },
     {
       "id": "task9-20260513-4.6-cmc-version-boundary",
@@ -4037,7 +4039,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/05-oom-governance.md"
@@ -4077,7 +4079,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T22:26:00+08:00"
+      "added_at": "2026-05-13T22:26:00+08:00",
+      "completed_date": "2026-05-18T23:31:04",
+      "completed_reason": "Task 2B 回炉修复: P0 Debug.getMemoryInfo API 签名修正(预分配MemoryInfo+getTotalPrivateDirty), P1 ART OOM 诊断拆为两类(碎片化vs整体饱和), P1 mallopt(M_PURGE)从虚拟内存治理移至Native RSS说明, P1 线程创建监控改为ThreadFactory封装"
     },
     {
       "id": "task9-21.5-splashscreen-compat-behavior-20260514",
@@ -4275,7 +4279,7 @@
       "added_at": "2026-05-14T03:44:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
@@ -4307,7 +4311,9 @@
           "detail": "Android SDK 文档确实说明所有 HardwareRenderer instances share a common render thread，但正文 Java 片段里的 private final RenderThread mRenderThread 不是 HardwareRenderer.java 的实际字段。把说明性伪代码标成源码会误导读者。",
           "suggestion": "改成引用 HardwareRenderer 文档句子 + AOSP graphics/java/android/graphics/HardwareRenderer.java；若要追 native 线程，补 libhwui RenderProxy / renderthread/RenderThread.cpp 路径。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-18T23:31:04",
+      "completed_reason": "Task 2B 回炉修复: P0 Vulkan 版本基线表拆分(平台API可用性+新设备launch requirement), P0 Perfetto GPU counter 配置修正(sampling_period_ns→counter_period_ns, counter_ids改为repeated), P1 RenderThread 代码片段改为文档引用+源码路径"
     },
     {
       "id": "task9-20260514-5.11-ml-npu-litert-aicore-unsupported",
@@ -11164,7 +11170,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T10:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-18T23:31:04",
+      "completed_reason": "Task 2B 回炉修复: P0 BLASTBufferQueue maxDequeuedBufferCount从2→3删除(android-16仍为2), P0 queueBuffer vsyncId版本差异修正(vsyncId在BLAST acquireNextBufferLocked Android 14已存在,queueBuffer本身不携带), P0 BufferQueueCore.h源码路径和代码片段修正(std::mutex/BufferQueueDefs::SlotsType/uint64_t)"
     },
     {
       "id": "task2a-26.14-performance-experiment-statistics",
@@ -11544,10 +11552,12 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T15:25:00+08:00",
       "created_date": "2026-05-18",
-      "status": "pending",
+      "status": "completed",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "dependencies": []
+      "dependencies": [],
+      "completed_date": "2026-05-18T23:31:04",
+      "completed_reason": "Task 2B 回炉修复: sugov_get_util()代码块已在前序修正中与android16-6.12源码对齐, GPU+NPU协同调度扩展段不存在(已处理或从未写入), 无额外修复"
     },
     {
       "id": "task9-audit-14.2-simpleperf-proto-callchain",

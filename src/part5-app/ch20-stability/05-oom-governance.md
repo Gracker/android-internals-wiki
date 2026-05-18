@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 created_by: "task2a"
 reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
@@ -35,7 +35,7 @@ last_task6_at: "2026-05-13T21:32:00+08:00"
 last_task6_review_log: logs/review/2026-05-13-21-review.md
 task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task9_at: '2026-05-13T22:26:00+08:00'
 task9_reviewed_by: openclaw-task9
@@ -91,8 +91,9 @@ giving up on allocation because <1% of heap free after GC.
 
 - **growth limit**：虚拟机为应用设置的堆上限（`Runtime.getRuntime().maxMemory()`），通常 256 MB 或 512 MB，由 `ActivityManager` 在进程启动时通过 `processinfo` 配置。
 - **target footprint**：当前堆的目标大小，ART 的 GC 会尽量把堆控制在这个值附近。当 target footprint 等于 growth limit 且空闲内存不够分配时，OOM 产生。
-- **free bytes / until OOM**：当前空闲内存和距 OOM 的余量。如果 free bytes 大于请求分配的大小但仍报 OOM，说明碎片化严重——连续空间不够。
-- **<1% of heap free after GC**：说明 GC 后堆空闲比例极低，不是单次大对象分配导致的，而是整体堆占用已饱和。
+- **free bytes / until OOM**：当前空闲内存和距 OOM 的余量。单独看 free bytes 大于请求大小不能直接断定碎片化——需要结合下文的 `LogFragmentationAllocFailure` 输出判断。
+- **<1% of heap free after GC**：说明 GC 后堆空闲比例极低，属于整体堆占用饱和，不是碎片化问题。
+- **largest contiguous chunk < N** 或 fragmentation alloc failure 信息：这才是堆碎片化的明确信号——空闲字节数足够但连续空间不够。
 
 ### 产生路径
 
@@ -120,16 +121,14 @@ void Heap::ThrowOutOfMemoryError(Thread* self, size_t byte_count,
 
 `Heap::ThrowOutOfMemoryError` 是堆 OOM 的唯一出口。它根据分配类型（ROS_ALLOC、DL_MALLOC、BUMP_POINTER、REGION_TLAB、LOS 等）定位到具体的 Space，输出碎片化信息。
 
-### 治理方向
+### 诊断分类
 
-按错误信息的分类，治理方向如下：
+`Heap::ThrowOutOfMemoryError` 的内部逻辑把 OOM 分成两类，排查时先区分：
 
-| 错误特征 | 典型原因 | 治理方向 |
-|----------|----------|----------|
-| 分配大对象失败，free bytes 充足 | 堆碎片化、LargeObject 分散 | 减少大对象分配频率，对象池化 |
-| free bytes 极少，GC 后 <1% | 整体堆占用饱和 | 排查内存泄漏，降低常驻内存 |
-| growth limit 本身太小 | 设备低内存配置或 largeHeap 未设置 | 评估是否申请 largeHeap，或拆分功能 |
-| 碎片化信息提示 "largest contiguous chunk < N" | ROS_ALLOC / Region Space 碎片 | 调整分配策略，避免频繁分配/释放不同大小对象 |
+| 诊断信号 | 含义 | 排查方向 |
+|----------|------|----------|
+| `largest contiguous chunk < N` / `LogFragmentationAllocFailure` | 空闲总字节数够，但连续空间不足 | 减少大对象分配频率、对象池化、避免频繁分配/释放不同大小对象 |
+| `<1% of heap free after GC` | GC 后整体堆空闲比例极低 | 排查内存泄漏、降低常驻内存、评估是否需要 growth limit 扩展 |
 
 内存泄漏的具体检测手段（Shark 解析 hprof、GC Root 引用链追踪）详见 23.1 节。Java 堆优化策略（减少对象分配、对象池、缓存策略）详见 23.4 节。
 
@@ -210,7 +209,7 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 **线程治理**（预防）
 
 1. 全局线程池统一管理异步任务，禁止直接 `new Thread`。使用 `Executors.newFixedThreadPool` 或 Kotlin 协程的 `Dispatchers.Default` / `Dispatchers.IO`。
-2. 三方库的线程创建需要监控。通过 `ThreadGroup` 或 `Thread.setDefaultUncaughtExceptionHandler` 记录线程创建来源。
+2. 三方库的线程创建需要监控。通过统一 `ThreadFactory` 或协程 dispatcher 封装记录创建堆栈；必要时 hook `Thread.start()`、`pthread_create()` 或三方库线程工厂，在阈值触发时同时上报当前线程堆栈与创建堆栈。
 3. 设定进程线程数上限阈值（线上通常设 400-500），超过阈值触发告警。
 
 **线程监控**（发现）
@@ -324,7 +323,9 @@ int proxy_open(char* path, int flags, int mode) {
 - 迁移到 64 位：从地址空间上解决 32 位进程的虚拟地址上限。
 - 减少线程数：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。
 - 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并或按需加载。
-- 调整 `malloc` 参数：`mallopt(M_PURGE, 1)` 释放空闲 arena 的物理页，减少虚拟内存碎片。
+- 减少线程栈和 mmap/so 映射占用：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。每个 so 的代码段 + 数据段都要占用虚拟地址空间，动态合并或按需加载。
+- 拆分进程：将功能模块拆到独立进程，分摊虚拟地址空间压力。
+- `mallopt(M_PURGE, 1)` 归还空闲 arena 的物理页：这招降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
 
 虚拟内存优化详见 23.6 节（大型 App 的多进程内存策略）。
 
@@ -341,15 +342,14 @@ OOM 是 `Error` 不是 `Exception`，默认的 `UncaughtExceptionHandler` 会终
 ```kotlin
 Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
   if (throwable is OutOfMemoryError) {
-    // 记录当时的内存状态
+    // 预分配 MemoryInfo，避免 OOM 路径再分配
+    val memInfo = Debug.MemoryInfo()
+    Debug.getMemoryInfo(memInfo)
     val runtime = Runtime.getRuntime()
-    val memInfo = Debug.getMemoryInfo()
     logOOMState(runtime.totalMemory(), runtime.freeMemory(),
                 runtime.maxMemory(), memInfo.totalPrivateDirty)
-    // 安全退出：关闭所有 Activity，清空缓存，再退出
     safeExit()
   } else {
-    // 交给原 Handler 处理
     defaultHandler.uncaughtException(thread, throwable)
   }
 }
