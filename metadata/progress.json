@@ -174,11 +174,11 @@
     "1.11"
   ],
   "review_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
-    "src/part5-app/ch20-stability/02-java-crash-governance.md"
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+    "src/part2-performance/ch09-anr/05-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-18 03: 深审 1.1/1.11/20.2；1.1 命中 SurfaceFlinger Android16 旧 doComposition 残留 P0，转 Task2B；1.11 与 20.2 无 P0/P1，自动晋升 finalized；新增 1 条 P2 suggestion。",
+  "review_summary": "Task9 2026-05-18 11: 深审 19.13/19.23/9.5；19.13 命中 AndroidX Tracing compat/版本表 P0，19.23 命中 OkHttp responseBodyEnd 指标口径 P1，9.5 命中 Cached Apps Freezer AOSP 版本边界 P0/P1；新增 queue 3 条，无自动晋升。",
   "task6_review_summary": {
     "l1_l2_fixes": 10,
     "l3_issues": 0,
@@ -377,10 +377,13 @@
       "p3": 1
     },
     "9.5": {
-      "p0": 2,
-      "p1": 0,
+      "p0": 1,
+      "p1": 1,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "reviewed_at": "2026-05-18T11:42:46+08:00",
+      "log": "logs/deep-review/2026-05-18-11-deep-review.md",
+      "summary": "P0 1/P1 1：Cached Apps Freezer AOSP Input 豁免与日志锚点缺证据，Android 11+ 版本边界需修正。"
     },
     "2.10": {
       "p0": 2,
@@ -550,10 +553,13 @@
       "p3": 0
     },
     "19.13": {
-      "p0": 2,
+      "p0": 1,
       "p1": 0,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "reviewed_at": "2026-05-18T11:42:46+08:00",
+      "log": "logs/deep-review/2026-05-18-11-deep-review.md",
+      "summary": "P0 1：traceAsync 起始版本、pre-29 fallback 与 TraceEventCache 源码事实错误。"
     },
     "19.26": {
       "p0": 1,
@@ -1261,6 +1267,15 @@
       "task9_reviewed_at": "2026-05-18T03:31:27+08:00",
       "task9_log": "logs/deep-review/2026-05-18-03-deep-review.md",
       "task9_summary": "无 P0/P1；P2 1：16KB 页与 VMA 数量边界需修正；自动晋升 finalized。"
+    },
+    "19.23": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-18T11:42:46+08:00",
+      "log": "logs/deep-review/2026-05-18-11-deep-review.md",
+      "summary": "P1 1：responseBodyEnd 是应用消费/关闭完成边界，不等同纯网络下载完成。"
     }
   },
   "total_review_sections": 156,
