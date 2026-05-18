@@ -1,7 +1,7 @@
 {
   "total": 320,
-  "draft": 1,
-  "ready-for-review": 117,
+  "draft": 0,
+  "ready-for-review": 118,
   "finalized": 202,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -1370,8 +1370,8 @@
   },
   "total_review_sections": 161,
   "next_review_candidates": [],
-  "ready_for_review": 100,
-  "last_updated": "2026-05-18T23:04:00+08:00",
+  "ready_for_review": 101,
+  "last_updated": "2026-05-19T01:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
@@ -3828,6 +3828,24 @@
       "last_task2a_at": "2026-05-18T23:04:00+08:00",
       "gap_score": 16,
       "confidence": "medium"
+    },
+    "4.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "title": "内存规整与直接回收性能边界",
+      "file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-19",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-19",
+      "last_task2a_at": "2026-05-19T01:04:00+08:00",
+      "gap_source": "素材驱动/AOSP结构/官方文档",
+      "confidence": "medium",
+      "task6_state": "pending",
+      "task6_result": "pending",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -3845,9 +3863,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "3.10",
-  "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
-  "last_task2a_processed_date": "2026-05-18",
+  "last_task2a_processed": "4.10",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+  "last_task2a_processed_date": "2026-05-19",
   "task9_last_review_detail": {
     "date": "2026-05-18",
     "time": "12:44",
@@ -3897,9 +3915,9 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
   ],
   "total_review_files": 152,
-  "last_task2a_at": "2026-05-18T23:04:00+08:00",
-  "last_task2a_section": "3.10",
-  "last_task2a_file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+  "last_task2a_at": "2026-05-19T01:04:00+08:00",
+  "last_task2a_section": "4.10",
+  "last_task2a_file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
   "last_task6_review": "2026-05-18",
   "last_task6_sections": [
     "2.6",
@@ -3933,7 +3951,7 @@
   "last_task9_at": "2026-05-18T12:44:40+08:00",
   "last_task2a_result": "processed-new-gap",
   "ready-to-publish": 198,
-  "last_task2a_processed_section": "3.10",
+  "last_task2a_processed_section": "4.10",
   "task6_last_review_at": "2026-05-18T22:15:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-18-22-review.md",
   "task6_last_review_sections": [
@@ -4663,16 +4681,34 @@
       "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
       "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
     },
-    "3.10": "ready-for-review"
+    "3.10": "ready-for-review",
+    "4.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "title": "内存规整与直接回收性能边界",
+      "file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-19",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-19",
+      "last_task2a_at": "2026-05-19T01:04:00+08:00",
+      "gap_source": "素材驱动/AOSP结构/官方文档",
+      "confidence": "medium",
+      "task6_state": "pending",
+      "task6_result": "pending",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "queue_priority": 80
+    }
   },
   "task2a_last_processed": {
-    "section": "3.10",
-    "title": "InputDispatcher stale event 判定与事件丢弃",
-    "file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
+    "section": "4.10",
+    "title": "内存规整与直接回收性能边界",
+    "file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
     "status": "ready-for-review",
-    "processed_at": "2026-05-18T23:04:00+08:00",
+    "processed_at": "2026-05-19T01:04:00+08:00",
     "processed_by": "openclaw-task2a",
-    "mode": "gap-mining-and-processing"
+    "mode": "draft-processing"
   },
   "task2a_last_gap_mining": {
     "section": "3.10",
@@ -4686,7 +4722,7 @@
     "25.6",
     "25.8"
   ],
-  "last_task2a_processed_at": "2026-05-18T23:04:00+08:00",
+  "last_task2a_processed_at": "2026-05-19T01:04:00+08:00",
   "last_task9_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
