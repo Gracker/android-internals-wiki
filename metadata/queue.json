@@ -11697,6 +11697,159 @@
         "https://source.android.com/docs/compatibility/cts/media-cts",
         "https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html"
       ]
+    },
+    {
+      "id": "task9-20260518-2.23-window-setframerate-api",
+      "section": "2.23",
+      "priority": 95,
+      "title": "DisplayFrameRate 入口误写 Window.setFrameRate",
+      "description": "正文要点把 DisplayFrameRate 请求入口写成 Window.setFrameRate；AOSP android-16.0.0_r1 public API 中不存在 Window.setFrameRate。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_at": "2026-05-18T19:44:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L70-L74 / outline DisplayFrameRate 请求",
+          "detail": "android-16.0.0_r1 current.txt 中 Surface 有 setFrameRate()，View 有 setRequestedFrameRate()，Window 只有 setFrameRateBoostOnTouchEnabled()/setFrameRatePowerSavingsBalanced()，没有 Window.setFrameRate()。",
+          "suggestion": "把入口改为 Surface.setFrameRate() / View.setRequestedFrameRate() / SurfaceControl.Transaction.setFrameRate()；Window 只保留 touch boost 与 power-savings 策略开关，不写成帧率请求 API。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260518-1.8-oom-service-anr-source",
+      "section": "1.8",
+      "priority": 95,
+      "title": "AMS oom_adj、ANR 与广播源码口径仍不符合 android-16",
+      "description": "1.8 章节仍保留上一轮 Task9 指出的 TOP_SLEEPING oom_adj、Service ANR 旧实现，并新增发现 ANR trace 文件名与 BroadcastQueueImpl 计时/版本表述问题。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_at": "2026-05-18T19:44:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L174-L190 / 进程优先级表",
+          "detail": "正文仍把 TOP_SLEEPING 写成 oom_adj=200、与 PERCEPTIBLE 同档。AOSP android-16.0.0_r1 OomAdjuster 在 app == topApp 的 sleeping 分支设置 adj = FOREGROUND_APP_ADJ，并把 adjType 标为 top-sleeping；TOP_SLEEPING 更适合作为 procstate/importance 语义，不应放进 oom_adj=200 表项。",
+          "suggestion": "移除 TOP_SLEEPING 的 oom_adj=200 表项，或改成“procstate/importance 与 adjType”说明；保持 PERCEPTIBLE_APP_ADJ=200 只用于可感知/常规 non-short FGS。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L286-L307 / Service ANR 伪代码",
+          "detail": "代码块仍写 scheduleServiceTimeoutLocked() 通过 mAm.mHandler.obtainMessage(SERVICE_TIMEOUT_MSG) + sendMessageDelayed() 埋雷。android-16.0.0_r1 ActiveServices.scheduleServiceTimeoutLocked() 实际计算 delay 后调用 mActiveServiceAnrTimer.start(proc, delay)，realStartServiceLocked() 的签名也包含 IApplicationThread、pid、UidRecord、enqueueOomAdj、serviceBindingOomAdjPolicy 等参数。",
+          "suggestion": "把代码块替换为 android-16 的 AnrTimer 路径骨架，或明确标注为历史版本示意；保留 onCreate 位于计时窗口内的结论，但源码锚点必须指向 mActiveServiceAnrTimer.start()/serviceDoneExecutingLocked()。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L332-L334 / AMS 的 ANR 数据采集",
+          "detail": "正文写 ANR stack traces 写入 /data/anr/traces.txt。android-16.0.0_r1 StackTracesDumpHelper 使用 ANR_TRACE_DIR=/data/anr、ANR_FILE_PREFIX=anr_，createAnrDumpFile() 创建 /data/anr/anr_<timestamp>，不是固定 traces.txt。",
+          "suggestion": "改为“写入 /data/anr/anr_<timestamp>（由 StackTracesDumpHelper 创建），部分旧资料或旧版本可能提到 traces.txt”。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L525 / 广播分发流程第 4 点",
+          "detail": "正文说 Receiver 执行 onReceive() 后系统按配置计时。android-16 BroadcastQueueImpl.dispatchReceivers() 在 setDeliveryState(DELIVERY_SCHEDULED) 和 schedule receiver 前就 startDeliveryTimeoutLocked(queue, softTimeoutMillis)。",
+          "suggestion": "改成“调度 Receiver 前/调度时启动 delivery timeout；Receiver 完成后取消或推进状态”，避免把 ANR 计时起点后移到 onReceive() 之后。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L527-L529 / ModernBroadcastQueue 架构（Android 15+）",
+          "detail": "正文写 AOSP 从 Android 15 起引入按进程组织的广播队列，但 Android 14 已有 BroadcastQueueModernImpl / BroadcastProcessQueue 相关现代实现；android-16 则是 BroadcastQueueImpl + BroadcastProcessQueue。",
+          "suggestion": "改成版本矩阵：Android 14/15 可锚定 BroadcastQueueModernImpl + BroadcastProcessQueue；android-16 锚定 BroadcastQueueImpl + BroadcastProcessQueue，并补充并发上限/调度约束。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260518-20.3-crashdump-breakpad-source",
+      "section": "20.3",
+      "priority": 95,
+      "title": "Native crash_dump、Breakpad、ApplicationExitInfo 与 JNI 边界口径错误",
+      "description": "20.3 章节仍有 debuggerd/crash_dump 链路、Breakpad debug-id/源码锚点、ApplicationExitInfo tombstone、JNI 边界与 Crashpad/mooner 风险边界错误。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-18",
+      "added_at": "2026-05-18T19:44:00+08:00",
+      "added_by": "task9-deep-tech-review",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L100-L113 / 崩溃收集流程",
+          "detail": "正文写 tombstoned exec 出 crash_dump。android-16.0.0_r1 的 debuggerd_handler.cpp 中，崩溃进程内的 debuggerd signal handler 使用 _Fork() 创建子进程并 execle(CRASH_DUMP_PATH, ...)，crash_dump 随后连接 tombstoned 获取输出 fd，并通过 /data/system/ndebugsocket 通知 ActivityManager。tombstoned 不负责 exec crash_dump。",
+          "suggestion": "改成“崩溃进程 handler/pseudothread fork+exec crash_dump；crash_dump 连接 tombstoned 写 tombstone，并通知 ActivityManager”的链路。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L182 / tombstone 源码锚点",
+          "detail": "正文把 tombstone 格式锚到 crash_dump.cpp 的 engrave_tombstone()，但函数定义在 system/core/debuggerd/libdebuggerd/tombstone.cpp / tombstone_proto.cpp，crash_dump.cpp 只是调用方。",
+          "suggestion": "sources 和正文锚点补 libdebuggerd/tombstone*.cpp，crash_dump.cpp 只作为调度/ptrace/AM 通知入口。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L285-L301 / Breakpad 符号目录协议",
+          "detail": "正文写 MODULE id 是 16 字符、Android 10+ Build ID 128 bit 并截取前 16 字符。Breakpad symbol_files.md 只要求 MODULE id 是用于精确匹配模块的十六进制序列，示例为 32 位 hex；符号目录应使用 MODULE 行中的完整 debug-id，不应泛化为“前 16 字符”。",
+          "suggestion": "改为“symbols/<module-name>/<debug-id-from-MODULE>/<module-name>.sym”，删除固定 16 字符/截断前 16 字符说法；如需讲 Chrome/Cronet 转换，单独加版本和实现前提。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L178-L180 / 线上获取 tombstone",
+          "detail": "正文写 API 31+ 的 REASON_CRASH_NATIVE 可通过 getTraceInputStream() 获取 native tombstone 原文。android-16 ApplicationExitInfo 注释说明返回的是 tombstone protobuf InputStream，且全局循环缓冲区被覆盖时可能为 null。",
+          "suggestion": "改为“API 31+ 可通过 getTraceInputStream() 获取 tombstone protobuf；需要按 tombstone.proto 解析，且可能返回 null”。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L188-L199 / 三种堆栈回溯方式",
+          "detail": "正文说 CFI/.eh_frame 能够同时解析 Java 方法调用帧，混淆了 native CFI unwind 与 libunwindstack 对 dex/JIT frame 的支持。Java/Dex/JIT 帧解析不来自 .eh_frame CFI 本身。",
+          "suggestion": "拆成 native CFI/EH/FP unwind 与 libunwindstack 的 DexFiles/JitDebug 支持两条线，避免把 Java 帧解析归因给 .eh_frame。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L303-L305 / minidump 符号还原流程源码锚点",
+          "detail": "正文锚到 minidump_processor.cc 的 FindSymbolFile() 与 SourceLineResolver::FindLine()，android-16 external/google-breakpad 中未命中这些函数名；符号路径查找在 SimpleSymbolSupplier::GetSymbolFileAtPathFromRoot()，地址解析在 BasicSourceLineResolver::Module::LookupAddress()。",
+          "suggestion": "改用 SimpleSymbolSupplier 与 BasicSourceLineResolver 的真实函数名，或把该段降级为流程说明不写不存在的函数锚点。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L328-L331 / Crashpad 集成",
+          "detail": "正文写 Crashpad 在 Linux/Android 用 ptrace 代替信号处理器，容易误导为完全不安装 signal handler。Crashpad Android/Linux 仍需要崩溃端捕获信号，再交给 handler 进程/线程生成 dump；ptrace 是后续采集机制之一。",
+          "suggestion": "改成“Crashpad 将 dump 生成外移到 handler 进程/线程，降低在崩溃线程中做复杂工作的风险；不是简单用 ptrace 完全取代 signal handler”。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L438-L442 / native 函数签名不匹配",
+          "detail": "正文写运行时 JNIEnv->FindSymbol() 找不到 JNI 函数，但 JNIEnv 没有 FindSymbol() API。JNI 动态注册/静态解析失败通常表现为 dlsym/ART native method resolve 失败并抛 UnsatisfiedLinkError，不应写成 JNIEnv->FindSymbol() 或“调用到错误地址”。",
+          "suggestion": "改为 ART/JNI native method resolve、dlsym、RegisterNatives 的真实路径，并把结果描述为 UnsatisfiedLinkError 或注册失败。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L487-L542 / mooner 线程级安全点",
+          "detail": "正文把 sigsetjmp/siglongjmp + 全局 sigjmp_buf/handleFlag 兜底讲得过于可靠。该类方案存在多线程竞态、跨线程 longjmp、资源/锁状态破坏、绕过系统 tombstone 等高风险边界。",
+          "suggestion": "补“实验性/高风险/不建议通用线上兜底”的边界，并明确只适合隔离线程和受控实验，不应作为稳定性治理主方案。"
+        }
+      ]
     }
   ],
   "metadata": {

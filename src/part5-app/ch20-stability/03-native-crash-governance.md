@@ -21,16 +21,16 @@ sources:
     path: "system/core/debuggerd/handler/debuggerd_handler.cpp"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: needs-rework
+task9_state: "reviewed"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-18T06:20:00+08:00"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T19:44:00+08:00"
+task2b_state: "pending"
+task2b_result: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-11"
 last_task6_at: "2026-05-11T08:00:00+08:00"
