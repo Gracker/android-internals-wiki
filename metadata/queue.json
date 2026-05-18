@@ -11379,7 +11379,8 @@
       "status": "pending",
       "dependencies": [],
       "material_paths": [
-        "logs/deep-review/2026-05-18-12-deep-review.md"
+        "logs/deep-review/2026-05-18-12-deep-review.md",
+        "logs/deep-review/2026-05-18-15-deep-review.md"
       ],
       "related_files": [
         "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -11467,22 +11468,94 @@
       "gap_score": 18,
       "completed_date": "2026-05-18",
       "completed_reason": "Task 2A 加工完成：status ready-for-review，补齐 16KB Page Size native 兼容性治理、NDK/AGP 升级、线上归因与验证流水线。"
+    },
+    {
+      "id": "task9-2026-05-18-2.6-android13-surfaceflinger-loop",
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 与合成",
+      "priority": 95,
+      "title": "Android 13 SurfaceFlinger 主循环版本边界错误",
+      "description": "正文把 Android 12-13 合并为 onMessageReceived / INVALIDATE / REFRESH 旧模型；AOSP android-13.0.0_r1 已无 onMessageReceived/onMessageInvalidate/onMessageRefresh，主循环由 MessageQueue::Handler::handleMessage 调用 commit() → composite() → sample()。",
+      "reason": "[Deep Tech Review] SurfaceFlinger Android 13 主循环版本边界错误，会误导读者在 Android 13 trace/source 中寻找不存在的 INVALIDATE/REFRESH 旧入口。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L176-L224 SurfaceFlinger 主循环版本分段",
+          "detail": "AOSP android-12.0.0_r1 / android-12.1.0_r1 存在 SurfaceFlinger::onMessageReceived()、onMessageInvalidate()、onMessageRefresh()；android-13.0.0_r1 中这些符号不存在，MessageQueue::Handler::handleMessage() 直接调用 compositor.commit(frameTime, vsyncId, expectedVsyncTime)、compositor.composite(frameTime, vsyncId)、compositor.sample()。正文当前写 Android 12-13 常见 INVALIDATE/REFRESH，会把 Android 13 的可观测入口写错。",
+          "suggestion": "把版本分段改成 Android 12/12L：onMessageReceived → INVALIDATE/REFRESH；Android 13：MessageQueue::Handler::handleMessage → commit(nsecs_t, int64_t, nsecs_t) / composite(nsecs_t, int64_t)；Android 14+：Scheduler::onFrameSignal → commit(TimePoint...) / composite(TimePoint...)，Android 15+ 再补 FrameTargeter/FrameTargets 多显示签名。"
+        }
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-15-deep-review.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T15:25:00+08:00",
+      "created_date": "2026-05-18",
+      "status": "pending",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "dependencies": []
+    },
+    {
+      "id": "task9-2026-05-18-5.3-sugov-get-util-source",
+      "section": "5.3",
+      "section_title": "大小核架构",
+      "priority": 95,
+      "title": "android16-6.12 sugov_get_util() 代码块与源码不一致",
+      "description": "正文标注为 android16-6.12 GKI 实际实现的 sugov_get_util() 代码块遗漏 scx_cpuperf_target()/scx_switched_all() 主路径，并把 boost 直接加到 cpu_util_cfs_boost 后再进入 effective_cpu_util；实际源码先取 scx_cpuperf_target，条件叠加 CFS boost，effective_cpu_util 后再 max(util, boost)。",
+      "reason": "[Deep Tech Review] schedutil 源码示例与 android16-6.12 kernel/sched/cpufreq_schedutil.c 实际实现不一致，需要回炉修正。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L266-L290 sugov_get_util() 代码块与解释",
+          "detail": "android16-6.12 源码为 unsigned long min, max, util = scx_cpuperf_target(sg_cpu->cpu); if (!scx_switched_all()) util += cpu_util_cfs_boost(sg_cpu->cpu); util = effective_cpu_util(...); util = max(util, boost); sg_cpu->bw_min = min; sg_cpu->util = sugov_effective_cpu_perf(...). 正文代码块写成 util = cpu_util_cfs_boost(...) + boost，并额外设置 max = arch_scale_cpu_capacity(...)，会误导读者理解 sched_ext 与 boost 的合流顺序。",
+          "suggestion": "替换为 android16-6.12 的真实骨架；解释中明确 scx_cpuperf_target 是当前 util 初值，非“预留接口”；boost 在 effective_cpu_util 之后通过 max(util, boost) 抬底。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "扩展：GPU + NPU 的协同调度概念",
+          "detail": "该扩展仅保留一条 [需补充素材] 占位句，缺少任务卸载策略、GPU/NPU 在异构计算中的角色，以及这些任务对 CPU 调度影响的可靠素材，当前无法作为成稿小节。",
+          "suggestion": "Task2B 补充可靠素材后再决定保留、合并到 §5.11，或删除该扩展，避免空壳扩展留在发布稿。"
+        }
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-18-15-deep-review.md",
+        "intake/suggestions.md（含 review 意见）",
+        "logs/review/2026-05-18-16-review.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-18T15:25:00+08:00",
+      "created_date": "2026-05-18",
+      "status": "pending",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "dependencies": []
     }
   ],
   "metadata": {
-    "total_entries": 322,
-    "p0_count": 135,
-    "last_updated": "2026-05-18T13:20:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 147,
+    "total_entries": 332,
+    "p0_count": 142,
+    "last_updated": "2026-05-18T16:05:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 148,
     "updated_date": "2026-05-18",
-    "last_updated_by": "task9-deep-tech-review",
+    "last_updated_by": "task6-review",
     "pending": 157,
-    "completed_entries": 175
+    "completed_entries": 182
   },
-  "last_updated": "2026-05-18T15:23:37+08:00",
-  "last_updated_by": "task2b-content-processing-rework",
-  "pending": 157,
+  "last_updated": "2026-05-18T16:05:00+08:00",
+  "last_updated_by": "task6-review",
+  "pending": 148,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }

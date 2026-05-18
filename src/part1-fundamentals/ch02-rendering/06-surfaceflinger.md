@@ -3,11 +3,11 @@ title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
-reviewed_date: "2026-05-10"
+reviewed_date: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 rework_date: 2026-04-02
@@ -16,9 +16,9 @@ confidence: high
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task9_reviewed_date: "2026-05-15"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-15T12:31:59+08:00"
+task9_reviewed_date: "2026-05-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-18T15:25:00+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -30,18 +30,19 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: revisiting
-task9_state: pending
+task6_state: reviewed
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-05-18T15:23:37+08:00"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-18T15:23:37+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
-task6_reviewed_date: "2026-05-09"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。"
-last_task9_review_log: "logs/deep-review/2026-05-15-12-deep-review.md"
+task6_reviewed_date: "2026-05-18"
+last_task6_at: "2026-05-18T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-18-16-review.md"
+task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。"
+last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 ---
 
 # SurfaceFlinger 与合成
@@ -165,7 +166,7 @@ Android 12-16 都能按这组阶段理解，只是接口承载形式不同：And
 
 ## SurfaceFlinger 主循环
 
-了解了 SurfaceFlinger 的三大核心职责后，我们来看它在每一帧里到底做了什么。这里最好按版本拆开读，不然最容易把 Android 12-13 的 `INVALIDATE / REFRESH` 与 Android 14 之后的 `commit() / composite()` 混成一套代码路径。
+SurfaceFlinger 的三大职责落到每一帧里，重点是版本边界：Android 12-13 的 `INVALIDATE / REFRESH` 与 Android 14 之后的 `commit() / composite()` 不能混成一套代码路径。
 
 ### Android 12-13：INVALIDATE / REFRESH
 
@@ -219,7 +220,7 @@ Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`Fr
 
 读代码和读 Trace 时，可以先建立一组近似关系：`commit()` 更接近旧版 `INVALIDATE` 的职责，负责收事务、latch Buffer、更新本帧状态；`composite()` 更接近旧版 `REFRESH` 的职责，负责组织合成并提交到显示设备。这样对照 Android 12 到 Android 16 的资料时，不会把不同版本的入口混成一条线。
 
-在 Perfetto 中，旧版本更容易看到 `INVALIDATE / REFRESH` 这组 slice；新版本更适合直接盯 `commit`、`composite`、`present` 这一组阶段。无论名称怎么变，我们关心的问题没变，本帧什么时候拿到了新 Buffer，合成决策花了多久，真正的合成有没有跨过当前 VSync 窗口。
+在 Perfetto 中，旧版本更容易看到 `INVALIDATE / REFRESH` 这组 slice；新版本更适合直接盯 `commit`、`composite`、`present` 这一组阶段。无论名称怎么变，分析重点没变：本帧什么时候拿到了新 Buffer，合成决策花了多久，合成阶段是否跨过当前 VSync 窗口。
 
 [图：SurfaceFlinger 主循环时序图，左侧是 Android 12-13 的 INVALIDATE / REFRESH，两步模型；右侧是 Android 14+ 的 commit / composite，两步模型。两侧都标出 VSYNC-sf 到来、Buffer latch、合成决策、present 提交四个观察点。]
 
@@ -231,7 +232,7 @@ Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`Fr
 
 在 Perfetto 中展开 `surfaceflinger` 进程，主线程 Track 上最先要看的是本帧主循环的阶段名。这里同样要按版本读。
 
-- **Android 12-13**：更常见的是 `INVALIDATE` 和 `REFRESH`。`INVALIDATE` 对应事务处理、Buffer 检查、脏区收敛；`REFRESH` 对应真正的合成与 present。
+- **Android 12-13**：更常见的是 `INVALIDATE` 和 `REFRESH`。`INVALIDATE` 对应事务处理、Buffer 检查、脏区收敛；`REFRESH` 对应合成与 present。
 - **Android 14+**：更适合直接看 `commit`、`composite`、`present` 这一组 slice。名称变了，分析思路没有变，仍然是先看本帧是否 latch 到新内容，再看合成阶段是否超时。
 
 **正常表现**：不论 slice 名称是哪一组，总耗时都应该稳定落在当前刷新周期内。60Hz 设备的预算约 16.67ms，120Hz 设备约 8.33ms，SurfaceFlinger 自身通常只占其中一部分。
@@ -397,7 +398,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 ### `dumpsys SurfaceFlinger` 适合看快照，Perfetto 负责时序
 
-`dumpsys SurfaceFlinger` 适合确认 Layer 树、合成类型、Buffer 状态和刷新率配置。真正的掉帧时刻、Fence 等待、present 延迟和 transaction 风暴，还是要回到 Perfetto 的时间线里判断。
+`dumpsys SurfaceFlinger` 适合确认 Layer 树、合成类型、Buffer 状态和刷新率配置。掉帧发生时刻、Fence 等待、present 延迟和 transaction 风暴，还是要回到 Perfetto 的时间线里判断。
 
 ## 参考资料
 
@@ -431,7 +432,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 ### SurfaceFlinger FrontEnd 架构与 RequestedLayerState（源码级调研）
 - 来源：DeepResearch 调研结果（2026-05-09）
 - 类型：AIW 每日源码调研
-- 摘要：Android 15 引入 FrontEnd 模块，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleManager 生命周期管理和 LayerHierarchyBuilder 层级构建解耦，主合成线程只在真正需要合成计算时持有 mStateLock，大幅降低锁竞争。包含 Changes bitmask 枚举、TransactionHandler 事务批处理、以及 FrontEnd 目录结构。
+- 摘要：Android 15 引入 FrontEnd 模块，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleManager 生命周期管理和 LayerHierarchyBuilder 层级构建解耦，主合成线程只在需要合成计算时持有 mStateLock，大幅降低锁竞争。包含 Changes bitmask 枚举、TransactionHandler 事务批处理、以及 FrontEnd 目录结构。
 - 注入时间：2026-05-10
 - 价值：补充 Android 15 SurfaceFlinger FrontEnd 架构的源码级分析，对理解 SurfaceFlinger 锁优化和 Layer 状态管理机制极具价值
 
