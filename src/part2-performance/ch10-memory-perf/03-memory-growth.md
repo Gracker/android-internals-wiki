@@ -2,7 +2,7 @@
 title: 内存持续增长
 chapter: '10.3'
 section: '10.3'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
@@ -40,19 +40,20 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task2b_result: "pending"
+task2b_state: "pending"
+task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-21'
-last_task9_at: '2026-04-21T07:38:43+08:00'
+task9_reviewed_date: "2026-05-19"
+last_task9_at: "2026-05-19T02:27:04+08:00"
 last_task6_at: '2026-05-18T05:08:00+08:00'
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
+last_task9_audit: "2026-05-19"
 ---
 
 # 内存持续增长
