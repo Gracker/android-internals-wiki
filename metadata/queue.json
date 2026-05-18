@@ -11419,22 +11419,53 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T13:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260518-20.13-16kb-native-compatibility",
+      "section": "20.13",
+      "title": "16KB Page Size 兼容性与 Native 崩溃治理",
+      "priority": 80,
+      "description": "Android 15+ 16KB Page Size 对 native 依赖、NDK r27、Hook/监控 SDK 和线上崩溃归因的应用层治理章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-18",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md"
+      ],
+      "material_paths": [
+        "Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md",
+        "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md",
+        "Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md",
+        "DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb-backcompat-option"
+      ],
+      "created_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-18T14:04:00+08:00",
+      "gap_score": 18
     }
   ],
   "metadata": {
-    "total_entries": 321,
+    "total_entries": 322,
     "p0_count": 135,
     "last_updated": "2026-05-18T13:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 147,
     "updated_date": "2026-05-18",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 156,
+    "pending": 157,
     "completed_entries": 175
   },
-  "last_updated": "2026-05-18T13:20:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 156,
+  "last_updated": "2026-05-18T14:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 157,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"
 }
