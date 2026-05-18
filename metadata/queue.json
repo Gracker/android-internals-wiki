@@ -6838,7 +6838,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md"
@@ -6863,7 +6863,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T12:31:59+08:00"
+      "added_at": "2026-05-15T12:31:59+08:00",
+      "completed_at": "2026-05-18T15:23:37+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，问题单已逐项修正"
     },
     {
       "id": "task9-20260515-5.3-deep-tech-review",
@@ -6878,7 +6881,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/03-big-little.md"
@@ -6903,7 +6906,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T12:31:59+08:00"
+      "added_at": "2026-05-15T12:31:59+08:00",
+      "completed_at": "2026-05-18T15:23:37+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，问题单已逐项修正"
     },
     {
       "id": "task9-20260515-11.5-deep-tech-review",
@@ -7017,7 +7023,7 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T14:27:34+08:00",
-      "status": "pending",
+      "status": "completed",
       "title": "Perfetto Profile v54 命名与 linux.perf 版本边界修正",
       "description": "13.12 需修正 v54 Data Explorer 命名为官方 DataGrid/SQL table viewer 口径，并补 linux.perf callstack sampling 在 Android 15+、profileable/debuggable/userdebug 下的采集边界。",
       "issue_type": "source-code-accuracy",
@@ -7028,7 +7034,10 @@
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md"
-      ]
+      ],
+      "completed_at": "2026-05-18T15:23:37+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，问题单已逐项修正"
     },
     {
       "id": "task9-2026-05-15-22.10-rendereffect-runtime-shader-review",
@@ -11331,7 +11340,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "logs/deep-review/2026-05-18-12-deep-review.md"
@@ -11349,7 +11358,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T12:44:40+08:00"
+      "added_at": "2026-05-18T12:44:40+08:00",
+      "completed_at": "2026-05-18T15:23:37+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，问题单已逐项修正"
     },
     {
       "id": "task9-2026-05-18-25.6-pad-native-code-boundary",
@@ -11398,7 +11410,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/07-profiling-manager.md"
@@ -11418,7 +11430,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T13:20:00+08:00"
+      "added_at": "2026-05-18T13:20:00+08:00",
+      "completed_at": "2026-05-18T15:23:37+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，问题单已逐项修正"
     },
     {
       "id": "task2a-gap-20260518-20.13-16kb-native-compatibility",
@@ -11465,8 +11480,8 @@
     "pending": 157,
     "completed_entries": 175
   },
-  "last_updated": "2026-05-18T14:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-18T15:23:37+08:00",
+  "last_updated_by": "task2b-content-processing-rework",
   "pending": 157,
   "last_task2a_completed": "7.16",
   "last_task2a_completed_at": "2026-05-18T00:09:00+08:00"

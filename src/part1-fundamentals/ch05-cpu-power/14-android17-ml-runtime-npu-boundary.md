@@ -288,4 +288,43 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 | 更新方式 | 系统级 OTA（Gemini Nano 下载） | Play Services runtime OTA |
 | 适用场景 | 文本/图像/音频生成 AI | 物体检测、NLP、ASR 等传统 ML |
 
+
+
+## 源码调研补充（2026-05-18）
+
+### Android 端侧 AI 推理栈架构核心发现
+
+本次调研从 Android Developers Blog（2022-10）和 AOSP Neural Networks HAL 源码出发，验证了 Android 端侧 AI 推理栈的分层设计原则。
+
+**推理引擎分发模式变革**：
+- 传统模式：App 打包 TFLite `.aar`，推理引擎与 App 绑定，无法独立更新
+- 新模式：**TensorFlow Lite in Google Play Services**，推理引擎作为 platform service 通过 Play Services OTA 更新
+- 这解决了设备碎片化导致的 inference engine 老化问题（2022 年博客数据：每月服务数十万应用、数亿用户）
+
+**关键源码路径**：
+- NNAPI Java API：`frameworks/base/core/java/android/neuralnetworks/NeuralNetworks.java`（API 27+）
+- NNAPI HAL 定义：`hardware/interfaces/neuralnetworks/1.3/types.hal`（API 35+ 关键版本，含 fenced execution）
+- TFLite Delegate：源码位于 `external/tflite/tensorflow/lite/delegates/nnapi/` 和 `external/tflite/tensorflow/lite/delegates/gpu/`
+
+**Acceleration Service 设计目标（API 35+）**：
+- 解决 Android 设备硬件异构性导致的 Delegate 选择难题
+- 运行时探测可用加速器，安全选择最优配置
+- 2022 年博客提及 early access 计划，公开状态需进一步验证
+
+**NNAPI HAL 版本演进**：
+| 版本 | API Level | 关键能力 |
+|------|-----------|---------|
+| 1.0 | 27 | 基础模型加载与执行 |
+| 1.1 | 29 | 动态输入维度 |
+| 1.2 | 30 | 扩展操作符、shared memory |
+| 1.3 | 35 | fenced execution、execution preferences |
+
+**未被一手验证的项目（待确认）**：
+- AICore 系统服务的具体源码路径（AOSP 中未找到 `com.android.internal.ml.aicore` 独立服务）
+- `CompiledModel` 类的具体 API 签名（可能属于 Play Services 私有 API）
+- Acceleration Service 的公开 API 名称和调用方式
+
+<!-- AIW-源码调研-2026-05-18 -->
+
+
 <!-- AIW-源码调研-2026-05-17 -->
