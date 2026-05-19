@@ -250,6 +250,7 @@ tags:
   - [14.14 Android Studio LeakCanary Profiler 与堆转储分析](part3-tools/ch14-other-tools/14-android-studio-leakcanary-profiler.md)
   - [14.15 Winscope 与窗口/合成状态可视化调试](part3-tools/ch14-other-tools/15-winscope-window-composition-debugging.md)
   - [14.16 Layout Inspector 与 ViewDebug 布局调试](part3-tools/ch14-other-tools/16-layout-inspector-viewdebug.md)
+  - [14.17 statsd 与系统级指标采集](part3-tools/ch14-other-tools/17-statsd-system-metrics.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
