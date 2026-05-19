@@ -2317,3 +2317,21 @@
 - **问题**：`developer.android.com/reference/okhttp3/EventListener` 返回 404；OkHttp EventListener 官方文档在 Square 站点，例如 `https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/`。
 - **建议**：把验证标注改成 Square OkHttp EventListener 文档；Android Developers 只保留 Android 平台 API，例如 `ConnectivityManager` / `NetworkCapabilities`。
 
+
+
+## [Task2A Gap Mining] 本轮未创建新章节 — 2026-05-20 05:13
+- **类型**：知识缺口挖掘记录
+- **结论**：未发现评分 ≥14 且未被现有章节覆盖的新缺口。
+- **检查范围**：source-index 高分未映射条目 92 个、research-feeds 最近 5 个文件、daily-info 最近 3 天、AOSP 结构对照、Android Developers 性能文档对照。
+- **已检查方向**：
+  - SmartPerfetto / Perfetto SDK / Data Explorer → 已有 13.14、13.17、13.18 覆盖。
+  - Android 17 MessageQueue / DeliQueue → 已有 1.13、16.5 覆盖，适合回炉校验。
+  - Android 16/17 桌面窗口化、大屏 resize 与多窗口 → 已有 2.20、18.18、22.14、17.6 覆盖。
+  - Android Studio Panda、Memory Profiler、LeakCanary Profiler → 已有 14.1、14.3、14.14 覆盖。
+  - Scudo / native allocator / GWP-ASan → 已有 4.6、20.11、23.3、14.3、19.24 覆盖，适合 Task 2B 或 Task 9 回炉。
+  - ProfilingManager 系统触发、Android 17 performance triggers → 已有 8.10、14.7、19.16、26.12 覆盖。
+  - Android Bench、AI 写 Android、Skills、Gemini API 接入 → 与 Android 性能优化主线相关性不足，评分未达 14。
+  - Linux Dirty Frag、Linux CVE、AI 漏洞报告治理 → 偏 Linux 安全与行业治理，缺少 Android 性能优化落点，评分未达 14。
+  - BiometricService、TelephonyManager 等系统服务 → 可找到 AOSP 入口，但性能案例和读者需求支撑不足，评分未达 14。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-20-05-知识加工(新).md`
+- **后续建议**：下一轮优先查看新增 DeepResearch、source-index 增量和 daily-info；上述方向若无新增官方证据或真实案例，不重复创建章节。
