@@ -13203,25 +13203,68 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T01:26:42+08:00",
       "review_log": "logs/deep-review/2026-05-20-01-audit.md"
+    },
+    {
+      "id": "task9-20260520-7.7-compose-pausable-composeview-audit",
+      "section": "7.7",
+      "section_title": "Jetpack Compose 性能优化",
+      "priority": 95,
+      "title": "Jetpack Compose 性能优化：Pausable Composition 与 ComposeView/RecyclerView 版本口径错误",
+      "description": "闲时抽检发现 7.7 对 Pausable Composition 的 Android 16 平台门槛、适用范围，以及 RecyclerView 中 ComposeView/Recomposer/释放策略的描述与 AndroidX 1.10 官方文档和源码不一致。",
+      "reason": "[Idle Deep Tech Review] Pausable Composition 被误写为 Android 16+ 平台能力，ComposeView in RecyclerView 被误写成每 item 独立 WindowRecomposer 且建议无条件 onViewRecycled dispose。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/07-compose-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-02-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/机制范围",
+          "location": "L115 Pausable Composition 段落",
+          "detail": "正文把 Pausable Composition 写成 Compose 1.10+（Android 16）引入，并声明需要 Compose Runtime 1.10+ 且运行在 Android 16+，旧版本仍会在单帧内同步完成整个 Composition。官方 Compose 2025-12 release blog 描述的是 Compose 1.10 的 lazy prefetch 中默认启用 pausable composition；AndroidX runtime 1.10 release notes 也把它作为 AndroidX runtime/foundation 侧能力与 bugfix 跟踪，未给出 Android 16 平台门槛。该段还把适用范围扩大成所有 Composition/首帧/VRR 场景，超出官方“lazy layout prefetch”口径。",
+          "suggestion": "改为：Compose 1.10 在 lazy prefetch 路径中默认启用 pausable composition，runtime 可在预算不足时暂停并在下一帧继续；不要写 Android 16+ 平台门槛。若要讨论首帧/VRR/普通 Composition，需补具体 AndroidX 版本、flag、benchmark 和源码锚点。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码行为/互操作生命周期",
+          "location": "L514-L516 RecyclerView 中使用 ComposeView",
+          "detail": "正文称 RecyclerView 每个 item 的 ComposeView 都持有独立渲染上下文和 WindowRecomposer，并建议在 onViewRecycled() 主动 disposeComposition()。AndroidX ui-android 1.10.0 `AbstractComposeView.resolveParentCompositionContext()` 实际优先使用显式 parentContext、ViewTree composition context、cached context，最后才落到 windowRecomposer；这不是每个 item 独立持有 WindowRecomposer。官方 Compose-in-Views 文档和 `ViewCompositionStrategy.Default` 源码也说明，默认策略在 RecyclerView 这类 pooling container 中会等 pooling container detach 或 item discarded（pool full）时释放 composition。无条件在 onViewRecycled() dispose 会破坏池化复用收益。",
+          "suggestion": "改成“每个 ComposeView 拥有自己的 Composition，但通常共享父/窗口级 Recomposer；RecyclerView 场景优先依赖默认 `DisposeOnDetachedFromWindowOrReleasedFromPool` 策略，让 composition 随 pool 生命周期释放。只有确认 ViewHolder 不再复用或存在泄漏时才手动 dispose，并说明代价。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T02:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T02:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-02-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 372,
-    "p0_count": 157,
-    "last_updated": "2026-05-19T21:04:13+08:00",
+    "total_entries": 373,
+    "p0_count": 158,
+    "last_updated": "2026-05-20T02:20:00+08:00",
     "updated_by": "openclaw-task9",
     "pending_entries": 144,
-    "updated_date": "2026-05-19",
+    "updated_date": "2026-05-20",
     "last_updated_by": "openclaw-task9",
-    "pending": 143,
+    "pending": 144,
     "completed_entries": 226,
     "last_task2a_gap_mining": "7.17",
     "last_task2a_gap_mining_at": "2026-05-20T01:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T01:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 143,
+  "last_updated": "2026-05-20T02:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 144,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
   "last_task2a_gap_mining": "7.17",

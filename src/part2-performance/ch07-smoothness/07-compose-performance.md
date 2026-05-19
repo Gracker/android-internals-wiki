@@ -10,7 +10,7 @@ reviewed_date: '2026-04-30'
 last_task2b_at: '2026-04-25T13:47:46+08:00'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: needs-rework
 polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
@@ -51,16 +51,20 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-25'
-last_task9_at: '2026-04-25T16:33:30+08:00'
+task9_reviewed_date: '2026-05-20'
+last_task9_at: "2026-05-20T02:20:00+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
+last_task9_audit: '2026-05-20'
+last_task9_audit_result: needs-rework
+last_task9_review_log: logs/deep-review/2026-05-20-02-audit.md
+task9_review_notes: "2026-05-20 02:20 闲时抽检：发现 Pausable Composition Android 16 平台门槛/范围错误，以及 RecyclerView 中 ComposeView 独立 WindowRecomposer 与 onViewRecycled dispose 建议不符合 AndroidX 1.10 官方文档/源码；已写入 queue.json，转 Task2B 修正。"
 ---
 
 # Jetpack Compose 性能优化
