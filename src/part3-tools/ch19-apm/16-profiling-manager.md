@@ -1,6 +1,4 @@
 ---
-
-
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
@@ -26,20 +24,20 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
 last_task6_at: "2026-05-07T15:09:20+08:00"
 last_task6_review_log: "logs/review/2026-05-07-15-review.md"
 task6_review_notes: "2026-05-07 task6 review 15:09：重审 ProfilingManager，清理填充词 3 处；L1/L2 通过，无新增回炉项；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_at: "2026-05-20T06:20:00+08:00"
+last_task9_at: "2026-05-20T07:37:11+08:00"
 last_task9_audit: "2026-05-20"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework。P0 1（ProfilingResult 不存在 ERROR_FAILED_PROFILING_NOT_ALLOWED）/ P1 0 / P2 1（官方 guide URL 过期）。"
-task2b_result: fixed
+task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 0 / P1 2 / P2 2 / P3 0。P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
+task2b_result: pending
 last_task2b_at: "2026-05-07T14:47:28+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -47,6 +45,7 @@ repaired_by: "openclaw-task2b"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
+last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
 ---
 
 # ProfilingManager

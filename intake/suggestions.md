@@ -2335,3 +2335,86 @@
   - BiometricService、TelephonyManager 等系统服务 → 可找到 AOSP 入口，但性能案例和读者需求支撑不足，评分未达 14。
 - **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-20-05-知识加工(新).md`
 - **后续建议**：下一轮优先查看新增 DeepResearch、source-index 增量和 daily-info；上述方向若无新增官方证据或真实案例，不重复创建章节。
+
+
+## [Task2A Gap Mining] 本轮未创建新章节 — 2026-05-20 06:04
+- **类型**：知识缺口挖掘记录
+- **结论**：未发现评分 ≥14 且未被现有章节或 Task2B/Task9 队列覆盖的新缺口。
+- **检查范围**：空 draft 章节（0 个）、`src/SUMMARY.md`、`metadata/source-index.json` 16 分以上未映射/弱映射素材、`intake/daily-info/` 最近 3 天、`intake/research-feeds/` 最近 5 个文件、`intake/research-gaps.md`、Android Developers / Source.android.com 官方文档。
+- **已检查方向**：SmartPerfetto / Perfetto SDK / Data Explorer、Android 17 MessageQueue / DeliQueue、Android Studio Panda / LeakCanary Profiler、Android 16/17 桌面窗口化、16KB Page Size / Scudo / GWP-ASan、ApplicationExitInfo / ApplicationStartInfo / ProfilingManager / ProfilingTrigger、Android 17 NPU / LiteRT / AICore、Codec2 / tunneled playback、sched_ext / OEM BPF、Cached App Freezer + GC。上述方向均已有对应章节或回炉队列承接。
+- **未达阈值方向**：Android Bench / AI 写 Android / Skills / Gemini API 接入、Android 17 侧载与应用认证、Linux Dirty Frag / CVE / AI 漏洞报告治理、BiometricService / TelephonyManager 等系统服务。主要原因是与 Android 性能优化主线相关性不足、素材支撑不足或已被近期 Task2A 记录判定不建节。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-20-06-知识加工(新).md`
+- **后续建议**：下一轮优先查看 source-index 增量和新增 DeepResearch；无新增官方证据或实测材料时，不重复扫描上述已覆盖方向。
+
+
+## [Task14 参考书扫描] 21.01 启动全链路分析 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md]
+- **建议补充**：启动4阶段模型（T1预览窗口→T2闪屏→T3主页→T4可操作）及3个核心体验问题的分析框架
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 21.08 启动监控与度量 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+- **建议补充**：线上监控指标体系（快开慢开比/P90/启动类型区分）、实验室视频录制+图像识别方案、Facebook Profilo 启动堆栈对比方案
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 21.09 启动优化案例集 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md]
+- **建议补充**：微信合并闪屏Activity减少100ms、按需拉起进程优化3%-8%、线程池+DAG编排防主线程空转案例
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 24.01 文件I/O优化 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 11.md]
+- **建议补充**：Linux I/O全链路架构图（VFS→文件系统→Page Cache→块层→调度→驱动）、闪存写入放大原理与fstrim缓解、文件损坏三视角分析
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 24.01 文件I/O优化 — 2026-05-20
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 11.md]
+- **过时内容**：eMMC/UFS 2.0/2.1 闪存标准对比（2018年数据），文中提到 LPDDR5/UFS 3.0 "即将在2019年面世"
+- **建议更新至**：当前主流 UFS 4.0/4.1 标准，eMMC 市场占比已极低可降级为历史背景
+
+## [Task14 参考书扫描] 24.01 文件I/O优化 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 12.md]
+- **建议补充**：标准I/O/直接I/O/mmap三种方式对比与适用场景、多线程I/O实验数据、小文件系统设计（微信SFS）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 26.03 性能指标采集与上报 — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
+- **建议补充**：I/O线上监控四规则（主线程I/O/Buffer过小/重复读/资源泄漏）、Native Hook vs Java Hook方案对比、Matrix I/O Canary实现
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 21.04 Baseline Profile — 2026-05-20
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+- **建议补充**：类重排+资源重排作为 Baseline Profile 的历史前身和技术对照（ReDex Interdex → Android Baseline Profile）
+- **参考书覆盖深度**：中等
+
+## [Task9 Deep Review] 19.16 ProfilingManager — 2026-05-20 — 错误码、限流和重试策略
+- **类型**：数据缺失/限流模型
+- **位置**：错误码、限流和重试策略
+- **问题**：官方 Profiling limitations 文档说明 app/system 两层 limiter 都按 profile type cost 计费，并有 per hour / per day / per week 三个窗口；正文只给出错误码处理，缺少预算模型。
+- **建议**：补一段 cost 模型和三层窗口，说明不同 profile type 消耗不同，命中任一窗口都会返回 RATE_LIMIT_PROCESS 或 RATE_LIMIT_SYSTEM。
+
+## [Task9 Deep Review] 19.16 ProfilingManager — 2026-05-20 — frontmatter sources 与参考资料 #4
+- **类型**：交叉引用/资料链接
+- **位置**：frontmatter sources 与参考资料 #4
+- **问题**：https://developer.android.com/topic/performance/profiling-manager 当前返回 404；官方文档已拆到 /topic/performance/tracing/profiling-manager/overview、/how-to-capture、/trigger-based-capture、/retrieve-and-analyze、/will-my-profile-always-be-collected。
+- **建议**：替换旧 URL，并按 app-driven / trigger-based / retrieval / limitations 拆成多条参考资料。
+
+## [Task9 Deep Review] 17.4 sched_ext 与 OEM BPF 调度器 — 2026-05-20 — frontmatter sources / 可观测与验证方法
+- **类型**：源码锚点补充
+- **位置**：frontmatter sources / 可观测与验证方法
+- **问题**：正文引用 Android common include/linux/sched/ext.h 与 sysfs state/root/ops/enable_seq，但 sources 未列 include/linux/sched/ext.h；验证清单也可补 switch_all、nr_rejected、hotplug_seq。
+- **建议**：补 Android common include/linux/sched/ext.h 链接，并在命令清单中加入 /sys/kernel/sched_ext/switch_all、nr_rejected、hotplug_seq。
+
+## [Task9 Deep Review] 17.4 sched_ext 与 OEM BPF 调度器 — 2026-05-20 — Android 17 之后会默认启用吗：OPPO 相关 scx tracepoint / symbol list
+- **类型**：证据不足
+- **位置**：Android 17 之后会默认启用吗：OPPO 相关 scx tracepoint / symbol list
+- **问题**：“OPPO 相关 scx tracepoint / symbol list 线索”未给具体路径、commit、symbol 名，读者无法复核。
+- **建议**：补具体证据；不能补时删掉该句或改为“公开证据不足”。

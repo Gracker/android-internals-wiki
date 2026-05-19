@@ -13410,6 +13410,87 @@
       "gap_source": "研究素材/官方文档/AOSP结构",
       "created_by": "task2a-knowledge-gap",
       "added_at": "2026-05-20T07:04:00+08:00"
+    },
+    {
+      "id": "task9-20260520-19.16-profilingmanager-trigger-boundaries",
+      "section": "19.16",
+      "section_title": "ProfilingManager",
+      "title": "ProfilingManager trigger / profileable / rate limiter 边界缺失",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 19.16 Task2B 修复错误码后，仍缺少 TRIGGER_TYPE_OOM 的 UncaughtExceptionHandler 前置条件，并把 <profileable android:shell=\"true\"> 写成 ProfilingManager 线上采集配置边界；限流部分缺官方 cost + hour/day/week 预算模型。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/接入前提",
+          "severity": "P1",
+          "location": "system-triggered profiling 的版本边界表：TRIGGER_TYPE_OOM 行",
+          "detail": "官方 ProfilingTrigger.TRIGGER_TYPE_OOM 文档要求自定义 Thread.UncaughtExceptionHandler 必须继续调用默认 handler，否则 OOM trigger 不能生效；正文只写产物是 Java heap dump，缺少该前置条件。",
+          "suggestion": "在 OOM 行或表格下方补充默认 uncaught handler 透传要求，并说明不能满足时只能由应用主动 request Java heap dump 作为 fallback。"
+        },
+        {
+          "type": "源码/配置边界",
+          "severity": "P1",
+          "location": "app-driven request 的基本调用形态；上线前检查清单",
+          "detail": "ProfilingManager 官方 guide 与 AOSP packages/modules/Profiling 中未将 <profileable android:shell=\"true\"> 作为 app-driven ProfilingManager 的结果可见范围前提；profileable manifest 文档说明 android:shell 面向本地 shell/Perfetto/simpleperf 等调试工具。当前写法会把本地 shell profiling 配置误并入线上 ProfilingManager 接入。",
+          "suggestion": "将 ProfilingManager 的线上采集前提与本地 shell/Perfetto/Android Studio profiling 的 profileable 配置拆开；保留 profileable 时标注它服务于本地/内测工具链，而非 requestProfiling 成功条件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T07:37:11+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260520-17.4-sched-ext-research-block-source-errors",
+      "section": "17.4",
+      "section_title": "sched_ext 与 OEM BPF 调度器",
+      "title": "sched_ext 每日调研块存在源码路径、AOSP 集成和 GameManager→BPF 链路错误",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 17.4 Task2B 修复 DSQ/partial 后，参考资料前后的 2026-05-18/19 调研块仍包含 P0 源码错误：pick_eevdf 路径写成 core.c、CFS weight 被称为完全移除、GameManagerService→game_state_map→BpfLoader 链路无 AOSP 源码证据，并与正文 Android common 6.12 已有 sched_ext 的结论互相矛盾。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L342 / L352：EEVDF 全面取代 CFS 段",
+          "detail": "Linux 6.12 与 Android common android16-6.12 中 pick_eevdf/__pick_eevdf 位于 kernel/sched/fair.c，不在 kernel/common/sched/core.c；fair.c 仍保留 struct load_weight、se->load.weight、__calc_delta 等权重路径，不能写“完全移除了 CFS 的 weight 权重体系”。",
+          "suggestion": "改成“fair class 的选取逻辑采用 EEVDF/eligible deadline 路径，但 nice/load weight 仍参与 vruntime 与权重计算”；源码锚点换成 kernel/sched/fair.c。"
+        },
+        {
+          "type": "源码错误/未验证链路",
+          "severity": "P0",
+          "location": "L345-L355、L379-L381：GameManagerService → BPF map → SCX 三层链路",
+          "detail": "AOSP main/android16/android15 的 GameManagerService.java 未找到 writeGameStateToBpMap、game_state_map 或 BpfMap 调用；当前 L616-L682 不是 BPF map 写入锚点。该链路不能作为已核源码事实写入正文。",
+          "suggestion": "删除该链路或降级为待验证素材；如要保留，必须补可访问源码路径、commit、map 定义和调用栈。"
+        },
+        {
+          "type": "版本差异/自相矛盾",
+          "severity": "P0",
+          "location": "L349、L387、L396-L400：Android 14/15/16/17 与 AOSP kernel/common 现状",
+          "detail": "android.googlesource.com/kernel/common refs/heads/android16-6.12 已存在 kernel/sched/ext.c、include/linux/sched/ext.h 与 sched-ext.rst；正文前半也引用该分支。后文“kernel/common 尚未合入 sched_ext”与源码和正文互相矛盾。",
+          "suggestion": "统一版本口径：Linux 6.12/Android common android16-6.12 已包含 sched_ext 基础设施；AOSP 默认用户态是否加载 BPF scheduler、Pixel/OEM user build 是否启用仍需逐设备验证。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "sched_ext 在 Android 调度体系里的位置：sched_ext 与 cpufreq 关系",
+          "detail": "Android common android16-6.12 的 kernel/sched/ext.c 提供 scx_bpf_cpuperf_set()，cpufreq_schedutil.c 的 sugov_get_util() 读取 scx_cpuperf_target(cpu)。正文只写“cpufreq 仍由 governor 和 util 信号驱动；绑定是 vendor 实现”，漏掉 Linux sched_ext 通用 CPU performance target 路径。",
+          "suggestion": "补一段 scx_bpf_cpuperf_set → scx_cpuperf_target → sugov_get_util 的通用路径，再与 OPPO scx_gov_ctrl 这类 vendor 控制面分开。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L349：Android 14 preview / Android 15 官方支持 / Android 17 完整框架",
+          "detail": "本轮只能核到 Linux 6.12 与 Android common android16-6.12；未核到 Android 14/15 官方 sched_ext 支持链。该时间线会误导读者把 upstream/GKI 分支和 Android API 版本绑定。",
+          "suggestion": "删除 Android 14/15/17 断言，改为“Linux 6.12 合入，Android common 6.12 可见；OEM backport 和启用状态看 vendor kernel/设备”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T07:37:11+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
@@ -13426,8 +13507,8 @@
     "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T07:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-20T07:37:11+08:00",
+  "last_updated_by": "openclaw-task9",
   "pending": [
     {
       "id": "task8-20260520-053311",
@@ -13556,6 +13637,87 @@
       "gap_source": "研究素材/官方文档/AOSP结构",
       "created_by": "task2a-knowledge-gap",
       "added_at": "2026-05-20T07:04:00+08:00"
+    },
+    {
+      "id": "task9-20260520-19.16-profilingmanager-trigger-boundaries",
+      "section": "19.16",
+      "section_title": "ProfilingManager",
+      "title": "ProfilingManager trigger / profileable / rate limiter 边界缺失",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 19.16 Task2B 修复错误码后，仍缺少 TRIGGER_TYPE_OOM 的 UncaughtExceptionHandler 前置条件，并把 <profileable android:shell=\"true\"> 写成 ProfilingManager 线上采集配置边界；限流部分缺官方 cost + hour/day/week 预算模型。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/接入前提",
+          "severity": "P1",
+          "location": "system-triggered profiling 的版本边界表：TRIGGER_TYPE_OOM 行",
+          "detail": "官方 ProfilingTrigger.TRIGGER_TYPE_OOM 文档要求自定义 Thread.UncaughtExceptionHandler 必须继续调用默认 handler，否则 OOM trigger 不能生效；正文只写产物是 Java heap dump，缺少该前置条件。",
+          "suggestion": "在 OOM 行或表格下方补充默认 uncaught handler 透传要求，并说明不能满足时只能由应用主动 request Java heap dump 作为 fallback。"
+        },
+        {
+          "type": "源码/配置边界",
+          "severity": "P1",
+          "location": "app-driven request 的基本调用形态；上线前检查清单",
+          "detail": "ProfilingManager 官方 guide 与 AOSP packages/modules/Profiling 中未将 <profileable android:shell=\"true\"> 作为 app-driven ProfilingManager 的结果可见范围前提；profileable manifest 文档说明 android:shell 面向本地 shell/Perfetto/simpleperf 等调试工具。当前写法会把本地 shell profiling 配置误并入线上 ProfilingManager 接入。",
+          "suggestion": "将 ProfilingManager 的线上采集前提与本地 shell/Perfetto/Android Studio profiling 的 profileable 配置拆开；保留 profileable 时标注它服务于本地/内测工具链，而非 requestProfiling 成功条件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T07:37:11+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260520-17.4-sched-ext-research-block-source-errors",
+      "section": "17.4",
+      "section_title": "sched_ext 与 OEM BPF 调度器",
+      "title": "sched_ext 每日调研块存在源码路径、AOSP 集成和 GameManager→BPF 链路错误",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 17.4 Task2B 修复 DSQ/partial 后，参考资料前后的 2026-05-18/19 调研块仍包含 P0 源码错误：pick_eevdf 路径写成 core.c、CFS weight 被称为完全移除、GameManagerService→game_state_map→BpfLoader 链路无 AOSP 源码证据，并与正文 Android common 6.12 已有 sched_ext 的结论互相矛盾。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L342 / L352：EEVDF 全面取代 CFS 段",
+          "detail": "Linux 6.12 与 Android common android16-6.12 中 pick_eevdf/__pick_eevdf 位于 kernel/sched/fair.c，不在 kernel/common/sched/core.c；fair.c 仍保留 struct load_weight、se->load.weight、__calc_delta 等权重路径，不能写“完全移除了 CFS 的 weight 权重体系”。",
+          "suggestion": "改成“fair class 的选取逻辑采用 EEVDF/eligible deadline 路径，但 nice/load weight 仍参与 vruntime 与权重计算”；源码锚点换成 kernel/sched/fair.c。"
+        },
+        {
+          "type": "源码错误/未验证链路",
+          "severity": "P0",
+          "location": "L345-L355、L379-L381：GameManagerService → BPF map → SCX 三层链路",
+          "detail": "AOSP main/android16/android15 的 GameManagerService.java 未找到 writeGameStateToBpMap、game_state_map 或 BpfMap 调用；当前 L616-L682 不是 BPF map 写入锚点。该链路不能作为已核源码事实写入正文。",
+          "suggestion": "删除该链路或降级为待验证素材；如要保留，必须补可访问源码路径、commit、map 定义和调用栈。"
+        },
+        {
+          "type": "版本差异/自相矛盾",
+          "severity": "P0",
+          "location": "L349、L387、L396-L400：Android 14/15/16/17 与 AOSP kernel/common 现状",
+          "detail": "android.googlesource.com/kernel/common refs/heads/android16-6.12 已存在 kernel/sched/ext.c、include/linux/sched/ext.h 与 sched-ext.rst；正文前半也引用该分支。后文“kernel/common 尚未合入 sched_ext”与源码和正文互相矛盾。",
+          "suggestion": "统一版本口径：Linux 6.12/Android common android16-6.12 已包含 sched_ext 基础设施；AOSP 默认用户态是否加载 BPF scheduler、Pixel/OEM user build 是否启用仍需逐设备验证。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "sched_ext 在 Android 调度体系里的位置：sched_ext 与 cpufreq 关系",
+          "detail": "Android common android16-6.12 的 kernel/sched/ext.c 提供 scx_bpf_cpuperf_set()，cpufreq_schedutil.c 的 sugov_get_util() 读取 scx_cpuperf_target(cpu)。正文只写“cpufreq 仍由 governor 和 util 信号驱动；绑定是 vendor 实现”，漏掉 Linux sched_ext 通用 CPU performance target 路径。",
+          "suggestion": "补一段 scx_bpf_cpuperf_set → scx_cpuperf_target → sugov_get_util 的通用路径，再与 OPPO scx_gov_ctrl 这类 vendor 控制面分开。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L349：Android 14 preview / Android 15 官方支持 / Android 17 完整框架",
+          "detail": "本轮只能核到 Linux 6.12 与 Android common android16-6.12；未核到 Android 14/15 官方 sched_ext 支持链。该时间线会误导读者把 upstream/GKI 分支和 Android API 版本绑定。",
+          "suggestion": "删除 Android 14/15/17 断言，改为“Linux 6.12 合入，Android common 6.12 可见；OEM backport 和启用状态看 vendor kernel/设备”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T07:37:11+08:00",
+      "status": "pending"
     }
   ],
   "last_task2a_completed": "18.22",
