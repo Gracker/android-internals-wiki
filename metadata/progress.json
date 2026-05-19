@@ -208,22 +208,22 @@
   "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-19",
-    "time": "17:09",
+    "time": "20:25",
     "sections": [
       "14.9",
-      "14.8",
-      "19.13"
+      "12.3",
+      "20.3"
     ],
     "files": [
       "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
-    "result": "pass-light-edit",
-    "small_fixes": 8,
+    "result": "pass-light-edit; no new task6 rework items; downstream queue/task9 blockers remain",
+    "small_fixes": 1,
     "new_rework_items": 0,
     "auto_promoted": [],
-    "note": "Task6 正常 review 14.9/14.8/19.13；完成写作层 L1/L2 小修，无新增 L3/L4 回炉项。14.9 仍有 Task9 pending queue；14.8/19.13 等待 Task9 复审。"
+    "note": "Task6 completed writing review for 3 revisiting chapters. 12.3 fixed one filler word. 14.9/12.3/20.3 not auto-promoted because task9_result != pass-tech-review and/or queue has pending entries."
   },
   "issues_by_section": {
     "1.6": {
@@ -1455,31 +1455,31 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T19:36:17+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-19T20:25:44+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-19",
-    "time": "17:09",
-    "reviewed_at": "2026-05-19T17:09:00+08:00",
+    "time": "20:25",
+    "reviewed_at": "2026-05-19T20:25:44+08:00",
     "sections": [
       "14.9",
-      "14.8",
-      "19.13"
+      "12.3",
+      "20.3"
     ],
     "files": [
       "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
-    "log": "logs/review/2026-05-19-17-review.md",
-    "mode": "首次 review",
-    "l1_l2_fixes": 8,
+    "log": "logs/review/2026-05-19-20-review.md",
+    "mode": "revisiting-review",
+    "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
     "technical_risk_markers": 0,
     "results": {
       "14.9": "pass-light-edit / task2b_pending(known Task9 queue)",
-      "14.8": "pass-light-edit / task9_pending",
-      "19.13": "pass-light-edit / task9_pending"
+      "12.3": "pass-light-edit / task2b_pending(known Task9 queue)",
+      "20.3": "pass-light-edit / task9_pending(after Task2B fixed)"
     },
     "auto_promoted": []
   },
@@ -2043,19 +2043,23 @@
       "auto_promoted_at": "2026-05-19T08:27:59+08:00"
     },
     "14.9": {
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task9_at": "2026-05-13T05:26:00+08:00",
-      "task9_result": "needs-rework",
-      "task9_state": "reviewed",
-      "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-19T17:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
       "task2b_state": "pending",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-19T19:36:17+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "p0": 0,
+      "p1": 1,
+      "p2": 1
     },
     "18.2": {
       "status": "ready-for-review",
@@ -4029,6 +4033,39 @@
       "gap_source": "每日信息/DeepResearch/AOSP结构/官方文档",
       "gap_score": 16,
       "material_count": 5
+    },
+    "12.3": {
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "file": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-19T19:36:17+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+      "task2b_result": "pending"
+    },
+    "20.3": {
+      "title": "Native Crash 分析与治理",
+      "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     }
   },
   "task2b_rounds": [
@@ -4117,29 +4154,29 @@
   "last_task6_review": "2026-05-19",
   "last_task6_sections": [
     "14.9",
-    "14.8",
-    "19.13"
+    "12.3",
+    "20.3"
   ],
   "last_task6_reviewed_files": [
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md"
   ],
-  "last_task6_at": "2026-05-19T17:09:00+08:00",
+  "last_task6_at": "2026-05-19T20:25:44+08:00",
   "last_task6_review_detail": {
-    "mode": "normal-review",
+    "mode": "revisiting-review",
     "sections": [
       "14.9",
-      "14.8",
-      "19.13"
+      "12.3",
+      "20.3"
     ],
     "files": [
       "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
-    "log": "logs/review/2026-05-19-17-review.md",
-    "summary": "Task6 本轮完成 14.9/14.8/19.13 写作层 review：3 个章节均 pass-light-edit，无新增回炉项；未自动晋升。"
+    "log": "logs/review/2026-05-19-20-review.md",
+    "summary": "Task6 本轮完成 14.9/12.3/20.3 写作层 revisiting review：3 个章节均 pass-light-edit；12.3 小修 1 处填充强调词；无新增回炉项；未自动晋升。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4148,12 +4185,12 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "4.10",
-  "task6_last_review_at": "2026-05-19T17:09:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-19-17-review.md",
+  "task6_last_review_at": "2026-05-19T20:25:44+08:00",
+  "task6_last_review_log": "logs/review/2026-05-19-20-review.md",
   "task6_last_review_sections": [
     "14.9",
-    "14.8",
-    "19.13"
+    "12.3",
+    "20.3"
   ],
   "sections_status": {
     "22.11": {
@@ -4905,12 +4942,12 @@
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-19T17:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
       "last_task9_at": "2026-05-19T19:36:17+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
       "p0": 0,
@@ -4946,14 +4983,19 @@
       "file": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
       "last_task9_at": "2026-05-19T19:36:17+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
       "p0": 0,
       "p1": 1,
-      "p2": 0,
-      "task2b_state": "pending"
+      "p2": 0
     },
     "8.2": {
       "title": "App 启动全流程",
@@ -4969,6 +5011,20 @@
       "p2": 2,
       "auto_promoted_by": "task9-deep-tech-review",
       "auto_promoted_at": "2026-05-19T19:36:17+08:00"
+    },
+    "20.3": {
+      "title": "Native Crash 分析与治理",
+      "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-19T20:25:44+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     }
   },
   "task2a_last_processed": {
@@ -5012,29 +5068,29 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "normal-review",
+    "mode": "revisiting-review",
     "sections": [
       "14.9",
-      "14.8",
-      "19.13"
+      "12.3",
+      "20.3"
     ],
     "files": [
       "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
     ],
-    "log": "logs/review/2026-05-19-17-review.md",
-    "summary": "Task6 本轮完成 14.9/14.8/19.13 写作层 review：3 个章节均 pass-light-edit，无新增回炉项；未自动晋升。"
+    "log": "logs/review/2026-05-19-20-review.md",
+    "summary": "Task6 本轮完成 14.9/12.3/20.3 写作层 revisiting review：3 个章节均 pass-light-edit；12.3 小修 1 处填充强调词；无新增回炉项；未自动晋升。"
   },
   "task6_last_review_files": [
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md"
   ],
   "task6_last_reviewed_files": [
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-    "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md"
   ],
   "last_task2a_date": "2026-05-18",
   "task9_last_review_summary": {
@@ -5185,16 +5241,13 @@
     "status": "ready-for-review",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-18T20:16:50+08:00",
-    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
-    "pipeline_stage": "task2b_pending",
-    "task9_state": "reviewed",
+    "last_task6_at": "2026-05-19T20:25:44+08:00",
+    "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+    "pipeline_stage": "task9_pending",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-18T19:44:00+08:00",
-    "task9_reviewed_date": "2026-05-18",
-    "task9_reviewed_by": "openclaw-task9",
-    "task2b_state": "pending",
-    "task2b_result": "pending"
+    "task2b_state": "fixed",
+    "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
   "last_task2a_gap_mining": "4.11",
@@ -5267,5 +5320,10 @@
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
     "task2b_result": "fixed"
-  }
+  },
+  "task6_last_reviewed_sections": [
+    "14.9",
+    "12.3",
+    "20.3"
+  ]
 }

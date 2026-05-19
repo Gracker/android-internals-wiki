@@ -3,7 +3,7 @@
 title: "网络性能深入：连接池、TLS 与传输优化"
 chapter: "12.3"
 section: "12.3"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-07"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-21"
@@ -50,15 +50,15 @@ gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 14
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-24"
-task6_result: pass-light-edit
+reviewed_date: "2026-05-19"
+task6_result: "pass-light-edit"
 review_round: 2
-task6_state: revisiting
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task6_state: "reviewed"
+pipeline_stage: "task2b_pending"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task9_at: "2026-05-19T19:36:17+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-19
@@ -69,6 +69,11 @@ p0: 0
 p1: 1
 p2: 0
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证。"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-19T20:25:44+08:00"
+task6_reviewed_at: "2026-05-19T20:25:44+08:00"
+last_task6_review_log: "logs/review/2026-05-19-20-review.md"
+task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。"
 
 ---
 
@@ -122,7 +127,7 @@ task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 3. **TLS 握手**：密钥协商和证书验证。TLS 1.2 需要 2 个 RTT，TLS 1.3 减少到 1 个 RTT。
 4. **HTTP 请求/响应**：发送请求头和 body、等待服务端处理、接收响应。首字节时间（TTFB）取决于服务端处理能力。
 
-对于首次连接，前三步可能先消耗 100-300 ms，真正的数据传输要到第 4 步才开始。连接池和 keep-alive 的价值就在这里，第二次请求可以直接跳到第 4 步。
+对于首次连接，前三步可能先消耗 100-300 ms，数据传输要到第 4 步才开始。连接池和 keep-alive 的价值就在这里，第二次请求可以直接跳到第 4 步。
 
 ### 网络操作与主线程性能
 

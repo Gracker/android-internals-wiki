@@ -21,24 +21,24 @@ sources:
     path: "system/core/debuggerd/handler/debuggerd_handler.cpp"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T19:44:00+08:00"
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-18"
-last_task6_at: "2026-05-18T20:16:50+08:00"
+reviewed_date: "2026-05-19"
+last_task6_at: "2026-05-19T20:25:44+08:00"
 last_task6_audit: "2026-05-18"
 task6_reviewed_by: "openclaw-task6"
-task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-last_task6_review_log: "logs/review/2026-05-18-20-review.md"
-task6_review_notes: "2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 1 项（为 7 个无语言代码块补充 text 标记）；既有 Task9/Task2B pending 技术项 2 个保留，不在 Task6 裁决。"
+task6_reviewed_at: "2026-05-19T20:25:44+08:00"
+last_task6_review_log: "logs/review/2026-05-19-20-review.md"
+task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1/L2 无新增正文问题。Task2B 已修复后仍待 Task9 复核；DeepResearch queue 条目待下游处理，未自动晋升。"
 ---
 
 # Native Crash 分析与治理
