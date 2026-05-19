@@ -995,13 +995,13 @@
       "summary": "P0 1：帧 × CPU 频率统计未按 frame 边界裁剪 joined.dur；P1 1：GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束；P2 1：缺 Trace Processor/PerfettoSQL 工具版本边界。"
     },
     "17.4": {
-      "p0": 1,
+      "p0": 3,
       "p1": 2,
-      "p2": 1,
-      "p3": 0,
-      "reviewed_at": "2026-05-15T10:27:02+08:00",
-      "log": "logs/deep-review/2026-05-15-10-deep-review.md",
-      "summary": "P0 1：Android common 6.12 源码锚点与 torvalds/linux master 混用；P1 2：BYPASS DSQ/slice 版本边界缺失、partial mode 接管范围未解释；P2 1：OPPO scx tracepoint/symbol 线索缺可复核锚点。"
+      "p2": 2,
+      "p3": 1,
+      "reviewed_at": "2026-05-20T07:37:11+08:00",
+      "log": "logs/deep-review/2026-05-20-07-deep-review.md",
+      "summary": "P0 3：EEVDF 源码路径/weight 体系错误、GameManager→BPF 链路无证据、AOSP kernel/common 集成结论自相矛盾；P1 2：scx_bpf_cpuperf_set cpufreq 通用路径缺失、Android 14/15/17 时间线无锚点；P2 2。"
     },
     "20.10": {
       "p0": 0,
@@ -1464,6 +1464,15 @@
       "reviewed_at": "2026-05-20T01:26:42+08:00",
       "log": "logs/deep-review/2026-05-20-01-audit.md",
       "summary": "闲时抽检发现 P0 1：ADPF API 写成不存在的 PerformanceManager.setPreferPowerEfficiency；P1 1：Android 16 BPF Network Bandwidth Estimator/40% 精度提升缺公开一手来源。P2 1：OkHttp EventListener 文档锚点 404。"
+    },
+    "19.16": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 2,
+      "p3": 0,
+      "reviewed_at": "2026-05-20T07:37:11+08:00",
+      "log": "logs/deep-review/2026-05-20-07-deep-review.md",
+      "summary": "P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
     }
   },
   "total_review_sections": 165,
@@ -2993,9 +3002,11 @@
       "queue_priority": 95,
       "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "task9_reviewed_date": "2026-05-15",
+      "task9_reviewed_date": "2026-05-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_review_log": "logs/deep-review/2026-05-15-10-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-05-20T07:37:11+08:00"
     },
     "20.10": {
       "title": "WebView Renderer OOM 与白屏恢复",
@@ -4130,6 +4141,22 @@
       },
       "last_task2a_at": "2026-05-20T07:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "19.16": {
+      "title": "ProfilingManager",
+      "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-20",
+      "last_task9_at": "2026-05-20T07:37:11+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
+      "queue_priority": 85,
+      "task6_result": "pass-light-edit"
     }
   },
   "task2b_rounds": [
@@ -4245,7 +4272,7 @@
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "last_task9_at": "2026-05-19T19:36:17+08:00",
+  "last_task9_at": "2026-05-20T07:37:11+08:00",
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
@@ -5459,5 +5486,6 @@
       "queue_id": "task9-17.4-sched-ext-android612-version-boundary",
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
-  ]
+  ],
+  "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md"
 }
