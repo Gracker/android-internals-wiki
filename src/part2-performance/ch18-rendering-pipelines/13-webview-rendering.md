@@ -29,6 +29,7 @@ reviewed_date: '2026-04-24'
 task9_result: pass-tech-review
 last_task9_at: "2026-04-27T14:32:13+08:00"
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-19"
 review_round: 3
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
@@ -153,7 +154,7 @@ sequenceDiagram
 - Android 10+ 平台侧更常见 `Hardware Draw Functor` / `DrawFn` 口径。
 - 两组名字都指向同一类现象：网页绘制开销落在宿主窗口这一帧的 `RenderThread` 里。
 
-**性能特征**：网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调，同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙，网页内容还在宿主窗口这帧里收口。
+**性能特征**：网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调，同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙，网页内容仍并入宿主窗口这一帧。
 
 #### Functor 路径里几个容易踩的点
 
@@ -185,7 +186,7 @@ sequenceDiagram
 
 ## 宿主全屏托管分支：`onShowCustomView()`
 
-只有网页请求全屏模式时，WebView 才会通过 `onShowCustomView()` 把一个 custom view 交给宿主管理。常见触发源是 HTML5 Fullscreen API 或全屏视频控件；单纯把 WebView 的布局拉满屏，不会触发这条分支。这里说的是宿主接管动作，真正的 producer / consumer 关系继续跟返回 `view` 的实际类型走。
+只有网页请求全屏模式时，WebView 才会通过 `onShowCustomView()` 把一个 custom view 交给宿主管理。常见触发源是 HTML5 Fullscreen API 或全屏视频控件；单纯把 WebView 的布局拉满屏，不会触发这条分支。这里说的是宿主接管动作，producer / consumer 关系继续由返回 `view` 的实际类型决定。
 
 ### 提交过程
 
@@ -220,7 +221,7 @@ sequenceDiagram
 
 ## 如何判断当前走哪条路径
 
-单看一条 heuristic 很容易误判。更稳妥的做法，是把 provider / SDK 身份、Perfetto 和 `dumpsys SurfaceFlinger` 三组证据按顺序收口。
+单看一条 heuristic 很容易误判。更稳妥的做法，是按顺序核对 provider / SDK 身份、Perfetto 和 `dumpsys SurfaceFlinger` 三组证据。
 
 ### 1. 先记 provider 或 SDK 身份
 
@@ -243,7 +244,7 @@ sequenceDiagram
 | 网页进入 fullscreen mode，宿主收到 `onShowCustomView()` | fullscreen custom view | 还要继续看运行时 `view` 类型 |
 | 宿主 `RenderThread` 出现 `SurfaceTexture` / `updateTexImage` | 第三方 Texture-like 实现 | 常见于 X5 / UC 一类自带内核 |
 
-### 4. 用 `dumpsys SurfaceFlinger` 收口
+### 4. 用 `dumpsys SurfaceFlinger` 核对 layer
 
 ```bash
 adb shell dumpsys SurfaceFlinger --list
