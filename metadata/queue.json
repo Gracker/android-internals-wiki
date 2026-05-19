@@ -13138,7 +13138,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md"
@@ -13157,7 +13157,9 @@
         "reader_demand": 4,
         "timeliness": 4,
         "total": 17
-      }
+      },
+      "completed_date": "2026-05-20",
+      "completed_reason": "Task 2A draft 加工完成，章节 status 已更新为 ready-for-review，进入 Task 6 评审管线。"
     },
     {
       "id": "task9-12.2-network-api-version-audit-20260520",
