@@ -13091,6 +13091,35 @@
       "completed_date": "2026-05-19",
       "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线",
       "pipeline_stage": "task6_pending"
+    },
+    {
+      "id": "task9-1.2-bootstat-flag-error",
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "title": "bootstat 示例命令参数错误",
+      "description": "`bootstat -l` 实际是写 logstorage，不会打印 boot event records；正文应使用 `bootstat -p` 作为分段耗时查看入口。",
+      "reason": "[Deep Tech Review][闲时抽检] bootstat 示例命令参数错误：`-l/--log` 是写 logstorage，`-p/--print` 才打印 boot event records。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/02-boot-process.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 使用错误",
+          "location": "L245-L249 bootstat 工具命令",
+          "detail": "正文用 `adb shell bootstat -l` 作为“快速看分段耗时”的入口；但 AOSP android-16.0.0_r1 `system/core/bootstat/bootstat.cpp` 的帮助信息显示 `-l/--log` 是 “Log all metrics to logstorage”，真正把 boot event records 打到控制台的是 `-p/--print`。读者照正文命令执行时拿不到用于粗定位的分段输出。",
+          "suggestion": "把示例改为 `adb shell bootstat -p`；如需区分 Bootloader/Kernel/Framework，还可补充 `adb shell getprop | grep -E \"^(ro.boottime|ro.boot.boottime)\"` 或说明厂商 bootloader 上报口径差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T22:20:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
