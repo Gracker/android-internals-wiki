@@ -6,7 +6,7 @@ section: "14.1"
 status: ready-for-review
 polish_count: 1
 drafted_date: "2026-04-03"
-reviewed_date: "2026-05-17"
+reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -28,20 +28,20 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T16:20:00+08:00"
-last_task6_at: "2026-05-17T16:11:00+08:00"
-task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。L1/L2 小修 8 处，清理第一人称和填充式提示语；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
+last_task6_at: "2026-05-19T12:07:00+08:00"
+task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 4 处，清理结构性元叙述与复述型过渡；Task9 仍 pending/needs-rework，未自动晋升。"
 task9_review_notes: "2026-05-17 16:20 Task9 deep-review 复核：needs-rework。P0 1 / P1 2 / P2 1；ProfilingTrigger Builder/registerForAllProfilingResults 示例仍不可编译，Network Inspector 时间轴与 profileable Java Method Trace 边界需回炉。"
-last_task6_review_log: "logs/review/2026-05-17-16-review.md"
+last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-17-16-deep-review.md"
 ---
 
@@ -89,7 +89,7 @@ last_task9_review_log: "logs/deep-review/2026-05-17-16-deep-review.md"
 
 Profiler 的核心分析模块对应不同类别的性能问题（Network Profiler 在 Android Studio 2020.3.1+ 已迁移到 App Inspection > Network Inspector）：
 
-CPU Profiler 解决"App 慢在哪里"的问题。它提供了三种 CPU 分析模式——System Trace、Java Method Trace 和 Callstack Sample——分别对应不同的精度和开销级别，适用于不同的分析场景。本章后面会详细对比这三种模式的差异。
+CPU Profiler 解决"App 慢在哪里"的问题。它提供了三种 CPU 分析模式——System Trace、Java Method Trace 和 Callstack Sample——分别对应不同的精度和开销级别，适用于不同的分析场景。三种模式的取舍会直接影响数据可信度。
 
 Memory Profiler 解决"App 的内存怎么了"的问题。它可以实时展示 Java 堆和 Native 堆的内存变化曲线，支持 Heap Dump（堆快照）分析对象引用关系，还支持 Allocation Tracking 追踪对象的分配来源。当怀疑有内存泄漏或者内存抖动时，Memory Profiler 是最直接的切入点。
 
@@ -101,7 +101,7 @@ Energy Profiler（在 Android Studio Hedgehog 之后升级为 Power Profiler）�
 
 ## CPU Profiler：三种分析模式的深度对比
 
-CPU Profiler 是日常性能分析中使用频率最高的模块。它提供三种分析模式，理解它们之间的差异是正确使用 CPU Profiler 的前提——选错模式，要么数据不准确，要么 App 直接卡死。
+CPU Profiler 是日常性能分析中使用频率最高的模块。它提供三种分析模式，选模式前要先区分精度和开销——选错模式，要么数据不准确，要么 App 直接卡死。
 
 ### System Trace（系统追踪）
 
@@ -189,7 +189,7 @@ Allocation Tracking 有两种模式：Full 和 Sampled。Full 模式记录所有
 
 理解每种分析模式的开销，是正确使用 Profiler 的核心前提。一个引入了 10 倍开销的工具，它给出的数据本身就是失真的——如果不知道这一点，就会在错误的方向上浪费时间。
 
-CPU 方面的开销对比前文已有详细分析，此处不再重复。
+CPU 的三种模式已经按 System Trace、Callstack Sample、Java Method Trace 分开说明。
 
 Memory 方面也有开销边界。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
 
@@ -224,7 +224,7 @@ Perfetto 的优势在于"系统级全局视野"。它能同时展示多个进程
 
 Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取的 System Trace 可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。在 Profiler 中完成第一轮快速分析、定位大致问题范围后，导出 Trace 到 Perfetto UI 做系统级深入分析——这个工作流在实践中非常高效。
 
-推荐的分析工作流：先用 Profiler 的 System Trace 做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在 Profiler 中切换到 Callstack Sample 或 Memory Profiler 做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出 Trace 到 Perfetto UI 做系统级分析。
+实操中更稳的顺序是：先用 Profiler 的 System Trace 做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在 Profiler 中切换到 Callstack Sample 或 Memory Profiler 做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出 Trace 到 Perfetto UI 做系统级分析。
 
 ## Power Profiler（Android Studio Hedgehog+）
 
