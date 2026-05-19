@@ -1,6 +1,6 @@
 {
-  "total": 324,
-  "draft": 0,
+  "total": 325,
+  "draft": 1,
   "ready-for-review": 120,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1433,8 +1433,8 @@
   "total_review_sections": 162,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T11:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-19T13:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -3959,6 +3959,18 @@
       "task9_state": "pending",
       "task9_result": "pending",
       "queue_priority": 80
+    },
+    "23.9": {
+      "status": "draft",
+      "pipeline_stage": "task2a_gap_created",
+      "queue_priority": 80,
+      "title": "Android 17 App Memory Limits 与内存泄漏治理",
+      "file": "src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-19",
+      "gap_source": "官方文档/每日信息/章节深挖/Clippings结构参考",
+      "gap_score": 18,
+      "material_count": 7
     }
   },
   "task2b_rounds": [
@@ -4063,7 +4075,7 @@
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "last_task9_at": "2026-05-19T08:27:59+08:00",
-  "last_task2a_result": "processed-new-gap",
+  "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "4.10",
   "task6_last_review_at": "2026-05-18T22:15:21+08:00",
@@ -5023,8 +5035,8 @@
     "task2b_result": "pending"
   },
   "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。",
-  "last_task2a_gap_mining": "22.14",
-  "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00",
+  "last_task2a_gap_mining": "23.9",
+  "last_task2a_gap_mining_at": "2026-05-19T13:04:00+08:00",
   "last_task6_audit": "2026-05-19T11:12:00+08:00",
   "last_task6_audit_sections": [
     "8.7"
