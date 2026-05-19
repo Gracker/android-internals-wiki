@@ -13266,7 +13266,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/17-statsd-system-metrics.md"
@@ -13289,7 +13289,9 @@
       },
       "gap_source": "AOSP结构/官方文档/已有章节深挖",
       "created_by": "task2a-knowledge-gap",
-      "pipeline_stage": "task2a_pending"
+      "pipeline_stage": "task6_pending",
+      "completed_date": "2026-05-20",
+      "completed_reason": "Task 2A 加工完成，章节状态更新为 ready-for-review，进入 Task 6 管线"
     }
   ],
   "metadata": {
