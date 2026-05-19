@@ -341,6 +341,7 @@ tags:
   - [21.7 多进程启动优化](part5-app/ch21-startup/07-multiprocess-startup.md)
   - [21.8 启动监控与度量](part5-app/ch21-startup/08-startup-monitoring.md)
   - [21.9 启动优化案例集](part5-app/ch21-startup/09-startup-case-studies.md)
+  - [21.10 SDK Runtime 与广告 SDK 启动隔离性能](part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
