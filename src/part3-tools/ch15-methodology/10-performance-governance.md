@@ -20,7 +20,7 @@ sources:
     path: "https://developer.android.com/topic/libraries/app-startup"
 tags: [governance, benchmark, ci, budget, release]
 related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-21"
@@ -28,11 +28,15 @@ reviewed_by: openclaw-task6
 task9_state: reviewed
 repaired_date: "2026-04-22"
 repaired_by: "codex"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-22"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-22T07:35:00+08:00"
+last_task9_at: "2026-05-19T21:04:13+08:00"
 last_task6_audit: "2026-05-19"
+task2b_state: pending
+last_task9_audit: "2026-05-19"
+last_task9_review_log: "logs/deep-review/2026-05-19-20-audit.md"
+task9_review_notes: "2026-05-19 20 Task9 闲时抽检: needs-rework。P0 1: frontmatter 官方来源 https://developer.android.com/topic/performance/benchmarking 当前返回 404，应替换为 benchmarking-overview 或 macrobenchmark-overview。"
 ---
 
 # 性能治理工程化
