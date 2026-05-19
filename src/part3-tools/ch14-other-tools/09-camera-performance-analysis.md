@@ -33,7 +33,7 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
@@ -41,17 +41,18 @@ review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fix
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: "pending"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 task9_result: needs-rework
-last_task9_at: "2026-05-16T07:30:00+08:00"
+last_task9_at: "2026-05-19T15:31:38+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
+task9_reviewed_date: "2026-05-19"
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-16-07-deep-review.md"
-task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。camera3.h 路径仍错；TextureView/SurfaceTexture 成本机制需改为 GraphicBuffer 外部纹理导入与 GPU 合成/采样边界；量化阈值和 CameraX 初始化开销需补证据。"
+last_task9_review_log: "logs/deep-review/2026-05-19-15-deep-review.md"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。Perfetto 抓取配置使用不存在的 android.trace_config/atrace_config；counter SQL 过滤 counter.name 无法执行；SurfaceView/TextureView 管线仍混用。"
+task2b_rework_date: '2026-05-19'
 ---
 
 
