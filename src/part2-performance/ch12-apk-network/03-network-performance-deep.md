@@ -2,7 +2,7 @@
 title: "网络性能深入：连接池、TLS 与传输优化"
 chapter: "12.3"
 section: "12.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-21"
@@ -53,14 +53,16 @@ reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 review_round: 2
 task6_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task9_at: "2026-04-25T18:39:22+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
+last_task6_audit: "2026-05-19"
+last_task9_audit: "2026-05-19"
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
