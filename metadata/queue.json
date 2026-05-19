@@ -7064,45 +7064,49 @@
       "section": "22.10",
       "section_title": "RenderEffect 与 RuntimeShader 性能实践",
       "priority": 95,
-      "title": "RuntimeShader uniform 动画失效风险与 gpu_busy 观测口径错误",
-      "description": "RuntimeShader 示例复用同一 RenderEffect 时缺少显式 invalidate，gpu_busy 又被写成 Android 16+ 标准化 counter。",
-      "reason": "[Deep Tech Review] RuntimeShader 示例复用同一 RenderEffect 时缺少显式 invalidate，gpu_busy 又被写成 Android 16+ 标准化 counter。",
+      "title": "RuntimeShader 示例不可编译与 gpu_busy / Android 16 CDD 口径仍需回炉",
+      "description": "RuntimeShader 示例需要改为自行维护 effect 安装状态并显式 invalidate；GPU counter 章节需要删除标准化 gpu_busy / CDD GPU 利用率 counter 的说法，改为枚举设备 producer 暴露的 counter。",
+      "reason": "[Deep Tech Review] Task2B 修复引入 `view.renderEffect` 非公开/不存在 API，RuntimeShader 示例不可编译；gpu_busy 仍被写成 Android 16+ / CDD 标准观察项。",
       "issue_type": "rendering-api-and-observability-accuracy",
-      "severity": "P1",
+      "severity": "P0",
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
       ],
       "material_paths": [
-        "intake/suggestions.md",
+        "logs/deep-review/2026-05-19-12-deep-review.md",
         "frameworks/base/core/java/android/view/View.java",
-        "frameworks/base/graphics/java/android/graphics/RenderNode.java",
-        "protos/perfetto/common/gpu_counter_descriptor.proto"
+        "protos/perfetto/common/gpu_counter_descriptor.proto",
+        "https://source.android.com/docs/compatibility/16/android-16-cdd"
       ],
       "review_issues": [
         {
-          "severity": "P1",
-          "type": "API 行为/原理断裂",
-          "location": "L181-L208 RuntimeShader 示例",
-          "detail": "示例复用同一个 RenderEffect，帧内只更新 RuntimeShader uniform 后再次调用 view.setRenderEffect(effect)。AOSP View.setRenderEffect() 只有在 mRenderNode.setRenderEffect(renderEffect) 返回 true 时才调用 invalidateViewProperty(true, true)；RenderNode.setRenderEffect() 文档说明相同值会返回 false。也就是说，同一个 RenderEffect 指针重复设置通常不会触发 View 重绘。若没有 ValueAnimator/Choreographer 侧显式 invalidate，progress/size uniform 更新可能不会出现在下一帧。",
-          "suggestion": "把示例改成“初始化时 setRenderEffect 一次；每帧更新 uniform 后调用 view.postInvalidateOnAnimation()/invalidate()”。同时说明如果动画框架本身已经驱动重绘，可以复用该帧调度；不要依赖重复 setRenderEffect(effect) 触发失效。"
+          "severity": "P0",
+          "type": "API 签名错误 / 示例不可编译",
+          "location": "L181-L223 RuntimeShader 示例 applyTo()",
+          "detail": "示例使用 `view.renderEffect !== effect` 判断是否已安装效果，但 AOSP View 只有 `setRenderEffect(RenderEffect)`，没有公开 `getRenderEffect()`/Kotlin `renderEffect` 属性；AOSP master View.java 搜索 `getRenderEffect` 为空。当前示例按公开 API 不可编译。",
+          "suggestion": "在 wrapper 内自行保存 `effectApplied`/`currentEffect` 状态，或拆成 install 与 update 两个方法：首次 `view.setRenderEffect(effect)`，之后每帧只更新 uniform 并调用 `postInvalidateOnAnimation()`/`invalidate()`；不要读取不存在的 View.renderEffect。"
         },
         {
           "severity": "P1",
-          "type": "版本差异/观测口径",
-          "location": "L240、L281 gpu_busy 观测指标",
-          "detail": "正文写“Android 16+ 优先看标准化 gpu_busy”，并在设备验证指标中直接列 gpu_busy。复核 Android 16 CDD 只要求 GPU counters/RenderStages 输出符合 Perfetto protobuf schema；Perfetto GpuCounterDescriptor 只有 counter_id/name/unit/group 等字段，没有公开的 gpu_busy 标准别名约束。2.10 章节当前也已有同类 pending 队列。按现有写法会让读者在很多设备上寻找不存在的统一 counter 名称。",
-          "suggestion": "改成“先枚举设备 producer 暴露的 GPU counter name/id；如果存在 busy/utilization 类 counter 再纳入对照”。删除“Android 16+ 标准化 gpu_busy”表述，或补 CDD/Perfetto producer/厂商文档证据后再保留。"
+          "type": "版本差异 / GPU counter 口径",
+          "location": "L255 gpu_busy / Android 16 CDD 描述",
+          "detail": "正文仍写 Android 16+ 可查看 `gpu_busy`，并称 CDD 要求设备暴露 GPU 利用率 counter。Android 16 CDD 7.1.4.6 要求的是声明支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStages schema，并报告 GPU frequency tracepoint；Perfetto GpuCounterDescriptor 只定义 counter_id、name、unit、group 等字段，没有标准化 `gpu_busy` 名称。",
+          "suggestion": "改成“先枚举设备 producer 暴露的 counter name/id；若存在 busy/utilization 类 counter 再纳入对照”。删除“CDD 要求 GPU 利用率 counter / Android 16+ 标准 gpu_busy”表述，除非补厂商或 Perfetto producer 证据。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T15:27:00+08:00",
-      "completed_date": "2026-05-19",
-      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
+      "reopened_from_completed": {
+        "completed_date": "2026-05-19",
+        "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
+      },
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-19T12:20:00+08:00"
     },
     {
       "id": "task9-2026-05-15-24.9-wifi-network-selection-version-review",
@@ -9767,56 +9771,65 @@
       "id": "task9-20260517-14.1-profiler-profilingmanager-api",
       "section": "14.1",
       "section_title": "Android Studio Profiler",
-      "title": "Android Studio Profiler ProfilingTrigger 示例与工具入口边界仍需回炉",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Task2B 修复后仍残留 ProfilingTrigger Builder/registerForAllProfilingResults API 签名错误；Network Inspector 时间轴口径和 profileable Java Method Trace 能力边界仍需按官方文档复核。",
-      "description": "修正 Android 16 trigger-based profiling 示例为可编译 API；拆清 Android Studio 2020.3.1+ Network Inspector 入口与 Profiler timeline；复核 profileable/debuggable 对 Java/Kotlin Method Recording 的支持边界。",
-      "issue_type": "api-signature-version-observability",
-      "severity": "P0",
+      "title": "Android Studio Profiler 工具入口与 profileable/Power/ProfilingTrigger 边界仍需回炉",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Task2B 修复后 ProfilingManager 示例已基本可编译，但 Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、TRIGGER_TYPE_APP_FULLY_DRAWN 语义仍不准确。",
+      "description": "拆清当前 Android Studio Profiler 与 App Inspection/Network Inspector 的边界；复核 profileable/debuggable 对 Java/Kotlin Method Recording 的支持；修正 Power Profiler 为设备级 power rail；修正 APP_FULLY_DRAWN 为 reportFullyDrawn() 后触发。",
+      "issue_type": "version-observability-api-semantics",
+      "severity": "P1",
       "created_date": "2026-05-17",
       "added_at": "2026-05-17T16:20:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
         "src/part3-tools/ch14-other-tools/01-as-profiler.md"
       ],
       "material_paths": [
-        "logs/deep-review/2026-05-17-16-deep-review.md"
+        "logs/deep-review/2026-05-19-12-deep-review.md",
+        "https://developer.android.com/studio/profile",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/guide/topics/manifest/profileable-element",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
       ],
       "review_issues": [
         {
-          "severity": "P0",
-          "type": "API 签名错误",
-          "location": "L247-L264 ProfilingManager / ProfilingTrigger 注册示例",
-          "detail": "正文仍使用 `ProfilingTrigger.Builder().setTriggerType(...)` 和 `registerForAllProfilingResults { ... }`。公开 API 是 `ProfilingTrigger.Builder(int triggerType)` + `setRateLimitingPeriodHours()` + `build()`；`registerForAllProfilingResults` 的签名是 `(Executor, Consumer<ProfilingResult>)`，没有单 lambda 重载。官方 trigger-based capture 示例还先注册全局结果 listener，再调用 `addProfilingTriggers()`。当前代码按 Android 16 API 36 不能编译。",
-          "suggestion": "改成 `ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN).setRateLimitingPeriodHours(1).build()`；用 `val executor = Executors.newSingleThreadExecutor()` 与 `Consumer<ProfilingResult>` 调 `registerForAllProfilingResults(executor, callback)`，再 `addProfilingTriggers(triggers)`；`TRIGGER_TYPE_APP_FULLY_DRAWN` 的触发条件写成冷启动中调用 `Activity.reportFullyDrawn()` 后，不要写成自动“首帧绘制”。"
-        },
-        {
           "severity": "P1",
           "type": "版本差异 / 工具入口",
-          "location": "L89-L99 Profiler 四模块与共享时间轴描述",
-          "detail": "正文已在 L95 说明 Network Profiler 迁移到 App Inspection > Network Inspector，但 L89 仍写“Profiler 的核心是四个分析模块”，L99 又写“四个模块共享同一个时间轴”。在 Android Studio 2020.3.1+，Network Inspector 位于 App Inspection，不是当前 Profiler 时间轴中的同级模块；该段会让 Koala/Meerkat 之后的读者继续按旧版 Profiler 入口和共享 timeline 理解。",
-          "suggestion": "拆成当前入口矩阵：Profiler 负责 CPU/Memory/Power 等任务；Network 走 View > Tool Windows > App Inspection > Network Inspector；旧版 Network Profiler 只保留历史说明。删除“这四个模块共享同一个时间轴”或限定为旧版 Profiler。"
+          "location": "L89-L100 Profiler 模块与共享时间轴",
+          "detail": "正文已说明 Network Profiler 在 Android Studio 2020.3.1+ 迁移到 App Inspection > Network Inspector，但仍写“Profiler 的核心分析模块”包含 Network，并写“四个模块共享同一个时间轴”。当前 Android Studio 的 Network Inspector 不在 Profiler Home 的同级任务/共享 timeline 中，旧版 Network Profiler 只能作为历史说明。",
+          "suggestion": "改成当前入口矩阵：Profiler Home/Tasks 负责 CPU、Memory、Power 等性能任务；Network 走 View > Tool Windows > App Inspection > Network Inspector。删除“这四个模块共享同一个时间轴”，或明确限定为旧版 Network Profiler。"
         },
         {
           "severity": "P1",
           "type": "观测前提 / profileable 能力边界",
-          "location": "L199-L208 能力矩阵、L275 FAQ",
-          "detail": "正文把 Java Method Trace 标为 `profileable` 不可用。当前 Android Studio profile 文档明确要求改用 debuggable 的场景是 Java/Kotlin allocations、heap dump，以及部分 task view 的 Interaction timeline；`<profileable>` manifest 文档还列出 simpleperf、am profile commands、Perfetto CPU/Java memory 等本地 profiling 能力。Java/Kotlin Method Recording 是否在当前 Studio/profileable 组合下受限需要单独版本证据，不能直接写成通用 ❌。",
-          "suggestion": "复核 Android Studio 当前版本的 Java/Kotlin Method Recording 支持矩阵；如果只能在某些 IDE/设备/API 组合下使用，按版本列条件。无一手证据前，把表格改成“需按 Studio 版本验证”，并保留官方确定限制：Java/Kotlin Allocation Recording、Heap Dump 需 debuggable。"
+          "location": "L199-L208 profileable/debuggable 能力矩阵",
+          "detail": "正文把 Java Method Trace 标成 profileable 不可用。Android Studio profile 文档明确要求改用 debuggable 的项目是 Java/Kotlin allocations、heap dump，以及部分 task view 的 Interaction timeline；<profileable> 官方文档列出 simpleperf、am profile commands、Perfetto CPU/Java memory 等本地 profiling 能力。Java/Kotlin Method Recording 在当前 Studio/profileable 组合下是否不可用，正文没有一手版本证据。",
+          "suggestion": "在实测或官方支持矩阵确认前，不要把 Java Method Trace 写成通用 ❌。建议改为“需按 Android Studio/设备/API 组合验证”，并只保留官方确定限制：Java/Kotlin Allocation Recording、Heap Dump 需要 debuggable。"
+        },
+        {
+          "severity": "P1",
+          "type": "观测口径 / Power Profiler",
+          "location": "L233 Power Profiler / ODPM 解释",
+          "detail": "正文写 Power Profiler 能看到“App 的总功耗”并精确知道功耗花在哪个子系统。官方 Power Profiler 文档说明 ODPM 是 device-level power consumption，不是 app-specific；只能把 power rail 数据与前台/后台 App 行为做时间相关，读数会受设备上其他活跃 App 干扰。",
+          "suggestion": "把结论改成“设备级 power rail，可与 App 操作窗口相关联”，并补充噪声边界；不要写成 App 级功耗归因。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 语义 / ProfilingTrigger",
+          "location": "L245 TRIGGER_TYPE_APP_FULLY_DRAWN 描述",
+          "detail": "正文写 TRIGGER_TYPE_APP_FULLY_DRAWN 是“App 完成首帧绘制时触发”。官方 API 语义是 cold start 中 Activity.reportFullyDrawn() 被调用后触发，系统返回 running system trace snapshot；它不是首帧自动触发器。",
+          "suggestion": "改成“冷启动期间调用 Activity.reportFullyDrawn() 后触发”，并提醒未调用 reportFullyDrawn() 的路径不会按首帧自动产出结果。"
         }
       ],
       "reopened_from_completed": {
-        "completed_date": "2026-05-17T15:18:41+08:00",
-        "completed_reason": "Task 2B 回炉修复: ProfilingManager API 修正为 addProfilingTriggers + TRIGGER_TYPE_APP_FULLY_DRAWN/ANR(P0), Network Profiler→Network Inspector 入口补版本(P1), profileable/debuggable 能力矩阵(P1)"
+        "completed_date": "2026-05-19",
+        "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
       },
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-17T16:20:00+08:00",
-      "completed_date": "2026-05-19",
-      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
+      "last_reviewed_at": "2026-05-19T12:20:00+08:00"
     },
     {
       "id": "task9-20260517-8.2-app-start-api-lifecycle-version",
