@@ -38,10 +38,10 @@ task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 section: "10.1"
 status: finalized
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_result: fixed
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-19"
@@ -241,21 +241,26 @@ malloc debug 是 Android 系统提供的另一种 Native 内存分析工具,它�
 malloc debug 通过设置系统属性开启:
 
 ```bash
-# 方式 1：root/platform 场景 — 指定目标可执行文件
-# 注意：app_process 会影响所有 zygote fork 出的 App
-adb shell setprop libc.debug.malloc.program com.example.app
+# 方式 1：root/platform 场景 — 指定目标可执行文件名
+# 注意：libc.debug.malloc.program 接受的是可执行文件名，不是包名
+# 对 zygote fork 的 App，可执行文件名是 app_process64（或 app_process）
+# 设置 app_process64 会影响所有从 zygote fork 出的 App
+adb shell setprop libc.debug.malloc.program app_process64
 adb shell setprop libc.debug.malloc.options "backtrace"
 
 # 方式 2：按信号切换（先不记录，收到 SIGUSR1 后开始记录 backtrace）
 adb shell setprop libc.debug.malloc.options "backtrace_enable_on_signal"
 
-# 方式 3：App debuggable 场景（不需要 root）
+# 方式 3：debuggable App 场景（不需要 root）
 # 在 AndroidManifest.xml 中设置 android:debuggable="true"
 # 或通过 adb shell am set-debug-app -w <package>
-# 然后设置 wrap.sh 并在 wrap.sh 中 export 相关环境变量
+# 然后创建 wrap.sh 并在其中 export 相关环境变量：
+#   #!/system/bin/sh
+#   export LIBC_DEBUG_MALLOC_OPTIONS=backtrace
+#   exec "$@"
 ```
 
-开启后，malloc debug 会跟踪每一次 Native 内存分配的调用栈，并能在检查到内存错误（如 use-after-free、buffer overflow）时输出详细信息。`backtrace` 本身即启用分配栈记录；`backtrace_enable_on_signal` 允许按信号动态切换记录状态。相比于 heapprofd，malloc debug 提供更完整的分配记录（非采样），但性能开销也大得多。
+开启后，malloc debug 会跟踪每一次 Native 内存分配的调用栈，并能在检查到内存错误（如 use-after-free、buffer overflow）时输出详细信息。`backtrace` 本身即启用分配栈记录；`backtrace_enable_on_signal` 允许按信号动态切换记录状态。root 场景下 `libc.debug.malloc.program` 设置为 `app_process64` 后，所有 zygote fork 的进程都会被 hook；如果只想调试特定 App，优先用方式 3（wrap.sh）。相比于 heapprofd，malloc debug 提供更完整的分配记录（非采样），但性能开销也大得多。
 
 [已验证: 官方文档, source.android.com/docs/core/debug/native-crash; NDK malloc debug 选项表不包含 enable_on_start，backtrace 本身即启用栈记录]
 
@@ -425,7 +430,7 @@ benchmarkRule.measureRepeated(
 
 - **Java Heap 使用率**：通过 `Runtime.totalMemory() - freeMemory()` 计算已用部分，以 `Runtime.maxMemory()` 为预算上界（受 `largeMemoryClass` 约束）
 - **进程 PSS**：通过 `Debug.MemoryInfo.getTotalPss()` 获取，返回进程 total PSS memory usage（单位 kB），涵盖 Java Heap、Native Heap、Graphics、Stack 等所有内存类别
-- **是否接近内存预算**：Java Heap 使用率以 `Runtime.maxMemory()` 为分母（不是 `largeHeap` 绝对值）；进程 PSS 以 `ActivityManager.getMemoryClass()`/`largeMemoryClass()` 的 kB 乘以 1024 作为参考上界，但 PSS 包含 Native/Graphics/Stack 等 Java heap 之外的内存，不能直接用 `largeHeap` 做比例阈值
+- **是否接近内存预算**：Java Heap 使用率以 `Runtime.maxMemory()` 为分母（不是 `largeHeap` 绝对值）；进程 PSS 不应直接与 `ActivityManager.getMemoryClass()`/`largeMemoryClass()` 返回的 MB 值做比例——PSS 包含 Native Heap、Graphics、Stack 等 Java heap 之外的内存，`getMemoryClass()` 返回的是 Java heap 预算上限（单位 MB），两者口径不同。PSS 监控应建立同设备、同 Android 版本的历史基线做趋势对比
 - **GC 频率**:短时间内 GC 事件过多说明内存压力大
 
 [待验证: `Debug.getMemoryInfo()` 的 PSS 计算在不同 Android 版本上是否一致]

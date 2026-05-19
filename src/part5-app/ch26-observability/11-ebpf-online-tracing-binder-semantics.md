@@ -3,7 +3,7 @@ title: "eBPF 在线追踪与 Binder 语义重建"
 chapter: "26.11"
 section: "26.11"
 status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 17 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-05-17"
@@ -44,7 +44,7 @@ source_refs:
   - https://arxiv.org/abs/2604.27830
   - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
@@ -52,12 +52,12 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T01:12:00+08:00"
-task9_result: needs-rework
+task9_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_at: "2026-05-17T01:36:14+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 26.11 eBPF 在线追踪与 Binder 语义重建
@@ -150,7 +150,7 @@ WDBind 的思路是把内核捕获和用户态解码分开：
 
 具体流程是：eBPF 在 `ioctl(BINDER_WRITE_READ)` 边界捕获写入 buffer，从中定位 `BC_TRANSACTION`，提取 `binder_transaction_data` 指向的 Parcel 数据；用户态预先用 Java Reflection 建立 framework 接口签名表，再把事务码和 descriptor 映射到方法名与参数类型。这样可以把“某进程发起了一次 ioctl”还原成“某 UID 调用了某个系统服务方法”。[已验证: 论文, arXiv:2604.27830]
 
-边界也要写清楚。WDBind 论文里的解析能力覆盖原始类型、String 和部分 Binder 对象；file descriptor、指针间接引用、复杂 Parcelable、reply 事务和厂商私有接口都可能解析不完整。反序列化失败时，记录 transaction code、descriptor、参数长度和失败类型，比强行猜参数更有用。[已验证: 论文, arXiv:2604.27830]
+边界也要写清楚。WDBind 论文里的解析能力覆盖原始类型、String 和部分 Binder 对象；file descriptor、指针间接引用、复杂 Parcelable 和厂商私有接口都可能解析不完整。reply 事务当前不处理——WDBind 只解析 outgoing 方向的 `BC_TRANSACTION`，不捕获 `BC_REPLY`。反序列化失败时，记录 transaction code、descriptor、参数长度和失败类型，比强行猜参数更有用。[已验证: 论文, arXiv:2604.27830 — “current implementation does not handle transaction reply”]
 
 [待验证: AOSP android-mainline `drivers/android/binder.c` 与 `include/uapi/linux/android/binder.h` 的字段路径需在源码审阅中复核]
 
@@ -184,7 +184,7 @@ eBPF + Binder 语义重建适合补强三类线上证据。
 
 ANR 现场经常只留下主线程等待栈：`binder_thread_read`、锁等待、futex 或 I/O 阻塞。Perfetto 能定位等待区间，日志能描述业务阶段，但缺一次跨进程调用的语义时，仍然很难判断是系统服务慢、服务端 Binder 线程池排队，还是 App 自己发起了过多同步调用。
 
-在受控设备上，Binder 事务日志可以补三列信息：调用方 tid / uid、目标接口 / transaction code、请求和 reply 的时间差。这样排查 ANR 时可以先把“主线程等待 600ms”拆成“发起了哪些系统服务调用、哪一次没有及时回复、前后是否伴随 I/O 或锁等待”。原理细节仍回到 1.4 节，26.11 只负责说明怎么把证据拿出来。[详见 1.4 节]
+在受控设备上，Binder 事务日志可以补三列信息：调用方 tid / uid、目标接口 / transaction code、outgoing transaction 的 ioctl enter/exit 阻塞时长。WDBind 当前实现不处理 transaction reply payload，无法直接给出“请求和回复的时间差”；如果需要 request/reply latency，要回退到 binder driver 的 `/sys/kernel/debug/binder/proc/` 或 `binder_transaction_log`。排查 ANR 时先把“主线程等待 600ms”拆成“发起了哪些系统服务调用、哪一次 ioctl 阻塞时间最长、前后是否伴随 I/O 或锁等待”。原理细节仍回到 1.4 节，26.11 只负责说明怎么把证据拿出来。[详见 1.4 节] [已验证: 论文, arXiv:2604.27830 — WDBind 当前不处理 transaction reply]
 
 ### 隐私审计
 
