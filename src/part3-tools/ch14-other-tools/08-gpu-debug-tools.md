@@ -3,7 +3,7 @@ title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
 status: "ready-for-review"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI/Sokatoa 要求 Android 11+)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, Sokatoa 要求 Android 13+)"
 last_verified: "2026-04-22"
 last_verified_against: "developer.android.com/agi, developer.android.com/guide/topics/manifest/profileable-element, perfetto.dev, AOSP gpu_counter_config.proto"
 confidence: medium
@@ -13,7 +13,7 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/gpu"
   - type: official
-    path: "https://developer.samsung.com/galaxy-gamedev/sokatoa.html"
+    path: "https://github.com/sarc-acl/sokatoa"
   - type: blog
     path: "intake/research-feeds/2026-04-05-11-agi-2026-roadmap-system-frame-profiler.md"
   - type: blog
@@ -32,14 +32,14 @@ gap_source: "AOSP结构+官方文档+研究素材"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-04-22T08:06:44+08:00"
-task2b_result: fixed
+last_task2b_at: "2026-05-19T15:20:11+08:00"
+task2b_result: "fixed"
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
@@ -68,7 +68,7 @@ task9_review_notes: "2026-05-19 Task9 闲时抽检：needs-rework。P0 1：AGI V
 - 🔹 **Perfetto 中的 GPU 观察点**：[已验证：perfetto.dev/docs/data-sources/gpu]
   `gpu.counters` 用来观察频率、利用率、带宽，`gpu.renderstages` 用来对齐 CPU 提交和 GPU 执行时间，适合作为 GPU 分析入口。
 
-- 🔹 **RenderDoc 与 Sokatoa 的角色差异**：[已验证：renderdoc.org，developer.samsung.com/galaxy-gamedev/sokatoa.html]
+- 🔹 **RenderDoc 与 Sokatoa 的角色差异**：[已验证：renderdoc.org，github.com/sarc-acl/sokatoa]
   RenderDoc 适合单帧图形调试和状态检查，Sokatoa 适合多帧对比和间歇性 GPU 卡顿定位，两者与 AGI 互补。
 
 - 🔹 **GPU 瓶颈判断指标**：[来源：Cubox/移动平台的GPU性能分析-2024-12-07.md，Cubox/基于gpu counters数据的性能优化-2025-02-27.md]
@@ -115,7 +115,7 @@ GPU 分析工具和 CPU 分析工具不是替代关系，是互补关系。先�
 
 - **AGI Frame Profiler**：Google 官方工具，支持 Vulkan 和 OpenGL ES 的帧捕获和分析。
 - **RenderDoc**：开源图形调试器，功能最全面的单帧分析工具。Arm、Samsung、Meta 都维护了自己的 fork。
-- **Sokatoa**：Samsung 2026 年发布的开源多帧 GPU profiler，基于 GFXReconstruct，是唯一支持多帧分析的工具。
+- **Sokatoa**：Samsung 2026 年发布的多帧 GPU profiler，基于 GFXReconstruct，计划 2026 年底开源，是唯一支持多帧分析的工具。
 
 **厂商专用工具**：针对特定 GPU 提供更深度的分析。
 
@@ -191,7 +191,7 @@ adb shell settings put global angle_gl_driver_selection_values angle
 
 部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时，改从 Settings / Graphics Driver Preferences 进入。
 
-5. **对于 Vulkan 应用，建议关闭 Vulkan Validation Layer**。Validation Layer 会改变 GPU 命令的执行时序，影响性能数据的准确性。调试阶段开 Validation Layer 确保正确性，性能分析阶段关掉它。
+5. **Vulkan 应用需要启用 AGI 的 Vulkan Layer 完成帧捕获**。AGI 官方 quickstart 要求 Vulkan 应用启用 Vulkan validation layers；若应用未自行启用，需要通过 `adb shell settings put global enable_gpu_debug_layers 1` 和 `adb shell settings put global gpu_debug_layers <agi_layer_name>` 注入 AGI APK 中的 layer。AGI Frame Profiler 的定位是 draw call / shader / render target 分析，不用于测量真实帧率。如果讨论应用自带调试 validation layer 的性能扰动，需要另起一句说明，但不要覆盖 AGI 必需的 layer 配置。
 
 使用步骤：
 
@@ -341,9 +341,9 @@ RenderDoc 有几个重要的厂商 fork：
 
 ## Sokatoa：多帧 GPU 分析的新范式
 
-2026 年 3 月，Samsung 发布了 Sokatoa，这是一个面向 Android 的开源 GPU 性能分析器。它的核心创新是多帧分析能力，和 AGI / RenderDoc 的单帧分析正好互补。
+2026 年 3 月，Samsung 发布了 Sokatoa，这是一个面向 Android 的多帧 GPU 性能分析器，基于 LunarG GFXReconstruct 引擎构建，计划 2026 年底开源。它的核心创新是多帧分析能力，和 AGI / RenderDoc 的单帧分析正好互补。
 
-[已验证：Samsung 官方文档，developer.samsung.com/galaxy-gamedev/sokatoa.html]
+[已验证：Samsung Semiconductor blog，LunarG 文章，github.com/sarc-acl/sokatoa]
 
 ### 为什么需要多帧分析
 
@@ -361,11 +361,11 @@ AGI 和 RenderDoc 都是捕获一帧来分析。这在问题稳定复现时够�
 
 Sokatoa 基于 LunarG 的 GFXReconstruct 引擎构建。GFXReconstruct 的工作方式是拦截应用的 Vulkan API 调用，记录所有命令和参数，然后在离线回放时精确重演。因为记录的是 API 级别的调用，而不是硬件状态，所以回放结果在不同 GPU 架构上仍然确定，在 Adreno 上捕获的 trace 也可以在 Mali 上回放。
 
-Sokatoa 支持三种 GPU：Samsung Xclipse（基于 AMD RDNA 架构）、Qualcomm Adreno、ARM Mali。它原生只支持 Vulkan 应用，对于 GLES 应用，需要先通过 ANGLE 转换为 Vulkan。
+Sokatoa 支持 Exynos/Xclipse（基于 AMD RDNA 架构）、Qualcomm Adreno、ARM Mali 和 PowerVR。它原生只支持 Vulkan 应用，对于 GLES 应用，需要先通过 ANGLE 转换为 Vulkan。目标设备要求 Android 13 or later，且需要 debuggable APK 或 rooted device 才能注入 GFXReconstruct/Sokatoa Vulkan layers。
 
 ### 开源计划
 
-Samsung 计划在 2026 年内开源 Sokatoa。这将使其成为继 RenderDoc 之后第二个主流的开源移动 GPU profiler，也是第一个开源的多帧 GPU profiler。
+Sokatoa 当前可免费下载使用，Samsung 计划在 2026 年底开源（GitHub: sarc-acl/sokatoa）。开源后将成为继 RenderDoc 之后第二个主流的开源移动 GPU profiler，也是第一个开源的多帧 GPU profiler。
 
 ## GPU 性能分析的核心指标
 
@@ -539,7 +539,7 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 | Perfetto GPU | Android 8+ | ✅ | ❌ | ✅ (profileable) | 通用 |
 | AGI | Android 11+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno/Mali/PowerVR |
 | RenderDoc | Android 8+ | ❌ | ✅ | ❌ 需 debuggable | 通用 |
-| Sokatoa | Android 11+ | ❌ | ✅ 多帧 | ❌ 需 debuggable | Adreno/Mali/Xclipse |
+| Sokatoa | Android 13+ | ❌ | ✅ 多帧 | ❌ 需 debuggable/rooted | Adreno/Mali/Xclipse/PowerVR |
 | Snapdragon Profiler | Android 7+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno 专用 |
 | ARM Streamline | Android 8+ | ✅ | ❌ | ✅ (部分功能) | Mali 专用 |
 | PerfDog | Android 5+ | ✅ | ❌ | ✅ | 通用 |
@@ -624,7 +624,7 @@ Android 15 开始，ANGLE 已经从“可选实验路径”走到“系统内可
 ### 官方文档
 - AGI 官方文档：https://developer.android.com/agi
 - Perfetto GPU 数据源：https://perfetto.dev/docs/data-sources/gpu
-- Sokatoa 官方文档：https://developer.samsung.com/galaxy-gamedev/sokatoa.html
+- Sokatoa GitHub：https://github.com/sarc-acl/sokatoa
 - RenderDoc 官方文档：https://renderdoc.org/docs/
 
 ### 厂商工具

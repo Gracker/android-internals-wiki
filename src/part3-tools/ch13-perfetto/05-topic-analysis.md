@@ -47,15 +47,15 @@ related_chapters:
 - '7.1'
 - '8.1'
 - '9.1'
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
-task2b_result: "pending"
-task6_state: reviewed
+task2b_result: "fixed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
 last_task9_at: "2026-05-19T05:36:10+08:00"
@@ -66,6 +66,7 @@ last_task9_audit: "2026-05-19"
 last_task9_audit_result: "p0-source-accuracy"
 last_task9_review_log: "logs/deep-review/2026-05-19-05-audit.md"
 task9_review_notes: "2026-05-19 Task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0；Perfetto process_stats RSS/PSS SQL 与 sched_blocked_reason 字段口径错误，已写入 queue。"
+last_task2b_at: "2026-05-19T15:20:11+08:00"
 ---
 
 # 专题解读
@@ -557,28 +558,57 @@ Java heap sampling 和 Java heap dump 经常一起用。前者告诉我们谁在
 
 ### 进程级内存 Counter
 
-除了堆分析，Perfetto 的 `linux.process_stats` 数据源会定期（通常每秒一次）采集进程的内存指标。在 Trace 中展开进程轨道，会看到 `RSS`（Resident Set Size）、`PSS`（Proportional Set Size）等 Counter 曲线。
+除了堆分析，Perfetto 的 `linux.process_stats` 数据源会定期采集进程级内存指标。默认配置下（`proc_stats_poll_ms: 1000`，即每秒一次）采集的是 RSS 相关指标。在 Trace 中展开进程轨道，会看到 `mem.rss`、`mem.rss.anon`、`mem.rss.file`、`mem.rss.shmem` 等 Counter 曲线。
+
+PSS 不在默认输出中。只有在 `ProcessStatsConfig` 中设置 `scan_smaps_rollup: true` 时，Perfetto 才会从 `/proc/pid/smaps_rollup` 采集 `mem.smaps.pss` / `mem.smaps.pss.anon` 等轨道，且该操作需要读取 `/proc/pid/smaps_rollup` 的权限——`user` build 上非自身进程通常无法读取。
 
 这些 Counter 曲线对于以下场景特别有用：
 
 - **对比内存与性能的关联**：把内存 Counter 和掉帧时间点放到同一时间窗里比较，判断是否是内存压力导致的 GC 暴发进而引起卡顿
-- **观察内存增长趋势**：在长时间使用的 Trace 中，看 RSS 是否在持续上涨而不回落——这是内存泄漏的典型信号
+- **观察内存增长趋势**：在长时间使用的 Trace 中，看 `mem.rss.anon` 是否在持续上涨而不回落——这是内存泄漏的典型信号
 - **量化 LMK 的影响**：结合 `oom_score_adj_update` 事件和内存 Counter，可以判断系统何时开始杀后台进程以回收内存
 
 ```sql
--- 查询进程内存变化趋势
+-- 查询进程 RSS anon 变化趋势
 SELECT
   ts,
-  (value / 1024) AS rss_kb
+  (value / 1024) AS rss_anon_kb
 FROM counter
 JOIN process_counter_track ON counter.track_id = process_counter_track.id
 JOIN process USING (upid)
 WHERE process.name = '<App包名>'
-  AND process_counter_track.name = 'rssanon'
+  AND process_counter_track.name = 'mem.rss.anon'
 ORDER BY ts;
 ```
 
-[已验证: 来源见 perfetto.dev/docs/data-sources/native-heap-profiler 及 perfetto.dev/docs/analysis/sql-tables]
+RSS anon 对应匿名内存页（Java 堆、native heap、mmap 匿名映射），是内存泄漏排查的首选指标。Trace Processor 中 counter value 按 bytes 存储，`value / 1024` 得到 KB。
+
+```protobuf
+# 采集配置示例（只含 RSS）
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config {
+      proc_stats_poll_ms: 1000
+    }
+  }
+}
+```
+
+```protobuf
+# 采集配置示例（含 PSS，需要额外权限）
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config {
+      proc_stats_poll_ms: 1000
+      scan_smaps_rollup: true
+    }
+  }
+}
+```
+
+[已验证: perfetto.dev/docs/data-sources/process-stats，counter track 名称为 mem.rss / mem.rss.anon / mem.rss.file / mem.rss.shmem；PSS 需要 scan_smaps_rollup]
 
 ## 13.5.5 I/O 分析专题：Block I/O 与文件系统事件追踪
 
@@ -613,9 +643,9 @@ data_sources {
 }
 ```
 
-`block_rq_issue` 表示一个 I/O 请求被提交到块设备层；`block_rq_complete` 表示请求完成。两者之间的时间差就是单次 I/O 的实际耗时。`sched_blocked_reason` 会告诉我们线程为什么进入了 `D` 状态——如果原因是 I/O，会显示具体的 block 设备和扇区信息。
+`block_rq_issue` 表示一个 I/O 请求被提交到块设备层；`block_rq_complete` 表示请求完成。两者之间的时间差就是单次 I/O 的实际耗时。`sched_blocked_reason` 记录线程进入 `D` 状态时的等待调用点（`caller` 字段）和 `io_wait` 标记——用于判断 D 状态等待是否由 I/O 引起。block device 和扇区信息不来自 `sched_blocked_reason`，需要同时间窗关联 `block_rq_issue` / `block_rq_complete` 或 `ext4_*` / `f2fs_*` 文件系统事件。
 
-[已验证: 来源见 perfetto.dev/docs/data-sources/ftrace 及 kernel documentation]
+[已验证: perfetto.dev/docs/data-sources/ftrace；kernel sched_blocked_reason tracepoint 字段为 pid/caller/io_wait，不含 block device/sector]
 
 ### 在 Trace 中定位 I/O 瓶颈
 

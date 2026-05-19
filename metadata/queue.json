@@ -8174,7 +8174,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-16T07:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-19T15:20:11+08:00",
+      "completed_reason": "Task 2B 回炉修复: camera3.h 源码锚点改为 hardware/libhardware/include_all；TextureView/SurfaceTexture 成本机制改为外部纹理导入+GPU合成/采样"
     },
     {
       "id": "task9-20260516-2212-fragment-version-runoncommit",
@@ -11935,7 +11937,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T20:30:46+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-19T15:20:11+08:00",
+      "completed_reason": "Task 2B 回炉修复: 修正 AndroidX Tracing compat 反射方法名(asyncTraceBegin/asyncTraceEnd)，拆清 tracing 主库与 tracing-ktx 版本能力归属"
     },
     {
       "id": "task2a-gap-20260518-13.18-smartperfetto-platform",
@@ -12332,7 +12336,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "reason": "[Deep Tech Review][闲时抽检] Perfetto 数据源 / SQL 口径与当前官方文档和源码不一致，发布前需回炉修正。",
       "material_paths": [
         "logs/deep-review/2026-05-19-05-audit.md"
@@ -12356,7 +12360,9 @@
       "related_files": [
         "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "completed_date": "2026-05-19T15:20:11+08:00",
+      "completed_reason": "Task 2B 回炉修复: process_stats 内存 counter 从默认RSS/PSS改为 mem.rss/mem.rss.anon 轨道名、SQL 改为 mem.rss.anon、补 scan_smaps_rollup PSS 权限说明、sched_blocked_reason 从'显示block device/sector'改为'只有 pid/caller/io_wait'"
     },
     {
       "id": "task6-audit-14.10-oem-sched-ext-source-risk-2026-05-19",
@@ -12490,7 +12496,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md"
@@ -12515,7 +12521,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-19T09:20:00+08:00"
+      "added_at": "2026-05-19T09:20:00+08:00",
+      "completed_date": "2026-05-19T15:20:11+08:00",
+      "completed_reason": "Task 2B 回炉修复: kernel AutoFDO inject 命令按 GKI README 重写(加 --binary kernel.kallsyms / --symdir / --allow-mismatched-build-id / -j)；create_llvm_prof 加 --use_fs_discriminator；版本适用范围从'Android 16+'改为'android15-6.6、android16-6.12'"
     },
     {
       "id": "task2a-gap-22.14-desktop-windowing-large-screen-performance",
@@ -12558,7 +12566,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "reason": "[Deep Tech Review][闲时抽检] AGI Frame Profiler 的 Vulkan validation layer 前置条件写反，Sokatoa 版本/来源口径已过期。",
       "material_paths": [
         "logs/deep-review/2026-05-19-10-audit.md"
@@ -12584,7 +12592,9 @@
       "related_files": [
         "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "completed_date": "2026-05-19T15:20:11+08:00",
+      "completed_reason": "Task 2B 回炉修复: AGI Vulkan Layer 前置条件从'建议关闭'改为'按要求启用'；Sokatoa 最低版本改为 Android 13+、GPU 支持补 PowerVR、开源状态改为'计划 2026 年底开源'、链接更新为 GitHub"
     },
     {
       "section": "8.2",

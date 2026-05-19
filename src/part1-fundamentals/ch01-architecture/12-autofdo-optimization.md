@@ -2,12 +2,12 @@
 title: "AutoFDO 反馈导向编译优化"
 chapter: "1.12"
 section: "1.12"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36); kernel/GKI AutoFDO 覆盖 android15-6.6、android16-6.12"
 last_verified: "2026-04-20"
 last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc + AOSP userspace afdo: true examples"
 confidence: medium
@@ -44,14 +44,14 @@ related_chapters:
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T09:20:00+08:00"
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
-task9_state: reviewed
-task2b_result: fixed
-last_task2b_at: "2026-04-29T12:42:48.185623"
-task2b_state: pending
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-19T15:20:11+08:00"
+task2b_state: "fixed"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 task9_result: needs-rework
@@ -127,7 +127,7 @@ AutoFDO 的采样过程要分成两层看。
 
 对内核 AutoFDO 来说，真正需要的是可还原 branch history 的 Coresight trace，而不是普通 PMU 周期采样。simpleperf 的事件名仍常写成 `cs-etm`，因为它暴露的是 Coresight trace 入口；落到具体 SoC 时，底层可能是 ETM，也可能是 ETE + TRBE。
 
-`[适用版本: Android 12+ 用户态 AutoFDO；Android 16+ kernel AutoFDO（GKI）]`
+`[适用版本: Android 12+ 用户态/native AutoFDO；kernel/GKI AutoFDO 当前公开 profile 覆盖 android15-6.6、android16-6.12，后续扩展 android17-6.18]`
 
 ### 数据采集流程
 
@@ -171,18 +171,28 @@ simpleperf inject -i perf.data --output branch-list -o branch_list.data --binary
 
 **Step 4：把 branch-list 转成 AutoFDO text profile**
 
+用户态 / native binary 场景用通用流程：
+
 ```bash
 simpleperf inject -i branch_list.data --output autofdo -o perf_inject.data
-# 如果 branch-list 里覆盖多个 binary，要先按 binary 拆分；内核只保留 [kernel.kallsyms] 对应的 perf_inject_kernel.data
+# 如果 branch-list 里覆盖多个 binary，要先按 binary 拆分
 ```
 
-这一层经常被漏掉。`create_llvm_prof` 消费的是 AutoFDO text profile，而不是原始 `branch_list.data`。内核场景常见的输入文件名是 `perf_inject_kernel.data`，它对应 `[kernel.kallsyms]` 这一个 binary。
+kernel / GKI 场景按当前 AOSP GKI README 使用专用的 inject 命令，带 kernel 符号目录和构建 ID 容差参数：
+
+```bash
+simpleperf inject -i branch01.data,branch02.data,... --binary kernel.kallsyms --symdir . --allow-mismatched-build-id -o kernel.autofdo -j 20
+```
+
+`--binary kernel.kallsyms` 指定内核符号映射，`--symdir .` 让 simpleperf 在当前目录查找内核模块 ELF，`--allow-mismatched-build-id` 容忍 build ID 不完全匹配（内核编译环境常见），`-j 20` 并行加速。`kernel.autofdo` 是 GKI README 当前使用的命名；旧文档或通用流程里的 `perf_inject_kernel.data` 是拆分产物，两者功能相同但命名不同。
 
 **Step 5：用未剥离 `vmlinux` 生成 `kernel.afdo`**
 
 ```bash
-create_llvm_prof --profile perf_inject_kernel.data --profiler text --binary vmlinux --out kernel.afdo --format=extbinary --prof_sym_list=false
+create_llvm_prof --profiler text --binary vmlinux --profile kernel.autofdo --format=extbinary --use_fs_discriminator --out kernel.afdo --prof_sym_list=false
 ```
+
+相比通用流程多了 `--use_fs_discriminator`，这是 GKI README 对 kernel 场景的要求——内核编译时如果启用了 `-fdebug-prefix-map` + `-fprofile-use`，discriminator 信息来自文件系统路径映射，需要显式告知 `create_llvm_prof`。
 
 这里有三个约束。
 
@@ -258,7 +268,7 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 | **优化方式** | AOT 编译热点 Java 方法 | 函数内联、基本块排列、分支预测提示 |
 | **作用范围** | 单个 App | 整个系统 |
 | **开发者可控性** | 完全可控 | 对 App 开发者透明 |
-| **引入版本** | Android 9（作为 App Profiles）/ Android 13（正式名称） | Android 12（用户态）/ Android 16（内核） |
+| **引入版本** | Android 9（作为 App Profiles）/ Android 13（正式名称） | Android 12（用户态/native）；kernel/GKI 当前覆盖 `android15-6.6`、`android16-6.12` |
 
 简单来说：**Baseline Profiles 让你的 App 跑得更快，AutoFDO 让你的 App 跑在更快的系统上**。两个机制不冲突，同时生效。
 
