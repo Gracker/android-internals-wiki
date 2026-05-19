@@ -187,7 +187,8 @@
     "5.15",
     "1.12",
     "13.5",
-    "21.10"
+    "21.10",
+    "12.2"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -205,9 +206,10 @@
     "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
-    "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md"
+    "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
+    "src/part2-performance/ch12-apk-network/02-network-performance.md"
   ],
-  "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-20 01: 闲时抽检 12.2；P0 1 / P1 1 / P2 1 / P3 1；已回炉到 Task2B。",
   "task6_review_summary": {
     "date": "2026-05-19",
     "time": "20:25",
@@ -1452,13 +1454,23 @@
       "task6_log": "logs/review/2026-05-19-17-review.md",
       "task6_new_rework": false,
       "task6_note": "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：删除结构性元叙述，保持工具选型主线。AGI/Sokatoa 技术项已由 Task2B 修复，等待 Task9 复审。"
+    },
+    "12.2": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 1,
+      "task9_result": "needs-rework",
+      "reviewed_at": "2026-05-20T01:26:42+08:00",
+      "log": "logs/deep-review/2026-05-20-01-audit.md",
+      "summary": "闲时抽检发现 P0 1：ADPF API 写成不存在的 PerformanceManager.setPreferPowerEfficiency；P1 1：Android 16 BPF Network Bandwidth Estimator/40% 精度提升缺公开一手来源。P2 1：OkHttp EventListener 文档锚点 404。"
     }
   },
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T01:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-20T01:26:42+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-19",
     "time": "20:25",
@@ -1485,7 +1497,7 @@
     },
     "auto_promoted": []
   },
-  "task9_last_review": "2026-05-19",
+  "task9_last_review": "2026-05-20",
   "ready_to_publish": 200,
   "rework_history": [
     {

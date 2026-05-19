@@ -2311,3 +2311,9 @@
   - 官方文档/AOSP 方向：Android 17 behavior changes、MessageQueue guidance、App memory limits、Power / performance docs 已有 1.13、16.5、23.9、14.11、25.11 等章节覆盖。
 - 下轮建议：优先等待 Task 2B / Task 9 清理既有 pending 队列；若继续挖掘，避开 Android 17 MessageQueue、App Memory Limits、ProfilingTrigger、WOOTdroid、16KB Page Size 这些已覆盖主题，改从官方文档中新发布且 `SUMMARY.md` 没有对应标题的 topic 入手。
 
+## [Task9 Idle Audit] 12.2 网络性能优化 — 2026-05-20
+- **类型**：源码引用/资料锚点
+- **位置**：§网络性能指标，验证标注（原 L104）
+- **问题**：`developer.android.com/reference/okhttp3/EventListener` 返回 404；OkHttp EventListener 官方文档在 Square 站点，例如 `https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/`。
+- **建议**：把验证标注改成 Square OkHttp EventListener 文档；Android Developers 只保留 Android 平台 API，例如 `ConnectivityManager` / `NetworkCapabilities`。
+

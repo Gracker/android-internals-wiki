@@ -13158,6 +13158,49 @@
         "timeliness": 4,
         "total": 17
       }
+    },
+    {
+      "id": "task9-12.2-network-api-version-audit-20260520",
+      "section": "12.2",
+      "section_title": "网络性能优化",
+      "priority": 95,
+      "title": "网络性能优化 API/版本口径错误",
+      "description": "P0: ADPF API 写成不存在的 PerformanceManager.setPreferPowerEfficiency；P1: Android 16 BPF Network Bandwidth Estimator/40% 精度提升缺公开一手来源且与官方版本线不一致。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/02-network-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-01-audit.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 签名错误",
+          "location": "§网络线程的能效分档，首句（原 L239）",
+          "detail": "正文写 Android 15 ADPF 提供 `PerformanceManager.setPreferPowerEfficiency(boolean)`。公开 API 中没有 `PerformanceManager` 这个入口；官方 API 是 `android.os.PerformanceHintManager.Session#setPreferPowerEfficiency(boolean)`，Added in API level 35。",
+          "suggestion": "把类名/API 改为 `PerformanceHintManager.Session#setPreferPowerEfficiency(boolean)`；同时说明它只作用于 Performance Hint Session 绑定的线程，适用前提是先创建 hint session 并把网络后台线程 tid 加入 session，避免写成全局网络线程调度开关。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/来源缺口",
+          "location": "§ConnectivityManager.NetworkCallback 段落后（原 L427）",
+          "detail": "正文写“Android 16 的 BPF Network Bandwidth Estimator 把 `getLinkDownstreamBandwidthKbps()` 精度提升约 40%”。官方 `NetworkCapabilities` 文档只说明该值是 estimated first hop transport bandwidth；Android 11/12 官方文档有 bandwidth estimation 改进描述，但 Android 16 features/summary/behavior/release notes 未检到 BPF estimator 或 40% 精度提升口径。",
+          "suggestion": "补一手来源（AOSP commit / Android 16 release note / 官方文档）后保留；否则删除 Android 16+BPF+40% 这组确定性表述，改为“该值仍是系统估算，只能做粗粒度分档”。如要讲版本线，可改写为 Android 11/12 对 bandwidth estimation 的官方改进。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T01:26:42+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T01:26:42+08:00",
+      "review_log": "logs/deep-review/2026-05-20-01-audit.md"
     }
   ],
   "metadata": {
