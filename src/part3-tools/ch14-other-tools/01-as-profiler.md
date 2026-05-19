@@ -28,21 +28,21 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task6_result: "pass-light-edit"
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T16:20:00+08:00"
+last_task9_at: "2026-05-19T12:20:00+08:00"
 last_task6_at: "2026-05-19T12:07:00+08:00"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 4 处，清理结构性元叙述与复述型过渡；Task9 仍 pending/needs-rework，未自动晋升。"
-task9_review_notes: "2026-05-17 16:20 Task9 deep-review 复核：needs-rework。P0 1 / P1 2 / P2 1；ProfilingTrigger Builder/registerForAllProfilingResults 示例仍不可编译，Network Inspector 时间轴与 profileable Java Method Trace 边界需回炉。"
+task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。"
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-17-16-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-19-12-deep-review.md"
 ---
 
 
