@@ -50,9 +50,9 @@ reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-13"
 last_task6_at: "2026-05-13T19:10:00+08:00"
+last_task6_audit: "2026-05-19"
 task6_review_log: "logs/review/2026-05-13-19-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
-
 ---
 
 

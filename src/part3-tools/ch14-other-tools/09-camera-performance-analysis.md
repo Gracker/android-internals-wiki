@@ -7,7 +7,7 @@ status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
-last_task2b_at: '2026-05-15T15:30:00+08:00'
+last_task2b_at: "2026-05-19T15:20:11+08:00"
 reviewed_date: '2026-05-01'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
@@ -33,17 +33,17 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_result: needs-rework
 last_task9_at: "2026-05-16T07:30:00+08:00"
 task9_reviewed_by: "openclaw-task9"
@@ -386,7 +386,7 @@ if not df.empty:
 
 BufferQueue 中 Buffer 数量有限（Camera 通常 3-4 个）。如果 HAL 生产帧的速度超过了 SurfaceFlinger 消费的速度，或者 App 持有 Buffer 的时间过长，就会出现所有 Buffer 都被占用的情况——HAL 无法 dequeue 到新的 Buffer，只能等待。
 
-在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。如果 Camera App 使用了 `SurfaceTexture`（而非直接 `SurfaceView`），GPU 纹理上传也会成为瓶颈——每帧都需要把 Camera 的 YUV 数据上传为 GL 纹理，在低端设备上这个操作可能需要 5-10 ms。
+在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。如果 Camera App 使用了 `SurfaceTexture`（而非直接 `SurfaceView`），会失去 SurfaceView 直送 overlay 的机会，增加外部纹理导入后的 GPU 采样、颜色转换和 View 树合成成本。低端设备上这部分开销可能多出 5-10 ms，具体数字因设备分辨率和 GPU 而异。
 
 排查步骤：
 
@@ -472,7 +472,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 **HAL Buffer 管理策略**：AOSP `camera3.h` 将 `request_stream_buffers` / `return_stream_buffers` 归入 `CAMERA_DEVICE_API_VERSION_3_6`（与 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 命名存在历史差异：3_5 是 HIDL 服务端版本，3_6 是 device API 版本）。这套接口允许 HAL 按需请求 Buffer，而不是在 Session 配置时一次性分配。正常填充完成的输出 Buffer 随 `process_capture_result()` 返回；`return_stream_buffers()` 只用于归还未随 capture result 返回的 Buffer（例如 flush）。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
 
 这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`request_stream_buffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `request_stream_buffers`、`return_stream_buffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。n
-[已验证: AOSP hardware/interfaces/camera/device/3.6/default/include/camera3.h, android-16.0.0_r1]
+[已验证: AOSP hardware/libhardware/include_all/hardware/camera3.h（`include/hardware/camera3.h` 为到 include_all 的链接/转发）, android-16.0.0_r1]
 
 **功耗度量**：在 Perfetto 中可以用 `android_cpu` Metric 查看 Camera 相关进程的 CPU 时间。如果 `cameraserver` 的 CPU 时间异常高，说明 HAL 的处理负载很重；如果 App 进程的 CPU 时间高，说明可能在主线程做了过多处理（如直接在 `onPreviewFrame` 中做图像处理）。将 Camera 操作移到后台线程，或者把 CPU 软处理替换为 CameraX ImageAnalysis / YUV 转换、RenderScript Intrinsics Replacement Toolkit（只覆盖旧 intrinsics）、OpenGL ES / Vulkan compute、NDK / MediaCodec 或厂商 HAL 能力。RenderScript 已在 Android 12 deprecated，不能再作为 Android 12-17 的主推荐；每条替代路径都要按分辨率、帧率和 SoC 做同机实测。
 
