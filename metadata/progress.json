@@ -1,6 +1,6 @@
 {
-  "total": 325,
-  "draft": 0,
+  "total": 326,
+  "draft": 1,
   "ready-for-review": 121,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -5044,5 +5044,18 @@
   "last_task6_audit_files": [
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md"
+  "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md",
+  "task2a_gap_mining": {
+    "date": "2026-05-19",
+    "time": "15:04",
+    "mode": "gap-mining",
+    "created_sections": [
+      "5.15"
+    ],
+    "created_files": [
+      "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md"
+    ],
+    "qualified_candidates": 1,
+    "note": "Phase 0 未发现空 draft；本轮从 AOSP 结构与官方文档补齐 SensorService 系统功耗路径缺口。"
+  }
 }
