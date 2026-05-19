@@ -1,8 +1,35 @@
 ---
 title: "PIP 与自由窗口渲染"
 chapter: "18.18"
+section: "18.18"
+section_title: "PIP 与自由窗口渲染"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+last_verified: "2026-04-24"
+last_verified_against: "AOSP ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
+sources:
+  - type: official
+    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+  - type: official
+    path: "frameworks/base/core/java/android/view/Choreographer.java"
+  - type: official
+    path: "frameworks/base/core/java/android/view/DisplayEventReceiver.java"
+  - type: official
+    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
+  - type: official
+    path: "frameworks/base/core/java/android/window/TaskOrganizer.java"
+  - type: official
+    path: "frameworks/base/core/java/android/window/WindowContainerTransaction.java"
+  - type: official
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java"
+  - type: official
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/picture-in-picture"
+  - type: official
+    path: "https://developer.android.com/guide/topics/large-screens/multi-window-support"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/SurfaceView"
 tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "渲染路径"]
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
@@ -18,6 +45,7 @@ last_task9_at: "2026-04-24T03:39:00+08:00"
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 task9_result: pass-tech-review
+last_task6_audit: "2026-05-19"
 review_round: 1
 task2b_result: fixed
 ---
