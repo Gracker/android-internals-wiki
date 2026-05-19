@@ -1455,8 +1455,8 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-19T19:36:17+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-19",
     "time": "17:09",
@@ -4051,52 +4051,64 @@
   "last_task2a_processed_date": "2026-05-19",
   "task9_last_review_detail": {
     "date": "2026-05-19",
-    "time": "08:27",
-    "reviewed_at": "2026-05-19T08:27:59+08:00",
+    "time": "19:36",
+    "reviewed_at": "2026-05-19T19:36:17+08:00",
     "mode": "normal",
     "sections": [
-      "21.9"
+      "14.9",
+      "12.3",
+      "8.2"
     ],
     "files": [
-      "src/part5-app/ch21-startup/09-startup-case-studies.md"
+      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
     ],
-    "log": "logs/deep-review/2026-05-19-08-deep-review.md",
+    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
     "p0": 0,
-    "p1": 0,
-    "p2": 0,
-    "p3": 2,
-    "result": "pass-tech-review",
+    "p1": 2,
+    "p2": 3,
+    "p3": 0,
+    "result": "needs-rework",
     "auto_promoted": [
-      "21.9"
+      "8.2"
     ]
   },
   "last_task9_review": "2026-05-19",
   "last_task9_sections": [
-    "21.9"
+    "14.9",
+    "12.3",
+    "8.2"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-19",
-    "time": "08:27",
-    "reviewed_at": "2026-05-19T08:27:59+08:00",
+    "time": "19:36",
+    "reviewed_at": "2026-05-19T19:36:17+08:00",
     "mode": "normal",
     "sections": [
-      "21.9"
+      "14.9",
+      "12.3",
+      "8.2"
     ],
     "files": [
-      "src/part5-app/ch21-startup/09-startup-case-studies.md"
+      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
     ],
-    "log": "logs/deep-review/2026-05-19-08-deep-review.md",
+    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
     "p0": 0,
-    "p1": 0,
-    "p2": 0,
-    "p3": 2,
-    "result": "pass-tech-review",
+    "p1": 2,
+    "p2": 3,
+    "p3": 0,
+    "result": "needs-rework",
     "auto_promoted": [
-      "21.9"
+      "8.2"
     ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch21-startup/09-startup-case-studies.md"
+    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 155,
   "last_task2a_at": "2026-05-19T19:04:00+08:00",
@@ -4132,7 +4144,7 @@
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "last_task9_at": "2026-05-19T08:27:59+08:00",
+  "last_task9_at": "2026-05-19T19:36:17+08:00",
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "4.10",
@@ -4896,7 +4908,14 @@
       "last_task6_at": "2026-05-19T17:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
       "task2b_state": "pending",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-19T19:36:17+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "p0": 0,
+      "p1": 1,
+      "p2": 1
     },
     "14.8": {
       "title": "GPU 图形调试与分析工具",
@@ -4921,6 +4940,35 @@
       "gap_source": "每日信息/DeepResearch/AOSP结构/官方文档",
       "gap_score": 16,
       "material_count": 5
+    },
+    "12.3": {
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "file": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-19T19:36:17+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "task2b_state": "pending"
+    },
+    "8.2": {
+      "title": "App 启动全流程",
+      "file": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-19T19:36:17+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "auto_promoted_by": "task9-deep-tech-review",
+      "auto_promoted_at": "2026-05-19T19:36:17+08:00"
     }
   },
   "task2a_last_processed": {
@@ -4945,15 +4993,21 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "21.9"
+    "14.9",
+    "12.3",
+    "8.2"
   ],
   "last_task2a_processed_at": "2026-05-19T01:04:00+08:00",
   "last_task9_files": [
-    "src/part5-app/ch21-startup/09-startup-case-studies.md"
+    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-19-08-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-19-19-deep-review.md",
   "task9_last_files": [
-    "src/part5-app/ch21-startup/09-startup-case-studies.md"
+    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
@@ -4984,26 +5038,28 @@
   ],
   "last_task2a_date": "2026-05-18",
   "task9_last_review_summary": {
-    "date": "2026-05-18",
-    "time": "12:44",
-    "reviewed_at": "2026-05-18T12:44:40+08:00",
+    "date": "2026-05-19",
+    "time": "19:36",
+    "reviewed_at": "2026-05-19T19:36:17+08:00",
     "mode": "normal",
     "sections": [
-      "25.6",
-      "25.8"
+      "14.9",
+      "12.3",
+      "8.2"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/06-apk-analysis.md",
-      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
     ],
-    "log": "logs/deep-review/2026-05-18-12-deep-review.md",
-    "p0": 1,
-    "p1": 1,
-    "p2": 0,
+    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
+    "p0": 0,
+    "p1": 2,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
     "auto_promoted": [
-      "25.8"
+      "8.2"
     ]
   },
   "task2b_history": [
@@ -5140,7 +5196,7 @@
     "task2b_state": "pending",
     "task2b_result": "pending"
   },
-  "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。",
+  "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
   "last_task2a_gap_mining": "4.11",
   "last_task2a_gap_mining_at": "2026-05-19T19:04:00+08:00",
   "last_task6_audit": "2026-05-19T11:12:00+08:00",

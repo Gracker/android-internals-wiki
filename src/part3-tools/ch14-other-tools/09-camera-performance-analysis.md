@@ -1,5 +1,6 @@
 ---
 
+
 title: Android Camera 性能与 Perfetto 分析
 chapter: '14.9'
 section: '14.9'
@@ -33,7 +34,7 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
@@ -41,23 +42,27 @@ review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fix
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
 task9_result: needs-rework
-last_task9_at: "2026-05-19T15:31:38+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-19"
+last_task9_at: "2026-05-19T19:36:17+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-19
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-19-15-deep-review.md"
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。Perfetto 抓取配置使用不存在的 android.trace_config/atrace_config；counter SQL 过滤 counter.name 无法执行；SurfaceView/TextureView 管线仍混用。"
+last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。TextureView 残留 GPU 纹理上传错误表述；CameraHal::openSession 示例缺 vendor slice 兜底。"
 task2b_rework_date: '2026-05-19'
 last_task6_at: "2026-05-19T17:09:00+08:00"
 task6_reviewed_at: "2026-05-19T17:09:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-19-17-review.md"
 task6_review_notes: "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：标准化 outline 标记、删除填充词/夸张表达、修正残留错字。已知 Perfetto 配置/SQL 与 Surface 管线技术项继续交 Task9/Task2B。"
+p0: 0
+p1: 1
+p2: 1
+
 ---
 
 

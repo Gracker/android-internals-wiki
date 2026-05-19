@@ -2130,6 +2130,108 @@
 - **问题**：Android 官方 Bitmap 内存文档把历史分为三段：API 10 及以下 pixel data 在 native memory；API 11-25 在 Dalvik heap；API 26+ 在 native heap。当前“Android 8.0 之前”覆盖过宽，会把 API 10 及以下历史行为写错。
 - **建议**：改为“API 11-25 的 Bitmap 像素数据在 Dalvik/ART heap；API 26+ 回到 native heap；API 10 及以下历史机型另行说明或直接标注不在本书适用版本范围内。”
 
+## [Task 2A Gap Scan] 2026-05-19 02:04
+- **模式**：Phase 1 知识缺口挖掘；未发现 `status: draft` 且正文实质内容 < 15 行的章节。
+- **结论**：本轮未发现评分 ≥14 且尚未被目录覆盖的新章节候选，不创建章节。
+- **已检查方向**：
+  1. Scudo / native allocator 深挖：已有 4.6、20.11、23.3、14.3 覆盖，新增内容更适合回炉补强，不单独建节。
+  2. ADPF Power Efficiency Mode / PowerMonitor：已有 5.9、11.5、14.11、25.11 覆盖，且部分已有 Task9 回炉记录，不单独建节。
+  3. ApplicationExitInfo 低版本替代方案：已有 26.9、26.10、26.12、19.24 等覆盖，不单独建节。
+  4. Android 17 NPU / LiteRT / AICore：已有 5.11、5.14、5.13 覆盖，不单独建节。
+  5. Codec2 / tunneled playback / Media3 ABR：已有 8.8 覆盖，不单独建节。
+  6. Perfetto v54 Data Explorer / Jank CUJ / heap_graph_stats：已有 13.14、13.12 覆盖，不单独建节。
+  7. Android 17 ProfilingManager triggers / excessive CPU / OOM：已有 8.10、14.7、16.5、26.12 覆盖，不单独建节。
+  8. Kernel 6.12 statsd/logd sendfile zero-copy、Microdroid Linux terminal：与当前 Android 性能优化主线相关性不足或素材支撑不足，评分未达 14。
+- **后续处理**：上述方向若出现新的官方源码证据或真实案例，进入 Task 2B 回炉或对应章节扩展点，不重复创建新章节。
+
+## [Task6 Idle Audit] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-05-19
+- **类型**：需确认
+- **位置**：参考资料之后的 `<!-- AIW-源码调研-2026-05-07 -->` 块
+- **问题**：该块位于参考资料之后，未纳入 outline 十个锚点覆盖范围；同时包含 Android OEM sched_ext 调度器源码路径、性能收益和 GKI 版本演进等具体断言。Task6 不裁决技术真伪，但该位置与内容形态不适合直接留在 finalized 发布稿。
+- **建议**：Task9 先核实源码路径、版本边界与性能收益来源；Task2B 再决定删除、迁移到 sched_ext 正文，或作为待验证素材保留。
+- **review 日志**：logs/review/2026-05-19-05-audit.md
+
+## [Task2A Gap Mining] 本轮未创建新章节 — 2026-05-19 05
+- **类型**：知识缺口挖掘记录
+- **结论**：未发现评分 ≥14 且未被现有章节覆盖的新缺口。
+- **检查范围**：source-index 高分未映射条目 116 个、research-feeds 最近 5 个文件、daily-info 最近 3 天、AOSP 结构对照、Android Developers 性能文档对照。
+- **已检查方向**：
+  - Perfetto SDK / SmartPerfetto / Data Explorer（来源：source-index 高分未映射）→ 已有 13.17、13.18、13.14 覆盖
+  - BufferQueue 阻塞、HWC2、RenderEffect、AGSL、AnimatedVectorDrawable（来源：source-index 高分未映射）→ 已有 13.15、2.6、22.10、22.11、18.x 覆盖
+  - 16KB Page Size、MTE、Native Crash、ApplicationExitInfo（来源：source-index 高分未映射）→ 已有 4.7、20.13、20.11、26.9、26.10、26.12 覆盖
+  - MessageQueue / DeliQueue / RecyclerView 协同（来源：source-index 高分未映射）→ 已有 1.13、7.8、16.5 覆盖
+  - Android 多媒体 Codec2 / tunneled playback / Media3 ABR（来源：source-index 高分未映射）→ 已有 8.8 覆盖
+  - Android 17 ML Runtime / LiteRT / AICore / NPU（来源：source-index 高分未映射）→ 已有 5.11、5.14 覆盖
+  - Android Studio Panda LeakCanary Profiler、ApplicationStartInfo、ProfilingTrigger（来源：daily-info 最近 3 天）→ 已有 14.1、14.14、26.12、26.13 覆盖
+  - Improve performance / R8 / memory profiler / app-driven profiling（来源：官方文档对照）→ 已有 25.7、14.1、14.7、19.16 覆盖
+  - BiometricService、TelephonyManager 等系统服务（来源：AOSP 结构对照）→ 与当前性能主线相关性不足且素材少，评分未达 14
+- **后续建议**：下一轮优先查看新增 source-index 与 daily-info；本轮列出的方向不重复创建章节，除非后续出现新的官方文档、AOSP 源码证据或实测材料。
+
+
+
+## [Task14 参考书扫描] 10.1 App 内存分析 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 5.md]
+- **建议补充**：线上内存监控指标体系 — PSS异常率(>400MB的UV/采集UV)、触顶率(Java堆>85%最大堆限制的UV/采集UV)的具体定义和计算公式；GC监控通过Debug.getRuntimeStat("art.gc.blocking-gc-count/time")获取阻塞式GC次数和耗时
+- **参考书覆盖深度**：中等（含具体阈值和代码示例，但部分API如Debug.startAllocCounting已deprecated）
+- **过时风险**：Debug.startAllocCounting已标记deprecated，建议用Debug.getRuntimeStat替代
+
+## [Task14 参考书扫描] 4.5 App 内存优化 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 5.md]
+- **建议补充**：设备分级策略实践模式 — device-year-class按内存/CPU核数/频率分级，低端机关闭复杂动画/使用RGB_565/缩小缓存；统一缓存管理+OnTrimMemory回调按状态释放；安装包大小与内存占用的量化关系表；APK轻量版策略（Facebook Lite/今日头条极速版）
+- **参考书覆盖深度**：概述（提供了框架性思路，但设备分级以2010-2013年标准举例，已过时）
+- **过时风险**：device-year-class的年份分级标准基于2013年设备，当前应改为基于内存+SoC能力分级
+
+## [Task14 参考书扫描] 10.2 内存泄漏 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 5.md]
+- **建议补充**：Hprof文件裁剪优化技巧 — 裁剪大部分Bitmap对应的byte数组（100MB→30MB），7zip压缩后<10MB增加上传成功率；重复Bitmap像素数据检测方案（通过Hprof分析工具自动输出重复图片和引用链）；美团Probe组件OOM时生成Hprof快照（需注意二次崩溃风险）
+- **参考书覆盖深度**：中等（含具体数据但未深入实现细节）
+- **过时风险**：Probe的OOM快照方案在高版本有兼容性风险
+
+## [Task14 参考书扫描] 7.3 卡顿分析方法论 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md]
+- **建议补充**：/proc文件系统卡顿分析参考 — /proc/[pid]/stat中utime/stime/majorFaults/minorFaults字段含义；/proc/[pid]/sched中nr_voluntary_switches/nr_involuntary_switches/iowait_count/iowait_sum用于分析上下文切换；CPU使用率>60%需关注用户/系统时间比例，系统时间>30%需排查IO/锁/系统调用
+- **参考书覆盖深度**：中等（含具体字段和阈值判断标准）
+
+## [Task14 参考书扫描] 15.5 线上性能监控 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
+- **建议补充**：线上卡顿监控三代方案演进对比 — 第一代Looper Printer（字符串拼接性能差）；第二代监控线程空消息探针（1秒间隔，3秒卡顿在第4次轮询确认）；第三代编译时插桩（Matrix方案，包体积增1-2%，帧率降2帧以内）；Facebook Profilo方案（SIGPROF+ManagedStack unwind，近乎零性能损耗但兼容性风险）
+- **参考书覆盖深度**：深入（含方案演进思路、性能数据和兼容性评估）
+
+## [Task14 参考书扫描] 15.3 性能指标体系 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
+- **建议补充**：冻帧率定义与计算 — 连续丢帧>700ms（42帧+）为冻帧，冻帧率=冻帧时间/总时间；按Activity/Fragment/操作细化场景帧率；UV卡顿率(发生卡顿UV/采集UV)评估影响面，PV卡顿率(卡顿PV/启动采集PV)评估严重度
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 15.5 线上性能监控 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
+- **建议补充**：卡顿树聚合方法 — 对超3秒卡顿抛弃具体耗时，按相同堆栈出现比例聚合为树结构，从全盘视角看Top卡顿问题的各分支；比传统堆栈聚合更适合十万级日志量的分析
+- **参考书覆盖深度**：概述（提供了思路但未深入算法实现）
+
+## [Task14 参考书扫描] 9.3 ANR 分析方法 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
+- **建议补充**：主动获取ANR级日志的三种方法 — 1)Java层Thread.getState+getAllStackTraces获取线程状态和堆栈（Android 7.0不返回主线程堆栈）；2)主动发送SIGQUIT信号触发系统生成traces.txt（高版本无读取权限）；3)fork子进程+libart.so Hook调用ThreadList::ForEach+Thread::DumpState获取完整线程信息（"无损"方案，子进程崩溃不影响主进程）
+- **参考书覆盖深度**：深入（含完整方案对比和兼容性分析）
+
+## [Task14 参考书扫描] 14.13 Hook 基础设施 — 2026-05-19
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
+- **过时内容**：Profilo快速获取Java堆栈功能不支持Android 8.0和9.0（2018年数据）
+- **建议更新至**：核实Profilo/Facebook后续版本是否已支持Android 8-16的快速堆栈获取，或推荐使用Android 8.0+ JVMTI机制作为替代方案
+
+## [Task14 参考书扫描] 5.1 Linux 进程调度基础 — 2026-05-19
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md]
+- **建议补充**：线程优先级对卡顿的影响 — nice+cgroup共同决定调度策略，高优先级线程空等低优先级线程锁（如主线程等后台线程）是常见卡顿模式；uptime命令load average应控制在0.7×核数以内
+- **参考书覆盖深度**：概述
+
 
 ## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-05-19
 - **类型**：数据缺失
@@ -2142,3 +2244,35 @@
 - **位置**：L639「Zygote preload 的贡献」
 - **问题**：`Zygote preload 覆盖了 80% 以上的类加载需求`、`如果每次都从零加载所有类，这个时间会翻好几倍` 缺少统计口径、Android 版本、设备样本和测量方法。
 - **建议**：改成定性描述，或补充基于 preloaded-classes / arrays.xml 与真实启动 trace 的统计；没有数据前不要保留 80% 与“翻好几倍”的量化判断。
+
+
+## [Task2A Gap Mining] 2026-05-19 12:04 — 无新增章节
+- **结论**：未发现评分 ≥ 14 且尚未被目录或回炉队列覆盖的新增章节缺口。
+- **已检查方向**：Android 17 ProfilingManager / ProfilingTrigger / Panda Profiler；Cached App Freezer + GC/compaction；DMA-BUF / Gralloc / 16KB 图形内存边界；DeliQueue + RecyclerView；Android 桌面模式；Android 17 侧载/应用认证。
+- **处理理由**：前五项已被现有章节或 Task9/Task2B 队列覆盖，适合作为回炉补证据，不应重复创建新小节；侧载/应用认证与性能主线相关性不足，低于创建阈值。
+- **日志**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-19-12-知识加工(新).md`
+
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-19
+- **类型**：版本差异/API 口径
+- **位置**：L237、L246「AndroidX Tracing compat 行为 / 版本差异表」
+- **问题**：正文已经把 pre-29 fallback 方法名修正为 `android.os.Trace.asyncTraceBegin/asyncTraceEnd`，但 1.2.0 的 lazy overload 仍写成 `trace(name) { }` / `traceAsync(name, cookie) { }`，容易让读者把 1.0.0 已存在的 eager string overload 误认为 1.2.0 新增能力。AndroidX 1.2.0 源码中新增的是 lambda 形式：`trace(lazyLabel: () -> String, block)` 与 `traceAsync(lazyMethodName: () -> String, lazyCookie: () -> Int, block)`。
+- **建议**：把表述改成“1.2.0 新增 lambda 形式的 lazy label/cookie 重载”，并在必要时给出 `trace({ buildName() }) { ... }` / `traceAsync({ buildName() }, { cookie }) { ... }` 的示意，避免把普通字符串调用误写成 lazy。
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-19
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters`、L206-L217「和 btrace、Perfetto SDK 的区别」
+- **问题**：正文已经把 `androidx.tracing` 与 Perfetto SDK 做边界区分，但 `related_chapters` 只列出 `19.0`；目录中已有 `13.17 Perfetto SDK 与应用内 Trace 数据源` 和 `13.9 Android Tracing 基础设施`。缺少交叉引用会让读者在 19.13 里寻找 Perfetto SDK producer / backend / data source 细节。
+- **建议**：在 `related_chapters` 或工具边界段补 `13.17`（必要时补 `13.9`），并注明“Perfetto SDK 自定义 data source / in-process tracing 详见 13.17”。
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-19
+- **类型**：交叉引用一致性 / 工程边界
+- **位置**：L540 与 L630 App Startup / ContentProvider 边界
+- **问题**：前文正确说明 App Startup 无法自动接管未适配的三方 ContentProvider，但后文又写可通过 App Startup 手动初始化模式接管已经通过 ContentProvider 初始化的第三方 SDK。官方 App Startup lazy initialization 只适用于已声明为 Initializer 的组件；未适配 SDK 的自有 provider 需要 manifest 排除、SDK 配置或等待 SDK 适配。
+- **建议**：改成“已接入 App Startup 的 Initializer 可移除 meta-data 后手动 lazy initialize；未适配的三方 ContentProvider 不能被 App Startup 直接接管，只能通过 provider 移除/SDK 配置/延迟显式初始化处理”。
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-19
+- **类型**：示例鲁棒性 / 数据支撑
+- **位置**：L425 / L450-L456 Camera 启动拆解脚本
+- **问题**：正文提示 `CameraHal::openSession` 是 Qualcomm vendor-specific，缺失时用 `connectDevice` 兜底；但 Python 示例无条件查询 vendor slice 并读取 `values[0]`，非高通或无 vendor slice 的 trace 会空表越界。
+- **建议**：脚本按 `connectDevice` / vendor `openSession` 两级查询并补空结果判断；无法定位 vendor slice 时降级输出 AOSP 通用阶段。
