@@ -12,6 +12,7 @@ reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 task6_state: reviewed
+last_task6_audit: "2026-05-20"
 task9_result: pass-tech-review
 task9_state: reviewed
 task9_reviewed_date: "2026-04-24"
@@ -47,7 +48,7 @@ repaired_by: openclaw-task2b
 
 误判通常出在第二步。刷新周期变长，不等于系统把一帧已经超时的工作补救回来。刷新率选择仍然要经过 App 投票、内容节奏判断、Scheduler 决策和设备能力约束。某一帧一旦错过自己的 `expected_frame_timeline_slice`，Perfetto 里依旧会落到 app jank 或 sf jank。ARR 改变的是目标节拍，不会消掉 deadline。
 
-## 先把三个概念拆开
+## VRR、多刷新率和 ARR 的边界
 
 | 名称 | 关注点 | 章节里怎么用 |
 |:---|:---|:---|
@@ -55,7 +56,7 @@ repaired_by: openclaw-task2b
 | ARR | 系统按内容节奏选择更合适的刷新率，减少高刷驻留和 mode switch 抖动 | 公开能力从 Android 15-QPR1+ 开始完整出现 |
 | VRR | 面板和显示栈支持动态变频的硬件能力 | 这是设备条件，是否可用以系统 API 和 HAL 支持为准 |
 
-LTPO 面板经常和 ARR 一起出现，因为它更容易覆盖更宽的刷新率范围。章节里的判断不能写成“只要 LTPO 就一定有 ARR”。更稳的说法是：设备需要公开相应的 HAL 能力，App 再通过公开 API 判断系统是否支持。
+LTPO 面板经常和 ARR 一起出现，因为它更容易覆盖更宽的刷新率范围。但 LTPO 不是 ARR 的充分条件。设备需要公开相应的 HAL 能力，App 再通过公开 API 判断系统是否支持。
 
 ## 系统如何决定刷新节奏
 
@@ -75,7 +76,7 @@ VSYNC-app / VSYNC-sf interval changes
 App draw → queueBuffer → SurfaceFlinger compose → present
 ```
 
-这一段的边界要写清。文中如果把某个 Composer 版本和某种面板类型写成唯一前提，范围会收得过死；如果把慢帧和刷新周期拉长写成同一件事，中间的决策过程又会被写漏。
+这里的边界有两层：Composer 版本和面板类型不能写成唯一前提；慢帧和刷新周期拉长也不是同一件事，否则会漏掉 Scheduler 决策和设备能力约束。
 
 ## App 端 API
 
@@ -139,7 +140,7 @@ Android 15 QPR 设备可能已经有 ARR 调度逻辑，但没有 `Display.hasAr
 - `actual_frame_timeline_slice`：真实完成情况、`on_time_finish`、`present_type`、`jank_type`
 - refresh-rate selection slice：刷新率选择有没有频繁来回切换
 
-### Android 12+：先看 FrameTimeline
+### Android 12+：以 FrameTimeline 为入口
 
 FrameTimeline 是 Android 12+ 更稳的入口。这里直接查 `actual_frame_timeline_slice`，不要再用错误的 `android_frames.jank_type` 列名，也不要再写不存在的 `android.frames` 模块。
 
