@@ -38,19 +38,19 @@ task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 section: "10.1"
 status: finalized
-pipeline_stage: task6_pending
-task9_state: pending
-task9_result: "needs-rework"
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-19"
-last_task9_at: "2026-05-19T01:30:19+08:00"
+last_task9_at: "2026-05-19T20:58:49+08:00"
 last_task2b_at: "2026-04-27T15:52:00+08:00"
 last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-19-01-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-19-20-deep-review.md"
 review_notes: "2026-05-19 task9 idle audit: needs-rework。P0 1(malloc debug 命令/选项无效),P1 2(ASan API 版本;PSS/largeHeap 指标口径),P2 1(Bitmap API10 历史口径);已写入 queue/suggestions,等待 Task2B 回炉。"
-task9_review_notes: "2026-05-19 Task9 闲时抽检:needs-rework。P0 1:malloc debug 示例把 package 写入 libc.debug.malloc.program,且 options 使用不存在的 enable_on_start;P1 2:ASan 支持版本应为 API 27/O MR1;PSS 不能按 largeHeap 上限做比例阈值。P2 1:Bitmap "Android 8.0 之前"历史口径需补 API10/11-25 分段。"
+task9_review_notes: "2026-05-19 20 Task9 复核: needs-rework。P0 1: malloc debug 仍把 package 写入 libc.debug.malloc.program；P1 1: PSS 仍与 memoryClass/largeHeap 预算混用且单位口径错误；P2 2: Bitmap 历史分段、Native OOM 表述需补正。"
 ---
 
 # App 内存分析

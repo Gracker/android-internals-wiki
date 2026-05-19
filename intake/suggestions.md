@@ -2276,3 +2276,16 @@
 - **位置**：L425 / L450-L456 Camera 启动拆解脚本
 - **问题**：正文提示 `CameraHal::openSession` 是 Qualcomm vendor-specific，缺失时用 `connectDevice` 兜底；但 Python 示例无条件查询 vendor slice 并读取 `values[0]`，非高通或无 vendor slice 的 trace 会空表越界。
 - **建议**：脚本按 `connectDevice` / vendor `openSession` 两级查询并补空结果判断；无法定位 vendor slice 时降级输出 AOSP 通用阶段。
+
+
+## [Task9 Deep Review] 10.1 App 内存分析 — 2026-05-19
+- **类型**：版本差异
+- **位置**：L290-L294 / Bitmap 内存管理的关键变化
+- **问题**：正文写“Android 8.0 之前 Bitmap 像素数据存储在 Java Heap”，遗漏官方分段：API 10 及更低在 native memory，API 11-25 在 Dalvik heap，API 26+ 回到 native heap。
+- **建议**：把历史说明拆成 API ≤10、API 11-25、API 26+ 三段；本章适用 Android 8+ 时重点写 API 26+ 对 dumpsys/MAT 观察口径的影响。
+
+## [Task9 Deep Review] 10.1 App 内存分析 — 2026-05-19
+- **类型**：源码准确性
+- **位置**：L476-L478 / 常见误区二
+- **问题**：“Native 内存耗尽了 Java Heap 的预算空间”把 native 内存压力与 Java heap class 混在一起。Native 泄漏通常表现为进程 RSS/PSS/Private Dirty 增长、malloc 失败、系统内存压力或 LMK/OOM 路径，不是消耗 Java heap 预算。
+- **建议**：改为“Native 内存会推高进程总内存与系统压力，可能触发 malloc 失败、native OOM、LMK 或进程被杀；Java heap 上限仍由 ART heap 预算单独约束”。
