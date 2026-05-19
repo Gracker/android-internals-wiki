@@ -12430,7 +12430,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/16-layout-inspector-viewdebug.md"
@@ -12441,7 +12441,9 @@
         "source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md"
       ],
       "gap_score": 16,
-      "gap_source": "素材驱动/官方文档/AOSP结构"
+      "gap_source": "素材驱动/官方文档/AOSP结构",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成：Layout Inspector / ViewDebug / RenderNode / Compose 调试内容已写入，status 已改为 ready-for-review。"
     }
   ],
   "metadata": {
