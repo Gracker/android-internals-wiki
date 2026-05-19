@@ -1,6 +1,6 @@
 {
-  "total": 331,
-  "draft": 0,
+  "total": 332,
+  "draft": 1,
   "ready-for-review": 127,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1469,7 +1469,7 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T03:12:00+08:00",
+  "last_updated": "2026-05-20T07:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-19",
@@ -4111,6 +4111,25 @@
       "created_date": "2026-05-20",
       "queue_priority": 80,
       "gap_score": 16
+    },
+    "4.12": {
+      "title": "ZRAM 压缩交换与应用重启延迟",
+      "file": "src/part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-20",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档/AOSP结构",
+      "gap_score": {
+        "material_richness": 4,
+        "relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 4,
+        "total": 17
+      },
+      "last_task2a_at": "2026-05-20T07:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -5091,6 +5110,25 @@
       "queue_priority": 80,
       "gap_score": 17,
       "gap_source": "素材驱动/官方文档/AOSP结构"
+    },
+    "4.12": {
+      "title": "ZRAM 压缩交换与应用重启延迟",
+      "file": "src/part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-20",
+      "queue_priority": 80,
+      "gap_source": "研究素材/官方文档/AOSP结构",
+      "gap_score": {
+        "material_richness": 4,
+        "relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 4,
+        "total": 17
+      },
+      "last_task2a_at": "2026-05-20T07:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2a_last_processed": {
@@ -5316,8 +5354,8 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
-  "last_task2a_gap_mining": "7.17",
-  "last_task2a_gap_mining_at": "2026-05-20T01:04:00+08:00",
+  "last_task2a_gap_mining": "4.12",
+  "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
   "last_task6_audit": "2026-05-19T11:12:00+08:00",
   "last_task6_audit_sections": [
     "8.7"
@@ -5329,18 +5367,19 @@
   "task2a_gap_mining": {
     "date": "2026-05-20",
     "created_sections": [
-      "7.17"
+      "4.12"
     ],
     "created_files": [
-      "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md"
+      "src/part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md"
     ],
     "candidate_count": 5,
     "qualified_count": 1,
-    "source": "素材驱动/官方文档/AOSP结构",
-    "time": "01:04",
+    "source": "研究素材/官方文档/AOSP结构",
+    "time": "07:04",
     "mode": "gap-mining",
     "qualified_candidates": 1,
-    "note": "Phase 0 未发现空 draft；本轮从 source-index、最近 daily-info、research-feeds、AOSP/官方文档搜索中筛出 FragmentTransaction 提交时序与主线程卡顿缺口。"
+    "last_run": "2026-05-20T07:04:00+08:00",
+    "note": "Phase 0 未发现空 draft；本轮从最近 daily-info、research-feeds、AOSP/官方文档搜索中筛出 ZRAM 压缩交换与应用重启延迟缺口。"
   },
   "section_5_15": {
     "section": "5.15",
