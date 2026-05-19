@@ -2289,3 +2289,14 @@
 - **位置**：L476-L478 / 常见误区二
 - **问题**：“Native 内存耗尽了 Java Heap 的预算空间”把 native 内存压力与 Java heap class 混在一起。Native 泄漏通常表现为进程 RSS/PSS/Private Dirty 增长、malloc 失败、系统内存压力或 LMK/OOM 路径，不是消耗 Java heap 预算。
 - **建议**：改为“Native 内存会推高进程总内存与系统压力，可能触发 malloc 失败、native OOM、LMK 或进程被杀；Java heap 上限仍由 ART heap 预算单独约束”。
+
+## [Task2A Gap Mining] 本轮未创建新章节 — 2026-05-19 23:04
+- **类型**：知识缺口扫描记录
+- **结论**：本轮未发现评分 ≥14 且未被现有章节覆盖的新增小节，跳过新章节创建。
+- **已检查方向**：
+  - 空 draft：`src/` 下未发现 `status: draft` 且正文实质内容 <15 行的章节；`metadata/progress.json` 当前 `draft=0`。
+  - 高分素材：`metadata/source-index.json` 中 16 分以上素材多已映射到现有章节；重点复核了 WOOTdroid/eBPF、MediaCodec/Codec2 tunneled playback、Android Studio Panda LeakCanary、Hybrid/WebView 能耗、Android 17 MessageQueue、SurfaceFlinger FrontEnd、ADPF 协程线程迁移等方向，均已有对应章节或正在 Task2B/Task9 管线中。
+  - 近期素材：`intake/research-feeds/` 最近 5 篇、`intake/daily-info/` 最近 3 天中的 Perfetto v53/v54、FrameTimeline、Compose Pausable Composition、View 层级、Android 17 适配、桌面窗口化等主题已被 2.4、7.12、13.x、14.14、16.5、22.3、22.14、26.12 等章节覆盖。
+  - 官方/AOSP 对照：ProfilingManager 触发式采集、ApplicationStartInfo、Android 16/17 FGS/JobScheduler 行为、StorageStatsManager/installd quota、Media tunneling 等方向均已有主章节覆盖；本轮只记录，不拆新节。
+- **下次建议**：优先从未被 source-index 正确映射的 AOSP 模块继续扫，例如 `vold`/`netd`/`installd` 的实战诊断边界；只有在现有章节无法容纳时再创建新节。
+
