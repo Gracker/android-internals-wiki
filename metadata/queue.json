@@ -12484,27 +12484,54 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T09:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-22.14-desktop-windowing-large-screen-performance",
+      "section": "22.14",
+      "priority": 80,
+      "title": "桌面窗口化与大屏渲染性能实践",
+      "description": "Android 16 connected displays、desktop windowing 与 API 37 大屏基线变化让应用侧布局、resize、多实例和键鼠输入成为新的性能排查入口，现有 Part 5 只有机制与页面切换内容，缺少应用层治理专节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-19.md",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing",
+        "https://developer.android.com/develop/ui/compose/layouts/adaptive/app-orientation-aspect-ratio-resizability",
+        "https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html"
+      ],
+      "gap_score": 16,
+      "gap_source": "每日信息/官方文档/Android Developers Blog",
+      "created_by": "task2a-knowledge-gap",
+      "created_at": "2026-05-19T10:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 356,
+    "total_entries": 359,
     "p0_count": 149,
-    "last_updated": "2026-05-19T07:04:00+08:00",
+    "last_updated": "2026-05-19T10:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 152,
+    "pending_entries": 149,
     "updated_date": "2026-05-19",
     "last_updated_by": "openclaw-task2a",
-    "pending": 152,
-    "completed_entries": 202,
-    "last_task2a_gap_mining": "14.16",
-    "last_task2a_gap_mining_at": "2026-05-19T08:18:00+08:00",
+    "pending": 149,
+    "completed_entries": 208,
+    "last_task2a_gap_mining": "22.14",
+    "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-19T07:04:00+08:00",
+  "last_updated": "2026-05-19T10:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 152,
+  "pending": 149,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
-  "last_task2a_gap_mining": "4.10",
-  "last_task2a_gap_mining_at": "2026-05-19T00:04:00+08:00"
+  "last_task2a_gap_mining": "22.14",
+  "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00"
 }

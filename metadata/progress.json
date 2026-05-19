@@ -1,6 +1,6 @@
 {
-  "total": 323,
-  "draft": 0,
+  "total": 324,
+  "draft": 1,
   "ready-for-review": 119,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -4990,5 +4990,7 @@
     "task2b_state": "pending",
     "task2b_result": "pending"
   },
-  "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。"
+  "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。",
+  "last_task2a_gap_mining": "22.14",
+  "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00"
 }
