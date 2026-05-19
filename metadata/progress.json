@@ -1,7 +1,7 @@
 {
   "total": 323,
-  "draft": 1,
-  "ready-for-review": 118,
+  "draft": 0,
+  "ready-for-review": 119,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4784,11 +4784,11 @@
     }
   },
   "task2a_last_processed": {
-    "section": "4.10",
-    "title": "内存规整与直接回收性能边界",
-    "file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+    "section": "14.16",
+    "title": "Layout Inspector 与 ViewDebug 布局调试",
+    "file": "src/part3-tools/ch14-other-tools/16-layout-inspector-viewdebug.md",
     "status": "ready-for-review",
-    "processed_at": "2026-05-19T01:04:00+08:00",
+    "processed_at": "2026-05-19T09:09:00+08:00",
     "processed_by": "openclaw-task2a",
     "mode": "draft-processing"
   },
