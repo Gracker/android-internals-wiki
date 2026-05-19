@@ -12444,6 +12444,46 @@
       "gap_source": "素材驱动/官方文档/AOSP结构",
       "completed_date": "2026-05-19",
       "completed_reason": "Task 2A 加工完成：Layout Inspector / ViewDebug / RenderNode / Compose 调试内容已写入，status 已改为 ready-for-review。"
+    },
+    {
+      "id": "task9-1.12-autofdo-kernel-profile-command",
+      "section": "1.12",
+      "section_title": "AutoFDO 反馈导向编译优化",
+      "priority": 95,
+      "title": "AutoFDO kernel profile 生成命令与版本口径错误",
+      "description": "P0：kernel AutoFDO profile 转换命令缺少当前 AOSP GKI README 要求的 kernel.kallsyms / symdir / allow-mismatched-build-id / use_fs_discriminator 口径；P1：kernel AutoFDO 版本线在 Android 16+ 与 android15-6.6/android16-6.12 之间冲突。",
+      "reason": "[Deep Tech Review] AutoFDO 章节的 kernel profile 复现命令与当前 AOSP GKI README 不一致，且 kernel AutoFDO 版本线前后冲突。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-19-09-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/命令链不完整",
+          "location": "L171-L184、L312-L317 AutoFDO kernel profile 生成命令",
+          "detail": "正文把 branch-list 转 AutoFDO text profile 写成 `simpleperf inject -i branch_list.data --output autofdo -o perf_inject.data`，并直接用 `create_llvm_prof --profile perf_inject_kernel.data ... --format=extbinary --prof_sym_list=false` 生成 `kernel.afdo`。AOSP android16-6.12 / android15-6.6 的 GKI README 当前示例要求 kernel 场景在 simpleperf inject 阶段带 `--binary kernel.kallsyms --symdir . --allow-mismatched-build-id -j 20` 生成 `kernel.autofdo`，create_llvm_prof 阶段还带 `--use_fs_discriminator`。现稿命令缺少 kernel 符号目录和当前 README 的 discriminator 参数，读者按文复现容易生成错误或质量不足的 profile。",
+          "suggestion": "按当前 GKI README / simpleperf kernel example 重写 host 侧命令：`simpleperf inject -i branch01.data,branch02.data,... --binary kernel.kallsyms --symdir . --allow-mismatched-build-id -o kernel.autofdo -j 20`；随后 `create_llvm_prof --profiler=text --binary={vmlinux_dir}/vmlinux --profile=kernel.autofdo --format=extbinary --use_fs_discriminator --out=kernel.afdo --prof_sym_list=false`。同时说明 `perf_inject_kernel.data` 是旧文档/通用流程里的拆分产物，GKI README 当前以 `kernel.autofdo` 命名。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/适用范围冲突",
+          "location": "L129、L260 与 L270-L276、L374-L376",
+          "detail": "正文一处写 `Android 16+ kernel AutoFDO（GKI）`，Baseline Profiles 对比表也写内核 AutoFDO 引入版本为 Android 16；但同章后文和官方 blog / GKI README 均显示当前交付分支包含 `android15-6.6` 与 `android16-6.12`。同一章节对 kernel AutoFDO 的版本线出现冲突。",
+          "suggestion": "把适用范围改成“userspace/native AutoFDO：Android 12+；kernel/GKI AutoFDO：当前公开 profile 覆盖 `android15-6.6`、`android16-6.12`，后续扩展 `android17-6.18`”。如果要表达用户可见 Android 16 rollout，需要单独区分平台版本与 kernel common branch。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T09:20:00+08:00"
     }
   ],
   "metadata": {
