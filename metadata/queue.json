@@ -11855,7 +11855,7 @@
       "added_by": "task9-deep-tech-review",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/03-native-crash-governance.md"
@@ -11915,7 +11915,9 @@
           "detail": "正文把 sigsetjmp/siglongjmp + 全局 sigjmp_buf/handleFlag 兜底讲得过于可靠。该类方案存在多线程竞态、跨线程 longjmp、资源/锁状态破坏、绕过系统 tombstone 等高风险边界。",
           "suggestion": "补“实验性/高风险/不建议通用线上兜底”的边界，并明确只适合隔离线程和受控实验，不应作为稳定性治理主方案。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-19T19:23:15",
+      "completed_reason": "Task 2B 回炉修复: crash_dump 链路修正(崩溃进程 fork+exec crash_dump→连接 tombstoned→通知 AMS), tombstone 源码锚点修正(engrave_tombstone→libdebuggerd/tombstone.cpp), Breakpad 符号目录修正(16字符截断→完整 MODULE debug-id)"
     },
     {
       "id": "task9-20260518-19.13-androidx-tracing-reflection-methods",
@@ -12183,7 +12185,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md"
@@ -12213,7 +12215,9 @@
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "reason": "[Deep Tech Review idle audit] Native memory tooling commands/version boundaries and PSS-vs-largeHeap metric semantics need rework."
+      "reason": "[Deep Tech Review idle audit] Native memory tooling commands/version boundaries and PSS-vs-largeHeap metric semantics need rework.",
+      "completed_date": "2026-05-19T19:23:15",
+      "completed_reason": "Task 2B 回炉修复: malloc debug 选项修正(enable_on_start→backtrace/backtrace_enable_on_signal), ASan 版本修正(Android 8.0→API 27/Android 8.1), PSS/largeHeap 监控指导修正(PSS vs Java heap 分开计量)"
     },
     {
       "id": "task9-audit-20260519-10.3-debug-getrss-version",
@@ -12616,7 +12620,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T11:45:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-19T19:23:15",
+      "completed_reason": "Task 2B 回炉修复: P0 ApplicationStartInfo startup state 常量修正(FIRST_FRAME_DRAWN=1→2, ERROR=2→1), reason 示例修正(BOOT→BOOT_COMPLETE, SCHEDULED→JOB)"
     },
     {
       "id": "task2a-gap-23.9-android17-app-memory-limits",
@@ -12674,7 +12680,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T14:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-19T19:23:15",
+      "completed_reason": "Task 2B 回炉修复: P0 删除 Android 15 Conscrypt 0-RTT/Anti-replay 错误结论(标准 TLS 不支持 0-RTT, 仅 Cronet/QUIC 可用), P0 DNS HTTPS Record 版本修正(Android 16→Android 17/API 37)"
     },
     {
       "id": "task2a-gap-5.15-sensorservice-batching-power-20260519",
@@ -12750,7 +12758,7 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T15:31:38+08:00",
-      "status": "pending",
+      "status": "completed",
       "related_files": [
         "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
       ],
@@ -12758,7 +12766,9 @@
       "severity": "P0",
       "estimated_hours": 3,
       "assigned_to": "content-team",
-      "dependencies": []
+      "dependencies": [],
+      "completed_date": "2026-05-19T19:23:15",
+      "completed_reason": "Task 2B 回炉修复: P0 Perfetto 配置修正(android.trace_config→linux.ftrace+ftrace_config), P0 SQL schema 修正(counter.name→JOIN counter_track), P1 SurfaceView/TextureView 管线拆分(SurfaceView直送SF/HWC, TextureView走SurfaceTexture/GLConsumer外部纹理)"
     },
     {
       "id": "task2a-gap-20260519-2.24-graphic-memory-dmabuf-gralloc-16kb",

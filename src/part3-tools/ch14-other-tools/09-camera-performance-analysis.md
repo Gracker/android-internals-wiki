@@ -33,17 +33,17 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-05-19T15:31:38+08:00"
 task9_reviewed_by: "openclaw-task9"
@@ -130,7 +130,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿**是最常见的投诉。用户打开相机后，预览画面出现肉眼可见的掉帧或卡顿。这类问题的根因通常在 Buffer 流转环节——可能是 HAL 处理慢了，可能是 SurfaceFlinger 合成不及时，也可能是 BufferQueue 的 Buffer 被耗尽了。在 Perfetto 中，我们需要关注 `cameraserver` 进程中 `queueBuffer` 的时间间隔，以及 SurfaceFlinger 的 `BufferTX - SurfaceView` Counter。
 
-**预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，GPU 纹理上传可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
+**预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
 **拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 
@@ -148,14 +148,14 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 要分析 Camera 性能，我们需要先搞清楚一帧数据从 Sensor 到屏幕经历了哪些环节。
 
-[图：Camera HAL3 管线 Buffer 流转示意图——从 Sensor → ISP → HAL → BufferQueue → SurfaceTexture → SurfaceView/TextureView → SurfaceFlinger → Display]
+[图：Camera HAL3 管线 Buffer 流转示意图——预览通路因 Surface 类型不同而分叉：SurfaceView（Camera3OutputStream → ANativeWindow/BufferQueue → SurfaceFlinger/HWC 直接合成上屏）、TextureView（Camera3OutputStream → BufferQueue → SurfaceTexture/GLConsumer 外部纹理采样 → App View 树合成 → App Surface → SurfaceFlinger）、ImageReader/MediaCodec（CPU/编码消费端）]
 
 Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Processor）处理成 YUV/RGB 格式，写入 GraphicBuffer。这个 Buffer 通过 BufferQueue 机制流转给消费端。以预览为例：
 
 1. 支持 HAL Buffer Management（`ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` + device API ≥ `CAMERA_DEVICE_API_VERSION_3_6`）的设备，HAL 可通过 `request_stream_buffers` 向 Framework 按需请求输出 Buffer
 2. Framework 从对应的 Camera3OutputStream 中 dequeue 一个空闲 Buffer 给 HAL
 3. HAL 将 ISP 处理完的帧数据写入 Buffer，随 `process_capture_result()` 携带 release fence 返回 Framework；`return_stream_buffers()` 仅用于归还未随 capture result 返回的 Buffer（如 flush 场景）
-4. Framework 收到帧后，通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger
+4. Framework 收到帧后，根据输出 Surface 类型走不同路径：SurfaceView 的预览流通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger，由 SF/HWC 直接合成上屏；TextureView 的预览流先经过 SurfaceTexture/GLConsumer 外部纹理采样，再进入 App View 树合成，最终由 App Surface 交给 SurfaceFlinger
 5. SurfaceFlinger 在下一个 VSync-sf 时 latch 这个 Buffer 并合成上屏
 
 Camera 管线和 App 渲染管线共享了 BufferQueue 机制，但两者的时序约束完全不同。App 渲染管线由 VSync 驱动，Choreographer 在 VSYNC-app 到来时开始 doFrame；而 Camera 管线由 Sensor 帧率驱动，和 VSync 没有直接关系。当 Camera 的帧率和屏幕刷新率不同步时，就可能出现预览卡顿。
@@ -178,13 +178,22 @@ adb shell perfetto \
 buffers: { size_kb: 8960 fill_policy: DISCARD }
 data_sources: {
     config {
-        name: "android.trace_config"
-        atrace_config {
-            compact_atrace_events: true
-            app_process_cmdlines: "com.android.camera2"
-            atrace_categories: [
-                "gfx", "view", "hwc", "camera", "binder_driver"
-            ]
+        name: "linux.ftrace"
+        ftrace_config {
+            atrace_categories: "gfx"
+            atrace_categories: "view"
+            atrace_categories: "hwc"
+            atrace_categories: "camera"
+            atrace_categories: "binder_driver"
+            atrace_apps: "com.android.camera2"
+        }
+    }
+}
+data_sources: {
+    config {
+        name: "linux.process_stats"
+        process_stats_config {
+            scan_all_processes_on_start: true
         }
     }
 }
@@ -192,7 +201,7 @@ duration_ms: 30000
 EOF
 ```
 
-[已验证: 官方文档, developer.android.com]
+[已验证: Perfetto 官方文档, perfetto.dev/docs/data-sources/atrace; 配置格式已按 linux.ftrace data source 校验]
 
 ### 关键 Track 和 Slice 识别
 
@@ -309,16 +318,16 @@ WHERE slice.name LIKE '%sendRequestsBatch%'
 Camera 分析中经常需要用 `cam2_frame` Counter 来追踪帧到达：
 
 ```sql
-SELECT counter.value, process.pid, process.name
-FROM counter
-JOIN process_counter_track ON counter.track_id = process_counter_track.id
+SELECT c.value, process.pid, process.name
+FROM counter AS c
+JOIN process_counter_track AS pct ON c.track_id = pct.id
 JOIN process USING(upid)
-WHERE counter.name LIKE '%cam2_frame%'
-ORDER BY counter.ts
+WHERE pct.name LIKE '%cam2_frame%'
+ORDER BY c.ts
 LIMIT 20
 ```
 
-[已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
+[已验证: Perfetto SQL schema — counter 表无 name 字段，track 名称在 counter_track/process_counter_track/thread_counter_track 等表上；来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
 
 ### Python SDK 自动化分析
 
@@ -358,10 +367,11 @@ for row in result:
 如果 HAL 帧率达标但预览仍然卡顿，问题在 Buffer 流转或合成环节。我们需要检查 SurfaceFlinger 的 `BufferTX` Counter：
 
 ```sql
-SELECT ts/1e6
-FROM counter
-WHERE name LIKE '%BufferTX - SurfaceView%' AND value=1
-ORDER BY ts ASC
+SELECT c.ts/1e6
+FROM counter AS c
+JOIN counter_track AS t ON c.track_id = t.id
+WHERE t.name LIKE '%BufferTX - SurfaceView%' AND c.value=1
+ORDER BY c.ts ASC
 ```
 
 将结果导出后，用 Python 计算帧间隔分布和抖动：
@@ -370,10 +380,11 @@ ORDER BY ts ASC
 import pandas as pd
 
 df = tp.query("""
-    SELECT ts/1e6 as ts_ms
-    FROM counter
-    WHERE name LIKE '%BufferTX - SurfaceView%' AND value=1
-    ORDER BY ts ASC
+    SELECT c.ts/1e6 as ts_ms
+    FROM counter AS c
+    JOIN counter_track AS t ON c.track_id = t.id
+    WHERE t.name LIKE '%BufferTX - SurfaceView%' AND c.value=1
+    ORDER BY c.ts ASC
 """).as_pandas_dataframe()
 
 if not df.empty:
@@ -392,7 +403,9 @@ if not df.empty:
 
 BufferQueue 中 Buffer 数量有限（Camera 通常 3-4 个）。如果 HAL 生产帧的速度超过了 SurfaceFlinger 消费的速度，或者 App 持有 Buffer 的时间过长，就会出现所有 Buffer 都被占用的情况——HAL 无法 dequeue 到新的 Buffer，只能等待。
 
-在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。如果 Camera App 使用了 `SurfaceTexture`（而非直接 `SurfaceView`），会失去 SurfaceView 直送 overlay 的机会，增加外部纹理导入后的 GPU 采样、颜色转换和 View 树合成成本。低端设备上这部分开销可能多出 5-10 ms，具体数字因设备分辨率和 GPU 而异。
+在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。
+
+预览 Surface 的选择对 Buffer 流转路径和成本有直接影响。SurfaceView 的 Camera 输出 Surface 由 SurfaceFlinger/HWC 直接消费，不经过 App 进程——GraphicBuffer 从 Camera3OutputStream 的 BufferQueue 直达 SF，再由 HWC overlay 合成上屏，帧数据不经过 App 地址空间。TextureView 则走完全不同的路径：Buffer 从 BufferQueue 进入 SurfaceTexture/GLConsumer，作为 `GL_TEXTURE_EXTERNAL_OES` 外部纹理被采样（不是 App 每帧上传 YUV 数据到 GL 纹理），颜色转换/合成在 GPU 侧完成，合成后的帧再通过 App Surface 交给 SurfaceFlinger。这条路径多出 SurfaceTexture 中间层、外部纹理采样和 View 树合成三个环节，低端设备上额外开销可能多出 5-10 ms，具体数字因设备分辨率和 GPU 而异。ImageReader/MediaCodec 作为消费端时，Buffer 由 CPU 或编码器直接消费，不经过 SurfaceFlinger 合成。
 
 排查步骤：
 
@@ -467,11 +480,11 @@ print(f"  [HAL] submitRequest -> first frame: {round(first_buf_ms - submit_ms, 2
 
 ## Camera 功耗优化
 
-Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP 持续处理、GPU 纹理持续上传、屏幕持续高亮，这些环节叠在一起，几分钟录像就可能带来几个百分点的耗电。
+Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP 持续处理、GPU 外部纹理持续采样、屏幕持续高亮，这些环节叠在一起，几分钟录像就可能带来几个百分点的耗电。
 
 功耗优化的核心思路是**减少不必要的工作**：
 
-**帧率和分辨率的权衡**：预览不需要 4K 分辨率，1080p 甚至 720p 在手机屏幕上差异不大。降低预览分辨率意味着 ISP 处理的数据量减少，GraphicBuffer 变小，GPU 纹理上传也更快。帧率方面，30fps 预览对于大多数场景足够，60fps 预览的功耗会明显高于 30fps——Sensor 采集和 ISP 处理频率翻倍，GPU 纹理上传量也相应增加。[待量化: 具体增幅因 SoC 和 Sensor 而异，暂缺通用基线]
+**帧率和分辨率的权衡**：预览不需要 4K 分辨率，1080p 甚至 720p 在手机屏幕上差异不大。降低预览分辨率意味着 ISP 处理的数据量减少，GraphicBuffer 变小，SurfaceView 路径的 Buffer 流转也更快。如果使用 TextureView，外部纹理采样成本也会相应降低。
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 

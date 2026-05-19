@@ -409,3 +409,36 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 - crashpad_client 信号注册具体时机（需进一步源码确认）
 - minidump 路径与 `ApplicationExitInfo` 的字段关联
 - Android 15+ 是否从 Breakpad 完全迁移到 crashpad 官方仓库
+
+<!-- AIW-源码调研-2026-05-19: Native Crash Signal Handler 与 ApplicationExitInfo 补偿链路 -->
+
+### 源码级补充：Native Crash Signal Handler 边界（2026-05-19）
+
+**来源**：DeepResearch/2026-05-19-native-crash-applicationexitinfo-compensation-chain.md
+
+**debuggerd 架构三层**：
+- debuggerd 常驻进程：通过 `sigaction()` 注册信号处理
+- crash_dump fork 子进程：执行实际 dump
+- tombstone 写入：`/data/tombstones/tombstone_XX`（Android 10+ 逐步 proto 化）
+
+**async-signal-safe 严格边界**：
+- 允许：`write()`, `pipe()`, `sigprocmask()`, `sync()`
+- 禁止：`malloc()`, `free()`, `printf()`, `std::string`, 任何堆操作
+- debuggerd handler 通过 `write()` 向 debuggerd 写管道，不在进程内堆分配
+
+**源码路径**：
+- `system/core/debuggerd/crash_dump.cpp l.303, l.497` — 主流程与 tombstone 写入路径
+- `system/core/debuggerd/libdebuggerd/tombstone.cpp l.336` — tombstone 写入实现
+- `system/core/debuggerd/proto/tombstone.proto` — proto 格式定义
+
+**ApplicationExitInfo 补偿入口**（API 30+）：
+- `REASON_CRASH_NATIVE` = 6，对应 tombstone 文件
+- `getTraceFile()` 返回 `/data/tombstones/tombstone_XX` 的 FileInputStream
+- 服务端追踪：`ActivityManagerService.java l.5213`
+- 系统记录：`AppExitInfoTracker.java`
+
+**版本边界**：
+- Android 9 以下：无 ApplicationExitInfo，需自建 Signal Handler
+- Android 11+：完整支持 getTraceFile()
+- Android 14+：proto 格式 tombstone
+

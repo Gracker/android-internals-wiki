@@ -52,11 +52,11 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 review_round: 2
-task6_state: reviewed
-pipeline_stage: task2b_pending
-task9_state: reviewed
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-04-25T18:39:22+08:00"
 task9_reviewed_by: openclaw-task9
@@ -218,11 +218,11 @@ TLS 1.3（Android 10+ 默认启用）将握手从 2-RTT 减少到 1-RTT。它通
 
 [已验证: 官方文档, developer.android.com — TLS 1.3 在 Android 10 (API 29) 起默认启用]
 
-TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带应用数据。早期 0-RTT 的主要风险是重放攻击（RFC 9001 §9.2），这也是 §12.2 中建议对非幂等请求禁用 0-RTT 的原因。
+TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带应用数据。0-RTT 的主要风险是重放攻击（RFC 9001 §9.2），这也是 §12.2 中建议对非幂等请求禁用 0-RTT 的原因。
 
-Android 15（API 35）的 Conscrypt 改变了这个局面。系统 TLS 实现正式引入了 TLS 1.3 Anti-replay 机制，通过单次性 Ticket 校验物理阻断重放——服务端为每个 0-RTT 会话签发唯一 Ticket，重放的 Ticket 在服务端校验时直接失败。在 Android 15+ 设备上，0-RTT 已经从“带安全风险的加速手段”变为受控的安全加速器。
+Android 平台的标准 TLS 入口（JSSE/Conscrypt）目前不支持 0-RTT。官方 TLS 1.3 行为文档明确标注“0-RTT mode isn't supported”。Conscrypt 在 Android 15 的变化是限制 TLS 1.0/1.1，并未引入 0-RTT 或 Anti-replay 能力。如果 App 需要在移动端利用类似 0-RTT 的加速，唯一可用的路径是 Cronet/HttpEngine 的 QUIC 会话恢复（0-RTT QUIC handshake），这和标准 JSSE/Conscrypt 的 TLS 1.3 路径完全不同。
 
-工程判断：对 Android 15+ 的用户群体，幂等接口（GET、PUT）应把 0-RTT 作为首选加速开关，收益是每个恢复会话省掉 1 个 RTT（4G 网络上约 50-100ms）。非幂等接口仍然建议走 1-RTT，除非服务端也部署了对应的应用层幂等键保护。分析 trace 时，区分“TLS 1.3 完整握手”、“TLS 1.3 恢复（1-RTT）”和“TLS 1.3 0-RTT”三种情况——只有最后一种在首包就携带了应用数据。
+分析网络 trace 时，区分“TLS 1.3 完整握手”、“TLS 1.3 恢复（1-RTT）”和 QUIC 0-RTT 三种情况——只有最后一种在首包就携带了应用数据，但走的是 QUIC/UDP 传输而非标准 TLS/TCP。
 
 ### Conscrypt 与 Android TLS 实现
 
@@ -290,9 +290,11 @@ Android 16（API 36）的 `DnsResolver` 新增了 Predictive Prefetching 能力�
 
 ### DNS HTTPS Record（Type 65）
 
-同一时期，Android 16 的系统 resolver 原生支持了 DNS HTTPS Record（Type 65）。传统 DNS 查询只返回 IP 地址；Type 65 查询一次能拿到目标服务的完整配置包：IP 地址、支持的 ALPN 协议列表（如 `h3` 标识 HTTP/3 可用）、ECH（Encrypted Client Hello）公钥等。
+Android 17（API 37）的 `DnsResolver` 新增了对 DNS HTTPS Record（Type 65）的公开 API 支持，包括 `DnsResolver.TYPE_HTTPS`、`android.net.dns.HttpsRecord`、`HttpsEndpoint` 以及带 `httpsTimeoutMillis` 参数的并发 A/AAAA/HTTPS 查询重载。传统 DNS 查询只返回 IP 地址；Type 65 查询一次能拿到目标服务的 HTTPS RR 信息：IP 地址、支持的 ALPN 协议列表（如 `h3` 标识 HTTP/3 可用）、ECH（Encrypted Client Hello）公钥等。
 
-对性能的直接影响是减少了建连前的探测 RTT。旧模型下，客户端要先查 A/AAAA 记录得到 IP，再通过 ALPN 协商判断是否支持 HTTP/3，连接建立后还要单独协商 ECH——每一步都可能产生额外 RTT。Type 65 把这些信息打包进一次查询，省掉 1-2 个探测 RTT。使用系统 `DnsResolver` 或 `InetAddress` 的代码自动获得这项能力，不需要手动适配。使用自定义 `Dns` 接口的 OkHttp 用户则需要在 `lookup()` 实现中显式处理 Type 65 记录。
+对性能的直接影响是减少了建连前的探测 RTT。旧模型下，客户端要先查 A/AAAA 记录得到 IP，再通过 ALPN 协商判断是否支持 HTTP/3，连接建立后还要单独协商 ECH——每一步都可能产生额外 RTT。Type 65 把这些信息打包进一次查询，省掉 1-2 个探测 RTT。
+
+API 使用边界：`DnsResolver` API 37 可显式返回 `HttpsEndpoint`（包含 IP 与 HTTPS RR 信息）；`InetAddress` 仍只返回地址，不暴露 HttpsRecord/ALPN/ECH 配置包。使用自定义 `Dns` 接口的 OkHttp 用户需要在 `lookup()` 实现中显式调用 `DnsResolver` 的 Type 65 查询。
 
 ### OkHttp 自定义 DNS 解析
 
