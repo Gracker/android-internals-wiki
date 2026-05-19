@@ -105,6 +105,7 @@ tags:
   - [5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频](part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md)
   - [5.13 移动端 LLM 推理的 DVFS 与能效边界](part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md)
   - [5.14 Android 17 ML Runtime 与 NPU 访问边界](part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md)
+  - [5.15 SensorService 与传感器批处理功耗模型](part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)

@@ -12665,6 +12665,39 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T14:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-5.15-sensorservice-batching-power-20260519",
+      "section": "5.15",
+      "priority": 80,
+      "title": "SensorService 与传感器批处理功耗模型",
+      "description": "AOSP SensorService、Sensor HAL、硬件 FIFO 与 Android 官方传感器批处理文档显示，现有 5.6/25.5 只覆盖功耗管理和 App 侧策略，缺少系统侧传感器批处理功耗模型。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md"
+      ],
+      "gap_source": "AOSP结构/官方文档",
+      "source_refs": [
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/sensorservice/",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/sensors/",
+        "https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview",
+        "https://developer.android.com/reference/android/hardware/SensorManager",
+        "https://developer.android.com/blog/posts/battery-technical-quality-enforcement-is-here-how-to-optimize-common-wake-lock-use-cases"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 3,
+        "total": 15
+      }
     }
   ],
   "metadata": {
