@@ -12418,6 +12418,30 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T06:29:22+08:00"
+    },
+    {
+      "id": "task2a-gap-14.16-layout-inspector-viewdebug",
+      "section": "14.16",
+      "priority": 80,
+      "title": "Layout Inspector 与 ViewDebug 布局调试",
+      "description": "基于 Android Studio Layout Inspector 官方文档、Compose 调试文档、ViewDebug/ViewRootImpl AOSP 源码和 2026 布局调试素材，新增布局调试工具专节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/16-layout-inspector-viewdebug.md"
+      ],
+      "material_paths": [
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-viewdebug-layout-trace.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-viewdebug-layout-trace-mechanism.md",
+        "source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md"
+      ],
+      "gap_score": 16,
+      "gap_source": "素材驱动/官方文档/AOSP结构"
     }
   ],
   "metadata": {
@@ -12430,8 +12454,9 @@
     "last_updated_by": "openclaw-task2a",
     "pending": 152,
     "completed_entries": 202,
-    "last_task2a_gap_mining": "14.15",
-    "last_task2a_gap_mining_at": "2026-05-19T03:25:00+08:00"
+    "last_task2a_gap_mining": "14.16",
+    "last_task2a_gap_mining_at": "2026-05-19T08:18:00+08:00",
+    "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
   "last_updated": "2026-05-19T07:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
