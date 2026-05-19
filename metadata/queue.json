@@ -12619,7 +12619,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch23-memory-practice/09-android17-app-memory-limits.md"
@@ -12633,7 +12633,9 @@
         "Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md",
         "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md",
         "Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md"
-      ]
+      ],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成：status 已改为 ready-for-review，进入 Task 6 管线。"
     }
   ],
   "metadata": {
