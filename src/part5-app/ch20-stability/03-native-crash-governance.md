@@ -21,16 +21,16 @@ sources:
     path: "system/core/debuggerd/handler/debuggerd_handler.cpp"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T19:44:00+08:00"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-18"
 last_task6_at: "2026-05-18T20:16:50+08:00"
@@ -105,16 +105,15 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 
 当信号到达且没有被任何 handler 拦截（或 handler 选择传递），Android 的崩溃收集流程启动：
 
-1. **bionic linker 的 debuggerd signal handler**（`system/core/debuggerd/handler/debuggerd_handler.cpp`）被触发，在崩溃进程内创建 pseudothread 用于后续通信
-2. handler 通过 pipe 向 **tombstoned** 守护进程发送崩溃通知
-3. tombstoned **exec** 出 `crash_dump` 进程（不是 fork，crash_dump 直接替换 tombstoned fork 出的子进程）
-4. `crash_dump` 通过 `ptrace` attach 到崩溃进程，读取寄存器状态和内存映射
-5. 使用 `libunwindstack` 回溯调用栈，收集所有线程的堆栈并 engrave tombstone
-6. tombstone 写入 `/data/tombstones/`，tombstoned 同时将信息交给 **ActivityManagerService**，由 AMS 通过 `AppErrors.crashApplication()` / `handleApplicationCrash()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
+1. **debuggerd signal handler**（`system/core/debuggerd/handler/debuggerd_handler.cpp`）在崩溃进程内被触发，创建 pseudothread，然后 `_Fork()` + `execle(CRASH_DUMP_PATH, ...)` 直接 fork+exec 出 `crash_dump` 子进程
+2. `crash_dump` 连接 **tombstoned** 守护进程获取输出 fd，通过 `ptrace` attach 回崩溃进程，读取寄存器状态和内存映射
+3. `crash_dump` 使用 `libunwindstack` 回溯调用栈，收集所有线程的堆栈并生成 tombstone
+4. tombstone 通过 tombstoned 写入 `/data/tombstones/`
+5. `crash_dump` 通过 `/data/system/ndebugsocket` 通知 **ActivityManagerService**，由 AMS 通过 `AppErrors.crashApplication()` / `handleApplicationCrash()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
 
-`ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 pipe 通信期间不会阻塞在信号处理上下文中。
+`ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
 
-[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/crash_dump.cpp — `CrashDump()` 函数执行 ptrace attach 和堆栈收集]
+[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp — `_Fork()` + `execle(CRASH_DUMP_PATH)`; system/core/debuggerd/crash_dump.cpp — `CrashDump()` 执行 ptrace attach 和堆栈收集; tombstone 生成在 libdebuggerd/tombstone.cpp]
 
 ## Tombstone 结构解读
 
@@ -183,7 +182,7 @@ stack:
 - **API 30+**：`ActivityManager.getHistoricalProcessExitReasons()` 返回 `ApplicationExitInfo`；API 31+ 的 `REASON_CRASH_NATIVE` 类型可通过 `getTraceInputStream()` 获取 native tombstone 原文
 - **dropbox**：系统将 tombstone 同时写入 `dropbox`（`adb shell dumpsys dropbox --print` 可查看）
 
-[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/crash_dump.cpp — tombstone 格式由 `engrave_tombstone()` 函数生成]
+[已验证: AOSP android-16.0.0_r1 — tombstone 格式由 `system/core/debuggerd/libdebuggerd/tombstone.cpp` 生成，`crash_dump.cpp` 是调用方/调度入口]
 
 ## 堆栈还原与符号化
 
@@ -300,9 +299,9 @@ symbols/
       libart.so.sym
 ```
 
-**查找协议**：`<module-name>/<build-id>/<module-name>.sym`。`<build-id>` 必须是符号文件 MODULE 行中的 16 字符 ID（Android 10+ 的 Build ID 为 128 bit，前 16 字节的 hex 字符串共 32 字符，Breakpad 截取前 16 字符）。
+**查找协议**：`<module-name>/<debug-id-from-MODULE>/<module-name>.sym`。`<debug-id>` 必须是符号文件 MODULE 行中的完整十六进制序列（如 `DA7778FB66018A4E9B4110ED06E730D00` 是 32 位 hex），不应截断为固定 16 字符。Breakpad symbol_files.md 只要求 MODULE id 是用于精确匹配模块的十六进制序列；Chrome/Cronet 有独立的 build-id 格式转换逻辑（将 160 bit ELF module ID 压缩到 128 bit），不能泛化为所有 Android 场景的截断规则。
 
-Build ID 格式转换逻辑在 `external/cronet/stable/base/profiler/module_cache.cc`（行 36-43）：Android 和 Linux Chrome builds 使用 breakpad 格式索引 build id，需要将 160 bit 的 Linux ELF module ID 压缩到 128 bit 以匹配 Breakpad 输出。
+Build ID 格式转换逻辑在 `external/cronet/stable/base/profiler/module_cache.cc`（行 36-43）：Android 和 Linux Chrome builds 使用 breakpad 格式索引 build id，需要将 160 bit 的 Linux ELF module ID 压缩到 128 bit 以匹配 Breakpad 输出。这是 Chrome/Cronet 特定的实现，不是 Breakpad 通用协议。
 
 #### minidump 符号还原流程
 
