@@ -2129,3 +2129,16 @@
 - **位置**：line 279「Android 8.0 之前 Bitmap 像素数据存储在 Java Heap」
 - **问题**：Android 官方 Bitmap 内存文档把历史分为三段：API 10 及以下 pixel data 在 native memory；API 11-25 在 Dalvik heap；API 26+ 在 native heap。当前“Android 8.0 之前”覆盖过宽，会把 API 10 及以下历史行为写错。
 - **建议**：改为“API 11-25 的 Bitmap 像素数据在 Dalvik/ART heap；API 26+ 回到 native heap；API 10 及以下历史机型另行说明或直接标注不在本书适用版本范围内。”
+
+
+## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-05-19
+- **类型**：数据缺失
+- **位置**：L619-L620 附录「对 Compose 性能的影响」
+- **问题**：`young GC pause 低（10-50ms）`、`old GC pause 高（100-500ms）` 缺少设备、collector、负载、trace 样本和统计口径；同时正文前面使用 1-3ms/1-5ms 的 pause 口径，两组数字没有解释差异。
+- **建议**：删除具体区间，或补充可复现实验条件和 Perfetto/ART 日志证据；若只是调研材料原文，应标注为待验证素材，避免进入正文结论。
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-19
+- **类型**：数据缺失
+- **位置**：L639「Zygote preload 的贡献」
+- **问题**：`Zygote preload 覆盖了 80% 以上的类加载需求`、`如果每次都从零加载所有类，这个时间会翻好几倍` 缺少统计口径、Android 版本、设备样本和测量方法。
+- **建议**：改成定性描述，或补充基于 preloaded-classes / arrays.xml 与真实启动 trace 的统计；没有数据前不要保留 80% 与“翻好几倍”的量化判断。

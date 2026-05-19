@@ -51,17 +51,21 @@ tags:
 reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: needs-rework
-last_task9_at: "2026-05-18T17:28:39+08:00"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+last_task9_at: "2026-05-19T11:45:22+08:00"
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task6_audit: "2026-05-18"
 last_task9_audit: "2026-05-18"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
+task9_reviewed_date: "2026-05-19"
+task9_reviewed_by: "openclaw-task9"
+last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Gen-CMC/UFFD 启用链路需按 AOSP main 属性与版本矩阵回炉。"
 ---
 
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
