@@ -2,8 +2,8 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: ready-for-review
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -16,9 +16,9 @@ confidence: high
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task9_reviewed_date: "2026-05-18"
+task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T15:25:00+08:00"
+last_task9_at: "2026-05-19T11:45:22+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -31,8 +31,8 @@ sources:
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
 task6_state: "revisiting"
-task9_state: "pending"
-task9_result: needs-rework
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
@@ -41,8 +41,8 @@ task6_reviewed_date: "2026-05-18"
 last_task6_at: "2026-05-18T16:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-16-review.md"
 task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。"
-last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
 ---
 
 # SurfaceFlinger 与合成

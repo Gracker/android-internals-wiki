@@ -8037,9 +8037,10 @@
       "section": "4.8",
       "section_title": "ART 分代 GC",
       "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 Generational CMC 机制源码与设备能力判断路径验证",
+      "reason": "[DeepResearch 注入 + Deep Tech Review] Android 17 Generational CMC 机制源码与设备能力判断路径需按 AOSP main 重整",
       "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md"
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md",
+        "logs/deep-review/2026-05-19-11-deep-review.md"
       ],
       "review_issues": [
         {
@@ -8047,11 +8048,19 @@
           "location": "参考资料/延伸阅读",
           "detail": "Android 17 Generational CMC 机制源码与设备能力判断路径验证 — Generational CC + userfaultfd 驱动的并发压缩 GC 组合机制，含版本差异矩阵、gUseUserfaultfd 初始化逻辑、分代 GC 与 Compose 性能因果链",
           "suggestion": "判断是否适合补充为 ch04/08-art-generational-gc.md 章节的参考资料或正文中 userfaultfd CMC 的版本边界说明"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码启用链路",
+          "location": "L143-L147、L613-L616、L629-L630 Gen-CMC/UFFD 版本与设备能力说明",
+          "detail": "AOSP main mark_compact.cc 中 UFFD CMC 启用链路由 SysPropSaysUffdGc() + KernelSupportsUffd() + ShouldUseUserfaultfd() 决定，涉及 persist.device_config.runtime_native_boot.enable_uffd_gc_2、persist.device_config.runtime_native_boot.force_disable_uffd_gc、ro.dalvik.vm.enable_uffd_gc 与 Android 版本条件；ShouldUseGenerationalGC() 还受 use_generational_cmc flag 和 persist.device_config.runtime_native_boot.use_generational_gc 约束。正文主时间线仍写成 Android 15+/17 语境，附录只列 enable_uffd_gc_2，并保留“低 RAM 设备通常禁用”但未给源码锚点，容易把平台版本、ART Mainline 下发和设备 flag 混成一条线。",
+          "suggestion": "重写为版本/能力矩阵：Android 8 CC、Android 10+ Gen-CC、Android 12+/13+ 在 ART Mainline/UFFD 条件满足时可进入 CMC、Android 17 对外发布 Gen-CMC 性能特性；同时补充 force_disable_uffd_gc、ro.dalvik.vm.enable_uffd_gc、KernelSupportsUffd()、use_generational_gc/use_generational_cmc 的验证路径，低 RAM 禁用若无法定位源码则降为待验证。"
         }
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-16T06:18:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "last_reviewed_by_task9_at": "2026-05-19T11:45:22+08:00"
     },
     {
       "id": "dr-inject-2026-05-16-hci-input-latency",
@@ -12563,6 +12572,28 @@
         "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
       ],
       "dependencies": []
+    },
+    {
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ApplicationStartInfo startup state 与 reason 常量仍与 API 35 源码不一致",
+      "material_paths": [
+        "logs/deep-review/2026-05-19-11-deep-review.md",
+        "AOSP android-15.0.0_r1: frameworks/base/core/java/android/app/ApplicationStartInfo.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 常量错误",
+          "location": "L332-L334 Android 15+ ApplicationStartInfo 关键字段表",
+          "detail": "AOSP android-15.0.0_r1 ApplicationStartInfo 中 STARTUP_STATE_STARTED=0、STARTUP_STATE_ERROR=1、STARTUP_STATE_FIRST_FRAME_DRAWN=2；正文写成 STARTUP_STATE_FIRST_FRAME_DRAWN=1、STARTUP_STATE_ERROR=2。正文还举例 START_REASON_BOOT、START_REASON_SCHEDULED，但公开 @StartReason 中是 START_REASON_BOOT_COMPLETE、START_REASON_JOB 等，未找到 BOOT/SCHEDULED。",
+          "suggestion": "按 API 35 源码修正常量表：STARTUP_STATE_STARTED=0、ERROR=1、FIRST_FRAME_DRAWN=2；reason 示例改为 ALARM、BACKUP、BOOT_COMPLETE、BROADCAST、CONTENT_PROVIDER、JOB、LAUNCHER、LAUNCHER_RECENTS、OTHER、PUSH、SERVICE、START_ACTIVITY。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T11:45:22+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
@@ -12579,9 +12610,9 @@
     "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-19T10:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 149,
+  "last_updated": "2026-05-19T11:45:22+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 145,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
   "last_task2a_gap_mining": "22.14",

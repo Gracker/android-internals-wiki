@@ -52,26 +52,25 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: "needs-rework"
-task2b_state: "fixed"
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T15:29:34+08:00"
-task9_review_notes: "2026-05-17 15 Task9 re-review: needs-rework。P0 1 / P1 1 / P2 1；ApplicationStartInfo startup state 数值与 START_REASON_CHANGED 仍错误，示例代码缺 timestamp key 判空；Zygote preload 80% 仍缺统计口径。"
-last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
+last_task9_at: "2026-05-19T11:45:22+08:00"
+task9_review_notes: "2026-05-17 15 Task9 re-review: needs-rework。P0 1 / P1 1 / P2 1；ApplicationStartInfo startup state 数值与 START_REASON_CHANGED 仍错误，示例代码缺 timestamp key 判空；Zygote preload 80% 仍缺统计口径。；2026-05-19 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；ApplicationStartInfo startup state/reason 常量仍与 API 35 源码不一致。"
+last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
 p0: 1
-p1: 1
+p1: 0
 p2: 1
 last_task6_at: "2026-05-17T16:11:00+08:00"
 last_task6_review_log: "logs/review/2026-05-17-16-review.md"
 task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。L1/L2 小修 22 处，清理第一人称、结构性元叙述和填充词；既有 Task9 P0 队列仍 pending，未新增回炉项。"
-
 ---
 
 
