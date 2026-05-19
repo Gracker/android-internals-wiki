@@ -12771,7 +12771,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"
@@ -12788,7 +12788,9 @@
           "detail": "新建 draft 仅含大纲，下一轮 Task 2A 需按 AOSP / 官方文档验证后展开正文。",
           "suggestion": "优先验证 BufferAllocator、Gralloc4、BufferQueue、GraphicBuffer flatten/unflatten 与 16KB 官方文档；未经验证的 Binder FDA / pooling 不写成确定结论。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成：基于 AOSP libdmabufheap / Gralloc4 / BufferQueue / GraphicBuffer 与官方 16KB Page Size、DMA-BUF heaps 文档展开正文，状态转 ready-for-review。"
     }
   ],
   "metadata": {
