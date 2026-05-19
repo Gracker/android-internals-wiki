@@ -6,9 +6,9 @@ section: '14.9'
 status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
-reviewed_date: '2026-05-01'
+reviewed_date: "2026-05-19"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
@@ -34,8 +34,8 @@ related_chapters:
 - '11.2'
 - '4.3'
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
@@ -53,6 +53,11 @@ repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-19-15-deep-review.md"
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。Perfetto 抓取配置使用不存在的 android.trace_config/atrace_config；counter SQL 过滤 counter.name 无法执行；SurfaceView/TextureView 管线仍混用。"
 task2b_rework_date: '2026-05-19'
+last_task6_at: "2026-05-19T17:09:00+08:00"
+task6_reviewed_at: "2026-05-19T17:09:00+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-19-17-review.md"
+task6_review_notes: "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：标准化 outline 标记、删除填充词/夸张表达、修正残留错字。已知 Perfetto 配置/SQL 与 Surface 管线技术项继续交 Task9/Task2B。"
 ---
 
 
@@ -68,7 +73,7 @@ Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系
 
 [已验证: 本文分析框架经过实际 Camera 性能问题案例分析验证]
 
-<!-- outline-start
+<!-- outline-start -->
 # 14.9 Android Camera 性能与 Perfetto 分析
 
 ## 🎯 为什么需要了解 Camera 性能分析  <!-- anchor: why-camera-perf -->
@@ -116,7 +121,7 @@ Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系
 ## ⚠️ 常见问题与误区  <!-- anchor: common-mistakes -->
 
 ## 📚 参考资料  <!-- anchor: references -->
-outline-end -->
+<!-- outline-end -->
 
 
 ## Camera 性能问题的四大分类
@@ -127,7 +132,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，GPU 纹理上传可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
-**拍照延迟**指的是从用户点击快门到照片真正拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
+**拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 
 **拍照延迟的典型值**：普通拍照通常需要 200-800ms，包含 ISP 处理时间、曝光等待、多帧合成等环节。ZSL 技术可以减少到 50-100ms，但会持续消耗内存和功耗。
 
@@ -135,7 +140,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **丢帧的阈值判断**：帧间隔超过 40ms 或标准差超过 8ms 就会触发明显丢帧。4K 录制时，编码器处理压力更大，更容易出现连续丢帧。
 
-**内存压力**是 Camera 场景的隐形杀手。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。截至 AOSP android-16.0.0_r1，Java 实现仍保留 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 释放路径，没有切到 `NativeAllocationRegistry` 或 `Cleaner`。只要结果对象被长时间强引用，metadata 仍会持续堆积。
+**内存压力**是 Camera 场景里容易被低估的问题。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。截至 AOSP android-16.0.0_r1，Java 实现仍保留 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 释放路径，没有切到 `NativeAllocationRegistry` 或 `Cleaner`。只要结果对象被长时间强引用，metadata 仍会持续堆积。
 
 据字节跳动西瓜视频团队公开报告，某次线上问题中 `CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃（案例数字来自该团队报告，不代表通用基线）。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[案例数据来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；释放路径已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-16.0.0_r1]
 
@@ -214,7 +219,7 @@ EOF
 
 ### SQL 查询：量化帧率和帧间隔
 
-Perfetto Trace Processor 最强大的能力是用 SQL 量化一切。下面是几个 Camera 性能分析中常用的查询。
+Perfetto Trace Processor 的价值在于用 SQL 量化事件时间、频率和抖动。下面是几个 Camera 性能分析中常用的查询。
 
 统计 CaptureRequest 处理帧率：
 
@@ -317,7 +322,7 @@ LIMIT 20
 
 ### Python SDK 自动化分析
 
-手动在 Perfetto UI 中点来点去效率很低，特别是需要反复对比不同版本、不同场景的性能数据时。Perfetto 提供了 Python SDK，可以把上述 SQL 查询封装成自动化脚本。
+手动在 Perfetto UI 中反复定位效率不高，特别是需要对比不同版本、不同场景的性能数据时。Perfetto 提供了 Python SDK，可以把上述 SQL 查询封装成自动化脚本。
 
 安装和基础配置：
 
@@ -472,7 +477,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **HAL Buffer 管理策略**：AOSP `camera3.h` 将 `request_stream_buffers` / `return_stream_buffers` 归入 `CAMERA_DEVICE_API_VERSION_3_6`（与 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 命名存在历史差异：3_5 是 HIDL 服务端版本，3_6 是 device API 版本）。这套接口允许 HAL 按需请求 Buffer，而不是在 Session 配置时一次性分配。正常填充完成的输出 Buffer 随 `process_capture_result()` 返回；`return_stream_buffers()` 只用于归还未随 capture result 返回的 Buffer（例如 flush）。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
 
-这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`request_stream_buffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `request_stream_buffers`、`return_stream_buffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。n
+这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`request_stream_buffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `request_stream_buffers`、`return_stream_buffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。
 [已验证: AOSP hardware/libhardware/include_all/hardware/camera3.h（`include/hardware/camera3.h` 为到 include_all 的链接/转发）, android-16.0.0_r1]
 
 **功耗度量**：在 Perfetto 中可以用 `android_cpu` Metric 查看 Camera 相关进程的 CPU 时间。如果 `cameraserver` 的 CPU 时间异常高，说明 HAL 的处理负载很重；如果 App 进程的 CPU 时间高，说明可能在主线程做了过多处理（如直接在 `onPreviewFrame` 中做图像处理）。将 Camera 操作移到后台线程，或者把 CPU 软处理替换为 CameraX ImageAnalysis / YUV 转换、RenderScript Intrinsics Replacement Toolkit（只覆盖旧 intrinsics）、OpenGL ES / Vulkan compute、NDK / MediaCodec 或厂商 HAL 能力。RenderScript 已在 Android 12 deprecated，不能再作为 Android 12-17 的主推荐；每条替代路径都要按分辨率、帧率和 SoC 做同机实测。
@@ -550,4 +555,3 @@ Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 B
 - Perfetto Python SDK：https://perfetto.dev/docs/analysis/trace-processor#python
 - Android Camera2 API 官方文档：https://developer.android.com/reference/android/hardware/camera2/package-summary
 - Android CameraX 官方文档：https://developer.android.com/training/camerax
-<!-- outline-end -->
