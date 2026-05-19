@@ -12496,7 +12496,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
@@ -12510,7 +12510,9 @@
       "gap_score": 16,
       "gap_source": "每日信息/官方文档/Android Developers Blog",
       "created_by": "task2a-knowledge-gap",
-      "created_at": "2026-05-19T10:04:00+08:00"
+      "created_at": "2026-05-19T10:04:00+08:00",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线"
     },
     {
       "id": "task9-audit-14.8-gpu-tools-version-source-20260519",

@@ -1,7 +1,7 @@
 {
   "total": 324,
-  "draft": 1,
-  "ready-for-review": 119,
+  "draft": 0,
+  "ready-for-review": 120,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -178,7 +178,8 @@
     "9.5",
     "19.13",
     "20.3",
-    "13.18"
+    "13.18",
+    "22.14"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -187,7 +188,8 @@
     "src/part2-performance/ch09-anr/05-case-studies.md",
     "src/part3-tools/ch19-apm/13-tracing-sdk.md",
     "src/part5-app/ch20-stability/03-native-crash-governance.md",
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
   ],
   "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
