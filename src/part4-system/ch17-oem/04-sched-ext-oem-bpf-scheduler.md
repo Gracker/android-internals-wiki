@@ -348,3 +348,44 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 - 摘要：分析 Linux 6.12 EEVDF 取代 CFS 的结构性转变，sched_ext 框架允许 OEM 通过 BPF map 注入定制调度策略。详细追踪 GameManagerService→BPF map→kernel SCX 的三层联动链路，以及厂商定制化输入优先级绑定机制。
 - 注入时间：2026-05-19
 - 价值：源码级追踪 EEVDF/SCX 三层联动链路，补充 GameManagerService BPF 交互与 OEM 定制化输入
+
+
+## 补充：公开源码调研现状（2026-05-19）
+
+本次每日调研（选题来自 daily-topics.json id=3）进一步核查了 AOSP 公开仓库和 GitHub 中与 sched_ext OEM 调度器相关的源码，结论如下：
+
+### AOSP kernel/common 现状
+
+在 cs.android.com 检索 `kernel/common/sched/`、`kernel/common/sched/ext.c` 和 `CONFIG_SCHED_CLASS_EXT`，均未发现 sched_ext 相关文件。`bionic/libc/kernel/uapi/linux/` 下仅有标准 Linux 头文件，无 sched_ext 专用接口。
+
+**结论**：截至 AOSP master 分支（对应 Android 正在开发的未来版本），kernel/common 尚未合入 sched_ext。这与 Linux 6.12 正式 upstream 的时间线一致——AOSP 通常跟踪稳定版内核，而非 mainline 开发分支。
+
+### Google Pixel 设备 kernel fork
+
+检索 `device/google/coral-kernel` 和 `device/google/sched/`：
+- coral-kernel 仓库存在，但不含 sched_ext 相关文件或配置
+- 未发现 `SCX_Litto` 或 Pixel 专用调度器的公开源码证据
+- `BoardConfig-common.mk` 和 `init.hardware.rc` 中未发现 sched_ext 启用逻辑
+
+### 上游 sched_ext 调度器生态（github.com/sched-ext/scx）
+
+| 调度器 | 实现语言 | 定位 |
+|--------|----------|------|
+| scx_simple | C | 最小全局 FIFO 示例 |
+| scx_rusty | Rust | 多级反馈队列，负载均衡 |
+| scx_bpfland | Rust | 拓扑感知 BPF 调度器 |
+| scx_lavd | Rust | Latency-Oriented Virtual Deadline |
+| scx_rustland | Rust | 用户态决策，用于 FPS 优化演示 |
+
+该项目明确指出 Meta 和 Google 正在推进 sched_ext 生产环境部署，且 upstream Linux 6.12 已正式支持。
+
+### Qualcomm SCX_Oplus / MediaTek SCX_Mtk / Pixel SCX_Litto
+
+**本次检索未在公开仓库发现上述三个定制调度器的源码。** 这些名称可能属于：
+1. 厂商内部 kernel fork（未公开）
+2. 非 AOSP 公开仓库的厂商 repository（如 qcom/opensource、mtk 的 kernel 仓库）
+3. 已公开但不在 AOSP 主线而在厂商单独维护的 kernel 分支
+
+现有章节已覆盖 OPPO/OnePlus `hmbird_sched` 的公开线索，对高通和联发科平台，公开证据仍不足。**本调研报告结论：Qualcomm SCX_Oplus、MediaTek SCX_Mtk、Google Pixel SCX_Litto 的实际源码位置和实现细节，仍属于未经一手验证的盲区。**
+
+<!-- AIW-源码调研-2026-05-19 -->

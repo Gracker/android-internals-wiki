@@ -51,16 +51,17 @@ tags:
 reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
 last_task9_at: "2026-05-18T17:28:39+08:00"
-task2b_state: pending
-task2b_result: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task6_audit: "2026-05-18"
 last_task9_audit: "2026-05-18"
+last_task2b_at: "2026-05-19T11:32:33+08:00"
 ---
 
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
@@ -139,7 +140,7 @@ ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超�
 
 **Android 10 前后的 CC 路径**：当前主线 AOSP 的 `art/runtime/gc/collector/concurrent_copying.cc` 构造函数带有 `young_gen` 和 `use_generational_cc` 两个参数，`art/runtime/gc/heap.cc` 也会在 `use_generational_gc_` 为 true 时同时创建 `concurrent_copying_collector_` 和 `young_concurrent_copying_collector_`。这说明 CC 的分代模式在运行时已经是正式实现，不是概念示意。至于“最早对应到哪一个 Android 10 tag”这一点，本节暂时不写死，等补 Android 10 分支源码再回填。
 
-**Android 15+ / Android 17 Beta 的 CMC 路径**：`art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 已经能直接看到 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 确实有代码落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
+**Android 15+ 的 CMC 路径（含 Android 17 Generational CMC）**：`art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 已经能直接看到 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 确实有代码落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
 
 本节后面谈 Android 17 时，默认语境是“CMC 路径下可见的分代实现”，不再把它和 Android 10 的分代 CC 混成一个机制。
 
@@ -394,7 +395,7 @@ protected void onDraw(Canvas canvas) {
 
 ### 对象池模式（Object Pool）
 
-对于确实需要频繁创建和销毁的对象，对象池是一种有效的优化方式。Android 系统自身就大量使用了这个模式：
+对于需要频繁创建和销毁的对象，对象池是一种有效的优化方式。Android 系统自身就大量使用了这个模式：
 
 - `Message.obtain()`：Android 的 Message 对象池，最大容量 50。调用 `obtain()` 从池中取，调用 `recycle()` 归还。
 - `Parcel.obtain()` / `Parcel.recycle()`：跨进程通信的 Parcel 对象池。
@@ -612,7 +613,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 3. **设备能力判断**：`gUseUserfaultfd` 变量控制
    - 编译时探测：检查内核是否支持 userfaultfd 系统调用
    - 运行时判断：低 RAM 设备（low-RAM device）通常禁用以节省内存
-   - DeviceConfig 覆盖：`debug.art.disable_userfaultfd` 可覆盖默认行为
+   - DeviceConfig 覆盖：`persist.device_config.runtime_native_boot.enable_uffd_gc_2` 可控制 UFFD GC 启用（`gUseUserfaultfd` 变量）
 
 4. **对 Compose 性能的影响**
    - young GC pause 低（10-50ms）：短生命周期 lambda/state 对象被快速回收
@@ -626,7 +627,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 **待深入**：
 - `gUseUserfaultfd` 的具体初始化逻辑（需读取 `art/runtime/gc/heap.cc` 源码验证）
-- DeviceConfig 属性 `debug.art.disable_userfaultfd` 的具体命名
+- DeviceConfig 属性 `persist.device_config.runtime_native_boot.enable_uffd_gc_2` 的具体生效路径
 - low-RAM 设备判定阈值（是否为 `ActivityManager.isLowRamDevice()`）
 
 **报告来源**：
@@ -637,4 +638,4 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 类型：DeepResearch 调研结果
 - 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 并非独立开关而是描述性概念。
 - 注入时间：2026-05-19
-- 价值：源码级闭环 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径
+- 价值：源码级完整 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径
