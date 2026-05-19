@@ -1,6 +1,6 @@
 {
-  "total": 326,
-  "draft": 0,
+  "total": 327,
+  "draft": 1,
   "ready-for-review": 122,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1437,8 +1437,8 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T16:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-19T17:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -4843,12 +4843,16 @@
     "mode": "draft-processing"
   },
   "task2a_last_gap_mining": {
-    "section": "3.10",
-    "title": "InputDispatcher stale event 判定与事件丢弃",
-    "file": "src/part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md",
-    "created_at": "2026-05-18T23:04:00+08:00",
-    "gap_score": 16,
-    "mode": "processed-new-gap"
+    "date": "2026-05-19",
+    "time": "17:04",
+    "mode": "gap-mining",
+    "created_sections": [
+      "2.24"
+    ],
+    "created_files": [
+      "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"
+    ],
+    "reason": "DeepResearch 发现 Android 16/17 图形内存分配边界仍未独立覆盖；现有 2.15 偏机制，本节用于版本边界与厂商实现拆分。"
   },
   "task9_last_sections": [
     "21.9"

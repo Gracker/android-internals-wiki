@@ -12759,6 +12759,36 @@
       "estimated_hours": 3,
       "assigned_to": "content-team",
       "dependencies": []
+    },
+    {
+      "id": "task2a-gap-20260519-2.24-graphic-memory-dmabuf-gralloc-16kb",
+      "section": "2.24",
+      "priority": 80,
+      "title": "Android 16/17 图形内存分配边界：DMA-BUF、Gralloc 与 16KB Page",
+      "description": "DeepResearch 与官方文档共同指向的缺口：需要独立拆清 libdmabufheap、Gralloc4/IMapper、BufferQueue fd 传递、16KB Page Size 与厂商 gralloc 策略边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md",
+        "intake/daily-info/2026-05-19.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新章节加工",
+          "location": "2.24 全文",
+          "detail": "新建 draft 仅含大纲，下一轮 Task 2A 需按 AOSP / 官方文档验证后展开正文。",
+          "suggestion": "优先验证 BufferAllocator、Gralloc4、BufferQueue、GraphicBuffer flatten/unflatten 与 16KB 官方文档；未经验证的 Binder FDA / pooling 不写成确定结论。"
+        }
+      ]
     }
   ],
   "metadata": {
