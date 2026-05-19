@@ -12708,25 +12708,69 @@
         "时效性": 3,
         "total": 15
       }
+    },
+    {
+      "id": "task9-20260519-149-perfetto-config-sql-surface-pipeline",
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.9 仍有 Perfetto 配置/SQL 可执行性错误，并且 SurfaceView/TextureView 管线路径未拆清。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/配置错误",
+          "location": "L167-L185 Perfetto 抓取配置",
+          "detail": "正文使用 `name: \"android.trace_config\"` + `atrace_config` + `app_process_cmdlines` 作为 Perfetto pbtxt。当前 Perfetto 官方 atrace 录制口径要求启用 `linux.ftrace` data source，并在 `ftrace_config` 中设置 `atrace_categories`；App 过滤使用 `atrace_apps`。`android.trace_config` / `atrace_config` 组合无公开 schema 锚点，读者按文运行会解析失败或无法采到 atrace category。",
+          "suggestion": "改为 `data_sources { config { name: \"linux.ftrace\" ftrace_config { atrace_categories: \"gfx\" atrace_categories: \"view\" atrace_categories: \"hwc\" atrace_categories: \"camera\" atrace_categories: \"binder_driver\" atrace_apps: \"com.android.camera2\" } } }`；如需进程统计另加 `linux.process_stats`。"
+        },
+        {
+          "severity": "P0",
+          "type": "SQL schema 错误",
+          "location": "L303-L311 / L354-L370 Counter 查询",
+          "detail": "Perfetto `counter` 表不提供 `name` 字段，Counter 名称在 `counter_track` / `process_counter_track` / `thread_counter_track` 等 track 表上。正文多处 `WHERE counter.name LIKE ...` 或 `WHERE name LIKE ... FROM counter` 会直接报 no such column 或误解析。",
+          "suggestion": "把 BufferTX 查询改为 `FROM counter c JOIN counter_track t ON c.track_id=t.id WHERE t.name LIKE ...`；把 `cam2_frame` 查询改为 `JOIN process_counter_track pct ON c.track_id=pct.id ... WHERE pct.name LIKE ...`。正文同时说明不同 Trace Processor 版本/track 类型下可先 `SELECT id,name,type FROM track WHERE name LIKE ...` 找 track_id。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L145-L153 / L389 / L464-L468 / L535 SurfaceView、TextureView 与 SurfaceTexture 管线",
+          "detail": "正文图示仍把通路写成 `BufferQueue → SurfaceTexture → SurfaceView/TextureView → SurfaceFlinger`，同时多处继续写“GPU 纹理上传”。SurfaceView 的 Camera 输出 Surface 通常由 SurfaceFlinger/HWC 消费，不经过 SurfaceTexture；TextureView 走 SurfaceTexture/GLConsumer，把 GraphicBuffer 作为 `GL_TEXTURE_EXTERNAL_OES` 外部纹理采样后进入 App View 树，再由 App surface 交给 SurfaceFlinger。这里不是 App 每帧把 YUV 数据重新上传到 GL 纹理。",
+          "suggestion": "把预览通路拆成三支：SurfaceView（Camera3OutputStream → ANativeWindow/BufferQueue → SF/HWC）、TextureView（→ SurfaceTexture/GLConsumer 外部纹理 → RenderThread/View 合成 → App surface → SF）、ImageReader/MediaCodec（CPU/编码消费端）。删除 `SurfaceTexture → SurfaceView` 和“GPU 纹理上传”的表述，改为外部纹理采样、颜色转换/合成与 View 树合成成本。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T15:31:38+08:00",
+      "status": "pending",
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
+      ],
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "estimated_hours": 3,
+      "assigned_to": "content-team",
+      "dependencies": []
     }
   ],
   "metadata": {
-    "total_entries": 360,
+    "total_entries": 365,
     "p0_count": 149,
-    "last_updated": "2026-05-19T13:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 150,
+    "last_updated": "2026-05-19T15:31:38+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 145,
     "updated_date": "2026-05-19",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 150,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 145,
     "completed_entries": 208,
     "last_task2a_gap_mining": "23.9",
     "last_task2a_gap_mining_at": "2026-05-19T13:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-19T13:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 146,
+  "last_updated": "2026-05-19T15:31:38+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 145,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
   "last_task2a_gap_mining": "23.9",
