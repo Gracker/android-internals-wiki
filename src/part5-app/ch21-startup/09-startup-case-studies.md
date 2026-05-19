@@ -2,7 +2,7 @@
 title: "启动优化复盘框架与案例模板"
 chapter: "21.9"
 section: "21.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP master Activity.reportFullyDrawn / ActivityMetricsLogger, Android Developers launch-time / App Startup / Baseline Profiles docs"
@@ -38,19 +38,24 @@ sources:
     path: "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
 tags: [case-study, startup, optimization, baseline-profile, startup-framework]
 related_chapters: ["21.1", "21.2", "21.4"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-19"
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
+task9_reviewed_date: "2026-05-19"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task6_at: "2026-05-19T08:16:46+08:00"
 last_task6_review_log: logs/review/2026-05-19-08-review.md
+last_task9_at: "2026-05-19T08:27:59+08:00"
+last_task9_review_log: logs/deep-review/2026-05-19-08-deep-review.md
+task9_review_notes: "2026-05-19 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点、App Startup、Baseline Profile 与 TTFD 链路复核通过；满足 Task6+Task9+queue 条件，自动晋升 finalized。"
+auto_promoted_by: task9-deep-tech-review
+auto_promoted_at: "2026-05-19T08:27:59+08:00"
 ---
 
 # 启动优化复盘框架与案例模板

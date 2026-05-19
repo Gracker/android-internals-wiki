@@ -1,8 +1,8 @@
 {
   "total": 323,
   "draft": 1,
-  "ready-for-review": 119,
-  "finalized": 203,
+  "ready-for-review": 118,
+  "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -189,7 +189,7 @@
     "src/part5-app/ch20-stability/03-native-crash-governance.md",
     "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
   ],
-  "review_summary": "Task9 2026-05-18 22: 深审 13.18；P1 1：多 Trace 对比标准指标/回填能力与当前 SmartPerfetto 实现不一致，转 Task2B。",
+  "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-19",
     "time": "08:16",
@@ -1383,21 +1383,26 @@
       "p0": 0,
       "p1": 0,
       "p2": 0,
-      "p3": 0,
+      "p3": 2,
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 6,
       "task6_l3_l4_issues": 0,
       "task6_reviewed_at": "2026-05-19T08:16:46+08:00",
       "task6_log": "logs/review/2026-05-19-08-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task2B fixed 后复审通过；标题与定位改为复盘框架/案例模板，清理编辑标记、抽象词和否定-纠正式句式。Task9 需复审，未自动晋升。"
+      "task6_note": "Task2B fixed 后复审通过；标题与定位改为复盘框架/案例模板，清理编辑标记、抽象词和否定-纠正式句式。Task9 需复审，未自动晋升。",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_at": "2026-05-19T08:27:59+08:00",
+      "task9_log": "logs/deep-review/2026-05-19-08-deep-review.md",
+      "task9_new_rework": false,
+      "task9_note": "Task9 复审通过；源码路径/方法、App Startup Provider 成本与顺序、Baseline Profile/TTFD/Startup Profile 口径均已复核，无 P0/P1/P2。记录 2 个 P3 后续增强观察点。"
     }
   },
   "total_review_sections": 161,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T07:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-19T08:27:59+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -1418,8 +1423,8 @@
     },
     "auto_promoted": []
   },
-  "task9_last_review": "2026-05-18",
-  "ready_to_publish": 199,
+  "task9_last_review": "2026-05-19",
+  "ready_to_publish": 200,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1956,14 +1961,14 @@
       "auto_promoted_at": "2026-05-15T20:08:00+08:00"
     },
     "21.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-19T08:16:46+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-05-19-08-review.md",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-05-14",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-19",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/09-startup-case-studies.md",
       "title": "启动优化复盘框架与案例模板",
@@ -1971,7 +1976,11 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-19",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task9_at": "2026-05-19T08:27:59+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-19-08-deep-review.md",
+      "auto_promoted_by": "task9-deep-tech-review",
+      "auto_promoted_at": "2026-05-19T08:27:59+08:00"
     },
     "14.9": {
       "status": "ready-for-review",
@@ -3939,52 +3948,53 @@
   "last_task2a_processed_file": "src/part2-performance/ch18-rendering-pipelines/22-android-xr-spatial-ui-rendering.md",
   "last_task2a_processed_date": "2026-05-19",
   "task9_last_review_detail": {
-    "date": "2026-05-18",
-    "time": "12:44",
-    "reviewed_at": "2026-05-18T12:44:40+08:00",
+    "date": "2026-05-19",
+    "time": "08:27",
+    "reviewed_at": "2026-05-19T08:27:59+08:00",
     "mode": "normal",
     "sections": [
-      "25.6",
-      "25.8"
+      "21.9"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/06-apk-analysis.md",
-      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+      "src/part5-app/ch21-startup/09-startup-case-studies.md"
     ],
-    "log": "logs/deep-review/2026-05-18-12-deep-review.md",
-    "p0": 1,
-    "p1": 1,
+    "log": "logs/deep-review/2026-05-19-08-deep-review.md",
+    "p0": 0,
+    "p1": 0,
     "p2": 0,
-    "p3": 0,
-    "result": "needs-rework",
+    "p3": 2,
+    "result": "pass-tech-review",
     "auto_promoted": [
-      "25.8"
+      "21.9"
     ]
   },
-  "last_task9_review": "2026-05-18",
+  "last_task9_review": "2026-05-19",
   "last_task9_sections": [
-    "25.6",
-    "25.8"
+    "21.9"
   ],
   "last_task9_review_detail": {
-    "mode": "idle-audit",
-    "reviewed_at": "2026-05-17T14:20:00+08:00",
+    "date": "2026-05-19",
+    "time": "08:27",
+    "reviewed_at": "2026-05-19T08:27:59+08:00",
+    "mode": "normal",
     "sections": [
-      "2.5"
+      "21.9"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+      "src/part5-app/ch21-startup/09-startup-case-studies.md"
     ],
+    "log": "logs/deep-review/2026-05-19-08-deep-review.md",
     "p0": 0,
-    "p1": 3,
+    "p1": 0,
     "p2": 0,
-    "p3": 0,
-    "result": "needs-rework",
-    "log": "logs/deep-review/2026-05-17-14-audit.md"
+    "p3": 2,
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "21.9"
+    ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch25-power-size/06-apk-analysis.md",
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "total_review_files": 152,
   "last_task2a_at": "2026-05-19T01:04:00+08:00",
@@ -4018,11 +4028,11 @@
     "summary": "3 个 revisiting 章节完成 Task6 写作层复审；2.6/25.6 pass-light-edit，5.3 因 GPU+NPU 扩展空壳保留 needs-rework。"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "last_task9_at": "2026-05-18T12:44:40+08:00",
+  "last_task9_at": "2026-05-19T08:27:59+08:00",
   "last_task2a_result": "processed-new-gap",
-  "ready-to-publish": 198,
+  "ready-to-publish": 199,
   "last_task2a_processed_section": "4.10",
   "task6_last_review_at": "2026-05-18T22:15:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-18-22-review.md",
@@ -4791,18 +4801,15 @@
     "mode": "processed-new-gap"
   },
   "task9_last_sections": [
-    "25.6",
-    "25.8"
+    "21.9"
   ],
   "last_task2a_processed_at": "2026-05-19T01:04:00+08:00",
   "last_task9_files": [
-    "src/part5-app/ch25-power-size/06-apk-analysis.md",
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-18-12-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-19-08-deep-review.md",
   "task9_last_files": [
-    "src/part5-app/ch25-power-size/06-apk-analysis.md",
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
@@ -4982,5 +4989,6 @@
     "task9_reviewed_by": "openclaw-task9",
     "task2b_state": "pending",
     "task2b_result": "pending"
-  }
+  },
+  "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。"
 }
