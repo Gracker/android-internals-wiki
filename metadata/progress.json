@@ -1,8 +1,8 @@
 {
   "total": 322,
   "draft": 0,
-  "ready-for-review": 120,
-  "finalized": 202,
+  "ready-for-review": 119,
+  "finalized": 203,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -191,18 +191,23 @@
   ],
   "review_summary": "Task9 2026-05-18 22: 深审 13.18；P1 1：多 Trace 对比标准指标/回填能力与当前 SmartPerfetto 实现不一致，转 Task2B。",
   "task6_review_summary": {
-    "date": "2026-05-18",
-    "time": "22:15",
+    "date": "2026-05-19",
+    "time": "08:16",
     "sections": [
-      "13.18"
+      "21.9",
+      "22.9"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+      "src/part5-app/ch21-startup/09-startup-case-studies.md",
+      "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 6,
+    "small_fixes": 9,
     "new_rework_items": 0,
-    "note": "Task6 写作层 review 通过；修复 outline 命名、AI 加工标记和少量抽象/口语化表达。Task9 尚未通过，未自动晋升。"
+    "auto_promoted": [
+      "22.9"
+    ],
+    "note": "Task6 复审 21.9/22.9 通过；清理标题定位、编辑标记和少量 L1/L2 表达问题。22.9 满足 Task6+Task9+queue 条件，自动晋升 finalized；21.9 继续等待 Task9 复审。"
   },
   "issues_by_section": {
     "1.6": {
@@ -737,8 +742,15 @@
     "22.9": {
       "p0": 0,
       "p1": 0,
-      "p2": 1,
-      "p3": 0
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-19T08:16:46+08:00",
+      "task6_log": "logs/review/2026-05-19-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task2B fixed 后复审通过；标题与定位改为排查框架/案例模板，清理编辑标记和否定-纠正式句式。Task9 已通过且 queue 无 pending，自动晋升 finalized。"
     },
     "24.1": {
       "p0": 0,
@@ -1366,6 +1378,19 @@
       "log": "logs/deep-review/2026-05-18-22-deep-review.md",
       "summary": "P1 1：多 Trace 对比标准指标/回填能力写得超出当前实现；P3 1：related_chapters 可补 13.3/26.12 元数据。",
       "task9_result": "needs-rework"
+    },
+    "21.9": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-19T08:16:46+08:00",
+      "task6_log": "logs/review/2026-05-19-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task2B fixed 后复审通过；标题与定位改为复盘框架/案例模板，清理编辑标记、抽象词和否定-纠正式句式。Task9 需复审，未自动晋升。"
     }
   },
   "total_review_sections": 161,
@@ -1932,17 +1957,21 @@
     },
     "21.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T05:09:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-05-review.md",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-19T08:16:46+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-19-08-review.md",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/09-startup-case-studies.md",
-      "title": "启动优化案例集"
+      "title": "启动优化复盘框架与案例模板",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-19",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "14.9": {
       "status": "ready-for-review",
@@ -2070,17 +2099,22 @@
       "last_task9_review_log": "logs/deep-review/2026-05-13-10-deep-review.md"
     },
     "22.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task6_result": "needs-rework",
-      "task9_state": "pending",
-      "task2b_state": "pending",
-      "queue_priority": 90,
-      "last_task6_at": "2026-05-13T15:18:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-15-review.md",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
+      "last_task6_at": "2026-05-19T08:16:46+08:00",
+      "last_task6_review_log": "logs/review/2026-05-19-08-review.md",
       "file": "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md",
-      "title": "渲染优化案例集"
+      "title": "渲染优化排查框架与案例模板",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-19",
+      "auto_promoted": true,
+      "auto_promoted_at": "2026-05-19T08:16:46+08:00"
     },
     "11.3": {
       "status": "finalized",

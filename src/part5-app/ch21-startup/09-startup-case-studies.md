@@ -1,5 +1,5 @@
 ---
-title: "启动优化案例集"
+title: "启动优化复盘框架与案例模板"
 chapter: "21.9"
 section: "21.9"
 status: ready-for-review
@@ -38,20 +38,22 @@ sources:
     path: "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
 tags: [case-study, startup, optimization, baseline-profile, startup-framework]
 related_chapters: ["21.1", "21.2", "21.4"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task9_state: "pending"
+reviewed_date: "2026-05-19"
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 task2b_state: "fixed"
 task2b_result: "fixed"
+last_task6_at: "2026-05-19T08:16:46+08:00"
+last_task6_review_log: logs/review/2026-05-19-08-review.md
 ---
 
-# 启动优化案例集
+# 启动优化复盘框架与案例模板
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -81,7 +83,7 @@ task2b_result: "fixed"
 
 本节不重复前文原理，重点放在三个工程场景的排查框架：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
 
-> **定位说明**：本节当前提供的是排查框架和复盘模板，而非脱敏后的真实案例。团队拿到自己的 Perfetto trace 和线上指标后，按末尾“启动案例复盘模板”填写即可产出可复查的优化记录。如果有可脱敏分享的真实案例，后续版本可以补充。[Task2B: 缺少真实案例证据链，已将“案例集”降级为“复盘框架”]
+> **定位说明**：本节提供排查框架和复盘模板，暂不包含脱敏后的真实案例。团队拿到自己的 Perfetto trace 和线上指标后，按末尾“启动案例复盘模板”填写，就能产出可复查的优化记录；有可脱敏分享的真实案例时，再补充到对应场景。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
@@ -151,7 +153,7 @@ Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvid
 
 | 字段 | 用途 |
 |---|---|
-| `taskId` | 稳定标识，便于 trace、日志、看板对齐 |
+| `taskId` | 稳定标识，便于 trace、日志、看板互相对应 |
 | `dependencies` | 声明必须等待哪些任务完成 |
 | `threadMode` | 标记主线程、I/O、CPU、任意线程 |
 | `priority` | 标记首帧前必需、首帧前最小能力、首帧后执行 |
@@ -159,7 +161,7 @@ Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvid
 | `owner` | 任务异常、耗时回归时能找到负责人 |
 | `metricsName` | 对应线上启动阶段指标 |
 
-这张清单是启动框架演进的分水岭。有了它，启动不再靠“谁先写进 `Application` 谁先跑”，而是按依赖、优先级和线程约束调度。21.2 节已经展开 DAG、关键路径和线程池策略，本案例关注演进结果：每个任务有位置、有耗时、有责任人、有可回滚开关。
+这张清单是启动框架演进的分水岭。有了它，启动任务会按依赖、优先级和线程约束调度，不再由 `Application` 中的代码顺序决定执行顺序。21.2 节已经展开 DAG、关键路径和线程池策略，本案例关注演进结果：每个任务有位置、有耗时、有责任人、有可回滚开关。
 
 [已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
 
@@ -175,13 +177,13 @@ Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvid
 | 任务超时次数 | 灰度阶段持续出现要报警 | 降级软依赖或关闭任务 |
 | 入口 Provider 数量 | 增加必须说明原因 | 改用 App Startup 或显式初始化 |
 
-这些阈值不是通用标准，要按项目基线调。稳定的做法是先连续观测 2-3 个版本，确认 P50 / P90 / P95 波动范围，再把阈值写进 CI 和灰度看板。
+这些阈值需要按项目基线调整。稳定的做法是先连续观测 2-3 个版本，确认 P50 / P90 / P95 波动范围，再把阈值写进 CI 和灰度看板。
 
 ## Baseline Profile 实施效果
 
 ### 文件生成了，但收益不稳定
 
-Baseline Profile 常见失败形态并不是“完全无效”。更常见的是本地测试有收益，线上新安装用户收益不稳定。原因通常出在三个位置：profile 没打进正确 variant、生成脚本没有覆盖真实启动路径、设备侧还没按 profile 完成编译。
+Baseline Profile 失败时常表现为本地测试有收益，线上新安装用户收益不稳定。原因通常出在三个位置：profile 没打进正确 variant、生成脚本没有覆盖真实启动路径、设备侧还没按 profile 完成编译。
 
 验证顺序要按 21.4 节的清单走：源码文件、构建产物、设备编译状态、性能收益。跳过任一层，都会把问题看错。
 
