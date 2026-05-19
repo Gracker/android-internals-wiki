@@ -1,6 +1,6 @@
 {
-  "total": 329,
-  "draft": 0,
+  "total": 330,
+  "draft": 1,
   "ready-for-review": 125,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1457,7 +1457,7 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-19T22:04:00+08:00",
+  "last_updated": "2026-05-20T01:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-19",
@@ -4078,6 +4078,17 @@
       "task2a_result": "drafted",
       "task6_state": "pending",
       "queue_priority": 80
+    },
+    "7.17": {
+      "title": "FragmentTransaction 提交时序与主线程卡顿",
+      "file": "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-20",
+      "queue_priority": 80,
+      "gap_score": 17,
+      "gap_source": "素材驱动/官方文档/AOSP结构"
     }
   },
   "task2b_rounds": [
@@ -4160,7 +4171,7 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 155,
-  "last_task2a_at": "2026-05-19T22:04:00+08:00",
+  "last_task2a_at": "2026-05-20T01:04:00+08:00",
   "last_task2a_section": "21.10",
   "last_task2a_file": "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
   "last_task6_review": "2026-05-19",
@@ -4194,7 +4205,7 @@
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "last_task9_at": "2026-05-19T19:36:17+08:00",
-  "last_task2a_result": "processed-draft",
+  "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
   "task6_last_review_at": "2026-05-19T20:25:44+08:00",
@@ -5047,6 +5058,17 @@
       "task2a_result": "drafted",
       "task6_state": "pending",
       "queue_priority": 80
+    },
+    "7.17": {
+      "title": "FragmentTransaction 提交时序与主线程卡顿",
+      "file": "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-20",
+      "queue_priority": 80,
+      "gap_score": 17,
+      "gap_source": "素材驱动/官方文档/AOSP结构"
     }
   },
   "task2a_last_processed": {
@@ -5272,8 +5294,8 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
-  "last_task2a_gap_mining": "21.10",
-  "last_task2a_gap_mining_at": "2026-05-19T21:19:00+08:00",
+  "last_task2a_gap_mining": "7.17",
+  "last_task2a_gap_mining_at": "2026-05-20T01:04:00+08:00",
   "last_task6_audit": "2026-05-19T11:12:00+08:00",
   "last_task6_audit_sections": [
     "8.7"
@@ -5283,17 +5305,20 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-05-19",
-    "time": "19:04",
-    "mode": "gap-mining",
+    "date": "2026-05-20",
     "created_sections": [
-      "4.11"
+      "7.17"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md"
+      "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md"
     ],
+    "candidate_count": 5,
+    "qualified_count": 1,
+    "source": "素材驱动/官方文档/AOSP结构",
+    "time": "01:04",
+    "mode": "gap-mining",
     "qualified_candidates": 1,
-    "note": "Phase 0 未发现空 draft；本轮从每日信息、DeepResearch、AOSP 结构和官方文档补齐 Cached App Freezer 与 GC/LMK 边界缺口。"
+    "note": "Phase 0 未发现空 draft；本轮从 source-index、最近 daily-info、research-feeds、AOSP/官方文档搜索中筛出 FragmentTransaction 提交时序与主线程卡顿缺口。"
   },
   "section_5_15": {
     "section": "5.15",
