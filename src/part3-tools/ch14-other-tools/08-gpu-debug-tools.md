@@ -34,10 +34,10 @@ drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 task2b_result: "fixed"
-reviewed_date: "2026-04-21"
-task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+reviewed_date: "2026-05-19"
+task6_result: "pass-light-edit"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
@@ -50,6 +50,11 @@ last_task9_audit: "2026-05-19"
 last_task9_review_log: "logs/deep-review/2026-05-19-10-audit.md"
 queue_entry: "task9-audit-14.8-gpu-tools-version-source-20260519"
 task9_review_notes: "2026-05-19 Task9 闲时抽检：needs-rework。P0 1：AGI Vulkan Frame Profiler 前置条件把 validation layer 写成应关闭；P1 1：Sokatoa 官方链接、Android 最低版本、GPU 支持和开源状态需按当前一手资料更新。已写入 queue。"
+last_task6_at: "2026-05-19T17:09:00+08:00"
+task6_reviewed_at: "2026-05-19T17:09:00+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-19-17-review.md"
+task6_review_notes: "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：删除结构性元叙述，保持工具选型主线。AGI/Sokatoa 技术项已由 Task2B 修复，等待 Task9 复审。"
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -101,7 +106,7 @@ GPU 分析工具和 CPU 分析工具不是替代关系，是互补关系。先�
 
 ## GPU 分析工具全景
 
-在深入每个工具之前，我们先了解 Android 平台上有哪些 GPU 分析工具，以及它们各自的定位：
+Android 平台上的 GPU 分析工具大致分三层，对应的定位也不同：
 
 [图：Android GPU 分析工具全景图，按“系统级/帧级”和“开源/厂商专用”两个维度分类]
 
@@ -132,7 +137,6 @@ GPU 分析工具和 CPU 分析工具不是替代关系，是互补关系。先�
 4. **Mali GPU 深度分析？** → ARM Streamline
 5. **游戏实时性能监控？** → PerfDog
 
-接下来我们逐个深入这些工具。
 
 [已验证：官方文档，developer.android.com/agi，perfetto.dev/docs/data-sources/gpu]
 
