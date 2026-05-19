@@ -12,6 +12,8 @@ drafted_date: 2026-03-30
 confidence: high
 reviewed_date: 2026-04-30
 reviewed_by: openclaw-task6
+last_task6_at: "2026-05-20T01:11:37+08:00"
+last_task6_audit: "2026-05-20"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-30T08:40:00+08:00"
@@ -105,7 +107,7 @@ review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task
 
 GPU 的 fill rate（像素填充率）是有上限的。当过度绘制严重时，GPU 需要填充的像素总量会明显高于屏幕的实际像素数。以一台 1080 × 2400 分辨率的手机为例，一帧需要填充约 260 万个像素。如果整屏平均 3x 过度绘制，GPU 实际要处理 780 万个像素，其中约 520 万个像素写入会被后续图层覆盖。
 
-过度绘制带来的耗时也不是线性增加的，还要看 GPU 当时有没有余量。如果 GPU 本来就很快，渲染一帧只用了 5 ms，那即使有 3x 过度绘制，总耗时也可能只是 8 ms，仍然落在 16.6 ms 的 VSync 周期内，用户未必能感知到卡顿。真正危险的是 GPU 已经接近满负载的场景，比如低端设备，或者界面本身就包含大量透明混合、自定义绘制和复杂阴影。这时过度绘制可能把单帧耗时从 15 ms 推到 20 ms 以上，直接跨过当前刷新周期的预算，出现肉眼可见的掉帧。
+过度绘制带来的耗时也不是线性增加的，还要看 GPU 当时有没有余量。如果 GPU 本来就很快，渲染一帧只用了 5 ms，那即使有 3x 过度绘制，总耗时也可能只是 8 ms，仍然落在 16.6 ms 的 VSync 周期内，用户未必能感知到卡顿。风险集中在 GPU 已经接近满负载的场景，比如低端设备，或者界面本身就包含大量透明混合、自定义绘制和复杂阴影。这时过度绘制可能把单帧耗时从 15 ms 推到 20 ms 以上，直接跨过当前刷新周期的预算，出现肉眼可见的掉帧。
 
 内存带宽是过度绘制性能影响中需要分场景讨论的维度。移动端 GPU 普遍采用 Tile-Based Rendering (TBR) 或 Tile-Based Deferred Rendering (TBDR) 架构，渲染时先把帧缓冲区划分为小块（tile），在 GPU 芯片内的 on-chip tile memory 中完成一个 tile 的所有 fragment 操作，再把最终结果写回外部内存：对于**不透明场景**（从远到近绘制，前面的东西完全遮挡后面的），中间层的 fragment 结果可能只留在 tile memory 中，被后续覆盖后丢弃，不会每一层都产生外部内存写入。此时 3x overdraw 的外部内存写入量不一定等于 3 倍物理像素。
 
@@ -267,7 +269,7 @@ ListView、RecyclerView 的 Item 经常使用 Selector 作为背景，用于显�
 
 `Canvas.clipRect()` 的普通重载只是把后续绘制限制在一个矩形裁剪区，这个语义从早期 Canvas API 就存在。`Canvas.quickReject()` 也是老 API，早期常见的是带 `Canvas.EdgeType` 的重载，它从 API 1 就存在；API 30 起又补了不带 `EdgeType` 的简化重载，并把旧重载标成 deprecated。
 
-因此，这里真正要区分的不是“API 18 之前有没有 `clipRect()` / `quickReject()`”，而是**硬件加速下哪些复杂裁剪操作什么时候才可靠**。Android 的 hardware acceleration 文档把 `clipPath()`、`clipRegion()`、`clipRect(Region.Op.XOR)`、`clipRect(Region.Op.Difference)`、`clipRect(Region.Op.ReverseDifference)` 以及带 rotation / perspective 的 `clipRect()` 标成 API 18 才支持。普通的 `clipRect(left, top, right, bottom)` 不在这条限制里。
+因此，这里的区分点是：**硬件加速下哪些复杂裁剪操作什么时候才可靠**，而不是“API 18 之前有没有 `clipRect()` / `quickReject()`”。Android 的 hardware acceleration 文档把 `clipPath()`、`clipRegion()`、`clipRect(Region.Op.XOR)`、`clipRect(Region.Op.Difference)`、`clipRect(Region.Op.ReverseDifference)` 以及带 rotation / perspective 的 `clipRect()` 标成 API 18 才支持。普通的 `clipRect(left, top, right, bottom)` 不在这条限制里。
 
 先看最常见的普通矩形裁剪：
 
@@ -335,9 +337,9 @@ protected void onDraw(Canvas canvas) {
 
 前面讨论的检测手段对 Compose 一样适用。Debug GPU Overdraw 看的是像素重复填充，Layout Inspector 看的是组合树和 layer 结构，必要时再用 Perfetto / AGI 继续深入。
 
-### 哪些场景会真的增加像素重复填充
+### 哪些场景会增加像素重复填充
 
-Compose 中真正会把 overdraw 颜色图压重的，通常还是下面几类场景：
+Compose 中会把 overdraw 颜色图压重的，通常还是下面几类场景：
 
 1. **多层 `Modifier.background()`、`Surface`、`Box` 叠在同一块区域**。外层已经是不透明背景时，里层再画一层同色背景，和 View 系统里的多层 background 属于同一类问题。
 2. **`graphicsLayer { alpha < 1f }`、半透明蒙层、阴影与模糊**。Compose graphics modifiers 文档说明，当 layer 的 alpha 小于 1.0f，且没有使用 `CompositingStrategy.ModulateAlpha` 时，内容会先绘制到 offscreen buffer，再合成回目标表面。这会增加一次额外的填充或合成 pass。
@@ -356,7 +358,7 @@ Compose 中真正会把 overdraw 颜色图压重的，通常还是下面几类�
 
 > **注意**：以下内容基于社区讨论和部分设备的观察结果，尚未在 AndroidX Compose release notes、AOSP commit history 或 issue tracker 中找到命名为「background merge」的公开特性声明。标记为 [待验证]，后续确认后更新。下文引用的官方文档只覆盖 Compose graphics modifiers 的一般绘制行为和 Layout Inspector 的通用排查能力，不包含背景合并特性的官方描述。
 
-有迹象表明 Compose 在较新版本中对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，可能自动跳过父级在该区域的绘制指令提交。如果该优化确实存在，在 `LazyLayout` 滑动场景下收益应该最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
+有迹象表明 Compose 在较新版本中对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，可能自动跳过父级在该区域的绘制指令提交。如果该优化存在，在 `LazyLayout` 滑动场景下收益应该最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
 
 两个需要验证的边界条件：第一，半透明背景不参与合并（混合结果依赖底层内容）；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
 
