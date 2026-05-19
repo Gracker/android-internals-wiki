@@ -183,7 +183,10 @@
     "4.8",
     "8.2",
     "14.1",
-    "22.10"
+    "22.10",
+    "5.15",
+    "1.12",
+    "13.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -197,29 +200,30 @@
     "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
     "src/part2-performance/ch08-responsiveness/02-app-launch.md",
     "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+    "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
   ],
   "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-19",
-    "time": "12:07",
+    "time": "16:12",
     "sections": [
-      "4.8",
-      "8.2",
-      "14.1",
-      "22.10"
+      "5.15",
+      "1.12",
+      "13.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
-      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+      "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 18,
+    "small_fixes": 3,
     "new_rework_items": 0,
     "auto_promoted": [],
-    "note": "Task6 复审 4.8/8.2/14.1/22.10 通过；清理第一人称、结构性元叙述、代码围栏语言和少量 L1/L2 表达问题。4.8/8.2 仍有既有 Task9/DeepResearch pending 队列；14.1/22.10 等待 Task9 复审，未自动晋升。"
+    "note": "Task6 正常 review 5.15/1.12/13.5；修正 5.15 frontmatter/术语顺序、1.12 禁用表达，3 个章节均进入 task9_pending。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1430,11 +1434,11 @@
       "task6_note": "复审通过；L1/L2 小修 10 处。既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理，Task6 未新增回炉。"
     }
   },
-  "total_review_sections": 162,
+  "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T13:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-19T16:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -4040,36 +4044,36 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "total_review_files": 152,
+  "total_review_files": 155,
   "last_task2a_at": "2026-05-19T01:04:00+08:00",
   "last_task2a_section": "4.10",
   "last_task2a_file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
-  "last_task6_review": "2026-05-18",
+  "last_task6_review": "2026-05-19",
   "last_task6_sections": [
-    "2.6",
-    "5.3",
-    "25.6"
+    "5.15",
+    "1.12",
+    "13.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part5-app/ch25-power-size/06-apk-analysis.md"
+    "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+    "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
   ],
-  "last_task6_at": "2026-05-18T16:05:00+08:00",
+  "last_task6_at": "2026-05-19T16:12:00+08:00",
   "last_task6_review_detail": {
-    "mode": "revisiting-review",
+    "mode": "normal-review",
     "sections": [
-      "2.6",
-      "5.3",
-      "25.6"
+      "5.15",
+      "1.12",
+      "13.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-      "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-      "src/part5-app/ch25-power-size/06-apk-analysis.md"
+      "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+      "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
     ],
-    "log": "logs/review/2026-05-18-16-review.md",
-    "summary": "3 个 revisiting 章节完成 Task6 写作层复审；2.6/25.6 pass-light-edit，5.3 因 GPU+NPU 扩展空壳保留 needs-rework。"
+    "log": "logs/review/2026-05-19-16-review.md",
+    "summary": "Task6 本轮完成 5.15/1.12/13.5 写作层 review：3 个章节均 pass-light-edit，无 L3/L4 回炉项，等待 Task9 复审。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4078,10 +4082,12 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "4.10",
-  "task6_last_review_at": "2026-05-18T22:15:21+08:00",
-  "task6_last_review_log": "logs/review/2026-05-18-22-review.md",
+  "task6_last_review_at": "2026-05-19T16:12:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-19-16-review.md",
   "task6_last_review_sections": [
-    "13.18"
+    "5.15",
+    "1.12",
+    "13.5"
   ],
   "sections_status": {
     "22.11": {
@@ -4858,23 +4864,29 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "first-review",
+    "mode": "normal-review",
     "sections": [
-      "13.18"
+      "5.15",
+      "1.12",
+      "13.5"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+      "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+      "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
     ],
-    "log": "logs/review/2026-05-18-22-review.md",
-    "summary": "13.18 SmartPerfetto 与可复用 Trace 分析平台完成 Task6 写作层 review：pass-light-edit，6 处 L1/L2 小修，无回炉，Task9 pending。"
+    "log": "logs/review/2026-05-19-16-review.md",
+    "summary": "Task6 本轮完成 5.15/1.12/13.5 写作层 review：3 个章节均 pass-light-edit，无 L3/L4 回炉项，等待 Task9 复审。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md"
+    "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+    "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
-    "src/part5-app/ch25-power-size/06-apk-analysis.md"
+    "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+    "src/part3-tools/ch13-perfetto/05-topic-analysis.md"
   ],
   "last_task2a_date": "2026-05-18",
   "task9_last_review_summary": {
@@ -5057,5 +5069,53 @@
     ],
     "qualified_candidates": 1,
     "note": "Phase 0 未发现空 draft；本轮从 AOSP 结构与官方文档补齐 SensorService 系统功耗路径缺口。"
+  },
+  "section_5_15": {
+    "section": "5.15",
+    "title": "SensorService 与传感器批处理功耗模型",
+    "file": "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-19",
+    "last_task6_at": "2026-05-19T16:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-19-16-review.md",
+    "task9_state": "pending"
+  },
+  "section_1_12": {
+    "section": "1.12",
+    "title": "AutoFDO 反馈导向编译优化",
+    "file": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-19",
+    "last_task6_at": "2026-05-19T16:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-19-16-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed"
+  },
+  "section_13_5": {
+    "section": "13.5",
+    "title": "专题解读",
+    "file": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-19",
+    "last_task6_at": "2026-05-19T16:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-19-16-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed"
   }
 }

@@ -1,6 +1,7 @@
 ---
 title: "SensorService 与传感器批处理功耗模型"
 chapter: "5.15"
+section: "5.15"
 status: ready-for-review
 drafted_date: "2026-05-19"
 applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
@@ -30,9 +31,15 @@ tags: [sensorservice, sensors, power, batching, cpu-wakeup]
 related_chapters: ["5.6", "11.2", "25.5", "14.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
-gap_source: "AOSP结构/官方文档"
-pipeline_stage: task6_pending
-task6_state: pending
+gap_source: "AOSP 结构/官方文档"
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_date: "2026-05-19"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+task9_state: pending
+last_task6_at: "2026-05-19T16:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 ---
 
 # 5.15 SensorService 与传感器批处理功耗模型
@@ -125,7 +132,7 @@ flowchart LR
 
 ## wake-up / non-wake-up sensor 与 sensor hub
 
-Source Android 把 suspend 下的行为分成两类。non-wake-up sensor 不阻止 SoC 进入 suspend，也不会为了上报数据唤醒 SoC；SoC 睡眠期间事件继续产生并进入 FIFO，SoC 醒来后再交付。App 如果要求灭屏期间稳定收到 non-wake-up sensor 事件，要么持有 partial wake lock，要么接受 suspend 期间事件可能丢失，要么在不需要时注销监听。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode]
+Android Source 把 suspend 下的行为分成两类。non-wake-up sensor 不阻止 SoC 进入 suspend，也不会为了上报数据唤醒 SoC；SoC 睡眠期间事件继续产生并进入 FIFO，SoC 醒来后再交付。App 如果要求灭屏期间稳定收到 non-wake-up sensor 事件，要么持有 partial wake lock，要么接受 suspend 期间事件可能丢失，要么在不需要时注销监听。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode]
 
 wake-up sensor 的约束更强。SoC 睡眠时，wake-up sensor 必须在最大上报延迟到达或 FIFO 将满前唤醒 SoC 并交付事件。`SensorManager` 注释也说明，每个 wake-up sensor 事件都可能让 AP wake-up，因此注册 wake-up sensor 有明显功耗影响；如果使用这类传感器，应结合 batching 参数减少唤醒频次。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode; AOSP main, frameworks/base/core/java/android/hardware/SensorManager.java]
 

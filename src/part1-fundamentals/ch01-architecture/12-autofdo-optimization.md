@@ -2,11 +2,11 @@
 title: "AutoFDO 反馈导向编译优化"
 chapter: "1.12"
 section: "1.12"
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-19"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36); kernel/GKI AutoFDO 覆盖 android15-6.6、android16-6.12"
 last_verified: "2026-04-20"
 last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc + AOSP userspace afdo: true examples"
@@ -44,11 +44,11 @@ related_chapters:
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T09:20:00+08:00"
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: "revisiting"
-task9_state: "pending"
+task6_state: reviewed
+task9_state: pending
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 task2b_state: "fixed"
@@ -56,6 +56,8 @@ task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 task9_result: needs-rework
 last_task9_audit: "2026-05-19"
+last_task6_at: "2026-05-19T16:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 ---
 
 # 1.12 AutoFDO 反馈导向编译优化
@@ -387,7 +389,7 @@ simpleperf stat -e cycles,instructions,cache-misses,branch-misses --app com.exam
 | Android 16 / `android16-6.12` | kernel AutoFDO 扩展到 `gki/aarch64/afdo/`，官方 blog 公布了 Boot、Cold Launch、Binder RPC、HWBinder、`syscall_mmap` 等基准数据 |
 | 后续 roadmap | 官方 blog 提到 `android17-6.18`、GKI module、vendor module 和更多构建目标；这些计划还没进入本文的已验证适用范围 |
 
-Android 17 的一个重要演进方向是 **模块化 AutoFDO**：AFDO 覆盖范围从单体 `vmlinux` 扩展到独立编译的 GKI 内核模块（`*.ko`）。这意味着 vendor module 和 GKI module 也可以各自拥有独立的 AFDO profile，而不再依赖 `vmlinux` 全局 profile 的间接覆盖。OEM 可以针对自研模块单独采集、生成和应用 profile，粒度更细，收益更可控。
+Android 17 的一个重要演进方向是 **模块化 AutoFDO**：AFDO 覆盖范围从单体 `vmlinux` 扩展到独立编译的 GKI 内核模块（`*.ko`）。vendor module 和 GKI module 可以各自拥有独立的 AFDO profile，不再依赖 `vmlinux` 全局 profile 的间接覆盖。OEM 可以针对自研模块单独采集、生成和应用 profile，粒度更细，收益更可控。
 
 Baseline Profiles / ART Service 的演进放在相关章节单独讨论，这里不再并表。
 
