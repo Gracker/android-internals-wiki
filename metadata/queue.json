@@ -13074,7 +13074,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md"
@@ -13087,7 +13087,10 @@
       ],
       "gap_score": 16,
       "gap_source": "官方文档/AOSP结构/每日信息",
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成，章节 status 已改为 ready-for-review，进入 Task 6 管线",
+      "pipeline_stage": "task6_pending"
     }
   ],
   "metadata": {
