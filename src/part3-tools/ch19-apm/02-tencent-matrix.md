@@ -24,6 +24,7 @@ reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
+last_task6_audit: "2026-05-20"
 last_task2b_at: "2026-04-27T22:40:00+08:00"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-06"
@@ -136,7 +137,7 @@ androidComponents {
 }
 ```
 
-这段只说明注册入口。真正迁移还要把原 `MatrixTraceTransform` 中的方法过滤、id 分配、method map 输出和增量构建处理搬到新的 visitor 工厂里。
+这段只说明注册入口。迁移时还要把原 `MatrixTraceTransform` 中的方法过滤、id 分配、method map 输出和增量构建处理搬到新的 visitor 工厂里。
 
 ## IO Canary 补的是 Perfetto 看不到的文件信息
 
@@ -210,7 +211,7 @@ public final class MatrixInitializer {
 }
 ```
 
-真正接入时，顺序是“先构造插件，再 `builder.plugin(...)` 注册，再 `Matrix.init(...)`，再按需 `start()`”。如果少了注册步骤，`getPluginByClass(...)` 拿不到实例，示例就会把读者带到一条不存在的接入路径上。
+实际接入时，顺序是“先构造插件，再 `builder.plugin(...)` 注册，再 `Matrix.init(...)`，再按需 `start()`”。如果少了注册步骤，`getPluginByClass(...)` 拿不到实例，示例就会把读者带到一条不存在的接入路径上。
 
 真实项目还要把远程开关、进程过滤、采样率、Debug / Release 差异放进去。Matrix 模块不应该在所有进程里默认启动，尤其是推送进程、WebView 独立进程、插件进程和短命进程。
 
@@ -329,7 +330,7 @@ Hprof 处理也要克制。完整 Hprof 体积大，还可能包含业务对象�
 
 Matrix 能提供应用侧现场，Perfetto 能提供系统时间线。两者联合时，先用 Matrix 定位样本窗口，再用 Perfetto 复现同一路径：
 
-- Matrix 报慢函数：Perfetto 看这段时间线程是否真的在 CPU 上运行。
+- Matrix 报慢函数：Perfetto 看这段时间线程是否在 CPU 上运行。
 - Matrix 报主线程 I/O：Perfetto 看线程状态是否 D，是否有其他系统负载。
 - Matrix 报启动慢：Perfetto 看 Zygote fork、bindApplication、Activity launch、首帧路径是否对应。
 - Matrix 报 ANR：Perfetto 看 Binder 对端、锁等待、CPU 饥饿和系统负载。
