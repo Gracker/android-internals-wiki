@@ -65,6 +65,7 @@ tags:
   - [2.21 文字渲染性能](part1-fundamentals/ch02-rendering/21-text-rendering-performance.md)
   - [2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState](part1-fundamentals/ch02-rendering/22-surfaceflinger-frontend-requestedlayerstate.md)
   - [2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略](part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md)
+  - [2.24 Android 16/17 图形内存分配边界：DMA-BUF、Gralloc 与 16KB Page](part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
