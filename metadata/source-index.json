@@ -8879,6 +8879,193 @@
       "chapter": "ch24",
       "processed_at": "2026-05-18 06:17",
       "type": "deepresearch-inject"
+    },
+    {
+      "title": "Android | 面试必问的 Handler，你确定不看看？",
+      "path": "AndroidWeekly/#12/Android | 面试必问的 Handler，你确定不看看？",
+      "source_url": "https://www.jianshu.com/p/70d5785ee4c3",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 1,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "登录 注册 写文章 首页 下载APP 会员 IT技术 简创 Android | 面试必问的 Hand...",
+      "scored_at": "2026-05-19T09:04:25.142310"
+    },
+    {
+      "title": "Android | 适可而止！看Glide如何把生命周期安排得明明白白",
+      "path": "AndroidWeekly/#12/Android | 适可而止！看Glide如何把生命周期安排得明明白白",
+      "source_url": "https://juejin.cn/post/6900548494818279432",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "(function () { const pages = [ /^\\/$/, /^\\/followi...",
+      "scored_at": "2026-05-19T09:04:25.142333"
+    },
+    {
+      "title": "Android | 老生常谈！屏幕适配原理 & 方案总结笔记",
+      "path": "AndroidWeekly/#12/Android | 老生常谈！屏幕适配原理 & 方案总结笔记",
+      "source_url": "https://juejin.cn/post/6903344875136745479",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "(function () { const pages = [ /^\\/$/, /^\\/followi...",
+      "scored_at": "2026-05-19T09:04:25.142335"
+    },
+    {
+      "title": "Android | 毫分缕析！说说图片加载的整个过程",
+      "path": "AndroidWeekly/#12/Android | 毫分缕析！说说图片加载的整个过程",
+      "source_url": "https://juejin.cn/post/6903403570872188936",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "(function () { const pages = [ /^\\/$/, /^\\/followi...",
+      "scored_at": "2026-05-19T09:04:25.142337"
+    },
+    {
+      "title": "【译】探索 Android 中的 ConstraintLayout 2.0",
+      "path": "AndroidWeekly/#12/【译】探索 Android 中的 ConstraintLayout 2.0",
+      "source_url": "https://juejin.cn/post/6906770827228741646",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-UI",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "(function () { const pages = [ /^\\/$/, /^\\/followi...",
+      "scored_at": "2026-05-19T09:04:25.142339"
+    },
+    {
+      "title": "Android耗电量一体化监控: Battery Historian + APM",
+      "path": "AndroidWeekly/#12/Android耗电量一体化监控: Battery Historian + APM",
+      "source_url": "https://mp.weixin.qq.com/s/0qRm7leSBuDUCHPzYMnTGw",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "var biz = \"MzAxMTI4MTkwNQ==\" || \"\"; var sn = \"176c...",
+      "scored_at": "2026-05-19T09:04:25.142341"
+    },
+    {
+      "title": "个人博客 - Android Performance",
+      "path": "AndroidWeekly/#12/个人博客 - Android Performance",
+      "source_url": "https://www.androidperformance.com/",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "&#xe775; &#xe627; &#9680; EN // Update language bu...",
+      "scored_at": "2026-05-19T09:04:25.142342"
+    },
+    {
+      "title": "Android 性能优化必知必会",
+      "path": "AndroidWeekly/#12/Android 性能优化必知必会",
+      "source_url": "https://androidperformance.com/2018/05/07/Android-performance-optimization-skills-and-tools/",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "&#xe775; &#xe627; &#9680; EN // Update language bu...",
+      "scored_at": "2026-05-19T09:04:25.142344"
+    },
+    {
+      "title": "Android 性能优化知识星球",
+      "path": "AndroidWeekly/#12/Android 性能优化知识星球",
+      "source_url": "https://www.androidperformance.com/2023/12/30/the-performance/",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "&#xe775; &#xe627; &#9680; EN // Update language bu...",
+      "scored_at": "2026-05-19T09:04:25.142345"
     }
   ]
 }

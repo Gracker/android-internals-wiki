@@ -28,10 +28,10 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
@@ -87,7 +87,7 @@ last_task9_review_log: "logs/deep-review/2026-05-17-16-deep-review.md"
 
 打开 Android Studio，点击底部的 Profiler 标签页（或者 View → Tool Windows → Profiler），就能看到 Profiler 的主界面。在 Android Studio Koala（2024.1）及之后的版本中，Profiler 采用了任务导向的新界面：首页列出了几个常见的分析任务，点击即可开始，相比旧版本启动速度提升了约 60%。[已验证: 官方文档, developer.android.com/studio/releases]
 
-Profiler 的核心是四个分析模块，每个模块对应一类性能问题：
+Profiler 的核心分析模块对应不同类别的性能问题（Network Profiler 在 Android Studio 2020.3.1+ 已迁移到 App Inspection > Network Inspector）：
 
 CPU Profiler 解决"App 慢在哪里"的问题。它提供了三种 CPU 分析模式——System Trace、Java Method Trace 和 Callstack Sample——分别对应不同的精度和开销级别，适用于不同的分析场景。本章后面会详细对比这三种模式的差异。
 
@@ -245,24 +245,29 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 - `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN`：App 完成首帧绘制时触发
 - `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时触发
 
-注册使用 `addProfilingTriggers()` 方法（不是 `registerTrigger()`），结果通过 `registerForAllProfilingResults()` 接收。注册示例：
+注册使用 `addProfilingTriggers()` 方法提交触发器列表，结果通过 `registerForAllProfilingResults(Executor, Consumer)` 回调接收（需先注册回调再添加触发器）。注册示例：
 
 ```kotlin
 val profilingManager = getSystemService(ProfilingManager::class.java)
+val mainExecutor: Executor = Executors.newSingleThreadExecutor()
+
+// 先注册结果回调，再注册触发器
+profilingManager.registerForAllProfilingResults(mainExecutor) { result ->
+    if (result.errorCode == ProfilingResult.ERROR_NONE) {
+        // 通过 result.resultFilePath 获取 trace 文件路径
+    }
+}
 profilingManager.addProfilingTriggers(
     listOf(
-        ProfilingTrigger.Builder()
-            .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+        // Builder 构造器直接接收触发器类型，不是 .setTriggerType()
+        ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+            .setRateLimitingPeriodHours(1)
             .build(),
-        ProfilingTrigger.Builder()
-            .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_ANR)
+        ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
+            .setRateLimitingPeriodHours(1)
             .build()
     )
 )
-// 注册回调接收 profiling 结果
-profilingManager.registerForAllProfilingResults { result ->
-    // 处理 profiling 结果
-}
 ```
 
 [已验证: Android 16 API 36, android.os.ProfilingManager — addProfilingTriggers / registerForAllProfilingResults]

@@ -12,9 +12,10 @@
     8,
     9,
     10,
-    11
+    11,
+    12
   ],
-  "indexed_links": 360,
+  "indexed_links": 368,
   "skipped_links": 143,
   "fetch_failures": 112,
   "attempted_issues": [
@@ -27,6 +28,6 @@
     12
   ],
   "last_attempted_issue": 12,
-  "last_attempt_date": "2026-05-18",
+  "last_attempt_date": "2026-05-19",
   "access_issues_count": 18
 }

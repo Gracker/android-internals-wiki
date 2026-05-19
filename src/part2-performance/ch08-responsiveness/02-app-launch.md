@@ -52,14 +52,14 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
-last_task2b_at: "2026-05-17T15:18:41+08:00"
+last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-17T15:29:34+08:00"
@@ -329,9 +329,9 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 | 字段 | 类型 | 含义 |
 |---|---|---|
 | `getStartType()` | int | 启动类型：`START_TYPE_COLD`(1)、`START_TYPE_WARM`(2)、`START_TYPE_HOT`(3) |
-| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED`(1) / `STARTUP_STATE_FIRST_FRAME_DRAWN`(2) / `STARTUP_STATE_ERROR`(3)。没有 `NOT_STARTED` 和 `FULLY_DRAWN` 状态——"fully drawn"通过 `START_TIMESTAMP_FULLY_DRAWN` timestamp key 表达，不是 startup state |
+| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED`(0) / `STARTUP_STATE_FIRST_FRAME_DRAWN`(1) / `STARTUP_STATE_ERROR`(2)。没有 `NOT_STARTED` 和 `FULLY_DRAWN` 状态——"fully drawn"通过 `START_TIMESTAMP_FULLY_DRAWN` timestamp key 表达，不是 startup state |
 | `getStartupTimestamps()` | Map<Integer, Long> | 返回各阶段时间戳（monotonic nanoseconds），通过常量 key 读取（见下表） |
-| `getReason()` | int | 启动原因：`START_REASON_CHANGED` 等（`START_REASON_CHANGED` 表示启动原因发生了变化，不是指"因为变更而启动"） |
+| `getReason()` | int | 启动原因常量（如 `START_REASON_ALARM`、`START_REASON_BOOT`、`START_REASON_SCHEDULED` 等） |
 
 `getStartupTimestamps()` 返回的 Map 中可用的 timestamp key：
 
@@ -357,20 +357,25 @@ if (history != null && !history.isEmpty()) {
     ApplicationStartInfo latest = history.get(0);
     Map<Integer, Long> timestamps = latest.getStartupTimestamps();
     if (timestamps != null) {
-        long launch = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
-        long fork = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FORK);
-        long bindApp = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
-        long oncreate = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE);
-        Long firstFrameObj = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME);
-        
-        long systemForkMs = (fork - launch) / 1_000_000;
-        long bindToOncreateMs = (oncreate - bindApp) / 1_000_000;
-        
+        Long launch = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
+        Long fork = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FORK);
+        Long bindApp = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
+        Long oncreate = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE);
+        Long firstFrame = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME);
+
+        // STARTUP_STATE_ERROR 不保证所有 timestamp key 都存在；
+        // 即使非 ERROR 状态，某些 key 也可能缺失（如冷启动才有 FORK）
+        if (launch != null && fork != null) {
+            long systemForkMs = (fork - launch) / 1_000_000;
+            Log.d("Startup", "System launch→fork: " + systemForkMs + "ms");
+        }
+        if (bindApp != null && oncreate != null) {
+            long bindToOncreateMs = (oncreate - bindApp) / 1_000_000;
+            Log.d("Startup", "Bind→onCreate: " + bindToOncreateMs + "ms");
+        }
         Log.d("Startup", "Start type: " + latest.getStartType());
-        Log.d("Startup", "System launch→fork: " + systemForkMs + "ms");
-        Log.d("Startup", "Bind→onCreate: " + bindToOncreateMs + "ms");
-        if (firstFrameObj != null) {
-            long ttidMs = (firstFrameObj - launch) / 1_000_000;
+        if (launch != null && firstFrame != null) {
+            long ttidMs = (firstFrame - launch) / 1_000_000;
             Log.d("Startup", "TTID: " + ttidMs + "ms");
         }
     }

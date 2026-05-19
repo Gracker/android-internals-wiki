@@ -3,7 +3,7 @@ title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -11,7 +11,7 @@ reviewed_date: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 rework_date: 2026-04-02
-last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLAST BufferQueue / HWC 2-HWC 3) + source.android.com HWC docs"
+last_verified_against: "AOSP android-12.0.0_r1, android-13.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLAST BufferQueue / HWC 2-HWC 3) + source.android.com HWC docs"
 confidence: high
 polish_count: 1
 polish_date: "2026-04-04"
@@ -30,12 +30,12 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: reviewed
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-last_task2b_at: "2026-05-18T15:23:37+08:00"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-19T11:32:33+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
 task6_reviewed_date: "2026-05-18"
 last_task6_at: "2026-05-18T16:05:00+08:00"
@@ -55,7 +55,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 - 🔹 SurfaceFlinger 的核心职责：Layer 合成、VSync 分发、Buffer 管理
 - 🔹 合成方式：Client Composition (GPU) vs Device Composition (HWC)
 - 🔹 Layer 的概念与 z-order 排列
-- 🔹 SurfaceFlinger 主循环：Android 12-13 为 onMessageReceived → INVALIDATE/REFRESH，Android 14+ 为 commit/composite
+- 🔹 SurfaceFlinger 主循环：Android 12 为 onMessageReceived → INVALIDATE/REFRESH，Android 13+ 为 commit/composite
 - 🔹 Jank 与 SurfaceFlinger 的关系：SF 主线程卡顿对全局帧率的影响
 - 🔹 BLAST BufferQueue 的版本边界（Android 11 进入主线，Android 12+ 观察口径继续完善）
 - 🔹 在 Perfetto 中的表现：各 Track 对照与正常/异常判断
@@ -76,7 +76,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 
 ## 为什么要了解 SurfaceFlinger
 
-打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12-13 常见 `INVALIDATE`、`REFRESH`，Android 14+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
+打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12 常见 `INVALIDATE`、`REFRESH`，Android 13+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
 
 这就是 SurfaceFlinger——Android 图形系统的合成器。它接受来自多个来源的数据缓冲区，按 z-order 叠加后输出到显示设备。
 
@@ -166,9 +166,9 @@ Android 12-16 都能按这组阶段理解，只是接口承载形式不同：And
 
 ## SurfaceFlinger 主循环
 
-SurfaceFlinger 的三大职责落到每一帧里，重点是版本边界：Android 12-13 的 `INVALIDATE / REFRESH` 与 Android 14 之后的 `commit() / composite()` 不能混成一套代码路径。
+SurfaceFlinger 的三大职责落到每一帧里，重点是版本边界：Android 12 的 `INVALIDATE / REFRESH` 与 Android 13 之后的 `commit() / composite()` 不能混成一套代码路径。
 
-### Android 12-13：INVALIDATE / REFRESH
+### Android 12：INVALIDATE / REFRESH
 
 `android-12.0.0_r1` 里，SurfaceFlinger 主线程收到 VSync 后，会在 `SurfaceFlinger::onMessageReceived()` 中处理 `INVALIDATE` 和 `REFRESH` 两类消息：
 
@@ -192,11 +192,11 @@ void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId,
 
 这套模型里，`INVALIDATE` 负责把“这一帧有哪些内容变了”收拢起来。它会处理事务、检查新的 Buffer、更新可见区域和脏区。`REFRESH` 再根据这些结果组织本帧的合成，决定哪些 Layer 交给 HWC，哪些 Layer 交给 RenderEngine。
 
-如果你在旧 Trace 或旧博客里看到 `handleMessageInvalidate`、`onMessageRefresh`、`INVALIDATE`、`REFRESH` 这些 slice，它们描述的就是 Android 12-13 这套主线程消息模型。
+如果你在旧 Trace 或旧博客里看到 `handleMessageInvalidate`、`onMessageRefresh`、`INVALIDATE`、`REFRESH` 这些 slice，它们描述的就是 Android 12 这套主线程消息模型。
 
-### Android 14+：commit() / composite()
+### Android 13+：commit() / composite()
 
-Android 14 起，入口收束到 `Scheduler::onFrameSignal()`。`android-14.0.0_r1` 的调度器在收到一帧信号后，先调 `commit()`，再调 `composite()`：
+Android 13 起，主循环入口已从 `onMessageReceived()` 切换到 `commit()` / `composite()` 模型。`android-13.0.0_r1` 的 `MessageQueue::Handler::handleMessage()` 直接调用 `commit()` → `composite()` → `sample()`；`android-14.0.0_r1` 进一步收束到 `Scheduler::onFrameSignal()`，调度器在收到一帧信号后，先调 `commit()`，再调 `composite()`：
 
 ```cpp
 // frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp
@@ -214,15 +214,15 @@ void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
 }
 ```
 
-`android-14.0.0_r1` 的 `SurfaceFlinger::commit(TimePoint, VsyncId, TimePoint)` 和 `SurfaceFlinger::composite(TimePoint, VsyncId)` 已经不再走旧版 `onMessageReceived()`。到 `android-16.0.0_r1`，这两个阶段继续保留，只是签名扩展成多显示场景使用的 `PhysicalDisplayId`、`FrameTargets` 和 `FrameTargeters`。
+`android-13.0.0_r1` 的 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()` 已不再走旧版 `onMessageReceived()`；`android-14.0.0_r1` 的签名扩展为 `SurfaceFlinger::commit(TimePoint, VsyncId, TimePoint)` 和 `SurfaceFlinger::composite(TimePoint, VsyncId)`。到 `android-16.0.0_r1`，这两个阶段继续保留，只是签名扩展成多显示场景使用的 `PhysicalDisplayId`、`FrameTargets` 和 `FrameTargeters`。
 
-Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`FrameTargeter` 与 `commit(PhysicalDisplayId, FrameTargets)` / `composite(...FrameTargeters)` 主签名在 Android 15 起进入主路径，Android 16 继续沿用并调整。每个物理屏幕拥有独立的 `FrameTargeter`，各自计算 VSync ID 和 present 截止时间。在多显示器场景下（外接显示器 + 内屏、桌面模式），每个 display 拥有自己的 `FrameTargeter`，独立追踪 VSync 时序和 Buffer latch 进度，不再共享单一时钟基准。SurfaceFlinger 在一次 `commit()` 中为多个 display 分别完成 latch 和合成决策，`composite()` 也可能按 display 并行触发。在 Perfetto 中，多屏设备能看到 SurfaceFlinger 主线程上按 display 分组的 commit/composite slice，外接屏的帧节奏可能与内屏不同步——这是 Pacesetter 架构的设计意图，不是异常。排查多屏掉帧时，要先按 display 隔离再分析。
+Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`FrameTargeter` 与 `commit(PhysicalDisplayId, FrameTargets)` / `composite(...FrameTargeters)` 主签名在 Android 15 起进入主路径，Android 16 继续沿用并调整。每个物理屏幕拥有独立的 `FrameTargeter`，各自计算 VSync ID 和 present 截止时间。在多显示器场景下（外接显示器 + 内屏、桌面模式），每个 display 拥有自己的 `FrameTargeter`，独立追踪 VSync 时序和 Buffer latch 进度，不再共享单一时钟基准。SurfaceFlinger 在一次 `commit()` 中为多个 display 分别完成 latch 和合成决策，`composite()` 仍是一次调用收集多个 output 后统一进入 `mCompositionEngine->present(refreshArgs)`，当前版本未见到按 display 并行触发的 AOSP 主路径。在 Perfetto 中，多屏设备能看到 SurfaceFlinger 主线程上按 display 区分的 commit/composite slice，外接屏的帧节奏可能与内屏不同步——这是 Pacesetter 架构的设计意图，不是异常。排查多屏掉帧时，要先按 display 隔离再分析。
 
 读代码和读 Trace 时，可以先建立一组近似关系：`commit()` 更接近旧版 `INVALIDATE` 的职责，负责收事务、latch Buffer、更新本帧状态；`composite()` 更接近旧版 `REFRESH` 的职责，负责组织合成并提交到显示设备。这样对照 Android 12 到 Android 16 的资料时，不会把不同版本的入口混成一条线。
 
 在 Perfetto 中，旧版本更容易看到 `INVALIDATE / REFRESH` 这组 slice；新版本更适合直接盯 `commit`、`composite`、`present` 这一组阶段。无论名称怎么变，分析重点没变：本帧什么时候拿到了新 Buffer，合成决策花了多久，合成阶段是否跨过当前 VSync 窗口。
 
-[图：SurfaceFlinger 主循环时序图，左侧是 Android 12-13 的 INVALIDATE / REFRESH，两步模型；右侧是 Android 14+ 的 commit / composite，两步模型。两侧都标出 VSYNC-sf 到来、Buffer latch、合成决策、present 提交四个观察点。]
+[图：SurfaceFlinger 主循环时序图，左侧是 Android 12 的 INVALIDATE / REFRESH，两步模型；右侧是 Android 13+ 的 commit / composite，两步模型。两侧都标出 VSYNC-sf 到来、Buffer latch、合成决策、present 提交四个观察点。]
 
 ## 在 Perfetto 中的表现
 
@@ -232,8 +232,8 @@ Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`Fr
 
 在 Perfetto 中展开 `surfaceflinger` 进程，主线程 Track 上最先要看的是本帧主循环的阶段名。这里同样要按版本读。
 
-- **Android 12-13**：更常见的是 `INVALIDATE` 和 `REFRESH`。`INVALIDATE` 对应事务处理、Buffer 检查、脏区收敛；`REFRESH` 对应合成与 present。
-- **Android 14+**：更适合直接看 `commit`、`composite`、`present` 这一组 slice。名称变了，分析思路没有变，仍然是先看本帧是否 latch 到新内容，再看合成阶段是否超时。
+- **Android 12**：更常见的是 `INVALIDATE` 和 `REFRESH`。`INVALIDATE` 对应事务处理、Buffer 检查、脏区收敛；`REFRESH` 对应合成与 present。
+- **Android 13+**：更适合直接看 `commit`、`composite`、`present` 这一组 slice。名称变了，分析思路没有变，仍然是先看本帧是否 latch 到新内容，再看合成阶段是否超时。
 
 **正常表现**：不论 slice 名称是哪一组，总耗时都应该稳定落在当前刷新周期内。60Hz 设备的预算约 16.67ms，120Hz 设备约 8.33ms，SurfaceFlinger 自身通常只占其中一部分。
 
@@ -316,7 +316,7 @@ SurfaceFlinger 的性能问题会表现成系统级卡顿。因为 SurfaceFlinge
 
 我们在实际分析中，最常遇到的 SurfaceFlinger 卡顿原因有四类。
 
-第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量显著增加。第二类是**Client 合成比例增大**。某些 Layer 的属性发生变化后，HWC 无法处理，系统只能退回 GPU 合成，GPU 渲染耗时会明显上升。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**。大量 Layer 状态更新会把事务处理阶段拉长，Android 12-13 常表现为 `handleMessageTransaction` / `INVALIDATE` 相关 slice 变长，Android 14+ 更常见的是 `commit` 阶段里的事务处理时间增加。
+第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量显著增加。第二类是**Client 合成比例增大**。某些 Layer 的属性发生变化后，HWC 无法处理，系统只能退回 GPU 合成，GPU 渲染耗时会明显上升。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**。大量 Layer 状态更新会把事务处理阶段拉长，Android 12 常表现为 `handleMessageTransaction` / `INVALIDATE` 相关 slice 变长，Android 14+ 更常见的是 `commit` 阶段里的事务处理时间增加。
 
 应对思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。具体的排查方法论，我们在 §7.3（卡顿分析方法论）中会系统讲解。
 
@@ -342,7 +342,7 @@ Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 F
 2. `acquireNextBufferLocked()` 取出 buffer、acquire fence、dataspace、surface damage、transform、crop、frame number 等元数据。
 3. BLAST 创建或复用一笔 `SurfaceComposerClient::Transaction`，通过 `Transaction::setBuffer()` 绑定 buffer 和 acquire fence，并继续写入 `setDataspace()`、`setSurfaceDamageRegion()`、frame number / desired present time 等帧属性。
 4. 如果同一帧还有 ViewRootImpl 侧的 geometry transaction，BLAST 会把内容 buffer transaction 与 geometry / sync transaction 合并后提交，避免“新内容 + 旧壳子”或“旧内容 + 新壳子”跨帧出现。
-5. Android 14+ 的 `SurfaceFlinger::commit()` 阶段消费这笔 transaction，完成 Layer 状态更新、buffer latch 和 frame timeline 归因；后续 `composite()` 再按 HWC / RenderEngine 决策进入显示。
+5. Android 13+ 的 `SurfaceFlinger::commit()` 阶段消费这笔 transaction，完成 Layer 状态更新、buffer latch 和 frame timeline 归因；后续 `composite()` 再按 HWC / RenderEngine 决策进入显示。
 
 读 Trace 时，把 BLAST 当成“BufferQueue + 同帧 SurfaceControl.Transaction 提交”这层适配即可。如果某一帧同时发生 Buffer 更新和 geometry 变化，检查它们是否落在同一个 frame number / VSync Id 上。consumer、fence 和 release 链仍然存在；释放阶段还会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。这部分可和 §2.13 BufferQueue、§2.16 Sync Fence 一起读。
 
@@ -372,9 +372,9 @@ SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Bu
 
 **Android 12**：FrameTimeline 进入官方性能分析体系，BLAST 路径上的 VSync Id、expected present、actual present 更容易放到同一时间基准里观察；窗口同步和 SurfaceView 相关分析口径也更稳定。
 
-**Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer；RenderEngine 的常见 backend 仍以 GLES / SkiaGL 路径为主。
+**Android 13**：SurfaceFlinger 主循环从 `onMessageReceived()` 切换到 `commit()` / `composite()` 模型（`MessageQueue::Handler::handleMessage()` 直接调用 `commit()` → `composite()` → `sample()`）；HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer。
 
-**Android 14**：`Scheduler::onFrameSignal()` 加上 `SurfaceFlinger::commit()` / `composite()` 成为主流程；`PROPERTY_DEBUG_RENDERENGINE_BACKEND` 已能识别 `skiavk` 和 `skiavkthreaded`，但 Vulkan backend 是否实际启用仍取决于设备配置和厂商实现。
+**Android 14**：`Scheduler::onFrameSignal()` 进一步收束调度入口，`SurfaceFlinger::commit()` / `composite()` 继续作为主流程；`PROPERTY_DEBUG_RENDERENGINE_BACKEND` 已能识别 `skiavk` 和 `skiavkthreaded`，但 Vulkan backend 是否实际启用仍取决于设备配置和厂商实现。
 
 **Android 14+**：HIDL 版 composer 2.4 被标记为 deprecated，厂商实现继续向 AIDL 收敛。
 
@@ -404,7 +404,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 ### AOSP 源码
 
-- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主流程实现，Android 12-13 侧重 `onMessageReceived` / `handleMessageInvalidate` / `onMessageRefresh`，Android 14+ 侧重 `commit()` / `composite()`
+- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主流程实现，Android 12 侧重 `onMessageReceived` / `handleMessageInvalidate` / `onMessageRefresh`，Android 13+ 侧重 `commit()` / `composite()`
 - `frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp` / `OutputLayer.cpp` — 显示输出层规划、可见区域、裁剪和 composition type 计算入口
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — 主窗口 BLAST 接入路径

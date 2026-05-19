@@ -33,6 +33,7 @@ task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
 last_task2b_at: '2026-04-22T21:50:17+08:00'
 last_task9_at: "2026-04-25T21:21:00+08:00"
+last_task6_audit: 2026-05-19
 ---
 
 <!-- outline-start -->
@@ -47,7 +48,7 @@ last_task9_at: "2026-04-25T21:21:00+08:00"
 - [18.8.7 Trace 视角](#trace-视角) — Perfetto 中的 GLES 链路识别
 
 **扩展（可选深入）：**
-- EGL Context 共享与多线程渲染
+- EGLContext 共享与多线程渲染
 - Android 15+ 上 GLES 的前景与迁移策略
 - GLSurfaceView vs 原生 EGL 集成
 
@@ -133,7 +134,7 @@ sequenceDiagram
     
     rect rgb(230, 240, 250)
         activate GL
-        GL->>GL: eglMakeCurrent (绑定 Context)
+        GL->>GL: eglMakeCurrent (绑定 EGLContext)
         GL->>GL: Logic Update (Game/Map Logic)
         GL->>GL: glDrawArrays / glDrawElements (GPU Commands)
         GL->>EGL: eglSwapBuffers
@@ -167,13 +168,13 @@ GLThread 在 Dirty 模式下没有任务时会 `wait()` 休眠，等待 `request
 
 #### 步骤 2：eglMakeCurrent
 
-将 EGL Context 绑定到当前线程。如果 Surface 尺寸发生变化（比如 Activity 旋转），这里会触发 `eglCreateWindowSurface` 重建。
+将 EGLContext 绑定到当前线程。如果 Surface 尺寸发生变化（比如 Activity 旋转），这里会触发 `eglCreateWindowSurface` 重建。
 
 ```java
 eglMakeCurrent(display, drawSurface, readSurface, context);
 ```
 
-**注意**：这个调用有开销——它涉及 GL 状态机的切换和 Cache 失效。如果频繁切换多个 Surface/Context，会成为性能瓶颈。多 Surface 场景（如分屏游戏）应该使用 Shared Context 而不是反复 makeCurrent。
+**注意**：这个调用有开销——它涉及 GL 状态机的切换和缓存失效。如果频繁切换多个 Surface 和 EGLContext，会成为性能瓶颈。多 Surface 场景（如分屏游戏）应该使用共享 EGLContext，而不是反复调用 makeCurrent。
 
 #### 步骤 3：User Draw（onDrawFrame）
 
@@ -185,9 +186,9 @@ glVertexAttribPointer(...);
 glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 ```
 
-#### 步骤 4：eglSwapBuffers（关键提交点）
+### eglSwapBuffers 详解
 
-这是 GLES 渲染链路中最重要的函数调用，没有之一。它在 Perfetto 中通常占据了单帧最大时间片，**大部分时间花在等待空闲 Buffer 上**。具体做了两件事：
+这是 GLES 渲染链路里的关键提交点。它在 Perfetto 中通常占据了单帧最大时间片，**大部分时间花在等待空闲 Buffer 上**。具体做了两件事：
 
 1. **Flush**：强制将所有 GL 指令发送给 GPU（`glFlush` 的等价操作）
 2. **Buffer 交换**：将画好的帧（Back Buffer）提交给 SurfaceFlinger，同时获取一个新的空闲 Buffer
@@ -306,7 +307,7 @@ adb shell settings delete global angle_gl_driver_selection_values
 |:---|:---|:---|
 | `eglSwapBuffers` | 提交帧给 SF | 总耗时的大头通常是等待 Buffer |
 | `dequeueBuffer` | 申请空闲 Buffer | 长等待 → Buffer 瓶颈或 release fence 未 signal |
-| `eglMakeCurrent` | 绑定 EGL Context | 频繁调用可能是瓶颈 |
+| `eglMakeCurrent` | 绑定 EGLContext | 频繁调用可能是瓶颈 |
 | `glDraw*` / `vkQueueSubmit` | GPU 绘制命令 | 正常情况下 CPU 端不耗时 |
 | `queueBuffer` | 提交画好的 Buffer | 带 acquireFence |
 
@@ -326,15 +327,15 @@ adb shell settings delete global angle_gl_driver_selection_values
 
 ## GLSurfaceView vs 原生 EGL 集成
 
-`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGL Context 创建、Surface 生命周期、GLThread 管理等所有样板代码。但对于高性能场景，你可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
+`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGLContext 创建、Surface 生命周期、GLThread 管理等所有样板代码。但对于高性能场景，你可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
 
 **GLSurfaceView 的局限**：
 - 只支持一个 EGLSurface，不支持多 Surface 并行渲染
 - GLThread 的生命周期与 View 绑定，不够灵活
-- 错误处理不够完善，EGL Context 丢失后恢复逻辑有限
+- 错误处理不够完善，EGLContext 丢失后恢复逻辑有限
 
 **原生 EGL 集成的优势**：
-- 可以创建多个 EGL Context（Shared Context），实现资源的多线程并行加载
+- 可以创建多个共享 EGLContext，实现资源的多线程并行加载
 - 可以更精细地控制 Surface 重建时机（比如在 Surface 尺寸变化时）
 - 可以自定义错误恢复策略
 
@@ -342,7 +343,7 @@ adb shell settings delete global angle_gl_driver_selection_values
 // 原生 EGL 集成的核心步骤
 EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 eglInitialize(display, null, null);
-// 选择 Config、创建 Context、创建 Surface...
+// 选择 EGLConfig、创建 EGLContext、创建 EGLSurface...
 eglMakeCurrent(display, surface, surface, context);
 // 渲染循环
 eglSwapBuffers(display, surface);

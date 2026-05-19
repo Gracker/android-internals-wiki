@@ -39,6 +39,7 @@ review_round: 6
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T07:39:59+08:00"
+last_task6_audit: '2026-05-19'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task9_review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2（既有 suggestions，不阻塞）；自动晋升 finalized。"
@@ -111,7 +112,7 @@ Baseline Profiles 的价值落在这两条时间线之间。它不替代 Android
 
 因此，Baseline Profiles 解决的是 Day-0 和 Day-1 的冷启动问题，Cloud Profiles 解决的是规模化分发后的热点补全，本地 JIT Profile 解决的是单设备的持续收敛。三者能合并使用，但触发时机和来源不同。
 
-**版本覆盖矩阵：**
+**版本覆盖表：**
 
 | 能力 | 起始版本 | 渠道限制 | 说明 |
 |------|----------|----------|------|

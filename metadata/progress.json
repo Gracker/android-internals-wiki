@@ -1403,8 +1403,8 @@
   "total_review_sections": 161,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T08:27:59+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-19T11:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-18",
     "time": "22:15",
@@ -4994,5 +4994,13 @@
   },
   "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。",
   "last_task2a_gap_mining": "22.14",
-  "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-19T10:04:00+08:00",
+  "last_task6_audit": "2026-05-19T11:12:00+08:00",
+  "last_task6_audit_sections": [
+    "8.7"
+  ],
+  "last_task6_audit_files": [
+    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+  ],
+  "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md"
 }

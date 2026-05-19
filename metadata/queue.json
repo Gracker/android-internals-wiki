@@ -7072,7 +7072,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
@@ -7100,7 +7100,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T15:27:00+08:00"
+      "added_at": "2026-05-15T15:27:00+08:00",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
     },
     {
       "id": "task9-2026-05-15-24.9-wifi-network-selection-version-review",
@@ -9766,7 +9768,7 @@
       "added_at": "2026-05-17T16:20:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
@@ -9803,7 +9805,9 @@
         "completed_reason": "Task 2B 回炉修复: ProfilingManager API 修正为 addProfilingTriggers + TRIGGER_TYPE_APP_FULLY_DRAWN/ANR(P0), Network Profiler→Network Inspector 入口补版本(P1), profileable/debuggable 能力矩阵(P1)"
       },
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-17T16:20:00+08:00"
+      "last_reviewed_at": "2026-05-17T16:20:00+08:00",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
     },
     {
       "id": "task9-20260517-8.2-app-start-api-lifecycle-version",
@@ -9955,7 +9959,7 @@
       "added_by": "task9-deep-tech-review",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/02-app-launch.md"
@@ -9979,7 +9983,9 @@
           "detail": "ApplicationStartInfo 文档说明 STARTUP_STATE_ERROR 不保证额外 timestamp；STARTUP_STATE_STARTED 只保证 LAUNCH。当前示例只判断 Map 非空，随后直接 unbox LAUNCH/FORK/BIND_APPLICATION/APPLICATION_ONCREATE，遇到未完成或 error record 会 NPE。",
           "suggestion": "先判断 latest.getStartupState()，再用 containsKey()/Long 判空读取每个 timestamp；只在 FIRST_FRAME_DRAWN 时计算 TTID 与 SF composition。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
     },
     {
       "id": "task9-20260517-7.6-sf-hwc-recheck",
@@ -11526,10 +11532,12 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-18T15:25:00+08:00",
       "created_date": "2026-05-18",
-      "status": "pending",
+      "status": "completed",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "dependencies": []
+      "dependencies": [],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
     },
     {
       "id": "task9-2026-05-18-5.3-sugov-get-util-source",
@@ -11640,7 +11648,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md"
@@ -11666,7 +11674,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T17:28:39+08:00"
+      "added_at": "2026-05-18T17:28:39+08:00",
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
     },
     {
       "id": "task9-audit-16.2-profilingmanager-source-path-20260518",

@@ -21,6 +21,7 @@ task2b_result: fixed
 task2b_rework_date: "2026-04-20"
 task2b_fixed_at: "2026-04-20"
 last_task9_at: "2026-04-25T13:26:00+08:00"
+last_task6_audit: 2026-05-19
 ---
 
 <!-- outline-start -->
@@ -153,7 +154,7 @@ TextureView 的性能代价不仅仅是"多一步"那么简单。从链路视角
 
 SurfaceView 的帧数据直出给 SurfaceFlinger，可能走 HWC Overlay 完全不消耗 GPU。而 TextureView 的帧数据必须在 App 进程内被 GPU 采样一次，合成到 App 主窗口的 Buffer 中。
 
-这意味着：
+直接带来两个观察点：
 - **GPU 负载增加**：如果 App 的 UI 本身已经很复杂（复杂 RecyclerView、大量图片），TextureView 的额外纹理采样会进一步增加 GPU 压力
 - **RenderThread 时间增加**：`updateTexImage` + Shader 采样需要时间，这个时间会加到 `DrawFrame` 的总耗时中
 
@@ -319,7 +320,7 @@ TextureView 实际有两套 fence，用途不同不能混淆：
 
 ## 何时从 TextureView 迁移到 SurfaceView
 
-如果你的应用当前使用 TextureView，但实际并不需要变换能力（旋转、缩放、透明度动画），迁移到 SurfaceView 可以获得显著的性能提升。以下是迁移检查清单：
+如果你的应用当前使用 TextureView，但实际并不需要变换能力（旋转、缩放、透明度动画），迁移到 SurfaceView 通常能减少 App 侧 GPU 采样和主窗口合成开销。迁移前先检查这几项：
 
 1. **是否有变换需求**：如果需要动画变换、圆角裁剪、透明度调节 → 保留 TextureView
 2. **是否有弹幕/悬浮控件**：如果在视频上方需要叠加 UI → 两者都可以，但 SurfaceView 需要考虑 Overlay 失效问题
