@@ -12688,7 +12688,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md"
@@ -12707,7 +12707,14 @@
         "读者需求度": 4,
         "时效性": 3,
         "total": 15
-      }
+      },
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 内容加工完成，章节状态已改为 ready-for-review，进入 Task 6 管线。",
+      "material_paths": [
+        "https://source.android.com/docs/core/interaction/sensors/batching",
+        "https://source.android.com/docs/core/interaction/sensors/suspend-mode",
+        "frameworks/native/services/sensorservice/SensorDevice.cpp"
+      ]
     },
     {
       "id": "task9-20260519-149-perfetto-config-sql-surface-pipeline",
