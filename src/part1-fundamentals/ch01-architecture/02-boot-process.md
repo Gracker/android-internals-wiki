@@ -12,7 +12,7 @@ review_type: task6-writing-quality-review
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-06"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_state: reviewed
 task9_result: needs-rework
@@ -86,7 +86,7 @@ related_chapters:
   - "1.11"
   - "8.3"
 review_notes: "2026-05-06T16:04 Task2B：P0 module.layout 修正为 modules.load / BOARD_VENDOR_KERNEL_MODULES_LOAD / BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD + MODULE_SOFTDEP() + async_probe=1。送 Task6 复审。 | 2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4（沿用既有 suggestions：Zygote slice、bootstat/GBL、Pixel 8 数据、dm-verity 版本边界）。Kernel 模块加载顺序已由 module.layout 修为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-19 22:20 闲时抽检：发现 P0 bootstat 命令参数错误；AOSP android-16.0.0_r1 中 `bootstat -l/--log` 写 logstorage，`-p/--print` 才打印 boot event records。已写入 queue.json，转 Task2B 修正。"
+task9_review_notes: "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4。 | 2026-05-19 22:20 闲时抽检：bootstat 命令参数错误。 | 2026-05-20 03:17 Task2B 修正：bootstat -l→-p。"
 last_task6_at: "2026-05-18T17:14:29+08:00"
 last_task6_audit: "2026-05-18"
 last_task6_audit_result: pass-no-edit
@@ -245,7 +245,7 @@ Home 首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger �
 `bootstat` 仍然是快速看分段耗时的第一入口，源码在 `system/core/bootstat/bootstat.cpp`。它的价值不在“给一个总耗时”，而在于把关键节点打散成可比较的时间戳。
 
 ```bash
-adb shell bootstat -l
+adb shell bootstat -p
 ```
 
 这一步适合先做粗定位：Bootloader / Kernel 慢，还是 Framework 慢，还是用户解锁后的广播尾部长。

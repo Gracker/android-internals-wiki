@@ -437,7 +437,7 @@ profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 
 虽然 Simpleperf 自成体系，但有些场景需要把 CPU 采样接到别的查看器里。这里把“导出格式”和“原生消费端”分开看：
 
 - **Firefox Profiler 路径**：用 `gecko_profile_generator.py` 把 `perf.data` 转成 Gecko JSON，交给 `profiler.firefox.com`。这是 Gecko Profile 的原生入口，火焰图和多线程时间轴体验更完整。
-- **Perfetto 直接导入路径**：用 `simpleperf report-sample --protobuf -i perf.data -o report_sample.trace` 导出 simpleperf proto，再拖到 `ui.perfetto.dev`。要和 system trace、Perfetto SQL 放在一起看时，优先选这条。
+- **Perfetto 直接导入路径**：用 `simpleperf report-sample --protobuf --show-callchain -i perf.data -o report_sample.trace` 导出 simpleperf proto，再拖到 `ui.perfetto.dev`。要和 system trace、Perfetto SQL 放在一起看时，优先选这条。
 - **perf script / folded stack 路径**：用 `report_sample.py` 导出文本格式，再接 FlameGraph、Speedscope 或 Perfetto 支持的 perf script importer。
 
 Perfetto 的 external format importer 也能读取 Firefox Profiler JSON，但支持点集中在 CPU samples。要避开格式兼容差异，Gecko JSON 直接给 Firefox Profiler；要在 Perfetto 里做 SQL 查询或和系统 trace 联查时，用 simpleperf proto 更稳妥。

@@ -4918,7 +4918,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/05-animation-performance.md"
@@ -4935,7 +4935,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T10:20:00+08:00"
+      "added_at": "2026-05-14T10:20:00+08:00",
+      "completed_date": "2026-05-20T03:22:46",
+      "completed_reason": "Task 2B 回炉修复: scaleX 动画示例补充初始状态（scaleX=0f collapsed）和展开注释"
     },
     {
       "id": "task9-24-4-httpdns-sync-lookup-boundary-20260514",
@@ -11618,7 +11620,7 @@
       "created_date": "2026-05-18",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/02-simpleperf.md"
@@ -11632,7 +11634,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-18T16:30:11+08:00"
+      "added_at": "2026-05-18T16:30:11+08:00",
+      "completed_date": "2026-05-20T03:22:46",
+      "completed_reason": "Task 2B 回炉修复: simpleperf proto 导出命令补充 --show-callchain flag（Perfetto external format 文档要求）"
     },
     {
       "id": "task2a-gap-20260518-2.23-vsync-scheduler-displayframerate",
@@ -13125,7 +13129,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-19T22:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-20T03:22:46",
+      "completed_reason": "Task 2B 回炉修复: bootstat 命令参数从 -l（写入 logstorage）修正为 -p（打印 boot event records 到 console）"
     },
     {
       "id": "task2a-gap-7.17-fragmenttransaction-commit-jank",
@@ -13173,7 +13179,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch12-apk-network/02-network-performance.md"
@@ -13202,7 +13208,9 @@
       "added_at": "2026-05-20T01:26:42+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T01:26:42+08:00",
-      "review_log": "logs/deep-review/2026-05-20-01-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-01-audit.md",
+      "completed_date": "2026-05-20T03:22:46",
+      "completed_reason": "Task 2B 回炉修复: (1) PerformanceManager.setPreferPowerEfficiency→PerformanceHintManager.Session.setPreferPowerEfficiency(API 35); (2) BPF Network Bandwidth Estimator 40%精度提升降级为[待验证]"
     },
     {
       "id": "task9-20260520-7.7-compose-pausable-composeview-audit",

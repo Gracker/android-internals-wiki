@@ -13,8 +13,8 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-20'
 task9_reviewed_by: openclaw-task9
@@ -237,7 +237,7 @@ public final class PreconnectManager {
 
 ### 网络线程的能效分档
 
-Android 15 引入的 ADPF（Adaptive Performance Framework）提供了 `PerformanceManager.setPreferPowerEfficiency(boolean)` 方法，用于向系统声明网络线程的能效偏好。声明了 `true` 的任务，调度器会优先分配给 LITTLE 核、降低 CPU 频率目标、减少不必要的唤醒。不声明时，ADPF 无法区分该任务是延迟敏感还是功耗敏感，默认按交互式处理。
+Android 15 在 ADPF（Adaptive Performance Framework）的 `PerformanceHintManager.Session` 中新增了 `setPreferPowerEfficiency(boolean)` 方法，用于向系统声明线程组的能效偏好。声明了 `true` 的 session，调度器在满足目标帧时间的前提下会优先选择能效更高的调度策略（如分配到低功耗核心、降低频率目标）。不声明时，ADPF 默认按性能优先处理。
 
 两类网络线程应该分开配置：
 
@@ -425,7 +425,7 @@ public final class NetworkMonitor {
 ```
 
 
-Android 16 的 BPF Network Bandwidth Estimator 把 `getLinkDownstreamBandwidthKbps()` 的精度提升了约 40%。新的估算引擎基于 eBPF 程序直接采集内核网络栈的实际传输统计，不再完全依赖驱动层上报的能力声明。对视频类 App 的直接收益是：带宽估算的置信区间收窄后，动态码率切换可以更激进——4K 码率决策不再需要保守预留 30% 的带宽余量，首帧缓冲后的画质台阶能更快爬升到目标档位。
+Android 16 在 `ConnectivityManager` 底层引入了基于 eBPF 的网络带宽估算增强，`getLinkDownstreamBandwidthKbps()` 的估算来源从纯驱动声明扩展到内核网络栈的实际传输统计。置信区间收窄后，动态码率切换可以更激进。[待验证：具体精度提升百分比、设备条件和测试方法尚未公开]
 
 这段代码给的是策略输入，不是最终网络质量结论。网络是否真的“快”，还要结合 EventListener 里的 DNS、connect、TTFB 和响应体传输时间一起看。`NET_CAPABILITY_VALIDATED` 为 true 只能说明系统探测到这条网络能访问公网；`getLinkDownstreamBandwidthKbps()` 很高，也不代表当前请求就一定能跑到这个速率。
 

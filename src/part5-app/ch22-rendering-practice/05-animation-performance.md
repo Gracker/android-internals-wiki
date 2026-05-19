@@ -40,7 +40,7 @@ related_chapters: ["22.4", "7.1", "2.5", "2.7"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -117,9 +117,11 @@ ValueAnimator.ofInt(0, targetWidth).apply {
 
 ```kotlin
 // 更低成本：只修改变换属性，不触发布局
+// 前提：View 当前处于 collapsed 状态（scaleX = 0f），展开到正常宽度
 view.pivotX = 0f
+view.scaleX = 0f // 确保初始状态为收起
 view.animate()
-    .scaleX(1.0f)
+    .scaleX(1.0f) // 展开到正常宽度
     .setDuration(240)
     .withLayer()
     .start()
