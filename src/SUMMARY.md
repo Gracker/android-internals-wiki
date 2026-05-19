@@ -91,6 +91,7 @@ tags:
   - [4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界](part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md)
   - [4.10 内存规整与直接回收性能边界](part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md)
   - [4.11 Cached App Freezer 与 GC 触发边界](part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md)
+  - [4.12 ZRAM 压缩交换与应用重启延迟](part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
