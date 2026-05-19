@@ -12814,7 +12814,7 @@
       "created_by": "task2a-knowledge-gap",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md"
@@ -12850,7 +12850,9 @@
           "detail": "新建 draft 仅含大纲，下一轮 Task 2A 需按 AOSP / 官方文档验证后展开正文。",
           "suggestion": "优先验证 CachedAppOptimizer、OomAdjuster、ProcessList、Binder freezer 文档、ART heap.cc；未经 android-16/android-17 分支验证前，不把 16KB Page Size 与 freezer/GC 关系写成确定结论。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-19",
+      "completed_reason": "Task 2A 加工完成：status ready-for-review，pipeline_stage=task6_pending；已基于 AOSP main 与官方文档拆清 Freezer/GC/LMK/16KB 边界。"
     },
     {
       "id": "task9-20260519-14.9-textureview-gpu-upload-residual",

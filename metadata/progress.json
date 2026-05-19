@@ -1,7 +1,7 @@
 {
   "total": 328,
-  "draft": 1,
-  "ready-for-review": 123,
+  "draft": 0,
+  "ready-for-review": 124,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4111,7 +4111,7 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 155,
-  "last_task2a_at": "2026-05-19T19:04:00+08:00",
+  "last_task2a_at": "2026-05-19T20:04:00+08:00",
   "last_task2a_section": "4.11",
   "last_task2a_file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
   "last_task6_review": "2026-05-19",
