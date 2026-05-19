@@ -1,6 +1,6 @@
 {
-  "total": 327,
-  "draft": 0,
+  "total": 328,
+  "draft": 1,
   "ready-for-review": 123,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1455,8 +1455,8 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 103,
-  "last_updated": "2026-05-19T17:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-19T19:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-19",
     "time": "17:09",
@@ -4017,6 +4017,18 @@
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed"
+    },
+    "4.11": {
+      "status": "draft",
+      "pipeline_stage": "task2a_gap_created",
+      "queue_priority": 80,
+      "title": "Cached App Freezer 与 GC 触发边界",
+      "file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-19",
+      "gap_source": "每日信息/DeepResearch/AOSP结构/官方文档",
+      "gap_score": 16,
+      "material_count": 5
     }
   },
   "task2b_rounds": [
@@ -4087,9 +4099,9 @@
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "total_review_files": 155,
-  "last_task2a_at": "2026-05-19T01:04:00+08:00",
-  "last_task2a_section": "4.10",
-  "last_task2a_file": "src/part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md",
+  "last_task2a_at": "2026-05-19T19:04:00+08:00",
+  "last_task2a_section": "4.11",
+  "last_task2a_file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
   "last_task6_review": "2026-05-19",
   "last_task6_sections": [
     "14.9",
@@ -4897,6 +4909,18 @@
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed"
+    },
+    "4.11": {
+      "status": "draft",
+      "pipeline_stage": "task2a_gap_created",
+      "queue_priority": 80,
+      "title": "Cached App Freezer 与 GC 触发边界",
+      "file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-19",
+      "gap_source": "每日信息/DeepResearch/AOSP结构/官方文档",
+      "gap_score": 16,
+      "material_count": 5
     }
   },
   "task2a_last_processed": {
@@ -4910,15 +4934,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",
-    "time": "17:04",
+    "time": "19:04",
     "mode": "gap-mining",
     "created_sections": [
-      "2.24"
+      "4.11"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md"
+      "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md"
     ],
-    "reason": "DeepResearch 发现 Android 16/17 图形内存分配边界仍未独立覆盖；现有 2.15 偏机制，本节用于版本边界与厂商实现拆分。"
+    "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
     "21.9"
@@ -5117,8 +5141,8 @@
     "task2b_result": "pending"
   },
   "last_task9_review_summary": "Task9 复审 21.9 通过；无 P0/P1/P2，自动晋升 finalized。",
-  "last_task2a_gap_mining": "23.9",
-  "last_task2a_gap_mining_at": "2026-05-19T13:04:00+08:00",
+  "last_task2a_gap_mining": "4.11",
+  "last_task2a_gap_mining_at": "2026-05-19T19:04:00+08:00",
   "last_task6_audit": "2026-05-19T11:12:00+08:00",
   "last_task6_audit_sections": [
     "8.7"
@@ -5129,16 +5153,16 @@
   "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-19",
-    "time": "15:04",
+    "time": "19:04",
     "mode": "gap-mining",
     "created_sections": [
-      "5.15"
+      "4.11"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md"
+      "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md"
     ],
     "qualified_candidates": 1,
-    "note": "Phase 0 未发现空 draft；本轮从 AOSP 结构与官方文档补齐 SensorService 系统功耗路径缺口。"
+    "note": "Phase 0 未发现空 draft；本轮从每日信息、DeepResearch、AOSP 结构和官方文档补齐 Cached App Freezer 与 GC/LMK 边界缺口。"
   },
   "section_5_15": {
     "section": "5.15",
