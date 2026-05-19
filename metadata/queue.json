@@ -12851,25 +12851,92 @@
           "suggestion": "优先验证 CachedAppOptimizer、OomAdjuster、ProcessList、Binder freezer 文档、ART heap.cc；未经 android-16/android-17 分支验证前，不把 16KB Page Size 与 freezer/GC 关系写成确定结论。"
         }
       ]
+    },
+    {
+      "id": "task9-20260519-14.9-textureview-gpu-upload-residual",
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 85,
+      "title": "TextureView 预览路径残留“GPU 纹理上传”错误口径",
+      "description": "常见误区段仍把 TextureView 成本写成 GPU 纹理上传，与 SurfaceTexture/GLConsumer 外部纹理采样路径不一致。",
+      "reason": "[Deep Tech Review] Camera 预览 SurfaceView/TextureView 消费端分支仍有残留错误表述。",
+      "issue_type": "principle-chain-source-semantics",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-19-19-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/源码语义",
+          "location": "L554 常见误区二",
+          "detail": "正文仍写 TextureView “需要经过一次 GPU 纹理上传”。当前前文已按 SurfaceTexture/GLConsumer 修正为 `GL_TEXTURE_EXTERNAL_OES` 外部纹理采样：Camera producer 把 buffer 交给 SurfaceTexture，App/GPU 采样外部纹理并参与 View 树合成；不是每帧把 YUV 数据上传成 GL 纹理。残留说法会把 SurfaceView 与 TextureView 的成本差异误导成 CPU/GPU copy。",
+          "suggestion": "把误区二改为“TextureView 多出 SurfaceTexture/GLConsumer 外部纹理采样和 App View 树合成；SurfaceView 可由 SF/HWC 直接合成。不要写 GPU 纹理上传。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T19:36:17+08:00"
+    },
+    {
+      "id": "task9-20260519-12.3-android16-dns-prefetch-source",
+      "section": "12.3",
+      "section_title": "网络性能深入：连接池、TLS 与传输优化",
+      "priority": 85,
+      "title": "Android 16 DNS Predictive Prefetching 平台能力缺少公开锚点",
+      "description": "章节把 Android 16/API 36 DnsResolver hover/TalkBack 自动预解析写成确定事实，但公开 Android 16 summary 与 DnsResolver reference 未给出该能力。",
+      "reason": "[Deep Tech Review] Android 16 DNS 预解析版本线与平台能力需回炉核证。",
+      "issue_type": "version-difference-data-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-19-19-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/待验证平台能力",
+          "location": "L285-L288 UI 焦点预解析（Android 16）",
+          "detail": "正文以确定语气写 Android 16/API 36 `DnsResolver` 新增 Predictive Prefetching，且会在链接 hover 或 TalkBack 聚焦 URL 时由系统 resolver 静默 DNS 查询。复核 Android 16 feature summary 与当前 `android.net.DnsResolver` API reference，未找到该公开 API/行为说明；`DnsResolver` 文档可确认的是 API 37/S Extensions 22 的 HTTPS RR 查询，不支持把这段 API 36 行为作为已验证事实发布。",
+          "suggestion": "删除该小节，或降级为 `[待验证]` 并补 AOSP commit / Android Developers 文档 / CTS/API stub 后再恢复；如讨论预解析，先写成 App 自行在 hover/accessibility focus 回调中调用 resolver 的工程策略。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T19:36:17+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 367,
-    "p0_count": 149,
-    "last_updated": "2026-05-19T19:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 145,
+    "total_entries": 369,
+    "p0_count": 154,
+    "last_updated": "2026-05-19T19:36:17+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 142,
     "updated_date": "2026-05-19",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 145,
-    "completed_entries": 220,
+    "last_updated_by": "openclaw-task9",
+    "pending": 142,
+    "completed_entries": 225,
     "last_task2a_gap_mining": "4.11",
     "last_task2a_gap_mining_at": "2026-05-19T19:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-19T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 145,
+  "last_updated": "2026-05-19T19:36:17+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 142,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
   "last_task2a_gap_mining": "4.11",

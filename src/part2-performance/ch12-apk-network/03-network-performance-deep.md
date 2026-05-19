@@ -1,4 +1,5 @@
 ---
+
 title: "网络性能深入：连接池、TLS 与传输优化"
 chapter: "12.3"
 section: "12.3"
@@ -53,16 +54,22 @@ reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 review_round: 2
 task6_state: revisiting
-pipeline_stage: task6_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
-last_task9_at: "2026-04-25T18:39:22+08:00"
+task2b_state: pending
+task2b_result: pending
+last_task9_at: "2026-05-19T19:36:17+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: 2026-05-19
 last_task6_audit: "2026-05-19"
 last_task9_audit: "2026-05-19"
+last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
+p0: 0
+p1: 1
+p2: 0
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证。"
+
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
