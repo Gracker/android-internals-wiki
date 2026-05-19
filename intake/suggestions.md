@@ -2300,3 +2300,14 @@
   - 官方/AOSP 对照：ProfilingManager 触发式采集、ApplicationStartInfo、Android 16/17 FGS/JobScheduler 行为、StorageStatsManager/installd quota、Media tunneling 等方向均已有主章节覆盖；本轮只记录，不拆新节。
 - **下次建议**：优先从未被 source-index 正确映射的 AOSP 模块继续扫，例如 `vold`/`netd`/`installd` 的实战诊断边界；只有在现有章节无法容纳时再创建新节。
 
+## Task2A 缺口挖掘记录 · 2026-05-20 00:11
+
+- 结论：本轮未发现评分 ≥ 14 且未被现有章节覆盖的新增小节候选。
+- Phase 0：`src/` 内 `status: draft` 且正文实质内容 < 15 行的章节为 0。
+- 已检查方向：
+  - `metadata/source-index.json` 高分素材：DeliQueue / MessageQueue、Android 17 App Memory Limits、WOOTdroid、ApplicationExitInfo legacy、16KB Page Size、AnimatedVectorDrawable、FragmentTransaction、RenderEffect、PowerMonitor 等高分素材均已映射到现有章节或已被正文覆盖。
+  - 最近 `intake/daily-info/`：Android Studio Panda、Android 17 MessageQueue、Android 17 适配、桌面窗口化、Cached App Freezer、DMA-BUF/Gralloc 16KB、Perfetto DataGrid/Jank CUJ、Generational CMC、sched_ext/EEVDF 均已有对应章节或队列项。
+  - 最近 `intake/research-feeds/`：Perfetto v53/v54、Frame Timeline、Compose Pausable Composition 等均已有 13.x / 22.3 / 2.4 等章节承接。
+  - 官方文档/AOSP 方向：Android 17 behavior changes、MessageQueue guidance、App memory limits、Power / performance docs 已有 1.13、16.5、23.9、14.11、25.11 等章节覆盖。
+- 下轮建议：优先等待 Task 2B / Task 9 清理既有 pending 队列；若继续挖掘，避开 Android 17 MessageQueue、App Memory Limits、ProfilingTrigger、WOOTdroid、16KB Page Size 这些已覆盖主题，改从官方文档中新发布且 `SUMMARY.md` 没有对应标题的 topic 入手。
+
