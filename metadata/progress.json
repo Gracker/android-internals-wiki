@@ -1,6 +1,6 @@
 {
-  "total": 330,
-  "draft": 0,
+  "total": 331,
+  "draft": 1,
   "ready-for-review": 126,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1469,8 +1469,8 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T01:26:42+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-20T03:12:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-19",
     "time": "20:25",
@@ -4101,6 +4101,16 @@
       "queue_priority": 80,
       "gap_score": 17,
       "gap_source": "素材驱动/官方文档/AOSP结构"
+    },
+    "14.17": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "file": "src/part3-tools/ch14-other-tools/17-statsd-system-metrics.md",
+      "title": "statsd 与系统级指标采集",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-20",
+      "queue_priority": 80,
+      "gap_score": 16
     }
   },
   "task2b_rounds": [

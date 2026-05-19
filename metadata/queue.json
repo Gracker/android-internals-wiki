@@ -13246,27 +13246,63 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T02:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-02-audit.md"
+    },
+    {
+      "id": "task2a-gap-14.17-statsd-system-metrics",
+      "section": "14.17",
+      "priority": 80,
+      "title": "statsd 与系统级指标采集",
+      "description": "全书多处使用 statsd 作为 ANR、JobScheduler、LMK、Game Mode、UprobeStats 等性能信号来源，但缺少一个专门章节解释 StatsD 模块、Atom、配置、报告拉取和与 Perfetto/logcat/dumpsys 的交叉验证边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/17-statsd-system-metrics.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/core/ota/modular-system/statsd",
+        "https://source.android.com/docs/core/architecture/modular-system/statsd",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/StatsD/service/java/com/android/server/stats/StatsCompanionService.java",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/StatsD/framework/java/android/util/StatsLog.java",
+        "https://cs.android.com/android/platform/superproject/+/master:external/perfetto/protos/perfetto/trace/statsd/statsd_atom.proto",
+        "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+        "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+      ],
+      "gap_score": {
+        "material_richness": 4,
+        "relevance": 4,
+        "reader_demand": 4,
+        "timeliness": 4,
+        "total": 16
+      },
+      "gap_source": "AOSP结构/官方文档/已有章节深挖",
+      "created_by": "task2a-knowledge-gap",
+      "pipeline_stage": "task2a_pending"
     }
   ],
   "metadata": {
-    "total_entries": 373,
+    "total_entries": 378,
     "p0_count": 158,
-    "last_updated": "2026-05-20T02:20:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 144,
+    "last_updated": "2026-05-20T03:12:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 145,
     "updated_date": "2026-05-20",
-    "last_updated_by": "openclaw-task9",
-    "pending": 144,
-    "completed_entries": 226,
-    "last_task2a_gap_mining": "7.17",
-    "last_task2a_gap_mining_at": "2026-05-20T01:04:00+08:00",
+    "last_updated_by": "openclaw-task2a",
+    "pending": 145,
+    "completed_entries": 231,
+    "last_task2a_gap_mining": "14.17",
+    "last_task2a_gap_mining_at": "2026-05-20T03:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T02:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 144,
+  "last_updated": "2026-05-20T03:12:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 145,
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
-  "last_task2a_gap_mining": "7.17",
-  "last_task2a_gap_mining_at": "2026-05-20T01:04:00+08:00"
+  "last_task2a_gap_mining": "14.17",
+  "last_task2a_gap_mining_at": "2026-05-20T03:12:00+08:00"
 }
