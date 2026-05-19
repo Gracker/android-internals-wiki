@@ -2,7 +2,7 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: finalized
+status: "ready-for-review"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI/Sokatoa 要求 Android 11+)"
 last_verified: "2026-04-22"
 last_verified_against: "developer.android.com/agi, developer.android.com/guide/topics/manifest/profileable-element, perfetto.dev, AOSP gpu_counter_config.proto"
@@ -36,16 +36,20 @@ last_task2b_at: "2026-04-22T08:06:44+08:00"
 task2b_result: fixed
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task2b_state: "pending"
+task9_result: "needs-rework"
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T14:30:00+08:00'
 last_task6_audit: "2026-05-19"
 last_task6_audit_log: "logs/review/2026-05-19-02-audit.md"
+last_task9_audit: "2026-05-19"
+last_task9_review_log: "logs/deep-review/2026-05-19-10-audit.md"
+queue_entry: "task9-audit-14.8-gpu-tools-version-source-20260519"
+task9_review_notes: "2026-05-19 Task9 闲时抽检：needs-rework。P0 1：AGI Vulkan Frame Profiler 前置条件把 validation layer 写成应关闭；P1 1：Sokatoa 官方链接、Android 最低版本、GPU 支持和开源状态需按当前一手资料更新。已写入 queue。"
 ---
 
 # 14.8 GPU 图形调试与分析工具

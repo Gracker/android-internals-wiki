@@ -12511,6 +12511,46 @@
       "gap_source": "每日信息/官方文档/Android Developers Blog",
       "created_by": "task2a-knowledge-gap",
       "created_at": "2026-05-19T10:04:00+08:00"
+    },
+    {
+      "id": "task9-audit-14.8-gpu-tools-version-source-20260519",
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "title": "GPU 工具章节的 AGI 前置条件与 Sokatoa 版本/来源过期",
+      "description": "闲时抽检发现 AGI Vulkan frame capture 前置条件与当前官方 quickstart 相反；Sokatoa 官方链接、最低 Android 版本、GPU 支持与开源状态需要按当前一手资料更新。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-19",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "reason": "[Deep Tech Review][闲时抽检] AGI Frame Profiler 的 Vulkan validation layer 前置条件写反，Sokatoa 版本/来源口径已过期。",
+      "material_paths": [
+        "logs/deep-review/2026-05-19-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/工具前置条件错误",
+          "location": "L190 AGI Frame Profiler 前置条件：Vulkan Validation Layer",
+          "detail": "正文建议“性能分析阶段关掉 Vulkan Validation Layer”。但当前 AGI quickstart 的 app requirements 明确写明：Vulkan 应用必须启用 Vulkan validation layers；若未启用，需要通过 enable_gpu_debug_layers / gpu_debug_layers 注入 AGI APK 中的 layer。这里把 AGI 帧捕获的必要前置条件写成应关闭，会让读者按文操作后无法捕获 Vulkan frame trace，或误把 AGI Frame Profiler 当成可关闭全部 layer 后测真实帧率的工具。",
+          "suggestion": "将该条改为“AGI Frame Profiler 按官方要求启用 AGI/validation layer 以完成捕获；帧捕获结果用于定位 draw call / shader / render target，不用于测真实帧率。若讨论应用自带调试 validation layer 的性能扰动，需要另起一句说明，并不要覆盖 AGI 必需的 layer 配置。”"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/一手资料过期",
+          "location": "L16、L67、L342、L623 Sokatoa 官方链接；L114、L360、L538、L364 Sokatoa 能力与版本表",
+          "detail": "文中引用的 developer.samsung.com/galaxy-gamedev/sokatoa.html 当前返回 404；当前可核对的一手入口是 Samsung Semiconductor blog、LunarG 文章与 GitHub sarc-acl/sokatoa。GitHub README v1.0.1 写明 target device 要求 Android 13 or later，debuggable APK or rooted device required for GFXR/Sokatoa Vulkan layers，并列出 Exynos/Mali/Adreno/PowerVR；正文表格仍写 Android 11+，正文写“支持三种 GPU：Xclipse/Adreno/Mali”，且 L114 直接称“开源多帧 GPU profiler”，与 README “will be open-sourced at the end of 2026” 的状态边界不一致。",
+          "suggestion": "把 Sokatoa source 更新为 Samsung Semiconductor + LunarG + https://github.com/sarc-acl/sokatoa；最低版本改为 Android 13+；GPU 支持改为 Exynos/Xclipse、Mali、Adreno、PowerVR（性能视图以 README/system requirements 为准）；开源状态统一为“free to download/use，计划 2026 年底开源”，不要在 2026 年内已开源前写成现状。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-19T10:25:00+08:00",
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+      ],
+      "dependencies": []
     }
   ],
   "metadata": {
