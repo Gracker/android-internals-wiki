@@ -47,14 +47,14 @@ related_chapters:
 section: '8.2'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-17"
+reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task2b_state: "pending"
@@ -68,9 +68,9 @@ last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
 p0: 1
 p1: 0
 p2: 1
-last_task6_at: "2026-05-17T16:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-17-16-review.md"
-task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。L1/L2 小修 22 处，清理第一人称、结构性元叙述和填充词；既有 Task9 P0 队列仍 pending，未新增回炉项。"
+last_task6_at: "2026-05-19T12:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-19-12-review.md"
+task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 4 处，补齐日志类代码围栏语言并压掉一处元叙述；既有 ApplicationStartInfo Task9 P0 pending 队列仍由 Task2B 处理。"
 ---
 
 
@@ -263,7 +263,7 @@ RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将�
 
 TTID 是从用户触发启动（点击图标）到首帧绘制完成的时间。系统通过 ActivityMetricsLogger 自动统计这个时间，logcat 中的 "Displayed" 行和 `am start -W` 的 TotalTime 都对应这个口径：
 
-```
+```text
 ActivityTaskManager: Displayed com.example.app/.MainActivity: +1s234ms
 ```
 
@@ -279,7 +279,7 @@ TTID 只统计到首帧绘制，但很多应用的界面在首帧绘制时并没
 
 TTFD 需要开发者在代码中主动调用 `Activity.reportFullyDrawn()` 来告诉系统"我的界面完全准备好了"。调用后 logcat 中会出现：
 
-```
+```text
 ActivityTaskManager: Fully drawn com.example.app/.MainActivity: +2s156ms
 ```
 
@@ -407,7 +407,7 @@ adb shell am start -W com.example.app/.MainActivity
 
 输出：
 
-```
+```text
 Status: ok
 LaunchState: COLD
 Activity: com.example.app/.MainActivity
@@ -541,7 +541,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 ## 首帧绘制的关键路径
 
-首帧绘制是从 Activity.onResume 到用户看到画面的最后一段旅程。理解这段路径，是优化启动感知的前提。
+首帧绘制是从 Activity.onResume 到用户看到画面的收尾路径。看清这段路径，才能优化启动感知。
 
 ### inflate：布局文件的解析
 

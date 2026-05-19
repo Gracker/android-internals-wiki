@@ -179,7 +179,11 @@
     "19.13",
     "20.3",
     "13.18",
-    "22.14"
+    "22.14",
+    "4.8",
+    "8.2",
+    "14.1",
+    "22.10"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -189,27 +193,33 @@
     "src/part3-tools/ch19-apm/13-tracing-sdk.md",
     "src/part5-app/ch20-stability/03-native-crash-governance.md",
     "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md"
+    "src/part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md",
+    "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "review_summary": "Task9 2026-05-19 08: 深审 21.9；P0/P1/P2 0，P3 2；满足 Task6+Task9+queue 条件，自动晋升 finalized。",
   "task6_review_summary": {
     "date": "2026-05-19",
-    "time": "08:16",
+    "time": "12:07",
     "sections": [
-      "21.9",
-      "22.9"
+      "4.8",
+      "8.2",
+      "14.1",
+      "22.10"
     ],
     "files": [
-      "src/part5-app/ch21-startup/09-startup-case-studies.md",
-      "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
+      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 9,
+    "small_fixes": 18,
     "new_rework_items": 0,
-    "auto_promoted": [
-      "22.9"
-    ],
-    "note": "Task6 复审 21.9/22.9 通过；清理标题定位、编辑标记和少量 L1/L2 表达问题。22.9 满足 Task6+Task9+queue 条件，自动晋升 finalized；21.9 继续等待 Task9 复审。"
+    "auto_promoted": [],
+    "note": "Task6 复审 4.8/8.2/14.1/22.10 通过；清理第一人称、结构性元叙述、代码围栏语言和少量 L1/L2 表达问题。4.8/8.2 仍有既有 Task9/DeepResearch pending 队列；14.1/22.10 等待 Task9 复审，未自动晋升。"
   },
   "issues_by_section": {
     "1.6": {
@@ -290,12 +300,12 @@
       "p2": 1,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 22,
+      "task6_l1_l2_fixes": 4,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
-      "task6_log": "logs/review/2026-05-17-16-review.md",
+      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
+      "task6_log": "logs/review/2026-05-19-12-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；清理第一人称、结构性元叙述、否定-纠正结构和填充词。既有 ApplicationStartInfo Task9 P0 队列仍 pending，未新增 Task6 回炉。"
+      "task6_note": "复审通过；L1/L2 小修 4 处。既有 ApplicationStartInfo Task9 P0 pending 队列仍由 Task2B 处理，Task6 未新增回炉。"
     },
     "1.5": {
       "p0": 0,
@@ -1011,7 +1021,14 @@
       "p3": 0,
       "reviewed_at": "2026-05-15T15:27:00+08:00",
       "log": "logs/deep-review/2026-05-15-15-deep-review.md",
-      "summary": "P1 2：RuntimeShader uniform 更新缺显式 redraw；gpu_busy 被写成 Android 16+ 标准化 counter。P2 3：backdrop hidden API 边界、GPU Headroom supported devices/参数、厂商 blur/AGSL 量化数据缺失。"
+      "summary": "P1 2：RuntimeShader uniform 更新缺显式 redraw；gpu_busy 被写成 Android 16+ 标准化 counter。P2 3：backdrop hidden API 边界、GPU Headroom supported devices/参数、厂商 blur/AGSL 量化数据缺失。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
+      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；正文无需修改，锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
     },
     "24.9": {
       "p0": 0,
@@ -1270,8 +1287,12 @@
       "summary": "P0 1：ProfilingTrigger Builder/registerForAllProfilingResults 示例仍不可编译；P1 2：Network Inspector 入口/时间轴口径、profileable Java Method Trace 能力边界需重查；P2 1：28% 性能提升缺来源。",
       "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
-      "task6_log": "logs/review/2026-05-17-16-review.md"
+      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
+      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "复审通过；L1/L2 小修 4 处。Task9 仍 pending/needs-rework，未自动晋升。"
     },
     "1.1": {
       "task6_result": "pass-light-edit",
@@ -1398,9 +1419,18 @@
       "task9_log": "logs/deep-review/2026-05-19-08-deep-review.md",
       "task9_new_rework": false,
       "task9_note": "Task9 复审通过；源码路径/方法、App Startup Provider 成本与顺序、Baseline Profile/TTFD/Startup Profile 口径均已复核，无 P0/P1/P2。记录 2 个 P3 后续增强观察点。"
+    },
+    "4.8": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 10,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
+      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；L1/L2 小修 10 处。既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理，Task6 未新增回炉。"
     }
   },
-  "total_review_sections": 161,
+  "total_review_sections": 162,
   "next_review_candidates": [],
   "ready_for_review": 103,
   "last_updated": "2026-05-19T11:12:00+08:00",

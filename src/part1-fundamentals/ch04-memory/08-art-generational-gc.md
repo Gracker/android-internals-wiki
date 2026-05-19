@@ -48,12 +48,12 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: "2026-04-19"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-19"
+reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: "needs-rework"
 last_task9_at: "2026-05-19T11:45:22+08:00"
@@ -66,6 +66,9 @@ task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Gen-CMC/UFFD 启用链路需按 AOSP main 属性与版本矩阵回炉。"
+last_task6_at: "2026-05-19T12:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-19-12-review.md"
+task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 10 处，清理第一人称、结构性元叙述、代码围栏语言和禁用句式；既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理。"
 ---
 
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
@@ -95,15 +98,15 @@ task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 
 阅读本节之前，建议先了解 §4.3 中 ART 堆结构和 GC 策略演进的基础内容。本节在 §4.3 的基础上，深入分代垃圾回收的内部实现——Write Barrier 如何工作、Card Table 怎么记录跨代引用、Android 17 对分代 GC 做了哪些增强——然后把视角拉回到实际工作：GC 暂停怎么导致掉帧，在 Perfetto 中怎么分析，App 端有哪些手段可以减轻 GC 压力。
 
-读完这一节，我们应该能回答三个问题：为什么一个"只有 1-3ms"的 GC 暂停仍然可能导致掉帧；Android 17 的分代 GC 做了哪些底层改变来减少这种影响；以及在自己的应用中，发现 GC 相关的卡顿后应该怎么排查和优化。
+读完这一节，应该能回答三个问题：为什么一个"只有 1-3ms"的 GC 暂停仍然可能导致掉帧；Android 17 的分代 GC 做了哪些底层改变来减少这种影响；以及在自己的应用中，发现 GC 相关的卡顿后应该怎么排查和优化。
 
 ## GC 暂停为什么会影响流畅性
 
-§4.3 中我们提到，ART 的 Concurrent Copying GC 将大部分 GC 工作放在应用线程之外并发执行，stop-the-world 暂停只有 1-5ms。这个数字看起来很小——但问题不在单次暂停的长度，而在 GC 活动与渲染管线的**时间冲突**。
+§4.3 提到，ART 的 Concurrent Copying GC 将大部分 GC 工作放在应用线程之外并发执行，stop-the-world 暂停只有 1-5ms。这个数字看起来很小——但问题不在单次暂停的长度，而在 GC 活动与渲染管线的**时间冲突**。
 
 在一个 120Hz 的设备上，帧间隔只有 8.33ms。主线程的 `doFrame()` 需要在这个窗口内完成 input 处理、animation 计算、measure、layout、draw，然后交给 RenderThread 进行 GPU 渲染。如果一次 Young GC 的暂停恰好发生在这个窗口内，主线程被暂停的 2-3ms 直接吃掉了整个帧预算的 25-36%。更严重的情况是：GC 并发阶段虽然不暂停主线程，但会与主线程争抢 CPU 时间，导致 `doFrame()` 执行变慢，间接造成掉帧。
 
-```
+```text
 正常帧（120Hz, 8.33ms 窗口）:
 ┌────────────────────────────────┐
 │ Input → Animation → Traversal  │  8ms
@@ -126,7 +129,7 @@ GC 干扰帧:
 
 ## 从 Concurrent Mark-Sweep 到分代 GC：ART 的演进路径
 
-§4.3 已经梳理了 CMS → CC → CMC 的 GC 策略演进。这里我们把焦点放在分代策略本身——它是如何叠加到这些收集器之上的。
+§4.3 已经梳理了 CMS → CC → CMC 的 GC 策略演进。这一节把焦点放在分代策略本身——它是如何叠加到这些收集器之上的。
 
 ### 分代假说：为什么要把堆分成两块
 
@@ -180,7 +183,7 @@ inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
 
 `art/runtime/gc/accounting/card_table.cc` 的文件注释写得很直接：所有对 heap object 的非空对象指针写入，都应该经过 WriteBarrier；heap 按 `kCardSize` 划成 card；card byte 用来表示 clean / dirty 状态。Young GC 不会重新扫完整个 old generation，而是先看这些 dirty card。
 
-很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个我们还没核实到类名的抽象名词。
+很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个尚未核实到类名的抽象名词。
 
 ### Android 15+/17 的 CMC 不是两代，而是三代
 
@@ -207,7 +210,7 @@ void YoungMarkCompact::RunPhases() {
 }
 ```
 
-这段代码给我们的提示很清楚：Young GC 和 whole-heap GC 共享同一套 CMC 主实现，差别在于 `young_gen_` 分支怎么限制扫描和压缩范围。
+这段代码提示：Young GC 和 whole-heap GC 共享同一套 CMC 主实现，差别在于 `young_gen_` 分支怎么限制扫描和压缩范围。
 
 ### Young GC 里 old generation 是怎么被扫描的
 
@@ -234,7 +237,7 @@ void YoungMarkCompact::RunPhases() {
 
 **持续高分配（内存抖动）**：应用持续高速分配和丢弃对象。典型场景：在 `onDraw()` 中创建新对象、在 `RecyclerView.Adapter.onBindViewHolder()` 中分配大量临时字符串、Compose recomposition 产生大量临时 lambda 和状态对象。Young GC 频率飙升到每秒 3 次以上，虽然每次暂停只有 2-3ms，但累积的 CPU 开销和与渲染管线的冲突导致持续掉帧。
 
-```
+```text
 稳态分配：     |GC|               |GC|               |GC|
 帧时间线：     |f|f|f|f|f|f|f|f| |f|f|f|f|f|f|f|f| |f|f|f|f|
               ✓ 流畅
@@ -368,7 +371,7 @@ tools/heap_profile -p <PID> --heaps art
 
 ## App 端的 GC 优化策略
 
-理解了 GC 的工作原理和影响方式后，我们来看 App 端可以采取的具体优化手段。核心思路只有一个：**减少需要 GC 处理的对象数量**。
+理解 GC 的工作原理和影响方式后，App 端优化要回到一个核心思路：**减少需要 GC 处理的对象数量**。
 
 ### 减少对象分配
 
@@ -447,7 +450,7 @@ Bitmap 复用仍然有价值，原因主要有两点：
 
 如果 trace 里看到的是 Bitmap 抖动，本节更适合联动 native heap、GraphicBuffer 或 GPU memory 去看，不要把它误算到 ART LOS。
 
-从 API 19（Android 4.4）开始，`BitmapFactory.Options.inBitmap` 允许我们将一块已有的 Bitmap 内存复用给新的 Bitmap。图片加载库（Glide、Coil）内部已经自动处理了 Bitmap 复用。对于手动管理 Bitmap 的场景（如相机预览、自定义图片编辑），使用 `inBitmap` 可以显著减少大对象分配：
+从 API 19（Android 4.4）开始，`BitmapFactory.Options.inBitmap` 允许把一块已有的 Bitmap 内存复用给新的 Bitmap。图片加载库（Glide、Coil）内部已经自动处理了 Bitmap 复用。对于手动管理 Bitmap 的场景（如相机预览、自定义图片编辑），使用 `inBitmap` 可以显著减少大对象分配：
 
 ```kotlin
 val options = BitmapFactory.Options().apply {
@@ -640,6 +643,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 ### Android 16 ART Generational CMC / userfaultfd GC 机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md
 - 类型：DeepResearch 调研结果
-- 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 并非独立开关而是描述性概念。
+- 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 属于描述性概念，不对应独立开关。
 - 注入时间：2026-05-19
 - 价值：源码级完整 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径

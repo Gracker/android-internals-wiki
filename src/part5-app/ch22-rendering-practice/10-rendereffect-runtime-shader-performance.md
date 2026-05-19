@@ -13,15 +13,15 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-last_task6_at: '2026-05-15T15:11:00+08:00'
-task6_result: pass-light-edit
-reviewed_date: "2026-05-15"
-reviewed_by: openclaw-task6
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+last_task6_at: "2026-05-19T12:07:00+08:00"
+task6_result: "pass-light-edit"
+reviewed_date: "2026-05-19"
+reviewed_by: "openclaw-task6"
 task9_state: "pending"
-last_task6_review_log: 'logs/review/2026-05-15-15-review.md'
-task6_review_notes: '2026-05-15 Task6 15:11：pass-light-edit。L1/L2 小修 10 处：补 section/审查元数据、删除结构性元叙述和正文编辑痕迹、标准化 GPU Headroom 待验证标注；无新增 L3/L4 回炉项，转入 Task9 技术复审。'
+last_task6_review_log: "logs/review/2026-05-19-12-review.md"
+task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 无需正文修改；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java"
