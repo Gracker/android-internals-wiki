@@ -34,6 +34,8 @@ task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
+last_task6_at: "2026-05-19T19:09:00+08:00"
+last_task6_audit: "2026-05-19"
 task6_result: "pass-light-edit"
 review_round: 2
 task2b_result: fixed
@@ -49,7 +51,7 @@ repaired_by: "openclaw-task2b"
 
 一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈通常在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要放在一起评估。
 
-这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，我们又该怎样在安全和连接成本之间做判断。
+这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，以及怎样在安全和连接成本之间做判断。
 
 <!-- outline-start -->
 ## 本节导读
@@ -143,7 +145,7 @@ ECH 的额外开销来自两部分：
 
 在 TLS 握手过程中，客户端验证服务器证书合法性——但"合法"不等于"可信"。一个被 CA 秘密签发的证书也能通过常规验证。Certificate Transparency（CT，RFC 6962）解决的就是这个问题：它要求 CA 把每一张签发的证书登记到公开可审计的日志中，客户端在握手时检查证书里有没有这个登记记录（SCT，Signed Certificate Timestamp）。
 
-对性能工程师来说，CT 验证本身的开销几乎可以忽略。真正需要关注的是它带来的兼容性风险：如果服务器证书缺少足够的 SCT，Android 17 的默认验证会让连接直接失败。
+对性能工程师来说，CT 验证本身的开销通常不是首要耗时项，性能排查更常遇到的是兼容性风险：如果服务器证书缺少足够的 SCT，Android 17 的默认验证会让连接直接失败。
 
 ### Android 17 默认启用
 
@@ -184,7 +186,7 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 
 从 HTTP 迁移到 HTTPS 的主要延迟影响来自 TLS 握手。但这个影响是一次性的，连接建立完成后，TLS 对数据传输的吞吐量影响很小。Google 的研究表明，当数据量超过 500KB 时，TLS 的能量开销相比传输 I/O 开销可以忽略。
 
-迁移中真正需要关注的是：
+迁移中要检查三类延迟变化：
 
 1. **混合内容（Mixed Content）**：如果 App 的部分请求走 HTTPS，部分走 HTTP，浏览器/WebView 会阻塞或警告混合内容。这不会增加延迟，但会导致请求失败，用户感知为"加载变慢"。
 
@@ -192,7 +194,7 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 
 [图：HTTP→HTTPS 重定向的额外延迟示意。标出：客户端发 HTTP → 服务器回 301/302 → 客户端发 HTTPS ClientHello → TLS 握手 → 首包。对比直接 HTTPS 的路径，标出浪费的 RTT]
 
-3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会显著影响握手时间。最佳实践是服务器只发送必要的中间证书。
+3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会增加握手时间。服务端只发送必要的中间证书即可。
 
 ### Network Security Configuration 的性能配置
 
@@ -266,7 +268,7 @@ OkHttpClient client = new OkHttpClient.Builder()
     .build();
 ```
 
-调整 `maxIdleConnections` 时需要注意：过多的空闲连接会占用服务器资源（每个连接对应服务器端的一个 socket + 线程），对于高并发 App（如即时通讯），适当增大到 10-15 可以减少 TLS 重握手频率。
+调整 `maxIdleConnections` 时要同时控制空闲连接数量：过多的空闲连接会占用服务器资源（每个连接对应服务器端的一个 socket + 线程），对于高并发 App（如即时通讯），适当增大到 10-15 可以减少 TLS 重握手频率。
 
 ### DNS-over-HTTPS / DNS-over-TLS 的权衡
 
