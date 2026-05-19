@@ -68,8 +68,8 @@ pipeline_stage: "ready-to-publish"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-08T10:29:04+08:00"
+last_task6_audit: "2026-05-19"
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
-
 ---
 
 # App 耗电优化
@@ -358,7 +358,7 @@ Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多�
 
 ### setAndAllowWhileIdle 的使用限制
 
-`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 确实能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类理解更清楚：
+`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类理解更清楚：
 
 - `setAlarmClock()`：面向用户可见闹钟，正常触发。
 - allow-while-idle alarms：可以穿过 Doze，但受频率限制，文档给出的节流口径大约是每个 App 每 9 分钟一次。
@@ -374,7 +374,7 @@ AlarmManager 的使用情况在 Battery Historian 的 "Alarm" 行中显示。如
 
 ## 前台服务的功耗考量与 Android 14+ 的限制
 
-前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 确实需要持续在后台运行，比如音乐播放、导航、位置追踪。前台服务会通过持续通知告诉用户"这个 App 还在工作"，同时提高进程优先级，降低因后台限制被回收的概率。它解决的是 app-level background limits 问题，本身不提供 device-level Doze 豁免。设备进入 Doze 后，网络、Job、普通 Alarm 等限制仍然存在，wake lock 也会被忽略。
+前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 需要持续在后台运行，比如音乐播放、导航、位置追踪。前台服务会通过持续通知告诉用户"这个 App 还在工作"，同时提高进程优先级，降低因后台限制被回收的概率。它解决的是 app-level background limits 问题，本身不提供 device-level Doze 豁免。设备进入 Doze 后，网络、Job、普通 Alarm 等限制仍然存在，wake lock 也会被忽略。
 
 Android 14（API 34）对 FGS 的治理经历了重大变革，系统从"信任开发者声明"转向"强制类型分类 + 运行时权限验证"。
 
@@ -475,7 +475,7 @@ Android 14 的 FGS Task Manager 让用户可以直接看到并停止前台服务
 
 ### 误区五："用了 WorkManager 就不用关心功耗了"
 
-WorkManager 确实比手动调度更省电，但它不是银弹。如果 App 注册了大量 PeriodicWorkRequest 且间隔很短(比如多个 15 分钟间隔的周期任务)，系统仍然需要频繁唤醒。最佳实践是将多个周期性任务合并为一个，或者利用任务的输出作为下一个任务的触发条件，减少总调度次数。
+WorkManager 比手动调度更省电，但它不是银弹。如果 App 注册了大量 PeriodicWorkRequest 且间隔很短(比如多个 15 分钟间隔的周期任务)，系统仍然需要频繁唤醒。最佳实践是将多个周期性任务合并为一个，或者利用任务的输出作为下一个任务的触发条件，减少总调度次数。
 
 ## 参考资料
 
