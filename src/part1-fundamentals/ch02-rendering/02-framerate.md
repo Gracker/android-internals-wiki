@@ -64,6 +64,7 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-30T16:20:00+08:00"
 task9_review_notes: "2026-04-30 16:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2。Frame Time/FrameTimeline 版本口径需 Task2B 回炉。"
 task2b_rework_note: "2026-05-07 2B修复: Frame Time口径拆分(doFrame=主线程回调 vs FrameTimeline=完整帧); setFrameTimeline版本边界拆分(API33读取 vs Android16公开setFrameTimeline)"
+last_task6_audit: "2026-05-19"
 ---
 
 # 帧率与刷新率
@@ -100,7 +101,7 @@ task2b_rework_note: "2026-05-07 2B修复: Frame Time口径拆分(doFrame=主线�
 
 要理解为什么会掉帧、怎么分析掉帧,我们先得搞清楚两个基本概念:**帧率**(App 画得多快)和**刷新率**(屏幕刷新得多快)。这两个东西听起来简单,但在现代 Android 设备上,它们之间的关系远比"画得快就显示得快"复杂得多。
 
-原因在于,从 Android 11 开始,设备可以支持多种刷新率(60Hz、90Hz、120Hz 甚至动态 1-120Hz),而 App 的渲染帧率可以是任意的。当 App 的帧率和屏幕的刷新率不匹配时,就会出现画面不流畅、输入延迟增大、功耗浪费等问题。理解这两个维量的关系,是分析一切渲染性能问题的基础。
+原因在于,从 Android 11 开始,设备可以支持多种刷新率(60Hz、90Hz、120Hz 甚至动态 1-120Hz),而 App 的渲染帧率可以是任意的。当 App 的帧率和屏幕的刷新率不匹配时,就会出现画面不流畅、输入延迟增大、功耗浪费等问题。理解这两个维度的关系,是分析一切渲染性能问题的基础。
 
 读完这一节,我们会知道:在 Perfetto 中看到"红色帧"时该怎么判断是帧率问题还是刷新率问题;为什么同一个 App 在 60Hz 手机上流畅,在 120Hz 手机上反而可能更卡;以及 Android 系统在背后做了哪些"匹配"工作来让这两者协调一致。
 
