@@ -5433,5 +5433,31 @@
     "14.9",
     "12.3",
     "20.3"
+  ],
+  "task2b_progress": [
+    {
+      "section": "19.16",
+      "title": "ProfilingManager",
+      "status": "fixed",
+      "fixed_date": "2026-05-20T07:21:14+08:00",
+      "queue_id": "task9-audit-19.16-profiling-result-not-allowed",
+      "fix_summary": "删除 ERROR_FAILED_PROFILING_NOT_ALLOWED 非公开常量引用，改写上线前检查清单"
+    },
+    {
+      "section": "25.7",
+      "title": "R8 与资源优化",
+      "status": "fixed",
+      "fixed_date": "2026-05-20T07:21:14+08:00",
+      "queue_id": "task9-2026-05-14-25.7-r8-keep-resource-version-boundary",
+      "fix_summary": "JSON keep 规则拆分、JNI includedescriptorclasses、AGP 版本边界表"
+    },
+    {
+      "section": "17.4",
+      "title": "sched_ext 与 OEM BPF 调度器",
+      "status": "fixed",
+      "fixed_date": "2026-05-20T07:21:14+08:00",
+      "queue_id": "task9-17.4-sched-ext-android612-version-boundary",
+      "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
+    }
   ]
 }

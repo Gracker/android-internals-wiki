@@ -18,12 +18,18 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md"
   - type: official
     path: "https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst"
-  - type: aosp
-    path: "https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext_internal.h"
-  - type: aosp
+  - type: upstream-linux
+    path: "https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c"
+  - type: upstream-linux
+    path: "https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.h"
+  - type: upstream-linux
     path: "https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h"
-  - type: aosp
+  - type: upstream-linux
     path: "https://raw.githubusercontent.com/torvalds/linux/master/tools/sched_ext/scx_simple.bpf.c"
+  - type: aosp
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/ext.c"
+  - type: aosp
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/ext.h"
   - type: oem-source
     path: "https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c"
   - type: official
@@ -32,15 +38,15 @@ tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-15"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-15
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器
@@ -149,22 +155,32 @@ flowchart TD
 
 `tools/sched_ext/scx_simple.bpf.c` 是理解这套接口的参考实现。它在 `select_cpu()` 中调用 `scx_bpf_select_cpu_dfl()`，如果拿到空闲 CPU，就把任务插入 `SCX_DSQ_LOCAL`；否则在 `enqueue()` 中把任务放入共享 DSQ，并在 `dispatch()` 中把共享 DSQ 的任务移动到 CPU local DSQ。这个例子足够解释大多数 Perfetto 现象：线程换 CPU，通常发生在 wakeup、入队、分发几个阶段的重新放置过程中。
 
-[已验证: Linux kernel/sched/ext_internal.h；Linux tools/sched_ext/scx_simple.bpf.c]
+[已验证: Linux kernel/sched/ext.c（torvalds/master + Android common android16-6.12）；Linux tools/sched_ext/scx_simple.bpf.c]
 
 ## DSQ 决定任务从 BPF 调度器回到 CPU 的方式
 
 DSQ 是 dispatch queue 的缩写。`sched_ext` 用 DSQ 衔接内核调度器和 BPF scheduler：BPF scheduler 可以把任务插入内置 DSQ，也可以创建自定义 DSQ，再在 `dispatch()` 中移动任务。
 
-内置 DSQ 包括：
+内置 DSQ 和时间片常量按版本拆开写。
+
+**Android common kernel `android16-6.12` 可用的内置 DSQ：**
 
 - `SCX_DSQ_LOCAL`：每个 CPU 的本地队列。任务进入这里后，目标 CPU 可以直接运行它。
 - `SCX_DSQ_GLOBAL`：内置全局 FIFO 队列。本地队列空时，CPU 可以从这里取任务。
 - `SCX_DSQ_LOCAL_ON | cpu`：把任务放到指定 CPU 的 local DSQ。
+
+时间片常量：`SCX_SLICE_DFL = 20ms`（默认补 slice）。
+
+**upstream mainline（torvalds/master）新增：**
+
 - `SCX_DSQ_BYPASS`：异常、回退或前进保障场景下使用的绕过队列。
+- `SCX_SLICE_BYPASS = 5ms`：bypass 模式下使用的时间片。
 
-Linux 源码里还定义了 `SCX_SLICE_DFL = 20ms` 和 `SCX_SLICE_BYPASS = 5ms`。这不是 Android 帧预算，也不是前台线程固定运行时间。它只是 sched_ext 在默认补 slice 和 bypass 模式下使用的时间片常量。把它直接换算成“120Hz 一帧 8.33ms 所以 20ms 一定卡顿”是不成立的，调度器还会被 wakeup、抢占、阻塞、频率变化和 RT 任务打断。
+这两组常量在 Android common 6.12 分支中不存在。如果正文面向 Android 16 GKI 6.12，不要把 `SCX_DSQ_BYPASS` 和 `SCX_SLICE_BYPASS` 写成当前可用能力。它们属于后续 upstream 差异，待 Android 分支合入后再更新。
 
-[已验证: Linux include/linux/sched/ext.h]
+`SCX_SLICE_DFL = 20ms` 不是 Android 帧预算，也不是前台线程固定运行时间。它只是 sched_ext 在默认补 slice 模式下使用的时间片常量。把它直接换算成"120Hz 一帧 8.33ms 所以 20ms 一定卡顿"是不成立的，调度器还会被 wakeup、抢占、阻塞、频率变化和 RT 任务打断。
+
+[已验证: Android common kernel android16-6.12 include/linux/sched/ext.h；torvalds/linux master 同文件]
 
 ## OEM 公开线索：OPPO / OnePlus `hmbird_sched`
 
@@ -175,6 +191,21 @@ Linux 源码里还定义了 `SCX_SLICE_DFL = 20ms` 和 `SCX_SLICE_BYPASS = 5ms`�
 - **有运行时开关**：`scx_enable` 和 `partial_ctrl` 说明策略可以按设备状态或场景切换，不一定整机常开。
 - **调度和频率治理可能协同**：`cpuctrl_high/low`、`slim_freq_gov/scx_gov_ctrl` 暗示 vendor 策略会同时调度任务和调整 governor 参数。
 - **帧率场景被纳入参数体系**：`slim_walt/frame_per_sec` 对应 `sched_ravg_window_frame_per_sec = 125`，说明厂商策略至少考虑了 frame rate 相关窗口。
+
+### partial enable 与接管范围
+
+Linux sched_ext 加载 BPF scheduler 后，默认接管 `SCHED_OTHER`、`SCHED_BATCH`、`SCHED_IDLE` 和 `SCHED_EXT` 等 policy 的普通任务。如果 BPF scheduler 设置了 `SCX_OPS_SWITCH_PARTIAL` 标志，只接管显式切换到 `SCHED_EXT` policy 的任务，其余仍留在 fair class（CFS/EEVDF）。
+
+这个分支直接决定"普通 App 线程是否受 sched_ext 影响"：
+
+- **默认模式（non-partial）**：所有普通线程进入 BPF scheduler 管理。前台 App 的 main 线程、RenderThread、binder 线程都会被 `select_cpu()`、`enqueue()`、`dispatch()` 处理。
+- **partial 模式**：只有显式 `sched_setscheduler(pid, SCHED_EXT, ...)` 的任务进入 BPF scheduler。未切换的 App 线程仍走 fair class。
+
+OPPO/OnePlus 的 `partial_ctrl` proc 节点与 `SCX_OPS_SWITCH_PARTIAL` 的对应关系需要从 vendor kernel 源码或 tracepoint 确认——它可能是控制 partial 模式开关的厂商接口，也可能只是命名相近但逻辑不同的控制面。验证方式：
+
+- `cat /proc/<pid>/sched | grep ext`：查看目标线程是否在 ext class
+- `tracepoint:sched:sched_switch` 或 Perfetto sched slice：对比 partial 开关前后，目标线程的调度行为变化
+- vendor kernel 源码中 `scx_enable` 和 `partial_ctrl` 的读写逻辑
 
 这份公开源码没有给出 BPF 调度策略主体。它展示的是 procfs 控制面，不等于完整的 scheduler policy。文档或文章如果只看到这些节点，就推断“所有 OnePlus 设备都用某个 BPF 算法调度前台线程”，证据不够。
 
@@ -335,19 +366,27 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 ## 参考资料
 
 - [已验证: Linux sched_ext 官方文档, `Documentation/scheduler/sched-ext.rst`](https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst)
-- [已验证: Linux `struct sched_ext_ops`, `kernel/sched/ext_internal.h`](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext_internal.h)
+- [已验证: Linux `struct sched_ext_ops`, `kernel/sched/ext.c`（torvalds/master + Android common 6.12）](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c)
 - [已验证: Linux DSQ 与 sched_ext entity, `include/linux/sched/ext.h`](https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h)
 - [已验证: Linux 示例 BPF scheduler, `tools/sched_ext/scx_simple.bpf.c`](https://raw.githubusercontent.com/torvalds/linux/master/tools/sched_ext/scx_simple.bpf.c)
 - [已验证: OPPO/OnePlus `hmbird_sched` proc 控制面, `hmbird_sched_proc_main.c`](https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c)
 - [来源: AIW AutoResearchClaw 调研报告, `2026-05-04-sched-ext-oplus-impl.md`]
 - [待验证: Android common kernel `android16-6.12` 分支与各 OEM user build 默认启用状态]
 
-### Android 17 sched_ext / EEVDF 调度器 OEM 落地机制
+### Android 17 sched_ext / EEVDF 调度器 OEM 实现机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-sched-ext-eevdf-oom-research.md
 - 类型：DeepResearch 调研结果
 - 摘要：分析 Linux 6.12 EEVDF 取代 CFS 的结构性转变，sched_ext 框架允许 OEM 通过 BPF map 注入定制调度策略。详细追踪 GameManagerService→BPF map→kernel SCX 的三层联动链路，以及厂商定制化输入优先级绑定机制。
 - 注入时间：2026-05-19
 - 价值：源码级追踪 EEVDF/SCX 三层联动链路，补充 GameManagerService BPF 交互与 OEM 定制化输入
+
+
+### SoC 平台差异 sched_ext OEM 调度器公开证据收集
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-soc-platform-sched-ext-oom-scheduler.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统检索 AOSP kernel/common、Google Pixel coral-kernel 及 GitHub sched-ext/scx 项目，确认 sched_ext 已在 Linux 6.12 正式合入但 AOSP 尚未集成。上游项目维护 scx_simple / scx_rusty / scx_bpfland / scx_lavd 等实验性调度器，Meta 和 Google 正在推进生产部署。SCX_Oplus / SCX_Mtk / SCX_Litto 未发现公开源码，属厂商私有实现。
+- 注入时间：2026-05-20
+- 价值：为 §17.4 sched_ext OEM 调度器章节提供完整的公开证据地图，明确哪些有源码验证、哪些仍是未验证信息
 
 
 ## 补充：公开源码调研现状（2026-05-19）

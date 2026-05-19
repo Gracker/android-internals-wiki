@@ -95,6 +95,16 @@ task9_review_notes: '2026-05-14 20:31 Task9 deep-review: needs-rework。P0 1 / P
 
 R8 全模式从 AGP 8.0 起成为默认模式。它比旧兼容模式更积极：会更大胆地做类合并、方法内联、泛型签名属性裁剪、注解属性裁剪和无用成员删除。体积收益来自这些优化，但风险也集中在同一批地方：反射、序列化、依赖注入、JNI、枚举名、`ServiceLoader`、框架通过注解或泛型读取类型信息的路径。
 
+R8 全模式、资源缩减和库 keep rules 的版本边界要按工具链拆开：
+
+| 能力 | 版本要求 | 说明 |
+|------|----------|------|
+| R8 full mode 默认 | AGP 8.0+ | 取代旧兼容模式，开启类合并、内联、无用成员删除 |
+| optimized resource shrinking | AGP 8.12/8.13 | 需显式设置 `android.r8.optimizedResourceShrinking=true` |
+| optimized resource shrinking 自动 | AGP 9.0+ | `isShrinkResources=true` 时自动启用 |
+| Gson consumer rules | Gson 2.11.0+ | 库自带 full mode 所需 keep rules，旧版需 App 侧补 TypeToken/Signature 规则 |
+| resource shrinking 依赖代码缩减 | 全版本 | 必须先开 `isMinifyEnabled=true`，否则 `isShrinkResources` 缺少代码引用图 |
+
 迁移时不要把“全模式出问题”归因成 R8 不稳定。更常见的原因是工程里有运行时入口没有被静态引用图表达出来。R8 只能保证静态可达代码不被删；反射和外部框架契约要靠 keep 规则、`@Keep`、库的 consumer rules 或 generated keep rules 补齐。
 
 这段配置用于临时退回兼容模式，只应作为定位手段，不应作为长期方案。

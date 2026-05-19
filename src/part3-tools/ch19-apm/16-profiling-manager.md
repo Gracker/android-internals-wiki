@@ -4,7 +4,7 @@
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
@@ -26,10 +26,10 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
@@ -182,7 +182,6 @@ fun supportsKillTriggeredProfiling(): Boolean {
 | `ERROR_FAILED_RATE_LIMIT_SYSTEM` | 系统级预算没给这次样本 | 不在前台循环重试，按下一次命中条件再试 |
 | `ERROR_FAILED_PROFILING_IN_PROGRESS` | 已有 profiling 正在执行 | 请求侧串行化，同类重样本只保留一个 |
 | `ERROR_FAILED_NO_DISK_SPACE` | 结果文件无法落盘 | 清理历史样本，给本地缓存设大小上限 |
-| `ERROR_FAILED_PROFILING_NOT_ALLOWED` | 当前设备或应用状态不允许 profiling，常见触发点包括 profileable / debuggable 配置不满足、用户或系统关闭相关能力 | 记录为配置类失败，检查 manifest、构建变体、开发者选项和设备策略，不做自动重试 |
 | `ERROR_FAILED_POST_PROCESSING` | 采集完成，但后处理失败，结果被丢弃 | 记录设备、版本、request 类型、errorCode，回看是否集中在某个系统版本 |
 | `ERROR_FAILED_EXECUTING` | 平台执行阶段失败 | 记失败事件，不做立即重试，等待下一次业务触发 |
 | `ERROR_FAILED_INVALID_REQUEST` | 参数不合法或 request 构造不满足要求 | 直接修接入代码，不走线上重试 |
@@ -244,7 +243,7 @@ Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果�
 - request callback 只做轻量关联，归档走后台流程
 - 结果文件要有大小上限、过期时间和清理策略
 - 堆文件、trace 文件的采集说明要和隐私条款、内部合规口径一致
-- manifest 中的 `profileable`、构建变体和设备策略要进入上线前检查，避免线上大量返回 `ERROR_FAILED_PROFILING_NOT_ALLOWED`
+- manifest 中的 `profileable`、构建变体和设备策略要进入上线前检查——调试包、内测包确认 `<profileable android:shell="true" />` 配置到位，发布包确认构建类型（debuggable / profileable）符合预期，避免线上采集因配置不满足被系统拒绝
 - 线上预算默认保守，不要把 `ProfilingManager` 当高频指标 SDK
 
 ## 参考资料
