@@ -1,6 +1,37 @@
 {
   "queue_entries": [
     {
+        "id": "task9-audit-19.16-profiling-result-not-allowed",
+        "section": "19.16",
+        "section_title": "ProfilingManager",
+        "priority": 95,
+        "title": "ProfilingResult 错误码引用了不存在的常量",
+        "description": "正文把 ERROR_FAILED_PROFILING_NOT_ALLOWED 写成 ProfilingResult 官方错误码，但 Android Developers ProfilingResult API（2026-02-26）只列出 ERROR_NONE、ERROR_UNKNOWN、ERROR_FAILED_EXECUTING、ERROR_FAILED_INVALID_REQUEST、ERROR_FAILED_NO_DISK_SPACE、ERROR_FAILED_POST_PROCESSING、ERROR_FAILED_PROFILING_IN_PROGRESS、ERROR_FAILED_RATE_LIMIT_PROCESS、ERROR_FAILED_RATE_LIMIT_SYSTEM；未定义 ERROR_FAILED_PROFILING_NOT_ALLOWED。",
+        "issue_type": "source-code-accuracy",
+        "severity": "P0",
+        "created_date": "2026-05-20",
+        "assigned_to": "content-team",
+        "estimated_hours": 1,
+        "status": "pending",
+        "dependencies": [],
+        "related_files": [
+            "src/part3-tools/ch19-apm/16-profiling-manager.md"
+        ],
+        "material_paths": [
+            "logs/deep-review/2026-05-20-06-audit.md"
+        ],
+        "review_issues": [
+            {
+                "type": "源码错误/API 常量错误",
+                "location": "错误码、限流和重试策略表 L183；上线前检查清单 L245",
+                "detail": "ERROR_FAILED_PROFILING_NOT_ALLOWED 不是 android.os.ProfilingResult 公开错误码。官方 API reference 未列出该常量，网页全文也无该符号；公开错误码集合只有 ERROR_NONE、ERROR_UNKNOWN、ERROR_FAILED_EXECUTING、ERROR_FAILED_INVALID_REQUEST、ERROR_FAILED_NO_DISK_SPACE、ERROR_FAILED_POST_PROCESSING、ERROR_FAILED_PROFILING_IN_PROGRESS、ERROR_FAILED_RATE_LIMIT_PROCESS、ERROR_FAILED_RATE_LIMIT_SYSTEM。",
+                "suggestion": "删除该表格行和上线前检查清单里的该常量引用；配置/设备策略/profileable 等不可采集场景改写为接入前置检查，运行时失败用实际返回的 errorCode + errorMessage 聚合，不要写成不存在的枚举。"
+            }
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-05-20T06:20:00+08:00"
+    },
+    {
       "id": "task9-16.5-deliqueue-type-error",
       "section": "16.5",
       "priority": 95,

@@ -26,17 +26,19 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
+task2b_state: pending
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-05-20"
 last_task6_at: "2026-05-07T15:09:20+08:00"
 last_task6_review_log: "logs/review/2026-05-07-15-review.md"
 task6_review_notes: "2026-05-07 task6 review 15:09：重审 ProfilingManager，清理填充词 3 处；L1/L2 通过，无新增回炉项；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_at: "2026-04-25T02:26:14+08:00"
+last_task9_at: "2026-05-20T06:20:00+08:00"
+last_task9_audit: "2026-05-20"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework。P0 1（ProfilingResult 不存在 ERROR_FAILED_PROFILING_NOT_ALLOWED）/ P1 0 / P2 1（官方 guide URL 过期）。"
 task2b_result: fixed
 last_task2b_at: "2026-05-07T14:47:28+08:00"
 repaired_date: "2026-04-25"
