@@ -286,3 +286,20 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 - `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 AOSP main 未确认该公开常量，后续以正式 SDK 文档为准。
 - Android 17 `ANOMALY` / `APP_COMPAT`：本轮按官方 features 和 8.10 既有复核写入，API 37 final 后复核常量值、tag 规则和结果产物类型。
 - Extension 36.1：实际接入时必须在运行时检查 Extension 版本，本节不写死具体设备覆盖率。
+
+<!-- AIW-源码调研-2026-05-19 -->
+## 补充调研（2026-05-19）
+
+**来源**：每日推荐选题 #5（优先级：high）
+
+**新增验证点**：
+
+- `ProfilingTrigger` `[ApiSince=36]`（Microsoft Learn .NET 绑定确认）
+- Android 17 / API 37 新增 trigger 类型：`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（Android Developers 官方 release notes）
+- `ApplicationStartInfo.getStartComponent()` `[ApiSince=36]`（Microsoft Learn 确参）
+- `ProfilingManager` 限流/调试模式具体 shell 命令：
+  - Android 16+: `device_config put profiling_testing delete_temporary_results.disabled true`
+  - Android 15: `device_config put profiling_testing delete_unredacted_trace.disabled true`
+  - 测试模式: `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`
+
+**参考报告**：`DeepResearch/2026-05-19-android-versioned-online-diagnostic-capabilities.md`
