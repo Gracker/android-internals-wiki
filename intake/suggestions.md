@@ -2437,3 +2437,20 @@
   9. ADPF Power Efficiency Mode / PowerMonitor → 已有 5.9、11.5、14.11、25.11 覆盖，且已有回炉建议要求收窄 GameManager/ADPF 口径；不新建。
   10. Android 17 NPU / LiteRT / AICore 端侧 AI 推理 → 已有 5.11、5.14；不新建。
 - **后续建议**：继续由 Task2B/Task9 处理已有章节中的源码口径、版本边界和待验证标注；Task2A 下轮优先从尚未进入 SUMMARY 的新官方性能 API 或新的 AOSP 模块结构变化中找缺口。
+
+## [Task2A Gap Scan] 本轮无新增章节 — 2026-05-20 10:04
+- **类型**：知识缺口挖掘记录
+- **结论**：本轮未发现评分 ≥14 且未被现有章节覆盖的新增小节候选。
+- **已检查方向**：
+  1. 空 draft 扫描：`src/` 中 `status: draft` 数量为 0，`metadata/progress.json` 中 `draft=0`。
+  2. 最近研究素材：`Perfetto v53/v54` 已对应 `13.12`、`13.14`、`13.17`；`Compose Pausable Composition` 已对应 `7.7`、`22.3`、`18.2`；`View hierarchy measure/layout` 已对应 `7.12`、`22.1`。
+  3. 最近每日信息：`Android 17 ProfilingTrigger` 已覆盖 `8.10`、`14.7`、`19.16`、`26.12`；`Cached App Freezer + GC` 已覆盖 `4.11`；`DMA-BUF/Gralloc 16KB` 已覆盖 `2.15`、`13.15` 与相关 16KB 章节；`sched_ext/EEVDF` 已覆盖 `17.4`。
+  4. 官方文档检查：Android 17 features/release notes 中的 `COLD_START`、`OOM`、`KILL_EXCESSIVE_CPU_USAGE` trigger 已在 `26.12` 和 `19.16` 形成版本边界说明。
+  5. AOSP/模块结构检查：本轮看到的候选主要落在已有章节点位；`ConnectivityService/netd`、`SensorService`、`statsd`、`cached app freezer`、`PackageInstaller/SDM` 等已有对应章节。
+- **低于录入线的候选**：
+  - Android Studio Panda 1 工具体验：偏 IDE 使用体验，素材和系统性能关联不足，评分 10/20。
+  - Linux Dirty Frag / CVE-2026-46333：偏安全漏洞，和本书性能主线距离较远，评分 8/20。
+  - Android Bench / AI 写 Android：偏 AI 编程工具评测，非 Android 性能机制，评分 7/20。
+  - Kotlin 2.3.0 语言更新：偏语言工具链，缺少明确性能切入点，评分 9/20。
+- **下轮建议**：如果后续出现 3 篇以上高质量素材聚焦同一未覆盖主题，可优先复查 `ch06 存储与 I/O` 的 F2FS / dm-verity / fsync 深水位，以及 `ch12/ch24` 的 QUIC/HTTP3 真实线上指标。
+
