@@ -2418,3 +2418,22 @@
 - **位置**：Android 17 之后会默认启用吗：OPPO 相关 scx tracepoint / symbol list
 - **问题**：“OPPO 相关 scx tracepoint / symbol list 线索”未给具体路径、commit、symbol 名，读者无法复核。
 - **建议**：补具体证据；不能补时删掉该句或改为“公开证据不足”。
+
+
+## [Task 2A Gap Mining] 2026-05-20 09:13 — 无新章节创建
+
+- **结论**：本轮未发现评分 ≥ 14 且尚未被 AIW 章节或回炉队列覆盖的新知识缺口。
+- **Phase 0**：`src/` 下 `status: draft` 且正文实质内容 < 15 行的章节数量为 0。
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json`、最近 5 个 `intake/research-feeds/`、最近 3 天 `intake/daily-info/`、`intake/research-gaps.md`、`metadata/queue.json`、官方 Android 17 文档与 AOSP Code Search 检索。
+- **已检查方向**：
+  1. Android 17 JobScheduler excessive CPU / ProfilingTrigger KILL_EXCESSIVE_CPU_USAGE → 已有 5.10、26.12 承接，且 queue.json 已有 Power Check/ProfilingTrigger 回炉项；不新建。
+  2. Android 16 SDM / Cloud Compilation 安装链路 → 已有 1.9、16.6 以及多条 Task2B 勘误/回炉记录；现阶段作为证据口径复核，不新建。
+  3. SmartPerfetto 可复用 Trace 分析平台 → 已有 13.18；本轮日报素材作为回炉素材，不新建。
+  4. Perfetto DataGrid / Jank CUJ / 第三方 App 适用范围 → 已有 13.14 与回炉队列；不新建。
+  5. Android 17 桌面窗口化、orientation/resizability 限制变化 → 已有 2.20、18.18、22.14；不新建。
+  6. Android 17 DeliQueue / MessageQueue → 已有 1.13、7.8、队列回炉项；不新建。
+  7. Android Studio Panda / Memory Profiler / LeakCanary Profiler → 已有 14.1、14.3、14.14，并有素材注入队列；不新建。
+  8. Cached App Freezer + GC / DMA-BUF + Gralloc + 16KB Page / ART Generational CMC → 已有 4.11、2.24、4.8 等章节或回炉队列；不新建。
+  9. ADPF Power Efficiency Mode / PowerMonitor → 已有 5.9、11.5、14.11、25.11 覆盖，且已有回炉建议要求收窄 GameManager/ADPF 口径；不新建。
+  10. Android 17 NPU / LiteRT / AICore 端侧 AI 推理 → 已有 5.11、5.14；不新建。
+- **后续建议**：继续由 Task2B/Task9 处理已有章节中的源码口径、版本边界和待验证标注；Task2A 下轮优先从尚未进入 SUMMARY 的新官方性能 API 或新的 AOSP 模块结构变化中找缺口。
