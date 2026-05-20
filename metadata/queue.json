@@ -13780,6 +13780,31 @@
       },
       "completed_date": "2026-05-20T14:04:00+08:00",
       "completed_reason": "Task 2A 加工完成，章节状态改为 ready-for-review，进入 Task6 管线"
+    },
+    {
+      "id": "task2a-gap-1.21-developer-verification-install-boundary",
+      "section": "1.21",
+      "section_title": "Android Developer Verification 与安装链路边界",
+      "priority": 80,
+      "title": "Android Developer Verification 对安装链路与分发路径的影响",
+      "description": "Android 2026 Developer Verification 引入开发者身份与包名注册校验，影响旁加载、第三方商店、企业分发与安装失败归因；需要与 PackageInstallerSession、PackageManager、Android 16 SDM / 云编译安装优化拆清边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/21-developer-verification-install-boundary.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-20.md"
+      ],
+      "gap_score": 14,
+      "gap_source": "官方文档/每日信息/AOSP结构",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T15:04:00+08:00"
     }
   ],
   "metadata": {
