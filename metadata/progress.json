@@ -1,7 +1,7 @@
 {
   "total": 340,
-  "draft": 1,
-  "ready-for-review": 134,
+  "draft": 0,
+  "ready-for-review": 135,
   "finalized": 205,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -1545,8 +1545,8 @@
   "total_review_sections": 166,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-21T04:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-21T05:14:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "04:09",
@@ -5298,13 +5298,17 @@
     }
   },
   "task2a_last_processed": {
-    "section": "21.10",
-    "title": "SDK Runtime 与广告 SDK 启动隔离性能",
-    "file": "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
-    "status": "ready-for-review",
-    "processed_at": "2026-05-19T22:04:00+08:00",
-    "processed_by": "openclaw-task2a",
-    "mode": "draft-processing"
+    "date": "2026-05-21",
+    "time": "05:14",
+    "section": "14.18",
+    "file": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+    "result": "ready-for-review",
+    "sources": [
+      "https://developer.android.com/android-performance-analyzer",
+      "https://developer.android.com/android-performance-analyzer/run",
+      "https://developer.android.com/android-performance-analyzer/analyze/ai",
+      "https://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+    ]
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",

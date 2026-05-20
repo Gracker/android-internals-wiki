@@ -14453,7 +14453,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md"
@@ -14472,7 +14472,9 @@
         }
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T04:04:00+08:00"
+      "added_at": "2026-05-21T04:04:00+08:00",
+      "completed_date": "2026-05-21T05:14:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成：基于官方 APA 文档/博客补齐工具定位、采集入口、Perfetto TraceConfig、GPU counter、项目化对比与 AI 辅助 SQL 边界，status→ready-for-review。"
     },
     {
       "id": "task6-20260521-5.9-adpf-source-block-mainline",
