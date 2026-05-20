@@ -15,22 +15,24 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:26:14+08:00"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 review_round: 3
 last_task2b_at: "2026-04-25T02:09:22+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-12-audit.md"
 ---
 
 # BlockCanary
