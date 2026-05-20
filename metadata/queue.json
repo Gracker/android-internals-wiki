@@ -1,6 +1,47 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-18.20-drawframetask-queuebuffer-source",
+      "section": "18.20",
+      "section_title": "渲染管线分析方法论",
+      "priority": 95,
+      "title": "RenderThread 源码路径与 queueBuffer 阻塞语义需修正",
+      "description": "章节把 DrawFrameTask.cpp 放到 frameworks/native/libs/hwui 路径下，且把 queueBuffer 长耗时直接解释为 BufferQueue 已满；两处与当前 AOSP 源码行为不一致。",
+      "reason": "[Deep Tech Review Audit] 闲时抽检发现 18.20 的 AOSP 源码路径与 BufferQueueProducer 行为解释存在 P0/P1 技术问题。",
+      "issue_type": "source-code-accuracy-producer-bufferqueue-semantics",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-05-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "frontmatter sources L22-L23、参考资料 L333：AOSP DrawFrameTask.cpp 路径",
+          "detail": "正文把 RenderThread 的 DrawFrameTask.cpp 标为 `frameworks/native/libs/hwui/renderthread/DrawFrameTask.cpp`。AOSP main、android-14.0.0_r1、android-15.0.0_r1 下该路径均不存在；当前源码路径为 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`。",
+          "suggestion": "把 frontmatter sources 与参考资料中的路径统一改为 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`；Step 3 表格的 `AOSP DrawFrameTask.cpp` 可补完整路径，避免后续源码索引继续命中错误仓库。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码错误/诊断语义",
+          "location": "§Step 3 关键 Slice 速查 L153-L154、SQL 诊断速查 L172-L177",
+          "detail": "正文把 `queueBuffer` 阻塞直接解释为“BufferQueue 已满”。AOSP `BufferQueueProducer::dequeueBuffer()` 才通过 `waitForFreeSlotThenRelock()` / `mDequeueCondition` 等待可用 slot；`queueBuffer()` 主要负责入队/替换可丢帧 item、通知 consumer，随后可能因 callback 顺序或 EGL CPU throttling 的 `lastQueuedFence->waitForever(\"Throttling EGL Production\")` 变长。把长 `queueBuffer` 等同于队列满，会把 EGL 节流、fence 等待或 consumer callback 开销误判成 BufferQueue 满。",
+          "suggestion": "保留 `dequeueBuffer` 作为 BufferQueue 回压/空闲 buffer 不足的主要信号；`queueBuffer` 长耗时应改成“需结合 binder/callback、EGL throttle fence、consumer 是否及时 latch 继续拆分”，SQL 标题也建议从“找 BufferQueue 阻塞”收窄为“找 BufferQueue/producer 侧等待点”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T05:31:18+08:00",
+      "original_review_log": "logs/deep-review/2026-05-21-05-audit.md"
+    },
+    {
       "id": "task9-20260521-3.1-inputdispatcher-a16-source-errors",
       "section": "3.1",
       "section_title": "Input 事件分发全流程",
