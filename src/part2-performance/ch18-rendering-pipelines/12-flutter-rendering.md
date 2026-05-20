@@ -1,7 +1,8 @@
 ---
+
 title: Flutter 渲染管线
 chapter: '18.12'
-status: finalized
+status: ready-for-review
 applicable_versions: Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android
   API 29+ 默认 Impeller） / Android 10 (API 29) - Android 16 (API 36)
 tags:
@@ -27,20 +28,23 @@ sources:
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
 task6_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-26T10:41:09+08:00"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T13:26:21+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T06:36:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit-18.12.md"
 ---
 
 <!-- outline-start -->

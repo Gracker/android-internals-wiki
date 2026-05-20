@@ -14708,24 +14708,111 @@
       "material_count": 13,
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T06:09:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260521-2.20-multiwindow-android16-17-version-source",
+      "section": "2.20",
+      "section_title": "多窗口与桌面模式渲染性能",
+      "priority": 95,
+      "title": "Android 16/17 多窗口版本演进与源码锚点需纠正",
+      "description": "闲时抽检发现正文把 Android 17 DeliQueue 误写为 SurfaceFlinger 多 display 隔离机制，并写入未验证的 Android 16 SurfaceControl 缓存/applyCachedState 与 16KB 页固定 PSS 数据。",
+      "reason": "[Deep Tech Review Audit] 2.20 在 Android 16/17 版本差异与源码锚点上存在 P0 技术事实错误，需 Task2B 回收修正。",
+      "issue_type": "source-version-accuracy-android16-17-multiwindow",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-06-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§Android 17 多屏掉帧隔离 L137-L149；版本演进表 L290",
+          "detail": "正文把 Android 17 DeliQueue 写成 SurfaceFlinger 多 display Transaction/Binder 路径上的无锁化，并进一步推出 mGlobalLock 按 display/layer 组拆分、外屏卡顿不再影响内屏，以及“第三方应用掉帧率下降 4%、System UI 下降 7.7%”的多屏隔离结论。官方 Android Developers Blog 对 DeliQueue 的描述是 apps targeting SDK 37+ 获得 android.os.MessageQueue 的 lock-free 实现，指标也是 MessageQueue 锁竞争减少后 app/SystemUI/Launcher missed frames 改善；未支持 SurfaceFlinger 多 display 锁拆分或多屏掉帧隔离结论。",
+          "suggestion": "删除“Android 17 多屏掉帧隔离”小节中的 SurfaceFlinger/mGlobalLock/Binder 路径推导，改为“Android 17 DeliQueue 属于 app/系统进程 Looper 的 android.os.MessageQueue 优化，可降低主线程 MessageQueue 锁竞争导致的掉帧”。4%/7.7% 数据只能绑定到 DeliQueue MessageQueue 场景，不能作为多 display SurfaceFlinger 隔离数据。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§Android 16 桌面模式窗口状态缓存 L153-L157；版本演进表 L289",
+          "detail": "正文声称 Android 16 引入“SurfaceControl 属性持久化缓存”，后台窗口状态保留在 SurfaceFlinger 侧，Perfetto slice 从 createSurface/setLayer/setBuffer 缩短为 applyCachedState。官方 Source Android “Desktop windowing features”页面列出的 Android 16 desktop windowing 特性是 customizable header insets 与 app instance management，未命中 SurfaceControl 持久化缓存或 applyCachedState；公开搜索也未找到 applyCachedState 这一 Android/SurfaceControl 锚点。",
+          "suggestion": "删除或标为[待验证]“SurfaceControl 属性持久化缓存 / applyCachedState”链路；Android 16 版本演进应改写为官方可验证的 desktop windowing 特性（customizable header insets、app instance management）以及 large-screen orientation/resizability 行为变化。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/数据错误",
+          "location": "§16KB 页在多窗口下的内存叠加效应 L159-L163",
+          "detail": "正文写“Android 16 起旗舰设备强制 16KB 页对齐”“PSS 增量约 9%”“四个窗口额外内存接近一个完整应用 PSS”。官方 16KB page size 文档口径是 Android 15 起 AOSP 支持 16KB page size、Google Play 从 2025-11-01 要求 targeting Android 15+ 的新 app/更新支持 16KB page sizes；AOSP 文档还说明 Android 15 时该选项不是默认启用。官方资料未支持 Android 16 旗舰强制、PSS 固定 +9% 或四窗口等于一个完整应用 PSS 的量化结论。",
+          "suggestion": "把此段改成条件化表述：16KB page size 是 Android 15+ 支持、设备/OEM 可采用且 Play 有兼容性要求；内存影响只能写“可能增加平均内存占用”，若要保留 PSS 百分比和多窗口叠加结论，必须补具体设备、kernel page size、应用样本、PSS 采集方法与原始数据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T06:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260521-18.12-flutter-rendermode-hcpp-source",
+      "section": "18.12",
+      "section_title": "Flutter 渲染管线",
+      "priority": 95,
+      "title": "Flutter RenderMode.image 与 HCPP 版本差异需补齐",
+      "description": "闲时抽检发现 18.12 将 RenderMode enum 写成只有 surface/texture，遗漏当前 image 枚举；同时未覆盖 Flutter 3.44+ Hybrid Composition++ 版本差异。",
+      "reason": "[Deep Tech Review Audit] 18.12 在 Flutter Android embedding 源码/API 与 Platform Views 版本边界上存在 P0/P1 技术问题。",
+      "issue_type": "source-version-accuracy-flutter-rendermode-platformviews",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-06-audit-18.12.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§`FlutterImageView` 是另一个维度的承载 L218-L225",
+          "detail": "正文写 `io.flutter.embedding.android.RenderMode` 只有 `surface` / `texture` 两个值，并据此判断 `FlutterImageView` 不是 RenderMode 枚举值。当前 Flutter Android embedding Javadoc 与 engine main 的 `RenderMode.java` 已包含 `surface`、`texture`、`image` 三个枚举值；`RenderMode.image` 明确描述为通过 ImageReader + Canvas 绘制 Flutter UI，并用于需要完整 PlatformView 交互的场景。",
+          "suggestion": "改为“常规 FlutterActivity/FlutterFragment 默认路径主要在 surface/texture 之间选择；当前 RenderMode enum 还包含 image。image 对应 FlutterImageView/ImageReader/Canvas 路径，多用于 PlatformView 交互/overlay 或内部转换场景，不应写成枚举不存在。”同时补充 `FlutterView(Context, FlutterImageView)` 与旧 `RenderMode` 构造器不支持 image 的边界。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "§Platform Views 嵌入 L229-L241；版本边界 L73-L75",
+          "detail": "正文把 Android Platform Views composition mode 收敛为 Hybrid Composition 与 Texture Layer Hybrid Composition 两类。当前 Flutter 官方 Platform Views 文档新增 Hybrid Composition++（HCPP），标注为 Flutter 3.44 起的实验性 opt-in 方案，要求 Android API 34+ 与 Vulkan，并会在条件不满足时回退到现有策略。章节适用范围写 Flutter 3.29+，但没有记录这个 3.44+ 版本差异。",
+          "suggestion": "在版本边界和 Platform Views 表格中增加 Flutter 3.44+ HCPP：定位为实验性 opt-in、Android API 34+/Vulkan 门槛、目标是改善原 Hybrid Composition 的合成性能与同步问题；同时说明不满足条件时仍回退到 HC/TLHC，避免读者把它当成所有设备默认路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T06:36:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 415,
-    "p0_count": 152,
-    "last_updated": "2026-05-21T06:09:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 150,
+    "total_entries": 417,
+    "p0_count": 177,
+    "last_updated": "2026-05-21T06:36:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 152,
     "updated_date": "2026-05-21",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 150,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 152,
     "completed_entries": 263,
     "last_task2a_gap_mining": "26.15",
     "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T06:09:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-21T06:36:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -15825,6 +15912,133 @@
       "material_count": 13,
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T06:09:00+08:00"
+    },
+    {
+      "section": "14.7",
+      "section_title": "14.7 ProfilingManager",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-17-profilingtrigger-excessive-cpu-api37.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ProfilingTrigger API 37 新增 Trigger 与 Excessive CPU Kill — Android 17 (API 37) 新增 TRIGGER_TYPE_COLD_START、TRIGGER_TYPE_OOM、TRIGGER_TYPE_ANOMALY 三个 system trigg",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-21T06:16:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.6",
+      "section_title": "16.6 Android 16 云端 Profile 与 dexopt 安装优化",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android16-sdm-cloud-compilation.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 16 云编译与 SDM 机制深度验证 — Android 16 Cloud Compilation 将 dex2oat 前移到 Play Store 服务端，生成签名 SDM 文件安装时直接加载。梳理 PackageInstallerSess",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-21T06:16:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-audit-20260521-2.20-multiwindow-android16-17-version-source",
+      "section": "2.20",
+      "section_title": "多窗口与桌面模式渲染性能",
+      "priority": 95,
+      "title": "Android 16/17 多窗口版本演进与源码锚点需纠正",
+      "description": "闲时抽检发现正文把 Android 17 DeliQueue 误写为 SurfaceFlinger 多 display 隔离机制，并写入未验证的 Android 16 SurfaceControl 缓存/applyCachedState 与 16KB 页固定 PSS 数据。",
+      "reason": "[Deep Tech Review Audit] 2.20 在 Android 16/17 版本差异与源码锚点上存在 P0 技术事实错误，需 Task2B 回收修正。",
+      "issue_type": "source-version-accuracy-android16-17-multiwindow",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-06-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§Android 17 多屏掉帧隔离 L137-L149；版本演进表 L290",
+          "detail": "正文把 Android 17 DeliQueue 写成 SurfaceFlinger 多 display Transaction/Binder 路径上的无锁化，并进一步推出 mGlobalLock 按 display/layer 组拆分、外屏卡顿不再影响内屏，以及“第三方应用掉帧率下降 4%、System UI 下降 7.7%”的多屏隔离结论。官方 Android Developers Blog 对 DeliQueue 的描述是 apps targeting SDK 37+ 获得 android.os.MessageQueue 的 lock-free 实现，指标也是 MessageQueue 锁竞争减少后 app/SystemUI/Launcher missed frames 改善；未支持 SurfaceFlinger 多 display 锁拆分或多屏掉帧隔离结论。",
+          "suggestion": "删除“Android 17 多屏掉帧隔离”小节中的 SurfaceFlinger/mGlobalLock/Binder 路径推导，改为“Android 17 DeliQueue 属于 app/系统进程 Looper 的 android.os.MessageQueue 优化，可降低主线程 MessageQueue 锁竞争导致的掉帧”。4%/7.7% 数据只能绑定到 DeliQueue MessageQueue 场景，不能作为多 display SurfaceFlinger 隔离数据。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§Android 16 桌面模式窗口状态缓存 L153-L157；版本演进表 L289",
+          "detail": "正文声称 Android 16 引入“SurfaceControl 属性持久化缓存”，后台窗口状态保留在 SurfaceFlinger 侧，Perfetto slice 从 createSurface/setLayer/setBuffer 缩短为 applyCachedState。官方 Source Android “Desktop windowing features”页面列出的 Android 16 desktop windowing 特性是 customizable header insets 与 app instance management，未命中 SurfaceControl 持久化缓存或 applyCachedState；公开搜索也未找到 applyCachedState 这一 Android/SurfaceControl 锚点。",
+          "suggestion": "删除或标为[待验证]“SurfaceControl 属性持久化缓存 / applyCachedState”链路；Android 16 版本演进应改写为官方可验证的 desktop windowing 特性（customizable header insets、app instance management）以及 large-screen orientation/resizability 行为变化。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/数据错误",
+          "location": "§16KB 页在多窗口下的内存叠加效应 L159-L163",
+          "detail": "正文写“Android 16 起旗舰设备强制 16KB 页对齐”“PSS 增量约 9%”“四个窗口额外内存接近一个完整应用 PSS”。官方 16KB page size 文档口径是 Android 15 起 AOSP 支持 16KB page size、Google Play 从 2025-11-01 要求 targeting Android 15+ 的新 app/更新支持 16KB page sizes；AOSP 文档还说明 Android 15 时该选项不是默认启用。官方资料未支持 Android 16 旗舰强制、PSS 固定 +9% 或四窗口等于一个完整应用 PSS 的量化结论。",
+          "suggestion": "把此段改成条件化表述：16KB page size 是 Android 15+ 支持、设备/OEM 可采用且 Play 有兼容性要求；内存影响只能写“可能增加平均内存占用”，若要保留 PSS 百分比和多窗口叠加结论，必须补具体设备、kernel page size、应用样本、PSS 采集方法与原始数据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T06:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260521-18.12-flutter-rendermode-hcpp-source",
+      "section": "18.12",
+      "section_title": "Flutter 渲染管线",
+      "priority": 95,
+      "title": "Flutter RenderMode.image 与 HCPP 版本差异需补齐",
+      "description": "闲时抽检发现 18.12 将 RenderMode enum 写成只有 surface/texture，遗漏当前 image 枚举；同时未覆盖 Flutter 3.44+ Hybrid Composition++ 版本差异。",
+      "reason": "[Deep Tech Review Audit] 18.12 在 Flutter Android embedding 源码/API 与 Platform Views 版本边界上存在 P0/P1 技术问题。",
+      "issue_type": "source-version-accuracy-flutter-rendermode-platformviews",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-06-audit-18.12.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "§`FlutterImageView` 是另一个维度的承载 L218-L225",
+          "detail": "正文写 `io.flutter.embedding.android.RenderMode` 只有 `surface` / `texture` 两个值，并据此判断 `FlutterImageView` 不是 RenderMode 枚举值。当前 Flutter Android embedding Javadoc 与 engine main 的 `RenderMode.java` 已包含 `surface`、`texture`、`image` 三个枚举值；`RenderMode.image` 明确描述为通过 ImageReader + Canvas 绘制 Flutter UI，并用于需要完整 PlatformView 交互的场景。",
+          "suggestion": "改为“常规 FlutterActivity/FlutterFragment 默认路径主要在 surface/texture 之间选择；当前 RenderMode enum 还包含 image。image 对应 FlutterImageView/ImageReader/Canvas 路径，多用于 PlatformView 交互/overlay 或内部转换场景，不应写成枚举不存在。”同时补充 `FlutterView(Context, FlutterImageView)` 与旧 `RenderMode` 构造器不支持 image 的边界。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "§Platform Views 嵌入 L229-L241；版本边界 L73-L75",
+          "detail": "正文把 Android Platform Views composition mode 收敛为 Hybrid Composition 与 Texture Layer Hybrid Composition 两类。当前 Flutter 官方 Platform Views 文档新增 Hybrid Composition++（HCPP），标注为 Flutter 3.44 起的实验性 opt-in 方案，要求 Android API 34+ 与 Vulkan，并会在条件不满足时回退到现有策略。章节适用范围写 Flutter 3.29+，但没有记录这个 3.44+ 版本差异。",
+          "suggestion": "在版本边界和 Platform Views 表格中增加 Flutter 3.44+ HCPP：定位为实验性 opt-in、Android API 34+/Vulkan 门槛、目标是改善原 Hybrid Composition 的合成性能与同步问题；同时说明不满足条件时仍回退到 HC/TLHC，避免读者把它当成所有设备默认路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T06:36:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
