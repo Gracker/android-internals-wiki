@@ -1,6 +1,6 @@
 {
-  "total": 336,
-  "draft": 0,
+  "total": 338,
+  "draft": 2,
   "ready-for-review": 132,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -5456,14 +5456,14 @@
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
   "last_task2a_gap_mining": "24.11",
   "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
-  "last_task6_audit": "2026-05-19T11:12:00+08:00",
+  "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
-    "8.7"
+    "19.11"
   ],
   "last_task6_audit_files": [
-    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+    "src/part3-tools/ch19-apm/11-jankstats.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-19-11-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-20",
     "created_sections": [
@@ -5578,5 +5578,35 @@
     "task2b_result": "pending",
     "queue_priority": 90,
     "queue_id": "task6-19.09-measure-outline-coverage"
+  },
+  "section_19_11": {
+    "section": "19.11",
+    "title": "JankStats",
+    "file": "src/part3-tools/ch19-apm/11-jankstats.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_audit": "2026-05-20",
+    "last_task6_at": "2026-05-20T23:28:00+08:00",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
+    "queue_id": "task6-audit-19.11-jankstats-tool-boundary-outline",
+    "log": "logs/review/2026-05-20-23-audit.md"
+  },
+  "task2a_gap_mining_summary": {
+    "date": "2026-05-20",
+    "time": "23:31",
+    "created_sections": [
+      "21.11",
+      "25.13"
+    ],
+    "created_files": [
+      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+      "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
+    ],
+    "reason": "Phase 0 未发现空 draft；Phase 1 从 source-index、近期信息和官方文档/AOSP 方向筛出评分 >=14 的缺口并录入。"
   }
 }
