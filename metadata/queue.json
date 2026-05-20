@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-13.8-inputdispatcher-oq-wq-semantics",
+      "section": "13.8",
+      "section_title": "Perfetto 输入延迟 SQL 深度分析",
+      "priority": 95,
+      "title": "InputDispatcher oq/wq 队列语义与 AOSP 源码相反",
+      "description": "章节把 oq 写成已发送等待 ACK，把 wq 写成等待窗口焦点；AOSP InputDispatcher 中 outboundQueue 是待 publish 队列，waitQueue 才是已发送后等待 App finish/ACK 的队列。",
+      "issue_type": "source-code-accuracy-principle",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/08-input-latency-sql.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-18-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/原理描述错误",
+          "location": "§InputDispatcher 延迟分解 → 输入队列长度追踪：`iq/oq/wq` 定义与解读规则",
+          "detail": "正文把 `oq` 解释为“已发送等待 ACK”，把 `wq` 解释为“等待窗口获取焦点”。当前 AOSP main 的 InputDispatcher.cpp 中，traceOutboundQueueLength() 统计的是 connection.outboundQueue；startDispatchCycleLocked() 从 outboundQueue 取出 dispatchEntry，publish 成功后将该 entry 放入 connection.waitQueue 并从 outboundQueue 删除。doDispatchCycleFinishedCommand() 再从 waitQueue 查找 seq、计算处理耗时、删除 waitQueue entry；isConnectionResponsive() 也遍历 waitQueue 的 timeoutTime。也就是说 `wq` 才是已发送给 App 后等待 finish/ACK 的队列，`oq` 是待发送/尚未成功 publish 到连接的队列；`wq` 不是等待窗口焦点队列。当前写法会把 App 处理/ANR 反压误判成窗口焦点等待。",
+          "suggestion": "把队列语义改为：`iq`=InputDispatcher inbound queue；`oq:<channel>`=connection outboundQueue，等待 publish 到目标 input channel，持续堆积通常表示目标连接/pipe/backpressure 使发送推进不了；`wq:<channel>`=connection waitQueue，事件已发送给 App，等待 App finish/ACK，也是 dispatching timeout/ANR 响应性判断的核心队列。删除“wq 等待窗口焦点”的表述；窗口焦点等待应另按 focus/window dispatch 事件或具体 trace slice 说明。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T18:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T18:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-18-audit.md"
+    },
+    {
       "id": "task9-audit-19.10-matrix-agp8-transform",
       "section": "19.10",
       "section_title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
@@ -13886,20 +13921,20 @@
     }
   ],
   "metadata": {
-    "total_entries": 385,
-    "p0_count": 164,
-    "last_updated": "2026-05-20T10:20:00+08:00",
+    "total_entries": 386,
+    "p0_count": 165,
+    "last_updated": "2026-05-20T18:20:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 143,
+    "pending_entries": 144,
     "updated_date": "2026-05-20",
     "last_updated_by": "openclaw-task9",
-    "pending": 143,
+    "pending": 144,
     "completed_entries": 240,
     "last_task2a_gap_mining": "4.12",
     "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T10:20:00+08:00",
+  "last_updated": "2026-05-20T18:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": [
     {
