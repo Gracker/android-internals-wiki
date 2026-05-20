@@ -2472,8 +2472,9 @@
       "title": "ADPF 自适应性能框架",
       "task6_state": "reviewed",
       "task6_result": "needs-rework",
-      "last_task6_at": "2026-05-16T23:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
+      "last_task6_at": "2026-05-21T02:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
+      "task2b_result": "pending"
     },
     "23.7": {
       "status": "finalized",
@@ -4784,8 +4785,10 @@
       "task2b_state": "pending",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "last_task6_at": "2026-05-16T23:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-23-review.md"
+      "last_task6_at": "2026-05-21T02:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
+      "task2b_result": "pending",
+      "queue_priority": 95
     },
     "4.3": {
       "status": "ready-for-review",

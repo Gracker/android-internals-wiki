@@ -45,21 +45,21 @@ sources:
 - type: blog
   path: https://android-developers.googleblog.com/
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: '2026-05-20T23:53:36+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-05-21"
 task6_result: needs-rework
 task9_result: needs-rework
 last_task9_at: "2026-05-21T00:29:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
-last_task6_at: "2026-05-16T23:15:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-23-review.md"
+last_task6_at: "2026-05-21T02:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-02-review.md"
 ---
 
 
@@ -112,7 +112,7 @@ session.updateTargetWorkDuration(16_666_667L);
 
 ### 系统侧的响应机制
 
-App 调 `reportActualWorkDuration()` 之后，信息不会直接到 SoC。公开 API 先进入 `PerformanceHintManager.Session`，再到 system_server 中的 `com.android.server.power.hint.HintManagerService`，再经 `IHintManager` 与厂商的 power hint HAL / AIDL 实现交互。排查 ADPF 失效时，我们也要按这三层拆开看，App 有没有正确上报，system_server 有没有收到 session 更新，OEM 实现有没有真的把 hint 变成提频或核心分配动作。
+App 调 `reportActualWorkDuration()` 之后，信息不会直接到 SoC。公开 API 先进入 `PerformanceHintManager.Session`，再到 system_server 中的 `com.android.server.power.hint.HintManagerService`，再经 `IHintManager` 与厂商的 power hint HAL / AIDL 实现交互。排查 ADPF 失效时，我们也要按这三层拆开看，App 有没有正确上报，system_server 有没有收到 session 更新，OEM 实现有没有把 hint 变成提频或核心分配动作。
 
 这种设计决定了 ADPF 的实际效果会有设备差异。同一款游戏在 Pixel 上和在某款定制 ROM 上，帧时间稳定性的改善幅度可能不同。分析时不能只看 App 代码，还要把 system_server 和 OEM 实现一起纳入判断。
 
@@ -155,7 +155,7 @@ Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal he
 
 ### 热状态的层级模型
 
-App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`getCurrentThermalStatus()`、`addThermalStatusListener()` 和 `getThermalHeadroom()` 都挂在 `PowerManager` 上。它返回的不是绝对温度，而是热状态等级。对 App 来说，真正有用的问题不是“芯片现在多少度”，而是“系统已经把设备放在哪个热状态上”。
+App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`getCurrentThermalStatus()`、`addThermalStatusListener()` 和 `getThermalHeadroom()` 都挂在 `PowerManager` 上。它返回的不是绝对温度，而是热状态等级。对 App 来说，要回答的问题不是“芯片现在多少度”，而是“系统已经把设备放在哪个热状态上”。
 
 热状态从低到高分为七个等级：
 
@@ -279,11 +279,11 @@ gameManager.setGameState(
 
 - **FrameTimeline / 帧时间**：看实际帧时间是否长期贴着目标 budget，还是经常在 budget 上方抖动。
 - **CPU frequency / 调度行为**：看上报 work duration 之后，big core 频率和线程调度有没有跟着变化。
-- **thermal status / 温度相关 counter**：看掉帧区间前后，thermal status 是否上升，或者 thermal / power counter 是否同步收紧。
+- **thermal status / 温度相关 counter**：看掉帧区间前后，thermal status 是否上升，或者 thermal / power counter 是否同步显示热约束增强。
 
-如果项目自己接了 ADPF，最好再补两类自定义 trace 标记，一类包住 `reportActualWorkDuration()`，一类包住画质或帧率策略切换。这样回放 trace 时，我们能把“App 何时上报 hint”“系统何时提频”“热状态何时收紧”放到同一条时间线上。
+如果项目自己接了 ADPF，最好再补两类自定义 trace 标记，一类包住 `reportActualWorkDuration()`，一类包住画质或帧率策略切换。这样回放 trace 时，我们能把“App 何时上报 hint”“系统何时提频”“热状态何时升高”放到同一条时间线上。
 
-### 分析 ADPF 是否真的生效
+### 分析 ADPF 是否生效
 
 判断 ADPF 是否起作用，可以按这个顺序看：
 
@@ -374,6 +374,8 @@ pm.registerForAllProfilingResults(executor, result -> {
 
 ### Hint 信号体系：sendHint() 的完整语义
 
+[需确认: Task9 已登记 NDK workload hint API level 与 Java sendHint 公开 API 边界风险，待 Task2B 按 logs/deep-review/2026-05-21-00-deep-review.md 修正后再发布。]
+
 **重要边界**：Java 层 `sendHint()` 标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。面向 NDK 的公开替代是 `APerformanceHint_notifyWorkloadIncrease` / `Reset` / `Spike` 系列函数（API 33+），这些是 CTS 验证的公开接口。下文描述的 `sendHint()` 语义仅供理解系统内部设计使用，不建议在 App 代码中直接调用。
 
 `PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
@@ -445,6 +447,8 @@ WorkDuration 四字段（从 JNI 签名推断）：
 
 ### JNI 实现：dlopen libandroid.so
 
+[需确认: Task9 已登记 `APerformanceHint_*` 源码入口与 `libandroid.so` 表述风险，待 Task2B 修正后再发布。]
+
 **源码位置**：`frameworks/base/core/jni/android_os_PerformanceHintManager.cpp`（AOSP master）
 
 ```cpp
@@ -466,7 +470,7 @@ void ensureAPerformanceHintBindingInitialized() {
 }
 ```
 
-所有 `APerformanceHint_*` 函数实现在 `libandroid.so`（非公开源码），通过 `dlopen + dlsym` 延迟绑定。这意味着 native 层的性能优化不会因为 Java API 的变化而受影响——两者通过稳定的 C 接口解耦。
+`android_os_PerformanceHintManager.cpp` 通过 `dlopen + dlsym` 绑定 `libandroid.so` 中的 `APerformanceHint_*` 符号；这些符号的源码入口和稳定性边界需按 Task9 反馈重新核对。
 
 ### GameState.MODE_CONTENT：非游戏应用的语义锚点
 
@@ -544,6 +548,8 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 高通平台通过 PowerHint HAL 将 ADPF 的 Hint 信号映射到 PerfLock 请求，触发 CPU/GPU 频率调整和核心分配。联发科平台通过 Perfservice 接收 ADPF Hint，结合自己的调度策略做频率决策。Google Tensor 平台有自己的 DVFS 调度策略，与 ADPF 的集成方式也可能不同。
 
 同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量。
+
+[需补充素材: Task9 已登记该 2026 旗舰机延迟表缺少测试方法、固件版本、样本数和原始 trace；Pixel 10 SoC 口径也需确认。]
 
 **2026 旗舰机 Hint 响应延迟对照**：HintSession 上报 work duration 后，系统完成频率调整所需的时间，直接影响“掉帧后补频能否挽回当前帧”。120 fps 下一帧只有 8.33 ms，5 ms 的响应延迟意味着超过一半的帧预算已经耗在等待上。
 
