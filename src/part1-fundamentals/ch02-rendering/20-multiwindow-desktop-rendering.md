@@ -1,8 +1,9 @@
 ---
+
 title: 多窗口与桌面模式渲染性能
 chapter: '2.20'
 section: '2.20'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -45,11 +46,11 @@ related_chapters:
 - '2.13'
 - '7.4'
 - '3.3'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_date: '2026-05-09'
 finalized_date: "2026-05-13"
 finalized_by: openclaw-task6-auto-promote
@@ -62,6 +63,9 @@ task9_reviewed_date: '2026-04-26'
 last_task9_at: '2026-04-26T22:20:00+08:00'
 last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: openclaw-task9
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T06:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit.md"
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
