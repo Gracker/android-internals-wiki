@@ -13,7 +13,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md"
@@ -39,7 +39,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T05:31:18+08:00",
-      "original_review_log": "logs/deep-review/2026-05-21-05-audit.md"
+      "original_review_log": "logs/deep-review/2026-05-21-05-audit.md",
+      "completed_date": "2026-05-21T07:17:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: DrawFrameTask 源码路径修正(frameworks/native→frameworks/base)；queueBuffer 阻塞语义收窄(补 EGL throttle fence/callback/consumer latch 拆分路径)；SQL 标题收窄为 BufferQueue/Producer 侧等待点"
     },
     {
       "id": "task9-20260521-3.1-inputdispatcher-a16-source-errors",
@@ -186,7 +188,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/09-measure.md"
@@ -210,7 +212,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-20T20:08:00+08:00",
-      "original_review_log": "logs/review/2026-05-20-20-review.md"
+      "original_review_log": "logs/review/2026-05-20-20-review.md",
+      "completed_date": "2026-05-21T07:17:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充能力范围表(10 项能力×6 维度); 补充 Firebase/Sentry/Measure 平台对比表(7 维度×3 平台)"
     },
     {
       "id": "task9-audit-13.8-inputdispatcher-oq-wq-semantics",
@@ -1891,7 +1895,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "research-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
@@ -1918,7 +1922,9 @@
           "detail": "ART GC 对老年代冷页调用 `madvise(MADV_COLD)`、系统掉帧减少约 10% 只引用 archived external-review，未给 AOSP commit、官方 release note 或论文/实验条件。",
           "suggestion": "未找到一手依据前标为 `[待验证]`；若保留，补 ART / libcore / runtime 源码路径、commit/tag、测试设备和 jank 指标口径。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-21T07:17:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: MGLRU Android 16 强制默认降级为 6.12 common kernel 包含(是否启用取决于 CONFIG/sysfs); madvise(MADV_COLD) 掉帧减少约 10% 降级为[待验证]"
     },
     {
       "id": "task9-5.7-exact-alarm-android13-20260512",

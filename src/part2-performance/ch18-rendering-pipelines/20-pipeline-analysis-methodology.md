@@ -20,15 +20,15 @@ sources:
   - type: aosp
     path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
   - type: aosp
-    path: "frameworks/native/libs/hwui/renderthread/DrawFrameTask.cpp"
+    path: "frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp"
 tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
 related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
@@ -39,7 +39,8 @@ last_task9_at: "2026-04-25T21:21:00+08:00"
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T11:40:54+08:00"
+last_task2b_at: "2026-05-21T07:17:00+08:00"
+last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T05:31:18+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-05-audit.md"
@@ -67,7 +68,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-21-05-audit.md"
 
 用户只说“App 卡了”时，Perfetto 往往会同时出现主线程、RenderThread、SurfaceFlinger、GPU、HWC 这些轨道。没有先把渲染路径认清，后面的时间窗和 slice 解释很容易串线。SurfaceView 现场要盯独立 Layer 与合成决策，TextureView 现场要盯 App 进程里的纹理采样，WebView 现场还要把 Chromium 的 Compositor / Viz 线程一起拉进来。
 
-这套四步法的目标是把“卡在哪”拆成固定顺序：识别路径，拆 Producer / Consumer，看 Perfetto，再收口到瓶颈类型。这样排查入口比较稳定，跨 Android 版本时也不容易把主窗口 BLAST 和 SurfaceView 的独立 Surface 机制混成一件事。
+这套四步法的目标是把“卡在哪”拆成固定顺序：识别路径，拆 Producer / Consumer，看 Perfetto，再定位到瓶颈类型。这样排查入口比较稳定，跨 Android 版本时也不容易把主窗口 BLAST 和 SurfaceView 的独立 Surface 机制混成一件事。
 
 [来源: Android Graphics Architecture；Android Graphics BufferQueue and Gralloc；§18.13、§18.14、§18.15；Perfetto Trace Processor 文档]
 
@@ -150,13 +151,15 @@ adb shell dumpsys SurfaceFlinger --latency "<LayerName>"
 | `Choreographer#doFrame` 超长 | 主线程预算超标 | Measure / Layout / Draw 或业务逻辑过重 |
 | `DrawFrame` 超长 | RenderThread CPU 段过长 | 命令构建过重，或卡在 `syncFrameState` / `dequeueBuffer` 等等待点 |
 | `dequeueBuffer` 阻塞 | Producer 拿不到空闲 Buffer | Consumer 消费慢、Buffer 深度不足、归还延后 |
-| `queueBuffer` 阻塞 | BufferQueue 已满 | SurfaceFlinger 或下一跳还没消费上一帧 |
+| `queueBuffer` 阻塞 | Producer 侧提交等待 | 需结合 binder callback、EGL throttle fence、consumer latch 时序继续拆分；不要直接等同 BufferQueue 已满 |
 | `syncFrameState` 阻塞 | UI / RT 协调等待 | 主线程与 RenderThread 同步点拥塞 |
 | `updateTexImage` 阻塞 | SurfaceTexture 取帧等待 | acquire fence 未 signal 或上游 producer 节奏抖动 |
 | `latchBuffer` 阻塞 | SurfaceFlinger 等待可用 Buffer | acquire fence 未 signal、GPU / producer 还没完成 |
-| `Invoke Functor` 超长 | WebView / GL functor 回调耗时高 | 网页内容在宿主窗口这帧里收口，需连看 Chromium 线程 |
+| `Invoke Functor` 超长 | WebView / GL functor 回调耗时高 | 网页内容并入宿主窗口这一帧，需连看 Chromium 线程 |
 
 `DrawFrame` 表示 RenderThread 这一段的 CPU 执行窗口。分析这一段时，要把同一时间窗里的 `dequeueBuffer`、`syncFrameState`、GPU 轨道和 SurfaceFlinger 一起放进来，才能分清是命令构建重，还是后段等待把时间拖长了。
+
+BufferQueue 空闲 buffer 回压的主要信号落在 `dequeueBuffer`：`BufferQueueProducer::dequeueBuffer()` 通过 `waitForFreeSlotThenRelock()` 等待可用 slot。`queueBuffer` 长耗时不等于队列满——它还可能由 binder callback 顺序、EGL CPU throttling（`lastQueuedFence->waitForever("Throttling EGL Production")`）或 consumer 侧处理延迟引起。定位 `queueBuffer` 长耗时时，应先检查同一时间窗的 fence 等待、EGL throttle 和 SurfaceFlinger latch 节奏，而不是直接判 BufferQueue 满。
 
 ### SQL 诊断速查
 
@@ -168,7 +171,7 @@ WHERE name = 'Choreographer#doFrame'
 ORDER BY dur DESC
 LIMIT 10;
 
--- 2. 找 BufferQueue 阻塞
+-- 2. 找 BufferQueue / Producer 侧等待点
 SELECT name, dur, ts
 FROM slice
 WHERE name IN ('dequeueBuffer', 'queueBuffer')
@@ -206,38 +209,38 @@ Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11
 
 ### 模式 A：主线程卡顿
 
-**特征**：`Choreographer#doFrame` 超过预算，Measure / Layout / Draw 占大头。  
-**常见路径**：标准 Android View 路径。  
-**收口方式**：回到主线程调用栈，区分布局、绘制和业务逻辑。  
-**常见处理**：压布局层级、拆分重计算、把非 UI 工作移出帧预算。
+- **特征**：`Choreographer#doFrame` 超过预算，Measure / Layout / Draw 占大头。
+- **常见路径**：标准 Android View 路径。
+- **定位方式**：回到主线程调用栈，区分布局、绘制和业务逻辑。
+- **常见处理**：压布局层级、拆分重计算、把非 UI 工作移出帧预算。
 
 ### 模式 B：RenderThread / GPU 压力高
 
-**特征**：`DrawFrame` 很长，GPU 轨道同步忙。  
-**常见路径**：TextureView、复杂 Canvas、WebView functor、GPU 合成回退。  
-**收口方式**：区分 CPU 侧命令构建、GPU 执行、`dequeueBuffer` 回压。  
-**常见处理**：减 overdraw、收敛 shader 复杂度、减少额外采样和离屏合成。
+- **特征**：`DrawFrame` 很长，GPU 轨道同步忙。
+- **常见路径**：TextureView、复杂 Canvas、WebView functor、GPU 合成回退。
+- **定位方式**：区分 CPU 侧命令构建、GPU 执行、`dequeueBuffer` 回压。
+- **常见处理**：减 overdraw、收敛 shader 复杂度、减少额外采样和离屏合成。
 
 ### 模式 C：BufferQueue 饥饿
 
-**特征**：`dequeueBuffer` 频繁阻塞，`queueBuffer` 间隔变长。  
-**常见路径**：SurfaceView、TextureView、Camera、MediaCodec、ImageReader。  
-**收口方式**：确认哪一跳拿着 Buffer 不还，哪一跳在等 fence。  
-**常见处理**：补 Buffer 深度、缩短 consumer 持有时间、检查 analysis 线程或 SurfaceFlinger 消费速度。
+- **特征**：`dequeueBuffer` 频繁阻塞，`queueBuffer` 间隔变长。
+- **常见路径**：SurfaceView、TextureView、Camera、MediaCodec、ImageReader。
+- **定位方式**：确认哪一跳拿着 Buffer 不还，哪一跳在等 fence。
+- **常见处理**：补 Buffer 深度、缩短 consumer 持有时间、检查 analysis 线程或 SurfaceFlinger 消费速度。
 
 ### 模式 D：Overlay 回退
 
-**特征**：目标 Layer 从 `DEVICE` 变成 `CLIENT`，GPU 合成任务抬高。  
-**常见路径**：视频 SurfaceView、地图或 Camera 预览的独立 Surface。  
-**收口方式**：把 Layer dump、HWC 结果和 GPU 轨道放到同一时间窗。  
-**常见处理**：去掉 Alpha、圆角、模糊、复杂变换，重新验证 composition 结果。
+- **特征**：目标 Layer 从 `DEVICE` 变成 `CLIENT`，GPU 合成任务抬高。
+- **常见路径**：视频 SurfaceView、地图或 Camera 预览的独立 Surface。
+- **定位方式**：把 Layer dump、HWC 结果和 GPU 轨道放到同一时间窗。
+- **常见处理**：去掉 Alpha、圆角、模糊、复杂变换，重新验证 composition 结果。
 
 ### 模式 E：VRR 误判
 
-**特征**：工具报出大量 jank，肉眼感受却不重。  
-**常见路径**：高刷与可变刷新率设备。  
-**收口方式**：看 `actual_frame_timeline_slice`、`present_type` 和实际 present 节奏。  
-**常见处理**：用 `setFrameRate()` 明确帧率意图，避免拿固定 16.6ms 习惯解释所有设备。
+- **特征**：工具报出大量 jank，肉眼感受却不重。
+- **常见路径**：高刷与可变刷新率设备。
+- **定位方式**：看 `actual_frame_timeline_slice`、`present_type` 和实际 present 节奏。
+- **常见处理**：用 `setFrameRate()` 明确帧率意图，避免拿固定 16.6ms 习惯解释所有设备。
 
 [来源: §18.13、§18.14、§18.15、§18.19；Android Graphics Architecture；Perfetto FrameTimeline 文档]
 
@@ -245,21 +248,21 @@ Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11
 
 ### 案例 1：SurfaceView 视频层因 Alpha 回退到 GPU
 
-**现场**：视频详情页静止播放时功耗正常，浮层动画出现后 GPU 轨道多出一段稳定的合成工作。  
-**Step 1**：目标 Layer 来自 `SurfaceView`，路径归到 §18.15 的视频直出路径。  
-**Step 2**：Producer / Consumer 是 `MediaCodec → SurfaceView → SurfaceFlinger → HWC`。这条路径理论上应该优先走 `DEVICE` composition。  
-**Step 3**：Perfetto 里 App 主线程和 RenderThread 都不重，`SurfaceFlinger` 同一时间窗出现更多 client target 合成；Layer dump 里目标 Layer 的 composition 从 `DEVICE` 变成 `CLIENT`。  
-**Step 4**：问题落点在 Overlay 失效。把 `setAlpha()`、圆角或复杂变换拿掉后再抓一次 trace，GPU 额外合成段就会消失。
+- **现场**：视频详情页静止播放时功耗正常，浮层动画出现后 GPU 轨道多出一段稳定的合成工作。
+- **Step 1**：目标 Layer 来自 `SurfaceView`，路径归到 §18.15 的视频直出路径。
+- **Step 2**：Producer / Consumer 是 `MediaCodec → SurfaceView → SurfaceFlinger → HWC`。这条路径理论上应该优先走 `DEVICE` composition。
+- **Step 3**：Perfetto 里 App 主线程和 RenderThread 都不重，`SurfaceFlinger` 同一时间窗出现更多 client target 合成；Layer dump 里目标 Layer 的 composition 从 `DEVICE` 变成 `CLIENT`。
+- **Step 4**：问题落点在 Overlay 失效。把 `setAlpha()`、圆角或复杂变换拿掉后再抓一次 trace，GPU 额外合成段就会消失。
 
 [案例来源: §18.15 Video Overlay + HWC；AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`；Android Graphics Architecture]
 
 ### 案例 2：WebView 滚动卡顿，瓶颈落在宿主窗口这一帧
 
-**现场**：页面滚动时宿主窗口掉帧，RecyclerView 本身工作量不高，但 RenderThread 持续出现长 `Invoke Functor`。  
-**Step 1**：这里要套用 §18.13 的 WebView GL Functor 路径，普通 View 列表的判断口径不适用。  
-**Step 2**：Producer / Consumer 是 `Chromium Compositor / Viz → 宿主 RenderThread → SurfaceFlinger`。网页内容在宿主窗口这一帧里收口。  
-**Step 3**：Perfetto 同窗能看到 `Invoke Functor` 拉长，同时 `CrRendererMain` 或 Viz 线程也在忙；宿主主线程并没有对应长度的 layout / draw。  
-**Step 4**：优化入口回到网页内容和 provider 路径。页面 DOM / Canvas 复杂度、WebView provider 版本、是否命中独立子 Surface，都会直接影响这一帧的 RenderThread 预算。
+- **现场**：页面滚动时宿主窗口掉帧，RecyclerView 本身工作量不高，但 RenderThread 持续出现长 `Invoke Functor`。
+- **Step 1**：这里要套用 §18.13 的 WebView GL Functor 路径，普通 View 列表的判断口径不适用。
+- **Step 2**：Producer / Consumer 是 `Chromium Compositor / Viz → 宿主 RenderThread → SurfaceFlinger`。网页内容并入宿主窗口这一帧。
+- **Step 3**：Perfetto 同窗能看到 `Invoke Functor` 拉长，同时 `CrRendererMain` 或 Viz 线程也在忙；宿主主线程并没有对应长度的 layout / draw。
+- **Step 4**：优化入口回到网页内容和 provider 路径。页面 DOM / Canvas 复杂度、WebView provider 版本、是否命中独立子 Surface，都会直接影响这一帧的 RenderThread 预算。
 
 [案例来源: §18.13 WebView 渲染管线；Chromium `android_webview/browser/gfx/browser_view_renderer.cc`；Chromium `android_webview/browser/gfx/hardware_renderer.cc`]
 
@@ -329,7 +332,7 @@ adb shell dumpsys gfxinfo <package> framestats
 - Android Developers, `SurfaceView`: <https://developer.android.com/reference/android/view/SurfaceView>
 - AOSP `frameworks/base/core/java/android/view/SurfaceView.java`
 - AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`
-- AOSP `frameworks/native/libs/hwui/renderthread/DrawFrameTask.cpp`
+- AOSP `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`
 - AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
 - Chromium `android_webview/browser/gfx/browser_view_renderer.cc`
 - Chromium `android_webview/browser/gfx/hardware_renderer.cc`

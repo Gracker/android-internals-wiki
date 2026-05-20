@@ -32,17 +32,17 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-20"
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task2b_reopened_at: "2026-05-20T20:08:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
-last_task2b_at: '2026-04-24T14:55:00+08:00'
+last_task2b_at: "2026-05-21T07:17:00+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
@@ -114,7 +114,7 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 - 用户进入哪个页面后出现错误。
 - 错误前是否发生网络失败、长耗时请求或页面跳转。
 - CPU / 内存是否在错误前异常升高。
-- 同一类问题是否有相似操作路径。
+- 同一类问题是否存在相似的操作路径。
 
 这和只看堆栈是两种体验。堆栈告诉你崩在代码哪里，时间线告诉你用户和系统在崩溃前经历了什么。
 
@@ -145,7 +145,15 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 
 ## 和 Firebase、Sentry 的差别
 
-Firebase Performance 更偏 Google 生态里的低门槛性能监控；Sentry 强在错误监控、tracing、profiling 和会话回放；Measure 的特点是开源、自托管和移动会话时间线。
+| 维度 | Firebase Performance | Sentry | Measure |
+|---|---|---|---|
+| 开源 / 托管 | Google 托管（Firebase console） | SaaS 托管 + 自托管选项（Sentry self-hosted） | 开源自托管（AGPL v3）+ 官方云托管 |
+| 错误监控 | Crashlytics 崩溃聚合；ANR 只有发生率和堆栈 | 崩溃聚合、异常追踪、session replay、面包屑 | 崩溃 + ANR 自动捕获；会话时间线关联点击、页面、HTTP |
+| 性能 Trace | HTTP、启动、屏幕渲染、自定义 trace | Transaction / span、UI Profiling、app start profiling | 自定义 trace + HTTP 耗时 + 启动时间；无自动屏幕渲染指标 |
+| 会话上下文 | Firebase Crashlytics 有面包屑和用户维度 | Session replay（SDK 7.x+）、面包屑、用户反馈 | 完整会话时间线（点击 / 页面 / HTTP / CPU / 内存） |
+| 部署成本 | 免费额度后按用量计费；无自托管 | SaaS 按量计费；自托管需 Docker + PostgreSQL + Kafka + Redis | 自托管需 Docker Compose（ClickHouse + PostgreSQL + Kafka + MinIO）；有存储和运维成本 |
+| 独特优势 | Google 生态集成（Analytics / Remote Config / A/B Testing） | 跨平台（Web / iOS / Android / 后端）；OpenTelemetry 原生 | 数据完全自控；移动会话时间线设计清晰 |
+| 适合场景 | Google 生态内快速搭建基础监控 | 跨端错误追踪 + APM + session replay | 移动为主的团队需要自托管和会话级回查 |
 
 选型时可以按三件事判断：
 
@@ -154,6 +162,8 @@ Firebase Performance 更偏 Google 生态里的低门槛性能监控；Sentry �
 3. 当前最缺的是崩溃治理、性能指标，还是会话级回查。
 
 如果只是想快速看到启动、网络、屏幕渲染和自定义 trace，Firebase 更轻。如果主要处理崩溃、异常聚合和跨端错误追踪，Sentry 更成熟。如果希望把移动监控数据留在自有环境里，Measure 的开源形态更有吸引力。
+
+[已验证: 官方文档, Firebase Performance / Crashlytics 文档；Sentry Android SDK 文档；Measure docs/README.md]
 
 ## 使用建议
 
