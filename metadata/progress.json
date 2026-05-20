@@ -1,7 +1,7 @@
 {
   "total": 336,
-  "draft": 1,
-  "ready-for-review": 131,
+  "draft": 0,
+  "ready-for-review": 132,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -1503,7 +1503,7 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T21:12:00+08:00",
+  "last_updated": "2026-05-20T22:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-20",
@@ -4208,12 +4208,15 @@
     "24.11": {
       "title": "卫星与低带宽网络适配",
       "file": "src/part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-20",
       "gap_score": 15,
-      "gap_source": "官方文档/每日信息/章节深挖"
+      "gap_source": "官方文档/每日信息/章节深挖",
+      "drafted_date": "2026-05-20",
+      "last_verified": "2026-05-20",
+      "confidence": "medium"
     }
   },
   "task2b_rounds": [
