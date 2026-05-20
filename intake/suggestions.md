@@ -2651,3 +2651,15 @@
 - **问题**：章节在参考资料后继续追加多个源码调研块，并保留 AIW 注释、注入时间和内部修正说明；内容像素材日志，影响发布稿收束。
 - **建议**：Task2B 将有价值的源码信息融入已有小节或整理为正式附录；删除内部加工痕迹，只保留必要来源。
 - **review 日志**：logs/review/2026-05-21-04-review.md
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-05-21
+- **类型**：数据缺失
+- **位置**：5.9 L326 setPreferPowerEfficiency 非游戏场景收益
+- **问题**：“后台 AI 推理批处理（功耗降低 15-30%）”没有设备、负载、统计口径或来源；当前只能算未验证收益数据。
+- **建议**：删除百分比，或补实验条件：设备/系统 build、线程绑定、任务类型、功耗采样工具、样本数和对照组。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-05-21
+- **类型**：版本差异
+- **位置**：3.1 L831 HwTimeoutMultiplier 版本口径
+- **问题**：正文写 `HwTimeoutMultiplier()` 是 Android 14+ 引入；但 AOSP android-13.0.0_r1 `InputDispatcher.cpp` 的 `STALE_EVENT_TIMEOUT` 和 `DEFAULT_INPUT_DISPATCHING_TIMEOUT` 已使用 `HwTimeoutMultiplier()`。
+- **建议**：把 stale/dispatch timeout 的 multiplier 口径改为 Android 13+；若只想强调某个具体路径，应按 Android 12/13/14 分别列源码差异。
