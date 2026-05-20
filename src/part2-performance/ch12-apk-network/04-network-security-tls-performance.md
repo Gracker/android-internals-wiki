@@ -25,13 +25,13 @@ created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
 task6_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 last_task6_at: "2026-05-19T19:09:00+08:00"
@@ -41,10 +41,13 @@ review_round: 2
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-26T10:43:00+08:00"
+last_task9_at: "2026-05-20T19:20:00+08:00"
 last_task2b_at: "2026-05-07T03:43:33+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
