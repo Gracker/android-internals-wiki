@@ -53,6 +53,9 @@ section: "15.3"
 related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned-word cleanup in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
+last_task9_audit: '2026-05-21'
+last_task9_audit_at: '2026-05-21T01:46:24+08:00'
+last_task9_audit_log: 'logs/deep-review/2026-05-21-01-audit.md'
 ---
 
 
