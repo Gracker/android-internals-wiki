@@ -2614,3 +2614,17 @@
 - **位置**：L393-L406 Activity 泄漏修复示例
 - **问题**：`MyWorker` 被改成 `static class` 后，示例仍在 `run()` 中直接调用 `doSomethingSlow()`；如果该方法是 `Activity` 的实例方法，这段 Java 代码不能编译。
 - **建议**：改为 `activity.doSomethingSlow()`，或把耗时任务抽到不依赖 Activity 的 worker/service；同时补充取消任务或检查生命周期的退出条件，避免 WeakReference 只是隐藏泄漏而不终止后台工作。
+
+
+## [Task9 Audit] 15.3 性能指标体系 — 2026-05-21
+- **类型**：指标定义准确性
+- **位置**：L279 Crash Rate 分子定义
+- **问题**：正文前半段已按 Android Vitals 写成“每日用户中至少一次崩溃的比例”，但随后又写成“受影响用户比例按会话占比计”。Play Console Help 的口径是 daily users / daily active users（按用户-设备-日期归一），不是 crash 次数，也不应简化成普通 session rate。
+- **建议**：改为“用户感知崩溃率是每日用户/设备日中至少一次用户感知崩溃的比例；一个用户同一设备同一天多次崩溃仍算一个受影响 daily user。若平台内部另有 session 指标，应单独命名，不和 Android Vitals crash rate 混写。”
+
+
+## [Task9 Audit] 15.3 性能指标体系 — 2026-05-21
+- **类型**：Perfetto 数据源口径
+- **位置**：L424-L430 Power Rails / Energy Consumer Track
+- **问题**：正文把 Power Rails track 描述成“实时电流和电压，单位 mW”。Perfetto power rails / ODPM 口径更准确地说是硬件 rail 的能量计数器，依赖设备硬件与 IPowerStats HAL；功率通常由能量差分除以时间窗口得到，不是所有设备都有可用轨道。
+- **建议**：改成“Power rails 提供 per-rail energy counters；在选定时间窗内计算能量差/时长得到平均功率。是否可见取决于设备硬件、PowerStats HAL 与 trace 配置 `collect_power_rails: true`。”
