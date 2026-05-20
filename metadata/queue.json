@@ -12,7 +12,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/18-commercial-apm.md"
@@ -40,7 +40,9 @@
       "added_at": "2026-05-20T13:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T13:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-13-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-13-audit.md",
+      "completed_date": "2026-05-20T15:25:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: Sentry Android 能力版本表(UI Profiling SDK 8.7.0+, transaction-based SDK 6.16.0+, app start SDK 7.3.0+, Session Replay API 26+); Bugly Pro 能力版本表(页面回放 4.4.7.3+, 16KB 4.4.6.2+, Span 4.4.3+, ANR 预抓取 BuglyBuilder 配置项)"
     },
     {
       "id": "task9-audit-19.06-looper-observer-api-version",
@@ -54,7 +56,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/06-blockcanary.md"
@@ -75,7 +77,9 @@
       "added_at": "2026-05-20T12:22:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T12:22:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-12-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-12-audit.md",
+      "completed_date": "2026-05-20T15:25:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: Looper.Observer 版本从 Android 9(API 28)修正为 Android 10(API 29)，补 messageDispatched 签名和 Hidden API 限制说明"
     },
     {
       "id": "task9-audit-19.16-profiling-result-not-allowed",
@@ -3591,13 +3595,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T15:31:00+08:00"
+      "added_at": "2026-05-13T15:31:00+08:00",
+      "completed_date": "2026-05-20T15:25:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: Perfetto 配置文件路径拆为 Android 10/11 stdin 和 Android 12+ push 两套命令; Trace.beginSection 线程归属从主线程 track 修正为调用线程对应 track, 补 beginAsyncSection 跨线程方案"
     },
     {
       "id": "task9-14.13-framemetrics-cacheflush-semantics-20260513",
