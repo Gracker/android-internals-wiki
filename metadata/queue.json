@@ -14473,6 +14473,70 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T04:04:00+08:00"
+    },
+    {
+      "id": "task6-20260521-5.9-adpf-source-block-mainline",
+      "section": "5.9",
+      "section_title": "ADPF 自适应性能框架",
+      "priority": 90,
+      "title": "ADPF 源码调研素材块需要融入发布主线",
+      "description": "Task6 复审发现正文仍保留 AIW 源码调研注释、日期标题和 DeepResearch 注入摘要，发布稿主线被素材块打断。",
+      "issue_type": "content-depth-publishing-polish",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "§源码调研补充（2026-05-01/05-07）与参考资料 DeepResearch 摘要",
+          "detail": "正文仍保留 `<!-- AIW-源码调研... -->`、`## 源码调研补充（日期）`、`注入时间/价值` 等加工痕迹。技术事实已经过 Task9/Task2B 修过一轮，但素材块没有融入 Performance Hint、GameState、版本演进或参考资料主线，读到版本演进后会突然进入内部素材记录。",
+          "suggestion": "把可保留的 API/version 内容合并进对应主线段落；删除 AIW 注释、源码调研日期标题和重复 DeepResearch 摘要，只在参考资料中保留必要来源。Task6 不做大段重写。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-21T04:09:00+08:00",
+      "original_review_log": "logs/review/2026-05-21-04-review.md"
+    },
+    {
+      "id": "task6-20260521-3.1-input-source-block-mainline",
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 90,
+      "title": "Input 章节源码调研附录需要融入正文或移出发布稿",
+      "description": "Task6 复审发现参考资料之后仍追加 stale-event、反压机制、Android 15/16 输入系统演进等源码调研素材块，并保留 AIW 注释/注入时间字段。",
+      "issue_type": "content-depth-publishing-polish",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "参考资料之后的 stale-event/WindowInfosListener、反压机制、Android 15/16 输入系统演进素材块",
+          "detail": "发布稿在参考资料后继续追加多个 `AIW-源码调研` 区块、`注入时间/价值` 字段和原始调研报告说明。内容有价值，但当前形态像内部素材日志，破坏“常见问题→版本演进→调试技巧→参考资料”的收束。",
+          "suggestion": "把 stale-event 版本差异、反压机制、InputFilter Rust/ARR 边界分别融入已有正文小节或移到正式附录；删除 AIW 注释、注入时间和内部修正说明，参考资料只保留来源链接。Task6 不做大段重写。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-21T04:09:00+08:00",
+      "original_review_log": "logs/review/2026-05-21-04-review.md"
     }
   ],
   "metadata": {

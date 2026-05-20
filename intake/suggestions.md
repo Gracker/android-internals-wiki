@@ -2636,3 +2636,18 @@
 - **建议**：由 Task2B 将可保留的 API/version 内容融入 Performance Hint、GameState、扩展/参考资料等主线段落；删除 AIW 注释、源码调研补充日期标题和重复摘要。Task9 已登记的 API level、源码入口和设备数据表问题需优先修正。
 - **review 日志**：logs/review/2026-05-21-02-review.md
 
+
+
+## [Task6 Review] 5.9 ADPF 自适应性能框架 — 2026-05-21
+- **类型**：需重写
+- **位置**：§源码调研补充（2026-05-01/05-07）与参考资料 DeepResearch 摘要
+- **问题**：正文仍保留 AIW 源码调研注释、日期标题和“注入时间/价值”等加工痕迹；技术事实已修过一轮，但发布主线被素材块打断。
+- **建议**：Task2B 将可保留内容融入 Performance Hint、GameState、版本演进或参考资料；删除 AIW 注释和重复摘要。
+- **review 日志**：logs/review/2026-05-21-04-review.md
+
+## [Task6 Review] 3.1 Input 事件分发全流程 — 2026-05-21
+- **类型**：需重写
+- **位置**：参考资料之后的 stale-event/WindowInfosListener、反压机制、Android 15/16 输入系统演进素材块
+- **问题**：章节在参考资料后继续追加多个源码调研块，并保留 AIW 注释、注入时间和内部修正说明；内容像素材日志，影响发布稿收束。
+- **建议**：Task2B 将有价值的源码信息融入已有小节或整理为正式附录；删除内部加工痕迹，只保留必要来源。
+- **review 日志**：logs/review/2026-05-21-04-review.md

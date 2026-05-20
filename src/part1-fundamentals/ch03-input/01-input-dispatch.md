@@ -1,14 +1,14 @@
 ---
 
 
-status: 'ready-for-review'
+status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: '2026-05-21T01:15:21+08:00'
-last_task6_review_log: logs/review/2026-05-21-01-review.md
-task6_review_notes: '2026-05-21 Task6 01: L1/L2 小修 9 处；Task9 已有 P0/P1 回炉项，保持 task2b_pending，未重复新增 queue。'
-pipeline_stage: 'task6_pending'
+last_task6_at: "2026-05-21T04:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-04-review.md"
+task6_review_notes: "2026-05-21 Task6 04: L1 小修 1 处；参考资料之后仍有源码调研素材块/AIW 注释，已回炉 Task2B 主线融合。"
+pipeline_stage: "task2b_pending"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -17,7 +17,7 @@ version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 Inpu
   13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及
   Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。
 confidence: high
-reviewed_date: '2026-05-21'
+reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 rework2_date: '2026-04-15'
 rework2_by: openclaw-task2b
@@ -52,11 +52,11 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: needs-rework
-task6_state: 'revisiting'
-task6_reviewed_date: '2026-05-21'
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-21"
 task9_state: 'pending'
 task9_result: needs-rework
-task2b_state: 'fixed'
+task2b_state: "pending"
 task2b_result: 'fixed'
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
@@ -254,7 +254,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 [待验证：AOSP android-16.0.0_r1 `InputDispatcher.cpp` 已无 `findTouchedWindowTargetsLocked()` 符号，`WindowInfo.h` 也未检索到 gesture exclusion/exclusion region 字段；"10ms" 收益没有源码锚点或 trace 数据支撑。以下保留概念说明，具体实现路径待后续版本源码确认。]
 
-Android 16 在触摸命中判定中对排除区域（exclusion region）的处理可能有变化，但具体实现路径和收益数据尚未在 AOSP android-16.0.0_r1 中得到确认。此前版本的 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认。如果 Android 16 确实将相关逻辑下沉到 Native 循环中，边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟可能会改善。在 Perfetto 中，相关效果需要通过 `InputDispatcher` 线程上触摸分发 slice 的对比来确认。
+Android 16 在触摸命中判定中对排除区域（exclusion region）的处理可能有变化，但具体实现路径和收益数据尚未在 AOSP android-16.0.0_r1 中得到确认。此前版本的 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认。如果后续源码确认 Android 16 将相关逻辑下沉到 Native 循环中，边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟可能会改善。在 Perfetto 中，相关效果需要通过 `InputDispatcher` 线程上触摸分发 slice 的对比来确认。
 
 ### 三大队列：iq / oq / wq
 
