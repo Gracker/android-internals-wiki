@@ -13924,23 +13924,79 @@
       "added_at": "2026-05-20T15:04:00+08:00",
       "completed_date": "2026-05-20T16:09:00+08:00",
       "completed_reason": "Task 2A draft 加工完成：Developer Verification 安装链路边界、PackageInstaller 回调面、SDM 区分、安装失败归因与发版门禁。"
+    },
+    {
+      "id": "task9-audit-12.4-tls-ech-zero-rtt-security-boundaries",
+      "section": "12.4",
+      "section_title": "Android 网络安全与 TLS 性能优化",
+      "priority": 95,
+      "title": "TLS 0-RTT、ECH/AAPM 与 DoH 隐私边界存在高风险事实错误",
+      "description": "章节把 Android 15 Conscrypt/HttpEngine 写成已自动阻断 TLS 1.3 0-RTT replay，把 Android 17 AAPM 写成强制 ECH+DoH3 并覆盖 Network Security Config，同时把 DoH/DoT 写成可防止 SNI 泄露；这些说法缺少官方源码/文档依据或与当前 Android 17 ECH 配置文档冲突。",
+      "issue_type": "source-code-accuracy-version-security",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-19-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/安全语义错误",
+          "severity": "P0",
+          "location": "L83-L85：0-RTT 的安全状态在 Android 15 后发生了变化",
+          "detail": "正文把 Android 15（API 35）描述为“Conscrypt + HttpEngine 实现自动化 TLS 1.3 Anti-replay，协议层阻断 0-RTT 重放”，并标成已验证。当前官方 Android 10 TLS 1.3 文档仍明确平台 TLS 1.3 0-RTT mode is not supported；HttpEngine.Builder 只在 QUIC hint / HTTP cache 场景提到 0-RTT connection establishment，Cronet QuicOptions 也只是 enableTlsZeroRtt 开关，未提供“Android 15 Conscrypt 自动 anti-replay”或“客户端协议层阻断重放”的公开依据。0-RTT replay 风险不能靠客户端声明消除，服务端幂等性与 replay cache 才是关键边界。",
+          "suggestion": "删除“Android 15 起 Conscrypt + HttpEngine 已自动阻断重放 / 0-RTT 已成为受控安全加速器”的已验证断言。改成：Android 平台通用 TLS 1.3 0-RTT 不作为 SSLSocket/Conscrypt 默认能力；Cronet/HttpEngine 的 QUIC 0-RTT 属独立网络栈能力，是否启用看 API、缓存、服务端配置和业务幂等性，正文只建议 GET/HEAD 等幂等请求在服务端具备 anti-replay 策略时评估。"
+        },
+        {
+          "type": "版本差异/配置枚举错误",
+          "severity": "P1",
+          "location": "L121：Android 17 的 <domainEncryption> 模式",
+          "detail": "正文写 `<domainEncryption>` 提供 `opportunistic`、`enabled`、`disabled` 等模式。2026-05-20 复核 developer.android.com/privacy-and-security/security-config：Android 17 起 ECH 默认以 \"enabled\" mode 使用，应用可全局或按域 opt out / 修改行为；页面示例只有 `mode=\"enabled\"` 与 `mode=\"disabled\"`，未检索到 `opportunistic` 作为公开配置值。继续写 `opportunistic` 会误导读者按不存在或过期的 XML 枚举配置。",
+          "suggestion": "按当前 Android 17 文档重写：ECH 仅 Android 17+ 可用，依赖网络库采用 ECH 与服务端支持；Network Security Config 当前公开示例为 enabled/disabled，默认 enabled，可全局或按 domain 调整。若要提“opportunistic”语义，只作为行为描述并标注待验证，不写成 XML 枚举值。"
+        },
+        {
+          "type": "源码错误/版本行为错误",
+          "severity": "P0",
+          "location": "L135：Android 17 Advanced Protection Mode 的强制 ECH",
+          "detail": "正文写 Advanced Protection Mode 会无视 App 的 Network Security Config，强制所有具备条件域名走 ECH + DoH3，缺少 HTTPS/SVCB(ECH) 记录会导致连接失败。官方 AAPM 文档只列出禁用 2G/WEP、阻止 sideloading、forensic logging、未知号码来电、消息链接防护等行为，并提供 AdvancedProtectionManager 状态查询/回调；Android 17 ECH 文档同时说明 App 可通过 `<domainEncryption>` opt out 或按域调整。当前没有官方依据支持 AAPM 覆盖 ECH 配置，更不能写成会导致 DNS 记录未适配即连接失败。",
+          "suggestion": "删除该段，或降级为“[待验证] AAPM 是否影响网络加密策略需等待正式文档”。不要把 AAPM 与 ECH/DoH3 强绑定；服务端 ECH 适配风险应放在普通 Android 17 ECH enabled/default 行为下说明。"
+        },
+        {
+          "type": "原理错误/隐私边界错误",
+          "severity": "P0",
+          "location": "L275：DNS-over-HTTPS / DNS-over-TLS 的权衡",
+          "detail": "正文写 DoH/DoT “可以防止 DNS 劫持和 SNI 泄露”。DoH/DoT 只能加密 DNS 查询通道，不能隐藏 TLS ClientHello 中的 SNI；SNI 隐私问题应由 ECH 处理。本文前文已经把 ECH 定义为加密 SNI 的机制，此处把 DoH/DoT 写成能防止 SNI 泄露会造成排查方向错误。",
+          "suggestion": "改成“DoH/DoT 可降低 DNS 查询被篡改或旁路观察的风险，但不隐藏 TLS SNI；如果要降低 SNI 泄露，需要结合 Android 17 ECH、服务端 HTTPS/SVCB 记录和网络库支持。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T19:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T19:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-19-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 386,
-    "p0_count": 165,
-    "last_updated": "2026-05-20T18:20:00+08:00",
+    "total_entries": 396,
+    "p0_count": 167,
+    "last_updated": "2026-05-20T19:20:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 144,
+    "pending_entries": 142,
     "updated_date": "2026-05-20",
     "last_updated_by": "openclaw-task9",
-    "pending": 144,
-    "completed_entries": 240,
+    "pending": 142,
+    "completed_entries": 252,
     "last_task2a_gap_mining": "4.12",
     "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T18:20:00+08:00",
+  "last_updated": "2026-05-20T19:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": [
     {
@@ -14183,6 +14239,62 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T10:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-12.4-tls-ech-zero-rtt-security-boundaries",
+      "section": "12.4",
+      "section_title": "Android 网络安全与 TLS 性能优化",
+      "priority": 95,
+      "title": "TLS 0-RTT、ECH/AAPM 与 DoH 隐私边界存在高风险事实错误",
+      "description": "章节把 Android 15 Conscrypt/HttpEngine 写成已自动阻断 TLS 1.3 0-RTT replay，把 Android 17 AAPM 写成强制 ECH+DoH3 并覆盖 Network Security Config，同时把 DoH/DoT 写成可防止 SNI 泄露；这些说法缺少官方源码/文档依据或与当前 Android 17 ECH 配置文档冲突。",
+      "issue_type": "source-code-accuracy-version-security",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-19-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/安全语义错误",
+          "severity": "P0",
+          "location": "L83-L85：0-RTT 的安全状态在 Android 15 后发生了变化",
+          "detail": "正文把 Android 15（API 35）描述为“Conscrypt + HttpEngine 实现自动化 TLS 1.3 Anti-replay，协议层阻断 0-RTT 重放”，并标成已验证。当前官方 Android 10 TLS 1.3 文档仍明确平台 TLS 1.3 0-RTT mode is not supported；HttpEngine.Builder 只在 QUIC hint / HTTP cache 场景提到 0-RTT connection establishment，Cronet QuicOptions 也只是 enableTlsZeroRtt 开关，未提供“Android 15 Conscrypt 自动 anti-replay”或“客户端协议层阻断重放”的公开依据。0-RTT replay 风险不能靠客户端声明消除，服务端幂等性与 replay cache 才是关键边界。",
+          "suggestion": "删除“Android 15 起 Conscrypt + HttpEngine 已自动阻断重放 / 0-RTT 已成为受控安全加速器”的已验证断言。改成：Android 平台通用 TLS 1.3 0-RTT 不作为 SSLSocket/Conscrypt 默认能力；Cronet/HttpEngine 的 QUIC 0-RTT 属独立网络栈能力，是否启用看 API、缓存、服务端配置和业务幂等性，正文只建议 GET/HEAD 等幂等请求在服务端具备 anti-replay 策略时评估。"
+        },
+        {
+          "type": "版本差异/配置枚举错误",
+          "severity": "P1",
+          "location": "L121：Android 17 的 <domainEncryption> 模式",
+          "detail": "正文写 `<domainEncryption>` 提供 `opportunistic`、`enabled`、`disabled` 等模式。2026-05-20 复核 developer.android.com/privacy-and-security/security-config：Android 17 起 ECH 默认以 \"enabled\" mode 使用，应用可全局或按域 opt out / 修改行为；页面示例只有 `mode=\"enabled\"` 与 `mode=\"disabled\"`，未检索到 `opportunistic` 作为公开配置值。继续写 `opportunistic` 会误导读者按不存在或过期的 XML 枚举配置。",
+          "suggestion": "按当前 Android 17 文档重写：ECH 仅 Android 17+ 可用，依赖网络库采用 ECH 与服务端支持；Network Security Config 当前公开示例为 enabled/disabled，默认 enabled，可全局或按 domain 调整。若要提“opportunistic”语义，只作为行为描述并标注待验证，不写成 XML 枚举值。"
+        },
+        {
+          "type": "源码错误/版本行为错误",
+          "severity": "P0",
+          "location": "L135：Android 17 Advanced Protection Mode 的强制 ECH",
+          "detail": "正文写 Advanced Protection Mode 会无视 App 的 Network Security Config，强制所有具备条件域名走 ECH + DoH3，缺少 HTTPS/SVCB(ECH) 记录会导致连接失败。官方 AAPM 文档只列出禁用 2G/WEP、阻止 sideloading、forensic logging、未知号码来电、消息链接防护等行为，并提供 AdvancedProtectionManager 状态查询/回调；Android 17 ECH 文档同时说明 App 可通过 `<domainEncryption>` opt out 或按域调整。当前没有官方依据支持 AAPM 覆盖 ECH 配置，更不能写成会导致 DNS 记录未适配即连接失败。",
+          "suggestion": "删除该段，或降级为“[待验证] AAPM 是否影响网络加密策略需等待正式文档”。不要把 AAPM 与 ECH/DoH3 强绑定；服务端 ECH 适配风险应放在普通 Android 17 ECH enabled/default 行为下说明。"
+        },
+        {
+          "type": "原理错误/隐私边界错误",
+          "severity": "P0",
+          "location": "L275：DNS-over-HTTPS / DNS-over-TLS 的权衡",
+          "detail": "正文写 DoH/DoT “可以防止 DNS 劫持和 SNI 泄露”。DoH/DoT 只能加密 DNS 查询通道，不能隐藏 TLS ClientHello 中的 SNI；SNI 隐私问题应由 ECH 处理。本文前文已经把 ECH 定义为加密 SNI 的机制，此处把 DoH/DoT 写成能防止 SNI 泄露会造成排查方向错误。",
+          "suggestion": "改成“DoH/DoT 可降低 DNS 查询被篡改或旁路观察的风险，但不隐藏 TLS SNI；如果要降低 SNI 泄露，需要结合 Android 17 ECH、服务端 HTTPS/SVCB 记录和网络库支持。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T19:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T19:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-19-audit.md"
     }
   ],
   "last_task2a_completed": "18.22",
