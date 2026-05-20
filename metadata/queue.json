@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-19.09-measure-retention-default",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 85,
+      "title": "Measure 数据保留期口径与当前官方文档不一致",
+      "description": "Measure 章节仍引用已失效的 feature-data-retention.md，并把服务端 retention 写成 7-365 天、默认 90 天；当前官方 Dashboard API 文档为 30-365 天、默认 30 天。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-15-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/官方文档路径失效",
+          "location": "frontmatter L10、L31-L32；正文 L224、L241-L253",
+          "detail": "正文和 frontmatter 仍引用 docs/features/feature-data-retention.md，并写“服务端保留期范围 7-365 天，默认 90 天”。当前 measure-sh/measure main 分支中该 feature-data-retention.md 已返回 404，docs/features 目录也不再列出该文件；当前 Dashboard API 文档把 GET/PATCH /apps/:id/retention 描述为 30-365 天，默认 30 天。",
+          "suggestion": "把来源从已失效的 feature-data-retention.md 改为 docs/api/dashboard/README.md 的 /apps/:id/retention；正文两处 retention 口径改为“30-365 天，默认 30 天”，并把 last_verified_against / sources 同步更新。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T15:22:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T15:22:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-15-audit.md"
+    },
+    {
       "id": "task9-audit-19.18-apm-sdk-version-gates",
       "section": "19.18",
       "section_title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
