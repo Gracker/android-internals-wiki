@@ -13558,6 +13558,35 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T10:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-25.12-android17-excessive-cpu-kill",
+      "section": "25.12",
+      "section_title": "Android 17 Excessive CPU Kill 与后台任务功耗治理",
+      "priority": 80,
+      "title": "Android 17 excessive CPU trigger 与后台任务功耗治理缺口",
+      "description": "从 2026-05-19 DeepResearch、Android 17 features/release notes 和 ProfilingTrigger API 发现：现有 5.10/25.4/26.12 已分别覆盖调度机制、WorkManager 实战和诊断 API，但缺少面向 App 后台任务 CPU 异常的治理章节。新章节聚焦 excessive CPU kill/trigger、JobScheduler quota 边界、证据归因字段和 App 侧退避/熔断策略。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md"
+      ],
+      "material_paths": [
+        "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md",
+        "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md",
+        "Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-jobscheduler-profilingtrigger-version-boundary.md",
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/release-notes",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T11:04:00+08:00"
     }
   ],
   "metadata": {
