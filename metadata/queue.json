@@ -13593,6 +13593,77 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-20T11:04:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-20-18.8-egl-native-fence-flush-dequeue-boundary",
+      "section": "18.8",
+      "section_title": "OpenGL ES 渲染链路",
+      "priority": 95,
+      "title": "EGL Native Fence 示例缺少 flush，且 dequeueBuffer/release fence 归因过度简化",
+      "description": "EGL_SYNC_NATIVE_FENCE_ANDROID 示例在 client wait 前未触发 glFlush 或 EGL_SYNC_FLUSH_COMMANDS_BIT_KHR；同时把 dequeueBuffer 长耗时直接等同于等待 release fence，未区分可用 slot/outstanding buffer 限制与返回 fence 后的安全复用等待。",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/EGL native fence 用法错误",
+          "location": "EGL Sync Objects 示例 L251-L258",
+          "detail": "示例用 EGL_SYNC_NATIVE_FENCE_ANDROID 创建 sync 后直接调用 eglClientWaitSyncKHR(display, sync, 0, EGL_FOREVER_KHR)。EGL/KHR sync 语义下，flags=0 不保证 flush 前序 GL 命令；如果没有后续 glFlush/eglSwapBuffers 等提交点，client wait 可能等待未提交的 sync，native fence FD 导出流程也会误导为 CPU 阻塞式用法。",
+          "suggestion": "拆成两段：CPU 侧等待/读回场景使用 glFlush 或 EGL_SYNC_FLUSH_COMMANDS_BIT_KHR 后再 wait；跨进程传递 native fence FD 场景创建 EGL_SYNC_NATIVE_FENCE_ANDROID 后 glFlush/eglDupNativeFenceFDANDROID，把未 signal 的 fence FD 交给消费者，不在导出前无条件 FOREVER wait。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/BufferQueue fence 归因不准确",
+          "location": "在 Trace 中的表现 L219-L232；Buffer 压力分析 L327-L329",
+          "detail": "正文把 dequeueBuffer 长耗时直接归因于“等 release fence”。更准确的链路是：dequeueBuffer 先受可用 slot、max dequeued/acquired、async mode、producer/consumer 节奏限制；返回给 producer 的 fence 用于保证被复用 buffer 的前序消费已完成，具体等待点可能在 EGL/producer 侧 fence wait，而不应把所有 dequeueBuffer 长条都简化成 release fence 等待。",
+          "suggestion": "把“dequeueBuffer 慢=release fence 未 signal”改成两层判断：先看 BufferQueue 可用 buffer / outstanding buffer 限制，再看返回 fence 或后续 wait 是否拖住 GPU/CPU；给出 Perfetto 中 slot 压力、queue/dequeue、fence wait 的区分观察点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T11:41:31+08:00"
+    },
+    {
+      "id": "task9-2026-05-20-22.10-setrendereffect-invalidate-boundary",
+      "section": "22.10",
+      "section_title": "RenderEffect 与 RuntimeShader 性能实践",
+      "priority": 85,
+      "title": "RuntimeShader 示例中 setRenderEffect 失效行为描述不准确",
+      "description": "示例注释写“setRenderEffect() 不会自动触发重绘”，但 AOSP View.setRenderEffect() 在 RenderNode 属性变更时会调用 invalidateViewProperty(true, true)。真正需要显式 invalidate 的是复用同一个 RenderEffect/RuntimeShader 后更新 uniform 的后续帧。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-11-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码行为描述错误",
+          "location": "RuntimeShader / AGSL 的实践边界代码示例 L220",
+          "detail": "AOSP master frameworks/base/core/java/android/view/View.java 中 setRenderEffect(renderEffect) 在 mRenderNode.setRenderEffect(renderEffect) 返回 true 时调用 invalidateViewProperty(true, true)。当前注释把 setRenderEffect 本身写成不会触发重绘，和源码行为不一致。",
+          "suggestion": "改为“首次设置或清空 RenderEffect 会触发 View 属性失效；后续只更新同一个 RuntimeShader 的 uniform 不会自动请求下一帧，因此动画/进度变化后需要 view.invalidate()”。代码结构可保留 effectApplied，但注释必须对应这个边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T11:41:31+08:00"
     }
   ],
   "metadata": {

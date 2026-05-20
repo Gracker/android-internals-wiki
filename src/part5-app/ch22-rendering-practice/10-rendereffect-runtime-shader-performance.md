@@ -13,13 +13,13 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: "ready-for-review"
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
 last_task6_at: "2026-05-19T12:07:00+08:00"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
-task9_state: "pending"
+task9_state: reviewed
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 无需正文修改；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
@@ -54,14 +54,14 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
 task9_result: needs-rework
-task2b_state: "fixed"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-20T11:12:00+08:00'
-task9_reviewed_date: "2026-05-19"
+task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-19T12:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-19-12-deep-review.md"
-task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 1 / P1 1 / P2 0；RuntimeShader 示例使用不存在的 view.renderEffect，gpu_busy / Android 16 CDD 口径仍需修正。"
+last_task9_at: "2026-05-20T11:41:31+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
+task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 0 / P1 1 / P2 2；P1 为 RuntimeShader 示例中 setRenderEffect 失效行为注释与 AOSP View.setRenderEffect 源码不一致。"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 ---

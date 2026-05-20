@@ -49,14 +49,14 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: ready-for-review
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-20T05:27:03+08:00"
+last_task9_at: "2026-05-20T11:41:31+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
@@ -66,6 +66,8 @@ last_task6_audit: "2026-05-18"
 last_task6_audit_result: l1-light-edit
 last_task2b_at: "2026-05-20T11:12:00+08:00"
 last_task9_audit: "2026-05-20"
+last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
+task9_review_notes: "2026-05-20 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 3；P2 为 CriticalNative public API 边界、16KB page size NDK 版本口径、Propeller 待验证段。已自动同步 pipeline_stage=ready-to-publish。"
 ---
 
 # 1.15 JNI/NDK 性能优化
