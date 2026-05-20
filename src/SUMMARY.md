@@ -386,6 +386,7 @@ tags:
   - [24.8 I/O 与网络优化案例集](part5-app/ch24-io-network/08-io-network-case-studies.md)
   - [24.9 Wi-Fi 评分、网络选择与连接切换性能](part5-app/ch24-io-network/09-wifi-connectivity-selection.md)
   - [24.10 HTTPDNS 与 OkHttp Dns 执行边界](part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md)
+  - [24.11 卫星与低带宽网络适配](part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
