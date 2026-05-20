@@ -1,6 +1,44 @@
 {
   "queue_entries": [
     {
+      "id": "task6-19.09-measure-outline-coverage",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 90,
+      "title": "Measure 能力范围与平台对比锚点覆盖不足",
+      "description": "Task6 复审发现章节仍缺能力范围字段级表格，以及 Firebase / Sentry / Measure 平台对比表；属于 L3 内容深度/结构覆盖问题，交 Task2B 补齐。",
+      "issue_type": "content-depth-outline-coverage",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "§核心能力（L118-L129）/ 大纲锚点「能力范围」",
+          "detail": "当前只列能力和适合问题，未按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航拆出数据来源、关键字段和适用判断；不满足大纲“每个数据对象都要给字段例子”的要求。",
+          "suggestion": "补一张能力范围表，建议列：数据对象、Measure 事件/字段、来源、适合判断、边界；字段示例至少覆盖 session、screen、event、trace、error、resource 的关联方式。"
+        },
+        {
+          "type": "需补充结构",
+          "location": "§和 Firebase、Sentry 的差别（L143-L153）/ 大纲锚点「平台对比」",
+          "detail": "当前是 3 段选型文字，没有按开源/托管、错误监控、性能 trace、会话上下文、部署成本做 Firebase / Sentry / Measure 横向表格。",
+          "suggestion": "保留现有选型判断，并补平台对比表：Firebase、Sentry、Measure 三列或三行，维度覆盖大纲指定的五项；涉及版本能力边界处加验证来源或待验证标注。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-20T20:08:00+08:00",
+      "original_review_log": "logs/review/2026-05-20-20-review.md"
+    },
+    {
       "id": "task9-audit-13.8-inputdispatcher-oq-wq-semantics",
       "section": "13.8",
       "section_title": "Perfetto 输入延迟 SQL 深度分析",

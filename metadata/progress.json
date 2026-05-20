@@ -189,7 +189,8 @@
     "13.5",
     "21.10",
     "12.2",
-    "8.11"
+    "8.11",
+    "19.09"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -209,23 +210,24 @@
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
     "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
-    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
+    "src/part3-tools/ch19-apm/09-measure.md"
   ],
   "review_summary": "Task9 2026-05-20 01: 闲时抽检 12.2；P0 1 / P1 1 / P2 1 / P3 1；已回炉到 Task2B。",
   "task6_review_summary": {
     "date": "2026-05-20",
-    "time": "14:13",
+    "time": "20:08",
     "sections": [
-      "8.11"
+      "19.09 Measure"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+      "src/part3-tools/ch19-apm/09-measure.md"
     ],
-    "result": "pass-light-edit; no new task6 rework items; task9 pending",
-    "small_fixes": 11,
-    "new_rework_items": 0,
+    "result": "needs-rework",
+    "small_fixes": 5,
+    "new_rework_items": 1,
     "auto_promoted": [],
-    "note": "Task6 completed writing review for 8.11. No auto-promotion because task9_result != pass-tech-review."
+    "note": "Task6 复审 Measure：L1/L2 小修 5 处；能力范围/平台对比两个 L3 锚点不足，已回炉 Task2B。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1484,31 +1486,41 @@
       "task6_log": "logs/review/2026-05-20-14-review.md",
       "task6_new_rework": false,
       "task6_note": "首次 review 通过；小修 10 处正文术语/表述与 frontmatter 元数据；无新增 L3/L4 回炉项，转 Task9 技术复核。"
+    },
+    "19.09": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 2,
+      "task6_reviewed_at": "2026-05-20T20:08:00+08:00",
+      "task6_log": "logs/review/2026-05-20-20-review.md",
+      "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。"
     }
   },
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T14:13:00+08:00",
+  "last_updated": "2026-05-20T20:08:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-20",
-    "time": "14:13",
-    "reviewed_at": "2026-05-20T14:13:00+08:00",
+    "time": "20:08",
+    "reviewed_at": "2026-05-20T20:08:00+08:00",
     "sections": [
-      "8.11"
+      "19.09 Measure"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+      "src/part3-tools/ch19-apm/09-measure.md"
     ],
-    "log": "logs/review/2026-05-20-14-review.md",
-    "mode": "first-review",
-    "l1_l2_fixes": 11,
-    "l3_l4_issues": 0,
+    "log": "logs/review/2026-05-20-20-review.md",
+    "mode": "revisit/normal-review",
+    "l1_l2_fixes": 5,
+    "l3_l4_issues": 2,
     "technical_risk_markers": 0,
-    "results": {
-      "8.11": "pass-light-edit / task9_pending"
-    },
+    "new_rework_items": 1,
     "auto_promoted": []
   },
   "task9_last_review": "2026-05-20",
@@ -4173,6 +4185,25 @@
       "last_task6_at": "2026-05-20T08:14:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-20-08-review.md",
       "task6_review_summary": "L1/L2 pass-light-edit；无新增写作回炉项；保留 Task9 needs-rework / task2b_pending。"
+    },
+    "19.09": {
+      "section": "19.09",
+      "title": "Measure",
+      "file": "src/part3-tools/ch19-apm/09-measure.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-20",
+      "last_task6_at": "2026-05-20T20:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 90,
+      "queue_id": "task6-19.09-measure-outline-coverage"
     }
   },
   "task2b_rounds": [
@@ -4260,23 +4291,23 @@
   "last_task2a_file": "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
   "last_task6_review": "2026-05-20",
   "last_task6_sections": [
-    "8.11"
+    "19.09 Measure"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+    "src/part3-tools/ch19-apm/09-measure.md"
   ],
-  "last_task6_at": "2026-05-20T14:13:00+08:00",
+  "last_task6_at": "2026-05-20T20:08:00+08:00",
   "last_task6_review_detail": {
-    "mode": "first-review",
-    "reviewed_at": "2026-05-20T14:13:00+08:00",
+    "mode": "first-review/revisit",
+    "reviewed_at": "2026-05-20T20:08:00+08:00",
     "sections": [
-      "8.11"
+      "19.09"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+      "src/part3-tools/ch19-apm/09-measure.md"
     ],
-    "log": "logs/review/2026-05-20-14-review.md",
-    "summary": "Task6 本轮完成 8.11 写作层首次 review：pass-light-edit；小修 11 处；无新增回炉项；未自动晋升，等待 Task9 技术复核。"
+    "log": "logs/review/2026-05-20-20-review.md",
+    "summary": "L1/L2 小修通过；L3 大纲覆盖不足，回炉 Task2B。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4285,8 +4316,8 @@
   "last_task2a_result": "draft-to-ready-for-review",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
-  "task6_last_review_at": "2026-05-20T14:13:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-20-14-review.md",
+  "task6_last_review_at": "2026-05-20T20:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-20-20-review.md",
   "task6_last_review_sections": [
     "8.11"
   ],
@@ -5163,6 +5194,25 @@
       },
       "last_task2a_at": "2026-05-20T07:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "19.09": {
+      "section": "19.09",
+      "title": "Measure",
+      "file": "src/part3-tools/ch19-apm/09-measure.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-20",
+      "last_task6_at": "2026-05-20T20:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 90,
+      "queue_id": "task6-19.09-measure-outline-coverage"
     }
   },
   "task2a_last_processed": {
@@ -5206,16 +5256,16 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "first-review",
-    "reviewed_at": "2026-05-20T14:13:00+08:00",
+    "mode": "first-review/revisit",
+    "reviewed_at": "2026-05-20T20:08:00+08:00",
     "sections": [
-      "8.11"
+      "19.09"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+      "src/part3-tools/ch19-apm/09-measure.md"
     ],
-    "log": "logs/review/2026-05-20-14-review.md",
-    "summary": "Task6 本轮完成 8.11 写作层首次 review：pass-light-edit；小修 11 处；无新增回炉项；未自动晋升，等待 Task9 技术复核。"
+    "log": "logs/review/2026-05-20-20-review.md",
+    "summary": "L1/L2 小修通过；L3 大纲覆盖不足，回炉 Task2B。"
   },
   "task6_last_review_files": [
     "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
@@ -5486,5 +5536,24 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-20-14-review.md"
+  "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
+  "section_19_09": {
+    "section": "19.09",
+    "title": "Measure",
+    "file": "src/part3-tools/ch19-apm/09-measure.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-20",
+    "last_task6_at": "2026-05-20T20:08:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
+    "queue_priority": 90,
+    "queue_id": "task6-19.09-measure-outline-coverage"
+  }
 }
