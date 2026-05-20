@@ -1,6 +1,48 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-19.18-apm-sdk-version-gates",
+      "section": "19.18",
+      "section_title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+      "priority": 85,
+      "title": "商业 APM 能力缺少 SDK 版本门槛",
+      "description": "Sentry Android 与 Bugly Pro 的 profiling、session replay、页面回放、启动 Span、16KB Page Size 等能力均存在 SDK/API 版本门槛；正文按平台能力泛化描述，缺少当前官方版本边界。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/18-commercial-apm.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-13-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/SDK 能力门槛缺失",
+          "location": "L92-L100、L145-L161：Sentry profiling / transaction / span",
+          "detail": "Sentry Android 当前文档把 UI Profiling 标为 SDK 8.7.0+；transaction-based profiler 为 SDK 6.16.0+ 且仅 API 22+，app start profiling 为 SDK 7.3.0+。文档还说明 transaction-based profiling 会被弃用，并存在 30 秒限制。正文仍把 Sentry profiling 与 transaction/span 泛化为同一模型，缺少 SDK 版本、API 下限和旧 profiling 模式迁移边界。",
+          "suggestion": "补一张 Sentry Android 能力版本表：Session Replay 录制 Android 8/API 26+；UI Profiling SDK 8.7.0+；transaction-based profiling SDK 6.16.0+、API 22+、30 秒限制且建议迁移到 UI Profiling；app start profiling SDK 7.3.0+。正文示例优先改成 span / UI Profiling 口径，保留 transaction 作为兼容旧 SDK 的术语。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/SDK 能力门槛缺失",
+          "location": "L114、L123、L189、L208、L311：Bugly Pro 页面回放 / 启动 Span / 16KB Page Size",
+          "detail": "Bugly Pro 官方文档显示这些能力有明确 SDK 版本门槛：页面回放 Android SDK 4.4.7.3+；Android 15 16KB page size 支持从 4.4.6.2 开始；页面启动耗时分析需要 4.4.3+；setEnableRecordAnrMainStack 接口存在于 BuglyBuilder。正文只写“按套餐确认”和“确认 Android 15 16KB 适配版本”，没有给出当前官方版本边界，PoC 时容易用低版本 SDK 验证失败或误判能力缺失。",
+          "suggestion": "在 Bugly Pro 段和 PoC 表中补“能力—最低 SDK 版本—验证动作”：页面回放 4.4.7.3+，16KB Page Size 4.4.6.2+，页面启动耗时/Span 4.4.3+，ANR 主线程预抓取确认 BuglyBuilder 配置项；frontmatter sources 同步补 `https://bugly.tds.qq.com/docs/` 和具体能力页。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T13:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T13:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-13-audit.md"
+    },
+    {
       "id": "task9-audit-19.06-looper-observer-api-version",
       "section": "19.06",
       "section_title": "BlockCanary",

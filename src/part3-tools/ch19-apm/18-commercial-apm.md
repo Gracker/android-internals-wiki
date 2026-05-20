@@ -18,12 +18,15 @@ sources:
     path: "https://www.volcengine.com/docs/6431"
   - type: official
     path: "https://bugly.qq.com/docs/"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: fixed
-task9_result: pass-tech-review
+task2b_state: pending
+task9_result: needs-rework
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 0 / P1 2 / P2 0 / P3 0. P1: Sentry profiling/UI Profiling/transaction-based profiling SDK/API 门槛缺失；Bugly Pro 页面回放、启动 Span、16KB Page Size SDK 版本门槛缺失。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T17:41:15+08:00"
