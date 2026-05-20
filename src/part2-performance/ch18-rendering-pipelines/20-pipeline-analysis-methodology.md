@@ -2,7 +2,7 @@
 title: "渲染管线分析方法论"
 chapter: "18.20"
 section: "18.20"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 sources:
   - type: official
@@ -25,14 +25,14 @@ tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T21:21:00+08:00"
@@ -40,6 +40,9 @@ task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-24T11:40:54+08:00"
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T05:31:18+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-05-audit.md"
 ---
 
 <!-- outline-start -->
