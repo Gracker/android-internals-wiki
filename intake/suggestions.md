@@ -2509,3 +2509,23 @@
 - **问题**：能力范围只列“能力/适合的问题”，缺 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航的数据来源、关键字段和适用判断；平台对比仍是段落说明，缺 Firebase / Sentry / Measure 横向表格。
 - **建议**：由 Task2B 补能力范围字段级表格与平台对比表；涉及官方能力边界时补验证来源或 `[待验证]` 标注。Task6 不裁决技术真伪，不在本轮补写新内容。
 - **review 日志**：logs/review/2026-05-20-20-review.md
+
+## [Task9 Deep Review] 19.09 Measure — 2026-05-20
+- **类型**：版本差异/接入边界
+- **位置**：frontmatter L6-L10；正文 §接入成本不只在 SDK L133-L143；§核心能力 L120-L129
+- **问题**：章节没有写 Measure Android 的接入版本边界。当前官方文档写 Android minimum requirements 为 AGP 8.1.0、minSdk 21、targetSdk 35；网络自动采集对 OkHttp 仅标注 4.7.0-5.3.2，HttpURLConnection 需要 Android SDK 0.18.0，请求 timeline 需要 Android 0.16.2。frontmatter 仍泛写 Android 8-17，容易把平台版本和 Measure SDK 支持版本混在一起。
+- **建议**：补“接入版本边界”小表：Measure SDK/Gradle plugin 版本、minSdk/targetSdk/AGP、自托管兼容版本、OkHttp/HttpURLConnection 自动采集边界；frontmatter 的 applicable_versions 改成章节关注的 Android 系统范围，并另设 SDK 版本来源，避免把 SDK 支持范围写成 Android 8-17。
+
+
+## [Task9 Deep Review] 19.09 Measure — 2026-05-20
+- **类型**：数据模型准确性
+- **位置**：§平台型 APM 的数据模型 L167-L172
+- **问题**：正文把 App size 放进 `resource`，与 HTTP、CPU、memory 一起描述成移动会话拆分对象。但官方 App Size Monitoring 是构建/发布级数据：Android 由 Gradle Plugin 在 assemble/bundle 成功后上传 APK/AAB size，iOS 由 dSYM 上传脚本带入 IPA size，不是 session timeline 内的资源事件。
+- **建议**：把数据模型拆成 session-level（session/screen/event/span/error/http/cpu/memory）和 build-level（build/app_size/mapping/dSYM/版本信息）两层；App size 放到 build/release 维度，不要和会话资源事件混写。
+
+
+## [Task9 Deep Review] 19.09 Measure — 2026-05-20
+- **类型**：原理链/数据支撑
+- **位置**：§和 OpenTelemetry 的关系 L231-L242
+- **问题**：“网络请求携带 trace id，与服务端 trace 关联”方向正确，但缺少 Measure 官方实现锚点，容易被读成自定义 request id。官方 performance tracing 文档给的是 W3C Trace Context 的 `traceparent` header，并提供 `Measure.getTraceParentHeaderKey()` / `Measure.getTraceParentHeaderValue(span)`。
+- **建议**：把这一节落到 `traceparent`：移动端先 `Measure.startSpan("http")`，再把 `Measure.getTraceParentHeaderKey()/Value(span)` 加到 OkHttp/URLSession/Dio 请求；服务端按 W3C Trace Context 继续 trace。说明这只是请求级关联，不等于把移动 session 完全建模成 OpenTelemetry trace。

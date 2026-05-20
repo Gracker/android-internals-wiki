@@ -477,3 +477,20 @@ libdmabufheap pooling、Binder FDA 批量 fd 安装、allocator AIDL `additional
 
 ### 关联章节
 2.15、2.13、2.16、4.2
+
+## [2026-05-20] 19.09 Measure — Crash/ANR 与 native crash 能力边界
+
+### 盲区描述
+Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android native crash、ANR、iOS crash、Flutter crash 的捕获方式与符号化材料不同。当前正文只写 Crash / ANR 自动捕获和 mapping / native symbol，未说明官方文档中 Android native C/C++ crash reporting 尚未支持，ANR 文档也提示 API 31 起 App Exit Info 可含 tombstone 但 native crash reports 尚未实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `docs/features/feature-crash-reporting.md`：Android JVM crash 通过 `UncaughtExceptionHandler`，native C/C++ crash reporting not yet supported，R8/ProGuard mapping 上传路径。
+- 核对 `docs/features/feature-anr-reporting.md`：ANR 通过 SIGQUIT / watchdog 采集，API 30 App Exit Info，API 31 native tombstone 说明与当前不支持边界。
+- 核对 `docs/api/sdk/README.md` 的 `PUT /builds`：`mapping_type` 为 `proguard`、`dsym`、`elf_debug`、`jsbundle`，按 Android/iOS/Flutter/React Native 区分符号化材料。
+- 产出“错误监控能力边界”表，避免把 Android native crash、iOS dSYM、React Native/Flutter 符号上传混成同一能力。
+
+### 关联章节
+19.09 Measure；19.0 APM 工具总览
