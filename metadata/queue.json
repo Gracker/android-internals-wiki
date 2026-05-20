@@ -14052,24 +14052,58 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T20:22:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-24.11-satellite-low-bandwidth-network",
+      "section": "24.11",
+      "section_title": "卫星与低带宽网络适配",
+      "priority": 80,
+      "title": "卫星与低带宽网络适配",
+      "description": "Android 17 features / release notes 已出现低带宽卫星网络连接优化信号，现有 24.4/24.5/24.7/24.10 分别覆盖网络架构、协议、离线优先和 DNS，但缺少面向低带宽/高时延网络的应用侧降级与可观测章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/release-notes",
+        "https://www.t-mobile.com/support/coverage/satellite-support",
+        "intake/daily-info/2026-05-20.md"
+      ],
+      "gap_score": {
+        "material_richness": 3,
+        "relevance": 4,
+        "reader_demand": 3,
+        "timeliness": 5,
+        "total": 15
+      },
+      "gap_source": "官方文档/每日信息/章节深挖",
+      "created_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T21:12:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 398,
+    "total_entries": 399,
     "p0_count": 167,
-    "last_updated": "2026-05-20T20:22:00+08:00",
+    "last_updated": "2026-05-20T21:12:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 144,
+    "pending_entries": 145,
     "updated_date": "2026-05-20",
-    "last_updated_by": "openclaw-task9",
-    "pending": 144,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 145,
     "completed_entries": 252,
-    "last_task2a_gap_mining": "4.12",
-    "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
+    "last_task2a_gap_mining": "24.11",
+    "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T20:22:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-20T21:12:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "pending": [
     {
       "id": "task8-20260520-053311",
@@ -14401,10 +14435,44 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T20:22:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-24.11-satellite-low-bandwidth-network",
+      "section": "24.11",
+      "section_title": "卫星与低带宽网络适配",
+      "priority": 80,
+      "title": "卫星与低带宽网络适配",
+      "description": "Android 17 features / release notes 已出现低带宽卫星网络连接优化信号，现有 24.4/24.5/24.7/24.10 分别覆盖网络架构、协议、离线优先和 DNS，但缺少面向低带宽/高时延网络的应用侧降级与可观测章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/release-notes",
+        "https://www.t-mobile.com/support/coverage/satellite-support",
+        "intake/daily-info/2026-05-20.md"
+      ],
+      "gap_score": {
+        "material_richness": 3,
+        "relevance": 4,
+        "reader_demand": 3,
+        "timeliness": 5,
+        "total": 15
+      },
+      "gap_source": "官方文档/每日信息/章节深挖",
+      "created_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T21:12:00+08:00"
     }
   ],
   "last_task2a_completed": "18.22",
   "last_task2a_completed_at": "2026-05-19T07:04:00+08:00",
-  "last_task2a_gap_mining": "4.12",
-  "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00"
+  "last_task2a_gap_mining": "24.11",
+  "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00"
 }
