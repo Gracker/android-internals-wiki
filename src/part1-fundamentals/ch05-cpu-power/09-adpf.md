@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: ADPF 自适应性能框架
 chapter: '5.9'
@@ -44,19 +45,19 @@ sources:
 - type: blog
   path: https://android-developers.googleblog.com/
 pipeline_stage: task2b_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: pending
-task2b_result: pending
-last_task2b_at: '2026-05-09T13:40:00+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-05-20T23:53:36+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: needs-rework
 task9_result: needs-rework
-last_task9_at: "2026-05-14T04:36:12+08:00"
+last_task9_at: "2026-05-21T00:29:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
+task9_reviewed_date: "2026-05-21"
+last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
 last_task6_at: "2026-05-16T23:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-23-review.md"
 ---
@@ -143,24 +144,13 @@ Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal he
 
 ### Android 17 的 `setPreferIdle`
 
-[存疑: Task9 已标记当前公开 API 文档未核验到 `setPreferIdle(boolean)`，此小节需回炉复核。]
+[待验证: Task9 已确认当前公开 API 37 文档和 NDK `performance_hint.h` 中均未检索到 `setPreferIdle(boolean)`。以下内容在找到 AOSP commit / API stub 或官方 release note 确认前，不作为确定信息使用。]
 
-API 37 在 `PerformanceHintManager.Session` 上引入了 `setPreferIdle(boolean)` 方法。应用调用 `setPreferIdle(true)` 后，系统会将该 session 关联的线程优先调度到效率核，或允许进入低功耗休眠状态。与 Android 15 的 `setPreferPowerEfficiency(true)` 不同，`setPreferIdle` 的语义更偏向“当前任务可以暂停”，系统在极端负载下可以更激进地压制这些线程的资源分配。
+有调研素材提到 API 37 可能在 `PerformanceHintManager.Session` 上引入 `setPreferIdle(boolean)`，语义比 `setPreferPowerEfficiency` 更偏向"任务可以暂停"。但当前 Android Developers API 37 参考文档和 NDK `performance_hint.h` 中均未找到该方法。如果该 API 存在，可能是 preview/vendor SDK 的一部分，不属于公开 SDK。
 
-适用场景：游戏过场动画（不需要实时渲染）、菜单界面（帧率要求低）、后台 AI 推理批处理。切换回高负载场景时调用 `setPreferIdle(false)` 恢复正常调度。
+能效模式的公开入口仍然是 `setPreferPowerEfficiency(boolean)`（API 35 已确认可用），建议以它为优先选择。
 
-```java
-// 进入菜单界面，不再需要满帧渲染
-hintSession.setPreferIdle(true);
-
-// 进入实时对战，恢复正常调度
-hintSession.setPreferIdle(false);
-```
-
-`setPreferIdle` 和 `setPreferPowerEfficiency` 不要叠加调用——前者是后者的加强版。非极端场景用 `setPreferPowerEfficiency` 就够了，只有当任务可以接受暂停时才用 `setPreferIdle`。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager.Session#setPreferIdle]
-
+> [已修正: 原文声称已验证 developer.android.com，但实际该 URL 不存在此方法。]
 ## Thermal API：从被动降频到主动管理
 
 ### 热状态的层级模型
@@ -316,7 +306,7 @@ gameManager.setGameState(
 | Android 14 | 更多 OEM 开始接入 ADPF HAL，设备差异仍然明显 |
 | Android 15 (API 35) | GPU 工作时长上报；HintSession 能效模式；`PowerManager#getThermalHeadroomThresholds()` |
 | Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()`；NDK thermal headroom listener |
-| Android 17 (API 37) | `PerformanceHintManager.Session#setPreferIdle()`；RecyclerView 1.4 内置 ADPF HintSession 管理 |
+| Android 17 (API 37) | `PerformanceHintManager.Session#setPreferIdle()` [待验证：公开 API 文档未确认]；RecyclerView 1.4 自适应刷新率支持（非 ADPF HintSession） |
 
 
 
@@ -384,7 +374,7 @@ pm.registerForAllProfilingResults(executor, result -> {
 
 ### Hint 信号体系：sendHint() 的完整语义
 
-[需确认: Task9 已标记 Java `sendHint()` 属于 @TestApi/@hide，普通 App 不能按 public SDK 路径使用。]
+**重要边界**：Java 层 `sendHint()` 标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。面向 NDK 的公开替代是 `APerformanceHint_notifyWorkloadIncrease` / `Reset` / `Spike` 系列函数（API 33+），这些是 CTS 验证的公开接口。下文描述的 `sendHint()` 语义仅供理解系统内部设计使用，不建议在 App 代码中直接调用。
 
 `PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
 
@@ -425,7 +415,7 @@ public void sendHint(@Hint int hint) {
 
 ### WorkDuration 分拆版本：CPU/GPU 分别计时
 
-Android 16 (API 36+) 通过 `WorkDuration` 结构将 CPU 和 GPU 耗时分别上报。
+Android 15 (API 35) 通过 `WorkDuration` 结构将 CPU 和 GPU 耗时分别上报。
 
 **源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java` JNI 签名
 
@@ -451,7 +441,7 @@ WorkDuration 四字段（从 JNI 签名推断）：
 - `mActualCpuDurationNanos`：CPU 耗时
 - `mActualGpuDurationNanos`：GPU 耗时
 
-这对 GPU-bound 场景至关重要：只报 CPU 耗时，系统只能调 CPU 频率；如果瓶颈在 GPU，调 CPU 频率完全打偏。
+这对 GPU-bound 场景关键：只报 CPU 耗时，系统只能调 CPU 频率；如果瓶颈在 GPU，调 CPU 频率完全打偏。
 
 ### JNI 实现：dlopen libandroid.so
 
@@ -524,9 +514,9 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 虽然 ADPF 的主要场景是游戏，但任何帧率敏感的应用都可以从中受益。Camera 应用在录制高帧率视频时、视频编辑 App 在实时预览时、AR 应用在渲染时，都可以通过 Performance Hint API 向系统预告性能需求。Android 16 的 Headroom API 更是降低了非游戏场景的使用门槛——不需要建立完整的 HintSession 反馈循环，直接查询当前性能余量即可。
 
-[需确认: Task9 已标记 RecyclerView 1.4 “内置 ADPF HintSession 管理”缺少公开 release notes 依据，需回炉复核。]
+[已修正: Task9 确认 RecyclerView 1.4 release notes 只提到 `setFrameContentVelocity` 支持自适应刷新率（Adaptive Refresh Rate），未出现 `PerformanceHintManager` / `HintSession` / `reportActualWorkDuration` 等 ADPF 相关内容。]
 
-**RecyclerView 1.4 的原生 ADPF 集成**进一步降低了门槛。从 RecyclerView 1.4 起，库内部已自动管理 HintSession：快速滑动时创建 session 并上报 work duration，滑动停止后关闭 session。应用侧只需要把 RecyclerView 依赖升级到 1.4+，不需要额外写 ADPF 接入代码，列表滚动场景的掉帧改善就能体现出来。这对非游戏应用（新闻信息流、商品列表、聊天记录）是最简单的 ADPF 收益入口。
+**RecyclerView 1.4 的自适应刷新率支持**：AndroidX RecyclerView 1.4.0 引入了 `setFrameContentVelocity()` API，用于在快速滚动时向系统上报滑动速度，配合 Adaptive Refresh Rate（自适应刷新率）机制动态调整屏幕刷新率。这不是 ADPF HintSession 集成——RecyclerView 1.4 不会自动创建 `PerformanceHintManager.Session`，也不会自动上报 work duration。如果需要 ADPF 能力，应用仍需自行创建和管理 HintSession。
 
 ## 与其他章节的关系
 
