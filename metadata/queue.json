@@ -14415,7 +14415,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch24-io-network/12-mediastore-mediaprovider-performance.md"
@@ -14430,7 +14430,9 @@
         "packages/providers/MediaProvider/"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T02:04:00+08:00"
+      "added_at": "2026-05-21T02:04:00+08:00",
+      "completed_date": "2026-05-21T03:10:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成：MediaStore / MediaProvider 性能治理章节已写入，status 改为 ready-for-review，进入 Task 6 管线"
     }
   ],
   "metadata": {
