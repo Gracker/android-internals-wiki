@@ -2503,6 +2503,63 @@
 - **问题**：正文已指出厂商 linker config 会改变 namespace / public library / 预装库暴露边界，但只留下 `[待补充]`，没有给出 AOSP linkerconfig 产物、Pixel 样本或厂商 ROM 对照。这个缺口不影响主线结论，但会限制读者判断“某台设备能 dlopen 私有库”是不是平台契约。
 - **建议**：补 1-2 个可复核样本：AOSP `system/linkerconfig` 生成规则、Pixel 设备上的 linker config 产物、至少一个厂商 ROM 差异；同时列出排查动作（收集 linker config、`dlopen failed` logcat、`/proc/<pid>/maps`）并标注“设备可访问 ≠ Android API 保证”。
 
+## [2026-05-20 17:13] Task 2A 缺口挖掘记录：未创建新章节
+
+本轮 Phase 0 未发现 `status: draft` 且正文实质内容少于 15 行的章节，因此进入缺口挖掘。检查结果如下：
+
+- `source-index.json` 中高分未映射素材多数已被既有章节覆盖，或主题不属于 Android 性能知识体系。
+- Perfetto v53 / v54 相关素材已覆盖到 13.12、13.14、13.17、13.18 等章节，不单独创建新小节。
+- Startup Profile / DEX layout 官方文档已在 21.4「Baseline Profile 实战」的扩展段落中覆盖，不创建 21.x 新章节。
+- Android 14–17 Foreground Service timeout / ANR 已在 9.2、9.4 中覆盖，不创建独立 9.x 新章节。
+- Android 17 MessageQueue / DeliQueue、ProfilingManager system triggers、桌面窗口化、大屏渲染、ApplicationExitInfo、DMA-BUF / Gralloc 16KB page 等方向均已有对应章节或待回炉队列。
+- 官方文档中 background location battery、background task battery optimization 等方向与 25.2、25.4、25.5 重合；本轮不拆新节。
+
+结论：本轮未发现评分 ≥ 14 且尚未被 SUMMARY.md 覆盖的独立知识缺口。下一轮建议优先从 AOSP `packages/modules/` 中仍未系统化覆盖的模块（如 UWB、NFC、HealthFitness、OnDevicePersonalization）筛选，但只有能关联启动、功耗、内存、稳定性或可观测性时再建章节。
+
+
+
+## [2026-05-20] Task 2A 挖掘模式复盘 — 未创建新章节
+
+### 结论
+本轮 Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的章节。进入 Phase 1 后，对 source-index 高分未映射素材、近 3 日 daily-info、research-gaps 与官方 Android 17 文档方向做交叉检查，未发现“尚未覆盖且适合独立成节”的 ≥14 分缺口。
+
+### 已检查方向
+- **Android 17 App Memory Limits / ANOMALY / ProfilingTrigger**：已覆盖于 23.9、26.12、8.8、14.7，不创建新节
+- **Reduced Wakelocks for Idle Alarms / OnAlarmListener**：已覆盖于 11.5、25.3、5.10；5.7 的旧口径已存在 Task2B 修正线索，不作为新节
+- **Android 16 SDM / Cloud Compilation 安装链路**：已覆盖于 1.9、1.21、16.6，并已有 2026-05-20 DeepResearch 素材挂入 1.9
+- **SmartPerfetto 可复用 Trace 分析平台**：已覆盖于 13.18，不创建新节
+- **Android Studio Panda / Layout Inspector / LeakCanary Profiler**：已覆盖于 14.14、14.16、23.9，不创建新节
+- **Codec2 / Tunneled Playback / Media3 ABR、端侧 AI 推理、sched_ext OEM 调度**：已覆盖于 8.8、5.11/5.14、17.4，不创建新节
+- **Linux Dirty Frag / CVE-2026-46333 / AI 漏洞报告洪流**：偏安全治理或行业资讯，与本书性能主线相关性不足，不创建新节
+
+### 避免重复挖掘的判断
+- 高分素材中多数已在 5.x、8.x、13.x、14.x、16.x、17.x、23.x、25.x、26.x 中形成独立小节或交叉引用。
+- 今日新增 Android 17 官方文档线索以 App memory limits、ProfilingTrigger、OnAlarmListener 为主，均已有章节承接。
+- Linux 安全新闻与 AI 开发资讯不进入本轮 Android 性能知识结构。
+---
+
+## Task 2A 知识缺口挖掘记录（2026-05-20 19:04）
+
+- **结果**：未发现评分 ≥ 14 且尚未被现有章节或队列承接的新增知识缺口，本轮不创建章节。
+- **已检查方向**：Perfetto v53/v54 Data Explorer / Jank CUJ / pprof / Simpleperf、Android 17 MessageQueue / DeliQueue、Cached App Freezer + GC、DMA-BUF / Gralloc / 16KB 图形内存、Android 17 JobScheduler Excessive CPU + ProfilingTrigger、ApplicationExitInfo / ApplicationStartInfo / ProfilingManager 版本化诊断、Android Studio Panda / LeakCanary Profiler、AOSP Wi-Fi / Bluetooth / Media / netd / Connectivity 结构缺口、Android AI OS / Android Bench。
+- **覆盖判断**：上述方向分别已有 13.12、13.14、13.18、1.13、4.11、2.24、25.12、26.9、26.12、26.13、14.14、23.9、11.6、12.5、12.6、8.8、17.6 等章节或回炉队列承接。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-20-19-知识加工(新).md`
+
+## 2026-05-20 Task 2A 缺口挖掘记录（20:04）
+
+本轮 Phase 0 未发现空 draft 章节。Phase 1 检查 source-index 高分未映射素材、最近 research-feeds / daily-info、AOSP 模块与官方性能文档后，未创建新章节。
+
+已检查但不建章的方向：
+- Android Vitals / Play 质量门禁：26.7、26.3、26.6 已覆盖，后续适合补 Task2B 口径。
+- MediaProvider / MediaStore / FUSE：6.1、6.4 已覆盖，独立章信息增量不足。
+- Android Studio Panda Memory Profiler / Leak Insight：14.14、14.16 已覆盖，适合工具章节增量更新。
+- NFC / Telephony / Biometric：性能主线弱，素材不足。
+- Linux Dirty Frag / CVE：偏安全资讯，不纳入性能书新章节。
+
+落盘报告：`OpenClaw定时任务/知识加工/2026-05-20-20-知识加工(新).md`
+
+
+
 ## [Task6 Review] 19.09 Measure — 2026-05-20
 - **类型**：需补充素材 / 需补充结构
 - **位置**：§核心能力（L118-L129）、§和 Firebase、Sentry 的差别（L143-L153）
@@ -2529,3 +2586,31 @@
 - **位置**：§和 OpenTelemetry 的关系 L231-L242
 - **问题**：“网络请求携带 trace id，与服务端 trace 关联”方向正确，但缺少 Measure 官方实现锚点，容易被读成自定义 request id。官方 performance tracing 文档给的是 W3C Trace Context 的 `traceparent` header，并提供 `Measure.getTraceParentHeaderKey()` / `Measure.getTraceParentHeaderValue(span)`。
 - **建议**：把这一节落到 `traceparent`：移动端先 `Measure.startSpan("http")`，再把 `Measure.getTraceParentHeaderKey()/Value(span)` 加到 OkHttp/URLSession/Dio 请求；服务端按 W3C Trace Context 继续 trace。说明这只是请求级关联，不等于把移动 session 完全建模成 OpenTelemetry trace。
+
+## [Task6 Audit] 19.11 JankStats — 2026-05-20
+- **类型**：需补充结构
+- **位置**：§和 FrameMetrics 的分工 / 大纲锚点「工具分工」
+- **问题**：大纲要求用表格说明 JankStats、FrameMetrics、Perfetto、Macrobenchmark、Firebase Performance 的数据边界。正文目前只有 JankStats 与 FrameMetrics 的分工说明，未覆盖 Perfetto、Macrobenchmark、Firebase Performance，读者无法判断线上指标、线下基准和 trace 根因分析之间如何分工。
+- **建议**：保留现有 JankStats vs FrameMetrics 判断，并补一张横向表格。建议维度：数据粒度、线上/线下、是否能定位根因、适用场景、边界；涉及 Firebase Performance 具体字段或版本能力时加官方来源或待验证标注。
+- **review 日志**：logs/review/2026-05-20-23-audit.md
+
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-21
+- **类型**：第三方库实现准确性
+- **位置**：L343-L353、L924 图片加载库内存管理
+- **问题**：正文写 Glide、Coil、Fresco “都内建 Bitmap Pool”，并在表格中写 Coil 的 Bitmap Pool 是“基于 Coroutine”。Coil 2.x 官方升级说明已经移除 BitmapPool，当前说法需要按 Coil 版本重写；否则会误导读者把 Glide 的复用池模型套到 Coil。
+- **建议**：把 Glide、Coil、Fresco 分版本描述：Glide 保留 `LruBitmapPool`；Coil 1.x/2.x+ 分开，若目标是当前 Coil，应改成 memory cache / hardware bitmap / ImageDecoder 边界，不写 BitmapPool；Fresco 说明 CloseableReference 与 native/shared memory 口径。
+
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-21
+- **类型**：数据支撑/政策边界
+- **位置**：L799、L848 16KB Page Size 与 Bitmap
+- **问题**：“Google Play 已将 16KB 页对齐作为对所有应用的强制要求”缺少 targetSdk/新应用与更新/生效时间边界；“每个 Bitmap 最后一页浪费增加、Glide/Coil 已内部处理对齐问题”缺少官方或实测依据。
+- **建议**：把 Play 要求改成带时间、targetSdk 和发布类型的政策表述；Bitmap 影响降级为“可能增加 native allocation/页粒度碎片，需以 heapprofd/meminfo 实测确认”，删除或补证 Glide/Coil 已处理对齐的断言。
+
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-21
+- **类型**：代码示例准确性
+- **位置**：L393-L406 Activity 泄漏修复示例
+- **问题**：`MyWorker` 被改成 `static class` 后，示例仍在 `run()` 中直接调用 `doSomethingSlow()`；如果该方法是 `Activity` 的实例方法，这段 Java 代码不能编译。
+- **建议**：改为 `activity.doSomethingSlow()`，或把耗时任务抽到不依赖 Activity 的 worker/service；同时补充取消任务或检查生命周期的退出条件，避免 WeakReference 只是隐藏泄漏而不终止后台工作。

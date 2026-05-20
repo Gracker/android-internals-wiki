@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: App 内存优化
 section: '4.5'
@@ -45,30 +46,30 @@ related_chapters:
 - '7.3'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-reviewed_date: '2026-05-12'
+reviewed_date: '2026-05-21'
 reviewed_by: openclaw-task6
 review_type: draft-review
-review_round: 3
+review_round: 4
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: '2026-05-09T22:10:00+08:00'
+task2b_state: pending
+task2b_result: pending
+last_task2b_at: '2026-05-20T23:56:34+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-14'
-last_task9_at: '2026-05-14T05:50:18+08:00'
-task9_review_notes: 2026-05-14 Task9 05: needs-rework。P0 3：GC 可达性、malloc debug、API34 onTrimMemory；P1 5：Message 池、Bitmap 释放、ASan 等。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
-task6_result: needs-rework
-last_task6_at: '2026-05-12T16:15:00+08:00'
-last_task6_review_log: logs/review/2026-05-12-16-review.md
-task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
+task9_reviewed_date: '2026-05-21'
+last_task9_at: '2026-05-21T01:38:56+08:00'
+task9_review_notes: '2026-05-21 Task9 01: needs-rework。P0 1：ApplicationExitInfo API 版本；P1 1：heapprofd 命令入口；P2 3：Coil/BitmapPool、16KB Bitmap/Play 边界、静态 worker 示例。已写入 logs/deep-review/2026-05-21-01-deep-review.md。'
+task6_result: pass-light-edit
+last_task6_at: '2026-05-21T01:15:21+08:00'
+last_task6_review_log: logs/review/2026-05-21-01-review.md
+task6_review_notes: '2026-05-21 Task6 01: 移除正文中残留的 review 编辑痕迹 1 处；L1/L2 通过，转 Task9 pending。'
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
-last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
+last_task9_review_log: logs/deep-review/2026-05-21-01-deep-review.md
 ---
 
 
@@ -169,8 +170,6 @@ last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
 - **Native Heap (`heapprofd`)**：通过 Perfetto 的 Native Heap Profiler 采集 Native 分配。可以按调用栈聚合，找出哪些代码路径分配了最多内存。注意 heapprofd 本身有性能开销，不建议在 Release 构建体中长期开启
 - **dmabuf/GPU memory Track**：在 `gfx` 相关的 counter track 中观察 GPU 纹理和 GraphicBuffer 占用。如果 `dmabuf` 持续增长但 Java Heap 稳定，通常是 Hardware Bitmap 或 Surface 相关资源未释放
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]: writing-guide 要求"每节提供在 Perfetto/工具中的实际表现"。当前章节 heapprofd 部分已有 Perfetto 对照，但 Bitmap 优化、内存泄漏检测等小节缺少 Trace/Perfetto Track 的具体描述。建议补充：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/ GPU memory Track 的说明]
-
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]
 
 这四层不是孤立的，而是一个递进的防御体系。第一道防线是"减少分配"，过了这一关之后，剩余的分配要"及时释放"，万一没释放干净就要"避免泄漏"，最后的底线是"监控兜底"。
@@ -212,7 +211,7 @@ UI Thread    | GC Pause!    | UI Thread
 
 Android 系统自身就大量使用了对象池模式：
 
-- **`Message.obtain()`**：系统自带的 Message 对象池，最大容量 50。`Handler.sendMessage()` 内部会调用 `Message.obtain()` 从池中取对象，而不是每次 `new Message()`。
+- **`Message.obtain()`**：系统自带的 Message 对象池，最大容量 50。`Handler.obtainMessage()` 和 `Handler.post()` 内部调用 `Message.obtain()` 从池中取对象复用。注意 `Handler.sendMessage()` 不会调用 `obtain()`——它直接使用调用方传入的 Message 对象，所以调用方需自行通过 `Message.obtain()` 获取。
 - **`Parcel.obtain()` / `Parcel.recycle()`**：Binder IPC 的数据载体，通过对象池复用。
 - **`MotionEvent.obtain()`**：触摸事件对象，从池中获取后必须调用 `recycle()` 归还。
 
@@ -258,7 +257,7 @@ Bitmap 是 Android App 中最大的内存消费者之一。一张 1080×1920 的
 
 - **不再直接受 Java 堆限制**：Bitmap 占用不再计入 `dalvikHeapSize`，通过 `Runtime.getRuntime().freeMemory()` 观察到的可用空间不再包含 Bitmap 占用
 - **仍然计入进程的 PSS**：虽然不在 Java 堆，但通过 `dumpsys meminfo` 看到的 `Native Heap` 会增加
-- **GC 不再直接回收**：Native 堆的 Bitmap 由 Native 层的 finalize 机制回收，或者通过 `Bitmap.recycle()` 主动释放
+- **释放路径变更**：Native 堆的 Bitmap 像素数据通过 `NativeAllocationRegistry` 注册到 ART 的 `Cleaner` 机制。当 Java 层的 Bitmap 对象变为不可达时，`Cleaner` 触发 Native 释放回调（而非旧版的 `finalize()`）。`Bitmap.recycle()` 仍可主动立即释放像素内存，不需要等 Cleaner 队列处理
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory — Bitmap 内存管理]
 
@@ -553,16 +552,20 @@ JNI 层的内存泄漏比 Java 层更隐蔽，因为 Native 代码没有 GC 机�
 Android 提供了 `malloc debug` 工具来追踪 Native 内存分配：
 
 ```bash
-# 启用 malloc debug
-adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_tracker android.app.ActivityThread"'
+# 方式一：通过 adb shell 设置进程 wrap 属性（需 force-stop 后重启进程）
+adb shell am force-stop com.example.app
+adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace"'
 
-# 或通过 am 启动
-adb shell am start --activity-clear-task -n com.example.app/.MainActivity
+# 方式二：通过 app_process 设置（适用于 debuggable 应用）
+adb shell am force-stop com.example.app
+adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_enable_on_signal"'
+adb shell am start -n com.example.app/.MainActivity
 ```
 
-启用后，可以通过 `dumpsys meminfo --checkin <pid>` 查看分配统计，或者通过 `heapprofd`（见下节）获取更详细的信息。
+`backtrace` 选项记录每次 native 分配的调用栈，`backtrace_enable_on_signal` 在收到 `SIGUSR1` 后才开始记录，减少运行时开销。启用后通过 `dumpsys mallocinfo <pid>` 查看分配统计，或结合 `heapprofd`（见下节）做更详细的性能分析。
 
-[已验证: 官方文档, developer.android.com/ndk/guides/debug-gdb — malloc debug 选项]
+> [已修正: 原示例使用不存在的 `backtrace_tracker` 选项。]
+> [已验证: 官方文档, source.android.com/docs/core/debug/native-crash — malloc debug 选项列表]
 
 ### ASan（AddressSanitizer）
 
@@ -598,17 +601,23 @@ target_compile_options(my-native-lib PRIVATE -fsanitize=address -fno-omit-frame-
 target_link_options(my-native-lib PRIVATE -fsanitize=address)
 ```
 
-2. 准备 `wrap.sh` 包装脚本（Android 8.0+，用于 ASan 运行时加载）：
+2. 准备 `wrap.sh` 包装脚本（Android API 27+ / O_MR1，debug 构建专用）：
 
 ```bash
 #!/system/bin/sh
 # app/src/main/resources/lib/arm64-v8a/wrap.sh
-ASAN_OPTIONS=alloc_dealloc_mismatch=0
+# ASan 运行时库路径取决于 NDK 版本，以下为典型路径
+ASAN_LIB=$(dirname $0)/libclang_rt.asan-aarch64-android.so
+export LD_PRELOAD=$ASAN_LIB
+ASAN_OPTIONS=alloc_dealloc_mismatch=0:detect_stack_use_after_return=1
 export ASAN_OPTIONS
 exec "$@"
 ```
 
-3. 在 Manifest 中为 debug 构建开启 `android:debuggable`（ASan 仅在 debuggable 进程中生效）。
+关键运行条件：
+- `wrap.sh` 仅在 `android:debuggable=true`（或通过 `android.testOnly`）的进程中生效
+- `LD_PRELOAD` 加载的 ASan runtime `.so` 需要正确打包到 APK 的 `lib/<abi>/` 下
+- 在 `build.gradle` 中确保 `debug` 构建类型的 `jniDebuggable true` 和正确的 NDK sanitizer 配置
 
 ASan 会使 App 性能下降 2-5 倍，所以只在 debug 构建中使用。但它能捕获到 malloc debug 无法发现的越界访问和 use-after-free 问题。
 
@@ -684,12 +693,13 @@ data_sources {
 
 **API 34+——回调范围收窄：**
 
-`RUNNING_*`、`MODERATE`（60）、`COMPLETE`（80）等旧 level 已废弃或不再投递给 App。API 35 将相关常量标为 `@Deprecated`。API 34+ 仍有实际意义的是：
+从 API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`（5）、`TRIM_MEMORY_RUNNING_LOW`（10）、`TRIM_MEMORY_RUNNING_CRITICAL`（15）不再投递给 App。`TRIM_MEMORY_MODERATE`（60）、`TRIM_MEMORY_COMPLETE`（80）、`TRIM_MEMORY_BACKGROUND`（40）等后台级别在 API 35 中标记为 `@Deprecated`。API 34+ 仍会实际投递的是：
 
 | 级别 | 值 | 含义 | 建议操作 |
 |------|---|------|----------|
-| `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见 | 释放 UI 相关资源 |
-| `TRIM_MEMORY_BACKGROUND` | 40 | 进入 LRU 列表 | 释放可重建的资源 |
+| `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见 | 释放 UI 相关资源（Bitmap 缓存等） |
+
+在 API 34+ 设备上，内存压力判断应回到 PSI（`/proc/pressure/memory`）、`lmkd` 指标、`dumpsys meminfo` 等系统级信号。`TRIM_MEMORY_BACKGROUND` / `MODERATE` / `COMPLETE` 不应再作为"即将被杀"或"释放缓存"的触发信号。
 
 在 API 34+ 设备上，系统内存压力判断应回到 PSI（`/proc/pressure/memory`）、`mm_vmscan` tracepoint、`lmkd` 指标等系统级信号，不要依赖不再投递的 `TRIM_MEMORY_COMPLETE` 作为"即将被杀"的信号。
 
@@ -893,7 +903,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的，但仍然需要短暂的"暂停"阶段（Young Generation 暂停）来拷贝存活对象。调用 `System.gc()` 时，就是在主动制造一次 GC 周期，这会让正在运行的线程暂停——如果这个调用发生在主线程的渲染路径中，就是一次额外的掉帧风险。
 
-第二层原因是 **它掩盖了问题本身**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"内存不足的症状（GC 会回收一些可达但暂时未引用的对象），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
+第二层原因是 **它掩盖了问题本身**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"内存不足的症状（GC 可能回收一些刚变为不可达的对象（比如清空缓存后，原先被缓存强引用持有的对象断开了引用链）），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
 
 有一种极少数情况下 `System.gc()` 是有意义的：当刚执行完一次大批量的内存释放操作（比如清空了一个大型缓存 Map），想让系统尽快回收这些对象以降低内存水位。但即使在这种场景下，也可以通过调用 `System.runFinalization()` 配合使用，或者直接信赖 ART 的 GC 会在下次自然周期中处理。
 
@@ -903,7 +913,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 前文讲过，Android 8.0（API 26）将 Bitmap 的像素数据从 Java 堆移到了 Native 堆。Bitmap 因此不再直接占用 Java 堆配额，也不再直接导致 `OutOfMemoryError`。但"不需要 recycle"这个结论过于简化了。
 
-实际情况是：Bitmap 的 Java 对象仍然在 Java 堆中（它是一个普通 Java 对象，包含宽高、配置等元数据），而像素数据在 Native 堆。当 Java 层的 Bitmap 对象变得不可达时，GC 会回收 Java 对象，并触发 Native 层的 finalize 机制来释放像素数据。但这个 finalize 过程是**异步的、延迟的**——GC 不保证立即回收，finalize 队列的处理也可能滞后。
+实际情况是：Bitmap 的 Java 对象仍然在 Java 堆中（它是一个普通 Java 对象，包含宽高、配置等元数据），而像素数据在 Native 堆。当 Java 层的 Bitmap 对象变得不可达时，GC 回收 Java 对象后，`NativeAllocationRegistry` 注册的 `Cleaner` 回调触发 Native 像素释放。这个过程是**异步的、延迟的**——GC 不保证立即回收，Cleaner 队列的处理也可能滞后。
 
 在以下场景中，显式调用 `Bitmap.recycle()` 仍然有意义：
 
