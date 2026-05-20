@@ -7,7 +7,7 @@ drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-24'
-last_verified_against: measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + feature-data-retention
+last_verified_against: measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + docs/api/dashboard/README.md retention endpoint
 confidence: medium
 tags:
 - apm
@@ -29,20 +29,20 @@ sources:
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md
+  path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: fixed
+task2b_result: fixed
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: '2026-04-24T14:55:00+08:00'
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
@@ -224,7 +224,7 @@ Measure 的开源形态意味着团队可以自托管，也意味着平台工作
 
 这些成本没有处理好，开源平台也会变成难维护的内部系统。试点时要从最小可用范围开始：Crash / ANR + 会话时间线 + 版本维度，跑通后再加性能 trace。
 
-服务端保留期在 dashboard 中可配，范围是 7-365 天，默认 90 天。这个值会直接影响存储成本、附件保留时间和删除策略。[已验证: 官方文档, docs/features/feature-data-retention.md]
+服务端保留期在 dashboard 中可配，范围是 30-365 天，默认 30 天（通过 `GET/PATCH /apps/:id/retention` 管理）。这个值会直接影响存储成本、附件保留时间和删除策略。[已验证: Dashboard API docs/api/dashboard/README.md retention endpoint]
 
 ## 和 OpenTelemetry 的关系
 
@@ -252,7 +252,7 @@ Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图
 | 请求体 / 响应体 | 默认不采集 body 和 header；只能对指定 URL 打开 | body 采集只给白名单接口，优先灰度环境；敏感字段先在业务层脱敏 |
 | 日志 / 诊断文件 | `enableDiagnosticMode` 只写 Measure SDK 自己的日志文件 | 只在 debug 或线下复现时打开，不把业务日志混进附件 |
 | 截图 / 附件 | bug report 默认可带截图，支持 screenshot mask level，单条 bug report 最多 5 个附件 | 默认开启文字或敏感输入遮罩；支付、实名认证、聊天页按场景禁用截图，必要时改成 layout snapshot |
-| 地区合规 | 自托管可以把数据留在自有区域；服务端 retention 可配 7-365 天 | EU、境内、海外环境分开部署，部署前确认存储区域、备份流程和访问审计 |
+| 地区合规 | 自托管可以把数据留在自有区域；服务端 retention 可配 30-365 天（默认 30 天） | EU、境内、海外环境分开部署，部署前确认存储区域、备份流程和访问审计 |
 | 删除请求 | SDK 提供 `clearUserId()` 处理后续会话标识；公开文档里明确的服务端控制项是 retention | 试点前就定义“按 user id 检索、导出、删除历史 session”的后台流程；没有这条流程时，不要把可识别用户数据放进自定义属性、请求体或附件 |
 
 执行隐私策略时，SDK 初始化参数、dashboard 远端配置、自托管存储策略要放在同一张表里审一次。这样排查事故时，团队才能知道哪些字段能看、哪些字段不能留。
