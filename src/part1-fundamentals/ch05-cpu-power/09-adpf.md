@@ -44,12 +44,12 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: '2026-05-20T23:53:36+08:00'
+pipeline_stage: 'task6_pending'
+task6_state: 'revisiting'
+task9_state: 'pending'
+task2b_state: 'fixed'
+task2b_result: 'fixed'
+last_task2b_at: '2026-05-21T03:22:56+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: needs-rework
@@ -374,9 +374,7 @@ pm.registerForAllProfilingResults(executor, result -> {
 
 ### Hint 信号体系：sendHint() 的完整语义
 
-[需确认: Task9 已登记 NDK workload hint API level 与 Java sendHint 公开 API 边界风险，待 Task2B 按 logs/deep-review/2026-05-21-00-deep-review.md 修正后再发布。]
-
-**重要边界**：Java 层 `sendHint()` 标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。面向 NDK 的公开替代是 `APerformanceHint_notifyWorkloadIncrease` / `Reset` / `Spike` 系列函数（API 33+），这些是 CTS 验证的公开接口。下文描述的 `sendHint()` 语义仅供理解系统内部设计使用，不建议在 App 代码中直接调用。
+**重要边界**：Java 层 `sendHint()` 标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。面向 NDK 的公开替代是 `APerformanceHint_notifyWorkloadIncrease` / `Reset` / `Spike` 系列函数（Android 16 / API 36+，NDK `performance_hint.h` 标注 `__INTRODUCED_IN(36)`），这些是 CTS 验证的公开接口。Java 层 `sendHint()` 及其 `CPU_LOAD_*` / `GPU_LOAD_*` 常量标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。下文描述的 `sendHint()` 语义仅供理解系统内部设计使用，公开接入示例应只使用 `reportActualWorkDuration()` 和 API 36+ 的 NDK workload hint。
 
 `PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
 
@@ -447,9 +445,9 @@ WorkDuration 四字段（从 JNI 签名推断）：
 
 ### JNI 实现：dlopen libandroid.so
 
-[需确认: Task9 已登记 `APerformanceHint_*` 源码入口与 `libandroid.so` 表述风险，待 Task2B 修正后再发布。]
-
 **源码位置**：`frameworks/base/core/jni/android_os_PerformanceHintManager.cpp`（AOSP master）
+
+> [Task2B 已修正：JNI 侧通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定 NDK C API 符号；C API 源码入口在 `frameworks/base/native/android/performance_hint.cpp`，是公开可查阅的 AOSP 代码。]
 
 ```cpp
 // 行 46-58
@@ -470,7 +468,7 @@ void ensureAPerformanceHintBindingInitialized() {
 }
 ```
 
-`android_os_PerformanceHintManager.cpp` 通过 `dlopen + dlsym` 绑定 `libandroid.so` 中的 `APerformanceHint_*` 符号；这些符号的源码入口和稳定性边界需按 Task9 反馈重新核对。
+`android_os_PerformanceHintManager.cpp` 通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定 NDK C API 符号（`APerformanceHint_getManager`、`APerformanceHint_createSession` 等）。这些 C API 的源码入口在 `frameworks/base/native/android/performance_hint.cpp`，是公开可查阅的 AOSP 代码；JNI 层的延迟绑定机制保证了 Java API 变化不会影响 native 层已绑定的符号地址，但新 API 的暴露仍然依赖 NDK 头文件的版本声明。
 
 ### GameState.MODE_CONTENT：非游戏应用的语义锚点
 
@@ -551,17 +549,11 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 [需补充素材: Task9 已登记该 2026 旗舰机延迟表缺少测试方法、固件版本、样本数和原始 trace；Pixel 10 SoC 口径也需确认。]
 
-**2026 旗舰机 Hint 响应延迟对照**：HintSession 上报 work duration 后，系统完成频率调整所需的时间，直接影响“掉帧后补频能否挽回当前帧”。120 fps 下一帧只有 8.33 ms，5 ms 的响应延迟意味着超过一半的帧预算已经耗在等待上。
+**OEM ADPF 响应差异**：不同 SoC 厂商对 ADPF Hint 的响应延迟存在显著差异，直接影响“掉帧后补频能否挽回当前帧”。120 fps 下一帧只有 8.33 ms，响应延迟超过 4 ms 就意味着近半帧预算耗在等待上。
 
-| 设备 | SoC | ADPF Hint → 频率生效延迟 | 备注 |
-|------|-----|--------------------------|------|
-| 小米 17 Ultra | 骁龙 8 Elite 2 | ~1.2 ms | 极限响应，掉帧后当前帧仍有挽回空间 |
-| Pixel 10 | Tensor G6 | ~1.5 ms | 均衡表现 |
-| 三星 S26 Ultra | 骁龙 8 Elite 2 (三星定制调度) | ~5 ms | 定制 PowerHAL 策略偏保守，频率爬升阶梯更多 |
+[待验证素材：2026 Q1 设备测试数据缺少测试方法（Perfetto CPU frequency + App 自定义 ADPF marker）、固件版本、样本数和原始 trace；Pixel 10 SoC 名称（Tensor G5 vs G6）也需按公开资料确认。待补齐数据来源后再发布对照表。]
 
-这个 4 倍代差决定了跨设备调优策略不能一刀切。在三星设备上，Hint 响应延迟接近半帧预算，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
-
-[待验证：不同 OEM 的 ADPF HAL 实现差异的具体数据；以上延迟数据来自 2026 Q1 设备测试，随固件更新可能变化]
+跨设备调优策略不能一刀切。响应延迟较快的设备上，ADPF 可以做帧级补救；响应延迟接近半帧预算的设备上，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
 
 ## 参考资料
 

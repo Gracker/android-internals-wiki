@@ -13,7 +13,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
@@ -42,7 +42,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T00:29:00+08:00"
+      "added_at": "2026-05-21T00:29:00+08:00",
+      "completed_date": "2026-05-21T03:23:09+08:00",
+      "completed_reason": "Task 2B 回炉修复: InputFilter 调用链从 mInputFilter 指针修正为 mPolicy.filterInputEvent→InputFilter.cpp→IInputFilter(Rust)；手势排除区域小节改为待验证（AOSP 无对应符号和10ms收益数据）；processAnrsLocked 从10ms固定轮询修正为 AnrTracker 超时驱动"
     },
     {
       "id": "task9-20260521-5.9-adpf-workload-hint-jni-oem-data",
@@ -57,7 +59,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
@@ -93,7 +95,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T00:29:00+08:00"
+      "added_at": "2026-05-21T00:29:00+08:00",
+      "completed_date": "2026-05-21T03:23:09+08:00",
+      "completed_reason": "Task 2B 回炉修复: NDK workload hint 版本从 API 33+ 修正为 API 36+(INTRODUCED_IN 36)；Java sendHint 标注 @TestApi+@hide 非 public SDK；JNI 实现描述修正（C API 源码在 performance_hint.cpp）；2026旗舰机延迟表删除改为待验证素材"
     },
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -107,7 +111,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/11-jankstats.md"
@@ -125,7 +129,9 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-05-20T23:28:00+08:00",
-      "original_review_log": "logs/review/2026-05-20-23-audit.md"
+      "original_review_log": "logs/review/2026-05-20-23-audit.md",
+      "completed_date": "2026-05-21T03:23:09+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充帧性能监控工具横向对比表（JankStats/FrameMetrics/Perfetto/Macrobenchmark/Firebase Performance 五工具七维度）"
     },
     {
       "id": "task6-19.09-measure-outline-coverage",
