@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-19.06-looper-observer-api-version",
+      "section": "19.06",
+      "section_title": "BlockCanary",
+      "priority": 85,
+      "title": "Looper.Observer 版本边界写错",
+      "description": "正文把 @hide Looper.Observer 的出现版本写成 Android 9（API 28），AOSP tags 显示 Android 9 Looper.java 尚无 Observer，Android 10（API 29）才出现 setObserver 和 Observer 回调。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/06-blockcanary.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-12-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/API 版本错误",
+          "location": "L269 自研轻量卡顿监控时的改进点",
+          "detail": "正文称 Android 9（API 28）之后 Looper 内部有 @hide Looper.Observer。AOSP android-9.0.0_r1 的 frameworks/base/core/java/android/os/Looper.java 未定义 Observer / setObserver；android-10.0.0_r1 才出现 private static Observer sObserver、setObserver()、messageDispatchStarting() / messageDispatched() 回调。",
+          "suggestion": "把版本边界改为 Android 10（API 29）起存在隐藏 Looper.Observer；Android 9 仍以 Printer / setMessageLogging 为公开可用边界。顺带补充 messageDispatched(Object token, Message msg) 签名和 Hidden API 限制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T12:22:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T12:22:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-12-audit.md"
+    },
+    {
       "id": "task9-audit-19.16-profiling-result-not-allowed",
       "section": "19.16",
       "section_title": "ProfilingManager",
