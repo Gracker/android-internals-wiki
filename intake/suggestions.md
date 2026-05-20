@@ -2454,3 +2454,38 @@
   - Kotlin 2.3.0 语言更新：偏语言工具链，缺少明确性能切入点，评分 9/20。
 - **下轮建议**：如果后续出现 3 篇以上高质量素材聚焦同一未覆盖主题，可优先复查 `ch06 存储与 I/O` 的 F2FS / dm-verity / fsync 深水位，以及 `ch12/ch24` 的 QUIC/HTTP3 真实线上指标。
 
+## [Task9 Deep Review] 18.8 OpenGL ES 渲染链路 — 2026-05-20 — BufferQueue triple buffering 口径
+- **类型**：源码准确性/数据支撑
+- **位置**：Buffer 流转与 Triple Buffering L203
+- **问题**：正文写“GLES 的 BufferQueue 通常配置为 3 个 Slot”。更稳的口径是“常见稳态会分配/使用 3 个 GraphicBuffer”，而不是 BufferQueue 固定只有 3 个 slot；实际 buffer 数受 max dequeued/acquired、async mode、producer/consumer 配置和 BLAST/传统 BufferQueue 路径影响。
+- **建议**：补一段源码边界：slot 数是队列容量/索引空间，实际分配的 GraphicBuffer 数和 producer 可 dequeue 数由 BufferQueue 配置决定；Trace 中应结合 queue/dequeue 节奏与 acquired/dequeued 状态判断。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-05-20 — @CriticalNative public API 边界
+- **类型**：源码准确性/API 边界
+- **位置**：`@FastNative` 和 `@CriticalNative`，到底快在哪，边界又在哪 L187-L189
+- **问题**：正文已收敛到 primitive 标量参数/返回值，但“数组不要写成稳定承诺；若要依赖数组语义需核对 ART 源码与测试”仍容易让应用侧读者理解成数组有条件可用。官方口径是 @CriticalNative 不能使用托管对象，数组也属于托管对象；非 static 的隐式 this 也属于托管对象。
+- **建议**：面向应用侧直接写成“必须是 static native，且 public API 安全边界只接受 primitive 标量参数/返回值；数组、String、对象、隐式 this 都不作为 @CriticalNative 参数/返回值”。如讨论 ART 内部实验能力，单独放到待验证/源码研究段，不混入实践建议。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-05-20 — 16KB page size NDK 版本口径
+- **类型**：版本差异
+- **位置**：16KB page size：JNI/NDK 项目的上线门槛 L238
+- **问题**：正文写“如果还在 NDK r27，需要按文档补充 linker flags”。官方迁移口径覆盖 NDK r27 及以下；只点名 r27 会漏掉仍停在更旧 NDK 的项目。
+- **建议**：改为“NDK r28+ 默认支持；NDK r27 及以下需要按官方文档补充 linker flags（如 max-page-size/common-page-size 16KB）并重编所有自有与三方 native 库”。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-05-20 — Propeller 待验证段
+- **类型**：数据缺失/版本边界
+- **位置**：Post-Link 优化：Propeller L246-L252
+- **问题**：章节已处于 finalized，但 Propeller 段仍以 `[待验证]` 开头，且明确说明 NDK r28 changelog 与 LLVM lld 官方文档未找到 `--propeller-order` flag，8% 收益来自 Google Propeller 论文的 warehouse-scale workload，不能直接作为 Android NDK 功能背书。
+- **建议**：删除正文中的实践性启用路径，或降级为“延伸阅读/待验证素材”；只有在 NDK/LLVM 官方文档出现 Android 可用 flag 和采集流程后再恢复到正文实践建议。
+
+## [Task9 Deep Review] 22.10 RenderEffect 与 RuntimeShader 性能实践 — 2026-05-20 — GPU Headroom 运行时降级边界
+- **类型**：版本差异/API 边界
+- **位置**：优化清单 L282
+- **问题**：正文写 Android 16+ 可结合 GPU Headroom 做运行时质量降级，但 AOSP android-16.0.0_r1 的 `SystemHealthManager.getGpuHeadroom()` 仍带 `@FlaggedApi(android.os.Flags.FLAG_CPU_GPU_HEADROOMS)`，设备不支持时会抛 `UnsupportedOperationException`，并且必须遵守 `getGpuHeadroomMinIntervalMillis()`。
+- **建议**：把这条改成“可选能力”：先检测 API/flag/设备支持，捕获 `UnsupportedOperationException`，遵守最小采样间隔；不满足时回退到帧耗时、温控、设备档位和灰度开关。
+
+## [Task9 Deep Review] 22.10 RenderEffect 与 RuntimeShader 性能实践 — 2026-05-20 — GPU counter 与 2.10 交叉引用口径
+- **类型**：交叉引用一致性
+- **位置**：Perfetto 与 GPU 工具观测 L264；优化清单 L282
+- **问题**：本节已经把 `gpu_busy` 写成“若存在则纳入对照，counter 名称和精度因厂商实现而异”，但相关章节 2.10 仍有“Android 16 统一 gpu_busy 轨道名称/百分比语义”的强断言。读者跨章阅读时会得到相反口径。
+- **建议**：同步 2.10 或在本节引用 2.10 时加边界说明：Android CDD 要求支持 GPU profiling 的设备输出符合 GPU counter proto，但不保证所有设备都有统一可用的 `gpu_busy` 名称与精度。
