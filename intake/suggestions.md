@@ -2628,3 +2628,11 @@
 - **位置**：L424-L430 Power Rails / Energy Consumer Track
 - **问题**：正文把 Power Rails track 描述成“实时电流和电压，单位 mW”。Perfetto power rails / ODPM 口径更准确地说是硬件 rail 的能量计数器，依赖设备硬件与 IPowerStats HAL；功率通常由能量差分除以时间窗口得到，不是所有设备都有可用轨道。
 - **建议**：改成“Power rails 提供 per-rail energy counters；在选定时间窗内计算能量差/时长得到平均功率。是否可见取决于设备硬件、PowerStats HAL 与 trace 配置 `collect_power_rails: true`。”
+
+## [Task6 Review] 5.9 ADPF 自适应性能框架 — 2026-05-21
+- **类型**：需重写
+- **位置**：源码调研补充（2026-05-01/05-07）与参考资料 DeepResearch 连续摘要
+- **问题**：正文仍保留 AIW 源码调研注释块、调研日期标题和重复 DeepResearch 摘要。它们提供了素材来源，但发布稿主线在“版本演进”后被打断，读者会从机制讲解切到内部加工记录。
+- **建议**：由 Task2B 将可保留的 API/version 内容融入 Performance Hint、GameState、扩展/参考资料等主线段落；删除 AIW 注释、源码调研补充日期标题和重复摘要。Task9 已登记的 API level、源码入口和设备数据表问题需优先修正。
+- **review 日志**：logs/review/2026-05-21-02-review.md
+
