@@ -36,10 +36,10 @@ sources:
 tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_state: revisiting
+reviewed_date: "2026-05-20"
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-15"
+task6_reviewed_date: "2026-05-20"
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-20"
@@ -50,6 +50,9 @@ task2b_result: pending
 last_task9_at: "2026-05-20T07:37:11+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
 task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 3 / P1 2 / P2 2 / P3 1。P0 3：EEVDF 源码路径/weight 体系错误、GameManager→BPF 链路无证据、AOSP kernel/common 集成结论自相矛盾；P1 2：scx_bpf_cpuperf_set cpufreq 通用路径缺失、Android 14/15/17 时间线无锚点；P2 2。"
+last_task6_at: "2026-05-20T08:14:00+08:00"
+last_task6_review_log: "logs/review/2026-05-20-08-review.md"
+task6_review_notes: "2026-05-20 task6 review 08:14：复审 sched_ext 与 OEM BPF 调度器；L1/L2 基本通过，仅同步 Task6 元数据；未新增写作回炉项；保留 Task9 needs-rework 与 task2b_pending。"
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器

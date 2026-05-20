@@ -1478,31 +1478,28 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T07:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-20T08:14:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-19",
-    "time": "20:25",
-    "reviewed_at": "2026-05-19T20:25:44+08:00",
+    "date": "2026-05-20",
+    "time": "08:14",
+    "reviewed_at": "2026-05-20T08:14:00+08:00",
     "sections": [
-      "14.9",
-      "12.3",
-      "20.3"
+      "19.16",
+      "17.4"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
     ],
-    "log": "logs/review/2026-05-19-20-review.md",
+    "log": "logs/review/2026-05-20-08-review.md",
     "mode": "revisiting-review",
-    "l1_l2_fixes": 1,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
     "technical_risk_markers": 0,
     "results": {
-      "14.9": "pass-light-edit / task2b_pending(known Task9 queue)",
-      "12.3": "pass-light-edit / task2b_pending(known Task9 queue)",
-      "20.3": "pass-light-edit / task9_pending(after Task2B fixed)"
+      "19.16": "pass-light-edit / task2b_pending(known Task9 queue)",
+      "17.4": "pass-light-edit / task2b_pending(known Task9 queue)"
     },
     "auto_promoted": []
   },
@@ -2997,7 +2994,7 @@
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
+      "reviewed_date": "2026-05-20",
       "last_review_log": "logs/review/2026-05-15-10-review.md",
       "queue_priority": 95,
       "task9_result": "needs-rework",
@@ -3006,7 +3003,11 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
       "task2b_result": "pending",
-      "last_task9_at": "2026-05-20T07:37:11+08:00"
+      "last_task9_at": "2026-05-20T07:37:11+08:00",
+      "task6_reviewed_date": "2026-05-20",
+      "last_task6_at": "2026-05-20T08:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-20-08-review.md",
+      "task6_review_summary": "L1/L2 pass-light-edit；无新增写作回炉项；保留 Task9 needs-rework / task2b_pending。"
     },
     "20.10": {
       "title": "WebView Renderer OOM 与白屏恢复",
@@ -4156,7 +4157,14 @@
       "last_task9_at": "2026-05-20T07:37:11+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
       "queue_priority": 85,
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-20",
+      "task6_reviewed_date": "2026-05-20",
+      "last_task6_at": "2026-05-20T08:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-20-08-review.md",
+      "task6_review_summary": "L1/L2 pass-light-edit；无新增写作回炉项；保留 Task9 needs-rework / task2b_pending。"
     }
   },
   "task2b_rounds": [
@@ -4242,32 +4250,29 @@
   "last_task2a_at": "2026-05-20T01:04:00+08:00",
   "last_task2a_section": "21.10",
   "last_task2a_file": "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
-  "last_task6_review": "2026-05-19",
+  "last_task6_review": "2026-05-20",
   "last_task6_sections": [
-    "14.9",
-    "12.3",
-    "20.3"
+    "19.16",
+    "17.4"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part5-app/ch20-stability/03-native-crash-governance.md"
+    "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task6_at": "2026-05-19T20:25:44+08:00",
+  "last_task6_at": "2026-05-20T08:14:00+08:00",
   "last_task6_review_detail": {
     "mode": "revisiting-review",
+    "reviewed_at": "2026-05-20T08:14:00+08:00",
     "sections": [
-      "14.9",
-      "12.3",
-      "20.3"
+      "19.16",
+      "17.4"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
     ],
-    "log": "logs/review/2026-05-19-20-review.md",
-    "summary": "Task6 本轮完成 14.9/12.3/20.3 写作层 revisiting review：3 个章节均 pass-light-edit；12.3 小修 1 处填充强调词；无新增回炉项；未自动晋升。"
+    "log": "logs/review/2026-05-20-08-review.md",
+    "summary": "Task6 本轮完成 19.16/17.4 写作层 revisiting review：2 个章节均 pass-light-edit；仅同步 Task6 元数据；无新增写作回炉项；两章保留 Task9 needs-rework / task2b_pending，未自动晋升。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4276,12 +4281,11 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
-  "task6_last_review_at": "2026-05-19T20:25:44+08:00",
-  "task6_last_review_log": "logs/review/2026-05-19-20-review.md",
+  "task6_last_review_at": "2026-05-20T08:14:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-20-08-review.md",
   "task6_last_review_sections": [
-    "14.9",
-    "12.3",
-    "20.3"
+    "19.16",
+    "17.4"
   ],
   "sections_status": {
     "22.11": {
@@ -5200,28 +5204,25 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "mode": "revisiting-review",
+    "reviewed_at": "2026-05-20T08:14:00+08:00",
     "sections": [
-      "14.9",
-      "12.3",
-      "20.3"
+      "19.16",
+      "17.4"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
     ],
-    "log": "logs/review/2026-05-19-20-review.md",
-    "summary": "Task6 本轮完成 14.9/12.3/20.3 写作层 revisiting review：3 个章节均 pass-light-edit；12.3 小修 1 处填充强调词；无新增回炉项；未自动晋升。"
+    "log": "logs/review/2026-05-20-08-review.md",
+    "summary": "Task6 本轮完成 19.16/17.4 写作层 revisiting review：2 个章节均 pass-light-edit；仅同步 Task6 元数据；无新增写作回炉项；两章保留 Task9 needs-rework / task2b_pending，未自动晋升。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part5-app/ch20-stability/03-native-crash-governance.md"
+    "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part5-app/ch20-stability/03-native-crash-governance.md"
+    "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5487,5 +5488,6 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md"
+  "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
+  "last_task6_review_log": "logs/review/2026-05-20-08-review.md"
 }
