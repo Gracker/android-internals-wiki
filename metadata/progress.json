@@ -1,7 +1,7 @@
 {
   "total": 338,
-  "draft": 1,
-  "ready-for-review": 133,
+  "draft": 0,
+  "ready-for-review": 134,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4234,9 +4234,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "21.10",
-  "last_task2a_processed_file": "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
-  "last_task2a_processed_date": "2026-05-19",
+  "last_task2a_processed": "25.13",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md",
+  "last_task2a_processed_date": "2026-05-21",
   "task9_last_review_detail": {
     "date": "2026-05-19",
     "time": "19:36",
@@ -5608,5 +5608,6 @@
       "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
     ],
     "reason": "Phase 0 未发现空 draft；Phase 1 从 source-index、近期信息和官方文档/AOSP 方向筛出评分 >=14 的缺口并录入。"
-  }
+  },
+  "last_task2a_processed_status": "ready-for-review"
 }
