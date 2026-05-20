@@ -14662,23 +14662,69 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T04:36:55+08:00"
+    },
+    {
+      "id": "task2a-gap-20260521-26.15-android-vitals-play-console-quality",
+      "section": "26.15",
+      "section_title": "Android Vitals 与 Play Console 质量指标归因",
+      "priority": 80,
+      "title": "补齐 Android Vitals / Play Console 质量指标归因章节",
+      "description": "现有目录覆盖 APM、线上性能监控、发版门禁与性能实验，但缺少把 Android Vitals 的 Crash/ANR/功耗/渲染/LMK/Slow Sessions 指标映射到内部证据链和发版动作的独立章节。",
+      "reason": "Task 2A Phase 1 缺口挖掘：developer.android.com 的 Android Vitals 官方文档有完整独立主题，SUMMARY 中无对应 Play Console 质量归因章节；Clippings 线上质量平台素材也多次把 Android Vitals 作为外部质量参照。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
+      ],
+      "material_paths": [
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/topic/performance/vitals/anr",
+        "https://developer.android.com/topic/performance/vitals/crash",
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://developer.android.com/topic/performance/vitals/slow-session",
+        "https://developer.android.com/topic/performance/vitals/lmk",
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock",
+        "https://developer.android.com/topic/performance/vitals/wakeup",
+        "https://developer.android.com/topic/performance/vitals/excessive-battery-usage"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md",
+          "detail": "需基于 Android Vitals 官方文档和 Play Console 技术质量口径，建立外部指标、内部 APM 证据、ApplicationExitInfo/ProfilingManager、发版门禁之间的映射。",
+          "suggestion": "先写指标层级与阈值口径，再按 Crash/ANR、启动/渲染/LMK、功耗、发版门禁四条线拆归因流程；Clippings 只作为质量平台结构参考，不复用原文段落。"
+        }
+      ],
+      "gap_score": 18,
+      "material_count": 13,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T06:09:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 409,
+    "total_entries": 415,
     "p0_count": 152,
-    "last_updated": "2026-05-21T04:04:00+08:00",
+    "last_updated": "2026-05-21T06:09:00+08:00",
     "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 148,
+    "pending_entries": 150,
     "updated_date": "2026-05-21",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 148,
-    "completed_entries": 253,
-    "last_task2a_gap_mining": "24.11",
-    "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 150,
+    "completed_entries": 263,
+    "last_task2a_gap_mining": "26.15",
+    "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T04:04:00+08:00",
+  "last_updated": "2026-05-21T06:09:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
@@ -15153,10 +15199,636 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T04:04:00+08:00"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Stay in sync with your agent with Android Halo.",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/products-and-platforms/platforms/android/android-halo/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Stay in sync with your agent with Android Halo. — URL Source: https://blog.google/products-and-platforms/platforms/android/android-halo/ Published Tim",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.394445",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android UI Development is Compose First",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android UI Development is Compose First — URL Source: http://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.396452",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Google teases Android Halo, which makes an AI agent's status visible via \"subtle communication\" at the top of the phone screen, coming later this year (Damien Wilde/9to5Google)",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.techmeme.com/260519/p43#a260519p43"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Google teases Android Halo, which makes an AI agent's status visible via \"subtle communication\" at the top of the phone screen, coming later this year (Damien Wilde/9to5Google) — URL Source: https://www.techmeme.com/260519/p43 Markdown Content: Techmeme: Google teases Android Ha",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.398431",
+      "status": "pending"
+    },
+    {
+      "section": "ch13-perfetto",
+      "section_title": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android — URL Source: http://android-developers.googleblog.com/2026/05/introducing-android-performance-analyze",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.400518",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android Studio I/O Edition: What’s new in Android Developer tools",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio I/O Edition: What’s new in Android Developer tools — URL Source: http://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.402523",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Updates to the Android XR SDK: Introducing Developer Preview 4",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-sdk-developer-preview-4-updates.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Updates to the Android XR SDK: Introducing Developer Preview 4 — URL Source: http://android-developers.googleblog.com/2026/05/android-xr-sdk-developer-preview-4-upda",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.404505",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android XR Updates for Unity, Unreal, and Godot",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-updates-unity-unreal-godot.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android XR Updates for Unity, Unreal, and Godot — URL Source: http://android-developers.googleblog.com/2026/05/android-xr-updates-unity-unreal-godot.h",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.406530",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-for-cars-unifying-platforms-premium-experiences.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences — URL Source: http://android-developers.googleblog.com/2026/05/android-for-cars-unifying-platforms-pre",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.408460",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Stay in sync with your agent with Android Halo.",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/products-and-platforms/platforms/android/android-halo/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Stay in sync with your agent with Android Halo. — ( ( Stay in sync with your agent with Android Halo. ( (",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.410454",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android UI Development is Compose First",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android UI Development is Compose First — _Posted by Nick Butcher, Product Manager_ ( In the almost-5-years since Jetpack Compose ( we've inve",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.412446",
+      "status": "pending"
+    },
+    {
+      "section": "ch13-perfetto",
+      "section_title": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android — _By Simon Cooke, Developer Relations Engineer (( and Mayank Jain, Product Manager (( ( APA is intend",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.414652",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android Studio I/O Edition: What’s new in Android Developer tools",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio I/O Edition: What’s new in Android Developer tools — ( This year at Google I/O we are going beyond iterative changes, towards a fundamental shift in how ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.416683",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Updates to the Android XR SDK: Introducing Developer Preview 4",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-sdk-developer-preview-4-updates.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Updates to the Android XR SDK: Introducing Developer Preview 4 — ( Today we're excited to launch Developer Preview 4 of the Android XR SDK, continuing our focus on u",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.418680",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android XR Updates for Unity, Unreal, and Godot",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-updates-unity-unreal-godot.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android XR Updates for Unity, Unreal, and Godot — _Posted by Luke Hopkins, Android Developer Relations Engineer for OpenXR & Ryan Bartley, Android XR ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.420684",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-for-cars-unifying-platforms-premium-experiences.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences — _Posted by Jan Kleinert, Developer Relations Engineer, Android for Cars, Noam Gefen, Senior Product ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.422644",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Stay in sync with your agent with Android Halo.",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/products-and-platforms/platforms/android/android-halo/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Stay in sync with your agent with Android Halo. — 内容过于简短或格式异常",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.424617",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android UI Development is Compose First",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android UI Development is Compose First — _Posted by Nick Butcher, Product Manager_ In the almost-5-years since Jetpack Compose  to be in main",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.426603",
+      "status": "pending"
+    },
+    {
+      "section": "ch13-perfetto",
+      "section_title": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android — _By Simon Cooke, Developer Relations Engineer (( and Mayank Jain, Product Manager (( APA is intended",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.428582",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android Studio I/O Edition: What’s new in Android Developer tools",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio I/O Edition: What’s new in Android Developer tools — This year at Google I/O we are going beyond iterative changes, towards a fundamental shift in how ap",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.430580",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Updates to the Android XR SDK: Introducing Developer Preview 4",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-sdk-developer-preview-4-updates.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Updates to the Android XR SDK: Introducing Developer Preview 4 — Today we're excited to launch Developer Preview 4 of the Android XR SDK, continuing our focus on uni",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.432591",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android XR Updates for Unity, Unreal, and Godot",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-updates-unity-unreal-godot.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android XR Updates for Unity, Unreal, and Godot — _Posted by Luke Hopkins, Android Developer Relations Engineer for OpenXR & Ryan Bartley, Android XR ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.434597",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-for-cars-unifying-platforms-premium-experiences.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences — _Posted by Jan Kleinert, Developer Relations Engineer, Android for Cars, Noam Gefen, Senior Product ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.436602",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Stay in sync with your agent with Android Halo.",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/products-and-platforms/platforms/android/android-halo/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Stay in sync with your agent with Android Halo. — Stay in sync with your agent with Android Halo.",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.438607",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android UI Development is Compose First",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android UI Development is Compose First — Any new Android Studio UI tools will be built for Jetpack Compose only. Existing view-based tools ar",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.440599",
+      "status": "pending"
+    },
+    {
+      "section": "ch13-perfetto",
+      "section_title": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Introducing Android Performance Analyzer : The Next Evolution in Profiling for Android — APA is intended as a profiling tool for any developer building for Android who needs to make their a",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.442440",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android Studio I/O Edition: What’s new in Android Developer tools",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio I/O Edition: What’s new in Android Developer tools — This year at Google I/O we are going beyond iterative changes, towards a fundamental shift in how ap",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.444311",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Updates to the Android XR SDK: Introducing Developer Preview 4",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-sdk-developer-preview-4-updates.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Updates to the Android XR SDK: Introducing Developer Preview 4 — This release is packed with updates that help you build incredible experiences for XR devices, enabl",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.446244",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android XR Updates for Unity, Unreal, and Godot",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-xr-updates-unity-unreal-godot.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android XR Updates for Unity, Unreal, and Godot — The Hub bridges the gap between desktop power and mobile sensor data. Instead of requiring a full bu",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.448104",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "http://android-developers.googleblog.com/2026/05/android-for-cars-unifying-platforms-premium-experiences.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "What's new in Android for Cars: Unifying platforms and unlocking premium experiences — We're increasing the modularity of existing templates to give developers more flexibility and option",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-21T05:41:14.449941",
+      "status": "pending"
+    },
+    {
+      "id": "task2a-gap-20260521-26.15-android-vitals-play-console-quality",
+      "section": "26.15",
+      "section_title": "Android Vitals 与 Play Console 质量指标归因",
+      "priority": 80,
+      "title": "补齐 Android Vitals / Play Console 质量指标归因章节",
+      "description": "现有目录覆盖 APM、线上性能监控、发版门禁与性能实验，但缺少把 Android Vitals 的 Crash/ANR/功耗/渲染/LMK/Slow Sessions 指标映射到内部证据链和发版动作的独立章节。",
+      "reason": "Task 2A Phase 1 缺口挖掘：developer.android.com 的 Android Vitals 官方文档有完整独立主题，SUMMARY 中无对应 Play Console 质量归因章节；Clippings 线上质量平台素材也多次把 Android Vitals 作为外部质量参照。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
+      ],
+      "material_paths": [
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/topic/performance/vitals/anr",
+        "https://developer.android.com/topic/performance/vitals/crash",
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://developer.android.com/topic/performance/vitals/slow-session",
+        "https://developer.android.com/topic/performance/vitals/lmk",
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock",
+        "https://developer.android.com/topic/performance/vitals/wakeup",
+        "https://developer.android.com/topic/performance/vitals/excessive-battery-usage"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md",
+          "detail": "需基于 Android Vitals 官方文档和 Play Console 技术质量口径，建立外部指标、内部 APM 证据、ApplicationExitInfo/ProfilingManager、发版门禁之间的映射。",
+          "suggestion": "先写指标层级与阈值口径，再按 Crash/ANR、启动/渲染/LMK、功耗、发版门禁四条线拆归因流程；Clippings 只作为质量平台结构参考，不复用原文段落。"
+        }
+      ],
+      "gap_score": 18,
+      "material_count": 13,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T06:09:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "14.18",
-  "last_task2a_gap_mining_at": "2026-05-21T04:04:00+08:00"
+  "last_task2a_gap_mining": "26.15",
+  "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00"
 }

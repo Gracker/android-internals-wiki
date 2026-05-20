@@ -1,6 +1,6 @@
 {
-  "total": 340,
-  "draft": 0,
+  "total": 341,
+  "draft": 1,
   "ready-for-review": 135,
   "finalized": 205,
   "task9_result": "needs-rework",
@@ -191,6 +191,9 @@
     "12.2",
     "8.11",
     "19.09",
+    "21.11",
+    "4.5",
+    "3.1",
     "19.11"
   ],
   "review_files": [
@@ -213,9 +216,11 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
     "src/part3-tools/ch19-apm/09-measure.md",
+    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
     "src/part3-tools/ch19-apm/11-jankstats.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
   ],
   "review_summary": "Task6 2026-05-21 04: review 19.11/5.9/3.1；19.11 自动 finalized；5.9/3.1 回炉 Task2B 做发布主线融合。",
   "task6_review_summary": {
@@ -1542,11 +1547,11 @@
       "task6_note": "L1 小修 1 处；参考资料后源码调研素材块/AIW 注释仍需主线融合，新增 Task6 queue priority 90。"
     }
   },
-  "total_review_sections": 166,
+  "total_review_sections": 171,
   "next_review_candidates": [],
-  "ready_for_review": 104,
-  "last_updated": "2026-05-21T05:14:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "ready_for_review": 105,
+  "last_updated": "2026-05-21T06:09:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "04:09",
@@ -1741,10 +1746,19 @@
     },
     "4.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T16:15:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-21T01:15:21+08:00",
+      "task6_result": "pass-light-edit",
+      "queue_priority": 90,
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "file": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "title": "App 内存优化"
     },
     "4.2": {
       "status": "ready-for-review",
@@ -4266,6 +4280,49 @@
       "drafted_date": "2026-05-20",
       "last_verified": "2026-05-20",
       "confidence": "medium"
+    },
+    "21.11": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T01:15:21+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+      "title": "云端 Profile、DM 文件与安装后编译优化"
+    },
+    "3.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T01:15:21+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "title": "Input 事件分发全流程"
+    },
+    "26.15": {
+      "title": "Android Vitals 与 Play Console 质量指标归因",
+      "file": "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-21",
+      "queue_priority": 80,
+      "gap_source": "官方文档/Clippings结构参考/AOSP结构对照",
+      "gap_score": 18,
+      "material_count": 13,
+      "last_task2a_at": "2026-05-21T06:09:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -4347,29 +4404,37 @@
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
-  "total_review_files": 158,
+  "total_review_files": 24,
   "last_task2a_at": "2026-05-21T00:55:00+08:00",
   "last_task2a_section": "21.11",
   "last_task2a_file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-  "last_task6_review": "2026-05-20",
+  "last_task6_review": "2026-05-21",
   "last_task6_sections": [
-    "19.09 Measure"
+    "21.11",
+    "4.5",
+    "3.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch19-apm/09-measure.md"
+    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
   ],
-  "last_task6_at": "2026-05-20T20:08:00+08:00",
+  "last_task6_at": "2026-05-21T01:15:21+08:00",
   "last_task6_review_detail": {
-    "mode": "first-review/revisit",
-    "reviewed_at": "2026-05-20T20:08:00+08:00",
+    "mode": "normal-review",
+    "reviewed_at": "2026-05-21T01:15:21+08:00",
     "sections": [
-      "19.09"
+      "21.11",
+      "4.5",
+      "3.1"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md"
+      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
     ],
-    "log": "logs/review/2026-05-20-20-review.md",
-    "summary": "L1/L2 小修通过；L3 大纲覆盖不足，回炉 Task2B。"
+    "log": "logs/review/2026-05-21-01-review.md",
+    "summary": "Task6 review 3 节：21.11、4.5 pass-light-edit；3.1 L1/L2 小修后保留既有 Task9 回炉项。自动晋升 0。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4378,10 +4443,12 @@
   "last_task2a_result": "draft-to-ready-for-review",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "14.18",
-  "task6_last_review_at": "2026-05-20T20:08:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-20-20-review.md",
+  "task6_last_review_at": "2026-05-21T01:15:21+08:00",
+  "task6_last_review_log": "logs/review/2026-05-21-01-review.md",
   "task6_last_review_sections": [
-    "8.11"
+    "21.11",
+    "4.5",
+    "3.1"
   ],
   "sections_status": {
     "22.11": {
@@ -5295,6 +5362,20 @@
       "title": "Android Performance Analyzer 与系统性能分析",
       "queue_priority": 80,
       "created_date": "2026-05-21"
+    },
+    "26.15": {
+      "title": "Android Vitals 与 Play Console 质量指标归因",
+      "file": "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-21",
+      "queue_priority": 80,
+      "gap_source": "官方文档/Clippings结构参考/AOSP结构对照",
+      "gap_score": 18,
+      "material_count": 13,
+      "last_task2a_at": "2026-05-21T06:09:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2a_last_processed": {
@@ -5342,22 +5423,30 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "first-review/revisit",
-    "reviewed_at": "2026-05-20T20:08:00+08:00",
+    "mode": "normal-review",
+    "reviewed_at": "2026-05-21T01:15:21+08:00",
     "sections": [
-      "19.09"
+      "21.11",
+      "4.5",
+      "3.1"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md"
+      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
     ],
-    "log": "logs/review/2026-05-20-20-review.md",
-    "summary": "L1/L2 小修通过；L3 大纲覆盖不足，回炉 Task2B。"
+    "log": "logs/review/2026-05-21-01-review.md",
+    "summary": "Task6 review 3 节：21.11、4.5 pass-light-edit；3.1 L1/L2 小修后保留既有 Task9 回炉项。自动晋升 0。"
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5517,8 +5606,8 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
-  "last_task2a_gap_mining": "14.18",
-  "last_task2a_gap_mining_at": "2026-05-21T04:04:00+08:00",
+  "last_task2a_gap_mining": "26.15",
+  "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -5528,21 +5617,20 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-05-20",
+    "date": "2026-05-21",
+    "time": "06:09",
+    "mode": "gap-mining",
     "created_sections": [
-      "24.11"
+      "26.15"
     ],
     "created_files": [
-      "src/part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md"
+      "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
     ],
-    "candidate_count": 5,
+    "candidate_count": 4,
     "qualified_count": 1,
-    "source": "官方文档/每日信息/章节深挖",
-    "time": "21:12",
-    "mode": "gap-mining",
     "qualified_candidates": 1,
-    "last_run": "2026-05-20T21:12:00+08:00",
-    "note": "Phase 0 未发现空 draft；本轮从 Android 17 官方功能说明、每日信息与既有网络章节中筛出低带宽/卫星网络适配缺口。"
+    "source": "官方文档/Clippings结构参考/AOSP结构对照",
+    "note": "Phase 0 未发现空 draft；本轮从 Android Vitals 官方文档、Play Console 技术质量口径与 Clippings 线上质量平台素材中筛出质量指标归因缺口。"
   },
   "section_5_15": {
     "section": "5.15",
@@ -5593,7 +5681,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "8.11"
+    "21.11",
+    "4.5",
+    "3.1"
   ],
   "task2b_progress": [
     {
@@ -5622,7 +5712,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -5660,19 +5750,64 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "date": "2026-05-20",
-    "time": "23:31",
+    "date": "2026-05-21",
+    "time": "06:09",
     "created_sections": [
-      "21.11",
-      "25.13"
+      "26.15"
     ],
     "created_files": [
-      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-      "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
+      "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
     ],
-    "reason": "Phase 0 未发现空 draft；Phase 1 从 source-index、近期信息和官方文档/AOSP 方向筛出评分 >=14 的缺口并录入。"
+    "reason": "Phase 0 未发现空 draft；Phase 1 发现 Android Vitals / Play Console 质量指标尚未在第 26 章形成独立归因章节，评分 18/20。"
   },
   "last_task2a_processed_status": "draft",
+  "section_21_11": {
+    "section": "21.11",
+    "title": "云端 Profile、DM 文件与安装后编译优化",
+    "file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-21",
+    "last_task6_at": "2026-05-21T01:15:21+08:00",
+    "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+    "task9_state": "pending",
+    "task9_result": "pending"
+  },
+  "section_4_5": {
+    "section": "4.5",
+    "title": "App 内存优化",
+    "file": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-21",
+    "last_task6_at": "2026-05-21T01:15:21+08:00",
+    "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "task2b_state": "fixed"
+  },
+  "section_3_1": {
+    "section": "3.1",
+    "title": "Input 事件分发全流程",
+    "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-21",
+    "last_task6_at": "2026-05-21T01:15:21+08:00",
+    "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending"
+  },
   "section_14_18": {
     "section": "14.18",
     "title": "Android Performance Analyzer 与系统性能分析",
