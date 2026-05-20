@@ -13834,7 +13834,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/21-developer-verification-install-boundary.md"
@@ -13845,7 +13845,9 @@
       "gap_score": 14,
       "gap_source": "官方文档/每日信息/AOSP结构",
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-20T15:04:00+08:00"
+      "added_at": "2026-05-20T15:04:00+08:00",
+      "completed_date": "2026-05-20T16:09:00+08:00",
+      "completed_reason": "Task 2A draft 加工完成：Developer Verification 安装链路边界、PackageInstaller 回调面、SDM 区分、安装失败归因与发版门禁。"
     }
   ],
   "metadata": {
