@@ -2,7 +2,7 @@
 title: "渲染管线分析方法论"
 chapter: "18.20"
 section: "18.20"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 sources:
   - type: official
@@ -25,17 +25,17 @@ tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T21:21:00+08:00"
+last_task9_at: "2026-05-21T07:34:33+08:00"
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
@@ -44,6 +44,8 @@ last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T05:31:18+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-05-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
+task9_review_notes: "2026-05-21 Task9 deep review: pass-tech-review；AOSP DrawFrameTask 路径与 queueBuffer/dequeueBuffer 语义已复核，无 P0/P1，满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。"
 ---
 
 <!-- outline-start -->
