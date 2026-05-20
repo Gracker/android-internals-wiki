@@ -38,6 +38,8 @@ sources:
     path: "frameworks/native/include/android/trace.h (android-16.0.0_r1)"
   - type: aosp
     path: "system/core/libcutils/include/cutils/trace.h (android-16.0.0_r1)"
+  - type: aosp
+    path: "system/core/libutils/include/utils/Trace.h (android-16.0.0_r1)"
 tags:
   - android
   - research
@@ -47,22 +49,22 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: ready-for-review
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T05:27:03+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 last_task6_at: "2026-05-18T15:14:44+08:00"
 last_task6_audit: "2026-05-18"
 last_task6_audit_result: l1-light-edit
-last_task2b_at: "2026-04-23T08:16:00+08:00"
+last_task2b_at: "2026-05-20T11:12:00+08:00"
 last_task9_audit: "2026-05-20"
 ---
 
@@ -114,7 +116,7 @@ last_task9_audit: "2026-05-20"
 
 很多章节一上来就说“在 Perfetto 里看 JNI slice”，这句话本身就不完整。默认 system trace 并不会自动替我们生成统一名字的“JNI transition”切片。要在 Perfetto 里看见 JNI，我们通常走三条路，而且每条路回答的问题都不一样。
 
-第一条路是**手工插桩**。如果代码在我们控制之下，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。[已验证: frameworks/native/include/android/trace.h, system/core/libcutils/include/cutils/trace.h]
+第一条路是**手工插桩**。如果代码在我们控制之下，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。C++ RAII 宏 `ATRACE_CALL()` / `ATRACE_NAME()` 定义在 `system/core/libutils/include/utils/Trace.h`，不是 `cutils/trace.h`——后者只有 C 风格的 `ATRACE_BEGIN/END`。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。[已验证: frameworks/native/include/android/trace.h, system/core/libcutils/include/cutils/trace.h, system/core/libutils/include/utils/Trace.h]
 
 第二条路是**采样**。Perfetto 的 callstack / native symbol 采样，或者 simpleperf 采样，能告诉我们 CPU 时间主要烧在什么 native 符号上，也能看到 `art_jni_trampoline` 这一类运行时桥接符号是否频繁出现。但采样给的是“这里经常被采到”，不是“这一次 JNI 调用精确耗时多少微秒”。如果我们要回答“哪个 native 算法最热”，采样很好用；如果我们要回答“Java 调用 native 的边界本身耗了多久”，还是得靠插桩或更细的实验。
 
@@ -243,20 +245,11 @@ AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这
 
 ## Post-Link 优化：Propeller
 
-NDK r28+ 引入了对 Propeller（Post-Link Optimization）的支持。Propeller 在 PGO 的基础上，通过重排二进制中的基本块（basic block）顺序，让 CPU 的分支预测和指令缓存命中率进一步提升。Google 内部测试显示，在已有 PGO 的基础上，Propeller 可以再带来最高 8% 的性能提升。
+[待验证: NDK r28 changelog 与 LLVM lld 官方文档中未找到 `--propeller-order` flag 的直接说明；8% 收益来自 Google Propeller 论文，为 warehouse-scale workload 评估，不能直接作为 Android NDK 功能背书]
 
-Propeller 的工作流程分为三步：先用 instrumented binary 采集执行 profile，然后把 profile 反馈给 linker 进行基本块重排，最后输出优化后的 .so。它和 PGO 是互补关系——PGO 影响编译器的内联和代码生成决策，Propeller 影响 linker 的代码布局决策。
+Propeller 是 Google 提出的 Post-Link Optimization 技术，在 PGO 的基础上通过重排二进制中的基本块（basic block）顺序，提升 CPU 的分支预测和指令缓存命中率。Google 的论文显示，在已有 PGO 的基础上，Propeller 可以再带来最高 8% 的性能提升。这项技术目前更适合对启动时间或热路径有极致要求的场景，通用业务可以先确保 PGO / AutoFDO 已接入后再考虑。
 
-在 NDK 构建中启用 Propeller 的最小配置：
-
-```cmake
-# CMakeLists.txt
-target_link_options(mylib PRIVATE
-    -Wl,--propeller-order=/path/to/order.txt
-)
-```
-
-完整的 profile 采集和构建流程，建议参照 NDK r28 的 `README.md` 中 Propeller 章节。这项技术目前更适合对启动时间或热路径有极致要求的场景，通用业务可以先确保 PGO / AutoFDO 已接入后再考虑。
+如果 NDK 后续版本正式暴露 Propeller flag，启用路径大致为：先用 instrumented binary 采集执行 profile，然后把 profile 反馈给 linker 进行基本块重排，最后输出优化后的 .so。它和 PGO 是互补关系——PGO 影响编译器的内联和代码生成决策，Propeller 影响 linker 的代码布局决策。当前 NDK r28 changelog 中能确认的是 16 KiB alignment 等变更，尚未看到 Propeller 的官方 flag 或 profile 采集流程。
 
 ## 版本演进
 
@@ -266,7 +259,7 @@ target_link_options(mylib PRIVATE
 | Android 12 (API 31) | 官方文档说明：内建 dynamic JNI linking 对这两类注解的支持从 Android 12+ 才完整可用 |
 | Android 14 (API 34) | `@FastNative` / `@CriticalNative` 成为 CTS-tested public API |
 | Android 15 (API 35) | 16KB page size 成为平台重点兼容项，Google Play 对 targeting Android 15+ 的 64 位提交提出强制支持要求 |
-| Android 16 (API 36) | 本轮核对未发现新的 public JNI annotation 语义变化；ARMv9 平台上 JNI transition 延迟进一步压短 |
+| Android 16 (API 36) | 本轮核对未发现新的 public JNI annotation 语义变化；`@FastNative` / `@CriticalNative` 公开口径仍停留在 Android 8 内部使用、Android 12+ dynamic lookup、Android 14 CTS-tested public API 这组边界 |
 
 ## 常见误区
 
@@ -301,3 +294,4 @@ target_link_options(mylib PRIVATE
   - `frameworks/base/core/java/android/os/Trace.java`
   - `frameworks/native/include/android/trace.h`
   - `system/core/libcutils/include/cutils/trace.h`
+  - `system/core/libutils/include/utils/Trace.h`

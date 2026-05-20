@@ -13,13 +13,13 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "ready-for-review"
 task6_state: "reviewed"
 last_task6_at: "2026-05-19T12:07:00+08:00"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
-task9_state: "reviewed"
+task9_state: "pending"
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 无需正文修改；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
@@ -54,7 +54,9 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
 task9_result: needs-rework
-task2b_state: "pending"
+task2b_state: "fixed"
+task2b_result: fixed
+last_task2b_at: '2026-05-20T11:12:00+08:00'
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T12:20:00+08:00"
@@ -210,16 +212,23 @@ class HighlightEffect {
 
     private val effect = RenderEffect.createRuntimeShaderEffect(shader, "content")
 
+    private var effectApplied = false
+
     fun applyTo(view: View, progress: Float) {
         shader.setFloatUniform("size", view.width.toFloat(), view.height.toFloat())
         shader.setFloatUniform("progress", progress.coerceIn(0f, 1f))
-        // setRenderEffect() 设置同一个对象引用不会自动触发重绘，
-        // 需要显式 invalidate() 让 HWUI 在下一帧用更新后的 uniform 重新执行 shader
-        if (view.renderEffect !== effect) {
+        // setRenderEffect() 不会自动触发重绘，需要显式 invalidate()
+        if (!effectApplied) {
             view.setRenderEffect(effect)
+            effectApplied = true
         } else {
             view.invalidate()
         }
+    }
+
+    fun clear(view: View) {
+        view.setRenderEffect(null)
+        effectApplied = false
     }
 }
 ```
@@ -252,7 +261,7 @@ RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderTh
 
 1. **先看 FrameTimeline**：找开启效果前后同一交互的 jank 数、actual duration、present 延迟。不要只看平均帧耗时，P90 / P99 更能暴露 blur 和 shader 尖峰。
 2. **再看 UI Thread 与 RenderThread**：UI Thread 短而 RenderThread `DrawFrame` 拉长，通常指向绘制、纹理上传或 GPU 提交；UI Thread 自身很长，则先回到布局、绘制命令和主线程任务排查。
-3. **接着看 GPU 轨道和 counter**：Android 16+ 可查看 `gpu_busy` 等 GPU counter（CDD 要求设备暴露 GPU 利用率 counter，但具体 counter 名称和精度因厂商实现而异）；旧版本按设备厂商查可用 counter。`gpu_busy` 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
+3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 要求声明支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但具体 counter 名称和精度因厂商实现而异，不能假设所有设备都有统一的 `gpu_busy` counter。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
 4. **做开关对照**：同一设备、同一页面、同一脚本分别跑“无效果 / 小半径 / 大半径 / 静态预渲染”，确认变化来自效果本身，而不是网络、数据加载或动画时序。
 
 AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把它定位为 Android 图形性能分析工具，支持 OpenGL ES 和 Vulkan，能查看帧分析、GPU 使用和 draw call。线上问题仍应先靠 Perfetto、`dumpsys gfxinfo`、应用埋点和灰度开关定位，复现后再用 AGI 深查。

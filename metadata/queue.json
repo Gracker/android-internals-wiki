@@ -7111,7 +7111,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
@@ -7145,7 +7145,9 @@
         "completed_reason": "Task 2B 回炉修复 (2026-05-19T11:32:33+08:00)"
       },
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-19T12:20:00+08:00"
+      "last_reviewed_at": "2026-05-19T12:20:00+08:00",
+      "completed_date": "2026-05-20T11:25:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 RuntimeShader 示例 view.renderEffect(不存在的公开属性)改为自行维护 effectApplied 状态, P1 gpu_busy/CDD GPU 利用率口径改为先枚举设备 counter name/id"
     },
     {
       "id": "task9-2026-05-15-24.9-wifi-network-selection-version-review",
@@ -13345,7 +13347,7 @@
       "added_at": "2026-05-20T05:27:03+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md"
@@ -13375,7 +13377,9 @@
           "suggestion": "删除 Android 16 行中的泛化性能断言，或补充可复核的 ART 变更 commit、测试机型、编译模式、调用签名和对比数据；否则只能写“本轮未发现新的 public JNI annotation 语义变化”。",
           "severity": "P1"
         }
-      ]
+      ],
+      "completed_date": "2026-05-20T11:25:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 ATRACE_CALL/ATRACE_NAME 源码锚点补充 utils/Trace.h, P1 Propeller 降级为待验证(删除不可核验的 --propeller-order flag 和 CMake 示例), P1 Android 16 JNI transition 断言删除"
     },
     {
       "id": "task2a-gap-4.12-zram-compressed-swap-relaunch",
@@ -13539,7 +13543,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
@@ -13557,7 +13561,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-20T10:20:00+08:00"
+      "added_at": "2026-05-20T10:20:00+08:00",
+      "completed_date": "2026-05-20T11:25:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: EGL Sync Object fence type 从 EGL_SYNC_FENCE_KHR 修正为 EGL_SYNC_NATIVE_FENCE_ANDROID(EGL_ANDROID_native_fence_sync 扩展), 补扩展检查和 attrs 说明"
     },
     {
       "id": "task2a-gap-25.12-android17-excessive-cpu-kill",
