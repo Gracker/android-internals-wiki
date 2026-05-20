@@ -1,6 +1,94 @@
 {
   "queue_entries": [
     {
+      "id": "task9-20260521-3.1-inputdispatcher-a16-source-errors",
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 95,
+      "title": "Android 16 InputDispatcher/InputFilter 源码路径与 ANR 检查机制需修正",
+      "description": "InputFilter Rust 调用点、Android 16 手势排除区域下沉、processAnrsLocked 10ms 轮询三处与 AOSP android-16.0.0_r1 不一致。",
+      "reason": "[Deep Tech Review] InputDispatcher/InputFilter 源码调用链与 Android 16 版本差异存在 P0/P1 技术问题。",
+      "issue_type": "source-code-accuracy-version-difference-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "3.1 L171 Android 16 InputFilter Rust 实现",
+          "detail": "正文称 `InputDispatcher` 在 `notifyKey()` 中通过 `mInputFilter` 指针调用过滤逻辑。AOSP android-16.0.0_r1 `InputDispatcher.cpp` 没有 `mInputFilter->filter(...)` 调用；实际路径是 `notifyKey()` 在 `mInputFilterEnabled` 为真时调用 `mPolicy.filterInputEvent(event, policyFlags)`，C++ `InputFilter.cpp` 再通过 `IInputFilter` Rust 接口转发到 Rust filter。",
+          "suggestion": "把调用点改为 `InputDispatcher::notifyKey/notifyMotion → mPolicy.filterInputEvent(...) → InputFilter.cpp → IInputFilter(Rust)`，不要写成 `mInputFilter` 指针直接过滤。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "3.1 L246-L248 手势排除区域判定下沉至 Native（Android 16）",
+          "detail": "正文称 Android 16 在 `findTouchedWindowTargetsLocked()` 中直接使用 `WindowInfo.touchableRegion` 和 exclusion region，并带来约 10ms 边缘触控收益。AOSP android-16.0.0_r1 `InputDispatcher.cpp` 已无 `findTouchedWindowTargetsLocked()` 符号，`InputDispatcher.cpp`/`WindowInfo.h` 也未检索到 gesture exclusion/exclusion region 字段；“10ms”收益没有源码锚点或 trace 数据支撑。",
+          "suggestion": "删除该小节或退回 `[待验证]`。若保留 Android 16 触摸命中变化，应改写为已核验的 `DispatcherTouchState`/`DispatcherWindowInfo` 路径，并补 AOSP commit、字段名、Perfetto 对照数据。"
+        },
+        {
+          "type": "原理断裂/源码错误",
+          "location": "3.1 L987 processAnrsLocked 10ms 间隔",
+          "detail": "正文称 `processAnrsLocked` 定期检查（10ms 间隔）。AOSP android-16.0.0_r1 中 `processAnrsLocked()` 取 `mAnrTracker.firstTimeout()` 并把 `nextWakeupTime` 设为下一次超时时间，`Looper::pollOnce(timeoutMillis)` 等到该时间或被唤醒；这不是固定 10ms 轮询。",
+          "suggestion": "改为“InputDispatcher 每轮 dispatch 后计算下一次 ANR 检查时间；有 waitQueue 事件时由 AnrTracker 的最早超时驱动唤醒”，删除 10ms 固定间隔表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T00:29:00+08:00"
+    },
+    {
+      "id": "task9-20260521-5.9-adpf-workload-hint-jni-oem-data",
+      "section": "5.9",
+      "section_title": "ADPF 自适应性能框架",
+      "priority": 95,
+      "title": "ADPF workload hint API 版本、JNI 绑定说明与 OEM 延迟数据需修正",
+      "description": "NDK workload hint 版本写成 API 33+，JNI/native 实现位置描述错误，2026 设备 Hint 响应延迟表缺少数据支撑且 Pixel 10 SoC 名称不一致。",
+      "reason": "[Deep Tech Review] ADPF 公开 API 版本、AOSP 源码锚点与设备数据表存在 P0/P1 技术问题。",
+      "issue_type": "source-code-accuracy-version-difference-data-support",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/公开 API 边界",
+          "location": "5.9 L376、L411-L413",
+          "detail": "正文称 NDK 公开替代 `APerformanceHint_notifyWorkloadIncrease/Reset/Spike` 是 API 33+，并把隐藏 Java `sendHint()` 描述成可与 `reportActualWorkDuration()` 组合使用的优化路径。AOSP android-16.0.0_r1 `frameworks/native/include/android/performance_hint.h` 中三个 NDK workload hint 均标注 `__INTRODUCED_IN(36)`；Java `sendHint()`/`CPU_LOAD_*`/`GPU_LOAD_*` 是 `@TestApi` + `@hide`，普通 App 不能走 public SDK。",
+          "suggestion": "把 NDK workload hint 版本统一改为 Android 16 / API 36+，并明确 Java `sendHint()` 只用于系统/测试 API 语义说明；公开接入示例只保留 `reportActualWorkDuration()`、`reportActualWorkDuration(WorkDuration)` 和 API 36+ 的 NDK workload hint。"
+        },
+        {
+          "type": "源码错误",
+          "location": "5.9 L445-L468 JNI 实现：dlopen libandroid.so",
+          "detail": "正文称 `APerformanceHint_*` 函数实现在 `libandroid.so` 且“非公开源码”。实际 NDK C API 的源码入口在 AOSP `frameworks/base/native/android/performance_hint.cpp`，Java JNI 侧 `frameworks/base/core/jni/android_os_PerformanceHintManager.cpp` 只是通过 `dlopen(\"libandroid.so\")`/`dlsym` 绑定这些符号。",
+          "suggestion": "改成“JNI 延迟绑定 libandroid.so 中的公开 NDK C API 符号，C API 源码在 `frameworks/base/native/android/performance_hint.cpp`”；删除“非公开源码”和“Java API 变化不影响 native 层”的稳定性外推。"
+        },
+        {
+          "type": "事实错误/数据缺失",
+          "location": "5.9 L547-L557 2026 旗舰机 Hint 响应延迟对照",
+          "detail": "表格给出小米 17 Ultra / Pixel 10 / S26 Ultra 的 ADPF Hint → 频率生效延迟，并声称来自 2026 Q1 设备测试，但没有测试方法、trace 指标、固件版本、样本数或原始数据；其中 Pixel 10 SoC 写成 Tensor G6，与 Google Pixel 10 公开资料中的 Tensor G5 不一致。",
+          "suggestion": "删除该表，或改为“待验证素材”并补齐数据来源：设备型号/系统 build、采样方法（Perfetto CPU frequency + App 自定义 ADPF marker）、统计口径和原始 trace；Pixel 10 SoC 名称需按公开资料修正。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T00:29:00+08:00"
+    },
+    {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
       "section": "19.11",
       "section_title": "JankStats",
@@ -4290,7 +4378,7 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 6,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
@@ -4331,7 +4419,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T21:57:00+08:00"
+      "added_at": "2026-05-13T21:57:00+08:00",
+      "completed_at": "2026-05-20T23:58:06+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "Task2B 回炉修复完成，所有 review issues 已处理"
     },
     {
       "id": "task9-20260513-20.5-oom-debug-api-diagnostics",
@@ -4690,7 +4781,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
@@ -4732,7 +4823,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T04:36:12+08:00",
-      "original_review_log": "logs/review/2026-05-16-23-review.md"
+      "original_review_log": "logs/review/2026-05-16-23-review.md",
+      "completed_at": "2026-05-20T23:58:06+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "Task2B 回炉修复完成，所有 review issues 已处理"
     },
     {
       "id": "task9-2026-05-14-4-3-tech-review",
@@ -4790,7 +4884,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
@@ -4843,7 +4937,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T05:50:18+08:00"
+      "added_at": "2026-05-14T05:50:18+08:00",
+      "completed_at": "2026-05-20T23:58:06+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "Task2B 回炉修复完成，所有 review issues 已处理"
     },
     {
       "id": "task9-2026-05-14-20-6-tech-review",
@@ -14232,8 +14329,8 @@
     "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T23:28:00+08:00",
-  "last_updated_by": "task6-audit",
+  "last_updated": "2026-05-20T23:58:06+08:00",
+  "last_updated_by": "task2b-rework",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",

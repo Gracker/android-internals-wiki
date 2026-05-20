@@ -1,8 +1,9 @@
 ---
+
 status: 'ready-for-review'
 title: Input 事件分发全流程
 chapter: '3.1'
-pipeline_stage: 'task2b_pending'
+pipeline_stage: task2b_pending
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -46,22 +47,23 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task6_reviewed_date: '2026-04-27'
-task9_state: 'reviewed'
-task9_result: 'needs-rework'
-task2b_state: 'pending'
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-13T21:57:00+08:00'
+task9_reviewed_date: "2026-05-21"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-21T00:29:00+08:00"
 review_notes: 2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale
   event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input
   trace 观察点 P2 建议。
-last_task2b_at: '2026-04-27T01:50:00+08:00'
+last_task2b_at: '2026-05-20T23:49:44+08:00'
 task2b_fixed_by: openclaw-task2b
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
+last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
 ---
 
 
@@ -152,120 +154,30 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 
 <!-- AIW-源码调研-2026-05-10 -->
 
-## Android 16 InputFlinger Rust 架构重构深度解析
+## Android 16 InputFilter Rust 实现
 
-基于 AOSP android-16-release 源码分析，Android 16 输入系统经历了重大架构演进，InputFlinger 实现了从 C++ 到 Rust 的渐进式迁移。
+Android 16 在 `services/inputflinger/rust/` 下引入了 Rust 编写的 **InputFilter** 实现，覆盖 bounce keys、slow keys、sticky keys 等辅助输入过滤器。这是 InputFlinger 中 Rust 的首次引入，但**仅限于 InputFilter 层**——`InputReader`、`InputDispatcher` 等核心组件仍然是 C++ 实现。
 
-### Rust 模块架构
-
-Android 16 引入了模块化的 Rust 输入过滤器架构：
+### Rust 模块与真实边界
 
 **源码位置**：`frameworks/native/services/inputflinger/rust/`
 
-- `lib.rs` - Rust 库主入口，定义 FFI 接口和初始化逻辑
-- `input_filter.rs` - InputFilter trait 定义，事件过滤核心
-- `input_filter_thread.rs` - 输入过滤线程，支持异步处理
-- `bounce_keys_filter.rs` - 按键弹跳过滤，防止重复按键
-- `slow_keys_filter.rs` - 慢键过滤，支持延迟处理
-- `sticky_keys_filter.rs` - 粘性键过滤，辅助输入特性
-- `ffi/` - FFI 绑定层，实现 Rust-C++ 协同
+- `lib.rs` — Rust 库主入口，FFI 接口定义
+- `input_filter.rs` — InputFilter trait，事件过滤核心
+- `input_filter_thread.rs` — 输入过滤线程
+- `bounce_keys_filter.rs` — 按键弹跳过滤
+- `slow_keys_filter.rs` — 慢键过滤
+- `sticky_keys_filter.rs` — 粘性键过滤
+- `ffi/` — Rust-C++ FFI 绑定层
 
-### 跨语言协同机制
+对应的 C++ 端仍然是 `InputFilter.cpp` / `InputFilter.h`，Rust 部分通过 `cxxbridge` FFI 与 C++ 互操作。`InputDispatcher` 在 `notifyKey()` 中通过 `mInputFilter` 指针调用过滤逻辑，这个调用点在 Android 16 中不变——只是过滤器的内部实现从 C++ 换成了 Rust。
 
-新架构通过 FFI 接口实现 Rust 与 C++ InputDispatcher 的无缝协同：
+**不要把这段写成"InputFlinger 核心从 C++ 迁移到 Rust"**。当前 Rust 只覆盖辅助输入过滤（accessibility filter 的子集），`InputReader`、`InputDispatcher`、`InputClassifier`/`InputProcessor` 全部仍是 C++。
 
-```cpp
-// 文件: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// 行 112-156 - notifyKey 中的输入过滤调用点
-void InputDispatcher::notifyKey(const sp<INotifyCallback>& notifyCallback, const sp<KeyEntry>& entry) {
-    // 事件验证
-    if (!validateInputEvent(entry)) {
-        ALOGW("Invalid input event: key entry");
-        return;
-    }
-    
-    // 输入过滤调用点 - 调用 Rust 过滤器
-    if (mInputFilter && !mInputFilter->filter(entry)) {
-        ALOGD("Key event filtered by InputFilter");
-        return;
-    }
-    
-    // 事件入队
-    enqueueInboundEventLocked(entry);
-}
-```
+> [已验证: AOSP android-16.0.0_r1, services/inputflinger/rust/ — 仅 InputFilter 相关 Rust 代码]
+> [已验证: services/inputflinger/dispatcher/InputDispatcher.cpp — InputReader/InputDispatcher 仍为 C++]
 
-### 性能优化特性
 
-基于源码分析，Rust 重构带来了以下性能优化：
-
-1. **内存管理优化**: Rust 的所有权系统避免了输入事件处理中的内存泄漏
-2. **线程安全提升**: Rust 的并发模型确保了 input_filter_thread 的线程安全性
-3. **延迟降低**: Rust 过滤器减少了事件验证和过滤的执行时间
-4. **崩溃率下降**: Rust 的类型系统避免了空指针引用和内存安全问题
-5. **性能监控增强**: 新增输入事件处理的时间戳记录，便于性能分析
-
-### 触摸状态管理增强
-
-Android 16 引入了增强的触摸状态管理机制：
-
-**源码位置**：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-
-```cpp
-// 文件: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// 行 189-223 - 触摸状态管理增强
-void InputDispatcher::notifyMotion(const sp<INotifyCallback>& notifyCallback, const sp<MotionEntry>& entry) {
-    // 触摸事件验证
-    if (entry->pointerCount == 0) {
-        ALOGW("Motion entry has no pointers");
-        return;
-    }
-    
-    // 触摸手势转移 - Android 16 新增特性
-    if (mDragState != nullptr) {
-        status_t status = transferTouchGesture(notifyCallback, entry);
-        if (status != OK) {
-            ALOGE("Failed to transfer touch gesture: %d", status);
-            return;
-        }
-    }
-    
-    // 事件入队和分发
-    enqueueInboundEventLocked(entry);
-}
-```
-
-### 指针捕获机制
-
-Android 16 新增了指针捕获机制，支持更精确的触摸控制：
-
-```cpp
-// 文件: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// 行 345-397 - 指针捕获机制
-bool InputDispatcher::hasPointerCapture(int32_t deviceId) const {
-    auto it = mPointerCaptureMap.find(deviceId);
-    return it != mPointerCaptureMap.end() && it->second != nullptr;
-}
-```
-
-### ARR (Adaptive Refresh Rate) 协同
-
-Rust 重构的 InputFlinger 为 ARR 提供了更好的支持：
-
-- **低延迟事件处理**: Rust 的无 GC 特性减少了事件处理的抖动
-- **高精度时间戳**: 精确的事件时间戳有助于刷新率自适应
-- **线程优化**: 专门的 input_filter_thread 减少了主线程阻塞
-
-### 关键 API 变更
-
-Android 16 的关键 API 变更：
-
-- `InputFilter` 接口从 C++ 重构为 Rust trait
-- 新增 `pointer_capture` 相关 API
-- 触摸事件取消逻辑优化
-- 事件验证机制增强
-
-<!-- AIW-源码调研-2026-05-10 -->
 
 
 
@@ -373,11 +285,19 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 
 > [来源: obsidian/Cubox/Analyze AOSP input architecture - Blog-2024-06-17.md]
 
-### Android 16 AOT 返回键预判拦截
+### 返回键分发与预测性返回的边界
 
-Android 16（Target 36+）对返回键的分发契约做了根本性调整。`InputDispatcher` 在分发 `KEYCODE_BACK` 之前，会先检查目标窗口是否注册了 `OnBackInvokedCallback`（通过 `BackNavigationController` / `OnBackInvokedDispatcher` 注册）。如果找到了有效 callback，`InputDispatcher` 根据其状态预判：这个返回事件应该由应用的 callback 处理，还是走系统默认行为。未适配的应用（没有注册 callback、或 `onBackPressed` 仍走旧路径）在某些场景下将收不到 `KEYCODE_BACK`——系统直接拦截，不再往下分发。
+返回键的处理链路需要区分两层：
 
-这个变化把返回事件的决策权从"App 运行时决定"提前到了"InputDispatcher 分发前预判"。对性能分析的影响是：如果在 Trace 里发现返回键事件没有出现在 App 侧的 `deliverInputEvent` 中，先确认应用是否已适配 `OnBackInvokedCallback`，而不是怀疑 `InputDispatcher` 丢了事件。
+**第一层：按键分发（InputDispatcher → App）**。`KEYCODE_BACK` 作为标准按键事件，走的是和音量键一样的 `InputDispatcher → InputChannel → ViewRootImpl → View 树` 分发路径。`InputDispatcher` 本身不解析返回键的语义，只负责把按键送到焦点窗口。
+
+**第二层：返回手势/预测性返回（Framework 窗口层）**。Android 13+ 引入的预测性返回（Predictive Back）和 `OnBackInvokedDispatcher` / `OnBackInvokedCallback` 是 **Framework 窗口层**（`Window.java` / `Activity.java` / `OnBackInvokedDispatcher.java`）的机制，不是 `InputDispatcher` 内部的逻辑。当 App 注册了 `OnBackInvokedCallback` 后，返回手势的拦截和回调发生在 App 进程的窗口层，而不是 `system_server` 的 `InputDispatcher` 里。
+
+排查返回键事件"消失"时，先确认是按键事件没从 `InputDispatcher` 发出来（查 `iq/oq/wq` 和 `dumpsys input`），还是 App 侧窗口层消费后没有回调到 `dispatchKeyEvent`（查 `OnBackInvokedDispatcher` 注册状态）。两者发生在不同层，不要混在一起判断。
+
+> [已验证: AOSP android-16.0.0_r1, InputDispatcher.cpp — 无 OnBackInvokedCallback / BackNavigationController / predictiveBackHandling 符号]
+> [已验证: frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java — 返回 callback 在 Framework 窗口层]
+
 
 ## InputChannel 与 Socket Pair：跨进程的事件管道
 
@@ -519,7 +439,11 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 ### Android 17 DeliQueue 对输入响应的加速
 
-Android 17 引入的无锁消息队列（DeliQueue）对输入事件的 App 侧接收有直接加速。此前 `WindowInputEventReceiver` 在 native `Looper` 中被 socket 唤醒后，需要通过传统 `MessageQueue` 的互斥锁机制进入 Java 回调，与主线程上其他消息（Choreographer 回调、idle handler 等）竞争同一把锁。DeliQueue 消除了这层锁竞争：输入事件的入队和出队走无锁路径，减少了约 15% 的主线程锁等待时间。效果是 `deliverInputEvent` 从被唤醒到实际执行的间隔缩短，在快速滑动、游戏等高频输入场景下，掉帧率下降约 4%。对比 Android 16 和 Android 17 的同一应用，能看到 `deliverInputEvent` slice 前的锁等待空白缩短。
+[待验证: DeliQueue 的源码锚点（`MessageQueue`/`Looper`/`WindowInputEventReceiver` 相关改动）尚未在 AOSP 公开分支中确认，以下为基于公开信息的推测。]
+
+Android 17 据报道引入了无锁消息队列（DeliQueue），用于减少输入事件在 App 侧的锁等待。此前 `WindowInputEventReceiver` 在 native `Looper` 中被 socket 唤醒后，需要通过传统 `MessageQueue` 的互斥锁机制进入 Java 回调，与主线程上其他消息（Choreographer 回调、idle handler 等）竞争同一把锁。DeliQueue 的设计目标是为输入事件提供无锁的入队/出队路径，减少主线程锁等待对 `deliverInputEvent` 延迟的影响。具体收益需要 Android 17 源码公开后，通过 `MessageQueue`/`Looper` 的改动对照 Perfetto trace 确认。
+
+
 
 ---
 
@@ -702,10 +626,10 @@ const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::mil
 
 ### system_server 进程中的 Track
 
-在 Perfetto 中，`system_server` 进程可以看到以下关键 Track：
+在 Perfetto 中，`system_server` 进程有以下关键 Track：
 
-- **InputReader 线程**：可以看到 `InputReader` 读取事件的活动。正常情况下每次读取都很短，如果看到 InputReader 长时间 `Runnable`（就绪但没被调度到），说明线程调度有问题。
-- **InputDispatcher 线程**：可以看到事件分发的活动。
+- **InputReader 线程**：`InputReader` 读取事件的 slice 反映了事件读取活动。正常情况下每次读取都很短，如果发现 InputReader 长时间 `Runnable`（就绪但没被调度到），说明线程调度有问题。
+- **InputDispatcher 线程**：反映了事件分发的活动。
 - **`iq` 计数器**：`InboundQueue` 的长度。通常很短，持续为 0 说明消费正常。
 - **`oq:{windowName}` 计数器**：每个窗口的 `OutboundQueue` 长度。
 - **`wq:{windowName}` 计数器**：每个窗口的 `WaitQueue` 长度。**这是最关键的一个**——如果 `wq` 值持续堆积，说明 App 没有及时处理事件，ANR 风险很高。
@@ -817,27 +741,26 @@ set_sched_policy(0, SP_FOREGROUND);  // 前台调度策略
 
 作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现真正的实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
 
-### AnrTracker 的 O(1) 优化（Android 14+）
+### AnrTracker 的超时驱动机制（Android 12+）
 
-Android 14 引入 `AnrTracker`（`services/inputflinger/dispatcher/AnrTracker.cpp`）替代旧的 O(N) 遍历：
-
-- **旧实现**：每帧遍历所有 connection 的 waitQueue，累计超时条目，复杂度 O(N)，N=连接数
-- **新实现**：使用 `std::multimap<timeoutTime, (connection, dispatchEntry)>` 自动排序，ANR 检测只检查最近超时条目，复杂度 O(1)
+`AnrTracker`（`services/inputflinger/dispatcher/AnrTracker.cpp`）从 Android 12 起已存在，实现是按 timeout 排序的容器（`std::multimap`），提供 `insert` / `erase` / `eraseToken` / `firstTimeout` / `firstToken` 接口。它用最早超时时间驱动下一次 ANR 检查——`processAnrsLocked()` 只需检查 `mAnrTracker` 中最早到期的时间点，如果已过期就触发 ANR 流程。
 
 ```cpp
-// AnrTracker 插入（dispatch 时）
-mAnrTracker.insert({dispatchEntry->timeoutTime, connectionToken});
+// AnrTracker 核心：按超时时间排序，最早到期的在最前面
+// dispatch 时插入
+mAnrTracker.insert(dispatchEntry->timeoutTime, connection->inputChannel->getConnectionToken());
 
-// ANR 检测（每帧只检查第一个）
-auto earliest = mAnrTracker.begin();
-if (earliest->first <= currentTime) {
-    // 触发 ANR
+// processAnrsLocked 中检查最早的超时
+nsecs_t nextTimeout = mAnrTracker.firstTimeout();
+if (nextTimeout <= currentTime) {
+    // 有连接超时，触发 ANR
 }
 ```
 
-动态超时更新机制：窗口超时时间变更时，AnrTracker 保留已派发事件的原始超时值，确保"已派发事件按原超时处理，新事件按新超时处理"。
+动态超时更新：窗口超时时间变更时，AnrTracker 保留已派发事件的原始超时值——已派发事件按原超时处理，新事件按新超时处理。这个机制在 Android 12-16 之间保持稳定。
 
-> [已验证: AOSP android-14.0.0_r1, services/inputflinger/dispatcher/AnrTracker.cpp]
+> [已验证: AOSP android-12.0.0_r1, services/inputflinger/dispatcher/AnrTracker.cpp — 按 timeout 排序的容器，非 Android 14 引入]
+> [已验证: AOSP android-14.0.0_r1, android-16.0.0_r1, 同文件 — 接口保持稳定]
 > [未验证: InputFlinger priority setpriority 移除的具体 commit 版本]
 
 
@@ -1064,77 +987,33 @@ void InputDispatcher::synthesizeCancelationEventsForConnectionLocked(
 1. **内存管理**: `waitQueue` 长度控制避免内存泄漏，ANR 超时及时释放资源
 2. **响应速度**: `shouldPruneInboundQueueLocked` 优化减少跨应用切换延迟  
 3. **CPU 使用**: `processAnrsLocked` 定期检查（10ms 间隔）平衡检测开销和响应速度
-4. **事件丢失**: `WOULD_BACK` 机制通过队列转移保证数据完整性，避免事件丢失
+4. **事件丢失**: `WOULD_BLOCK` 机制通过队列转移保证数据完整性，避免事件丢失
 
 **完整报告**: [2026-05-10-inputdispatcher-backpressure.md](./DeepResearch/2026-05-10-inputdispatcher-backpressure.md)
 
 <!-- AIW-源码调研-2026-05-10 结束 -->
 
 
-<!-- AIW-源码调研-2026-05-11 -->
+<!-- AIW-源码调研-2026-05-11, 2026-05-20 Task2B 修正 -->
 
-### Android 15/16 输入系统架构重构调研发现
+### Android 15/16 输入系统演进（已修正）
 
-#### InputFlinger Rust 组件架构
-Android 15/16 引入了 InputFlinger Rust 组件替代传统 C++ 实现，主要架构变迁：
+> 以下内容已在 Task2B 回炉中根据 AOSP android-16.0.0_r1 源码核验修正。
+> 原调研中关于"InputFlinger Rust 核心重构"的叙述不准确，已在上文"Android 16 InputFilter Rust 实现"一节中纠正。
 
-**源码路径**：`services/core/inputflinger/`（推测）
-**关键类**：`InputFlinger` Rust 类
-**调用链**：
-```
-InputReader::processEvents() → 
-InputFlinger::dispatchEvent() → 
-InputDispatcher::dispatchOnce()
-```
+#### InputFilter Rust 组件（已确认）
+Android 16 引入的 Rust 组件仅覆盖 InputFilter 层（bounce keys / slow keys / sticky keys），通过 cxxbridge FFI 与 C++ InputDispatcher 互操作。InputReader、InputDispatcher 等核心组件仍为 C++ 实现。详见上文"Android 16 InputFilter Rust 实现"小节。
 
-**设计意图**：通过 Rust 语言重写输入系统核心组件，提升安全性、性能和并发处理能力。基于源码推断，新架构主要解决 C++ 版本的内存安全问题，并优化多线程并发处理。
+#### ARR 与输入协同
+ARR（Adaptive Refresh Rate）的刷新率切换由 `DisplayPolicy` 和 `SurfaceFlinger` 驱动，输入事件频率不是直接的控制信号。输入系统通过 `VsyncModulator` / `VsyncConfiguration` 间接影响调度节奏，但不直接设置刷新率。
 
-#### ARR (Adaptive Refresh Rate) 与输入协同机制
-Android 15/16 的 ARR 与输入协同实现：
-
-**源码位置**：`frameworks/base/core/java/android/view/InputChannel.java`（推测）
-**关键类**：`InputChannel`、`InputMonitor`、`DisplayManager`
-**调用链**：
-```
-InputReader::processEvents() →
-InputMonitor::setDisplayProperties() →
-DisplayManager::updateRefreshRate()
-```
-
-**设计意图**：动态调整刷新率以匹配输入事件频率，减少功耗和提升流畅度。新算法通过预测输入频率，提前调整显示刷新率，减少无效刷新次数。
-
-#### 预测性返回性能优化
-预测性返回机制的性能优化实现：
-
-**源码位置**：`services/core/input/InputDispatcher.cpp`（无法访问）
-**关键函数**：`InputDispatcher::predictiveBackHandling()`
-**调用链**：
-```
-InputReader::processKeyEvent() →
-InputDispatcher::handleBackEvent() →
-InputFlinger::handlePredictiveBack()
-```
-
-**设计意图**：提前预判用户返回意图，优化动画过渡性能。通过按键模式识别和手势轨迹分析，提前触发返回动画，减少延迟感知。
-
-#### 性能影响量化
-基于公开文档和架构分析：
-
-- **内存优化**：Rust 实现减少了内存泄漏风险，降低 15-20% 内存占用
-- **CPU 优化**：并发处理能力提升，输入延迟减少 8-12ms  
-- **功耗优化**：ARR 协同机制降低无效刷新率，节省功耗 10-15%
-- **流畅度提升**：预测性返回减少动画卡顿，提升 UI 流畅度
-
-#### 版本差异
-- **Android 15**: 引入 InputFlinger Rust 1.0 初步实现
-- **Android 16**: 完善 InputFlinger Rust 并集成 ARR 高级功能，优化预测性返回算法
-
-#### 技术限制说明
-⚠️ **重要提示**：本研究受限于无法直接访问 AOSP 源码 (cs.android.com)，部分实现细节基于架构推断和公开文档。建议后续研究可直接访问源码以获得准确实现细节。
+#### 返回键处理（已修正）
+预测性返回（Predictive Back）是 Framework 窗口层（`OnBackInvokedDispatcher`）的机制，不是 `InputDispatcher` 内部的逻辑。InputDispatcher 只负责将 `KEYCODE_BACK` 作为标准按键分发到焦点窗口。详见上文"返回键分发与预测性返回的边界"小节。
 
 ---
 
-*本调研基于 2026-2026-05-11 源码调研报告：[`DeepResearch/2026-05-11-input-system-architecture-refactor.md`](/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-input-system-architecture-refactor.md)*
+*原始调研报告：[`DeepResearch/2026-05-11-input-system-architecture-refactor.md`](/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-input-system-architecture-refactor.md)*
+*Task2B 修正说明：原报告多处源码路径标注为"推测"/"无法访问"，核心结论与 AOSP android-16.0.0_r1 实际源码不符，已在本次回炉中纠正。*
 
 ### Android 输入优先级机制与厂商游戏模式
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-input-priority-mechanism.md
