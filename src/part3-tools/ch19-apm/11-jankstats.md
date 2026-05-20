@@ -3,7 +3,7 @@
 title: JankStats
 chapter: '19'
 section: '19.11'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
@@ -17,22 +17,25 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: ready-to-publish
+pipeline_stage: 'task6_pending'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+task6_result: needs-rework
+task6_state: 'revisiting'
+last_task6_audit: "2026-05-20"
+last_task6_at: "2026-05-20T23:28:00+08:00"
+task9_state: 'pending'
+task2b_state: 'fixed'
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:57:00+08:00"
-task2b_result: fixed
-last_task2b_at: '2026-04-25T04:45:04+08:00'
+task2b_result: 'fixed'
+last_task2b_at: '2026-05-21T03:22:56+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 ---
+
 
 # JankStats
 
@@ -159,7 +162,7 @@ JankStats 通过 `jankHeuristicMultiplier` 控制 jank 判定，默认值是 2�
 
 平均 FPS 不适合作为唯一指标。前半秒卡死、后半秒补很多帧，平均数可能还不错，但用户已经感到卡顿。
 
-## 和 FrameMetrics 的分工
+## 帧性能工具分工
 
 JankStats 更适合线上统一口径，FrameMetrics 更适合高版本上拆帧阶段。二者可以同时存在：
 
@@ -167,6 +170,28 @@ JankStats 更适合线上统一口径，FrameMetrics 更适合高版本上拆帧
 - FrameMetrics 在 API 24+ 上补 `DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`DEADLINE` 等细分指标。
 
 如果只接 FrameMetrics，低版本和 UI 状态关联要自己补。如果只接 JankStats，慢帧原因仍然很粗。线上体系里，两者组合更容易从“哪里慢”走到“像是哪一段慢”。
+
+### 帧性能监控工具横向对比
+
+除了 JankStats 和 FrameMetrics，线上和线下还有几类常用工具。下面的表格覆盖了数据粒度、适用场景和各自的边界：
+
+| 维度 | JankStats | FrameMetrics | Perfetto | Macrobenchmark | Firebase Performance |
+|------|-----------|--------------|----------|----------------|---------------------|
+| **数据粒度** | 帧级（duration + isJank + UI context） | 帧级（拆分 draw/sync/input 等阶段耗时） | 系统级全链路 trace | 帧级 + 操作级基准指标 | 聚合级（慢帧率、冻结帧率按页面/版本聚合） |
+| **线上/线下** | 线上 | 线上 | 线上（受限于 trace 大小和采集成本，通常用于按需抓取） | 线下基准测试 | 线上 |
+| **能否定位根因** | 否（只标记“哪里慢”） | 部分（区分帧内阶段） | 是（全链路函数级追踪） | 否（对比前后版本帧时间变化） | 否（只看聚合趋势） |
+| **UI context** | 支持（PerformanceMetricsState 标记页面/交互状态） | 不支持（只有帧时间数据） | 支持（自定义 trace event） | 不适用（自动化 benchmark 场景） | 支持（按 Screen / Activity 聚合） |
+| **跨版本兼容** | API 16+（不同版本精度不同） | API 24+ | Android 5+（功能随版本增强） | Android 5+ | 集成 Firebase SDK 即可 |
+| **适用场景** | 线上慢帧分布监控、按页面/交互维度聚合 | 线上帧阶段耗时分析、定位慢帧发生在 draw/sync/input 哪一段 | 根因分析：单帧下钻到具体函数调用、线程调度、锁等待 | CI/CD 基准对比：量化代码变更对帧性能的影响 | 线上趋势监控：按版本/设备/页面看慢帧率和冻结帧率变化 |
+| **边界** | 不提供堆栈、不提供帧内阶段拆分；回调里不能做重操作 | 不关联 UI 状态，不跨进程；低版本不可用 | trace 文件大，不适合全量线上采集；需要 Perfetto 知识 | 只能在测试环境运行，不反映线上真实用户场景 | 数据粒度粗，无法定位到具体帧；依赖 Firebase 生态 |
+
+**选型判断**：
+
+- **线上入口**：JankStats + Firebase Performance 覆盖“哪里慢”和“版本趋势”。JankStats 给页面/交互级慢帧分布，Firebase 给版本级聚合趋势。
+- **线上下钻**：FrameMetrics 在 API 24+ 上拆帧阶段，判断慢帧发生在 draw / sync / input 哪一段。
+- **线下根因**：Perfetto 做全链路 trace 分析，定位到具体函数、锁、调度问题。
+- **CI/CD 守门**：Macrobenchmark 在每次代码变更后跑基准测试，量化帧时间变化。
+- **组合使用**：JankStats 发现“首页滚动慢帧率 5%” → FrameMetrics 确认“draw 阶段占 70%” → Perfetto 下钻到“Bitmap 解码在主线程” → 修复后 Macrobenchmark 验证改善幅度。
 
 ## 使用建议
 

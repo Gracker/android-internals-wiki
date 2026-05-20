@@ -1,9 +1,14 @@
 ---
 
+
 status: 'ready-for-review'
 title: Input 事件分发全流程
 chapter: '3.1'
-pipeline_stage: task2b_pending
+section: '3.1'
+last_task6_at: '2026-05-21T01:15:21+08:00'
+last_task6_review_log: logs/review/2026-05-21-01-review.md
+task6_review_notes: '2026-05-21 Task6 01: L1/L2 小修 9 处；Task9 已有 P0/P1 回炉项，保持 task2b_pending，未重复新增 queue。'
+pipeline_stage: 'task6_pending'
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -12,7 +17,7 @@ version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 Inpu
   13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及
   Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。
 confidence: high
-reviewed_date: '2026-04-27'
+reviewed_date: '2026-05-21'
 reviewed_by: openclaw-task6
 rework2_date: '2026-04-15'
 rework2_by: openclaw-task2b
@@ -46,20 +51,20 @@ related_chapters:
 - '2.5'
 - '9.1'
 - '9.2'
-task6_result: pass-light-edit
-task6_state: revisiting
-task6_reviewed_date: '2026-04-27'
-task9_state: reviewed
+task6_result: needs-rework
+task6_state: 'revisiting'
+task6_reviewed_date: '2026-05-21'
+task9_state: 'pending'
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: 'fixed'
+task2b_result: 'fixed'
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T00:29:00+08:00"
 review_notes: 2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale
   event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input
   trace 观察点 P2 建议。
-last_task2b_at: '2026-05-20T23:49:44+08:00'
+last_task2b_at: '2026-05-21T03:22:56+08:00'
 task2b_fixed_by: openclaw-task2b
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -115,7 +120,7 @@ last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
 
 **第四段：App 侧分发**。App 进程通过 `WindowInputEventReceiver` 收到事件，经过 `ViewRootImpl` 的责任链式 `InputStage` 管线处理，最终分发到 View 树中的具体控件。
 
-整个过程涉及两个进程（`system_server` 和 App）、四个关键组件（`EventHub`、`InputReader`、`InputDispatcher`、`ViewRootImpl`），以及一个跨进程通信机制（`InputChannel`/`socketpair`）。我们接下来逐一拆解。
+整个过程涉及两个进程（`system_server` 和 App）、四个关键组件（`EventHub`、`InputReader`、`InputDispatcher`、`ViewRootImpl`），以及一个跨进程通信机制（`InputChannel`/`socketpair`）。这条路径可以按这四个环节继续展开。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
 > [已验证: 官方文档, source.android.com — Input pipeline architecture]
@@ -144,7 +149,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 
 这里有两个机制：
 
-**第一，`epoll` 机制**。`EventHub` 不是轮询，而是利用 Linux 的 `epoll` 在设备文件有数据可读时才被唤醒。这意味着在没有事件的时候，`InputReader` 线程会安静地休眠，不会消耗 CPU。
+**第一，`epoll` 机制**。`EventHub` 不是轮询，而是利用 Linux 的 `epoll` 在设备文件有数据可读时才被唤醒。在没有事件的时候，`InputReader` 线程会休眠，不会消耗 CPU。
 
 **第二，`inotify` 机制**。`EventHub` 同时监听 `/dev/input/` 目录本身的变化——当有新设备插入或拔出时（比如蓝牙键盘连接），`inotify` 会产生一个事件，`EventHub` 就能感知到并执行设备打开/关闭操作。
 
@@ -170,7 +175,7 @@ Android 16 在 `services/inputflinger/rust/` 下引入了 Rust 编写的 **Input
 - `sticky_keys_filter.rs` — 粘性键过滤
 - `ffi/` — Rust-C++ FFI 绑定层
 
-对应的 C++ 端仍然是 `InputFilter.cpp` / `InputFilter.h`，Rust 部分通过 `cxxbridge` FFI 与 C++ 互操作。`InputDispatcher` 在 `notifyKey()` 中通过 `mInputFilter` 指针调用过滤逻辑，这个调用点在 Android 16 中不变——只是过滤器的内部实现从 C++ 换成了 Rust。
+对应的 C++ 端仍然是 `InputFilter.cpp` / `InputFilter.h`，Rust 部分通过 `cxxbridge` FFI 与 C++ 互操作。`InputDispatcher` 在 `notifyKey()` / `notifyMotion()` 中不直接持有 `mInputFilter` 指针。过滤路径是：`notifyKey()` 在 `mInputFilterEnabled` 为真时调用 `mPolicy.filterInputEvent(event, policyFlags)`，C++ `InputFilter.cpp` 收到调用后通过 `IInputFilter` 接口转发到 Rust filter。变化发生在 `InputFilter.cpp` 内部——过滤逻辑的实现从 C++ 换成了 Rust，调用入口 `mPolicy.filterInputEvent()` 不变。
 
 **不要把这段写成"InputFlinger 核心从 C++ 迁移到 Rust"**。当前 Rust 只覆盖辅助输入过滤（accessibility filter 的子集），`InputReader`、`InputDispatcher`、`InputClassifier`/`InputProcessor` 全部仍是 C++。
 
@@ -214,7 +219,7 @@ void InputReader::loopOnce() {
 
 ## InputDispatcher 的分发策略
 
-`InputDispatcher` 是整个事件分发流程中策略最复杂的组件。它要解决的核心问题是：**给定一个输入事件，应该把它发送给哪个窗口？**
+`InputDispatcher` 是整个事件分发流程中策略最复杂的组件。它负责决定：**给定一个输入事件，应该把它发送给哪个窗口？**
 
 ### 焦点窗口 vs 触摸窗口
 
@@ -245,15 +250,17 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 为什么触摸事件不用焦点窗口？因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮，应该由悬浮窗接收事件（因为它在上面），而不是焦点窗口。而按键事件没有空间信息，只能用焦点窗口来决定接收者。
 
-### 手势排除区域判定下沉至 Native（Android 16）
+### 手势排除区域（Android 16）
 
-Android 16 将手势排除区域（gesture exclusion region）的判定逻辑从 Java 层下沉到了 `InputDispatcher` 的 Native 循环中。此前 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认，增加了边缘触控响应延迟。Android 16 的 `InputDispatcher` 在 `findTouchedWindowTargetsLocked()` 路径中直接使用已同步的 `WindowInfo.touchableRegion` 和 exclusion region 数据完成判定，不再需要跨进程查询。这一改动让边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟缩短约 10ms。在 Perfetto 中，效果体现为 `InputDispatcher` 线程上触摸分发 slice 的尾部缩短，特别是在边缘触控场景下。
+[待验证：AOSP android-16.0.0_r1 `InputDispatcher.cpp` 已无 `findTouchedWindowTargetsLocked()` 符号，`WindowInfo.h` 也未检索到 gesture exclusion/exclusion region 字段；"10ms" 收益没有源码锚点或 trace 数据支撑。以下保留概念说明，具体实现路径待后续版本源码确认。]
+
+Android 16 在触摸命中判定中对排除区域（exclusion region）的处理可能有变化，但具体实现路径和收益数据尚未在 AOSP android-16.0.0_r1 中得到确认。此前版本的 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认。如果 Android 16 确实将相关逻辑下沉到 Native 循环中，边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟可能会改善。在 Perfetto 中，相关效果需要通过 `InputDispatcher` 线程上触摸分发 slice 的对比来确认。
 
 ### 三大队列：iq / oq / wq
 
 在 Perfetto 中追踪 Input 问题时，我们经常看到三个计数器 Track：`iq`、`oq`、`wq`。它们对应 `InputDispatcher` 内部的三个关键队列：
 
-**InboundQueue（iq）**：`InputReader` 加工完的事件首先进入这个队列。`InputDispatcher` 的主循环从这个队列取出事件进行分发。在 Perfetto 中通过 `ATRACE_INT("iq", mInboundQueue.size())` 追踪。
+**InboundQueue（iq）**：`InputReader` 加工完的事件先进入这个队列。`InputDispatcher` 的主循环从这个队列取出事件进行分发。在 Perfetto 中通过 `ATRACE_INT("iq", mInboundQueue.size())` 追踪。
 
 **OutboundQueue（oq）**：每个窗口连接（`Connection`）都有一个独立的 `outboundQueue`，存放即将通过 `InputChannel` 发送给该窗口的事件。事件从 `iq` 取出后，找到目标窗口，放入对应窗口的 `oq`。在 Perfetto 中格式为 `oq:{windowName}`。
 
@@ -386,7 +393,7 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 
 [图：InputStage 责任链处理顺序——从 NativePreIme 到 SyntheticInput 的七阶段流水线，标注每阶段的主要职责]
 
-每个 Stage 可以选择自己处理（返回 `FINISH_HANDLED`）、传递给下一个 Stage（返回 `FORWARD`）或丢弃。真正把事件分发到 View 树的是第 6 个 Stage：`ViewPostImeInputStage`。
+每个 Stage 可以选择自己处理（返回 `FINISH_HANDLED`）、传递给下一个 Stage（返回 `FORWARD`）或丢弃。把事件分发到 View 树的是第 6 个 Stage：`ViewPostImeInputStage`。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
 
@@ -478,7 +485,7 @@ bool InputDispatcher::isStaleEvent(nsecs_t currentTime, const EventEntry& entry)
 这组差异说明三件事：
 
 - Android 12 的 stale 判定是 dispatcher 内的固定超时逻辑。
-- Android 13/14 把阈值收口到 `mStaleEventTimeout`。
+- Android 13/14 将阈值统一为 `mStaleEventTimeout`。
 - Android 15/16 又把判定下沉到 policy，dispatcher 只保留入口。
 
 ### 与 ANR 的关系
@@ -622,7 +629,7 @@ const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::mil
 
 ## 在 Perfetto 中的完整表现
 
-前面我们拆解了 Input 事件从硬件到 View 树的每一个环节。现在把这些环节放回到 Perfetto Trace 中，看看它们各自对应哪些 Track、什么形态，以及在出问题时应该如何定位。
+前面已经梳理了 Input 事件从硬件到 View 树的每一个环节。把这些环节放回 Perfetto Trace 中，就能对应到各自的 Track、形态和定位入口。
 
 ### system_server 进程中的 Track
 
@@ -739,7 +746,7 @@ set_sched_policy(0, SP_FOREGROUND);  // 前台调度策略
 
 后续版本中，这些显式调用被移除，InputFlinger 的高优先级改为由 Android 框架隐式保证——作为 system_server 的关键组件，它的线程以 `ANDROID_PRIORITY_FOREGROUND` 运行。移除的理由是避免与系统其他高优先级任务产生调度冲突。
 
-作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现真正的实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
+作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
 
 ### AnrTracker 的超时驱动机制（Android 12+）
 
@@ -833,7 +840,7 @@ stale 检查发生在 `dispatchOnceInnerLocked()` 内部、调用 `dispatchKeyLo
 4. `DROP_REASON_BLOCKED` — 事件被阻塞
 5. `DROP_REASON_APP_SWITCH` — app switch 待处理
 
-这意味着 stale 判定优先级**低于** policy 消费和 DISABLED，高于 BLOCKED 和 APP_SWITCH。
+stale 判定优先级**低于** policy 消费和 DISABLED，高于 BLOCKED 和 APP_SWITCH。
 
 ### 4. AnrTracker 的完整调用链
 
@@ -986,7 +993,7 @@ void InputDispatcher::synthesizeCancelationEventsForConnectionLocked(
 
 1. **内存管理**: `waitQueue` 长度控制避免内存泄漏，ANR 超时及时释放资源
 2. **响应速度**: `shouldPruneInboundQueueLocked` 优化减少跨应用切换延迟  
-3. **CPU 使用**: `processAnrsLocked` 定期检查（10ms 间隔）平衡检测开销和响应速度
+3. **CPU 使用**: `processAnrsLocked` 由 `AnrTracker.firstTimeout()` 驱动唤醒，`Looper::pollOnce()` 等到下一次超时或被新事件唤醒，没有固定轮询间隔
 4. **事件丢失**: `WOULD_BLOCK` 机制通过队列转移保证数据完整性，避免事件丢失
 
 **完整报告**: [2026-05-10-inputdispatcher-backpressure.md](./DeepResearch/2026-05-10-inputdispatcher-backpressure.md)
