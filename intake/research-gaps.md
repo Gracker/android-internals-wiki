@@ -494,3 +494,20 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 
 ### 关联章节
 19.09 Measure；19.0 APM 工具总览
+
+
+## [2026-05-21] 4.2 Linux 内核内存管理 — Android 17 ART MADV_COLD 协同
+
+### 盲区描述
+章节需要确认 Android 17 是否已有 ART GC → `madvise(MADV_COLD)` → MGLRU 的正式实现链。目前本轮核验未在 AOSP `platform/art` main 的 `runtime/gc` 源码中找到 `MADV_COLD` 调用，不能只凭 archived external-review 写成确定实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查找 Android 17 / API 37 release note、AOSP commit、ART `runtime/gc` 调用点，确认是否存在 GC 标记阶段对冷对象页调用 `MADV_COLD`。
+- 核对 Linux `mm/madvise.c` 中 `madvise_cold_or_pageout_pte_range()`、`folio_deactivate()` 与 MGLRU 的实际交互，避免把 cold advice 简化成“直接降到更老 generation”。
+- 若存在性能数据，补齐设备、内核分支、ART 配置、trace 指标与 jank/换入统计口径。
+
+### 关联章节
+4.2、4.3、4.4

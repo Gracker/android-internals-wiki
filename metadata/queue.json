@@ -1,6 +1,40 @@
 {
   "queue_entries": [
     {
+      "id": "task9-20260521-4.2-art-madv-cold-source",
+      "section": "4.2",
+      "section_title": "Linux 内核内存管理",
+      "priority": 85,
+      "title": "Android 17 ART madvise(MADV_COLD) 实现链缺少 AOSP 源码锚点",
+      "description": "章节把 Silk 论文思路写成 Android 17 已有 ART→MADV_COLD 实现，但当前可核验 AOSP platform/art main 未检出 MADV_COLD 源码调用，内核 MADV_COLD 侧也应按 madvise.c/folio_deactivate 语义描述。",
+      "reason": "[Deep Tech Review] Android 17 ART GC 向内核发送 MADV_COLD 的实现链缺少 AOSP commit、release note 或源码路径；继续以确定语气发布会误导版本边界。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-07-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点缺失",
+          "location": "§Android 17 实现：madvise(MADV_COLD) 信号通路 L363-L373",
+          "detail": "正文称 Android 17 中 ART 在 GC 标记阶段识别老年代未引用对象并调用 madvise(MADV_COLD)，且内核在 MGLRU generation 中降级这些页面。当前本轮核验在 AOSP platform/art main（6484611fd45e）中 grep MADV_COLD 只命中二进制测试 hprof，runtime/gc 源码未见 MADV_COLD 调用；Linux mm/madvise.c 的 MADV_COLD 路径是清 young/referenced 并调用 folio_deactivate()/MGLRU clear refs，不能在没有内核源码锚点时写成“直接降级到更老 generation”。",
+          "suggestion": "若找不到 Android 17 ART commit/release note/源码路径，把本节改为“待验证方向”或“可能的协同设计”，删除“已有具体实现/直接解决”的确定语气；若保留，需要补 ART 调用点、触发条件、对象/页映射边界、内核 madvise_cold_or_pageout_pte_range 到 MGLRU 的具体语义以及 jank/换入指标口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T07:34:33+08:00",
+      "review_log": "logs/deep-review/2026-05-21-07-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260521-18.20-drawframetask-queuebuffer-source",
       "section": "18.20",
       "section_title": "渲染管线分析方法论",
@@ -14227,7 +14261,8 @@
       ],
       "material_paths": [
         "logs/deep-review/2026-05-20-20-deep-review.md",
-        "intake/research-gaps.md"
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-21-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -14240,7 +14275,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T20:22:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-21-07-deep-review.md",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-21T07:34:33+08:00",
+      "revalidated_reason": "2026-05-21 Task9 复核：正文仍只写 Crash/ANR 自动捕获与 mapping/native symbol 成本，未补官方 native crash 不支持、ANR App Exit Info tombstone 与平台符号化材料差异。"
     },
     {
       "id": "task2a-gap-24.11-satellite-low-bandwidth-network",
