@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-19.10-matrix-agp8-transform",
+      "section": "19.10",
+      "section_title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
+      "priority": 85,
+      "title": "Matrix Gradle Trace 插件缺少 AGP 8+ 兼容性边界",
+      "description": "章节将 Matrix 放入现代客户端监控框架选项，但未说明当前 Matrix Android Gradle plugin 仍依赖 Transform API，官方 README 只声明 AGP 3.5/4.0/4.1；AGP 8.0+ 工程直接接入可能构建失败。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/10-other-opensource-apm.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-17-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/AGP 8 Transform API 兼容性",
+          "location": "L134-L148：AGP 8 分水岭与 Matrix 方案分工",
+          "detail": "正文把 AGP 8.0 Transform API 移除风险限定在旧开源库，并在方案表中把 Matrix 作为“客户端监控框架”推荐，但未交代 Matrix Android Gradle plugin 的版本边界。当前 Matrix README 仍写 Android Gradle Plugin 3.5.0/4.0.0/4.1.0；源码 matrix-gradle-plugin 中 MatrixTraceInjection.kt 调用 appExtension.registerTransform，MatrixTraceTransform.kt / MatrixTraceLegacyTransform.kt 仍依赖 com.android.build.api.transform.*。Android Developers 官方 AGP 8.0 API changes 说明 Transform API 在 AGP 8.0 已移除。",
+          "suggestion": "在 Matrix 行或 AGP 8 分水岭段补兼容性说明：Matrix 的 Gradle Trace 插件接入前必须验证 AGP 8+ 适配；若工程已在 AGP 8+，优先只参考其端侧采集设计/非 Gradle 模块，或选择已迁到 Instrumentation API / Artifacts API 的维护分支，再评估 R8、增量构建和多模块范围。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T17:24:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T17:24:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-17-audit.md"
+    },
+    {
       "id": "task9-audit-19.09-measure-retention-default",
       "section": "19.09",
       "section_title": "Measure",
