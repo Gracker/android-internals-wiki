@@ -14676,7 +14676,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
@@ -14707,7 +14707,9 @@
       "gap_score": 18,
       "material_count": 13,
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T06:09:00+08:00"
+      "added_at": "2026-05-21T06:09:00+08:00",
+      "completed_date": "2026-05-21T07:09:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成：基于 Android Vitals 官方文档、Play Developer Reporting API 和 Clippings 结构参考，补齐指标层级、28 天窗口、Crash/ANR 差异、启动/渲染/LMK/Slow Sessions、功耗类 vitals、发版门禁与 API 对接。"
     },
     {
       "id": "task9-audit-20260521-2.20-multiwindow-android16-17-version-source",
