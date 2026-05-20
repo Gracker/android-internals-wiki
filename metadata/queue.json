@@ -14317,24 +14317,100 @@
       "added_at": "2026-05-20T23:31:00+08:00",
       "completed_date": "2026-05-21T01:04:00+08:00",
       "completed_reason": "Task 2A 内容加工完成：status ready-for-review，等待 Task6 复审"
+    },
+    {
+      "id": "task9-20260521-4.5-app-memory-api-heapprofd-boundary",
+      "section": "4.5",
+      "section_title": "App 内存优化",
+      "priority": 95,
+      "title": "App 内存诊断 API 版本与 heapprofd 命令入口需修正",
+      "description": "ApplicationExitInfo 被写成 Android 10+，heapprofd/Java heap profile 命令入口使用了非官方或不稳定形式，发布前需回炉修正。",
+      "reason": "[Deep Tech Review] App 内存优化存在 API 版本错误与 heapprofd 工具命令错误，影响读者按版本和命令复现诊断流程。",
+      "issue_type": "version-difference-tool-command-source-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API 版本错误",
+          "location": "4.5 L891 Android 17：历史峰值追溯 — ApplicationExitInfo（Android 10+）",
+          "detail": "正文把 `ApplicationExitInfo` / `getHistoricalProcessExitReasons()` 写成 Android 10+。公开 API 实际从 Android 11 / API 30 引入，`getPss()` / `getRss()` 也是 API 30 口径；Android 10/API 29 设备不能按该路径回查低内存退出原因。",
+          "suggestion": "改为 `ApplicationExitInfo（Android 11 / API 30+）`。如要覆盖 Android 10，应单独列 DropBox、tombstone、dumpsys/proc 采样或自建退出记录等替代路径，不要把 API 30 能力下放到 API 29。"
+        },
+        {
+          "type": "工具命令/源码入口错误",
+          "location": "4.5 L634-L646 heapprofd 命令示例",
+          "detail": "Perfetto heapprofd 官方入口是 TraceConfig（`android.heapprofd` / `linux.heapprofd`）或主机侧 `tools/heap_profile -n/-p` 脚本；当前正文的 `adb shell heapprofd --pid=<PID>` 不是稳定公开用法，`perfetto_heap_profile --name ...` 也不是官方文档中的脚本名。读者按示例执行很可能失败。",
+          "suggestion": "把命令改为 `tools/heap_profile -n <package>` / `tools/heap_profile -p <pid>`，或给出 `adb shell perfetto --txt -c - ... heapprofd_config { pid/name/heaps }` 的 TraceConfig 示例；Java 堆采样保留 `heaps: \"com.android.art\"`，但不要包装成不存在的 `perfetto_heap_profile` 命令。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T01:38:56+08:00"
+    },
+    {
+      "id": "task9-20260521-21.11-art-profile-dump-reset-commands",
+      "section": "21.11",
+      "section_title": "云端 Profile、DM 文件与安装后编译优化",
+      "priority": 95,
+      "title": "ART Service 编译状态与无 profile 基线命令需修正",
+      "description": "正文使用 `cmd package art dump` 和单条 `cmd package compile --reset` 作为 Android 14+ 排查入口，与 ART Service / Baseline Profile 官方命令不一致。",
+      "reason": "[Deep Tech Review] 云端 Profile 章节的核心排查命令存在 P0/P1 问题：ART Service dump 命令错误，API34+ 无 profile 基线清理命令不完整。",
+      "issue_type": "source-code-accuracy-version-difference-verification-methodology",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/命令错误",
+          "location": "21.11 L102、L155-L159、L222、L250 编译状态查看命令",
+          "detail": "正文多处写 `cmd package art dump`。ART Service README 给出的命令是 `pm art dump <package-name>`，用于查看 OAT header 中的 compiler filter / compilation reason；`cmd package art dump` 不是该文档中的子命令。",
+          "suggestion": "统一改为 `adb shell pm art dump com.example.app`。`dumpsys package dexopt` 可作为 Android 13 及以下或兼容口径补充，但 Android 14+ 的主路径应写 `pm art dump`。"
+        },
+        {
+          "type": "验证口径/版本差异",
+          "location": "21.11 L173-L180 无 profile 基线命令",
+          "detail": "正文用单条 `adb shell cmd package compile --reset com.example.app` 构造“无 profile”基线。Android Developers Baseline Profile 文档将 API 34+ 拆成 `cmd package compile -f -m verify <pkg>` 与 `pm art clear-app-profiles <pkg>`；API 33 及以下才使用 `cmd package compile --reset`（通常还需要 root/AOSP 环境）。当前命令不能保证 API 34+ 清掉本地 profile，实验基线可能仍被旧 profile 污染。",
+          "suggestion": "按版本拆命令：API 34+ 使用 `adb shell cmd package compile -f -m verify <pkg>` + `adb shell pm art clear-app-profiles <pkg>`；API 33 及以下再写 `adb shell cmd package compile --reset <pkg>`。说明是否需要 root、是否会保留 Play/DM profile。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T01:38:56+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 401,
-    "p0_count": 167,
-    "last_updated": "2026-05-20T23:28:00+08:00",
-    "updated_by": "task6-audit",
-    "pending_entries": 146,
-    "updated_date": "2026-05-20",
-    "last_updated_by": "task6-audit",
-    "pending": 146,
+    "total_entries": 407,
+    "p0_count": 152,
+    "last_updated": "2026-05-21T01:38:56+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 147,
+    "updated_date": "2026-05-21",
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 147,
     "completed_entries": 253,
     "last_task2a_gap_mining": "24.11",
     "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T23:58:06+08:00",
-  "last_updated_by": "task2b-rework",
+  "last_updated": "2026-05-21T01:38:56+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -14698,6 +14774,82 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T20:22:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
+    },
+    {
+      "id": "task9-20260521-4.5-app-memory-api-heapprofd-boundary",
+      "section": "4.5",
+      "section_title": "App 内存优化",
+      "priority": 95,
+      "title": "App 内存诊断 API 版本与 heapprofd 命令入口需修正",
+      "description": "ApplicationExitInfo 被写成 Android 10+，heapprofd/Java heap profile 命令入口使用了非官方或不稳定形式，发布前需回炉修正。",
+      "reason": "[Deep Tech Review] App 内存优化存在 API 版本错误与 heapprofd 工具命令错误，影响读者按版本和命令复现诊断流程。",
+      "issue_type": "version-difference-tool-command-source-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API 版本错误",
+          "location": "4.5 L891 Android 17：历史峰值追溯 — ApplicationExitInfo（Android 10+）",
+          "detail": "正文把 `ApplicationExitInfo` / `getHistoricalProcessExitReasons()` 写成 Android 10+。公开 API 实际从 Android 11 / API 30 引入，`getPss()` / `getRss()` 也是 API 30 口径；Android 10/API 29 设备不能按该路径回查低内存退出原因。",
+          "suggestion": "改为 `ApplicationExitInfo（Android 11 / API 30+）`。如要覆盖 Android 10，应单独列 DropBox、tombstone、dumpsys/proc 采样或自建退出记录等替代路径，不要把 API 30 能力下放到 API 29。"
+        },
+        {
+          "type": "工具命令/源码入口错误",
+          "location": "4.5 L634-L646 heapprofd 命令示例",
+          "detail": "Perfetto heapprofd 官方入口是 TraceConfig（`android.heapprofd` / `linux.heapprofd`）或主机侧 `tools/heap_profile -n/-p` 脚本；当前正文的 `adb shell heapprofd --pid=<PID>` 不是稳定公开用法，`perfetto_heap_profile --name ...` 也不是官方文档中的脚本名。读者按示例执行很可能失败。",
+          "suggestion": "把命令改为 `tools/heap_profile -n <package>` / `tools/heap_profile -p <pid>`，或给出 `adb shell perfetto --txt -c - ... heapprofd_config { pid/name/heaps }` 的 TraceConfig 示例；Java 堆采样保留 `heaps: \"com.android.art\"`，但不要包装成不存在的 `perfetto_heap_profile` 命令。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T01:38:56+08:00"
+    },
+    {
+      "id": "task9-20260521-21.11-art-profile-dump-reset-commands",
+      "section": "21.11",
+      "section_title": "云端 Profile、DM 文件与安装后编译优化",
+      "priority": 95,
+      "title": "ART Service 编译状态与无 profile 基线命令需修正",
+      "description": "正文使用 `cmd package art dump` 和单条 `cmd package compile --reset` 作为 Android 14+ 排查入口，与 ART Service / Baseline Profile 官方命令不一致。",
+      "reason": "[Deep Tech Review] 云端 Profile 章节的核心排查命令存在 P0/P1 问题：ART Service dump 命令错误，API34+ 无 profile 基线清理命令不完整。",
+      "issue_type": "source-code-accuracy-version-difference-verification-methodology",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/命令错误",
+          "location": "21.11 L102、L155-L159、L222、L250 编译状态查看命令",
+          "detail": "正文多处写 `cmd package art dump`。ART Service README 给出的命令是 `pm art dump <package-name>`，用于查看 OAT header 中的 compiler filter / compilation reason；`cmd package art dump` 不是该文档中的子命令。",
+          "suggestion": "统一改为 `adb shell pm art dump com.example.app`。`dumpsys package dexopt` 可作为 Android 13 及以下或兼容口径补充，但 Android 14+ 的主路径应写 `pm art dump`。"
+        },
+        {
+          "type": "验证口径/版本差异",
+          "location": "21.11 L173-L180 无 profile 基线命令",
+          "detail": "正文用单条 `adb shell cmd package compile --reset com.example.app` 构造“无 profile”基线。Android Developers Baseline Profile 文档将 API 34+ 拆成 `cmd package compile -f -m verify <pkg>` 与 `pm art clear-app-profiles <pkg>`；API 33 及以下才使用 `cmd package compile --reset`（通常还需要 root/AOSP 环境）。当前命令不能保证 API 34+ 清掉本地 profile，实验基线可能仍被旧 profile 污染。",
+          "suggestion": "按版本拆命令：API 34+ 使用 `adb shell cmd package compile -f -m verify <pkg>` + `adb shell pm art clear-app-profiles <pkg>`；API 33 及以下再写 `adb shell cmd package compile --reset <pkg>`。说明是否需要 root、是否会保留 Play/DM profile。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T01:38:56+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
