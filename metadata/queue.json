@@ -13526,23 +13526,55 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T08:36:07+08:00"
+    },
+    {
+      "id": "task9-audit-18.8-egl-native-fence-sync-type",
+      "section": "18.8",
+      "section_title": "OpenGL ES 渲染链路",
+      "priority": 95,
+      "title": "EGL native fence FD 导出示例使用了错误的 sync 类型",
+      "description": "正文在 EGL Sync Objects 示例中用 EGL_SYNC_FENCE_KHR 创建 sync 后调用 eglDupNativeFenceFDANDROID 导出 native fence FD；EGL_ANDROID_native_fence_sync 规范要求导出 FD 的对象应为 EGL_SYNC_NATIVE_FENCE_ANDROID，当前代码会误导跨进程 fence / Android native fence 用法。",
+      "issue_type": "source-code-accuracy-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 使用错误",
+          "severity": "P0",
+          "location": "EGL Sync Objects（精确控制）代码块 L241-L249",
+          "detail": "代码先用 eglCreateSyncKHR(display, EGL_SYNC_FENCE_KHR, NULL) 创建 KHR fence sync，随后调用 eglDupNativeFenceFDANDROID(display, sync) 导出 Android native fence FD。Khronos EGL_ANDROID_native_fence_sync 规范要求 eglDupNativeFenceFDANDROID 复制的是 EGL native fence sync 对象的 EGL_SYNC_NATIVE_FENCE_FD_ANDROID；要导出 native fence FD，应创建 EGL_SYNC_NATIVE_FENCE_ANDROID 类型，或传入既有 native fence FD 创建该类型。当前示例在需要 native fence FD 的跨进程/Android fence 场景下会返回 EGL_NO_NATIVE_FENCE_FD_ANDROID / EGL_BAD_PARAMETER 或误导读者。",
+          "suggestion": "把导出 FD 的示例改为 EGL_ANDROID_native_fence_sync：检查扩展后使用 eglCreateSyncKHR(display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs)；若由 GPU 命令流生成 fence，attrs 使用 EGL_SYNC_NATIVE_FENCE_FD_ANDROID = EGL_NO_NATIVE_FENCE_FD_ANDROID，并在 glFlush/eglSwapBuffers 等 flush 后再 eglDupNativeFenceFDANDROID；只做 CPU 等 GPU 完成时可保留 EGL_SYNC_FENCE_KHR + eglClientWaitSyncKHR，但不要导出 native FD。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T10:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 381,
-    "p0_count": 158,
-    "last_updated": "2026-05-20T07:04:00+08:00",
-    "updated_by": "openclaw-task2a",
+    "total_entries": 385,
+    "p0_count": 164,
+    "last_updated": "2026-05-20T10:20:00+08:00",
+    "updated_by": "openclaw-task9",
     "pending_entries": 143,
     "updated_date": "2026-05-20",
-    "last_updated_by": "openclaw-task2a",
+    "last_updated_by": "openclaw-task9",
     "pending": 143,
-    "completed_entries": 236,
+    "completed_entries": 240,
     "last_task2a_gap_mining": "4.12",
     "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T07:37:11+08:00",
+  "last_updated": "2026-05-20T10:20:00+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": [
     {
@@ -13753,6 +13785,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T07:37:11+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task9-audit-18.8-egl-native-fence-sync-type",
+      "section": "18.8",
+      "section_title": "OpenGL ES 渲染链路",
+      "priority": 95,
+      "title": "EGL native fence FD 导出示例使用了错误的 sync 类型",
+      "description": "正文在 EGL Sync Objects 示例中用 EGL_SYNC_FENCE_KHR 创建 sync 后调用 eglDupNativeFenceFDANDROID 导出 native fence FD；EGL_ANDROID_native_fence_sync 规范要求导出 FD 的对象应为 EGL_SYNC_NATIVE_FENCE_ANDROID，当前代码会误导跨进程 fence / Android native fence 用法。",
+      "issue_type": "source-code-accuracy-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 使用错误",
+          "severity": "P0",
+          "location": "EGL Sync Objects（精确控制）代码块 L241-L249",
+          "detail": "代码先用 eglCreateSyncKHR(display, EGL_SYNC_FENCE_KHR, NULL) 创建 KHR fence sync，随后调用 eglDupNativeFenceFDANDROID(display, sync) 导出 Android native fence FD。Khronos EGL_ANDROID_native_fence_sync 规范要求 eglDupNativeFenceFDANDROID 复制的是 EGL native fence sync 对象的 EGL_SYNC_NATIVE_FENCE_FD_ANDROID；要导出 native fence FD，应创建 EGL_SYNC_NATIVE_FENCE_ANDROID 类型，或传入既有 native fence FD 创建该类型。当前示例在需要 native fence FD 的跨进程/Android fence 场景下会返回 EGL_NO_NATIVE_FENCE_FD_ANDROID / EGL_BAD_PARAMETER 或误导读者。",
+          "suggestion": "把导出 FD 的示例改为 EGL_ANDROID_native_fence_sync：检查扩展后使用 eglCreateSyncKHR(display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs)；若由 GPU 命令流生成 fence，attrs 使用 EGL_SYNC_NATIVE_FENCE_FD_ANDROID = EGL_NO_NATIVE_FENCE_FD_ANDROID，并在 glFlush/eglSwapBuffers 等 flush 后再 eglDupNativeFenceFDANDROID；只做 CPU 等 GPU 完成时可保留 EGL_SYNC_FENCE_KHR + eglClientWaitSyncKHR，但不要导出 native FD。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T10:20:00+08:00"
     }
   ],
   "last_task2a_completed": "18.22",

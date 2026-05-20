@@ -20,20 +20,23 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-25"
-task2b_result: fixed
+task9_reviewed_date: "2026-05-20"
+task2b_result: pending
 last_task2b_at: '2026-04-22T21:50:17+08:00'
-last_task9_at: "2026-04-25T21:21:00+08:00"
+last_task9_at: "2026-05-20T10:20:00+08:00"
 last_task6_audit: 2026-05-19
+last_task9_audit: "2026-05-20"
+last_task9_review_log: "logs/deep-review/2026-05-20-10-audit.md"
+task9_review_notes: "2026-05-20 idle audit: needs-rework。P0 1 / P1 0 / P2 1；P0 为 EGL native fence FD 导出示例使用 EGL_SYNC_FENCE_KHR，需改为 EGL_SYNC_NATIVE_FENCE_ANDROID；P2 为 BLAST/BufferQueue 与 triple buffering 口径建议补源码边界。"
 ---
 
 <!-- outline-start -->
