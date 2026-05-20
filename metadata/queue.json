@@ -14018,23 +14018,57 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T19:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-19-audit.md"
+    },
+    {
+      "id": "task9-19.09-measure-native-crash-anr-boundary",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 85,
+      "title": "Measure Crash/ANR 与 native crash 能力边界未交代",
+      "description": "Task9 深度技术审计发现：Measure 章节把 Crash/ANR 与符号化能力写成统一能力，但未写 Android native crash reporting 尚未支持、ANR native tombstone/APP Exit Info 边界和各平台符号化材料差异。",
+      "issue_type": "technical-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-20-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "知识盲区/版本差异",
+          "location": "§核心能力 L120-L131；§自托管平台的成本清单 L218-L223；§Measure 试点评估表 L266-L270",
+          "detail": "章节把 Crash / ANR 写成统一的自动捕获能力，并在自托管成本里写 mapping / native symbol，但没有交代 Measure Android 的关键边界：JVM crash 通过 UncaughtExceptionHandler 捕获并用 R8/ProGuard mapping 还原；官方文档明确 native C/C++ crash reporting 尚不支持；ANR 文档也说明 API 31 起 App Exit Info 有 native tombstone，但 native crash reports 尚未实现。这个边界会直接影响 Matrix/KOOM/Sentry/Firebase 选型和试点验收。",
+          "suggestion": "补一张“错误监控能力边界”表：Android JVM crash、Android native crash、ANR、iOS crash、Flutter crash 分列写捕获方式、符号化材料和当前不支持项；把“native symbol”改成按平台区分的 ProGuard/R8 mapping、iOS dSYM、React Native jsbundle/elf_debug，并明确 Android native crash 仍待官方实现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T20:22:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 396,
+    "total_entries": 398,
     "p0_count": 167,
-    "last_updated": "2026-05-20T19:20:00+08:00",
+    "last_updated": "2026-05-20T20:22:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 142,
+    "pending_entries": 144,
     "updated_date": "2026-05-20",
     "last_updated_by": "openclaw-task9",
-    "pending": 142,
+    "pending": 144,
     "completed_entries": 252,
     "last_task2a_gap_mining": "4.12",
     "last_task2a_gap_mining_at": "2026-05-20T07:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T19:20:00+08:00",
+  "last_updated": "2026-05-20T20:22:00+08:00",
   "last_updated_by": "openclaw-task9",
   "pending": [
     {
@@ -14333,6 +14367,40 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T19:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-19-audit.md"
+    },
+    {
+      "id": "task9-19.09-measure-native-crash-anr-boundary",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 85,
+      "title": "Measure Crash/ANR 与 native crash 能力边界未交代",
+      "description": "Task9 深度技术审计发现：Measure 章节把 Crash/ANR 与符号化能力写成统一能力，但未写 Android native crash reporting 尚未支持、ANR native tombstone/APP Exit Info 边界和各平台符号化材料差异。",
+      "issue_type": "technical-knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-20-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "知识盲区/版本差异",
+          "location": "§核心能力 L120-L131；§自托管平台的成本清单 L218-L223；§Measure 试点评估表 L266-L270",
+          "detail": "章节把 Crash / ANR 写成统一的自动捕获能力，并在自托管成本里写 mapping / native symbol，但没有交代 Measure Android 的关键边界：JVM crash 通过 UncaughtExceptionHandler 捕获并用 R8/ProGuard mapping 还原；官方文档明确 native C/C++ crash reporting 尚不支持；ANR 文档也说明 API 31 起 App Exit Info 有 native tombstone，但 native crash reports 尚未实现。这个边界会直接影响 Matrix/KOOM/Sentry/Firebase 选型和试点验收。",
+          "suggestion": "补一张“错误监控能力边界”表：Android JVM crash、Android native crash、ANR、iOS crash、Flutter crash 分列写捕获方式、符号化材料和当前不支持项；把“native symbol”改成按平台区分的 ProGuard/R8 mapping、iOS dSYM、React Native jsbundle/elf_debug，并明确 Android native crash 仍待官方实现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T20:22:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-20-deep-review.md"
     }
   ],
   "last_task2a_completed": "18.22",

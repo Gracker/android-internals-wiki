@@ -37,22 +37,23 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-20"
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: "pending"
+task9_state: reviewed
 task2b_state: pending
 task2b_result: pending
 task2b_reopened_at: "2026-05-20T20:08:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: '2026-04-24T14:55:00+08:00'
-task9_result: pending
-task9_reviewed_date: '2026-04-24'
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-24T17:50:00+08:00'
+last_task9_at: "2026-05-20T20:22:00+08:00"
 task6_reviewed_date: "2026-05-20"
 last_task6_at: "2026-05-20T20:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-20-20-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit P1 已由 Task2B 修复：retention 口径为 30-365 天、默认 30 天；Task6 复审发现能力范围/平台对比大纲覆盖不足，已回炉 Task2B。"
+task9_review_notes: "2026-05-20 Task9 deep review: P1 Crash/ANR/native crash 能力边界缺失，已写入 queue/research-gaps；另有 P2 版本接入边界、App size 数据模型、traceparent 锚点建议。"
+last_task9_review_log: "logs/deep-review/2026-05-20-20-deep-review.md"
 ---
 # Measure
 
