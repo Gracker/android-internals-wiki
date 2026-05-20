@@ -14537,6 +14537,88 @@
       "added_by": "task6-review",
       "added_at": "2026-05-21T04:09:00+08:00",
       "original_review_log": "logs/review/2026-05-21-04-review.md"
+    },
+    {
+      "id": "task9-20260521-5.9-adpf-headroom-gamestate-api-boundary",
+      "section": "5.9",
+      "section_title": "ADPF 自适应性能框架",
+      "priority": 95,
+      "title": "ADPF Headroom API 签名与 GameState 非游戏边界需修正",
+      "description": "SystemHealthManager Headroom API 被写成无参方法，GameState.MODE_CONTENT 被误扩展到非游戏应用。",
+      "reason": "[Deep Tech Review] ADPF 自适应性能框架 存在 P0/P1 技术问题，需要 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-api-boundary-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-04-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 签名错误",
+          "location": "5.9 L137、L310 Android 16 Headroom API",
+          "detail": "正文写成 `SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()` 无参方法。AOSP android-16.0.0_r1 的公开签名是 `getCpuHeadroom(@Nullable CpuHeadroomParams params)` 与 `getGpuHeadroom(@Nullable GpuHeadroomParams params)`；默认参数也需要显式传 null 或构造 Params。",
+          "suggestion": "把方法名改为 `getCpuHeadroom(CpuHeadroomParams)` / `getGpuHeadroom(GpuHeadroomParams)`，补一句“传 null 使用默认参数”，并保留 `get*HeadroomMinIntervalMillis()` 轮询间隔说明。"
+        },
+        {
+          "severity": "P1",
+          "type": "公开 API 边界/语义误读",
+          "location": "5.9 L477-L498 GameState.MODE_CONTENT 非游戏场景映射",
+          "detail": "正文把 `GameState.MODE_CONTENT` 解释为覆盖视频播放、视频通话、地图导航等非游戏应用。AOSP `GameState` 注释是 “State of the game passed to the GameManager”，`GameManager#getGameMode()` 对非 game 应用返回 `GAME_MODE_UNSUPPORTED`；`MODE_CONTENT` 指游戏内非 gameplay 内容（ad/web page/text/video），不是通用非游戏 App 语义锚点。",
+          "suggestion": "删除“非游戏场景到 GameState 的映射”表。非游戏 ADPF 适用性应放在 `PerformanceHintManager` / Thermal / SystemHealthManager 侧说明；GameState 只保留游戏及游戏内内容状态。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T04:36:55+08:00"
+    },
+    {
+      "id": "task9-20260521-3.1-input-priority-windowinfos-version-errors",
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 95,
+      "title": "InputFlinger 线程优先级与 WindowInfosListener 版本语义需修正",
+      "description": "InputFlinger 线程优先级常量写错，Android 12 setInputWindows 被误写成 InputDispatcher 主动 Pull。",
+      "reason": "[Deep Tech Review] Input 事件分发全流程 存在 P0/P1 技术问题，需要 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-api-boundary-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-04-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/常量错误",
+          "location": "3.1 L747 InputFlinger 线程优先级",
+          "detail": "正文称 Android 12+ InputFlinger 线程以 `ANDROID_PRIORITY_FOREGROUND` 运行。AOSP android-12.0.0_r1 与 android-16.0.0_r1 `services/inputflinger/InputThread.cpp` 实际调用 `mThread->run(..., ANDROID_PRIORITY_URGENT_DISPLAY)`。",
+          "suggestion": "把当前主线优先级改为 `ANDROID_PRIORITY_URGENT_DISPLAY`，源码锚点写到 `InputThread.cpp`；旧版 `setpriority(-20)` 的迁移原因若无 commit 证据，应保留为待验证或删除。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/交叉引用不一致",
+          "location": "3.1 L872 WindowInfosListener 补充说明",
+          "detail": "正文称 Android 12 `setInputWindows()` 是 “Pull 模式（InputDispatcher 主动查询）”。Android 12 主线是 WMS/InputMonitor/SurfaceControl transaction 更新 input window info，最终进入 `InputDispatcher::setInputWindows()`；InputDispatcher 不是主动查询窗口信息。该说法也与 L549“WMS/IMS 侧把 input windows 更新给 InputDispatcher”矛盾。",
+          "suggestion": "改为“Android 12 仍由 WMS/IMS/SurfaceControl transaction 推送/同步 input windows 到 InputDispatcher；Android 13+ 改为通过 SurfaceFlinger WindowInfosListener 回调更新”，删除 Pull/主动查询表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T04:36:55+08:00"
     }
   ],
   "metadata": {

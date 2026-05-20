@@ -54,13 +54,13 @@ related_chapters:
 task6_result: needs-rework
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-21"
-task9_state: 'pending'
+task9_state: "reviewed"
 task9_result: needs-rework
 task2b_state: "pending"
 task2b_result: 'fixed'
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T00:29:00+08:00"
+last_task9_at: "2026-05-21T04:36:55+08:00"
 review_notes: 2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale
   event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input
   trace 观察点 P2 建议。
@@ -68,7 +68,7 @@ last_task2b_at: '2026-05-21T03:22:56+08:00'
 task2b_fixed_by: openclaw-task2b
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
 ---
 
 
