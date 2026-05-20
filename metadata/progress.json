@@ -1,7 +1,7 @@
 {
   "total": 334,
-  "draft": 1,
-  "ready-for-review": 129,
+  "draft": 0,
+  "ready-for-review": 130,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4247,9 +4247,9 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 155,
-  "last_task2a_at": "2026-05-20T01:04:00+08:00",
-  "last_task2a_section": "21.10",
-  "last_task2a_file": "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
+  "last_task2a_at": "2026-05-20T14:04:00+08:00",
+  "last_task2a_section": "8.11",
+  "last_task2a_file": "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
   "last_task6_review": "2026-05-20",
   "last_task6_sections": [
     "19.16",
@@ -4278,7 +4278,7 @@
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "last_task9_at": "2026-05-20T07:37:11+08:00",
-  "last_task2a_result": "gap-mining",
+  "last_task2a_result": "draft-to-ready-for-review",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
   "task6_last_review_at": "2026-05-20T08:14:00+08:00",
