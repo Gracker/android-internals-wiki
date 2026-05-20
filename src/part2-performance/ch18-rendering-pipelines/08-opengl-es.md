@@ -20,18 +20,18 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: ready-for-review
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
-task2b_result: pending
-last_task2b_at: '2026-04-22T21:50:17+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-05-20T11:12:00+08:00'
 last_task9_at: "2026-05-20T10:20:00+08:00"
 last_task6_audit: 2026-05-19
 last_task9_audit: "2026-05-20"
@@ -242,20 +242,26 @@ Fence（同步栅栏）是跨 GPU/CPU/Display 的关键同步原语。在 GLES �
 对于需要精确同步的场景——比如在 GPU 渲染完成后执行 CPU 操作（记录性能数据、读取像素）——EGL 提供了扩展接口：
 
 ```c
-// 创建 Fence 对象（GPU 端）
-EGLSyncKHR sync = eglCreateSyncKHR(display, EGL_SYNC_FENCE_KHR, NULL);
+// 检查扩展是否可用（EGL_ANDROID_native_fence_sync）
+// const char* exts = eglQueryString(display, EGL_EXTENSIONS);
+// 确认包含 EGL_ANDROID_native_fence_sync
 
-// CPU 等待 GPU 完成
-EGLenum status = eglClientWaitSyncKHR(display, sync, 0, EGL_FOREVER_KHR);
+// 创建 Native Fence Sync 对象
+// 如果要在后续 GPU 命令流中生成 fence，传入 EGL_SYNC_NATIVE_FENCE_ANDROID + NULL attribs
+EGLint attrs[] = { EGL_NONE };
+EGLSyncKHR sync = eglCreateSyncKHR(display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
 
-// 导出为 Android Native Fence FD（可以跨进程传递）
+// 确保前面提交的 GPU 命令已完成，fence 才会被 signal
+eglClientWaitSyncKHR(display, sync, 0, EGL_FOREVER_KHR);
+
+// 导出为 Native Fence FD（可用于跨进程传递，例如提交给 BufferQueue）
 int fd = eglDupNativeFenceFDANDROID(display, sync);
 
 // 清理
 eglDestroySyncKHR(display, sync);
 ```
 
-这个模式在 GPU → CPU 的数据回读场景中很常见（如截图、OCR）。如果不使用 Sync Object 而是直接读 Buffer，可能读到 GPU 还没画完的半成品。
+`eglDupNativeFenceFDANDROID` 属于 `EGL_ANDROID_native_fence_sync` 扩展，sync 对象必须用 `EGL_SYNC_NATIVE_FENCE_ANDROID` 创建，不能用 `EGL_SYNC_FENCE_KHR`。导出的 FD 可以跨进程传递给 SurfaceFlinger / HWC 等消费者。这个模式在 GPU → CPU 的数据回读场景中很常见（如截图、OCR）。如果不使用 Sync Object 而是直接读 Buffer，可能读到 GPU 还没画完的半成品。
 
 ## ANGLE 路径
 
