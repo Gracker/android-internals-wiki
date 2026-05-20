@@ -14272,7 +14272,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md"
@@ -14284,7 +14284,9 @@
       "gap_score": 17,
       "material_count": 2,
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-20T23:31:00+08:00"
+      "added_at": "2026-05-20T23:31:00+08:00",
+      "completed_date": "2026-05-21T00:55:00+08:00",
+      "completed_reason": "Task 2A 内容加工完成，章节 status -> ready-for-review，进入 Task 6 审查管线。"
     },
     {
       "id": "task2a-gap-25.13",
