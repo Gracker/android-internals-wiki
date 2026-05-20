@@ -23,13 +23,13 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task2b_pending
-task2b_result: pending
-task2b_state: pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pending
 
 last_task2b_at: "2026-04-26T08:55:00+08:00"
 task9_reviewed_date: "2026-04-27"
@@ -79,7 +79,7 @@ dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前
 
 ## 为什么需要专门的输入延迟 SQL 分析
 
-在 §3.4 中，我们已经从机制层面拆解了输入延迟的六个阶段，也介绍了 `android.input` 模块的基本用法。把 SQL 单独拉出来讲，是因为实际排障面对的往往不是教科书上的“理想路径”，而是下面这几类场景：
+在 §3.4 中，我们已经从机制层面分析了输入延迟的六个阶段，也介绍了 `android.input` 模块的基本用法。把 SQL 单独拉出来讲，是因为实际排障面对的往往不是教科书上的“理想路径”，而是下面这几类场景：
 
 - 用户反馈"滑动列表偶尔卡一下"，但 Perfetto UI 中滑动看起来正常，掉帧不明显
 - ANR traces 显示 InputDispatcher 超时，但不知道是哪个环节拖慢了
@@ -284,7 +284,7 @@ WHERE total_latency_dur IS NOT NULL;
 
 ### 输入队列长度追踪
 
-InputDispatcher 内部维护三个关键队列：`iq`（inbound queue，等待分发）、`oq`（outbound queue，已发送等待 ACK）、`wq`（wait queue，等待窗口焦点）。队列长度的变化是定位输入延迟瓶颈的经典指标。
+InputDispatcher 内部维护三个关键队列：`iq`（inbound queue，等待分发）、`oq`（connection outboundQueue，等待 publish 到目标 input channel）、`wq`（connection waitQueue，已发给 App 等待 finish/ACK）。队列长度的变化是定位输入延迟瓶颈的经典指标。
 
 在 Perfetto 中，这些队列通过 counter track 追踪。查询前先确认当前 trace 中的 track 名称：
 
@@ -334,15 +334,15 @@ ORDER BY queue_length DESC, duration_ms DESC
 LIMIT 50;
 ```
 
-[已验证: `iq/oq/wq` 对应 InputDispatcher 的 inbound / outbound / wait queue；不同 Perfetto 版本和厂商构建可能改写 track name，查询时以当前 trace 的 `track.name` 为准]
+[已验证: `iq`=InputDispatcher inbound queue；`oq:<channel>`=connection outboundQueue，等待 publish 到目标 input channel，持续堆积通常表示目标连接/pipe/backpressure 使发送推进不了；`wq:<channel>`=connection waitQueue，事件已发送给 App，等待 App finish/ACK，也是 dispatching timeout/ANR 响应性判断的核心队列。不同 Perfetto 版本和厂商构建可能改写 track name，查询时以当前 trace 的 `track.name` 为准]
 
 [图：Perfetto 中 InputDispatcher 的 iq/oq/wq counter track 示例——三个 counter 分别以不同颜色显示在 InputDispatcher 线程下方，标注 iq 堆积 > 5 的时段和对应的 App 主线程耗时操作]
 
 **解读规则**：
 
 - `iq` 持续非零：InputReader 到 InputDispatcher 的处理跟不上，InputReader 读到的事件在排队等分发。通常是 InputDispatcher 线程调度不及时
-- `oq` 堆积：已发送的事件在等 App 的 ACK，说明 App 主线程处理慢
-- `wq` 堆积：等待窗口获取焦点的事件在排队，通常是窗口切换场景（如启动新 Activity）
+- `oq` 堆积：事件尚未成功 publish 到目标 input channel，持续堆积说明目标连接存在 backpressure 或 pipe 写入阻塞
+- `wq` 堆积：已发给 App 的事件在等 finish/ACK，是 dispatching timeout / ANR 响应性判断的核心指标；堆积通常表示 App 主线程处理慢或无响应
 
 
 ### ANR 前的输入事件堆积分析

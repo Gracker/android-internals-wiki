@@ -12,7 +12,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/08-input-latency-sql.md"
@@ -33,7 +33,9 @@
       "added_at": "2026-05-20T18:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T18:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-18-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-18-audit.md",
+      "completed_date": "2026-05-20T19:17:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: InputDispatcher oq/wq 队列语义纠正——oq 是 connection outboundQueue（待 publish 到目标 input channel），wq 是 connection waitQueue（已发给 App 等待 finish/ACK）；删除 wq 等待窗口焦点的错误表述"
     },
     {
       "id": "task9-audit-19.10-matrix-agp8-transform",
@@ -47,7 +49,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/10-other-opensource-apm.md"
@@ -68,7 +70,9 @@
       "added_at": "2026-05-20T17:24:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T17:24:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-17-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-17-audit.md",
+      "completed_date": "2026-05-20T19:17:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充 Matrix Gradle Trace 插件 AGP 8+ 兼容性边界说明（仍依赖 Transform API，仅声明 AGP 3.5/4.0/4.1）；补充 ApplicationExitInfo API 30+ 版本标注"
     },
     {
       "id": "task9-audit-19.09-measure-retention-default",
@@ -82,7 +86,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/09-measure.md"
@@ -103,7 +107,9 @@
       "added_at": "2026-05-20T15:22:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T15:22:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-15-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-15-audit.md",
+      "completed_date": "2026-05-20T19:17:03+08:00",
+      "completed_reason": "Task 2B 回炉修复: Measure 数据保留期从 7-365 天/默认 90 天修正为 30-365 天/默认 30 天；来源从失效的 feature-data-retention.md 更新为 Dashboard API retention endpoint"
     },
     {
       "id": "task9-audit-19.18-apm-sdk-version-gates",

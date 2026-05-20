@@ -38,18 +38,19 @@ sources:
   path: https://developer.android.com/build/releases/gradle-plugin-api-updates
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
+last_task6_audit: '2026-05-20'
 task2b_result: fixed
 last_task2b_at: '2026-04-25T09:40:00+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
@@ -144,7 +145,9 @@ AGP 8.0 是旧 APM 插桩方案的分水岭。旧库若通过 `android.registerT
 | 方案 | 主要价值 | 短板 | 适合什么时候选 |
 |---|---|---|---|
 | 轻量开源方案（Collie、局部自研） | 成本低，能快速起步 | 归因深度、治理能力、稳定 schema 较弱 | 团队先把启动、慢帧、主线程 block、网络耗时跑通 |
-| 客户端监控框架（Matrix、KOOM） | 端侧采集能力更全，专项模块更成熟 | 接入、调参与兼容性验证成本更高 | 已经明确要做客户端专项治理 |
+| 客户端监控框架（Matrix、KOOM） | 端侧采集能力更全，专项模块更成熟 | 接入、调参与兼容性验证成本更高；Matrix Gradle Trace 插件仍依赖 Transform API，仅声明支持 AGP 3.5/4.0/4.1，AGP 8.0+ 工程不能直接接入 | 已经明确要做客户端专项治理 |
+
+> **Matrix Gradle 插件兼容性边界**：Matrix Android Gradle plugin 当前仍通过 `appExtension.registerTransform` 注册字节码插桩，依赖 `com.android.build.api.transform.*`（AGP 8.0 已移除）。官方 README 仅声明 AGP 3.5.0/4.0.0/4.1.0。AGP 8.0+ 工程接入 Matrix 时，Gradle Trace 插件不能直接使用；可以只参考端侧采集设计、非 Gradle 模块（如 Resource Canary、IO Canary），或寻找已迁到 `AsmClassVisitorFactory` / Instrumentation API 的社区分支。
 | 官方 SDK / 系统能力（JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager） | 口径稳定，系统兼容性好，适合长期维护 | `ProfilingManager` 仅限 Android 15（API 35）+；功能面通常更窄，需要自己补治理流程 | 希望先建立稳定基础指标与诊断入口 |
 | 商业 / 平台型方案（Firebase Performance、Measure、Sentry、APMPlus、Bugly） | 会话、告警、看板、权限管理、协同流程完整 | 成本、数据所有权、私有化、迁移锁定要评估 | 团队已经需要跨端看板、告警治理和组织级协作 |
 
@@ -245,7 +248,7 @@ CPU / 内存 / 网络聚合"] --> B
 |---|---|---|
 | 慢帧 / 卡顿 | `JankStats`、`FrameMetrics` | 先把系统口径稳定下来 |
 | 启动异常后的重样本 | Android 15（API 35）+ 使用 `ProfilingManager`；低版本用 Perfetto trace config / 内部抓取流程 | 指标发现问题后再取证，按设备版本选择入口 |
-| Crash / ANR | Crash SDK + `ApplicationExitInfo` | 退出原因和堆栈分别治理 |
+| Crash / ANR | Crash SDK + `ApplicationExitInfo`（Android 11 / API 30+） | 退出原因和堆栈分别治理 |
 | Java 泄漏本地复盘 | `LeakCanary` | 研发自查比线上常驻更合适 |
 | 线上内存专项 | `KOOM` 或内部专项模块 | 不和轻量基础指标混在一起 |
 | 看板、告警、权限、跨团队协作 | 平台型 / 商业方案 | 这部分不是轻量库擅长的事 |
