@@ -2,7 +2,7 @@
 title: "商业 APM 平台（Sentry、APMPlus、Bugly）"
 chapter: "19"
 section: "19.18"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,11 +18,13 @@ sources:
     path: "https://www.volcengine.com/docs/6431"
   - type: official
     path: "https://bugly.qq.com/docs/"
-pipeline_stage: task2b_pending
+  - type: official
+    path: "https://bugly.tds.qq.com/docs/"
+pipeline_stage: "task6_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: pending
+task2b_state: "fixed"
 task9_result: needs-rework
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
@@ -34,7 +36,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 
 review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: "2026-04-25T05:47:52+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
@@ -101,6 +103,17 @@ Sentry Android 文档显示，除了错误捕获，它还支持 tracing、profil
 - 面向海外用户，Sentry SaaS 可稳定访问。
 
 Sentry profiling 需要低采样。官方资料说明 Android 侧 profiling 依赖 runtime tracer；线上启用后，如果崩溃集中出现在 `libart.so`、`art::Trace::StopTracing`、`pthread_getcpuclockid` 等栈帧附近，排查顺序是降低 profiling 采样率、升级 SDK、按 Android 版本和机型灰度验证。
+
+Sentry Android 各能力存在 SDK/API 版本门槛，接入前要按版本表核对：
+
+| 能力 | 最低 SDK / API 版本 | 边界与约束 |
+|---|---|---|
+| Session Replay 录制 | Android 8（API 26）+ | 录制内容受 SDK 采样率和隐私规则控制 |
+| UI Profiling | Sentry Android SDK 8.7.0+ | 替代旧版 transaction-based profiling；当前推荐路径 |
+| Transaction-based profiling | Sentry Android SDK 6.16.0+、API 22+ | 单次最长 30 秒；Sentry 文档建议迁移到 UI Profiling |
+| App start profiling | Sentry Android SDK 7.3.0+ | 需在 SentryOptions 配置中启用 |
+
+正文示例优先用 span / UI Profiling 口径，transaction-based profiling 保留为兼容旧 SDK 的术语。接入评审时在灰度配置里按 SDK 版本和 Android 版本分桶验证。
 
 ### APMPlus：国内移动 APM 平台型方案
 
@@ -192,6 +205,17 @@ Bugly 普通版常见价值在：
 Bugly Pro 的评审口径要扩到 APM：ANR 预抓取主线程堆栈能把 5 秒超时前的主线程状态留下来，页面回放能把崩溃前的用户路径与页面快照关联，启动 Span 可以把启动过程拆成可查询阶段。启用这些能力前，要确认回放脱敏、采样率、低端机开销、数据留存和 Android 15 16KB 适配版本。
 
 如果团队只需要 crash / ANR 基础设施，普通版可能足够。如果要把 Bugly 当完整性能平台，要按 Pro 能力做 PoC，不要用普通版经验推断 Pro 版边界。
+
+Bugly Pro 各增强能力存在 SDK 版本门槛，PoC 前要确认当前集成版本是否覆盖：
+
+| 能力 | 最低 SDK 版本 | PoC 验证动作 |
+|---|---|---|
+| 页面回放（Page Replay） | Android SDK 4.4.7.3+ | 接入后触发崩溃/ANR，检查控制台是否生成回放数据 |
+| Android 15 16KB Page Size 支持 | Android SDK 4.4.6.2+ | 在 16KB page size 模拟器/真机启动 App，检查 `.so` alignment 和采集是否正常 |
+| 页面启动耗时 / Span | Android SDK 4.4.3+ | 冷启动后在控制台检查 Span 数据是否拆分到各阶段 |
+| ANR 主线程预抓取 | BuglyBuilder 配置项 `setEnableRecordAnrMainStack(true)` | 触发 ANR 后检查上报中是否包含 5s 超时前主线程堆栈 |
+
+frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能力页。如果当前集成版本低于上述最低版本，先升级 SDK 再做 PoC，否则会误判能力缺失。
 
 ## PoC 验收表
 

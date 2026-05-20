@@ -2,7 +2,7 @@
 title: Trace 抓取
 chapter: '13.2'
 section: '13.2'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
@@ -46,12 +46,12 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T15:31:00+08:00'
@@ -132,19 +132,26 @@ adb pull /data/misc/perfetto-traces/trace.perfetto-trace
 
 当追踪需求稍微复杂一些——比如需要调整 buffer 大小、开启多个数据源、或者配置 Long Trace——直接在命令行拼接参数就不太方便了。这时候可以用配置文件的方式。
 
-Perfetto 使用 Protocol Buffer 文本格式（`.pbtxt`）的配置文件，官方称为 `TraceConfig`。我们可以把完整的配置写到一个文件中，然后通过 `-c` 参数传给 `perfetto` 命令：
+Perfetto 使用 Protocol Buffer 文本格式（`.pbtxt`）的配置文件，官方称为 `TraceConfig`。我们可以把完整的配置写到一个文件中，然后通过 `-c` 参数传给 `perfetto` 命令。
+
+**Android 12+** 可以把配置文件 push 到设备上直接引用：
 
 ```bash
+adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt
 adb shell perfetto -c /data/misc/perfetto-configs/config.pbtxt \
   --txt \
   -o /data/misc/perfetto-traces/trace.perfetto-trace
 ```
 
-注意 `--txt` 参数告诉 Perfetto 配置文件是人类可读的文本格式（而非二进制 protobuf）。配置文件需要预先 `adb push` 到设备上：
+**Android 10/11** 非 root 设备受 SELinux 规则限制，配置只能通过 stdin 传入：
 
 ```bash
-adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt
+cat config.pbtxt | adb shell perfetto -c - \
+  --txt \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
 ```
+
+注意 `--txt` 参数告诉 Perfetto 配置文件是人类可读的文本格式（而非二进制 protobuf）。
 
 `TraceConfig` 文件的基本结构是这样的：
 
@@ -534,7 +541,7 @@ try {
 }
 ```
 
-抓取 Trace 时，只要在 atrace categories 中包含了 App 的包名（通过 `atrace_apps` 或命令行参数 `-a com.example.myapp`），这些自定义标记就会出现在 Perfetto UI 中 App 进程的主线程 track 上，显示为带有标签名的彩色切片。
+抓取 Trace 时，只要在 atrace categories 中包含了 App 的包名（通过 `atrace_apps` 或命令行参数 `-a com.example.myapp`），这些自定义标记就会出现在 Perfetto UI 中**调用线程对应的 track** 上，显示为带有标签名的彩色切片。如果示例在主线程调用 `Trace.beginSection`，slice 显示在主线程 track；如果在工作线程或 RenderThread 调用，slice 会出现在对应线程 track，不会统一落到主线程。跨线程操作应改用 `Trace.beginAsyncSection` / `Trace.endAsyncSection`。
 
 `Trace.beginSection` 和 `Trace.endSection` 使用的底层标签是 `ATRACE_TAG_APP`。因此，所有通过 `android.os.Trace` API 添加的标记都会归类到同一个 tag 下。
 
