@@ -1,6 +1,6 @@
 {
-  "total": 339,
-  "draft": 0,
+  "total": 340,
+  "draft": 1,
   "ready-for-review": 135,
   "finalized": 204,
   "task9_result": "needs-rework",
@@ -1503,7 +1503,7 @@
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T22:04:00+08:00",
+  "last_updated": "2026-05-21T04:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-20",
@@ -4329,7 +4329,7 @@
   "last_task9_at": "2026-05-20T07:37:11+08:00",
   "last_task2a_result": "draft-to-ready-for-review",
   "ready-to-publish": 199,
-  "last_task2a_processed_section": "21.10",
+  "last_task2a_processed_section": "14.18",
   "task6_last_review_at": "2026-05-20T20:08:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-20-20-review.md",
   "task6_last_review_sections": [
@@ -5239,6 +5239,14 @@
       "created_date": "2026-05-20",
       "gap_score": 15,
       "gap_source": "官方文档/每日信息/章节深挖"
+    },
+    "14.18": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "file": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+      "title": "Android Performance Analyzer 与系统性能分析",
+      "queue_priority": 80,
+      "created_date": "2026-05-21"
     }
   },
   "task2a_last_processed": {
@@ -5457,8 +5465,8 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
-  "last_task2a_gap_mining": "24.11",
-  "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
+  "last_task2a_gap_mining": "14.18",
+  "last_task2a_gap_mining_at": "2026-05-21T04:04:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -5612,5 +5620,15 @@
     ],
     "reason": "Phase 0 未发现空 draft；Phase 1 从 source-index、近期信息和官方文档/AOSP 方向筛出评分 >=14 的缺口并录入。"
   },
-  "last_task2a_processed_status": "ready-for-review"
+  "last_task2a_processed_status": "draft",
+  "section_14_18": {
+    "section": "14.18",
+    "title": "Android Performance Analyzer 与系统性能分析",
+    "file": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-21",
+    "queue_priority": 80
+  }
 }

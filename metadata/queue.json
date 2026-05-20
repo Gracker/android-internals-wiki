@@ -14439,24 +14439,58 @@
       "added_at": "2026-05-21T02:04:00+08:00",
       "completed_date": "2026-05-21T03:10:00+08:00",
       "completed_reason": "Task 2A 内容加工完成：MediaStore / MediaProvider 性能治理章节已写入，status 改为 ready-for-review，进入 Task 6 管线"
+    },
+    {
+      "id": "task2a-gap-20260521-14.18-android-performance-analyzer",
+      "section": "14.18",
+      "section_title": "Android Performance Analyzer 与系统性能分析",
+      "priority": 80,
+      "title": "补齐 Android Performance Analyzer 官方 profiling 工具章节",
+      "description": "Google I/O 2026 发布 Android Performance Analyzer；现有目录覆盖 Android Studio Profiler、Perfetto、GPU 工具和 ProfilingManager，但缺少 APA 在 CPU/GPU/Memory/Power 一体化分析中的工具边界。",
+      "reason": "Phase 0 未发现空 draft；Phase 1 从 2026-05-21 每日信息和官方 Android Developers Blog 发现高时效、高相关缺口。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "https://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html",
+        "https://developer.android.com/android-performance-analyzer/analyze/ai"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+          "detail": "需基于官方 APA 文档、Android Studio Panda 4+ System Trace viewer、Perfetto config、GPU counter 与 SurfaceFlinger 事件写成工具实践章节。",
+          "suggestion": "先建立 APA 与 Perfetto UI、Android Studio Profiler、AGI、SmartPerfetto 的边界，再给采集与分析流程。"
+        }
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T04:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 407,
+    "total_entries": 409,
     "p0_count": 152,
-    "last_updated": "2026-05-21T01:38:56+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 147,
+    "last_updated": "2026-05-21T04:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 148,
     "updated_date": "2026-05-21",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 147,
+    "pending": 148,
     "completed_entries": 253,
     "last_task2a_gap_mining": "24.11",
     "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T01:38:56+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-21T04:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -14896,10 +14930,44 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T01:38:56+08:00"
+    },
+    {
+      "id": "task2a-gap-20260521-14.18-android-performance-analyzer",
+      "section": "14.18",
+      "section_title": "Android Performance Analyzer 与系统性能分析",
+      "priority": 80,
+      "title": "补齐 Android Performance Analyzer 官方 profiling 工具章节",
+      "description": "Google I/O 2026 发布 Android Performance Analyzer；现有目录覆盖 Android Studio Profiler、Perfetto、GPU 工具和 ProfilingManager，但缺少 APA 在 CPU/GPU/Memory/Power 一体化分析中的工具边界。",
+      "reason": "Phase 0 未发现空 draft；Phase 1 从 2026-05-21 每日信息和官方 Android Developers Blog 发现高时效、高相关缺口。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "https://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html",
+        "https://developer.android.com/android-performance-analyzer/analyze/ai"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+          "detail": "需基于官方 APA 文档、Android Studio Panda 4+ System Trace viewer、Perfetto config、GPU counter 与 SurfaceFlinger 事件写成工具实践章节。",
+          "suggestion": "先建立 APA 与 Perfetto UI、Android Studio Profiler、AGI、SmartPerfetto 的边界，再给采集与分析流程。"
+        }
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T04:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "24.11",
-  "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00"
+  "last_task2a_gap_mining": "14.18",
+  "last_task2a_gap_mining_at": "2026-05-21T04:04:00+08:00"
 }
