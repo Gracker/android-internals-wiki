@@ -42,6 +42,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T15:20:00+08:00"
 last_task2b_at: "2026-04-25T21:43:45+08:00"
+last_task6_audit: "2026-05-20"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -81,7 +82,7 @@ Google 在 2017 年推广 ConstraintLayout 时做过一组基准测试 [已验�
 
 [图：Google 官方 benchmark 对比——RelativeLayout 嵌套 vs ConstraintLayout 的 Systrace 截图，标注 pass 数差异]
 
-理解了 View 体系性能问题的根源，我们就能有针对性地优化。下面按 inflate → measure/layout → 优化方案的顺序展开。
+理解 View 体系性能问题的根源后，优化才有明确落点：inflate 的创建成本、measure/layout 的遍历成本，以及工具和布局组件的选择边界。
 
 ## LayoutInflater.inflate() 的完整流程与耗时分析
 
@@ -177,7 +178,7 @@ public View createView(View parent, String name, Context context, AttributeSet a
 
 ### measure/layout 的递归遍历机制
 
-从 `ViewRootImpl` 的视角看，真正驱动 View 树遍历的是 `performTraversals()`。这一轮 traversal 不一定每次都完整执行 Measure、Layout、Draw 三个阶段。`requestLayout()`、窗口尺寸变化、insets 变化等条件会让 `mLayoutRequested` 为 true，这时 `performTraversals()` 会进入 `performMeasure()` 和 `performLayout()`；如果只是 `invalidate()`，很多帧会直接复用上一次布局结果，把主要成本留在 `performDraw()`。
+从 `ViewRootImpl` 的视角看，驱动 View 树遍历的是 `performTraversals()`。这一轮 traversal 不一定每次都完整执行 Measure、Layout、Draw 三个阶段。`requestLayout()`、窗口尺寸变化、insets 变化等条件会让 `mLayoutRequested` 为 true，这时 `performTraversals()` 会进入 `performMeasure()` 和 `performLayout()`；如果只是 `invalidate()`，很多帧会直接复用上一次布局结果，把主要成本留在 `performDraw()`。
 
 当系统确实需要重新布局时，Measure 和 Layout 都是自顶向下的递归过程：
 
@@ -258,12 +259,12 @@ void scheduleTraversals() {
 
 **`requestLayout()`** 标记 View 需要重新测量和布局，触发 **Measure + Layout + Draw 全流程**。而且它是**向上传播**的：一个子 View 调用 `requestLayout()`，它的父 View、祖父 View……一直到 `ViewRootImpl`，整条传递路径上的所有 View 都需要重新 measure/layout。
 
-性能差异的根本原因：
+性能差异来自执行范围：
 
 | 维度 | invalidate() | requestLayout() |
 |------|-------------|-----------------|
 | 触发方式 | 标记 dirty，下一轮 traversal 主要进入 Draw | 标记 layout request，下一轮 traversal 进入 Measure + Layout + Draw |
-| 传播方向 | dirty 区域向上传到 ViewRootImpl；真正的 Draw 再自顶向下执行 | layout request 向上传播至 ViewRootImpl |
+| 传播方向 | dirty 区域向上传到 ViewRootImpl；Draw 阶段再自顶向下执行 | layout request 向上传播至 ViewRootImpl |
 | 影响范围 | 以 dirty 区域和受影响的节点为主 | 常常从根节点重新走一轮 measure/layout，树越大代价越高 |
 | Perfetto 常见表现 | Draw 相关 slice 更显眼 | Measure/Layout 相关 slice 更显眼 |
 
@@ -299,7 +300,7 @@ Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验�
 
 这组数据能证明两件事。第一，扁平层级通常更容易减少重复 measure/layout。第二，`RelativeLayout` 这类需要多轮测量的容器，在嵌套后会更容易把 traversal 成本放大。它不能直接说明“当前 AndroidX 项目每帧一定节省多少毫秒”，因为测试对象、support library 版本、设备刷新率和 trace 口径都与今天的项目环境不同。
 
-`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。真正的收益大小，还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
+`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。收益大小还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
 
 [图：Google 官方 benchmark 的 Systrace 对比截图——80 passes vs 扁平化的 pass 数]
 
@@ -325,7 +326,7 @@ ViewBinding 常被理解为 `findViewById` 的语法糖。在初始化阶段，�
 
 在 RecyclerView 列表这种高频 bind 场景中，可以考虑以下替代方案：
 
-- 手动缓存 `findViewById` 结果，只查找真正需要动态更新的 View
+- 手动缓存 `findViewById` 结果，只查找需要动态更新的 View
 - 通过 `LayoutInflater.Factory2` 直接实例化核心控件，跳过 XML 反射路径
 - 对特别复杂的列表项，用基准测试对比 ViewBinding bind 和手动 bind 的耗时占比
 
@@ -391,7 +392,7 @@ View errorPanel = ((ViewStub) findViewById(R.id.stub_error_panel)).inflate();
 
 `<include>` 仍然由 `LayoutInflater` 在运行时处理。inflate 走到 `<include>` 节点时，会进入 `parseInclude()` 解析被包含布局的资源 ID，再继续创建其中的根 View 或 `<merge>` 子树。它的价值在于复用布局定义，inflate 成本仍然存在。
 
-真正能减少层级的是让被 include 的布局以 `<merge>` 作为根，这样父容器在运行时不会再多包一层 ViewGroup。如果这块内容很大且大多数时候不显示，再考虑改用 `ViewStub` 做延迟 inflate。
+能减少层级的是让被 include 的布局以 `<merge>` 作为根，这样父容器在运行时不会再多包一层 ViewGroup。如果这块内容很大且大多数时候不显示，再考虑改用 `ViewStub` 做延迟 inflate。
 
 ## AsyncLayoutInflater 异步布局加载
 
@@ -411,7 +412,7 @@ new AsyncLayoutInflater(context).inflate(
 
 ### 限制与注意事项
 
-`AsyncLayoutInflater` 能不能真的把 inflate 留在后台线程，关键看下面几个前提：
+`AsyncLayoutInflater` 能否把 inflate 留在后台线程，取决于几个前提：
 
 1. **parent 的 `generateLayoutParams(AttributeSet)` 必须线程安全**。如果父容器的这一步只能在主线程执行，后台 inflate 会失败并回退到 UI thread。
 2. **被创建的 View 不能在构造或初始化阶段创建 `Handler`，也不能依赖 `Looper.myLooper()`**。这类 View 在后台线程里构造时很容易抛异常。
@@ -661,7 +662,7 @@ ORDER BY slice.dur DESC;
 
 ### 误区 1：布局越少越好
 
-减少 View 数量确实能降低 measure/layout 的开销，但"过度扁平化"也有代价。如果一个 View 的 `onDraw()` 逻辑过于复杂（比如用 Canvas 手动画了一个本来应该拆成多个 View 的复杂界面），draw 阶段的耗时反而可能超过省下来的 measure 时间。
+减少 View 数量能降低 measure/layout 的开销，但"过度扁平化"也有代价。如果一个 View 的 `onDraw()` 逻辑过于复杂（比如用 Canvas 手动画了一个本来应该拆成多个 View 的复杂界面），draw 阶段的耗时反而可能超过省下来的 measure 时间。
 
 正确做法：优先减少**层级深度**（嵌套层数），再看**View 总数**。一个 5 层 50 个 View 的布局，通常比 2 层 200 个 View 的布局更慢；但一个 1 层 500 个 View 的布局也未必比 3 层 100 个 View 的布局快。
 
@@ -682,7 +683,7 @@ ORDER BY slice.dur DESC;
 
 进阶回答：
 
-- `invalidate()` 会把 dirty 区域向上传到 `ViewRootImpl`，真正的向下遍历发生在随后那一轮 Draw；`requestLayout()` 则把 layout request 向上传到 `ViewRootImpl`
+- `invalidate()` 会把 dirty 区域向上传到 `ViewRootImpl`，随后那一轮 Draw 再自顶向下遍历；`requestLayout()` 则把 layout request 向上传到 `ViewRootImpl`
 - `requestLayout()` 会触发 `scheduleTraversals()` 并通过 `Choreographer` 等待下一个 VSync 执行
 - `invalidate()` 也是异步的，它通过 `ViewRootImpl.scheduleTraversals()` 等待下一个 VSync
 - 在同一帧内多次调用 `invalidate()` 或 `requestLayout()`，只会在下一个 VSync 执行一次 doFrame
