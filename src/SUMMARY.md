@@ -397,6 +397,7 @@ tags:
   - [25.9 功耗与包体积案例集](part5-app/ch25-power-size/09-power-size-case-studies.md)
   - [25.10 Hybrid/WebView 功耗与原生化取舍](part5-app/ch25-power-size/10-hybrid-webview-power.md)
   - [25.11 ADPF Hint Session 与协程线程迁移](part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md)
+  - [25.12 Android 17 Excessive CPU Kill 与后台任务功耗治理](part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
