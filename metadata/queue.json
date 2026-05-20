@@ -1,6 +1,38 @@
 {
   "queue_entries": [
     {
+      "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
+      "section": "19.11",
+      "section_title": "JankStats",
+      "priority": 90,
+      "title": "JankStats 工具分工锚点覆盖不足",
+      "description": "Task6 闲时抽检发现正文未完整覆盖大纲锚点「工具分工」：目前只写了 JankStats 与 FrameMetrics 的分工，缺少与 Perfetto、Macrobenchmark、Firebase Performance 的数据边界对比表。属于 L3 内容覆盖问题，交 Task2B 补齐。",
+      "issue_type": "content-depth-outline-coverage",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/11-jankstats.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 audit 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充结构",
+          "location": "§和 FrameMetrics 的分工 / 大纲锚点「工具分工」",
+          "detail": "大纲要求用表格说明 JankStats、FrameMetrics、Perfetto、Macrobenchmark、Firebase Performance 的数据边界。正文目前只有 JankStats 与 FrameMetrics 的分工说明，未覆盖 Perfetto、Macrobenchmark、Firebase Performance，读者无法判断线上指标、线下基准和 trace 根因分析之间如何分工。",
+          "suggestion": "保留现有 JankStats vs FrameMetrics 判断，并补一张横向表格。建议维度：数据粒度、线上/线下、是否能定位根因、适用场景、边界；涉及 Firebase Performance 具体字段或版本能力时加官方来源或待验证标注。"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-05-20T23:28:00+08:00",
+      "original_review_log": "logs/review/2026-05-20-23-audit.md"
+    },
+    {
       "id": "task6-19.09-measure-outline-coverage",
       "section": "19.09",
       "section_title": "Measure",
@@ -14130,25 +14162,111 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T21:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-20-21-audit.md"
+    },
+    {
+      "id": "task2a-gap-21.11",
+      "section": "21.11",
+      "section_title": "云端 Profile、DM 文件与安装后编译优化",
+      "priority": 80,
+      "title": "云端 Profile、DM 文件与安装后编译优化",
+      "description": "Task 2A 知识缺口挖掘创建的新小节，评分 17/20，后续按 draft 加工流程补正文。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P3",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android16-cloud-compilation-sdm-verification.md",
+        "https://source.android.com/docs/core/runtime/configure"
+      ],
+      "gap_score": 17,
+      "material_count": 2,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T23:31:00+08:00"
+    },
+    {
+      "id": "task2a-gap-25.13",
+      "section": "25.13",
+      "section_title": "Foreground Service 超时与 JobScheduler 配额治理",
+      "priority": 80,
+      "title": "Foreground Service 超时与 JobScheduler 配额治理",
+      "description": "Task 2A 知识缺口挖掘创建的新小节，评分 18/20，后续按 draft 加工流程补正文。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P3",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/develop/background-work/services/fgs/timeout",
+        "https://developer.android.com/about/versions/15/behavior-changes-15",
+        "https://developer.android.com/about/versions/16/behavior-changes-all",
+        "https://developer.android.com/develop/background-work/services/fgs/troubleshooting"
+      ],
+      "gap_score": 18,
+      "material_count": 4,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T23:31:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 399,
+    "total_entries": 401,
     "p0_count": 167,
-    "last_updated": "2026-05-20T22:04:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 145,
+    "last_updated": "2026-05-20T23:28:00+08:00",
+    "updated_by": "task6-audit",
+    "pending_entries": 146,
     "updated_date": "2026-05-20",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 145,
+    "last_updated_by": "task6-audit",
+    "pending": 146,
     "completed_entries": 253,
     "last_task2a_gap_mining": "24.11",
     "last_task2a_gap_mining_at": "2026-05-20T21:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-20T22:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-20T23:28:00+08:00",
+  "last_updated_by": "task6-audit",
   "pending": [
+    {
+      "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
+      "section": "19.11",
+      "section_title": "JankStats",
+      "priority": 90,
+      "title": "JankStats 工具分工锚点覆盖不足",
+      "description": "Task6 闲时抽检发现正文未完整覆盖大纲锚点「工具分工」：目前只写了 JankStats 与 FrameMetrics 的分工，缺少与 Perfetto、Macrobenchmark、Firebase Performance 的数据边界对比表。属于 L3 内容覆盖问题，交 Task2B 补齐。",
+      "issue_type": "content-depth-outline-coverage",
+      "severity": "P2",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/11-jankstats.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 audit 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充结构",
+          "location": "§和 FrameMetrics 的分工 / 大纲锚点「工具分工」",
+          "detail": "大纲要求用表格说明 JankStats、FrameMetrics、Perfetto、Macrobenchmark、Firebase Performance 的数据边界。正文目前只有 JankStats 与 FrameMetrics 的分工说明，未覆盖 Perfetto、Macrobenchmark、Firebase Performance，读者无法判断线上指标、线下基准和 trace 根因分析之间如何分工。",
+          "suggestion": "保留现有 JankStats vs FrameMetrics 判断，并补一张横向表格。建议维度：数据粒度、线上/线下、是否能定位根因、适用场景、边界；涉及 Firebase Performance 具体字段或版本能力时加官方来源或待验证标注。"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-05-20T23:28:00+08:00",
+      "original_review_log": "logs/review/2026-05-20-23-audit.md"
+    },
     {
       "id": "task8-20260520-053311",
       "section": "ch13-perfetto",

@@ -347,6 +347,7 @@ tags:
   - [21.8 启动监控与度量](part5-app/ch21-startup/08-startup-monitoring.md)
   - [21.9 启动优化案例集](part5-app/ch21-startup/09-startup-case-studies.md)
   - [21.10 SDK Runtime 与广告 SDK 启动隔离性能](part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md)
+  - [21.11 云端 Profile、DM 文件与安装后编译优化](part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
@@ -401,6 +402,7 @@ tags:
   - [25.10 Hybrid/WebView 功耗与原生化取舍](part5-app/ch25-power-size/10-hybrid-webview-power.md)
   - [25.11 ADPF Hint Session 与协程线程迁移](part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md)
   - [25.12 Android 17 Excessive CPU Kill 与后台任务功耗治理](part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md)
+  - [25.13 Foreground Service 超时与 JobScheduler 配额治理](part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
