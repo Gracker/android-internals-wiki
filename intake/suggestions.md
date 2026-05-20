@@ -2489,3 +2489,16 @@
 - **位置**：Perfetto 与 GPU 工具观测 L264；优化清单 L282
 - **问题**：本节已经把 `gpu_busy` 写成“若存在则纳入对照，counter 名称和精度因厂商实现而异”，但相关章节 2.10 仍有“Android 16 统一 gpu_busy 轨道名称/百分比语义”的强断言。读者跨章阅读时会得到相反口径。
 - **建议**：同步 2.10 或在本节引用 2.10 时加边界说明：Android CDD 要求支持 GPU profiling 的设备输出符合 GPU counter proto，但不保证所有设备都有统一可用的 `gpu_busy` 名称与精度。
+
+
+## [Task9 Deep Review] 8.11 Native 库加载与动态链接性能 — 2026-05-20 — ART / NativeLoader 源码链路锚点
+- **类型**：原理链/源码引用
+- **位置**：Native 库加载在启动链路里的位置 L102-L111
+- **问题**：正文概括 `System.loadLibrary()` 会从 Java 层进入运行时再到 Bionic `dlopen()` / `android_dlopen_ext()`，结论正确，但缺少 ART 与 libnativeloader 的源码锚点；读者容易把它理解成 Java 直接调用 Bionic，忽略 ClassLoader namespace、caller location、NativeBridge 等中间决策。
+- **建议**：补一条源码链路：`libcore/ojluni/src/main/native/Runtime.c::Runtime_nativeLoad` → `art/openjdkjvm/OpenjdkJvm.cc::JVM_NativeLoad` → `art/runtime/jni/java_vm_ext.cc::JavaVMExt::LoadNativeLibrary` → `art/libnativeloader/native_loader.cpp::OpenNativeLibrary` / `NativeLoaderNamespace::Load()` → `android_dlopen_ext(..., ANDROID_DLEXT_USE_NAMESPACE)`；说明 namespace 不是 Bionic 单独决定，而是由 ClassLoader/native loader 共同传入。
+
+## [Task9 Deep Review] 8.11 Native 库加载与动态链接性能 — 2026-05-20 — 厂商 linker config 样本缺口
+- **类型**：知识盲区/版本差异
+- **位置**：扩展：厂商配置与预装库差异 L218-L222
+- **问题**：正文已指出厂商 linker config 会改变 namespace / public library / 预装库暴露边界，但只留下 `[待补充]`，没有给出 AOSP linkerconfig 产物、Pixel 样本或厂商 ROM 对照。这个缺口不影响主线结论，但会限制读者判断“某台设备能 dlopen 私有库”是不是平台契约。
+- **建议**：补 1-2 个可复核样本：AOSP `system/linkerconfig` 生成规则、Pixel 设备上的 linker config 产物、至少一个厂商 ROM 差异；同时列出排查动作（收集 linker config、`dlopen failed` logcat、`/proc/<pid>/maps`）并标注“设备可访问 ≠ Android API 保证”。
