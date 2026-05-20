@@ -13701,6 +13701,41 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T11:41:31+08:00"
+    },
+    {
+      "id": "task2a-gap-8.11-native-library-loading-dynamic-linker",
+      "section": "8.11",
+      "section_title": "Native 库加载与动态链接性能",
+      "priority": 80,
+      "title": "Native 库加载、Bionic linker 与 16KB Page Size 兼容性缺口",
+      "description": "source-index 中已有 Bionic linker namespace、NDK 16KB page size、三方 native 库兼容性三类高质量素材；现有 8.x 启动章节和 4.7 16KB Page Size 章节尚缺少从 native 库加载视角串起启动耗时、动态链接、namespace 与发布合规的独立小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
+      ],
+      "material_paths": [
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md",
+        "DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://developer.android.com/ndk/reference/group/libdl",
+        "https://cs.android.com/android/platform/superproject/+/master:bionic/linker"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-20T13:04:00+08:00",
+      "score": {
+        "material_richness": 5,
+        "book_relevance": 4,
+        "reader_demand": 4,
+        "timeliness": 5,
+        "total": 18
+      }
     }
   ],
   "metadata": {
