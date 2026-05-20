@@ -2,7 +2,7 @@
 title: Measure
 chapter: '19'
 section: '19.09'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -32,22 +32,25 @@ sources:
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: '2026-04-24T14:55:00+08:00'
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T22:07:00+08:00"
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 0 / P1 1 / P2 0 / P3 0. P1: Measure retention 文档路径失效，当前 Dashboard API 为 30-365 天、默认 30 天，正文仍写 7-365 天、默认 90 天。"
 ---
 # Measure
 
