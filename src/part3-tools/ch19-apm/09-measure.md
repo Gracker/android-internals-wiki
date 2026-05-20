@@ -32,25 +32,27 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
-task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: "reviewed"
-task2b_state: fixed
-task2b_result: fixed
+reviewed_date: "2026-05-20"
+task6_result: needs-rework
+task6_state: reviewed
+task9_state: "pending"
+task2b_state: pending
+task2b_result: pending
+task2b_reopened_at: "2026-05-20T20:08:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: '2026-04-24T14:55:00+08:00'
 task9_result: pending
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T22:07:00+08:00"
+task6_reviewed_date: "2026-05-20"
+last_task6_at: "2026-05-20T20:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-20-20-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 0 / P1 1 / P2 0 / P3 0. P1: Measure retention 文档路径失效，当前 Dashboard API 为 30-365 天、默认 30 天，正文仍写 7-365 天、默认 90 天。"
+task9_review_notes: "2026-05-20 task9 idle audit P1 已由 Task2B 修复：retention 口径为 30-365 天、默认 30 天；Task6 复审发现能力范围/平台对比大纲覆盖不足，已回炉 Task2B。"
 ---
 # Measure
 
@@ -154,7 +156,7 @@ Firebase Performance 更偏 Google 生态里的低门槛性能监控；Sentry �
 
 ## 使用建议
 
-Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时不要一上来接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回放、符号能否还原、告警能否进入团队处理流程。
+Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时不要一次接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回放、符号能否还原、告警能否进入团队处理流程。
 
 只有当这些环节都跑通，平台型 APM 才能给团队省时间。否则它只是多收了一批数据。
 
@@ -224,7 +226,7 @@ Measure 的开源形态意味着团队可以自托管，也意味着平台工作
 
 这些成本没有处理好，开源平台也会变成难维护的内部系统。试点时要从最小可用范围开始：Crash / ANR + 会话时间线 + 版本维度，跑通后再加性能 trace。
 
-服务端保留期在 dashboard 中可配，范围是 30-365 天，默认 30 天（通过 `GET/PATCH /apps/:id/retention` 管理）。这个值会直接影响存储成本、附件保留时间和删除策略。[已验证: Dashboard API docs/api/dashboard/README.md retention endpoint]
+服务端保留期在 Dashboard 中可配，范围是 30-365 天，默认 30 天（通过 `GET/PATCH /apps/:id/retention` 管理）。这个值会直接影响存储成本、附件保留时间和删除策略。[已验证: Dashboard API docs/api/dashboard/README.md retention endpoint]
 
 ## 和 OpenTelemetry 的关系
 
@@ -241,7 +243,7 @@ Measure 的开源形态意味着团队可以自托管，也意味着平台工作
 
 ## 隐私策略要在接入前定清
 
-[已验证: 官方文档, docs/features/feature-network-monitoring.md；docs/features/feature-identify-users.md；docs/features/feature-bug-report-android.md；docs/features/configuration-options.md；docs/features/feature-data-retention.md]
+[已验证: 官方文档, docs/features/feature-network-monitoring.md；docs/features/feature-identify-users.md；docs/features/feature-bug-report-android.md；docs/features/configuration-options.md；docs/api/dashboard/README.md retention endpoint]
 
 Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图遮罩、数据保留期这些控制点，但默认策略仍要由接入团队自己定。试点阶段如果没有把规则写清，后面补救成本会很高。
 

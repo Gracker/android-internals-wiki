@@ -2502,3 +2502,10 @@
 - **位置**：扩展：厂商配置与预装库差异 L218-L222
 - **问题**：正文已指出厂商 linker config 会改变 namespace / public library / 预装库暴露边界，但只留下 `[待补充]`，没有给出 AOSP linkerconfig 产物、Pixel 样本或厂商 ROM 对照。这个缺口不影响主线结论，但会限制读者判断“某台设备能 dlopen 私有库”是不是平台契约。
 - **建议**：补 1-2 个可复核样本：AOSP `system/linkerconfig` 生成规则、Pixel 设备上的 linker config 产物、至少一个厂商 ROM 差异；同时列出排查动作（收集 linker config、`dlopen failed` logcat、`/proc/<pid>/maps`）并标注“设备可访问 ≠ Android API 保证”。
+
+## [Task6 Review] 19.09 Measure — 2026-05-20
+- **类型**：需补充素材 / 需补充结构
+- **位置**：§核心能力（L118-L129）、§和 Firebase、Sentry 的差别（L143-L153）
+- **问题**：能力范围只列“能力/适合的问题”，缺 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航的数据来源、关键字段和适用判断；平台对比仍是段落说明，缺 Firebase / Sentry / Measure 横向表格。
+- **建议**：由 Task2B 补能力范围字段级表格与平台对比表；涉及官方能力边界时补验证来源或 `[待验证]` 标注。Task6 不裁决技术真伪，不在本轮补写新内容。
+- **review 日志**：logs/review/2026-05-20-20-review.md
