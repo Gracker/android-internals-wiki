@@ -188,7 +188,8 @@
     "1.12",
     "13.5",
     "21.10",
-    "12.2"
+    "12.2",
+    "8.11"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -207,27 +208,24 @@
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
     "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
-    "src/part2-performance/ch12-apk-network/02-network-performance.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
   ],
   "review_summary": "Task9 2026-05-20 01: 闲时抽检 12.2；P0 1 / P1 1 / P2 1 / P3 1；已回炉到 Task2B。",
   "task6_review_summary": {
-    "date": "2026-05-19",
-    "time": "20:25",
+    "date": "2026-05-20",
+    "time": "14:13",
     "sections": [
-      "14.9",
-      "12.3",
-      "20.3"
+      "8.11"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
     ],
-    "result": "pass-light-edit; no new task6 rework items; downstream queue/task9 blockers remain",
-    "small_fixes": 1,
+    "result": "pass-light-edit; no new task6 rework items; task9 pending",
+    "small_fixes": 11,
     "new_rework_items": 0,
     "auto_promoted": [],
-    "note": "Task6 completed writing review for 3 revisiting chapters. 12.3 fixed one filler word. 14.9/12.3/20.3 not auto-promoted because task9_result != pass-tech-review and/or queue has pending entries."
+    "note": "Task6 completed writing review for 8.11. No auto-promotion because task9_result != pass-tech-review."
   },
   "issues_by_section": {
     "1.6": {
@@ -1473,33 +1471,43 @@
       "reviewed_at": "2026-05-20T07:37:11+08:00",
       "log": "logs/deep-review/2026-05-20-07-deep-review.md",
       "summary": "P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
+    },
+    "8.11": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-20T14:13:00+08:00",
+      "task6_log": "logs/review/2026-05-20-14-review.md",
+      "task6_new_rework": false,
+      "task6_note": "首次 review 通过；小修 10 处正文术语/表述与 frontmatter 元数据；无新增 L3/L4 回炉项，转 Task9 技术复核。"
     }
   },
   "total_review_sections": 165,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-20T08:14:00+08:00",
+  "last_updated": "2026-05-20T14:13:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-20",
-    "time": "08:14",
-    "reviewed_at": "2026-05-20T08:14:00+08:00",
+    "time": "14:13",
+    "reviewed_at": "2026-05-20T14:13:00+08:00",
     "sections": [
-      "19.16",
-      "17.4"
+      "8.11"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/16-profiling-manager.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
     ],
-    "log": "logs/review/2026-05-20-08-review.md",
-    "mode": "revisiting-review",
-    "l1_l2_fixes": 2,
+    "log": "logs/review/2026-05-20-14-review.md",
+    "mode": "first-review",
+    "l1_l2_fixes": 11,
     "l3_l4_issues": 0,
     "technical_risk_markers": 0,
     "results": {
-      "19.16": "pass-light-edit / task2b_pending(known Task9 queue)",
-      "17.4": "pass-light-edit / task2b_pending(known Task9 queue)"
+      "8.11": "pass-light-edit / task9_pending"
     },
     "auto_promoted": []
   },
@@ -4252,27 +4260,23 @@
   "last_task2a_file": "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
   "last_task6_review": "2026-05-20",
   "last_task6_sections": [
-    "19.16",
-    "17.4"
+    "8.11"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch19-apm/16-profiling-manager.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
   ],
-  "last_task6_at": "2026-05-20T08:14:00+08:00",
+  "last_task6_at": "2026-05-20T14:13:00+08:00",
   "last_task6_review_detail": {
-    "mode": "revisiting-review",
-    "reviewed_at": "2026-05-20T08:14:00+08:00",
+    "mode": "first-review",
+    "reviewed_at": "2026-05-20T14:13:00+08:00",
     "sections": [
-      "19.16",
-      "17.4"
+      "8.11"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/16-profiling-manager.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
     ],
-    "log": "logs/review/2026-05-20-08-review.md",
-    "summary": "Task6 本轮完成 19.16/17.4 写作层 revisiting review：2 个章节均 pass-light-edit；仅同步 Task6 元数据；无新增写作回炉项；两章保留 Task9 needs-rework / task2b_pending，未自动晋升。"
+    "log": "logs/review/2026-05-20-14-review.md",
+    "summary": "Task6 本轮完成 8.11 写作层首次 review：pass-light-edit；小修 11 处；无新增回炉项；未自动晋升，等待 Task9 技术复核。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4281,11 +4285,10 @@
   "last_task2a_result": "draft-to-ready-for-review",
   "ready-to-publish": 199,
   "last_task2a_processed_section": "21.10",
-  "task6_last_review_at": "2026-05-20T08:14:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-20-08-review.md",
+  "task6_last_review_at": "2026-05-20T14:13:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-20-14-review.md",
   "task6_last_review_sections": [
-    "19.16",
-    "17.4"
+    "8.11"
   ],
   "sections_status": {
     "22.11": {
@@ -5203,26 +5206,22 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "revisiting-review",
-    "reviewed_at": "2026-05-20T08:14:00+08:00",
+    "mode": "first-review",
+    "reviewed_at": "2026-05-20T14:13:00+08:00",
     "sections": [
-      "19.16",
-      "17.4"
+      "8.11"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/16-profiling-manager.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
     ],
-    "log": "logs/review/2026-05-20-08-review.md",
-    "summary": "Task6 本轮完成 19.16/17.4 写作层 revisiting review：2 个章节均 pass-light-edit；仅同步 Task6 元数据；无新增写作回炉项；两章保留 Task9 needs-rework / task2b_pending，未自动晋升。"
+    "log": "logs/review/2026-05-20-14-review.md",
+    "summary": "Task6 本轮完成 8.11 写作层首次 review：pass-light-edit；小修 11 处；无新增回炉项；未自动晋升，等待 Task9 技术复核。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch19-apm/16-profiling-manager.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch19-apm/16-profiling-manager.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5458,9 +5457,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "14.9",
-    "12.3",
-    "20.3"
+    "8.11"
   ],
   "task2b_progress": [
     {
@@ -5489,5 +5486,5 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-20-08-review.md"
+  "last_task6_review_log": "logs/review/2026-05-20-14-review.md"
 }
