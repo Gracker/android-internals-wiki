@@ -13493,6 +13493,39 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-20T07:37:11+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task9-audit-18.7-textureview-blast-version-boundary",
+      "section": "18.7",
+      "section_title": "TextureView 合成链路",
+      "priority": 85,
+      "title": "TextureView 宿主窗口提交路径缺少 BLAST 版本边界",
+      "description": "章节 frontmatter 标注适用 Android 4.0/API 14 - Android 16/API 36，但正文把宿主窗口提交统一写成 BLAST Adapter / BLAST Transaction / BLASTBufferQueue。AOSP android-10.0.0_r1 的 ViewRootImpl.java、SurfaceView.java 未出现 BLAST/BLASTBufferQueue；android-11.0.0_r1 才出现 BLASTBufferQueue 相关实现，android-16.0.0_r1 ViewRootImpl/SurfaceView 当前路径使用 BLASTBufferQueue。旧版本仍是 App Window Surface/BufferQueue 提交给 SurfaceFlinger，不能把 BLAST 当成 API 14+ 全版本路径。",
+      "reason": "[Deep Tech Review] TextureView 章节把 Android 11+ BLASTBufferQueue 路径泛化到 API 14+ 全版本，需补 Android 10 及以前的 BufferQueue/Window Surface 边界。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/07-textureview.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-08-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L84-L87“第三阶段：BLAST 提交”与 L250 宿主窗口侧 fence",
+          "detail": "章节 frontmatter 标注适用 Android 4.0/API 14 - Android 16/API 36，但正文把宿主窗口提交统一写成 BLAST Adapter / BLAST Transaction / BLASTBufferQueue。AOSP android-10.0.0_r1 的 ViewRootImpl.java、SurfaceView.java 未出现 BLAST/BLASTBufferQueue；android-11.0.0_r1 才出现 BLASTBufferQueue 相关实现，android-16.0.0_r1 ViewRootImpl/SurfaceView 当前路径使用 BLASTBufferQueue。旧版本仍是 App Window Surface/BufferQueue 提交给 SurfaceFlinger，不能把 BLAST 当成 API 14+ 全版本路径。",
+          "suggestion": "把“第三阶段：BLAST 提交”改为“宿主窗口提交（Android 11+ 为 BLASTBufferQueue）”；图中 BBQ 节点命名为 App Window BufferQueue / BLASTBufferQueue，并在正文补一条版本边界：Android 10 及以前按 ViewRootImpl/Window Surface 的 BufferQueue 路径理解，Android 11+ 当前 AOSP 再落到 BLAST Transaction。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T08:36:07+08:00"
     }
   ],
   "metadata": {
