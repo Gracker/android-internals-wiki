@@ -1,7 +1,7 @@
 {
   "total": 338,
-  "draft": 2,
-  "ready-for-review": 132,
+  "draft": 1,
+  "ready-for-review": 133,
   "finalized": 204,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4299,9 +4299,9 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 155,
-  "last_task2a_at": "2026-05-20T14:04:00+08:00",
-  "last_task2a_section": "8.11",
-  "last_task2a_file": "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
+  "last_task2a_at": "2026-05-21T00:55:00+08:00",
+  "last_task2a_section": "21.11",
+  "last_task2a_file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
   "last_task6_review": "2026-05-20",
   "last_task6_sections": [
     "19.09 Measure"
