@@ -45,13 +45,14 @@ task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: "pass-light-edit"
+last_task6_audit: "2026-05-20"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
 section: "15.3"
 related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 review_round: 5
-review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
+review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned-word cleanup in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 ---
 
 
@@ -87,7 +88,7 @@ review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 ba
 
 性能优化最容易掉进一个陷阱:花了很多时间分析和修改,最后却说不清到底好没好。
 
-如果一轮优化结束后，只能说"感觉顺了一点""看起来没那么卡了"，那这轮工作其实还没闭环。性能问题要回答的是"比之前好多少""影响了多少人""值得不值得优先修"——这些判断都离不开指标。
+如果一轮优化结束后，只能说"感觉顺了一点""看起来没那么卡了"，那这轮工作还没有完成验证。性能问题要回答的是"比之前好多少""影响了多少人""值得不值得优先修"——这些判断都离不开指标。
 
 所以这一节先把"什么数字值得长期盯、什么数字适合拿来诊断、什么数字适合做发布门禁"讲清楚。
 
@@ -201,7 +202,7 @@ Google Play 的 Android Vitals 将 TTID 作为核心启动指标之一。冷启�
 
 ### TTFD(Time to Full Display)
 
-TTFD 度量的是 App 从启动到"内容完全可用"的时间。和 TTID 的区别在于:TTID 只管第一帧画出来,但那可能只是一个空壳布局(加载中的骨架屏、空白列表);TTFD 关注的是真正的业务内容加载完成--列表数据拿到了、图片显示了、用户可以开始交互了。
+TTFD 度量的是 App 从启动到"内容完全可用"的时间。和 TTID 的区别在于:TTID 只管第一帧画出来,但那可能只是一个空壳布局(加载中的骨架屏、空白列表);TTFD 关注的是完整业务内容加载完成--列表数据拿到了、图片显示了、用户可以开始交互了。
 
 开发者需要手动调用 `reportFullyDrawn()` 来标记 TTFD:
 
@@ -215,7 +216,7 @@ public void onDataLoaded(List<Item> items) {
 }
 ```
 
-这个调用时机需要斟酌:太早则 TTFD 失去意义(内容还没加载完),太晚则会把真正的首屏问题掩盖掉。TTFD 本身是启动指标,和是否抓 trace 是两回事。
+这个调用时机需要斟酌:太早则 TTFD 失去意义(内容还没加载完),太晚则会把首屏问题掩盖掉。TTFD 本身是启动指标,和是否抓 trace 是两回事。
 
 Android 16 的 system-triggered profiling 建立在 `ProfilingManager` 之上。应用可以注册 `TRIGGER_TYPE_APP_FULLY_DRAWN` 这类触发器,让系统在 `reportFullyDrawn()` 发生时自动收集一段 Perfetto profile。它适合调试启动问题,但不改变 TTID / TTFD 的定义,也不应该拿来充当启动指标的证据来源。
 
@@ -317,7 +318,7 @@ for (exit in exits) {
 
 内存指标的重要性常常被低估。在 Android 上,内存问题不只是 OOM--一个 App 占用内存过多,会触发系统更频繁的 GC、增加 LMK(Low Memory Killer)杀进程的概率、影响其他 App 的可用内存,最终以卡顿或闪退的形式呈现给用户。
 
-所以内存指标最容易出现的误区,就是"只在 OOM 时才看"。很多性能差评在真正 OOM 之前很久就已经开始发生了。
+所以内存指标最容易出现的误区,就是"只在 OOM 时才看"。很多性能差评在发生 OOM 之前很久就已经开始了。
 
 ### PSS(Proportional Set Size)
 
@@ -440,7 +441,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 均值的问题在于它会被极端值拉偏。假设你有一组帧时间数据:[8, 8, 8, 8, 8, 8, 8, 8, 8, 200],均值是 27.2ms,看起来不差。但 P50 是 8ms(很好),P90 是 8ms(也不错),P99 是 200ms(有一个极端长帧)。P99 暴露了均值完全掩盖的尾部问题。
 
-在性能领域,我们真正关心的是最差体验,而非平均体验--因为用户离开的原因通常是那一次最差的体验,而不是平均表现。所以 P90 和 P99 在性能监控中的价值远高于均值。
+在性能领域,更该关注的是最差体验,而非平均体验--因为用户离开的原因通常是那一次最差的体验,而不是平均表现。所以 P90 和 P99 在性能监控中的价值远高于均值。
 
 一个健康的指标分布应该是:P90 接近 P50,P99 略高于 P90。如果 P99 远高于 P50(比如 P50=8ms 但 P99=150ms),说明系统存在偶发的严重问题,需要排查。
 
