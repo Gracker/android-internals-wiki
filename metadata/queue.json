@@ -14393,6 +14393,37 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T01:38:56+08:00"
+    },
+    {
+      "id": "task2a-gap-20260521-24.12-mediastore-mediaprovider-performance",
+      "section": "24.12",
+      "section_title": "MediaStore 与 MediaProvider 性能治理",
+      "priority": 80,
+      "title": "补齐 MediaStore / MediaProvider 共享媒体访问性能治理章节",
+      "description": "现有章节只在存储架构中零散提到 MediaStore、MediaProvider 和 scoped storage，缺少面向 App 的媒体枚举、缩略图、FUSE、兼容媒体转码与线上排查路径。",
+      "reason": "Task 2A Phase 1 缺口挖掘：AOSP MediaProvider / scoped storage / compatible media transcoding 官方文档有独立主题，SUMMARY 中无对应实战章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "gap_score": "17/20",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/12-mediastore-mediaprovider-performance.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/core/media/media-provider",
+        "https://source.android.com/docs/core/media/media-transcoding",
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://developer.android.com/training/data-storage/shared/media",
+        "https://developer.android.com/social-and-messaging/guides/media-thumbnails",
+        "https://developer.android.com/media/platform/transcoding",
+        "packages/providers/MediaProvider/"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T02:04:00+08:00"
     }
   ],
   "metadata": {
