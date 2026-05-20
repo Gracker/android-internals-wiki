@@ -5817,5 +5817,52 @@
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-21",
     "queue_priority": 80
-  }
+  },
+  "task2b_rework_history": [
+    {
+      "date": "2026-05-21T07:17:00+08:00",
+      "sections": [
+        {
+          "section": "18.20",
+          "title": "渲染管线分析方法论",
+          "queue_id": "task9-audit-20260521-18.20-drawframetask-queuebuffer-source",
+          "source": "task9-deep-tech-review",
+          "priority": 95,
+          "fixes": [
+            "DrawFrameTask 源码路径: frameworks/native/libs/hwui → frameworks/base/libs/hwui",
+            "queueBuffer 阻塞语义: BufferQueue 已满 → 需结合 binder callback/EGL throttle fence/consumer latch 拆分",
+            "SQL 标题: 找 BufferQueue 阻塞 → 找 BufferQueue/Producer 侧等待点"
+          ]
+        },
+        {
+          "section": "19.09",
+          "title": "Measure",
+          "queue_id": "task6-19.09-measure-outline-coverage",
+          "source": "task6-review",
+          "priority": 90,
+          "fixes": [
+            "补充能力范围表: 10 项能力 × 6 维度（数据对象/关键字段/来源/适合判断/边界）",
+            "补充平台对比表: Firebase/Sentry/Measure × 7 维度（开源托管/错误监控/性能trace/会话上下文/部署成本/独特优势/适合场景）"
+          ]
+        },
+        {
+          "section": "4.2",
+          "title": "Linux 内存管理",
+          "queue_id": "task9-4.2-mglru-version-madvise-20260512",
+          "source": "task9-deep-tech-review",
+          "priority": 85,
+          "fixes": [
+            "MGLRU \"Android 16 强制默认/所有 GKI 设备必须启用\" → 6.12 common kernel 包含 MGLRU，是否启用取决于 CONFIG/sysfs",
+            "madvise(MADV_COLD) \"掉帧减少约 10%\" → 降级为[待验证]"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 3,
+        "remaining_p95": 0,
+        "remaining_p90": 2,
+        "remaining_p85": 4
+      }
+    }
+  ]
 }

@@ -52,13 +52,13 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: '2026-05-05'
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 2，MGLRU 源码锚点、Android16/17 版本与 MADV_COLD 数据需回炉。'
 
 ---
@@ -278,9 +278,9 @@ MGLRU 在 Linux 6.1 合入主线，但 Android 设备的实际启用状态取决
 | Android 13 | common 5.10/5.15 | 可选 | OEM 自行决定是否开启 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
 | Android 14 | common 5.15/6.1 | 编译可用 | 多数旗舰 Pixel/高通平台已启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
 | Android 15 | GKI 6.1/6.6 | 编译可用 | 主流旗舰默认启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
-| Android 16 | GKI 6.12 | 强制默认 | GKI 基线化，所有 GKI 设备必须启用 | `cat /sys/kernel/mm/lru_gen/enabled` |
+| Android 16 | GKI 6.12 | GKI 基线可用 | 6.12 common kernel 包含 MGLRU；是否启用取决于 CONFIG_LRU_GEN/CONFIG_LRU_GEN_ENABLED 和 `/sys/kernel/mm/lru_gen/enabled` | `cat /sys/kernel/mm/lru_gen/enabled` |
 
-Android 16 (GKI 6.12) 是一个分水岭：MGLRU 成为 GKI 内核的强制基线特性，终结了传统双链表 LRU 在高性能 Android 设备上的地位。对于非 GKI 设备（部分低端机型使用旧内核），MGLRU 的可用性仍取决于 OEM 的内核配置。
+Android 16 (GKI 6.12) 的 common kernel 包含 MGLRU 基础设施。是否作为平台强制基线，需要 CDD/VTS 或 GKI config 引用确认——当前可验证的判断方式是检查 `CONFIG_LRU_GEN`、`CONFIG_LRU_GEN_ENABLED` 和 `/sys/kernel/mm/lru_gen/enabled`。对于非 GKI 设备（部分低端机型使用旧内核），MGLRU 的可用性仍取决于 OEM 的内核配置。
 
 [待验证: Android 16/17 非 GKI 低端设备的 MGLRU 覆盖率]
 
@@ -364,7 +364,9 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 
 Silk 论文提出的“让 GC 告诉内核哪些页面是冷的”思路，在 Android 17 有了具体实现。ART 虚拟机在 GC 标记阶段识别出老年代中未被引用的对象后，对它们所在的内存页调用 `madvise(MADV_COLD)`，主动向内核标记这些页面为冷页。
 
-内核收到 `MADV_COLD` 提示后，在 MGLRU 的代际模型中将这些页面降级到更老的 generation，使它们优先被回收。内核不再需要等到扫描 LRU 链表才发现这些页面没人用，GC 直接给了信号，回收命中率提升。实测数据显示系统掉帧减少约 10%。
+内核收到 `MADV_COLD` 提示后，在 MGLRU 的代际模型中将这些页面降级到更老的 generation，使它们优先被回收。内核不再需要等到扫描 LRU 链表才发现这些页面没人用，GC 直接给了信号，回收命中率提升。
+
+[待验证: "系统掉帧减少约 10%" 缺少 AOSP commit、官方 release note 或独立 benchmark；当前来源为 archived external-review，未找到 ART / libcore / runtime 中的具体 commit 或 jank 指标口径]
 
 这个机制直接解决了 MGLRU 在 Android 上的核心问题——GC 遍历对象时访问的页面被内核误判为“热的”（前面提到的 pseudo-hot 问题）。GC 访问完就调 `madvise(MADV_COLD)` 打个招呼，内核下次回收就不用猜了。
 
