@@ -1,8 +1,8 @@
 {
   "total": 340,
   "draft": 1,
-  "ready-for-review": 135,
-  "finalized": 204,
+  "ready-for-review": 134,
+  "finalized": 205,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -190,7 +190,8 @@
     "21.10",
     "12.2",
     "8.11",
-    "19.09"
+    "19.09",
+    "19.11"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -211,23 +212,32 @@
     "src/part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md",
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md",
-    "src/part3-tools/ch19-apm/09-measure.md"
+    "src/part3-tools/ch19-apm/09-measure.md",
+    "src/part3-tools/ch19-apm/11-jankstats.md",
+    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
   ],
-  "review_summary": "Task9 2026-05-20 01: 闲时抽检 12.2；P0 1 / P1 1 / P2 1 / P3 1；已回炉到 Task2B。",
+  "review_summary": "Task6 2026-05-21 04: review 19.11/5.9/3.1；19.11 自动 finalized；5.9/3.1 回炉 Task2B 做发布主线融合。",
   "task6_review_summary": {
-    "date": "2026-05-20",
-    "time": "20:08",
+    "date": "2026-05-21",
+    "time": "04:09",
     "sections": [
-      "19.09 Measure"
+      "19.11",
+      "5.9",
+      "3.1"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md"
+      "src/part3-tools/ch19-apm/11-jankstats.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
     ],
-    "result": "needs-rework",
-    "small_fixes": 5,
-    "new_rework_items": 1,
-    "auto_promoted": [],
-    "note": "Task6 复审 Measure：L1/L2 小修 5 处；能力范围/平台对比两个 L3 锚点不足，已回炉 Task2B。"
+    "result": "1 pass-light-edit(auto-finalized), 2 needs-rework(Task2B)",
+    "small_fixes": 11,
+    "new_rework_items": 2,
+    "auto_promoted": [
+      "19.11"
+    ],
+    "note": "19.11 Task9 已通过且 queue 无 pending，自动晋升 finalized；5.9/3.1 仍有源码调研素材块未融入发布主线，回炉 Task2B。"
   },
   "issues_by_section": {
     "1.6": {
@@ -713,7 +723,14 @@
       "p2": 1,
       "p3": 0,
       "task6_l3_l4": 1,
-      "task9_pending": 4
+      "task9_pending": 4,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
+      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_new_rework": true,
+      "task6_note": "L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，新增 Task6 queue priority 90。"
     },
     "23.6": {
       "p0": 0,
@@ -1498,33 +1515,64 @@
       "task6_reviewed_at": "2026-05-20T20:08:00+08:00",
       "task6_log": "logs/review/2026-05-20-20-review.md",
       "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。"
+    },
+    "19.11": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
+      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": true,
+      "auto_promoted_at": "2026-05-21T04:09:00+08:00",
+      "task6_note": "L1 禁用词/黑话小修 6 处；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。",
+      "task9_result": "pass-tech-review"
+    },
+    "3.1": {
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
+      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_new_rework": true,
+      "task6_note": "L1 小修 1 处；参考资料后源码调研素材块/AIW 注释仍需主线融合，新增 Task6 queue priority 90。"
     }
   },
-  "total_review_sections": 165,
+  "total_review_sections": 166,
   "next_review_candidates": [],
   "ready_for_review": 104,
-  "last_updated": "2026-05-21T04:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-21T04:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-20",
-    "time": "20:08",
-    "reviewed_at": "2026-05-20T20:08:00+08:00",
+    "date": "2026-05-21",
+    "time": "04:09",
+    "reviewed_at": "2026-05-21T04:09:00+08:00",
     "sections": [
-      "19.09 Measure"
+      "19.11",
+      "5.9",
+      "3.1"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md"
+      "src/part3-tools/ch19-apm/11-jankstats.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
     ],
-    "log": "logs/review/2026-05-20-20-review.md",
-    "mode": "revisit/normal-review",
-    "l1_l2_fixes": 5,
+    "log": "logs/review/2026-05-21-04-review.md",
+    "mode": "normal-review",
+    "l1_l2_fixes": 11,
     "l3_l4_issues": 2,
     "technical_risk_markers": 0,
-    "new_rework_items": 1,
-    "auto_promoted": []
+    "auto_promoted": [
+      "19.11"
+    ],
+    "summary": "Task6 review 3 节：19.11 pass-light-edit 并自动 finalized；5.9/3.1 因素材块主线融合问题回炉 Task2B。"
   },
   "task9_last_review": "2026-05-20",
-  "ready_to_publish": 200,
+  "ready_to_publish": 201,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -4299,7 +4347,7 @@
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
-  "total_review_files": 155,
+  "total_review_files": 158,
   "last_task2a_at": "2026-05-21T00:55:00+08:00",
   "last_task2a_section": "21.11",
   "last_task2a_file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",

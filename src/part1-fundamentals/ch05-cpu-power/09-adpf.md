@@ -44,10 +44,10 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: 'task6_pending'
-task6_state: 'revisiting'
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
 task9_state: 'pending'
-task2b_state: 'fixed'
+task2b_state: "pending"
 task2b_result: 'fixed'
 last_task2b_at: '2026-05-21T03:22:56+08:00'
 reviewed_by: openclaw-task6
@@ -58,8 +58,10 @@ last_task9_at: "2026-05-21T00:29:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_review_log: "logs/deep-review/2026-05-21-00-deep-review.md"
-last_task6_at: "2026-05-21T02:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-21-02-review.md"
+last_task6_at: "2026-05-21T04:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-04-review.md"
+task6_reviewed_date: "2026-05-21"
+task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。"
 ---
 
 
@@ -71,7 +73,7 @@ last_task6_review_log: "logs/review/2026-05-21-02-review.md"
 
 这个滞后在高帧率场景中尤为致命。以 120 fps 为例，一帧的预算只有 8.33 ms。如果系统在 2-3 个采样周期（可能 10-30 ms）后才完成提频，App 已经连续掉了几帧。反过来，负载下降后系统缓慢降频又浪费了功耗。
 
-ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后——让 App 直接告诉系统"我接下来需要多少性能"，而不是等系统自己猜。系统拿到这个信息后，可以更精准、更快速地调整 CPU/GPU 频率和核心分配。这不是一个单一 API，而是 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成的框架，覆盖了"预告需求→动态调频→热管理→模式适配"的完整性能调控流程。
+ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后：App 直接告诉系统"我接下来需要多少性能"，系统再据此调整 CPU/GPU 频率和核心分配。ADPF 由 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成，覆盖"预告需求→动态调频→热管理→模式适配"的性能调控流程。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager]
 
@@ -132,7 +134,7 @@ Android 15 为 Performance Hint API 引入了两个重要增强。
 
 ### Android 16 的 Headroom API
 
-Android 16 新增的不是 `SystemHealthManager` 这个类，而是它上的 `getCpuHeadroom()` 和 `getGpuHeadroom()` 等 API。它们返回的是 available CPU / GPU capacity headroom，用来回答一个更具体的问题，在当前负载下，离容量上限还剩多少余量。
+Android 16 新增的是 `SystemHealthManager#getCpuHeadroom()` 和 `getGpuHeadroom()` 等 API。它们返回 available CPU / GPU capacity headroom，用来回答一个更具体的问题：在当前负载下，离容量上限还剩多少余量。
 
 这组 API 适合做较低频的策略判断，比如场景切换、画质挡位调整、后台调优线程的周期性采样。它不适合塞进 frame loop。官方文档明确写到，每次调用至少会触发一次同步 Binder，单次调用可能超过 1 ms，不建议在 critical thread 上等待结果。实际用法应该放在 worker thread，并遵守 `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()` 暴露的最小轮询间隔。
 
@@ -155,7 +157,7 @@ Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal he
 
 ### 热状态的层级模型
 
-App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`getCurrentThermalStatus()`、`addThermalStatusListener()` 和 `getThermalHeadroom()` 都挂在 `PowerManager` 上。它返回的不是绝对温度，而是热状态等级。对 App 来说，要回答的问题不是“芯片现在多少度”，而是“系统已经把设备放在哪个热状态上”。
+App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`getCurrentThermalStatus()`、`addThermalStatusListener()` 和 `getThermalHeadroom()` 都挂在 `PowerManager` 上。它返回热状态等级；对 App 来说，更有用的判断对象是“系统已经把设备放在哪个热状态上”，芯片绝对温度通常不是可直接决策的输入。
 
 热状态从低到高分为七个等级：
 
