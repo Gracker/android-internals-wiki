@@ -7,24 +7,26 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-20"
 review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T04:25:00+08:00"
+last_task9_at: "2026-05-20T21:20:00+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-27 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。自动晋升 finalized。"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 1 / P1 1 / P2 0 / P3 0. P0: OutputConfiguration.setStreamUseCase() 源码片段与 android14-release 不一致；P1: STREAM_USE_CASE mandatory combinations 与 concurrent combinations 口径混淆，且缺 Android 14+ CROPPED_RAW/vendor range。"
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
 ---
 
 <!-- outline-start -->

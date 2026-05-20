@@ -14086,6 +14086,48 @@
       "gap_source": "官方文档/每日信息/章节深挖",
       "created_by": "task2a-knowledge-gap",
       "added_at": "2026-05-20T21:12:00+08:00"
+    },
+    {
+      "id": "task9-audit-18.14-camera-stream-use-case-source-mismatch",
+      "section": "18.14",
+      "section_title": "Camera 渲染管线",
+      "priority": 95,
+      "title": "Camera Stream Use Case 源码片段与 mandatory 组合口径错误",
+      "description": "章节的 OutputConfiguration.setStreamUseCase() 源码片段与 AOSP android14-release 不一致，并把 concurrent camera mandatory combinations 误写成 STREAM_USE_CASE capability 的 guaranteed combinations；Android 14+ CROPPED_RAW/vendor range 版本边界也缺失。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-20",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-20-21-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/源码片段与 android14-release 不一致",
+          "location": "L107-L120：OutputConfiguration.setStreamUseCase() 关键源码片段",
+          "detail": "正文给出的 android14-release 片段使用 `if (isConfigurationValid(streamUseCase)) { mStreamUseCase = streamUseCase; }`，但 AOSP android14-release 的 `frameworks/base/core/java/android/hardware/camera2/params/OutputConfiguration.java` 没有 `isConfigurationValid()`；实际实现是先以 `SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW` 作为 maxUseCaseValue 校验，并对 `(streamUseCase > maxUseCaseValue && streamUseCase < VENDOR_START)` 抛 `IllegalArgumentException`，随后直接 `mStreamUseCase = streamUseCase`。Android 13/14/15/16 tag 均为这一类实现，只是 Android 13 的 max 到 VIDEO_CALL，Android 14+ 到 CROPPED_RAW。当前片段会误导读者以为非法 use case 被静默忽略。",
+          "suggestion": "把源码片段改为 AOSP 实际实现：Android 13 使用 `SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL` 作为最大公开值，Android 14+ 使用 `SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW`；非法公开范围内值会抛 `IllegalArgumentException`，vendor range 从 `SCALER_AVAILABLE_STREAM_USE_CASES_VENDOR_START` 开始。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/mandatory stream combination 口径混淆",
+          "location": "L96-L134：Stream Use Case 常量表与 Guaranteed Stream Combination 表",
+          "detail": "正文适用范围到 Android 16，但常量表缺 Android 14+ 的 `SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW = 0x6` 和 `SCALER_AVAILABLE_STREAM_USE_CASES_VENDOR_START = 0x10000`。更关键的是，L126-L134 列出的 YUV/PRIV/JPEG s1440p 组合对应 `MandatoryStreamCombination.java` 中的 `sConcurrentStreamCombinations`（并发 camera mandatory combinations），不是 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` 对应的 `sStreamUseCaseCombinations`。真实的 stream-use-case mandatory list 会为每个 stream 绑定 PREVIEW / RECORD / STILL_CAPTURE / PREVIEW_VIDEO_STILL / VIDEO_CALL 等 use case，且组合远多于当前 5 行。",
+          "suggestion": "把这一节拆成两部分：① `SCALER_AVAILABLE_STREAM_USE_CASES` 常量表补 CROPPED_RAW 与 vendor range，并标注 Android 13 无 CROPPED_RAW、Android 14+ 有；② Guaranteed Stream Combination 改引用 `SCALER_MANDATORY_USE_CASE_STREAM_COMBINATIONS` / `sStreamUseCaseCombinations`，删除当前并发 camera 组合表，或明确那张表属于 `SCALER_MANDATORY_CONCURRENT_STREAM_COMBINATIONS`，不能作为 STREAM_USE_CASE capability 的保证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-20T21:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-20T21:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-20-21-audit.md"
     }
   ],
   "metadata": {
