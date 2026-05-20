@@ -421,6 +421,7 @@ tags:
   - [26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger](part5-app/ch26-observability/12-versioned-diagnostics.md)
   - [26.13 ApplicationStartInfo 与启动归因上报](part5-app/ch26-observability/13-application-start-info.md)
   - [26.14 性能实验统计与分位值回归判定](part5-app/ch26-observability/14-performance-experiment-statistics.md)
+  - [26.15 Android Vitals 与 Play Console 质量指标归因](part5-app/ch26-observability/15-android-vitals-play-console-quality.md)
 
 ---
 
