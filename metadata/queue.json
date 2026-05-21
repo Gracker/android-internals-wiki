@@ -15389,24 +15389,79 @@
       "gap_score": 18,
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T17:04:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260521-7.13-systemui-multidisplay-source-anchors",
+      "section": "7.13",
+      "section_title": "SystemUI 性能分析",
+      "priority": 95,
+      "title": "SystemUI 多 Display / desktop mode 源码锚点错误",
+      "description": "闲时抽检发现 7.13 的 Foldable 多 Display 与 Android 16 desktop mode 段落引用了错误的 SystemUI / WM Shell 源码路径、方法名和类名。",
+      "reason": "[Deep Tech Review Audit] 7.13 的 SystemUI 多 Display / desktop mode 段落存在 AOSP main 源码路径、方法名和类名错误，需 Task2B 回收修正。",
+      "issue_type": "source-code-accuracy-version-difference-systemui-multidisplay",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/13-systemui-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-17-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性",
+          "location": "L403-L407：NavigationBarController / NavigationBarControllerImpl 路径与数据结构",
+          "detail": "正文把 NavigationBarController/Impl 写在 packages/SystemUI/src/com/android/systemui/statusbar/phone/，并写成 mNavigationBarViews: HashMap<Int, NavigationBarView>。AOSP main 下这两个文件位于 packages/SystemUI/src/com/android/systemui/navigationbar/；NavigationBarController.java 是接口，NavigationBarControllerImpl.java 使用 SparseArray<NavigationBar> mNavigationBars，不是 HashMap<Int, NavigationBarView>。旧路径在 AOSP main 404。",
+          "suggestion": "把源码锚点改为 packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarController.java 与 NavigationBarControllerImpl.java；数据结构改成 SparseArray<NavigationBar> mNavigationBars，再通过 getNavigationBarView(displayId) 取出对应 NavigationBarView。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/版本差异",
+          "location": "L426-L430、L443：DisplayContent 系统装饰方法名与判断逻辑",
+          "detail": "正文写 DisplayContent.supportsSystemDecorations() / DisplayContent.shouldShowSystemDecors()。AOSP main 的方法是 DisplayContent.isSystemDecorationsSupported()，内部读取 DisplayWindowSettings.shouldShowSystemDecorsLocked(this)、Display.FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS，并包含 desktop mode force-enable 分支；没有 supportsSystemDecorations() 或 DisplayContent.shouldShowSystemDecors() 这两个锚点。",
+          "suggestion": "按 mainline 改成 DisplayContent.isSystemDecorationsSupported() + DisplayWindowSettings.shouldShowSystemDecorsLocked(DisplayContent)；多 Display/System Decor 结论要按 Android 12-17 分支写清，不要把 Android 10 旧口径直接外推到 Android 16/17 desktop windowing。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码引用准确性",
+          "location": "L432-L437：CentralSurfacesImpl wallpaper/displayId 锚点",
+          "detail": "正文写 CentralSurfacesImpl.onWallpaperVisibilityChanged(displayId, visible)，但 AOSP main 的 CentralSurfacesImpl 未检索到该方法。带 displayId 的 wallpaper visibility 更新锚点出现在 packages/SystemUI/src/com/android/systemui/navigationbar/TaskbarDelegate.java：updateWallpaperVisibility(boolean visible, int displayId) 调用 OverviewProxyService.updateWallpaperVisibility(displayId, visible)。",
+          "suggestion": "删除 CentralSurfacesImpl.onWallpaperVisibilityChanged(displayId, visible) 锚点；若要讲外屏/任务栏 wallpaper visibility，改用 TaskbarDelegate.updateWallpaperVisibility(boolean visible, int displayId) 及 OverviewProxyService 调用链。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/版本差异",
+          "location": "L210-L212：Android 16 desktop mode 的 WM Shell 类名与角色",
+          "detail": "正文写 WM Shell 中的 DesktopModeController 与 SystemUI 频繁交互。AOSP main 的 libs/WindowManager/Shell/src/com/android/wm/shell/desktopmode/ 目录未找到 DesktopModeController.java；当前可核对锚点包括 DesktopTasksController.kt、DesktopDisplayEventHandler.kt、DesktopRepository.kt、DesktopMode.java，以及 SystemUI 侧 TaskbarDelegate.java。继续写 DesktopModeController 会让读者按不存在的类检索。",
+          "suggestion": "把 DesktopModeController 改成当前分支存在的 DesktopTasksController / DesktopDisplayEventHandler / DesktopRepository 等 WM Shell 锚点，并把 TaskbarDelegate 作为 SystemUI 交互点；Universal Cursor、多桌面视图、CPU/显存阶跃增长等结论需要补具体官方文档、trace 或设备基线，否则降级为待验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T17:28:40+08:00",
+      "review_log": "logs/deep-review/2026-05-21-17-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 418,
-    "p0_count": 177,
-    "last_updated": "2026-05-21T17:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 153,
+    "total_entries": 419,
+    "p0_count": 178,
+    "last_updated": "2026-05-21T17:28:40+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 154,
     "updated_date": "2026-05-21",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 153,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 154,
     "completed_entries": 263,
     "last_task2a_gap_mining": "22.15",
     "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T17:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-21T17:28:40+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",

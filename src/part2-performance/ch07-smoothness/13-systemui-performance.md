@@ -2,7 +2,7 @@
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
@@ -71,22 +71,27 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: "reviewed"
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
-task2b_result: fixed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-26"
+last_task6_audit: "2026-05-21"
 task6_result: "pass-light-edit"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
-last_task9_at: "2026-04-27T16:20:00+08:00"
+task9_reviewed_date: "2026-05-21"
+last_task9_at: "2026-05-21T17:28:40+08:00"
 last_task2b_at: "2026-04-26T21:49:23+08:00"
-
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T17:28:40+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-17-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-17-audit.md"
+task9_review_notes: "2026-05-21 Task9 idle audit: P0 SystemUI 多 Display / desktop mode 源码锚点错误，写入 queue 条目 task9-audit-20260521-7.13-systemui-multidisplay-source-anchors。"
 ---
 
 # 7.13 SystemUI 性能分析
