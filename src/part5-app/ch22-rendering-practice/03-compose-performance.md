@@ -14,20 +14,20 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
-task2b_result: fixed
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task2b_result: pending
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
-task9_result: "needs-rework"
+task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T08:47:50+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 3 / P1 2 / P2 3；Strong Skipping 默认版本、@Immutable 契约、LazyLayoutCacheWindow API 示例仍需回炉；Compose Profiler/benchmark 来源仍缺。"
+task9_reviewed_date: 2026-05-21
+last_task9_at: "2026-05-21T19:35:29+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
+task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1 / P2 3，需 Task2B 修正 Android 17/API 口径、ART GC 数据支撑与 Compose 细节。"
 last_task6_review_log: "logs/review/2026-05-14-16-review.md"
 ---
 

@@ -15503,6 +15503,90 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T17:28:40+08:00",
       "review_log": "logs/deep-review/2026-05-21-17-audit.md"
+    },
+    {
+      "id": "task9-20260521-4.9-cleaner-execution-path-error",
+      "section": "4.9",
+      "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "priority": 95,
+      "title": "CleanerDaemon 与 java.lang.ref.Cleaner 执行路径错误",
+      "description": "章节把 sun.misc.Cleaner 写成由不存在的 CleanerDaemon 独立执行，并把 public java.lang.ref.Cleaner 统一写成由 FinalizerDaemon#doClean 触发；这与 android-16.0.0_r1 libcore 的 Daemons、ReferenceQueue、CleanerImpl 实现不符。",
+      "reason": "[Deep Tech Review] Cleaner 执行路径存在 P0 事实错误：android-16 Daemons 只有 HeapTask/ReferenceQueue/Finalizer/Watchdog 四个 daemon；sun.misc.Cleaner 在 ReferenceQueueDaemon 的 enqueuePending() 中执行；public Cleaner.create() 使用 CleanerImpl 自有线程，只有 system cleaner 复用 FinalizerReference.queue。",
+      "issue_type": "source-code-accuracy-principle-chain-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-19-deep-review.md",
+        "AOSP libcore android-16.0.0_r1 Daemons.java / ReferenceQueue.java / Cleaner.java / CleanerImpl.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/原理链错误",
+          "location": "L307、L348-L389：Cleaner 两条路径与版本对照表",
+          "detail": "android-16.0.0_r1 `Daemons.DAEMONS` 只包含 HeapTaskDaemon、ReferenceQueueDaemon、FinalizerDaemon、FinalizerWatchdogDaemon，没有 CleanerDaemon。`sun.misc.Cleaner` 在 `ReferenceQueue.enqueuePending()` 中由 ReferenceQueueDaemon 直接 `cl.clean()`。public `java.lang.ref.Cleaner.create()` 会通过 `CleanerImpl.start()` 创建 Cleaner-N daemon 线程；只有 Android 隐藏的 system cleaner（`Cleaner.createSystemCleaner()` / `SystemCleaner.cleaner()`）把 queue 设为 `FinalizerReference.queue`，随后由 `FinalizerDaemon.processReference()` 的 `doClean()` 执行。",
+          "suggestion": "把表格改成三列：sun.misc.Cleaner → ReferenceQueueDaemon/enqueuePending；public java.lang.ref.Cleaner.create() → CleanerImpl 自有线程；Android system cleaner → FinalizerReference.queue + FinalizerDaemon#doClean。删除 CleanerDaemon。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码锚点/版本边界",
+          "location": "L363-L366、L393：源码路径和行号锚点",
+          "detail": "`FinalizerReference.java` 的路径应为 `libcore/luni/src/main/java/java/lang/ref/FinalizerReference.java`；`doClean()` 位于 `libcore/libart/src/main/java/java/lang/Daemons.java`；正文写 `Daemons.java L41 定义五个 daemon` 与 android-16 源码不一致。",
+          "suggestion": "更新源码路径和行号：Daemons.java L59-L64 daemon 数组、L363-L411 processReference/doFinalize/doClean、ReferenceQueue.java L236-L279 enqueuePending、Cleaner.java L178-L221 create/createSystemCleaner、CleanerImpl.java L113-L144 start。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T19:35:29+08:00",
+      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+    },
+    {
+      "id": "task9-20260521-22.3-android17-gc-api-data-error",
+      "section": "22.3",
+      "section_title": "Jetpack Compose 性能优化",
+      "priority": 95,
+      "title": "Compose-GC 因果链的 Android 17/API 与数据支撑错误",
+      "description": "章节适用范围是 Android 10-16，却新增 Android 17 段落并写成 API 35；同时给出 ART CC/Young Gen pause 的具体毫秒数和源码行号，但没有固定 AOSP tag、设备、trace 或 GC log 证据。",
+      "reason": "[Deep Tech Review] 22.3 的 Android 17/API 映射和 ART GC 数据口径存在 P0/P1 问题，不能作为发布稿技术事实。",
+      "issue_type": "version-difference-data-support-source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-19-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/事实错误",
+          "location": "L538-L566：GC-Composition 因果链与 API Level 表",
+          "detail": "frontmatter 标注适用 Android 10 (API 29) - Android 16 (API 36)，正文却写“Android 17 的 ART CC GC 已通过源码验证”，表格又写 Android 17 (API 35)。按当前项目版本口径，API 35 是 Android 15，Android 16 是 API 36，Android 17 应为 API 37/preview。",
+          "suggestion": "删除或降级 Android 17 段落；若保留，改成 Android 17 preview 待验证并使用正确 API 口径，同时把 applicable_versions、last_verified_against 与源码 tag 对齐。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/源码锚点不足",
+          "location": "L540-L559：Young Generation pause、safepoint 和 heap.cc 行号",
+          "detail": "“Young Generation pause 通常 <5ms”“1-3ms”“主线程 safepoint <0.5ms”属于测试/观测结论，正文没有设备、版本、测试路径、Perfetto/GC log 样本或固定 AOSP tag；`heap.cc 第2168-2173行` 也未绑定 android-16/android-17 具体 tag。",
+          "suggestion": "补一组可复核数据：设备/刷新率/Compose Foundation/Kotlin/Android build、Macrobenchmark 或手工滚动路径、Perfetto/ART GC log；否则把毫秒数改成定性描述，并删掉未 pin 的行号。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T19:35:29+08:00",
+      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
     }
   ],
   "metadata": {
