@@ -17,21 +17,40 @@ related_chapters: ["7.7", "2.4", "22.1"]
 pipeline_stage: task2b_pending
 task2b_result: pending
 task2b_state: pending
-task6_state: revisiting
+task6_state: reviewed
+last_task6_at: "2026-05-21T20:11:00+08:00"
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_result: pass-light-edit
+reviewed_date: "2026-05-21"
+task6_result: needs-rework
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-21
 last_task9_at: "2026-05-21T19:35:29+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
 task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1 / P2 3，需 Task2B 修正 Android 17/API 口径、ART GC 数据支撑与 Compose 细节。"
-last_task6_review_log: "logs/review/2026-05-14-16-review.md"
+last_task6_review_log: "logs/review/2026-05-21-20-review.md"
 ---
-
 # Jetpack Compose 性能优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 重组控制：Strong Skipping、Stability 标记与 lambda memoize
+- 🔹 状态读取阶段：Composition / Layout / Draw 的触发范围差异
+- 🔹 Pausable Composition 与 LazyColumn 预取的版本边界
+- 🔹 Compose 编译器报告、Layout Inspector、Compose Profiler 与 Perfetto 观测
+- 🔹 Compose 与 View 互操作的生命周期和性能边界
+- 🔹 版本迁移与实战检查清单
+
+### 扩展（待整合）
+
+- 🔸 Pausable Composition / LazyLayoutCacheWindow 源码调研补充
+- 🔸 ART GC 与 Compose 重组性能因果链
+
+<!-- outline-end -->
 
 Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
@@ -62,7 +81,7 @@ composeCompiler {
 }
 ```
 
-这个变化改变了 Compose 性能优化的优先级。
+这个变化会调整 Compose 性能优化的优先级。
 
 **Strong Skipping 之前**：只有参数类型被标记为 `@Stable` 或 `@Immutable` 的 Composable 函数才会被跳过。Lambda 参数默认不被 memoize，每次父 Composable 重组时，lambda 参数都是新对象（引用不等），导致接收 lambda 的子 Composable 无法跳过。
 
@@ -131,7 +150,6 @@ data class UserProfile(
 
 // 当 displayName 变化时，Compose 可能跳过重组，UI 不会更新
 ```
-
 
 ## 状态读取阶段：性能差异的来源
 
@@ -502,7 +520,7 @@ public sealed interface PausedComposition {
 ```kotlin
 ComposeFeatureFlag.Companion.PausableComposition
 ```
-这不是一个用户可简单启用的 feature flag，而是 compiler plugin 层面的代码生成支持。
+这个 feature flag 面向 compiler plugin 的代码生成支持，不是普通用户可直接开启的运行时开关。
 
 **版本注意**：Compose Foundation 1.10.0-alpha05 曾默认启用，但 1.10.6 因稳定性问题默认禁用。
 
@@ -538,7 +556,7 @@ interface LazyLayoutCacheWindow {
 Android 17 的 ART Concurrent Copying（CC）GC 与 Compose 重组性能之间的因果链已通过源码验证：
 
 1. **GC 停顿本身不是 Compose 滑动性能的主要矛盾**：CC GC 的 Young Generation pause 通常 <5ms，而一次不必要的全页重组可能 >50ms。
-2. **真正的性能杠杆是减少重组次数**：Strong Skipping Mode（Kotlin 2.0+）通过减少不必要的重组，间接降低 Young Generation 的内存分配压力，形成良性循环。
+2. **性能优化重点是减少重组次数**：Strong Skipping Mode（Kotlin 2.0+）通过减少不必要的重组，间接降低 Young Generation 的内存分配压力，形成良性循环。
 3. **Compose 的 GC 压力来源**：recomposition 期间大量分配 Snapshot 对象、remember 缓存和 Composable 调用栈——这些对象的生命周期很短，主要在 Young Generation 被回收。
 
 ### ART GC 源码级验证
@@ -601,7 +619,7 @@ mutableStateOf<T>.value = newValue
 | 避免不必要的全页重组 | ↓ 间接减少分配 | ↑↑ 帧率提升最显著 | ⭐⭐⭐ |
 | 调整 GC 参数（DeviceConfig） | 可调整 pause 时间 | 效果有限 | ⭐ |
 
-**结论**：Compose 性能问题的首要优化方向是减少不必要的重组，而非调优 GC 参数。在 GC 参数上花费的时间ROI很低。
+**结论**：Compose 性能问题的首要优化方向是减少不必要的重组，而非调优 GC 参数。在 GC 参数上花费的时间 ROI 很低。
 
 [AIW-源码调研-2026-05-16]
 
@@ -615,7 +633,7 @@ mutableStateOf<T>.value = newValue
 - Compose Foundation **1.10.6**：因稳定性问题默认禁用
 - 稳定版（1.10.x）：启用状态取决于具体版本，非强制默认开启
 
-这意味着 Android 16 + Compose 1.10 的组合**不一定默认启用 Pausable Composition**，需要确认目标 Foundation 版本。
+因此，Android 16 + Compose 1.10 的组合**不一定默认启用 Pausable Composition**，需要确认目标 Foundation 版本。
 
 **Android Studio Compose Profiler 入口**（Ladybug 2024.2.1+ Feature Drop）：
 - 路径：View → Tool Windows → Profiler → 选择进程 → CPU 时间线 → 主线程 Compose activity

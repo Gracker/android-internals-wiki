@@ -15524,7 +15524,8 @@
       ],
       "material_paths": [
         "logs/deep-review/2026-05-21-19-deep-review.md",
-        "AOSP libcore android-16.0.0_r1 Daemons.java / ReferenceQueue.java / Cleaner.java / CleanerImpl.java"
+        "AOSP libcore android-16.0.0_r1 Daemons.java / ReferenceQueue.java / Cleaner.java / CleanerImpl.java",
+        "intake/suggestions.md（含 review 意见）"
       ],
       "review_issues": [
         {
@@ -15540,11 +15541,19 @@
           "location": "L363-L366、L393：源码路径和行号锚点",
           "detail": "`FinalizerReference.java` 的路径应为 `libcore/luni/src/main/java/java/lang/ref/FinalizerReference.java`；`doClean()` 位于 `libcore/libart/src/main/java/java/lang/Daemons.java`；正文写 `Daemons.java L41 定义五个 daemon` 与 android-16 源码不一致。",
           "suggestion": "更新源码路径和行号：Daemons.java L59-L64 daemon 数组、L363-L411 processReference/doFinalize/doClean、ReferenceQueue.java L236-L279 enqueuePending、Cleaner.java L178-L221 create/createSystemCleaner、CleanerImpl.java L113-L144 start。"
+        },
+        {
+          "severity": "P1",
+          "type": "Task6复审确认/技术风险待回炉",
+          "location": "Cleaner / CloseGuard 的版本对照表与源码路径",
+          "detail": "Task6 复审不裁决源码真伪，但该段仍保留 CleanerDaemon、java.lang.ref.Cleaner 与 FinalizerReference 执行路径等 Task9 已标记的高风险表述。发布前需由 Task2B 按 Task9 deep-review 修正。",
+          "suggestion": "按 logs/deep-review/2026-05-21-19-deep-review.md 的 P0/P1 问题修正 Cleaner 执行路径、源码路径与 API level 边界，修复后再回到 Task6/Task9。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T19:35:29+08:00",
-      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+      "original_review_log": "logs/review/2026-05-21-20-review.md"
     },
     {
       "id": "task9-20260521-22.3-android17-gc-api-data-error",
@@ -15566,7 +15575,8 @@
       ],
       "material_paths": [
         "logs/deep-review/2026-05-21-19-deep-review.md",
-        "intake/research-gaps.md"
+        "intake/research-gaps.md",
+        "intake/suggestions.md（含 review 意见）"
       ],
       "review_issues": [
         {
@@ -15582,11 +15592,19 @@
           "location": "L540-L559：Young Generation pause、safepoint 和 heap.cc 行号",
           "detail": "“Young Generation pause 通常 <5ms”“1-3ms”“主线程 safepoint <0.5ms”属于测试/观测结论，正文没有设备、版本、测试路径、Perfetto/GC log 样本或固定 AOSP tag；`heap.cc 第2168-2173行` 也未绑定 android-16/android-17 具体 tag。",
           "suggestion": "补一组可复核数据：设备/刷新率/Compose Foundation/Kotlin/Android build、Macrobenchmark 或手工滚动路径、Perfetto/ART GC log；否则把毫秒数改成定性描述，并删掉未 pin 的行号。"
+        },
+        {
+          "severity": "P1",
+          "type": "Task6复审确认/素材块与技术口径待回炉",
+          "location": "GC-Composition 因果链 / 源码调研补充 / 版本迁移段",
+          "detail": "Task6 已补 outline 并修 L1 表述，但章节仍保留 Android 17/API 映射、Young Generation pause 数据口径、AOSP master 行号与 Compose 细节等 Task9 已标记的 P0/P1/P2 技术风险，且源码调研补充尚未完全融入正文。",
+          "suggestion": "由 Task2B 按 logs/deep-review/2026-05-21-19-deep-review.md 修正版本/API 口径、补数据来源与固定 tag，再把源码调研素材归并到正文或删去未验证结论。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T19:35:29+08:00",
-      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+      "original_review_log": "logs/review/2026-05-21-20-review.md"
     }
   ],
   "metadata": {

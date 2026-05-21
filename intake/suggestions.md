@@ -2776,3 +2776,17 @@
   - 最近 daily-info：Android Performance Analyzer 已有 14.18；Compose First / View 迁移已有 22.15；Android 16 Buffer Stuffing Recovery 已有 2.25；Android 17 MessageQueue / DeliQueue 已有 1.13 与 7.8。
   - AOSP/官方文档抽查：ProfilingTrigger API 37、APA 官方页、BiometricService/NfcService 源码入口暂不足以单独成节；NFC/Biometric/Android Halo/Android Cars 与全书性能主线相关性不足。
 - **避免重复方向**：下次挖掘优先避开 APA、ProfilingManager、Android 17 NPU、SDM/Cloud Profile、Buffer Stuffing Recovery、Compose First、DeliQueue、Android 17 Excessive CPU。
+
+## [Task6 Review] 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界 — 2026-05-21
+- **类型**：需确认 / 需回炉
+- **位置**：Cleaner / CloseGuard 的版本对照表与源码路径
+- **问题**：Task6 复审不裁决源码真伪，但章节仍保留 Task9 已标记的 CleanerDaemon、java.lang.ref.Cleaner 与 FinalizerReference 执行路径高风险表述。
+- **建议**：按 `logs/deep-review/2026-05-21-19-deep-review.md` 修正 Cleaner 执行路径、源码路径与 API level 边界。
+- **review 日志**：logs/review/2026-05-21-20-review.md
+
+## [Task6 Review] 22.3 Jetpack Compose 性能优化 — 2026-05-21
+- **类型**：需确认 / 需补充素材
+- **位置**：GC-Composition 因果链 / 源码调研补充 / 版本迁移段
+- **问题**：Task6 已补 outline 并修 L1 表述，但章节仍保留 Task9 已标记的 Android 17/API 映射、GC 数据口径、AOSP master 行号与 Compose 细节风险，源码调研补充尚未完全融入正文。
+- **建议**：由 Task2B 修正版本/API 口径、补数据来源与固定 tag，再把源码调研素材归并到正文或删去未验证结论。
+- **review 日志**：logs/review/2026-05-21-20-review.md
