@@ -1,7 +1,7 @@
 {
   "total": 360,
-  "draft": 22,
-  "ready-for-review": 150,
+  "draft": 21,
+  "ready-for-review": 151,
   "finalized": 188,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -199,7 +199,8 @@
     "18.23",
     "22.15",
     "15.5",
-    "23.10"
+    "23.10",
+    "5.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -232,9 +233,10 @@
     "src/part3-tools/ch15-methodology/05-online-monitoring.md",
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
+    "src/part5-app/ch23-memory-practice/10-memory-advice-api.md",
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
-  "review_summary": "Task2A 2026-05-21 23: 加工 23.10 Memory Advice API 与游戏内存压力治理；status ready-for-review，进入 Task6 管线。",
+  "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-21",
     "time": "20:11",
@@ -1612,8 +1614,8 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-22T00:12:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-22T01:04:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "20:11",
@@ -4426,15 +4428,15 @@
     }
   ],
   "last_task2a_processed": {
-    "date": "2026-05-21",
-    "time": "15:04",
-    "section": "26.16",
-    "file": "src/part5-app/ch26-observability/16-online-storage-io-sqlite-observability.md",
+    "date": "2026-05-22",
+    "time": "01:04",
+    "section": "5.16",
+    "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
     "result": "ready-for-review",
-    "source": "Clippings 14/16/17 + Android docs + AOSP paths"
+    "source": "empty-draft-priority"
   },
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md",
-  "last_task2a_processed_date": "2026-05-21",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+  "last_task2a_processed_date": "2026-05-22",
   "task9_last_review_detail": {
     "date": "2026-05-19",
     "time": "19:36",
@@ -4497,9 +4499,9 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "total_review_files": 24,
-  "last_task2a_at": "2026-05-21T12:04:00+08:00",
-  "last_task2a_section": "2.25",
-  "last_task2a_file": "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md",
+  "last_task2a_at": "2026-05-22T01:04:00+08:00",
+  "last_task2a_section": "5.16",
+  "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
   "last_task6_review": "2026-05-21",
   "last_task6_sections": [
     "15.5",
@@ -4536,7 +4538,7 @@
   "last_task9_at": "2026-05-21T19:35:29+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "2.25",
+  "last_task2a_processed_section": "5.16",
   "task6_last_review_at": "2026-05-21T20:11:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-21-20-review.md",
   "task6_last_review_sections": [
@@ -5504,17 +5506,16 @@
     }
   },
   "task2a_last_processed": {
-    "date": "2026-05-21",
-    "time": "23:04",
-    "section": "23.10",
-    "file": "src/part5-app/ch23-memory-practice/10-memory-advice-api.md",
+    "date": "2026-05-22",
+    "time": "01:04",
+    "section": "5.16",
+    "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
     "result": "ready-for-review",
     "sources": [
-      "developer.android.com/games/sdk/memory-advice/overview",
-      "developer.android.com/games/sdk/memory-advice/start",
-      "developer.android.com/games/optimize/memory-allocation",
-      "android.googlesource.com/platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h",
-      "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
+      "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md",
+      "https://source.android.com/docs/core/perf/performance-hint-api",
+      "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+      "https://ai.google.dev/edge/litert/overview"
     ]
   },
   "task2a_last_gap_mining": {
@@ -5905,7 +5906,7 @@
     ],
     "reason": "5.3 只留下 GPU+NPU 协同调度占位；5.11/5.14 分别偏端侧 AI 管线与 NPU 访问边界，缺少面向性能分析的异构负载调度、可观测性和功耗归因章节。"
   },
-  "last_task2a_processed_status": "draft",
+  "last_task2a_processed_status": "ready-for-review",
   "section_21_11": {
     "section": "21.11",
     "title": "云端 Profile、DM 文件与安装后编译优化",
@@ -6039,10 +6040,15 @@
     "section": "5.16",
     "title": "GPU/NPU 异构负载调度与功耗归因",
     "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
-    "status": "draft",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "pending",
+    "task6_result": "pending",
+    "reviewed_by": null,
+    "reviewed_date": null,
+    "last_task2a_at": "2026-05-22T01:04:00+08:00",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-22",
-    "gap_score": 16,
-    "pipeline_stage": "task2a_pending"
+    "gap_score": 16
   }
 }

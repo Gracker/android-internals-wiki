@@ -15883,18 +15883,19 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
       ],
       "material_paths": [
-        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md#扩展-GPU-NPU-的协同调度概念",
         "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md",
         "DeepResearch/2026-05-15-android-17-npu-litert-aicore.md",
         "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md",
         "https://source.android.com/docs/core/perf/performance-hint-api",
-        "https://ai.google.dev/edge/litert/"
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+        "https://ai.google.dev/edge/litert/overview",
+        "https://perfetto.dev/docs/data-sources/battery-counters"
       ],
       "gap_score": {
         "素材丰富度": 4,
@@ -15904,7 +15905,9 @@
         "total": 16
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-22T00:12:00+08:00"
+      "added_at": "2026-05-22T00:12:00+08:00",
+      "completed_date": "2026-05-22",
+      "completed_reason": "Task 2A 内容加工完成，章节状态已改为 ready-for-review，进入 Task 6 管线。"
     }
   ],
   "metadata": {
