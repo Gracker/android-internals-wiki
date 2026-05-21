@@ -63,12 +63,13 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task9_result: pass-tech-review
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
 last_task9_at: '2026-05-12T22:15:00+08:00'
 last_task9_audit: '2026-05-19'
+last_task6_audit: '2026-05-21'
 task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
 ---
 
