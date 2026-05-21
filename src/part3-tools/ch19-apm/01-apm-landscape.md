@@ -39,17 +39,22 @@ task2b_state: pending
 reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task2b_result: pending
-last_task2b_at: "2026-04-25T07:04:06+08:00"
+task2b_result: fixed
+task2b_state: fixed
+last_task2b_at: "2026-05-21T23:22:00+08:00"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T15:48:06+08:00"
+last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-21-15-audit.md"
-review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。"
+review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。"
 task9_review_notes: "2026-05-21 Task9 idle audit: P0 AppExitInfoTracker 源码位置与 ApplicationExitInfo reason 常量错误，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。"
 ---
 
@@ -96,7 +101,7 @@ task9_review_notes: "2026-05-21 Task9 idle audit: P0 AppExitInfoTracker 源码�
 
 ## APM 先解决线上可见性
 
-APM 在 Android 性能体系里的位置很清楚：它把线上设备里的性能信号采回来，让团队知道哪类问题正在发生、影响多少用户、是否需要进入修复队列。它不替代 Perfetto、Android Studio Profiler、simpleperf 这类线下诊断工具，也不保证单靠 SDK 上报就能还原所有现场。
+APM 在 Android 性能体系里的作用是把线上设备里的性能信号采回来，让团队知道哪类问题正在发生、影响多少用户、是否需要进入修复队列。它不替代 Perfetto、Android Studio Profiler、simpleperf 这类线下诊断工具，也不保证单靠 SDK 上报就能还原所有现场。
 
 APM 负责发现样本和分布，Perfetto 负责还原一次具体慢帧、ANR、启动慢或内存异常的细节。
 
@@ -128,7 +133,7 @@ Android 性能监控工具可以按采集位置和使用场景分成四类：
 - **指标 metrics**：`startup_p95_ms`、`jank_frame_rate`、`oom_rate`、`anr_rate` 等聚合值，用来判断版本是否变差。误用场景：只看 P95 抬升就直接定位到某个函数。
 - **样本 sample**：`main_thread_stack`、`hprof_summary_id`、`leak_signature`、`network_phase_cost` 等单次现场，用来定位问题方向。误用场景：把未按采样率归一化的样本数当成真实发生率。
 - **Trace**：`trace_id`、`time_range_ms`、`atrace_categories`、业务 `slice` 名等时间线数据，用来复核线程调度、Binder、I/O 和渲染阶段。误用场景：把大 trace 当成高频事件上传，导致端侧磁盘和网络成本失控。
-- **上下文 context**：App 版本、build number、系统版本、机型、ABI、页面、实验分组、`session_id` 与 `trace_id` 的关联关系，用来判断影响范围和复现入口。误用场景：页面名或实验名不稳定，导致同一问题被拆成多个统计桶。
+- **上下文**：App 版本、build number、系统版本、机型、ABI、页面、实验分组、`session_id` 与 `trace_id` 的关联关系，用来判断影响范围和复现入口。误用场景：页面名或实验名不稳定，导致同一问题被拆成多个统计桶。
 
 只采指标，问题会停在“知道差了但不知道为什么”。只采样本，样本会很散，无法判断优先级。只采 trace，成本会很快失控。只采上下文，没有稳定指标，报警口径会变成业务猜测。
 
@@ -245,7 +250,7 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 ## 书稿中的判断边界
 
-本章不做“哪个工具最好”的排序。原因很直接：APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适合内存专项，JankStats 适合帧级基础信号，Firebase / Measure / Sentry / APMPlus 适合平台化，PerfDog 适合外部测试，Benchmark 适合可重复验证。
+本章不做“哪个工具最好”的排序。原因是 APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适合内存专项，JankStats 适合帧级基础信号，Firebase / Measure / Sentry / APMPlus 适合平台化，PerfDog 适合外部测试，Benchmark 适合可重复验证。
 
 后文每个小节都会把边界写在正文里。读者读完后应该能回答三个问题：
 
@@ -260,14 +265,14 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 ### AppExitInfoTracker 在 AOSP 中的位置
 
-`AppExitInfoTracker` 是 `ProcessList.java`（`services/core/java/com/android/server/am/`）的内部类，由 `ActivityManagerService` 实例化并通过 `ProcessList` 持有。
+`AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-15.0.0_r1）。
 
 它在系统侧维护每个包名的进程退出记录 circular buffer，接入两类消息：
 
 | 消息类型 | 来源 | 创建的 exitInfo.reason |
 |---|---|---|
-| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | `REASON_LOW_MEMORY (6)` |
-| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | `REASON_CRASH (5)` / `REASON_SIGNALED (10)` |
+| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | `REASON_LOW_MEMORY (3)` |
+| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | `REASON_SIGNALED (2)` / `REASON_CRASH_NATIVE (5)` |
 
 应用侧通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询，该 API 底层调用 `ActivityManagerService.getHistoricalProcessExitReasons()`，后者从 `AppExitInfoTracker` 读取。
 
@@ -275,7 +280,7 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 | 方法 | 说明 | 版本 |
 |---|---|---|
-| `getReason()` | 返回值：`REASON_ANR(4)` `REASON_CRASH(5)` `REASON_LOW_MEMORY(6)` `REASON_SIGNALED(10)` `REASON_PROCESS_ENTRY_NULL(13)` 等 | API 30 |
+| `getReason()` | 返回值：`REASON_SIGNALED(2)` `REASON_LOW_MEMORY(3)` `REASON_CRASH(4)` `REASON_CRASH_NATIVE(5)` `REASON_ANR(6)` `REASON_USER_REQUESTED(10)` `REASON_OTHER(13)`；API 34+ 新增 `REASON_FREEZER(14)`；API 35+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)` `REASON_PACKAGE_UPDATED(16)` | API 30 |
 | `getDescription()` | 人类可读退出描述字符串 | API 30 |
 | `getTimestamp()` | 退出时间戳（毫秒） | API 30 |
 | `getTraceInputStream()` | 获取 ANR/native crash 的 trace 流，仅 `REASON_ANR` / native crash 有效；`REASON_LOW_MEMORY` 无 trace | API 30 |
@@ -287,12 +292,14 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 - circular buffer 持久化到磁盘，重启后可查询
 - 不支持 `USER_ALL` / `USER_CURRENT` 作为 userId 参数
 - `getTraceInputStream()` 对 `REASON_LOW_MEMORY` 返回 null（无 trace）
+- `REASON_CRASH` 对应 Java 未捕获异常；`REASON_CRASH_NATIVE` 对应 native crash（SIGSEGV/SIGABRT 等）；`REASON_ANR` 对应 Application Not Responding
 
 ---
 
 **调研来源**：
-- `services/core/java/com/android/server/am/ProcessList.java` (AOSP mainline) — AppExitInfoTracker 内部类
-- `core/java/android/app/ApplicationExitInfo.java` (API 30+) — 应用层 API
+- `services/core/java/com/android/server/am/AppExitInfoTracker.java` (AOSP mainline) — 顶层类，进程退出记录管理与持久化
+- `services/core/java/com/android/server/am/ProcessList.java` (AOSP mainline) — 持有 `mAppExitInfoTracker` 字段（L525）
+- `core/java/android/app/ApplicationExitInfo.java` (API 30+) — 应用层 API，reason 常量定义
 - `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
 
 <!-- AIW-源码调研-2026-04-25 -->

@@ -21,7 +21,7 @@ last_verified: '2026-05-09'
 last_verified_against: Flutter 3.29 architecture/thread merge docs + Flutter Impeller
   docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java
   / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
-confidence: medium
+confidence: medium-to-low
 sources:
 - type: official
   path: https://docs.flutter.dev/perf/rendering-performance
@@ -56,13 +56,17 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-09T16:43:00+08:00'
+last_task2b_at: '2026-05-21T23:22:00+08:00'
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T21:20:00+08:00"
 last_task9_audit: "2026-05-21"
+last_task6_audit: '2026-05-20'
 ---
 
 <!-- outline-start -->
@@ -102,7 +106,7 @@ Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFram
 
 这个差异会改变排查入口。列表滚动卡顿时,Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`;Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
 
-所以这一章要解决的问题是:Flutter 在 Android 上到底是怎么渲染的?它的渲染管线和原生 Android 有什么本质区别?当 Flutter 应用出现性能问题时,我们应该看哪里、怎么分析?
+这一章围绕三个排查问题展开:Flutter 在 Android 上怎么渲染,它的渲染管线和原生 Android 有什么差异,性能问题出现时应该看哪里、怎么分析?
 
 ## Flutter 的渲染架构
 
@@ -179,8 +183,9 @@ Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线。从 20
 排查清单:
 
 - `flutter pub deps` 列出所有依赖,逐个检查含原生代码的 plugin 是否已适配 16KB
-- 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`,确认 NDK 版本 ≥ r27
-- 在 16KB 模拟器(`--16kb-page-size`)上跑集成测试,验证 native 层行为
+- 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`,优先升级 NDK r28+（默认生成 16KB-aligned `.so`）
+- 若必须使用 NDK r27 或更低版本,在 `CMakeLists.txt` 或 `android` 块中显式配置 linker flags（如 `-Wl,-z,max-page-size=16384`），并确保 AGP 8.5.1+ packaging 对齐
+- 在 16KB 模拟器（`--16kb-page-size`）或 16KB 真机上跑集成测试,验证 native 层行为
 - 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径--对齐错误在这些场景下最容易触发
 
 如果某个关键 plugin 还没有适配,短期方案是在 `android/app/build.gradle` 中通过 `packagingOptions` 做对齐处理,长期仍需推动 plugin 作者更新 NDK 版本。
@@ -243,19 +248,19 @@ EOF
 - CPU 整体使用率:看 Flutter 线程和系统服务是否在争抢 CPU 时间
 - SurfaceFlinger Track:看 Flutter 的 Surface 合成是否正常
 
-在 Perfetto 中，Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别，并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`；不同 Flutter 版本的事件名会变化，过滤时不要只依赖单个字符串。
+在 Perfetto 中,Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别,并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`;不同 Flutter 版本的事件名会变化,过滤时不要只依赖单个字符串。
 
-### ADPF 系统级调频协同
+### ADPF 系统级调频（待验证）
 
-Flutter Engine 在 Android 16+ 上接入了 ADPF（Adaptive Performance Framework）。Engine 通过 `PerformanceHintManager` 创建 HintSession，每一帧渲染完成后调用 `reportActualWorkDuration()` 向系统反馈渲染负载。系统根据反馈调整 CPU/GPU 频率——负载偏高时提频保帧率，负载偏低时降频省功耗。
+ADPF（Adaptive Performance Framework）的 `PerformanceHintManager` 是 Android 平台提供的动态调频接口。App 或引擎可以创建 HintSession,逐帧调用 `reportActualWorkDuration()` 反馈渲染负载,系统根据反馈调整 CPU/GPU 频率。
 
-Flutter 应用中 Raster 线程的工作量波动比原生应用更大。原生应用可以靠 Hardware Layer 缓存跳过部分帧的重绘，Flutter 自绘每一帧的内容，因此负载波动更剧烈。ADPF 的动态调频能更好地匹配这种波动特征。
+Flutter 应用中 Raster 线程的工作量波动比原生应用更大。原生应用可以靠 Hardware Layer 缓存跳过部分帧的重绘,Flutter 自绘每一帧的内容,因此负载波动更剧烈。ADPF 的动态调频在理论上能更好地匹配这种波动特征。
 
-在 Perfetto 中观察 ADPF 效果的方法：检查 `ADPF` 相关 slice 与 CPU frequency counter 的联动。当 Raster 线程进入高负载区间时，后续帧的 CPU 频率应该被拉高。如果频率没有响应，可能是设备的 ADPF 实现存在延迟或厂商定制限制。
+截至当前,Flutter Engine 主干（ae5c360）的 `shell/platform/android`、`impeller`、`fml`、`runtime`、`lib/ui`、`common` 目录中未检索到 `PerformanceHint`、`APerformanceHint`、`reportActualWorkDuration`、`HintSession` 等符号；Flutter issue #155097（[Android] Determine if Android Performance Hint Manager is useful）已关闭为 not_planned。当前公开源码不能支撑“Flutter Engine 已自动启用 ADPF HintSession”这一结论。
 
-使用 ADPF 不需要额外的 Dart 或 Java 代码。Flutter Engine 3.27+ 在支持的设备上自动启用 HintSession。排查性能问题时，可以把 ADPF 的调频响应时间作为一个辅助诊断维度——如果调频延迟超过了当前帧的剩余预算，提频就来不及挽救当前帧。
+在 Perfetto 中观察 ADPF 效果的方法：检查 `ADPF` 相关 slice 与 CPU frequency counter 的联动。当 Raster 线程进入高负载区间时,后续帧的 CPU 频率应该被拉高。如果频率没有响应,可能是设备的 ADPF 实现存在延迟或厂商定制限制。
 
-`[已验证: Android 16 ADPF PerformanceHintManager; Flutter Engine ADPF integration]`
+如果后续 Flutter Engine 显式接入了 ADPF,排查性能问题时可以把调频响应时间作为一个辅助诊断维度——如果调频延迟超过了当前帧的剩余预算,提频就来不及挽救当前帧。
 
 ### 自定义 Trace
 
@@ -344,17 +349,15 @@ Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起,Android AP
 
 如果我们在项目里评估 Impeller,需要关注两类现象:第一,首次进入复杂页面或首次播放动画时,Raster 线程是否还会被 shader 编译长时间阻塞;第二,在同一段动画里,帧时间分布是否比 Skia 更稳定。提升幅度最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测,不套用别人的百分比。
 
-#### Vulkan 1.4 零拷贝纹理上传
+#### Vulkan 1.4 Host Image Copy 与纹理上传
 
-Android 16 强制要求 Vulkan 1.4,其中 `VK_EXT_host_image_copy` 扩展对 Impeller 的纹理上传路径有显著影响。
+Android 16 强制要求 Vulkan 1.4,其中 `VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力。
 
-传统路径中,纹理上传需要先把像素数据写到 Staging Buffer,再通过 GPU 命令把数据从 Staging Buffer 搬到目标纹理--两次拷贝加上 GPU 命令提交的延迟。`VK_EXT_host_image_copy` 允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了 Staging Buffer 中转和 GPU 搬运命令。
+但截至当前 Flutter Engine 主干（ae5c360）,Impeller Vulkan 后端的 capability 枚举只包含 `VK_EXT_pipeline_creation_feedback`、`VK_KHR_portability_subset`、`VK_EXT_image_compression_control` 三个可选扩展,未启用 `VK_EXT_host_image_copy`。`impeller/renderer/backend/vulkan/texture_vk.cc` L75-L130 仍创建 staging buffer 并调用 `vk_cmd_buffer.copyBufferToImage()`。全局搜索 `host_image_copy` / `CopyMemoryToImage` 无命中。
 
-实测数据显示,启用该扩展后纹理上传速度提升约 45%,上传期间的内存峰值降低约 50%。对 Flutter 应用影响最大的两个场景:一是首次加载大量图片(长列表滚动到新区域),二是 PlatformView 纹理合成。在 Perfetto 中,Raster 线程上的纹理上传 slice 在支持 Vulkan 1.4 的设备上会明显缩短。
+Android Developers 公开的 Vulkan benchmark 数据显示,启用该扩展后纹理上传速度提升约 45%,上传期间的内存峰值降低约 50%——这是 Android/Vulkan 层面的合成 benchmark,不是 Flutter 实测结果。Impeller 未来可能采纳该扩展作为优化方向,但当前 Flutter 场景下的纹理上传仍走传统 Staging Buffer 路径。
 
-该扩展仅在 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效。低于该版本的设备仍走传统 Staging Buffer 路径,Impeller 会自动回退。
-
-`[已验证: Android 16 VPA16 specification, VK_EXT_host_image_copy extension; Impeller Vulkan backend]`
+该扩展仅在 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效。低于该版本的设备不受影响。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
@@ -362,7 +365,7 @@ Android 16 强制要求 Vulkan 1.4,其中 `VK_EXT_host_image_copy` 扩展对 Imp
 
 ## 常见误区
 
-在分析 Flutter 应用性能时,有几个常见的认知陷阱值得注意:
+分析 Flutter 应用性能时,下面几个认知陷阱最容易干扰判断:
 
 **误区一:"Flutter 不卡,因为渲染不走 Android 主线程"**
 
