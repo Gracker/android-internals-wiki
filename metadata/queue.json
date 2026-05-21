@@ -1,6 +1,54 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-18.11-angle-native-fence-fd-ownership",
+      "section": "18.11",
+      "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "priority": 95,
+      "title": "ANGLE native fence fd ownership 与 Perfetto 识别锚点需修正",
+      "description": "闲时抽检发现 §18.11 在 SyncHelperNativeFence::serverWait() 的 fd 生命周期解释中把 dup 后导入 Vulkan 的 fd 写成原始 fd ownership 转移，同时 Perfetto slice 名称列出源码中不存在或无 trace event 的锚点。",
+      "reason": "[Deep Tech Review Audit] ANGLE native fence → Vulkan semaphore 转换的 fd ownership 表述与源码行为矛盾，属于 P0 事实错误，需回炉修正。",
+      "issue_type": "source-code-accuracy-trace-attribution",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-18-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/同步 fd 生命周期",
+          "location": "L338-L365：`SyncHelperNativeFence::serverWait()` 代码块后的 `dup()` 设计解释",
+          "detail": "正文写“`dup()` 复制 fd：原始 fd 所有权已转移到 VkSemaphore，调用方需保留自己的副本”。ANGLE main `external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp` L521-L551 与 AOSP android-16.0.0_r1 L508-L538 均显示：`serverWait()` 调用 `dup(mExternalFence->getFenceFd())`，随后把这个复制出来的 fd 交给 `vkImportSemaphoreFdKHR`；`mExternalFence` 持有的原 fd 仍留在 ANGLE 的 ExternalFence 中。发生 ownership transfer 的是 dup 出来的 fd，不是原 fd。当前表述会误导 native fence lifetime，容易引出 double-close 或错误复用判断。",
+          "suggestion": "改成：`initializeWithFd()` 接收 EGL native fence fd 后由 `ExternalFence` 接管；`serverWait()` 为 Vulkan semaphore 导入再 `dup()` 一份 fd，Vulkan import 接管的是这份 duplicated fd，原 ExternalFence fd 继续由 ANGLE 管理。补充 `vkImportSemaphoreFdKHR` 对 fd ownership 的边界。"
+        },
+        {
+          "severity": "P2",
+          "type": "版本差异/源码锚点",
+          "location": "L339-L345：`SyncVk.cpp:521-551` 与 `Semaphore::init()` 调用",
+          "detail": "代码片段匹配 Chromium ANGLE main：`serverWait()` 在 L521-L551，`Semaphore::init(device, VK_SEMAPHORE_TYPE_BINARY)`。AOSP android-16.0.0_r1 的同一逻辑在 L508-L538，调用为 `waitSemaphore.get().init(device)`。逻辑等价，但章节 frontmatter 标注 Android 10-16，源码锚点应区分 Chromium main 与 AOSP android-16 tag。",
+          "suggestion": "在代码块注释中写明“Chromium ANGLE main”或改用 `android-16.0.0_r1` 行号；若保留 main 片段，补一句 AOSP 16 行号/签名略有差异但行为一致。"
+        },
+        {
+          "severity": "P2",
+          "type": "Trace 归因/源码锚点",
+          "location": "L369-L371：Perfetto 中的同步 slice 名称",
+          "detail": "ANGLE main `SyncVk.cpp` 中 `ANGLE_TRACE_EVENT0` 覆盖的是 `SyncHelperNativeFence::clientWait` 与 `SyncHelperNativeFence::clientWait block (unlocked)`；`SyncHelperNativeFence::serverWait()` 是函数名但没有对应 trace event，`SyncHelperNativeFence::waitForGpu` 在该文件中不存在。将其写成 Perfetto slice 名称会让读者按错误关键词检索。",
+          "suggestion": "把 Perfetto 识别改成“可优先搜索 `gpu.angle` category 下的 `SyncHelperNativeFence::clientWait` / `... block`；`serverWait()` 需要依赖调用栈采样、Vulkan submit/present 事件或 AGI frame trace 辅助确认”，删除不存在的 `waitForGpu`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T18:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-21-18-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-2.4-choreographer-vsynceventdata-bufferstuffing",
       "section": "2.4",
       "section_title": "Choreographer 与渲染流水线",
