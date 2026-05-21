@@ -1,6 +1,47 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-19.01-appexitinfo-constants-source",
+      "section": "19.01",
+      "section_title": "APM 全景图与分类体系",
+      "priority": 95,
+      "title": "ApplicationExitInfo reason 常量与 AppExitInfoTracker 源码位置错误",
+      "description": "闲时抽检发现 §19.01 的 AppExitInfoTracker 源码位置写成 ProcessList.java 内部类，且 ApplicationExitInfo reason 常量值整体错位。",
+      "reason": "[Deep Tech Review Audit] ApplicationExitInfo reason 常量与 AppExitInfoTracker 源码位置存在 P0 事实错误，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/01-apm-landscape.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-15-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性",
+          "location": "L258、L288-L289：AppExitInfoTracker 源码位置",
+          "detail": "正文写成 AppExitInfoTracker 是 ProcessList.java 的内部类，且调研来源也只列 ProcessList.java。AOSP android-11.0.0_r1、android-15.0.0_r1 与 main 均显示 AppExitInfoTracker 是 services/core/java/com/android/server/am/AppExitInfoTracker.java 中的顶层 public final class；ProcessList.java 只是持有并创建 mAppExitInfoTracker（android-15.0.0_r1 ProcessList.java L525，main L530）。",
+          "suggestion": "将源码位置改为 services/core/java/com/android/server/am/AppExitInfoTracker.java；表述改为“ProcessList 持有并创建 AppExitInfoTracker”，不要写成 ProcessList 内部类。调研来源同步替换为 AppExitInfoTracker.java + ProcessList.java。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/版本差异",
+          "location": "L264-L265、L273：ApplicationExitInfo reason 常量值",
+          "detail": "正文把 REASON_LOW_MEMORY 写成 6、REASON_CRASH 写成 5、REASON_SIGNALED 写成 10，并列出不存在的公开常量 REASON_PROCESS_ENTRY_NULL(13)。AOSP android-11.0.0_r1、android-15.0.0_r1 与 main 的 core/java/android/app/ApplicationExitInfo.java 常量一致：REASON_SIGNALED=2、REASON_LOW_MEMORY=3、REASON_CRASH=4、REASON_CRASH_NATIVE=5、REASON_ANR=6、REASON_USER_REQUESTED=10、REASON_OTHER=13；android-15/main 另有 REASON_FREEZER=14、REASON_PACKAGE_STATE_CHANGE=15、REASON_PACKAGE_UPDATED=16。",
+          "suggestion": "重写消息表和 getReason() 行：lmkd 对应 LOW_MEMORY(3)；Zygote/SIGCHLD 路径主要对应 SIGNALED(2) 或已标记的 CRASH_NATIVE(5)；Java 未捕获异常是 CRASH(4)，ANR 是 ANR(6)。删除 REASON_PROCESS_ENTRY_NULL，若需要 13 应写 REASON_OTHER(13)。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T15:48:06+08:00",
+      "review_log": "logs/deep-review/2026-05-21-15-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-18.17-ndk-previous-release-fence",
       "section": "18.17",
       "section_title": "Hardware Buffer Renderer",
