@@ -31,6 +31,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 last_verified: '2026-05-08'
 last_verified_against: AOSP main + android-16.0.0_r1 + android-14.0.0_r1 + android-12/11/10/4.1 tags + external review
+confidence: high
 sources:
 - type: aosp
   path: frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h
@@ -65,6 +66,10 @@ task9_reviewed_date: 2026-05-19
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T00:30:02+08:00"
 last_task9_audit: "2026-05-18"
+last_task6_at: "2026-05-21T09:08:00+08:00"
+last_task6_audit: "2026-05-21"
+last_task6_audit_result: l1-light-edit
+last_task6_audit_log: "logs/review/2026-05-21-09-audit.md"
 review_round: 1
 last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
 task9_review_notes: "2026-05-19 Task9 00:20：pass-tech-review。无 P0/P1；P2 2 处已写入 suggestions；Task6 pass 且 queue 无 pending，保持 finalized 并自动标记 ready-to-publish。"
@@ -101,7 +106,7 @@ task9_review_notes: "2026-05-19 Task9 00:20：pass-tech-review。无 P0/P1；P2 
 
 如果我们在 Perfetto 里看到 RenderThread 卡在 `dequeueBuffer()`,或者看到 App 已经 `queueBuffer()` 了,但 SurfaceFlinger 很晚才把这一帧合成上屏,问题往往不在"画得快不快"这一层,而在 BufferQueue 这一层。它决定了一帧图像怎样在 producer 和 consumer 之间流转,也决定了什么时候能复用旧 buffer,什么时候必须继续等。
 
-这部分知识真正有用的地方,不是记住几个 API 名字,而是能把"GPU 太慢"、"SurfaceFlinger 太慢"、"buffer 没有及时释放"、"geometry transaction 和 buffer 落在不同帧"这几类问题拆开。拆开之后,我们在 Trace 里看到的长等待,才知道该往哪条链路继续挖。
+这部分知识的价值在于把"GPU 太慢"、"SurfaceFlinger 太慢"、"buffer 没有及时释放"、"geometry transaction 和 buffer 落在不同帧"这几类问题拆开,而不是记住几个 API 名字。拆开之后,我们在 Trace 里看到的长等待,才知道该往哪条链路继续挖。
 
 ## BufferQueue 不是"传一帧像素",而是"共享一组 slot"
 
@@ -134,7 +139,7 @@ virtual status_t queueBuffer(int slot, const QueueBufferInput& input,
 
 第二步,如果 `dequeueBuffer()` 返回的 slot 需要重新分配,producer 会看到 `BUFFER_NEEDS_REALLOCATION`,这时再调用 `requestBuffer(slot, &buf)` 把这个 slot 当前绑定的 `GraphicBuffer` 取出来。也就是说,slot 和 `GraphicBuffer` 的映射不是每帧都重新传一次,只有首次分配、尺寸变化、格式变化,或者 attach/detach 这类场景,才需要同步新的句柄。
 
-第三步,producer 把内容画到这块 `GraphicBuffer` 里。等 GPU 或 CPU 写完以后,调用 `queueBuffer(slot, QueueBufferInput)` 把 slot 放回队列。这里真正跟着这次 `queueBuffer()` 一起提交的,是 slot 编号、时间戳、crop、transform、dataspace,以及 `QueueBufferInput::fence`。AOSP 对这个 fence 的注释也很明确,它是"consumer 在读取这个 buffer 之前必须等待的 fence"。
+第三步,producer 把内容画到这块 `GraphicBuffer` 里。等 GPU 或 CPU 写完以后,调用 `queueBuffer(slot, QueueBufferInput)` 把 slot 放回队列。这次 `queueBuffer()` 一起提交的是 slot 编号、时间戳、crop、transform、dataspace,以及 `QueueBufferInput::fence`。AOSP 对这个 fence 的注释也很明确,它是"consumer 在读取这个 buffer 之前必须等待的 fence"。
 
 高频流转的是 slot 编号、metadata（时间戳、crop、transform）和 fence——不是完整的 `GraphicBuffer` handle。把这条链路说准，后面讨论阻塞和掉帧才不会偏。
 
@@ -162,7 +167,7 @@ struct BufferState {
 
 AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUED、ACQUIRED 这些状态看起来还是互斥的,但实现层面已经换成了计数器。原因是 shared buffer mode 允许 `mShared` 和其他状态并存,一个 slot 可以一边 shared,一边仍然处在 dequeued、queued 或 acquired 计数不为 0 的状态。
 
-这意味着我们在排查问题时,不能再把 `mBufferState == FREE` 这种老口径当成今天的源码事实。更稳妥的说法是,普通路径里 slot 大多数时候呈现为单状态流转,shared buffer mode 下状态会叠加,源码判断应以 `isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 这几组方法为准。
+排查问题时,不能再把 `mBufferState == FREE` 这种老口径当成今天的源码事实。更稳妥的说法是,普通路径里 slot 大多数时候呈现为单状态流转,shared buffer mode 下状态会叠加,源码判断应以 `isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 这几组方法为准。
 
 [已验证:AOSP main `frameworks/native/libs/gui/include/gui/BufferSlot.h`]
 
@@ -176,7 +181,7 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 只看 slot 状态,我们最多知道 buffer 的所有权大概在谁手里;只看 fence,我们才知道它是不是已经真的可以读写。这两件事必须放在一起看。
 
-先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 说明上一位使用者是不是已经彻底放手。slot 已经回到了 producer 这边,不代表 producer 立刻就能覆盖旧内容,必须等这条 fence signal。
+先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 说明上一位使用者是不是已经结束使用。slot 已经回到了 producer 这边,不代表 producer 立刻就能覆盖旧内容,必须等这条 fence signal。
 
 再看 consumer 这一侧。producer 调 `queueBuffer()` 时会把 `QueueBufferInput::fence` 一起交出去。这个 fence 说明"我把 slot 交给你了,但 GPU 可能还没把最后几笔写完,你要等到 fence signal 才能读"。所以,slot 进入 QUEUED 不代表 SurfaceFlinger 这一刻就能安全合成。
 
@@ -184,13 +189,13 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 AOSP 在 `BufferItem.h` 里把 `mFence` 注释为"buffer idle 时 signal 的 fence",在 `IGraphicBufferConsumer.h` 里又把 `releaseBuffer()` 的 `releaseFence` 明确成 consumer 归还 buffer 时携带的同步信息。光看 FREE / QUEUED / ACQUIRED 这些字面状态,不足以解释为什么某个 buffer 明明已经 release 了,producer 还要再等一会儿才能复用,原因就在 fence。
 
-这一层和 §2.16 Sync Fence 框架与帧同步机制是同一件事的两个切面。§2.16 解释 fence 在内核和 SurfaceFlinger 里的同步意义,这一节更关心 fence 怎样把 BufferQueue 的 slot 状态变成"真正可写、真正可读、真正可复用"的时间边界。
+这一层和 §2.16 Sync Fence 框架与帧同步机制是同一件事的两个切面。§2.16 解释 fence 在内核和 SurfaceFlinger 里的同步意义,这一节更关心 fence 怎样把 BufferQueue 的 slot 状态变成"可写、可读、可复用"的时间边界。
 
 [已验证:AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`、`frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h`、`frameworks/native/libs/gui/include/gui/BufferItem.h`]
 
 ## BLASTBufferQueue 解决的是 buffer 与 geometry transaction 落在同一帧
 
-如果把 BLAST 只概括成"少了一次 Binder hop",说轻了。它真正解决的问题,是 buffer 提交和 geometry transaction 以前走的是两条线,窗口尺寸、crop、transform、buffer 内容不一定能落在同一帧。
+如果把 BLAST 只概括成"少了一次 Binder hop",说轻了。它解决的是 buffer 提交和 geometry transaction 以前走两条线的问题:窗口尺寸、crop、transform、buffer 内容不一定能落在同一帧。
 
 AOSP tag 只能说明 BLAST 的代码进入时间,不能直接等同于所有窗口的默认路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
 
@@ -222,7 +227,7 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 第五,如果这一帧还有窗口大小、裁剪区域、alpha、z-order 之类的 geometry 变化,BLAST 会把它们先放进 pending transaction,后面通过 `mergeWithNextTransaction(frameNumber)` 和 `applyPendingTransactions(frameNumber)` 按 frame number 归到同一帧再统一 apply。这样一来,buffer 和 geometry 就不会错帧。
 
-所以,BLAST 的核心价值不是一句"跨进程更少,所以更快"就能讲完的。它真正做的是把"这一帧的内容"和"这一帧的窗口状态"绑在一起,减少内容已经更新了、窗口属性却还停在上一帧的错位。
+所以,BLAST 的核心价值不是一句"跨进程更少,所以更快"就能讲完的。它做的是把"这一帧的内容"和"这一帧的窗口状态"绑在一起,减少内容已经更新了、窗口属性却还停在上一帧的错位。
 
 [已验证:AOSP `android-10.0.0_r47`、`android-11.0.0_r48`、main 的 `ViewRootImpl.java` 与 `BLASTBufferQueue.cpp`]
 
@@ -419,7 +424,7 @@ AOSP 源码里,Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRe
 
 ### 异常 2:`queueBuffer()` 之后很久才被消费
 
-另一类问题是 producer 已经把这一帧交出去了,但 consumer 很久才真正消费。BLAST 路径下,这时要重点看两件事:一是 `QueuedBuffer - ...BLAST#...` 到实际呈现之间隔了几帧,二是这段时间里有没有 geometry transaction 一起排队,等着同一个 `frameNumber` 被 apply。
+另一类情况是 producer 已经把这一帧交出去了,但 consumer 过了很久才消费。BLAST 路径下,这时要重点看两件事:一是 `QueuedBuffer - ...BLAST#...` 到实际呈现之间隔了几帧,二是这段时间里有没有 geometry transaction 一起排队,等着同一个 `frameNumber` 被 apply。
 
 如果 trace 里没有直接露出 `acquireBuffer` 这种 slice 名字,也不要硬猜。更稳妥的办法,是把 App 侧提交点、BLAST trace、SurfaceFlinger 合成周期和 FrameTimeline 的实际呈现摆到同一条时间线上。只要这些时间轴能对应上,哪怕设备厂商改了 slice 名字,我们照样能看清"是 queue 之后就堵住了",还是"consumer 早就拿到 buffer 了,只是后面的合成或显示又慢了一拍"。
 
@@ -427,7 +432,7 @@ AOSP 源码里,Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRe
 
 如果把一帧从输入到上屏拆开看,§2.4 Choreographer 决定这一帧什么时候启动,§2.5 MainThread 与 RenderThread 决定 DisplayList 和 GPU 命令怎样生成,§2.13 BufferQueue 决定生成好的内容怎样在 producer 和 consumer 之间流转,§2.16 Sync Fence 决定每一步交接什么时候真的生效,§2.6 SurfaceFlinger 决定这些 layer 何时被合成到屏幕上。
 
-我们在性能分析里经常会遇到一种错觉,看见掉帧就先怀疑主线程太慢。BufferQueue 这一节真正帮我们拆掉的,就是这类错觉。主线程、RenderThread、SurfaceFlinger、HWC,谁都可能是瓶颈,但它们会通过同一条 buffer 流转链暴露出来。懂这条链,问题才有机会分层。
+我们在性能分析里经常会遇到一种错觉,看见掉帧就先怀疑主线程太慢。BufferQueue 这一节帮我们拆掉的,就是这类错觉。主线程、RenderThread、SurfaceFlinger、HWC,谁都可能是瓶颈,但它们会通过同一条 buffer 流转链暴露出来。懂这条链,问题才有机会分层。
 
 ## 版本演进
 
@@ -449,11 +454,11 @@ Android 12 之后还有持续演进,但 `frame rate override`、`maxBufferCount`
 
 ### `queueBuffer()` 不是"每帧重新传一份 GraphicBuffer handle"
 
-`queueBuffer()` 的高频动作是提交 slot、metadata 和 fence。真正把新的 `GraphicBuffer` 句柄同步给对端,通常发生在首次分配、重分配、attach / detach 这些低频路径上。把这两类路径混成一件事,会直接把 BufferQueue 的成本模型看错。
+`queueBuffer()` 的高频动作是提交 slot、metadata 和 fence。同步新的 `GraphicBuffer` 句柄给对端,通常发生在首次分配、重分配、attach / detach 这些低频路径上。把这两类路径混成一件事,会直接把 BufferQueue 的成本模型看错。
 
 ### slot 状态变化,不等于这块内存已经能安全访问
 
-slot 从 DEQUEUED 变成 QUEUED,不代表 consumer 立刻能读;slot 从 ACQUIRED 变回 FREE,也不代表 producer 这一刻就能重写。状态只告诉我们所有权大致在哪,真正的"现在能不能碰"还要看 fence。
+slot 从 DEQUEUED 变成 QUEUED,不代表 consumer 立刻能读;slot 从 ACQUIRED 变回 FREE,也不代表 producer 这一刻就能重写。状态只告诉我们所有权大致在哪,"现在能不能碰"还要看 fence。
 
 ### BLAST 不只是"更快"
 
