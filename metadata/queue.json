@@ -15203,6 +15203,44 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T11:31:10+08:00",
       "review_log": "logs/deep-review/2026-05-21-11-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260521-26.16-online-storage-io-sqlite-observability",
+      "section": "26.16",
+      "section_title": "线上存储、I/O 与 SQLite 可观测性",
+      "priority": 80,
+      "title": "加工线上存储、I/O 与 SQLite 可观测性",
+      "description": "基于 Clippings 中线上 I/O 监控、存储监控与 SQLite 监控素材，结合 Android 官方 SQLite 性能文档与 AOSP SQLite/BlockGuard/CloseGuard 路径，补齐 ch26 对存储类线上问题的采集、规则、上报和诊断能力。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/16-online-storage-io-sqlite-observability.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md",
+        "intake/research-gaps.md",
+        "https://developer.android.com/topic/performance/sqlite-performance-best-practices",
+        "https://developer.android.com/training/data-storage/room/testing-db",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteConnection.java",
+        "https://cs.android.com/android/platform/superproject/+/master:libcore/luni/src/main/java/libcore/io/BlockGuardOs.java",
+        "https://cs.android.com/android/platform/superproject/+/master:/libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java"
+      ],
+      "gap_score": {
+        "material_richness": 5,
+        "book_relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 3,
+        "total": 17
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T14:08:00+08:00"
     }
   ],
   "metadata": {
