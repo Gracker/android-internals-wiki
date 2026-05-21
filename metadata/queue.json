@@ -16402,6 +16402,133 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T07:04:00+08:00"
+    },
+    {
+      "id": "task9-20260522-14.13-hook-16kb-agp-ndk-boundary",
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "title": "Hook 16KB 迁移表混淆 NDK ELF p_align、AGP 打包对齐与 Play 要求",
+      "description": "§14.13 的 16KB Page Size 迁移表把 NDK/LLD ELF p_align、AGP 打包对齐和 Google Play 发布要求混写，需回炉修正。",
+      "reason": "[Deep Tech Review] §14.13 的 16KB Page Size 迁移表把 NDK/LLD ELF p_align、AGP 打包对齐和 Google Play 发布要求混写，需回炉修正。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-07-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "severity": "P0",
+          "location": "L627-L633 NDK/AGP 16KB 对齐表",
+          "detail": "表格把 AGP 8.3-8.5、AGP 8.5.1+ 都写成默认 ELF p_align=0x4000。ELF PT_LOAD p_align 由 NDK/LLD 与 -z max-page-size 控制；官方口径是 NDK r28+ 默认 16KB 对齐，r27 及以下需手动加链接器参数。AGP 8.5.1+ 影响 APK 中未压缩 native library 的 16KB 对齐/打包检查，不等同于 ELF p_align。",
+          "suggestion": "拆成两张表：NDK/LLD 负责 ELF p_align；AGP/zipalign 负责 APK 打包对齐。删除“AGP 8.3-8.5 默认 0x4000”的断言，只保留 AGP 8.5.1+ 官方推荐/默认处理边界。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L625 Google Play 强制截止日期",
+          "detail": "正文只写“Google Play 强制截止日期：2025-11-01”，缺少适用范围。官方表述是从 2025-11-01 起，提交到 Google Play、面向 Android 15/API 35+ 设备的新应用和更新必须支持 16KB page size。",
+          "suggestion": "补充 target/API、提交类型和设备范围，避免读者误解为所有存量应用或所有设备在该日统一强制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T07:43:01+08:00"
+    },
+    {
+      "id": "task9-20260522-14.6-benchmark-instrument-args",
+      "section": "14.6",
+      "section_title": "自动化测试工具",
+      "priority": 95,
+      "title": "AndroidX Benchmark am instrument 参数使用了无效 key",
+      "description": "§14.6 的 am instrument 参数列表含无效 AndroidX Benchmark 参数，CI 直接照抄会被忽略或失败。",
+      "reason": "[Deep Tech Review] §14.6 的 am instrument 参数列表含无效 AndroidX Benchmark 参数，CI 直接照抄会被忽略或失败。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/06-automation-tools.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-07-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/API 参数",
+          "severity": "P0",
+          "location": "L271-L276 am instrument 参数列表",
+          "detail": "AndroidX Benchmark 的 instrumentation argument 统一使用 androidx.benchmark. 前缀。AndroidX benchmark-common Arguments.kt 中 prefix = \"androidx.benchmark.\"，iterations 也是通过 getBenchmarkArgument(\"iterations\") 读取，因此裸写 -e iterations N 会被忽略。当前源码未发现 androidLogResults 这个参数，正文给出的 -e androidLogResults true 不属于当前 AndroidX Benchmark 参数。",
+          "suggestion": "改为经官方文档/Arguments.kt 校验的参数：如 -e androidx.benchmark.suppressErrors EMULATOR,LOW-BATTERY、-e androidx.benchmark.dryRunMode.enable true、-e androidx.benchmark.profiling.mode ...、-e androidx.benchmark.output.enable true/false；iterations 需写成 androidx.benchmark.iterations 且注明适用范围，Macrobenchmark 常规迭代次数优先使用 measureRepeated(iterations=)。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T07:43:01+08:00"
+    },
+    {
+      "id": "task9-20260522-4.5-memory-coil-trim-16kb",
+      "section": "4.5",
+      "section_title": "App 内存优化",
+      "priority": 95,
+      "title": "Coil BitmapPool、静态 Worker 示例、onTrimMemory API 34+ 与 16KB 口径需修正",
+      "description": "§4.5 仍存在 Coil 当前版本行为、Java 示例可编译性、ComponentCallbacks2 API 34+ 回调口径和 16KB Play/Bitmap 断言错误。",
+      "reason": "[Deep Tech Review] §4.5 仍存在 Coil 当前版本行为、Java 示例可编译性、ComponentCallbacks2 API 34+ 回调口径和 16KB Play/Bitmap 断言错误。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-07-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/第三方库版本",
+          "severity": "P0",
+          "location": "L345-L356 图片加载库表格与 Coil 描述",
+          "detail": "正文写 Coil “同样实现 Bitmap Pool”且表格写“✅ 基于 Coroutine”。Coil 2.x 官方升级文档已移除 BitmapPool / PoolableViewTarget，当前说法把 Glide 的 LruBitmapPool 模型错误套到 Coil。",
+          "suggestion": "按版本拆开：Glide 保留 LruBitmapPool；Coil 1.x 曾有 BitmapPool，Coil 2.x/3.x 应改写为 memory cache、hardware/immutable bitmap、ImageDecoder 等边界；不要写“基于 Coroutine 的 Bitmap Pool”。"
+        },
+        {
+          "type": "代码示例错误",
+          "severity": "P0",
+          "location": "L388-L411 Activity 泄漏修复示例",
+          "detail": "MyWorker 改为 static 内部类后，run() 中直接调用 doSomethingSlow()。如果 doSomethingSlow() 是 Activity 实例方法，示例无法编译；如果它是 static 方法，WeakReference<MyActivity> 与 activity.isFinishing() 判断又失去示例意义。",
+          "suggestion": "示例应在判空后调用 activity.doSomethingSlow()，或把耗时逻辑改为不依赖 Activity 的独立 worker，并通过主线程/弱引用只回调 UI。"
+        },
+        {
+          "type": "版本差异/API 行为",
+          "severity": "P0",
+          "location": "L672-L705 onTrimMemory API 34+ 回调范围",
+          "detail": "正文写 API 34+ “仍会实际投递的只有 UI_HIDDEN”，并把 TRIM_MEMORY_BACKGROUND 也归入不再投递/弃用范围。AOSP android-16.0.0_r1 ComponentCallbacks2.java 中 RUNNING_*、MODERATE(60)、COMPLETE(80) 带 @Deprecated 且说明 API 34 后 App 不再收到；BACKGROUND(40) 与 UI_HIDDEN(20) 没有该弃用说明。",
+          "suggestion": "按 AOSP 常量注释重写 API 34+ 矩阵：RUNNING_*、MODERATE、COMPLETE 不再作为 App 侧信号；BACKGROUND/UI_HIDDEN 不要写成“已废弃/不投递”，除非另有 AMS 分发源码证据。"
+        },
+        {
+          "type": "版本差异/数据支撑",
+          "severity": "P1",
+          "location": "L800-L849 16KB Page Size 与 Bitmap",
+          "detail": "“Google Play 已将 16KB 页对齐作为对所有应用的强制要求”缺少新应用/更新、Android 15+ 设备/target 范围；“每个 Bitmap 最后一页浪费增加、Glide/Coil 已内部处理对齐问题”缺少官方或实测依据。",
+          "suggestion": "把 Play 要求改成带时间、提交类型和 target/API 范围的政策表述；Bitmap 影响降级为“可能受 native allocation、GraphicBuffer/allocator 和页粒度影响，需用 heapprofd/dumpsys meminfo/图像库版本实测确认”，删除 Glide/Coil 已处理页对齐的断言。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T07:43:01+08:00"
     }
   ],
   "metadata": {

@@ -38,22 +38,24 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 review_round: 3
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_reviewed_date: 2026-04-27
+task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-04-27T03:32:04+08:00
+last_task9_at: "2026-05-22T07:43:01+08:00"
 last_task6_audit: "2026-05-21"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
 last_task9_audit: "2026-05-22"
+last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
+task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：AndroidX Benchmark am instrument 参数裸写 iterations 且包含未验证 androidLogResults，需按 androidx.benchmark.* 参数重写。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
 ---
 
 # 自动化测试工具
