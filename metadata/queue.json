@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-15.5-framemetrics-snippet-scope",
+      "section": "15.5",
+      "section_title": "线上性能监控",
+      "priority": 95,
+      "title": "FrameMetrics 掉帧判定示例存在未定义变量",
+      "description": "闲时抽检发现 FrameMetrics DEADLINE 示例在 else 分支使用 totalDuration，但该变量只在 if 分支内声明，Java 代码无法编译；同时 FrameMetrics 指标表仍将 COMMAND_ISSUE 误写为 GPU 命令执行耗时。",
+      "reason": "[Deep Tech Review Audit] FrameMetrics 掉帧判定示例存在 P0 代码错误，需回炉修正。",
+      "issue_type": "source-code-accuracy-code-snippet",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-13-audit.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/代码片段错误",
+          "location": "L167-L179：FrameMetrics.DEADLINE 掉帧判定示例",
+          "detail": "示例在 if 分支内声明 `long totalDuration = metrics.getMetric(FrameMetrics.TOTAL_DURATION);`，但 else 分支继续使用 `totalDuration`。Java 块级作用域下 else 分支无法访问该变量，代码无法编译。AOSP android-16.0.0_r1 `FrameMetrics.java` 中 `TOTAL_DURATION` 与 `DEADLINE` 常量存在，问题不在 API，而在示例变量作用域。",
+          "suggestion": "把 `long totalDuration = metrics.getMetric(FrameMetrics.TOTAL_DURATION);` 提前到 if/else 外；API 31+ 分支只读取 `DEADLINE`，API 24-30 分支再按刷新率计算 `deadlineNanos`。同时可明确所有值单位为 ns。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T13:31:48+08:00",
+      "review_log": "logs/deep-review/2026-05-21-13-audit.md"
+    },
+    {
       "id": "task2a-gap-20260521-2.25-buffer-stuffing-recovery",
       "section": "2.25",
       "section_title": "Choreographer Buffer Stuffing Recovery 与帧节拍修正",

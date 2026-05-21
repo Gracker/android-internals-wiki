@@ -1,7 +1,7 @@
 ---
 title: "线上性能监控"
 chapter: "15.5"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
@@ -35,21 +35,27 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task9_at: "2026-04-26T00:28:30+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-26"
-task9_result: pass-tech-review
+task2b_state: pending
+task2b_result: pending
+last_task9_at: "2026-05-21T13:31:48+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-21"
+task9_result: needs-rework
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T13:31:48+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-13-audit.md"
+review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：FrameMetrics DEADLINE 示例中 totalDuration 变量作用域错误；P2：COMMAND_ISSUE_DURATION 指标口径需修正。"
+task9_review_notes: "2026-05-21 Task9 idle audit: P0 FrameMetrics 代码片段无法编译，写入 queue 条目 task9-audit-20260521-15.5-framemetrics-snippet-scope；P2 FrameMetrics 指标表写入 suggestions。"
 ---
 
 # 线上性能监控
