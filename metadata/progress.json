@@ -194,7 +194,8 @@
     "21.11",
     "4.5",
     "3.1",
-    "19.11"
+    "19.11",
+    "18.15"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -221,25 +222,28 @@
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
     "src/part3-tools/ch19-apm/11-jankstats.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-    "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+    "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
   ],
-  "review_summary": "Task6 2026-05-21 08: review 19.09/4.2；19.09 能力范围字段级表仍缺，回炉 Task2B；4.2 写作层小修通过，沿用 MADV_COLD Task9 pending。",
+  "review_summary": "Task6 2026-05-21 12: review 19.09/18.15/4.2；三章 L1/L2 通过，HWC/4.2 小修 4 处；无新增回炉，既有 Task9 pending 保留。",
   "task6_review_summary": {
     "date": "2026-05-21",
-    "time": "08:06",
+    "time": "12:11",
     "sections": [
       "19.09",
+      "18.15",
       "4.2"
     ],
     "files": [
       "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
     ],
-    "result": "1 needs-rework(Task2B), 1 pass-light-edit(technical pending)",
-    "small_fixes": 6,
-    "new_rework_items": 1,
+    "result": "3 pass-light-edit (technical pending via Task9/Task2B)",
+    "small_fixes": 4,
+    "new_rework_items": 0,
     "auto_promoted": [],
-    "note": "19.09 仍缺能力范围字段级表，新增 Task6 queue priority 90；4.2 清理编辑痕迹和禁用词，MADV_COLD 技术边界沿用 Task9 pending。"
+    "note": "Measure/HWC/4.2 写作层复审通过；官方 SDK schema、SKIP_VALIDATE、MADV_COLD 三类技术项均已有 Task9 pending queue，Task6 未重复投递。"
   },
   "issues_by_section": {
     "1.6": {
@@ -358,13 +362,13 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
       "task6_technical_risk_markers": 1,
-      "task6_reviewed_at": "2026-05-21T08:06:00+08:00",
-      "task6_log": "logs/review/2026-05-21-08-review.md",
+      "task6_reviewed_at": "2026-05-21T12:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-12-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作层复审通过；清理 AIW 编辑注释、DeepResearch 元数据和禁用词“闭环”；MADV_COLD 技术边界沿用 Task9 pending queue。",
+      "task6_note": "复审通过：frontmatter 禁用词清理 1 处；MADV_COLD 实现链确定语气问题已有 Task9 pending queue。",
       "task9_result": "needs-rework"
     },
     "5.2": {
@@ -1517,18 +1521,18 @@
     },
     "19.09": {
       "p0": 0,
-      "p1": 0,
-      "p2": 2,
+      "p1": 2,
+      "p2": 0,
       "p3": 0,
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 0,
-      "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-21T08:06:00+08:00",
-      "task6_log": "logs/review/2026-05-21-08-review.md",
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-21T12:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-12-review.md",
       "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。",
-      "task6_technical_risk_markers": 1,
-      "task6_new_rework": true,
-      "task6_note": "复审发现能力范围字段级表仍未落盘，新增 Task6 queue priority 90；Crash/ANR/native crash 能力边界沿用 Task9 pending。",
+      "task6_technical_risk_markers": 2,
+      "task6_new_rework": false,
+      "task6_note": "复审通过：能力范围字段级表和平台对比表已具备写作覆盖；官方 SDK 事件 schema 与 native crash/ANR 技术边界已有 Task9 pending queue，Task6 不重复投递。",
       "task9_result": "needs-rework"
     },
     "19.11": {
@@ -1555,6 +1559,21 @@
       "task6_log": "logs/review/2026-05-21-04-review.md",
       "task6_new_rework": true,
       "task6_note": "L1 小修 1 处；参考资料后源码调研素材块/AIW 注释仍需主线融合，新增 Task6 queue priority 90。"
+    },
+    "18.15": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-21T12:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-12-review.md",
+      "task6_new_rework": false,
+      "task9_result": "needs-rework",
+      "task6_note": "复审通过：清理“真正”和否定-纠正式句子 3 处；SKIP_VALIDATE 版本边界与 canSkipValidate 条件已有 Task9 pending queue。"
     }
   },
   "total_review_sections": 171,
