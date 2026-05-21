@@ -2,7 +2,7 @@
 title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 chapter: '19'
 section: '19.14'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
@@ -26,21 +26,26 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-27"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T10:57:00+08:00"
+last_task9_at: "2026-05-21T22:26:00+08:00"
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T22:26:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-22-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-22-audit.md"
+task9_review_notes: "2026-05-21 Task9 idle audit: needs-rework。P1：BaselineProfileRule.collect() 生成环境需拆出 API 33+ / rooted API 28+ 支持边界，API 23 只能 Full 编译；写入 queue 条目 task9-audit-20260521-19.14-baseline-profile-api-floor。"
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）

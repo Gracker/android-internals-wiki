@@ -1,6 +1,43 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-19.14-baseline-profile-api-floor",
+      "section": "19.14",
+      "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+      "priority": 85,
+      "title": "Baseline Profile 生成/验证 API 边界需拆出 API 33+/rooted API 28+ 限制",
+      "description": "闲时抽检发现 §19.14 将 Macrobenchmark 与 Baseline Profile 场景整体写成 API 23+，遗漏 BaselineProfileRule.collect() 的 API/root 支持边界，以及 API 23 只能 Full 编译的限制。",
+      "reason": "[Deep Tech Review Audit] Jetpack Benchmark Baseline Profile 生成/验证版本边界存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-differences-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-22-audit.md",
+        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro-junit4/src/main/java/androidx/benchmark/macro/junit4/BaselineProfileRule.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/BaselineProfileMode.kt"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Baseline Profile 生成与验证 API 边界",
+          "location": "L8、L97-L103、L331-L364：Baseline Profile 场景兼容表与 BaselineProfileRule 示例",
+          "detail": "正文和 frontmatter 将 Macrobenchmark / Baseline Profile 场景整体写成 API 23+，兼容表也只写“通常复用 Macrobenchmark 场景”。但 AndroidX androidx-main 的 BaselineProfileRule.kt 明确标注 @RequiresApi(28)，类注释写明 BaselineProfileRule 只在 Android 13/API 33+ 完整支持，或 rooted Android P/API 28+ 支持；CompilationMode.kt 也说明 API 23 只有 Full，Partial/None 在 API 23 不可用。当前写法会让读者误以为 API 23-27 设备可直接生成/验证 Baseline Profile，版本边界过宽。",
+          "suggestion": "把 Baseline Profile 拆成“收益覆盖”和“实验室生成/验证”两层：ProfileInstaller/Baseline Profile 的安装收益可覆盖低版本目标设备；BaselineProfileRule.collect() 生成环境需写 API 33+，或 rooted API 28+；CompilationMode.Partial(BaselineProfileMode.Require) 验证需 API 24+ 且目标 App 含 ProfileInstaller 与 AGP 7.0+ 打包 profile。frontmatter 的 Baseline Profile 场景不要继续并入 Macrobenchmark API 23+。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T22:26:00+08:00",
+      "review_log": "logs/deep-review/2026-05-21-22-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-2.11-flutter-adpf-host-image-copy",
       "section": "2.11",
       "section_title": "Flutter 渲染管线与性能",
