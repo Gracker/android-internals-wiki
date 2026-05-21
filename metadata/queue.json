@@ -14949,6 +14949,35 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T08:24:53+08:00",
       "original_review_log": "logs/deep-review/2026-05-21-08-audit.md"
+    },
+    {
+      "id": "task2a-gap-2026-05-21-18.23-media-codec2-tunneled-media3-abr",
+      "section": "18.23",
+      "priority": 80,
+      "title": "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+      "description": "知识缺口挖掘新增章节，评分 18/20；加工时需按大纲补齐 Codec2、tunneled playback、Media3 ABR 与 Perfetto 诊断路径。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "created_by": "task2a-knowledge-gap",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
+      ],
+      "gap_source": "研究素材/AOSP结构/官方文档",
+      "gap_score": 18,
+      "material_paths": [
+        "DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md",
+        "DeepResearch/2026-05-15-android-multimedia-codec2-tunneled-abr.md",
+        "https://source.android.com/docs/devices/tv/multimedia-tunneling",
+        "https://source.android.com/docs/core/media/updatable-media",
+        "https://developer.android.com/media/media3/exoplayer/track-selection",
+        "https://developer.android.com/media/media3/exoplayer/troubleshooting"
+      ],
+      "priority_reason": "现有 18 章有视频叠加与 HWC、SurfaceView/TextureView 路径，但缺少 MediaCodec/Codec2 到 tunneled playback 与 Media3 ABR 的端到端播放性能诊断。"
     }
   ],
   "metadata": {

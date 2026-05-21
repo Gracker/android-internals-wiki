@@ -1,6 +1,6 @@
 {
-  "total": 341,
-  "draft": 0,
+  "total": 342,
+  "draft": 1,
   "ready-for-review": 136,
   "finalized": 205,
   "task9_result": "needs-rework",
@@ -1560,8 +1560,8 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T08:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-21T10:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "08:06",
@@ -5383,6 +5383,19 @@
       "material_count": 13,
       "last_task2a_at": "2026-05-21T06:09:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "18.23": {
+      "section": "18.23",
+      "title": "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+      "file": "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-21",
+      "queue_priority": 80,
+      "gap_source": "研究素材/AOSP结构/官方文档",
+      "gap_score": 18,
+      "material_count": 6
     }
   },
   "task2a_last_processed": {
@@ -5625,19 +5638,28 @@
   "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-21",
-    "time": "06:09",
+    "time": "10:04",
     "mode": "gap-mining",
     "created_sections": [
-      "26.15"
+      "18.23"
     ],
     "created_files": [
-      "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
+      "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
     ],
-    "candidate_count": 4,
+    "candidate_count": 5,
     "qualified_count": 1,
-    "qualified_candidates": 1,
-    "source": "官方文档/Clippings结构参考/AOSP结构对照",
-    "note": "Phase 0 未发现空 draft；本轮从 Android Vitals 官方文档、Play Console 技术质量口径与 Clippings 线上质量平台素材中筛出质量指标归因缺口。"
+    "qualified_candidates": [
+      {
+        "section": "18.23",
+        "title": "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+        "score": 18,
+        "material_count": 6,
+        "source": "研究素材/AOSP结构/官方文档",
+        "file": "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
+      }
+    ],
+    "source": "研究素材/AOSP结构/官方文档/每日信息",
+    "note": "Phase 0 未发现空 draft；本轮对每日信息、source-index 高分未映射素材与 AOSP/官方文档进行比对，Codec2 / tunneled playback / Media3 ABR 具备独立章节价值。"
   },
   "section_5_15": {
     "section": "5.15",
@@ -5758,14 +5780,14 @@
   },
   "task2a_gap_mining_summary": {
     "date": "2026-05-21",
-    "time": "06:09",
+    "time": "10:04",
     "created_sections": [
-      "26.15"
+      "18.23"
     ],
     "created_files": [
-      "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md"
+      "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
     ],
-    "reason": "Phase 0 未发现空 draft；Phase 1 发现 Android Vitals / Play Console 质量指标尚未在第 26 章形成独立归因章节，评分 18/20。"
+    "reason": "现有 18 章覆盖 SurfaceView、视频叠加与 HWC，但缺少媒体解码、tunneled playback 与 Media3 ABR 之间的完整播放管线诊断章节。"
   },
   "last_task2a_processed_status": "draft",
   "section_21_11": {
@@ -5871,5 +5893,18 @@
         "remaining_p85": 4
       }
     }
-  ]
+  ],
+  "section_18_23": {
+    "section": "18.23",
+    "title": "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+    "file": "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-21",
+    "queue_priority": 80,
+    "gap_source": "研究素材/AOSP结构/官方文档",
+    "gap_score": 18,
+    "material_count": 6
+  }
 }

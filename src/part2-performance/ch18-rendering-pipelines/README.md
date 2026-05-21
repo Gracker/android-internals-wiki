@@ -39,6 +39,8 @@
 - `18.19` 可变刷新率渲染管线
 - `18.20` 渲染分析方法（含 Frame Timeline / JankTracker 观察）
 - `18.21` EyeDropper API 与跨设备协作性能
+- `18.22` Android XR 空间 UI 与环境资产渲染性能
+- `18.23` 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
 ## 阅读建议
 
@@ -51,3 +53,4 @@
 1. 先确定问题属于哪条路径。
 2. 再回到对应章节。
 3. 最后把 `18.20` 的分析方法拿出来复核。
+
