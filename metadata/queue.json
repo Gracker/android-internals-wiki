@@ -1,6 +1,57 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-2.11-flutter-adpf-host-image-copy",
+      "section": "2.11",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 95,
+      "title": "Flutter ADPF 与 Impeller Vulkan host image copy 归因缺少源码支撑",
+      "description": "闲时抽检发现 §2.11 将 Flutter Engine 自动接入 ADPF HintSession、Impeller 使用 VK_EXT_host_image_copy 改善纹理上传写成已验证事实，但 Flutter engine main 源码未见对应实现；16KB page size 的 NDK r27/r28 边界也需修正。",
+      "reason": "[Deep Tech Review Audit] Flutter Engine ADPF 与 Impeller Vulkan host image copy 的源码/版本归因存在 P0/P1 技术错误，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-21-audit.md",
+        "https://github.com/flutter/flutter/issues/155097",
+        "https://github.com/flutter/engine/blob/main/impeller/renderer/backend/vulkan/texture_vk.cc",
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/Flutter Engine ADPF 归因",
+          "location": "L248-L258：`ADPF 系统级调频协同` 小节",
+          "detail": "正文写 Flutter Engine 在 Android 16+ 接入 ADPF，并在 Flutter Engine 3.27+ 设备上自动创建 PerformanceHintManager HintSession、逐帧调用 reportActualWorkDuration()。但 Flutter issue #155097（[Android] Determine if Android Performance Hint Manager is useful）已关闭为 not_planned；本轮对 Flutter engine main ae5c360 的 shell/platform/android、impeller、fml、runtime、lib/ui、common 目录执行 `rg \"PerformanceHint|APerformanceHint|reportActualWorkDuration|ADPF|HintSession|performance_hint\"` 无命中。当前公开源码不能支撑“Flutter Engine 已自动启用 ADPF HintSession”这一结论。",
+          "suggestion": "删除该小节或改成 `[待验证]` 的 Android 平台能力说明：ADPF / PerformanceHintManager 是 Android API，若应用或引擎显式接入才可观察 HintSession；不要写成 Flutter 3.27+ 自动启用。若后续找到具体 engine commit，再补 commit、文件路径和版本边界。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/Impeller Vulkan 纹理上传实现",
+          "location": "L347-L357：`Vulkan 1.4 零拷贝纹理上传` 小节",
+          "detail": "正文把 Android 16 Vulkan 1.4 的 `VK_EXT_host_image_copy` 直接归因到 Impeller 纹理上传路径，并写支持设备上 Raster 线程纹理上传 slice 会明显缩短。Flutter engine main ae5c360 的 Impeller Vulkan capability 枚举只包含 `VK_EXT_pipeline_creation_feedback`、`VK_KHR_portability_subset`、`VK_EXT_image_compression_control` 三个可选扩展，未启用 `VK_EXT_host_image_copy`；`impeller/renderer/backend/vulkan/texture_vk.cc` L75-L130 仍创建 staging buffer 并调用 `vk_cmd_buffer.copyBufferToImage()`；全局搜索 `host_image_copy` / `CopyMemoryToImage` 无命中。该段把 Vulkan/Android 通用能力写成 Flutter Impeller 已用行为，版本归因过度。",
+          "suggestion": "改成“Android 16 / Vulkan 1.4 提供 host image copy 能力，但截至当前 Flutter engine main 未看到 Impeller 启用该扩展；Flutter 场景只能作为未来优化方向或待验证假设”。删除“零拷贝”“Perfetto slice 会明显缩短”等 Flutter 结果断言；45%/50% 数据若保留，标明来自 Android Developers synthetic Vulkan benchmark，不是 Flutter 实测。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/16KB page size 工具链边界",
+          "location": "L175-L184：16KB Page Size 合规清单",
+          "detail": "正文写 Flutter plugin `.so` 必须用 NDK r27+ 重新编译，并建议检查 NDK 版本 ≥ r27。Android Developers 16KB page size 文档的边界是 NDK r28+ 默认生成 16KB-aligned shared libraries；NDK r27 或更低需要额外 linker flags（如 `-Wl,-z,max-page-size=16384`）/ 构建配置。仅写 NDK ≥ r27 会让读者误以为 r27 默认满足对齐要求。",
+          "suggestion": "改为：优先升级 NDK r28+；若必须使用 r27 或更低，显式配置 16KB page-size linker flags，并结合 AGP 8.5.1+ packaging 对齐与 16KB 模拟器/真机验证。检查项不要只写“NDK ≥ r27”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T21:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-21-21-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-18.11-angle-native-fence-fd-ownership",
       "section": "18.11",
       "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
