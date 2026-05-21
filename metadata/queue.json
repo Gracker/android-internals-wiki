@@ -16111,6 +16111,36 @@
       "review_log": "logs/deep-review/2026-05-22-03-deep-review.md",
       "last_task6_review_at": "2026-05-22T04:07:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-22-04-review.md"
+    },
+    {
+      "id": "task2a-gap-20260522-25.14-jobdebuginfo-jobscheduler-diagnostics",
+      "section": "25.14",
+      "section_title": "JobScheduler 调试：Pending Reasons 与 JobDebugInfo",
+      "priority": 80,
+      "title": "Android 16/17 JobScheduler Pending Reasons 与 JobDebugInfo 排障",
+      "description": "Android 16 引入 getPendingJobReasons()/getPendingJobReasonsHistory()，Android 17 扩展 getPendingJobReasonStats()。现有章节覆盖 JobScheduler/WorkManager 调度、配额和 Excessive CPU，但缺少面向后台任务排障的 pending reason 结构化诊断章节。",
+      "reason": "Task2A gap mining: 官方 Android 17 features 与后台任务文档显示 JobDebugInfo 已成为 JobScheduler 排障新入口，适合补入 Part 5 后台功耗治理章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/reference/android/app/job/JobScheduler",
+        "https://developer.android.com/develop/background-work/background-tasks/data-transfer-options",
+        "https://developer.android.com/develop/background-work/background-tasks/testing/persistent/debug",
+        "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+        "src/part5-app/ch25-power-size/04-workmanager-practice.md",
+        "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T04:17:00+08:00"
     }
   ],
   "metadata": {

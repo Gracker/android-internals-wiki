@@ -411,6 +411,7 @@ tags:
   - [25.11 ADPF Hint Session 与协程线程迁移](part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md)
   - [25.12 Android 17 Excessive CPU Kill 与后台任务功耗治理](part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md)
   - [25.13 Foreground Service 超时与 JobScheduler 配额治理](part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md)
+  - [25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo](part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
