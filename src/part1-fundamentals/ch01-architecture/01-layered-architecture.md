@@ -31,14 +31,14 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-18"
-task2b_state: "pending"
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed  # 2026-05-22 rework: SF version boundary, memfd claim, SELinux causal
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T08:31:45+08:00"
 task9_review_notes: "2026-05-18 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。SurfaceFlinger 旧版本边界仍误写到 Android 14-；Android 15 起强制 memfd 说法与 AOSP android-16.0.0_r1 不符；SELinux AVC 性能因果仍需删除/补证。已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。Android 16 SurfaceFlinger 旧 trace 名 doComposition 在正常/异常示例中残留，已写入 queue.json。 | 2026-05-18 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。SurfaceFlinger Android 16 trace/源码切片名称仍使用旧路径；HAL 调用段落仍把 Treble 后 HAL 泛化成每次 Binder IPC。已写入 queue.json。 | 2026-05-17 task9 idle-audit: needs-rework。P0 1 / P1 0 / P2 0。命中 SELinux AVC 缓存实例描述错误，已写入 queue.json。"
@@ -120,7 +120,7 @@ graph TB
 
 ### 各层职责：从 Kernel 到 App 的边界分工
 
-**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制。Binder 驱动负责高频进程间通信。内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK 的历史实现，Android 10 及以后主线切到 userspace `lmkd`，并可结合 PSI（Pressure Stall Information）判断内存压力。共享内存也不是一套机制覆盖所有版本，早期大量使用 ashmem，Linux 5.18（2022）已从 staging 目录移除 ashmem 驱动，Android 15 起强制使用 `memfd` 作为共享内存后端；图形等子系统还会结合 `dmabuf` 一类机制。
+**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制。Binder 驱动负责高频进程间通信。内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK 的历史实现，Android 10 及以后主线切到 userspace `lmkd`，并可结合 PSI（Pressure Stall Information）判断内存压力。共享内存也不是一套机制覆盖所有版本。早期大量使用 ashmem，Linux 5.18（2022）已从 staging 目录移除 ashmem 驱动，Android 正在从 ashmem 向 memfd / ashmemd / compat shim 迁移。AOSP android-16.0.0_r1 的 `libcutils` 仍保留受 `sys.use_memfd` 属性与兼容性检查控制的 memfd 路径和 ashmem fallback，尚未达到全量强制切换；图形等子系统还会结合 `dmabuf` 一类机制。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
@@ -180,7 +180,7 @@ private void run() {
 
 SurfaceFlinger 是一个独立的 Native 进程，它的职责很单一：把各个 App 产生的 Surface 合成为最终的画面，交给屏幕显示。它不属于 SystemServer，但与 SystemServer 中的 WMS 紧密协作——WMS 负责决定窗口的层级和位置，SurfaceFlinger 负责把这些窗口画出来。
 
-SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。Android 16 的主路径切片是 `commit`（WorkloadTracer Commit）→ `composite`（Composition）→ `postComposition`；旧版本（Android 14 及之前）的切片名是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。排查时先确认设备版本，再按对应名称搜索。
+SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。Android 16 的主路径切片是 `commit`（WorkloadTracer Commit）→ `composite`（Composition）→ `postComposition`。Android 13–15 同样使用 `SurfaceFlinger::commit()` + `composite()` 路径（命名略有调整），旧版本（Android 10 及之前）的切片名是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。排查时先确认设备版本，再按对应名称搜索。
 
 ### Zygote：应用进程 fork 入口
 
@@ -262,7 +262,7 @@ Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与
 > 
 > 关键性能事实在于 **AVC（Access Vector Cache）**：首次未知请求需完整策略评估（~1-10 μs），后续命中仅 O(1) 缓存查找（~50-200 ns）。Binder 高频调用特征使 AVC 命中率极高，稳态下 SELinux 开销可忽略不计。
 > 
-> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离，三路 binder 设备各自拥有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。SELinux AVC 本身是全局访问向量缓存（`security/selinux/avc.c` 中的 `static struct selinux_avc selinux_avc`），缓存键是 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。Treble 隔离减少了跨域 Binder 调用次数，从而降低了需要 AVC 检查的跨域 transaction 频率。
+> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离，三路 binder 设备各自拥有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。SELinux AVC 本身是全局访问向量缓存（`security/selinux/avc.c` 中的 `static struct selinux_avc selinux_avc`），缓存键是 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。Treble 三路隔离通过 SELinux type / 权限边界限制跨域访问，降低了误用风险。三路 binder 设备各自独立的 context manager 本身并不减少 SELinux 检查次数——每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
 > 
 > enforcing 与 permissive 的差异仅体现在拒绝路径：两者均执行完整检查，但 enforcing 额外执行拒绝操作。对于正常放行的请求，两种模式路径几乎相同。
 > 
@@ -310,7 +310,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 **Framework 层**主要体现在 `system_server` 进程中。展开它会看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，Trace 中会出现一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
 
-`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。旧版本（Android 14 及之前）的主路径是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
+`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。旧版本（Android 10 及之前）的主路径是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
 
 **Native/HAL 层**的表现比较分散。Treble 之后的 HAL 服务按传输模式区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到调用方进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在调用方进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
@@ -322,12 +322,12 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 正常 vs 异常的表现对比
 
-**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的合成阶段（Android 16 为 `composite`，旧版本为 `doComposition`）耗时稳定。
+**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的合成阶段（Android 13+ 为 `composite`，Android 10 及之前为 `doComposition`）耗时稳定。
 
 **异常情况（举例）：**
 - 如果 App 主线程出现长时间 "Runnable" 但没有 CPU 切片，说明线程已经就绪但迟迟没拿到 CPU——可能是 CPU 被其他高优先级线程占满，或者系统处于 Thermal 降频状态。
 - 如果 App 主线程的 Binder 调用箭头指向 `system_server` 后长时间没有返回，说明 SystemServer 在处理请求时被其他工作阻塞——可能是锁竞争，也可能是某个服务初始化慢。
-- 如果 `surfaceflinger` 的合成阶段（`composite` / 旧版 `doComposition`）突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
+- 如果 `surfaceflinger` 的合成阶段（Android 13+ `composite` / Android 10 及之前 `doComposition`）突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
 
 [待补充：Trace 截图——正常帧 vs 掉帧对比]
 
@@ -349,7 +349,7 @@ HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访�
 
 很多性能问题出在 App 层（主线程做了耗时操作），但有不少场景根因在系统层。比如：
 - **启动慢**：可能是因为 SystemServer 在处理多个启动请求时发生锁竞争，AMS 的 `ActivityManagerService.attachApplication()` 被阻塞。
-- **渲染卡顿**：根因也可能落在 SurfaceFlinger 的合成阶段耗时过长（Android 16 看 `composite`，旧版本看 `doComposition`），也就是 GPU 合成负担过重。
+- **渲染卡顿**：根因也可能落在 SurfaceFlinger 的合成阶段耗时过长（Android 13+ 看 `composite`，Android 10 及之前看 `doComposition`），也就是 GPU 合成负担过重。
 - **ANR**：Input ANR 的根因也可能出在 SystemServer 端的 InputDispatcher 被其他工作拖慢。
 
 在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能定位根因。Main Thread 上如果有一个持续几十毫秒的 Binder slice，下一步应先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程；问题可能不在 App 本身，而在系统服务排队等待。理解分层架构是性能分析的基本功：每一层都可能是瓶颈所在。

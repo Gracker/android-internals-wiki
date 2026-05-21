@@ -22,11 +22,11 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: fixed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed  # 2026-05-22 rework: Alpha API correction, thread priority warning
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
@@ -199,7 +199,7 @@ AlphaManager.getInstance()
     .start();
 ```
 
-Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。
+Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务；`Project.Builder` 使用 `add(...)` + `after(...)` 组织依赖，而非 `dependsOn`。入口调用为 `AlphaManager.getInstance(context).addProject(project).start()`。默认线程池为单线程 `ExecutorService`，可通过 `AlphaConfig` 替换为自定义线程池。
 
 ### 依赖的边界情况
 
@@ -251,18 +251,19 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 **核心概念**（基于 alibaba/alpha v1.2.0 源码）：
 
-- `Task`：最小调度单位，声明依赖关系（`dependsOn`）、执行线程（`isMainThread`）、优先级（`executePriority` / `threadPriority`）。
-- `Project`：Task 的容器，对应一个启动阶段（如"Application 初始化""首屏准备"），Project 之间可以串行或并行。
-- `AlphaManager`：入口类，接收 Project 配置，内部构建 DAG 并调度执行。支持 Java Builder 和 XML 两种配置方式。
+- `Task`：最小调度单位。通过 `Task(String taskName, boolean isInUiThread)` 构造，`isInUiThread=true` 的 Task 通过主线程 Handler 执行，`false` 的走 ExecutorService。Task 支持设置 `executePriority`（调度优先级）和 `threadPriority`（OS 线程优先级）。
+- `Project`：Task 的容器，对应一个启动阶段（如"Application 初始化""首屏准备"）。`Project.Builder` 使用 `add(task)` 添加任务，`add(task).after(taskA, taskB)` 声明依赖。Project 之间可以串行或并行。
+- `AlphaManager`：入口类，通过 `AlphaManager.getInstance(context).addProject(project).start()` 启动调度。支持 Java Builder 和 XML 两种配置方式。
 
 **执行流程**（基于 `AlphaManager.start()` 源码）：
 
 ```
-1. 通过 AlphaManager.Builder 或 XML 解析注册所有 Project/Task
-2. 内部构建 DAG 并做拓扑排序 + 环检测
+1. 通过 AlphaManager.getInstance(context).addProject(project) 注册所有 Project/Task
+   （Task 依赖通过 Project.Builder.add(...).after(...) 声明）
+2. AlphaManager.start() 内部构建 DAG 并做拓扑排序 + 环检测
 3. 按拓扑排序结果分发任务到对应线程池
-   - isMainThread=true 的 Task 通过主线程 Handler 执行
-   - isMainThread=false 的 Task 通过配置的 ExecutorService 执行
+   - isInUiThread=true 的 Task 通过主线程 Handler 执行
+   - isInUiThread=false 的 Task 通过配置的 ExecutorService 执行
    - 默认 ExecutorService 为单线程池，可通过 AlphaConfig 替换
 4. 任务完成后检查下游任务的依赖是否全部满足，满足则调度执行
 5. 所有任务完成后回调 onProjectFinish
@@ -429,7 +430,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 ```
 
-关键路径上的异步线程优先级设置为 `THREAD_PRIORITY_FOREGROUND`（-2），非关键路径的 IO 线程设置为 `THREAD_PRIORITY_BACKGROUND`（10）。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
+关键路径上的异步线程优先级设置为 `THREAD_PRIORITY_FOREGROUND`（-2），非关键路径的 IO 线程设置为 `THREAD_PRIORITY_BACKGROUND`（10）。**注意**：`THREAD_PRIORITY_FOREGROUND`（-2）在 AOSP `Process.java` 中的注释为"Standard priority for foreground app threads"，应用侧设置 -2 通常可以成功，但严格来说内核允许调度策略对此做限制——建议在实战中用 Perfetto `sched` 轨道 + TTID 实测验证优先级调整的实际收益，代码层面增加 `try/catch SecurityException` 防护。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
 
 ### 线程池的监控指标
 

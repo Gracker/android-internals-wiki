@@ -8557,7 +8557,7 @@
       "created_date": "2026-05-16",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/02-startup-framework.md"
@@ -8585,7 +8585,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T00:30:00+08:00"
+      "added_at": "2026-05-16T00:30:00+08:00",
+      "completed_date": "2026-05-22",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task2B rework fixed"
     },
     {
       "id": "task9-20260516-25.11-adpf-session-api-version-boundary",
@@ -12126,7 +12129,7 @@
       "added_at": "2026-05-18T08:31:45+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
@@ -12159,7 +12162,10 @@
       ],
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-18T08:31:45+08:00",
-      "review_log": "logs/deep-review/2026-05-18-08-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-18-08-deep-review.md",
+      "completed_date": "2026-05-22",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task2B rework fixed"
     },
     {
       "id": "task9-audit-20260518-2.13-bufferqueue-version-trace-source-errors",
@@ -14209,7 +14215,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/07-compose-performance.md"
@@ -14237,7 +14243,10 @@
       "added_at": "2026-05-20T02:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T02:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-02-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-02-audit.md",
+      "completed_date": "2026-05-22",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task2B rework fixed"
     },
     {
       "id": "task2a-gap-14.17-statsd-system-metrics",
