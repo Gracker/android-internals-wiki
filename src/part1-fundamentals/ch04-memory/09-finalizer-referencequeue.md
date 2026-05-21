@@ -30,7 +30,12 @@ gap_source: "素材驱动/章节深挖"
 pipeline_stage: task2b_pending
 task2b_result: pending
 task2b_state: pending
-task6_state: revisiting
+task6_state: reviewed
+last_task6_review_log: "logs/review/2026-05-21-20-review.md"
+last_task6_at: "2026-05-21T20:11:00+08:00"
+reviewed_date: "2026-05-21"
+reviewed_by: openclaw-task6
+task6_result: needs-rework
 task9_state: reviewed
 task9_reviewed_date: 2026-05-21
 task9_reviewed_by: "openclaw-task9"
@@ -39,7 +44,6 @@ task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1，需 Task2B 修�
 last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
 task9_result: needs-rework
 ---
-
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
 <!-- outline-start -->
@@ -341,8 +345,6 @@ class NativeHandleOwner(
 CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/关闭，记录 FD 数和 `dumpsys meminfo`，再配合 StrictMode 日志判断是否有未关闭资源。测试失败条件不要只看单次绝对值，最好看增长斜率；一次启动里的基线 FD 数受系统版本、WebView、厂商组件影响较大。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/StrictMode]
-
-
 
 ## Cleaner / CloseGuard 的版本对照表与源码路径
 

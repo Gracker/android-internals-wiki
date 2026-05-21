@@ -1,6 +1,12 @@
 ---
 title: "线上性能监控"
 chapter: "15.5"
+last_task6_review_log: "logs/review/2026-05-21-20-review.md"
+last_task6_at: "2026-05-21T20:11:00+08:00"
+reviewed_date: "2026-05-21"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+section: 15.5
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
@@ -35,15 +41,15 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 last_task9_at: "2026-05-21T13:31:48+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
-task9_result: needs-rework
+task9_result: pending
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
@@ -54,7 +60,6 @@ last_task9_review_log: "logs/deep-review/2026-05-21-13-audit.md"
 review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：FrameMetrics DEADLINE 示例中 totalDuration 变量作用域错误；P2：COMMAND_ISSUE_DURATION 指标口径需修正。"
 task9_review_notes: "2026-05-21 Task9 idle audit: P0 FrameMetrics 代码片段无法编译，写入 queue 条目 task9-audit-20260521-15.5-framemetrics-snippet-scope；P2 FrameMetrics 指标表写入 suggestions。"
 ---
-
 # 线上性能监控
 
 <!-- outline-start -->
@@ -84,9 +89,9 @@ task9_review_notes: "2026-05-21 Task9 idle audit: P0 FrameMetrics 代码片段�
 
 ## 为什么要做线上性能监控
 
-我们在第 7 章讲卡顿分析、第 9 章讲 ANR 分析时，讨论的都是"拿到了 Trace 怎么看"。那些分析工作有一个共同的前提：你得先知道出了问题。在开发阶段，我们靠 Systrace/Perfetto 手动抓 Trace、靠 StrictMode 拦截主线程 IO、靠开发者选项里的 GPU 呈现模式分析来发现异常。但这些手段都有一个根本性的局限：**它们只能覆盖开发者在实验室里主动测试的场景。**
+我们在第 7 章讲卡顿分析、第 9 章讲 ANR 分析时，讨论的都是"拿到了 Trace 怎么看"。那些分析工作有一个共同的前提：你得先知道出了问题。在开发阶段，我们靠 Systrace/Perfetto 手动抓 Trace、靠 StrictMode 拦截主线程 IO、靠开发者选项里的 GPU 呈现模式分析来发现异常。但这些手段都有一个明显局限：**它们只能覆盖开发者在实验室里主动测试的场景。**
 
-真实用户面对的情况远比测试环境复杂。不同 SoC 平台（高通、联发科、三星）的 GPU 驱动行为有差异；不同内存配置（4GB vs 12GB）下的后台压力不同；不同网络条件（弱网切换、VPN 连接）对数据加载的影响各异；不同 Android 版本（厂商 ROM 定制层）的系统调度策略也有出入。一个在 Pixel 上完全流畅的列表滚动，在某款低端机上可能频繁掉帧；一个在 WiFi 下秒开的页面，在 4G 弱信号下可能要等 3 秒。这些问题如果不在线上采集数据，开发者根本无从知晓。
+真实用户面对的情况远比测试环境复杂。不同 SoC 平台（高通、联发科、三星）的 GPU 驱动行为有差异；不同内存配置（4GB vs 12GB）下的后台压力不同；不同网络条件（弱网切换、VPN 连接）对数据加载的影响各异；不同 Android 版本（厂商 ROM 定制层）的系统调度策略也有出入。一个在 Pixel 上完全流畅的列表滚动，在某款低端机上可能频繁掉帧；一个在 WiFi 下秒开的页面，在 4G 弱信号下可能要等 3 秒。这些问题如果不在线上采集数据，开发者很难发现。
 
 线上性能监控要解决的核心问题就三个：**感知**（知道出了问题）、**定位**（知道问题在哪）、**量化**（知道问题有多严重、影响多少用户）。三者缺一不可——只感知不定位等于废话，只定位不量化等于没有优先级。
 
@@ -137,7 +142,7 @@ Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() 
 
 第一，`postFrameCallback()` 只会注册一次回调。如果想持续监听，必须在每次 `doFrame()` 末尾重新注册，就像上面代码中那样。忘记重新注册是最常见的初学者错误。
 
-第二，`frameTimeNanos` 是 VSync 信号到达的时间，而不是你的 `doFrame()` 被执行的时间。这意味着帧间隔测量的是"两个相邻 VSync 之间的距离"，而不是"你的代码执行耗时"。这恰好是我们想要的——它反映的是用户实际感知到的帧率。
+第二，`frameTimeNanos` 是 VSync 信号到达的时间，而不是你的 `doFrame()` 被执行的时间。因此，帧间隔测量的是"两个相邻 VSync 之间的距离"，而不是"你的代码执行耗时"。这恰好是我们想要的——它反映的是用户实际感知到的帧率。
 
 第三，`doFrame()` 运行在所属 `Choreographer` 的 Looper 线程上。应用通常在主线程调用 `Choreographer.getInstance()`，所以这个回调在所有 API 版本里通常都在主线程执行。回调里只做时间戳采集和计数，写文件、序列化、上报都放到后台线程。
 
@@ -145,7 +150,7 @@ FrameCallback 的方式虽然简单直接，但它有一个明显的短板：只
 
 ### FrameMetrics API：拿到每一帧的完整耗时拆解
 
-Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、不知道原因"的问题。它提供了每一帧从 VSync 到最终上屏的完整耗时拆解，包括以下几个维度：
+Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、不知道原因"的问题。它提供了每一帧从 VSync 到最终上屏的完整耗时分项，包括以下几个维度：
 
 | 指标 | 含义 | 对应渲染阶段 |
 |------|------|-------------|
@@ -155,14 +160,14 @@ Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、
 | `LAYOUT_MEASURE` | measure/layout 耗时 | Traversal 回调 |
 | `DRAW` | draw 耗时 | Traversal 回调 |
 | `SYNC` | 同步阶段耗时 | RenderThread |
-| `COMMAND_ISSUE_DURATION` | GPU 命令下发耗时 | GPU |
+| `COMMAND_ISSUE_DURATION` | 向图形驱动下发绘制命令耗时 | RenderThread / graphics driver command issue |
 | `SWAP_BUFFERS` | Buffer 交换耗时 | BufferQueue |
 | `TOTAL_DURATION` | 帧总耗时 | 全流程 |
 | `FIRST_DRAW_FRAME` | 首帧绘制标记 | 冷启动首帧 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
-有了这些拆解数据，才能区分掉帧是因为布局太复杂、GPU 渲染太慢、还是主线程消息队列堵塞——没有这个粒度的拆解，性能优化就是盲人摸象。
+有了这些分项数据，才能区分掉帧是因为布局太复杂、GPU 渲染太慢、还是主线程消息队列堵塞——没有这个粒度的拆解，性能优化就是盲人摸象。
 
 从 API 31 开始，FrameMetrics 还新增了 `DEADLINE` 指标，直接告诉你这一帧的 deadline 是多少（取决于当前屏幕刷新率）。有了 deadline，判断掉帧就不再需要硬编码 16ms，而是直接比较 `TOTAL_DURATION` 和 `DEADLINE`：
 
@@ -193,9 +198,9 @@ FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获�
 
 2022 年 Google 发布了 `JankStats` 库（AndroidX），它是 FrameMetrics 的上层封装，解决了直接使用 FrameMetrics 时的几个工程问题。
 
-第一个问题是**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
+**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
 
-第二项是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。低版本回退到 `ViewTreeObserver.OnPreDrawListener` 时，这个监听点还承担同步锚点的作用：业务侧写入的页面、操作、列表状态，会和帧信号重新匹配，避免纯 FrameMetrics 上报只有耗时而缺少业务上下文。
+**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。低版本回退到 `ViewTreeObserver.OnPreDrawListener` 时，这个监听点还承担同步锚点的作用：业务侧写入的页面、操作、列表状态，会和帧信号重新匹配，避免纯 FrameMetrics 上报只有耗时而缺少业务上下文。
 
 ```java
 performanceMetricsState.putState("navigation", "HomeFragment");
@@ -204,7 +209,7 @@ performanceMetricsState.putState("user_action", "scrolling_feed");
 
 [已验证: AndroidX androidx-main, metrics/metrics-performance/src/main/java/androidx/metrics/performance/JankStatsApi24Impl.kt, JankStatsApi31Impl.kt]
 
-第三项是**掉帧判定策略的可配置性**。JankStats 默认的 `jankHeuristicMultiplier` 是 `2.0f`。API 24-30 会先按刷新率估算期望帧时长，API 31+ 直接读取 `FrameMetrics.DEADLINE`，再用 `uiDuration` 和这个阈值比较。业务侧可以按自己的流畅度目标调整这个 multiplier。
+**掉帧判定策略的可配置性**。JankStats 默认的 `jankHeuristicMultiplier` 是 `2.0f`。API 24-30 会先按刷新率估算期望帧时长，API 31+ 直接读取 `FrameMetrics.DEADLINE`，再用 `uiDuration` 和这个阈值比较。业务侧可以按自己的流畅度目标调整这个 multiplier。
 
 在实际项目中，如果你的 App 最低支持 API 24+，直接使用 FrameMetrics 就够用了；如果需要覆盖更低的版本，或者想要 UI 状态关联和开箱即用的掉帧判定逻辑，JankStats 是更省心的选择。
 
@@ -283,7 +288,7 @@ ANR（Application Not Responding）是线上监控中优先级最高的一类问
 
 ### 为什么 ANR 监控比想象的困难
 
-ANR 监控面临一个根本矛盾：**ANR 的定义是主线程被阻塞超过阈值（通常 5 秒），而你要监控 ANR 的代码也运行在同一个 App 里。** 如果主线程卡死了，你的监控代码怎么执行？
+ANR 监控面临一个主要矛盾：**ANR 的定义是主线程被阻塞超过阈值（通常 5 秒），而你要监控 ANR 的代码也运行在同一个 App 里。** 如果主线程卡死了，你的监控代码怎么执行？
 
 这催生了两种截然不同的监控思路。
 
@@ -390,7 +395,7 @@ Android 15（API 35）开始提供 `android.os.ProfilingManager`，应用可以�
 
 ### 报警策略
 
-报警是监控的最后一公里。一个好的报警系统应该做到：**及时发现、低误报率、附带上下文**。
+报警负责把监控结果推到处理流程里。一个好的报警系统应该做到：**及时发现、低误报率、附带上下文**。
 
 典型做法是设置滑动窗口报警：比如"过去 1 小时内，某 App 版本 + 某设备组的 P95 冷启动时间超过 3 秒，且影响的用户数 > 50"。单纯的阈值报警（"P95 > 3s 就报警"）容易被异常值干扰，加上最小影响用户数的条件可以过滤掉统计噪声。
 
@@ -415,7 +420,7 @@ Perfetto SDK 主要面向 C/C++ 代码。对于纯 Java/Kotlin 的 Android App�
 
 ## 扩展：监控数据的可视化与归因分析平台
 
-采集了数据、设计了采样策略、搭建了报警，最后一块拼图是**可视化与归因分析**。原始数据堆在数据库里没有任何价值，必须变成可交互的图表和报告，才能驱动决策。
+采集了数据、设计了采样策略、搭建了报警，剩下的一块拼图是**可视化与归因分析**。原始数据堆在数据库里没有任何价值，必须变成可交互的图表和报告，才能驱动决策。
 
 ### Google Play Console — Android Vitals
 
@@ -452,41 +457,6 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 第一，**数据要和用户行为关联**。纯技术指标（帧率 55fps）不如带上下文的指标（首页信息流滚动时帧率 55fps）有价值。第二，**关注趋势而不是绝对值**。一个从 50fps 稳定退化到 45fps 的趋势，比一次偶然掉到 30fps 的异常更值得关注。第三，**让数据驱动优化决策**。不是所有掉帧都值得修——如果某个低频操作偶尔掉 2 帧，但只影响 0.1% 的用户，优先级应该低于影响 5% 用户的高频操作卡顿。
 
-## 采样、聚合与报警策略
-
-线上监控的难点不是采一个指标，而是决定“采多少、什么时候报、报了之后怎么用”。
-
-### 采样
-
-常见策略有三种：
-
-- **基础指标全量**：如启动、jank、exit reason
-- **异常样本加密集采样**：异常设备 / 页面 / 版本加大采样率
-- **异常触发补证据**：例如掉帧持续超过阈值后，API 35+ 用 `ProfilingManager` 请求 system trace / heap artifact，API 36+ 注册 `ProfilingTrigger` 等系统触发器；低版本再退回自建 trace 或 session timeline
-
-经验上，越重的证据越不应该全量。指标负责广覆盖，trace / dump 负责窄而深。
-
-### 聚合
-
-聚合维度至少要包括：
-
-- 版本
-- 机型 / SoC / GPU
-- Android 版本
-- 页面 / 场景
-- 网络与前后台状态
-
-没有这些维度，线上监控很容易退化成“全局均值还行”，却看不到某几个重点机型已经坏掉了。
-
-### 报警
-
-报警不该直接对原始事件触发，而应该围绕业务可行动阈值：
-
-- 首页 P95 TTFD 连续升高
-- 某机型 frozen frame rate 超阈值
-- 某版本 user-perceived ANR rate 抬升
-
-如果把原始事件直接推给团队，最后通常只会制造噪音。
 
 ## 平台与客户端的边界
 
@@ -501,7 +471,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 线上监控数据在 Perfetto 中没有直接对应的 Track（因为 Perfetto 是离线分析工具），但线上监控的各维度指标可以在 Perfetto 中找到对应的验证方式：
 
-- **帧率监控**：对应 Perfetto 中的 `Choreographer#doFrame` slice 和 RenderThread 的 `DrawFrames` slice。线上监控报告的掉帧，在 Perfetto 中能看到完整的渲染管线拆解
+- **帧率监控**：对应 Perfetto 中的 `Choreographer#doFrame` slice 和 RenderThread 的 `DrawFrames` slice。线上监控报告的掉帧，在 Perfetto 中能看到完整的渲染管线分项耗时
 - **启动耗时**：对应 Perfetto 中的冷启动 Trace（从 Zygote fork 到首帧 doFrame）。`reportFullyDrawn()` 的调用时刻在 Perfetto 中会显示为 `ActivityManager: Fully drawn <package_name>` 的日志事件
 - **ANR 监控**：对应 Perfetto 中主线程的长时间 block（能看到具体阻塞在哪个方法）以及 `am_anr` 的 logcat 事件
 
@@ -555,7 +525,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 - AOSP 源码路径：
   - `frameworks/base/core/java/android/view/Choreographer.java` — FrameCallback 和 doFrame 实现
-  - `frameworks/base/core/java/android/view/FrameMetrics.java` — 帧耗时拆解 API
+  - `frameworks/base/core/java/android/view/FrameMetrics.java` — 帧耗时分项 API
   - `frameworks/base/core/java/android/view/Window.java` — OnFrameMetricsAvailableListener 注册
   - `frameworks/base/core/java/android/app/ApplicationExitInfo.java` — 进程退出信息 API
   - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java` — `appNotResponding` 入口

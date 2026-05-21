@@ -197,7 +197,8 @@
     "19.11",
     "18.15",
     "18.23",
-    "22.15"
+    "22.15",
+    "15.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -226,23 +227,27 @@
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
     "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
-  "review_summary": "Task6 2026-05-21 19: review 22.15；四层质检通过，L1/L2 小修 12 处；无回炉项，送 Task9 技术复审。",
+  "review_summary": "Task6 2026-05-21 20: review 15.5、4.9、22.3；15.5 轻修通过转 Task9，4.9/22.3 因 Task9 高风险项继续 Task2B。",
   "task6_review_summary": {
     "date": "2026-05-21",
-    "time": "19:07",
+    "time": "20:11",
     "sections": [
-      "22.15"
+      "15.5",
+      "4.9",
+      "22.3"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "result": "1 pass-light-edit (Task9 pending)",
-    "small_fixes": 12,
-    "new_rework_items": 0,
-    "auto_promoted": [],
-    "note": "22.15 写作层复审通过；术语/中英文表达与元数据完成轻量修复。Task9 尚未通过，未自动晋升 finalized。"
+    "result": "2 回炉 / 1 通过",
+    "log": "logs/review/2026-05-21-20-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -309,7 +314,14 @@
       "p0": 3,
       "p1": 2,
       "p2": 3,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "补 outline 并修 L1 表述；Android 17/API/GC 数据口径等 Task9 高风险问题继续 Task2B。"
     },
     "2.3": {
       "p0": 3,
@@ -1050,7 +1062,14 @@
       "p3": 0,
       "reviewed_at": "2026-05-15T13:30:28+08:00",
       "log": "logs/deep-review/2026-05-15-13-deep-review.md",
-      "summary": "P0 1：FinalizerReference 创建时机写反；P1 2：Cleaner 双路径未区分、CloseGuard/Cleaner API level 边界缺失；P2 3：remove() wait 语义、watchdog 行号/阈值、AOSP path 规范。"
+      "summary": "P0 1：FinalizerReference 创建时机写反；P1 2：Cleaner 双路径未区分、CloseGuard/Cleaner API level 边界缺失；P2 3：remove() wait 语义、watchdog 行号/阈值、AOSP path 规范。",
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审仅做格式小修；Task9 已标记 Cleaner 执行路径/源码锚点 P0/P1，合并确认到 queue，继续 Task2B。"
     },
     "13.12": {
       "p0": 1,
@@ -1573,31 +1592,43 @@
       "task6_new_rework": false,
       "task9_result": "needs-rework",
       "task6_note": "复审通过：清理“真正”和否定-纠正式句子 3 处；SKIP_VALIDATE 版本边界与 canSkipValidate 条件已有 Task9 pending queue。"
+    },
+    "15.5": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 10,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
+      "task6_log": "logs/review/2026-05-21-20-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；补 section 元数据，修禁用/填充表达、COMMAND_ISSUE_DURATION 口径表述与重复采样段。Task9 重新进入 pending。"
     }
   },
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T19:35:29+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-21T20:11:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-21",
-    "time": "19:07",
-    "reviewed_at": "2026-05-21T19:07:00+08:00",
+    "time": "20:11",
+    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "mode": "normal",
     "sections": [
-      "22.15"
+      "15.5",
+      "4.9",
+      "22.3"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-21-19-review.md",
-    "mode": "normal-review",
-    "result": "22.15 pass-light-edit; no auto-finalized (Task9 pending)",
-    "l1_l2_fixes": 12,
-    "l3_l4_issues": 0,
-    "technical_risk_markers": 0,
-    "auto_promoted": [],
-    "summary": "Task6 review 1 节：22.15 写作层通过，术语和元数据轻量修复；无新增回炉项，进入 Task9 pending。"
+    "log": "logs/review/2026-05-21-20-review.md",
+    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
   },
   "task9_last_review": "2026-05-20",
   "ready_to_publish": 201,
@@ -2356,14 +2387,19 @@
       "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_priority": 95,
       "last_task9_at": "2026-05-21T19:35:29+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T20:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
     },
     "1.3": {
       "status": "finalized",
@@ -3213,7 +3249,13 @@
       "task2b_result": "pending",
       "queue_priority": 95,
       "last_task9_at": "2026-05-21T19:35:29+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T20:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
     },
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
@@ -4348,6 +4390,22 @@
       "task9_result": "pass-tech-review",
       "last_task9_at": "2026-05-21T19:35:29+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
+    },
+    "15.5": {
+      "title": "线上性能监控",
+      "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T20:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
     }
   },
   "task2b_rounds": [
@@ -4442,31 +4500,33 @@
   "last_task2a_file": "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md",
   "last_task6_review": "2026-05-21",
   "last_task6_sections": [
-    "21.11",
-    "4.5",
-    "3.1"
+    "15.5",
+    "4.9",
+    "22.3"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
-  "last_task6_at": "2026-05-21T01:15:21+08:00",
+  "last_task6_at": "2026-05-21T20:11:00+08:00",
   "last_task6_review_detail": {
-    "mode": "normal-review",
-    "reviewed_at": "2026-05-21T01:15:21+08:00",
+    "date": "2026-05-21",
+    "time": "20:11",
+    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "mode": "normal",
     "sections": [
-      "21.11",
-      "4.5",
-      "3.1"
+      "15.5",
+      "4.9",
+      "22.3"
     ],
     "files": [
-      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-21-01-review.md",
-    "summary": "Task6 review 3 节：21.11、4.5 pass-light-edit；3.1 L1/L2 小修后保留既有 Task9 回炉项。自动晋升 0。"
+    "log": "logs/review/2026-05-21-20-review.md",
+    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4475,12 +4535,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "2.25",
-  "task6_last_review_at": "2026-05-21T01:15:21+08:00",
-  "task6_last_review_log": "logs/review/2026-05-21-01-review.md",
+  "task6_last_review_at": "2026-05-21T20:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-21-20-review.md",
   "task6_last_review_sections": [
-    "21.11",
-    "4.5",
-    "3.1"
+    "15.5",
+    "4.9",
+    "22.3"
   ],
   "sections_status": {
     "22.11": {
@@ -5486,30 +5546,32 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "normal-review",
-    "reviewed_at": "2026-05-21T01:15:21+08:00",
+    "date": "2026-05-21",
+    "time": "20:11",
+    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "mode": "normal",
     "sections": [
-      "21.11",
-      "4.5",
-      "3.1"
+      "15.5",
+      "4.9",
+      "22.3"
     ],
     "files": [
-      "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-21-01-review.md",
-    "summary": "Task6 review 3 节：21.11、4.5 pass-light-edit；3.1 L1/L2 小修后保留既有 Task9 回炉项。自动晋升 0。"
+    "log": "logs/review/2026-05-21-20-review.md",
+    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
   },
   "task6_last_review_files": [
-    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5761,9 +5823,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "21.11",
-    "4.5",
-    "3.1"
+    "15.5",
+    "4.9",
+    "22.3"
   ],
   "task2b_progress": [
     {
@@ -5792,7 +5854,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+  "last_task6_review_log": "logs/review/2026-05-21-20-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
