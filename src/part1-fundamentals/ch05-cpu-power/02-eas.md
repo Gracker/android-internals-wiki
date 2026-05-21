@@ -35,6 +35,7 @@ related_chapters:
 - '2.5'
 drafted_date: '2026-03-31'
 reviewed_date: "2026-05-11"
+last_task6_audit: '2026-05-21'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
@@ -61,12 +62,12 @@ review_notes: '2026-05-12 task9 deep-review: pass-tech-review。无 P0/P1；仅 
 <!-- outline-start -->
 ## 本节要点大纲
 
-### 锚点(必须覆盖)
+### 锚点（必须覆盖）
 
-- 🔹 EAS(Energy Aware Scheduling)的核心思想:在满足性能需求的同时最小化能耗
-- 🔹 能量模型(Energy Model):OPP(Operating Performance Points)与功耗曲线
+- 🔹 EAS（Energy Aware Scheduling）的核心思想：在满足性能需求的同时最小化能耗
+- 🔹 能量模型（Energy Model）：OPP（Operating Performance Points）与功耗曲线
 - 🔹 Task Placement 策略:将轻任务放小核、重任务放大核
-- 🔹 Util(utilization)信号与 PELT(Per-Entity Load Tracking)
+- 🔹 Util（utilization）信号与 PELT（Per-Entity Load Tracking）
 - 🔹 EAS 在 Perfetto 中的观察:cpu_frequency、sched_switch、uclamp
 
 ### 扩展(可选深入)
@@ -84,13 +85,13 @@ review_notes: '2026-05-12 task9 deep-review: pass-tech-review。无 P0/P1；仅 
 
 ## 为什么要了解 EAS
 
-在上一节中,我们讲了 CFS 的基本原理:它通过 vruntime 保证所有进程公平地获得 CPU 时间。但公平只是调度器的一个目标--在手机这样的移动设备上,还有一个同样重要的目标:**省电**。
+在上一节中,我们讲了 CFS 的基本原理:它通过 vruntime 保证所有进程公平地获得 CPU 时间。但公平只是调度器的一个目标——在手机这样的移动设备上，还有一个同样重要的目标：**省电**。
 
-现代手机 SoC(System on Chip,片上系统)普遍采用大小核架构(我们会在 5.3 节详细展开),一个四小核加四大核的八核处理器,在安排任务时面临一个核心问题:**一个任务应该放在小核还是大核?** 放小核省电但可能不够快,放大核够快但功耗高。如果调度器只看当前空闲程度,轻任务就可能被放到大核上,频率和电压都会被抬高,系统会多花电,也更容易把热量堆在前台交互阶段。
+现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构(我们会在 5.3 节详细展开),一个四小核加四大核的八核处理器,在安排任务时面临一个核心问题:**一个任务应该放在小核还是大核?** 放小核省电但可能不够快,放大核够快但功耗高。如果调度器只看当前空闲程度,轻任务就可能被放到大核上,频率和电压都会被抬高,系统会多花电,也更容易把热量堆在前台交互阶段。
 
-EAS(Energy Aware Scheduling)就是为了解决这个问题而生的。它在 Linux 5.0 中被合入主线内核,是 Android 设备上最重要的调度增强之一。EAS 的核心能力是:**在任务唤醒时,预测把任务放在不同 CPU 核心上分别需要消耗多少能量,然后选择一个既满足性能需求又最省电的核**。
+EAS（Energy Aware Scheduling）就是为了解决这个问题而生的。它在 Linux 5.0 中被合入主线内核,是 Android 设备上最重要的调度增强之一。EAS 的核心能力是:**在任务唤醒时,预测把任务放在不同 CPU 核心上分别需要消耗多少能量,然后选择一个既满足性能需求又最省电的核**。
 
-理解 EAS 的意义在于:打开一份 Perfetto Trace 时,看到主线程被分配到了小核上运行缓慢,或者在大小核之间频繁迁移,需要知道这不是"随机"的行为--背后有 EAS 的决策逻辑,而理解这个逻辑,是判断调度行为是否正常的关键。
+理解 EAS 的意义在于:打开一份 Perfetto Trace 时,看到主线程被分配到了小核上运行缓慢,或者在大小核之间频繁迁移,需要知道这不是“随机”的行为，背后有 EAS 的决策逻辑,而理解这个逻辑,是判断调度行为是否正常的关键。
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html]
 
@@ -98,9 +99,9 @@ EAS(Energy Aware Scheduling)就是为了解决这个问题而生的。它在 Lin
 
 ### 从"找最快的核"到"找最省电的核"
 
-传统 CFS 的任务唤醒逻辑(5.1 节讲过的 `select_task_rq_fair()`)主要关注性能:在可用的 CPU 核心中选择一个负载最低的、能让任务尽快开始执行的核。这个逻辑在同构系统(所有 CPU 核心性能相同)上工作良好,但在大小核架构上会出现问题--它可能把一个轻量级任务放到大核上,仅仅因为大核当时更空闲,这白白浪费了大核的高功耗能力。
+传统 CFS 的任务唤醒逻辑（5.1 节讲过的 `select_task_rq_fair()`）主要关注性能：在可用的 CPU 核心中选择一个负载最低的、能让任务尽快开始执行的核。这个逻辑在同构系统（所有 CPU 核心性能相同）上工作良好，但在大小核架构上会出现问题：它可能把一个轻量级任务放到大核上，仅仅因为大核当时更空闲，这白白浪费了大核的高功耗能力。
 
-EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时,`select_task_rq_fair()` 不再走原来的负载均衡路径,而是调用 `find_energy_efficient_cpu()`--这个函数的决策目标从"最快开始执行"变成了"满足性能需求的前提下,系统总能耗最低"。
+EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时，`select_task_rq_fair()` 不再走原来的负载均衡路径，而是调用 `find_energy_efficient_cpu()`，这个函数的决策目标从“最快开始执行”变成了“满足性能需求的前提下，系统总能耗最低”。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - "EAS overrides the CFS task wake-up balancing code"]
 
@@ -123,7 +124,7 @@ EAS 并非在所有设备上都生效。它需要满足以下条件:
 2. **能量模型(Energy Model)可用**:内核中必须注册了 CPU 的能耗数据。没有能量模型,EAS 就无法做能耗预测。
 3. **schedutil 调频策略**:EAS 需要与 `schedutil` governor 配合工作,因为它的能耗预测依赖于对 CPU 未来运行频率的估算,而 `schedutil` 能提供这个信息。如果使用 `performance` 或 `powersave` 等固定频率的 governor,EAS 的频率预测就不准了。
 
-这三个条件在主流 Android 手机上通常都满足--它们都是大小核架构,内核中有能量模型(通常通过 Device Tree 提供),默认使用 `schedutil` 调频。
+这三个条件在主流 Android 手机上通常都满足：它们都是大小核架构，内核中有能量模型（通常通过 Device Tree 提供），默认使用 `schedutil` 调频。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - EAS requirements: asymmetric CPU topology, EM, schedutil]
 
@@ -131,7 +132,7 @@ EAS 并非在所有设备上都生效。它需要满足以下条件:
 
 ### OPP:频率-电压对的集合
 
-要理解 EAS 怎么做能耗预测,我们得先看能量模型的数据来源,即 OPP(Operating Performance Points)。
+要理解 EAS 怎么做能耗预测,我们得先看能量模型的数据来源,即 OPP（Operating Performance Points）。
 
 一个 CPU 核心并不是只能跑一个固定频率。它可以在多个频率-电压对之间切换,每个频率-电压对就是一个 OPP。例如,一个小核可能有如下 OPP 表:
 
@@ -144,17 +145,17 @@ EAS 并非在所有设备上都生效。它需要满足以下条件:
 | 4   | 1500      | 950       | 200       |
 | 5   | 1800      | 1100      | 380       |
 
-注意功耗不是线性增长的--从 OPP 4 到 OPP 5,频率只增加了 20%,但功耗几乎翻倍。这是因为更高的频率需要更高的电压,而功耗与电压的平方成正比(动态功耗公式:P ∝ CV2f)。这也是 EAS 要尽量让任务在低频运行的原因--省下的不只是"一点电",而是指数级的功耗节省。
+功耗不是线性增长的：从 OPP 4 到 OPP 5,频率只增加了 20%,但功耗几乎翻倍。这是因为更高的频率需要更高的电压,而功耗与电压的平方成正比(动态功耗公式：P ∝ C V² f)。这也是 EAS 要尽量让任务在低频运行的原因：省下的不只是“一点电”，而是指数级的功耗节省。
 
 [已验证: 官方文档, Documentation/power/energy-model.rst - EM provides power cost tables for performance domains]
 
 [图:OPP 功耗曲线示例 - 频率-功耗非线性关系可视化,标注动态功耗公式 P ∝ CV2f]
 
-OPP 数据通常定义在 Device Tree(设备树)中,使用 `operating-points-v2` 属性。内核启动时解析这些数据,构建出每个"性能域"(Performance Domain)的功耗曲线。一个性能域通常对应一个 CPU 簇--同簇内的核心共享频率和电压调节,因此它们的 OPP 表相同。
+OPP 数据通常定义在 Device Tree（设备树）中,使用 `operating-points-v2` 属性。内核启动时解析这些数据,构建出每个“性能域”（Performance Domain）的功耗曲线。一个性能域通常对应一个 CPU 簇，同簇内的核心共享频率和电压调节,因此它们的 OPP 表相同。
 
 ### 能量模型框架
 
-Linux 内核的 Energy Model(EM)是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table,表项对应不同的 performance state / OPP,调度器通过 `em_cpu_energy()` 接口估算"把任务放进这个簇后,活跃运行态大概要花多少能量"。调用链是 `kernel/sched/fair.c::compute_energy()` → `em_cpu_energy()` → EM performance state / power table。
+Linux 内核的 Energy Model（EM）是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table，表项对应不同的 performance state / OPP，调度器通过 `em_cpu_energy()` 接口估算“把任务放进这个簇后，活跃运行态大概要花多少能量”。调用链是 `kernel/sched/fair.c::compute_energy()` → `em_cpu_energy()` → EM performance state / power table。
 
 这里有个边界要拆开。EM 只描述活跃运行态的功耗成本,不负责 CPU idle state。C-State 进入多深、停留多久,属于 CPUIdle governor 和 driver 的职责,观测时要看 `cpu_idle` 轨、平台 idle 统计或内核 idle 数据。把 EM 和 CPUIdle 写成一张表,会把"频率点功耗"和"空闲驻留功耗"混成同一层概念。
 
@@ -175,11 +176,11 @@ energy_delta = 放置任务后的系统总能耗 - 当前的系统总能耗
 具体来说,它会:
 
 1. 计算目标 CPU 在放置任务后的预期 utilization
-2. 根据 utilization 查询 EM,确定需要运行的 OPP(频率)
+2. 根据 utilization 查询 EM，确定需要运行的 OPP（频率）
 3. 用该 OPP 的功耗值,结合该 CPU 上其他任务的 utilization,计算总能耗
 4. 对每个候选 CPU 重复上述计算,选出总能耗最低的
 
-这个计算是近似的--它假设 schedutil 会把频率调到恰好满足当前 utilization 的最低 OPP,这是 `schedutil` governor 的核心行为。也正是这个原因,EAS 必须配合 `schedutil` 使用:如果 governor 不是按 utilization 调频的,EAS 的预测就会出错。
+这个计算是近似的：它假设 schedutil 会把频率调到恰好满足当前 utilization 的最低 OPP,这是 `schedutil` governor 的核心行为。也正是这个原因,EAS 必须配合 `schedutil` 使用:如果 governor 不是按 utilization 调频的,EAS 的预测就会出错。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - EAS predicts energy impact and relies on schedutil for frequency predictions]
 
@@ -187,9 +188,9 @@ energy_delta = 放置任务后的系统总能耗 - 当前的系统总能耗
 
 ### 为什么需要"利用率"信号
 
-EAS 的决策依赖一个关键输入:**任务有多"忙"**。这个信息由 PELT(Per-Entity Load Tracking)提供。
+EAS 的决策依赖一个关键输入:**任务有多"忙"**。这个信息由 PELT（Per-Entity Load Tracking）提供。
 
-在 PELT 出现之前,内核通过 per-CPU runqueue 的负载来估算任务的繁忙程度,但这种方式有根本性的缺陷--它只反映了 CPU 的整体负载,无法区分"一个 CPU 上跑了三个轻任务"和"一个 CPU 上跑了一个重任务"。EAS 需要知道**每个任务**需要多少计算能力,才能做出合理的选核决策。
+在 PELT 出现之前,内核通过 per-CPU runqueue 的负载来估算任务的繁忙程度,但这种方式有一个缺陷：它只反映了 CPU 的整体负载,无法区分"一个 CPU 上跑了三个轻任务"和"一个 CPU 上跑了一个重任务"。EAS 需要知道**每个任务**需要多少计算能力,才能做出合理的选核决策。
 
 PELT 从 Linux 3.8 开始引入,它为每个调度实体(单个任务、任务组、CPU runqueue)维护一个独立的 utilization 信号 `util_avg`。
 
@@ -205,7 +206,7 @@ PELT 使用指数加权移动平均(EWMA)来平滑 utilization 信号。它的�
 
 [图:PELT 信号衰减示意 - 32ms 窗口指数加权移动平均,展示信号上升/下降的响应速度]
 
-PELT 的 `util_avg` 被归一化到 0~1024 的范围。其中 1024 代表"一个最大 capacity 的 CPU 满负荷运行"。这个归一化非常关键--它让 `util_avg` 可以直接与 CPU 的 `capacity` 比较:如果任务的 `util_avg` 是 300,而小核的 `capacity` 是 400,EAS 就知道这个任务放在小核上"装得下"。
+PELT 的 `util_avg` 被归一化到 0~1024 的范围。其中 1024 代表"一个最大 capacity 的 CPU 满负荷运行"。这个归一化的作用是让 `util_avg` 可以直接与 CPU 的 `capacity` 比较:如果任务的 `util_avg` 是 300,而小核的 `capacity` 是 400,EAS 就知道这个任务放在小核上"装得下"。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - PELT signals normalized to 1024, comparable with CPU capacity]
 
@@ -213,9 +214,9 @@ PELT 的 `util_avg` 被归一化到 0~1024 的范围。其中 1024 代表"一个
 
 PELT 的 util 信号要能在大小核之间准确比较,需要满足两个"不变性":
 
-1. **频率不变性(Frequency Invariance)**:同一个任务在大核 1GHz 上跑 10ms 和大核 2GHz 上跑 5ms,utilization 信号应该相同。PELT 通过 `arch_scale_freq_capacity()` 回调实现频率归一化--将实际运行时间按当前频率与最大频率的比值进行缩放。
+1. **频率不变性（Frequency Invariance）**：同一个任务在大核 1GHz 上跑 10ms 和大核 2GHz 上跑 5ms，utilization 信号应该相同。PELT 通过 `arch_scale_freq_capacity()` 回调实现频率归一化：将实际运行时间按当前频率与最大频率的比值进行缩放。
 
-2. **CPU 不变性(CPU Invariance)**:同一个任务在大核上跑 5ms 和小核上跑 5ms,由于大核 IPC(Instructions Per Cycle,每周期指令数)更高,实际完成的计算量不同。PELT 通过 `arch_scale_cpu_capacity()` 回调实现 CPU 归一化--将 utilization 信号按目标 CPU 的 capacity 进行缩放。
+2. **CPU 不变性（CPU Invariance）**：同一个任务在大核上跑 5ms 和小核上跑 5ms，由于大核 IPC（Instructions Per Cycle，每周期指令数）更高，实际完成的计算量不同。PELT 通过 `arch_scale_cpu_capacity()` 回调实现 CPU 归一化：将 utilization 信号按目标 CPU 的 capacity 进行缩放。
 
 没有这两个不变性,EAS 的选核决策就会出错。例如,如果一个任务在小核上跑了很长时间积累了较高的 raw utilization,不做 CPU 不变性归一化的话,EAS 会误以为这个任务很重而不敢放在小核上。归一化后,它的 util 可能并不高。
 
@@ -223,7 +224,7 @@ PELT 的 util 信号要能在大小核之间准确比较,需要满足两个"不�
 
 ### WALT 与设备差异
 
-Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance 之上,并没有把 WALT 当成前提。WALT(Window Assisted Load Tracking)更像是部分 Android common kernel 或厂商内核使用过的负载跟踪扩展,常见于追求更快突发响应的设备内核。它会改变 util 信号的形成方式,但不会改掉 EAS 仍需依据 util、capacity、EM 做选核这一点。
+Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance 之上,并没有把 WALT 当成前提。WALT（Window Assisted Load Tracking）更像是部分 Android common kernel 或厂商内核使用过的负载跟踪扩展,常见于追求更快突发响应的设备内核。它会改变 util 信号的形成方式,但不会改掉 EAS 仍需依据 util、capacity、EM 做选核这一点。
 
 时间线最好拆成三层看。主线内核这条线是 PELT → EAS → uclamp;AOSP 用户态这条线是 task profile、cgroup 和 Power HAL 怎样把提示送进调度器;厂商设备这条线才是 WALT、boost hook、额外迁核策略。把三条线压成"Android 12 统一回归 PELT",很容易把 mainline、AOSP 和 vendor 内核混成一件事。分析具体设备时,要按内核版本和厂商树确认它到底是纯 PELT、WALT,还是两者混用。
 
@@ -233,18 +234,18 @@ Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance �
 
 ### find_energy_efficient_cpu 的决策流程
 
-当一个 CFS 任务被唤醒时,`select_task_rq_fair()` 会调用 `find_energy_efficient_cpu()` 为它选择目标 CPU。注意这个函数只负责 **wake-up placement**--负载均衡迁移、newidle balance、misfit migration 等路径有各自的入口(`load_balance()`、`detach_tasks()` 等),不走能量估算。这个函数的核心流程如下:
+当一个 CFS 任务被唤醒时，`select_task_rq_fair()` 会调用 `find_energy_efficient_cpu()` 为它选择目标 CPU。这个函数只负责 **wake-up placement**：负载均衡迁移、newidle balance、misfit migration 等路径有各自的入口（`load_balance()`、`detach_tasks()` 等），不走能量估算。这个函数的核心流程如下：
 
 **第一步:寻找每个性能域中 spare capacity 最大的 CPU。** Spare capacity = CPU capacity - 当前 utilization。它表示这个 CPU 还有多少"余力"。在大小核系统中,也就是先在小核簇中找一个最空闲的小核,再在大核簇中找一个最空闲的大核。
 
-**第二步:检查 prev_cpu(上一次运行的 CPU)的 spare capacity。** 如果 prev_cpu 当前有足够的空闲容量来容纳这个任务,倾向于保持不变--因为迁移本身有开销(cache miss、TLB flush 等)。
+**第二步：检查 prev_cpu（上一次运行的 CPU）的 spare capacity。** 如果 prev_cpu 当前有足够的空闲容量来容纳这个任务,倾向于保持不变，因为迁移本身有开销（cache miss、TLB flush 等）。
 
 **第三步:如果 prev_cpu 容不下,计算将任务放到每个候选 CPU 上的系统总能耗。** 对每个候选,EAS 会:
 - 预测目标 CPU 的 utilization 会变成多少
 - 根据新的 utilization 查询 EM,确定目标 CPU 需要运行在哪个 OPP
 - 计算整个系统的能耗变化(不仅仅是目标 CPU,还要考虑被迁出 CPU 的能耗下降)
 
-**第四步:选择总能耗最低的候选 CPU。** 但有一个安全阀--如果"能耗最优"的候选与"性能最优"的候选之间的能耗差异很小(在一个阈值范围内),EAS 会倾向于选择性能更好的那个,避免为了省微不足道的电量而牺牲用户体验。
+**第四步:选择总能耗最低的候选 CPU。** 但有一个安全阀：如果“能耗最优”的候选与“性能最优”的候选之间的能耗差异很小(在一个阈值范围内),EAS 会倾向于选择性能更好的那个,避免为了省微不足道的电量而牺牲用户体验。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - find_energy_efficient_cpu identifies highest spare capacity and estimates energy]
 
@@ -258,9 +259,9 @@ EAS 对轻任务和重任务有不同的处理方式:
 
 ### 全大核架构的调度边界
 
-骁龙 8 Elite(2+6 Oryon)和天玑 9400(All Big Core)这类设计模糊了大小核的传统分界:所有核心都有较强的性能输出,级差大幅收窄。骁龙 8 Elite 的 Performance 核算力约为 837(以 Prime 核 1024 为基准),Prime 与 Performance 之间的 capacity 差距只有约 18%,远小于传统 4+4 架构中小核与大核之间 3-5 倍的差距。
+骁龙 8 Elite（2+6 Oryon）和天玑 9400（All Big Core）这类设计模糊了大小核的传统分界:所有核心都有较强的性能输出,级差大幅收窄。骁龙 8 Elite 的 Performance 核算力约为 837（以 Prime 核 1024 为基准）,Prime 与 Performance 之间的 capacity 差距只有约 18%,远小于传统 4+4 架构中小核与大核之间 3-5 倍的差距。
 
-这种架构下,EAS 的能耗优化空间变小--因为核心之间的能效差异本身就小了。调度器更倾向于负载均衡而非节能压制,迁核决策的容错窗口也变宽。在 Perfetto 中表现为:线程在不同核心间的分布更均匀,迁移更频繁但每次迁移的性能波动更小。
+这种架构下，EAS 的能耗优化空间变小，因为核心之间的能效差异本身就小了。调度器更倾向于负载均衡而非节能压制,迁核决策的容错窗口也变宽。在 Perfetto 中表现为:线程在不同核心间的分布更均匀,迁移更频繁但每次迁移的性能波动更小。
 
 排查这类设备时,重点关注的是频率和热约束,而不是选核。因为所有核心性能接近,"跑错了核"的惩罚比传统大小核架构轻得多。
 
@@ -274,10 +275,10 @@ EAS 对轻任务和重任务有不同的处理方式:
 
 overutilized 对 EAS 的影响随内核版本有差异:
 
-- **Linux 6.6 及更早**:`find_energy_efficient_cpu()` 入口处检查 `rd->overutilized`,如果系统已 overutilized,直接跳过能量估算,回到传统选核路径。
-- **Linux 6.12 / GKI 6.12(Android 16)**:`find_energy_efficient_cpu()` 本身不再用 `rd->overutilized` 短路,但 overutilized 标志仍然存在,主要进入负载均衡判断(`load_balance()`、misfit migration 等路径),影响系统在高负载下的迁移策略。
+- **Linux 6.6 及更早**：`find_energy_efficient_cpu()` 入口处检查 `rd->overutilized`，如果系统已 overutilized，直接跳过能量估算，回到传统选核路径。
+- **Linux 6.12 / GKI 6.12（Android 16）**：`find_energy_efficient_cpu()` 本身不再用 `rd->overutilized` 短路，但 overutilized 标志仍然存在，主要进入负载均衡判断（`load_balance()`、misfit migration 等路径），影响系统在高负载下的迁移策略。
 
-这意味着在 Android 16/17 设备上,即使系统 overutilized,唤醒路径仍会尝试能量估算;但负载均衡路径会因 overutilized 而更激进地做性能优先的迁移。排查时要按内核版本区分,不要把 6.6 的行为外推到 6.12。
+因此在 Android 16/17 设备上，即使系统 overutilized，唤醒路径仍会尝试能量估算；但负载均衡路径会因 overutilized 而更激进地做性能优先的迁移。排查时要按内核版本区分,不要把 6.6 的行为外推到 6.12。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - overutilized flag disables EAS energy-awareness]
 
@@ -289,9 +290,9 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 但有时候,用户空间比调度器更清楚一个任务的重要程度:主线程需要低延迟响应,而后台同步任务可以慢慢跑。PELT 提供了任务的实际 utilization 信号,用户空间还需要一种机制告诉调度器:"这个任务虽然 util 不高,但它很重要,请给它更多资源"或者"这个后台任务不重要,不要让它浪费太多电"。
 
-这就是 uclamp(Utilization Clamping)的作用--它允许用户空间为每个任务设置 utilization 的上下限:
+这就是 uclamp（Utilization Clamping）的作用：它允许用户空间为每个任务设置 utilization 的上下限：
 
-- **UCLAMP_MIN**:设置 utilization 的下限。即使任务的实际 util 很低,调度器也会按这个下限来对待它。效果类似"保底性能"。例如,设 UCLAMP_MIN=512 意味着即使这个任务当前 util 只有 100,EAS 也会按 512 来选核和调频--它会被分配到 capacity 更高的 CPU,频率也会被拉高。
+- **UCLAMP_MIN**:设置 utilization 的下限。即使任务的实际 util 很低,调度器也会按这个下限来对待它。效果类似"保底性能"。例如,设 UCLAMP_MIN=512 意味着即使这个任务当前 util 只有 100,EAS 也会按 512 来选核和调频，它会被分配到 capacity 更高的 CPU,频率也会被拉高。
 
 - **UCLAMP_MAX**:设置 utilization 的上限。限制任务最多能获得多少 CPU 资源。用于约束后台任务,防止它们占用大核或拉高频率。
 
@@ -299,13 +300,13 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 ### Android 中的 uclamp 使用
 
-在 Android 里,调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group,随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI,JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`,把 profile 展开成"加入哪个 cgroup"和"往哪个属性文件写值"两类动作。
+在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI，JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
 
 ### UClamp 聚合方式的演进
 
-主线内核(Linux 5.3 至 6.12)的 UClamp 聚合始终采用 max/bucket 策略--`kernel/sched/core.c` 的 clamp bucket 逻辑追踪每个 rq 上请求的最大 clamp 值。这意味着三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上,调度器只按 200 来调频和选核。多任务并发时,如果各任务的真实负载之和远大于单任务的 clamp 值,频率预测会系统性偏低。
+主线内核（Linux 5.3 至 6.12）的 UClamp 聚合始终采用 max/bucket 策略：`kernel/sched/core.c` 的 clamp bucket 逻辑追踪每个 rq 上请求的最大 clamp 值。三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上时，调度器只按 200 来调频和选核。多任务并发时,如果各任务的真实负载之和远大于单任务的 clamp 值,频率预测会系统性偏低。
 
-社区和部分厂商分支曾探索将聚合方式从 max 改为 sum,理论上能更准确反映多任务总负载。但截至 android16-6.12(GKI 6.12),公开源码中 `uclamp_rq_util_with()` 仍走 max 路径,sum 聚合尚未合入主线。如果某个厂商内核确实切换到了 sum 聚合,排查时要结合具体 kernel tree 和 commit 确认。
+社区和部分厂商分支曾探索将聚合方式从 max 改为 sum，理论上能更准确反映多任务总负载。但截至 android16-6.12（GKI 6.12），公开源码中 `uclamp_rq_util_with()` 仍走 max 路径，sum 聚合尚未合入主线。如果某个厂商内核切换到了 sum 聚合，排查时要结合具体 kernel tree 和 commit 确认。
 
 把 Android 10、11、12 的路径拆开看,更稳:
 
@@ -336,19 +337,19 @@ overutilized 对 EAS 的影响随内核版本有差异:
 在 Perfetto 界面最上方,每个 CPU 核心都有对应的频率条。鼠标悬停在频率区域上,能直接读到当前的运行频率(MHz)。频率曲线随负载上下波动时,对应的就是 schedutil 根据 PELT utilization 信号做出的 DVFS 决策。
 
 重点关注:
-- 频率是否有突然的上限限制(scaling_max_freq 被压低)--这通常意味着温控介入了(详见 5.5 节)
-- 同簇 CPU 的频率是否同步变化--移动 SoC 通常以簇为单位调频
-- 任务运行期间频率是否合理--如果一个高负载任务运行时频率被限制在低位,性能瓶颈可能不在代码而在系统策略
+- 频率是否有突然的上限限制（scaling_max_freq 被压低），通常表示温控介入了(详见 5.5 节)
+- 同簇 CPU 的频率是否同步变化，移动 SoC 通常以簇为单位调频
+- 任务运行期间频率是否合理，如果一个高负载任务运行时频率被限制在低位,性能瓶颈可能不在代码而在系统策略
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - CPU Frequency 深度解析部分]
 
-**2. CPU Scheduling Track(sched_switch)**
+**2. CPU Scheduling Track（sched_switch）**
 
 CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行。这是观察 EAS 选核和迁移行为的直接窗口。
 
 重点观察:
 - **关键线程是否在合适的核心上**:主线程和 RenderThread 是否被分配到了大核?如果被长时间限制在小核上,可能是 EAS 误判了任务的 util,或者系统处于 overutilized 状态
-- **迁移频率**:一个线程在大小核之间"反复横跳"(ping-pong)通常不是好现象--每次迁移都会带来 cache miss 开销
+- **迁移频率**:一个线程在大小核之间"反复横跳"(ping-pong)通常不是好现象，每次迁移都会带来 cache miss 开销
 - **唤醒关系**:通过点击一个 sched slice,能追到是谁唤醒了这个线程(wakeup from),以及它被唤醒后的目标 CPU
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - 选核与迁移逻辑部分]
@@ -425,21 +426,21 @@ ORDER BY cpu, idle;
 
 ## 与其他机制的关系
 
-### EAS 与 CFS(5.1 节)
+### EAS 与 CFS（5.1 节）
 
 EAS 建立在 CFS 之上。它不替换 CFS，而是接管了 CFS 的唤醒选核逻辑。overutilized 对 EAS 的影响随内核版本有差异：Linux 6.6 及更早版本中，overutilized 会直接跳过唤醒路径的能量估算；android16-6.12 起唤醒路径仍会做能量估算，overutilized 主要影响负载均衡和迁移策略（详见本文「负载均衡与任务迁移」小节）。
 
-### EAS 与大小核架构(5.3 节)
+### EAS 与大小核架构（5.3 节）
 
-EAS 的节能效果严重依赖于大小核架构的设计--小核提供能效,大核提供性能。5.3 节会详细讲解不同 SoC 的核心拓扑及其对 EAS 的影响。
+EAS 的节能效果严重依赖于大小核架构的设计：小核提供能效，大核提供性能。5.3 节会详细讲解不同 SoC 的核心拓扑及其对 EAS 的影响。
 
-### EAS 与 DVFS(5.4 节)
+### EAS 与 DVFS（5.4 节）
 
-EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详细讲解 DVFS 机制,以及 Power HAL 的场景策略如何影响 CPU 频率--这些因素会直接影响 EAS 的预测准确性。
+EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详细讲解 DVFS 机制,以及 Power HAL 的场景策略如何影响 CPU 频率，这些因素会直接影响 EAS 的预测准确性。
 
 ### EAS 与 Thermal 管理(5.5 节)
 
-当设备过热时,温控系统会强制降低 CPU 频率上限(scaling_max_freq)。这不影响 EAS 的选核逻辑,但会改变 EAS 对 CPU capacity 的估算--因为实际可用的最高频率被降低了。5.5 节会详细讲解温控对调度的影响。
+当设备过热时,温控系统会强制降低 CPU 频率上限（scaling_max_freq）。这不影响 EAS 的选核逻辑，但会改变 EAS 对 CPU capacity 的估算，因为实际可用的最高频率被降低了。5.5 节会详细讲解温控对调度的影响。
 
 ### EAS 与 UClamp/SchedTune
 
@@ -455,15 +456,15 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 
 ### "任务应该尽量放在大核上以保证性能"
 
-这是最常见的误区。大核的高功耗意味着频繁使用大核会显著缩短续航,而且大核在高频下的能效比(performance per watt)可能不如中频运行时。正确的做法是让 EAS 根据任务的实际 util 来决定--轻任务放小核、重任务放大核,各司其职。
+这是最常见的误区。大核的高功耗意味着频繁使用大核会显著缩短续航,而且大核在高频下的能效比(performance per watt)可能不如中频运行时。正确的做法是让 EAS 根据任务的实际 util 来决定：轻任务放小核、重任务放大核，各司其职。
 
 ### "看到任务在小核上就是 EAS 有问题"
 
-不一定。如果任务的 util 很低(比如 <200),放在小核上是 EAS 的正确决策。只有当任务的 util 超过了小核 capacity、且没有触发 overutilized、但任务仍然长时间留在小核上时,才说明 EAS 可能有问题--这通常是因为 EM 数据不准确或任务的 util 信号被错误地 clamp 了。
+不一定。如果任务的 util 很低(比如 <200),放在小核上是 EAS 的正确决策。只有当任务的 util 超过了小核 capacity、且没有触发 overutilized、但任务仍然长时间留在小核上时,才说明 EAS 可能有问题，通常是因为 EM 数据不准确或任务的 util 信号被错误地 clamp 了。
 
 ### "厂商的定制调度器比原版 EAS 好"
 
-不一定,但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知(如游戏模式、性能模式)和更精细的绑核策略。有些厂商的定制确实带来了更好的用户体验,但也有厂商的定制引入了新的问题(如过度激进的上核策略导致功耗飙升)。分析 Perfetto Trace 时,需要了解测试设备的厂商调度策略,才能准确判断行为是否正常。
+不一定,但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知(如游戏模式、性能模式)和更精细的绑核策略。有些厂商的定制带来了更好的用户体验,但也有厂商的定制引入了新的问题(如过度激进的上核策略导致功耗飙升)。分析 Perfetto Trace 时,需要了解测试设备的厂商调度策略,才能准确判断行为是否正常。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - 选核与迁移逻辑、厂商定制化部分]
 
@@ -490,9 +491,9 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 - Linux 内核文档:[Operating Performance Points (OPP)](https://docs.kernel.org/power/opp.html)
 - Perfetto 官方文档:[CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - Perfetto 官方文档:[Perfetto stdlib docs](https://perfetto.dev/docs/analysis/stdlib-docs)
-- AOSP 源码:`platform/system/core/libprocessgroup/profiles/task_profiles.json`(android10/11/12-release)
-- AOSP 源码:`frameworks/base/core/jni/android_util_Process.cpp`(`SetTaskProfiles()` / `SetProcessProfiles()` 调用链)
-- AOSP 源码:`kernel/sched/fair.c`(`find_energy_efficient_cpu()`)
-- AOSP 源码:`kernel/power/energy_model.c`(EM 框架)
+- AOSP 源码：`platform/system/core/libprocessgroup/profiles/task_profiles.json`（android10/11/12-release）
+- AOSP 源码：`frameworks/base/core/jni/android_util_Process.cpp`（`SetTaskProfiles()` / `SetProcessProfiles()` 调用链）
+- AOSP 源码：`kernel/sched/fair.c`（`find_energy_efficient_cpu()`）
+- AOSP 源码：`kernel/power/energy_model.c`（EM 框架）
 - [高爷 - Android Perfetto 系列 9:CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - ARM 社区:[EAS 设计与实现](https://www.linuxplumbersconf.org/event/2/contributions/133/)
