@@ -16191,6 +16191,33 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-22T05:19:00+08:00",
       "completion_reason": "Task 2A draft processing: expanded empty draft into ready-for-review JobScheduler pending reason / JobDebugInfo diagnostics chapter"
+    },
+    {
+      "id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance",
+      "section": "24.13",
+      "section_title": "Photo Picker、媒体转码与缓存治理",
+      "priority": 80,
+      "title": "补齐 Photo Picker、媒体转码与缓存治理实践章节",
+      "description": "每日信息与官方文档显示 Photo Picker 的嵌入式体验、视频转码、缓存回收和媒体 URI 生命周期会影响启动、I/O、存储占用和失败率；现有 24.12 只覆盖 MediaStore / MediaProvider，缺少应用接入层的性能治理小节。",
+      "reason": "Task 2A gap mining: Photo Picker performance/storage/transcoding gap scored 15/20 and belongs to Part 5 I/O 与网络优化。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "task2a-content-processing",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-22.md",
+        "metadata/source-index.json: Android 嵌入式照片选择器，让体验更加丝滑",
+        "https://developer.android.com/training/data-storage/shared/photo-picker",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/providers/MediaProvider/"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T07:04:00+08:00"
     }
   ],
   "metadata": {
