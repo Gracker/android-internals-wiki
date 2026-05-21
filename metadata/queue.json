@@ -15705,24 +15705,59 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T20:31:42+08:00",
       "review_log": "logs/deep-review/2026-05-21-20-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260521-23.10-memory-advice-api",
+      "section": "23.10",
+      "section_title": "Memory Advice API 与游戏内存压力治理",
+      "priority": 80,
+      "title": "Memory Advice API 与游戏内存压力治理",
+      "description": "官方 Memory Advice API 面向游戏和图形重负载应用提供内存压力估算、状态通知和运行时降级信号；当前全书有游戏性能、内存治理和 LMKD / AppExitInfo，但缺少将 Memory Advice API 放入应用内存治理流程的独立小节。",
+      "reason": "[Task2A Gap Mining] developer.android.com 已有 Memory Advice API overview/start/reference 和 game memory optimization 文档，且现有目录未覆盖该 API 的接入边界、watcher 回调、与 LMKD / Android Vitals 的分工。",
+      "issue_type": "knowledge-gap-official-docs",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/games/sdk/memory-advice/overview",
+        "https://developer.android.com/games/sdk/memory-advice/start",
+        "https://developer.android.com/games/optimize/memory-allocation",
+        "https://developer.android.com/reference/games/memory-advice/namespacememory/advice",
+        "https://developer.android.com/games/agdk/release-notes"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 17
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T22:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 419,
+    "total_entries": 420,
     "p0_count": 178,
-    "last_updated": "2026-05-21T20:31:42+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 155,
+    "last_updated": "2026-05-21T22:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 156,
     "updated_date": "2026-05-21",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 154,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 155,
     "completed_entries": 263,
-    "last_task2a_gap_mining": "22.15",
-    "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
+    "last_task2a_gap_mining": "23.10",
+    "last_task2a_gap_mining_at": "2026-05-21T22:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T20:31:42+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-21T22:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -16980,10 +17015,45 @@
       "added_at": "2026-05-21T17:04:00+08:00",
       "completed_date": "2026-05-21T18:13:00+08:00",
       "completed_reason": "Task 2A 加工完成：基于 Compose First 官方公告、Compose interop/performance 文档、Compose Foundation 1.9/1.10 release notes、本地 Pausable Composition 调研与 Clippings 结构参考，补齐 View/Compose 混合迁移性能边界、版本边界和验收指标；状态改为 ready-for-review。"
+    },
+    {
+      "id": "task2a-gap-20260521-23.10-memory-advice-api",
+      "section": "23.10",
+      "section_title": "Memory Advice API 与游戏内存压力治理",
+      "priority": 80,
+      "title": "Memory Advice API 与游戏内存压力治理",
+      "description": "官方 Memory Advice API 面向游戏和图形重负载应用提供内存压力估算、状态通知和运行时降级信号；当前全书有游戏性能、内存治理和 LMKD / AppExitInfo，但缺少将 Memory Advice API 放入应用内存治理流程的独立小节。",
+      "reason": "[Task2A Gap Mining] developer.android.com 已有 Memory Advice API overview/start/reference 和 game memory optimization 文档，且现有目录未覆盖该 API 的接入边界、watcher 回调、与 LMKD / Android Vitals 的分工。",
+      "issue_type": "knowledge-gap-official-docs",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/games/sdk/memory-advice/overview",
+        "https://developer.android.com/games/sdk/memory-advice/start",
+        "https://developer.android.com/games/optimize/memory-allocation",
+        "https://developer.android.com/reference/games/memory-advice/namespacememory/advice",
+        "https://developer.android.com/games/agdk/release-notes"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 17
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T22:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "22.15",
-  "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00"
+  "last_task2a_gap_mining": "23.10",
+  "last_task2a_gap_mining_at": "2026-05-21T22:04:00+08:00"
 }
