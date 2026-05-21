@@ -15988,6 +15988,43 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T02:04:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260522-14.6-uiautomator-drag-signature",
+      "section": "14.6",
+      "section_title": "自动化测试工具",
+      "priority": 95,
+      "title": "UIAutomator `UiObject2.drag()` 示例使用了不存在的双 Point 重载",
+      "description": "闲时抽检发现 §14.6 的 Macrobenchmark 滑动帧率示例调用 `list?.drag(Point(...), Point(...))`，与 AndroidX UIAutomator 当前 API 签名不一致，示例不可编译。",
+      "reason": "[Deep Tech Review Audit] §14.6 存在 UIAutomator API 签名级源码错误，需回炉修正示例代码。",
+      "issue_type": "source-code-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/06-automation-tools.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-02-audit.md",
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/test/uiautomator/uiautomator/src/main/java/androidx/test/uiautomator/UiObject2.java",
+        "https://developer.android.com/reference/androidx/test/uiautomator/UiObject2#drag(android.graphics.Point)",
+        "https://developer.android.com/reference/androidx/test/uiautomator/UiObject2#swipe(androidx.test.uiautomator.Direction,float)"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 签名错误",
+          "location": "L203-L205：滑动帧率 Macrobenchmark 示例中的 `list?.drag(Point(...), Point(...))`",
+          "detail": "正文示例把 `UiObject2.drag()` 写成两个 `Point` 参数（起点、终点）。AndroidX UIAutomator 当前源码只提供 `drag(Point dest)` 和 `drag(Point dest, int speed)`，内部起点固定取 `getVisibleCenter()`；不存在 `drag(Point start, Point end)` 这个重载。因此该示例不能编译，读者复制到 Macrobenchmark 工程会直接遇到 API 签名错误。",
+          "suggestion": "改成合法 UIAutomator 调用：若只需要模拟列表滚动，优先使用 `list?.swipe(Direction.UP, 0.8f)`；若保留 drag，则写成 `list?.drag(Point(list.visibleBounds.centerX(), list.visibleBounds.top + 100))`（可按需加 speed 参数），并说明手势起点由 `UiObject2` 的 visible center / gesture margin 决定。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T02:27:04+08:00",
+      "review_log": "logs/deep-review/2026-05-22-02-audit.md"
     }
   ],
   "metadata": {
