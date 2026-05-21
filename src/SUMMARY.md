@@ -424,6 +424,7 @@ tags:
   - [26.13 ApplicationStartInfo 与启动归因上报](part5-app/ch26-observability/13-application-start-info.md)
   - [26.14 性能实验统计与分位值回归判定](part5-app/ch26-observability/14-performance-experiment-statistics.md)
   - [26.15 Android Vitals 与 Play Console 质量指标归因](part5-app/ch26-observability/15-android-vitals-play-console-quality.md)
+  - [26.16 线上存储、I/O 与 SQLite 可观测性](part5-app/ch26-observability/16-online-storage-io-sqlite-observability.md)
 
 ---
 
