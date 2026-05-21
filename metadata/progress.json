@@ -220,29 +220,26 @@
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
     "src/part3-tools/ch19-apm/11-jankstats.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+    "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
   ],
-  "review_summary": "Task6 2026-05-21 04: review 19.11/5.9/3.1；19.11 自动 finalized；5.9/3.1 回炉 Task2B 做发布主线融合。",
+  "review_summary": "Task6 2026-05-21 08: review 19.09/4.2；19.09 能力范围字段级表仍缺，回炉 Task2B；4.2 写作层小修通过，沿用 MADV_COLD Task9 pending。",
   "task6_review_summary": {
     "date": "2026-05-21",
-    "time": "04:09",
+    "time": "08:06",
     "sections": [
-      "19.11",
-      "5.9",
-      "3.1"
+      "19.09",
+      "4.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/11-jankstats.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
     ],
-    "result": "1 pass-light-edit(auto-finalized), 2 needs-rework(Task2B)",
-    "small_fixes": 11,
-    "new_rework_items": 2,
-    "auto_promoted": [
-      "19.11"
-    ],
-    "note": "19.11 Task9 已通过且 queue 无 pending，自动晋升 finalized；5.9/3.1 仍有源码调研素材块未融入发布主线，回炉 Task2B。"
+    "result": "1 needs-rework(Task2B), 1 pass-light-edit(technical pending)",
+    "small_fixes": 6,
+    "new_rework_items": 1,
+    "auto_promoted": [],
+    "note": "19.09 仍缺能力范围字段级表，新增 Task6 queue priority 90；4.2 清理编辑痕迹和禁用词，MADV_COLD 技术边界沿用 Task9 pending。"
   },
   "issues_by_section": {
     "1.6": {
@@ -359,7 +356,16 @@
       "p0": 1,
       "p1": 2,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-21T08:06:00+08:00",
+      "task6_log": "logs/review/2026-05-21-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "写作层复审通过；清理 AIW 编辑注释、DeepResearch 元数据和禁用词“闭环”；MADV_COLD 技术边界沿用 Task9 pending queue。",
+      "task9_result": "needs-rework"
     },
     "5.2": {
       "p0": 0,
@@ -1515,11 +1521,15 @@
       "p2": 2,
       "p3": 0,
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 5,
-      "task6_l3_l4_issues": 2,
-      "task6_reviewed_at": "2026-05-20T20:08:00+08:00",
-      "task6_log": "logs/review/2026-05-20-20-review.md",
-      "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。"
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-21T08:06:00+08:00",
+      "task6_log": "logs/review/2026-05-21-08-review.md",
+      "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。",
+      "task6_technical_risk_markers": 1,
+      "task6_new_rework": true,
+      "task6_note": "复审发现能力范围字段级表仍未落盘，新增 Task6 queue priority 90；Crash/ANR/native crash 能力边界沿用 Task9 pending。",
+      "task9_result": "needs-rework"
     },
     "19.11": {
       "p0": 0,
@@ -1550,31 +1560,28 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T06:09:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-21T08:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-21",
-    "time": "04:09",
-    "reviewed_at": "2026-05-21T04:09:00+08:00",
+    "time": "08:06",
+    "reviewed_at": "2026-05-21T08:06:00+08:00",
     "sections": [
-      "19.11",
-      "5.9",
-      "3.1"
+      "19.09",
+      "4.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/11-jankstats.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
     ],
-    "log": "logs/review/2026-05-21-04-review.md",
+    "log": "logs/review/2026-05-21-08-review.md",
     "mode": "normal-review",
-    "l1_l2_fixes": 11,
-    "l3_l4_issues": 2,
-    "technical_risk_markers": 0,
-    "auto_promoted": [
-      "19.11"
-    ],
-    "summary": "Task6 review 3 节：19.11 pass-light-edit 并自动 finalized；5.9/3.1 因素材块主线融合问题回炉 Task2B。"
+    "result": "19.09 needs-rework; 4.2 pass-light-edit; no auto-finalized",
+    "l1_l2_fixes": 6,
+    "l3_l4_issues": 1,
+    "technical_risk_markers": 2,
+    "auto_promoted": [],
+    "summary": "Task6 review 2 节：19.09 能力范围字段级表仍缺，回炉 Task2B；4.2 写作层 pass-light-edit，MADV_COLD 技术边界沿用 Task9 pending。"
   },
   "task9_last_review": "2026-05-20",
   "ready_to_publish": 201,

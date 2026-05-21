@@ -2,7 +2,7 @@
 title: Measure
 chapter: '19'
 section: '19.09'
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -34,26 +34,28 @@ sources:
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
 pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-20"
+reviewed_date: "2026-05-21"
 task6_result: needs-rework
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
-task2b_reopened_at: "2026-05-20T20:08:00+08:00"
+task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: "2026-05-21T07:17:00+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T07:34:33+08:00"
-task6_reviewed_date: "2026-05-20"
-last_task6_at: "2026-05-20T20:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-20-20-review.md"
+task6_reviewed_date: "2026-05-21"
+last_task6_at: "2026-05-21T08:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-08-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
 task9_review_notes: "2026-05-21 Task9 deep review: P1 Crash/ANR/native crash 能力边界仍未补齐；沿用并复核 pending queue 条目 task9-19.09-measure-native-crash-anr-boundary。"
 last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
+task6_review_notes: "2026-05-21 Task6 revisiting-review: 能力范围字段级表仍未落盘，已重新写入 queue；Crash/ANR/native crash 能力边界沿用 Task9 pending。"
+
 ---
 # Measure
 
@@ -128,6 +130,9 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 | HTTP / CPU / memory 事件 | 错误发生前后的资源和网络上下文 |
 | Bug report | 用户主动反馈和设备侧现场补充 |
 | Custom traces | 业务关键路径耗时观测 |
+
+[需补充素材: 大纲要求按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航列出数据来源、关键字段和适用判断；当前表格只覆盖能力名称和适合问题。]
+[存疑: Task9 已标记 Measure Android native crash reporting、ANR App Exit Info tombstone 与各平台符号化材料边界未闭合，发布前需要补官方能力边界。]
 
 这些能力组合起来后，Measure 更像移动端“可观测性平台”。它不只收一个指标，而是把会话中的多个事件放在同一条时间线上。
 

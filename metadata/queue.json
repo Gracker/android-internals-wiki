@@ -1,6 +1,39 @@
 {
   "queue_entries": [
     {
+      "id": "task6-20260521-19.09-measure-capability-fields",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 90,
+      "title": "Measure 能力范围字段级表仍未落盘",
+      "description": "Task6 复审发现 Task2B 标记完成后，正文仍只有“能力/适合的问题”二列表，未按大纲拆出数据来源、关键字段和适用判断。",
+      "issue_type": "content-depth-outline-coverage",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 2026-05-21 08 复审意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "§核心能力 L121-L132 / 大纲锚点「能力范围」",
+          "detail": "大纲要求按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航列数据来源、字段和适用判断；当前正文仍只列能力名称与适合问题。虽然已有 session/screen/event/trace/error/resource 的数据模型说明，但没有把每项能力对应到事件字段、来源和判断边界。",
+          "suggestion": "补一张能力范围字段级表，列：能力、Measure 事件/字段、端侧来源、适合判断、边界/不支持项、验证来源；同时与 Task9 的 native crash / ANR / 符号化边界问题合并处理。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-21T08:06:00+08:00",
+      "original_review_log": "logs/review/2026-05-21-08-review.md",
+      "related_completed_queue": "task6-19.09-measure-outline-coverage"
+    },
+    {
       "id": "task9-20260521-4.2-art-madv-cold-source",
       "section": "4.2",
       "section_title": "Linux 内核内存管理",

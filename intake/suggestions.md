@@ -2663,3 +2663,10 @@
 - **位置**：3.1 L831 HwTimeoutMultiplier 版本口径
 - **问题**：正文写 `HwTimeoutMultiplier()` 是 Android 14+ 引入；但 AOSP android-13.0.0_r1 `InputDispatcher.cpp` 的 `STALE_EVENT_TIMEOUT` 和 `DEFAULT_INPUT_DISPATCHING_TIMEOUT` 已使用 `HwTimeoutMultiplier()`。
 - **建议**：把 stale/dispatch timeout 的 multiplier 口径改为 Android 13+；若只想强调某个具体路径，应按 Android 12/13/14 分别列源码差异。
+
+## [Task6 Review] 19.09 Measure — 2026-05-21
+- **类型**：需补充素材
+- **位置**：§核心能力 / 大纲锚点「能力范围」
+- **问题**：Task2B 标记完成后，正文仍只有“能力 / 适合的问题”二列表，未按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航拆出数据来源、关键字段和适用判断。
+- **建议**：补一张字段级能力范围表，列出 Measure 事件/字段、端侧来源、适合判断、边界/不支持项和验证来源；与 Task9 的 native crash / ANR / 符号化边界问题合并处理。
+- **review 日志**：logs/review/2026-05-21-08-review.md

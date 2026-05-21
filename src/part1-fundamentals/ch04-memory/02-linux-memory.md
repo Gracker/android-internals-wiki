@@ -12,7 +12,7 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-03-31'
-reviewed_date: "2026-05-11"
+reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
@@ -53,14 +53,18 @@ related_chapters:
 - '4.4'
 - '2.6'
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_reviewed_date: '2026-05-05'
+task6_state: reviewed
+task6_reviewed_date: "2026-05-21"
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
+last_task6_at: "2026-05-21T08:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-08-review.md"
+task6_review_notes: "2026-05-21 Task6 revisiting-review: L1/L2 小修通过；MADV_COLD 技术边界沿用 Task9 pending queue。"
+
 ---
 
 
@@ -288,7 +292,6 @@ Android 16 (GKI 6.12) 的 common kernel 包含 MGLRU 基础设施。是否作为
 [来源: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md]
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
 
-<!-- AIW-源码调研-2026-05-09 -->
 #### 源码分析：MGLRU vs 传统双级 LRU 锁竞争
 
 传统双级 LRU 的核心问题是 **per-node 全局 `lru_lock` 的竞争**。`struct lruvec` 持有单一 `spinlock_t lru_lock`，所有 CPU 上的页面引用事件（`folio_mark_accessed()` / `activate_page()`）和页面回收路径（`shrink_inactive_list()` / `shrink_active_list()`）都在这把锁下操作。在 8+ 核的手机 SoC 上，多核并发访问导致这把锁成为瓶颈。
@@ -344,7 +347,6 @@ static int evict_folios(struct lruvec *lruvec, ...)
 
 **sysfs 监控接口**：`/sys/kernel/mm/lru_gen/enabled`（bitmask 主开关）+ `/sys/kernel/mm/lru_gen/lru_gen`（各代页面数量直方图）。
 
-[AIW-源码调研-2026-05-09 end]
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
 
 ### [自动发现] Silk：GC 与内核页面回收的协同优化
@@ -361,6 +363,8 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)]
 
 #### Android 17 实现：madvise(MADV_COLD) 信号通路
+
+[存疑: Task9 已记录 Android 17 ART → `MADV_COLD` 实现链缺少 AOSP commit、release note 或 runtime 源码锚点；本节发布前需要改成待验证方向，或补齐 ART 调用点与内核 `madvise.c` 语义。]
 
 Silk 论文提出的“让 GC 告诉内核哪些页面是冷的”思路，在 Android 17 有了具体实现。ART 虚拟机在 GC 标记阶段识别出老年代中未被引用的对象后，对它们所在的内存页调用 `madvise(MADV_COLD)`，主动向内核标记这些页面为冷页。
 
@@ -553,12 +557,7 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 
 ### MTE ASYMM 模式与 android:memtagMode 源码级验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级闭环验证 Android MTE 实现多层机制：应用层 android:memtagMode 仅支持 off/sync/async（ASYMM 非 Java API 选项）；Zygote 始终以 ASYNC MTE 运行（因 MTE 只能在进程初始化后禁用）；decideTaggingLevel()→SpecializeCommon→mallopt 完整调用链；Linux Kernel per-CPU mte_tcf_preferred 覆盖机制。
-- 注入时间：2026-05-14
-- 价值：首次完成 MTE ASYMM 与 Java API 对应关系的源码级闭环验证，对内存安全章节有重要补充价值
-
-
+- 摘要：源码级验证 Android MTE 实现多层机制：应用层 android:memtagMode 仅支持 off/sync/async（ASYMM 非 Java API 选项）；Zygote 始终以 ASYNC MTE 运行（因 MTE 只能在进程初始化后禁用）；decideTaggingLevel()→SpecializeCommon→mallopt 完整调用链；Linux Kernel per-CPU mte_tcf_preferred 覆盖机制。
 - Linux kernel / Android common kernel 路径：
   - `mm/page_alloc.c` — Buddy 分配器实现
   - `mm/slub.c` — SLUB 分配器实现
@@ -579,7 +578,4 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 
 ### MGLRU vs 传统双级 LRU 锁竞争差异
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
-- 类型：DeepResearch 调研结果
 - 摘要：Linux 6.12 / Android common kernel MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 每次页面引用做 `list_move()`（持 `lruvec->lru_lock`），多核时成为瓶颈；MGLRU 用 generation 编号替代 `list_move()`（`folio_update_gen()` 无锁），`lru_gen_look_around()` 批量 PTE 扫描，`evict_folios()` 持锁时间从 O(n) 降到 O(1)。含关键数据结构与调用链。
-- 注入时间：2026-05-11
-- 价值：源码级分析，可直接作为章节背景材料或延伸阅读
