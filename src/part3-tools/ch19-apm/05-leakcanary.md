@@ -25,6 +25,7 @@ task6_state: "reviewed"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
+last_task6_audit: "2026-05-20"
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-26"
@@ -36,7 +37,6 @@ task2b_result: fixed
 last_task2b_at: "2026-04-25T08:51:01+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-reviewed_date: "2026-04-25"
 review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 ---
@@ -127,7 +127,7 @@ LeakCanary 会把泄漏分成 Application Leak 和 Library Leak。前者是应�
 | `leakcanary-object-watcher-android` | 自动安装 `ObjectWatcher`，只保留 retained object 计数信号 | Release / 灰度包里只统计 retained object |
 | release heap analysis | 需要额外评估 dump、分析、脱敏和上传流程 | 预发或专项诊断，不适合默认常开 |
 
-当前主流做法很明确：完整 `leakcanary-android` 只放 debug；release 若确实要留信号，通常只接 `leakcanary-object-watcher-android`。线上直接做 heap dump 仍然要面对三个代价：
+实践中，完整 `leakcanary-android` 通常只放 debug；release 若要保留信号，只接 `leakcanary-object-watcher-android`。线上直接做 heap dump 仍然要面对三个代价：
 
 - dump 会冻结进程一小段时间，交互体验会抖。
 - Hprof 可能带出对象字段、URL、文本和用户态数据，隐私审查压力高。

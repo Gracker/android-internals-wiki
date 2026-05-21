@@ -725,3 +725,12 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
    - [第 2.6 节：SurfaceFlinger 与合成](06-surfaceflinger.md)
    - [第 3.1 节：Input 事件分发全流程](01-input-dispatch.md)
    - [第 8.2 节：App 启动全流程](02-app-launch.md)
+
+
+
+### Android 16 Choreographer Buffer Stuffing Recovery 机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 16 在 Choreographer.java 中引入 BufferStuffingState 内部类，通过 onWaitForBufferRelease() API 检测 Buffer Dequeue 阻塞，动态调整帧调度时序（OFFSET/DELAY_FRAME），解决帧节拍错位问题。包含源码级 RecoveryAction 枚举、触发阈值（半帧周期）和 FrameCallback 队列优先级分析。
+- 注入时间：2026-05-21
+- 价值：源码级深度调研，包含 AOSP 路径、调用链和版本矩阵，可作为章节扩展参考或正文补充素材

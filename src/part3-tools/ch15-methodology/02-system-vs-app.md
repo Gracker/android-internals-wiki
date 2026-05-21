@@ -30,6 +30,7 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
+last_task6_audit: "2026-05-21"
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
@@ -75,7 +76,7 @@ finalized_by: openclaw-task9
 
 ## 为什么一定要区分系统问题和 App 问题
 
-很多性能排查最后卡住，不是因为 trace 不够，也不是因为工具不会用，而是因为一开始就把责任链看错了。  
+很多性能排查最后卡住，不是因为 trace 不够，也不是因为工具不会用，而是因为一开始就把责任链看错了。
 用户反馈你的 App 滑动卡顿，你打开 Perfetto 一看，主线程每一帧都在 20ms 左右——超标了，但 MainThread 的 Slice 里没有特别长的耗时段。放大去看，主线程大部分时间处于 Runnable 状态，也就是“准备好了但上不去 CPU”。同时 CPU 区域里 8 个核心全满，system_server、媒体扫描器、另一个游戏进程各占了不少核。
 
 这种情况，该谁改？
@@ -118,7 +119,7 @@ Wall = CPU 时间 + Runnable 时间 + Sleep 时间
 
 确认了主线程的等待类型后，还需要看全局的系统状态来佐证判断：
 
-- **CPU 区域**：所有核心是否满载？如果是，说明系统负载确实很高，主线程拿不到 CPU 是合理的。
+- **CPU 区域**：所有核心是否满载？如果是，说明系统负载很高，主线程拿不到 CPU 是合理的。
 - **频率轨道**：CPU 频率是否正常？如果被温控限频（`scaling_max_freq` 被压低），即使主线程分到了 CPU，执行速度也会打折扣。
 - **内存压力**：有没有看到 `kswapd` 线程活跃？有没有大量的 `direct reclaim` 事件？
 - **SurfaceFlinger 轨道**：Android 14+ 的 trace 里优先看 `commit` 和 `composite`。`commit` 处理事务、状态更新和 buffer latch；`composite` 负责合成决策、HWC/GPU 提交和 present 前后的工作。旧 trace 或部分设备上仍可能看到 `onMessageRefresh`，它更像外层刷新入口，不要把它当成唯一耗时归因点。
@@ -153,7 +154,7 @@ LIMIT 10;
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
-**注意一种常见的误判**：CPU 看起来满载，但其实是你的 App 自己把 CPU 吃满了。在归因之前，先确认"满载的主力"是不是你自己的进程。如果 top 1 的 CPU 消耗者就是你的 App，那问题回到了 App 端——可能是后台线程在做不必要的计算。
+**注意一种常见的误判**：CPU 看起来满载，但满载的主力可能是你的 App 自己。在归因之前，先确认"满载的主力"是不是你自己的进程。如果 top 1 的 CPU 消耗者就是你的 App，那问题回到了 App 端——可能是后台线程在做不必要的计算。
 
 ### kswapd 活跃与内存压力
 
@@ -246,7 +247,7 @@ App 侧问题的另一个特征是**可重现、可关联到特定用户操作**
 
 ## 灰色地带：谁该负责
 
-理想世界里，问题要么是系统的，要么是 App 的。但在实际工作中，最常见的情况恰恰是灰色地带：**系统资源不足，导致 App 本来没问题的代码跑出了问题**。这种情况下，"归因"就变得微妙了。
+理想世界里，问题要么是系统的，要么是 App 的。但在实际工作中，最常见的情况往往是灰色地带：**系统资源不足，导致 App 本来没问题的代码跑出了问题**。这种情况下，"归因"就变得微妙了。
 
 ### 场景一：CPU 被其他 App 占满
 
@@ -380,7 +381,7 @@ Android 大版本升级往往会引入新的系统服务，或者让既有服务
 
 **误区三："CPU 利用率低就说明没问题"**
 
-CPU 利用率低可能恰恰说明有问题——如果你的主线程在 Runnable 状态等了很久，但 CPU 看起来"不满载"，可能是因为调度器在等当前 CPU 空闲而不愿意把线程迁移到另一个空闲核心（Linux 调度器的非严格 work-conserving 行为）。这种情况下，虽然总利用率不高，但对你的线程来说延迟是实实在在的。
+CPU 利用率低也可能说明有问题——如果你的主线程在 Runnable 状态等了很久，但 CPU 看起来"不满载"，可能是因为调度器在等当前 CPU 空闲而不愿意把线程迁移到另一个空闲核心（Linux 调度器的非严格 work-conserving 行为）。这种情况下，虽然总利用率不高，但对你的线程来说延迟是实实在在的。
 
 **误区四："ANR 一定是 App 的问题"**
 

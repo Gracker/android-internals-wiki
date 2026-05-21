@@ -14,6 +14,7 @@ review_round: 3
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-29"
+last_task6_audit: "2026-05-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -97,7 +98,7 @@ task9_review_notes: "2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0
 
 如果我们在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，我们的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一个可能性经常被忽略：**那次触摸事件被系统手势截获了**。
 
-Android 10 引入的全屏手势导航（Gesture Navigation）彻底改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当我们分析一次"卡顿"或"无响应"时，我们需要知道事件是被系统拿走了还是真的没有送达 App。
+Android 10 引入的全屏手势导航（Gesture Navigation）改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当我们分析一次"卡顿"或"无响应"时，我们需要知道事件是被系统拿走了，还是没有送达 App。
 
 Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档明确把 back-to-home、cross-task、cross-activity 系统动画从开发者选项后面移了出来，但前提仍然是 App 或 Activity 已 opt in。返回处理从“松手后再决定怎么退”变成了“手势过程中就要准备回调和预览”，返回阶段的渲染分析也跟着变了。
 
@@ -125,7 +126,7 @@ legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null
 
 ### 从边缘滑动到返回事件的完整流程
 
-把完整流程拆开，读起来会清楚得多。
+完整流程可以拆成两条路径。
 
 **一条是 Android 10-12 为主的 legacy back gesture 路径。**
 
@@ -195,7 +196,7 @@ Predictive Back 把时序往前挪了。系统在手势进行中就要知道返�
 
 ### Predictive Back 的回调模型
 
-把 platform API 和 AndroidX API 分开后，回调层级会干净很多。
+回调层级可以分成 platform API 和 AndroidX API 两层。
 
 | 层级 | 接口 | 引入版本 | 可直接确认的方法 | 作用 |
 | --- | --- | --- | --- | --- |
@@ -211,7 +212,7 @@ App 端注册时，platform 走 `OnBackInvokedDispatcher`，AndroidX 走 `OnBack
 
 ### 版本演进的时间线
 
-把开发者选项、manifest flag、platform API 和动画范围拆开后，版本边界可以写成下面这张表。
+把开发者选项、manifest flag、platform API 和动画范围拆开后，版本边界可以整理成几组条件。
 
 | Android 版本 | API | 系统动画状态 | manifest / activity 条件 | targetSdk / 兼容边界 | 回调与预览范围 |
 | --- | --- | --- | --- | --- | --- |
@@ -258,7 +259,7 @@ android-16.0.0_r1 默认的边缘反馈插件是 `BackPanelController` / `BackPa
 
 ## 在 Perfetto 中的表现
 
-这一节给一套能复现的最小抓取基线，再说明 legacy / predictive 两条路径怎么判读。目标是把输入接管、动画进度和目标层预览放回同一时间轴里，不把某个固定 slice 名当成通用答案。
+抓取可以先从一套能复现的最小基线开始，再按 legacy / predictive 两条路径判读。目标是把输入接管、动画进度和目标层预览放回同一时间轴里，不把某个固定 slice 名当成通用答案。
 
 ### 最小抓取配置
 
@@ -295,7 +296,7 @@ legacy path 的判读顺序可以按这四步走：
 1. 手指从左右边缘按下时，App 窗口和 `edge-swipe` monitor 同时出现第一批触摸事件。
 2. 横向位移越过阈值后，原目标窗口会在同一时间窗附近收到 cancel，和 `pilferPointers()` 的接管时刻对应。
 3. 手势提交后，再去找 injected `KEYCODE_BACK` 或后续 back dispatch。
-4. 如果 App 一直收到完整 pointer stream，没有 cancel，先回到 exclusion rect、生效边界，或这次根本没有命中 back edge。
+4. 如果 App 一直收到完整 pointer stream，没有 cancel，先回到 exclusion rect、生效边界，或这次没有命中 back edge。
 
 稳定证据是“边缘按下 → cancel → back dispatch”这条时间关系，不是某一个设备私有 slice 名。
 

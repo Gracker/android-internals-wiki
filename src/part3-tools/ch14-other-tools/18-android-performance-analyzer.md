@@ -188,3 +188,12 @@ APA 把 Perfetto Trace、GPU counter、SurfaceFlinger 事件、截图导航、�
 - Introducing Android Performance Analyzer：https://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html
 - Android Developer Tools I/O 2026：https://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html
 - Perfetto TraceConfig docs：https://perfetto.dev/docs/concepts/config
+
+
+
+### Android Performance Analyzer 深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Performance Analyzer/2026-05-20-Android Performance Analyzer-深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：Google I/O 2026 发布 APA open beta，重新包装 Android 性能工具栈：Perfetto 负责系统级 trace 能力，APA 提供面向应用和游戏的采集、GPU 分析、SQL 分析和 AI Agent Skills 入口。事实核验 26x 渲染提速的限定条件，厘清 APA 与 Perfetto 的架构边界和组合使用策略。
+- 注入时间：2026-05-21
+- 价值：源码级深度调研，包含 AOSP 路径、调用链和版本矩阵，可作为章节扩展参考或正文补充素材

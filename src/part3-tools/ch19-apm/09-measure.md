@@ -141,12 +141,24 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 | Crash（Native） | `error` type=crash，含 native stack frames / signal / fault address | signal handler（`sigaction`） | Native 崩溃捕获和符号还原 | 官方文档明确 Android native C/C++ crash reporting 尚未支持（截至 2026-05）；需要自行集成 Breakpad / Crashpad 或等待官方实现 |
 | ANR | `error` type=anr，含 thread dump / CPU usage / memory snapshot | `ApplicationExitInfo`（API 30+）或 Watchdog timer | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下无法用 `ApplicationExitInfo`，回退到 Watchdog 轮询；主线程堆栈深度受系统限制 |
 | HTTP | `http` 事件，含 url / method / status_code / request_duration / response_body（opt-in） | OkHttp Interceptor 或 `URLConnection` 包装 | 慢接口定位、错误率趋势、请求与崩溃时序关联 | body 采集默认关闭，需白名单配置；URL pattern 归并粒度由 dashboard 配置 |
-| 启动时间 | `trace` name 含 startup，duration_ms；`session` 含 cold/warm/hot 标记 | SDK 初始化 → `Activity.onResume` / first frame drawn | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
+| 启动时间 | `trace` name=startup，duration_ms；`session` 含 cold/warm/hot 标记 | SDK 初始化 → `Activity.onResume` / first frame drawn | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
 | App size | `resource` / session 属性，含 app_build_size / download_size | 构建产物分析（非运行时采集） | 包体积趋势、模块级拆分定位 | 非实时采集；需要 CI/CD 集成才能持续跟踪 |
 | CPU 使用率 | `resource` type=cpu，含 cpu_usage / cpu_cycles / thread_count | `/proc/stat` + `Process.cpuUsage()` | CPU 异常升高与崩溃/ANR 的时序关联 | 采样间隔受 SDK 配置约束；不区分 per-thread CPU 除非自定义 trace |
 | 内存使用 | `resource` type=memory，含 java_heap / native_heap / total_pss / rss | `Debug.getMemoryInfo()` + `/proc/self/statm` | 内存泄漏趋势、OOM 前后内存曲线 | 细粒度对象级泄漏需要 heap dump 分析，Measure 不直接提供 |
 | 用户点击 | `event` type=click，含 target / coordinates / timestamp | `View.OnClickListener` 自动追踪或手动 `track()` | 用户操作路径还原、崩溃前操作序列 | 自动追踪依赖 View 结构注入；自定义 View 需手动埋点 |
 | 页面导航 | `screen` 事件，含 screen_name / entry_type / duration | Activity / Fragment 生命周期回调 | 页面停留时长、导航路径、页面级崩溃率 | Fragment 追踪依赖手动配置 screen name；Jetpack Navigation 需适配 |
+| 自定义 Trace | `trace` 含 name/duration_ms/attributes | 手动 `Measure.startTrace()` / `stopTrace()` | 业务关键路径耗时观测 | trace 命名需规范；避免动态值；属性有限制 |
+| 用户标识 | `user` 含 id/name/email/phone | `Measure.setUser()` / `clearUser()` | 用户维度聚合、错误关联 | PII 数据需脱敏处理；支持匿名ID |
+| 设备属性 | `session` 含 os_version/device_model/manufacturer | SDK 自动采集 | 设备维度分析、机型趋势 | 包含 device_id 但不可用于用户识别 |
+| 会话属性 | `session` 含 app_version/network_type/carrier | SDK 自动采集 | 版本/网络/运营商维度分析 | 不包含 precise location |
+| 性能指标 | `resource` 含 frame_rate/frozen_frames_counter | Choreographer callback | 渲染性能监测、掉帧趋势 | frame_rate 为估算值，非精确统计 |
+| 网络类型 | `resource` 含 network_type/signal_strength | ConnectivityManager / TelephonyManager | 网络条件对性能影响分析 | 部分设备可能缺失网络信息 |
+| 电池状态 | `resource` 含 battery_level/power_source | BatteryManager | 低温/低电量对性能影响 | 电池温度数据暂未支持 |
+| 后台任务 | `event` type=background_task | WorkManager / JobScheduler | 后台任务调度分析 | 仅限 Android 8+ 后台限制场景 |
+| 内存警告 | `event` type=memory_warning | `onLowMemory()` 回调 | 内存压力预警 | 仅限系统触发内存警告时 |
+| 应用退出 | `event` type=app_exit | `Activity.onDestroy()` | 应用生命周期分析 | 不覆盖被系统杀死场景 |
+| 日志事件 | `event` type=log | `Log` 接口封装 | 日志聚合与错误关联 | 支持自定义 log level 和 tag |
+| 自定义属性 | `session` / `event` / `trace` 附加 key-value | `Measure.setCustomAttribute()` | 业务维度扩展 | 属性值长度有限制；需符合 schema |
 
 [已验证: Measure GitHub docs/README.md + sdk-integration-guide.md；native crash / ANR App Exit Info 边界基于 docs/features/feature-crash-reporting.md 与 feature-anr-reporting.md]
 

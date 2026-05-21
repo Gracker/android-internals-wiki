@@ -20,6 +20,7 @@ pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
+last_task6_audit: "2026-05-20"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task9_state: reviewed
@@ -81,6 +82,20 @@ DoKit，也就是 DoraemonKit，是滴滴开源的泛前端研发效率平台。
 
 它的定位偏 Debug 和 QA 现场。官方 README 也明确提醒：功能只针对 Debug 环境，Release 环境没有经过充分验证，不建议在 Release 使用。
 
+## 能力地图：谁在现场用 DoKit
+
+DoKit 的价值不只在性能面板。它更像一个把调试入口、测试条件和现场记录放到同一个包里的工具箱。
+
+| 能力 | 使用对象 | 回答的问题 |
+|---|---|---|
+| 性能面板 | 开发、性能专项 | 页面操作时 FPS、CPU、内存、启动耗时是否异常 |
+| 网络查看 | 测试、开发 | 请求参数、响应内容、耗时、图片大小是否异常 |
+| Mock | 测试、开发 | 异常响应、空态、大数据量页面能否稳定复现 |
+| 弱网 | 测试、性能专项 | 首屏等待、重试、降级策略在慢网下是否稳定 |
+| 日志 / 沙盒 | 开发、测试 | 本地缓存、文件、日志和运行状态是否符合预期 |
+| 业务入口 | 开发、测试 | 环境切换、清缓存、内部状态页是否收在一个面板里 |
+| 视觉辅助 | 开发、UI QA | UI 层级、控件信息、布局边界是否异常 |
+
 ## 性能能力覆盖哪些场景
 
 DoKit 的性能检测能力更像“端上小仪表盘”，适合开发和测试人员快速发现异常：
@@ -108,9 +123,16 @@ DoKit 的强项是现场效率，不是生产监控。原因有三点：
 
 如果团队把 DoKit 当线上 APM 用，后面会遇到采样、上报、数据合规、用户影响、开关控制等问题。它可以帮助开发和测试更快复现线上问题，但不应该直接承担线上采集职责。
 
-## 和 Android Studio Profiler、Perfetto 的关系
+## 和 Android Studio Profiler、Perfetto、JankStats、FrameMetrics 的关系
 
-DoKit 适合“边操作边看”。Android Studio Profiler 和 Perfetto 适合“抓一次完整证据后分析”。
+DoKit 适合“边操作边看”。Android Studio Profiler、Perfetto、JankStats 和 FrameMetrics 适合在同一复现路径下补证据。
+
+| 工具 | DoKit 先做什么 | 何时切过去 |
+|---|---|---|
+| Android Studio Profiler | 在端上确认 CPU、内存、网络和页面路径是否异常 | 要看方法调用、对象分配、线程状态或网络详情 |
+| Perfetto | 记录复现步骤和异常发生的大致时间点 | 要确认主线程、RenderThread、GPU、sched、FrameTimeline 等系统级证据 |
+| JankStats | 先定位容易掉帧的页面和操作条件 | 要在 App 侧按页面、状态和交互标签采集 jank 事件 |
+| FrameMetrics | 先判断某个窗口是否有帧率异常 | 要拿窗口级 frame duration，以及 layout、draw、sync 等阶段耗时 |
 
 一个常见流程是：测试同学用 DoKit 在端上发现某页面滑动时 FPS 下跌，并记录操作路径；开发同学用同一操作路径抓 Perfetto，再看主线程、RenderThread、GPU 和调度；修复后再用 DoKit 做快速回归。这样 DoKit 负责入口，Perfetto 负责证据。
 

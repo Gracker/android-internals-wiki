@@ -303,3 +303,13 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
   - 测试模式: `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`
 
 **参考报告**：`DeepResearch/2026-05-19-android-versioned-online-diagnostic-capabilities.md`
+
+## 参考资料
+
+### Android 版本化线上诊断能力完整边界研究
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
+- 类型：DeepResearch 调研结果
+- 摘要：建立 Android 10-17 四档线上诊断能力对照表：ApplicationExitInfo（API 30+）提供进程退出追溯，ProfilingManager（API 35+）支持 system trace / heap dump / heap profile / stack sampling 四类采集，ProfilingTrigger（API 36+）支持 APP_FULLY_DRAWN / ANR 触发器，API 37 扩展 COLD_START / OOM / KILL_EXCESSIVE_CPU_USAGE / ANOMALY。包含完整的 API 版本降级路径和限流配置。
+- 注入时间：2026-05-20
+- 价值：为本章提供 Android 线上诊断能力的完整版本边界映射，是排障流程 API 选型的关键参考
+

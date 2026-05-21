@@ -2777,6 +2777,19 @@
   - AOSP/官方文档抽查：ProfilingTrigger API 37、APA 官方页、BiometricService/NfcService 源码入口暂不足以单独成节；NFC/Biometric/Android Halo/Android Cars 与全书性能主线相关性不足。
 - **避免重复方向**：下次挖掘优先避开 APA、ProfilingManager、Android 17 NPU、SDM/Cloud Profile、Buffer Stuffing Recovery、Compose First、DeliQueue、Android 17 Excessive CPU。
 
+## [Task2A 缺口挖掘检查] 2026-05-21 20:04
+- **结论**：本轮未发现评分 ≥ 14 且尚未覆盖的新增章节缺口，跳过新章节创建。
+- **Phase 0**：`src/` 中未发现 `status: draft` 且正文实质内容 < 15 行的 `.md` 章节；仅发现一个 `.md.backup` 命中 draft，不进入加工队列。
+- **已检查方向**：
+  1. Android Halo / Agent 状态提示：偏产品体验与系统 UI 状态表达，和本书性能优化主线距离较远，本轮评分未达 14。
+  2. Android UI Development is Compose First：22.15 已创建并进入加工管线，不重复创建。
+  3. Android Performance Analyzer 与 Android Studio I/O Edition 工具更新：14.18 已创建；Android Studio Profiler / LeakCanary Profiler / APA 已分别落到 14.1、14.14、14.18，不重复创建。
+  4. Android XR SDK DP4、Unity / Unreal / Godot XR 更新：18.22 已覆盖 Android XR 空间 UI，18.16 已覆盖游戏引擎渲染链路；新增素材更适合补充既有章节。
+  5. Android for Cars 平台统一：偏车载平台能力，当前与启动、渲染、内存、功耗等主线关联不足，本轮评分未达 14。
+  6. Android 17 后台音频强化与 AudioTrack 新 API：已在 1.16、5.8、16.5 等章节覆盖；此前 suggestions 也记录过“不作为新小节创建”。
+  7. 2026-05-20/21 DeepResearch 项：Choreographer Buffer Stuffing、ProfilingTrigger Excessive CPU、SDM Cloud Compilation、Codec2/Tunneled Playback、Android Performance Analyzer 均已有对应新节或既有章节承接。
+- **建议**：下一轮先检查是否有新建但未加工的 draft；若仍无空 draft，再优先从 Android 17/18 官方 behavior changes 中筛选“已有官方文档 + 尚无章节承接 + 直接影响性能治理动作”的主题。
+
 ## [Task6 Review] 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界 — 2026-05-21
 - **类型**：需确认 / 需回炉
 - **位置**：Cleaner / CloseGuard 的版本对照表与源码路径
@@ -2791,9 +2804,12 @@
 - **建议**：由 Task2B 修正版本/API 口径、补数据来源与固定 tag，再把源码调研素材归并到正文或删去未验证结论。
 - **review 日志**：logs/review/2026-05-21-20-review.md
 
+
 ## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-21 20:31
 - **类型**：数据缺失
 - **位置**：L274 Jetpack App Startup “每个 ContentProvider 约 2ms”
 - **问题**：当前段落给出“每个 ContentProvider 约 2ms”的具体数字，但只标官方 App Startup 文档；当前官方文档说明 `InitializationProvider` 与 initializer 发现机制，并未给出这个固定耗时。该数字缺少设备、Android 版本、样本范围或基准来源。
 - **建议**：删除固定 2ms，或补充来源/测试条件；更稳的写法是“减少多个 ContentProvider 带来的初始化分发开销”，把具体收益留给项目基准或 Macrobenchmark 数据。
 - **review 日志**：logs/deep-review/2026-05-21-20-deep-review.md
+
+

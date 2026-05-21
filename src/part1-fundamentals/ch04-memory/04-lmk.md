@@ -8,6 +8,9 @@ reviewed_date: '2026-05-10'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
+last_task6_audit: '2026-05-21'
+last_task6_audit_log: logs/review/2026-05-21-21-audit.md
+last_task6_at: '2026-05-21T21:06:00+08:00'
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 polish_count: 1
@@ -165,7 +168,7 @@ Linux 内核有两个 OOM 相关的进程调整值：
 
 ### 进程优先级层次
 
-我们来看 AMS 为不同状态进程分配的 `oom_score_adj` 值。理解这个层次结构，是理解 LMK 杀进程顺序的关键。
+AMS 为不同状态进程分配的 `oom_score_adj` 值如下。理解这个层次结构，是理解 LMK 杀进程顺序的关键。
 
 [图：进程优先级层次图，从上到下为 NATIVE(-1000) → SYSTEM(-900) → PERSISTENT(-800) → FOREGROUND(0) → VISIBLE(100) → PERCEPTIBLE(200) → BACKUP(300) → HEAVY_WEIGHT(400) → SERVICE(500) → HOME(600) → PREVIOUS(700) → SERVICE_B(800) → CACHED(900)]
 
@@ -510,7 +513,7 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 ### PSI 驱动的 Android LMKD 进程杀机制（DeepResearch 调研材料）
 - 来源：`DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md`
 - 类型：DeepResearch 调研结果
-- 摘要：从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 kernel/sched/psi.c → lmkd.cpp 完整信号链，包含 PSI stall threshold 配置、lmkd 事件订阅机制、进程选择策略、per-UID 防护、swap+zRAM 配合、Android 10-15 演进编年史，以及 Google A/B 实测数据。
+- 摘要：从 vmpressure 到 PSI 的范式转移完整源码路径分析，覆盖 kernel/sched/psi.c → lmkd.cpp 完整信号链，包含 PSI stall threshold 配置、lmkd 事件订阅机制、进程选择策略、per-UID 防护、swap+zRAM 配合、Android 10-15 演进编年史，以及 Google A/B 实测数据。
 - 注入时间：2026-04-24（首次），后续 2026-04-28/29/30 追加摘要更新
 - 价值：源码级贯通 PSI→LMKD 完整信号链，填补 AIW ch04-lmk 的 PSI 机制源码分析空白
 

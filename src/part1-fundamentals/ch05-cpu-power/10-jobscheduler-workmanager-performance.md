@@ -643,3 +643,10 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 ### 性能分析工具
 - [PerfettoSQL standard library: android.job_scheduler / android.job_scheduler_states](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
+
+### Android 17 JobScheduler Excessive CPU 检查与 ProfilingTrigger 版本边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-jobscheduler-profilingtrigger-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 作为 ProfilingTrigger 新类型，对应系统对后台缓存态应用持续消耗 CPU 的强制干预。分析了 ProfilingManager API 从 API 35 到 37 的完整版本边界、ApplicationStartInfo 与 Cold Start Trigger 的关系、JobScheduler quota 与 excessive CPU 检测的独立性。
+- 注入时间：2026-05-20
+- 价值：为 §5.10 提供 Android 17 Power Check 机制的源码级证据，厘清 ProfilingTrigger 与 JobScheduler quota 的边界关系

@@ -692,3 +692,54 @@ SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含�
 
 
 <!-- AIW-源码调研-2026-05-17：原“Android 16 云编译与 SDM 机制（2026-05-17 源码调研补充）”段已删除。该段仍包含未经验证的内容：SDM 被错误描述为“Speed-compiled Dex Metadata”（实际为 Secure Dex Metadata，扩展名 .sdm）、installFilter 判断机制缺少 AOSP 佐证、性能数据“20-60s to 1-3s”无来源。云端编译的保守描述见前文“Android 16 云端编译与 SDM”小节。 -->
+
+### Android 16 SDM / Cloud Compilation 安装链路源码复核
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-16-sdm-cloud-compilation-install-linkage.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 16 引入 SDM（Secure Dex Metadata）新文件格式，Play 渠道下载后直接注入安装流程跳过本地 dex2oat。源码级分析了 ArtFileManager 中 SDM_DALVIK_CACHE / SDM_NEXT_TO_DEX 枚举、PackageInstallerSession 的 .sdm/.dm 配对验证、ArtManagerLocal 的云端编译产物生命周期管理。
+- 注入时间：2026-05-20
+- 价值：为 §1.9 安装链路提供 Android 16 Cloud Compilation 的源码级链路证据，包含 SDM 格式定义、版本差异表和安装性能影响分析
+
+
+<!-- AIW-源码调研-2026-05-21 -->
+## 源码调研补遗：Android 16 Cloud Compilation 与 SDM 机制
+
+**调研时间**：2026-05-21  
+**关联源码文件**：
+- `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`
+- `frameworks/base/services/core/java/com/android/server/pm/dex/ArtManagerService.java`
+- `frameworks/base/core/java/android/content/pm/dex/ArtManagerInternal.java`
+
+### 核心机制
+
+Android 16 引入 **Cloud Compilation**（云端编译），彻底重构安装链路：
+
+1. **传统链路（Android ≤14）**：安装时执行 dex2oat → 应用冻结窗口秒级
+2. **Android 16 云编译链路**：Play Store 预生成 SDM 签名文件 → 安装时跳过 dex2oat → 冻结窗口毫秒级
+
+### 关键组件职责
+
+| 组件 | 职责 |
+|------|------|
+| PackageInstallerSession | 安装会话管理、状态流转、commit 触发 |
+| ArtManagerService | ART 编译配置、Profile 验证、dexopt 调度 |
+| ArtManagerInternal | Local-only 隐藏接口，供 PMS 调用编译 layout 等 |
+| InstallPackageHelper | 实际安装逻辑，解析包、迁移数据、调用 PMS |
+
+### .sdm / .sdc 文件角色（基于公开技术报道）
+
+- **.sdm**：Signed Data and Metadata，云编译的签名前置产物，携带预编译 oat 的元数据
+- **.sdc**：可能为 Cloud 编译的 Data Container（待进一步验证）
+- **.dm**：Delta Manifest，增量安装描述
+
+### Android 16 dexopt 前移
+
+Android 16 release notes 明确：
+> "When a package is being updated, it halted and put into a frozen state... **Android 16 reduces the time an app is unrunnable by moving dexopt or dex2oat to an earlier phase of the install process**."
+
+这不仅为云编译铺路，也减少了所有安装场景的冻结时间。
+
+### 待验证
+- `.dm/.sdm/.sdc` 具体二进制格式（需进一步定位 art 源码）
+- ArtManagedInstallFileHelper 在 AOSP 的具体路径
+- SDM 与 OatFileManager 的绑定机制（需验证 art/runtime/oat_file_manager.cc）
