@@ -19,12 +19,12 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: needs-rework
 task2b_state: "pending"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-21"
 task6_result: pass-light-edit
 task2b_result: "pending"
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
@@ -38,6 +38,10 @@ last_task9_audit: 2026-05-21
 review_notes: '2026-05-21 task9 idle audit: needs-rework。P1：HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
 last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
 task9_review_notes: "2026-05-21 Task9 deep review: P1 SKIP_VALIDATE 版本边界与 canSkipValidate 条件仍未在正文修正，写入 queue 条目 task9-20260521-18.15-hwc-skipvalidate-still-wrong。"
+task6_reviewed_date: "2026-05-21"
+last_task6_at: "2026-05-21T12:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-12-review.md"
+task6_review_notes: "2026-05-21 Task6 revisiting-review: 清理 3 处文风问题；SKIP_VALIDATE 版本/条件技术边界沿用 Task9 pending queue。"
 ---
 
 <!-- outline-start -->
@@ -99,7 +103,7 @@ graph LR
 4. 只要存在 `CLIENT` Layer，SurfaceFlinger 就先用 RenderEngine/GPU 合成这些 Layer，再通过 `setClientTarget()` 把 client target 交回 HWC。
 5. 随后调用 `presentDisplay()`，把 `DEVICE` Layer 和 client target 一起提交给显示硬件。
 
-文中常写的 `HWC::validate()` / `HWC::present()` 是 SurfaceFlinger 包装层里的名字。HAL 真正暴露的是 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
+文中常写的 `HWC::validate()` / `HWC::present()` 是 SurfaceFlinger 包装层里的名字。HAL 暴露的是 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
 
 HWC3 / AIDL 还引入能力声明来减少重复协商。设备声明 `Capability::SKIP_VALIDATE` 后，如果 layer 栈、buffer 属性和显示配置没有变化，SurfaceFlinger 可以跳过本帧 `validateDisplay()`，直接走 `presentDisplay()`。这只省掉“向 HWC 再确认一次”的开销，不代表 HWC 绕过 SurfaceFlinger；一旦 composition type、damage、color mode 或 fence 条件变化，下一帧仍要重新 validate。
 
@@ -182,7 +186,7 @@ graph LR
 
 ## SurfaceFlinger 的合成决策流程
 
-SurfaceFlinger 收到本帧 Transaction 后，真正的合成流程一般是：
+SurfaceFlinger 收到本帧 Transaction 后，合成流程一般是：
 
 1. **layer latch**：收集本帧可见 Layer，更新几何信息、裁剪区域和 acquire fence。
 2. **`validateDisplay()`**：把 Layer 栈交给 HWC，让它返回本轮 `DEVICE` / `CLIENT` / `SIDEBAND` 决策。
@@ -191,7 +195,7 @@ SurfaceFlinger 收到本帧 Transaction 后，真正的合成流程一般是：
 5. **`setClientTarget()`**：把 client target 交回 HWC，让 HWC 把它和仍保留为 `DEVICE` 的 Layer 一起完成最终合成。
 6. **`presentDisplay()`**：提交本帧到 display。
 
-Mixed composition 的重点就在这里：`CLIENT` 和 `DEVICE` 可以同时存在。GPU 不是“接管整帧”，而是只负责 HWC 接不住的那部分 Layer。
+Mixed composition 的重点就在这里：`CLIENT` 和 `DEVICE` 可以同时存在。GPU 不会接管整帧，只负责 HWC 接不住的那部分 Layer。
 
 ### Overlay 回退的常见原因（能力依赖平台）
 
