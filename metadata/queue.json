@@ -15360,24 +15360,53 @@
       "added_at": "2026-05-21T14:08:00+08:00",
       "completed_date": "2026-05-21T15:04:00+08:00",
       "completed_reason": "Task 2A 加工完成：基于 Clippings 14/16/17 的 I/O、存储和 SQLite 监控结构，结合 Android SQLite 性能文档、StrictMode、Room QueryCallback、AndroidX SQLite release notes 与 AOSP BlockGuardOs/CloseGuard/SQLiteConnection 路径，补齐线上存储、I/O 与 SQLite 可观测性；状态改为 ready-for-review。"
+    },
+    {
+      "id": "task2a-gap-20260521-22.15-compose-first-view-migration",
+      "section": "22.15",
+      "section_title": "Compose First 与 View/Compose 混合迁移性能边界",
+      "priority": 80,
+      "title": "加工 Compose First 与 View/Compose 混合迁移性能边界",
+      "description": "基于 Google Compose First 公告、Compose 性能文档和本地 Pausable Composition / LazyLayoutCacheWindow 调研，补齐 View/Compose 混合迁移的性能成本、版本边界和验收指标。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "https://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html",
+        "https://developer.android.com/develop/ui/compose/first",
+        "https://developer.android.com/develop/ui/compose/performance",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-compose-pausable-composition-lazy-layout-cache-window.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-compose-pausable-composition-tooling-verification.md"
+      ],
+      "gap_score": 18,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T17:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 417,
+    "total_entries": 418,
     "p0_count": 177,
-    "last_updated": "2026-05-21T06:36:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 152,
+    "last_updated": "2026-05-21T17:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 153,
     "updated_date": "2026-05-21",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 152,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 153,
     "completed_entries": 263,
-    "last_task2a_gap_mining": "26.15",
-    "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00",
+    "last_task2a_gap_mining": "22.15",
+    "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T06:36:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-21T17:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -16604,10 +16633,39 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T06:36:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260521-22.15-compose-first-view-migration",
+      "section": "22.15",
+      "section_title": "Compose First 与 View/Compose 混合迁移性能边界",
+      "priority": 80,
+      "title": "加工 Compose First 与 View/Compose 混合迁移性能边界",
+      "description": "基于 Google Compose First 公告、Compose 性能文档和本地 Pausable Composition / LazyLayoutCacheWindow 调研，补齐 View/Compose 混合迁移的性能成本、版本边界和验收指标。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "https://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html",
+        "https://developer.android.com/develop/ui/compose/first",
+        "https://developer.android.com/develop/ui/compose/performance",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-compose-pausable-composition-lazy-layout-cache-window.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-compose-pausable-composition-tooling-verification.md"
+      ],
+      "gap_score": 18,
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T17:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "26.15",
-  "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00"
+  "last_task2a_gap_mining": "22.15",
+  "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00"
 }
