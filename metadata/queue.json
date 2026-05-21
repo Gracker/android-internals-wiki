@@ -1,6 +1,53 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260522-6.1-storage-fbe-io-cgroup",
+      "section": "6.1",
+      "section_title": "Android 存储架构",
+      "priority": 95,
+      "title": "FBE 密钥目录/伪源码片段与 cgroup v2 I/O 口径需修正",
+      "description": "Task9 闲时抽检发现 §6.1 的 FBE 密钥层次存在路径与伪源码错误，同时 I/O 优先级段落把 AOSP blkio/task profiles 写成 cgroup v2 IO controller。",
+      "reason": "[Deep Tech Review Audit] Android 存储架构存在 P0/P1 技术问题，需回炉修正 FBE 源码锚点和 I/O 控制器版本口径。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/01-storage-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-06-audit.md",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-16.0.0_r1/FsCrypt.cpp",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-16.0.0_r1/Utils.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-16.0.0_r1/libprocessgroup/profiles/cgroups.json",
+        "https://source.android.com/docs/security/features/encryption/file-based",
+        "https://source.android.com/docs/security/features/encryption/metadata"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/FBE 密钥目录与伪源码片段",
+          "location": "L297-L309：FBE 的密钥层次与 `installKey(...)` 示意代码",
+          "detail": "正文把 System DE Key 写成“启动早期由硬件生成”，并写用于 `/data/system/`、`/data/misc/`；示意代码又把 `installKey(\"scrypt_key_system_de\", \"/data/system_de/\")` 写成类似 vold 源码调用。AOSP android-16.0.0_r1 的 `system/vold/FsCrypt.cpp` 实际是通过 `install_storage_key()` / `installKey(mountpoint, options, key, policy)` 安装 fscrypt policy，再在 `fs_prepare_user_storage()` 中对 `BuildDataSystemDePath()`、`BuildDataMiscDePath()`、`BuildDataUserDePath()` 返回目录执行 `prepare_dir_with_policy()`；`system/vold/Utils.cpp` 对应路径是 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>`，CE 则是 `/data/system_ce/<user>`、`/data/user/<user>`。当前写法同时错了目录名、密钥来源和源码形态。",
+          "suggestion": "删除伪 C++ 调用，改成 AOSP 锚点式描述：`FsCrypt.cpp::fs_prepare_user_storage()` 准备 DE/CE 目录并应用 policy；`Utils.cpp::BuildDataSystemDePath()` 等生成 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>`。System/User DE key 由 vold 读取或创建并安装到 fscrypt，不写成“硬件生成”；硬件/KeyMint 只放在 key wrapping / metadata encryption 保护链里说明。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/cgroup v2 I/O 控制器口径",
+          "location": "L138-L140、L388-L389：I/O 调度器与 cgroup I/O 优先级",
+          "detail": "正文写“Android 引入 cgroup v2 的 I/O 控制器，前台 App 的 I/O 请求会被标记为更高优先级”。但 AOSP android-15/16 的 `system/core/libprocessgroup/profiles/cgroups.json` 默认仍挂载 `blkio` 控制器在 `/dev/blkio`，cgroups2 列出的默认控制器是 freezer/memory；`task_profiles.json` 中 `LowIoPriority` 加入 `blkio/background`，`SCHED_SP_FOREGROUND` / `SCHED_SP_TOP_APP` 只是聚合 `HighIoPriority` / `MaxIoPriority`（路径为空，回到 blkio 根组）。这不能写成已使用 cgroup v2 IO controller，也不能泛化为“前台请求被 cgroup v2 标记”。",
+          "suggestion": "改成版本化口径：Android 10+ 通过 task profiles 抽象调度组；AOSP android-15/16 默认 I/O 侧仍能看到 blkio/LowIoPriority 这条路径，前后台 I/O 隔离效果还取决于 kernel、active scheduler、blkio/BFQ 支持和 OEM 配置。若要讨论 cgroup v2 io controller，只能作为厂商/内核可选实现或未来方向，并给出设备实测入口（`/proc/cgroups`、`/sys/fs/cgroup`、`/dev/blkio`、`task_profiles.json`）。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T06:24:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-06-audit.md"
+    },
+    {
       "id": "task9-deep-20260522-2.11-vulkan14-launch-device-boundary",
       "section": "2.11",
       "section_title": "Flutter 渲染管线与性能",
