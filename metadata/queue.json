@@ -12,7 +12,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md"
@@ -24,7 +24,9 @@
         "https://cs.android.com/android/platform/superproject/+/master:/frameworks/native/libs/gui/BufferQueueProducer.cpp"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T11:04:00+08:00"
+      "added_at": "2026-05-21T11:04:00+08:00",
+      "completed_date": "2026-05-21T12:04:00+08:00",
+      "completed_reason": "Task 2A 加工完成：基于 AOSP android-16.0.0_r1 Choreographer.java / BufferQueueProducer.cpp 与 DeepResearch 素材补齐 Buffer Stuffing Recovery 状态机、触发阈值、恢复动作、版本边界和 Perfetto 诊断路径；状态改为 ready-for-review。"
     },
     {
       "id": "task9-audit-20260521-18.15-hwc-skipvalidate-source",
