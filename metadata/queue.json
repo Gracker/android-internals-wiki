@@ -1,6 +1,40 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-18.17-ndk-previous-release-fence",
+      "section": "18.17",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 85,
+      "title": "NDK SurfaceControl API 29-35 缺少 previous release fence 回收路径",
+      "description": "闲时抽检发现 18.17 将 Android 10-15 的 NDK buffer 回收写成只有 setBuffer 与 in-flight 计数，遗漏 API 29 起可通过 OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd 获取 previous release fence 的路径。",
+      "reason": "[Deep Tech Review Audit] NDK SurfaceControl API 29-35 buffer 回收路径需补 previous release fence。",
+      "issue_type": "version-differences-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-14-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码引用准确性",
+          "location": "§NDK API L183-L189、§渲染时序 L211-L214",
+          "detail": "正文把 Android 10-15/API 29-35 的 NDK SurfaceControl 回收路径概括为只有 ASurfaceTransaction_setBuffer()，并写 OnComplete 只能说明事务完成、不能作为 buffer 已释放信号。AOSP android-15/16 的 frameworks/native/include/android/surface_control.h 显示：ASurfaceTransactionStats_getPreviousReleaseFenceFd() 自 API 29 可用；OnComplete 的 stats 可返回 previous release fence，且注释说明被替换/移除的 previous buffer 可在该 callback/fence 之后复用。API 36 新增 ASurfaceTransaction_setBufferWithRelease()/ASurfaceTransaction_OnBufferRelease 是更直接的回调，不代表 API 29-35 没有 release fence 路径。",
+          "suggestion": "重写 NDK 回收策略：API 36+ 优先使用 ASurfaceTransaction_setBufferWithRelease()/ASurfaceTransaction_OnBufferRelease；API 29-35 在提交新 buffer 替换旧 buffer 时设置 ASurfaceTransaction_setOnComplete()，从 ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl) 取 previous release fence，并在 fence signal 后回收上一块 buffer。保留“不要把 acquire fence 当 release fence”的结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T14:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-21-14-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-15.5-framemetrics-snippet-scope",
       "section": "15.5",
       "section_title": "线上性能监控",
