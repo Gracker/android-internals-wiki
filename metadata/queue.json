@@ -14874,6 +14874,47 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T06:36:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260521-7.12-layoutinflater-android15-source",
+      "section": "7.12",
+      "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+      "priority": 95,
+      "title": "LayoutInflater Android 15 缓存版本差异与 OverScroll 优化断言需复核",
+      "description": "闲时抽检发现章节把 LayoutInflater.sConstructorMap 写成 Android 15 起实例缓存，但 android-15/16 源码仍为 static；另有 Android 15 OverScroll 渲染意图感知优化断言缺少源码/版本依据。",
+      "reason": "[Deep Tech Review Audit] 7.12 的 AOSP 源码引用与 Android 15 版本差异存在 P0/P1 技术问题。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/12-view-layout-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-08-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L137 LayoutInflater Constructor 缓存版本差异",
+          "detail": "正文称 Android 15 起 AOSP android-15.0.0_r1 将 LayoutInflater.sConstructorMap 从 static 改为实例变量。源码复核显示 android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 均仍声明 `private static final HashMap<String, Constructor<? extends View>> sConstructorMap`，并继续通过 verifyClassLoader() 做 ClassLoader 校验。",
+          "suggestion": "删除“Android 15 起改为实例变量 / 每个 LayoutInflater 独立缓存”的版本差异；改为“Android 14-16 仍为进程级静态缓存，复用前由 verifyClassLoader() 校验，不匹配时移除重建”。如果要讨论动态特性模块/插件化内存边界，应基于 verifyClassLoader() 和 ClassLoader 可见性描述，不要绑定到 Android 15 实例缓存。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码锚点缺失",
+          "location": "L205 Android 15 OverScroll / 渲染意图感知优化",
+          "detail": "正文称 Android 15 引入“渲染意图感知”，减少 OverScroll 触发时的额外 measure pass，并让 120Hz 回弹动画稳定性提升。章节未给出 AOSP commit、release note、类/方法路径或 trace 数据；本轮按 exact phrase 与官方文档方向检索未命中可核验来源。该段属于高风险版本差异断言，不能以已验证语气发布。",
+          "suggestion": "若找不到 AOSP commit / release note / Perfetto 对照数据，删除该段或改为 `[待验证]`；若保留，至少补出触发链路（具体 View/ViewRootImpl/EdgeEffect/OverScroll 代码路径）、Android 14 vs 15 行为差异和 120Hz trace 指标。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T08:24:53+08:00",
+      "original_review_log": "logs/deep-review/2026-05-21-08-audit.md"
     }
   ],
   "metadata": {

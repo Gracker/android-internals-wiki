@@ -2,7 +2,7 @@
 title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开销"
 chapter: "7.12"
 section: "7.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
@@ -30,19 +30,20 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
-task2b_result: fixed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-26T15:20:00+08:00"
+task9_reviewed_date: "2026-05-21"
+last_task9_at: "2026-05-21T08:24:53+08:00"
 last_task2b_at: "2026-04-25T21:43:45+08:00"
 last_task6_audit: "2026-05-20"
+last_task9_audit: "2026-05-21"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
