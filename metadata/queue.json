@@ -1,6 +1,40 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-18.15-hwc-skipvalidate-source",
+      "section": "18.15",
+      "section_title": "视频叠加与 HWC",
+      "priority": 85,
+      "title": "HWC SKIP_VALIDATE 版本边界与跳过 validate 条件需修正",
+      "description": "闲时抽检发现 SKIP_VALIDATE 被写成 HWC3/AIDL 引入且跳过条件概括不准；AOSP 显示该能力自 HWC2 Android 8 起存在，现代 SurfaceFlinger 通过 presentOrValidate() 的条件还包括 client composition 与 present timing。",
+      "reason": "[Deep Tech Review Audit] HWC SKIP_VALIDATE 的版本边界与 SurfaceFlinger 源码行为描述存在 P1 技术偏差。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-09-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码行为",
+          "location": "§HWC 的核心职责 L97-L99：HWC3/AIDL Capability::SKIP_VALIDATE 说明",
+          "detail": "正文把 SKIP_VALIDATE 写成 HWC3/AIDL 引入的能力，并把跳过 validateDisplay 的条件概括为 layer 栈、buffer 属性和显示配置没有变化。AOSP 复核显示：HWC2_CAPABILITY_SKIP_VALIDATE 已在 Android 8.0 的 hardware/libhardware/include/hardware/hwcomposer2.h 存在；composer3/Capability.aidl 中 SKIP_VALIDATE 标为 @deprecated / enabled by default。android-14.0.0_r1 与 android-16.0.0_r1 的 frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp 中，SurfaceFlinger 是否尝试 presentOrValidate() 主要受 frameUsesClientComposition 与 earliestPresentTime/timing 保护控制；presentOrValidate() 失败时再落回 validateDisplay。当前写法会把 HWC2→HWC3 的版本边界和实际 skip validate 条件讲偏。",
+          "suggestion": "把该段改为：SkipValidate 从 HWC2(Android 8+) 已存在，HWC3/AIDL 继续暴露但已标 deprecated/enabled by default；SurfaceFlinger 只有在本帧不需要 client composition，且不会过早 present 的情况下尝试 presentOrValidate()，HWC 返回需要重新验证时仍会执行 validateDisplay。补源码锚点：hardware/libhardware/include/hardware/hwcomposer2.h（android-8.0.0_r1 / android-14.0.0_r1）、hardware/interfaces/graphics/composer/aidl/.../Capability.aidl、frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T09:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-21-09-audit.md"
+    },
+    {
       "id": "task6-20260521-19.09-measure-capability-fields",
       "section": "19.09",
       "section_title": "Measure",
