@@ -3,10 +3,10 @@ title: 自动化测试工具
 chapter: '14.6'
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
-last_task2b_at: "2026-04-26T12:54:28+08:00"
+last_task2b_at: "2026-05-22T07:21:00+08:00"
 task2b_result: fixed
 section: '14.6'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-04'
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: "2026-04-26"
@@ -38,11 +38,11 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 3
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
@@ -202,14 +202,13 @@ fun scrollList() = benchmarkRule.measureRepeated(
 ) {
     val list = device.findObject(By.res("recycler_list"))
     list?.setGestureMargin(device.displayWidth / 5)
-    list?.drag(Point(0, list.visibleBounds.bottom - 100),
-              Point(0, list.visibleBounds.top + 100))
+    list?.swipe(Direction.UP, 0.8f)
 }
 ```
 
 `FrameTimingMetric` 会收集每一帧的渲染时间。Macrobenchmark 会统计帧时间分布——P50、P90、P95 和 P99 分位数。P50 代表典型帧的渲染时间，P95/P99 用来观察尾部掉帧。API 31+ 还会输出 `frameOverrunMs`，它按每帧完成时间与系统 deadline 的差值判断是否越界，比固定套 16.67ms 或 8.33ms 更适合高刷新率、可变刷新率设备。API 30 及以下主要看帧时间分布和 Trace 中的 `Choreographer#doFrame`。
 
-这里的滑动操作使用了 `UiDevice.drag()`，这是 UI Automator 的 API。Macrobenchmark 在底层依赖 UI Automator 来驱动 UI 操作——后面会详细讨论。
+这里的滑动操作使用了 `UiObject2.swipe()`，这是 UI Automator 的 API。`swipe(Direction.UP, 0.8f)` 表示向上滑动屏幕 80% 的距离，适合模拟列表滚动。`UiObject2` 也提供 `drag(Point dest)` 方法——起点固定取 `getVisibleCenter()`，传入目标点即可——但列表滚动场景用 `swipe()` 更简洁。Macrobenchmark 在底层依赖 UI Automator 来驱动 UI 操作——后面会详细讨论。
 
 ### CompilationMode：量化编译优化效果
 

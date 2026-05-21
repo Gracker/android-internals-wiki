@@ -13,7 +13,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch06-storage/01-storage-architecture.md"
@@ -45,7 +45,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T06:24:00+08:00",
-      "review_log": "logs/deep-review/2026-05-22-06-audit.md"
+      "review_log": "logs/deep-review/2026-05-22-06-audit.md",
+      "completed_at": "2026-05-22T07:21:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "回炉修复完成，章节已更新为 ready-for-review"
     },
     {
       "id": "task9-deep-20260522-2.11-vulkan14-launch-device-boundary",
@@ -9951,7 +9954,7 @@
       "reason": "[Deep Tech Review] Hook 基础设施章节对 ByteHook W^X/execmem 风险和 Android classloader namespace 可见性边界描述不准确。",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
@@ -9977,7 +9980,10 @@
       ],
       "created_date": "2026-05-16",
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-16T18:20:00+08:00"
+      "added_at": "2026-05-16T18:20:00+08:00",
+      "completed_at": "2026-05-22T07:21:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "回炉修复完成，章节已更新为 ready-for-review"
     },
     {
       "id": "task2a-gap-5-14-14-android17-ml-runtime-npu-boundary",
@@ -14975,7 +14981,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
@@ -14998,7 +15004,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T01:38:56+08:00"
+      "added_at": "2026-05-21T01:38:56+08:00",
+      "completed_at": "2026-05-22T07:21:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "回炉修复完成，章节已更新为 ready-for-review"
     },
     {
       "id": "task9-20260521-21.11-art-profile-dump-reset-commands",
@@ -16072,7 +16081,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/06-automation-tools.md"
@@ -16094,7 +16103,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T02:27:04+08:00",
-      "review_log": "logs/deep-review/2026-05-22-02-audit.md"
+      "review_log": "logs/deep-review/2026-05-22-02-audit.md",
+      "completed_at": "2026-05-22T07:21:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "回炉修复完成，章节已更新为 ready-for-review"
     },
     {
       "id": "task9-20260522-21.2-alpha-api-executor-thread-priority-regression",
@@ -16193,6 +16205,178 @@
       "completion_reason": "Task 2A draft processing: expanded empty draft into ready-for-review JobScheduler pending reason / JobDebugInfo diagnostics chapter"
     },
     {
+      "id": "task9-20260522-1.1-sf-16kb-version-boundary",
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 85,
+      "title": "SurfaceFlinger Android 11-12 trace 名称与 Android 16 16KB 页大小口径需补齐",
+      "description": "Task9 复审发现 §1.1 仍有两个版本边界缺口：SurfaceFlinger trace 名称矩阵漏掉 Android 11-12；16 KB Page Size 段落把 Android 15 AOSP 支持、Android 16 构建期检查、Google Play app 发布要求和设备兼容性要求混写。",
+      "reason": "[Deep Tech Review] Android 分层架构仍有 SurfaceFlinger/16KB Page Size 版本边界 P1，需回炉修正。",
+      "issue_type": "version-difference-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-04-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-11.0.0_r48/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-12.0.0_r34/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://source.android.com/docs/compatibility/16/android-16-cdd"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/SurfaceFlinger trace 名称矩阵缺 Android 11-12",
+          "location": "L183、L313、L325-L330：SurfaceFlinger 主路径与正常/异常示例",
+          "detail": "正文只给出 Android 13+ 的 `commit`/`composite` 与 Android 10 及之前的 `onMessageReceived`/`handleMessageRefresh`/`doComposition`，没有覆盖 Android 11-12。AOSP android-11.0.0_r48 / android-12.0.0_r34 的 SurfaceFlinger.cpp 已无 `doComposition`/`handleMessageRefresh`，也尚未出现 Android 13+ 的 `commit()`/`composite()` ICompositor 路径，trace/源码锚点应按 `onMessageReceived` → `onMessageInvalidate` / `onMessageRefresh` / `postComposition` 这一代路径单独说明。当前写法会让 Android 11/12 设备排查者按两个都不存在的名称搜索。",
+          "suggestion": "补一张版本矩阵：Android 8-10：`onMessageReceived`/`handleMessageRefresh`/`doComposition`；Android 11-12：`onMessageReceived`/`onMessageInvalidate`/`onMessageRefresh`/`postComposition`；Android 13-15：`commit()`/`composite()` 路径；Android 16：`commit <vsyncId>`、`composite <vsyncId>`，并带 WorkloadTracer 的 `Commit` / `Composition` / `Post Composition` 轨道。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/16 KB Page Size Android 16 设备要求口径",
+          "location": "L240-L244：`16 KB Page Size 对 Android 16 的影响`",
+          "detail": "正文写“Android 16 的主要变化是要求部分设备必须支持 16 KB Page Size”。官方 16 KB page size 文档的稳定口径是 Android 15 起 AOSP 支持构建 16 KB page size，且 Android 15 时该选项默认未开启；Android 16 文档明确新增的是 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 这类构建期 prebuilt 对齐检查。Google Play 的兼容性要求则是 2025-11-01 起新应用/更新在 targeting Android 15+ 且含 native code 时需支持 16 KB page size。Android 16 CDD 页面未命中 `16 KB`/`page size` 要求。当前段落把 AOSP 构建能力、Play 发布要求与设备兼容性要求混在一起。",
+          "suggestion": "改成“Android 15 引入 AOSP 16 KB page size 构建支持；Android 16 增加 prebuilt 最大页大小检查；Play 从 2025-11-01 要求 targeting Android 15+ 的新应用/更新支持 16 KB page size；设备是否以 16 KB kernel 运行取决于 OEM/kernel/产品配置”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T04:51:16+08:00",
+      "original_review_log": "logs/deep-review/2026-05-22-04-deep-review.md"
+    },
+    {
+      "id": "task9-audit-20260522-5.12-thermal-hal-kernel-version-boundary",
+      "section": "5.12",
+      "section_title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+      "priority": 85,
+      "title": "Thermal HAL / headroom API 版本链与 Linux thermal 源码分支需修正",
+      "description": "闲时抽检发现 §5.12 将 Android 16 Thermal HAL forecast 能力写入 Android 14 AIDL 通用契约，并把 Linux thermal_core / gov_step_wise 的不同 kernel 分支源码混在一起，导致源码锚点与版本边界不一致。",
+      "reason": "[Deep Tech Review Audit] Thermal HAL AIDL/headroom 预测路径与 Linux thermal kernel 源码版本边界存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-05-audit.md",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-14.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-16.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/power/ThermalManagerService.java",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android14-6.1/drivers/thermal/thermal_core.c",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/drivers/thermal/thermal_core.c",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/drivers/thermal/gov_step_wise.c"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Thermal HAL AIDL 与 headroom 预测路径",
+          "location": "L341-L370、L400-L420、L624-L635：AIDL Thermal HAL 接口结构、ThermalManagerService headroom 预测、版本演进表",
+          "detail": "正文把 `forecastSkinTemperature()` 写进 AIDL 版 `IThermal` 的通用“当前契约”，并说当前 Framework 暴露给 App 的 headroom 主要靠 `TemperatureWatcher` 自己采样和回归。AOSP 复核显示：`android-14.0.0_r1` 的 `IThermal.aidl` 已迁到 AIDL，但没有 `forecastSkinTemperature()`；`android-15.0.0_r1` 增加 cooling device changed callback，但仍没有 `forecastSkinTemperature()`；`android-16.0.0_r1` 才新增 `forecastSkinTemperature(in int forecastSeconds)`。同一 tag 的 `ThermalManagerService.TemperatureWatcher#getForecast()` 在 `mIsHalSkinForecastSupported` 且只有一路 SKIN threshold 时，会先调用 `mHalWrapper.forecastSkinTemperature()` 并归一化，失败或不支持时才回落到 ring buffer + `getSlopeOf()`。当前写法会让读者把 Android 16 HAL 方法误认为 Android 14/15 AIDL 基础能力，也会误读 Android 16 Framework 的优先预测路径。",
+          "suggestion": "把 AIDL / Framework 版本链拆开：Android 14 = AIDL 基础接口（temperature / cooling devices / thresholds / thermal callback）；Android 15 = cooling device changed callback 与 headroom thresholds 相关公开能力；Android 16 = `forecastSkinTemperature()` + Framework 优先 HAL 预测、失败再线性回归 fallback。版本演进表补这几项，并把 L400-L420 的“主要靠自己采样和回归”改成“API 30-35 走采样回归；API 36 若 HAL 支持 forecast 则优先用 HAL 预测”。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码引用准确性/Linux thermal kernel 分支混用",
+          "location": "L13、L172-L176、L200-L225：last_verified_against、critical trip point、step_wise 源码片段",
+          "detail": "frontmatter 写 `last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.1`，但正文 critical trip point 描述混用了不同 kernel 分支：`android14-6.1` 的 `thermal_core.c` 只有 `thermal_zone_device_critical()` 直接调用 `hw_protection_shutdown()`，不存在 `thermal_zone_device_halt()`、`thermal_zone_device_critical_shutdown()`、`thermal_zone_device_critical_reboot()` 或 thermal_core 内的 `__hw_protection_trigger()`；`android16-6.12` 有 `thermal_zone_device_halt()` 和 critical reboot，但仍没有 `thermal_zone_device_critical_shutdown()` / `__hw_protection_trigger()`；`android-mainline` 才有 `thermal_zone_device_critical_shutdown()` 与 `__hw_protection_trigger()`。此外 L200-L225 的 `gov_step_wise.c` 片段签名写成 `get_target_state(struct thermal_instance *, enum thermal_trend)`，而 `android14-6.1` / `android16-6.12` / `android-mainline` 都是 `get_target_state(..., enum thermal_trend trend, bool throttle)`，实际逻辑还受 `throttle` 和 initialized 状态控制。当前“已验证”标注会让源码锚点和版本行为对不上。",
+          "suggestion": "选定一个 kernel 分支作为正文源码基准（建议 `android16-6.12` 或明确“Linux 6.1/6.12/mainline 差异”）：critical trip point 段按对应分支重写；若保留 mainline 的 `__hw_protection_trigger()`，要标注 mainline-only / newer-than-6.12。`step_wise` 代码块改成当前签名并保留 `throttle` 分支，或明确标成伪代码，不再用“已验证源码片段”的口径。frontmatter 的 `last_verified_against` 同步更新为实际核验分支。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-22T05:34:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-05-audit.md"
+    },
+    {
+      "id": "task9-audit-20260522-14.12-appexitinfo-source-path-message-chain",
+      "section": "14.12",
+      "section_title": "APM / 可观测性平台与 SDK 选型",
+      "priority": 95,
+      "title": "AppExitInfoTracker 持久化路径/历史条数与消息来源链路需修正",
+      "description": "闲时抽检发现 §14.12 的 AppExitInfoTracker 源码调研补充中，持久化路径和历史条数与 AOSP android-16.0.0_r1 不符，触发链也遗漏 AMS app kill / recoverable crash / lmkd / zygote 等 KillHandler 消息来源。",
+      "reason": "[Deep Tech Review Audit] APM 选型章节的 AppExitInfoTracker 源码路径、常量和消息来源链路存在 P0/P1 技术错误，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/12-apm-observability.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-05-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/res/res/values/config.xml",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/AppExitInfoTracker 持久化路径与历史条数",
+          "location": "L373-L377：AppExitInfoTracker 关键设计",
+          "detail": "正文写持久化路径为 `/data/system/proc_exit_store/proc_exit_info`，并写“最多 8 条历史记录 per（package, UID）组合”。AOSP android-16.0.0_r1 的 `AppExitInfoTracker` 常量是 `APP_EXIT_STORE_DIR = \"procexitstore\"`、`APP_EXIT_INFO_FILE = \"procexitinfo\"`，初始化时使用 `new File(SystemServiceManager.ensureSystemDir(), APP_EXIT_STORE_DIR)` 和 `new File(mProcExitStoreDir, APP_EXIT_INFO_FILE)`，默认路径口径应是 `/data/system/procexitstore/procexitinfo`。同 tag 的 `core/res/res/values/config.xml` 中 `config_app_exit_info_history_list_size` 默认是 16，不是 8，且是资源配置项，OEM 可改。当前写法属于路径和常量事实错误。",
+          "suggestion": "改为“默认持久化目录 `/data/system/procexitstore/`，主文件 `procexitinfo`；历史条数由 `config_app_exit_info_history_list_size` 控制，AOSP android-15/16 默认 16”。如果要写设备实测路径，应标注设备 / ROM 版本。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码引用准确性/AppExitInfoTracker 消息来源链路过窄",
+          "location": "L371、L377、L389-L399：核心职责、外部来源与触发链",
+          "detail": "正文把触发链压成 `AMS.killProcess() / Zygote SIGCHLD → scheduleNoteProcessDied() → MSG_PROC_DIED → handleNoteProcessDiedLocked()`，并写 Zygote 和 LMKD 是两个独立外部来源。AOSP android-16.0.0_r1 的 `KillHandler` 同时处理 `MSG_LMKD_PROC_KILLED`、`MSG_CHILD_PROC_DIED`、`MSG_PROC_DIED`、`MSG_APP_KILL`、`MSG_STATSD_LOG`、`MSG_APP_RECOVERABLE_CRASH`；`scheduleNoteAppKill()` 会记录 AMS 主动 kill 的 reason/subreason，`scheduleNoteAppRecoverableCrash()` 也会形成 raw record。Zygote/LMKD 更准确地说是外部补充来源，用于修正 low-memory kill、signaled/native status 等信息，不是退出记录的全部入口。当前链路会误导读者理解 crash、ANR、系统主动 kill 如何进入历史记录。",
+          "suggestion": "把该段拆成“基础记录入口”和“外部补充来源”：基础入口包含 `MSG_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`；外部来源包含 `MSG_LMKD_PROC_KILLED` 和 `MSG_CHILD_PROC_DIED`，再由 `handleNoteProcessDiedLocked()` / `updateExistingExitInfoRecordLocked()` 合并。Android 16 可补充 lmkd 来源携带 `rss_kb`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-22T05:34:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-05-audit.md"
+    },
+    {
+      "id": "task6-audit-15.8-empirical-performance-outline-missing",
+      "section": "15.8",
+      "section_title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "priority": 90,
+      "title": "§15.8 缺少 outline 锚点块，需补齐大纲覆盖",
+      "description": "Task 6 闲时抽检发现章节缺少 outline 锚点块，无法执行大纲覆盖检查；正文主体完整，本轮不做内容重写，只交 Task2B 补齐结构锚点。",
+      "reason": "[Task6 闲时抽检] 缺少 outline 锚点块，无法确认锚点覆盖。",
+      "issue_type": "outline-coverage",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "task2b",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/review/2026-05-22-06-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补齐 outline",
+          "location": "文件开头正文前：缺少 `<!-- outline-start -->` 到 `<!-- outline-end -->` 大纲锚点块",
+          "detail": "Task 6 闲时抽检要求检查 outline 锚点覆盖，但章节当前没有锚点块，只能从正文标题推断结构，无法完成覆盖率判断。",
+          "suggestion": "按现有正文结构补充本节要点大纲，至少覆盖实证数据来源、七类性能后果、六类代码模式、现代 Binder/freezer 补充、排查优先级、Code Review 清单、实践指导，并确认每个锚点都有对应正文段落。"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-05-22T06:19:29+08:00",
+      "original_review_log": "logs/review/2026-05-22-06-audit.md"
+    },
+    {
       "id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance",
       "section": "24.13",
       "section_title": "Photo Picker、媒体转码与缓存治理",
@@ -16221,21 +16405,21 @@
     }
   ],
   "metadata": {
-    "total_entries": 422,
+    "total_entries": 452,
     "p0_count": 178,
-    "last_updated": "2026-05-22T05:19:00+08:00",
-    "updated_by": "task2a-content-processing",
-    "pending_entries": 157,
+    "last_updated": "2026-05-22T05:34:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 162,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task2a-content-processing",
-    "pending": 156,
-    "completed_entries": 264,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 162,
+    "completed_entries": 287,
     "last_task2a_gap_mining": "14.19",
     "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
-    "last_task2a_completed_at": "2026-05-22T05:19:00+08:00"
+    "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T05:19:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-22T07:21:00+08:00",
+  "last_updated_by": "openclaw-task2b",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
