@@ -1,8 +1,8 @@
 ---
+
 title: ANGLE（GLES-over-Vulkan 翻译层）
 chapter: '18.11'
 section: '18.11'
-status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 tags:
 - ANGLE
@@ -22,31 +22,34 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-21"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
-last_task9_at: "2026-05-21T18:20:00+08:00"
-task9_reviewed_date: "2026-05-21"
-task9_reviewed_by: openclaw-task9
-task9_result: needs-rework
 review_round: 1
-task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
 task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
-task9_review_notes: "2026-05-21 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 2；P0 为 ANGLE native fence fd ownership 表述与 SyncVk.cpp serverWait() 源码行为矛盾。"
 last_task9_audit: "2026-05-21"
-last_task9_review_log: "logs/deep-review/2026-05-21-18-audit.md"
+status: finalized
+pipeline_stage: ready-to-publish
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-22"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-22T00:27:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
+finalized_date: "2026-05-22"
+finalized_by: openclaw-task9-auto-promote
+auto_promoted_date: "2026-05-22"
+auto_promoted_by: openclaw-task9
+task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 2 写入 suggestions。满足 task6_result pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 ---
 
 <!-- outline-start -->

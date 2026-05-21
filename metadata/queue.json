@@ -1,6 +1,87 @@
 {
   "queue_entries": [
     {
+      "id": "task9-deep-20260522-2.11-vulkan14-launch-device-boundary",
+      "section": "2.11",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 85,
+      "title": "Android 16 Vulkan 1.4 / Host Image Copy 设备边界需改成 launch-device 口径",
+      "description": "本轮 Task9 深审发现 §2.11 已把 Host Image Copy 从 Flutter 已用行为改成 Android/Vulkan 通用能力，但仍将 Vulkan 1.4 写成所有 Android 16 设备强制能力，遗漏 launch-device 与升级设备边界。",
+      "reason": "[Deep Tech Review] Flutter 章节的 Android 16 Vulkan 1.4 / Host Image Copy 版本边界存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-difference-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-00-deep-review.md",
+        "https://source.android.com/docs/core/graphics/implement-vulkan",
+        "https://medium.com/androiddevelopers/vulkan-1-4-faster-app-loads-less-stutter-and-less-memory-usage-host-image-copy-is-a-game-53c57e531f5d",
+        "https://raw.githubusercontent.com/flutter/engine/main/impeller/renderer/backend/vulkan/texture_vk.cc"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Vulkan 1.4 与 Host Image Copy 设备边界",
+          "location": "L352-L360：`Vulkan 1.4 Host Image Copy 与纹理上传`",
+          "detail": "正文写“Android 16 强制要求 Vulkan 1.4”并在结尾写该扩展仅在 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效。AOSP Implement Vulkan 文档的口径是：launch with Android 16 and higher 的设备必须支持 Vulkan 1.4；升级到 Android 16 的旧设备可选支持。Android Developers Host Image Copy 文章也使用 new Android 16 devices 的口径。当前写法会把系统版本与出厂版本混在一起，让读者误以为所有 Android 16 升级设备都具备 Vulkan 1.4 / Host Image Copy 能力。",
+          "suggestion": "改成“出厂搭载 Android 16+ 的合规设备需支持 Vulkan 1.4；升级到 Android 16 的旧设备需要运行时查询 `vkEnumerateInstanceVersion` / device extension / feature bit。Host Image Copy 作为 Android 16 新设备图形能力与未来优化方向，不作为 Flutter 当前可依赖能力。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T00:27:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260522-19.01-appexitinfo-source-version-paths",
+      "section": "19.01",
+      "section_title": "APM 全景图与分类体系",
+      "priority": 85,
+      "title": "ApplicationExitInfo 版本边界与 AppExitInfoTracker 消息路径需补齐",
+      "description": "本轮 Task9 深审发现 §19.01 的 ApplicationExitInfo 新增 reason API level 仍有错位，且 AppExitInfoTracker 内部机制把退出记录来源压成 lmkd/zygote 两类消息，遗漏 AMS 主路径。",
+      "reason": "[Deep Tech Review] ApplicationExitInfo reason 版本边界和 AppExitInfoTracker 退出记录来源存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference-principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/01-apm-landscape.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-00-deep-review.md",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/ApplicationExitInfo reason API level",
+          "location": "L281-L286：ApplicationExitInfo 关键字段表 `getReason()`",
+          "detail": "正文写 API 34+ 新增 `REASON_FREEZER(14)`、API 35+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)` / `REASON_PACKAGE_UPDATED(16)`。Android Developers reference 页面对应 data-version-added 显示：`REASON_FREEZER` 为 API 33，`REASON_PACKAGE_STATE_CHANGE` 与 `REASON_PACKAGE_UPDATED` 为 API 34；AOSP ApplicationExitInfo.java 也在常量注释中用 `UPSIDE_DOWN_CAKE` 标注 package state/update 的版本边界。当前写法会让 Android 13/14 设备能力判断错后一版。",
+          "suggestion": "将表格改为：API 33+ 新增 `REASON_FREEZER(14)`；API 34+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)`、`REASON_PACKAGE_UPDATED(16)`。若同时讨论 Android 15/16，可只作为后续沿用，不写成新增版本。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/AppExitInfoTracker 消息路径遗漏",
+          "location": "L259-L277：AppExitInfoTracker 内部机制表",
+          "detail": "正文写 AppExitInfoTracker 只“接入两类消息”：`MSG_LMKD_PROC_KILLED` 和 `MSG_CHILD_PROC_DIED`。AOSP android-15.0.0_r1 的 `KillHandler` 实际还处理 `MSG_PROC_DIED`、`MSG_APP_KILL`、`MSG_STATSD_LOG`、`MSG_APP_RECOVERABLE_CRASH`；`scheduleNoteProcessDied()` 会把 ProcessRecord 转为 raw ApplicationExitInfo，`scheduleNoteAppKill()` 会记录 AMS 主动 kill 的 reason/subreason，`handleNoteProcessDiedLocked()` 再用 lmkd/zygote 外部来源修正 reason。当前表述把 lmkd/zygote 的补充来源写成全部来源，读者会误解 Java crash、ANR、用户/系统 kill 等退出记录如何进入历史列表。",
+          "suggestion": "把该表拆成“基础记录来源”和“外部修正来源”：基础路径包括 `MSG_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`；lmkd/zygote 作为 `REASON_LOW_MEMORY`、`REASON_SIGNALED` / native crash status 的补充修正来源。补 `handleNoteProcessDiedLocked()`、`handleNoteAppKillLocked()`、`updateExistingExitInfoRecordLocked()` 源码锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T00:27:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260521-19.14-baseline-profile-api-floor",
       "section": "19.14",
       "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
