@@ -1,5 +1,4 @@
 ---
-
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
@@ -32,18 +31,12 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-task6_state: reviewed
-reviewed_date: "2026-04-25"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
-task6_state: revisiting
 last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
-review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。"
 status: ready-for-review
 task9_state: reviewed
 task9_result: needs-rework
@@ -54,6 +47,13 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T00:27:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 2：ApplicationExitInfo reason 新增 API level 错位；AppExitInfoTracker 消息路径遗漏 MSG_PROC_DIED/MSG_APP_KILL 等 AMS 主路径。"
+reviewed_date: "2026-05-22"
+reviewed_by: "openclaw-task6"
+task6_state: reviewed
+task6_result: pass-light-edit
+last_task6_at: "2026-05-22T01:16:12+08:00"
+last_task6_review_log: "logs/review/2026-05-22-01-review.md"
+review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修正 frontmatter 重复 key 与术语表达；Task9 P1 queue 已存在，保持 task2b_pending。"
 ---
 
 # APM 全景图与分类体系
@@ -265,7 +265,7 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 `AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-15.0.0_r1）。
 
-它在系统侧维护每个包名的进程退出记录 circular buffer，接入两类消息：
+它在系统侧维护每个包名的进程退出记录环形缓冲区，接入两类消息：
 
 | 消息类型 | 来源 | 创建的 exitInfo.reason |
 |---|---|---|

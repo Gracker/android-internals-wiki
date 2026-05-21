@@ -15,8 +15,6 @@ created_date: "2026-05-22"
 gap_source: "章节深挖/素材驱动/官方文档"
 gap_score: 16
 material_count: 6
-pipeline_stage: task6_pending
-task6_state: pending
 sources:
   - type: official
     path: "https://source.android.com/docs/core/perf/performance-hint-api"
@@ -38,6 +36,15 @@ sources:
     path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
   - type: material
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
+reviewed_date: "2026-05-22"
+reviewed_by: "openclaw-task6"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-22T01:16:12+08:00"
+last_task6_review_log: "logs/review/2026-05-22-01-review.md"
+review_notes: "2026-05-22 Task6 first review: L1/L2 pass-light-edit，修正结尾结构性元叙述；无新增回炉项，进入 Task9 技术审查。"
 ---
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因
@@ -226,7 +233,7 @@ Qualcomm、MediaTek、Google Tensor、Samsung 的 AI 加速路径、GPU driver�
 - 版本边界可迁移：NNAPI deprecated、LiteRT 迁移、ADPF session 语义来自公开文档，能作为章节基线。
 - 收益数字不可迁移：latency、功耗、温升、NPU 覆盖率必须绑定设备、模型和 runtime。
 
-所以本节的结论应收束到一句话：GPU/NPU 异构调度不是“把任务交给加速器”这么简单，而是把 CPU 准备、硬件执行、同步等待、热预算和功耗证据放到同一条时间轴上。能被 trace 和实验复核的结论，才适合写进发布稿。
+GPU/NPU 异构调度不能只看“任务是否交给加速器”，还要把 CPU 准备、硬件执行、同步等待、热预算和功耗证据放到同一条时间轴上。能被 trace 和实验复核的结论，才适合写进发布稿。
 
 ## References
 

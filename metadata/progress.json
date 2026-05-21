@@ -1,8 +1,8 @@
 {
   "total": 360,
   "draft": 21,
-  "ready-for-review": 151,
-  "finalized": 188,
+  "ready-for-review": 152,
+  "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -200,7 +200,9 @@
     "22.15",
     "15.5",
     "23.10",
-    "5.16"
+    "5.16",
+    "19.01",
+    "2.11"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -234,24 +236,26 @@
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch23-memory-practice/10-memory-advice-api.md",
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+    "src/part3-tools/ch19-apm/01-apm-landscape.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
   ],
   "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
-    "date": "2026-05-21",
-    "time": "20:11",
+    "date": "2026-05-22",
+    "time": "01:16",
     "sections": [
-      "15.5",
-      "4.9",
-      "22.3"
+      "19.01",
+      "2.11",
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch19-apm/01-apm-landscape.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "result": "2 回炉 / 1 通过",
-    "log": "logs/review/2026-05-21-20-review.md"
+    "result": "3 通过写作质检 / 0 新增回炉 / 0 自动晋升",
+    "log": "logs/review/2026-05-22-01-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1611,31 +1615,31 @@
       "task6_note": "复审通过；补 section 元数据，修禁用/填充表达、COMMAND_ISSUE_DURATION 口径表述与重复采样段。Task9 重新进入 pending。"
     }
   },
-  "total_review_sections": 171,
+  "total_review_sections": 196,
   "next_review_candidates": [],
-  "ready_for_review": 105,
-  "last_updated": "2026-05-22T01:04:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "ready_for_review": 152,
+  "last_updated": "2026-05-22T01:16:12+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-21",
-    "time": "20:11",
-    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "date": "2026-05-22",
+    "time": "01:16",
+    "reviewed_at": "2026-05-22T01:16:12+08:00",
     "mode": "normal",
     "sections": [
-      "15.5",
-      "4.9",
-      "22.3"
+      "19.01",
+      "2.11",
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch19-apm/01-apm-landscape.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/review/2026-05-21-20-review.md",
-    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
+    "log": "logs/review/2026-05-22-01-review.md",
+    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
   },
   "task9_last_review": "2026-05-20",
-  "ready_to_publish": 201,
+  "ready_to_publish": 187,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2145,12 +2149,15 @@
       "auto_promoted_at": "2026-05-16T08:16:00+08:00"
     },
     "2.11": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
-      "last_task6_at": "2026-05-13T03:19:00+08:00",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-22T01:16:12+08:00",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
-      "auto_promoted_at": "2026-05-13T03:19:00+08:00",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
       "source_file": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
     },
     "2.20": {
@@ -4410,6 +4417,28 @@
       "reviewed_date": "2026-05-21",
       "last_task6_at": "2026-05-21T20:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
+    },
+    "19.01": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-22T01:16:12+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
+      "source_file": "src/part3-tools/ch19-apm/01-apm-landscape.md"
+    },
+    "5.16": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-22T01:16:12+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
+      "source_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     }
   },
   "task2b_rounds": [
@@ -4498,39 +4527,39 @@
     "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
-  "total_review_files": 24,
+  "total_review_files": 34,
   "last_task2a_at": "2026-05-22T01:04:00+08:00",
   "last_task2a_section": "5.16",
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
-  "last_task6_review": "2026-05-21",
+  "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "15.5",
-    "4.9",
-    "22.3"
+    "19.01",
+    "2.11",
+    "5.16"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch19-apm/01-apm-landscape.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
-  "last_task6_at": "2026-05-21T20:11:00+08:00",
+  "last_task6_at": "2026-05-22T01:16:12+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-21",
-    "time": "20:11",
-    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "date": "2026-05-22",
+    "time": "01:16",
+    "reviewed_at": "2026-05-22T01:16:12+08:00",
     "mode": "normal",
     "sections": [
-      "15.5",
-      "4.9",
-      "22.3"
+      "19.01",
+      "2.11",
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch19-apm/01-apm-landscape.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/review/2026-05-21-20-review.md",
-    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
+    "log": "logs/review/2026-05-22-01-review.md",
+    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
@@ -4539,12 +4568,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "5.16",
-  "task6_last_review_at": "2026-05-21T20:11:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-21-20-review.md",
+  "task6_last_review_at": "2026-05-22T01:16:12+08:00",
+  "task6_last_review_log": "logs/review/2026-05-22-01-review.md",
   "task6_last_review_sections": [
-    "15.5",
-    "4.9",
-    "22.3"
+    "19.01",
+    "2.11",
+    "5.16"
   ],
   "sections_status": {
     "22.11": {
@@ -5550,32 +5579,32 @@
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "date": "2026-05-21",
-    "time": "20:11",
-    "reviewed_at": "2026-05-21T20:11:00+08:00",
+    "date": "2026-05-22",
+    "time": "01:16",
+    "reviewed_at": "2026-05-22T01:16:12+08:00",
     "mode": "normal",
     "sections": [
-      "15.5",
-      "4.9",
-      "22.3"
+      "19.01",
+      "2.11",
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch19-apm/01-apm-landscape.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/review/2026-05-21-20-review.md",
-    "result": "15.5 pass-light-edit; 4.9/22.3 needs-rework (Task9 high-risk pending)"
+    "log": "logs/review/2026-05-22-01-review.md",
+    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch19-apm/01-apm-landscape.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch19-apm/01-apm-landscape.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5827,9 +5856,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "15.5",
-    "4.9",
-    "22.3"
+    "19.01",
+    "2.11",
+    "5.16"
   ],
   "task2b_progress": [
     {
@@ -5858,7 +5887,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-21-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -6041,11 +6070,14 @@
     "title": "GPU/NPU 异构负载调度与功耗归因",
     "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "pending",
-    "task6_result": "pending",
-    "reviewed_by": null,
-    "reviewed_date": null,
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-22",
+    "last_task6_at": "2026-05-22T01:16:12+08:00",
+    "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
     "last_task2a_at": "2026-05-22T01:04:00+08:00",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-22",

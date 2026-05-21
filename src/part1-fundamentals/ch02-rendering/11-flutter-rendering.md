@@ -1,18 +1,13 @@
 ---
-
 title: 2.11 Flutter 渲染管线与性能
 section: '2.11'
 chapter: '2.11'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-09'
 finalized_date: "2026-05-13"
 finalized_by: openclaw-task6-auto-promote
 auto_promoted_date: "2026-05-13"
 auto_promoted_by: openclaw-task6
-reviewed_by: openclaw-task6
-review_notes: 'task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分:
-  结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
@@ -51,11 +46,8 @@ related_chapters:
 - '7.1'
 - '7.7'
 - '18.12'
-task6_state: reviewed
-task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: '2026-05-21T23:22:00+08:00'
-task6_state: revisiting
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
@@ -68,6 +60,13 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T00:27:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：Android 16 Vulkan 1.4 / Host Image Copy 设备边界需改成 launch-device 口径；P2 1：ADPF 小节 Flutter 每帧重绘因果判断缺少支撑。"
+reviewed_date: "2026-05-22"
+reviewed_by: "openclaw-task6"
+task6_state: reviewed
+task6_result: pass-light-edit
+last_task6_at: "2026-05-22T01:16:12+08:00"
+last_task6_review_log: "logs/review/2026-05-22-01-review.md"
+review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。"
 ---
 
 <!-- outline-start -->
@@ -107,7 +106,7 @@ Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFram
 
 这个差异会改变排查入口。列表滚动卡顿时,Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`;Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
 
-这一章围绕三个排查问题展开:Flutter 在 Android 上怎么渲染,它的渲染管线和原生 Android 有什么差异,性能问题出现时应该看哪里、怎么分析?
+本节围绕三个排查问题展开:Flutter 在 Android 上怎么渲染,它的渲染管线和原生 Android 有什么差异,性能问题出现时应该看哪里、怎么分析?
 
 ## Flutter 的渲染架构
 
@@ -145,7 +144,7 @@ Flutter 3.29 之后,Android / iOS 的主线线程模型改成 Main(UI+Platform) 
 
 ### 渲染管线的根本区别
 
-原生 Android 的渲染管线我们已经在前面章节详细讲过了:VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个特征:它由系统的 VSync-app 信号触发;MainThread 和 RenderThread 是流水线式的协作关系;最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
+原生 Android 的渲染管线在 §2.3 和 §2.5 已经展开:VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个特征:它由系统的 VSync-app 信号触发;MainThread 和 RenderThread 是流水线式的协作关系;最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
 
 Flutter 的帧起点仍来自系统 VSync。Android 侧 `VsyncWaiter` 注册 `FlutterJNI.AsyncWaitForVsyncDelegate`,在 `asyncWaitForVsync()` 中调用 `Choreographer.getInstance().postFrameCallback()`;回调进入 `FrameCallback#doFrame()` 后再调用 `flutterJNI.onVsync(delay, refreshPeriodNanos, cookie)`。Flutter 使用 Choreographer 获取系统帧信号,随后由 Engine 接管 Dart 与 Raster 调度。它没有脱离 Choreographer 自己计时,也不会进入原生 View 的 traversal 流程。
 
@@ -280,17 +279,17 @@ developer.Timeline.finishSync();
 
 ## 常见性能问题
 
-有了上面的工具基础,我们可以开始分析 Flutter 在 Android 上最常见的几类性能问题了。这些问题在 Perfetto 和 DevTools 中各有不同的表现特征,识别这些特征是定位问题的关键。
+这些工具可以对应到 Flutter 在 Android 上最常见的几类性能问题。不同问题在 Perfetto 和 DevTools 中有不同表现,识别这些特征是定位问题的关键。
 
 ### Shader 编译卡顿(Skia 时代)
 
-这是 Flutter 在使用 Skia 渲染引擎时最臭名昭著的问题。Skia 在运行时编译 shader 程序--这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作(比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪)时,Skia 需要在 Raster 线程上编译对应的 shader。
+这是 Flutter 使用 Skia 渲染引擎时长期最容易被提到的问题。Skia 在运行时编译 shader 程序--这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作(比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪)时,Skia 需要在 Raster 线程上编译对应的 shader。
 
 这个编译过程可能明显超出一帧预算。常见现象是:应用启动后第一次滚动到某个页面时,或者第一次播放某个动画时出现卡顿;第二次经过同样的页面或动画时,shader 已经进入缓存,卡顿会减轻或消失。具体耗时要以目标设备和驱动为准。
 
 在 Perfetto 中,这种现象表现为 Raster 线程上突然出现一个很长的 slice,内部包含 `ShaderCompile` 相关的标记。整个 Raster 线程在这段时间被阻塞,UI / Main 侧虽然已经准备好了 DisplayList,但必须等 Raster 线程完成 shader 编译才能继续。
 
-Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 shader,但这个方案使用复杂,效果也不稳定。根本的解决方案是切换到 Impeller 引擎(后面会详细讲)。
+Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 shader,但这个方案使用复杂,效果也不稳定。更稳的方向是切换到 Impeller 引擎。
 
 ### Widget 过度重建
 
@@ -348,7 +347,7 @@ Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起,Android AP
 
 这也是为什么前文的"30-50% 改善"不适合当作通用结论。那组数字更接近 2024-2025 年第三方样本中的经验区间,受 GPU 型号、驱动版本、场景复杂度、是否夹杂 PlatformView 等因素影响很大。更稳妥的写法是:社区测试经常观察到光栅化时间下降、jank 帧减少,但 Flutter 官方并没有给出一个对所有 Android 设备都成立的统一基准。
 
-如果我们在项目里评估 Impeller,需要关注两类现象:第一,首次进入复杂页面或首次播放动画时,Raster 线程是否还会被 shader 编译长时间阻塞;第二,在同一段动画里,帧时间分布是否比 Skia 更稳定。提升幅度最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测,不套用别人的百分比。
+项目评估 Impeller 时,需要关注两类现象:第一,首次进入复杂页面或首次播放动画时,Raster 线程是否还会被 shader 编译长时间阻塞;第二,在同一段动画里,帧时间分布是否比 Skia 更稳定。提升幅度最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测,不套用别人的百分比。
 
 #### Vulkan 1.4 Host Image Copy 与纹理上传
 
@@ -386,7 +385,7 @@ Impeller 解决的是 shader 编译卡顿这一类特定问题。Widget 过度�
 
 ## 优化策略
 
-经过前面的分析,我们把 Flutter 渲染性能优化的要点整理成一个系统性的框架。
+Flutter 渲染性能优化可以先抓三个要点。
 
 ### 必须做的事
 
