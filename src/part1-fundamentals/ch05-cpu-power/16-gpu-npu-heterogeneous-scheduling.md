@@ -40,11 +40,22 @@ reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
 review_notes: "2026-05-22 Task6 first review: L1/L2 pass-light-edit，修正结尾结构性元叙述；无新增回炉项，进入 Task9 技术审查。"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-22"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-22T01:31:51+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-01-deep-review.md"
+task2b_state: pending
+task2b_result: pending
+p0: 0
+p1: 1
+p2: 1
+task9_review_notes: "2026-05-22 Task9 01: needs-rework。P1 1：ADPF Android 15/16 GPU duration 与 workload hint 版本边界需补齐；P2 1：交叉引用元数据需同步。"
 ---
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因

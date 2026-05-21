@@ -1618,8 +1618,8 @@
   "total_review_sections": 196,
   "next_review_candidates": [],
   "ready_for_review": 152,
-  "last_updated": "2026-05-22T01:16:12+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-22T01:31:51+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-22",
     "time": "01:16",
@@ -4432,13 +4432,19 @@
     },
     "5.16": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-22T01:16:12+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
-      "source_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "source_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-22T01:31:51+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-22-01-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary"
     }
   },
   "task2b_rounds": [
@@ -4467,65 +4473,49 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
   "last_task2a_processed_date": "2026-05-22",
   "task9_last_review_detail": {
-    "date": "2026-05-19",
-    "time": "19:36",
-    "reviewed_at": "2026-05-19T19:36:17+08:00",
+    "date": "2026-05-22",
+    "time": "01:31",
+    "reviewed_at": "2026-05-22T01:31:51+08:00",
     "mode": "normal",
     "sections": [
-      "14.9",
-      "12.3",
-      "8.2"
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
+    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
     "p0": 0,
-    "p1": 2,
-    "p2": 3,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promoted": [
-      "8.2"
-    ]
+    "auto_promoted": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-21-19-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-22-01-deep-review.md",
   "last_task9_sections": [
-    "4.9",
-    "22.15",
-    "22.3"
+    "5.16"
   ],
   "last_task9_review_detail": {
-    "date": "2026-05-19",
-    "time": "19:36",
-    "reviewed_at": "2026-05-19T19:36:17+08:00",
+    "date": "2026-05-22",
+    "time": "01:31",
+    "reviewed_at": "2026-05-22T01:31:51+08:00",
     "mode": "normal",
     "sections": [
-      "14.9",
-      "12.3",
-      "8.2"
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
+    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
     "p0": 0,
-    "p1": 2,
-    "p2": 3,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promoted": [
-      "8.2"
-    ]
+    "auto_promoted": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
   "total_review_files": 34,
   "last_task2a_at": "2026-05-22T01:04:00+08:00",
@@ -4562,9 +4552,9 @@
     "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch21-startup/09-startup-case-studies.md"
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
-  "last_task9_at": "2026-05-21T19:35:29+08:00",
+  "last_task9_at": "2026-05-22T01:31:51+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "5.16",
@@ -5566,15 +5556,11 @@
   ],
   "last_task2a_processed_at": "2026-05-19T22:04:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-22-01-deep-review.md",
   "task9_last_files": [
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
@@ -5608,29 +5594,23 @@
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
-    "date": "2026-05-19",
-    "time": "19:36",
-    "reviewed_at": "2026-05-19T19:36:17+08:00",
+    "date": "2026-05-22",
+    "time": "01:31",
+    "reviewed_at": "2026-05-22T01:31:51+08:00",
     "mode": "normal",
     "sections": [
-      "14.9",
-      "12.3",
-      "8.2"
+      "5.16"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "log": "logs/deep-review/2026-05-19-19-deep-review.md",
+    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
     "p0": 0,
-    "p1": 2,
-    "p2": 3,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promoted": [
-      "8.2"
-    ]
+    "auto_promoted": []
   },
   "task2b_history": [
     {
@@ -5764,13 +5744,11 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": {
-    "p0": 2,
-    "p1": 2,
-    "p2": 3,
-    "auto_finalized": [
-      "22.15"
-    ],
-    "log": "logs/deep-review/2026-05-21-19-deep-review.md"
+    "p0": 0,
+    "p1": 1,
+    "p2": 1,
+    "auto_finalized": [],
+    "log": "logs/deep-review/2026-05-22-01-deep-review.md"
   },
   "last_task2a_gap_mining": "5.16",
   "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00",
@@ -5886,7 +5864,7 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-22-01-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -6070,10 +6048,10 @@
     "title": "GPU/NPU 异构负载调度与功耗归因",
     "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-22",
     "last_task6_at": "2026-05-22T01:16:12+08:00",
@@ -6081,6 +6059,15 @@
     "last_task2a_at": "2026-05-22T01:04:00+08:00",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-22",
-    "gap_score": 16
+    "gap_score": 16,
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-22T01:31:51+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-22-01-deep-review.md",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
+    "p0": 0,
+    "p1": 1,
+    "p2": 1,
+    "queue_entry": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary"
   }
 }
