@@ -41,24 +41,24 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task9_pending
-task2b_result: fixed
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task2b_result: pending
+task2b_state: pending
 task6_state: reviewed
-task9_state: pending
-last_task9_at: "2026-05-21T13:31:48+08:00"
+task9_state: reviewed
+last_task9_at: "2026-05-21T20:31:42+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
-task9_result: pending
+task9_result: needs-rework
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T13:31:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-13-audit.md"
-review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：FrameMetrics DEADLINE 示例中 totalDuration 变量作用域错误；P2：COMMAND_ISSUE_DURATION 指标口径需修正。"
-task9_review_notes: "2026-05-21 Task9 idle audit: P0 FrameMetrics 代码片段无法编译，写入 queue 条目 task9-audit-20260521-15.5-framemetrics-snippet-scope；P2 FrameMetrics 指标表写入 suggestions。"
+last_task9_review_log: "logs/deep-review/2026-05-21-20-deep-review.md"
+review_notes: "2026-05-21 Task9 deep review: needs-rework。P0：FrameMetrics 指标表使用不存在的公开常量名；P1：GPU_DURATION/API31 版本边界与 ANR 触发口径需补。"
+task9_review_notes: "2026-05-21 Task9 deep review: P0 FrameMetrics 常量名错误写入 queue；P1 GPU_DURATION/API31 版本边界、ANR 系统触发分类与 ApplicationExitInfo trace 处理写入 queue；P2 App Startup 2ms 数据口径写入 suggestions。"
 ---
 # 线上性能监控
 

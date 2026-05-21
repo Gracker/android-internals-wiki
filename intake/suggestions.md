@@ -2790,3 +2790,10 @@
 - **问题**：Task6 已补 outline 并修 L1 表述，但章节仍保留 Task9 已标记的 Android 17/API 映射、GC 数据口径、AOSP master 行号与 Compose 细节风险，源码调研补充尚未完全融入正文。
 - **建议**：由 Task2B 修正版本/API 口径、补数据来源与固定 tag，再把源码调研素材归并到正文或删去未验证结论。
 - **review 日志**：logs/review/2026-05-21-20-review.md
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-21 20:31
+- **类型**：数据缺失
+- **位置**：L274 Jetpack App Startup “每个 ContentProvider 约 2ms”
+- **问题**：当前段落给出“每个 ContentProvider 约 2ms”的具体数字，但只标官方 App Startup 文档；当前官方文档说明 `InitializationProvider` 与 initializer 发现机制，并未给出这个固定耗时。该数字缺少设备、Android 版本、样本范围或基准来源。
+- **建议**：删除固定 2ms，或补充来源/测试条件；更稳的写法是“减少多个 ContentProvider 带来的初始化分发开销”，把具体收益留给项目基准或 Macrobenchmark 数据。
+- **review 日志**：logs/deep-review/2026-05-21-20-deep-review.md
