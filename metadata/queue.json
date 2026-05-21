@@ -1,6 +1,32 @@
 {
   "queue_entries": [
     {
+      "id": "task2a-gap-20260521-2.25-buffer-stuffing-recovery",
+      "section": "2.25",
+      "section_title": "Choreographer Buffer Stuffing Recovery 与帧节拍修正",
+      "priority": 80,
+      "title": "加工 Choreographer Buffer Stuffing Recovery 与帧节拍修正",
+      "description": "基于 Android 16 Choreographer BufferStuffingState / onWaitForBufferRelease 源码调研，补齐 Buffer dequeue 阻塞后帧节拍恢复机制、版本边界和 Perfetto 诊断路径。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md",
+        "intake/daily-info/2026-05-21.md",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/Choreographer.java",
+        "https://cs.android.com/android/platform/superproject/+/master:/frameworks/native/libs/gui/BufferQueueProducer.cpp"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-21T11:04:00+08:00"
+    },
+    {
       "id": "task9-audit-20260521-18.15-hwc-skipvalidate-source",
       "section": "18.15",
       "section_title": "视频叠加与 HWC",
