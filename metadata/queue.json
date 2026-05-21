@@ -50,7 +50,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
@@ -86,7 +86,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T21:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-21-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-21-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: ADPF 小节从 Flutter 自动启用改为待验证（issue #155097 closed not_planned, engine 主干无 ADPF 符号）；Vulkan 1.4 host image copy 从 Impeller 已用改为 Android 通用能力+Impeller 未采纳（texture_vk.cc 仍用 staging buffer）；16KB Page Size NDK 边界从 r27+ 修正为 r28+ 默认/r27 需显式 linker flags"
     },
     {
       "id": "task9-audit-20260521-18.11-angle-native-fence-fd-ownership",
@@ -101,7 +104,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md"
@@ -134,7 +137,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T18:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-18-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-18-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: dup() fd ownership 从原始 fd 转移修正为 duplicated fd 转移（原 fd 留在 ExternalFence）；Perfetto slice 名称从不存在的 waitForGpu 修正为 clientWait/clientWait block；代码块补 AOSP android-16 行号注释"
     },
     {
       "id": "task9-audit-20260521-2.4-choreographer-vsynceventdata-bufferstuffing",
@@ -191,7 +197,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/01-apm-landscape.md"
@@ -217,7 +223,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T15:48:06+08:00",
-      "review_log": "logs/deep-review/2026-05-21-15-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-15-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；ApplicationExitInfo reason 常量按 AOSP 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL"
     },
     {
       "id": "task9-audit-20260521-18.17-ndk-previous-release-fence",

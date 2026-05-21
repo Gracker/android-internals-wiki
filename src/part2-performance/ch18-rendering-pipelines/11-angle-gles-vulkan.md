@@ -26,18 +26,21 @@ pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
+last_task6_audit: "2026-05-21"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
 last_task9_at: "2026-05-21T18:20:00+08:00"
 task9_reviewed_date: "2026-05-21"
-review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T15:45:22+08:00"
+last_task2b_at: "2026-05-21T23:22:00+08:00"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
@@ -338,6 +341,7 @@ ANGLE 在 `SyncHelperNativeFence::initializeWithFd()` 中接收来自 EGL 层的
 
 ```cpp
 // external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:521-551
+// 注：Chromium ANGLE main 行号；AOSP android-16.0.0_r1 同一逻辑在 L508-L538
 angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
 {
     // 创建 Binary 类型 Vulkan Semaphore
@@ -363,13 +367,15 @@ angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
 **关键设计决策**：
 - `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR`：导入的 fd 语义是临时的，不需要在 Vulkan API 外持久化
 - `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR`：明确指定 handle 类型为 Android native sync fd，确保跨进程语义正确
-- `dup()` 复制 fd：原始 fd 所有权已转移到 VkSemaphore，调用方需保留自己的副本
+- `dup()` 复制 fd：`serverWait()` 为 Vulkan semaphore 导入再 `dup()` 一份 fd。发生 ownership transfer 的是这份 duplicated fd——`vkImportSemaphoreFdKHR` 接管 dup 出来的 fd，Vulkan 端负责关闭它；`mExternalFence` 持有的原 fd 继续由 ANGLE 的 ExternalFence 管理，不受影响
 
 ### Perfetto 中的识别
 
-ANGLE Vulkan 路径下，同步相关 slice 名称变为：
-- `SyncVk::serverWait` 或 `SyncHelperNativeFence::waitForGpu`
-- 对应 `android.vulkan` 事件 track
+ANGLE Vulkan 路径下，同步相关 trace event 需要按以下方式检索：
+
+可优先搜索 `gpu.angle` category 下的 `SyncHelperNativeFence::clientWait` / `SyncHelperNativeFence::clientWait block (unlocked)`——这两个是 `SyncVk.cpp` 中 `ANGLE_TRACE_EVENT0` 覆盖的 slice。
+
+`SyncHelperNativeFence::serverWait()` 是函数名但没有对应 trace event，需要依赖调用栈采样、Vulkan submit/present 事件或 AGI frame trace 辅助确认。不要把 `serverWait` 函数名当成 Perfetto slice 名称来搜索。
 
 原生 GLES 路径的同步事件为：
 - `eglClientWaitSyncKHR`
