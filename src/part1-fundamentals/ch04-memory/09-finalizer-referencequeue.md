@@ -27,16 +27,17 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: task6_pending
-task2b_result: fixed
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task2b_result: pending
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
-task9_reviewed_date: 2026-05-15
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-15T13:30:28+08:00'
-task9_review_notes: '2026-05-15 task9 deep-review: P0 1 / P1 2 / P2 3，需 Task2B 修正 FinalizerReference 生命周期、Cleaner 路径与 API level 边界。'
-last_task9_review_log: 'logs/deep-review/2026-05-15-13-deep-review.md'
+task9_state: reviewed
+task9_reviewed_date: 2026-05-21
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-21T19:35:29+08:00"
+task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1，需 Task2B 修正 CleanerDaemon、java.lang.ref.Cleaner public/system cleaner 执行路径与源码锚点。"
+last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
+task9_result: needs-rework
 ---
 
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界

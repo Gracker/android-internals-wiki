@@ -1,8 +1,8 @@
 {
-  "total": 345,
-  "draft": 0,
-  "ready-for-review": 140,
-  "finalized": 205,
+  "total": 358,
+  "draft": 21,
+  "ready-for-review": 149,
+  "finalized": 188,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
   "task9_reviewed_by": "openclaw-task9",
@@ -1578,8 +1578,8 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T19:07:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-21T19:35:29+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "19:07",
@@ -2352,20 +2352,18 @@
       "title": "渲染系统总纲"
     },
     "22.3": {
+      "title": "Jetpack Compose 性能优化",
+      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "queue_priority": 95,
-      "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
-      "task6_state": "reviewed",
       "task9_state": "reviewed",
+      "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "title": "Jetpack Compose 性能优化",
-      "last_task6_at": "2026-05-14T16:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-21T19:35:29+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
     },
     "1.3": {
       "status": "finalized",
@@ -3209,20 +3207,13 @@
       "file": "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "task9_reviewed_date": "2026-05-15",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_review_log": "logs/deep-review/2026-05-15-13-deep-review.md",
+      "task2b_result": "pending",
       "queue_priority": 95,
-      "created_by": "task2a-knowledge-gap",
-      "created_date": "2026-05-15",
-      "task6_result": "pass-light-edit",
-      "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "last_task6_at": "2026-05-15T14:12:00+08:00"
+      "last_task9_at": "2026-05-21T19:35:29+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
     },
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
@@ -4346,6 +4337,17 @@
       "material_count": 13,
       "last_task2a_at": "2026-05-21T06:09:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "22.15": {
+      "title": "Compose First 与 View/Compose 混合迁移性能边界",
+      "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-21T19:35:29+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -4398,11 +4400,11 @@
       "8.2"
     ]
   },
-  "last_task9_review": "2026-05-19",
+  "last_task9_review": "logs/deep-review/2026-05-21-19-deep-review.md",
   "last_task9_sections": [
-    "14.9",
-    "12.3",
-    "8.2"
+    "4.9",
+    "22.15",
+    "22.3"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-19",
@@ -4430,9 +4432,9 @@
     ]
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "total_review_files": 24,
   "last_task2a_at": "2026-05-21T12:04:00+08:00",
@@ -4469,9 +4471,9 @@
   "last_task9_reviewed_files": [
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
-  "last_task9_at": "2026-05-20T07:37:11+08:00",
+  "last_task9_at": "2026-05-21T19:35:29+08:00",
   "last_task2a_result": "ready-for-review",
-  "ready-to-publish": 199,
+  "ready-to-publish": 0,
   "last_task2a_processed_section": "2.25",
   "task6_last_review_at": "2026-05-21T01:15:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-21-01-review.md",
@@ -5465,21 +5467,21 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "14.9",
-    "12.3",
-    "8.2"
+    "4.9",
+    "22.15",
+    "22.3"
   ],
   "last_task2a_processed_at": "2026-05-19T22:04:00+08:00",
   "last_task9_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "last_task9_log": "logs/deep-review/2026-05-19-19-deep-review.md",
   "task9_last_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
@@ -5666,7 +5668,15 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
+  "last_task9_review_summary": {
+    "p0": 2,
+    "p1": 2,
+    "p2": 3,
+    "auto_finalized": [
+      "22.15"
+    ],
+    "log": "logs/deep-review/2026-05-21-19-deep-review.md"
+  },
   "last_task2a_gap_mining": "22.15",
   "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
@@ -5781,7 +5791,7 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -5949,15 +5959,15 @@
     "material_count": 6
   },
   "section_22_15": {
-    "section": "22.15",
     "title": "Compose First 与 View/Compose 混合迁移性能边界",
     "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
-    "status": "draft",
-    "pipeline_stage": "task2a-gap-created",
-    "created_by": "task2a-knowledge-gap",
-    "created_date": "2026-05-21",
-    "queue_priority": 80,
-    "gap_source": "每日信息/官方文档/研究素材",
-    "gap_score": 18
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-05-21T19:35:29+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
+    "section": "22.15"
   }
 }

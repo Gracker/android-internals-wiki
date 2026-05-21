@@ -2664,6 +2664,55 @@
 - **问题**：正文写 `HwTimeoutMultiplier()` 是 Android 14+ 引入；但 AOSP android-13.0.0_r1 `InputDispatcher.cpp` 的 `STALE_EVENT_TIMEOUT` 和 `DEFAULT_INPUT_DISPATCHING_TIMEOUT` 已使用 `HwTimeoutMultiplier()`。
 - **建议**：把 stale/dispatch timeout 的 multiplier 口径改为 Android 13+；若只想强调某个具体路径，应按 Android 12/13/14 分别列源码差异。
 
+
+## [Task14 参考书扫描] 24.1 文件 I/O 优化 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md]
+- **建议补充**：I/O 启动优化专项——大文件 mmap/NIO、安装包不压缩启动文件、Buffer 复用（Okio ByteString/Buffer）、Multidex ZIP 格式直接搬运技巧（无解压压缩）
+- **参考书覆盖深度**：深入（含微信 Multidex 实战案例）
+
+## [Task14 参考书扫描] 24.1 文件 I/O 优化 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 15.md]
+- **建议补充**：SharedPreferences「七宗罪」详解——跨进程不安全（MODE_MULTI_PROCESS 万分之一损坏率）、全量写入、apply 强制落盘导致 ANR（线上占比超 5%）；ContentProvider 跨进程数据传递的 Binder + 匿名共享内存机制详解；ContentProvider 性能陷阱（生命周前于 Application.onCreate）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 21.3 ContentProvider 启动治理 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 15.md]
+- **建议补充**：ContentProvider 生命周期在 Application.onCreate 之前、multiprocess 属性的多实例问题、Binder 传输大小限制 1~2MB 对批量操作的影响
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 24.3 序列化性能对比与选型 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md]
+- **建议补充**：Serial（Twitter 开源）高性能序列化方案——无反射、有版本管理、debug 能力强；微信 Protobuf 实践——自定义 op 方法减少方法数；FlatBuffers 体验
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 24.2 数据库性能优化 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md]
+- **建议补充**：SQLite 并发实战——连接池大小建议（微信设为 4）、WAL 模式开启后读写完全并发但写仍互斥、Busy Retry 方案（Thread.sleep + 重试）、EXCLUSIVE 锁模式优化单进程场景
+- **参考书覆盖深度**：深入（含微信 WCDB 实战）
+
+## [Task14 参考书扫描] 24.2 数据库性能优化 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md]
+- **建议补充**：SQLite 查询优化实操——索引使用陷阱（BETWEEN/LIKE/OR 不走索引及转换技巧）、复合索引选择、页大小默认 1024Byte 建议调大、缓存大小默认 1000 页；WCDB SQLite 损坏率 1/20000~1/10000
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 24.2 数据库性能优化 — 2026-05-21
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md]
+- **建议补充**：SQLite 加密性能影响——SQLCipher AES 页级加密，Create 性能影响高达 10 倍（WCDB Benchmark 数据）；全文搜索 FTS 优化经验
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 24.1 文件 I/O 优化 — 2026-05-21
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 15.md]
+- **过时内容**：文中 Android 分区描述基于 Android 8.0 Treble；全盘加密描述为 Android 5.0 默认开启
+- **建议更新至**：Android 16/17 已强制文件级加密（FBE），全盘加密（FDE）在新设备已废弃；需更新加密方案描述
+
 ## [Task6 Review] 19.09 Measure — 2026-05-21
 - **类型**：需补充素材
 - **位置**：§核心能力 / 大纲锚点「能力范围」
@@ -2671,8 +2720,59 @@
 - **建议**：补一张字段级能力范围表，列出 Measure 事件/字段、端侧来源、适合判断、边界/不支持项和验证来源；与 Task9 的 native crash / ANR / 符号化边界问题合并处理。
 - **review 日志**：logs/review/2026-05-21-08-review.md
 
+## [Task2A 知识缺口挖掘跳过] 2026-05-21 08:14
+
+- **扫描结果**：`src/` 下未发现 `status: draft` 且正文实质内容少于 15 行的空草稿；`metadata/progress.json` 当前 `draft = 0`。
+- **本轮检查方向**：
+  - `metadata/source-index.json` 中高分未显式映射素材：BufferQueue / Buffer Stuffing、Perfetto SDK、RenderEffect、AnimatedVectorDrawable、FragmentTransaction、ApplicationExitInfo、MTE、Android 17 ML Runtime 等方向均已落入现有章节或 Task6/Task9 回炉队列。
+  - 最近 3 天 `intake/daily-info/`：Android Performance Analyzer 已有 14.18；Compose First / Compose April 2026 与 7.7、22.3 重合；Android XR 渲染已有 18.22；Android Halo 更偏产品交互，暂不满足性能优化核心相关性。
+  - AOSP / 官方文档抽查：`MediaProvider` / FUSE 已有 24.12；`ProfilingManager` / `ProfilingTrigger` 已有 8.10、14.7、19.16、26.12；`NotificationManagerService` 已有 9.6 与 statsd 相关章节可承接。
+- **结论**：本轮未发现“去重后仍值得新建章节”的评分 ≥ 14 知识缺口；不创建新文件，避免重复章节。
+- **下轮建议**：优先等待 Task6/Task9 回炉队列清空，或从 AOSP `system/vold`、`packages/modules/Wifi`、`packages/modules/Bluetooth` 中选择有明确 App 性能入口的方向再评分。
+
+## [Task2A 知识缺口挖掘跳过] 2026-05-21 09:15
+
+- **扫描结果**：`src/` 下未发现 `status: draft` 且正文实质内容少于 15 行的空草稿；`metadata/progress.json` 当前 `draft = 0`，本轮不进入内容加工。
+- **本轮检查方向**：
+  - 最近注入 DeepResearch：`Android 16 Choreographer Buffer Stuffing Recovery` 已在 2.4、7.9、13.15、16.5 等章节出现；`Android 17 ProfilingTrigger API 37` 已在 8.10、14.7、19.16、26.12 承接；`Android 16 云编译与 SDM` 已在 1.9、1.21、8.7、16.6、21.4 承接；`Codec2 / Tunneled Playback / Media3 ABR` 已在 8.8、18.15 等章节出现。
+  - 官方文档 / AOSP 抽查：Android 17 ProfilingTrigger、Compose First / Compose April 2026、Choreographer BufferStuffingState 均有素材，但去重后更适合补现有章节或 Task6/Task9 回炉，不适合新开章节。
+  - 每日信息：Android Performance Analyzer 已有 14.18；Android XR 渲染已有 18.22、22.14；Android Halo 和 Cars 更新偏产品/场景入口，与性能优化主线相关性不足。
+- **候选评分**：
+  - ProfilingTrigger API 37 补充：素材 5 / 相关性 5 / 需求 4 / 时效 5 = 19，但已有 8.10、14.7、19.16、26.12，判定为已有章节补强。
+  - Choreographer Buffer Stuffing Recovery：素材 4 / 相关性 5 / 需求 4 / 时效 5 = 18，但已有 2.4、7.9、13.15、16.5，判定为已有章节补强。
+  - Compose First / Compose Runtime SlotTable：素材 4 / 相关性 4 / 需求 4 / 时效 5 = 17，但已有 7.7、22.3，判定为已有章节补强。
+  - Android Halo：素材 2 / 相关性 2 / 需求 2 / 时效 5 = 11，低于新建阈值。
+- **结论**：本轮未发现“去重后仍值得新建章节”的评分 ≥ 14 知识缺口；不创建新文件，避免重复章节。
+- **下轮建议**：若继续挖掘，优先从 `system/vold`、`packages/modules/Wifi`、`packages/modules/Bluetooth`、`packages/modules/Connectivity` 中寻找能直接影响 App 性能诊断的缺口；否则先消化 Task6/Task9 回炉队列。
 ## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-21
 - **类型**：源码准确性 / FrameMetrics 指标口径
 - **位置**：L150-L157 FrameMetrics 指标表
 - **问题**：表格使用 `UNKNOWN_DELAY` / `INPUT_HANDLING` / `COMMAND_ISSUE` 等缩写，和公开 API 常量名不完全一致；其中 `COMMAND_ISSUE` 被写成 “GPU 命令执行耗时”。AOSP `FrameMetrics.java` 中公开常量是 `UNKNOWN_DELAY_DURATION`、`INPUT_HANDLING_DURATION`、`COMMAND_ISSUE_DURATION` 等；`COMMAND_ISSUE_DURATION` 表示 issuing draw commands to the GPU，GPU 完成耗时另有 `GPU_DURATION`。
 - **建议**：把指标列改为公开常量名（`*_DURATION`）；将 `COMMAND_ISSUE_DURATION` 的含义改为 RenderThread/HWUI 向 GPU 提交 draw commands 的阶段。如果要讨论 GPU 执行耗时，单独补 `GPU_DURATION` 与对应 API 边界。
+
+
+
+## [Task2A 知识缺口挖掘跳过] 2026-05-21 16:12
+
+- **扫描结果**：`src/` 下未发现 `status: draft` 且正文实质内容少于 15 行的空草稿；`metadata/progress.json` 当前 `draft = 0`，本轮不进入内容加工。
+- **本轮检查方向**：
+  - 最近 5 个 `intake/research-feeds/`：Perfetto v53/v54、Frame Timeline、Compose Pausable Composition、View 层级 measure/layout 均已由 13.14、13.17、2.4、7.7、7.12、22.3 等现有章节或回炉队列承接。
+  - 最近 3 天 `intake/daily-info/`：Android Performance Analyzer 已有 14.18；Compose First 与 7.7、22.3 重合；Android XR 已有 18.22、22.14；Android Halo / Cars 偏产品交互或垂类入口，不满足性能优化核心相关性。
+  - 官方文档 / AOSP 抽查：Android 17 App memory limits、ProfilingTrigger / ANOMALY、App Performance Score、Wi-Fi / Connectivity 网络选择均已有 23.9、26.12、26.15、26.7、24.9 或 Task6/Task9 回炉项承接。
+  - `metadata/source-index.json` 高价值未显式映射素材：Android 16KB Page Size、MTE、ApplicationExitInfo、AnimatedVectorDrawable、FragmentTransaction、Codec2 / Tunneled Playback、Android Performance Analyzer 等方向均已落入现有章节。
+- **候选评分**：
+  - App Performance Score / Vitals 质量建议：素材 5 / 相关性 4 / 需求 4 / 时效 5 = 18；但已可补 26.7、26.15、15.5，不单独建节。
+  - Android Performance Analyzer 深度材料：素材 5 / 相关性 5 / 需求 4 / 时效 5 = 19；已有 14.18，不单独建节。
+  - Compose First / Compose Runtime 新材料：素材 4 / 相关性 4 / 需求 4 / 时效 5 = 17；已有 7.7、22.3，不单独建节。
+  - Android Halo：素材 2 / 相关性 2 / 需求 2 / 时效 5 = 11，低于新建阈值。
+- **结论**：本轮未发现“去重后仍值得新建章节”的评分 ≥ 14 知识缺口；不创建新文件，避免重复章节。
+- **下轮建议**：继续等待 Task6/Task9 回炉队列消化；若需要继续挖掘，优先选择 `system/vold`、`packages/modules/Connectivity`、`packages/modules/Bluetooth` 中有明确 App 性能入口且现有章节无法承接的方向。
+
+
+## [Task2A 缺口挖掘] 2026-05-21 19:04
+- **结论**：本轮未发现评分 ≥14、且尚未被 SUMMARY.md 覆盖的新增章节缺口。
+- **已检查方向**：
+  - source-index 高分未映射素材：Perfetto SPAN_JOIN、MTE memtagMode、Android 版本化线上诊断、Android 17 NPU、JobScheduler Excessive CPU、ADPF 协程线程迁移等均已在 13.11、20.11/14.3、26.12、5.14、25.12/25.13、25.11 等章节覆盖。
+  - 最近 daily-info：Android Performance Analyzer 已有 14.18；Compose First / View 迁移已有 22.15；Android 16 Buffer Stuffing Recovery 已有 2.25；Android 17 MessageQueue / DeliQueue 已有 1.13 与 7.8。
+  - AOSP/官方文档抽查：ProfilingTrigger API 37、APA 官方页、BiometricService/NfcService 源码入口暂不足以单独成节；NFC/Biometric/Android Halo/Android Cars 与全书性能主线相关性不足。
+- **避免重复方向**：下次挖掘优先避开 APA、ProfilingManager、Android 17 NPU、SDM/Cloud Profile、Buffer Stuffing Recovery、Compose First、DeliQueue、Android 17 Excessive CPU。

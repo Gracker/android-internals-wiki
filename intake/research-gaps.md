@@ -478,6 +478,63 @@ libdmabufheap pooling、Binder FDA 批量 fd 安装、allocator AIDL `additional
 ### 关联章节
 2.15、2.13、2.16、4.2
 
+
+## [2026-05-20] 21.1/21.9 启动优化 — 参考书素材（极客时间 #9 #10）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md]
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+
+### 知识点
+1. 启动4阶段模型（T1预览窗口→T2闪屏→T3主页→T4可操作），以及对应3个核心体验问题
+2. systrace + ASM 函数插桩方案：降低性能损耗到1倍以内，覆盖主线程+子线程调用流程
+3. 闪屏优化：预览窗口做闪屏（今日头条方案），合并闪屏与主Activity减少100ms
+4. 启动框架 DAG 编排：Pipeline 机制（mmkernel/Alpha），防止主线程空转等待依赖任务
+5. GC 监控：Debug.getRuntimeStat("art.gc.blocking-gc-time") 统计阻塞式同步 GC
+6. 数据重排优化：ReDex Interdex 类重排 + 资源文件重排（修改7zip源码），减少磁盘I/O缺页中断，100-200ms提升
+7. 类加载 verify 跳过：Dalvik 平台 gDvm.classVerifyMode 设为 VERIFY_MODE_NONE，2MB Dex 从350ms降到150ms
+8. 启动线上监控指标：快开慢开比（2s快开/5s慢开）、P90启动耗时、区分冷/温/首次安装启动
+9. 实验室监控：视频录制+80%绘制检测/图像识别，覆盖高中低端机
+10. 保活/插件化/热修复对启动的负面影响量化分析（Tinker 加载补丁后启动慢5%-10%）
+
+### 重要程度
+高
+
+### 建议加工方向
+- ch21.01 可补充启动4阶段模型作为分析框架
+- ch21.08 可补充快开慢开比、P90指标等线上度量方案
+- ch21.09 可收录 DAG 编排空转案例、数据重排案例
+- [需确认: verify 跳过在 Android 16/17 下已不可用，需标注版本限制]
+
+## [2026-05-20] 24.1 文件I/O优化 — 参考书素材（极客时间 #11 #12 #13）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 11.md]
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 12.md]
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
+
+### 知识点
+1. Linux I/O 全链路：VFS → 具体文件系统(ext4/F2FS) → Page Cache → 通用块层 → I/O调度 → 驱动
+2. Android 闪存演进：eMMC → UFS 2.0/2.1 → NVMe（iPhone），F2FS vs ext4 对比
+3. 文件损坏三视角分析：应用程序（非原子操作/跨进程）、文件系统（断电丢失）、磁盘（闪存寿命/ECC）
+4. 写入放大原理：闪存擦除以block为单位，低端机/老设备更严重；fstrim/TRIM 缓解
+5. 三种I/O方式对比：标准I/O（Page Cache缓冲）、直接I/O（O_DIRECT绕Page Cache）、mmap（减少系统调用+数据拷贝）
+6. mmap 适用场景与限制：小文件频繁读写、跨进程同步（Binder内部用mmap）；虚拟内存增大、磁盘延迟无法解决
+7. 多线程阻塞I/O实验：30线程读40MB文件，收益递减（3.6s→1.1s），过多线程反而更慢
+8. 小文件系统设计：目录查找性能瓶颈（FAT32线性 vs ext4 Hash索引），微信SFS方案
+9. I/O线上监控：Native Hook（PLT/GOT Hook libc.so open/read/write/close）优于 Java Hook
+10. 四类I/O问题检测规则：主线程I/O（>100ms）、Buffer过小（<4KB且>5次）、重复读（>3次且未更新）、资源泄漏（CloseGuard Hook）
+11. Matrix I/O Canary 开源方案细节
+
+### 重要程度
+高
+
+### 建议加工方向
+- ch24.01 可补充三种I/O方式对比表、mmap适用场景、Buffer大小推荐实验数据
+- ch26.03 可补充 I/O 线上监控四规则作为可观测性实战案例
+- [需确认: F2FS 可靠性问题在 2026 年是否已解决，需更新]
+- [需确认: eMMC 在当前市场占比已极低，相关内容可能需降级为历史背景]
+
 ## [2026-05-20] 19.09 Measure — Crash/ANR 与 native crash 能力边界
 
 ### 盲区描述
@@ -496,6 +553,56 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 19.09 Measure；19.0 APM 工具总览
 
 
+
+## [2026-05-21] 26.5 线上问题排查方法论 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 14.md]
+
+### 知识点
+1. I/O 线上监控方案：Native Hook（PLT/GOT Hook on libc open/read/write/close）可低损耗采集全量 I/O 信息，性能可忽略不计；Java Hook（BlockGuardOs 动态代理）性能差且无法监控 Native I/O
+2. 线上 I/O 不良规则抽象：主线程连续读写 >100ms、Buffer < block size 且读写 >5次、重复读同文件 >3 次、资源泄漏（CloseGuard Hook）
+3. Matrix I/O Canary 实践：基于 GOT Hook 监控 libjavacore.so 等，覆盖 Java 层 I/O 调用
+
+### 重要程度
+高
+
+### 建议加工方向
+- 整理为「线上 I/O 监控方案选择」对比表：Java Hook vs Native Hook vs 插桩
+- 提炼 I/O 不良规则为可配置的检测阈值模板
+
+## [2026-05-21] 26.3 性能指标采集与上报 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 16.md]
+
+### 知识点
+1. 存储模块线上监控三要素：正确性（损坏率监控 + CRC 校验）、时间开销（初始化耗时 + 读写耗时）、空间开销（内存峰值 + ROM 占用）
+2. ROM 整体监控：文件总大小异常率 + 文件数异常率 + 存储树剪枝上报 + 远程清理规则下发
+
+### 重要程度
+中
+
+### 建议加工方向
+- 整理为「存储监控指标体系」模板，含 SP 损坏率基准值（万分之一）
+- ROM 存储树剪枝算法与上报策略
+
+## [2026-05-21] 26.3 性能指标采集与上报 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 17.md]
+
+### 知识点
+1. SQLite 线上耗时监控：WCDB SQLiteTrace 三接口（busy/damage/耗时），EXPLAIN QUERY PLAN 本地测试
+2. Matrix SQLiteLint 智能分析：基于 SQL 语法树自动检测索引使用不当、select* 等六大问题
+
+### 重要程度
+高
+
+### 建议加工方向
+- 整理 SQLite 线上监控方案对比：自研 Trace vs Matrix SQLiteLint
+- 提供可落地的监控接入步骤
+
 ## [2026-05-21] 4.2 Linux 内核内存管理 — Android 17 ART MADV_COLD 协同
 
 ### 盲区描述
@@ -511,3 +618,20 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 
 ### 关联章节
 4.2、4.3、4.4
+
+## [2026-05-21] 22.3 Jetpack Compose 性能优化 — Compose 重组与 ART GC 数据闭环
+
+### 盲区描述
+章节把 Compose 重组分配压力与 ART Concurrent Copying / Young Generation GC pause 写成已源码验证的 Android 17 结论，但缺少固定 AOSP tag、正确 API level 口径、Perfetto/GC log 样本和 benchmark 条件。需要把“减少不必要重组可降低分配压力”与“具体 GC pause 数值”分开验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 固定 Android 16 / Android 17 preview 的 ART 源码 tag，核对 `Heap::RequestConcurrentGCCollector`、generational CC、safepoint 相关路径和行号。
+- 在 Compose 长列表滚动或重组 benchmark 中采集 Perfetto、logcat GC、分配数据，记录设备、刷新率、Compose Foundation、Compose Compiler/Kotlin 版本。
+- 复核 Android 17 API level 与项目 `applicable_versions` 口径，避免把 preview 结论写进 Android 10-16 稳定范围。
+
+### 关联章节
+22.3、22.15、7.7、4.9
+
