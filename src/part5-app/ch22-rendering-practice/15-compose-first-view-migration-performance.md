@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-05-21"
 applicable_versions: "Jetpack Compose 1.9 - 1.10 / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-21"
-last_verified_against: "Android Developers Compose First docs/blog, Compose performance docs, Compose Foundation 1.9/1.10 release notes, local DeepResearch 2026-05-15/18"
+last_verified_against: "Android Developers Compose First docs/blog, Compose performance docs, Compose Foundation 1.9/1.10 发布说明, local DeepResearch 2026-05-15/18"
 confidence: medium
 tags: [compose, view-interop, rendering, migration, performance]
 related_chapters: ["7.7", "22.2", "22.3", "18.2", "14.18"]
@@ -13,8 +13,17 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-21"
 gap_source: "每日信息/官方文档/研究素材"
 gap_score: 18
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-21"
+task6_result: pass-light-edit
+task9_state: pending
+last_task6_at: "2026-05-21T19:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-21-19-review.md"
+task6_l1_l2_fixes: 12
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-21 Task6：四层质检通过；L1/L2 轻量修复 12 处；无 L3/L4 回炉项，送 Task9 技术复审。"
 sources:
   - type: blog
     path: "https://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html"
@@ -52,10 +61,10 @@ sources:
 ## 要点
 
 ### 🔹 Compose First 改变新增 UI 能力入口
-说明 Google 2026 年将 Android UI guidance、tools、API 和 samples 转向 Compose 的背景，并把它转成工程判断：新增功能优先 Compose，老页面按触碰频率和性能风险分批迁移。
+说明 Google 2026 年将 Android UI 指南、工具、API 和示例转向 Compose 的背景，并把它转成工程判断：新增功能优先 Compose，老页面按触碰频率和性能风险分批迁移。
 
 ### 🔹 View 维护模式与存量页面边界
-区分 android.widget、Fragment、RecyclerView、ViewPager 等 View based 组件的维护状态、继续可用范围和不再承接新特性的影响，避免把“维护模式”误读成“立即废弃”。
+区分 android.widget、Fragment、RecyclerView、ViewPager 等 View-based 组件的维护状态、继续可用范围和不再承接新特性的影响，避免把“维护模式”误读成“立即废弃”。
 
 ### 🔹 View/Compose interop 的性能成本
 梳理 `ComposeView`、`AndroidView`、Fragment 容器、RecyclerView item 中嵌入 Compose 的常见成本：生命周期桥接、measure/layout 重复、状态同步、slot table 与 View tree 双重管理。
@@ -77,12 +86,12 @@ sources:
 ### 🔸 Compose Multiplatform 与 Android App 迁移的差异
 区分跨平台 UI 选型和 Android 原生页面迁移，避免把 Compose Multiplatform 的限制直接套到 Android App 页面上。
 
-### 🔸 Compose 1.10+ release notes 跟踪
+### 🔸 Compose 1.10+ 发布说明跟踪
 后续补充 Pausable Composition、Lazy prefetch、Modifier 优化和 runtime tracing 的稳定版本边界。
 
 <!-- outline-end -->
 
-Google 在 2026 年把 Android UI guidance、samples、tools 和新 API 的重心转向 Compose，并把这个方向命名为 Compose First。本节把这条产品路线转成工程迁移规则：新增 UI 默认选 Compose；存量 View 页面按触碰频率、性能敏感度和维护成本分批处理，不把一次性重写当成目标。[已验证: Android Developers Blog, 2026-05-21][已验证: 官方文档, developer.android.com/develop/ui/compose/first]
+Google 在 2026 年把 Android UI 指南、示例、工具和新增 API 的重心转向 Compose，并把这个方向命名为 Compose First。本节把这条产品路线转成工程迁移规则：新增 UI 默认选 Compose；存量 View 页面按触碰频率、性能敏感度和维护成本分批处理，不把一次性重写当成目标。[已验证: Android Developers Blog, 2026-05-21][已验证: 官方文档, developer.android.com/develop/ui/compose/first]
 
 这类迁移不能只看“能不能改成 Compose”。渲染性能章节已经覆盖 View 管线、RecyclerView 实战和 Compose 性能细节，详见 22.2、22.3 和 18.2 节。本节只处理混合迁移阶段的取舍：什么时候插入 `ComposeView`，什么时候用 `AndroidView` 保留遗留组件，什么时候必须先补性能基线。
 
@@ -90,15 +99,15 @@ Google 在 2026 年把 Android UI guidance、samples、tools 和新 API 的重�
 
 ## Compose First 改变新增 UI 能力入口
 
-Compose First 的工程含义是“新增能力优先从 Compose 入口接入”。Google 公告给出的范围包括 API、libraries、tools、guidance、documentation、codelabs 和 samples；Android Studio 后续新增 UI 工具也会面向 Compose。对业务团队来说，新增页面、重做页面和新形态适配应该先评估 Compose 方案，再回看是否存在必须保留 View 的技术债。[已验证: Android Developers Blog, 2026-05-21]
+Compose First 的工程含义是“新增能力优先从 Compose 入口接入”。Google 公告给出的范围包括 API、库、工具、指南、文档、codelab 和示例；Android Studio 后续新增 UI 工具也会面向 Compose。对业务团队来说，新增页面、重做页面和新形态适配应该先评估 Compose 方案，再回看是否存在必须保留 View 的技术债。[已验证: Android Developers Blog, 2026-05-21]
 
 新增页面优先 Compose 的收益主要来自三个方面：
 
 - **开发入口统一**：UI 状态、预览、Material 组件和自适应布局都从 Compose 文档开始，团队不再为新页面同时维护 XML、Binding 和 Compose 三套写法。
 - **工具投入集中**：Compose Profiler、Layout Inspector 重组计数、compiler metrics、runtime tracing、Baseline Profile 指南都围绕 Compose 补齐，性能问题更容易形成统一排查模板。
-- **跨形态成本更低**：大屏、折叠屏、窗口化和多尺寸布局在 Compose guidance 中被放到更前的位置，新增页面能较早暴露尺寸适配问题。
+- **跨形态成本更低**：大屏、折叠屏、窗口化和多尺寸布局在 Compose 指南中被放到更前的位置，新增页面能较早暴露尺寸适配问题。
 
-存量页面的规则要更保守。公告建议“when you touch them” 再迁移，这句话适合转成版本计划：页面发生大改、视觉重做、状态模型重构或性能专项时，把 Compose 迁移纳入同一批验证；没有产品变化、线上指标稳定、依赖复杂 View 组件的页面继续保留 View。[已验证: 官方文档, developer.android.com/develop/ui/compose/first]
+存量页面的规则要更保守。公告建议在“触碰到页面时再迁移”（when you touch them），这句话适合转成版本计划：页面发生大改、视觉重做、状态模型重构或性能专项时，把 Compose 迁移纳入同一批验证；没有产品变化、线上指标稳定、依赖复杂 View 组件的页面继续保留 View。[已验证: 官方文档, developer.android.com/develop/ui/compose/first]
 
 ## View 维护模式与存量页面边界
 
@@ -121,7 +130,7 @@ Compose First 不等于 View 立刻废弃。官方明确 `android.widget` 这类
 
 常见成本可以按四类看：
 
-- **生命周期桥接**：`ComposeView` 需要明确 Composition 释放时机。官方文档说明 `ViewCompositionStrategy.Default` 会在底层 `ComposeView` detach 时释放 Composition，但在 RecyclerView 这类 pooling container 中有特殊处理；Fragment 的 View 中更适合使用与 `ViewTreeLifecycleOwner` 绑定的策略，避免 Fragment view 销毁后 Composition 仍持有状态。[已验证: 官方文档, developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views]
+- **生命周期桥接**：`ComposeView` 需要明确 Composition 释放时机。官方文档说明 `ViewCompositionStrategy.Default` 会在底层 `ComposeView` detach 时释放 Composition，但在 RecyclerView 这类可复用容器（pooling container）中有特殊处理；Fragment 的 View 中更适合使用与 `ViewTreeLifecycleOwner` 绑定的策略，避免 Fragment view 销毁后 Composition 仍持有状态。[已验证: 官方文档, developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views]
 - **测量与布局边界**：View 的 `measure/layout/draw` 与 Compose 的 Composition/Layout/Draw 不是同一个阶段模型。一个 `ComposeView` 进入复杂 ViewGroup 后，尺寸约束、重新测量和 invalidation 传播要跨边界转换；`AndroidView` 包装旧 View 时也会把 View 的测量规则带进 Compose。
 - **状态同步**：ViewModel、SavedState、Fragment arguments、View binding、Compose state 和 snapshot 需要收敛到一个数据源。双向同步越多，重复更新和无效重组越难排查。
 - **双重树管理**：混合页面同时存在 View tree、Semantics tree、slot table 和旧组件内部状态。问题发生在滚动、动画、焦点、输入法和无障碍场景时，定位成本会明显上升。
@@ -153,10 +162,10 @@ Compose First 不等于 View 立刻废弃。官方明确 `android.widget` 这类
 
 | 能力 | 版本边界 | 迁移判断 |
 |---|---|---|
-| `LazyLayoutCacheWindow` | Compose Foundation 1.9.0 稳定化，支持 Dp 和 viewport fraction 两类窗口描述；具体参数类型要按所用版本 release notes 核对 | 可以作为长列表预取调优入口，但要配合 item 复杂度和滚动基准测试 |
-| Pausable Composition in lazy prefetch | 1.10.0-alpha05 曾默认启用；1.10.6 release notes 因稳定性问题默认禁用 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` | 不能把 alpha 阶段默认行为写成稳定版默认能力；采用前必须核对 Foundation 版本和 flag 状态 |
+| `LazyLayoutCacheWindow` | Compose Foundation 1.9.0 稳定化，支持 Dp 和 viewport fraction 两类窗口描述；具体参数类型要按所用版本发布说明核对 | 可以作为长列表预取调优入口，但要配合 item 复杂度和滚动基准测试 |
+| Pausable Composition in lazy prefetch | 1.10.0-alpha05 曾默认启用；1.10.6 发布说明记录：因稳定性问题默认禁用 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` | 不能把 alpha 阶段默认行为写成稳定版默认能力；采用前必须核对 Foundation 版本和 flag 状态 |
 
-[已验证: DeepResearch/2026-05-15-compose-pausable-composition-lazy-layout-cache-window.md][已验证: DeepResearch/2026-05-18-android-17-compose-pausable-composition-tooling-verification.md][已验证: 官方 release notes, developer.android.com/jetpack/androidx/releases/compose-foundation]
+[已验证: DeepResearch/2026-05-15-compose-pausable-composition-lazy-layout-cache-window.md][已验证: DeepResearch/2026-05-18-android-17-compose-pausable-composition-tooling-verification.md][已验证: 官方发布说明, developer.android.com/jetpack/androidx/releases/compose-foundation]
 
 Pausable Composition 解决的是“单次组合工作阻塞当前帧”的问题，不会自动减少无效重组。无效重组仍要靠状态读取位置、稳定性、Strong Skipping、key 设计和派生状态控制。Strong Skipping 在 Kotlin 2.0.20 起默认启用，会让带 unstable 参数的 restartable Composable 也可跳过，并记住带 unstable captures 的 lambda；这能改变老项目里手写 `remember` lambda 的优先级。[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/strongskipping]
 
@@ -166,7 +175,7 @@ Pausable Composition 解决的是“单次组合工作阻塞当前帧”的问�
 
 | 工具 | 主要用途 | 适合回答的问题 |
 |---|---|---|
-| Layout Inspector / Compose Profiler | 查看 Composable 重组次数、跳过次数和耗时 | 哪个组件在频繁重组，是否存在明显的 skip 失败 |
+| Layout Inspector / Compose Profiler | 查看 Composable 重组次数、跳过次数和耗时 | 哪个组件在频繁重组，是否存在明显无法跳过的情况 |
 | Compose compiler metrics | 输出 skippable、restartable、稳定性推断结果 | 数据模型是否破坏跳过；哪些参数导致函数不可跳过 |
 | Macrobenchmark | 重复执行启动、滚动、页面跳转路径 | 迁移前后冷启动、首帧、滚动帧耗时是否回退 |
 | Baseline Profile | 让 ART 提前编译关键路径 | Compose runtime 之外，业务热点路径是否被覆盖 |
@@ -182,7 +191,7 @@ Pausable Composition 解决的是“单次组合工作阻塞当前帧”的问�
 | 冷启动 / 热启动耗时 | Macrobenchmark `StartupTimingMetric` | P50 / P90 / P95 不劣化；收益要给出设备和迭代次数 |
 | 页面首帧 | Macrobenchmark + FrameTimeline | 目标页面首帧不晚于迁移前基线 |
 | 滚动帧耗时 | Macrobenchmark scroll + Perfetto | 16.6/11.1/8.3 ms 档位按目标刷新率分别统计 |
-| 重组次数 / 跳过次数 | Layout Inspector / Compose Profiler / compiler metrics | 高频组件重组次数有解释；skip 失败能追到参数稳定性 |
+| 重组次数 / 跳过次数 | Layout Inspector / Compose Profiler / compiler metrics | 高频组件重组次数有解释；跳过失败能追到参数稳定性 |
 | GC 暂停和分配 | Android Studio Profiler / Perfetto / ART counters | 滑动阶段无持续分配尖峰；GC pause 不集中压到交互窗口 |
 | 内存峰值 | Profiler / dumpsys meminfo / Perfetto | 混合层不会长期持有 Fragment view、Context 或旧 View 缓存 |
 | 线上帧指标 | APM / FrameMetrics / statsd | 灰度期间与老页面分桶对比，按设备档位拆开看 |
@@ -199,7 +208,7 @@ Compose First 面向 Android UI 开发主路径；Compose Multiplatform 是跨�
 
 因此，不能把 Compose Multiplatform 的限制直接套到 Android 页面迁移，也不能用 Android Compose 的成熟度推断跨平台项目的成本。Android 原生页面优先关心与 View 互操作、AndroidX 版本、ART profile、Perfetto 和线上指标；跨平台项目还要单独评估平台能力缺口、组件差异和发布流程。
 
-## Compose 1.10+ release notes 跟踪
+## Compose 1.10+ 发布说明跟踪
 
 Compose 1.10 之后，列表预取、Pausable Composition、Modifier 行为、runtime tracing 和 compiler metrics 仍在快速变化。进入稳定版本之前，任何“默认启用”“性能对等”“列表卡顿率显著下降”这类判断都要补齐四个条件：Compose BOM / Foundation / Compiler 版本、Android Studio 或 AGP 版本、设备与刷新率、测试场景与统计口径。
 
