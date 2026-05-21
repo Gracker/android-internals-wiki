@@ -15053,6 +15053,117 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T10:23:28+08:00",
       "review_log": "logs/deep-review/2026-05-21-10-audit.md"
+    },
+    {
+      "id": "task9-20260521-19.09-measure-sdk-schema-fields",
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 85,
+      "title": "Measure 能力范围字段级表与官方 SDK 事件 schema 不一致",
+      "description": "正文新增的能力范围字段级表仍使用 error type=crash、event type=click、screen 事件、trace startup 等泛化/错误字段，和 Measure 官方 SDK ingestion API 的 exception/anr/http/cold_launch/gesture_click/screen_view/spans 等 schema 不一致。",
+      "reason": "[Deep Tech Review] Measure 事件与字段表会直接指导接入和后端查询，当前字段名、事件类型和 ANR/native crash 来源边界多处偏离官方文档。",
+      "issue_type": "source-code-accuracy-official-api-schema",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/09-measure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-11-deep-review.md",
+        "https://raw.githubusercontent.com/measure-sh/measure/main/docs/api/sdk/README.md",
+        "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-crash-reporting.md",
+        "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-anr-reporting.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/官方 API schema",
+          "location": "§能力范围字段级明细 L141-L150",
+          "detail": "官方 SDK API 文档中 Crash/错误使用 `exception` 事件（handled/severity/exceptions/threads/binary_images/framework 等字段），ANR 使用 `anr` 事件并结合 SIGQUIT/App Exit 信息，HTTP 使用 `http`，启动使用 `cold_launch`/`warm_launch`/`hot_launch`，点击与页面分别是 `gesture_click`、`screen_view`，自定义 trace 是 spans。正文写成 `error type=crash`、`error type=anr`、`event type=click`、`screen` 事件、`trace` name 含 startup，并把 Android native crash 的 native stack/signal/fault address 写进可用字段；这会误导 SDK 接入、查询字段和能力边界。",
+          "suggestion": "按 `docs/api/sdk/README.md` 重写字段级表：逐项列官方事件类型/字段；Crash(Java) 改为 `exception`，Native crash 标明 Android native C/C++ crash reporting 尚未支持且不要列为已采集字段；ANR 改为 `anr` + SIGQUIT/App Exit 边界；启动改为 launch event 或 span 的真实字段；点击/页面改为 `gesture_click`/`screen_view`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T11:31:10+08:00",
+      "review_log": "logs/deep-review/2026-05-21-11-deep-review.md"
+    },
+    {
+      "id": "task9-20260521-18.15-hwc-skipvalidate-still-wrong",
+      "section": "18.15",
+      "section_title": "视频叠加与 HWC",
+      "priority": 85,
+      "title": "SKIP_VALIDATE 修复未落到正文：版本边界与 canSkipValidate 条件仍错误",
+      "description": "Task2B 标记完成后，正文仍写“HWC3/AIDL 引入 Capability::SKIP_VALIDATE”，并把跳过 validate 的条件概括为 layer 栈、buffer 属性、显示配置不变；这与 HWC2 Android 8+ 能力和 SurfaceFlinger presentOrValidate() 源码条件不符。",
+      "reason": "[Deep Tech Review] HWC SKIP_VALIDATE 的版本边界和 SurfaceFlinger 源码行为仍有 P1 偏差，且此前 queue completed 后正文未闭环。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-11-deep-review.md",
+        "logs/deep-review/2026-05-21-09-audit.md",
+        "AOSP hardware/libhardware/include/hardware/hwcomposer2.h android-8.0.0_r1",
+        "AOSP hardware/interfaces/graphics/composer/aidl/.../Capability.aidl android16-release",
+        "AOSP frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp android16-release"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码行为",
+          "location": "§HWC 的核心职责 L102",
+          "detail": "正文仍称 HWC3/AIDL 引入 SKIP_VALIDATE，并称 layer 栈、buffer 属性和显示配置没有变化时 SurfaceFlinger 可以跳过 validateDisplay。AOSP 复核显示 `HWC2_CAPABILITY_SKIP_VALIDATE` 在 Android 8.0 `hwcomposer2.h` 已存在；composer3 AIDL 的 `SKIP_VALIDATE` 标注 `@deprecated - enabled by default`；android16 `HWComposer::getDeviceCompositionChanges()` 在 `frameUsesClientComposition` 为真时必须 validate，且还受 expected/earliest present timing 保护，随后通过 `presentOrValidate()` 试探，失败再回落 validate。",
+          "suggestion": "把该段改为“SkipValidate 自 HWC2 Android 8+ 已存在，HWC3/AIDL 继续保留但已默认启用/标 deprecated；SurfaceFlinger 只有在本帧无 client composition 且 present timing 安全时尝试 `presentOrValidate()`，HWC 要求重新验证时仍执行 `validateDisplay()`”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T11:31:10+08:00",
+      "review_log": "logs/deep-review/2026-05-21-11-deep-review.md"
+    },
+    {
+      "id": "task9-20260521-4.2-art-madv-cold-still-assertive",
+      "section": "4.2",
+      "section_title": "Linux 内核内存管理",
+      "priority": 85,
+      "title": "Android 17 ART→MADV_COLD 仍以确定实现描述发布",
+      "description": "正文虽然加了“存疑”提示，但随后仍写 Android 17 已有 ART 在 GC 标记阶段调用 MADV_COLD 的具体实现，并把内核效果写成直接降级到更老 generation；源码锚点、release note 和内核语义仍未闭环。",
+      "reason": "[Deep Tech Review] Android 17 ART GC 与内核 MADV_COLD 协同目前只能作为待验证方向，不能继续以确定版本事实写入正文。",
+      "issue_type": "source-code-accuracy-version-difference-principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-11-deep-review.md",
+        "logs/deep-review/2026-05-21-07-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码锚点/原理链/版本差异",
+          "location": "§Android 17 实现：madvise(MADV_COLD) 信号通路 L366-L376",
+          "detail": "前次 deep review 已核验 AOSP platform/art main 未找到 `MADV_COLD` runtime/gc 调用，正文此次只加“存疑”提示但仍保留“Android 17 有了具体实现”“ART 在 GC 标记阶段识别老年代未引用对象后调用 madvise(MADV_COLD)”“直接解决 pseudo-hot”等确定表述。内核侧 `MADV_COLD` 也不应简化成直接降到更老 generation；需要按 `mm/madvise.c` 清 referenced/young、`folio_deactivate()` 以及 MGLRU clear refs 语义描述。",
+          "suggestion": "删除“Android 17 实现”确定小节或改为“待验证方向”；在补到 ART commit/release note/runtime 源码路径前，不写具体触发阶段、对象/页映射和 10% 掉帧收益。若保留机制讨论，拆成 Silk 论文思路 + Linux `MADV_COLD` 内核语义 + Android 侧待验证清单。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T11:31:10+08:00",
+      "review_log": "logs/deep-review/2026-05-21-11-deep-review.md"
     }
   ],
   "metadata": {

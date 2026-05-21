@@ -2,7 +2,7 @@
 status: "ready-for-review"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T07:34:33+08:00"
+last_task9_at: "2026-05-21T11:31:10+08:00"
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
@@ -52,20 +52,20 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task6_reviewed_date: "2026-05-21"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: needs-rework
-task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
-last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
 last_task6_at: "2026-05-21T08:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-08-review.md"
 task6_review_notes: "2026-05-21 Task6 revisiting-review: L1/L2 小修通过；MADV_COLD 技术边界沿用 Task9 pending queue。"
-
+task9_review_notes: "2026-05-21 Task9 deep review: P1 Android 17 ART→MADV_COLD 仍以确定语气描述，源码锚点与内核语义未闭环，写入 queue 条目 task9-20260521-4.2-art-madv-cold-still-assertive。"
 ---
 
 
