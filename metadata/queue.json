@@ -15605,13 +15605,62 @@
       "added_at": "2026-05-21T19:35:29+08:00",
       "review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
       "original_review_log": "logs/review/2026-05-21-20-review.md"
+    },
+    {
+      "id": "task9-20260521-15.5-online-monitoring-framemetrics-anr",
+      "section": "15.5",
+      "section_title": "线上性能监控",
+      "priority": 95,
+      "title": "FrameMetrics 常量名/API31 指标边界与 ANR 口径需修正",
+      "description": "FrameMetrics 指标表使用不存在的公开常量名，GPU_DURATION/API31 版本边界缺失；ANR 监控段落把系统 ANR 口径简化为 5 秒主线程阻塞，ApplicationExitInfo 示例会漏掉带 ANR trace 的非 REASON_ANR 记录。",
+      "reason": "[Deep Tech Review] 15.5 存在 FrameMetrics API 常量错误、版本差异缺失与 ANR 系统口径断裂，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-20-deep-review.md",
+        "intake/suggestions.md（含 P2 数据支撑建议）"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 常量名",
+          "location": "L157-L164 FrameMetrics 指标表",
+          "detail": "表格把 FrameMetrics 的多个 metric id 写成 `UNKNOWN_DELAY`、`INPUT_HANDLING`、`ANIMATION`、`LAYOUT_MEASURE`、`DRAW`、`SYNC`、`SWAP_BUFFERS`。AOSP android-16.0.0_r1 `FrameMetrics.java` 和官方 API 中可传给 `getMetric()` 的公开常量分别是 `UNKNOWN_DELAY_DURATION`、`INPUT_HANDLING_DURATION`、`ANIMATION_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`SWAP_BUFFERS_DURATION`；当前 code formatting 会让读者按错误常量实现，代码无法编译。",
+          "suggestion": "将表格中的可调用 API 常量改成带 `_DURATION` 的正式名称；如果只想写概念名，去掉代码格式，并在同一表格补正式 `FrameMetrics.*` 常量列。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/指标口径",
+          "location": "L153-L172 FrameMetrics “完整耗时拆解” 与 GPU 归因",
+          "detail": "正文称 FrameMetrics 提供从 VSync 到最终上屏的完整分项，并可区分 GPU 渲染慢，但表格没有 `GPU_DURATION`，也没有说明它是 API 31+ 才出现的指标。AOSP 显示 `GPU_DURATION` 与 `DEADLINE` 从 Android 12/API 31 开始存在；API 24-30 只有 `COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`、`TOTAL_DURATION` 等基础指标，不能直接把 command issue 或 swap buffers 等同为 GPU 执行时间。",
+          "suggestion": "把 FrameMetrics 指标拆成 API 24+ 基础阶段指标与 API 31+ 扩展指标：API 31+ 才写 `GPU_DURATION` / `DEADLINE`；API 24-30 用 `TOTAL_DURATION`、刷新率预算、JankStats 或 trace 兜底，不跨版本直接比较 raw GPU/SWAP 指标。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/ANR 口径",
+          "location": "L291-L331 ANR 定义、Watchdog 与 ApplicationExitInfo 示例",
+          "detail": "正文把 ANR 定义压成“主线程阻塞超过阈值（通常 5 秒）”。官方 ANR 文档列出的触发条件还包括 input dispatch、service 执行、startForegroundService 未及时 startForeground、BroadcastReceiver、JobService 等，阈值和 Android 版本/targetSdk 行为不同。`ApplicationExitInfo.getTraceInputStream()` 源码注释还说明：进程发生 ANR 后如果恢复、后来因其他原因退出，ANR trace 仍可能附在后续 ApplicationExitInfo 记录上；当前示例只处理 `info.getReason() == REASON_ANR`，会漏掉这类带 trace 的非 ANR reason 记录。",
+          "suggestion": "补一小段 ANR 触发分类与口径边界：Watchdog 只能近似主 Looper stall，不等同系统 ANR；ApplicationExitInfo 处理时除 `REASON_ANR` 外，也应记录/检查非 ANR reason 但 `getTraceInputStream()!=null` 的记录，并把 input/service/broadcast/job 的阈值差异交叉引用到 §9.3。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T20:31:42+08:00",
+      "review_log": "logs/deep-review/2026-05-21-20-deep-review.md"
     }
   ],
   "metadata": {
     "total_entries": 419,
     "p0_count": 178,
-    "last_updated": "2026-05-21T19:22:59+08:00",
-    "updated_by": "openclaw-task2b",
+    "last_updated": "2026-05-21T20:31:42+08:00",
+    "updated_by": "task9-deep-tech-review",
     "pending_entries": 155,
     "updated_date": "2026-05-21",
     "last_updated_by": "task9-deep-tech-review",
@@ -15621,7 +15670,7 @@
     "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T17:28:40+08:00",
+  "last_updated": "2026-05-21T20:31:42+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
