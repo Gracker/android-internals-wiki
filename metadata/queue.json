@@ -15944,23 +15944,67 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T01:31:51+08:00",
       "review_log": "logs/deep-review/2026-05-22-01-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260522-14.19-android-cli-agent-performance-workflow",
+      "section": "14.19",
+      "section_title": "Android CLI 与 Agent 化性能调试工作流",
+      "priority": 80,
+      "title": "Android CLI 与 Agent 化性能调试工作流",
+      "description": "Android CLI 1.0 与 Android skills 把项目描述、设备管理、Journey 测试、Android Studio 语义分析和 agent 工作流接到同一套命令入口；现有工具篇覆盖 Profiler、Perfetto、APA 和自动化测试，但缺少面向性能复现与调试协作的 Android CLI 独立章节。",
+      "reason": "[Task2A Gap Mining] Phase 0 未发现空 draft；结合 Android CLI 1.0 官方文档、Android Developers Blog 和 2026-05-21 每日信息，评估为工具篇高时效缺口。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/08-android-cli-stable.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/10-android-cli-doc.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/11-android-skills-doc.md",
+        "https://developer.android.com/tools/agents/android-cli",
+        "https://developer.android.com/tools/agents/android-skills"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+          "detail": "需基于 Android CLI 官方文档、Android skills 文档、Android Developers Blog 和 APA/Perfetto 工具章节，建立 agent 化性能调试工作流。",
+          "suggestion": "先写 Android CLI 与 APA/Perfetto/Macrobenchmark/Android Studio Profiler 的分工，再给可复现的本地/CI 流程；不要把 CLI 写成性能采集引擎。"
+        }
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T02:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 421,
+    "total_entries": 422,
     "p0_count": 178,
-    "last_updated": "2026-05-22T00:12:00+08:00",
+    "last_updated": "2026-05-22T02:04:00+08:00",
     "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 157,
+    "pending_entries": 158,
     "updated_date": "2026-05-22",
     "last_updated_by": "task2a-knowledge-gap",
-    "pending": 156,
+    "pending": 157,
     "completed_entries": 263,
-    "last_task2a_gap_mining": "5.16",
-    "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00",
+    "last_task2a_gap_mining": "14.19",
+    "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T00:12:00+08:00",
+  "last_updated": "2026-05-22T02:04:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
@@ -17290,10 +17334,54 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T00:12:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260522-14.19-android-cli-agent-performance-workflow",
+      "section": "14.19",
+      "section_title": "Android CLI 与 Agent 化性能调试工作流",
+      "priority": 80,
+      "title": "Android CLI 与 Agent 化性能调试工作流",
+      "description": "Android CLI 1.0 与 Android skills 把项目描述、设备管理、Journey 测试、Android Studio 语义分析和 agent 工作流接到同一套命令入口；现有工具篇覆盖 Profiler、Perfetto、APA 和自动化测试，但缺少面向性能复现与调试协作的 Android CLI 独立章节。",
+      "reason": "[Task2A Gap Mining] Phase 0 未发现空 draft；结合 Android CLI 1.0 官方文档、Android Developers Blog 和 2026-05-21 每日信息，评估为工具篇高时效缺口。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-21.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/08-android-cli-stable.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/10-android-cli-doc.md",
+        "DeepResearch/Android Performance Analyzer/2026-05-20-研究材料/references/11-android-skills-doc.md",
+        "https://developer.android.com/tools/agents/android-cli",
+        "https://developer.android.com/tools/agents/android-skills"
+      ],
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+          "detail": "需基于 Android CLI 官方文档、Android skills 文档、Android Developers Blog 和 APA/Perfetto 工具章节，建立 agent 化性能调试工作流。",
+          "suggestion": "先写 Android CLI 与 APA/Perfetto/Macrobenchmark/Android Studio Profiler 的分工，再给可复现的本地/CI 流程；不要把 CLI 写成性能采集引擎。"
+        }
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T02:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "5.16",
-  "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00"
+  "last_task2a_gap_mining": "14.19",
+  "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00"
 }

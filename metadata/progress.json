@@ -1,6 +1,6 @@
 {
-  "total": 360,
-  "draft": 21,
+  "total": 361,
+  "draft": 22,
   "ready-for-review": 152,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -1618,8 +1618,8 @@
   "total_review_sections": 196,
   "next_review_candidates": [],
   "ready_for_review": 152,
-  "last_updated": "2026-05-22T01:31:51+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-22T02:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-22",
     "time": "01:16",
@@ -4445,6 +4445,16 @@
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_entry": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary"
+    },
+    "14.19": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "title": "Android CLI 与 Agent 化性能调试工作流",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-22",
+      "queue_priority": 80,
+      "gap_score": 16
     }
   },
   "task2b_rounds": [
@@ -5522,6 +5532,14 @@
       "task6_l1_l2_fixes": 12,
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-21 Task6：四层质检通过；L1/L2 轻量修复 12 处；无 L3/L4 回炉项，送 Task9 技术复审。"
+    },
+    "14.19": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "title": "Android CLI 与 Agent 化性能调试工作流",
+      "queue_priority": 80,
+      "created_date": "2026-05-22"
     }
   },
   "task2a_last_processed": {
@@ -5750,8 +5768,8 @@
     "auto_finalized": [],
     "log": "logs/deep-review/2026-05-22-01-deep-review.md"
   },
-  "last_task2a_gap_mining": "5.16",
-  "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00",
+  "last_task2a_gap_mining": "14.19",
+  "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -5762,28 +5780,27 @@
   "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-22",
-    "time": "00:12",
+    "time": "02:04",
     "mode": "gap-mining",
     "created_sections": [
-      "5.16"
+      "14.19"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md"
     ],
     "candidate_count": 4,
     "qualified_count": 1,
     "qualified_candidates": [
       {
-        "section": "5.16",
-        "title": "GPU/NPU 异构负载调度与功耗归因",
+        "section": "14.19",
+        "title": "Android CLI 与 Agent 化性能调试工作流",
         "score": 16,
-        "material_count": 6,
-        "source": "章节深挖/素材驱动/官方文档",
-        "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+        "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+        "material_count": 5
       }
     ],
-    "source": "5.3 扩展锚点/DeepResearch/官方文档/AOSP 结构对照",
-    "note": "Phase 0 未发现空 draft；本轮对 5.3 GPU+NPU 协同调度占位、Android 17 NPU/LiteRT 素材、ADPF 与 thermal 官方文档进行比对，确认缺少把异构卸载、调度观测、功耗归因放在一起的独立章节。"
+    "source": "Android CLI 1.0 官方文档 + Android Developers Blog + daily-info 2026-05-21",
+    "note": "Phase 0 未发现空 draft；仅创建评分 >=14 且未被 SUMMARY 覆盖的缺口。"
   },
   "section_5_15": {
     "section": "5.15",
@@ -5904,14 +5921,14 @@
   },
   "task2a_gap_mining_summary": {
     "date": "2026-05-22",
-    "time": "00:12",
+    "time": "02:04",
     "created_sections": [
-      "5.16"
+      "14.19"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md"
     ],
-    "reason": "5.3 只留下 GPU+NPU 协同调度占位；5.11/5.14 分别偏端侧 AI 管线与 NPU 访问边界，缺少面向性能分析的异构负载调度、可观测性和功耗归因章节。"
+    "reason": "Phase 0 未发现空 draft；Phase 1 发现 Android CLI / Android skills 在 agent 化性能调试中的目录缺口。"
   },
   "last_task2a_processed_status": "ready-for-review",
   "section_21_11": {
@@ -6069,5 +6086,17 @@
     "p1": 1,
     "p2": 1,
     "queue_entry": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary"
+  },
+  "section_14_19": {
+    "section": "14.19",
+    "title": "Android CLI 与 Agent 化性能调试工作流",
+    "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-22",
+    "queue_priority": 80,
+    "gap_source": "官方文档/每日信息/研究素材",
+    "gap_score": 16
   }
 }
