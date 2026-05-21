@@ -1,6 +1,48 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260521-2.4-choreographer-vsynceventdata-bufferstuffing",
+      "section": "2.4",
+      "section_title": "Choreographer 与渲染流水线",
+      "priority": 85,
+      "title": "Choreographer VsyncEventData 版本边界与 Android 16 BufferStuffingRecovery 需修正",
+      "description": "闲时抽检发现 §2.4 将内部 doFrame 接入 VsyncEventData 的版本边界写成 API 33，且 Android 16 BufferStuffingRecovery 仍停留在文末素材块，未进入正文版本链。",
+      "reason": "[Deep Tech Review Audit] Choreographer 源码版本边界与 Android 16 帧调度新增机制存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-16-audit.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码引用准确性",
+          "location": "L229、L661-L664：`doFrame()` 接入 `VsyncEventData` 的版本边界",
+          "detail": "正文写“从 API 33 开始，doFrame() 还会收到 VsyncEventData”，版本边界不准确。AOSP android-12.0.0_r1 的 frameworks/base/core/java/android/view/Choreographer.java L701-L702 已是 `void doFrame(long frameTimeNanos, int frame, DisplayEventReceiver.VsyncEventData vsyncEventData)`；API 33 新增的是公开应用侧入口 `postVsyncCallback(VsyncCallback)`、`FrameData`、`FrameTimeline`，不是内部 doFrame 首次接收 VsyncEventData。",
+          "suggestion": "把版本演进拆成两层：Android 12/API 31 起内部 Choreographer#doFrame 已接收 VsyncEventData/FrameTimeline 数据；Android 13/API 33 起公开 `postVsyncCallback`、`FrameData`、`FrameTimeline` 给应用侧读取 preferred timeline/deadline/vsyncId。正文 L229 与版本演进 L661-L664 同步修正。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码链遗漏",
+          "location": "L176-L233、L645-L664、L727-L733：Android 16 Buffer Stuffing Recovery 仍停留在素材注入区",
+          "detail": "正文主体的 doFrame 解析明确省略 buffer stuffing recovery，并且版本演进没有覆盖 Android 16 的 BufferStuffingState / onWaitForBufferRelease 机制；该机制只以 DeepResearch 素材块出现在文末。AOSP android-16.0.0_r1 Choreographer.java L213 定义 BufferStuffingState，L257 `onWaitForBufferRelease(long)` 以半帧周期为阈值标记 stuffed，L966 起 doFrame 在进入 mFrameData.update 前执行 updateBufferStuffingState，可能采取 OFFSET 或 DELAY_FRAME；ViewRootImpl.java 还通过 BLASTBufferQueue 设置 wait-for-buffer-release callback。对 Android 16 读者来说，这是会改变帧时间线/调度节拍的关键版本差异。",
+          "suggestion": "把文末 DeepResearch 素材整合进正文或加到版本演进：说明 Android 16 在 buffer dequeue 阻塞后可能对 frameTime 做负 offset 或延迟一帧，并补充源码锚点 `Choreographer.BufferStuffingState`、`onWaitForBufferRelease()`、`updateBufferStuffingState()`、`ViewRootImpl#setWaitForBufferReleaseCallback`；同时与新章节 2.25 建立交叉引用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-21T16:25:11+08:00",
+      "review_log": "logs/deep-review/2026-05-21-16-audit.md"
+    },
+    {
       "id": "task9-audit-20260521-19.01-appexitinfo-constants-source",
       "section": "19.01",
       "section_title": "APM 全景图与分类体系",
