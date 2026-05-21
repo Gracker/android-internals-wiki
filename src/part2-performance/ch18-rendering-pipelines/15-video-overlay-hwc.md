@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 7.0 (API 24) - Android 16 (API 36)
 tags:
 - HWC
@@ -18,21 +18,23 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 last_task9_at: "2026-04-26T13:26:21+08:00"
+last_task9_audit: 2026-05-21
+review_notes: '2026-05-21 task9 idle audit: needs-rework。P1：HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
 ---
 
 <!-- outline-start -->
