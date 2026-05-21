@@ -1,6 +1,6 @@
 {
-  "total": 344,
-  "draft": 0,
+  "total": 345,
+  "draft": 1,
   "ready-for-review": 139,
   "finalized": 205,
   "task9_result": "needs-rework",
@@ -1580,7 +1580,7 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T10:04:00+08:00",
+  "last_updated": "2026-05-21T17:04:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-21",
@@ -5423,6 +5423,14 @@
       "gap_source": "研究素材/AOSP结构/官方文档",
       "gap_score": 18,
       "material_count": 6
+    },
+    "22.15": {
+      "status": "draft",
+      "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+      "title": "Compose First 与 View/Compose 混合迁移性能边界",
+      "pipeline_stage": "task2a-gap-created",
+      "task6_state": "not-started",
+      "task9_state": "not-started"
     }
   },
   "task2a_last_processed": {
@@ -5653,8 +5661,8 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": "Task9 复审 14.9/12.3/8.2：14.9 与 12.3 各 1 个 P1 回炉；8.2 无 P0/P1，自动晋升 finalized。",
-  "last_task2a_gap_mining": "26.15",
-  "last_task2a_gap_mining_at": "2026-05-21T06:09:00+08:00",
+  "last_task2a_gap_mining": "22.15",
+  "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -5665,28 +5673,28 @@
   "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-21",
-    "time": "10:04",
+    "time": "17:04",
     "mode": "gap-mining",
     "created_sections": [
-      "18.23"
+      "22.15"
     ],
     "created_files": [
-      "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
+      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
     ],
     "candidate_count": 5,
     "qualified_count": 1,
     "qualified_candidates": [
       {
-        "section": "18.23",
-        "title": "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR",
+        "section": "22.15",
+        "title": "Compose First 与 View/Compose 混合迁移性能边界",
         "score": 18,
-        "material_count": 6,
-        "source": "研究素材/AOSP结构/官方文档",
-        "file": "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
+        "material_count": 5,
+        "source": "每日信息/官方文档/研究素材",
+        "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
       }
     ],
-    "source": "研究素材/AOSP结构/官方文档/每日信息",
-    "note": "Phase 0 未发现空 draft；本轮对每日信息、source-index 高分未映射素材与 AOSP/官方文档进行比对，Codec2 / tunneled playback / Media3 ABR 具备独立章节价值。"
+    "source": "每日信息/官方文档/研究素材/AOSP结构对照",
+    "note": "Phase 0 未发现空 draft；本轮对 2026-05-21 Android Developers Blog、Compose 官方性能文档和本地 DeepResearch 素材进行比对，Compose First 后的 View/Compose 混合迁移缺少独立实战章节。"
   },
   "section_5_15": {
     "section": "5.15",
@@ -5807,14 +5815,14 @@
   },
   "task2a_gap_mining_summary": {
     "date": "2026-05-21",
-    "time": "10:04",
+    "time": "17:04",
     "created_sections": [
-      "18.23"
+      "22.15"
     ],
     "created_files": [
-      "src/part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md"
+      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
     ],
-    "reason": "现有 18 章覆盖 SurfaceView、视频叠加与 HWC，但缺少媒体解码、tunneled playback 与 Media3 ABR 之间的完整播放管线诊断章节。"
+    "reason": "现有 22.3 偏 Compose 性能优化点，7.7 偏流畅性专题；缺少 Compose First 后新增 UI、存量 View 页面、interop、工具验收和版本边界放在一起的迁移章节。"
   },
   "last_task2a_processed_status": "draft",
   "section_21_11": {
@@ -5933,5 +5941,17 @@
     "gap_source": "研究素材/AOSP结构/官方文档",
     "gap_score": 18,
     "material_count": 6
+  },
+  "section_22_15": {
+    "section": "22.15",
+    "title": "Compose First 与 View/Compose 混合迁移性能边界",
+    "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
+    "status": "draft",
+    "pipeline_stage": "task2a-gap-created",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-21",
+    "queue_priority": 80,
+    "gap_source": "每日信息/官方文档/研究素材",
+    "gap_score": 18
   }
 }
