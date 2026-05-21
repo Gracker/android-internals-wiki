@@ -22,21 +22,25 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed  # 2026-05-22 rework: Alpha API correction, thread priority warning
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T00:30:00+08:00"
+reviewed_date: "2026-05-22"
+task6_result: needs-rework
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-05-22T03:46:50+08:00"
 last_task2b_at: 2026-05-15T23:30:32+08:00
-task6_reviewed_date: "2026-05-13"
-task9_review_notes: "2026-05-16 00:30 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；Alpha 源码口径仍有 API/默认线程池错误，Process 线程优先级建议与 AOSP 注释不一致。"
+task6_reviewed_date: "2026-05-22"
+task9_review_notes: "2026-05-22 task9 deep-review: P0 1 / P1 2（Alpha API/默认线程池、执行模型、线程优先级边界），已写入 queue。"
+last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
+last_task6_at: "2026-05-22T04:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-04-review.md"
+task6_review_notes: "2026-05-22 task6 复审：needs-rework。L1/L2 无新增写作硬伤；已按 Task9 2026-05-22 P0/P1 风险在 Alpha 与线程优先级段落加存疑标注，并合并到既有 queue 条目。"
 ---
 
 # 启动框架设计与任务编排
@@ -247,6 +251,8 @@ App Startup 解决的核心问题：**消除启动阶段多个 SDK 各自注册 
 
 [已验证: GitHub alibaba/alpha v1.2.0 README + Task.java / Project.java / AlphaConfig.java]
 
+[存疑: Task9 2026-05-22 已标记 Alpha Builder API、默认 ExecutorService 与执行模型存在 P0/P1 技术风险；Task6 不裁决源码真伪，交 Task2B 按 logs/deep-review/2026-05-22-03-deep-review.md 修正。]
+
 Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个基于 DAG 的异步任务调度器。
 
 **核心概念**（基于 alibaba/alpha v1.2.0 源码）：
@@ -409,6 +415,8 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 ```
 
 ### 线程优先级策略
+
+[存疑: Task9 2026-05-22 已标记 `THREAD_PRIORITY_FOREGROUND`（-2）的应用侧权限边界与默认建议存在 P1 技术风险；Task6 不裁决 API 语义，交 Task2B 修正后再复审。]
 
 启动阶段主线程和渲染线程的 Nice 值分别是 0 和 -4。后台线程默认 Nice 值为 0，如果不做区分，后台线程会和主线程争抢 CPU 时间片。
 

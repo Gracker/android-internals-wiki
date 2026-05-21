@@ -14,21 +14,21 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed  # 2026-05-22 rework: Pausable Composition scope, ComposeView/RecyclerView lifecycle
-task2b_state: fixed
+task2b_state: pending
 task6_state: revisiting
 last_task6_at: "2026-05-21T20:11:00+08:00"
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: needs-rework
 task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-21
-last_task9_at: "2026-05-21T19:35:29+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
-task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1 / P2 3，需 Task2B 修正 Android 17/API 口径、ART GC 数据支撑与 Compose 细节。"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-05-22T03:46:50+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
+task9_review_notes: "2026-05-22 task9 deep-review: 复核 22.3 仍有 P0 1 / P1 1（Android 17/API 与 ART GC 数据支撑），已合并既有 queue。"
 last_task6_review_log: "logs/review/2026-05-21-20-review.md"
 ---
 # Jetpack Compose 性能优化
