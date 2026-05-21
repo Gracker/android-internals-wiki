@@ -348,3 +348,63 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - 研究素材：
   - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
   - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`
+
+
+## Choreographer Buffer Stuffing Recovery（Android 16 新增）
+
+> 来源：源码调研 2026-05-20 | 一手源码：frameworks/base/core/java/android/view/Choreographer.java（android-16.0.0_r1）
+
+Android 16 引入 **Buffer Stuffing Recovery** 机制，解决应用端 Buffer Dequeue 阻塞导致的帧节拍错位问题。这是 Android 16 针对帧节拍稳定性的新保障手段。
+
+### 核心组件：BufferStuffingState
+
+Choreographer.java 中新增内部类 `BufferStuffingState`：
+
+```java
+private static class BufferStuffingState {
+    enum RecoveryAction {
+        NONE,       // 无恢复
+        OFFSET,     // 添加负偏移，提前下一帧
+        DELAY_FRAME // 延迟一帧等待 Buffer 恢复
+    }
+    public AtomicBoolean isStuffed = new AtomicBoolean(false);
+    public boolean isRecovering = false;
+    public int numberWaitsForNextVsync = 0;
+}
+```
+
+### onWaitForBufferRelease() API
+
+新增 `@hide` API，供图形客户端通知 Choreographer 其正在等待 Buffer：
+
+```java
+public void onWaitForBufferRelease(long durationNanos) {
+    if (durationNanos > mLastFrameIntervalNanos / 2) {
+        mBufferStuffingState.isStuffed.set(true);
+    }
+}
+```
+
+触发条件：客户端阻塞超过半帧周期时设 `isStuffed = true`。
+
+### 恢复机制
+
+当 `isStuffed` 为 true 时，Recovery 进入以下两种模式之一：
+- **OFFSET**：添加负偏移，让下一帧提前，补偿 stuff 导致的延迟累积
+- **DELAY_FRAME**：延迟一帧，等待 Buffer 计数恢复，防止帧时间倒退
+
+`numberWaitsForNextVsync` 统计在 Recovery 期间额外等待的 VSync 次数，防止跳帧扩散。
+
+### mLastNoOffsetFrameTimeNanos
+
+```java
+private long mLastNoOffsetFrameTimeNanos;
+```
+
+保留不含 Buffer Stuffing 偏移的帧时间，用于判断系统是否处于空闲状态。
+
+### 与步幅波动的关系
+
+Buffer Stuffing Recovery 解决的是**供给侧阻塞**导致的帧节拍错位，与本节讨论的需求侧（OverScroller 时间精度）形成互补。两类问题都会导致"不掉帧但感觉卡"的现象，需要分别从 Buffer 队列状态和动画时间源两个方向排查。
+
+<!-- AIW-源码调研-2026-05-20 -->

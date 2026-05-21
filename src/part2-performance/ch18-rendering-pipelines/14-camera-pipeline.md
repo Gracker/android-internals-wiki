@@ -1,8 +1,20 @@
 ---
 title: "Camera 渲染管线"
-chapter: 18.14
-status: finalized
+chapter: "18.14"
+section: "18.14"
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+sources:
+  - type: official
+    path: "https://developer.android.com/media/camera/camera2"
+  - type: official
+    path: "https://developer.android.com/media/camera/camerax"
+  - type: official
+    path: "https://developer.android.com/reference/android/hardware/camera2/params/OutputConfiguration"
+  - type: aosp
+    path: "frameworks/av/services/camera/libcameraservice/device3/Camera3Device.cpp"
+  - type: aosp
+    path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
@@ -14,11 +26,10 @@ task9_result: needs-rework
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
+review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: pending
 task9_reviewed_date: "2026-05-20"
-review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T21:20:00+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
@@ -27,6 +38,9 @@ repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 1 / P1 1 / P2 0 / P3 0. P0: OutputConfiguration.setStreamUseCase() 源码片段与 android14-release 不一致；P1: STREAM_USE_CASE mandatory combinations 与 concurrent combinations 口径混淆，且缺 Android 14+ CROPPED_RAW/vendor range。"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
+last_task6_audit: "2026-05-21"
+last_task6_audit_result: l1-frontmatter-light-edit
+last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
 ---
 
 <!-- outline-start -->

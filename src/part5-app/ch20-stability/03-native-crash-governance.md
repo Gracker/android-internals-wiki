@@ -654,3 +654,13 @@ hook pthread_mutex_lock/trylock/unlock/timedlock/clocklock，在每个函数入�
 | shadowhook inline hook | art.so 等内部符号的 hook，ART OOM 拦截等高级功能 |
 
 <!-- AIW-源码调研-2026-05-12 -->
+
+## 参考资料
+
+### Native Crash / ApplicationExitInfo 补偿链路与 Signal Handler 边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-native-crash-applicationexitinfo-compensation-chain.md
+- 类型：DeepResearch 调研结果
+- 摘要：完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理链路，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30-34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
+- 注入时间：2026-05-20
+- 价值：为 §20.3 native crash 治理提供完整的系统级补偿链路和 signal handler 安全约束的源码级分析
+

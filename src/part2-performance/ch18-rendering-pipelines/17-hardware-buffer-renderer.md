@@ -178,8 +178,38 @@ AHardwareBuffer_allocate(&desc, &buffer);
 int acquireFenceFd = -1;  // 由图形 API 的同步对象导出
 
 ASurfaceTransaction* tx = ASurfaceTransaction_create();
+
+// API 29+: setBuffer 基础版本
 ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
-// API 36+ 可以改成 ASurfaceTransaction_setBufferWithRelease(...)
+
+// API 36+: setBufferWithRelease 带回调版本（推荐）
+// int releaseFenceFd = -1;
+// ASurfaceTransaction_setBufferWithRelease(tx, surfaceControl, buffer, 
+//                                         acquireFenceFd, releaseFenceFd, 
+//                                         ASurfaceTransaction_OnBufferRelease,
+//                                         callback_data);
+
+// API 29-35 方案：使用 setBuffer() + OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd
+// 注意：API 29-35 只有 setBuffer()，没有带 release 回调的版本
+// 但可以通过 OnComplete 获取 previous release fence 来实现 buffer 回收
+ASurfaceTransaction_setOnCompleteListener(tx, [](ASurfaceTransaction*, void* userData) {
+    // 从 transaction stats 获取 previous release fence
+    ASurfaceTransactionStats* stats = ASurfaceTransactionStats_create(tx);
+    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats);
+    
+    if (prevReleaseFenceFd >= 0) {
+        // 等待 previous release fence signal 后，buffer 可以安全回收
+        sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
+        close(prevReleaseFenceFd);
+    }
+    
+    ASurfaceTransactionStats_delete(stats);
+    
+    // 回收 buffer
+    AHardwareBuffer* buffer = (AHardwareBuffer*)userData;
+    AHardwareBuffer_delete(buffer);
+}, buffer);
+
 ASurfaceTransaction_apply(tx);
 ```
 

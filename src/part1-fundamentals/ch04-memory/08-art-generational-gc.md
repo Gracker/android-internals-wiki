@@ -646,3 +646,79 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 属于描述性概念，不对应独立开关。
 - 注入时间：2026-05-19
 - 价值：源码级完整 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径
+
+---
+
+## 附录：Android 17 ART Generational CMC 调研补充（2026-05-20）
+
+<!-- AIW-源码调研-2026-05-20 来源：daily-topics.json #5 -->
+<!-- 关联：DeepResearch/2026-05-20-android-17-art-generational-cmc-memory-management.md -->
+
+### 调研结论
+
+1. **Generational CC 扩展**：ART CC GC 在 Android 10（API 29）扩展为 Generational CC，通过 Sticky Mark Sweep 专门收集自上次 GC 以来分配的新对象（young objects），增加 GC throughput 并延迟 full-heap GC 触发。
+
+2. **Android 17 Gen-CMC**：Android 16 QPR2+ 引入 Generational CMC，底层使用 UFFD（userfaultfd）实现页级别零拷贝压缩，区别于传统 CC 的 Baker read barrier 逐引用拦截。
+
+3. **Compose 场景优化**：Compose Composition 阶段短生命周期可组合对象密集分配，恰好落在 Young Generation 高频收集窗口，与 Generational CMC 协同降低对象分配开销。
+
+4. **版本矩阵**：Android 8.0-13 → CC；Android 14/15 → UFFD-driven CMC；Android 16 QPR2+/17 → Generational CMC。
+
+### 源码来源
+
+- `art/runtime/gc/collector/concurrent_copying.h` l.108：`ConcurrentCopying` collector 类定义
+- `art/runtime/gc/heap.cc` l.2168-2173：heap region 结构与 young/old 分离
+- `source.android.com/docs/core/runtime/gc-debug`：Generational CC 行为文档
+- `art/runtime/gc/collector/mark_compact.cc`：CMC UFFD minor fault 处理
+
+### 待验证
+
+- Generational CMC 开关链路（ART_USE_READ_BARRIER 配置路径）
+- UFFD write_range 在 concurrent_copying.cc 中的具体调用
+- 20%+ 对象分配开销降低的设备/场景 benchmark 数据
+- §4.5 章节（Compose Composition 与 GC 因果链）需进一步补充
+
+---
+
+## 附录：AIW-源码调研-20260521 补充（三代晋升阈值精化）
+
+<!-- AIW-源码调研-20260521 来源：daily-topics.json #5 -->
+<!-- 关联：DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md -->
+
+### 三代晋升阈值：硬编码为 1，无动态调整
+
+**调研主题**：mid_generation → old_generation 晋升阈值的精确语义
+
+**核心结论**：
+
+基于 `art/runtime/gc/collector/mark_compact.h` 注释和源码分析，Android 16 QPR2+/17 的 Generational CMC 晋升路径如下：
+
+| 晋升路径 | 触发条件 | 阈值是否可动态调整 |
+|---|---|---|
+| Young → Mid | 对象存活过 **1 次** Young GC | **否，硬编码为 1** |
+| Mid → Old | 对象再存活过 **1 次** Young GC（总共存活过 2 次） | **否，硬编码为 1** |
+
+```cpp
+// art/runtime/gc/collector/mark_compact.h
+// In generational-mode, we maintain 3 generations: young, mid, and old.
+// Mid generation is collected during young collections. This means objects
+// need to survive two GCs before they get promoted to old-gen.
+```
+
+**关键补充**：`mark_compact.cc` 中 `YoungMarkCompact::RunPhases()` 直接复用 `MarkCompact::RunPhases()`，通过 `main_collector_->young_gen_` 标志位区分扫描范围，无需独立实现。
+
+### Compose Composition 对象与 Generational CMC 协同
+
+**调研发现**：
+
+Compose recomposition 产生的短期对象（不稳定 lambda、Snapshot、remember 值）生命周期极短，通常在 1-2 次 Young GC 后即成为垃圾。Generational CMC 的 young/mid 分代设计使这些对象在 Young GC 阶段被吸收，无需进入 full-heap GC 流程，从而减少对 doFrame() 时间预算的侵蚀。
+
+Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 recomposition 场景（如动画状态更新、传感器数据驱动 UI），Generational CMC 可显著减少 GC 触发的掉帧概率。
+
+### "20% 对象分配开销降低" 验证状态
+
+**未经一手 Benchmark 验证**。Android Developers Blog（Android 16 QPR2 发布页）原文仅给出定性描述（"reduces CPU/battery"），未标注具体数字、设备型号、版本号和负载场景。原始描述中的 "20%+/AOSP 版本/设备 benchmark" 无法在 AOSP 源码或官方文档中找到对应一手数据源。引用时应标注「未经一手 Benchmark 验证」。
+
+**报告来源**：
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md`
+

@@ -1,7 +1,7 @@
 ---
 title: "游戏引擎渲染链路"
 chapter: "18.16"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
@@ -15,7 +15,7 @@ task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: pending
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T20:50:00+08:00'
@@ -23,6 +23,8 @@ last_task2b_at: "2026-04-26T14:46:27+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-05-19"
+last_task6_audit: "2026-05-20"
+last_task6_at: "2026-05-20T13:10:00+08:00"
 ---
 
 <!-- outline-start -->
@@ -198,7 +200,7 @@ Swappy 没有一个默认必然出现的 `Swappy` Track。排查时把信号分�
 | 现象 | 可能含义 |
 |:---|:---|
 | `Expected Timeline` 与 `Actual Timeline` 持续错位 | 帧提交晚于目标时刻，先检查 swap interval、CPU 帧时间和 GPU 帧时间 |
-| 自定义 `preWait` / `postWait` Slice 很长 | 应用确实埋了 Swappy tracer，长等待多半指向 GPU 负载高或前一帧释放太晚 |
+| 自定义 `preWait` / `postWait` Slice 很长 | 应用已埋入 Swappy tracer，长等待多半指向 GPU 负载高或前一帧释放太晚 |
 | 只有 `vkQueuePresentKHR` / `eglSwapBuffers`，没有单独 `Swappy` Track | 这很常见，不能据此判断 Swappy 未接入 |
 | 需要看到 GPU queue 与 present timing 细节 | 额外打开 graphics tracing 或用 AGI 复查 |
 

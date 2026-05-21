@@ -327,4 +327,53 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 <!-- AIW-源码调研-2026-05-18 -->
 
 
+## 源码调研补充（2026-05-20）
+
+### NNAPI 废弃边界与 HAL 延续澄清
+
+通过 cs.android.com AOSP 源码和 developer.android.com 文档交叉验证，澄清以下事实：
+
+**NNAPI NDK C API 废弃（Android 15 / API 35）**：
+- 来源：developer.android.com/ndk/guides/neuralnetworks
+- 废弃的是 `ANeuralNetworks*` 系列 C API（NDK 接口）
+- **Neural Networks HAL 本身未被废弃**，仍通过 AIDL 驱动（Android 12+）持续维护
+
+**HAL 版本演进（确认）**：
+| 版本 | 接口类型 | API Level | 状态 |
+|------|---------|-----------|------|
+| 1.0 | HIDL | 27 | 已废弃 |
+| 1.1 | HIDL | 29 | 已废弃 |
+| 1.2 | HIDL | 30 | 历史版本 |
+| 1.3 | AIDL | 35+ | **当前活跃版本** |
+
+**源码位置**：`hardware/interfaces/neuralnetworks/1.3/types.hal`（AOSP，cs.android.com）
+- `OperationType` 枚举：定义所有支持的算子类型
+- `OperandType` 枚举：TENSOR_FLOAT32、TENSOR_QUANT8_SYMM_PER_CHANNEL 等
+- `DeviceType` 枚举：CPU / GPU / ACCELERATOR（NPU 归入 ACCELERATOR）
+
+**NNAPI Runtime 模块**：`frameworks/ml/nn/runtime/`（AOSP）
+- 模块名：`com.android.neuralnetworks`（APEX 格式）
+- Android 11+ 的 NNAPI Runtime 以 APEX 分发，独立于 Framework
+
+**AICore vs LiteRT vs NNAPI 边界（整理）**：
+| | NNAPI | AICore | LiteRT (TFLite in Play Services) |
+|---|---|---|---|
+| API 类型 | NDK C API (deprecated) | Kotlin/Java API | 跨平台 SDK |
+| 底层驱动 | Neural Networks HAL | Neural Networks HAL | 复用 NN HAL |
+| 版本起点 | API 27 | API 34 (Android 14) | 品牌重命名 |
+| 维护状态 | 废弃 NDK，HAL 仍活跃 | 活跃 (Developer Preview) | 活跃 |
+| 调用路径 | 直接 HAL | 系统服务多租户 | Google Play Services OTA |
+
+**未一手验证的声明（需继续溯源）**：
+- AICore 系统服务的 AOSP 源码路径（推测在 `frameworks/ml/nn/` 但未确认）
+- `android.ai.core` 包的确切 AOSP 路径（需要 cs.android.com 搜索确认）
+- Android 16 NNAPI HAL 是否有 1.4 版本更新
+
+<!-- AIW-源码调研-2026-05-20 -->
+
+
+
 <!-- AIW-源码调研-2026-05-17 -->
+
+
+<!-- AIW-源码调研-2026-05-22 -->

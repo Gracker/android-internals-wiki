@@ -604,3 +604,37 @@ public class TreiberStack<E> {
 | Generational CMC | 不可用 | 需满足 gating 条件 | 通过 device_config 验证配置状态 |
 | ProfilingManager | API 36 基础触发器 | API 37 新增 3 个触发器 | 按版本注册不同触发器集合 |
 | ConcurrentMessageQueue | 存在但不默认启用 | 默认启用 | 反射代码需适配 null 值 |
+
+
+## Choreographer Buffer Stuffing Recovery（Android 16 新增）
+
+> 来源：源码调研 2026-05-20 | 一手源码：frameworks/base/core/java/android/view/Choreographer.java（android-16.0.0_r1）
+
+Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新增 `BufferStuffingState` 内部类管理恢复状态，新增 `onWaitForBufferRelease()` @hide API 供图形客户端调用。
+
+### 关键发现
+
+| 发现 | 源码位置 | 说明 |
+|------|---------|------|
+| BufferStuffingState | Choreographer.java l.185-206（估算） | 内部枚举类，管理 isStuffed / isRecovering / numberWaitsForNextVsync |
+| onWaitForBufferRelease() | Choreographer.java | @hide API，duration > 半帧周期时触发 |
+| mLastNoOffsetFrameTimeNanos | Choreographer.java | 保留不含偏移的帧时间用于空闲判断 |
+| CALLBACK_* 队列 | Choreographer.java | 五类回调：INPUT/ANIMATION/INSETS_ANIMATION/TRAVERSAL/COMMIT |
+
+### 版本边界
+
+| 版本 | Buffer Stuffing Recovery | onWaitForBufferRelease |
+|------|-------------------------|------------------------|
+| Android 14 (API 34) | ❌ | ❌ |
+| Android 15 (API 35) | ❌ | ❌ |
+| Android 16 (API 36) | ✅ | ✅ @hide |
+
+### 性能关联
+
+此机制与 Android 17 DeliQueue 的 lock-free 改造属于不同层面的优化：
+- **DeliQueue**：解决 MessageQueue 消费端的锁竞争
+- **Buffer Stuffing Recovery**：解决 Buffer Dequeue 阻塞导致的帧节拍错位
+
+两者共同改善滑动流畅性，但针对的问题根源不同。
+
+<!-- AIW-源码调研-2026-05-20 -->

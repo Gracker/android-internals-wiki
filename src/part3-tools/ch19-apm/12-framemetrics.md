@@ -35,6 +35,7 @@ last_task9_audit: "2026-05-19"
 last_task9_review_log: "logs/deep-review/2026-05-19-03-audit.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
 task9_review_notes: "2026-05-19 Task9 idle-audit 03:30：needs-rework。P0 0 / P1 1 / P2 0；GPU_DURATION 与 SWAP_BUFFERS_DURATION 的 API31/33 源码边界需 Task2B 回炉。"
+last_task6_audit: '2026-05-20'
 ---
 
 # FrameMetrics

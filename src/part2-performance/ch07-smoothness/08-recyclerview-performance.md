@@ -181,6 +181,15 @@ if (deadlineNs != FOREVER_NS
 
 ### Android 17 DeliQueue 对预取调度的影响
 
+> **⚠️ 未经一手验证的标注（2026-05-20 调研）**
+> 
+> 本节中关于 DeliQueue 的以下描述**未在 AOSP master / androidx-main 公开源码中找到一手证据**，建议补充一手验证：
+> - "DeliQueue 用 Treiber Stack 替代了 synchronized 块" — cs.android.com / googlesource.com 检索无果
+> - "Google 官方观测数据...missed frames 降低约 4%，System UI 和 Launcher 降低约 7.7%，首帧 P95 耗时降低约 9.1%" — 非一手来源，数字来源待确认
+> - "DeliQueue 仅在应用 targetSdk >= 37 时生效" — 当前 AOSP master 最高 targetSdkVersion 为 36（android-17），37 属于未来版本
+> 
+> 如需确认，建议联系 Android 内部团队或查阅 Google internal bug tracker / performance release notes。
+
 Android 17 引入的 DeliQueue（无锁消息队列）改变了 GapWorker 的执行环境。`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 `MessageQueue`；在传统 `MessageQueue` 里，`post()` 和 `next()` 都由 `synchronized` 保护。当后台线程也在往同一个队列投消息时（比如 `AsyncListDiffer` 的 diff 结果回调、`Handler.post()` 调度），`GapWorker` 的执行时机会被 Monitor Lock 阻塞，导致预取任务的发起和执行出现几毫秒的随机偏移。
 
 DeliQueue 用 Treiber Stack 替代了 `synchronized` 块，消除了 `post()` 路径上的锁竞争。Google 官方观测数据（需 `targetSdk 37+`）：应用 missed frames 降低约 4%，System UI 和 Launcher 降低约 7.7%，首帧 P95 耗时降低约 9.1%。这个收益不限于 RecyclerView，而是 `MessageQueue` Monitor Contention 减少后整个主线程调度的改善——预取任务的调度不再受后台线程锁竞争干扰，`willCreateInTime()` / `willBindInTime()` 的 deadline 判断也更准确，因为 GapWorker 被唤醒到开始执行的间隔缩短了。

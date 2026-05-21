@@ -50,6 +50,7 @@ task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-27
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-04-27T03:32:04+08:00
+last_task6_audit: "2026-05-21"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
 ---
@@ -283,7 +284,7 @@ UI Automator 和 Espresso 都是 Android 的 UI 测试框架，但它们在性�
 
 UI Automator 是一个**黑盒测试框架**——它通过 Android 的无障碍服务（Accessibility Service）与 UI 交互，不需要知道应用的内部实现。它运行在独立进程中，可以跨应用操作（比如先打开设置修改配置，再回到被测应用）。
 
-Macrobenchmark 在底层直接使用 UI Automator 的 API 来驱动应用。当我们调用 `startActivityAndWait()`、`pressHome()` 或 `device.findObject(By.res("..."))` 时，底层调用的都是 UI Automator 的 `UiDevice` 接口。这意味着 Macrobenchmark 测试天然具备黑盒特性——它测试的是用户真实感知到的性能，而不是开发者注入的探针。
+Macrobenchmark 在底层直接使用 UI Automator 的 API 来驱动应用。当我们调用 `startActivityAndWait()`、`pressHome()` 或 `device.findObject(By.res("..."))` 时，底层调用的都是 UI Automator 的 `UiDevice` 接口。Macrobenchmark 测试因此具备黑盒特性：它测量的是用户真实感知到的性能，而不是开发者注入的探针。
 
 UI Automator 在性能测试中的优势是它不干扰被测应用：因为它运行在独立进程中，不会占用被测应用的 CPU 时间片或内存空间。但它也有代价——通过无障碍服务交互有 IPC 开销，操作速度比 Espresso 慢。不过对于性能测试来说，这个"慢"反而是优势——它更接近真实用户的操作节奏。
 

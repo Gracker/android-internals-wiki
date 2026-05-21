@@ -118,7 +118,7 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 [存疑: Android 17 NPU feature、意图防火墙、电量配额审计等表述需要 Task 9 复核官方 API/源码来源后再发布。]
 
-从 API 37 起，访问 NPU 必须在 `AndroidManifest.xml` 中声明 `<uses-feature android:name="android.hardware.ai.npu" />`，未声明的应用在运行时会收到异常。系统侧同时建立了 NPU 意图防火墙，结合电量配额审计控制 NPU 的使用频率和时长。排查 NPU 不可用的问题时需要检查三件事：清单是否声明了对应 feature、设备是否通过 `PackageManager.hasSystemFeature()` 返回 true、以及系统电量配额是否还允许 NPU 使用。NPU 路径的可用性取决于三者的交集，缺一不可。
+从 API 37 起，访问 NPU 必须在 `AndroidManifest.xml` 中声明 `<uses-feature android:name="android.hardware.neural_processing_unit" />`，未声明的应用在运行时会收到异常。系统侧同时建立了 NPU 意图防火墙，结合电量配额审计控制 NPU 的使用频率和时长。排查 NPU 不可用的问题时需要检查三件事：清单是否声明了对应 feature、设备是否通过 `PackageManager.hasSystemFeature()` 返回 true、以及系统电量配额是否还允许 NPU 使用。NPU 路径的可用性取决于三者的交集，缺一不可。
 
 ### GPU 推理
 
@@ -360,3 +360,6 @@ ML Kit GenAI APIs → Google AI Edge SDK → AICore System Service
 **AICore Developer Preview**（2026-04-02）新增 Gemini Nano 4 和 Gemma 4 支持——这是真正的 Android 17 时间点更新
 
 <!-- AIW-源码调研-2026-05-17 -->
+
+
+<!-- AIW-源码调研-2026-05-22 -->

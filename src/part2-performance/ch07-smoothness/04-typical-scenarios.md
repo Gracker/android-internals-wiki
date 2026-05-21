@@ -48,7 +48,6 @@ related_chapters:
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task2b_result: fixed
 task2b_state: fixed
 task2b_result: fixed
 task6_result: "pass-light-edit"
@@ -57,6 +56,7 @@ task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-03T08:25:39+08:00"
 last_task2b_at: "2026-04-27T12:54:09+08:00"
+last_task6_audit: "2026-05-21"
 task9_review_notes: "2026-05-03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 auto_promoted: true
 ---
@@ -313,7 +313,7 @@ Android 15 将预测性返回动画（Predictive Back）设为默认行为。用
 Perfetto 分析要点：
 - 观察 `predictive_back_progress` 计数器的更新频率——稳定递增说明 SystemUI 手势侧正常，跳跃或停滞指向 App 回调阻塞
 - 检查 App 主线程在 `onBackProgressed()` 回调期间的 slice 耗时
-- 同时看 SurfaceFlinger 的 `composeModese` slice 是否因多层合成而拉长
+- 同时看 SurfaceFlinger 的 `compose` slice 是否因多层合成而拉长
 
 [已验证: Android 15 CDD Predictive Back 要求, developer.android.com/guide/navigation/custom-back/predictive-back-animation]
 

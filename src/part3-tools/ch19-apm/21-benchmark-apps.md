@@ -32,6 +32,7 @@ pipeline_stage: 'ready-to-publish'
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-25
+last_task6_audit: '2026-05-21'
 task6_result: pass-light-edit
 task9_state: 'reviewed'
 task2b_state: 'fixed'
@@ -49,7 +50,7 @@ task9_review_notes: '2026-05-13 task9 deep-review: pass-tech-review。无 P0/P1�
 ---
 
 
-# Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）
+# Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -110,7 +111,7 @@ Benchmark 结果可以帮助做机型分层、竞品对比、性能模式验证�
 
 ## 适用版本要按工具拆开
 
-本节不能用一个 Android 8-17 范围概括所有工具。工具版本、上架状态和测试口径都要分开记录：
+不能用一个统一的 Android 版本范围概括所有 Benchmark 工具。工具版本、上架状态和测试口径要分开记录：
 
 | 工具 | 当前定位 | Android 版本边界 | 处理方式 |
 |---|---|---|---|
@@ -121,7 +122,7 @@ Benchmark 结果可以帮助做机型分层、竞品对比、性能模式验证�
 
 ## Geekbench：CPU 和 Compute
 
-本节后文默认指 Geekbench 6。Geekbench 6 官方说明它覆盖 CPU 单核、多核，以及 GPU Compute，使用真实任务和数据集建模，支持 Android、iOS、macOS、Windows、Linux。
+下文默认指 Geekbench 6。Geekbench 6 官方说明它覆盖 CPU 单核、多核，以及 GPU Compute，使用真实任务和数据集建模，支持 Android、iOS、macOS、Windows、Linux。
 
 在 Android 性能分析里，Geekbench 更适合做机型分层：
 

@@ -10,6 +10,7 @@ reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
 reviewed_at: '2026-05-12T20:10:00+08:00'
 last_task6_at: '2026-05-12T20:10:00+08:00'
+last_task6_audit: '2026-05-21'
 task6_reviewed_date: '2026-05-12'
 review_round: 9
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
@@ -338,7 +339,7 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 
 在一些性能敏感的场景中（如滑动列表、游戏），开发者可以通过 `sched_setaffinity` 将 RenderThread 绑定到频率最高的大核 CPU 上，以减少因线程在不同核心间迁移导致的性能波动。严振杰的实践文章详细介绍了如何通过读取 `/sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq` 来识别大核，然后通过 native 调用 `sched_setaffinity` 绑定线程。
 
-不过这种做法要谨慎：它可能和系统的 EAS（能量感知调度）策略冲突，而且不同 SoC 平台的核心布局不同。在做绑定之前，先在目标设备上用 Perfetto 对比绑定前后的帧耗时数据，确认确实有改善。
+不过这种做法要谨慎：它可能和系统的 EAS（能量感知调度）策略冲突，而且不同 SoC 平台的核心布局不同。在做绑定之前，先在目标设备上用 Perfetto 对比绑定前后的帧耗时数据，确认有改善。
 
 Android 12 引入的 ADPF（Adaptive Performance Framework）通过 `PerformanceHintManager` 让应用向系统反馈工作负载目标。ADPF hint session 主要影响 CPU 频率决策——当 `reportActualWorkDuration()` 上报的耗时超过 `getTargetWorkDuration()` 的目标值时，系统会提高对应线程的运行频率。核心放置（哪个 CPU 核心执行线程）仍然由内核 EAS 调度器基于 load/capacity 信息决定，ADPF 不直接控制核心迁移。手动 `sched_setaffinity` 会锁定线程的核心选择范围，ADPF 的频率调整在绑核范围内仍然生效，但调度器无法再自由选择最优核心。在新设备上，优先使用 `PerformanceHintManager` 让系统做频率调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
 
