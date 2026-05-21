@@ -32,14 +32,14 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: needs-rework
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
@@ -47,16 +47,15 @@ last_task2b_at: "2026-05-21T07:17:00+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T07:34:33+08:00"
+last_task9_at: "2026-05-21T11:31:10+08:00"
 task6_reviewed_date: "2026-05-21"
 last_task6_at: "2026-05-21T08:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-08-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
-task9_review_notes: "2026-05-21 Task9 deep review: P1 Crash/ANR/native crash 能力边界仍未补齐；沿用并复核 pending queue 条目 task9-19.09-measure-native-crash-anr-boundary。"
-last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
+task9_review_notes: "2026-05-21 Task9 deep review: P1 Measure SDK 事件/字段表仍与官方 SDK API 不一致，写入 queue 条目 task9-20260521-19.09-measure-sdk-schema-fields。"
+last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
 task6_review_notes: "2026-05-21 Task6 revisiting-review: 能力范围字段级表仍未落盘，已重新写入 queue；Crash/ANR/native crash 能力边界沿用 Task9 pending。"
-
 ---
 # Measure
 

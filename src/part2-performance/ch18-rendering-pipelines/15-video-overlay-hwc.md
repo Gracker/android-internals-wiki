@@ -18,24 +18,26 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: needs-rework
-task2b_state: "fixed"
+task2b_state: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task2b_result: "fixed"
+task2b_result: "pending"
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-05-21"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-last_task9_at: "2026-04-26T13:26:21+08:00"
+last_task9_at: "2026-05-21T11:31:10+08:00"
 last_task9_audit: 2026-05-21
 review_notes: '2026-05-21 task9 idle audit: needs-rework。P1：HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
+last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
+task9_review_notes: "2026-05-21 Task9 deep review: P1 SKIP_VALIDATE 版本边界与 canSkipValidate 条件仍未在正文修正，写入 queue 条目 task9-20260521-18.15-hwc-skipvalidate-still-wrong。"
 ---
 
 <!-- outline-start -->
