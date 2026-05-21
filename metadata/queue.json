@@ -15756,7 +15756,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
@@ -15776,7 +15776,9 @@
         "total": 17
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T22:04:00+08:00"
+      "added_at": "2026-05-21T22:04:00+08:00",
+      "completed_date": "2026-05-21T23:04:00+08:00",
+      "completed_reason": "Task 2A 加工完成：结合 Android Developers Memory Advice API deprecated 口径、AOSP gamesdk 源码和 Clippings 内存优化结构参考，补齐接入边界、watcher 回调、LMKD/ApplicationExitInfo/Android Vitals 分工、游戏资产降级策略与 Perfetto/meminfo 验证路径；状态改为 ready-for-review。"
     }
   ],
   "metadata": {

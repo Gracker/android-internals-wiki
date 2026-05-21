@@ -1,7 +1,7 @@
 {
   "total": 359,
-  "draft": 22,
-  "ready-for-review": 149,
+  "draft": 21,
+  "ready-for-review": 150,
   "finalized": 188,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -198,7 +198,8 @@
     "18.15",
     "18.23",
     "22.15",
-    "15.5"
+    "15.5",
+    "23.10"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -230,9 +231,10 @@
     "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
     "src/part3-tools/ch15-methodology/05-online-monitoring.md",
     "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch23-memory-practice/10-memory-advice-api.md"
   ],
-  "review_summary": "Task6 2026-05-21 20: review 15.5、4.9、22.3；15.5 轻修通过转 Task9，4.9/22.3 因 Task9 高风险项继续 Task2B。",
+  "review_summary": "Task2A 2026-05-21 23: 加工 23.10 Memory Advice API 与游戏内存压力治理；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-21",
     "time": "20:11",
@@ -5503,15 +5505,16 @@
   },
   "task2a_last_processed": {
     "date": "2026-05-21",
-    "time": "05:14",
-    "section": "14.18",
-    "file": "src/part3-tools/ch14-other-tools/18-android-performance-analyzer.md",
+    "time": "23:04",
+    "section": "23.10",
+    "file": "src/part5-app/ch23-memory-practice/10-memory-advice-api.md",
     "result": "ready-for-review",
     "sources": [
-      "https://developer.android.com/android-performance-analyzer",
-      "https://developer.android.com/android-performance-analyzer/run",
-      "https://developer.android.com/android-performance-analyzer/analyze/ai",
-      "https://android-developers.googleblog.com/2026/05/introducing-android-performance-analyzer.html"
+      "developer.android.com/games/sdk/memory-advice/overview",
+      "developer.android.com/games/sdk/memory-advice/start",
+      "developer.android.com/games/optimize/memory-allocation",
+      "android.googlesource.com/platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h",
+      "Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md"
     ]
   },
   "task2a_last_gap_mining": {
