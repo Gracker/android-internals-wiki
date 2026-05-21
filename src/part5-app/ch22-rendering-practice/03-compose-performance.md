@@ -14,12 +14,12 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task2b_pending
-task2b_result: pending
-task2b_state: pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task2b_result: fixed  # 2026-05-22 rework: Pausable Composition scope, ComposeView/RecyclerView lifecycle
+task2b_state: fixed
+task6_state: revisiting
 last_task6_at: "2026-05-21T20:11:00+08:00"
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: needs-rework
@@ -266,9 +266,9 @@ LazyColumn {
 
 ### Pausable Composition（Compose 1.10+）
 
-Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 官方宣称达到 View 系统性能对等的关键机制。
+Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 官方宣称达到 View 系统性能对等的关键机制。它主要作用在 LazyColumn/LazyRow 的预取路径中——运行时可将预取 item 的组合工作切分成可暂停的块，在帧预算不足时暂停并在下一帧继续。
 
-**版本注意**：Compose Foundation 1.10.0-alpha05 曾默认启用 Pausable Composition（通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`），但 1.10.6 因稳定性问题已将其默认禁用。当前是否默认启用取决于具体 Foundation 版本，使用前需确认目标版本的默认值或手动设置 flag。
+**版本注意**：Pausable Composition 无 Android 平台版本门槛，只要 Compose Foundation 版本支持即可。Compose Foundation 1.10.0-alpha05 曾默认启用（通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`），但 1.10.6 因稳定性问题已将其默认禁用。当前是否默认启用取决于具体 Foundation 版本，使用前需确认目标版本的默认值或手动设置 flag。对于首帧 Composition 和普通（非 Lazy）Composable，Pausable Composition 不适用——这些场景仍然在单帧内同步完成。
 
 **之前的行为**：Composition 必须在单个帧内完成。如果 Composable 树很深或 LazyColumn 的可见 item 很多，组合阶段的 CPU 时间可能超过 16.67ms 帧预算，直接导致掉帧。
 
@@ -410,6 +410,8 @@ LIMIT 20;
 
 在 RecyclerView 等 View 系统容器中嵌入 ComposeView 时，性能瓶颈不在 Compose 的组合阶段，而在 ComposeView 的生命周期管理。
 
+**Composition 与 Recomposer 的共享关系**：每个 ComposeView 拥有自己的 Composition，但通常共享父级或窗口级 `Recomposer`——而不是每个 ComposeView 持有独立渲染上下文和独立 WindowRecomposer。`AbstractComposeView.resolveParentCompositionContext()` 实际优化了 Recomposer 的查找逻辑，优先复用父级已存在的 CompositionContext。
+
 `ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。
 
 **默认策略 `DisposeOnDetachedFromWindowOrReleasedFromPool`** 是为 RecyclerView 等 pooling container 设计的。当 ComposeView 从窗口 detach 或从缓存池中被丢弃时，Composition 被正确处理。注意"ReleasedFromPool"指的是缓存池满时丢弃最旧的 ViewHolder，而不是每次 item 滚出屏幕就销毁——item 被 RecyclerView 临时回收进缓存池时，Composition 保持存活。
@@ -438,7 +440,7 @@ val composeView = ComposeView(context).apply {
 }
 ```
 
-如果需要在 ViewHolder rebinding 时重置 Compose 状态，可以调用 `disposeComposition()` 手动销毁，但要承担重建 Composition 的完整开销。
+如果需要在 ViewHolder 不再复用或确认存在内存泄漏时重置 Compose 状态，可以调用 `disposeComposition()` 手动销毁，但要承担重建 Composition 的完整开销。优先依赖默认 `DisposeOnDetachedFromWindowOrReleasedFromPool` 策略，让 Composition 随缓存池生命周期自然释放，不要在 `onViewRecycled()` 中盲目调用 `disposeComposition()`——回收进缓存池的 ViewHolder 还有可能被复用，提前销毁只会增加重建成本。
 
 ### AndroidView 在 Compose 中嵌入 View
 
