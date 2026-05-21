@@ -16125,7 +16125,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md"
@@ -16140,25 +16140,28 @@
         "src/part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-22T04:17:00+08:00"
+      "added_at": "2026-05-22T04:17:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-22T05:19:00+08:00",
+      "completion_reason": "Task 2A draft processing: expanded empty draft into ready-for-review JobScheduler pending reason / JobDebugInfo diagnostics chapter"
     }
   ],
   "metadata": {
     "total_entries": 422,
     "p0_count": 178,
-    "last_updated": "2026-05-22T02:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 158,
+    "last_updated": "2026-05-22T05:19:00+08:00",
+    "updated_by": "task2a-content-processing",
+    "pending_entries": 157,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 157,
-    "completed_entries": 263,
+    "last_updated_by": "task2a-content-processing",
+    "pending": 156,
+    "completed_entries": 264,
     "last_task2a_gap_mining": "14.19",
     "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
-    "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
+    "last_task2a_completed_at": "2026-05-22T05:19:00+08:00"
   },
-  "last_updated": "2026-05-22T02:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-22T05:19:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
