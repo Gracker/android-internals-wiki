@@ -2838,3 +2838,9 @@
 - **问题**：正文引用 5.4、5.12、5.13，但 frontmatter `related_chapters` 未包含 5.4；同时 5.14 目标文件只有 `chapter: "5.14"`，缺少 `section: "5.14"`，依赖 `section` 字段的自动化索引可能漏掉目标章节。
 - **建议**：本节 metadata 补 `5.4`；另开 metadata 小修，为 `src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md` 补 `section: "5.14"`。
 - **review 日志**：logs/deep-review/2026-05-22-01-deep-review.md
+## [Task6 Review] 21.2 启动框架设计与任务编排 — 2026-05-22
+- **类型**：需确认
+- **位置**：Alpha 框架、线程优先级策略
+- **问题**：Task9 2026-05-22 已标记 Alpha API / 默认线程池 / 执行模型与 `THREAD_PRIORITY_FOREGROUND` 应用侧边界仍有 P0/P1 技术风险；Task6 仅做文稿交接标注，不裁决源码真伪。
+- **建议**：由 Task2B 按 `logs/deep-review/2026-05-22-03-deep-review.md` 修正文稿，修完后重新进入 Task6 / Task9。
+- **review 日志**：logs/review/2026-05-22-04-review.md

@@ -4,7 +4,7 @@
   "ready-for-review": 153,
   "finalized": 187,
   "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-18",
+  "task9_reviewed_date": "2026-05-22",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -202,7 +202,8 @@
     "23.10",
     "5.16",
     "19.01",
-    "2.11"
+    "2.11",
+    "14.19"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -238,24 +239,27 @@
     "src/part5-app/ch23-memory-practice/10-memory-advice-api.md",
     "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
     "src/part3-tools/ch19-apm/01-apm-landscape.md",
-    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md",
+    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
   ],
   "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
-    "time": "01:16",
+    "time": "04:07",
     "sections": [
-      "19.01",
-      "2.11",
-      "5.16"
+      "14.19",
+      "1.1",
+      "21.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/01-apm-landscape.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "result": "3 通过写作质检 / 0 新增回炉 / 0 自动晋升",
-    "log": "logs/review/2026-05-22-01-review.md"
+    "result": "2 通过写作质检 / 1 回炉确认 / 0 自动晋升",
+    "log": "logs/review/2026-05-22-04-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -319,9 +323,9 @@
       "task6_note": "复审通过；修正导读动词、开头结构元叙述、标题层级、编辑标记和“这意味着”填充句。Task9 仍 pending，未自动晋升。"
     },
     "22.3": {
-      "p0": 3,
-      "p1": 2,
-      "p2": 3,
+      "p0": 1,
+      "p1": 1,
+      "p2": 2,
       "p3": 0,
       "task6_result": "needs-rework",
       "task6_l1_l2_fixes": 5,
@@ -329,7 +333,11 @@
       "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
       "task6_log": "logs/review/2026-05-21-20-review.md",
       "task6_new_rework": false,
-      "task6_note": "补 outline 并修 L1 表述；Android 17/API/GC 数据口径等 Task9 高风险问题继续 Task2B。"
+      "task6_note": "补 outline 并修 L1 表述；Android 17/API/GC 数据口径等 Task9 高风险问题继续 Task2B。",
+      "reviewed_at": "2026-05-22T03:46:50+08:00",
+      "log": "logs/deep-review/2026-05-22-03-deep-review.md",
+      "summary": "P0 1：Android 17/API 35 映射错误；P1 1：ART GC/Young Gen pause 数据与源码 tag 未固定；P2 2：状态读取 onSizeChanged 与 derivedStateOf 约束沿用既有 suggestions。",
+      "task9_result": "needs-rework"
     },
     "2.3": {
       "p0": 3,
@@ -437,10 +445,8 @@
       "p3": 0
     },
     "21.2": {
-      "p0": 1,
-      "p1": 1,
-      "p2": 0,
-      "p3": 0
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "21.3": {
       "p0": 0,
@@ -1370,20 +1376,7 @@
     },
     "1.1": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 10,
-      "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-18T08:15:18+08:00",
-      "task6_log": "logs/review/2026-05-18-08-review.md",
-      "task6_new_rework": false,
-      "task6_note": "复审通过；修正结构性标题、代码省略注释、传输模式术语、编辑标记和中英文间距。queue.json 中 1.1 无 pending 条目，但 task9_result 尚非 pass-tech-review，转 Task9 复核。",
-      "task9_result": "needs-rework",
-      "task9_p0": 1,
-      "task9_p1": 0,
-      "task9_p2": 0,
-      "task9_p3": 0,
-      "task9_reviewed_at": "2026-05-18T03:31:27+08:00",
-      "task9_log": "logs/deep-review/2026-05-18-03-deep-review.md",
-      "task9_summary": "P0 1：Android 16 SurfaceFlinger 后续示例仍使用旧 doComposition trace 名；前文已修正为 commit/composite/postComposition。"
+      "task9_result": "needs-rework"
     },
     "20.2": {
       "task6_result": "pass-light-edit",
@@ -1613,32 +1606,36 @@
       "task6_log": "logs/review/2026-05-21-20-review.md",
       "task6_new_rework": false,
       "task6_note": "复审通过；补 section 元数据，修禁用/填充表达、COMMAND_ISSUE_DURATION 口径表述与重复采样段。Task9 重新进入 pending。"
+    },
+    "14.19": {
+      "task6_result": "pass-light-edit",
+      "task9_result": "pending"
     }
   },
-  "total_review_sections": 196,
+  "total_review_sections": 197,
   "next_review_candidates": [],
-  "ready_for_review": 152,
-  "last_updated": "2026-05-22T02:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "ready_for_review": 153,
+  "last_updated": "2026-05-22T04:07:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
-    "time": "01:16",
-    "reviewed_at": "2026-05-22T01:16:12+08:00",
+    "time": "04:07",
+    "reviewed_at": "2026-05-22T04:07:00+08:00",
     "mode": "normal",
     "sections": [
-      "19.01",
-      "2.11",
-      "5.16"
+      "14.19",
+      "1.1",
+      "21.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/01-apm-landscape.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/review/2026-05-22-01-review.md",
-    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
+    "log": "logs/review/2026-05-22-04-review.md",
+    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
-  "task9_last_review": "2026-05-20",
+  "task9_last_review": "2026-05-22",
   "ready_to_publish": 187,
   "rework_history": [
     {
@@ -1902,16 +1899,19 @@
     "21.2": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T04:17:00+08:00",
-      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-22T04:07:00+08:00",
+      "task6_result": "needs-rework",
       "task9_state": "reviewed",
-      "last_task6_review_log": "logs/review/2026-05-13-04-review.md",
+      "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
       "title": "启动框架设计与任务编排",
       "file": "src/part5-app/ch21-startup/02-startup-framework.md",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-05-16",
-      "last_task9_at": "2026-05-16T00:30:00+08:00",
-      "task2b_state": "pending"
+      "task9_reviewed_date": "2026-05-22",
+      "last_task9_at": "2026-05-22T03:46:50+08:00",
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "reviewed_date": "2026-05-22",
+      "reviewed_by": "openclaw-task6"
     },
     "21.3": {
       "status": "ready-for-review",
@@ -3980,18 +3980,18 @@
     },
     "1.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-18T04:08:40+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-22T04:07:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "last_task6_review_log": "logs/review/2026-05-18-04-review.md",
+      "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
       "title": "Android 分层架构",
       "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-18",
-      "task9_state": "reviewed",
+      "reviewed_date": "2026-05-22",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending"
+      "task2b_state": "fixed"
     },
     "20.2": {
       "status": "ready-for-review",
@@ -4447,14 +4447,22 @@
       "queue_entry": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary"
     },
     "14.19": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
       "title": "Android CLI 与 Agent 化性能调试工作流",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-22",
       "queue_priority": 80,
-      "gap_score": 16
+      "gap_score": 16,
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-22T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "reviewed_date": "2026-05-22",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "task2b_rounds": [
@@ -4484,96 +4492,103 @@
   "last_task2a_processed_date": "2026-05-22",
   "task9_last_review_detail": {
     "date": "2026-05-22",
-    "time": "01:31",
-    "reviewed_at": "2026-05-22T01:31:51+08:00",
+    "time": "03:46",
+    "reviewed_at": "2026-05-22T03:46:50+08:00",
     "mode": "normal",
     "sections": [
-      "5.16"
+      "22.3",
+      "21.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
-    "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "log": "logs/deep-review/2026-05-22-03-deep-review.md",
+    "p0": 2,
+    "p1": 3,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
     "auto_promoted": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-22-01-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-22-03-deep-review.md",
   "last_task9_sections": [
-    "5.16"
+    "22.3",
+    "21.2"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-22",
-    "time": "01:31",
-    "reviewed_at": "2026-05-22T01:31:51+08:00",
+    "time": "03:46",
+    "reviewed_at": "2026-05-22T03:46:50+08:00",
     "mode": "normal",
     "sections": [
-      "5.16"
+      "22.3",
+      "21.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
-    "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "log": "logs/deep-review/2026-05-22-03-deep-review.md",
+    "p0": 2,
+    "p1": 3,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
     "auto_promoted": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "total_review_files": 34,
+  "total_review_files": 37,
   "last_task2a_at": "2026-05-22T01:04:00+08:00",
   "last_task2a_section": "5.16",
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "19.01",
-    "2.11",
-    "5.16"
+    "14.19",
+    "1.1",
+    "21.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch19-apm/01-apm-landscape.md",
-    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "last_task6_at": "2026-05-22T01:16:12+08:00",
+  "last_task6_at": "2026-05-22T04:07:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-22",
-    "time": "01:16",
-    "reviewed_at": "2026-05-22T01:16:12+08:00",
+    "time": "04:07",
+    "reviewed_at": "2026-05-22T04:07:00+08:00",
     "mode": "normal",
     "sections": [
-      "19.01",
-      "2.11",
-      "5.16"
+      "14.19",
+      "1.1",
+      "21.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/01-apm-landscape.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/review/2026-05-22-01-review.md",
-    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
+    "log": "logs/review/2026-05-22-04-review.md",
+    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "last_task9_at": "2026-05-22T01:31:51+08:00",
+  "last_task9_at": "2026-05-22T03:46:50+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "5.16",
-  "task6_last_review_at": "2026-05-22T01:16:12+08:00",
-  "task6_last_review_log": "logs/review/2026-05-22-01-review.md",
+  "task6_last_review_at": "2026-05-22T04:07:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-22-04-review.md",
   "task6_last_review_sections": [
-    "19.01",
-    "2.11",
-    "5.16"
+    "14.19",
+    "1.1",
+    "21.2"
   ],
   "sections_status": {
     "22.11": {
@@ -5534,12 +5549,19 @@
       "task6_review_notes": "2026-05-21 Task6：四层质检通过；L1/L2 轻量修复 12 处；无 L3/L4 回炉项，送 Task9 技术复审。"
     },
     "14.19": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
-      "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "section": "14.19",
       "title": "Android CLI 与 Agent 化性能调试工作流",
-      "queue_priority": 80,
-      "created_date": "2026-05-22"
+      "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "last_task6_at": "2026-05-22T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+      "reviewed_date": "2026-05-22",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "task2a_last_processed": {
@@ -5568,64 +5590,67 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "4.9",
-    "22.15",
-    "22.3"
+    "22.3",
+    "21.2"
   ],
   "last_task2a_processed_at": "2026-05-19T22:04:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-22-01-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-22-03-deep-review.md",
   "task9_last_files": [
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "last_task2b_run": "2026-05-17T03:11:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-22",
-    "time": "01:16",
-    "reviewed_at": "2026-05-22T01:16:12+08:00",
+    "time": "04:07",
+    "reviewed_at": "2026-05-22T04:07:00+08:00",
     "mode": "normal",
     "sections": [
-      "19.01",
-      "2.11",
-      "5.16"
+      "14.19",
+      "1.1",
+      "21.2"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/01-apm-landscape.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/review/2026-05-22-01-review.md",
-    "result": "19.01/2.11/5.16 pass-light-edit; 0 Task6 新增回炉; 0 自动晋升; 19.01/2.11 保留 Task9 queue pending"
+    "log": "logs/review/2026-05-22-04-review.md",
+    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch19-apm/01-apm-landscape.md",
-    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch19-apm/01-apm-landscape.md",
-    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-    "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
     "date": "2026-05-22",
-    "time": "01:31",
-    "reviewed_at": "2026-05-22T01:31:51+08:00",
+    "time": "03:46",
+    "reviewed_at": "2026-05-22T03:46:50+08:00",
     "mode": "normal",
     "sections": [
-      "5.16"
+      "22.3",
+      "21.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch21-startup/02-startup-framework.md"
     ],
-    "log": "logs/deep-review/2026-05-22-01-deep-review.md",
-    "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "log": "logs/deep-review/2026-05-22-03-deep-review.md",
+    "p0": 2,
+    "p1": 3,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
     "auto_promoted": []
@@ -5762,11 +5787,11 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": {
-    "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "p0": 2,
+    "p1": 3,
+    "p2": 3,
     "auto_finalized": [],
-    "log": "logs/deep-review/2026-05-22-01-deep-review.md"
+    "log": "logs/deep-review/2026-05-22-03-deep-review.md"
   },
   "last_task2a_gap_mining": "14.19",
   "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
@@ -5851,9 +5876,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "19.01",
-    "2.11",
-    "5.16"
+    "14.19",
+    "1.1",
+    "21.2"
   ],
   "task2b_progress": [
     {
@@ -5881,8 +5906,8 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-22-01-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-22-03-deep-review.md",
+  "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -6091,12 +6116,15 @@
     "section": "14.19",
     "title": "Android CLI 与 Agent 化性能调试工作流",
     "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_pending",
-    "created_by": "task2a-knowledge-gap",
-    "created_date": "2026-05-22",
-    "queue_priority": 80,
-    "gap_source": "官方文档/每日信息/研究素材",
-    "gap_score": 16
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "last_task6_at": "2026-05-22T04:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+    "reviewed_date": "2026-05-22",
+    "reviewed_by": "openclaw-task6"
   }
 }

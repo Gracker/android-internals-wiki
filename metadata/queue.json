@@ -15763,7 +15763,9 @@
       "material_paths": [
         "logs/deep-review/2026-05-21-19-deep-review.md",
         "intake/research-gaps.md",
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md（含 review 意见）",
+        "logs/deep-review/2026-05-22-03-deep-review.md",
+        "intake/suggestions.md（含既有 P2 意见）"
       ],
       "review_issues": [
         {
@@ -15786,12 +15788,21 @@
           "location": "GC-Composition 因果链 / 源码调研补充 / 版本迁移段",
           "detail": "Task6 已补 outline 并修 L1 表述，但章节仍保留 Android 17/API 映射、Young Generation pause 数据口径、AOSP master 行号与 Compose 细节等 Task9 已标记的 P0/P1/P2 技术风险，且源码调研补充尚未完全融入正文。",
           "suggestion": "由 Task2B 按 logs/deep-review/2026-05-21-19-deep-review.md 修正版本/API 口径、补数据来源与固定 tag，再把源码调研素材归并到正文或删去未验证结论。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/数据支撑/源码锚点",
+          "location": "L558-L586：GC-Composition 因果链与 API Level 表",
+          "detail": "本轮复核确认问题仍在：章节 frontmatter 适用范围为 Android 10(API 29)-Android 16(API 36)，正文仍写“Android 17 的 ART CC GC 已通过源码验证”，表格仍写 Android 17(API 35)。同时 Young Gen pause 1-3ms、safepoint <0.5ms、heap.cc 行号仍未绑定固定 AOSP tag、设备、Perfetto 或 GC log 样本。",
+          "suggestion": "Task2B 需删除或降级 Android 17 段落；若保留，按 Android 17/API 37 preview 待验证口径写，并补固定 AOSP tag、设备/Compose/Kotlin 版本、Perfetto/ART GC log 数据。补不齐时只保留“减少重组可降低分配压力”的定性链路。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T19:35:29+08:00",
       "review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-      "original_review_log": "logs/review/2026-05-21-20-review.md"
+      "original_review_log": "logs/review/2026-05-21-20-review.md",
+      "last_confirmed_at": "2026-05-22T03:46:50+08:00",
+      "last_confirmed_review_log": "logs/deep-review/2026-05-22-03-deep-review.md"
     },
     {
       "id": "task9-20260521-15.5-online-monitoring-framemetrics-anr",
@@ -16037,6 +16048,69 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T02:27:04+08:00",
       "review_log": "logs/deep-review/2026-05-22-02-audit.md"
+    },
+    {
+      "id": "task9-20260522-21.2-alpha-api-executor-thread-priority-regression",
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 95,
+      "title": "Alpha API/默认线程池与线程优先级源码口径仍需修正",
+      "description": "本轮 Task9 复核发现 §21.2 仍保留 alibaba/alpha API 示例错误、默认 ExecutorService 单线程误述、Alpha 执行模型/环检测描述过度，以及 THREAD_PRIORITY_FOREGROUND 应用侧权限边界错误。",
+      "reason": "[Deep Tech Review] Alpha 框架源码准确性与 Android 线程优先级 API 边界仍存在 P0/P1 问题，需回炉修正。",
+      "issue_type": "source-code-accuracy-principle-chain-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-03-deep-review.md",
+        "https://raw.githubusercontent.com/alibaba/alpha/master/alpha/src/main/java/com/alibaba/android/alpha/Project.java",
+        "https://raw.githubusercontent.com/alibaba/alpha/master/alpha/src/main/java/com/alibaba/android/alpha/AlphaManager.java",
+        "https://raw.githubusercontent.com/alibaba/alpha/master/alpha/src/main/java/com/alibaba/android/alpha/AlphaConfig.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/Process.java",
+        "intake/suggestions.md（含 review 意见）",
+        "logs/review/2026-05-22-04-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 错误/Alpha Builder 与默认 ExecutorService",
+          "location": "L190-L202、L260-L282：Alpha Builder 示例、入口调用和默认线程池说明",
+          "detail": "正文示例使用 `new Project.Builder(\"app_init\")` 与 `AlphaManager.getInstance()`，并多处写默认 ExecutorService 为单线程池。alibaba/alpha master/v1.2.0 源码中 `Project.Builder` 只有无参构造，项目名通过 `setProjectName(String)` 设置；`AlphaManager` 入口是 `getInstance(Context)`；`AlphaConfig` 默认 `sCoreThreadNum = Runtime.getRuntime().availableProcessors()`，默认线程池是 core=max=CPU 核数、`LinkedBlockingQueue`、`allowCoreThreadTimeOut(true)`，不是单线程池。",
+          "suggestion": "把示例改为 `new Project.Builder().setProjectName(\"app_init\")...create()` 和 `AlphaManager.getInstance(context)`；默认线程池改成“CPU 核数固定线程池 + 无界队列 + core timeout”，并说明如需 IO/CPU 分池需要通过 `AlphaConfig.setExecutorService()` 自行替换。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/Alpha 执行模型与环检测",
+          "location": "L258-L268：`AlphaManager.start()` 执行流程",
+          "detail": "正文写 `AlphaManager.start()` 内部构建 DAG 并做拓扑排序 + 环检测。源码显示 `AlphaManager.start()` 只按进程选择 Project 后调用 `project.start()`；依赖图在 `Project.Builder.add(...).after(...)` 阶段通过 predecessor/successor 连接，Task 完成后由 `notifyFinished()` 触发 successor，`AlphaUtils.sort()` 只按 executePriority 排同一批 successor，并非全局拓扑排序。源码只拒绝 self-dependency，重复 start 时抛出“is there a circular dependency?”，没有 DFS/GRAY/BLACK 式环路径检测。",
+          "suggestion": "改成“Builder 构图 + 前驱计数归零触发 successor”的执行模型；删除“拓扑排序 + 环检测”的确定表述，或明确 Alpha 仅有有限循环防护，复杂环检测需自研框架补充。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本/API 边界/线程优先级",
+          "location": "L411-L434：关键启动线程 `THREAD_PRIORITY_FOREGROUND(-2)` 建议",
+          "detail": "正文仍把关键启动线程默认建议为 -2，并写应用侧设置通常可以成功。AOSP android-16 `Process.java` 对 `THREAD_PRIORITY_FOREGROUND(-2)` 的注释是“Applications can not normally change to this priority; the system will automatically adjust your application threads as the user moves through the UI”；`THREAD_PRIORITY_DISPLAY(-4)` 也同样标注普通应用不能切换。当前建议容易让业务把负 nice 当成通用启动优化手段。",
+          "suggestion": "把 -2 从默认策略降级为受限实验项：默认使用 `THREAD_PRIORITY_DEFAULT` / `THREAD_PRIORITY_BACKGROUND` 分层；只有在目标机型实测可设置、捕获 `SecurityException`、并通过 Perfetto sched + TTID/P99 证实收益时才使用 -2，且必须有失败回退。"
+        },
+        {
+          "severity": "P1",
+          "type": "Task6 文稿审查复核/需确认",
+          "location": "Alpha 框架；线程优先级策略",
+          "detail": "Task6 复审确认该章节 L1/L2 写作问题不重，但 Alpha Builder API、默认 ExecutorService、执行模型与 THREAD_PRIORITY_FOREGROUND(-2) 应用侧边界仍属于 Task9 已标记的 P0/P1 技术风险。Task6 不裁决源码真伪，已在正文加存疑标注。",
+          "suggestion": "由 Task2B 按 logs/deep-review/2026-05-22-03-deep-review.md 修正技术口径；修完后重新进入 Task6/Task9。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T03:46:50+08:00",
+      "review_log": "logs/deep-review/2026-05-22-03-deep-review.md",
+      "last_task6_review_at": "2026-05-22T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-04-review.md"
     }
   ],
   "metadata": {
