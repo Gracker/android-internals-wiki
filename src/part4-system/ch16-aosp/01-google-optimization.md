@@ -27,6 +27,8 @@ task2b_result: fixed
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-04-27T11:41:00+08:00"
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-22"
+last_task6_audit_log: "logs/review/2026-05-22-03-audit.md"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
@@ -81,7 +83,7 @@ Google 对性能的判断，基本可以拆成两层。
 AutoFDO 就是典型例子。它优化的是内核和系统 native binary 的机器码布局与分支预测，不要求 App 配合，但会影响冷启动、Binder 调用、系统服务执行这些底层热点路径。这个方向的细节可以继续看 §1.12《AutoFDO 反馈导向编译优化》和本章的 §16.4《Android 17 + Kernel 6.12 系统级性能优化》。Google 在系统层做的其他长期工作也属于这一类，比如 ART 编译与 GC 的持续演进、Binder 调度与线程池模型的调整、SurfaceFlinger 合成与 Buffer 管线重构。
 
 ### 用户感知层（User-Perceived Performance）
-第二层是用户真正能感知到的性能。Google 一直把启动是否拖、滑动是否卡、点击是否迟、ANR 是否出现放在指标前面。CPU 利用率和函数耗时承担证据角色，最终仍要回到用户动作。
+第二层是用户能直接感知到的性能。Google 一直把启动是否拖、滑动是否卡、点击是否迟、ANR 是否出现放在指标前面。CPU 利用率和函数耗时承担证据角色，最终仍要回到用户动作。
 
 这层思路决定了 Google 的工具形态。Android Vitals 追踪 ANR 率、崩溃率、卡顿率这类用户感知指标，而非只看某个线程的平均 CPU 占用。Macrobenchmark 的目标是复现冷启动、滚动、页面切换这些用户动作，然后确认优化前后用户能否感到差别。
 
@@ -112,7 +114,7 @@ Dalvik 到 ART 的切换，是 Android 运行时层面最重要的一次重写�
 ### Project Treble（Android 8.0，2017）
 Project Treble 表面上讲的是架构解耦，真实情况是它解决了另一个性能大问题，Google 修好的系统优化到底能不能及时送到用户手里。
 
-Treble 之前，Framework 和厂商 HAL 绑得很紧。Google 即使修好了框架层的性能 bug，也得等 SoC 厂商和 OEM 一层层适配，很多设备根本等不到更新。Treble 通过稳定接口把 Framework 和 HAL 拆开，把“平台层改进”和“厂商适配”之间的耦合降下来，这才给后面的 Mainline、Stable AIDL、模块化更新创造了前提。
+Treble 之前，Framework 和厂商 HAL 绑得很紧。Google 即使修好了框架层的性能 bug，也得等 SoC 厂商和 OEM 一层层适配，很多设备等不到更新。Treble 通过稳定接口把 Framework 和 HAL 拆开，把“平台层改进”和“厂商适配”之间的耦合降下来，这才给后面的 Mainline、Stable AIDL、模块化更新创造了前提。
 
 ### Project Mainline（Android 10，2019）：先把“交付路径”拆清楚
 Mainline 的最大价值在于把“系统能力更新如何送达设备”做成了独立问题。官方 Mainline 文档写得很明确，Android 10 引入 Mainline 后，终端可以通过 Google Play system update feature 或 partner-provided OTA 获取模块更新；模块本身既可能是 APEX，也可能是 APK。ART 模块 `com.android.art` 是从 Android 12 开始作为 APEX 交付的。
@@ -144,17 +146,17 @@ Android 17 release notes 对 generational GC 的描述也保持了这个口径�
 Startup Profiles 则是编译期补刀。它和 Baseline Profiles 配合时，一个负责安装期编译关键代码路径，一个负责在 DEX 布局阶段把启动热点排到更容易被顺序读取的位置。两者放在一起看，才是今天 Android 启动优化工具链的完整图景。
 
 ## Framework 层的性能优化实践
-Google 在 Framework 层的工作，很多都没有单独冠上一个 Project 名字，但真正影响卡顿、启动、切换速度时，往往就是这些改动在起作用。
+Google 在 Framework 层的很多工作没有单独冠上 Project 名字，但卡顿、启动、切换速度这些体验，往往会受这些改动影响。
 
 ### View 系统：持续减主线程负担
-View 系统历史太久，Google 这些年一直在做两件事，减少不必要的 measure/layout/invalidate 传播，以及把真正重的绘制工作继续往 RenderThread 挪。
+View 系统历史太久，Google 这些年一直在做两件事，减少不必要的 measure/layout/invalidate 传播，以及把更重的绘制工作继续往 RenderThread 挪。
 
-从 Android 5.0 引入 RenderThread 之后，主线程更多是在记录 DisplayList，真正的 OpenGL 或 Vulkan 指令提交不再都堵在 UI 线程上。这个变化对性能分析很关键：主线程慢只能说明一部分问题，RenderThread 和合成侧能否赶上 VSync，才决定用户能不能看见掉帧。
+从 Android 5.0 引入 RenderThread 之后，主线程更多是在记录 DisplayList，OpenGL 或 Vulkan 指令提交不再都堵在 UI 线程上。这个变化对性能分析很关键：主线程慢只能说明一部分问题，RenderThread 和合成侧能否赶上 VSync，才决定用户能不能看见掉帧。
 
 ### Handler / MessageQueue：先分清 legacy queue 和 Android 17 新队列
 MessageQueue 的性能问题，在于“很多生产者在并发入队”和“Looper 必须按消息到期时间有序取出”这两件事被塞进了同一套队列结构里。
 
-在 legacy locked queue 里，这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息，生产者在 `enqueueMessage()` 里按 `when` 插入单链表，两边都会碰到同一份队列状态。分析旧实现时，可以说它围绕一把锁序列化访问；源码引用应指向 `MessageQueue` 自身，不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层，真正的队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
+在 legacy locked queue 里，这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息，生产者在 `enqueueMessage()` 里按 `when` 插入单链表，两边都会碰到同一份队列状态。分析旧实现时，可以说它围绕一把锁序列化访问；源码引用应指向 `MessageQueue` 自身，不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层，队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
 
 到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`。而当前 AOSP master 的 `core/java/android/os/` 目录里，已经能直接看到 `LockedMessageQueue/MessageQueue.java`、`ConcurrentMessageQueue/MessageQueue.java`、`CombinedMessageQueue/`、`SemiConcurrentMessageQueue/` 这些实现拆分。这说明“MessageQueue 就是一份带 `mLock` 的单一实现”只对历史 locked queue 成立，不能拿来概括现在的代码树。
 
@@ -194,14 +196,14 @@ Google 的性能工具大致可以分成三类。
 ### 官方最佳实践，反复回到五件事
 Google 在 I/O、Codelab 和官方文档里反复强调的原则并不花哨，常见的就五件事。
 
-第一，不要在主线程做阻塞操作。第二，初始化要按用户真正的使用顺序来排，不要启动时全量摊开。第三，优先优化关键路径，避免把精力平均铺到每一行代码。第四，一定要在资源更紧的设备上测，旗舰机上的“没感觉”往往说明不了什么。第五，优化之前和之后都要量化，没基线就谈不上收益。
+第一，不要在主线程做阻塞操作。第二，初始化要按用户实际的使用顺序来排，不要启动时全量摊开。第三，优先优化关键路径，避免把精力平均铺到每一行代码。第四，一定要在资源更紧的设备上测，旗舰机上的“没感觉”往往说明不了什么。第五，优化之前和之后都要量化，没基线就谈不上收益。
 
-这些原则看起来像常识，但它们刚好解释了为什么 Google 会同时推动系统层优化和开发者工具链优化。系统层提高平台默认能力，开发者工具要求 App 把这些能力真正用起来。
+这些原则看起来像常识，但它们刚好解释了为什么 Google 会同时推动系统层优化和开发者工具链优化。系统层提高平台默认能力，开发者工具要求 App 把这些能力用到位。
 
 ## Android Go Edition：面向低资源设备的性能策略
 Android Go Edition 是 Project Svelte 思路的延续版。它把低内存、低存储、低算力设备当成真实目标平台，再反过来重做系统和应用默认配置。
 
-这条线的意义在于，它不断提醒我们，好的性能优化应该天然向下兼容。减少常驻内存、延迟初始化、降低后台工作、缩短关键路径，这些策略不会只对低端机有效。相反，低端机场景往往最容易把问题放大，也最容易逼我们看清楚什么才是真正的性能瓶颈。
+这条线的意义在于，它不断提醒我们，好的性能优化应该天然向下兼容。减少常驻内存、延迟初始化、降低后台工作、缩短关键路径，这些策略不会只对低端机有效。相反，低端机场景往往最容易把问题放大，也最容易逼我们看清楚主要性能瓶颈。
 
 ## Google 内部的性能测试基础设施
 公开信息里能看到的 Google 内部性能基础设施，主要还是三块。
@@ -212,10 +214,10 @@ Android Go Edition 是 Project Svelte 思路的延续版。它把低内存、低
 
 ## 常见问题与误区
 ### “系统已经越来越快了，App 端不用太管”
-系统层优化确实会抬高默认上限，但它不会替我们删掉主线程阻塞 I/O，也不会自动把启动阶段那些不该同步做的初始化搬走。Google 的系统优化更像乘数，前提还是 App 自己的结构别太差。
+系统层优化会抬高默认上限，但它不会替我们删掉主线程阻塞 I/O，也不会自动把启动阶段那些不该同步做的初始化搬走。Google 的系统优化更像乘数，前提还是 App 自己的结构别太差。
 
 ### “Baseline Profiles 能包治启动慢”
-Baseline Profiles 解决的是“关键代码路径尽早编译成机器码”，但启动优化不等于只做编译。如果启动慢的真正根因是主线程 I/O、同步 Binder、数据库初始化、第三方 SDK 常驻初始化，那它只能缓解一部分，不可能替代架构和线程模型层面的整理。
+Baseline Profiles 解决的是“关键代码路径尽早编译成机器码”，但启动优化不等于只做编译。如果启动慢的根因是主线程 I/O、同步 Binder、数据库初始化、第三方 SDK 常驻初始化，那它只能缓解一部分，不可能替代架构和线程模型层面的整理。
 
 ### “升级 Android 版本，性能自然会整体变好”
 大方向通常是对的，但具体场景仍然要实测。新系统会带来更好的运行时、更好的调度和更好的系统工具，也可能同时带来新的行为限制、更多安全检查或 targetSdk 适配成本。Google 每一版都在优化平台，也每一版都在改平台规则，这两件事是一起发生的。
