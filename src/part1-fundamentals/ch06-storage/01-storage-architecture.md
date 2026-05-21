@@ -2,7 +2,7 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 9 - Android 15"
 last_verified: "2026-04-14"
 last_verified_against: "Android 15, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
@@ -33,12 +33,12 @@ last_task6_audit: 2026-05-18
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T06:24:00+08:00"
@@ -47,7 +47,8 @@ last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T06:24:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-06-audit.md"
 task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：FBE System/User DE/CE 目录与伪源码片段不符合 AOSP vold FsCrypt/Utils；P1 1：I/O 优先级段落把 AOSP blkio/task profiles 误写成 cgroup v2 IO controller。"
----
+
+last_task2b_at: "2026-05-22T07:21:00+08:00"---
 
 <!-- outline-start -->
 - 🔹 Android 存储架构：UFS/eMMC → Block Layer → 文件系统 → Scoped Storage / MediaStore
@@ -142,7 +143,7 @@ UFS 4.0 还引入了 **MCQ（Multi-Circular Queue，多命令队列）**。在 U
 
 I/O 调度器负责把文件系统提交的 bio 请求按照一定策略排序和合并，然后发给底层存储设备。Android 设备上通常使用 `mq-deadline` 或 `bfq` 调度器。`mq-deadline` 的核心思路是为每个 I/O 请求设置一个截止时间，在截止时间之前尽量合并和排序请求以提高吞吐量，超过截止时间则强制发出，避免饿死。`bfq` 则更注重公平性，会按照进程（cgroup）分配 I/O 带宽，防止后台进程抢占前台 App 的 I/O 资源。
 
-手机场景下，I/O 调度的挑战在于：前台 App（比如用户正在滑动的列表）需要低延迟的随机读，而后台任务（比如系统更新、媒体扫描）在进行大量顺序写。如果调度器不给力，后台的顺序写就会把前台的随机读挤到队列后面，造成卡顿。这也是为什么 Android 引入了 `cgroup` v2 的 I/O 控制器——前台 App 的 I/O 请求会被标记为更高的优先级。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
+手机场景下，I/O 调度的挑战在于：前台 App（比如用户正在滑动的列表）需要低延迟的随机读，而后台任务（比如系统更新、媒体扫描）在进行大量顺序写。如果调度器不给力，后台的顺序写就会把前台的随机读挤到队列后面，造成卡顿。这也是为什么 Android 通过 task profiles 抽象调度组来实现前后台 I/O 隔离。AOSP android-15/16 的 `cgroups.json` 默认仍挂载 `blkio` 控制器在 `/dev/blkio`；`task_profiles.json` 中 `LowIoPriority` 加入 `blkio/background`，`SCHED_SP_FOREGROUND` / `SCHED_SP_TOP_APP` 聚合 `HighIoPriority` / `MaxIoPriority`。前后台 I/O 隔离效果取决于 kernel、active scheduler、blkio/BFQ 支持和 OEM 配置。cgroup v2 io controller 目前只能作为厂商/内核可选实现，可用 `/proc/cgroups`、`/sys/fs/cgroup`、`/dev/blkio` 确认设备实际配置。[已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/profiles/cgroups.json / task_profiles.json; 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 ### device-mapper：虚拟块设备的瑞士军刀
 
@@ -299,21 +300,15 @@ Android 的存储加密经历了从全盘加密（Full-Disk Encryption，FDE）�
 
 FBE 的密钥管理由 `vold`（Volume Daemon）负责。整个密钥层次如下：
 
-1. **System DE Key**：系统级 DE 密钥，在启动早期由硬件生成。用于 `/data/system/`、`/data/misc/` 等系统目录。
-2. **User DE Key**：每个用户的 DE 密钥，用于该用户的 Direct Boot 相关数据（如闹钟设置）。
-3. **User CE Key**：每个用户的 CE 密钥，用户解锁后由凭据派生。用于绝大多数 App 数据。
+1. **System DE Key**：系统级 DE 密钥，由 `vold` 在启动早期读取或创建并安装到 fscrypt。对应 `/data/system_de/`、`/data/misc_de/` 目录。
+2. **User DE Key**：每个用户的 DE 密钥，由 `vold` 管理，用于该用户的 Direct Boot 相关数据（如闹钟设置），对应 `/data/user_de/<user_id>/`。
+3. **User CE Key**：每个用户的 CE 密钥，用户解锁后由凭据派生，用于绝大多数 App 数据，对应 `/data/user/<user_id>/`（CE 也包括 `/data/system_ce/<user_id>/`）。
 
-```cpp
-// vold 中的密钥安装（简化示意）
-// System DE Key
-installKey("scrypt_key_system_de", "/data/system_de/");
-// User DE Key (per user)
-installKey("scrypt_key_user_de_0", "/data/user_de/0/");
-// User CE Key (after unlock)
-installKey("scrypt_key_user_ce_0", "/data/user/0/");
-```
+AOSP 中的关键实现路径：
+- `system/vold/FsCrypt.cpp`：`fs_prepare_user_storage()` 函数准备 DE/CE 目录并应用 fscrypt policy
+- `system/vold/Utils.cpp`：`BuildDataSystemDePath()`、`BuildDataMiscDePath()`、`BuildDataUserDePath()` 生成 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>` 等路径
 
-[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
+[已验证: AOSP android-16.0.0_r1, system/vold/FsCrypt.cpp / Utils.cpp; 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 每个目录的加密策略由扩展属性（xattr）记录在文件系统的 inode 中。当创建新文件时，文件系统会继承父目录的加密策略，自动使用对应的密钥加密。
 

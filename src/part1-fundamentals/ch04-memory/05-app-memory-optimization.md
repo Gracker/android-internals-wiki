@@ -53,12 +53,12 @@ review_round: 4
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: '2026-05-20T23:56:34+08:00'
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-22T07:21:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-21'
@@ -630,13 +630,14 @@ ASan 会使 App 性能下降 2-5 倍，所以只在 debug 构建中使用。但�
 `heapprofd` 是 Perfetto 提供的 Native 堆分析工具，可以精确追踪每一次 Native 内存分配的调用栈：
 
 ```bash
-# 追踪特定进程的 Native 堆分配
-adb shell heapprofd --pid=<PID>
+# 追踪特定进程的 Native 堆分配（主机侧 Perfetto 脚本）
+tools/heap_profile -p <PID>
 
-# Java 堆分配采样（Android 12+）：使用 Perfetto tools/heap_profile
-# 注意：heapprofd 没有 --java 稳定参数
-# 推荐：通过 Perfetto heap_profile 脚本指定 ART heap
-perfetto_heap_profile --name <package_name> --heaps com.android.art
+# 追踪特定包名的 Native 堆分配
+tools/heap_profile -n <package_name>
+
+# Java 堆分配采样：通过 --heaps 指定 ART heap
+tools/heap_profile -n <package_name> --heaps com.android.art
 ```
 
 或在 Perfetto TraceConfig 中配置：
@@ -888,7 +889,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 当前已公开的诊断路径：
 
-- **`ApplicationExitInfo`（Android 10+）**：通过 `getHistoricalProcessExitReasons()` 获取进程终止原因、状态、PSS/RSS 快照。如果 `reason == REASON_LOW_MEMORY`，说明进程被系统因内存压力终止
+- **`ApplicationExitInfo`（Android 11 / API 30+）**：通过 `getHistoricalProcessExitReasons()` 获取进程终止原因、状态、PSS/RSS 快照。`getPss()` / `getRss()` 也是 API 30 口径；Android 10 / API 29 设备无法按此路径回查低内存退出原因。如果 `reason == REASON_LOW_MEMORY`，说明进程被系统因内存压力终止
 - **`ProfilingManager`（Android 15/API 35+）**：可在内存水位达到阈值时触发系统级 Trace 采集，提供零侵入的内存异常捕获
 
 [待验证] Android 17 是否在 `ApplicationStartInfo` 中新增了上次运行周期的峰值内存回查方法。确认前可先用 `ApplicationExitInfo.getPss()` 和 `getRss()` 作为替代诊断数据源。

@@ -2,7 +2,7 @@
 title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -39,14 +39,14 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: "pending"
-last_task2b_at: '2026-05-15T15:30:00+08:00'
+task2b_state: fixed
+last_task2b_at: "2026-05-22T07:21:00+08:00"
 task9_review_notes: "2026-05-16 Task9 18:20：needs-rework。P0 1：ByteHook 被写成“无 W^X 问题”，但 upstream arm/arm64 链接 shadowhook 且 bh_trampo.c 分配 RWX trampoline。P1 1：classloader namespace 流程混淆 search path/permitted path/public libs namespace link。P2 1：16KB/Play 截止日期与版本表需补官方证据。"
 last_task6_at: "2026-05-09T07:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-07-review.md"
@@ -418,7 +418,7 @@ Android 14（API 34）针对 targetSdkVersion 34 的应用引入了 “Safer dyn
 | 库 | 类型 | 支持版本 | W^X 适配 |
 |----|------|---------|---------|
 | ShadowHook（字节跳动） | Inline Hook | Android 4.1 - 16（API 16-36） | upstream 使用 RWX mmap/mprotect，依赖 execmem 可用；W^X 严格设备可能失效 |
-| ByteHook（字节跳动） | PLT Hook | Android 4.1 - 15（API 16-35） | PLT Hook 不修改代码段，无 W^X 问题 |
+| ByteHook（字节跳动） | PLT Hook | Android 4.1 - 15（API 16-35） | PLT/GOT 改写不 patch 目标函数代码页；但 ARM/ARM64 上 upstream 通过 shadowhook 依赖 RWX trampoline 与 dlopen 监控，仍需验证 execmem/RWX 可用性 |
 | xHook（爱奇艺） | PLT Hook | Android 4.0 - 10（API 14-29） | **不支持 Android 14+** |
 
 ### 16KB Page Size 对 mprotect 页边界的影响
@@ -459,12 +459,14 @@ Android 从 7.0 (Nougat) 开始引入 Linker Namespace，用来**隔离私有系
 
 ```text
 Zygote 进程
-  → libnativeloader.so 为 Java 应用创建 classloader-namespace
-  → System.loadLibrary() 加载的库沿用 ClassLoader 的 namespace
-  → 该 namespace 限制只能从以下目录加载 SO：
-      /data
-      /mnt/expand
-      应用私有目录（/data/data/<pkg>）
+  → libnativeloader.so 为 Java 应用创建 isolated classloader-namespace
+  → namespace 的三层构成：
+      1. App 本地 JNI search path：来自 ClassLoader 的 library_path
+      2. Permitted path：允许绝对路径加载的额外目录（如 /data/data/<pkg>）
+      3. Linked namespace：通过 app_ns->Link() 链接 system namespace
+         与 APEX public libraries（public.libraries.txt /
+         apex_public_libraries 定义的 NDK/public libs 可见）
+  → 私有系统库（非 NDK）仍不可见
 ```
 
 **dlopen 的 namespace 校验逻辑**（与标准 Linux 不同）：
@@ -520,7 +522,7 @@ ShadowHook README 给出这段说明：
 | **架构支持** | armeabi-v7a, arm64-v8a, x86, x86_64 | armeabi-v7a, arm64-v8a |
 | **Namespace 绕过** | 不支持 | 支持 |
 | **典型场景** | 通用函数 Hook、IO/malloc 类监控 | 需要访问任意 ELF 符号或绕过 namespace |
-| **W^X 影响** | 无（不修改代码段） | 需修改代码页权限 + icache flush（方式因库而异：两步 RW→RX 或直接 RWX mmap） |
+| **W^X 影响** | PLT/GOT 改写不修改目标函数代码页；但 upstream ARM/ARM64 trampoline 与 dlopen 监控仍需 execmem/RWX | 需修改代码页权限 + icache flush |
 
 **ByteHook 三种 Hook 模式**（bytehook/bytehook.h）：
 

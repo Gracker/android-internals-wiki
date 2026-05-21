@@ -1610,12 +1610,25 @@
     "14.19": {
       "task6_result": "pass-light-edit",
       "task9_result": "pending"
+    },
+    "15.8": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0,
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-22T06:19:29+08:00",
+      "task6_log": "logs/review/2026-05-22-06-audit.md",
+      "task6_new_rework": true,
+      "task6_note": "闲时抽检发现缺少 outline 锚点块，无法执行锚点覆盖检查；已加入 queue priority 90 交 Task2B 补齐。"
     }
   },
   "total_review_sections": 197,
   "next_review_candidates": [],
-  "ready_for_review": 153,
-  "last_updated": "2026-05-22T05:08:00+08:00",
+  "ready_for_review": 154,
+  "last_updated": "2026-05-22T06:19:29+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
@@ -1632,7 +1645,7 @@
     "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "task9_last_review": "2026-05-22",
-  "ready_to_publish": 187,
+  "ready_to_publish": 186,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -4570,7 +4583,7 @@
   "last_task9_at": "2026-05-22T03:46:50+08:00",
   "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "25.14",
+  "last_task2a_processed_section": "5.16",
   "task6_last_review_at": "2026-05-22T05:08:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-22-05-review.md",
   "task6_last_review_sections": [
@@ -5548,6 +5561,22 @@
       "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
       "reviewed_date": "2026-05-22",
       "reviewed_by": "openclaw-task6"
+    },
+    "15.8": {
+      "section": "15.8",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "file": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_id": "task6-audit-15.8-empirical-performance-outline-missing",
+      "last_task6_audit": "2026-05-22",
+      "last_task6_at": "2026-05-22T06:19:29+08:00"
     }
   },
   "task2a_last_processed": {
@@ -5589,7 +5618,7 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "last_task2b_run": "2026-05-17T03:11:00+08:00",
+  "last_task2b_run": "2026-05-22T07:21:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-22",
@@ -5652,6 +5681,29 @@
         "task9-20260516-2.3-vsync-predictor-version-drift"
       ],
       "summary": "5 sections reworked: SELinux AVC, Throwable stack depth, UClamp/SQL/base_slice_ns, Binder freezer API, VSyncPredictor version drift"
+    },
+    {
+      "date": "2026-05-22",
+      "time": "07:21",
+      "sections_fixed": [
+        "6.1",
+        "14.6",
+        "4.5",
+        "14.13"
+      ],
+      "issues_fixed": 7,
+      "queue_ids_completed": [
+        "task9-audit-20260522-6.1-storage-fbe-io-cgroup",
+        "task9-audit-20260522-14.6-uiautomator-drag-signature",
+        "task9-20260521-4.5-app-memory-api-heapprofd-boundary",
+        "task9-20260516-14.13-bytehook-wx-namespace-risk"
+      ],
+      "source_types": [
+        "task9-deep-tech-review",
+        "task9-deep-tech-review",
+        "task9-deep-tech-review",
+        "task9-deep-tech-review"
+      ]
     }
   ],
   "task2a_result": "processed-draft",
@@ -5773,14 +5825,14 @@
   },
   "last_task2a_gap_mining": "24.13",
   "last_task2a_gap_mining_at": "2026-05-22T07:04:00+08:00",
-  "last_task6_audit": "2026-05-20T23:28:00+08:00",
+  "last_task6_audit": "2026-05-22T06:19:29+08:00",
   "last_task6_audit_sections": [
-    "19.11"
+    "15.8"
   ],
   "last_task6_audit_files": [
-    "src/part3-tools/ch19-apm/11-jankstats.md"
+    "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-22-06-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-22",
     "time": "02:04",
@@ -5882,7 +5934,7 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-22-03-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-22-05-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -6092,26 +6144,49 @@
     "section": "14.19",
     "title": "Android CLI 与 Agent 化性能调试工作流",
     "file": "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
-    "task9_result": "pending",
-    "last_task6_at": "2026-05-22T04:07:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-05-22T04:51:16+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
     "reviewed_date": "2026-05-22",
-    "reviewed_by": "openclaw-task6"
+    "reviewed_by": "openclaw-task9"
   },
-  "last_task2a_completed_at": "2026-05-22T05:19:00+08:00",
-  "section_25_14": {
-    "section": "25.14",
-    "title": "JobScheduler 调试：Pending Reasons 与 JobDebugInfo",
-    "file": "src/part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md",
+  "section_1_1": {
+    "section": "1.1",
+    "title": "Android 分层架构",
+    "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task2a_result": "draft-ready-for-review",
-    "last_task2a_at": "2026-05-22T05:19:00+08:00"
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-22T04:51:16+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
+    "reviewed_date": "2026-05-22",
+    "reviewed_by": "openclaw-task9"
+  },
+  "section_15_8": {
+    "section": "15.8",
+    "title": "Android 性能问题实证：真实世界的分类与代码模式",
+    "file": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_audit": "2026-05-22",
+    "last_task6_at": "2026-05-22T06:19:29+08:00",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
+    "queue_id": "task6-audit-15.8-empirical-performance-outline-missing",
+    "log": "logs/review/2026-05-22-06-audit.md"
   },
   "section_24_13": {
     "section": "24.13",
@@ -6123,5 +6198,6 @@
     "task2a_result": "draft-created",
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
-  }
+  },
+  "task2b_total_fixed": 4
 }
