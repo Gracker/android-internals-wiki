@@ -1,7 +1,7 @@
 {
   "total": 343,
-  "draft": 2,
-  "ready-for-review": 136,
+  "draft": 1,
+  "ready-for-review": 137,
   "finalized": 205,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-18",
@@ -4412,9 +4412,9 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md"
   ],
   "total_review_files": 24,
-  "last_task2a_at": "2026-05-21T00:55:00+08:00",
-  "last_task2a_section": "21.11",
-  "last_task2a_file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
+  "last_task2a_at": "2026-05-21T12:04:00+08:00",
+  "last_task2a_section": "2.25",
+  "last_task2a_file": "src/part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md",
   "last_task6_review": "2026-05-21",
   "last_task6_sections": [
     "21.11",
@@ -4447,9 +4447,9 @@
     "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "last_task9_at": "2026-05-20T07:37:11+08:00",
-  "last_task2a_result": "draft-to-ready-for-review",
+  "last_task2a_result": "ready-for-review",
   "ready-to-publish": 199,
-  "last_task2a_processed_section": "14.18",
+  "last_task2a_processed_section": "2.25",
   "task6_last_review_at": "2026-05-21T01:15:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-21-01-review.md",
   "task6_last_review_sections": [
