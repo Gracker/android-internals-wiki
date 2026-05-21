@@ -33,15 +33,20 @@ last_task6_audit: 2026-05-18
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task2b_result: fixed
-task2b_state: fixed
-task9_reviewed_date: 2026-04-28
+task2b_state: pending
+task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-04-28T16:21:00+08:00
+last_task9_at: "2026-05-22T06:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-06-audit.md"
+last_task9_audit: "2026-05-22"
+last_task9_audit_at: "2026-05-22T06:24:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-22-06-audit.md"
+task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：FBE System/User DE/CE 目录与伪源码片段不符合 AOSP vold FsCrypt/Utils；P1 1：I/O 优先级段落把 AOSP blkio/task profiles 误写成 cgroup v2 IO controller。"
 ---
 
 <!-- outline-start -->
