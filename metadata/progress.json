@@ -225,27 +225,24 @@
     "src/part3-tools/ch19-apm/11-jankstats.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+    "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
   ],
-  "review_summary": "Task6 2026-05-21 12: review 19.09/18.15/4.2；三章 L1/L2 通过，HWC/4.2 小修 4 处；无新增回炉，既有 Task9 pending 保留。",
+  "review_summary": "Task6 2026-05-21 19: review 22.15；四层质检通过，L1/L2 小修 12 处；无回炉项，送 Task9 技术复审。",
   "task6_review_summary": {
     "date": "2026-05-21",
-    "time": "12:11",
+    "time": "19:07",
     "sections": [
-      "19.09",
-      "18.15",
-      "4.2"
+      "22.15"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
     ],
-    "result": "3 pass-light-edit (technical pending via Task9/Task2B)",
-    "small_fixes": 4,
+    "result": "1 pass-light-edit (Task9 pending)",
+    "small_fixes": 12,
     "new_rework_items": 0,
     "auto_promoted": [],
-    "note": "Measure/HWC/4.2 写作层复审通过；官方 SDK schema、SKIP_VALIDATE、MADV_COLD 三类技术项均已有 Task9 pending queue，Task6 未重复投递。"
+    "note": "22.15 写作层复审通过；术语/中英文表达与元数据完成轻量修复。Task9 尚未通过，未自动晋升 finalized。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1581,28 +1578,26 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T17:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-21T19:07:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-21",
-    "time": "08:06",
-    "reviewed_at": "2026-05-21T08:06:00+08:00",
+    "time": "19:07",
+    "reviewed_at": "2026-05-21T19:07:00+08:00",
     "sections": [
-      "19.09",
-      "4.2"
+      "22.15"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
     ],
-    "log": "logs/review/2026-05-21-08-review.md",
+    "log": "logs/review/2026-05-21-19-review.md",
     "mode": "normal-review",
-    "result": "19.09 needs-rework; 4.2 pass-light-edit; no auto-finalized",
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 1,
-    "technical_risk_markers": 2,
+    "result": "22.15 pass-light-edit; no auto-finalized (Task9 pending)",
+    "l1_l2_fixes": 12,
+    "l3_l4_issues": 0,
+    "technical_risk_markers": 0,
     "auto_promoted": [],
-    "summary": "Task6 review 2 节：19.09 能力范围字段级表仍缺，回炉 Task2B；4.2 写作层 pass-light-edit，MADV_COLD 技术边界沿用 Task9 pending。"
+    "summary": "Task6 review 1 节：22.15 写作层通过，术语和元数据轻量修复；无新增回炉项，进入 Task9 pending。"
   },
   "task9_last_review": "2026-05-20",
   "ready_to_publish": 201,
@@ -5426,12 +5421,22 @@
       "material_count": 6
     },
     "22.15": {
-      "status": "draft",
+      "status": "ready-for-review",
       "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md",
       "title": "Compose First 与 View/Compose 混合迁移性能边界",
-      "pipeline_stage": "task2a-gap-created",
-      "task6_state": "not-started",
-      "task9_state": "not-started"
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-21",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-21",
+      "last_task6_at": "2026-05-21T19:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-21-19-review.md",
+      "task6_l1_l2_fixes": 12,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-21 Task6：四层质检通过；L1/L2 轻量修复 12 处；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2a_last_processed": {
