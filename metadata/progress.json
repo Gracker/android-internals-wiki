@@ -328,12 +328,12 @@
       "p2": 2,
       "p3": 0,
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 5,
+      "task6_l1_l2_fixes": 6,
       "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
-      "task6_log": "logs/review/2026-05-21-20-review.md",
+      "task6_reviewed_at": "2026-05-22T05:08:00+08:00",
+      "task6_log": "logs/review/2026-05-22-05-review.md",
       "task6_new_rework": false,
-      "task6_note": "补 outline 并修 L1 表述；Android 17/API/GC 数据口径等 Task9 高风险问题继续 Task2B。",
+      "task6_note": "L1/L2 小修 6 处；未新增回炉项，沿用既有 22.3 Task9 P0/P1 pending queue。",
       "reviewed_at": "2026-05-22T03:46:50+08:00",
       "log": "logs/deep-review/2026-05-22-03-deep-review.md",
       "summary": "P0 1：Android 17/API 35 映射错误；P1 1：ART GC/Young Gen pause 数据与源码 tag 未固定；P2 2：状态读取 onSizeChanged 与 derivedStateOf 约束沿用既有 suggestions。",
@@ -1615,25 +1615,21 @@
   "total_review_sections": 197,
   "next_review_candidates": [],
   "ready_for_review": 153,
-  "last_updated": "2026-05-22T04:07:00+08:00",
+  "last_updated": "2026-05-22T05:08:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
-    "time": "04:07",
-    "reviewed_at": "2026-05-22T04:07:00+08:00",
+    "time": "05:08",
+    "reviewed_at": "2026-05-22T05:08:00+08:00",
     "mode": "normal",
     "sections": [
-      "14.19",
-      "1.1",
-      "21.2"
+      "22.3"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-22-04-review.md",
-    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-05-review.md",
+    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "task9_last_review": "2026-05-22",
   "ready_to_publish": 187,
@@ -2408,9 +2404,9 @@
       "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-21",
-      "last_task6_at": "2026-05-21T20:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
+      "reviewed_date": "2026-05-22",
+      "last_task6_at": "2026-05-22T05:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-05-review.md"
     },
     "1.3": {
       "status": "finalized",
@@ -4547,33 +4543,25 @@
   "last_task2a_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "14.19",
-    "1.1",
-    "21.2"
+    "22.3"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
-  "last_task6_at": "2026-05-22T04:07:00+08:00",
+  "last_task6_at": "2026-05-22T05:08:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-22",
-    "time": "04:07",
-    "reviewed_at": "2026-05-22T04:07:00+08:00",
+    "time": "05:08",
+    "reviewed_at": "2026-05-22T05:08:00+08:00",
     "mode": "normal",
     "sections": [
-      "14.19",
-      "1.1",
-      "21.2"
+      "22.3"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-22-04-review.md",
-    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-05-review.md",
+    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
@@ -4583,12 +4571,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "5.16",
-  "task6_last_review_at": "2026-05-22T04:07:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-22-04-review.md",
+  "task6_last_review_at": "2026-05-22T05:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-22-05-review.md",
   "task6_last_review_sections": [
-    "14.19",
-    "1.1",
-    "21.2"
+    "22.3"
   ],
   "sections_status": {
     "22.11": {
@@ -5607,31 +5593,23 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-22",
-    "time": "04:07",
-    "reviewed_at": "2026-05-22T04:07:00+08:00",
+    "time": "05:08",
+    "reviewed_at": "2026-05-22T05:08:00+08:00",
     "mode": "normal",
     "sections": [
-      "14.19",
-      "1.1",
-      "21.2"
+      "22.3"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
-    "log": "logs/review/2026-05-22-04-review.md",
-    "result": "14.19/1.1 pass-light-edit；21.2 needs-rework（合并既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-05-review.md",
+    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5876,9 +5854,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "14.19",
-    "1.1",
-    "21.2"
+    "22.3"
   ],
   "task2b_progress": [
     {
@@ -5907,7 +5883,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-22-03-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+  "last_task6_review_log": "logs/review/2026-05-22-05-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",

@@ -15,13 +15,13 @@ sources:
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
 pipeline_stage: task2b_pending
-task2b_result: fixed  # 2026-05-22 rework: Pausable Composition scope, ComposeView/RecyclerView lifecycle
+task2b_result: pending  # 2026-05-22 task6: existing Task9 P0/P1 remains
 task2b_state: pending
-task6_state: revisiting
-last_task6_at: "2026-05-21T20:11:00+08:00"
+task6_state: reviewed
+last_task6_at: "2026-05-22T05:08:00+08:00"
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-21"
+reviewed_date: "2026-05-22"
 task6_result: needs-rework
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -29,7 +29,7 @@ task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T03:46:50+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
 task9_review_notes: "2026-05-22 task9 deep-review: 复核 22.3 仍有 P0 1 / P1 1（Android 17/API 与 ART GC 数据支撑），已合并既有 queue。"
-last_task6_review_log: "logs/review/2026-05-21-20-review.md"
+last_task6_review_log: "logs/review/2026-05-22-05-review.md"
 ---
 # Jetpack Compose 性能优化
 
@@ -180,7 +180,7 @@ fun AnimatedBox() {
 }
 ```
 
-场景 B 的性能优势在动画场景下非常明显：一个 60fps 的颜色动画，如果走 Composition 阶段，每秒触发 60 次重组；如果走 Draw 阶段，每秒只触发 60 次绘制——绘制本身是 GPU 操作，比重新执行 Composable 函数体的 CPU 开销小一到两个数量级。
+场景 B 的差别主要体现在 CPU 侧工作量：一个 60fps 的颜色动画，如果走 Composition 阶段，每秒触发 60 次重组；如果走 Draw 阶段，每秒只触发 60 次绘制，避免反复执行 Composable 函数体。
 
 **实战判断规则**：
 - 如果状态变化只影响视觉效果（颜色、透明度、位移、缩放），用 `Modifier.graphicsLayer` 或 `Modifier.drawBehind` 在 Draw 阶段读取。
@@ -287,7 +287,7 @@ Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 
 `apply()` 是 Pausable Composition 的提交阶段：只有当所有组合工作完成后，变更才会被提交到 UI 树。未完成的 UI 子树不会被渲染。
 
 **对开发者的意义**：
-1. 长列表滚动的卡顿率显著降低，不需要开发者做任何代码改动。
+1. 在已启用的 LazyColumn/LazyRow 预取路径中，Pausable Composition 可以减少预取组合阻塞当前帧的概率；是否生效取决于具体 Foundation 版本和 flag 状态。
 2. 以前为了规避组合阻塞而做的各种拆分优化（手动将大 Composable 拆成小函数），在 Compose 1.10 上的效果减弱了——运行时层面已经做了时间切片。
 3. 但 `derivedStateOf`、key、stable 参数等优化仍然有效——Pausable Composition 解决的是单帧阻塞问题，不解决不必要的重组问题。
 
@@ -357,7 +357,7 @@ composeCompiler {
 
 关注 `*_composables.txt` 中的关键字段：
 
-```
+```text
 restartable     — 函数可以被独立重启（不在内联 Composable 内部）
 skippable       — 函数可以被跳过（所有参数都是 Stable）
 ```
@@ -494,7 +494,7 @@ AndroidView(
 | Compose-View 混合 | ComposeView 的 ViewCompositionStrategy 是否正确 | 代码审查 |
 | Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda；2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 
-[自动发现]：Compose 1.9+ 的 `TextMeasurer` API 支持在后台线程（`TextMeasurer.measure`）预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。开发者需要主动使用 `TextMeasurer` 并在 Composable 之外调用 `measure()`，不是自动生效的后台预热。[待验证: 需确认具体 Compose Foundation 版本引入的 TextMeasurer API 稳定化时间和后台线程调用约束]
+**补充待验证**：Compose 1.9+ 的 `TextMeasurer` API 支持在后台线程（`TextMeasurer.measure`）预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。开发者需要主动使用 `TextMeasurer` 并在 Composable 之外调用 `measure()`，不是自动生效的后台预热。[待验证: 需确认具体 Compose Foundation 版本引入的 TextMeasurer API 稳定化时间和后台线程调用约束]
 
 
 ## 源码调研补充（2026-05-15）
@@ -551,7 +551,7 @@ interface LazyLayoutCacheWindow {
 }
 ```
 
-## GC-Composition 因果链：ART分代GC对Compose重组性能的影响（2026-05-16）
+## GC-Composition 因果链：ART 分代 GC 对 Compose 重组性能的影响（2026-05-16）
 
 ### 核心结论
 
@@ -588,7 +588,7 @@ if (ShouldRunBackgroundGc(collector_type, ...)) {
 ### Compose Snapshot 系统与 GC 根对象
 
 **状态变化感知链**（`androidx.compose.runtime.snapshots/Snapshot.kt`，AndroidX androidx-main）：
-```
+```text
 mutableStateOf<T>.value = newValue
   → Snapshot.registerWrite()
   → SnapshotStateObserver.invalidate()
@@ -616,7 +616,7 @@ mutableStateOf<T>.value = newValue
 
 | 优化项 | GC 压力 | Compose 性能 | 推荐度 |
 |--------|---------|-------------|--------|
-| Strong Skipping（Kotlin 2.0+） | ↓ Young Gen 压力 | ↑↑ 帧率显著提升 | ⭐⭐⭐ |
+| Strong Skipping（Kotlin 2.0+） | ↓ Young Gen 压力 | 减少不必要重组 | ⭐⭐⭐ |
 | 延迟状态读取到 Draw 阶段 | 无影响 | ↑ 减少重组范围 | ⭐⭐⭐ |
 | 避免不必要的全页重组 | ↓ 间接减少分配 | ↑↑ 帧率提升最显著 | ⭐⭐⭐ |
 | 调整 GC 参数（DeviceConfig） | 可调整 pause 时间 | 效果有限 | ⭐ |
