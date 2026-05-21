@@ -15373,7 +15373,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
@@ -15388,7 +15388,9 @@
       ],
       "gap_score": 18,
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T17:04:00+08:00"
+      "added_at": "2026-05-21T17:04:00+08:00",
+      "completed_date": "2026-05-21T18:13:00+08:00",
+      "completed_reason": "Task 2A 加工完成：基于 Compose First 官方公告、Compose interop/performance 文档、Compose Foundation 1.9/1.10 release notes、本地 Pausable Composition 调研与 Clippings 结构参考，补齐 View/Compose 混合迁移性能边界、版本边界和验收指标；状态改为 ready-for-review。"
     },
     {
       "id": "task9-audit-20260521-7.13-systemui-multidisplay-source-anchors",
@@ -16701,7 +16703,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
@@ -16716,7 +16718,9 @@
       ],
       "gap_score": 18,
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-21T17:04:00+08:00"
+      "added_at": "2026-05-21T17:04:00+08:00",
+      "completed_date": "2026-05-21T18:13:00+08:00",
+      "completed_reason": "Task 2A 加工完成：基于 Compose First 官方公告、Compose interop/performance 文档、Compose Foundation 1.9/1.10 release notes、本地 Pausable Composition 调研与 Clippings 结构参考，补齐 View/Compose 混合迁移性能边界、版本边界和验收指标；状态改为 ready-for-review。"
     }
   ],
   "last_task2a_completed": "24.11",
