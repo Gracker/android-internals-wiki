@@ -1,6 +1,6 @@
 {
-  "total": 362,
-  "draft": 21,
+  "total": 363,
+  "draft": 22,
   "ready-for-review": 154,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -4538,9 +4538,9 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "total_review_files": 37,
-  "last_task2a_at": "2026-05-22T05:19:00+08:00",
-  "last_task2a_section": "25.14",
-  "last_task2a_file": "src/part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md",
+  "last_task2a_at": "2026-05-22T07:04:00+08:00",
+  "last_task2a_section": "24.13",
+  "last_task2a_file": "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
     "22.3"
@@ -4568,7 +4568,7 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "last_task9_at": "2026-05-22T03:46:50+08:00",
-  "last_task2a_result": "draft-ready-for-review",
+  "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.14",
   "task6_last_review_at": "2026-05-22T05:08:00+08:00",
@@ -5771,8 +5771,8 @@
     "auto_finalized": [],
     "log": "logs/deep-review/2026-05-22-03-deep-review.md"
   },
-  "last_task2a_gap_mining": "14.19",
-  "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
+  "last_task2a_gap_mining": "24.13",
+  "last_task2a_gap_mining_at": "2026-05-22T07:04:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -6112,5 +6112,16 @@
     "pipeline_stage": "task6_pending",
     "task2a_result": "draft-ready-for-review",
     "last_task2a_at": "2026-05-22T05:19:00+08:00"
+  },
+  "section_24_13": {
+    "section": "24.13",
+    "title": "Photo Picker、媒体转码与缓存治理",
+    "file": "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "task2a_state": "created_by_gap_mining",
+    "task2a_result": "draft-created",
+    "created_at": "2026-05-22T07:04:00+08:00",
+    "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   }
 }
