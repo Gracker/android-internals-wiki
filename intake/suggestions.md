@@ -2830,3 +2830,11 @@
 - **问题**：该小节已正确把 Flutter Engine 自动接入 ADPF 改成待验证，但仍用“Flutter 自绘每一帧的内容，因此负载波动更剧烈”解释 ADPF 适配价值。Flutter 有 retained layer tree、raster cache、图片缓存等机制；原生 Android 也会按脏区、RenderNode 和硬件层缓存影响重绘成本。这个对比缺少源码或 trace 数据支撑，容易把“跨平台自绘”简化成“每帧全部内容重绘”。
 - **建议**：保留 ADPF 作为平台能力说明即可；如要比较 Flutter 与原生负载波动，补 Flutter raster cache / layer tree 的源码锚点和目标设备 Perfetto 数据，否则删除该因果判断。
 
+
+
+## [Task9 Deep Review] 5.16 GPU/NPU 异构负载调度与功耗归因 — 2026-05-22 01:31
+- **类型**：交叉引用一致性
+- **位置**：frontmatter L12 `related_chapters` 与 L204 正文交叉引用
+- **问题**：正文引用 5.4、5.12、5.13，但 frontmatter `related_chapters` 未包含 5.4；同时 5.14 目标文件只有 `chapter: "5.14"`，缺少 `section: "5.14"`，依赖 `section` 字段的自动化索引可能漏掉目标章节。
+- **建议**：本节 metadata 补 `5.4`；另开 metadata 小修，为 `src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md` 补 `section: "5.14"`。
+- **review 日志**：logs/deep-review/2026-05-22-01-deep-review.md

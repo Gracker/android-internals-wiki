@@ -15908,6 +15908,42 @@
       "added_at": "2026-05-22T00:12:00+08:00",
       "completed_date": "2026-05-22",
       "completed_reason": "Task 2A 内容加工完成，章节状态已改为 ready-for-review，进入 Task 6 管线。"
+    },
+    {
+      "id": "task9-deep-20260522-5.16-adpf-gpu-workduration-boundary",
+      "section": "5.16",
+      "section_title": "GPU/NPU 异构负载调度与功耗归因",
+      "priority": 85,
+      "title": "ADPF Android 15/16 GPU duration 与 workload hint 版本边界需补齐",
+      "description": "本轮 Task9 深审发现 §5.16 将 ADPF 概括为线程/CPU 工作量表达，遗漏 Android 15 `reportActualWorkDuration2()` 的 CPU/GPU duration 分解和 API 36 NDK workload hints 的 CPU/GPU 变化提示，导致 Android 15-17 边界过窄。",
+      "reason": "[Deep Tech Review] §5.16 的 ADPF 异构负载边界遗漏 Android 15/16 公开 NDK GPU workload 表达能力，需回炉修正。",
+      "issue_type": "version-difference-source-accuracy-adpf",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-01-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/include/android/performance_hint.h",
+        "https://source.android.com/docs/core/perf/performance-hint-api"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/ADPF GPU work duration 与 workload hint 边界",
+          "location": "L126-L141：`ADPF 只能表达线程工作量` 小节",
+          "detail": "正文把 ADPF 归纳为线程组目标时长/实际时长与 CPU 调度预算，并写“系统看到的是线程没有占满 CPU，而不是加速器需要更高频率”。这对 Android 12-14 的基础 PerformanceHint 口径基本成立，但章节适用范围写到 Android 17，遗漏 Android 15/API 35 与 Android 16/API 36 的公开 NDK 边界：AOSP android-16.0.0_r1 `frameworks/native/include/android/performance_hint.h` 中 `AWorkDuration` 已包含 `AWorkDuration_setActualCpuDurationNanos()` / `AWorkDuration_setActualGpuDurationNanos()`，`APerformanceHint_reportActualWorkDuration2()` 以 `__ANDROID_API_V__` 引入并要求 actual CPU/GPU duration 至少一项大于 0；`APerformanceHint_notifyWorkloadIncrease/Reset/Spike(session, bool cpu, bool gpu, ...)` 以 API 36 引入，可声明 CPU/GPU 工作量变化。当前写法会让 Android 15-17 读者误以为 ADPF 完全不能表达 GPU 侧 workload，只能看线程 CPU 忙闲。",
+          "suggestion": "把 ADPF 小节按版本拆开：API 31/33 基础 session 表达线程组 target/actual duration；API 35 增加 `setPreferPowerEfficiency()` 与 `reportActualWorkDuration2()` 的 CPU/GPU duration 分解；API 36 NDK workload hints 可标记 CPU/GPU increase/reset/spike。结论保留为“ADPF 不是应用侧 GPU/NPU 调频或 NPU 调度 API，不能保证厂商 governor/driver 响应”，但不要写成“只能表达 CPU/线程工作量”；NPU 仍应单独标注为无通用公开控制面。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T01:31:51+08:00",
+      "review_log": "logs/deep-review/2026-05-22-01-deep-review.md"
     }
   ],
   "metadata": {
