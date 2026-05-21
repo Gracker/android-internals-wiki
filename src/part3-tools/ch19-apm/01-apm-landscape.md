@@ -2,7 +2,7 @@
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -32,19 +32,25 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: "2026-04-25T07:04:06+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-26"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T23:27:38+08:00"
+last_task9_at: "2026-05-21T15:48:06+08:00"
+last_task9_audit: "2026-05-21"
+last_task9_audit_at: "2026-05-21T15:48:06+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-21-15-audit.md"
+review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。"
+task9_review_notes: "2026-05-21 Task9 idle audit: P0 AppExitInfoTracker 源码位置与 ApplicationExitInfo reason 常量错误，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。"
 ---
 
 # APM 全景图与分类体系
