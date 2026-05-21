@@ -39,7 +39,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
@@ -58,7 +58,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T09:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-09-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-09-audit.md",
+      "completed_date": "2026-05-21T11:19:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: SKIP_VALIDATE 版本边界从 HWC3/AIDL 引入修正为 HWC2 Android 8+ 已存在（hwcomposer2.h）；HWC3 AIDL 标注 @deprecated/enabled by default；SurfaceFlinger canSkipValidate 条件修正为 frameUsesClientComposition + present timing 保护 + presentOrValidate() 回退"
     },
     {
       "id": "task6-20260521-19.09-measure-capability-fields",
@@ -72,7 +74,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/09-measure.md"
@@ -91,7 +93,9 @@
       "added_by": "task6-review",
       "added_at": "2026-05-21T08:06:00+08:00",
       "original_review_log": "logs/review/2026-05-21-08-review.md",
-      "related_completed_queue": "task6-19.09-measure-outline-coverage"
+      "related_completed_queue": "task6-19.09-measure-outline-coverage",
+      "completed_date": "2026-05-21T11:19:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: 补充能力范围字段级表（10 项能力 × 5 维度：Crash/ANR/HTTP/启动/App size/CPU/内存/点击/页面导航），含端侧来源、关键字段、适合判断和边界/不支持项；native crash 标注官方尚未支持"
     },
     {
       "id": "task9-20260521-4.2-art-madv-cold-source",
@@ -106,7 +110,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
@@ -125,7 +129,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T07:34:33+08:00",
-      "review_log": "logs/deep-review/2026-05-21-07-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-21-07-deep-review.md",
+      "completed_date": "2026-05-21T11:19:08+08:00",
+      "completed_reason": "Task 2B 回炉修复: Android 17 ART→MADV_COLD 从'已有具体实现'改为'待验证方向'；补 AOSP platform/art 核验结果（未找到 MADV_COLD 调用）；补内核 madvise.c 语义（folio_deactivate / lru_gen_clear_refs）；列出需补齐的验证清单"
     },
     {
       "id": "task9-audit-20260521-18.20-drawframetask-queuebuffer-source",
@@ -655,7 +661,7 @@
       "created_date": "2026-05-11",
       "assigned_to": "research-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "blocked",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
@@ -667,7 +673,9 @@
           "detail": "Task6 本轮确认该证据缺口仍影响正文判断边界。",
           "suggestion": "补实机 Perfetto trace 或官方/vendor kernel 材料后再转 Task9。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-21T11:19:08+08:00",
+      "completed_reason": "需要实机 Perfetto trace 或官方/vendor kernel 材料，Task 2B 无法仅凭源码修复，标记 blocked 等待研究素材"
     },
     {
       "id": "task9-20.4-dispatchers-io-degradation",

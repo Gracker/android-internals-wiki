@@ -2,7 +2,7 @@
 title: Measure
 chapter: '19'
 section: '19.09'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -32,14 +32,15 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: '2026-04-24T14:55:00+08:00'
 last_task2b_at: "2026-05-21T07:17:00+08:00"
@@ -131,8 +132,24 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 | Bug report | 用户主动反馈和设备侧现场补充 |
 | Custom traces | 业务关键路径耗时观测 |
 
-[需补充素材: 大纲要求按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航列出数据来源、关键字段和适用判断；当前表格只覆盖能力名称和适合问题。]
-[存疑: Task9 已标记 Measure Android native crash reporting、ANR App Exit Info tombstone 与各平台符号化材料边界未闭合，发布前需要补官方能力边界。]
+### 能力范围字段级明细
+
+上表是能力概览，下面按每个能力拆出具体的数据来源、关键字段和判断边界。
+
+| 能力 | Measure 事件 / 字段 | 端侧来源 | 适合判断 | 边界 / 不支持项 |
+|---|---|---|---|---|
+| Crash（Java） | `error` type=crash，含 thread trace / stack frames / exception class / message | `Thread.UncaughtExceptionHandler` | 崩溃大盘趋势、版本回归、Top-N 聚合 | 混淆堆栈需要 mapping 文件上传后才能还原 |
+| Crash（Native） | `error` type=crash，含 native stack frames / signal / fault address | signal handler（`sigaction`） | Native 崩溃捕获和符号还原 | 官方文档明确 Android native C/C++ crash reporting 尚未支持（截至 2026-05）；需要自行集成 Breakpad / Crashpad 或等待官方实现 |
+| ANR | `error` type=anr，含 thread dump / CPU usage / memory snapshot | `ApplicationExitInfo`（API 30+）或 Watchdog timer | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下无法用 `ApplicationExitInfo`，回退到 Watchdog 轮询；主线程堆栈深度受系统限制 |
+| HTTP | `http` 事件，含 url / method / status_code / request_duration / response_body（opt-in） | OkHttp Interceptor 或 `URLConnection` 包装 | 慢接口定位、错误率趋势、请求与崩溃时序关联 | body 采集默认关闭，需白名单配置；URL pattern 归并粒度由 dashboard 配置 |
+| 启动时间 | `trace` name 含 startup，duration_ms；`session` 含 cold/warm/hot 标记 | SDK 初始化 → `Activity.onResume` / first frame drawn | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
+| App size | `resource` / session 属性，含 app_build_size / download_size | 构建产物分析（非运行时采集） | 包体积趋势、模块级拆分定位 | 非实时采集；需要 CI/CD 集成才能持续跟踪 |
+| CPU 使用率 | `resource` type=cpu，含 cpu_usage / cpu_cycles / thread_count | `/proc/stat` + `Process.cpuUsage()` | CPU 异常升高与崩溃/ANR 的时序关联 | 采样间隔受 SDK 配置约束；不区分 per-thread CPU 除非自定义 trace |
+| 内存使用 | `resource` type=memory，含 java_heap / native_heap / total_pss / rss | `Debug.getMemoryInfo()` + `/proc/self/statm` | 内存泄漏趋势、OOM 前后内存曲线 | 细粒度对象级泄漏需要 heap dump 分析，Measure 不直接提供 |
+| 用户点击 | `event` type=click，含 target / coordinates / timestamp | `View.OnClickListener` 自动追踪或手动 `track()` | 用户操作路径还原、崩溃前操作序列 | 自动追踪依赖 View 结构注入；自定义 View 需手动埋点 |
+| 页面导航 | `screen` 事件，含 screen_name / entry_type / duration | Activity / Fragment 生命周期回调 | 页面停留时长、导航路径、页面级崩溃率 | Fragment 追踪依赖手动配置 screen name；Jetpack Navigation 需适配 |
+
+[已验证: Measure GitHub docs/README.md + sdk-integration-guide.md；native crash / ANR App Exit Info 边界基于 docs/features/feature-crash-reporting.md 与 feature-anr-reporting.md]
 
 这些能力组合起来后，Measure 更像移动端“可观测性平台”。它不只收一个指标，而是把会话中的多个事件放在同一条时间线上。
 
