@@ -1,6 +1,6 @@
 {
-  "total": 359,
-  "draft": 21,
+  "total": 360,
+  "draft": 22,
   "ready-for-review": 150,
   "finalized": 188,
   "task9_result": "needs-rework",
@@ -1612,8 +1612,8 @@
   "total_review_sections": 171,
   "next_review_candidates": [],
   "ready_for_review": 105,
-  "last_updated": "2026-05-21T20:11:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-22T00:12:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-21",
     "time": "20:11",
@@ -5742,8 +5742,8 @@
     ],
     "log": "logs/deep-review/2026-05-21-19-deep-review.md"
   },
-  "last_task2a_gap_mining": "22.15",
-  "last_task2a_gap_mining_at": "2026-05-21T17:04:00+08:00",
+  "last_task2a_gap_mining": "5.16",
+  "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00",
   "last_task6_audit": "2026-05-20T23:28:00+08:00",
   "last_task6_audit_sections": [
     "19.11"
@@ -5753,29 +5753,29 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-20-23-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-05-21",
-    "time": "17:04",
+    "date": "2026-05-22",
+    "time": "00:12",
     "mode": "gap-mining",
     "created_sections": [
-      "22.15"
+      "5.16"
     ],
     "created_files": [
-      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "candidate_count": 5,
+    "candidate_count": 4,
     "qualified_count": 1,
     "qualified_candidates": [
       {
-        "section": "22.15",
-        "title": "Compose First 与 View/Compose 混合迁移性能边界",
-        "score": 18,
-        "material_count": 5,
-        "source": "每日信息/官方文档/研究素材",
-        "file": "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+        "section": "5.16",
+        "title": "GPU/NPU 异构负载调度与功耗归因",
+        "score": 16,
+        "material_count": 6,
+        "source": "章节深挖/素材驱动/官方文档",
+        "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
       }
     ],
-    "source": "每日信息/官方文档/研究素材/AOSP结构对照",
-    "note": "Phase 0 未发现空 draft；本轮对 2026-05-21 Android Developers Blog、Compose 官方性能文档和本地 DeepResearch 素材进行比对，Compose First 后的 View/Compose 混合迁移缺少独立实战章节。"
+    "source": "5.3 扩展锚点/DeepResearch/官方文档/AOSP 结构对照",
+    "note": "Phase 0 未发现空 draft；本轮对 5.3 GPU+NPU 协同调度占位、Android 17 NPU/LiteRT 素材、ADPF 与 thermal 官方文档进行比对，确认缺少把异构卸载、调度观测、功耗归因放在一起的独立章节。"
   },
   "section_5_15": {
     "section": "5.15",
@@ -5895,15 +5895,15 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "date": "2026-05-21",
-    "time": "17:04",
+    "date": "2026-05-22",
+    "time": "00:12",
     "created_sections": [
-      "22.15"
+      "5.16"
     ],
     "created_files": [
-      "src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md"
+      "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
     ],
-    "reason": "现有 22.3 偏 Compose 性能优化点，7.7 偏流畅性专题；缺少 Compose First 后新增 UI、存量 View 页面、interop、工具验收和版本边界放在一起的迁移章节。"
+    "reason": "5.3 只留下 GPU+NPU 协同调度占位；5.11/5.14 分别偏端侧 AI 管线与 NPU 访问边界，缺少面向性能分析的异构负载调度、可观测性和功耗归因章节。"
   },
   "last_task2a_processed_status": "draft",
   "section_21_11": {
@@ -6034,5 +6034,15 @@
     "last_task9_at": "2026-05-21T19:35:29+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
     "section": "22.15"
+  },
+  "section_5_16": {
+    "section": "5.16",
+    "title": "GPU/NPU 异构负载调度与功耗归因",
+    "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+    "status": "draft",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-22",
+    "gap_score": 16,
+    "pipeline_stage": "task2a_pending"
   }
 }

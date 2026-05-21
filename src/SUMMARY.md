@@ -111,6 +111,7 @@ tags:
   - [5.13 移动端 LLM 推理的 DVFS 与能效边界](part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md)
   - [5.14 Android 17 ML Runtime 与 NPU 访问边界](part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md)
   - [5.15 SensorService 与传感器批处理功耗模型](part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md)
+  - [5.16 GPU/NPU 异构负载调度与功耗归因](part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
