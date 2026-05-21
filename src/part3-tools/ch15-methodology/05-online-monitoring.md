@@ -35,14 +35,11 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-25'
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 last_task9_at: "2026-05-21T13:31:48+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
@@ -158,7 +155,7 @@ Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、
 | `LAYOUT_MEASURE` | measure/layout 耗时 | Traversal 回调 |
 | `DRAW` | draw 耗时 | Traversal 回调 |
 | `SYNC` | 同步阶段耗时 | RenderThread |
-| `COMMAND_ISSUE` | GPU 命令执行耗时 | GPU |
+| `COMMAND_ISSUE_DURATION` | GPU 命令下发耗时 | GPU |
 | `SWAP_BUFFERS` | Buffer 交换耗时 | BufferQueue |
 | `TOTAL_DURATION` | 帧总耗时 | 全流程 |
 | `FIRST_DRAW_FRAME` | 首帧绘制标记 | 冷启动首帧 |
@@ -170,17 +167,20 @@ Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、
 从 API 31 开始，FrameMetrics 还新增了 `DEADLINE` 指标，直接告诉你这一帧的 deadline 是多少（取决于当前屏幕刷新率）。有了 deadline，判断掉帧就不再需要硬编码 16ms，而是直接比较 `TOTAL_DURATION` 和 `DEADLINE`：
 
 ```java
+// 所有值单位为纳秒 (ns)
+long totalDurationNanos = metrics.getMetric(FrameMetrics.TOTAL_DURATION);
+
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    long deadline = metrics.getMetric(FrameMetrics.DEADLINE);
-    long totalDuration = metrics.getMetric(FrameMetrics.TOTAL_DURATION);
-    boolean isJank = totalDuration > deadline;
+    // API 31+：直接读取系统给出的 deadline
+    long deadlineNanos = metrics.getMetric(FrameMetrics.DEADLINE);
+    boolean isJank = totalDurationNanos > deadlineNanos;
 } else {
-    // API 24-30：通过 DisplayManager 获取屏幕刷新率来计算 deadline
+    // API 24-30：通过屏幕刷新率计算 deadline
     Display display = context.getSystemService(DisplayManager.class)
             .getDisplay(Display.DEFAULT_DISPLAY);
     float refreshRate = display.getRefreshRate();
     long deadlineNanos = (long) (1_000_000_000.0 / refreshRate);
-    boolean isJank = totalDuration > deadlineNanos;
+    boolean isJank = totalDurationNanos > deadlineNanos;
 }
 ```
 
@@ -195,7 +195,7 @@ FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获�
 
 第一个问题是**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
 
-第二项是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。低版本回退到 `ViewTreeObserver.OnPreDrawListener` 时，这个监听点还承担同步锚点的作用：业务侧写入的页面、操作、列表状态，会和帧信号重新匹配，避免纯 FrameMetrics 上报只有耗时而缺少业务 context。
+第二项是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。低版本回退到 `ViewTreeObserver.OnPreDrawListener` 时，这个监听点还承担同步锚点的作用：业务侧写入的页面、操作、列表状态，会和帧信号重新匹配，避免纯 FrameMetrics 上报只有耗时而缺少业务上下文。
 
 ```java
 performanceMetricsState.putState("navigation", "HomeFragment");
@@ -210,7 +210,7 @@ performanceMetricsState.putState("user_action", "scrolling_feed");
 
 再往前走一步，线上体系通常会把二者的职责切开：
 
-- `JankStats` 负责更统一的帧级感知与 UI context
+- `JankStats` 负责更统一的帧级感知与 UI 上下文
 - `FrameMetrics` 负责在高版本设备上补更细的分阶段耗时
 
 不要把二者理解成非此即彼。对大多数团队，更合理的是“用 `JankStats` 做主信号，用 `FrameMetrics` 做高版本增强”。
@@ -235,7 +235,7 @@ Android 把 App 启动分为三种类型，线上监控需要分别度量：
 
 **TTID（Time To Initial Display）**：从 App 启动到第一帧渲染完成的时间。它反映的是"用户看到画面需要等多久"。系统会在 logcat 中输出 `Displayed` 日志记录这个时间，你也可以通过 `adb shell am start -W` 命令获取。但 TTID 有一个陷阱：第一帧可能是一个空白 loading 页面或闪屏，用户虽然"看到了东西"，但 App 还不能交互。
 
-**TTFD（Time To Full Display）**：从 App 启动到内容完全加载并可交互的时间。它反映的是"用户真正能开始使用需要等多久"。这个指标需要开发者自己定义"完全可交互"的时机，并通过调用 `Activity.reportFullyDrawn()` 来标记。
+**TTFD（Time To Full Display）**：从 App 启动到内容完全加载并可交互的时间。它反映的是"用户要等多久才能开始使用"。这个指标需要开发者自己定义"完全可交互"的时机，并通过调用 `Activity.reportFullyDrawn()` 来标记。
 
 ```java
 @Override
@@ -262,7 +262,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 **手动埋点**是最传统的方式：在 `Application.attachBaseContext()` 记录起点时间戳，在 `Activity.onWindowFocusChanged()` 或自定义的"可交互"时刻记录终点时间戳，两者之差就是启动耗时。这种方式灵活但维护成本高——如果有人改了启动流程忘了更新埋点，数据就不准了。
 
-手动埋点最大的价值是可以拆分启动子阶段：初始化 SDK 花了多少时间、加载首屏数据花了多少时间、渲染首帧花了多少时间。这些细粒度数据对定位启动瓶颈至关重要。
+手动埋点最大的价值是可以拆分启动子阶段：初始化 SDK 花了多少时间、加载首屏数据花了多少时间、渲染首帧花了多少时间。这些细粒度数据对定位启动瓶颈是直接输入。
 
 **系统 API 自动采集**则依赖 Android 框架提供的能力。从 API 24 开始，系统在 logcat 中输出的 `Displayed` 日志就包含了 TTID 信息。更现代的做法是使用 Jetpack Macrobenchmark 库在 CI 环境中持续度量启动时间，但这属于测试侧，不是线上监控。
 
@@ -358,7 +358,7 @@ for (ApplicationExitInfo info : exitInfos) {
 
 成熟的 APM 系统通常采用三层采样策略：
 
-**第一层：全量采集基础指标（低开销）**。每个用户会话都采集聚合数据：会话总帧数、掉帧总数、冷启动 TTID/TTFD、ANR 次数、崩溃次数。这些数据量很小（每次会话几十字节），但对建立性能基线至关重要。它能回答"我们的 App 整体性能怎么样"这个问题。
+**第一层：全量采集基础指标（低开销）**。每个用户会话都采集聚合数据：会话总帧数、掉帧总数、冷启动 TTID/TTFD、ANR 次数、崩溃次数。这些数据量很小（每次会话几十字节），但对建立性能基线是必需的。它能回答"我们的 App 整体性能怎么样"这个问题。
 
 **第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 拆解数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。要保证采样是随机的，不能只采高端设备。
 
@@ -454,7 +454,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 ## 采样、聚合与报警策略
 
-线上监控真正难的部分，不是采一个指标，而是决定“采多少、什么时候报、报了之后怎么用”。
+线上监控的难点不是采一个指标，而是决定“采多少、什么时候报、报了之后怎么用”。
 
 ### 采样
 
@@ -492,10 +492,10 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 客户端最擅长的是感知和取证，平台最擅长的是聚合和回查。成熟方案通常会明确这个边界：
 
-- **客户端**：采集信号、记录 context、在异常时补现场
+- **客户端**：采集信号、记录上下文、在异常时补现场
 - **平台**：聚合趋势、机型对比、版本回归、报警、问题榜单
 
-二者任何一边过弱，线上监控都会失真。只有客户端、平台、修复流程一起成立，线上性能监控才真正有治理价值。
+二者任何一边过弱，线上监控都会失真。只有客户端、平台、修复流程一起成立，线上性能监控才有治理价值。
 
 ## 在 Perfetto 中的表现
 
@@ -512,8 +512,8 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 - **误区 1：把线上监控当成线下工具的替代品**  
   它们是互补，不是替换关系。
 
-- **误区 2：只采总指标，不采 context**  
-  没有页面、场景、版本、机型 context，后续归因会非常难。
+- **误区 2：只采总指标，不采上下文**  
+  没有页面、场景、版本、机型上下文，后续归因会非常难。
 
 - **误区 3：异常证据全量上传**  
   成本和隐私都会迅速失控。
@@ -541,11 +541,11 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 ## 常见问题与误区
 
-**"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。真正拖慢 App 的是在回调中做 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
+**"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。拖慢 App 的通常是回调中的 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
 
 **"ANR Watchdog 能替代 ApplicationExitInfo"**——不能完全替代。Watchdog 是基于启发式的（"主线程 N 秒没响应就认为 ANR"），而 ApplicationExitInfo 提供的是系统认定的 ANR 事件。两者的数据口径不同，Watchdog 的误报率更高。在 API 30+ 设备上应该优先使用 ApplicationExitInfo。
 
-**"采样率越高质量越好"**——不是。5% 的随机采样对于日活百万级的 App 已经能提供统计意义上足够精确的 P95 估计。盲目提高采样率只会增加成本，不增加决策价值。真正需要全量采集的是异常会话（ANR/崩溃/严重卡顿），而不是正常用户的行为。
+**"采样率越高质量越好"**——不是。5% 的随机采样对于日活百万级的 App 已经能提供统计意义上足够精确的 P95 估计。盲目提高采样率只会增加成本，不增加决策价值。需要全量采集的是异常会话（ANR/崩溃/严重卡顿），而不是正常用户的行为。
 
 **"启动耗时只需要监控冷启动"**——不够。虽然冷启动是优化重点，但温启动和热启动的用户体验同样重要。很多 App 的温启动因为 Activity 重建时的数据加载而变慢，这个问题只有监控温启动才能发现。
 
