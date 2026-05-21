@@ -2670,3 +2670,9 @@
 - **问题**：Task2B 标记完成后，正文仍只有“能力 / 适合的问题”二列表，未按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航拆出数据来源、关键字段和适用判断。
 - **建议**：补一张字段级能力范围表，列出 Measure 事件/字段、端侧来源、适合判断、边界/不支持项和验证来源；与 Task9 的 native crash / ANR / 符号化边界问题合并处理。
 - **review 日志**：logs/review/2026-05-21-08-review.md
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-21
+- **类型**：源码准确性 / FrameMetrics 指标口径
+- **位置**：L150-L157 FrameMetrics 指标表
+- **问题**：表格使用 `UNKNOWN_DELAY` / `INPUT_HANDLING` / `COMMAND_ISSUE` 等缩写，和公开 API 常量名不完全一致；其中 `COMMAND_ISSUE` 被写成 “GPU 命令执行耗时”。AOSP `FrameMetrics.java` 中公开常量是 `UNKNOWN_DELAY_DURATION`、`INPUT_HANDLING_DURATION`、`COMMAND_ISSUE_DURATION` 等；`COMMAND_ISSUE_DURATION` 表示 issuing draw commands to the GPU，GPU 完成耗时另有 `GPU_DURATION`。
+- **建议**：把指标列改为公开常量名（`*_DURATION`）；将 `COMMAND_ISSUE_DURATION` 的含义改为 RenderThread/HWUI 向 GPU 提交 draw commands 的阶段。如果要讨论 GPU 执行耗时，单独补 `GPU_DURATION` 与对应 API 边界。
