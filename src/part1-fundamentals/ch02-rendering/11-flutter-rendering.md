@@ -1,8 +1,8 @@
 ---
+
 title: 2.11 Flutter 渲染管线与性能
 section: '2.11'
 chapter: '2.11'
-status: ready-for-review
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-05-09'
@@ -51,22 +51,23 @@ related_chapters:
 - '7.1'
 - '7.7'
 - '18.12'
-pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-21T23:22:00+08:00'
 task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-task9_reviewed_date: '2026-04-27'
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T21:20:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
+status: ready-for-review
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-22"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-22T00:27:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：Android 16 Vulkan 1.4 / Host Image Copy 设备边界需改成 launch-device 口径；P2 1：ADPF 小节 Flutter 每帧重绘因果判断缺少支撑。"
 ---
 
 <!-- outline-start -->

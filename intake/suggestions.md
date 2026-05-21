@@ -2812,4 +2812,21 @@
 - **建议**：删除固定 2ms，或补充来源/测试条件；更稳的写法是“减少多个 ContentProvider 带来的初始化分发开销”，把具体收益留给项目基准或 Macrobenchmark 数据。
 - **review 日志**：logs/deep-review/2026-05-21-20-deep-review.md
 
+## [Task9 Deep Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-05-22
+- **类型**：源码准确性 / 版本差异
+- **位置**：L342-L363 `SyncHelperNativeFence::serverWait()` 代码块
+- **问题**：当前代码块标注 Chromium ANGLE main L521-L551，但 Chromium main 已在 `dup(mExternalFence->getFenceFd())` 后增加 `ANGLE_VK_CHECK(contextVk, importFdInfo.fd >= 0, VK_ERROR_OUT_OF_HOST_MEMORY)`；AOSP android-16.0.0_r1 同逻辑在 L508-L538，仍是 `waitSemaphore.get().init(device)`。章节注释已区分 main 与 AOSP 16，但代码片段没有反映 main 的 fd 失败检查，源码锚点容易漂移。
+- **建议**：要么固定引用 AOSP android-16.0.0_r1 的代码片段，要么更新 Chromium main 片段并保留 AOSP 16 差异说明。避免“main 行号 + 旧代码片段”混用。
+
+## [Task9 Deep Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-05-22
+- **类型**：知识盲区 / 同步机制边界
+- **位置**：L336-L339 `initializeWithFd()` 描述
+- **问题**：正文只覆盖传入有效 native fence fd 的 import 路径。`SyncHelperNativeFence::initializeWithFd()` 还有 `EGL_NO_NATIVE_FENCE_FD_ANDROID` 分支：创建 exportable VkFence、flush/submit 当前命令并导出 fence fd。读者如果按 EGL native fence sync 的完整创建语义理解，会缺少“无 fd 创建 sync object”这条路径。
+- **建议**：补一句边界：本文代码块审的是已有 fd 的 server wait；当 EGL 创建 native fence sync 时传入 `EGL_NO_NATIVE_FENCE_FD_ANDROID`，ANGLE 会创建 VkFence 并提交命令生成/导出 fence fd。
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-05-22
+- **类型**：原理链 / 数据支撑
+- **位置**：L253-L265 `ADPF 系统级调频（待验证）`
+- **问题**：该小节已正确把 Flutter Engine 自动接入 ADPF 改成待验证，但仍用“Flutter 自绘每一帧的内容，因此负载波动更剧烈”解释 ADPF 适配价值。Flutter 有 retained layer tree、raster cache、图片缓存等机制；原生 Android 也会按脏区、RenderNode 和硬件层缓存影响重绘成本。这个对比缺少源码或 trace 数据支撑，容易把“跨平台自绘”简化成“每帧全部内容重绘”。
+- **建议**：保留 ADPF 作为平台能力说明即可；如要比较 Flutter 与原生负载波动，补 Flutter raster cache / layer tree 的源码锚点和目标设备 Perfetto 数据，否则删除该因果判断。
 

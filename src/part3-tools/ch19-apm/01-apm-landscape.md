@@ -1,8 +1,8 @@
 ---
+
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
-status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -32,30 +32,28 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
 reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
-task2b_state: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
 task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-21"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T15:48:06+08:00"
 last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-15-audit.md"
 review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。"
-task9_review_notes: "2026-05-21 Task9 idle audit: P0 AppExitInfoTracker 源码位置与 ApplicationExitInfo reason 常量错误，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。"
+status: ready-for-review
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-22"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-22T00:27:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 2：ApplicationExitInfo reason 新增 API level 错位；AppExitInfoTracker 消息路径遗漏 MSG_PROC_DIED/MSG_APP_KILL 等 AMS 主路径。"
 ---
 
 # APM 全景图与分类体系
