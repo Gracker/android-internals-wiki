@@ -178,7 +178,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch15-methodology/05-online-monitoring.md"
@@ -198,7 +198,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T13:31:48+08:00",
-      "review_log": "logs/deep-review/2026-05-21-13-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-13-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T19:22:59+08:00",
+      "completion_reason": "Task 2B rework: issues fixed, section returned to review pipeline"
     },
     {
       "id": "task2a-gap-20260521-2.25-buffer-stuffing-recovery",
@@ -5688,7 +5691,7 @@
       ],
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
@@ -5696,7 +5699,10 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T08:47:50+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T19:22:59+08:00",
+      "completion_reason": "Task 2B rework: issues fixed, section returned to review pipeline"
     },
     {
       "id": "task9-22-5-scalex-example-state-20260514",
@@ -7798,7 +7804,7 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T13:30:28+08:00",
-      "status": "pending",
+      "status": "completed",
       "title": "FinalizerReference 生命周期与 Cleaner API 边界修正",
       "description": "4.9 需修正 finalizable 对象注册时机、sun.misc.Cleaner/java.lang.ref.Cleaner.Cleanable 两条路径，以及 CloseGuard/Cleaner API level 适用边界。",
       "issue_type": "source-code-accuracy",
@@ -7809,7 +7815,10 @@
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
-      ]
+      ],
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-21T19:22:59+08:00",
+      "completion_reason": "Task 2B rework: issues fixed, section returned to review pipeline"
     },
     {
       "id": "task9-2026-05-15-13.12-perfetto-profile-review",
@@ -15499,9 +15508,9 @@
   "metadata": {
     "total_entries": 419,
     "p0_count": 178,
-    "last_updated": "2026-05-21T17:28:40+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 154,
+    "last_updated": "2026-05-21T19:22:59+08:00",
+    "updated_by": "openclaw-task2b",
+    "pending_entries": 155,
     "updated_date": "2026-05-21",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 154,

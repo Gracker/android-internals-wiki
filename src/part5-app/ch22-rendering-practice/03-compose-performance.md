@@ -14,11 +14,11 @@ sources:
     path: "androidx/compose/runtime/PausableComposition"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -35,7 +35,7 @@ last_task6_review_log: "logs/review/2026-05-14-16-review.md"
 
 Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
-本文使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。滚动性能与 View 系统性能对等、Google 内部长列表滚动基准测试卡顿率降至 0.2% 这两个判断，需要补齐官方声明链接、测试条件和 Foundation 版本边界。[待验证: Google 官方声明、测试条件与 Foundation 版本] 在可用且启用 Pausable Composition 的版本里，长列表组合阻塞主线程的风险由 Compose 运行时分担一部分；开发者仍要关注组合范围控制、状态读取阶段和互操作开销。
+本文使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。Pausable Composition 的默认启用状态因 Foundation 版本而异（1.10.0-alpha05 默认启用，1.10.6 因稳定性问题默认禁用），使用前需确认目标版本的默认值。“滚动性能与 View 系统性能对等”“卡顿率降至 0.2%” 的判断目前只有 Google I/O 演讲引用，缺官方 benchmark 报告、测试设备列表和 Foundation 版本边界。[待验证: Google 官方 benchmark 报告、测试条件与 Foundation 版本]
 
 ## 重组控制：从手动优化到编译器自动跳过
 
@@ -52,9 +52,17 @@ Compose 的渲染管线分三阶段：Composition → Layout → Draw。重组�
 
 Compose 运行时的跳过（skip）机制：如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"（通过 `equals()` 判断），运行时会跳过整个函数体的执行，直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
 
-### Strong Skipping Mode（Kotlin 2.0 起默认启用）
+### Strong Skipping Mode（Kotlin 2.0.20 起默认启用）
 
-Compose compiler 从 Kotlin 2.0 起默认启用 Strong Skipping Mode。这个变化改变了 Compose 性能优化的优先级。
+Compose compiler 从 **Kotlin 2.0.20** 起默认启用 Strong Skipping Mode。Kotlin 2.0.0–2.0.10 需要在 `build.gradle.kts` 中显式开启：
+
+```kotlin
+composeCompiler {
+    enableStrongSkippingMode = true
+}
+```
+
+这个变化改变了 Compose 性能优化的优先级。
 
 **Strong Skipping 之前**：只有参数类型被标记为 `@Stable` 或 `@Immutable` 的 Composable 函数才会被跳过。Lambda 参数默认不被 memoize，每次父 Composable 重组时，lambda 参数都是新对象（引用不等），导致接收 lambda 的子 Composable 无法跳过。
 
@@ -79,7 +87,7 @@ fun MyScreen(viewModel: ViewModel) {
 
 **对已有代码的影响**：很多以前必须手写的 `remember { }` 包裹 lambda 的优化代码，现在可以删掉了。如果项目已经升级到 Kotlin 2.0+，手动 `remember` lambda 的代码不会出错，但属于冗余操作。
 
-[适用版本: Kotlin 2.0+ (Compose Compiler 1.5+)]
+[适用版本: Kotlin 2.0.20+ 默认启用；Kotlin 2.0.0–2.0.10 需显式开启]
 
 ### Stability 标记：什么时候还需要手动标注
 
@@ -109,7 +117,20 @@ class ScrollState(
 2. 当属性变化时，Compose 运行时能收到通知（通过 `mutableStateOf` 或 `mutableStateListOf` 等机制）。
 3. 所有公开属性的类型也是 Stable 的。
 
-`@Immutable` 比 `@Stable` 更严格：要求类的所有属性在构造后不可变。用于 data class 或 val-only 的类，是一个编译器承诺而非运行时检查——标注了 `@Immutable` 但实际有可变字段，运行时不会报错，但可能导致应该跳过的重组没有跳过。
+`@Immutable` 比 `@Stable` 更严格：要求类的所有属性在构造后不可变。用于 data class 或 val-only 的类，是一个编译器承诺而非运行时检查——错误标注 `@Immutable`（例如对实际包含可变字段的类加注解）会让 Compose 运行时误判参数未变，跳过本应执行的重组，导致 UI 不更新（stale UI）。这是一个难以排查的问题，因为运行时不会报错，只是 UI 状态不再响应用户操作或数据变化。
+
+反例：
+
+```kotlin
+// ❌ 错误：data class 有 var 字段，不应标注 @Immutable
+@Immutable
+data class UserProfile(
+    val id: String,
+    var displayName: String  // 可变字段违反 @Immutable 契约
+)
+
+// 当 displayName 变化时，Compose 可能跳过重组，UI 不会更新
+```
 
 
 ## 状态读取阶段：性能差异的来源
@@ -269,9 +290,10 @@ Compose 1.9 引入的 `LazyLayoutCacheWindow` API 允许开发者精确控制预
 ```kotlin
 @OptIn(ExperimentalFoundationApi::class)
 val listState = rememberLazyListState(
-    // cacheWindow 定义预取窗口范围
-    // 构造参数在不同 Foundation 版本间有差异，参见对应版本 release notes
-    cacheWindow = LazyLayoutCacheWindow(ahead = 3, behind = 1)
+    // cacheWindow 定义预取窗口范围，单位为 viewport 外的 Dp 距离
+    cacheWindow = LazyLayoutCacheWindow(ahead = 150.dp, behind = 100.dp)
+    // 或使用 viewport fraction：
+    // cacheWindow = LazyLayoutCacheWindow(aheadFraction = 1f, behindFraction = 0.5f)
 )
 
 LazyColumn(state = listState) {
@@ -429,13 +451,13 @@ AndroidView(
 
 | 变化项 | 旧版本做法 | Kotlin 2.0+ 做法 |
 |--------|-----------|-----------------|
-| Lambda memoize | 手动 `remember { { ... } }` 包裹 | Strong Skipping 自动 memoize，手动包裹变为冗余 |
+| Lambda memoize | 手动 `remember { { ... } }` 包裹 | Kotlin 2.0.20+ Strong Skipping 自动 memoize，手动包裹变为冗余 |
 | `@Stable` / `@Immutable` 标注 | 大量手动标注以保证跳过 | Strong Skipping 下大部分场景不再需要，仅第三方库和自定义状态容器仍需标注 |
-| 长列表组合阻塞 | 手动拆分大 Composable 函数 | Pausable Composition 自动切分，但 `derivedStateOf` / key 优化仍有效 |
+| 长列表组合阻塞 | 手动拆分大 Composable 函数 | Pausable Composition 自动切分（需确认 Foundation 版本默认值），但 `derivedStateOf` / key 优化仍有效 |
 | 编译器报告 | 关注 `skippable` 字段 | Strong Skipping 下所有 restartable Composable 默认 skippable，关注点转向重组次数和状态读取阶段 |
 
 迁移步骤：
-1. 升级 Kotlin 到 2.0+，确认 Compose compiler 插件版本匹配。
+1. 升级 Kotlin 到 2.0.20+（或 2.0.0–2.0.10 显式开启 `enableStrongSkippingMode`），确认 Compose compiler 插件版本匹配。
 2. 运行编译器报告，检查 `skippable` 字段是否全部为 `true`。
 3. 清理冗余的手动 `remember { { lambda } }` 包裹代码。
 4. 在 Layout Inspector 中对比升级前后的重组次数，确认 Strong Skipping 生效。

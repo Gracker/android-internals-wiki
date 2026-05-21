@@ -27,15 +27,11 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-last_task6_at: '2026-05-15T14:12:00+08:00'
-task6_result: pass-light-edit
-reviewed_date: "2026-05-15"
-reviewed_by: openclaw-task6
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 task9_reviewed_date: 2026-05-15
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-15T13:30:28+08:00'
@@ -91,7 +87,7 @@ last_task9_review_log: 'logs/deep-review/2026-05-15-13-deep-review.md'
 这几个角色不能混成一个“GC 清理资源”的动作：
 
 - GC: 判断对象可达性，生成待处理引用列表，触发引用入队。它不负责关闭业务资源。
-- `ReferenceQueueDaemon`: 把 GC 提供的 pending list 转移到 Java 层队列，处理 `Cleaner` 的特殊路径，并给 watchdog 报进度。
+- `ReferenceQueueDaemon`: 把 GC 提供的 pending list 转移到 Java 层队列；对 `sun.misc.Cleaner` 类型的引用直接调用 `Cleaner.clean()`，无需经过 `FinalizerDaemon`。
 - `FinalizerDaemon`: 从 `FinalizerReference.queue` 取对象，执行 `finalize()`，处理异常和超时监控。
 - 应用代码: 对 FD、socket、数据库 cursor、native handle、图形 buffer 等资源执行确定性释放。
 
@@ -134,12 +130,12 @@ public Reference<? extends T> remove(long timeout)
 
 ## 从 GC 标记到 finalize 执行的路径
 
-带 `finalize()` 的对象被判定不可达后，不会在同一次 GC 里直接完成释放。它会先被包装成 `FinalizerReference`，进入 ART 的引用处理路径。`ReferenceQueueDaemon` 把 pending list 转移到队列后，`FinalizerDaemon` 才能从 `FinalizerReference.queue` 里取到它。
+带 `finalize()` 的对象在分配/构造阶段就通过 `FinalizerReference.add()` 注册了对应的 `FinalizerReference` 链表节点（参见 `FinalizerReference.java` L33-L45）。GC 判定对象不可达后，不会重新创建引用，只是把已有 `FinalizerReference` 的 referent 置为 zombie 状态，然后挂到 `ReferenceQueue.unenqueued`。`ReferenceQueueDaemon` 再通过 `enqueuePending()` 把这批引用转移到 `FinalizerReference.queue`，`FinalizerDaemon` 才能取出并调用 `object.finalize()`。
 
-这条路径可以按四段排查：
+这条路径按四段排查：
 
-1. 对象变成不可达，但因为 finalization 语义还要暂时保活一次。
-2. GC 把待处理引用挂到 `ReferenceQueue.unenqueued`，并唤醒 `ReferenceQueueDaemon`。
+1. 对象构造时注册 `FinalizerReference`（`FinalizerReference.add()`），此时引用节点已在链表中，referent 仍指向存活对象。
+2. GC 判定对象不可达，把 referent 移到 zombie，将已有引用挂到 `ReferenceQueue.unenqueued`，唤醒 `ReferenceQueueDaemon`。
 3. `ReferenceQueueDaemon` 调用 `ReferenceQueue.enqueuePending()`，按队列分组批量入队。
 4. `FinalizerDaemon` 从队列取出引用，调用 `object.finalize()`，完成后清掉对对象的强引用。
 
@@ -308,7 +304,7 @@ adb shell debuggerd -b <pid> > threads_after.txt
 - 资源池: 对昂贵对象做复用时要有最大容量、空闲回收和生命周期 owner，不能只依赖对象不可达后的清理。
 - JNI wrapper: native 资源要明确所有权。Java 对象关闭时调用 native release；native 层不能长期持有不释放的 global ref。
 
-`Cleaner` 的使用要看 API level、desugaring 和团队规范。它适合做比 `finalize()` 更清晰的兜底清理，但仍然没有确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源，主路径仍然是显式关闭。
+`Cleaner` 的使用要看 API level、desugaring 和团队规范。Android 上有两条 Cleaner 路径：`sun.misc.Cleaner`（API 26+，由 `CleanerDaemon` 独立执行）和 `java.lang.ref.Cleaner`（API 33 公开，通过 `FinalizerDaemon` 的 `doClean()` 触发）。两条路径都不提供确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源，主路径仍然是显式关闭。
 
 一个资源 wrapper 的最小结构应该像这样：
 
@@ -347,7 +343,7 @@ CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/�
 
 
 
-## Cleaner / CloseGuard 的版本矩阵与源码路径
+## Cleaner / CloseGuard 的版本对照表与源码路径
 
 三个机制在不同 API level 的可用性有明确边界，源码路径也不同。`dalvik.system.CloseGuard`（非公开）和 `android.util.CloseGuard`（API 30 公开）是两套独立的 CloseGuard 实现，分别服务于虚拟机层和应用层；`sun.misc.Cleaner`（API 26+）和 `java.lang.ref.Cleaner`（API 33 公开）是两条 Cleaner 路径，前者由 `CleanerDaemon` 独立执行，后者通过 `FinalizerReference.doClean()` 触发。
 
@@ -392,7 +388,7 @@ FinalizerDaemon.processReference()
 
 关键区别：旧 `sun.misc.Cleaner` 由 `CleanerDaemon` 独立线程执行，不经过 `FinalizerReference`；新 `java.lang.ref.Cleaner` 复用 `FinalizerDaemon` 的 `processReference()` 循环，通过 `Cleaner.Cleanable` 接口执行清理。
 
-**Core Library Desugaring 影响**: API 33 的 `java.lang.ref.Cleaner` 可通过 AGP 8.0+ desugaring 在低 API level 使用，但每次清理调用增加桥接层开销；对 FD、GraphicBuffer 这类高频资源，建议用 `AutoCloseable` 显式关闭，不依赖 desugared Cleaner。
+**Core Library Desugaring 影响**: `java.lang.ref.Cleaner` 可通过 AGP 8.0+ `coreLibraryDesugaring` 在 API 26+ 设备上使用，需要在 `build.gradle` 中添加 `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.x")` 依赖。但 desugared Cleaner 的每次清理调用会增加桥接层开销，且运行时语义不保证与原生实现完全一致（例如线程调度、异常处理路径可能有差异）；对 FD、GraphicBuffer 这类高频资源，建议用 `AutoCloseable` 显式关闭，不依赖 desugared Cleaner。
 
 [已验证: AOSP android-16.0.0_r1, Daemons.java L41, L295-L401]
 [已验证: AOSP android-16.0.0_r1, ReferenceQueue.java L236-L278]
