@@ -14978,6 +14978,47 @@
         "https://developer.android.com/media/media3/exoplayer/troubleshooting"
       ],
       "priority_reason": "现有 18 章有视频叠加与 HWC、SurfaceView/TextureView 路径，但缺少 MediaCodec/Codec2 到 tunneled playback 与 Media3 ABR 的端到端播放性能诊断。"
+    },
+    {
+      "id": "task9-audit-20260521-19.11-jankstats-framemetrics-source",
+      "section": "19.11",
+      "section_title": "JankStats",
+      "priority": 95,
+      "title": "JankStats API24 状态同步机制与 FrameMetrics DEADLINE 版本边界需修正",
+      "description": "闲时抽检发现章节把 JankStatsApi24Impl 的状态同步机制写成 OnPreDrawListener 锚点，并把 FrameMetrics DEADLINE 泛化到 API 24+；两处与当前 AndroidX metrics-performance 1.0.0 / AOSP FrameMetrics 版本边界不一致。",
+      "reason": "[Deep Tech Review Audit] JankStats 源码行为与 FrameMetrics 版本边界存在 P0/P1 技术问题。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-21",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/11-jankstats.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-21-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码行为错误",
+          "location": "§它输出什么 L140：JankStatsApi24Impl / OnPreDrawListener 状态同步说明",
+          "detail": "正文称 PerformanceMetricsState 在 UI 线程记录状态区间，且 JankStatsApi24Impl 用 OnPreDrawListener 作为同步锚点给状态变化打接近绘制前的时间戳。AndroidX metrics-performance 1.0.0 源码显示：JankStats.kt 在 API 24+ 选择 JankStatsApi24Impl；JankStatsApi24Impl 通过 Window.addOnFrameMetricsAvailableListener 接收 FrameMetrics，并在 getFrameData() 中用 frame start/end 调 PerformanceMetricsState.getIntervalStates()。OnPreDrawListener 是 JankStatsApi16Impl 的低版本 frame timer 路径，不是 JankStatsApi24Impl 的同步锚点。PerformanceMetricsState.putState()/removeState() 用 System.nanoTime() 记录状态生效/移除时间。当前写法把 API16 路径套到了 API24+，会误导读者对状态与帧区间匹配机制的理解。",
+          "suggestion": "把该段改为：API16-23 通过 Choreographer/OnPreDraw 估算 frame timing；API24+ 通过 FrameMetrics listener 获取帧信息，并使用 PerformanceMetricsState 中由 System.nanoTime() 记录的状态区间与帧 [start,end] 做 overlap；JankStatsApi26Impl 用 INTENDED_VSYNC_TIMESTAMP 改善 startTime；API31+ 再使用 DEADLINE/GPU_DURATION 等新增指标。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "§帧性能工具分工 L172-L173：FrameMetrics API24+ 指标列表",
+          "detail": "正文写 FrameMetrics 在 API 24+ 可补 DRAW_DURATION、SYNC_DURATION、COMMAND_ISSUE_DURATION、DEADLINE 等细分指标。AOSP android-11.0.0_r1 的 FrameMetrics.java 没有 DEADLINE；android-12.0.0_r1 开始才有 FrameMetrics.DEADLINE。AndroidX JankStats 1.0.0 也只在 @RequiresApi(31) 的 JankStatsApi31Impl 中读取 FrameMetrics.DEADLINE 并计算 frameOverrunNanos。把 DEADLINE 放进 API 24+ 通用指标列表会造成版本口径错误。",
+          "suggestion": "把 FrameMetrics 指标拆成 API24+ 基础阶段指标（UNKNOWN_DELAY、INPUT_HANDLING、ANIMATION、LAYOUT_MEASURE、DRAW、SYNC、COMMAND_ISSUE、SWAP_BUFFERS、TOTAL 等）和 API31+ deadline/overrun 指标；JankStats 的 FrameDataApi31/FrameOverrun 也应标 API31+。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-21T10:23:28+08:00",
+      "review_log": "logs/deep-review/2026-05-21-10-audit.md"
     }
   ],
   "metadata": {

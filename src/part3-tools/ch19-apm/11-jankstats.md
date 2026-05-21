@@ -3,7 +3,7 @@
 title: JankStats
 chapter: '19'
 section: '19.11'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
@@ -17,7 +17,7 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: pass-light-edit
@@ -25,18 +25,23 @@ task6_state: "reviewed"
 last_task6_audit: "2026-05-20"
 last_task6_at: "2026-05-21T04:09:00+08:00"
 task9_state: "reviewed"
-task2b_state: 'fixed'
-task9_result: pass-tech-review
+task2b_state: "pending"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:57:00+08:00"
-task2b_result: 'fixed'
+task2b_result: "pending"
 last_task2b_at: '2026-05-21T03:22:56+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task6_reviewed_date: "2026-05-21"
 last_task6_review_log: "logs/review/2026-05-21-04-review.md"
 task6_review_notes: "2026-05-21 Task6 04: L1 小修 6 处；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+last_task9_audit: 2026-05-21
+last_task9_audit_at: "2026-05-21T10:23:28+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-21-10-audit.md"
+task9_review_notes: "2026-05-21 Task9 闲时抽检：发现 JankStatsApi24Impl 状态同步机制与 FrameMetrics DEADLINE 版本边界 P0/P1 问题，已写入 queue，转 Task2B 回炉。"
+
 ---
 
 
