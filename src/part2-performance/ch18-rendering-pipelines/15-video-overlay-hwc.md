@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: Android 7.0 (API 24) - Android 16 (API 36)
 tags:
 - HWC
@@ -18,15 +18,16 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: "fixed"
+last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
@@ -267,10 +268,12 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 
 ## 参考资料
 
-- AOSP `frameworks/native/services/surfaceflinger/`
+- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` — `canSkipValidate` / `presentOrValidate()` 条件与回退逻辑
 - AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
 - AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.cpp`
+- AOSP `hardware/libhardware/include/hardware/hwcomposer2.h`（android-8.0.0_r1 / android-14.0.0_r1）— `HWC2_CAPABILITY_SKIP_VALIDATE`
 - AOSP `hardware/interfaces/graphics/composer/2.4/`
-- AOSP `hardware/interfaces/graphics/composer/aidl/`
+- AOSP `hardware/interfaces/graphics/composer/aidl/` — `Capability.aidl` SKIP_VALIDATE @deprecated
+- AOSP `frameworks/native/services/surfaceflinger/`
 - Android 官方文档：Hardware Composer
 - Android 官方文档：`SurfaceView`（Android N 起位置同步更新，叠加 View 的行为边界）

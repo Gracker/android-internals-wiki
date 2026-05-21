@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: "ready-for-review"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T07:34:33+08:00"
@@ -52,13 +52,14 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-21"
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
 last_task6_at: "2026-05-21T08:06:00+08:00"
