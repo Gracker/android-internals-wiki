@@ -15788,23 +15788,59 @@
       "added_at": "2026-05-21T22:04:00+08:00",
       "completed_date": "2026-05-21T23:04:00+08:00",
       "completed_reason": "Task 2A 加工完成：结合 Android Developers Memory Advice API deprecated 口径、AOSP gamesdk 源码和 Clippings 内存优化结构参考，补齐接入边界、watcher 回调、LMKD/ApplicationExitInfo/Android Vitals 分工、游戏资产降级策略与 Perfetto/meminfo 验证路径；状态改为 ready-for-review。"
+    },
+    {
+      "id": "task2a-gap-20260522-5.16-gpu-npu-heterogeneous-scheduling",
+      "section": "5.16",
+      "section_title": "GPU/NPU 异构负载调度与功耗归因",
+      "priority": 80,
+      "title": "GPU/NPU 异构负载调度与功耗归因",
+      "description": "5.3 只有 GPU+NPU 协同调度占位；现有端侧 AI、NPU 访问边界和 ADPF 章节缺少将异构卸载、调度观测、功耗归因放在同一条分析路径中的章节。",
+      "reason": "[Task2A Gap Mining] 结合 5.3 扩展锚点、Android 17 NPU/LiteRT DeepResearch 素材、ADPF Performance Hint API 与 thermal 官方文档，评估为性能工程师高需求缺口。",
+      "issue_type": "knowledge-gap-chapter-deep-dive",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      ],
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md#扩展-GPU-NPU-的协同调度概念",
+        "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md",
+        "DeepResearch/2026-05-15-android-17-npu-litert-aicore.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md",
+        "https://source.android.com/docs/core/perf/performance-hint-api",
+        "https://ai.google.dev/edge/litert/"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T00:12:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 420,
+    "total_entries": 421,
     "p0_count": 178,
-    "last_updated": "2026-05-21T22:04:00+08:00",
+    "last_updated": "2026-05-22T00:12:00+08:00",
     "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 156,
-    "updated_date": "2026-05-21",
+    "pending_entries": 157,
+    "updated_date": "2026-05-22",
     "last_updated_by": "task2a-knowledge-gap",
-    "pending": 155,
+    "pending": 156,
     "completed_entries": 263,
-    "last_task2a_gap_mining": "23.10",
-    "last_task2a_gap_mining_at": "2026-05-21T22:04:00+08:00",
+    "last_task2a_gap_mining": "5.16",
+    "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-21T22:04:00+08:00",
+  "last_updated": "2026-05-22T00:12:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
@@ -17098,10 +17134,46 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-21T22:04:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260522-5.16-gpu-npu-heterogeneous-scheduling",
+      "section": "5.16",
+      "section_title": "GPU/NPU 异构负载调度与功耗归因",
+      "priority": 80,
+      "title": "GPU/NPU 异构负载调度与功耗归因",
+      "description": "5.3 只有 GPU+NPU 协同调度占位；现有端侧 AI、NPU 访问边界和 ADPF 章节缺少将异构卸载、调度观测、功耗归因放在同一条分析路径中的章节。",
+      "reason": "[Task2A Gap Mining] 结合 5.3 扩展锚点、Android 17 NPU/LiteRT DeepResearch 素材、ADPF Performance Hint API 与 thermal 官方文档，评估为性能工程师高需求缺口。",
+      "issue_type": "knowledge-gap-chapter-deep-dive",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md"
+      ],
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md#扩展-GPU-NPU-的协同调度概念",
+        "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md",
+        "DeepResearch/2026-05-15-android-17-npu-litert-aicore.md",
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md",
+        "https://source.android.com/docs/core/perf/performance-hint-api",
+        "https://ai.google.dev/edge/litert/"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T00:12:00+08:00"
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "23.10",
-  "last_task2a_gap_mining_at": "2026-05-21T22:04:00+08:00"
+  "last_task2a_gap_mining": "5.16",
+  "last_task2a_gap_mining_at": "2026-05-22T00:12:00+08:00"
 }
