@@ -1,5 +1,4 @@
 ---
-
 status: ready-for-review
 title: App 内存优化
 section: '4.5'
@@ -46,15 +45,15 @@ related_chapters:
 - '7.3'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-reviewed_date: '2026-05-21'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-22"
+reviewed_by: "openclaw-task6"
 review_type: draft-review
-review_round: 4
+review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
@@ -64,10 +63,10 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T07:43:01+08:00"
 task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 3：Coil BitmapPool 版本错误、static Worker 示例不可编译、onTrimMemory API34+ BACKGROUND/UI_HIDDEN 口径错误；P1 1：16KB Play/Bitmap 断言缺边界和证据。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
-task6_result: pass-light-edit
-last_task6_at: '2026-05-21T01:15:21+08:00'
-last_task6_review_log: logs/review/2026-05-21-01-review.md
-task6_review_notes: '2026-05-21 Task6 01: 移除正文中残留的 review 编辑痕迹 1 处；L1/L2 通过，转 Task9 pending。'
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-22T08:20:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-08-review.md"
+task6_review_notes: "2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 3 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。"
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
 ---
@@ -172,7 +171,7 @@ last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]
 
-这四层不是孤立的，而是一个递进的防御体系。第一道防线是"减少分配"，过了这一关之后，剩余的分配要"及时释放"，万一没释放干净就要"避免泄漏"，最后的底线是"监控兜底"。
+这四层不是孤立的，而是一个递进的防御体系：第一道防线是"减少分配"；剩余的分配要"及时释放"；没释放干净的风险要靠"避免泄漏"控制；监控负责兜底。
 
 ## 内存抖动：当"减少分配"失败时的连锁反应
 
@@ -564,7 +563,6 @@ adb shell am start -n com.example.app/.MainActivity
 
 `backtrace` 选项记录每次 native 分配的调用栈，`backtrace_enable_on_signal` 在收到 `SIGUSR1` 后才开始记录，减少运行时开销。启用后通过 `dumpsys mallocinfo <pid>` 查看分配统计，或结合 `heapprofd`（见下节）做更详细的性能分析。
 
-> [已修正: 原示例使用不存在的 `backtrace_tracker` 选项。]
 > [已验证: 官方文档, source.android.com/docs/core/debug/native-crash — malloc debug 选项列表]
 
 ### ASan（AddressSanitizer）
@@ -934,7 +932,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 - **前台回调**（`TRIM_MEMORY_RUNNING_LOW/MODERATE/CRITICAL`）：App 仍在前台运行，系统只是说"整个设备的内存有点紧了"。这时候应释放非关键缓存（比如预加载的数据），但不要影响用户正在使用的核心功能——不要清空当前列表的图片缓存，不要停止正在播放的视频。
 - **`TRIM_MEMORY_UI_HIDDEN`**：App 的 UI 不可见（比如用户按了 Home 键）。这是最常见的前后台切换回调，和"即将被杀"没有关系。只需释放 UI 相关的资源（比如大的 View 缓存）。
-- **后台回调**（`TRIM_MEMORY_BACKGROUND/MODERATE`）：App 在后台 LRU 列表中，系统在考虑是否回收进程。应释放大部分可重建的缓存，但还没到"最后关头"。
+- **后台回调**（`TRIM_MEMORY_BACKGROUND/MODERATE`）：App 在后台 LRU 列表中，系统在考虑是否回收进程。应释放大部分可重建的缓存，但还没到最高压力级别。
 - **`TRIM_MEMORY_COMPLETE`**：这是唯一一个可以理解为"系统正在认真考虑终止进程"的级别。到了这个级别，应释放一切可释放的资源，并保存关键状态数据，以备下次冷启动时恢复。
 
 **不要把 `onTrimMemory` 当成 `onDestroy`**。它是一个梯度式的预警系统，不是一次性开关。正确的做法是根据级别做差异化的响应，而不是一收到回调就清空一切。
