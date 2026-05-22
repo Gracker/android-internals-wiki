@@ -1,7 +1,7 @@
 ---
 title: "Perfetto SQL 性能分析实战手册"
 chapter: "13.10"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -33,15 +33,15 @@ created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: '2026-04-28'
 reviewed_by: "openclaw-task6"
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
+pipeline_stage: task2b_pending
+task9_result: needs-rework
 task9_reviewed_date: '2026-04-29'
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T04:38:09+08:00"
@@ -49,7 +49,8 @@ last_task2b_at: "2026-04-27T20:58:38+08:00"
 rework_date: "2026-04-27"
 rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。"
+last_task9_audit: "2026-05-22"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册

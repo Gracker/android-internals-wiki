@@ -16636,6 +16636,47 @@
       "completed_at": "2026-05-22T09:16:00+08:00",
       "completed_by": "openclaw-task2a",
       "completion_reason": "内容加工完成，status 已更新为 ready-for-review，进入 Task 6 管线。"
+    },
+    {
+      "id": "task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin",
+      "section": "13.10",
+      "section_title": "Perfetto SQL 性能分析实战手册",
+      "priority": 95,
+      "title": "Perfetto SQL doFrame 版本匹配与 SPAN_JOIN 分区列需修正",
+      "description": "闲时抽检发现 13.10 的 doFrame SQL 在 Android 12+ trace 上会漏帧，SPAN_JOIN 示例缺少 utid 分区列导致虚拟表创建失败。",
+      "reason": "[Deep Tech Review Audit] 13.10 在 Perfetto SQL 查询口径上存在 P0/P1 问题：Choreographer#doFrame 精确匹配未覆盖 Android 12+ trace 名后缀，SPAN_JOIN 示例按不存在的 utid 分区。",
+      "issue_type": "source-version-accuracy-perfetto-sql",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-09-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/Perfetto SQL 查询口径",
+          "severity": "P1",
+          "location": "L190-L202、L213-L230、L606-L613、L637-L641、L805-L824：Choreographer#doFrame 精确匹配",
+          "detail": "章节适用范围覆盖 Android 10-17，但多处 SQL 使用 slice.name = 'Choreographer#doFrame' 或 IN 中的精确值。AOSP Choreographer.java 在 Android 10/11 使用精确 trace 名；Android 12 起 traceBegin 变为 \"Choreographer#doFrame \" + vsyncId/timeline.mVsyncId。当前查询在 Android 12+ trace 上会漏掉主线程帧、启动首帧窗口和帧内锁竞争，返回空结果或低估卡顿。",
+          "suggestion": "按版本改为前缀/模式匹配并限定主线程，例如 slice.name GLOB 'Choreographer#doFrame*' 或 LIKE 'Choreographer#doFrame%'；正文补充 Android 10/11 精确名与 Android 12+ 带 vsyncId 后缀的版本边界。Frame Timeline 可作为 Android 12+ 首选路径，但 doFrame fallback 不能继续精确等值。"
+        },
+        {
+          "type": "SQL schema/操作符输入错误",
+          "severity": "P0",
+          "location": "L875-L889：main_lock_span 与 SPAN_JOIN(main_lock_span PARTITIONED utid, sp_sched)",
+          "detail": "main_lock_span 只 SELECT ts、dur、blocking_thread_name，没有输出 utid；下一步却按 utid 分区执行 SPAN_JOIN，Trace Processor 会因找不到分区列而无法创建虚拟表。Perfetto stdlib android_monitor_contention 的线程列是 blocked_utid/blocking_utid，前文 L817-L818 也使用 blocked_utid。",
+          "suggestion": "把 main_lock_span 改为 SELECT blocked_utid AS utid, ts, dur, blocking_thread_name FROM android_monitor_contention WHERE is_blocked_thread_main = 1；再与 sp_sched PARTITIONED utid 做 SPAN_JOIN。若要继续接 CPU 频率，需明确 frame span / sched_with_freq 的分区和重叠裁剪。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T09:27:33+08:00",
+      "review_log": "logs/deep-review/2026-05-22-09-audit.md"
     }
   ],
   "metadata": {
@@ -16652,8 +16693,8 @@
     "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T08:45:48+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-22T09:27:33+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -18067,6 +18108,47 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T08:45:48+08:00"
+    },
+    {
+      "id": "task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin",
+      "section": "13.10",
+      "section_title": "Perfetto SQL 性能分析实战手册",
+      "priority": 95,
+      "title": "Perfetto SQL doFrame 版本匹配与 SPAN_JOIN 分区列需修正",
+      "description": "闲时抽检发现 13.10 的 doFrame SQL 在 Android 12+ trace 上会漏帧，SPAN_JOIN 示例缺少 utid 分区列导致虚拟表创建失败。",
+      "reason": "[Deep Tech Review Audit] 13.10 在 Perfetto SQL 查询口径上存在 P0/P1 问题：Choreographer#doFrame 精确匹配未覆盖 Android 12+ trace 名后缀，SPAN_JOIN 示例按不存在的 utid 分区。",
+      "issue_type": "source-version-accuracy-perfetto-sql",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-09-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/Perfetto SQL 查询口径",
+          "severity": "P1",
+          "location": "L190-L202、L213-L230、L606-L613、L637-L641、L805-L824：Choreographer#doFrame 精确匹配",
+          "detail": "章节适用范围覆盖 Android 10-17，但多处 SQL 使用 slice.name = 'Choreographer#doFrame' 或 IN 中的精确值。AOSP Choreographer.java 在 Android 10/11 使用精确 trace 名；Android 12 起 traceBegin 变为 \"Choreographer#doFrame \" + vsyncId/timeline.mVsyncId。当前查询在 Android 12+ trace 上会漏掉主线程帧、启动首帧窗口和帧内锁竞争，返回空结果或低估卡顿。",
+          "suggestion": "按版本改为前缀/模式匹配并限定主线程，例如 slice.name GLOB 'Choreographer#doFrame*' 或 LIKE 'Choreographer#doFrame%'；正文补充 Android 10/11 精确名与 Android 12+ 带 vsyncId 后缀的版本边界。Frame Timeline 可作为 Android 12+ 首选路径，但 doFrame fallback 不能继续精确等值。"
+        },
+        {
+          "type": "SQL schema/操作符输入错误",
+          "severity": "P0",
+          "location": "L875-L889：main_lock_span 与 SPAN_JOIN(main_lock_span PARTITIONED utid, sp_sched)",
+          "detail": "main_lock_span 只 SELECT ts、dur、blocking_thread_name，没有输出 utid；下一步却按 utid 分区执行 SPAN_JOIN，Trace Processor 会因找不到分区列而无法创建虚拟表。Perfetto stdlib android_monitor_contention 的线程列是 blocked_utid/blocking_utid，前文 L817-L818 也使用 blocked_utid。",
+          "suggestion": "把 main_lock_span 改为 SELECT blocked_utid AS utid, ts, dur, blocking_thread_name FROM android_monitor_contention WHERE is_blocked_thread_main = 1；再与 sp_sched PARTITIONED utid 做 SPAN_JOIN。若要继续接 CPU 频率，需明确 frame span / sched_with_freq 的分区和重叠裁剪。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T09:27:33+08:00",
+      "review_log": "logs/deep-review/2026-05-22-09-audit.md"
     }
   ],
   "last_task2a_completed": "24.11",
