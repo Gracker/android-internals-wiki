@@ -25,12 +25,12 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T11:21:56+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-28"
+reviewed_date: "2026-05-22"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
@@ -50,7 +50,7 @@ p1: 1
 p2: 1
 updated_by: "openclaw-task6"
 updated_date: "2026-05-22"
-review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。"
+review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 2 处（ContentProvider 顺序句式、占位提示改为 Trace 观察点）。既有 Task9 16KB SQLite P1 queue pending，保持 task2b_pending。"
 rework_round_2: "2026-05-04"
 last_task9_audit: "2026-05-22"
 task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md."
@@ -61,6 +61,8 @@ auto_promotion_revoked_date: "2026-05-22"
 auto_promotion_revoked_reason: "Task9 audit queue pending; finalized status was inconsistent."
 last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size / SQLite WAL 段仍把 Android 16 旗舰、kernel page size、SQLite page_size、物理写放大 4 倍与固定 wal_autocheckpoint=250 绑定，需条件化。"
+last_task6_at: "2026-05-22T12:13:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-12-review.md"
 ---
 
 # 特殊场景的 ANR
@@ -164,7 +166,7 @@ App 侧 `onReceive()` 的线程模型没有变。Manifest 注册的 receiver 仍
 
 ### ContentProvider 的初始化时序陷阱
 
-ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCreate()` 之前就被初始化了。** 当系统启动一个 App 进程时，`ActivityThread.handleBindApplication()` 的执行顺序是：先创建 Application 对象 → 然后逐一安装所有声明的 ContentProvider → 调用每个 ContentProvider 的 `onCreate()` → 最后才调用 `Application.onCreate()`。
+ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCreate()` 之前就被初始化了。** 当系统启动一个 App 进程时，`ActivityThread.handleBindApplication()` 的执行顺序是：创建 Application 对象 → 逐一安装所有声明的 ContentProvider → 调用每个 ContentProvider 的 `onCreate()` → 才调用 `Application.onCreate()`。
 
 如果某个 ContentProvider 的 `onCreate()` 做了耗时操作（数据库初始化、读取大文件、网络请求），它会直接拉长整个 App 的冷启动时间，而这个时间是被算在 ANR 超时里的。
 
@@ -172,7 +174,7 @@ ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCrea
 
 ### 跨进程 ContentProvider 查询的超时
 
-[待补充：跨进程 ContentProvider 冷启动在 Perfetto 中的 Track 表现]
+在 Perfetto 中，重点看调用方的长段 WAITING 是否与对端进程的 `ActivityThread.handleBindApplication()` / Provider 初始化时间对齐。
 
 另一个常见场景是 App A 通过 ContentResolver 查询 App B 的 ContentProvider。如果 App B 的进程还没有启动（冷启动），系统需要先启动 App B 的进程，初始化它的 ContentProvider，然后才能响应查询。这个冷启动的全过程对 App A 来说就是一个 Binder 同步调用等待。
 

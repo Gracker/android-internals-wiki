@@ -62,11 +62,11 @@ last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size 合规段仍把 Android 16/NDK r27+ 写成通用边界；需改为 Android 15+ 16KB 设备 + NDK r28 默认 / r27 及以下 linker flags。既有 ADPF P2 已在 suggestions.md 记录，本轮不重复写入。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-05-22T01:16:12+08:00"
-last_task6_review_log: "logs/review/2026-05-22-01-review.md"
-review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。"
+last_task6_at: "2026-05-22T12:13:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-12-review.md"
+review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。"
 ---
 
 <!-- outline-start -->
@@ -106,7 +106,7 @@ Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFram
 
 这个差异会改变排查入口。列表滚动卡顿时,Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`;Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
 
-本节围绕三个排查问题展开:Flutter 在 Android 上怎么渲染,它的渲染管线和原生 Android 有什么差异,性能问题出现时应该看哪里、怎么分析?
+排查 Flutter 卡顿时，有三个问题需要同时定清：Flutter 在 Android 上怎么渲染，它的渲染管线和原生 Android 有什么差异，性能问题出现时应该看哪里、怎么分析？
 
 ## Flutter 的渲染架构
 
@@ -140,7 +140,7 @@ Flutter 3.29 之后,Android / iOS 的主线线程模型改成 Main(UI+Platform) 
 
 ## 与 Android 原生渲染的差异
 
-理解了 Flutter 的渲染架构后,我们把它和原生 Android 的渲染管线做一个系统性的对比。这个对比的用途是帮助我们在实际工作中快速定位问题,不做路线优劣判断。
+理解 Flutter 的渲染架构后，再和原生 Android 的渲染管线做系统对比。这个对比的用途是帮助实际排查快速定位问题，不做路线优劣判断。
 
 ### 渲染管线的根本区别
 
@@ -160,7 +160,7 @@ Flutter 在 Android 上通过一个 Surface(通常是 SurfaceView 或 TextureVie
 
 ### PlatformView:Flutter 与原生 View 的桥梁
 
-Flutter 应用有时候需要嵌入原生的 Android View--比如 WebView、MapView、或者某些只有 Android 原生实现的控件。这就是 PlatformView 的工作。
+Flutter 应用有时候需要嵌入原生的 Android View，比如 WebView、MapView，或者某些只有 Android 原生实现的控件。这就是 PlatformView 的工作。
 
 PlatformView 不能再只按"两种模式"理解。Flutter Engine 源码里至少有三条可核对路径:
 
@@ -186,7 +186,7 @@ Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线。从 20
 - 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`,优先升级 NDK r28+（默认生成 16KB-aligned `.so`）
 - 若必须使用 NDK r27 或更低版本,在 `CMakeLists.txt` 或 `android` 块中显式配置 linker flags（如 `-Wl,-z,max-page-size=16384`），并确保 AGP 8.5.1+ packaging 对齐
 - 在 16KB 模拟器（`--16kb-page-size`）或 16KB 真机上跑集成测试,验证 native 层行为
-- 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径--对齐错误在这些场景下最容易触发
+- 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径——对齐错误在这些场景下最容易触发
 
 如果某个关键 plugin 还没有适配,短期方案是在 `android/app/build.gradle` 中通过 `packagingOptions` 做对齐处理,长期仍需推动 plugin 作者更新 NDK 版本。
 
@@ -194,13 +194,13 @@ Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线。从 20
 
 ## 性能分析方法
 
-分析 Flutter 应用的性能,最大的挑战在于它横跨了两个世界:Flutter Engine 内部的 Dart/C++ 世界,和 Android 系统的内核/GPU 世界。问题可能藏在任何一层。所以我们需要两套工具配合使用--Flutter DevTools 看 Engine 内部的执行细节,Perfetto 看系统层面的调度和合成状态。
+分析 Flutter 应用的性能，最大的挑战在于它横跨两个世界：Flutter Engine 内部的 Dart/C++ 世界，以及 Android 系统的内核/GPU 世界。问题可能藏在任何一层，因此需要两套工具配合使用：Flutter DevTools 看 Engine 内部的执行细节，Perfetto 看系统层面的调度和合成状态。
 
 ### Flutter DevTools
 
 Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板:
 
-**Performance 面板**(集成 Perfetto trace viewer):这是最常用的面板。它记录每一帧的 UI / Main 侧和 Raster 线程耗时,用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer--DevTools 的演进节奏和 Flutter SDK 版本不一一绑定,分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括:
+**Performance 面板**(集成 Perfetto trace viewer):这是最常用的面板。它记录每一帧的 UI / Main 侧和 Raster 线程耗时,用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer。DevTools 的演进节奏和 Flutter SDK 版本不一一绑定，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括：
 
 - 每一帧在 UI / Main 侧的 Build、Layout、Paint 各自花了多少时间
 - Raster 线程的光栅化耗时
@@ -211,7 +211,7 @@ Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关
 
 **Memory 面板**:监控 Dart 堆的内存使用,帮助发现内存泄漏。
 
-使用 DevTools 分析时有一个重要前提:必须在 Profile 模式下运行。Debug 模式引入了大量的调试断言和 JIT 编译开销,性能数据完全不可信。在命令行中用 `flutter run --profile` 启动即可。
+使用 DevTools 分析时有一个前提：必须在 Profile 模式下运行。Debug 模式引入了大量调试断言和 JIT 编译开销，性能数据不能代表真实发布环境。在命令行中用 `flutter run --profile` 启动即可。
 
 ### Perfetto 系统级分析
 
@@ -283,7 +283,7 @@ developer.Timeline.finishSync();
 
 ### Shader 编译卡顿(Skia 时代)
 
-这是 Flutter 使用 Skia 渲染引擎时长期最容易被提到的问题。Skia 在运行时编译 shader 程序--这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作(比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪)时,Skia 需要在 Raster 线程上编译对应的 shader。
+这是 Flutter 使用 Skia 渲染引擎时长期最容易被提到的问题。Skia 在运行时编译 shader 程序，这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作(比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪)时,Skia 需要在 Raster 线程上编译对应的 shader。
 
 这个编译过程可能明显超出一帧预算。常见现象是:应用启动后第一次滚动到某个页面时,或者第一次播放某个动画时出现卡顿;第二次经过同样的页面或动画时,shader 已经进入缓存,卡顿会减轻或消失。具体耗时要以目标设备和驱动为准。
 
@@ -295,7 +295,7 @@ Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 s
 
 这是 Dart 层面最常见的性能问题。Flutter 的声明式 UI 框架在状态变化时会重建 Widget 树,但如果不注意控制重建范围,很容易导致整棵树都在重建。
 
-最常见的表现是:在 Perfetto 或 DevTools 中,UI / Main 侧每一帧耗时都很长,火焰图显示大量的 `build` 方法在执行。但 Raster 线程很空闲--因为虽然 UI / Main 侧生成了大量的 DisplayList,但很多内容没有变化。
+最常见的表现是:在 Perfetto 或 DevTools 中,UI / Main 侧每一帧耗时都很长,火焰图显示大量的 `build` 方法在执行。但 Raster 线程很空闲，因为 UI / Main 侧虽然生成了大量 DisplayList，很多内容并没有变化。
 
 这类问题的诊断和修复属于 Flutter 开发层面的优化,核心思路是:用 `const` 构造函数标记不需要重建的 Widget、将大的 build 方法拆分为小组件、使用合适的 State 管理方案限制重建范围。DevTools 的 "Rebuild Tracker" 功能可以帮助定位哪些 Widget 被频繁重建。
 
@@ -309,13 +309,13 @@ Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 s
 
 ### 列表滚动卡顿
 
-Flutter 的 ListView/GridView/CustomScrollView 在数据量大时可能出现卡顿。原因通常是 item builder 太慢--每个 item 在构建时做了太多的工作(网络请求、图片解码、复杂的 Widget 树等)。
+Flutter 的 ListView/GridView/CustomScrollView 在数据量大时可能出现卡顿。原因通常是 item builder 太慢：每个 item 在构建时做了太多工作（网络请求、图片解码、复杂的 Widget 树等）。
 
-在 Perfetto 中的表现是 UI / Main 侧在滚动时持续高负载,每一帧的 Build 阶段耗时过长。Flutter 提供了 `ListView.builder` 和 `cacheExtent` 等机制来缓解这个问题--builder 只构建可见区域附近的 item,cacheExtent 控制预构建的范围。
+在 Perfetto 中的表现是 UI / Main 侧在滚动时持续高负载,每一帧的 Build 阶段耗时过长。Flutter 提供了 `ListView.builder` 和 `cacheExtent` 等机制来缓解这个问题：builder 只构建可见区域附近的 item，cacheExtent 控制预构建范围。
 
 ## Impeller 引擎
 
-到目前为止我们讨论的性能问题中,shader 编译卡顿是最难绕过的一个--即使我们把 Dart 代码优化到了极致,把 Widget 树管理得井井有条,用户第一次看到某个动画时依然会卡。这就是 Flutter 团队开发 Impeller 的原因。
+前面讨论的性能问题里，shader 编译卡顿是最难绕过的一类：即使 Dart 代码已经优化到位，Widget 树管理得很干净，用户第一次看到某个动画时依然可能卡顿。这就是 Flutter 团队开发 Impeller 的原因。
 
 ### 为什么需要 Impeller
 
@@ -389,7 +389,7 @@ Flutter 渲染性能优化可以先抓三个要点。
 
 ### 必须做的事
 
-**始终在 Profile/Release 模式下测试性能**。Debug 模式的性能数据毫无参考价值--JIT 编译、调试断言、DevTools 的通信开销会让性能看起来比实际差得多。
+**始终在 Profile/Release 模式下测试性能**。Debug 模式的性能数据没有参考价值——JIT 编译、调试断言、DevTools 的通信开销会让性能看起来比实际差得多。
 
 **优先使用 Impeller**。运行在 Android API 29+ 的 Flutter 3.27+ 应用默认启用 Impeller;低版本系统、无 Vulkan 支持或后端条件不满足时会回退到 legacy OpenGL。评估时用 `--no-enable-impeller` 做 A/B,对比 Raster 线程首次进入复杂页面或动画时是否仍有 shader / pipeline 长 slice。
 
@@ -419,7 +419,7 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 - **§2.5 MainThread 与 RenderThread 协作**:Flutter 3.29+ 的 Dart UI 与 Platform 主线程已经合并;PlatformView、插件同步调用和原生 View 工作会直接影响同一条主线程的帧预算
 - **§4.4 Low Memory Killer**:Flutter 应用占用内存通常比原生应用高(Dart VM 堆 + Skia/Impeller 资源),在低内存场景下更容易被 LMK 杀掉
 - **§5.4 DVFS**:Flutter 的多线程模型(UI + Raster 同时运行)对 CPU 频率调度有影响,可能导致 DVFS 策略不如预期
-- **§7.1 卡顿的定义与分类**:Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同,但卡顿的分类框架同样适用--理解 jank 的分类有助于在 DevTools 中快速判断是 UI / Main 侧 jank 还是 Raster 线程 jank
+- **§7.1 卡顿的定义与分类**:Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同,但卡顿的分类框架同样适用——理解 jank 的分类有助于在 DevTools 中快速判断是 UI / Main 侧 jank 还是 Raster 线程 jank
 - **§7.7 Jetpack Compose 性能**:Compose 和 Flutter 都是"自绘引擎"路线(不依赖原生 View 体系),两者在 PlatformView/互操作场景下遇到类似的主线程压力和合成性能问题,优化思路可以互相参考
 - **§18.12 Flutter 渲染路径**:该章节按 Flutter 3.29+ 的 Main(UI+Platform) / Raster / IO 口径展开,可作为本章实践分析部分的延伸阅读
 
