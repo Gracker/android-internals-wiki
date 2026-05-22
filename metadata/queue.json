@@ -17700,6 +17700,33 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T03:35:03+08:00",
       "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260523-16.8-appflow-cold-launch-memory-scheduling",
+      "section": "16.8",
+      "section_title": "AppFlow：GB 级应用冷启动内存联合调度",
+      "priority": 80,
+      "title": "AppFlow 系统级冷启动内存调度缺口",
+      "description": "基于 MobiCom 2026 AppFlow 论文与本地精读材料，补齐 GB 级应用冷启动在文件预加载、页回收、进程杀灭之间的系统侧联合调度视角。",
+      "reason": "Phase 1 知识缺口挖掘：现有目录覆盖 App 启动、LMKD、I/O 调度，但缺少把 GB 级应用冷启动、文件页保护、Context-Aware Kill 放在同一系统级调度框架下的独立章节。",
+      "issue_type": "knowledge-gap",
+      "gap_source": "研究素材/论文精读/官方外部搜索",
+      "gap_score": 18,
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md"
+      ],
+      "material_paths": [
+        "intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md",
+        "https://arxiv.org/abs/2603.17259"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T07:04:00+08:00"
     }
   ],
   "metadata": {
