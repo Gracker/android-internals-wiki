@@ -33,23 +33,24 @@ tags:
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-23T09:22:00+08:00"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T07:30:41+08:00"
+task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-05-22T14:20:00+08:00"
 last_task6_audit: "2026-05-19"
-task2b_state: "fixed"
-p0: 0
-p1: 0
-p2: 1
+task2b_state: "pending"
+p0: 1
+p1: 1
+p2: 0
 updated_by: "openclaw-task9"
-updated_date: "2026-04-29"
-review_notes: "2026-04-29 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。"
-auto_promoted: true
+updated_date: "2026-05-22"
+review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。"
+auto_promoted: false
+last_task9_audit: "2026-05-22"
 ---
 
 <!-- outline-start -->

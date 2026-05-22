@@ -1,6 +1,51 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260522-6.2-filesystem-f2fs-erofs-source-version",
+      "section": "6.2",
+      "section_title": "文件系统",
+      "priority": 95,
+      "title": "f2fs 前台 GC 源码片段与 EROFS 压缩算法版本边界需修正",
+      "description": "Task9 闲时抽检发现 §6.2 的 f2fs 前台 GC 触发源码片段与 android15-6.6 当前实现不一致，且 EROFS ZSTD 支持被写成 Android 13+ 通用能力。",
+      "reason": "[Deep Tech Review Audit] §6.2 文件系统存在 f2fs 前台 GC 源码片段过期和 EROFS 压缩算法版本边界缺失，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-14-audit.md",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6/fs/f2fs/segment.h",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6/fs/f2fs/segment.c",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6/fs/erofs/decompressor.c",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/fs/erofs/decompressor.c"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/f2fs 前台 GC 触发源码过期",
+          "location": "L214-L231：`f2fs 前台 GC 触发机制详解`",
+          "detail": "正文把 android15-6.6 的 `has_not_enough_free_secs()` 写成 `free_secs < needed + reserved_sections + __get_secs_required`，并把 GC_MERGE 路径写成 `wake_up(&fggc_wq)`。当前 `kernel/common` android15-6.6 的 `fs/f2fs/segment.h` 实现已改为 `__get_secs_required(sbi, &lower_secs, &upper_secs, &curseg_space)`，再按 `free_secs > upper_secs`、`free_secs <= lower_secs`、`!curseg_space` 三段判断；`fs/f2fs/segment.c` 的 GC_MERGE 路径是等待 `fggc_wq`，实际唤醒 `gc_wait_queue_head`。章节引用的源码片段与当前源码不一致，会误导读者理解 CVE-2024-53220 后的 free section 判定。",
+          "suggestion": "按 android15-6.6 当前源码重写该段：展示 lower/upper/curseg_space 三段判定，说明 `__get_secs_required()` 同时返回 lower/upper 需求与当前 curseg 空间；GC_MERGE 描述改为“写线程等待 `fggc_wq`，唤醒后台 `gc_wait_queue_head` 执行前台 GC”。保留 CVE-2024-53220 时需说明它对应这版判定逻辑。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/EROFS 压缩算法边界",
+          "location": "L313、L497：EROFS 压缩算法与 Android 16 改进",
+          "detail": "正文写 EROFS 支持 LZ4（默认）、Zstandard 和 DEFLATE，且到 Android 16 新增更大压缩单元和去重增强，但没有版本/内核配置边界。android15-6.6 的 `fs/erofs/decompressor.c` 只列 LZ4、可选 LZMA、可选 DEFLATE，未包含 ZSTD；android16-6.12 / android-mainline 才出现 `CONFIG_EROFS_FS_ZIP_ZSTD` 与 `Z_EROFS_COMPRESSION_ZSTD`。当前写法会把 Android 16/6.12+ 能力误投射到 Android 13-15 设备。",
+          "suggestion": "改成版本化表述：Android 13-15 常见只读分区以 LZ4 为主，内核可选 LZMA/DEFLATE；ZSTD 需要 Android 16/6.12+ 或厂商 backport 且启用 `CONFIG_EROFS_FS_ZIP_ZSTD`。同时把 LZMA 补进算法表，避免只列 Zstandard/DEFLATE。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T14:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-14-audit.md"
+    },
+    {
       "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
       "section": "2.11",
       "section_title": "Flutter 渲染管线与性能",
