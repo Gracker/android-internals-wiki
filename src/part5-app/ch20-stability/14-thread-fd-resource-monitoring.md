@@ -1,7 +1,7 @@
 ---
 title: "线程与 FD 资源监控治理"
 chapter: "20"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, thread, fd, oom, observability]
@@ -29,17 +29,21 @@ sources:
     path: "https://developer.android.com/reference/java/io/FileDescriptor"
   - type: official
     path: "https://developer.android.com/ndk/reference/group/file-descriptor"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 last_task2a_at: "2026-05-23T03:09:00+08:00"
 section: "20.14"
-task9_state: "pending"
+task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-05-23T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-23-04-review.md"
 task6_review_notes: "2026-05-23 Task6 first review: pass-light-edit。L1/L2 小修 2 处（frontmatter 补 section/chapter，outline 禁用词替换），无回炉项；进入 Task9 技术审查。"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-23T04:36:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-23-04-deep-review.md"
+task9_review_notes: "2026-05-23 Task9 deep review: no P0/P1; P2 建议 3 处已写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 20.14 线程与 FD 资源监控治理
