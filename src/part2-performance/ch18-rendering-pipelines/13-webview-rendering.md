@@ -2,7 +2,7 @@
 title: "WebView 渲染管线"
 chapter: "18.13"
 section: "18.13"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0+（WebView provider 可独立更新；SurfaceControl 子 Surface 需结合 provider / Chromium milestone 判断）"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
 related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7", "18.10"]
@@ -18,21 +18,23 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-24T16:17:57+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
-task9_result: pass-tech-review
+task9_result: needs-rework
 last_task9_at: "2026-04-27T14:32:13+08:00"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-19"
 review_round: 3
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
+last_task9_audit: "2026-05-22"
+task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework，P0 0 / P1 1 / P2 1，写入 queue task9-audit-20260522-18.13-webview-surfacecontrol-platform-boundary。"
 ---
 
 <!-- outline-start -->
