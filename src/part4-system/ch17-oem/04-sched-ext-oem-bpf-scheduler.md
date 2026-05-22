@@ -434,3 +434,74 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 现有章节已覆盖 OPPO/OnePlus `hmbird_sched` 的公开线索，对高通和联发科平台，公开证据仍不足。**本调研报告结论：Qualcomm SCX_Oplus、MediaTek SCX_Mtk、Google Pixel SCX_Litto 的实际源码位置和实现细节，仍属于未经一手验证的盲区。**
 
 <!-- AIW-源码调研-2026-05-19 -->
+
+<!-- AIW-源码调研-2026-05-22 -->
+## 补充：2026-05-22 每日调研（sched_ext OEM 调度器公开证据与生产就绪度）
+
+**选题来源：** daily-topics.json id=5（pending）
+**核心发现：**
+
+### 1. Android kernel/common android16-6.12 实际包含 sched_ext 工具链
+
+本次调研确认：`https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/tools/sched_ext/` 包含完整的 sched_ext 示例调度器，而非之前认为的"kernel/common 无 sched_ext"。**区分点在于：kernel 源码位于 `kernel/sched/ext.c`（核心实现），而 AOSP 提供的示例工具位于 `tools/sched_ext/`（用户态调度器二进制）。**
+
+包含的示例调度器：
+- `scx_simple.bpf.c` / `scx_simple.c` — 简单全局 vtime 或 FIFO 调度器
+- `scx_central.bpf.c` / `scx_central.c` — 集中式调度器
+- `scx_flatcg.bpf.c` / `scx_flatcg.c` — 扁平 cgroup 调度器
+- `scx_qmap.bpf.c` — 多层队列映射调度器
+- `include/` — 共享 BPF 和用户态 C 头文件，包含 vmlinux.h
+
+### 2. SCX_OPS_SWITCH_PARTIAL 行为精确语义
+
+当 BPF 调度器加载且设置了 `SCX_OPS_SWITCH_PARTIAL` 标志时：
+- **仅 SCHED_EXT 策略的任务由 sched_ext 调度**
+- SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE 任务由 fair-class 调度（具有更高的 sched_class 优先级）
+
+当**未设置**该标志时：所有 SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE 和 SCHED_EXT 任务都由 sched_ext 调度。
+
+这与章节 §17.4 中 partial enable 的描述一致，并补充了精确的调度类分工边界。
+
+### 3. 任务状态机（enum scx_task_state）
+
+| 状态 | 含义 |
+|------|------|
+| `SCX_TASK_INIT` | ops.init_task() 成功，任务可被取消 |
+| `SCX_TASK_READY` | 完全初始化，但未加入 sched_ext |
+| `SCX_TASK_ENABLED` | 完全初始化且已加入 sched_ext |
+
+### 4. kernel config 要求（已确认）
+
+```
+CONFIG_BPF=y
+CONFIG_BPF_SYSCALL=y
+CONFIG_BPF_JIT=y
+CONFIG_DEBUG_INFO_BTF=y
+CONFIG_BPF_JIT_ALWAYS_ON=y
+CONFIG_BPF_JIT_DEFAULT_ON=y
+CONFIG_SCHED_CLASS_EXT=y
+```
+
+可通过 `zcat /proc/config.gz | grep CONFIG_SCHED_CLASS_EXT` 核查。
+
+### 5. sysfs 运行时状态接口（已确认）
+
+```
+cat /sys/kernel/sched_ext/state        # enabled / disabled
+cat /sys/kernel/sched_ext/*/ops        # 当前加载的调度器名称
+```
+
+### 6. Qualcomm SCX_Oplus / MediaTek SCX_Mtk / Google Pixel SCX_Litto 仍未找到公开源码
+
+本次调研在 cs.android.com 和 android.googlesource.com 上进行了 10+ 次针对性搜索，**未搜索到这三个定制调度器的具体实现源码**。这些名称可能属于：
+1. Vendor-specific kernel fork 中的私有实现（不在 AOSP/mainline 中）
+2. 尚未上传或仅在 vendor 分支中存在
+3. 内部代号，非实际源码中的符号名称
+
+**生产就绪度判断：**
+- Linux 6.12+ 上游支持已成熟，Meta 和 Google 均表态支持，Meta 处于规模化部署阶段
+- Android kernel/common android16-6.12 分支已包含 sched_ext 工具链
+- 但各设备是否实际启用、加载哪个 BPF 调度器，由厂商 kernel config 和运行时决定，不可泛化
+
+**关联报告：** `2026-05-22-sched-ext-oem-scheduler-production-readiness.md`（DeepResearch/）
+<!-- AIW-源码调研-2026-05-22 -->
