@@ -635,3 +635,67 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 ### 关联章节
 22.3、22.15、7.7、4.9
 
+## [2026-05-22] 网络性能优化 — 参考书素材（极客时间 #18-#19）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md]
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md]
+
+### 知识点
+1. 无线网络基础知识：WiFi/蜂窝/蓝牙/NFC 各标准特性与适用场景，5G 基带芯片格局
+2. Link Turbo 双通道聚合加速技术：WiFi + 蜂窝同时传输，MPTCP/MPUDP 原理
+3. UNIX 网络 I/O 五种模型对比：阻塞/非阻塞/多路复用/信号驱动/异步，客户端场景下多路复用不一定优于阻塞 I/O
+4. epoll vs select/poll 误区澄清：连接数少时 select 可能更快；epool 未使用 mmap
+5. 网卡收发包流程：硬中断 + 软中断机制，/proc/softirqs、/proc/interrupts 监控接口
+6. 网络性能评估指标体系：吞吐量/延迟/连接数/丢包，Linux 网络分析工具矩阵（ping/hping3/iperf3/netstat/ss/dropwatch/strace等）
+7. 网络优化三大目标：速度（利用带宽）/弱网络（连通性）/安全（防劫持篡改）
+8. 网络库横向对比：OkHttp（Android 单平台）/Chromium Cronet（跨平台标准）/Mars（跨平台弱网络优化），核心模块差异
+9. HTTPDNS 解决 LocalDNS 三大问题：劫持/调度不准/TTL 修改，配合统一接入层做流量调度与容灾
+10. 连接复用优化：HTTP/2 多路复用 + 统一接入层域名合并，但存在 TCP 队首阻塞
+11. 数据压缩方案：gzip/Brotli/Z-standard + 业务字典训练，Protocol Buffers vs JSON 序列化对比
+12. HTTPS 安全优化：TLS 1.3 0-RTT、ecc 证书替代 RSA、Session Ticket 复用、证书锁定
+13. QUIC（HTTP/3）优势与坑：解决队首阻塞 + 0-RTT + 灵活拥塞控制，但 UDP 穿透性/运营商支持不足
+14. IPv6 对网络性能的正向作用：减少 NAT，P2P/QUIC 连接不再受阻，印度测试连接耗时降低 10%-20%
+
+### 重要程度
+高
+
+### 建议加工方向
+- AIW 目前缺少独立的网络性能优化章节，建议在 Part 5 新增"网络性能"章节，覆盖上述知识点
+- 以网络请求全链路（DNS→建连→收发→关闭）为主线组织内容，每步拆解优化手段
+- QUIC/HTTP 3 现状需更新至 2025-2026 年实际落地情况（Chrome/Android Cronet 默认支持状态）
+- HTTPDNS 部分可结合 DoH/DoT 等新标准补充
+- 5G 内容需更新（SA/NSA、毫米波、载波聚合等当前部署现状）
+
+### 关联章节
+[章节待创建] Part 5 网络性能优化
+
+---
+
+## [2026-05-22] 网络可观测性与监控 — 参考书素材（极客时间 #20）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+
+### 知识点
+1. 网络监控三种方法：插桩（Aspect 切面）/Native Hook（PLT Hook connect/send/recv）/统一网络库
+2. PLT Hook 监控 Socket 的实现细节：排除 libc.so、过滤 Local Socket
+3. TrafficStats 流量监控：基于 /proc/net/xt_qtaguid/stats，Android 7.0+ 权限收紧
+4. 客户端网络质量监控维度：时延（DNS/建连/首包/总时间）/维度（网络类型/运营商/地域/版本）/错误（DNS失败/连接失败/超时）
+5. 接入层监控互补：实时性强（秒级）/可靠性高（不受客户端上报通道影响）
+6. 实时 vs 离线监控分层：实时（PV+错误率）/离线（全维度+UV）
+7. 报警算法：规则驱动 vs 时间序列/神经网络智能报警，混合方案更优
+8. WiFi 稳定性检测：网卡驱动层射频参数 + 协议栈 ACK 信息判断 WiFi 问题 vs 服务器问题
+
+### 重要程度
+高
+
+### 建议加工方向
+- AIW Part 5 可观测性章节需要包含网络监控体系
+- PLT Hook 网络监控可归入"Native Hook 实践"段落
+- 客户端+接入层双层监控架构是可观测性章节的核心内容
+- 报警算法演进需要补充 2024-2026 年 AIOps 实际落地案例
+
+### 关联章节
+[章节待创建] Part 5 可观测性
+

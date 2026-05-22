@@ -2844,13 +2844,62 @@
 - **问题**：Task9 2026-05-22 已标记 Alpha API / 默认线程池 / 执行模型与 `THREAD_PRIORITY_FOREGROUND` 应用侧边界仍有 P0/P1 技术风险；Task6 仅做文稿交接标注，不裁决源码真伪。
 - **建议**：由 Task2B 按 `logs/deep-review/2026-05-22-03-deep-review.md` 修正文稿，修完后重新进入 Task6 / Task9。
 - **review 日志**：logs/review/2026-05-22-04-review.md
+## [Task9 Deep Review] 14.19 Android CLI 与 Agent 化性能调试工作流 — 2026-05-22
+- **类型**：命令链路完整性
+- **位置**：L204-L237：CI 与本地 agent 工作流模板
+- **问题**：模板直接执行 `android emulator start medium_phone`，但没有说明 `medium_phone` 必须已经由 `android emulator create [--profile=medium_phone]` 创建，或由 CI 预置。官方命令把 create/list/start 分成三个步骤，`start` 的参数是可用虚拟设备名。
+- **建议**：在模板前置条件里写清“若 AVD 不存在先执行 `android emulator create --profile=medium_phone`，或在 CI 中传入已创建的设备名”。这属于模板可执行性补强，不阻塞技术通过。
 
-## [Task9 Deep Review] 12.2 网络性能优化 — 2026-05-22
-- **类型**：数据缺失
-- **位置**：L148：16KB 分页对 Cronet 冷启动的影响
-- **问题**：正文写 `libcronet.so` 在 16KB 页环境下从 `dlopen` 到首次 HTTP 请求发出的间隔缩短约 10%，但未给出设备、内核页大小、Cronet provider 形态、版本、ABI、样本量或公开来源。Android 16KB page size 的通用收益不能直接推出 Cronet 冷启动 10% 这一具体数据。
-- **建议**：若这是内部实测，补充测试条件和对比表；若没有可复现实验或官方来源，删除“约 10%”并改成定性表述：大型 native 库在 16KB page size 下可能减少页表项和 page fault，但收益需按 provider 与设备实测。
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-05-22
+- **类型**：数据支撑
+- **位置**：L244、L263、L277-L281：16 KB page size、SELinux AVC、JNI 延迟量化数据
+- **问题**：多处量化数据缺少同一口径的设备、build、kernel/page-size、测试工具和样本说明；其中 16 KB 的 3.16%/0.8s 可追到官方兼容性页或开发者博客，但 “内存开销增加约 9%” 与 TLS 专项优化需要明确来源或降级为待验证。AVC 50-200 ns、JNI 25-200 ns 也需要标出 benchmark 来源和设备条件。
+- **建议**：为每组数字补“来源 + 测试条件 + 是否官方/社区/内部 benchmark”。无法 pin 到来源的数字改为 `[待验证]`，避免把估算值写成稳定事实。
 
+## [Task6 Audit] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-05-22
+- **类型**：需补齐 outline
+- **位置**：文件开头正文前（缺少 `<!-- outline-start -->` / `<!-- outline-end -->`）
+- **问题**：闲时抽检无法执行 outline 锚点覆盖检查；当前章节直接从正文开始，没有 Task 6 可核对的锚点块。
+- **建议**：按现有正文结构补充本节要点大纲，至少覆盖实证数据来源、七类性能后果、六类代码模式、现代 Binder/freezer 补充、排查优先级、Code Review 清单和实践指导；补完后确认每个锚点都有正文段落。
+- **queue_id**：`task6-audit-15.8-empirical-performance-outline-missing`
+- **review 日志**：logs/review/2026-05-22-06-audit.md
+## [Task14 参考书扫描] 11.1 Android 功耗模型 — 2026-05-22
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md]
+- **建议补充**：电能计算公式（模块电量 = 模块电流 × 模块耗时）、power_profile.xml 详解与提取方法、dumpsys batterystats 用法、BatteryStatsImpl 统计的系统能资源类型图、Battery Historian 排查流程。五种电量测试方法对比（硬件仪器/软件测量/Battery Historian/其他）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 5.8 后台执行限制与优化 — 2026-05-22
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md]
+- **建议补充**：Android 后台限制演进历程三阶段梳理：野蛮生长（Pre 5.0，多进程/fork/广播保活）→ 逐步收紧（5.0-8.0，Volta 项目/Doze 模式/后台清理）→ 最严限制（9.0+，App Standby Buckets/后台限制/用户主动管控）。各阶段的关键特性与不足对比
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 11.2 App 耗电优化 — 2026-05-22
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md]
+- **过时内容**：原文仅覆盖到 Android 9.0 的功耗管理限制（App Standby Buckets、省电模式），未涉及 Android 10-16 的演进
+- **建议更新至**：补充 Android 10（后台位置权限限制）、Android 12（精确闹钟限制/前台服务类型）、Android 14（前台服务类型强制/后台资源访问限制）、Android 16（新的后台执行边界）对功耗管理的持续收紧
+
+## [Task14 参考书扫描] 11.1 Android 功耗模型 — 2026-05-22
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md]
+- **建议补充**：手机耗电硬件模块全景（CPU/屏幕/WiFi/数据网络/GPS/音视频）及其耗电特性、厂商资源调度机制（大小核/GPU 调度/AI 调度）、厂商合作通道（CPU Boost/Hardcode 白名单）对头部应用的特殊资源倾斜
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 5.6 Android 功耗管理 — 2026-05-22
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md]
+- **过时内容**：原文提到石墨烯电池作为"革命性技术"，但截至 2026 年石墨烯电池仍未在智能手机中大规模商用
+- **建议更新至**：更新电池技术现状（硅碳负极电池/固态电池进展），快充技术现状（120W-240W），移除过于前瞻的石墨烯预测
+
+
+
+## [Task2A 缺口挖掘] 本轮未创建新章节 — 2026-05-22 13:04
+- **检查结果**：`src/` 未发现 `status: draft` 且正文实质内容 < 15 行的章节。
+- **已核对方向**：Android Performance Analyzer（已有 14.18）、Android CLI/Agent 调试（已有 14.19）、Android XR 渲染（已有 18.22）、Compose First 迁移（已有 22.15）、Android 17 侧载/Developer Verification（已有 1.21 / 16.5 相关覆盖）、用户设置功耗论文（已有 11.7）、ProfilingManager / ProfilingTrigger 版本化诊断（已有 14.7 / 19.16 / 26.12）。
+- **低分候选**：Android Halo、Android for Cars、Health Connect rate limiting、原生应用锁。它们与本书性能优化主线相关性不足，未达到 14 分录入线。
+- **建议**：下一轮优先从 `source-index.json` 中 score ≥ 16 但仍未映射的条目继续筛查，重点排除已被 13.x / 14.x / 18.x / 26.x 吸收的旧素材，避免重复创建章节。
 
 ## [Task9 Deep Review] 6.2 文件系统 — 2026-05-22
 - **类型**：数据缺失
@@ -2858,8 +2907,67 @@
 - **问题**：正文列出 system 镜像缩小 30%-45%、随机读提升约 20% / 最高 300%、Pixel 启动改善 10%-15%、dm-verity 开销 5%-15% 等数字，但缺设备型号、Android 版本、分区大小、压缩算法、workload、冷/热启动条件和原始链接。
 - **建议**：补官方文档、论文或厂商演讲的原始出处与测试条件；补不齐时改为方向性表述，避免把公开案例数字写成 Android 通用基准。
 
+
+
+## [Task2A Gap Mining] 2026-05-22 17:04 — 本轮无新增章节
+- **类型**：知识缺口挖掘记录
+- **结论**：Phase 0 未发现 `status: draft` 且正文实质内容少于 15 行的章节；Phase 1 未发现评分 ≥14 且需要新建章节的知识缺口。
+- **已检查方向**：Android 17 应用锁、Android 17 禁止侧载 / Developer Verification、AICore / LiteRT / NNAPI、MTE ASYMM、ART 分代 GC 与 Compose、DMA-BUF / Gralloc、ProfilingManager Android 17 新触发器、Android Performance Analyzer、Compose First、Android XR SDK DP4、用户设置对能耗影响论文。
+- **不创建原因**：候选要么偏安全/生态，和性能主线相关性不足；要么已被 1.21、2.15、2.24、4.8、5.11、5.14、8.10、11.7、14.18、18.15、18.22、20.11、22.15 等章节覆盖，更适合进入 Task 2B/Task 6 修订，而不是创建新小节。
+- **后续建议**：后续挖掘优先转向 `packages/modules/Wifi`、`vold`、`installd`、`statsd` 高版本变更，避免重复评估本轮热点。
+
+## [Task2A 缺口挖掘] 2026-05-22 18:19
+
+- **Phase 0**：扫描 `src/` 未发现 `status: draft` 且正文实质内容少于 15 行的章节。
+- **素材检查**：读取 `source-index.json`、最近 3 天 `daily-info`、近期 `research-feeds`、`research-gaps.md`，并对照 Android Developers / AOSP 官方检索结果。
+- **结论**：本轮未发现评分 ≥ 14 且尚未被现有章节覆盖的独立新小节。
+- **已排除方向**：
+  - Android Performance Analyzer / Android CLI：已覆盖在 14.18、14.19。
+  - Compose First / View 迁移：已覆盖在 22.15。
+  - 用户设置对能耗影响：已覆盖在 11.7，论文可作为后续补充素材。
+  - ProfilingManager / ProfilingTrigger 新触发类型：已覆盖在 26.12、25.12，后续走 Task2B 深修更合适。
+  - Android 17 原生应用锁、Android Halo：与本书性能主线相关性不足，暂不新建章节。
+  - 16KB Page Size、MTE、ADPF、ART GC、DMA-BUF：现有章节已覆盖，新增素材更适合补充已有章节，不符合 Task2A “不碰非空章节”规则。
+- **后续建议**：下一轮优先等待新的空 draft；若继续挖掘，可重点看 Part 5 参考书中尚未被 20.x-26.x 覆盖的独立实战主题。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-05-22
+- **类型**：数据缺失
+- **位置**：L148：16KB 分页对 Cronet 冷启动的影响
+- **问题**：正文写 `libcronet.so` 在 16KB 页环境下从 `dlopen` 到首次 HTTP 请求发出的间隔缩短约 10%，但未给出设备、内核页大小、Cronet provider 形态、版本、ABI、样本量或公开来源。Android 16KB page size 的通用收益不能直接推出 Cronet 冷启动 10% 这一具体数据。
+- **建议**：若这是内部实测，补充测试条件和对比表；若没有可复现实验或官方来源，删除“约 10%”并改成定性表述：大型 native 库在 16KB page size 下可能减少页表项和 page fault，但收益需按 provider 与设备实测。
+
+## [Task2A 缺口挖掘] 2026-05-22 19:04
+
+- **Phase 0**：扫描 `src/**/*.md` 未发现 `status: draft` 且正文实质内容少于 15 行的章节；`progress.json` 中 draft 计数与实际文件状态不一致，需后续元数据校准。
+- **素材检查**：复核 `source-index.json` 中 score ≥ 16 的未映射/低映射素材、最近 3 天 `daily-info`、近期 `research-feeds`、`research-gaps.md`，并补充检索 Android Developers / AOSP Code Search。
+- **候选评估**：Android Performance Analyzer、Android CLI / Agent、Compose First、Android XR、ApplicationStartInfo / ProfilingTrigger、16KB Page Size、MTE ASYMM、ADPF 协程、ART 分代 GC、DMA-BUF / Gralloc、端侧 AI 推理、用户设置功耗论文均已有章节承接；本轮未发现评分 ≥ 14 且需要独立新建小节的缺口。
+- **低分候选**：Android 17 原生应用锁、Android Halo、Android for Cars、AI 写 Android / Android Bench、Kotlin 2.3 更新。它们偏生态、安全或开发体验，和本书性能优化主线相关性不足，暂不进入章节队列。
+- **后续建议**：下一轮优先做元数据一致性校准（`progress.json` draft 计数、`source-index.json` 映射字段统一），再继续筛查 `packages/modules/Wifi`、`statsd`、`installd`、`vold` 的 Android 17 变更是否具备独立小节价值。
+
+
 ## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-05-22
 - **类型**：原理链精度
 - **位置**：L303：低内存 / 频繁 GC ANR 段
 - **问题**：正文把“LMK 杀后台进程释放的内存页”与“需要通过磁盘 I/O 重新分配给存活进程”直接连起来。Linux/Android 中被杀进程的匿名页通常直接释放；真正会引入 I/O 或 CPU 压力的是内存压力下的 kswapd/direct reclaim、page cache 回收、writeback、zram/swap 与后续 refault 等路径。
 - **建议**：改成“系统内存压力会触发回收与调度竞争；kswapd/direct reclaim、page cache eviction/refault、writeback 或 zram/swap 可能增加 CPU/I/O 压力”，不要把 LMK free pages 描述成必须经磁盘 I/O 重新分配。
+
+---
+
+## [Task2A 知识缺口挖掘] 2026-05-22 22:04 — 本轮无新章节
+
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、`intake/daily-info/2026-05-20..22.md`、近期 `intake/research-feeds/`、Android Developers / AOSP 搜索结果。
+- **结论**：本轮未发现评分 ≥ 14 且尚未被目录覆盖的知识缺口，不创建新章节。
+- **已去重方向**：Android Performance Analyzer（14.18/14.19 已覆盖）、Compose First（22.15 已覆盖）、Android XR 性能（18.22 已覆盖）、AICore/LiteRT/NNAPI（5.14/5.11/5.13 已覆盖）、ART GC + Compose（4.8/22.3 已覆盖）、用户设置能耗论文（11.7 已覆盖）、Android 17 App Lock/侧载限制（性能相关性不足，开发者验证已有 1.21）。
+- **建议**：后续修订可加强 5.14、22.3、14.18/14.19 的新材料同步；不建议单独新建章节。
+- **报告落盘**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-22-22-知识加工(新).md`
+
+
+
+## [Task2A 知识缺口挖掘] 2026-05-22 23:04 — 本轮无新章节
+
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、`intake/research-feeds/` 近期文件、`intake/daily-info/2026-05-20..22.md`、`intake/research-gaps.md`、Android Developers / AOSP Code Search 检索结果。
+- **Phase 0**：未发现 `status: draft` 且正文实质内容少于 15 行的章节；`progress.json` 的 draft 计数与实际文件状态不一致。
+- **结论**：本轮未发现评分 ≥ 14 且尚未被目录覆盖的独立知识缺口，不创建新章节。
+- **已去重方向**：Android Performance Analyzer / Android CLI（14.18、14.19 已覆盖）、Compose First（22.15 已覆盖）、Android XR（18.22、22.14 已覆盖）、AICore / LiteRT / NNAPI（5.11、5.14、5.13 已覆盖）、ART GC + Compose（4.8、22.3 已覆盖）、DMA-BUF / Gralloc / 16KB（2.15、2.24、18.15 已覆盖）、用户设置能耗论文（11.7 已覆盖）。
+- **低分候选**：Android 17 原生应用锁、Android Halo、Android for Cars、AI 写 Android / Android Bench、Kotlin 2.3 更新；这些方向与 Android 性能优化主线相关性不足，暂不进入章节队列。
+- **报告落盘**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-22-23-知识加工(新).md`
