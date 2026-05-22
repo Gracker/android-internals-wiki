@@ -13,7 +13,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch06-storage/02-filesystem.md"
@@ -43,7 +43,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T14:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-22-14-audit.md"
+      "review_log": "logs/deep-review/2026-05-22-14-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T15:25:30.815307",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
@@ -58,7 +61,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
@@ -78,7 +81,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T11:40:27+08:00",
-      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T15:25:30.815307",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-rereview-20260522-9.4-16kb-sqlite-wal-boundary",
@@ -93,7 +99,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/04-special-anr.md"
@@ -116,7 +122,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T11:40:27+08:00",
-      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T15:25:30.815307",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260522-9.4-special-anr-broadcast-freezer-sqlite",

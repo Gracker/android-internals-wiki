@@ -25,10 +25,10 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-05-22T11:21:56+08:00"
+last_task2b_at: "2026-05-22T15:21:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 rework_date: "2026-04-16"
@@ -36,15 +36,15 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T11:40:27+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
-task2b_state: pending
+task2b_state: fixed
 p0: 0
 p1: 1
 p2: 1
@@ -358,15 +358,24 @@ Android 还要区分 compatibility WAL 与 full WAL。Android 9+ framework 引�
 Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`、Java 锁或 native mutex 上等待，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易看到 D 状态。只用一个“文件锁”标签归因，很容易漏掉连接池和 checkpoint。
 
 
-### 16KB Page Size 下的数据库写放大
+### 16KB Page Size 下的数据库 I/O 变化
 
-[来源: External Review — Android 16+ 物理分页对 SQLite 的影响]
+[来源: External Review — Android 16KB 物理分页对 SQLite 的影响]
 
-Android 16 在旗舰设备上强制 16KB 页面对齐后，数据库操作的物理 I/O 行为发生了变化。4KB 页时代，修改一个数据库页只需要写入 4KB；16KB 页时代，同一个修改需要写入 16KB——物理写放大 4 倍。对于 WAL 模式的 checkpoint 操作，影响尤为明显：checkpoint 需要把 WAL 中的脏页写回主数据库文件，每个页的物理写入代价从 4KB 涨到 16KB。
+Android 15+ 设备开始使用 16KB kernel page size，Google Play 从 2025-11-01 起要求面向 Android 15+ 的新应用和更新兼容 16KB page sizes。kernel page size 的变化可能影响 SQLite 的物理 I/O 行为，但影响程度取决于多个因素的实际配置，不能简单断言为固定倍数的写放大。
 
-具体影响链条：WAL 积累到一定量后触发 checkpoint → 每个 dirty page 的物理写入放大 4 倍 → checkpoint 耗时增加 → 持有写锁时间拉长 → 阻塞后续读写的等待时间增加。如果同时还有跨进程竞争（主进程读、后台进程写），锁等待和 I/O 等待叠加，主线程被卡住的时间可能从百毫秒级跳到秒级。
+**影响链条需要实测确认**：kernel page size、filesystem block size、SQLite `PRAGMA page_size`、Room/SQLite 版本和 WAL 文件大小，这些因素共同决定 checkpoint 的实际 I/O 开销。排查时先确认设备的 kernel page size（`adb shell getconf PAGESIZE` 或 `/proc/sys/vm/page_size`），再读取数据库的 `PRAGMA page_size` 和 `PRAGMA wal_autocheckpoint`。
 
-**实战建议**：在 16KB 页环境下，建议将 `wal_autocheckpoint` 从默认值（通常 1000 页）手动调低到 250 页左右，让 checkpoint 更频繁但每次更轻量，减少单次 checkpoint 的写放大累积。通过 `PRAGMA wal_autocheckpoint = 250` 即可设置。同时监控 WAL 文件大小和 checkpoint 耗时，如果 WAL 文件持续增长超过几 MB，说明 checkpoint 频率仍然不够。
+当 kernel page size 和 filesystem block size 都切到 16KB，且 SQLite database page size 也是 16KB 时，每个脏页的物理写入从 4KB 变为 16KB，checkpoint 的单次 I/O 开销可能相应增大。但这不是“所有 16KB 设备上的 SQLite 都写放大 4 倍”——database page size 由数据库创建时的参数决定，很多现有数据库的 `PRAGMA page_size` 仍然是 1024 或 4096。
+
+**排查步骤**：
+1. 确认设备 kernel page size：`adb shell getconf PAGESIZE`
+2. 确认数据库 page size：`PRAGMA page_size`
+3. 确认当前 autocheckpoint 阈值：`PRAGMA wal_autocheckpoint`
+4. 监控 WAL 文件大小和 checkpoint 耗时
+5. 检查 SQLite busy / locked 日志，确认是否存在锁竞争叠加
+
+**checkpoint 调参建议**：只有确认 checkpoint 耗时在实际 workload 下成为瓶颈后，再考虑调低 `wal_autocheckpoint`。具体值取决于业务写入模式、WAL 增长速率和可接受的 checkpoint 停顿时长，不建议固定为某个通用值（如 250）。默认 1000 页在多数场景下工作正常；调低后 checkpoint 更频繁但每次更轻量，反过来也意味着更频繁的写锁竞争机会。
 
 ### 源码锚点与防御手段
 
