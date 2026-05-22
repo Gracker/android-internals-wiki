@@ -2,7 +2,7 @@
 title: dumpsys 系列命令
 chapter: '14.4'
 section: '14.4'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
@@ -31,11 +31,11 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
@@ -46,7 +46,9 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T18:33:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-review_notes: "2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
+review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
+last_task9_audit: "2026-05-23"
+last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
 ---
 
 # dumpsys 系列命令
