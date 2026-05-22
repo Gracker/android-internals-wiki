@@ -1,6 +1,62 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-7.5-rendereffect-source-version-errors",
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 95,
+      "title": "RenderEffect 源码锚点与版本演进存在 P0 错误",
+      "description": "闲时抽检发现 §7.5 参考资料后的 RenderEffect 深度分析段存在 LAYER_SIZE 常量错误、伪调用链/伪代码片段，以及 API 31/33 版本能力表述错误。",
+      "reason": "[Deep Tech Review Audit] §7.5 RenderEffect 段存在源码准确性与版本差异 P0 问题，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/05-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-06-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/Properties.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/LAYER_SIZE 常量错误",
+          "location": "L510-L536：RenderEffect GPU 渲染管线续篇「RenderNode 的 Layer 申请与 LAYER_SIZE 对齐」",
+          "detail": "正文写 RenderEffect layer 分配按 `LAYER_SIZE=256` 对齐，并给出 100×100→256×256、300×300→512×512 的示例。复核 AOSP android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1：`frameworks/base/libs/hwui/Properties.h` 均为 `#define LAYER_SIZE 64`；`SkiaGpuPipeline::createOrUpdateLayer()` 使用该常量向上取整。因此当前常量和显存估算示例均错误，直接影响读者对 RenderEffect 显存成本的判断。",
+          "suggestion": "将常量改为 `LAYER_SIZE=64`，示例改为 100×100→128×128、300×300→320×320；或者删除具体倍数示例，只保留“按 HWUI layer size 向上对齐”的描述，并把源码锚点放到 `libs/hwui/Properties.h` + `libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/伪调用链与伪代码片段",
+          "location": "L619-L707：参考资料后的「RenderEffect GPU 渲染管线深度分析」",
+          "detail": "正文给出的 `RenderNode.setRenderEffect()` 片段写成 `mRenderEffect = effect`、`mNeedsDisplayListSync = true`，并列出 `RenderThread.applyRenderEffect()`、`RenderEffect::createBlurEffect()`、`CanvasContext::drawRenderEffect()` 等调用链。复核 android-16.0.0_r1：`RenderNode.setRenderEffect()` 直接调用 native `nSetRenderEffect()`；`View.setRenderEffect()` 在 RenderNode 属性变化时调用 `invalidateViewProperty(true, true)`；`RenderEffect.cpp` 的 JNI blur 创建函数直接构造 `SkImageFilters::Blur(...)`；未找到上述 `applyRenderEffect()`、`RenderEffect::createBlurEffect()`、`CanvasContext::drawRenderEffect()` 锚点。",
+          "suggestion": "删除这一整段未核源码链，或改写为已验证链路：`View.setRenderEffect()` → `RenderNode.setRenderEffect()` → `nSetRenderEffect()` / `RenderProperties::setImageFilter()`；blur 创建链路为 `RenderEffect.createBlurEffect()` → JNI `createBlurEffect()` → `SkImageFilters::Blur(...)`。不要保留不存在的方法名和伪代码片段。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 能力错误",
+          "location": "L729-L732：RenderEffect 版本演进差异",
+          "detail": "正文写 Android 12/API 31 “仅支持基本模糊效果”，并断言 Android 14 优化 GPU 内存管理、Android 15 添加软件回退智能选择。复核 AOSP `RenderEffect.java`：android-12.0.0_r1 已包含 `createBitmapEffect`、`createBlendModeEffect`、`createBlurEffect`、`createChainEffect`、`createColorFilterEffect`、`createOffsetEffect`、`createShaderEffect`；android-13.0.0_r1 起新增 `createRuntimeShaderEffect`。本轮未核到 Android 14/15 两条性能/回退断言的公开源码或官方文档锚点。",
+          "suggestion": "将版本表改为：API 31 引入 RenderEffect 基础 effect 集合（blur/colorFilter/blend/chain/offset/bitmap/shader）；API 33 新增 RuntimeShader/AGSL 输入效果。Android 14/15 的 GPU 内存管理或软件回退优化若无 AOSP commit / release note / trace 证据，应删除或标 `[待验证]`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T06:28:41+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-23T06:28:41+08:00",
+      "review_log": "logs/deep-review/2026-05-23-06-audit.md"
+    },
+    {
       "id": "task9-audit-20260522-2.2-framerate-refresh-rate-selector-layerhistory",
       "section": "2.2",
       "section_title": "帧率与刷新率",
@@ -17647,22 +17703,78 @@
     }
   ],
   "metadata": {
-    "total_entries": 480,
-    "p0_count": 201,
-    "last_updated": "2026-05-23T01:30:00+08:00",
+    "total_entries": 484,
+    "p0_count": 187,
+    "last_updated": "2026-05-23T06:28:41+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 171,
+    "pending_entries": 177,
     "updated_date": "2026-05-23",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 171,
+    "pending": 177,
     "completed_entries": 302,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T01:30:00+08:00",
+  "last_updated": "2026-05-23T06:28:41+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
+    {
+      "id": "task9-audit-20260523-7.5-rendereffect-source-version-errors",
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 95,
+      "title": "RenderEffect 源码锚点与版本演进存在 P0 错误",
+      "description": "闲时抽检发现 §7.5 参考资料后的 RenderEffect 深度分析段存在 LAYER_SIZE 常量错误、伪调用链/伪代码片段，以及 API 31/33 版本能力表述错误。",
+      "reason": "[Deep Tech Review Audit] §7.5 RenderEffect 段存在源码准确性与版本差异 P0 问题，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/05-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-06-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/Properties.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/LAYER_SIZE 常量错误",
+          "location": "L510-L536：RenderEffect GPU 渲染管线续篇「RenderNode 的 Layer 申请与 LAYER_SIZE 对齐」",
+          "detail": "正文写 RenderEffect layer 分配按 `LAYER_SIZE=256` 对齐，并给出 100×100→256×256、300×300→512×512 的示例。复核 AOSP android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1：`frameworks/base/libs/hwui/Properties.h` 均为 `#define LAYER_SIZE 64`；`SkiaGpuPipeline::createOrUpdateLayer()` 使用该常量向上取整。因此当前常量和显存估算示例均错误，直接影响读者对 RenderEffect 显存成本的判断。",
+          "suggestion": "将常量改为 `LAYER_SIZE=64`，示例改为 100×100→128×128、300×300→320×320；或者删除具体倍数示例，只保留“按 HWUI layer size 向上对齐”的描述，并把源码锚点放到 `libs/hwui/Properties.h` + `libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/伪调用链与伪代码片段",
+          "location": "L619-L707：参考资料后的「RenderEffect GPU 渲染管线深度分析」",
+          "detail": "正文给出的 `RenderNode.setRenderEffect()` 片段写成 `mRenderEffect = effect`、`mNeedsDisplayListSync = true`，并列出 `RenderThread.applyRenderEffect()`、`RenderEffect::createBlurEffect()`、`CanvasContext::drawRenderEffect()` 等调用链。复核 android-16.0.0_r1：`RenderNode.setRenderEffect()` 直接调用 native `nSetRenderEffect()`；`View.setRenderEffect()` 在 RenderNode 属性变化时调用 `invalidateViewProperty(true, true)`；`RenderEffect.cpp` 的 JNI blur 创建函数直接构造 `SkImageFilters::Blur(...)`；未找到上述 `applyRenderEffect()`、`RenderEffect::createBlurEffect()`、`CanvasContext::drawRenderEffect()` 锚点。",
+          "suggestion": "删除这一整段未核源码链，或改写为已验证链路：`View.setRenderEffect()` → `RenderNode.setRenderEffect()` → `nSetRenderEffect()` / `RenderProperties::setImageFilter()`；blur 创建链路为 `RenderEffect.createBlurEffect()` → JNI `createBlurEffect()` → `SkImageFilters::Blur(...)`。不要保留不存在的方法名和伪代码片段。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 能力错误",
+          "location": "L729-L732：RenderEffect 版本演进差异",
+          "detail": "正文写 Android 12/API 31 “仅支持基本模糊效果”，并断言 Android 14 优化 GPU 内存管理、Android 15 添加软件回退智能选择。复核 AOSP `RenderEffect.java`：android-12.0.0_r1 已包含 `createBitmapEffect`、`createBlendModeEffect`、`createBlurEffect`、`createChainEffect`、`createColorFilterEffect`、`createOffsetEffect`、`createShaderEffect`；android-13.0.0_r1 起新增 `createRuntimeShaderEffect`。本轮未核到 Android 14/15 两条性能/回退断言的公开源码或官方文档锚点。",
+          "suggestion": "将版本表改为：API 31 引入 RenderEffect 基础 effect 集合（blur/colorFilter/blend/chain/offset/bitmap/shader）；API 33 新增 RuntimeShader/AGSL 输入效果。Android 14/15 的 GPU 内存管理或软件回退优化若无 AOSP commit / release note / trace 证据，应删除或标 `[待验证]`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T06:28:41+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-23T06:28:41+08:00",
+      "review_log": "logs/deep-review/2026-05-23-06-audit.md"
+    },
     {
       "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
       "section": "2.11",
@@ -24067,6 +24179,86 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T01:30:00+08:00",
       "review_log": "logs/deep-review/2026-05-23-01-audit.md"
+    },
+    {
+      "section": "ch05-cpu-power",
+      "section_title": "Section ch05-cpu-power",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-sched-ext-oem-scheduler-production-readiness.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "sched_ext OEM 调度器公开证据与生产就绪度分析 — 调研 Linux 6.12 sched_ext 可扩展调度器框架在 Android android16-6.12 内核中的支持状态，包含 BPF 调度器核心接口（scx_ops）、Android ke...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-23T05:37:14.675627",
+      "status": "pending"
+    },
+    {
+      "section": "ch02-rendering",
+      "section_title": "Section ch02-rendering",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 — 验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-23T05:37:14.693009",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Section ch04-memory",
+      "priority": 75,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-dma-buf-gralloc-graphics-memory.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "DMA-BUF、Gralloc 与跨进程图形内存共享 Android 16/17 公开边界 — 分析 Android 16/17 图形内存三层体系：AOSP libdmabufheap 用户端库（BufferAllocator/DmaBufHeap）、Gralloc4 IAllocator AI...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-23T05:37:14.708332",
+      "status": "pending"
+    },
+    {
+      "section": "ch16-aosp",
+      "section_title": "Section ch16-aosp",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清 — 交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-23T05:37:14.723362",
+      "status": "pending"
     }
   ],
   "last_task2a_completed": "24.14",

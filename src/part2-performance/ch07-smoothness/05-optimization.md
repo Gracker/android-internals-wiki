@@ -1,4 +1,5 @@
 ---
+
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
@@ -49,18 +50,20 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 last_task6_audit: "2026-05-22"
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-30T07:43:21.194303"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-30"
-last_task9_at: "2026-04-30T08:33:53+08:00"
-task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P1 1。AGSL RuntimeShader uniform API 示例错误；RenderEffect 相对 Hardware Layer 的内存/GPU 结论过于绝对，缺少边界和数据。"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-23"
+last_task9_at: "2026-05-23T06:28:41+08:00"
+task9_review_notes: "2026-05-23 Task9 idle audit: needs-rework。P0 3 / P1 0。RenderEffect 段存在 LAYER_SIZE=256 源码错误、伪调用链/伪源码片段、API31/33 版本差异错误。"
+last_task9_audit: "2026-05-23"
+last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
 ---
 
 # 优化策略
