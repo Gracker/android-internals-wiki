@@ -1,6 +1,60 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260522-2.2-framerate-refresh-rate-selector-layerhistory",
+      "section": "2.2",
+      "section_title": "帧率与刷新率",
+      "priority": 95,
+      "title": "RefreshRateSelector / LayerHistory Android 16 源码锚点需修正",
+      "description": "Task9 闲时抽检发现 §2.2 的 SurfaceFlinger 刷新率选择段引用了不存在的 LayerHistory::getSnapshot，并把 Android 16 LayerVoteType 与 ExplicitExact 评分规则写成旧口径。",
+      "reason": "[Deep Tech Review Audit] §2.2 帧率与刷新率存在 RefreshRateSelector / LayerHistory 源码准确性与 Android 16 版本差异问题，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/02-framerate.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-22-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp",
+        "https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)",
+        "https://developer.android.com/reference/android/view/Window#setFrameRatePowerSavingsBalanced(boolean)"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/LayerHistory 方法名与调用路径",
+          "location": "L263：`LayerHistory::getSnapshot()` 在每一帧被 SurfaceFlinger 调用",
+          "detail": "AOSP android-16.0.0_r1 的 `services/surfaceflinger/Scheduler/LayerHistory.cpp` / `.h` 中没有 `LayerHistory::getSnapshot()`；当前实现是 `LayerHistory::summarize(const RefreshRateSelector&, nsecs_t)` 汇总活跃 layer vote，并由 `Scheduler::chooseRefreshRateForContent()` 调用后传给 `applyPolicy(&Policy::contentRequirements, ...)`。正文引用了不存在的方法名和错误调用锚点。",
+          "suggestion": "把源码锚点改为 `LayerHistory::summarize()` + `Scheduler::chooseRefreshRateForContent()`；描述为 SurfaceFlinger/Scheduler 周期性汇总 active layer 的 vote summary，再交给 policy/RefreshRateSelector 排序。删除 `getSnapshot()`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/LayerVoteType 枚举数量与表格过期",
+          "location": "L682-L692：`LayerVoteType 有 7 种类型` 表格",
+          "detail": "AOSP android-16.0.0_r1 `RefreshRateSelector.h` L152-L166 定义的 `LayerVoteType` 有 9 个值：`NoVote`、`Min`、`Max`、`Heuristic`、`ExplicitDefault`、`ExplicitExactOrMultiple`、`ExplicitExact`、`ExplicitGte`、`ExplicitCategory`。正文写 7 种并漏掉 `ExplicitGte` 与 `ExplicitCategory`，而 `ExplicitCategory` 正是 Android 15+ View/Window 级 frame-rate category / HighHint touch boost 路径会进入的投票类型。",
+          "suggestion": "把表格更新为 Android 16 的 9 类枚举，并补 `ExplicitGte`（at least 语义）与 `ExplicitCategory`（View/Window category、HighHint touch boost）两行；如果要兼容 Android 11-14，需要单独说明旧版本没有 View category vote 的版本边界。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/ExplicitExact 评分规则受 FrameRateOverride 配置影响",
+          "location": "L691-L695：`ExplicitExact` = 必须整除 `divisor==1`、整除满分规则",
+          "detail": "AOSP android-16.0.0_r1 `RefreshRateSelector.cpp` L449-L458 中，`ExplicitExact` 在 `supportsAppFrameRateOverrideByContent()` 为 true 时允许 `divisor > 0` 的刷新率得分；只有不支持 app frame-rate override by content 时才要求 `divisor == 1`。正文把 Android 16 行为写成固定 `divisor==1`，遗漏 frame-rate override 配置/设备能力造成的版本差异。",
+          "suggestion": "将 `ExplicitExact` 行改成条件化：无 frame-rate override by content 时只接受 exact；支持 override 时可接受请求帧率的整数倍，由系统通过 override 把 App 限到目标帧率。补 `supportsAppFrameRateOverrideByContent()` / `mFrameRateOverrideConfig` 源码锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T22:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-22-audit.md"
+    },
+    {
       "id": "task9-audit-20260522-1.13-messagequeue-deliqueue-source-paths",
       "section": "1.13",
       "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
