@@ -35,21 +35,24 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "needs-rework"
 last_task9_at: "2026-04-30T08:33:53+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
-task2b_state: fixed
+task2b_state: "pending"
 task2b_result: fixed
 last_task2b_at: "2026-04-30T07:43:21.194303"
 task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。SemiConcurrentMessageQueue 路径不存在;16KB Page Size 附录与本节主题交叉引用不一致。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T12:26:00+08:00"
 task6_review_notes: "2026-05-05 Task6 re-review: pass-light-edit。修复 frontmatter 重复状态、代码省略标注、源码调研段落编辑痕迹与 Treiber 拼写；Task9 已通过且 queue 无 pending，确认 ready-to-publish。"
+last_task9_audit: "2026-05-22"
+last_task9_audit_log: "logs/deep-review/2026-05-22-21-audit.md"
+task9_audit_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：CombinedDeliMessageQueue / MessageStack / MessageHeap AOSP mainline 路径不可验证，SemiConcurrentMessageQueue 主线/分支边界混写。"
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
