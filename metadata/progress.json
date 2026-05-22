@@ -203,7 +203,10 @@
     "5.16",
     "19.01",
     "2.11",
-    "14.19"
+    "14.19",
+    "14.13",
+    "14.6",
+    "4.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -242,24 +245,27 @@
     "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
     "src/part5-app/ch21-startup/02-startup-framework.md",
     "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
   ],
   "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
-    "time": "04:07",
+    "time": "08:20",
     "sections": [
-      "14.19",
-      "1.1",
-      "21.2"
+      "14.13",
+      "14.6",
+      "4.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md",
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
     ],
-    "result": "2 通过写作质检 / 1 回炉确认 / 0 自动晋升",
-    "log": "logs/review/2026-05-22-04-review.md"
+    "result": "3 通过写作 L1/L2 复审 / 0 新增回炉 / 0 自动晋升（Task9 pending queue 保留）",
+    "log": "logs/review/2026-05-22-08-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -650,7 +656,15 @@
       "p0": 1,
       "p1": 1,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T08:20:00+08:00",
+      "task6_log": "logs/review/2026-05-22-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。"
     },
     "18.10": {
       "p0": 0,
@@ -794,13 +808,18 @@
       "summary": "P0 1：LargeObjectSpace FreeList/Map 选择条件仍写成 arm64/非 arm64；P1 2：Android 15+ CMC/BumpPointerSpace 版本线写得过满，Generational CMC 开关源码锚点与命名不准；JIT Code Cache 默认容量口径与 AOSP 不符。P2 2：GC 基线/Trace 案例缺数据。"
     },
     "4.5": {
-      "task9_result": "needs-rework",
       "p0": 3,
-      "p1": 5,
-      "p2": 3,
-      "reviewed_at": "2026-05-14T05:50:18+08:00",
-      "log": "logs/deep-review/2026-05-14-05-deep-review.md",
-      "summary": "P0 3：GC 可达性、malloc debug、API34 onTrimMemory；P1 5：Message 池、Bitmap 释放、ASan 等。"
+      "p1": 1,
+      "p2": 0,
+      "p3": 0,
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T08:20:00+08:00",
+      "task6_log": "logs/review/2026-05-22-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 Coil BitmapPool、static Worker、onTrimMemory API34+；P1 16KB Play/Bitmap 口径。Task6 08:20 L1/L2 小修 3 处，无新增回炉。"
     },
     "20.6": {
       "task9_result": "needs-rework",
@@ -1623,6 +1642,20 @@
       "task6_log": "logs/review/2026-05-22-06-audit.md",
       "task6_new_rework": true,
       "task6_note": "闲时抽检发现缺少 outline 锚点块，无法执行锚点覆盖检查；已加入 queue priority 90 交 Task2B 补齐。"
+    },
+    "14.6": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T08:20:00+08:00",
+      "task6_log": "logs/review/2026-05-22-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 AndroidX Benchmark instrumentation 参数需按 androidx.benchmark.* 修正。Task6 08:20 L1/L2 小修 6 处，无新增回炉。"
     }
   },
   "total_review_sections": 197,
@@ -1814,19 +1847,21 @@
     },
     "4.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-21T01:15:21+08:00",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-22T08:20:00+08:00",
       "task6_result": "pass-light-edit",
-      "queue_priority": 90,
+      "queue_priority": 95,
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-21",
-      "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "task2b_state": "fixed",
+      "reviewed_date": "2026-05-22",
+      "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
       "file": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-      "title": "App 内存优化"
+      "title": "App 内存优化",
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 Coil BitmapPool、static Worker、onTrimMemory API34+；P1 16KB Play/Bitmap 口径。Task6 08:20 L1/L2 小修 3 处，无新增回炉。"
     },
     "4.2": {
       "status": "ready-for-review",
@@ -2389,7 +2424,19 @@
       "pipeline_stage": "task2b_pending",
       "last_task9_at": "2026-05-13T15:31:00+08:00",
       "task9_result": "needs-rework",
-      "queue_priority": 95
+      "queue_priority": 95,
+      "title": "Hook 基础设施与性能工具实现原理",
+      "file": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-22",
+      "last_task6_at": "2026-05-22T08:20:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。"
     },
     "2.0": {
       "status": "ready-for-review",
@@ -4472,6 +4519,24 @@
       "task9_result": "pending",
       "reviewed_date": "2026-05-22",
       "reviewed_by": "openclaw-task6"
+    },
+    "14.6": {
+      "title": "自动化测试工具",
+      "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-22",
+      "last_task6_at": "2026-05-22T08:20:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 95,
+      "task6_new_rework": false,
+      "task6_note": "Task9 07:43：P0 AndroidX Benchmark instrumentation 参数需按 androidx.benchmark.* 修正。Task6 08:20 L1/L2 小修 6 处，无新增回炉。"
     }
   },
   "task2b_rounds": [
@@ -4556,25 +4621,33 @@
   "last_task2a_file": "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "22.3"
+    "14.13",
+    "14.6",
+    "4.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
   ],
-  "last_task6_at": "2026-05-22T05:08:00+08:00",
+  "last_task6_at": "2026-05-22T08:20:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-22",
-    "time": "05:08",
-    "reviewed_at": "2026-05-22T05:08:00+08:00",
-    "mode": "normal",
+    "time": "08:20",
+    "reviewed_at": "2026-05-22T08:20:00+08:00",
+    "mode": "revisiting",
     "sections": [
-      "22.3"
+      "14.13",
+      "14.6",
+      "4.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
     ],
-    "log": "logs/review/2026-05-22-05-review.md",
-    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-08-review.md",
+    "result": "14.13/14.6/4.5 pass-light-edit（L1/L2 小修 10 处；无新增 L3/L4；沿用 Task9 pending queue）；0 自动晋升 finalized"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
@@ -4584,10 +4657,12 @@
   "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "5.16",
-  "task6_last_review_at": "2026-05-22T05:08:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-22-05-review.md",
+  "task6_last_review_at": "2026-05-22T08:20:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-22-08-review.md",
   "task6_last_review_sections": [
-    "22.3"
+    "14.13",
+    "14.6",
+    "4.5"
   ],
   "sections_status": {
     "22.11": {
@@ -5622,23 +5697,31 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-22",
-    "time": "05:08",
-    "reviewed_at": "2026-05-22T05:08:00+08:00",
-    "mode": "normal",
+    "time": "08:20",
+    "reviewed_at": "2026-05-22T08:20:00+08:00",
+    "mode": "revisiting",
     "sections": [
-      "22.3"
+      "14.13",
+      "14.6",
+      "4.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
     ],
-    "log": "logs/review/2026-05-22-05-review.md",
-    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-08-review.md",
+    "result": "14.13/14.6/4.5 pass-light-edit（L1/L2 小修 10 处；无新增 L3/L4；沿用 Task9 pending queue）；0 自动晋升 finalized"
   },
   "task6_last_review_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -5935,7 +6018,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-22-05-review.md",
+  "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -6004,16 +6087,19 @@
     "title": "App 内存优化",
     "file": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-21",
-    "last_task6_at": "2026-05-21T01:15:21+08:00",
-    "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
-    "task9_state": "pending",
-    "task9_result": "pending",
-    "task2b_state": "fixed"
+    "reviewed_date": "2026-05-22",
+    "last_task6_at": "2026-05-22T08:20:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "queue_priority": 95,
+    "task6_new_rework": false,
+    "task6_note": "Task9 07:43：P0 Coil BitmapPool、static Worker、onTrimMemory API34+；P1 16KB Play/Bitmap 口径。Task6 08:20 L1/L2 小修 3 处，无新增回炉。"
   },
   "section_3_1": {
     "section": "3.1",
