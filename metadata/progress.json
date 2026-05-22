@@ -1,7 +1,7 @@
 {
   "total": 365,
-  "draft": 22,
-  "ready-for-review": 156,
+  "draft": 21,
+  "ready-for-review": 157,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-22",
@@ -4600,9 +4600,9 @@
   ],
   "last_task2a_processed": {
     "date": "2026-05-22",
-    "time": "01:04",
-    "section": "5.16",
-    "file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+    "time": "12:04",
+    "section": "8.12",
+    "file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
     "result": "ready-for-review",
     "source": "empty-draft-priority"
   },
