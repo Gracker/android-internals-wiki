@@ -61,22 +61,23 @@ task2b_result: "fixed"
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
+task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 status: "finalized"
-pipeline_stage: ready-to-publish
-task9_state: "pass"
-task9_result: "pass-tech-review"
+pipeline_stage: task2b_pending
+task9_state: "reviewed"
+task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-30"
-last_task9_at: "2026-04-30T17:30:08+08:00"
-task2b_state: "fixed"
-p0: 0
+task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-05-22T12:20:00+08:00"
+task2b_state: "pending"
+p0: 2
 p1: 1
-p2: 2
+p2: 1
 updated_by: "openclaw-task9"
-updated_date: "2026-04-30"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
+updated_date: "2026-05-22"
+review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
+last_task9_audit: "2026-05-22"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
