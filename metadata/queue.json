@@ -1,6 +1,44 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260522-1.13-messagequeue-deliqueue-source-paths",
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "title": "DeliQueue AOSP mainline 源码路径与 SemiConcurrentMessageQueue 来源需修正",
+      "description": "Task9 闲时抽检发现 §1.13 的 Android 17 DeliQueue 补充段把不可访问的 CombinedDeliMessageQueue / MessageStack / MessageHeap 路径写成 AOSP mainline 源码，并把当前 AOSP main 中已出现的 SemiConcurrentMessageQueue 写成非 AOSP 主线 fork。",
+      "reason": "[Deep Tech Review Audit] §1.13 MessageQueue/DeliQueue 存在 AOSP mainline 源码路径错误与版本/分支边界混写，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-21-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/main/core/java/android/os/",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/AOSP mainline 路径与 DeliQueue 数据结构锚点",
+          "location": "L506-L641：`补充:CombinedDeliMessageQueue 三路合并实现细节`；L641-L643：`SemiConcurrentMessageQueue` 来源说明",
+          "detail": "正文把 `core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` 写成 AOSP mainline Android 17 API 37 阶段的实际生效文件，并引用 `MessageStack.java` / `MessageHeap.java` 作为源码路径。2026-05-22 抽检 android.googlesource `platform/frameworks/base` 的 `main` 分支与 `android-16.0.0_r1`：`CombinedDeliMessageQueue/MessageQueue.java`、`DeliQueue/MessageQueue.java`、`MessageStack.java`、`MessageHeap.java` 均 404；公开 main 树下存在 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`、`LockedMessageQueue/`、`SemiConcurrentMessageQueue/`，`CombinedMessageQueue/MessageQueue.java` 仍可见 `ConcurrentSkipListSet`、`mPriorityQueue`、`mAsyncPriorityQueue`，未见 `MessageStack` / `MessageHeap` / `DeliQueue` 符号。L641-L643 又写 `SemiConcurrentMessageQueue` 是 ROM fork、非 AOSP 主线，也与当前 AOSP main tree 不一致（但 android-16 tag 下确实不存在）。",
+          "suggestion": "把该补充段拆成两层：① Android 16 tag 的源码锚点只保留 `CombinedMessageQueue` / `ConcurrentMessageQueue` / `LegacyMessageQueue`，并说明其公开实现使用 `ConcurrentSkipListSet` + 两组 priority queue；② Android 17 的 DeliQueue 只按 Android Developers Blog/behavior guidance 做概念性说明（Treiber stack + min-heap、mMessages always null、targetSdk 37 默认启用），除非能补到可访问的官方 AOSP ref/commit，否则不要写 `CombinedDeliMessageQueue`、`MessageStack.java`、`MessageHeap.java` 为 AOSP mainline 源码路径。`SemiConcurrentMessageQueue` 需要按具体 ref 改成“android-16 tag 不存在；当前 AOSP main 已出现/或需标明 fork 来源”，避免主线/fork混写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T21:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-21-audit.md"
+    },
+    {
       "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
       "section": "2.11",
       "section_title": "Flutter 渲染管线与性能",
