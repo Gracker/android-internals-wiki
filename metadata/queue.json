@@ -17208,24 +17208,60 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T18:30:26+08:00",
       "review_log": "logs/deep-review/2026-05-22-18-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260522-24.15-network-performance-baseline",
+      "section": "24.15",
+      "section_title": "移动网络性能优化实战：DNS、连接、传输与容灾",
+      "priority": 80,
+      "title": "移动网络请求性能优化缺口：DNS、连接、传输、弱网与容灾需要独立实战小节",
+      "description": "2026-05-22 缺口挖掘发现 Clippings 网络优化 18/19 与 Android 官方 Cronet/network access 文档提供了足够素材；现有 24.4/24.5/24.10/24.14 覆盖局部主题，但缺少按请求阶段组织的移动网络性能优化实战小节。",
+      "reason": "[Task2A gap-mining] 参考书素材与官方文档均指向移动网络性能优化的独立加工价值。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/15-network-performance-baseline.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md",
+        "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+        "https://developer.android.com/develop/connectivity/cronet",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/Connectivity/framework/src/android/net/DnsResolver.java"
+      ],
+      "gap_score": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4,
+        "total": 19
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T20:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 473,
+    "total_entries": 474,
     "p0_count": 200,
-    "last_updated": "2026-05-22T18:30:26+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 168,
+    "last_updated": "2026-05-22T20:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 169,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 168,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 169,
     "completed_entries": 302,
-    "last_task2a_gap_mining": "24.14",
-    "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",
+    "last_task2a_gap_mining": "24.15",
+    "last_task2a_gap_mining_at": "2026-05-22T20:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-22T18:30:26+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-22T20:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
@@ -23476,10 +23512,46 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T18:30:26+08:00",
       "review_log": "logs/deep-review/2026-05-22-18-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260522-24.15-network-performance-baseline",
+      "section": "24.15",
+      "section_title": "移动网络性能优化实战：DNS、连接、传输与容灾",
+      "priority": 80,
+      "title": "移动网络请求性能优化缺口：DNS、连接、传输、弱网与容灾需要独立实战小节",
+      "description": "2026-05-22 缺口挖掘发现 Clippings 网络优化 18/19 与 Android 官方 Cronet/network access 文档提供了足够素材；现有 24.4/24.5/24.10/24.14 覆盖局部主题，但缺少按请求阶段组织的移动网络性能优化实战小节。",
+      "reason": "[Task2A gap-mining] 参考书素材与官方文档均指向移动网络性能优化的独立加工价值。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/15-network-performance-baseline.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md",
+        "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+        "https://developer.android.com/develop/connectivity/cronet",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/Connectivity/framework/src/android/net/DnsResolver.java"
+      ],
+      "gap_score": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4,
+        "total": 19
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T20:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.14",
   "last_task2a_completed_at": "2026-05-22T16:18:00+08:00",
-  "last_task2a_gap_mining": "24.14",
-  "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00"
+  "last_task2a_gap_mining": "24.15",
+  "last_task2a_gap_mining_at": "2026-05-22T20:04:00+08:00"
 }
