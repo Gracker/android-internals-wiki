@@ -1,11 +1,11 @@
 ---
-last_task9_at: "2026-04-27T10:02:28+08:00"
+last_task9_at: "2026-05-22T05:34:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-22"
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
 section: "5.12"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
@@ -43,16 +43,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_date: "2026-04-20"
 last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-task9_result: pass-tech-review
+task2b_state: pending
+task2b_result: pending
+task9_result: needs-rework
+last_task9_audit: "2026-05-22"
+last_task9_audit_at: "2026-05-22T05:34:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
+task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P1：Thermal HAL AIDL/headroom API 版本边界与 Linux thermal kernel 源码分支混用，写入 queue 条目 task9-audit-20260522-5.12-thermal-hal-kernel-version-boundary。"
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频

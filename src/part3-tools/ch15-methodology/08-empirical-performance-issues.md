@@ -1,7 +1,8 @@
 ---
 title: "Android 性能问题实证：真实世界的分类与代码模式"
 chapter: "15.8"
-status: finalized
+section: "15.8"
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)（章节方法适用范围；实证数据为跨版本综合观察）"
@@ -25,14 +26,16 @@ tags:
   - code-review
   - performance-patterns
   - empirical-study
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-task6_result: pass-light-edit
+last_task6_audit: "2026-05-22"
+last_task6_at: "2026-05-22T06:19:29+08:00"
+task6_result: needs-rework
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9

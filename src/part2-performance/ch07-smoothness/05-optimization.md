@@ -51,6 +51,7 @@ rework_date: "2026-04-30"
 rework_by: "task2b-rework"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
+last_task6_audit: "2026-05-22"
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
@@ -83,7 +84,7 @@ task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P1 1。
 
 ## 为什么要单独讲优化策略
 
-在前面的章节里，我们走完了卡顿的定义（7.1）、原因体系（7.2）、分析方法论（7.3）和典型场景分析（7.4）。知道了"卡顿是什么"和"卡顿怎么查"，这一章要解决的问题是：**查到原因之后，怎么改？**
+在前面的章节里，我们走完了卡顿的定义（7.1）、原因体系（7.2）、分析方法论（7.3）和典型场景分析（7.4）。知道了"卡顿是什么"和"卡顿怎么查"，这一章回答：**查到原因之后，怎么改？**
 
 同样是"主线程耗时"，有的是布局层级太深导致 measure 反复执行，有的是 RecyclerView 的 onBindViewHolder 里做了不该做的事，有的是一个看似无害的 Binder 调用正好赶上了系统服务繁忙。每一种原因对应的优化策略都不同，用错方法不仅白费力气，还可能引入新问题。
 
@@ -306,7 +307,7 @@ bool RenderThread::threadLoop() {
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
-前面讲的布局、列表、渲染三类优化，解决的是渲染管线内部的效率问题。但很多卡顿的根因不在渲染本身——主线程被耗时操作阻塞，根本没有时间完成一帧的渲染。这类问题需要从线程调度层面解决。
+前面讲的布局、列表、渲染三类优化，解决的是渲染管线内部的效率问题。但很多卡顿的根因不在渲染本身——主线程被耗时操作阻塞，没有时间完成一帧的渲染。这类问题需要从线程调度层面解决。
 
 ### 耗时操作异步化的基本原则
 
@@ -330,7 +331,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-b
 
 两者的耗时量级不同：`getMyMemoryState()` 读取的是当前进程已维护的状态字段，常见开销在毫秒以内到 2ms 左右；`getProcessMemoryInfo(int[])` 面向指定 PID 的 PSS / dirty 页面统计，底层可能触发 `/proc/<pid>/smaps` 解析和系统服务侧采样，几十毫秒到百毫秒量级都不罕见，Android 10+ 之后还存在更严格的调用限制。启动、滑动、动画路径里只适合读取缓存结果，不适合临时查 PSS。
 
-**绝不把 Binder 调用放在渲染路径上。** 滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果确实需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的 onBindViewHolder。
+**绝不把 Binder 调用放在渲染路径上。** 滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的 onBindViewHolder。
 
 对于批量数据操作，使用 `ContentProviderOperation` 替代逐条调用。每次 `ContentResolver.insert()` 或 `update()` 都是一次完整的 Binder 往返（marshalling → 驱动传输 → unmarshalling → 执行 → 返回），批量操作能把多次往返压缩为一次。
 
@@ -358,7 +359,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-b
 
 ### 任务拆分与延迟初始化
 
-- **任务拆解**：将一个大任务拆成多个小 Message，用 `Handler.post()` 或 `Choreographer.postFrameCallback()` 分发到不同帧处理
+- **任务拆分**：将一个大任务拆成多个小 Message，用 `Handler.post()` 或 `Choreographer.postFrameCallback()` 分发到不同帧处理
 - **取消旧消息**：新状态到来时先移除过期 Message，保证主线程只处理当前还需要的工作
 - **延迟初始化**：`by lazy(LazyThreadSafetyMode.NONE)` 减少首帧负担
 
@@ -437,9 +438,9 @@ LazyColumn {
 
 ## 预渲染与预计算策略 🔸
 
-"预"字诀的核心思想是：利用当前帧的空闲时间，提前为接下来的帧做好准备工作。它的有效性基于一个前提——用户操作（滑动、切换页面）在时间上有连续性和可预测性，我们大致知道接下来需要什么数据、需要渲染什么 UI，所以可以提前准备，避免等到真正需要时才仓促计算。
+"预"字诀的核心思想是：利用当前帧的空闲时间，提前为接下来的帧做好准备工作。它的有效性基于一个前提——用户操作（滑动、切换页面）在时间上有连续性和可预测性，我们大致知道接下来需要什么数据、需要渲染什么 UI，所以可以提前准备，避免等到需要时才仓促计算。
 
-RecyclerView 的 GapWorker 就是系统级预取的典型实现。在主线程处理完当前帧之后、下一个 VSync 信号到来之前的空闲间隙，GapWorker 会根据滑动方向和速度，预测即将进入屏幕的 item，提前创建并绑定对应的 ViewHolder。这样当 item 真正出现在屏幕上时，onBindViewHolder 已经执行完了，省去了创建和绑定的耗时。嵌套 RecyclerView（如 ViewPager2 中的水平列表）需要额外配置 `setInitialPrefetchCount(3)`，让 GapWorker 知道内层列表需要预取多少个 item。
+RecyclerView 的 GapWorker 就是系统级预取的典型实现。在主线程处理完当前帧之后、下一个 VSync 信号到来之前的空闲间隙，GapWorker 会根据滑动方向和速度，预测即将进入屏幕的 item，提前创建并绑定对应的 ViewHolder。这样当 item 出现在屏幕上时，onBindViewHolder 已经执行完了，省去了创建和绑定的耗时。嵌套 RecyclerView（如 ViewPager2 中的水平列表）需要额外配置 `setInitialPrefetchCount(3)`，让 GapWorker 知道内层列表需要预取多少个 item。
 
 Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在滑动列表时，Compose 会在帧间空闲时间提前 compose 和 measure 即将进入视口的 item。加上 Compose 1.10（BOM 2025.12.00）引入的 pausable composition，如果在预取过程中发现当前帧时间即将用完，可以暂停 composition 并在下一帧恢复，而不是强行完成导致掉帧。
 
@@ -520,7 +521,7 @@ bool SkiaGpuPipeline::createOrUpdateLayer(RenderNode* node, ...) {
 }
 ```
 
-这意味着即使很小的 View 设置了 blur，也会按 256 的倍数分配 texture。对于 300×300 的 View，分配 512×512。Layer 尺寸越大，GPU 显存占用和 shader 处理量都越高。
+即使很小的 View 设置了 blur，也会按 256 的倍数分配 texture。对于 300×300 的 View，分配 512×512。Layer 尺寸越大，GPU 显存占用和 shader 处理量都越高。
 
 ### RenderEffect 的 filter chain 执行：updateSnapshotIfRequired
 
@@ -611,7 +612,7 @@ Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::Tex
 | 每帧 invalidate | 导致 snapshot 重建，filter chain 重新执行 |
 
 优化建议：
-1. 确认 View 尺寸确实需要那么大才设置 RenderEffect
+1. 确认 View 尺寸达到效果所需范围后再设置 RenderEffect
 2. blur radius 尽量保守；大模糊效果考虑用静态 bitmap 替代运行时计算
 3. RuntimeShader 参数不变时复用同一个 RenderEffect 对象
 4. 多层 RenderEffect 时利用 `createChainEffect()` 让 Skia 做算子融合

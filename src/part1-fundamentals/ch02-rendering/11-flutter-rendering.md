@@ -47,14 +47,14 @@ related_chapters:
 - '7.7'
 - '18.12'
 task2b_result: fixed
-last_task2b_at: "2026-05-22T15:21:00+08:00"
+last_task2b_at: "2026-05-22T19:18:14+08:00"
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task2b_state: pending
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T15:42:52+08:00"
@@ -62,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：16KB Page Size 合规段把“plugin 未适配”的短期方案写成 packagingOptions 处理，需拆开 AGP zip alignment、ELF p_align 与 hardcoded 4KB runtime bug；packagingOptions/useLegacyPackaging 不能修复预编译 .so 的 ELF 对齐或代码假设。"
 reviewed_date: "2026-05-22"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-16-review.md"
@@ -196,7 +196,7 @@ Flutter plugin 中的 `.so` 文件对齐要求取决于 NDK 版本：
 - 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径——对齐错误在这些场景下最容易触发
 - 复测预编译 `.so` 和 `libc++_shared.so` 的对齐状态
 
-如果某个关键 plugin 还没有适配，短期方案是在 `android/app/build.gradle` 中通过 `packagingOptions` 做对齐处理，长期仍需推动 plugin 作者更新 NDK 版本。
+如果某个关键 plugin 还没有适配，需要区分两类问题：若是 AGP/APK zip alignment 问题，可升级 AGP 8.5.1+（自动处理 uncompressed shared libraries 的 16KB 对齐），或在旧版 AGP 下临时使用 compressed shared libraries；若是 plugin 内含未重新编译的 `.so`（ELF `p_align` 仍为 4KB）或 native 代码中 hardcoded `PAGE_SIZE=4096`，必须等待 plugin 作者更新、本地 fork 用 NDK r28+ 重编、或替换 plugin。`packagingOptions` 不能修复 ELF segment alignment 和 native 代码的 4KB 假设。
 
 `[已验证: Android 15+ 16KB page size requirements, developer.android.com/guide/practices/page-sizes; NDK r28 release notes]`
 
