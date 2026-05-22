@@ -49,6 +49,7 @@ last_task9_at: "2026-05-06T10:38:04+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task6_state: reviewed
 task6_result: pass-light-edit
+last_task6_audit: "2026-05-23"
 ---
 
 # ANR 设计思想
