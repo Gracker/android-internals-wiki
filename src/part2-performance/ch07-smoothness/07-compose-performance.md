@@ -7,6 +7,10 @@ last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium
 reviewed_date: '2026-04-30'
+last_task6_at: '2026-05-22T19:07:00+08:00'
+last_task6_audit: '2026-05-22'
+last_task6_audit_result: pass-light-edit
+last_task6_audit_log: logs/review/2026-05-22-19-audit.md
 last_task2b_at: '2026-04-25T13:47:46+08:00'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -112,7 +116,7 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 
 进入 **Layout** 阶段时,负责测量和布局的是 `LayoutNode` 树。`LayoutNode` 对应 Compose UI 的布局节点,承接 measure、layout、draw 相关的 modifier / coordinator 信息。Composition 更新运行时状态与节点关系,Layout / Drawing 再沿 `LayoutNode` 树完成尺寸协商和绘制提交。
 
-最后是 **Drawing** 阶段。Compose 的 UI 元素最终会通过 Android 的 Canvas 进行绘制。虽然 Jetpack Compose 是全新的 UI 框架,底层并没有脱离 Android 的范畴--最终还是要把像素画到 Canvas 上。
+进入 **Drawing** 阶段后,Compose 的 UI 元素会通过 Android 的 Canvas 进行绘制。Jetpack Compose 是全新的 UI 框架,底层仍没有脱离 Android 的渲染体系--像素还是要画到 Canvas 上。
 
 主要区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的“Recomposition”（重组）。
 
@@ -148,7 +152,7 @@ fun Greeting(msg: String) {
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
 
-社区里确实出现过 LazyColumn 和 RecyclerView 的对比测试:同一个列表页面,分别用两套 UI 实现,然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
+社区里出现过 LazyColumn 和 RecyclerView 的对比测试:同一个列表页面,分别用两套 UI 实现,然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
 
 其中一组常被引用的样本里,高端设备(Android 11+)两者都能接近 60fps;中低端的 Android 7.1 设备上,LazyColumn 约 43fps,RecyclerView 约 60fps。同一位测试者在粒子动画场景里又观察到 Compose 和 View 的 Canvas 绘制几乎一致。这类结果更适合当成"特定设备、特定版本、特定页面结构下的观察",不能直接外推成通用结论。真要拿它指导项目,至少要用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto,在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
@@ -160,7 +164,7 @@ fun Greeting(msg: String) {
 
 ## Recomposition 的触发条件与最小化策略
 
-理解了重组的本质之后,我们来看具体的触发条件和优化策略。这部分是 Compose 性能优化的核心。
+理解重组的本质之后,下一步是具体的触发条件和优化策略。这部分决定了 Compose 性能优化的方向。
 
 ### Strong Skipping 与 stable 标记:让 Compose 更容易跳过重组
 
@@ -237,7 +241,7 @@ val sortedItems = remember(items) { items.sortedBy { it.priority } }
 
 注意这里的 `items` 是 `remember` 的 key--只有当 items 变化时才会重新排序。如果不指定 key,排序结果会在整个 Composable 的生命周期内被缓存,即使 items 已经变了也不会更新。
 
-### derivedStateOf:只在结果真正变化时才触发重组
+### derivedStateOf:只在结果变化时触发重组
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/side-effects#derivedstateof]
 [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md]
@@ -305,7 +309,7 @@ public class SnapshotStateObserver(
 
 **DerivedState 去重**:
 
-SSO 实现了 DerivedState 的智能去重:当依赖状态变更时,SSO 先检查 `DerivedState.currentRecord.currentValue` 是否等于 `recordedDerivedStateValues[derived]`。值未变则跳过去重,下游 Composable 不重组。这是 `derivedStateOf` 高效的根本原因。
+SSO 实现了 DerivedState 的智能去重:当依赖状态变更时,SSO 先检查 `DerivedState.currentRecord.currentValue` 是否等于 `recordedDerivedStateValues[derived]`。值未变则跳过去重,下游 Composable 不重组。这是 `derivedStateOf` 高效的底层原因。
 
 **典型调用链**:
 
@@ -366,7 +370,7 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 ## Compose 中的性能陷阱
 
-了解优化策略之后,我们来看实际项目中最容易踩的坑。
+了解优化策略之后,再看实际项目中最容易踩的坑。
 
 ### 陷阱一:不稳定参数导致整个页面被拖着重组
 
@@ -378,7 +382,7 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 1. 把上游状态建模成不可变快照,更新时发布新的 `List` 实例
 2. 用 `kotlinx.collections.immutable` 的不可变集合替代普通 List,让编译器能推断稳定性
-3. 用 `@Immutable` 注解标记数据类(前提是确实保证不可变)
+3. 用 `@Immutable` 注解标记数据类(前提是必须保证不可变)
 4. 在 Compose Compiler 1.5.5+ 中,通过 Stability Configuration File 声明外部类的稳定性
 
 [已验证: Kotlin 2.0.20+ Strong Skipping 对不稳定参数使用引用相等比较;这能减少过度重组,也会放大可变集合原地修改的刷新风险。来源: Android Developers Strong Skipping 文档]
@@ -402,7 +406,7 @@ LazyColumn {
 }
 ```
 
-有了 key 之后,Compose 就能识别出哪些 item 是新增的、哪些是移动的、哪些没变,只重组真正变化的 item。
+有了 key 之后,Compose 就能识别出哪些 item 是新增的、哪些是移动的、哪些没变,只重组发生变化的 item。
 
 ### 陷阱三:在 Composable 函数中做计算
 
@@ -585,11 +589,11 @@ fun WebViewScreen(url: String) {
 
 **误区二:"给所有类加 @Stable 就能解决性能问题"**
 
-`@Stable` 是一个契约,不是魔法。如果我们的类不满足稳定性的要求(比如内部有不受 State 管理的可变状态),加注解不仅不能提升性能,还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到真正不稳定的类,然后根据实际情况选择修复方式。
+`@Stable` 是一个契约,不是魔法。如果我们的类不满足稳定性的要求(比如内部有不受 State 管理的可变状态),加注解不仅不能提升性能,还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到实际不稳定的类,然后根据实际情况选择修复方式。
 
 **误区三:"Compose 的 remember 就是缓存,什么都能往里塞"**
 
-`remember` 确实有缓存的效果,但它的语义是"跨重组保持状态",不是通用缓存。`remember` 不关心内存压力,不会被自动回收。如果我们用它缓存大量数据,可能导致内存问题。对于需要响应配置变更的场景,应该考虑 `rememberSaveable`。
+`remember` 有缓存效果,但它的语义是"跨重组保持状态",不是通用缓存。`remember` 不关心内存压力,不会被自动回收。如果我们用它缓存大量数据,可能导致内存问题。对于需要响应配置变更的场景,应该考虑 `rememberSaveable`。
 
 **误区四:"Compose 就不需要关心过度绘制了"**
 
