@@ -17424,6 +17424,52 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-23T00:04:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260523-1.13-messagequeue-android16-mainline-boundary",
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "title": "Android 16 MessageQueue 变体目录与 Android 17 DeliQueue 数据结构边界仍需修正",
+      "description": "Task9 回炉复审发现 §1.13 的补充段仍把 AOSP main 才出现的 Locked/SemiConcurrentMessageQueue 放进 android-16.0.0_r1 tag 目录表，并引用不存在的 computeUseConcurrent()；同时 DeliQueue 的 Min-Heap / IdleHandler 精度表述缺少公开源码锚点。",
+      "reason": "[Deep Tech Review] §1.13 MessageQueue/DeliQueue 仍存在 AOSP tag 路径错误、方法名错误与 Android 16/17 数据结构边界混写，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-00-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/os/",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L512-L523：`补充:Android 16 并发实现与 Android 17 DeliQueue 方向` 的 Android 16 tag 目录表；L523-L525 的 `computeUseConcurrent()` 描述；L376 收尾的 `semi-concurrent` 表述",
+          "detail": "AOSP `android-16.0.0_r1/core/java/android/os/` 目录实际只有 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`。`LockedMessageQueue/` 与 `SemiConcurrentMessageQueue/` 在当前 AOSP main 可见，但不在 android-16 tag；`CombinedMessageQueue` 源码中也没有 `computeUseConcurrent()`，实际是构造函数调用 `initIsProcessAllowedToUseConcurrent()` 后设置 `mUseConcurrent`。正文把 tag 与 main 分支混在同一个 “Android 16 tag 可确认” 表里，会误导读者按 tag 查源码。",
+          "suggestion": "Android 16 tag 表只保留 Legacy / Concurrent / Combined 三项；另起 “AOSP main 后续变体” 表放 Locked / SemiConcurrent，并明确它们不属于 android-16.0.0_r1。把 `computeUseConcurrent()` 改为 `initIsProcessAllowedToUseConcurrent()` / `mUseConcurrent` allowlist，并同步修正收尾里的 `legacy / semi-concurrent / concurrent 多变体试点`。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/公开源码边界",
+          "location": "L442-L472：`补充:DeliQueue 反射失效后的 Idle 判断替代方案`；L528-L536：Android 17 DeliQueue 概念性说明",
+          "detail": "正文一处把 DeliQueue 直接写成 `Treiber Stack + Min-Heap`，并说 “DeliQueue 的 Min-Heap 使 IdleHandler 判断更精确”；另一处又说明截至 2026-05-22 未检出 `DeliQueue/MessageHeap` 等公开源码路径。Android 16 `ConcurrentMessageQueue` 可验证的是 Treiber stack + 两组 `ConcurrentSkipListSet<MessageNode>`，Android 17 行为页/博客可验证的是 lock-free MessageQueue 与 `mMessages` 失效；Min-Heap / IdleHandler 精度提升若没有公开源码或官方文档支撑，应降级为概念性待验证，不能写成已确认实现。",
+          "suggestion": "把 Android 16 可验证结构与 Android 17 官方行为拆开：Android 16 写 Treiber stack + `ConcurrentSkipListSet<MessageNode>`；Android 17 只写官方确认的 lock-free、`mMessages` always null、compat 开关和测试框架影响。删除或标注 `[待验证]` 的 Min-Heap / IdleHandler 更精确结论，等公开源码后再补。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T00:20:00+08:00"
     }
   ],
   "metadata": {
@@ -17440,8 +17486,8 @@
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T00:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-23T00:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
@@ -23764,6 +23810,52 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-23T00:04:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260523-1.13-messagequeue-android16-mainline-boundary",
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "title": "Android 16 MessageQueue 变体目录与 Android 17 DeliQueue 数据结构边界仍需修正",
+      "description": "Task9 回炉复审发现 §1.13 的补充段仍把 AOSP main 才出现的 Locked/SemiConcurrentMessageQueue 放进 android-16.0.0_r1 tag 目录表，并引用不存在的 computeUseConcurrent()；同时 DeliQueue 的 Min-Heap / IdleHandler 精度表述缺少公开源码锚点。",
+      "reason": "[Deep Tech Review] §1.13 MessageQueue/DeliQueue 仍存在 AOSP tag 路径错误、方法名错误与 Android 16/17 数据结构边界混写，需回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-00-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/os/",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L512-L523：`补充:Android 16 并发实现与 Android 17 DeliQueue 方向` 的 Android 16 tag 目录表；L523-L525 的 `computeUseConcurrent()` 描述；L376 收尾的 `semi-concurrent` 表述",
+          "detail": "AOSP `android-16.0.0_r1/core/java/android/os/` 目录实际只有 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`。`LockedMessageQueue/` 与 `SemiConcurrentMessageQueue/` 在当前 AOSP main 可见，但不在 android-16 tag；`CombinedMessageQueue` 源码中也没有 `computeUseConcurrent()`，实际是构造函数调用 `initIsProcessAllowedToUseConcurrent()` 后设置 `mUseConcurrent`。正文把 tag 与 main 分支混在同一个 “Android 16 tag 可确认” 表里，会误导读者按 tag 查源码。",
+          "suggestion": "Android 16 tag 表只保留 Legacy / Concurrent / Combined 三项；另起 “AOSP main 后续变体” 表放 Locked / SemiConcurrent，并明确它们不属于 android-16.0.0_r1。把 `computeUseConcurrent()` 改为 `initIsProcessAllowedToUseConcurrent()` / `mUseConcurrent` allowlist，并同步修正收尾里的 `legacy / semi-concurrent / concurrent 多变体试点`。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/公开源码边界",
+          "location": "L442-L472：`补充:DeliQueue 反射失效后的 Idle 判断替代方案`；L528-L536：Android 17 DeliQueue 概念性说明",
+          "detail": "正文一处把 DeliQueue 直接写成 `Treiber Stack + Min-Heap`，并说 “DeliQueue 的 Min-Heap 使 IdleHandler 判断更精确”；另一处又说明截至 2026-05-22 未检出 `DeliQueue/MessageHeap` 等公开源码路径。Android 16 `ConcurrentMessageQueue` 可验证的是 Treiber stack + 两组 `ConcurrentSkipListSet<MessageNode>`，Android 17 行为页/博客可验证的是 lock-free MessageQueue 与 `mMessages` 失效；Min-Heap / IdleHandler 精度提升若没有公开源码或官方文档支撑，应降级为概念性待验证，不能写成已确认实现。",
+          "suggestion": "把 Android 16 可验证结构与 Android 17 官方行为拆开：Android 16 写 Treiber stack + `ConcurrentSkipListSet<MessageNode>`；Android 17 只写官方确认的 lock-free、`mMessages` always null、compat 开关和测试框架影响。删除或标注 `[待验证]` 的 Min-Heap / IdleHandler 更精确结论，等公开源码后再补。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T00:20:00+08:00"
     }
   ],
   "last_task2a_completed": "24.14",

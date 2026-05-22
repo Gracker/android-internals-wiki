@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
@@ -52,19 +52,19 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
 task6_state: revisiting
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-30"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-23"
 task2b_result: fixed
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-30T16:20:00+08:00"
+last_task9_at: "2026-05-23T00:20:00+08:00"
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
-task9_review_notes: "2026-05-22 22:20 task9 idle-audit: needs-rework。P0 2 / P1 1。RefreshRateSelector/LayerHistory Android 16 源码锚点、LayerVoteType 枚举与 ExplicitExact 评分口径需 Task2B 回炉。"
+task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；仅留下官方文档 URL、Perfetto SQL 可执行性与功耗数据口径建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-05-19"
 ---
