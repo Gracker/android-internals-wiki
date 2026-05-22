@@ -1,7 +1,7 @@
 {
-  "total": 366,
+  "total": 367,
   "draft": 21,
-  "ready-for-review": 158,
+  "ready-for-review": 159,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-22",
@@ -6063,8 +6063,8 @@
     "auto_finalized": [],
     "log": "logs/deep-review/2026-05-22-03-deep-review.md"
   },
-  "last_task2a_gap_mining": "26.17",
-  "last_task2a_gap_mining_at": "2026-05-22T14:04:00+08:00",
+  "last_task2a_gap_mining": "24.14",
+  "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",
   "last_task6_audit": "2026-05-22T11:11:00+08:00",
   "last_task6_audit_sections": [
     "9.4"
@@ -6496,5 +6496,7 @@
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
-  }
+  },
+  "last_task2a_completed": "24.14",
+  "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
 }

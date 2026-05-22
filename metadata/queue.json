@@ -16973,24 +16973,63 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-22T15:04:00+08:00",
       "completion_reason": "Task 2A draft processing: status ready-for-review, sent to Task6 pipeline."
+    },
+    {
+      "id": "task2a-gap-20260522-24.14-network-request-performance-playbook",
+      "section": "24.14",
+      "section_title": "网络请求分段优化与弱网治理",
+      "priority": 80,
+      "title": "网络请求分段优化与弱网治理",
+      "description": "基于极客时间网络优化参考书、Android Cronet/Connectivity 官方文档与现有 ch24 网络章节，新增网络请求分段诊断、弱网治理、缓存预取、功耗约束与指标采集手册。",
+      "reason": "Phase 1 知识缺口挖掘发现：现有 ch24.4/ch24.5/ch24.10 覆盖连接、协议、HTTPDNS 单点能力，但缺少面向 App 网络请求分段优化与弱网治理的场景化章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md"
+      ],
+      "material_paths": [
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md",
+        "https://developer.android.com/develop/connectivity/cronet",
+        "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+        "https://developer.android.com/topic/performance/power/network/index.html"
+      ],
+      "score": {
+        "material_richness": 5,
+        "book_relevance": 5,
+        "reader_demand": 5,
+        "timeliness": 3,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T16:18:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-22T16:18:00+08:00",
+      "completion_reason": "Task 2A gap mining + draft processing: created new section, wrote content, status ready-for-review, sent to Task6 pipeline."
     }
   ],
   "metadata": {
-    "total_entries": 465,
+    "total_entries": 466,
     "p0_count": 178,
-    "last_updated": "2026-05-22T11:40:27+08:00",
+    "last_updated": "2026-05-22T16:18:00+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 166,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task9-deep-tech-review",
+    "last_updated_by": "task2a-content-processing",
     "pending": 166,
-    "completed_entries": 296,
-    "last_task2a_gap_mining": "8.12",
-    "last_task2a_gap_mining_at": "2026-05-22T11:04:00+08:00",
-    "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
+    "completed_entries": 297,
+    "last_task2a_gap_mining": "24.14",
+    "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",
+    "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-22T11:40:27+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-22T16:18:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "pending": [
     {
       "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
@@ -18605,8 +18644,8 @@
       ]
     }
   ],
-  "last_task2a_completed": "24.11",
-  "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "8.12",
-  "last_task2a_gap_mining_at": "2026-05-22T11:04:00+08:00"
+  "last_task2a_completed": "24.14",
+  "last_task2a_completed_at": "2026-05-22T16:18:00+08:00",
+  "last_task2a_gap_mining": "24.14",
+  "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00"
 }
