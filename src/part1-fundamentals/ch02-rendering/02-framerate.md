@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
@@ -52,20 +52,20 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "reviewed"
+task6_state: revisiting
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-30"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-30T16:20:00+08:00"
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
 task9_review_notes: "2026-05-22 22:20 task9 idle-audit: needs-rework。P0 2 / P1 1。RefreshRateSelector/LayerHistory Android 16 源码锚点、LayerVoteType 枚举与 ExplicitExact 评分口径需 Task2B 回炉。"
-task2b_rework_note: "2026-05-07 2B修复: Frame Time口径拆分(doFrame=主线程回调 vs FrameTimeline=完整帧); setFrameTimeline版本边界拆分(API33读取 vs Android16公开setFrameTimeline)"
+task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-05-19"
 ---
 
@@ -262,7 +262,7 @@ SurfaceFlinger 会先拿到 Display policy 允许的候选刷新率,再按每个
 2. **OverridePolicy**:系统覆盖(如 Game Mode、开发者选项强制 120Hz),优先级最高
 3. **NoOverridePolicy**:纯内容驱动,依赖 LayerHistory 汇总的 vote 和应用显式请求
 
-**LayerHistory**(`services/surfaceflinger/Scheduler/LayerHistory.cpp`):负责追踪每个活跃 Layer 的帧率请求。它通过统计 Layer 实际提交 Buffer 的时间戳来估算平均 FPS,并将汇总结果传递给 `RefreshRateSelector`。`LayerHistory::getSnapshot()` 在每一帧被 SurfaceFlinger 调用,返回当前所有活跃 Layer 的帧率需求摘要。
+**LayerHistory**(`services/surfaceflinger/Scheduler/LayerHistory.cpp`):负责追踪每个活跃 Layer 的帧率请求。它通过统计 Layer 实际提交 Buffer 的时间戳来估算平均 FPS。`LayerHistory::summarize(const RefreshRateSelector&, nsecs_t)` 由 `Scheduler::chooseRefreshRateForContent()` 周期性调用,汇总当前所有活跃 Layer 的 vote summary,再交给 `applyPolicy(&Policy::contentRequirements, ...)` 进行排序决策。
 
 ### App 如何参与刷新率选择
 
@@ -681,7 +681,7 @@ LTPO 面板的像素驱动电路中混合使用了两种 TFT 技术:
 
 #### RefreshRateSelector 评分算法(比"整除"复杂得多)
 
-LayerVoteType 有 7 种类型,每种对应不同评分策略:
+LayerVoteType 有 9 种类型(Android 16 `RefreshRateSelector.h` L152-L166),每种对应不同评分策略:
 
 | LayerVoteType | 含义 | 评分策略 |
 |---|---|---|
@@ -691,7 +691,17 @@ LayerVoteType 有 7 种类型,每种对应不同评分策略:
 | `Heuristic` | 平台内容检测帧率 | 非整除评分(0.95 penalty)|
 | `ExplicitDefault` | App 设置 Default | 计算实际渲染帧率(displayPeriod 最小倍数)|
 | `ExplicitExactOrMultiple` | App 设置 ExactOrMultiple | 整除=1.0;fractional pair=0.8 |
-| `ExplicitExact` | App 设置 Exact | 必须整除(divisor==1)|
+| `ExplicitExact` | App 设置 Exact | 条件化(见下文) |
+| `ExplicitGte` | App 设置"至少 X fps" | 请求帧率及以上的候选均可得高分 |
+| `ExplicitCategory` | View/Window 级 category 投票(HighHint / touch boost 路径) | Android 15+ 新增,按 category 优先级映射到高低刷新率档 |
+
+`ExplicitExact` 的评分受 `supportsAppFrameRateOverrideByContent()` 配置影响:
+- 不支持 frame-rate override by content 时:只接受 `divisor == 1`(严格整除)
+- 支持时:允许 `divisor > 0` 的刷新率得分,系统通过 `FrameRateOverride` 把 App 限到目标帧率
+
+源码锚点:`RefreshRateSelector.cpp` L449-L458,`mFrameRateOverrideConfig`。
+
+> 版本边界:`ExplicitGte` 和 `ExplicitCategory` 是 Android 15/API 35 新增枚举值,Android 11-14 的 `LayerVoteType` 只有前 7 种。
 
 关键评分逻辑(`RefreshRateSelector::calculateLayerScoreLocked()`):
 整除 → 满分 1.0;非整除 → 0.95 penalty;fractional pair(如 59.94fps@60Hz)→ 0.8 分。

@@ -29,14 +29,14 @@ sources:
   - type: aosp
     path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-34/android/net/http/RequestFinishedInfo.java"
+    path: "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
 tags: [observability, network, trafficstats, apm, alerting]
 related_chapters: ["19.23", "24.4", "24.10", "26.3", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "参考书素材/知识盲区/官方文档/AOSP结构"
 last_task2a_at: "2026-05-22T15:04:00+08:00"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -121,7 +121,13 @@ p2: 0
 
 OkHttp 的 `EventListener` 是 Android 端最常用的阶段采集入口。官方文档列出的事件包含 dispatcher queue、DNS、connect、secure connect、connection acquire/release、request headers/body、response headers/body，并且说明连接复用时 DNS 和 connect 事件可能不会出现，重试和 follow-up 会重复触发事件序列。采集代码要按一次 `Call` 内的多次 exchange 建模，不能把第二次重试的 `connectStart` 覆盖到第一次失败样本上。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/]
 
-Cronet 的口径更接近 Chromium 网络栈。Android 34 SDK source 中 `android.net.http.RequestFinishedInfo.Metrics` 提供 DNS、connect、SSL、sending、push、response 等阶段的时间戳，并能判断 socket 是否复用。它适合统一接入 Cronet 的业务，但不能覆盖绕过 Cronet 的 OkHttp、`HttpURLConnection` 或 Native 自研协议。 [已验证: AOSP android-34 SDK sources, android/net/http/RequestFinishedInfo.java]
+Cronet 的口径更接近 Chromium 网络栈。公开 Cronet API 的稳定包名是 `org.chromium.net.RequestFinishedInfo`，其中 `Metrics` 提供 DNS、connect、SSL、sending、response 阶段时间戳、socket 复用判断、TTFB、总耗时和传输字节数。采集入口是 `RequestFinishedInfo.Listener` 的 `onRequestFinished(RequestFinishedInfo)` 回调。
+
+需要注意：Android platform 的 `android.net.http.RequestFinishedInfo` 是隐藏/版本化实现细节（android-34 SDK source 中带 `{@hide}` / prototype 注释，android-35 SDK source 中已无该文件），不作为 App 侧稳定 API。App 接入应使用 `org.chromium.net` 包下的 public Cronet API，或通过 AndroidX Cronet wrapper（`androidx.cronet`）。
+
+Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cronet 的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
+
+[已验证: Chromium Cronet source, org/chromium/net/RequestFinishedInfo.java; AOSP android-34/android-35 SDK sources]
 
 自研网络库要从开始就把阶段事件作为协议的一部分，不要等线上问题多了再补埋点。最小事件模型可以这样设计：
 
