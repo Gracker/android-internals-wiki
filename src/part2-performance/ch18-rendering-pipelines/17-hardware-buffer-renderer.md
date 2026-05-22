@@ -1,6 +1,6 @@
 ---
 title: Hardware Buffer Renderer
-chapter: 18.17
+chapter: "18"
 section: "18.17"
 status: "ready-for-review"
 applicable_versions: Android 14 (API 34) - Android 16 (API 36)
@@ -19,17 +19,15 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "pending"
-task2b_result: "fixed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
-review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
-task6_result: pass-light-edit
+task2b_result: "pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-23"
+task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-23"
-review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-23T03:35:03+08:00"
 last_task2b_at: "2026-04-26T14:46:27+08:00"
@@ -40,21 +38,25 @@ last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
+last_task6_at: "2026-05-23T04:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-23-04-review.md"
+task6_review_notes: "2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 6 处（补 H1、规范 outline 锚点、删除高频强调词、去重 frontmatter review_notes、修正 chapter、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 NDK SurfaceControl API 签名问题已在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。 | 2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
 ---
+# Hardware Buffer Renderer
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- HardwareBufferRenderer 解决的核心问题：lockCanvas() 的性能瓶颈
-- GPU 硬件加速离屏渲染 vs CPU 软件渲染
-- API 使用流程：RenderRequest → GPU Rasterize → Fence → SurfaceControl
-- 性能对比：lockCanvas() vs HardwareBufferRenderer
-- 适用场景：HDR、跨进程 Buffer 共享、高帧率渲染
+- 🔹 HardwareBufferRenderer 解决的核心问题：lockCanvas() 的性能瓶颈
+- 🔹 GPU 硬件加速离屏渲染 vs CPU 软件渲染
+- 🔹 API 使用流程：RenderRequest → GPU Rasterize → Fence → SurfaceControl
+- 🔹 性能对比：lockCanvas() vs HardwareBufferRenderer
+- 🔹 适用场景：HDR、跨进程 Buffer 共享、高帧率渲染
 
 **扩展（可选深入）：**
-- Java API vs NDK API 的差异
-- 与 RenderNode 的关系
-- 在旧版本上的降级策略
+- 🔸 Java API vs NDK API 的差异
+- 🔸 与 RenderNode 的关系
+- 🔸 在旧版本上的降级策略
 
 <!-- outline-end -->
 
@@ -101,7 +103,7 @@ graph LR
 
 这套模型把两件事改清楚了。光栅化从 CPU 写像素换成 GPU 写 `HardwareBuffer`，buffer 的归属也回到了调用方手里。software Canvas 拿到的是已经挂在 `Surface` / BufferQueue 后面的生产者入口，`unlockCanvasAndPost()` 之后的提交、同步、复用沿着窗口体系继续往下走。HBR 拿到的是一块独立 `HardwareBuffer`，提交目标和回收时机都要自己安排。要直接上屏，就走 `SurfaceControl.Transaction.setBuffer()`；要接回窗口体系，才会再碰到 `queueBuffer()` 或 BLAST。
 
-排查时把职责拆开，判断会直接很多：
+排查时把职责拆开，判断会更清楚：
 
 1. **HBR 负责把 `RenderNode` 树画进 `HardwareBuffer`**，不负责选 consumer，也不负责安排下一次 draw。
 2. **执行阶段仍会落到硬件渲染栈**。Perfetto 里通常还能看到 app 进程的 `RenderThread` 和对应 GPU 工作，触发者从 `ViewRootImpl` 帧循环变成了 `RenderRequest.draw()`。
@@ -307,7 +309,7 @@ software Canvas 很难覆盖 FP16 render target、dataspace 和 layer 级颜色�
 
 ### wide color 与 HDR 要分开看
 
-`HardwareBuffer.RGBA_FP16` 只说明 buffer 精度到了 FP16。真正显示成 HDR，还要同时满足几件事：
+`HardwareBuffer.RGBA_FP16` 只说明 buffer 精度到了 FP16。要显示成 HDR，还要同时满足几件事：
 
 1. Layer dataspace 要和内容匹配，通常要通过 `SurfaceControl.Transaction.setDataSpace()` 声明。
 2. SurfaceFlinger、HWC 和 display 必须支持对应的 color mode / composition 能力。

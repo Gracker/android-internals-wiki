@@ -27,13 +27,13 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "pending"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-23"
 task6_result: "pass-light-edit"
-task2b_result: "fixed"
+task2b_result: "pending"
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -46,6 +46,9 @@ last_task9_audit_at: "2026-05-21T22:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-22-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: needs-rework。P0：Baseline Profile 安装收益 API floor 写成 API 21+，官方口径为 API 28+ install-time / API 24+ with ProfileInstaller；写入 queue 条目 task9-deep-20260523-19.14-baseline-profile-install-api-floor。"
+last_task6_at: "2026-05-23T04:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-23-04-review.md"
+task6_review_notes: "2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处（删除高频强调词、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 Baseline Profile API floor 问题已在 queue pending，保持 task2b_pending。"
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
@@ -107,7 +110,7 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 | Baseline Profile 生成（BaselineProfileRule） | API 33+，或 rooted API 28+ | Android 8-17 | `BaselineProfileRule.collect()` 生成环境需要 API 33+ 或 rooted 设备；生成结果与具体设备/版本绑定，需在目标发布设备段验证 |
 | Baseline Profile 验证（CompilationMode） | API 24+（`Partial(BaselineProfileMode.Require)`） | Android 8-17 | 验证需被测 APK 包含 ProfileInstaller 且由 AGP 7.0+ 打包 profile；API 23 只有 `Full()` 编译模式 |
 
-真正决定能不能测的，除了 API floor，还包括 metric 是否被当前设备支持、被测 App 是否使用接近 Release 的 build variant，以及 profileable / instrumentation 配置是否齐全。
+决定能不能测的，除了 API floor，还包括 metric 是否被当前设备支持、被测 App 是否使用接近 Release 的 build variant，以及 profileable / instrumentation 配置是否齐全。
 
 ## Microbenchmark 测小代码段
 

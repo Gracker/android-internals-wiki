@@ -1,7 +1,7 @@
 ---
 title: "线程与 FD 资源监控治理"
-chapter: "20.14"
-status: ready-for-review
+chapter: "20"
+status: "ready-for-review"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, thread, fd, oom, observability]
@@ -29,9 +29,17 @@ sources:
     path: "https://developer.android.com/reference/java/io/FileDescriptor"
   - type: official
     path: "https://developer.android.com/ndk/reference/group/file-descriptor"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 last_task2a_at: "2026-05-23T03:09:00+08:00"
+section: "20.14"
+task9_state: "pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-23"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-23T04:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-23-04-review.md"
+task6_review_notes: "2026-05-23 Task6 first review: pass-light-edit。L1/L2 小修 2 处（frontmatter 补 section/chapter，outline 禁用词替换），无回炉项；进入 Task9 技术审查。"
 ---
 
 # 20.14 线程与 FD 资源监控治理
@@ -40,7 +48,7 @@ last_task2a_at: "2026-05-23T03:09:00+08:00"
 ## 要点
 
 ### 🔹 线程与 FD 为什么要放在同一套资源治理里
-线程数失控、FD 泄漏、虚拟地址空间不足和 OOM/Native Crash 常在同一条稳定性链路上出现。本节从「资源数量 → 创建来源 → 关闭/回收 → 崩溃补偿」四层建立治理入口，避免只在崩溃栈上找最后一次触发点。
+线程数失控、FD 泄漏、虚拟地址空间不足和 OOM / Native Crash 常常在同一组稳定性问题里出现。本节从「资源数量 → 创建来源 → 关闭/回收 → 崩溃补偿」四层建立治理入口，避免只在崩溃栈上找最后一次触发点。
 
 ### 🔹 线程快照：数量、名称、状态与调用栈
 覆盖 `Thread.getAllStackTraces()`、线程名规范、线程池命名策略、匿名线程识别和采样频率边界。重点说明快照适合回答「当前有哪些线程」，不适合单独回答「是谁创建了线程」。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
