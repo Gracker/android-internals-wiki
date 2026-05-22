@@ -1,10 +1,13 @@
 ---
 title: "用户设置对能耗的影响：亮度、刷新率与深色模式"
 chapter: "11.7"
-status: draft
+section: "11.7"
+status: ready-for-review
+drafted_date: "2026-05-22"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-tags: [power, battery, display, refresh-rate, dark-mode, empirical-study]
-related_chapters: ["2.18", "2.19", "5.6", "11.1", "11.2", "15.6", "25.1"]
+last_verified: "2026-05-22"
+last_verified_against: "arXiv 2604.25587v1 + Android Developers / AOSP power and refresh-rate docs"
+confidence: medium
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "每日信息/研究论文/官方文档"
@@ -12,9 +15,22 @@ sources:
   - type: paper
     path: "https://arxiv.org/abs/2604.25587"
   - type: official
-    path: "https://developer.android.com/topic/performance/power/battery-historian"
+    path: "https://source.android.com/docs/core/power"
+  - type: official
+    path: "https://source.android.com/docs/core/graphics/arr"
+  - type: official
+    path: "https://source.android.com/docs/core/graphics/multiple-refresh-rate"
+  - type: official
+    path: "https://developer.android.com/media/optimize/performance/frame-rate"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/theming/darktheme"
+  - type: official
+    path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
   - type: local
     path: "intake/daily-info/2026-05-22.md"
+tags: [power, battery, display, refresh-rate, dark-mode, empirical-study]
+related_chapters: ["2.18", "2.19", "5.6", "11.1", "11.2", "15.6", "25.1"]
+pipeline_stage: task6_pending
 ---
 
 # 11.7 用户设置对能耗的影响：亮度、刷新率与深色模式
@@ -52,8 +68,146 @@ sources:
 补充如何在 Battery Historian、Perfetto counter 和 Android Studio Profiler 中记录屏幕亮度、刷新率、温度和电量变化。
 
 ### 🔸 论文复现实验模板
-提供 UIAutomator / Macrobenchmark / 手工复现实验的变量矩阵，后续可落成可运行脚本。
+提供 UIAutomator / Macrobenchmark / 手工复现实验的变量组合表，后续可整理成可运行脚本。
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 用户设置为什么要进入功耗模型
+
+功耗分析里常把 CPU、网络、WakeLock、定位和渲染拆开看，但用户手里能改的设置经常被放在测试备注里。亮度、刷新率、深色模式、省电模式、网络状态和视频清晰度不只是背景条件，它们会直接改变屏幕发光、显示刷新、解码负载、网络传输和应用交互强度。
+
+AOSP 的功耗模型说明了这件事的底层原因：框架层不会直接测量电池电流，而是由 BatteryStats 收集组件状态和持续时间，再结合 power profile 中的电流成本估算各组件耗电。以显示为例，系统会记录不同亮度档位上的停留时间，再乘以插值后的显示亮度成本；CPU 也按运行时间和频点成本归因。屏幕亮度、刷新率和省电模式会改变这些输入条件，测试时不能只写“同一台设备”。[已验证: 官方文档, source.android.com/docs/core/power]
+
+2026 年 arXiv 论文《An Empirical Analysis of Mobile Energy Consumption Across User Configurations》把这些设置单独拉出来做实验。作者使用 ebserver、ADB、UIAutomator 和 `dumpsys batterystats`，在 Samsung Galaxy S23 Ultra 上对 WhatsApp、Instagram、TikTok、YouTube 和手电筒场景组合了 879 种配置，得到超过 12,000 个数据点。它的价值不在于给出所有设备通用的百分比，而是把“用户能改什么”和“能耗变化多大”放进同一个实验组合。[来源: intake/daily-info/2026-05-22.md][引用: https://arxiv.org/abs/2604.25587]
+
+这类结论在工程上要按两层使用：
+
+- **实验变量层**：亮度、刷新率、深色模式、省电模式、网络状态、视频分辨率和消息长度必须写进测试条件，否则两次功耗数据没有可比性。
+- **产品策略层**：只把建议推给能受益的场景。阅读、短视频、长视频、聊天和游戏的主导耗电项不同，同一句省电提示不能覆盖所有场景。
+
+## 亮度是最稳定的高权重变量
+
+论文结果里，屏幕亮度是影响最稳定的一项。0% 到 100% 亮度的对比中，所有测试 App 的能耗都上升；整体平均增幅为 86.5%，Instagram 为 96.8%，WhatsApp 达到 210.2%。50% 亮度相对 0% 亮度的整体增幅也有 46%。这些数字来自同一台 Galaxy S23 Ultra、同一组自动化场景和软件功耗模型，不能直接换算到每台设备，但方向足够明确：功耗测试不锁亮度，结果就会被屏幕条件主导。[引用: https://arxiv.org/abs/2604.25587]
+
+亮度影响大，有三个原因。
+
+- **显示面板本身耗电**：LCD 主要受背光影响，OLED / AMOLED 主要受像素发光面积、颜色和亮度影响。Android 官方 power profile 也把显示常亮和亮度成本作为独立组件建模。[已验证: 官方文档, source.android.com/docs/core/power]
+- **高亮会放大内容差异**：同样是深色模式，OLED 上黑色区域越多收益越明显；白底列表、视频画面和图文流会把收益压低。
+- **户外高亮和温度会互相影响**：高亮会推高面板功耗和机身温度，温度上来后 CPU/GPU 降频又会影响滚动、解码和游戏帧率。详见 5.5 节和 15.6 节。
+
+自动亮度也不能简单归为“省电开关”。它的作用是把亮度压回可读范围内的较低档位，而不是让每个场景固定省电。室内阅读、聊天、文档类页面通常收益更稳定；户外强光、相机取景、地图导航这些场景，系统可能主动拉高亮度以保证可见性。测试报告应记录环境照度或至少记录“固定亮度 / 自动亮度 / 户外高亮是否触发”。
+
+功耗测试里推荐把亮度写成三类条件：固定档位、自动亮度、异常高亮。固定档位用于回归对比，自动亮度用于贴近真实使用，高亮场景单独建 case，不和普通室内数据混在一张图里。
+
+## 刷新率的收益和代价按场景拆开
+
+刷新率影响的是显示子系统和渲染节奏。60Hz、90Hz、120Hz 不只是屏幕参数，它们会改变帧预算：60Hz 约 16.67ms 一帧，120Hz 约 8.33ms 一帧。预算变短后，App、RenderThread、SurfaceFlinger 和 GPU 都更容易暴露瓶颈；即使 App 不满帧，高刷新率也会带来更多显示刷新和调度机会。
+
+论文里，30Hz 到 120Hz 的整体平均能耗增幅为 10.8%。YouTube 在最高刷新率下最高增加 16.3%；Instagram 从 30Hz 到 60Hz 增加 9.2%；WhatsApp 是例外，因为测试工作负载没有视频，刷新率变化没有形成显著影响。论文讨论给出的产品化判断是：60Hz 往往是能效和体验的折中点，120Hz 的边际体验收益要按场景确认。[引用: https://arxiv.org/abs/2604.25587]
+
+Android 平台侧的策略也支持这种分场景判断。Android 11 引入多刷新率支持和 App 设置期望帧率的 SDK / NDK API；`Surface.setFrameRate()` 可以表达视频、游戏或自绘 Surface 的帧率偏好，但系统调度器会同时考虑其他 Layer、用户设置、省电模式和设备能力，App 请求不保证被满足。[已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
+
+AOSP 多刷新率文档还给出一个明确边界：进入省电模式后，刷新率会被限制到 60Hz 或更低，低功耗状态通过 `Settings.Global.LOW_POWER_MODE` 表示。到了 Android 15 的 Adaptive Refresh Rate，支持设备可以让显示刷新率按内容帧率做离散 VSync 步进，默认尽量运行在低于最高刷新率的档位，需要体验时再升高，从而减少无效刷新和模式切换卡顿。详见 2.18、2.19 节。[已验证: 官方文档, source.android.com/docs/core/graphics/multiple-refresh-rate][已验证: 官方文档, source.android.com/docs/core/graphics/arr]
+
+不同场景的判断口径可以这样拆：
+
+| 场景 | 刷新率策略 | 功耗判断 |
+|------|------------|----------|
+| 静态阅读 / 聊天停留 | 倾向低刷新率或 ARR 自动降频 | 高刷收益低，亮度通常更重要 |
+| 列表滑动 / 图文流 | 滑动时升频，静止后降频 | 关注 touch boost、RecyclerView 速度上报和掉帧率 |
+| 短视频流 | 依据内容帧率和滚动交互折中 | 120Hz 不一定改善视频本体，可能改善交互动画 |
+| 长视频播放 | 用 `setFrameRate()` 表达源视频帧率 | 让刷新率匹配 24/30/60fps，减少抖动和无效刷新 |
+| 游戏 / 自绘 Surface | 由游戏目标帧率和散热预算决定 | 高刷收益可能明显，但要同时看温度和掉帧 |
+
+## 深色模式不能写成通用省电开关
+
+Android 官方暗色主题文档明确写到：暗色主题的省电收益取决于设备屏幕技术，同时它还改善低视力用户和弱光环境下的可读性。这个说法是边界清楚的：OLED / AMOLED 上黑色像素发光更少，理论收益更容易出现；LCD 背光仍然工作，收益通常不稳定。[已验证: 官方文档, developer.android.com/develop/ui/views/theming/darktheme]
+
+论文数据给暗色主题泼了一盆冷水。测试中暗色主题只在 Instagram 和 WhatsApp 上出现显著省电，分别降低 2.4% 和 3.8%；整体平均降幅只有 1.4%。如果用户为了看清暗色页面把亮度调高，亮度带来的额外成本可能盖过暗色主题的收益。[引用: https://arxiv.org/abs/2604.25587]
+
+因此，暗色模式的产品文案应该写成条件判断：
+
+- **可以提示**：OLED / AMOLED 设备、低亮度或中等亮度、以文本和大面积深色背景为主的页面。
+- **谨慎提示**：视频、图片流、地图、相机预览、品牌色大面积铺底的页面，内容颜色本身会决定像素发光成本。
+- **不要承诺**：“开启深色模式显著省电”“所有设备都省电”这类说法没有足够依据。
+
+暗色模式仍然值得支持，但它的主要价值常常是视觉舒适和系统一致性。省电只是某些设备、某些页面、某些亮度档位下的附加收益。
+
+## 视频分辨率、消息长度和网络状态的场景化影响
+
+视频分辨率是一个容易误判的变量。直觉上，1440p 应该比 720p 更耗电；论文结果却显示，YouTube 最高测试分辨率只带来 5.5% 能耗上升，720p 与 1440p 的差异没有统计显著性。作者的解释是，视频处理存在固定成本，解码、渲染、缓存和平台播放管线会吞掉一部分分辨率差异。[引用: https://arxiv.org/abs/2604.25587]
+
+这不表示分辨率对功耗无影响。它表示“降低分辨率”只有在特定瓶颈下才是主策略：蜂窝网络弱、码率很高、解码器负载高、设备发热、后台还有下载或录屏时，分辨率和码率才可能成为主导变量。Wi-Fi 良好、硬件解码稳定、缓存命中率高的长视频播放里，屏幕亮度和播放时长反而更可能决定总耗电。
+
+消息长度的结果也提醒我们不要只看组件名。WhatsApp 场景中，100 字符增加到 200 字符后总能耗增加 115.6%。这未必是“多发 100 个字符本身耗电”，更可能包含输入、布局、网络、加密、发送回执和 UI 刷新等动作的组合成本。把它拆到工程观察点上，应看四类信号：主线程输入和布局、网络上下行字节、CPU 运行时间、发送后后台工作。
+
+网络状态在论文里用 Airplane Mode 做了对比，但没有得到统计显著影响。这个结论只能解释该实验里的工作负载：脚本、缓存、网络质量、App 行为和采样窗口共同决定结果。真实线上排障仍要单独记录 Wi-Fi / 5G / 弱网、信号强度、DNS / TLS 重试和缓存命中率，不能把“飞行模式无显著影响”推广到所有 App。
+
+## 测试设计：把用户设置写进实验条件
+
+功耗测试的失败常见于变量没写清。一次“优化后省电 8%”的报告，如果没有亮度、刷新率、深色模式、省电模式和温度条件，结论无法复现。15.6 节讲性能测试环境标准化，这里把用户设置变量单独列出来。
+
+| 变量 | 推荐记录方式 | 失控后的典型误判 |
+|------|--------------|------------------|
+| 屏幕亮度 | 固定百分比、自动亮度状态、是否户外高亮 | 把屏幕成本误判成 App 代码回归 |
+| 刷新率 | 用户设置、当前显示刷新率、App 帧率请求 | 把正常 ARR 降频误判为掉帧，或忽略 120Hz 成本 |
+| 深色模式 | 系统主题、App 主题、页面主色和内容类型 | 把暗色主题写成无条件省电 |
+| 省电模式 | `LOW_POWER_MODE`、CPU 限速、后台限制 | 把系统降频导致的变慢归到代码 |
+| 网络状态 | Wi-Fi / 蜂窝、信号强度、缓存命中、弱网注入 | 把重试、预加载和缓存差异混到功耗里 |
+| 温度 | 起始温度、峰值温度、是否触发 thermal throttling | 把降频后的帧率下降误判为渲染代码问题 |
+| 电量与充电 | 初始电量、是否接 USB、是否断开充电 | 充电状态改变调度策略和电池统计口径 |
+| App 条件 | 版本、账号状态、内容源、广告开关、采样窗口 | 同一脚本跑到不同内容，结果漂移 |
+
+Battery Historian 适合回看系统级统计。官方文档说明，System Stats 页包含 cell signal levels 和 screen brightness 这类全局信息，可用于确认测试期间有没有外部干扰；App Stats 页再看单个应用的统计。Power Profiler、Perfetto power rail 和 Macrobenchmark `PowerMetric` 更适合短场景和回归测试。25.1 节会从工具角度展开，这里只强调采样口径必须和用户设置一起落表。[已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
+
+一个可复现的实验组合至少包含三层：
+
+- **固定基线**：室内环境、固定亮度 50%、60Hz、浅色主题、Wi-Fi、关闭省电模式、设备温度回到稳定区间后开始。
+- **单变量扫描**：每次只改变一个设置，例如亮度 0/50/100，或刷新率 60/120，其他条件保持不变。
+- **真实场景复测**：开启自动亮度、ARR、真实网络和真实内容源，验证单变量结论在用户环境里是否仍成立。
+
+论文复现实验可以使用 UIAutomator 或 Macrobenchmark 组织动作，但数据解释不要只看最终 mAh / J。短视频、聊天和长视频分别要记录滚动次数、输入字符数、播放时长、分辨率、缓存状态和广告出现情况。少一个业务变量，功耗差异就可能解释错。
+
+## 与 Android 自适应刷新率策略联动
+
+刷新率相关数据要和系统策略放在一起看，避免把 App 请求当成系统最终决策。2.18 节已经讲过 ARR，2.19 节讲刷新率切换卡顿；本节只保留实验侧的对照表。
+
+| 输入来源 | 代表 API / 状态 | 对实验的影响 | 排查入口 |
+|----------|-----------------|--------------|----------|
+| 用户刷新率设置 | 系统显示设置、OEM 高刷开关 | 限制可选刷新率上限或默认策略 | 设置截图、`dumpsys display`、Perfetto VSync 间隔 |
+| App Surface 请求 | `Surface.setFrameRate()`、视频源帧率 | 表达内容帧率偏好，不保证系统采纳 | 代码路径、SurfaceFlinger Layer 信息 |
+| View / RecyclerView / Compose | `View.setRequestedFrameRate()`、速度上报、Compose 帧率偏好 | 普通 UI 场景的刷新率提示入口 | 详见 2.18 节 |
+| 系统 ARR 策略 | Android 15-QPR1+、设备 HAL 支持 | 静止时降频，交互时升频，减少无效刷新 | VSYNC 间隔、FrameTimeline、Display 刷新率 |
+| 省电模式 | `Settings.Global.LOW_POWER_MODE` | 刷新率限制到 60Hz 或更低 | `dumpsys settings`、`dumpsys display` |
+
+实验报告里不要只写“120Hz”。更稳的写法是“用户设置允许 120Hz，当前场景 Perfetto 观察到 VSYNC 间隔约 8.33ms，省电模式关闭”。这三句话分别交代用户设置、系统实际行为和约束条件。
+
+## 产品策略：省电提示要给出适用条件
+
+把论文和平台规则落到产品策略上，优先级可以这样排。
+
+1. **亮度提示优先于暗色主题提示**：在阅读、聊天、图文流和长视频场景里，亮度通常是第一组要确认的变量。提示语应写成“在能看清的前提下降低亮度”，不要鼓励用户牺牲可读性。
+2. **刷新率提示要绑定场景**：长视频、阅读、文档和聊天可以提示 60Hz 或跟随系统 ARR；游戏和高交互场景应让用户在流畅和续航之间选择。
+3. **暗色模式只写条件收益**：OLED 设备、深色内容、大面积背景可受益；图片、视频和地图类页面不要承诺明显省电。
+4. **分辨率提示放在弱网和发热之后**：如果用户已经发热、弱网、流量受限或播放卡顿，降低分辨率有价值；只为了省电，优先级不如亮度和刷新率。
+5. **省电模式会改变性能结果**：测试和线上诊断都要记录是否开启省电模式。它可能限制 CPU、后台和刷新率，带来耗电下降，也可能带来响应变慢。
+
+用户设置类建议最怕一句话打满。好的提示应该带条件：当前页面类型、设备能力、环境亮度、网络状态和用户正在做的事。工程侧也一样，功耗数据要先把这些条件写清，再谈代码优化是否生效。
+
+## 复现实验模板
+
+下面的模板用于后续把本节落成脚本或测试计划。它不是生产代码清单，而是实验设计清单。
+
+| 模块 | 固定项 | 扫描项 | 输出 |
+|------|--------|--------|------|
+| 设备 | 机型、系统版本、屏幕类型、初始电量、起始温度 | 亮度、刷新率、省电模式、主题 | 每轮设备状态表 |
+| 场景 | App 版本、账号、内容源、采样窗口 | 聊天字符数、视频分辨率、滑动时长 | 场景参数表 |
+| 自动化 | UIAutomator / Macrobenchmark 动作序列 | 重复次数、warm-up 轮次 | 失败截图和日志 |
+| 功耗数据 | BatteryStats reset、Perfetto 配置、Power Profiler session | 采样窗口、是否断开 USB | UID 统计、power rail、系统状态 |
+| 解释 | 单变量对比、置信区间或显著性检验 | 真实场景复测 | 结论、边界、未验证项 |
+
+论文用 Mann-Whitney U test 只报告统计显著结果，这一点值得保留。移动端功耗数据常常不是正态分布，直接平均后下判断风险很高。实际工程可以先用中位数、P90、箱线图和异常值说明，再决定是否做显著性检验。没有统计检验时，报告里至少要写重复次数、方差或误差范围。
+
+## 小结
+
+用户设置不是功耗测试的背景噪声，而是实验条件的一部分。亮度在当前证据里最稳定，刷新率要按场景和 ARR 策略解释，暗色模式只在特定屏幕和内容下产生可观收益，视频分辨率和消息长度需要回到具体工作负载拆分。测试报告把这些变量写清，功耗优化才有可复现的起点。

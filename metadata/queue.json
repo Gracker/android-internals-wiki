@@ -16606,7 +16606,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "task2a-content-processing",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch11-power/07-user-settings-energy-impact.md"
@@ -16632,7 +16632,10 @@
         "total": 16
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-22T08:45:48+08:00"
+      "added_at": "2026-05-22T08:45:48+08:00",
+      "completed_at": "2026-05-22T09:16:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completion_reason": "内容加工完成，status 已更新为 ready-for-review，进入 Task 6 管线。"
     }
   ],
   "metadata": {
