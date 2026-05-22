@@ -1,7 +1,7 @@
 {
   "total": 370,
-  "draft": 22,
-  "ready-for-review": 161,
+  "draft": 21,
+  "ready-for-review": 162,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-23",
@@ -213,7 +213,8 @@
     "26.17",
     "6.2",
     "24.14",
-    "7.18"
+    "7.18",
+    "20.14"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -260,7 +261,8 @@
     "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
     "src/part1-fundamentals/ch06-storage/02-filesystem.md",
     "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
-    "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md"
+    "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
+    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
   ],
   "review_summary": "Task2A 2026-05-22 21: 加工 24.15 移动网络性能优化实战；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
@@ -1734,8 +1736,8 @@
   "total_review_sections": 200,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-23T01:24:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-23T02:12:00+08:00",
+  "last_updated_by": "openclaw-task6-audit",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "01:24",
@@ -4729,13 +4731,13 @@
   ],
   "last_task2a_processed": {
     "date": "2026-05-23",
-    "time": "01:04",
-    "section": "7.18",
-    "file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
+    "time": "03:09",
+    "section": "20.14",
+    "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending"
   },
-  "last_task2a_processed_file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
+  "last_task2a_processed_file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
   "last_task2a_processed_date": "2026-05-23",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -4789,9 +4791,9 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "total_review_files": 42,
-  "last_task2a_at": "2026-05-23T01:04:00+08:00",
-  "last_task2a_section": "7.18",
-  "last_task2a_file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
+  "last_task2a_at": "2026-05-23T03:09:00+08:00",
+  "last_task2a_section": "20.14",
+  "last_task2a_file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "1.13"
@@ -4819,9 +4821,9 @@
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
   "last_task9_at": "2026-05-23T00:20:00+08:00",
-  "last_task2a_result": "processed-draft",
+  "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "7.18",
+  "last_task2a_processed_section": "20.14",
   "task6_last_review_at": "2026-05-23T01:24:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-23-01-review.md",
   "task6_last_review_sections": [
@@ -5891,7 +5893,7 @@
     "22.3",
     "21.2"
   ],
-  "last_task2a_processed_at": "2026-05-19T22:04:00+08:00",
+  "last_task2a_processed_at": "2026-05-23T03:09:00+08:00",
   "last_task9_files": [
     "src/part1-fundamentals/ch02-rendering/02-framerate.md",
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
@@ -6111,14 +6113,14 @@
     "qualified_count": 1
   },
   "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
-  "last_task6_audit": "2026-05-22T11:11:00+08:00",
+  "last_task6_audit": "2026-05-23T02:12:00+08:00",
   "last_task6_audit_sections": [
-    "9.4"
+    "16.3"
   ],
   "last_task6_audit_files": [
-    "src/part2-performance/ch09-anr/04-special-anr.md"
+    "src/part4-system/ch16-aosp/03-aosp-build.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-22-11-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-23-02-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-22",
     "time": "14:04",
@@ -6562,8 +6564,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "7.18",
-  "last_task2a_completed_at": "2026-05-23T01:04:00+08:00",
+  "last_task2a_completed": "20.14",
+  "last_task2a_completed_at": "2026-05-23T03:09:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
