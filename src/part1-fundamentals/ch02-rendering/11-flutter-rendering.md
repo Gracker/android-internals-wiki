@@ -51,10 +51,10 @@ last_task2b_at: '2026-05-21T23:22:00+08:00'
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T00:27:00+08:00"
@@ -62,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：Android 16 Vulkan 1.4 / Host Image Copy 设备边界需改成 launch-device 口径；P2 1：ADPF 小节 Flutter 每帧重绘因果判断缺少支撑。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
@@ -351,13 +351,13 @@ Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起,Android AP
 
 #### Vulkan 1.4 Host Image Copy 与纹理上传
 
-Android 16 强制要求 Vulkan 1.4,其中 `VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力。
+出厂搭载 Android 16+ 的合规设备需支持 Vulkan 1.4（升级到 Android 16 的旧设备可选支持,需运行时查询 `vkEnumerateInstanceVersion` / device extension / feature bit）。`VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力,不作为 Flutter 当前可依赖能力。
 
 但截至当前 Flutter Engine 主干（ae5c360）,Impeller Vulkan 后端的 capability 枚举只包含 `VK_EXT_pipeline_creation_feedback`、`VK_KHR_portability_subset`、`VK_EXT_image_compression_control` 三个可选扩展,未启用 `VK_EXT_host_image_copy`。`impeller/renderer/backend/vulkan/texture_vk.cc` L75-L130 仍创建 staging buffer 并调用 `vk_cmd_buffer.copyBufferToImage()`。全局搜索 `host_image_copy` / `CopyMemoryToImage` 无命中。
 
 Android Developers 公开的 Vulkan benchmark 数据显示,启用该扩展后纹理上传速度提升约 45%,上传期间的内存峰值降低约 50%——这是 Android/Vulkan 层面的合成 benchmark,不是 Flutter 实测结果。Impeller 未来可能采纳该扩展作为优化方向,但当前 Flutter 场景下的纹理上传仍走传统 Staging Buffer 路径。
 
-该扩展仅在 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效。低于该版本的设备不受影响。
+该扩展仅在出厂搭载 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效；升级到 Android 16 的旧设备需运行时查询 device extension 是否可用。低于该版本的设备不受影响。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 

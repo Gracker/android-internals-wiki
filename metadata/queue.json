@@ -13,7 +13,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/04-special-anr.md"
@@ -61,7 +61,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T08:40:32+08:00",
-      "review_log": "logs/deep-review/2026-05-22-08-audit.md"
+      "review_log": "logs/deep-review/2026-05-22-08-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T11:22:11+08:00",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260522-6.1-storage-fbe-io-cgroup",
@@ -126,7 +129,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
@@ -148,7 +151,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T00:27:00+08:00",
-      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T11:22:11+08:00",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-deep-20260522-19.01-appexitinfo-source-version-paths",
@@ -163,7 +169,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/01-apm-landscape.md"
@@ -192,7 +198,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T00:27:00+08:00",
-      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-22-00-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-22T11:22:11+08:00",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260521-19.14-baseline-profile-api-floor",
