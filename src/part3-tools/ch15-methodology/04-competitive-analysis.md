@@ -1,4 +1,5 @@
 ---
+
 title: "竞品分析方法"
 chapter: "15.4"
 section: "15.4"
@@ -45,6 +46,9 @@ last_task2b_at: "2026-04-27T21:44:26+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
+last_task9_audit: "2026-05-23"
+last_task9_audit_log: "logs/deep-review/2026-05-23-00-audit.md"
+task9_audit_notes: "2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 Android 16 FrameMetrics/ActivityTaskManager 链路复核通过；仅记录 P2：Benchmarking overview 官方 URL 已迁移。"
 ---
 
 # 竞品分析方法

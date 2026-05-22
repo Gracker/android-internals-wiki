@@ -2971,3 +2971,22 @@
 - **已去重方向**：Android Performance Analyzer / Android CLI（14.18、14.19 已覆盖）、Compose First（22.15 已覆盖）、Android XR（18.22、22.14 已覆盖）、AICore / LiteRT / NNAPI（5.11、5.14、5.13 已覆盖）、ART GC + Compose（4.8、22.3 已覆盖）、DMA-BUF / Gralloc / 16KB（2.15、2.24、18.15 已覆盖）、用户设置能耗论文（11.7 已覆盖）。
 - **低分候选**：Android 17 原生应用锁、Android Halo、Android for Cars、AI 写 Android / Android Bench、Kotlin 2.3 更新；这些方向与 Android 性能优化主线相关性不足，暂不进入章节队列。
 - **报告落盘**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-22-23-知识加工(新).md`
+
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-05-23
+- **类型**：源码准确性/资料锚点
+- **位置**：L24、L323、L843
+- **问题**：官方文档链接 `developer.android.com/develop/ui/views/layout/swinging-area` 与 `source.android.com/docs/core/display/multiple-refresh-rate` 当前均返回 404；多刷新率支持的正确 AOSP 文档路径是 `source.android.com/docs/core/graphics/multiple-refresh-rate`，View 级 ARR 文档应指向 `developer.android.com/develop/ui/views/animations/adaptive-refresh-rate`。
+- **建议**：修正 frontmatter sources、正文 `[已验证]` 标注与参考资料链接，避免读者按错误 URL 复核。
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-05-23
+- **类型**：数据/工具查询可执行性
+- **位置**：L316-L319、L421-L425 的 Perfetto SQL 示例
+- **问题**：示例使用 `SELECT * FROM track_event ...`，但 Perfetto Trace Processor 文档中 `track_event` 是数据源/事件来源，常规 SQL 表应落到 `slice`、`counter`、`track`、Frame Timeline 相关表或标准库视图。当前写法缺少可执行性验证。
+- **建议**：用一条实际 trace 验证 SQL；若只是示意，改成明确的伪查询。推荐给出 `slice JOIN track` 或刷新率 counter 的可执行查询，并保留 Frame Timeline 使用 `actual_frame_timeline` / `expected_frame_timeline` 口径的版本边界。
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-05-23
+- **类型**：数据缺失
+- **位置**：L744：`120Hz 的屏幕功耗通常比 60Hz 高 20-40%`
+- **问题**：该数字缺少设备型号、亮度、内容类型、SoC/GPU 负载、测试方法和来源。刷新率功耗受面板、亮度、VRR/LTPO 策略和渲染负载影响很大，直接写固定区间容易被读者当成通用结论。
+- **建议**：补一条可追溯来源或改成定性表述；如果保留数字，至少标明 “某类 OLED/LTPO 设备、固定亮度、同内容滚动/静态场景” 的测试边界。
