@@ -28,11 +28,11 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task2b_pending
-task2b_result: pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
@@ -76,15 +76,15 @@ ANR 治理围绕一条约束：主线程要在对应超时窗口内完成系统�
 | ANR 类型 | 超时阈值（AOSP 默认值） | 检测机制 | 典型成因 |
 |----------|------------------------|---------|---------|
 | Input dispatch | 5s（AOSP `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，可通过 per-window/per-application timeout 调整） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
-| BroadcastReceiver（前台） | 10s（`BROADCAST_FG_TIMEOUT`） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
-| BroadcastReceiver（后台） | 60s（`BROADCAST_BG_TIMEOUT`） | 同上 | 后台广播处理链过长 |
+| BroadcastReceiver（前台） | 10s（Android 13 及以下）；10-20s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
+| BroadcastReceiver（后台） | 60s（Android 13 及以下）；60-120s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | 同上 | 后台广播处理链过长 |
 | ContentProvider publish | 10s（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
-| Service（前台） | 20s（`SERVICE_FOREGROUND_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
-| Service（后台） | 200s（`SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
+| Service（前台） | 20s（`ActivityManagerConstants.SERVICE_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
+| Service（后台） | 200s（`ActivityManagerConstants.SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
 
 上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。在多数线上治理中，Input dispatch ANR 是优先排查对象，具体占比应以应用自己的 ANR 监控口径为准。
 
-> 注意：`BROADCAST_FG_TIMEOUT` 和 `BROADCAST_BG_TIMEOUT` 对应的是标准（unordered）广播。有序广播（ordered broadcast）的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。高优先级接收者如果在前台，走前台超时；在后台走后台超时。
+> 注意：上表超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Android 14+ 的广播超时由 `BroadcastConstants` 管理，窗口可拉长（CPU-starved 、冷启动时间计入等场景），不宜写成固定值。有序广播的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。
 
 ## 主线程瘦身策略与异步化
 
@@ -382,7 +382,8 @@ ContentProvider 的超时发生在 `ActivityManagerService` 等待应用 publish
 
 治理手段：
 
-- **延迟初始化**：Android 11+ 提供的 `AppComponentFactory` 可以控制 ContentProvider 的初始化时机。更通用的做法是在 ContentProvider 的 `onCreate()` 里只做极轻量的注册操作，实质的初始化工作放到首次调用 `query()` / `insert()` 时再触发（lazy init）。
+- **延迟初始化**：`AppComponentFactory.instantiateProvider()` 只提供实例化 hook，返回的 Provider 对象尚无 Context，不能用于控制初始化时机。实际可用的做法是在 ContentProvider 的 `onCreate()` 里只做极轻量的注册操作，实质的初始化工作放到首次调用 `query()` / `insert()` 时再触发（lazy init）。
+- **App Startup 统一管理**：用 AndroidX App Startup 的 `Initializer` 替代各 SDK 自注册 ContentProvider，在 manifest 中只保留一个 `InitializationProvider`，按依赖顺序统一调度初始化。
 - **精简 ContentProvider 数量**：检查 manifest 中声明的 ContentProvider，移除不必要的。很多第三方 SDK 提供了关闭自动初始化的开关（`enable = false`），改用手动初始化。
 - **启动时序优化**：把 ContentProvider 初始化纳入启动框架统一调度（详见 21.2 节），控制并发数和依赖关系。
 
@@ -395,7 +396,7 @@ BroadcastReceiver 的 ANR 发生在 `onReceive()` 执行超过阈值时。关键
 治理手段：
 
 - **onReceive() 只做转发**：收到广播后，把实际处理逻辑交给 `JobScheduler` / `WorkManager` / `Coroutine` 在后台执行。`onReceive()` 本身只做参数解析和任务调度。
-- **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 允许把处理时间延长到 10 秒（前台）或 60 秒（后台）。但 `goAsync()` 不消除超时风险——它只是给了更多时间，处理仍然不能无限长。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
+- **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 不新增超时预算，只是延续同一个广播超时窗口——从 `onReceive()` 开始到 `PendingResult.finish()` 返回，仍然受原广播超时约束。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
 - **静态广播 → 动态广播**：如果不需要在应用未运行时接收广播，把静态注册的 `BroadcastReceiver` 改为动态注册。动态注册可以减少应用未运行时被唤醒的广播面，但 `onReceive()` / `goAsync()` 仍受广播执行时间限制——系统不因注册方式不同而豁免超时。
 
 ```kotlin
@@ -416,10 +417,11 @@ override fun onReceive(context: Context, intent: Intent) {
 
 ### Service 超时补充
 
-Service 的前台超时是 20 秒，后台 200 秒。治理要点：
+Service 的前台生命周期超时是 `SERVICE_TIMEOUT` 默认 20 秒，后台 `SERVICE_BACKGROUND_TIMEOUT` 默认 200 秒。FGS 晋升超时是独立的计时器（见下方）。治理要点：
 
 - `onCreate()` 和 `onStartCommand()` 都在主线程执行。如果 `onStartCommand()` 需要做耗时操作，启动一个后台线程来处理，然后立即返回 `START_STICKY` 或 `START_NOT_STICKY`。
-- Android 12+ 对前台 Service 启动有新的约束：应用在调用 `Context.startForegroundService()` 后，必须在限定时间内（AOSP 默认约 5s，`SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`）调用 `Service.startForeground()`，否则会触发 `ForegroundServiceDidNotStartInTimeException`。触发顺序是 startForegroundService → startForeground，不是 startForeground 之后的操作。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
+- FGS 晋升超时（`startForegroundService()` → `startForeground()`）：Android 8 引入此约束。`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS` 默认 30s（android-16），超时后系统再等待 `DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS`（10s）后触发 ANR。Android 12-13、Android 14+ 的宽限值有差异，排查时应以目标版本 `ActivityManagerConstants` 中的配置为准，不要统一写 5s。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
+- 普通前台 Service 生命周期执行超时（`onCreate()`/`onStartCommand()`）：`ActivityManagerConstants.SERVICE_TIMEOUT` 默认 20s（前台），`SERVICE_BACKGROUND_TIMEOUT` 默认 200s（后台）。两者与 FGS 晋升超时是独立的计时器。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
 

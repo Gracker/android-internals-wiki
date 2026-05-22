@@ -371,6 +371,13 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 
 ## 参考资料
 
+### sched_ext OEM 调度器公开证据与生产就绪度分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-sched-ext-oem-scheduler-production-readiness.md
+- 类型：DeepResearch 调研结果
+- 摘要：调研 Linux 6.12 sched_ext 可扩展调度器框架在 Android android16-6.12 内核中的支持状态，包含 BPF 调度器核心接口（scx_ops）、Android kernel/common 示例调度器、sysfs 运行状态接口、OEM 私有调度器（SCX_Oplus/SCX_Mtk/SCX_Litto）的公开证据边界，以及 CONFIG_SCHED_CLASS_EXT 启用路径。核心发现：OEM 调度器实现为 vendor fork 私有代码，未在 AOSP 公开。
+- 注入时间：2026-05-23
+- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
+
 - [已验证: Linux sched_ext 官方文档, `Documentation/scheduler/sched-ext.rst`](https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst)
 - [已验证: Linux `struct sched_ext_ops`, `kernel/sched/ext.c`（torvalds/master + Android common 6.12）](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c)
 - [已验证: Linux DSQ 与 sched_ext entity, `include/linux/sched/ext.h`](https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h)

@@ -35,6 +35,8 @@ task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T10:38:04+08:00"
 task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task6_audit: "2026-05-23"
+last_task6_at: "2026-05-23T05:09:00+08:00"
 ---
 
 # 崩溃与 ANR 捕获机制
@@ -388,10 +390,10 @@ Native 层要额外做两件事：
 - [扩展已覆盖] `ApplicationExitInfo` 代码片段
 - [扩展已覆盖] GWP-ASan 灰度方案
 
-## 11. Android 11 以下：ApplicationExitInfo 缺失时的替代方案
+## 12. Android 11 以下：ApplicationExitInfo 缺失时的替代方案
 
 <!-- AIW-源码调研-2026-05-08 -->
-### 11.1 核心矛盾
+### 12.1 核心矛盾
 
 API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己构建 "Process Exit Info" 的采集、存储和上报链路。低版本缺失的不只是一个 API，而是整套机制：
 
@@ -399,7 +401,7 @@ API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己
 - **无官方 trace 路径**：`/data/anr/` 对普通 App 始终不可读
 - **ANR 无信号**：`SIGQUIT` 由系统发送，但普通 App 无法通过 `sigaction` 截获（SignalCatcher 用 `sigwait()` 消费）
 
-### 11.2 Signal Handler 自注册（Native Crash）
+### 12.2 Signal Handler 自注册（Native Crash）
 
 **原理**：在 JNI 层注册 `sigaction`，捕获 `SIGSEGV` / `SIGABRT` / `SIGFPE` 等信号，获取 native crash 时的寄存器上下文和调用栈。
 
@@ -441,7 +443,7 @@ sigaction(SIGABRT, &sa, &g_old_handlers[SIGABRT]);
 - 信号到来时进程状态已不稳定，上报链路本身可能受损
 - ANR 不发信号，无法通过此路径获取 ANR trace
 
-### 11.3 LMKd 监听（进程被 LMK 杀死）
+### 12.3 LMKd 监听（进程被 LMK 杀死）
 
 **源码位置**：`system/core/lmkd/`、`frameworks/base/services/core/java/com/android/server/am/ProcessList.java`
 
@@ -468,7 +470,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 **核心约束**：普通 App 没有权限读取他进程的 `/proc/<pid>/oom_score_adj`，只能通过系统 API 间接判断。
 
-### 11.4 /data/anr/ 目录不可读的处理
+### 12.4 /data/anr/ 目录不可读的处理
 
 **路径**：`/data/anr/`（API 26+ 统一为 `traces_text.txt`，不再按进程名区分）
 
@@ -484,7 +486,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 **注**：ANR 不发信号，`sigaction` 无法截获。系统通过 SignalCatcher 线程的 `sigwait()` 消费 `SIGQUIT`，这不是普通的异步信号处理。
 
-### 11.5 KOOM fork-dump 对低版本 OOM 的补偿
+### 12.5 KOOM fork-dump 对低版本 OOM 的补偿
 
 KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，不依赖 `ApplicationExitInfo`：
 
@@ -502,7 +504,7 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
 
 这个模式在 Android 5.0 (API 21) 起可用，不依赖 `ApplicationExitInfo`。是 Android 低版本 OOM 现场保留的最优解。
 
-### 11.6 版本能力对比
+### 12.6 版本能力对比
 
 | 能力 | < API 21 | API 21-28 | API 29 | API 30+ |
 |------|---------|---------|--------|---------|
@@ -521,11 +523,11 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
 
 ---
 
-## 12. 源码调研补充：Android 线上诊断能力版本边界（2026-05-15）
+## 13. 源码调研补充：Android 线上诊断能力版本边界（2026-05-15）
 
 *来源：AIW 每日源码调研 | 关联章节：§26.5、§26.2*
 
-### 12.1 ApplicationExitInfo 版本行为差异
+### 13.1 ApplicationExitInfo 版本行为差异
 
 | API Level | ANR Trace | Native Tombstone | 备注 |
 |-----------|-----------|------------------|------|
@@ -536,7 +538,7 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
 - `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
 - `system/core/debuggerd/tombstone_proto.cc`
 
-### 12.2 ProfilingManager（API 35+）
+### 13.2 ProfilingManager（API 35+）
 
 Android 15 引入 `ProfilingManager.requestProfiling()`，支持 App-driven profiling：
 
@@ -565,7 +567,7 @@ ProfilingResult#getResultStatus()    // 状态码
 
 源码路径：`frameworks/base/core/java/android/os/ProfilingManager.java`
 
-### 12.3 ProfilingTrigger（API 36+）
+### 13.3 ProfilingTrigger（API 36+）
 
 Android 16 引入 `ProfilingTrigger` 事件触发采集：
 
@@ -585,7 +587,7 @@ profilingManager.registerTrigger(trigger, executor, callback)
 
 源码路径：`frameworks/base/core/java/android/os/ProfilingTrigger.java`
 
-### 12.4 Android 10-16 线上诊断能力版本表
+### 13.4 Android 10-16 线上诊断能力版本表
 
 | 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
 |------|---------------------------|---------------------|----------------------|
@@ -596,7 +598,7 @@ profilingManager.registerTrigger(trigger, executor, callback)
 | Trigger-based Profiling | ❌ | ❌ | `ProfilingTrigger` ✅ |
 | 系统 trace 路径 | Perfetto / bugreport | ✅ | ✅ |
 
-### 12.5 Native Crash Signal Handler 边界（未经一手验证）
+### 13.5 Native Crash Signal Handler 边界（未经一手验证）
 
 - Signal handler 必须是 async-signal-safe：不能调用 `malloc`/`free`、不能使用锁、不能分配内存
 - Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程，写入 minidump

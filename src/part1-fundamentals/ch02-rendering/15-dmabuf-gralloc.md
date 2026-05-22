@@ -475,6 +475,13 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
 
 ## 参考资料
 
+### DMA-BUF、Gralloc 与跨进程图形内存共享 Android 16/17 公开边界
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-dma-buf-gralloc-graphics-memory.md
+- 类型：DeepResearch 调研结果
+- 摘要：分析 Android 16/17 图形内存三层体系：AOSP libdmabufheap 用户端库（BufferAllocator/DmaBufHeap）、Gralloc4 IAllocator AIDL 接口、vendor 实现（mali_gralloc 等）。明确 AOSP vs Vendor 边界，16KB 页大小对 Gralloc 的影响，DMA-BUF fd 通过 Binder Parcel 传递的零拷贝路径，以及 Pool/carveout/system heap 分配策略差异。
+- 注入时间：2026-05-23
+- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
+
 - AOSP 源码：
   - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer 的 flatten/unflatten 实现
   - `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` — 分配器的框架层封装

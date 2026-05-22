@@ -3,7 +3,7 @@
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
-status: finalized
+status: ready-for-review
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
@@ -50,14 +50,14 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_audit: "2026-05-22"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-30T07:43:21.194303"
+last_task2b_at: "2026-05-23T07:17:06.103693"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 last_task9_at: "2026-05-23T06:28:41+08:00"
@@ -510,21 +510,21 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 
 ### RenderNode 的 Layer 申请与 LAYER_SIZE 对齐
 
-当 View 设置了 RenderEffect（blur、colorFilter、RuntimeShader 等），系统为该 RenderNode 分配一块 GPU texture 作为 RenderLayer。分配尺寸按 `LAYER_SIZE=256` 向上对齐：
+当 View 设置了 RenderEffect（blur、colorFilter、RuntimeShader 等），系统为该 RenderNode 分配一块 GPU texture 作为 RenderLayer。分配尺寸按 `LAYER_SIZE=64` 向上对齐（定义在 `libs/hwui/Properties.h`，由 `SkiaGpuPipeline::createOrUpdateLayer()` 使用）：
 
 ```cpp
 // 文件: frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp, 行 51-60
 bool SkiaGpuPipeline::createOrUpdateLayer(RenderNode* node, ...) {
     const int surfaceWidth = ceilf(node->getWidth() / float(LAYER_SIZE)) * LAYER_SIZE;
     const int surfaceHeight = ceilf(node->getHeight() / float(LAYER_SIZE)) * LAYER_SIZE;
-    // 一个 100×100 的 View 实际分配 256×256 的 GPU texture
+    // 一个 100×100 的 View 实际分配 128×128 的 GPU texture (LAYER_SIZE=64 向上取整)
     SkImageInfo info = SkImageInfo::Make(surfaceWidth, surfaceHeight, ...);
     node->setLayerSurface(SkSurfaces::RenderTarget(
             mRenderThread.getGrContext(), skgpu::Budgeted::kYes, info, ...));
 }
 ```
 
-即使很小的 View 设置了 blur，也会按 256 的倍数分配 texture。对于 300×300 的 View，分配 512×512。Layer 尺寸越大，GPU 显存占用和 shader 处理量都越高。
+即使很小的 View 设置了 blur，也会按 64 的倍数分配 texture。对于 300×300 的 View，分配 320×320（向上取整到 64 的倍数）。Layer 尺寸越大，GPU 显存占用和 shader 处理量都越高。
 
 ### RenderEffect 的 filter chain 执行：updateSnapshotIfRequired
 
@@ -608,7 +608,7 @@ Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::Tex
 
 | 因素 | 影响 |
 |------|------|
-| View 尺寸 | 按 LAYER_SIZE=256 对齐，小 View 也可能分配较大 texture |
+| View 尺寸 | 按 LAYER_SIZE=64（`Properties.h`）向上对齐，小 View 也可能分配较大 texture |
 | blur radius | sigma 越大，shader sampling 范围越大，GPU 计算量呈几何增长 |
 | RuntimeShader inputShader | 访问 inputShader 时触发 makeImageSnapshot()，增加 GPU→GPU copy |
 | Layer 数量 | 同时有多个带 RenderEffect 的 View，显存压力叠加 |
@@ -619,127 +619,61 @@ Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::Tex
 2. blur radius 尽量保守；大模糊效果考虑用静态 bitmap 替代运行时计算
 3. RuntimeShader 参数不变时复用同一个 RenderEffect 对象
 4. 多层 RenderEffect 时利用 `createChainEffect()` 让 Skia 做算子融合
-## RenderEffect GPU 渲染管线深度分析
+## RenderEffect GPU 渲染管线：已验证的调用链与版本边界
 
-### Offscreen Buffer 双重机制
+> 以下调用链基于 AOSP android-16.0.0_r1 源码验证。之前版本中包含未经验证的方法名和调用链，已删除。
 
-RenderEffect 在 Android 12+ 的 GPU 渲染管线中实现了复杂的 Offscreen Buffer 机制，这是高性能视觉效果的基础。
+### 已验证的 RenderEffect 设置链路
 
-#### RenderEffect 与 RenderNode 的集成机制
+`View.setRenderEffect()` 的实际调用路径：
 
-- **源码位置**：`frameworks/base/graphics/java/android/graphics/RenderNode.java` (API 31+)
-- **关键函数/类**：`RenderNode.setRenderEffect(RenderEffect)`
-- **调用链**：
-  1. `RenderNode.setRenderEffect(effect)` →
-  2. `mRenderEffect = effect` (标记效果属性) →
-  3. `RecordingCanvas` 重录时包含效果 →
-  4. `RenderThread.applyRenderEffect()` →
-  5. GPU管线处理
-- **关键代码段**：
-```java
-// 文件: frameworks/base/graphics/java/android/graphics/RenderNode.java
-public void setRenderEffect(@Nullable RenderEffect effect) {
-    mRenderEffect = effect;
-    // 标记需要重新录制显示列表
-    mNeedsDisplayListSync = true;
-}
-```
+1. `View.setRenderEffect(effect)` → 调用 `mRenderNode.setRenderEffect(effect)` 并执行 `invalidateViewProperty(true, true)` 触发重绘
+2. `RenderNode.setRenderEffect(effect)` → 调用 native `nSetRenderEffect(mNativeRenderNode, effect != null ? effect.getNativeInstance() : 0)`
+3. JNI 层将 `SkImageFilter` 写入 `RenderProperties::setImageFilter()`
 
-#### Offscreen Buffer 的具体实现机制
+源码锚点：`frameworks/base/core/java/android/view/View.java`、`frameworks/base/graphics/java/android/graphics/RenderNode.java`、`frameworks/base/libs/hwui/jni/RenderEffect.cpp`。
 
-- **源码位置**：`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`
-- **调用链**：
-  1. `setRenderEffect()` 触发 →
-  2. `RenderThread` 检查是否需要离屏缓冲区 →
-  3. GPU 渲染到离屏纹理 →
-  4. 应用着色器效果 →
-  5. 合回到主屏幕
-- **设计意图**：通过离屏渲染避免重复计算，实现高效的视觉效果处理
+### 已验证的 Blur 创建链路
 
-### GPU 着色器在 RenderEffect 中的作用
+`RenderEffect.createBlurEffect()` 的实际调用路径：
 
-RenderEffect 的核心优势在于将复杂的视觉效果计算完全卸载到 GPU，通过 Skia 图像过滤器实现高性能处理。
+1. `RenderEffect.createBlurEffect(radiusX, radiusY, inputRenderEffect, edgeTreatment)` → 创建 Java 层 `RenderEffect` 对象
+2. JNI `nativeCreateBlurEffect()` → 直接构造 `SkImageFilters::Blur(convertRadiusToSigma(radiusX), convertRadiusToSigma(radiusY), tileMode, inputFilter)`
+3. 返回的 `SkImageFilter*` 以 `jlong` 句柄形式交由 Java 层持有
 
-#### 底层渲染管线集成
+源码锚点：`frameworks/base/graphics/java/android/graphics/RenderEffect.java`、`frameworks/base/libs/hwui/jni/RenderEffect.cpp`。
 
-- **源码位置**：`frameworks/base/libs/hwui/jni/RenderEffect.cpp`
-- **关键函数/类**：`nativeCreateBlurEffect()`、`RenderEffect::createBlurEffect()`
-- **调用链**：
-  1. `RenderEffect.createBlurEffect()` →
-  2. `nativeCreateBlurEffect()` (JNI) →
-  3. `RenderEffect::createBlurEffect()` (C++) →
-  4. GPU 着色器编译 →
-  5. 返回着色器引用给 RenderThread
-- **关键代码段**：
-```cpp
-// 文件: frameworks/base/libs/hwui/jni/RenderEffect.cpp
-static jlong nativeCreateBlurEffect(JNIEnv* env, jclass clazz,
-                                   jfloat radiusX, jfloat radiusY,
-                                   jint edgeTreatment) {
-    // 创建模糊效果的GPU着色器
-    auto effect = RenderEffect::createBlurEffect(
-        radiusX, radiusY, 
-        static_cast<Shader::TileMode>(edgeTreatment));
-    // 将效果对象引用转换为long返回给Java层
-    return reinterpret_cast<jlong>(effect.release());
-}
-```
+不存在 `RenderEffect::createBlurEffect()` (C++ 类方法)、`RenderThread::applyRenderEffect()`、`CanvasContext::drawRenderEffect()` 这些方法。
 
-#### RenderEffect vs Hardware Layer 的性能对比
+### RenderEffect vs Hardware Layer 的性能特征
 
-RenderEffect 和 Hardware Layer 是两种不同的 GPU 资源管理策略：
+两种机制的 GPU 资源管理策略不同：
 
-**RenderEffect - Shader 级集成**：
-- blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性
-- Skia 在绘制时沿标准 Skia 图像过滤管线处理
-- 可能对相邻 filter 做算子融合并复用 Scratch Texture
+**RenderEffect — Shader 级集成**：
+- blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性（`RenderProperties::setImageFilter()`）
+- Skia 在绘制时沿标准图像过滤管线处理
+- 相邻 filter 满足 Skia 内部融合条件时可复用 Scratch Texture，减少中间缓冲区分配
 - 动态内容（频繁 invalidate）的内存开销通常低于 Hardware Layer
 
-**Hardware Layer - Buffer 级隔离**：
-- 为 View 创建独立的 FBO（Framebuffer Object）并缓存渲染结果
-- 属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw
-- FBO 是独占的 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
+**Hardware Layer — Buffer 级隔离**：
+- 为 View 创建独立 FBO 并缓存渲染结果
+- 属性动画阶段只需在纹理上做矩阵变换，不重新执行 draw
+- FBO 是独占 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
 
-### 低端设备上的回退机制
+### 版本演进差异
 
-RenderEffect 在低端设备上的性能表现需要特别关注，系统会根据 GPU 能力选择不同的渲染路径。
+| 版本 | 能力 | 源码/文档锚点 |
+|------|------|---------------|
+| Android 12 (API 31) | 引入 `RenderEffect`，包含 blur、colorFilter、blendMode、chain、offset、bitmap、shader 七类效果工厂方法 | `frameworks/base/graphics/java/android/graphics/RenderEffect.java` (android-12.0.0_r1) |
+| Android 13 (API 33) | 新增 `createRuntimeShaderEffect()`，支持 AGSL 自定义着色器作为 RenderEffect 输入 | `RenderEffect.java` (android-13.0.0_r1) |
 
-#### 软件回退路径
+Android 14/15 的 GPU 内存管理优化和软件回退智能选择机制，当前未在 AOSP 公开源码或官方 release note 中找到对应锚点，暂不列入。如有读者掌握具体 commit 或文档，欢迎补充。
 
-- **源码位置**：`frameworks/base/libs/hwui/renderthread/CanvasContext.cpp`
-- **关键函数/类**：`CanvasContext::drawRenderEffect()`
-- **调用链**：
-  1. 检查 GPU 能力 →
-  2. 不支持硬件加速时 →
-  3. 调用软件回退路径 →
-  4. CPU 模拟模糊效果 →
-  5. 渲染到内存缓冲区
-- **设计意图**：确保在低端设备上也能提供视觉效果，尽管性能较差
+### 性能排查入口
 
-### 性能影响与优化建议
-
-#### GPU Fillrate 压力
-- 复杂的RenderEffect会增加GPU填充率，特别是在高分辨率屏幕上
-- 大 View 上的 blur 需要更多中间渲染资源，显存和带宽开销都会上升
-- 模糊区域越小越好，性能影响呈几何级数下降
-
-#### 显存占用
-- Offscreen Buffer 会消耗额外的显存，复杂效果的纹理可能占用数百MB
-- 每个RenderEffect链可能需要多个中间纹理
-- 在低端设备上，软件回退会导致内存带宽消耗增加
-
-#### 版本演进差异
-- **Android 12 (API 31)**: 引入 RenderEffect，仅支持基本模糊效果
-- **Android 13 (API 33)**: 扩展支持RuntimeShader效果，引入AGSL自定义着色器
-- **Android 14 (API 34)**: 优化GPU内存管理，减少离屏缓冲区内存占用
-- **Android 15 (API 35)**: 增强低端设备优化，添加软件回退的智能选择机制
-
-#### 实际应用建议
-1. **效果对象复用**：参数不变时复用同一个 `RenderEffect`，避免每帧构造新对象
-2. **避免动态参数**：每帧修改 blur radius 会让 filter 和中间资源频繁变化
-3. **性能测试**：在低端设备上特别关注软件回退路径的性能影响
-4. **监控显存**：使用 Perfetto GPU track 观察显存使用情况
-5. **渐进增强**：为低端设备准备降级方案，避免用户体验急剧下降
-
-这个源码级分析表明，RenderEffect 虽然提供了现代化的 GPU 渲染管线，但在实际应用中需要考虑设备差异、显存占用和性能回退机制。复杂的视觉效果应当在性能监控工具的指导下谨慎使用。
+1. **Perfetto FrameTimeline**：观察带 RenderEffect 的 View 对应帧的帧时间是否异常
+2. **GPU track**：观察显存占用和 GPU 命令提交量
+3. **效果对象复用**：参数不变时复用同一个 `RenderEffect`，避免每帧构造新 native filter
+4. **blur radius 控制**：sigma 越大 sampling 范围越大，GPU 计算量上升
+5. **多层 RenderEffect**：使用 `createChainEffect()` 让 Skia 尝试算子融合
 

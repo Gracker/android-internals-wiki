@@ -13,7 +13,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/05-optimization.md"
@@ -54,7 +54,10 @@
       "added_at": "2026-05-23T06:28:41+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-23T06:28:41+08:00",
-      "review_log": "logs/deep-review/2026-05-23-06-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-06-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T07:23:09.139219",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260522-2.2-framerate-refresh-rate-selector-layerhistory",
@@ -7071,7 +7074,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
@@ -7106,7 +7109,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T19:29:00+08:00"
+      "added_at": "2026-05-14T19:29:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T07:23:09.139219",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task9-2026-05-14-9.5-anr-source-anchors",
@@ -8852,7 +8858,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/04-anr-governance.md"
@@ -8891,7 +8897,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T20:23:00+08:00"
+      "added_at": "2026-05-15T20:23:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T07:23:09.139219",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task2a-gap-16-6",
@@ -11267,7 +11276,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md"
@@ -11301,7 +11310,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-17T12:32:07+08:00"
+      "added_at": "2026-05-17T12:32:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T07:23:09.139219",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task2a-gap-16.7-system-boot-time-optimization",

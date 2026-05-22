@@ -20,7 +20,7 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-task9_state: "reviewed"
+task9_state: "pending"
 repaired_date: "2026-04-21"
 repaired_by: "codex"
 task9_result: "needs-rework"
@@ -31,9 +31,9 @@ last_task9_at: "2026-05-17T12:32:07+08:00"
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task6_state: reviewed
-task2b_state: "pending"
-pipeline_stage: "task2b_pending"
+task6_state: revisiting
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
 review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
 last_task6_at: "2026-05-05T07:30:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
@@ -65,10 +65,10 @@ task9_review_notes: "2026-05-17 Task9 12: needs-rework。P0 2 / P1 1；atrace 0x
 
 ### FrameTimeline：Android 12+
 
-`FrameTimeline` 是 Android 12（API 31）引入的 Perfetto 数据源，能直接在 trace 中标注每帧的 jank type（`AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerDeadlined` 等）。Android 8-11 没有 `FrameTimeline`，排查流畅性问题需要回退到以下入口：
+`FrameTimeline` 是 Android 12（API 31）引入的 Perfetto 数据源，能直接在 trace 中标注每帧的 jank type（`AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 等）。Android 8-11 没有 `FrameTimeline`，排查流畅性问题需要回退到以下入口：
 
-- **gfx/view trace tag**：`adb shell setprop debug.atrace.tags.enableflags 0x200` 开启 `gfx` + `view` tag，在 Perfetto 中观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间
-- **SurfaceFlinger slice**：观察 `SurfaceFlinger` 主线程的 `composeDisplay` / `handleMessageRefresh` slice，判断合成耗时是否超标
+- **gfx/view trace tag**：`adb shell setprop debug.atrace.tags.enableflags 0xA` 开启 `gfx` (0x2) + `view` (0x8) tag（0x200 对应的是 ATRACE_TAG_VIDEO，不是 gfx+view），在 Perfetto 中观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间
+- **SurfaceFlinger slice**：观察 `SurfaceFlinger` 主线程的 `onMessageReceived` / `Output::composeSurfaces` slice（Android 14+），或旧版本的 `handleMessageRefresh`，判断合成耗时是否超标
 - **sched 轨道**：主线程和 RenderThread 的调度状态（Runnable / Sleeping / Uninterruptible），排查调度延迟和 CPU 争抢
 - **FrameMetrics / JankStats**（Android 7.0+）：通过 `Window.OnFrameMetricsAvailableListener` 或 `JankStats` 库在应用内采集帧耗时分布，作为 `FrameTimeline` 的应用侧替代
 
@@ -96,7 +96,7 @@ task9_review_notes: "2026-05-17 Task9 12: needs-rework。P0 2 / P1 1；atrace 0x
 | ApplicationExitInfo | API 30+ | traces.txt + logcat + bugreport |
 | BufferStuffing 标签 | Android 12+ | 帧间隔观察 + BufferQueue dump |
 | JankStats | Android 7.0+ | 直接可用（但不如 FrameTimeline 信息丰富） |
-| Perfetto `frame_timeline_event` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
+| Perfetto `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
 
 ---
 
@@ -334,7 +334,7 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 - `BufferQueueConsumer::acquireBuffer` — Consumer 侧取 buffer 耗时 slice
 - `PRESENT_LATER` — Consumer 主动推迟的 trace 事件
 - `NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` — 来自 `query()` 的状态值
-- `graphics.frametimeline` 数据源中的 `dequeue_time` 元数据
+- `android.surfaceflinger.frametimeline` 数据源中的帧时间线（对应 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 表）
 
 详情见调研报告：[2026-05-07-bufferqueue-blocking-perfetto-patterns.md](https://github.com/gracker/DeepResearch/blob/main/2026-05-07-bufferqueue-blocking-perfetto-patterns.md)
 <!-- AIW-源码调研-20260507 END -->
@@ -484,8 +484,8 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 
 | 场景 | 关键 SQL | 说明 |
 |---|---|---|
-| 掉帧 / jank | `SELECT * FROM frame_timeline_event WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧，按 jank_type 分类 |
-| BufferStuffing | `SELECT * FROM frame_timeline_event WHERE jank_type = 'BufferStuffing'` | Android 15+ Perfetto UI 中显示为浅绿色轨道 |
+| 掉帧 / jank | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧，按 jank_type 分类 |
+| BufferStuffing | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type = 'BufferStuffing'` | Perfetto UI 中 FrameTimeline 轨道显示为浅绿色 |
 | 冷启动 | `SELECT name, ts, dur FROM slice WHERE name LIKE '%ActivityManager%' AND name LIKE '%start%'` | 定位 AMS 启动调度链 |
 | ANR | `SELECT * FROM slice WHERE name LIKE '%ANR%'` | 结合 `ApplicationExitInfo` 时间线 |
 | Input 延迟 | `SELECT (doFrame_ts - input_ts) AS latency FROM ...` | 输入事件到 `doFrame` 的时差 |
@@ -509,3 +509,12 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 - 哪类问题可以直接回到指标平台做聚类
 
 做到这一步，性能排障才从个人经验变成团队资产。
+
+## 参考资料
+
+### HWC Overlay Plane Capability 与 SurfaceFlinger 合成降级实战验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
+- 类型：DeepResearch 调研结果
+- 摘要：梳理 HWC2/HWC2.4 Overlay Plane 能力查询机制、SurfaceFlinger 合成决策链（validateDisplay→getChangedCompositionTypes→acceptDisplayChanges）、DEVICE→CLIENT 降级触发条件（Layer 超出 Plane 数/像素格式/混合模式/旋转缩放），以及高通/联发科 HWC 实现差异。包含 Perfetto android.surfaceflinger.frametimeline 证据收集路径。
+- 注入时间：2026-05-23
+- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料

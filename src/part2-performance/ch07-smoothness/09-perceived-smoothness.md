@@ -13,6 +13,7 @@ reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-05"
 task6_result: "pass-light-edit"
 task6_state: reviewed
+last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
 confidence: medium
 polish_count: 1
@@ -33,7 +34,7 @@ pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-05T02:37:46+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已闭环；自动晋升 finalized。"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已完成复核；自动晋升 finalized。"
 review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 ---
 

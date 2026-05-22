@@ -559,6 +559,13 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 ## 参考资料
 
+### Android ADPF PerformanceHintManager 与 Kotlin 协程调度深度验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-adpf-performance-hint-session-kotlin-coroutine-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 AOSP android-16.0.0_r1 源码验证 createHintSession/setThreads/close 状态机、Flagged API 双栅栏机制（GPU_LOAD_* 需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION）、CoroutineScheduler work-stealing 与线程迁移对 hint session 的影响、reportActualWorkDuration 单次 Binder IPC 约 1ms 在 120Hz 下消耗 12% 帧预算的量化分析。
+- 注入时间：2026-05-23
+- 价值：提供了 ADPF hint session 与协程线程迁移冲突的工程解法，以及 Binder IPC 开销的精确量化数据
+
 ### ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md
 - 类型：DeepResearch 调研结果

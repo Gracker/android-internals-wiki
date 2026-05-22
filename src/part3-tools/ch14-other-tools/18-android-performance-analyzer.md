@@ -182,6 +182,13 @@ APA 把 Perfetto Trace、GPU counter、SurfaceFlinger 事件、截图导航、�
 
 ## 参考资料
 
+### Android Performance Analyzer 深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Performance Analyzer/2026-05-20-Android Performance Analyzer-深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 Google I/O 2026 发布材料和本地官方 skills 文件，系统梳理 APA 与 Perfetto 的架构边界（APA 消费 Perfetto trace、补上 GPU 分析/截图导航/AI Agent Skills 产品层能力）、26x 提速的真实含义（对比 AGI 的 trace 渲染速度）、四家 GPU vendor counter 覆盖范围、AI Agent Skills（perfetto-trace-analysis / perfetto-sql）的真实边界，含完整事实核验表。
+- 注入时间：2026-05-23
+- 价值：对 APA 营销话术做了逐一事实核验，厘清 APA 与 Perfetto 的精确分层关系，避免读者误读 26x 等数字
+
 - Android Performance Analyzer 官方页：https://developer.android.com/android-performance-analyzer
 - Record a system trace：https://developer.android.com/android-performance-analyzer/run
 - Use AI-powered analysis features：https://developer.android.com/android-performance-analyzer/analyze/ai
