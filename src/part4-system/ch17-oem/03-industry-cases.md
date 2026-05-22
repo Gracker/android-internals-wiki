@@ -34,6 +34,9 @@ task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task6_result: "pass-light-edit"
+last_task6_audit: "2026-05-22"
+last_task6_audit_log: "logs/review/2026-05-22-10-audit.md"
+last_task6_audit_notes: "idle audit: L1 高频词小修 6 个位置；frontmatter 完整；outline 锚点覆盖 4/4；无回炉项。"
 section: "17.3"
 status: finalized
 pipeline_stage: ready-to-publish
@@ -78,7 +81,7 @@ review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task
 
 ## 为什么要看行业案例
 
-前十六章我们一直在拆解 Android 系统的内部机制和优化方法——VSync 怎么工作、Binder 怎么调度、SurfaceFlinger 怎么合成。这些是"兵器谱"，告诉你每件兵器的原理和用法。但真正到了战场上，面对一个具体的性能问题，怎么选兵器、怎么组合、怎么根据战场条件调整策略，光看原理是不够的。
+前十六章我们一直在拆解 Android 系统的内部机制和优化方法——VSync 怎么工作、Binder 怎么调度、SurfaceFlinger 怎么合成。这些是"兵器谱"，告诉你每件兵器的原理和用法。但落到具体性能问题时，怎么选兵器、怎么组合、怎么根据现场条件调整策略，光看原理是不够的。
 
 行业案例的价值在于：**它们是真实战场的复盘报告。** 每一个案例背后都是某个团队在数亿用户、复杂设备和苛刻时间约束下做出的技术决策。看这些案例的目的是学习他们的**分析思路、决策逻辑和权衡取舍**。
 
@@ -115,7 +118,7 @@ Xiaomi 的 Game Turbo 是 HyperOS 里的游戏模式入口。公开能稳定确�
 
 ### OPPO/vivo：ADPF 的价值在于更早给系统负载信号
 
-OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power stack 的协作边界。公开标准 API 只有 `PerformanceHintManager`、Thermal Headroom 和 Game Mode 这类入口。应用把 workload signal 提前交给系统后，真正怎样换成 cluster placement、frequency vote 或 thermal policy，仍要经过厂商的 power HAL、perfservice 或调度栈。
+OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power stack 的协作边界。公开标准 API 只有 `PerformanceHintManager`、Thermal Headroom 和 Game Mode 这类入口。应用把 workload signal 提前交给系统后，怎样转换为 cluster placement、frequency vote 或 thermal policy，仍要经过厂商的 power HAL、perfservice 或调度栈。
 
 因此，这里保留定性判断，不再写成通用时延数字。ADPF 的价值是让游戏把目标帧时间和实际工作时长更早交给系统，减少纯靠历史负载猜测的滞后。具体能快多少，取决于 SoC、governor、power HAL、thermal policy 和游戏引擎接入方式。
 
@@ -187,7 +190,7 @@ Performance Hint API 用于把周期性 workload 的目标耗时和实际耗时�
 
 第三步，**预加载任务评估**。对每个预加载任务进行 A/B 实验，评估它的命中率和收益。结果是大量预加载任务被移除或延迟——因为统计发现很多预加载的内容在启动后的前 30 秒根本没有被用到。
 
-这套方法论关注的是：**启动优化要先减少启动阶段真正需要执行的任务。** 这和我们在 8.3 节（启动优化）中讨论的"延迟初始化"原则完全一致，但抖音的工程规模让这个原则的应用变得极具挑战。
+这套方法论关注的是：**启动优化要先减少启动阶段需要执行的任务。** 这和我们在 8.3 节（启动优化）中讨论的"延迟初始化"原则完全一致，但抖音的工程规模让这个原则的应用变得极具挑战。
 
 ### ContentProvider 优化：字节码插桩的妙用
 
@@ -203,7 +206,7 @@ Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 Fil
 
 字节公开资料能确认的是一套方法论：通过自动化插桩把函数耗时、锁等待、I/O 和 Binder 信息放到统一分析面里，再做启动与页面场景的差异分析。对外资料没有完整公开 Rhea 的全部产品形态和内部插件边界，所以这类工具更适合写成“方法论案例”，不适合写成“已有完整开源平台”。
 
-对外团队真正能带走的有三点：
+对外团队能带走的有三点：
 
 - **自动插桩**：减少人工到处加 trace marker 的维护成本
 - **统一事件面**：把函数、锁、I/O、Binder 放到同一条时间线里看
@@ -220,7 +223,7 @@ Google 在 2022 年发布了 TikTok Android 性能案例，给出的三组结果
 这个案例的参考价值在于它把“分析路径 → 工程动作 → 业务结果”接完整了：
 
 - **启动路径**：按需加载组件、细化任务调度、把部分 View 初始化移到后台线程
-- **界面流畅性**：精简首屏层级，只保留当前帧真正需要的内容，减少每帧任务量
+- **界面流畅性**：精简首屏层级，只保留当前帧需要的内容，减少每帧任务量
 - **视频首帧**：复用 player、做 preload / prerender，并联优化 codec 与 network path
 
 这类官方案例最有用的地方，不在数字本身，而在证据链完整。能看到优化目标、主要动作和业务结果之间的对应关系。
@@ -263,7 +266,7 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 
 ## 常见问题与误区
 
-**误区一：厂商优化可以替代 App 自身的优化。** 厂商的 Game Booster、Game Turbo 等功能确实能提升性能，但它们解决的是系统层面的调度和资源分配问题。如果 App 自身存在主线程 I/O、过度绘制、内存抖动等问题，厂商优化无法从根本上解决。两者的关系是互补而非替代。
+**误区一：厂商优化可以替代 App 自身的优化。** 厂商的 Game Booster、Game Turbo 等功能能提升性能，但它们解决的是系统层面的调度和资源分配问题。如果 App 自身存在主线程 I/O、过度绘制、内存抖动等问题，厂商优化无法直接消除这些瓶颈。两者的关系是互补而非替代。
 
 **误区二：ADPF 只适用于游戏。** ADPF 的 Thermal API 和 Performance Hint API 虽然最初为游戏场景设计，但它们对任何性能密集型应用都有效——视频编辑、图片处理、AR/VR 应用等。Google 官方文档也明确指出这些 API "可用于其他性能密集型应用"。
 
