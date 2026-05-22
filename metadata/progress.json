@@ -208,7 +208,8 @@
     "14.6",
     "4.5",
     "11.7",
-    "24.13"
+    "24.13",
+    "9.4"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -250,24 +251,23 @@
     "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
     "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part2-performance/ch09-anr/04-special-anr.md"
   ],
   "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
-    "time": "08:20",
+    "time": "12:13",
     "sections": [
-      "14.13",
-      "14.6",
-      "4.5"
+      "9.4",
+      "2.11"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
     ],
-    "result": "3 通过写作 L1/L2 复审 / 0 新增回炉 / 0 自动晋升（Task9 pending queue 保留）",
-    "log": "logs/review/2026-05-22-08-review.md"
+    "result": "2 通过写作 L1/L2 复审 / 0 新增回炉 / 0 自动晋升（Task9 pending queue 保留）",
+    "log": "logs/review/2026-05-22-12-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1658,26 +1658,48 @@
       "task6_log": "logs/review/2026-05-22-08-review.md",
       "task6_new_rework": false,
       "task6_note": "Task9 07:43：P0 AndroidX Benchmark instrumentation 参数需按 androidx.benchmark.* 修正。Task6 08:20 L1/L2 小修 6 处，无新增回炉。"
+    },
+    "9.4": {
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T12:13:00+08:00",
+      "task6_log": "logs/review/2026-05-22-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；清理 ContentProvider 占位提示与顺序句式。既有 Task9 16KB SQLite P1 pending queue 保留，未新增回炉。"
+    },
+    "2.11": {
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 14,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T12:13:00+08:00",
+      "task6_log": "logs/review/2026-05-22-12-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；修复结构性元叙述、ASCII 破折号、标点与少量口语化表达。既有 Task9 16KB/ADPF pending queue 保留，未新增回炉。"
     }
   },
-  "total_review_sections": 197,
+  "total_review_sections": 198,
   "next_review_candidates": [],
   "ready_for_review": 154,
-  "last_updated": "2026-05-22T11:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-22T12:13:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
-    "time": "05:08",
-    "reviewed_at": "2026-05-22T05:08:00+08:00",
+    "time": "12:13",
+    "reviewed_at": "2026-05-22T12:13:00+08:00",
     "mode": "normal",
     "sections": [
-      "22.3"
+      "9.4",
+      "2.11"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
     ],
-    "log": "logs/review/2026-05-22-05-review.md",
-    "result": "22.3 needs-rework（L1/L2 小修 6 处；沿用既有 Task9 P0/P1 queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-12-review.md",
+    "result": "9.4、2.11 pass-light-edit（L1/L2 小修 16 处；0 新增回炉；0 自动晋升，沿用既有 Task9 pending queue）"
   },
   "task9_last_review": "2026-05-22",
   "ready_to_publish": 186,
