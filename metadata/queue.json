@@ -13566,25 +13566,52 @@
       "id": "task6-audit-14.10-oem-sched-ext-source-risk-2026-05-19",
       "section": "14.10",
       "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
-      "priority": 90,
-      "title": "14.10 参考资料后未纳入大纲的 sched_ext OEM 段落需复核",
-      "description": "参考资料之后存在未纳入 outline 的 AIW 源码调研块，包含 Android OEM sched_ext 调度器源码路径、性能收益与版本演进断言，需技术复核和结构处理。",
-      "issue_type": "outline-coverage/source-risk",
-      "severity": "P1",
+      "priority": 95,
+      "title": "14.10 sched_ext OEM 段落存在伪源码路径与 GKI 版本错误",
+      "description": "Task9 闲时抽检确认 §14.10 参考资料后的 AIW 源码调研块包含无法核验的 OEM sched_ext 源码路径/函数、错误的 Android GKI 版本演进和无来源性能收益，需要回炉删除或改成待验证素材。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
-      "estimated_hours": 2,
+      "estimated_hours": 1.5,
       "status": "pending",
-      "reason": "[review抽检回炉] 参考资料之后存在未纳入大纲的 AIW 源码调研块，包含具体 OEM / GKI 断言，需 Task9/Task2B 判断保留、迁移或删除。",
+      "reason": "[Deep Tech Review Audit] §14.10 参考资料后的 sched_ext OEM 段落存在 P0/P1 技术问题：公开 AOSP / Android common kernel 中未找到所列 OEM 调度器源码和函数，Android 14/15/16 GKI 版本线也与官方口径不符。",
       "material_paths": [
-        "intake/suggestions.md（含 Task6 抽检意见）"
+        "intake/suggestions.md（含 Task6 抽检意见）",
+        "logs/deep-review/2026-05-22-12-audit.md",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/",
+        "https://source.android.com/docs/core/architecture/kernel/android-common",
+        "https://source.android.com/docs/core/architecture/kernel/gki-android16-6_12-release-builds",
+        "https://www.kernel.org/doc/html/latest/scheduler/sched-ext.html"
       ],
       "review_issues": [
         {
-          "type": "需确认",
-          "location": "参考资料之后的 `<!-- AIW-源码调研-2026-05-07 -->` 块",
-          "detail": "该块位于参考资料之后，不在 outline 十个锚点覆盖范围内；同时包含 Android OEM sched_ext 调度器源码路径、性能收益、GKI 版本演进等具体断言。Task6 只做写作审查，不裁决这些技术断言真伪。",
-          "suggestion": "由 Task9 先核实源码路径、版本边界和性能收益来源；Task2B 再决定删除、迁移到 sched_ext 正文，或作为待验证素材保留，避免发布稿在参考资料后追加未审正文。"
+          "severity": "P0",
+          "type": "源码错误/OEM sched_ext 路径与函数不可核验",
+          "location": "L522-L553：Qualcomm SCX_Oplus / MediaTek SCX_Mtk / Google Pixel SCX_Litto 段落",
+          "detail": "正文列出 `kernel/sched/oplus-sched.c`、`kernel/sched/mtk-sched.c`、`kernel/sched/litto-sched.c` 以及 `oplus_select_cpu()`、`mtk_emergency_dispatch()`、`litto_power_aware()` 等函数。对 android16-6.12 Android common kernel 的 `kernel/sched/` 目录复核，只存在 `ext.c` / `ext.h` 等通用 sched_ext 文件，不存在这些 OEM 文件；公开 Web 搜索 `SCX_Oplus`、`SCX_Mtk`、`SCX_Litto` 及对应函数也无命中。当前段落以确定口吻给出源码位置和性能结论，但没有可追溯公开来源。",
+          "suggestion": "删除参考资料后的 OEM sched_ext 段落；若要保留，只能改成“未公开资料/待验证素材”，补充可访问源码、commit、设备型号、内核分支、测试场景和数据来源后再进入正文。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/Android Common Kernel 集成锚点不存在",
+          "location": "L555-L557：`system/core/libprocessgroup/cgroup_utils.c` / `apply_android_scheduling_constraints()`",
+          "detail": "AOSP android-16.0.0_r1 的 `system/core/libprocessgroup/` 下未找到 `cgroup_utils.c` / `cgroup_utils.cpp`，存在的是 `cgroup_map.cpp`、`task_profiles.cpp` 等文件；本轮对这些文件也未发现 `apply_android_scheduling_constraints()`。把 libprocessgroup cgroup 配置写成 sched_ext 集成源码锚点不成立。",
+          "suggestion": "删除该源码锚点。若想说明 Android 进程调度组，应回到 `task_profiles.json`、`cgroups.json`、`task_profiles.cpp`；若想说明 sched_ext，应锚到 Android common kernel `kernel/sched/ext.c` 和内核文档。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/sched_ext 与 GKI 时间线错误",
+          "location": "L564-L567：版本演进表",
+          "detail": "正文写 Android 14(GKI 5.10) 已有基础 sched_ext、Android 15(GKI 5.15) 添加 MediaTek SCX_Mtk、Android 16(GKI 6.12) 全面支持且 Pixel SCX_Litto 默认启用。官方 Android common kernel 文档的口径是 Android 14 有 `android14-5.15` / `android14-6.1`，Android 15 引入 `android15-6.6`，Android 16 对应 `android16-6.12` release builds；Linux sched_ext 需要 `CONFIG_SCHED_CLASS_EXT`，随 6.12 才进入 Android 16 这一代评估条件。Android 14/15 的 5.10/5.15 sched_ext 说法和 Pixel 默认启用 SCX_Litto 均缺少依据。",
+          "suggestion": "用正文 L390-L392 的限定口径替换该表：Android 16 / GKI 6.12 才具备平台侧 sched_ext 评估条件；设备是否可用仍要检查 `CONFIG_SCHED_CLASS_EXT`、`/sys/kernel/sched_ext`、CTS/VTS、OEM 配置和 shipping build 策略。"
+        },
+        {
+          "severity": "P2",
+          "type": "数据缺失/OEM 性能收益无来源",
+          "location": "L531、L542、L553：15-20% 游戏帧率、25ms 触摸延迟、8-12% 功耗",
+          "detail": "这些量化收益没有测试设备、内核分支、调度器版本、场景、样本量和来源链接；并且对应调度器/源码名称本轮未能核验。",
+          "suggestion": "在没有可访问 benchmark 和源码来源前删除数字；如后续补充，需写明设备型号、内核/GKI 分支、workload、对照组和统计口径。"
         }
       ],
       "added_by": "task6-review",
@@ -13593,7 +13620,10 @@
       "related_files": [
         "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "review_log": "logs/deep-review/2026-05-22-12-audit.md",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-22T12:20:00+08:00"
     },
     {
       "id": "task2a-18.22-android-xr-spatial-ui-rendering",
