@@ -2997,3 +2997,11 @@
 - **问题**：补充段仍像源码调研素材块，和正文主线、参考资料顺序断开；16KB Page Size 线程栈内容与本节 MessageQueue 主线关联弱。
 - **建议**：Task2B 将 DeliQueue 兼容性/Idle 判断内容整合进正文；无关 16KB Page Size 内容移至对应章节或正式附录；删除编辑痕迹后再回 Task6/Task9。
 - **review 日志**：logs/review/2026-05-23-01-review.md
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-05-23
+- **类型**：交叉引用一致性/版本表述
+- **位置**：L134、L243-L249、L570、L674
+- **问题**：章节标题/大纲仍写“四种回调类型”，正文源码序列已按 Android 16 写成五类 `CALLBACK_INPUT`、`CALLBACK_ANIMATION`、`CALLBACK_INSETS_ANIMATION`、`CALLBACK_TRAVERSAL`、`CALLBACK_COMMIT`；收尾总结又写 `Input → Animation → Traversal → Commit`，漏掉 `INSETS_ANIMATION`。这会造成同一节内部的回调类型数量不一致。
+- **建议**：统一改为“五类回调”或明确“常用四类 + COMMIT 收尾”；总结链路补上 `INSETS_ANIMATION`，避免读者以为 Android 16 的 `CALLBACK_COMMIT` 或 `CALLBACK_INSETS_ANIMATION` 不在当前执行序列内。
+- **review 日志**：logs/deep-review/2026-05-23-03-deep-review.md
+

@@ -17572,6 +17572,78 @@
       "completed_at": "2026-05-23T03:09:00+08:00",
       "completed_by": "task2a-content-processing",
       "result_file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+    },
+    {
+      "id": "task9-deep-20260523-19.14-baseline-profile-install-api-floor",
+      "section": "19.14",
+      "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+      "priority": 95,
+      "title": "Baseline Profile 安装收益 API floor 需从 API 21+ 修正为 API 24+/28+ 边界",
+      "description": "Task9 深度复审发现 §19.14 把 Baseline Profile 安装收益写成目标设备 API 21+，与 Android Developers 官方口径不一致。Baseline Profile 的 ART AOT 利用边界是 Android 9/API 28+ 的安装期支持，或 Android 7/API 24+ 配合 ProfileInstaller；API 21-23 不应写成可获得 Baseline Profile AOT 收益。",
+      "reason": "[Deep Tech Review] §19.14 Baseline Profile 安装收益 API floor 写错，需回炉修正 frontmatter 与版本兼容表。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-03-deep-review.md",
+        "https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API floor 与版本边界",
+          "location": "frontmatter L8；正文 L106-L108；L373-L375",
+          "detail": "正文把 Baseline Profile 安装收益写成“目标设备 API 21+（ProfileInstaller 兼容）”。Android Developers 官方文档写明：ART 在 Android 9/API 28+ 可在安装期利用 Baseline Profile；Android 7/API 24+ 可通过 ProfileInstaller 安装/转码 profile。Android 7-8.1/API 24-27 是 ProfileInstaller 覆盖段；API 21-23 不应承诺 Baseline Profile AOT 收益，且正文后文也写 `CompilationMode.Partial(...Require)` 需要 API 24+。",
+          "suggestion": "把兼容表和 frontmatter 改为“Baseline Profile 安装收益：API 24+（API 24-27 依赖 ProfileInstaller；API 28+ 支持安装期/云端 profile 口径）”。补一句 API 21-23 不能按 Baseline Profile AOT 收益验证，API 23 Macrobenchmark 只保留 Full 编译口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T03:35:03+08:00",
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260523-18.17-ndk-surface-control-api-signature",
+      "section": "18.17",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 95,
+      "title": "NDK SurfaceControl previous release fence 示例使用不存在 API / 错误签名",
+      "description": "Task9 深度复审发现 §18.17 NDK 示例把 Android 10-15 的 previous release fence 回收路径写成了不存在的 `ASurfaceTransaction_setOnCompleteListener()` / `ASurfaceTransactionStats_create()`，并遗漏 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surface_control)` 的 surface_control 参数。",
+      "reason": "[Deep Tech Review] §18.17 NDK SurfaceControl API 名称与签名错误，示例不可编译且会误导 buffer 回收路径，需回炉修正。",
+      "issue_type": "source-code-accuracy-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-03-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/include/android/surface_control.h"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/NDK API 名称与签名",
+          "location": "L192-L207：API 29-35 `setBuffer() + OnComplete + previous release fence` 示例",
+          "detail": "AOSP android-16.0.0_r1 `frameworks/native/include/android/surface_control.h` 中公开 API 是 `ASurfaceTransaction_setOnComplete(transaction, context, ASurfaceTransaction_OnComplete)`，不是 `ASurfaceTransaction_setOnCompleteListener()`；没有 `ASurfaceTransactionStats_create(tx)`；`ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 的签名是 `(ASurfaceTransactionStats*, ASurfaceControl*)`，正文示例只传 `stats`。当前代码块不可编译，也会让读者拿不到指定 SurfaceControl 的 previous release fence。",
+          "suggestion": "把示例改成 `ASurfaceTransaction_setOnComplete(tx, context, onComplete)`；在回调里直接使用传入的 `ASurfaceTransactionStats* stats`，调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)`；删除 `ASurfaceTransactionStats_create/delete`。同时说明 API 36+ 优先 `ASurfaceTransaction_setBufferWithRelease()`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T03:35:03+08:00",
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
     }
   ],
   "metadata": {

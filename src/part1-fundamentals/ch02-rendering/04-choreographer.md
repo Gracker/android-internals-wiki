@@ -43,19 +43,19 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
-task9_result: needs-rework
-task9_state: "pending"
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-21T16:25:11+08:00"
-task9_reviewed_date: "2026-05-21"
-task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-23T03:35:03+08:00"
+task9_reviewed_date: "2026-05-23"
+task9_reviewed_by: "openclaw-task9"
 last_task6_at: "2026-05-18T18:06:00+08:00"
 last_task6_audit: "2026-05-18"
 last_task6_audit_result: l1-light-edit
@@ -63,7 +63,8 @@ last_task6_audit_log: "logs/review/2026-05-18-18-audit.md"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T16:25:11+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-16-audit.md"
-
+last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
+task9_review_notes: "2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型“四种/五类”内部表述需统一，已写入 suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # Choreographer 与渲染流水线

@@ -26,10 +26,10 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
@@ -37,15 +37,15 @@ task2b_result: "fixed"
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-21"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T22:26:00+08:00"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-23"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-23T03:35:03+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T22:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-22-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-22-audit.md"
-task9_review_notes: "2026-05-21 Task9 idle audit: needs-rework。P1：BaselineProfileRule.collect() 生成环境需拆出 API 33+ / rooted API 28+ 支持边界，API 23 只能 Full 编译；写入 queue 条目 task9-audit-20260521-19.14-baseline-profile-api-floor。"
+last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
+task9_review_notes: "2026-05-23 Task9 deep review: needs-rework。P0：Baseline Profile 安装收益 API floor 写成 API 21+，官方口径为 API 28+ install-time / API 24+ with ProfileInstaller；写入 queue 条目 task9-deep-20260523-19.14-baseline-profile-install-api-floor。"
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
