@@ -36,8 +36,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "参考书素材/知识盲区/官方文档/AOSP结构"
 last_task2a_at: "2026-05-22T15:04:00+08:00"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-22"
+last_task6_at: "2026-05-22T15:14:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-15-review.md"
 ---
 
 # 26.17 线上网络质量监控与接入层协同
@@ -81,7 +87,7 @@ task6_state: pending
 
 网络质量监控要回答三件事：慢发生在哪一段、影响哪些用户、客户端和接入层看到的事实是否一致。只看接口总耗时，DNS、建连、TLS、服务端等待、响应体读取、重试和本地队列等待都会混在一起，排障时只能按经验猜。
 
-本节把 24.4 的连接管理、24.10 的 HTTPDNS 边界、19.23 的网络 APM 采集方式和 26.3 的指标上报模型接到同一张网络质量表里。参考书用于确定知识点顺序：网络请求阶段拆分、统一网络库、流量监控、客户端与接入层监控、实时报警和离线圈选。正文用自己的表述重写，不使用参考书原文段落。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+本节把 24.4 的连接管理、24.10 的 HTTPDNS 边界、19.23 的网络 APM 采集方式和 26.3 的指标上报模型接到同一张网络质量表里。读者需要能从一条慢请求样本出发，判断慢发生在哪一段，圈出影响范围，再用接入层日志做对账。
 
 ## 网络监控的分层目标
 
@@ -142,7 +148,7 @@ Cronet 的口径更接近 Chromium 网络栈。Android 34 SDK source 中 `androi
 | Native / PLT Hook | `connect`、`send`、`recv`、`SSL_read`、`SSL_write` 等底层调用 | 能发现绕过 Java 网络层的调用和总流量 | Android 版本、ABI、符号、加固、静态链接都会影响稳定性；发布前必须灰度 |
 | 统一网络库 | App 自有业务请求 | 最适合做策略、埋点、trace id、HTTPDNS、重试和容灾 | 迁移成本高；三方 SDK 和 WebView 仍需旁路监控 |
 
-Clippings 中把插桩、Native Hook、统一网络库放在同一节讨论，这个顺序适合工程决策：Hook 用来补盲区，统一网络库用来承载稳定能力。19.23 已经展开网络 APM 的底层捕获原理；放到线上质量监控里，优先级要调整为先保证指标可解释，再追求覆盖所有 socket。覆盖率提高但误归因增加，看板会更难用。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md] [详见 19.23 节]
+工程决策上，Hook 适合补盲区，统一网络库适合承载稳定能力。19.23 已经展开网络 APM 的底层捕获原理；放到线上质量监控里，指标可解释要排在覆盖所有 socket 前面。覆盖率提高但误归因增加，看板会更难用。 [详见 19.23 节]
 
 发布风险按能力分级。纯 `EventListener` 采集可以随版本发布；ASM 插桩要配合构建期白名单和回滚开关；Native Hook 必须有 ABI 灰度、崩溃率护栏、远程关闭和端上自检。不要在全量用户上直接启用新的 Hook 表。
 
@@ -170,7 +176,7 @@ Clippings 中把插桩、Native Hook、统一网络库放在同一节讨论，�
 | 小时级分析 | 30 分钟到数小时 | 阶段耗时分位值、错误码分布、重试次数、上报失败率 | 放开机型、系统、App 版本、CDN、IP 段、协议、页面场景 | 圈定故障范围和触发条件 |
 | 日级复盘 | 天级 | 长尾分布、失败样本聚类、版本对比、地域/运营商趋势 | 全字段离线聚合，过滤低样本噪声 | 修复验证、容量规划、规则调整 |
 
-实时告警不要把所有维度都展开。维度过多会让单个桶样本数过低，误报和漏报都会增加。Clippings 中提到分钟级监控通常会舍弃 UV，只按 PV 和少数维度做报警；这个取舍仍适合移动端网络监控。用户数、尾延迟细分和复杂归因放到离线分析里做。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+实时告警不要把所有维度都展开。维度过多会让单个桶样本数过低，误报和漏报都会增加。分钟级监控通常舍弃 UV，只按 PV 和少数维度做报警；这个取舍仍适合移动端网络监控。用户数、尾延迟细分和复杂归因放到离线分析里做。
 
 尾延迟要看阶段分布，不要只看总耗时 P99。DNS P99 升高通常指向解析、调度或网络切换；connect P99 升高更接近 TCP 可达性、运营商、CDN 或防火墙；TTFB P99 升高可能是服务端处理、入口拥塞或请求排队；body P99 升高常见于大响应体、限速、弱网和应用消费速度。分段指标能让告警直接指向下一步证据。
 
@@ -191,7 +197,7 @@ Clippings 中把插桩、Native Hook、统一网络库放在同一节讨论，�
 
 ## QUIC / HTTP/3 指标口径
 
-QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连接建立、TLS 1.3 加密握手和传输可靠性都在 QUIC 层处理；0-RTT、连接迁移、connection id、UDP 路径验证都会影响耗时解释。继续把所有字段命名为 `tcp_ms`、`tls_ms`，会让看板误导排障人员。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md] [待验证: 需补充 Android 17 / Cronet 当前 HTTP/3 指标字段官方文档]
+QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连接建立、TLS 1.3 加密握手和传输可靠性都在 QUIC 层处理；0-RTT、连接迁移、connection id、UDP 路径验证都会影响耗时解释。继续把所有字段命名为 `tcp_ms`、`tls_ms`，会让看板误导排障人员。 [待验证: 需补充 Android 17 / Cronet 当前 HTTP/3 指标字段官方文档]
 
 协议字段要升级成显式模型：`protocol=h1/h2/h3`、`transport=tcp/quic`、`handshake_ms`、`zero_rtt_used`、`connection_migration_count`、`path_validation_ms`、`packet_loss_estimate`。在 h1/h2 下继续记录 TCP/TLS 分段；在 h3 下记录 QUIC handshake 和首包等待，并把连接迁移单独作为事件。这样同一张看板可以比较用户体验，又不会把协议内部阶段强行套成 TCP 字段。
 

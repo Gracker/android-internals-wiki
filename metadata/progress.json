@@ -259,17 +259,15 @@
   "review_summary": "Task2A 2026-05-22 15: 加工 26.17 线上网络质量监控与接入层协同；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
-    "time": "12:13",
+    "time": "15:14",
     "sections": [
-      "9.4",
-      "2.11"
+      "26.17"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/04-special-anr.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
     ],
-    "result": "2 通过写作 L1/L2 复审 / 0 新增回炉 / 0 自动晋升（Task9 pending queue 保留）",
-    "log": "logs/review/2026-05-22-12-review.md"
+    "result": "1 章节通过写作 L1/L2 review / 0 新增回炉 / 0 自动晋升（Task9 pending）",
+    "log": "logs/review/2026-05-22-15-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1680,28 +1678,35 @@
       "task6_log": "logs/review/2026-05-22-12-review.md",
       "task6_new_rework": false,
       "task6_note": "复审通过；修复结构性元叙述、ASCII 破折号、标点与少量口语化表达。既有 Task9 16KB/ADPF pending queue 保留，未新增回炉。"
+    },
+    "26.17": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T15:14:00+08:00",
+      "task6_log": "logs/review/2026-05-22-15-review.md",
+      "task6_new_rework": false,
+      "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 pending。"
     }
   },
   "total_review_sections": 198,
   "next_review_candidates": [],
   "ready_for_review": 154,
-  "last_updated": "2026-05-22T12:13:00+08:00",
+  "last_updated": "2026-05-22T15:14:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
-    "time": "12:13",
-    "reviewed_at": "2026-05-22T12:13:00+08:00",
+    "time": "15:14",
+    "reviewed_at": "2026-05-22T15:14:00+08:00",
     "mode": "normal",
     "sections": [
-      "9.4",
-      "2.11"
+      "26.17"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/04-special-anr.md",
-      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
     ],
-    "log": "logs/review/2026-05-22-12-review.md",
-    "result": "9.4、2.11 pass-light-edit（L1/L2 小修 16 处；0 新增回炉；0 自动晋升，沿用既有 Task9 pending queue）"
+    "log": "logs/review/2026-05-22-15-review.md",
+    "result": "26.17 pass-light-edit（L1/L2 小修 4 处；0 新增回炉；0 自动晋升，Task9 pending）"
   },
   "task9_last_review": "2026-05-22",
   "ready_to_publish": 186,
@@ -4605,6 +4610,25 @@
       "material_count": 6,
       "last_task2a_at": "2026-05-22T11:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "26.17": {
+      "section": "26.17",
+      "title": "线上网络质量监控与接入层协同",
+      "file": "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-22",
+      "last_task6_at": "2026-05-22T15:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-22-15-review.md",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。",
+      "last_task2a_at": "2026-05-22T15:04:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -4689,33 +4713,25 @@
   "last_task2a_file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "14.13",
-    "14.6",
-    "4.5"
+    "26.17"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+    "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
   ],
-  "last_task6_at": "2026-05-22T08:20:00+08:00",
+  "last_task6_at": "2026-05-22T15:14:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-22",
-    "time": "08:20",
-    "reviewed_at": "2026-05-22T08:20:00+08:00",
-    "mode": "revisiting",
+    "time": "15:14",
+    "reviewed_at": "2026-05-22T15:14:00+08:00",
+    "mode": "normal",
     "sections": [
-      "14.13",
-      "14.6",
-      "4.5"
+      "26.17"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
     ],
-    "log": "logs/review/2026-05-22-08-review.md",
-    "result": "14.13/14.6/4.5 pass-light-edit（L1/L2 小修 10 处；无新增 L3/L4；沿用 Task9 pending queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-15-review.md",
+    "result": "26.17 pass-light-edit（L1/L2 小修 4 处；0 新增回炉；0 自动晋升，Task9 pending）"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
@@ -6399,8 +6415,8 @@
     "section": "26.17",
     "title": "线上网络质量监控与接入层协同",
     "file": "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_pending",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-22",
     "queue_priority": 80,
@@ -6413,7 +6429,18 @@
       "total": 16
     },
     "material_count": 5,
-    "last_task2a_at": "2026-05-22T14:04:00+08:00",
-    "task2a_result": "gap-created"
+    "last_task2a_at": "2026-05-22T15:04:00+08:00",
+    "task2a_result": "gap-created",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-22",
+    "last_task6_at": "2026-05-22T15:14:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-22-15-review.md",
+    "task6_l1_l2_fixes": 4,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   }
 }
