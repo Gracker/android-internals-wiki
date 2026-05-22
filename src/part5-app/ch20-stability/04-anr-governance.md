@@ -28,22 +28,23 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-15T20:08:00+08:00"
 task6_reviewed_date: "2026-05-15"
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-15"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-15T20:23:00+08:00"
+task9_reviewed_date: "2026-05-23"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-23T07:24:00+08:00"
 last_task6_review_log: "logs/review/2026-05-15-20-review.md"
-task9_review_notes: "2026-05-15 Task9 deep-review: needs-rework; P0 FGS 晋升超时/AppComponentFactory Provider 初始化建议错误；P1 Broadcast/Service 常量与版本口径需对齐。"
+task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 2 / P2 2；Dispatchers.IO 继承关系错误；FGS 晋升超时版本矩阵缺失；SIGQUIT 自进程权限边界混淆；WorkManager/nativePollOnce P2 沿用既有 suggestions。"
+last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
 ---
 
 # ANR 治理策略

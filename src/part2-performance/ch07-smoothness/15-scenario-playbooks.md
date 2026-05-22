@@ -20,24 +20,24 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-task9_state: "pending"
+task9_state: reviewed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
-task9_result: "needs-rework"
+task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-17"
-last_task9_at: "2026-05-17T12:32:07+08:00"
+task9_reviewed_date: "2026-05-23"
+last_task9_at: "2026-05-23T07:24:00+08:00"
 
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
 task6_state: revisiting
-task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+task2b_state: pending
+pipeline_stage: task2b_pending
 review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
 last_task6_at: "2026-05-05T07:30:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
-task9_review_notes: "2026-05-17 Task9 12: needs-rework。P0 2 / P1 1；atrace 0x200、FrameTimeline SQL/table 与 SurfaceFlinger slice 口径错误；功耗/发热投诉入口仍缺独立排障链。"
+last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
+task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 1 / P2 1；Android 14+ SurfaceFlinger slice 锚点仍写 onMessageReceived；功耗/发热投诉入口仍是待补素材；BufferStuffing 判据需证据收敛。"
 ---
 
 # 场景化性能作战手册

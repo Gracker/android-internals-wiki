@@ -216,7 +216,10 @@
     "7.18",
     "20.14",
     "19.14",
-    "18.17"
+    "18.17",
+    "7.15",
+    "7.5",
+    "20.4"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -266,9 +269,12 @@
     "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
     "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
     "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+    "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
+    "src/part2-performance/ch07-smoothness/05-optimization.md",
+    "src/part5-app/ch20-stability/04-anr-governance.md"
   ],
-  "review_summary": "Task2A 2026-05-22 21: 加工 24.15 移动网络性能优化实战；status ready-for-review，进入 Task6 管线。",
+  "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
     "date": "2026-05-23",
     "time": "04:05",
@@ -336,9 +342,9 @@
       "task6_note": "复审小修通过；常见问题后的源码调研/Game Mode 素材仍是素材块，且 Task9 已标记 Dimensity/sched_ext 证据风险，已并入 queue.json priority 95。"
     },
     "20.4": {
-      "p0": 4,
+      "p0": 1,
       "p1": 2,
-      "p2": 1,
+      "p2": 2,
       "p3": 0,
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 6,
@@ -346,7 +352,11 @@
       "task6_reviewed_at": "2026-05-15T20:08:00+08:00",
       "task6_log": "logs/review/2026-05-15-20-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；修正导读动词、开头结构元叙述、标题层级、编辑标记和“这意味着”填充句。Task9 仍 pending，未自动晋升。"
+      "task6_note": "复审通过；修正导读动词、开头结构元叙述、标题层级、编辑标记和“这意味着”填充句。Task9 仍 pending，未自动晋升。",
+      "reviewed_at": "2026-05-23T07:24:00+08:00",
+      "log": "logs/deep-review/2026-05-23-07-deep-review.md",
+      "summary": "P0 1：DefaultIoScheduler 继承关系错误；P1 2：FGS 晋升超时版本矩阵缺失、SIGQUIT 权限边界混淆；P2 2 沿用既有 suggestions。",
+      "task9_result": "needs-rework"
     },
     "22.3": {
       "p0": 1,
@@ -1379,13 +1389,14 @@
       "p3": 1
     },
     "7.15": {
-      "p0": 2,
+      "p0": 1,
       "p1": 1,
-      "p2": 0,
+      "p2": 1,
       "p3": 0,
-      "reviewed_at": "2026-05-17T12:32:07+08:00",
-      "log": "logs/deep-review/2026-05-17-12-deep-review.md",
-      "summary": "P0 2：atrace 0x200、FrameTimeline SQL/data source/jank type、SF slice 锚点错误。P1 1：功耗/发热场景入口缺失。"
+      "reviewed_at": "2026-05-23T07:24:00+08:00",
+      "log": "logs/deep-review/2026-05-23-07-deep-review.md",
+      "summary": "P0 1：Android 14+ SurfaceFlinger onMessageReceived 锚点错误；P1 1：功耗/发热场景入口仍为待补素材；P2 1：BufferStuffing 判据缺证据。",
+      "task9_result": "needs-rework"
     },
     "12.5": {
       "p0": 0,
@@ -1739,6 +1750,16 @@
       "task6_note": "复审小修 10 处；补充段仍像源码调研素材块，已并入既有 Task9 pending queue（priority 95）交 Task2B 整合。",
       "task9_result": "needs-rework",
       "task2b_state": "pending"
+    },
+    "7.5": {
+      "p0": 2,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-23T07:24:00+08:00",
+      "log": "logs/deep-review/2026-05-23-07-deep-review.md",
+      "summary": "P0 2：RenderEffect 与 Hardware Layer 对比违背 promotedToLayer 行为；HardwareBitmapUploader Android 14/15+ Vulkan API 边界错误。",
+      "task9_result": "needs-rework"
     }
   },
   "total_review_sections": 210,
