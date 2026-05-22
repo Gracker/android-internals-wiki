@@ -2844,3 +2844,10 @@
 - **问题**：Task9 2026-05-22 已标记 Alpha API / 默认线程池 / 执行模型与 `THREAD_PRIORITY_FOREGROUND` 应用侧边界仍有 P0/P1 技术风险；Task6 仅做文稿交接标注，不裁决源码真伪。
 - **建议**：由 Task2B 按 `logs/deep-review/2026-05-22-03-deep-review.md` 修正文稿，修完后重新进入 Task6 / Task9。
 - **review 日志**：logs/review/2026-05-22-04-review.md
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-05-22
+- **类型**：数据缺失
+- **位置**：L148：16KB 分页对 Cronet 冷启动的影响
+- **问题**：正文写 `libcronet.so` 在 16KB 页环境下从 `dlopen` 到首次 HTTP 请求发出的间隔缩短约 10%，但未给出设备、内核页大小、Cronet provider 形态、版本、ABI、样本量或公开来源。Android 16KB page size 的通用收益不能直接推出 Cronet 冷启动 10% 这一具体数据。
+- **建议**：若这是内部实测，补充测试条件和对比表；若没有可复现实验或官方来源，删除“约 10%”并改成定性表述：大型 native 库在 16KB page size 下可能减少页表项和 page fault，但收益需按 provider 与设备实测。
+
