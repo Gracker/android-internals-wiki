@@ -1,7 +1,7 @@
 {
   "total": 366,
-  "draft": 22,
-  "ready-for-review": 157,
+  "draft": 21,
+  "ready-for-review": 158,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-22",
@@ -209,7 +209,8 @@
     "4.5",
     "11.7",
     "24.13",
-    "9.4"
+    "9.4",
+    "26.17"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -252,9 +253,10 @@
     "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part3-tools/ch14-other-tools/06-automation-tools.md",
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-    "src/part2-performance/ch09-anr/04-special-anr.md"
+    "src/part2-performance/ch09-anr/04-special-anr.md",
+    "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
   ],
-  "review_summary": "Task2A 2026-05-22 01: 加工 5.16 GPU/NPU 异构负载调度与功耗归因；status ready-for-review，进入 Task6 管线。",
+  "review_summary": "Task2A 2026-05-22 15: 加工 26.17 线上网络质量监控与接入层协同；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
     "time": "12:13",
