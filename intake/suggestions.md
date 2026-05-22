@@ -3018,3 +3018,21 @@
   4. AOSP / 官方文档对照：`packages/modules/Bluetooth`、`packages/modules/Wifi`、Android 17 ProfilingTrigger / Excessive CPU、Compose First 等方向均已有相邻章节或缺少独立成节必要性。
 - **避免重复挖掘**：下次优先检查尚未进入目录的系统模块级缺口，例如 Biometric / NFC / Telephony 的性能或可观测性边界；只有能满足“素材丰富度 ≥3 篇高质量资料 + 直接性能相关”的方向才创建章节。
 
+## [Task9 Deep Review] 20.14 线程与 FD 资源监控治理 — 2026-05-23
+- **类型**：源码准确性 / 采样边界
+- **位置**：L103-L133：`Thread.getAllStackTraces()` 线程快照说明
+- **问题**：AOSP Android 实现使用 `ThreadGroup.systemThreadGroup.activeCount()` 估算数量，按 `count + count / 2` 分配数组后调用 `enumerate()`；`ThreadGroup.enumerate()` 在数组不足时会静默丢弃额外线程。正文已说明短生命周期线程可能漏采，但还没把“高并发创建期间快照可能低估线程数”写成明确采样边界。
+- **建议**：补一句边界：`Thread.getAllStackTraces()` 适合低频诊断快照，不适合作为线程风暴期间的精确计数；阈值判断可同时记录 `/proc/self/task` 数量或平台线程池计数，避免单点低估。
+
+## [Task9 Deep Review] 20.14 线程与 FD 资源监控治理 — 2026-05-23
+- **类型**：知识盲区 / FD 创建归因
+- **位置**：L233-L240：FD 创建/复制函数监控集合
+- **问题**：表格覆盖 `open/openat`、`socket/accept`、`pipe/pipe2`、`dup/dup2/dup3`、`eventfd`、`epoll_create*`、`close`，但未点名 `fcntl(F_DUPFD/F_DUPFD_CLOEXEC)`。这也是标准 FD 复制入口；如果只把 `dup` 系列写成复制路径，归因表可能漏掉通过 `fcntl` 生成的新 fd。扩展诊断还可区分 `accept4`、`socketpair`、`eventfd2`、`memfd_create`、`timerfd_create`、`inotify_init1` 等 Linux/Android 常见 fd 生产点。
+- **建议**：把“最小集合”和“扩展集合”拆开：最小集合补上 `fcntl(F_DUPFD*)`；扩展集合列出 `accept4/socketpair/eventfd2/memfd_create/timerfd_create/inotify_init1` 等按业务启用的 hook 点，并说明 PLT hook 只能覆盖动态符号调用，直接 syscall / inline wrapper 需要另行处理。
+
+## [Task9 Deep Review] 20.14 线程与 FD 资源监控治理 — 2026-05-23
+- **类型**：交叉引用一致性
+- **位置**：frontmatter L8；正文 L66、L260-L267
+- **问题**：正文明确引用 20.3 Native Crash、20.4 ANR、20.5 OOM、20.7、26.2、26.5；frontmatter `related_chapters` 只列 20.5、20.7、26.2、26.5、14.13，缺 20.3 和 20.4。导航/知识图谱会漏掉本节与 Native Crash / ANR 的技术关联。
+- **建议**：下轮元数据整理时把 `related_chapters` 补齐为包含 `20.3`、`20.4`、`20.5`、`20.7`、`26.2`、`26.5`、`14.13`。
+
