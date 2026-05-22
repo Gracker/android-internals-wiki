@@ -52,17 +52,19 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: "pass"
-task9_result: "pass-tech-review"
+task9_state: "reviewed"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-30"
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-30T16:20:00+08:00"
-task9_review_notes: "2026-04-30 16:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2。Frame Time/FrameTimeline 版本口径需 Task2B 回炉。"
+last_task9_audit: "2026-05-22"
+last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
+task9_review_notes: "2026-05-22 22:20 task9 idle-audit: needs-rework。P0 2 / P1 1。RefreshRateSelector/LayerHistory Android 16 源码锚点、LayerVoteType 枚举与 ExplicitExact 评分口径需 Task2B 回炉。"
 task2b_rework_note: "2026-05-07 2B修复: Frame Time口径拆分(doFrame=主线程回调 vs FrameTimeline=完整帧); setFrameTimeline版本边界拆分(API33读取 vs Android16公开setFrameTimeline)"
 last_task6_audit: "2026-05-19"
 ---
