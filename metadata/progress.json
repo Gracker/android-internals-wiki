@@ -1,6 +1,6 @@
 {
-  "total": 367,
-  "draft": 21,
+  "total": 368,
+  "draft": 22,
   "ready-for-review": 159,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -260,7 +260,7 @@
     "src/part1-fundamentals/ch06-storage/02-filesystem.md",
     "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md"
   ],
-  "review_summary": "Task2A 2026-05-22 15: 加工 26.17 线上网络质量监控与接入层协同；status ready-for-review，进入 Task6 管线。",
+  "review_summary": "Task2A 2026-05-22 20: 缺口挖掘创建 24.15 移动网络性能优化实战；status draft，等待下一轮 Task2A 加工。",
   "task6_review_summary": {
     "date": "2026-05-22",
     "time": "17:08",
