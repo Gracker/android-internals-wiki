@@ -604,7 +604,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
@@ -626,7 +626,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T22:26:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-22-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-22-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T03:22:50",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260521-2.11-flutter-adpf-host-image-copy",
@@ -746,7 +749,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
@@ -773,7 +776,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T16:25:11+08:00",
-      "review_log": "logs/deep-review/2026-05-21-16-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-16-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T03:22:50",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260521-19.01-appexitinfo-constants-source",
@@ -832,7 +838,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
@@ -851,7 +857,10 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-21T14:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-14-audit.md"
+      "review_log": "logs/deep-review/2026-05-21-14-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T03:22:50",
+      "completion_reason": "Task 2B rework: see review notes"
     },
     {
       "id": "task9-audit-20260521-15.5-framemetrics-snippet-scope",

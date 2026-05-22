@@ -2,10 +2,10 @@
 title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 chapter: '19'
 section: '19.14'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
+applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark：Android 6.0+（API 23+）；Baseline Profile 生成需 API 33+ 或 rooted API 28+；Baseline Profile 验证需 API 24+；书中样例以 Android 8-17 为主
 last_verified: '2026-04-27'
 last_verified_against: AndroidX BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode source and Android Developers Benchmark docs
 confidence: medium
@@ -26,14 +26,14 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
-task2b_result: pending
+task2b_result: "fixed"
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -103,7 +103,9 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 |---|---|---|---|
 | Microbenchmark | API 14+ | Android 8-17 | 适合进程内热点代码；结果更接近局部 CPU / 内存分配，不代表页面端到端体验 |
 | Macrobenchmark | API 23+ | Android 8-17 | 适合启动、滚动、转场；依赖外部测试进程驱动 App |
-| Baseline Profile 生成 / 验证 | 通常复用 Macrobenchmark 场景 | Android 8-17 | 生成脚本是实验室能力，最终收益仍要回到目标发布设备验证 |
+| Baseline Profile 安装收益 | 目标设备 API 21+（ProfileInstaller 兼容） | Android 8-17 | 收益通过 ProfileInstaller + AGP 7.0+ 打包的 profile 生效；低版本目标设备也能获得 AOT 加速 |
+| Baseline Profile 生成（BaselineProfileRule） | API 33+，或 rooted API 28+ | Android 8-17 | `BaselineProfileRule.collect()` 生成环境需要 API 33+ 或 rooted 设备；生成结果与具体设备/版本绑定，需在目标发布设备段验证 |
+| Baseline Profile 验证（CompilationMode） | API 24+（`Partial(BaselineProfileMode.Require)`） | Android 8-17 | 验证需被测 APK 包含 ProfileInstaller 且由 AGP 7.0+ 打包 profile；API 23 只有 `Full()` 编译模式 |
 
 真正决定能不能测的，除了 API floor，还包括 metric 是否被当前设备支持、被测 App 是否使用接近 Release 的 build variant，以及 profileable / instrumentation 配置是否齐全。
 
@@ -367,3 +369,7 @@ class BaselineProfileGenerator {
 ```
 
 每次改启动路径、首页依赖或大 SDK 初始化，都要重新跑 profile 生成和 benchmark。否则 profile 可能还存在，但已经覆盖不到新的热点路径。生成设备的 API、root 状态和库版本要记录进报告；收益验证仍然回到目标发布设备段。
+
+`BaselineProfileRule.collect()` 的运行环境有版本门槛：Android 13 / API 33+ 完整支持，rooted 设备从 Android P / API 28+ 也可运行。低于这两个条件时，`collect()` 会降级或跳过。生成的 profile 规则与被测路径和设备版本绑定，跨版本迁移后需要重新生成。
+
+验证 profile 是否生效优先用 `CompilationMode.Partial(BaselineProfileMode.Require)`，这一模式要求 API 24+ 且被测 APK 由 AGP 7.0+ 打包了 baseline profile 并包含 `androidx.profileinstaller:profileinstaller`。API 23 只有 `CompilationMode.Full()` 可用，`Partial` / `None` 在这一版本不可用。[已验证: AndroidX BaselineProfileRule.kt @RequiresApi(28) + 类注释 API 33+ / rooted API 28+; CompilationMode.kt API 23 only Full]

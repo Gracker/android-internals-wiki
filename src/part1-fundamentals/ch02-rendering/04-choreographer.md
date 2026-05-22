@@ -43,16 +43,16 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task9_at: "2026-05-21T16:25:11+08:00"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
@@ -230,7 +230,7 @@ void doFrame(long frameTimeNanos, int frame,
 
 ### 读这段代码时先看四个点
 
-第一，方法签名里第二个参数是 `int frame`，不是旧资料里常见的 `vsyncSource`。从 API 33 开始，`doFrame()` 还会收到 `VsyncEventData`，里面带着 `frameInterval`、preferred timeline、deadline 等帧时间线数据。应用侧对应的公开入口是 `postVsyncCallback(VsyncCallback)`，回调参数 `FrameData` 会把这组信息包装成 `getPreferredFrameTimeline()`、`getFrameTimelines()` 和 `FrameTimeline` 上的 `getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()`。
+第一，方法签名里第二个参数是 `int frame`，不是旧资料里常见的 `vsyncSource`。从 Android 12 / API 31 起，内部 `doFrame()` 已经接收 `DisplayEventReceiver.VsyncEventData`，包含 `frameInterval`、preferred timeline、deadline 等帧时间线数据。Android 13 / API 33 把这组数据通过公开 API 暴露给应用侧：`postVsyncCallback(VsyncCallback)`、`FrameData`、`FrameTimeline`。应用侧从 `FrameData.getPreferredFrameTimeline()`、`getFrameTimelines()` 和 `FrameTimeline` 上的 `getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()` 读取帧时间线信息。[已验证: AOSP android-12.0.0_r1 Choreographer.java L701-L702 已有 VsyncEventData 参数; API 33 新增公开 postVsyncCallback]
 
 第二，Perfetto 主线程 slice 的名字不是固定的 `Choreographer#doFrame`。AOSP 会把 `timeline.mVsyncId` 拼到 trace 名称后面，所以现代 trace 里常见的是 `Choreographer#doFrame 123456` 这种形式。这个 vsyncId 是跨进程关联的枢纽——同一个 vsyncId 会出现在 App 主线程的 `Choreographer#doFrame`、RenderThread 的 `DrawFrame`、以及 SurfaceFlinger 的帧合成 slice 中。在 Perfetto 中按 vsyncId 过滤，可以把同一帧在 App、RT、SF 三个环节的耗时串起来，实现端到端的联路追踪。Android 16（API 36）的 `FrameMetrics` 也新增了 `FRAME_TIMELINE_VSYNC_ID` 常量，允许将线上帧指标数据与线下 Perfetto trace 通过同一个 ID 精确匹配，解决了"线上发现慢帧但线下复现时找不到对应帧"的问题。
 
@@ -662,10 +662,16 @@ Project Butter 引入 Choreographer。最早的职责就是让 UI 线程的输�
 **Android 12（API 31）**  
 `Surface.setFrameRate(float, int, int)` 增加 `changeFrameRateStrategy` 参数。`FrameMetrics.GPU_DURATION` 也在这一版进入公开 API，App 侧第一次能直接拿到 GPU 阶段耗时。
 
-**Android 13（API 33）**  
-`doFrame()` 接入 `DisplayEventReceiver.VsyncEventData`，公开 API 也同步增加 `postVsyncCallback(VsyncCallback)`、`FrameData` 和 `FrameTimeline`。应用侧从 `FrameData.getPreferredFrameTimeline()`、`FrameTimeline.getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()` 读取这组帧时间线信息，Perfetto 里的 Frame Timeline 也从这一版开始更容易和 App 主线程 slice 关联起来。
+**Android 12（API 31）**  
+内部 `doFrame()` 开始接收 `DisplayEventReceiver.VsyncEventData`，Choreographer 内部已能读到 preferred frame timeline、deadline、vsyncId 等帧时间线数据。这组数据先用于内部帧调度和 `FrameInfo` 写入，尚未暴露给应用侧。[已验证: AOSP android-12.0.0_r1 Choreographer.java L701-L702]
 
-后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标和 trace 可观测性上继续补细节。本节需要记住的分界线有四个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION`，API 33 看 `VsyncCallback` / `FrameData` / `FrameTimeline` 这组公开入口。
+**Android 13（API 33）**  
+公开 API 增加 `postVsyncCallback(VsyncCallback)`、`FrameData` 和 `FrameTimeline`，应用侧可以主动订阅帧时间线回调。`FrameData.getPreferredFrameTimeline()`、`FrameTimeline.getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()` 把内部帧调度信息包装成可消费的公开对象。Perfetto 里的 Frame Timeline 也从这一版开始更容易和 App 主线程 slice 关联起来。
+
+**Android 16（API 36）**  
+Choreographer 引入 `BufferStuffingState` 内部类和 `onWaitForBufferRelease()` 检测机制，处理 BufferQueue 中 buffer dequeue 阻塞后的帧节拍修正。当检测到 buffer 释放延迟超过半帧周期时，doFrame 可能对 frameTime 做负 offset（`OFFSET`）或直接延迟一帧（`DELAY_FRAME`），避免在 buffer 仍然被 SurfaceFlinger 占用时继续生产。`ViewRootImpl` 还通过 `BLASTBufferQueue` 设置 wait-for-buffer-release callback，与 Choreographer 的状态更新协同。这一机制会改变帧时间线和调度节拍，在 16KB page size 设备或生产速率接近消费速率的连续动画场景中尤其值得关注。[已验证: AOSP android-16.0.0_r1 Choreographer.java `BufferStuffingState` / `onWaitForBufferRelease()` / `updateBufferStuffingState()`; ViewRootImpl.java `setWaitForBufferReleaseCallback`]
+
+后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标、trace 可观测性和 buffer 回压处理上继续补细节。本节需要记住的分界线有五个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION` 以及内部 VsyncEventData，API 33 看 `VsyncCallback` / `FrameData` / `FrameTimeline` 这组公开入口，API 36 看 Buffer Stuffing Recovery。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/android/view/Surface; developer.android.com/reference/android/view/WindowInsetsAnimation; developer.android.com/reference/android/view/Choreographer.VsyncCallback; developer.android.com/reference/android/view/Choreographer.FrameData; developer.android.com/reference/android/view/Choreographer.FrameTimeline; AOSP android-16.0.0_r1, Choreographer.java]
 
@@ -728,9 +734,9 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
 
 
 
-### Android 16 Choreographer Buffer Stuffing Recovery 机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 16 在 Choreographer.java 中引入 BufferStuffingState 内部类，通过 onWaitForBufferRelease() API 检测 Buffer Dequeue 阻塞，动态调整帧调度时序（OFFSET/DELAY_FRAME），解决帧节拍错位问题。包含源码级 RecoveryAction 枚举、触发阈值（半帧周期）和 FrameCallback 队列优先级分析。
-- 注入时间：2026-05-21
-- 价值：源码级深度调研，包含 AOSP 路径、调用链和版本矩阵，可作为章节扩展参考或正文补充素材
+### 参考素材
+
+Buffer Stuffing Recovery 的源码级深度分析（`BufferStuffingState`、`RecoveryAction` 枚举、触发阈值、`FrameCallback` 队列优先级）已整合进版本时间线"Android 16（API 36）"段落和 §2.25 专门章节。本节不再重复展开。
+
+- 来源：[DeepResearch 2026-05-20 Choreographer Buffer Stuffing Recovery](obsidian://open?vault=Personal-Knowledge&file=DeepResearch%2F2026-05-20-android-choreographer-buffer-stuffing-recovery)
+- 交叉引用：[§2.25 Choreographer Buffer Stuffing Recovery 与帧节拍修正](25-choreographer-buffer-stuffing-recovery.md)

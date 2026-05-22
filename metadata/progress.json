@@ -6620,5 +6620,39 @@
     "task9_result": "needs-rework",
     "task2b_state": "pending",
     "task2b_result": "pending"
-  }
+  },
+  "rework_log": [
+    {
+      "timestamp": "2026-05-23T03:23:02+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "19.14",
+        "18.17",
+        "2.4"
+      ],
+      "details": [
+        {
+          "section": "19.14",
+          "title": "Jetpack Benchmark",
+          "fixes": [
+            "Baseline Profile API boundary: split into install benefit (API 21+) / generation (API 33+ or rooted API 28+) / validation (API 24+); updated version compat table and applicable_versions frontmatter"
+          ]
+        },
+        {
+          "section": "18.17",
+          "title": "Hardware Buffer Renderer",
+          "fixes": [
+            "NDK previous release fence: removed contradictory text, documented API 29-35 OnComplete + getPreviousReleaseFenceFd recovery path"
+          ]
+        },
+        {
+          "section": "2.4",
+          "title": "Choreographer 与渲染流水线",
+          "fixes": [
+            "VsyncEventData version: internal doFrame received VsyncEventData since API 31, public API at API 33; added Android 16 Buffer Stuffing Recovery to version timeline; replaced DeepResearch material block with cross-reference to §2.25"
+          ]
+        }
+      ]
+    }
+  ]
 }

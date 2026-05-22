@@ -2,7 +2,7 @@
 title: Hardware Buffer Renderer
 chapter: 18.17
 section: "18.17"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: Android 14 (API 34) - Android 16 (API 36)
 tags:
   - HardwareBufferRenderer
@@ -18,11 +18,11 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
@@ -221,7 +221,9 @@ NDK 侧的最小版本要分开记：
 - `ASurfaceTransaction_setBuffer()` 从 API 29 开始。
 - `ASurfaceTransaction_setBufferWithRelease()` 与 `ASurfaceTransaction_OnBufferRelease` 从 API 36 开始。[已验证: `android/surface_control.h`]
 
-Android 10-15 只有 `ASurfaceTransaction_setBuffer()`。这几个版本里，`OnComplete` 只能说明事务完成，不能直接拿来当 buffer 已释放的信号；调用方仍要自己维护 in-flight buffer 计数和回收策略。
+Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnCompleteListener()` 设置回调，从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取回 previous release fence，等待 fence signal 后即可安全回收上一块被替换的 buffer。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
+
+不要把 acquire fence 当 release fence 用——前者表示 producer 写完，后者表示 consumer 不再占用。
 
 ## 性能对比
 
