@@ -399,6 +399,7 @@ tags:
   - [24.11 卫星与低带宽网络适配](part5-app/ch24-io-network/11-satellite-low-bandwidth-network.md)
   - [24.12 MediaStore 与 MediaProvider 性能治理](part5-app/ch24-io-network/12-mediastore-mediaprovider-performance.md)
   - [24.13 Photo Picker、媒体转码与缓存治理](part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md)
+  - [24.14 网络请求分段优化与弱网治理](part5-app/ch24-io-network/14-network-request-performance-playbook.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
