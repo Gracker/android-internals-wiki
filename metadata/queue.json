@@ -17484,23 +17484,60 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T00:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260523-14.4-layerhierarchybuilder-source-path",
+      "section": "14.4",
+      "section_title": "dumpsys 系列命令",
+      "priority": 95,
+      "title": "dumpsys 章节 FrontEnd 源码索引引用不存在的 LayerHierarchyBuilder.h",
+      "description": "闲时抽检发现 14.4 的 SurfaceFlinger FrontEnd 源码索引写入不存在的 `LayerHierarchyBuilder.h`；AOSP android-16/main 实际定义在 `LayerHierarchy.h`。",
+      "reason": "[Deep Tech Review Audit] 14.4 的 SurfaceFlinger FrontEnd 源码锚点存在 P0 路径错误，按文中路径无法在 AOSP android-16/main 检索到文件。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-01-audit.md",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.cpp",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "FrontEnd 架构深扒表格 / 源码索引：`LayerHierarchyBuilder.h`",
+          "detail": "正文把 SurfaceFlinger FrontEnd 的层级构建组件源码位置写成 `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchyBuilder.h`。AOSP android-16.0.0_r1、android16-qpr1-release 与 main 的 `FrontEnd/` 目录均没有该文件；`class LayerHierarchyBuilder` 实际定义在 `FrontEnd/LayerHierarchy.h`，实现位于 `LayerHierarchy.cpp`。`SurfaceFlinger.cpp` 中的 `mLayerHierarchyBuilder.update()` / `getHierarchy()` 调用链存在，但头文件路径写错。",
+          "suggestion": "将源码索引与表格中的路径改为 `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h`（必要时补 `LayerHierarchy.cpp` 作为实现文件），并说明“类名是 LayerHierarchyBuilder，但定义文件是 LayerHierarchy.h”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T01:30:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-01-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 475,
-    "p0_count": 200,
-    "last_updated": "2026-05-23T00:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 170,
+    "total_entries": 480,
+    "p0_count": 201,
+    "last_updated": "2026-05-23T01:30:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 171,
     "updated_date": "2026-05-23",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 170,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 171,
     "completed_entries": 302,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T00:20:00+08:00",
+  "last_updated": "2026-05-23T01:30:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
@@ -23870,6 +23907,43 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T00:20:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260523-14.4-layerhierarchybuilder-source-path",
+      "section": "14.4",
+      "section_title": "dumpsys 系列命令",
+      "priority": 95,
+      "title": "dumpsys 章节 FrontEnd 源码索引引用不存在的 LayerHierarchyBuilder.h",
+      "description": "闲时抽检发现 14.4 的 SurfaceFlinger FrontEnd 源码索引写入不存在的 `LayerHierarchyBuilder.h`；AOSP android-16/main 实际定义在 `LayerHierarchy.h`。",
+      "reason": "[Deep Tech Review Audit] 14.4 的 SurfaceFlinger FrontEnd 源码锚点存在 P0 路径错误，按文中路径无法在 AOSP android-16/main 检索到文件。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-01-audit.md",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.cpp",
+        "AOSP android-16.0.0_r1: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "FrontEnd 架构深扒表格 / 源码索引：`LayerHierarchyBuilder.h`",
+          "detail": "正文把 SurfaceFlinger FrontEnd 的层级构建组件源码位置写成 `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchyBuilder.h`。AOSP android-16.0.0_r1、android16-qpr1-release 与 main 的 `FrontEnd/` 目录均没有该文件；`class LayerHierarchyBuilder` 实际定义在 `FrontEnd/LayerHierarchy.h`，实现位于 `LayerHierarchy.cpp`。`SurfaceFlinger.cpp` 中的 `mLayerHierarchyBuilder.update()` / `getHierarchy()` 调用链存在，但头文件路径写错。",
+          "suggestion": "将源码索引与表格中的路径改为 `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h`（必要时补 `LayerHierarchy.cpp` 作为实现文件），并说明“类名是 LayerHierarchyBuilder，但定义文件是 LayerHierarchy.h”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T01:30:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-01-audit.md"
     }
   ],
   "last_task2a_completed": "24.14",
