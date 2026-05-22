@@ -19,41 +19,46 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/IActivityManager.java"
+    path: "frameworks/base/core/java/android/app/IActivityManager.aidl"
   - type: web
     url: "https://androidperformance.com/"
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-27T19:10:48+08:00"
+last_task2b_at: "2026-05-22T11:21:56+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-28"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: finalized
-pipeline_stage: task2b_pending
-task9_state: "reviewed"
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T08:40:32+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
-task2b_state: pending
+task2b_state: fixed
 p0: 2
 p1: 2
 p2: 1
-updated_by: "openclaw-task9"
+updated_by: "openclaw-task6"
 updated_date: "2026-05-22"
-review_notes: "2026-05-04 task2b rework: 16KB Page写放大、Freezer感知豁免、异步广播优先级反转。P0 0 / P1 3 fixed。"
+review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。"
 rework_round_2: "2026-05-04"
 last_task9_audit: "2026-05-22"
 task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md."
+last_task6_audit: "2026-05-22"
+task6_audit_notes: "2026-05-22 idle audit: L1 wording fixes; status changed from finalized to ready-for-review because Task9 queue has pending P0/P1 issues."
+auto_promotion_revoked_by: "openclaw-task6"
+auto_promotion_revoked_date: "2026-05-22"
+auto_promotion_revoked_reason: "Task9 audit queue pending; finalized status was inconsistent."
 ---
 
 # 特殊场景的 ANR
@@ -65,7 +70,7 @@ task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2
 
 在 §9.2 中，我们梳理了 ANR 的标准触发条件——Input 事件 5 秒超时、Service 20 秒超时。Broadcast 的窗口要再细分一步：Android 13 及以下通常按前台 10 秒、后台 60 秒计时；Android 14 及以上如果接收进程处于 CPU starvation，`FLAG_RECEIVER_FOREGROUND` 广播会放宽到 10-20 秒，后台广播会放宽到 60-120 秒。把这些窗口看成固定常量，后面的 trace 很容易读偏。
 
-但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
+但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在 App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
 
 我们把这些情况称为"特殊场景的 ANR"。它们的共同特点：
 
@@ -95,7 +100,7 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 ### I/O 阻塞：D 状态与磁盘带宽竞争
 
-在 Perfetto 的线程状态 track 中，会看到线程进入 D 状态（Uninterruptible Sleep），通常标注为 `D (disk sleep)` 或 `D (iowait)`。这意味着线程在等待磁盘 I/O 完成，而且这个等待不可中断。
+在 Perfetto 的线程状态 track 中，会看到线程进入 D 状态（Uninterruptible Sleep），通常标注为 `D (disk sleep)` 或 `D (iowait)`。线程在等待磁盘 I/O 完成，而且这个等待不可中断。
 
 当整机 I/O 压力大时，以下看似无害的操作都可能变成 ANR 的导火索：主线程读取一个 SharedPreferences 文件；主线程通过 `open()` 打开一个文件；ContentResolver 执行一次 `query()`；甚至主线程执行一次 Binder 调用，而对端进程正好在做 I/O 无法响应。
 
@@ -108,7 +113,7 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 在 Perfetto 中，这类问题的特征是主线程在 ANR 时间窗内有 `__refrigerator` 或 `D (frozen)` 状态段，说明进程当时被系统冻结了。
 
-**Android 16+ 的变化**：系统优化了 Freezer 与 ANR 计时的交互——当进程处于冻结态时，ANR 超时计时会暂停（或者说系统会在解冻后才开始计时）。这意味着在 Android 16+ 设备上，如果仍然发生了 ANR，可以基本排除"系统因为功耗原因导致应用强制无响应"这个外部因素。ANR 的根因应该回归到应用自身的主线程耗时操作或系统负载问题，不需要再花时间去排查 Freezer 干扰。
+**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播/回调调度对 freezer 更敏感——投递前先解冻，并可基于 CPU starvation 延长超时。排查广播 ANR 时仍要看 freezer/unfreeze 事件、binder callback 是否在冻结期积压、以及具体 ANR 类型。不要把这个结论扩展到 Input、Service、ContentProvider 等所有 ANR 场景——那些路径的 freezer 处理逻辑不同，需要分别确认。
 
 ### 在 Perfetto 中怎么分析
 
@@ -118,7 +123,7 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 如果主线程长时间是 `D (iowait)`（深红色），说明它在等磁盘。需要去看是哪个进程在做密集 I/O。
 
-再检查 ANR 发生时刻的 `loadavg`。如果 1 分钟平均负载远超 CPU 核心数（比如 8 核设备上负载 > 16），说明整机确实过载了。
+再检查 ANR 发生时刻的 `loadavg`。如果 1 分钟平均负载远超 CPU 核心数（比如 8 核设备上负载 > 16），说明整机处于过载状态。
 
 ## Broadcast 风暴导致的连锁 ANR
 
@@ -145,13 +150,13 @@ AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后�
 
 [来源: External Review — Modern Broadcast Queue 调度陷阱]
 
-Android 14+ 引入了 `ModernBroadcastQueue`，将广播按进程组织成队列，解决了旧模型中的"队头阻塞"问题。但这个改进引入了一个新的调度陷阱。
+Android 14+ 引入了 Modern Broadcast Queue（`BroadcastQueueModernImpl` + `BroadcastProcessQueue`，Android 16 侧为 `BroadcastQueueImpl`），将广播按目标进程组织成队列，解决了旧模型中串行分发导致的"队头阻塞"问题。这一改动发生在 system_server 侧——system_server 按进程维度排队与调度广播投递，不再让同一个进程的多个 receiver 互相阻塞。
 
-`ModernBroadcastQueue` 将广播的 `onReceive()` 回调投递到目标进程的一个内部线程池中异步执行。这个线程池的线程优先级（nice 值）与主线程不同——通常是普通优先级而非前台优先级。当整机负载很高时，这些线程池线程可能在与系统其他线程的 nice 值竞争中失败，导致 `onReceive()` 回调迟迟无法被调度执行。
+App 侧 `onReceive()` 的线程模型没有变。Manifest 注册的 receiver 仍由 `IApplicationThread.scheduleReceiver()` 投递到 `ActivityThread.H.RECEIVER`，再在 `ActivityThread.handleReceiver()` 中直接调用 `receiver.onReceive(...)`——跑在主线程上。动态注册 receiver 默认也是注册线程或主线程 Handler，除非调用方显式传入其他 Handler。framework 没有把 `onReceive()` 投递到进程内部的线程池。
 
-讽刺的是：**主线程此时可能是空闲的**——它什么都没做，只是等广播回调完成。但从系统的视角看，ANR 超时窗口仍在倒数，因为 ANR 计时的是广播从分发到 `onReceive()` 返回的完整时间，不管这个时间花在排队还是执行上。
+如果 trace 里看到 BG Thread 池的 Runnable 执行了广播相关逻辑，应归因到 App 自己的 `goAsync()` / executor / SDK 内部线程池，而不是 framework 的 ModernBroadcastQueue。
 
-排查这类问题时，Perfetto 中会看到：广播的线程池线程处于 Runnable 状态但长时间拿不到 CPU（与 CPU 饥饿模式类似），而主线程在 `nativePollOnce` 或其他空闲状态。这时 ANR 的根因不是主线程阻塞，而是广播回调线程池被系统负载挤掉了 CPU 时间。
+排查 Modern Broadcast Queue 相关问题时，Perfetto 中要看两个层面：system_server 侧按进程排队的投递节奏（`BroadcastQueueModernImpl` / `BroadcastQueueImpl` 的调度 slice），以及目标 App 主线程 `handleReceiver()` 的执行耗时。整机负载高时，ANR 的根因可能是主线程被其他工作占满，也可能是 system_server 调度延迟导致投递本身推后——两种情况在 trace 里表现不同。
 
 ## ContentProvider 冷启动导致的 ANR
 
@@ -179,17 +184,17 @@ Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvi
 
 ### apply() 的危险点在组件边界等待
 
-`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把 XML 写盘放进 `QueuedWork`。单看调用点，它确实比 `commit()` 更像异步接口。
+`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把 XML 写盘放进 `QueuedWork`。单看调用点，它比 `commit()` 更接近异步接口。
 
-问题出在另一头：框架会在 BroadcastReceiver、Service，以及部分组件收尾路径上调用 `QueuedWork.waitToFinish()`，要求进程里尚未收口的 `QueuedWork` 先处理完。旧应用的 Activity pause 也会走这条路径，但 Android 8-16 的日常排查里，更常见的是 receiver 和 service 边界被慢刷盘拖住。
+问题出在另一头：框架会在 BroadcastReceiver、Service，以及部分组件收尾路径上调用 `QueuedWork.waitToFinish()`，要求进程里尚未完成的 `QueuedWork` 先处理完。旧应用的 Activity pause 也会走这条路径，但 Android 8-16 的日常排查里，更常见的是 receiver 和 service 边界被慢刷盘拖住。
 
 ### 从 apply() 到阻塞的过程
 
 一个页面或 receiver 里频繁调用了 `apply()` 保存状态。修改先进入内存，磁盘写入随后排进 `QueuedWork`。如果这时整机 I/O 压力很高，`writeToFile()` 里的 XML 落盘和 `fsync()` 会明显变慢。
 
-等到组件离开当前边界，框架调用 `QueuedWork.waitToFinish()`，主线程就会被迫等这些未完成的写盘收尾。这里看到的是组件边界上的等待，真正耗时通常落在尚未完成的 XML 落盘和 `fsync()`。
+等到组件离开当前边界，框架调用 `QueuedWork.waitToFinish()`，主线程就会被迫等这些未完成的写盘收尾。这里看到的是组件边界上的等待，耗时通常落在尚未完成的 XML 落盘和 `fsync()`。
 
-### 源码里真正注册的是什么
+### 源码里注册的是什么
 
 ```java
 // frameworks/base/core/java/android/app/SharedPreferencesImpl.java
@@ -251,7 +256,7 @@ public void apply() {
 
 ### 预防和解决方案
 
-核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，这意味着如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
+核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
 
 [已验证: 来源见 AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
 
@@ -429,7 +434,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 - **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
 - **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
 - **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；`shortService` 前台服务类型引入独立 timeout 与 `Service.onTimeout()`。
-- **Android 15 / 16**：`dataSync` / `mediaProcessing` 这类 time-limited FGS 需要按配额、`onTimeout()` 和迟到 ANR / exception 路径排查；本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的根本改写。
+- **Android 15 / 16**：`dataSync` / `mediaProcessing` 这类 time-limited FGS 需要按配额、`onTimeout()` 和迟到 ANR / exception 路径排查；本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的机制改写。
 
 ## 常见问题与误区
 

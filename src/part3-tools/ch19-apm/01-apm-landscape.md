@@ -32,16 +32,16 @@ sources:
   - type: blog
     path: "https://github.com/measure-sh/measure"
 task2b_result: fixed
-last_task2b_at: "2026-05-21T23:22:00+08:00"
+last_task2b_at: "2026-05-22T11:21:56+08:00"
 last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
 status: ready-for-review
-task9_state: reviewed
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T00:27:00+08:00"
@@ -49,7 +49,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 2：ApplicationExitInfo reason 新增 API level 错位；AppExitInfoTracker 消息路径遗漏 MSG_PROC_DIED/MSG_APP_KILL 等 AMS 主路径。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
@@ -265,12 +265,25 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 `AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-15.0.0_r1）。
 
-它在系统侧维护每个包名的进程退出记录环形缓冲区，接入两类消息：
+它在系统侧维护每个包名的进程退出记录环形缓冲区。`KillHandler` 处理的消息分为基础记录来源和外部修正来源两层：
 
-| 消息类型 | 来源 | 创建的 exitInfo.reason |
+**基础记录来源**（`AppExitInfoTracker` 内部 `KillHandler` 处理的消息）：
+
+| 消息类型 | 来源 | 创建/修正的 exitInfo.reason |
 |---|---|---|
-| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | `REASON_LOW_MEMORY (3)` |
-| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | `REASON_SIGNALED (2)` / `REASON_CRASH_NATIVE (5)` |
+| `MSG_PROC_DIED` | 进程死亡通知（`scheduleNoteProcessDied()` → `handleNoteProcessDiedLocked()`） | 根据死亡原因写入基础 reason |
+| `MSG_APP_KILL` | AMS 主动杀进程（`scheduleNoteAppKill()` → `handleNoteAppKillLocked()`） | 记录 AMS 主动 kill 的 reason/subreason |
+| `MSG_APP_RECOVERABLE_CRASH` | 可恢复 crash 通知 | 记录可恢复 crash 事件 |
+| `MSG_STATSD_LOG` | 统计日志记录 | 辅助记录，不直接决定 reason |
+
+**外部修正来源**（对基础记录的 reason 做补充修正）：
+
+| 消息类型 | 来源 | 修正说明 |
+|---|---|---|
+| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | 将 reason 修正为 `REASON_LOW_MEMORY (3)` |
+| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | 修正为 `REASON_SIGNALED (2)` / `REASON_CRASH_NATIVE (5)` |
+
+`handleNoteProcessDiedLocked()` 和 `handleNoteAppKillLocked()` 是核心处理函数；`updateExistingExitInfoRecordLocked()` 会在已有记录上做 reason 修正。Java crash（`REASON_CRASH(4)`）、ANR（`REASON_ANR(6)`）、用户/系统 kill（`REASON_USER_REQUESTED(10)`）等退出记录通过基础路径进入历史列表，lmkd/zygote 作为外部来源补充和修正 reason 值。
 
 应用侧通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询，该 API 底层调用 `ActivityManagerService.getHistoricalProcessExitReasons()`，后者从 `AppExitInfoTracker` 读取。
 
@@ -278,7 +291,7 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 | 方法 | 说明 | 版本 |
 |---|---|---|
-| `getReason()` | 返回值：`REASON_SIGNALED(2)` `REASON_LOW_MEMORY(3)` `REASON_CRASH(4)` `REASON_CRASH_NATIVE(5)` `REASON_ANR(6)` `REASON_USER_REQUESTED(10)` `REASON_OTHER(13)`；API 34+ 新增 `REASON_FREEZER(14)`；API 35+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)` `REASON_PACKAGE_UPDATED(16)` | API 30 |
+| `getReason()` | 返回值：`REASON_SIGNALED(2)` `REASON_LOW_MEMORY(3)` `REASON_CRASH(4)` `REASON_CRASH_NATIVE(5)` `REASON_ANR(6)` `REASON_USER_REQUESTED(10)` `REASON_OTHER(13)`；API 33+ 新增 `REASON_FREEZER(14)`；API 34+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)` `REASON_PACKAGE_UPDATED(16)` | API 30 |
 | `getDescription()` | 人类可读退出描述字符串 | API 30 |
 | `getTimestamp()` | 退出时间戳（毫秒） | API 30 |
 | `getTraceInputStream()` | 获取 ANR/native crash 的 trace 流，仅 `REASON_ANR` / native crash 有效；`REASON_LOW_MEMORY` 无 trace | API 30 |
