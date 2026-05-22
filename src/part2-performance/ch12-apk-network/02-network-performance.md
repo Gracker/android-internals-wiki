@@ -2,7 +2,7 @@
 title: "网络性能优化"
 chapter: 12.2
 section: '12.2'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-29"
@@ -13,12 +13,12 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 task9_result: needs-rework
-task9_reviewed_date: '2026-05-20'
+task9_reviewed_date: '2026-05-22'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-20T01:26:42+08:00"
+last_task9_at: "2026-05-22T18:30:26+08:00"
 pipeline_stage: task2b_pending
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'

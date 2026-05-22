@@ -1532,14 +1532,14 @@
       "task6_note": "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：删除结构性元叙述，保持工具选型主线。AGI/Sokatoa 技术项已由 Task2B 修复，等待 Task9 复审。"
     },
     "12.2": {
-      "p0": 1,
+      "p0": 0,
       "p1": 1,
-      "p2": 1,
+      "p2": 2,
       "p3": 1,
       "task9_result": "needs-rework",
-      "reviewed_at": "2026-05-20T01:26:42+08:00",
-      "log": "logs/deep-review/2026-05-20-01-audit.md",
-      "summary": "闲时抽检发现 P0 1：ADPF API 写成不存在的 PerformanceManager.setPreferPowerEfficiency；P1 1：Android 16 BPF Network Bandwidth Estimator/40% 精度提升缺公开一手来源。P2 1：OkHttp EventListener 文档锚点 404。"
+      "reviewed_at": "2026-05-22T18:30:26+08:00",
+      "log": "logs/deep-review/2026-05-22-18-deep-review.md",
+      "summary": "回炉复审仍发现 P1：Android 16 eBPF bandwidth estimator 版本/源码锚点缺失；P2：Cronet 16KB 冷启动 10% 数据缺测试条件；OkHttp EventListener 文档锚点旧建议仍未修。"
     },
     "19.16": {
       "p0": 0,
@@ -1719,8 +1719,8 @@
   "total_review_sections": 200,
   "next_review_candidates": [],
   "ready_for_review": 154,
-  "last_updated": "2026-05-22T17:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-22T18:30:26+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "date": "2026-05-22",
     "time": "17:08",
@@ -4730,8 +4730,7 @@
   },
   "last_task9_review": "logs/deep-review/2026-05-22-03-deep-review.md",
   "last_task9_sections": [
-    "22.3",
-    "21.2"
+    "12.2"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-22",
@@ -4796,7 +4795,7 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "last_task9_at": "2026-05-22T03:46:50+08:00",
+  "last_task9_at": "2026-05-22T18:30:26+08:00",
   "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "8.12",
@@ -5849,10 +5848,9 @@
   ],
   "last_task2a_processed_at": "2026-05-19T22:04:00+08:00",
   "last_task9_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-22-03-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-22-18-deep-review.md",
   "task9_last_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
@@ -6064,11 +6062,11 @@
     "task2b_result": "fixed"
   },
   "last_task9_review_summary": {
-    "p0": 2,
-    "p1": 3,
-    "p2": 3,
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
     "auto_finalized": [],
-    "log": "logs/deep-review/2026-05-22-03-deep-review.md"
+    "log": "logs/deep-review/2026-05-22-18-deep-review.md"
   },
   "last_task2a_gap_mining": "24.14",
   "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",

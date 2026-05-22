@@ -17012,24 +17012,60 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-22T16:18:00+08:00",
       "completion_reason": "Task 2A gap mining + draft processing: created new section, wrote content, status ready-for-review, sent to Task6 pipeline."
+    },
+    {
+      "id": "task9-rereview-20260522-12.2-network-bandwidth-estimator-source",
+      "section": "12.2",
+      "section_title": "网络性能优化",
+      "priority": 85,
+      "title": "Android 16 eBPF 带宽估算增强缺少公开源码/版本锚点",
+      "description": "Task9 回炉复审发现 §12.2 已删除 40% 精度提升，但仍保留 Android 16 在 ConnectivityManager 底层引入 eBPF bandwidth estimator 的确定性结论，公开文档/搜索未能支撑。",
+      "reason": "[Deep Tech Review] §12.2 NetworkCallback 段仍存在 Android 16 eBPF 带宽估算增强的版本/源码锚点缺失，需回炉修正。",
+      "issue_type": "version-difference-source-anchor",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/02-network-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-18-deep-review.md",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities#getLinkDownstreamBandwidthKbps()",
+        "https://source.android.com/docs/core/data/ebpf-traffic-monitor"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码与公开资料锚点缺失",
+          "location": "L429：`Android 16 在 ConnectivityManager 底层引入了基于 eBPF 的网络带宽估算增强`",
+          "detail": "回炉复审后，正文仍保留 Android 16 + eBPF bandwidth estimator 这一确定性版本结论，只把“具体精度提升百分比”标成待验证。公开 `NetworkCapabilities#getLinkDownstreamBandwidthKbps()` 文档仍只说明该值是 estimated first hop transport bandwidth；Android 16 公开 feature / release note 与 source.android eBPF traffic monitor 文档未提供 `getLinkDownstreamBandwidthKbps()` 改由内核网络栈实际传输统计或 eBPF estimator 支撑的证据。当前写法仍会让读者误以为 Android 16 设备上该 API 的估算语义已经发生可依赖变化。",
+          "suggestion": "删除 Android 16 + eBPF estimator 的确定性表述，改成“该值仍是系统估算，只能用于粗粒度分档；真实吞吐和时延以 EventListener / APM 实测为准”。如果后续要保留版本线，必须补 AOSP commit、Android 16 release note 或 ConnectivityService / NetworkCapabilities 源码锚点，并把实验条件写清楚。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T18:30:26+08:00",
+      "review_log": "logs/deep-review/2026-05-22-18-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 466,
+    "total_entries": 467,
     "p0_count": 178,
-    "last_updated": "2026-05-22T16:18:00+08:00",
+    "last_updated": "2026-05-22T18:30:26+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 166,
+    "pending_entries": 167,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task2a-content-processing",
-    "pending": 166,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 167,
     "completed_entries": 297,
     "last_task2a_gap_mining": "24.14",
     "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-22T16:18:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-22T18:30:26+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
       "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
@@ -18642,6 +18678,42 @@
           "suggestion": "加工时避免给固定耗时结论；所有分位值必须带设备、算法、provider、StrongBox/TEE、冷/热状态和样本口径。"
         }
       ]
+    },
+    {
+      "id": "task9-rereview-20260522-12.2-network-bandwidth-estimator-source",
+      "section": "12.2",
+      "section_title": "网络性能优化",
+      "priority": 85,
+      "title": "Android 16 eBPF 带宽估算增强缺少公开源码/版本锚点",
+      "description": "Task9 回炉复审发现 §12.2 已删除 40% 精度提升，但仍保留 Android 16 在 ConnectivityManager 底层引入 eBPF bandwidth estimator 的确定性结论，公开文档/搜索未能支撑。",
+      "reason": "[Deep Tech Review] §12.2 NetworkCallback 段仍存在 Android 16 eBPF 带宽估算增强的版本/源码锚点缺失，需回炉修正。",
+      "issue_type": "version-difference-source-anchor",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/02-network-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-18-deep-review.md",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities#getLinkDownstreamBandwidthKbps()",
+        "https://source.android.com/docs/core/data/ebpf-traffic-monitor"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码与公开资料锚点缺失",
+          "location": "L429：`Android 16 在 ConnectivityManager 底层引入了基于 eBPF 的网络带宽估算增强`",
+          "detail": "回炉复审后，正文仍保留 Android 16 + eBPF bandwidth estimator 这一确定性版本结论，只把“具体精度提升百分比”标成待验证。公开 `NetworkCapabilities#getLinkDownstreamBandwidthKbps()` 文档仍只说明该值是 estimated first hop transport bandwidth；Android 16 公开 feature / release note 与 source.android eBPF traffic monitor 文档未提供 `getLinkDownstreamBandwidthKbps()` 改由内核网络栈实际传输统计或 eBPF estimator 支撑的证据。当前写法仍会让读者误以为 Android 16 设备上该 API 的估算语义已经发生可依赖变化。",
+          "suggestion": "删除 Android 16 + eBPF estimator 的确定性表述，改成“该值仍是系统估算，只能用于粗粒度分档；真实吞吐和时延以 EventListener / APM 实测为准”。如果后续要保留版本线，必须补 AOSP commit、Android 16 release note 或 ConnectivityService / NetworkCapabilities 源码锚点，并把实验条件写清楚。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T18:30:26+08:00",
+      "review_log": "logs/deep-review/2026-05-22-18-deep-review.md"
     }
   ],
   "last_task2a_completed": "24.14",
