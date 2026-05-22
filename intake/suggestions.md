@@ -3005,3 +3005,16 @@
 - **建议**：统一改为“五类回调”或明确“常用四类 + COMMIT 收尾”；总结链路补上 `INSETS_ANIMATION`，避免读者以为 Android 16 的 `CALLBACK_COMMIT` 或 `CALLBACK_INSETS_ANIMATION` 不在当前执行序列内。
 - **review 日志**：logs/deep-review/2026-05-23-03-deep-review.md
 
+---
+
+## [Task2A 缺口挖掘记录] 2026-05-23 04:13 — 本轮未创建新章节
+
+- **类型**：缺口挖掘结果记录
+- **结论**：本轮未发现评分 ≥14 且尚未被目录覆盖的新增章节候选。
+- **已检查方向**：
+  1. `intake/daily-info/2026-05-23.md`：sched_ext、HWC Overlay、Perfetto CUJ 第三方 App 边界、DMA-BUF/Gralloc、AICore/LiteRT/NNAPI、Compose First、Android Performance Analyzer。上述主题已分别被 17.4/17.5、7.18/18.15、13.14、2.15/2.24、5.14、22.15、14.18 覆盖或进入回炉队列。
+  2. `metadata/source-index.json`：高分未映射素材中，Android Performance Analyzer、Compose First、Android 17 ProfilingTrigger、ApplicationStartInfo、网络性能/网络可观测性等已在 14.18、22.15、26.12/26.13、24.15、26.17 建节；非 Android 性能主题不录入。
+  3. `intake/research-gaps.md`：2026-05-22 网络性能优化与网络可观测性两个“章节待创建”缺口已由 24.15、26.17 覆盖。
+  4. AOSP / 官方文档对照：`packages/modules/Bluetooth`、`packages/modules/Wifi`、Android 17 ProfilingTrigger / Excessive CPU、Compose First 等方向均已有相邻章节或缺少独立成节必要性。
+- **避免重复挖掘**：下次优先检查尚未进入目录的系统模块级缺口，例如 Biometric / NFC / Telephony 的性能或可观测性边界；只有能满足“素材丰富度 ≥3 篇高质量资料 + 直接性能相关”的方向才创建章节。
+
