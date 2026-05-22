@@ -18,28 +18,28 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-21"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-23"
 review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T14:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-23T03:35:03+08:00"
 last_task2b_at: "2026-04-26T14:46:27+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-21 Task9 idle audit: needs-rework。P1：NDK SurfaceControl API 29-35 缺少 OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd 的 previous release fence 回收路径，写入 queue 条目 task9-audit-20260521-18.17-ndk-previous-release-fence。"
+task9_review_notes: "2026-05-23 Task9 deep review: needs-rework。P0：NDK SurfaceControl previous release fence 示例使用不存在 API / 错误签名；写入 queue 条目 task9-deep-20260523-18.17-ndk-surface-control-api-signature。"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-14-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 ---
 
 <!-- outline-start -->
