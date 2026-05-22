@@ -36,17 +36,17 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task6_pending
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T08:40:32+08:00"
+last_task9_at: "2026-05-22T11:40:27+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
-task2b_state: fixed
-p0: 2
-p1: 2
+task2b_state: pending
+p0: 0
+p1: 1
 p2: 1
 updated_by: "openclaw-task6"
 updated_date: "2026-05-22"
@@ -59,6 +59,8 @@ task6_audit_notes: "2026-05-22 idle audit: L1 wording fixes; status changed from
 auto_promotion_revoked_by: "openclaw-task6"
 auto_promotion_revoked_date: "2026-05-22"
 auto_promotion_revoked_reason: "Task9 audit queue pending; finalized status was inconsistent."
+last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size / SQLite WAL 段仍把 Android 16 旗舰、kernel page size、SQLite page_size、物理写放大 4 倍与固定 wal_autocheckpoint=250 绑定，需条件化。"
 ---
 
 # 特殊场景的 ANR

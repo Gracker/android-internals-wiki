@@ -37,16 +37,16 @@ last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
-status: ready-for-review
-task9_state: "pending"
-task9_result: needs-rework
+status: finalized
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T00:27:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 2：ApplicationExitInfo reason 新增 API level 错位；AppExitInfoTracker 消息路径遗漏 MSG_PROC_DIED/MSG_APP_KILL 等 AMS 主路径。"
+last_task9_at: "2026-05-22T11:40:27+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 re-review: pass-tech-review。P0/P1=0；ApplicationExitInfo reason 版本边界与 AppExitInfoTracker 消息路径已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
 task6_state: revisiting
@@ -54,6 +54,10 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
 review_notes: "2026-05-21 task9 idle audit: needs-rework。P0：AppExitInfoTracker 源码位置写错；ApplicationExitInfo reason 常量值错位，写入 queue 条目 task9-audit-20260521-19.01-appexitinfo-constants-source。2026-05-21 task2b rework: AppExitInfoTracker 源码位置从 ProcessList 内部类修正为顶层类 AppExitInfoTracker.java；reason 常量按 AOSP ApplicationExitInfo.java 修正（SIGNALED=2, LOW_MEMORY=3, CRASH=4, CRASH_NATIVE=5, ANR=6 等）；消息表同步修正；删除不存在的 REASON_PROCESS_ENTRY_NULL。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修正 frontmatter 重复 key 与术语表达；Task9 P1 queue 已存在，保持 task2b_pending。"
+finalized_date: "2026-05-22"
+finalized_by: openclaw-task9-auto-promote
+auto_promoted_date: "2026-05-22"
+auto_promoted_by: openclaw-task9
 ---
 
 # APM 全景图与分类体系
