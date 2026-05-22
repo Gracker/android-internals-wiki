@@ -57,6 +57,8 @@ task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
+last_task6_at: "2026-05-22T21:05:00+08:00"
+last_task6_audit: "2026-05-22"
 task2b_result: fixed
 last_task2b_at: "2026-05-01T06:48:44"
 repaired_date: "2026-04-25"
@@ -102,7 +104,7 @@ repaired_by: "openclaw-task2b"
 
 ## 先按层看，不要先按库名看
 
-一上来就列库名，读者很容易只记住“Matrix、KOOM、LeakCanary、btrace”。这样记不住真正有用的东西。更稳的方式，是先把它们放回各自所在的层。
+一上来就列库名，读者很容易只记住“Matrix、KOOM、LeakCanary、btrace”。这样很难记住工具和问题之间的对应关系。更稳的方式，是先把它们放回各自所在的层。
 
 | 层次 | 代表方案 | 更接近什么 |
 |---|---|---|
@@ -221,7 +223,7 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 **资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。在 AGP 7.x 及更早版本中，编译后 R 类（如 R.id.xxx、R.layout.xxx）是一组 `static final int` 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
 
-**AGP 8.0+ 的 R 字段变更**：AGP 8.0 起 `android.nonFinalResIds` 和 `nonTransitiveRClass` 默认开启，应用模块的 R 字段不再是 `static final`——编译器会为每个资源 ID 生成 `static int`（非 final）的内联赋值。这意味着 Booster 原有的"把 R 字段访问替换为字面值"的前提（字段是 final 常量）在 AGP 8.0+ 默认配置下不再成立。使用 Booster 这类优化时需要确认项目仍在使用旧版 AGP 或已手动关闭 `nonFinalResIds`；对于 AGP 8.0+ 项目，该优化的收益和适用条件需要重新评估，Booster 官方或 fork 是否已适配 non-final R 字段也需要验证。
+**AGP 8.0+ 的 R 字段变更**：AGP 8.0 起 `android.nonFinalResIds` 和 `nonTransitiveRClass` 默认开启，应用模块的 R 字段不再是 `static final`——编译器会为每个资源 ID 生成 `static int`（非 final）的内联赋值。因此，Booster 原有的"把 R 字段访问替换为字面值"的前提（字段是 final 常量）在 AGP 8.0+ 默认配置下不再成立。使用 Booster 这类优化时需要确认项目仍在使用旧版 AGP 或已手动关闭 `nonFinalResIds`；对于 AGP 8.0+ 项目，该优化的收益和适用条件需要重新评估，Booster 官方或 fork 是否已适配 non-final R 字段也需要验证。
 
 **系统 Bug 修复**模块展现了编译期优化的另一个优势。比如 Android API 25 中 Toast 的 BadTokenException 问题（在 Toast.show() 时如果 NotificationManagerService 还未来得及处理，会抛出异常导致崩溃）。Booster 通过字节码注入，在所有 Toast.show() 调用前后包裹 try-catch，一次性解决全局问题，而不需要每个调用点手动处理。
 
@@ -394,7 +396,7 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 
 **"Booster 的 Transform API 已经过时了"**。Transform API 在 AGP 8.0 已经被移除，旧版基于 Transform 的 Booster 方案不能直接带到新的构建流程里。编译期优化本身还有效，只是接入点换成了 Instrumentation API 和 Artifacts API。
 
-**"启动框架能自动优化启动速度"**。启动调度框架只是帮你更好地组织任务——把可以并行的任务并行化、把非关键路径的任务延迟化。它本身不会让任何单个任务执行得更快。如果每个初始化任务本身就很慢，用了框架也不会有质的变化。优化启动的根本还是减少启动路径上的工作量。
+**"启动框架能自动优化启动速度"**。启动调度框架只是帮你更好地组织任务——把可以并行的任务并行化、把非关键路径的任务延迟化。它本身不会让任何单个任务执行得更快。如果每个初始化任务本身就很慢，用了框架也不会有质的变化。优化启动还是要减少启动路径上的工作量。
 
 ## 参考资料
 
