@@ -51,15 +51,15 @@ last_task2b_at: '2026-05-21T23:22:00+08:00'
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
-task9_state: "pending"
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+pipeline_stage: task2b_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T00:27:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：Android 16 Vulkan 1.4 / Host Image Copy 设备边界需改成 launch-device 口径；P2 1：ADPF 小节 Flutter 每帧重绘因果判断缺少支撑。"
+last_task9_at: "2026-05-22T11:40:27+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size 合规段仍把 Android 16/NDK r27+ 写成通用边界；需改为 Android 15+ 16KB 设备 + NDK r28 默认 / r27 及以下 linker flags。既有 ADPF P2 已在 suggestions.md 记录，本轮不重复写入。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
 task6_state: revisiting

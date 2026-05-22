@@ -1,6 +1,79 @@
 {
   "queue_entries": [
     {
+      "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
+      "section": "2.11",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 85,
+      "title": "16KB Page Size 合规段版本与 NDK 工具链边界仍需修正",
+      "description": "Task9 回炉复审发现 §2.11 的 16KB Page Size 合规段仍把 Android 16 写成旗舰运行基线，并把 NDK r27+ 写成统一重编译条件；需回到 Android 15+ 16KB 设备与 NDK r28/r27 边界。",
+      "reason": "[Deep Tech Review] Flutter 章节 16KB Page Size / NDK 对齐版本边界仍存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-difference-toolchain-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-11-deep-review.md",
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/16KB Page Size 与 NDK 对齐边界",
+          "location": "L177-L186：`16KB Page Size 合规与 Flutter 原生插件`",
+          "detail": "正文写“Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线”，并写 Flutter plugin `.so` “必须用 NDK r27+ 重新编译”。Android Developers 当前公开口径是：Beginning with Android 15, AOSP supports 16KB page-size devices；Google Play 从 2025-11-01 要求提交到 Play 且 targeting Android 15+ 的新应用/更新支持 16KB page sizes。工具链边界是 NDK r28+ 默认生成 16KB-aligned shared libraries；NDK r27 and lower 需要 `-Wl,-z,max-page-size=16384` / `-Wl,-z,common-page-size=16384` 等 linker flags。当前写法会把平台版本、出厂设备和 NDK 版本条件混在一起。",
+          "suggestion": "改成：Android 15+ 已支持 16KB page-size devices，Play 要求面向 Android 15+ 的新应用/更新兼容 16KB；含 native code 的 Flutter plugin 优先用 NDK r28+ 重编，NDK r27 及以下必须显式加 linker flags，并复测预编译 `.so` / `libc++_shared.so`。删除“Android 16 旗舰运行基线”和“NDK r27+ 即可”的泛化表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T11:40:27+08:00",
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+    },
+    {
+      "id": "task9-rereview-20260522-9.4-16kb-sqlite-wal-boundary",
+      "section": "9.4",
+      "section_title": "特殊场景的 ANR",
+      "priority": 85,
+      "title": "16KB page 与 SQLite WAL 写放大链路仍需条件化",
+      "description": "Task9 回炉复审发现 §9.4 的 16KB Page Size / SQLite WAL 段仍将 Android 16 旗舰、kernel page size、SQLite database page size 和固定 wal_autocheckpoint 调参绑定，证据链不足。",
+      "reason": "[Deep Tech Review] §9.4 16KB Page Size / SQLite WAL 写放大链路仍存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-difference-data-evidence",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/04-special-anr.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-11-deep-review.md",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://sqlite.org/wal.html",
+        "https://sqlite.org/pragma.html#pragma_page_size",
+        "https://sqlite.org/pragma.html#pragma_wal_autocheckpoint"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/数据支撑/16KB page 与 SQLite WAL",
+          "location": "L357-L365：`16KB Page Size 下的数据库写放大`",
+          "detail": "正文仍写“Android 16 在旗舰设备上强制 16KB 页面对齐后”，并直接推出“修改一个数据库页从写 4KB 变 16KB、物理写放大 4 倍”，随后建议把 `wal_autocheckpoint` 从 1000 页固定调到 250 页。官方 16KB 文档口径是 Android 15+ 支持 16KB 设备与 Play targeting Android 15+ 兼容要求；SQLite WAL 文档只说明默认在 WAL 达到 1000 pages 时 checkpoint，`wal_autocheckpoint` 单位是 database pages，database page size 应以 `PRAGMA page_size` 和实际数据库创建参数为准。当前因果链缺少设备 page size、filesystem block size、SQLite page_size、Room/SQLite 版本、WAL 文件大小与 checkpoint 耗时的实测支撑。",
+          "suggestion": "改成条件化排查口径：先读取设备 kernel page size、`PRAGMA page_size`、`PRAGMA wal_autocheckpoint`、WAL 文件大小、checkpoint 耗时和 SQLite busy/locked 日志；只有确认 database page / I/O 粒度或 checkpoint 耗时放大后，再建议按业务写入模式调低 autocheckpoint。删除固定“4 倍写放大”和“统一调 250”的结论，版本口径改为 Android 15+ 16KB 设备 / Play 兼容要求。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T11:40:27+08:00",
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260522-9.4-special-anr-broadcast-freezer-sqlite",
       "section": "9.4",
       "section_title": "特殊场景的 ANR",
@@ -16777,22 +16850,95 @@
     }
   ],
   "metadata": {
-    "total_entries": 463,
+    "total_entries": 465,
     "p0_count": 178,
-    "last_updated": "2026-05-22T11:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 167,
+    "last_updated": "2026-05-22T11:40:27+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 166,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 167,
-    "completed_entries": 293,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 166,
+    "completed_entries": 296,
     "last_task2a_gap_mining": "8.12",
     "last_task2a_gap_mining_at": "2026-05-22T11:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T11:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-22T11:40:27+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
+    {
+      "id": "task9-rereview-20260522-2.11-16kb-page-ndk-boundary",
+      "section": "2.11",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 85,
+      "title": "16KB Page Size 合规段版本与 NDK 工具链边界仍需修正",
+      "description": "Task9 回炉复审发现 §2.11 的 16KB Page Size 合规段仍把 Android 16 写成旗舰运行基线，并把 NDK r27+ 写成统一重编译条件；需回到 Android 15+ 16KB 设备与 NDK r28/r27 边界。",
+      "reason": "[Deep Tech Review] Flutter 章节 16KB Page Size / NDK 对齐版本边界仍存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-difference-toolchain-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-11-deep-review.md",
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/16KB Page Size 与 NDK 对齐边界",
+          "location": "L177-L186：`16KB Page Size 合规与 Flutter 原生插件`",
+          "detail": "正文写“Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线”，并写 Flutter plugin `.so` “必须用 NDK r27+ 重新编译”。Android Developers 当前公开口径是：Beginning with Android 15, AOSP supports 16KB page-size devices；Google Play 从 2025-11-01 要求提交到 Play 且 targeting Android 15+ 的新应用/更新支持 16KB page sizes。工具链边界是 NDK r28+ 默认生成 16KB-aligned shared libraries；NDK r27 and lower 需要 `-Wl,-z,max-page-size=16384` / `-Wl,-z,common-page-size=16384` 等 linker flags。当前写法会把平台版本、出厂设备和 NDK 版本条件混在一起。",
+          "suggestion": "改成：Android 15+ 已支持 16KB page-size devices，Play 要求面向 Android 15+ 的新应用/更新兼容 16KB；含 native code 的 Flutter plugin 优先用 NDK r28+ 重编，NDK r27 及以下必须显式加 linker flags，并复测预编译 `.so` / `libc++_shared.so`。删除“Android 16 旗舰运行基线”和“NDK r27+ 即可”的泛化表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T11:40:27+08:00",
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+    },
+    {
+      "id": "task9-rereview-20260522-9.4-16kb-sqlite-wal-boundary",
+      "section": "9.4",
+      "section_title": "特殊场景的 ANR",
+      "priority": 85,
+      "title": "16KB page 与 SQLite WAL 写放大链路仍需条件化",
+      "description": "Task9 回炉复审发现 §9.4 的 16KB Page Size / SQLite WAL 段仍将 Android 16 旗舰、kernel page size、SQLite database page size 和固定 wal_autocheckpoint 调参绑定，证据链不足。",
+      "reason": "[Deep Tech Review] §9.4 16KB Page Size / SQLite WAL 写放大链路仍存在 P1 技术缺口，需回炉修正。",
+      "issue_type": "version-difference-data-evidence",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/04-special-anr.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-11-deep-review.md",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://sqlite.org/wal.html",
+        "https://sqlite.org/pragma.html#pragma_page_size",
+        "https://sqlite.org/pragma.html#pragma_wal_autocheckpoint"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/数据支撑/16KB page 与 SQLite WAL",
+          "location": "L357-L365：`16KB Page Size 下的数据库写放大`",
+          "detail": "正文仍写“Android 16 在旗舰设备上强制 16KB 页面对齐后”，并直接推出“修改一个数据库页从写 4KB 变 16KB、物理写放大 4 倍”，随后建议把 `wal_autocheckpoint` 从 1000 页固定调到 250 页。官方 16KB 文档口径是 Android 15+ 支持 16KB 设备与 Play targeting Android 15+ 兼容要求；SQLite WAL 文档只说明默认在 WAL 达到 1000 pages 时 checkpoint，`wal_autocheckpoint` 单位是 database pages，database page size 应以 `PRAGMA page_size` 和实际数据库创建参数为准。当前因果链缺少设备 page size、filesystem block size、SQLite page_size、Room/SQLite 版本、WAL 文件大小与 checkpoint 耗时的实测支撑。",
+          "suggestion": "改成条件化排查口径：先读取设备 kernel page size、`PRAGMA page_size`、`PRAGMA wal_autocheckpoint`、WAL 文件大小、checkpoint 耗时和 SQLite busy/locked 日志；只有确认 database page / I/O 粒度或 checkpoint 耗时放大后，再建议按业务写入模式调低 autocheckpoint。删除固定“4 倍写放大”和“统一调 250”的结论，版本口径改为 Android 15+ 16KB 设备 / Play 兼容要求。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T11:40:27+08:00",
+      "review_log": "logs/deep-review/2026-05-22-11-deep-review.md"
+    },
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
       "section": "19.11",
