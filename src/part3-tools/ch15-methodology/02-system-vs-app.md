@@ -2,7 +2,7 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -26,18 +26,18 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-21"
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 last_task9_at: "2026-04-27T20:35:19+08:00"
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 review_round: 2
 repaired_date: "2026-04-27"
@@ -45,6 +45,8 @@ repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T14:50:00+08:00"
 finalized_date: "2026-04-27"
 finalized_by: openclaw-task9
+last_task9_audit: "2026-05-22"
+last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
 ---
 
 # 如何区分系统问题和 App 问题
