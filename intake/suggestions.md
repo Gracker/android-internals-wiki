@@ -3036,3 +3036,85 @@
 - **问题**：正文明确引用 20.3 Native Crash、20.4 ANR、20.5 OOM、20.7、26.2、26.5；frontmatter `related_chapters` 只列 20.5、20.7、26.2、26.5、14.13，缺 20.3 和 20.4。导航/知识图谱会漏掉本节与 Native Crash / ANR 的技术关联。
 - **建议**：下轮元数据整理时把 `related_chapters` 补齐为包含 `20.3`、`20.4`、`20.5`、`20.7`、`26.2`、`26.5`、`14.13`。
 
+
+## [Task2A 缺口挖掘记录] 2026-05-23 05:16 — 本轮未创建新章节
+
+- **类型**：缺口挖掘结果记录
+- **结论**：Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的空草稿；进入缺口挖掘后，未发现评分 ≥14 且尚未被目录覆盖的新增章节候选。
+- **已检查方向**：
+  1. `intake/daily-info/2026-05-23.md`：sched_ext OEM 调度器、HWC Overlay 降级、Perfetto DataGrid/Jank CUJ、DMA-BUF/Gralloc、AICore/LiteRT/NNAPI、Compose First、Android Performance Analyzer 已分别被 17.4、7.18/18.15、13.14、2.15/2.24、5.14、22.15、14.18 覆盖或有相邻章节承接。
+  2. `metadata/source-index.json`：2026-05-21 至 2026-05-22 高分素材中，Android Performance Analyzer 参考资料组、Android CLI/Agent 工具、ProfilingTrigger/Excessive CPU、ApplicationStartInfo、云端 Profile/SDM、NPU/端侧 AI、MTE ASYMM、DMA-BUF、ART GC/Compose、ADPF 协程迁移等已在 14.18、14.19、25.12、26.13、21.11/16.6、5.11/5.14、20.11、2.24、4.8/22.15、25.11 覆盖。
+  3. `intake/research-gaps.md`：网络性能优化、网络可观测性两个高优先级缺口已由 24.15、26.17 建节；存储/I/O 与 SQLite 可观测性已由 26.16 承接。
+  4. AOSP / 官方文档对照：`packages/modules/Bluetooth`、`packages/modules/Wifi`、NFC、Telephony、Biometric、Connectivity 等系统模块目前缺少 ≥3 篇高质量素材支撑，且与本书性能主线的直接关联不足，本轮不建节。
+  5. 2026-05-23 热点中的 Android Halo、原生应用锁、Gemini API 接入、KMP、Flutter 拖拽等偏产品/应用架构/跨平台开发主题，不满足性能优化主线和素材丰富度要求。
+- **避免重复挖掘**：下轮优先检查 Android 17/18 官方性能行为变更、Perfetto/APA 后续版本、厂商公开调度与图形栈材料；系统模块方向只有在素材丰富度 ≥3 且能落到性能分析或线上治理时再创建章节。
+
+
+---
+
+## [Task2A 缺口挖掘记录] 2026-05-23 06:04 — 本轮未创建新章节
+
+- **类型**：缺口挖掘结果记录
+- **结论**：Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的空草稿；进入缺口挖掘后，未发现评分 ≥14 且尚未被目录覆盖的新增章节候选。
+- **已检查方向**：
+  1. `intake/daily-info/2026-05-23.md`：sched_ext、HWC Overlay、Perfetto CUJ、DMA-BUF/Gralloc、AICore/LiteRT/NNAPI、Compose First、Android Performance Analyzer 均已有章节承接。
+  2. `metadata/source-index.json`：近期高分素材中的 APA、Android CLI、ProfilingTrigger、ApplicationStartInfo、云端 Profile/SDM、端侧 AI、MTE、DMA-BUF、ART GC/Compose、ADPF 协程迁移等已覆盖。
+  3. `intake/research-gaps.md`：网络、存储/I/O、SQLite 与线上可观测性方向已由 24.15、26.16、26.17 承接。
+  4. AOSP / 官方文档对照：Bluetooth、Wi-Fi、NFC、Telephony、Biometric、Connectivity 等系统模块本轮素材丰富度不足，不建节。
+- **避免重复挖掘**：下轮优先跟进 Android 17/18 官方性能行为变更、Perfetto/APA 后续版本、厂商公开调度与图形栈材料。
+- **报告落盘**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-23-06-知识加工(新).md`
+
+## [Task14 参考书扫描] 11.2 App 耗电优化 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
+- **建议补充**：耗电优化的"三个难点"（缺乏现场无法复现、信息不全难以定位、无法评估结果）和"三个方向"（找到需求替代方案、符合 Android 规则、异常情况监控）的框架性总结，可作为 ch11.2 的方法论引入
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 2.9 渲染机制的版本演进 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 23.md]
+- **建议补充**：软件绘制→硬件加速绘制的完整流程图（Surface→Canvas→Graphic Buffer→SurfaceFlinger 四阶段对比），以及 Android 4.0→4.1→5.0 渲染演进的三阶段对比表（DisplayList/RenderNode/VSYNC/Triple Buffer/RenderThread 的引入节点）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 2.1/18.x 渲染架构全景 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 23.md]
+- **建议补充**：Android 图形系统的比喻化解释（画笔=Skia/OpenGL、画纸=Surface、画板=Graphic Buffer、显示=SurfaceFlinger），适合作为 ch2.1 或 ch18 的通俗引入段落
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 2.9 渲染演进 — 2026-05-23
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 23.md]
+- **过时内容**：原文提到"Android P 支持 Vulkan 1.1"和"Android Q 更好支持 Vulkan"作为未来方向
+- **建议更新至**：Android 16/17 已全面支持 Vulkan 1.3+，ANGLE (GLES-over-Vulkan) 已成为默认翻译层，补充最新状态
+
+## [Task14 参考书扫描] 12.1 APK 体积优化 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md]
+- **建议补充**：Dex 信息有效率指标（define methods / reference methods）概念及 80% 基线，以及 method id 爆表导致 Dex 数量增多的根因分析；可作为 ch12.1 的 Dex 优化度量指标补充
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 25.6 APK 体积分析 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md]
+- **建议补充**：包体积对应用性能的三重影响量化数据（安装时间：微信 13 个 Dex 编译 ODEX 约 5 分钟；运行内存：Resource/Library/Dex 加载占用；ROM：100MB 安装包解压后超 200MB）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 25.6 APK 体积分析 — 2026-05-23
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md]
+- **过时内容**：原文提到 R8 "依然处于实验室阶段"，D8 "刚刚正式 Release"
+- **建议更新至**：R8 已成为 Android 构建标配多年，D8 也早已成熟，建议更新为 R8 最新能力（如 class merging、vertical/class merging 等）的现状
+
+## [Task14 参考书扫描] 22.x 渲染优化实战 — 2026-05-23
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md]
+- **建议补充**：UI 优化三个层级的思路脉络：①在系统框架下优化（布局/View 缓存）→ ②利用系统新特性（硬件加速/RenderThread/RenderScript）→ ③突破系统限制（Litho 异步布局/Flutter 自渲染引擎），可作为 ch22 的方法论框架
+- **参考书覆盖深度**：概述
+
+## [Task9 Deep Review] 7.15 场景化性能作战手册 — 2026-05-23
+- **类型**：数据缺失/判据边界
+- **位置**：L249 BufferStuffing / high latency state 判定
+- **问题**：正文写“凡是 Actual Present 稳定落后 Expected Present 固定 N 个周期的帧，都按 BufferStuffing 处理”，判据过强，且 Android 15+ Perfetto UI 浅绿色口径缺少官方文档或 trace 样例支撑。
+- **建议**：改为“这是识别 high latency / BufferQueue 积压的候选信号，需要结合 FrameTimeline jank type、SurfaceFlinger/BufferQueue slice、Layer/slot 状态共同确认”；补 1 个 Perfetto SQL 与 UI 截图/trace 样本作为证据。
+

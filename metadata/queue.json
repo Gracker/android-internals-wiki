@@ -5,15 +5,15 @@
       "section": "7.5",
       "section_title": "优化策略",
       "priority": 95,
-      "title": "RenderEffect 源码锚点与版本演进存在 P0 错误",
-      "description": "闲时抽检发现 §7.5 参考资料后的 RenderEffect 深度分析段存在 LAYER_SIZE 常量错误、伪调用链/伪代码片段，以及 API 31/33 版本能力表述错误。",
-      "reason": "[Deep Tech Review Audit] §7.5 RenderEffect 段存在源码准确性与版本差异 P0 问题，需 Task2B 回炉修正。",
+      "title": "RenderEffect layer 机制与 HardwareBitmapUploader 版本边界仍有 P0 错误",
+      "description": "06 点抽检指出的 LAYER_SIZE/伪调用链/API31-33 问题已部分修复，但复审发现 RenderEffect vs Hardware Layer 性能描述仍与 HWUI promotedToLayer 行为矛盾，HardwareBitmapUploader Vulkan 上传版本边界仍写错。",
+      "reason": "[Deep Tech Review] §7.5 RenderEffect/HWUI 段仍存在源码行为与版本边界 P0 错误，需 Task2B 再修。",
       "issue_type": "source-code-accuracy-version-difference",
       "severity": "P0",
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/05-optimization.md"
@@ -25,7 +25,8 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/graphics/java/android/graphics/RenderNode.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/View.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
-        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -48,6 +49,20 @@
           "location": "L729-L732：RenderEffect 版本演进差异",
           "detail": "正文写 Android 12/API 31 “仅支持基本模糊效果”，并断言 Android 14 优化 GPU 内存管理、Android 15 添加软件回退智能选择。复核 AOSP `RenderEffect.java`：android-12.0.0_r1 已包含 `createBitmapEffect`、`createBlendModeEffect`、`createBlurEffect`、`createChainEffect`、`createColorFilterEffect`、`createOffsetEffect`、`createShaderEffect`；android-13.0.0_r1 起新增 `createRuntimeShaderEffect`。本轮未核到 Android 14/15 两条性能/回退断言的公开源码或官方文档锚点。",
           "suggestion": "将版本表改为：API 31 引入 RenderEffect 基础 effect 集合（blur/colorFilter/blend/chain/offset/bitmap/shader）；API 33 新增 RuntimeShader/AGSL 输入效果。Android 14/15 的 GPU 内存管理或软件回退优化若无 AOSP commit / release note / trace 证据，应删除或标 `[待验证]`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/实现机制矛盾",
+          "location": "L648-L656：RenderEffect vs Hardware Layer 的性能特征",
+          "detail": "正文把 RenderEffect 描述为“Shader 级集成”，并断言动态内容内存开销通常低于 Hardware Layer。但 AOSP android-16.0.0_r1 `RenderProperties::promotedToLayer()` 明确在 `mLayerProperties.mImageFilter != nullptr` 时把 RenderNode 提升为 `LayerType::RenderLayer`；`RenderNode::pushLayerUpdate()` 随后通过 `SkiaGpuPipeline::createOrUpdateLayer()` 创建 layer surface。也就是说 View RenderEffect 不是“不走 buffer 隔离”的纯 shader 路径。",
+          "suggestion": "改为：RenderEffect 以 `SkImageFilter` 写入 RenderNode 属性，但 HWUI 会因 imageFilter 将该 RenderNode promoted to RenderLayer；性能差异应围绕 layer surface 尺寸、snapshot/filter cache、invalidate 频率、filter chain 是否可融合来讲，不要和 Hardware Layer 做“一个 shader、一个 buffer”的二分。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 符号错误",
+          "location": "L581-L605：Hardware Bitmap Upload：EGL vs Vulkan 两条路径",
+          "detail": "正文写“Android 14+ 支持 Vulkan 上传路径（VkUploader），通过 `SkImages::TextureFromAHardwareBufferWithData`”。复核 AOSP：`VkUploader` 在 android-13/14 已存在；android-14.0.0_r1 调用的是 `SkImage::MakeFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb)`；android-15/16 才是 `SkImages::TextureFromAHardwareBufferWithData(...)` 并使用 `mGrContext->submit(GrSyncCpu::kYes)`。当前把 Android 14+ 统一写成 android-15/16 API，版本边界错误。",
+          "suggestion": "拆成 Android 13-14 与 Android 15+ 两档：13/14 有 VkUploader 但使用旧 SkImage API；15/16 使用 `SkImages::TextureFromAHardwareBufferWithData`。如果正文只想支撑 RenderEffect 成本，建议压缩这段，避免把 Bitmap upload 的跨版本细节写成 RenderEffect 主链路。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -56,8 +71,10 @@
       "last_reviewed_at": "2026-05-23T06:28:41+08:00",
       "review_log": "logs/deep-review/2026-05-23-06-audit.md",
       "completed_by": "openclaw-task2b",
-      "completed_at": "2026-05-23T07:23:09.139219",
-      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task9-audit-20260522-2.2-framerate-refresh-rate-selector-layerhistory",
@@ -8851,20 +8868,21 @@
       "id": "task9-deep-review-20.4-20260515-fgs-provider-broadcast",
       "section": "20.4",
       "priority": 95,
-      "title": "ANR 治理策略：FGS 超时、Provider 初始化与广播超时版本口径错误",
-      "description": "P0: startForegroundService→startForeground 宽限期按 Android 12+ 约 5s 描述错误；AppComponentFactory 不能控制 ContentProvider 初始化时机。P1: Broadcast/Service 常量名与 Android 14+/16 版本口径需对齐。",
+      "title": "ANR 治理策略的协程调度、FGS 版本矩阵与 SIGQUIT 边界仍需修正",
+      "description": "复审发现 §20.4 旧 FGS/Provider/Broadcast 修复后仍有新的源码级错误和版本边界缺口：Dispatchers.IO 类继承关系写错、FGS 晋升超时缺 Android 10-12/13+ 矩阵、Watchdog SIGQUIT 权限边界混淆。",
       "issue_type": "source-code-accuracy-version-differences-principle-chain",
       "severity": "P0",
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/04-anr-governance.md"
       ],
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -8894,13 +8912,38 @@
           "location": "L82 Service（前台）阈值表",
           "detail": "20s Service 生命周期执行超时在 android-16 ActivityManagerConstants 中对应 SERVICE_TIMEOUT / DEFAULT_SERVICE_TIMEOUT，不是 SERVICE_FOREGROUND_TIMEOUT。后者容易与 ActiveServices 中 FGS 未及时 startForeground 的 SERVICE_FOREGROUND_TIMEOUT_* 消息混淆。",
           "suggestion": "把表格常量名改为 ActivityManagerConstants.SERVICE_TIMEOUT（默认 20s）和 SERVICE_BACKGROUND_TIMEOUT（默认 200s），并单列 FGS 晋升超时。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/类继承关系错误",
+          "location": "L169-L184：Dispatchers.IO 与 Default 共享线程池",
+          "detail": "正文写 `DefaultIoScheduler` 和 `DefaultScheduler` “两者都继承自 `SchedulerCoroutineDispatcher`”。kotlinx-coroutines 1.9.0 `Dispatcher.kt` 中 `DefaultScheduler : SchedulerCoroutineDispatcher(...)`，但 `DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor`；IO 通过 `UnlimitedIoScheduler.limitedParallelism(...)` 委托到 `DefaultScheduler.dispatchWithContext(block, BlockingContext, ...)`。共享底层调度器的结论可保留，但继承关系是错的。",
+          "suggestion": "改成“Default 直接由 `DefaultScheduler` / `SchedulerCoroutineDispatcher` 提供；IO 由 `DefaultIoScheduler` 包装，内部 limitedParallelism 视图委托到 `UnlimitedIoScheduler`，后者通过 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)` 复用同一个 CoroutineScheduler”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/FGS 晋升超时矩阵缺失",
+          "location": "L423：FGS 晋升超时",
+          "detail": "正文只给 android-16 的 `DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS=30s`，再用“Android 12-13、Android 14+ 有差异”带过。按本章 `applicable_versions: Android 10-16`，需要明确 Android 10-12 仍走 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT=10s`（Android 8 为 5s，Android 9-12 为 10s），Android 13+ 才进入 `ActivityManagerConstants.mServiceStartForegroundTimeoutMs=30s` 加 `mServiceStartForegroundAnrDelayMs=10s` 的两段路径。",
+          "suggestion": "补一张 FGS 晋升超时版本表：API 26=5s；API 28-32=10s；API 33-36=30s transition timeout + 10s ANR delay；同时把 `fgs_start_foreground_timeout`（后台 FGS 启动限制相关）和 `service_start_foreground_timeout_ms`（startForegroundService 后必须调用 startForeground）分开。"
+        },
+        {
+          "severity": "P1",
+          "type": "API/权限边界错误",
+          "location": "L493-L498：主线程堆栈 Dump / SIGQUIT 信号",
+          "detail": "正文写向进程发送 SIGQUIT “需要 root 权限或者 android.permission.DUMP”。这把“向自己进程发送信号”和“读取系统生成的 /data/anr/debuggerd 产物”混在了一起。应用进程向自身发送 SIGQUIT（例如 `Process.sendSignal(Process.myPid(), OsConstants.SIGQUIT)`）不需要 root/DUMP；受限的是从普通应用侧读取系统 traces 文件或抓其他进程完整 dump。",
+          "suggestion": "拆成两层：自进程触发 SIGQUIT 可行，但线上 SDK 通常拿不到系统落盘的 `/data/anr` 产物；因此生产侧仍以 `Thread.getStackTrace()` / `Thread.getAllStackTraces()`、关键线程采样、API 30+ `ApplicationExitInfo` 可用信息为主。不要把“触发信号”写成需要 root。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T20:23:00+08:00",
       "completed_by": "openclaw-task2b",
-      "completed_at": "2026-05-23T07:23:09.139219",
-      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
+      "section_title": "ANR 治理策略",
+      "reason": "[Deep Tech Review] §20.4 仍存在协程源码继承、FGS 超时版本矩阵与 SIGQUIT 权限边界问题，需 Task2B 回炉修正。",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task2a-gap-16-6",
@@ -11269,14 +11312,14 @@
       "section": "7.15",
       "section_title": "场景化性能作战手册",
       "priority": 95,
-      "title": "FrameTimeline / atrace / SQL 口径与功耗排障入口需修正",
-      "description": "[Deep Tech Review] P0 2：atrace 0x200 不是 gfx+view，frame_timeline_event/graphics.frametimeline/SurfaceFlingerDeadlined 等口径错误。P1 1：功耗/发热投诉入口缺独立排障链。",
+      "title": "场景化手册的 SurfaceFlinger 现代 trace 锚点与功耗入口仍需修正",
+      "description": "Task9 复审发现 §7.15 旧 queue 虽已标 completed，但正文仍保留功耗/发热入口待补标记，且 Android 14+ SurfaceFlinger 观察锚点仍写入不存在/过时的 onMessageReceived 口径。",
       "issue_type": "source-accuracy/version-boundary/knowledge-gap",
       "severity": "P0",
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "completed",
+      "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md"
@@ -11284,7 +11327,8 @@
       "material_paths": [
         "logs/deep-review/2026-05-17-12-deep-review.md",
         "https://raw.githubusercontent.com/google/perfetto/master/docs/data-sources/frametimeline.md",
-        "AOSP main: libcutils/include/cutils/trace.h"
+        "AOSP main: libcutils/include/cutils/trace.h",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -11307,13 +11351,30 @@
           "location": "L157 大纲要求的功耗/发热投诉入口",
           "detail": "正文已标注需补素材，但没有独立说明耗电/发热伴随卡顿时的第一观察点、trace 配置和优先排查路径。作为场景化手册，这会让“卡 + 热 + 掉电”的线上投诉缺少入口。",
           "suggestion": "补一个“耗电/发热伴随卡顿”场景，至少覆盖 Battery Historian / batterystats、Perfetto power rails、Thermal/CPU frequency、wakelock、JobScheduler/WorkManager、网络重试与后台同步。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/trace 锚点错误",
+          "location": "L71：FrameTimeline fallback 的 SurfaceFlinger slice",
+          "detail": "正文把 Android 14+ 的 SurfaceFlinger 观察入口写成 `onMessageReceived` / `Output::composeSurfaces`。复核 AOSP：`handleMessageRefresh` 只在 Android 8-10 的 SurfaceFlinger.cpp 中存在；Android 11-12 为 `onMessageRefresh()`；Android 13 起主路径改为 `SurfaceFlinger::commit()` / `SurfaceFlinger::composite()`，android-14/16 的 SurfaceFlinger.cpp 中没有 `onMessageReceived`。`Output::composeSurfaces()` 可作为 CompositionEngine 锚点，但不能和 `onMessageReceived` 一起标成 Android 14+ 主观察入口。",
+          "suggestion": "改成版本化入口：Android 8-10 看 `handleMessageRefresh`；Android 11-12 看 `onMessageRefresh` / invalidate-refresh 相关 slice；Android 13+ 看 `SurfaceFlinger::commit()`、`SurfaceFlinger::composite()` 与 `CompositionEngine::Output::composeSurfaces()`，并说明不同版本 Perfetto slice 名可能随 `SFTRACE_NAME/ATRACE_NAME` 变化。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/场景入口缺失",
+          "location": "L149-L159：用户投诉映射表之后",
+          "detail": "正文仍保留 `[需补充素材]`，没有把“耗电/发热伴随卡顿”加入场景化入口。当前手册覆盖启动、滑动、输入、SurfaceView、WebView、前后台、ANR，但缺少 power rails、thermal、CPU/GPU frequency、wakelock、JobScheduler/WorkManager、网络重试和渲染负载之间的分流路径。",
+          "suggestion": "补一个独立场景“耗电/发热伴随卡顿”：先分 CPU/GPU 持续负载、热限频、后台任务/wakelock、网络重试、渲染负载；给 Perfetto power rails + thermal + freq + sched + FrameTimeline 抓取模板；与 5.10、25.2 交叉引用。research-gaps.md 已有 2026-05-17 同主题条目，本轮不重复新增。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T12:32:07+08:00",
       "completed_by": "openclaw-task2b",
-      "completed_at": "2026-05-23T07:23:09.139219",
-      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
+      "reason": "[Deep Tech Review] §7.15 仍存在 SurfaceFlinger trace/source anchor P0 与功耗/发热场景 P1 缺口，需 Task2B 回炉修正。",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task2a-gap-16.7-system-boot-time-optimization",
@@ -17742,9 +17803,9 @@
     }
   ],
   "metadata": {
-    "total_entries": 484,
+    "total_entries": 485,
     "p0_count": 187,
-    "last_updated": "2026-05-23T06:28:41+08:00",
+    "last_updated": "2026-05-23T07:24:00+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 177,
     "updated_date": "2026-05-23",
@@ -17755,7 +17816,7 @@
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T06:28:41+08:00",
+  "last_updated": "2026-05-23T07:24:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
@@ -17763,9 +17824,9 @@
       "section": "7.5",
       "section_title": "优化策略",
       "priority": 95,
-      "title": "RenderEffect 源码锚点与版本演进存在 P0 错误",
-      "description": "闲时抽检发现 §7.5 参考资料后的 RenderEffect 深度分析段存在 LAYER_SIZE 常量错误、伪调用链/伪代码片段，以及 API 31/33 版本能力表述错误。",
-      "reason": "[Deep Tech Review Audit] §7.5 RenderEffect 段存在源码准确性与版本差异 P0 问题，需 Task2B 回炉修正。",
+      "title": "RenderEffect layer 机制与 HardwareBitmapUploader 版本边界仍有 P0 错误",
+      "description": "06 点抽检指出的 LAYER_SIZE/伪调用链/API31-33 问题已部分修复，但复审发现 RenderEffect vs Hardware Layer 性能描述仍与 HWUI promotedToLayer 行为矛盾，HardwareBitmapUploader Vulkan 上传版本边界仍写错。",
+      "reason": "[Deep Tech Review] §7.5 RenderEffect/HWUI 段仍存在源码行为与版本边界 P0 错误，需 Task2B 再修。",
       "issue_type": "source-code-accuracy-version-difference",
       "severity": "P0",
       "created_date": "2026-05-23",
@@ -17783,7 +17844,8 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/graphics/java/android/graphics/RenderNode.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/View.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
-        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -17806,13 +17868,30 @@
           "location": "L729-L732：RenderEffect 版本演进差异",
           "detail": "正文写 Android 12/API 31 “仅支持基本模糊效果”，并断言 Android 14 优化 GPU 内存管理、Android 15 添加软件回退智能选择。复核 AOSP `RenderEffect.java`：android-12.0.0_r1 已包含 `createBitmapEffect`、`createBlendModeEffect`、`createBlurEffect`、`createChainEffect`、`createColorFilterEffect`、`createOffsetEffect`、`createShaderEffect`；android-13.0.0_r1 起新增 `createRuntimeShaderEffect`。本轮未核到 Android 14/15 两条性能/回退断言的公开源码或官方文档锚点。",
           "suggestion": "将版本表改为：API 31 引入 RenderEffect 基础 effect 集合（blur/colorFilter/blend/chain/offset/bitmap/shader）；API 33 新增 RuntimeShader/AGSL 输入效果。Android 14/15 的 GPU 内存管理或软件回退优化若无 AOSP commit / release note / trace 证据，应删除或标 `[待验证]`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/实现机制矛盾",
+          "location": "L648-L656：RenderEffect vs Hardware Layer 的性能特征",
+          "detail": "正文把 RenderEffect 描述为“Shader 级集成”，并断言动态内容内存开销通常低于 Hardware Layer。但 AOSP android-16.0.0_r1 `RenderProperties::promotedToLayer()` 明确在 `mLayerProperties.mImageFilter != nullptr` 时把 RenderNode 提升为 `LayerType::RenderLayer`；`RenderNode::pushLayerUpdate()` 随后通过 `SkiaGpuPipeline::createOrUpdateLayer()` 创建 layer surface。也就是说 View RenderEffect 不是“不走 buffer 隔离”的纯 shader 路径。",
+          "suggestion": "改为：RenderEffect 以 `SkImageFilter` 写入 RenderNode 属性，但 HWUI 会因 imageFilter 将该 RenderNode promoted to RenderLayer；性能差异应围绕 layer surface 尺寸、snapshot/filter cache、invalidate 频率、filter chain 是否可融合来讲，不要和 Hardware Layer 做“一个 shader、一个 buffer”的二分。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 符号错误",
+          "location": "L581-L605：Hardware Bitmap Upload：EGL vs Vulkan 两条路径",
+          "detail": "正文写“Android 14+ 支持 Vulkan 上传路径（VkUploader），通过 `SkImages::TextureFromAHardwareBufferWithData`”。复核 AOSP：`VkUploader` 在 android-13/14 已存在；android-14.0.0_r1 调用的是 `SkImage::MakeFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb)`；android-15/16 才是 `SkImages::TextureFromAHardwareBufferWithData(...)` 并使用 `mGrContext->submit(GrSyncCpu::kYes)`。当前把 Android 14+ 统一写成 android-15/16 API，版本边界错误。",
+          "suggestion": "拆成 Android 13-14 与 Android 15+ 两档：13/14 有 VkUploader 但使用旧 SkImage API；15/16 使用 `SkImages::TextureFromAHardwareBufferWithData`。如果正文只想支撑 RenderEffect 成本，建议压缩这段，避免把 Bitmap upload 的跨版本细节写成 RenderEffect 主链路。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T06:28:41+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-23T06:28:41+08:00",
-      "review_log": "logs/deep-review/2026-05-23-06-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-06-audit.md",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
@@ -20123,8 +20202,8 @@
       "id": "task9-deep-review-20.4-20260515-fgs-provider-broadcast",
       "section": "20.4",
       "priority": 95,
-      "title": "ANR 治理策略：FGS 超时、Provider 初始化与广播超时版本口径错误",
-      "description": "P0: startForegroundService→startForeground 宽限期按 Android 12+ 约 5s 描述错误；AppComponentFactory 不能控制 ContentProvider 初始化时机。P1: Broadcast/Service 常量名与 Android 14+/16 版本口径需对齐。",
+      "title": "ANR 治理策略的协程调度、FGS 版本矩阵与 SIGQUIT 边界仍需修正",
+      "description": "复审发现 §20.4 旧 FGS/Provider/Broadcast 修复后仍有新的源码级错误和版本边界缺口：Dispatchers.IO 类继承关系写错、FGS 晋升超时缺 Android 10-12/13+ 矩阵、Watchdog SIGQUIT 权限边界混淆。",
       "issue_type": "source-code-accuracy-version-differences-principle-chain",
       "severity": "P0",
       "created_date": "2026-05-15",
@@ -20136,7 +20215,8 @@
         "src/part5-app/ch20-stability/04-anr-governance.md"
       ],
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -20166,10 +20246,36 @@
           "location": "L82 Service（前台）阈值表",
           "detail": "20s Service 生命周期执行超时在 android-16 ActivityManagerConstants 中对应 SERVICE_TIMEOUT / DEFAULT_SERVICE_TIMEOUT，不是 SERVICE_FOREGROUND_TIMEOUT。后者容易与 ActiveServices 中 FGS 未及时 startForeground 的 SERVICE_FOREGROUND_TIMEOUT_* 消息混淆。",
           "suggestion": "把表格常量名改为 ActivityManagerConstants.SERVICE_TIMEOUT（默认 20s）和 SERVICE_BACKGROUND_TIMEOUT（默认 200s），并单列 FGS 晋升超时。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/类继承关系错误",
+          "location": "L169-L184：Dispatchers.IO 与 Default 共享线程池",
+          "detail": "正文写 `DefaultIoScheduler` 和 `DefaultScheduler` “两者都继承自 `SchedulerCoroutineDispatcher`”。kotlinx-coroutines 1.9.0 `Dispatcher.kt` 中 `DefaultScheduler : SchedulerCoroutineDispatcher(...)`，但 `DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor`；IO 通过 `UnlimitedIoScheduler.limitedParallelism(...)` 委托到 `DefaultScheduler.dispatchWithContext(block, BlockingContext, ...)`。共享底层调度器的结论可保留，但继承关系是错的。",
+          "suggestion": "改成“Default 直接由 `DefaultScheduler` / `SchedulerCoroutineDispatcher` 提供；IO 由 `DefaultIoScheduler` 包装，内部 limitedParallelism 视图委托到 `UnlimitedIoScheduler`，后者通过 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)` 复用同一个 CoroutineScheduler”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/FGS 晋升超时矩阵缺失",
+          "location": "L423：FGS 晋升超时",
+          "detail": "正文只给 android-16 的 `DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS=30s`，再用“Android 12-13、Android 14+ 有差异”带过。按本章 `applicable_versions: Android 10-16`，需要明确 Android 10-12 仍走 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT=10s`（Android 8 为 5s，Android 9-12 为 10s），Android 13+ 才进入 `ActivityManagerConstants.mServiceStartForegroundTimeoutMs=30s` 加 `mServiceStartForegroundAnrDelayMs=10s` 的两段路径。",
+          "suggestion": "补一张 FGS 晋升超时版本表：API 26=5s；API 28-32=10s；API 33-36=30s transition timeout + 10s ANR delay；同时把 `fgs_start_foreground_timeout`（后台 FGS 启动限制相关）和 `service_start_foreground_timeout_ms`（startForegroundService 后必须调用 startForeground）分开。"
+        },
+        {
+          "severity": "P1",
+          "type": "API/权限边界错误",
+          "location": "L493-L498：主线程堆栈 Dump / SIGQUIT 信号",
+          "detail": "正文写向进程发送 SIGQUIT “需要 root 权限或者 android.permission.DUMP”。这把“向自己进程发送信号”和“读取系统生成的 /data/anr/debuggerd 产物”混在了一起。应用进程向自身发送 SIGQUIT（例如 `Process.sendSignal(Process.myPid(), OsConstants.SIGQUIT)`）不需要 root/DUMP；受限的是从普通应用侧读取系统 traces 文件或抓其他进程完整 dump。",
+          "suggestion": "拆成两层：自进程触发 SIGQUIT 可行，但线上 SDK 通常拿不到系统落盘的 `/data/anr` 产物；因此生产侧仍以 `Thread.getStackTrace()` / `Thread.getAllStackTraces()`、关键线程采样、API 30+ `ApplicationExitInfo` 可用信息为主。不要把“触发信号”写成需要 root。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T20:23:00+08:00"
+      "added_at": "2026-05-15T20:23:00+08:00",
+      "section_title": "ANR 治理策略",
+      "reason": "[Deep Tech Review] §20.4 仍存在协程源码继承、FGS 超时版本矩阵与 SIGQUIT 权限边界问题，需 Task2B 回炉修正。",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task9-20260515-1.18-binder-freezer-policy-version-api",
@@ -21280,8 +21386,8 @@
       "section": "7.15",
       "section_title": "场景化性能作战手册",
       "priority": 95,
-      "title": "FrameTimeline / atrace / SQL 口径与功耗排障入口需修正",
-      "description": "[Deep Tech Review] P0 2：atrace 0x200 不是 gfx+view，frame_timeline_event/graphics.frametimeline/SurfaceFlingerDeadlined 等口径错误。P1 1：功耗/发热投诉入口缺独立排障链。",
+      "title": "场景化手册的 SurfaceFlinger 现代 trace 锚点与功耗入口仍需修正",
+      "description": "Task9 复审发现 §7.15 旧 queue 虽已标 completed，但正文仍保留功耗/发热入口待补标记，且 Android 14+ SurfaceFlinger 观察锚点仍写入不存在/过时的 onMessageReceived 口径。",
       "issue_type": "source-accuracy/version-boundary/knowledge-gap",
       "severity": "P0",
       "created_date": "2026-05-17",
@@ -21295,7 +21401,8 @@
       "material_paths": [
         "logs/deep-review/2026-05-17-12-deep-review.md",
         "https://raw.githubusercontent.com/google/perfetto/master/docs/data-sources/frametimeline.md",
-        "AOSP main: libcutils/include/cutils/trace.h"
+        "AOSP main: libcutils/include/cutils/trace.h",
+        "logs/deep-review/2026-05-23-07-deep-review.md"
       ],
       "review_issues": [
         {
@@ -21318,10 +21425,28 @@
           "location": "L157 大纲要求的功耗/发热投诉入口",
           "detail": "正文已标注需补素材，但没有独立说明耗电/发热伴随卡顿时的第一观察点、trace 配置和优先排查路径。作为场景化手册，这会让“卡 + 热 + 掉电”的线上投诉缺少入口。",
           "suggestion": "补一个“耗电/发热伴随卡顿”场景，至少覆盖 Battery Historian / batterystats、Perfetto power rails、Thermal/CPU frequency、wakelock、JobScheduler/WorkManager、网络重试与后台同步。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/trace 锚点错误",
+          "location": "L71：FrameTimeline fallback 的 SurfaceFlinger slice",
+          "detail": "正文把 Android 14+ 的 SurfaceFlinger 观察入口写成 `onMessageReceived` / `Output::composeSurfaces`。复核 AOSP：`handleMessageRefresh` 只在 Android 8-10 的 SurfaceFlinger.cpp 中存在；Android 11-12 为 `onMessageRefresh()`；Android 13 起主路径改为 `SurfaceFlinger::commit()` / `SurfaceFlinger::composite()`，android-14/16 的 SurfaceFlinger.cpp 中没有 `onMessageReceived`。`Output::composeSurfaces()` 可作为 CompositionEngine 锚点，但不能和 `onMessageReceived` 一起标成 Android 14+ 主观察入口。",
+          "suggestion": "改成版本化入口：Android 8-10 看 `handleMessageRefresh`；Android 11-12 看 `onMessageRefresh` / invalidate-refresh 相关 slice；Android 13+ 看 `SurfaceFlinger::commit()`、`SurfaceFlinger::composite()` 与 `CompositionEngine::Output::composeSurfaces()`，并说明不同版本 Perfetto slice 名可能随 `SFTRACE_NAME/ATRACE_NAME` 变化。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/场景入口缺失",
+          "location": "L149-L159：用户投诉映射表之后",
+          "detail": "正文仍保留 `[需补充素材]`，没有把“耗电/发热伴随卡顿”加入场景化入口。当前手册覆盖启动、滑动、输入、SurfaceView、WebView、前后台、ANR，但缺少 power rails、thermal、CPU/GPU frequency、wakelock、JobScheduler/WorkManager、网络重试和渲染负载之间的分流路径。",
+          "suggestion": "补一个独立场景“耗电/发热伴随卡顿”：先分 CPU/GPU 持续负载、热限频、后台任务/wakelock、网络重试、渲染负载；给 Perfetto power rails + thermal + freq + sched + FrameTimeline 抓取模板；与 5.10、25.2 交叉引用。research-gaps.md 已有 2026-05-17 同主题条目，本轮不重复新增。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-17T12:32:07+08:00"
+      "added_at": "2026-05-17T12:32:07+08:00",
+      "reason": "[Deep Tech Review] §7.15 仍存在 SurfaceFlinger trace/source anchor P0 与功耗/发热场景 P1 缺口，需 Task2B 回炉修正。",
+      "updated_at": "2026-05-23T07:24:00+08:00",
+      "reopened_at": "2026-05-23T07:24:00+08:00",
+      "updated_by": "task9-deep-tech-review"
     },
     {
       "id": "task9-20260517-14.1-profiler-profilingmanager-api",
