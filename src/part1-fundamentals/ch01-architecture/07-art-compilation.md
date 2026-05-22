@@ -45,7 +45,6 @@ related_chapters:
 task2b_result: fixed
 task6_state: reviewed
 review_round: 5
-last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
@@ -62,6 +61,8 @@ task9_reviewed_date: 2026-05-07
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T09:35:55+08:00"
 task9_review_notes: "2026-05-07 Task9 09:34：pass-tech-review。本轮无 P0/P1；P2：AutoFDO 量化数字混用 android16-6.12 Pixel 8 与 android-mainline Pixel 6 口径，已写入 suggestions；Cloud Compilation/SDM 官方锚点沿用既有 suggestions，不重复新增。自动晋升 finalized。"
+last_task6_audit: "2026-05-22"
+last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
 ---
 
 

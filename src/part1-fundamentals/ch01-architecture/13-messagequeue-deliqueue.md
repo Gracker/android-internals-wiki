@@ -2,7 +2,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: finalized
+status: ready-for-review
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-05-05"
@@ -35,17 +35,17 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 last_task9_at: "2026-04-30T08:33:53+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
-last_task2b_at: "2026-04-30T07:43:21.194303"
+last_task2b_at: "2026-05-22T23:21:23+08:00"
 task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。SemiConcurrentMessageQueue 路径不存在;16KB Page Size 附录与本节主题交叉引用不一致。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T12:26:00+08:00"
@@ -505,144 +505,38 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
 - Treiber stack
   https://en.wikipedia.org/wiki/Treiber_Stack
 
-<!-- AIW-源码调研-2026-05-04 -->
-## 补充:CombinedDeliMessageQueue 三路合并实现细节
+<!-- AIW-源码调研-2026-05-04（已按 Task9 2026-05-22 idle audit 修正：CombinedDeliMessageQueue / MessageStack / MessageHeap 在 AOSP main 中未检出，改为双层表述）-->
+## 补充:Android 16 并发实现与 Android 17 DeliQueue 方向
 
-AOSP mainline 的 CombinedDeliMessageQueue 细节可以按下面几层看。来源为 LineageOS 镜像（AOSP 同步分支 commit 536c021），对应 AOSP mainline Android 17 API 37 阶段：
+### 第一层:Android 16 tag 可确认的源码(AOSP `android-16.0.0_r1`)
 
-### CombinedDeliMessageQueue 是统一入口文件
+AOSP `android-16.0.0_r1` 的 `core/java/android/os/` 下存在以下 MessageQueue 变体目录：
 
-`core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` 是 AOSP mainline 的实际生效文件。它在**同一个类**里同时保留 Legacy 字段和 DeliQueue 字段：
+| 目录 | 性质 | 核心实现 |
+|------|------|----------|
+| `LegacyMessageQueue/MessageQueue.java` | 纯旧实现（单向链表 + synchronized） | 单链表 + monitor lock |
+| `ConcurrentMessageQueue/MessageQueue.java` | 并发实现(系统进程 allowlist) | `ConcurrentSkipListSet<Message>` + 两组 Priority Queue(`mPriorityQueue` / `mAsyncPriorityQueue`) |
+| `CombinedMessageQueue/MessageQueue.java` | 合并入口,静态开关选择实现 | 同时保留 Legacy 和 Concurrent 字段,按 `computeUseConcurrent()` 选择 |
+| `LockedMessageQueue/MessageQueue.java` | 带 lock 的中间实现 | 内部仍用 synchronized |
+| `SemiConcurrentMessageQueue/MessageQueue.java` | 半并发实现(当前 AOSP main 已出现,android-16 tag 不存在) | 介于 Concurrent 和 Legacy 之间 |
 
-```java
-/* These fields are only used in legacy message queue. */
-Message mMessages;          // 反射入口，DeliQueue 下永远 null
-private Message mLast;
-private boolean mQuitting;
-private boolean mBlocked;
-private int mAsyncMessageCount;
+`ConcurrentMessageQueue` 的并发安全依赖 `ConcurrentSkipListSet` 的 CAS 语义,入队和出队不需要获取 monitor lock。两组 Priority Queue 分别处理同步消息和异步消息,按 `when` 排序。`CombinedMessageQueue` 作为统一入口,在类加载时通过 `computeUseConcurrent()` 决定走哪套实现。
 
-/* These fields are only used in DeliQueue. */
-MessageStack mStack = new MessageStack();  // Treiber Stack，无锁入队容器
-```
+> 版本边界:`ConcurrentMessageQueue` / `CombinedMessageQueue` 在 `android-16.0.0_r1` tag 下可确认存在,但仅对系统进程(UID < 1000)和 SystemUI 生效;普通 App 仍走 `LegacyMessageQueue`。
 
-这解释了为什么旧反射代码不会直接 crash——类加载没问题，只是 `mMessages` 在 DeliQueue 模式下内容无意义。
+### 第二层:Android 17 DeliQueue 方向(概念性说明)
 
-### DeliQueue 启用条件（`computeUseDeliQueue()`）
+Android Developers Blog(2026-02-17 "Under the hood: Android 17's lock-free MessageQueue")和 Android Developers 行为变更页描述了 Android 17 的 DeliQueue 设计方向:
 
-```java
-private static boolean computeUseDeliQueue() {
-    // 1. 显式 flags 优先（允许应用进程通过 feature flag 开启）
-    if (Flags.useConcurrentMessageQueueInApps()) {
-        try {
-            Class.forName("org.robolectric.Robolectric");
-            return false;  // Robolectric 测试强制走 Legacy
-        } catch (ClassNotFoundException e) {
-            return true;
-        }
-    }
+- **数据结构**:Treiber Stack + min-heap + tombstoning,替代传统单链表
+- **核心语义**:DeliQueue 模式下 `mMessages` 始终为 null,消息入队通过 CAS 无锁操作完成
+- **启用条件**:`targetSdk 37` 的 App 默认启用 DeliQueue;非 targetSdk 37 的 App 仍走 Legacy
+- **性能收益**:消除 `synchronized` 锁竞争,多线程入队不再阻塞 UI 线程
 
-    // 2. 核心 UID（system_server / surfaceflinger 等系统进程）
-    if (UserHandle.isCore(Process.myUid())) {
-        if (processName.contains("test")) return false;  // 平台测试集走 Legacy
-        return true;
-    }
+截至 2026-05-22,AOSP main 公开源码中**未检出** `CombinedDeliMessageQueue/`、`DeliQueue/`、`MessageStack.java`、`MessageHeap.java` 这些路径。当前 AOSP main 下可见的变体仍为 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`、`LockedMessageQueue/`、`SemiConcurrentMessageQueue/`。DeliQueue 的具体实现细节(VarHandle 替代 Atomic、mPtr 引用计数 TEARDOWN_MASK 等)暂按 Android Developers Blog 做概念性引用,待 AOSP 公开对应 commit/路径后再补源码锚点。
 
-    // 3. SystemUI 进程（性能敏感，被明确白名单）
-    if (processName.equals("com.android.systemui")
-            || processName.startsWith("com.android.systemui:")) {
-        return true;
-    }
+### SemiConcurrentMessageQueue 的来源
 
-    return false;  // 普通 App 默认 Legacy，Android 17 targetSdk 37 默认走 DeliQueue
-}
-```
-
-关键细节：**普通应用进程在 API 37 仍默认走 Legacy**，只有 `targetSdk 37` 才默认启用。`Flags.useConcurrentMessageQueueInApps()` 是 feature flag，不是所有应用自动开启。
-
-### MessageStack：Treiber Stack + RCU 风格 Freelist
-
-```java
-// core/java/android/os/MessageStack.java
-public final class MessageStack {
-    private volatile Message mTopValue = null;         // 栈顶指针
-    private volatile Message mFreelistHeadValue = null; // RCU 风格 freelist
-
-    private final MessageHeap mSyncHeap = new MessageHeap();   // 同步消息 min-heap
-    private final MessageHeap mAsyncHeap = new MessageHeap();   // 异步消息 min-heap
-
-    // CAS 无锁入栈（acquire/release 语义）
-    public boolean pushMessage(Message m) {
-        Message current;
-        do {
-            current = mTopValue;
-            if (isQuittingMessage(current)) return false;
-            m.next = current;
-        } while (!sTop.weakCompareAndSetRelease(this, current, m));
-        return true;
-    }
-
-    // 批量回收（每轮 next() 调用时触发）
-    public void drainFreelist() {
-        Message current = (Message) sFreelistHead.getAndSetAcquire(this, null);
-        while (current != null) {
-            Message nextFree = current.nextFree;
-            maybeRemoveFromHeap(current);
-            removeFromStack(current);
-            current = nextFree;
-        }
-    }
-}
-```
-
-设计意图：freelist 的 `nextFree` 指针在入栈时被复用到 `Message.next`，避免了单独分配回收节点的开销。批量 `drainFreelist()` 在 `nextMessage()` 开头调用，不在关键路径逐个分配。
-
-### VarHandle 而非 Atomic*：性能关键
-
-```java
-// core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java
-static {
-    MethodHandles.Lookup l = MethodHandles.lookup();
-    sNextInsertSeq = l.findVarHandle(MessageQueue.class, "mNextInsertSeqValue", long.class);
-    sNextFrontInsertSeq = l.findVarHandle(MessageQueue.class, "mNextFrontInsertSeqValue", long.class);
-    sWaitState = l.findVarHandle(MessageQueue.class, "mWaitState", long.class);
-    sMptrRefCount = l.findVarHandle(MessageQueue.class, "mMptrRefCountValue", long.class);
-    sSyncBarrier = l.findVarHandle(MessageQueue.class, "mSyncBarrier", Message.class);
-}
-```
-
-注释说明（b/421437036）：VarHandle 在此场景比 `Atomic*` 性能更好，因为它允许针对不同操作选择最合适的内存排序语义（`compareAndSet` / `weakCompareAndSetRelease` / `getVolatile`），减少不必要的 CPU 缓存同步开销。
-
-### mPtr 引用计数：解决 quit 与 nativeWake 的 Race
-
-```java
-private static final long MPTR_TEARDOWN_MASK = 1L << 63;  // MSB
-
-private boolean incrementMptrRefs() {
-    while (true) {
-        final long oldVal = mMptrRefCountValue;
-        if ((oldVal & MPTR_TEARDOWN_MASK) != 0) return false;  // 正在退出
-        if (sMptrRefCount.compareAndSet(this, oldVal, oldVal + 1)) return true;
-    }
-}
-
-// 最后持有者退出时唤醒 looper 线程
-if (oldVal - 1 == MPTR_TEARDOWN_MASK) {
-    LockSupport.unpark(mLooperThread);
-}
-```
-
-TEARDOWN_MASK（MSB）与引用计数共用一个 `long`，零开销合并两个状态。`nativeWake()` 前必须先 `incrementMptrRefs()`，确保 quit 过程中没有其他线程仍在用 `mPtr`。
-
-### 三个目录的分工
-
-| 目录 | 性质 | TAG |
-|------|------|-----|
-| `core/java/android/os/LegacyMessageQueue/` | 纯旧实现（单向链表 + synchronized） | "LegacyMessageQueue" |
-| `core/java/android/os/DeliQueue/` | 纯新实现（无 Legacy 字段，TAG="DeliQueue"） | "DeliQueue" |
-| `core/java/android/os/CombinedDeliMessageQueue/` | **实际生效文件**：两套字段并存，静态开关选择 | "DeliQueue" / "LegacyMessageQueue" |
-| `core/java/android/os/SemiConcurrentMessageQueue/` | ROM fork 分支（非 AOSP 主线），各 ROM 独立维护 | "SemiConcurrentMessageQueue" |
-
-> 注：`SemiConcurrentMessageQueue` 是 BlissRoms / DroidX-UI 等 ROM fork 的内部分支，非 AOSP 主线。章节前版引用时已确认"不存在于公开源码"，此处补充其实际来源：多方 ROM fork 独立维护，非 AOSP 官方目录。
+`SemiConcurrentMessageQueue` 在 `android-16.0.0_r1` tag 下不存在,但当前 AOSP main 分支已出现。前版将其标注为"ROM fork,非 AOSP 主线",这是基于 android-16 tag 的核验结果,不适用于 AOSP main 的后续状态。具体引入 commit 和功能边界待后续审校补齐。
 
 <!-- AIW-源码调研-2026-05-04 END -->

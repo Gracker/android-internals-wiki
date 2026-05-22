@@ -107,6 +107,28 @@ VSync-app 信号到达
 
 在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。后面的分类按这条路径逐段展开。
 
+
+
+<!-- AIW-源码调研-2026-05-22 -->
+### HWC 合成降级导致的 Jank（补充）
+
+**来源**：DeepResearch 调研（2026-05-22）
+
+当 Layer 数量超出 HWC Overlay Plane 数量、或像素格式/混合模式超出 HWC 能力时，SurfaceFlinger 会将 Layer 从 DEVICE 合成回退到 CLIENT 合成（GPU 渲染）。这会导致：
+
+1. **GPU 帧时间增加**：每帧必须渲染到 Framebuffer，GPU 负载上升
+2. **额外内存拷贝**：GPU 显存 → 显示控制器的拷贝开销
+3. **掉帧风险**：如果 CLIENT 比例过高，GPU 帧时间超过 VSync 周期
+
+**Perfetto 中的证据**：通过 `android.surfaceflinger.frametimeline` 观察 `present_offset` > `refresh_period` 的帧，结合 `hwc_layer_name` 定位触发合成降级的 Layer。
+
+**实测建议**：
+- 收集 dumpsys SurfaceFlinger 确认 DEVICE/CLIENT 比例
+- 对比不同 SoC 平台在相同场景下的合成降级频率
+- 高端 SoC（骁龙 8 Gen3）通常 4-6 个 Overlay Plane，中端（骁龙 6/7 Gen）通常 4 个
+
+> 来源：DeepResearch 调研（2026-05-22）— `2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md`
+
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 ## 主线程耗时过长

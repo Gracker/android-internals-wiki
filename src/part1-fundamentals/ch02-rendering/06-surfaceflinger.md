@@ -400,6 +400,80 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 `dumpsys SurfaceFlinger` 适合确认 Layer 树、合成类型、Buffer 状态和刷新率配置。掉帧发生时刻、Fence 等待、present 延迟和 transaction 风暴，还是要回到 Perfetto 的时间线里判断。
 
+
+
+<!-- AIW-源码调研-2026-05-22 -->
+## HWC Overlay Plane Capability 与合成降级（补充）
+
+### HWC2 Overlay Capability 查询机制
+
+**源码位置**：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp` (Android 14 tag: `android-14.0.0_r1`)
+
+Android 设备通常支持 4 个 Overlay Plane（官方文档声明），但实际数量取决于 SoC 和显示控制器。HWC2 通过 `validateDisplay()` / `presentDisplay()` 两阶段流程与 SurfaceFlinger 交互：
+
+```cpp
+// HWC2.cpp, getRequests() — SurfaceFlinger 向 HWC 查询本帧合成策略
+Error Display::getRequests(DisplayRequest* outDisplayRequests,
+                          std::unordered_map<HWC2::Layer, LayerRequest>* outLayerRequests) {
+    auto intError = mComposer.getRequests(mId, &displayRequests, &layerRequests);
+    // layerRequests 包含每个 Layer 的 DEVICE/CLIENT 请求
+}
+```
+
+**Composition 类型**（`hardware/interfaces/graphics/composer/2.1/IComposerClient.aidl`）：
+```java
+enum Composition : int32_t {
+    INVALID = 0,
+    CLIENT = 1,        // SurfaceFlinger GLES 合成
+    DEVICE = 2,         // HWC 硬件 Overlay 合成
+    SOLID_COLOR = 3,   // 纯色填充
+    CURSOR = 4,         // 光标层（异步位置更新）
+    BACKGROUND = 5,     // 背景层（单例）
+    DISPLAY_DECORATION = 6,  // Android 14+ 圆角/挖孔装饰
+};
+```
+
+### 合成降级的完整触发链
+
+以下条件会触发 CLIENT 合成降级（DEVICE→CLIENT）：
+
+1. **[硬件限制]** Layer 数量 > HWC Overlay Plane 数量
+2. **[格式不支持]** Layer 像素格式不在 HWC 支持列表
+3. **[混合模式]** 需要复杂 blending（SRC_OVER 等）且 HWC 不支持
+4. **[旋转变换]** 旋转角度 HWC 不支持（如 90° 旋转某些 GPU 不支持）
+5. **[缩放变换]** 超出 HWC 硬件缩放器范围
+6. **[功耗策略]** MTK 低电量模式主动请求 CLIENT
+7. **[带宽限制]** 高刷新率 + DSI/Bridge 带宽受限时 MTK 触发
+
+### dumpsys SurfaceFlinger 中的证据
+
+```
+类型: Device
+─ #0   ...  LAYER_NUMID=40001  |  HWC layer name: SurfaceView
+─ #1   ...  LAYER_NUMID=40002  |  HWC layer name: Background
+
+类型: Client
+─ #2   ...  LAYER_NUMID=40003  |  HWC layer name: com.example.app/ViewGroup
+```
+
+- `类型: Device` = HWC 直接合成（Overlay Plane 处理）
+- `类型: Client` = GPU 合成后提交（HWC 后处理）
+
+**关键命令**：
+```bash
+dumpsys surfaceflinger          # 完整状态
+dumpsys surfaceflinger layers   # Layer 详细信息
+```
+
+### 厂商差异
+
+| SoC 系列 | 策略特征 |
+|---------|---------|
+| 高通 QdX | 最大化 DEVICE 合成，Video overlay 优化，120Hz 高刷优先 DEVICE |
+| 联发科 MTK | 功耗优先策略，低电量请求 CLIENT，Frame Rate Migration |
+
+> 来源：DeepResearch 调研（2026-05-22）— `2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md`
+
 ## 参考资料
 
 ### AOSP 源码
