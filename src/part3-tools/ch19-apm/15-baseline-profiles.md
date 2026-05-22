@@ -37,6 +37,7 @@ repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1 写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 auto_promoted: true
+last_task6_audit: "2026-05-22"
 ---
 
 # Baseline Profiles 与编译优化
