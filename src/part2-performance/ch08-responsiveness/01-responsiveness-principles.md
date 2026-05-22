@@ -36,6 +36,7 @@ task2b_result: fixed
 task6_reviewed_date: "2026-05-01"
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
+last_task6_audit: "2026-05-22"
 review_round: 1
 status: finalized
 pipeline_stage: ready-to-publish
@@ -45,7 +46,6 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 last_task9_at: "2026-05-01T03:20:00+08:00"
 task9_review_notes: "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1；仅发现 P2 交叉引用路径问题，已写入 suggestions。自动晋升 finalized。"
-
 ---
 
 # 响应速度原理
@@ -116,7 +116,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 在 Android 中的具体含义：
 - 主线程（UI Thread）的任何操作都不能阻塞超过 100ms
 - 所有耗时操作（网络请求、数据库读写、复杂计算）都必须放到后台线程
-- 如果某个操作确实需要超过 100ms，应该在 50ms 内先给出一个过渡态反馈（比如显示 loading 状态），然后异步处理
+- 如果某个操作需要超过 100ms，应该在 50ms 内先给出一个过渡态反馈（比如显示 loading 状态），然后异步处理
 
 ### Animation——动画（命中 VSync Deadline）
 
@@ -229,7 +229,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 - 300-1000ms：感觉"正在处理"，需要某种反馈来维持信心
 - 1s 以上：感觉"在等"，注意力开始分散
 
-这 100ms 的临界点可以通过视觉技巧来"骗过"。如果我们不能在 100ms 内完成真正的处理，但能在 50ms 内给用户一个视觉反馈（即使这个反馈不包含最终结果），用户的感知仍然是"系统立即响应了我"。
+这 100ms 的临界点可以通过视觉技巧来"骗过"。如果我们不能在 100ms 内完成完整处理，但能在 50ms 内给用户一个视觉反馈（即使这个反馈不包含最终结果），用户的感知仍然是"系统立即响应了我"。
 
 华为在《交互流畅体验设计》文档中也强调了这一点：**感知流畅性不等同于系统性能。优秀的系统性能是保证用户感知流畅的必要条件，但好的系统性能不一定带来好的感知流畅性。** [来源: Cubox/华为-交互流畅体验设计-2025-02-18.md]
 
