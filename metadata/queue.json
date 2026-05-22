@@ -16721,24 +16721,68 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T10:28:24+08:00",
       "review_log": "logs/deep-review/2026-05-22-10-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260522-8.12-keystore-keymint-latency",
+      "section": "8.12",
+      "section_title": "Keystore/KeyMint 调用延迟与登录链路性能",
+      "priority": 80,
+      "title": "Keystore/KeyMint 调用延迟与登录链路性能",
+      "description": "Android Keystore / KeyMint 已有官方架构、KeyMint operation 并发要求、BiometricPrompt 认证绑定密钥文档和近期硬件密钥性能研究；现有目录覆盖启动、登录响应和存储加密，但缺少把硬件密钥调用延迟放入启动/登录链路的独立章节。",
+      "reason": "Task 2A Phase 1 缺口挖掘：SUMMARY 未覆盖 Keystore/KeyMint 性能；AOSP KeyMint/keystore2、Android Developers Keystore/BiometricPrompt 与 2025 KeyDroid 研究共同指向高频工程问题。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/security/features/keystore",
+        "https://source.android.com/docs/security/features/keystore/implementer-ref",
+        "https://source.android.com/docs/security/features/keystore/features",
+        "https://developer.android.com/privacy-and-security/keystore",
+        "https://developer.android.com/identity/sign-in/biometric-auth",
+        "https://arxiv.org/html/2507.07927v1"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T11:04:00+08:00",
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
+          "detail": "需基于 AOSP keystore2 / KeyMint 官方文档、Android Keystore API、BiometricPrompt 和硬件密钥性能研究，拆清安全硬件调用延迟与登录/启动耗时的关系。",
+          "suggestion": "加工时避免给固定耗时结论；所有分位值必须带设备、算法、provider、StrongBox/TEE、冷/热状态和样本口径。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 461,
+    "total_entries": 463,
     "p0_count": 178,
-    "last_updated": "2026-05-22T10:28:24+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 163,
+    "last_updated": "2026-05-22T11:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 167,
     "updated_date": "2026-05-22",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 163,
-    "completed_entries": 287,
-    "last_task2a_gap_mining": "14.19",
-    "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 167,
+    "completed_entries": 293,
+    "last_task2a_gap_mining": "8.12",
+    "last_task2a_gap_mining_at": "2026-05-22T11:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T10:28:24+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-22T11:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task6-audit-19.11-jankstats-tool-boundary-outline",
@@ -18234,10 +18278,54 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T10:28:24+08:00",
       "review_log": "logs/deep-review/2026-05-22-10-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260522-8.12-keystore-keymint-latency",
+      "section": "8.12",
+      "section_title": "Keystore/KeyMint 调用延迟与登录链路性能",
+      "priority": 80,
+      "title": "Keystore/KeyMint 调用延迟与登录链路性能",
+      "description": "Android Keystore / KeyMint 已有官方架构、KeyMint operation 并发要求、BiometricPrompt 认证绑定密钥文档和近期硬件密钥性能研究；现有目录覆盖启动、登录响应和存储加密，但缺少把硬件密钥调用延迟放入启动/登录链路的独立章节。",
+      "reason": "Task 2A Phase 1 缺口挖掘：SUMMARY 未覆盖 Keystore/KeyMint 性能；AOSP KeyMint/keystore2、Android Developers Keystore/BiometricPrompt 与 2025 KeyDroid 研究共同指向高频工程问题。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/security/features/keystore",
+        "https://source.android.com/docs/security/features/keystore/implementer-ref",
+        "https://source.android.com/docs/security/features/keystore/features",
+        "https://developer.android.com/privacy-and-security/keystore",
+        "https://developer.android.com/identity/sign-in/biometric-auth",
+        "https://arxiv.org/html/2507.07927v1"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T11:04:00+08:00",
+      "review_issues": [
+        {
+          "type": "新增章节待加工",
+          "location": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
+          "detail": "需基于 AOSP keystore2 / KeyMint 官方文档、Android Keystore API、BiometricPrompt 和硬件密钥性能研究，拆清安全硬件调用延迟与登录/启动耗时的关系。",
+          "suggestion": "加工时避免给固定耗时结论；所有分位值必须带设备、算法、provider、StrongBox/TEE、冷/热状态和样本口径。"
+        }
+      ]
     }
   ],
   "last_task2a_completed": "24.11",
   "last_task2a_completed_at": "2026-05-20T22:04:00+08:00",
-  "last_task2a_gap_mining": "11.7",
-  "last_task2a_gap_mining_at": "2026-05-22T08:45:48+08:00"
+  "last_task2a_gap_mining": "8.12",
+  "last_task2a_gap_mining_at": "2026-05-22T11:04:00+08:00"
 }
