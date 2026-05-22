@@ -16680,23 +16680,64 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T09:27:33+08:00",
       "review_log": "logs/deep-review/2026-05-22-09-audit.md"
+    },
+    {
+      "id": "task9-audit-20260522-18.13-webview-surfacecontrol-platform-boundary",
+      "section": "18.13",
+      "section_title": "WebView 渲染管线",
+      "priority": 85,
+      "title": "WebView SurfaceControl 子 Surface 平台下限需从 Android 10+ 修正为 Android 12+ 门槛",
+      "description": "闲时抽检发现 §18.13 把 WebView SurfaceControl child layer 的平台基础写成 Android 10+，遗漏 Android 10/11 HWUI WebViewFunctor 没有 SurfaceControl/transaction 回调这一门槛。",
+      "reason": "[Deep Tech Review Audit] §18.13 的 SurfaceControl 子 Surface 版本边界过宽：Android 10/11 只有 DrawFn/GL-Vulkan functor，缺少 WebView SurfaceControl overlay path 所需的 HWUI WebViewFunctor 回调；需回炉修正平台下限和 provider 判断口径。",
+      "issue_type": "source-version-accuracy-webview-surfacecontrol",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "severity": "P1",
+          "location": "L6、L112-L118、L171-L183、L218、L242-L255：SurfaceControl 子 Surface 平台下限",
+          "detail": "章节把 WebView SurfaceControl 子 Surface 候选写成“Android 10+ 平台具备 SurfaceControl / DrawFn 基础”，并把判断重点放在 provider / Chromium milestone。抽检复核 AOSP 后发现 Android 10/11 的 frameworks/base/libs/hwui/WebViewFunctorManager.cpp 只有 drawGl/drawVk functor 回调，没有 ASurfaceControl、getSurfaceControl、mergeTransaction 或 prepareRootSurfaceControl；Android 12.0.0_r34 起才出现 WebViewFunctor::getSurfaceControl()/prepareRootSurfaceControl()，并把 SurfaceControl 相关函数传给 Chromium DrawFn。Chromium draw_fn.h 也标注 DrawFn version 3 才加入 SurfaceControl related functions。因此 Android 10/11 即使 provider 较新，也缺少这条 WebView overlay path 的平台侧 HWUI functor 门槛。",
+          "suggestion": "把 SurfaceControl 子 Surface 的平台门槛改成“Android 12+ HWUI WebViewFunctor 提供 SurfaceControl/transaction 回调 + provider/Chromium milestone 支持 + 运行时 overlay 条件命中”；Android 10/11 只保留 DrawFn/GL-Vulkan functor 口径，不应作为 WebView SurfaceControl child layer 候选。"
+        },
+        {
+          "type": "源码路径版本差异",
+          "severity": "P2",
+          "location": "L15 sources：WebViewUpdateServiceImpl.java",
+          "detail": "AOSP services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java 在 Android 10-14、Android 15 早期 tag 仍存在；Android 15 后续 tag、Android 16 与 master 已切到 WebViewUpdateServiceImpl2.java。当前 sources 未标版本，会让读者用最新 AOSP 查路径时落空。",
+          "suggestion": "sources 中把 WebViewUpdateServiceImpl.java 标注为 Android 10-15 early，并补 WebViewUpdateServiceImpl2.java（Android 15 late / 16+ / master）或改成“WebViewUpdateServiceImpl(2).java”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T10:28:24+08:00",
+      "review_log": "logs/deep-review/2026-05-22-10-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 460,
+    "total_entries": 461,
     "p0_count": 178,
-    "last_updated": "2026-05-22T08:45:48+08:00",
+    "last_updated": "2026-05-22T10:28:24+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 162,
+    "pending_entries": 163,
     "updated_date": "2026-05-22",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 162,
+    "pending": 163,
     "completed_entries": 287,
     "last_task2a_gap_mining": "14.19",
     "last_task2a_gap_mining_at": "2026-05-22T02:04:00+08:00",
     "last_task2a_completed_at": "2026-05-19T08:18:00+08:00"
   },
-  "last_updated": "2026-05-22T09:27:33+08:00",
+  "last_updated": "2026-05-22T10:28:24+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
@@ -18152,6 +18193,47 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T09:27:33+08:00",
       "review_log": "logs/deep-review/2026-05-22-09-audit.md"
+    },
+    {
+      "id": "task9-audit-20260522-18.13-webview-surfacecontrol-platform-boundary",
+      "section": "18.13",
+      "section_title": "WebView 渲染管线",
+      "priority": 85,
+      "title": "WebView SurfaceControl 子 Surface 平台下限需从 Android 10+ 修正为 Android 12+ 门槛",
+      "description": "闲时抽检发现 §18.13 把 WebView SurfaceControl child layer 的平台基础写成 Android 10+，遗漏 Android 10/11 HWUI WebViewFunctor 没有 SurfaceControl/transaction 回调这一门槛。",
+      "reason": "[Deep Tech Review Audit] §18.13 的 SurfaceControl 子 Surface 版本边界过宽：Android 10/11 只有 DrawFn/GL-Vulkan functor，缺少 WebView SurfaceControl overlay path 所需的 HWUI WebViewFunctor 回调；需回炉修正平台下限和 provider 判断口径。",
+      "issue_type": "source-version-accuracy-webview-surfacecontrol",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-10-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "severity": "P1",
+          "location": "L6、L112-L118、L171-L183、L218、L242-L255：SurfaceControl 子 Surface 平台下限",
+          "detail": "章节把 WebView SurfaceControl 子 Surface 候选写成“Android 10+ 平台具备 SurfaceControl / DrawFn 基础”，并把判断重点放在 provider / Chromium milestone。抽检复核 AOSP 后发现 Android 10/11 的 frameworks/base/libs/hwui/WebViewFunctorManager.cpp 只有 drawGl/drawVk functor 回调，没有 ASurfaceControl、getSurfaceControl、mergeTransaction 或 prepareRootSurfaceControl；Android 12.0.0_r34 起才出现 WebViewFunctor::getSurfaceControl()/prepareRootSurfaceControl()，并把 SurfaceControl 相关函数传给 Chromium DrawFn。Chromium draw_fn.h 也标注 DrawFn version 3 才加入 SurfaceControl related functions。因此 Android 10/11 即使 provider 较新，也缺少这条 WebView overlay path 的平台侧 HWUI functor 门槛。",
+          "suggestion": "把 SurfaceControl 子 Surface 的平台门槛改成“Android 12+ HWUI WebViewFunctor 提供 SurfaceControl/transaction 回调 + provider/Chromium milestone 支持 + 运行时 overlay 条件命中”；Android 10/11 只保留 DrawFn/GL-Vulkan functor 口径，不应作为 WebView SurfaceControl child layer 候选。"
+        },
+        {
+          "type": "源码路径版本差异",
+          "severity": "P2",
+          "location": "L15 sources：WebViewUpdateServiceImpl.java",
+          "detail": "AOSP services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java 在 Android 10-14、Android 15 早期 tag 仍存在；Android 15 后续 tag、Android 16 与 master 已切到 WebViewUpdateServiceImpl2.java。当前 sources 未标版本，会让读者用最新 AOSP 查路径时落空。",
+          "suggestion": "sources 中把 WebViewUpdateServiceImpl.java 标注为 Android 10-15 early，并补 WebViewUpdateServiceImpl2.java（Android 15 late / 16+ / master）或改成“WebViewUpdateServiceImpl(2).java”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T10:28:24+08:00",
+      "review_log": "logs/deep-review/2026-05-22-10-audit.md"
     }
   ],
   "last_task2a_completed": "24.11",
