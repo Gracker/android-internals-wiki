@@ -33,9 +33,10 @@ reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T11:20:00+08:00"
+last_task6_audit: "2026-05-22"
+last_task6_at: "2026-05-22T23:13:03+08:00"
 review_round: 4
 task9_review_notes: "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
-
 ---
 
 # AOSP 代码阅读
@@ -327,7 +328,7 @@ Android 16 上更稳的阅读入口是这条调用链：
 - `HWComposer::getDeviceCompositionChanges()` — 向 HWC 查询哪些 layer 可走 device composition，哪些要回退 client composition
 - `HWComposer::presentAndGetReleaseFences()` — present 后取回 release fence，用于后续 buffer 生命周期管理
 
-老版本资料里常见的 `composeSurfaces()`、`onMessageRefresh()`、`Layer::onDraw()` 不能直接当作 Android 16 的主入口。阅读旧文章时，把它们放进版本差异里看；真正查 android-16.0.0_r1，要从 `SurfaceFlinger::composite()` 往 `CompositionEngine` / `Output` / `HWComposer` 走。
+老版本资料里常见的 `composeSurfaces()`、`onMessageRefresh()`、`Layer::onDraw()` 不能直接当作 Android 16 的主入口。阅读旧文章时，把它们放进版本差异里看；查 android-16.0.0_r1 时，要从 `SurfaceFlinger::composite()` 往 `CompositionEngine` / `Output` / `HWComposer` 走。
 
 | 资料里的入口 | Android 16 阅读方式 |
 |---|---|
@@ -377,7 +378,7 @@ Android 16 上更稳的阅读入口是这条调用链：
 
 ### 方法四：跨 Binder 边界追踪 AIDL 实现
 
-性能问题经常跨进程。App 里看到一次 `WindowManager`、`ActivityManager`、`PowerManager` 或 vendor service 调用时，Java 调用栈只能走到 Manager 或 Proxy，真正耗时可能发生在 system_server、SurfaceFlinger 或 HAL 进程。
+性能问题经常跨进程。App 里看到一次 `WindowManager`、`ActivityManager`、`PowerManager` 或 vendor service 调用时，Java 调用栈只能走到 Manager 或 Proxy，耗时可能发生在 system_server、SurfaceFlinger 或 HAL 进程。
 
 可执行的追踪步骤：
 
@@ -386,7 +387,7 @@ Android 16 上更稳的阅读入口是这条调用链：
 3. 匹配运行现场。Perfetto 中看 `binder transaction` / `binder reply`，用 client pid/tid、server pid/tid 和 transaction 时间窗匹配调用链。这样可以判断时间花在客户端等待、system_server 执行、SurfaceFlinger 合成，还是 vendor service。
 4. 回到源码读业务逻辑。确认服务端入口后，再用 cs.android.com 或 IDE 继续追内部调用。不要只停在生成的 Stub / Proxy；它们主要是跨进程胶水，根因通常在服务端实现类里。
 
-这个方法能避免一个常见误判：App 主线程栈只显示“Binder 调用中”，就把问题归为 App 卡顿。很多场景里，App 主线程只是同步等待，真正需要看的线程在 system_server 或 SurfaceFlinger。
+这个方法能避免一个常见误判：App 主线程栈只显示“Binder 调用中”，就把问题归为 App 卡顿。很多场景里，App 主线程只是同步等待，需要看的线程在 system_server 或 SurfaceFlinger。
 
 ## 本地 AOSP 代码的获取与配置
 
@@ -472,7 +473,7 @@ git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 
 **"cs.android.com 够用了，不需要本地代码"**
 
-如果只是偶尔查一两个函数，cs.android.com 确实够用。但当需要追踪深层调用链、对比多个版本的差异、或者理解一个功能的设计演进时，本地代码 + IDE + git 工具的组合效率要高得多。建议至少搭建一次本地环境，哪怕只是 `frameworks/base` 一个目录。
+如果只是偶尔查一两个函数，cs.android.com 基本够用。但当需要追踪深层调用链、对比多个版本的差异、或者理解一个功能的设计演进时，本地代码 + IDE + git 工具的组合效率要高得多。建议至少搭建一次本地环境，哪怕只是 `frameworks/base` 一个目录。
 
 **"AOSP 代码太复杂，不适合应用开发者"**
 
@@ -480,7 +481,7 @@ git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 
 **"grep 搜索就够了，不需要专门工具"**
 
-`grep` 确实能搜到内容，但它无法展示代码的引用关系和调用层次。当我们需要理解"谁调用了这个函数"或"这个函数调用了哪些函数"时，cs.android.com 的交叉引用或 IDE 的 Call Hierarchy 功能效率要高一个数量级。
+`grep` 能搜到内容，但它无法展示代码的引用关系和调用层次。当我们需要理解"谁调用了这个函数"或"这个函数调用了哪些函数"时，cs.android.com 的交叉引用或 IDE 的 Call Hierarchy 功能效率要高一个数量级。
 
 ## 参考资料
 
