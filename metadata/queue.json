@@ -17244,6 +17244,46 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T20:04:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260522-15.2-system-vs-app-fgs-timeout-version-boundary",
+      "section": "15.2",
+      "section_title": "如何区分系统问题和 App 问题",
+      "priority": 85,
+      "title": "startForegroundService 超时阈值需补 Android 8/9+/13+ 版本边界",
+      "description": "Task9 闲时抽检发现 §15.2 的 ANR 阈值表把前台服务启动后未及时调用 startForeground() 统一写成 5 秒，和 Android 9+ / Android 13+ AOSP 默认实现不一致。",
+      "reason": "[Deep Tech Review Audit] §15.2 ANR 阈值表中的 startForegroundService 超时口径缺少 Android 8/9+/13+ 版本边界，需回炉修正。",
+      "issue_type": "version-difference-anr-fgs-timeout",
+      "severity": "P1",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/02-system-vs-app.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-20-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java#109",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-9.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java#122",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#155",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#245",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#318",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#320"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/ANR 前台服务启动超时",
+          "location": "L397：ANR 阈值表 `startForegroundService()` 后未及时调用 `startForeground()`",
+          "detail": "章节适用范围写 Android 8.0 - Android 16，但表格把 `Context.startForegroundService()` 后未及时调用 `Service.startForeground()` 的阈值统一写成 5 秒。AOSP Android 8.0 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT` 确实是 5*1000；Android 9-11 已改为 10*1000；Android 12 `DEFAULT_FGS_START_FOREGROUND_TIMEOUT_MS` 为 10*1000；Android 13-16 又拆出 `service_start_foreground_timeout_ms` 默认 30*1000 与 `service_start_foreground_anr_delay_ms` 默认 10*1000。当前 5 秒口径只覆盖 Android 8，不能作为 Android 8-16 的通用默认阈值。",
+          "suggestion": "把该行改成版本化表述：Android 8 为 5s；Android 9-12 常见 AOSP 默认 promotion window 为 10s；Android 13+ 需区分 `fgs_start_foreground_timeout`、`service_start_foreground_timeout_ms` 和 `service_start_foreground_anr_delay_ms`，并提示 OEM / DeviceConfig 可调整。不要把 5s 写成全版本默认值。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T20:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-20-audit.md"
     }
   ],
   "metadata": {
