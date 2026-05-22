@@ -15,8 +15,17 @@ created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"
 gap_score: 18
 last_task2a_at: "2026-05-22T16:18:00+08:00"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-22"
+task6_result: pass-light-edit
+task9_state: pending
+last_task6_at: "2026-05-22T17:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-17-review.md"
+task6_l1_l2_fixes: 5
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-22 Task6：首次写作质检通过；补齐 outline，清理结构性元叙述、编辑标记和填充副词 5 处；无 L3/L4 回炉项，送 Task9 技术复核。"
 sources:
   - type: clippings
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
@@ -54,9 +63,46 @@ sources:
 
 # 24.14 网络请求分段优化与弱网治理
 
+<!-- outline-start -->
+## 要点
+
+### 🔹 一次请求的七段拆解
+说明 DNS、connect、TLS、request write、TTFB、response read 和 decode/render 的观测入口，避免只看总耗时。
+
+### 🔹 速度、弱网、安全和功耗的取舍
+把低延迟、弱网可用性、安全和省电拆开设计，说明前台请求与后台同步不能共用同一套策略。
+
+### 🔹 OkHttp、Cronet 与自研长连接选型
+明确不同网络栈适合的业务路径、迁移成本和验证指标，避免把协议能力等同于实际收益。
+
+### 🔹 DNS、建连和连接复用组合
+把 HTTPDNS、连接池、fast fallback、IPv6/IPv4 fallback 和网络切换放在同一套风险模型中检查。
+
+### 🔹 弱网治理与重试预算
+按失败类型、幂等性、页面预算和请求体积设计弱网策略，重点控制请求风暴。
+
+### 🔹 压缩、缓存和预取验证
+按请求形态评估 Brotli、HTTP cache、预取和断点续传的收益，避免用单一结论覆盖所有接口。
+
+### 🔹 后台网络与 Vitals 约束
+结合电量、移动网络、WorkManager 约束和 TrafficStats，把后台同步从前台低延迟路径中拆出来。
+
+### 🔹 指标采集与场景拆分
+用 trace id 关联客户端、接入层和业务服务日志，并区分 API、WebView、媒体、下载和长连接场景。
+
+## 扩展
+
+### 🔸 与 26.17 线上网络质量监控的关系
+App 侧策略入口聚焦本地拆段、降级和指标埋点；线上接入层观测和跨层监控在 26.17 展开。
+
+### 🔸 与 24.4 / 24.5 / 24.10 的关系
+24.4 / 24.5 / 24.10 分别承接连接池、协议优化和 HTTPDNS 执行边界，当前章节引用这些结论，不重复展开底层机制。
+
+<!-- outline-end -->
+
 移动端网络优化不能只盯一个慢接口。一次请求从域名解析到响应解析，中间会经过 DNS、建连、TLS、写请求、首字节、读响应、业务解码；任何一段抖动，页面都会变慢。App 侧要做的是把这些等待段拆清楚，再按场景选择网络栈、缓存、降级和监控策略。
 
-本节只讲 App 实战策略。DNS 与连接池细节见 24.4、24.10，HTTP/2、HTTP/3、QUIC 与 gRPC 见 24.5，线上网络质量观测见 26.17。参考书用于确定结构：先拆网络基础和弱网特征，再看网络库选型，并把监控和流量指标接上；正文不使用参考书原文和代码。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+App 侧可执行的策略主要落在请求分段、网络栈选型、弱网治理、后台约束和指标采集。DNS 与连接池细节见 24.4、24.10，HTTP/2、HTTP/3、QUIC 与 gRPC 见 24.5，线上网络质量观测见 26.17。参考书用于组织写作顺序：网络基础、弱网特征、网络库选型、监控与流量指标；正文不使用参考书原文和代码。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
 
 ## 先把一次请求拆成七段
 
@@ -89,7 +135,7 @@ OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、reque
 
 ## 网络栈选型：OkHttp、Cronet、自研长连接
 
-24.4 已经覆盖 OkHttp 的连接池、Dispatcher、Dns 和弱网策略。这里补一层选型边界。
+24.4 已经覆盖 OkHttp 的连接池、Dispatcher、Dns 和弱网策略。网络栈选型还要补上业务层边界。
 
 | 方案 | 适合做什么 | 不适合做什么 | 验证点 |
 |---|---|---|---|
@@ -102,7 +148,7 @@ Android Developers 的 Cronet 文档说明，Cronet 是面向 Android App 的 Ch
 
 Android 35 SDK 的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。 [已验证: Android 35 SDK source, android/net/http/HttpEngine.java]
 
-Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四个问题：QUIC 建连成功率是否足够高；失败后回退到 TCP/TLS 的尾延迟是否可控；缓存和 Brotli 是否真的降低首屏字节数；业务层的重试、鉴权、trace id、日志脱敏能否迁移。
+Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四个问题：QUIC 建连成功率是否足够高；失败后回退到 TCP/TLS 的尾延迟是否可控；缓存和 Brotli 是否降低首屏字节数；业务层的重试、鉴权、trace id、日志脱敏能否迁移。
 
 ## DNS、建连和连接复用要组合设计
 
@@ -177,7 +223,7 @@ Android 官方 network access optimization 文档把无线电状态机作为省�
 
 参考书提到插桩、Native Hook、TrafficStats、接入层监控这些方向。当前章节不建议把 Hook 当成默认方案：Aspect/OkHttp interceptor 适合统一自家网络层；Native Hook 能覆盖更底层 socket，但兼容性、稳定性和隐私风险更高，适合 APM SDK 或实验环境。常规业务 App 先把网络库事件和 TrafficStats 做准。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
 
-## [自动发现] 不同场景不要套同一套网络结论
+## 不同场景不要套同一套网络结论
 
 普通 API、WebView、Media3/ExoPlayer、文件下载和 IM 长连接使用的网络栈可能不同。Cronet integration 文档说明 Cronet 可以与 ExoPlayer、gRPC、OkHttp、Glide、Dart 等库集成；这说明网络栈有机会统一，但不代表所有库天然共用同一套连接池和指标。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet/integration]
 
