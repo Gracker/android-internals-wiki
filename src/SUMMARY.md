@@ -181,6 +181,7 @@ tags:
   - [11.4 案例集](part2-performance/ch11-power/04-case-studies.md)
   - [11.5 Wakelock 机制与功耗分析](part2-performance/ch11-power/05-wakelock.md)
   - [11.6 Bluetooth 扫描与连接功耗分析](part2-performance/ch11-power/06-bluetooth-scan-connection-power.md)
+  - [11.7 用户设置对能耗的影响：亮度、刷新率与深色模式](part2-performance/ch11-power/07-user-settings-energy-impact.md)
 
 - [第 18 章：渲染链路全景](part2-performance/ch18-rendering-pipelines/README.md)
   - [18.1 渲染链路分类与选择矩阵](part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)
