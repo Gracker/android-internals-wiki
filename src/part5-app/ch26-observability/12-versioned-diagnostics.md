@@ -288,6 +288,13 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 - Extension 36.1：实际接入时必须在运行时检查 Extension 版本，本节不写死具体设备覆盖率。
 
 <!-- AIW-源码调研-2026-05-19 -->
+
+- **ApplicationExitInfo master 分支常量验证**（2026-05-22 一手验证）：master 分支（对应 API 34+）的 Reason 常量共 17 个（REASON_UNKNOWN=0 到 REASON_PACKAGE_UPDATED=16），SubReason 扩展至 32 个（0-31），包含 SUBREASON_OOM_KILL、SUBREASON_FREEZER_BINDER_IOCTL 等新增常量。源码位置：`frameworks/base/core/java/android/app/ApplicationExitInfo.java`。
+- **ApplicationStartInfo 启动时间戳体系**（2026-05-22 一手验证）：Android 15 引入的 ApplicationStartInfo 提供 6 个 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
+- **ProfilingTrigger 源码位置**：未在 `frameworks/base` 路径找到 ProfilingTrigger.java，源码路径待进一步核实（可能位于 `packages/modules/Profiling/` 而非 `frameworks/base/`）。
+
+<!-- AIW-源码调研-2026-05-22 -->
+
 ## 补充调研（2026-05-19）
 
 **来源**：每日推荐选题 #5（优先级：high）

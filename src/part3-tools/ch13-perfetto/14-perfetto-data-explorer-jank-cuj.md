@@ -132,6 +132,93 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 | Android 13+ | InteractionJankMonitor 稳定化 |
 
 <!-- AIW-源码调研-2026-05-18 -->
+
+
+<!-- AIW-源码调研-2026-05-22 -->
+### 第三方 App CUJ 分析的三条执行路径（补充验证）
+
+**来源**：Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 · 源码调研（2026-05-22）  
+**验证状态**：一手源码验证完成（部分细节待进一步确认）
+
+前次调研已厘清 `android.cujs.base` 默认仅覆盖系统进程的边界。本补充提供三条**可落地执行**的路径，适用于第三方 App 做 CUJ 分析：
+
+#### 路径一：AndroidX JankStats（推荐，API 30+）
+
+```kotlin
+val jankStats = JankStats.createAndTrack(window) { frameData ->
+    // 回调里最少化操作：复制字段后立即返回
+    val event = JankFrameEvent(
+        page = "feed",
+        durationNanos = frameData.frameDurationUiNanos,
+        isJank = frameData.isJank,
+        overrunNanos = frameData.frameOverrunNanos
+    )
+    backgroundHandler.post { aggregator.enqueue(event) }
+}
+// Activity 生命周期管理
+jankStats.isTrackingEnabled = true   // onResume()
+jankStats.isTrackingEnabled = false  // onPause() + flush
+```
+- `JankStats` 内部通过平台 FrameMetrics API（API 24+）获取帧数据
+- 配合 `PerformanceMetricsState` 绑定 UI 状态（如列表滚动状态）
+- 阈值默认按刷新率倍数判断，可通过 `jankHeuristicMultiplier` 调整
+- **注意**：`OnFrameListener` 每帧触发，回调对象会复用，必须立即复制字段
+
+#### 路径二：自定义 atrace marker
+
+```kotlin
+Trace.beginSection("J<my_custom_cuj>")
+// ... user interaction ...
+Trace.endSection()
+```
+- `Trace.beginSection()` 的 name 参数使用 `J<>` 前缀格式，可被 Perfetto SQL 筛选
+- 第三方 App 的 CUJ 不进入 `android_jank_cuj` 表，需配合自定义 SQL 扩展
+- 高频场景（滚动、动画）要注意标记密度，避免 atrace marker 本身成为开销
+
+#### 路径三：FrameTimeline direct join
+
+```sql
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
+SELECT
+  actual.slice_name,
+  actual.ts,
+  CAST((actual.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
+  CAST(actual.dur / 1e6 AS FLOAT) AS actual_ms,
+  CAST(expected.dur / 1e6 AS FLOAT) AS expected_ms,
+  actual.on_time_finish,
+  actual.jank_type
+FROM actual_frame_timeline_slice AS actual
+JOIN expected_frame_timeline_slice AS expected
+  ON actual.display_frame_token = expected.display_frame_token
+WHERE actual.on_time_finish = 0
+ORDER BY actual.ts
+LIMIT 50;
+```
+- 不依赖 CUJ marker，直接用 `on_time_finish = 0` 判断异常帧
+- 需要 trace 配置开启 `gfx` category（FrameTimeline 数据源）
+
+#### FrameTracker 数据流（系统进程视角）
+
+```
+Choreographer#doFrame()
+  → ViewRootImpl.doTraversals()  // frameworks/base/core/java/android/view/ViewRootImpl.java:1713
+    → JankTracker.doFrame(jankInfo)  // frameworks/base/libs/hwui/JankTracker.cpp
+      → SurfaceFlinger FrameTimeline (BufferQueue feedback)
+        → Perfetto trace → android_jank_cuj 表
+```
+
+| 文件 | 说明 |
+|------|------|
+| `frameworks/base/libs/hwui/JankTracker.cpp` | FrameTracker JankTracker 实现 |
+| `frameworks/native/libs/gui/include/gui/JankInfo.h` | JankInfo 类型定义（含 `JANK_TYPE_*`） |
+| `external/perfetto/src/trace_processor/metrics/sql/android/jank/cujs.sql` | CUJ SQL 过滤逻辑（进程名过滤仅限系统进程） |
+| `android/performance-samples/JankStatsSample/` | JankStats 官方示例代码 |
+
+**版本备注**：sched_ext 调度器可能影响 CUJ 帧时间判断（线程调度延迟 → 帧耗时），此方向有待进一步验证。
+
+<!-- AIW-源码调研-2026-05-22 -->
+
 <!-- outline-end -->
 
 Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”继续追到“这次卡顿有多重”。

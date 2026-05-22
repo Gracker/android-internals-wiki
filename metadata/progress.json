@@ -6061,13 +6061,7 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": {
-    "p0": 0,
-    "p1": 1,
-    "p2": 2,
-    "auto_finalized": [],
-    "log": "logs/deep-review/2026-05-22-18-deep-review.md"
-  },
+  "last_task9_review_summary": "12.2 回炉复审：P1 1（Android 16 eBPF 带宽估算增强缺公开源码/版本锚点），P2 2（Cronet 16KB 冷启动数据缺条件；OkHttp EventListener 文档锚点旧建议仍未修）。",
   "last_task2a_gap_mining": "24.14",
   "last_task2a_gap_mining_at": "2026-05-22T16:18:00+08:00",
   "last_task6_audit": "2026-05-22T11:11:00+08:00",
@@ -6335,6 +6329,27 @@
         "remaining_p90": 2,
         "remaining_p85": 4
       }
+    },
+    {
+      "date": "2026-05-22T19:19:14+08:00",
+      "sections": [
+        "6.2",
+        "9.4",
+        "2.11"
+      ],
+      "sources": [
+        "task9-deep-tech-review"
+      ],
+      "fixes": [
+        "§6.2: curseg_space type block_t→bool, EROFS ZSTD upstream Linux 6.10+ not 6.12+",
+        "§9.4: page size read path /proc/sys/vm/page_size→getconf PAGE_SIZE/grep KernelPageSize",
+        "§2.11: packagingOptions conditionalized, AGP zip vs ELF segment alignment separated"
+      ],
+      "queue_ids_completed": [
+        "task9-deep-20260522-6.2-f2fs-curseg-erofs-zstd-boundary",
+        "task9-deep-20260522-9.4-16kb-page-size-proc-path",
+        "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary"
+      ]
     }
   ],
   "section_18_23": {

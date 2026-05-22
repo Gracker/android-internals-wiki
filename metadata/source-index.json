@@ -10879,6 +10879,194 @@
       ],
       "summary": "createchance：Java 并发——基石篇（下） discusses Android development with 10/20 score.",
       "scored_at": "2026-05-21T09:07:38.384903"
+    },
+    {
+      "title": "源码调研：Android ADPF PerformanceHintManager 与 Kotlin 协程调度深度验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-adpf-performance-hint-session-kotlin-coroutine-analysis.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch05",
+      "type": "technical_analysis",
+      "tags": [
+        "#Android",
+        "#ADPF",
+        "#Kotlin",
+        "#性能优化",
+        "#协程"
+      ],
+      "summary": "深度分析Android ADPF PerformanceHintManager与Kotlin协程调度机制，包含源码级验证、性能影响分析和实际应用建议",
+      "scored_at": "2026-05-22T06:03:30.011480"
+    },
+    {
+      "title": "源码调研：Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch05",
+      "type": "technical_analysis",
+      "tags": [
+        "#Android",
+        "#AI",
+        "#AICore",
+        "#LiteRT",
+        "#NNAPI",
+        "#ML"
+      ],
+      "summary": "澄清Android AI推理栈边界，验证AICore、LiteRT、NNAPI的公开可发布事实vs preview/vendor/待验证素材",
+      "scored_at": "2026-05-22T06:03:30.011493"
+    },
+    {
+      "title": "源码调研：Android MTE ASYMM 实战：memtagMode=async 自动启用验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-mte-asymm-memtagMode-async-auto-upgrade.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch04",
+      "type": "technical_analysis",
+      "tags": [
+        "#Android",
+        "#内存安全",
+        "#MTE",
+        "#性能优化",
+        "#内存管理"
+      ],
+      "summary": "Android MTE ASYMM模式实战分析，涵盖Zygote、bionic、kernel多层次的内存安全机制实现",
+      "scored_at": "2026-05-22T06:03:30.011495"
+    },
+    {
+      "title": "源码调研：Android 17 ART 分代 GC 与 Compose Composition 性能链路",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch18",
+      "type": "technical_analysis",
+      "tags": [
+        "#Android",
+        "#ART",
+        "#垃圾回收",
+        "#Compose",
+        "#性能优化"
+      ],
+      "summary": "Android 17 ART分代GC与Compose Composition性能链路研究，验证对象分配开销与GC协同机制",
+      "scored_at": "2026-05-22T06:03:30.011497"
+    },
+    {
+      "title": "源码调研：DMA-BUF、Gralloc 与跨进程图形内存共享 Android 16/17 公开边界",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-dma-buf-gralloc-graphics-memory.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "technical_analysis",
+      "tags": [
+        "#Android",
+        "#图形",
+        "#DMA-BUF",
+        "#Gralloc",
+        "#内存共享"
+      ],
+      "summary": "Android 16/17图形内存共享体系源码分析，libdmabufheap、Gralloc4与vendor边界明确化",
+      "scored_at": "2026-05-22T06:03:30.011498"
+    },
+    {
+      "title": "Android ANR 深度治理：从主线程卡顿根因到 ANR Trace 全链路分析方法论",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Android ANR 深度治理：从主线程卡顿根因到 ANR Trace 全链路分析方法论-2026-05-21.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "ch09",
+      "type": "methodology",
+      "tags": [
+        "#Android",
+        "#ANR",
+        "#性能优化",
+        "#调试",
+        "#方法论"
+      ],
+      "summary": "ANR深度治理方法论，从触发机制到traces.txt解读，再到Perfetto对齐的完整分析流程",
+      "scored_at": "2026-05-22T06:03:30.011500"
+    },
+    {
+      "title": "这个问题，90%的安卓开发只能答对一半",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-22-76020726-这个问题90的安卓开发只能答对一半.md",
+      "quality": "medium",
+      "score": 18,
+      "chapter": "ch08",
+      "type": "best_practice",
+      "tags": [
+        "#Android",
+        "#协程",
+        "#线程管理",
+        "#生命周期",
+        "#最佳实践"
+      ],
+      "summary": "Android线程与协程最佳实践，强调任务取消机制、生命周期感知和作用域归属管理",
+      "scored_at": "2026-05-22T06:03:30.011501"
+    },
+    {
+      "title": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-22-76046943-Android_17_终于有原生应用锁了.md",
+      "quality": "medium",
+      "score": 16,
+      "chapter": "ch15",
+      "type": "feature_analysis",
+      "tags": [
+        "#Android",
+        "#隐私",
+        "#应用锁",
+        "#Android17",
+        "#安全"
+      ],
+      "summary": "Android 17原生应用锁功能分析，包含通知内容屏蔽策略与厂商方案对比",
+      "scored_at": "2026-05-22T06:03:30.011502"
+    },
+    {
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-22-76102333-Android_17_有什么需要适配的2.md",
+      "quality": "high",
+      "score": 19,
+      "chapter": "ch16",
+      "type": "migration_guide",
+      "tags": [
+        "#Android",
+        "#适配",
+        "#Android17",
+        "#迁移",
+        "#安全"
+      ],
+      "summary": "Android 17适配指南，涵盖网络配置、权限管理、后台音频收紧等关键变更",
+      "scored_at": "2026-05-22T06:03:30.011503"
+    },
+    {
+      "title": "精读：TDD Governance for Multi-Agent Code Generation via Prompt Engineering",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/AI-2026-05-20-TDD-Governance-Multi-Agent/03-精读.md",
+      "quality": "medium",
+      "score": 18,
+      "chapter": "ch16",
+      "type": "research",
+      "tags": [
+        "#AI",
+        "#TDD",
+        "#多智能体",
+        "#软件开发",
+        "#治理"
+      ],
+      "summary": "多智能体代码生成的TDD治理框架研究，包含提案层与执行层分离的治理架构",
+      "scored_at": "2026-05-22T06:03:30.011505"
+    },
+    {
+      "title": "论文精读：Understanding Large Language Models in Your Pockets: Performance Study on COTS Mobile Devices",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-20-LLM-Perf-Study/03-精读.md",
+      "quality": "high",
+      "score": 19,
+      "chapter": "ch05",
+      "type": "research",
+      "tags": [
+        "#Android",
+        "#AI",
+        "#性能",
+        "#移动端",
+        "#LLM"
+      ],
+      "summary": "手机端侧LLM部署性能测量研究，涵盖硬件要求、量化权衡和系统配置优化",
+      "scored_at": "2026-05-22T06:03:30.011506"
     }
   ]
 }

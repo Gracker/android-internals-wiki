@@ -32,11 +32,11 @@ tags:
 - research
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-05-22T15:21:00+08:00"
+last_task2b_at: "2026-05-22T19:18:14+08:00"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
@@ -223,7 +223,7 @@ static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
 {
     unsigned int free_secs = free_sections(sbi) + freed;
     unsigned int lower_secs, upper_secs;
-    block_t curseg_space;
+    bool curseg_space;
 
     if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
         return false;
@@ -241,10 +241,10 @@ static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
 ```
 
 **三段判定逻辑**：
-- `__get_secs_required()` 同时返回三个值：`lower_secs`（最低需求）、`upper_secs`（充裕阈值）和 `curseg_space`（当前 curseg 剩余空间）
+- `__get_secs_required()` 同时返回三个值：`lower_secs`（最低需求）、`upper_secs`（充裕阈值）和 `curseg_space`（布尔值，当前 curseg 是否能容纳余下的 node/data/dentry blocks）
 - `free_secs > upper_secs`：空闲充足，不需要 GC
 - `free_secs <= lower_secs`：空闲不足，必须触发前台 GC
-- 介于两者之间时：取决于 curseg 是否还有可用空间（`!curseg_space` 表示 curseg 已满，仍需 GC）
+- 介于两者之间时：取决于 curseg 是否还有可用空间（`curseg_space` 为 `false` 表示 curseg 不足以容纳余数，仍需 GC）
 - `lower_secs` 和 `upper_secs` 的计算包含 node/dentry/imeta 三类 dirty sections 加上 reserved sections（over-provisioning，默认约 5%）
 
 **VFS 入口**：`f2fs_balance_fs()`（`fs/f2fs/segment.c`）在每次 VFS 写请求时被调用。当空闲不足需要前台 GC 时，根据 `GC_MERGE` mount option 决定执行方式：`GC_MERGE`=true 时写线程等待 `fggc_wq`，后台 `gc_thread` 被唤醒执行前台 GC（`wake_up(&gc_wait_queue_head)`）；否则同步调用 `f2fs_gc()`。
@@ -330,7 +330,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 
 ### EROFS 的核心优势
 
-**压缩与去重**：EROFS 最大的价值在于它对存储空间的高效利用。Android 13-15 的常见只读分区以 LZ4 为主（默认压缩），内核可选启用 LZMA 或 DEFLATE。ZSTD 压缩需要 Android 16 / kernel 6.12+ 或厂商 backport 并启用 `CONFIG_EROFS_FS_ZIP_ZSTD`。EROFS 还具有字节粒度的去重（deduplication）能力。实测数据显示，EROFS 压缩后的 system 分区镜像比未压缩的 ext4 镜像小 30%-45%，相当于为 128GB 的设备节省了 800MB 到 2GB 的空间——这些空间可以分配给 `data` 分区供用户使用。
+**压缩与去重**：EROFS 最大的价值在于它对存储空间的高效利用。Android 13-15 的常见只读分区以 LZ4 为主（默认压缩），内核可选启用 LZMA 或 DEFLATE。ZSTD 压缩在 upstream Linux 6.10+ 出现（`CONFIG_EROFS_FS_ZIP_ZSTD`），但 android15-6.6 ACK 不含 ZSTD 支持；Android 设备上 ZSTD 需要 ACK/厂商 backport 并启用 `CONFIG_EROFS_FS_ZIP_ZSTD`。EROFS 还具有字节粒度的去重（deduplication）能力。实测数据显示，EROFS 压缩后的 system 分区镜像比未压缩的 ext4 镜像小 30%-45%，相当于为 128GB 的设备节省了 800MB 到 2GB 的空间——这些空间可以分配给 `data` 分区供用户使用。
 
 [已验证: 多来源交叉验证, esper.io, androidauthority.com, pocketnow.com]
 

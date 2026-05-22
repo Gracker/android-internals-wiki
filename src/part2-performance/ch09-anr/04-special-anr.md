@@ -25,10 +25,10 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-05-22T15:21:00+08:00"
+last_task2b_at: "2026-05-22T19:18:14+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 rework_date: "2026-04-16"
@@ -36,8 +36,8 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
@@ -363,12 +363,12 @@ Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`
 
 Android 15+ 设备开始使用 16KB kernel page size，Google Play 从 2025-11-01 起要求面向 Android 15+ 的新应用和更新兼容 16KB page sizes。kernel page size 的变化可能影响 SQLite 的物理 I/O 行为，但影响程度取决于多个因素的实际配置，不能简单断言为固定倍数的写放大。
 
-**影响链条需要实测确认**：kernel page size、filesystem block size、SQLite `PRAGMA page_size`、Room/SQLite 版本和 WAL 文件大小，这些因素共同决定 checkpoint 的实际 I/O 开销。排查时先确认设备的 kernel page size（`adb shell getconf PAGESIZE` 或 `/proc/sys/vm/page_size`），再读取数据库的 `PRAGMA page_size` 和 `PRAGMA wal_autocheckpoint`。
+**影响链条需要实测确认**：kernel page size、filesystem block size、SQLite `PRAGMA page_size`、Room/SQLite 版本和 WAL 文件大小，这些因素共同决定 checkpoint 的实际 I/O 开销。排查时先确认设备的 kernel page size（`adb shell getconf PAGE_SIZE` 或 `grep KernelPageSize /proc/<pid>/smaps`），再读取数据库的 `PRAGMA page_size` 和 `PRAGMA wal_autocheckpoint`。
 
 当 kernel page size 和 filesystem block size 都切到 16KB，且 SQLite database page size 也是 16KB 时，每个脏页的物理写入从 4KB 变为 16KB，checkpoint 的单次 I/O 开销可能相应增大。但这不是“所有 16KB 设备上的 SQLite 都写放大 4 倍”——database page size 由数据库创建时的参数决定，很多现有数据库的 `PRAGMA page_size` 仍然是 1024 或 4096。
 
 **排查步骤**：
-1. 确认设备 kernel page size：`adb shell getconf PAGESIZE`
+1. 确认设备 kernel page size：`adb shell getconf PAGE_SIZE` 或 `adb shell getconf PAGESIZE`
 2. 确认数据库 page size：`PRAGMA page_size`
 3. 确认当前 autocheckpoint 阈值：`PRAGMA wal_autocheckpoint`
 4. 监控 WAL 文件大小和 checkpoint 耗时
