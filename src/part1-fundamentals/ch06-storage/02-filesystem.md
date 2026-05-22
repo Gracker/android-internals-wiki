@@ -11,7 +11,7 @@ drafted_by: openclaw-task2a
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-reviewed_date: '2026-04-23'
+reviewed_date: "2026-05-22"
 reviewed_by: openclaw-task6
 review_type: scheduled-review
 review_round: 4
@@ -34,25 +34,28 @@ task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T15:21:00+08:00"
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task9_state: pending
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T14:20:00+08:00"
+last_task9_at: "2026-05-22T15:42:52+08:00"
 last_task6_audit: "2026-05-19"
-task2b_state: fixed
+task2b_state: pending
 p0: 1
 p1: 1
-p2: 0
+p2: 1
 updated_by: "openclaw-task9"
 updated_date: "2026-05-22"
-review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。"
+review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 11 处；压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。"
 auto_promoted: false
 last_task9_audit: "2026-05-22"
+last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P0 1：android15-6.6 `has_not_enough_free_secs()` 代码片段仍把 `curseg_space` 写成 `block_t` 与“剩余空间”，实际为 bool；需按 lower/upper/curseg_space 三段判定重写。P1 1：EROFS ZSTD 版本边界写成 kernel 6.12+，需标注 upstream Linux 6.10+ / Android ACK 或 backport + CONFIG。P2 1：EROFS 压缩/启动收益百分比缺测试条件。"
+last_task6_at: "2026-05-22T16:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-16-review.md"
 ---
-
 <!-- outline-start -->
 
 
@@ -182,7 +185,7 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 
 这是 f2fs 对 Android 性能贡献最大的一个特性。
 
-SQLite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据真正落盘。
+SQLite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据落到存储介质。
 
 f2fs 在 `kernel/common/include/uapi/linux/f2fs.h` 里定义了 `F2FS_IOC_START_ATOMIC_WRITE`、`F2FS_IOC_COMMIT_ATOMIC_WRITE` 和 `F2FS_IOC_ABORT_ATOMIC_WRITE` 这组 ioctl，允许数据库把一批页修改包成一次原子提交。工作流程可以概括成：
 
@@ -191,7 +194,7 @@ f2fs 在 `kernel/common/include/uapi/linux/f2fs.h` 里定义了 `F2FS_IOC_START_
 3. 成功路径调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)`，让 NAT / node 映射一次性切到新版本
 4. 失败或回滚路径调用 `ioctl(F2FS_IOC_ABORT_ATOMIC_WRITE)`，丢弃本轮改动
 
-这条路径的收益，在于把 journal 文件和多次同步点压成一次提交边界。提交阶段通常只剩一轮主要的持久化边界，而不是 journal 文件和数据文件各做一轮同步。Android 8.1 之后，SQLite / AOSP 已经具备 batch atomic write 的接入点；但是否真正走到这条路径，还要看设备是否使用 f2fs，以及内核、挂载选项和 SQLite 构建配置是否同时满足条件。[已验证: sqlite.org/src/info/5c5e4f6f6d + kernel/common/include/uapi/linux/f2fs.h]
+这条路径的收益，在于把 journal 文件和多次同步点压成一次提交边界。提交阶段通常只剩一轮主要的持久化边界，而不是 journal 文件和数据文件各做一轮同步。Android 8.1 之后，SQLite / AOSP 已经具备 batch atomic write 的接入点；但是否走到这条路径，还要看设备是否使用 f2fs，以及内核、挂载选项和 SQLite 构建配置是否同时满足条件。[已验证: sqlite.org/src/info/5c5e4f6f6d + kernel/common/include/uapi/linux/f2fs.h]
 
 ### f2fs 的 fsync 优化
 
@@ -268,7 +271,7 @@ free_sections <= node_secs + 2 * dent_secs + imeta_secs
 命中后，分配策略会更积极地复用 dirty segment 里的 invalid blocks，也就是 SSR（selective segment reuse）。旧文里把它叫成 threaded logging，只能算历史描述的近似说法；放到当前源码语境里，直接写 LFS / SSR 更贴近实现。
 
 #### SSR 与 GC 的关系
-SSR 不是 GC 的替代品。它的作用，是在 free section 紧张时先让写入路径继续向前推进，少等一次“先清理出干净 segment再写”的过程。真正的空间回收仍然由 `kernel/common/fs/f2fs/gc.c` 里的前台 / 后台 GC 完成，victim 选择和回收节奏也都在那套回收逻辑里。SSR 负责缓冲写入压力，GC 负责把空间拿回来。
+SSR 不是 GC 的替代品。它的作用，是在 free section 紧张时先让写入路径继续向前推进，少等一次“先清理出干净 segment再写”的过程。空间回收仍然由 `kernel/common/fs/f2fs/gc.c` 里的前台 / 后台 GC 完成，victim 选择和回收节奏也都在那套回收逻辑里。SSR 负责缓冲写入压力，GC 负责把空间拿回来。
 
 #### Perfetto 里怎么观察
 Perfetto 通常不会给出一个名为“SSR”的直接 slice。排查时更可操作的线索是：
@@ -306,7 +309,7 @@ Android 需要兼顾 Linux 的大小写敏感语义和移动设备上常见的�
 
 ### fscrypt 与 Inline Encryption：加密在 I/O 路径里的真实位置
 
-Android 的文件级加密建立在 fscrypt 上，真正落到 ext4 / f2fs 的读写路径时，还会继续和块层的 inline encryption 能力配合。
+Android 的文件级加密建立在 fscrypt 上，进入 ext4 / f2fs 的读写路径时，还会继续和块层的 inline encryption 能力配合。
 
 设备具备 Inline Crypto Engine 时，文件系统可以把数据加解密工作交给存储硬件，CPU 主要负责密钥和请求编排。对 trace 分析来说，加密不再等同于“每次写入都多跑一段 CPU 密集计算”。
 
@@ -473,7 +476,7 @@ Android 设备上的文件系统选型并非完全统一，各厂商有不同的
 
 我们在 6.1 节中讨论过写入放大，现在从文件系统层面再深入看一下碎片化导致的性能退化。
 
-ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建-删除-修改操作使得 ext4 的空闲空间变得越来越零散。新写入的文件不得不分散在不连续的物理块中，导致读取时需要多次寻道——虽然对 SSD 来说没有物理寻道的开销，但分散的块意味着更多的 I/O 请求和更低的预读效率。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建-删除-修改操作使得 ext4 的空闲空间变得越来越零散。新写入的文件只能分散在不连续的物理块中，导致读取时需要多次寻道——虽然对 SSD 来说没有物理寻道的开销，但分散的块意味着更多的 I/O 请求和更低的预读效率。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 f2fs 的碎片化问题表现形式不同。f2fs 的 CoW 机制本身不会产生传统意义上的文件碎片（因为写入总是追加到新位置），但 CoW 会产生大量的"无效 segment"——被旧版本数据占据但已经不再被引用的 segment。当无效 segment 积累到一定程度，f2fs 必须执行 GC 来回收空间。GC 的效率取决于冷热分离的效果——如果冷热数据混合在一起，GC 需要搬运大量仍然有效的冷数据，增加了写放大。
 
@@ -499,7 +502,7 @@ f2fs 的演进路径比较独特，项目起点来自 Samsung 的 Jaegeuk Kim：
 
 Google 自己的 Pixel 系列从 Pixel 3（2018 年）开始在 `data` 分区使用 f2fs。从 Android 10 开始，AOSP 的推荐配置明确建议 `data` 分区使用 f2fs。一个关键的里程碑是 Android 8.1——这一版本引入了对 SQLite batch atomic write 的支持（编译选项 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`）。当 SQLite 检测到文件系统和内核能力都满足条件时，可以用原子写接口替代传统的 journal + 多次同步流程；收益主要体现在减少额外写放大和同步等待，具体幅度要看 workload。
 
-Android 15 把 16KB 页面大小（Page Size）带进正式适配范围，f2fs 的边界也随之收紧。内核头文件 `include/linux/f2fs_fs.h` 直接把 `F2FS_BLKSIZE` 定义为 `PAGE_SIZE`，也就是块大小必须和页大小一致。结果是：4KB 时代创建的 4KB f2fs 镜像，不能直接搬到 16KB kernel 上继续挂载为 `/data`；设备切到 16KB 方案时，通常要重建文件系统并完成数据迁移。这一项是格式兼容约束，不是普通的 GC 调优。
+Android 15 把 16KB 页面大小（Page Size）带进正式适配范围，f2fs 的格式限制也随之变严格。内核头文件 `include/linux/f2fs_fs.h` 直接把 `F2FS_BLKSIZE` 定义为 `PAGE_SIZE`，也就是块大小必须和页大小一致。结果是：4KB 时代创建的 4KB f2fs 镜像，不能直接搬到 16KB kernel 上继续挂载为 `/data`；设备切到 16KB 方案时，通常要重建文件系统并完成数据迁移。这一项是格式兼容约束，不是普通的 GC 调优。
 
 ### EROFS：从华为自研到事实标准
 
@@ -536,7 +539,7 @@ Samsung、OPPO、小米等厂商在 2020-2021 年间陆续跟进，在各自的�
 
 ### "f2fs 一定比 ext4 快"
 
-这是最常见也最危险的误解之一。f2fs 在随机写和 fsync 场景下确实比 ext4 有明显优势，但这不意味着它在所有场景下都更快。
+这是最常见也最危险的误解之一。f2fs 在随机写和 fsync 场景下通常比 ext4 有明显优势，但这不意味着它在所有场景下都更快。
 
 顺序读写方面，在 Page Cache 命中率高的情况下，ext4 和 f2fs 的性能几乎没有差异——因为数据根本不经过文件系统的写入路径。f2fs 的 GC 机制在存储空间紧张时会引入不可预测的延迟峰值，这种峰值在 ext4 上不会出现。在存储接近满的情况下，f2fs 的前台 GC 可能导致比 ext4 更严重的卡顿。此外，f2fs 的成熟度和边缘情况处理（如异常断电后的恢复）虽然经过多年改进已经非常可靠，但与经过二十多年打磨的 ext4 相比，在极端场景下仍然可能存在风险。
 
@@ -550,19 +553,19 @@ EROFS 是只读文件系统——这个限制是设计层面决定的，不是�
 
 ### "fsync 在 f2fs 上完全没有开销"
 
-f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大幅降低"不等于"没有"。在正常情况下，f2fs 上的 fsync 确实比 ext4 快得多——通常只需更新少量的元数据映射。但当 f2fs 正在执行 GC（尤其是前台 GC）时，fsync 仍然可能被阻塞数十甚至数百毫秒。存储器件本身的健康状况（磨损程度、预留空间是否充足）也会影响 fsync 的实际延迟。
+f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大幅降低"不等于"没有"。在正常情况下，f2fs 上的 fsync 通常比 ext4 快得多——只需更新少量的元数据映射。但当 f2fs 正在执行 GC（尤其是前台 GC）时，fsync 仍然可能被阻塞数十甚至数百毫秒。存储器件本身的健康状况（磨损程度、预留空间是否充足）也会影响 fsync 的实际延迟。
 
 在 Perfetto 中看到 f2fs 分区上的 fsync 延迟异常时，不要因为"用了 f2fs 就不应该有问题"而跳过存储层面的排查。正确的做法是检查 GC 活动、存储空间使用率和器件健康状态。
 
 ### "手机卡一定是存储变慢了"
 
-这是从用户角度最容易产生的直觉判断，但实际情况远比这复杂。手机使用一段时间后变卡，可能的原因包括：存储碎片化和 GC 压力增大（这确实是存储层面的）、后台进程数量增加导致内存和 CPU 竞争、App 缓存和数据膨胀导致数据库查询变慢、系统更新引入了新的性能回退等。
+这是从用户角度最容易产生的直觉判断，但实际情况远比这复杂。手机使用一段时间后变卡，可能的原因包括：存储碎片化和 GC 压力增大（这属于存储层面）、后台进程数量增加导致内存和 CPU 竞争、App 缓存和数据膨胀导致数据库查询变慢、系统更新引入了新的性能回退等。
 
 在 Trace 中排查"手机变卡"问题时，应该先确认瓶颈在哪里——是主线程在 I/O 上阻塞（存储问题），还是在 CPU 上跑满了计算（算法或渲染问题），还是因为内存不足导致频繁的低内存回收（内存问题）。只有当 Trace 明确显示主线程在 D 状态等待 I/O 时，才需要深入到文件系统层面分析。
 
 ### "恢复出厂设置能彻底解决文件系统碎片化"
 
-恢复出厂设置确实会清除 data 分区的所有数据并重新格式化，短期内能消除碎片化和 GC 压力。但这只是"重置"，不是"解决"——恢复后随着使用，碎片化问题会再次累积。如果根本原因是不良的 I/O 使用模式（某个 App 频繁创建和删除大量小文件），恢复出厂设置后问题会再次出现。
+恢复出厂设置会清除 data 分区的所有数据并重新格式化，短期内能消除碎片化和 GC 压力。但这只是"重置"，不是"解决"——恢复后随着使用，碎片化问题会再次累积。如果根本原因是不良的 I/O 使用模式（某个 App 频繁创建和删除大量小文件），恢复出厂设置后问题会再次出现。
 
 更有针对性的做法是：识别产生大量随机 I/O 的 App（通过 Perfetto 的 block I/O 视图），优化其数据存储策略，保持足够的可用存储空间（至少 10%-15%），以及在系统层面确保 f2fs 的后台 GC 有足够的执行窗口。
 

@@ -210,7 +210,8 @@
     "11.7",
     "24.13",
     "9.4",
-    "26.17"
+    "26.17",
+    "6.2"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -254,20 +255,25 @@
     "src/part3-tools/ch14-other-tools/06-automation-tools.md",
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "src/part2-performance/ch09-anr/04-special-anr.md",
-    "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+    "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
+    "src/part1-fundamentals/ch06-storage/02-filesystem.md"
   ],
   "review_summary": "Task2A 2026-05-22 15: 加工 26.17 线上网络质量监控与接入层协同；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-22",
-    "time": "15:14",
+    "time": "16:06",
     "sections": [
-      "26.17"
+      "9.4",
+      "2.11",
+      "6.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     ],
-    "result": "1 章节通过写作 L1/L2 review / 0 新增回炉 / 0 自动晋升（Task9 pending）",
-    "log": "logs/review/2026-05-22-15-review.md"
+    "result": "3 章节通过写作 L1/L2 review / 0 新增回炉 / 0 自动晋升（Task9 queue pending）",
+    "log": "logs/review/2026-05-22-16-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1662,22 +1668,22 @@
     "9.4": {
       "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 2,
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-22T12:13:00+08:00",
-      "task6_log": "logs/review/2026-05-22-12-review.md",
+      "task6_reviewed_at": "2026-05-22T16:06:00+08:00",
+      "task6_log": "logs/review/2026-05-22-16-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；清理 ContentProvider 占位提示与顺序句式。既有 Task9 16KB SQLite P1 pending queue 保留，未新增回炉。"
+      "task6_note": "修复版本演进里的物理动词式表达；既有 Task9 P0（16KB SQLite 页大小排查路径）queue 保留，保持 task2b_pending。"
     },
     "2.11": {
       "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 14,
+      "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-22T12:13:00+08:00",
-      "task6_log": "logs/review/2026-05-22-12-review.md",
+      "task6_reviewed_at": "2026-05-22T16:06:00+08:00",
+      "task6_log": "logs/review/2026-05-22-16-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；修复结构性元叙述、ASCII 破折号、标点与少量口语化表达。既有 Task9 16KB/ADPF pending queue 保留，未新增回炉。"
+      "task6_note": "压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。"
     },
     "26.17": {
       "task6_result": "pass-light-edit",
@@ -1687,26 +1693,40 @@
       "task6_log": "logs/review/2026-05-22-15-review.md",
       "task6_new_rework": false,
       "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 pending。"
+    },
+    "6.2": {
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-22T16:06:00+08:00",
+      "task6_log": "logs/review/2026-05-22-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。"
     }
   },
-  "total_review_sections": 198,
+  "total_review_sections": 199,
   "next_review_candidates": [],
   "ready_for_review": 154,
-  "last_updated": "2026-05-22T15:14:00+08:00",
+  "last_updated": "2026-05-22T16:06:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-22",
-    "time": "15:14",
-    "reviewed_at": "2026-05-22T15:14:00+08:00",
-    "mode": "normal",
+    "time": "16:06",
+    "reviewed_at": "2026-05-22T16:06:00+08:00",
+    "mode": "revisiting",
     "sections": [
-      "26.17"
+      "9.4",
+      "2.11",
+      "6.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     ],
-    "log": "logs/review/2026-05-22-15-review.md",
-    "result": "26.17 pass-light-edit（L1/L2 小修 4 处；0 新增回炉；0 自动晋升，Task9 pending）"
+    "log": "logs/review/2026-05-22-16-review.md",
+    "result": "9.4/2.11/6.2 pass-light-edit（L1/L2 小修 17 处；0 新增回炉；0 自动晋升，Task9 queue pending）"
   },
   "task9_last_review": "2026-05-22",
   "ready_to_publish": 186,
@@ -2226,13 +2246,13 @@
     "2.11": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-22T01:16:12+08:00",
+      "last_task6_at": "2026-05-22T16:06:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-22-01-review.md",
+      "last_task6_review_log": "logs/review/2026-05-22-16-review.md",
       "source_file": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
     },
     "2.20": {
@@ -4629,6 +4649,30 @@
       "task6_new_rework": false,
       "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。",
       "last_task2a_at": "2026-05-22T15:04:00+08:00"
+    },
+    "9.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-22T16:06:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-22-16-review.md",
+      "source_file": "src/part2-performance/ch09-anr/04-special-anr.md"
+    },
+    "6.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-22T16:06:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-22-16-review.md",
+      "source_file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     }
   },
   "task2b_rounds": [
@@ -4707,31 +4751,39 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "total_review_files": 37,
+  "total_review_files": 42,
   "last_task2a_at": "2026-05-22T11:04:00+08:00",
   "last_task2a_section": "8.12",
   "last_task2a_file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
-    "26.17"
+    "9.4",
+    "2.11",
+    "6.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+    "src/part2-performance/ch09-anr/04-special-anr.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch06-storage/02-filesystem.md"
   ],
-  "last_task6_at": "2026-05-22T15:14:00+08:00",
+  "last_task6_at": "2026-05-22T16:06:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-22",
-    "time": "15:14",
-    "reviewed_at": "2026-05-22T15:14:00+08:00",
-    "mode": "normal",
+    "time": "16:06",
+    "reviewed_at": "2026-05-22T16:06:00+08:00",
+    "mode": "revisiting",
     "sections": [
-      "26.17"
+      "9.4",
+      "2.11",
+      "6.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     ],
-    "log": "logs/review/2026-05-22-15-review.md",
-    "result": "26.17 pass-light-edit（L1/L2 小修 4 处；0 新增回炉；0 自动晋升，Task9 pending）"
+    "log": "logs/review/2026-05-22-16-review.md",
+    "result": "9.4/2.11/6.2 pass-light-edit（L1/L2 小修 17 处；0 新增回炉；0 自动晋升，Task9 queue pending）"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
@@ -4741,12 +4793,12 @@
   "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "8.12",
-  "task6_last_review_at": "2026-05-22T08:20:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-22-08-review.md",
+  "task6_last_review_at": "2026-05-22T16:06:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-22-16-review.md",
   "task6_last_review_sections": [
-    "14.13",
-    "14.6",
-    "4.5"
+    "9.4",
+    "2.11",
+    "6.2"
   ],
   "sections_status": {
     "22.11": {
@@ -5802,31 +5854,31 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-22",
-    "time": "08:20",
-    "reviewed_at": "2026-05-22T08:20:00+08:00",
+    "time": "16:06",
+    "reviewed_at": "2026-05-22T16:06:00+08:00",
     "mode": "revisiting",
     "sections": [
-      "14.13",
-      "14.6",
-      "4.5"
+      "9.4",
+      "2.11",
+      "6.2"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-      "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      "src/part2-performance/ch09-anr/04-special-anr.md",
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     ],
-    "log": "logs/review/2026-05-22-08-review.md",
-    "result": "14.13/14.6/4.5 pass-light-edit（L1/L2 小修 10 处；无新增 L3/L4；沿用 Task9 pending queue）；0 自动晋升 finalized"
+    "log": "logs/review/2026-05-22-16-review.md",
+    "result": "9.4/2.11/6.2 pass-light-edit（L1/L2 小修 17 处；0 新增回炉；0 自动晋升，Task9 queue pending）"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+    "src/part2-performance/ch09-anr/04-special-anr.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch06-storage/02-filesystem.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-    "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+    "src/part2-performance/ch09-anr/04-special-anr.md",
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part1-fundamentals/ch06-storage/02-filesystem.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6085,7 +6137,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "22.3"
+    "9.4",
+    "2.11",
+    "6.2"
   ],
   "task2b_progress": [
     {
@@ -6114,7 +6168,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+  "last_task6_review_log": "logs/review/2026-05-22-16-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",

@@ -51,24 +51,28 @@ last_task2b_at: "2026-05-22T15:21:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+pipeline_stage: task2b_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T11:40:27+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size 合规段仍把 Android 16/NDK r27+ 写成通用边界；需改为 Android 15+ 16KB 设备 + NDK r28 默认 / r27 及以下 linker flags。既有 ADPF P2 已在 suggestions.md 记录，本轮不重复写入。"
+last_task9_at: "2026-05-22T15:42:52+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：16KB Page Size 合规段把“plugin 未适配”的短期方案写成 packagingOptions 处理，需拆开 AGP zip alignment、ELF p_align 与 hardcoded 4KB runtime bug；packagingOptions/useLegacyPackaging 不能修复预编译 .so 的 ELF 对齐或代码假设。"
 reviewed_date: "2026-05-22"
-reviewed_by: "openclaw-task6"
-task6_state: revisiting
+reviewed_by: openclaw-task6
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-05-22T12:13:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-12-review.md"
-review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。"
+last_task6_at: "2026-05-22T16:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-16-review.md"
+review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 5 处；压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-22"
+p0: 0
+p1: 1
+p2: 0
 ---
-
 <!-- outline-start -->
 ## 本节要点大纲
 
@@ -106,13 +110,13 @@ Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFram
 
 这个差异会改变排查入口。列表滚动卡顿时,Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`;Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
 
-排查 Flutter 卡顿时，有三个问题需要同时定清：Flutter 在 Android 上怎么渲染，它的渲染管线和原生 Android 有什么差异，性能问题出现时应该看哪里、怎么分析？
+排查 Flutter 卡顿时，需要先定清三个问题：Flutter 在 Android 上怎么渲染，它的渲染管线和原生 Android 有什么差异，性能问题出现时应该看哪里、怎么分析？
 
 ## Flutter 的渲染架构
 
 Flutter 的渲染架构可以分为三层:Framework 层(Dart)、Engine 层(C++)和平台嵌入层(Platform Embedder)。
 
-Framework 层是我们作为 Flutter 开发者直接接触的部分。我们写的 Widget、State、Element,以及 Rendering 目录下的 RenderObject,都在这一层。当 UI 需要更新时,Framework 层会经历 Build → Layout → Paint 三个阶段:Build 阶段根据状态构建 Widget 树;Layout 阶段计算每个 RenderObject 的大小和位置;Paint 阶段将绘制指令记录到一个 DisplayList 中。
+Framework 层是应用开发者直接接触的部分。Widget、State、Element,以及 Rendering 目录下的 RenderObject,都在这一层。当 UI 需要更新时,Framework 层会经历 Build → Layout → Paint 三个阶段:Build 阶段根据状态构建 Widget 树;Layout 阶段计算每个 RenderObject 的大小和位置;Paint 阶段将绘制指令记录到一个 DisplayList 中。
 
 Engine 层是 Flutter 的核心引擎,用 C++ 编写。它负责两件事:一是把 Framework 层产生的 DisplayList 光栅化为实际的像素数据;二是管理与底层图形 API(Vulkan 或 OpenGL ES)的交互。Engine 层还包含了 Dart 虚拟机、文本排版引擎(最近从 libtxt 迁移到了 SkParagraph)、以及网络、文件等基础能力。
 
@@ -243,7 +247,7 @@ duration_ms: 10000
 EOF
 ```
 
-在 Perfetto UI 中查看时,我们需要关注不同的 Track:
+在 Perfetto UI 中查看时,需要关注不同的 Track:
 
 - Flutter 3.29+ 的 Main(UI+Platform) 线程:看 Dart Build/Layout/Paint、Platform Channel、插件同步调用和 PlatformView 工作是否挤占同一帧预算
 - Flutter 3.28- 或定制 Embedder 的 `1.ui` / `io.flutter.ui`:看 Dart 代码执行耗时、Widget 重建和 Dart VM GC
@@ -275,11 +279,11 @@ import 'dart:developer' as developer;
 
 // 在需要追踪的代码块前后添加
 developer.Timeline.startSync('my_custom_operation');
-// ... 我们要追踪的代码
+// ... 需要追踪的代码
 developer.Timeline.finishSync();
 ```
 
-这在定位某个特定操作的耗时时非常有用。比如如果我们怀疑某个列表的 item builder 太慢,可以在 builder 中添加 trace event,然后在 DevTools 或 Perfetto 中直接看到它的耗时。
+这在定位某个特定操作的耗时时非常有用。比如怀疑某个列表的 item builder 太慢时,可以在 builder 中添加 trace event,然后在 DevTools 或 Perfetto 中直接看到它的耗时。
 
 ## 常见性能问题
 
