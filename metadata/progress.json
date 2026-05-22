@@ -1,6 +1,6 @@
 {
-  "total": 364,
-  "draft": 21,
+  "total": 365,
+  "draft": 22,
   "ready-for-review": 156,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -1663,7 +1663,7 @@
   "total_review_sections": 197,
   "next_review_candidates": [],
   "ready_for_review": 154,
-  "last_updated": "2026-05-22T08:45:48+08:00",
+  "last_updated": "2026-05-22T11:04:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-22",
@@ -4560,6 +4560,27 @@
       "material_count": 3,
       "last_task2a_at": "2026-05-22T08:45:48+08:00",
       "task2a_result": "gap-created"
+    },
+    "8.12": {
+      "section": "8.12",
+      "title": "Keystore/KeyMint 调用延迟与登录链路性能",
+      "file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-22",
+      "queue_priority": 80,
+      "gap_source": "AOSP结构/官方文档/素材驱动",
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "material_count": 6,
+      "last_task2a_at": "2026-05-22T11:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -4585,7 +4606,7 @@
     "result": "ready-for-review",
     "source": "empty-draft-priority"
   },
-  "last_task2a_processed_file": "src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md",
+  "last_task2a_processed_file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
   "last_task2a_processed_date": "2026-05-22",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -4639,9 +4660,9 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "total_review_files": 37,
-  "last_task2a_at": "2026-05-22T07:04:00+08:00",
-  "last_task2a_section": "24.13",
-  "last_task2a_file": "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md",
+  "last_task2a_at": "2026-05-22T11:04:00+08:00",
+  "last_task2a_section": "8.12",
+  "last_task2a_file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
   "last_task6_review": "2026-05-22",
   "last_task6_sections": [
     "14.13",
@@ -4679,7 +4700,7 @@
   "last_task9_at": "2026-05-22T03:46:50+08:00",
   "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "5.16",
+  "last_task2a_processed_section": "8.12",
   "task6_last_review_at": "2026-05-22T08:20:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-22-08-review.md",
   "task6_last_review_sections": [
