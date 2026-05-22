@@ -25,7 +25,7 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T15:21:00+08:00"
@@ -36,21 +36,21 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task6_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T11:40:27+08:00"
+last_task9_at: "2026-05-22T15:42:52+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
-task2b_state: fixed
-p0: 0
-p1: 1
-p2: 1
-updated_by: "openclaw-task6"
+task2b_state: pending
+p0: 1
+p1: 0
+p2: 0
+updated_by: "openclaw-task9"
 updated_date: "2026-05-22"
-review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 2 处（ContentProvider 顺序句式、占位提示改为 Trace 观察点）。既有 Task9 16KB SQLite P1 queue pending，保持 task2b_pending。"
+review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 2 处（ContentProvider 顺序句式、占位提示改为 Trace 观察点）。既有 Task9 16KB SQLite P1 queue pending，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 1 处；修复版本演进里的物理动词式表达；既有 Task9 P0（16KB SQLite 页大小排查路径）queue 保留，保持 task2b_pending。"
 rework_round_2: "2026-05-04"
 last_task9_audit: "2026-05-22"
 task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md."
@@ -59,12 +59,11 @@ task6_audit_notes: "2026-05-22 idle audit: L1 wording fixes; status changed from
 auto_promotion_revoked_by: "openclaw-task6"
 auto_promotion_revoked_date: "2026-05-22"
 auto_promotion_revoked_reason: "Task9 audit queue pending; finalized status was inconsistent."
-last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size / SQLite WAL 段仍把 Android 16 旗舰、kernel page size、SQLite page_size、物理写放大 4 倍与固定 wal_autocheckpoint=250 绑定，需条件化。"
-last_task6_at: "2026-05-22T12:13:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-12-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P0 1：16KB SQLite 排查步骤引用 `/proc/sys/vm/page_size`，该路径不是 Android 官方/标准页大小获取方式；需改为 `getconf PAGE_SIZE`、`Os.sysconf(_SC_PAGE_SIZE)`、`/proc/<pid>/smaps` KernelPageSize 或 `AT_PAGESZ`。"
+last_task6_at: "2026-05-22T16:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-22-16-review.md"
 ---
-
 # 特殊场景的 ANR
 
 > **阅读本章前，你需要了解：** §9.1 ANR 的设计思想（ANR 的超时机制与触发流程）、§9.2 ANR 类型与触发条件。
@@ -442,7 +441,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ## 版本演进
 
-- **Android 8**：`startForegroundService()` 的前台化宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`）；后台 service 限制开始明显收紧。
+- **Android 8**：`startForegroundService()` 的前台化宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`）；后台 service 限制开始明显变严格。
 - **Android 9**：前台化宽限期提升到 10 秒（`10*1000`，见 ActiveServices.java android-9.0.0_r61）。
 - **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
 - **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
