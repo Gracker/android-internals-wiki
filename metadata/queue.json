@@ -17521,6 +17521,45 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T01:30:00+08:00",
       "review_log": "logs/deep-review/2026-05-23-01-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260523-20.14-thread-fd-resource-monitoring",
+      "section": "20.14",
+      "section_title": "线程与 FD 资源监控治理",
+      "priority": 80,
+      "title": "线程与 FD 资源监控治理",
+      "description": "补齐 Part 5 稳定性治理中线程数、匿名线程、FD 泄漏、创建归因与 OOM/Native Crash/ANR 关联判定的独立实战章节。",
+      "reason": "参考书扫描与 research-gaps 均显示线程监控、FD 监控、OOM 发生路径素材充足，但 ch20 当前缺少资源监控治理的独立小节。",
+      "issue_type": "knowledge-gap-resource-monitoring",
+      "severity": "P1",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+      ],
+      "material_paths": [
+        "Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md",
+        "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md",
+        "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md",
+        "intake/research-gaps.md",
+        "https://android.googlesource.com/platform/libcore/+/refs/heads/main/ojluni/src/main/java/java/lang/Thread.java",
+        "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/native/java_lang_Thread.cc",
+        "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/private/bionic_fortify.h",
+        "https://developer.android.com/reference/java/io/FileDescriptor",
+        "https://developer.android.com/ndk/reference/group/file-descriptor"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T02:04:00+08:00",
+      "gap_score": {
+        "material_richness": 5,
+        "book_relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 3,
+        "total": 17
+      }
     }
   ],
   "metadata": {
