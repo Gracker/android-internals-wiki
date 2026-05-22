@@ -2851,3 +2851,15 @@
 - **问题**：正文写 `libcronet.so` 在 16KB 页环境下从 `dlopen` 到首次 HTTP 请求发出的间隔缩短约 10%，但未给出设备、内核页大小、Cronet provider 形态、版本、ABI、样本量或公开来源。Android 16KB page size 的通用收益不能直接推出 Cronet 冷启动 10% 这一具体数据。
 - **建议**：若这是内部实测，补充测试条件和对比表；若没有可复现实验或官方来源，删除“约 10%”并改成定性表述：大型 native 库在 16KB page size 下可能减少页表项和 page fault，但收益需按 provider 与设备实测。
 
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-05-22
+- **类型**：数据缺失
+- **位置**：L330-L334、L378-L382：EROFS 压缩/随机读/启动时间收益百分比
+- **问题**：正文列出 system 镜像缩小 30%-45%、随机读提升约 20% / 最高 300%、Pixel 启动改善 10%-15%、dm-verity 开销 5%-15% 等数字，但缺设备型号、Android 版本、分区大小、压缩算法、workload、冷/热启动条件和原始链接。
+- **建议**：补官方文档、论文或厂商演讲的原始出处与测试条件；补不齐时改为方向性表述，避免把公开案例数字写成 Android 通用基准。
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-05-22
+- **类型**：原理链精度
+- **位置**：L303：低内存 / 频繁 GC ANR 段
+- **问题**：正文把“LMK 杀后台进程释放的内存页”与“需要通过磁盘 I/O 重新分配给存活进程”直接连起来。Linux/Android 中被杀进程的匿名页通常直接释放；真正会引入 I/O 或 CPU 压力的是内存压力下的 kswapd/direct reclaim、page cache 回收、writeback、zram/swap 与后续 refault 等路径。
+- **建议**：改成“系统内存压力会触发回收与调度竞争；kswapd/direct reclaim、page cache eviction/refault、writeback 或 zram/swap 可能增加 CPU/I/O 压力”，不要把 LMK free pages 描述成必须经磁盘 I/O 重新分配。

@@ -33,28 +33,32 @@ tags:
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T15:42:52+08:00"
+last_task9_at: "2026-05-22T19:26:00+08:00"
 last_task6_audit: "2026-05-19"
-task2b_state: pending
-p0: 1
-p1: 1
+task2b_state: "fixed"
+p0: 0
+p1: 0
 p2: 1
 updated_by: "openclaw-task9"
 updated_date: "2026-05-22"
-review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 11 处；压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。"
-auto_promoted: false
+review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 11 处；压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1=0；P2 EROFS/dm-verity 数据条件已在 suggestions 保留；queue 无 pending，自动晋升 finalized。"
+auto_promoted: true
 last_task9_audit: "2026-05-22"
-last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P0 1：android15-6.6 `has_not_enough_free_secs()` 代码片段仍把 `curseg_space` 写成 `block_t` 与“剩余空间”，实际为 bool；需按 lower/upper/curseg_space 三段判定重写。P1 1：EROFS ZSTD 版本边界写成 kernel 6.12+，需标注 upstream Linux 6.10+ / Android ACK 或 backport + CONFIG。P2 1：EROFS 压缩/启动收益百分比缺测试条件。"
+last_task9_review_log: "logs/deep-review/2026-05-22-19-deep-review.md"
+task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 1：EROFS/ dm-verity 百分比仍缺完整测试条件，既有 suggestions 已记录，不重复追加。queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-16-review.md"
+finalized_date: "2026-05-22"
+finalized_by: "openclaw-task9-auto-promote"
+auto_promoted_by: "openclaw-task9"
+auto_promoted_date: "2026-05-22"
 ---
 <!-- outline-start -->
 
