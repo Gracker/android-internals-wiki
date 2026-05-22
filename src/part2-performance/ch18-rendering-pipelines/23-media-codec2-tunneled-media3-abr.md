@@ -201,6 +201,7 @@ Media3 Transformer / 转码链路暂不在本节展开。它更接近离线导�
 ## 参考资料
 
 - [来源: DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md]
+- [来源: DeepResearch/2026-05-23-android-media-codec2-tunneled-playback-abr.md]
 - [来源: DeepResearch/2026-05-15-android-multimedia-codec2-tunneled-abr.md]
 - [引用: https://source.android.com/docs/devices/tv/multimedia-tunneling]
 - [引用: https://source.android.com/docs/core/media/updatable-media]

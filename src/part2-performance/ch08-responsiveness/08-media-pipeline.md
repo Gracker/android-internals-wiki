@@ -216,7 +216,7 @@ fence 链确保从硬件解码器到 GPU 合成再到显示控制器的整个流
 
 这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价也很明确：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
 
-从实现路径看，tunneled playback 在 OMX 时代（Android 4.x-9）就已存在，通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点。Android 10 起 Codec2 作为 OMX 的替代路径，逐步补齐了 tunneled playback 的对应能力（`ACodec::setupTunneledPlayback()` 封装相同语义）。排查时不要误读为“Android 11 才支持 tunneled”——OMX 路径更早就有。组件为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在，像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU。
+从实现路径看，tunneled playback 在 OMX 时代（Android 4.x-9）就已存在，通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点。Android 10 起 Codec2 作为 OMX 的替代路径，逐步补齐了 tunneled playback 的对应能力（`CCodec::configureTunneledVideoPlayback()` 封装相同语义）。排查时不要误读为“Android 11 才支持 tunneled”——OMX 路径更早就有。组件为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在，像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU。
 
 [已验证: AOSP 文档与实现, tunneled playback / sideband stream 机制, OMX tunneled → Codec2 tunneled 版本线]
 [待验证: 具体哪些 SoC/设备支持 tunneled mode，不同设备的支持情况差异较大]
@@ -456,7 +456,7 @@ atrace audio,video,camera,gfx,view,sched,freq
 
 注意：AOSP `atrace.cpp` 中没有 `media` 或 `codec` 分类。如果需要覆盖编解码器的内部 trace，应依赖 `video` 分类以及 MediaCodec 组件自身暴露的 atrace/dumpsys 信息。不同 Android 版本上分类可用性有差异，抓取前建议先运行 `atrace --list_categories` 确认。
 
-[已验证: AOSP android-14/16 system/core/cpio/atrace.cpp — atrace_categories]
+[已验证: AOSP android-14/16 frameworks/native/cmds/atrace/atrace.cpp — atrace_categories]
 
 ## 常见问题与最佳实践
 
@@ -508,7 +508,8 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 ## 版本演进
 
 - **Android 4.1 (Project Butter)**：引入 Fast Mixer Thread，音频延迟从约 100ms 降到约 20-40ms
-- **Android 4.3**：引入 Surface 作为 MediaCodec output，开启零拷贝视频渲染路径
+- **Android 4.1 (API 16)**：`MediaCodec.configure(format, Surface, ...)` 支持将解码输出绑定到 Surface
+- **Android 4.3 (API 18)**：`MediaCodec.createInputSurface()` 支持编码器输入 Surface，开启 GPU 到编码器零拷贝路径
 - **Android 5.0**：引入 async mode (`setCallback`)，MediaCodec 从同步轮询变为异步回调驱动
 - **Android 8.0**：引入 AAudio API，提供 C 语言级别的低延迟音频接口
 - **Android 8.1**：AAudio 支持 MMAP 路径，延迟可降至 10ms 以下
@@ -541,7 +542,7 @@ Codec2（Android 10+）是 OMX 的现代化替代，使用 C++17 队列驱动模
 - **关键文件**：`frameworks/av/media/codec2/core/C2.cpp` — Codec2 库主入口
 - **类型定义**：`frameworks/av/media/codec2/core/include/C2.h` — `C2Component`、`C2Work` 定义
 
-两条路径共存于 `ACodec` 类中，由 `ACodec::setupNode()` 根据 API level 选择初始化哪个路径。
+OMX 路径通过 `ACodec` 适配，Codec2 路径通过 `CCodec` (`media/codec2/sfplugin/CCodec.cpp`) 适配。两条路径在 `MediaCodec` 层面统一 API，但底层实现各自独立。
 
 ### Tunneled Playback 实现差异
 
@@ -551,7 +552,7 @@ Codec2（Android 10+）是 OMX 的现代化替代，使用 C++17 队列驱动模
 | TextureView | `MediaCodec → BufferQueue → SurfaceTexture → App RenderThread → SurfaceFlinger` | GPU 纹理采样 | 否 |
 | Tunneled sideband | `Decoder → sideband handle → SurfaceView layer → HWC` | 无像素接触 | 是 |
 
-OMX 下通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点；Codec2 下通过 `ACodec::setupTunneledPlayback()` 封装相同语义。Tunneled 的本质是 decoder 输出通过 sideband stream 绑定到 video layer，HWC 在音频时钟驱动下直接从 decoder 取帧渲染。
+OMX 下通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点；Codec2 下通过 `CCodec::configureTunneledVideoPlayback()` 封装相同语义。Tunneled 的本质是 decoder 输出通过 sideband stream 绑定到 video layer，HWC 在音频时钟驱动下直接从 decoder 取帧渲染。
 
 ### Media3 ABR 决策机制
 
@@ -563,17 +564,19 @@ Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实�
 
 ### 版本边界
 
-- **Android 4.3+**：Surface 作为 MediaCodec output surface 启用零拷贝路径
+- **Android 4.1+ (API 16)**：Surface 作为 MediaCodec output surface
+- **Android 4.3+ (API 18)**：encoder input Surface (createInputSurface)，零拷贝编码路径
 - **Android 5.0+**：async callback mode 减少主线程阻塞
-- **Android 10 (API 29)+**：Codec2 正式成为 OMX 的替代路径
-- **Android 11 (API 30)+**：low-latency decoding 模式
+- **Android 10 (API 29)+**：Codec2 框架引入，开始作为 OMX 的替代路径；设备是否使用 Codec2 取决于 vendor component 实现与配置
+- **Android 11 (API 30)+**：low-latency decoding 模式；Codec2 路径逐步补齐 tunneled playback 支持（具体可用性依赖设备 vendor component）
 - **Android 15 (API 35)+**：dav1d 默认软解引擎，AV1 软解效率提升约 3x
 
 ### 源码文件索引
 
 | 文件路径 | 关键内容 |
 |----------|---------|
-| `frameworks/av/media/libstagefright/ACodec.cpp` | OMX/Codec2 适配层，tunneled 配置 |
+| `frameworks/av/media/libstagefright/ACodec.cpp` | OMX 适配层（Codec2 走独立 CCodec 路径） |
+| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | Codec2 适配层，tunneled 配置 |
 | `frameworks/av/media/codec2/core/C2.cpp` | Codec2 核心接口实现 |
 | `frameworks/av/media/codec2/core/include/C2.h` | C2Component, C2Work 类型定义 |
 | `androidx/media3/exoplayer/.../DefaultBandwidthMeter.java` | 带宽估算逻辑 |

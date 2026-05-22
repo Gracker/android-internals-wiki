@@ -517,6 +517,13 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ## 参考资料
 
+### Android 17 ART 分代 GC 与 Compose Composition 性能链路
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 AOSP art/runtime 源码验证 Generational CMC 三代模型（young/mid/old）演进路径、YoungMarkCompact 复用 MarkCompact 主实现的设计、Write Barrier + Card Table 协同机制、Compose recomposition 短期对象（lambda/Snapshot/remember）与 Young GC 的因果链。明确指出「20% 对象分配开销降低」无一手 Benchmark 证据，标注为未经验证。
+- 注入时间：2026-05-23
+- 价值：首次从源码级梳理 ART 三代 GC 与 Compose 对象分配的因果链，并对官方定性描述做了严谨的验证状态标注
+
 ### AOSP 源码路径
 - CC 分代实现：`art/runtime/gc/collector/concurrent_copying.cc`
 - CMC 分代类型定义：`art/runtime/gc/collector/mark_compact.h`

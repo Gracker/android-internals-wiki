@@ -236,3 +236,12 @@ order by ts;
 - [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/OverlayProperties.aidl] overlay 支持项边界。
 - [已验证: Perfetto docs, docs/data-sources/frametimeline.md] `expected_frame_timeline_slice` / `actual_frame_timeline_slice` 与 FrameTimeline 版本边界。
 - [来源: Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md] HWC Overlay Plane Capability 与 SF 合成降级验证素材。
+
+## 参考资料
+
+### HWC Overlay Plane Capability 与 SurfaceFlinger 合成降级实战验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 AOSP HWC2/HWC2.4 Composer HAL 源码出发，梳理 Overlay Plane capability 查询路径、合成降级（DEVICE→CLIENT）7 条触发条件、高通/MTK 厂商行为差异、dumpsys SurfaceFlinger 与 Perfetto frametimeline 证据收集方法，建立设备级合成降级判断基准，含中端 vs 高端 SoC Overlay 能力对比表。
+- 注入时间：2026-05-23
+- 价值：首次从源码级完整梳理 HWC 合成降级触发链路和厂商差异，提供可直接操作的 dumpsys/Perfetto 验证步骤

@@ -743,3 +743,32 @@ Android 16 release notes 明确：
 - `.dm/.sdm/.sdc` 具体二进制格式（需进一步定位 art 源码）
 - ArtManagedInstallFileHelper 在 AOSP 的具体路径
 - SDM 与 OatFileManager 的绑定机制（需验证 art/runtime/oat_file_manager.cc）
+
+<!-- AIW-源码调研-2026-05-23：每日选题 #1 调研补充 -->
+
+### 源码调研补遗（2026-05-23）
+
+**来源**：每日选题 #1 | DeepResearch/2026-05-23-android16-cloud-compilation-sdm.md
+
+**关键源码路径**：
+- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`
+- `frameworks/native/cmds/installd/dexopt.cpp`
+- `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`
+
+**已验证事实**：
+- Android 16 Cloud Compilation 通过 SDM（Secure Diamond Mirror）云端预编译绕过设备端 dex2oat，Play Store 上传时预编译，SDM 文件存 CDN，设备安装时下载映射
+- installd 连接改为 `ServiceManager.getService("installd")` 获取 Binder 服务（android-16），旧版 `/dev/socket/installd` socket 路径已弃用
+- ParallelPackageParser 线程池在 Android 13-16 均存在，非 Android 16 新引入
+- SDM 实际位于 `system/extras/sdm/` 目录（工具类，非服务），与 Cloud Compilation 是两个独立机制
+
+**存疑/未验证**（cs.android.com 访问受限）：
+- Cloud Compilation 在 PMS 中的具体判断分支方法名（`getCloudCompiledArtifact` 等）
+- SDM 二进制格式结构
+- Play Store 编译触发机制
+
+**版本演进表补充**（Android 16）：
+| 机制 | 描述 |
+|------|------|
+| Cloud Compilation | 云端预编译 + SDM 下载映射，跳过本地 dex2oat |
+| SDM | System Dexopt Manager，位于 system/extras/sdm/，OTA 场景本地调度工具 |
+|installd 连接 | ServiceManager Binder（android-16），非 socket |

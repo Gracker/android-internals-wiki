@@ -11067,6 +11067,46 @@
       ],
       "summary": "手机端侧LLM部署性能测量研究，涵盖硬件要求、量化权衡和系统配置优化",
       "scored_at": "2026-05-22T06:03:30.011506"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md",
+      "title": "HWC Overlay Plane Capability 与 SurfaceFlinger 合成降级实战验证",
+      "summary": "从 AOSP HWC2/HWC2.4源码梳理Overlay Plane capability查询路径、合成降级7条触发条件、高通/MTK厂商差异、dumpsys/Perfetto证据收集方法。",
+      "chapter": "ch07",
+      "processed_at": "2026-05-23 06:12",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-adpf-performance-hint-session-kotlin-coroutine-analysis.md",
+      "title": "Android ADPF PerformanceHintManager 与 Kotlin 协程调度深度验证",
+      "summary": "验证createHintSession/setThreads/close状态机、Flagged API双栅栏、协程线程迁移影响、Binder IPC约1ms/120Hz消耗12%帧预算。",
+      "chapter": "ch05",
+      "processed_at": "2026-05-23 06:12",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Performance Analyzer/2026-05-20-Android Performance Analyzer-深度调研.md",
+      "title": "Android Performance Analyzer 深度调研",
+      "summary": "梳理APA与Perfetto架构边界、26x提速真实含义、GPU vendor counter覆盖、AI Agent Skills边界，含完整事实核验表。",
+      "chapter": "ch14",
+      "processed_at": "2026-05-23 06:12",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md",
+      "title": "Android 17 ART 分代 GC 与 Compose Composition 性能链路",
+      "summary": "验证Generational CMC三代模型演进、YoungMarkCompact复用设计、Write Barrier+Card Table协同、Compose短期对象与Young GC因果链。",
+      "chapter": "ch04",
+      "processed_at": "2026-05-23 06:12",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md",
+      "title": "Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证",
+      "summary": "验证Perfetto cujs.sql默认仅覆盖系统进程，梳理第三方App三条CUJ分析路径：JankStats、atrace marker、FrameTimeline join。",
+      "chapter": "ch13",
+      "processed_at": "2026-05-23 06:12",
+      "type": "deepresearch-inject"
     }
   ]
 }

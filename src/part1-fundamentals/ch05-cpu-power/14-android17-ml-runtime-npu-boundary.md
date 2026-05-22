@@ -377,3 +377,12 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 
 
 <!-- AIW-源码调研-2026-05-22 -->
+
+## 参考资料
+
+### Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 AOSP；android.hardware.ai.npu 不存在，正确 feature 常量为 android.hardware.neural_processing_unit；NNAPI NDK C API 在 Android 15 废弃但 HAL 1.3 AIDL 仍活跃；LiteRT 是 Play Services SDK 不在 AOSP；AICore 仍为 Developer Preview。建立公开可发布事实 vs preview/vendor/待验证的边界。
+- 注入时间：2026-05-23
+- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料

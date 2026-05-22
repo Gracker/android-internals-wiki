@@ -8,6 +8,7 @@ reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
+last_task6_audit: "2026-05-23"
 task9_state: reviewed
 task9_result: pass-tech-review
 last_task9_at: "2026-05-01T08:27:00+08:00"
@@ -69,7 +70,7 @@ related_chapters: ["16.1", "16.2", "15.7", "14.7"]
 
 ## 环境准备与源码下载
 
-编译 AOSP 首先需要一台性能足够的工作站。Google 内部使用 72 核、64 GB RAM 的机器，全量编译大约 40 分钟。对个人开发者来说，16 核 CPU、64 GB RAM、500 GB 以上 SSD 是比较现实的起步配置。磁盘空间至少预留 400 GB——源码 checkout 约 250 GB，编译产物另需 150 GB。
+编译 AOSP 需要一台性能足够的工作站。Google 内部使用 72 核、64 GB RAM 的机器，全量编译大约 40 分钟。对个人开发者来说，16 核 CPU、64 GB RAM、500 GB 以上 SSD 是比较现实的起步配置。磁盘空间至少预留 400 GB——源码 checkout 约 250 GB，编译产物另需 150 GB。
 
 [已验证: 官方文档, source.android.com/docs/setup/build/requirements]
 
@@ -99,7 +100,7 @@ repo init -u https://android.googlesource.com/platform/manifest \
 repo sync -j32
 ```
 
-这里有几个要点值得注意。`-b android-latest-release` 指向当前最新稳定分支（Android 16 发布后即为 android-16 分支）。从 2026 年开始，Google 调整了 AOSP 发布节奏，改为每年两次（Q2 和 Q4）公开发布源码，推荐使用 `android-latest-release` 而非 `aosp-main`，后者正在向内部开发模式过渡。首次同步大约需要 50-100 GB 的网络流量，耗时取决于网速。
+`-b android-latest-release` 指向当前最新稳定分支（Android 16 发布后即为 android-16 分支）。从 2026 年开始，Google 调整了 AOSP 发布节奏，改为每年两次（Q2 和 Q4）公开发布源码，推荐使用 `android-latest-release` 而非 `aosp-main`，后者正在向内部开发模式过渡。首次同步大约需要 50-100 GB 的网络流量，耗时取决于网速。
 
 [已验证: 官方文档, source.android.com/docs/setup/build/downloading]
 
@@ -209,7 +210,7 @@ ARM64 主机（如 Apple Silicon Mac 上的 Linux 虚拟机）也可以运行 Cu
 
 ## 修改 Framework 代码并验证
 
-现在到了最关键的部分：修改 Framework 代码，然后验证效果。调试循环是这样的：
+Framework 调试的核心是修改代码，然后验证效果。调试循环如下：
 
 **第一步：定位要修改的文件。** AOSP 的 Framework 层源码主要分布在 `frameworks/base/` 下。System Server 的代码在 `frameworks/base/services/`，核心类如 ActivityManagerService、WindowManagerService 都在这里。对于性能分析相关的调试，我们经常需要修改的地方包括：
 
@@ -385,7 +386,7 @@ adb push out/target/product/<device>/system/framework/framework.jar /system/fram
 adb shell stop && adb shell start
 ```
 
-需要注意两点。`adb remount` 可能要求先关闭 dm-verity，这会降低设备安全性，不应在生产设备上使用。部分系统分区在 Android 12+ 使用了 EROFS 等只读文件系统，`adb remount` 能否工作取决于设备的分区方案和 OverlayFS 支持。
+这一步有两个边界。`adb remount` 可能要求先关闭 dm-verity，这会降低设备安全性，不应在生产设备上使用。部分系统分区在 Android 12+ 使用了 EROFS 等只读文件系统，`adb remount` 能否工作取决于设备的分区方案和 OverlayFS 支持。
 
 ## Pixel 设备刷入自编译 ROM
 

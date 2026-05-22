@@ -391,3 +391,19 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 - 摘要：厘清 Perfetto android.cujs.base 默认仅纳入 com.android.*/com.google.android.* 进程的限制，分析系统 FrameTracker 与 Perfetto SQL 模块的两级数据源架构，提供第三方 App 扩展 CUJ 分析的三种方案（JankStats/自定义 atrace/FrameTimeline join）。
 - 注入时间：2026-05-19
 - 价值：填补第三方 App CUJ 分析方案的空白，厘清系统级与 App 级 CUJ 数据源边界
+
+## 参考资料
+
+### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Perfetto google/perfetto cujs.sql 源码验证 android.cujs.base 默认仅覆盖 com.android.*/com.google.android.* 进程，第三方 App 的 CUJ 不自动进入 android_jank_cuj 表。梳理三条第三方可执行路径：AndroidX JankStats（推荐）、自定义 atrace marker（J<> 格式）、FrameTimeline direct join，含完整 FrameTracker 数据流和 JankStats vs FrameTracker 分工对比。
+- 注入时间：2026-05-23
+- 价值：解决了第三方 App 如何使用 Perfetto CUJ 分析的实际工程问题，提供了可直接使用的三种方案和代码示例
+
+### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认第三方 App CUJ 不自动进入 android_jank_cuj 表。给出三条替代路径：AndroidX JankStats（API 30+）、自定义 atrace marker（Trace.beginSection）、FrameTimeline direct join。梳理 FrameTracker 数据流从 Choreographer→ViewRootImpl→JankTracker→SF FrameTimeline→Perfetto。
+- 注入时间：2026-05-23
+- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
