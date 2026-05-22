@@ -214,7 +214,9 @@
     "6.2",
     "24.14",
     "7.18",
-    "20.14"
+    "20.14",
+    "19.14",
+    "18.17"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -262,22 +264,28 @@
     "src/part1-fundamentals/ch06-storage/02-filesystem.md",
     "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
     "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
-    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
+    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "review_summary": "Task2A 2026-05-22 21: 加工 24.15 移动网络性能优化实战；status ready-for-review，进入 Task6 管线。",
   "task6_review_summary": {
     "date": "2026-05-23",
-    "time": "01:24",
+    "time": "04:05",
     "sections": [
-      "1.13"
+      "19.14",
+      "18.17",
+      "20.14"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
     ],
-    "result": "1 章节复审：needs-rework；L1/L2 小修 10 处；1 个结构回炉已并入既有 queue（priority 95）；0 自动晋升（Task9 needs-rework）",
-    "log": "logs/review/2026-05-23-01-review.md",
-    "reviewed_at": "2026-05-23T01:24:00+08:00",
-    "mode": "revisiting-review"
+    "result": "3 章节 review：均 pass-light-edit；L1/L2 小修 10 处；0 个新增回炉；0 自动晋升（19.14/18.17 有 Task9 pending queue，20.14 待 Task9）",
+    "log": "logs/review/2026-05-23-04-review.md",
+    "reviewed_at": "2026-05-23T04:05:00+08:00",
+    "mode": "mixed-review"
   },
   "issues_by_section": {
     "1.6": {
@@ -1733,24 +1741,28 @@
       "task2b_state": "pending"
     }
   },
-  "total_review_sections": 200,
+  "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-23T02:12:00+08:00",
-  "last_updated_by": "openclaw-task6-audit",
+  "last_updated": "2026-05-23T04:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-23",
-    "time": "01:24",
+    "time": "04:05",
     "sections": [
-      "1.13"
+      "19.14",
+      "18.17",
+      "20.14"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
     ],
-    "result": "1 章节复审：needs-rework；L1/L2 小修 10 处；1 个结构回炉已并入既有 queue（priority 95）；0 自动晋升（Task9 needs-rework）",
-    "log": "logs/review/2026-05-23-01-review.md",
-    "reviewed_at": "2026-05-23T01:24:00+08:00",
-    "mode": "revisiting-review"
+    "result": "3 章节 review：均 pass-light-edit；L1/L2 小修 10 处；0 个新增回炉；0 自动晋升（19.14/18.17 有 Task9 pending queue，20.14 待 Task9）",
+    "log": "logs/review/2026-05-23-04-review.md",
+    "reviewed_at": "2026-05-23T04:05:00+08:00",
+    "mode": "mixed-review"
   },
   "task9_last_review": "2026-05-22",
   "ready_to_publish": 186,
@@ -4712,6 +4724,59 @@
       "queue_priority": 80,
       "gap_source": "章节深挖/研究素材/AOSP结构/官方文档",
       "material_count": 4
+    },
+    "19.14": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+      "file": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-23",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-23T04:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
+      "task6_new_rework": false,
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 95,
+      "task6_note": "Task6 04:05 L1/L2 小修 2 处，无新增回炉；Task9 P0 Baseline Profile API floor 已在 queue pending。",
+      "task2b_result": "pending"
+    },
+    "18.17": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "title": "Hardware Buffer Renderer",
+      "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-23",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-23T04:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
+      "task6_new_rework": false,
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 95,
+      "task6_note": "Task6 04:05 L1/L2 小修 6 处，无新增回炉；Task9 P0 NDK SurfaceControl API 签名已在 queue pending。",
+      "task2b_result": "pending"
+    },
+    "20.14": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "title": "线程与 FD 资源监控治理",
+      "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-23",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-23T04:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
+      "task6_new_rework": false,
+      "task9_state": "pending",
+      "task6_note": "Task6 04:05 首审 pass-light-edit；补 section/chapter 与禁用词小修，进入 Task9 pending。"
     }
   },
   "task2b_rounds": [
@@ -4790,31 +4855,39 @@
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
-  "total_review_files": 42,
+  "total_review_files": 48,
   "last_task2a_at": "2026-05-23T03:09:00+08:00",
   "last_task2a_section": "20.14",
   "last_task2a_file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
-    "1.13"
+    "19.14",
+    "18.17",
+    "20.14"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
   ],
-  "last_task6_at": "2026-05-23T01:24:00+08:00",
+  "last_task6_at": "2026-05-23T04:05:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-23",
-    "time": "01:24",
+    "time": "04:05",
     "sections": [
-      "1.13"
+      "19.14",
+      "18.17",
+      "20.14"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
     ],
-    "result": "1 章节复审：needs-rework；L1/L2 小修 10 处；1 个结构回炉已并入既有 queue（priority 95）；0 自动晋升（Task9 needs-rework）",
-    "log": "logs/review/2026-05-23-01-review.md",
-    "reviewed_at": "2026-05-23T01:24:00+08:00",
-    "mode": "revisiting-review"
+    "result": "3 章节 review：均 pass-light-edit；L1/L2 小修 10 处；0 个新增回炉；0 自动晋升（19.14/18.17 有 Task9 pending queue，20.14 待 Task9）",
+    "log": "logs/review/2026-05-23-04-review.md",
+    "reviewed_at": "2026-05-23T04:05:00+08:00",
+    "mode": "mixed-review"
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch02-rendering/02-framerate.md",
@@ -4824,10 +4897,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.14",
-  "task6_last_review_at": "2026-05-23T01:24:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-23-01-review.md",
+  "task6_last_review_at": "2026-05-23T04:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-23-04-review.md",
   "task6_last_review_sections": [
-    "1.13"
+    "19.14",
+    "18.17",
+    "20.14"
   ],
   "sections_status": {
     "22.11": {
@@ -5920,7 +5995,9 @@
     "mode": "revisiting-review"
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
   ],
   "task6_last_reviewed_files": [
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
