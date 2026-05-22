@@ -1,6 +1,6 @@
 {
-  "total": 365,
-  "draft": 21,
+  "total": 366,
+  "draft": 22,
   "ready-for-review": 157,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -5993,27 +5993,30 @@
     "auto_finalized": [],
     "log": "logs/deep-review/2026-05-22-03-deep-review.md"
   },
-  "last_task2a_gap_mining": "11.7",
-  "last_task2a_gap_mining_at": "2026-05-22T08:45:48+08:00",
-  "last_task6_audit": "2026-05-22T06:19:29+08:00",
+  "last_task2a_gap_mining": "26.17",
+  "last_task2a_gap_mining_at": "2026-05-22T14:04:00+08:00",
+  "last_task6_audit": "2026-05-22T11:11:00+08:00",
   "last_task6_audit_sections": [
-    "15.8"
+    "9.4"
   ],
   "last_task6_audit_files": [
-    "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md"
+    "src/part2-performance/ch09-anr/04-special-anr.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-22-06-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-22-11-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-22",
-    "time": "08:45",
+    "time": "14:04",
     "mode": "gap-mining",
-    "created_sections": [
-      "11.7"
-    ],
-    "candidate_count": 5,
+    "empty_draft_count": 0,
+    "candidate_count": 4,
     "qualified_count": 1,
-    "commit": null,
-    "note": "No empty draft section found; created user-settings energy impact gap from daily-info and arXiv 2604.25587."
+    "created_sections": [
+      "26.17"
+    ],
+    "created_files": [
+      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+    ],
+    "top_candidate": "线上网络质量监控与接入层协同"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6388,6 +6391,27 @@
     },
     "material_count": 3,
     "last_task2a_at": "2026-05-22T08:45:48+08:00",
+    "task2a_result": "gap-created"
+  },
+  "section_26_17": {
+    "section": "26.17",
+    "title": "线上网络质量监控与接入层协同",
+    "file": "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-22",
+    "queue_priority": 80,
+    "gap_source": "参考书素材/知识盲区/官方文档/AOSP结构",
+    "gap_score": {
+      "素材丰富度": 4,
+      "与全书目标相关性": 4,
+      "读者需求度": 4,
+      "时效性": 4,
+      "total": 16
+    },
+    "material_count": 5,
+    "last_task2a_at": "2026-05-22T14:04:00+08:00",
     "task2a_result": "gap-created"
   }
 }

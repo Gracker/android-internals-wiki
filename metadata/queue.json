@@ -16880,6 +16880,42 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-22T12:04:00+08:00",
       "completion_reason": "Task 2A content processing: draft expanded and status set to ready-for-review"
+    },
+    {
+      "id": "task2a-gap-20260522-26.17-online-network-quality-observability",
+      "section": "26.17",
+      "section_title": "线上网络质量监控与接入层协同",
+      "priority": 80,
+      "title": "补齐线上网络质量监控与接入层协同章节",
+      "description": "基于极客时间网络监控参考书素材、AIW research-gaps 与官方 TrafficStats/NetworkCapabilities 文档，新增 Part 5 应用可观测性中的网络质量监控小节。",
+      "reason": "ch26 已覆盖 Crash、ANR、性能指标、实验与存储/I/O 可观测性，但缺少面向网络故障的客户端阶段耗时、接入层对账和告警分层章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md",
+        "intake/research-gaps.md#2026-05-22-网络可观测性与监控",
+        "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+        "https://developer.android.com/reference/android/net/TrafficStats",
+        "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/Connectivity/framework-t/src/android/net/TrafficStats.java"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-22T14:04:00+08:00",
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      }
     }
   ],
   "metadata": {
