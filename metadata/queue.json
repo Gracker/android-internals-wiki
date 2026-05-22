@@ -17388,23 +17388,59 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-22T20:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-22-20-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260523-7.18-hwc-overlay-composition-downgrade",
+      "section": "7.18",
+      "section_title": "HWC Overlay Plane 与合成降级排查",
+      "priority": 80,
+      "title": "HWC Overlay Plane 能力基准与 SurfaceFlinger 合成降级排查需要独立小节",
+      "description": "2026-05-23 缺口挖掘发现：现有 7.6/7.15/2.6 已分散覆盖 HWC 合成降级，但缺少面向 App 卡顿排障的独立流程，需把 Overlay Plane 能力、DEVICE/CLIENT composition、Perfetto/Winscope/dumpsys 证据和优化动作放到同一节。",
+      "reason": "[Task2A gap-mining] HWC Overlay Plane 能力属于中高频系统侧卡顿根因；DeepResearch 2026-05-22 已提供源码链路和官方文档锚点，足够独立成节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md",
+        "src/part2-performance/ch07-smoothness/06-case-studies.md#案例六-surfaceflinger-hwc-合成降级导致掉帧",
+        "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md#hwc-overlay-plane-capability-与-surfaceflinger-合成降级实战验证",
+        "https://source.android.com/docs/core/graphics/implement-hwc",
+        "https://source.android.com/docs/core/graphics/hwc",
+        "https://android.googlesource.com/platform/frameworks/native/+/master/services/surfaceflinger/DisplayHardware/HWC2.cpp"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T00:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 474,
+    "total_entries": 475,
     "p0_count": 200,
-    "last_updated": "2026-05-22T20:04:00+08:00",
+    "last_updated": "2026-05-23T00:04:00+08:00",
     "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 169,
-    "updated_date": "2026-05-22",
+    "pending_entries": 170,
+    "updated_date": "2026-05-23",
     "last_updated_by": "task2a-knowledge-gap",
-    "pending": 169,
+    "pending": 170,
     "completed_entries": 302,
-    "last_task2a_gap_mining": "24.15",
-    "last_task2a_gap_mining_at": "2026-05-22T20:04:00+08:00",
+    "last_task2a_gap_mining": "7.18",
+    "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-22T20:04:00+08:00",
+  "last_updated": "2026-05-23T00:04:00+08:00",
   "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
@@ -23692,10 +23728,46 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-22T20:04:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260523-7.18-hwc-overlay-composition-downgrade",
+      "section": "7.18",
+      "section_title": "HWC Overlay Plane 与合成降级排查",
+      "priority": 80,
+      "title": "HWC Overlay Plane 能力基准与 SurfaceFlinger 合成降级排查需要独立小节",
+      "description": "2026-05-23 缺口挖掘发现：现有 7.6/7.15/2.6 已分散覆盖 HWC 合成降级，但缺少面向 App 卡顿排障的独立流程，需把 Overlay Plane 能力、DEVICE/CLIENT composition、Perfetto/Winscope/dumpsys 证据和优化动作放到同一节。",
+      "reason": "[Task2A gap-mining] HWC Overlay Plane 能力属于中高频系统侧卡顿根因；DeepResearch 2026-05-22 已提供源码链路和官方文档锚点，足够独立成节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md",
+        "src/part2-performance/ch07-smoothness/06-case-studies.md#案例六-surfaceflinger-hwc-合成降级导致掉帧",
+        "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md#hwc-overlay-plane-capability-与-surfaceflinger-合成降级实战验证",
+        "https://source.android.com/docs/core/graphics/implement-hwc",
+        "https://source.android.com/docs/core/graphics/hwc",
+        "https://android.googlesource.com/platform/frameworks/native/+/master/services/surfaceflinger/DisplayHardware/HWC2.cpp"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 5,
+        "时效性": 4,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T00:04:00+08:00"
     }
   ],
   "last_task2a_completed": "24.14",
   "last_task2a_completed_at": "2026-05-22T16:18:00+08:00",
-  "last_task2a_gap_mining": "24.15",
-  "last_task2a_gap_mining_at": "2026-05-22T20:04:00+08:00"
+  "last_task2a_gap_mining": "7.18",
+  "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00"
 }
