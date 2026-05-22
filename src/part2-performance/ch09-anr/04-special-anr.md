@@ -36,22 +36,24 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T07:30:41+08:00"
+task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-05-22T08:40:32+08:00"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
-task2b_state: fixed
-p0: 0
-p1: 0
+task2b_state: pending
+p0: 2
+p1: 2
 p2: 1
 updated_by: "openclaw-task9"
-updated_date: "2026-04-29"
+updated_date: "2026-05-22"
 review_notes: "2026-05-04 task2b rework: 16KB Page写放大、Freezer感知豁免、异步广播优先级反转。P0 0 / P1 3 fixed。"
 rework_round_2: "2026-05-04"
+last_task9_audit: "2026-05-22"
+task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md."
 ---
 
 # 特殊场景的 ANR

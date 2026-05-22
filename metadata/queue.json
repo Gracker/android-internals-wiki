@@ -1,6 +1,69 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260522-9.4-special-anr-broadcast-freezer-sqlite",
+      "section": "9.4",
+      "section_title": "特殊场景的 ANR",
+      "priority": 95,
+      "title": "BroadcastQueue 线程模型、Freezer 计时与 16KB SQLite 版本边界需修正",
+      "description": "Task9 闲时抽检发现 §9.4 存在 AOSP 路径错误、Modern Broadcast Queue / onReceive 线程模型错误，以及 Android 16 Freezer 与 16KB page/SQLite WAL 的版本边界过度泛化。",
+      "reason": "[Deep Tech Review Audit] §9.4 特殊场景 ANR 存在 P0/P1 技术问题，需回炉修正源码锚点、BroadcastQueue 线程模型、Freezer 计时口径和 16KB SQLite 条件边界。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-22",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/04-special-anr.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-22-08-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/core/java/android/app/IActivityManager.aidl",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/utils/AnrTimer.java",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://sqlite.org/wal.html",
+        "https://sqlite.org/pragma.html#pragma_page_size"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Frontmatter AOSP 路径",
+          "location": "frontmatter sources L22：`frameworks/base/core/java/android/app/IActivityManager.java`",
+          "detail": "AOSP android-14/15/16 中 `IActivityManager` 是 AIDL 接口，路径为 `frameworks/base/core/java/android/app/IActivityManager.aidl`；`.java` 路径在 android-14.0.0_r1 下 404。当前 source anchor 会让读者和后续审校脚本追错文件。",
+          "suggestion": "把 frontmatter source path 改为 `frameworks/base/core/java/android/app/IActivityManager.aidl`；若正文未实际使用该接口，直接从 sources 中移除。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/BroadcastQueue 线程模型",
+          "location": "L146-L150：`ModernBroadcastQueue` 与 `onReceive()` 内部线程池",
+          "detail": "AOSP Android 14/15 的实现类是 `BroadcastQueueModernImpl` + `BroadcastProcessQueue`，Android 16 侧为 `BroadcastQueueImpl`，并不存在名为 `ModernBroadcastQueue` 的 framework 类。更关键的是，manifest receiver 仍由 `IApplicationThread.scheduleReceiver()` 投递到 `ActivityThread.H.RECEIVER`，再在 `ActivityThread.handleReceiver()` 中直接调用 `receiver.onReceive(...)`；动态注册 receiver 默认也是注册线程/主线程 Handler，除非调用方显式传入 Handler。framework 没有把 `onReceive()` 投递到“目标进程内部线程池”。",
+          "suggestion": "删除“内部线程池异步执行 / 主线程空闲等待广播回调完成”这条归因，改为：Modern Broadcast Queue 是 system_server 侧按进程排队与调度；App 侧 `onReceive()` 默认仍在主线程。若 trace 里看到 BG Thread 池 Runnable，应归因到 App 自己的 `goAsync()` / executor / SDK 线程池，而不是 framework 的 ModernBroadcastQueue。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/Android 16 Freezer 与 ANR 计时口径",
+          "location": "L109：Android 16+ “ANR 超时计时会暂停 / 可基本排除 Freezer 干扰”",
+          "detail": "Android 16 `BroadcastQueueImpl` 在调度 receiver 前会 `unfreezeTemporarily(... START_RECEIVER)`，广播 ANR 计时使用 `BroadcastAnrTimer(new AnrTimer.Args().extend(true).freeze(true))`；`extend(true)` 表示可按 CPU delay 做一次软超时延长，`freeze(true)` 是对 ANR 后进程状态的处理选项。现有源码锚点不能推出“所有 ANR timer 在进程冻结期间暂停”，也不能推出 Android 16+ 发生 ANR 时可全局排除 Freezer。",
+          "suggestion": "改成限定口径：Android 16 的广播/回调调度对 freezer 更敏感，会在投递前临时解冻并可基于 CPU starvation 延长超时；排查仍要看 freezer/unfreeze 事件、binder callback 是否在冻结期积压、以及 ANR 类型。不要把结论扩展到 Input、Service、ContentProvider 等所有 ANR。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/16KB page 与 SQLite WAL 条件化边界",
+          "location": "L354-L358：Android 16 旗舰设备强制 16KB page、SQLite checkpoint 写放大与 `wal_autocheckpoint=250`",
+          "detail": "官方公开口径是 Android 15+ 设备可能使用 16KB 内存页，Google Play 从 2025-11-01 要求面向 Android 15+ 的新应用/更新支持 16KB page size；不是“Android 16 在旗舰设备上强制”。同时 SQLite WAL 的 `wal_autocheckpoint` 单位是数据库 page（默认阈值 1000 pages），数据库 page size 由数据库创建/`PRAGMA page_size` 决定，不能把 kernel memory page size 直接等同为每个 SQLite dirty page 一定从 4KB 变 16KB。当前“物理写放大 4 倍”和“建议固定调到 250”缺少设备、filesystem block size、SQLite page_size、Room/SQLite 版本与 checkpoint 实测支撑。",
+          "suggestion": "改成条件化写法：在 16KB kernel page size 且数据库/文件系统/SQLite 配置导致更大 I/O 粒度时，checkpoint 单次代价可能上升；先用 `PRAGMA page_size`、`PRAGMA wal_autocheckpoint`、WAL 文件大小、checkpoint 耗时和设备 page size 实测确认，再决定是否调低 autocheckpoint。版本口径改为 Android 15+ 16KB 兼容要求与部分 16KB 设备，而非 Android 16 全量/旗舰强制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T08:40:32+08:00",
+      "review_log": "logs/deep-review/2026-05-22-08-audit.md"
+    },
+    {
       "id": "task9-audit-20260522-6.1-storage-fbe-io-cgroup",
       "section": "6.1",
       "section_title": "Android 存储架构",
