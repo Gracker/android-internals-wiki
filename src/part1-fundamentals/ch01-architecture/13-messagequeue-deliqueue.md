@@ -5,7 +5,7 @@ section: "1.13"
 status: ready-for-review
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-23"
 reviewed_by: openclaw-task6
 last_verified: "2026-04-24"
 last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers MessageQueue 行为变更页 + Android Developers Blog 2026-02-17"
@@ -36,8 +36,9 @@ tags:
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_result: needs-rework
+last_task6_review_log: "logs/review/2026-05-23-01-review.md"
 task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-05-23T00:20:00+08:00"
@@ -47,9 +48,9 @@ task2b_state: pending
 task2b_result: pending
 last_task2b_at: "2026-05-22T23:21:23+08:00"
 task9_review_notes: "2026-05-23 task9 deep-review: needs-rework。P0 1 / P1 1。android-16 tag 目录表误列 Locked/SemiConcurrentMessageQueue，且 CombinedMessageQueue 方法名/Android17 DeliQueue 数据结构边界仍需 Task2B 回炉。"
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T12:26:00+08:00"
-task6_review_notes: "2026-05-05 Task6 re-review: pass-light-edit。修复 frontmatter 重复状态、代码省略标注、源码调研段落编辑痕迹与 Treiber 拼写；Task9 已通过且 queue 无 pending，确认 ready-to-publish。"
+task6_reviewed_date: "2026-05-23"
+last_task6_at: "2026-05-23T01:24:00+08:00"
+task6_review_notes: "2026-05-23 Task6 revisiting-review: needs-rework。L1/L2 小修：移除 AIW 源码调研 HTML 注释，修正 8 处措辞/术语，补 [需重写] 标注。L3/L4：参考资料前后仍有源码调研补充块，需 Task2B 整合进正文/附录或移出发布稿；Task9 P0/P1 继续沿用 pending queue。"
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-21-audit.md"
 task9_audit_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：CombinedDeliMessageQueue / MessageStack / MessageHeap AOSP mainline 路径不可验证，SemiConcurrentMessageQueue 主线/分支边界混写。"
@@ -85,7 +86,7 @@ task9_audit_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：CombinedD
 
 主线程卡顿并不都发生在 `doFrame()` 里面。很多 trace 往下展开后,会先看到主线程在等一把锁,随后 `doFrame()` 才被整体推迟。排查这类问题时,如果把注意力只放在 layout、draw 或 Binder 调用上,容易漏掉调度层本身的竞争。
 
-MessageQueue 就在这个位置上。Input 事件、`Handler.post()`、`Choreographer` 的 VSync 回调,最终都要先进入 MessageQueue,再由 `Looper` 取出并分发。只要入队和出队的同步方式有瓶颈,主线程的帧预算就会先在队列门口被吃掉。
+MessageQueue 就在这个位置上。Input 事件、`Handler.post()`、`Choreographer` 的 VSync 回调,最终都要先进入 MessageQueue,再由 `Looper` 取出并分发。只要入队和出队的同步方式有瓶颈,主线程的帧预算会先消耗在队列入口。
 
 本文沿用社区里对新实现的称呼 **DeliQueue**。公开官方页面用的名字更朴素,就是 **lock-free MessageQueue**。两个名字指向同一件事:Android 17 面向 `targetSdk 37` 的应用,把旧的单一 monitor 方案换成了新的无锁实现。
 
@@ -107,7 +108,7 @@ private static boolean loopOnce(final Looper me, /* 省略其他参数 */) {
 }
 ```
 
-这条边界很重要。复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会把本次 `MessageQueue` 的锁持有时间直接拉长。把这两段混成一件事,后面的因果关系就会写歪。
+这条边界很重要。复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会把本次 `MessageQueue` 的锁持有时间直接拉长。把这两段混成一件事，后面的因果关系会被混淆。
 
 ## 传统实现为什么容易出现锁竞争
 
@@ -271,7 +272,7 @@ Android 的公开实现里,相关处理分散在 state node、取消路径、`ne
 
 1. `Choreographer` 仍然投递异步消息。
 2. 如果队列头部存在 barrier,`nextMessage()` 仍然会优先检查异步队列。
-3. 变化发生在入队和取消阶段。生产者线程不再和主线程围着同一把 Java monitor 打架。
+3. 变化发生在入队和取消阶段。生产者线程不再和主线程争抢同一把 Java monitor。
 
 对渲染流程的影响也要这样写:新实现减少的是 **queue operation 的竞争**,不是把 layout、draw、measure 本身做快了。布局开销仍在 `dispatchMessage()` 之后;VSync 到 `doFrame()` 的抖动,则有机会因为队列竞争减少而更稳定。
 
@@ -315,7 +316,7 @@ Android 17 行为变更页面已经把兼容性风险点写得很具体。
 
 ### 兼容开关可以拿来做 A/B 排查
 
-如果 retarget 到 Android 17 后出现 crash、UI 异常、测试不稳定,可以先做一件很朴素的事:
+如果 retarget 到 Android 17 后出现 crash、UI 异常、测试不稳定，可以先做一项对照:
 
 ```bash
 adb am compat enable USE_NEW_MESSAGEQUEUE <your-package-name>
@@ -333,7 +334,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 - `enqueueMessage()` / `next()` 周边出现 monitor contention,说明旧实现的队列竞争在放大问题。
 - `dispatchMessage()` 很长,说明业务本身慢,问题不在队列锁。
 
-### 2. 升到 Android 17 后,如果 contention 消失但帧还是慢,别再盯着 MessageQueue
+### 2. 升到 Android 17 后，如果 contention 消失但帧还是慢，继续检查后续路径
 
 这时该回头看后续慢路径：layout、draw、Binder、数据库、I/O、锁竞争、GPU backpressure。
 
@@ -365,11 +366,11 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ### "新实现里还是能从 `mMessages` 看见真实队列"
 
-官方页面已经把这个口子堵死了。字段还在,值固定不再代表真实队列内容。
+官方页面已经明确：这个字段还在，但值固定不再代表真实队列内容。
 
 ### "DeliQueue 引入了新的任务优先级重排机制"
 
-公开源码能确认的调度语义还是 `when`、barrier、async message 这三件事。它换的是队列结构和同步方式,不是给应用层偷偷加了一套新的优先级系统。
+公开源码能确认的调度语义还是 `when`、barrier、async message 这三件事。它换的是队列结构和同步方式，不是给应用层额外加入新的优先级系统。
 
 ## 收尾
 
@@ -377,12 +378,13 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 这节最该带走的判断只有两个:
 
-- trace 里看到 `dispatchMessage()` 长,不要先甩锅给 MessageQueue。
+- trace 里看到 `dispatchMessage()` 长，不要先归因到 MessageQueue。
 - retarget 到 Android 17 后,如果测试框架、反射代码、旧监控脚本先出问题,先查 `mMessages` 和测试库版本,再查业务逻辑。
 
 
 
-<!-- AIW-源码调研-2026-04-26 -->
+[需重写: 以下“补充”段仍像源码调研素材块，和本文主线、参考资料顺序断开；请 Task2B 重新整合到正文、改成正式附录，或移出发布稿。]
+
 ## 补充:16KB Page Size 对线程栈内存的影响
 
 这组补充核对线程栈、测试框架和 DeliQueue 性能三组边界：
@@ -431,9 +433,7 @@ Android 17 DeliQueue 对工具链的具体影响:
 
 > 数据来源:Android Developers Blog 2026-02-17《Under the hood: Android 17's lock-free MessageQueue》
 
-<!-- AIW-源码调研-2026-04-26 END -->
 
-<!-- AIW-源码调研-2026-05-01 -->
 ## 补充:DeliQueue 反射失效后的 Idle 判断替代方案
 
 这组源码核对补上 §1.13 / §1.5 / §1.14 的 Idle 判断边界：
@@ -441,7 +441,7 @@ Android 17 DeliQueue 对工具链的具体影响:
 ### mMessages 反射失效的根因
 
 DeliQueue 的内部数据结构不再是链表,而是:
-- **Trebier Stack**(原子指针 mStack):任何线程通过 CAS 无锁并发入队
+- **Treiber Stack**(原子指针 mStack):任何线程通过 CAS 无锁并发入队
 - **Min-Heap**(Looper 线程独享):按 when 时间顺序出队
 
 mMessages 作为字段被保留用于二进制兼容性,但永远返回 null。官方文档明确说明:`mMessages` **always null** in the new implementation。
@@ -483,7 +483,6 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
 
 > 注：`ConcurrentMessageQueue` 和 `CombinedMessageQueue` 已在 `android-16.0.0_r1` 的 `core/java/android/os/` 目录下确认存在。`SemiConcurrentMessageQueue` 在公开源码中不存在，前版误引已删除。
 
-<!-- AIW-源码调研-2026-05-01 END -->
 
 
 ## 参考资料
@@ -505,7 +504,6 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
 - Treiber stack
   https://en.wikipedia.org/wiki/Treiber_Stack
 
-<!-- AIW-源码调研-2026-05-04（已按 Task9 2026-05-22 idle audit 修正：CombinedDeliMessageQueue / MessageStack / MessageHeap 在 AOSP main 中未检出，改为双层表述）-->
 ## 补充:Android 16 并发实现与 Android 17 DeliQueue 方向
 
 ### 第一层:Android 16 tag 可确认的源码(AOSP `android-16.0.0_r1`)
@@ -538,5 +536,3 @@ Android Developers Blog(2026-02-17 "Under the hood: Android 17's lock-free Messa
 ### SemiConcurrentMessageQueue 的来源
 
 `SemiConcurrentMessageQueue` 在 `android-16.0.0_r1` tag 下不存在,但当前 AOSP main 分支已出现。前版将其标注为"ROM fork,非 AOSP 主线",这是基于 android-16 tag 的核验结果,不适用于 AOSP main 的后续状态。具体引入 commit 和功能边界待后续审校补齐。
-
-<!-- AIW-源码调研-2026-05-04 END -->
