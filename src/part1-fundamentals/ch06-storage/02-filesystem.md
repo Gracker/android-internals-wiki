@@ -32,17 +32,17 @@ tags:
 - research
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-23T09:22:00+08:00"
-status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
+last_task2b_at: "2026-05-22T15:21:00+08:00"
+status: ready-for-review
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T14:20:00+08:00"
 last_task6_audit: "2026-05-19"
-task2b_state: "pending"
+task2b_state: fixed
 p0: 1
 p1: 1
 p2: 0
@@ -209,32 +209,48 @@ f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负�
 
 在 Perfetto 中，f2fs 的 GC 活动可以通过 `f2fs_gc_*` 相关的 trace event 观察到。如果我们看到 App 线程在写入时出现长时间的 D 状态等待，同时有 `f2fs_gc` 相关的活动，那大概率是前台 GC 在阻塞写入。[待补充：Trace截图展示f2fs前台GC期间的I/O延迟]
 
-<!-- AIW-源码调研-2026-04-28 -->
 ### f2fs 前台 GC 触发机制详解
 
-f2fs 的前台 GC 触发决策由 `has_not_enough_free_secs()` 函数（`fs/f2fs/segment.h`）控制，源码定义为：
+f2fs 的前台 GC 触发决策由 `has_not_enough_free_secs()` 函数（`fs/f2fs/segment.h`）控制。android15-6.6 的实现使用了三段判定逻辑：
 
 ```c
-static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi, int freed, int needed) {
-    unsigned int free_secs, required_secs;
+// fs/f2fs/segment.h — android15-6.6
+static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
+        int freed, int needed)
+{
+    unsigned int free_secs = free_sections(sbi) + freed;
+    unsigned int lower_secs, upper_secs;
+    block_t curseg_space;
+
     if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
         return false;
-    free_secs = free_sections(sbi) + freed;
-    required_secs = needed + reserved_sections(sbi) + __get_secs_required(sbi);
-    return free_secs < required_secs;
+
+    __get_secs_required(sbi, &lower_secs, &upper_secs, &curseg_space);
+    // 情况 1：空闲充裕，直接返回 false
+    if (free_secs > upper_secs)
+        return false;
+    // 情况 2：空闲不足，需要前台 GC
+    if (free_secs <= lower_secs)
+        return true;
+    // 情况 3：空闲处于中间地带，取决于 curseg 是否还有空间
+    return !curseg_space;
 }
 ```
 
-**触发条件**：`free_sections + freed < needed + reserved_sections + __get_secs_required`  
-- `reserved_sections`：保留的 over-provisioning 空间（默认约 5%），确保 GC 操作始终有空间可用  
-- `__get_secs_required`：根据当前脏数据量计算所需段数，包含 node/dentry/imeta 三类 dirty sections
+**三段判定逻辑**：
+- `__get_secs_required()` 同时返回三个值：`lower_secs`（最低需求）、`upper_secs`（充裕阈值）和 `curseg_space`（当前 curseg 剩余空间）
+- `free_secs > upper_secs`：空闲充足，不需要 GC
+- `free_secs <= lower_secs`：空闲不足，必须触发前台 GC
+- 介于两者之间时：取决于 curseg 是否还有可用空间（`!curseg_space` 表示 curseg 已满，仍需 GC）
+- `lower_secs` 和 `upper_secs` 的计算包含 node/dentry/imeta 三类 dirty sections 加上 reserved sections（over-provisioning，默认约 5%）
 
-**VFS 入口**：`f2fs_balance_fs()`（`fs/f2fs/segment.c`）在每次 VFS 写请求时被调用。当 `has_enough_free_secs()` 返回 false 时，根据 `GC_MERGE` mount option 决定同步或异步执行前台 GC：`GC_MERGE`=true 时唤醒后台 `gc_thread` 执行前台清理（`wake_up(&fggc_wq)`），否则同步调用 `f2fs_gc()`。
+**VFS 入口**：`f2fs_balance_fs()`（`fs/f2fs/segment.c`）在每次 VFS 写请求时被调用。当空闲不足需要前台 GC 时，根据 `GC_MERGE` mount option 决定执行方式：`GC_MERGE`=true 时写线程等待 `fggc_wq`，后台 `gc_thread` 被唤醒执行前台 GC（`wake_up(&gc_wait_queue_head)`）；否则同步调用 `f2fs_gc()`。
 
 **Victim 选择**：前台 GC（`FG_GC`）使用 `GC_GREEDY` 算法——选择有效块最少的 segment 进行清理，以最快速度释放空间。后台 GC 则使用 `GC_CB`（Cost Benefit）或 `GC_AT`（Age Threshold）算法，在不阻塞前台 I/O 的前提下平衡清理效率。
 
-**性能特征**：前台 GC 触发时可能导致 50-500ms 的同步 I/O 阻塞。CVE-2024-53220 修复了 `__get_secs_required()` 对脏数据计算不准确的问题，修复前可能导致内核 panic。
-<!-- AIW-源码调研-2026-04-28 END -->
+**性能特征**：前台 GC 触发时可能导致 50-500ms 的同步 I/O 阻塞。CVE-2024-53220 修复了 `has_not_enough_free_secs()` 判定逻辑相关的问题，影响的是 free section 判定和 GC 触发时机。
+
+`[源码锚点: kernel/common fs/f2fs/segment.h — has_not_enough_free_secs() / __get_secs_required(); fs/f2fs/segment.c — f2fs_balance_fs()]`
 
 ### f2fs 的 LFS / SSR 切换机制
 
@@ -311,7 +327,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 
 ### EROFS 的核心优势
 
-**压缩与去重**：EROFS 最大的价值在于它对存储空间的高效利用。它支持 LZ4（默认）、Zstandard 和 DEFLATE 三种压缩算法，并具有字节粒度的去重（deduplication）能力。实测数据显示，EROFS 压缩后的 system 分区镜像比未压缩的 ext4 镜像小 30%-45%，相当于为 128GB 的设备节省了 800MB 到 2GB 的空间——这些空间可以分配给 `data` 分区供用户使用。
+**压缩与去重**：EROFS 最大的价值在于它对存储空间的高效利用。Android 13-15 的常见只读分区以 LZ4 为主（默认压缩），内核可选启用 LZMA 或 DEFLATE。ZSTD 压缩需要 Android 16 / kernel 6.12+ 或厂商 backport 并启用 `CONFIG_EROFS_FS_ZIP_ZSTD`。EROFS 还具有字节粒度的去重（deduplication）能力。实测数据显示，EROFS 压缩后的 system 分区镜像比未压缩的 ext4 镜像小 30%-45%，相当于为 128GB 的设备节省了 800MB 到 2GB 的空间——这些空间可以分配给 `data` 分区供用户使用。
 
 [已验证: 多来源交叉验证, esper.io, androidauthority.com, pocketnow.com]
 

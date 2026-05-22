@@ -47,14 +47,14 @@ related_chapters:
 - '7.7'
 - '18.12'
 task2b_result: fixed
-last_task2b_at: '2026-05-21T23:22:00+08:00'
+last_task2b_at: "2026-05-22T15:21:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task6_audit: '2026-05-20'
 status: ready-for-review
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T11:40:27+08:00"
@@ -62,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 re-review: needs-rework。P1 1：16KB Page Size 合规段仍把 Android 16/NDK r27+ 写成通用边界；需改为 Android 15+ 16KB 设备 + NDK r28 默认 / r27 及以下 linker flags。既有 ADPF P2 已在 suggestions.md 记录，本轮不重复写入。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T12:13:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-12-review.md"
@@ -176,21 +176,25 @@ PlatformView 不能再只按"两种模式"理解。Flutter Engine 源码里至�
 
 ### 16KB Page Size 合规与 Flutter 原生插件
 
-Android 16 (API 36) 确立 16KB 页大小为旗舰设备的运行基线。从 2025-11-01 起,Google Play 要求所有 Target 35+ 应用的 NDK 原生库完成 16KB 对齐适配。
+Android 15+ 已支持 16KB page-size 设备。Google Play 从 2025-11-01 起要求所有面向 Android 15+ 的新应用和更新兼容 16KB page sizes。对 Flutter 开发者来说，影响的是包含原生代码的第三方插件，而不是 Dart 代码本身。
 
-对 Flutter 开发者来说,影响的是包含原生代码的第三方插件,而不是 Dart 代码本身。Flutter plugin 中的 `.so` 文件必须用 NDK r27+ 重新编译,否则在 16KB 环境下会出现内存对齐错误和运行时崩溃。
+Flutter plugin 中的 `.so` 文件对齐要求取决于 NDK 版本：
 
-排查清单:
+- **NDK r28+**：默认生成 16KB-aligned shared libraries，无需额外配置
+- **NDK r27 及以下**：必须显式配置 linker flags（如 `-Wl,-z,max-page-size=16384` / `-Wl,-z,common-page-size=16384`），否则在 16KB 环境下会出现内存对齐错误和运行时崩溃
 
-- `flutter pub deps` 列出所有依赖,逐个检查含原生代码的 plugin 是否已适配 16KB
-- 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`,优先升级 NDK r28+（默认生成 16KB-aligned `.so`）
-- 若必须使用 NDK r27 或更低版本,在 `CMakeLists.txt` 或 `android` 块中显式配置 linker flags（如 `-Wl,-z,max-page-size=16384`），并确保 AGP 8.5.1+ packaging 对齐
-- 在 16KB 模拟器（`--16kb-page-size`）或 16KB 真机上跑集成测试,验证 native 层行为
+排查清单：
+
+- `flutter pub deps` 列出所有依赖，逐个检查含原生代码的 plugin 是否已适配 16KB
+- 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`，优先升级 NDK r28+（默认生成 16KB-aligned `.so`）
+- 若必须使用 NDK r27 或更低版本，在 `CMakeLists.txt` 或 `android` 块中显式配置 linker flags，并确保 AGP 8.5.1+ packaging 对齐
+- 在 16KB 模拟器（`--16kb-page-size`）或 16KB 真机上跑集成测试，验证 native 层行为
 - 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径——对齐错误在这些场景下最容易触发
+- 复测预编译 `.so` 和 `libc++_shared.so` 的对齐状态
 
-如果某个关键 plugin 还没有适配,短期方案是在 `android/app/build.gradle` 中通过 `packagingOptions` 做对齐处理,长期仍需推动 plugin 作者更新 NDK 版本。
+如果某个关键 plugin 还没有适配，短期方案是在 `android/app/build.gradle` 中通过 `packagingOptions` 做对齐处理，长期仍需推动 plugin 作者更新 NDK 版本。
 
-`[已验证: Android 16 16KB page size requirements, source.android.com; NDK r27 release notes]`
+`[已验证: Android 15+ 16KB page size requirements, developer.android.com/guide/practices/page-sizes; NDK r28 release notes]`
 
 ## 性能分析方法
 
