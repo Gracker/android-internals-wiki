@@ -28,6 +28,8 @@ task9_reviewed_date: "2026-05-09"
 task2b_fixed_at: "2026-05-08T23:46:33"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-09T00:37:58+08:00"
+last_task6_audit: "2026-05-23"
+last_task6_at: "2026-05-23T03:05:00+08:00"
 task2b_result: fixed
 ---
 
@@ -181,7 +183,7 @@ sequenceDiagram
 
 ## 跨 Surface 同步机制
 
-混合渲染的核心难题不在每条管线本身，而在两条管线如何**收到同一帧里**。两个 Layer 由不同线程驱动、不同 BufferQueue 周转、有各自的 fence，要让它们在 SurfaceFlinger 这一轮被一起 latch、用同一组逻辑帧内容合成，需要专门的跨 Surface 同步原语。下面这些机制各自解决的问题不同，不能混用。
+混合渲染的核心难题不在每条管线本身，而在两条管线如何**在同一帧里完成同步**。两个 Layer 由不同线程驱动、不同 BufferQueue 周转、有各自的 fence，要让它们在 SurfaceFlinger 这一轮被一起 latch、用同一组逻辑帧内容合成，需要专门的跨 Surface 同步原语。下面这些机制各自解决的问题不同，不能混用。
 
 | 机制 | 适用范围 | 解决什么问题 |
 |:---|:---|:---|
@@ -218,7 +220,7 @@ SurfaceFlinger 是按 **per-layer** 节奏推进合成的，并不等所有 Laye
 
 ### 优势
 
-1. **UI 与内容解耦**：主线程卡顿不直接拖慢视频播放。这是混合渲染最大的价值——在 Trace 中你可以看到 UI Thread 掉帧了，但 SurfaceView 的帧率依然稳定。
+1. **UI 与内容解耦**：主线程卡顿不直接拖慢视频播放。这是混合渲染的主要价值：Trace 中会同时出现 UI Thread 掉帧和 SurfaceView 帧率稳定的现象。
 2. **HWC 直出**：如果 SurfaceView 的 Buffer 格式和分辨率与 HWC 兼容，SurfaceFlinger 可以直接将两个 Layer 交给 HWC 硬件叠加，不经过 GPU 合成。这是功耗最优的路径。
 3. **帧率独立**：视频可以按 24fps 输出，UI 可以按 60fps 渲染，互不影响。
 
@@ -228,7 +230,7 @@ SurfaceFlinger 是按 **per-layer** 节奏推进合成的，并不等所有 Laye
 
 当用户快速滚动列表时，SurfaceView 的位置（由 UI Thread 控制）需要与视频帧内容（由解码线程控制）保持同步。如果位置更新和内容更新不在同一个 VSync 周期内着陆，就会出现视频画面与 UI 容器不对齐的情况——看起来像视频在"飘"。
 
-**解法**：Android 12+ 上 BLAST / Transaction 模型允许将 SurfaceView 的几何位置更新与**受控 Surface** 的 Buffer 内容更新放入同一个 Transaction，显著减少竞态。但这只适用于 App 侧能控制的 Surface（如自绘内容）；对 MediaCodec / Camera 等外部 Producer，App 无法把解码产出的下一帧 buffer 也放进 Transaction，同步仍依赖 Producer 的 buffer 到达时机和 fence。[已验证: Android 12 BLAST 文档]
+**解法**：Android 12+ 上 BLAST / Transaction 模型允许将 SurfaceView 的几何位置更新与**受控 Surface** 的 Buffer 内容更新放入同一个 Transaction，减少两者分开发送带来的竞态。但这只适用于 App 侧能控制的 Surface（如自绘内容）；对 MediaCodec / Camera 等外部 Producer，App 无法把解码产出的下一帧 buffer 也放进 Transaction，同步仍依赖 Producer 的 buffer 到达时机和 fence。[已验证: Android 12 BLAST 文档]
 
 #### 陷阱二：Layer 过多导致 GPU 合成
 
