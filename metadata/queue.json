@@ -18293,57 +18293,21 @@
   "metadata": {
     "total_entries": 492,
     "p0_count": 211,
-    "last_updated": "2026-05-23T16:20:00+08:00",
+    "last_updated": "2026-05-23T19:20:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 169,
+    "pending_entries": 168,
     "updated_date": "2026-05-23",
     "last_updated_by": "openclaw-task9",
-    "pending": 169,
+    "pending": 168,
     "completed_entries": 320,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-23T17:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-23T19:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "pending": [
-    {
-      "id": "task9-audit-20260523-8.5-case-studies-autofdo-metrics",
-      "section": "8.5",
-      "section_title": "案例集",
-      "priority": 95,
-      "title": "AutoFDO 官方指标表引用值错误",
-      "description": "Task9 闲时抽检发现 §8.5 AutoFDO 案例把 Android Developers Blog 性能图中的 Cold App Launch、Boot、Binder-rpc、HWBinder 指标值写错或互换，导致系统级启动收益口径失真。",
-      "reason": "[Deep Tech Review Audit] §8.5 AutoFDO 官方指标表引用值错误：Cold App Launch 应为 4.3%，Boot Time 应为 2.1%，Binder-rpc 为 21.7%，HWBinder 为 20.0%，需 Task2B 回炉修正。",
-      "issue_type": "data-source-accuracy-version-difference",
-      "severity": "P0",
-      "created_date": "2026-05-23",
-      "assigned_to": "content-team",
-      "estimated_hours": 0.75,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part2-performance/ch08-responsiveness/05-case-studies.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-23-16-audit.md",
-        "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html",
-        "https://developer.android.com/blog/posts/boosting-android-performance-introducing-autofdo-for-the-kernel"
-      ],
-      "review_issues": [
-        {
-          "severity": "P0",
-          "type": "数据引用错误/AutoFDO 官方指标",
-          "location": "案例五：系统级启动优化——Google AutoFDO 与 16KB 页面 / AutoFDO 指标表",
-          "detail": "正文表格写“App cold start -2.1%”“Boot 缩短 1-2%”“Binder RPC +21%”“HWBinder 最高 +26.4%”。复核 Android Developers Blog《Introducing AutoFDO for the Kernel》的性能图：Cold App Launch Time 为 4.3%，Boot Time 为 2.1%，Binder-rpc 为 21.7%，Hwbinder 为 20.0%。当前写法把启动和开机数值混用，并高估 HWBinder 子项；读者会错误理解 Android GKI AutoFDO 的收益口径。",
-          "suggestion": "把表格改为官方图中的四个数值：Cold App Launch Time 4.3%，Boot Time 2.1%，Binder-rpc 21.7%，Hwbinder 20.0%。同时保留“这些是 Pixel/6.1、6.6、6.12 内核上由 lab workload/profile 验证的 AutoFDO kernel 指标，不能外推到所有 App 或所有设备”的边界说明。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-23T16:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-16-audit.md"
-    },
     {
       "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
       "section": "7.4",

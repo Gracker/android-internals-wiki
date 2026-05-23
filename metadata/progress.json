@@ -1797,8 +1797,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 157,
-  "last_updated": "2026-05-23T18:16:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-23T19:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "16:13",
@@ -1813,7 +1813,7 @@
     "reviewed_at": "2026-05-23T16:13:21+08:00",
     "mode": "revisiting-review"
   },
-  "task9_last_review": "2026-05-22",
+  "task9_last_review": "2026-05-23",
   "ready_to_publish": 186,
   "rework_history": [
     {
@@ -4867,6 +4867,19 @@
       "task2a_result": "ready-for-review",
       "task6_state": "pending",
       "last_task2a_at": "2026-05-23T18:16:00+08:00"
+    },
+    "8.5": {
+      "title": "案例集",
+      "file": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-23T19:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-23-19-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     }
   },
   "task2b_rounds": [
@@ -4915,31 +4928,30 @@
     "result": "needs-rework",
     "auto_promoted": []
   },
-  "last_task9_review": "2026-05-23T00:20:00+08:00",
+  "last_task9_review": "2026-05-23T19:20:00+08:00",
   "last_task9_sections": [
-    "2.2",
-    "1.13"
+    "8.5 案例集"
   ],
   "last_task9_review_detail": {
-    "date": "2026-05-22",
-    "time": "03:46",
-    "reviewed_at": "2026-05-22T03:46:50+08:00",
+    "date": "2026-05-23",
+    "time": "19:20",
+    "reviewed_at": "2026-05-23T19:20:00+08:00",
     "mode": "normal",
     "sections": [
-      "22.3",
-      "21.2"
+      "8.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part2-performance/ch08-responsiveness/05-case-studies.md"
     ],
-    "log": "logs/deep-review/2026-05-22-03-deep-review.md",
-    "p0": 2,
-    "p1": 3,
-    "p2": 3,
-    "p3": 0,
-    "result": "needs-rework",
-    "auto_promoted": []
+    "log": "logs/deep-review/2026-05-23-19-deep-review.md",
+    "p0": 0,
+    "p1": 0,
+    "p2": 0,
+    "p3": 1,
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "8.5 案例集"
+    ]
   },
   "task9_last_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
@@ -4983,7 +4995,7 @@
     "src/part1-fundamentals/ch02-rendering/02-framerate.md",
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
-  "last_task9_at": "2026-05-23T00:20:00+08:00",
+  "last_task9_at": "2026-05-23T19:20:00+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.15",
@@ -6070,18 +6082,15 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "22.3",
-    "21.2"
+    "8.5 案例集"
   ],
   "last_task2a_processed_at": "2026-05-23T18:16:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch02-rendering/02-framerate.md",
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part2-performance/ch08-responsiveness/05-case-studies.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-23-00-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-23-19-deep-review.md",
   "task9_last_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part2-performance/ch08-responsiveness/05-case-studies.md"
   ],
   "last_task2b_run": "2026-05-22T07:21:00+08:00",
   "task2b_sections_fixed": 2,
@@ -6109,25 +6118,25 @@
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
-    "date": "2026-05-22",
-    "time": "03:46",
-    "reviewed_at": "2026-05-22T03:46:50+08:00",
+    "date": "2026-05-23",
+    "time": "19:20",
+    "reviewed_at": "2026-05-23T19:20:00+08:00",
     "mode": "normal",
     "sections": [
-      "22.3",
-      "21.2"
+      "8.5"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part5-app/ch21-startup/02-startup-framework.md"
+      "src/part2-performance/ch08-responsiveness/05-case-studies.md"
     ],
-    "log": "logs/deep-review/2026-05-22-03-deep-review.md",
-    "p0": 2,
-    "p1": 3,
-    "p2": 3,
-    "p3": 0,
-    "result": "needs-rework",
-    "auto_promoted": []
+    "log": "logs/deep-review/2026-05-23-19-deep-review.md",
+    "p0": 0,
+    "p1": 0,
+    "p2": 0,
+    "p3": 1,
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "8.5 案例集"
+    ]
   },
   "task2b_history": [
     {
@@ -6283,7 +6292,7 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": "Task9 deep-review: 2.2 pass-tech-review 并自动晋升 finalized；1.13 needs-rework，P0 1 / P1 1 写入 queue。",
+  "last_task9_review_summary": "Task9 deep-review: 8.5 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-23",
     "time": "17:04",
@@ -6395,7 +6404,7 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-23-19-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-23-01-review.md",
   "section_19_09": {
     "section": "19.09",
