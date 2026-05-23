@@ -1779,8 +1779,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-23T08:18:48+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-23T10:08:00+08:00",
+  "last_updated_by": "openclaw-task6-audit",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "08:18",
@@ -6256,14 +6256,14 @@
     "qualified_count": 1
   },
   "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
-  "last_task6_audit": "2026-05-23T02:12:00+08:00",
+  "last_task6_audit": "2026-05-23T10:08:00+08:00",
   "last_task6_audit_sections": [
-    "16.3"
+    "7.3"
   ],
   "last_task6_audit_files": [
-    "src/part4-system/ch16-aosp/03-aosp-build.md"
+    "src/part2-performance/ch07-smoothness/03-jank-methodology.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-23-02-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-23-10-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-22",
     "time": "14:04",
