@@ -1,7 +1,7 @@
 {
   "total": 376,
-  "draft": 22,
-  "ready-for-review": 163,
+  "draft": 21,
+  "ready-for-review": 164,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-24",
@@ -1851,8 +1851,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T02:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-24T04:15:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -4949,10 +4949,15 @@
       "section": "25.17",
       "title": "Android 17 后台音频硬化与播放功耗治理",
       "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
-      "status": "draft",
-      "pipeline_stage": "task2a-created-draft",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-24",
+      "last_verified": "2026-05-24",
+      "last_verified_against": "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17 源码待复核",
+      "confidence": "medium",
       "queue_priority": 80,
       "gap_source": "官方文档/已有章节深挖/每日信息",
       "gap_score": {
@@ -4962,10 +4967,11 @@
         "时效性": 5,
         "total": 18
       },
-      "material_count": 4,
-      "task2a_state": "created",
-      "task2a_result": "gap-created",
-      "last_task2a_at": "2026-05-24T02:04:00+08:00"
+      "material_count": 14,
+      "task2a_state": "processed",
+      "task2a_result": "processed-draft",
+      "last_task2a_at": "2026-05-24T04:15:00+08:00",
+      "task6_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -4983,8 +4989,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.16",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+  "last_task2a_processed": "25.17",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
   "last_task2a_processed_date": "2026-05-24",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -5036,9 +5042,9 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-24T02:04:00+08:00",
-  "last_task2a_section": "25.16",
-  "last_task2a_file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+  "last_task2a_at": "2026-05-24T04:15:00+08:00",
+  "last_task2a_section": "25.17",
+  "last_task2a_file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "26.18"
@@ -5065,9 +5071,9 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "last_task9_at": "2026-05-23T20:25:42+08:00",
-  "last_task2a_result": "gap-created",
+  "last_task2a_result": "processed-draft",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "25.16",
+  "last_task2a_processed_section": "25.17",
   "task6_last_review_at": "2026-05-23T20:16:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-23-20-review.md",
   "task6_last_review_sections": [
@@ -6145,7 +6151,7 @@
       "last_verified": "2026-05-24",
       "confidence": "medium-high"
     },
-    "25.17": "draft"
+    "25.17": "ready-for-review"
   },
   "task2a_last_processed": {
     "section": "25.16",
@@ -6170,7 +6176,7 @@
   "task9_last_sections": [
     "26.18 App Performance Score 与性能质量评分归因"
   ],
-  "last_task2a_processed_at": "2026-05-24T00:04:00+08:00",
+  "last_task2a_processed_at": "2026-05-24T04:15:00+08:00",
   "last_task9_files": [
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
@@ -6839,8 +6845,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "25.16",
-  "last_task2a_completed_at": "2026-05-24T00:04:00+08:00",
+  "last_task2a_completed": "25.17",
+  "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -7003,10 +7009,15 @@
     "section": "25.17",
     "title": "Android 17 后台音频硬化与播放功耗治理",
     "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
-    "status": "draft",
-    "pipeline_stage": "task2a-created-draft",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-24",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-05-24",
+    "last_verified": "2026-05-24",
+    "last_verified_against": "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17 源码待复核",
+    "confidence": "medium",
     "queue_priority": 80,
     "gap_source": "官方文档/已有章节深挖/每日信息",
     "gap_score": {
@@ -7016,9 +7027,10 @@
       "时效性": 5,
       "total": 18
     },
-    "material_count": 4,
-    "task2a_state": "created",
-    "task2a_result": "gap-created",
-    "last_task2a_at": "2026-05-24T02:04:00+08:00"
+    "material_count": 14,
+    "task2a_state": "processed",
+    "task2a_result": "processed-draft",
+    "last_task2a_at": "2026-05-24T04:15:00+08:00",
+    "task6_state": "pending"
   }
 }
