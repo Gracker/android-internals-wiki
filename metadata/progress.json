@@ -1,7 +1,7 @@
 {
   "total": 372,
-  "draft": 22,
-  "ready-for-review": 163,
+  "draft": 21,
+  "ready-for-review": 164,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-23",
@@ -219,7 +219,8 @@
     "18.17",
     "7.15",
     "7.5",
-    "20.4"
+    "20.4",
+    "14.20"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -6707,8 +6708,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "20.14",
-  "last_task2a_completed_at": "2026-05-23T03:09:00+08:00",
+  "last_task2a_completed": "14.20",
+  "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -6797,5 +6798,15 @@
         }
       ]
     }
-  ]
+  ],
+  "task6_audit_summary": {
+    "date": "2026-05-23",
+    "time": "11:08",
+    "section": "7.14",
+    "file": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
+    "mode": "idle-audit",
+    "result": "L1/L2 小修 3 处；frontmatter 标注 last_task6_audit；未发现 L3/L4 回炉项",
+    "log": "logs/review/2026-05-23-11-audit.md",
+    "reviewed_at": "2026-05-23T11:08:00+08:00"
+  }
 }
