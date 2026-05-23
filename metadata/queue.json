@@ -18412,6 +18412,40 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T01:38:24+08:00",
       "review_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260524-25.17-background-audio-hardening-power",
+      "section": "25.17",
+      "section_title": "Android 17 后台音频硬化与播放功耗治理",
+      "priority": 80,
+      "title": "Android 17 后台音频硬化与播放功耗治理",
+      "description": "补齐 Android 17 后台音频硬化在媒体播放、音频焦点、FGS 和功耗治理中的应用侧实战小节。",
+      "reason": "现有 §1.16、§5.8、§16.5 已说明后台音频行为变更，但 Part 5 缺少面向应用的播放中断排查、功耗预算和 targetSdk 37 灰度验证清单。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/about/versions/17/behavior-changes-all",
+        "https://developer.android.com/about/versions/17/release-notes",
+        "Clippings/Android 性能优化 - Android 性能优化总结.md"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T02:04:00+08:00"
     }
   ],
   "metadata": {
