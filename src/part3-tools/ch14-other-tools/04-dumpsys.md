@@ -31,11 +31,11 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
@@ -415,7 +415,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 | `RequestedLayerState` | `FrontEnd/RequestedLayerState.h` | 存储客户端请求的层状态，含 21 种 `Changes` 位掩码（Created/Destroyed/Geometry/Buffer 等） |
 | `LayerLifecycleManager` | `FrontEnd/LayerLifecycleManager.h` | 管理 RequestedLayerState 的增删改，追踪 Handle 生命周期 |
 | `TransactionHandler` | `FrontEnd/TransactionHandler.h` | 通过 `LocklessQueue` 异步收集事务，按 `ApplyToken` 排序过滤 |
-| `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchyBuilder.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
+| `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchy.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
 | `LayerSnapshotBuilder` | `FrontEnd/LayerSnapshotBuilder.h` | 从 LayerHierarchy 生成可消费的 `LayerSnapshot`，含 `tryFastUpdate()` 快速路径 |
 
 **热路径无锁设计（核心设计原则）：**

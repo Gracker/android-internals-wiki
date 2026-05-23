@@ -2,7 +2,7 @@
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -12,7 +12,7 @@ reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-05"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
 confidence: medium
@@ -27,10 +27,10 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-23T21:20:00+08:00"
@@ -327,7 +327,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 **性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。
 
-**配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputConsumerResampling=DEBUG`
+**配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputTransportResampling=DEBUG`（user build 需重启生效，userdebug/debuggable build 可即时生效）
 
 **关键源码文件**：
 - `frameworks/native/include/input/InputConsumer.h` — InputConsumer 类声明

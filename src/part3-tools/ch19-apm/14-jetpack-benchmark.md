@@ -26,10 +26,11 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: "pass-light-edit"
@@ -106,7 +107,7 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 |---|---|---|---|
 | Microbenchmark | API 14+ | Android 8-17 | 适合进程内热点代码；结果更接近局部 CPU / 内存分配，不代表页面端到端体验 |
 | Macrobenchmark | API 23+ | Android 8-17 | 适合启动、滚动、转场；依赖外部测试进程驱动 App |
-| Baseline Profile 安装收益 | 目标设备 API 21+（ProfileInstaller 兼容） | Android 8-17 | 收益通过 ProfileInstaller + AGP 7.0+ 打包的 profile 生效；低版本目标设备也能获得 AOT 加速 |
+| Baseline Profile 安装收益 | 目标设备 API 24+（API 24-27 依赖 ProfileInstaller；API 28+ 支持安装期/云端 profile） | Android 8-17 | API 24-27 通过 `ProfileInstaller` 在 App 首次启动后安装 profile；API 28+ ART 支持安装期编译，可利用 Baseline Profile 和云端 profile。API 21-23 不能获得 Baseline Profile AOT 收益 |
 | Baseline Profile 生成（BaselineProfileRule） | API 33+，或 rooted API 28+ | Android 8-17 | `BaselineProfileRule.collect()` 生成环境需要 API 33+ 或 rooted 设备；生成结果与具体设备/版本绑定，需在目标发布设备段验证 |
 | Baseline Profile 验证（CompilationMode） | API 24+（`Partial(BaselineProfileMode.Require)`） | Android 8-17 | 验证需被测 APK 包含 ProfileInstaller 且由 AGP 7.0+ 打包 profile；API 23 只有 `Full()` 编译模式 |
 

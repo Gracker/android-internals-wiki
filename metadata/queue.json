@@ -13,7 +13,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
@@ -33,7 +33,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T21:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-21-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-21-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T23:20:08.381162",
+      "completion_reason": "Task 2B rework: InputConsumer resampling DEBUG log tag 从 InputConsumerResampling 修正为 InputTransportResampling；补 user/userdebug 生效边界说明"
     },
     {
       "id": "task9-audit-20260523-8.5-case-studies-autofdo-metrics",
@@ -18019,7 +18022,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/04-dumpsys.md"
@@ -18041,7 +18044,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T01:30:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-01-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-01-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T23:20:08.381162",
+      "completion_reason": "Task 2B rework: FrontEnd 源码索引从 LayerHierarchyBuilder.h 修正为 LayerHierarchy.h（类名不变，定义文件路径修正）"
     },
     {
       "id": "task2a-gap-20260523-20.14-thread-fd-resource-monitoring",
@@ -18098,7 +18104,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 0.75,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
@@ -18120,7 +18126,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T03:35:03+08:00",
-      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T23:20:08.381162",
+      "completion_reason": "Task 2B rework: Baseline Profile 安装收益 API floor 从 API 21+ 修正为 API 24+（API 24-27 依赖 ProfileInstaller；API 28+ 安装期/云端 profile）；补 API 21-23 不支持 AOT 收益说明"
     },
     {
       "id": "task9-deep-20260523-18.17-ndk-surface-control-api-signature",
