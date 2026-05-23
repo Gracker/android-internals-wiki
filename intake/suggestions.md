@@ -3255,3 +3255,18 @@
 - Bluetooth LE GATT 吞吐与扫描连接延迟。
 - NFC Reader Mode / HCE 交互延迟与后台限制。
 - Telephony/RIL 网络状态、radio active 与移动网络功耗归因。
+
+## [Task2A Gap Mining] 无合格新章节 — 2026-05-24 01:07
+- **类型**：知识缺口挖掘记录
+- **扫描结果**：未发现评分 ≥ 14 的新章节候选。
+- **已检查方向**：
+  - Android Performance Analyzer / APA AI 分析：14.18 Android Performance Analyzer 与系统性能分析已覆盖；ch13/ch14 也已有 Perfetto、Simpleperf、ProfilingManager 条目（不录入）。
+  - Compose First 与 View maintenance mode：22.15 Compose First 与 View/Compose 混合迁移性能边界已覆盖，22.3 与 7.7 已覆盖 Compose 性能（不录入）。
+  - Android 17 ProfilingTrigger: COLD_START/OOM/KILL_EXCESSIVE_CPU_USAGE：26.12 已覆盖版本化线上诊断，25.12 覆盖 Excessive CPU Kill，21.8/26.3 覆盖启动与性能采集（不录入）。
+  - HWC Overlay Plane capability 与合成降级：7.18 HWC Overlay Plane 与合成降级排查已覆盖，2.6/18.15 覆盖 SurfaceFlinger 与视频叠加（不录入）。
+  - sched_ext OEM 调度器生产就绪度：17.4 sched_ext 与 OEM BPF 调度器已覆盖，17.2 覆盖 SoC 平台差异（不录入）。
+  - DMA-BUF / Gralloc / 16KB page 图形内存边界：2.15 与 2.24 已覆盖 DMA-BUF、Gralloc、16KB Page 图形内存边界（不录入）。
+  - AICore / LiteRT / NNAPI / Android 17 NPU 边界：5.14 Android 17 ML Runtime 与 NPU 访问边界已覆盖，5.11 覆盖端侧 AI 推理性能（不录入）。
+  - Android 17 原生应用锁、Halo、Cars/XR 热点：与本书性能优化主线相关性不足，素材丰富度或读者需求度达不到建节阈值（低于 14 分）。
+- **报告路径**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-01-知识加工(新).md`
+
