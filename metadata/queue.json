@@ -17888,23 +17888,68 @@
       "completed_at": "2026-05-23T08:21:00+08:00",
       "completion_reason": "Task 2A draft processing: section drafted and marked ready-for-review",
       "updated_at": "2026-05-23T08:21:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260523-14.5-third-party-libs-booster-koom-version-boundaries",
+      "section": "14.5",
+      "section_title": "三方性能库",
+      "priority": 85,
+      "title": "三方性能库 Booster/KOOM 版本兼容边界需修正",
+      "description": "闲时抽检发现 Booster AGP 8.x 兼容矩阵过期，KOOM ThreadLeakMonitor 缺 Android N+/arm64 能力边界。",
+      "reason": "[Deep Tech Review Audit] 14.5 的三方性能库选型建议存在 P1 版本差异问题：Booster 5.x 对 AGP 8.0-8.2 的支持与 AGP 8.3+ N/A 边界未覆盖，KOOM thread leak 的 API/ABI 范围未写入正文。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/05-third-party-libs.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-10-audit.md",
+        "https://raw.githubusercontent.com/didi/Booster/master/README.md",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/master/koom-thread-leak/README.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异 / 工具兼容性",
+          "location": "L234-L238、L397 Booster Transform API / AGP 8.0+ 边界",
+          "detail": "正文把 Booster 基于 Transform 的方案概括为 AGP 8.0+ 下直接失去接入点，并在 FAQ 中再次写“旧版基于 Transform 的 Booster 方案不能直接带到新的构建流程里”。但 didi/Booster 当前 README 的兼容表写明 AGP 8.0/8.1/8.2 对应 Booster 5.0.0+，AGP 8.3/8.4/8.5 为 N/A；迁移说明还写明 AGP 8 不兼容变更后 5.x 不再支持 AGP 7.x 及以下，但 Transform based modules 仍 supported without breaking changes。现文会把 Booster 5.x 在 AGP 8.0-8.2 的可用范围讲没，同时也漏掉 AGP 8.3+ 的不可用边界。",
+          "suggestion": "把 Booster 兼容性改成版本矩阵：Booster 4.x 对 AGP 7.x 及以下，Booster 5.x 对 AGP 8.0-8.2；AGP 8.3+ 截至当前 README 标 N/A。保留 registerTransform 在 AGP 8 移除这一通用事实，但不要把它等同于“所有 Booster Transform 模块 AGP 8 不可用”。R inline/non-final R 的收益边界仍需单独按模块验证。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异 / KOOM 模块能力边界",
+          "location": "L200-L204 KOOM 线程泄漏检测",
+          "detail": "正文说明 KOOM ThreadLeakMonitor 会 Hook pthread_create/pthread_exit 并跟踪 join/detach，但没有写该模块的适用范围。KOOM 官方 koom-thread-leak README 明确 Scope 为 Android N and above (API >= 24) 且 only support arm64-v8a；章节 frontmatter 适用 Android 5.0-16，且前文只在 native leak 段写了 API 24/arm64，读者容易误以为线程泄漏检测也覆盖 Android 5/6 或 32-bit 设备。",
+          "suggestion": "在线程泄漏检测段补兼容性硬边界：Android N/API 24+、arm64-v8a；Android 5/6 或 32-bit 设备需要降级为线程数量、/proc、日志采样或自研轻量监控，不能直接套 KOOM thread leak 模块。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T10:24:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-23T10:24:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-10-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 485,
+    "total_entries": 488,
     "p0_count": 187,
-    "last_updated": "2026-05-23T07:24:00+08:00",
+    "last_updated": "2026-05-23T10:24:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 177,
+    "pending_entries": 178,
     "updated_date": "2026-05-23",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 177,
+    "pending": 178,
     "completed_entries": 302,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T07:24:00+08:00",
+  "last_updated": "2026-05-23T10:24:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
@@ -24511,6 +24556,51 @@
       "added_by": "task8-classifier",
       "added_at": "2026-05-23T05:37:14.723362",
       "status": "pending"
+    },
+    {
+      "id": "task9-audit-20260523-14.5-third-party-libs-booster-koom-version-boundaries",
+      "section": "14.5",
+      "section_title": "三方性能库",
+      "priority": 85,
+      "title": "三方性能库 Booster/KOOM 版本兼容边界需修正",
+      "description": "闲时抽检发现 Booster AGP 8.x 兼容矩阵过期，KOOM ThreadLeakMonitor 缺 Android N+/arm64 能力边界。",
+      "reason": "[Deep Tech Review Audit] 14.5 的三方性能库选型建议存在 P1 版本差异问题：Booster 5.x 对 AGP 8.0-8.2 的支持与 AGP 8.3+ N/A 边界未覆盖，KOOM thread leak 的 API/ABI 范围未写入正文。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/05-third-party-libs.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-10-audit.md",
+        "https://raw.githubusercontent.com/didi/Booster/master/README.md",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/master/koom-thread-leak/README.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异 / 工具兼容性",
+          "location": "L234-L238、L397 Booster Transform API / AGP 8.0+ 边界",
+          "detail": "正文把 Booster 基于 Transform 的方案概括为 AGP 8.0+ 下直接失去接入点，并在 FAQ 中再次写“旧版基于 Transform 的 Booster 方案不能直接带到新的构建流程里”。但 didi/Booster 当前 README 的兼容表写明 AGP 8.0/8.1/8.2 对应 Booster 5.0.0+，AGP 8.3/8.4/8.5 为 N/A；迁移说明还写明 AGP 8 不兼容变更后 5.x 不再支持 AGP 7.x 及以下，但 Transform based modules 仍 supported without breaking changes。现文会把 Booster 5.x 在 AGP 8.0-8.2 的可用范围讲没，同时也漏掉 AGP 8.3+ 的不可用边界。",
+          "suggestion": "把 Booster 兼容性改成版本矩阵：Booster 4.x 对 AGP 7.x 及以下，Booster 5.x 对 AGP 8.0-8.2；AGP 8.3+ 截至当前 README 标 N/A。保留 registerTransform 在 AGP 8 移除这一通用事实，但不要把它等同于“所有 Booster Transform 模块 AGP 8 不可用”。R inline/non-final R 的收益边界仍需单独按模块验证。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异 / KOOM 模块能力边界",
+          "location": "L200-L204 KOOM 线程泄漏检测",
+          "detail": "正文说明 KOOM ThreadLeakMonitor 会 Hook pthread_create/pthread_exit 并跟踪 join/detach，但没有写该模块的适用范围。KOOM 官方 koom-thread-leak README 明确 Scope 为 Android N and above (API >= 24) 且 only support arm64-v8a；章节 frontmatter 适用 Android 5.0-16，且前文只在 native leak 段写了 API 24/arm64，读者容易误以为线程泄漏检测也覆盖 Android 5/6 或 32-bit 设备。",
+          "suggestion": "在线程泄漏检测段补兼容性硬边界：Android N/API 24+、arm64-v8a；Android 5/6 或 32-bit 设备需要降级为线程数量、/proc、日志采样或自研轻量监控，不能直接套 KOOM thread leak 模块。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T10:24:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-23T10:24:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-10-audit.md"
     }
   ],
   "last_task2a_completed": "24.14",
