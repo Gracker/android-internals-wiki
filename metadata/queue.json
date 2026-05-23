@@ -18620,25 +18620,56 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-24T04:15:00+08:00",
       "completion_reason": "Task 2A draft processing: Android 17 后台音频硬化与播放功耗治理完成，status → ready-for-review，进入 Task 6 管线"
+    },
+    {
+      "id": "task2a-gap-20260524-6.6-vold-fuse-scoped-storage-io",
+      "section": "6.6",
+      "section_title": "vold、FUSE 与 Scoped Storage I/O 性能边界",
+      "priority": 80,
+      "title": "补齐 Android 外部存储 FUSE/vold 性能边界",
+      "description": "AOSP 官方存储文档显示 scoped storage、SDCardFS deprecation、FUSE passthrough 与 MediaProvider 非 FUSE 通道对随机 I/O、批量媒体访问和主线程阻塞有直接影响；现有 6.2 未覆盖 FUSE/vold 路径，24.12 只从 MediaStore 实战侧涉及，需要新增系统机制小节。",
+      "reason": "Task2A Phase1 AOSP结构/官方文档比对：SUMMARY 未覆盖 vold/FUSE/scoped storage I/O 机制；source.android.com/core/storage/scoped 与 fuse-passthrough 明确给出性能边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "gap_score": 16,
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://source.android.com/docs/core/storage/fuse-passthrough",
+        "https://source.android.com/docs/core/storage/sdcardfs-deprecate",
+        "https://source.android.com/docs/core/storage/config-example",
+        "src/part5-app/ch24-io-network/12-mediastore-mediaprovider-performance.md",
+        "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      ],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T07:16:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 499,
+    "total_entries": 500,
     "p0_count": 211,
-    "last_updated": "2026-05-24T02:20:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 170,
+    "last_updated": "2026-05-24T07:16:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 171,
     "updated_date": "2026-05-24",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 170,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 171,
     "completed_entries": 320,
-    "last_task2a_gap_mining": "25.16",
-    "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
+    "last_task2a_gap_mining": "6.6",
+    "last_task2a_gap_mining_at": "2026-05-24T07:16:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-24T04:15:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-24T07:16:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task9-audit-20260524-8.2-applicationstartinfo-clock-domain",
@@ -25017,10 +25048,41 @@
       },
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-23T23:04:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260524-6.6-vold-fuse-scoped-storage-io",
+      "section": "6.6",
+      "section_title": "vold、FUSE 与 Scoped Storage I/O 性能边界",
+      "priority": 80,
+      "title": "补齐 Android 外部存储 FUSE/vold 性能边界",
+      "description": "AOSP 官方存储文档显示 scoped storage、SDCardFS deprecation、FUSE passthrough 与 MediaProvider 非 FUSE 通道对随机 I/O、批量媒体访问和主线程阻塞有直接影响；现有 6.2 未覆盖 FUSE/vold 路径，24.12 只从 MediaStore 实战侧涉及，需要新增系统机制小节。",
+      "reason": "Task2A Phase1 AOSP结构/官方文档比对：SUMMARY 未覆盖 vold/FUSE/scoped storage I/O 机制；source.android.com/core/storage/scoped 与 fuse-passthrough 明确给出性能边界。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "gap_score": 16,
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://source.android.com/docs/core/storage/fuse-passthrough",
+        "https://source.android.com/docs/core/storage/sdcardfs-deprecate",
+        "https://source.android.com/docs/core/storage/config-example",
+        "src/part5-app/ch24-io-network/12-mediastore-mediaprovider-performance.md",
+        "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      ],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T07:16:00+08:00"
     }
   ],
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
-  "last_task2a_gap_mining": "25.16",
-  "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00"
+  "last_task2a_gap_mining": "6.6",
+  "last_task2a_gap_mining_at": "2026-05-24T07:16:00+08:00"
 }
