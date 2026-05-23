@@ -1,6 +1,99 @@
 {
   "queue_entries": [
     {
+      "id": "task9-deep-20260523-1520-15.7-sftrace-slice-version",
+      "section": "15.7",
+      "section_title": "AOSP 代码阅读",
+      "priority": 95,
+      "title": "SurfaceFlinger Android 13-16 trace 宏版本边界与 slice 名仍需修正",
+      "description": "Task9 复审 §15.7 发现回炉后仍把 Android 12-15 概括成 ATRACE_CALL，且把 Android 16 SFTRACE_NAME 解释为会生成带类名的 SurfaceFlinger::composite slice；源码显示 Android 13/14 使用 ATRACE_FORMAT，Android 15 使用 ATRACE_NAME，Android 16 的 SFTRACE_NAME 也只使用传入的 `__func__ + vsyncId` 名称。",
+      "reason": "[Deep Tech Review] §15.7 SurfaceFlinger trace 宏版本边界与 Android 16 slice 名解释仍不准确，需 Task2B 再修。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-15-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-12.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-14.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/common/include/common/trace.h"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/SurfaceFlinger trace slice 名",
+          "location": "L240-L254：Native Trace / SurfaceFlinger SFTRACE 示例与注意段",
+          "detail": "正文写 Android 16 使用 `SFTRACE_NAME(ftl::Concat(__func__, vsyncId).c_str())` 后会生成带类名、带 vsyncId 的 slice，并举 `SurfaceFlinger::composite`。复核 android-16.0.0_r1：`common/include/common/trace.h` 中 `SFTRACE_NAME(name)` 只是把传入 name 交给 `ScopedTrace`；`SurfaceFlinger::composite()` 传入的是 `ftl::Concat(__func__, ' ', ftl::to_underlying(vsyncId))`，`__func__` 为 `composite`，不会自动带 `SurfaceFlinger::` 类名。当前说法会让读者在 Perfetto 中搜索不存在的 `SurfaceFlinger::composite` slice。",
+          "suggestion": "改为：Android 16 `SurfaceFlinger::composite()` 的 trace 名来自显式传入的 `composite <vsyncId>`，SFTRACE 宏本身不补类名；如需类名必须由调用点字符串显式提供。删除“带类名”与 `SurfaceFlinger::composite` 的断言。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/SurfaceFlinger trace 宏边界",
+          "location": "L240-L254：`Android 12-15 仍用 ATRACE_CALL` 与版本说明",
+          "detail": "正文把 Android 12-15 统一写成 `ATRACE_CALL`。源码边界更细：android-12.0.0_r1 的刷新入口 `onMessageRefresh()` 使用 `ATRACE_CALL()`；android-13.0.0_r1 / android-14.0.0_r1 的 `SurfaceFlinger::composite()` 使用 `ATRACE_FORMAT(\"%s ...\", __func__, vsyncId)`；android-15.0.0_r1 使用 `ATRACE_NAME(ftl::Concat(__func__, ' ', vsyncId).c_str())`；android-16.0.0_r1 才切到 `SFTRACE_NAME` / `SFTRACE_ASYNC_FOR_TRACK_BEGIN`。当前版本概括会误导跨版本源码阅读。",
+          "suggestion": "按 Android 12、13/14、15、16 四档描述 SurfaceFlinger trace 入口：12 看 `onMessageRefresh()` / `ATRACE_CALL`；13/14 看 `composite()` / `ATRACE_FORMAT`；15 看 `ATRACE_NAME(__func__ + vsyncId)`；16 看 `SFTRACE_*` 封装。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T15:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260523-1520-7.4-predictiveback-fragment-timing",
+      "section": "7.4",
+      "section_title": "典型场景分析",
+      "priority": 95,
+      "title": "Predictive Back 回调接口/Perfetto 观察点与 Fragment commit 时序需修正",
+      "description": "Task9 复审 §7.4 发现 Predictive Back 段仍把动画进度能力归到 OnBackInvokedCallback，并引用未核到的 `predictive_back_progress` 标准 Perfetto counter；FragmentTransaction 段还绝对断言 `execPendingActions()` 早于 Choreographer 帧回调，源码只支持 Handler.post(mExecCommit)，不支持固定帧前顺序。",
+      "reason": "[Deep Tech Review] §7.4 Predictive Back API/trace 观察点与 Fragment commit 时序存在源码准确性问题，需 Task2B 再修。",
+      "issue_type": "source-code-accuracy-trace-observation",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/04-typical-scenarios.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-15-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackInvokedCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Predictive Back API 与 Perfetto counter",
+          "location": "L313-L318：预测性返回动画回调与 Perfetto 分析要点",
+          "detail": "正文写 SystemUI 与 App 的 `OnBackInvokedCallback` 协作完成进度动画，并写 `OnBackInvokedCallback` 的动画更新与 `onBackProgressed()`。AOSP android-16.0.0_r1 中 `OnBackInvokedCallback` 只有 `onBackInvoked()`；`onBackStarted()` / `onBackProgressed()` / `onBackCancelled()` 属于 `OnBackAnimationCallback extends OnBackInvokedCallback`。同段还把 `predictive_back_progress` 写成 Perfetto counter；抽检 `BackEvent`、`OnBackAnimationCallback`、SystemUI `EdgeBackGestureHandler` 与全网精确搜索，未核到该标准 counter 名，不能作为默认 Perfetto 观察点。",
+          "suggestion": "把进度回调口径改为 `OnBackAnimationCallback`；`OnBackInvokedCallback` 只保留最终 back 触发语义。删除 `predictive_back_progress` 标准 counter 断言，改为“如需观察 App 侧进度回调，给 `onBackProgressed(BackEvent)` 自定义 Trace/counter；系统侧可结合 SystemUI/WM/SF 相关 trace 与动画帧耗时判断”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/Fragment commit 与 Choreographer 顺序过度断言",
+          "location": "L253-L257：FragmentTransaction.commit() 源码链路时序关键点",
+          "detail": "正文写 `execPendingActions()` 在 Activity 生命周期中早于 Choreographer 帧回调。AndroidX Fragment 源码只能证明 `BackStackRecord.commitInternal()` 调 `FragmentManager.enqueueAction()`，`scheduleCommit()` 用宿主主线程 Handler `post(mExecCommit)`，Runnable 内调用 `execPendingActions(true)`。它没有绑定 Choreographer，也不保证固定早于下一次 frame callback；实际顺序取决于 commit 调用时机、主线程消息队列、是否已有 traversal sync barrier、以及是否使用 `commitNow()` / `executePendingTransactions()`。",
+          "suggestion": "删除“早于 Choreographer 帧回调”的绝对表述，改为：普通 `commit()` 通过 Handler 异步排队执行，不按 VSync 对齐；它可能落在下一帧前，也可能与已排队的 traversal/animation 竞争。性能分析时用自定义 Trace 标出 commit、`execPendingActions` 附近工作和下一次 traversal/FrameTimeline。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T15:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
       "section": "7.4",
       "section_title": "典型场景分析",
