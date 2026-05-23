@@ -1,6 +1,44 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260524-8.2-applicationstartinfo-clock-domain",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 85,
+      "title": "ApplicationStartInfo 时间戳时钟域与 Perfetto 对齐口径需修正",
+      "description": "Task9 闲时抽检发现 §8.2 把 ApplicationStartInfo 启动时间戳写成 System.nanoTime 时基，并声称可与 Perfetto trace 时间轴直接对齐；AOSP android-15.0.0_r1 实际使用 SystemClock.uptimeNanos() 记录多数字段，而 Perfetto Android trace 默认时钟为 CLOCK_BOOTTIME 并依赖 clock snapshot 转换。",
+      "reason": "[Deep Tech Review Audit] §8.2 ApplicationStartInfo/Perfetto 对齐流程存在时钟域错误：不能把 getStartupTimestamps() 的原始 ns 值按 System.nanoTime 直接叠到 Perfetto UI/SQL 时间轴上，应说明 AOSP 使用 uptimeNanos/monotonic timestamp，Perfetto 默认 BOOTTIME，需通过 trace clock snapshot/trace_processor 转换或以同一基准做差。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-02-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java#214",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#4869",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ActivityThread.java#7503",
+        "https://perfetto.dev/docs/concepts/clock-sync"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/时钟域口径错误",
+          "location": "L390-L398：ApplicationStartInfo 与 Perfetto 的联动",
+          "detail": "正文写 ApplicationStartInfo timestamp 是 monotonic nanoseconds（System.nanoTime 时基），Perfetto trace 时间轴也是 monotonic clock，两者可以直接对齐。复核 android-15.0.0_r1：ActivityMetricsLogger.LaunchingState 用 SystemClock.uptimeNanos() 记录启动起点；ActivityManagerService 记录 bindApplication 与 RenderThread/SF timestamp；ActivityThread.handleBindApplication() 用 SystemClock.uptimeNanos() 记录 Application.onCreate。Perfetto Android trace packet 默认 CLOCK_BOOTTIME，文档要求依赖 timestamp_clock_id/ClockSnapshot 做跨时钟域转换。直接比较原始 ns 值可能被 boot vs uptime 的 suspend offset 影响。",
+          "suggestion": "改成：ApplicationStartInfo 返回 clock monotonic ns，AOSP 多数字段来自 SystemClock.uptimeNanos()；与 Perfetto 对齐时优先用 trace_processor/ClockSnapshot 转换到同一 clock domain，或只用 ApplicationStartInfo 内部 timestamp 之间做差。不要写成 System.nanoTime 时基、也不要声称可无条件直接对齐 Perfetto UI/SQL 时间。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T02:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-02-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-7.9-inputconsumer-resampling-debug-tag",
       "section": "7.9",
       "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
@@ -18449,23 +18487,61 @@
     }
   ],
   "metadata": {
-    "total_entries": 498,
+    "total_entries": 499,
     "p0_count": 211,
-    "last_updated": "2026-05-23T23:04:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 169,
-    "updated_date": "2026-05-23",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 169,
+    "last_updated": "2026-05-24T02:20:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 170,
+    "updated_date": "2026-05-24",
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 170,
     "completed_entries": 320,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-23T23:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "last_updated": "2026-05-24T02:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "pending": [
+    {
+      "id": "task9-audit-20260524-8.2-applicationstartinfo-clock-domain",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 85,
+      "title": "ApplicationStartInfo 时间戳时钟域与 Perfetto 对齐口径需修正",
+      "description": "Task9 闲时抽检发现 §8.2 把 ApplicationStartInfo 启动时间戳写成 System.nanoTime 时基，并声称可与 Perfetto trace 时间轴直接对齐；AOSP android-15.0.0_r1 实际使用 SystemClock.uptimeNanos() 记录多数字段，而 Perfetto Android trace 默认时钟为 CLOCK_BOOTTIME 并依赖 clock snapshot 转换。",
+      "reason": "[Deep Tech Review Audit] §8.2 ApplicationStartInfo/Perfetto 对齐流程存在时钟域错误：不能把 getStartupTimestamps() 的原始 ns 值按 System.nanoTime 直接叠到 Perfetto UI/SQL 时间轴上，应说明 AOSP 使用 uptimeNanos/monotonic timestamp，Perfetto 默认 BOOTTIME，需通过 trace clock snapshot/trace_processor 转换或以同一基准做差。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-02-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java#214",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#4869",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ActivityThread.java#7503",
+        "https://perfetto.dev/docs/concepts/clock-sync"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/时钟域口径错误",
+          "location": "L390-L398：ApplicationStartInfo 与 Perfetto 的联动",
+          "detail": "正文写 ApplicationStartInfo timestamp 是 monotonic nanoseconds（System.nanoTime 时基），Perfetto trace 时间轴也是 monotonic clock，两者可以直接对齐。复核 android-15.0.0_r1：ActivityMetricsLogger.LaunchingState 用 SystemClock.uptimeNanos() 记录启动起点；ActivityManagerService 记录 bindApplication 与 RenderThread/SF timestamp；ActivityThread.handleBindApplication() 用 SystemClock.uptimeNanos() 记录 Application.onCreate。Perfetto Android trace packet 默认 CLOCK_BOOTTIME，文档要求依赖 timestamp_clock_id/ClockSnapshot 做跨时钟域转换。直接比较原始 ns 值可能被 boot vs uptime 的 suspend offset 影响。",
+          "suggestion": "改成：ApplicationStartInfo 返回 clock monotonic ns，AOSP 多数字段来自 SystemClock.uptimeNanos()；与 Perfetto 对齐时优先用 trace_processor/ClockSnapshot 转换到同一 clock domain，或只用 ApplicationStartInfo 内部 timestamp 之间做差。不要写成 System.nanoTime 时基、也不要声称可无条件直接对齐 Perfetto UI/SQL 时间。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T02:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-02-audit.md"
+    },
     {
       "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
       "section": "7.4",

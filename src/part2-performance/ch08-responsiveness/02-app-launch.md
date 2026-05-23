@@ -53,28 +53,29 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: "pass-light-edit"
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-19T11:32:33+08:00"
-task9_reviewed_date: 2026-05-19
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-19T19:36:17+08:00"
-task9_review_notes: "2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。ApplicationStartInfo 常量已修正；仅保留 App Startup 边界与 Zygote preload 数据口径 P2，不阻塞发布。自动晋升 finalized。"
+task9_reviewed_date: "2026-05-24"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-24T02:20:00+08:00"
+task9_review_notes: "2026-05-24 Task9 闲时抽检: needs-rework。P0 0 / P1 1 / P2 1；ApplicationStartInfo 时间戳与 Perfetto 对齐口径存在时钟域错误，已入队 Task2B；另记录 INITIAL_RENDERTHREAD_FRAME timestamp key 漏列 P2。"
 last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
 p0: 0
-p1: 0
-p2: 2
+p1: 1
+p2: 1
 last_task6_at: "2026-05-19T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 task6_review_notes: "2026-05-19 12:07 Task6 复审:pass-light-edit。L1/L2 小修 4 处,补齐日志类代码围栏语言并压掉一处元叙述;既有 ApplicationStartInfo Task9 P0 pending 队列仍由 Task2B 处理。"
 auto_promoted_by: task9-deep-tech-review
 auto_promoted_at: "2026-05-19T19:36:17+08:00"
-
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
 ---
 
 
