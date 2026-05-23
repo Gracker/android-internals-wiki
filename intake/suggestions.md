@@ -3279,3 +3279,12 @@
 - **结论**：本轮未发现评分 ≥ 14 且尚未覆盖、需要独立新建小节的知识缺口。
 - **报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-05-知识加工(新).md`
 
+
+
+## [Task2A Gap Mining] 6.6 vold、FUSE 与 Scoped Storage I/O 性能边界 — 2026-05-24
+- **类型**：新增章节 / AOSP 结构缺口
+- **来源**：Phase1 对照 `source.android.com/docs/core/storage/*` 与现有 SUMMARY.md
+- **评分**：16/20（素材丰富度 4、相关性 5、读者需求 4、时效性 3）
+- **新增章节**：`src/part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md`
+- **建议加工方向**：从 vold 挂载、FUSE 守护进程、SDCardFS 退场、FUSE passthrough、MediaProvider 非 FUSE 通道和 App 侧 I/O 策略六条线展开；与 24.12 只做交叉引用，不重复写 MediaStore 实战细节。
+- **本轮已排除方向**：NFC Services、BiometricService、Telephony/RIL。它们有 AOSP 文档，但与当前性能优化主线的素材丰富度或读者需求不足，未达到新增章节阈值。
