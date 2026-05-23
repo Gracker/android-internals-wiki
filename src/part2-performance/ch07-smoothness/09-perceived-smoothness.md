@@ -26,16 +26,18 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: ready-to-publish
-task9_reviewed_date: "2026-05-05"
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T02:37:46+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已完成复核；自动晋升 finalized。"
+last_task9_at: "2026-05-23T21:20:00+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已完成复核；自动晋升 finalized。；2026-05-23 21:20 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1（P2 为既有输入重采样 latency 口径建议，未重复入队）；DEBUG log tag 源码名应为 InputTransportResampling，当前写成 InputConsumerResampling。详见 logs/deep-review/2026-05-23-21-audit.md。"
 review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
+last_task9_audit: "2026-05-23"
+
 ---
 
 

@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-7.9-inputconsumer-resampling-debug-tag",
+      "section": "7.9",
+      "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+      "priority": 95,
+      "title": "InputConsumer 重采样 DEBUG log tag 写错",
+      "description": "Task9 闲时抽检发现 §7.9 输入重采样配置接口把 AOSP 源码中的 resampling debug log tag 写成了不存在的 InputConsumerResampling。",
+      "reason": "[Deep Tech Review Audit] §7.9 输入重采样 DEBUG 开关应为 `log.tag.InputTransportResampling=DEBUG`，当前写成 `InputConsumerResampling` 会导致调试日志无法打开，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-21-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/libs/input/InputConsumer.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/InputConsumer resampling debug log tag",
+          "location": "L328：输入重采样「配置接口」",
+          "detail": "正文写 DEBUG 开关为 `log.tag.InputConsumerResampling=DEBUG`。复核 AOSP android-16.0.0_r1 与 mainline `frameworks/native/libs/input/InputConsumer.cpp`，源码注释给出的开关是 `adb shell setprop log.tag.InputTransportResampling DEBUG`；`debugResampling()` 也按 `LOG_TAG \"Resampling\"` 检查 loggability。当前 tag 名不会打开 InputConsumer 重采样调试日志。",
+          "suggestion": "把 DEBUG 开关改为 `log.tag.InputTransportResampling=DEBUG`，并保留源码注释中的边界：user build 通常需要重启，userdebug/debuggable build 可即时生效。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T21:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-21-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-8.5-case-studies-autofdo-metrics",
       "section": "8.5",
       "section_title": "案例集",
