@@ -5,7 +5,7 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-30"
+reviewed_date: "2026-05-23"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -51,7 +51,7 @@ rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 last_task6_audit: "2026-05-22"
 task9_state: reviewed
 task9_result: needs-rework
@@ -65,6 +65,10 @@ task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 2；RenderEffect vs 
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
+last_task6_at: "2026-05-23T08:18:48+08:00"
+task6_reviewed_date: "2026-05-23"
+last_task6_review_log: "logs/review/2026-05-23-08-review.md"
+task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；补齐代码块语言，清理顺序词和非必要技术词面；Task9 RenderEffect P0 queue pending，未晋升。"
 ---
 
 # 优化策略
@@ -209,7 +213,7 @@ RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。An
 
 Hardware Layer 把 View 渲染成 GPU 纹理，属性动画只操作纹理不需要重新 draw。
 
-```
+```java
 view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 ObjectAnimator.ofFloat(view, "translationX", 0f, 100f).start();
 // 动画结束后关闭
@@ -237,7 +241,7 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 `RenderEffect` 是 Java 层对 Skia 图像过滤器的封装。创建 blur 时，`RenderEffect.createBlurEffect()` 通过 JNI 在 HWUI / Skia 侧创建 `SkImageFilter`；设置到 View 时，`View.setRenderEffect(effect)` 把这个对象交给 View 持有的 `RenderNode`，再由 native `nSetRenderEffect()` 写入 RenderNode 属性中的 `imageFilter`。后续绘制该节点时，HWUI / Skia 在节点输出上执行对应的 blur、color filter 或 RuntimeShader 效果。
 
 **创建路径与设置路径要分开看**：
-```
+```text
 RenderEffect.createBlurEffect(...)                 [frameworks/base/graphics/java/android/graphics/RenderEffect.java]
   └─> nativeCreateBlurEffect(...)                 [frameworks/base/libs/hwui/jni/RenderEffect.cpp]
         └─> SkImageFilters::Blur(...)
@@ -253,7 +257,7 @@ View.setRenderEffect(effect)                      [frameworks/base/core/java/and
 RenderEffect 和 Hardware Layer 的底层隔离层级不同，内存开销和 GPU 调度友好度也相应不同：
 
 - `RenderEffect` 是 **Shader 级集成**。blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性（`RenderProperties::setImageFilter()`），Skia 在绘制时沿标准 `SkImageFilter` 管线处理。当 filter 链中的子类组合满足 Skia 内部的融合条件时，Skia 可能对相邻 filter 做算子融合并复用 Scratch Texture，减少中间缓冲区分配——但这取决于具体 filter 类型和参数组合，不是所有 RenderEffect 链都能自动触发。总体而言，对于动态内容（频繁 invalidate 的 View），RenderEffect 的内存开销通常低于 Hardware Layer，且更利于 GPU 连续执行。
-- `LAYER_TYPE_HARDWARE` 是 **Buffer 级隔离**。HWUI 强制为该 View 创建一个独立的 FBO（Framebuffer Object）并缓存渲染结果。属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw——这正是 Hardware Layer 的加速来源。但 FBO 是独占的 GPU 内存，内容每帧都变时缓存重建的开销会超过加速收益。
+- `LAYER_TYPE_HARDWARE` 是 **Buffer 级隔离**。HWUI 强制为该 View 创建一个独立的 FBO（Framebuffer Object）并缓存渲染结果。属性动画阶段只需要在纹理上做几何变换，不重新执行 draw——这正是 Hardware Layer 的加速来源。但 FBO 是独占的 GPU 内存，内容每帧都变时缓存重建的开销会超过加速收益。
 
 处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在属性动画需要缓存静态纹理的场景里，才考虑手动打开 Hardware Layer。对动态内容，RenderEffect 通常比 Hardware Layer 更适合表达 blur/filter 效果，但"优于"不是无条件的——具体取决于 View 尺寸、blur radius、invalidate 频率、GPU/Skia 后端和 filter 链是否能触发算子融合。建议用 Perfetto FrameTimeline / GPU track 或 Macrobenchmark 在目标设备上验证。
 
@@ -434,7 +438,7 @@ LazyColumn {
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/performance — 避免在 composition 中修改 state]
 
-**策略五：Modifier 顺序** — 将昂贵的 Modifier（如 `graphicsLayer`）放在链的最后。
+**策略五：Modifier 顺序** — 将昂贵的 Modifier（如 `graphicsLayer`）放在 Modifier 链尾。
 
 ### Compose 优化的验证
 
@@ -452,7 +456,7 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 
 图片预加载是另一个重要的预取场景。Coil 和 Glide 都提供了预加载 API（如 Coil 的 `ImageRequest.Builder` 配合 `enqueue()`，Glide 的 `preload()`）。在用户还没滑动到图片位置时就在后台加载并缓存，滑动到时直接从内存缓存中读取，不再经历网络请求和解码的耗时。
 
-预计算布局则是把渲染阶段的计算工作前置到后台线程。最常见的场景是文本排版——`StaticLayout` 的构建（特别是长文本和多行 Spannable）可以在后台线程提前完成，主线程的 `onDraw()` 只需要调用 `staticLayout.draw(canvas)` 即可。类似的思路也适用于复杂的 Path 计算、矩阵运算等。关键原则是：**所有可以在后台线程完成的纯计算工作，都不应该留到主线程的渲染路径上**。
+预计算布局则是把渲染阶段的计算工作前置到后台线程。最常见的场景是文本排版——`StaticLayout` 的构建（特别是长文本和多行 Spannable）可以在后台线程提前完成，主线程的 `onDraw()` 只需要调用 `staticLayout.draw(canvas)` 即可。类似的思路也适用于复杂的 Path 计算、几何变换计算等。关键原则是：**所有可以在后台线程完成的纯计算工作，都不应该留到主线程的渲染路径上**。
 
 ## 实际优化案例
 
@@ -658,7 +662,7 @@ Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::Tex
 
 **Hardware Layer — Buffer 级隔离**：
 - 为 View 创建独立 FBO 并缓存渲染结果
-- 属性动画阶段只需在纹理上做矩阵变换，不重新执行 draw
+- 属性动画阶段只需在纹理上做几何变换，不重新执行 draw
 - FBO 是独占 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
 
 ### 版本演进差异

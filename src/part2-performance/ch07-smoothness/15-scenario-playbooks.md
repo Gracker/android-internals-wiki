@@ -28,16 +28,19 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 last_task9_at: "2026-05-23T07:24:00+08:00"
 
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-23"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task6_state: revisiting
+task6_state: reviewed
 task2b_state: pending
 pipeline_stage: task2b_pending
 review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
-last_task6_at: "2026-05-05T07:30:00+08:00"
+last_task6_at: "2026-05-23T08:18:48+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 1 / P2 1；Android 14+ SurfaceFlinger slice 锚点仍写 onMessageReceived；功耗/发热投诉入口仍是待补素材；BufferStuffing 判据需证据收敛。"
+task6_reviewed_date: "2026-05-23"
+last_task6_review_log: "logs/review/2026-05-23-08-review.md"
+task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；L1/L2 无新增小修；功耗入口缺口和 Task9 技术问题已有 pending queue，保持 task2b_pending。"
 ---
 
 # 场景化性能作战手册
