@@ -3142,3 +3142,10 @@
 - **位置**：L59 本节要点大纲：`Load < 1000ms`
 - **问题**：正文 L133-L135 已按 web.dev RAIL 当前口径写成首次加载 < 5s、后续加载 < 2s，但大纲仍保留 `Load < 1000ms`。这会和正文、参考资料形成阈值冲突。
 - **建议**：把大纲改为“Load 首次 < 5s，后续 < 2s”，或删除具体数值，仅保留“Load 阶段需给出及时可交互反馈”。
+
+## [Task9 Idle Audit] 7.4 典型场景分析 — 2026-05-23 — predictive_back_progress 计数器证据不足
+- **类型**：源码锚点 / Perfetto 观察点证据不足
+- **位置**：L309、L314：`predictive_back_progress` 计数器
+- **问题**：本轮在 Perfetto / Android Developers / AOSP 公开资料中未核到名为 `predictive_back_progress` 的跨设备标准 counter。正文把它作为 Perfetto 分析要点，证据仍停留在旧 P2 状态。
+- **建议**：如果是自定义 trace/counter，明确写成 App 或 SystemUI 自定义埋点；如果要给通用观察点，改为围绕 `BackEvent.progress` / `OnBackAnimationCallback.onBackProgressed()` 的应用侧回调耗时、自定义 trace slice、SystemUI/SurfaceFlinger 合成耗时来描述，不要把 `predictive_back_progress` 当作稳定轨道名。
+- **review 日志**：logs/deep-review/2026-05-23-12-audit.md
