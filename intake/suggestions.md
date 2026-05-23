@@ -3149,3 +3149,21 @@
 - **问题**：本轮在 Perfetto / Android Developers / AOSP 公开资料中未核到名为 `predictive_back_progress` 的跨设备标准 counter。正文把它作为 Perfetto 分析要点，证据仍停留在旧 P2 状态。
 - **建议**：如果是自定义 trace/counter，明确写成 App 或 SystemUI 自定义埋点；如果要给通用观察点，改为围绕 `BackEvent.progress` / `OnBackAnimationCallback.onBackProgressed()` 的应用侧回调耗时、自定义 trace slice、SystemUI/SurfaceFlinger 合成耗时来描述，不要把 `predictive_back_progress` 当作稳定轨道名。
 - **review 日志**：logs/deep-review/2026-05-23-12-audit.md
+
+## [Task9 Audit] 16.3 AOSP 源码编译与调试环境 — 2026-05-23
+- **类型**：源码引用/资料源准确性
+- **位置**：L169-L171 / L198 / L450
+- **问题**：Cuttlefish 段落用 `source.android.com/docs/setup/create/avd` 作为验证源；当前该 URL 重定向到 AVD 测试页面，不是 Cuttlefish 设置文档。
+- **建议**：把 Cuttlefish 引用源替换为 `source.android.com/docs/setup/create/cuttlefish` 和 `source.android.com/docs/devices/cuttlefish/get-started`；WebRTC 端口说明可引用 `source.android.com/docs/devices/cuttlefish/webrtc`。
+
+## [Task9 Audit] 16.3 AOSP 源码编译与调试环境 — 2026-05-23
+- **类型**：源码引用/资料源准确性
+- **位置**：L323 / L452 / L456
+- **问题**：SystemProperties 与 Sysprop API 的参考路径 `source.android.com/docs/core/properties`、`source.android.com/docs/core/properties/sysprop` 当前返回 404。
+- **建议**：改为 `source.android.com/docs/core/architecture/configuration/add-system-properties` 与 `source.android.com/docs/core/architecture/configuration/sysprops-apis`，并在正文保留 Sysprop 生成 Java/C++/Rust API 的边界。
+
+## [Task9 Audit] 16.3 AOSP 源码编译与调试环境 — 2026-05-23
+- **类型**：版本差异/命令链准确性
+- **位置**：L180-L193
+- **问题**：Cuttlefish host 环境安装把 `m cvd-host-package`、`cuttlefish-base/user` deb 安装、`cvd-host_package.tar.gz` 解压放在同一条流程里。当前官方 get-started 是先用 `google/android-cuttlefish` 的 `tools/buildutils/build_packages.sh` 构建并安装 host deb，再从 CI 下载同一 build 的 `cvd-host_package.tar.gz` 与 image zip 运行；`m cvd-host-package` 不应被写成会在当前目录产出 `cuttlefish-base_*.deb` 的步骤。
+- **建议**：拆成两段：① host 依赖安装：clone `google/android-cuttlefish` → `tools/buildutils/build_packages.sh` → `dpkg -i ./cuttlefish-base_*_*64.deb ./cuttlefish-user_*_*64.deb` → 加组并重启；② 运行镜像：解压同一 build 的 `cvd-host_package.tar.gz` 与 image zip → `HOME=$PWD ./bin/launch_cvd --daemon`。若保留 AOSP 自编译路径，需要标明 `cvd-host_package.tar.gz` 的实际输出位置。
