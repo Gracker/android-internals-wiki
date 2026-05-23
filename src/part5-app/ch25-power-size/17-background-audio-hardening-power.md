@@ -1,6 +1,7 @@
 ---
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
+section: "25.17"
 status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -18,6 +19,8 @@ sources:
     path: "https://developer.android.com/about/versions/17/release-notes"
   - type: official
     path: "https://developer.android.com/media/media3/session/background-playback"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/service-types"
   - type: official
     path: "https://developer.android.com/media/optimize/audio-focus"
   - type: official
@@ -39,10 +42,18 @@ sources:
 tags: [power, audio, foreground-service, android-17, media-playback]
 related_chapters: ["1.16", "5.8", "8.8", "11.2", "16.5", "25.13", "26.17"]
 created_by: "task2a-knowledge-gap"
+drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: "task6_pending"
-task6_state: "pending"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-24"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-24T05:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-24-05-review.md"
+task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
@@ -102,7 +113,7 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 | 场景 | Android 17 上的要求 | 失败表现 | 适配动作 |
 | --- | --- | --- | --- |
 | 可见页面内播放 | Activity 可见，PiP 也算可见播放场景 | 一般不受本变更影响 | 保持现有音频焦点和播放器生命周期管理 |
-| 锁屏 / 退后台后继续音乐、播客、长视频音频 | 应用需要运行非 `shortService` 类型的前台服务；`targetSdkVersion >= 37` 时还要满足 WIU 能力或闹钟豁免 | 播放被静音；焦点申请返回失败；音量调用被忽略 | 使用 Media3 `MediaSessionService`，或在用户触发播放时启动 `mediaPlayback` FGS |
+| 锁屏 / 退后台后继续音乐、播客、长视频音频 | 应用需要运行非 `shortService` 类型的前台服务；`targetSdkVersion >= 37` 时还要满足 while-in-use（WIU）能力或闹钟豁免 | 播放被静音；焦点申请返回失败；音量调用被忽略 | 使用 Media3 `MediaSessionService`，或在用户触发播放时启动 `mediaPlayback` FGS |
 | 后台启动后直接播放，例如 `BOOT_COMPLETED` 拉起播放 | 即使启动了 FGS，也可能没有 WIU 能力 | 操作被静默抑制，logcat / `dumpsys audio` 出现 `AudioHardening` | 改成用户显式触发恢复，或由通知 / media key / widget 等入口建立用户意图 |
 | 定时提醒、闹钟音频 | `targetSdkVersion >= 37` 时，exact alarm 权限 + `USAGE_ALARM` 可豁免 WIU 要求 | 不满足豁免条件时仍按后台音频限制处理 | 区分媒体播放和闹钟用途，使用正确 `AudioAttributes` |
 | 后台调节系统音量或铃声模式 | 需要满足同样生命周期约束 | API 调用不抛异常，但系统音量没有变化 | 把音量控制放到用户可见交互或媒体通知控制里 |
@@ -136,7 +147,7 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 
 这套状态机不要和 §25.13 的 FGS 超时治理混在一起。`mediaPlayback` FGS 的目标是表达用户可见的持续播放意图；JobScheduler / WorkManager 负责可推迟、可恢复的后台任务。音频播放失败后继续跑下载、预拉取、唤醒保活，只会把体验问题变成功耗问题。
 
-## 播放路径上的失败信号
+## 播放链路上的失败信号
 
 Android 17 的难点在于部分失败是静默的。定位时要同时看播放器、音频焦点、系统音频服务和前台服务状态。
 
