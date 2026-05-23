@@ -1,7 +1,7 @@
 {
   "total": 375,
-  "draft": 22,
-  "ready-for-review": 165,
+  "draft": 21,
+  "ready-for-review": 166,
   "finalized": 188,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-23",
@@ -223,7 +223,8 @@
     "14.20",
     "15.7",
     "25.15",
-    "26.18"
+    "26.18",
+    "25.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -279,7 +280,8 @@
     "src/part5-app/ch20-stability/04-anr-governance.md",
     "src/part3-tools/ch15-methodology/07-aosp-reading.md",
     "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
-    "src/part5-app/ch26-observability/18-app-performance-score.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md",
+    "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
@@ -1798,9 +1800,9 @@
   },
   "total_review_sections": 210,
   "next_review_candidates": [],
-  "ready_for_review": 157,
-  "last_updated": "2026-05-23T23:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "ready_for_review": 158,
+  "last_updated": "2026-05-24T00:04:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -4882,6 +4884,16 @@
       "last_task9_review_log": "logs/deep-review/2026-05-23-19-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed"
+    },
+    "25.16": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
+      "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+      "last_task2a_at": "2026-05-24T00:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -4899,9 +4911,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "26.18",
-  "last_task2a_processed_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
-  "last_task2a_processed_date": "2026-05-23",
+  "last_task2a_processed": "25.16",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+  "last_task2a_processed_date": "2026-05-24",
   "task9_last_review_detail": {
     "date": "2026-05-22",
     "time": "03:46",
@@ -4952,9 +4964,9 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-23T20:04:00+08:00",
-  "last_task2a_section": "26.18",
-  "last_task2a_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
+  "last_task2a_at": "2026-05-24T00:04:00+08:00",
+  "last_task2a_section": "25.16",
+  "last_task2a_file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "26.18"
@@ -4983,7 +4995,7 @@
   "last_task9_at": "2026-05-23T20:25:42+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "25.15",
+  "last_task2a_processed_section": "25.16",
   "task6_last_review_at": "2026-05-23T20:16:21+08:00",
   "task6_last_review_log": "logs/review/2026-05-23-20-review.md",
   "task6_last_review_sections": [
@@ -6042,15 +6054,33 @@
       "task2a_result": "ready-for-review",
       "last_task2a_at": "2026-05-23T18:16:00+08:00",
       "task6_state": "pending"
+    },
+    "25.16": {
+      "section": "25.16",
+      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
+      "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-23",
+      "queue_priority": 80,
+      "gap_source": "素材驱动/官方文档/AOSP结构",
+      "last_task2a_at": "2026-05-24T00:04:00+08:00",
+      "task2a_result": "drafted",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "drafted_date": "2026-05-24",
+      "last_verified": "2026-05-24",
+      "confidence": "medium-high"
     }
   },
   "task2a_last_processed": {
-    "section": "25.15",
-    "title": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理",
-    "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+    "section": "25.16",
+    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
+    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-05-23T18:16:00+08:00"
+    "processed_at": "2026-05-24T00:04:00+08:00"
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",
@@ -6067,7 +6097,7 @@
   "task9_last_sections": [
     "26.18 App Performance Score 与性能质量评分归因"
   ],
-  "last_task2a_processed_at": "2026-05-23T18:16:00+08:00",
+  "last_task2a_processed_at": "2026-05-24T00:04:00+08:00",
   "last_task9_files": [
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
@@ -6736,8 +6766,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "26.18",
-  "last_task2a_completed_at": "2026-05-23T20:04:00+08:00",
+  "last_task2a_completed": "25.16",
+  "last_task2a_completed_at": "2026-05-24T00:04:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -6866,16 +6896,22 @@
   },
   "section_25_16": {
     "section": "25.16",
-    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
     "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
-    "status": "draft",
-    "pipeline_stage": "queued-for-task2a",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-23",
     "queue_priority": 80,
     "gap_source": "素材驱动/官方文档/AOSP结构",
     "material_count": 6,
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
-    "task2a_result": "gap-created"
+    "task2a_result": "drafted",
+    "last_task2a_at": "2026-05-24T00:04:00+08:00",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "drafted_date": "2026-05-24",
+    "last_verified": "2026-05-24",
+    "confidence": "medium-high"
   }
 }
