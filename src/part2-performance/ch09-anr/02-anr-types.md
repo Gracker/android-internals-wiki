@@ -2,7 +2,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -45,11 +45,11 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-06T07:51:16+08:00"
 task9_reviewed_date: "2026-05-05"
@@ -237,7 +237,7 @@ Reason: executing service com.example.app/com.example.app.MyService
 
 **路径一：startForeground 未调用（DidNotStartInTime）。** `Context.startForegroundService()` 之后，Service 在宽限期内没有调用 `startForeground()`。AOSP 路径是 `ActiveServices.serviceForegroundTimeout()` → `stopServiceLocked()` → 延迟 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG` → `appNotResponding()`。Android 12+ 对此抛出 `ForegroundServiceDidNotStartInTimeException`——这条路径没有 `Service.onTimeout()` 回调自救，超时就直接进入 ANR/异常流程。
 
-**路径二：FGS 运行超时（shortService / dataSync / mediaProcessing）。** Service 已经成功调用了 `startForeground()`，但运行时间超过该 FGS 类型的限额。以 Android 14+ 的 `shortService`（约 3 分钟）为例：**第一阶段**是回调自救——系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚——如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。Android 15 的 `dataSync`（6 小时）和 `mediaProcessing`（23 小时）走同样的两段式语义。
+**路径二：FGS 运行超时（shortService / dataSync / mediaProcessing）。** Service 已经成功调用了 `startForeground()`，但运行时间超过该 FGS 类型的限额。以 Android 14+ 的 `shortService`（约 3 分钟）为例：**第一阶段**是回调自救——系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚——如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。Android 15 的 `dataSync`（6 小时）和 `mediaProcessing`（6 小时）走同样的两段式语义，各自类型在后台 24 小时窗口内累计运行不超过 6 小时（AOSP `ActivityManagerConstants.DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION = 6 * 60 * 60_000`，`DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION` 同理）。
 
 这两条路径的入口、触发条件和后果都不同，排查时要先确认是"没有调 startForeground"还是"FGS 运行超时"。
 
@@ -307,7 +307,7 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。引入 `shortService` 前台 Service 类型，约 3 分钟运行超时，超时后走 `Service.onTimeout()` 回调自救 → 硬杀的两段式语义 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。`AnrTimer` 已在 AOSP `android-15.0.0_r1` 中存在（`com.android.server.utils.AnrTimer`），`ActiveServices` 中已使用 `ServiceAnrTimer`；Android 16 在此基础上继续完善。
 
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，分别有 6 小时和 23 小时的累计运行时间限制（后台 24 小时窗口内）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
+**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，各自类型在后台 24 小时窗口内累计运行时间限制为 6 小时（`dataSync` 与 `mediaProcessing` 同类型服务共享配额，AOSP `ActivityManagerConstants` 中两者超时常量一致）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
 
 **Android 16（API 36）：** `AnrTimer` 在 Android 15 已引入的基础上进一步扩展覆盖范围。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。`AnrTimer` 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可在 `adb shell dumpsys activity` 的完整输出中查找 `AnrTimer` dump 段（AOSP `AnrTimer.dump(pw, false)` 会输出当前活跃的 ANR 计时器状态），具体过滤命令需以目标版本的 `dumpsys activity` 输出格式为准。
 
