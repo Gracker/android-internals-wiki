@@ -1,6 +1,6 @@
 {
-  "total": 374,
-  "draft": 21,
+  "total": 375,
+  "draft": 22,
   "ready-for-review": 165,
   "finalized": 188,
   "task9_result": "pass-tech-review",
@@ -1799,8 +1799,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 157,
-  "last_updated": "2026-05-23T20:25:42+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-23T23:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -6276,15 +6276,15 @@
   "last_task9_review_summary": "Task9 deep-review: 26.18 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-23",
-    "time": "17:04",
-    "section": "25.15",
-    "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+    "time": "23:04",
+    "section": "25.16",
+    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
     "result": "gap-created",
-    "gap_score": 16,
-    "candidate_count": 4,
+    "gap_score": 18,
+    "candidate_count": 5,
     "qualified_count": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-23T17:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
   "last_task6_audit": "2026-05-23T10:08:00+08:00",
   "last_task6_audit_sections": [
     "7.3"
@@ -6295,18 +6295,18 @@
   "last_task6_audit_log": "logs/review/2026-05-23-10-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-23",
-    "time": "17:04",
+    "time": "23:04",
     "mode": "gap-mining",
     "empty_draft_count": 0,
-    "candidate_count": 4,
+    "candidate_count": 5,
     "qualified_count": 1,
     "created_sections": [
-      "25.15"
+      "25.16"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
+      "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
     ],
-    "top_candidate": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理"
+    "top_candidate": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6425,20 +6425,20 @@
   },
   "task2a_gap_mining_summary": {
     "date": "2026-05-23",
-    "time": "17:04",
+    "time": "23:04",
     "created_sections": [
-      "25.15"
+      "25.16"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
+      "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
     ],
     "gap_scores": {
-      "25.15": {
-        "素材丰富度": 3,
-        "与全书目标相关性": 4,
+      "25.16": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
         "读者需求度": 4,
-        "时效性": 5,
-        "total": 16
+        "时效性": 4,
+        "total": 18
       }
     }
   },
@@ -6863,5 +6863,19 @@
     "last_task9_review_log": "logs/deep-review/2026-05-23-20-deep-review.md",
     "auto_promoted_by": "task9-deep-tech-review",
     "auto_promoted_at": "2026-05-23T20:25:42+08:00"
+  },
+  "section_25_16": {
+    "section": "25.16",
+    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+    "status": "draft",
+    "pipeline_stage": "queued-for-task2a",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-23",
+    "queue_priority": 80,
+    "gap_source": "素材驱动/官方文档/AOSP结构",
+    "material_count": 6,
+    "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
+    "task2a_result": "gap-created"
   }
 }
