@@ -18340,9 +18340,9 @@
     {
       "id": "task2a-gap-20260523-25.16-adpf-power-efficiency-powermonitor",
       "section": "25.16",
-      "section_title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "section_title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
       "priority": 80,
-      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
       "description": "补齐 Android 15 ADPF Power Efficiency Mode 与 PowerMonitor/Power Rails 的应用层能耗验证闭环。",
       "reason": "source-index 中高质量素材显示 §5.9/§25.11 已覆盖 ADPF 基础与协程线程迁移，但 Part 5 缺少“节能 hint → PowerMonitor/Perfetto power_rails 验证 → 线上灰度指标”的实战小节。",
       "issue_type": "knowledge-gap",
@@ -18350,7 +18350,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 2.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
@@ -18371,7 +18371,10 @@
         "total": 18
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-23T23:04:00+08:00"
+      "added_at": "2026-05-23T23:04:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-24T00:04:00+08:00",
+      "completion_reason": "Task 2A content processing: draft expanded and status set to ready-for-review"
     }
   ],
   "metadata": {
