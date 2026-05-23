@@ -1856,8 +1856,8 @@
   "total_review_sections": 211,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T04:15:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-24T07:07:00+08:00",
+  "last_updated_by": "task6-review",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -6189,7 +6189,7 @@
   "task9_last_files": [
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
-  "last_task2b_run": "2026-05-22T07:21:00+08:00",
+  "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-23",
@@ -6274,6 +6274,25 @@
         "task9-deep-tech-review",
         "task9-deep-tech-review",
         "task9-deep-tech-review"
+      ]
+    },
+    {
+      "timestamp": "2026-05-24T07:32:43+08:00",
+      "sections_processed": [
+        "9.2",
+        "25.17",
+        "18.1"
+      ],
+      "sections_fixed": [
+        "9.2",
+        "25.17",
+        "18.1"
+      ],
+      "issues_addressed": 6,
+      "details": [
+        "§9.2: mediaProcessing FGS 超时 23h→6h (2处)",
+        "§25.17: ADB重定向修正(4处) + enable/throw测试边界 + 播放失败信号 + BOOT_COMPLETED FGS限制",
+        "§18.1: Flutter线程合并版本 3.29→3.32 stable"
       ]
     }
   ],
@@ -6399,14 +6418,14 @@
     "qualified_count": 1
   },
   "last_task2a_gap_mining_at": "2026-05-24T02:04:00+08:00",
-  "last_task6_audit": "2026-05-23T10:08:00+08:00",
+  "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
-    "7.3"
+    "18.6"
   ],
   "last_task6_audit_files": [
-    "src/part2-performance/ch07-smoothness/03-jank-methodology.md"
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
-  "last_task6_audit_log": "logs/review/2026-05-23-10-audit.md",
+  "last_task6_audit_log": "logs/review/2026-05-24-07-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-24",
     "time": "02:04",
@@ -6942,14 +6961,14 @@
     }
   ],
   "task6_audit_summary": {
-    "date": "2026-05-23",
-    "time": "11:08",
-    "section": "7.14",
-    "file": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
+    "date": "2026-05-24",
+    "time": "07:07",
+    "section": "18.6",
+    "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
     "mode": "idle-audit",
-    "result": "L1/L2 小修 3 处；frontmatter 标注 last_task6_audit；未发现 L3/L4 回炉项",
-    "log": "logs/review/2026-05-23-11-audit.md",
-    "reviewed_at": "2026-05-23T11:08:00+08:00"
+    "result": "L1 禁用词/高频词 0 命中；锚点 8/8；补齐 frontmatter 来源/验证字段；发现 1 个版本边界与发布状态闭环问题，已写入 queue P90。",
+    "log": "logs/review/2026-05-24-07-audit.md",
+    "reviewed_at": "2026-05-24T07:07:00+08:00"
   },
   "section_26_18": {
     "section": "26.18",

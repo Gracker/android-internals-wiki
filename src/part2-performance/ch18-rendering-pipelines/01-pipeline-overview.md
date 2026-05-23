@@ -5,16 +5,16 @@ section: "18.1"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-05-05"
-last_verified_against: "AOSP android-16 BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.29 release notes"
+last_verified_against: "AOSP android-16 BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
 confidence: medium
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES", "HardwareBufferRenderer"]
 related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-05-24T04:06:06+08:00"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
@@ -146,7 +146,7 @@ WebView 的渲染路径不是 App 开发者能直接控制的，它取决于 Chr
 
 ## 补充：Flutter 渲染架构（概览）
 
-Flutter 在 Android 上的渲染架构有自己的线程分工。纯 Flutter 渲染时，raster 线程和 platform 线程的分工仍然存在。Flutter 3.29+ 在 Platform View 混合场景里把 UI Task Runner 和 Platform Task Runner 收到同一条主线程执行——这消除了 Platform View 异步偏移造成的帧间闪烁，因为 Flutter 侧的合成与原生侧的提交共享同一个 VSync 调度点，不再有跨线程的时序漂移。Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终渲染路径：
+Flutter 在 Android 上的渲染架构有自己的线程分工。纯 Flutter 渲染时，raster 线程和 platform 线程的分工仍然存在。Flutter 3.32 stable 起默认在 iOS/Android 上合并 UI Task Runner 和 Platform Task Runner 到同一条主线程执行（PR #162944，Flutter #150525），可通过 flag opt-out。旧版本 Flutter 在 Platform View 混合场景里 UI 和 platform 线程分开执行，存在跨线程时序漂移。合并后消除了 Platform View 异步偏移造成的帧间闪烁：Flutter 侧的合成与原生侧的提交共享同一个 VSync 调度点。Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终渲染路径：
 
 - **Flutter SurfaceView**：走 SurfaceView 直出管线（见 [18.6](06-surfaceview.md)），适合全屏 Flutter 页面
 - **Flutter TextureView**：走 App 侧合成管线（见 [18.7](07-textureview.md)），适合需要与原生 View 混合的场景

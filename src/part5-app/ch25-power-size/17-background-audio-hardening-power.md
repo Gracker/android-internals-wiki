@@ -45,9 +45,9 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
 task6_result: "pass-light-edit"
@@ -55,7 +55,7 @@ last_task6_at: "2026-05-24T05:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-24
 last_task9_at: "2026-05-24T05:20:00+08:00"
@@ -143,7 +143,7 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 | --- | --- | --- | --- |
 | Activity 可见，无 FGS | 页面内短音效、可见视频播放 | 允许播放、申请焦点和调音量 | 页面退后台后要重新评估 |
 | `mediaPlayback` FGS，从可见页面的用户播放动作启动 | 音乐、播客、长视频锁屏继续播放 | 符合后台播放模型，target 37 下也能获得 WIU 能力 | 推荐路径，Media3 `MediaSessionService` 会帮忙管理服务和 session 生命周期 |
-| FGS 从 `BOOT_COMPLETED`、后台广播或后台任务启动 | 设备重启后自动播放、后台补偿播放 | 可能没有 WIU 能力，target 37 下会被拦 | `AudioHardening level: full` 常指向“有 FGS 但无 WIU” |
+| FGS 从 `BOOT_COMPLETED`、后台广播或后台任务启动 | 设备重启后自动播放、后台补偿播放 | 可能没有 WIU 能力，target 37 下会被拦；target 35+ 的 `mediaPlayback` FGS 从 `BOOT_COMPLETED` 启动本身也受限（`ForegroundServiceStartNotAllowedException`） | 排查顺序：先确认 FGS 是否成功启动（看 system log 有无 `ForegroundServiceStartNotAllowedException` 或系统拒绝记录），再看 WIU 与 `AudioHardening` level |
 | 无 FGS 但仍在后台写音频 | 旧版“Service 里直接播放”方案 | 被拦，且可能只表现为无声 | `AudioHardening level: partial` 常指向“没有 FGS” |
 | exact alarm + `USAGE_ALARM` | 用户设置的闹钟、提醒 | 可豁免 WIU 要求 | 不能把普通媒体播放伪装成 alarm usage |
 
@@ -161,7 +161,7 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 | 观察点 | 信号 | 常见解释 | 下一步 |
 | --- | --- | --- | --- |
 | `AudioManager.requestAudioFocus()` | 返回 `AUDIOFOCUS_REQUEST_FAILED` | 后台生命周期不合法，或焦点被系统锁住 | 记录请求时页面可见性、FGS 状态、usage、focus gain 类型 |
-| `AudioTrack.write()` / native `AAudioStream_write()` | 写入报错、持续 underrun、或在 hardening throw 模式下失败 | 播放端仍在写，但系统不允许输出 | 对照 `AudioHardening` 日志和播放器回调 |
+| `AudioTrack.write()` / native `AAudioStream_write()` | 默认模式下可能仍显示成功但输出被静音；`throw` 模式下 write 持续返回错误码 | 默认模式：静音；throw 模式：显性错误 | 默认模式看 `AudioHardening` 日志和 `dumpsys audio`；throw 模式下 write 错误码和崩溃是显性化信号 |
 | Media3 Player | `isPlaying=false`、buffering、error、playWhenReady 状态反复切换 | 可能是网络、焦点、系统生命周期中的任一类 | 记录 `playbackState`、`playWhenReady`、session id、当前 item |
 | MediaSession | session 不活跃、通知控制消失、media key 无法恢复 | session 与 FGS 生命周期没有同步 | 用 `dumpsys media_session` 看 session owner、state、actions |
 | `dumpsys audio` / logcat | `AudioHardening`，`level: partial` 或 `level: full` | partial 常指无 FGS；full 常指有 FGS 但无 WIU | 回到 FGS 启动入口和 targetSdk 37 gating 检查 |
@@ -201,27 +201,32 @@ Media3 文档给出的边界是：短音频或亮屏播放通常不用把电量�
 这组命令用于复现和收集证据，观察播放中断时间点附近的状态变化。
 
 ```bash
-# 打开 Android 17 后台音频硬化测试开关；throw 模式只用于线下复现
+# 打开 Android 17 后台音频硬化测试开关
+# enable: 对所有应用强制开启限制，WIU 前台服务要求不再受 targetSdk 37 限制
+# throw: 在 enable 基础上让失败显性化（write 持续返回错误码、部分播放模式可能崩溃）
+# 两者都只用于线下发现潜在后台音频路径，不用于验证 target 36 生产豁免或 alarm 豁免
+# targetSdk A/B 和 USAGE_ALARM 豁免要在默认平台行为 / compat 条件下单独跑
+# 测试后用 adb shell cmd audio set-enable-hardening disable 复原
 adb shell cmd audio set-enable-hardening enable
 adb shell cmd audio set-enable-hardening throw
 
 # 查看音频策略、焦点、音量和 AudioHardening 相关记录
-adb shell dumpsys audio > /sdcard/audio.txt
+adb shell dumpsys audio > audio.txt
 adb logcat -b all -v threadtime | grep -Ei "AudioHardening|AudioFocus|AudioTrack"
 
 # 查看 MediaSession 是否仍处于活跃播放状态，以及通知控制是否可恢复
-adb shell dumpsys media_session > /sdcard/media_session.txt
+adb shell dumpsys media_session > media_session.txt
 
 # 查看前台服务类型、启动时间和 Service 记录
-adb shell dumpsys activity services YOUR_PACKAGE_NAME > /sdcard/services.txt
+adb shell dumpsys activity services YOUR_PACKAGE_NAME > services.txt
 
 # 查看电量、WakeLock、网络和后台唤醒统计
 adb shell dumpsys batterystats --reset
 # 复现场景后再导出
-adb shell dumpsys batterystats > /sdcard/batterystats.txt
+adb shell dumpsys batterystats > batterystats.txt
 ```
 
-`throw` 模式会让失败更显性：音量和焦点交互抛出 `IllegalStateException`，`AudioTrack.write()` 持续返回错误，部分没有显式写入点的播放模式可能直接崩溃。它适合开发和回归测试，不适合作为线上配置。
+`throw` 模式会让失败更显性：音量和焦点交互抛出 `IllegalStateException`，`AudioTrack.write()` 持续返回错误码，部分没有显式写入点的播放模式可能直接崩溃。它适合开发和回归测试，不适合作为线上配置。默认模式下 `AudioTrack.write()` 可能仍看起来成功但输出被静音，主要证据是 `AudioHardening` 日志、`dumpsys audio` 与播放器/焦点状态；`write()` 错误码和崩溃只作为 `throw` 模式下的显性化信号。
 
 Perfetto 抓取时建议覆盖 `audio`、`sched`、`freq`、`power`、`battery`、`binder_driver`、`am` 等数据源。分析顺序按时间线推进：用户点击播放 → FGS 启动 → MediaSession active → focus granted → AudioTrack / AudioFlinger 活动 → 锁屏或退后台 → 网络或蓝牙事件 → 播放停止或耗电升高。发现播放停止后，如果 CPU、网络和 WakeLock 仍持续，问题就从“播放失败”转成“停止态资源释放不完整”。
 
