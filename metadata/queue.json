@@ -18002,6 +18002,35 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-23T10:24:00+08:00",
       "review_log": "logs/deep-review/2026-05-23-10-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260523-14.20-r8-configuration-analyzer",
+      "section": "14.20",
+      "section_title": "R8 Configuration Analyzer 与 keep 规则体积归因",
+      "priority": 80,
+      "title": "R8 Configuration Analyzer 与 keep 规则体积归因",
+      "description": "Android Developers 新增 R8 Configuration Analyzer 文档，用于识别 app rules、consumer rules 与默认 AGP keep rules 对 shrinking / obfuscation / optimization 的影响。现有 12.1 与 25.7 覆盖 APK 体积和 R8 规则实践，但缺少面向 analyzer 报告、规则影响分级和 CI 回归治理的工具章节。",
+      "reason": "Task 2A gap mining: 官方文档新增且 SUMMARY.md 无对应小节；与 APK Analyzer、R8 full mode 和体积治理形成互补。",
+      "issue_type": "knowledge-gap-official-tooling",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/20-r8-configuration-analyzer.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION-ANALYZER",
+        "https://github.com/android/skills/blob/main/performance/r8-analyzer/SKILL.md",
+        "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
+        "src/part2-performance/ch12-apk-network/01-apk-size.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T12:04:00+08:00"
     }
   ],
   "metadata": {

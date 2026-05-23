@@ -262,6 +262,7 @@ tags:
   - [14.17 statsd 与系统级指标采集](part3-tools/ch14-other-tools/17-statsd-system-metrics.md)
   - [14.18 Android Performance Analyzer 与系统性能分析](part3-tools/ch14-other-tools/18-android-performance-analyzer.md)
   - [14.19 Android CLI 与 Agent 化性能调试工作流](part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md)
+  - [14.20 R8 Configuration Analyzer 与 keep 规则体积归因](part3-tools/ch14-other-tools/20-r8-configuration-analyzer.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
