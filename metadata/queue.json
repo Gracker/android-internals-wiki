@@ -18251,6 +18251,34 @@
       "added_at": "2026-05-23T17:04:00+08:00",
       "completed_date": "2026-05-23T18:16:00+08:00",
       "completed_reason": "Task 2A 加工完成：基于 Android 16 官方行为变更、AOSP libcore ScheduledThreadPoolExecutor 源码、Perfetto / Batterystats 文档与 Clippings 线程池/CPU 优化结构参考，补齐固定频率任务补偿边界、恢复窗口 CPU 峰值治理、测试矩阵和 SDK 迁移清单；状态改为 ready-for-review。"
+    },
+    {
+      "id": "task2a-gap-20260523-26.18-app-performance-score",
+      "section": "26.18",
+      "section_title": "App Performance Score 与性能质量评分归因",
+      "priority": 80,
+      "title": "App Performance Score 与性能质量评分归因",
+      "description": "官方 App Performance Score 文档提供静态/动态评分框架，当前目录只有 Vitals、Macrobenchmark、APM 与治理章节，缺少把 0-100 分转成研发优先级和发版门禁的独立小节。",
+      "reason": "Task 2A gap mining: developer.android.com/topic/performance/app-score 与 Performance Journey 官方博客反复强调 App Performance Score，但 SUMMARY 未覆盖该主题。",
+      "issue_type": "knowledge-gap-official-doc",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch26-observability/18-app-performance-score.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/topic/performance/app-score",
+        "https://developer.android.com/topic/performance/overview",
+        "https://android-developers.googleblog.com/2025/11/leveling-guide-for-your-performance.html",
+        "https://developer.android.com/topic/performance/performance-measurement-examples",
+        "https://developer.android.com/topic/performance/monitoring-overview"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T19:04:00+08:00"
     }
   ],
   "metadata": {
