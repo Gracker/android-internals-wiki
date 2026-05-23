@@ -1,6 +1,43 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-8.1-startup-metrics-version-boundary",
+      "section": "8.1",
+      "section_title": "响应速度原理",
+      "priority": 85,
+      "title": "TTID/TTFD 启动指标不应归因到 Android 12 引入",
+      "description": "Task9 闲时抽检发现 §8.1 将 Android Vitals 的 TTID/TTFD 启动指标写成 Android 12 开始引入，但官方文档未支持该归因，且 reportFullyDrawn() 在 Android 4.4 已存在。",
+      "reason": "[Deep Tech Review Audit] §8.1 Android Vitals 启动指标版本边界错误，需回炉修正。",
+      "issue_type": "version-difference-startup-metrics",
+      "severity": "P1",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-09-audit.md",
+        "https://developer.android.com/topic/performance/vitals/launch-time",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-4.4_r1/core/java/android/app/Activity.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/app/Activity.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/启动指标 Android 12 归因不成立",
+          "location": "L210-L214：Android Vitals 启动时间 TTID / TTFD 段",
+          "detail": "正文写“从 Android 12 开始，系统引入 TTID / TTFD 两个更精细的启动指标”。复核当前 Android Developers App Startup Time 文档：Android vitals 使用 TTID，TTID 由框架自动上报；TTFD 由应用调用 reportFullyDrawn() 标记。文档没有把 TTID/TTFD 归因到 Android 12。AOSP Activity.reportFullyDrawn() 在 android-4.4_r1 已存在，android-12.0.0_r1 与 android-16.0.0_r1 继续保留，因此“Android 12 开始引入”会误导版本边界。",
+          "suggestion": "删掉“从 Android 12 开始”这个版本归因；改为“Android Vitals 当前用 TTID/TTFD 描述启动体验：TTID 自动上报，TTFD 依赖 reportFullyDrawn()”。如果同段要讲 Android 12，应只落到 SplashScreen API（API 31+）这个独立版本点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T09:31:49+08:00",
+      "review_log": "logs/deep-review/2026-05-23-09-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-15.1-philosophy-profilingmanager-benchmarking-source-paths",
       "section": "15.1",
       "section_title": "性能优化的术、道、器",
