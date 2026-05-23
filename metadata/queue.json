@@ -1,6 +1,66 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-15.7-sftrace-version-path",
+      "section": "15.7",
+      "section_title": "AOSP 代码阅读",
+      "priority": 95,
+      "title": "SurfaceFlinger SFTRACE 宏路径与版本边界错误",
+      "description": "章节把 SurfaceFlinger 的 SFTRACE_* 宏族写成 Android 12 起引入，并标注定义在不存在的 SurfaceFlingerTrace.h；android-12/13/14/15 SurfaceFlinger.cpp 仍使用 ATRACE_CALL，android-16 才切到 <common/trace.h> 中的 SFTRACE_*。",
+      "reason": "[Deep Tech Review Audit] §15.7 SurfaceFlinger trace 宏源码路径和 Android 12-16 版本边界错误，需要 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-11-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-12.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/common/include/common/trace.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L247：SurfaceFlinger `SFTRACE_*` 宏族定义文件",
+          "detail": "正文写 `SFTRACE_*` 定义在 `SurfaceFlingerTrace.h`。AOSP android-16.0.0_r1 的 `services/surfaceflinger/SurfaceFlingerTrace.h` 返回 404；`SurfaceFlinger.cpp` 实际 include `<common/trace.h>`，宏定义位于 `services/surfaceflinger/common/include/common/trace.h`。",
+          "suggestion": "把 `SurfaceFlingerTrace.h` 改为 `services/surfaceflinger/common/include/common/trace.h`，并说明它是 SurfaceFlinger 专用 trace 封装头。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L247：`SurfaceFlinger 从 Android 12 起引入 SFTRACE_*`",
+          "detail": "抽检 android-12.0.0_r1、android-13.0.0_r1、android-14.0.0_r1、android-15.0.0_r1 的 `SurfaceFlinger.cpp`，均未出现 `SFTRACE_*`，仍可见 `ATRACE_CALL`；android-16.0.0_r1 才出现 `SFTRACE_CALL/SFTRACE_NAME` 并 include `<common/trace.h>`。当前 Android 12 起的版本口径会误导读者在 Android 12-15 trace/source 中寻找不存在的宏族。",
+          "suggestion": "改成版本化描述：Android 12-15 仍按 `ATRACE_CALL/ATRACE_NAME` 阅读 SurfaceFlinger trace；Android 16 当前代码使用 `SFTRACE_*` 封装。不要把 Android 16 的实现泛化到 Android 12+。"
+        },
+        {
+          "severity": "P2",
+          "type": "源码锚点精度",
+          "location": "L189：Logcat 反查源码小节验证锚点",
+          "detail": "小节示例是 `D/Choreographer: Skipping ...` 日志，验证锚点却写 `frameworks/base/core/java/android/os/Trace.java`；该日志应回到 `frameworks/base/core/java/android/view/Choreographer.java`。",
+          "suggestion": "把 Logcat 小节锚点改为 `Choreographer.java`；`Trace.java` 只保留在 Perfetto traceBegin/traceEnd 小节。"
+        },
+        {
+          "severity": "P2",
+          "type": "版本差异/源码阅读提示",
+          "location": "L305、L309：Choreographer 回调顺序",
+          "detail": "正文只写 Input → Animation → Traversal。android-16.0.0_r1 `Choreographer.java` 还定义 `CALLBACK_INSETS_ANIMATION` 与 `CALLBACK_COMMIT`；作为源码阅读方法论，应提醒现代源码里还有 Insets Animation 与 Commit 阶段。",
+          "suggestion": "补一句：早期主链可按 Input/Animation/Traversal 理解，Android 16 当前源码还要看 INSETS_ANIMATION 与 COMMIT。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T11:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-11-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-8.1-startup-metrics-version-boundary",
       "section": "8.1",
       "section_title": "响应速度原理",
@@ -17945,22 +18005,119 @@
     }
   ],
   "metadata": {
-    "total_entries": 488,
-    "p0_count": 187,
-    "last_updated": "2026-05-23T10:24:00+08:00",
+    "total_entries": 489,
+    "p0_count": 189,
+    "last_updated": "2026-05-23T11:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 178,
+    "pending_entries": 167,
     "updated_date": "2026-05-23",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 178,
-    "completed_entries": 302,
+    "pending": 167,
+    "completed_entries": 319,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T10:24:00+08:00",
+  "last_updated": "2026-05-23T11:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
+    {
+      "id": "task9-audit-20260523-15.7-sftrace-version-path",
+      "section": "15.7",
+      "section_title": "AOSP 代码阅读",
+      "priority": 95,
+      "title": "SurfaceFlinger SFTRACE 宏路径与版本边界错误",
+      "description": "章节把 SurfaceFlinger 的 SFTRACE_* 宏族写成 Android 12 起引入，并标注定义在不存在的 SurfaceFlingerTrace.h；android-12/13/14/15 SurfaceFlinger.cpp 仍使用 ATRACE_CALL，android-16 才切到 <common/trace.h> 中的 SFTRACE_*。",
+      "reason": "[Deep Tech Review Audit] §15.7 SurfaceFlinger trace 宏源码路径和 Android 12-16 版本边界错误，需要 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-11-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-12.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/common/include/common/trace.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L247：SurfaceFlinger `SFTRACE_*` 宏族定义文件",
+          "detail": "正文写 `SFTRACE_*` 定义在 `SurfaceFlingerTrace.h`。AOSP android-16.0.0_r1 的 `services/surfaceflinger/SurfaceFlingerTrace.h` 返回 404；`SurfaceFlinger.cpp` 实际 include `<common/trace.h>`，宏定义位于 `services/surfaceflinger/common/include/common/trace.h`。",
+          "suggestion": "把 `SurfaceFlingerTrace.h` 改为 `services/surfaceflinger/common/include/common/trace.h`，并说明它是 SurfaceFlinger 专用 trace 封装头。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L247：`SurfaceFlinger 从 Android 12 起引入 SFTRACE_*`",
+          "detail": "抽检 android-12.0.0_r1、android-13.0.0_r1、android-14.0.0_r1、android-15.0.0_r1 的 `SurfaceFlinger.cpp`，均未出现 `SFTRACE_*`，仍可见 `ATRACE_CALL`；android-16.0.0_r1 才出现 `SFTRACE_CALL/SFTRACE_NAME` 并 include `<common/trace.h>`。当前 Android 12 起的版本口径会误导读者在 Android 12-15 trace/source 中寻找不存在的宏族。",
+          "suggestion": "改成版本化描述：Android 12-15 仍按 `ATRACE_CALL/ATRACE_NAME` 阅读 SurfaceFlinger trace；Android 16 当前代码使用 `SFTRACE_*` 封装。不要把 Android 16 的实现泛化到 Android 12+。"
+        },
+        {
+          "severity": "P2",
+          "type": "源码锚点精度",
+          "location": "L189：Logcat 反查源码小节验证锚点",
+          "detail": "小节示例是 `D/Choreographer: Skipping ...` 日志，验证锚点却写 `frameworks/base/core/java/android/os/Trace.java`；该日志应回到 `frameworks/base/core/java/android/view/Choreographer.java`。",
+          "suggestion": "把 Logcat 小节锚点改为 `Choreographer.java`；`Trace.java` 只保留在 Perfetto traceBegin/traceEnd 小节。"
+        },
+        {
+          "severity": "P2",
+          "type": "版本差异/源码阅读提示",
+          "location": "L305、L309：Choreographer 回调顺序",
+          "detail": "正文只写 Input → Animation → Traversal。android-16.0.0_r1 `Choreographer.java` 还定义 `CALLBACK_INSETS_ANIMATION` 与 `CALLBACK_COMMIT`；作为源码阅读方法论，应提醒现代源码里还有 Insets Animation 与 Commit 阶段。",
+          "suggestion": "补一句：早期主链可按 Input/Animation/Traversal 理解，Android 16 当前源码还要看 INSETS_ANIMATION 与 COMMIT。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T11:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-23-11-audit.md"
+    },
+    {
+      "id": "task9-audit-20260523-8.1-startup-metrics-version-boundary",
+      "section": "8.1",
+      "section_title": "响应速度原理",
+      "priority": 85,
+      "title": "TTID/TTFD 启动指标不应归因到 Android 12 引入",
+      "description": "Task9 闲时抽检发现 §8.1 将 Android Vitals 的 TTID/TTFD 启动指标写成 Android 12 开始引入，但官方文档未支持该归因，且 reportFullyDrawn() 在 Android 4.4 已存在。",
+      "reason": "[Deep Tech Review Audit] §8.1 Android Vitals 启动指标版本边界错误，需回炉修正。",
+      "issue_type": "version-difference-startup-metrics",
+      "severity": "P1",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-09-audit.md",
+        "https://developer.android.com/topic/performance/vitals/launch-time",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-4.4_r1/core/java/android/app/Activity.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/app/Activity.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/启动指标 Android 12 归因不成立",
+          "location": "L210-L214：Android Vitals 启动时间 TTID / TTFD 段",
+          "detail": "正文写“从 Android 12 开始，系统引入 TTID / TTFD 两个更精细的启动指标”。复核当前 Android Developers App Startup Time 文档：Android vitals 使用 TTID，TTID 由框架自动上报；TTFD 由应用调用 reportFullyDrawn() 标记。文档没有把 TTID/TTFD 归因到 Android 12。AOSP Activity.reportFullyDrawn() 在 android-4.4_r1 已存在，android-12.0.0_r1 与 android-16.0.0_r1 继续保留，因此“Android 12 开始引入”会误导版本边界。",
+          "suggestion": "删掉“从 Android 12 开始”这个版本归因；改为“Android Vitals 当前用 TTID/TTFD 描述启动体验：TTID 自动上报，TTFD 依赖 reportFullyDrawn()”。如果同段要讲 Android 12，应只落到 SplashScreen API（API 31+）这个独立版本点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T09:31:49+08:00",
+      "review_log": "logs/deep-review/2026-05-23-09-audit.md"
+    },
     {
       "id": "task9-audit-20260523-7.5-rendereffect-source-version-errors",
       "section": "7.5",
@@ -18031,273 +18188,11 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-23T06:28:41+08:00",
       "review_log": "logs/deep-review/2026-05-23-06-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
       "updated_at": "2026-05-23T07:24:00+08:00",
       "reopened_at": "2026-05-23T07:24:00+08:00",
       "updated_by": "task9-deep-tech-review"
-    },
-    {
-      "id": "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary",
-      "section": "2.11",
-      "section_title": "Flutter 渲染管线与性能",
-      "priority": 85,
-      "title": "16KB Page Size 合规段需拆开 packaging 与 ELF / runtime 适配边界",
-      "description": "Task9 回炉复审发现 §2.11 虽已修正 NDK r28/r27 版本边界，但仍把关键 plugin 未适配时的短期方案写成 packagingOptions 处理，容易让读者把 zip alignment workaround 当成原生库 16KB 适配。",
-      "reason": "[Deep Tech Review] §2.11 16KB Page Size 合规段仍混淆 AGP packaging 对齐、ELF segment alignment 与 native 代码 4KB 假设，需回炉修正。",
-      "issue_type": "version-difference-toolchain-boundary",
-      "severity": "P1",
-      "created_date": "2026-05-22",
-      "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-22-15-deep-review.md",
-        "https://developer.android.com/guide/practices/page-sizes"
-      ],
-      "review_issues": [
-        {
-          "severity": "P1",
-          "type": "版本差异/工具链边界",
-          "location": "L181-L195：`16KB Page Size 合规与 Flutter 原生插件`",
-          "detail": "正文已正确写出 NDK r28 默认 16KB-aligned、r27 及以下需 linker flags，但 L195 写“关键 plugin 未适配，短期方案是在 build.gradle 中通过 packagingOptions 做对齐处理”。Android Developers 文档把问题拆成两层：AGP 8.5.1+ 负责 uncompressed shared libraries 的 16KB zip alignment；NDK r28+ 或 r27 及以下 linker flags 负责 ELF segment alignment；此外还要修复 hardcoded PAGE_SIZE=4096 等 runtime 问题。`packagingOptions { jniLibs { useLegacyPackaging = true } }` 只是 AGP 8.5 及以下的压缩/提取 workaround，不能修复预编译 `.so` 的 ELF p_align，也不能修复 native 代码里的 4KB 假设。",
-          "suggestion": "把短期方案改成有条件表述：若只是 AGP/APK zip alignment 问题，可升级 AGP 8.5.1+ 或在旧 AGP 下临时使用 compressed shared libraries；若 plugin 内含未重新编译的 `.so` 或 hardcoded 4KB 假设，必须等待/替换 plugin、让作者用 NDK r28+ 重编，或本地 fork 重编并测试。不要把 packagingOptions 写成“plugin 未适配”的通用修复。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-22T15:42:52+08:00",
-      "review_log": "logs/deep-review/2026-05-22-15-deep-review.md"
-    },
-    {
-      "id": "task9-deep-20260522-6.2-f2fs-curseg-erofs-zstd-boundary",
-      "section": "6.2",
-      "section_title": "文件系统",
-      "priority": 95,
-      "title": "f2fs curseg_space 源码片段与 EROFS ZSTD 版本边界仍需修正",
-      "description": "Task9 回炉复审发现 §6.2 的 f2fs 前台 GC 片段仍与 android15-6.6 当前源码不一致，且 EROFS ZSTD 支持版本边界仍偏硬。",
-      "reason": "[Deep Tech Review] §6.2 文件系统仍存在 f2fs `has_not_enough_free_secs()` 源码片段错误与 EROFS ZSTD 版本边界问题，需回炉修正。",
-      "issue_type": "source-code-accuracy-version-difference",
-      "severity": "P0",
-      "created_date": "2026-05-22",
-      "assigned_to": "content-team",
-      "estimated_hours": 2,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part1-fundamentals/ch06-storage/02-filesystem.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-22-15-deep-review.md",
-        "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6/fs/f2fs/segment.h",
-        "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6/fs/f2fs/segment.c",
-        "https://raw.githubusercontent.com/torvalds/linux/v6.10/fs/erofs/Kconfig"
-      ],
-      "review_issues": [
-        {
-          "severity": "P0",
-          "type": "源码错误/f2fs 前台 GC 触发源码片段",
-          "location": "L216-L244：`has_not_enough_free_secs()` 代码片段与三段判定说明",
-          "detail": "正文代码块标注 android15-6.6，但把 `curseg_space` 声明成 `block_t`，并在说明里写成“当前 curseg 剩余空间”。实际 android15-6.6 `fs/f2fs/segment.h` L604-L655 中 `__get_secs_required(..., bool *curseg_p)`，`has_not_enough_free_secs()` 里是 `bool curseg_space`；L631-L633 通过 `has_curseg_enough_space()` 返回布尔值，表示当前 curseg 是否足以容纳 residual node/data/dentry blocks。`lower_secs` / `upper_secs` 在 L648-L649 才加 `needed + reserved_sections(sbi)`，随后按 `free_secs > upper_secs`、`free_secs <= lower_secs`、`return !curseg_space` 判定。当前片段会把 lower/upper/curseg_space 的语义讲成数量型剩余空间。",
-          "suggestion": "把代码片段改为源码中的 `bool curseg_space`，说明 `curseg_space` 是布尔判定而不是剩余块数；三段逻辑写成：free_secs 大于 upper 不触发、低于等于 lower 触发、中间区间取决于当前 curseg 是否能容纳余数。保留 `/upper/curseg_space` 审校锚点时要对应源码语义。"
-        },
-        {
-          "severity": "P1",
-          "type": "版本差异/EROFS ZSTD 边界",
-          "location": "L330：`EROFS 的核心优势` 压缩算法说明",
-          "detail": "正文写 ZSTD 需要 Android 16 / kernel 6.12+ 或厂商 backport。android15-6.6 `fs/erofs/decompressor.c` 只列 LZ4、可选 LZMA、可选 DEFLATE；这部分收窄是正确的。但 upstream Linux v6.10 `fs/erofs/Kconfig` 已出现 `CONFIG_EROFS_FS_ZIP_ZSTD`，因此“kernel 6.12+”作为通用内核版本边界偏晚。Android 设备侧是否可用还要看 ACK 分支、厂商 backport 与 `CONFIG_EROFS_FS_ZIP_ZSTD`。",
-          "suggestion": "改成：Android 13-15 常见 ACK/设备以 LZ4 为主，android15-6.6 可选 LZMA/DEFLATE、无 ZSTD；ZSTD 在 upstream Linux 6.10+ 出现，Android 设备上需 Android ACK/厂商 backport 且启用 `CONFIG_EROFS_FS_ZIP_ZSTD`，不能只写 kernel 6.12+。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-22T15:42:52+08:00",
-      "review_log": "logs/deep-review/2026-05-22-15-deep-review.md"
-    },
-    {
-      "id": "task9-deep-20260522-9.4-16kb-page-size-proc-path",
-      "section": "9.4",
-      "section_title": "特殊场景的 ANR",
-      "priority": 95,
-      "title": "16KB SQLite 排查步骤中的 page size 读取路径需修正",
-      "description": "Task9 回炉复审发现 §9.4 已条件化 SQLite WAL 口径，但新增的设备 page size 排查路径包含非标准 `/proc/sys/vm/page_size`。",
-      "reason": "[Deep Tech Review] §9.4 16KB Page Size / SQLite WAL 段仍存在页大小排查路径错误，需回炉修正。",
-      "issue_type": "source-code-accuracy-diagnostic-path",
-      "severity": "P0",
-      "created_date": "2026-05-22",
-      "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part2-performance/ch09-anr/04-special-anr.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-22-15-deep-review.md",
-        "https://source.android.com/docs/core/architecture/16kb-page-size/getting-page-size"
-      ],
-      "review_issues": [
-        {
-          "severity": "P0",
-          "type": "源码错误/诊断路径错误",
-          "location": "L367：`adb shell getconf PAGESIZE` 或 `/proc/sys/vm/page_size`",
-          "detail": "Android 官方 16KB page size 文档给出的获取方式是 Java/Kotlin `Os.sysconf(OsConstants._SC_PAGE_SIZE)`、命令行 `getconf PAGE_SIZE`、`/proc/<pid>/smaps` 中的 `KernelPageSize`，以及 `LD_SHOW_AUXV=1` 输出里的 `AT_PAGESZ`。`/proc/sys/vm/page_size` 不是标准 Linux/Android 页大小接口，量产设备上通常不存在。当前排查步骤会让读者执行错误路径。",
-          "suggestion": "把该句改为 `adb shell getconf PAGE_SIZE` / `getconf PAGESIZE`，或 `grep KernelPageSize /proc/<pid>/smaps`；如果写应用内检测，用 `Os.sysconf(OsConstants._SC_PAGE_SIZE)`。删除 `/proc/sys/vm/page_size`。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-22T15:42:52+08:00",
-      "review_log": "logs/deep-review/2026-05-22-15-deep-review.md"
-    },
-    {
-      "id": "task9-deep-20260522-26.17-cronet-requestfinishedinfo-api-boundary",
-      "section": "26.17",
-      "section_title": "线上网络质量监控与接入层协同",
-      "priority": 85,
-      "title": "Cronet RequestFinishedInfo 指标入口需区分 public Cronet 与 Android hidden API 边界",
-      "description": "Task9 首轮深审发现 §26.17 将 Android 34 hidden/prototype `android.net.http.RequestFinishedInfo.Metrics` 作为 Cronet 阶段耗时采集口径，未说明 Android 35 已无该源码类与 public Cronet API 的包名差异。",
-      "reason": "[Deep Tech Review] §26.17 Cronet 阶段指标段存在 API/版本边界缺失，需回炉修正。",
-      "issue_type": "api-version-boundary",
-      "severity": "P1",
-      "created_date": "2026-05-22",
-      "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-22-15-deep-review.md",
-        "/Users/gracker/Android/sources/android-34/android/net/http/RequestFinishedInfo.java",
-        "/Users/gracker/Android/sources/android-35/android/net/http/",
-        "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
-      ],
-      "review_issues": [
-        {
-          "severity": "P1",
-          "type": "版本差异/API 边界",
-          "location": "L112：`Cronet 的口径更接近 Chromium 网络栈`",
-          "detail": "正文引用 Android 34 SDK source 的 `android.net.http.RequestFinishedInfo.Metrics` 来说明 Cronet 阶段耗时。该本地源码文件带 `{@hide}` / prototype 注释，且 `/Users/gracker/Android/sources/android-35/android/net/http/` 中已无 `RequestFinishedInfo.java`；公开 Cronet API 的稳定包名是 `org.chromium.net.RequestFinishedInfo`，其中 `Metrics` 提供 DNS/connect/SSL/sending/response、socket reuse、TTFB/total/bytes 等字段。当前写法会让读者把 Android 34 hidden `android.net.http` 类当成 Android 8-17 可用的稳定采集入口。",
-          "suggestion": "将采集入口改为 public Cronet / Chromium `org.chromium.net.RequestFinishedInfo.Listener` + `RequestFinishedInfo.Metrics`，或明确 Android platform `android.net.http` 是隐藏/版本化实现细节，不作为 App 侧稳定 API。frontmatter sources 也应补 Chromium/Cronet 源码或 Android Developers Cronet reference，避免只锚到 android-34 hidden source。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-22T15:42:52+08:00",
-      "review_log": "logs/deep-review/2026-05-22-15-deep-review.md"
-    },
-    {
-      "id": "task9-audit-20260521-19.14-baseline-profile-api-floor",
-      "section": "19.14",
-      "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
-      "priority": 85,
-      "title": "Baseline Profile 生成/验证 API 边界需拆出 API 33+/rooted API 28+ 限制",
-      "description": "闲时抽检发现 §19.14 将 Macrobenchmark 与 Baseline Profile 场景整体写成 API 23+，遗漏 BaselineProfileRule.collect() 的 API/root 支持边界，以及 API 23 只能 Full 编译的限制。",
-      "reason": "[Deep Tech Review Audit] Jetpack Benchmark Baseline Profile 生成/验证版本边界存在 P1 技术缺口，需回炉修正。",
-      "issue_type": "version-differences-source-accuracy",
-      "severity": "P1",
-      "created_date": "2026-05-21",
-      "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-21-22-audit.md",
-        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro-junit4/src/main/java/androidx/benchmark/macro/junit4/BaselineProfileRule.kt",
-        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt",
-        "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/BaselineProfileMode.kt"
-      ],
-      "review_issues": [
-        {
-          "severity": "P1",
-          "type": "版本差异/Baseline Profile 生成与验证 API 边界",
-          "location": "L8、L97-L103、L331-L364：Baseline Profile 场景兼容表与 BaselineProfileRule 示例",
-          "detail": "正文和 frontmatter 将 Macrobenchmark / Baseline Profile 场景整体写成 API 23+，兼容表也只写“通常复用 Macrobenchmark 场景”。但 AndroidX androidx-main 的 BaselineProfileRule.kt 明确标注 @RequiresApi(28)，类注释写明 BaselineProfileRule 只在 Android 13/API 33+ 完整支持，或 rooted Android P/API 28+ 支持；CompilationMode.kt 也说明 API 23 只有 Full，Partial/None 在 API 23 不可用。当前写法会让读者误以为 API 23-27 设备可直接生成/验证 Baseline Profile，版本边界过宽。",
-          "suggestion": "把 Baseline Profile 拆成“收益覆盖”和“实验室生成/验证”两层：ProfileInstaller/Baseline Profile 的安装收益可覆盖低版本目标设备；BaselineProfileRule.collect() 生成环境需写 API 33+，或 rooted API 28+；CompilationMode.Partial(BaselineProfileMode.Require) 验证需 API 24+ 且目标 App 含 ProfileInstaller 与 AGP 7.0+ 打包 profile。frontmatter 的 Baseline Profile 场景不要继续并入 Macrobenchmark API 23+。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-21T22:26:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-22-audit.md"
-    },
-    {
-      "id": "task9-audit-20260521-2.4-choreographer-vsynceventdata-bufferstuffing",
-      "section": "2.4",
-      "section_title": "Choreographer 与渲染流水线",
-      "priority": 85,
-      "title": "Choreographer VsyncEventData 版本边界与 Android 16 BufferStuffingRecovery 需修正",
-      "description": "闲时抽检发现 §2.4 将内部 doFrame 接入 VsyncEventData 的版本边界写成 API 33，且 Android 16 BufferStuffingRecovery 仍停留在文末素材块，未进入正文版本链。",
-      "reason": "[Deep Tech Review Audit] Choreographer 源码版本边界与 Android 16 帧调度新增机制存在 P1 技术缺口，需回炉修正。",
-      "issue_type": "source-code-accuracy-version-difference",
-      "severity": "P1",
-      "created_date": "2026-05-21",
-      "assigned_to": "content-team",
-      "estimated_hours": 1.5,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-21-16-audit.md",
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-choreographer-buffer-stuffing-recovery.md"
-      ],
-      "review_issues": [
-        {
-          "severity": "P1",
-          "type": "版本差异/源码引用准确性",
-          "location": "L229、L661-L664：`doFrame()` 接入 `VsyncEventData` 的版本边界",
-          "detail": "正文写“从 API 33 开始，doFrame() 还会收到 VsyncEventData”，版本边界不准确。AOSP android-12.0.0_r1 的 frameworks/base/core/java/android/view/Choreographer.java L701-L702 已是 `void doFrame(long frameTimeNanos, int frame, DisplayEventReceiver.VsyncEventData vsyncEventData)`；API 33 新增的是公开应用侧入口 `postVsyncCallback(VsyncCallback)`、`FrameData`、`FrameTimeline`，不是内部 doFrame 首次接收 VsyncEventData。",
-          "suggestion": "把版本演进拆成两层：Android 12/API 31 起内部 Choreographer#doFrame 已接收 VsyncEventData/FrameTimeline 数据；Android 13/API 33 起公开 `postVsyncCallback`、`FrameData`、`FrameTimeline` 给应用侧读取 preferred timeline/deadline/vsyncId。正文 L229 与版本演进 L661-L664 同步修正。"
-        },
-        {
-          "severity": "P1",
-          "type": "版本差异/源码链遗漏",
-          "location": "L176-L233、L645-L664、L727-L733：Android 16 Buffer Stuffing Recovery 仍停留在素材注入区",
-          "detail": "正文主体的 doFrame 解析明确省略 buffer stuffing recovery，并且版本演进没有覆盖 Android 16 的 BufferStuffingState / onWaitForBufferRelease 机制；该机制只以 DeepResearch 素材块出现在文末。AOSP android-16.0.0_r1 Choreographer.java L213 定义 BufferStuffingState，L257 `onWaitForBufferRelease(long)` 以半帧周期为阈值标记 stuffed，L966 起 doFrame 在进入 mFrameData.update 前执行 updateBufferStuffingState，可能采取 OFFSET 或 DELAY_FRAME；ViewRootImpl.java 还通过 BLASTBufferQueue 设置 wait-for-buffer-release callback。对 Android 16 读者来说，这是会改变帧时间线/调度节拍的关键版本差异。",
-          "suggestion": "把文末 DeepResearch 素材整合进正文或加到版本演进：说明 Android 16 在 buffer dequeue 阻塞后可能对 frameTime 做负 offset 或延迟一帧，并补充源码锚点 `Choreographer.BufferStuffingState`、`onWaitForBufferRelease()`、`updateBufferStuffingState()`、`ViewRootImpl#setWaitForBufferReleaseCallback`；同时与新章节 2.25 建立交叉引用。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-21T16:25:11+08:00",
-      "review_log": "logs/deep-review/2026-05-21-16-audit.md"
-    },
-    {
-      "id": "task9-audit-20260521-18.17-ndk-previous-release-fence",
-      "section": "18.17",
-      "section_title": "Hardware Buffer Renderer",
-      "priority": 85,
-      "title": "NDK SurfaceControl API 29-35 缺少 previous release fence 回收路径",
-      "description": "闲时抽检发现 18.17 将 Android 10-15 的 NDK buffer 回收写成只有 setBuffer 与 in-flight 计数，遗漏 API 29 起可通过 OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd 获取 previous release fence 的路径。",
-      "reason": "[Deep Tech Review Audit] NDK SurfaceControl API 29-35 buffer 回收路径需补 previous release fence。",
-      "issue_type": "version-differences-source-accuracy",
-      "severity": "P1",
-      "created_date": "2026-05-21",
-      "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-21-14-audit.md"
-      ],
-      "review_issues": [
-        {
-          "severity": "P1",
-          "type": "版本差异/源码引用准确性",
-          "location": "§NDK API L183-L189、§渲染时序 L211-L214",
-          "detail": "正文把 Android 10-15/API 29-35 的 NDK SurfaceControl 回收路径概括为只有 ASurfaceTransaction_setBuffer()，并写 OnComplete 只能说明事务完成、不能作为 buffer 已释放信号。AOSP android-15/16 的 frameworks/native/include/android/surface_control.h 显示：ASurfaceTransactionStats_getPreviousReleaseFenceFd() 自 API 29 可用；OnComplete 的 stats 可返回 previous release fence，且注释说明被替换/移除的 previous buffer 可在该 callback/fence 之后复用。API 36 新增 ASurfaceTransaction_setBufferWithRelease()/ASurfaceTransaction_OnBufferRelease 是更直接的回调，不代表 API 29-35 没有 release fence 路径。",
-          "suggestion": "重写 NDK 回收策略：API 36+ 优先使用 ASurfaceTransaction_setBufferWithRelease()/ASurfaceTransaction_OnBufferRelease；API 29-35 在提交新 buffer 替换旧 buffer 时设置 ASurfaceTransaction_setOnComplete()，从 ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl) 取 previous release fence，并在 fence signal 后回收上一块 buffer。保留“不要把 acquire fence 当 release fence”的结论。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-21T14:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-21-14-audit.md"
     },
     {
       "id": "task6-20.8-crash-aggregation-depth",
@@ -19063,98 +18958,6 @@
       ]
     },
     {
-      "id": "task9-2026-05-14-20-6-tech-review",
-      "section": "20.6",
-      "section_title": "稳定性度量与指标体系",
-      "priority": 95,
-      "title": "稳定性度量与指标体系 Task9 技术审计回炉",
-      "description": "[Deep Tech Review] P1 3：Crash-Free 示例计算仍错；ANR 超时表仍混淆系统阈值/内部目标/版本差异；Vitals/Firebase/行业阈值来源仍需闭合。",
-      "issue_type": "deep-tech-review",
-      "severity": "P0",
-      "created_date": "2026-05-14",
-      "assigned_to": "content-team",
-      "estimated_hours": 3,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part5-app/ch20-stability/06-stability-metrics.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-14-05-deep-review.md",
-        "logs/deep-review/2026-05-17-11-deep-review.md",
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "官方口径错误",
-          "severity": "P0",
-          "location": "L98-L102 User-Perceived ANR Rate",
-          "detail": "正文把用户感知 ANR 写成“前台经历过至少一次 ANR”。官方 Android Vitals 当前只把 `Input dispatching timed out` 计为 user-perceived ANR，不等同所有前台 ANR。",
-          "suggestion": "重写公式，区分 ANR rate、user-perceived ANR rate 与 multiple ANR rate。"
-        },
-        {
-          "type": "指标口径断裂",
-          "severity": "P1",
-          "location": "L155-L175 Crash-Free Users / Sessions",
-          "detail": "Firebase 文档定义了 crash-free users/sessions，但不足以支持“Crash-Free Users 比 PV/Session 更适合发版门禁”的单向结论。",
-          "suggestion": "改成双指标门禁：Users 控制影响面，Sessions 控制频率。"
-        },
-        {
-          "type": "数据缺来源",
-          "severity": "P1",
-          "location": "L56、L164-L174、L276-L286 行业阈值表",
-          "detail": "99.5%、99.8%、微信/头部电商等数值缺公开来源或内部口径说明。",
-          "suggestion": "补来源；补不到就改为匿名经验区间并标注适用边界。"
-        },
-        {
-          "type": "指标计算错误",
-          "severity": "P1",
-          "location": "L159-L162 示例计算",
-          "detail": "PV / Session 崩溃率不能只由 DAU 和崩溃次数推出，示例缺总 Session 分母，0.5% / 0.75% 不可复算。",
-          "suggestion": "补总 Session 数，或只比较 Crash-Free Users。"
-        },
-        {
-          "type": "版本差异缺失",
-          "severity": "P1",
-          "location": "L121-L127 ANR 类型阈值表",
-          "detail": "Broadcast Queue 在 Android 14+ 有 soft/hard timeout 口径，Foreground Service 启动超时与执行超时也需拆分，当前表格按固定阈值写法覆盖不足。",
-          "suggestion": "补 Android 10-13 与 14+ 差异，或把表格标成团队内部监控阈值而非系统超时常量。"
-        },
-        {
-          "severity": "P1",
-          "type": "指标计算错误",
-          "location": "L172-L175 Crash-Free Users vs PV 崩溃率示例",
-          "detail": "App B 公式 `(5 万 + 1000×49) / 200 万` 的结果是 99,000 / 2,000,000 = 4.95%，不是 ≈0.50%。即使按“1000 人总共 50 次”理解，也无法让 5 万受影响用户在 200 万 session 下维持 0.5% PV 崩溃率。当前示例反而证明 PV 差异很大，不能支撑“PV 差距可能很小”的结论。",
-          "suggestion": "重新构造可复算样例：要么降低 App B 受影响用户数、提高总 Session 分母；要么保留“Users 控影响面、Sessions 控频率”的结论，删除错误算例。"
-        },
-        {
-          "severity": "P1",
-          "type": "版本差异/指标口径",
-          "location": "L134-L139 ANR 类型阈值表",
-          "detail": "表格仍把系统 ANR 超时常量和团队内部目标混在一列。Android 官方文档对 BroadcastReceiver 写的是 foreground intents 约 10-20 秒、background 约 60-120 秒；Android 14+ broadcast 有 soft/hard 超时与 CPU-starved 情况。Foreground Service 也要拆 startForeground、JobService onStart/onStop、shortService/dataSync/mediaProcessing 等类型/版本。",
-          "suggestion": "拆成两张表：系统触发阈值/版本差异表 + 团队内部监控目标表；补 developer.android.com ANR/FGS troubleshooting 与 AOSP BroadcastQueue/ActiveServices 源码锚点。"
-        },
-        {
-          "severity": "P1",
-          "type": "数据来源",
-          "location": "L65、L177-L184、L287-L297 稳定性行业阈值",
-          "detail": "Firebase Crashlytics 官方 crash-free metrics 文档定义了 Crash-Free Users/Sessions 的计算口径，但没有把 99.5% 写成官方发版门禁；“微信公开分享”“头部电商”“中型应用/长尾应用”仍是未溯源对标值。正文虽加了“匿名行业经验区间”，但表格继续给具体公司/产品级别数字，容易被读者当成公开事实。",
-          "suggestion": "把 99.5/99.8/0.1/0.2 统一降级为“示例 SLO/匿名经验区间”，或补公开演讲/内部看板口径；不要把 Firebase metrics 定义写成 Firebase 推荐阈值。"
-        },
-        {
-          "severity": "P2",
-          "type": "需补充素材",
-          "location": "“行业参考值”“行业对标参考”两张表",
-          "detail": "Task6 2026-05-17 复查发现正文仍保留 [需补充素材] 标注；“微信公开分享”“头部电商”等对标值缺具体出处或需要统一降级为匿名经验区间。",
-          "suggestion": "Task2B 补公开演讲/官方文档/内部指标口径；补不到则删除公司名和确定数值，改成匿名经验区间并标注适用边界。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T05:50:18+08:00",
-      "last_task6_reviewed_at": "2026-05-17T12:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
-    },
-    {
       "id": "task6-23.8-memory-case-studies-case-evidence-20260514",
       "section": "23.8",
       "section_title": "内存优化案例集",
@@ -19420,68 +19223,6 @@
       "last_reviewed_at": "2026-05-14T13:30:11+08:00"
     },
     {
-      "id": "task9-20-9-signal-thread-case-source-errors-20260514",
-      "section": "20.9",
-      "section_title": "稳定性治理案例集",
-      "priority": 95,
-      "severity": "P0",
-      "issue_type": "source-code-accuracy-principle-chain",
-      "title": "稳定性案例中的 debuggerd 源码路径、线程 OOM 归因和 signal handler 示例存在技术错误",
-      "description": "Native Crash 案例引用不存在的 bionic/linker/debuggerd/handler.cpp，并且统一 signal handler 示例会递归 raise、错误调用旧 handler；线程 OOM 案例也把线程创建失败原因和预警代码写窄。",
-      "created_date": "2026-05-14",
-      "assigned_to": "content-team",
-      "estimated_hours": 4,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part5-app/ch20-stability/09-stability-case-studies.md"
-      ],
-      "material_paths": [
-        "logs/deep-review/2026-05-14-13-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "severity": "P0",
-          "type": "源码错误",
-          "location": "L172 Native Crash 案例源码锚点",
-          "detail": "正文标注 `bionic/linker/debuggerd/handler.cpp`，该路径不符合当前 AOSP 结构。debuggerd handler 相关实现应锚到 `system/core/debuggerd/handler/debuggerd_handler.cpp`；linker 侧集成在当前分支是 `bionic/linker/linker_debuggerd_android.cpp`（旧版本可见 `linker/debugger.cpp`）。",
-          "suggestion": "替换源码锚点，并按版本说明 linker/debuggerd 相关文件名变化；不要继续使用 `bionic/linker/debuggerd/handler.cpp`。"
-        },
-        {
-          "severity": "P1",
-          "type": "原理断裂/归因过窄",
-          "location": "L69 Thread::CreateNativeThread 失败原因",
-          "detail": "正文写线程创建失败只有 FD 耗尽和虚拟内存不足。`pthread_create`/ART nativeCreate 还会受进程/用户 task 数限制、cgroup pids、RLIMIT_NPROC、线程栈/guard page 分配失败等影响；FDSize 也不能直接等价为 FD 耗尽。",
-          "suggestion": "改为“虚拟地址空间/物理内存、线程/进程数限制、cgroup pids、FD/资源限制”等多因子判断，并给出 `/proc/self/status` 中 Threads、VmSize、VmPeak、FDSize、limits/cgroup 的判读顺序。"
-        },
-        {
-          "severity": "P1",
-          "type": "代码准确性/监控时机错误",
-          "location": "L120-L129 短期止血代码",
-          "detail": "`Thread.setDefaultUncaughtExceptionHandler` 只会在 OOM 抛出后运行，不能“在 OOM 发生前提前检测”；`Thread.activeCount()` 只统计当前 ThreadGroup 及子组，不是进程线程总数，也覆盖不了 native 线程。",
-          "suggestion": "改为周期性采样 `/proc/self/status` 的 `Threads` 或枚举 `/proc/self/task`，并在 ThreadFactory/ASM/SDK 边界记录创建栈；UncaughtExceptionHandler 只能作为事后补充信息采集。"
-        },
-        {
-          "severity": "P1",
-          "type": "代码准确性/signal handler 链错误",
-          "location": "L208-L227 unified_signal_handler 示例",
-          "detail": "示例在无旧 handler 时直接 `raise(sig)`，但当前 handler 未恢复默认动作，会再次进入自身造成递归；同时不检查旧 action 是否带 `SA_SIGINFO`，直接调用 `sa_sigaction` 可能错误。handler 内 dump/写文件也需要区分 async-signal-safe 路径。",
-          "suggestion": "补恢复默认/旧 action 后用 `tgkill(getpid(), gettid(), sig)` 重新投递，按 `SA_SIGINFO` 区分 `sa_sigaction` 与 `sa_handler`；handler 内只保留 async-signal-safe 最小路径，复杂符号化放到子进程或崩溃后处理。"
-        },
-        {
-          "severity": "P1",
-          "type": "原理断裂/初始化时机错误",
-          "location": "L243 统一处理器初始化时机",
-          "detail": "正文写统一处理器必须在所有 SDK 之前注册。按 `sigaction(oldact)` 链式模型，先注册的 handler 可能被后注册 SDK 覆盖；如果后者不调用 old handler，统一处理器不会执行。",
-          "suggestion": "改为“要么统一接管并禁止/拦截后续 SDK 注册；要么在第三方 SDK 初始化后注册总 handler，捕获已有 oldact，并明确仍无法保证不规范 SDK 链接”。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T13:30:11+08:00",
-      "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T13:30:11+08:00"
-    },
-    {
       "id": "task9-24-8-preference-write-buffer-race-20260514",
       "section": "24.8",
       "section_title": "I/O 与网络优化案例集",
@@ -19626,56 +19367,6 @@
         }
       ],
       "updated_at": "2026-05-14T18:30:00+08:00"
-    },
-    {
-      "id": "task9-2026-05-14-8.8-media-source-anchors",
-      "section": "8.8",
-      "section_title": "Android 多媒体管线性能",
-      "priority": 95,
-      "title": "多媒体管线 Codec2 / atrace / 版本锚点错误",
-      "description": "ACodec/Codec2/tunneled playback、atrace.cpp 路径与 MediaCodec output Surface 版本口径存在源码或版本错误",
-      "reason": "[Deep Tech Review] ACodec/Codec2/tunneled playback、atrace.cpp 路径与 MediaCodec output Surface 版本口径存在源码或版本错误",
-      "issue_type": "source-code-accuracy",
-      "severity": "P0",
-      "created_date": "2026-05-14",
-      "assigned_to": "content-team",
-      "estimated_hours": 3,
-      "status": "pending",
-      "dependencies": [],
-      "material_paths": [
-        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
-      ],
-      "related_files": [
-        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L214、L539-L549、L571",
-          "detail": "正文把 Codec2 路径写成 ACodec 适配，并引用不存在的 ACodec::setupTunneledPlayback()/ACodec::setupNode()。AOSP main 中 ACodec.cpp 未定义 setupTunneledPlayback/setupNode；Codec2 tunneled 逻辑在 media/codec2/sfplugin/CCodec.cpp 的 configureTunneledVideoPlayback 路径。",
-          "suggestion": "将 OMX/ACodec 与 Codec2/CCodec 两条路径拆开：OMX 使用 ACodec::configureTunneledVideoPlayback；Codec2 使用 CCodec::configureTunneledVideoPlayback + CCodecBufferChannel/sideband handle。删除 ACodec 同时承载 OMX/Codec2 的表述。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L454",
-          "detail": "AOSP atrace 分类源码路径写成 system/core/cpio/atrace.cpp，该路径不存在；atrace_categories 定义在 frameworks/native/cmds/atrace/atrace.cpp。",
-          "suggestion": "修正源码路径与验证口径；保留“audio/video/camera/gfx/view/sched/freq，无 media/codec 分类”的结论，但改用正确文件锚点。"
-        },
-        {
-          "type": "版本差异",
-          "location": "L505-L510、L561-L564",
-          "detail": "版本演进把 MediaCodec output Surface/零拷贝路径归到 Android 4.3；MediaCodec.configure(format, Surface, ...) 自 API 16 起存在，Android 4.3 更关键的是 createInputSurface 等编码输入 Surface 能力。",
-          "suggestion": "拆分 Android 4.1/API16 output Surface 与 Android 4.3/API18 encoder input Surface；避免把输出 Surface 历史写晚。"
-        },
-        {
-          "type": "版本差异",
-          "location": "L510、L563",
-          "detail": "Codec2 “Android 10 正式替代 OMX / Android 11 补齐 tunneled playback”写成确定边界，但正文未给出对应 commit、release note 或 CCodec 版本锚点。",
-          "suggestion": "补 CCodec tunneled playback 首次可用版本与提交锚点；找不到则标为“Android 10+ Codec2 路径逐步支持，设备实现依赖 vendor component”。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T19:29:00+08:00"
     },
     {
       "id": "task9-20260514-25.9-vitals-excessive-wakelock-threshold",
@@ -20413,6 +20104,8 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-15T20:23:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
       "section_title": "ANR 治理策略",
       "reason": "[Deep Tech Review] §20.4 仍存在协程源码继承、FGS 超时版本矩阵与 SIGQUIT 权限边界问题，需 Task2B 回炉修正。",
       "updated_at": "2026-05-23T07:24:00+08:00",
@@ -21585,6 +21278,8 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-17T12:32:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
       "reason": "[Deep Tech Review] §7.15 仍存在 SurfaceFlinger trace/source anchor P0 与功耗/发热场景 P1 缺口，需 Task2B 回炉修正。",
       "updated_at": "2026-05-23T07:24:00+08:00",
       "reopened_at": "2026-05-23T07:24:00+08:00",
@@ -24332,76 +24027,44 @@
       "review_log": "logs/deep-review/2026-05-22-18-deep-review.md"
     },
     {
-      "id": "task2a-gap-20260522-24.15-network-performance-baseline",
-      "section": "24.15",
-      "section_title": "移动网络性能优化实战：DNS、连接、传输与容灾",
-      "priority": 80,
-      "title": "移动网络请求性能优化缺口：DNS、连接、传输、弱网与容灾需要独立实战小节",
-      "description": "2026-05-22 缺口挖掘发现 Clippings 网络优化 18/19 与 Android 官方 Cronet/network access 文档提供了足够素材；现有 24.4/24.5/24.10/24.14 覆盖局部主题，但缺少按请求阶段组织的移动网络性能优化实战小节。",
-      "reason": "[Task2A gap-mining] 参考书素材与官方文档均指向移动网络性能优化的独立加工价值。",
-      "issue_type": "knowledge-gap-new-section",
-      "severity": "P2",
+      "id": "task9-audit-20260522-15.2-system-vs-app-fgs-timeout-version-boundary",
+      "section": "15.2",
+      "section_title": "如何区分系统问题和 App 问题",
+      "priority": 85,
+      "title": "startForegroundService 超时阈值需补 Android 8/9+/13+ 版本边界",
+      "description": "Task9 闲时抽检发现 §15.2 的 ANR 阈值表把前台服务启动后未及时调用 startForeground() 统一写成 5 秒，和 Android 9+ / Android 13+ AOSP 默认实现不一致。",
+      "reason": "[Deep Tech Review Audit] §15.2 ANR 阈值表中的 startForegroundService 超时口径缺少 Android 8/9+/13+ 版本边界，需回炉修正。",
+      "issue_type": "version-difference-anr-fgs-timeout",
+      "severity": "P1",
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
-      "estimated_hours": 3,
+      "estimated_hours": 1,
       "status": "pending",
       "dependencies": [],
       "related_files": [
-        "src/part5-app/ch24-io-network/15-network-performance-baseline.md"
+        "src/part3-tools/ch15-methodology/02-system-vs-app.md"
       ],
       "material_paths": [
-        "intake/research-gaps.md",
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md",
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md",
-        "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
-        "https://developer.android.com/develop/connectivity/cronet",
-        "https://cs.android.com/android/platform/superproject/+/master:packages/modules/Connectivity/framework/src/android/net/DnsResolver.java"
+        "logs/deep-review/2026-05-22-20-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java#109",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-9.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java#122",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#155",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#245",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#318",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#320"
       ],
-      "gap_score": {
-        "素材丰富度": 5,
-        "与全书目标相关性": 5,
-        "读者需求度": 5,
-        "时效性": 4,
-        "total": 19
-      },
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-22T20:04:00+08:00"
-    },
-    {
-      "id": "task2a-gap-20260523-7.18-hwc-overlay-composition-downgrade",
-      "section": "7.18",
-      "section_title": "HWC Overlay Plane 与合成降级排查",
-      "priority": 80,
-      "title": "HWC Overlay Plane 能力基准与 SurfaceFlinger 合成降级排查需要独立小节",
-      "description": "2026-05-23 缺口挖掘发现：现有 7.6/7.15/2.6 已分散覆盖 HWC 合成降级，但缺少面向 App 卡顿排障的独立流程，需把 Overlay Plane 能力、DEVICE/CLIENT composition、Perfetto/Winscope/dumpsys 证据和优化动作放到同一节。",
-      "reason": "[Task2A gap-mining] HWC Overlay Plane 能力属于中高频系统侧卡顿根因；DeepResearch 2026-05-22 已提供源码链路和官方文档锚点，足够独立成节。",
-      "issue_type": "knowledge-gap-new-section",
-      "severity": "P2",
-      "created_date": "2026-05-23",
-      "assigned_to": "content-team",
-      "estimated_hours": 3,
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md"
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/ANR 前台服务启动超时",
+          "location": "L397：ANR 阈值表 `startForegroundService()` 后未及时调用 `startForeground()`",
+          "detail": "章节适用范围写 Android 8.0 - Android 16，但表格把 `Context.startForegroundService()` 后未及时调用 `Service.startForeground()` 的阈值统一写成 5 秒。AOSP Android 8.0 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT` 确实是 5*1000；Android 9-11 已改为 10*1000；Android 12 `DEFAULT_FGS_START_FOREGROUND_TIMEOUT_MS` 为 10*1000；Android 13-16 又拆出 `service_start_foreground_timeout_ms` 默认 30*1000 与 `service_start_foreground_anr_delay_ms` 默认 10*1000。当前 5 秒口径只覆盖 Android 8，不能作为 Android 8-16 的通用默认阈值。",
+          "suggestion": "把该行改成版本化表述：Android 8 为 5s；Android 9-12 常见 AOSP 默认 promotion window 为 10s；Android 13+ 需区分 `fgs_start_foreground_timeout`、`service_start_foreground_timeout_ms` 和 `service_start_foreground_anr_delay_ms`，并提示 OEM / DeviceConfig 可调整。不要把 5s 写成全版本默认值。"
+        }
       ],
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md",
-        "src/part2-performance/ch07-smoothness/06-case-studies.md#案例六-surfaceflinger-hwc-合成降级导致掉帧",
-        "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md#hwc-overlay-plane-capability-与-surfaceflinger-合成降级实战验证",
-        "https://source.android.com/docs/core/graphics/implement-hwc",
-        "https://source.android.com/docs/core/graphics/hwc",
-        "https://android.googlesource.com/platform/frameworks/native/+/master/services/surfaceflinger/DisplayHardware/HWC2.cpp"
-      ],
-      "gap_score": {
-        "素材丰富度": 4,
-        "与全书目标相关性": 5,
-        "读者需求度": 5,
-        "时效性": 4,
-        "total": 18
-      },
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-23T00:04:00+08:00"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-22T20:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-22-20-audit.md"
     },
     {
       "id": "task9-deep-20260523-1.13-messagequeue-android16-mainline-boundary",
@@ -24428,7 +24091,9 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java",
         "https://developer.android.com/about/versions/17/changes/messagequeue",
-        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html",
+        "intake/suggestions.md",
+        "logs/review/2026-05-23-01-review.md"
       ],
       "review_issues": [
         {
@@ -24444,6 +24109,15 @@
           "location": "L442-L472：`补充:DeliQueue 反射失效后的 Idle 判断替代方案`；L528-L536：Android 17 DeliQueue 概念性说明",
           "detail": "正文一处把 DeliQueue 直接写成 `Treiber Stack + Min-Heap`，并说 “DeliQueue 的 Min-Heap 使 IdleHandler 判断更精确”；另一处又说明截至 2026-05-22 未检出 `DeliQueue/MessageHeap` 等公开源码路径。Android 16 `ConcurrentMessageQueue` 可验证的是 Treiber stack + 两组 `ConcurrentSkipListSet<MessageNode>`，Android 17 行为页/博客可验证的是 lock-free MessageQueue 与 `mMessages` 失效；Min-Heap / IdleHandler 精度提升若没有公开源码或官方文档支撑，应降级为概念性待验证，不能写成已确认实现。",
           "suggestion": "把 Android 16 可验证结构与 Android 17 官方行为拆开：Android 16 写 Treiber stack + `ConcurrentSkipListSet<MessageNode>`；Android 17 只写官方确认的 lock-free、`mMessages` always null、compat 开关和测试框架影响。删除或标注 `[待验证]` 的 Min-Heap / IdleHandler 更精确结论，等公开源码后再补。"
+        },
+        {
+          "severity": "P2",
+          "type": "需重写/结构整合",
+          "location": "收尾后与参考资料前后的“补充”段（16KB Page Size、DeliQueue Idle 判断、Android 16/17 DeliQueue 方向）",
+          "detail": "这些段落仍保留源码调研素材块形态，位置在收尾之后、参考资料前后穿插，打断主线；其中 16KB Page Size 线程栈内容与 MessageQueue 主线关联弱，发布稿读者会误以为是正文连续叙述。",
+          "suggestion": "由 Task2B 决定整合路径：与 MessageQueue 主线直接相关的 DeliQueue 兼容性/Idle 判断内容并入正文；不相关的 16KB Page Size 线程栈内容移到对应章节或正式附录；删除编辑痕迹后再回到 Task6/Task9。",
+          "source": "task6-review",
+          "review_log": "logs/review/2026-05-23-01-review.md"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -24487,84 +24161,76 @@
       "review_log": "logs/deep-review/2026-05-23-01-audit.md"
     },
     {
-      "section": "ch05-cpu-power",
-      "section_title": "Section ch05-cpu-power",
-      "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "id": "task9-deep-20260523-19.14-baseline-profile-install-api-floor",
+      "section": "19.14",
+      "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+      "priority": 95,
+      "title": "Baseline Profile 安装收益 API floor 需从 API 21+ 修正为 API 24+/28+ 边界",
+      "description": "Task9 深度复审发现 §19.14 把 Baseline Profile 安装收益写成目标设备 API 21+，与 Android Developers 官方口径不一致。Baseline Profile 的 ART AOT 利用边界是 Android 9/API 28+ 的安装期支持，或 Android 7/API 24+ 配合 ProfileInstaller；API 21-23 不应写成可获得 Baseline Profile AOT 收益。",
+      "reason": "[Deep Tech Review] §19.14 Baseline Profile 安装收益 API floor 写错，需回炉修正 frontmatter 与版本兼容表。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
+      ],
       "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-sched-ext-oem-scheduler-production-readiness.md"
+        "logs/deep-review/2026-05-23-03-deep-review.md",
+        "https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "sched_ext OEM 调度器公开证据与生产就绪度分析 — 调研 Linux 6.12 sched_ext 可扩展调度器框架在 Android android16-6.12 内核中的支持状态，包含 BPF 调度器核心接口（scx_ops）、Android ke...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "severity": "P0",
+          "type": "源码错误/API floor 与版本边界",
+          "location": "frontmatter L8；正文 L106-L108；L373-L375",
+          "detail": "正文把 Baseline Profile 安装收益写成“目标设备 API 21+（ProfileInstaller 兼容）”。Android Developers 官方文档写明：ART 在 Android 9/API 28+ 可在安装期利用 Baseline Profile；Android 7/API 24+ 可通过 ProfileInstaller 安装/转码 profile。Android 7-8.1/API 24-27 是 ProfileInstaller 覆盖段；API 21-23 不应承诺 Baseline Profile AOT 收益，且正文后文也写 `CompilationMode.Partial(...Require)` 需要 API 24+。",
+          "suggestion": "把兼容表和 frontmatter 改为“Baseline Profile 安装收益：API 24+（API 24-27 依赖 ProfileInstaller；API 28+ 支持安装期/云端 profile 口径）”。补一句 API 21-23 不能按 Baseline Profile AOT 收益验证，API 23 Macrobenchmark 只保留 Full 编译口径。"
         }
       ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-23T05:37:14.675627",
-      "status": "pending"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T03:35:03+08:00",
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
     },
     {
-      "section": "ch02-rendering",
-      "section_title": "Section ch02-rendering",
-      "priority": 70,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "id": "task9-deep-20260523-18.17-ndk-surface-control-api-signature",
+      "section": "18.17",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 95,
+      "title": "NDK SurfaceControl previous release fence 示例使用不存在 API / 错误签名",
+      "description": "Task9 深度复审发现 §18.17 NDK 示例把 Android 10-15 的 previous release fence 回收路径写成了不存在的 `ASurfaceTransaction_setOnCompleteListener()` / `ASurfaceTransactionStats_create()`，并遗漏 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surface_control)` 的 surface_control 参数。",
+      "reason": "[Deep Tech Review] §18.17 NDK SurfaceControl API 名称与签名错误，示例不可编译且会误导 buffer 回收路径，需回炉修正。",
+      "issue_type": "source-code-accuracy-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      ],
       "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md"
+        "logs/deep-review/2026-05-23-03-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/include/android/surface_control.h"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 — 验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "severity": "P0",
+          "type": "源码错误/NDK API 名称与签名",
+          "location": "L192-L207：API 29-35 `setBuffer() + OnComplete + previous release fence` 示例",
+          "detail": "AOSP android-16.0.0_r1 `frameworks/native/include/android/surface_control.h` 中公开 API 是 `ASurfaceTransaction_setOnComplete(transaction, context, ASurfaceTransaction_OnComplete)`，不是 `ASurfaceTransaction_setOnCompleteListener()`；没有 `ASurfaceTransactionStats_create(tx)`；`ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 的签名是 `(ASurfaceTransactionStats*, ASurfaceControl*)`，正文示例只传 `stats`。当前代码块不可编译，也会让读者拿不到指定 SurfaceControl 的 previous release fence。",
+          "suggestion": "把示例改成 `ASurfaceTransaction_setOnComplete(tx, context, onComplete)`；在回调里直接使用传入的 `ASurfaceTransactionStats* stats`，调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)`；删除 `ASurfaceTransactionStats_create/delete`。同时说明 API 36+ 优先 `ASurfaceTransaction_setBufferWithRelease()`。"
         }
       ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-23T05:37:14.693009",
-      "status": "pending"
-    },
-    {
-      "section": "ch04-memory",
-      "section_title": "Section ch04-memory",
-      "priority": 75,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-dma-buf-gralloc-graphics-memory.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "DMA-BUF、Gralloc 与跨进程图形内存共享 Android 16/17 公开边界 — 分析 Android 16/17 图形内存三层体系：AOSP libdmabufheap 用户端库（BufferAllocator/DmaBufHeap）、Gralloc4 IAllocator AI...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-23T05:37:14.708332",
-      "status": "pending"
-    },
-    {
-      "section": "ch16-aosp",
-      "section_title": "Section ch16-aosp",
-      "priority": 80,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清 — 交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 ...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-23T05:37:14.723362",
-      "status": "pending"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T03:35:03+08:00",
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
     },
     {
       "id": "task9-audit-20260523-14.5-third-party-libs-booster-koom-version-boundaries",
