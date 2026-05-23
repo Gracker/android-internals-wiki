@@ -1,8 +1,11 @@
+repaired_date: "2026-05-23"
+updated_by: "openclaw-task2b"
+updated_date: "2026-05-23"
 ---
 title: 典型场景分析
 chapter: '7.4'
 section: '7.4'
-status: "finalized"
+status: "ready-for-review"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
@@ -45,11 +48,11 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "task2b_pending"
-task6_state: revisiting
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-23"
@@ -254,7 +257,7 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 **时序关键点**：
 - `commit()` → `enqueueAction()` → `scheduleCommit()` → Handler post `mExecCommit` → `execPendingActions()` → `moveToState()`
-- `execPendingActions()` 在 Activity 生命周期中早于 Choreographer 帧回调
+- 普通 `commit()` 通过 Handler 异步排队执行，不按 VSync 对齐；它可能落在下一帧前，也可能与已排队的 traversal/animation 竞争。性能分析时用自定义 Trace 标出 commit、`execPendingActions` 附近工作和下一次 traversal/FrameTimeline
 - Fragment 状态推进与 View 树布局在不同消息周期，不会立即响应
 
 **性能影响**：
@@ -311,18 +314,18 @@ Android 12+ 的过渡发生在 `SurfaceControl` 级别。WMS 通过 `StartingSur
 - **Android 15**：开发者选项不再可用，系统预测性返回动画只对已 opt-in 的 App/Activity 显示
 - **Android 16（API 36 target + Android 16 设备）**：系统预测性返回动画默认启用，App 仍可通过 `android:enableOnBackInvokedCallback="false"` 临时 opt-out
 
-用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackInvokedCallback` 协作完成的。
+用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackAnimationCallback` 协作完成的。`OnBackAnimationCallback` 继承自 `OnBackInvokedCallback`：父接口只有 `onBackInvoked()` 负责最终触发；子接口额外提供 `onBackStarted()`、`onBackProgressed(BackEvent)`、`onBackCancelled()` 回调用于进度动画。
 
 这引入了一类新的卡顿场景：
 
-- **手势进度更新不及时**：App 的 `onBackProgressed()` 回调如果在主线程做了耗时操作（比如重新计算布局），手势预览就会出现卡顿。Perfetto 中表现为 `predictive_back_progress` 计数器更新间隔不均匀
+- **手势进度更新不及时**：App 的 `onBackProgressed(BackEvent)` 回调如果在主线程做了耗时操作（比如重新计算布局），手势预览就会出现卡顿。如需在 Perfetto 中观察进度回调频率，需要给 `onBackProgressed()` 添加自定义 Trace/counter；系统侧可结合 SystemUI/WM/SF 相关 trace 与动画帧耗时判断
 - **动画回调与帧渲染争抢主线程**：如果 `OnBackInvokedCallback` 的动画更新（alpha/scale/translation）与 App 正在进行的列表滑动、图片加载等操作在同一个 VSync 周期内竞争主线程，帧预算会被压缩
 - **SystemUI 侧合成压力**：手势预览涉及两层内容的叠加合成——当前 Activity 和目标 Activity 的缩略图。如果 SurfaceFlinger 合成路径走了 GPU，帧耗时会明显增加
 
 Perfetto 分析要点：
-- 观察 `predictive_back_progress` 计数器的更新频率——稳定递增说明 SystemUI 手势侧正常，跳跃或停滞指向 App 回调阻塞
-- 检查 App 主线程在 `onBackProgressed()` 回调期间的 slice 耗时
-- 同时看 SurfaceFlinger 的 `compose` slice 是否因多层合成而拉长
+- 通过自定义 Trace 标出 `onBackProgressed(BackEvent)` 回调的耗时和间隔——间隔均匀说明 App 回调正常，跳跃或停滞指向回调阻塞
+- 检查 App 主线程在进度回调期间的 slice 耗时
+- 结合 SystemUI/WM/SF 相关 trace 与动画帧耗时判断系统侧合成是否正常
 
 [已验证: developer.android.com/guide/navigation/custom-back/predictive-back-gesture — Android 13/14 开发者选项 + opt-in, Android 15 opt-in only, Android 16 默认启用；developer.android.com/about/versions/16/behavior-changes-16 — targeting Android 16+ 默认启用系统预测性返回动画]
 

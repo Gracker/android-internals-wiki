@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-04-02"
 reviewed_date: "2026-05-05"
 rework_date: "2026-05-03"
@@ -34,22 +34,22 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: fixed
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 last_task9_at: "2026-05-23T16:20:00+08:00"
-repaired_date: "2026-04-27"
+repaired_date: "2026-05-23"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 updated_by: "openclaw-task2b"
-updated_date: "2026-04-27"
+updated_date: "2026-05-23"
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-16-audit.md"
@@ -372,10 +372,10 @@ AutoFDO（Automatic Feedback-Directed Optimization）的核心思路是：收集
 
 | 场景 / benchmark | 口径 | 变化 |
 |------------------|------|------|
-| App cold start | Pixel 设备上常用应用 profile 驱动的 Android GKI 内核优化 | **-2.1%** 启动耗时 |
-| Boot | Android GKI 内核优化后的系统开机场景 | **缩短 1-2%** |
-| Binder RPC | Android 内核微基准 | **+21%** |
-| HWBinder | Android 内核微基准中的高收益子项 | **最高 +26.4%** |
+| Cold App Launch Time | Pixel 设备上常用应用 profile 驱动的 Android GKI 内核优化 | **-4.3%** 启动耗时 |
+| Boot Time | Android GKI 内核优化后的系统开机场景 | **-2.1%** |
+| Binder-rpc | Android 内核微基准 | **+21.7%** |
+| Hwbinder | Android 内核微基准 | **+20.0%** |
 
 AutoFDO 早期论文 / 数据中心基准另算：
 
