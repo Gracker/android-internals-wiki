@@ -37,6 +37,7 @@ related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
+last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
