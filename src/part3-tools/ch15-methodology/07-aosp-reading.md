@@ -19,7 +19,7 @@ sources:
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-23"
@@ -29,13 +29,14 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-23T15:20:00+08:00"
 last_task6_audit: "2026-05-22"
-last_task6_at: "2026-05-22T23:13:03+08:00"
-review_round: 4
+last_task6_at: "2026-05-23T16:13:21+08:00"
+last_task6_review_log: "logs/review/2026-05-23-16-review.md"
+review_round: 5
 task9_review_notes: "2026-05-23 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 0；SurfaceFlinger Android 13-16 trace 宏版本边界与 Android 16 slice 名仍需修正。详见 logs/deep-review/2026-05-23-15-deep-review.md。"
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
@@ -179,7 +180,7 @@ ART 虚拟机的完整实现。这个目录结构比较独立和完整：
 | 内存管理 / GC | art/runtime/ |
 | 输入事件分发 | frameworks/native/services/inputflinger/dispatcher/（C++ 分发核心） + frameworks/base/core/java/android/view/InputEventReceiver.java（Java 接收端） |
 | Binder 通信 | frameworks/native/libs/binder/ |
-| 功耗 / WakeLock | frameworks/base/services/core/.../PowerManagerService.java |
+| 功耗 / WakeLock | frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java |
 
 [图：AOSP 目录结构树状图，标注性能相关的核心路径]
 
@@ -226,7 +227,7 @@ Android 系统中有两种埋点方式：
 // frameworks/base/core/java/android/os/Trace.java
 // @ AOSP android-16.0.0_r1
 Trace.traceBegin(Trace.TRACE_TAG_VIEW, "measure");
-// ... measure 操作 ...
+// measure 相关代码省略。
 Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 ```
 
@@ -243,8 +244,8 @@ void SurfaceFlinger::composite(const CompositeArgs& args) {
     // SFTRACE_NAME 展开为包含函数名的 slice，通常带 vsyncId 前缀
     SFTRACE_NAME(ftl::Concat(__func__, vsyncId).c_str());
     // 异步 trace 用 SFTRACE_ASYNC_FOR_TRACK_BEGIN / END
-    SFTRACE_ASYNC_FOR_TRACK_BEGIN("vsync", ...);
-    // 合成逻辑 ...
+    SFTRACE_ASYNC_FOR_TRACK_BEGIN("vsync", /* 其他参数省略 */);
+    // 合成逻辑省略。
 }
 ```
 
@@ -386,7 +387,7 @@ Android 16 上更稳的阅读入口是这条调用链：
 
 可执行的追踪步骤：
 
-1. 找接口定义。搜索 `IWindowSession.aidl`、`IActivityTaskManager.aidl`、`IPowerManager.aidl` 这类 `.aidl` 文件。Framework AIDL 常在 `frameworks/base/core/java/android/...`，模块化或 Stable AIDL 还可能在 `packages/modules/`、`hardware/interfaces/` 或 `aidl_api/` 快照目录。
+1. 找接口定义。搜索 `IWindowSession.aidl`、`IActivityTaskManager.aidl`、`IPowerManager.aidl` 这类 `.aidl` 文件。Framework AIDL 常在 `frameworks/base/core/java/android/` 下的 `app`、`view`、`os` 等子包，模块化或 Stable AIDL 还可能在 `packages/modules/`、`hardware/interfaces/` 或 `aidl_api/` 快照目录。
 2. 找服务端实现。Java 服务端通常搜索 `extends IXXX.Stub`，Native / NDK AIDL 则搜索 `BnXXX`、`BpXXX` 或 `ndk::BnCInterface`。如果找不到直接实现，再搜 `onTransact` 和 service registration。
 3. 匹配运行现场。Perfetto 中看 `binder transaction` / `binder reply`，用 client pid/tid、server pid/tid 和 transaction 时间窗匹配调用链。这样可以判断时间花在客户端等待、system_server 执行、SurfaceFlinger 合成，还是 vendor service。
 4. 回到源码读业务逻辑。确认服务端入口后，再用 cs.android.com 或 IDE 继续追内部调用。不要只停在生成的 Stub / Proxy；它们主要是跨进程胶水，根因通常在服务端实现类里。
