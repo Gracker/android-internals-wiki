@@ -11,12 +11,12 @@ tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "
 related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-last_task9_at: "2026-05-05T05:41:00+08:00"
+last_task9_at: "2026-05-24T04:06:06+08:00"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
@@ -24,11 +24,15 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T05:05:00+08:00"
 last_task6_audit: "2026-05-23"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-05"
-task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。自动晋升 finalized。"
-
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-24"
+task9_reviewed_by: "openclaw-task9"
+task9_review_notes: "2026-05-24 Task9 闲时抽检: needs-rework。P0 0 / P1 1 / P2 1；Flutter UI/Platform 线程合并版本写成 3.29+，官方 release notes 显示默认合并落在 Flutter 3.32 stable；已入队 Task2B。"
+p0: 0
+p1: 1
+p2: 1
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit.md"
 ---
 
 <!-- outline-start -->

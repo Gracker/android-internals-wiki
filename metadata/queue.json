@@ -1,6 +1,44 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260524-18.1-flutter-thread-merge-version",
+      "section": "18.1",
+      "section_title": "渲染管线分类与选择对照表",
+      "priority": 85,
+      "title": "Flutter UI/Platform 线程合并版本口径写成 3.29+",
+      "description": "Task9 闲时抽检发现 §18.1 把 Flutter Android Platform View 场景的 UI Task Runner 与 Platform Task Runner 默认合并写成 Flutter 3.29+；官方 release notes 与跟踪 issue 显示该默认行为落在 Flutter 3.32 stable。",
+      "reason": "[Deep Tech Review Audit] §18.1 Flutter 渲染架构概览的版本边界错误：Flutter 3.29 release notes 未包含 PR #162944，Flutter 3.32 release notes 才列出“Implement merged platform and UI thread”，Flutter #150525 也说明 3.32 stable 起 iOS/Android 默认合并且可 opt-out。需把 3.29+ 改为 3.32+，并补充旧版本仍可能保持 UI/platform 分线程或仅特定 platform view 路径触发合并的边界。",
+      "issue_type": "version-difference-source-reference",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-04-audit.md",
+        "https://docs.flutter.dev/release/release-notes/release-notes-3.29.0",
+        "https://docs.flutter.dev/release/release-notes/release-notes-3.32.0",
+        "https://github.com/flutter/flutter/issues/150525",
+        "https://github.com/flutter/flutter/pull/162944"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Flutter thread merge 版本口径",
+          "location": "L145：补充：Flutter 渲染架构（概览）",
+          "detail": "正文写“Flutter 3.29+ 在 Platform View 混合场景里把 UI Task Runner 和 Platform Task Runner 收到同一条主线程执行”。复核 Flutter 3.29.0 release notes 未包含 PR #162944 或 merged platform/UI thread 相关条目；Flutter 3.32.0 release notes 列出 “[Embedder] Implement merged platform and UI thread by @knopp in 162944”；Flutter #150525 的官方更新写明 “As of Flutter 3.32 stable, threads are merged by default on iOS and Android with a flag available to opt-out”。当前 3.29+ 会让读者把旧版 Flutter 的线程模型判断错。",
+          "suggestion": "把版本边界改为 Flutter 3.32 stable 起默认合并 iOS/Android UI 与 platform 线程；如果要讨论 3.29/3.30/3.31，需要单独说明该行为尚未作为 stable 默认项，Platform View/Hybrid Composition 仍要结合具体 engine commit、feature flag 和线程合并策略判断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T04:06:06+08:00",
+      "review_log": "logs/deep-review/2026-05-24-04-audit.md"
+    },
+    {
       "id": "task9-audit-20260524-8.2-applicationstartinfo-clock-domain",
       "section": "8.2",
       "section_title": "App 启动全流程",
