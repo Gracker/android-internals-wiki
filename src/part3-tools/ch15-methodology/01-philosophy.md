@@ -35,11 +35,11 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
@@ -47,7 +47,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-30
 last_task9_at: "2026-05-23T08:36:45+08:00"
-last_task2b_at: "2026-04-30T17:46:37.750688"
+last_task2b_at: "2026-05-23T11:17:28+08:00"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0。"
 task6_reviewed_date: "2026-05-05"
@@ -150,7 +150,7 @@ Android 系统在持续演进,每一代新版本都可能引入新的性能特�
 
 持续优化在实践中意味着三件事:
 
-**防劣化**是最基本的底线。每次提交代码之前,自动化的性能测试应该跑一遍,确保关键指标没有回退。AndroidX 的 Macrobenchmark 库就是为此设计的--它可以在 CI 环境中自动测量 App 的启动时间、帧率等指标,并在指标回退时发出警告 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark]。
+**防劣化**是最基本的底线。每次提交代码之前,自动化的性能测试应该跑一遍,确保关键指标没有回退。AndroidX 的 Macrobenchmark 库就是为此设计的--它可以在 CI 环境中自动测量 App 的启动时间、帧率等指标,并在指标回退时发出警告 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
 
 **定期巡检**是更主动的做法。即使没有新功能发布,也应该定期(比如每周或每两周)用 Perfetto 抓取一次 Trace,检查关键路径上有没有新增的耗时操作。就像身体健康需要定期体检一样,App 的性能也需要定期「体检」。
 
@@ -163,7 +163,7 @@ Android 系统在持续演进,每一代新版本都可能引入新的性能特�
 - **Android 11**:BLAST 改变了 buffer 交接模型,渲染路径的观测口径开始和旧 BufferQueue 时代分开。
 - **Android 12**:FrameTimeline 和更细的 jank 证据链让帧级诊断更直接。
 - **Baseline Profiles**:这是 Jetpack ProfileInstaller + ART 的能力,不属于某一个 Android 大版本。Profile 规则随 APK/AAB 打包,ProfileInstaller 可在 API 24+ 设备上回填到 ART;如果讨论 Play Cloud Profiles,需要和本地 Baseline Profile 分开写。
-- **API 35 / Android 15**:`android.os.ProfilingManager` 正式进入平台 API,应用可通过 `requestProfiling()` 发起采样,并通过 `registerForAllProfilingResults()` 接收 profiling 结果。源码入口是 `frameworks/base/core/java/android/os/ProfilingManager.java` 与系统侧 `ProfilingManagerService`。
+- **API 35 / Android 15**:`android.os.ProfilingManager` 正式进入平台 API,应用可通过 `requestProfiling()` 发起采样,并通过 `registerForAllProfilingResults()` 接收 profiling 结果。Profiling 属于 Mainline 模块,源码入口是 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`,系统侧服务为 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`[已验证: android.googlesource.com, android-15.0.0_r1 / android-16.0.0_r1]。
 - **API 36 / Android 16**:`android.os.ProfilingTrigger` 与 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 允许应用注册系统触发式 profiling,例如启动、ANR 或其他平台定义的触发器。触发式采样有系统限流,结果通过全局 listener 返回,系统也可能因为配额、负载或隐私策略跳过本次采样。
 
 Baseline Profiles 的处理路径可以拆成几段:AGP / profgen 把人类可读规则转成二进制 `baseline.prof`,随包进入 `assets/dexopt/`;ProfileInstaller 在设备端安装或合并 profile;ART 侧 `art/profman/profman.cc` 分析 profile,`art/dex2oat/dex2oat.cc` 在 `speed-profile` 等编译过滤器下编译热点方法。`ENQUEUED` 只表示编译任务进入队列,`COMPILED` 才表示 profile 已被编译消费。
@@ -206,7 +206,7 @@ Android 14-16 继续扩展 Perfetto 的 Track 覆盖(Jobscheduler Track、App St
 
 优化做完之后,如何确保效果不会在后续迭代中逐渐流失?这需要建立一套性能防劣化机制。
 
-**自动化性能测试**是最有效的防线。AndroidX 提供了 Macrobenchmark 和 Microbenchmark 两套库,前者用于测量端到端的用户场景(如冷启动、列表滚动),后者用于测量代码片段的执行时间 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]。把这些测试集成到 CI 流水线中,每次提交都跑一遍,就能在性能回退发生的第一时间发现它。
+**自动化性能测试**是最有效的防线。AndroidX 提供了 Macrobenchmark 和 Microbenchmark 两套库,前者用于测量端到端的用户场景(如冷启动、列表滚动),后者用于测量代码片段的执行时间 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-overview]。把这些测试集成到 CI 流水线中,每次提交都跑一遍,就能在性能回退发生的第一时间发现它。
 
 **性能预算(Performance Budget)** 是一种更主动的约束机制。团队为关键指标设定上限,比如「冷启动 P50 不超过 1.5 秒」「90Hz 设备上主线程帧耗时尽量压到 11ms 以内」。这些只能作为示例阈值,正式预算要绑定 release 包、设备档位、刷新率、冷/温/热启动口径、样本次数和 P50/P90/P95 分位数。任何导致指标超过预算的代码提交,都必须在合并前解决性能问题,或者重新评估预算是否适合当前业务基线。
 
@@ -385,7 +385,7 @@ Brendan Gregg 在讨论性能工程团队的价值时,特别强调了性能工�
 - Yingyun, "OS 设计之性能设计", androidperformance.com, 2023
 - Google, "Android Performance Patterns", YouTube, 2015
 - Google, "App performance", developer.android.com/topic/performance
-- Google, "Benchmark your app", developer.android.com/topic/performance/benchmarking
+- Google, "Benchmark your app", developer.android.com/topic/performance/benchmarking/benchmarking-overview
 - Google, "Android Vitals", developer.android.com/topic/performance/vitals
 - Knuth, "Structured Programming with go to Statements", Computing Surveys, 1974
 

@@ -50,7 +50,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch15-methodology/01-philosophy.md"
@@ -82,7 +82,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T08:36:45+08:00",
-      "review_log": "logs/deep-review/2026-05-23-08-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-08-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T11:17:28+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 fixes applied"
     },
     {
       "id": "task9-audit-20260523-7.5-rendereffect-source-version-errors",
@@ -6211,7 +6214,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/06-stability-metrics.md"
@@ -6289,7 +6292,10 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T05:50:18+08:00",
       "last_task6_reviewed_at": "2026-05-17T12:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
+      "last_task6_review_log": "logs/review/2026-05-17-12-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T11:17:28+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 fixes applied"
     },
     {
       "id": "task6-23.8-memory-case-studies-case-evidence-20260514",
@@ -6839,7 +6845,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/09-stability-case-studies.md"
@@ -6887,7 +6893,10 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T13:30:11+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-14T13:30:11+08:00"
+      "last_reviewed_at": "2026-05-14T13:30:11+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T11:17:28+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 fixes applied"
     },
     {
       "id": "task9-24-8-preference-write-buffer-race-20260514",
