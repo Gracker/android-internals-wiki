@@ -24,10 +24,10 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -36,6 +36,8 @@ task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T13:30:11+08:00"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-23T11:17:28+08:00"
 ---
 
 # 稳定性治理案例集
@@ -70,7 +72,14 @@ OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆�
 
 ### 追踪：从 FD 和线程数入手
 
-在 `Thread::CreateNativeThread`（AOSP `art/runtime/thread.cc`）中，线程创建失败有两个原因：FD 耗尽和虚拟内存不足。查看崩溃报告附带的 `/proc/self/status`：
+在 `Thread::CreateNativeThread`（AOSP `art/runtime/thread.cc`）中，线程创建失败涉及多个因素：
+
+- **虚拟地址空间不足**：32 位进程或线程栈映射耗尽可用虚拟内存
+- **物理内存不足**：线程栈的 guard page、TLS、JNI Env 等分配失败
+- **进程/用户 task 数限制**：`RLIMIT_NPROC`、cgroup `pids_max`、`/proc/sys/kernel/threads-max`
+- **FD / 资源限制**：`RLIMIT_NOFILE` 限制、epoll/timerfd 等 kernel 对象耗尽（FDSize 高不代表 FD 耗尽，只是打开文件数的近似指标）
+
+查看崩溃报告附带的 `/proc/self/status`：
 
 ```
 Threads: 387
@@ -120,20 +129,28 @@ public class PushSDK {
 
 ### 修复方案
 
-**短期止血**：限制进程最大线程数。在 Application 初始化时注册线程监控（详见 20.7 节），超过阈值时报警：
+**短期止血**：限制进程最大线程数。在 Application 初始化时启动周期性线程数采样，超过阈值时报警：
 
 ```java
-Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-    // 在 OOM 发生前提前检测
-    if (throwable instanceof OutOfMemoryError) {
-        int threadCount = Thread.activeCount();
-        if (threadCount > 200) {
-            logWarning("Thread leak detected: " + threadCount + " threads");
+// 周期性采样 /proc/self/status 的 Threads 字段
+private fun startThreadMonitor() {
+    val executor = Executors.newSingleThreadScheduledExecutor()
+    executor.scheduleAtFixedRate({
+        try {
+            val status = File("/proc/self/status").readLines()
+            val threads = status.first { it.startsWith("Threads:") }
+                .substringAfter(":").trim().toInt()
+        if (threads > 200) {
+            logWarning("Thread leak detected: $threads threads")
         }
-    }
-    // 交给原始 handler 处理
-});
+        } catch (e: Exception) { /* ignore */ }
+    }, 0, 30, TimeUnit.SECONDS)
+}
 ```
+
+`Thread.activeCount()` 只统计当前 ThreadGroup 及子组的 Java 线程，不覆盖 native 线程，不适合做进程级线程监控。`/proc/self/status` 的 `Threads` 字段或枚举 `/proc/self/task` 才是准确的进程线程总数。
+
+`Thread.setDefaultUncaughtExceptionHandler` 只能在 OOM 已经抛出后采集上下文，不能在 OOM 发生前提前检测。线程泄漏的预警依赖上述周期性采样。
 
 **中期修复**：联系 SDK 厂商修复线程泄漏问题。在等待修复期间，用字节码插桩（ASM）在 `Thread.start()` 调用前注入线程名和创建栈采集：
 
@@ -173,7 +190,7 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 - SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
 - 链路变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
 
-`[已验证: AOSP android-16.0.0_r1, bionic/linker/debuggerd/handler.cpp]`
+`[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp; bionic/linker/linker_debuggerd_android.cpp]`
 
 ### 追踪：确认信号处理器覆盖
 
@@ -221,14 +238,23 @@ void unified_signal_handler(int sig, siginfo_t* info, void* context) {
     write_crash_report(sig, info);
 
     // 4. 调用旧处理器链
-    if (g_old_handlers[sig].sa_sigaction != NULL &&
-        g_old_handlers[sig].sa_sigaction != SIG_DFL &&
-        g_old_handlers[sig].sa_sigaction != SIG_IGN) {
-        g_old_handlers[sig].sa_sigaction(sig, info, context);
+    if (g_old_handlers[sig].sa_flags & SA_SIGINFO) {
+        if (g_old_handlers[sig].sa_sigaction != NULL &&
+            g_old_handlers[sig].sa_sigaction != SIG_DFL &&
+            g_old_handlers[sig].sa_sigaction != SIG_IGN) {
+            g_old_handlers[sig].sa_sigaction(sig, info, context);
+        }
     } else {
-        // 没有旧处理器，恢复默认行为（让 debuggerd 处理）
-        raise(sig);
+        if (g_old_handlers[sig].sa_handler != NULL &&
+            g_old_handlers[sig].sa_handler != SIG_DFL &&
+            g_old_handlers[sig].sa_handler != SIG_IGN) {
+            g_old_handlers[sig].sa_handler(sig);
+        }
     }
+
+    // 5. 恢复默认动作后重新投递信号，让 debuggerd 处理
+    signal(sig, SIG_DFL);
+    tgkill(getpid(), gettid(), sig);
 }
 
 void register_unified_handler() {
@@ -244,7 +270,13 @@ void register_unified_handler() {
 }
 ```
 
-**初始化时机控制**：统一处理器必须在所有其他 SDK 之前注册。在 `Application.attachBaseContext()` 阶段调用 `register_unified_handler()`，此时第三方 SDK 还没有初始化。
+**初始化时机控制**：统一处理器注册有两种策略，各有取舍。
+
+策略一：在 `Application.attachBaseContext()` 阶段注册，此时第三方 SDK 还没有初始化，统一处理器最先入链。风险是后续 SDK 可能覆盖它。
+
+策略二：在所有第三方 SDK 初始化完毕后注册总 handler，用 `sigaction(oldact)` 捕获已有链路。风险是不规范 SDK 可能在初始化后再次注册，绕过统一处理器。
+
+两种策略都无法 100% 保证覆盖所有 SDK 的信号注册行为。实际操作中推荐策略二并在 APM SDK 中增加信号处理器监控，定期检查目标信号是否仍指向统一处理器，被覆盖时报警。
 
 **禁止 SDK 的 longjmp 恢复**：在信号处理器中执行 `longjmp` 是未定义行为——信号处理器中只能调用异步信号安全函数（async-signal-safe）。`longjmp` 会跳过 RAII 析构、锁释放等清理步骤，导致死锁或内存损坏。正确的做法是 dump 信息后让进程终止。
 

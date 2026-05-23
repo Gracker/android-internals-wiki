@@ -18,11 +18,11 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: "reviewed"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-17
 task6_result: needs-rework
@@ -33,7 +33,7 @@ last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
 task9_result: "needs-rework"
 task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
 rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
-last_task2b_at: "2026-05-17T11:26:41"
+last_task2b_at: "2026-05-23T11:17:28+08:00"
 p0: 0
 p1: 3
 p2: 1
@@ -136,12 +136,23 @@ Google Play 的阈值是面向所有开发者的底线。团队内部度量 ANR�
 
 **按触发原因拆分**：
 
-| ANR 类型 | 超时阈值 | 内部目标 |
-|----------|---------|---------|
-| Input dispatching | 5 秒 | P90 < 2 秒 |
-| 前台 Service | 20 秒（启动与执行分别计时） | P90 < 10 秒 |
-| 前台 Broadcast | 10 秒（Android 14+ 有 soft/hard 两级超时机制，前台广播 soft timeout 更短） | P90 < 5 秒 |
-| ContentProvider | 10 秒 | P90 < 5 秒 |
+**系统 ANR 触发阈值（AOSP / 官方文档）**
+
+| ANR 类型 | 系统超时阈值 | 版本差异 |
+|----------|-------------|----------|
+| Input dispatching | 5 秒 | 全版本一致 [AOSP `InputDispatcher.cpp`] |
+| 前台 Service | 启动: ~5 秒（`startForeground()` 通知时限）; 执行: ~20 秒 | Android 14+ 按 FGS 类型（shortService / dataSync / mediaProcessing 等）有不同超时 [developer.android.com FGS troubleshooting] |
+| 前台 Broadcast | fg ~10 秒 / bg ~60 秒 | Android 14+ 引入 soft/hard 两级超时: soft timeout 更短，超过后广播排队等待; hard timeout 到达才触发 ANR [AOSP `BroadcastQueue.java`] |
+| ContentProvider | 10 秒 | 全版本一致 [AOSP `ActivityManagerService.java`] |
+
+**团队内部监控目标（示例）**
+
+| ANR 类型 | 内部 P90 目标 | 说明 |
+|----------|-------------|------|
+| Input dispatching | < 2 秒 | 用户可感知的主线程卡顿，要求最严 |
+| 前台 Service | < 10 秒 | 启动和执行分别统计 |
+| Broadcast | < 5 秒 | 团队内部阈值，严于系统触发线 |
+| ContentProvider | < 5 秒 | 重点关注冷启动阶段 |
 
 单独看总 ANR 率会掩盖结构性问题。比如总 ANR 率 0.3% 看起来不错，但其中 80% 是 Input ANR——主线程卡了 5 秒以上用户才会触发 ANR 对话框，实际卡顿问题远比数字显示的严重。
 
@@ -175,9 +186,9 @@ Firebase Crashlytics 默认展示这个指标。它的含义直白：每天有�
 Crash-Free Users 度量的是"有多少用户的体验完全不受影响"。PV 崩溃率度量的是"会话级别的崩溃频率"。两者的差异在长尾场景：
 
 - App A：100 万 DAU，人均 2 次 Session（200 万总 Session），1 万用户各崩溃 1 次。Crash-Free Users = 99%，PV 崩溃率 = 1 万次 / 200 万 = 0.5%
-- App B：100 万 DAU，人均 2 次 Session（200 万总 Session），5 万用户各崩溃 1 次，其中 1000 人又崩溃了 50 次。Crash-Free Users = 95%，PV 崩溃率 = (5 万 + 1000×49) / 200 万 ≈ 0.50%
+- App B：100 万 DAU，人均 2 次 Session（200 万总 Session），2 万用户受影响：1 万用户各崩溃 1 次，另 1 万用户因特定 bug 反复崩溃（每人平均 5 次，共 5 万次崩溃）。Crash-Free Users = 98%（2 万去重用户受影响），PV 崩溃率 = (1 万 + 5 万) / 200 万 = 3%
 
-App B 的 Crash-Free Users 明显更差（95% vs 99%），说明崩溃影响面更广。但 PV 崩溃率的差距可能很小（取决于少数用户的集中崩溃程度），容易误判。如果只看 PV 崩溃率做门禁，会放过影响面大的问题——这正是两个指标需要配合使用的原因。
+Crash-Free Users 揭示了 App B 的崩溃影响面是 App A 的 2 倍（98% vs 99%）。但只看 Crash-Free Users 看不到 App B 存在严重的重复崩溃问题——PV 崩溃率 3% 远高于 App A 的 0.5%。这正是两个指标需要配合使用的原因：前者控制影响面，后者控制频率。
 
 ### 行业参考值
 
@@ -185,7 +196,7 @@ App B 的 Crash-Free Users 明显更差（95% vs 99%），说明崩溃影响面�
 |----------|----------------------|------|
 | Play Store 不良行为线 | < 98.91%（即 User-Perceived Crash Rate > 1.09%） | 超过此值 Play Store 展示警告 [来源: Google Play Console Android Vitals] |
 | 行业经验及格线 | ≥ 99.0% | 中大型 App 的常见最低标准 [匿名行业经验区间] |
-| 发版门禁 | ≥ 99.5% | Crashlytics 文档建议的 Crash-Free Users 基线 [来源: Firebase Crashlytics best practices] |
+| 发版门禁 | ≥ 99.5% | 常见内部发版标准 [匿名行业经验区间，各团队根据自身基线调整] |
 | 头部 App 目标 | ≥ 99.8% | 超级 App 的内控标准 [匿名行业经验区间，各团队实际目标因应用类型和用户分布差异较大] |
 
 实际操作中，Crash-Free Users 需要和 Crash-Free Session 配合使用。前者控制影响面，后者控制频率。两者同时满足才算达标。
@@ -291,14 +302,14 @@ $$\text{Error Budget} = 1 - \text{SLO Target}$$
 
 ### 行业对标参考
 
-[需补充素材: “微信公开分享”“头部电商”等对标值需要补具体出处，或改成匿名内部经验区间。]
+> 下表中的具体数字均为匿名行业经验区间，用于团队设定 SLO 时做横向参考。不同应用类型（社交/工具/游戏）、用户分布和采集 SDK 差异都会影响实际值，不要直接照搬。
 
-| 公司 / 产品 | Crash-Free Users | ANR Rate | 说明 |
-|-------------|-----------------|----------|------|
-| Google Play 不良行为线 | < 98.91% | > 0.47% | 全机型阈值 |
-| 微信（公开分享） | ~99.8% | < 0.1% | 超级 App 内控标准 |
-| 头部电商（行业通用） | ≥ 99.5% | < 0.2% | 大型团队发版门禁 |
-| 中型应用 | ≥ 99.0% | < 0.5% | 行业及格线 |
+| 应用级别 | Crash-Free Users | ANR Rate | 说明 |
+|----------|-----------------|----------|------|
+| Google Play 不良行为线 | < 98.91% | > 0.47% | 全机型阈值 [来源: Google Play Console Android Vitals] |
+| 头部超级 App | ≥ 99.8% | < 0.1% | 内控标准 [匿名行业经验区间] |
+| 大型团队发版门禁 | ≥ 99.5% | < 0.2% | 常见内部标准 [匿名行业经验区间] |
+| 中型应用 | ≥ 99.0% | < 0.5% | 行业及格线 [匿名行业经验区间] |
 | 长尾应用 | < 98% | > 1% | Play Store 会展示警告 |
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
