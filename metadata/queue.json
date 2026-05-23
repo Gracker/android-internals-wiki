@@ -18375,6 +18375,43 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-24T00:04:00+08:00",
       "completion_reason": "Task 2A content processing: draft expanded and status set to ready-for-review"
+    },
+    {
+      "id": "task9-deep-20260524-14.4-gfxinfo-framestats-version-boundary",
+      "section": "14.4",
+      "section_title": "dumpsys 系列命令",
+      "priority": 85,
+      "title": "gfxinfo framestats FrameDeadline / WorkloadTarget 版本边界写错",
+      "description": "Task9 复审 §14.4 发现 gfxinfo framestats 把 FrameDeadline、FrameInterval、WorkloadTarget 都标成 Android 14+ 新增；AOSP FrameInfo.h 显示 FrameDeadline/FrameInterval 已在 Android 12 存在，WorkloadTarget 到 Android 16 才出现。",
+      "reason": "[Deep Tech Review] §14.4 L229 gfxinfo framestats 版本边界错误：FrameDeadline/FrameInterval 并非 Android 14+，WorkloadTarget 也不是 Android 14+，需 Task2B 回炉修正。",
+      "issue_type": "version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-01-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/libs/hwui/FrameInfo.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/FrameInfo.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/JankTracker.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/gfxinfo framestats 字段版本边界",
+          "location": "L229：framestats 逐帧时间线字段列表",
+          "detail": "正文把 `FrameDeadline`、`FrameInterval`、`WorkloadTarget` 都标注为 Android 14+ 新增。复核 AOSP：android-12.0.0_r1 `libs/hwui/FrameInfo.h` 已包含 `FrameDeadline` 与 `FrameInterval`；android-16.0.0_r1 才新增 `WorkloadTarget`，并把 `UI_THREAD_FRAME_INFO_SIZE` 从 12 调整为 13。当前版本标注会误导 Android 12/13/15 设备上的 gfxinfo framestats 解读。",
+          "suggestion": "把版本边界拆开：`FrameDeadline` / `FrameInterval` 标为 Android 12+ FrameInfo 字段；`WorkloadTarget` 标为 Android 16+ 字段。若正文只想覆盖 Android 14+ 输出样例，应改写成“Android 14/15 设备可见 FrameDeadline / FrameInterval，Android 16 额外包含 WorkloadTarget”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T01:38:24+08:00",
+      "review_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
   "metadata": {

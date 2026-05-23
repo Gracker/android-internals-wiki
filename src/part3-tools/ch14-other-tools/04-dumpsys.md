@@ -30,21 +30,21 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: needs-rework
+task9_result: "needs-rework"
 last_task2b_at: "2026-04-30T17:46:37.750688"
-task9_reviewed_date: 2026-04-30
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-30T18:33:37+08:00"
+task9_reviewed_date: "2026-05-24"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-24T01:38:24+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
@@ -52,6 +52,8 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 3 处（清理 AIW 编辑注释、标题措辞、无条件量化收益）。无新增 Task6 回炉；Task9 P0 已由 Task2B 修复，等待 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
+task9_review_notes: "2026-05-24 Task9 deep review: needs-rework。P0 0 / P1 1 / P2 0；gfxinfo framestats 版本边界需修正：FrameDeadline/FrameInterval 并非 Android 14+，WorkloadTarget 为 Android 16+；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
 ---
 # dumpsys 系列命令
 

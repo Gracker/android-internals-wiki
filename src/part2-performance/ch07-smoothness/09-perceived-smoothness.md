@@ -21,17 +21,17 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-23"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-23T21:20:00+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已完成复核；自动晋升 finalized。；2026-05-23 21:20 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1（P2 为既有输入重采样 latency 口径建议，未重复入队）；DEBUG log tag 源码名应为 InputTransportResampling，当前写成 InputConsumerResampling。详见 logs/deep-review/2026-05-23-21-audit.md。"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-24"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-24T01:38:24+08:00"
+task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 1（既有 RESAMPLE_LATENCY 口径建议，未重复入队）；InputTransportResampling DEBUG tag 修复已复核；自动晋升 finalized；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
 review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 last_task9_audit: "2026-05-23"
-status: "ready-for-review"
-pipeline_stage: "task9_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
@@ -40,6 +40,7 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 5 处（压低否定-纠正式句式、移除 AIW 编辑注释、把新增 Buffer Stuffing Recovery 段移到参考资料前）。无新增 Task6 回炉；InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
 ---
 
 
