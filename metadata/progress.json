@@ -1,7 +1,7 @@
 {
   "total": 374,
-  "draft": 22,
-  "ready-for-review": 165,
+  "draft": 21,
+  "ready-for-review": 166,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-23",
@@ -1797,8 +1797,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 157,
-  "last_updated": "2026-05-23T19:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-23T20:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "16:13",
@@ -4897,15 +4897,8 @@
       ]
     }
   ],
-  "last_task2a_processed": {
-    "date": "2026-05-23",
-    "time": "03:09",
-    "section": "20.14",
-    "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
-    "result": "ready-for-review",
-    "pipeline_stage": "task6_pending"
-  },
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+  "last_task2a_processed": "26.18",
+  "last_task2a_processed_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
   "last_task2a_processed_date": "2026-05-23",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -4958,9 +4951,9 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-23T18:16:00+08:00",
-  "last_task2a_section": "25.15",
-  "last_task2a_file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+  "last_task2a_at": "2026-05-23T20:04:00+08:00",
+  "last_task2a_section": "26.18",
+  "last_task2a_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "19.14",
@@ -4996,7 +4989,7 @@
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
   "last_task9_at": "2026-05-23T19:20:00+08:00",
-  "last_task2a_result": "ready-for-review",
+  "last_task2a_result": "drafted",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.15",
   "task6_last_review_at": "2026-05-23T04:05:00+08:00",
@@ -6755,8 +6748,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "25.15",
-  "last_task2a_completed_at": "2026-05-23T18:16:00+08:00",
+  "last_task2a_completed": "26.18",
+  "last_task2a_completed_at": "2026-05-23T20:04:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -6855,5 +6848,20 @@
     "result": "L1/L2 小修 3 处；frontmatter 标注 last_task6_audit；未发现 L3/L4 回炉项",
     "log": "logs/review/2026-05-23-11-audit.md",
     "reviewed_at": "2026-05-23T11:08:00+08:00"
+  },
+  "section_26_18": {
+    "section": "26.18",
+    "title": "App Performance Score 与性能质量评分归因",
+    "file": "src/part5-app/ch26-observability/18-app-performance-score.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-23",
+    "queue_priority": 80,
+    "gap_source": "官方文档",
+    "material_count": 16,
+    "last_task2a_at": "2026-05-23T20:04:00+08:00",
+    "task2a_result": "drafted",
+    "task6_state": "pending"
   }
 }
