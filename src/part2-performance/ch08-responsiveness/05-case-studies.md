@@ -34,23 +34,27 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
-task2b_state: fixed
+task2b_state: "pending"
 task2b_result: fixed
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-03"
-last_task9_at: "2026-05-03T16:20:00+08:00"
+task9_reviewed_date: "2026-05-23"
+last_task9_at: "2026-05-23T16:20:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 updated_by: "openclaw-task2b"
 updated_date: "2026-04-27"
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
+last_task9_audit: "2026-05-23"
+last_task9_review_log: "logs/deep-review/2026-05-23-16-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-05-23-16-audit.md"
+task9_review_notes: "2026-05-23 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 0；AutoFDO 官方性能图指标值被误抄/互换，需修正 Cold App Launch、Boot、Binder-rpc、HWBinder 数值。详见 logs/deep-review/2026-05-23-16-audit.md。"
 ---
 
 # 案例集
