@@ -1,6 +1,6 @@
 {
-  "total": 372,
-  "draft": 21,
+  "total": 373,
+  "draft": 22,
   "ready-for-review": 164,
   "finalized": 187,
   "task9_result": "needs-rework",
@@ -1795,8 +1795,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-23T16:13:21+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-23T17:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "16:13",
@@ -6259,15 +6259,15 @@
   "last_task9_review_summary": "Task9 deep-review: 2.2 pass-tech-review 并自动晋升 finalized；1.13 needs-rework，P0 1 / P1 1 写入 queue。",
   "last_task2a_gap_mining": {
     "date": "2026-05-23",
-    "time": "00:04",
-    "section": "7.18",
-    "file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
+    "time": "17:04",
+    "section": "25.15",
+    "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
     "result": "gap-created",
-    "gap_score": 18,
-    "candidate_count": 5,
+    "gap_score": 16,
+    "candidate_count": 4,
     "qualified_count": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-23T17:04:00+08:00",
   "last_task6_audit": "2026-05-23T10:08:00+08:00",
   "last_task6_audit_sections": [
     "7.3"
@@ -6277,19 +6277,19 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-23-10-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-05-22",
-    "time": "14:04",
+    "date": "2026-05-23",
+    "time": "17:04",
     "mode": "gap-mining",
     "empty_draft_count": 0,
     "candidate_count": 4,
     "qualified_count": 1,
     "created_sections": [
-      "26.17"
+      "25.15"
     ],
     "created_files": [
-      "src/part5-app/ch26-observability/17-online-network-quality-observability.md"
+      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
     ],
-    "top_candidate": "线上网络质量监控与接入层协同"
+    "top_candidate": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6407,16 +6407,16 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "date": "2026-05-22",
-    "time": "08:45",
+    "date": "2026-05-23",
+    "time": "17:04",
     "created_sections": [
-      "11.7"
+      "25.15"
     ],
     "created_files": [
-      "src/part2-performance/ch11-power/07-user-settings-energy-impact.md"
+      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
     ],
     "gap_scores": {
-      "11.7": {
+      "25.15": {
         "素材丰富度": 3,
         "与全书目标相关性": 4,
         "读者需求度": 4,

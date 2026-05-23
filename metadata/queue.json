@@ -18220,6 +18220,35 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-23T13:04:00+08:00",
       "completion_reason": "Task 2A content processing: draft expanded and status moved to ready-for-review"
+    },
+    {
+      "id": "task2a-gap-20260523-25.15-scheduledexecutor-fixedrate-android16",
+      "section": "25.15",
+      "section_title": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理",
+      "priority": 80,
+      "title": "Android 16 scheduleAtFixedRate 补偿执行边界",
+      "description": "官方 Android 16 行为变更说明 targetSdk 36 后 scheduleAtFixedRate 在应用回到有效生命周期时最多立即补一次错过执行。现有功耗与后台任务章节覆盖 WorkManager、JobScheduler、FGS 和 ADPF，但缺少固定频率线程池任务在前后台切换后的 CPU 峰值与功耗治理小节。",
+      "reason": "Phase 1 知识缺口挖掘：该行为变化直接影响埋点、心跳、监控采样和后台恢复阶段的周期任务；SUMMARY.md 未覆盖 ScheduledExecutorService / scheduleAtFixedRate 的 API 36 行为边界。",
+      "issue_type": "knowledge-gap-official-behavior-change",
+      "severity": "P2",
+      "gap_source": "官方文档/每日信息/源码结构",
+      "gap_score": 16,
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/16/behavior-changes-16",
+        "https://developer.android.com/reference/java/util/concurrent/ScheduledExecutorService",
+        "https://android-developers.googleblog.com/2025/06/android-16-is-here.html",
+        "intake/daily-info/2026-05-23.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T17:04:00+08:00"
     }
   ],
   "metadata": {
@@ -18237,8 +18266,8 @@
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-23T16:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-23T17:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "pending": [
     {
       "id": "task9-audit-20260523-8.5-case-studies-autofdo-metrics",
@@ -24583,6 +24612,15 @@
   ],
   "last_task2a_completed": "14.20",
   "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
-  "last_task2a_gap_mining": "7.18",
-  "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00"
+  "last_task2a_gap_mining": {
+    "date": "2026-05-23",
+    "time": "17:04",
+    "created_sections": [
+      "25.15"
+    ],
+    "created_files": [
+      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
+    ]
+  },
+  "last_task2a_gap_mining_at": "2026-05-23T17:04:00+08:00"
 }
