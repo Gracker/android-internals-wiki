@@ -45,15 +45,22 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T05:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-24
+last_task9_at: "2026-05-24T05:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-24-05-deep-review.md"
+task9_review_notes: "2026-05-24 05:20 Task9 deep-review: needs-rework。P0 1 / P1 3：ADB dumpsys 重定向命令错误；hardening enable/throw 测试模式不能代表 target36/37 与 alarm 豁免生产行为；默认播放失败应按静默静音处理，write 错误只属于 throw 模式；BOOT_COMPLETED mediaPlayback FGS target35+ 启动限制需补。"
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
