@@ -13,7 +13,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/04-typical-scenarios.md"
@@ -46,7 +46,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T12:32:12+08:00",
-      "review_log": "logs/deep-review/2026-05-23-12-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-12-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T15:16:24+08:00",
+      "completion_reason": "Task 2B rework: source code path / version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260523-15.7-sftrace-version-path",
@@ -61,7 +64,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch15-methodology/07-aosp-reading.md"
@@ -106,7 +109,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T11:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-11-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-11-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T15:16:24+08:00",
+      "completion_reason": "Task 2B rework: source code path / version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260523-8.1-startup-metrics-version-boundary",
@@ -121,7 +127,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md"
@@ -143,7 +149,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T09:31:49+08:00",
-      "review_log": "logs/deep-review/2026-05-23-09-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-09-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T15:16:24+08:00",
+      "completion_reason": "Task 2B rework: source code path / version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260523-15.1-philosophy-profilingmanager-benchmarking-source-paths",

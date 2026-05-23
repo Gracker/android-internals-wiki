@@ -31,7 +31,7 @@ related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
 task6_state: reviewed
 task6_result: pass-light-edit
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_reviewed_date: "2026-05-01"
 task6_spotcheck_date: "2026-05-15"
@@ -39,7 +39,7 @@ task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_state: reviewed
 task9_reviewed_by: openclaw-task9
@@ -209,11 +209,13 @@ Android Vitals 区分三种启动类型，并分别设定了"过长"的告警阈
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
-从 Android 12 开始，系统引入了两个更精细的启动指标：
+Android Vitals 当前用两个更精细的启动指标描述启动体验：
 
 **TTID（Time To Initial Display）**——从系统收到启动 Intent 到 App 第一帧绘制完成的时间。这个指标由系统自动上报，反映的是用户从点击图标到看到 App 画面的时间。
 
-**TTFD（Time To Full Display）**——从启动到 App 调用 `Activity.reportFullyDrawn()` 的时间。这个指标反映的是 App 内容完全加载并可交互的时间。开发者需要主动调用 `reportFullyDrawn()` 来触发上报，如果不调用，TTFD 就不会被记录。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+**TTFD（Time To Full Display）**——从启动到 App 调用 `Activity.reportFullyDrawn()` 的时间。`reportFullyDrawn()` 从 API 19（Android 4.4）起就已存在；这个指标反映的是 App 内容完全加载并可交互的时间。开发者需要主动调用 `reportFullyDrawn()` 来触发上报，如果不调用，TTFD 就不会被记录。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time；AOSP android-4.4_r1 Activity.reportFullyDrawn() 已存在]
+
+Android 12（API 31）在启动体验方面引入的是 SplashScreen API，为所有 App 提供系统级启动画面，与 TTID/TTFD 指标本身是独立的版本点。
 
 ### ANR（Application Not Responding）
 

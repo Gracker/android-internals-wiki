@@ -18,12 +18,12 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-23"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -189,7 +189,7 @@ ART 虚拟机的完整实现。这个目录结构比较独立和完整：
 
 ### 路径一：从 Logcat 日志定位源码
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Trace.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — Log tag 与日志文本源码位置]
 
 Logcat 日志有一个经常被忽略的特性：每条日志都带着 tag。这个 tag 通常就是源码中 `Log.x()` 调用的第一个参数，而源码中的 tag 定义往往是类名或模块名的常量。
 
@@ -237,7 +237,8 @@ Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 ```cpp
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 // @ AOSP android-16.0.0_r1
-// SurfaceFlinger 使用自定义 SFTRACE_* 宏族，不是通用 ATRACE_CALL()
+// SurfaceFlinger 在 Android 16 使用自定义 SFTRACE_* 宏族（Android 12-15 仍用 ATRACE_CALL）
+// SFTRACE_* 定义在 services/surfaceflinger/common/include/common/trace.h
 void SurfaceFlinger::composite(const CompositeArgs& args) {
     // SFTRACE_NAME 展开为包含函数名的 slice，通常带 vsyncId 前缀
     SFTRACE_NAME(ftl::Concat(__func__, vsyncId).c_str());
@@ -247,7 +248,7 @@ void SurfaceFlinger::composite(const CompositeArgs& args) {
 }
 ```
 
-> **注意**：`ATRACE_CALL()` 展开为 `ATRACE_NAME(__FUNCTION__)`，只能拿到函数名（如 `composite`），不包含类名。SurfaceFlinger 从 Android 12 起引入了自己的 `SFTRACE_*` 宏族（定义在 `SurfaceFlingerTrace.h`），用于生成带类名、带 vsyncId 的更丰富 slice 名。Perfetto 中看到的 `SurfaceFlinger::composite` 这类带类名的 slice，来源于 `SFTRACE_NAME` 而非通用 `ATRACE_CALL`。
+> **注意**：`ATRACE_CALL()` 展开为 `ATRACE_NAME(__FUNCTION__)`，只能拿到函数名（如 `composite`），不包含类名。SurfaceFlinger 在 Android 16 起使用自己的 `SFTRACE_*` 宏族（定义在 `services/surfaceflinger/common/include/common/trace.h`），用于生成带类名、带 vsyncId 的更丰富 slice 名。Android 12-15 的 SurfaceFlinger 仍按 `ATRACE_CALL` / `ATRACE_NAME` 阅读，Perfetto 中看到的 `composite` 这类只含函数名的 slice 来自通用宏。Android 16 才出现带类名的 `SurfaceFlinger::composite`，来源于 `SFTRACE_NAME`。
 
 反查规则需要区分宏族。Perfetto 中看到的 slice 名来源取决于模块使用的宏：
 
@@ -305,7 +306,7 @@ Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
-`Choreographer` 是 Android 渲染管线的时序协调者。它接收 VSync 信号，按优先级调度 Input → Animation → Traversal 三类回调。本书第 2.4 节已经详细讲解了它的机制，这里只强调源码层面的入口。
+`Choreographer` 是 Android 渲染管线的时序协调者。它接收 VSync 信号，按优先级调度回调。早期版本可按 Input → Animation → Traversal 三类理解；Android 16 当前源码还定义了 `CALLBACK_INSETS_ANIMATION` 和 `CALLBACK_COMMIT`，读者在阅读现代源码时应注意到完整的回调队列。本书第 2.4 节已经详细讲解了它的机制，这里只强调源码层面的入口。
 
 性能分析中最常用的切入点：
 

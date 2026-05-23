@@ -45,10 +45,10 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
@@ -239,31 +239,32 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 ### 2.3 页面切换动画在 Perfetto 中的表现
 <!-- AIW-源码调研-2026-05-08: FragmentTransaction commit 源码链路 -->
+<!-- AIW-回炉-2026-05-23: 修正 mTrack()/mHostHandler 等不存在方法名，改为 AndroidX Fragment 口径 -->
 
 **FragmentTransaction.commit() 源码链路深度分析**：
 
-关键发现：FragmentTransaction 的 `commit()` 并非立即执行，而是通过 `BackStackRecord.mTrack()` 封存为 `OpGenerator` 投入 `mPendingActions` 队列，等待主线程 Looper 下一轮消息处理才真正执行。
+`commit()` 不会立即执行事务，而是将 `BackStackRecord` 入队，等主线程 Looper 下一轮消息处理时才执行。
 
-**源码流程**：
-1. `commitInternal()` → 将 `BackStackRecord` 加入 `mPendingActions` 队列
-2. `scheduleCommit()` → 通过 `FragmentHostCallback.mHandler` 在主线程安排异步执行
-3. `execPendingActions()` → 由 `FragmentActivity.onResume()` 触发，处理所有挂起的事务
-4. `moveToState()` → 执行 fragment 状态转换，创建/销毁 View
+**AndroidX Fragment 源码流程**（现代应用主要路径）：
+1. `BackStackRecord.commitInternal()` → 调用 `FragmentManager.enqueueAction(this, allowStateLoss)` 将事务入队
+2. `FragmentManager.scheduleCommit()` → 通过宿主主线程 Handler post `mExecCommit` Runnable
+3. `mExecCommit` → 调用 `execPendingActions()`，内部调用 `generateOps()` 生成操作序列
+4. `removeRedundantOperationsAndExecute()` → 去重后执行，最终走到 `moveToState()` 推进 fragment 状态
 
 **时序关键点**：
-- `commit()` → `enqueuePendingAction()` → `scheduleCommit()` → `mHostHandler.execPendingActions()` → `moveToState()` → 真正的状态推进
+- `commit()` → `enqueueAction()` → `scheduleCommit()` → Handler post `mExecCommit` → `execPendingActions()` → `moveToState()`
 - `execPendingActions()` 在 Activity 生命周期中早于 Choreographer 帧回调
 - Fragment 状态推进与 View 树布局在不同消息周期，不会立即响应
 
 **性能影响**：
-- `commit()` 延迟设计确保 UI 线程有序执行，避免竞争
-- `mPendingActions` 堆积过多可能导致首帧延迟
+- `commit()` 延迟设计确保主线程有序执行，避免竞争
+- pending actions 堆积过多可能导致首帧延迟
 - 无 Choreographer 绑定，fragment 操作不感知 VSync 周期
 
-**源码依据**：
-- `frameworks/base/core/java/android/app/FragmentManager.java:1913-1935` - enqueuePendingAction
-- `frameworks/base/core/java/android/app/FragmentManager.java:2060-2078` - execPendingActions  
-- `frameworks/base/core/java/android/app/FragmentManager.java:1624-1627` - moveToState
+**源码依据**（AndroidX Fragment 1.8.x / AOSP android-16.0.0_r1）：
+- `androidx/fragment/app/BackStackRecord.java` — `commitInternal()` / `enqueueAction()`
+- `androidx/fragment/app/FragmentManager.java` — `scheduleCommit()` / `execPendingActions()` / `generateOps()` / `removeRedundantOperationsAndExecute()`
+- 平台 `frameworks/base/core/java/android/app/FragmentManager.java` 为 legacy 实现，仅作旧系统源码参考
 
 
 [图：Activity 切换动画期间两个进程的 Perfetto 时序，标注源 Activity 退出动画和目标 Activity 进入动画]
@@ -303,7 +304,13 @@ Android 12+ 的过渡发生在 `SurfaceControl` 级别。WMS 通过 `StartingSur
 
 ### 3.2 预测性返回动画（Predictive Back）
 
-Android 15 将预测性返回动画（Predictive Back）设为默认行为。用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackInvokedCallback` 协作完成的。
+预测性返回动画（Predictive Back）的版本边界需要拆开看：
+
+- **Android 13/14**：需要在开发者选项中手动启用，且 App 需 opt-in（`android:enableOnBackInvokedCallback="true"`）
+- **Android 15**：开发者选项不再可用，系统预测性返回动画只对已 opt-in 的 App/Activity 显示
+- **Android 16（API 36 target + Android 16 设备）**：系统预测性返回动画默认启用，App 仍可通过 `android:enableOnBackInvokedCallback="false"` 临时 opt-out
+
+用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackInvokedCallback` 协作完成的。
 
 这引入了一类新的卡顿场景：
 
@@ -316,7 +323,7 @@ Perfetto 分析要点：
 - 检查 App 主线程在 `onBackProgressed()` 回调期间的 slice 耗时
 - 同时看 SurfaceFlinger 的 `compose` slice 是否因多层合成而拉长
 
-[已验证: Android 15 CDD Predictive Back 要求, developer.android.com/guide/navigation/custom-back/predictive-back-animation]
+[已验证: developer.android.com/guide/navigation/custom-back/predictive-back-gesture — Android 13/14 开发者选项 + opt-in, Android 15 opt-in only, Android 16 默认启用；developer.android.com/about/versions/16/behavior-changes-16 — targeting Android 16+ 默认启用系统预测性返回动画]
 
 ### 3.3 Dialog / PopupWindow 弹出动画
 
