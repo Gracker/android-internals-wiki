@@ -18236,7 +18236,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
@@ -18248,7 +18248,9 @@
         "intake/daily-info/2026-05-23.md"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-23T17:04:00+08:00"
+      "added_at": "2026-05-23T17:04:00+08:00",
+      "completed_date": "2026-05-23T18:16:00+08:00",
+      "completed_reason": "Task 2A 加工完成：基于 Android 16 官方行为变更、AOSP libcore ScheduledThreadPoolExecutor 源码、Perfetto / Batterystats 文档与 Clippings 线程池/CPU 优化结构参考，补齐固定频率任务补偿边界、恢复窗口 CPU 峰值治理、测试矩阵和 SDK 迁移清单；状态改为 ready-for-review。"
     }
   ],
   "metadata": {

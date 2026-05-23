@@ -1,7 +1,7 @@
 {
   "total": 373,
-  "draft": 22,
-  "ready-for-review": 164,
+  "draft": 21,
+  "ready-for-review": 165,
   "finalized": 187,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-23",
@@ -221,7 +221,8 @@
     "7.5",
     "20.4",
     "14.20",
-    "15.7"
+    "15.7",
+    "25.15"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -275,7 +276,8 @@
     "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
     "src/part2-performance/ch07-smoothness/05-optimization.md",
     "src/part5-app/ch20-stability/04-anr-governance.md",
-    "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+    "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+    "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
@@ -1794,8 +1796,8 @@
   },
   "total_review_sections": 210,
   "next_review_candidates": [],
-  "ready_for_review": 156,
-  "last_updated": "2026-05-23T17:04:00+08:00",
+  "ready_for_review": 157,
+  "last_updated": "2026-05-23T18:16:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
@@ -4855,6 +4857,16 @@
       "reviewed_date": "2026-05-23",
       "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
       "title": "优化策略"
+    },
+    "25.15": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "title": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理",
+      "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+      "task2a_state": "processed",
+      "task2a_result": "ready-for-review",
+      "task6_state": "pending",
+      "last_task2a_at": "2026-05-23T18:16:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -4880,7 +4892,7 @@
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending"
   },
-  "last_task2a_processed_file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
   "last_task2a_processed_date": "2026-05-23",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -4934,9 +4946,9 @@
     "src/part5-app/ch21-startup/02-startup-framework.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-23T08:21:00+08:00",
-  "last_task2a_section": "16.8",
-  "last_task2a_file": "src/part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+  "last_task2a_at": "2026-05-23T18:16:00+08:00",
+  "last_task2a_section": "25.15",
+  "last_task2a_file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "19.14",
@@ -4974,7 +4986,7 @@
   "last_task9_at": "2026-05-23T00:20:00+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "20.14",
+  "last_task2a_processed_section": "25.15",
   "task6_last_review_at": "2026-05-23T04:05:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-23-04-review.md",
   "task6_last_review_sections": [
@@ -6020,15 +6032,30 @@
       "queue_priority": 80,
       "gap_source": "章节深挖/研究素材/AOSP结构/官方文档",
       "material_count": 4
+    },
+    "25.15": {
+      "section": "25.15",
+      "title": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理",
+      "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-23",
+      "queue_priority": 80,
+      "gap_source": "官方文档/每日信息/源码结构",
+      "task2a_state": "processed",
+      "task2a_result": "ready-for-review",
+      "last_task2a_at": "2026-05-23T18:16:00+08:00",
+      "task6_state": "pending"
     }
   },
   "task2a_last_processed": {
-    "date": "2026-05-22",
-    "time": "21:10",
-    "section": "24.15",
-    "file": "src/part5-app/ch24-io-network/15-network-performance-baseline.md",
+    "section": "25.15",
+    "title": "Android 16 固定频率任务补偿执行与后台 CPU 峰值治理",
+    "file": "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
     "result": "ready-for-review",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "task6_pending",
+    "processed_at": "2026-05-23T18:16:00+08:00"
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",
@@ -6046,7 +6073,7 @@
     "22.3",
     "21.2"
   ],
-  "last_task2a_processed_at": "2026-05-23T03:09:00+08:00",
+  "last_task2a_processed_at": "2026-05-23T18:16:00+08:00",
   "last_task9_files": [
     "src/part1-fundamentals/ch02-rendering/02-framerate.md",
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
@@ -6719,8 +6746,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "14.20",
-  "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
+  "last_task2a_completed": "25.15",
+  "last_task2a_completed_at": "2026-05-23T18:16:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
