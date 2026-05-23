@@ -363,3 +363,67 @@ ML Kit GenAI APIs → Google AI Edge SDK → AICore System Service
 
 
 <!-- AIW-源码调研-2026-05-22 -->
+
+<!-- AIW-源码调研-2026-05-23 -->
+
+## 源码调研补充（2026-05-23）
+
+### 端侧 AI 推理栈分层验证
+
+本轮调研针对 §5.11"端侧 AI 推理性能"章节的选题#5（AIW research-gaps 驱动），验证 Android 17 端侧 AI 推理栈边界的公开可发布事实。
+
+**关键验证结论（一手源码+官方文档）**：
+
+#### NNAPI 废弃（Android 15 API 35）
+
+**源码锚点**：`frameworks/ml/nn/runtime/include/NeuralNetworks.h`（AOSP）
+
+Android 15 正式将 NNAPI 标记为 deprecated。官方 NNAPI Migration Guide 明确指引迁移至：
+- **TensorFlow Lite in Play Services**（即 LiteRT）：通过 Google Play Services 更新 runtime，脱离 App 独立更新
+- **AICore**：内部使用 NNAPI 做硬件加速，但开发者不直接调用 NNAPI
+
+#### FEATURE_NEURAL_PROCESSING_UNIT（Android 17 新增）
+
+**源码锚点**：`frameworks/base/core/java/android/content/pm/PackageManager.java`（AOSP cs.android.com）
+
+Android 17 release notes 明确：
+> "Apps targeting Android 17 that need to directly access the NPU must declare `FEATURE_NEURAL_PROCESSING_UNIT` in their manifest to avoid being blocked from accessing the NPU."
+
+targetSdk>=17 的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
+```xml
+<uses-feature android:name="android.hardware.neural_processing_unit" />
+```
+
+这一机制将 NPU 访问从"透明可用"变为"显式声明"，是 Android 17 对 AI 硬件安全管控的关键机制。
+
+#### LiteRT = TensorFlow Lite 品牌重命名
+
+"LiteRT" 是 TensorFlow Lite 的官方品牌重命名，属于 Google AI Edge SDK 的一部分，非 API 层面变化。在 AOSP 源码中，模块仍位于 `external/tensorflow/tensorflow/lite/` 目录，核心 kernels 位于 `tensorflow/lite/kernels/internal/`。XNNPACK 位于 `external/XNNPACK/`。
+
+#### AICore 与 NNAPI 的关系（Google AI Forum 官方确认）
+
+> "AICore uses NNAPI internally for hardware acceleration and developers do not use NNAPI to call AICore."
+> — Google AI Developers Forum, 2025-07-10
+
+AICore 是 Android 系统级 AI 推理 service，主要支持 Gemini Nano 端侧 LLM。内部通过 NNAPI 调用 NPU 硬件加速，但对外暴露高阶封装接口。开发者不直接、也不需要直接调用 NNAPI。
+
+#### 三层推理栈（验证后的事实边界）
+
+```
+应用层：ML Kit GenAI APIs / Google AI Edge SDK
+       ↓
+中间层：LiteRT（TensorFlow Lite）= 推理 runtime + Delegate 选择
+         ├─ XNNPACK（CPU）
+         ├─ GPU Delegate（OpenCL/OpenGL ES）
+         └─ NPU via NNAPI（deprecated）
+       ↓
+系统层：AICore System Service（Gemini Nano 模型管理 + 硬件路由）
+         └─ 内部调用 NNAPI → NPU Driver（HAL 1.3）
+```
+
+**信息边界澄清**：
+- AICore 包名 `com.google.mlkit:aicore` 来源为社区/XDA 论坛，未获一手 AOSP 源码验证
+- LiteRT CompiledModel API V2 的具体接口和 AOT 编译机制待进一步源码锚点验证
+- Android 16 NPU feature 变更暂无一手数据覆盖
+
+
