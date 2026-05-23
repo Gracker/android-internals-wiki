@@ -422,6 +422,7 @@ tags:
   - [25.13 Foreground Service 超时与 JobScheduler 配额治理](part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md)
   - [25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo](part5-app/ch25-power-size/14-jobdebuginfo-jobscheduler-diagnostics.md)
   - [25.15 Android 16 固定频率任务补偿执行与后台 CPU 峰值治理](part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md)
+  - [25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环](part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)

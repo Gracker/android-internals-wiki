@@ -18327,25 +18327,61 @@
       "completed_by": "openclaw-task2a",
       "result_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
       "pipeline_stage": "task6_pending"
+    },
+    {
+      "id": "task2a-gap-20260523-25.16-adpf-power-efficiency-powermonitor",
+      "section": "25.16",
+      "section_title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "priority": 80,
+      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "description": "补齐 Android 15 ADPF Power Efficiency Mode 与 PowerMonitor/Power Rails 的应用层能耗验证闭环。",
+      "reason": "source-index 中高质量素材显示 §5.9/§25.11 已覆盖 ADPF 基础与协程线程迁移，但 Part 5 缺少“节能 hint → PowerMonitor/Perfetto power_rails 验证 → 线上灰度指标”的实战小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md",
+        "https://developer.android.com/games/optimize/adpf",
+        "https://developer.android.com/reference/android/os/PowerMonitor",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://source.android.com/docs/core/perf/performance-hint-api",
+        "https://cs.android.com/hardware/interfaces/power/stats/"
+      ],
+      "gap_score": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T23:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 492,
+    "total_entries": 498,
     "p0_count": 211,
-    "last_updated": "2026-05-23T19:20:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 168,
+    "last_updated": "2026-05-23T23:04:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 169,
     "updated_date": "2026-05-23",
-    "last_updated_by": "openclaw-task9",
-    "pending": 168,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 169,
     "completed_entries": 320,
-    "last_task2a_gap_mining": "7.18",
-    "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
+    "last_task2a_gap_mining": "25.16",
+    "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-23T20:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-23T23:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "pending": [
     {
       "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
@@ -24650,19 +24686,46 @@
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-23T10:24:00+08:00",
       "review_log": "logs/deep-review/2026-05-23-10-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260523-25.16-adpf-power-efficiency-powermonitor",
+      "section": "25.16",
+      "section_title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "priority": 80,
+      "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环",
+      "description": "补齐 Android 15 ADPF Power Efficiency Mode 与 PowerMonitor/Power Rails 的应用层能耗验证闭环。",
+      "reason": "source-index 中高质量素材显示 §5.9/§25.11 已覆盖 ADPF 基础与协程线程迁移，但 Part 5 缺少“节能 hint → PowerMonitor/Perfetto power_rails 验证 → 线上灰度指标”的实战小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
+      ],
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md",
+        "https://developer.android.com/games/optimize/adpf",
+        "https://developer.android.com/reference/android/os/PowerMonitor",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://source.android.com/docs/core/perf/performance-hint-api",
+        "https://cs.android.com/hardware/interfaces/power/stats/"
+      ],
+      "gap_score": {
+        "素材丰富度": 5,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 18
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-23T23:04:00+08:00"
     }
   ],
   "last_task2a_completed": "26.18",
   "last_task2a_completed_at": "2026-05-23T20:04:00+08:00",
-  "last_task2a_gap_mining": {
-    "date": "2026-05-23",
-    "time": "17:04",
-    "created_sections": [
-      "25.15"
-    ],
-    "created_files": [
-      "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
-    ]
-  },
-  "last_task2a_gap_mining_at": "2026-05-23T17:04:00+08:00"
+  "last_task2a_gap_mining": "25.16",
+  "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00"
 }
