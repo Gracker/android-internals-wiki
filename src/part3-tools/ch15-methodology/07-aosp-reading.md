@@ -1,8 +1,10 @@
+updated_by: "openclaw-task2b"
+updated_date: "2026-05-23"
 ---
 title: "AOSP 代码阅读"
 chapter: "15.7"
 section: "15.7"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
@@ -18,14 +20,14 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-23"
-task2b_state: "pending"
-task2b_result: fixed
-repaired_date: "2026-04-25"
+task2b_state: "fixed"
+task2b_result: "fixed"
+repaired_date: "2026-05-23"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
 reviewed_by: "openclaw-task6"
@@ -238,18 +240,21 @@ Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 ```cpp
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 // @ AOSP android-16.0.0_r1
-// SurfaceFlinger 在 Android 16 使用自定义 SFTRACE_* 宏族（Android 12-15 仍用 ATRACE_CALL）
+// SurfaceFlinger 在 Android 16 使用自定义 SFTRACE_* 宏族
 // SFTRACE_* 定义在 services/surfaceflinger/common/include/common/trace.h
 void SurfaceFlinger::composite(const CompositeArgs& args) {
-    // SFTRACE_NAME 展开为包含函数名的 slice，通常带 vsyncId 前缀
-    SFTRACE_NAME(ftl::Concat(__func__, vsyncId).c_str());
+    // SFTRACE_NAME 把传入的 name 交给 ScopedTrace
+    // Perfetto 中看到的 slice 是 "composite <vsyncId>"，不含类名
+    SFTRACE_NAME(ftl::Concat(__func__, ' ', ftl::to_underlying(args.vsyncId)).c_str());
     // 异步 trace 用 SFTRACE_ASYNC_FOR_TRACK_BEGIN / END
     SFTRACE_ASYNC_FOR_TRACK_BEGIN("vsync", /* 其他参数省略 */);
     // 合成逻辑省略。
 }
 ```
 
-> **注意**：`ATRACE_CALL()` 展开为 `ATRACE_NAME(__FUNCTION__)`，只能拿到函数名（如 `composite`），不包含类名。SurfaceFlinger 在 Android 16 起使用自己的 `SFTRACE_*` 宏族（定义在 `services/surfaceflinger/common/include/common/trace.h`），用于生成带类名、带 vsyncId 的更丰富 slice 名。Android 12-15 的 SurfaceFlinger 仍按 `ATRACE_CALL` / `ATRACE_NAME` 阅读，Perfetto 中看到的 `composite` 这类只含函数名的 slice 来自通用宏。Android 16 才出现带类名的 `SurfaceFlinger::composite`，来源于 `SFTRACE_NAME`。
+> **注意**：`ATRACE_CALL()` 展开为 `ATRACE_NAME(__FUNCTION__)`，只能拿到函数名（如 `composite`），不包含类名。SurfaceFlinger 在 Android 16 起使用自己的 `SFTRACE_*` 宏族（定义在 `services/surfaceflinger/common/include/common/trace.h`）。但 `SFTRACE_NAME` 本身只是把传入的 name 交给 `ScopedTrace`，不会自动补类名。`SurfaceFlinger::composite()` 传入的是 `ftl::Concat(__func__, ' ', ftl::to_underlying(vsyncId))`，`__func__` 为 `composite`，所以 Perfetto 中看到的 slice 名是 `composite <vsyncId>`，不是 `SurfaceFlinger::composite`。如需类名，调用点字符串必须显式提供。
+>
+> SurfaceFlinger trace 入口按版本拆开看：Android 12 的 `onMessageRefresh()` 使用 `ATRACE_CALL()`；Android 13/14 的 `composite()` 使用 `ATRACE_FORMAT("%s ...", __func__, vsyncId)`；Android 15 使用 `ATRACE_NAME(ftl::Concat(__func__, ' ', vsyncId).c_str())`；Android 16 才切到 `SFTRACE_*` 封装。不要把 Android 16 的宏族泛化到 Android 12+。
 
 反查规则需要区分宏族。Perfetto 中看到的 slice 名来源取决于模块使用的宏：
 

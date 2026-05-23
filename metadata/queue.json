@@ -13,7 +13,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 0.75,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/05-case-studies.md"
@@ -34,7 +34,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T16:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-16-audit.md"
+      "review_log": "logs/deep-review/2026-05-23-16-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T19:15:31+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task9-deep-20260523-1520-15.7-sftrace-slice-version",
@@ -49,7 +52,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch15-methodology/07-aosp-reading.md"
@@ -81,7 +84,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T15:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T19:15:31+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task9-deep-20260523-1520-7.4-predictiveback-fragment-timing",
@@ -96,7 +102,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/04-typical-scenarios.md"
@@ -127,7 +133,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T15:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-23-15-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-23T19:15:31+08:00",
+      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
