@@ -1,6 +1,6 @@
 {
-  "total": 375,
-  "draft": 21,
+  "total": 376,
+  "draft": 22,
   "ready-for-review": 163,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -1851,8 +1851,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T00:04:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-24T02:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -4944,6 +4944,28 @@
       "task2a_result": "drafted",
       "task6_state": "pending",
       "task9_state": "pending"
+    },
+    "25.17": {
+      "section": "25.17",
+      "title": "Android 17 后台音频硬化与播放功耗治理",
+      "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+      "status": "draft",
+      "pipeline_stage": "task2a-created-draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-24",
+      "queue_priority": 80,
+      "gap_source": "官方文档/已有章节深挖/每日信息",
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 18
+      },
+      "material_count": 4,
+      "task2a_state": "created",
+      "task2a_result": "gap-created",
+      "last_task2a_at": "2026-05-24T02:04:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -5014,7 +5036,7 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-24T00:04:00+08:00",
+  "last_task2a_at": "2026-05-24T02:04:00+08:00",
   "last_task2a_section": "25.16",
   "last_task2a_file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
   "last_task6_review": "2026-05-23",
@@ -5043,7 +5065,7 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "last_task9_at": "2026-05-23T20:25:42+08:00",
-  "last_task2a_result": "drafted",
+  "last_task2a_result": "gap-created",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.16",
   "task6_last_review_at": "2026-05-23T20:16:21+08:00",
@@ -6122,7 +6144,8 @@
       "drafted_date": "2026-05-24",
       "last_verified": "2026-05-24",
       "confidence": "medium-high"
-    }
+    },
+    "25.17": "draft"
   },
   "task2a_last_processed": {
     "section": "25.16",
@@ -6355,16 +6378,16 @@
   },
   "last_task9_review_summary": "Task9 deep-review: 26.18 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
   "last_task2a_gap_mining": {
-    "date": "2026-05-23",
-    "time": "23:04",
-    "section": "25.16",
-    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+    "date": "2026-05-24",
+    "time": "02:04",
+    "section": "25.17",
+    "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
     "result": "gap-created",
     "gap_score": 18,
-    "candidate_count": 5,
+    "candidate_count": 4,
     "qualified_count": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-24T02:04:00+08:00",
   "last_task6_audit": "2026-05-23T10:08:00+08:00",
   "last_task6_audit_sections": [
     "7.3"
@@ -6374,19 +6397,19 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-23-10-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-05-23",
-    "time": "23:04",
+    "date": "2026-05-24",
+    "time": "02:04",
     "mode": "gap-mining",
     "empty_draft_count": 0,
-    "candidate_count": 5,
+    "candidate_count": 4,
     "qualified_count": 1,
     "created_sections": [
-      "25.16"
+      "25.17"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
+      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
     ],
-    "top_candidate": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环"
+    "top_candidate": "Android 17 后台音频硬化与播放功耗治理"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6504,20 +6527,20 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "date": "2026-05-23",
-    "time": "23:04",
+    "date": "2026-05-24",
+    "time": "02:04",
     "created_sections": [
-      "25.16"
+      "25.17"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
+      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
     ],
     "gap_scores": {
-      "25.16": {
-        "素材丰富度": 5,
+      "25.17": {
+        "素材丰富度": 4,
         "与全书目标相关性": 5,
         "读者需求度": 4,
-        "时效性": 4,
+        "时效性": 5,
         "total": 18
       }
     }
@@ -6975,5 +6998,27 @@
     "last_task9_review_log": "logs/deep-review/2026-05-24-01-deep-review.md",
     "auto_promoted_by": "task9-deep-tech-review",
     "auto_promoted_at": "2026-05-24T01:38:24+08:00"
+  },
+  "section_25_17": {
+    "section": "25.17",
+    "title": "Android 17 后台音频硬化与播放功耗治理",
+    "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+    "status": "draft",
+    "pipeline_stage": "task2a-created-draft",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-24",
+    "queue_priority": 80,
+    "gap_source": "官方文档/已有章节深挖/每日信息",
+    "gap_score": {
+      "素材丰富度": 4,
+      "与全书目标相关性": 5,
+      "读者需求度": 4,
+      "时效性": 5,
+      "total": 18
+    },
+    "material_count": 4,
+    "task2a_state": "created",
+    "task2a_result": "gap-created",
+    "last_task2a_at": "2026-05-24T02:04:00+08:00"
   }
 }
