@@ -2,7 +2,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -45,25 +45,29 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-06T07:51:16+08:00"
-task9_reviewed_date: "2026-05-05"
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T09:20:00+08:00"
+last_task9_at: "2026-05-24T07:40:43+08:00"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
-task9_review_notes: "2026-05-05 09:20 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2: FGS targetSdk 边界、BroadcastQueueModernImpl 明确化、Perfetto 观察点。"
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-06T08:15:00+08:00"
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit-2.md"
+last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
+p0: 0
+p1: 0
+p2: 2
 ---
 
 # ANR 类型与触发条件

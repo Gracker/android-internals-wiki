@@ -3288,3 +3288,27 @@
 - **新增章节**：`src/part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md`
 - **建议加工方向**：从 vold 挂载、FUSE 守护进程、SDCardFS 退场、FUSE passthrough、MediaProvider 非 FUSE 通道和 App 侧 I/O 策略六条线展开；与 24.12 只做交叉引用，不重复写 MediaStore 实战细节。
 - **本轮已排除方向**：NFC Services、BiometricService、Telephony/RIL。它们有 AOSP 文档，但与当前性能优化主线的素材丰富度或读者需求不足，未达到新增章节阈值。
+
+## [Task9 Deep Review] 9.2 ANR 类型与触发条件 — 2026-05-24
+- **类型**：版本差异 / Logcat 观察点
+- **位置**：Input ANR「在 Logcat 中的特征」示例
+- **问题**：示例使用 Android 8-10 InputDispatcher 的 `STREAM_AHEAD_EVENT_TIMEOUT` 文案（`delivered ... over 500.0ms`、`Wait queue length`、`Wait queue head age`），但章节 frontmatter 标注最近验证到 Android 14。Android 11+ AOSP 的 Input ANR reason 已改成 `{channel} is not responding. Waited {N}ms for {event}` 这一类文案，旧示例不应作为全版本通用 logcat 字段。
+- **建议**：把该示例标注为 Legacy/Android 8-10 样式，并补一条 Android 11+ / Android 14 样式；或把判断标准收敛为 `Reason: Input dispatching timed out` + 等待时长/目标窗口，不依赖 `Wait queue length/head age` 是否出现。
+
+## [Task9 Deep Review] 9.2 ANR 类型与触发条件 — 2026-05-24
+- **类型**：交叉引用一致性 / 版本边界
+- **位置**：常见问题与误区「ANR 超时时间都是 5 秒」
+- **问题**：该段写「Broadcast 后台超时是 60 秒」，但正文前文已经采用 Android 14+ 官方诊断口径：后台广播为 60-120 秒，是否拉长取决于 CPU-starved 状态。FAQ 里的绝对 60 秒会削弱前文版本边界。
+- **建议**：改为「Android 13 及以下通常是 60 秒；Android 14+ 后台广播按 60-120 秒排查」。
+
+## [Task9 Deep Review] 18.1 渲染管线分类与选择对照表 — 2026-05-24
+- **类型**：源码准确性 / API 版本边界
+- **位置**：典型模式对比表「离屏渲染 (Offscreen)」
+- **问题**：表格把 `HardwareBufferRenderer + Matrix44` 放进覆盖 Android 9-16 的总表，但没有标注 API 边界。AOSP `current.txt` 显示 `HardwareBufferRenderer` 从 Android 14/API 34 进入 public API，`Matrix44` 从 Android 15/API 35 出现且仍带 `@FlaggedApi("com.android.graphics.hwui.flags.matrix_44")`。
+- **建议**：在该行补「Android 14+；`Matrix44` 需 Android 15+ 且注意 flag 状态」，或把 `Matrix44` 从概览表移到版本注释里。
+
+## [Task9 Deep Review] 18.1 渲染管线分类与选择对照表 — 2026-05-24
+- **类型**：技术表述精度 / 渲染管线成本
+- **位置**：典型模式对比表「TextureView」
+- **问题**：表格把 TextureView 核心特点写成「灵活但多一次拷贝」。TextureView 的常见额外成本更准确地说是 App 侧对 `SurfaceTexture` 内容进行纹理采样/二次合成，不能一概等同于 CPU 内存拷贝。
+- **建议**：改成「灵活但多一次纹理采样/App 侧合成成本」，必要时在 18.7 中再区分 GPU 采样、合成与真实 buffer copy。
