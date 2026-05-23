@@ -46,10 +46,15 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
   - type: official
     path: "https://developer.android.com/android-performance-analyzer"
-task6_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 last_task2a_at: "2026-05-23T20:04:00+08:00"
 task2a_result: drafted
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-23"
+task6_result: pass-light-edit
+task9_state: pending
+last_task6_at: "2026-05-23T20:16:21+08:00"
 ---
 
 # 26.18 App Performance Score 与性能质量评分归因
@@ -109,7 +114,7 @@ App Performance Score 适合做研发阶段的性能体检。官方文档把它�
 | Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.15 节 |
 | Macrobenchmark | 某条启动、滚动或页面路径在受控设备上的耗时与 trace 证据 | CI、专项回归、性能预算 | 不能覆盖所有真实用户路径；脚本质量决定结论质量 |
 | Perfetto / Android Performance Analyzer | 某次慢启动、慢帧、GPU 压力或线程调度异常的时间线证据 | 根因定位、案例复盘、A/B trace 对比 | 不负责把问题自动转成组织任务 |
-| 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 口径容易和平台指标分叉，需要和 Vitals 对齐 |
+| 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易和平台口径分叉，需要和 Vitals 保持同一套口径 |
 
 这个定位决定了它更像一张检查清单，而不是性能系统的终点。评分项命中后，还要回到具体场景：启动慢看 TTID / TTFD 和主线程；滑动慢看帧耗时、RenderThread、SurfaceFlinger 与 GPU；低端机差看设备档位、存储、温度和后台负载。
 
@@ -172,7 +177,7 @@ Macrobenchmark 官方文档要求使用独立的 `com.android.test` 模块，被
 
 ## 和 Android Vitals / Play Console 的关系
 
-Android Vitals 看的是 Play 用户质量，App Performance Score 看的是研发阶段的性能改进空间。两者要对齐，但不要合并成一个数字。
+Android Vitals 看的是 Play 用户质量，App Performance Score 看的是研发阶段的性能改进空间。两者的字段和时间窗口要统一，但不要合并成一个数字。
 
 | 维度 | App Performance Score | Android Vitals / Play Console |
 |---|---|---|
@@ -221,7 +226,7 @@ App Performance Score 不能替代专项判断。R8、Baseline Profile、Startup
 | 评分异常 | APA / Perfetto 观察点 | 后续动作 |
 |---|---|---|
 | TTFD 变慢 | app launch、main thread、RenderThread、Binder、I/O、CPU frequency、thread_state | 标注启动阶段，拆分首帧、首屏内容、可交互点 |
-| 滚动 slow frames 上升 | FrameTimeline、RenderThread、UI thread、SurfaceFlinger、GPU counters | 对齐场景帧区间，判断是应用绘制、合成还是 GPU 压力 |
+| 滚动 slow frames 上升 | FrameTimeline、RenderThread、UI thread、SurfaceFlinger、GPU counters | 标注场景帧区间，判断是应用绘制、合成还是 GPU 压力 |
 | 动画 frozen frames | 主线程长任务、Choreographer、RenderThread、GPU completion、资源加载 | 固定动画路径，保存前后两个 trace 做对比 |
 | 低端机波动大 | CPU frequency、thermal、内存水位、I/O 等待、后台进程 | 同一设备多轮采样，排除温度和后台负载干扰 |
 
@@ -251,7 +256,7 @@ APA 的价值在于减少工具切换，并把 trace 导航、对比和 SQL 分�
 | 设备类型 | 覆盖目的 | 最小要求 |
 |---|---|---|
 | 低端机 | 放大启动、I/O、内存、线程调度问题 | 低内存、低存储、eMMC 或低速 UFS、60Hz |
-| 主流机 | 对齐主要用户群体体验 | 当前线上占比最高的 SoC / OEM 组合 |
+| 主流机 | 覆盖主要用户群体体验 | 当前线上占比最高的 SoC / OEM 组合 |
 | 高刷机 | 检查 90Hz / 120Hz 下帧预算变化 | 记录刷新率，区分 8.3ms / 11.1ms / 16.6ms 目标 |
 | 低存储设备 | 复现安装、数据库、缓存、dexopt 和 I/O 抖动 | 存储剩余低于固定阈值并记录清理策略 |
 | 弱网设备 | 区分启动慢来自网络还是本地执行 | 固定网络条件和超时策略 |

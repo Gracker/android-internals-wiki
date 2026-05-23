@@ -282,17 +282,17 @@
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
     "date": "2026-05-23",
-    "time": "16:13",
+    "time": "20:16",
     "sections": [
-      "15.7"
+      "26.18"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "result": "15.7 revisiting review：Task6 写作层 pass-light-edit；L1/L2 小修 5 处；0 个新增回炉；0 自动晋升（Task9 SurfaceFlinger trace P0/P1 queue pending）",
-    "log": "logs/review/2026-05-23-16-review.md",
-    "reviewed_at": "2026-05-23T16:13:21+08:00",
-    "mode": "revisiting-review"
+    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
+    "log": "logs/review/2026-05-23-20-review.md",
+    "reviewed_at": "2026-05-23T20:16:21+08:00",
+    "mode": "first-review"
   },
   "issues_by_section": {
     "1.6": {
@@ -1797,21 +1797,21 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 157,
-  "last_updated": "2026-05-23T20:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-23T20:16:21+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-23",
-    "time": "16:13",
+    "time": "20:16",
     "sections": [
-      "15.7"
+      "26.18"
     ],
     "files": [
-      "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "result": "15.7 revisiting review：Task6 写作层 pass-light-edit；L1/L2 小修 5 处；0 个新增回炉；0 自动晋升（Task9 SurfaceFlinger trace P0/P1 queue pending）",
-    "log": "logs/review/2026-05-23-16-review.md",
-    "reviewed_at": "2026-05-23T16:13:21+08:00",
-    "mode": "revisiting-review"
+    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
+    "log": "logs/review/2026-05-23-20-review.md",
+    "reviewed_at": "2026-05-23T20:16:21+08:00",
+    "mode": "first-review"
   },
   "task9_last_review": "2026-05-23",
   "ready_to_publish": 186,
@@ -4956,33 +4956,25 @@
   "last_task2a_file": "src/part5-app/ch26-observability/18-app-performance-score.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
-    "19.14",
-    "18.17",
-    "20.14"
+    "26.18"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
-  "last_task6_at": "2026-05-23T04:05:00+08:00",
+  "last_task6_at": "2026-05-23T20:16:21+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-23",
-    "time": "04:05",
+    "time": "20:16",
     "sections": [
-      "19.14",
-      "18.17",
-      "20.14"
+      "26.18"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-      "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "result": "3 章节 review：均 pass-light-edit；L1/L2 小修 10 处；0 个新增回炉；0 自动晋升（19.14/18.17 有 Task9 pending queue，20.14 待 Task9）",
-    "log": "logs/review/2026-05-23-04-review.md",
-    "reviewed_at": "2026-05-23T04:05:00+08:00",
-    "mode": "mixed-review"
+    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
+    "log": "logs/review/2026-05-23-20-review.md",
+    "reviewed_at": "2026-05-23T20:16:21+08:00",
+    "mode": "first-review"
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch02-rendering/02-framerate.md",
@@ -4992,12 +4984,10 @@
   "last_task2a_result": "drafted",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.15",
-  "task6_last_review_at": "2026-05-23T04:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-23-04-review.md",
+  "task6_last_review_at": "2026-05-23T20:16:21+08:00",
+  "task6_last_review_log": "logs/review/2026-05-23-20-review.md",
   "task6_last_review_sections": [
-    "19.14",
-    "18.17",
-    "20.14"
+    "26.18"
   ],
   "sections_status": {
     "22.11": {
@@ -6089,25 +6079,23 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-23",
-    "time": "01:24",
+    "time": "20:16",
     "sections": [
-      "1.13"
+      "26.18"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "result": "1 章节复审：needs-rework；L1/L2 小修 10 处；1 个结构回炉已并入既有 queue（priority 95）；0 自动晋升（Task9 needs-rework）",
-    "log": "logs/review/2026-05-23-01-review.md",
-    "reviewed_at": "2026-05-23T01:24:00+08:00",
-    "mode": "revisiting-review"
+    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
+    "log": "logs/review/2026-05-23-20-review.md",
+    "reviewed_at": "2026-05-23T20:16:21+08:00",
+    "mode": "first-review"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-    "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6369,7 +6357,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.13"
+    "26.18"
   ],
   "task2b_progress": [
     {
@@ -6398,7 +6386,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-23-19-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-23-01-review.md",
+  "last_task6_review_log": "logs/review/2026-05-23-20-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -6854,7 +6842,7 @@
     "title": "App Performance Score 与性能质量评分归因",
     "file": "src/part5-app/ch26-observability/18-app-performance-score.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
+    "pipeline_stage": "task9_pending",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-23",
     "queue_priority": 80,
@@ -6862,6 +6850,11 @@
     "material_count": 16,
     "last_task2a_at": "2026-05-23T20:04:00+08:00",
     "task2a_result": "drafted",
-    "task6_state": "pending"
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-23",
+    "last_task6_at": "2026-05-23T20:16:21+08:00",
+    "task9_state": "pending"
   }
 }
