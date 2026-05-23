@@ -1,9 +1,9 @@
 {
   "total": 374,
   "draft": 21,
-  "ready-for-review": 166,
-  "finalized": 187,
-  "task9_result": "needs-rework",
+  "ready-for-review": 165,
+  "finalized": 188,
+  "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-23",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
@@ -222,7 +222,8 @@
     "20.4",
     "14.20",
     "15.7",
-    "25.15"
+    "25.15",
+    "26.18"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -277,7 +278,8 @@
     "src/part2-performance/ch07-smoothness/05-optimization.md",
     "src/part5-app/ch20-stability/04-anr-governance.md",
     "src/part3-tools/ch15-methodology/07-aosp-reading.md",
-    "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md"
+    "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
@@ -1797,8 +1799,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 157,
-  "last_updated": "2026-05-23T20:16:21+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-23T20:25:42+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -4921,34 +4923,33 @@
     "result": "needs-rework",
     "auto_promoted": []
   },
-  "last_task9_review": "2026-05-23T19:20:00+08:00",
+  "last_task9_review": "2026-05-23T20:25:42+08:00",
   "last_task9_sections": [
-    "8.5 案例集"
+    "26.18 App Performance Score 与性能质量评分归因"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-23",
-    "time": "19:20",
-    "reviewed_at": "2026-05-23T19:20:00+08:00",
+    "time": "20:25",
+    "reviewed_at": "2026-05-23T20:25:42+08:00",
     "mode": "normal",
     "sections": [
-      "8.5"
+      "26.18"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/05-case-studies.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "log": "logs/deep-review/2026-05-23-19-deep-review.md",
+    "log": "logs/deep-review/2026-05-23-20-deep-review.md",
     "p0": 0,
     "p1": 0,
     "p2": 0,
     "p3": 1,
     "result": "pass-tech-review",
     "auto_promoted": [
-      "8.5 案例集"
+      "26.18 App Performance Score 与性能质量评分归因"
     ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "src/part5-app/ch21-startup/02-startup-framework.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "total_review_files": 48,
   "last_task2a_at": "2026-05-23T20:04:00+08:00",
@@ -4977,10 +4978,9 @@
     "mode": "first-review"
   },
   "last_task9_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/02-framerate.md",
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
-  "last_task9_at": "2026-05-23T19:20:00+08:00",
+  "last_task9_at": "2026-05-23T20:25:42+08:00",
   "last_task2a_result": "drafted",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.15",
@@ -6065,15 +6065,15 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "8.5 案例集"
+    "26.18 App Performance Score 与性能质量评分归因"
   ],
   "last_task2a_processed_at": "2026-05-23T18:16:00+08:00",
   "last_task9_files": [
-    "src/part2-performance/ch08-responsiveness/05-case-studies.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-23-19-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-23-20-deep-review.md",
   "task9_last_files": [
-    "src/part2-performance/ch08-responsiveness/05-case-studies.md"
+    "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "last_task2b_run": "2026-05-22T07:21:00+08:00",
   "task2b_sections_fixed": 2,
@@ -6100,23 +6100,23 @@
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
     "date": "2026-05-23",
-    "time": "19:20",
-    "reviewed_at": "2026-05-23T19:20:00+08:00",
+    "time": "20:25",
+    "reviewed_at": "2026-05-23T20:25:42+08:00",
     "mode": "normal",
     "sections": [
-      "8.5"
+      "26.18"
     ],
     "files": [
-      "src/part2-performance/ch08-responsiveness/05-case-studies.md"
+      "src/part5-app/ch26-observability/18-app-performance-score.md"
     ],
-    "log": "logs/deep-review/2026-05-23-19-deep-review.md",
+    "log": "logs/deep-review/2026-05-23-20-deep-review.md",
     "p0": 0,
     "p1": 0,
     "p2": 0,
     "p3": 1,
     "result": "pass-tech-review",
     "auto_promoted": [
-      "8.5 案例集"
+      "26.18 App Performance Score 与性能质量评分归因"
     ]
   },
   "task2b_history": [
@@ -6273,7 +6273,7 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": "Task9 deep-review: 8.5 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
+  "last_task9_review_summary": "Task9 deep-review: 26.18 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-23",
     "time": "17:04",
@@ -6385,7 +6385,7 @@
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-23-19-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-23-20-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-23-20-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -6841,8 +6841,8 @@
     "section": "26.18",
     "title": "App Performance Score 与性能质量评分归因",
     "file": "src/part5-app/ch26-observability/18-app-performance-score.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-23",
     "queue_priority": 80,
@@ -6855,6 +6855,13 @@
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-23",
     "last_task6_at": "2026-05-23T20:16:21+08:00",
-    "task9_state": "pending"
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-05-23T20:25:42+08:00",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_reviewed_date": "2026-05-23",
+    "last_task9_review_log": "logs/deep-review/2026-05-23-20-deep-review.md",
+    "auto_promoted_by": "task9-deep-tech-review",
+    "auto_promoted_at": "2026-05-23T20:25:42+08:00"
   }
 }
