@@ -21,6 +21,8 @@ applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
 confidence: medium
+last_task9_audit: "2026-05-23"
+last_task9_audit_log: "logs/deep-review/2026-05-23-13-audit.md"
 sources:
   - type: official
     path: "source.android.com/docs/setup"
