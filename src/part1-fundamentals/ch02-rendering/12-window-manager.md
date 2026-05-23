@@ -77,6 +77,7 @@ task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-04
 last_task9_at: "2026-05-04T12:41:40+08:00"
+last_task9_audit: "2026-05-23"
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
