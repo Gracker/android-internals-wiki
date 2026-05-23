@@ -18,12 +18,12 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: "reviewed"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-23"
-task2b_state: fixed
+task2b_state: "pending"
 task2b_result: fixed
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -31,14 +31,14 @@ last_task2b_at: "2026-04-25T19:43:07+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-23T11:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-23T15:20:00+08:00"
 last_task6_audit: "2026-05-22"
 last_task6_at: "2026-05-22T23:13:03+08:00"
 review_round: 4
-task9_review_notes: "2026-05-23 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 2；SurfaceFlinger SFTRACE 宏路径与 Android 12-16 版本边界需修正。详见 logs/deep-review/2026-05-23-11-audit.md。"
+task9_review_notes: "2026-05-23 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 0；SurfaceFlinger Android 13-16 trace 宏版本边界与 Android 16 slice 名仍需修正。详见 logs/deep-review/2026-05-23-15-deep-review.md。"
 last_task9_audit: "2026-05-23"
-last_task9_review_log: "logs/deep-review/2026-05-23-11-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
 last_task9_audit_log: "logs/deep-review/2026-05-23-11-audit.md"
 ---
 
