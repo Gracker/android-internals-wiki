@@ -224,6 +224,10 @@
     "15.7",
     "25.15",
     "26.18",
+    "25.16",
+    "14.4",
+    "19.14",
+    "7.9",
     "25.16"
   ],
   "review_files": [
@@ -281,22 +285,32 @@
     "src/part3-tools/ch15-methodology/07-aosp-reading.md",
     "src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md",
     "src/part5-app/ch26-observability/18-app-performance-score.md",
+    "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+    "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
-    "date": "2026-05-23",
-    "time": "20:16",
+    "date": "2026-05-24",
+    "time": "01:08",
     "sections": [
-      "26.18"
+      "14.4",
+      "19.14",
+      "7.9",
+      "25.16"
     ],
     "files": [
-      "src/part5-app/ch26-observability/18-app-performance-score.md"
+      "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+      "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md"
     ],
-    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
-    "log": "logs/review/2026-05-23-20-review.md",
-    "reviewed_at": "2026-05-23T20:16:21+08:00",
-    "mode": "first-review"
+    "result": "Task6 本轮 4 章 review：14.4、19.14、7.9、25.16 均为 pass-light-edit；L1/L2 小修合计 17 处；0 个新增回炉；0 自动晋升（4 章 Task9 均未 pass-tech-review）。",
+    "log": "logs/review/2026-05-24-01-review.md",
+    "reviewed_at": "2026-05-24T01:08:00+08:00",
+    "mode": "first/revisiting-review"
   },
   "issues_by_section": {
     "1.6": {
@@ -1796,6 +1810,42 @@
       "task6_log": "logs/review/2026-05-23-16-review.md",
       "task6_new_rework": false,
       "task6_note": "revisiting review；修复代码占位省略号、PowerManagerService 路径和 AIDL 路径表达。既有 Task9 P0/P1 queue pending，未自动晋升。"
+    },
+    "14.4": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-24-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "revisiting 复审通过；清理 AIW 编辑注释、FrontEnd 标题措辞和无测试条件量化收益。Task9 P0 路径项已由 Task2B 修复，等待 Task9 复审。"
+    },
+    "19.14": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-24-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "revisiting 复审通过；清理 frontmatter duplicate task2b_result。Baseline Profile API floor 项已由 Task2B 修复，等待 Task9 复审。"
+    },
+    "7.9": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-24-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "revisiting 复审通过；压低否定-纠正式句式，移除 AIW 注释，并把 Buffer Stuffing Recovery 段移到参考资料前。InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
+    },
+    "25.16": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
+      "task6_log": "logs/review/2026-05-24-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "首次 review 通过；补 section/drafted_by、outline 锚点，移除正文结构参考编辑痕迹，统一 Thermal 扩展标题。等待 Task9 技术复审。"
     }
   },
   "total_review_sections": 210,

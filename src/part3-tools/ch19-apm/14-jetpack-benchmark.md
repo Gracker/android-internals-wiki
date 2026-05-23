@@ -2,7 +2,6 @@
 title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 chapter: '19'
 section: '19.14'
-status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark：Android 6.0+（API 23+）；Baseline Profile 生成需 API 33+ 或 rooted API 28+；Baseline Profile 验证需 API 24+；书中样例以 Android 8-17 为主
@@ -26,15 +25,6 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
-task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-23"
-task6_result: "pass-light-edit"
-task2b_result: "pending"
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -47,11 +37,19 @@ last_task9_audit_at: "2026-05-21T22:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-22-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: needs-rework。P0：Baseline Profile 安装收益 API floor 写成 API 21+，官方口径为 API 28+ install-time / API 24+ with ProfileInstaller；写入 queue 条目 task9-deep-20260523-19.14-baseline-profile-install-api-floor。"
-last_task6_at: "2026-05-23T04:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-23-04-review.md"
-task6_review_notes: "2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处（删除高频强调词、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 Baseline Profile API floor 问题已在 queue pending，保持 task2b_pending。"
+status: "ready-for-review"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-24"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-24T01:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-24-01-review.md"
+task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 1 处（清理 frontmatter duplicate task2b_result）。无新增 Task6 回炉；Baseline Profile API floor 已由 Task2B 修复，等待 Task9 复审。"
 ---
-
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 
 <!-- outline-start -->

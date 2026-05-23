@@ -2,17 +2,12 @@
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
-reviewed_date: "2026-05-05"
-reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-05"
-task6_result: "pass-light-edit"
-task6_state: revisiting
 last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
 confidence: medium
@@ -27,19 +22,25 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
 task9_result: needs-rework
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-23T21:20:00+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已完成复核；自动晋升 finalized。；2026-05-23 21:20 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1（P2 为既有输入重采样 latency 口径建议，未重复入队）；DEBUG log tag 源码名应为 InputTransportResampling，当前写成 InputConsumerResampling。详见 logs/deep-review/2026-05-23-21-audit.md。"
 review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 last_task9_audit: "2026-05-23"
-
+status: "ready-for-review"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-24"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-24T01:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-24-01-review.md"
+task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 5 处（压低否定-纠正式句式、移除 AIW 编辑注释、把新增 Buffer Stuffing Recovery 段移到参考资料前）。无新增 Task6 回炉；InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
 ---
-
 
 
 # 7.9 感知流畅性：步幅波动与无掉帧卡顿
@@ -81,7 +82,7 @@ last_task9_audit: "2026-05-23"
 
 **步幅均匀性**衡量的是每帧画面位移量的均匀性。一个列表在匀速滚动时，相邻两帧之间应该移动相同的像素数。如果帧 A 移动了 10px、帧 B 移动了 13px、帧 C 移动了 8px，即使三帧都在 VSync 预算内完成，用户也会感觉到"抖动"。
 
-用户在连续动画中建立的预期不是"每 8.33ms 刷新一次"，而是"画面在匀速运动"。当这个运动轨迹出现不规则跳动时，视觉系统会立即感知到不连贯。在高刷新率滑动场景里，没有一个跨设备、跨 workload 通用的阈值可以直接套用。更稳妥的做法是把同一段轨迹里的位移采样拿出来看，确认是否持续出现可见的像素级交替。
+用户在连续动画中建立的预期是"画面按稳定速度前进"，刷新间隔只是其中一个条件。当这个运动轨迹出现不规则跳动时，视觉系统会立即感知到不连贯。在高刷新率滑动场景里，没有一个跨设备、跨 workload 通用的阈值可以直接套用。更稳妥的做法是把同一段轨迹里的位移采样拿出来看，确认是否持续出现可见的像素级交替。
 
 这就是为什么一台跑满 120fps 的设备，列表滑动时仍然可能"感觉不丝滑"。问题不在帧率，而在步幅。
 
@@ -175,7 +176,7 @@ public static long currentAnimationTimeMillis() {
 }
 ```
 
-这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的并不是另一套独立时钟，而是跟当前 VSync 同步过的线程本地动画时钟。Choreographer 内部维护的 `mLastFrameTimeNanos` 仍然是纳秒值，但传给 `AnimationUtils.lockAnimationClock()` 时已经执行了 `frameTimeNanos / NANOS_PER_MS` 这一步 long 整数除法。这里的行为是直接向下截断，不是四舍五入：`8_999_999ns / 1_000_000 = 8ms`，`9_000_001ns / 1_000_000 = 9ms`。两次 VSync 只差 2ns，动画时钟却会跨过完整的 1ms 档位。120Hz 面板上一帧只有 8.33ms，这种跳变会把样条进度和位移量一起放大。
+这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的是跟当前 VSync 同步过的线程本地动画时钟。Choreographer 内部维护的 `mLastFrameTimeNanos` 仍然是纳秒值，但传给 `AnimationUtils.lockAnimationClock()` 时已经执行了 `frameTimeNanos / NANOS_PER_MS` 这一步 long 整数除法。这里的行为是直接向下截断，不是四舍五入：`8_999_999ns / 1_000_000 = 8ms`，`9_000_001ns / 1_000_000 = 9ms`。两次 VSync 只差 2ns，动画时钟却会跨过完整的 1ms 档位。120Hz 面板上一帧只有 8.33ms，这种跳变会把样条进度和位移量一起放大。
 
 ## 帧率稳定性与步幅均匀性的关系
 
@@ -323,7 +324,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 3. 当历史样本间的时间差 `>= RESAMPLE_MIN_DELTA`（2ms）时，`resampleTouchState()` 进入重采样逻辑：若 `sampleTime` 在两个历史样本之间，执行线性插值（Interpolation）；若 `sampleTime` 超出最新样本，执行外推（Extrapolation），外推量不超过 `RESAMPLE_MAX_PREDICTION`（8ms）。
 4. 重采样后的坐标同步到 VSync 时间点，确保渲染新帧时使用的是同步后的坐标。
 
-**设计意图**：解决触摸采样率（通常 100-240Hz）与显示刷新率（60/90/120Hz）不同步导致的坐标跳跃。`RESAMPLE_LATENCY` 的 5ms 不是固定最坏响应增量，而是重采样算法的延迟补偿参数——它控制的是采样时间点相对于目标 VSync 的回退量，使得插值/外推有足够的历史数据支撑，降低误预测概率。
+**设计意图**：解决触摸采样率（通常 100-240Hz）与显示刷新率（60/90/120Hz）不同步导致的坐标跳跃。`RESAMPLE_LATENCY` 的 5ms 是重采样算法的延迟补偿参数，不代表固定最坏响应增量；它控制的是采样时间点相对于目标 VSync 的回退量，使得插值/外推有足够的历史数据支撑，降低误预测概率。
 
 **性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。
 
@@ -335,23 +336,6 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
 **与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本节讨论的步幅波动问题形成跨输入-渲染的完整关联。
-
-## 参考资料
-
-- AOSP 源码路径：
-  - `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
-  - `frameworks/base/core/java/android/view/Choreographer.java`（`doFrame()`、`postVsyncCallback()`）
-  - `frameworks/base/core/java/android/view/animation/AnimationUtils.java`（`lockAnimationClock()`、`currentAnimationTimeMillis()`）
-- 官方文档：
-  - Choreographer VsyncCallback: https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)
-  - View.reportAppJankStats: https://developer.android.com/reference/android/view/View#reportAppJankStats(android.app.jank.AppJankStats)
-  - AppJankStats: https://developer.android.com/reference/android/app/jank/AppJankStats
-  - RelativeFrameTimeHistogram: https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram
-  - Perfetto FrameTimeline: https://perfetto.dev/docs/data-sources/frametimeline
-- 研究素材：
-  - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
-  - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`
-
 
 ## Choreographer Buffer Stuffing Recovery（Android 16 新增）
 
@@ -410,4 +394,18 @@ private long mLastNoOffsetFrameTimeNanos;
 
 Buffer Stuffing Recovery 解决的是**供给侧阻塞**导致的帧节拍错位，与本节讨论的需求侧（OverScroller 时间精度）形成互补。两类问题都会导致"不掉帧但感觉卡"的现象，需要分别从 Buffer 队列状态和动画时间源两个方向排查。
 
-<!-- AIW-源码调研-2026-05-20 -->
+## 参考资料
+
+- AOSP 源码路径：
+  - `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
+  - `frameworks/base/core/java/android/view/Choreographer.java`（`doFrame()`、`postVsyncCallback()`）
+  - `frameworks/base/core/java/android/view/animation/AnimationUtils.java`（`lockAnimationClock()`、`currentAnimationTimeMillis()`）
+- 官方文档：
+  - Choreographer VsyncCallback: https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)
+  - View.reportAppJankStats: https://developer.android.com/reference/android/view/View#reportAppJankStats(android.app.jank.AppJankStats)
+  - AppJankStats: https://developer.android.com/reference/android/app/jank/AppJankStats
+  - RelativeFrameTimeHistogram: https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram
+  - Perfetto FrameTimeline: https://perfetto.dev/docs/data-sources/frametimeline
+- 研究素材：
+  - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
+  - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`

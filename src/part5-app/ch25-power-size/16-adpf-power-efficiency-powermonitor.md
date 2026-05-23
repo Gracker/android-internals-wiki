@@ -1,7 +1,4 @@
 ---
-title: "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证"
-chapter: "25.16"
-status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-24"
@@ -40,21 +37,50 @@ tags: [adpf, power-efficiency, powermonitor, power-rails, perfetto, power-optimi
 related_chapters: ["5.9", "11.2", "25.1", "25.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
-gap_source: "素材驱动/官方文档/AOSP结构"
-pipeline_stage: "task6_pending"
-task6_state: "pending"
+gap_source: "素材驱动/官方文档/AOSP 结构"
+title: "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证"
+chapter: "25.16"
+section: "25.16"
+status: "ready-for-review"
+drafted_by: "task2a-knowledge-gap"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-24"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-24T01:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-24-01-review.md"
+task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 8 处（补 section/drafted_by 元数据、补 outline 锚点、降低否定-纠正式开头、修 frontmatter 中英文间距、去重 Thermal 扩展标题、移除正文结构参考编辑痕迹）。无新增 Task6 回炉，等待 Task9 技术复审。"
 ---
-
 # 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
 
-ADPF 的 Power Efficiency Mode 不是给线程“降速”的开关，而是让系统知道这组线程允许优先按能效调度。它适合长时间、周期稳定、允许少量延迟弹性的任务；不适合输入响应、帧渲染提交、音视频低延迟播放这类 deadline 紧的路径。本节把 `PerformanceHintManager.Session.setPreferPowerEfficiency(true)`、`PowerMonitor` 读数和 Perfetto power rails 放在同一个验证流程里，目标是判断节能 hint 有没有带来单位任务能耗下降，而不是只看电池百分比。
+<!-- outline-start -->
+## 本节要点大纲
 
-[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md] 参考书把性能优化放在硬件、系统、应用三个层面组织，本节沿用这个分析顺序：应用侧先表达任务特征，系统侧通过 ADPF / Power HAL / 调度器处理 hint，验证侧再用 API 与 trace 观测硬件能耗变化。
+### 锚点（必须覆盖）
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] 参考书把速度问题拆成 CPU、缓存、任务调度三类因素。Power Efficiency Mode 处理的是任务调度中的能效偏好：同一份工作量不追求更短完成时间，而是利用 deadline 余量降低高频、大核或温控压力。
+- 🔹 适用场景：Power Efficiency Mode 适合长期周期任务，不适合低延迟路径
+- 🔹 ADPF Session：线程集合、生命周期、target duration 与实际耗时上报
+- 🔹 系统语义：节能偏好不是收益承诺，需要同时看尾部耗时与能耗
+- 🔹 PowerMonitor / SystemHealthManager：累计能耗读数、monitor 类型与读数差值
+- 🔹 Perfetto power rails：用 trace 交叉验证能耗窗口、CPU 频率与线程状态
+- 🔹 实验设计与线上灰度：A/B 对照、单位任务能耗、热状态和设备分桶
+- 🔹 OEM 差异、Thermal API 联合治理与降级策略
 
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] 参考书讨论过线程优先级和大核绑定。本节不建议在现代 Android App 中依赖绑核思路；公开 API 提供的是 hint session，App 交出线程集合、目标周期和实际耗时，系统决定资源分配。ADPF 基础机制详见 5.9 节，协程线程迁移边界详见 25.11 节。
+### 扩展（可选深入）
+
+- 🔸 游戏帧循环与后台计算的策略差异
+- 🔸 PowerMonitor 与 Android Studio Power Profiler 数据口径
+- 🔸 PowerMonitorReadings 与 Perfetto power rails 一致性待验证
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，审校时需确认每个锚点在正文中有对应展开。
+> 涉及能耗收益的表述必须绑定设备、场景、时间窗口和验证方式，无法闭合时保留 `[待验证]`。
+<!-- outline-end -->
+
+ADPF 的 Power Efficiency Mode 不负责给线程“降速”，它只是让系统知道这组线程允许优先按能效调度。它适合长时间、周期稳定、允许少量延迟弹性的任务；不适合输入响应、帧渲染提交、音视频低延迟播放这类 deadline 紧的路径。本节把 `PerformanceHintManager.Session.setPreferPowerEfficiency(true)`、`PowerMonitor` 读数和 Perfetto power rails 放在同一个验证流程里，目标是判断节能 hint 有没有带来单位任务能耗下降，而不是只看电池百分比。
 
 ## 适用场景：什么时候该把线程标成节能优先
 
@@ -322,7 +348,7 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 
 `PowerMonitorReadings` 返回 monitor 维度的累计 μWs；Perfetto power rails 提供 trace 时间线；Android Studio Power Profiler 更适合交互式分析 App 行为、系统事件和功耗趋势。三者可以互相佐证，但不要把采样频率、单位和归因范围混成同一个数字。
 
-### 与 Thermal API 的联合治理
+### Thermal 阈值需要设备实验
 
 热状态进入高档位前主动降低 batch 并发，通常比等系统 throttling 后再恢复更可控。具体阈值要由设备实验给出，本节不写固定温度或固定收益。
 
