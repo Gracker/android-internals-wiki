@@ -1,6 +1,64 @@
 {
   "queue_entries": [
     {
+      "id": "task9-deep-20260524-0520-25.17-bg-audio-hardening-debug-boundaries",
+      "section": "25.17",
+      "section_title": "Android 17 后台音频硬化与播放功耗治理",
+      "priority": 95,
+      "title": "后台音频 hardening 取证命令与测试边界需修正",
+      "description": "Task9 深度技术 Review 发现 §25.17 的 ADB 导出命令会被宿主 shell 重定向到错误位置，同时 hardening enable/throw 测试模式、播放失败信号和 BOOT_COMPLETED mediaPlayback FGS 版本边界缺少关键说明。",
+      "reason": "[Deep Tech Review] §25.17 ADB dumpsys 导出命令错误（`adb shell ... > /sdcard/*.txt` 会在宿主侧重定向），并遗漏 Android 17 hardening 测试开关强制语义、默认播放静默失败 vs throw 模式错误码、target 35+ BOOT_COMPLETED 启动 mediaPlayback FGS 限制。需 Task2B 回炉修正。",
+      "issue_type": "source-accuracy-version-difference-debug-command",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-05-deep-review.md",
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/develop/background-work/services/fgs/service-types",
+        "https://developer.android.com/media/optimize/audio-focus"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "命令错误/ADB 重定向位置错误",
+          "location": "L196-L214：dumpsys/audio/media_session/services/batterystats 导出命令",
+          "detail": "命令写成 `adb shell dumpsys audio > /sdcard/audio.txt`、`adb shell dumpsys media_session > /sdcard/media_session.txt` 等。复制到宿主 shell 执行时，`>` 由宿主 shell 解释，会写宿主机 `/sdcard/*.txt`，不是设备侧 `/sdcard`；多数环境会直接失败或生成错误位置的文件。",
+          "suggestion": "改成宿主侧导出：`adb shell dumpsys audio > audio.txt` / `adb shell dumpsys media_session > media_session.txt`；如果必须写设备侧，用 `adb shell 'dumpsys audio > /sdcard/audio.txt'` 后再 `adb pull`。同一代码块中的 services、batterystats 命令一起修正。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/Hardening 测试开关语义缺失",
+          "location": "L196-L199、L235-L237、L250：`cmd audio set-enable-hardening` 与 targetSdk A/B / alarm 场景",
+          "detail": "Android 官方 Background audio hardening 文档说明：`enable` 会对所有应用强制开启限制，WIU 前台服务要求不再受 targetSdk 37 限制，并且即使是 exact alarm + `USAGE_ALARM` 也会被强制执行；`throw` 在此基础上让失败显性化。当前章节只给命令，没有说明它不是生产行为等价开关，会让 target 36 vs 37 A/B 和闹钟豁免测试得出错误结论。",
+          "suggestion": "补一段测试边界：`enable/throw` 用于发现潜在后台音频路径，不用于验证 target 36 生产豁免或 alarm 豁免；targetSdk A/B 和 `USAGE_ALARM` 豁免要在默认平台行为/compat 条件下单独跑，测试后用 `adb shell cmd audio set-enable-hardening disable` 复原。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码/官方行为口径错误：播放失败信号",
+          "location": "L157、L217：`AudioTrack.write()` / `AAudioStream_write()` 失败信号",
+          "detail": "官方文档把普通 hardening 失败定义为“audio playback is silenced；no exceptions, no failure message”，音频焦点才返回 `AUDIOFOCUS_REQUEST_FAILED`；只有 `throw` 测试模式会让 write 持续返回错误码，部分无显式 write 的播放模式可能崩溃。当前 L157 把写入报错/underrun 写成通用观察信号，容易误导排障时等待不存在的 write 错误。",
+          "suggestion": "改成：默认模式下 `AudioTrack.write()` 可能仍看起来成功但输出被静音，主要证据是 `AudioHardening` 日志、`dumpsys audio` 与播放器/焦点状态；`write()` 错误码和崩溃只作为 `throw` 模式下的显性化信号。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/BOOT_COMPLETED mediaPlayback FGS 启动限制遗漏",
+          "location": "L117、L139、L236：`BOOT_COMPLETED` 后台自启播放场景",
+          "detail": "Foreground service types 官方文档说明：target Android 15+ 的应用不允许从 `BOOT_COMPLETED` receiver 启动 `mediaPlayback` 前台服务。对于 Android 17 / target 37，BOOT_COMPLETED 直接播放可能先命中 FGS 启动限制，而不只是“有 FGS 但无 WIU”导致 `AudioHardening level: full`。当前排查路径会把一部分启动失败误归因到音频 hardening。",
+          "suggestion": "在 BOOT_COMPLETED 行补版本边界：target 35+ 的 `mediaPlayback` FGS 从 BOOT_COMPLETED 启动本身受限；排查顺序应先确认 FGS 是否成功启动/是否有 `ForegroundServiceStartNotAllowedException` 或系统拒绝记录，再看 WIU 与 AudioHardening level。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T05:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-05-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260524-9.2-fgs-mediaprocessing-timeout",
       "section": "9.2",
       "section_title": "ANR 类型与触发条件",
