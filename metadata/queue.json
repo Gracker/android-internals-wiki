@@ -1,6 +1,43 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260524-9.2-fgs-mediaprocessing-timeout",
+      "section": "9.2",
+      "section_title": "ANR 类型与触发条件",
+      "priority": 95,
+      "title": "Android 15 mediaProcessing FGS 超时阈值误写为 23 小时",
+      "description": "Task9 闲时抽检发现 §9.2 把 Android 15 mediaProcessing 前台服务累计运行限制写成 23 小时；AOSP android-15/16 与官方文档均显示 mediaProcessing 与 dataSync 一样是 24 小时窗口内累计 6 小时。",
+      "reason": "[Deep Tech Review Audit] §9.2 Android 15 FGS 运行超时版本口径错误：mediaProcessing 默认累计限额不是 23 小时，而是 6 小时（ActivityManagerConstants.DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION = 6 * 60 * 60_000）。需回炉修正两处正文和速查口径。",
+      "issue_type": "version-difference-source-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/02-anr-types.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-04-audit-2.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/源码常量错误",
+          "location": "L238、L308：Android 15 dataSync / mediaProcessing 前台服务运行超时",
+          "detail": "正文两处写 Android 15 的 dataSync 为 6 小时、mediaProcessing 为 23 小时。复核 AOSP android-15.0.0_r1 与 android-16.0.0_r1：ActivityManagerConstants.DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION = 6 * 60 * 60_000，DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION 也是 6 * 60 * 60_000；官方 Foreground service timeouts 文档也写 dataSync 和 mediaProcessing 在 24 小时窗口内合计允许 6 小时。23 小时口径会让读者错误评估媒体处理任务的后台运行预算。",
+          "suggestion": "把 L238 和 L308 的 mediaProcessing 限额改为 6 小时；版本演进段写成“dataSync 与 mediaProcessing 各自类型在后台 24 小时窗口内累计 6 小时（同类型服务共享配额）”，不要写 23 小时。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T04:40:10+08:00",
+      "review_log": "logs/deep-review/2026-05-24-04-audit-2.md"
+    },
+    {
       "id": "task9-audit-20260524-18.1-flutter-thread-merge-version",
       "section": "18.1",
       "section_title": "渲染管线分类与选择对照表",

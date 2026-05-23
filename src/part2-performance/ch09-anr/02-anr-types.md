@@ -45,11 +45,11 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-06T07:51:16+08:00"
 task9_reviewed_date: "2026-05-05"
@@ -62,6 +62,8 @@ task9_review_notes: "2026-05-05 09:20 task9 deep-review: pass-tech-review；无 
 last_task6_at: "2026-05-06T08:15:00+08:00"
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit-2.md"
 ---
 
 # ANR 类型与触发条件
