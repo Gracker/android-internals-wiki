@@ -1,6 +1,53 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-15.1-philosophy-profilingmanager-benchmarking-source-paths",
+      "section": "15.1",
+      "section_title": "性能优化的术、道、器",
+      "priority": 95,
+      "title": "ProfilingManager AOSP 模块路径与 Benchmarking 官方文档 URL 需修正",
+      "description": "Task9 闲时抽检发现 §15.1 的 Android 15/16 ProfilingManager 源码入口写成 frameworks/base 路径且服务名错误，同时 Benchmarking/Macrobenchmark 官方文档 URL 已返回 404。",
+      "reason": "[Deep Tech Review Audit] §15.1 存在 ProfilingManager/ProfilingTrigger 源码锚点错误与 Benchmarking 文档链接失效，需回炉修正。",
+      "issue_type": "source-code-accuracy-documentation-url",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/01-philosophy.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-08-audit.md",
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-15.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-16.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-16.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-16.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/ProfilingManager 模块路径与系统服务名",
+          "location": "L164-L165：API 35/36 ProfilingManager / ProfilingTrigger 里程碑段",
+          "detail": "正文写 `android.os.ProfilingManager` 的源码入口是 `frameworks/base/core/java/android/os/ProfilingManager.java`，系统侧为 `ProfilingManagerService`。抽检 android.googlesource：`platform/frameworks/base` 的 main、android-15.0.0_r1、android-16.0.0_r1 下该 `ProfilingManager.java` 路径均 404；实际公开 API 源码在 Mainline 模块 `platform/packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`。系统服务实现是 `service/java/com/android/os/profiling/ProfilingService.java`，不是 `ProfilingManagerService`。版本边界复核结果：Android 15 模块已有 `ProfilingManager.requestProfiling()` / `registerForAllProfilingResults()`；Android 16 模块新增 `ProfilingTrigger.java` 与 `ProfilingManager.addProfilingTriggers(...)`。",
+          "suggestion": "把源码锚点改为 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`framework/java/android/os/ProfilingTrigger.java`、`service/java/com/android/os/profiling/ProfilingService.java`；正文可保留 API35/API36 的版本划分，但需说明 Profiling 属于 Mainline 模块源码，不在 `frameworks/base/core/java/android/os/`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码引用/官方文档 URL 失效",
+          "location": "frontmatter sources；L151；L207：Benchmarking / Macrobenchmark 官方文档引用",
+          "detail": "`https://developer.android.com/topic/performance/benchmarking` 与 `https://developer.android.com/topic/performance/benchmarking/macrobenchmark` 当前返回 404。正文 L151 用后者支撑 Macrobenchmark 防劣化，L207 用前者支撑 Benchmarking 库说明，frontmatter 也保留旧路径，读者无法追到官方证据。",
+          "suggestion": "将 Benchmarking 总览改为 `https://developer.android.com/topic/performance/benchmarking/benchmarking-overview`，Macrobenchmark 改为 `https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview`；同步更新 frontmatter sources 与正文引用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T08:36:45+08:00",
+      "review_log": "logs/deep-review/2026-05-23-08-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-7.5-rendereffect-source-version-errors",
       "section": "7.5",
       "section_title": "优化策略",
