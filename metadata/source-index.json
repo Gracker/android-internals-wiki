@@ -11107,6 +11107,558 @@
       "chapter": "ch13",
       "processed_at": "2026-05-23 06:12",
       "type": "deepresearch-inject"
+    },
+    {
+      "title": "有赞 Android 编译进阶之路 —— 增量编译提效方案Savitar",
+      "path": "AndroidWeekly/#12/有赞_Android_编译进阶之路_——_增量编译提效方案S",
+      "source_url": "https://tech.youzan.com/you-zan-android-bian-yi-jin-jie-zhi-lu-zeng-liang-bian-yi-ti-xiao-fang-an-savitar/?utm_source=tuicool&utm_medium=referral",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 有赞 Android 编译进阶之路 —— 增量编译提效方案S...",
+      "scored_at": "2026-05-23T09:04:36.672105"
+    },
+    {
+      "title": "Android | 面试必问的 Handler，你确定不看看？",
+      "path": "AndroidWeekly/#12/Android_|_面试必问的_Handler，你确定不看看",
+      "source_url": "https://www.jianshu.com/p/70d5785ee4c3",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android | 面试必问的 Handler，你确定不看看...",
+      "scored_at": "2026-05-23T09:04:36.672116"
+    },
+    {
+      "title": "强大！ASM 插桩实现 Android 端无埋点性能监控！",
+      "path": "AndroidWeekly/#12/强大！ASM_插桩实现_Android_端无埋点性能监控！",
+      "source_url": "https://mp.weixin.qq.com/s/Xuc034VlR7TqjTaoaSuI2A",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 强大！ASM 插桩实现 Android 端无埋点性能监控！...",
+      "scored_at": "2026-05-23T09:04:36.672119"
+    },
+    {
+      "title": "Linux系统开发之Framebuffer应用编程",
+      "path": "AndroidWeekly/#12/Linux系统开发之Framebuffer应用编程",
+      "source_url": "https://mp.weixin.qq.com/s/sUGiWaXsRfyUIaaOcPtMaA",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Linux系统开发之Framebuffer应用编程...",
+      "scored_at": "2026-05-23T09:04:36.672120"
+    },
+    {
+      "title": "Android | 适可而止！看Glide如何把生命周期安排得明明白白",
+      "path": "AndroidWeekly/#12/Android_|_适可而止！看Glide如何把生命周期安排",
+      "source_url": "https://juejin.cn/post/6900548494818279432",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android | 适可而止！看Glide如何把生命周期安排...",
+      "scored_at": "2026-05-23T09:04:36.672122"
+    },
+    {
+      "title": "Android | 老生常谈！屏幕适配原理 & 方案总结笔记",
+      "path": "AndroidWeekly/#12/Android_|_老生常谈！屏幕适配原理_&_方案总结笔记",
+      "source_url": "https://juejin.cn/post/6903344875136745479",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android | 老生常谈！屏幕适配原理 & 方案总结笔记...",
+      "scored_at": "2026-05-23T09:04:36.672125"
+    },
+    {
+      "title": "Android | 毫分缕析！说说图片加载的整个过程",
+      "path": "AndroidWeekly/#12/Android_|_毫分缕析！说说图片加载的整个过程",
+      "source_url": "https://juejin.cn/post/6903403570872188936",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android | 毫分缕析！说说图片加载的整个过程...",
+      "scored_at": "2026-05-23T09:04:36.672126"
+    },
+    {
+      "title": "最全面的Kotlin协程: Coroutine/Channel/Flow 以及实际应用",
+      "path": "AndroidWeekly/#12/最全面的Kotlin协程:_Coroutine_Channe",
+      "source_url": "https://juejin.cn/post/6844904037586829320#heading-23",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 最全面的Kotlin协程: Coroutine/Channe...",
+      "scored_at": "2026-05-23T09:04:36.672128"
+    },
+    {
+      "title": "『BATcoder』寒冬已至！视频聊聊四面楚歌的Android工程师该何去何从？",
+      "path": "AndroidWeekly/#12/『BATcoder』寒冬已至！视频聊聊四面楚歌的Androi",
+      "source_url": "http://liuwangshu.cn/batcoder/android_future.html",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 『BATcoder』寒冬已至！视频聊聊四面楚歌的Androi...",
+      "scored_at": "2026-05-23T09:04:36.672129"
+    },
+    {
+      "title": "携程技术：携程机票 Android Jetpack 与 Kotlin Coroutines 实践",
+      "path": "AndroidWeekly/#12/携程技术：携程机票_Android_Jetpack_与_Ko",
+      "source_url": "https://zhuanlan.zhihu.com/p/328513587",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 携程技术：携程机票 Android Jetpack 与 Ko...",
+      "scored_at": "2026-05-23T09:04:36.672130"
+    },
+    {
+      "title": "Kotlin Android Extensions 的未来计划",
+      "path": "AndroidWeekly/#12/Kotlin_Android_Extensions_的未来计",
+      "source_url": "https://mp.weixin.qq.com/s/pa1YOFA1snTMYhrjnWqIgg",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Kotlin Android Extensions 的未来计...",
+      "scored_at": "2026-05-23T09:04:36.672132"
+    },
+    {
+      "title": "终于有人将进程间通信讲明白了",
+      "path": "AndroidWeekly/#12/终于有人将进程间通信讲明白了",
+      "source_url": "https://mp.weixin.qq.com/s/3r7k3jKFLHDenh8LO_BD6A",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 终于有人将进程间通信讲明白了...",
+      "scored_at": "2026-05-23T09:04:36.672133"
+    },
+    {
+      "title": "郭健： 进程切换分析之——TLB处理",
+      "path": "AndroidWeekly/#12/郭健：_进程切换分析之——TLB处理",
+      "source_url": "https://mp.weixin.qq.com/s/l6_e9HUT5cA64Uxc-zFL5Q",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 郭健： 进程切换分析之——TLB处理...",
+      "scored_at": "2026-05-23T09:04:36.672134"
+    },
+    {
+      "title": "【译】探索 Android 中的 ConstraintLayout 2.0",
+      "path": "AndroidWeekly/#12/【译】探索_Android_中的_ConstraintLay",
+      "source_url": "https://juejin.cn/post/6906770827228741646",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 【译】探索 Android 中的 ConstraintLay...",
+      "scored_at": "2026-05-23T09:04:36.672135"
+    },
+    {
+      "title": "Android Studio 中的 Motion Editor 用法详解",
+      "path": "AndroidWeekly/#12/Android_Studio_中的_Motion_Edito",
+      "source_url": "https://mp.weixin.qq.com/s/_A-wxa-NcnhxTmdyda73Rg",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android Studio 中的 Motion Edito...",
+      "scored_at": "2026-05-23T09:04:36.672137"
+    },
+    {
+      "title": "Hello小崔：内核态调测工具：ftrace(一)-初识",
+      "path": "AndroidWeekly/#12/Hello小崔：内核态调测工具：ftrace(一)-初识",
+      "source_url": "https://zhuanlan.zhihu.com/p/267925553",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Hello小崔：内核态调测工具：ftrace(一)-初识...",
+      "scored_at": "2026-05-23T09:04:36.672138"
+    },
+    {
+      "title": "既然引用计数在做 GC 时有性能问题，为什么智能指针会广泛应用它？",
+      "path": "AndroidWeekly/#12/既然引用计数在做_GC_时有性能问题，为什么智能指针会广泛应",
+      "source_url": "https://www.zhihu.com/question/433176297/answer/1623897574",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 既然引用计数在做 GC 时有性能问题，为什么智能指针会广泛应...",
+      "scored_at": "2026-05-23T09:04:36.672139"
+    },
+    {
+      "title": "携程机票 Android Jetpack 与 Kotlin Coroutines 实践 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#12/携程机票_Android_Jetpack_与_Kotlin_",
+      "source_url": "https://mp.weixin.qq.com/s/NS2gzSpkW8lYyLq3G2th9g",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - 携程机票 Android Jetpack 与 Kotlin ...",
+      "scored_at": "2026-05-23T09:04:36.672140"
+    },
+    {
+      "title": "createchance：Java 并发——基石篇（上）",
+      "path": "AndroidWeekly/#12/createchance：Java_并发——基石篇（上）",
+      "source_url": "https://zhuanlan.zhihu.com/p/75532011",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - createchance：Java 并发——基石篇（上）...",
+      "scored_at": "2026-05-23T09:04:36.672141"
+    },
+    {
+      "title": "createchance：Java 并发——基石篇（中）",
+      "path": "AndroidWeekly/#12/createchance：Java_并发——基石篇（中）",
+      "source_url": "https://zhuanlan.zhihu.com/p/75533444",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - createchance：Java 并发——基石篇（中）...",
+      "scored_at": "2026-05-23T09:04:36.672143"
+    },
+    {
+      "title": "createchance：Java 并发——基石篇（下）",
+      "path": "AndroidWeekly/#12/createchance：Java_并发——基石篇（下）",
+      "source_url": "https://zhuanlan.zhihu.com/p/75533893",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - createchance：Java 并发——基石篇（下）...",
+      "scored_at": "2026-05-23T09:04:36.672144"
+    },
+    {
+      "title": "Android 性能优化“基石”是什么？ Fps,Memory,Cpu如何采集？",
+      "path": "AndroidWeekly/#12/Android_性能优化“基石”是什么？_Fps,Memor",
+      "source_url": "https://mp.weixin.qq.com/s/O2diQxhj4Kg9O4yV8MK7Hg",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android 性能优化“基石”是什么？ Fps,Memor...",
+      "scored_at": "2026-05-23T09:04:36.672145"
+    },
+    {
+      "title": "volatile关键字在Android中到底有什么用？",
+      "path": "AndroidWeekly/#12/volatile关键字在Android中到底有什么用？",
+      "source_url": "https://juejin.cn/post/6903456861475831816",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - volatile关键字在Android中到底有什么用？...",
+      "scored_at": "2026-05-23T09:04:36.672146"
+    },
+    {
+      "title": "Android耗电量一体化监控: Battery Historian + APM",
+      "path": "AndroidWeekly/#12/Android耗电量一体化监控:_Battery_Histo",
+      "source_url": "https://mp.weixin.qq.com/s/0qRm7leSBuDUCHPzYMnTGw",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android技术文章 - Android耗电量一体化监控: Battery Histo...",
+      "scored_at": "2026-05-23T09:04:36.672147"
     }
   ]
 }

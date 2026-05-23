@@ -58,6 +58,7 @@ status: 'finalized'
 reviewed_date: '2026-05-09'
 reviewed_by: openclaw-task6
 last_task6_at: '2026-05-09T02:08:33+08:00'
+last_task6_audit: '2026-05-23'
 last_task6_review_log: logs/review/2026-05-09-02-review.md
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -244,7 +245,7 @@ GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Tre
 
 1. **VTS（Vendor Test Suite）/ CTS-on-GSI 验证**：设备必须通过 GSI 测试才能获得 Google 认证
 2. **开发调试**：开发者可以在自己的设备上刷入 GSI 来测试纯 AOSP 的行为
-3. **Project Treble 合规性检查**：确保厂商的 Vendor 实现确实遵循了 Treble 接口
+3. **Project Treble 合规性检查**：确保厂商的 Vendor 实现遵循了 Treble 接口
 
 GSI 能成为 Treble 合规性的试金石，有两个前提：HAL 版本匹配，以及 vendor 分区对 system 镜像的 native 依赖已经被压缩到 VNDK / LL-NDK / namespace 允许的范围内。设备能启动纯 AOSP GSI，再通过 CTS-on-GSI / VTS，说明这台设备同时满足了接口兼容和 ABI 隔离两项约束。
 

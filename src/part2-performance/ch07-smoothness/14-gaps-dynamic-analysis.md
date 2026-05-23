@@ -22,6 +22,7 @@ task6_result: "pass-light-edit"
 reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-05"
+last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
 repaired_by: openclaw-task2b
@@ -34,7 +35,7 @@ pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-05T02:37:46+08:00"
-task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已闭环；自动晋升 finalized。"
+task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。"
 review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 ---
 
@@ -109,7 +110,7 @@ GAPS 的论文主线可以按下面这条链理解：
 
 ### 🔹 UI 资源 ID 逆向与 GUI 操作序列生成
 
-GAPS 的静态阶段会把 GUI 事件解析成运行期可用的操作线索，主要有三步：:
+GAPS 的静态阶段会把 GUI 事件解析成运行期可用的操作线索，主要有三步：
 
 - **用 Androguard 读 APK/DEX**：拿到方法分析结果和 smali 指令。
 - **用 Apktool 还原资源 ID**：把 `findViewById()` 里的整型资源值，通过 `public.xml` 还原成字面量 ID。
@@ -182,7 +183,7 @@ GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为
 - **超时设置**：动态实验统一 5 分钟。
 - **仓库边界**：README 说明 `run` 模式默认可用 built-in LLM agent；论文正文则以 AndroidViewClient + optional Guardian + optional Frida 描述实验链。引用实现时要说明"论文基线"还是"当前仓库版本"。
 
-### 🔸 局限性：:哪些场景会掉精度
+### 🔸 局限性：哪些场景会掉精度
 
 - **Jetpack Compose**：论文明确写了当前不支持 Compose。
 - **Flutter / React Native**：逻辑不完全落在传统 Dalvik 调用链里，静态路径重建会受限。

@@ -295,6 +295,41 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 <!-- AIW-源码调研-2026-05-22 -->
 
+<!-- AIW-源码调研-2026-05-23 -->
+## 补充调研（2026-05-23）：REASON 常量版本矩阵与 MemoryLimiter 边界确认
+
+**来源**：research-gaps.md §26.12 盲区回退
+
+**新增验证点（2026-05-23 一手验证）**：
+
+### ApplicationExitInfo REASON 常量版本矩阵
+基于 Microsoft Learn .NET binding for Android（该 binding 忠实映射 AOSP `[ApiSince=30]` 注册注解）交叉验证，REASON_* 常量版本矩阵：
+
+| 常量 | API Level | 备注 |
+|------|-----------|------|
+| REASON_UNKNOWN / REASON_LOW_MEMORY / REASON_ANR / REASON_CRASH / REASON_CRASH_NATIVE 等基础常量 | API 30 | |
+| **REASON_FREEZER** | **API 33** | Android 13 引入，App Freezer 杀进程原因 |
+| **REASON_PACKAGE_STATE_CHANGE** | **API 34** | Android 14 引入，包组件状态变化 |
+| **REASON_PACKAGE_UPDATED** | **API 34** | Android 14 引入，包更新杀进程 |
+
+⚠️ 上述 API Level 基于 Microsoft Learn .NET binding 注释，建议通过 AOSP git log 确认具体 commit。
+
+### Android 17 MemoryLimiter 行为
+**来源**：developer.android.com/about/versions/17/behavior-changes-all（官方 Android 17 behavior changes）
+
+- Android 17 对高 RAM 设备引入保守应用内存限制（per-app memory limits based on device total RAM）
+- 应用被 MemoryLimiter 杀灭时，`ApplicationExitInfo.getDescription()` 包含字符串 "MemoryLimiter"
+- 原因码为 `REASON_OTHER`（兜底原因）
+- 适用条件：`targetSdk >= 36`
+
+示例设备：Pixel 6a (6GB RAM) 在 Android 17 Beta 4 下触发 MemoryLimiter 限制。
+
+### ProfilingTrigger 与 ApplicationStartInfo 共享判断逻辑确认
+- `TRIGGER_TYPE_COLD_START`（API 37）的触发前提等价于 `ApplicationStartInfo.getStartType() == START_TYPE_COLD`
+- 两者共享底层启动类型判断数据源，分工：ApplicationStartInfo 用于历史启动分析，TRIGGER_TYPE_COLD_START 用于 ProfilingTrigger 触发
+
+**参考报告**：`DeepResearch/2026-05-23-android-versioned-diagnostic-api-versions.md`
+
 ## 补充调研（2026-05-19）
 
 **来源**：每日推荐选题 #5（优先级：high）

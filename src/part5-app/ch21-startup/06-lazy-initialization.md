@@ -33,6 +33,7 @@ task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
+last_task6_audit: "2026-05-23"
 task6_result: pass-light-edit
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
@@ -86,7 +87,7 @@ last_task9_at: "2026-05-13T01:43:00+08:00"
 | 首次使用 | 低频功能、二级页面、可明确触发的业务模块 | 首次使用不能等待的支付、风控、消息通道 | 首次点击耗时、功能失败率 |
 | 后台空闲 | 预热数据、冷门资源解压、二级缓存构建 | CPU 密集且不可切片的任务 | 空闲窗口长度、前台帧率、功耗 |
 
-Android Vitals 把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒作为过慢启动的判断边界。延迟初始化的目标不是把任务藏起来，而是把首帧前的必要工作压到合理范围，同时确认延后的任务不会在 TTFD 或首次使用阶段反弹。
+Android Vitals 把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒作为过慢启动的判断边界。延迟初始化的目标是把首帧前的必要工作压到合理范围，同时确认延后的任务不会在 TTFD 或首次使用阶段反弹。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
@@ -272,7 +273,7 @@ fallback: skip | retry | degrade_page
 metrics: [cost_ms, success, trigger_source]
 ```
 
-这份声明不是为了好看，而是为了在出问题时能回放决策：任务为什么没有在启动时执行，为什么在这个入口触发，失败后走了哪条降级路径。
+这份声明用于在出问题时回放决策：任务为什么没有在启动时执行，为什么在这个入口触发，失败后走了哪条降级路径。
 
 ### 验证方式
 

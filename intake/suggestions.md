@@ -3143,6 +3143,34 @@
 - **问题**：正文 L133-L135 已按 web.dev RAIL 当前口径写成首次加载 < 5s、后续加载 < 2s，但大纲仍保留 `Load < 1000ms`。这会和正文、参考资料形成阈值冲突。
 - **建议**：把大纲改为“Load 首次 < 5s，后续 < 2s”，或删除具体数值，仅保留“Load 阶段需给出及时可交互反馈”。
 
+## [2026-05-23 10:04] Task 2A 知识缺口挖掘：无新增章节
+
+### 检查结论
+- Phase 0 扫描 `src/`：未发现 `status: draft` 且正文实质内容 < 15 行的章节；当前 `src/` 未检出 draft 章节，`progress.json` 的 draft 计数疑似滞后。
+- 本轮进入 Phase 1 缺口挖掘；结合 `SUMMARY.md`、`source-index.json`、`research-gaps.md`、`daily-info/2026-05-23.md`、AOSP/官方文档搜索结果，未发现评分 ≥ 14 且尚未被全书覆盖的候选，因此不创建新章节。
+
+### 已检查方向
+1. **sched_ext OEM 调度器公开证据与生产就绪度**：已有 `17.4 sched_ext 与 OEM BPF 调度器`、`17.2 SoC 平台差异` 承接；本轮素材主要是证据边界复核，不拆新节。
+2. **HWC Overlay Plane Capability 与 SurfaceFlinger 合成降级**：已有 `7.18 HWC Overlay Plane 与合成降级排查`、`18.15 视频叠加与 HWC`、`14.15 Winscope 与窗口/合成状态可视化调试` 承接。
+3. **Perfetto DataGrid 与 Jank CUJ 第三方 App 适用性**：已有 `13.14 Perfetto DataGrid 与 Jank CUJ 标准库`，后续应作为该节修订素材，而不是新增章节。
+4. **DMA-BUF / Gralloc / 16KB 图形内存边界**：已有 `2.15 DMA-BUF、Gralloc 与跨进程图形内存共享`、`2.24 Android 16/17 图形内存分配边界` 覆盖。
+5. **AICore / LiteRT / NNAPI / NPU 分层边界**：已有 `5.11 端侧 AI 推理性能`、`5.14 Android 17 ML Runtime 与 NPU 访问边界` 覆盖；当前更适合作为技术复核素材。
+6. **Android 17 性能行为变更、ProfilingTrigger、内存限制、excessive CPU / anomaly trigger**：已有 `23.9`、`25.12`、`26.12`、`8.10` 相关章节承接。
+7. **Compose First 与 Android Performance Analyzer**：已由 `22.15` 与 `14.18` 覆盖，未形成新小节需求。
+8. **Android Halo / App Lock / Developer Verification / Skills 类内容**：性能主线相关性不足，或已由 `1.21`、`14.19` 等章节覆盖。
+
+### 后续建议
+- 下一轮 Task 2A 可继续监控 Android 17/18 官方文档中是否出现新的性能专页、AOSP 可定位源码或可复现实测数据。
+- 建议维护任务修正 `metadata/progress.json` 的 draft 计数，避免 Phase 0 与实际文件状态不一致。
+
+
+## [Task2A 缺口挖掘记录] 2026-05-23 11:04
+- **类型**：缺口挖掘 no-op 记录
+- **结论**：本轮未发现评分 ≥ 14 且尚未被现有目录覆盖的新章节候选，跳过创建。
+- **已检查方向**：Android Performance Analyzer、Compose First、AppFlow、16KB Page Size backcompat、Android 17 ProfilingTrigger / ApplicationStartInfo、网络性能优化与网络可观测性。
+- **覆盖依据**：上述方向已分别落入 §14.18、§22.15、§16.8、§4.7/§20.13/§2.24、§26.12/§26.13/§14.7/§8.10、§24.15/§26.17。
+- **后续建议**：如继续挖掘，优先避开近期已创建的 Android 16/17 性能新特性，改从未覆盖的系统服务或厂商实机证据缺口入手。
+
 ## [Task9 Idle Audit] 7.4 典型场景分析 — 2026-05-23 — predictive_back_progress 计数器证据不足
 - **类型**：源码锚点 / Perfetto 观察点证据不足
 - **位置**：L309、L314：`predictive_back_progress` 计数器
@@ -3167,3 +3195,63 @@
 - **位置**：L180-L193
 - **问题**：Cuttlefish host 环境安装把 `m cvd-host-package`、`cuttlefish-base/user` deb 安装、`cvd-host_package.tar.gz` 解压放在同一条流程里。当前官方 get-started 是先用 `google/android-cuttlefish` 的 `tools/buildutils/build_packages.sh` 构建并安装 host deb，再从 CI 下载同一 build 的 `cvd-host_package.tar.gz` 与 image zip 运行；`m cvd-host-package` 不应被写成会在当前目录产出 `cuttlefish-base_*.deb` 的步骤。
 - **建议**：拆成两段：① host 依赖安装：clone `google/android-cuttlefish` → `tools/buildutils/build_packages.sh` → `dpkg -i ./cuttlefish-base_*_*64.deb ./cuttlefish-user_*_*64.deb` → 加组并重启；② 运行镜像：解压同一 build 的 `cvd-host_package.tar.gz` 与 image zip → `HOME=$PWD ./bin/launch_cvd --daemon`。若保留 AOSP 自编译路径，需要标明 `cvd-host_package.tar.gz` 的实际输出位置。
+
+## [Task2A 缺口扫描] 2026-05-23 14:08
+- **类型**：缺口扫描记录
+- **结果**：本轮未发现评分 ≥ 14 且未被目录覆盖的新章节候选。
+- **已排除（已有章节覆盖）**：Android 17 MessageQueue / DeliQueue（1.13、7.8、16.5）；Android Performance Analyzer（14.18）；Compose First 与 View 维护模式（22.15）；Android XR DP4 / glTF / Unity 路径（18.22）；HWC Overlay Plane 合成降级（7.18）；Perfetto CUJ 第三方 App 适用边界（13.14、26.11）。
+- **已排除（低于创建阈值）**：Android 17 原生应用锁、Android Halo Agent 状态提示、Android for Cars 多形态适配。
+- **建议**：后续若上述方向出现 3 篇以上一手素材或官方性能数据，再重新评分；当前不新建章节，避免和既有章节重复。
+
+
+## [Task2A 缺口扫描] 2026-05-23 15:04
+- **类型**：缺口扫描记录
+- **结果**：Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的章节；本轮未发现评分 ≥ 14 且未被目录覆盖的新章节候选。
+- **已排除（已有章节覆盖）**：Android 17 JobDebugInfo / ProfilingTrigger / Excessive CPU（25.12、25.14、26.12、8.10）；Android Performance Analyzer（14.18、14.19）；Compose First 与 View 维护模式（22.15）；Perfetto CUJ 第三方 App 适用边界（13.14、26.11）；HWC Overlay Plane 合成降级（7.18、18.15）；DMA-BUF / Gralloc / 16KB 图形内存边界（2.15、2.24）；AICore / LiteRT / NNAPI / NPU 分层边界（5.11、5.14）。
+- **已排除（低于创建阈值）**：Android Halo Agent 状态提示、Android 17 原生应用锁、Android for Cars / adaptive apps 多形态适配。
+- **建议**：下一轮继续避开近期已覆盖的 Android 16/17 性能新特性；只有出现官方性能文档、AOSP 可定位源码、或 3 篇以上一手素材时再重新评分。另建议维护 `metadata/progress.json` 的 draft 计数，当前 `src/` 实际未检出 draft 章节。
+
+## [Task2A 知识缺口挖掘] 2026-05-23 16:04
+
+- **执行结果**：Phase 0 扫描 `src/`，未发现 `status: draft` 且正文实质内容 < 15 行的空 draft 章节；本轮进入 Phase 1。
+- **已检查方向**：Android Performance Analyzer、Compose First / View 维护模式、HWC Overlay Plane 合成降级、Perfetto v54 DataGrid / Jank CUJ、Android Halo、Android 17 原生应用锁、Android Show I/O 2026 AI OS 概览。
+- **判断**：APA、Compose First、HWC Overlay、Perfetto v54 方向已在现有章节覆盖；Android Halo、原生应用锁、AI OS 概览与本书性能优化主线相关性不足，评分未达到 14 分创建门槛。
+- **本轮新增章节**：无。
+- **避免重复挖掘备注**：后续若继续跟进 Android Halo，应先确认其是否产生可观测性能问题（如常驻 UI overlay、agent 状态指示的渲染/功耗成本），否则不建议进入 AIW 正文章节。
+
+
+
+## [Task2A 缺口挖掘] 2026-05-23 21:04
+- **结论**：本轮未发现评分 ≥ 14 且尚未被 SUMMARY / queue 覆盖的新增章节缺口。
+- **Phase 0**：src 扫描未发现 `status: draft` 且正文少于 15 行的空草稿章节。
+- **检查范围**：SUMMARY、source-index 高分未映射素材、research-feeds 最近文件、daily-info 最近 3 天、AOSP/官方文档方向。
+- **候选复核**：
+  - Android 16 Cloud Compilation / SDM 安装路径：评分 16/20，素材丰富，但 SUMMARY 已有 21.11，1.9 正文与 queue 已覆盖回炉项 → 不新建
+  - Compose Pausable Composition / ART 分代 GC 与 Composition：评分 15/20，7.7 已覆盖 Pausable Composition；4.8 覆盖 ART 分代 GC；相关 Task9/Task2B 队列仍在 → 不新建
+  - HWC Overlay Plane 与合成降级：评分 17/20，7.18 已有独立章节 → 不新建
+  - Perfetto DataGrid / Jank CUJ 标准库：评分 18/20，13.14 已有独立章节，且存在 Task9 回炉队列 → 不新建
+  - Android Performance Analyzer：评分 17/20，14.18 已有独立章节 → 不新建
+  - AppFlow 大型 App 冷启动内存调度：评分 16/20，16.8 已有独立章节 → 不新建
+  - sched_ext OEM 调度器公开证据：评分 15/20，17.4 已有独立章节；当前主要是证据边界修正，不适合新章 → 不新建
+  - Android 17 原生应用锁：评分 11/20，与性能优化主线关联弱，素材多为资讯/适配话题 → 低于阈值
+- **下次建议**：优先等待 Task2B 清理已有回炉项；新章创建前继续先做 SUMMARY / queue 去重。
+
+
+## [2026-05-23 22:04] Task 2A 知识缺口挖掘：本轮无新增章节
+
+### 检查结论
+- Phase 0 未发现空 draft 章节。
+- 本轮检查 8 个候选方向；5 个方向评分 ≥14，但均已被现有章节覆盖，未创建新章节。
+- 详情见：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-23-22-知识加工(新).md`
+
+### 已覆盖方向，后续不重复建节
+- ADPF Power Efficiency Mode 与 PowerMonitor：5.9、11.1、14.11、25.11 已覆盖。
+- Android Performance Analyzer：14.18、13.18 已覆盖。
+- Perfetto v54 DataGrid / Jank CUJ / heap graph stats：13.14、13.15、13.18 已覆盖。
+- Android 17 ECH / DNS HTTPS RR：12.3、12.4、16.5 已覆盖。
+- Compose First 与 View 维护模式：22.15、22.3、18.2 已覆盖。
+
+### 下一轮可继续验证
+- Bluetooth LE GATT 吞吐与扫描连接延迟。
+- NFC Reader Mode / HCE 交互延迟与后台限制。
+- Telephony/RIL 网络状态、radio active 与移动网络功耗归因。

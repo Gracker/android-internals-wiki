@@ -699,3 +699,63 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 ### 关联章节
 [章节待创建] Part 5 可观测性
 
+
+## [2026-05-23] 25.2/25.3 功耗监控实战 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
+
+### 知识点
+1. 耗电监控的 Java Hook 方案：通过 ProxyHook 代理 PowerManagerService/AlarmManagerService 实现对 WakeLock/Alarm 的 acquire/release/set/remove 的拦截
+2. 耗电监控的插桩方案：封装 WakelockMetrics 基类替换直接调用，兼容 Android P+（Hook 失效场景）
+3. Facebook Battery-Metrics 开源库：监控 Alarm/WakeLock/Camera/CPU/Network 并采集充电状态和电量水平
+4. 华为安卓绿色联盟后台资源使用"红线"规则表（后台 WakeLock 时长/Alarm 频次/网络使用等具体阈值）
+
+### 重要程度
+中
+
+### 建议加工方向
+- 补充 Hook 方案在 Android P+ 的替代策略对比
+- 华为红线规则可作为 ch25.2 后台功耗治理的厂商实例参考
+
+## [2026-05-23] 22.2 UI 优化实战 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md]
+
+### 知识点
+1. 异步创建 View 的 Looper MessageQueue 替换技巧：将工作线程 Looper 的 MessageQueue 临时替换为 UI 线程的 Queue，创建完成后恢复
+2. View 跨 Activity/Fragment 缓存复用机制（参考微信实践经验，需注意状态清理防止错乱）
+3. Litho 的三大优化：异步布局（measure/layout 移到后台线程）、界面扁平化（Yoga 引擎自动消除多余层级）、RecyclerView 按组件类型独立回收
+4. PrecomputedText 异步 measure/layout（Jetpack 集成）
+5. RenderScript 用于图片密集计算（高斯模糊、扫一扫场景的缩放/裁剪/二值化/降噪）
+
+### 重要程度
+中
+
+### 建议加工方向
+- Litho 的异步布局思路可作为 ch22 渲染优化实战的"突破系统限制"方案参考
+- 异步创建 View 的 Looper 替换方案可作为 ch22 的进阶技巧
+
+## [2026-05-23] 25.6/25.7 APK 深度优化 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md]
+
+### 知识点
+1. ReDex StripDebugInfoPass：保留行号但去除局部变量/debug info，减少约 5% Dex 体积
+2. ReDex InterDexPass（CrossDexDefMinimizer）：贪心算法优化 Dex 分包，减少跨 Dex 方法引用冗余，4+ Dex 场景可减少 10%+ 体积
+3. Facebook 的 XZ 压缩 Dex 方案：secondary.dex.jar.xzs，XZ 比 Zip 压缩率高 30%
+4. ReDex oatmeal：直接在本进程按 ODEX 格式生成 ODEX 文件，10MB Dex 从 10s+ 降到 ~100ms
+5. 四大组件和 View 混淆方案：XML 替换 + ASM 代码替换（参考饿了么 Mess 开源组件）
+6. Native Library 合并（Buck）：Android 4.3 之前进程加载 Library 数量限制的应对
+7. Native Library 裁剪（Buck relinker）：分析 JNI 调用链，删除无用导出 symbol，实现 Library 级别的 ProGuard Shrinking
+
+### 重要程度
+高
+
+### 建议加工方向
+- ReDex 三大 Pass（StripDebugInfo/InterDex/oatmeal）可作为 ch25.7 R8 与资源优化的进阶补充
+- Library 合并/裁剪方案可作为 ch25.6 APK 分析的 Native 优化方向
+- XZ 压缩方案可作为极致优化案例补充到 ch25.6
+

@@ -295,6 +295,55 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 
 `speed-profile` 在 Android 12+ 设备上很常见，但它不是所有安装来源、所有设备策略下的固定默认值。Baseline Profiles、本地 JIT Profile、Cloud Profile 是否命中，都会影响最终选中的 compiler filter；没有可用 Profile 时，结果可能直接落到 `verify`。判断一台设备上的真实状态，直接看 `cmd package art dump`（Android 14+ 常用）或 `dumpsys package dexopt` 的输出更可靠。
 
+<!-- AIW-源码调研-2026-05-23 -->
+
+## 源码调研补充：ART Verifier Quickening 机制（2026-05-23）
+
+> 本补充基于 AOSP 源码分析，验证了 dex2oat quicken 过滤器的具体含义和 vdex 文件的作用。
+
+### Quicken 过滤器的真实行为
+
+官方文档对 `quicken` 的描述（Android 11 及更低）：Runs DEX code verification and optimizes some DEX instructions to get better interpreter performance。"优化 DEX 指令"指的是将符号引用替换为实际偏移量，例如 `INVOKE_VIRTUAL` 的方法索引在 quickened 后变为直接偏移，去掉了运行时符号查找开销。
+
+[已验证: AOSP source.android.com/docs/core/runtime/configure — quicken 官方描述]
+
+### DexToDex 变换的源码证据
+
+AOSP art 仓库中，DexToDex 转换在 `kOptimize` 级别可能引入 quickened opcodes，将符号引用替换为实际偏移：
+
+> // DexToDex at the kOptimize level may introduce quickened opcodes, which replace symbolic references with actual offsets
+
+[已验证: AOSP android.googlesource.com/platform/art/+/2ed8def — DexToDex quickening 说明]
+
+### Vdex 文件的结构与作用
+
+从 Android 8 起，dex2oat 生成 `.vdex` 文件，官方文档描述其内容：contains some additional metadata to speed up verification, sometimes along with the uncompressed DEX code of the APK。
+
+vdex 的核心价值在于"加速验证的元数据"：verifier 在首次验证时记录类解析结果（方法签名一致性、字段偏移合法性），这些结果写入 vdex。下次加载时，verifier 直接读预计算结果，跳过符号解析过程。
+
+[已验证: AOSP source.android.com/docs/core/runtime/configure — vdex 描述]
+
+### Quicken 与 AOT 的正交关系
+
+quicken 和 AOT 编译是正交的优化路径：
+- **quicken**：发生在 DEX 字节码层级，将符号引用替换为实际偏移。输出仍是 DEX 格式（但内容被修改），由解释器执行。Android 11 及更低版本支持。
+- **AOT**：发生在编译阶段，将 DEX 字节码编译为原生机器码。输出是 .oat 格式（ELF 格式），由 ART 运行时直接执行。
+
+quicken 不生成原生代码，不能替代 speed/speed-profile。两者可以叠加：先 quicken DEX（解释器执行更快），再对同一 DEX 做 AOT 编译（跳过解释器）。
+
+### 版本边界
+
+| 版本 | quicken 可用性 |
+|------|--------------|
+| Android 8-11 | 官方支持的过滤器 |
+| Android 12+ | 官方文档将 quicken 限定在"Android 11 or lower"，具体状态需 AOSP android-12+ 源码确认 |
+
+[已验证: AOSP source.android.com/docs/core/runtime/configure — quicken 版本标注]
+
+*原始调研报告：[`DeepResearch/2026-05-23-android-art-verifier-quickening-mechanism.md`](obsidian://open?vault=Obsidian&file=DeepResearch%2F2026-05-23-android-art-verifier-quickening-mechanism)*
+
+<!-- AIW-源码调研-2026-05-23 -->
+
 ### dex2oat 的多线程编译
 
 dex2oat 支持多线程并行编译，线程数由 `dalvik.vm.dex2oat-threads` 控制。在 8 核设备上，默认可能使用 4-6 个线程并行编译不同的 DEX 方法。

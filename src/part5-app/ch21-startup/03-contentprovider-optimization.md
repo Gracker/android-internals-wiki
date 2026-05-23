@@ -39,6 +39,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: 2026-05-13T08:40:35+08:00
 task6_reviewed_date: "2026-05-13"
+last_task6_audit: "2026-05-23"
 ---
 
 # ContentProvider 启动治理

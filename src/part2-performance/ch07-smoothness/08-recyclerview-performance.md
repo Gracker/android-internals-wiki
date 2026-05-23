@@ -722,4 +722,14 @@ ORDER BY SUM(dur) DESC;
 - 注意：DeliQueue 不直接优化 RecyclerView 渲染管线，滑动卡顿更多取决于 layout 层级、binding 耗时、overdraw
 
 来源：DeepResearch 调研 2026-05-16
+<!-- AIW-源码调研-2026-05-23 -->
+**DeliQueue + RecyclerView GapWorker 联动细节**（来源：Google Android Developers Blog + AOSP 源码）：
+- DeliQueue 触发条件：`targetSdk >= 37`（Android 17）才启用，旧版 targetSdk 仍用 legacy monitor lock MessageQueue
+- GapWorker `dispatchFromTraversal()` 的 prefetch deadline 精度受益于 MessageQueue 调度延迟降低
+- 生产者 O(1) 无锁 push → Looper 线程 O(log N) min-heap 出队，帧处理不再因锁争用被打断
+- Tombstoning 移除模式：逻辑删除 CAS flag，实际清理 defer 到 Looper 线程，避免边遍历边修改的 ABA 问题
+- 未直接改变 RecyclerView 渲染管线，但 MessageQueue 优先级倒置消除后 `doFrame()` 时间更稳定
+来源：DeepResearch 调研 2026-05-23
+<!-- AIW-源码调研-2026-05-23 -->
+
 <!-- end AIW-源码调研-2026-05-16 -->
