@@ -1,6 +1,54 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
+      "section": "7.4",
+      "section_title": "典型场景分析",
+      "priority": 95,
+      "title": "FragmentTransaction 源码链路与 Predictive Back 版本边界需修正",
+      "description": "Task9 闲时抽检发现 §7.4 的 FragmentTransaction commit 链路包含不存在的 `BackStackRecord.mTrack()` / `mHostHandler.execPendingActions()`，且把 Predictive Back 默认启用错误归到 Android 15。",
+      "reason": "[Deep Tech Review Audit] §7.4 FragmentTransaction 源码链路存在不可核验方法名，Predictive Back Android 15/16 默认启用边界错误，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/04-typical-scenarios.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-12-audit.md",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackInvokedCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/FragmentTransaction commit 链路",
+          "location": "L244、L253-L265：FragmentTransaction.commit() 源码链路深度分析",
+          "detail": "正文写 `BackStackRecord.mTrack()` 会把事务封存为 `OpGenerator`，并写出 `mHostHandler.execPendingActions()` 调用链。抽检 AndroidX Fragment 当前源码与 AOSP android-16.0.0_r1 平台 FragmentManager：`BackStackRecord.mTrack()` 不存在；平台链路是 `BackStackRecord.commitInternal()` 调 `FragmentManager.enqueueAction(this, allowStateLoss)`，`scheduleCommit()` 通过 `mHost.getHandler().post(mExecCommit)` 触发 `execPendingActions()`。AndroidX Fragment 1.8/当前源码也没有 `mTrack()`。当前段落还在 L235 明确说现代应用主要走 AndroidX Fragment、平台 `android.app.Fragment` 只适合解释旧系统 Fragment，随后又用平台 FragmentManager 行号泛化解释现代 Fragment 切换，源码口径前后冲突。",
+          "suggestion": "删除 `mTrack()` 与 `mHostHandler.execPendingActions()`；把该段改成 AndroidX 口径：`BackStackRecord.commitInternal()` → `FragmentManager.enqueueAction()` → `scheduleCommit()` → Handler post `mExecCommit` → `execPendingActions()` / `generateOps()` / `removeRedundantOperationsAndExecute()`；如果保留 `frameworks/base/core/java/android/app/FragmentManager.java`，需标注为 legacy platform Fragment，仅作旧系统源码参考。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/Predictive Back 默认启用边界",
+          "location": "L305：`Android 15 将预测性返回动画设为默认行为`",
+          "detail": "官方 Predictive Back 文档说明：Android 15 起开发者选项不再可用，system animations 只会对已 opt-in 的 app/activity 显示；Android 16 behavior changes 才写明“apps targeting Android 16(API 36)+ 且运行在 Android 16+ 设备上，predictive back system animations 默认启用”。当前把默认行为归到 Android 15，会误导 Android 15、Android 16 targetSdk 迁移边界。",
+          "suggestion": "改成版本化表述：Android 13/14 需要开发者选项 + opt-in；Android 15 不再提供开发者选项，但仍是已 opt-in app/activity 才显示系统预测返回动画；Android 16(API 36 target + Android 16 device) 默认启用系统预测返回动画，仍可临时通过 `android:enableOnBackInvokedCallback=\"false\"` opt out。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T12:32:12+08:00",
+      "review_log": "logs/deep-review/2026-05-23-12-audit.md"
+    },
+    {
       "id": "task9-audit-20260523-15.7-sftrace-version-path",
       "section": "15.7",
       "section_title": "AOSP 代码阅读",
@@ -18034,22 +18082,70 @@
     }
   ],
   "metadata": {
-    "total_entries": 489,
-    "p0_count": 189,
-    "last_updated": "2026-05-23T11:20:00+08:00",
+    "total_entries": 490,
+    "p0_count": 190,
+    "last_updated": "2026-05-23T12:32:12+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 167,
+    "pending_entries": 168,
     "updated_date": "2026-05-23",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 167,
+    "pending": 168,
     "completed_entries": 319,
     "last_task2a_gap_mining": "7.18",
     "last_task2a_gap_mining_at": "2026-05-23T00:04:00+08:00",
     "last_task2a_completed_at": "2026-05-22T16:18:00+08:00"
   },
-  "last_updated": "2026-05-23T11:20:00+08:00",
+  "last_updated": "2026-05-23T12:32:12+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
+    {
+      "id": "task9-audit-20260523-7.4-typical-scenarios-fragment-predictiveback",
+      "section": "7.4",
+      "section_title": "典型场景分析",
+      "priority": 95,
+      "title": "FragmentTransaction 源码链路与 Predictive Back 版本边界需修正",
+      "description": "Task9 闲时抽检发现 §7.4 的 FragmentTransaction commit 链路包含不存在的 `BackStackRecord.mTrack()` / `mHostHandler.execPendingActions()`，且把 Predictive Back 默认启用错误归到 Android 15。",
+      "reason": "[Deep Tech Review Audit] §7.4 FragmentTransaction 源码链路存在不可核验方法名，Predictive Back Android 15/16 默认启用边界错误，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-23",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/04-typical-scenarios.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-23-12-audit.md",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java",
+        "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackInvokedCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/FragmentTransaction commit 链路",
+          "location": "L244、L253-L265：FragmentTransaction.commit() 源码链路深度分析",
+          "detail": "正文写 `BackStackRecord.mTrack()` 会把事务封存为 `OpGenerator`，并写出 `mHostHandler.execPendingActions()` 调用链。抽检 AndroidX Fragment 当前源码与 AOSP android-16.0.0_r1 平台 FragmentManager：`BackStackRecord.mTrack()` 不存在；平台链路是 `BackStackRecord.commitInternal()` 调 `FragmentManager.enqueueAction(this, allowStateLoss)`，`scheduleCommit()` 通过 `mHost.getHandler().post(mExecCommit)` 触发 `execPendingActions()`。AndroidX Fragment 1.8/当前源码也没有 `mTrack()`。当前段落还在 L235 明确说现代应用主要走 AndroidX Fragment、平台 `android.app.Fragment` 只适合解释旧系统 Fragment，随后又用平台 FragmentManager 行号泛化解释现代 Fragment 切换，源码口径前后冲突。",
+          "suggestion": "删除 `mTrack()` 与 `mHostHandler.execPendingActions()`；把该段改成 AndroidX 口径：`BackStackRecord.commitInternal()` → `FragmentManager.enqueueAction()` → `scheduleCommit()` → Handler post `mExecCommit` → `execPendingActions()` / `generateOps()` / `removeRedundantOperationsAndExecute()`；如果保留 `frameworks/base/core/java/android/app/FragmentManager.java`，需标注为 legacy platform Fragment，仅作旧系统源码参考。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/Predictive Back 默认启用边界",
+          "location": "L305：`Android 15 将预测性返回动画设为默认行为`",
+          "detail": "官方 Predictive Back 文档说明：Android 15 起开发者选项不再可用，system animations 只会对已 opt-in 的 app/activity 显示；Android 16 behavior changes 才写明“apps targeting Android 16(API 36)+ 且运行在 Android 16+ 设备上，predictive back system animations 默认启用”。当前把默认行为归到 Android 15，会误导 Android 15、Android 16 targetSdk 迁移边界。",
+          "suggestion": "改成版本化表述：Android 13/14 需要开发者选项 + opt-in；Android 15 不再提供开发者选项，但仍是已 opt-in app/activity 才显示系统预测返回动画；Android 16(API 36 target + Android 16 device) 默认启用系统预测返回动画，仍可临时通过 `android:enableOnBackInvokedCallback=\"false\"` opt out。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-23T12:32:12+08:00",
+      "review_log": "logs/deep-review/2026-05-23-12-audit.md"
+    },
     {
       "id": "task9-audit-20260523-15.7-sftrace-version-path",
       "section": "15.7",

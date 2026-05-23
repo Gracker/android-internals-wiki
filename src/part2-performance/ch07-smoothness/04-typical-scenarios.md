@@ -45,20 +45,21 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-03T08:25:39+08:00"
+last_task9_at: "2026-05-23T12:32:12+08:00"
 last_task2b_at: "2026-04-27T12:54:09+08:00"
 last_task6_audit: "2026-05-21"
-task9_review_notes: "2026-05-03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 1；已写入 queue.json 与 suggestions.md。"
 auto_promoted: true
+last_task9_audit: "2026-05-23"
 ---
 
 # 典型场景分析
