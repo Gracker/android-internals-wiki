@@ -3118,3 +3118,22 @@
 - **问题**：正文写“凡是 Actual Present 稳定落后 Expected Present 固定 N 个周期的帧，都按 BufferStuffing 处理”，判据过强，且 Android 15+ Perfetto UI 浅绿色口径缺少官方文档或 trace 样例支撑。
 - **建议**：改为“这是识别 high latency / BufferQueue 积压的候选信号，需要结合 FrameTimeline jank type、SurfaceFlinger/BufferQueue slice、Layer/slot 状态共同确认”；补 1 个 Perfetto SQL 与 UI 截图/trace 样本作为证据。
 
+## [2026-05-23 09:10] Task 2A 知识缺口挖掘：无新增章节
+
+### 检查结论
+- Phase 0 扫描 `src/`：未发现 `status: draft` 且正文实质内容 < 15 行的章节；当前 `src/` 实际状态为 `finalized` / `ready-for-review`，`progress.json` 中 draft 计数疑似滞后。
+- 本轮进入 Phase 1 缺口挖掘；未发现评分 ≥ 14 且尚未被全书覆盖的候选，因此不创建新章节。
+
+### 已检查方向
+1. **移动网络性能优化 / HTTPDNS / QUIC / Cronet / 弱网治理**：已由 `24.15 移动网络性能优化实战：DNS、连接、传输与容灾` 与 `26.17 线上网络质量监控与接入层协同` 覆盖，不再创建独立章节。
+2. **Android Performance Analyzer 与 AI-assisted trace analysis**：已由 `14.18 Android Performance Analyzer 与系统性能分析` 覆盖；后续可作为该节扩展素材，不拆新节。
+3. **Compose First 与 View 维护模式**：已由 `22.15 Compose First 与 View/Compose 混合迁移性能边界` 覆盖；无需新增。
+4. **Android XR Developer Preview 4 / Unity、Unreal、Godot 更新**：已有 `18.22 Android XR 空间 UI 与环境资产渲染性能` 与 `18.16 游戏引擎渲染链路` 可承接；当前素材更偏生态公告，未达到独立性能章节阈值。
+5. **Android Halo / AI agent 状态可视化**：性能相关性不足，暂不纳入 AIW 主线。
+6. **AppFlow GB 级大型 App 冷启动内存调度**：已由 `16.8 AppFlow：GB 级应用冷启动内存联合调度` 覆盖。
+7. **Android 17 Developer Verification / 禁止侧载适配**：已由 `1.21 Android Developer Verification 与安装链路边界` 覆盖。
+
+### 后续建议
+- 下一轮 Task 2A 可优先继续监控 `Android XR` 引擎适配、`Android Halo` 与 agent UI 对系统渲染/输入/功耗的实际影响；只有出现官方性能文档、AOSP/SDK API 或可复现实测材料后再评估是否独立成节。
+- 建议后续维护任务同步修正 `metadata/progress.json` 的 draft 计数，避免 Phase 0 与实际文件状态不一致。
+
