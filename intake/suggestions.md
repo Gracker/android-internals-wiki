@@ -3270,3 +3270,12 @@
   - Android 17 原生应用锁、Halo、Cars/XR 热点：与本书性能优化主线相关性不足，素材丰富度或读者需求度达不到建节阈值（低于 14 分）。
 - **报告路径**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-01-知识加工(新).md`
 
+## [Task2A Gap Mining] 2026-05-24 05:17 — 无新建章节
+
+- **Phase 0**：未发现空 draft 章节。
+- **已检查来源**：`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、最近 5 个 `intake/research-feeds/`、最近 3 天 `intake/daily-info/`、developer.android.com / cs.android.com 抽查。
+- **已排除（已有章节覆盖）**：Android Performance Analyzer（14.18 / 14.19）、Compose First（22.15）、sched_ext OEM 调度器（17.4）、HWC Overlay（7.18 / 18.15）、Perfetto DataGrid / Jank CUJ（13.14）、DMA-BUF / Gralloc / 16KB（2.15 / 2.24 / 18.15）、AICore / LiteRT / NNAPI（5.11 / 5.14）、MTE ASYMM（20.11）、ADPF 协程迁移（25.11）、ProfilingTrigger / ApplicationExitInfo（26.12 / 25.12）。
+- **低分候选**：Android Studio Panda LeakCanary Profiler、Android 17 原生应用锁、Android Halo、Android for Cars；独立成节必要性或性能主线相关性不足。
+- **结论**：本轮未发现评分 ≥ 14 且尚未覆盖、需要独立新建小节的知识缺口。
+- **报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-05-知识加工(新).md`
+
