@@ -516,6 +516,13 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 虽然 `finalize()` 目前还能工作，但它会显著增加 GC 的负担。每个有 `finalize()` 的对象都需要进入 FinalizerReference 队列，由 FinalizerDaemon 线程异步处理。这会让对象至少多存活一个 GC 周期，FinalizerDaemon 本身也会消耗 CPU。在高频分配场景下，FinalizerDaemon 可能成为性能瓶颈。
 
 ## 参考资料
+### Android 17 ART 分代 GC 与 Compose Composition 分配/停顿因果链分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android17-art-generational-gc-compose-composition.md
+- 类型：DeepResearch 调研结果
+- 摘要：ART CC 收集器分代架构（Young Gen BumpPointerSpace + Old Gen MarkCompactSpace）源码分析，Compose Composition 阶段 SlotTable/LayoutNode/Snapshot 短生命周期对象分配模式，年轻代 STW copy 快速回收对帧停顿的影响路径，含完整调用链和 Perfetto 可观测性指标。
+- 注入时间：2026-05-24
+- 价值：建立 ART 分代 GC 与 Compose Composition 对象分配的完整因果链，含可观测性指标
+
 
 ### Android 17 ART 分代 GC 与 Compose Composition 性能链路
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md

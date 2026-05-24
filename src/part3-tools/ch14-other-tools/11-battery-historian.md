@@ -69,6 +69,8 @@ Android 提供了从系统级到应用级的一整套功耗分析工具链，覆
 
 [图：Android 功耗分析工具链定位图——从离线分析（Battery Historian）到实时分析（Power Profiler）到自动化测试（Macrobenchmark）]
 
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-24"
 ---
 
 ## Bugreport 抓取与 Battery Historian 使用

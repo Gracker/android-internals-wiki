@@ -47,6 +47,16 @@ sources:
   path: frameworks/base/core/java/android/os/PowerManager.java
 - type: official
   path: https://dontkillmyapp.com/
+- type: official
+  path: https://developer.android.com/topic/performance/app-hibernation
+- type: official
+  path: https://source.android.com/docs/core/storage/app-archiving
+- type: official
+  path: https://developer.android.com/about/versions/oreo/background
+- type: official
+  path: https://developer.android.com/topic/performance/power
+- type: official
+  path: https://developer.android.com/about/versions
 tags:
 - doze
 - standby
@@ -71,6 +81,7 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 last_task6_at: '2026-05-06T22:05:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-22-review.md
+last_task6_audit: '2026-05-24'
 review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
 review_round: 4
 pipeline_stage: ready-to-publish

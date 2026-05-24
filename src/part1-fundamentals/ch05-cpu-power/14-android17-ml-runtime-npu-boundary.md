@@ -379,6 +379,13 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 <!-- AIW-源码调研-2026-05-22 -->
 
 ## 参考资料
+### Android 端侧 AI 推理栈边界澄清 — LiteRT / AICore / NNAPI 分层验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 端侧 AI 推理栈三层架构（NNAPI→LiteRT→AICore）的源码验证，Android 17 新增 FEATURE_NEURAL_PROCESSING_UNIT 强制声明机制，LiteRT 与 TensorFlow Lite 的品牌重命名关系，AICore 内部通过 NNAPI 调用 NPU 的封装路径及版本演进对照。
+- 注入时间：2026-05-24
+- 价值：厘清 NNAPI/LiteRT/AICore 三层架构边界，补充 Android 17 NPU feature 声明机制
+
 
 ### Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md

@@ -122,7 +122,7 @@ SDK 和设备基线至少要记录四项：Android SDK 路径、平台包版本�
 
 ## `run`、`layout`、`screen` 在复现流程中的边界
 
-`android run` 只负责把给定 APK 安装到设备并启动组件。官方文档明确写到，它不执行构建步骤，调用方必须传入 APK 路径；多 APK 安装可以通过逗号分隔的 `--apks` 完成。这个边界对性能测试很有用：构建和运行分开，测试报告里能清楚区分“这次测的是哪个构建产物”。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
+`android run` 只负责把给定 APK 安装到设备并启动组件。官方文档明确写到，它不执行构建步骤，调用方必须传入 APK 路径；多 APK 安装可以通过逗号分隔的 `--apks` 完成——构建和运行分开，测试报告里能清楚区分“这次测的是哪个构建产物”。[已验证: 官方文档, developer.android.com/tools/agents/android-cli]
 
 常见用法如下：
 
@@ -258,3 +258,5 @@ Android CLI 官方文档写明会收集基础使用数据，包括 `android` 命
 ## 小结
 
 Android CLI 的价值在于把 agent 从“猜项目、猜设备、猜按钮”推进到“读项目描述、固定设备基线、导出 UI 状态、调用 IDE 语义能力”。性能分析仍然要由 Profiler、Perfetto、APA、Macrobenchmark 和线上指标承担。把这条边界划清，agent 化工作流才不会把复现自动化误当成性能结论。
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-24"

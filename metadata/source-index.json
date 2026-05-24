@@ -11659,6 +11659,1811 @@
       ],
       "summary": "Android技术文章 - Android耗电量一体化监控: Battery Histo...",
       "scored_at": "2026-05-23T09:04:36.672147"
+    },
+    {
+      "title": "源码调研：Android 端侧 AI 推理栈边界澄清 — LiteRT / AICore / NNAPI 分层验证",
+      "path": "DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.576491",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：ART Verifier Quickening 与 Dex2oat 过滤器体系",
+      "path": "DeepResearch/2026-05-23-android-art-verifier-quickening-mechanism.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.636908",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 多媒体管线性能 —— Codec2 / Tunneled Playback / Media3 ABR 机制",
+      "path": "DeepResearch/2026-05-23-android-media-codec2-tunneled-playback-abr.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.699679",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 版本化线上诊断能力 — ApplicationExitInfo / ApplicationStartInfo / ProfilingTrigger 版本边界",
+      "path": "DeepResearch/2026-05-23-android-versioned-diagnostic-api-versions.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.761785",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿因果链分析",
+      "path": "DeepResearch/2026-05-23-android17-art-generational-gc-compose-composition.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.826626",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 17 DeliQueue 与 RecyclerView 预取机制",
+      "path": "DeepResearch/2026-05-23-android17-deliqueue-messagequeue-recyclerview.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.891359",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 17 JobScheduler/WorkManager Excessive CPU 与 Power Check 机制边界验证",
+      "path": "DeepResearch/2026-05-23-android17-jobscheduler-excessive-cpu-powercheck.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:55.955553",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "源码调研：Android 17 DeliQueue 与 RecyclerView 预取机制源码锚点验证",
+      "path": "DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.021157",
+      "file_type": "markdown",
+      "chapter": "ch07",
+      "android_related": true
+    },
+    {
+      "title": "AK RSS Digest（89 源精选）· 2026-05-23",
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-05-23-AK-RSS-Digest（89源精选）.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.086826",
+      "file_type": "markdown"
+    },
+    {
+      "title": "每日 Agent 实践 · 2026-05-23",
+      "path": "OpenClaw定时任务/Agent实践探索/2026-05-23-Agent实践探索.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:56.148566",
+      "file_type": "markdown"
+    },
+    {
+      "title": "ClawFeed 日报 - 2026-05-24",
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-05-24-ClawFeed24小时高价值一览.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.212250",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "DailyDigest 日终复盘 · 2026-05-23",
+      "path": "OpenClaw定时任务/DailyDigest日终复盘/2026-05-23-DailyDigest日终复盘.md",
+      "source": "incremental_scan",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:48:56.276812",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Evolver 周检（只读）· 2026-05-24",
+      "path": "OpenClaw定时任务/Evolver周检只读/2026-05-24-Evolver周检只读.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:56.339316",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "GitHub 自仓库 Issue/PR 监控 · 2026-05-23",
+      "path": "OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-05-23-GitHub自仓库IssuePR监控.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.402771",
+      "file_type": "markdown",
+      "chapter": "ch11",
+      "android_related": true
+    },
+    {
+      "title": "Gracker 的 Rss 订阅 · 2026-05-24",
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-05-24-Gracker的Rss订阅.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.467665",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "Obsidian 定时任务目录卫生巡检 · 2026-05-23",
+      "path": "OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-05-23-Obsidian定时任务目录卫生巡检.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.530791",
+      "file_type": "markdown",
+      "chapter": "ch06",
+      "android_related": true
+    },
+    {
+      "title": "Obsidian新增文件与今日总结 · 2026-05-23",
+      "path": "OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-05-23-Obsidian新增文件与今日总结（22点）.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.610747",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "2026-05-23-Perfetto每日提交监控",
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-05-23-Perfetto每日提交监控.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.674374",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "Perfetto 每日提交监控",
+      "path": "OpenClaw定时任务/Perfetto每日提交解读/2026-05-23-Perfetto提交解读.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.736660",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "SmartPerfetto / perfetto 协作日报 · 2026-05-22",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/2026-05-22-SmartPerfetto日报.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.800783",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "SmartPerfetto / perfetto 协作日报 · 2026-05-22",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-05-22/daily-report.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.865223",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "GitHub Snapshot — 2026-05-23",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-05-23/github-snapshot.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:56.963510",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Perfetto PR / CI Check",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-05-23/perfetto-pr-check.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:48:57.066395",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "SmartPerfetto Local Gate — 2026-05-23",
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-05-23/smartperfetto-test.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:57.130296",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "今天 OpenClaw 帮我干了点啥？！· 2026-05-23",
+      "path": "OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-05-23-今天干了啥日报（OpenClaw）.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:57.192899",
+      "file_type": "markdown"
+    },
+    {
+      "title": "夜航之一致性周检 · 2026-05-24",
+      "path": "OpenClaw定时任务/夜航之一致性周检/2026-05-24-夜航之一致性周检.md",
+      "source": "incremental_scan",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:48:57.255144",
+      "file_type": "markdown",
+      "chapter": "ch07",
+      "android_related": true
+    },
+    {
+      "title": "夜航之上发布准备 · 2026-05-23",
+      "path": "OpenClaw定时任务/夜航之上发布准备/2026-05-23-夜航之上发布准备.md",
+      "source": "incremental_scan",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:48:57.329170",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Skill 守门员审计 · 2026-05-23",
+      "path": "OpenClaw定时任务/工具链守门-SkillVetter/2026-05-23-工具链守门-SkillVetter.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:57.391847",
+      "file_type": "markdown"
+    },
+    {
+      "title": "掘金 Android 日报 · 2026-05-24",
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-05-24-掘金Android技术文章抓取.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.453196",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "AI一分钟写App，Android开发者的护城河到底在哪？",
+      "path": "OpenClaw定时任务/每周深度文草稿/2026-05-23-ai-studio-android-developer.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.516618",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "每日 Task 巡检 · 2026-05-23",
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-05-23-每日Task巡检与自修复.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.578567",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "2026-05-23-每日冥想流程",
+      "path": "OpenClaw定时任务/每日冥想流程/2026-05-23-每日冥想流程.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.643479",
+      "file_type": "markdown"
+    },
+    {
+      "title": "每日论文精读（AI） · 2026-05-23",
+      "path": "OpenClaw定时任务/每日论文精读（AI）/2026-05-23-每日论文精读（AI）.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.700816",
+      "file_type": "markdown"
+    },
+    {
+      "title": "2026-05-23-每日论文精读（Android）",
+      "path": "OpenClaw定时任务/每日论文精读（Android）/2026-05-23-每日论文精读（Android）.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.756054",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "2026-05-23-06-深度技术Review",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-06-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.820157",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 06:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-06-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.885557",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-23 07:24",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-07-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:57.953853",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task 2B 回炉修复报告 — 2026-05-23 07:14",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-07-知识加工(回炉).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.022529",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task9 闲时抽检 · 2026-05-23 08:36",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-08-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.084845",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告（新）",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-08-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.150542",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review 闲时抽检 · 2026-05-23 09:31",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-09-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.214562",
+      "file_type": "markdown",
+      "chapter": "ch03",
+      "android_related": true
+    },
+    {
+      "title": "2026-05-23-09-知识加工(新)",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-09-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.276548",
+      "file_type": "markdown",
+      "chapter": "ch08",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-23 10:24",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-10-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:58.341278",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工记录（新）",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-10-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.403905",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review 抽检 · 2026-05-23 11:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-11-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.468442",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 11:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-11-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.532919",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "Task 9 闲时抽检 · 2026-05-23 12:32",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-12-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.597024",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 12:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-12-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.657023",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "闲时抽检 · Task 9 深度技术 Review · 2026-05-23 13:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-13-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.718932",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 14:08",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-14-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.780462",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-23 15:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-15-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.846157",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 15:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-15-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:58.908830",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A · 知识加工 — 2026-05-23 16:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-16-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:58.974218",
+      "file_type": "markdown",
+      "chapter": "ch06",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识缺口挖掘报告",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-17-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.040425",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告（新章节）",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-18-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.105997",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-23 19:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-19-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.173274",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-23 20:25",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-20-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.240924",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-23 20:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-20-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.305969",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "2026-05-23-21-深度技术Review",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-21-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:59.372112",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Task 2A · 知识加工报告（新）",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-21-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.432266",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识缺口挖掘报告",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-22-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.493544",
+      "file_type": "markdown",
+      "chapter": "ch07",
+      "android_related": true
+    },
+    {
+      "title": "知识加工（回炉修复）— 2026-05-23 23:16",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-23-知识加工(回炉).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.558624",
+      "file_type": "markdown"
+    },
+    {
+      "title": "2026-05-23-23-知识加工(新)",
+      "path": "OpenClaw定时任务/知识加工/2026-05-23-23-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.617341",
+      "file_type": "markdown",
+      "chapter": "ch06",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-24 01:38",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-01-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.674297",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-24 01:07",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-01-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.734840",
+      "file_type": "markdown",
+      "chapter": "ch02",
+      "android_related": true
+    },
+    {
+      "title": "Task9 闲时抽检 · 2026-05-24 02:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-02-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.798097",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-24 02:04",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-02-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:48:59.863820",
+      "file_type": "markdown",
+      "chapter": "ch11",
+      "android_related": true
+    },
+    {
+      "title": "Task9 闲时抽检 · 2026-05-24 04:06",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-04-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.929606",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "深度技术 Review · 2026-05-24 05:20",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-05-深度技术Review.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:48:59.994972",
+      "file_type": "markdown",
+      "chapter": "ch11",
+      "android_related": true
+    },
+    {
+      "title": "Task 2A 知识加工报告 — 2026-05-24 05:17",
+      "path": "OpenClaw定时任务/知识加工/2026-05-24-05-知识加工(新).md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.057212",
+      "file_type": "markdown",
+      "chapter": "ch13",
+      "android_related": true
+    },
+    {
+      "title": "资讯简报（综合）· 2026-05-23",
+      "path": "OpenClaw定时任务/资讯简报（综合）/2026-05-23-资讯简报（综合）.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.126800",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Anthropic says Claude Mythos Preview has been used to find more than 10,000 high- or critical-severity vulnerabilities since the launch of Project Glasswing (Anthropic)",
+      "path": "Personal-Knowlodge/source/rss-nontech/2026-05-24_RSS_89e7efe19c.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.239139",
+      "file_type": "markdown",
+      "chapter": "ch04",
+      "android_related": true
+    },
+    {
+      "title": "JM Law Group Cryptocurrency Fraud Attorneys for Global Clients",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_0472fd3417.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.311985",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "Q&A with Sundar Pichai on the future of Google Search, Google's place in the AI race, public skepticism toward AI, AI agents, AI safety, TPUs, and more (New York Times)",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_0b0be56682.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.376537",
+      "file_type": "markdown"
+    },
+    {
+      "title": "如何解决国内镜像aosp进行repo sync太慢问题？",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_2db39d9294.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.438339",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "TH-DATA 助力 WhatsApp 营销批量筛选有效活跃号码",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_30f0d61738.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.503407",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "🖼 Android 17 将引入 Noto 3D 表情设计",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_39c2fd2578.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.566254",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "精准触达目标用户：TG 筛号服务如何高效筛选活跃有效手机号码",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_4621e5907b.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.633701",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "跳过 SMSfeee 问题，登录 Telegram 的方法分享。",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_5f36e8caaf.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.699805",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "+86 用户登录 telegram 需要验证码，这样可以跳过 smsfee。",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_79317609fc.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.761373",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Google I/O 2026 | 开发者主题演讲精华集锦",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_7fd1091371.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.827753",
+      "file_type": "markdown",
+      "chapter": "ch05",
+      "android_related": true
+    },
+    {
+      "title": "↩️[GIF] Android 17 将推出类似苹果 Handoff（接力） 的功能",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_b9a8050632.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:00.890136",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Karpathy 说 AI 编程准确率 94%，但我劝你别高兴太早",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_c19282c03e.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:00.959126",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "写组件文档写到吐？我用 AI 自动生成 Storybook，同事以后直接抄",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_caa8b4a50c.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:01.028693",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Samsung's bonus deal is fueling employee resentment over a 100x payout gap between memory division staff and those making smartphones, TVs, and home appliances (Yoolim Lee/Bloomberg)",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_e5116ed396.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.086175",
+      "file_type": "markdown"
+    },
+    {
+      "title": "The memory shortage is causing a repricing of consumer electronics",
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-24_RSS_ec79cfe3c2.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.148797",
+      "file_type": "markdown"
+    },
+    {
+      "title": "边缘计算与5G的协同发展",
+      "path": "X 文章/2026-05-23-1238-edge5g-边缘计算与5G协同发展.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:49:01.203733",
+      "file_type": "markdown"
+    },
+    {
+      "title": "机器学习在金融风控中的应用",
+      "path": "X 文章/2026-05-23-1238-financetech-机器学习金融风控应用.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.259861",
+      "file_type": "markdown"
+    },
+    {
+      "title": "可持续发展与绿色科技创新",
+      "path": "X 文章/2026-05-23-1238-greentech-可持续发展与绿色科技创新.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.313829",
+      "file_type": "markdown"
+    },
+    {
+      "title": "量子计算的现状与未来",
+      "path": "X 文章/2026-05-23-1238-quantumtech-量子计算现状与未来.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:01.368347",
+      "file_type": "markdown"
+    },
+    {
+      "title": "AI驱动的软件开发新范式",
+      "path": "X 文章/2026-05-23-1238-techwriter-AI开发新范式.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.420992",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Changelog",
+      "path": "awesome-ai-field-notes/CHANGELOG.md",
+      "source": "incremental_scan",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:01.495424",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "God of GPT",
+      "path": "awesome-ai-field-notes/README.md",
+      "source": "incremental_scan",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:01.559987",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "用 MCP + Claude Code 搭建 AI Agent 工作流实战",
+      "path": "awesome-ai-field-notes/content/2aef58dd.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.627538",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "万字总结：我的 Harness Engineering 项目开发实践经验完整分享（上）",
+      "path": "awesome-ai-field-notes/content/2kX8t9cK.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.696912",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "Karpathy: Local Demo to Production, DevOps Is the Hardest Part",
+      "path": "awesome-ai-field-notes/content/5c7a3ee4.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.762022",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Neuro-Symbolic AI Solves RAG Scale Failure",
+      "path": "awesome-ai-field-notes/content/698e1058.md",
+      "source": "incremental_scan",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.834007",
+      "file_type": "markdown"
+    },
+    {
+      "title": "LLM Powered Autonomous Agents（基于大语言模型的自主智能体）",
+      "path": "awesome-ai-field-notes/content/90udpdgs.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 1,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:01.901481",
+      "file_type": "markdown",
+      "chapter": "ch03",
+      "android_related": true
+    },
+    {
+      "title": "acpx 0.6.0：Claude/Codex 智能体控制工具再更新",
+      "path": "awesome-ai-field-notes/content/b58e207e.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:01.970962",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Google 推出 Gemini 3.1 Flash TTS：音频标签控制语音风格与节奏",
+      "path": "awesome-ai-field-notes/content/e5f6g7h8.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:02.036492",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Scaling Managed Agents：解耦大脑与双手",
+      "path": "awesome-ai-field-notes/content/grcvmlet.md",
+      "source": "incremental_scan",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:02.098813",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "title": "What 81,000 People Want from AI（Anthropic 81K 用户访谈研究）",
+      "path": "awesome-ai-field-notes/content/l92x6515.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 3
+      },
+      "scored_at": "2026-05-24T05:49:02.162407",
+      "file_type": "markdown"
+    },
+    {
+      "title": "tibo_maker 复盘：从 9 个失败产品到 5 个 AI 产品月入 100 万美元的方法论",
+      "path": "awesome-ai-field-notes/content/q7r8s9t0.md",
+      "source": "incremental_scan",
+      "score": 17,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:02.221761",
+      "file_type": "markdown"
+    },
+    {
+      "title": "Automated Alignment Researchers：利用大语言模型扩展可扩展监督",
+      "path": "awesome-ai-field-notes/content/tIs9VugG.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 1,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:02.281744",
+      "file_type": "markdown"
+    },
+    {
+      "title": "OpenClaw Automation",
+      "path": "awesome-ai-field-notes/openclaw/README.md",
+      "source": "incremental_scan",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 1,
+        "verifiability": 4
+      },
+      "scored_at": "2026-05-24T05:49:02.340493",
+      "file_type": "markdown"
+    },
+    {
+      "title": "精读笔记",
+      "path": "论文/AI-2026-05-23-declarative-agent-workflow/03-精读.md",
+      "source": "incremental_scan",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:02.398470",
+      "file_type": "markdown"
+    },
+    {
+      "title": "AppFlow: Memory Scheduling for Cold Launch of Large Apps on Mobile and Vehicle Systems",
+      "path": "论文/Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md",
+      "source": "incremental_scan",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "scored_at": "2026-05-24T05:49:02.456583",
+      "file_type": "markdown",
+      "chapter": "ch16",
+      "android_related": true
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md",
+      "title": "OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）",
+      "summary": "AOSP 标准安装链路（PMS→InstallPackageHelper→DexOptHelper→ART Service→artd→dex2oat）与 vivo Turbo/小米 HyperOS 厂商定制安装优化路径的源码级对比，包含编译过滤器决策表、installd 改造机制、云编译 .dm 集成方式及厂商差异化策略分析。",
+      "chapter": "ch01.09",
+      "processed_at": "2026-05-24 06:11",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md",
+      "title": "Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取机制",
+      "summary": "Android 17 DeliQueue 无锁 MessageQueue 实现的源码验证，Treiber Stack + Min-Heap 混合数据结构，ARM64 LSE 原子指令优化（高竞争场景 CAS 性能提升约 3x），DeliQueue 消息入队全流程与 RecyclerView GapWorker 预取链路的性能关联分析。",
+      "chapter": "ch01.13",
+      "processed_at": "2026-05-24 06:11",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md",
+      "title": "Android 端侧 AI 推理栈边界澄清 — LiteRT / AICore / NNAPI 分层验证",
+      "summary": "Android 端侧 AI 推理栈三层架构（NNAPI→LiteRT→AICore）的源码验证，Android 17 新增 FEATURE_NEURAL_PROCESSING_UNIT 强制声明机制，LiteRT 与 TensorFlow Lite 的品牌重命名关系，AICore 内部通过 NNAPI 调用 NPU 的封装路径及版本演进对照。",
+      "chapter": "ch05.14",
+      "processed_at": "2026-05-24 06:11",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android17-art-generational-gc-compose-composition.md",
+      "title": "Android 17 ART 分代 GC 与 Compose Composition 分配/停顿因果链分析",
+      "summary": "ART CC 收集器分代架构（Young Gen BumpPointerSpace + Old Gen MarkCompactSpace）源码分析，Compose Composition 阶段 SlotTable/LayoutNode/Snapshot 短生命周期对象分配模式，年轻代 STW copy 快速回收对帧停顿的影响路径，含完整调用链和 Perfetto 可观测性指标。",
+      "chapter": "ch04.08",
+      "processed_at": "2026-05-24 06:11",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android-art-verifier-quickening-mechanism.md",
+      "title": "ART Verifier Quickening 与 Dex2oat 编译过滤器体系",
+      "summary": "dex2oat 四大编译过滤器（verify/quicken/speed/speed-profile）的机制源码分析，DexToDex quickening 将符号引用替换为实际偏移量的具体过程，vdex 文件结构与验证加速原理，运行时各场景（first-boot/install/bg-dexopt/OTA）编译过滤器触发条件对照表。",
+      "chapter": "ch01.07",
+      "processed_at": "2026-05-24 06:11",
+      "type": "deepresearch-inject"
     }
   ]
 }

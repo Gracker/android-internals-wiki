@@ -20,6 +20,9 @@ pipeline_stage: ready-to-publish
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-05-07T01:44:08+08:00"
 last_task6_at: "2026-05-07T02:05:00+08:00"
+last_task6_audit: "2026-05-24"
+last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
+last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲；L1 禁用词正文未命中；frontmatter 完整；outline 锚点覆盖 9/9；无回炉项。"
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
@@ -41,6 +44,28 @@ task6_review_notes: "2026-05-07 Task6：pass-light-edit。小修 6 处：本章/
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Kernel 6.12 相关性能变化的可核验边界
+- 🔹 EEVDF fair scheduler 与 sched_ext 的调度器变化
+- 🔹 F2FS checkpoint merge、io_uring 与 dm-verity 的存储栈优化
+- 🔹 AutoFDO for GKI Kernel 的限定收益口径
+- 🔹 ART 运行时优化与 DeliQueue lock-free MessageQueue
+- 🔹 MGLRU 与 LMK 的协同边界
+- 🔹 Perfetto 中验证 Kernel 6.12 优化的观察点
+- 🔹 Android 平台版本与 GKI 分支的版本边界
+- 🔹 常见误区与排查结论
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> 本节涉及 Android 平台版本、GKI release branch 和 Linux mainline 版本三层边界。
+> 后续加工或复审时，所有性能收益都必须保留来源、设备、分支和适用条件。
+<!-- outline-end -->
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 

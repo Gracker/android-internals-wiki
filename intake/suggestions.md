@@ -3279,6 +3279,91 @@
 - **结论**：本轮未发现评分 ≥ 14 且尚未覆盖、需要独立新建小节的知识缺口。
 - **报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-05-知识加工(新).md`
 
+## [Task2A Gap Mining] 本轮未新建章节 — 2026-05-24 06:04
+- **类型**：缺口挖掘去重记录
+- **已检查方向**：Android Studio Panda LeakCanary Profiler、ART Verifier / Quickening、Codec2 / Tunneled Playback / Media3 ABR、ApplicationExitInfo / ApplicationStartInfo / ProfilingTrigger、ART 分代 GC + Compose、DeliQueue + RecyclerView、JobScheduler Excessive CPU / Power Check、Android 17 原生应用锁 / 侧载政策。
+- **结论**：评分 ≥14 的候选均已有章节承接，适合进入 Task2B / Task9 补证据或修版本边界；本轮不创建新章节。
+- **报告**：`OpenClaw定时任务/知识加工/2026-05-24-06-知识加工(新).md`
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md]
+- **建议补充**：AndResGuard 资源混淆原理（短路径优化 resources.arsc / 签名文件 / ZIP 索引）与极限压缩（7-Zip 大字典 + 强制压缩 PNG/JPG），微信 7000+ 资源文件的实际优化数据
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md]
+- **建议补充**：无用资源删除三阶段演进（Lint → shrinkResources → realShrinkResources），shrinkResources 的两大缺陷：不处理 resources.arsc、仅替换空文件不真正删除；realShrinkResources 利用 Public ID 机制实现非连续资源 ID 的思路
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md]
+- **建议补充**：资源合并方案（Big Resource File）——将所有资源合并为单一文件，需自行实现资源解析（PNG/JPG/XML → Drawable）和资源缓存池管理（参考 Glide），Facebook App 已采用类似方案
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md]
+- **建议补充**：Assets 无用资源识别的难点（代码中引用方式多样）与 Matrix 的 UnusedAssetsTask 简单实现
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **过时内容**：Instant Run（Android Plugin 2.3+）基于 Split APK + Multidex 的增量编译方案，存在多进程不支持、Split APK 安装耗时、javac 全量编译等问题
+- **建议更新至**：Android Studio 3.5+ 的 Apply Changes（基于 JVMTI 运行时替换），以及 Android Studio 2024+ Live Edit 方案；AGP 8.x 对编译管线的重构
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **建议补充**：d8（替代 dx，Dex 大小减少 3-5%）、R8（合并 ProGuard + d8 功能）、ReDex（直接操作 Dex，Interdex/Oatmeal/StripDebugInfo/TypeErasure）三种代码优化工具的对比与演进关系
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：编译插桩四大应用场景：代码生成（APT）、代码监控（网络/耗电/线程监控）、代码修改（无痕埋点/第三方SDK修复）、代码分析（自定义代码检查）；Java 文件级 vs 字节码级两种介入时机
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：ASM 字节码操作核心概念——Visitor 模式（Core API）vs Tree API、栈帧结构（本地变量表 + 操作数栈 + 常量池引用）、COMPUTE_MAXS 自动计算、异常处理对操作数栈的影响；与 AspectJ 对比（AspectJ 封装多性能差，ASM 直接高效）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：Java 字节码 vs Dalvik 字节码三大差异——体系结构（栈 vs 寄存器）、格式结构（Class 独立常量池 vs Dex 共享常量池）、指令优化（Dalvik 精简指令集）；对选择插桩工具的影响
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：ReDex InstrumentPass——Dex 级别字节码注入（Method Tracing / Block Tracing），直接操作 Dalvik 字节码的工具对比（ASMDEX/Dexter/Dexmaker/Soot Smali），适合不需要源码的运行时监控场景
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **建议补充**：编译速度优化实践——Buck exopackage 方案、Build Cache 远端缓存、AAPT2 增量资源编译（Compile + Link 两步）、微信理想编译方案（壳 APK + Assets ClassesN.dex + Oatmeal 快速 Odex + vmSafeMode 关闭 JIT）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch25 包体积优化 — 2026-05-24
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **建议补充**：持续交付流程中的代码质量保障——自定义代码检查（微信日志规范/禁止 new Thread）、第三方扫描（Coverity/Infer）、Code Review 工具集成（Gerrit/Phabricator）；Infer 扫描结果需配合人员培训避免粗暴修复
+- **参考书覆盖深度**：概述
+
+## [Task6 Audit] 18.6 SurfaceView 直出路径 — 2026-05-24
+- **类型**：需确认 / 版本差异 / 发布状态闭环
+- **位置**：`src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md` L374、L393-L394；frontmatter `status` / `pipeline_stage` / `task9_result`
+- **问题**：闲时抽检发现正文仍把 SurfaceView 的 BLAST 模式 / `createBlastSurfaceControls()` 版本边界写成 Android 11+；而 `logs/deep-review/2026-05-06-02-deep-review.md` 已记录 Android 12.0.0_r1 起才出现 `createBlastSurfaceControls()` 与 `BLASTBufferQueue`，Android 8-11 应单独处理。frontmatter 同时存在 `task9_result: needs-rework` 与发布态字段，闭环状态不一致。
+- **建议**：Task2B 按 Task9 结论拆成 Android 7- / Android 8-11 / Android 12+ 三段，修正 Resize、首帧延迟与 Trace 观察段；修复后交 Task9 复审，通过前不要标 ready-to-publish。
+- **review 日志**：logs/review/2026-05-24-07-audit.md
+
 
 
 ## [Task2A Gap Mining] 6.6 vold、FUSE 与 Scoped Storage I/O 性能边界 — 2026-05-24
@@ -3312,6 +3397,31 @@
 - **位置**：典型模式对比表「TextureView」
 - **问题**：表格把 TextureView 核心特点写成「灵活但多一次拷贝」。TextureView 的常见额外成本更准确地说是 App 侧对 `SurfaceTexture` 内容进行纹理采样/二次合成，不能一概等同于 CPU 内存拷贝。
 - **建议**：改成「灵活但多一次纹理采样/App 侧合成成本」，必要时在 18.7 中再区分 GPU 采样、合成与真实 buffer copy。
+
+
+## [2026-05-24 09:04] Task 2A 知识缺口挖掘空跑记录
+
+### 检查结论
+本轮未发现评分 ≥ 14 且尚未被 `src/SUMMARY.md` 覆盖的知识缺口，因此未创建新章节。
+
+### 已检查方向
+- Android Studio Panda LeakCanary / heap dump 工作流：已覆盖于 14.14。
+- Android Performance Analyzer 与 AI 辅助 Trace 分析：已覆盖于 14.18。
+- Android Developer Verification / 侧载边界：已覆盖于 1.21。
+- Android 17 原生 App Lock：偏隐私安全，暂不纳入性能优化章节。
+- Android Studio Panda JDK 管理 / Gradle JVM criteria：偏开发环境与构建配置，暂不单独建章。
+- 近期 research-feeds 中 Perfetto v54/v53、Frame Timeline、Compose Pausable Composition、View 层级优化：已映射到现有章节或回炉队列。
+
+### 后续建议
+下一轮可从 `metadata/source-index.json` 高分未映射条目中继续排除“已覆盖但未写 mapped_chapters”的历史数据噪声，优先寻找同时满足「性能核心场景 + 官方/AOSP 证据 + SUMMARY 未覆盖」的主题。
+
+## [Task2A Gap Mining] 2026-05-24 10:04 — 本轮无新章节创建
+- **类型**：知识缺口挖掘记录
+- **结论**：本轮未发现评分 ≥ 14 且尚未被现有章节覆盖的新缺口。
+- **已检查方向**：Android 17 anomaly detection / ProfilingManager triggers、App Memory Limits、Android Studio Panda LeakCanary Profiler、Android Performance Analyzer AI、sched_ext OEM、InputDispatcher stale event、ART ReferenceQueue / DeliQueue、ARM64 this_cpu_ops、NFC / BiometricService、Android Halo。
+- **去重依据**：`16.5`、`23.9`、`25.12`、`26.12`、`14.18`、`14.14`、`17.4`、`3.7`、`3.8`、`3.10`、`4.8`、`4.9`、`1.13` 已覆盖主要高分方向。
+- **后续建议**：下一轮缺口挖掘优先避开上述方向，转向未覆盖的官方性能专题或具备 ≥3 篇高质量素材的新 AOSP 模块。
+
 
 
 ## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-24
@@ -3357,6 +3467,33 @@
 - **问题**：“参考资料”后仍接正文级 RenderEffect 章节，和前文 RenderEffect 小节重复并产生结论冲突。
 - **建议**：将 L512-L688 合并回 RenderEffect 小节，参考资料保持在文件末尾；合并时以已验证源码链为准。
 
+## [Task2A Gap Mining] 2026-05-24 15:04 — 本轮无合格新章节
+
+- **检查范围**：空 draft 章节、source-index 高分未映射项、最近 research-feeds、最近 daily-info、AOSP 模块对照、官方 Android 17 / APA 文档。
+- **结论**：未发现评分 ≥14 且尚未被现有章节覆盖的知识缺口，本轮不创建新章节。
+- **已排除方向**：Android Performance Analyzer（已覆盖 14.18）、ProfilingTrigger / ApplicationStartInfo（已覆盖 26.12 / 26.13 / 14.7）、Developer Verification（已覆盖 1.21）、App Lock（性能相关性不足）、Wifi / Connectivity / DnsResolver（已覆盖 12.5 / 12.6 / 24.9）、Bluetooth（已覆盖 11.6）、NFC（素材不足，暂不建章）。
+- **后续观察**：IME / InputMethodManager 输入延迟、NFC/UWB/Nearby 功耗边界、APA 稳定版新增能力。
+- **报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-24-15-知识加工(新).md`
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-05-24
+- **类型**：源码准确性 / 术语精度
+- **位置**：L263 Binary Semaphore vs Timeline Semaphore
+- **问题**：正文写“Binary Semaphore signal 一次后回到 unsignal 状态”。Vulkan binary semaphore 是 signal 后保持 signaled，直到被队列 wait 消耗后才回到 unsignaled；如果没有 wait，并不会因为 signal 本身自动复位。
+- **建议**：改成“Binary Semaphore 一次 signal 对应一次 wait，wait 消耗后回到 unsignaled；跨帧复用通常需要重新 signal/wait 或使用新的同步对象”。
+
+## [Task9 Deep Review] 1.16 Audio Pipeline 延迟与性能 — 2026-05-24
+- **类型**：版本差异 / API 边界
+- **位置**：L241-L247、L380 AAudio Power Saving Offloaded 模式
+- **问题**：正文一处已按官方 NDK 文档写 Android 16/API 36 的 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`，后文又写 API level、支持格式和入口仍需确认，口径不一致；同时“使用这个模式需要 WIU 前台服务”把 Android 17 后台音频 hardening 条件混进 AAudio offloaded 模式本身。
+- **建议**：将 API level 收敛为 API 36/Android 16，设备覆盖和格式组合可保留待验证；WIU/FGS 条件放回 Android 17 后台音频段，表述为“后台调用 `AAudioStream_write` 等音频 API 时需满足可见 Activity 或合规 FGS/WIU”，不要写成 AAudio offloaded 模式的通用前提。
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-24
+- **类型**：源码锚点 / 版本标注
+- **位置**：L244 Android 17 DeliQueue 来源标注
+- **问题**：正文标注 `[来源: AOSP android-17-beta3, frameworks/base/core/java/android/os/MessageQueue.java; Android Developers Blog 2026-02-17]`，但公开 android.googlesource 上未核到 `android-17-beta3` tag。DeliQueue 机制与 targetSdk 37 默认启用可由 Android Developers Blog 和 `developer.android.com/about/versions/17/changes/messagequeue` 支撑，AOSP tag 需要换成可访问的 release tag / branch / commit。
+- **建议**：删除不可核的 `android-17-beta3` tag，改为官方 MessageQueue behavior change 文档 + Developers Blog；如果要保留 AOSP 源码锚点，补可访问的 `android-latest-release`/正式 tag/commit 链接。
+
+
 
 ## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-24
 - **类型**：源码准确性 / 版本差异
@@ -3382,3 +3519,25 @@
 - **问题**：章节末尾仍保留素材归档与编辑过程痕迹（AIW 源码调研块、来源/注入时间/价值说明），与发布稿只面向读者的规范冲突。
 - **建议**：Task2B 将已验证内容整合进主体章节；删除或移出 AIW 调研标记和素材索引。未验证技术点保留在 queue / suggestions / 参考资料中，不作为发布正文。
 - **review 日志**：logs/review/2026-05-24-21-review.md
+
+
+## [Task2A Gap Mining] 2026-05-24 22:04
+- **结论**：本轮无空 draft 章节；缺口挖掘未发现评分 ≥14 且尚未覆盖的候选章节。
+- **已检查方向**：
+  - Phase 0：`src/` 中未发现 `status: draft` 章节。
+  - source-index 高分未映射素材：Perfetto v53/v54、ADPF / ProfilingManager、sched_ext、RenderEffect、BufferQueue、ApplicationExitInfo、Android 16/17 DeliQueue 等方向均已落到现有章节或 Task2B/Task9 队列。
+  - Android 16 官方性能与电池能力：system-triggered profiling、ADPF headroom、JobScheduler pending reasons 已由 `26.12`、`25.16`、`25.14` 等章节覆盖。
+  - AOSP / 内核结构方向：sched_ext 已由 `17.4 sched_ext 与 OEM BPF 调度器` 覆盖。
+  - Android Studio Panda / Memory Profiler：属于工具版本与 IDE 能力更新，已有 `14.14` / `14.18` 相邻覆盖，暂不拆新节。
+- **避免重复挖掘**：下一轮优先检查新增 `research-feeds/` 与 `daily-info/`，不要重复把以上方向当新缺口录入。
+
+## [Task2A Gap Mining] 2026-05-24 23:04 — 本轮无新章节创建
+- **类型**：知识缺口挖掘记录
+- **结论**：本轮无空 draft 章节；缺口挖掘未发现评分 ≥14 且尚未被现有章节覆盖的候选章节。
+- **已检查方向**：
+  - Phase 0: src/ 中未发现 status: draft 的空章节。
+  - 最近 research-feeds: Perfetto v53/v54、Frame Timeline、Compose Pausable Composition、View 层级优化均已落到现有章节或回炉队列。
+  - 最近 daily-info: Android Studio Panda / LeakCanary Profiler 已由 14.14、14.18、23.9 覆盖；Android 17 Developer Verification 已由 1.21、16.5 覆盖；App Lock 与性能主线相关性不足。
+  - 官方 Android 16/17 文档: system-triggered profiling、ApplicationStartInfo、JobScheduler pending reasons、ADPF headroom、App memory limits、background audio hardening、ACCESS_LOCAL_NETWORK、ECH/domainEncryption 均已有 12.4、16.5、23.9、24.16、25.14、25.16、25.17、26.12、26.13 等章节承接。
+  - AOSP/模块方向: Connectivity / DnsResolver / Wi-Fi / Bluetooth / Media / sched_ext / DeliQueue / DMA-BUF / Gralloc 方向已有对应章节或 Task2B/Task9 队列。
+- **避免重复挖掘**：下一轮优先检查 2026-05-25 之后新增的 `research-feeds/`、`daily-info/` 和官方文档变更，避开上述已覆盖方向。

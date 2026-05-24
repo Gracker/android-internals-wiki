@@ -1,5 +1,4 @@
 ---
-
 title: "ProfilingManager"
 chapter: "14.7"
 section: "14.7"
@@ -48,6 +47,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-18"
 task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检：needs-rework。P0 1 / P1 0；显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包，官方签名实际为 android.os.ProfilingResult。；2026-05-18 15:25 Task9 deep-review: Task2B 已修正 ProfilingResult 包名口径；本轮 P0 0 / P1 0，queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-24"
 ---
 
 # 14.7 ProfilingManager
