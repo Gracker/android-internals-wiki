@@ -1,6 +1,6 @@
 {
-  "total": 379,
-  "draft": 21,
+  "total": 380,
+  "draft": 22,
   "ready-for-review": 167,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -1887,8 +1887,8 @@
   "total_review_sections": 211,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T13:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-24T16:18:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -6274,6 +6274,19 @@
       "p0": 2,
       "p1": 1,
       "p2": 2
+    },
+    "22.16": {
+      "section": "22.16",
+      "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
+      "file": "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-24",
+      "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
+      "gap_score": 18,
+      "material_count": 5,
+      "queue_priority": 80
     }
   },
   "task2a_last_processed": {
@@ -6532,15 +6545,16 @@
   "last_task9_review_summary": "Task9 deep-review: 26.18 pass-tech-review 并自动晋升 finalized；P0 0 / P1 0 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-24",
-    "time": "02:04",
-    "section": "25.17",
-    "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+    "time": "16:18",
+    "section": "22.16",
+    "file": "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
+    "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
     "result": "gap-created",
     "gap_score": 18,
-    "candidate_count": 4,
+    "candidate_count": 6,
     "qualified_count": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-24T02:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-24T16:18:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -6551,18 +6565,18 @@
   "last_task6_audit_log": "logs/review/2026-05-24-07-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-24",
-    "time": "02:04",
+    "time": "16:18",
     "mode": "gap-mining",
     "empty_draft_count": 0,
-    "candidate_count": 4,
+    "candidate_count": 6,
     "qualified_count": 1,
     "created_sections": [
-      "25.17"
+      "22.16"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
     ],
-    "top_candidate": "Android 17 后台音频硬化与播放功耗治理"
+    "top_candidate": "Android 17 DeliQueue 与 RecyclerView 预取时序优化"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6683,22 +6697,24 @@
   },
   "task2a_gap_mining_summary": {
     "date": "2026-05-24",
-    "time": "02:04",
+    "time": "16:18",
     "created_sections": [
-      "25.17"
+      "22.16"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
     ],
     "gap_scores": {
-      "25.17": {
+      "22.16": {
         "素材丰富度": 4,
         "与全书目标相关性": 5,
         "读者需求度": 4,
         "时效性": 5,
         "total": 18
       }
-    }
+    },
+    "candidate_count": 6,
+    "qualified_count": 1
   },
   "last_task2a_processed_status": "ready-for-review",
   "section_21_11": {
@@ -7181,5 +7197,18 @@
     "task2a_result": "processed-draft",
     "last_task2a_at": "2026-05-24T04:15:00+08:00",
     "task6_state": "pending"
+  },
+  "section_22_16": {
+    "section": "22.16",
+    "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
+    "file": "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-24",
+    "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
+    "gap_score": 18,
+    "material_count": 5,
+    "queue_priority": 80
   }
 }
