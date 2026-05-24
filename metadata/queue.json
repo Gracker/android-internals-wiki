@@ -19051,6 +19051,42 @@
           "suggestion": "按 Android 10- / Android 11 / Android 12+ 三段描述，或将第一段改为 Android 11 及以下并补一句 Android 11 的特殊性。"
         }
       ]
+    },
+    {
+      "id": "task2a-gap-20260524-25.18-audio-offload-audiotrack-power",
+      "section": "25.18",
+      "section_title": "音频 Offload 与 AudioTrack 精确控制功耗实践",
+      "priority": 80,
+      "title": "音频 Offload 与 AudioTrack 精确控制功耗实践",
+      "description": "补齐应用层音频 Offload、AAudio compressed offload 与 Android 17 AudioTrack 精确 flush / 编解码器来源 的功耗实践章节。",
+      "reason": "研究素材与官方文档显示 Android 16+ AAudio compressed offload、Android 17 AudioTrack flush / 编解码器来源 与 Assistant 专用音量流已经形成新的应用层音频性能边界；现有 §1.16 / §8.8 偏机制，§25.17 偏后台音频 hardening，缺少面向播放器功耗治理的实践小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md"
+      ],
+      "material_paths": [
+        "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md",
+        "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md",
+        "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md",
+        "https://developer.android.com/ndk/reference/group/audio",
+        "https://developer.android.com/reference/android/media/AudioTrack",
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "gap_score": {
+        "素材丰富度": 3,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T13:04:00+08:00"
     }
   ],
   "metadata": {
@@ -19068,11 +19104,11 @@
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-24T11:33:19+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-24T13:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "pending": 171,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
-  "last_task2a_gap_mining": "25.16",
-  "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00"
+  "last_task2a_gap_mining": "25.18",
+  "last_task2a_gap_mining_at": "2026-05-24T13:04:00+08:00"
 }
