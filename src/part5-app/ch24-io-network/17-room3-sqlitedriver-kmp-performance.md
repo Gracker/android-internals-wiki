@@ -5,9 +5,9 @@ section: "24.17"
 status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-alpha04"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-alpha05"
 last_verified: "2026-05-25"
-last_verified_against: "AndroidX Room3 3.0.0-alpha04 release notes + androidx.sqlite API reference + Android Developers performance docs"
+last_verified_against: "AndroidX Room3 3.0.0-alpha05 release notes + androidx.sqlite API reference + Android Developers performance docs"
 confidence: medium
 sources:
   - type: official
@@ -37,11 +37,11 @@ related_chapters: ["10.7", "14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-25-01-review.md"
@@ -101,7 +101,7 @@ Room 3.0 不是一次普通依赖升级。它把包名移到 `androidx.room3`，
 
 ## Room 3.0 的变化边界
 
-截至 2026-05-25，Room 3.0 最新公开版本是 `3.0.0-alpha04`，发布日期为 2026-05-06。官方 release notes 把它定义为 Room 2.x 的大版本更新，包名从 `androidx.room` 迁到 `androidx.room3`，Maven 坐标也相应改为 `androidx.room3:room3-*`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+截至 2026-05-25，Room 3.0 最新公开版本是 `3.0.0-alpha05`（2026-05-19 发布），alpha04（2026-05-06）引入了 connection pool 改进，alpha05 新增 `@Relation`/`@Junction` 的 `parentColumns`/`entityColumns` 数组化以支持 composite relationship keys。本文按 alpha05 验证；alpha 阶段 API 仍可能变化，生产接入需固定版本。官方 release notes 把它定义为 Room 2.x 的大版本更新，包名从 `androidx.room` 迁到 `androidx.room3`，Maven 坐标也相应改为 `androidx.room3:room3-*`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
 
 迁移评估先看破坏性变化，不看新平台覆盖。Room 3.0 保留 `@Database`、`@Entity`、`@Dao`、`@Query` 这类注解模型，但运行期和编译期的基础设施已经换掉：
 
@@ -162,15 +162,20 @@ plugins {
 }
 
 dependencies {
-    val roomVersion = "3.0.0-alpha04"
+    val roomVersion = "3.0.0-alpha05"
     implementation("androidx.room3:room3-runtime:$roomVersion")
     ksp("androidx.room3:room3-compiler:$roomVersion")
+
+    // Android 端用平台 SQLite 驱动；KMP commonMain 改用 BundledSQLiteDriver
+    implementation("androidx.sqlite:sqlite-framework:$sqliteDriverVersion")
 }
 
 room3 {
     schemaDirectory("$projectDir/schemas")
 }
 ```
+
+`SQLiteDriver` 是 Room 3.0 打开数据库的入口。Android 端可选 `AndroidSQLiteDriver`（委托平台 `SQLiteDatabase`）或 `BundledSQLiteDriver`（内嵌 SQLite，KMP commonMain 共享）；构建时通过 `RoomDatabase.Builder.setDriver(...)` 指定。[已验证: developer.android.com/reference/androidx/sqlite/SQLiteDriver]
 
 schema 是迁移验证输入，不是构建产物垃圾。自动迁移、schema diff、CI 校验都依赖它；漏提交 schema 文件，后续版本的迁移测试会失去基线。多 flavor 项目要把各变体输出目录纳入 CI artifact 或仓库管理，避免只在 debug 变体验证通过。
 
@@ -209,7 +214,7 @@ Room 3.0 迁移后的性能验收不能只看“编译通过”和“测试通�
 | 验证线 | 采集指标 | 工具 |
 | --- | --- | --- |
 | 冷启动数据库打开 | app start 到 database ready 的耗时、Migration 耗时、首次 query 耗时 | Macrobenchmark + app 自定义 trace |
-| 查询与事务 | P50 / P90 / P99 查询耗时、写事务耗时、statement 数量 | DAO wrapper 采样、Room QueryCallback、Perfetto |
+| 查询与事务 | P50 / P90 / P99 查询耗时、写事务耗时、statement 数量 | DAO/Repository 包装层采样、SQLiteStatement 包装埋点、Perfetto |
 | 线程与锁等待 | 主线程 disk read/write、数据库线程 runnable / sleeping、连接等待栈 | StrictMode、Perfetto、ANR traces |
 | 构建与 CI | clean build、增量构建、KSP task 耗时、schema diff | Gradle Build Scan、CI 日志 |
 
@@ -259,7 +264,7 @@ Room 3.0 目前仍是 alpha。生产接入应默认使用灰度、双版本 sche
 
 | 风险 | 触发条件 | 回滚策略 |
 | --- | --- | --- |
-| alpha API 变化 | 后续 alpha / beta 改签名或行为 | 固定版本到 `3.0.0-alpha04`，升级单独开分支 |
+| alpha API 变化 | 后续 alpha / beta 改签名或行为 | 固定版本到当前验证版本，升级单独开分支 |
 | KSP 配置缺失 | 模块未接入 KSP 或 Kotlin Gradle Plugin | 数据层模块先迁移，业务模块通过接口调用 |
 | schema 漏提交 | flavor 输出目录未纳入仓库或 CI | CI 强制检查 schema diff，缺文件直接失败 |
 | SupportSQLite 扩展点失效 | 旧 helper、callback、raw query 工具仍依赖旧类型 | 白名单 wrapper，逐项迁到 driver / DAO |
@@ -269,6 +274,18 @@ Room 3.0 目前仍是 alpha。生产接入应默认使用灰度、双版本 sche
 
 回滚不能只回滚依赖。schema 一旦前进，用户设备上的数据库版本也前进了；回滚版本必须能识别新 schema，或者通过服务端开关停用触发新 schema 的功能。发版前要跑“升级到 Room 3.0 → 写入新数据 → 回滚到旧版本”的兼容测试。无法兼容时，灰度范围要小到可承受数据修复成本。
 
+## 版本边界
+
+Room 3.0 alpha 阶段的 API 变化节奏较快，几个关键版本的边界要记住：
+
+| 版本 | 变化 | 迁移影响 |
+| --- | --- | --- |
+| 3.0.0-alpha02 | `@Fts5` 支持 | 搜索类业务可评估 FTS5，单独验证索引构建时间 |
+| 3.0.0-alpha04 | connection pool 改进 | 多连接读场景的并发行为可能变化 |
+| 3.0.0-alpha05 | `@Relation`/`@Junction` 数组化 `parentColumns`/`entityColumns` | 支持复合关系键；旧写法是否仍兼容需单独验证 |
+
+alpha 阶段建议固定版本号，不要用动态版本；升级时逐版本跑 migration test 和 benchmark。
+
 ## Room 2.x 到 Room 3.0 迁移 checklist
 
 迁移按这个顺序执行，避免运行期问题和构建期问题混在一起：
@@ -277,7 +294,7 @@ Room 3.0 目前仍是 alpha。生产接入应默认使用灰度、双版本 sche
 - imports：批量替换 `androidx.room.*` 到 `androidx.room3.*`，保留可编译提交。
 - schema：配置 `room3 { schemaDirectory(...) }`，提交所有变体 schema，CI 增加 schema diff 检查。
 - DAO：把同步 DAO、Executor 依赖和旧 callback 改到协程 / Flow / driver 形态。
-- driver：为直接 SQL 路径补 `SQLiteConnection` / `SQLiteStatement` 生命周期测试。
+- driver：在 builder 中设置 `SQLiteDriver`（Android 端用 `AndroidSQLiteDriver` 或 `BundledSQLiteDriver`），为直接 SQL 路径补 `SQLiteConnection` / `SQLiteStatement` 生命周期测试。
 - wrapper：只为迁移期白名单调用点添加 `room3-sqlite-wrapper`，每个调用点登记删除计划。
 - 测试：跑 MigrationTestHelper、DAO 单测、Macrobenchmark、StrictMode 主线程 I/O 检查和大库回放。
 - 灰度：数据库 ready、Migration 耗时、查询 P90、事务 P90、crash-free、ANR rate 进入灰度看板。

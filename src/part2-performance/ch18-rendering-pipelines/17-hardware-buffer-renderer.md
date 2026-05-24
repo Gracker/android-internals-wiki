@@ -18,11 +18,11 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: "pass-light-edit"
@@ -194,22 +194,22 @@ ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
 // API 29-35 方案：使用 setBuffer() + OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd
 // 注意：API 29-35 只有 setBuffer()，没有带 release 回调的版本
 // 但可以通过 OnComplete 获取 previous release fence 来实现 buffer 回收
-ASurfaceTransaction_setOnCompleteListener(tx, [](ASurfaceTransaction*, void* userData) {
-    // 从 transaction stats 获取 previous release fence
-    ASurfaceTransactionStats* stats = ASurfaceTransactionStats_create(tx);
-    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats);
-    
+ASurfaceTransaction_setOnComplete(tx, buffer, [](ASurfaceTransaction*, void* userData,
+                                               ASurfaceTransactionStats* stats) {
+    AHardwareBuffer* buf = (AHardwareBuffer*)userData;
+
+    // 从 transaction stats 获取指定 SurfaceControl 的 previous release fence
+    // 第二个参数是目标 ASurfaceControl*，不是 stats 单参
+    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl);
+
     if (prevReleaseFenceFd >= 0) {
         // 等待 previous release fence signal 后，buffer 可以安全回收
         sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
         close(prevReleaseFenceFd);
     }
-    
-    ASurfaceTransactionStats_delete(stats);
-    
+
     // 回收 buffer
-    AHardwareBuffer* buffer = (AHardwareBuffer*)userData;
-    AHardwareBuffer_delete(buffer);
+    AHardwareBuffer_release(buf);
 }, buffer);
 
 ASurfaceTransaction_apply(tx);
@@ -223,7 +223,7 @@ NDK 侧的最小版本要分开记：
 - `ASurfaceTransaction_setBuffer()` 从 API 29 开始。
 - `ASurfaceTransaction_setBufferWithRelease()` 与 `ASurfaceTransaction_OnBufferRelease` 从 API 36 开始。[已验证: `android/surface_control.h`]
 
-Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnCompleteListener()` 设置回调，从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取回 previous release fence，等待 fence signal 后即可安全回收上一块被替换的 buffer。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
+Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnComplete()` 设置回调，回调签名直接传入 `ASurfaceTransactionStats*`（不需要 create/delete），再调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)` 取回指定 SurfaceControl 的 previous release fence。等待 fence signal 后即可安全回收上一块被替换的 buffer。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransaction_setOnComplete()` 与 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
 
 不要把 acquire fence 当 release fence 用——前者表示 producer 写完，后者表示 consumer 不再占用。
 
