@@ -18849,6 +18849,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T10:22:45+08:00",
       "original_review_log": "logs/deep-review/2026-05-24-10-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260524-23.11-scudo-native-heap-allocator",
+      "section": "23.11",
+      "section_title": "Scudo 分配器与 Native Heap 性能边界",
+      "priority": 80,
+      "title": "补齐 Scudo 分配器与 Native Heap 性能边界",
+      "description": "source-index 与 Clippings 均显示 Native Heap 治理已覆盖 malloc hook、heapprofd、MTE、GWP-ASan 等分散知识点，但 ch23 缺少从 Scudo/bionic allocator 视角解释分配器行为、诊断工具边界和线上治理指标的独立小节。",
+      "reason": "Task2A Phase1 素材驱动/官方文档比对：SUMMARY 未覆盖 Scudo 分配器和 Native Heap allocator 性能边界；source.android.com Scudo/native-memory 与 Android Studio Native Allocations/GWP-ASan 文档提供可验证素材，Clippings 提供 Native 内存优化结构参考。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "gap_score": 17,
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md"
+      ],
+      "material_paths": [
+        "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md",
+        "https://source.android.com/docs/security/test/scudo",
+        "https://source.android.com/docs/core/tests/debug/native-memory",
+        "https://developer.android.com/studio/profile/record-native-allocations",
+        "https://developer.android.com/ndk/guides/gwp-asan"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T11:04:00+08:00"
     }
   ],
   "metadata": {

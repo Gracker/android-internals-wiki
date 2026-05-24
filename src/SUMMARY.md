@@ -389,6 +389,7 @@ tags:
   - [23.8 内存优化案例集](part5-app/ch23-memory-practice/08-memory-case-studies.md)
   - [23.9 Android 17 App Memory Limits 与内存泄漏治理](part5-app/ch23-memory-practice/09-android17-app-memory-limits.md)
   - [23.10 Memory Advice API 与游戏内存压力治理](part5-app/ch23-memory-practice/10-memory-advice-api.md)
+  - [23.11 Scudo 分配器与 Native Heap 性能边界](part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md)
 
 - [第 24 章：I/O 与网络优化](part5-app/ch24-io-network/README.md)
   - [24.1 文件 I/O 优化](part5-app/ch24-io-network/01-file-io-optimization.md)
