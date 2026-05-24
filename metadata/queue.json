@@ -18776,6 +18776,42 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T08:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-24-08-audit.md"
+    },
+    {
+      "id": "task9-audit-20260524-0927-10.4-lmk-trace-config",
+      "section": "10.4",
+      "section_title": "低内存对系统性能的影响",
+      "priority": 95,
+      "title": "低内存 Trace 配置中的 LMK 捕获口径需修正",
+      "description": "Task9 闲时抽检发现 §10.4 的低内存 Perfetto 配置把 `memory` atrace category 当作 lmk 捕获入口，并使用不可核的 `lowmemorykiller/lowmemorykiller` ftrace event 名。",
+      "reason": "[Deep Tech Review][闲时抽检] §10.4 L230/L248-L250：AOSP atrace 的 `memory` category 不启用 lowmemorykiller，lowmemorykiller group 挂在 `memreclaim` category；Perfetto 文档中的 legacy LMK event 是 `lowmemorykiller/lowmemory_kill`。当前配置会导致低内存复现 Trace 漏采 lmk 事件，需 Task2B 回炉修正。",
+      "issue_type": "source-accuracy-trace-config-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-09-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-16.0.0_r1/cmds/atrace/atrace.cpp",
+        "https://perfetto.dev/docs/data-sources/memory-counters"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Trace 配置事件名错误",
+          "location": "L230、L248-L250：低内存 Trace 配置中的 lmk 捕获口径",
+          "detail": "正文写 lmk 事件可通过 `atrace_categories: \"memory\"` 捕获，并在 Perfetto 配置里写 `ftrace_events: \"lowmemorykiller/lowmemorykiller\"`。复核 AOSP android-14/15/16 `frameworks/native/cmds/atrace/atrace.cpp`：`memory` category 只启用 `mm_event/mm_event_record`、rss_stat、ion/gpu/fastrpc 等事件，不包含 lowmemorykiller；lowmemorykiller group 是 `memreclaim` category 的 optional enable。Perfetto 官方 memory counters 文档记录 legacy kernel LMK 事件名是 `lowmemorykiller/lowmemory_kill`，不是 `lowmemorykiller/lowmemorykiller`。按当前配置复制执行会漏掉或采不到 LMK 事件。",
+          "suggestion": "把示例改成两条路径：现代 Android 优先依赖 lmkd ATrace slice / ProcessKilled / logcat/statsd，并说明 `LMKD_TRACE_KILLS` 与设备实现相关；如果走 atrace category，应使用 `atrace_categories: \"memreclaim\"` 而不是 `memory`；如果手写 legacy ftrace event，应写 `lowmemorykiller/lowmemory_kill`，并在录制前 `adb shell ls /sys/kernel/tracing/events/lowmemorykiller` 验证事件存在。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T09:27:32+08:00",
+      "original_review_log": "logs/deep-review/2026-05-24-09-audit.md"
     }
   ],
   "metadata": {
