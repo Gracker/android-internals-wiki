@@ -38,16 +38,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task2b_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
-last_task6_review_log: "logs/review/2026-05-25-01-review.md"
-last_task6_at: "2026-05-25T01:12:00+08:00"
-task6_result: pass-light-edit
-task6_l1_l2_fixes: 1
+last_task6_review_log: "logs/review/2026-05-25-05-review.md"
+last_task6_at: "2026-05-25T05:08:00+08:00"
+task6_result: "pass-light-edit"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 review_type: "task6-writing-quality-review"
 last_task9_at: "2026-05-25T03:26:43+08:00"
@@ -58,6 +58,8 @@ task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P1：alpha04 connection pool 控制 API、默认池配置、hasConnectionPool 与 SQLITE_BUSY/busy_timeout 边界仍未补全。"
 task9_p2_issues: 0
+task6_new_rework: false
+task6_review_notes: "2026-05-25 Task6 revisiting review: pass-light-edit。L1 禁用词/高频词扫描通过，outline 锚点均有正文覆盖；正文无新增 L1/L2 小修，无新增 Task6 回炉。既有 Task9 技术问题仍在 queue pending，保持 task2b_pending。"
 ---
 
 # 24.17 Room 3.0 与 SQLiteDriver 迁移性能边界

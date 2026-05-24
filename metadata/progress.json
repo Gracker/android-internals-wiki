@@ -1916,7 +1916,7 @@
   "total_review_sections": 206,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T01:12:00+08:00",
+  "last_updated": "2026-05-25T05:08:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-25",
@@ -3601,11 +3601,15 @@
       "last_task9_at": "2026-05-21T19:35:29+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
       "task6_state": "reviewed",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-21",
-      "last_task6_at": "2026-05-21T20:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
+      "reviewed_date": "2026-05-25",
+      "last_task6_at": "2026-05-25T05:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。"
     },
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
@@ -4960,18 +4964,20 @@
       "title": "Hardware Buffer Renderer",
       "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-23",
+      "reviewed_date": "2026-05-25",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-23T04:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
+      "last_task6_at": "2026-05-25T05:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
       "task6_new_rework": false,
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
       "queue_priority": 95,
-      "task6_note": "Task6 04:05 L1/L2 小修 6 处，无新增回炉；Task9 P0 NDK SurfaceControl API 签名已在 queue pending。",
-      "task2b_result": "pending"
+      "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。",
+      "task2b_result": "pending",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0
     },
     "20.14": {
       "status": "ready-for-review",
@@ -5193,18 +5199,22 @@
       "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
       "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-25",
-      "last_task6_at": "2026-05-25T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
-      "task6_l1_l2_fixes": 1,
-      "task6_l3_l4_issues": 0
+      "last_task6_at": "2026-05-25T05:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "queue_priority": 85,
+      "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。",
+      "task2b_result": "pending"
     },
     "1.16": {
       "title": "Audio Pipeline 延迟与性能",
@@ -5295,14 +5305,16 @@
   "last_task2a_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_section": "1.22",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
-  "last_task6_review": "2026-05-25",
+  "last_task6_review": "2026-05-25T05:08:00+08:00",
   "last_task6_sections": [
     "24.17",
-    "1.16"
+    "4.9",
+    "18.17"
   ],
   "last_task6_reviewed_files": [
     "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "last_task6_at": "2026-05-25T01:12:00+08:00",
   "last_task6_review_detail": {
@@ -6890,7 +6902,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
+  "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7555,6 +7567,8 @@
   },
   "last_task6_reviewed_sections": [
     "24.17",
-    "1.16"
-  ]
+    "4.9",
+    "18.17"
+  ],
+  "last_task6_result": "pass-light-edit"
 }
