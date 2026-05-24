@@ -34,11 +34,11 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-05-24T15:15:46+08:00"
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
@@ -105,7 +105,7 @@ Speaker / Headphone
 
 ### AudioFlinger 的角色
 
-AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver` 进程中（自 Android 8.0 起从 `mediaserver` 分离）。Android 16 起，新设备必须通过 AIDL HAL 的 `IConfig.aidl` 接口动态提供音频策略配置，逐步淘汰 vendor 分区下的静态 XML 配置文件。这一变化使音频策略可以在 APEX 更新中独立演进，不再依赖完整 OTA。它的职责包括：
+AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver` 进程中（自 Android 8.0 起从 `mediaserver` 分离）。Android 16 起 AIDL Audio HAL 完整支持 CAP（Core Audio Policy），AIDL 实现可通过 `IConfig.getEngineConfig()` 等接口提供音频策略配置，音频策略得以随 APEX 更新独立演进。HIDL/legacy 产品仍有兼容路径：厂商可继续使用 XML 配置文件并通过 AIDL reference implementation 转换为 AIDL 数据。是否强制使用 `IConfig.aidl` 取决于具体发布要求和设备迁移状态，不能一律写成所有 Android 16 新设备必须。它的职责包括：
 
 1. **接收来自所有 App 的音频数据**——通过共享内存（SharedMemory）和 Binder IPC
 2. **混音（Mixing）**——将多个 App 的音频流合并为一路输出
@@ -420,7 +420,7 @@ Audio Pipeline 与全书其他章节的关联点：
 | Android 9 | HIDL Audio HAL 仍是主流实现 | 低延迟能力仍主要取决于厂商 HAL 质量 |
 | Android 12 | AIDL Audio HAL 已可用于新实现，迁移开始进入可用阶段 | 为后续模块化迁移铺路 |
 | Android 14 | 平台明确鼓励迁移到 AIDL，framework 同时支持 HIDL/AIDL；Android 14 之后的新 HAL API 只继续加到 AIDL | 降低后续音频 HAL 演进分叉 |
-| Android 16 | AAudio Power Saving Offloaded 模式；新设备强制 IConfig.aidl 动态音频策略 | 长音频省电播放；音频策略配置可随 APEX 独立更新 |
+| Android 16 | AAudio Power Saving Offloaded 模式；AIDL Audio HAL 完整支持 CAP，可通过 IConfig 提供音频策略配置 | 长音频省电播放；音频策略配置可随 APEX 独立更新；HIDL/legacy 产品仍有 XML + reference implementation 兼容路径 |
 | Android 17 | 后台音频强化 + 精确 flush + codec provenance | 后台播放约束更严，播放控制更细 |
 
 [待验证: Android 9/12 的迁移节奏在不同 SoC 上差异很大，表中描述的是平台方向，不等于所有设备在对应版本统一完成迁移]
