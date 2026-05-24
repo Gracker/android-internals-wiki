@@ -313,21 +313,20 @@
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
     "date": "2026-05-24",
-    "time": "20:14",
+    "time": "21:05",
     "sections": [
-      "5.6",
-      "5.11",
-      "7.2"
+      "18.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
     ],
-    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
-    "log": "logs/review/2026-05-24-20-review.md",
-    "reviewed_at": "2026-05-24T20:14:35+08:00",
-    "mode": "revisiting"
+    "result": "needs-rework",
+    "log": "logs/review/2026-05-24-21-review.md",
+    "reviewed_at": "2026-05-24T21:11:52+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 1,
+    "risk_marks": 3,
+    "l3_l4_issues": 1
   },
   "issues_by_section": {
     "1.6": {
@@ -669,7 +668,11 @@
       "reviewed_at": "2026-05-24T20:34:56+08:00",
       "log": "logs/deep-review/2026-05-24-20-deep-review.md",
       "summary": "needs-rework；P0：ConcurrentCopying/CMS 混写、DeliQueue 源码路径错误；P1：固定 16ms/8ms 帧预算阈值不适配高刷/FrameTimeline；P2：30fps/VSync 示例方向写反。",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task6_result": "needs-rework",
+      "task6_reviewed_at": "2026-05-24T21:11:52+08:00",
+      "task6_log": "logs/review/2026-05-24-21-review.md",
+      "task6_summary": "L1/L2 小修 1 处，按 Task9 风险加 3 处需确认标注；L3/L4 1 项：源码调研补充仍是素材归档/编辑痕迹，需 Task2B 整合。"
     },
     "19.21": {
       "p0": 0,
@@ -1909,25 +1912,24 @@
   "total_review_sections": 206,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-24T20:14:35+08:00",
+  "last_updated": "2026-05-24T21:11:52+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-24",
-    "time": "20:14",
+    "time": "21:05",
     "sections": [
-      "5.6",
-      "5.11",
-      "7.2"
+      "18.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
     ],
-    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
-    "log": "logs/review/2026-05-24-20-review.md",
-    "reviewed_at": "2026-05-24T20:14:35+08:00",
-    "mode": "revisiting"
+    "result": "needs-rework",
+    "log": "logs/review/2026-05-24-21-review.md",
+    "reviewed_at": "2026-05-24T21:11:52+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 1,
+    "risk_marks": 3,
+    "l3_l4_issues": 1
   },
   "task9_last_review": "2026-05-24",
   "ready_to_publish": 186,
@@ -2539,7 +2541,22 @@
       "task9_result": "needs-rework",
       "task9_state": "reviewed",
       "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md",
+      "section": "18.2",
+      "title": "Android View 标准管线（BLAST 深入）",
+      "file": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "last_task6_at": "2026-05-24T21:11:52+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
     },
     "19.21": {
       "status": "finalized",
@@ -5229,33 +5246,28 @@
   "last_task2a_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
   "last_task6_review": "2026-05-24",
   "last_task6_sections": [
-    "5.6",
-    "5.11",
-    "7.2"
+    "18.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
   ],
-  "last_task6_at": "2026-05-24T20:14:35+08:00",
+  "last_task6_at": "2026-05-24T21:11:52+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-24",
-    "time": "20:14",
+    "time": "21:05",
     "sections": [
-      "5.6",
-      "5.11",
-      "7.2"
+      "18.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
     ],
-    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
-    "log": "logs/review/2026-05-24-20-review.md",
-    "reviewed_at": "2026-05-24T20:14:35+08:00",
-    "mode": "revisiting"
+    "result": "needs-rework",
+    "log": "logs/review/2026-05-24-21-review.md",
+    "reviewed_at": "2026-05-24T21:11:52+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 1,
+    "risk_marks": 3,
+    "l3_l4_issues": 1
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -5264,12 +5276,10 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.17",
-  "task6_last_review_at": "2026-05-24T20:14:35+08:00",
-  "task6_last_review_log": "logs/review/2026-05-24-20-review.md",
+  "task6_last_review_at": "2026-05-24T21:11:52+08:00",
+  "task6_last_review_log": "logs/review/2026-05-24-21-review.md",
   "task6_last_review_sections": [
-    "5.6",
-    "5.11",
-    "7.2"
+    "18.2"
   ],
   "sections_status": {
     "22.11": {
@@ -6430,7 +6440,29 @@
       "task2a_state": "processed",
       "task6_state": "pending"
     },
-    "1.22": "draft"
+    "1.22": "draft",
+    "18.2": {
+      "section": "18.2",
+      "title": "Android View 标准管线（BLAST 深入）",
+      "file": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "last_task6_at": "2026-05-24T21:11:52+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 1,
+      "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
+    }
   },
   "task2a_last_processed": {
     "section": "22.16",
@@ -6467,31 +6499,26 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-24",
-    "time": "20:14",
+    "time": "21:05",
     "sections": [
-      "5.6",
-      "5.11",
-      "7.2"
+      "18.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
     ],
-    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
-    "log": "logs/review/2026-05-24-20-review.md",
-    "reviewed_at": "2026-05-24T20:14:35+08:00",
-    "mode": "revisiting"
+    "result": "needs-rework",
+    "log": "logs/review/2026-05-24-21-review.md",
+    "reviewed_at": "2026-05-24T21:11:52+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 1,
+    "risk_marks": 3,
+    "l3_l4_issues": 1
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6773,9 +6800,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "5.6",
-    "5.11",
-    "7.2"
+    "18.2"
   ],
   "task2b_progress": [
     {
@@ -6804,7 +6829,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7375,8 +7400,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-24T20:14:35+08:00",
-  "last_task6_review_section": "24.16",
+  "last_task6_review_at": "2026-05-24T21:11:52+08:00",
+  "last_task6_review_section": "18.2",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -7437,5 +7462,27 @@
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed"
+  },
+  "section_18_2": {
+    "section": "18.2",
+    "title": "Android View 标准管线（BLAST 深入）",
+    "file": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-24",
+    "last_task6_at": "2026-05-24T21:11:52+08:00",
+    "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
+    "queue_priority": 95,
+    "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
+    "task6_l1_l2_fixes": 1,
+    "task6_l3_l4_issues": 1,
+    "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
   }
 }
