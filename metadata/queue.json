@@ -19133,26 +19133,71 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-24T14:04:00+08:00",
       "completion_reason": "Task 2A draft processing: 空 draft 章节加工完成，status=ready-for-review，进入 Task6 管线"
+    },
+    {
+      "id": "task9-audit-20260524-1420-3.5-android17-input-security-version-anchors",
+      "section": "3.5",
+      "section_title": "输入事件拦截与安全机制",
+      "priority": 95,
+      "title": "输入安全章节的 Android 17 / InputMonitor 版本锚点需回炉",
+      "description": "Task9 闲时抽检发现 §3.5 将密码输入时 InputMonitor 物理切断、通话中敏感权限封锁写成 android-17.0.0_r1/API 37 结论，但公开 AOSP tag/source anchor 与官方资料无法支撑该版本归属。",
+      "reason": "[Task9 闲时抽检] §3.5 L7/L341/L357 使用 `android-17.0.0_r1` + `InputDispatcher.cpp` 支撑密码输入时暂停非系统级 InputMonitor；公开 `frameworks/native` tags 无 android-17.0.0_r1，main/android-16 InputDispatcher 未见 password/sensitive 维度门禁。L342/L359 将 in-call sensitive-permission block 归到 Android 17/API 37，也与 Google 2025 in-call protections 资料的 rollout 口径不一致。",
+      "issue_type": "source-anchor-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/05-input-interception-security.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-14-audit.md",
+        "logs/external-review/archive/2026-04-28-15-ch03-05-input-interception-security-external-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/heads/main/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://blog.google/security/whats-new-in-android-security-privacy-2025/",
+        "https://android-developers.googleblog.com/2025/12/enhancing-android-security-stop-malware.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码引用准确性/不可复核版本锚点",
+          "location": "L7、L341、L357：`android-17.0.0_r1` / `InputDispatcher.cpp` 密码输入时切断 InputMonitor",
+          "detail": "章节把“密码输入时 InputDispatcher 暂停非系统级 InputMonitor 副本分发”标成 android-17.0.0_r1/API 37 且指向 `InputDispatcher.cpp`。本轮复核 `platform/frameworks/native` 公开 tags，未发现 `android-17.0.0_r1`；直接请求该 tag 下的 `services/inputflinger/dispatcher/InputDispatcher.cpp` 返回 404。`refs/heads/main` 与 `android-16.0.0_r1` 的 InputDispatcher 仍能看到 monitor/spy window/pilferPointers 的通用逻辑，但未命中 password/sensitive 维度的分发门禁。当前写法把 archived external-review 的结论包装成可复核 AOSP tag/source anchor，属于发布级源码锚点错误。",
+          "suggestion": "回炉时二选一：若能拿到 Android 17 Beta/内部分支的具体 commit、文件行号和判断条件，改成精确源码锚点；否则删除 `android-17.0.0_r1` 和 `InputDispatcher.cpp` 断言，降级为 `[待验证]` 或改写为“external-review 提出的待核验风险”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/来源归属错误",
+          "location": "L342、L359：通话期间阻塞敏感权限授予被归到 Android 17/API 37 权限策略",
+          "detail": "Google 2025 Android security/privacy 公告描述的 in-call protections 是通话中阻止高风险安全动作，包括关闭 Play Protect、首次侧载、授予无障碍权限，并说明对非联系人通话在设备侧生效；银行 App 增强保护试点还标注 Android 11+。该资料不能支撑“android-17.0.0_r1/API 37”或 `InputDispatcher` 级机制归属。当前版本表把一个系统安全/PermissionController/Settings 侧策略写成 Android 17 源码版本点，读者会按错误版本和错误源码层去查。",
+          "suggestion": "把该行移出 `android-17.0.0_r1` 版本表，改为“Android in-call protections / Google Play services 或系统安全策略 rollout（需补具体平台组件）”；如果要保留 Android 17 归属，必须补 Android 17 官方 feature 文档或 AOSP commit。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T14:28:59+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 516,
-    "p0_count": 221,
-    "last_updated": "2026-05-24T13:29:11+08:00",
+    "total_entries": 517,
+    "p0_count": 222,
+    "last_updated": "2026-05-24T14:28:59+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 172,
+    "pending_entries": 173,
     "updated_date": "2026-05-24",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 172,
+    "pending": 173,
     "completed_entries": 341,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-24T13:29:11+08:00",
+  "last_updated": "2026-05-24T14:28:59+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 172,
+  "pending": 173,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "last_task2a_gap_mining": "25.18",

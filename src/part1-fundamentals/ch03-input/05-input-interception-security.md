@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
@@ -11,8 +11,8 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: ready-to-publish
+task2b_state: pending
+pipeline_stage: task2b_pending
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -35,8 +35,8 @@ related_chapters:
 - '9.1'
 - '9.2'
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
-task2b_result: fixed
-task9_result: pass-tech-review
+task2b_result: pending
+task9_result: needs-rework
 task9_reviewed_date: '2026-05-09'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-09T06:20:00+08:00'
@@ -44,9 +44,11 @@ last_task6_at: '2026-05-12T16:15:00+08:00'
 last_task6_review_log: logs/review/2026-05-12-16-review.md
 task6_review_notes: 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；L1/L2 通过；Task9 已通过且 queue 无 pending，自动晋升 finalized。
 last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
-task9_review_notes: 2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。
+task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0：Android 17/InputDispatcher 密码场景 InputMonitor 切断缺少可复核 AOSP tag/source anchor；P1：通话中敏感权限封锁版本归属需重核。"
 finalized_date: '2026-05-12'
 finalized_by: openclaw-task6
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-14-audit.md"
 ---
 
 # 输入事件拦截与安全机制
