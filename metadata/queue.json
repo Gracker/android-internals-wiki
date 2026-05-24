@@ -19667,6 +19667,43 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-25T00:04:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-0020-1.16-bg-audio-hardening-wiu-boundary",
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "priority": 85,
+      "title": "Android 17 后台音频 hardening 与 AAudio offload WIU 条件需拆开",
+      "description": "Task9 深度技术 Review 发现 §1.16 把 Android 17 后台音频 hardening 写成所有后台音频 API 必须持有 WIU 前台服务，并进一步写成 AAudio Power Saving Offloaded 模式的通用前提；官方文档实际区分所有应用的可见 Activity/非 SHORT_SERVICE FGS 基线、targetSdk 37 的 WIU 附加要求、USAGE_ALARM exact alarm 豁免，AAudio offload 本身没有 WIU 前置条件。",
+      "reason": "[Deep Tech Review] §1.16 L246、L319 Android 17 background audio hardening / AAudio offload 条件混写：developer.android.com/about/versions/17/changes/bg-audio 规定所有 Android 17 后台音频交互需 visible activity 或非 SHORT_SERVICE FGS；target API 37 才额外要求 WIU FGS，且 exact alarm + USAGE_ALARM 有豁免。NDK AAudio 文档只把 AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED 描述为 offloaded output path / 硬件缓冲 / CPU sleep 省电模式，并未把 WIU FGS 写成该模式前提。",
+      "issue_type": "version-difference-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-00-deep-review.md",
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/ndk/reference/group/audio"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码准确性",
+          "location": "L246 AAudio Power Saving Offloaded 模式；L319 Android 17 后台音频强化新规则",
+          "detail": "正文把“使用 AAudio Power Saving Offloaded 模式”写成需要 WIU 前台服务，又在 Android 17 hardening 段把后台音频 API 统一写成必须持有 WIU FGS。复核官方文档：Android 17 上所有后台音频交互的基线是 visible Activity 或非 SHORT_SERVICE 前台服务；只有 target API 37 的后台 App 才额外要求 FGS 具备 WIU，且 exact alarm 权限 + USAGE_ALARM 音频流可豁免 WIU 要求。AAudio NDK 文档对 AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED 的定义是省电型 offloaded output path，可写入数秒数据到 hardware buffer 并允许 framework data pipe 暂停/CPU sleep，没有把 WIU FGS 列为该 performance mode 的通用前置条件。",
+          "suggestion": "拆成两条：1) AAudio offloaded playback 段只说明 performance mode、output-only、offload capability/格式/设备支持和 API level 边界；2) Android 17 hardening 段按“所有 app：visible Activity 或非 SHORT_SERVICE FGS；target API 37：WIU FGS；USAGE_ALARM + exact alarm 豁免；enable/throw 测试模式会对所有 app 强制 WIU”补完整条件。删除“短音乐播放器不想维护前台服务就走传统 PCM”这类把路径选择和生命周期权限绑定的结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T00:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-25-00-deep-review.md"
     }
   ],
   "metadata": {
