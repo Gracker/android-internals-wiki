@@ -2,7 +2,7 @@
 title: "GAPS：Android 动态分析目标可达性路径重建"
 chapter: "7.14"
 section: "7.14"
-status: finalized
+status: ready-for-review
 applicable_versions: "论文实验环境：Android 13 x86-64 emulator；ARM 场景：Pixel 2 Android 11"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]
@@ -27,15 +27,16 @@ review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
 repaired_by: openclaw-task2b
 review_round: 3
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: ready-to-publish
-task9_reviewed_date: "2026-05-05"
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T02:37:46+08:00"
-task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。"
+last_task9_at: "2026-05-24T10:22:45+08:00"
+last_task9_audit: "2026-05-24"
+task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。；2026-05-24 10:22 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0。L196-L212 的反射/DI/动态代理穿透率表未被 GAPS 论文/仓库支撑，已写入 queue。"
 review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 ---
 
