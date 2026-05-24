@@ -232,7 +232,8 @@
     "25.17",
     "23.11",
     "1.16",
-    "22.16"
+    "22.16",
+    "24.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -297,22 +298,23 @@
     "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
     "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md",
     "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
-    "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
+    "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
+    "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
     "date": "2026-05-24",
-    "time": "16:05",
+    "time": "19:14",
     "sections": [
-      "1.16"
+      "24.16"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
     ],
-    "result": "Task6 本轮 1 章 review：1.16 pass-light-edit；L1/L2 小修 14 处；0 个新增回炉；0 自动晋升（Task9 needs-rework 且 queue.json 有 1 条 pending）。",
-    "log": "logs/review/2026-05-24-16-review.md",
-    "reviewed_at": "2026-05-24T16:05:00+08:00",
-    "mode": "revisiting-review"
+    "result": "Task6 本轮 1 章 review：24.16 pass-light-edit；L1/L2 小修 7 处；0 个新增回炉；0 自动晋升（Task9 尚未通过）。",
+    "log": "logs/review/2026-05-24-19-review.md",
+    "reviewed_at": "2026-05-24T19:14:00+08:00",
+    "mode": "first-review"
   },
   "issues_by_section": {
     "1.6": {
@@ -6722,7 +6724,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+  "last_task6_review_log": "logs/review/2026-05-24-19-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7275,5 +7277,36 @@
     "gap_score": 18,
     "material_count": 5,
     "queue_priority": 80
-  }
+  },
+  "section_24_16": {
+    "section": "24.16",
+    "title": "Android 17 流媒体网络预算与本地网络权限适配",
+    "file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-24",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-05-24",
+    "last_verified": "2026-05-24",
+    "confidence": "medium",
+    "gap_score": 16,
+    "material_count": 5,
+    "task2a_state": "processed",
+    "task2a_result": "processed-draft",
+    "last_task2a_at": "2026-05-24T19:04:00+08:00",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-24",
+    "last_task6_at": "2026-05-24T19:14:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-24-19-review.md",
+    "task6_l1_l2_fixes": 7,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task9_state": "pending",
+    "task9_result": "pending"
+  },
+  "last_task6_review_at": "2026-05-24T19:14:00+08:00",
+  "last_task6_review_section": "24.16"
 }
