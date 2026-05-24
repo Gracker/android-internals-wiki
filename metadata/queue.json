@@ -13,7 +13,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
@@ -34,7 +34,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-24T07:07:00+08:00",
-      "original_review_log": "logs/review/2026-05-24-07-audit.md"
+      "original_review_log": "logs/review/2026-05-24-07-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T11:17:42+08:00",
+      "completion_reason": "Task 2B rework: SurfaceView BLAST 版本边界从 Android 11+ 修正为 Android 12+（L391 Resize 闪烁段、L411 首帧延迟段）"
     },
     {
       "id": "task9-deep-20260524-0520-25.17-bg-audio-hardening-debug-boundaries",
@@ -191,7 +194,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch08-responsiveness/02-app-launch.md"
@@ -214,7 +217,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T02:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-24-02-audit.md"
+      "review_log": "logs/deep-review/2026-05-24-02-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T11:17:42+08:00",
+      "completion_reason": "Task 2B rework: ApplicationStartInfo 时钟域从 System.nanoTime 修正为 SystemClock.uptimeNanos；Perfetto 对齐从直接对齐修正为需 ClockSnapshot 转换"
     },
     {
       "id": "task9-audit-20260523-7.9-inputconsumer-resampling-debug-tag",
@@ -609,7 +615,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/05-optimization.md"
@@ -667,10 +673,11 @@
       "last_reviewed_at": "2026-05-23T06:28:41+08:00",
       "review_log": "logs/deep-review/2026-05-23-06-audit.md",
       "completed_by": "openclaw-task2b",
-      "completion_reason": "Task 2B rework: P0/P1 source code and version boundary fixes applied",
+      "completion_reason": "Task 2B rework: RenderEffect vs Hardware Layer 从'Shader vs Buffer'二分修正为两者都触发 layer 提升；Vulkan upload 拆分 Android 13-14 vs 15+ 两档 API",
       "updated_at": "2026-05-23T07:24:00+08:00",
       "reopened_at": "2026-05-23T07:24:00+08:00",
-      "updated_by": "task9-deep-tech-review"
+      "updated_by": "task9-deep-tech-review",
+      "completed_at": "2026-05-24T11:17:42+08:00"
     },
     {
       "id": "task9-audit-20260522-2.2-framerate-refresh-rate-selector-layerhistory",

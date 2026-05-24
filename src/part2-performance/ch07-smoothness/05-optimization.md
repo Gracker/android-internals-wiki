@@ -50,14 +50,14 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_audit: "2026-05-22"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-23T07:17:06.103693"
+last_task2b_at: "2026-05-24T11:16:52+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 last_task9_at: "2026-05-23T07:24:00+08:00"
@@ -607,7 +607,7 @@ class EGLUploader : public AHBUploader {
 };
 ```
 
-Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::TextureFromAHardwareBufferWithData` 直接将数据上传到 Vulkan texture，省去 EGLImage 中转。
+Android 13-14 有 Vulkan 上传路径（`VkUploader`），使用 `SkImage::MakeFromAHardwareBufferWithData(grContext, bitmap.pixmap(), ahb)` 直接将数据上传到 Vulkan texture；Android 15+ 切换到 `SkImages::TextureFromAHardwareBufferWithData(...)` + `GrSyncCpu::kYes`，API 入口和同步语义有变化。两条路径都省去了 EGLImage 中转。
 
 ### 性能影响总结
 
@@ -652,18 +652,22 @@ Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::Tex
 
 ### RenderEffect vs Hardware Layer 的性能特征
 
-两种机制的 GPU 资源管理策略不同：
+两种机制都会触发 HWUI 的 layer 提升与 offscreen buffer 分配，但触发条件和资源生命周期不同：
 
-**RenderEffect — Shader 级集成**：
+**RenderEffect — ImageFilter 驱动的 Layer 提升**：
 - blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性（`RenderProperties::setImageFilter()`）
-- Skia 在绘制时沿标准图像过滤管线处理
+- HWUI 在 `RenderProperties::promotedToLayer()` 中检测到 `mImageFilter != nullptr`，将该 RenderNode 提升为 `LayerType::RenderLayer`
+- `RenderNode::pushLayerUpdate()` 通过 `SkiaGpuPipeline::createOrUpdateLayer()` 创建/更新 layer surface
+- 绘制时 `updateSnapshotIfRequired()` 先捕获 layer 内容，再由 `SkImages::MakeWithFilter` 执行 filter chain
 - 相邻 filter 满足 Skia 内部融合条件时可复用 Scratch Texture，减少中间缓冲区分配
-- 动态内容（频繁 invalidate）的内存开销通常低于 Hardware Layer
 
-**Hardware Layer — Buffer 级隔离**：
+**Hardware Layer — 显式设置的 Layer 缓存**：
+- 开发者通过 `View.setLayerType(LAYER_TYPE_HARDWARE)` 显式请求
 - 为 View 创建独立 FBO 并缓存渲染结果
 - 属性动画阶段只需在纹理上做几何变换，不重新执行 draw
-- FBO 是独占 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
+- FBO 独占 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
+
+两者性能差异应围绕 layer surface 尺寸、snapshot/filter cache 命中率、invalidate 频率、filter chain 是否可融合来分析，而不是简单归类为"一个走 shader、一个走 buffer"。
 
 ### 版本演进差异
 
