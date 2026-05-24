@@ -13,22 +13,23 @@ reviewed_date: "2026-05-05"
 task6_reviewed_date: "2026-05-05"
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-14"
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T11:34:00+08:00"
-task2b_state: fixed
+last_task9_at: 2026-05-24T19:30:00+08:00
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
 review_round: 4
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-
+last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
+task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 JobScheduler 配额口径需按官方行为变更修正。"
 ---
 
 # Android 功耗管理

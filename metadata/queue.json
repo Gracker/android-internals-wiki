@@ -19417,27 +19417,115 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T18:20:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260524-1930-5.6-jobscheduler-quota-boundary",
+      "section": "5.6",
+      "section_title": "Android 功耗管理",
+      "priority": 85,
+      "title": "Android 16 JobScheduler 配额行为口径需按官方变更修正",
+      "description": "Task9 深度技术 Review 发现 §5.6 将 Android 16 JobScheduler 变更写成 Active bucket、可见态启动和前台服务并行 Job 更宽松，但官方行为变更说明 Android 16 开始对 Active bucket、top-started jobs、FGS 并行 jobs 都纳入运行时配额约束。",
+      "reason": "[Deep Tech Review] §5.6 L430-L432、L508-L509 Android 16 JobScheduler 配额口径反向：正文写“Active Bucket 配额更宽裕、可见时发起的 Job 更容易保留高配额、与前台服务同时运行也享有更宽松限制”，但 Android 16 官方说明是 regular/expedited job runtime quota 按 standby bucket、top state、FGS 并行状态调整，并明确 top-started 和 FGS concurrent jobs 会 adhere to job runtime quota。",
+      "issue_type": "version-difference-jobscheduler-quota",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/06-android-power.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-19-deep-review.md",
+        "https://developer.android.com/about/versions/16/behavior-changes-all#jobscheduler-quota-optimizations",
+        "https://developer.android.com/about/versions/16/summary"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L430-L432：Android 16 中的演进；L508-L509：版本演进表 Android 16/17 行",
+          "detail": "正文把 Android 16 JobScheduler 变更解释为更宽松的运行条件。官方 Android 16 行为变更实际强调 Active standby bucket 开始执行 generous runtime quota，top state 启动后转不可见的 Job 仍受 job runtime quota，和前台服务并行执行的 Job 也受 job runtime quota；并建议用 getPendingJobReasonsHistory()/getStopReason() 调试。",
+          "suggestion": "把 Android 16 行改为“配额约束口径细化/更可观测”：Active bucket 也纳入运行时配额，top-started 与 FGS concurrent jobs 不再按无限宽松路径理解；补 getPendingJobReasonsHistory、getStopReason 与 compat override adb 验证命令。Android 17 行只保留 JobDebugInfo/getPendingJobReasonStats 增强，不把 onVsyncIdle 归入后台任务配额主线。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T19:30:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-19-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260524-1930-5.11-litert-npu-source-index",
+      "section": "5.11",
+      "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "priority": 95,
+      "title": "端侧 AI 推理章节 LiteRT/NPU 源码索引与 API 37 边界需修正",
+      "description": "Task9 深度技术 Review 发现 §5.11 仍把 LiteRT/AICore/NPU 多处未核实内容写成 AOSP 源码索引或已验证结论，包括 external/litert AOSP 路径、AICore 位于 frameworks/ml/nn/runtime、NPU feature 位于 platform.xml、API 36+/targetSdk>=17 等错误边界。",
+      "reason": "[Deep Tech Review] §5.11 L291-L304、L315-L322、L389-L397 LiteRT/NPU 源码锚点与版本边界错误：android.googlesource platform/external/litert 精确路径返回 404，frameworks/base/data/etc/platform.xml 不包含 neural_processing_unit，frameworks/ml/nn/runtime 不是 AICore system service；Android 17 NPU 管理应按 API 37/target Android 17 直接访问 NPU 需声明 FEATURE_NEURAL_PROCESSING_UNIT，fallback 不是系统保证。",
+      "issue_type": "source-accuracy-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.25,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-19-deep-review.md",
+        "https://android-developers.googleblog.com/2026/02/the-second-beta-of-android-17.html",
+        "https://developer.android.com/sdk/api_diff/37/changes/android.content.pm.PackageManager",
+        "https://ai.google.dev/edge/litert/android",
+        "https://ai.google.dev/edge/api/litert/c/classlitert/1-1-compiled-model"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L291-L304：源码索引表",
+          "detail": "`external/litert/runtime/dispatch/dispatch_delegate.cc`、`external/litert/runtime/compiled_model.cc`、`external/litert/aot/` 被标为 AOSP 源码路径，但 android.googlesource platform/external/litert 精确路径复核为 404；`frameworks/base/data/etc/platform.xml` 不含 `android.hardware.neural_processing_unit`；`frameworks/ml/nn/runtime/` 是 NNAPI runtime 方向，不能写成 AICore System Service / 多租户路由源码锚点。",
+          "suggestion": "删除错误 AOSP 源码索引。LiteRT 改引用 Google AI Edge LiteRT API docs 或 google-ai-edge/LiteRT 源码仓的实际路径；NPU feature 改引用 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` API diff / SDK stubs；AICore 只按 developer.android.com/ai/aicore 说明为 Google 系统服务，未拿到 AOSP 锚点前不要挂到 `frameworks/ml/nn/runtime/`。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 边界错误",
+          "location": "L315-L322：Android 17 NPU Feature 声明要求；L389-L397：FEATURE_NEURAL_PROCESSING_UNIT 补充段",
+          "detail": "正文同时写“Android 17 NPU Feature 声明要求（API 36+）”和“targetSdk>=17”，API/targetSdk 边界错误；还写“未声明 feature 的应用在 Android 17+ 设备上无法直接访问 NPU，系统会拒绝 NPU 调度请求并回退到 CPU/GPU”，其中 fallback 到 CPU/GPU 是具体 runtime/delegate 的策略，不是 Android 平台保证。",
+          "suggestion": "统一改为 Android 17 / API 37 / targetSdkVersion >= 37。表述为：直接访问 NPU 的应用（包括 LiteRT NPU delegate、vendor SDK、deprecated NNAPI）必须声明 `FEATURE_NEURAL_PROCESSING_UNIT` 以避免被阻止访问 NPU；是否降级到 CPU/GPU 由 LiteRT/vendor runtime 自己处理，需要在应用侧显式验证。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/来源边界",
+          "location": "L76-L77、L183-L194、L232-L244：CompiledModel API V2 与 AOT 编译",
+          "detail": "同一节既把 CompiledModel API V2、零拷贝 TensorBuffer、AICore 多租户调度、AOT 500ms+ → 50ms 以内写成“已验证”，又在正文标 `[存疑]`。公开 LiteRT 文档可支撑 CompiledModel、TensorBuffer、AOT/JIT、async 等 API 方向，但不能支撑通用 500ms/50ms 数字或 AICore 多租户路由保证。",
+          "suggestion": "按 LiteRT 版本号拆成“已发布 API 能力”和“设备/厂商相关能力”。删除通用 500ms/50ms 断言，或补模型、设备、LiteRT 版本、NPU 固件和 benchmark 方法；AICore 路由/多租户只保留为待验证或迁移到 AICore 专节。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T19:30:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-19-deep-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 523,
-    "p0_count": 223,
-    "last_updated": "2026-05-24T19:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 174,
+    "total_entries": 525,
+    "p0_count": 224,
+    "last_updated": "2026-05-24T19:30:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 172,
     "updated_date": "2026-05-24",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 174,
-    "completed_entries": 346,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 172,
+    "completed_entries": 350,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-24T19:04:00+08:00",
     "last_task2a_completed": "24.16",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 174,
+  "last_updated": "2026-05-24T19:30:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 172,
   "last_task2a_completed": "24.16",
   "last_task2a_completed_at": "2026-05-24T19:04:00+08:00",
   "last_task2a_gap_mining": "24.16",
