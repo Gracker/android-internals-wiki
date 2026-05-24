@@ -2,7 +2,7 @@
 title: "ART FinalizerDaemon 与 ReferenceQueue 性能边界"
 chapter: "4.9"
 section: "4.9"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36), Android 17 preview 待复核"
@@ -27,22 +27,25 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task2b_result: "fixed"
-task2b_state: "fixed"
+task2b_state: "pending"
 task6_state: "revisiting"
 last_task6_review_log: "logs/review/2026-05-21-20-review.md"
 last_task6_at: "2026-05-21T20:11:00+08:00"
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task9_state: "pending"
-task9_reviewed_date: 2026-05-21
+task9_state: "reviewed"
+task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-21T19:35:29+08:00"
-task9_review_notes: "2026-05-21 task9 deep-review: P0 1 / P1 1，需 Task2B 修正 CleanerDaemon、java.lang.ref.Cleaner public/system cleaner 执行路径与源码锚点。"
-last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
-task9_result: needs-rework
+last_task9_at: "2026-05-25T03:26:43+08:00"
+task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P0：Cleaner 版本对照段仍把 sun.misc.Cleaner/java.lang.ref.Cleaner 执行路径写反，与 AOSP 和后文说明冲突。"
+last_task9_review_log: "logs/deep-review/2026-05-25-03-deep-review.md"
+task9_result: "needs-rework"
+task9_p0_issues: 1
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 

@@ -19774,6 +19774,114 @@
       "completed_by": "openclaw-task2b",
       "completed_at": "2026-05-25T03:21:56+08:00",
       "completion_reason": "Task 2B rework: task9 fixes applied"
+    },
+    {
+      "id": "task9-deep-20260525-0326-24.17-room3-connection-pool-boundary",
+      "section": "24.17",
+      "section_title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "priority": 85,
+      "title": "Room 3.0 alpha04 connection pool 迁移边界仍未补全",
+      "description": "Task9 re-review 发现 §24.17 虽更新到 alpha05 与 setDriver 口径，但 alpha04 connection pool 只写成“connection pool 改进”，未补 setSingleConnectionPool()/setMultipleConnectionPool()、hasConnectionPool 生效条件、WAL 默认 4 reader + 1 writer、multiple writers 的 SQLITE_BUSY/busy_timeout 风险。",
+      "reason": "[Deep Tech Review] §24.17 L104、L279-L285、L291-L300：Room 3.0 alpha04 connection pool 仍停留在概念级说明。官方 RoomDatabase.Builder 文档明确提供 setSingleConnectionPool()/setMultipleConnectionPool()，且 pool 只在 SQLiteDriver.hasConnectionPool=false 时生效；默认随 JournalMode 变化，WAL 为 4 reader + 1 writer，多 writer 可能触发 SQLITE_BUSY，需要 busy_timeout 或调用方重试策略。",
+      "issue_type": "version-difference-principle-gap",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-03-deep-review.md",
+        "https://developer.android.com/jetpack/androidx/releases/room3",
+        "https://developer.android.com/reference/androidx/room3/RoomDatabase.Builder"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/原理断裂",
+          "location": "L104、L279-L285 版本边界；L291-L300 迁移 checklist",
+          "detail": "正文只写 alpha04 引入 connection pool 改进，没有给出可执行 API 与生效条件。官方 Builder API 已暴露 setSingleConnectionPool()/setMultipleConnectionPool(maxNumOfReaders, maxNumOfWriters)，并说明只有 supplied SQLiteDriver 没有内部 pool 时 Room pool 才生效；默认配置随 JournalMode 变化，WAL 下是 four reader and one writer，多 writer 可能 SQLITE_BUSY。",
+          "suggestion": "在版本边界和 checklist 中补 connection pool 小节：列出 setSingleConnectionPool()/setMultipleConnectionPool()、SQLiteDriver.hasConnectionPool 判定、WAL/TRUNCATE 默认池配置、multiple writers 的 SQLITE_BUSY 与 busy_timeout/retry 验收点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T03:26:43+08:00",
+      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260525-0326-4.9-cleaner-path-contradiction",
+      "section": "4.9",
+      "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "priority": 95,
+      "title": "Cleaner 版本对照段仍保留错误执行路径",
+      "description": "Task9 re-review 发现 §4.9 L357 仍写 sun.misc.Cleaner 由 CleanerDaemon 独立执行、java.lang.ref.Cleaner 通过 FinalizerReference.doClean() 触发；这与 AOSP android-16 Daemons/ReferenceQueue/CleanerImpl 源码以及正文 L369、L382-L405 的正确说明冲突。",
+      "reason": "[Deep Tech Review] §4.9 L357 Cleaner 执行路径 P0：android-16.0.0_r1 Daemons.DAEMONS 只有 HeapTaskDaemon、ReferenceQueueDaemon、FinalizerDaemon、FinalizerWatchdogDaemon，不存在 CleanerDaemon；sun.misc.Cleaner 在 ReferenceQueue.enqueuePending() 的 Cleaner queue 分支直接 clean()；java.lang.ref.Cleaner.create() 由 CleanerImpl.start() 创建独立 daemon 线程；只有 Android system cleaner 复用 FinalizerReference.queue 并由 FinalizerDaemon#doClean() 处理。",
+      "issue_type": "source-accuracy-cleaner-execution-path",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-03-deep-review.md",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/libart/src/main/java/java/lang/Daemons.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/Cleaner 执行路径",
+          "location": "L357：Cleaner / CloseGuard 版本对照表导语",
+          "detail": "该句仍写“sun.misc.Cleaner 由 CleanerDaemon 独立执行，java.lang.ref.Cleaner 通过 FinalizerReference.doClean() 触发”。AOSP android-16 Daemons 没有 CleanerDaemon；sun.misc.Cleaner 在 ReferenceQueueDaemon 的 enqueuePending() 中直接 clean；java.lang.ref.Cleaner.create() 走 CleanerImpl 独立线程；FinalizerReference.doClean() 只对应 Android system cleaner 路径。",
+          "suggestion": "删除 L357 后半句或改成与 L369、L382-L405 一致的三路径说明：sun.misc.Cleaner=ReferenceQueueDaemon 直接执行；java.lang.ref.Cleaner.create()=CleanerImpl 自有线程；system cleaner=FinalizerDaemon#doClean()。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T03:26:43+08:00",
+      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260525-0326-18.17-ndk-surfacecontrol-signature-still-wrong",
+      "section": "18.17",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 95,
+      "title": "NDK SurfaceControl 示例仍有不可编译 API 签名",
+      "description": "Task9 re-review 发现 §18.17 NDK 示例仍把 ASurfaceTransaction_setBufferWithRelease 写成带 releaseFenceFd 参数，并把 ASurfaceTransaction_setOnComplete callback 写成三参签名；AOSP android-16 surface_control.h 的真实签名不匹配。",
+      "reason": "[Deep Tech Review] §18.17 L187-L192、L197-L203 NDK SurfaceControl API 签名仍错误：ASurfaceTransaction_setBufferWithRelease(transaction, surface_control, buffer, acquire_fence_fd, context, func) 没有 releaseFenceFd 入参；ASurfaceTransaction_OnComplete typedef 是 (void* context, ASurfaceTransactionStats* stats)，不是 (ASurfaceTransaction*, void*, ASurfaceTransactionStats*)。当前示例不可编译，且 callback 里用 no-capture lambda 访问 surfaceControl 也无法成立。",
+      "issue_type": "source-accuracy-ndk-api-signature",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-03-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/include/android/surface_control.h"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/NDK API 签名",
+          "location": "L187-L192 setBufferWithRelease；L197-L203 setOnComplete callback",
+          "detail": "AOSP android-16.0.0_r1 surface_control.h 中 ASurfaceTransaction_setBufferWithRelease 的参数为 transaction、surface_control、buffer、acquire_fence_fd、context、ASurfaceTransaction_OnBufferRelease func；release_fence_fd 是 OnBufferRelease callback 返回值，不是 setBufferWithRelease 入参。ASurfaceTransaction_OnComplete typedef 只有 void* context 和 ASurfaceTransactionStats* stats 两个参数。",
+          "suggestion": "修正示例为：setBufferWithRelease(tx, sc, buffer, acquireFenceFd, callbackContext, onBufferRelease)。API 29-35 的 OnComplete 回调改成 static/free function 或无捕获 lambda转函数指针，签名为 (void* context, ASurfaceTransactionStats* stats)，并把 ASurfaceControl* 放进 context 结构后再调用 ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, ctx->surfaceControl)。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T03:26:43+08:00",
+      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
     }
   ],
   "metadata": {
