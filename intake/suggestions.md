@@ -3541,3 +3541,14 @@
   - 官方 Android 16/17 文档: system-triggered profiling、ApplicationStartInfo、JobScheduler pending reasons、ADPF headroom、App memory limits、background audio hardening、ACCESS_LOCAL_NETWORK、ECH/domainEncryption 均已有 12.4、16.5、23.9、24.16、25.14、25.16、25.17、26.12、26.13 等章节承接。
   - AOSP/模块方向: Connectivity / DnsResolver / Wi-Fi / Bluetooth / Media / sched_ext / DeliQueue / DMA-BUF / Gralloc 方向已有对应章节或 Task2B/Task9 队列。
 - **避免重复挖掘**：下一轮优先检查 2026-05-25 之后新增的 `research-feeds/`、`daily-info/` 和官方文档变更，避开上述已覆盖方向。
+
+
+## [Task 2A 缺口挖掘巡检] 2026-05-25 02:14
+- **触发原因**：Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的空 draft 章节，进入缺口挖掘。
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json` 高分未映射素材、`intake/research-feeds/` 最近 5 个文件、`intake/daily-info/` 最近 3 天、AOSP / 官方文档抽查。
+- **已排除方向**：
+  - Android 16 `ApplicationStartInfo.getStartComponent()`、系统触发 Profiling、Adaptive Refresh Rate、`JobScheduler#getPendingJobReasons*`：已由 26.13、26.12、14.7/8.10、2.18/2.23、25.14 覆盖。
+  - 近期 DeepResearch 中的端侧 AI、Codec2 / tunneled playback、版本化诊断、ART 分代 GC + Compose、DeliQueue + RecyclerView、Excessive CPU / Power Check：已分别映射到 5.11、8.8/18.23、26.12、4.8/22.3、22.16、25.12/25.14。
+  - source-index 高分未映射素材中的 Android Performance Analyzer 案例、16KB Page Size 三方库兼容、AppExitInfoTracker + KOOM、Perfetto CPU / Input 指导、sched_ext BPF：现有 14.18、20.13/4.7、19.3/26.9、13.13/13.8、17.4 已有承接章节，暂不拆新节。
+  - AOSP 结构抽查中的 Bluetooth / GATT、NotificationManagerService：Bluetooth 仅有 11.6 扫描功耗局部覆盖，但本轮素材丰富度不足；Notification 已由 9.6 承接 ANR / 性能风险。
+- **本轮结论**：未发现评分 ≥ 14 且不与现有章节重复的知识缺口；不创建新章节。下一轮可优先跟踪 Bluetooth GATT 连接时延、Android Studio Panda 内存泄漏诊断、APA 案例库是否积累到可独立成节的素材量。
