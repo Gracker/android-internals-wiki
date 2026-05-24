@@ -54,6 +54,7 @@ reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_reviewed_date: '2026-05-06'
 last_task6_at: '2026-05-06T18:18:36+08:00'
+last_task6_audit: '2026-05-24'
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
   Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
   Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance
