@@ -40,6 +40,7 @@ tags:
   - [1.19 Zygote 图形驱动预加载与启动性能](part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md)
   - [1.20 App Archiving 机制与恢复性能](part1-fundamentals/ch01-architecture/20-app-archiving-performance.md)
   - [1.21 Android Developer Verification 与安装链路边界](part1-fundamentals/ch01-architecture/21-developer-verification-install-boundary.md)
+  - [1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界](part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
