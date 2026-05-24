@@ -3356,3 +3356,22 @@
 - **位置**：L490 后参考资料后又追加 RenderEffect 正文段
 - **问题**：“参考资料”后仍接正文级 RenderEffect 章节，和前文 RenderEffect 小节重复并产生结论冲突。
 - **建议**：将 L512-L688 合并回 RenderEffect 小节，参考资料保持在文件末尾；合并时以已验证源码链为准。
+
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-24
+- **类型**：源码准确性 / 版本差异
+- **位置**：L303-L313 HWC3 Composition.aidl 枚举片段
+- **问题**：正文列出 Android 13+ HWC3 AIDL Composition 枚举时只写到 SIDEBAND，当前公开 AOSP `Composition.aidl` 还包含 `DISPLAY_DECORATION = 6`。本节主线关注 DEVICE/CLIENT，不构成回炉项，但源码片段不应表现为完整枚举。
+- **建议**：二选一：补 `DISPLAY_DECORATION = 6` 及其 display decoration/cutout/rounded corner 含义；或在代码块标题标注“仅列出与 DEVICE/CLIENT 归因相关的子集”。
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-24
+- **类型**：数据缺失
+- **位置**：L122-L125、L360-L367 Overlay plane 数量与 Qualcomm/MediaTek 差异
+- **问题**：高端 SoC 4-6 个 Overlay Plane、中端 4 个，以及 MTK 静态场景更积极切 CLIENT 等结论缺少具体设备、SoC、dumpsys/HWC dump 或厂商公开材料锚点。
+- **建议**：补至少一组设备/系统版本/`dumpsys SurfaceFlinger` 或 HWC dump 样本；没有样本前把这些数字改成“常见经验范围，需按目标设备复核”。
+
+## [Task9 Deep Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-24
+- **类型**：源码准确性 / 帧时序表述
+- **位置**：L288 FrameTimeline 与 30fps 示例
+- **问题**：“一个 30fps 渲染的页面，每两帧才有一个 VSync”方向写反。60Hz 显示上 30fps 内容通常是每两次 VSync 产出/展示一帧，而不是每两帧才有一个 VSync。
+- **建议**：改为“一个 30fps 页面在 60Hz 显示上通常每两个 VSync 周期产出一帧；FrameTimeline 用 expected/actual present 关系判断是否符合预期节奏”。

@@ -36,10 +36,10 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_by: openclaw-task6
@@ -48,13 +48,13 @@ task6_result: needs-rework
 task6_reviewed_date: "2026-05-15"
 last_task6_at: "2026-05-15T12:11:00+08:00"
 task9_result: needs-rework
-task9_reviewed_date: '2026-05-15'
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-15T11:41:46+08:00'
-task9_review_notes: '2026-05-15 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0。HWUI Sync、BLAST 回调、ART Generational CMC 源码口径需回炉。'
+last_task9_at: "2026-05-24T20:34:56+08:00"
+task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0。HWUI Sync、BLAST 回调、ART Generational CMC 源码口径需回炉。 | 2026-05-24 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1；ART GC 把 ConcurrentCopying 写成 CMS、DeliQueue 源码路径仍指旧 MessageQueue、Trace 阈值用固定 16ms/8ms，需 Task2B 回炉。"
 task6_review_notes: "2026-05-15 task6 revisiting review: needs-rework。小修5处（补H1、sources、运行时译法、未验证收益降调）；L3/L4 1项：源码调研附录仍是素材 dump，需 Task2B 整合。Task9 既有 P0/P1 队列继续处理。"
 last_task6_review_log: "logs/review/2026-05-15-12-review.md"
-last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
+last_task9_review_log: "logs/deep-review/2026-05-24-20-deep-review.md"
 ---
 
 
