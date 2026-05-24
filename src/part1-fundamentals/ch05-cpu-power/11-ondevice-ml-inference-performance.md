@@ -4,15 +4,15 @@ chapter: '5.11'
 section: '5.11'
 status: ready-for-review
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-12'
-reviewed_at: '2026-05-12T20:10:00+08:00'
-last_task6_at: '2026-05-12T20:10:00+08:00'
-task6_reviewed_date: '2026-05-12'
-review_round: 2
-task6_review_notes: '2026-05-12 task6 review: 移动 misplaced outline、补齐 section frontmatter、修禁用词和翻译腔动词；技术证据问题已写入 queue.json。'
+reviewed_date: "2026-05-24"
+reviewed_at: "2026-05-24T20:14:35+08:00"
+last_task6_at: "2026-05-24T20:14:35+08:00"
+task6_reviewed_date: "2026-05-24"
+review_round: 3
+task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 22 处；无新增 Task6 回炉项；既有 Task6 技术证据条目与 Task9 LiteRT/NPU 源码索引、API 37 边界问题仍在 queue.json pending。"
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
@@ -54,6 +54,7 @@ task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
 last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
 task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。LiteRT/NPU 源码索引、API 37 边界和 AOT 数据口径需回炉。"
+last_task6_review_log: "logs/review/2026-05-24-20-review.md"
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
@@ -112,7 +113,7 @@ Android 设备上的 ML 推理可以跑在三种硬件上：CPU、GPU 和 NPU（
 
 ### NPU：各 SoC 厂商的实现差异
 
-NPU 是为张量乘加、卷积和 attention 这类运算准备的专用加速器，但 Android 生态里并不存在一个“统一 NPU”。Qualcomm、MediaTek、Samsung、Google 都有各自的硬件和 runtime。对性能工程师来说，更有用的是把注意力放在三件事上：当前模型能不能完整落到该加速器上，fallback 会不会回到 CPU，以及在 Trace 里有没有对应的可观测证据。
+NPU 是为张量乘加、卷积和 attention 这类运算准备的专用加速器，但 Android 生态里并不存在一个“统一 NPU”。Qualcomm、MediaTek、Samsung、Google 都有各自的硬件和运行时。对性能工程师来说，更有用的是把注意力放在三件事上：当前模型能不能完整落到该加速器上，fallback 会不会回到 CPU，以及在 Trace 里有没有对应的可观测证据。
 
 Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engine / NPU；MediaTek 使用 APU；Google Tensor 平台则有自己的端侧 AI 加速路径。这些代际名字可以帮助我们理解生态演进，但单独引用 TOPS、tokens/s 或“某代首 token 延迟”帮助不大，因为它们强依赖模型大小、量化方式、prefill / decode 口径和测试负载。
 
@@ -146,7 +147,7 @@ NNAPI（Neural Networks API）在 Android 8.1（API 27）引入，目标是提�
 
 ### 为什么 NNAPI 被废弃
 
-Android 官方文档现在明确把 NNAPI 标为 deprecated，并建议对性能敏感 workload 迁移到其他路径，例如 TF Lite GPU runtime。问题并不神秘：
+Android 官方文档现在明确把 NNAPI 标为 deprecated，并建议对性能敏感 workload 迁移到其他路径，例如 TF Lite GPU 运行时。原因主要有三点：
 
 第一，**驱动碎片化严重**。每家 SoC 厂商的 NNAPI HAL 实现质量参差不齐。同一个模型在 Qualcomm 平台上可能正常运行，在 MediaTek 平台上可能因为某个算子不支持而 fallback 到 CPU。兼容性测试很快会变成设备数 × SoC 厂商数 × Android 版本数的组合问题，几乎不可能全面覆盖。
 
@@ -191,7 +192,7 @@ LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledMod
 - **硬件绑定前置**：在编译阶段指定目标加速器（NPU / GPU / CPU），编译产物与具体硬件绑定，推理时不再需要运行时协商
 - **零拷贝 TensorBuffer**：通过 `HardwareBuffer` 与 NPU 直接共享内存，省去中间 tensor 的数据搬运
 - **异步执行**：CompiledModel API 支持异步推理模式。具体是 V2 强制异步还是提供同步/异步两种接口，需以 LiteRT SDK 版本和官方 API 文档为准
-- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / vendor runtime 分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [待验证]
+- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / 厂商运行时分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [待验证]
 
 迁移路径上，`Interpreter` + `Delegate` 仍然可以工作，但无法利用零拷贝和 AICore 多租户调度特性。对新项目或性能敏感的推理场景，建议直接从 `CompiledModel` API 开始。
 
@@ -203,7 +204,7 @@ Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore 
 
 [已验证: developer.android.com/ai/aicore, Gemini Nano runs in Android's AICore system service; model downloads are routed through Private Compute Services]
 
-### 对性能工程师真正重要的边界
+### 性能工程师更该关注的边界
 
 这类能力对产品功能很有吸引力，但性能分析时更该先看四个边界：
 
@@ -249,7 +250,7 @@ AOT 的适用条件：
 
 ### 在 Perfetto 中分析 ML 推理
 
-默认 system trace 能稳定看到的是线程调度、CPU / GPU 频率、内存水位和 thermal 变化。模型内部阶段 slice 只有在 App 或 native runtime 主动打点后才会出现，所以分析前先分清“默认能看到什么”和“额外打点后能看到什么”。
+默认 system trace 能稳定看到的是线程调度、CPU / GPU 频率、内存水位和 thermal 变化。模型内部阶段 slice 只有在 App 或 native 运行时主动打点后才会出现，所以分析前先分清“默认能看到什么”和“额外打点后能看到什么”。
 
 - **默认 Perfetto**：能看到主线程 / 工作线程是否被推理压满，CPU frequency 是否持续拉高，GPU freq 是否跟渲染一起上升，RSS / heap 是否在模型加载后明显抬升。
 - **App trace instrumentation**：如果 Java 层在 `interpreter.run()` 外包了 `Trace.beginSection()`，或 native 层用 `ATrace_beginSection()` 给预处理、推理、后处理打点，Perfetto 才会稳定出现这些阶段的 slice。`TfLiteInterpreter::run` 这种名字不是默认保证可见的。
@@ -275,7 +276,7 @@ AOT 的适用条件：
 
 异步推理是最先要落实的优化。推理调用必须在工作线程执行，绝不能在主线程。对于持续性推理场景（如相机滤镜），使用双缓冲策略，一个缓冲区做推理，另一个缓冲区准备下一帧输入。
 
-模型预热是另一个常用技巧。在 App 启动或页面跳转的空档期，用 dummy input 跑一次推理，提前完成 Interpreter 初始化和 Delegate 绑定。这样用户真正触发推理时，延迟会低很多。
+模型预热是另一个常用技巧。在 App 启动或页面跳转的空档期，用 dummy input 跑一次推理，提前完成 Interpreter 初始化和 Delegate 绑定。这样用户触发推理时，延迟会低很多。
 
 批处理（batching）适合需要连续推理的场景。将多个推理请求攒成一批执行，减少 Delegate 调度的固定开销。但需要注意批处理会增加延迟，不适合实时性要求高的场景。
 
@@ -288,9 +289,7 @@ AOT 的适用条件：
 - **§14.1 Android Studio Profiler**：ML Profiler 可视化推理性能
 
 
-
-
-## 源码索引（2026-05-15 调研补充）
+## 源码索引与验证边界
 
 本节涉及的关键源码路径，供进一步溯源：
 
@@ -328,28 +327,25 @@ CompiledModel.create(Accelerator.NPU)
 - Snapdragon 8 Elite Gen 5：NPU 加速最高 100x（对比 CPU）、10x（对比 GPU）
 - FastVLM-0.5B：TTFT 0.12s，prefill >11000 tokens/s，decode >100 tokens/s
 
-<!-- AIW-源码调研-2026-05-15 -->
 
 ## 延伸阅读
 ### 从 NNAPI 到 LiteRT：Android NPU 性能优化全景
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/从 NNAPI 到 LiteRT：Android NPU 性能优化全景 .md
 - 类型：DeepResearch 调研结果
 - 摘要：从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。
-- 注入时间：2026-04-19
-- 价值：对 AI 手机时代的 NPU 路线迁移和性能选型很有参考价值。
 
-## 源码调研补充（2026-05-17）
+## AICore 版本边界
 
 ### AICore 版本澄清
 
-daily-topics #5 研究发现：题目描述"AICore 为 Android 17 端侧 AI 推理性能"存在版本错误。
+AICore 的版本边界需要单独说明。公开资料能确认的事实如下。
 
 **关键事实**：
 - **AICore 起源于 Android 14（API 34）**，非 Android 17 新特性
 - Android 17 的 AI feature 变化主要是 LiteRT NPU delegate 支持和 Android 14+ 既有的 AICore 能力延续
 - AICore 通过 `com.google.ai.edge.aicore` 包对外暴露 API，包含 `InferenceSession`、`GenerativeAIException.ErrorCode` 等接口（来源：developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary）
 
-**架构分层（确认）**：
+**架构分层**：
 ```
 ML Kit GenAI APIs → Google AI Edge SDK → AICore System Service
                                            ├─ Model Distribution (Gemini Nano)
@@ -359,33 +355,27 @@ ML Kit GenAI APIs → Google AI Edge SDK → AICore System Service
 
 **LiteRT 即 TensorFlow Lite 品牌重命名**，属于 Google AI Edge SDK 的一部分，非 Android 17 新功能
 
-**NNAPI 废弃（确认，一手源码）**：
+**NNAPI 废弃**：
 - `frameworks/ml/nn/runtime/include/NeuralNetworks.h`（AOSP）- NNAPI NDK 头文件，Android 15 起 deprecated
 - `hardware/interfaces/neuralnetworks/1.3/types.hal`（AOSP）- NN HAL 接口仍受支持，驱动层仍可用
 
-**AICore Developer Preview**（2026-04-02）新增 Gemini Nano 4 和 Gemma 4 支持——这是真正的 Android 17 时间点更新
-
-<!-- AIW-源码调研-2026-05-17 -->
+**AICore Developer Preview**（2026-04-02）新增 Gemini Nano 4 和 Gemma 4 支持——这属于 Android 17 时间点更新
 
 
-<!-- AIW-源码调研-2026-05-22 -->
-
-<!-- AIW-源码调研-2026-05-23 -->
-
-## 源码调研补充（2026-05-23）
+## 端侧 AI 推理栈验证边界
 
 ### 端侧 AI 推理栈分层验证
 
-本轮调研针对 §5.11"端侧 AI 推理性能"章节的选题#5（AIW research-gaps 驱动），验证 Android 17 端侧 AI 推理栈边界的公开可发布事实。
+这一节收束 Android 17 端侧 AI 推理栈边界中可以公开发布的事实。
 
-**关键验证结论（一手源码+官方文档）**：
+**关键验证结论（源码 + 官方文档）**：
 
 #### NNAPI 废弃（Android 15 API 35）
 
 **源码锚点**：`frameworks/ml/nn/runtime/include/NeuralNetworks.h`（AOSP）
 
 Android 15 正式将 NNAPI 标记为 deprecated。官方 NNAPI Migration Guide 明确指引迁移至：
-- **TensorFlow Lite in Play Services**（即 LiteRT）：通过 Google Play Services 更新 runtime，脱离 App 独立更新
+- **TensorFlow Lite in Play Services**（即 LiteRT）：通过 Google Play Services 更新运行时，脱离 App 独立更新
 - **AICore**：内部使用 NNAPI 做硬件加速，但开发者不直接调用 NNAPI
 
 #### FEATURE_NEURAL_PROCESSING_UNIT（Android 17 新增）
@@ -418,7 +408,7 @@ AICore 是 Android 系统级 AI 推理 service，主要支持 Gemini Nano 端侧
 ```
 应用层：ML Kit GenAI APIs / Google AI Edge SDK
        ↓
-中间层：LiteRT（TensorFlow Lite）= 推理 runtime + Delegate 选择
+中间层：LiteRT（TensorFlow Lite）= 推理运行时 + Delegate 选择
          ├─ XNNPACK（CPU）
          ├─ GPU Delegate（OpenCL/OpenGL ES）
          └─ NPU via NNAPI（deprecated）

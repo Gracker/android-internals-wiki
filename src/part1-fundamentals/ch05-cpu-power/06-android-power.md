@@ -9,9 +9,9 @@ last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-05"
-task6_reviewed_date: "2026-05-05"
-task6_state: revisiting
+reviewed_date: "2026-05-24"
+task6_reviewed_date: "2026-05-24"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
@@ -23,13 +23,17 @@ task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
 pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
-review_round: 4
+review_round: 5
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
 last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
 task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 JobScheduler 配额口径需按官方行为变更修正。"
+reviewed_at: "2026-05-24T20:14:35+08:00"
+last_task6_at: "2026-05-24T20:14:35+08:00"
+last_task6_review_log: "logs/review/2026-05-24-20-review.md"
+task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 6 处；无新增 Task6 回炉项；既有 Task9 JobScheduler 配额问题仍在 queue.json pending。"
 ---
 
 # Android 功耗管理
@@ -51,13 +55,6 @@ task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 - 🔸 Background Restriction 对后台功耗的控制
 - 🔸 RESTRICTED bucket 与 Exemption 机制
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要了解 Android 功耗管理
@@ -150,7 +147,7 @@ Wake Locks: size=2
   PARTIAL_WAKE_LOCK  'myapp:background_sync' (uid=10102, pid=12345, ws=null)  activated
 ```
 
-[待补充:Perfetto 中 PowerManagerService 相关 slice 的截图]
+[待补充：Perfetto 中 PowerManagerService 相关 slice 的截图]
 
 ## Doze 模式与 App Standby 的工作原理与影响
 
@@ -296,8 +293,6 @@ Battery Historian 中的常见场景案例也很有参考价值:充电慢可能�
 - `adb shell dumpsys batterystats`:查看电池统计信息
 - `adb shell dumpsys power`:查看当前 WakeLock 状态
 - `adb shell dumpsys jobscheduler`:查看 Job 执行统计
-
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md - 器件功耗模型与 OEM 厂商 power_profile.xml]
 
 功耗分析要把整机功耗拆到各个器件（CPU、GPU、Display、WiFi、Audio 等），再按使用比例归因到各个 App。Google 在 AOSP 中提供了一套通用的器件耗电模型和配置方案(`power_profile.xml`),OEM 厂商根据自己的硬件参数校准。以 WiFi 为例,模型按状态(on/active/scan/rx/tx/idle)分别配置基准电流,运行时统计各状态时长再乘以对应电流值,就得到 WiFi 器件的功耗估算。不过这套通用模型的精度有限,各 OEM 厂商通常还有基于自身硬件的更精准功耗统计方案。
 
@@ -456,7 +451,7 @@ Adaptive Battery 从系统侧智能调整资源分配,而 Android 也为用户�
 
 **自动限制**:从 Android 12 开始,如果系统检测到某个 App 在后台消耗了过多资源(如频繁唤醒、长时间持锁),会自动弹出通知提醒用户。如果用户确认,该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的"共治"模式。
 
-### [自动发现] Android 17:能量限额制 (Energy Limiter) [待验证]
+### Android 17 能量限额制（Energy Limiter）[待验证]
 
 Android 17 (API 37) 公开资料提及 JobDebugInfo 等后台任务调试能力。当前可检索的官方文档未能支撑"按 App 统计后台 μJ 能量、超配额强杀进程"的完整调用链和 CDD/CTS 要求。以下内容为基于公开线索的研究假设，**发布前需要补齐 Android 17 CDD、AOSP PowerStats/ODPM 调用链或官方特性页证据**。
 
@@ -509,7 +504,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 16 (API 36) | JobScheduler 配额优化 | Active Bucket 配额更宽裕,可见时发起的 Job 更容易保留高配额 |
 | 17 (API 37) | JobDebugInfo 调试能力 + onVsyncIdle 显示空闲回调 | 后台任务调试信息增强;HWC display idle 通知 SurfaceFlinger 重新同步 |
 
-从这张表可以看出,Android 的功耗管理策略越来越依赖系统侧的主动管控,而非依赖 App 开发者的自觉行为。对于 App 开发者来说,趋势很明确:尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
+这张表呈现出一个趋势：Android 的功耗管理策略越来越依赖系统侧的主动管控，而不是只依赖 App 开发者自觉控制后台行为。对于 App 开发者来说,趋势很明确:尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
 
 ## 常见问题与误区
 
@@ -564,5 +559,3 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md
 - 类型:DeepResearch 调研结果
 - 摘要:基于 AOSP 16 逐层拆解 `getCpuHeadroom()/getGpuHeadroom()` 调用链,澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量,不走 PSI/lmkd,也不存在公开 memory headroom;适合做相机、游戏等重负载场景的前瞻降级信号。
-- 注入时间:2026-04-23
-- 价值:把 Headroom API 与 PSI/lmkd 边界说清楚,能避免把产能信号误当成内存压力接口。

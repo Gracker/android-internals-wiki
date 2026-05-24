@@ -233,7 +233,9 @@
     "23.11",
     "1.16",
     "22.16",
-    "24.16"
+    "24.16",
+    "5.6",
+    "7.2"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -299,22 +301,29 @@
     "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md",
     "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
     "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
-    "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
+    "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
+    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
     "date": "2026-05-24",
-    "time": "19:14",
+    "time": "20:14",
     "sections": [
-      "24.16"
+      "5.6",
+      "5.11",
+      "7.2"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
+      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
     ],
-    "result": "Task6 本轮 1 章 review：24.16 pass-light-edit；L1/L2 小修 7 处；0 个新增回炉；0 自动晋升（Task9 尚未通过）。",
-    "log": "logs/review/2026-05-24-19-review.md",
-    "reviewed_at": "2026-05-24T19:14:00+08:00",
-    "mode": "first-review"
+    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
+    "log": "logs/review/2026-05-24-20-review.md",
+    "reviewed_at": "2026-05-24T20:14:35+08:00",
+    "mode": "revisiting"
   },
   "issues_by_section": {
     "1.6": {
@@ -1888,24 +1897,28 @@
       "task9_pending_queue": 1
     }
   },
-  "total_review_sections": 211,
+  "total_review_sections": 206,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-24T20:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-24T20:14:35+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-23",
-    "time": "20:16",
+    "date": "2026-05-24",
+    "time": "20:14",
     "sections": [
-      "26.18"
+      "5.6",
+      "5.11",
+      "7.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/18-app-performance-score.md"
+      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
     ],
-    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
-    "log": "logs/review/2026-05-23-20-review.md",
-    "reviewed_at": "2026-05-23T20:16:21+08:00",
-    "mode": "first-review"
+    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
+    "log": "logs/review/2026-05-24-20-review.md",
+    "reviewed_at": "2026-05-24T20:14:35+08:00",
+    "mode": "revisiting"
   },
   "task9_last_review": "2026-05-24",
   "ready_to_publish": 186,
@@ -2218,13 +2231,20 @@
     "5.11": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-12T20:10:00+08:00",
-      "task6_result": "needs-rework",
+      "last_task6_at": "2026-05-24T20:14:35+08:00",
+      "task6_result": "pass-light-edit",
       "queue_priority": 95,
-      "last_task6_review_log": "logs/review/2026-05-12-20-review.md",
+      "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T03:44:00+08:00"
+      "last_task9_at": "2026-05-14T03:44:00+08:00",
+      "section": "5.11",
+      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "file": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "task2b_state": "pending"
     },
     "1.5": {
       "status": "ready-for-review",
@@ -5096,6 +5116,39 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "pipeline_stage": "task2a_gap_mining"
+    },
+    "5.6": {
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "last_task6_at": "2026-05-24T20:14:35+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 85
+    },
+    "7.2": {
+      "section": "7.2",
+      "title": "卡顿原因体系",
+      "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "last_task6_at": "2026-05-24T20:14:35+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     }
   },
   "task2b_rounds": [
@@ -5161,35 +5214,39 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
-  "total_review_files": 48,
+  "total_review_files": 64,
   "last_task2a_at": "2026-05-24T13:04:00+08:00",
   "last_task2a_section": "25.18",
   "last_task2a_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
   "last_task6_review": "2026-05-24",
   "last_task6_sections": [
-    "8.2",
-    "7.5",
-    "18.6"
+    "5.6",
+    "5.11",
+    "7.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part2-performance/ch07-smoothness/05-optimization.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
   ],
-  "last_task6_at": "2026-05-24T13:10:00+08:00",
+  "last_task6_at": "2026-05-24T20:14:35+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-23",
-    "time": "20:16",
+    "date": "2026-05-24",
+    "time": "20:14",
     "sections": [
-      "26.18"
+      "5.6",
+      "5.11",
+      "7.2"
     ],
     "files": [
-      "src/part5-app/ch26-observability/18-app-performance-score.md"
+      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
     ],
-    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
-    "log": "logs/review/2026-05-23-20-review.md",
-    "reviewed_at": "2026-05-23T20:16:21+08:00",
-    "mode": "first-review"
+    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
+    "log": "logs/review/2026-05-24-20-review.md",
+    "reviewed_at": "2026-05-24T20:14:35+08:00",
+    "mode": "revisiting"
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -5198,12 +5255,12 @@
   "last_task2a_result": "gap-mining",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.17",
-  "task6_last_review_at": "2026-05-24T13:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-24-13-review.md",
+  "task6_last_review_at": "2026-05-24T20:14:35+08:00",
+  "task6_last_review_log": "logs/review/2026-05-24-20-review.md",
   "task6_last_review_sections": [
-    "8.2",
-    "7.5",
-    "18.6"
+    "5.6",
+    "5.11",
+    "7.2"
   ],
   "sections_status": {
     "22.11": {
@@ -6400,29 +6457,32 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "mode": "normal-review",
-    "result": "pass-light-edit",
-    "new_rework_items": 0,
-    "existing_pending_queue_sections": [
-      "8.2",
-      "7.5",
-      "18.6"
+    "date": "2026-05-24",
+    "time": "20:14",
+    "sections": [
+      "5.6",
+      "5.11",
+      "7.2"
     ],
-    "l1_l2_fixes": {
-      "8.2": 18,
-      "7.5": 9,
-      "18.6": 5
-    },
-    "log": "logs/review/2026-05-24-13-review.md",
-    "reviewed_at": "2026-05-24T13:10:00+08:00"
+    "files": [
+      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    ],
+    "result": "pass-light-edit; no new task6 rework; existing queue pending for 5.6 and 5.11",
+    "log": "logs/review/2026-05-24-20-review.md",
+    "reviewed_at": "2026-05-24T20:14:35+08:00",
+    "mode": "revisiting"
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-    "src/part2-performance/ch07-smoothness/05-optimization.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch26-observability/18-app-performance-score.md"
+    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6704,9 +6764,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "8.2",
-    "7.5",
-    "18.6"
+    "5.6",
+    "5.11",
+    "7.2"
   ],
   "task2b_progress": [
     {
@@ -6735,7 +6795,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-24-19-review.md",
+  "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7306,7 +7366,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-24T19:14:00+08:00",
+  "last_task6_review_at": "2026-05-24T20:14:35+08:00",
   "last_task6_review_section": "24.16",
   "section_1_22": {
     "section": "1.22",
@@ -7317,5 +7377,56 @@
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-24",
     "gap_source": "研究素材/官方文档/AOSP结构"
+  },
+  "section_5_6": {
+    "section": "5.6",
+    "title": "Android 功耗管理",
+    "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-24",
+    "last_task6_at": "2026-05-24T20:14:35+08:00",
+    "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "queue_priority": 85
+  },
+  "section_5_11": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "last_task6_at": "2026-05-24T20:14:35+08:00",
+    "task6_result": "pass-light-edit",
+    "queue_priority": 95,
+    "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-14T03:44:00+08:00",
+    "section": "5.11",
+    "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "file": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "task6_state": "reviewed",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-24",
+    "task2b_state": "pending"
+  },
+  "section_7_2": {
+    "section": "7.2",
+    "title": "卡顿原因体系",
+    "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-24",
+    "last_task6_at": "2026-05-24T20:14:35+08:00",
+    "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed"
   }
 }
