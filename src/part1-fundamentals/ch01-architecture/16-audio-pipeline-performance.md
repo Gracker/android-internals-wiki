@@ -34,20 +34,20 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-24T15:15:46+08:00"
-task9_reviewed_date: "2026-05-24"
+task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-24T15:30:04+08:00"
+last_task9_at: "2026-05-25T00:20:00+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。"
+task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。 | 2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Android 17 background audio hardening 的 visible Activity/非 SHORT_SERVICE FGS、target API 37 WIU、USAGE_ALARM exact alarm 豁免条件与 AAudio offloaded playback 前提混写，已写入 metadata/queue.json。"
 review_type: "task6-writing-quality-review"
 last_task9_audit: "2026-05-24"
-last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
