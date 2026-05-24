@@ -37,23 +37,23 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
-task2b_result: fixed
+task2b_result: pending
 last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
+reviewed_date: "2026-05-24"
 task6_result: needs-rework
-task6_reviewed_date: "2026-05-15"
-last_task6_at: "2026-05-15T12:11:00+08:00"
+task6_reviewed_date: "2026-05-24"
+last_task6_at: "2026-05-24T21:11:52+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T20:34:56+08:00"
 task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0。HWUI Sync、BLAST 回调、ART Generational CMC 源码口径需回炉。 | 2026-05-24 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1；ART GC 把 ConcurrentCopying 写成 CMS、DeliQueue 源码路径仍指旧 MessageQueue、Trace 阈值用固定 16ms/8ms，需 Task2B 回炉。"
-task6_review_notes: "2026-05-15 task6 revisiting review: needs-rework。小修5处（补H1、sources、运行时译法、未验证收益降调）；L3/L4 1项：源码调研附录仍是素材 dump，需 Task2B 整合。Task9 既有 P0/P1 队列继续处理。"
-last_task6_review_log: "logs/review/2026-05-15-12-review.md"
+task6_review_notes: "2026-05-24 task6 revisiting review: needs-rework。小修1处（清理 Compose 段结构性元叙述），风险标注3处（固定帧预算、DeliQueue 源码路径、GC 术语混写）；L3/L4 1项：源码调研补充仍保留素材归档与编辑痕迹，已合并到 queue.json 18.2 P95 pending 项。"
+last_task6_review_log: "logs/review/2026-05-24-21-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-20-deep-review.md"
 ---
 
@@ -236,6 +236,8 @@ sequenceDiagram
 
 在 Perfetto 中分析标准管线时，以下 Slice 和信号是关键锚点。注意：具体名称可能因 Android 版本和 OEM 而异，但功能语义是稳定的。
 
+[需确认: Task9 2026-05-24 已指出本表固定 `<8ms` / `>16ms` 帧预算口径不适配高刷、可变刷新率和 Android 12+ FrameTimeline deadline，需按刷新率与 Expected Present deadline 回炉修正。]
+
 ### UI Thread 关键 Slice
 
 | Slice | 含义 | 正常耗时 | 异常信号 |
@@ -289,7 +291,7 @@ Android 12 引入了 FrameTimeline 机制，改变了 Jank 的判定方式。在
 
 ## 补充：Jetpack Compose 在这条管线上的位置
 
-Jetpack Compose 是 Android 原生的声明式 UI 框架。从出图路径看，Compose 和 View 系统没有区别——最终都走这条 HWUI / BLAST / SurfaceFlinger 主路径。Compose 的独立维度只有一个：**MainThread 上的工作形态不同**。RenderThread 之后的部分完全共用，所以本节只展开 Compose 特有的 MainThread 侧差异。
+Jetpack Compose 是 Android 原生的声明式 UI 框架。从出图路径看，Compose 和 View 系统没有区别——最终都走这条 HWUI / BLAST / SurfaceFlinger 主路径。Compose 的独立维度只有一个：**MainThread 上的工作形态不同**。RenderThread 之后的部分完全共用，Compose 相关分析应集中在 MainThread 侧。
 
 ### Compose 一帧的三阶段
 
@@ -370,6 +372,8 @@ Compose 与 View 系统可以互相嵌入：
 ### MessageQueue.DeliQueue 源码验证
 
 **文件**：`frameworks/base/core/java/android/os/MessageQueue.java`（AOSP master）
+
+[需确认: Task9 2026-05-24 已指出 Android 17 DeliQueue 源码锚点仍指向旧 `MessageQueue.java` 路径，应按 `core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 与 Android 17 behavior change 文档回炉核对。]
 
 DeliQueue（Treiber Stack 实现）是 Android 17 (API 37) 为 targetSdk >= 37 应用引入的 MessageQueue 优化：
 
@@ -522,6 +526,8 @@ if (last_gc_ < tried_type) {
 - 同步 GC 导致分配线程 stop-the-world，如果发生在 VSYNC 窗口则造成掉帧
 
 **Android 13+ 改进**：
+[需确认: Task9 2026-05-24 已指出 `ConcurrentCopying（CMS）` 属于 GC 术语混写，需回炉修正为 CC / CMS 的准确边界。]
+
 - 默认使用 ConcurrentCopying（CMS）大幅减少 stop-the-world pause
 - `ChangeCollector()` 支持 young→old GC 类型切换
 - `use_generational_gc_` 参数启用分代 GC 优化

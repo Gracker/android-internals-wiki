@@ -19557,7 +19557,9 @@
         "https://source.android.com/docs/core/runtime/gc-debug",
         "https://developer.android.com/about/versions/17/changes/messagequeue",
         "https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue",
-        "https://android.googlesource.com/platform/frameworks/base.git/+/refs/heads/main/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
+        "https://android.googlesource.com/platform/frameworks/base.git/+/refs/heads/main/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java",
+        "logs/review/2026-05-24-21-review.md",
+        "intake/suggestions.md（含 Task6 2026-05-24 review 意见）"
       ],
       "review_issues": [
         {
@@ -19580,11 +19582,20 @@
           "location": "L241-L255：Trace 视角关键 Slice 表",
           "detail": "表中把 Choreographer#doFrame 正常耗时写为 <8ms，并写“超过 16ms → 必定掉帧”；RenderThread DrawFrame 也固定写 <8ms。Android 11-17 覆盖 60/90/120Hz、可变刷新率和 Android 12+ FrameTimeline，固定 16ms/8ms 阈值会漏判高刷设备，也会误导读者忽略 expected/actual timeline deadline。",
           "suggestion": "把阈值改成相对当前 display frame interval / FrameTimeline expected present deadline 的预算；表格可保留 60Hz/120Hz 示例，但不要写成跨版本固定标准。"
+        },
+        {
+          "severity": "P1",
+          "type": "需重写/编辑痕迹",
+          "location": "L362-L533：源码调研补充、AIW 调研标记、参考资料素材索引",
+          "detail": "正文末尾仍保留 AIW 源码调研块、来源/注入时间/价值说明和未整合素材记录，读起来像素材归档而不是发布稿。Task6 不裁决其中技术结论，只标记写作质量问题：发布正文应面向读者，不能保留加工过程痕迹。",
+          "suggestion": "由 Task2B 将已验证的 BLAST release 回路、Compose/ART 边界等必要信息整合进主体章节；删除或移出 AIW-源码调研标记、来源/注入时间/价值说明。未验证技术点保留为 queue / suggestions / 参考资料，不作为发布正文。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T20:34:56+08:00",
-      "review_log": "logs/deep-review/2026-05-24-20-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-24-20-deep-review.md",
+      "task6_last_merged_at": "2026-05-24T21:11:52+08:00",
+      "task6_last_review_log": "logs/review/2026-05-24-21-review.md"
     }
   ],
   "metadata": {
