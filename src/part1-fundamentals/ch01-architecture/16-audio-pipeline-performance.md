@@ -13,11 +13,11 @@ last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-24"
-last_task6_review_log: "logs/review/2026-05-24-16-review.md"
-last_task6_at: "2026-05-24T16:05:00+08:00"
+reviewed_date: "2026-05-25"
+last_task6_review_log: "logs/review/2026-05-25-01-review.md"
+last_task6_at: "2026-05-25T01:12:00+08:00"
 last_task6_audit: "2026-05-19"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task9_result: needs-rework
 sources:
   - type: official
@@ -35,7 +35,7 @@ sources:
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
@@ -48,6 +48,9 @@ task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastM
 review_type: "task6-writing-quality-review"
 last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能

@@ -237,7 +237,8 @@
     "5.6",
     "7.2",
     "7.2",
-    "18.2"
+    "18.2",
+    "24.17"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -308,25 +309,28 @@
     "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
     "src/part2-performance/ch07-smoothness/02-jank-causes.md",
     "src/part2-performance/ch07-smoothness/02-jank-causes.md",
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
-    "date": "2026-05-24",
-    "time": "21:05",
+    "date": "2026-05-25",
+    "time": "01:12",
     "sections": [
-      "18.2"
+      "24.17",
+      "1.16"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
     ],
-    "result": "needs-rework",
-    "log": "logs/review/2026-05-24-21-review.md",
-    "reviewed_at": "2026-05-24T21:11:52+08:00",
-    "mode": "revisiting review",
+    "result": "pass-light-edit",
+    "log": "logs/review/2026-05-25-01-review.md",
+    "reviewed_at": "2026-05-25T01:12:00+08:00",
+    "mode": "mixed first/revisiting review",
     "l1_l2_fixes": 1,
-    "risk_marks": 3,
-    "l3_l4_issues": 1
+    "risk_marks": 0,
+    "l3_l4_issues": 0
   },
   "issues_by_section": {
     "1.6": {
@@ -1912,24 +1916,26 @@
   "total_review_sections": 206,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-24T21:16:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-25T01:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-24",
-    "time": "21:05",
+    "date": "2026-05-25",
+    "time": "01:12",
     "sections": [
-      "18.2"
+      "24.17",
+      "1.16"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
     ],
-    "result": "needs-rework",
-    "log": "logs/review/2026-05-24-21-review.md",
-    "reviewed_at": "2026-05-24T21:11:52+08:00",
-    "mode": "revisiting review",
+    "result": "pass-light-edit",
+    "log": "logs/review/2026-05-25-01-review.md",
+    "reviewed_at": "2026-05-25T01:12:00+08:00",
+    "mode": "mixed first/revisiting review",
     "l1_l2_fixes": 1,
-    "risk_marks": 3,
-    "l3_l4_issues": 1
+    "risk_marks": 0,
+    "l3_l4_issues": 0
   },
   "task9_last_review": "2026-05-24",
   "ready_to_publish": 186,
@@ -5182,6 +5188,44 @@
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed"
+    },
+    "24.17": {
+      "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-25",
+      "last_task6_at": "2026-05-25T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0
+    },
+    "1.16": {
+      "title": "Audio Pipeline 延迟与性能",
+      "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 85,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-25",
+      "last_task6_at": "2026-05-25T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
+      "last_task9_at": "2026-05-25T00:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-25-00-deep-review.md",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。"
     }
   },
   "task2b_rounds": [
@@ -5251,30 +5295,34 @@
   "last_task2a_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_section": "1.22",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
-  "last_task6_review": "2026-05-24",
+  "last_task6_review": "2026-05-25",
   "last_task6_sections": [
-    "18.2"
+    "24.17",
+    "1.16"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
   ],
-  "last_task6_at": "2026-05-24T21:11:52+08:00",
+  "last_task6_at": "2026-05-25T01:12:00+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-24",
-    "time": "21:05",
+    "date": "2026-05-25",
+    "time": "01:12",
     "sections": [
-      "18.2"
+      "24.17",
+      "1.16"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
     ],
-    "result": "needs-rework",
-    "log": "logs/review/2026-05-24-21-review.md",
-    "reviewed_at": "2026-05-24T21:11:52+08:00",
-    "mode": "revisiting review",
+    "result": "pass-light-edit",
+    "log": "logs/review/2026-05-25-01-review.md",
+    "reviewed_at": "2026-05-25T01:12:00+08:00",
+    "mode": "mixed first/revisiting review",
     "l1_l2_fixes": 1,
-    "risk_marks": 3,
-    "l3_l4_issues": 1
+    "risk_marks": 0,
+    "l3_l4_issues": 0
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -5283,10 +5331,11 @@
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.22",
-  "task6_last_review_at": "2026-05-24T21:11:52+08:00",
-  "task6_last_review_log": "logs/review/2026-05-24-21-review.md",
+  "task6_last_review_at": "2026-05-25T01:12:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-25-01-review.md",
   "task6_last_review_sections": [
-    "18.2"
+    "24.17",
+    "1.16"
   ],
   "sections_status": {
     "22.11": {
@@ -6505,27 +6554,31 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "date": "2026-05-24",
-    "time": "21:05",
+    "date": "2026-05-25",
+    "time": "01:12",
     "sections": [
-      "18.2"
+      "24.17",
+      "1.16"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
     ],
-    "result": "needs-rework",
-    "log": "logs/review/2026-05-24-21-review.md",
-    "reviewed_at": "2026-05-24T21:11:52+08:00",
-    "mode": "revisiting review",
+    "result": "pass-light-edit",
+    "log": "logs/review/2026-05-25-01-review.md",
+    "reviewed_at": "2026-05-25T01:12:00+08:00",
+    "mode": "mixed first/revisiting review",
     "l1_l2_fixes": 1,
-    "risk_marks": 3,
-    "l3_l4_issues": 1
+    "risk_marks": 0,
+    "l3_l4_issues": 0
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6807,7 +6860,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "18.2"
+    "24.17",
+    "1.16"
   ],
   "task2b_progress": [
     {
@@ -6836,7 +6890,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+  "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7407,8 +7461,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-24T21:11:52+08:00",
-  "last_task6_review_section": "18.2",
+  "last_task6_review_at": "2026-05-25T01:12:00+08:00",
+  "last_task6_review_section": "24.17,1.16",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -7498,5 +7552,9 @@
     "task6_l1_l2_fixes": 1,
     "task6_l3_l4_issues": 1,
     "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
-  }
+  },
+  "last_task6_reviewed_sections": [
+    "24.17",
+    "1.16"
+  ]
 }
