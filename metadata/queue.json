@@ -19599,17 +19599,53 @@
       "review_log": "logs/deep-review/2026-05-24-20-deep-review.md",
       "task6_last_merged_at": "2026-05-24T21:11:52+08:00",
       "task6_last_review_log": "logs/review/2026-05-24-21-review.md"
+    },
+    {
+      "id": "task9-audit-20260524-2220-12.1-play-feature-delivery-version-boundary",
+      "section": "12.1",
+      "section_title": "APK 体积优化",
+      "priority": 85,
+      "title": "Dynamic Feature Module 运行时加载依赖版本需从旧 Play Core 口径更新",
+      "description": "Task9 闲时抽检发现 §12.1 的 Dynamic Feature Module 示例仍写 Play Core Library 1.6+。当前官方口径已按 Play Feature Delivery Library 分发，且 2.1.0 是 Android 14 target SDK 兼容边界；旧 1.x 版本说明不适配本文 Android 8-16 / compileSdk 36 基线。",
+      "reason": "[Deep Tech Review Audit] §12.1 L367、L444-L461 使用旧 Play Core Library 1.6+ 解释 on-demand delivery。官方文档和 release notes 应改为 Play Feature Delivery Library 2.1.0+ / Android 5.0+，避免读者在 targetSdk/compileSdk 34+ 工程中沿用旧依赖口径。",
+      "issue_type": "version-difference-play-feature-delivery",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch12-apk-network/01-apk-size.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-22-audit.md",
+        "https://developer.android.com/guide/playcore/feature-delivery",
+        "https://developer.android.com/guide/playcore",
+        "https://developer.android.com/reference/com/google/android/play/core/release-notes-feature_delivery"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L367、L444-L461：Dynamic Feature Module 运行时加载依赖版本",
+          "detail": "正文仍使用“Play Core Library 1.6+”作为 on-demand delivery 的适用版本口径。官方 Play Core SDK 已拆分为按功能分发的 Play Feature Delivery Library；release notes 明确 2.1.0 支持 Android 14 target SDK，旧 Play Core 1.x 口径不能覆盖本文 frontmatter 的 Android 8-16 / compileSdk 36 基线。",
+          "suggestion": "把“Play Core Library 1.6+”改成“Play Feature Delivery Library 2.1.0+（或当前官方最新版本）/ Android 5.0+”；代码说明同步标注 SplitInstallManagerFactory 来自 Play Feature Delivery，而不是旧 monolithic Play Core。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T22:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 527,
-    "p0_count": 224,
-    "last_updated": "2026-05-24T21:16:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 173,
+    "total_entries": 528,
+    "p0_count": 225,
+    "last_updated": "2026-05-24T22:20:00+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 174,
     "updated_date": "2026-05-24",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 173,
+    "last_updated_by": "openclaw-task9",
+    "pending": 174,
     "completed_entries": 351,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
@@ -19617,9 +19653,9 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T21:16:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 173,
+  "last_updated": "2026-05-24T22:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 174,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
