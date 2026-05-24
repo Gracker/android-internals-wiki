@@ -2,7 +2,7 @@
 title: "Room 3.0 与 SQLiteDriver 迁移性能边界"
 chapter: "24.17"
 section: "24.17"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-alpha05"
@@ -37,11 +37,11 @@ related_chapters: ["10.7", "14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task9_result: needs-rework
-task2b_state: "fixed"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-25-01-review.md"
@@ -50,10 +50,14 @@ task6_result: pass-light-edit
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 review_type: "task6-writing-quality-review"
-last_task9_at: "2026-05-25T01:34:17+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-01-deep-review.md"
-task9_p0_issues: 2
-task9_p1_issues: 2
+last_task9_at: "2026-05-25T03:26:43+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-03-deep-review.md"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
+task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P1：alpha04 connection pool 控制 API、默认池配置、hasConnectionPool 与 SQLITE_BUSY/busy_timeout 边界仍未补全。"
+task9_p2_issues: 0
 ---
 
 # 24.17 Room 3.0 与 SQLiteDriver 迁移性能边界

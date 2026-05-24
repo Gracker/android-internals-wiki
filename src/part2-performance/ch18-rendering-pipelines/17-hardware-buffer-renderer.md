@@ -18,29 +18,32 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-23"
+task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-23T03:35:03+08:00"
+last_task9_at: "2026-05-25T03:26:43+08:00"
 last_task2b_at: "2026-04-26T14:46:27+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-23 Task9 deep review: needs-rework。P0：NDK SurfaceControl previous release fence 示例使用不存在 API / 错误签名；写入 queue 条目 task9-deep-20260523-18.17-ndk-surface-control-api-signature。"
+task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P0：NDK SurfaceControl 示例仍有 setBufferWithRelease 参数顺序和 setOnComplete callback 签名错误。"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-25-03-deep-review.md"
 last_task6_at: "2026-05-23T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-23-04-review.md"
 task6_review_notes: "2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 6 处（补 H1、规范 outline 锚点、删除高频强调词、去重 frontmatter review_notes、修正 chapter、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 NDK SurfaceControl API 签名问题已在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。 | 2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
+task9_p0_issues: 1
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 # Hardware Buffer Renderer
 
