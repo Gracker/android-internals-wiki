@@ -19641,6 +19641,32 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T22:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260525-2417-room3-sqlitedriver-kmp-performance",
+      "section": "24.17",
+      "section_title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "priority": 80,
+      "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "description": "Room 3.0 官方 alpha 引入 androidx.room3、SQLiteDriver、KSP-only 和 Kotlin-only 生成代码，现有 24.2 只覆盖传统 SQLite/Room 优化，缺少迁移期数据库 I/O 与构建性能边界。",
+      "reason": "2026-05 每日信息出现 Room 3.0 适配热点；官方 Room 3.0 release notes 与 Android Developers Blog 已发布迁移口径，适合独立成 24.17 小节，后续加工时与 24.2、10.7 交叉引用。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "task2a-content-processing",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/room3",
+        "https://android-developers.googleblog.com/2026/03/room-30-modernizing-room.html",
+        "intake/daily-info/2026-05-22.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T00:04:00+08:00"
     }
   ],
   "metadata": {
@@ -19673,5 +19699,5 @@
       "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
     ]
   },
-  "last_task2a_gap_mining_at": "2026-05-24T20:04:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-25T00:04:00+08:00"
 }
