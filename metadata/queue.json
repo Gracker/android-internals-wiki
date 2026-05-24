@@ -18731,6 +18731,51 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-24T08:11:00+08:00",
       "completion_reason": "Task 2A 内容加工完成，status → ready-for-review，进入 Task6 review 管线"
+    },
+    {
+      "id": "task9-audit-20260524-0816-audio-pipeline-aosp-paths",
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "priority": 95,
+      "title": "Audio Pipeline AOSP 源码锚点路径需修正",
+      "description": "Task9 闲时抽检发现 §1.16 中 FastMixer 与 AAudio service 的 AOSP 路径不匹配 android-16.0.0_r1；相关官方文档 URL 也已迁移。",
+      "reason": "[Deep Tech Review][Idle Audit] §1.16 的 `frameworks/av/services/audioflinger/FastMixer.cpp` 与 `frameworks/av/media/libaaudio/service/` 路径在 android-16.0.0_r1 不存在；需改为 fastpath/oboeservice/libaaudio src 等可复核源码锚点。",
+      "issue_type": "source-path-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-08-audit.md",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-16.0.0_r1/services/audioflinger/fastpath/FastMixer.cpp",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-16.0.0_r1/services/oboeservice/AAudioService.cpp",
+        "https://source.android.com/docs/core/audio/latency/latency",
+        "https://source.android.com/docs/core/audio/aaudio"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L172：`frameworks/av/services/audioflinger/FastMixer.cpp`",
+          "detail": "android-16.0.0_r1 的 `frameworks/av/services/audioflinger/` 下不存在 `FastMixer.cpp`；该文件位于 `frameworks/av/services/audioflinger/fastpath/FastMixer.cpp`。正文的 fast track slot 证据还应同时锚到 `FastMixerState.h` 与 `Threads.cpp`。",
+          "suggestion": "将验证标注改为 `frameworks/av/services/audioflinger/fastpath/FastMixer.cpp` / `FastMixerState.h`，并保留 `Threads.cpp` 中 `mFastTrackAvailMask` 作为 slot 证据。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码路径错误",
+          "location": "L236：`frameworks/av/media/libaaudio/service/`",
+          "detail": "android-16.0.0_r1 中不存在 `frameworks/av/media/libaaudio/service/`。AAudio 服务端实现位于 `frameworks/av/services/oboeservice/AAudioService.cpp`，client/binder/core 代码位于 `frameworks/av/media/libaaudio/src/{binding,client,core}/`。",
+          "suggestion": "把 AAudio/MMAP 段落源码锚点拆成服务端 `frameworks/av/services/oboeservice/AAudioService.cpp` 与客户端/绑定层 `frameworks/av/media/libaaudio/src/binding/`、`src/client/`、`src/core/`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T08:20:00+08:00",
+      "review_log": "logs/deep-review/2026-05-24-08-audit.md"
     }
   ],
   "metadata": {

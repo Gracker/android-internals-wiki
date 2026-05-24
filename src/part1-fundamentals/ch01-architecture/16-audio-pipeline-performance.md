@@ -16,7 +16,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-04"
 last_task6_audit: "2026-05-19"
 task6_result: "pass-light-edit"
-task9_result: pass-tech-review
+task9_result: needs-rework
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -32,18 +32,19 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-05T09:20:00+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-05 09:20 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2: IConfig.aidl 版本边界/段落位置、FastCapture 输入路径、LE Audio 数据边界。"
+task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。"
 review_type: "task6-writing-quality-review"
+last_task9_audit: "2026-05-24"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
