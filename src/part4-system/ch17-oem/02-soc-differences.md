@@ -31,21 +31,24 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
 task6_result: needs-rework
 task6_state: "revisiting"
-pipeline_stage: "task6_pending"
-task9_state: "pending"
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-17"
-last_task9_at: "2026-05-17T19:30:43+08:00"
-task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0;Tensor G4 CPU 核心、Dimensity 9400 vendor 路径和 sched_ext OEM 名称需回炉。"
-task2b_state: "fixed"
+task9_reviewed_date: "2026-05-25"
+last_task9_at: "2026-05-25T07:30:00+08:00"
+task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；MediaTek 9400 官方频率表述错误，2025/2026 旗舰 SoC 与 Tensor/Exynos 版本边界需更新。"
+task2b_state: pending
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-17T20:11:00+08:00"
 last_task6_review_log: "logs/review/2026-05-17-20-review.md"
 task6_review_notes: "2026-05-17 Task6:小修 L1/L2 15 处;常见问题后的源码调研/Game Mode 素材仍是素材块,且含 Task9 已标记的 Dimensity/sched_ext 证据风险,已并入 queue.json priority 95。"
-last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
 task6_reviewed_date: "2026-05-17"
+p0: 1
+p1: 1
+p2: 1
 ---
 
 # SoC 平台差异
