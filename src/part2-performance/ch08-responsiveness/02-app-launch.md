@@ -48,13 +48,13 @@ related_chapters:
 section: '8.2'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-19"
+reviewed_date: "2026-05-24"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_state: reviewed
 task9_result: needs-rework
@@ -69,13 +69,12 @@ last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
 p0: 0
 p1: 1
 p2: 2
-last_task6_at: "2026-05-19T12:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-19-12-review.md"
-task6_review_notes: "2026-05-19 12:07 Task6 复审:pass-light-edit。L1/L2 小修 4 处,补齐日志类代码围栏语言并压掉一处元叙述;既有 ApplicationStartInfo Task9 P0 pending 队列仍由 Task2B 处理。"
-auto_promoted_by: task9-deep-tech-review
-auto_promoted_at: "2026-05-19T19:36:17+08:00"
+last_task6_at: "2026-05-24T13:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-24-13-review.md"
+task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 18 处；既有 Task9 P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
+task6_reviewed_date: "2026-05-24"
 ---
 
 
@@ -110,7 +109,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
 
 ## 为什么要了解 App 启动流程
 
-在 Perfetto 中打开一个冷启动 Trace,会看到一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长时间线。从用户点击桌面图标到界面显示出来,中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成--整个过程可能超过 2 秒,而应用侧能优化的部分只占其中一段。
+在 Perfetto 中打开一个冷启动 Trace,会看到一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长时间线。从用户点击桌面图标到界面显示出来,中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒,而应用侧能优化的部分只占其中一段。
 
 这就是完整理解启动流程的原因。如果只知道 Application.onCreate 里不能做太多事,优化范围就很有限。掌握从点击到首帧的完整路径后,才能找到所有可能的优化切入点:哪些是系统开销无法改变,哪些是应用侧可以加速,哪些是可以通过缓存机制绕过。
 
@@ -120,7 +119,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
-Android 把应用的启动分为三种状态:冷启动(Cold Start)、温启动(Warm Start)和热启动(Hot Start)。它们的区别在于系统需要做多少工作,理解这三种状态的本质,是后续所有优化工作的基础--因为不同状态下的优化策略完全不同。
+Android 把应用的启动分为三种状态:冷启动(Cold Start)、温启动(Warm Start)和热启动(Hot Start)。它们的区别在于系统需要做多少工作,理解这三种状态的本质,是后续所有优化工作的基础——因为不同状态下的优化策略完全不同。
 
 ### 冷启动:从零开始
 
@@ -181,7 +180,7 @@ Android 把应用的启动分为三种状态:冷启动(Cold Start)、温启动(W
 
 用户在桌面上点击应用图标,Launcher 的 onClick 回调被触发。这看似一个简单的函数调用,背后却涉及多个系统组件的协调。
 
-Launcher 调用 startActivity(),经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService(ATMS)。ATMS 的 ActivityStarter 收到请求后,会通过 ActivityMetricsLogger 记录一个时间戳--这个时间戳就是后续所有启动耗时度量的起点(TTID 的起点)。
+Launcher 调用 startActivity(),经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService(ATMS)。ATMS 的 ActivityStarter 收到请求后,会通过 ActivityMetricsLogger 记录一个时间戳——这个时间戳就是后续所有启动耗时度量的起点(TTID 的起点)。
 
 然后 ATMS 创建 ActivityRecord 和 Task(旧版本/Android 10 前后资料中常写 TaskRecord,Android 15 源码中任务容器类为 `services/core/java/com/android/server/wm/Task.java`),检查是否有可以复用的 Activity。冷启动场景下,答案是没有。ATMS 接着会向前一个处于 Resumed 状态的 Activity(通常是 Launcher)发送 Pause 请求。这个 Pause 请求通过 ClientLifecycleManager 机制发送到 Launcher 进程,Launcher 处理 onPause 后通过 Binder 通知 ATMS 完成。
 
@@ -211,12 +210,12 @@ fork 出来的子进程从 ActivityThread.main() 开始执行。这个 main() �
 
 AMS 的 attachApplication 会触发 bindApplication,这会向主线程发送一条 BIND_APPLICATION 消息。Looper 开始循环后处理这条消息时,创建 Application 对象。如果 AndroidManifest.xml 中声明了自定义的 Application 类,系统会通过反射创建 Application 实例,然后依次调用:
 
-1. Application.attachBaseContext()--这是应用侧最早能介入的回调
-2. Application.onCreate()--大多数 SDK 初始化代码放在这里
+1. Application.attachBaseContext()——这是应用侧最早能介入的回调
+2. Application.onCreate()——大多数 SDK 初始化代码放在这里
 
 [已验证: AOSP android-15.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java: handleBindApplication]
 
-这个阶段是应用侧启动耗时的重灾区。一个中等规模的应用可能在 Application.onCreate 中初始化 10-20 个 SDK(埋点、推送、网络、图片加载、数据库等),每个 SDK 几十到几百毫秒,加起来可能超过 1 秒。后续 8.3 会专门讨论 Application.onCreate 的优化策略。
+这个阶段通常是应用侧启动耗时的集中区域。一个中等规模的应用可能在 Application.onCreate 中初始化 10-20 个 SDK(埋点、推送、网络、图片加载、数据库等),每个 SDK 几十到几百毫秒,加起来可能超过 1 秒。后续 8.3 会专门讨论 Application.onCreate 的优化策略。
 
 ### 第三阶段:Activity 创建与生命周期
 
@@ -224,7 +223,7 @@ Application 初始化完成后,system_server 通过 ClientLifecycleManager 向 A
 
 App 的 ActivityThread 在主线程处理 EXECUTE_TRANSACTION 消息。TransactionExecutor 按顺序执行:
 
-**先执行 callback**:LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象(通过反射),调用 Activity.attach() 初始化(创建 PhoneWindow),然后调用 Activity.onCreate()。常规有 UI 的 Activity 通常在 onCreate 中调用 `setContentView()`(或 Compose 的 `setContent {}`)来安装首屏内容。`setContentView` 的本质是将布局文件 inflate 后挂载到 `PhoneWindow` 的 `mContentParent` 中。Activity 框架并不强制要求调用 `setContentView`--不调用时 Activity 会显示空窗口;无 UI Activity(如只做后台操作的 Activity)或延迟安装内容的设计也是合法的。
+**先执行 callback**:LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象(通过反射),调用 Activity.attach() 初始化(创建 PhoneWindow),然后调用 Activity.onCreate()。常规有 UI 的 Activity 通常在 onCreate 中调用 `setContentView()`(或 Compose 的 `setContent {}`)来安装首屏内容。`setContentView` 的本质是将布局文件 inflate 后挂载到 `PhoneWindow` 的 `mContentParent` 中。Activity 框架并不强制要求调用 `setContentView`——不调用时 Activity 会显示空窗口;无 UI Activity(如只做后台操作的 Activity)或延迟安装内容的设计也是合法的。
 
 **然后执行生命周期路径补全**:从 ON_CREATE 到 ON_RESUME,中间需要补 ON_START。依次调用 Activity.onStart()、Activity.onResume()。
 
@@ -236,7 +235,7 @@ Activity.onResume() 执行完后,并不是立刻就能看到界面。绘制操�
 
 在 onResume 的处理过程中,WindowManager 会将 DecorView 添加到 WindowManagerGlobal 中,这会创建 ViewRootImpl。ViewRootImpl 做了两件事:
 
-**请求布局**:调用 requestLayout(),这是通过 Choreographer 向主线程 post 一个回调(TRAVERSAL)。注意,这个回调不会立即执行--它要等下一个 VSync 信号到来。
+**请求布局**:调用 requestLayout(),这是通过 Choreographer 向主线程 post 一个回调(TRAVERSAL)。注意,这个回调不会立即执行——它要等下一个 VSync 信号到来。
 
 **创建 SurfaceSession 连接**:通过 IWindowSession.addWindow() 向 WindowManagerService 注册窗口。WMS 会与 SurfaceFlinger 建立连接,为这个窗口创建 Layer 和 BufferQueue。
 
@@ -254,7 +253,7 @@ RenderThread 完成绘制后,通过 IGraphicBufferProducer.queueBuffer() 将帧�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time, AOSP ActivityRecord.java]
 
-[图:冷启动完整时序图--从用户点击到首帧显示,标注 system_server、Zygote、App 主线程、RenderThread、SurfaceFlinger 各进程的参与环节]
+[图:冷启动完整时序图——从用户点击到首帧显示,标注 system_server、Zygote、App 主线程、RenderThread、SurfaceFlinger 各进程的参与环节]
 
 > 注意:queueBuffer 返回 ≠ 用户看到画面。SurfaceFlinger 合成和物理送显还有一到两个 VSync 周期的延迟。如果需要追踪完整送显链路,Android 15 的 ApplicationStartInfo 提供了 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE`,可以和 `START_TIMESTAMP_FIRST_FRAME` 搭配使用。
 
@@ -280,7 +279,7 @@ TTID 是 Android Vitals 等平台监控的核心指标。Google 建议 TTID 不�
 
 ### TTFD(Time To Full Display)
 
-TTID 只统计到首帧绘制,但很多应用的界面在首帧绘制时并没有显示完整内容--数据还在从网络加载,或者数据库还在查询。用户看到的是一个加载骨架或者空白区域。为了让度量更贴近用户实际感知,Android 提供了 TTFD(Time To Full Display)指标。
+TTID 只统计到首帧绘制,但很多应用的界面在首帧绘制时并没有显示完整内容——数据还在从网络加载,或者数据库还在查询。用户看到的是一个加载骨架或者空白区域。为了让度量更贴近用户实际感知,Android 提供了 TTFD(Time To Full Display)指标。
 
 TTFD 需要开发者在代码中主动调用 `Activity.reportFullyDrawn()` 来告诉系统"我的界面完全准备好了"。调用后 logcat 中会出现:
 
@@ -512,7 +511,7 @@ system_server 和应用进程的采集条件要分开看。`atrace_categories: "
 
 度量方法明确之后,再看应用侧优化的重点区域。Application.onCreate 是应用启动流程中开发者能控制的第一个回调,也是最常见的性能瓶颈所在。
 
-### SDK 初始化:最大的耗时黑洞
+### SDK 初始化:常见耗时来源
 
 一个中等规模的应用可能在 Application.onCreate 中初始化以下 SDK:
 
@@ -524,7 +523,7 @@ system_server 和应用进程的采集条件要分开看。`atrace_categories: "
 - 热修复框架:100-300ms
 - APM 监控:20-50ms
 
-单独看每个 SDK 的初始化时间都不长,但 10-20 个 SDK 串行初始化的累积效果可能达到 1-2 秒。而且很多 SDK 的初始化并不需要在首帧显示前完成--它们只是"习惯性"地放在了 Application.onCreate 里。
+单独看每个 SDK 的初始化时间都不长,但 10-20 个 SDK 串行初始化的累积效果可能达到 1-2 秒。而且很多 SDK 的初始化并不需要在首帧显示前完成——它们只是"习惯性"地放在了 Application.onCreate 里。
 
 优化思路不是本节的重点(在 8.3 启动优化策略中会详细讨论),但核心原则是:**区分哪些初始化是首帧必需的,哪些可以延迟**。只有影响首帧显示的初始化才需要在 Application.onCreate 中同步执行,其余的都应该延迟到首帧之后。
 
@@ -574,19 +573,19 @@ measure 和 layout 完成后,就进入 draw 阶段。在硬件加速开启的情
 
 首帧绘制完成后,system_server 的 ActivityMetricsLogger 记录完成时间,这就是 TTID 的终点。至此,整个冷启动流程结束。
 
-[图:首帧绘制的关键路径--从 performTraversals 到 queueBuffer,标注主线程和 RenderThread 的分工]
+[图:首帧绘制的关键路径——从 performTraversals 到 queueBuffer,标注主线程和 RenderThread 的分工]
 
 ## Baseline Profile 与 Cloud Profile
 
 [来源: obsidian/Cubox/Android 强推的 Baseline Profiles 国内能用吗?我找 Google 工程师求证了! - 掘金-2022-07-17.md]
 
-在 Android 7.0(API 24)之前,ART 采用的是 AOT(Ahead-Of-Time)全量编译策略--安装时将所有 DEX 字节码编译为本地机器码。这带来了运行时的性能提升,但代价是安装时间极长和存储空间占用巨大。
+在 Android 7.0(API 24)之前,ART 采用的是 AOT(Ahead-Of-Time)全量编译策略——安装时将所有 DEX 字节码编译为本地机器码。这带来了运行时的性能提升,但代价是安装时间极长和存储空间占用巨大。
 
 从 Android 7.0 开始,ART 转向了混合编译策略(Profile-Guided Compilation):应用首次安装时只做解释执行(不编译),在运行过程中收集"热点代码"的 Profile(哪些方法被频繁调用),然后在设备空闲时根据 Profile 对热点代码进行后台编译。
 
 Baseline Profile 的核心思想是:与其等系统自动收集 Profile,不如由开发者主动提供一份"启动时一定会用到的代码路径"的 Profile,让系统在安装时(或下次后台优化时)就提前编译这些代码路径。
 
-实测数据表明,对于中大型应用,Baseline Profile 可以将冷启动时间缩短 20%-40%。效果取决于应用自身的复杂度--越复杂的应用,DEX 中"冷路径"越多,Baseline Profile 带来的提升越明显。
+实测数据表明,对于中大型应用,Baseline Profile 可以将冷启动时间缩短 20%-40%。效果取决于应用自身的复杂度——越复杂的应用,DEX 中"冷路径"越多,Baseline Profile 带来的提升越明显。
 
 ### Cloud Profile:不依赖应用更新的 Profile 下发
 
@@ -642,9 +641,9 @@ class MySdkInitializer : Initializer<MySdk> {
 
 Android 系统启动时,Zygote 进程会预加载一批常用的类和资源。预加载类列表定义在 `frameworks/base/config/preloaded-classes`;预加载 Drawable 和 ColorStateList 定义在 `frameworks/base/core/res/res/values/arrays.xml` 的 `preloaded_drawables` 和 `preloaded_color_state_lists` 数组中。当 Zygote fork 出 App 进程时,这些预加载的类和资源通过 Copy-on-Write 机制共享给子进程。
 
-这些预加载内容让应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说,Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段(fork + init)通常只需要几十到一百多毫秒--如果每次都从零加载所有类,这个时间会翻好几倍。
+这些预加载内容让应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说,Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段(fork + init)通常只需要几十到一百多毫秒——如果每次都从零加载所有类,这个时间会翻好几倍。
 
-Zygote preload 的局限性在于:它只预加载系统级的类和资源,不会预加载应用自身的代码。Application 类、Activity 类、第三方 SDK 的类,都需要在 fork 后由子进程自己加载。这就是 Baseline Profile 的优化空间所在--通过提前编译应用侧的热点代码,减少类加载和 JIT 编译的开销。
+Zygote preload 的局限性在于:它只预加载系统级的类和资源,不会预加载应用自身的代码。Application 类、Activity 类、第三方 SDK 的类,都需要在 fork 后由子进程自己加载。这就是 Baseline Profile 的优化空间所在——通过提前编译应用侧的热点代码,减少类加载和 JIT 编译的开销。
 
 ## 与其他章节的关系
 
@@ -652,7 +651,7 @@ Zygote preload 的局限性在于:它只预加载系统级的类和资源,不会
 - **1.2 系统启动全流程**:1.2 讲的是设备开机到桌面就绪的全过程,其中 Zygote 的启动和预加载为本节的冷启动奠定了基础。
 - **2.4 Choreographer 与渲染流水线**:首帧绘制中的 VSync 等待和 performTraversals 由 Choreographer 驱动,详细机制在 2.4 中讲解。
 - **2.5 MainThread 与 RenderThread 协作**:首帧绘制的 draw 阶段涉及主线程记录 DisplayList 和 RenderThread 执行渲染,这是 2.5 中讨论的协作模式。
-- **7.1 卡顿的定义与分类**:启动超时是卡顿的一种特殊形式--首帧耗时超过了用户可接受的范围。
+- **7.1 卡顿的定义与分类**:启动超时是卡顿的一种特殊形式——首帧耗时超过了用户可接受的范围。
 
 ## 常见问题与误区
 
