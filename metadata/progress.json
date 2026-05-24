@@ -399,17 +399,18 @@
       "p3": 0
     },
     "8.2": {
-      "p0": 1,
+      "p0": 0,
       "p1": 1,
-      "p2": 1,
+      "p2": 2,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 4,
+      "task6_l1_l2_fixes": 18,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
-      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_reviewed_at": "2026-05-24T13:10:00+08:00",
+      "task6_log": "logs/review/2026-05-24-13-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；L1/L2 小修 4 处。既有 ApplicationStartInfo Task9 P0 pending 队列仍由 Task2B 处理，Task6 未新增回炉。"
+      "task6_note": "Task6 复审通过；L1/L2 小修 18 处。既有 Task9 pending 队列继续由 Task2B 处理，Task6 未新增回炉。",
+      "task9_result": "needs-rework"
     },
     "1.5": {
       "p0": 0,
@@ -1776,21 +1777,21 @@
       "task2b_state": "pending"
     },
     "7.5": {
-      "p0": 2,
-      "p1": 0,
-      "p2": 0,
+      "p0": 1,
+      "p1": 6,
+      "p2": 3,
       "p3": 0,
       "reviewed_at": "2026-05-23T07:24:00+08:00",
       "log": "logs/deep-review/2026-05-23-07-deep-review.md",
       "summary": "P0 2：RenderEffect 与 Hardware Layer 对比违背 promotedToLayer 行为；HardwareBitmapUploader Android 14/15+ Vulkan API 边界错误。",
       "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 5,
+      "task6_l1_l2_fixes": 9,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-23T08:18:48+08:00",
-      "task6_log": "logs/review/2026-05-23-08-review.md",
+      "task6_reviewed_at": "2026-05-24T13:10:00+08:00",
+      "task6_log": "logs/review/2026-05-24-13-review.md",
       "task6_new_rework": false,
-      "task6_note": "revisiting 复审；补齐代码块语言，清理顺序词和非必要技术词面；Task9 RenderEffect P0 queue pending，未晋升。"
+      "task6_note": "Task6 复审通过；L1/L2 小修 9 处。既有 Task9 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
     },
     "15.7": {
       "p0": 1,
@@ -1853,13 +1854,27 @@
       "task6_log": "logs/review/2026-05-24-05-review.md",
       "task6_new_rework": false,
       "task6_note": "首次 review 通过；补 Task6/section/drafted_by 元数据与 FGS service-type 来源，展开 WIU 首次出现，修正 outline 锚点标题一致性。无新增回炉，转 Task9 技术复核。"
+    },
+    "18.6": {
+      "p0": 2,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0,
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-24T13:10:00+08:00",
+      "task6_log": "logs/review/2026-05-24-13-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 复审通过；L1/L2 小修 5 处。既有 Task9 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
     }
   },
   "total_review_sections": 211,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T13:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-24T13:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -3665,11 +3680,18 @@
       "file": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-05-16",
-      "last_task9_at": "2026-05-16T00:30:00+08:00",
-      "task2b_state": "pending"
+      "task2b_state": "pending",
+      "p0": 0,
+      "p1": 1,
+      "p2": 2
     },
     "20.11": {
       "title": "MTE memtagMode 与 Native 崩溃治理",
@@ -4905,19 +4927,22 @@
       "title": "场景化性能作战手册"
     },
     "7.5": {
+      "title": "优化策略",
+      "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-23T08:18:48+08:00",
-      "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-23-08-review.md",
-      "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-23",
-      "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
-      "title": "优化策略"
+      "p0": 1,
+      "p1": 6,
+      "p2": 3
     },
     "25.15": {
       "status": "ready-for-review",
@@ -4993,6 +5018,24 @@
       "material_count": 6,
       "last_task2a_at": "2026-05-24T13:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "18.6": {
+      "title": "SurfaceView 直出路径",
+      "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "p0": 2,
+      "p1": 1,
+      "p2": 2
     }
   },
   "task2b_rounds": [
@@ -5066,14 +5109,18 @@
   "last_task2a_at": "2026-05-24T13:04:00+08:00",
   "last_task2a_section": "25.18",
   "last_task2a_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
-  "last_task6_review": "2026-05-23",
+  "last_task6_review": "2026-05-24",
   "last_task6_sections": [
-    "26.18"
+    "8.2",
+    "7.5",
+    "18.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/18-app-performance-score.md"
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+    "src/part2-performance/ch07-smoothness/05-optimization.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
-  "last_task6_at": "2026-05-23T20:16:21+08:00",
+  "last_task6_at": "2026-05-24T13:10:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -5095,10 +5142,12 @@
   "last_task2a_result": "processed-draft",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.17",
-  "task6_last_review_at": "2026-05-23T20:16:21+08:00",
-  "task6_last_review_log": "logs/review/2026-05-23-20-review.md",
+  "task6_last_review_at": "2026-05-24T13:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-24-13-review.md",
   "task6_last_review_sections": [
-    "26.18"
+    "8.2",
+    "7.5",
+    "18.6"
   ],
   "sections_status": {
     "22.11": {
@@ -5910,17 +5959,20 @@
     "8.2": {
       "title": "App 启动全流程",
       "file": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
       "task9_state": "reviewed",
-      "task9_result": "pass-tech-review",
-      "last_task9_at": "2026-05-19T19:36:17+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
       "p0": 0,
-      "p1": 0,
-      "p2": 2,
-      "auto_promoted_by": "task9-deep-tech-review",
-      "auto_promoted_at": "2026-05-19T19:36:17+08:00"
+      "p1": 1,
+      "p2": 2
     },
     "20.3": {
       "title": "Native Crash 分析与治理",
@@ -6172,7 +6224,43 @@
       "last_verified": "2026-05-24",
       "confidence": "medium-high"
     },
-    "25.17": "ready-for-review"
+    "25.17": "ready-for-review",
+    "7.5": {
+      "title": "优化策略",
+      "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "p0": 1,
+      "p1": 6,
+      "p2": 3
+    },
+    "18.6": {
+      "title": "SurfaceView 直出路径",
+      "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-24T13:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-24",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "p0": 2,
+      "p1": 1,
+      "p2": 2
+    }
   },
   "task2a_last_processed": {
     "section": "25.16",
@@ -6208,21 +6296,26 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "date": "2026-05-23",
-    "time": "20:16",
-    "sections": [
-      "26.18"
+    "mode": "normal-review",
+    "result": "pass-light-edit",
+    "new_rework_items": 0,
+    "existing_pending_queue_sections": [
+      "8.2",
+      "7.5",
+      "18.6"
     ],
-    "files": [
-      "src/part5-app/ch26-observability/18-app-performance-score.md"
-    ],
-    "result": "26.18 首次 review：Task6 写作层 pass-light-edit；L1/L2 小修 4 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）",
-    "log": "logs/review/2026-05-23-20-review.md",
-    "reviewed_at": "2026-05-23T20:16:21+08:00",
-    "mode": "first-review"
+    "l1_l2_fixes": {
+      "8.2": 18,
+      "7.5": 9,
+      "18.6": 5
+    },
+    "log": "logs/review/2026-05-24-13-review.md",
+    "reviewed_at": "2026-05-24T13:10:00+08:00"
   },
   "task6_last_review_files": [
-    "src/part5-app/ch26-observability/18-app-performance-score.md"
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+    "src/part2-performance/ch07-smoothness/05-optimization.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
   "task6_last_reviewed_files": [
     "src/part5-app/ch26-observability/18-app-performance-score.md"
@@ -6506,7 +6599,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "26.18"
+    "8.2",
+    "7.5",
+    "18.6"
   ],
   "task2b_progress": [
     {
@@ -6535,7 +6630,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-23-20-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-23-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-24-13-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",

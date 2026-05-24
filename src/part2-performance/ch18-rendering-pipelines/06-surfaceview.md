@@ -50,16 +50,16 @@ rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: ready-for-review
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-06'
-task6_reviewed_date: '2026-05-06'
-last_task6_at: '2026-05-06T02:06:00+08:00'
+reviewed_date: "2026-05-24"
+task6_reviewed_date: "2026-05-24"
+last_task6_at: "2026-05-24T13:10:00+08:00"
 last_task6_audit: '2026-05-24'
 last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
-last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 闭环不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
+last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
 review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST
   创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理
   L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android
@@ -73,6 +73,8 @@ last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
 p0: 2
 p1: 1
 p2: 2
+last_task6_review_log: "logs/review/2026-05-24-13-review.md"
+task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 5 处，清理 frontmatter 禁用词与口语化绝对表达；既有 Task9 P0/P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
 ---
 
 
@@ -103,9 +105,9 @@ p2: 2
 
 SurfaceView 是 Android 里效率很高的视图组件之一，设计目标是 **去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
 
-SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这就是为什么视频播放器、游戏引擎、Camera 预览几乎清一色使用 SurfaceView。[已验证: AOSP SurfaceView 实现]
+SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这也是视频播放器、游戏引擎、Camera 预览通常优先使用 SurfaceView 的原因。[已验证: AOSP SurfaceView 实现]
 
-SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 TextureView。旧版本里的平移、缩放和透明度支持都很受限，圆角、复杂变换、特效叠加也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。Android 15 进一步改善了 SurfaceView 圆角的同步机制，宿主窗口的圆角 Outline 和 SurfaceView Layer 的几何边界可以在同一 Transaction 中协调，不再像旧版本那样因错拍产生可见抖动。涉及复杂动画、裁剪和多层混合时，TextureView 仍然更省心。
+SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 TextureView。旧版本里的平移、缩放和透明度支持都很受限，圆角、复杂变换、特效叠加也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。Android 15 进一步改善了 SurfaceView 圆角的同步机制，宿主窗口的圆角 Outline 和 SurfaceView Layer 的几何边界可以在同一 Transaction 中协调，不再像旧版本那样因错拍产生可见抖动。涉及复杂动画、裁剪和多层混合时，TextureView 的实现成本仍然更低。
 
 ## 独立 Surface 与挖洞机制
 
@@ -156,7 +158,7 @@ Android 14 起，`SurfaceView#setAlpha()` 支持 0 到 1 之间的连续透明�
 
 排查半透明 SurfaceView 时，要同时看 `setZOrderOnTop()`、Surface buffer 格式和 `dumpsys SurfaceFlinger` 中的 Composition Type。alpha 混合可能让原本可走 DEVICE 的 layer 退回 CLIENT，具体结果取决于 SoC 的 HWC 能力、上层遮挡和 buffer 格式。
 
-Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方没有其他 UI 元素遮挡（即"挖洞"区域只有 App 主窗口的透明部分），HWC 可以将 SurfaceView Layer 作为独立 Overlay 直接输出到屏幕，这就是最省 GPU 的路径。
+Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方没有其他 UI 元素遮挡（即"挖洞"区域只有 App 主窗口的透明部分），HWC 可以将 SurfaceView Layer 作为独立 Overlay 直接输出到屏幕，这是 GPU 成本最低的路径。
 
 一旦在 SurfaceView 上方叠加了 UI 元素（比如弹幕、控制按钮），Overlay 可能失效，退化为 GPU 合成。如果你的视频播放器需要悬浮控件，就要把这部分代价算进去。
 
@@ -301,7 +303,7 @@ SurfaceView 的帧数据不需要先被 App RenderThread 采样到主窗口，�
 - **需要动画/变换/嵌入复杂层级** → **TextureView**（灵活性优先）
 - **不确定** → 默认 SurfaceView，遇到限制再换
 
-Android 11+ BLAST 同步机制成熟后，SurfaceView 的同步问题已大幅改善。若需要连续 alpha 动画、复杂变换、圆角裁剪或特效叠加，TextureView 更直接；其余视频、游戏、Camera 预览场景，SurfaceView 仍然更省功耗。
+Android 12+ BLAST 路径成熟后，SurfaceView 的同步问题已改善。若需要连续 alpha 动画、复杂变换、圆角裁剪或特效叠加，TextureView 更直接；其余视频、游戏、Camera 预览场景，SurfaceView 仍然更省功耗。
 
 ## HWC Overlay 与合成策略
 

@@ -5,7 +5,7 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-23"
+reviewed_date: "2026-05-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -51,7 +51,7 @@ rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 last_task6_audit: "2026-05-22"
 task9_state: reviewed
 task9_result: needs-rework
@@ -65,10 +65,10 @@ task9_review_notes: "2026-05-24 Task9 复审: needs-rework。P0 1 / P1 6 / P2 3�
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
-last_task6_at: "2026-05-23T08:18:48+08:00"
-task6_reviewed_date: "2026-05-23"
-last_task6_review_log: "logs/review/2026-05-23-08-review.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；补齐代码块语言，清理顺序词和非必要技术词面；Task9 RenderEffect P0 queue pending，未晋升。"
+last_task6_at: "2026-05-24T13:10:00+08:00"
+task6_reviewed_date: "2026-05-24"
+last_task6_review_log: "logs/review/2026-05-24-13-review.md"
+task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 9 处，清理夸张标题/网络化表达并将参考资料移至末尾；既有 Task9 P0/P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
 p0: 1
 p1: 6
 p2: 3
@@ -113,7 +113,7 @@ Android 的渲染管线在每一帧都需要执行 measure → layout → draw �
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/constraint-layout — ConstraintLayout 通过消除嵌套来减少 measure/layout pass 次数]
 
-### ConstraintLayout：扁平化布局的核心武器
+### ConstraintLayout：扁平化布局的主要手段
 
 `ConstraintLayout` 的设计目标是**用一层布局替代多层嵌套**。它通过约束系统让每个子 View 直接描述自己相对于其他 View 或父容器的位置关系。
 
@@ -123,7 +123,7 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 
 **使用建议：** 对于复杂布局优先用 ConstraintLayout 替代嵌套；在 RecyclerView 的 item 布局中尤其重要——item 布局会被 inflate 和 measure 成百上千次，每减少一层嵌套都会被放大。
 
-### ViewStub：按需加载的利器
+### ViewStub：按需加载的占位机制
 
 `ViewStub` 是一个零大小、不可见、不参与 layout 的占位符。当调用 `inflate()` 或设置 `VISIBLE` 时，它将自己从 View 树中替换为实际的布局。inflate 之前几乎零性能开销；inflate 之后 ViewStub 对象被释放。
 
@@ -147,7 +147,7 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 
 ## RecyclerView 优化：预创建、DiffUtil、预取
 
-RecyclerView 是卡顿的高发地带——滑动场景下每一帧的预算只有 8-16ms，而列表滑动会频繁触发 onBindViewHolder 和 requestLayout。
+RecyclerView 是滑动卡顿的高发区域——滑动场景下每一帧的预算只有 8-16ms，而列表滑动会频繁触发 onBindViewHolder 和 requestLayout。
 
 ### onBindViewHolder：最关键的瓶颈
 
@@ -204,7 +204,7 @@ RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。An
 
 ## 渲染优化：减少 Overdraw、Hardware Layer、Canvas 简化
 
-### Overdraw：画了又画
+### Overdraw：重复绘制
 
 检测方式：开发者选项 → "调试 GPU 过度绘制"。无色=绘制 1 次，蓝色=2 次，绿色=3 次，粉色=4 次。
 
@@ -212,7 +212,7 @@ RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。An
 
 详见 [2.8 过度绘制](08-overdraw.md)。
 
-### Hardware Layer：动画加速器
+### Hardware Layer：属性动画缓存
 
 Hardware Layer 把 View 渲染成 GPU 纹理，属性动画只操作纹理不需要重新 draw。
 
@@ -225,7 +225,7 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java — LAYER_TYPE_HARDWARE 在硬件加速开启时生效]
 
-**三个陷阱：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](07-hardware-layer.md)。
+**三个注意点：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](07-hardware-layer.md)。
 
 ### Canvas 操作简化
 
@@ -449,7 +449,7 @@ LazyColumn {
 
 ## 预渲染与预计算策略 🔸
 
-"预"字诀的核心思想是：利用当前帧的空闲时间，提前为接下来的帧做好准备工作。它的有效性基于一个前提——用户操作（滑动、切换页面）在时间上有连续性和可预测性，我们大致知道接下来需要什么数据、需要渲染什么 UI，所以可以提前准备，避免等到需要时才仓促计算。
+预取和预计算的核心思路是：利用当前帧的空闲时间，提前为接下来的帧做好准备工作。它的有效性基于一个前提——用户操作（滑动、切换页面）在时间上有连续性和可预测性，我们大致知道接下来需要什么数据、需要渲染什么 UI，所以可以提前准备，避免等到需要时才仓促计算。
 
 RecyclerView 的 GapWorker 就是系统级预取的典型实现。在主线程处理完当前帧之后、下一个 VSync 信号到来之前的空闲间隙，GapWorker 会根据滑动方向和速度，预测即将进入屏幕的 item，提前创建并绑定对应的 ViewHolder。这样当 item 出现在屏幕上时，onBindViewHolder 已经执行完了，省去了创建和绑定的耗时。嵌套 RecyclerView（如 ViewPager2 中的水平列表）需要额外配置 `setInitialPrefetchCount(3)`，让 GapWorker 知道内层列表需要预取多少个 item。
 
@@ -485,29 +485,10 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 
 1. **"优化就是减少代码量"**：更多时候是关于"在正确的时间做正确的事"
 2. **"Compose 天生比 View 快"**：BOM 2025.12.00 官方声明 Compose 性能已与 View 系统对等（内部滑动基准测试 jank 降至 0.2%），但使用不当反而可以更慢 [已确认: BOM 2025.12.00 为 2025 年 12 月稳定版，含 Compose 1.10 + Material 3 1.4；性能对等声明来源为 Google Android Developers Blog]
-3. **"Hardware Layer 神器"**：只在属性动画场景有效，滥用反而增加开销
+3. **"Hardware Layer 适合所有动画"**：它只在属性动画场景有效，滥用反而增加开销
 4. **"onBindViewHolder 调用越少越好"**：应关注单次调用的耗时，不是次数
 5. **"子线程不影响主线程"**：大量子线程抢 CPU 时间片、增内存压力、导致更频繁 GC
 6. **"预取越多越好"**：GapWorker 预取和图片预加载都占用帧间空闲时间，过度预取反而会挤占主线程的渲染预算；`setInitialPrefetchCount` 应根据实际 item 复杂度调优，不是越大越好
-
-## 参考资料
-
-- [RecyclerView 官方指南](https://developer.android.com/topic/performance/recycler-view)
-- [AndroidX RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
-- [Jetpack Compose Performance](https://developer.android.com/develop/ui/compose/performance)
-- [ConstraintLayout 性能优化](https://developer.android.com/develop/ui/views/layout/constraint-layout)
-- [ViewStub 文档](https://developer.android.com/reference/android/view/ViewStub)
-- [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
-- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](07-hardware-layer.md)
-- AOSP：`ViewStub.java`、`View.java`、`Choreographer.java`
-- 腾讯 WeSing：[Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)
-- [Compose BOM 2025.12.00](https://developer.android.com/develop/ui/compose/bom)
-- [ConstraintLayout 性能基准测试](https://android-developers.googleblog.com/constraintlayout-performance)
-- [DiffUtil 官方文档](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil)
-- [RecyclerView Prefetch](https://medium.com/google-developers/recyclerview-prefetch-c64ad0d3e324)
-- [Compose Strong Skipping](https://medium.com/androiddevelopers/strong-skipping-in-compose-984c37e8e8be)
-- [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
-- [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
 
 <!-- AIW-源码调研-2026-05-02 -->
 
@@ -689,3 +670,21 @@ Android 14/15 的 GPU 内存管理优化和软件回退智能选择机制，当�
 4. **blur radius 控制**：sigma 越大 sampling 范围越大，GPU 计算量上升
 5. **多层 RenderEffect**：使用 `createChainEffect()` 让 Skia 尝试算子融合
 
+## 参考资料
+
+- [RecyclerView 官方指南](https://developer.android.com/topic/performance/recycler-view)
+- [AndroidX RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
+- [Jetpack Compose Performance](https://developer.android.com/develop/ui/compose/performance)
+- [ConstraintLayout 性能优化](https://developer.android.com/develop/ui/views/layout/constraint-layout)
+- [ViewStub 文档](https://developer.android.com/reference/android/view/ViewStub)
+- [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
+- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](07-hardware-layer.md)
+- AOSP：`ViewStub.java`、`View.java`、`Choreographer.java`
+- 腾讯 WeSing：[Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)
+- [Compose BOM 2025.12.00](https://developer.android.com/develop/ui/compose/bom)
+- [ConstraintLayout 性能基准测试](https://android-developers.googleblog.com/constraintlayout-performance)
+- [DiffUtil 官方文档](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil)
+- [RecyclerView Prefetch](https://medium.com/google-developers/recyclerview-prefetch-c64ad0d3e324)
+- [Compose Strong Skipping](https://medium.com/androiddevelopers/strong-skipping-in-compose-984c37e8e8be)
+- [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
+- [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
