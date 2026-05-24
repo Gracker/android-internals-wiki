@@ -27,16 +27,16 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: task2b_pending
-task2b_result: pending
-task2b_state: pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
+task6_state: "revisiting"
 last_task6_review_log: "logs/review/2026-05-21-20-review.md"
 last_task6_at: "2026-05-21T20:11:00+08:00"
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: "pending"
 task9_reviewed_date: 2026-05-21
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-21T19:35:29+08:00"
@@ -309,7 +309,13 @@ adb shell debuggerd -b <pid> > threads_after.txt
 - 资源池: 对昂贵对象做复用时要有最大容量、空闲回收和生命周期 owner，不能只依赖对象不可达后的清理。
 - JNI wrapper: native 资源要明确所有权。Java 对象关闭时调用 native release；native 层不能长期持有不释放的 global ref。
 
-`Cleaner` 的使用要看 API level、desugaring 和团队规范。Android 上有两条 Cleaner 路径：`sun.misc.Cleaner`（API 26+，由 `CleanerDaemon` 独立执行）和 `java.lang.ref.Cleaner`（API 33 公开，通过 `FinalizerDaemon` 的 `doClean()` 触发）。两条路径都不提供确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源，主路径仍然是显式关闭。
+`Cleaner` 的使用要看 API level、desugaring 和团队规范。Android 上有三条 Cleaner 执行路径：
+
+- `sun.misc.Cleaner`（API 26+）：在 `ReferenceQueueDaemon` 的 `enqueuePending()` 中，检测到引用的 queue 是 `Cleaner` 队列时直接调用 `Cleaner.clean()`。不存在独立的 `CleanerDaemon` 线程。
+- `java.lang.ref.Cleaner.create()`（API 33 公开）：通过 `CleanerImpl.start()` 创建名为 `Cleaner-N` 的独立 daemon 线程执行清理，不经过 `FinalizerDaemon`。
+- Android 隐藏的 system cleaner（`Cleaner.createSystemCleaner()` / `SystemCleaner.cleaner()`）：把 queue 设为 `FinalizerReference.queue`，由 `FinalizerDaemon.processReference()` 中的 `doClean()` 执行。
+
+三条路径都不提供确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源，主路径仍然是显式关闭。
 
 一个资源 wrapper 的最小结构应该像这样：
 
@@ -359,41 +365,48 @@ CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/�
 | `sun.misc.Cleaner` | ✅ | ✅ | ⚠️ 已废弃（推荐迁移） |
 | `java.lang.ref.Cleaner` | ❌（需 desugaring） | ❌（需 desugaring） | ✅ 公开 |
 | `FinalizerDaemon` | ✅ | ✅ | ✅ |
-| `CleanerDaemon` | ✅ | ✅ | ✅（处理 `sun.misc.Cleaner`） |
+
+> 注：`Daemons.DAEMONS` 数组只包含 `HeapTaskDaemon`、`ReferenceQueueDaemon`、`FinalizerDaemon`、`FinalizerWatchdogDaemon` 四个 daemon（android-16.0.0_r1 `Daemons.java` L59-L64），不存在 `CleanerDaemon`。`sun.misc.Cleaner` 的清理动作在 `ReferenceQueueDaemon.enqueuePending()` 内完成；`java.lang.ref.Cleaner` 使用 `CleanerImpl` 自有线程。
 
 **源码路径**:
 
-- `libcore/libart/src/main/java/java/lang/Daemons.java` — `FinalizerDaemon`、`CleanerDaemon` 定义，L41 定义五个 daemon，L295-L401 `FinalizerDaemon.runInternal()`
-- `libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java` — `enqueuePending()` 批量入队逻辑，L236-L278
-- `libcore/ojluni/src/main/java/java/lang/ref/FinalizerReference.java` — `doClean()` 执行路径
-- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` — 旧版 Cleaner，`CleanerDaemon` 独立触发
+- `libcore/libart/src/main/java/java/lang/Daemons.java` — 四个 daemon 定义（L59-L64 `HeapTaskDaemon`/`ReferenceQueueDaemon`/`FinalizerDaemon`/`FinalizerWatchdogDaemon`），L363-L411 `processReference()`/`doFinalize()`/`doClean()`
+- `libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java` — `enqueuePending()` 批量入队与 `sun.misc.Cleaner` 清理触发，L236-L279
+- `libcore/ojluni/src/main/java/java/lang/ref/FinalizerReference.java` — `FinalizerReference.add()`、`queue` 字段
+- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` — 旧版 Cleaner，在 `ReferenceQueueDaemon.enqueuePending()` 中由 `isCleanerQueue(queue)` 分支直接 `clean()`，L178-L221 `create()`/`createSystemCleaner()`
 - `libcore/ojluni/src/main/java/java/lang/ref/Cleaner.java` — API 33 公开 Cleaner，`Cleaner.Cleanable` 接口
+- `libcore/ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java` — `CleanerImpl.start()` 创建独立 daemon 线程，L113-L144
 - `frameworks/base/core/java/android/util/CloseGuard.java` — API 30 公开 CloseGuard，应用层泄漏检测
 - `libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java` — API 26+ 非公开 CloseGuard，Dalvik 内部使用
 
-**Cleaner 两条执行路径**:
+**Cleaner 三条执行路径**:
 
-路径 A — `sun.misc.Cleaner`（`CleanerDaemon` 独立执行）:
+路径 A — `sun.misc.Cleaner`（`ReferenceQueueDaemon.enqueuePending()` 直接执行）:
 ```
-CleanerDaemon.run()
-  → Cleaner.clean()
-    → sun.misc.Cleaner.invoke()
-      → thunk.run()
+ReferenceQueueDaemon.enqueuePending(list, progressCounter)
+  → if (sun.misc.Cleaner.isCleanerQueue(queue))
+      → cleaner.clean()
+        → thunk.run()
 ```
-路径 B — `java.lang.ref.Cleaner`（`FinalizerDaemon` 触发）:
+路径 B — `java.lang.ref.Cleaner.create()`（`CleanerImpl` 自有线程）:
+```
+Cleaner.create() → CleanerImpl.start()
+  → Cleaner-N daemon thread
+    → CleanableChain.clean()
+      → Cleaner.Cleanable.clean()
+```
+路径 C — Android system cleaner（`FinalizerDaemon` 触发）:
 ```
 FinalizerDaemon.processReference()
   → FinalizerReference.doClean()
-    → Cleaner.Cleanable.clean()
-      → Cleaner.invokeCleaners()
-        → thunk.run()
+    → SystemCleaner 的 queue 上引用执行清理
 ```
 
-关键区别：旧 `sun.misc.Cleaner` 由 `CleanerDaemon` 独立线程执行，不经过 `FinalizerReference`；新 `java.lang.ref.Cleaner` 复用 `FinalizerDaemon` 的 `processReference()` 循环，通过 `Cleaner.Cleanable` 接口执行清理。
+关键区别：`sun.misc.Cleaner` 不经过独立线程，在 `ReferenceQueueDaemon` 的入队循环中直接执行；`java.lang.ref.Cleaner.create()` 使用 `CleanerImpl` 创建的独立线程，不经过 `FinalizerDaemon`；只有 Android 隐藏的 system cleaner 才走 `FinalizerReference.queue` + `FinalizerDaemon#doClean()` 路径。
 
 **Core Library Desugaring 影响**: `java.lang.ref.Cleaner` 可通过 AGP 8.0+ `coreLibraryDesugaring` 在 API 26+ 设备上使用，需要在 `build.gradle` 中添加 `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.x")` 依赖。但 desugared Cleaner 的每次清理调用会增加桥接层开销，且运行时语义不保证与原生实现完全一致（例如线程调度、异常处理路径可能有差异）；对 FD、GraphicBuffer 这类高频资源，建议用 `AutoCloseable` 显式关闭，不依赖 desugared Cleaner。
 
-[已验证: AOSP android-16.0.0_r1, Daemons.java L41, L295-L401]
+[已验证: AOSP android-16.0.0_r1, Daemons.java L59-L64 (四个 daemon), L363-L411 (processReference/doFinalize/doClean)]
 [已验证: AOSP android-16.0.0_r1, ReferenceQueue.java L236-L278]
 [已验证: 官方文档, developer.android.com/reference/android/util/CloseGuard — Added in API 30]
 [待验证: `java.lang.ref.Cleaner` 在 API 33 的具体添加版本，建议交叉核 android-developer-preview 文档]

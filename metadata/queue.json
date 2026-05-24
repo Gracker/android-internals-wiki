@@ -17174,7 +17174,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
@@ -17210,7 +17210,10 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-21T19:35:29+08:00",
       "review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-      "original_review_log": "logs/review/2026-05-21-20-review.md"
+      "original_review_log": "logs/review/2026-05-21-20-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T03:21:56+08:00",
+      "completion_reason": "Task 2B rework: task9 fixes applied"
     },
     {
       "id": "task9-20260521-22.3-android17-gc-api-data-error",
@@ -18544,7 +18547,7 @@
       "created_date": "2026-05-23",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
@@ -18564,7 +18567,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-23T03:35:03+08:00",
-      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-23-03-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T03:21:56+08:00",
+      "completion_reason": "Task 2B rework: task9 fixes applied"
     },
     {
       "id": "task2a-gap-20260523-16.8-appflow-cold-launch-memory-scheduling",
@@ -19721,7 +19727,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
@@ -19764,7 +19770,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T01:34:17+08:00",
-      "review_log": "logs/deep-review/2026-05-25-01-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-25-01-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T03:21:56+08:00",
+      "completion_reason": "Task 2B rework: task9 fixes applied"
     }
   ],
   "metadata": {
