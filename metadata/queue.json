@@ -19187,6 +19187,32 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T14:28:59+08:00"
+    },
+    {
+      "id": "task2a-gap-20260524-1618-22.16-deliqueue-recyclerview-prefetch",
+      "section": "22.16",
+      "section_title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
+      "priority": 80,
+      "title": "加工 Android 17 DeliQueue 与 RecyclerView 预取时序优化",
+      "description": "基于 Android 17 lock-free MessageQueue / DeliQueue 官方变更与 DeepResearch 素材，补齐 RecyclerView 预取时序、主线程队列竞争和 Perfetto/JankStats 取证路径。",
+      "reason": "daily-info 与 research-gaps 均显示 §7.8/§22.2 缺少 DeliQueue 与 RecyclerView GapWorker 的应用侧排障闭环；已有章节覆盖机制或通用 RecyclerView 优化，但缺少 targetSdk 37 适配、预取 deadline 与 monitor contention 的实战章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-24",
+      "assigned_to": "task2a-content-processing",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
+      ],
+      "material_paths": [
+        "DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md",
+        "DeepResearch/2026-05-23-android17-deliqueue-messagequeue-recyclerview.md",
+        "intake/research-gaps.md"
+      ],
+      "source": "task2a-knowledge-gap",
+      "next_action": "draft-section-content"
     }
   ],
   "metadata": {

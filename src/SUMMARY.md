@@ -377,6 +377,7 @@ tags:
   - [22.13 Predictive Back 动画与页面切换性能](part5-app/ch22-rendering-practice/13-predictive-back-performance.md)
   - [22.14 桌面窗口化与大屏渲染性能实践](part5-app/ch22-rendering-practice/14-desktop-windowing-large-screen-performance.md)
   - [22.15 Compose First 与 View/Compose 混合迁移性能边界](part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md)
+  - [22.16 Android 17 DeliQueue 与 RecyclerView 预取时序优化](part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
