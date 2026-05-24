@@ -2,7 +2,7 @@
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
@@ -37,19 +37,19 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_reviewed_date: "2026-05-08"
 task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: pending
+task2b_state: pending
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-08"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-08T04:31:55+08:00"
+last_task9_at: "2026-05-24T18:20:00+08:00"
 last_task2b_at: "2026-04-27T05:45:00+08:00"
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
@@ -58,6 +58,8 @@ review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mT
 last_task6_at: "2026-05-08T04:05:00+08:00"
 review_log: "logs/review/2026-05-08-04-review.md"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。"
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-18-audit.md"
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
