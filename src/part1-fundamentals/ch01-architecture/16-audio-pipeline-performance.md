@@ -13,7 +13,9 @@ last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-24"
+last_task6_review_log: "logs/review/2026-05-24-16-review.md"
+last_task6_at: "2026-05-24T16:05:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
@@ -32,19 +34,20 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-05-24T15:15:46+08:00"
-task9_reviewed_date: "2026-05-05"
+task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T09:20:00+08:00"
+last_task9_at: "2026-05-24T15:30:04+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。"
+task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。"
 review_type: "task6-writing-quality-review"
 last_task9_audit: "2026-05-24"
+last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -74,13 +77,13 @@ last_task9_audit: "2026-05-24"
 
 ## 为什么需要了解 Audio Pipeline
 
-当我们讨论 Android 性能时，注意力通常集中在渲染管线上——帧率、掉帧、VSync。但用户的感知不止来自视觉。点击一个钢琴 App 的琴键，如果声音在手指触摸后 100ms 才响起，用户会觉得这台设备「卡了」。在视频会议中，200ms 的往返延迟会让对话变得不自然。游戏里 50ms 的音效延迟，足以让打击感消失殆尽。
+讨论 Android 性能时，注意力通常集中在渲染管线上——帧率、掉帧、VSync。但用户的感知不止来自视觉。点击一个钢琴 App 的琴键，如果声音在手指触摸后 100ms 才响起，用户会觉得这台设备「卡了」。在视频会议中，200ms 的往返延迟会让对话变得不自然。游戏里 50ms 的音效延迟，足以让打击感明显变弱。
 
-音频延迟和渲染延迟在技术结构上有一个有趣的对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是 Android 框架层中承上启下的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。理解了其中之一的架构，学习另一个会事半功倍。
+音频延迟和渲染延迟在技术结构上有一个有趣的对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是 Android 框架层中承上启下的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。理解其中之一的架构后，再看另一个会更容易。
 
-人类对音频延迟的感知阈值比视觉更严苛：超过 20ms 的往返延迟就能被训练过的耳朵察觉，专业音乐制作要求低于 10ms。而 Android 设备的音频延迟，从早期的 100ms 以上到如今 Pixel 设备的 10ms 以下，经历了漫长而曲折的优化历程。
+人类对音频延迟的感知阈值比视觉更严苛：超过 20ms 的往返延迟就能被训练过的耳朵察觉，专业音乐制作要求低于 10ms。Android 设备的音频延迟，也从早期的 100ms 以上逐步压到如今 Pixel 设备的 10ms 以下。
 
-了解 Audio Pipeline 的内部机制，能帮助我们在 Perfetto 中识别音频相关的性能瓶颈，理解为什么某些场景下声音会卡顿或延迟，以及如何为不同场景选择正确的音频 API。
+了解 Audio Pipeline 的内部机制后，后续分析音频性能瓶颈时，可以在 Perfetto 中识别声音卡顿或延迟的来源，并为不同场景选择合适的音频 API。
 
 ## Audio Pipeline 架构全景
 
@@ -98,7 +101,7 @@ DSP / Codec
 Speaker / Headphone
 ```
 
-这个管线看起来简单，但每一层都有影响延迟的关键设计决策。
+这个管线看起来只有几层，但每一层都有影响延迟的关键设计决策。
 
 ### AudioFlinger 的角色
 
@@ -112,7 +115,7 @@ AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver
 
 [已验证: AOSP android-16.0.0_r1, frameworks/av/services/audioflinger/]
 
-### AudioPolicyService：音频路由的大脑
+### AudioPolicyService：音频路由决策
 
 AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪里」。当 App 创建一条音频流时，AudioPolicyService 根据音频类型（stream type）、用途（usage）、设备连接状态（耳机、蓝牙、扬声器）做出路由决策。
 
@@ -120,7 +123,7 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 
 ## 延迟分解：从 App 到扬声器
 
-要理解音频延迟的来源，我们需要把整个路径拆开来看。
+理解音频延迟的来源，要把整个路径拆开看。
 
 ### 输出延迟（Output Latency）
 
@@ -148,7 +151,7 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 
 ### 缓冲区大小：延迟的主要决定因素
 
-音频延迟的核心公式很简单：
+音频延迟的基础公式是：
 
 ```
 单次缓冲延迟 = buffer_size / sample_rate
@@ -158,7 +161,7 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 
 在 Normal Mixer 路径下，AudioFlinger 的默认缓冲区大小由 HAL 层决定，通常在 480-960 帧之间（10-20ms）。这个值在不同设备上差异很大——同一台设备上扬声器输出和蓝牙输出的缓冲区大小也不同。
 
-## FAST Mixer：低延迟的秘密
+## FAST Mixer：低延迟路径
 
 Android 4.1（Project Butter）引入了 FAST Mixer，这是 Android 音频低延迟的关键机制。
 
@@ -188,19 +191,19 @@ FAST Mixer 省掉的是每条 fast track 的 sample rate conversion、per-track 
 
 FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策略（而非普通应用的 `SCHED_NORMAL`）。这个优先级设置确保了即使在系统负载较高时，音频数据的写入也能准时完成。
 
-在 Perfetto 中，我们可以通过 CPU scheduling track 观察到 FAST Mixer 线程的调度行为。如果发现这个线程频繁被抢占或无法及时唤醒，通常意味着系统负载过高或 CPU 频率调度策略不适合音频场景。
+在 Perfetto 中，可以通过 CPU scheduling track 观察 FAST Mixer 线程的调度行为。如果发现这个线程频繁被抢占或无法及时唤醒，通常意味着系统负载过高或 CPU 频率调度策略不适合音频场景。
 
 [图：Perfetto 中 AudioFlinger FAST Mixer 线程的 CPU scheduling slice，标注 SCHED_FIFO 优先级]
 
 ### 从创建流到选路：为什么这条流没有进入 fast path
 
-如果我们只看输出侧，很容易把 round-trip latency 讲成半截。完整路径是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
+只看输出侧，容易把 round-trip latency 讲成半截。完整路径是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
 
-所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快；如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。分析乐器、KTV、视频会议这类场景时，我们要同时看 `AudioFlinger` 的 playback thread 和 `RecordThread` / `FastCapture` 的调度节奏，不能只盯着输出线程。
+所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快；如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。分析乐器、KTV、视频会议这类场景时，需要同时看 `AudioFlinger` 的 playback thread 和 `RecordThread` / `FastCapture` 的调度节奏，不能只盯着输出线程。
 
 [图：AudioTrack/AAudio 输出选路与 AudioRecord/AAudio 输入选路示意图，标注 AudioPolicyService、PlaybackThread、FastMixer、RecordThread、FastCapture、MMAP output、input MMAP]
 
-## AAudio 与 MMAP：绕过混音器
+## AAudio 与 MMAP：低延迟数据路径
 
 ### AAudio：面向低延迟的 C API
 
@@ -210,7 +213,7 @@ AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入�
 
 [已验证: developer.android.com/ndk/guides/audio/aaudio]
 
-### MMAP 模式：把数据面压平，但控制面还在
+### MMAP 模式：减少数据面拷贝，控制面仍在
 
 Android 8.1 引入了 MMAP（Memory Mapped）模式。它缩短的是数据面的搬运路径，不是把 audioserver 完全拿掉。
 

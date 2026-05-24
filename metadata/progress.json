@@ -230,7 +230,8 @@
     "7.9",
     "25.16",
     "25.17",
-    "23.11"
+    "23.11",
+    "1.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -293,22 +294,23 @@
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
     "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
-    "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md"
+    "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
     "date": "2026-05-24",
-    "time": "05:09",
+    "time": "16:05",
     "sections": [
-      "25.17"
+      "1.16"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
     ],
-    "result": "Task6 本轮 1 章 review：25.17 pass-light-edit；L1/L2 小修 3 处；0 个新增回炉；0 自动晋升（Task9 尚未 pass-tech-review）。",
-    "log": "logs/review/2026-05-24-05-review.md",
-    "reviewed_at": "2026-05-24T05:09:00+08:00",
-    "mode": "first-review"
+    "result": "Task6 本轮 1 章 review：1.16 pass-light-edit；L1/L2 小修 14 处；0 个新增回炉；0 自动晋升（Task9 needs-rework 且 queue.json 有 1 条 pending）。",
+    "log": "logs/review/2026-05-24-16-review.md",
+    "reviewed_at": "2026-05-24T16:05:00+08:00",
+    "mode": "revisiting-review"
   },
   "issues_by_section": {
     "1.6": {
@@ -1868,6 +1870,18 @@
       "task6_log": "logs/review/2026-05-24-13-review.md",
       "task6_new_rework": false,
       "task6_note": "Task6 复审通过；L1/L2 小修 5 处。既有 Task9 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
+    },
+    "1.16": {
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 14,
+      "task6_l3_l4_issues": 0,
+      "task6_technical_risk_markers": 1,
+      "task6_reviewed_at": "2026-05-24T16:05:00+08:00",
+      "task6_log": "logs/review/2026-05-24-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "revisiting 复审；清理第一人称/比喻化标题/夸张表达等 L1/L2 文风问题。Task9 已有 Android 16 AIDL CAP/IConfig pending queue，Task6 未新增回炉。",
+      "task9_pending_queue": 1
     }
   },
   "total_review_sections": 211,
