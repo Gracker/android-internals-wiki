@@ -37,6 +37,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 task6_state: reviewed
+last_task6_audit: "2026-05-24"
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 task9_result: pass-tech-review

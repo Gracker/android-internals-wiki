@@ -593,6 +593,13 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 <!-- AIW-源码调研-2026-05-12 已删除：原文包含 Task9 确认不存在的类名（PackageSnapshotCompiler/SDM/CloudCompilerNetworkService）、方法签名和性能数据（30-50%/15-25%），已整体移除。云端编译/SDM 的保守描述见前文"Android 16 云端编译与 SDM"小节。 -->
 
 ## 参考资料
+### OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP 标准安装链路（PMS→InstallPackageHelper→DexOptHelper→ART Service→artd→dex2oat）与 vivo Turbo/小米 HyperOS 厂商定制安装优化路径的源码级对比，包含编译过滤器决策表、installd 改造机制、云编译 .dm 集成方式及厂商差异化策略分析。
+- 注入时间：2026-05-24
+- 价值：首次系统对比 AOSP 标准安装链路与 vivo/小米厂商定制路径，包含编译过滤器决策表和云编译集成方式
+
 
 ### AOSP 源码路径
 - `frameworks/base/services/java/com/android/server/SystemServer.java`：`StartPackageManagerService` 所在启动阶段
@@ -772,3 +779,54 @@ Android 16 release notes 明确：
 | Cloud Compilation | 云端预编译 + SDM 下载映射，跳过本地 dex2oat |
 | SDM | System Dexopt Manager，位于 system/extras/sdm/，OTA 场景本地调度工具 |
 |installd 连接 | ServiceManager Binder（android-16），非 socket |
+
+<!-- AIW-源码调研-2026-05-24 -->
+## 源码调研补遗（2026-05-24）：OEM 厂商定制安装优化路径
+
+**来源**：每日选题 #1 | DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md
+
+### 核心发现
+
+Android 安装优化分为 **AOSP 标准路径**和**OEM 厂商定制路径**。AOSP 标准路径以 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat` 为主链路。
+
+**OEM 厂商（vivo Turbo / 小米 HyperOS 等）定制优化的核心层面**：
+
+| 优化层面 | 厂商定制内容（推测） |
+|---------|-------------------|
+| dexopt 参数 | 跳过 verify，直接 speed/speed-profile |
+| installd 扩展 | 厂商新增 install hint 命令 |
+| 编译策略 | 差异化过滤器（预装 vs 第三方） |
+| 云编译集成 | Play .dm + OTA 云编译产物预生成 |
+
+### 关键源码路径
+
+| 组件 | AOSP 源码路径 |
+|------|-------------|
+| 安装 session | `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java` |
+| 安装辅助 | `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java` |
+| dexopt 决策 | `frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java` |
+| 后台编译 | `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` |
+| ART Service | `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` |
+| dex2oat | `frameworks/native/cmds/installd/dexopt.cpp` |
+
+### installd 连接方式变化（Android 16+）
+
+| 版本 | 连接方式 |
+|------|---------|
+| Android ≤14 | Unix Domain Socket `/dev/socket/installd` |
+| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 |
+
+### 版本演进补充
+
+| Android 版本 | 机制 |
+|------------|------|
+| Android 7.0 | JIT + AOT 混合编译 |
+| Android 9 | Cloud Profiles (.dm) |
+| Android 14 | ART Service 统一调度 |
+| Android 16 | Cloud Compilation + SDM，Play 预编译产物分发 |
+
+### 待验证
+
+- vivo / 小米 installd 源码（厂商闭源，需反编译或厂商开放）
+- Game Turbo 联动机制（JobScheduler priority？）
+- 实机验证性能数据

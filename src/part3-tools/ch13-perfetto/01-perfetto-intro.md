@@ -56,6 +56,7 @@ last_task9_at: '2026-05-06T05:30:00+08:00'
 task9_review_notes: '2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0
   / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 last_task6_at: '2026-05-06T04:13:56+08:00'
+last_task6_audit: '2026-05-24'
 task6_reviewed_date: '2026-05-06'
 last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 ---

@@ -486,6 +486,13 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
 
 
 ## 参考资料
+### Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 DeliQueue 无锁 MessageQueue 实现的源码验证，Treiber Stack + Min-Heap 混合数据结构，ARM64 LSE 原子指令优化（高竞争场景 CAS 性能提升约 3x），DeliQueue 消息入队全流程与 RecyclerView GapWorker 预取链路的性能关联分析。
+- 注入时间：2026-05-24
+- 价值：补充 ARM64 LSE 原子指令优化细节和 DeliQueue 对 RecyclerView 滑动性能的量化影响路径
+
 
 - Android Developers, MessageQueue behavior change guidance
   https://developer.android.com/about/versions/17/changes/messagequeue

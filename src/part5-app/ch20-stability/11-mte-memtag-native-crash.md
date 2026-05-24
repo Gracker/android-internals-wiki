@@ -44,6 +44,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-16T01:26:00+08:00"
 finalized_date: "2026-05-16"
 finalized_by: openclaw-task9
+last_task6_audit: "2026-05-24"
 
 ---
 
@@ -303,6 +304,6 @@ CPU load/store 时比对 pointer tag 和 memory tag
 ### MTE ASYMM 在 Android App memtagMode=async 下的自动启用机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-mte-asymm-memtag-mode-analysis.md
 - 类型：DeepResearch 调研结果
-- 摘要：MTE ASYMM/SYMM 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYMM 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。
+- 摘要：MTE ASYMM/SYNC 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYNC 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。
 - 注入时间：2026-05-17
-- 价值：补充 MTE ASYMM/SYMM 启用链路的源码级闭环，覆盖 bionic、Zygote、Manifest 完整路径
+- 价值：补充 MTE ASYMM/SYNC 启用路径的源码证据链，覆盖 bionic、Zygote、Manifest 路径

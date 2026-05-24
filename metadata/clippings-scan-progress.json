@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 25,
+  "current_offset": 30,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -15,12 +15,12 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 25
+      "completed_files": 30
     }
   ],
-  "last_scan_date": "2026-05-23",
-  "total_knowledge_points": 229,
-  "total_suggestions": 76,
+  "last_scan_date": "2026-05-24",
+  "total_knowledge_points": 242,
+  "total_suggestions": 88,
   "total_gaps": 23,
   "skipped": [
     {

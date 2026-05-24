@@ -47,6 +47,7 @@ tags: [serialization, json, protobuf, parcelable, flatbuffers]
 related_chapters: ["24.4", "1.4", "21.1"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
+last_task6_audit: "2026-05-24"
 task9_state: reviewed
 last_task2a_at: "2026-05-14T08:20:00+08:00"
 task9_result: pass-tech-review
