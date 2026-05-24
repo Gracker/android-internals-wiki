@@ -11,17 +11,17 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-05"
 task6_reviewed_date: "2026-05-05"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-14T11:34:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-10T13:15:46+08:00"
-pipeline_stage: task2b_pending
+last_task2b_at: 2026-05-24T19:29:26+08:00
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 4
 related_chapters:
@@ -95,7 +95,7 @@ WakeLock 是 Android 提供给 App 的一种"阻止系统休眠"的机制。在 
 
 其他类型的锁(如 SCREEN_BRIGHT_WAKE_LOCK、FULL_WAKE_LOCK)在较新的 Android 版本中已经被废弃,因为它们强制保持屏幕点亮,功耗影响太大。如果代码中还在使用这些废弃的锁类型,应该迁移到 FLAG_KEEP_SCREEN_ON 或其他方式。
 
-**WakeLock 事件如何流向 BatteryStats**：当 App 调用 PowerManager.newWakeLock() 时，请求会经过 PowerManager(客户端) → Binder IPC → PowerManagerService(PMS)。PMS 在 acquireWakeLockInternal() 中创建 BatteryStatsImpl.WakeLock 对象，调用 stats.noteWakeLockAcquired(uid, pid, lockFlags)；释放时调用 stats.noteWakeLockReleased()。这个 stats 对象是 BatteryService 中追踪进程耗电的核心数据结构，最终会通过 Binder IPC 反馈到 batterystats 服务供 Battery Historian 分析。在 Perfetto 中看不到这个细节，Battery Historian 的 Userspace Wakelock Track 就是从这个 BatteryStats 统计路径得到的。
+**WakeLock 事件如何流向 BatteryStats**：当 App 调用 PowerManager.newWakeLock() 时，请求经过 PowerManager(客户端) → Binder IPC → PowerManagerService(PMS)。PMS 在 acquireWakeLockInternal() 中完成 WakeLock 注册，随后通过 notifyWakeLockAcquiredLocked() → Notifier.onWakeLockAcquired() 把事件转发给 IBatteryStats（通过 noteStartWakelock() / noteStartWakelockFromSource()，携带 WorkSource、historyTag、lockFlags 等参数）。IBatteryStats 的实现类 BatteryStatsService 最终在 BatteryStatsImpl 中按 uid/pid 记录持锁时长和频次。释放流程对称：notifyWakeLockReleasedLocked() → Notifier → IBatteryStats.noteStopWakelock*()。Battery Historian 的 Userspace Wakelock Track 数据就来自这条统计路径。[已验证: AOSP android-16.0.0_r1, PowerManagerService.java / PowerManagerService.Notifier.java / BatteryStatsImpl.java]
 
 ```java
 // frameworks/base/core/java/android/os/PowerManager.java
@@ -121,11 +121,15 @@ WakeLock、suspend blocker、autosuspend 和 Power HAL 处理的是同一套机�
 
 唤醒路径也要反过来看:电源键、RTC、调制解调器、中断控制器等硬件事件先把 SoC 拉回运行态;内核恢复驱动;system_server 里的 suspend blocker 保证恢复流程走完;PMS 再更新显示、电源模式和上层服务状态。
 
-### HWC 4.0 与 onVsyncIdle:显示状态驱动的极速挂起
+### HWC onVsyncIdle 与显示空闲检测
 
-Android 16 在 suspend 路径中引入了 HWC 4.0 的 onVsyncIdle 信号联动。传统的 suspend 入口依赖 PMS 的超时和 WakeLock 判断,而 HWC 4.0 提供了一条更前置的信号通道:当 SurfaceFlinger 检测到屏幕内容连续多个 VSync 周期没有变化(典型场景是静态阅读、电子书翻页后停留),HWC 向 PMS 发出 onVsyncIdle 回调,表示显示管线已处于空闲态。PMS 收到信号后可以提前释放显示相关的 WakeLock 和 Power HAL interactive mode,缩短系统从"屏幕静止"到"进入 Deep Sleep"的窗口。
+HWC（Hardware Composer）在显示内容持续不变时，可以通过 IComposerCallback.onVsyncIdle() 通知上层显示管线进入空闲态。在 AOSP 实现中，SurfaceFlinger 收到 onComposerHalVsyncIdle() 回调后，调用 Scheduler.forceNextResync() 触发一次重新同步——这个回调的语义是 display idle 导致 refresh/vsync cadence 发生变化，而不是直接驱动 PMS 进入 suspend。
 
-在静态阅读场景下,这套联动使设备更快进入深度休眠,续航收益约 10%-15%。对开发者而言，灭屏后的功耗分析不能只看 WakeLock 持有时长,还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 `SurfaceFlinger` 仍然持续产生 VSync-surfaceflinger slice,且系统迟迟不进入 suspend,排查方向包括:持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
+注意：onVsyncIdle 是 HWC → SurfaceFlinger 的显示侧信号，不等于 PMS 收到后直接释放 WakeLock 或触发系统 suspend。系统从"屏幕静止"到"进入 Deep Sleep"的路径仍然由 PMS 的 WakeLock 汇总、用户超时设置、Doze 状态等因素决定。如果需要缩短灭屏到 suspend 的窗口，应从 PowerManagerService / DisplayPowerController / Power HAL 交互逻辑入手分析，而非依赖 onVsyncIdle 单信号。
+
+对开发者而言，灭屏后的功耗分析不能只看 WakeLock 持有时长，还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 SurfaceFlinger 仍然持续产生 VSync-surfaceflinger slice，且系统迟迟不进入 suspend，排查方向包括：持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
+
+[已验证: AOSP android-16.0.0_r1, SurfaceFlinger.onComposerHalVsyncIdle() / Scheduler.forceNextResync(); hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerCallback.aidl]
 
 [图:PowerManagerService → WakeLock / suspend blocker / autosuspend / Power HAL 的分层示意]
 
@@ -396,7 +400,7 @@ WorkManager 是 Jetpack 组件库中的后台任务调度方案,在底层根据 
 
 **链式任务**:可以把多个任务按先后顺序编排,依次执行。
 
-**Expedited Job（加急任务）**：WorkManager 2.7+ 引入的机制，允许 App 在前台时请求系统尽快执行一个任务，不受 App Standby Bucket 限制。
+**Expedited Job（加急任务）**：WorkManager 2.7+ 引入的机制，允许 App 请求系统尽快执行一个任务。Expedited job 使用独立的 expedited quota，但该配额仍与 App Standby Bucket 和前台状态相关；配额耗尽时按 OutOfQuotaPolicy（RUN_AS_NON_EXPEDITED_WORK_REQUEST / DROP）降级或丢弃。不能假设 expedited job 一定不受 Bucket 限制。[已验证: developer.android.com/topic/libraries/architecture/workmanager/advanced/custom-configuration]
 
 ```kotlin
 val constraints = Constraints.Builder()
@@ -451,20 +455,18 @@ Adaptive Battery 从系统侧智能调整资源分配,而 Android 也为用户�
 
 **自动限制**:从 Android 12 开始,如果系统检测到某个 App 在后台消耗了过多资源(如频繁唤醒、长时间持锁),会自动弹出通知提醒用户。如果用户确认,该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的"共治"模式。
 
-### [自动发现] Android 17:能量限额制 (Energy Limiter)
+### [自动发现] Android 17:能量限额制 (Energy Limiter) [待验证]
 
-Android 17 (API 37) 在 App Standby Buckets 的基础上引入了能量限额制 (Energy Limiter),把后台管控从"限制调度机会"升级为"限制物理能量消耗"。
+Android 17 (API 37) 公开资料提及 JobDebugInfo 等后台任务调试能力。当前可检索的官方文档未能支撑"按 App 统计后台 μJ 能量、超配额强杀进程"的完整调用链和 CDD/CTS 要求。以下内容为基于公开线索的研究假设，**发布前需要补齐 Android 17 CDD、AOSP PowerStats/ODPM 调用链或官方特性页证据**。
 
-机制要点:系统通过 ODPM(On-Device Power Monitor)或等效硬件计数器,按 App 统计后台运行期间消耗的微焦耳 (μJ) 能量。当累计值超过配额时,系统强制终止该 App 的后台进程。配额大小与 App 的 Standby Bucket 挂钩--Active Bucket 的配额宽裕,Restricted Bucket 的配额极低。
+假设性机制：系统通过 ODPM(On-Device Power Monitor)或等效硬件计数器，按 App 统计后台运行期间消耗的微焦耳 (μJ) 能量。当累计值超过配额时，系统终止该 App 的后台进程。配额大小与 App 的 Standby Bucket 挂钩。
 
-这和 App Standby Buckets 的区别在于:Buckets 控制的是"你能得到多少调度机会"(Job 频率、Alarm 次数、网络窗口),Energy Limiter 控制的是"你能消耗多少物理能量"。一个 App 即使成功拿到了调度机会(比如通过 FCM 高优先级消息唤醒),如果执行期间消耗的能量超标,仍然会被终止。
+对开发者的潜在影响（待验证）：
+- 长时间高 CPU 占用的后台同步可能需要拆分为短时间片
+- 单位时间内的功耗密度可能成为新的管控维度
+- 低电量模式下能量配额可能被动态压缩
 
-对开发者的直接影响:后台工作必须在能量预算内完成。具体来说：
-- 长时间高 CPU 占用的后台同步需要拆分为短时间片
-- WakeLock 持有时间不再是唯一指标,单位时间内的功耗密度同样关键
-- 在低电量模式下,系统会动态压缩单应用能量配额,后台工作需要感知电量状态并主动降级
-
-[已验证: Android 17 Developer Preview 文档; source.android.com/docs/core/power]
+[待验证: 需 Android 17 CDD、AOSP service/PowerStats/ODPM 调用链、CTS 证据补充]
 
 ## RESTRICTED Bucket 与 Exemption 机制
 
@@ -504,7 +506,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
 | 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
 | 16 (API 36) | JobScheduler 配额优化 | Active Bucket 配额更宽裕,可见时发起的 Job 更容易保留高配额 |
-| 17 (API 37) | 能量限额制 (Energy Limiter) + HWC 4.0 onVsyncIdle | 后台 App 消耗 μJ 超标即被终止;显示空闲信号驱动极速挂起 |
+| 17 (API 37) | JobDebugInfo 调试能力 + onVsyncIdle 显示空闲回调 | 后台任务调试信息增强;HWC display idle 通知 SurfaceFlinger 重新同步 |
 
 从这张表可以看出,Android 的功耗管理策略越来越依赖系统侧的主动管控,而非依赖 App 开发者的自觉行为。对于 App 开发者来说,趋势很明确:尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
 

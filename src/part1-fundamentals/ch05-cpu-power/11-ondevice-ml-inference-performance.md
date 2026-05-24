@@ -3,8 +3,8 @@ title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
@@ -13,12 +13,12 @@ last_task6_at: '2026-05-12T20:10:00+08:00'
 task6_reviewed_date: '2026-05-12'
 review_round: 2
 task6_review_notes: '2026-05-12 task6 review: 移动 misplaced outline、补齐 section frontmatter、修禁用词和翻译腔动词；技术证据问题已写入 queue.json。'
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-14'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-14T03:44:00+08:00'
-task2b_state: pending
+task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
@@ -50,6 +50,8 @@ drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 created_by: task2a-knowledge-gap
 created_date: '2026-04-08'
+task2b_result: fixed
+last_task2b_at: 2026-05-24T19:29:26+08:00
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
@@ -75,10 +77,10 @@ created_date: '2026-04-08'
   V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
 
 - 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
-  API 37 起访问 NPU 需声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计。
+  API 37 NPU 硬件特性声明机制待官方文档/源码确认。[待验证]
 
 - 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
-  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 机制将 Gemini Nano 内存成本计入发起方 App。
+  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 属性与 AICore 推理内存归属的关系待源码确认。[待验证]
 
 - 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
   默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
@@ -114,11 +116,13 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 在 Perfetto 里，NPU 工作负载没有统一的标准 track。部分厂商会暴露 vendor tracepoint 或 atrace 标签，更多时候我们只能通过 CPU 利用率下降、GPU 频率变化、thermal 状态和 delegate 日志做交叉判断。只看一个 counter，通常不够。
 
-### Android 17 NPU 硬件特性声明
+### Android 17 NPU 硬件特性声明 [待验证]
 
-[存疑: Android 17 NPU feature、意图防火墙、电量配额审计等表述需要 Task 9 复核官方 API/源码来源后再发布。]
+当前公开 developer.android.com / CDD 搜索未找到 `android.hardware.neural_processing_unit` feature 常量、NPU 意图防火墙或电量配额审计的公开 API/源码锚点。以下内容为研究假设，**发布前需要补齐 Android 17 CDD、PackageManager feature 常量或 framework/service 源码证据**。
 
-从 API 37 起，访问 NPU 必须在 `AndroidManifest.xml` 中声明 `<uses-feature android:name="android.hardware.neural_processing_unit" />`，未声明的应用在运行时会收到异常。系统侧同时建立了 NPU 意图防火墙，结合电量配额审计控制 NPU 的使用频率和时长。排查 NPU 不可用的问题时需要检查三件事：清单是否声明了对应 feature、设备是否通过 `PackageManager.hasSystemFeature()` 返回 true、以及系统电量配额是否还允许 NPU 使用。NPU 路径的可用性取决于三者的交集，缺一不可。
+假设性机制：从 API 37 起，访问 NPU 可能需要在 `AndroidManifest.xml` 中声明对应 uses-feature，系统可能通过 feature 检查和配额机制控制 NPU 访问。排查 NPU 不可用问题时，常规方向包括：检查设备是否通过 `PackageManager.hasSystemFeature()` 暴露 NPU 能力、对应 HAL / AIDL service 是否可用、以及系统资源调度策略是否限制了 NPU 使用。
+
+[待验证: 需 Android 17 CDD、PackageManager feature 常量、framework service 源码锚点]
 
 ### GPU 推理
 
@@ -126,9 +130,9 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 GPU 推理的优点是覆盖面广，几乎所有现代 Android 设备都有可用 GPU；缺点是它会和渲染共享带宽、功耗和热预算。只要同一时段还有 RenderThread、SurfaceFlinger 或相机预处理一起抢 GPU，GPU Delegate 的收益就需要放回整段渲染过程里评估。
 
-Android 16 上，LiteRT 的 GPU 路径利用 Vulkan 1.4 的 `VK_EXT_host_image_copy` 扩展绕过 Staging Buffer，纹理上传速度提升约 50%，内存峰值降低约 50%。目标设备支持 Vulkan 1.4 且模型以 GPU Delegate 运行时，这一优化由 LiteRT runtime 自动生效，不需要额外配置。
+Android 16 上，LiteRT 的 GPU Delegate 公开文档主要围绕 OpenCL / OpenGL ES 后端。`VK_EXT_host_image_copy` 是 Vulkan 图形上传扩展，当前公开 LiteRT GPU delegate 文档未确认该扩展在 Android GPU delegate 路径中自动生效。纹理上传速度和内存峰值的量化收益（如"约 50%"）缺少模型、设备、delegate 版本和 workload 的 benchmark 支撑。Host Image Copy 作为图形/Vulkan 栈优化更适合放在图形渲染章节讨论；本节 GPU 推理路径以公开 LiteRT GPU delegate 文档为准。
 
-[已验证: ai.google.dev/edge/litert/android/gpu, Android GPU delegate public docs focus on OpenCL / OpenGL ES]
+[已验证: ai.google.dev/edge/litert/android/gpu — public docs focus on OpenCL / OpenGL ES delegate backends]
 
 ### DSP 推理
 
@@ -184,8 +188,8 @@ LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledMod
 
 - **硬件绑定前置**：在编译阶段指定目标加速器（NPU / GPU / CPU），编译产物与具体硬件绑定，推理时不再需要运行时协商
 - **零拷贝 TensorBuffer**：通过 `HardwareBuffer` 与 NPU 直接共享内存，省去中间 tensor 的数据搬运
-- **异步执行**：V2 强制使用异步推理模式，调用方通过 `Future` 或回调获取结果，不阻塞调用线程
-- **AICore 路由**：在支持 AICore 的设备上，`CompiledModel` 可以通过 AICore 的多租户调度器路由到 NPU，避免与系统 Gemini Nano 任务冲突
+- **异步执行**：CompiledModel API 支持异步推理模式。具体是 V2 强制异步还是提供同步/异步两种接口，需以 LiteRT SDK 版本和官方 API 文档为准
+- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / vendor runtime 分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [待验证]
 
 迁移路径上，`Interpreter` + `Delegate` 仍然可以工作，但无法利用零拷贝和 AICore 多租户调度特性。对新项目或性能敏感的推理场景，建议直接从 `CompiledModel` API 开始。
 
@@ -205,7 +209,7 @@ Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore 
 - 首次使用时是否发生模型下载、准备或冷启动初始化
 - 请求是否命中共享模型缓存，还是每次都要重新准备上下文
 - 持续推理时，内存、thermal 和前台交互是否还能压在预算内
-- AICore 推理的内存成本归属：Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 机制，当 App 通过 AICore 调用 Gemini Nano 时，推理产生的内存回算到发起调用的 App 的 PSS / RSS 中，而非计入 AICore 系统进程。排查内存水位时不要忽略这部分归属变化
+- AICore 推理的内存成本归属：Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 属性用于标记跨进程工作归属。AICore 推理的内存（PSS/RSS）是否通过该机制回算到发起方 App，当前公开 AICore 和 Android memory 文档未检到明确的回算路径——PSS/RSS 归属通常由进程地址空间和共享页比例决定。排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 相关进程的内存变化 [待验证: 需 framework API / StatsD / LMKD 源码锚点确认回算机制]
 
 离开机型、模型版本、输入长度和测试口径，单独引用 TOPS、tokens/s、首 token 延迟或峰值内存数字，分析价值很有限。写到书里时，最好把这些数字降级成“具体 benchmark 以官方兼容列表和机型实测为准”。
 
