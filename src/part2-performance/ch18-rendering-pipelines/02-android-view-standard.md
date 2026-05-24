@@ -36,12 +36,12 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-15T11:23:41+08:00'
+last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: needs-rework
@@ -97,11 +97,9 @@ last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 
 UI 线程完成 Draw 后，会把这一帧封装成 `DrawFrameTask` 交给 RenderThread，然后主线程进入等待。执行 `syncFrameState()` 的是 RenderThread，它在 `DrawFrameTask::run()` 中把 DisplayList、Bitmap 引用、Path 数据和 Layer 更新同步到渲染上下文。
 
-**Android 14 及以下**：主线程通过 `postAndWait()` 同步等待 RenderThread 完成状态同步后才返回。这个阶段在 Perfetto 中表现为 UI Thread 上 `DrawFrame` 内的一段等待时间，对应的 RenderThread slice 是 `syncFrameState`。
+**跨版本一致的机制**：`DrawFrameTask::postAndWait()` 从 Android 5.0 引入 RenderThread 起即存在，android-11 到 android-16 结构一致。UI 线程提交后同步等待 RenderThread 完成状态同步。具体流程：`DrawFrameTask::run()` 中先执行 `syncFrameState(info)`，把 DisplayList、Bitmap 引用和 Layer 更新同步到渲染上下文；同步完成后，如果满足条件（`canUnblockUiThread` 为 true），RenderThread 通过 `mSyncCond.signal()` 提前释放 UI 线程，UI 线程就能返回处理下一帧的 Input / Animation，不必等到 GPU 绘制完成。如果不满足提前释放条件（如帧结构复杂、需要保持 Draw-RT 原子性的场景），UI 线程会继续等待直到绘制结束。AVP 视频播放相关事务属于后一种场景，仍走完整同步阻塞路径。
 
-**Android 14 及以上**：`DrawFrameTask::postAndWait()` 在 android-14/15/16 中均存在，UI 线程提交后会同步等待 RenderThread 完成状态同步。具体流程：`DrawFrameTask::run()` 中先执行 `syncFrameState(info)`，把 DisplayList、Bitmap 引用和 Layer 更新同步到渲染上下文；同步完成后，如果满足条件（`canUnblockUiThread` 为 true），RenderThread 会通过 `mSyncCond.signal()` 提前释放 UI 线程，UI 线程在 `syncFrameState` 结束后就能返回处理下一帧的 Input / Animation，不必等到 GPU 绘制完成。如果不满足提前释放条件（如帧结构复杂、需要保持 Draw-RT 原子性的场景），UI 线程会继续等待直到绘制结束。AVP 视频播放相关事务属于后一种场景，仍走完整同步阻塞路径。
-
-[已验证: AOSP `frameworks/base/libs/hwui/RenderProxy.cpp` DrawFrameTask::postAndWait() + `canUnblockUiThread` + `mSyncCond.signal()`，android-14/15/16 结构一致]
+[已验证: AOSP `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` — postAndWait() + canUnblockUiThread + mSyncCond.signal()，android-11/14/15/16 结构一致]
 
 `syncFrameState` 变长时，常见原因是 Bitmap 过大、脏区域过多或 Layer 更新量突然上升。
 
@@ -303,7 +301,7 @@ Compose 一帧在 MainThread 侧分三个阶段：
 
 三阶段执行完后，Compose 把结果挂到 Host View（`ComposeView` / `AbstractComposeView`）上。这个 Host View 对外仍是普通 Android View，继续走 `ViewRootImpl` 的 `performTraversals()` / `performDraw()` 路径。RenderThread 之后的一切和 View 标准管线完全相同。
 
-**运行时层演进**：Android 17 的 Generational CMC（分代并发标记压缩）对 Compose Composition 阶段的 GC 停顿有潜在优化空间。Composition 阶段会产生大量 `Snapshot` 状态快照对象，属于短生命周期分配。分代 CMC 把这些对象划入 young generation，回收时只扫描这一代，停顿时间从 CC（Concurrent Copying）的全堆扫描缩小到 young generation 扫描。
+**运行时层演进**：Android 17 的 Generational CMC（分代并发标记压缩）对 Compose Composition 阶段的 GC 停顿有潜在优化空间。Composition 阶段会产生大量 `Snapshot` 状态快照对象，属于短生命周期分配。分代 GC 的 young generation 回收范围更小，理论上停顿时间比全堆回收更短。
 
 注意：Slot Table 条目不是简单的每帧短生命周期临时对象——它们在重组间持续存在，生命周期与 Composition group 绑定。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART 运行时版本、堆大小和具体 Composable 复杂度，需要按场景实测确认。[待验证: 目前缺少 ART generational CMC 与 Compose Composition 阶段的一手 benchmark 数据（设备、模型、量化配置和 jank 指标），无法确认具体收益幅度]
 
@@ -367,7 +365,7 @@ Compose 与 View 系统可以互相嵌入：
 ## 源码调研补充（2026-05-16）
 
 **关联章节**：§18.2
-**调研目标**：HWUI Sync、BLAST 回调机制源码闭环；DeliQueue 版本边界确认
+**调研目标**：HWUI Sync、BLAST 回调机制源码验证；DeliQueue 版本边界确认
 
 ### MessageQueue.DeliQueue 源码验证
 
@@ -416,7 +414,7 @@ detached View 的 `invalidate()`/`requestLayout()` 会被忽略或延迟到下�
 
 ### canUnblockUiThread 机制确认
 
-**文件**：`frameworks/base/libs/hwui/RenderProxy.cpp`（DrawFrameTask::postAndWait）
+**文件**：`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`（postAndWait + canUnblockUiThread）
 
 - 存在于 Android 14/15/16（android-14+ 保持一致）
 - 满足 `canUnblockUiThread` 条件时，RenderThread 通过 `mSyncCond.signal()` 提前释放 UI 线程
@@ -445,55 +443,43 @@ BLASTBufferQueue 持有 `IGraphicBufferProducer`，在 `relayout()` 触发时通
 ```cpp
 class BLASTBufferQueue : public ConsumerBase::FrameAvailableListener,
                          public BufferItemConsumer::BufferFreedListener {
-    // onFrameAvailable() 在 SurfaceFlinger 产生新 frame 时被回调
+    // onFrameAvailable(): producer queueBuffer() 后 BBQ 作为 consumer 收到的
+    // BufferQueue 回调，表示有新 Buffer 可消费
     void onFrameAvailable(const BufferItem& item) override;
     void onFrameReplaced(const BufferItem& item) override;
     void onFrameDequeued(const uint64_t) override;
     void onFrameCancelled(const uint64_t) override;
     sp<IGraphicBufferProducer> getIGraphicBufferProducer() const { return mProducer; }
-    // transactionCommittedCallback 驱动 Transaction 提交给 SF
-    void transactionCommittedCallback(nsecs_t latchTime, const sp<>& surface);
 };
 ```
+
+BBQ 在 `acquireNextBufferLocked()` 中消费新 Buffer 并构建 `SurfaceControl.Transaction`，通过 `Transaction.apply()` 提交给 SurfaceFlinger。`transactionCommittedCallback` 在 Transaction 提交后被回调，用于清理 synced frame state 和 flush shadow queue，不是驱动 Transaction 提交的入口。[已验证: AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — acquireNextBufferLocked / processNextBufferLocked / transactionCommittedCallback]
 
 Java 层绑定在 `frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java`，JNI 层在 `core/jni/android_graphics_BLASTBufferQueue.cpp`。
 
 ViewRootImpl (`frameworks/base/core/java/android/view/ViewRootImpl.java`) 通过 `mBlastBufferQueue` 成员持有实例。`performTraversals()` → `relayout()` → `scheduleTraversals()` 调度链路中，`mChoreographer.postCallback(Choreographer.CALLBACK_TRAVERSAL, this, null)` 将 traversal 任务注入下一个 vsync 周期。
 
-### ART Generational CC 源码级机制
+### ART Generational GC 源码级机制
 
-**文件**: `art/runtime/gc/collector/semi_space.cc`
+**文件**: `art/runtime/gc/collector/mark_compact.cc`（Android 17 Concurrent Mark-Compact generational GC）；`art/runtime/gc/collector/concurrent_copying.cc`（历史 CC/Generational CC）
 
-Generational CC 通过 `-Xgc:generational_cc` 标志启用（由 `app_process`/`zygote` 在 `android::AndroidRuntime::startVm()` 中传递）。堆被划分为 young generation 和 old generation：
+Android 17 引入的 CMC（Concurrent Mark-Compact）generational support 与历史 generational CC 是不同实现：
 
-```cpp
-if (generational_) {
-    if (GetCurrentIteration()->GetGcCause() == kGcCauseExplicit ||
-        GetCurrentIteration()->GetGcCause() == kGcCauseForNativeAlloc ||
-        GetCurrentIteration()->GetGcCause() == kGcCauseForNativeAllocBlocking ||
-        GetCurrentIteration()->GetClearSoftReferences()) {
-        // 全堆收集（old + young）
-    } else {
-        // 仅 young generation 收集（pause 常数级）
-    }
-}
-```
+- **历史 Generational CC**（`-Xgc:generational_cc`，Android 10 引入，默认关闭）：基于 `ConcurrentCopying` collector，在 `concurrent_copying.cc` 中实现分代逻辑，young GC 只回收 young generation，全堆回收在 explicit/native alloc 等 GcCause 时触发。
+- **Android 17 CMC generational**：基于 `MarkCompact` collector，源码在 `mark_compact.cc`，通过 ART aconfig flags（`art-flags.aconfig`）控制启用条件。具体 runtime 条件和 targetSdk 边界需待 AOSP 正式 tag 发布后确认。
 
-关键 GcCause 类型：
-- `kGcCauseForNativeAlloc` / `kGcCauseForNativeAllocBlocking`: native 分配触发
-- `kGcCauseExplicit`: 显式 `System.gc()`
-- 其他：young GC（短停顿）
+CC Collector 通过 read-barrier 拦截堆引用读取，在应用线程运行期间并发复制对象。GC 的 stop-the-world 停顿时间取决于回收范围和堆大小——分代回收时 young generation 扫描范围更小，停顿通常更短，但具体收益取决于应用分配模式和堆配置。
 
-CC Collector（`art/runtime/gc/collector/concurrent_copying.h`）通过 read-barrier 拦截堆引用读取，在应用线程运行期间并发复制对象。GC 仅有一个常数级小停顿（"only one small pause, which is constant" — source.android.com）。
+[待验证: Android 17 CMC generational 的启用条件、Runtime::Init 中的 generational_cmc_supported 判断逻辑，需 AOSP 正式 tag 确认]
 
 ### 版本差异
 
 | 版本 | GC 类型 | 分代支持 |
 |------|---------|----------|
-| Android 10 之前 | CMS/Semi-space | 无 |
+| Android 10 之前 | CMS / Semi-space | 无分代 |
 | Android 10 | CC | 引入 `-Xgc:generational_cc`（默认关闭）|
-| Android 11+ | CC | 逐步默认启用（90+ 设备）|
-| Android 17 | CC (optimized) | 稳定支持，young GC 停顿进一步优化 |
+| Android 11-16 | CC | 分代 CC 在部分设备逐步默认启用 |
+| Android 17 | CMC (Concurrent Mark-Compact) | 引入基于 MarkCompact 的分代 GC，与历史 CC 分代为不同实现；启用条件和 targetSdk 边界待 AOSP 正式 tag 确认 |
 
 ### 性能影响机制
 
@@ -512,3 +498,36 @@ Compose Composition 阶段的 `Snapshot` 状态快照属于短生命周期分配
 - 摘要：解析 BLASTBufferQueue 与 ViewRootImpl 的异步 buffer 提交流程，以及 ART Generational CC 分代 GC 对 View 渲染分配压力的影响。核心内容：整理 BLASTBufferQueue 的 buffer 回调路径和 ART 分代 GC 的停顿边界；Compose / View 渲染阶段的收益仍需实测。
 - 注入时间：2026-05-15
 - 价值：提供后续核对 BLASTBufferQueue 与 ART GC 关系的素材索引，待 Task2B 整合进正文
+
+<!-- AIW-源码调研-2026-05-24 -->
+## 附：Android ART GC 与 Compose 性能关联（源码级验证）
+
+### GC 触发机制对 Compose 的影响
+
+**关键源码路径**：`art/runtime/gc/heap.cc`
+
+ART 在 allocation failure 时触发 `kGcCauseForAlloc` 同步 GC：
+
+```cpp
+// GC_FOR_ALLOC when young generation is full
+if (last_gc_ < tried_type) {
+  CollectGarbageInternal(tried_type, kGcCauseForAlloc, false, starting_gc_num + 1);
+}
+```
+
+**对 Compose 的影响**：
+- Compose recomposition 产生大量短期对象（lambda、state、node）
+- 这些对象集中在 young generation，快速填满分配空间
+- 当达到 `growth_limit_` / `alloc_limit_` 阈值时，触发同步 GC
+- 同步 GC 导致分配线程 stop-the-world，如果发生在 VSYNC 窗口则造成掉帧
+
+**Android 13+ 改进**：
+- 默认使用 ConcurrentCopying（CMS）大幅减少 stop-the-world pause
+- `ChangeCollector()` 支持 young→old GC 类型切换
+- `use_generational_gc_` 参数启用分代 GC 优化
+
+### 性能优化建议
+
+1. 减少 recomposition 频率（避免不必要状态变更）
+2. 使用 `remember` + `derivedStateOf` 减少对象分配
+3. 对高频重组场景使用 `remember` 缓存计算结果

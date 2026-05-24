@@ -39,6 +39,84 @@
       "added_at": "2026-05-24T17:31:10+08:00"
     },
     {
+      "id": "task9-audit-20260524-1537-7.2-frametimeline-schema-fields",
+      "section": "7.2",
+      "section_title": "卡顿原因体系",
+      "priority": 95,
+      "title": "FrameTimeline / HWC 合成降级证据字段需按 Perfetto SQL 表修正",
+      "description": "Task9 闲时抽检发现 §7.2 HWC 合成降级补充段把 Perfetto 证据写成 `present_offset > refresh_period` 与 `hwc_layer_name`，但 Perfetto FrameTimeline 官方 SQL 表是 `expected_frame_timeline_slice` / `actual_frame_timeline_slice`，常用字段为 `jank_type`、`on_time_finish`、`present_type`、`layer_name` 等。",
+      "reason": "[Deep Tech Review Audit] §7.2 L124 FrameTimeline 取证字段错误：Perfetto 官方 frametimeline 文档没有 `present_offset`、`refresh_period`、`hwc_layer_name` 字段；以这些字段指导查询会直接失败。HWC DEVICE/CLIENT 归因也不能只靠 FrameTimeline layer 字段完成，需要结合 SurfaceFlinger composition trace / dumpsys / layer snapshot。",
+      "issue_type": "source-accuracy-trace-schema",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-15-audit.md",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://raw.githubusercontent.com/google/perfetto/master/docs/data-sources/frametimeline.md",
+        "https://developer.android.com/topic/performance/vitals/render"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/Trace schema 错误",
+          "location": "L124：HWC 合成降级补充段的 Perfetto 证据字段",
+          "detail": "正文写“通过 `android.surfaceflinger.frametimeline` 观察 `present_offset` > `refresh_period` 的帧，结合 `hwc_layer_name` 定位触发合成降级的 Layer”。复核 Perfetto frametimeline 官方文档：SQL 层数据表为 `expected_frame_timeline_slice` 和 `actual_frame_timeline_slice`；示例字段包含 `surface_frame_token`、`display_frame_token`、`jank_type`、`on_time_finish`、`present_type`、`layer_name`、`process.name`。文档未出现 `present_offset`、`refresh_period`、`hwc_layer_name`。",
+          "suggestion": "改成先用 `actual_frame_timeline_slice` 的 `jank_type`、`present_type`、`on_time_finish`、`layer_name` 找 Late Present / SurfaceFlinger deadline / BufferStuffing 等帧，再结合 SurfaceFlinger track、RenderEngine slice、`dumpsys SurfaceFlinger` 或已采集的 layer snapshot 复核 DEVICE/CLIENT composition；不要写不存在的字段。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T15:37:59+08:00",
+      "review_log": "logs/deep-review/2026-05-24-15-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T19:29:26+08:00",
+      "completion_reason": "Task 2B rework: Perfetto FrameTimeline 证据字段从不存在的 present_offset/refresh_period/hwc_layer_name 修正为 actual_frame_timeline_slice 的 jank_type/present_type/on_time_finish/layer_name，并补 HWC 合成降级复核路径"
+    },
+    {
+      "id": "task9-deep-20260524-1530-1.16-audio-aidl-cap-boundary",
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "priority": 85,
+      "title": "Android 16 AIDL CAP / IConfig 动态音频策略强制口径需收窄",
+      "description": "Task9 深度技术 Review 发现 §1.16 仍把 Android 16 新设备强制 IConfig.aidl 动态音频策略、逐步淘汰 vendor XML 写成确定结论；公开 AOSP 文档只支持 AIDL Audio HAL fully supports CAP、AIDL 可通过 IConfig 提供系统配置、legacy/HIDL 产品仍兼容，强制范围需补 CDD/VTS/发布要求证据。",
+      "reason": "[Deep Tech Review] §1.16 L105、L420 Android 16 AIDL CAP / IConfig 版本口径过硬：source.android.com/docs/core/audio/aidl-cap 表述为 Android 16 起 AIDL Audio HAL fully supports CAP，legacy product 不更新 vendor partition 且保持 HIDL 时仍可把 system partition 更新到 Android 16；aidl-hidl-comp 也说明 vendors still have the option of using XML files with reference implementation。需把“新设备必须/逐步淘汰 vendor XML/不依赖完整 OTA”收窄为有证据的 AIDL CAP 支持与迁移路径。",
+      "issue_type": "version-difference-source-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-15-deep-review.md",
+        "https://source.android.com/docs/core/audio/aidl-cap",
+        "https://source.android.com/docs/core/audio/aidl-hidl-comp",
+        "https://source.android.com/docs/core/audio/aidl-implement",
+        "https://source.android.com/docs/core/audio/implement"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码准确性",
+          "location": "L105 AudioFlinger 角色段；L420 版本演进表 Android 16 行",
+          "detail": "正文把 Android 16 写成“新设备必须通过 AIDL HAL 的 IConfig.aidl 接口动态提供音频策略配置，逐步淘汰 vendor 分区静态 XML”，并在版本表写“新设备强制 IConfig.aidl 动态音频策略”。复核公开文档：Android 16 是 AIDL Audio HAL fully supports CAP；AIDL Core HAL 的 IConfig 替代 HIDL XML 中的 system-wide parameters；但迁移文档同时保留 legacy/HIDL 产品兼容，并说明 vendors 仍可用 XML + reference implementation 转成 AIDL 数据。缺少 CDD/VTS/launch requirement 时不能写成所有 Android 16 新设备强制。",
+          "suggestion": "改为：“Android 16 起 AIDL Audio HAL 完整支持 CAP，AIDL 实现可通过 IConfig.getEngineConfig()/相关 parcelables 提供策略配置；HIDL/legacy 产品仍有兼容路径，是否强制取决于具体发布要求/设备迁移状态。”删除或补证“新设备必须”“逐步淘汰 vendor XML”“不依赖完整 OTA”等强断言。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T15:30:04+08:00",
+      "review_log": "logs/deep-review/2026-05-24-15-deep-review.md"
+    },
+    {
       "id": "task9-audit-20260524-2.16-vulkan-timeline-syncfd-boundary",
       "section": "2.16",
       "section_title": "Sync Fence 框架与帧同步机制",
@@ -6587,7 +6665,7 @@
       "added_at": "2026-05-14T03:44:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "added_by": "task9-deep-tech-review",
       "related_files": [
@@ -6626,7 +6704,10 @@
           "detail": "正文声称 Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 会把 AICore/Gemini Nano 推理内存回算到发起 App 的 PSS/RSS。公开 AICore 与 Android memory docs 未检到该机制，且 PSS/RSS 归属通常由进程地址空间和共享页比例决定，不能只凭 work attribution 概念推出 meminfo 归属。",
           "suggestion": "找到 framework API/StatsD/LMKD/meminfo 源码锚点后再写；否则改成“需要同时观察调用方与 AICore/PCS 相关进程内存”。"
         }
-      ]
+      ],
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T19:29:26+08:00",
+      "completion_reason": "Task 2B rework: (1) Android 17 NPU 声明整体降级为[待验证]；(2) LiteRT GPU Host Image Copy 50%收益删除改为以公开文档为准；(3) CompiledModel V2/AICore路由拆分公开/preview两档；(4) AICore 内存回算机制降级为[待验证]"
     },
     {
       "id": "task9-2026-05-14-5.9-adpf-api-version-errors",
@@ -7242,7 +7323,7 @@
       "created_date": "2026-05-14",
       "assigned_to": "content-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/06-android-power.md"
@@ -7289,7 +7370,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-14T11:34:00+08:00"
+      "added_at": "2026-05-14T11:34:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T19:29:26+08:00",
+      "completion_reason": "Task 2B rework: (1) WakeLock→BatteryStats 调用链修正为 PMS→Notifier→IBatteryStats；(2) onVsyncIdle 从'PMS suspend 驱动'修正为'SF resync 信号'；(3) 10%-15%续航收益标记为无证据删除；(4) Energy Limiter 降级为[待验证]；(5) WorkManager expedited quota 修正"
     },
     {
       "id": "task6-20.1-anr-timeout-dialog-boundary-20260514",
@@ -8958,7 +9042,7 @@
       "created_date": "2026-05-15",
       "assigned_to": "content-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
@@ -9005,7 +9089,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-15T11:41:46+08:00"
+      "added_at": "2026-05-15T11:41:46+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T19:29:26+08:00",
+      "completion_reason": "Task 2B rework: (1) Sync 阶段 Android 14 分界线移除改为跨版本描述+源码路径修正 DrawFrameTask.cpp；(2) onFrameAvailable/transactionCommittedCallback 语义修正；(3) ART Generational CMC 源码从 semi_space.cc 改为 mark_compact.cc 并拆分 CC/CMC 两实现；(4) 版本差异表修正；(5) 禁用词闭环清除"
     },
     {
       "id": "task9-21.5-baseline-profile-dsl-20260515",
@@ -19333,14 +19420,14 @@
     }
   ],
   "metadata": {
-    "total_entries": 521,
-    "p0_count": 222,
+    "total_entries": 523,
+    "p0_count": 223,
     "last_updated": "2026-05-24T19:04:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 172,
+    "pending_entries": 174,
     "updated_date": "2026-05-24",
     "last_updated_by": "openclaw-task2a",
-    "pending": 172,
+    "pending": 174,
     "completed_entries": 346,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
@@ -19350,7 +19437,7 @@
   },
   "last_updated": "2026-05-24T19:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
-  "pending": 172,
+  "pending": 174,
   "last_task2a_completed": "24.16",
   "last_task2a_completed_at": "2026-05-24T19:04:00+08:00",
   "last_task2a_gap_mining": "24.16",

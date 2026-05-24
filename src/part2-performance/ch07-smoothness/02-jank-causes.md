@@ -2,7 +2,7 @@
 title: "卡顿原因体系"
 chapter: "7.2"
 section: "7.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -36,22 +36,25 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
-task9_result: pass-tech-review
-last_task9_at: "2026-05-06T03:43:42+08:00"
+task9_result: needs-rework
+last_task9_at: "2026-05-24T15:37:59+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-06"
-task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-05-24"
+task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。"
 last_task6_at: "2026-05-06T03:20:00+08:00"
 last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-06"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
+last_task9_audit: "2026-05-24"
+last_task9_audit_log: "logs/deep-review/2026-05-24-15-audit.md"
+last_task2b_at: 2026-05-24T19:29:26+08:00
 ---
 
 # 卡顿原因体系
@@ -121,7 +124,7 @@ VSync-app 信号到达
 2. **额外内存拷贝**：GPU 显存 → 显示控制器的拷贝开销
 3. **掉帧风险**：如果 CLIENT 比例过高，GPU 帧时间超过 VSync 周期
 
-**Perfetto 中的证据**：通过 `android.surfaceflinger.frametimeline` 观察 `present_offset` > `refresh_period` 的帧，结合 `hwc_layer_name` 定位触发合成降级的 Layer。
+**Perfetto 中的证据**：通过 `actual_frame_timeline_slice` 表的 `jank_type`（如 `SurfaceFlinger Deadline Missed`、`Buffer Stuffing`、`Late Present`）和 `present_type` 字段定位异常帧，再用 `layer_name` 和 `on_time_finish` 缩小嫌疑 Layer。FrameTimeline 不直接暴露 HWC DEVICE/CLIENT 归因——确认合成降级需要结合 SurfaceFlinger composition trace（`android.surfaceflinger` 轨道）中 `compositionType` slice、RenderEngine 执行耗时，或 `dumpsys SurfaceFlinger` 的 layer dump 输出。
 
 **实测建议**：
 - 收集 dumpsys SurfaceFlinger 确认 DEVICE/CLIENT 比例
