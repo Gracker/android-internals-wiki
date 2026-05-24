@@ -19281,17 +19281,63 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-24T18:04:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260524-1820-4.7-16kb-toolchain-version-boundary",
+      "section": "4.7",
+      "section_title": "16KB Page Size 与 Android 性能",
+      "priority": 85,
+      "title": "16KB Page Size 章节需修正第三方 SDK 修复路径与 Android 16/17 版本边界",
+      "description": "Task9 闲时抽检发现 §4.7 对第三方 SDK 的 16KB 迁移建议把 `llvm-objcopy` 写成可手工处理 ELF/ZIP 边界的方案，官方文档没有支持该修复路径；同时 frontmatter 写 Android 15-17，但当前只复核到 Android 16/AOSP main，且遗漏 Android 16 的 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 验证入口。",
+      "reason": "[Deep Tech Review Audit] §4.7 16KB Page Size 迁移指导存在高风险技术边界：第三方预编译 `.so` 不能承诺用 `llvm-objcopy` 从 App 侧可靠修复 16KB ELF alignment；Android 17 尚无 AOSP release tag 可作源码锚点，Android 16 的 prebuilt ELF 对齐检查机制也未纳入版本演进。",
+      "issue_type": "source-toolchain-version-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-18-audit.md",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/optimize",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb-backcompat-option",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r4/linker/linker_phdr.cpp",
+        "https://android.googlesource.com/platform/bionic/+/main/linker/linker_phdr.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/工具链迁移",
+          "location": "L329-L331：第三方 SDK 的 `.so` 文件迁移建议",
+          "detail": "正文建议用 NDK r28+ 的 `llvm-objcopy` 手动重新处理第三方 SDK 的 ELF/ZIP 边界。复核官方 16KB page-size 迁移文档后，公开推荐路径是升级 AGP 8.5.1+ 处理 uncompressed shared libraries 的 zip alignment、用 NDK r28+ 或 r27- 加完整 linker flags 重新编译、用 `llvm-objdump`/`zipalign`/`bundletool dump config`/`check_elf_alignment.sh` 检查；文档没有把 `llvm-objcopy` 作为修复第三方预编译 `.so` 的方案。对没有源码的 4KB-aligned SDK，objcopy 不能可靠修复 LOAD segment 的 p_align、权限边界和代码里的 PAGE_SIZE 假设，容易给读者错误迁移路径。",
+          "suggestion": "删掉 `llvm-objcopy` 手工修复说法，改为：优先升级/替换 SDK 或拿源码用 NDK r28+ 重编；只存在 APK zip alignment 问题时由 AGP 8.5.1+ / bundletool / zipalign 路径处理；无法重编的预编译库只能作为风险项、兼容模式临时验证或联系供应商，不应承诺可由 App 侧 objcopy 修复。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码锚点边界",
+          "location": "L12-L14 frontmatter；L466-L475 版本演进与 OEM 适配",
+          "detail": "章节标注 applicable_versions 为 Android 15-17，并写 last_verified_against 包含 AOSP android-16.0.0_r1 与 bionic main；但 AOSP bionic refs 当前只有 android-16.0.0_r1-r4，未见 android-17.0.0_r1 tag。正文 L473-L475 已把 Android 16/17 设备侧策略写成待 CDD/公告确认，frontmatter 却把 Android 17 写成适用版本，版本证据不一致。同时 source.android 当前 16KB 文档明确 Android 16 起可用 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 做 prebuilt ELF 对齐检查，并可跑 `atest elf_alignment_test`，章节的版本演进/OEM 适配未覆盖这个 Android 16 源码侧验证入口。",
+          "suggestion": "将适用范围收窄为 Android 15-16，或把 Android 17 标成 “preview / 待 AOSP tag 与 CDD 发布后复核”；补一条 Android 16 版本差异：`PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true`、`ignore_max_page_size` / `LOCAL_IGNORE_MAX_PAGE_SIZE` 临时豁免、`atest elf_alignment_test` 用于 OEM/prebuilt 验证，并把 last_verified_against 更新到已复核的 android-16.0.0_r4 或 main commit。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T18:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 519,
+    "total_entries": 521,
     "p0_count": 222,
-    "last_updated": "2026-05-24T17:31:10+08:00",
+    "last_updated": "2026-05-24T18:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 171,
+    "pending_entries": 173,
     "updated_date": "2026-05-24",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 171,
+    "pending": 173,
     "completed_entries": 345,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
@@ -19299,9 +19345,9 @@
     "last_task2a_completed": "14.20",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T18:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 172,
+  "last_updated": "2026-05-24T18:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 173,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "last_task2a_gap_mining": "24.16",
