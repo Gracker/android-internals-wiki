@@ -1,6 +1,49 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260524-2.16-vulkan-timeline-syncfd-boundary",
+      "section": "2.16",
+      "section_title": "Sync Fence 框架与帧同步机制",
+      "priority": 85,
+      "title": "Vulkan Timeline Semaphore 与 Android sync fd 边界需修正",
+      "description": "Task9 闲时抽检发现 §2.16 把 Vulkan Timeline Semaphore 写成导出为 sync fd 后可被 Perfetto fence track 捕获；Vulkan 规范要求 SYNC_FD 这类 copy payload handle 导出使用 Binary Semaphore，Android native fence 边界应写成 Binary Semaphore bridge。",
+      "reason": "[Deep Tech Review Audit] §2.16 L302 Timeline Semaphore / sync fd 边界存在 API 约束错误：Vulkan copy payload handle 导出要求 VK_SEMAPHORE_TYPE_BINARY，SYNC_FD 临时导入也不能来自 timeline semaphore；需将 Perfetto 可观测性段改为 native fence/Binary Semaphore bridge，并顺手修正 L284 dequeueBuffer fence 命名。",
+      "issue_type": "source-accuracy-version-difference",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/16-sync-fence.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-13-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+        "https://docs.vulkan.org/spec/latest/chapters/synchronization.html#VUID-VkSemaphoreGetFdInfoKHR-handleType-03253",
+        "https://source.android.com/docs/core/graphics/sync"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/版本差异",
+          "location": "L302 Perfetto 可观测性：\"Vulkan Timeline Semaphore 在导出为 sync fd 后\"",
+          "detail": "Vulkan 规范要求 copy payload transference handle 导出时 semaphore 必须是 VK_SEMAPHORE_TYPE_BINARY（VUID-VkSemaphoreGetFdInfoKHR-handleType-03253）；SYNC_FD 属于 copy/temporary handle，临时导入也不能来自 timeline semaphore（VUID-VkImportSemaphoreFdInfoKHR-flags-03323）。因此 Android native fence / sync_file 边界不能写成 Timeline Semaphore 直接导出为 sync fd 后被 Perfetto fence track 捕获。",
+          "suggestion": "改为：Perfetto fence track 观测 native fence / sync_file，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接；纯 Vulkan Timeline Semaphore 等待不会直接进入 android.fence 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。"
+        },
+        {
+          "severity": "P2",
+          "type": "源码命名/术语一致性",
+          "location": "L284 Binary Semaphore Export：\"dequeueBuffer() 返回的 acquire fence fd\"",
+          "detail": "AOSP android-16.0.0_r1 VulkanManager.cpp 使用字段名 bufferInfo->dequeue_fence，并将该 fd import 为 VkSemaphore 后让 Skia surface wait；按 Android 图形同步官方语义，consumer 返回给 producer、producer 再写旧 buffer 前等待的是 release fence。这里写 acquire fence 容易与前文 L338 的 release fence 方向说明冲突。",
+          "suggestion": "改成 \"dequeueBuffer() 返回的 dequeue/release fence fd\"；如果想沿用 Vulkan WSI 的 acquire image 语境，需要单独说明这是 API 视角命名，不是 Android BufferQueue acquire fence。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T13:29:11+08:00"
+    },
+    {
       "id": "task6-audit-20260524-18.6-surfaceview-blast-boundary",
       "section": "18.6",
       "section_title": "SurfaceView 直出路径",
@@ -19090,23 +19133,23 @@
     }
   ],
   "metadata": {
-    "total_entries": 514,
-    "p0_count": 217,
-    "last_updated": "2026-05-24T11:33:19+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 171,
+    "total_entries": 516,
+    "p0_count": 221,
+    "last_updated": "2026-05-24T13:29:11+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 172,
     "updated_date": "2026-05-24",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 171,
-    "completed_entries": 333,
+    "pending": 172,
+    "completed_entries": 341,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-24T13:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 171,
+  "last_updated": "2026-05-24T13:29:11+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 172,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "last_task2a_gap_mining": "25.18",
