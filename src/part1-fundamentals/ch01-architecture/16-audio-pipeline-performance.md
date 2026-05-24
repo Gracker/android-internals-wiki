@@ -1,7 +1,7 @@
 ---
 title: "Audio Pipeline 延迟与性能"
 chapter: "1.16"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [audio, audioflinger, aaudio, latency, perfetto, scheduling]
 related_chapters: ["1.4", "5.1", "5.6", "16.5"]
@@ -32,12 +32,12 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-04-22T23:53:44+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-24T15:15:46+08:00"
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-05T09:20:00+08:00"
@@ -170,7 +170,7 @@ FAST Mixer 是绑定在某个 output 上的低延迟混音线程。AudioFlinger 
 
 FAST Mixer 省掉的是每条 fast track 的 sample rate conversion、per-track effects 和其他高开销处理，而不是把 mixing 这件事完全删掉。它保留最小必要的混音和音量衰减，把周期压到更短的 2-3ms 左右，所以低延迟播放听起来会更跟手。
 
-[已验证: AOSP audio latency 文档与 `frameworks/av/services/audioflinger/FastMixer.cpp`]
+[已验证: AOSP audio latency 文档与 `frameworks/av/services/audioflinger/fastpath/FastMixer.cpp` / `FastMixerState.h`]
 
 ### 进入 FAST Mixer 的条件
 
@@ -234,7 +234,7 @@ EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写�
 
 所以 `App → 驱动` 只适合描述 EXCLUSIVE 模式下的数据面，不能拿来概括整个 MMAP 机制。MMAP 的收益也不是无条件成立，设备不支持、format 不匹配、endpoint 被占用时，AAudio / Oboe 仍会回退到 FAST 或 Normal 输出。
 
-[已验证: AAudio 文档、AOSP audio latency 文档与 `frameworks/av/media/libaaudio/service/`]
+[已验证: AAudio 文档、AOSP audio latency 文档；服务端 `frameworks/av/services/oboeservice/AAudioService.cpp`，客户端/绑定层 `frameworks/av/media/libaaudio/src/binding/` / `src/client/` / `src/core/`]
 
 ### AAudio Power Saving Offloaded 模式
 

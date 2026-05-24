@@ -29,7 +29,7 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-task2b_state: pending
+task2b_state: fixed
 task9_result: "needs-rework"
 task2b_result: fixed
 task9_reviewed_date: "2026-05-24"
@@ -40,10 +40,10 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
@@ -282,7 +282,7 @@ vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
 4. 这个 fd 随 buffer 通过 `queueBuffer()` 交给 BufferQueue → SurfaceFlinger
 5. SurfaceFlinger/HWC 侧拿到的就是标准 native fence fd，走正常 acquire/release 流程
 
-反向同理：`dequeueBuffer()` 返回的 acquire fence fd 通过 `vkImportSemaphoreFdKHR` 导入为 Vulkan Binary Semaphore，GPU 等待该 semaphore 后再开始写入 buffer。
+反向同理：`dequeueBuffer()` 返回的 fence fd（AOSP `VulkanManager.cpp` 字段名 `bufferInfo->dequeue_fence`）通过 `vkImportSemaphoreFdKHR` 导入为 Vulkan Binary Semaphore，GPU 等待该 semaphore 后再开始写入 buffer。这个 fd 按 Android 图形同步语义是 release fence（consumer 释放旧 buffer 给 producer），不是 BufferQueue acquire fence——两者方向不同，不要混淆。
 
 注意：`VulkanManager::createReleaseFence()` / `finishFrame()` 并没有设置 `VkSemaphoreTypeCreateInfo`（Timeline Semaphore 需要 `semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE`），所以当前 HWUI 导出的都是 Binary Semaphore，与 WSI / native fence 的语义完全匹配。
 
@@ -300,7 +300,7 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 **与 Android native fence fd 的边界。** Timeline Semaphore 是 Vulkan 同步模型内部的优化。Android 图形栈的跨进程/跨驱动边界——BufferQueue 的 `queueBuffer()` / `dequeueBuffer()`、SurfaceFlinger 的 `latchBuffer`、HWC 的 `setLayerBuffer` / `presentDisplay()`——仍然以 native fence / `sync_file` fd 作为交换格式。Vulkan 队列通过 `vkGetSemaphoreFdKHR`（`VK_KHR_external_semaphore_fd`）导出 sync fd 进入 Android 图形管线，或通过 `vkImportSemaphoreFdKHR` 导入外部 fence。HWUI 的 `SkiaVulkanPipeline` / `VulkanManager::createReleaseFence()` 正是走这条 export → import interop 路径。
 
-**Perfetto 可观测性。** Perfetto 中的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件。Vulkan Timeline Semaphore 在导出为 sync fd 后，其等待行为可以被 Perfetto fence track 捕获。但 Vulkan 队列内部的纯 Timeline Semaphore 等待（未导出 fd）不会出现在 fence track 上，需要通过 GPU counter / Vulkan layer trace 观察。两者不能等同。
+**Perfetto 可观测性。** Perfetto 的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接。纯 Vulkan Timeline Semaphore 等待不会直接进入 `android.fence` 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。Vulkan 规范要求 `SYNC_FD` 这类 copy payload handle 导出使用 Binary Semaphore（`VUID-VkSemaphoreGetFdInfoKHR-handleType-03253`），所以 Android native fence 边界始终以 Binary Semaphore 为桥梁，不是 Timeline Semaphore 直接导出。
 
 > [说明: Vulkan Timeline Semaphores 是 Vulkan 1.2 核心特性之一，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。]
 

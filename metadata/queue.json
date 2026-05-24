@@ -13,7 +13,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 0.75,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/16-sync-fence.md"
@@ -41,7 +41,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-24T13:29:11+08:00"
+      "added_at": "2026-05-24T13:29:11+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T15:15:46+08:00",
+      "completion_reason": "Task 2B rework: Perfetto 可观测性段改为 Binary Semaphore → sync fd 桥接，补 VUID 约束说明；dequeueBuffer fence 命名从 acquire fence 修正为 release fence"
     },
     {
       "id": "task6-audit-20260524-18.6-surfaceview-blast-boundary",
@@ -18795,7 +18798,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
@@ -18825,7 +18828,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T08:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-24-08-audit.md"
+      "review_log": "logs/deep-review/2026-05-24-08-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T15:15:46+08:00",
+      "completion_reason": "Task 2B rework: FastMixer.cpp 路径修正为 fastpath/FastMixer.cpp + FastMixerState.h；AAudio service 路径拆分为 oboeservice/ + libaaudio/src/binding|client|core"
     },
     {
       "id": "task9-audit-20260524-0927-10.4-lmk-trace-config",
@@ -18840,7 +18846,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md"
@@ -18861,7 +18867,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T09:27:32+08:00",
-      "original_review_log": "logs/deep-review/2026-05-24-09-audit.md"
+      "original_review_log": "logs/deep-review/2026-05-24-09-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T15:15:46+08:00",
+      "completion_reason": "Task 2B rework: atrace category 从 memory 改为 memreclaim；ftrace 事件名从 lowmemorykiller/lowmemorykiller 改为 lowmemory_kill；补现代 lmkd ATrace/ProcessKilled 推荐路径"
     },
     {
       "id": "task9-audit-20260524-0714-gaps-unsupported-reachability-rates",

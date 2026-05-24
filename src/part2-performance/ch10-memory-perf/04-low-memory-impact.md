@@ -28,7 +28,7 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
@@ -36,9 +36,9 @@ repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
 review_round: 8
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T09:27:32+08:00"
@@ -229,7 +229,7 @@ PSI 数据在 Perfetto 的 `sys_stats` 数据源中可以找到。PSI 为每种�
 
 如果 1-3 出现但还没有 5-6，说明系统在低内存但还在努力维持。如果 5-6 也出现了，说明系统已经无法仅靠内存回收来维持运转了。
 
-可复现的低内存 Trace 可以从下面这份配置起步。它覆盖 vmscan、sched、process stats、PSI、ART GC 和 lmk 事件；设备内核裁剪不同时，录制前先用 `adb shell ls /sys/kernel/tracing/events/vmscan` 和 `adb shell atrace --list_categories` 确认可用项。注意 `lmkd` 不是 atrace 稳定 category（不在 `frameworks/native/cmds/atrace/atrace.cpp` 列表中），lmk 事件应通过 `lowmemorykiller` ftrace 事件组或 `atrace_categories: "memory"` 捕获。
+可复现的低内存 Trace 可以从下面这份配置起步。它覆盖 vmscan、sched、process stats、PSI、ART GC 和 lmk 事件；设备内核裁剪不同时，录制前先用 `adb shell ls /sys/kernel/tracing/events/vmscan` 和 `adb shell atrace --list_categories` 确认可用项。注意 `lmkd` 不是 atrace 稳定 category（不在 `frameworks/native/cmds/atrace/atrace.cpp` 列表中）。现代 Android 推荐优先依赖 lmkd ATrace slice / ProcessKilled / logcat/statsd 监控杀进程事件（`LMKD_TRACE_KILLS` 与设备实现相关）。如果需要 atrace category 辅助内存回收相关 trace，应使用 `atrace_categories: "memreclaim"` 而不是 `"memory"`——AOSP atrace 的 `memory` category 不启用 `lowmemorykiller` ftrace 事件。如果需要 legacy ftrace 事件，应使用 `lowmemorykiller/lowmemory_kill` 而不是 `lowmemorykiller/lowmemorykiller`。
 
 ```protobuf
 buffers { size_kb: 32768 fill_policy: RING_BUFFER }
@@ -247,9 +247,10 @@ data_sources {
       ftrace_events: "vmscan/mm_vmscan_direct_reclaim_end"
       atrace_categories: "am"
       atrace_categories: "dalvik"
-      atrace_categories: "memory"
+      atrace_categories: "memreclaim"
       # lmkd 不是 atrace 稳定 category；lmk 事件通过 ftrace lowmemorykiller 事件组捕获
-      ftrace_events: "lowmemorykiller/lowmemorykiller"
+      # 注意：事件名是 lowmemory_kill，不是 lowmemorykiller
+      ftrace_events: "lowmemorykiller/lowmemory_kill"
     }
   }
 }
