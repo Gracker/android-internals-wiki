@@ -18812,6 +18812,43 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T09:27:32+08:00",
       "original_review_log": "logs/deep-review/2026-05-24-09-audit.md"
+    },
+    {
+      "id": "task9-audit-20260524-0714-gaps-unsupported-reachability-rates",
+      "section": "7.14",
+      "section_title": "GAPS：Android 动态分析目标可达性路径重建",
+      "priority": 85,
+      "title": "GAPS 反射/DI/动态代理穿透率表缺少论文或仓库来源",
+      "description": "Task9 闲时抽检发现 §7.14 末尾新增的反射/DI/动态代理专项穿透率表给出精确百分比，但 GAPS 论文与公开仓库没有对应分项数据或估算方法。",
+      "reason": "[Task9 闲时抽检] §7.14 L196-L212 将反射、Dagger/Hilt、动态代理等场景写成可估算穿透率表；arXiv 2511.23213v2 与 samudoria/GAPS README/evaluation_data 只支撑整体 reachability 和论文列出的限制项，未支撑这些分项百分比。需 Task2B 删除或改成有来源的风险清单。",
+      "issue_type": "unsupported-quantitative-claim",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-10-audit.md",
+        "https://arxiv.org/abs/2511.23213",
+        "https://github.com/samudoria/GAPS",
+        "https://raw.githubusercontent.com/samudoria/GAPS/main/README.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码引用/数据支撑",
+          "location": "L196-L212：反射/DI/动态代理场景的专项穿透数据",
+          "detail": "章节给出显式调用、生命周期回调、UI 回调、ICC、反射、Dagger/Hilt、动态代理的静态分析穿透率（~90%/~85%/~80%/~70%/~40%/~30%/~25%），并称可由 GAPS 论文 Limitations 与实验基准估算。但 arXiv 2511.23213v2 的结果表只给出整体 reachability：GAPS static 88.24%、dynamic 57.44%、FlowDroid 58.81%、DroidReach 9.48%、APE 12.82%、GoalExplorer 9.69%、Guardian 17.12%；Limitations 仅描述 Flutter/React Native、混淆、dead code、implicit flows、Jetpack Compose、复杂交互与 intent-filter/permission/data 参数限制，没有 Dagger/Hilt、动态代理、Class.forName/R8 分项数据。公开仓库 README/evaluation_data 也未提供这组分项穿透率。当前表格属于无来源量化，容易被读者误认为论文或仓库结论。",
+          "suggestion": "删除该穿透率表，或改成无百分比的风险清单：论文可确认的边界只保留 Flutter/React Native、混淆/第三方框架、未跟踪 implicit flows、Jetpack Compose、复杂 App state、intent filter 权限/数据参数；若要讨论反射、DI/Hilt、动态代理，必须补独立实验口径、样本、工具版本和复现脚本，不能挂在 GAPS 论文数据下。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T10:22:45+08:00",
+      "original_review_log": "logs/deep-review/2026-05-24-10-audit.md"
     }
   ],
   "metadata": {
