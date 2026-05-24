@@ -1,6 +1,44 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260524-3.7-inputdispatcher-version-boundary",
+      "section": "3.7",
+      "section_title": "InputDispatcher 反压与无响应窗口降级",
+      "priority": 85,
+      "title": "InputDispatcher 反压章节需补 Android 10-13 / Android 17 版本边界",
+      "description": "Task9 闲时抽检发现 §3.7 标注 Android 10-17 适用，但正文主体按 Android 16 InputDispatcher 实现讲 mAnrTracker、processAnrsLocked、processConnectionResponsiveLocked、shouldPruneInboundQueueLocked 与 canReceiveForegroundTouches，未补 Android 10-13 的实现引入点和 Android 17 未验证边界。",
+      "reason": "[Deep Tech Review Audit] §3.7 Android 10-17 版本覆盖过宽：Android 10/11/12 的 InputDispatcher ANR/队列裁剪实现与正文所按 Android 16 描述的 mAnrTracker、processAnrsLocked、processConnectionResponsiveLocked、canReceiveForegroundTouches 边界不一致，且 Android 17 AOSP tag 未发布，需补版本矩阵或收窄适用范围。",
+      "issue_type": "version-difference-source-anchor-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-17-audit.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-10.0.0_r47/services/inputflinger/InputDispatcher.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-11.0.0_r48/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-12.1.0_r27/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r83/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r4/services/inputflinger/dispatcher/InputDispatcher.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码锚点边界",
+          "location": "L6 applicable_versions；L104、L113-L119、L125-L131、L173-L179：mAnrTracker / responsive / 队列裁剪主线",
+          "detail": "章节 frontmatter 标注 applicable_versions 为 Android 10-17，但正文 L104、L113-L119、L125-L131、L173-L179 把 android-16 InputDispatcher 实现中的 mAnrTracker、processAnrsLocked、processConnectionResponsiveLocked、shouldPruneInboundQueueLocked、canReceiveForegroundTouches 等写成章节主线。复核 AOSP 后，android-10.0.0_r47 的 InputDispatcher 仍在 services/inputflinger/InputDispatcher.cpp，dispatcher/InputDispatcher.cpp 不存在；Android 10 没有 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches，ANR 等待主要走 mInputTargetWaitCause/mInputTargetWaitTimeoutTime/onANRLocked。android-11 引入 mAnrTracker 与 shouldPruneInboundQueueLocked，android-12 才有 processConnectionResponsiveLocked，android-13 起可见 canReceiveForegroundTouches；AOSP refs 当前也没有 android-17.0.0_r1 标签。",
+          "suggestion": "二选一：要么把 applicable_versions 收窄到已验证的 Android 13-16/16.0.0_r4 当前实现；要么补版本边界表，分别列出 Android 10 旧路径与旧 ANR 等待模型、Android 11/12/13 的关键实现引入点，并把 Android 17 标为待源码 tag 发布后复核。frontmatter sources/references 也需注明 Android 10 的旧路径和 docs/anr.md 在 Android 12+ 才存在。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T17:31:10+08:00"
+    },
+    {
       "id": "task9-audit-20260524-2.16-vulkan-timeline-syncfd-boundary",
       "section": "2.16",
       "section_title": "Sync Fence 框架与帧同步机制",
@@ -19216,23 +19254,24 @@
     }
   ],
   "metadata": {
-    "total_entries": 517,
+    "total_entries": 519,
     "p0_count": 222,
-    "last_updated": "2026-05-24T14:28:59+08:00",
+    "last_updated": "2026-05-24T17:31:10+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 173,
+    "pending_entries": 171,
     "updated_date": "2026-05-24",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 173,
-    "completed_entries": 341,
+    "pending": 171,
+    "completed_entries": 345,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
-    "last_task2a_completed": "14.20"
+    "last_task2a_completed": "14.20",
+    "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T14:28:59+08:00",
+  "last_updated": "2026-05-24T17:31:10+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 173,
+  "pending": 171,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "last_task2a_gap_mining": "25.18",
