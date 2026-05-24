@@ -13,7 +13,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 0.75,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -36,7 +36,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-24T17:31:10+08:00"
+      "added_at": "2026-05-24T17:31:10+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T23:23:48+08:00",
+      "completion_reason": "Task 2B rework: applicable_versions 从 Android 10-17 收窄到 Android 13-16；补版本边界说明（mAnrTracker/shouldPruneInboundQueueLocked Android 11+、processConnectionResponsiveLocked Android 12+、canReceiveForegroundTouches Android 13+）；Android 17 标为待验证"
     },
     {
       "id": "task9-audit-20260524-1537-7.2-frametimeline-schema-fields",
@@ -91,7 +94,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 0.75,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
@@ -114,7 +117,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T15:30:04+08:00",
-      "review_log": "logs/deep-review/2026-05-24-15-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-24-15-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-24T23:23:48+08:00",
+      "completion_reason": "Task 2B rework: AudioFlinger 角色段 AIDL CAP 口径从新设备必须/IConfig.aidl 动态提供/逐步淘汰 vendor XML 收窄为 AIDL HAL fully supports CAP、HIDL/legacy 仍有 XML + reference implementation 兼容路径；版本演进表同步修正"
     },
     {
       "id": "task9-audit-20260524-2.16-vulkan-timeline-syncfd-boundary",

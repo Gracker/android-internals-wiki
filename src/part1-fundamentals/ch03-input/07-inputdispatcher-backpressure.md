@@ -4,7 +4,7 @@ chapter: "3.7"
 section: "3.7"
 status: ready-for-review
 drafted_date: "2026-05-16"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
 last_verified: "2026-05-16"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -26,25 +26,27 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T17:31:10+08:00"
 task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
+
+> **版本边界说明**：本章主线按 AOSP android-16.0.0_r1 的 InputDispatcher 实现描述，涉及 `mAnrTracker`、`processAnrsLocked()`、`processConnectionResponsiveLocked()`、`shouldPruneInboundQueueLocked()`、`canReceiveForegroundTouches()` 等机制。这些能力并非在同一版本全部引入：Android 11 起出现 `mAnrTracker` 和 `shouldPruneInboundQueueLocked`，Android 12 起有 `processConnectionResponsiveLocked`，Android 13 起可见 `canReceiveForegroundTouches`。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（非 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文描述的主线机制差异较大。Android 17 AOSP tag 截至当前未发布，未经验证。排查旧版本时应优先确认源码路径和 ANR 等待模型。
 
 <!-- outline-start -->
 ## 要点
