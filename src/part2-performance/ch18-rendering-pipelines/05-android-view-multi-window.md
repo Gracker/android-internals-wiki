@@ -37,6 +37,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-07'
 last_task6_at: '2026-05-07T06:10:00+08:00'
+last_task6_audit: '2026-05-25T07:06:00+08:00'
 last_task6_review_log: logs/review/2026-05-07-06-review.md
 task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2
   通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2
@@ -54,7 +55,7 @@ task9_review_notes: 2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分
 
 **锚点(必须覆盖):**
 - [18.5.1 多窗口场景分析](#多窗口场景分析) - 什么时候会出现双窗口
-- [18.5.2 同进程 vs 跨进程](#同进程-vs-跨进程两类完全不同的问题) - 拓扑决定瓶颈位置
+- [18.5.2 同进程 vs 跨进程](#同进程-vs-跨进程拓扑判断决定了分析入口) - 拓扑决定瓶颈位置
 - [18.5.3 核心瓶颈:串行化](#核心瓶颈串行化) - UI Thread 与 RenderThread 的争抢
 - [18.5.4 完整执行流程](#完整执行流程) - 双窗口的完整时序
 - [18.5.5 Trace 视角](#trace-视角) - 识别多窗口瓶颈

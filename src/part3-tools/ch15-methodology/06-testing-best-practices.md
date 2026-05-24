@@ -59,7 +59,10 @@ last_task9_at: "2026-05-07T18:28:30+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-25"
 ---
+
 
 # 性能测试最佳实践
 
@@ -376,7 +379,7 @@ Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT
 内存占用 (启动后稳定态):
   Java Heap: 48.2MB
   Native Heap: 22.7MB
-  总PSS: 126.5MB
+  总 PSS: 126.5MB
 ```
 
 ### 回归检测的阈值设定

@@ -2,7 +2,7 @@
 title: Perfetto 简介与演进
 chapter: '13.1'
 section: '13.1'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-05-06'
@@ -38,13 +38,13 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
-task9_state: 'reviewed'
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: 'needs-rework'
-task2b_state: 'pending'
-task2b_result: pending
-task2b_rework_date: '2026-05-06T02:43:33+08:00'
+task2b_state: "fixed"
+task2b_result: "fixed"
+task2b_rework_date: "2026-05-25T07:27:11+08:00"
 task9_reviewed_date: '2026-05-25'
 task9_reviewed_by: 'openclaw-task9'
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。
@@ -273,11 +273,24 @@ data_sources {
 duration_ms: 10000
 ```
 
-对应的抓取命令是：
+对应的抓取命令因 Android 版本而异：
 
 ```bash
+# Android 12+（推荐）
+# /data/misc/perfetto-configs/ 由 Perfetto init 确保存在且 SELinux 可读
 adb push config.pbtx /data/misc/perfetto-configs/config.pbtx
 adb shell perfetto --txt -c /data/misc/perfetto-configs/config.pbtx \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
+
+# Android 10/11 非 root 设备
+# SELinux 限制使 Perfetto 无法直接读取任意路径的配置文件，通过 stdin 传入
+cat config.pbtx | adb shell perfetto -c - --txt \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
+
+# Android 9
+# 不支持 --txt，必须用 binary protobuf
+perfetto_to_pb -i config.pbtx -o config.bin  # 在主机上用 Perfetto SDK 工具编译
+cat config.bin | adb shell perfetto -c - \
   -o /data/misc/perfetto-traces/trace.perfetto-trace
 ```
 
@@ -313,15 +326,32 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 
 
 <!-- AIW-源码调研-2026-04-20: lmkd trace 事件补充 -->
+<!-- Task2B rework 2026-05-25: P0 修正 LMKD Perfetto 事件名，P1 补版本化观测路径 -->
 ### LMKD 行为追踪 [自动发现]
 
-Perfetto 支持追踪 lmkd（Low Memory Killer Daemon）的杀死行为，对应 `android_lmk_proc_state` 和 `linux.lowmemorykiller` 事件。Android 14 中 lmkd 已迁移至 `platform/system/memory/lmkd/lmkd.cpp`（C++），默认使用 PSI 监控（`PSI_WINDOW_SIZE_MS=1000`）。
+Perfetto 可以追踪 lmkd（Low Memory Killer Daemon）的杀死行为，但观测路径取决于 Android 版本和内核配置。
 
-在 Perfetto UI 中，lmkd 活动通常出现在系统级 Counter Track 或 Event Table 中。当 `linux.lowmemorykiller` 事件密集出现时，说明系统内存压力持续升高。配合 `TRIM_MEMORY_*` 级别应用回调（通过应用 `ComponentCallbacks2.onTrimMemory()` 触发）的 trace 记录，可以判断 Jank 是否由低内存导致。
+**Legacy kernel LMK（Android 9 及更早，部分设备延续到 Android 10）**：通过 ftrace 事件 `lowmemorykiller/lowmemory_kill` 记录。Perfetto 导入 ftrace 数据后，可在 `instant` 表中查询 `instant.name = 'mem.lmk'`。在设备上先验证该事件是否存在：
+
+```bash
+adb shell cat /sys/kernel/tracing/events/lowmemorykiller/enable
+```
+
+如果路径不存在，说明设备已切换到用户空间 lmkd。
+
+**Modern lmkd（Android 10+）**：lmkd 已迁移至 `system/memory/lmkd/`（C++ 实现），默认使用 PSI（Pressure Stall Information）监控内存压力。Perfetto 没有独立的 `android_lmk_proc_state` 或 `linux.lowmemorykiller` data source；lmkd 行为需要结合多条证据链交叉验证：
+
+- `lmkd atrace` 标记（如果设备编译了对应 atrace tag）
+- `logcat | grep lmkd` 查看杀死决策日志
+- `statsd` 的 `ProcessKilled` atom（通过 `dumpsys stats` 或 Perfetto `statsd` data source）
+- PSI stall 事件（`some` / `full` 行的 `avg10` / `avg60` / `avg300`）
+- `ProcessList.java` 中 `TRIM_MEMORY_*` 级别回调（通过 App 侧 `ComponentCallbacks2.onTrimMemory()` 触发）
+
+当这些信号密集出现时，说明系统内存压力持续升高，可能间接导致渲染帧超时或 GC 停顿。在 Perfetto UI 中结合 CPU 调度、内存 Counter（`mem.used` / `mem.available`）和 `lmkd` 相关日志一起观察效果最好。
 
 详细源码分析见 §7.3「卡顿分析方法论」。
 
-[源码验证: lmkd.cpp (android-14.0.0_r44), ProcessList.java (android14-release)]
+[源码验证: lmkd.cpp (android-16.0.0_r1), Perfetto ftrace parser — instant.name='mem.lmk', Perfetto 官方 memory counters 文档]
 
 ### Track：时间线上的一条轨道
 
@@ -413,12 +443,12 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 
 ### Android 版本对照表
 
-| 版本 | `traced` / `traced_probes` 状态 | normal mode 配置输入 | 常见启用条件 | 这一章该怎么理解 |
-| --- | --- | --- | --- | --- |
-| Android 9 (P) | 服务已进 system image | binary protobuf | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 不是“只能用 Systrace”，只是文本 `--txt` 还不可用 |
-| Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf + `--txt` | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
-| Android 11+ (R+) | 大多数设备默认启用 | binary protobuf + `--txt` | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
-| Android 12 (S) | 默认启用 | binary protobuf + `--txt` | FrameTimeline 成为帧级 jank 分类的主入口 | Perfetto 组件（`traced`/`traced_probes`）仍为平台二进制部署；部分设备通过 Mainline 机制提供更新，具体包名和覆盖范围因设备和 build 而异 [待验证] |
+| 版本 | `traced` / `traced_probes` 状态 | normal mode 配置输入 | 配置文件读取路径 / SELinux | 常见启用条件 | 这一章该怎么理解 |
+| --- | --- | --- | --- | --- | --- |
+| Android 9 (P) | 服务已进 system image | binary protobuf（仅 stdin） | 不支持 `--txt`，无配置文件路径问题 | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 不是“只能用 Systrace”，只是文本 `--txt` 还不可用 |
+| Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf + `--txt` | 非 root 设备 SELinux 限制配置文件读取，需用 stdin 传入 | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
+| Android 11+ (R+) | 大多数设备默认启用 | binary protobuf + `--txt` | 同 Android 10，非 root 设备建议 stdin | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
+| Android 12 (S) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用，SELinux 已放行 | FrameTimeline 成为帧级 jank 分类的主入口 | Perfetto 组件（`traced`/`traced_probes`）仍为平台二进制部署；部分设备通过 Mainline 机制提供更新，具体包名和覆盖范围因设备和 build 而异 [待验证] |
 | Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从"手动 adb 抓取"向"App 发起、系统执行"的触发式 profiling 演进 |
 | Android 16+ | 默认启用 | binary protobuf + `--txt` | System Triggered Profiling：ANR 等场景自动捕获背景 trace | Profiling 能力从"主动采集"扩展到"被动捕获" |
 

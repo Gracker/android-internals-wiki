@@ -1,4 +1,5 @@
 ---
+task2b_rework_date: "2026-05-25T07:27:11+08:00"
 
 title: "eBPF/BPF 在 Android 性能分析中的应用"
 chapter: "14.10"
@@ -52,7 +53,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-30"
 last_task6_audit: "2026-05-19"
@@ -63,14 +64,14 @@ repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
-status: "finalized"
-pipeline_stage: task2b_pending
-task9_state: "reviewed"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T12:20:00+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 p0: 2
 p1: 1
 p2: 1
@@ -517,52 +518,34 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 - Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md
 
 
-<!-- AIW-源码调研-2026-05-07 -->
-## sched_ext 在 Android OEM 中的实际应用策略
+<!-- AIW-源码调研-2026-05-07（原始 OEM 素材已移除：源码路径/函数名/OEM 调度器名称未能核验，量化收益无来源。保留 sched_ext 基础设施描述） -->
 
-### Qualcomm SCX_Oplus 调度器
-**源码位置**：`kernel/sched/oplus-sched.c`
-**关键函数**：`oplus_select_cpu()`、`oplus_dispatch()`
+## sched_ext 在 Android 中的可用性现状
 
-核心特性：
-- 基于游戏场景的高频率任务优先级提升
-- 大核心优先调度策略
-- GPU/CPU 协同调度支持
+sched_ext 允许 OEM 通过 eBPF 程序替换内核默认调度策略。Android common kernel 从 Linux 6.12 分支（对应 Android 16 / GKI 6.12）开始包含完整的 sched_ext 基础设施（`kernel/sched/ext.c`）。
 
-性能提升：15-20% 游戏帧率提升
+设备是否实际启用 sched_ext 取决于多个条件：
 
-### MediaTek SCX_Mtk 应急响应调度
-**源码位置**：`kernel/sched/mtk-sched.c`
-**关键函数**：`mtk_emergency_dispatch()`、`mtk_latency_sensitive()`
+- 内核配置 `CONFIG_SCHED_CLASS_EXT=y`
+- 设备 `/sys/kernel/sched_ext` 目录是否存在
+- CTS/VTS 是否要求启用
+- OEM 在 shipping build 中的具体配置策略
 
-核心特性：
-- 突发流量应急调度
-- 低延迟敏感任务优化
-- 应急模式下的频率提升
+AOSP 默认调度链尚未切换到 sched_ext，当前 Android 16 设备上多数仍使用传统 EAS + schedutil 调度。
 
-性能提升：减少 25ms 触摸延迟
+部分 OEM 据报道在开发各自的 sched_ext 调度器，但公开检索未找到可核实的源码仓库、commit 或官方文档。在没有可访问源码和 benchmark 数据之前，不能将具体的 OEM 调度器名称、函数名和量化收益写入确定结论。
 
-### Google Pixel SCX_Litto 电源优化
-**源码位置**：`kernel/sched/litto-sched.c`
-**关键函数**：`litto_power_aware()`、`litto_balanced_dispatch()`
+**排查 sched_ext 是否启用**：
 
-核心特性：
-- 基于电源效率的调度决策
-- 学习用户使用模式
-- 与 Android Battery Historian 集成
+```bash
+# 检查内核配置
+adb shell zcat /proc/config.gz | grep SCHED_CLASS_EXT
 
-性能提升：降低 8-12% 功耗
+# 检查 sched_ext 运行状态
+adb shell ls /sys/kernel/sched_ext/
 
-### Android Common Kernel 集成
-**源码位置**：`system/core/libprocessgroup/cgroup_utils.c`
-**关键函数**：`apply_android_scheduling_constraints()`
+# 查看当前调度器是否为 sched_ext
+adb shell cat /sys/kernel/sched_ext/root/ops
+```
 
-特性：
-- Android 特有的 cgroup 配置
-- 进程优先级映射
-- 前台/后台调度策略
-
-**版本演进**：
-- Android 14 (GKI 5.10)：基础 sched_ext 支持
-- Android 15 (GKI 5.15)：添加 MediaTek SCX_Mtk
-- Android 16 (GKI 6.12)：全面支持，Google Pixel SCX_Litto 默认启用
+Android 进程调度组仍由 `task_profiles.json`、`cgroups.json`、`task_profiles.cpp`（`system/core/libprocessgroup/`）管理，不依赖 sched_ext。

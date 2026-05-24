@@ -1,6 +1,7 @@
 ---
+task2b_rework_date: "2026-05-25T07:27:11+08:00"
 
-status: ready-for-review
+status: "ready-for-review"
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
 section: '2.18'
@@ -45,18 +46,18 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 last_task9_at: "2026-05-17T19:30:43+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
 task6_result: needs-rework
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
@@ -253,20 +254,20 @@ ORDER BY actual.ts;
 
 ### 利用 VSync ID 分析切换瞬间的预测误差
 
-ARR 切换刷新率时，偶尔出现的一两帧长间隔不一定是 bug。调度器需要从旧频率的 VSYNC 时序过渡到新频率，过渡期间预测模型可能出现偏差。判断长间隔是正常过渡还是异常，可以关联 `vsync_id`：
+ARR 切换刷新率时，偶尔出现的一两帧长间隔不一定是 bug。调度器需要从旧频率的 VSYNC 时序过渡到新频率，过渡期间预测模型可能出现偏差。判断长间隔是正常过渡还是异常，可以关联 `display_frame_token`（即 VSync ID）的连续性：
 
 1. 在 `FrameTimeline` 中找到刷新率切换的时间点（`expected_dur_ms` 从 8.33ms 变到 16.67ms 的位置）
-2. 提取该帧前后的 `vsync_id` 序列
-3. 如果 `vsync_id` 在切换点出现跳变（比如从连续递增变为跳过一个 ID），说明调度器在切换时错过了目标 VSYNC
-4. 如果 `vsync_id` 序列连续，但 `actual_dur_ms` 明显大于 `expected_dur_ms`，问题更可能在 App 侧——App 没有在新频率下及时提交帧
+2. 提取该帧前后的 `display_frame_token` 序列
+3. 如果 `display_frame_token` 在切换点出现跳变（比如从连续递增变为跳过一个 token），说明调度器在切换时错过了目标 VSYNC
+4. 如果 `display_frame_token` 序列连续，但 `actual_dur_ms` 明显大于 `expected_dur_ms`，问题更可能在 App 侧——App 没有在新频率下及时提交帧
 
 ```sql
 SELECT
-  actual.vsync_id,
+  actual.display_frame_token,
   ROUND(actual.ts / 1e6, 2) AS ts_ms,
   ROUND(actual.dur / 1e6, 2) AS actual_dur_ms,
   ROUND(expected.dur / 1e6, 2) AS expected_dur_ms,
-  CASE WHEN actual.vsync_id - LAG(actual.vsync_id) OVER (ORDER BY actual.ts) > 1
+  CASE WHEN actual.display_frame_token - LAG(actual.display_frame_token) OVER (ORDER BY actual.ts) > 1
        THEN 'vsync_gap' ELSE 'continuous' END AS vsync_continuity
 FROM actual_frame_timeline_slice AS actual
 LEFT JOIN expected_frame_timeline_slice AS expected
@@ -331,13 +332,13 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
 
 
 - AOSP 源码路径：
+  - `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`（内容刷新率选择）
+  - `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.h`
+  - `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`（policy/range 控制）
+  - `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`
   - `frameworks/base/core/java/android/view/Display.java`
   - `frameworks/base/core/java/android/view/View.java`
   - `frameworks/base/core/java/android/view/Choreographer.java`
-  - `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`
-  - `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`
-  - `frameworks/base/services/core/java/com/android/server/display/LogicalDisplay.java`
-  - `frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java`
   - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
   - `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`
 - 官方文档：
@@ -352,56 +353,4 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
 
 
 
-[需重写: 以下 DeepResearch 卡片和源码调研附录仍是素材堆放，且 Task9 已标记其中的 FrameTimeline SQL、RefreshRateSelector 路径和 ARR 决策层归属风险。Task2B 需要把可用内容整合进正文或移出发布稿。]
 
----
-
-### Android 17 RefreshRateSelector 多维度评分算法与 ARR 实现机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-refreshrate-selector-arr.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 15 ARR 机制允许刷新率在单一显示模式内动态调整，核心组件为 RefreshRateSelector 和 DisplayModeDirector。评分算法综合帧率匹配度（divisor 关系）、亮度阈值、场景优先级、功耗预算、温度控制多维度权重。ARR 与 VSync 解耦，通过 HWC HAL v3 实现。
-- 注入时间：2026-05-15
-- 价值：首次源码级解析 ARR 评分算法与 VRR 的架构差异，补充 ch02 自适应刷新率章节的技术深度
-
-## 附录：RefreshRateSelector 多维度评分算法与 ARR 实现机制（2026-05-13 调研）
-
-### 核心组件架构
-
-ARR（Adaptive Refresh Rate）机制涉及三个核心层次：
-
-1. **Framework 层**：`RefreshRateSelector.java` + `DisplayModeDirector.java`
-2. **HAL 层**：HWC Composer v3
-3. **Kernel/驱动层**：Panel 自适应刷新协议
-
-`DisplayModeDirector` 是 ARR 核心决策者，负责监听前台应用帧率请求、综合多维度权重评分、选择最优显示模式。
-
-### 评分算法多维度权重
-
-| 维度 | 说明 |
-|------|------|
-| 帧率匹配度 | 刷新率必须能被目标帧率整除（divisor 关系），避免 tearing |
-| 亮度阈值 | `config_brightnessThresholdsOfPeakRefreshRate` + `config_ambientThresholdsOfPeakRefreshRate` |
-| 场景优先级 | Keyguard 锁屏专用 `config_keyguardRefreshRate` |
-| 功耗预算 | PEAK_REFRESH_RATE / MIN_REFRESH_RATE 设置项 |
-| 温度控制 | 热阈值触发降刷新率 |
-
-### ARR vs VRR 关键区别
-
-| 特性 | ARR（Android 15+） | VRR（传统模式切换） |
-|------|-------------------|-------------------|
-| 刷新率变更 | 单一模内连续调整 | 模式级别切换 |
-| VSync 解耦 | 是，刷新率与 VSync 率解耦 | 否 |
-| 实现要求 | HWC HAL v3 | 驱动私有方案 |
-| 功耗收益 | 内容静止时降至 1Hz | 固定高刷新 |
-
-### 关键源码路径
-
-- `frameworks/base/services/core/java/com/android/server/display/RefreshRateSelector.java`
-- `frameworks/base/services/core/java/com/android/server/display/DisplayModeDirector.java`
-- `frameworks/base/core/res/res/values/config.xml`（亮度阈值配置）
-
-### 信息源自述
-
-本次调研基于 cs.android.com 代码索引、source.android.com 官方文档（source.android.com/docs/core/graphics/arr）、developer.android.com ARR 文档。部分源码文件因认证限制未能直接获取全文，核心架构分析来自官方文档与代码索引摘要。
-
-<!-- AIW-源码调研-2026-05-13 -->

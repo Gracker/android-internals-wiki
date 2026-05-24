@@ -221,3 +221,12 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 ## 小结
 
 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 的价值在取证，不在治理。后台 CPU 异常的治理仍由 App 完成：任务分层、唯一任务、合理约束、指数退避、分片执行、远程熔断和证据归档。系统 trigger 能补一份现场，但只有把它和 work id、job id、重试次数、bucket、退出 reason 绑定起来，才能从“知道进程被处置”走到“知道该改哪个后台任务”。
+
+## 延伸阅读
+### Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 机制边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-trIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：确认 Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE（API 37，targetSdk>=37），但 excessive CPU 检测服务、阈值、kill 路径等关键细节仍缺 AOSP 源码闭环。targetSdk gating 条件已修正（非 API 36）。与 JobScheduler quota 的关联尚无直接证据。
+- 注入时间：2026-05-25
+- 价值：补充 targetSdk gating 条件修正和官方文档层面的确认，标注待验证源码路径
+
