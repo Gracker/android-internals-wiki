@@ -50,25 +50,28 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 last_task6_audit: "2026-05-22"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-24T11:16:52+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-23"
-last_task9_at: "2026-05-23T07:24:00+08:00"
-task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 2；RenderEffect vs Hardware Layer 仍与 HWUI promotedToLayer 行为矛盾；HardwareBitmapUploader Android 14/15+ Vulkan API 边界写错。"
+task9_reviewed_date: "2026-05-24"
+last_task9_at: "2026-05-24T11:33:19+08:00"
+task9_review_notes: "2026-05-24 Task9 复审: needs-rework。P0 1 / P1 6 / P2 3；RenderEffect 高层结论与 promotedToLayer/offscreen layer 源码链冲突；RecyclerView API、Hardware Layer 示例、RenderThread priority、Compose 1.10.6 版本边界、AGSL 示例与 Binder API 口径需回炉。"
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
 last_task6_at: "2026-05-23T08:18:48+08:00"
 task6_reviewed_date: "2026-05-23"
 last_task6_review_log: "logs/review/2026-05-23-08-review.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；补齐代码块语言，清理顺序词和非必要技术词面；Task9 RenderEffect P0 queue pending，未晋升。"
+p0: 1
+p1: 6
+p2: 3
 ---
 
 # 优化策略

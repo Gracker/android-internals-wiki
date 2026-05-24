@@ -37,11 +37,11 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task2b_state: fixed
+task2b_state: pending
 task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-06T02:28:51+08:00'
-task9_reviewed_date: '2026-05-06'
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-24T11:30:20+08:00"
+task9_reviewed_date: "2026-05-24"
 task2b_result: fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-26T13:40:00+08:00'
@@ -49,10 +49,10 @@ last_task2b_at: "2026-05-24T11:16:52+08:00"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_reviewed_date: '2026-05-06'
@@ -68,6 +68,11 @@ review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 Surfac
   API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。
   | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4
   回炉项，送 Task9 复审。'
+task9_review_notes: "2026-05-24 Task9 复审: needs-rework。P0 2 / P1 1 / P2 2；BufferQueue BUFFER_RELEASE_CHANNEL 版本写成 Android 14+，AOSP r14/r15 无该 flag；SurfaceView BLAST 边界仍残留 Android 11+ 口径，首帧版本拆分漏 Android 11。"
+last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
+p0: 2
+p1: 1
+p2: 2
 ---
 
 
