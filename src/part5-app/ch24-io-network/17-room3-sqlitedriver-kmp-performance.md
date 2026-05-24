@@ -37,9 +37,19 @@ related_chapters: ["10.7", "14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
+task9_result: pending
+task2b_state: fixed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-25"
+last_task6_review_log: "logs/review/2026-05-25-01-review.md"
+last_task6_at: "2026-05-25T01:12:00+08:00"
+task6_result: pass-light-edit
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+review_type: "task6-writing-quality-review"
 ---
 
 # 24.17 Room 3.0 与 SQLiteDriver 迁移性能边界
@@ -47,10 +57,6 @@ task9_state: pending
 Room 3.0 不是一次普通依赖升级。它把包名移到 `androidx.room3`，把后端收敛到 `SQLiteDriver`，把编译链路收敛到 KSP，并把数据库操作接口推向协程和 Kotlin Multiplatform。Android App 团队迁移时要分开评估三类成本：运行期数据库 I/O、构建期 schema / KSP 输出、以及旧 `SupportSQLite` 扩展点的替换成本。
 
 本文只处理应用侧迁移动作。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；传统 SQLite / Room 查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 工具入口详见 14.1 节。
-
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
 <!-- outline-start -->
 ## 要点
