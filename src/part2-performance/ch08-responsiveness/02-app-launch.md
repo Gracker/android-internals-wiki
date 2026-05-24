@@ -1,6 +1,6 @@
 ---
 
-status: finalized
+status: ready-for-review
 title: App 启动全流程
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
@@ -53,12 +53,12 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-05-24"
@@ -334,7 +334,7 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 |---|---|---|
 | `getStartType()` | int | 启动类型:`START_TYPE_COLD`(1)、`START_TYPE_WARM`(2)、`START_TYPE_HOT`(3) |
 | `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED`(0) / `STARTUP_STATE_ERROR`(1) / `STARTUP_STATE_FIRST_FRAME_DRAWN`(2)。没有 `NOT_STARTED` 和 `FULLY_DRAWN` 状态——“fully drawn”通过 `START_TIMESTAMP_FULLY_DRAWN` timestamp key 表达，不是 startup state |
-| `getStartupTimestamps()` | Map<Integer, Long> | 返回各阶段时间戳(monotonic nanoseconds),通过常量 key 读取(见下表) |
+| `getStartupTimestamps()` | Map<Integer, Long> | 返回各阶段时间戳(clock monotonic 纳秒), AOSP 多数字段来自 `SystemClock.uptimeNanos()`,通过常量 key 读取(见下表) |
 | `getReason()` | int | 启动原因常量（如 `START_REASON_ALARM`、`START_REASON_BOOT_COMPLETE`、`START_REASON_JOB`、`START_REASON_LAUNCHER`、`START_REASON_SERVICE`、`START_REASON_CONTENT_PROVIDER` 等） |
 
 `getStartupTimestamps()` 返回的 Map 中可用的 timestamp key:
@@ -388,7 +388,9 @@ if (history != null && !history.isEmpty()) {
 
 #### 与 Perfetto 的联动
 
-ApplicationStartInfo 的 timestamp 是 monotonic nanoseconds(`System.nanoTime()` 时基),Perfetto 的 trace 时间轴也是 monotonic clock,两者可以直接对齐。
+ApplicationStartInfo 的 timestamp 是 clock monotonic 纳秒,AOSP 内部多数字段通过 `SystemClock.uptimeNanos()` 记录（`ActivityMetricsLogger.LaunchingState.mStartUptimeNs`、`ActivityThread.handleBindApplication()` 的 `timestampApplicationOnCreateNs` 等）。Perfetto Android trace packet 默认使用 `CLOCK_BOOTTIME`，与 uptime clock 之间存在 suspend offset 差异（设备休眠期间 uptime 停止计时，boottime 继续）。直接把 `getStartupTimestamps()` 返回的原始 ns 值叠到 Perfetto UI/SQL 时间轴，在经历过 suspend 的设备上会偏移。
+
+推荐的对齐方式：优先通过 trace_processor 的 `ClockSnapshot` 做跨时钟域转换，把 ApplicationStartInfo 的 uptime ns 映射到 Perfetto 的 boottime 时间轴；或只在 ApplicationStartInfo 内部 timestamp 之间做差（同属 uptime clock domain，差值不受 suspend 影响）。
 
 推荐的分析流程:
 

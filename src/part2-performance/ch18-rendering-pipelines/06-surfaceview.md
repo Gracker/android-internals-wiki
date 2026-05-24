@@ -3,6 +3,20 @@ title: SurfaceView 直出路径
 section: '18.6'
 chapter: '18.6'
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
+last_verified: '2026-05-06'
+last_verified_against: AOSP SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
+confidence: medium
+sources:
+- type: aosp
+  path: frameworks/base/core/java/android/view/SurfaceView.java
+- type: aosp
+  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+- type: official
+  path: source.android.com/docs/core/graphics/architecture
 tags:
 - SurfaceView
 - BLAST
@@ -31,18 +45,21 @@ task9_reviewed_date: '2026-05-06'
 task2b_result: fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-26T13:40:00+08:00'
-last_task2b_at: '2026-05-07T09:42:00+08:00'
+last_task2b_at: "2026-05-24T11:16:52+08:00"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
-status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: needs-rework
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_reviewed_date: '2026-05-06'
 last_task6_at: '2026-05-06T02:06:00+08:00'
+last_task6_audit: '2026-05-24'
+last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
+last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 闭环不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
 review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST
   创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理
   L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android
@@ -371,7 +388,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 **原因**：Buffer 更新和窗口几何更新没有在同一 Transaction 中提交。
 
-**改善**：BLAST 模式（Android 11+）显著改善了这个问题。如果你在 Android 10 及以下设备上遇到此问题，延迟 Buffer 更新或减少频繁 resize 仍然是常见缓解手段。
+**改善**：BLAST 模式（Android 12+）显著改善了这个问题。如果你在 Android 11 及以下设备上遇到此问题，延迟 Buffer 更新或减少频繁 resize 仍然是常见缓解手段。
 
 ### 3. Z-Order 冲突导致 Overlay 失效
 
@@ -391,7 +408,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 **原因**（按版本拆开）：
 
 - **Android 10 及以下**：SurfaceView 的独立 Layer 注册和位置同步依赖 WMS 的 `WindowState` / `WindowSurfacePlacer` 跨进程协调。Layer 创建、BufferQueue 初始化、窗口位置同步分别由不同模块处理，容易错拍——首帧延迟主要来自这个跨进程窗口模型的协调开销
-- **Android 11+（BLAST/SurfaceControl）**：SurfaceView 通过 `updateSurface()` → `createBlastSurfaceControls()` 在 App 进程内创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。首帧延迟的构成变成：ViewRoot/window 就绪 → SurfaceControl/BLASTBufferQueue 初始化 → Transaction 提交到 SurfaceFlinger → Producer 第一帧 buffer/fence 就绪。每一步都有明确的边界，但 BLAST 模式下的同步协调比旧模型可靠得多
+- **Android 12+（BLAST/SurfaceControl）**：SurfaceView 通过 `updateSurface()` → `createBlastSurfaceControls()` 在 App 进程内创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。首帧延迟的构成变成：ViewRoot/window 就绪 → SurfaceControl/BLASTBufferQueue 初始化 → Transaction 提交到 SurfaceFlinger → Producer 第一帧 buffer/fence 就绪。每一步都有明确的边界，但 BLAST 模式下的同步协调比旧模型可靠得多
 
 **优化**：使用 `SurfaceView.getHolder().addCallback()` 监听 `surfaceCreated` 回调，在回调后才启动 Producer，避免在 Surface 就绪前就开始绘制。
 
