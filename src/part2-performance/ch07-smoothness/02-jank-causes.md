@@ -6,7 +6,7 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
-reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-24"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -36,10 +36,10 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
@@ -48,13 +48,17 @@ last_task9_at: "2026-05-24T15:37:59+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-24"
 task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。"
-last_task6_at: "2026-05-06T03:20:00+08:00"
+last_task6_at: "2026-05-24T20:14:35+08:00"
 last_task6_audit: "2026-05-24"
-task6_reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-24"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-15-audit.md"
 last_task2b_at: 2026-05-24T19:29:26+08:00
+reviewed_at: "2026-05-24T20:14:35+08:00"
+review_round: 2
+last_task6_review_log: "logs/review/2026-05-24-20-review.md"
+task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 7 处；无新增 Task6 回炉项；Task9 audit 已由 Task2B 修复，等待 Task9 复审。"
 ---
 
 # 卡顿原因体系
@@ -77,13 +81,6 @@ last_task2b_at: 2026-05-24T19:29:26+08:00
 - 🔸 多窗口/分屏场景的特殊 Jank 问题
 - 🔸 动画与手势场景的 Jank 特征
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要系统化地理解卡顿原因
@@ -112,11 +109,7 @@ VSync-app 信号到达
 在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。后面的分类按这条路径逐段展开。
 
 
-
-<!-- AIW-源码调研-2026-05-22 -->
-### HWC 合成降级导致的 Jank（补充）
-
-**来源**：DeepResearch 调研（2026-05-22）
+### HWC 合成降级导致的 Jank
 
 当 Layer 数量超出 HWC Overlay Plane 数量、或像素格式/混合模式超出 HWC 能力时，SurfaceFlinger 会将 Layer 从 DEVICE 合成回退到 CLIENT 合成（GPU 渲染）。这会导致：
 
@@ -131,7 +124,6 @@ VSync-app 信号到达
 - 对比不同 SoC 平台在相同场景下的合成降级频率
 - 高端 SoC（骁龙 8 Gen3）通常 4-6 个 Overlay Plane，中端（骁龙 6/7 Gen）通常 4 个
 
-> 来源：DeepResearch 调研（2026-05-22）— `2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md`
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
@@ -288,9 +280,7 @@ SurfaceFlinger 瓶颈导致的卡顿有一个特点：App 侧的 Trace 看起来
 **在 Perfetto 中的表现：** 先看 SurfaceFlinger 的 `doComposition`、`composeSurfaces` 或 RenderEngine 相关 slice 是否拉长，再用 `adb shell dumpsys SurfaceFlinger` 做快照，检查对应 layer 是否出现 `DEVICE` / `CLIENT` 一类的 composition type 分配结果。厂商输出格式差异很大，这一步适合做复核，不要只凭一条未验证的 SQL 下结论。
 
 
-
-<!-- AIW-源码调研-2026-04-26: HWC厂商差异深度分析 -->
-#### HWC 厂商差异：Qualcomm vs MediaTek 源码级分析
+#### HWC 厂商差异：Qualcomm vs MediaTek
 
 > 以下内容基于 AOSP 源码和公开技术文档的一手研究。高通/联发科的 HWC 私有实现代码不在 AOSP 主线中，以下分析基于 AOSP HAL 接口定义和公开技术博客。
 
