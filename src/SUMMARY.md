@@ -408,6 +408,7 @@ tags:
   - [24.13 Photo Picker、媒体转码与缓存治理](part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md)
   - [24.14 网络请求分段优化与弱网治理](part5-app/ch24-io-network/14-network-request-performance-playbook.md)
   - [24.15 移动网络性能优化实战：DNS、连接、传输与容灾](part5-app/ch24-io-network/15-network-performance-baseline.md)
+  - [24.16 Android 17 流媒体网络预算与本地网络权限适配](part5-app/ch24-io-network/16-android17-streaming-local-network.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
