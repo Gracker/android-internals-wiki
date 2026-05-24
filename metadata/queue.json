@@ -19505,6 +19505,34 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-24T19:30:00+08:00",
       "review_log": "logs/deep-review/2026-05-24-19-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260524-2004-1.22-art-verifier-quickening-dexopt-filters",
+      "section": "1.22",
+      "section_title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
+      "priority": 80,
+      "title": "ART Verifier / quickening / dexopt filter 性能边界新章节加工",
+      "description": "从 2026-05-24 每日源码调研发现 ART Verifier Quickening 与 dex2oat 过滤器体系缺少独立章节；官方 ART 配置和 ART Service 文档可支撑版本边界与排障流程。",
+      "reason": "现有 1.7 讲 ART 编译管线总览，16.6/21.11 讲云端 Profile 与 DM 文件，但缺少 verifier、VDEX quickening 信息、compiler filter、ART Service dexopt 场景之间的执行成本与排障入口。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+      ],
+      "material_paths": [
+        "intake/daily-info/2026-05-24.md",
+        "https://source.android.com/docs/core/runtime/configure",
+        "https://source.android.com/docs/core/runtime/configure/art-service",
+        "https://developer.android.com/guide/practices/verifying-apps-art",
+        "https://android.googlesource.com/platform/art/+/main/dex2oat/"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T20:04:00+08:00"
     }
   ],
   "metadata": {
@@ -19523,11 +19551,19 @@
     "last_task2a_completed": "24.16",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T19:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 172,
+  "last_updated": "2026-05-24T20:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 173,
   "last_task2a_completed": "24.16",
   "last_task2a_completed_at": "2026-05-24T19:04:00+08:00",
-  "last_task2a_gap_mining": "24.16",
-  "last_task2a_gap_mining_at": "2026-05-24T18:04:00+08:00"
+  "last_task2a_gap_mining": {
+    "created": 1,
+    "sections": [
+      "1.22"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+    ]
+  },
+  "last_task2a_gap_mining_at": "2026-05-24T20:04:00+08:00"
 }

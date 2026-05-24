@@ -1,6 +1,6 @@
 {
-  "total": 381,
-  "draft": 21,
+  "total": 382,
+  "draft": 22,
   "ready-for-review": 169,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -1891,7 +1891,7 @@
   "total_review_sections": 211,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-24T19:04:00+08:00",
+  "last_updated": "2026-05-24T20:04:00+08:00",
   "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
@@ -5088,6 +5088,14 @@
       "confidence": "medium",
       "task2a_state": "processed",
       "task6_state": "pending"
+    },
+    "1.22": {
+      "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
+      "file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
+      "status": "draft",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-24",
+      "pipeline_stage": "task2a_gap_mining"
     }
   },
   "task2b_rounds": [
@@ -5187,7 +5195,7 @@
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
   "last_task9_at": "2026-05-24T17:31:10+08:00",
-  "last_task2a_result": "processed-draft",
+  "last_task2a_result": "gap-mining",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "25.17",
   "task6_last_review_at": "2026-05-24T13:10:00+08:00",
@@ -6355,7 +6363,8 @@
       "confidence": "medium",
       "task2a_state": "processed",
       "task6_state": "pending"
-    }
+    },
+    "1.22": "draft"
   },
   "task2a_last_processed": {
     "section": "22.16",
@@ -6611,16 +6620,19 @@
   "last_task9_review_summary": "Task9 闲时抽检：3.7 needs-rework；P0 0 / P1 1 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-24",
-    "time": "18:04",
-    "section": "24.16",
-    "file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
-    "title": "Android 17 流媒体网络预算与本地网络权限适配",
-    "result": "gap-created",
-    "gap_score": 16,
-    "candidate_count": 5,
-    "qualified_count": 1
+    "time": "20:04",
+    "created": 1,
+    "sections": [
+      "1.22"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+    ],
+    "candidates_total": 4,
+    "qualified": 1,
+    "source": "研究素材/官方文档/AOSP结构"
   },
-  "last_task2a_gap_mining_at": "2026-05-24T18:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-24T20:04:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -6631,18 +6643,17 @@
   "last_task6_audit_log": "logs/review/2026-05-24-07-audit.md",
   "task2a_gap_mining": {
     "date": "2026-05-24",
-    "time": "16:18",
-    "mode": "gap-mining",
-    "empty_draft_count": 0,
-    "candidate_count": 6,
-    "qualified_count": 1,
-    "created_sections": [
-      "22.16"
+    "time": "20:04",
+    "created": 1,
+    "sections": [
+      "1.22"
     ],
-    "created_files": [
-      "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
     ],
-    "top_candidate": "Android 17 DeliQueue 与 RecyclerView 预取时序优化"
+    "candidates_total": 4,
+    "qualified": 1,
+    "source": "研究素材/官方文档/AOSP结构"
   },
   "section_5_15": {
     "section": "5.15",
@@ -6762,26 +6773,14 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "date": "2026-05-24",
-    "time": "18:04",
+    "last_run": "2026-05-24T20:04:00+08:00",
+    "mode": "create-new-section",
     "created_sections": [
-      "24.16"
+      "1.22"
     ],
     "created_files": [
-      "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
-    ],
-    "gap_scores": {
-      "24.16": {
-        "素材丰富度": 3,
-        "与全书目标相关性": 4,
-        "读者需求度": 4,
-        "时效性": 5,
-        "total": 16
-      }
-    },
-    "candidate_count": 5,
-    "qualified_count": 1,
-    "source": "research-feeds/daily-info/official-docs/clippings-structure"
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+    ]
   },
   "last_task2a_processed_status": "ready-for-review",
   "section_21_11": {
@@ -7308,5 +7307,15 @@
     "task9_result": "pending"
   },
   "last_task6_review_at": "2026-05-24T19:14:00+08:00",
-  "last_task6_review_section": "24.16"
+  "last_task6_review_section": "24.16",
+  "section_1_22": {
+    "section": "1.22",
+    "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
+    "file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_gap_mining",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-24",
+    "gap_source": "研究素材/官方文档/AOSP结构"
+  }
 }
