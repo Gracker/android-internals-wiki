@@ -19707,6 +19707,64 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T00:20:00+08:00",
       "review_log": "logs/deep-review/2026-05-25-00-deep-review.md"
+    },
+    {
+      "id": "task9-deep-20260525-0128-24.17-room3-alpha05-driver-querycallback",
+      "section": "24.17",
+      "section_title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "priority": 95,
+      "title": "Room 3.0 版本/API 锚点与性能验证入口需按 alpha05 和 room3 API 修正",
+      "description": "Task9 深度技术 Review 发现 §24.17 把 3.0.0-alpha04 写成 2026-05-25 最新版本，漏掉 alpha05；迁移示例缺 SQLiteDriver/setDriver；性能验证表误用 Room QueryCallback；并遗漏 alpha04 connection pool 性能边界。",
+      "reason": "[Deep Tech Review] §24.17 Room 3.0 版本/API 锚点需回炉：最新版本已到 3.0.0-alpha05，初始化缺少 SQLiteDriver/setDriver，性能验证表误用 Room QueryCallback，且遗漏 alpha04 connection pool 边界。",
+      "issue_type": "source-accuracy-version-difference-room3-api",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-01-deep-review.md",
+        "https://developer.android.com/jetpack/androidx/releases/room3?hl=en",
+        "https://developer.android.com/reference/androidx/room3/RoomDatabase.Builder",
+        "https://developer.android.com/reference/androidx/sqlite/SQLiteDriver"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本事实错误/源码锚点过期",
+          "location": "L8-L10 frontmatter；L100 Room 3.0 最新公开版本判断",
+          "detail": "章节写“截至 2026-05-25，Room 3.0 最新公开版本是 3.0.0-alpha04，发布日期为 2026-05-06”。复核官方 Room 3 release notes：3.0.0-alpha05 已在 2026-05-19 发布，且包含 @Relation/@Junction 的 parentColumns/entityColumns 数组化以支持 composite relationship keys。当前 frontmatter 的 applicable_versions、last_verified_against 和正文版本判断已经过期。",
+          "suggestion": "把版本锚点更新到 3.0.0-alpha05；正文补 alpha05 的 @Relation/@Junction 复合关系键变化。若文章刻意只审 alpha04，应删除“最新公开版本”口径，改成“本文按 alpha04 固定验证”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/构建配置缺失",
+          "location": "L148-L169 Gradle 最小迁移配置；L268-L278 迁移 checklist",
+          "detail": "章节说明 Room 3.0 后端迁到 SQLiteDriver，但 Gradle 示例和 checklist 只列 room3-runtime、room3-compiler、KSP、Room Gradle Plugin 与 schemaDirectory，没有列出 SQLiteDriver 实现依赖，也没有展示 RoomDatabase.Builder.setDriver(...)。官方 release notes 明确 RoomDatabase 构建现在需要 SQLiteDriver；API reference 也公开 setDriver(SQLiteDriver)。读者照当前最小配置迁移会漏掉数据库打开路径的关键配置。",
+          "suggestion": "在依赖和初始化示例中补 driver 选择：Android 端说明 AndroidSQLiteDriver 与 BundledSQLiteDriver 的取舍，KMP commonMain 可用 BundledSQLiteDriver；builder 示例补 .setDriver(...) 和 setQueryCoroutineContext/dispatcher 的位置。"
+        },
+        {
+          "severity": "P0",
+          "type": "API 引用错误/监控入口不存在",
+          "location": "L205-L210 性能验证表：工具列的 “Room QueryCallback”",
+          "detail": "Room 3.0 的 androidx.room3 API surface 未暴露 RoomDatabase.QueryCallback / setQueryCallback；官方迁移说明还指出 Room 3.0 不能再用 Executor 配置 RoomDatabase，而 QueryCallback 是 Room 2.x 时代依赖 Executor 的调试入口。把它写成 Room 3.0 验证工具会误导读者接入不存在的 API。",
+          "suggestion": "将 “Room QueryCallback” 改为 DAO/Repository 包装层采样、SQLiteDriver/SQLiteStatement 包装埋点、app 自定义 trace section 或 Perfetto 事件；如需保留 QueryCallback，明确标注为 Room 2.x/兼容层迁移期专用，不能作为 room3 主路径。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/性能边界缺失",
+          "location": "L123-L145 SQLiteDriver I/O 路径；L199-L210 迁移性能验证",
+          "detail": "章节按 alpha04 审计却没有覆盖 alpha04 新增的 connection pool 控制 API。官方 release notes 说明 setSingleConnectionPool()/setMultipleConnectionPool() 可控制 Room 打开的连接数；Builder API 还说明默认会按 JournalMode 选择连接池，WAL 下默认 4 reader + 1 writer，多个 writer 可能触发 SQLITE_BUSY。当前只写“单写者模型不会变成并行写”，缺少读连接/写连接池、hasConnectionPool 与 busy_timeout 的性能验证边界。",
+          "suggestion": "补一小节“连接池不是并行写保证”：说明默认连接池策略、setSingleConnectionPool/setMultipleConnectionPool 生效条件、SQLiteDriver.hasConnectionPool、WAL/多 writer 的 SQLITE_BUSY 风险，并把连接等待、SQLITE_BUSY、读写连接占用时间加入验收指标。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T01:34:17+08:00",
+      "review_log": "logs/deep-review/2026-05-25-01-deep-review.md"
     }
   ],
   "metadata": {
