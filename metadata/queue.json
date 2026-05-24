@@ -18888,26 +18888,186 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-24T11:04:00+08:00"
+    },
+    {
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "dependencies": [],
+      "status": "pending",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T11:30:20+08:00",
+      "material_paths": [
+        "logs/deep-review/2026-05-24-11-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "id": "task9-20260524-8.2-app-window-blast-surface-path",
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 85,
+      "severity": "P1",
+      "title": "首帧 Surface 创建路径仍按旧 BufferQueue 模型描述",
+      "description": "§8.2 首帧绘制段把 relayoutWindow 后的 Surface 创建描述为 SurfaceFlinger 创建 BufferQueueLayer 并返回 IGraphicBufferProducer，未覆盖 Android 11+ App Window 的 ViewRootImpl BLASTBufferQueue 路径。",
+      "reason": "[Deep Tech Review] §8.2 L241-L245 仍按旧 BufferQueueLayer/IGBP 模型描述首帧 Surface 创建；AOSP android-11+ ViewRootImpl 已引入 BLASTBufferQueue，android-15/16 由 updateBlastSurfaceIfNeeded() 创建/更新 BLAST surface 后交给 ThreadedRenderer。",
+      "issue_type": "version-difference/source-accuracy",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/02-app-launch.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/源码准确性",
+          "location": "L241-L245：首帧绘制 relayoutWindow / Surface 创建描述",
+          "detail": "章节把第一次 relayout 描述成向 SurfaceFlinger 申请创建 Surface、SF 创建 BufferQueueLayer 并返回 IGraphicBufferProducer。这只接近旧模型；Android 11+ App Window 已在 ViewRootImpl 中使用 BLASTBufferQueue，Android 15/16 的 updateBlastSurfaceIfNeeded() 会围绕 SurfaceControl 创建/更新 BLAST surface。",
+          "suggestion": "按版本拆成 Android 10- 旧 Surface/BufferQueue 路径与 Android 11+ ViewRootImpl BLASTBufferQueue 路径；首帧 TTID 仍可保留 windows drawn 口径，但 Surface 创建链路不要写成单一路径。"
+        }
+      ]
+    },
+    {
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "dependencies": [],
+      "status": "pending",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T11:30:20+08:00",
+      "material_paths": [
+        "logs/deep-review/2026-05-24-11-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "id": "task9-20260524-7.5-rendereffect-layer-model-contradiction",
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 95,
+      "severity": "P0",
+      "title": "优化策略中 RenderEffect 与多处 API/版本口径需回炉",
+      "description": "§7.5 存在 RenderEffect/HWUI P0 事实冲突，并有 RecyclerView 预取 API、Hardware Layer 示例、RenderThread priority、Compose pausable composition、AGSL Java 示例、Binder API 口径等 P1 问题。",
+      "reason": "[Deep Tech Review] §7.5 L257-L262 与 L655-L670 的 RenderEffect 机制自相矛盾；另 L182/L451 RecyclerView API 名错误，L216-L221 动画示例立即关闭硬件层，L298-L300 PRIORITY_DISPLAY 数值错误，L453/L484 Compose 1.10.6 默认关闭 pausable prefetch，L268-L282 Java 示例不可编译，L336-L340 Binder API 口径不准。",
+      "issue_type": "source-accuracy/version-boundary/api-error",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/05-optimization.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/原理矛盾",
+          "location": "L257-L262 vs L655-L670：RenderEffect vs Hardware Layer",
+          "detail": "前文称 RenderEffect 是 Shader 级集成、动态内容内存通常低于 Hardware Layer；后文又写 RenderEffect 因 mImageFilter 触发 promotedToLayer/offscreen RenderLayer。AOSP android-16 RenderProperties::promotedToLayer() 在 mImageFilter != nullptr 时返回 RenderLayer，View.setRenderEffect 文档也说明内容会先绘制到 separate layer 再执行 effect。",
+          "suggestion": "删除“Shader 级 vs Buffer 级”二分法，统一为 RenderEffect 是 RenderNode imageFilter 属性，但 HWUI 会为其提升/更新 RenderLayer；性能取决于 layer 尺寸、snapshot cache、invalidate 频率和 filter 链。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 错误",
+          "location": "L182、L451：RecyclerView 预取",
+          "detail": "章节写 setInitialPrefetchCount(3)，实际 AndroidX API 是 LinearLayoutManager#setInitialPrefetchItemCount(int)，默认值为 2。",
+          "suggestion": "改为 setInitialPrefetchItemCount(visibleItemCount)，按首屏可见 item 数和 item 复杂度调参，不要硬编码 3。"
+        },
+        {
+          "severity": "P1",
+          "type": "示例代码错误",
+          "location": "L216-L221：Hardware Layer 动画示例",
+          "detail": "ObjectAnimator.start() 后立即 setLayerType(NONE)，并不是动画结束后关闭；复制后硬件层会立刻关闭。",
+          "suggestion": "使用 ViewPropertyAnimator.withLayer()，或给 ObjectAnimator 添加 AnimatorListenerAdapter#onAnimationEnd 后再关闭。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性",
+          "location": "L298-L300：RenderThread priority",
+          "detail": "AOSP RenderThread 使用 setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)，但 ANDROID_PRIORITY_DISPLAY = -4，不是“约 -8 到 -10”。",
+          "suggestion": "改为 PRIORITY_DISPLAY = -4；如讨论 urgent display，单独说明该值不是 RenderThread 此处使用。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L453、L484：Compose pausable composition",
+          "detail": "2025.12.00/Compose 1.10.0 曾默认开启 lazy prefetch pausable composition；Compose Foundation 1.10.6（2026-03-25）已因稳定性问题默认关闭 ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled。",
+          "suggestion": "加版本限定：1.10.0 默认开启，1.10.6 默认关闭；要求按实际 BOM/Foundation patch 验证。"
+        },
+        {
+          "severity": "P1",
+          "type": "示例代码错误",
+          "location": "L268-L282：AGSL RuntimeShader Java 示例",
+          "detail": "Java 字符串不能像 C/Kotlin 那样相邻拼接，当前示例缺少 +，不可编译。",
+          "suggestion": "每行字符串后加 +，或改成 Kotlin 示例。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性/API 口径",
+          "location": "L336-L340：ActivityManager.getMyMemoryState / getProcessMemoryInfo",
+          "detail": "getMyMemoryState 仍会通过 getService().getMyMemoryState() 走 Binder（Android 16 还加 rate limit/cache），不能写成只读取当前进程字段；耗时数值缺可复核来源。",
+          "suggestion": "改为二者都是系统服务 API；getMyMemoryState 返回字段少且可能被缓存/限频，getProcessMemoryInfo Android Q 后受权限与采样限制；耗时以目标设备 trace 为准。"
+        }
+      ],
+      "updated_at": "2026-05-24T11:33:19+08:00",
+      "updated_by": "task9-deep-tech-review"
+    },
+    {
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "dependencies": [],
+      "status": "pending",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T11:30:20+08:00",
+      "material_paths": [
+        "logs/deep-review/2026-05-24-11-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "id": "task9-20260524-18.6-surfaceview-version-boundary-regression",
+      "section": "18.6",
+      "section_title": "SurfaceView 直出路径",
+      "priority": 95,
+      "severity": "P0",
+      "title": "SurfaceView / BufferQueue 版本边界复修后仍有错误",
+      "description": "§18.6 仍残留 BufferQueue BUFFER_RELEASE_CHANNEL Android 14+、SurfaceView Android 11+ BLAST 等错误版本口径，并在首帧延迟拆分中漏掉 Android 11。",
+      "reason": "[Deep Tech Review] §18.6 L176 将 BUFFER_RELEASE_CHANNEL 写成 Android 14+，但 AOSP android-14/15 BufferQueueProducer.cpp 无该 flag，android-16.0.0_r1 才出现；L299 仍写 Android 11+ BLAST 同步机制成熟，和 L109/L162-L163 的 Android 12+ SurfaceView BLAST 边界矛盾；L410-L411 首帧版本拆分漏 Android 11。",
+      "issue_type": "version-boundary/source-accuracy",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/源码错误",
+          "location": "L176：BufferQueue BUFFER_RELEASE_CHANNEL flag",
+          "detail": "章节称 Android 14+ 引入 BUFFER_RELEASE_CHANNEL / notifyBufferReleased 精确唤醒；AOSP android-14.0.0_r1 与 android-15.0.0_r1 的 BufferQueueProducer.cpp 仍使用 mDequeueCondition.notify_all()，未出现该 flag；android-16.0.0_r1 才有 COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(BUFFER_RELEASE_CHANNEL) 分支。",
+          "suggestion": "把版本边界改为 Android 16/mainline flag-gated 行为；Android 14/15 保持 notify_all 口径，避免把优化前移到 r14/r15。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/原理矛盾",
+          "location": "L299：Android 11+ BLAST 同步机制成熟",
+          "detail": "同章 L109/L162-L163 已写明 SurfaceView createBlastSurfaceControls() 从 Android 12 起；AOSP android-11.0.0_r1 SurfaceView.java 不含 createBlastSurfaceControls/BLASTBufferQueue。L299 仍写 Android 11+，会把 Android 11 SurfaceView 误判为 BLAST 路径。",
+          "suggestion": "将 L299 改为 Android 12+ SurfaceView BLAST 路径；如果讨论 ViewRootImpl 的 Android 11 BLAST，要单独说明“App 主窗口 BLAST，不等于 SurfaceView BLAST”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/知识盲区",
+          "location": "L410-L411：首帧延迟按版本拆分",
+          "detail": "首帧延迟只列 Android 10 及以下与 Android 12+，漏掉 Android 11。Android 11 的 ViewRootImpl 有 BLASTBufferQueue，但 SurfaceView 本身仍走旧窗口模型，是前后版本边界最容易误判的一档。",
+          "suggestion": "按 Android 10- / Android 11 / Android 12+ 三段描述，或将第一段改为 Android 11 及以下并补一句 Android 11 的特殊性。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 506,
+    "total_entries": 514,
     "p0_count": 217,
-    "last_updated": "2026-05-24T07:07:00+08:00",
+    "last_updated": "2026-05-24T11:33:19+08:00",
     "updated_by": "task6-review",
-    "pending_entries": 170,
+    "pending_entries": 171,
     "updated_date": "2026-05-24",
-    "last_updated_by": "task6-review",
-    "pending": 170,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 171,
     "completed_entries": 333,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-23T13:04:00+08:00",
     "last_task2a_completed": "14.20"
   },
-  "last_updated": "2026-05-24T07:07:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 170,
+  "last_updated": "2026-05-24T11:33:19+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 171,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
   "last_task2a_gap_mining": "25.16",

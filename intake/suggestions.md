@@ -3312,3 +3312,47 @@
 - **位置**：典型模式对比表「TextureView」
 - **问题**：表格把 TextureView 核心特点写成「灵活但多一次拷贝」。TextureView 的常见额外成本更准确地说是 App 侧对 `SurfaceTexture` 内容进行纹理采样/二次合成，不能一概等同于 CPU 内存拷贝。
 - **建议**：改成「灵活但多一次纹理采样/App 侧合成成本」，必要时在 18.7 中再区分 GPU 采样、合成与真实 buffer copy。
+
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-24
+- **类型**：版本差异 / 源码锚点
+- **位置**：L340-L350 ApplicationStartInfo timestamp key 表
+- **问题**：AOSP API 35 `ApplicationStartInfo` 还包含 `START_TIMESTAMP_INITIAL_RENDERTHREAD_FRAME`，章节当前只列到 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE`，会漏掉 RenderThread 首帧起点这个可用于拆分主线程记录与 RenderThread 执行的锚点。
+- **建议**：在 timestamp key 表中补 `START_TIMESTAMP_INITIAL_RENDERTHREAD_FRAME`，并在“与 Perfetto 联动”中说明它可与 `FIRST_FRAME` / `SURFACEFLINGER_COMPOSITION_COMPLETE` 一起拆首帧渲染和合成阶段。
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-24
+- **类型**：数据缺失
+- **位置**：L196-L200 16KB Page Size 对启动 I/O 的削峰作用
+- **问题**：“TLB 命中率提升约 4 倍”“冷启动平均提速 3.16%”缺少测试条件和出处；16KB page 更准确的表述是 TLB reach / 页表项覆盖范围提升，命中率与 workload、设备和内存访问模式相关。
+- **建议**：补 Google 16KB page size 官方 benchmark 链接、设备/样本条件；将“命中率提升 4 倍”改成“TLB 覆盖范围提升 4 倍，上限收益取决于访问模式”。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出路径 — 2026-05-24
+- **类型**：版本差异 / 数据支撑
+- **位置**：L103 Android 15 圆角同步机制
+- **问题**：`SurfaceView#setCornerRadius()` 与 `Transaction#setCornerRadius()` 在 Android 11/12 已存在；“Android 15 进一步改善圆角同步机制”需要具体 commit、API 或源码差异支撑，否则容易被理解成 Android 15 才具备圆角同步能力。
+- **建议**：若指 Android 15 某个源码改动，请补 commit / 方法名 / 行为差异；否则删除“Android 15 进一步”或改成按 Android 11+/12+ 已存在能力描述。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出路径 — 2026-05-24
+- **类型**：源码准确性
+- **位置**：L160 挖洞实现
+- **问题**：章节写“用 CLEAR 模式把对应矩形区域清成透明”，但 Android 14+ `SurfaceView.draw()` / `clearSurfaceViewPort()` 使用的是 `Canvas.punchHole(...)`，不是直接的 PorterDuff CLEAR 调用。
+- **建议**：按版本补充：旧资料可用 CLEAR/transparent region 理解，Android 14+ 源码锚点应写 `Canvas.punchHole()`，并说明它负责对宿主 window 视口打洞。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-05-24
+- **类型**：源码准确性 / 版本边界
+- **位置**：L610 HardwareBitmapUploader 版本边界
+- **问题**：Android 12 已有 `VkUploader + SkImage::MakeFromAHardwareBufferWithData`，不只是 Android 13-14；Android 15+ 切到 `SkImages::TextureFromAHardwareBufferWithData + GrSyncCpu::kYes` 的方向正确。
+- **建议**：改为 Android 12-14 使用旧 Vulkan API，Android 15+ 使用新入口。
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-05-24
+- **类型**：数据/机制补充
+- **位置**：L182、L451 RecyclerView GapWorker 预取机制
+- **问题**：GapWorker 按 deadline 执行预取，`tryGetViewHolderForPositionByDeadline` 可能因时间不足放弃 create/bind；章节“提前创建并缓存”容易被理解为一定完成。
+- **建议**：补充 deadline/可能 abort 语义，把预取描述为“利用帧间预算尝试提前 create/bind”。
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-05-24
+- **类型**：交叉引用 / 结构一致性
+- **位置**：L490 后参考资料后又追加 RenderEffect 正文段
+- **问题**：“参考资料”后仍接正文级 RenderEffect 章节，和前文 RenderEffect 小节重复并产生结论冲突。
+- **建议**：将 L512-L688 合并回 RenderEffect 小节，参考资料保持在文件末尾；合并时以已验证源码链为准。
