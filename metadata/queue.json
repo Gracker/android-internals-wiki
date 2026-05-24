@@ -19251,6 +19251,36 @@
       ],
       "source": "task2a-knowledge-gap",
       "next_action": "draft-section-content"
+    },
+    {
+      "id": "task2a-gap-20260524-2416-android17-streaming-local-network",
+      "section": "24.16",
+      "section_title": "Android 17 流媒体网络预算与本地网络权限适配",
+      "priority": 80,
+      "title": "Android 17 流媒体网络预算与本地网络权限适配待加工",
+      "description": "基于 Android 17 Data Plan Streaming API、ACCESS_LOCAL_NETWORK 强制执行、本地网络权限迁移和流媒体码率预算，新增 ch24 网络优化实战小节。",
+      "reason": "research-feeds 中 Android 17 网络性能相关 API 变更评分 16/20；官方文档已提供 SubscriptionInfo streaming bitrate API 与 Local Network Permission 行为边界；现有 12.2/12.4/24.11/24.14 分散覆盖网络请求、TLS、卫星网络和弱网治理，但缺少面向 Android 17 targetSdk 37 的流媒体预算与局域网权限实践章节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md"
+      ],
+      "material_paths": [
+        "intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md",
+        "intake/daily-info/2026-05-24.md",
+        "https://developer.android.com/reference/android/telephony/SubscriptionInfo#getStreamingAppMaxDownlinkKbps()",
+        "https://developer.android.com/privacy-and-security/local-network-permission",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]",
+        "[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-24T18:04:00+08:00"
     }
   ],
   "metadata": {
@@ -19269,11 +19299,11 @@
     "last_task2a_completed": "14.20",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T17:31:10+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 171,
+  "last_updated": "2026-05-24T18:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 172,
   "last_task2a_completed": "25.17",
   "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
-  "last_task2a_gap_mining": "25.18",
-  "last_task2a_gap_mining_at": "2026-05-24T13:04:00+08:00"
+  "last_task2a_gap_mining": "24.16",
+  "last_task2a_gap_mining_at": "2026-05-24T18:04:00+08:00"
 }
