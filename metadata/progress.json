@@ -1,7 +1,7 @@
 {
   "total": 381,
-  "draft": 22,
-  "ready-for-review": 168,
+  "draft": 21,
+  "ready-for-review": 169,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-24",
@@ -1888,9 +1888,9 @@
   },
   "total_review_sections": 211,
   "next_review_candidates": [],
-  "ready_for_review": 158,
-  "last_updated": "2026-05-24T18:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
+  "ready_for_review": 159,
+  "last_updated": "2026-05-24T19:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -5063,8 +5063,8 @@
     "24.16": {
       "title": "Android 17 流媒体网络预算与本地网络权限适配",
       "file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "queue_priority": 80,
@@ -5077,8 +5077,15 @@
         "total": 16
       },
       "material_count": 5,
-      "last_task2a_at": "2026-05-24T18:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-24T19:04:00+08:00",
+      "task2a_result": "processed-draft",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-24",
+      "last_verified": "2026-05-24",
+      "last_verified_against": "Android Developers API reference / Android 17 behavior changes / Local Network Permission docs 2026-05；AOSP android-17 tag 待复核",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task6_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -5096,8 +5103,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.18",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
+  "last_task2a_processed": "24.16",
+  "last_task2a_processed_file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
   "last_task2a_processed_date": "2026-05-24",
   "task9_last_review_detail": {
     "date": "2026-05-24",
@@ -6323,8 +6330,8 @@
     "24.16": {
       "title": "Android 17 流媒体网络预算与本地网络权限适配",
       "file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "queue_priority": 80,
@@ -6337,8 +6344,15 @@
         "total": 16
       },
       "material_count": 5,
-      "last_task2a_at": "2026-05-24T18:04:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-24T19:04:00+08:00",
+      "task2a_result": "processed-draft",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-24",
+      "last_verified": "2026-05-24",
+      "last_verified_against": "Android Developers API reference / Android 17 behavior changes / Local Network Permission docs 2026-05；AOSP android-17 tag 待复核",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task6_state": "pending"
     }
   },
   "task2a_last_processed": {
