@@ -1,6 +1,49 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-0520-13.1-perfetto-lmk-config-boundary",
+      "section": "13.1",
+      "section_title": "Perfetto 简介与演进",
+      "priority": 95,
+      "title": "Perfetto LMKD 事件名与 Android 10/11 配置读取边界需修正",
+      "description": "Task9 闲时抽检发现 §13.1 的 LMKD Perfetto 事件/data source 名称不可核，且 normal mode 示例命令直接使用 /data/misc/perfetto-configs，缺少 Android 10/11 非 root 设备必须 stdin 传配置的版本边界。",
+      "reason": "[Deep Tech Review Audit] §13.1 L317-L323 使用 `android_lmk_proc_state` / `linux.lowmemorykiller` 作为 LMKD Perfetto 事件名，未能在 Perfetto 官方文档或当前源索引中核到；L275-L283 的 config 文件命令缺 Android 12 以前 SELinux 限制，Android 10/11 user build 需通过 stdin 传配置。",
+      "issue_type": "source-accuracy-version-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-05-audit.md",
+        "https://perfetto.dev/docs/concepts/config",
+        "https://perfetto.dev/docs/data-sources/memory-counters",
+        "https://perfetto.dev/docs/analysis/stdlib-docs"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/Trace 事件名",
+          "location": "L317-L323 LMKD 行为追踪",
+          "detail": "正文写 Perfetto 追踪 lmkd 对应 `android_lmk_proc_state` 和 `linux.lowmemorykiller`。复核 Perfetto 官方 memory counters 文档和当前文档索引，未核到这两个 data source / event / SQL 表名；官方给出的 LMK 取证口径是 legacy ftrace event `lowmemorykiller/lowmemory_kill`，Trace Processor 规范化后可在 `instant` 表看到 `mem.lmk`，并且 Android 9+ lmkd 路径应优先结合 lmkd atrace/logcat/statsd/ProcessKilled 证据。按当前名称指导读者配置或查询会直接失效。",
+          "suggestion": "删除 `android_lmk_proc_state` / `linux.lowmemorykiller` 口径，改为“legacy kernel LMK 可查 `lowmemorykiller/lowmemory_kill`；Perfetto 导入后看 `instant.name = 'mem.lmk'`；现代 lmkd 需结合 lmkd atrace/logcat/statsd/ProcessKilled 与 PSI 证据，并在设备上先验证 `/sys/kernel/tracing/events/lowmemorykiller` 是否存在”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/命令可执行性",
+          "location": "L275-L283 TraceConfig 抓取命令；L417-L419 Android 9-11 配置输入表",
+          "detail": "正文直接展示 `adb push config.pbtx /data/misc/perfetto-configs/` 后再用 `adb shell perfetto --txt -c /data/misc/perfetto-configs/config.pbtx`，只补了 Android 9 不支持 `--txt`。Perfetto 官方 Android 指南说明 Android 12 之前，非 root 设备受 SELinux 限制，config 文件不能从任意路径直接读取，应通过 stdin 传入 `cat config.pbtx | adb shell perfetto -c - --txt ...`；Android 12+ 才推荐 `/data/misc/perfetto-configs/`。章节适用 Android 9-17，当前命令会误导 Android 10/11 user build 读者。",
+          "suggestion": "把 normal mode 命令拆成 Android 10/11 非 root 用 stdin、Android 12+ 用 `/data/misc/perfetto-configs/` 两套；Android 9 另列 binary protobuf + stdin/可读路径边界。版本表中补“配置格式”和“配置文件读取路径/SELinux”两列。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T05:20:00+08:00"
+    },
+    {
       "id": "task9-audit-20260524-3.7-inputdispatcher-version-boundary",
       "section": "3.7",
       "section_title": "InputDispatcher 反压与无响应窗口降级",
