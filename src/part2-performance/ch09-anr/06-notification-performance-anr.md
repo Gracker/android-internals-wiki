@@ -48,6 +48,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T19:57:05+08:00"
 last_task2b_at: "2026-05-06T19:28:51+08:00"
 last_task6_at: "2026-05-06T17:26:00+08:00"
+last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-06-17-review.md"
 task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-19-deep-review.md"
@@ -67,11 +68,6 @@ review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。
 ### 🔹 锚点 5:通知与 ANR 的典型模式
 ### 🔹 锚点 6:Android 17 通知性能变更
 ### 🔹 锚点 7:在 Perfetto 中诊断通知 ANR
-
-## 扩展
-
-### 🔸 扩展点 1:通知批量操作优化
-### 🔸 扩展点 2:推送服务(FCM/厂商推送)与通知性能
 
 <!-- outline-end -->
 
@@ -327,7 +323,7 @@ public class MyNotificationListener extends NotificationListenerService {
 
 ### 模式五:SystemUI 过载让"通知显示"变慢
 
-SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感觉通知晚到、下拉卡顿,甚至误以为发布方 `notify()` 被系统拖住。这个结论不能靠现象推断,必须回到 Perfetto:如果调用线程很快离开 Binder wait,问题更接近 SystemUI 显示时延;如果调用线程长时间睡在 Binder 边界,再看 system_server 的入口和队列。
+SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感觉通知晚到、下拉卡顿,甚至把问题归因到发布方 `notify()` 被系统拖住。这个结论不能靠现象推断,必须回到 Perfetto:如果调用线程很快离开 Binder wait,问题更接近 SystemUI 显示时延;如果调用线程长时间睡在 Binder 边界,再看 system_server 的入口和队列。
 
 ## Android 17 通知性能变更
 
