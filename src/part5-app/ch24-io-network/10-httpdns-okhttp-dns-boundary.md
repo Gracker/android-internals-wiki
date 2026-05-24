@@ -433,6 +433,76 @@ fun interface Dns {
 - 是否通过 EventListener 同时采集 DNS、connect、TLS、TTFB、失败类型。
 - 弱网演练是否覆盖 HTTPDNS 服务不可达、返回空、多 IP 失败、网络切换和 Dispatcher 挤占。
 
+
+
+<!-- AIW-源码调研-2026-05-25 -->
+## 源码补充：ExchangeFinder.findConnection() 与 RealRoutePlanner 同步调用链（2026-05-25 验证）
+
+> 以下补充于 2026-05-25 每日源码调研，基于 square/okhttp commit 19cb19ab4ac31aa789bc94759d13898f64f93ce3 源码验证。
+
+### RealRoutePlanner.planConnect() 阻塞注释
+
+OkHttp 5.x `RealRoutePlanner.kt` 的 `planConnect()` 方法注释直接写明：
+> "List available IP addresses for the current proxy. **This may block in Dns.lookup().**"
+
+这是 OkHttp 官方代码对 `Dns.lookup()` 同步阻塞特性的最直接确认。
+
+### ExchangeFinder.findConnection() 完整路径（335 行 Kotlin 源码）
+
+```kotlin
+// ExchangeFinder.kt 节选（findConnection 方法核心路径）
+private fun findConnection(...): RealConnection {
+    // 1. 先在池内查找已有连接（无 DNS）
+    if (connectionPool.callAcquirePooledConnection(address, call, null, false)) {
+        foundPooledConnection = true
+        result = call.connection
+    } else if (nextRouteToTry != null) {
+        selectedRoute = nextRouteToTry
+    }
+
+    // 2. 池命中失败 → 创建 RouteSelector 并调用 .next()（触发同步 DNS）
+    if (selectedRoute == null && (routeSelection == null || !routeSelection!!.hasNext())) {
+        val localRouteSelector = RouteSelector(address, call.client.routeDatabase, call, eventListener)
+        this.routeSelector = localRouteSelector
+        newRouteSelection = true
+        routeSelection = localRouteSelector.next()  // ← 同步阻塞 DNS lookup 在这里
+    }
+
+    // 3. 创建 RealConnection 并执行 TCP+TLS handshake（也是阻塞调用）
+    result!!.connect(connectTimeout, readTimeout, writeTimeout, pingIntervalMillis, ...)
+}
+```
+
+关键点：`routeSelector.next()` 是 `RouteSelector.next()`，内部调用 `resetNextInetSocketAddress()` → `address.dns().lookup()`。
+
+### Dns 接口并发安全要求（官方文档原文）
+
+OkHttp Dns 接口文档（square.github.io/5.x）：
+> "**Implementations must support concurrent execution.**"
+
+这意味着：即使 `lookup()` 在建连前被同步调用，OkHttp 要求实现必须并发安全——内部缓存、失败隔离表等数据结构必须能承受多线程同时调用。
+
+### Fast Fallback 与 Happy Eyeballs（OkHttp 5.x 新特性）
+
+| 规则 | 说明 |
+|------|------|
+| 地址族交替 | 优先交替 IPv6/IPv4，IPv6 优先 |
+| 尝试间隔 | 新尝试延迟 250ms 后发起 |
+| 连接保留 | 保留最先成功 TCP 连接，取消其他 |
+| TLS 时机 | 只在 winning TCP 连接上做 TLS handshake |
+
+Fast Fallback 可以缓解 DNS 解析慢导致的建连延迟，但无法消除 `lookup()` 同步阻塞本身。
+
+### 来源
+
+- `github.com/square/okhttp` commit `19cb19ab4ac31aa789bc94759d13898f64f93ce3`
+  - `okhttp/src/main/java/okhttp3/internal/connection/ExchangeFinder.kt`（335 行，raw 源码）
+  - `okhttp/src/main/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt`（注释来源）
+- square.github.io/okhttp/features/connections/（Fast Fallback 文档）
+
+<!-- AIW-源码调研-2026-05-25 end -->
+
+
 ## 延伸阅读
 
 

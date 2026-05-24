@@ -34,6 +34,7 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_task6_at: "2026-05-07T06:10:00+08:00"
+last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-06-review.md"
 review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。 | 2026-05-07 task6 review 05:05：压缩流程段落的结构性元叙述，清理主观强化句；L1/L2 通过，无新增回炉项，转 Task9 复审。 | 2026-05-07 task6 review 06:10：复核 Task2B 回炉后文稿，未发现新增 L1/L2 问题；保持技术边界标注，转 Task9 复审。"
 task9_review_notes: "2026-05-07 Task9 08:36：pass-tech-review。P0 0 / P1 0 / P2 2；SkTaskGroup 与软件渲染能效口径已降级为源码边界/理论推导，剩余交叉引用与数据口径已有 suggestions 记录。"

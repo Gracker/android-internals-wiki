@@ -442,3 +442,12 @@ Native 资源问题通常来自“小 wrapper 持有大资源”，不一定对�
 `ReferenceQueue` 是 ART 引用处理路径里的队列设施，`FinalizerDaemon` 是执行 finalizer 的守护线程。Android 16 源码显示，这条路径仍然依赖 `ReferenceQueue` 实例锁、批量入队和 watchdog 进度监控；没有证据表明 `ReferenceQueue` 已接入无锁消息队列。
 
 工程上的结论是：不要把 finalizer 当成资源释放方案。发现 FD、native 内存或图形资源上涨时，先采集资源计数和线程证据，再回到 owner 生命周期修关闭路径。finalizer 只能提示“有对象没被及时处理”，不能替代显式释放。
+
+## 延伸阅读
+### ART FinalizerDaemon 与 ReferenceQueue 版本矩阵补全
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-art-finalizer-referencequeue-cleaner-close-guard-version-matrix.md
+- 类型：DeepResearch 调研结果
+- 摘要：补全 Android 8-16 区间 sun.misc.Cleaner（CleanerDaemon 独立线程）、java.lang.ref.Cleaner（FinalizerDaemon 路径）、dalvik.system.CloseGuard 与 android.util.CloseGuard 四条清理路径的版本边界、源码位置和执行触发链。ReferenceQueue enqueuePending() 批处理逻辑与 FIFO 队列实现已验证。
+- 注入时间：2026-05-25
+- 价值：完整的 Cleaner/Finalizer/CloseGuard 版本矩阵和源码路径，填补 §4.9 多版本边界空白
+

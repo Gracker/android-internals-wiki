@@ -49,7 +49,10 @@ task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1�
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-00-audit.md"
 task9_audit_notes: "2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 Android 16 FrameMetrics/ActivityTaskManager 链路复核通过；仅记录 P2：Benchmarking overview 官方 URL 已迁移。"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-25"
 ---
+
 
 # 竞品分析方法
 

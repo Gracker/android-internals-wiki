@@ -13,7 +13,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
@@ -41,7 +41,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-25T05:20:00+08:00"
+      "added_at": "2026-05-25T05:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T07:27:51+08:00",
+      "completion_reason": "Task 2B rework: P0 LMKD event names corrected; P1 config path versioned; version table updated"
     },
     {
       "id": "task9-audit-20260524-3.7-inputdispatcher-version-boundary",
@@ -12497,7 +12500,7 @@
       "added_by": "task9-deep-tech-review",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch07-smoothness/06-case-studies.md"
@@ -12530,7 +12533,10 @@
           "detail": "正文建议“使用 setRelativeLayer 控制叠放”。AOSP android-16 SurfaceControl.Transaction#setRelativeLayer 标注 @hide，普通 App 不能把它当作稳定 public API；应用侧更可执行的是减少 Surface/Layer 数、调整 SurfaceView/TextureView 选择、使用 setZOrderMediaOverlay()/setZOrderOnTop() 等公开能力，并用 trace 验证合成类型。",
           "suggestion": "把 setRelativeLayer 降级为系统/特权层能力；普通 App 修复方案改成公开 SurfaceView Z-order、合并 overlay、减少独立 Surface，并说明没有 public API 查询 overlay plane 数。"
         }
-      ]
+      ],
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T07:27:51+08:00",
+      "completion_reason": "Task 2B rework: P0 SF slice names versioned; P1 HWC plane assertion removed; P1 setRelativeLayer corrected"
     },
     {
       "id": "task2a-gap-11.6-bluetooth-scan-connection-power",
@@ -12674,7 +12680,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
@@ -12723,7 +12729,10 @@
       "last_reviewed_by": "task6-review",
       "last_reviewed_at": "2026-05-17T20:11:00+08:00",
       "review_log": "logs/deep-review/2026-05-17-19-deep-review.md",
-      "task6_review_log": "logs/review/2026-05-17-20-review.md"
+      "task6_review_log": "logs/review/2026-05-17-20-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T07:27:51+08:00",
+      "completion_reason": "Task 2B rework: P0 SQL vsync_id corrected; P0 source paths corrected; P1 appendix cleaned"
     },
     {
       "id": "task9-17.2-soc-source-errors-20260517",
@@ -12737,7 +12746,7 @@
       "created_date": "2026-05-17",
       "assigned_to": "research-team",
       "estimated_hours": 4,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
@@ -12786,7 +12795,10 @@
       "last_reviewed_by": "task6-review",
       "last_reviewed_at": "2026-05-17T20:11:00+08:00",
       "review_log": "logs/deep-review/2026-05-17-19-deep-review.md",
-      "task6_review_log": "logs/review/2026-05-17-20-review.md"
+      "task6_review_log": "logs/review/2026-05-17-20-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T07:27:51+08:00",
+      "completion_reason": "Task 2B rework: P0 Tensor G4 corrected; P0 mt6989 path corrected; P1 sched_ext OEM downgraded; P1 material cleaned"
     },
     {
       "id": "task9-audit-21.8-application-start-info-fully-drawn",
@@ -14856,7 +14868,7 @@
       "created_date": "2026-05-19",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "reason": "[Deep Tech Review Audit] §14.10 参考资料后的 sched_ext OEM 段落存在 P0/P1 技术问题：公开 AOSP / Android common kernel 中未找到所列 OEM 调度器源码和函数，Android 14/15/16 GKI 版本线也与官方口径不符。",
       "material_paths": [
         "intake/suggestions.md（含 Task6 抽检意见）",
@@ -14905,7 +14917,10 @@
       "dependencies": [],
       "review_log": "logs/deep-review/2026-05-22-12-audit.md",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-22T12:20:00+08:00"
+      "updated_at": "2026-05-22T12:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T07:27:51+08:00",
+      "completion_reason": "Task 2B rework: P0 OEM paths removed; P0 cgroup_utils replaced; P1 version table corrected"
     },
     {
       "id": "task2a-18.22-android-xr-spatial-ui-rendering",
@@ -19964,6 +19979,28 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-25T06:04:00+08:00",
       "completion_reason": "Task 2A draft processing: section drafted and status moved to ready-for-review for Task 6 pipeline."
+    },
+    {
+      "id": "dr-inject-2026-05-25-ch24-10",
+      "section": "ch24.10",
+      "section_title": "HTTPDNS 与 OkHttp Dns 执行边界",
+      "priority": 80,
+      "title": "[DeepResearch 注入] OkHttp Dns.lookup() 同步执行边界与 HTTPDNS 工程风险",
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到已 finalized 章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-okhttp-dns-lookup-sync-blocking-httpdns-risk.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "OkHttp Dns.lookup() 同步执行边界与 HTTPDNS 工程风险 — OkHttp Dns.lookup() 是同步阻塞调用，位于 RouteSelector.resetNextInetSocketAddress() 路径。在 lookup() 内实时发 HTTPDNS",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-25T06:16:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
@@ -19982,9 +20019,9 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-24T22:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 174,
+  "last_updated": "2026-05-25T06:16:00+08:00",
+  "last_updated_by": "task-deepresearch-injector",
+  "pending": 175,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {

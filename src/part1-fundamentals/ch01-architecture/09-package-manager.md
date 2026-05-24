@@ -825,7 +825,15 @@ Android 安装优化分为 **AOSP 标准路径**和**OEM 厂商定制路径**。
 | Android 14 | ART Service 统一调度 |
 | Android 16 | Cloud Compilation + SDM，Play 预编译产物分发 |
 
-### 待验证
+#
+### Android 16 Cloud Compilation / SDM 机制验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-android16-cloud-compilation-sdm-mechanism-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：确认 SDM 全称为 Secure Dex Metadata（非 Signature Delegation Mechanism），Cloud Compilation 通过 Play Store 预生成编译产物，设备侧跳过 dex2oat。SDM 文件使用 APK 同密钥签名。但 SDM 二进制格式、设备侧加载入口等关键细节仍缺 AOSP 源码闭环，§1.9 章节已有错误标注待修正。
+- 注入时间：2026-05-25
+- 价值：纠正 SDM 名称错误，补充 Cloud Compilation 分发链路和 fallback 机制
+
+## 待验证
 
 - vivo / 小米 installd 源码（厂商闭源，需反编译或厂商开放）
 - Game Turbo 联动机制（JobScheduler priority？）

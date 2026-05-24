@@ -1,4 +1,5 @@
 ---
+
 title: androidx.tracing（Tracing SDK）
 chapter: '19'
 section: '19.13'
@@ -53,6 +54,8 @@ last_task9_review_log: "logs/deep-review/2026-05-19-18-deep-review.md"
 task6_reviewed_at: "2026-05-19T17:09:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-19-17-review.md"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-25"
 ---
 # androidx.tracing（Tracing SDK）
 
@@ -190,9 +193,9 @@ companion object {
 
 ## 命名要稳定
 
-trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词、订单号。原因很直接：名称会进入 trace 文件，可能触发隐私问题，也会让分析视图变得不可聚合。
+trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词、订单号——名称进入 trace 文件后可能触发隐私问题，也会让分析视图不可聚合。
 
-更适合的命名方式是：
+推荐的命名：
 
 - `Startup#loadConfig`
 - `Home#firstFeedRequest`
@@ -206,7 +209,7 @@ trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词�
 
 `androidx.tracing` 是手动标注。btrace / RheaTrace 可以采到更多方法级调用信息。Perfetto SDK 则适合写入更结构化或跨平台的自定义 trace 数据源。
 
-三者的关系可以这样理解：
+三者的关系：
 
 - `androidx.tracing`：轻量、稳定、适合长期保留的业务 slice。
 - Macrobenchmark：测试侧抓 trace；App 侧的 `androidx.tracing` slice 会成为 `TraceSectionMetric` 或 Perfetto 人工分析里的业务阶段锚点。

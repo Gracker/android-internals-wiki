@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 30,
+  "current_offset": 35,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -15,13 +15,13 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 30
+      "completed_files": 35
     }
   ],
-  "last_scan_date": "2026-05-24",
-  "total_knowledge_points": 242,
-  "total_suggestions": 88,
-  "total_gaps": 23,
+  "last_scan_date": "2026-05-25",
+  "total_knowledge_points": 281,
+  "total_suggestions": 97,
+  "total_gaps": 28,
   "skipped": [
     {
       "file": "ART 堆内存分布与黑科技扩量：拯救 OOM 的利器",

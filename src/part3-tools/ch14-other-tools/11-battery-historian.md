@@ -48,8 +48,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
 last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
 task9_review_notes: "2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1 0；前轮 PowerMonitor 常量与 PowerStatsService 路径/版本 P0 已复核通过；新增 P2 源码锚点建议 2 条，自动晋升 finalized。"
----
-
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-24"
 # 14.11 Battery Historian 与功耗分析工具
 
 ## 为什么需要专门的功耗分析工具
@@ -68,10 +68,6 @@ Android 提供了从系统级到应用级的一整套功耗分析工具链，覆
 这几个工具各有侧重，组合起来用最顺手。本节把它们放到同一张图里讲清楚，方便按场景选工具。
 
 [图：Android 功耗分析工具链定位图——从离线分析（Battery Historian）到实时分析（Power Profiler）到自动化测试（Macrobenchmark）]
-
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
----
 
 ## Bugreport 抓取与 Battery Historian 使用
 
@@ -141,8 +137,6 @@ Google 仓库仍然保留了 Battery Historian 源码，但官方 gcr.io 镜像�
 
 使用技巧：点击时间线上的任意位置，下方会显示该时刻的详细系统状态。可以拖拽选择时间范围来聚焦分析特定时段。
 
----
-
 ## 关键功耗指标解读
 
 Battery Historian 提供的信息需要主动去"读"。以下是几个最值得关注的指标及其含义。
@@ -187,8 +181,6 @@ GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpd
 ### 电池电量曲线
 
 `battery_level` 行是最直观的——电量百分比随时间的下降曲线。在对比测试中（基线 vs 优化版本），这条曲线的斜率变化就是优化的直接证据。
-
----
 
 ## 从 Battery Historian 到根因定位
 
@@ -255,8 +247,6 @@ adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
 ```
 
 `--checkin` 格式的输出可以导入脚本进行自动化分析，每行包含 UID、时间戳和各类统计值，适合 CI 管线中的功耗回归检测。
-
----
 
 ## Android Studio Power Profiler
 
@@ -344,8 +334,6 @@ LIMIT 20;
 
 **局限性**：ODPM 测量的是设备级功耗而非 App 级功耗。它能说明"在这段时间内，CPU 大核消耗了 X 毫瓦"，但不能直接说明"目标 App 消耗了 Y 毫瓦"。要通过关联分析间接推断：在 App 前台时 CPU 大核功耗上升了多少，后台时又如何变化。
 
----
-
 ## Macrobenchmark PowerMetric
 
 对于需要在 CI 中自动检测功耗回归的场景，`androidx.benchmark:benchmark-macro` 从 1.2.0 就开始提供实验性的 `PowerMetric`。1.3.0 又补了设备能力判断 API，便于在不支持高精度 rail 采集的设备上跳过或降级测试。
@@ -380,8 +368,6 @@ class PowerBenchmark {
 ```
 
 `PowerMetric` 文档页标注为 Added in 1.2.0，运行前提是 API 29+；高精度 rail 采集仍要看设备是否支持 Power Stats HAL / ODPM。`1.3.0` 起又补了 `deviceBatteryHasMinimumCharge()`、`deviceSupportsHighPrecisionTracking()` 这类能力判断接口。它提供的是整个测试周期内各子系统的累计能耗或功率读数，适合做相对比较，不适合直接当成绝对功耗结论。
-
----
 
 ## PowerMonitor API（API 35 应用层接口）
 
@@ -454,7 +440,6 @@ systemHealthManager.getPowerMonitorReadings(
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 
-
 ## 功耗分析的最佳实践
 
 ### 测试前准备
@@ -494,8 +479,6 @@ systemHealthManager.getPowerMonitorReadings(
 
 硬件测量的精度远高于任何软件方案，但设备成本高、操作复杂，通常只在系统级功耗调优时使用。对大多数 App 开发者来说，Battery Historian + Power Profiler 的组合已经足够定位功耗问题。
 
----
-
 ## 平台 / 工具版本演进
 
 | 时间点 | 功耗分析工具变化 |
@@ -507,8 +490,6 @@ systemHealthManager.getPowerMonitorReadings(
 | Jetpack Benchmark 1.3.0 | 增加设备能力判断 API，便于按设备能力启用或跳过高精度功耗测试 |
 | Android Studio Hedgehog | Power Profiler 取代旧 Energy Profiler UI，优先展示 ODPM 数据 |
 
----
-
 ## 常见问题与误区
 
 **「Battery Historian 只能分析系统 App」** → 错误。Battery Historian 解析的是完整 bugreport，其中包含所有 UID（包括第三方 App）的电池使用统计。任何 App 的功耗行为都可以在 Battery Historian 中看到。
@@ -518,8 +499,6 @@ systemHealthManager.getPowerMonitorReadings(
 **「bugreport 文件太大了」** → 可以用 `adb shell dumpsys batterystats --checkin` 只导出电池统计数据（文本格式，通常几百 KB），而不需要完整 bugreport（可能数百 MB）。这个精简输出足以用于自动化分析脚本。
 
 **「功耗分析必须用真机」** → 基本正确。模拟器没有真实电池和传感器，Energy Profiler 的估算数据在模拟器上参考价值有限。Power Profiler（ODPM）完全不支持模拟器。
-
----
 
 ## ADPF Power Efficiency Mode 与 PowerMonitor 的协作方案
 
@@ -549,8 +528,6 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源轨变化，结合 hint session 状态做 A/B 对比验证。
 
 [已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails]
-
----
 
 ## 参考资料
 

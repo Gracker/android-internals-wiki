@@ -217,3 +217,11 @@ Android 的 Game Service / GameSession 能让 OEM 游戏工具与游戏场景协
 - [交叉引用: §3.9 端到端输入延迟预算与感知阈值]
 - [交叉引用: §8.9 Android 游戏性能与 Game Mode/State API]
 - [交叉引用: §17.2 SoC 平台差异]
+
+### 厂商游戏模式输入优先级机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android-game-mode-input-priority-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP InputDispatcher 无原生游戏模式概念，输入优先级依赖 TouchFocus + Policy Interface 扩展点。厂商通过 override notifyWindowResponsive()/interceptInput() 检测游戏窗口并重定向输入，或利用 injectInputEvent ASYNC 模式实现零延迟注入。TouchFocus 按 Z-order 最高窗口确定。
+- 注入时间：2026-05-25
+- 价值：AOSP 标准机制源码锚定（InputDispatcher TouchFocus、Policy扩展点、injectInputEvent），补全厂商实现典型路径
+

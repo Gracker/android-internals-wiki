@@ -1,4 +1,5 @@
 ---
+
 title: "存储 Benchmark（AndroBench、A1 SD Bench）"
 chapter: "19"
 section: "19.22"
@@ -35,6 +36,8 @@ task2b_result: fixed
 last_task2b_at: "2026-04-25T02:45:50+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-25"
 ---
 
 # 存储 Benchmark（AndroBench、A1 SD Bench）
@@ -135,7 +138,7 @@ A1 SD Bench 公开说明中列出 Quick、Longer、Accurate、Random I/O 等模�
 
 ## 测试条件
 
-存储 Benchmark 对环境很敏感：
+以下因素会影响存储 Benchmark 的结果：
 
 - 剩余空间不足会影响写入表现。
 - 文件系统缓存会让第二次测试变快。

@@ -44,8 +44,8 @@ task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T04:51:16+08:00"
 task9_review_notes: "2026-05-22 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1（CI 模板需补 AVD create 前置条件，已写入 suggestions）。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
----
-
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-24"
 # 14.19 Android CLI 与 Agent 化性能调试工作流
 
 <!-- outline-start -->
@@ -258,5 +258,3 @@ Android CLI 官方文档写明会收集基础使用数据，包括 `android` 命
 ## 小结
 
 Android CLI 的价值在于把 agent 从“猜项目、猜设备、猜按钮”推进到“读项目描述、固定设备基线、导出 UI 状态、调用 IDE 语义能力”。性能分析仍然要由 Profiler、Perfetto、APA、Macrobenchmark 和线上指标承担。把这条边界划清，agent 化工作流才不会把复现自动化误当成性能结论。
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
