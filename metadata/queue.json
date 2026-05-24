@@ -19882,6 +19882,42 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T03:26:43+08:00",
       "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
+    },
+    {
+      "id": "task2a-gap-20260525-25.19-android-vitals-wakelock-governance",
+      "section": "25.19",
+      "section_title": "Android Vitals 过度 WakeLock 指标与治理",
+      "priority": 80,
+      "title": "Android Vitals 过度 WakeLock 指标与治理",
+      "description": "补齐 Android Vitals 过度 partial wake lock 指标口径、Play 质量阈值、端侧归因与治理实践章节。",
+      "reason": "官方 Android Vitals 文档在 2026-05 更新 wake lock 指标口径，Android Developers Blog 明确 2026-03-01 后该指标会影响 Play 发现面；现有 §25.3 偏 WakeLock/Alarm API，§25.9 偏案例，缺少面向 Vitals 指标、端侧归因和发布风险的专项治理小节。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md"
+      ],
+      "material_paths": [
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md",
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock",
+        "https://developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric",
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/set",
+        "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
+      ],
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 17
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T05:15:00+08:00"
     }
   ],
   "metadata": {
