@@ -49,6 +49,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-06"
 task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-06T03:20:00+08:00"
+last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-06"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
 ---
@@ -92,7 +93,7 @@ review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处
 
 在进入具体原因之前，我们需要先回顾一下一帧的渲染在 Perfetto 中的完整路径，因为后面的原因分类就是按照这条路径的阶段来组织的：
 
-```
+```text
 VSync-app 信号到达
   → Choreographer.doFrame()
     → Input 回调处理
@@ -321,7 +322,7 @@ enum Composition : int32 {
 
 **DEVICE vs CLIENT 决策流程（AOSP）：**
 
-```
+```text
 SurfaceFlinger 准备每帧 layer state（geometry + buffer）
   → HWComposer::getDeviceCompositionChanges()
   → HWC display presentOrValidate() / validate()
@@ -348,7 +349,7 @@ SurfaceFlinger 准备每帧 layer state（geometry + buffer）
 
 **dumpsys SurfaceFlinger DEVICE/CLIENT 输出格式（AOSP）：**
 
-```
+```text
 Display 0 (Primary):
   HWC layers:
   + Bounds: 1080x2400, z=0, type=DEVICE, hdl=0x...
@@ -522,7 +523,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 
 **Android 12+：** 先看 FrameTimeline。先找 `Actual Timeline` 里的红色条，再看同一帧的 JankType、`On-time finish` 和 `PresentType`。这一代系统已经把掉帧归因拆到 App、SurfaceFlinger 和 Display HAL，继续只盯 `doFrame` 很容易漏掉系统侧问题。
 
-```
+```text
 掉帧的视觉线索：
 1. Android 5-11：VSYNC-app 间隔异常，或 `Choreographer#doFrame` 明显延迟
 2. Android 12+：FrameTimeline 出现红色条、Late present 或异常 JankType
