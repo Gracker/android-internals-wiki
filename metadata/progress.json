@@ -1,7 +1,7 @@
 {
   "total": 380,
-  "draft": 22,
-  "ready-for-review": 167,
+  "draft": 21,
+  "ready-for-review": 168,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-24",
@@ -231,7 +231,8 @@
     "25.16",
     "25.17",
     "23.11",
-    "1.16"
+    "1.16",
+    "22.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -295,7 +296,8 @@
     "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
     "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
     "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md",
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
@@ -6290,12 +6292,12 @@
     }
   },
   "task2a_last_processed": {
-    "section": "25.16",
-    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
-    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+    "section": "22.16",
+    "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
+    "file": "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-05-24T00:04:00+08:00"
+    "processed_at": "2026-05-24T17:04:00+08:00"
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",
