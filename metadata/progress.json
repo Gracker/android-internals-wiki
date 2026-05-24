@@ -1,6 +1,6 @@
 {
-  "total": 378,
-  "draft": 21,
+  "total": 379,
+  "draft": 22,
   "ready-for-review": 166,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -1858,8 +1858,8 @@
   "total_review_sections": 211,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-24T07:07:00+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-24T13:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-23",
     "time": "20:16",
@@ -4979,6 +4979,20 @@
       "task2a_result": "processed-draft",
       "last_task2a_at": "2026-05-24T04:15:00+08:00",
       "task6_state": "pending"
+    },
+    "25.18": {
+      "title": "音频 Offload 与 AudioTrack 精确控制功耗实践",
+      "file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-24",
+      "gap_source": "研究素材/官方文档/AOSP结构/Clippings结构参考",
+      "gap_score": 16,
+      "queue_priority": 80,
+      "material_count": 6,
+      "last_task2a_at": "2026-05-24T13:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -4996,8 +5010,8 @@
       ]
     }
   ],
-  "last_task2a_processed": "25.17",
-  "last_task2a_processed_file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+  "last_task2a_processed": "25.18",
+  "last_task2a_processed_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
   "last_task2a_processed_date": "2026-05-24",
   "task9_last_review_detail": {
     "date": "2026-05-22",
@@ -5049,9 +5063,9 @@
     "src/part5-app/ch26-observability/18-app-performance-score.md"
   ],
   "total_review_files": 48,
-  "last_task2a_at": "2026-05-24T04:15:00+08:00",
-  "last_task2a_section": "25.17",
-  "last_task2a_file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+  "last_task2a_at": "2026-05-24T13:04:00+08:00",
+  "last_task2a_section": "25.18",
+  "last_task2a_file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
   "last_task6_review": "2026-05-23",
   "last_task6_sections": [
     "26.18"
