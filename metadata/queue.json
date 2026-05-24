@@ -19533,6 +19533,58 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-24T20:04:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
+      "section": "18.2",
+      "section_title": "Android View 标准管线（BLAST 深入）",
+      "priority": 95,
+      "title": "ART GC 术语、DeliQueue 源码路径与帧预算阈值需修正",
+      "description": "Task9 深度技术 Review 发现 §18.2 仍把 ART Concurrent Copying 写成 CMS，Android 17 DeliQueue 源码锚点指向旧 MessageQueue 路径，并用固定 16ms/8ms 判断 View 管线掉帧，需按 AOSP/官方文档回炉。",
+      "reason": "[Deep Tech Review] §18.2 L524-L527 把 Concurrent Copying（CC）误写成 CMS；L370-L383 DeliQueue AOSP master 路径应改为 ConcurrentMessageQueue/MessageQueue.java；L241-L255 固定 16ms/8ms 阈值不适配高刷/FrameTimeline。",
+      "issue_type": "source-accuracy-version-boundary-frame-budget",
+      "severity": "P0",
+      "created_date": "2026-05-24",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-24-20-deep-review.md",
+        "https://source.android.com/docs/core/runtime/gc-debug",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue",
+        "https://android.googlesource.com/platform/frameworks/base.git/+/refs/heads/main/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/术语错误",
+          "location": "L524-L527：Android 13+ 改进段",
+          "detail": "正文写“默认使用 ConcurrentCopying（CMS）”。AOSP ART 文档把 Android 8 起默认 GC plan 称为 Concurrent Copying（CC），并把 Concurrent Mark Sweep（CMS）列为另一个 GC plan；CC 与 CMS 不能混写。",
+          "suggestion": "改成“Android 8+ 默认 Concurrent Copying（CC）；Android 13+ / 17 的分代能力需按具体 ART 版本和 aconfig/sysprop 边界说明”。删除 “ConcurrentCopying（CMS）” 这种混合写法。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码路径错误/版本标注",
+          "location": "L370-L383：MessageQueue.DeliQueue 源码验证",
+          "detail": "正文把 Android 17 DeliQueue 源码锚点写成 frameworks/base/core/java/android/os/MessageQueue.java（AOSP master）。公开 AOSP main 中 MessageQueue 实现已拆到 LegacyMessageQueue、ConcurrentMessageQueue、CombinedMessageQueue 等目录；无锁实现的直接源码锚点是 core/java/android/os/ConcurrentMessageQueue/MessageQueue.java。",
+          "suggestion": "把 AOSP 锚点改为 frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java，并补 Android 17 MessageQueue behavior change 官方文档作为 targetSdk 37 默认启用依据；若引用 release tag，使用可访问的正式 tag/commit。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/数据支撑",
+          "location": "L241-L255：Trace 视角关键 Slice 表",
+          "detail": "表中把 Choreographer#doFrame 正常耗时写为 <8ms，并写“超过 16ms → 必定掉帧”；RenderThread DrawFrame 也固定写 <8ms。Android 11-17 覆盖 60/90/120Hz、可变刷新率和 Android 12+ FrameTimeline，固定 16ms/8ms 阈值会漏判高刷设备，也会误导读者忽略 expected/actual timeline deadline。",
+          "suggestion": "把阈值改成相对当前 display frame interval / FrameTimeline expected present deadline 的预算；表格可保留 60Hz/120Hz 示例，但不要写成跨版本固定标准。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-24T20:34:56+08:00",
+      "review_log": "logs/deep-review/2026-05-24-20-deep-review.md"
     }
   ],
   "metadata": {

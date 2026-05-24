@@ -235,7 +235,9 @@
     "22.16",
     "24.16",
     "5.6",
-    "7.2"
+    "7.2",
+    "7.2",
+    "18.2"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -304,9 +306,11 @@
     "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
     "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-    "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
   ],
-  "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
+  "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
     "date": "2026-05-24",
     "time": "20:14",
@@ -658,20 +662,14 @@
       "task6_note": "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：标准化 outline 标记、删除填充词/夸张表达、修正残留错字。已知 Perfetto 配置/SQL 与 Surface 管线技术项继续交 Task9/Task2B。"
     },
     "18.2": {
-      "p0": 3,
-      "p1": 2,
-      "p2": 0,
-      "p3": 1,
-      "reviewed_at": "2026-05-15T11:41:46+08:00",
-      "log": "logs/deep-review/2026-05-15-11-deep-review.md",
-      "summary": "P0 3 / P1 2 / P2 0 / P3 1。[P0] L86-L90 — Sync 阶段版本口径自相矛盾，且源码锚点应为 DrawFrameTask.cpp / mSignal.signal()。; [P0] L364-L371 — BLASTBufferQueue 回调注释和 transactionCommittedCallback 签名/语义错误。",
-      "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 5,
-      "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-15T12:11:00+08:00",
-      "task6_log": "logs/review/2026-05-15-12-review.md",
-      "task6_new_rework": true,
-      "task6_note": "源码调研附录仍是素材 dump，并保留 AIW 注入记录；需 Task2B 在 Task9 技术复核后整合进正文或移出发布稿。"
+      "p0": 2,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0,
+      "reviewed_at": "2026-05-24T20:34:56+08:00",
+      "log": "logs/deep-review/2026-05-24-20-deep-review.md",
+      "summary": "needs-rework；P0：ConcurrentCopying/CMS 混写、DeliQueue 源码路径错误；P1：固定 16ms/8ms 帧预算阈值不适配高刷/FrameTimeline；P2：30fps/VSync 示例方向写反。",
+      "task9_result": "needs-rework"
     },
     "19.21": {
       "p0": 0,
@@ -1895,6 +1893,17 @@
       "task6_new_rework": false,
       "task6_note": "revisiting 复审；清理第一人称/比喻化标题/夸张表达等 L1/L2 文风问题。Task9 已有 Android 16 AIDL CAP/IConfig pending queue，Task6 未新增回炉。",
       "task9_pending_queue": 1
+    },
+    "7.2": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0,
+      "reviewed_at": "2026-05-24T20:34:56+08:00",
+      "log": "logs/deep-review/2026-05-24-20-deep-review.md",
+      "summary": "pass-tech-review；既有 DeliQueue tag 建议沿用，新增 P2：HWC3 Composition DISPLAY_DECORATION 子集标注、Overlay plane/厂商差异数据支撑。Task6 已通过且 queue 无 pending，自动晋升 finalized。",
+      "task9_result": "pass-tech-review",
+      "auto_promoted": true
     }
   },
   "total_review_sections": 206,
