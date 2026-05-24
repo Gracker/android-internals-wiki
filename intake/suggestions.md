@@ -3552,3 +3552,10 @@
   - source-index 高分未映射素材中的 Android Performance Analyzer 案例、16KB Page Size 三方库兼容、AppExitInfoTracker + KOOM、Perfetto CPU / Input 指导、sched_ext BPF：现有 14.18、20.13/4.7、19.3/26.9、13.13/13.8、17.4 已有承接章节，暂不拆新节。
   - AOSP 结构抽查中的 Bluetooth / GATT、NotificationManagerService：Bluetooth 仅有 11.6 扫描功耗局部覆盖，但本轮素材丰富度不足；Notification 已由 9.6 承接 ANR / 性能风险。
 - **本轮结论**：未发现评分 ≥ 14 且不与现有章节重复的知识缺口；不创建新章节。下一轮可优先跟踪 Bluetooth GATT 连接时延、Android Studio Panda 内存泄漏诊断、APA 案例库是否积累到可独立成节的素材量。
+
+## [Task9 Deep Review] 17.2 SoC 平台差异 — 2026-05-25
+- **类型**：数据缺失 / 案例支撑
+- **位置**：L220-L232 GPU Track 表现；L270-L278 内存带宽争用观察
+- **问题**：章节给出 Adreno/Mali/Xclipse 在 Perfetto `gpu_render_stages`、内存带宽争用上的差异判断，但缺少同设备/同场景 trace 截图、counter 配置和 SQL/指标口径；读者只能得到方向，无法复现判断。
+- **建议**：至少补一组 Adreno + Mali/Immortalis 的同类场景 Perfetto 截图或查询口径，列出 `gpu_render_stages`、CPU freq、PMU/cache miss、memmgr/thermal counter 的采集配置；Xclipse 若缺公开样本，应明确标为待实机验证。
+

@@ -16,9 +16,9 @@ polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
 confidence: medium-high
-task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T15:29:34+08:00"
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-25T07:30:00+08:00"
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md
@@ -56,24 +56,24 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-pipeline_stage: "task6_pending"
+pipeline_stage: task2b_pending
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: reviewed
+task2b_state: pending
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T07:27:11+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
-task9_result: "needs-rework"
+task9_result: needs-rework
 last_task2b_at: "2026-05-17T15:18:41+08:00"
-task9_review_notes: "2026-05-17 15 Task9 re-review: needs-rework。P0 1 / P1 2 / P2 1；案例六仍保留 android-16 不存在的 handleMessageRefresh 锚点；HWC plane 数来源与 setRelativeLayer 公共 API 边界仍需修正；案例数据证据既有 P2 保留。"
+task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；SurfaceView Z-order API 不能写成可分配或保证使用 HWC Overlay Plane；既有 Trace 数据 P2 不重复新增。"
 last_task6_at: "2026-05-17T16:11:00+08:00"
 task6_review_notes: "2026-05-17 16:11 Task6 复审：pass-light-edit。未发现新增 L1/L2 文风问题；锚点覆盖完整。既有 Task9 P0/P1 队列仍 pending，未自动晋升。"
 last_task6_review_log: "logs/review/2026-05-17-16-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
-p0: 1
-p1: 2
-p2: 1
+last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
+p0: 0
+p1: 1
+p2: 0
 
 ---
 

@@ -1,6 +1,121 @@
 {
   "queue_entries": [
     {
+      "id": "task9-deep-20260525-0730-2.18-vsync-token-boundary",
+      "section": "2.18",
+      "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+      "priority": 85,
+      "title": "FrameTimeline VSync ID gap 不能直接归因调度器错过目标 VSYNC",
+      "description": "§2.18 在 ARR 切换分析中把 display_frame_token 跳变直接解释为调度器错过目标 VSYNC，证据链不足，容易把正常低帧率提交或查询过滤造成的 token 间隔误判为系统调度问题。",
+      "reason": "[Deep Tech Review] §2.18 L257-L262 / L264-L280 使用 actual_frame_timeline_slice 的 display_frame_token 连续性判断 ARR 切换瞬间预测误差，并写成“出现跳变说明调度器错过目标 VSYNC”。display_frame_token 是显示帧标识，按进程/Surface 过滤后出现 gap 不能单独证明 Scheduler miss；还可能来自 App 按较低内容帧率提交、Surface 未每个 VSYNC 产帧、expected/actual 匹配口径或 trace 裁剪。",
+      "issue_type": "principle-chain-trace-interpretation",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-07-deep-review.md",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/stdlib-docs"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/Trace 证据解释",
+          "location": "L257-L262、L264-L280：display_frame_token 连续性判断",
+          "detail": "正文把 display_frame_token gap 直接解释成调度器错过目标 VSYNC。该证据单独不成立，因为按 package/surface 过滤后的实际帧本来就可能跨过若干 display frame，ARR 下内容帧率低于显示 VSYNC 时更常见。",
+          "suggestion": "改成分层判断：先看 expected/actual frame 的 present_type、jank_type、actual_dur；再与 SurfaceFlinger frame、Refresh Rate Selection/mode change slice、VSYNC-app/sf 间隔同窗对齐；display_frame_token gap 只能作为可疑信号，不能单独定责 Scheduler。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T07:30:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-0730-7.6-surfaceview-zorder-hwc-plane",
+      "section": "7.6",
+      "section_title": "案例集",
+      "priority": 85,
+      "title": "SurfaceView Z-order API 不能写成可分配或保证使用 HWC Overlay Plane",
+      "description": "§7.6 案例六把 SurfaceView.setZOrderMediaOverlay()/setZOrderOnTop() 描述成让不同 Surface 走不同 Overlay Plane，超出了 public API 语义。",
+      "reason": "[Deep Tech Review] §7.6 L561-L563 建议通过 SurfaceView Z-order public API “让本地预览窗口和远端视频走不同的 Overlay Plane，避免竞争同一个 Plane”。官方 SurfaceView API 只控制 surface 相对层级；HWC validateDisplay() 会基于 layer 属性、带宽和 device-specific plane capability 决定 DEVICE/CLIENT composition，App 侧不能指定或保证 plane 分配。",
+      "issue_type": "source-accuracy-api-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-07-deep-review.md",
+        "https://developer.android.com/reference/android/view/SurfaceView",
+        "https://source.android.com/docs/core/graphics/hwc"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/API 边界",
+          "location": "L561-L563：SurfaceView Z-order 与 HWC Overlay Plane",
+          "detail": "SurfaceView.setZOrderMediaOverlay()/setZOrderOnTop() 只改变 Surface 的 Z-order 关系，不能承诺“走不同 Overlay Plane”。Plane 分配由 HWC 在 validateDisplay() 后决定，且受格式、缩放、alpha、dataspace、保护内容、带宽等约束影响。",
+          "suggestion": "修正为“Z-order 可能改变 HWC 决策输入，但不能强制 plane 分配；优化方向仍是减少 Layer、降低 alpha/transform/crop 复杂度，并用 Perfetto Layer trace / dumpsys SurfaceFlinger 验证 DEVICE/CLIENT composition”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T07:30:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-0730-17.2-soc-current-specs",
+      "section": "17.2",
+      "section_title": "SoC 平台差异",
+      "priority": 95,
+      "title": "SoC 平台差异需更新 2025/2026 旗舰与 MediaTek 官方规格",
+      "description": "§17.2 使用“当前旗舰/最新/预计”框架，但仍停在 Snapdragon 8 Elite、Dimensity 9400、Exynos 2500、Tensor G4/G5 预测阶段，且误称 MediaTek 官方不公布 Dimensity 9400 频率。",
+      "reason": "[Deep Tech Review] §17.2 L94-L100、L116、L264-L266 的当前旗舰和规格口径已过期或错误。MediaTek 官方 Dimensity 9400 页面公开 X925 up to 3.62GHz 与 LPDDR5X 10667；截至 2026-05，官方资料已存在 Snapdragon 8 Elite Gen 5、Dimensity 9500、Exynos 2600、Google Tensor G5。继续用“最新 Exynos 2500 计划用于”“Tensor G5 预计”会造成版本事实错误。",
+      "issue_type": "source-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-07-deep-review.md",
+        "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9400",
+        "https://www.qualcomm.com/smartphones/products/8-series/snapdragon-8-elite-gen-5",
+        "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500",
+        "https://semiconductor.samsung.com/processor/mobile-processor/exynos-2600/",
+        "https://blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/规格事实错误",
+          "location": "L116：Dimensity 9400 官方频率来源",
+          "detail": "正文写“联发科官方只公布核心型号、不公布具体频率”。MediaTek 官方 Dimensity 9400 页面和新闻稿公开 1x Cortex-X925 up to 3.62GHz，且公开 LPDDR5X 10667；把频率全部归为评测拆解/跑分读数是事实错误。",
+          "suggestion": "改为“MediaTek 官方公开 X925 up to 3.62GHz 与内存规格；X4/A720 的细分频率、vendor OPP 表和实机频率策略仍需以设备/内核来源核验”。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/当前旗舰口径过期",
+          "location": "L94-L100、L264-L266：当前旗舰 SoC 概览和内存带宽",
+          "detail": "截至 2026-05，Qualcomm 官方已有 Snapdragon 8 Elite Gen 5，MediaTek 官方已有 Dimensity 9500，Samsung Semiconductor 已有 Exynos 2600，Google 已在 Pixel 10 发布 Tensor G5。正文仍把 8 Elite/9400/Exynos 2500/G4 作为“最新/当前”主线，并把 Tensor G5 写成预计，版本边界已不成立。",
+          "suggestion": "把正文拆成“2024/2025 代表芯片”和“2025/2026 当前旗舰”两层；当前层补 8 Elite Gen 5 / Dimensity 9500 / Exynos 2600 / Tensor G5 的 CPU、GPU、NPU、内存规格和 Perfetto 观察差异，历史层保留 8 Gen 3、8 Elite、9400 作为演进背景。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T07:30:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-0520-13.1-perfetto-lmk-config-boundary",
       "section": "13.1",
       "section_title": "Perfetto 简介与演进",

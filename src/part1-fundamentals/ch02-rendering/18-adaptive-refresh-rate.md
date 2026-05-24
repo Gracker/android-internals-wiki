@@ -46,13 +46,13 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: "task6_pending"
-last_task9_at: "2026-05-17T19:30:43+08:00"
+pipeline_stage: task2b_pending
+last_task9_at: "2026-05-25T07:30:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-05-25"
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
 task6_result: needs-rework
@@ -61,12 +61,15 @@ task2b_result: "fixed"
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；FrameTimeline SQL 字段、RefreshRateSelector 源码路径和 ARR 决策层归属需回炉。"
+task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；FrameTimeline display_frame_token gap 不能直接判定调度器错过目标 VSYNC。"
 task6_reviewed_date: "2026-05-17"
-last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
 last_task6_at: "2026-05-17T20:11:00+08:00"
 last_task6_review_log: "logs/review/2026-05-17-20-review.md"
 task6_review_notes: "2026-05-17 Task6：小修 L1/L2 9 处；参考资料后 DeepResearch/源码调研附录仍是素材堆放，且含 Task9 已标记的 SQL/源码路径/决策层风险，已并入 queue.json priority 95。"
+p0: 0
+p1: 1
+p2: 0
 ---
 
 
