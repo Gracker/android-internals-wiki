@@ -1,7 +1,7 @@
 {
   "total": 378,
-  "draft": 22,
-  "ready-for-review": 165,
+  "draft": 21,
+  "ready-for-review": 166,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-24",
@@ -229,7 +229,8 @@
     "19.14",
     "7.9",
     "25.16",
-    "25.17"
+    "25.17",
+    "23.11"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -291,7 +292,8 @@
     "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
-    "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+    "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+    "src/part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md"
   ],
   "review_summary": "Task9 2026-05-23 07: 审计 7.15、7.5、20.4；P0 4 / P1 3 / P2 3；3 章均 needs-rework，0 自动晋升。",
   "task6_review_summary": {
