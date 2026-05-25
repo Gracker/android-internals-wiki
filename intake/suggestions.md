@@ -3759,8 +3759,34 @@
 - **问题**：参考资料写成 `https://developer.android.com/topic/performance/vitals/wakeups`，当前官方页面为单数路径 `/wakeup`，复核时 plural URL 返回 404。
 - **建议**：改为 `https://developer.android.com/topic/performance/vitals/wakeup`，并同步检查 frontmatter sources 是否需要补该官方链接。
 
+## Task 2A 缺口挖掘检查记录 — 2026-05-26 03:11 Asia/Shanghai
+
+本轮 Phase 0 未发现 `status: draft` 且正文实质内容少于 15 行的章节。
+
+本轮进入 Phase 1 后检查了以下方向，未发现评分 >= 14 且尚未覆盖的新增小节候选：
+
+- `metadata/source-index.json`：quality >= 16 且未映射/低置信映射素材为 0。
+- 最近研究素材：Perfetto v53/v54、Frame Timeline、Compose Pausable Composition 等主题已映射到 ch13、ch14、ch02 或现有队列。
+- 最近 3 天每日信息：Android 17 App Lock、Developer Verification、Android Studio Panda、端侧 AI 推理、ART Verifier Quickening 等方向已由 17.7、1.21、14.14、5.11/5.14、1.22 等现有章节覆盖或属于非性能核心话题。
+- 官方文档对照：Android Vitals、excessive partial wake locks、startup、LMK、Android 17 behavior changes 等已由 26.15、25.19、21.8、23.9 等章节覆盖。
+- AOSP/系统组件对照：Connectivity、netd/DnsResolver、Wi-Fi、Bluetooth、Media、vold/FUSE、JobScheduler、Keystore/KeyMint、Notification、Biometric/隐私相关组件未形成高素材+高性能相关性的新增独立小节。
+
+结论：本轮不创建新章节，下一轮可从 `research-gaps.md` 中尚未转化的高分项继续检查，优先避免重复 Android 17 行为变更类选题。
+
 ## [Task9 Deep Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-26
 - **类型**：数据缺失/FrameTimeline 判定口径
 - **位置**：src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md L243-L248
 - **问题**：Trace 表已经从固定 16ms 改成 frame interval，但 `Choreographer#doFrame` 的异常信号仍写“超过当前 display frame interval → 必定掉帧”。Android 12+ 的用户可感知 jank 应以 FrameTimeline expected/actual present、app deadline 和当前 refresh rate 共同判断；单个 UI Thread slice 超过 display interval 只能作为高风险信号。
 - **建议**：改成“超过 app deadline / expected present 预算时高风险，最终以 FrameTimeline jank tag 与 actual present 结果确认”，避免把局部 slice 阈值写成必然结论。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-05-26
+- **类型**：数据缺失
+- **位置**：src/part1-fundamentals/ch01-architecture/07-art-compilation.md L187
+- **问题**：`JIT 代码缓存的内存占用通常稳定在 4MB 左右` 仍是工程经验值并标注 `[待验证]`，缺少设备、应用规模、采样命令与统计区间。
+- **建议**：补一组可复现实测：至少给出 Android 版本、设备、应用规模、`dumpsys meminfo`/Perfetto/ART 统计入口和 code cache 区间；补不到时降级为“可能在数 MB 级别，需以设备实测为准”。
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-05-26
+- **类型**：数据口径/Android Vitals 指标
+- **位置**：src/part2-performance/ch11-power/04-case-studies.md L644
+- **问题**：`Stuck WakeLock` 被解释为“没有超过 2 小时的 WakeLock”，但本章前文和 Android Vitals 官方口径是后台 `PARTIAL_WAKE_LOCK` 单次持续超过 1 小时；2 小时是 excessive partial wake locks 的 24 小时累计口径。
+- **建议**：将 L644 改为“没有超过 1 小时的后台 partial WakeLock”，并保留 excessive partial wake locks 的 2 小时累计口径作为另一项指标。

@@ -51,19 +51,19 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 last_task6_at: "2026-05-26T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-status: "ready-for-review"
-pipeline_stage: "task9_pending"
-task9_result: needs-rework
-task9_state: "pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_result: pass-tech-review
+task9_state: "reviewed"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 task2b_state: "fixed"
-task9_reviewed_date: 2026-05-07
+task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-26T00:20:00+08:00"
-task9_review_notes: "2026-05-26 Task9 00:20 闲时抽检：needs-rework。P0 1 / P1 1 / P2 0；compiler filter 源码锚点应改为 libartbase/base/compiler_filter.{h,cc}；`android-17-beta3` 不是公开 AOSP ref，Android 17 行为需改用官方 docs / 可复现公开分支口径。"
+last_task9_at: "2026-05-26T04:30:00+08:00"
+task9_review_notes: "2026-05-26 Task9 deep-review 04:30: pass-tech-review。P0 0 / P1 0 / P2 1；JIT code cache 4MB 工程值仍需补实测出处；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-26-00-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
 last_task9_audit: 2026-05-26
 ---
 

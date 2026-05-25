@@ -31,23 +31,23 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-26T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task6_audit: "2026-05-23"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_result: "fixed"
-task2b_state: "fixed"
+task2b_state: "pending"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-26T03:19:12+08:00"
-last_task9_at: "2026-05-26T02:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-26-02-audit.md"
-task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 1 / P1 1 / P2 1；JobScheduler runtime 常量表与 android-16.0.0_r1 不一致；location FGS type 版本边界写晚；Excessive Wakeups 参考链接需改为 /wakeup。"
+last_task9_at: "2026-05-26T04:30:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
+task9_review_notes: "2026-05-26 Task9 deep-review 04:30: needs-rework。P0 1 / P1 0 / P2 2；JobScheduler timeout 仍把 quota 降级写成可能短于最小保障，需按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正；Stuck WakeLock 阈值与 Excessive Wakeups URL 待修。"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T02:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
