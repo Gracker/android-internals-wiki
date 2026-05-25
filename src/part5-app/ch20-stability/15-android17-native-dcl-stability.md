@@ -14,10 +14,14 @@ gap_source: "官方文档/AOSP结构/每日信息"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers Android 14/17 behavior changes; Android Dynamic Code Loading security guidance; Android NDK JNI tips; AOSP native library namespace docs"
 confidence: medium
-pipeline_stage: task6_pending
 task2a_state: processed
 task2a_result: processed-draft
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-25"
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c"
@@ -70,7 +74,7 @@ source_refs:
 
 <!-- outline-end -->
 
-Android 17 把动态代码加载的只读约束扩展到 native library。对业务代码来说，风险点不在 APK 内随包发布的常规 `System.loadLibrary()`，而在运行时下载、解压、替换后再通过 `System.load(path)` 加载的 `.so` 文件。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c]
+Android 17 把动态代码加载的只读约束扩展到 native library。业务代码需要重点检查运行时下载、解压、替换后再通过 `System.load(path)` 加载的 `.so` 文件；APK 内随包发布的常规 `System.loadLibrary()` 不是主要风险来源。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c]
 
 这类问题通常会在 targetSdk 升级灰度里暴露成启动崩溃、功能入口崩溃或插件初始化失败。排查时不要只看“库不存在”，还要把文件权限、发布目录、ABI、完整性校验、加载入口和多进程并发放到同一个证据包里。
 
@@ -118,7 +122,7 @@ fun publishNativeLibrary(tmp: File, finalFile: File, expectedSha256: String) {
 
 ### 🔹 动态库更新流程的稳定性风险
 
-动态库更新最容易出错的地方不是加载 API，而是发布状态机。覆盖写同一个 `.so` 路径会制造两个问题：一个进程可能在文件还没写完时加载，另一个进程可能已经加载了旧版本，后续再覆盖同名文件也不能让已加载进程切到新实现。
+动态库更新的主要风险落在发布状态机，加载 API 本身反而不是最容易出错的位置。覆盖写同一个 `.so` 路径会制造两个问题：一个进程可能在文件还没写完时加载，另一个进程可能已经加载了旧版本，后续再覆盖同名文件也不能让已加载进程切到新实现。
 
 推荐把每个 native 包发布到独立版本目录，例如 `files/native/{abi}/{version}/libfeature.so`。灰度命中后，进程只读取一个稳定版本；新版本发布完成后更新一个小的 manifest；旧版本延迟清理，直到确认没有存活进程仍在使用。多进程应用还要用跨进程锁保护“发布 manifest”和“加载库”两个动作，避免主进程与远程服务进程同时修改同一份文件。
 
