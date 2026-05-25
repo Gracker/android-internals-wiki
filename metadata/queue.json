@@ -20316,6 +20316,42 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T09:28:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-1020-20.15-native-dcl-readonly-race",
+      "section": "20.15",
+      "section_title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+      "priority": 85,
+      "title": "Native DCL 发布顺序需补齐写入期只读与并发加载窗口",
+      "description": "§20.15 的示意流程在 rename 之后才 setReadOnly，缺少 Android DCL 官方强调的“打开后、写入前标记只读”race mitigation，容易让插件/多进程发布实现保留最终路径可写窗口。",
+      "reason": "[Deep Tech Review] §20.15 L100-L119 推荐“下载/写入→校验→rename→setReadOnly→System.load”的流程，并引用 Android 14 Safer DCL。Android 14 文档明确建议动态加载文件在打开后、写入内容前标记只读以防 race；Android 17 文档把保护扩展到 System.load() native 文件，要求加载的 native 文件只读。当前流程满足加载前 chmod，但没有把写入期只读和 rename 后 chmod 前的多进程窗口讲清。",
+      "issue_type": "principle-chain-source-guidance",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-10-deep-review.md",
+        "https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading",
+        "https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c",
+        "https://developer.android.com/privacy-and-security/risks/dynamic-code-loading"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/源码依据偏差",
+          "location": "L100-L119：Native DCL 发布顺序与示意代码",
+          "detail": "正文推荐“写入临时文件→校验→rename 到最终路径→setReadOnly→System.load”的顺序，并引用 Android 14 Safer DCL 文档。Android 14 DCL 官方建议是在文件打开后、写入内容前尽早标记只读，用来避免写入期 race；Android 17 Native DCL 又继承该保护到 System.load() 的 native 文件。现有顺序虽然满足加载前只读，但在 rename 后、chmod 前存在最终路径短暂可写且可被其他进程加载的窗口，和官方 race mitigation 口径不一致。",
+          "suggestion": "把推荐流程改成“创建/打开最终版本文件或不可见临时文件后立即 setReadOnly，再通过已打开的 fd 写入内容；写完 fsync/校验；原子发布；加载前再次 stat/canWrite 断言”。如果工程只能先写后 chmod，必须要求持有跨进程发布锁，并说明这是兼容退路，不是首选安全路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T10:20:00+08:00"
     }
   ],
   "metadata": {

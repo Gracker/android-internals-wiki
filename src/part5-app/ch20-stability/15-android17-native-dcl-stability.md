@@ -20,8 +20,8 @@ task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: "task2b_pending"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c"
@@ -39,6 +39,18 @@ source_refs:
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md]"
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md]"
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md]"
+task9_result: "needs-rework"
+task2b_state: "pending"
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-25T10:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-10-deep-review.md"
+task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Native DCL 发布顺序与 Android 14 DCL 写入期只读建议不一致，存在 rename 后 chmod 前的并发加载窗口。"
+p0: 0
+p1: 1
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-05-25"
 ---
 
 # 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性
