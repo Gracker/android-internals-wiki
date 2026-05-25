@@ -5392,19 +5392,22 @@
       "task2a_result": "gap-created"
     },
     "18.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-25T20:12:00+08:00",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task6_review_log": "logs/review/2026-05-25-20-review.md",
       "title": "OpenGL ES 渲染链路",
       "file": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
-      "task6_review_notes": "Task2B 修复后写作复审通过；小修 10 处，无新增 L3/L4 回炉项，转 Task9 复核。"
+      "task6_review_notes": "Task2B 修复后写作复审通过；小修 10 处，无新增 L3/L4 回炉项，转 Task9 复核。",
+      "last_task9_at": "2026-05-25T20:22:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-25-20-deep-review.md",
+      "task9_review_notes": "Task9 深度复核通过；P0/P1=0，历史 P2 triple buffering 口径已在 suggestions.md，不重复新增；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
     }
   },
   "task2b_rounds": [
