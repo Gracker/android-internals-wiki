@@ -249,7 +249,8 @@
     "19.24",
     "9.6",
     "9.1",
-    "19.24"
+    "19.24",
+    "18.8"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -334,25 +335,22 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
     "src/part2-performance/ch09-anr/01-anr-design.md",
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
-    "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-25T16:07:00+08:00",
+    "last_review_at": "2026-05-25T20:12:00+08:00",
     "sections": [
-      "9.6",
-      "9.1",
-      "19.24"
+      "18.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-      "src/part2-performance/ch09-anr/01-anr-design.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 23,
+    "small_fixes": 10,
     "rework_items": 0,
-    "log": "logs/review/2026-05-25-16-review.md"
+    "log": "logs/review/2026-05-25-20-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1968,24 +1966,20 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-25T20:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-25T16:07:00+08:00",
+    "reviewed_at": "2026-05-25T20:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "9.6",
-      "9.1",
-      "19.24"
+      "18.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-      "src/part2-performance/ch09-anr/01-anr-design.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
     ],
-    "log": "logs/review/2026-05-25-16-review.md",
+    "log": "logs/review/2026-05-25-20-review.md",
     "mode": "normal-review",
-    "l1_l2_fixes": 23,
+    "l1_l2_fixes": 10,
     "new_task6_rework_items": 0,
     "auto_finalized": []
   },
@@ -5396,6 +5390,21 @@
       "material_count": 5,
       "last_task2a_at": "2026-05-25T19:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "18.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-25T20:12:00+08:00",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task6_review_log": "logs/review/2026-05-25-20-review.md",
+      "title": "OpenGL ES 渲染链路",
+      "file": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+      "task6_review_notes": "Task2B 修复后写作复审通过；小修 10 处，无新增 L3/L4 回炉项，转 Task9 复核。"
     }
   },
   "task2b_rounds": [
@@ -5465,37 +5474,30 @@
   "last_task2a_at": "2026-05-25T09:21:00+08:00",
   "last_task2a_section": "20.15",
   "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-  "last_task6_review": "2026-05-25T12:09:00+08:00",
+  "last_task6_review": "2026-05-25T20:12:00+08:00",
   "last_task6_sections": [
-    "17.2",
-    "7.6"
+    "18.8"
   ],
   "last_task6_reviewed_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
   ],
-  "last_task6_at": "2026-05-25T12:09:00+08:00",
+  "last_task6_at": "2026-05-25T20:12:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_at": "2026-05-25T20:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
-      "7.6"
+      "18.8"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
     ],
-    "log": "logs/review/2026-05-25-12-review.md",
+    "log": "logs/review/2026-05-25-20-review.md",
     "mode": "normal-review",
     "results": {
-      "17.2": "needs-rework",
-      "7.6": "pass-light-edit"
+      "18.8": "pass-light-edit"
     },
     "auto_finalized": [],
-    "queue_updates": [
-      "17.2"
-    ]
+    "queue_updates": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
