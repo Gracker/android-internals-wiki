@@ -20826,6 +20826,41 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T16:22:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260525-25.20-android17-allow-while-idle-listener-alarm",
+      "section": "25.20",
+      "section_title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
+      "priority": 80,
+      "title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
+      "description": "补齐 Android 17 callback 型 setExactAndAllowWhileIdle、短生命周期后台唤醒、exact alarm 权限和 WakeLock 减量治理的专项章节。",
+      "reason": "Android 17 新增 OnAlarmListener 版本 allow-while-idle exact alarm，官方博客把它定位为减少连续 WakeLock 的后台周期任务方案；现有 25.3 覆盖 WakeLock/Alarm 基础，25.19 覆盖 Vitals 指标，但缺少 API 37 Listener Alarm 迁移边界与验证流程。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
+      ],
+      "material_paths": [
+        "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md",
+        "https://developer.android.com/blog/posts/the-third-beta-of-android-17",
+        "https://developer.android.com/reference/android/app/AlarmManager#setExactAndAllowWhileIdle(int,long,java.lang.String,java.util.concurrent.Executor,android.app.AlarmManager.OnAlarmListener)",
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
+      ],
+      "gap_score": {
+        "素材丰富度": 3,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T19:04:00+08:00"
     }
   ],
   "metadata": {
@@ -20844,19 +20879,19 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T17:26:00+08:00",
-  "last_updated_by": "task9-deep-tech-review-audit",
-  "pending": 182,
+  "last_updated": "2026-05-25T19:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 183,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
-    "created": 1,
-    "sections": [
-      "24.19"
+    "created_sections": [
+      "25.20"
     ],
-    "files": [
-      "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
-    ]
+    "created_files": [
+      "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
+    ],
+    "created_at": "2026-05-25T19:04:00+08:00"
   },
-  "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-25T19:04:00+08:00"
 }

@@ -1,6 +1,6 @@
 {
-  "total": 369,
-  "draft": 0,
+  "total": 370,
+  "draft": 1,
   "ready-for-review": 200,
   "finalized": 169,
   "task9_result": "needs-rework",
@@ -1967,8 +1967,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T16:07:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-25T19:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "reviewed_at": "2026-05-25T16:07:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -5381,6 +5381,20 @@
       "last_task6_at": "2026-05-25T10:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-25-10-review.md",
       "task9_state": "pending"
+    },
+    "25.20": {
+      "title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
+      "file": "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-25",
+      "gap_source": "官方文档/Android 17 API 变更/Clippings结构参考",
+      "gap_score": 16,
+      "queue_priority": 80,
+      "material_count": 5,
+      "last_task2a_at": "2026-05-25T19:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -6702,6 +6716,20 @@
       "last_task6_at": "2026-05-25T10:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-25-10-review.md",
       "task9_state": "pending"
+    },
+    "25.20": {
+      "title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
+      "file": "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-25",
+      "gap_source": "官方文档/Android 17 API 变更/Clippings结构参考",
+      "gap_score": 16,
+      "queue_priority": 80,
+      "material_count": 5,
+      "last_task2a_at": "2026-05-25T19:04:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2a_last_processed": {
@@ -6965,19 +6993,19 @@
   "last_task9_review_summary": "Task9 闲时抽检：3.7 needs-rework；P0 0 / P1 1 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-25",
-    "time": "16:15",
-    "created": 1,
-    "sections": [
-      "24.19"
+    "time": "19:04",
+    "mode": "create-new-section",
+    "created_sections": [
+      "25.20"
     ],
-    "files": [
-      "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
+    "created_files": [
+      "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
     ],
-    "mode": "gap-mining",
-    "source": "official-docs/android17-behavior-changes/clippings-structure",
-    "qualified_total": 1
+    "candidate_count": 1,
+    "qualified_count": 1,
+    "source": "Android 17 official API change / Clippings structure reference"
   },
-  "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-25T19:04:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -7118,13 +7146,11 @@
     "log": "logs/review/2026-05-20-23-audit.md"
   },
   "task2a_gap_mining_summary": {
-    "last_run": "2026-05-24T20:04:00+08:00",
+    "last_run": "2026-05-25T19:04:00+08:00",
     "mode": "create-new-section",
+    "created_count": 1,
     "created_sections": [
-      "1.22"
-    ],
-    "created_files": [
-      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+      "25.20"
     ]
   },
   "last_task2a_processed_status": "ready-for-review",
@@ -7805,5 +7831,20 @@
       "https://developer.android.com/reference/android/bluetooth/BluetoothSocket",
       "packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothSocket.java"
     ]
+  },
+  "section_25_20": {
+    "section": "25.20",
+    "title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
+    "file": "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-25",
+    "gap_source": "官方文档/Android 17 API 变更/Clippings结构参考",
+    "gap_score": 16,
+    "queue_priority": 80,
+    "material_count": 5,
+    "last_task2a_at": "2026-05-25T19:04:00+08:00",
+    "task2a_result": "gap-created"
   }
 }
