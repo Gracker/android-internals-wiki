@@ -57,13 +57,13 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
-task2b_rework_date: "2026-05-25T07:27:11+08:00"
+task2b_rework_date: "2026-05-25T11:23:10+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 task9_result: needs-rework
 last_task2b_at: "2026-05-17T15:18:41+08:00"
@@ -560,13 +560,13 @@ Overlay Plane 数量因 SoC 和显示管线配置而异，没有统一的公开�
 ### 修复方案
 
 1. **减少 Layer 数量**:把 App UI overlay 合并到主 Surface,避免额外的 Layer。用 `SurfaceView` 的 Z-order 排列让 HWC 直接叠加视频和预览窗口
-2. **控制 Layer 叠放顺序**:使用 `SurfaceView.setZOrderMediaOverlay(true)` 或 `setZOrderOnTop(true)` 等 public API 让本地预览窗口和远端视频走不同的 Overlay Plane,避免两者竞争同一个 Plane。注意 `SurfaceControl.Transaction.setRelativeLayer()` 是 `@hide` API,仅系统/特权组件可用，普通应用无法调用
+2. **控制 Layer 叠放顺序**:使用 `SurfaceView.setZOrderMediaOverlay(true)` 或 `setZOrderOnTop(true)` 等 public API 调整 Surface 的 Z-order 关系，让 HWC 在 validateDisplay() 时拿到不同的 layer 属性输入。Z-order 变化可能影响 HWC 的 DEVICE/CLIENT 合成决策，但 App 侧不能强制指定或保证 plane 分配——plane 分配由 HWC 基于 layer 属性、带宽、格式、alpha、transform 和 device-specific plane capability 决定。优化方向仍是减少 Layer 数量、降低 alpha/transform/crop 复杂度，并用 Perfetto Layer trace 或 `dumpsys SurfaceFlinger` 验证实际 composition 类型。注意 `SurfaceControl.Transaction.setRelativeLayer()` 是 `@hide` API,仅系统/特权组件可用，普通应用无法调用
 3. **用 Perfetto/dumpsys 确认 HWC 合成类型**:Android 应用侧没有稳定的 public API 查询 HWC overlay plane 数量。可通过 Perfetto 的 SurfaceFlinger/Layer trace、`dumpsys SurfaceFlinger` 输出或 Winscope 观察 Layer 合成类型（`DEVICE`/`CLIENT`），据此决定是否降低 UI 复杂度
 
 ```kotlin
 // 视频通话场景:合并 UI overlay 到主 Surface,减少 Layer 数量
 // 只保留远端视频 + 本地预览 + 系统 UI,控制在 4 层以内
-surfaceView.setZOrderMediaOverlay(true)  // 本地预览走单独 overlay
+surfaceView.setZOrderMediaOverlay(true)  // 调整预览窗口 Z-order，可能影响 HWC 合成决策
 ```
 
 [已验证: developer.android.com - SurfaceView Z-order 控制对 HWC 合成的影响]

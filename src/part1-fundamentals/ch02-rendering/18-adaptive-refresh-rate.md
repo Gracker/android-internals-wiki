@@ -1,6 +1,6 @@
 ---
 
-task2b_rework_date: "2026-05-25T07:27:11+08:00"
+task2b_rework_date: "2026-05-25T11:23:10+08:00"
 
 status: "ready-for-review"
 title: Adaptive Refresh Rate 与动态帧率控制
@@ -47,13 +47,13 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 last_task9_at: "2026-05-25T07:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
 task6_result: pass-light-edit
@@ -258,12 +258,12 @@ ORDER BY actual.ts;
 
 ### 利用 VSync ID 分析切换瞬间的预测误差
 
-ARR 切换刷新率时，偶尔出现的一两帧长间隔不一定是 bug。调度器需要从旧频率的 VSYNC 时序过渡到新频率，过渡期间预测模型可能出现偏差。判断长间隔是正常过渡还是异常，可以关联 `display_frame_token`（即 VSync ID）的连续性：
+ARR 切换刷新率时，偶尔出现的一两帧长间隔不一定是 bug。调度器需要从旧频率的 VSYNC 时序过渡到新频率，过渡期间预测模型可能出现偏差。判断长间隔是正常过渡还是异常，需要分层排查：
 
-1. 在 `FrameTimeline` 中找到刷新率切换的时间点（`expected_dur_ms` 从 8.33ms 变到 16.67ms 的位置）
-2. 提取该帧前后的 `display_frame_token` 序列
-3. 如果 `display_frame_token` 在切换点出现跳变（比如从连续递增变为跳过一个 token），说明调度器在切换时错过了目标 VSYNC
-4. 如果 `display_frame_token` 序列连续，但 `actual_dur_ms` 明显大于 `expected_dur_ms`，问题更可能在 App 侧——App 没有在新频率下及时提交帧
+1. 先看 `actual_frame_timeline_slice` 的 `jank_type`、`present_type`、`on_time_finish`：如果出现 `SurfaceFlinger Deadline` 或 `Late Present`，问题在系统侧；如果是 `BufferStuffing` 或 App 侧 jank 类型，先回 App 排查
+2. 把 `expected_dur_ms` / `actual_dur_ms` 的变化与 `Refresh Rate Selection` / mode change slice 放在同一时间窗里对照：mode change 期间的 jank 通常来自切换过渡，mode change 之后的持续 jank 才值得深挖
+3. 结合 `surfaceflinger` 进程的 frame 数据和 VSYNC-app / VSYNC-sf 间隔，确认刷新率是否确实发生了变化
+4. `display_frame_token`（VSync ID）的连续性可以作为辅助信号：按进程/Surface 过滤后的 token gap 可能来自 App 按较低内容帧率提交、Surface 未每个 VSYNC 产帧、或 trace 裁剪范围，不能单独证明调度器错过目标 VSYNC
 
 ```sql
 SELECT
