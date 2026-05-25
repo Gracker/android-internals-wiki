@@ -21087,37 +21087,75 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-26T00:20:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260526-0104-26.19-client-log-diagnostic-command-channel",
+      "section": "26.19",
+      "section_title": "端侧高可用日志与诊断命令通道",
+      "priority": 80,
+      "title": "补齐端侧高可用日志与诊断命令通道",
+      "description": "从线上疑难问题排查与数据上报组件结构中拆出独立小节，覆盖高可用日志、采样存储上报、诊断命令通道、ProfilingManager/Perfetto 边界和隐私治理。",
+      "reason": "现有 26.5 偏方法论，26.12 偏系统 profiling API，缺少面向 App 团队落地的端侧日志与诊断命令基础设施小节；Clippings 中已有高质量结构参考，官方 ProfilingManager 文档提供版本化验证入口。",
+      "gap_source": "参考书结构/章节深挖/官方文档",
+      "score": 17,
+      "score_detail": {
+        "material_richness": 4,
+        "book_relevance": 5,
+        "reader_demand": 5,
+        "timeliness": 3
+      },
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [
+        "26.3",
+        "26.5",
+        "26.12"
+      ],
+      "related_files": [
+        "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md"
+      ],
+      "material_paths": [
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md",
+        "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md",
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture",
+        "src/part5-app/ch26-observability/05-online-troubleshooting.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-26T01:04:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 564,
+    "total_entries": 565,
     "p0_count": 239,
-    "last_updated": "2026-05-26T00:20:00+08:00",
-    "updated_by": "task9-deep-tech-review-audit",
-    "pending_entries": 178,
+    "last_updated": "2026-05-26T01:04:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 179,
     "updated_date": "2026-05-26",
-    "last_updated_by": "task9-deep-tech-review-audit",
-    "pending": 178,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 179,
     "completed_entries": 383,
-    "last_task2a_gap_mining": "24.19",
-    "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
+    "last_task2a_gap_mining": "26.19",
+    "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T00:20:00+08:00",
-  "last_updated_by": "task9-deep-tech-review-audit",
-  "pending": 178,
+  "last_updated": "2026-05-26T01:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 179,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
     "created_sections": [
-      "25.20"
+      "26.19"
     ],
     "created_files": [
-      "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md"
+      "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md"
     ],
-    "created_at": "2026-05-25T19:04:00+08:00"
+    "created_at": "2026-05-26T01:04:00+08:00"
   },
-  "last_task2a_gap_mining_at": "2026-05-25T19:04:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00"
 }

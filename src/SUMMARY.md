@@ -459,6 +459,7 @@ tags:
   - [26.16 线上存储、I/O 与 SQLite 可观测性](part5-app/ch26-observability/16-online-storage-io-sqlite-observability.md)
   - [26.17 线上网络质量监控与接入层协同](part5-app/ch26-observability/17-online-network-quality-observability.md)
   - [26.18 App Performance Score 与性能质量评分归因](part5-app/ch26-observability/18-app-performance-score.md)
+  - [26.19 端侧高可用日志与诊断命令通道](part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md)
 
 ---
 
