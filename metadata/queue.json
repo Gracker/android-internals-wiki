@@ -1,6 +1,34 @@
 {
   "queue_entries": [
     {
+      "id": "task2a-gap-20260525-17.7-private-space-app-lock-boundary",
+      "section": "17.7",
+      "section_title": "Private Space 与应用锁的兼容性边界",
+      "priority": 80,
+      "title": "加工 Private Space 与应用锁的兼容性边界",
+      "description": "基于 AOSP Private Space 官方文档、Android 16 QPR2 变更和 Android 17 应用锁素材，补齐系统级隐私空间、应用锁、Launcher/通知/媒体访问对启动、稳定性和线上指标的影响边界。",
+      "reason": "AIW 已在 24.13 零散提到应用锁和隐私空间，但缺少独立章节说明 profile 隔离、锁定状态、通知隐藏、URI 授权和 OEM 应用锁差异。每日信息和 source-index 多次出现 Android 17 应用锁素材，AOSP 已有 Private Space 官方文档，可形成面向 Android 工程师的兼容性边界章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
+      ],
+      "material_paths": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://source.android.com/docs/whatsnew/android-16-release",
+        "intake/daily-info/2026-05-25.md",
+        "source/juejin-android/2026-05-22-76046943-Android_17_终于有原生应用锁了.md",
+        "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T13:04:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-1227-9.1-dropbox-tag-boundary",
       "section": "9.1",
       "section_title": "ANR 设计思想",
@@ -20503,14 +20531,14 @@
     }
   ],
   "metadata": {
-    "total_entries": 549,
+    "total_entries": 551,
     "p0_count": 233,
-    "last_updated": "2026-05-25T11:41:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 177,
+    "last_updated": "2026-05-25T13:04:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 179,
     "updated_date": "2026-05-25",
-    "last_updated_by": "openclaw-task9",
-    "pending": 177,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 179,
     "completed_entries": 369,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
@@ -20518,19 +20546,19 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T11:41:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 177,
+  "last_updated": "2026-05-25T13:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 179,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
     "created": 1,
     "sections": [
-      "1.22"
+      "17.7"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+      "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
     ]
   },
-  "last_task2a_gap_mining_at": "2026-05-25T00:04:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-25T13:04:00+08:00"
 }

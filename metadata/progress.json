@@ -1,6 +1,6 @@
 {
-  "total": 387,
-  "draft": 21,
+  "total": 388,
+  "draft": 22,
   "ready-for-review": 175,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -6917,19 +6917,19 @@
   "last_task9_review_summary": "Task9 闲时抽检：3.7 needs-rework；P0 0 / P1 1 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-25",
-    "time": "05:15",
+    "time": "13:04",
     "created": 1,
     "sections": [
-      "25.19"
+      "17.7"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md"
+      "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
     ],
     "mode": "gap-mining",
-    "source": "official-docs/clippings/queue-gap",
+    "source": "official-docs/daily-info/source-index",
     "qualified_total": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-25T05:15:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-25T13:04:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
