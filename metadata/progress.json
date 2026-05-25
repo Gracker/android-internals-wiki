@@ -1,6 +1,6 @@
 {
-  "total": 372,
-  "draft": 0,
+  "total": 373,
+  "draft": 1,
   "ready-for-review": 203,
   "finalized": 169,
   "task9_result": "needs-rework",
@@ -1992,8 +1992,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-26T04:07:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-26T04:17:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "reviewed_at": "2026-05-26T04:07:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -5516,6 +5516,15 @@
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed"
+    },
+    "22.17": {
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "title": "Hardware Bitmap 与 RenderNode 缓存策略",
+      "file": "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-26",
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -5582,9 +5591,9 @@
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
   "total_review_files": 69,
-  "last_task2a_at": "2026-05-25T09:21:00+08:00",
-  "last_task2a_section": "20.15",
-  "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+  "last_task2a_at": "2026-05-26T04:17:00+08:00",
+  "last_task2a_section": "22.17",
+  "last_task2a_file": "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md",
   "last_task6_review": "2026-05-26T04:07:00+08:00",
   "last_task6_sections": [
     "1.7",
@@ -8161,5 +8170,10 @@
     "p90": 15,
     "p85": 81,
     "total": 129
-  }
+  },
+  "last_task2a_action": "gap-mining-new-section",
+  "last_task2a_created": "22.17",
+  "last_task2a_created_files": [
+    "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
+  ]
 }
