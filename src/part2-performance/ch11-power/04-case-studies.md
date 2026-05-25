@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -31,20 +31,25 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-23"
 task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-07"
+task2b_result: pending
+task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-07T06:40:00+08:00"
-last_task9_at: "2026-05-07T07:28:39+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
-task9_review_notes: "2026-05-07 Task9 07:20：pass-tech-review。P0 0 / P1 0 / P2 1；FGS timeout 修正已闭环，仅 Android Vitals Excessive Wakeups 链接为 404（suggestions.md 已有同项记录，本轮不重复追加）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-05-26T02:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-26-02-audit.md"
+task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 1 / P1 1 / P2 1；JobScheduler runtime 常量表与 android-16.0.0_r1 不一致；location FGS type 版本边界写晚；Excessive Wakeups 参考链接需改为 /wakeup。"
+last_task9_audit: "2026-05-26"
+last_task9_audit_at: "2026-05-26T02:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
+last_task9_audit_result: "p0-source-error"
+task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
 ---
 
 # 案例集
