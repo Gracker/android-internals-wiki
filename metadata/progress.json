@@ -1,7 +1,7 @@
 {
   "total": 369,
-  "draft": 1,
-  "ready-for-review": 199,
+  "draft": 0,
+  "ready-for-review": 200,
   "finalized": 169,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -7421,8 +7421,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "25.17",
-  "last_task2a_completed_at": "2026-05-24T04:15:00+08:00",
+  "last_task2a_completed": "24.19",
+  "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -7782,18 +7782,28 @@
     "section": "24.19",
     "title": "BluetoothSocket read 断开语义与长连接治理",
     "file": "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_pending",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-25",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-05-25",
+    "last_verified": "2026-05-25",
+    "last_verified_against": "Android Developers Android 17 behavior changes / Bluetooth transfer-data guide 2026-05-25; AOSP packages/modules/Bluetooth refs/heads/main",
+    "confidence": "medium",
     "gap_source": "官方文档/Android17行为变更/Part5结构参考",
     "gap_score": 18,
-    "task2a_state": "pending",
+    "material_count": 4,
+    "task2a_state": "processed",
+    "task2a_result": "processed-draft",
+    "last_task2a_at": "2026-05-25T17:37:00+08:00",
+    "task6_state": "pending",
     "queue_priority": 80,
     "sources": [
       "https://developer.android.com/about/versions/17/behavior-changes-17",
       "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
-      "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      "https://developer.android.com/reference/android/bluetooth/BluetoothSocket",
+      "packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothSocket.java"
     ]
   }
 }

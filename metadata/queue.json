@@ -20729,7 +20729,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
@@ -20742,7 +20742,10 @@
         "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-25T16:15:00+08:00"
+      "added_at": "2026-05-25T16:15:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-25T17:37:00+08:00",
+      "completion_reason": "Task 2A draft processing: BluetoothSocket read EOF semantics and long-connection governance drafted"
     },
     {
       "id": "task9-deep-20260525-1622-9.6-nls-input-anr-boundary",
@@ -20844,8 +20847,8 @@
   "last_updated": "2026-05-25T17:26:00+08:00",
   "last_updated_by": "task9-deep-tech-review-audit",
   "pending": 182,
-  "last_task2a_completed": "1.22",
-  "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
+  "last_task2a_completed": "24.19",
+  "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
     "created": 1,
     "sections": [
