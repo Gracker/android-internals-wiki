@@ -1,4 +1,5 @@
 ---
+
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
@@ -38,16 +39,16 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-status: "ready-for-review"
-pipeline_stage: "task9_pending"
-task9_result: "needs-rework"
-task9_state: "pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-task9_reviewed_date: 2026-05-06
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T10:38:04+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。"
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-25T16:22:00+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
@@ -57,6 +58,9 @@ last_task9_audit_log: "logs/deep-review/2026-05-25-12-audit.md"
 last_task6_at: "2026-05-25T16:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
+auto_promoted_by: "openclaw-task9"
+auto_promoted_date: "2026-05-25"
 ---
 
 # ANR 设计思想
