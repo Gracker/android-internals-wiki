@@ -1,6 +1,6 @@
 {
-  "total": 373,
-  "draft": 0,
+  "total": 374,
+  "draft": 1,
   "ready-for-review": 203,
   "finalized": 170,
   "task9_result": "needs-rework",
@@ -1995,8 +1995,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-26T05:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-26T06:16:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "reviewed_at": "2026-05-26T05:09:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -5547,6 +5547,20 @@
       "last_verified": "2026-05-26",
       "confidence": "medium",
       "last_task2a_at": "2026-05-26T05:20:00+08:00"
+    },
+    "8.13": {
+      "title": "BiometricPrompt 与 Credential Manager 登录链路性能",
+      "file": "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-26",
+      "gap_source": "AOSP结构/官方文档/素材驱动",
+      "gap_score": 16,
+      "queue_priority": 80,
+      "material_count": 6,
+      "last_task2a_at": "2026-05-26T06:16:00+08:00",
+      "task2a_result": "gap-created"
     }
   },
   "task2b_rounds": [
@@ -7272,19 +7286,19 @@
   "last_task9_review_summary": "Task9 04:30 reviewed 1.7 and 11.4; 1.7 auto-finalized; 11.4 returned to Task2B for JobScheduler timeout min-guarantee correction.",
   "last_task2a_gap_mining": {
     "date": "2026-05-26",
-    "time": "01:04",
+    "time": "06:16",
     "mode": "create-new-section",
     "created_sections": [
-      "26.19"
+      "8.13"
     ],
     "created_files": [
-      "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md"
+      "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md"
     ],
-    "candidate_count": 3,
+    "candidate_count": 6,
     "qualified_count": 1,
-    "source": "参考书结构/章节深挖/官方文档"
+    "source": "AOSP结构/官方文档/素材驱动"
   },
-  "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-26T06:16:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"

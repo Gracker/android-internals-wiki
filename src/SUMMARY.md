@@ -159,6 +159,7 @@ tags:
   - [8.10 ProfilingManager 系统触发式性能追踪](part2-performance/ch08-responsiveness/08-system-triggered-profiling.md)
   - [8.11 Native 库加载与动态链接性能](part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md)
   - [8.12 Keystore/KeyMint 调用延迟与登录链路性能](part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md)
+  - [8.13 BiometricPrompt 与 Credential Manager 登录链路性能](part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)

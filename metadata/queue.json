@@ -21382,29 +21382,82 @@
       "added_at": "2026-05-26T05:35:00+08:00",
       "status": "pending",
       "original_review_log": "logs/deep-review/2026-05-26-05-audit.md"
+    },
+    {
+      "id": "task2a-gap-20260526-0616-8.13-biometric-credential-login-performance",
+      "section": "8.13",
+      "section_title": "BiometricPrompt 与 Credential Manager 登录链路性能",
+      "priority": 80,
+      "title": "加工 BiometricPrompt 与 Credential Manager 登录链路性能",
+      "description": "补齐生物识别、Credential Manager、passkey 单击登录、Keystore/KeyMint 与线上登录耗时归因的响应速度章节。",
+      "reason": "AOSP 结构检查发现 BiometricService/CredentialManagerService 尚未在目录中形成独立性能章节；官方文档已有 Android 15 Credential Manager single tap biometric、BiometricPrompt 认证行为和错误码边界，现有 8.12 只覆盖 Keystore/KeyMint 调用延迟，缺少从用户登录链路视角拆分 prompt、credential provider、认证、签名和服务端校验的章节。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [
+        "8.12",
+        "20.16",
+        "26.12"
+      ],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt",
+        "https://developer.android.com/reference/android/hardware/biometrics/BiometricManager.Authenticators",
+        "https://developer.android.com/identity/sign-in/single-tap-biometric",
+        "https://developer.android.com/training/sign-in/passkeys",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/biometrics/",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/credentials/"
+      ],
+      "gap_score": {
+        "素材丰富度": 3,
+        "与全书目标相关性": 4,
+        "读者需求度": 5,
+        "时效性": 4,
+        "total": 16
+      },
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-26T06:16:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 573,
+    "total_entries": 574,
     "p0_count": 242,
-    "last_updated": "2026-05-26T05:35:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 180,
+    "last_updated": "2026-05-26T06:16:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 181,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task9",
-    "pending": 180,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 181,
     "completed_entries": 390,
-    "last_task2a_gap_mining": "22.17",
-    "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00",
+    "last_task2a_gap_mining": "8.13",
+    "last_task2a_gap_mining_at": "2026-05-26T06:16:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T05:35:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 180,
+  "last_updated": "2026-05-26T06:16:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 181,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
-  "last_task2a_gap_mining": "22.17",
-  "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00"
+  "last_task2a_gap_mining": {
+    "date": "2026-05-26",
+    "time": "06:16",
+    "mode": "create-new-section",
+    "created_sections": [
+      "8.13"
+    ],
+    "created_files": [
+      "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md"
+    ],
+    "candidate_count": 6,
+    "qualified_count": 1,
+    "source": "AOSP结构/官方文档/素材驱动"
+  },
+  "last_task2a_gap_mining_at": "2026-05-26T06:16:00+08:00"
 }
