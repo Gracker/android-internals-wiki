@@ -1,7 +1,7 @@
 {
   "total": 372,
-  "draft": 1,
-  "ready-for-review": 202,
+  "draft": 0,
+  "ready-for-review": 203,
   "finalized": 169,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -5484,9 +5484,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "20.15",
-  "last_task2a_processed_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-  "last_task2a_processed_date": "2026-05-25",
+  "last_task2a_processed": "26.19",
+  "last_task2a_processed_file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
+  "last_task2a_processed_date": "2026-05-26",
   "task9_last_review_detail": {
     "date": "2026-05-24",
     "time": "17:31",
