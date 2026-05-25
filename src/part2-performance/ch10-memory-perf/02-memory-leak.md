@@ -41,6 +41,7 @@ last_task9_at: "2026-05-08T04:31:55+08:00"
 task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径） | 2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
 task9_result: "pass-tech-review"
 last_task6_at: "2026-05-08T04:05:00+08:00"
+last_task6_audit: "2026-05-25"
 task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter YAML 与流程元数据；正文无新增 L1/L2 问题；无新增回炉项，送 Task9 复审。"
 ---
 
