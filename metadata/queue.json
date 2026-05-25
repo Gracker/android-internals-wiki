@@ -1,6 +1,42 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-1420-9.6-android17-notification-metricstyle",
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 85,
+      "title": "补齐 Android 17 MetricStyle 与 Live Update semantic color 通知版本边界",
+      "description": "Task9 闲时抽检发现 §9.6 仍把 Android 17 通知性能条目写成暂缓，但官方 Android 17/API 37 文档已经发布 MetricStyle 和 Live Update Semantic Coloring API，章节的版本演进口径已过期。",
+      "reason": "[Deep Tech Review Audit] §9.6 L330-L346、L478-L483 继续写 Android 17 通知条目缺少一手材料；官方 Android 17 文档已有 Notification.MetricStyle、Notification.Metric 与 semantic color API，需要更新版本差异和性能边界。",
+      "issue_type": "version-difference-android17-notification-api",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-14-audit.md",
+        "https://developer.android.com/reference/android/app/Notification.MetricStyle",
+        "https://developer.android.com/develop/ui/views/notifications/metric-style",
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/Android 17 通知 API 覆盖缺失",
+          "location": "L330-L346、L478-L483：Android 17 通知性能变更与版本演进表",
+          "detail": "正文仍写“Android 17 条目暂缓”并在版本演进表中把 Android 17 的通知行为整体归为缺少一手材料。2026-03 官方文档已经发布 Android 17/API 37 的 Notification.MetricStyle，并在 Android 17 Features 中列出 Live Update Semantic Coloring API，覆盖 Notification、Notification.Metric、Notification.ProgressStyle.Point/Segment。当前章节继续只保留 Android 16 ProgressStyle，会漏掉 Android 17 进度/指标型通知模板与 Live Update 展示边界。",
+          "suggestion": "Task2B 按 Android 16/17 分层补齐：Android 16 写 ProgressStyle / progress-centric notifications；Android 17 写 MetricStyle、Notification.Metric、semantic color API 与 promoted ongoing/Live Update 的关系。保留“后台 NLS 限频未证实”的边界，但不要把 Android 17 全部写成暂缓。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T14:20:00+08:00"
+    },
+    {
       "id": "task2a-gap-20260525-17.7-private-space-app-lock-boundary",
       "section": "17.7",
       "section_title": "Private Space 与应用锁的兼容性边界",

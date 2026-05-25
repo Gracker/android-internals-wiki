@@ -2,7 +2,7 @@
 title: "Notification 性能与 ANR"
 chapter: "9.6"
 section: "9.6"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
@@ -34,26 +34,27 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "needs-rework"
 task2b_result: fixed
-task2b_state: fixed
-task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T19:57:05+08:00"
+task2b_state: "pending"
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-25T14:20:00+08:00"
 last_task2b_at: "2026-05-06T19:28:51+08:00"
 last_task6_at: "2026-05-06T17:26:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-06-17-review.md"
 task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-06-19-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。 | 2026-05-06 18:45 Task9：needs-rework。P0 1 / P1 0 / P2 0。L504 “标准模板不需要 RemoteViews inflate” 与 android-16 Notification.Builder/NotificationContentInflater 源码矛盾。 | 2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。"
-review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-25-14-audit.md"
+task9_review_notes: "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。 | 2026-05-06 18:45 Task9：needs-rework。P0 1 / P1 0 / P2 0。L504 “标准模板不需要 RemoteViews inflate” 与 android-16 Notification.Builder/NotificationContentInflater 源码矛盾。 | 2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
+review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
+last_task9_audit: "2026-05-25"
 ---
 
 # 9.6 Notification 性能与 ANR
