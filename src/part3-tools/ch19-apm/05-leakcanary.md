@@ -39,6 +39,8 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
 ---
 
 # LeakCanary
@@ -213,13 +215,13 @@ RecyclerView
 
 | 模式 | 表现 | 修复方向 |
 |---|---|---|
-| 静态单例持有 Context / View | Activity 销毁后仍被 static 字段引用 | 存 application context，避免持有 View |
+| 静态单例持有 Context / View | Activity 销毁后仍被 static 字段引用 | 存应用上下文，避免持有 View |
 | Handler / Runnable 延迟任务 | MessageQueue 中的任务持有页面对象 | 页面销毁时 `removeCallbacksAndMessages()` |
 | 监听器未注销 | 全局 dispatcher、网络回调、传感器监听持有页面 | 成对注册和注销 |
 | 协程 / Rx / Flow 收集未取消 | 页面销毁后 collector 还在推数据，闭包继续持有页面对象 | 绑定 lifecycle scope，退出页面时 cancel / dispose |
 | 匿名内部类 / lambda 持有外部类 | `this$0` 把 callback 和 Activity / Fragment 连在一起 | 改成静态类、顶层类，或在退出时解绑 |
 | Fragment view 泄漏 | `onDestroyView()` 后 adapter / binding 仍持有 View | 清空 binding、adapter、listener |
-| Dialog / PopupWindow 泄漏 | 弹窗 dismiss 后仍被 Window、listener 或 manager 持有 | `dismiss()` 后清理 listener、adapter、context 链 |
+| Dialog / PopupWindow 泄漏 | 弹窗 dismiss 后仍被 Window、listener 或 manager 持有 | `dismiss()` 后清理 listener、adapter、上下文链 |
 | WebView / Map / Player 容器 | native 资源或内部线程持有 Activity | 独立生命周期封装，销毁顺序明确 |
 
 LeakCanary 的优势是直接告诉你引用路径。修复时不要只把字段置空，而要找到谁负责释放这条引用。

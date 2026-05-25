@@ -31,7 +31,7 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-26T04:07:00+08:00"
@@ -40,7 +40,7 @@ task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit�
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
 task2b_result: "fixed"
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
@@ -54,7 +54,6 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
 last_task9_audit_result: "p0-source-error"
 task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
 ---
-
 # 案例集
 
 <!-- outline-start -->
@@ -655,11 +654,11 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 | Expedited | 3 分钟（`DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS`） | 不超过 Regular 上限（10 分钟），调度优先级更高 | 同 Regular |
 | User-Initiated | 约 6 小时（`DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS`，max(6h,10min)） | 约 12 小时（`DEFAULT_RUNTIME_UI_LIMIT_MS`，max(12h,30min)）；累计 UI limit 24h | 同 Regular |
 
-以上是 `JobSchedulerService.Constants` 中各类 Job 的最小保障时长和常规上限。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 standby bucket、当前 quota、QuotaController 和 timeout quota 约束。低电量或受限状态下，上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants`]
+以上是 `JobSchedulerService.Constants` 中各类 Job 的最小保障时长和常规上限。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 standby bucket、当前 quota、QuotaController 和 timeout quota 约束。quota 和 standby bucket 影响的是后续调度频率和每次运行的上限，不是缩短单次 timeout。AOSP `JobServiceContext.executeRunnableJob()` 中 `mMaxExecutionTimeMillis = max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)`，timeout 窗口不会低于对应类型的最小保障值。更早停止只能来自约束变化、preempt、cancel 或 ANR 等非 timeout 路径。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `JobServiceContext.java`]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
 
-如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular 至少 10 分钟、Expedited 至少 3 分钟、User-Initiated 至少约 6 小时，但 quota 降级后可能更短。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长取决于 `max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)` 的返回值——Regular 至少 10 分钟、Expedited 至少 3 分钟、User-Initiated 至少约 6 小时。quota 和 standby bucket 会影响运行上限，但 timeout 窗口不会低于最小保障值。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。[已验证: AOSP android-16.0.0\_r1 `JobServiceContext.executeRunnableJob()`]
 
 ### 逐步分析
 

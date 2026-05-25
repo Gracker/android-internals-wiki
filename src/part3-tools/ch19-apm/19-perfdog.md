@@ -40,6 +40,8 @@ rework_count: 1
 rework_date: "2026-04-27"
 rework_by: "task2b-rework"
 last_task2b_at: "2026-04-27T07:58:00+08:00"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
 ---
 
 
@@ -128,7 +130,7 @@ GPU 利用率、频率、显存类指标受 SoC 和驱动暴露程度影响。�
 
 ## 结果解释要看测试条件
 
-PerfDog 的数据很容易被拿来横向比较，但横向比较最容易出错。至少要固定这些条件：
+PerfDog 数据常被横向比较，但这种比较最易出错。至少要固定这些条件：
 
 - 设备型号、系统版本、刷新率、性能模式。
 - 电量、充电状态、温度和散热方式。

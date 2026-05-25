@@ -8,7 +8,7 @@ section: '3.1'
 last_task6_at: "2026-05-21T04:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-04-review.md"
 task6_review_notes: "2026-05-21 Task6 04: L1 小修 1 处；参考资料之后仍有源码调研素材块/AIW 注释，已回炉 Task2B 主线融合。"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -56,8 +56,8 @@ task6_state: "reviewed"
 task6_reviewed_date: "2026-05-21"
 task9_state: "reviewed"
 task9_result: needs-rework
-task2b_state: "pending"
-task2b_result: 'fixed'
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T04:36:55+08:00"
@@ -70,7 +70,6 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
 ---
-
 
 # Input 事件分发全流程
 
@@ -744,9 +743,7 @@ set_sched_policy(0, SP_FOREGROUND);  // 前台调度策略
 
 `nice=-20` 是 Linux 用户态进程的最高优先级（数值越低优先级越高）。`SP_FOREGROUND` 确保 InputFlinger 线程归属 foreground 调度组，获得约 95% 的 CPU 时间片。
 
-后续版本中，这些显式调用被移除，InputFlinger 的高优先级改为由 Android 框架隐式保证——作为 system_server 的关键组件，它的线程以 `ANDROID_PRIORITY_FOREGROUND` 运行。移除的理由是避免与系统其他高优先级任务产生调度冲突。
-
-作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
+后续版本中，这些显式调用被移除，InputFlinger 的高优先级由 `InputThread` 构造时通过 `mThread->run(..., ANDROID_PRIORITY_URGENT_DISPLAY)` 设置（源码锚点：`services/inputflinger/InputThread.cpp`）。`ANDROID_PRIORITY_URGENT_DISPLAY` 对应 nice=-8，高于 foreground 的 nice=0。作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
 
 ### AnrTracker 的超时驱动机制（Android 12+）
 
@@ -869,7 +866,7 @@ NativeInputDispatcherPolicy.inputDispatchingTimedOut()
 
 ### 6. WindowInfosListener 补充说明（vs setInputWindows）
 
-Android 12 的 `setInputWindows()` 是 Pull 模式（InputDispatcher 主动查询）；Android 13+ 的 `addWindowInfosListener()` + `DispatcherWindowListener` 是 Push 模式（SurfaceFlinger 推送）。Push 模式降低了 InputDispatcher 查询窗口信息的延迟，提升了触摸分发的实时性。
+Android 12 的 `setInputWindows()` 由 WMS/InputMonitor 通过 SurfaceControl transaction 推送 input window info 到 InputDispatcher，不是 InputDispatcher 主动查询。Android 13+ 的 `addWindowInfosListener()` + `DispatcherWindowListener` 改为由 SurfaceFlinger 通过回调更新窗口信息，减少了 WMS 到 InputDispatcher 的中间环节。
 
 ### 信息源（本次补核）
 

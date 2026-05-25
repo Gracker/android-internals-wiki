@@ -27,9 +27,9 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task2b_pending"
-task2b_result: "pending"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 task6_state: "reviewed"
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
 last_task6_at: "2026-05-26T05:09:00+08:00"
@@ -52,8 +52,7 @@ task6_new_rework: false
 review_type: "task6-writing-quality-review"
 task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处（延伸阅读中抽象黑话改为「版本对照表」）；outline 锚点覆盖 6/6；无新增 Task6 回炉。既有 Task9 P0 Cleaner 延伸阅读摘要问题仍在 queue pending，保持 task2b_pending。"
 task6_reviewed_date: "2026-05-26"
----
-# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
+---# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
 <!-- outline-start -->
 ## 要点
@@ -448,7 +447,7 @@ Native 资源问题通常来自“小 wrapper 持有大资源”，不一定对�
 ### ART FinalizerDaemon 与 ReferenceQueue 版本对照表补全
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-art-finalizer-referencequeue-cleaner-close-guard-version-matrix.md
 - 类型：DeepResearch 调研结果
-- 摘要：补全 Android 8-16 区间 sun.misc.Cleaner（CleanerDaemon 独立线程）、java.lang.ref.Cleaner（FinalizerDaemon 路径）、dalvik.system.CloseGuard 与 android.util.CloseGuard 四条清理路径的版本边界、源码位置和执行触发链。ReferenceQueue enqueuePending() 批处理逻辑与 FIFO 队列实现已验证。
+- 摘要：补全 Android 8-16 区间 sun.misc.Cleaner（ReferenceQueueDaemon.enqueuePending() 直接 clean()）、java.lang.ref.Cleaner（CleanerImpl 自有 daemon 线程）、Android system cleaner（FinalizerDaemon#doClean() 路径）、dalvik.system.CloseGuard 与 android.util.CloseGuard 四条清理路径的版本边界、源码位置和执行触发链。ReferenceQueue enqueuePending() 批处理逻辑与 FIFO 队列实现已验证。
 - 注入时间：2026-05-25
 - 价值：完整的 Cleaner/Finalizer/CloseGuard 版本对照表和源码路径，填补 §4.9 多版本边界空白
 

@@ -261,3 +261,10 @@ Android 的 Game Service / GameSession 能让 OEM 游戏工具与游戏场景协
 - Perfetto `input` track 查看dispatch latency
 
 <!-- AIW-源码调研-2026-05-25 END -->
+
+### OEM游戏模式输入优先级机制深度验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-oem-game-mode-input-dispatcher-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级验证AOSP InputDispatcher无独立游戏输入优先级通道，TouchFocus按Z-order确定与Game Mode无关；InputDispatcherPolicyInterface::notifyWindowResponsive()是厂商扩展点，injectInputEvent(ASYNC)实现零排队注入但均为通用机制。
+- 注入时间：2026-05-26
+- 价值：首次从AOSP源码明确辟谣游戏输入优先级独立通道，提供厂商实现的正确归因分解框架

@@ -44,11 +44,11 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: "reviewed"
 task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: 'fixed'
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-21T03:22:56+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
@@ -63,7 +63,6 @@ last_task6_review_log: "logs/review/2026-05-21-04-review.md"
 task6_reviewed_date: "2026-05-21"
 task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。"
 ---
-
 
 # 5.9 ADPF 自适应性能框架
 
@@ -134,7 +133,7 @@ Android 15 为 Performance Hint API 引入了两个重要增强。
 
 ### Android 16 的 Headroom API
 
-Android 16 新增的是 `SystemHealthManager#getCpuHeadroom()` 和 `getGpuHeadroom()` 等 API。它们返回 available CPU / GPU capacity headroom，用来回答一个更具体的问题：在当前负载下，离容量上限还剩多少余量。
+Android 16 新增的是 `SystemHealthManager#getCpuHeadroom(@Nullable CpuHeadroomParams)` 和 `getGpuHeadroom(@Nullable GpuHeadroomParams)` 等 API。传 `null` 使用默认参数。它们返回 available CPU / GPU capacity headroom，用来回答一个更具体的问题：在当前负载下，离容量上限还剩多少余量。
 
 这组 API 适合做较低频的策略判断，比如场景切换、画质挡位调整、后台调优线程的周期性采样。它不适合塞进 frame loop。官方文档明确写到，每次调用至少会触发一次同步 Binder，单次调用可能超过 1 ms，不建议在 critical thread 上等待结果。实际用法应该放在 worker thread，并遵守 `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()` 暴露的最小轮询间隔。
 
@@ -307,7 +306,7 @@ gameManager.setGameState(
 | Android 13 (API 33) | 继续通过 `GameManager#setGameState(GameState)` 上报游戏状态，不新增 `GameStateManager` 公开类 |
 | Android 14 | 更多 OEM 开始接入 ADPF HAL，设备差异仍然明显 |
 | Android 15 (API 35) | GPU 工作时长上报；HintSession 能效模式；`PowerManager#getThermalHeadroomThresholds()` |
-| Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()`；NDK thermal headroom listener |
+| Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom(CpuHeadroomParams)` / `getGpuHeadroom(GpuHeadroomParams)`（传 null 用默认值）；NDK thermal headroom listener |
 | Android 17 (API 37) | `PerformanceHintManager.Session#setPreferIdle()` [待验证：公开 API 文档未确认]；RecyclerView 1.4 自适应刷新率支持（非 ADPF HintSession） |
 
 
@@ -472,9 +471,9 @@ void ensureAPerformanceHintBindingInitialized() {
 
 `android_os_PerformanceHintManager.cpp` 通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定 NDK C API 符号（`APerformanceHint_getManager`、`APerformanceHint_createSession` 等）。这些 C API 的源码入口在 `frameworks/base/native/android/performance_hint.cpp`，是公开可查阅的 AOSP 代码；JNI 层的延迟绑定机制保证了 Java API 变化不会影响 native 层已绑定的符号地址，但新 API 的暴露仍然依赖 NDK 头文件的版本声明。
 
-### GameState.MODE_CONTENT：非游戏应用的语义锚点
+### GameState.MODE_CONTENT：游戏内非 Gameplay 内容的状态标记
 
-虽然类名是 `GameState`，但 `MODE_CONTENT = 4` 的语义定义覆盖了非游戏场景：
+`GameState` 的 AOSP 注释写的是 "State of the game passed to the GameManager"；`GameManager#getGameMode()` 对非 game 应用返回 `GAME_MODE_UNSUPPORTED`。`MODE_CONTENT = 4` 的语义是游戏内非 gameplay 内容（广告、网页、文字、视频），不是通用非游戏 App 的锚点。
 
 ```java
 // frameworks/base/core/java/android/app/GameState.java, 行 48
@@ -485,17 +484,7 @@ void ensureAPerformanceHintBindingInitialized() {
 public static final int MODE_CONTENT = 4;
 ```
 
-**非游戏场景到 GameState 的映射**：
-
-| 非游戏场景 | GameState 模式 | 原因 |
-|-----------|---------------|------|
-| 视频播放（内容为主） | `MODE_CONTENT` | 明确为视频内容设计 |
-| 视频通话（实时交互） | `MODE_GAMEPLAY_UNINTERRUPTIBLE` | 不可中断的实时通信 |
-| AR 应用（空间追踪） | `MODE_GAMEPLAY_INTERRUPTIBLE` | 可被系统中断的 AR 处理 |
-| 地图导航 | `MODE_CONTENT` | 展示内容为主 |
-| 音乐播放（后台） | `MODE_NONE` | 非活跃状态 |
-
-GameState 通过 `GameManager.setGameState()` 报告，传入 `GameState(isLoading, mode)` 即可。无需在意 GameState 的命名——语义匹配比命名更重要。
+非游戏性能密集型应用（视频播放、视频通话、地图导航）不应通过 `GameState` 管理 ADPF 行为。正确的路径是 `PerformanceHintManager.Session.setPreferPowerEfficiency()`（API 35+）和 `SystemHealthManager` headroom 轮询——它们不依赖 `GameManager` 的游戏分类。
 
 <!-- AIW-源码调研-20260507 END -->
 
