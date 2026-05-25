@@ -94,7 +94,9 @@
         "https://www.qualcomm.com/smartphones/products/8-series/snapdragon-8-elite-gen-5",
         "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500",
         "https://semiconductor.samsung.com/processor/mobile-processor/exynos-2600/",
-        "https://blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/"
+        "https://blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/",
+        "intake/suggestions.md",
+        "logs/review/2026-05-25-09-review.md"
       ],
       "review_issues": [
         {
@@ -110,10 +112,19 @@
           "location": "L94-L100、L264-L266：当前旗舰 SoC 概览和内存带宽",
           "detail": "截至 2026-05，Qualcomm 官方已有 Snapdragon 8 Elite Gen 5，MediaTek 官方已有 Dimensity 9500，Samsung Semiconductor 已有 Exynos 2600，Google 已在 Pixel 10 发布 Tensor G5。正文仍把 8 Elite/9400/Exynos 2500/G4 作为“最新/当前”主线，并把 Tensor G5 写成预计，版本边界已不成立。",
           "suggestion": "把正文拆成“2024/2025 代表芯片”和“2025/2026 当前旗舰”两层；当前层补 8 Elite Gen 5 / Dimensity 9500 / Exynos 2600 / Tensor G5 的 CPU、GPU、NPU、内存规格和 Perfetto 观察差异，历史层保留 8 Gen 3、8 Elite、9400 作为演进背景。"
+        },
+        {
+          "severity": "P1",
+          "type": "需整合",
+          "location": "常见问题与误区之后的 `<!-- AIW-源码调研-2026-05-11（已整合） -->` / `#### 联发科调度行为要点`",
+          "detail": "正文在常见问题之后继续追加源码调研列表,结构上像素材块残留;内容与 CPU 调度小节部分重复,且含待验证材料。Task6 不做大段改写,交由 Task2B 决定合并、删冗余或改成资料注释。",
+          "suggestion": "把可保留的调度要点并入 `CPU 核心架构差异与性能调度策略` 或 `不同 SoC 上 Perfetto 数据的差异`;无法核验的 vendor kernel/频率表述继续保留待验证或交 Task9。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-25T07:30:00+08:00"
+      "added_at": "2026-05-25T07:30:00+08:00",
+      "updated_at": "2026-05-25T09:09:00+08:00",
+      "updated_by": "openclaw-task6"
     },
     {
       "id": "task9-audit-20260525-0520-13.1-perfetto-lmk-config-boundary",
@@ -20227,7 +20238,8 @@
       "priority": 95,
       "reason": "[Deep Tech Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 本轮复审发现 P0 1 / P1 1：UprobeStats 工作原理：`设备上的挂载路径是 /apex/com.android.uprobestats.apex`；sched_ext 架构：`在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间`",
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "logs/review/2026-05-25-09-review.md"
       ],
       "review_issues": [
         {
@@ -20243,11 +20255,20 @@
           "location": "sched_ext 架构：`在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间`",
           "detail": "Linux sched_ext 文档描述的是 sched_class 与 policy 的组合关系：BPF scheduler 加载且未设置 `SCX_OPS_SWITCH_PARTIAL` 时，SCHED_NORMAL/BATCH/IDLE/EXT 任务可被 sched_ext 管理；设置 partial 后，只有 SCHED_EXT policy 任务进入 sched_ext，SCHED_NORMAL/BATCH/IDLE 仍由更高优先级的 fair-class 调度。把 sched_ext 写成位于 SCHED_IDLE 和 SCHED_NORMAL 之间，会混淆 policy 与 sched_class precedence。",
           "suggestion": "删除“位于 SCHED_IDLE 和 SCHED_NORMAL 之间”的表述，改为按 `SCX_OPS_SWITCH_PARTIAL` 分两种模式解释：全量切换时 fair-policy 任务交给 sched_ext；partial 模式下 fair-class 优先处理 NORMAL/BATCH/IDLE，仅 SCHED_EXT policy 进入 sched_ext。"
+        },
+        {
+          "severity": "P1",
+          "type": "需整合",
+          "location": "参考资料之后的 `sched_ext 在 Android 中的可用性现状`",
+          "detail": "参考资料已经结束正文,后面继续出现正文小节,发布稿结构像素材追加;该内容应并入 sched_ext 主体部分,或与前文去重后删除。",
+          "suggestion": "将该小节前移到 `对 Android 的意义` 之后,去掉 AIW 源码调研注释,并与 Task9 指出的 APEX 路径和 sched_ext 优先级问题一起处理。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T08:32:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-05-25T09:09:00+08:00",
+      "updated_by": "openclaw-task6"
     }
   ],
   "metadata": {
@@ -20266,8 +20287,8 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T08:32:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-25T09:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "pending": 179,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",

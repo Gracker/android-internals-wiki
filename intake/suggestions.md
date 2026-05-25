@@ -3553,6 +3553,78 @@
   - AOSP 结构抽查中的 Bluetooth / GATT、NotificationManagerService：Bluetooth 仅有 11.6 扫描功耗局部覆盖，但本轮素材丰富度不足；Notification 已由 9.6 承接 ANR / 性能风险。
 - **本轮结论**：未发现评分 ≥ 14 且不与现有章节重复的知识缺口；不创建新章节。下一轮可优先跟踪 Bluetooth GATT 连接时延、Android Studio Panda 内存泄漏诊断、APA 案例库是否积累到可独立成节的素材量。
 
+
+## [Task2A Gap Mining] 2026-05-25 04:04
+- **模式**：Phase 0 未发现 `src/` 下 `status: draft` 且正文实质内容 < 15 行的章节；进入知识缺口挖掘。
+- **结果**：本轮未发现评分 ≥ 14 且未被 `SUMMARY.md` 覆盖的新增小节，跳过创建。
+- **已检查方向**：`metadata/source-index.json` 高分未映射素材、最近 5 个 `intake/research-feeds/`、`intake/daily-info/2026-05-25.md`、AOSP / Android Developers 公开主题、Part 5 既有章节覆盖情况。
+- **去重结论**：WOOTdroid/eBPF、Perfetto v53/v54 Data Explorer/Jank CUJ/pprof、Android Performance Analyzer、Android 16 SDM / Cloud Compilation、Android 17 DeliQueue、ApplicationExitInfo / ProfilingManager / ProfilingTrigger、Room 3.0、Android 17 后台音频硬化、Fixed Performance Mode、ADPF PowerMonitor 等方向已在现有章节或 Task2B/Task9 管线中覆盖。
+- **低分候选**：AI 终端智能化分级标准（素材 1、与 Android 性能主线相关性低，约 10/20）；Telephony/NFC/Biometric 等 AOSP 服务结构缺口（性能主线弱、素材不足，约 8-12/20）。
+- **备注**：`metadata/progress.json` 仍显示 draft=21，但实际 `src/` frontmatter 扫描结果为 `ready-for-review=193`、`finalized=177`、`draft=0`；建议后续由元数据修复任务统一校准。
+
+
+## [Task14 参考书扫描] 14.6 自动化测试工具 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md]
+- **建议补充**：AI 测试工具生态补充 — Airtest（网易，图像识别+OCR）、AIon（爱奇艺，UI2Code）、Sapienz（Facebook，基于真实用户路径训练的智能 Monkey）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 15.6 性能测试最佳实践 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md]
+- **建议补充**：测试左移方法论 + 持续集成平台化（测试平台+体验平台）的实践框架
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 26.7 发版质量门禁 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+- **建议补充**：APK 灰度发布完整流程（测试效率 + 数据验证效率 + 渠道覆盖速度）+ Tinker 作者反思（热修复滥用问题：性能损耗、团队质量意识退化）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 26.7 发版质量门禁 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+- **建议补充**：统一发布平台架构：管理（审批+定级）、灰度（逐步扩大）、监控（对接实时数据平台）+ 运营事故应对三件套（启动安全保护 + 动态部署 + 远程控制）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 26.3 性能指标采集与上报 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+- **建议补充**：上报组件容灾策略（频率限制/存储上限/单次大小上限/过期清理）+ 自监控指标体系（到达率/实时到达率/容灾监控/流量监控）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 26.1 App 可观测性架构设计 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
+- **建议补充**：SPM（Super Position Model）统一埋点规范：A.站点 B.页面 C.区块 D.点位，阿里全集团推广案例 + 埋点方式对比（代码/可视化/无痕，含 AccessibilityDelegate 和 dispatchTouchEvent 自动采集方案）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] 26.8 可观测性案例集 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
+- **建议补充**：大数据平台五层架构（采集工具层→数据采集层→数据计算层→数据服务层→数据产品层）+ 实时监控系统：IDKey（微信）、Sunfire（阿里）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 26.5 线上问题排查方法论 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+- **建议补充**：Holmes 动态日志系统（美团，方法级插桩记录执行路径）+ Mars SDT 网络诊断模块 + 用户标识体系（UTDID/MTA ID，需考虑漂移率/碰撞率/跨应用）
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 26.17 线上网络质量监控与接入层协同 — 2026-05-25
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+- **建议补充**：网络远程诊断思路（DNS检测→请求阶段→错误码定位）+ Mars SDT 模块架构
+- **参考书覆盖深度**：概述
+
+
+## [Task2A Gap Mining] 2026-05-25 07:11
+- **模式**：Phase 0 扫描未发现 `status: draft` 且正文实质内容 < 15 行的章节；进入缺口挖掘。
+- **检查范围**：`src/SUMMARY.md`、`metadata/source-index.json` 近期高分未映射素材、`intake/research-feeds/` 最近 5 个文件、`intake/daily-info/2026-05-25.md`、AOSP / Android Developers 公开主题抽查。
+- **去重结论**：Perfetto v53/v54、FrameTimeline、Compose Pausable Composition、View measure/layout、Android 16/17 ProfilingManager / ApplicationStartInfo / JobScheduler、Android Vitals WakeLock、Codec2 / Tunneled Playback / Media3 ABR、OkHttp DNS、Excessive CPU、Cloud Compilation / SDM、ART FinalizerDaemon、厂商游戏模式输入优先级等方向已由 2.4、7.12、8.8、13.x、14.7、16.6、17.5、18.23、24.10、25.12、25.14、25.19、26.12、26.13 等章节或 Task2B/Task9 管线承接。
+- **低分候选**：Android 17 原生应用锁（性能主线弱，约 9/20）；AI 终端智能化分级 / AIoT 政策（系统性能关联弱，约 8/20）；OEM 安装优化 vendor 案例（素材 1 篇且公开验证不足，约 12/20）；Bluetooth GATT / Telephony / Biometric 服务结构缺口（素材不足，约 10-12/20）。
+- **本轮结论**：未发现评分 ≥ 14 且不与现有章节重复的知识缺口；不创建新章节。
+
 ## [Task9 Deep Review] 17.2 SoC 平台差异 — 2026-05-25
 - **类型**：数据缺失 / 案例支撑
 - **位置**：L220-L232 GPU Track 表现；L270-L278 内存带宽争用观察
@@ -3565,3 +3637,16 @@
 - **问题**：正文写“预置了三类 BPF 程序模板”，只列 GenericInstrumentation、BitmapAllocation、ProcessManagement；但 android-16.0.0_r1 的 `src/bpf_progs/` 还包含 `MalwareSignal.c`，`UprobeStats.cpp` 中也有 `MalwareSignal_output_buf` 读取路径。
 - **建议**：把列表更新为四个源码文件，或说明 MalwareSignal 是否属于本章不展开的安全/异常信号监控模板，避免与前文源码路径表不一致。
 
+## [Task6 Review] 17.2 SoC 平台差异 — 2026-05-25
+- **类型**：需整合
+- **位置**：常见问题与误区之后的 `<!-- AIW-源码调研-2026-05-11（已整合） -->` / `#### 联发科调度行为要点`
+- **问题**：正文在常见问题之后继续追加源码调研列表,结构上像素材块残留;内容与 CPU 调度小节部分重复,且含待验证材料。Task6 不做大段改写,交由 Task2B 决定合并、删冗余或改成资料注释。
+- **建议**：把可保留的调度要点并入 `CPU 核心架构差异与性能调度策略` 或 `不同 SoC 上 Perfetto 数据的差异`;无法核验的 vendor kernel/频率表述继续保留待验证或交 Task9。
+- **review 日志**：logs/review/2026-05-25-09-review.md
+
+## [Task6 Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-05-25
+- **类型**：需整合
+- **位置**：参考资料之后的 `sched_ext 在 Android 中的可用性现状`
+- **问题**：参考资料已经结束正文,后面继续出现正文小节,发布稿结构像素材追加;该内容应并入 sched_ext 主体部分,或与前文去重后删除。
+- **建议**：将该小节前移到 `对 Android 的意义` 之后,去掉 AIW 源码调研注释,并与 Task9 指出的 APEX 路径和 sched_ext 优先级问题一起处理。
+- **review 日志**：logs/review/2026-05-25-09-review.md

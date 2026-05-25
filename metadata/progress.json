@@ -318,30 +318,19 @@
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
-    "date": "2026-05-25",
-    "time": "08:15",
+    "last_review_at": "2026-05-25T09:09:00+08:00",
     "sections": [
-      "2.18",
-      "7.6",
-      "13.1"
+      "17.2",
+      "14.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md",
-      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
     ],
-    "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-08-review.md",
-    "reviewed_at": "2026-05-25T08:15:00+08:00",
-    "mode": "revisiting review",
-    "l1_l2_fixes": 24,
-    "risk_marks": 0,
-    "l3_l4_issues": 0,
-    "auto_promoted": [],
-    "existing_pending_queue": [
-      "2.18",
-      "7.6"
-    ]
+    "result": "needs-rework",
+    "small_fixes": 24,
+    "rework_items": 2,
+    "log": "logs/review/2026-05-25-09-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1930,7 +1919,7 @@
     "17.2"
   ],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T08:15:00+08:00",
+  "last_updated": "2026-05-25T09:09:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-25",
@@ -2096,10 +2085,17 @@
     "17.2": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T02:12:00+08:00",
+      "last_task6_at": "2026-05-25T09:09:00+08:00",
       "task6_result": "needs-rework",
-      "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-02-review.md"
+      "queue_priority": 95,
+      "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
+      "title": "SoC 平台差异",
+      "file": "src/part4-system/ch17-oem/02-soc-differences.md",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-25",
+      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。"
     },
     "3.5": {
       "status": "finalized",
@@ -5301,6 +5297,21 @@
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed"
+    },
+    "14.10": {
+      "title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 95,
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-25",
+      "last_task6_at": "2026-05-25T09:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
+      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。"
     }
   },
   "task2b_rounds": [
@@ -5370,18 +5381,16 @@
   "last_task2a_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_section": "1.22",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
-  "last_task6_review": "2026-05-25T08:15:00+08:00",
+  "last_task6_review": "2026-05-25T09:09:00+08:00",
   "last_task6_sections": [
-    "2.18",
-    "7.6",
-    "13.1"
+    "17.2",
+    "14.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md",
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
   ],
-  "last_task6_at": "2026-05-25T08:15:00+08:00",
+  "last_task6_at": "2026-05-25T09:09:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-25",
     "time": "08:15",
@@ -5415,12 +5424,11 @@
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.22",
-  "task6_last_review_at": "2026-05-25T08:15:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-25-08-review.md",
+  "task6_last_review_at": "2026-05-25T09:09:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-25-09-review.md",
   "task6_last_review_sections": [
-    "2.18",
-    "7.6",
-    "13.1"
+    "17.2",
+    "14.10"
   ],
   "sections_status": {
     "22.11": {
@@ -6639,40 +6647,29 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "date": "2026-05-25",
-    "time": "08:15",
+    "reviewed_at": "2026-05-25T09:09:00+08:00",
     "sections": [
-      "2.18",
-      "7.6",
-      "13.1"
+      "17.2",
+      "14.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md",
-      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
     ],
-    "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-08-review.md",
-    "reviewed_at": "2026-05-25T08:15:00+08:00",
-    "mode": "revisiting review",
-    "l1_l2_fixes": 24,
-    "risk_marks": 0,
-    "l3_l4_issues": 0,
-    "auto_promoted": [],
-    "existing_pending_queue": [
-      "2.18",
-      "7.6"
-    ]
+    "mode": "首次 review / revisiting",
+    "result": "needs-rework",
+    "small_fixes": 24,
+    "rework_items": 2,
+    "log": "logs/review/2026-05-25-09-review.md",
+    "summary": "17.2 修复正文双连字符标点;17.2 与 14.10 均存在素材块/正文块未整合问题,已合并到 queue.json priority 95。"
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md",
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md",
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6955,11 +6952,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "24.17",
-    "1.16",
-    "2.18",
-    "7.6",
-    "13.1"
+    "17.2",
+    "14.10"
   ],
   "task2b_progress": [
     {
@@ -6988,7 +6982,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-25-08-review.md",
+  "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7560,7 +7554,7 @@
     "task9_result": "pending"
   },
   "last_task6_review_at": "2026-05-25T08:15:00+08:00",
-  "last_task6_review_section": "2.18,7.6,13.1",
+  "last_task6_review_section": "17.2,14.10",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -7652,9 +7646,8 @@
     "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
   },
   "last_task6_reviewed_sections": [
-    "24.17",
-    "4.9",
-    "18.17"
+    "17.2",
+    "14.10"
   ],
-  "last_task6_result": "pass-light-edit"
+  "last_task6_result": "needs-rework"
 }
