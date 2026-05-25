@@ -2,8 +2,8 @@
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: ready-for-review
-pipeline_stage: "task9_pending"
+status: finalized
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -14,12 +14,12 @@ last_task6_audit: '2026-05-21'
 task6_reviewed_date: "2026-05-26"
 review_round: 10
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（元叙述、禁用/高频词、直接提示语、Perfetto 观察句）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-25"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-25T19:34:07+08:00"
-task9_review_notes: "2026-05-25 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；Binder 线程池等待机制误写成 epoll，硬件加速默认启用版本误写为 Android 4.4。详见 logs/deep-review/2026-05-25-19-deep-review.md。"
+last_task9_at: "2026-05-26T01:27:00+08:00"
+task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 last_task9_audit: "2026-05-25"
 last_task9_audit_at: "2026-05-25T17:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-17-audit.md"
@@ -88,8 +88,9 @@ drafted_by: openclaw-task2
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-last_task9_review_log: "logs/deep-review/2026-05-25-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-26-01-review.md"
+review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 ---
 
 # 线程模型

@@ -2,19 +2,19 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: "reviewed"
-task9_state: pending
-task9_result: needs-rework
-last_task9_at: "2026-05-25T21:20:00+08:00"
-task9_reviewed_date: "2026-05-25"
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-05-26T01:27:00+08:00"
+task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-25 Task9 idle audit: needs-rework。P1 1:Android 17 GKI 分支边界已过期,需补 android17-6.18、6.18 AFDO preliminary 数据与 sched_ext dsq_insert API 差异。详见 logs/deep-review/2026-05-25-21-audit.md。"
+task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2;sched_ext dsq_insert 版本边界残留说明与 AutoFDO 官方链接写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 last_task9_audit: "2026-05-25"
 last_task9_audit_at: "2026-05-25T21:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-21-audit.md"
@@ -22,7 +22,7 @@ last_task9_audit_result: "p1-version-difference"
 task9_audit_notes: "2026-05-25 Task9 idle audit: P1 1;AOSP android17-6.18 已存在,Kernel 6.12/android16-6.12 与 Android 17/API37 口径需拆分。"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-05-07T01:44:08+08:00"
 last_task6_at: "2026-05-26T01:12:00+08:00"
@@ -45,8 +45,8 @@ sources:
     path: "AOSP kernel/common android16-6.12"
   - type: kernel
     path: "AOSP kernel/common android17-6.18"
-review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已处理,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-07-02-deep-review.md"
+review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已处理,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。 | 2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2;sched_ext dsq_insert 版本边界残留说明与 AutoFDO 官方链接写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（禁用词、标题标点、中英文间距）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 ---
