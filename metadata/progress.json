@@ -333,9 +333,10 @@
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
     "src/part2-performance/ch09-anr/01-anr-design.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
   ],
-  "review_summary": "Task9 2026-05-25 16: 审计 9.6、9.1、19.24；P0 2 / P1 1 / P2 3；9.1 自动晋升 finalized，9.6 与 19.24 回炉 Task2B。",
+  "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
     "last_review_at": "2026-05-25T16:07:00+08:00",
     "sections": [
