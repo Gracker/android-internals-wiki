@@ -1,6 +1,49 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-1227-9.1-dropbox-tag-boundary",
+      "section": "9.1",
+      "section_title": "ANR 设计思想",
+      "priority": 95,
+      "title": "ANR Dropbox tag 不能统一写成 system_app_anr",
+      "description": "Task9 闲时抽检发现 §9.1 把 ANR Dropbox 条目统一写成 `system_app_anr`，与 AOSP 按进程类别生成 `data_app_anr` / `system_app_anr` / `system_server_anr` 的实现不一致。",
+      "reason": "[Deep Tech Review Audit] §9.1 L378 写 ANR 信息会被写入 Dropbox 的 `system_app_anr` 标签。AOSP android-14.0.0_r1 中 ProcessErrorStateRecord 以 eventType=\"anr\" 调用 ActivityManagerService.addErrorToDropBox，AMS 使用 processClass(process)+\"_\"+eventType 生成 tag；普通三方应用应查 `data_app_anr`。",
+      "issue_type": "source-accuracy-dropbox-tag-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/01-anr-design.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-12-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/Watchdog.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / Dropbox tag 事实错误",
+          "location": "L378：Dropbox ANR tag",
+          "detail": "正文把 ANR Dropbox 条目写成统一进入 `system_app_anr`。AOSP android-14.0.0_r1 的 `ProcessErrorStateRecord.appNotResponding()` 调用 `ActivityManagerService.addErrorToDropBox(\"anr\", ...)`，AMS 内部用 `processClass(process) + \"_\" + eventType` 生成 tag；普通三方应用是 `data_app_anr`，系统应用是 `system_app_anr`，system_server 是 `system_server_anr`。当前说法会让 App 开发者在 dumpsys dropbox 中查错 tag。",
+          "suggestion": "改为按进程类别说明 `data_app_anr` / `system_app_anr` / `system_server_anr`；命令示例补 `adb shell dumpsys dropbox --print data_app_anr`，并说明不同 ROM 可能还有 rate limit / tag enable 差异。"
+        },
+        {
+          "severity": "P2",
+          "type": "源码精度 / Watchdog 半程检查",
+          "location": "L296-L324：Watchdog 默认 60 秒巡检描述与伪代码",
+          "detail": "正文把 Watchdog 描述成每隔默认 60 秒发送心跳。AOSP android-14.0.0_r1 中默认 timeout 是 60s，但 run loop 使用 `checkIntervalMillis = watchdogTimeoutMillis / 2`，先等待 30s 进入 `WAITED_HALF` 并可做半程 dump，再到 `OVERDUE` 后触发后续处理；此外每个 HandlerChecker 可有 custom timeout，实际 scheduleCheckLocked 还乘 `Build.HW_TIMEOUT_MULTIPLIER`。",
+          "suggestion": "把表述改成“默认超时窗口 60s，30s 半程检查，60s overdue”；伪代码体现 WAITED_HALF / OVERDUE 两段式，避免读者把 60s 理解成单纯巡检周期。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T12:27:10+08:00"
+    },
+    {
       "id": "task9-deep-20260525-0730-2.18-vsync-token-boundary",
       "section": "2.18",
       "section_title": "Adaptive Refresh Rate 与动态帧率控制",
