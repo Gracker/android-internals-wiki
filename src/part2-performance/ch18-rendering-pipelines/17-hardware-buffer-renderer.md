@@ -18,31 +18,31 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-25"
+task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-25T03:26:43+08:00"
+last_task9_at: "2026-05-26T03:20:00+08:00"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P0：NDK SurfaceControl 示例仍有 setBufferWithRelease 参数顺序和 setOnComplete callback 签名错误。"
+task9_review_notes: "2026-05-26 Task9 deep-review: needs-rework。P0：NDK OnBufferRelease 签名错误、OnComplete 示例残留不可编译尾巴；P1：API 29-35 与 API 36+ buffer 回收方案未拆分。"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-25-03-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
 last_task6_at: "2026-05-25T05:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-05-review.md"
 task6_review_notes: "2026-05-25 Task6 revisiting review: pass-light-edit。L1 禁用词/高频词扫描通过，outline 锚点均有正文覆盖；正文无新增 L1/L2 小修，无新增 Task6 回炉。既有 Task9 技术问题仍在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 6 处（补 H1、规范 outline 锚点、删除高频强调词、去重 frontmatter review_notes、修正 chapter、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 NDK SurfaceControl API 签名问题已在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。 | 2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
-task9_p0_issues: 1
-task9_p1_issues: 0
+task9_p0_issues: 2
+task9_p1_issues: 1
 task9_p2_issues: 0
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0

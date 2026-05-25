@@ -38,7 +38,7 @@ created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
@@ -47,14 +47,17 @@ reviewed_date: "2026-05-24"
 task6_result: needs-rework
 task6_reviewed_date: "2026-05-24"
 last_task6_at: "2026-05-24T21:11:52+08:00"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-24"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-24T20:34:56+08:00"
-task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0。HWUI Sync、BLAST 回调、ART Generational CMC 源码口径需回炉。 | 2026-05-24 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1；ART GC 把 ConcurrentCopying 写成 CMS、DeliQueue 源码路径仍指旧 MessageQueue、Trace 阈值用固定 16ms/8ms，需 Task2B 回炉。"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-26"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-26T03:20:00+08:00"
+task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。无 P0/P1；P2：Trace 表的 Choreographer#doFrame 判定仍需改成 FrameTimeline/app deadline 口径。"
 task6_review_notes: "2026-05-24 task6 revisiting review: needs-rework。小修1处（清理 Compose 段结构性元叙述），风险标注3处（固定帧预算、DeliQueue 源码路径、GC 术语混写）；L3/L4 1项：源码调研补充仍保留素材归档与编辑痕迹，已合并到 queue.json 18.2 P95 pending 项。"
 last_task6_review_log: "logs/review/2026-05-24-21-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-24-20-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 1
 ---
 
 

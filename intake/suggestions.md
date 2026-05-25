@@ -3758,3 +3758,9 @@
 - **位置**：L893 Android Vitals: Excessive Wakeups 参考资料
 - **问题**：参考资料写成 `https://developer.android.com/topic/performance/vitals/wakeups`，当前官方页面为单数路径 `/wakeup`，复核时 plural URL 返回 404。
 - **建议**：改为 `https://developer.android.com/topic/performance/vitals/wakeup`，并同步检查 frontmatter sources 是否需要补该官方链接。
+
+## [Task9 Deep Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-26
+- **类型**：数据缺失/FrameTimeline 判定口径
+- **位置**：src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md L243-L248
+- **问题**：Trace 表已经从固定 16ms 改成 frame interval，但 `Choreographer#doFrame` 的异常信号仍写“超过当前 display frame interval → 必定掉帧”。Android 12+ 的用户可感知 jank 应以 FrameTimeline expected/actual present、app deadline 和当前 refresh rate 共同判断；单个 UI Thread slice 超过 display interval 只能作为高风险信号。
+- **建议**：改成“超过 app deadline / expected present 预算时高风险，最终以 FrameTimeline jank tag 与 actual present 结果确认”，避免把局部 slice 阈值写成必然结论。
