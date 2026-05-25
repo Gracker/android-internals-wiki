@@ -22,30 +22,40 @@ sources:
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 6
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-07"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-26"
 last_task2b_at: "2026-04-25T05:47:52+08:00"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T17:29:52+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-26T05:35:00+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 1（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-07-17-deep-review.md"
+task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 0 / P1 1 / P2 0；版本演进把 RenderNode 架构归到 Android 3.0，需按 Android 3.0 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 拆开。"
+last_task9_review_log: "logs/deep-review/2026-05-26-05-audit.md"
 
-status: finalized
+status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
+task9_state: "reviewed"
+pipeline_stage: "task2b_pending"
+task2b_state: "pending"
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
-task2b_result: fixed
+task2b_result: "pending"
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补齐 11 个示意代码围栏语言，清理禁用词/冗余强调 5 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
+last_task9_audit: "2026-05-26"
+last_task9_audit_at: "2026-05-26T05:35:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-26-05-audit.md"
+last_task9_audit_result: "p1-version-difference"
+task9_audit_notes: "2026-05-26 Task9 idle audit: P0 0 / P1 1 / P2 0；AOSP 4.4.4_r2 无 RenderNode/renderthread，Android 5.0 才出现现代 RenderNode/RenderThread 分工。"
+p0: 0
+p1: 1
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-05-26"
 ---
 
 # Android 渲染架构全景
