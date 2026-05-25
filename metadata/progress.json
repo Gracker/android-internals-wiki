@@ -1,6 +1,6 @@
 {
-  "total": 388,
-  "draft": 21,
+  "total": 389,
+  "draft": 22,
   "ready-for-review": 176,
   "finalized": 191,
   "task9_result": "needs-rework",
@@ -6956,19 +6956,19 @@
   "last_task9_review_summary": "Task9 闲时抽检：3.7 needs-rework；P0 0 / P1 1 / P2 0。",
   "last_task2a_gap_mining": {
     "date": "2026-05-25",
-    "time": "13:04",
+    "time": "16:15",
     "created": 1,
     "sections": [
-      "17.7"
+      "24.19"
     ],
     "files": [
-      "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
+      "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
     ],
     "mode": "gap-mining",
-    "source": "official-docs/daily-info/source-index",
+    "source": "official-docs/android17-behavior-changes/clippings-structure",
     "qualified_total": 1
   },
-  "last_task2a_gap_mining_at": "2026-05-25T13:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -7768,5 +7768,23 @@
   "last_task6_review_files": [
     "src/part4-system/ch17-oem/02-soc-differences.md",
     "src/part2-performance/ch07-smoothness/06-case-studies.md"
-  ]
+  ],
+  "section_24_19": {
+    "section": "24.19",
+    "title": "BluetoothSocket read 断开语义与长连接治理",
+    "file": "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-25",
+    "gap_source": "官方文档/Android17行为变更/Part5结构参考",
+    "gap_score": 18,
+    "task2a_state": "pending",
+    "queue_priority": 80,
+    "sources": [
+      "https://developer.android.com/about/versions/17/behavior-changes-17",
+      "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+      "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+    ]
+  }
 }

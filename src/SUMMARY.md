@@ -415,6 +415,7 @@ tags:
   - [24.16 Android 17 流媒体网络预算与本地网络权限适配](part5-app/ch24-io-network/16-android17-streaming-local-network.md)
   - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
   - [24.18 Android 17 ECH 与 domainEncryption 网络适配](part5-app/ch24-io-network/18-android17-ech-domain-encryption.md)
+  - [24.19 BluetoothSocket read 断开语义与长连接治理](part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
