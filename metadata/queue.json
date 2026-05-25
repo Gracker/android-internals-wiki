@@ -20643,27 +20643,62 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T11:41:00+08:00"
+    },
+    {
+      "id": "task9-audit-20260525-1523-10.5-profilingtrigger-oom-api37",
+      "section": "10.5",
+      "section_title": "案例集",
+      "priority": 85,
+      "title": "补齐 ProfilingTrigger API 37 OOM 触发器与版本边界",
+      "description": "Task9 闲时抽检发现 §10.5 的 Android 15+ ProfilingManager 段仍按 Android 16 初始能力描述 ProfilingTrigger，遗漏 Android 17/API 37 的 OOM 触发式 Java heap dump。",
+      "reason": "[Deep Tech Review Audit] §10.5 L294、L316 继续写 ProfilingTrigger 只有 APP_FULLY_DRAWN / ANR，未覆盖 API 36.1 与 API 37 新增触发器；其中 TRIGGER_TYPE_OOM 直接改变 OOM 现场采集建议。",
+      "issue_type": "version-difference-profilingtrigger-oom-api37",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-15-audit.md",
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异/ProfilingTrigger API 37 OOM 触发器覆盖缺失",
+          "location": "L294、L316：Android 15+ ProfilingManager / ProfilingTrigger 替代采集后端",
+          "detail": "正文写“ProfilingTrigger 目前只暴露 TRIGGER_TYPE_APP_FULLY_DRAWN 和 TRIGGER_TYPE_ANR，没有内存突增自动触发类型”。该口径只适用于 Android 16 初始触发器集合；当前 Android Developers API reference 已列出 API 36.1 的 APP_REQUEST_RUNNING_TRACE / kill 类触发器，以及 API 37 的 TRIGGER_TYPE_OOM、TRIGGER_TYPE_ANOMALY、TRIGGER_TYPE_COLD_START、TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE、TRIGGER_TYPE_APP_COMPAT。尤其 TRIGGER_TYPE_OOM 会在 App 发生 OutOfMemoryException 时提供 Java heap dump，直接影响本节 MemoryThrashing / OOM 现场采集建议。",
+          "suggestion": "Task2B 按版本拆开：Android 15/API 35 写 requestProfiling 主动请求 heap dump/profile/trace；Android 16/API 36 写 APP_FULLY_DRAWN 与 ANR 触发器；Android 16.1 写 requestRunningSystemTrace / kill 类触发器；Android 17/API 37 补 TRIGGER_TYPE_OOM 的 Java heap dump 能力、默认 uncaught exception handler 前提，以及它只能覆盖 OOM 崩溃而不能替代业务侧“内存突增阈值”探针。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T15:23:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 551,
+    "total_entries": 554,
     "p0_count": 233,
-    "last_updated": "2026-05-25T13:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 179,
+    "last_updated": "2026-05-25T15:23:00+08:00",
+    "updated_by": "task9-deep-tech-review-audit",
+    "pending_entries": 178,
     "updated_date": "2026-05-25",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 179,
-    "completed_entries": 369,
+    "last_updated_by": "task9-deep-tech-review-audit",
+    "pending": 178,
+    "completed_entries": 373,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T13:20:00+08:00",
+  "last_updated": "2026-05-25T15:23:00+08:00",
   "last_updated_by": "task9-deep-tech-review-audit",
-  "pending": 180,
+  "pending": 178,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
