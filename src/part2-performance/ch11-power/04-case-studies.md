@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -31,17 +31,17 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-23"
-task9_state: reviewed
-task2b_result: pending
-task2b_state: pending
+task9_state: "pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-last_task2b_at: "2026-05-07T06:40:00+08:00"
+last_task2b_at: "2026-05-26T03:19:12+08:00"
 last_task9_at: "2026-05-26T02:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-26-02-audit.md"
 task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 1 / P1 1 / P2 1；JobScheduler runtime 常量表与 android-16.0.0_r1 不一致；location FGS type 版本边界写晚；Excessive Wakeups 参考链接需改为 /wakeup。"
@@ -298,7 +298,7 @@ public class RunningActivity extends AppCompatActivity {
 > **Geofencing 与 GNSS 硬件卸载**：持续 1Hz GPS 定位是最粗放的用法。如果需求是"进入/离开某个区域时触发"，`GeofencingClient` 可以将围栏下沉到 GNSS 硬件执行，App 不需要持续持有 GPS 请求，功耗可降低一个数量级。`FusedLocationProviderClient` 的低功耗模式（`PRIORITY_BALANCED_POWER_ACCURACY` / `PRIORITY_LOW_POWER`）通过 WiFi + 基站辅助定位降低 GPS 芯片激活频率，精度从米级放宽到街区级。通过 `adb shell dumpsys location` 可以区分硬件 geofence 和软件 geofence 的注册状态。不同设备的 GNSS 硬件 geofencing 能力不同，部分低端设备不支持硬件卸载，此时仍依赖软件轮询。[待验证：各主流 SoC 的 GNSS hardware geofencing 支持情况]
 
 1. **跑步 App 通常会启动一个前台服务来保持追踪**，开发者在 Service 中注册了位置请求，但"结束跑步"的 UI 操作只停止了 Service 的业务逻辑，没有调用 `removeLocationUpdates`。
-2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续变严：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 12 要求使用后台位置的前台服务必须声明 `foregroundServiceType="location"`。
+2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续变严：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 10 要求使用后台位置的前台服务声明 `foregroundServiceType="location"`（target/compile SDK 29+），Android 12+ 进一步补上前台服务后台启动限制和 while-in-use 权限。
 3. **测试环境的盲区**：开发时通常用模拟器或短距离测试，GPS 不会长时间运行，问题不容易暴露。
 
 ### 修复方案
@@ -649,14 +649,14 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 | Job 类型 | 最小保障时长（源码常量） | 运行上限 | 超时行为 |
 |---------|----------------------|---------|----------|
 | Regular | 10 分钟（`DEFAULT_RUNTIME_MIN_GUARANTEE_MS`） | `getMaxJobExecutionTimeMs()` 返回值，取决于 standby bucket 和当前 quota | 超时后 `onStopJob()` 被调用，系统释放 WakeLock |
-| Expedited | 10 分钟（同 Regular 保障下限） | 同 Regular，但调度优先级更高 | 同 Regular |
-| User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | `getMaxJobExecutionTimeMs()` 返回值 | 同 Regular |
+| Expedited | 3 分钟（`DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS`） | 不超过 Regular 上限（10 分钟），调度优先级更高 | 同 Regular |
+| User-Initiated | 约 6 小时（`DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS`，max(6h,10min)） | 约 12 小时（`DEFAULT_RUNTIME_UI_LIMIT_MS`，max(12h,30min)）；累计 UI limit 24h | 同 Regular |
 
-10 分钟和 30 分钟是系统承诺的**最小保障时长**，不是统一最大执行时长。运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 App 的 standby bucket、当前电量策略和 quota 降级状态影响。低电量或受限状态下，上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `getMaxJobExecutionTimeMs()`]
+以上是 `JobSchedulerService.Constants` 中各类 Job 的最小保障时长和常规上限。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 standby bucket、当前 quota、QuotaController 和 timeout quota 约束。低电量或受限状态下，上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants`]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
 
-如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular/Expedited 至少 10 分钟、User-Initiated 至少 30 分钟，但 quota 降级后可能更短。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular 至少 10 分钟、Expedited 至少 3 分钟、User-Initiated 至少约 6 小时，但 quota 降级后可能更短。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
 
 ### 逐步分析
 

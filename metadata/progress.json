@@ -8080,5 +8080,18 @@
     "queue_priority": 90,
     "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
     "task6_new_rework": true
+  },
+  "task2b_daily": {
+    "2026-05-26": {
+      "sections_processed": 5,
+      "items_completed": 5
+    }
+  },
+  "task2b_last_run": "2026-05-26",
+  "task2b_pending_counts": {
+    "p95": 33,
+    "p90": 15,
+    "p85": 81,
+    "total": 129
   }
 }

@@ -49,6 +49,8 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 1 处（清理 frontmatter duplicate task2b_result）。无新增 Task6 回炉；Baseline Profile API floor 已由 Task2B 修复，等待 Task9 复审。"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
 ---
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 
@@ -115,11 +117,11 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 
 Microbenchmark 在进程内循环执行一段可直接调用的代码，适合测算法、序列化、正则、数据结构、图片处理等局部 CPU 工作。
 
-旧版经验常把 Microbenchmark 理解成热身后的 JIT 和 cache 命中口径。这个判断只适用于没有额外 AOT 预编译的配置。Android Developers 现在明确写明：Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` plugin 会默认把 microbenchmark APK 做 fully compile，口径更接近稳定的 AOT 结果；如果要回到旧的 warmed-up JIT 口径，需要在 `gradle.properties` 里设置 `androidx.benchmark.forceaotcompilation=false`。
+旧版经验常把 Microbenchmark 理解成热身后的 JIT 和缓存命中口径。这个判断只适用于没有额外 AOT 预编译的配置。Android Developers 现在明确写明：Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` plugin 会默认把 microbenchmark APK 做全量编译，口径更接近稳定的 AOT 结果；如果要回到旧的预热后的 JIT 口径，需要在 `gradle.properties` 里设置 `androidx.benchmark.forceaotcompilation=false`。
 
 | Microbenchmark 运行形态 | 典型版本 | 结果口径 |
 |---|---|---|
-| 旧配置或手动关闭 AOT | Benchmark < 1.3.0-beta01，或 AGP < 8.4，或显式设置 `androidx.benchmark.forceaotcompilation=false` | 更接近热身后的 JIT 与 cache 命中结果 |
+| 旧配置或手动关闭 AOT | Benchmark < 1.3.0-beta01，或 AGP < 8.4，或显式设置 `androidx.benchmark.forceaotcompilation=false` | 更接近热身后的 JIT 与缓存命中结果 |
 | 新版默认配置 | Benchmark 1.3.0-beta01+ 且 AGP 8.4.0+ | 默认 full AOT，波动更小，适合做稳定回归 |
 
 读数据时要先写清编译模式。两条 benchmark 曲线如果编译模式不同，不能放在一张图里直接横比。

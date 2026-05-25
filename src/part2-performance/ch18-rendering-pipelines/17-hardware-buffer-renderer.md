@@ -18,11 +18,11 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "pass-light-edit"
@@ -30,7 +30,7 @@ task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T03:26:43+08:00"
-last_task2b_at: "2026-04-26T14:46:27+08:00"
+last_task2b_at: "2026-05-26T03:19:12+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-25 Task9 re-review: needs-rework。P0：NDK SurfaceControl 示例仍有 setBufferWithRelease 参数顺序和 setOnComplete callback 签名错误。"
@@ -192,31 +192,42 @@ ASurfaceTransaction* tx = ASurfaceTransaction_create();
 ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
 
 // API 36+: setBufferWithRelease 带回调版本（推荐）
-// int releaseFenceFd = -1;
-// ASurfaceTransaction_setBufferWithRelease(tx, surfaceControl, buffer, 
-//                                         acquireFenceFd, releaseFenceFd, 
-//                                         ASurfaceTransaction_OnBufferRelease,
-//                                         callback_data);
+// ASurfaceTransaction_OnBufferRelease callback 签名：
+//   void (*)(void* context, ASurfaceControl* surface_control, ANativeWindowBuffer* buffer, int release_fence_fd)
+// release_fence_fd 在回调参数中返回，不是 setBufferWithRelease 的入参
+struct CallbackContext {
+    AHardwareBuffer* buffer;
+    ASurfaceControl* surfaceControl;
+};
+CallbackContext* ctx = new CallbackContext{buffer, surfaceControl};
+ASurfaceTransaction_setBufferWithRelease(tx, surfaceControl, buffer,
+                                         acquireFenceFd, ctx, onBufferRelease);
 
 // API 29-35 方案：使用 setBuffer() + OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd
 // 注意：API 29-35 只有 setBuffer()，没有带 release 回调的版本
 // 但可以通过 OnComplete 获取 previous release fence 来实现 buffer 回收
-ASurfaceTransaction_setOnComplete(tx, buffer, [](ASurfaceTransaction*, void* userData,
-                                               ASurfaceTransactionStats* stats) {
-    AHardwareBuffer* buf = (AHardwareBuffer*)userData;
+// ASurfaceTransaction_OnComplete 签名：void (*)(void* context, ASurfaceTransactionStats* stats)
+struct OnCompleteContext {
+    AHardwareBuffer* buffer;
+    ASurfaceControl* surfaceControl;
+};
+OnCompleteContext* octx = new OnCompleteContext{buffer, surfaceControl};
+ASurfaceTransaction_setOnComplete(tx, octx, onComplete);
+
+// OnComplete 回调（自由函数或无捕获 lambda 转函数指针）
+static void onComplete(void* context, ASurfaceTransactionStats* stats) {
+    OnCompleteContext* ctx = static_cast<OnCompleteContext*>(context);
 
     // 从 transaction stats 获取指定 SurfaceControl 的 previous release fence
-    // 第二个参数是目标 ASurfaceControl*，不是 stats 单参
-    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl);
+    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(
+            stats, ctx->surfaceControl);
 
     if (prevReleaseFenceFd >= 0) {
-        // 等待 previous release fence signal 后，buffer 可以安全回收
         sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
         close(prevReleaseFenceFd);
     }
-
-    // 回收 buffer
-    AHardwareBuffer_release(buf);
+    AHardwareBuffer_release(ctx->buffer);
+    delete ctx;
 }, buffer);
 
 ASurfaceTransaction_apply(tx);

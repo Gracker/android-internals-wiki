@@ -6,7 +6,7 @@ drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-04-05'
-last_verified_against: AOSP android-17-beta3
+last_verified_against: AOSP android-16.0.0_r1 + Android 17 official docs
 confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
@@ -42,8 +42,8 @@ related_chapters:
 - '8.2'
 - '8.3'
 - '16.1'
-task2b_result: fixed
-task6_state: reviewed
+task2b_result: "fixed"
+task6_state: "revisiting"
 review_round: 5
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -51,12 +51,12 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 last_task6_at: "2026-05-07T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-09-review.md"
 task6_review_notes: "2026-05-07 task6 revisiting review 09:06: pass-light-edit。小修 Cloud Compilation 命中时的 `dex2oat` 进程表述；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-status: ready-for-review
-pipeline_stage: task2b_pending
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 task9_result: needs-rework
-task9_state: reviewed
-last_task2b_at: "2026-05-07T08:42:28"
-task2b_state: pending
+task9_state: "pending"
+last_task2b_at: "2026-05-26T03:19:12+08:00"
+task2b_state: "fixed"
 task9_reviewed_date: 2026-05-07
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T00:20:00+08:00"
@@ -293,7 +293,7 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 | `speed-profile` | 只编译 Profile 中标记的方法 | 命中 Baseline / JIT / Cloud Profile 时的常见选择 |
 | `everything` | 编译所有方法（含未验证的） | 极少使用 |
 
-[已验证: AOSP art/dex2oat/dex2oat_options.cc, 编译过滤器定义]
+[已验证: AOSP art/libartbase/base/compiler_filter.h / compiler_filter.cc, 编译过滤器枚举定义；dex2oat_options.cc 为参数解析入口]
 
 `speed-profile` 在 Android 12+ 设备上很常见，但它不是所有安装来源、所有设备策略下的固定默认值。Baseline Profiles、本地 JIT Profile、Cloud Profile 是否命中，都会影响最终选中的 compiler filter；没有可用 Profile 时，结果可能直接落到 `verify`。判断一台设备上的真实状态，直接看 `cmd package art dump`（Android 14+ 常用）或 `dumpsys package dexopt` 的输出更可靠。
 
@@ -649,12 +649,13 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 ## 参考资料
 
 ### AOSP 源码路径
-> 以下路径基于 AOSP `android-17-beta3` 分支验证，部分文件在早期版本中路径或结构可能不同。
+> 以下路径基于 AOSP `android-16.0.0_r1` 公开 tag 和 `platform/art` main 分支验证。Android 17 行为以官方 Developer 文档为准，部分文件在早期版本中路径或结构可能不同。
 
 - `art/compiler/`：ART 编译器核心（H 图构建、SSA 优化 pass、寄存器分配、代码生成）
 - `art/compiler/optimizing/`：具体优化 pass 实现（常量折叠、内联、逃逸分析、去虚化等）
 - `art/dex2oat/`：dex2oat 工具入口和编译管线（`dex2oat.cc` 为 main entry）
-- `art/dex2oat/dex2oat_options.cc`：编译过滤器（compiler filter）定义和选项解析
+- `art/libartbase/base/compiler_filter.h` / `compiler_filter.cc`：编译过滤器枚举定义与字符串解析（`CompilerFilter` 类）
+- `art/dex2oat/dex2oat_options.cc`：dex2oat 参数解析入口，从命令行读取 compiler filter 选项
 - `art/runtime/jit/`：JIT 编译器实现（`jit.cc` 可核对 `Jit::CompileMethod()` / `CompileMethodInternal()` 等核心逻辑）
 - `art/runtime/jit/jit_code_cache.cc`：JIT 代码缓存管理和 `GarbageCollectCache()` 回收逻辑
 - `art/runtime/jit/profile_saver.cc`：Profile 持久化（后台线程定期将热点信息写入 `primary.prof`）

@@ -307,3 +307,73 @@ CPU load/store 时比对 pointer tag 和 memory tag
 - 摘要：MTE ASYMM/SYNC 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYNC 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。
 - 注入时间：2026-05-17
 - 价值：补充 MTE ASYMM/SYNC 启用路径的源码证据链，覆盖 bionic、Zygote、Manifest 路径
+
+
+<!-- AIW-源码调研-2026-05-26 START -->
+## 补充：MTE ASYMM 自动启用的源码闭环（2026-05-26）
+
+本节补充 2026-05-26 源码调研的关键发现，完善 §20.11 中"ASYMM 为什么不是应用 API"和"从 Zygote 到 bionic allocator 的生效路径"两个锚点的三层源码闭环证据。
+
+### 三层源码路径
+
+#### 应用层：android:memtagMode 只暴露 off/default/sync/async
+
+AOSP 源码：`frameworks/base/core/java/android/content/pm/ApplicationInfo.java`
+
+```java
+public static final int MEMTAG_OFF = 0;
+public static final int MEMTAG_DEFAULT = 1;
+public static final int MEMTAG_ASYNC = 2;
+public static final int MEMTAG_SYNC = 3;
+// 注意：没有 MEMTAG_ASYMM
+```
+
+AOSP 源码：`frameworks/base/core/java/com/android/internal/os/Zygote.java`
+
+```java
+private static final int MEMORY_TAG_LEVEL_NONE = 0;
+private static final int MEMORY_TAG_LEVEL_TBI = 1;
+private static final int MEMORY_TAG_LEVEL_ASYNC = 2;
+private static final int MEMORY_TAG_LEVEL_SYNC = 3;
+// 注意：没有 MEMORY_TAG_LEVEL_ASYMM
+```
+
+Zygote 的 `memtagModeToZygoteMemtagLevel()` 只处理 MEMTAG_ASYNC → MEMORY_TAG_LEVEL_ASYNC 和 MEMTAG_SYNC → MEMORY_TAG_LEVEL_SYNC 的映射。**应用层 Zygote 没有任何 ASYMM 代码路径**。
+
+#### Bionic 层：__libc_init_mte 通过 prctl 设置 MTE
+
+AOSP 源码：`bionic/libc/bionic/libc_init_common.cpp`
+
+```cpp
+if (prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg | PR_MTE_TCF_SYNC, 0, 0, 0) == 0 ||
+    prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg, 0, 0, 0) == 0) {
+    __libc_shared_globals()->initial_heap_tagging_level = level;
+    __libc_shared_globals()->initial_memtag_stack = memtag_stack;
+    // ... set PROT_MTE on stack ...
+}
+```
+
+调用路径：动态链接可执行文件由 linker 调用，静态链接可执行文件由 crtbegin.c 中的 `__libc_init` 调用。`bionic/libc/platform/bionic/mte.h` 定义 MemtagMode 枚举：
+
+```cpp
+enum MemtagMode {
+    MEMTAG_MODE_OFF = 0,
+    MEMTAG_MODE_ASYNC = 1,
+    MEMTAG_MODE_SYNC = 2,
+};
+// 同样没有 ASYMM 枚举值
+```
+
+#### 内核层：mte_tcf_preferred 实现 per-CPU 静默升级
+
+source.android.com MTE configuration 文档（2025-12-02）：
+
+> MTE modes can be set for each CPU core in the system by writing to /sys/devices/system/cpu/cpu*/mte_tcf_preferred. For example, writing sync (or asymm) would cause any userspace process that has requested Async mode to be silently auto-upgraded to Sync (or Asymm) while running on that core.
+
+**核心结论**：ASYMM 不是应用 API，不能通过 manifest 配置。manifest 中的 `async` 只是请求值，实际运行模式由设备侧 `mte_tcf_preferred` 决定。当设备写入 `asymm` 时，请求 ASYNC 的进程在该 CPU 上会被内核静默升级为 ASYMM，这个升级发生在硬件/内核层，不经过 Zygote 或 bionic 的应用级逻辑。
+
+### 实战排查提示
+
+当看到 `android:memtagMode="async"` 的崩溃率数据时，不能直接假设设备上运行的就是 async 模式。需要在支持 MTE 的设备上采集 `/sys/devices/system/cpu/cpu*/mte_tcf_preferred` 的值，才能确认实际模式。不同厂商设备对 ASYMM 的默认配置可能不同，Pixel 系列与第三方厂商设备的配置策略可能存在差异。
+<!-- AIW-源码调研-2026-05-26 END -->
+
