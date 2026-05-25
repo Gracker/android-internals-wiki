@@ -21280,37 +21280,57 @@
       "added_by": "task6-review",
       "added_at": "2026-05-26T01:12:00+08:00",
       "original_review_log": "logs/review/2026-05-26-01-review.md"
+    },
+    {
+      "id": "task2a-gap-20260526-22.17-hardware-bitmap-rendernode",
+      "section": "22.17",
+      "section_title": "Hardware Bitmap 与 RenderNode 缓存策略",
+      "priority": 80,
+      "title": "加工 Hardware Bitmap 与 RenderNode 缓存策略",
+      "description": "基于 Hardware Bitmap、AHardwareBuffer、RenderNode、RenderThread upload 与 SurfaceFlinger composition 边界素材，补齐图片渲染实战中硬件位图的选型、观测和回退策略。",
+      "reason": "source-index 存在高质量源码调研素材，现有 22.6 与 23.2 分别覆盖图片加载和 Bitmap 内存，但缺少独立章节讲清 Hardware Bitmap 是否绕过 RenderThread、Perfetto 如何识别 upload 成本、graphics memory/FD 风险以及图片库配置边界。官方 Compose 图片优化文档和 AOSP HWUI 源码可验证。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
+      ],
+      "material_paths": [
+        "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-hardware-bitmap-rendernode-surfaceflinger-composition.md",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/hwui/hwui/Bitmap.cpp",
+        "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/hwui/HardwareBitmapUploader.cpp",
+        "https://developer.android.com/develop/ui/compose/graphics/images/optimization",
+        "https://developer.android.com/topic/performance/rendering/profile-gpu"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-26T04:17:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 569,
+    "total_entries": 570,
     "p0_count": 242,
-    "last_updated": "2026-05-26T03:20:00+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 177,
+    "last_updated": "2026-05-26T04:17:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 178,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task9",
-    "pending": 177,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 178,
     "completed_entries": 389,
-    "last_task2a_gap_mining": "26.19",
-    "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00",
+    "last_task2a_gap_mining": "22.17",
+    "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T03:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 177,
+  "last_updated": "2026-05-26T04:17:00+08:00",
+  "last_updated_by": "openclaw-task2a",
+  "pending": 178,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
-  "last_task2a_gap_mining": {
-    "created_sections": [
-      "26.19"
-    ],
-    "created_files": [
-      "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md"
-    ],
-    "created_at": "2026-05-26T01:04:00+08:00"
-  },
-  "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00"
+  "last_task2a_gap_mining": "22.17",
+  "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00"
 }
