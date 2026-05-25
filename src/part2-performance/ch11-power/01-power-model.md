@@ -6,7 +6,7 @@ status: finalized
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: needs-rework
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -40,23 +40,23 @@ sources:
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-05-07T07:47:17+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T08:36:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-07-08-deep-review.md"
-task9_review_notes: "2026-05-07 Task9 08:36：pass-tech-review。P0 0 / P1 0 / P2 1；Perfetto/PowerMonitor/ODPM 关键源码锚点已复核，参考链接 404 已有 suggestions 记录，不阻断发布。"
+last_task9_at: "2026-05-25T22:28:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-22-audit.md"
+task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。"
 last_task6_at: "2026-05-07T08:20:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-08-review.md"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
-
+last_task9_audit: 2026-05-25
 ---
 
 

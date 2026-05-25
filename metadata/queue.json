@@ -1,6 +1,41 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-2228-11.1-energyconsumer-type-symbol",
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "priority": 95,
+      "title": "修正 PowerStats AIDL EnergyConsumer 类型符号",
+      "description": "Task9 闲时抽检发现 §11.1 把 CPU cluster 能量 consumer 写成不存在的 `EnergyConsumer.TYPE_CPU_CLUSTER`，与 AOSP PowerStats AIDL 类型定义不一致。",
+      "reason": "[Deep Tech Review Audit] §11.1 L178 使用 `EnergyConsumer.TYPE_CPU_CLUSTER`；AOSP android-16.0.0_r1 中正确类型枚举是 `EnergyConsumerType.CPU_CLUSTER`，`EnergyConsumer` 只是包含 `type` 字段的 parcelable。",
+      "issue_type": "source-accuracy-powerstats-aidl-energyconsumer-type",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch11-power/01-power-model.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-22-audit.md",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-16.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumer.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-16.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / PowerStats AIDL EnergyConsumer 类型名错误",
+          "location": "L178：`EnergyConsumer.TYPE_CPU_CLUSTER`",
+          "detail": "正文把 CPU cluster 能量 consumer 写成 `EnergyConsumer.TYPE_CPU_CLUSTER`。AOSP android-16.0.0_r1 的 `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyConsumer.aidl` 只有 `EnergyConsumer.type` 字段；类型枚举定义在 `EnergyConsumerType.aidl`，正确枚举值为 `EnergyConsumerType.CPU_CLUSTER`。当前符号在公开 AIDL 中不存在，读者按该名字查源码或实现 HAL 会查不到。",
+          "suggestion": "改为“当 HAL 上报 `EnergyConsumerType.CPU_CLUSTER` 类型的 `EnergyConsumer` 时，Framework 可消费其硬件能量读数”，或写成“CPU_CLUSTER energy consumer”，避免把 parcelable `EnergyConsumer` 误写成持有 TYPE 常量的类。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T22:28:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-2120-16.4-android17-gki-6.18-boundary",
       "section": "16.4",
       "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
@@ -20997,24 +21032,24 @@
     }
   ],
   "metadata": {
-    "total_entries": 558,
-    "p0_count": 236,
-    "last_updated": "2026-05-25T17:26:00+08:00",
+    "total_entries": 563,
+    "p0_count": 238,
+    "last_updated": "2026-05-25T22:28:00+08:00",
     "updated_by": "task9-deep-tech-review-audit",
-    "pending_entries": 183,
+    "pending_entries": 181,
     "updated_date": "2026-05-25",
     "last_updated_by": "task9-deep-tech-review-audit",
-    "pending": 182,
-    "completed_entries": 373,
+    "pending": 181,
+    "completed_entries": 379,
     "last_task2a_gap_mining": "24.19",
     "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
     "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T22:04:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 184,
+  "last_updated": "2026-05-25T22:28:00+08:00",
+  "last_updated_by": "task9-deep-tech-review-audit",
+  "pending": 181,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
