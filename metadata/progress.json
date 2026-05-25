@@ -1,7 +1,7 @@
 {
   "total": 374,
-  "draft": 1,
-  "ready-for-review": 203,
+  "draft": 0,
+  "ready-for-review": 204,
   "finalized": 170,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -253,7 +253,8 @@
     "18.8",
     "1.7",
     "11.4",
-    "22.17"
+    "22.17",
+    "8.13"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -5551,16 +5552,20 @@
     "8.13": {
       "title": "BiometricPrompt 与 Credential Manager 登录链路性能",
       "file": "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-26",
       "gap_source": "AOSP结构/官方文档/素材驱动",
       "gap_score": 16,
       "queue_priority": 80,
       "material_count": 6,
-      "last_task2a_at": "2026-05-26T06:16:00+08:00",
-      "task2a_result": "gap-created"
+      "last_task2a_at": "2026-05-26T07:13:00+08:00",
+      "task2a_result": "drafted",
+      "drafted_date": "2026-05-26",
+      "last_verified": "2026-05-26",
+      "last_verified_against": "Android Developers identity docs, AOSP android-16.0.0_r1 frameworks/base",
+      "confidence": "medium"
     }
   },
   "task2b_rounds": [

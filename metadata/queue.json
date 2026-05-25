@@ -21396,7 +21396,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [
         "8.12",
         "20.16",
@@ -21421,7 +21421,10 @@
         "total": 16
       },
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-26T06:16:00+08:00"
+      "added_at": "2026-05-26T06:16:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-26T07:13:00+08:00",
+      "completion_reason": "Task 2A draft completed; status ready-for-review; entering Task 6 pipeline"
     }
   ],
   "metadata": {
