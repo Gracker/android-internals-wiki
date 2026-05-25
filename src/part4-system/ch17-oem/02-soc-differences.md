@@ -1,9 +1,9 @@
 ---
+
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 title: "SoC 平台差异"
 chapter: "17.2"
 section: "17.2"
-status: "ready-for-review"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -31,25 +31,26 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "needs-rework"
 task6_state: "revisiting"
-pipeline_stage: "task6_pending"
-task9_state: "pending"
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
-last_task9_at: "2026-05-25T07:30:00+08:00"
-task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；MediaTek 9400 官方频率表述错误，2025/2026 旗舰 SoC 与 Tensor/Exynos 版本边界需更新。"
-task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-25T09:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-09-review.md"
 task6_review_notes: "2026-05-25 Task6:小修 L1 标点 24 处;尾部 AIW 源码调研列表仍未整合进正文,已并入 queue.json priority 95。Task9 技术回炉项保持 pending。"
-last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
 task6_reviewed_date: "2026-05-25"
-p0: 1
-p1: 1
-p2: 1
 task6_reviewed_by: "openclaw-task6"
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-25"
+last_task9_at: "2026-05-25T11:41:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。"
+p0: 2
+p1: 0
+p2: 0
+task2b_state: "pending"
 ---
 
 # SoC 平台差异

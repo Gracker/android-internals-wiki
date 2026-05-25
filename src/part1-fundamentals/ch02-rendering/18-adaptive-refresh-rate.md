@@ -1,8 +1,8 @@
 ---
 
+
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 
-status: "ready-for-review"
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
 section: '2.18'
@@ -47,29 +47,30 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: "task6_pending"
-last_task9_at: "2026-05-25T07:30:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
 task6_state: "revisiting"
-task9_state: "pending"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
 task6_result: pass-light-edit
-task9_result: needs-rework
 task2b_result: "fixed"
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；FrameTimeline display_frame_token gap 不能直接判定调度器错过目标 VSYNC。"
 task6_reviewed_date: "2026-05-25"
-last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
 last_task6_at: "2026-05-25T08:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-08-review.md"
 task6_review_notes: "2026-05-25 Task6：小修 L1/L2 1 处；未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：display_frame_token gap 不能单独定责 Scheduler。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-25"
+last_task9_at: "2026-05-25T11:41:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
 ---
 

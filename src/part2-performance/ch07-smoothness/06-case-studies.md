@@ -1,6 +1,6 @@
 ---
 
-status: "ready-for-review"
+
 title: 案例集
 chapter: '7.6'
 section: '7.6'
@@ -17,9 +17,6 @@ polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
 confidence: medium-high
-task9_reviewed_date: "2026-05-25"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-25T07:30:00+08:00"
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md
@@ -57,25 +54,29 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task2b_state: "fixed"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
-task9_result: needs-rework
 last_task2b_at: "2026-05-17T15:18:41+08:00"
-task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；SurfaceView Z-order API 不能写成可分配或保证使用 HWC Overlay Plane；既有 Trace 数据 P2 不重复新增。"
 last_task6_at: "2026-05-25T08:15:00+08:00"
 task6_review_notes: "2026-05-25 Task6：小修 L1/L2 18 处；清理正文破折号残留、口水过渡和填充词。未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：SurfaceView Z-order 不能写成保证使用 HWC Overlay Plane。"
 last_task6_review_log: "logs/review/2026-05-25-08-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
+task6_reviewed_date: "2026-05-25"
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-25"
+last_task9_at: "2026-05-25T11:41:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。"
 p0: 0
 p1: 1
 p2: 0
-task6_reviewed_date: "2026-05-25"
+task2b_state: "pending"
 ---
 
 
