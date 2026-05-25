@@ -51,18 +51,20 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 last_task6_at: "2026-05-07T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-09-review.md"
 task6_review_notes: "2026-05-07 task6 revisiting review 09:06: pass-light-edit。小修 Cloud Compilation 命中时的 `dex2oat` 进程表述；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-status: finalized
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_result: needs-rework
 task9_state: reviewed
 last_task2b_at: "2026-05-07T08:42:28"
-task2b_state: fixed
+task2b_state: pending
 task9_reviewed_date: 2026-05-07
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T09:35:55+08:00"
-task9_review_notes: "2026-05-07 Task9 09:34：pass-tech-review。本轮无 P0/P1；P2：AutoFDO 量化数字混用 android16-6.12 Pixel 8 与 android-mainline Pixel 6 口径，已写入 suggestions；Cloud Compilation/SDM 官方锚点沿用既有 suggestions，不重复新增。自动晋升 finalized。"
+last_task9_at: "2026-05-26T00:20:00+08:00"
+task9_review_notes: "2026-05-26 Task9 00:20 闲时抽检：needs-rework。P0 1 / P1 1 / P2 0；compiler filter 源码锚点应改为 libartbase/base/compiler_filter.{h,cc}；`android-17-beta3` 不是公开 AOSP ref，Android 17 行为需改用官方 docs / 可复现公开分支口径。"
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-26-00-audit.md"
+last_task9_audit: 2026-05-26
 ---
 
 
