@@ -20141,7 +20141,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 2.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
@@ -20151,7 +20151,12 @@
         "https://developer.android.com/reference/java/lang/System#load(java.lang.String)"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-25T08:27:00+08:00"
+      "added_at": "2026-05-25T08:27:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-25T09:21:00+08:00",
+      "completion_reason": "Task 2A 内容加工完成：Android 17 Native DCL 只读约束与动态库加载稳定性已写入，status → ready-for-review，进入 Task 6 管线。",
+      "result": "ready-for-review",
+      "drafted_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
     },
     {
       "id": "task2a-gap-20260525-20-16",
