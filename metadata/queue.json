@@ -20678,37 +20678,65 @@
       ],
       "added_by": "task9-deep-tech-review-audit",
       "added_at": "2026-05-25T15:23:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260525-24.19-bluetoothsocket-read-disconnect",
+      "section": "24.19",
+      "section_title": "BluetoothSocket read 断开语义与长连接治理",
+      "priority": 80,
+      "title": "加工 BluetoothSocket read 断开语义与长连接治理",
+      "description": "基于 Android 17 Bluetooth RFCOMM socket read() 断开语义变化、官方 Bluetooth 数据传输文档和 Part5 性能结构参考，补齐蓝牙长连接读写线程、断线状态机、重连退避和线上监控字段。",
+      "reason": "现有 AIW 已覆盖 Bluetooth 扫描/连接功耗、网络架构和弱网治理，但缺少经典蓝牙 RFCOMM socket 在 Android 17 上 read() 返回 -1 的适配边界。该变化会影响只靠 IOException 退出读循环的长连接业务，容易造成线程不退出、状态机卡住或重连策略异常。",
+      "issue_type": "knowledge-gap-new-section",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket",
+        "Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md",
+        "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T16:15:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 554,
+    "total_entries": 555,
     "p0_count": 233,
-    "last_updated": "2026-05-25T15:23:00+08:00",
-    "updated_by": "task9-deep-tech-review-audit",
-    "pending_entries": 178,
+    "last_updated": "2026-05-25T16:15:00+08:00",
+    "updated_by": "task2a-knowledge-gap",
+    "pending_entries": 179,
     "updated_date": "2026-05-25",
-    "last_updated_by": "task9-deep-tech-review-audit",
-    "pending": 178,
+    "last_updated_by": "task2a-knowledge-gap",
+    "pending": 179,
     "completed_entries": 373,
-    "last_task2a_gap_mining": "25.16",
-    "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
+    "last_task2a_gap_mining": "24.19",
+    "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
     "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T15:23:00+08:00",
-  "last_updated_by": "task9-deep-tech-review-audit",
-  "pending": 178,
+  "last_updated": "2026-05-25T16:15:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 179,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
     "created": 1,
     "sections": [
-      "17.7"
+      "24.19"
     ],
     "files": [
-      "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
+      "src/part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md"
     ]
   },
-  "last_task2a_gap_mining_at": "2026-05-25T13:04:00+08:00"
+  "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00"
 }
