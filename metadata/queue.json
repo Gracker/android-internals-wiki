@@ -21107,7 +21107,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [
         "26.3",
         "26.5",
@@ -21124,7 +21124,10 @@
         "src/part5-app/ch26-observability/05-online-troubleshooting.md"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-26T01:04:00+08:00"
+      "added_at": "2026-05-26T01:04:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-26T02:04:00+08:00",
+      "completion_reason": "Task 2A draft processing: expanded empty draft into ready-for-review client log and diagnostic command channel chapter"
     },
     {
       "id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
