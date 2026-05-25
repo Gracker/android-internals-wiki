@@ -1,6 +1,45 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-2120-16.4-android17-gki-6.18-boundary",
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 85,
+      "title": "补齐 Android 17 `android17-6.18` GKI 分支与 sched_ext API 版本边界",
+      "description": "Task9 闲时抽检发现 §16.4 仍把 Android 17 讨论中的 GKI 主线限定在 android16-6.12，遗漏当前 AOSP android17-6.18 分支、6.18 AutoFDO profile 数据和 sched_ext dsq_insert API 变化。",
+      "reason": "[Deep Tech Review Audit] §16.4 L74、L84、L190-L198、L270-L279、L390-L392 未覆盖 AOSP android17-6.18；会误导读者把 Android 17/API 37 与 Kernel 6.12/android16-6.12 绑定过紧。",
+      "issue_type": "version-difference-android17-gki-6.18",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-21-audit.md",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/Makefile",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/gki/aarch64/afdo/README.md",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/kernel/sched/ext.c",
+        "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/ext.c",
+        "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异 / Android 17 GKI 分支与 sched_ext API 口径过期",
+          "location": "L74、L84、L190-L198、L270-L279、L390-L392、L416-L419：Android 17 + Kernel 6.12 / AutoFDO / sched_ext 版本边界",
+          "detail": "正文仍把 Android 17 讨论中的 GKI 主线限定在 android16-6.12，并把 scx_bpf_dsq_insert() 归为 Linux 6.14+ / 非 GKI 分支现象；但 AOSP kernel/common 已存在 refs/heads/android17-6.18，Makefile 为 6.18.21，sched_ext kfunc 已改为 scx_bpf_dsq_insert()/scx_bpf_dsq_insert_vtime()。android17-6.18 的 gki/aarch64/afdo/README.md 也已经公开 6.18.16 profile 与 Pixel 8 初步 benchmark（Boot time 1.9%、Cold App launch 3.4%、Binder-rpc 13.9%、Binder-addints 17.1%、Hwbinder 23.9%），并明确这些结果仍是 preliminary。现稿缺少 android17-6.18，会把 Android 17/API 37 平台行为与 android16-6.12 内核线绑定过紧，并漏掉标准 GKI 6.18 上的 API/数据变化。",
+          "suggestion": "Task2B 回炉时按三层重写版本边界：Android 17/API 37 平台行为（DeliQueue、Generational CMC、ProfilingTrigger 等）单列；android16-6.12 作为 Kernel 6.12/GKI 事实保留；新增 android17-6.18 作为当前 Android 17 common-kernel 分支，补 Makefile 6.18.21、gki/aarch64/afdo README 的 preliminary 指标与 sched_ext dsq_insert API 差异。标题或开头需要明确本节是“Kernel 6.12 相关变化与 Android 17 分支边界”，不是“Android 17 默认等于 Kernel 6.12”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T21:20:00+08:00"
+    },
+    {
       "id": "task9-deep-20260525-19-1.5-binder-epoll-hwa-version",
       "section": "1.5",
       "section_title": "线程模型",

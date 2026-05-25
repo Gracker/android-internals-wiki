@@ -2,7 +2,7 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-07"
@@ -10,13 +10,19 @@ reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-last_task9_at: "2026-05-07T02:20:00+08:00"
-task9_reviewed_date: "2026-05-07"
+task9_result: needs-rework
+last_task9_at: "2026-05-25T21:20:00+08:00"
+task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: ready-to-publish
+task9_review_notes: "2026-05-25 Task9 idle audit: needs-rework。P1 1：Android 17 GKI 分支边界已过期，需补 android17-6.18、6.18 AFDO preliminary 数据与 sched_ext dsq_insert API 差异。详见 logs/deep-review/2026-05-25-21-audit.md。"
+last_task9_audit: "2026-05-25"
+last_task9_audit_at: "2026-05-25T21:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-25-21-audit.md"
+last_task9_audit_result: "p1-version-difference"
+task9_audit_notes: "2026-05-25 Task9 idle audit: P1 1；AOSP android17-6.18 已存在，Kernel 6.12/android16-6.12 与 Android 17/API37 口径需拆分。"
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-05-07T01:44:08+08:00"
 last_task6_at: "2026-05-07T02:05:00+08:00"
