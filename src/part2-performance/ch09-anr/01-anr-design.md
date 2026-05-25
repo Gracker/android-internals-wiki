@@ -9,8 +9,8 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
-reviewed_date: 2026-05-04
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-25"
+reviewed_by: "openclaw-task6"
 confidence: medium
 sources:
   - type: aosp
@@ -39,21 +39,24 @@ repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_result: "needs-rework"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T10:38:04+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。"
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T12:27:10+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-12-audit.md"
+last_task6_at: "2026-05-25T16:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-25-16-review.md"
+task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 ---
 
 # ANR 设计思想
@@ -87,11 +90,11 @@ last_task9_audit_log: "logs/deep-review/2026-05-25-12-audit.md"
 
 当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，最后卸载你的 App。Android 的设计者很早就意识到，一个无响应的应用会严重损害用户对整个系统的信任，而不仅仅是对单个 App 的不满。
 
-ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它不是事后诊断工具，而是一道运行时的防线：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
+ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它的角色是运行时防线，而非事后诊断工具：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
 
-如果把全书的主线连起来看，ANR 并不是“完全不同的一类问题”，而是广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想也是一篇“体验保护机制”章节，而不只是异常处理机制。
+如果把全书的主线连起来看，ANR 属于广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想也是一篇“体验保护机制”章节，不只是异常处理机制。
 
-理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
+理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——ANR trace 的堆栈经常是"替罪羊"，导致超时的代码可能早已执行完毕。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
@@ -103,9 +106,9 @@ Android 设计 ANR 机制的出发点可以用一句话概括：**用户不应�
 
 ANR 机制在这个场景中介入的方式是：设置一个超时计时器，如果在规定时间内应用没有完成某个关键操作，系统就会认为它"失去了响应能力"，然后弹出对话框让用户决定下一步。这个设计哲学有几个关键特点：
 
-**第一，ANR 是系统对应用的强制约束，不是应用自愿配合的机制。** 超时检测在 system_server 中运行，与应用自身的代码完全隔离。即使应用的主线程已经死锁，system_server 仍然能检测到超时并介入。这种设计保证了即使应用开发者完全不考虑响应性，系统也有兜底方案。
+**第一，ANR 是系统对应用的强制约束，并非应用自愿配合的机制。** 超时检测在 system_server 中运行，与应用自身的代码完全隔离。即使应用的主线程已经死锁，system_server 仍然能检测到超时并介入。这种设计保证了即使应用开发者完全不考虑响应性，系统也有兜底方案。
 
-**第二，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户根本看不到它在做什么）。
+**第二，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户通常看不到它在做什么）。
 
 **第三，ANR 机制本身是一个"紧急刹车"，不应该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。这意味着好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
 
@@ -362,7 +365,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 - **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
 - **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
-在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 30+，随 `ApplicationExitInfo` 在 Android 11 引入）程序化读取 ANR 堆栈。Android 14 起 `/data/anr/` 目录需要 root 权限，非 root 设备只能通过 `ApplicationExitInfo` 或 `adb bugreport` 获取。
+在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 30+，随 `ApplicationExitInfo` 在 Android 11 引入）程序化读取 ANR 堆栈。
 
 **traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时导致超时的代码可能已经执行完毕。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——问题出在更早的消息处理中。
 
@@ -478,7 +481,7 @@ Play Console 提供的 ANR 信息包括：
 
 ### 误区二："ANR = CPU 高负载"
 
-ANR 的触发条件是"主线程在超时时间内没有响应"，而不是"CPU 占用率高"。一个 CPU 占用率极低的线程，如果被锁阻塞（BLOCKED 状态），同样会触发 ANR。反过来，CPU 占用率高但及时返回了结果的代码，不会触发 ANR。ANR 的本质是"响应超时"，不是"资源消耗过大"。
+ANR 的触发条件是"主线程在超时时间内没有响应"，不看 CPU 占用率是否高。一个 CPU 占用率极低的线程，如果被锁阻塞（BLOCKED 状态），同样会触发 ANR。反过来，CPU 占用率高但及时返回了结果的代码，不会触发 ANR。ANR 的本质是"响应超时"，不是"资源消耗过大"。
 
 ### 误区三："后台 Service 超时 200 秒，所以不用担心"
 
