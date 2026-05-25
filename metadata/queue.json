@@ -1,6 +1,64 @@
 {
   "queue_entries": [
     {
+      "id": "task9-20260526-0320-4.9-cleaner-summary-stale",
+      "section": "4.9",
+      "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "priority": 95,
+      "title": "清理延伸阅读中残留的 Cleaner 错误执行路径摘要",
+      "description": "正文已修正 Cleaner 三条路径，但延伸阅读摘要仍保留 sun.misc.Cleaner 独立 CleanerDaemon、java.lang.ref.Cleaner 走 FinalizerDaemon 的旧结论。",
+      "reason": "[Deep Tech Review] §4.9 L447-L450 延伸阅读摘要与正文和 AOSP 不一致：android-16 Daemons 无 CleanerDaemon；java.lang.ref.Cleaner.create() 创建独立 daemon 线程；只有 system cleaner 走 FinalizerDaemon#doClean()。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/交叉引用不一致",
+          "location": "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md L447-L450",
+          "detail": "延伸阅读摘要仍写“sun.misc.Cleaner（CleanerDaemon 独立线程）、java.lang.ref.Cleaner（FinalizerDaemon 路径）”，与正文 L320-L324、L390-L413 以及 AOSP Daemons/ReferenceQueue/CleanerImpl 路径冲突。",
+          "suggestion": "删除这段过期摘要，或改为：sun.misc.Cleaner 在 ReferenceQueueDaemon.enqueuePending() 中直接 clean()；java.lang.ref.Cleaner.create() 使用 CleanerImpl 自有 daemon；Android system cleaner 才复用 FinalizerReference.queue 并由 FinalizerDaemon#doClean() 处理。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260526-0320-18.17-surfacecontrol-ndk-callback-signature",
+      "section": "18.17",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 95,
+      "title": "修正 NDK SurfaceControl buffer release 回调签名与示例分支",
+      "description": "§18.17 的 NDK 示例仍含不可编译代码，并把 API 36 OnBufferRelease 签名写成带 surface_control/buffer 参数的旧口径。",
+      "reason": "[Deep Tech Review] §18.17 L195-L204 把 ASurfaceTransaction_OnBufferRelease 写成 4 参数，AOSP surface_control.h 实际为 void (*)(void*, int release_fence_fd)；L217-L231 static 回调块残留 “}, buffer);” 不可编译；L191-L215 把 API 29-35 与 API 36+ 方案连续调用到同一 transaction，需按版本分支拆开。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md L195-L204",
+          "detail": "ASurfaceTransaction_OnBufferRelease typedef 在 AOSP/NDK 为 void (*)(void* context, int release_fence_fd)，正文写成带 ASurfaceControl* 与 ANativeWindowBuffer* 的 4 参数回调；按正文实现会编译失败。",
+          "suggestion": "把 API 36+ 回调改成 static void onBufferRelease(void* context, int releaseFenceFd)，surfaceControl/buffer 需要放在 context 里。"
+        },
+        {
+          "type": "源码错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md L217-L231",
+          "detail": "OnComplete 示例定义 static 函数后残留 “}, buffer);”，C/C++ 代码不可编译。",
+          "suggestion": "删掉尾部 “, buffer);”，补完整函数定义，并在 apply 后释放/复用 transaction 对象。"
+        },
+        {
+          "type": "版本差异",
+          "location": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md L191-L215",
+          "detail": "示例先调用 setBuffer()，又调用 setBufferWithRelease()，再设置 OnComplete；这应是 API 29-35 与 API 36+ 两套互斥方案，不能作为同一个 transaction 的连续调用流程。",
+          "suggestion": "用 #if __ANDROID_API__ >= 36 或运行时 API 分支拆成两段：API 36+ 使用 setBufferWithRelease；API 29-35 使用 setBuffer + setOnComplete + getPreviousReleaseFenceFd。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
       "id": "task9-audit-20260526-0220-11.4-jobscheduler-runtime-constants",
       "section": "11.4",
       "section_title": "案例集",
@@ -21225,24 +21283,24 @@
     }
   ],
   "metadata": {
-    "total_entries": 567,
-    "p0_count": 240,
-    "last_updated": "2026-05-26T02:20:00+08:00",
+    "total_entries": 569,
+    "p0_count": 242,
+    "last_updated": "2026-05-26T03:20:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 180,
+    "pending_entries": 177,
     "updated_date": "2026-05-26",
     "last_updated_by": "openclaw-task9",
-    "pending": 180,
-    "completed_entries": 384,
+    "pending": 177,
+    "completed_entries": 389,
     "last_task2a_gap_mining": "26.19",
     "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T02:20:00+08:00",
+  "last_updated": "2026-05-26T03:20:00+08:00",
   "last_updated_by": "openclaw-task9",
-  "pending": 180,
+  "pending": 177,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
