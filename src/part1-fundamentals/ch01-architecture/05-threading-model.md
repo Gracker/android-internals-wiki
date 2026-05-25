@@ -2,8 +2,8 @@
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -15,13 +15,18 @@ task6_reviewed_date: '2026-05-12'
 review_round: 9
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T06:25:00+08:00"
 task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
-task2b_state: fixed
-task2b_result: fixed
+last_task9_audit: "2026-05-25"
+last_task9_audit_at: "2026-05-25T17:26:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-25-17-audit.md"
+last_task9_audit_result: "p1-source-accuracy"
+task9_audit_notes: "2026-05-25 Task9 idle audit: needs-rework。P1 1：MQ.DispatchBatches Trace 计数器缺少公开 AOSP/官方文档锚点，需回炉核验。"
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
