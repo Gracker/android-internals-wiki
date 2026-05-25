@@ -27,28 +27,29 @@ sources:
     path: "多来源综合(web search 验证)"
 tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-17"
-task6_result: needs-rework
-task6_state: "revisiting"
-pipeline_stage: task2b_pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-25"
+task6_result: "needs-rework"
+task6_state: "reviewed"
+pipeline_stage: "task2b_pending"
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
 last_task9_at: "2026-05-25T07:30:00+08:00"
 task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；MediaTek 9400 官方频率表述错误，2025/2026 旗舰 SoC 与 Tensor/Exynos 版本边界需更新。"
-task2b_state: pending
+task2b_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
-last_task6_at: "2026-05-17T20:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-17-20-review.md"
-task6_review_notes: "2026-05-17 Task6:小修 L1/L2 15 处;常见问题后的源码调研/Game Mode 素材仍是素材块,且含 Task9 已标记的 Dimensity/sched_ext 证据风险,已并入 queue.json priority 95。"
+last_task6_at: "2026-05-25T09:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-25-09-review.md"
+task6_review_notes: "2026-05-25 Task6:小修 L1 标点 24 处;尾部 AIW 源码调研列表仍未整合进正文,已并入 queue.json priority 95。Task9 技术回炉项保持 pending。"
 last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
-task6_reviewed_date: "2026-05-17"
+task6_reviewed_date: "2026-05-25"
 p0: 1
 p1: 1
 p2: 1
+task6_reviewed_by: "openclaw-task6"
 ---
 
 # SoC 平台差异
@@ -84,7 +85,7 @@ p2: 1
 
 问题往往出在不同 SoC 平台的硬件架构差异上:CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同,厂商的调度策略也不同。这些差异会直接影响 Perfetto 里的现象,如果不了解它们,就很容易把平台特性误判为代码问题。
 
-了解 SoC 平台差异之后,**Perfetto 里出现异常的 CPU 调度、GPU 耗时或内存行为时,分析者能判断这是代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要--团队不可能在每个平台上都做一遍完整分析,但需要知道不同平台上同一个现象的含义可能完全不同。
+了解 SoC 平台差异之后,**Perfetto 里出现异常的 CPU 调度、GPU 耗时或内存行为时,分析者能判断这是代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要:团队不可能在每个平台上都做一遍完整分析,但需要知道不同平台上同一个现象的含义可能完全不同。
 
 这里不按产品评测方式逐项对比芯片参数,只保留会直接影响性能分析结论的架构差异,以及它们在 Perfetto 中分别长什么样。
 
@@ -96,9 +97,9 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 
 **高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite,高通一直保持着综合性能的领先地位,尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研:CPU 方面,从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心(开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历),不再使用 ARM 公版 Cortex 核心;GPU 方面的 Adreno 系列一直是自研的;基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
 
-**联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略--取消传统的小核心,全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势,但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心,GPU 则采用 ARM 的 Immortalis 系列(高端)或 Mali 系列(中端)。联发科的芯片通常在性价比方面有优势,在中端市场的份额尤其高。
+**联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略:取消传统的小核心,全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势,但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心,GPU 则采用 ARM 的 Immortalis 系列(高端)或 Mali 系列(中端)。联发科的芯片通常在性价比方面有优势,在中端市场的份额尤其高。
 
-**三星 Exynos** 的情况比较特殊。Exynos 曾经是三星 Galaxy 系列的主力芯片,但在旗舰性能上与高通的差距导致三星多次在旗舰机型上转向骁龙。最新的 Exynos 2500 计划用于 Galaxy Z Flip 7 等折叠屏设备。Exynos 的 CPU 使用 ARM 公版核心,但 GPU 方面采用了与 AMD 合作的 Xclipse 系列,基于 AMD RDNA 架构--这在移动 GPU 中是独树一帜的选择,带来了硬件光追和 VRS 等桌面级特性。
+**三星 Exynos** 的情况比较特殊。Exynos 曾经是三星 Galaxy 系列的主力芯片,但在旗舰性能上与高通的差距导致三星多次在旗舰机型上转向骁龙。最新的 Exynos 2500 计划用于 Galaxy Z Flip 7 等折叠屏设备。Exynos 的 CPU 使用 ARM 公版核心,但 GPU 方面采用了与 AMD 合作的 Xclipse 系列,基于 AMD RDNA 架构,这在移动 GPU 中是独树一帜的选择,带来了硬件光追和 VRS 等桌面级特性。
 
 **Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 预计将是 Google 的首款完全自研芯片,由 TSMC 代工。
 
@@ -112,7 +113,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 ### 核心拓扑:从传统大小核到全大核
 
-§5.3 讲过 ARM big.LITTLE 和 DynamIQ 的大小核架构--这是 Android SoC 的经典设计:几个高性能核心负责重负载,几个低功耗核心处理后台任务。但最近两代芯片中,各家开始出现明显分化。
+§5.3 讲过 ARM big.LITTLE 和 DynamIQ 的大小核架构,这是 Android SoC 的经典设计:几个高性能核心负责重负载,几个低功耗核心处理后台任务。但最近两代芯片中,各家开始出现明显分化。
 
 高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计(1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核),到了 8 Elite(搭载自研 Oryon 核心)则简化为 2+6 的双集群设计。这种简化策略背后的思路是:减少集群间迁移的机会,降低调度器做迁移决策时的开销。在 Perfetto 中分析 Oryon 设备时,应重点看线程是否在两个集群之间来回迁移,而不是直接套用四集群大小核的判断。
 
@@ -128,9 +129,9 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 同样是 ARMv9 指令集,不同核心的微架构设计会导致 IPC(Instructions Per Cycle)有显著差异。这直接影响在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构,开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计(每个核心独占 L2),但缓存拓扑的具体参数(容量、延迟周期)尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认,容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是:大容量 L1 带来更好的命中率,私有 L2 消除了多核共享缓存带来的竞争延迟--但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中,Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰,但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构,开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计(每个核心独占 L2),但缓存拓扑的具体参数(容量、延迟周期)尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认,容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是:大容量 L1 带来更好的命中率,私有 L2 消除了多核共享缓存带来的竞争延迟,但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中,Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰,但整体吞吐量很好。
 
-[待验证: Oryon L1/L2 容量和访问延迟周期--Qualcomm 公开产品页未披露具体数字,待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认;L2 已确认为私有(非共享),但容量和延迟数值仍待验证]
+[待验证: Oryon L1/L2 容量和访问延迟周期:Qualcomm 公开产品页未披露具体数字,待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认;L2 已确认为私有(非共享),但容量和延迟数值仍待验证]
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心,10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心,IPC 虽然不如 X 系列,但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用,其基础性能仍远超传统的 A5xx 系列小核心。
 
@@ -140,7 +141,7 @@ Google Tensor G4 使用 Arm Cortex-X4/A720/A520 公版核心,微架构与同代 
 
 硬件只是基础,直接影响分析结论的是各家的软件调度策略。同样是基于 EAS(Energy Aware Scheduler)的 Android 内核,不同厂商的参数调优会导致 Perfetto 中看到完全不同的调度行为。
 
-高通的调度策略通常偏向性能--在检测到重负载时会快速将任务迁移到大核并拉高频率。高通还有一套独有的 Perflock 机制(封装在 `libqti-perfd-client.so` 中),允许系统服务或应用直接请求锁定 CPU 频率。例如打开相机时,系统会通过 Perflock 将所有核心频率拉到最高,同时关闭 Power Collapse:
+高通的调度策略通常偏向性能:在检测到重负载时会快速将任务迁移到大核并拉高频率。高通还有一套独有的 Perflock 机制(封装在 `libqti-perfd-client.so` 中),允许系统服务或应用直接请求锁定 CPU 频率。例如打开相机时,系统会通过 Perflock 将所有核心频率拉到最高,同时关闭 Power Collapse:
 
 ```c
 // 高通 Perflock 请求示例
@@ -157,13 +158,13 @@ static INT32 perfLockParamsOpenCamera[] = {
 
 [来源: obsidian/Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md]
 
-这种 Perflock 机制在 Perfetto 中的表现是:某些时刻所有 CPU 核心的频率会突然同时拉到最高,即使用户操作并不需要这么高的性能。这在分析功耗或发热问题时需要区分--是 App 的代码触发了重负载,还是厂商的系统服务通过 Perflock 提频了。
+这种 Perflock 机制在 Perfetto 中的表现是:某些时刻所有 CPU 核心的频率会突然同时拉到最高,即使用户操作并不需要这么高的性能。这在分析功耗或发热问题时需要区分:是 App 的代码触发了重负载,还是厂商的系统服务通过 Perflock 提频了。
 
-联发科的调度策略相对保守,更强调能效平衡。联发科也有类似的性能提示机制(通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制),但在默认策略上不那么激进。不过,在全大核架构下,调度器的迁移更多发生在同性能级别的核心之间--因为没有传统意义上的「小核」作为低优先级任务的收容区,负载均衡在几个性能接近的集群内部分配。
+联发科的调度策略相对保守,更强调能效平衡。联发科也有类似的性能提示机制(通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制),但在默认策略上不那么激进。不过,在全大核架构下,调度器的迁移更多发生在同性能级别的核心之间,因为没有传统意义上的「小核」作为低优先级任务的收容区,负载均衡在几个性能接近的集群内部分配。
 
 **在 Perfetto 中观察全大核迁移行为**,可以通过以下方式:
 
-1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下,不同集群间不再有数量级的性能差距,迁移对任务执行性能的影响更小。但迁移频率不一定更高--没有大小核之间的性能断崖,调度器不需要频繁地把任务在高性能核和低性能核之间来回搬。用 SQL 查询可以量化迁移模式:
+1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下,不同集群间不再有数量级的性能差距,迁移对任务执行性能的影响更小。但迁移频率不一定更高:没有大小核之间的性能断崖,调度器不需要频繁地把任务在高性能核和低性能核之间来回搬。用 SQL 查询可以量化迁移模式:
 ```sql
 -- 统计每个线程在 10 秒窗口内的迁移次数
 -- sched 表只有 cpu 字段记录当前所在核心,没有 prev_cpu,需要用 LAG 窗口函数从上一条调度记录取上一次所在的 CPU
@@ -193,9 +194,9 @@ LIMIT 20;
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下,低优先级唤醒偏向小核(CPU 4-7);全大核架构下唤醒目标分布更均匀,没有明显的「小核汇聚」现象。
 
-需要区分的是:迁移频繁不等于调度效率低。全大核的核心间性能差距小,同性能级别核心间的迁移开销较低(Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存,但任务迁移仍然会损失私有 L1 / L2 的局部性)。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载--不能简单用 DSU 的存在推论"跨核迁移成本低"。在 Perfetto 中,只有迁移导致缓存抖动(例如 `cpu_cycles / instructions` 比值突然上升)时才需要关注。
+需要区分的是:迁移频繁不等于调度效率低。全大核的核心间性能差距小,同性能级别核心间的迁移开销较低(Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存,但任务迁移仍然会损失私有 L1 / L2 的局部性)。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载,不能简单用 DSU 的存在推论"跨核迁移成本低"。在 Perfetto 中,只有迁移导致缓存抖动(例如 `cpu_cycles / instructions` 比值突然上升)时才需要关注。
 
-[已验证: ARM DSU-120 架构手册--DSU 提供一致性协议和可选共享缓存,但不等于跨核复用对方私有 L2]
+[已验证: ARM DSU-120 架构手册:DSU 提供一致性协议和可选共享缓存,但不等于跨核复用对方私有 L2]
 
 [已验证: ARM DSU-120 缓存一致性协议文档; Perfetto sched 表结构; MediaTek Dimensity 9400 公开规格]
 
@@ -212,13 +213,13 @@ GPU 是 Android 渲染管线的核心执行单元。§2.10 已经分析过 GPU �
 
 ### 四大 GPU 架构概览
 
-高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR(Tile-Based Rendering)架构。高通称其渲染方式为 FlexRender--它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
+高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR(Tile-Based Rendering)架构。高通称其渲染方式为 FlexRender:它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
 
 ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 是 ARM 的旗舰 GPU(支持硬件光追),Mali 是高端/中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科的旗舰芯片使用 Immortalis GPU(如 Dimensity 9400 上的 Immortalis-G925),中端芯片使用 Mali。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 Cache 大小),但驱动优化的成熟度有时不如 Adreno。
 
-三星的 **Xclipse** GPU 是移动 GPU 中的异类--它基于 AMD 的 RDNA 架构,这是 PC 和主机显卡的架构。Xclipse 940(Exynos 2400)使用 RDNA 3,支持硬件光追和可变分辨率渲染(VRS)等桌面级特性。Xclipse 的理论性能很强,但由于移动端的功耗和散热限制,持续性能输出可能不如 Adreno 稳定。在驱动方面,Xclipse 的 Vulkan 支持被认为与 Adreno 接近。
+三星的 **Xclipse** GPU 是移动 GPU 中的异类:它基于 AMD 的 RDNA 架构,这是 PC 和主机显卡的架构。Xclipse 940(Exynos 2400)使用 RDNA 3,支持硬件光追和可变分辨率渲染(VRS)等桌面级特性。Xclipse 的理论性能很强,但由于移动端的功耗和散热限制,持续性能输出可能不如 Adreno 稳定。在驱动方面,Xclipse 的 Vulkan 支持被认为与 Adreno 接近。
 
-Google Tensor 使用的 GPU 通常是 ARM Mali 系列(如 Mali-G715)。Tensor 不追求 GPU 峰值性能,更看重端侧 AI 推理--这个需求由 TPU(Tensor Processing Unit)而非 GPU 来承担。
+Google Tensor 使用的 GPU 通常是 ARM Mali 系列(如 Mali-G715)。Tensor 不追求 GPU 峰值性能,更看重端侧 AI 推理,这个需求由 TPU(Tensor Processing Unit)而非 GPU 来承担。
 
 ### GPU 差异在 Perfetto 中的表现
 
@@ -226,11 +227,11 @@ Google Tensor 使用的 GPU 通常是 ARM Mali 系列(如 Mali-G715)。Tensor �
 
 Adreno GPU 在 Perfetto 中的渲染阶段标记最为完整和规范。高通的 GPU 驱动会通过 `gpu_render_stages` 数据源上报详细的渲染阶段信息,包括 Vertex Processing、Fragment Processing、Compute 等细分阶段。这让 Perfetto 成为分析高通设备 GPU 瓶颈的有力工具。
 
-Mali/Immortalis GPU 也有较好的 Perfetto 支持,ARM 提供了 Mali GPU 的 Perfetto 数据源集成。但具体上报的阶段信息可能因厂商的驱动版本不同而有差异--联发科和三星各自的 Mali 驱动版本可能导致上报的数据粒度不同。
+Mali/Immortalis GPU 也有较好的 Perfetto 支持,ARM 提供了 Mali GPU 的 Perfetto 数据源集成。但具体上报的阶段信息可能因厂商的驱动版本不同而有差异,联发科和三星各自的 Mali 驱动版本可能导致上报的数据粒度不同。
 
 Xclipse GPU 的 Perfetto 支持相对有限。由于 AMD 的 RDNA 架构在移动端是较新的尝试,驱动与 Android tracing 基础设施的集成程度不如 Adreno 和 Mali 成熟。在分析 Exynos 设备的 GPU 性能时,可能需要更多依赖三星提供的专用工具。
 
-**实战经验**:在做跨设备 GPU 性能分析时,一个常见的误区是直接对比不同 GPU 上 `gpu_render_stages` 的绝对耗时数值。这就像对比不同架构 CPU 的主频一样--架构不同,每个周期做的工作量不同,数值不可直接比较。更稳的做法是:在同一设备上对比优化前后的相对变化,或者关注帧时间的一致性(是否出现明显的耗时波动)。
+**实战经验**:在做跨设备 GPU 性能分析时,一个常见的误区是直接对比不同 GPU 上 `gpu_render_stages` 的绝对耗时数值。这就像对比不同架构 CPU 的主频一样:架构不同,每个周期做的工作量不同,数值不可直接比较。更稳的做法是:在同一设备上对比优化前后的相对变化,或者关注帧时间的一致性(是否出现明显的耗时波动)。
 
 [待补充: 不同 SoC 上 Perfetto GPU Track 的截图对比]
 
@@ -254,7 +255,7 @@ Google 的 TPU 是 Tensor 芯片的核心卖点。TPU 专门针对 Google 的 AI
 
 ### ISP(图像信号处理器)
 
-ISP 负责相机图像处理,是影响相机启动速度和拍照延迟的关键组件。各家的 ISP 都在持续加强 AI 摄影能力(夜景增强、人像虚化、HDR+ 等),这些计算量的增加直接影响相机 App 的启动速度和拍照响应--这也正是 §8.4 中讲响应速度时需要考虑的跨平台因素。
+ISP 负责相机图像处理,是影响相机启动速度和拍照延迟的关键组件。各家的 ISP 都在持续加强 AI 摄影能力(夜景增强、人像虚化、HDR+ 等),这些计算量的增加直接影响相机 App 的启动速度和拍照响应,这也正是 §8.4 中讲响应速度时需要考虑的跨平台因素。
 
 高通、联发科和三星在 ISP 架构上的差异主要影响相机的计算摄影流水线。高计算量的 AI 后处理(如夜景合成)在内存带宽需求大的场景下可能与前台 App 的渲染竞争带宽,导致潜在的帧率波动。这在 Perfetto 中可能表现为渲染帧耗时的偶发性波动。
 
@@ -268,13 +269,13 @@ ISP 负责相机图像处理,是影响相机启动速度和拍照延迟的关键
 
 当前旗舰 SoC 都使用 LPDDR5X 内存,但具体配置不同。Snapdragon 8 Elite 支持最高 LPDDR5X 4800MHz,理论峰值带宽约 76.8 GB/s。Dimensity 9400 也支持 LPDDR5X,带宽在类似水平。Exynos 2500 和 Tensor G4 的内存带宽通常略低一些。
 
-实际分析更应该看有效带宽--考虑到内存控制器效率、延迟和功耗管理的差异,不同 SoC 在相同标称带宽下的有效利用率可能不同。这种差异在大规模纹理渲染(游戏)或大量数据搬运(相机 ISP 处理高像素图像)时最为明显。
+实际分析更应该看有效带宽。考虑到内存控制器效率、延迟和功耗管理的差异,不同 SoC 在相同标称带宽下的有效利用率可能不同。这种差异在大规模纹理渲染(游戏)或大量数据搬运(相机 ISP 处理高像素图像)时最为明显。
 
 ### 内存带宽争用在 Perfetto 中的间接观察
 
 Perfetto 目前没有直接的「内存带宽利用率」Track。判断带宽争用时,通常看三类间接信号:
 
-- GPU 渲染帧耗时出现周期性波动,且波动频率与 CPU 负载变化相关--可能是 CPU 和 GPU 争用内存带宽导致的
+- GPU 渲染帧耗时出现周期性波动,且波动频率与 CPU 负载变化相关,可能是 CPU 和 GPU 争用内存带宽导致的
 - 在 Perfetto 的 `memmgr` Track 中观察 GPU 内存压力事件
 - 对比有和没有 GPU 密集渲染时,CPU 的缓存未命中指标(如果设备支持 PMU 计数器采集)
 
@@ -302,7 +303,7 @@ Snapdragon Profiler 的局限在于:只支持高通设备,且需要通过 USB �
 
 ### ARM Streamline Performance Analyzer
 
-ARM Streamline 是面向所有使用 ARM CPU 和 GPU(Mali/Immortalis)的设备的分析工具。它的适用范围更广--联发科和三星的部分 Exynos 设备都可以使用。
+ARM Streamline 是面向所有使用 ARM CPU 和 GPU(Mali/Immortalis)的设备的分析工具。它的适用范围更广,联发科和三星的部分 Exynos 设备都可以使用。
 
 Streamline 的核心优势在于它对 ARM Mali GPU 的深度分析能力。它可以展示 Mali GPU 的着色器核心利用率、Pipeline Stall 原因分解、L2 缓存命中率等详细信息。如果在 Perfetto 中发现 Mali GPU 上有渲染耗时异常,但无法确定瓶颈位置,Streamline 可以帮助精确定位。
 
@@ -330,25 +331,25 @@ SoC 平台差异不是一个独立的机制,它影响着本书前面讲过的几
 
 与 **§5.1 Linux 进程调度** 的关系:调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑(双集群 vs 三集群 vs 全大核)直接决定了负载均衡和迁移策略。Android 16 及之前基于 CFS 的 EAS(Energy Aware Scheduling)在选核时权衡算力与功耗,Android 17 / GKI 6.12 切换到 EEVDF 后,调度决策基于虚拟截止时间,但能效感知的选核逻辑仍然存在(详见 §5.1)。联发科的全大核架构消除了大小核之间的性能断崖,迁移更多发生在同性能级别的核心之间;高通的 Oryon 双集群让迁移更简洁。
 
-与 **§5.3 大小核架构** 的关系:联发科的全大核策略明显改变了传统大小核架构的分析前提。它改变了分析 Perfetto 时对「小核」的预期--在传统架构上,任务在小核上执行慢是正常的;在全大核架构上,任何核心上的性能都不应该太差。
+与 **§5.3 大小核架构** 的关系:联发科的全大核策略明显改变了传统大小核架构的分析前提。它改变了分析 Perfetto 时对「小核」的预期:在传统架构上,任务在小核上执行慢是正常的;在全大核架构上,任何核心上的性能都不应该太差。
 
 与 **§5.4 DVFS** 的关系:各厂商的 DVFS 策略差异巨大。高通的 Perflock 允许直接锁定频率,联发科的调频更依赖 EAS 的建议。在分析功耗或发热时,同样的 Perfetto 数据在不同平台上的含义不同。
 
-与 **§2.10 GPU 渲染深入** 的关系:不同 GPU 架构(Adreno/Mali/Xclipse)的渲染管线有本质差异。同一帧画面在不同 GPU 上的渲染耗时分布不同--Adreno 可能 Vertex 阶段快、Fragment 阶段慢;Mali 可能反过来。直接对比不同 GPU 的 `gpu_render_stages` 数值是无效的。
+与 **§2.10 GPU 渲染深入** 的关系:不同 GPU 架构(Adreno/Mali/Xclipse)的渲染管线有本质差异。同一帧画面在不同 GPU 上的渲染耗时分布不同:Adreno 可能 Vertex 阶段快、Fragment 阶段慢;Mali 可能反过来。直接对比不同 GPU 的 `gpu_render_stages` 数值是无效的。
 
 与 **§17.1 OEM 优化通用思路** 的关系:OEM 的优化策略很大程度上受限于 SoC 平台的能力。比如高通提供了 Perflock 这种精细的频率控制接口,而联发科平台上的厂商就需要用其他方式实现类似的提频策略。了解 SoC 差异有助于理解为什么不同厂商的优化手段不同。
 
 ## 常见问题与误区
 
-**「骁龙一定比天玑流畅」**--这是最常见的误解。SoC 的峰值性能存在差异,但实际用户体验更多取决于 OEM 的调度策略、散热设计和软件优化。一款调度激进的天玑设备可能比调度保守的骁龙设备更流畅,也可能因为散热不足更快降频。在做性能分析时,不能预设哪个平台一定更好,而要看 Perfetto 中的实际数据。
+**「骁龙一定比天玑流畅」**:这是最常见的误解。SoC 的峰值性能存在差异,但实际用户体验更多取决于 OEM 的调度策略、散热设计和软件优化。一款调度激进的天玑设备可能比调度保守的骁龙设备更流畅,也可能因为散热不足更快降频。在做性能分析时,不能预设哪个平台一定更好,而要看 Perfetto 中的实际数据。
 
-**「GPU 跑分高 = 渲染性能好」**--跑分测量的是峰值性能,但日常使用中的渲染性能更多取决于持续性能输出和驱动优化。Adreno GPU 在持续性能和驱动成熟度上的优势可能比峰值跑分的差异更重要。
+**「GPU 跑分高 = 渲染性能好」**:跑分测量的是峰值性能,但日常使用中的渲染性能更多取决于持续性能输出和驱动优化。Adreno GPU 在持续性能和驱动成熟度上的优势可能比峰值跑分的差异更重要。
 
-**「不同设备上 Perfetto 的数据可以直接对比」**--不能。不同 SoC 的 `gpu_render_stages` 上报格式不同、CPU 频率上报精度不同、温控行为不同。跨设备对比应该关注趋势和相对变化,而不是绝对数值。
+**「不同设备上 Perfetto 的数据可以直接对比」**:不能。不同 SoC 的 `gpu_render_stages` 上报格式不同、CPU 频率上报精度不同、温控行为不同。跨设备对比应该关注趋势和相对变化,而不是绝对数值。
 
-**「全大核架构一定更省电」**--不一定。联发科的全大核设计消除了小核,但 A720「能效核」的功耗仍然高于传统的 A5xx 小核。在轻负载场景下(如待机、听音乐),全大核的功耗可能反而更高。全大核的优势在于中高负载场景下没有性能断崖。
+**「全大核架构一定更省电」**:不一定。联发科的全大核设计消除了小核,但 A720「能效核」的功耗仍然高于传统的 A5xx 小核。在轻负载场景下(如待机、听音乐),全大核的功耗可能反而更高。全大核的优势在于中高负载场景下没有性能断崖。
 
-**「Google Tensor 性能差」**--这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑,但它的设计目标是端侧 AI 体验,而不是通用峰值性能。在 Pixel 设备上,语音识别、实时翻译和计算摄影的响应速度可能优于其他平台,因为这些工作负载被 TPU 加速了。评估 Tensor 需要看具体场景是什么。
+**「Google Tensor 性能差」**:这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑,但它的设计目标是端侧 AI 体验,而不是通用峰值性能。在 Pixel 设备上,语音识别、实时翻译和计算摄影的响应速度可能优于其他平台,因为这些工作负载被 TPU 加速了。评估 Tensor 需要看具体场景是什么。
 
 
 
