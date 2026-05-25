@@ -3790,3 +3790,11 @@
 - **位置**：src/part2-performance/ch11-power/04-case-studies.md L644
 - **问题**：`Stuck WakeLock` 被解释为“没有超过 2 小时的 WakeLock”，但本章前文和 Android Vitals 官方口径是后台 `PARTIAL_WAKE_LOCK` 单次持续超过 1 小时；2 小时是 excessive partial wake locks 的 24 小时累计口径。
 - **建议**：将 L644 改为“没有超过 1 小时的后台 partial WakeLock”，并保留 excessive partial wake locks 的 2 小时累计口径作为另一项指标。
+
+
+## [Task6 Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-26
+- **类型**：需重写
+- **位置**：`src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md` L367-L542
+- **问题**：交叉引用之后仍保留 `<!-- AIW-源码调研... -->`、`源码调研补充`、`调研目标`、`注入时间`、`价值` 等素材归档和编辑痕迹；这部分还混有重复技术说明与待验证素材，不适合进入发布稿正文。
+- **建议**：Task2B 将可用技术点整合进 BLAST、Compose、ART GC 相关正文小节；重复或过期素材移出正文，只保留正式参考资料和必要待验证标注。
+- **review 日志**：logs/review/2026-05-26-05-review.md

@@ -36,28 +36,32 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_state: "pending"
+task2b_result: "pending"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-24"
-task6_result: needs-rework
-task6_reviewed_date: "2026-05-24"
-last_task6_at: "2026-05-24T21:11:52+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-26"
+task6_result: "needs-rework"
+task6_reviewed_date: "2026-05-26"
+last_task6_at: "2026-05-26T05:09:00+08:00"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-26T03:20:00+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。无 P0/P1；P2：Trace 表的 Choreographer#doFrame 判定仍需改成 FrameTimeline/app deadline 口径。"
-task6_review_notes: "2026-05-24 task6 revisiting review: needs-rework。小修1处（清理 Compose 段结构性元叙述），风险标注3处（固定帧预算、DeliQueue 源码路径、GC 术语混写）；L3/L4 1项：源码调研补充仍保留素材归档与编辑痕迹，已合并到 queue.json 18.2 P95 pending 项。"
-last_task6_review_log: "logs/review/2026-05-24-21-review.md"
+task6_review_notes: "2026-05-26 Task6 revisiting review: needs-rework。主体锚点覆盖 5/5；L1 禁用词/高频词未发现新增问题；L3/L4 1 项：正文末尾仍保留源码调研补充、AIW 注入时间、调研目标、价值等素材归档和编辑痕迹，已标注并写入 queue.json P90 交 Task2B 整合或移出发布稿。"
+last_task6_review_log: "logs/review/2026-05-26-05-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 1
+task6_new_rework: true
+review_type: "task6-writing-quality-review"
 ---
 
 
@@ -363,6 +367,8 @@ Compose 与 View 系统可以互相嵌入：
 > - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
 > - Fence 同步原理详见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)
 > - SurfaceControl 与 Transaction 的底层实现详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
+
+[需重写: 以下源码调研补充仍是素材归档形态，含 AIW 注入时间、调研目标、价值等编辑痕迹，需由 Task2B 整合进正文或移出发布稿。]
 
 <!-- AIW-源码调研-2026-05-15 -->
 

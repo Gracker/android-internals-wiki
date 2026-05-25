@@ -344,19 +344,21 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-26T04:07:00+08:00",
+    "last_review_at": "2026-05-26T05:09:00+08:00",
     "sections": [
-      "1.7",
-      "11.4"
+      "4.9",
+      "18.2",
+      "18.17"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "src/part2-performance/ch11-power/04-case-studies.md"
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
     ],
-    "result": "pass-light-edit",
-    "small_fixes": 17,
-    "rework_items": 0,
-    "log": "logs/review/2026-05-26-04-review.md"
+    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
+    "small_fixes": 2,
+    "rework_items": 1,
+    "log": "logs/review/2026-05-26-05-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1992,28 +1994,33 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-26T04:30:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-26T05:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-26T04:07:00+08:00",
+    "reviewed_at": "2026-05-26T05:09:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "1.7",
-      "11.4"
+      "4.9",
+      "18.2",
+      "18.17"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "src/part2-performance/ch11-power/04-case-studies.md"
+      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
+      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
     ],
-    "log": "logs/review/2026-05-26-04-review.md",
+    "log": "logs/review/2026-05-26-05-review.md",
     "mode": "normal-review",
     "results": {
-      "1.7": "pass-light-edit",
-      "11.4": "pass-light-edit"
+      "4.9": "pass-light-edit",
+      "18.2": "needs-rework",
+      "18.17": "pass-light-edit"
     },
-    "l1_l2_fixes": 17,
-    "new_task6_rework_items": 0,
-    "queue_updates": [],
+    "l1_l2_fixes": 2,
+    "new_task6_rework_items": 1,
+    "queue_updates": [
+      "task6-20260526-0509-18.2-source-research-appendix"
+    ],
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-26",
@@ -2654,26 +2661,32 @@
     "18.2": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task9_at": "2026-05-13T05:26:00+08:00",
-      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-26T03:20:00+08:00",
+      "task9_result": "pass-tech-review",
       "task9_state": "reviewed",
-      "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md",
+      "queue_priority": 90,
+      "last_task9_review_log": "logs/deep-review/2026-05-26-03-deep-review.md",
       "section": "18.2",
       "title": "Android View 标准管线（BLAST 深入）",
       "file": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
       "task6_state": "reviewed",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-24",
-      "last_task6_at": "2026-05-24T21:11:52+08:00",
-      "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T05:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
       "task2b_state": "pending",
       "task2b_result": "pending",
-      "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
-      "task6_l1_l2_fixes": 1,
+      "queue_entry": "task6-20260526-0509-18.2-source-research-appendix",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 1,
-      "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
+      "task6_review_notes": "2026-05-26 Task6：写作复审 needs-rework；主体锚点覆盖 5/5；源码调研附录仍是素材归档与编辑痕迹，已新增 P90 queue。",
+      "task6_new_rework": true,
+      "task9_reviewed_date": "2026-05-26",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_p0_issues": 0,
+      "task9_p1_issues": 0,
+      "task9_p2_issues": 1
     },
     "19.21": {
       "status": "finalized",
@@ -3714,13 +3727,13 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
-      "last_task6_at": "2026-05-25T05:08:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
-      "task6_l1_l2_fixes": 0,
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T05:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
+      "task6_l1_l2_fixes": 2,
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
-      "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。"
+      "task6_note": "Task6 05:09 写作复审通过；修复延伸阅读抽象黑话 2 处，无新增回炉，既有 Task9 P0 由 Task2B 处理。"
     },
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
@@ -5075,17 +5088,17 @@
       "title": "Hardware Buffer Renderer",
       "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
+      "reviewed_date": "2026-05-26",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-25T05:08:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
+      "last_task6_at": "2026-05-26T05:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
       "task6_new_rework": false,
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
       "queue_priority": 95,
-      "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。",
+      "task6_note": "Task6 05:09 写作复审通过；无新增回炉，既有 Task9 NDK API 问题由 Task2B 处理。",
       "task2b_result": "pending",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0
@@ -6835,18 +6848,26 @@
       "task6_state": "reviewed",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-24",
-      "last_task6_at": "2026-05-24T21:11:52+08:00",
-      "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T05:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_state": "pending",
       "task2b_result": "pending",
-      "queue_priority": 95,
-      "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
-      "task6_l1_l2_fixes": 1,
+      "queue_priority": 90,
+      "queue_entry": "task6-20260526-0509-18.2-source-research-appendix",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 1,
-      "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
+      "task6_review_notes": "2026-05-26 Task6：写作复审 needs-rework；主体锚点覆盖 5/5；源码调研附录仍是素材归档与编辑痕迹，已新增 P90 queue。",
+      "task6_new_rework": true,
+      "last_task9_at": "2026-05-26T03:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-26-03-deep-review.md",
+      "task9_reviewed_date": "2026-05-26",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_p0_issues": 0,
+      "task9_p1_issues": 0,
+      "task9_p2_issues": 1
     },
     "20.15": {
       "section": "20.15",
@@ -8007,22 +8028,31 @@
     "task6_state": "reviewed",
     "task6_result": "needs-rework",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-24",
-    "last_task6_at": "2026-05-24T21:11:52+08:00",
-    "last_task6_review_log": "logs/review/2026-05-24-21-review.md",
+    "reviewed_date": "2026-05-26",
+    "last_task6_at": "2026-05-26T05:09:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
     "task9_state": "reviewed",
-    "task9_result": "needs-rework",
+    "task9_result": "pass-tech-review",
     "task2b_state": "pending",
     "task2b_result": "pending",
-    "queue_priority": 95,
-    "queue_entry": "task9-deep-20260524-2024-18.2-art-gc-messagequeue-budget",
-    "task6_l1_l2_fixes": 1,
+    "queue_priority": 90,
+    "queue_entry": "task6-20260526-0509-18.2-source-research-appendix",
+    "task6_l1_l2_fixes": 0,
     "task6_l3_l4_issues": 1,
-    "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
+    "task6_review_notes": "2026-05-26 Task6：写作复审 needs-rework；主体锚点覆盖 5/5；源码调研附录仍是素材归档与编辑痕迹，已新增 P90 queue。",
+    "task6_new_rework": true,
+    "last_task9_at": "2026-05-26T03:20:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-26-03-deep-review.md",
+    "task9_reviewed_date": "2026-05-26",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_p0_issues": 0,
+    "task9_p1_issues": 0,
+    "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "1.7",
-    "11.4"
+    "4.9",
+    "18.2",
+    "18.17"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8215,5 +8245,6 @@
   "last_task2a_created": "22.17",
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
-  ]
+  ],
+  "last_task6_reviewed_at": "2026-05-26T05:09:00+08:00"
 }
