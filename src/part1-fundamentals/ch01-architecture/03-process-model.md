@@ -70,7 +70,7 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T18:28:00+08:00"
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-05-25"
 ---
 
 # 进程模型与生命周期管理
@@ -295,7 +295,37 @@ Perfetto 适合补上时间维度：进程何时被启动、主线程何时 atta
 ## 版本边界
 
 - Android 10 及以上：官方 lmkd 文档将 PSI 作为默认内存压力检测机制，前提是内核启用 `CONFIG_PSI=y`。旧设备可能仍依赖 `vmpressure` 或厂商自定义策略。 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
-- Android 13 及以上：官方文档说明 cached 进程在进入活跃生命周期状态之前，可能获得有限或没有执行时间。后台任务不能依赖 cached 进程持续运行。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+- Android 13 及以上：官方文档说明 cached 进程在进入活跃生命周期状态之前，可能获得有限或没有执行时间。后台任务不能依赖 cached 进程持续运行。
+
+<!-- AIW-源码调研-2026-05-25 -->
+### CachedAppOptimizer / Freezer 机制（Android 12+）
+
+Cached 进程的回收机制在 Android 12（API 31）发生了质的改变：系统引入了 `CachedAppOptimizer`（简称 freezer），使用 cgroup v2 freezer 将 adj >= 900 的 cached 进程彻底冻结，使其线程完全停止执行（状态为 `TASK_FROZEN`），而不是简单降优先级等待调度。
+
+**核心行为：**
+- **冻结条件**：`adj >= CACHED_APP_MIN_ADJ (900)` 时触发 `CachedAppOptimizer.freezeAppAsyncLSP()`
+- **冻结效果**：线程 slice 在 Perfetto 中彻底消失（零 CPU 时间），但进程本身仍存在
+- **解冻触发**：冻结进程收到同步 Binder 调用时被解冻（unfreeze）
+- **异常退出**：若解冻后处理不当，系统记录 `ApplicationExitInfo.REASON_FREEZER`（API 33+）
+
+**Perfetto 区分方法：**
+- **被 freezer 冻结**：进程存在，线程 slice 消失 → 进程 track 可见，thread track 空白
+- **被 LMK 杀死**：进程直接从 track 消失
+
+**版本差异：**
+
+| 特性 | 引入版本 |
+|------|---------|
+| CachedAppOptimizer | Android 12 (API 31) |
+| REASON_FREEZER | Android 13 (API 33) |
+
+**源码锚点：**
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
+- `system/core/libprocessgroup/task_profiles.cpp`（FreezerCgroup profile）
+- `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`（CACHED_APP_MIN_ADJ = 900）
+
+[未经一手验证：freezeAppAsyncLSP() 具体实现细节，建议通过 AOSP android-15.0.0_r1 tag 直接阅读源码]
+ [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
 - Android 16 源码：`ProcessList` 的 `CACHED_APP_MIN_ADJ = 900`、`CACHED_APP_MAX_ADJ = 999`、`FOREGROUND_APP_ADJ = 0`、`VISIBLE_APP_ADJ = 100`、`SERVICE_ADJ = 500` 等常量仍是 OOM_ADJ 分层的基础；具体 kill 行为还要看设备 lmkd 配置。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
 ## 参考资料

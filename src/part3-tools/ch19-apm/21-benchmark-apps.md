@@ -47,6 +47,8 @@ repaired_by: openclaw-task2b
 last_task9_review_log: 'logs/deep-review/2026-05-13-05-deep-review.md'
 auto_promoted: true
 task9_review_notes: '2026-05-13 task9 deep-review: pass-tech-review。无 P0/P1；P2 已写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+last_deepseek_polish_at: 2026-05-25
+deepseek_polish_state: done
 ---
 
 

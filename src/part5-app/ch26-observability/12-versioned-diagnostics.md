@@ -355,3 +355,44 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 - 注入时间：2026-05-20
 - 价值：为本章提供 Android 线上诊断能力的完整版本边界映射，是排障流程 API 选型的关键参考
 
+<!-- AIW-源码调研-2026-05-25 -->
+### 源码调研补充（2026-05-25）
+
+**调研议题**：Android 版本化线上诊断能力——ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
+
+**关键发现**：
+
+1. **getTraceInputStream() 版本差异**（未经一手验证，建议用 AOSP android-16.0.0_r1 核实）
+   - API 30：`getTraceInputStream()` 仅对 ANR 场景返回 trace，native crash 返回 null
+   - API 31+：`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 native tombstone protobuf
+   
+2. **Exit Reason 常量版本边界**
+   - `REASON_FREEZER` = API 33
+   - `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` = API 34
+   
+3. **ProfilingManager 能力边界**（API 35+，建议用 `frameworks/base/core/java/android/os/ProfilingManager.java` 核实）
+   - `requestProfiling()` 后台执行，完成后通过 callback 返回 `ProfilingResult#getResultFilePath()`
+   - trace 输出路径：`/data/user/0/<app>/files/profiling/profile_<tag>_<datetime>.perfetto-trace`
+   - 有 rate limiter；debug mode 可禁用 rate limiting 并保留未脱敏 trace
+   
+4. **ProfilingTrigger 触发类型**（API 36+，未经一手 AOSP 源码验证）
+   - `TRIGGER_TYPE_ANR` — ANR 发生时触发
+   - `TRIGGER_TYPE_COLD_START` — 冷启动时触发，前提：`ApplicationStartInfo.getStartType() == START_TYPE_COLD`
+   - `TRIGGER_TYPE_FULLY_DRAWN` — 应用首帧完成时触发
+   - `TRIGGER_TYPE_APP_REQUEST` — 应用主动请求时触发
+   
+5. **ApplicationStartInfo 启动类型**（API 35+，未经一手 AOSP 源码验证）
+   - `getStartType()` 返回 `START_TYPE_COLD` / `START_TYPE_WARM` / `START_TYPE_HOT`
+   - 时间戳常量：`START_TIMESTAMP_PROCESS_CREATION`、`START_TIMESTAMP_BIND_APPLICATION`、`START_TIMESTAMP_FIRST_ACTIVITY`
+   - 与 `TRIGGER_TYPE_COLD_START` 形成分层诊断：启动历史记录判断冷启动类型，trigger 在冷启动时采集 profiling
+
+6. **Crashpad Out-of-Process Handler 模型**（未经一手 AOSP 源码验证，建议读 `external/google-breakpad/client/crashpad_client_linux.cc`）
+   - signal handler 必须是 async-signal-safe（禁止 malloc/free/printf 等堆操作）
+   - minidump 写入由独立 handler 进程完成，不阻塞应用主线程
+   - 双策略：RequestCrashDumpHandler（与已运行 handler 通信）/ LaunchAtCrashHandler（crash 时启动 handler）
+
+**信息源一手性**：
+- developer.android.com NDK debug 文档（✅）
+- developer.android.com ApplicationExitInfo API reference（✅ REASON_FREEZER API 33、REASON_PACKAGE_STATE_CHANGE API 34）
+- developer.android.com ProfilingManager overview（✅）
+- Crashpad 模型、ProfilingTrigger 详细常量定义、ApplicationStartInfo START_TYPE_* 常量定义：均未经 AOSP 源码直接验证（❌）
