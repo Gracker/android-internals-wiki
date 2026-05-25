@@ -21041,27 +21041,73 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-25T23:10:00+08:00",
       "completion_reason": "Task 2A draft processing: chapter drafted and moved to ready-for-review"
+    },
+    {
+      "id": "task9-audit-20260526-0020-1.7-art-compiler-filter-ref",
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "priority": 95,
+      "title": "修正 ART compiler filter 源码锚点与 Android 17 AOSP 验证口径",
+      "description": "Task9 闲时抽检发现 §1.7 的 compiler filter 源码锚点指向 dex2oat_options.cc，但当前 AOSP 定义在 libartbase/base/compiler_filter.{h,cc}；同时 frontmatter/参考资料声称基于 AOSP android-17-beta3 验证，该公开 ref 在 platform/art 与 platform/manifest 中不可复现。",
+      "reason": "[Deep Tech Review Audit] §1.7 L294、L655 的 compiler filter 源码锚点错误；L9、L650 使用不可复现的 AOSP android-17-beta3 验证口径。",
+      "issue_type": "source-accuracy-version-reference-art-compiler-filter",
+      "severity": "P0",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/07-art-compilation.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-26-00-audit.md",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/libartbase/base/compiler_filter.h",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/libartbase/base/compiler_filter.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/dex2oat/dex2oat_options.cc",
+        "https://source.android.com/docs/core/runtime/configure",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/blog/posts/the-first-beta-of-android-17"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / compiler filter 定义源码锚点错误",
+          "location": "L294、L655：`art/dex2oat/dex2oat_options.cc` 被标为 compiler filter 定义",
+          "detail": "抽查 AOSP android-15.0.0_r1、android-16.0.0_r1 与 main：`dex2oat/dex2oat_options.cc` 中没有 `quicken`、`speed-profile`、`everything` 等 filter 名称；compiler filter 枚举与字符串解析定义在 `libartbase/base/compiler_filter.h` / `compiler_filter.cc`。当前锚点会让读者按错误文件核对编译级别。",
+          "suggestion": "把源码锚点改为 `art/libartbase/base/compiler_filter.h` 和 `compiler_filter.cc`；`dex2oat_options.cc` 只作为 dex2oat 参数解析入口引用。若保留表格，顺手核对当前 AOSP 还存在 `space`、`space-profile`、`everything-profile` 等 filter，与 source.android.com “officially supported filters” 分开写。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异 / Android 17 AOSP 验证口径不可复现",
+          "location": "frontmatter L9、参考资料 L650：`AOSP android-17-beta3`",
+          "detail": "本轮用 `git ls-remote --heads --tags` 复核 `platform/art` 与 `platform/manifest`，未发现 `android-17*` 或 `android17*` 公开 ref。正文 Android 17 的 `static final` 与 Generational GC 可由 Android Developers Beta 文档支撑，但不能写成已按 AOSP `android-17-beta3` 分支验证。该口径会把文档/API 依据伪装成源码依据。",
+          "suggestion": "将 `last_verified_against` 拆成“公开 AOSP android-16.0.0_r1 / platform/art main 源码锚点 + Android 17 official docs/API 37 行为说明”。参考资料 L650 改为“源码路径按公开 AOSP tag/main 复核；Android 17 行为以官方 Developer 文档为准”，不要继续使用不可复现的 `android-17-beta3` 分支名。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-26T00:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 563,
-    "p0_count": 238,
-    "last_updated": "2026-05-25T23:10:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 180,
-    "updated_date": "2026-05-25",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 180,
-    "completed_entries": 380,
+    "total_entries": 564,
+    "p0_count": 239,
+    "last_updated": "2026-05-26T00:20:00+08:00",
+    "updated_by": "task9-deep-tech-review-audit",
+    "pending_entries": 178,
+    "updated_date": "2026-05-26",
+    "last_updated_by": "task9-deep-tech-review-audit",
+    "pending": 178,
+    "completed_entries": 383,
     "last_task2a_gap_mining": "24.19",
     "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T23:10:00+08:00",
+  "last_updated": "2026-05-26T00:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review-audit",
-  "pending": 181,
+  "pending": 178,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
