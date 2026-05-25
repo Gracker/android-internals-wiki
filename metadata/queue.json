@@ -29,6 +29,73 @@
       "added_at": "2026-05-25T13:04:00+08:00"
     },
     {
+      "id": "task9-audit-20260525-1320-19.24-crash-anr-source-version-boundary",
+      "section": "19.24",
+      "section_title": "崩溃与 ANR 捕获机制",
+      "priority": 95,
+      "title": "Crash/ANR 章节需修正 native signal、LMK、ANR 文件与 ProfilingTrigger API 口径",
+      "description": "Task9 闲时抽检发现 19.24 的新增补充段存在多处可执行层面的源码/API 错误，集中在 sigaction 旧 handler 转发、Android 14 OOM adj 常量、/data/anr 文件命名、LMK 能力表和 Android 16/17 ProfilingTrigger。",
+      "reason": "[Deep Tech Review Audit] §19.24 L416-L435、L450-L460、L475、L513、L574-L585 与 AOSP/官方 API 不一致；这些位置会直接误导端侧 APM 实现或版本能力判断。",
+      "issue_type": "source-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-13-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/am/ProcessList.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/master/services/core/java/com/android/server/am/StackTracesDumpHelper.java",
+        "https://developer.android.com/reference/android/app/ActivityManager#isLowMemoryKillReportSupported()",
+        "https://developer.android.com/reference/android/os/IBinder.FrozenStateChangeCallback",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 签名",
+          "location": "L416-L435：低版本 native crash handler 伪代码",
+          "detail": "`sa.sa_sigaction` 需要 `void (*)(int, siginfo_t*, void*)` 形态，正文函数第三参写成 `ucontext_t*`；转发旧 handler 时用 `sa_handler(sig, info, ctx)` 也与 `sa_handler(int)` 签名不匹配，并且没有按 `SA_SIGINFO` 分支转发。",
+          "suggestion": "复用 §3.2 的三分支模型：先判断 `old_action.sa_flags & SA_SIGINFO` 调 `sa_sigaction(signum, info, ucontext)`，再处理 `SIG_IGN` / `SIG_DFL`，普通 `sa_handler` 只传一个 `signum`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L450-L460：Android 14 OOM adj 常量与 LMK 触发表述",
+          "detail": "正文给出的 Android 14 常量值与 AOSP 不一致：`CACHED_APP_MAX_ADJ` 实际为 999、`CACHED_APP_MIN_ADJ` 为 900、`SERVICE_B_ADJ` 为 800、`HOME_APP_ADJ` 为 600、`FOREGROUND_APP_ADJ` 为 0；正文还把 `computeOomAdj()` 写成 LMK 触发阈值来源，容易混淆 oom_score_adj 计算和 lmkd minfree/PSI 杀进程决策。",
+          "suggestion": "替换为 AOSP android-14.0.0_r1 的 `ProcessList.java` 常量，并把因果链改成：AMS/OomAdjuster 计算进程 `oom_score_adj`，ProcessList 配置 lmkd adj/minfree 档位，lmkd 再结合内存压力和 adj 选择 kill 目标。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/路径命名",
+          "location": "L475：`/data/anr/` 文件命名",
+          "detail": "正文称 API 26+ 统一为 `traces_text.txt`，与 AOSP 当前 `StackTracesDumpHelper` 不符。源码定义 `ANR_TRACE_DIR = \"/data/anr\"`、`ANR_FILE_PREFIX = \"anr_\"`，`createAnrDumpFile()` 生成 `anr_yyyy-MM-dd-HH-mm-ss-SSS` 文件，且权限设为 0600。",
+          "suggestion": "改为“现代版本在 `/data/anr/` 下按 `anr_时间戳` 生成单次 ANR trace 文件；早期/旧路径存在 `traces.txt` 口径，文件名和保留策略跨版本不同”。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 边界",
+          "location": "L513：`FrozenStateChangeCallback` 被写成 API 30+ LMK 事件监听",
+          "detail": "`ActivityManager.isLowMemoryKillReportSupported()` 是 API 30 的能力查询，只说明 LMK 是否会进入 `getHistoricalProcessExitReasons()`；`IBinder.FrozenStateChangeCallback` 是 API 36 的远端 Binder 进程冻结/解冻通知，不是 LMK kill 事件监听，也不能归入 API 30+ LMK 监听能力。",
+          "suggestion": "表格拆成“API 30+ 可查询历史退出原因中的 `REASON_LOW_MEMORY`（取决于设备报告能力）”和“API 36 Binder frozen state callback（冻结状态，不等同 LMK）”，不要写成 LMK 事件监听。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/API 常量与调用方式",
+          "location": "L574-L585：`ProfilingTrigger` 类型和注册 API",
+          "detail": "正文列出 `TRIGGER_TYPE_APP_REQUESTED`、`TRIGGER_TYPE_CRASH`，官方 API 中没有这两个常量；正确常量包括 API 36 的 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANR`，36.1 的 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，API 37 的 `TRIGGER_TYPE_OOM` / `TRIGGER_TYPE_KILL_*` / `TRIGGER_TYPE_COLD_START` 等。`ProfilingManager` 也没有 `registerTrigger(trigger, executor, callback)`；触发器应通过 `addProfilingTriggers(List<ProfilingTrigger>)` 注册，结果通过 `registerForAllProfilingResults(...)` 接收。",
+          "suggestion": "按 Android 15/16/17 分层重写 §13.2-13.3：API 35 `requestProfiling()`；API 36 `addProfilingTriggers()` + ANR/fully-drawn；36.1 running trace；API 37 OOM、cold start、kill/anomaly/app-compat 触发器。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T13:20:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-1227-9.1-dropbox-tag-boundary",
       "section": "9.1",
       "section_title": "ANR 设计思想",
@@ -20546,9 +20613,9 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T13:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 179,
+  "last_updated": "2026-05-25T13:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review-audit",
+  "pending": 180,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {

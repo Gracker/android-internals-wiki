@@ -25,18 +25,21 @@ sources:
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: finalized
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
+task9_result: "needs-rework"
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T10:38:04+08:00"
-task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-05-25T13:20:00+08:00"
+task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。"
 last_task6_audit: "2026-05-23"
 last_task6_at: "2026-05-23T05:09:00+08:00"
+last_task9_audit: 2026-05-25
+last_task9_audit_at: "2026-05-25T13:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 ---
 
 # 崩溃与 ANR 捕获机制
