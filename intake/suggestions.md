@@ -3659,6 +3659,23 @@
 - **建议**：Task2B 将可保留内容并入 CPU 调度策略或 Perfetto 数据差异小节；无法核验的 vendor kernel 表述继续保留待验证或交 Task9。
 - **review 日志**：logs/review/2026-05-25-12-review.md
 
+## Task2A 缺口扫描记录 · 2026-05-25 12:16
+
+- **结论**：本轮未发现评分 >= 14 的新知识缺口，未创建章节。
+- **已检查方向**：Perfetto v53/v54 工具更新、Android 17 MessageQueue lock-free、App memory limits、background audio hardening、ECH/local network permission、App Lock、physical password hiding、CP2 严格查询、NFC/Biometric/Clipboard/PermissionManager 等 AOSP 模块。
+- **不录入原因**：高分素材多数已由现有章节承接；未覆盖模块与性能优化主线关联不足，或缺少 3 篇以上高质量素材支撑。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-25-12-知识加工(新).md`
+
+
+
+## [Task2A Gap Mining] 2026-05-25 15:04
+
+- **结论**：本轮无空 draft 章节；缺口挖掘未发现评分 ≥14 且尚未被现有章节或 Task2B/Task9 队列覆盖的候选章节。
+- **已检查方向**：OkHttp DNS / HTTPDNS、Cloud Compilation / Secure Dex Metadata、ART FinalizerDaemon / ReferenceQueue、Android 17 Excessive CPU ProfilingTrigger、厂商游戏模式输入优先级、Android App Lock / Private Space、NFC / Biometric / Telephony 服务结构、Android Weekly / RSS 零散信息。
+- **不录入原因**：高分素材多已由 `24.4`、`24.10`、`16.6`、`21.11`、`4.9`、`25.12`、`25.14`、`26.12`、`17.5`、`17.7` 等章节承接；未覆盖服务模块与性能优化主线关联不足，素材量未达到可独立成节标准。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-25-15-知识加工(新).md`
+
+
 ## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-05-25
 - **类型**：版本差异 / 元数据一致性
 - **位置**：frontmatter L8-L34、L48-L55；正文 L345-L353、L484-L489
@@ -3676,6 +3693,23 @@
 - **位置**：L634-L638：Native Crash Signal Handler 边界
 - **问题**：补充段写 “Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程”，但前文主线和 Crashpad 设计资料强调的是独立 handler 进程/客户端通知模型；“crash 时 fork handler”属于实现细节断言，当前段落还标了未经一手验证，容易被读者当成 Android Crashpad 的固定流程。
 - **建议**：改成保守表述：“Crashpad 使用独立 handler 进程接收客户端通知并写 minidump；具体启动/连接方式以接入版本为准”。如需保留 fork 说法，补 Crashpad Android client 源码锚点。
+
+## Task 2A gap mining 去重记录 — 2026-05-25 18:04
+
+- **结论**：本轮未发现评分 >= 14 且尚未被 AIW 覆盖的新增知识缺口，跳过新章节创建。
+- **已检查方向**：Android Performance Analyzer / AI-assisted Perfetto SQL、Android 17 ProfilingTrigger anomaly / excessive CPU、Private Space / 应用锁、AGSL RuntimeShader / RenderEffect、AnimatedVectorDrawable、R8 Configuration Analyzer。
+- **去重依据**：上述方向已分别落在 14.18、14.19、13.18、8.10、25.12、26.12、26.13、17.7、22.10、22.11、14.20 等章节；`source-index.json` 中的 high-quality unmapped 记录属于旧索引未回填，不再作为新章节创建依据。
+- **下轮建议**：若继续挖掘，优先检查 `packages/modules/Connectivity`、`packages/modules/Bluetooth`、`packages/modules/HealthFitness` 与 Android 17 行为变更是否有全书未覆盖的性能边界；先做 SUMMARY 去重，再评分。
+
+
+
+## Task 2A gap mining 去重记录 — 2026-05-25 21:10
+
+- **结论**：本轮未发现评分 >= 14 且尚未被 AIW 覆盖的新增知识缺口，跳过新章节创建。
+- **已检查方向**：Android 16/17 behavior changes、Android 16 features / summary、SystemHealthManager Headroom API、OkHttp DNS / HTTPDNS、Cloud Compilation / Secure Dex Metadata、ART FinalizerDaemon、TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE、厂商游戏模式输入优先级、Bluetooth / Telephony / Biometric / NFC / HealthFitness AOSP 模块。
+- **去重依据**：官方性能与电池能力已由 `16.5`、`23.9`、`24.16`、`24.18`、`25.12`、`25.14`、`25.16`、`25.17`、`26.12`、`26.13` 等章节承接；近期 DeepResearch 已映射到 `24.10`、`1.9/16.6/21.11`、`4.9`、`25.12`、`17.5`；剩余 AOSP 服务模块素材不足或性能主线弱。
+- **落盘报告**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-25-21-知识加工(新).md`
+
 
 ## [Task9 Audit] 11.1 Android 功耗模型 — 2026-05-25
 - **类型**：源码示例
