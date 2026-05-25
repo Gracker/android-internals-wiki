@@ -12,7 +12,7 @@ last_verified_against: developer.android.com create/debug/profileable docs + AOS
 reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: needs-rework
 confidence: medium
 sources:
 - type: official
@@ -30,19 +30,20 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 review_round: 6
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-06T07:39:59+08:00"
+last_task9_at: "2026-05-25T09:28:00+08:00"
 last_task6_audit: '2026-05-19'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2（既有 suggestions，不阻塞）；自动晋升 finalized。"
+task9_review_notes: "2026-05-25 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 1（既有）。Startup Profile 构建期 DEX layout 与 Baseline Profile/ART 编译路径需要拆开。"
+last_task9_audit: 2026-05-25
 ---
 
 # 8.7 Baseline Profiles 与编译优化实践
