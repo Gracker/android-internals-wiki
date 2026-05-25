@@ -3676,3 +3676,10 @@
 - **位置**：L634-L638：Native Crash Signal Handler 边界
 - **问题**：补充段写 “Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程”，但前文主线和 Crashpad 设计资料强调的是独立 handler 进程/客户端通知模型；“crash 时 fork handler”属于实现细节断言，当前段落还标了未经一手验证，容易被读者当成 Android Crashpad 的固定流程。
 - **建议**：改成保守表述：“Crashpad 使用独立 handler 进程接收客户端通知并写 minidump；具体启动/连接方式以接入版本为准”。如需保留 fork 说法，补 Crashpad Android client 源码锚点。
+
+## [Task9 Audit] 11.1 Android 功耗模型 — 2026-05-25
+- **类型**：源码示例
+- **位置**：L132-L135：`cpu.active` XML 示例
+- **问题**：AOSP android-16.0.0_r1 的 `power_profile.xml` 中 `cpu.active` 是 `<array name="cpu.active"><value>...</value></array>`，现稿示例写成 `<item name="cpu.active">52</item>`，与 Android 16 公共 profile 形态不一致。
+- **建议**：改成 `array` 形态，或明确标注该片段只示意键名、不代表 Android 16 默认 XML 标签形态。
+- **review 日志**：logs/deep-review/2026-05-25-22-audit.md

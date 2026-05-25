@@ -5505,7 +5505,7 @@
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
-  "last_task9_at": "2026-05-24T17:31:10+08:00",
+  "last_task9_at": "2026-05-25T22:28:00+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
@@ -6767,7 +6767,7 @@
   "last_task9_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-24-17-audit.md",
+  "last_task9_log": "logs/deep-review/2026-05-25-22-audit.md",
   "task9_last_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
@@ -6996,7 +6996,7 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": "Task9 闲时抽检：3.7 needs-rework；P0 0 / P1 1 / P2 0。",
+  "last_task9_review_summary": "Task9 闲时抽检 11.1：P0 1 / P1 0 / P2 1，已写入 queue.json 和 suggestions.md。",
   "last_task2a_gap_mining": {
     "date": "2026-05-25",
     "time": "19:04",
@@ -7469,14 +7469,14 @@
     "task2a_result": "drafted",
     "task6_state": "pending"
   },
-  "last_task9_audit": "2026-05-24",
+  "last_task9_audit": "2026-05-25",
   "last_task9_audit_sections": [
-    "3.7"
+    "11.1"
   ],
   "last_task9_audit_files": [
-    "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
+    "src/part2-performance/ch11-power/01-power-model.md"
   ],
-  "last_task9_audit_log": "logs/deep-review/2026-05-24-17-audit.md",
+  "last_task9_audit_log": "logs/deep-review/2026-05-25-22-audit.md",
   "section_7_18": {
     "section": "7.18",
     "title": "HWC Overlay Plane 与合成降级排查",
