@@ -437,6 +437,7 @@ tags:
   - [25.17 Android 17 后台音频硬化与播放功耗治理](part5-app/ch25-power-size/17-background-audio-hardening-power.md)
   - [25.18 音频 Offload 与 AudioTrack 精确控制功耗实践](part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md)
   - [25.19 Android Vitals 过度 WakeLock 指标与治理](part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md)
+  - [25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理](part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
