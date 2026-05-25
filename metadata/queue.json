@@ -20958,6 +20958,42 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-25T20:04:00+08:00",
       "completion_reason": "Task 2A draft processing: chapter drafted and moved to ready-for-review"
+    },
+    {
+      "id": "task2a-gap-20260525-2204-21.12-startup-profile-dex-layout",
+      "section": "21.12",
+      "section_title": "Startup Profile 与 DEX Layout 启动优化",
+      "priority": 80,
+      "title": "补齐 Startup Profile 与 DEX Layout 启动优化实战",
+      "description": "从 21.4 Baseline Profile 实战的扩展点拆出，单独覆盖 Startup Profile、DEX layout 优化、构建产物检查、Macrobenchmark 验证矩阵和安装渠道边界。",
+      "reason": "官方 Baseline Profiles 文档已将 Startup Profile、DEX layout、Cloud Profiles、AGP/R8 配置和验证步骤拆成独立主题；当前全书只有 21.4 的扩展点，缺少面向首屏启动路径的实战小节。",
+      "gap_source": "章节深挖/官方文档",
+      "score": 17,
+      "score_detail": {
+        "material_richness": 4,
+        "book_relevance": 5,
+        "reader_demand": 4,
+        "timeliness": 4
+      },
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [
+        "21.4"
+      ],
+      "related_files": [
+        "src/part5-app/ch21-startup/12-startup-profile-dex-layout.md"
+      ],
+      "material_paths": [
+        "src/part5-app/ch21-startup/04-baseline-profile-practice.md",
+        "https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T22:04:00+08:00"
     }
   ],
   "metadata": {
@@ -20965,7 +21001,7 @@
     "p0_count": 236,
     "last_updated": "2026-05-25T17:26:00+08:00",
     "updated_by": "task9-deep-tech-review-audit",
-    "pending_entries": 182,
+    "pending_entries": 183,
     "updated_date": "2026-05-25",
     "last_updated_by": "task9-deep-tech-review-audit",
     "pending": 182,
@@ -20976,9 +21012,9 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T19:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 183,
+  "last_updated": "2026-05-25T22:04:00+08:00",
+  "last_updated_by": "task2a-knowledge-gap",
+  "pending": 184,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {

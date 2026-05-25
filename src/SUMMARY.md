@@ -364,6 +364,7 @@ tags:
   - [21.9 启动优化案例集](part5-app/ch21-startup/09-startup-case-studies.md)
   - [21.10 SDK Runtime 与广告 SDK 启动隔离性能](part5-app/ch21-startup/10-sdk-runtime-ad-sdk-startup.md)
   - [21.11 云端 Profile、DM 文件与安装后编译优化](part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md)
+  - [21.12 Startup Profile 与 DEX Layout 启动优化](part5-app/ch21-startup/12-startup-profile-dex-layout.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
