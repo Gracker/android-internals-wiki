@@ -1,5 +1,5 @@
 ---
-task2b_rework_date: "2026-05-25T07:27:11+08:00"
+task2b_rework_date: "2026-05-25T11:23:10+08:00"
 title: "SoC 平台差异"
 chapter: "17.2"
 section: "17.2"
@@ -30,15 +30,15 @@ related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "needs-rework"
-task6_state: "reviewed"
-pipeline_stage: "task2b_pending"
-task9_state: reviewed
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
 last_task9_at: "2026-05-25T07:30:00+08:00"
 task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；MediaTek 9400 官方频率表述错误，2025/2026 旗舰 SoC 与 Tensor/Exynos 版本边界需更新。"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-25T09:09:00+08:00"
@@ -103,6 +103,14 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 
 **Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 预计将是 Google 的首款完全自研芯片,由 TSMC 代工。
 
+> **2025/2026 当前旗舰更新**：截至 2026-05，四大平台均已迭代到新一代旗舰：
+> - **Qualcomm Snapdragon 8 Elite Gen 5**：第二代自研 Oryon CPU 核心，Adreno GPU 升级，支持 Vulkan 1.4；出厂搭载 Android 16 的设备必须支持
+> - **MediaTek Dimensity 9500**：采用 ARM 新一代 C1-Ultra + C1-Premium + C1-Pro 十核架构（1×C1-Ultra up to 4.2GHz + 3×C1-Premium + 4×C1-Pro + 2×C1-Pro 低功耗核），Immortalis GPU
+> - **Samsung Exynos 2600**：2nm GAA 工艺，十核 CPU（ARM C1 系列），Xclipse 960 GPU（基于 AMD RDNA）
+> - **Google Tensor G5**：Pixel 10 系列搭载，TSMC 代工的首款完全自研芯片，12GB RAM 配置
+>
+> 2024/2025 代表芯片（8 Elite、9400、Exynos 2500、Tensor G4）仍作为当前在售设备的主力参考，但分析新设备 Perfetto 数据时需要按新一代架构更新基准判断。
+
 [图:四大 SoC 平台的关键参数对比表格(CPU 架构/GPU/NPU/制程/典型机型)]
 
 [已验证: 公开产品规格,来源见 Qualcomm/MediaTek/Samsung/Google 官方产品页]
@@ -117,7 +125,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计(1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核),到了 8 Elite(搭载自研 Oryon 核心)则简化为 2+6 的双集群设计。这种简化策略背后的思路是:减少集群间迁移的机会,降低调度器做迁移决策时的开销。在 Perfetto 中分析 Oryon 设备时,应重点看线程是否在两个集群之间来回迁移,而不是直接套用四集群大小核的判断。
 
-联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计:Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。联发科官方只公布核心型号、不公布具体频率;公开渠道引用的频率数字(如 X925 约 3.6GHz、X4 约 2.8-3.3GHz、A720 约 2.0-2.4GHz)来自评测拆解和 GeekBoard/AnTuTu 等工具读数,未获 MediaTek 官方确认,不同渠道的数字存在差异。这种设计带来的直接影响是:在 Perfetto 的 CPU Track 中,所有核心都有较高的基础性能,即使任务被调度到所谓「能效核」上,也不会出现性能断崖式下降的情况。
+联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计:Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。MediaTek 官方公开 Cortex-X925 up to 3.62GHz 与 LPDDR5X 内存规格;X4/A720 的细分频率、vendor OPP 表和实机频率策略仍需以设备/内核来源核验。评测拆解和 GeekBoard/AnTuTu 等工具读数可作交叉参考,但不同渠道的数字存在差异。这种设计带来的直接影响是:在 Perfetto 的 CPU Track 中,所有核心都有较高的基础性能,即使任务被调度到所谓「能效核」上,也不会出现性能断崖式下降的情况。
 
 三星 Exynos 2500 则保持相对传统的大小核配置,使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 使用 Arm 公版 Cortex 核心(1×Cortex-X4 + 3×Cortex-A720 + 4×Cortex-A520),Google/Samsung 在 SoC 集成、频率调度和 TPU/NPU 侧做定制,核心频率通常设得比同代骁龙和天玑低一些,以换取更好的功耗和散热表现。
 
@@ -353,18 +361,8 @@ SoC 平台差异不是一个独立的机制,它影响着本书前面讲过的几
 
 
 
-<!-- AIW-源码调研-2026-05-11（已整合） -->
+<!-- 联发科调度行为要点（源码锚点，已从素材块整合） -->
 
-#### 联发科调度行为要点
-
-基于 AOSP 和 Linux 主线源码的联发科调度分析要点：
-
-- **Schedutil Governor**（`kernel/sched/cpufreq_schedutil.c`）：Android 使用 schedutil 作为主要 cpufreq governor，通过 `cpufreq_update_util()` 在每次 scheduler tick 中直接更新频率。关键机制包括 iowait boost（IO 唤醒时频率翻倍）和 freq-invariant 计算。联发科全大核设计中，所有核心都运行在较高的基础频率区间。
-- **UCLamp 约束**（`kernel/sched/sched.h`）：Android 通过 `sched_setattr()` 的 uclamp_min/uclamp_max 约束任务可用的频率范围。top-app 通常设置较高的 uclamp_min 确保不被其他任务挤出大核。
-- **EAS 能效调度**（`kernel/sched/energy.c`）：EAS 在多 cluster 之间选择“节能收益 > 迁移成本”的迁移目标。Dimensity 的 1+3+4 拓扑（X925 + X4 + A720）中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科的 vendor kernel 在 energy model 中为每个 cluster 定义了不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。
+联发科调度链路的源码锚点：schedutil governor（`kernel/sched/cpufreq_schedutil.c`）通过 `cpufreq_update_util()` 在每次 scheduler tick 中更新频率，iowait boost 在 IO 唤醒时频率翻倍；uclamp（`kernel/sched/sched.h`）约束任务可用频率范围，top-app 通常设置较高的 uclamp_min；EAS（`kernel/sched/energy.c`）在多 cluster 之间选择节能收益大于迁移成本的目标。Dimensity 的 1+3+4 拓扑中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科 vendor kernel 在 energy model 中为每个 cluster 定义不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。Dimensity 9400（代号 MT6991）的具体频率曲线定义在 vendor kernel 设备树中，通过 `operating-points-v2` 传递到 mtk-cpufreq driver。
 
 [待验证：Dimensity 9400 具体 freq table 数值、MTK EAS vendor patch 与主线的差异量、real device 实际调度行为需通过 Perfetto traces 测量]
-
-**联发科 Vendor 闭源部分**:Dimensity 9400 的具体频率曲线定义在 vendor kernel 的设备树文件中,通过 `operating-points-v2` 传递到 mtk-cpufreq driver。联发科 Dimensity 9400 对应的公开芯片代号为 MT6991,上一代 Dimensity 9300 系列对应 MT6989;具体 dtsi 文件名需在确认 vendor kernel tag 后确定,不能直接套用前代路径。mtk-cpufreq driver 实现了 cpufreq driver 框架,负责电压-频率联合控制。这部分源码不包含在 AOSP 主线中。
-
-[待验证:Dimensity 9400 具体 freq table 数值、MTK EAS vendor patch 与主线的差异量、real device 实际调度行为需通过 Perfetto traces 测量]
