@@ -3658,3 +3658,21 @@
 - **问题**：复审确认该段仍未并入正文主线，位置在 FAQ 收束之后，读起来像已消费素材残留；其中 MTK vendor kernel / OPP 表内容还带待验证边界，Task6 不做技术裁决。
 - **建议**：Task2B 将可保留内容并入 CPU 调度策略或 Perfetto 数据差异小节；无法核验的 vendor kernel 表述继续保留待验证或交 Task9。
 - **review 日志**：logs/review/2026-05-25-12-review.md
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-05-25
+- **类型**：版本差异 / 元数据一致性
+- **位置**：frontmatter L8-L34、L48-L55；正文 L345-L353、L484-L489
+- **问题**：正文已经补入 Android 17/API 37 的 `Notification.MetricStyle`、`Notification.Metric` 与 Semantic Coloring，但 frontmatter 仍写 `applicable_versions: Android 12 - Android 16`，`last_verified_against` 仍停在 `android-16.0.0_r1`，sources 也缺 Android 17 MetricStyle / features 官方文档。后续流水线会把本节误判成只覆盖到 Android 16。
+- **建议**：Task2B 同步 frontmatter：版本范围扩到 Android 17/API 37；sources 增加 MetricStyle、Android 17 features / Live Update semantic coloring 文档；`last_verified_against` 拆成 AOSP android-16 源码链 + Android 17 official API docs。
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-05-25
+- **类型**：版本差异 / 数据来源精度
+- **位置**：L420-L424：ANR trace 存储演进
+- **问题**：L420 已写 Android 10 开始 `/data/anr/anr_时间戳` 独立文件；L424 又写 Android 13 “trace 文件改为按进程独立存储”，但本轮抽查 AOSP android-10.0.0_r1 已能定位 `new File(tracesDir, "anr_" + formattedDate)` 与 0600 权限设置。Android 13 的新增点如果没有 commit/source 锚点，当前版本演进口径会显得重复甚至误导。
+- **建议**：补 Android 13 对 ANR trace 采集可靠性/多进程处理的具体源码或 release note；如果找不到一手依据，删除 “Android 13 改为按进程独立存储” 这句，只保留 Android 10 文件命名变化和 Android 14/现代权限获取边界。
+
+## [Task9 Deep Review] 19.24 崩溃与 ANR 捕获机制 — 2026-05-25
+- **类型**：源码准确性 / 待验证材料
+- **位置**：L634-L638：Native Crash Signal Handler 边界
+- **问题**：补充段写 “Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程”，但前文主线和 Crashpad 设计资料强调的是独立 handler 进程/客户端通知模型；“crash 时 fork handler”属于实现细节断言，当前段落还标了未经一手验证，容易被读者当成 Android Crashpad 的固定流程。
+- **建议**：改成保守表述：“Crashpad 使用独立 handler 进程接收客户端通知并写 minidump；具体启动/连接方式以接入版本为准”。如需保留 fork 说法，补 Crashpad Android client 源码锚点。

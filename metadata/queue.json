@@ -20706,6 +20706,86 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-25T16:15:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-1622-9.6-nls-input-anr-boundary",
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 85,
+      "title": "补清 NLS 回调阻塞与 Input ANR 的触发前提",
+      "description": "NotificationListenerService 回调确实默认落到监听器进程主线程，但阻塞 onNotificationPosted() 本身不是 InputDispatcher 计时器；只有存在待处理输入、生命周期/Service 超时或前台交互时才会转成对应 ANR。",
+      "reason": "[Deep Tech Review] §9.6 L144-L145、L249-L268、L308-L310 把 NLS 回调阻塞写成会触发监听器进程自己的 Input ANR，缺少“有输入事件被派发且 5s 未 finish”这一前提，容易把通知分发成本和 InputDispatcher ANR 触发条件混在一起。",
+      "issue_type": "principle-chain-nls-input-anr-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-16-deep-review.md",
+        "https://developer.android.com/topic/performance/vitals/anr",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/service/notification/NotificationListenerService.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/ANR 触发条件",
+          "location": "L144-L145、L249-L268、L308-L310：NLS 回调阻塞与 Input ANR",
+          "detail": "AOSP NotificationListenerService 在 registerAsSystemService() 路径中把 MyHandler 绑定到 main looper，回调阻塞会占住监听器进程主线程；但 Input ANR 的计时来自 InputDispatcher 对已派发输入事件的等待，不会因为 onNotificationPosted() 被调用就自动启动。当前表述少了“监听器进程处于可交互窗口且有输入事件/其他主线程超时消息等待”的前提。",
+          "suggestion": "改成分层描述：NLS 回调阻塞首先造成监听器进程主线程饥饿；若此时用户与该进程窗口交互，会表现为 Input ANR；若阻塞的是 Service/生命周期回调，则按对应组件超时归因。Perfetto 诊断也应同时看 NLS 回调 slice、main thread_state 与 input/wm/am 事件，而不是直接把通知回调归为 Input ANR。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T16:22:00+08:00"
+    },
+    {
+      "id": "task9-deep-20260525-1622-19.24-lmk-profilingmanager-boundary",
+      "section": "19.24",
+      "section_title": "崩溃与 ANR 捕获机制",
+      "priority": 95,
+      "title": "修正 LMK 因果链残留错误与 ProfilingManager.requestProfiling 参数语义",
+      "description": "Task2B 修复后仍残留两处可执行层面的源码/API 错误：LMK 小节仍把 computeOomAdj 写成触发阈值来源，并把 Binder 冻结回调列进 LMK 监听方式；ProfilingManager.requestProfiling() 示例把第三个 String 参数写成 packageName，官方语义是 tag。",
+      "reason": "[Deep Tech Review] §19.24 L462-L487、L558-L572 与 AOSP/官方 API 不一致，会误导 APM 端侧实现 LMK 归因与 ProfilingManager 调用参数。",
+      "issue_type": "source-accuracy-lmk-profilingmanager-api",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-16-deep-review.md",
+        "https://source.android.com/docs/core/perf/lmkd",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/services/core/java/com/android/server/am/ProcessList.java",
+        "https://developer.android.com/reference/android/app/ActivityManager#isLowMemoryKillReportSupported()",
+        "https://developer.android.com/reference/android/os/IBinder.FrozenStateChangeCallback",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/LMK 因果链",
+          "location": "L462-L487：LMKd 监听与 oom_adj 说明",
+          "detail": "正文 L464 仍写“LMK 的触发阈值由 ProcessList.computeOomAdj() 计算的 oom_adj 值决定”，但 L477 又说 computeOomAdj 不是 lmkd 触发阈值来源，前后矛盾。正确链路是 AMS/OomAdjuster 计算进程 oom_score_adj，ProcessList/lmkd 配置 adj/minfree 档位，lmkd 结合内存压力/PSI 与 adj 选择 kill 目标。表格 L486 仍把 IBinder.FrozenStateChangeCallback 放在 LMK 监听方式中；该 API 是 API 36 的远端 Binder 冻结/解冻状态回调，不是 LMK kill 事件监听。",
+          "suggestion": "删除“触发阈值由 computeOomAdj 决定”的句子，统一成 oom_score_adj 只表示 kill 优先级；LMK 监听表只保留 ApplicationExitInfo/REASON_LOW_MEMORY、设备支持查询、root/厂商 socket/cgroup 路径。把 FrozenStateChangeCallback 移出 LMK 表，单独标为 Binder frozen state 观测能力。"
+        },
+        {
+          "severity": "P0",
+          "type": "API 签名/参数语义错误",
+          "location": "L558-L572：ProfilingManager.requestProfiling() 示例签名",
+          "detail": "官方 ProfilingManager.requestProfiling() 第三个 String 参数是 tag，不是 packageName；tag 会进入结果文件命名/识别语义。正文把它标成 packageName，会让读者误以为要传调用包名，和 API 设计不符。",
+          "suggestion": "把示例改为 requestProfiling(int profilingType, Bundle options, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)，并说明 tag 用于结果识别，调用进程身份由系统 API 上下文决定。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T16:22:00+08:00"
     }
   ],
   "metadata": {

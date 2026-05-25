@@ -1,4 +1,5 @@
 ---
+
 title: "崩溃与 ANR 捕获机制"
 chapter: "19"
 section: "19.24"
@@ -26,15 +27,15 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task9_result: "needs-rework"
-task9_state: "pending"
-task2b_state: "fixed"
-task2b_result: "fixed"
-task9_reviewed_date: 2026-05-06
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-25T13:20:00+08:00"
-task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。"
+task9_state: "reviewed"
+task2b_state: "pending"
+task2b_result: "pending"
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-25T16:22:00+08:00"
+task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。 | 2026-05-25 16:22 Task9 deep-review：needs-rework。P0 2 / P1 0 / P2 1。P0：LMK 因果链仍残留 computeOomAdj/IBinder.FrozenStateChangeCallback 错误；ProfilingManager.requestProfiling 第三个参数应为 tag 不是 packageName。"
 last_task6_audit: "2026-05-23"
 last_task6_at: "2026-05-25T16:07:00+08:00"
 last_task9_audit: 2026-05-25
@@ -42,6 +43,7 @@ last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 15 处（否定-纠正句式、真正/不是高频词、标题表达）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
 ---
 
 # 崩溃与 ANR 捕获机制
