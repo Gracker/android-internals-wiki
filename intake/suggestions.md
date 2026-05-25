@@ -3717,3 +3717,38 @@
 - **问题**：AOSP android-16.0.0_r1 的 `power_profile.xml` 中 `cpu.active` 是 `<array name="cpu.active"><value>...</value></array>`，现稿示例写成 `<item name="cpu.active">52</item>`，与 Android 16 公共 profile 形态不一致。
 - **建议**：改成 `array` 形态，或明确标注该片段只示意键名、不代表 Android 16 默认 XML 标签形态。
 - **review 日志**：logs/deep-review/2026-05-25-22-audit.md
+
+## Task 2A 缺口挖掘记录 — 2026-05-26 00:04
+
+本轮未发现评分 >= 14 且尚未覆盖的知识缺口。已检查方向：
+- Android 17 ProfilingTrigger / Excessive CPU Kill：已覆盖 25.12、26.12、19.16。
+- Android 17 Local Network Permission / streaming budget：已覆盖 24.16。
+- Android 17 BluetoothSocket read 断开语义：已覆盖 24.19。
+- Android 17 static final 不可修改 / ART 优化：已覆盖 1.7、16.5。
+- DeliQueue / RecyclerView 预取：已覆盖 1.13、22.16。
+- ApplicationStartInfo / 版本化诊断能力：已覆盖 26.12、26.13。
+- App Lock / Private Space：已覆盖 17.7；性能相关性不足以另拆小节。
+
+
+
+## [Task6 Review] 11.1 Android 功耗模型 — 2026-05-26
+- **类型**：需确认
+- **位置**：`power_profile.xml` 示例中的 `cpu.active` 标签形态
+- **问题**：Task9 2026-05-25 闲时抽检已指出，AOSP android-16.0.0_r1 的 `power_profile.xml` 中 `cpu.active` 是 `<array name="cpu.active"><value>...</value></array>` 形态；现稿示例仍写成 `<item name="cpu.active">52</item>`。Task6 不裁决源码真伪，但该示例容易让读者把 Android 16 公共 profile 形态理解错。
+- **建议**：Task2B 按 Task9 审计修正为 `array` 形态，或明确标注该片段只示意键名、不代表 Android 16 默认 XML 标签形态。
+- **review 日志**：logs/review/2026-05-26-01-review.md
+
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-05-26
+- **类型**：版本差异 / sched_ext API 口径
+- **位置**：L203-L208：`scx_simple` 的 `scx_bpf_dispatch()` / `scx_bpf_dsq_insert()` 版本说明
+- **问题**：正文前文和版本演进表已经写明 `android17-6.18` 标准 GKI 分支使用 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`，但这里仍写成“Linux 6.14+ / 部分厂商分支”并提示“非 GKI 标准分支”才会看到 `dsq_insert` 命名。这个局部说明会和同节的 Android 17 GKI 结论冲突。
+- **建议**：改成“`android16-6.12` 的 `scx_simple` 使用 `scx_bpf_dispatch()`；`android17-6.18` 与后续 mainline / 部分厂商分支使用 `scx_bpf_dsq_insert()` 命名”，删除“非 GKI 标准分支”判断。
+- **review 日志**：logs/deep-review/2026-05-26-01-deep-review.md
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-05-26
+- **类型**：来源可追溯性 / 官方链接
+- **位置**：L430：AutoFDO 官方博客参考链接
+- **问题**：参考资料中的 `https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html` 返回 404；官方可访问 URL 是 `https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html`。正文依赖该博客限定 AutoFDO 数据口径，坏链会影响后续复核。
+- **建议**：修正参考链接；如果后续 Google Blog 提供 canonical slug，再以 canonical URL 为准。
+- **review 日志**：logs/deep-review/2026-05-26-01-deep-review.md
