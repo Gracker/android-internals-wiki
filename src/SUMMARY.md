@@ -348,6 +348,8 @@ tags:
   - [20.12 SafeMode 崩溃循环判定与启动补偿链路](part5-app/ch20-stability/12-safemode-crash-loop-recovery.md)
   - [20.13 16KB Page Size 兼容性与 Native 崩溃治理](part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md)
   - [20.14 线程与 FD 资源监控治理](part5-app/ch20-stability/14-thread-fd-resource-monitoring.md)
+  - [20.15 Android 17 Native DCL 只读约束与动态库加载稳定性](part5-app/ch20-stability/15-android17-native-dcl-stability.md)
+  - [20.16 Android 17 Keystore 配额与登录故障治理](part5-app/ch20-stability/16-keystore-quota-login-stability.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -411,6 +413,7 @@ tags:
   - [24.15 移动网络性能优化实战：DNS、连接、传输与容灾](part5-app/ch24-io-network/15-network-performance-baseline.md)
   - [24.16 Android 17 流媒体网络预算与本地网络权限适配](part5-app/ch24-io-network/16-android17-streaming-local-network.md)
   - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
+  - [24.18 Android 17 ECH 与 domainEncryption 网络适配](part5-app/ch24-io-network/18-android17-ech-domain-encryption.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
   - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)

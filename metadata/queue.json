@@ -20116,6 +20116,82 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-25T06:16:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-20260525-20-15",
+      "section": "20.15",
+      "section_title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+      "priority": 80,
+      "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+      "description": "Task 2A 知识缺口挖掘创建的新 draft 小节，待后续加工正文。",
+      "reason": "Android 17 官方行为变更与现有章节对照后发现缺口；来源：官方文档/AOSP结构/每日信息。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/reference/java/lang/System#load(java.lang.String)"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T08:27:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260525-20-16",
+      "section": "20.16",
+      "section_title": "Android 17 Keystore 配额与登录故障治理",
+      "priority": 80,
+      "title": "Android 17 Keystore 配额与登录故障治理",
+      "description": "Task 2A 知识缺口挖掘创建的新 draft 小节，待后续加工正文。",
+      "reason": "Android 17 官方行为变更与现有章节对照后发现缺口；来源：官方文档/每日信息/AOSP结构。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/16-keystore-quota-login-stability.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/behavior-changes-all",
+        "https://developer.android.com/reference/android/security/KeyStoreException"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T08:27:00+08:00"
+    },
+    {
+      "id": "task2a-gap-20260525-24-18",
+      "section": "24.18",
+      "section_title": "Android 17 ECH 与 domainEncryption 网络适配",
+      "priority": 80,
+      "title": "Android 17 ECH 与 domainEncryption 网络适配",
+      "description": "Task 2A 知识缺口挖掘创建的新 draft 小节，待后续加工正文。",
+      "reason": "Android 17 官方行为变更与现有章节对照后发现缺口；来源：官方文档/每日信息。",
+      "issue_type": "knowledge-gap",
+      "severity": "P2",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/18-android17-ech-domain-encryption.md"
+      ],
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/privacy-and-security/security-config",
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-05-25T08:27:00+08:00"
     }
   ],
   "metadata": {
