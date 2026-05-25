@@ -29,6 +29,7 @@ task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T05:05:00+08:00"
+last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-05-review.md"
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
@@ -167,7 +168,7 @@ GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制�
 
 **Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。即使 GC 标记为"并发"，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
 
-大对象分配（超过 TLAB / RegionTLAB 容量的对象）的阻塞代价在 Android 15+ 得到了缓解。CMC 通过 `userfaultfd` 内核特性处理对象搬移期间的页面访问同步，使 Large Object Space（LOS）的分配 Stall Time 降低约 15%。这意味着在 Android 15+ 设备上，大对象分配对帧渲染路径的冲击比老版本（全局锁模型）要轻，但仍然不能忽视——高频大对象分配依然会触发 GC 和 CPU 竞争。
+大对象分配（超过 TLAB / RegionTLAB 容量的对象）的阻塞代价在 Android 15+ 得到了缓解。CMC 通过 `userfaultfd` 内核特性处理对象搬移期间的页面访问同步，使 Large Object Space（LOS）的分配 Stall Time 降低约 15%。在 Android 15+ 设备上，大对象分配对帧渲染路径的冲击比老版本（全局锁模型）要轻，但仍然不能忽视——高频大对象分配依然会触发 GC 和 CPU 竞争。
 
 **CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中， `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
 
