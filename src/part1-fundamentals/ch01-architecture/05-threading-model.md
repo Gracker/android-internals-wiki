@@ -3,7 +3,7 @@ title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -14,19 +14,19 @@ last_task6_audit: '2026-05-21'
 task6_reviewed_date: '2026-05-12'
 review_round: 9
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-13"
+task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T06:25:00+08:00"
-task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
+last_task9_at: "2026-05-25T19:34:07+08:00"
+task9_review_notes: "2026-05-25 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；Binder 线程池等待机制误写成 epoll，硬件加速默认启用版本误写为 Android 4.4。详见 logs/deep-review/2026-05-25-19-deep-review.md。"
 last_task9_audit: "2026-05-25"
 last_task9_audit_at: "2026-05-25T17:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-17-audit.md"
 last_task9_audit_result: "p1-source-accuracy"
 task9_audit_notes: "2026-05-25 Task9 idle audit: fixed。P1 1：已删除不可验证的 MQ.DispatchBatches 断言，替换为官方可核验的队列区分信号。"
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
@@ -88,6 +88,7 @@ drafted_by: openclaw-task2
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
+last_task9_review_log: "logs/deep-review/2026-05-25-19-deep-review.md"
 ---
 
 # 线程模型

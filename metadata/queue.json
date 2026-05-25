@@ -1,6 +1,49 @@
 {
   "queue_entries": [
     {
+      "id": "task9-deep-20260525-19-1.5-binder-epoll-hwa-version",
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 95,
+      "title": "修正 Binder 线程池等待机制与硬件加速默认启用版本口径",
+      "description": "Task9 深度技术审计发现 §1.5 在 Looper/nativePollOnce 段落中把 Binder 线程池误写成独立 epoll 循环，并在软件绘制段落中把硬件加速默认启用版本误写为 Android 4.4 之后。",
+      "reason": "[Deep Tech Review] §1.5 L213 与 AOSP android-16.0.0_r1 Binder 线程池源码不一致；L296 与 Android 官方 Hardware Acceleration 文档的版本边界不一致。",
+      "issue_type": "source-accuracy-version-difference",
+      "severity": "P0",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-19-deep-review.md",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-16.0.0_r1/libs/binder/IPCThreadState.cpp",
+        "https://android.googlesource.com/platform/system/core/+/android-16.0.0_r1/libutils/Looper.cpp",
+        "https://developer.android.com/develop/ui/views/graphics/hardware-accel"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / Binder 线程池等待机制错误",
+          "location": "L213：Binder 通信 fd 与 Binder 线程池等待机制",
+          "detail": "正文前半句“Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中”成立，但后半句把 Binder 线程池描述成“自己独立的 epoll 循环”。AOSP android-16.0.0_r1 中 IPCThreadState::joinThreadPool() 循环调用 getAndExecuteCommand()，最终在 IPCThreadState::talkWithDriver() 里通过 ioctl(mDriverFD, BINDER_WRITE_READ, &bwr) 和 binder driver 阻塞交互；该路径没有 epoll_wait/addFd 循环。把 Binder pool 写成 epoll 会误导 Perfetto/kernel wait-state 解读。",
+          "suggestion": "改为：Binder fd 默认不挂在主线程 native Looper epoll 上；Binder 线程池通过 binder driver 的 BINDER_WRITE_READ ioctl 等待/处理事务。需要和 MessageQueue/nativePollOnce 的 epoll_wait 路径分开观察。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异 / 硬件加速默认启用版本错误",
+          "location": "L296：Android 从 4.4 之后默认开启硬件加速",
+          "detail": "官方 Hardware Acceleration 文档写明 Android 3.0/API 11 开始 2D 渲染管线支持硬件加速，target API >= 14 时默认启用；不是 Android 4.4/API 19 之后才默认开启。当前段落还容易把“硬件加速默认启用”和“Android 5.0 引入 RenderThread”混成同一个版本节点。",
+          "suggestion": "拆成两个版本边界：Android 3.0 引入 GPU 加速的 2D pipeline，targetSdk >= 14 默认启用硬件加速；Android 5.0/Lollipop 引入 RenderThread/threaded renderer，把 GPU 命令提交等后半段从主线程拆出去。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T19:34:07+08:00"
+    },
+    {
       "id": "task9-audit-20260525-1726-1.5-messagequeue-dispatchbatches-counter",
       "section": "1.5",
       "section_title": "线程模型",
