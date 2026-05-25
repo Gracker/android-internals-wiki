@@ -3,9 +3,9 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: "ready-for-review"
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+task6_result: needs-rework
 task9_result: needs-rework
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -39,11 +39,11 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-task2b_result: "fixed"
-task2b_state: "fixed"
-task6_state: "revisiting"
+task2b_result: "pending"
+task2b_state: "pending"
+task6_state: "reviewed"
 task9_state: reviewed
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-05-07T07:47:17+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
@@ -52,11 +52,12 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-25T22:28:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-25-22-audit.md"
 task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。"
-last_task6_at: "2026-05-07T08:20:00+08:00"
+last_task6_at: "2026-05-26T01:12:00+08:00"
 last_task6_audit: "2026-05-25"
-last_task6_review_log: "logs/review/2026-05-07-08-review.md"
+last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 last_task9_audit: 2026-05-25
+task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。"
 ---
 
 
@@ -175,7 +176,9 @@ CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经�
 
 如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。设置页里的 CPU 百分比也是沿着这套归属流程产出的，不能一概当成 `power_profile.xml` 查表结果。
 
-在 CPU cluster 能量可用的设备上，当 HAL 上报 `EnergyConsumerType.CPU_CLUSTER` 类型的 `EnergyConsumer` 时，Framework 可消费其硬件能量读数，再结合 UID 的 CPU time、policy running time 和 freq step 统计做归属。`EnergyConsumer` 是包含 `type` 字段的 parcelable，类型枚举定义在 `EnergyConsumerType.aidl`（如 `CPU_CLUSTER`、`DISPLAY`、`WIFI` 等），不是 `EnergyConsumer` 自身持有的 TYPE 常量。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl]这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
+在 CPU cluster 能量可用的设备上，当 HAL 上报 `EnergyConsumerType.CPU_CLUSTER` 类型的 `EnergyConsumer` 时，Framework 可消费其硬件能量读数，再结合 UID 的 CPU time、policy running time 和 freq step 统计做归属。`EnergyConsumer` 是包含 `type` 字段的 parcelable，类型枚举定义在 `EnergyConsumerType.aidl`（如 `CPU_CLUSTER`、`DISPLAY`、`WIFI` 等），不是 `EnergyConsumer` 自身持有的 TYPE 常量。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl]
+
+这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
 
 组件是否走 measured energy path，取决于 HAL 和统计能力。CPU、Screen 这类组件在支持的设备上更容易拿到 hardware energy data；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先消费硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
 
@@ -268,7 +271,7 @@ Battery Historian 常说的“先 reset 再采集”，指的是手动执行 `ad
 
 Coulomb Counter 是一个集成在设备主板上的专用芯片，通常位于 Fuel Gauge IC 中（如 Maxim MAX17050、TI BQ 系列）。它通过直接测量流入和流出电池的电流来计算电量变化。原理很直观：对电流进行时间积分，就得到了电荷量（mAh）。
 
-这种方式的精度远高于软件估算，通常可以达到 ±2-5% 的误差范围。它不受 power_profile 参数不准确的影响，也不需要对硬件模块进行抽象建模——直接测量就是了。
+这种方式的精度远高于软件估算，通常可以达到 ±2-5% 的误差范围。它不受 power_profile 参数不准确的影响，也不需要对硬件模块进行抽象建模；数据来自电池侧电流积分。
 
 [待验证: 不同设备使用的 Fuel Gauge IC 型号和精度有差异，具体数值需参考各设备数据手册]
 
@@ -286,7 +289,7 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会�
 
 **硬件测量的优势**是精度高——它可以准确展示"过去 1 小时电池总共消耗了 200mAh"。这个全局精度是软件估算难以保证的，特别是当 power_profile 参数不准时。
 
-在实际的 Android 系统中，两者结合使用：Fuel Gauge 提供全局的电量消耗基准（电池百分比），BatteryStats + power_profile 提供按 App 的拆分归属。下一节我们会看到，Android 10 引入的 IPowerStats HAL 正是为了弥合这两条路径之间的精度差距。
+在实际的 Android 系统中，两者结合使用：Fuel Gauge 提供全局的电量消耗基准（电池百分比），BatteryStats + power_profile 提供按 App 的拆分归属。Android 10 引入的 IPowerStats HAL，目的之一就是弥合这两条路径之间的精度差距。
 
 ## App 耗电量的归属算法
 
@@ -330,7 +333,7 @@ Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层�
 - WiFi 活跃传输 60 秒
 - GPS 定位 120 秒
 
-Framework 会把 CPU 的 active 基础功耗、policy 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。这里看重点就够了，现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
+Framework 会把 CPU 的 active 基础功耗、policy 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。本例只强调一个边界：现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
 
 ### 归属的精度问题
 
@@ -395,7 +398,7 @@ ODPM 目前也有几个比较明确的局限：
 
 ## 功耗模型的准确性问题与校准
 
-了解完整个功耗模型的架构之后，我们需要正视一个现实：Android 的功耗估算并不总是准确的。它的准确性取决于一长串前提条件。
+梳理完整个功耗模型的架构之后，需要正视一个现实：Android 的功耗估算并不总是准确的。它的准确性取决于一长串前提条件。
 
 ### 影响准确性的因素
 
@@ -419,7 +422,7 @@ ODPM 目前也有几个比较明确的局限：
 
 功耗模型的数据在多个工具中都有对应的表现形式：
 
-**Battery Historian**：这是常用的功耗分析工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的功耗时间线可视化。我们能看到屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降之间的对应关系。[待补充: Battery Historian 截图示例]
+**Battery Historian**：这是常用的功耗分析工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的功耗时间线可视化。工具能呈现屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降之间的对应关系。[待补充: Battery Historian 截图示例]
 
 **dumpsys batterystats**：命令行工具，输出 BatteryStats 的原始统计数据。适合脚本化分析和自动化测试场景。常用命令组合：
 
@@ -467,7 +470,7 @@ Perfetto 的 Android power probe 注册的数据源名是 `android.power`；`and
 
 ## 与其他机制的关系
 
-Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论的机制紧密关联：
+Android 功耗模型与本书多个章节讨论的机制紧密关联：
 
 - **CPU 调度（§5.1）**：调度器决定哪个进程在哪个核心上运行多久，直接影响 BatteryStats 中 CPU 时间的归属计算。EEVDF/CFS 的调度决策最终都会反映在功耗统计中。
 - **EAS / PAS（§5.2）**：早期 EAS 使用静态 Energy Model（EM）做开环预测——根据 EM 表估算任务迁移的能耗代价，选择最优核。PAS（Power-Aware Scheduling）理论上可以引入功耗动态反馈来修正调度决策，但截至目前公开的 AOSP 源码（android-16.0.0_r1）中，调度器路径（`find_energy_efficient_cpu` / `sched_energy_util`）仍走 EM 静态表计算，没有找到从 ODPM / PowerStats HAL 实时读取功耗并反馈到调度决策的确定调用链。ADPF / CPU-GPU headroom 走的是 `Power HAL` 的 `getCpuHeadroom` / `getGpuHeadroom` 接口和 `PerformanceHintManager` hint session 路径，PowerMonitor / PowerStats 是能量观测路径。两条路径目前在公开源码层面暂未看到对接。[待验证: 如后续 CDD / source.android.com 或新 AOSP tag 补充了 ODPM→EAS 反馈链，可重新修订]
