@@ -1,6 +1,29 @@
 {
   "queue_entries": [
     {
+      "id": "task9-20260526-0430-11.4-jobscheduler-timeout-min-guarantee",
+      "section": "11.4",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "修正 JobScheduler timeout 最小保障与 quota 降级口径",
+      "description": "§11.4 案例五仍把 quota / restricted 状态描述成可能让 JobScheduler timeout 短于最小保障，和 android-16.0.0_r1 JobServiceContext 实际 timeout 计算不一致。",
+      "reason": "[Deep Tech Review] §11.4 L650-L662 JobScheduler timeout 口径与 AOSP 不一致：JobServiceContext 使用 max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis) 设置 mMaxExecutionTimeMillis，timeout 不会低于对应 min guarantee。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/运行时边界",
+          "location": "src/part2-performance/ch11-power/04-case-studies.md L650-L662",
+          "detail": "正文说明 JobScheduler 实际运行上限受 standby bucket、quota、QuotaController 影响，并进一步写“低电量或受限状态下，上限可能远低于最小保障值 / quota 降级后可能更短”。AOSP android-16.0.0_r1 中 JobServiceContext.executeRunnableJob() 将 mMaxExecutionTimeMillis 设为 max(JobSchedulerService.getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)，因此 timeout 窗口不会低于对应 min guarantee；更早停止只能来自约束变化、preempt、cancel、ANR 等非 timeout 路径。",
+          "suggestion": "重写案例五 timeout 口径：Regular/EJ/UIJ 分别说明 min guarantee 与 max/free quota 上限；强调 forgotten jobFinished() 的系统持锁超时至少按 min guarantee 起算，quota 主要限制上限或后续调度，不应写成 timeout 可短于 min guarantee。另把 JobServiceContext 的 Math.max(...) 作为源码锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T04:30:00+08:00",
+      "status": "pending"
+    },
+    {
       "id": "task9-20260526-0320-4.9-cleaner-summary-stale",
       "section": "4.9",
       "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
