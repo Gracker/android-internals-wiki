@@ -20,13 +20,13 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-23
+reviewed_date: 2026-05-25
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
@@ -34,9 +34,12 @@ task2b_result: fixed
 last_task2b_at: '2026-05-20T11:12:00+08:00'
 last_task9_at: "2026-05-20T11:41:31+08:00"
 last_task6_audit: 2026-05-19
+last_task6_at: "2026-05-25T20:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-25-20-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 1；P0 为 EGL native fence 示例缺少 flush/flush flag 且混用 wait 与 FD 导出；P1 为 dequeueBuffer/release fence 归因需补 slot/outstanding buffer 边界。"
+task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小修 10 处（否定纠正式、直接称呼、图/代码说明、Buffer 等待措辞）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 ---
 
 <!-- outline-start -->
@@ -59,7 +62,7 @@ task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 
 
 当 App 需要高频自定义渲染——地图应用、3D 游戏、数据可视化——标准的 Android View 链路就不够用了。OpenGL ES（GLES）给了开发者直接控制 GPU 的能力，通过 EGL 与 Android 的 Surface 系统对接。这条链路的核心是**独立的 GLThread** 和 **`eglSwapBuffers`** 这个关键提交点。
 
-> **注意**：Android 15+ 将 Vulkan 继续作为主低层图形 API 推进，并把 ANGLE 作为重要可选层纳入生态方向；但这不等于"所有新设备都会强制把 GLES 走 ANGLE"。如果你的 App 依赖 GLES，请同时验证 native GLES、ANGLE 和旧设备 fallback。[已验证: Android 15 图形变更说明]
+> **边界**：Android 15+ 将 Vulkan 继续作为主低层图形 API 推进，并把 ANGLE 作为重要可选层纳入生态方向；设备侧仍会同时存在 native GLES、ANGLE 和旧设备 fallback。依赖 GLES 的 App 需要三条路径都验证。[已验证: Android 15 图形变更说明]
 
 ## 核心架构
 
@@ -107,7 +110,7 @@ GLThread 的常规生命周期：
 4. **暂离与销毁**：`onDetachedFromWindow()` 会调用 `requestExitAndWait()`，Surface 变化时也可能触发 EGLSurface 重建
 5. **重新 attach**：只有 View 先 detach 再 attach 时，`onAttachedToWindow()` 才会按旧 renderMode 重建并启动新的 GLThread
 
-`GLSurfaceView` 基于 `SurfaceView`。所以 GLES 链路在底层走的是 SurfaceView 的独立 Surface 直出路径——GLThread 向 SurfaceView 的 BufferQueue 提交 Buffer，SurfaceFlinger 直接消费。GLES 链路因此拥有 SurfaceView 的所有性能优势。
+`GLSurfaceView` 基于 `SurfaceView`。所以 GLES 链路在底层走的是 SurfaceView 的独立 Surface 直出路径——GLThread 向 SurfaceView 的 BufferQueue 提交 Buffer，SurfaceFlinger 直接消费。GLES 链路因此继承了 SurfaceView 独立 Surface 直出的性能特征。
 
 ## 渲染循环时序
 
@@ -123,6 +126,8 @@ GLThread 有两种唤醒方式，对应不同的使用场景：
 Continuous 模式下，GLThread 在紧凑循环中持续执行 `onDrawFrame()` + `eglSwapBuffers()`，不等待 VSync 信号。帧率受 `eglSwapBuffers` 内部 `dequeueBuffer` 的 BufferQueue 可用性限制，而非 VSync 驱动。适合需要持续渲染的场景（如 3D 游戏）。Dirty 模式下，线程在没有任务时会 `wait()`，只在 App 调用 `requestRender()` 时才被唤醒，适合静态或事件驱动的渲染（如数据图表更新）。
 
 ### 完整时序图
+
+下面这张图把 GLThread 提交、SurfaceFlinger latch 和 HWC present 分成三段看，重点是 `eglSwapBuffers` 之后 Buffer 与 fence 的交接。
 
 ```mermaid
 sequenceDiagram
@@ -167,7 +172,7 @@ sequenceDiagram
 
 #### 步骤 1：等待（Idle/Wait）
 
-GLThread 在 Dirty 模式下没有任务时会 `wait()` 休眠，等待 `requestRender()` 唤醒。Continuous 模式下不存在这个等待步骤——线程在紧凑循环中持续执行渲染和提交。在 Perfetto 中，Dirty 模式下你会看到 GL Thread 在两帧之间有一段空白；Continuous 模式下帧间的短暂间隔来自 `eglSwapBuffers` 内部 `dequeueBuffer` 等待空闲 Buffer 的耗时。
+GLThread 在 Dirty 模式下没有任务时会 `wait()` 休眠，等待 `requestRender()` 唤醒。Continuous 模式下不存在这个等待步骤——线程在紧凑循环中持续执行渲染和提交。在 Perfetto 中，Dirty 模式下 GL Thread 在两帧之间会有一段空白；Continuous 模式下帧间的短暂间隔来自 `eglSwapBuffers` 内部 `dequeueBuffer` 等待空闲 Buffer 的耗时。
 
 #### 步骤 2：eglMakeCurrent
 
@@ -177,7 +182,7 @@ GLThread 在 Dirty 模式下没有任务时会 `wait()` 休眠，等待 `request
 eglMakeCurrent(display, drawSurface, readSurface, context);
 ```
 
-**注意**：这个调用有开销——它涉及 GL 状态机的切换和缓存失效。如果频繁切换多个 Surface 和 EGLContext，会成为性能瓶颈。多 Surface 场景（如分屏游戏）应该使用共享 EGLContext，而不是反复调用 makeCurrent。
+**成本**：这个调用有开销——它涉及 GL 状态机的切换和缓存失效。如果频繁切换多个 Surface 和 EGLContext，会成为性能瓶颈。多 Surface 场景（如分屏游戏）优先使用共享 EGLContext，减少 `makeCurrent` 反复切换。
 
 #### 步骤 3：User Draw（onDrawFrame）
 
@@ -188,6 +193,8 @@ shader.use();
 glVertexAttribPointer(...);
 glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 ```
+
+这段代码返回时，命令通常只进入驱动队列；是否已经在 GPU 上完成，要结合 fence 或后续同步点判断。
 
 ### eglSwapBuffers 详解
 
@@ -216,7 +223,7 @@ GLES 的 BufferQueue 通常配置为 3 个 Slot（Triple Buffering）。理解 B
 
 ### 在 Trace 中的表现
 
-在 Perfetto 中，`eglSwapBuffers` 占据大部分时间条，**等的基本都是空闲 Buffer 的释放**：
+在 Perfetto 中，`eglSwapBuffers` 占据大部分时间条，**主要等待空闲 Buffer 重新可用**：
 
 - 如果 `dequeueBuffer` 耗时短 → Buffer 充足，流水线顺畅
 - 如果 `dequeueBuffer` 耗时长 → Buffer 压力大，需要分层排查：可用 slot 不足、outstanding buffer 达到上限、或返回 fence 等待时间长
@@ -301,9 +308,9 @@ GLES 链路最大的挑战是**驱动碎片化**。不同 GPU 厂商（Qualcomm 
 
 ### ANGLE 是强制路径吗
 
-**不是**。Android 15+ 继续将 Vulkan 作为主低层图形 API 推进，并把 ANGLE 作为重要可选层纳入生态方向，但这不等于"所有新设备都强制走 ANGLE"。Native GLES 路径、设备差异和 OEM 策略仍然存在。[已验证: Android 15 图形变更说明]
+这仍然是可选路径。Android 15+ 继续将 Vulkan 作为主低层图形 API 推进，并把 ANGLE 作为重要可选层纳入生态方向。Native GLES 路径、设备差异和 OEM 策略仍然存在。[已验证: Android 15 图形变更说明]
 
-如果你的 App 依赖 GLES，建议：
+依赖 GLES 的 App 可以按三步检查：
 1. 在 Android 15+ 设备上同时验证 native GLES 和 ANGLE 两条路径
 2. 按包切换时直接用 AOSP `Settings.Global` 里的 `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`：
 
@@ -319,7 +326,7 @@ adb shell settings delete global angle_gl_driver_selection_pkgs
 adb shell settings delete global angle_gl_driver_selection_values
 ```
 
-3. 关注 Google 的 ANGLE 推进时间表，提前准备迁移计划
+3. 把设备型号、GPU 驱动版本、native/ANGLE 切换方式和 Trace 结果一起记录，后续迁移 Vulkan 或排查驱动差异时才能复用
 
 ## Trace 视角
 
@@ -327,8 +334,8 @@ adb shell settings delete global angle_gl_driver_selection_values
 
 1. **独立 GL Thread**：`GLSurfaceView` 的渲染线程，持续活动，名称通常包含 `GLThread`
 2. **`eglSwapBuffers`**：这是 GLES 链路的标志性 Slice，与标准 View 链路的 `queueBuffer`（RenderThread）不同
-3. **无 DisplayList**：GLES 不走 DisplayList 机制，直接生成 GPU 命令——所以你不会在 Trace 中看到 `DisplayListCanvas` 相关的 Slice
-4. **`vkQueueSubmit`**：如果走了 ANGLE 路径，你会看到 Vulkan 的提交调用替代了 GLES 调用
+3. **无 DisplayList**：GLES 不走 DisplayList 机制，直接生成 GPU 命令——Trace 中不会出现 `DisplayListCanvas` 相关的 Slice
+4. **`vkQueueSubmit`**：走 ANGLE 路径时，Vulkan 的提交调用会替代 GLES 调用
 
 ### 关键 Slice
 
@@ -346,17 +353,17 @@ adb shell settings delete global angle_gl_driver_selection_values
 
 - `dequeueBuffer` 快 + `eglSwapBuffers` 快 → 流水线健康
 - `dequeueBuffer` 慢 → 先看 BufferQueue 可用 slot 和 outstanding buffer 限制，再看返回 fence 或后续 fence wait 是否拖住 CPU/GPU。不能把所有 `dequeueBuffer` 长条直接归因到 release fence
-- `eglSwapBuffers` 整体慢 → 大头通常是 `dequeueBuffer` 等待可用 buffer，不是 GPU 绘制慢
+- `eglSwapBuffers` 整体慢 → 大头通常是 `dequeueBuffer` 等待可用 buffer，优先观察 Buffer 等待，再排查 GPU 绘制耗时
 
 ### 典型场景的 Trace 模式
 
 **地图渲染**：GLThread 以 Continuous 模式运行，每帧执行大量的 `glDrawArrays`（绘制瓦片）。如果瓦片加载过慢，`eglSwapBuffers` 仍然会正常提交（只是画面不更新），不会阻塞主线程。
 
-**游戏**：GLThread 帧率独立于 App UI（因为基于 SurfaceView）。在 Trace 中你会看到 GL Thread 和 App Main Thread 完全解耦——游戏画面流畅，但 UI 操作可能卡顿（或反过来）。
+**游戏**：GLThread 帧率独立于 App UI（因为基于 SurfaceView）。Trace 中通常会看到 GL Thread 和 App Main Thread 解耦——游戏画面流畅，但 UI 操作可能卡顿（或反过来）。
 
 ## GLSurfaceView vs 原生 EGL 集成
 
-`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGLContext 创建、Surface 生命周期、GLThread 管理等所有样板代码。但对于高性能场景，你可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
+`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGLContext 创建、Surface 生命周期、GLThread 管理等所有样板代码。但高性能场景可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
 
 **GLSurfaceView 的局限**：
 - 只支持一个 EGLSurface，不支持多 Surface 并行渲染
