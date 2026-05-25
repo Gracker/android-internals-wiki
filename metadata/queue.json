@@ -21013,7 +21013,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [
         "21.4"
       ],
@@ -21028,26 +21028,29 @@
         "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-25T22:04:00+08:00"
+      "added_at": "2026-05-25T22:04:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-25T23:10:00+08:00",
+      "completion_reason": "Task 2A draft processing: chapter drafted and moved to ready-for-review"
     }
   ],
   "metadata": {
     "total_entries": 563,
     "p0_count": 238,
-    "last_updated": "2026-05-25T22:28:00+08:00",
-    "updated_by": "task9-deep-tech-review-audit",
-    "pending_entries": 181,
+    "last_updated": "2026-05-25T23:10:00+08:00",
+    "updated_by": "openclaw-task2a",
+    "pending_entries": 180,
     "updated_date": "2026-05-25",
-    "last_updated_by": "task9-deep-tech-review-audit",
-    "pending": 181,
-    "completed_entries": 379,
+    "last_updated_by": "openclaw-task2a",
+    "pending": 180,
+    "completed_entries": 380,
     "last_task2a_gap_mining": "24.19",
     "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
-    "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
-    "last_task2a_completed": "1.22",
+    "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
+    "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T22:28:00+08:00",
+  "last_updated": "2026-05-25T23:10:00+08:00",
   "last_updated_by": "task9-deep-tech-review-audit",
   "pending": 181,
   "last_task2a_completed": "24.19",
