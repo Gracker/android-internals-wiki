@@ -8,6 +8,8 @@ drafted_date: '2026-04-24'
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task9_at: "2026-05-16T08:33:00+08:00"
 last_verified: '2026-04-25'
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-25
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
 pipeline_stage: "ready-to-publish"

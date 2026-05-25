@@ -7,6 +7,8 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-25"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-25
 last_verified_against: "bytedance/btrace GitHub README, rhea-trace-shell sched category, external review 2026-04-25"
 confidence: medium
 tags: [apm]
@@ -134,7 +136,7 @@ btrace 的价值在另一边：它可以从方法栈角度补更多调用信息�
 
 接入 btrace 前要把构建开关设计好。Debug / internal 包可以默认集成真实依赖，Release 包通常使用 no-op 或只在灰度诊断包中启用。方法名混淆后还要准备 mapping，否则 Perfetto 中的调用栈会失去可读性。
 
-分析结果不要只看最长方法。更稳的读法是从时间轴出发：先确定慢的时间窗口，再确认主线程是否运行，再看方法 trace、系统调度和阻塞点。只有应用方法、系统状态和用户操作能互相对应，结论才适合写进性能修复单。
+分析结果不要只看最长方法。从时间轴出发：先确定慢的时间窗口，再确认主线程是否运行，再看方法 trace、系统调度和阻塞点。只有应用方法、系统状态和用户操作能互相对应，结论才适合写进性能修复单。
 
 ## 采集参数怎么读
 

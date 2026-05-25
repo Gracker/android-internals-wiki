@@ -824,3 +824,37 @@ public void draw(Canvas canvas) {
 当 AVD 退化到 UI 线程运行时,主线程会同时承担动画推进和 View invalidation;没有 fallback 但同屏向量动画过多时,RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看:主线程动画 slice / Choreographer 动画回调增多,指向 UI fallback;RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`,指向 RT 积压。
 
 **源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-16.0.0_r1)
+
+---
+
+<!-- AIW-源码调研-2026-05-25 -->
+
+## 补充：HWC Overlay Plane 合成降级源码锚点（2026-05-25）
+
+### 核心结论
+- **Overlay Plane 典型数量**: 4 个（source.android.com 确认），但由厂商 HWC 实现定义，非 Android 标准强制
+- **合成降级触发条件**: Layer 数量超过可用 Plane 数时，多余 Layer 退回 GLES 合成
+- **性能影响**: GPU 合成功耗显著高于 HWC 合成，主线程等待 GPU 完成导致 SurfaceFlinger jank
+
+### 关键源码路径
+- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` L620+ — presentOrValidate 模式
+- `frameworks/native/libs/renderengine/skia/SkiaGLRenderEngine.cpp` L615, L1395 — drawLayers()
+- `frameworks/native/libs/renderengine/gl/GLESRenderEngine.cpp` L798 — GLES 合成路径
+- `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCapability.aidl` — DisplayCapability AIDL
+
+### 设备级证据采集
+1. **dumpsys SurfaceFlinger** — 查 Overlay Plane 数、每 Layer composition type
+2. **Layer Trace / Winscope** — 追踪 compositionType 随时间变化
+3. **Perfetto android.surfaceflinger.frametimeline** — 查 CLIENT 类型 layer 的帧时间
+
+### 版本差异
+| 版本 | Overlay Plane 数 | 合成路径 |
+|-----|-----------------|---------|
+| Android 10+ | 典型 4 个（厂商定义） | presentOrValidate 稳定 |
+| Android 12+ | 设备差异化 | Composer 3 AIDL 化 |
+| Android 14+ | 厂商自定义 | Dynamic DisplayCapability |
+
+### 信息源
+- 一手：source.android.com/docs/core/graphics/hwc（HWC 官方文档）
+- 一手：cs.android.com SurfaceFlinger.cpp, RenderEngine.cpp（HWC presentOrValidate 源码）
+- 一手：hardware/interfaces DisplayCapability.aidl（AIDL 定义）
