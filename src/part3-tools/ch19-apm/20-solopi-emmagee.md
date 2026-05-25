@@ -1,5 +1,7 @@
 ---
 title: SoloPi 与 Emmagee
+deepseek_polish_state: done
+last_deepseek_polish_at: '2026-05-25'
 chapter: '19'
 section: '19.20'
 status: finalized
@@ -107,7 +109,7 @@ SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。R
 - 在多台设备上复现同一套步骤。
 - 把启动耗时、资源指标和现场图表放在同一套工具里。
 
-## SoloPi 的现代兼容性边界
+## SoloPi 的兼容性边界
 
 SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12 之后的验收方式。
 

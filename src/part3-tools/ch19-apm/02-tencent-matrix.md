@@ -35,6 +35,8 @@ repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P1 0 / P2 2；无 P0/P1，记录 Matrix README/API 与 AGP 版本边界建议。"
 
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-25
 ---
 
 # Tencent Matrix
@@ -112,7 +114,7 @@ Trace Canary 最容易被误解。它在编译期对目标方法插入入口和�
 - 方法级耗时来自插桩记录，比单纯定时抓栈更容易还原业务调用路径。
 - 可以通过包名、黑名单、白名单控制插桩范围，避免全项目方法都进监控。
 
-代价也很具体：
+代价同样明确：
 
 - 构建链变复杂，AGP 升级要重新确认插件适配情况。
 - 混淆后需要稳定的 mapping / method map 关系，否则线上报告难以阅读。

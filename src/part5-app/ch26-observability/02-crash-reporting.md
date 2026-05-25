@@ -442,3 +442,25 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 - Android 11+：完整支持 getTraceFile()
 - Android 14+：proto 格式 tombstone
 
+<!-- AIW-源码调研-2026-05-25 -->
+### 源码调研补充（2026-05-25）
+
+**调研议题**：Android 版本化线上诊断能力——ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
+
+**关键发现**：
+
+1. **debuggerd async-signal-safe 约束**（已在 §26.2 中标注源码路径，此处补充验证）
+   - 允许：`write()`, `pipe()`, `sigprocmask()`, `sync()`
+   - 禁止：`malloc()`, `free()`, `printf()`, `std::string`，任何堆操作
+   - 源码：`system/core/debuggerd/crash_dump.cpp l.303, l.497`
+
+2. **Crashpad Out-of-Process Handler 模型**（未经一手 AOSP 源码验证，建议读 `external/google-breakpad/client/crashpad_client_linux.cc`）
+   - signal handler 必须是 async-signal-safe
+   - minidump 写入由独立 handler 进程完成，不阻塞应用主线程
+   - 双策略：RequestCrashDumpHandler（与已运行 handler 通信）/ LaunchAtCrashHandler（crash 时启动）
+
+3. **ApplicationExitInfo 补偿入口版本差异**
+   - API 30：`getTraceInputStream()` 仅对 ANR 返回 trace
+   - API 31+：`REASON_CRASH_NATIVE` 返回 native tombstone protobuf
+
+**信息源**：developer.android.com NDK debug 文档（✅）

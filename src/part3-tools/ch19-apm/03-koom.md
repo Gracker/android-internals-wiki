@@ -37,6 +37,8 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T13:23:00+08:00"
 last_task9_audit: "2026-05-20"
 last_task6_audit: "2026-05-20"
+last_deepseek_polish_at: 2026-05-25
+deepseek_polish_state: done
 ---
 
 # KOOM
@@ -102,7 +104,7 @@ Java 堆泄漏检测通常绕不开 Hprof。Android 原生 heap dump 的入口�
 
 KOOM 官方文档给出的路线是 `VM suspend -> fork -> VM resume -> child dump`：父进程借 Linux copy-on-write 只承受很短的 suspend / fork 窗口，Hprof 写文件和后续 Shark 分析落到子进程。这个设计降低主进程冻结时间，但没有消除成本。子进程仍会占用额外内存和 I/O；fork 发生在多线程进程里，还要控制 native 锁、malloc 状态和超时退出，避免子进程继承父进程的锁状态后卡死。
 
-这条路线的收益很直接：线上可以在达到阈值时保留堆现场，避免等用户 OOM 后只拿到一个崩溃点。代价也要算清：
+这条路线的直接收益：线上可以在达到阈值时保留堆现场，不必等用户 OOM 后只拿到一个崩溃点。代价也要算清：
 
 - Hprof 文件仍然很大，需要裁剪或只上传摘要。
 - fork 和 dump 对低内存设备仍然有压力，KOOM 文档也建议远程开关和采样开启。
@@ -116,7 +118,7 @@ Native 泄漏比 Java 泄漏难，是因为 ART 的引用图帮不上忙。KOOM 
 
 这一层依赖的是 native 分配入口拦截能力。KOOM 官方接入依赖里包含 `com.kuaishou.koom:xhook`，同类工程也常用 bhook / xhook 处理动态库符号重定向和 Android linker 兼容问题。
 
-报告里更有用的是这些信息：
+报告里需要包含这些信息：
 
 - 分配大小和累计大小
 - 分配调用栈
@@ -192,7 +194,7 @@ Native leak 模块要处理三个成本：
 - **可达性扫描成本**：扫描 native heap 和寄存器/栈范围需要 CPU 时间。
 - **符号化成本**：没有 so 符号表，报告只能显示地址或不完整栈。
 
-线上通常不会对所有 native 分配全量记录。更合理的策略是：
+线上通常不会对所有 native 分配全量记录。可以采取的策略：
 
 - 只在灰度或异常设备开启。
 - 对大分配或可疑 so 提高采样。

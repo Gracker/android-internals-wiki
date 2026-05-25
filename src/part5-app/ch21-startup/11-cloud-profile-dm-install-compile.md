@@ -37,7 +37,7 @@ related_chapters: ["1.7", "8.2", "21.4", "21.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
@@ -49,8 +49,8 @@ task9_result: needs-rework
 last_task6_at: "2026-05-21T01:15:21+08:00"
 last_task6_review_log: logs/review/2026-05-21-01-review.md
 task6_review_notes: "2026-05-21 Task6 01: L1/L2 无需正文修改；结构、锚点、验证标注通过，转 Task9 pending。"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-21'
 last_task9_at: '2026-05-21T01:38:56+08:00'
@@ -106,7 +106,7 @@ ART 从 Android 7 起采用解释执行、JIT 和 Profile-Guided AOT 混合模�
 
 | Profile 类型 | 生产者 | 到达设备的时机 | 主要影响 | 验证入口 |
 |---|---|---|---|---|
-| Baseline Profile | App 团队、库作者、CI | 随 APK / AAB 打包，安装或后续编译时被 ART 消费 | 新安装、新升级后的 Day-0 代码执行成本 | APK 内 `assets/dexopt/baseline.prof`、`ProfileVerifier`、`cmd package art dump` |
+| Baseline Profile | App 团队、库作者、CI | 随 APK / AAB 打包，安装或后续编译时被 ART 消费 | 新安装、新升级后的 Day-0 代码执行成本 | APK 内 `assets/dexopt/baseline.prof`、`ProfileVerifier`、`pm art dump` |
 | Cloud Profile | Google Play 基于用户群体聚合 | Play 分发时随 dex metadata 一起到达设备 | 补充真实用户高频路径，覆盖开发脚本没跑到的路径 | 安装来源、`.dm` 文件、编译状态 |
 | 本地 JIT Profile | 单台设备运行时 | 用户实际使用后写入 `/data/misc/profiles/cur/.../primary.prof` | 后续启动和后台编译逐步收敛 | `profman --dump-profile-file`、后台 dexopt 日志 |
 | Startup Profile | App 团队、构建系统 | 构建期交给 D8 / R8 做 DEX layout | 启动路径类和方法的物理布局 | APK DEX 布局、Macrobenchmark 对比 |
@@ -159,11 +159,11 @@ AOSP ART Service 里，主 dex 的 `.dm` 路径由 `PrimaryDexopter.buildDmPath(
 下面的命令用于本地复现时确认包的编译状态，重点看 compiler filter 和 compilation reason。
 
 ```bash
-adb shell cmd package art dump com.example.app
+adb shell pm art dump com.example.app
 adb shell dumpsys package dexopt | grep -A 12 com.example.app
 ```
 
-Android 14+ 优先看 `cmd package art dump`；旧设备可退回 `dumpsys package dexopt`。如果状态仍是 `verify`，而启动 trace 又有大量 `art::jit::*`，编译覆盖不足就是可疑方向。
+Android 14+ 优先看 `pm art dump`；旧设备可退回 `dumpsys package dexopt`。如果状态仍是 `verify`，而启动 trace 又有大量 `art::jit::*`，编译覆盖不足就是可疑方向。
 
 ## Profile 命中率与冷启动收益评估
 
@@ -180,14 +180,22 @@ Android 14+ 优先看 `cmd package art dump`；旧设备可退回 `dumpsys packa
 下面的命令适合线下实验，用于构造“无 profile”和“强制 speed-profile”两个状态。执行前先确认测试设备允许这些 shell 操作。
 
 ```bash
-# 清理当前编译状态，接近无 profile 启动基线
+# === API 34+ (Android 14+)：两步清理 ===
+# 第一步：将编译 filter 降为 verify（不做 AOT 编译）
+adb shell cmd package compile -f -m verify com.example.app
+
+# 第二步：清掉本地 profile（包括 reference profile 和当前 profile）
+adb shell pm art clear-app-profiles com.example.app
+
+# === API 33 及以下：单条命令 ===
+# 重置编译状态（通常需要 root 或 AOSP build）
 adb shell cmd package compile --reset com.example.app
 
 # 使用当前可用 profile 强制触发 speed-profile 编译
 adb shell cmd package compile -m speed-profile -f com.example.app
 ```
 
-命令只适合实验室复现。线上发布验证仍要按真实安装来源测试，因为 Play、第三方商店、adb 侧载和厂商应用商店对 `.dm`、profile 安装和后台 dexopt 的触发时机可能不同。
+API 34+ 需要两步才能保证"无 profile"基线干净：先降 filter 到 `verify`，再清 profile 文件。只做 `compile --reset` 在 API 34+ 上可能仍保留 Play / DM 下发的 profile，导致基线被旧 profile 污染。命令只适合实验室复现。线上发布验证仍要按真实安装来源测试，因为 Play、第三方商店、adb 侧载和厂商应用商店对 `.dm`、profile 安装和后台 dexopt 的触发时机可能不同。
 
 指标上，至少看 TTID、TTFD、启动阶段慢帧和 P50 / P90 / P99。P50 变好只能说明主路径改善；P90 / P99 没变，常见原因是 profile 没覆盖长尾路径，或者长尾主要来自 I/O、网络、迁移任务和低端机 CPU。21.8 节已经给出启动监控的分位值口径，本节只补一个编译维度字段：每条启动样本最好带上安装来源、是否升级后首启、当前 compiler filter、是否清数据或首次安装。
 
@@ -226,7 +234,7 @@ Profile 也会带来发布风险。它不是“加上就只会变快”的静态
 
 1. 记录设备 build、ART module 版本、安装来源和是否开启省电模式。
 2. 用 `getprop | grep -E 'pm.dexopt|dex2oat'` 记录 ROM 的默认编译策略。
-3. 安装后立刻抓 `cmd package art dump`，记录 filter 和 reason。
+3. 安装后立刻抓 `pm art dump`，记录 filter 和 reason。
 4. 启动三次，观察 `art::jit::*` 是否逐步减少。
 5. 充电、灭屏、空闲一段时间后再次查看编译状态，确认后台 dexopt 是否执行。
 
@@ -254,7 +262,7 @@ App Bundle 和动态特性模块会改变 profile 验证边界。Base APK 的 pr
 把本节内容压成一次可执行排查：
 
 1. 确认安装来源和包内 profile：APK 内有 `assets/dexopt/baseline.prof`，Play 分发场景再确认是否存在 `.dm`。
-2. 确认当前编译状态：看 `cmd package art dump` 或 `dumpsys package dexopt`，记录 compiler filter 和 reason。
+2. 确认当前编译状态：看 `pm art dump` 或 `dumpsys package dexopt`，记录 compiler filter 和 reason。
 3. 对照启动 trace：搜索 `art::jit::*`、class loading、page fault 和主线程长任务。
 4. 分开测试无 profile、profile 命中、稳态三组，不用单次启动数字下结论。
 5. 灰度监控同时看启动耗时、安装 / 升级后首启耗时、崩溃率和 ANR 率。

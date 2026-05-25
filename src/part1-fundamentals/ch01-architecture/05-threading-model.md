@@ -3,7 +3,7 @@ title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -14,7 +14,7 @@ last_task6_audit: '2026-05-21'
 task6_reviewed_date: '2026-05-12'
 review_round: 9
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
@@ -24,9 +24,9 @@ last_task9_audit: "2026-05-25"
 last_task9_audit_at: "2026-05-25T17:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-17-audit.md"
 last_task9_audit_result: "p1-source-accuracy"
-task9_audit_notes: "2026-05-25 Task9 idle audit: needs-rework。P1 1：MQ.DispatchBatches Trace 计数器缺少公开 AOSP/官方文档锚点，需回炉核验。"
-task2b_state: pending
-task2b_result: pending
+task9_audit_notes: "2026-05-25 Task9 idle audit: fixed。P1 1：已删除不可验证的 MQ.DispatchBatches 断言，替换为官方可核验的队列区分信号。"
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
@@ -480,7 +480,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
-- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下新增的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，所以它不是 DeliQueue/ConcurrentMessageQueue 的独有签名。要区分队列实现，应结合 `MQ.DispatchBatches`（DeliQueue 的批量投递计数）或其他 DeliQueue 专有 Trace 片段一起判断。
+- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，不能用它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段同窗对齐。
 
 ### 主线程状态解读
 

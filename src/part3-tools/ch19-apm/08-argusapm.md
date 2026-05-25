@@ -32,6 +32,8 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径�
 last_task6_at: "2026-05-05T22:07:00+08:00"
 last_task6_audit: "2026-05-23"
 last_task9_audit: "2026-05-23"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-25
 ---
 # ArgusAPM
 
@@ -97,7 +99,7 @@ ArgusAPM 的整体结构可以看成两部分：
 
 读 `@Aspect` 入口时看 `argus-apm-aop` 和 `argus-apm-gradle`，不要只在 `argus-apm-main` 里找采集任务。
 
-这套组合在早期 Android APM 里很典型：客户端 SDK 负责采集，Gradle 插件负责自动插入埋点或包装调用，服务端负责展示和分析。
+早期 Android APM 常走这套组合：客户端 SDK 负责采集，Gradle 插件负责自动插入埋点或包装调用，服务端负责展示和分析。
 
 ## 支持的监控方向
 
@@ -124,7 +126,7 @@ ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采�
 - 旧监控模块对 Android 12+、14+、16KB page size、隐私策略的适配需要重新验证。
 - 文档和社区活跃度不足，遇到兼容问题时更多要靠自修。
 
-公开 sample 的工具链基线也把迁移顺序指得很清楚：
+公开 sample 的工具链基线直接标出了迁移顺序：
 
 | 公开 sample 基线 | 对现代项目的风险 | 建议替换顺序 |
 |---|---|---|
@@ -135,7 +137,7 @@ ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采�
 
 如果已有项目还在用，建议先把采集模块、服务端依赖和构建插件分开评估。能保留的保留，无法适配的逐步替换成 AndroidX、Matrix、KOOM、Sentry、Firebase 或自研模块。
 
-## 作为参考，它仍然有学习价值
+## 作为参考，它有学习价值
 
 ArgusAPM 展示了一个完整移动 APM 早期形态：客户端模块化采集、编译期织入、网络库适配、多进程处理、服务端看板。这些设计问题今天仍然存在，只是工具和系统环境变了。
 

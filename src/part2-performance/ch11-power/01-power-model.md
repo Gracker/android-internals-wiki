@@ -53,6 +53,7 @@ last_task9_at: "2026-05-07T08:36:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-08-deep-review.md"
 task9_review_notes: "2026-05-07 Task9 08:36：pass-tech-review。P0 0 / P1 0 / P2 1；Perfetto/PowerMonitor/ODPM 关键源码锚点已复核，参考链接 404 已有 suggestions 记录，不阻断发布。"
 last_task6_at: "2026-05-07T08:20:00+08:00"
+last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-08-review.md"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 
@@ -303,7 +304,7 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会�
 
 **WiFi / 蓝牙 / Radio**：按 UID 的网络活动、扫描、连接时长和流量做归属。多个 App 并发时通常需要分摊。
 
-**GPS / Sensor**：按注册者和活跃时间归属。谁持有请求，谁承担对应时段的成本。
+**GPS / Sensor**：按注册者和活跃时间归属。谁持有请求，对应时段的成本就归到谁名下。
 
 **WakeLock**：按持有者归属。它会增加 CPU 忙碌时间，也会把本来可以进入休眠的时间变成可计费的耗电窗口。
 

@@ -14638,6 +14638,29 @@
       "chapter": "ch17.5",
       "processed_at": "2026-05-25 06:16",
       "type": "deepresearch-inject"
+    },
+    {
+      "title": "Android 性能优化\"基石\"是什么？ Fps,Memory,Cpu如何采集？",
+      "path": "AndroidWeekly/#12/Android_性能优化基石是什么？_Fps,Memory,Cpu如何采集？",
+      "source_url": "https://mp.weixin.qq.com/s/O2diQxhj4Kg9O4yV8MK7Hg",
+      "weekly_issue": "#12",
+      "weekly_date": "2020-12-17",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-性能优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android相关的技术分享",
+      "scored_at": "2026-05-25T09:09:00.642683"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 title: OpenGL ES 渲染链路
 chapter: '18.8'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 9 (API 28) - Android 16 (API 36)
 tags:
 - OpenGL-ES
@@ -219,7 +219,7 @@ GLES 的 BufferQueue 通常配置为 3 个 Slot（Triple Buffering）。理解 B
 在 Perfetto 中，`eglSwapBuffers` 占据大部分时间条，**等的基本都是空闲 Buffer 的释放**：
 
 - 如果 `dequeueBuffer` 耗时短 → Buffer 充足，流水线顺畅
-- 如果 `dequeueBuffer` 耗时长 → Buffer 压力大，可能是 Display 消费太慢或 GPU 负载过高导致 release fence 迟迟不 signal
+- 如果 `dequeueBuffer` 耗时长 → Buffer 压力大，需要分层排查：可用 slot 不足、outstanding buffer 达到上限、或返回 fence 等待时间长
 
 ## Fence 机制
 
@@ -227,9 +227,9 @@ Fence（同步栅栏）是跨 GPU/CPU/Display 的关键同步原语。在 GLES �
 
 ### Release Fence（释放栅栏）
 
-- **来源**：`eglSwapBuffers` 内部调用 `dequeueBuffer` 时，系统返回一个 release fence
-- **含义**：这个 Buffer 还在被 Display/SurfaceFlinger 使用，**等 fence signal 后才能写入新内容**
-- **Trace 表现**：`dequeueBuffer` 耗时很长，通常是在等 release fence。如果 Display 的刷新周期是 16.6ms（60Hz），最坏情况下 App 需要等一整个 VSync 周期才能拿到 Buffer
+- **来源**：`eglSwapBuffers` 内部调用 `dequeueBuffer` 时，如果所有 buffer 都在流转中（被 consumer 持有或 outstanding buffer 数量达到上限），`dequeueBuffer` 会阻塞到有 buffer 释放为止。返回时可能附带一个 release fence
+- **含义**：返回的 fence 表示该 Buffer 的前序消费者操作已完成，fence signal 后才能安全写入新内容
+- **Trace 表现**：`dequeueBuffer` 耗时长的原因不只有 release fence。需要分层判断：① BufferQueue 可用 slot 是否充足（可用 buffer 不足 = 生产者跑太快或消费者太慢）；② outstanding buffer 数量是否达到 `maxDequeuedBufferCount` 限制；③ 返回的 fence 是否还需要额外等待。Perfetto 中可以同时观察 `BufferQueue` 的 queue/dequeue 计数和 `fence_wait` 片段来区分
 
 ### Acquire Fence（获取栅栏）
 
@@ -241,27 +241,47 @@ Fence（同步栅栏）是跨 GPU/CPU/Display 的关键同步原语。在 GLES �
 
 对于需要精确同步的场景——比如在 GPU 渲染完成后执行 CPU 操作（记录性能数据、读取像素）——EGL 提供了扩展接口：
 
-```c
-// 检查扩展是否可用（EGL_ANDROID_native_fence_sync）
-// const char* exts = eglQueryString(display, EGL_EXTENSIONS);
-// 确认包含 EGL_ANDROID_native_fence_sync
+**场景 A：CPU 侧等待 GPU 完成（数据回读、像素读取）**
 
+创建 sync 后，需要先 `glFlush()` 确保前序 GL 命令提交到 GPU 驱动，再调用 `eglClientWaitSyncKHR` 时带上 `EGL_SYNC_FLUSH_COMMANDS_BIT_KHR`：
+
+```c
 // 创建 Native Fence Sync 对象
-// 如果要在后续 GPU 命令流中生成 fence，传入 EGL_SYNC_NATIVE_FENCE_ANDROID + NULL attribs
 EGLint attrs[] = { EGL_NONE };
 EGLSyncKHR sync = eglCreateSyncKHR(display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
 
-// 确保前面提交的 GPU 命令已完成，fence 才会被 signal
-eglClientWaitSyncKHR(display, sync, 0, EGL_FOREVER_KHR);
+// glFlush() 确保 GL 命令提交到 GPU 驱动队列
+// 没有 glFlush，sync 对象可能永远不会被 signal
+glFlush();
+
+// CPU 侧等待 fence signal；flags 带 EGL_SYNC_FLUSH_COMMANDS_BIT_KHR 防止 client 端死锁
+eglClientWaitSyncKHR(display, sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
+
+// 此时 GPU 已完成，可以安全读取 Buffer 数据
+eglDestroySyncKHR(display, sync);
+```
+
+**场景 B：导出 Native Fence FD 跨进程传递（GPU → SurfaceFlinger / HWC）**
+
+创建 sync 后 `glFlush()`，再导出未 signal 的 fence FD 交给消费者。消费者在自己的时间线等待 fence，不需要 CPU 阻塞等待：
+
+```c
+// 创建 Native Fence Sync 对象
+EGLint attrs[] = { EGL_NONE };
+EGLSyncKHR sync = eglCreateSyncKHR(display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
+
+// glFlush() 确保 fence 创建命令被驱动处理
+// 导出的 FD 此时处于 unsignaled 状态，会在 GPU 完成所有前序命令后自动 signal
+glFlush();
 
 // 导出为 Native Fence FD（可用于跨进程传递，例如提交给 BufferQueue）
 int fd = eglDupNativeFenceFDANDROID(display, sync);
 
-// 清理
+// FD 交给消费者后，本地 sync 对象可以销毁
 eglDestroySyncKHR(display, sync);
 ```
 
-`eglDupNativeFenceFDANDROID` 属于 `EGL_ANDROID_native_fence_sync` 扩展，sync 对象必须用 `EGL_SYNC_NATIVE_FENCE_ANDROID` 创建，不能用 `EGL_SYNC_FENCE_KHR`。导出的 FD 可以跨进程传递给 SurfaceFlinger / HWC 等消费者。这个模式在 GPU → CPU 的数据回读场景中很常见（如截图、OCR）。如果不使用 Sync Object 而是直接读 Buffer，可能读到 GPU 还没画完的半成品。
+`eglDupNativeFenceFDANDROID` 属于 `EGL_ANDROID_native_fence_sync` 扩展，sync 对象必须用 `EGL_SYNC_NATIVE_FENCE_ANDROID` 创建，不能用 `EGL_SYNC_FENCE_KHR`。导出的 FD 可以跨进程传递给 SurfaceFlinger / HWC 等消费者。关键区别：场景 A 是 CPU 阻塞等待 GPU 完成，场景 B 是把 fence FD 交给消费者异步等待。两个场景都需要在创建 sync 后调用 `glFlush()`，否则 sync 对象可能不会被驱动处理，fence 永远不 signal。
 
 ## ANGLE 路径
 
@@ -325,8 +345,8 @@ adb shell settings delete global angle_gl_driver_selection_values
 分析 GLES 链路性能，重点是理解 Buffer 压力：
 
 - `dequeueBuffer` 快 + `eglSwapBuffers` 快 → 流水线健康
-- `dequeueBuffer` 慢 → Buffer 不足，可能是 Triple Buffer 不够用或 release fence 回收慢
-- `eglSwapBuffers` 整体慢 → 通常等的就是 `dequeueBuffer`，不是 GPU 绘制慢
+- `dequeueBuffer` 慢 → 先看 BufferQueue 可用 slot 和 outstanding buffer 限制，再看返回 fence 或后续 fence wait 是否拖住 CPU/GPU。不能把所有 `dequeueBuffer` 长条直接归因到 release fence
+- `eglSwapBuffers` 整体慢 → 大头通常是 `dequeueBuffer` 等待可用 buffer，不是 GPU 绘制慢
 
 ### 典型场景的 Trace 模式
 

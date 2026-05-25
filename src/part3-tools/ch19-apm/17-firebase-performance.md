@@ -1,5 +1,7 @@
 ---
 title: "Firebase Performance"
+deepseek_polish_state: done
+last_deepseek_polish_at: '2026-05-25'
 chapter: "19"
 section: "19.17"
 status: finalized
@@ -38,6 +40,7 @@ last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task6_at: "2026-05-08T02:09:46+08:00"
+last_task6_audit: "2026-05-25"
 task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result=pending 等待 Task9 复审。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。修复 YAML 引号、重复验证句和 8 处 L1/L2 表达问题；Task9 仍为 pending，未自动晋升。"
 task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言 | 2026-05-08 02 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
@@ -129,6 +132,8 @@ Manifest 开关要单独写清楚：
 
 Release 策略也要固定下来：debug 包默认关闭，内部测试包只开小流量，正式版按地区和渠道放量。这样可以避免开发期噪声把线上盘面污染掉。
 
+接入前还要把地区可用性、Firebase project 权限、Google Analytics 权限、隐私政策和数据保留口径写进发布清单。产品不面向 Google 服务可用地区时，控制台可用性要先验证。
+
 ## 自动采集能力与版本边界
 
 Firebase 的自动采集很多，但边界也很明确：
@@ -144,7 +149,7 @@ Firebase 的自动采集很多，但边界也很明确：
 
 Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment 级 screen rendering trace，这对单 Activity / Navigation 架构有用；它仍然是控制台聚合指标，缺少 JankStats 那种逐帧界面状态和业务动作上下文。
 
-到 Android 17，官方 get-started 和 troubleshooting 文档没有列出单独的 API 37 变更。本章按“使用最新 Firebase Android BoM，能力边界沿当前文档执行”来写，不额外编造 Android 17 专属行为。
+到 Android 17，官方 get-started 和 troubleshooting 文档没有列出单独的 API 37 变更。以下内容基于最新 Firebase Android BoM，能力边界沿当前文档执行，不额外编造 Android 17 专属行为。
 
 ## 自定义 trace 的命名规则
 
@@ -164,6 +169,8 @@ Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment
 Firebase 自动网络 trace 更像聚合盘，不是抓包器。它擅长回答“哪个接口在某个版本变慢了”，不擅长拆 DNS、TCP、TLS、服务端队列和弱网重试这些阶段。
 
 URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002/detail` 这一类路径，在盘面上应该收敛成 `/api/item/{id}/detail`。query 参数里的 token、签名、搜索词、实验参数也不要直接进聚合维度。
+
+状态码、payload size 和 Content-Type 只能解释一部分失败。DNS、TLS、timeout、服务端 5xx 这类原因要靠客户端错误码或服务端 trace 补齐，避免多个失败阶段都混在同一个 URL pattern 里。
 
 官方文档给了几条实操边界：
 
@@ -199,7 +206,7 @@ Firebase Performance 的控制台时效会直接影响排查方式。官方 trou
 | FrameMetrics | 端侧阶段耗时 | 适合做渲染阶段拆分和本地诊断 | 平台 API，字段更底层 |
 | Android Vitals | Play 分发真实用户质量数据 | 适合看发布质量门槛、慢帧和 ANR 风险 | 只覆盖 Play 分发用户，业务上下文少 |
 
-Firebase 和 Android Vitals 也不要混成一套口径。两边都可能出现“slow frames”“frozen frames”这类指标，但样本面、聚合窗口和覆盖用户群都不同，不能把百分比直接拿来比较。
+Firebase 和 Android Vitals 也不要混成一套口径。两边都可能出现“slow frames”“frozen frames”这类指标，但样本面、聚合窗口和覆盖用户群都不同，不能把百分比直接拿来比较。Google Play Console 更适合看发布质量门槛，Firebase Performance 更适合看接入 SDK 后的版本和设备分布。
 
 ## 使用建议
 

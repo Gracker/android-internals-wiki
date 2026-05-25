@@ -19,16 +19,16 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: fixed
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T21:20:00+08:00"
@@ -119,35 +119,40 @@ Android 12+ 的 Extensions 是这一步的一个变体。App 通过 `CameraDevic
 | `SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD` | 0x3 | 视频录制，启用 EISR 时保证视频防抖 |
 | `SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW_VIDEO_STILL` | 0x4 | 单流同时服务预览+录像+拍照，社交媒体推荐 |
 | `SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL` | 0x5 | 长时间视频通话，功耗优先，允许低分辨率 sensor mode |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW` | 0x6 | 裁剪 RAW 输出，Android 14 (API 34)+ 可用 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_VENDOR_START` | 0x10000 | vendor 自定义 use case 起始值 |
 
 **关键源码**（`frameworks/base/core/java/android/hardware/camera2/params/OutputConfiguration.java`）：
 
 ```java
 // android14-release, setStreamUseCase() 方法
+// maxUseCaseValue 取自 CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES
+// Android 13 max 到 VIDEO_CALL (0x5)，Android 14+ 到 CROPPED_RAW (0x6)
 public void setStreamUseCase(@StreamUseCase long streamUseCase) {
-    if (isConfigurationValid(streamUseCase)) {
-        mStreamUseCase = streamUseCase;
+    // 公开范围校验：超过 maxUseCaseValue 且小于 VENDOR_START 则抛异常
+    if (streamUseCase > maxUseCaseValue
+            && streamUseCase < CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VENDOR_START) {
+        throw new IllegalArgumentException("Invalid stream use case " + streamUseCase);
     }
-}
-
-public long getStreamUseCase() {
-    return mStreamUseCase;
+    mStreamUseCase = streamUseCase;
 }
 ```
 
-**调用约束**：必须在 `createCaptureSession()` 之前；Session 创建后调用无效；未调用时默认返回 `DEFAULT (0x0)`。
+**调用约束**：必须在 `createCaptureSession()` 之前调用；Session 创建后调用无效；未调用时默认返回 `DEFAULT (0x0)`。非法的公开范围内值（大于设备支持的最大公开 use case 且小于 `VENDOR_START`）会直接抛 `IllegalArgumentException`，不会被静默忽略。`VENDOR_START = 0x10000`，vendor 可在此之上定义设备专有 use case。
 
-**Guaranteed Stream Combination**（`frameworks/base/core/java/android/hardware/camera2/params/MandatoryStreamCombination.java`）：
+**Guaranteed Stream Combination**（`SCALER_MANDATORY_USE_CASE_STREAM_COMBINATIONS`，`MandatoryStreamCombination.java` 中的 `sStreamUseCaseCombinations`）：
 
-具有 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` 能力的设备，必须保证以下组合（所有流 use case 设为非 DEFAULT）：
+具有 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` 能力的设备，必须为每个 stream 绑定对应的 use case（PREVIEW / RECORD / STILL_CAPTURE / PREVIEW_VIDEO_STILL / VIDEO_CALL / CROPPED_RAW），且保证以下类型的组合。与 `SCALER_MANDATORY_CONCURRENT_STREAM_COMBINATIONS`（并发 camera mandatory）不同，stream-use-case 组合的每条流都带有明确的 use case 标记：
 
-| 组合 | 分辨率 | 用途 |
+| 组合类型 | 典型流的 use case 绑定 | 说明 |
 |:---|:---|:---|
-| YUV / PRIV | s1440p | 应用内视频或图像处理 |
-| PRIV | s1440p | 应用内取景框分析 |
-| JPEG | s1440p | 无取景框拍照 |
-| YUV/PRIV @ s720p + JPEG @ s1440p | 混合 | 标准静态拍照 |
-| YUV/PRIV @ s720p + YUV/PRIV @ s1440p | 混合 | 应用内视频/处理+预览 |
+| 单流预览 | PRIV (PREVIEW) | 最简组合，只开预览 |
+| 单流拍照 | JPEG (STILL_CAPTURE) | 无取景框直拍 |
+| 双流：预览 + 拍照 | PRIV @ s1440p (PREVIEW) + JPEG @ s1440p (STILL_CAPTURE) | 标准拍照场景 |
+| 双流：预览 + 录像 | PRIV @ s1440p (PREVIEW) + PRIV @ s1440p (RECORD) | 标准录像场景 |
+| 三流：预览 + 录像 + 拍照 | PRIV @ s720p (PREVIEW_VIDEO_STILL) + PRIV @ s1440p (RECORD) | 单流服务多种用途 |
+
+上表列出的是组合类型示意。完整 guaranteed combination 数量远多于 5 行，具体取决于设备的 `SCALER_AVAILABLE_STREAM_USE_CASES` 支持范围。排查时，先确认设备声明了 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` capability，再通过 `CameraCharacteristics.SCALER_AVAILABLE_MANDATORY_USE_CASE_STREAM_COMBINATIONS` 查询设备实际支持的组合。
 
 **CameraX Interop 接入**（`androidx.camera:camera-core`，CameraX 1.2+）：
 

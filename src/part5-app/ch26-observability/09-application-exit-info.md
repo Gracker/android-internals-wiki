@@ -306,3 +306,20 @@ GWP-ASan、MTE、HWASan 这类内存安全工具经常以 native crash 或 abort
 | API 31+ | `ApplicationExitInfo` 可用 | 同 API 30 | `REASON_CRASH_NATIVE` 可通过 `traceInputStream` 读取 tombstone protobuf，但可能为 `null` | 归并系统 tombstone、Crash SDK、端侧资源快照 |
 
 这张表给工程实现划边界：API 30+ 用系统记录做主归因；API 31+ 对 native crash 多拉一份 tombstone；API 29 及以下靠端侧状态机和自建采样兜底。所有版本都保留本地启动标记，因为它能发现“系统没有给出完整解释”的异常退出。
+
+<!-- AIW-源码调研-2026-05-25 -->
+### 源码调研补充（2026-05-25）
+
+**调研议题**：Android 版本化线上诊断能力——ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
+
+**关键发现**：
+
+1. **getTraceInputStream() 版本差异**（未经一手验证，建议用 AOSP android-16.0.0_r1 核实）
+   - API 30：`getTraceInputStream()` 仅对 ANR 返回 trace，native crash 返回 null
+   - API 31+：`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 native tombstone protobuf
+
+2. **Exit Reason 常量版本边界**
+   - `REASON_FREEZER` = API 33
+   - `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` = API 34
+
+**信息源**：developer.android.com NDK debug 文档（✅）、developer.android.com ApplicationExitInfo API reference（✅）

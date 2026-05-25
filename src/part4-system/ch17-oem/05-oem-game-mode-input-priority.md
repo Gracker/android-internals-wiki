@@ -225,3 +225,39 @@ Android 的 Game Service / GameSession 能让 OEM 游戏工具与游戏场景协
 - 注入时间：2026-05-25
 - 价值：AOSP 标准机制源码锚定（InputDispatcher TouchFocus、Policy扩展点、injectInputEvent），补全厂商实现典型路径
 
+
+
+<!-- AIW-源码调研-2026-05-25 -->
+### 2026-05-25 补充：INPUT_TARGET_FLAG_FOREGROUND 与 dispatchMode 源码锚点
+
+**来源**：DeepResearch/2026-05-25-oem-game-mode-input-dispatcher-mechanism.md
+
+**关键发现**：
+
+1. **FLAG_FOREGROUND 是标准窗口状态标志，非游戏专属**
+   - `INPUT_TARGET_FLAG_FOREGROUND` (值 0x00000001) 标识前台窗口，是标准窗口焦点机制的一部分
+   - `FLAG_DISPATCH_AS_IS` (值 0x00000002) 表示不修改事件直接分发
+   - 这些flags与Game Mode状态无关联，Game Mode不改变InputDispatcher的分发flags
+
+2. **findTouchedWindowTargetsLocked() 核心逻辑**
+   - 遍历窗口栈，按Z-order找到第一个 `touchFocusable` 窗口
+   - 检查窗口是否可接收输入：`hasFocus && touchFocusable && not occluded`
+   - 为找到的窗口创建InputTarget，向量按Z-order排序
+
+3. **性能收益归因层次（2026-05-25 补充澄清）**
+   - **输入分发层**：InputDispatcher队列长度、dispatch latency trace → 厂商实现降低分发等待
+   - **刷新率层**：FrameTimeline present延迟、display mode切换 → 缩短每帧present等待
+   - **CPU调度层**：sched trace、uclamp、CPU freq → 线程调度优先级提升
+   - **触控固件层**：getevent -lt报点间隔、内核节点 → 采样率提高降低端到端延迟
+
+4. **injectInputEvent(ASYNC) 行为澄清**
+   - `INJECT_INPUT_EVENT_MODE_ASYNC = 0x0001`
+   - 异步模式：不等待目标窗口ACK，直接入队分发
+   - 用于厂商实现"零延迟注入"，但丢事件风险由调用方承担
+
+**验证入口**：
+- `adb shell dumpsys input` 查看InputDispatcher状态
+- `adb shell getevent -lt` 查看触控原始事件时序
+- Perfetto `input` track 查看dispatch latency
+
+<!-- AIW-源码调研-2026-05-25 END -->

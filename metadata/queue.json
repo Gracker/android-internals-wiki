@@ -13,7 +13,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
@@ -35,7 +35,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-25T17:26:00+08:00"
+      "added_at": "2026-05-25T17:26:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T19:25:37+08:00",
+      "completion_reason": "Task 2B rework: 删除不可验证的 MQ.DispatchBatches 断言，替换为官方可核验的队列区分信号"
     },
     {
       "id": "task9-audit-20260525-1420-9.6-android17-notification-metricstyle",
@@ -16445,7 +16448,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
@@ -16470,7 +16473,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-20T11:41:31+08:00"
+      "added_at": "2026-05-20T11:41:31+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T19:25:37+08:00",
+      "completion_reason": "Task 2B rework: EGL native fence 示例拆分两场景并补 glFlush + dequeueBuffer fence 归因分层修正"
     },
     {
       "id": "task9-2026-05-20-22.10-setrendereffect-invalidate-boundary",
@@ -16710,7 +16716,7 @@
       "created_date": "2026-05-20",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
@@ -16738,7 +16744,10 @@
       "added_at": "2026-05-20T21:20:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-20T21:20:00+08:00",
-      "review_log": "logs/deep-review/2026-05-20-21-audit.md"
+      "review_log": "logs/deep-review/2026-05-20-21-audit.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T19:25:37+08:00",
+      "completion_reason": "Task 2B rework: setStreamUseCase 源码片段改为 AOSP 实际实现 + mandatory combination 表拆分 concurrent/stream-use-case"
     },
     {
       "id": "task2a-gap-21.11",
@@ -16852,7 +16861,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md"
@@ -16875,7 +16884,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T01:38:56+08:00"
+      "added_at": "2026-05-21T01:38:56+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T19:25:37+08:00",
+      "completion_reason": "Task 2B rework: cmd package art dump → pm art dump + 无 profile 基线命令按 API 34+/33- 版本拆分"
     },
     {
       "id": "task2a-gap-20260521-24.12-mediastore-mediaprovider-performance",
