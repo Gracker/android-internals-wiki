@@ -21358,26 +21358,50 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-26T05:20:00+08:00",
       "completion_reason": "Task 2A 内容加工完成，status 已更新为 ready-for-review，进入 Task 6 管线"
+    },
+    {
+      "id": "task9-20260526-0535-2.1-rendernode-version-boundary",
+      "section": "2.1",
+      "section_title": "Android 渲染架构全景",
+      "priority": 85,
+      "title": "拆分 Android 3.0 HWUI 与 Android 5.0 RenderNode/RenderThread 版本线",
+      "description": "§2.1 版本演进把 Android 3.0 硬件加速与 DisplayList/RenderNode 架构合并描述，漏掉 RenderNode / RenderThread 在 Android 5.0 形成现代分工的版本边界。",
+      "reason": "[Deep Tech Review] L622-L626 把 RenderNode 架构归入 Android 3.0；AOSP android-4.4.4_r2 libs/hwui 无 RenderNode.h / renderthread，android-5.0.0_r1 才出现 RenderNode 与 renderthread。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md L622-L626",
+          "detail": "版本演进把 Android 3.0 硬件加速与 DisplayList/RenderNode 架构合并描述。AOSP android-4.4.4_r2 的 libs/hwui 目录有 DisplayList / DisplayListRenderer，但没有 RenderNode.h 或 renderthread；RenderNode.h、RenderNode.cpp 与 renderthread 目录出现在 android-5.0.0_r1。当前写法会让 API 11-20 的 HWUI 架构被误读成已经具备 Android 5.0 之后的 RenderNode/RenderThread 分工。",
+          "suggestion": "拆开版本线：Android 3.0 写硬件加速、HWUI 与早期 DisplayList / OpenGLRenderer，强调 GPU 调用仍在主线程路径；Android 4.1 写 VSync / Choreographer / 三缓冲；Android 5.0 再写 RenderNode + RenderThread + staging display list 同步路径。正文 HWUI 概述中若暗示 RenderNode 覆盖 Android 3.0-4.4，也要加版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T05:35:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/deep-review/2026-05-26-05-audit.md"
     }
   ],
   "metadata": {
-    "total_entries": 572,
+    "total_entries": 573,
     "p0_count": 242,
-    "last_updated": "2026-05-26T05:09:00+08:00",
-    "updated_by": "openclaw-task6",
+    "last_updated": "2026-05-26T05:35:00+08:00",
+    "updated_by": "openclaw-task9",
     "pending_entries": 180,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task6",
+    "last_updated_by": "openclaw-task9",
     "pending": 180,
-    "completed_entries": 389,
+    "completed_entries": 390,
     "last_task2a_gap_mining": "22.17",
     "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T05:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-26T05:35:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "pending": 180,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
