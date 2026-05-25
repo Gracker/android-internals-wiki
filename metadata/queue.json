@@ -20388,7 +20388,9 @@
         "https://www.qualcomm.com/smartphones/products/8-series/snapdragon-8-elite-gen-5",
         "https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/images/company/news-media/media-center/press-kits/snapdragon-summit-2025-press-kit/day-2-/documents/Snapdragon8EliteGen5_ProductBrief.pdf",
         "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500",
-        "https://docs.qualcomm.com/bundle/publicresource/87-83196-1_REV_A_Snapdragon_8_Elite_Mobile_Platform_Product_Brief.pdf"
+        "https://docs.qualcomm.com/bundle/publicresource/87-83196-1_REV_A_Snapdragon_8_Elite_Mobile_Platform_Product_Brief.pdf",
+        "intake/suggestions.md（含 Task6 复审意见）",
+        "logs/review/2026-05-25-12-review.md"
       ],
       "review_issues": [
         {
@@ -20404,10 +20406,21 @@
           "location": "L278：LPDDR5X 带宽差异",
           "detail": "正文把 Snapdragon 8 Elite 写成 LPDDR5X 4800MHz、约 76.8GB/s；Qualcomm 8 Elite 与 8 Elite Gen 5 产品 brief 均列 LP-DDR5x up to 5300MHz。该段会影响后续“不同 SoC 内存带宽争用”判断。",
           "suggestion": "把 8 Gen 3、8 Elite、8 Elite Gen 5 的内存速率分开写；Dimensity 9400/9500 使用 MediaTek 官方 LPDDR5X 10667 口径；带宽换算必须同时说明总线宽度和是否为理论峰值。"
+        },
+        {
+          "type": "需整合",
+          "severity": "L3/L4",
+          "location": "常见问题与误区之后的 `<!-- 联发科调度行为要点（源码锚点，已从素材块整合） -->` 段落",
+          "detail": "Task6 复审确认尾部仍保留独立源码素材块，位置在 FAQ 收束之后，破坏发布稿结构；内容与 CPU 调度策略小节部分重复，且含待验证 vendor kernel/OPP 表述。",
+          "suggestion": "Task2B 将可保留内容并入 `CPU 核心架构差异与性能调度策略` 或 `不同 SoC 上 Perfetto 数据的差异`；无法核验的 MTK vendor kernel/频率表继续保留待验证或交 Task9。",
+          "source": "task6-review",
+          "review_log": "logs/review/2026-05-25-12-review.md"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-25T11:41:00+08:00"
+      "added_at": "2026-05-25T11:41:00+08:00",
+      "updated_by": "task6-review",
+      "updated_at": "2026-05-25T12:09:00+08:00"
     },
     {
       "id": "task9-deep-20260525-1141-7.6-hwc-plane-evidence-boundary",

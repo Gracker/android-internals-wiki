@@ -241,7 +241,9 @@
     "24.17",
     "13.1",
     "20.15",
-    "24.18"
+    "24.18",
+    "17.2",
+    "7.6"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -318,7 +320,8 @@
     "src/part2-performance/ch07-smoothness/06-case-studies.md",
     "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
     "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-    "src/part5-app/ch24-io-network/18-android17-ech-domain-encryption.md"
+    "src/part5-app/ch24-io-network/18-android17-ech-domain-encryption.md",
+    "src/part4-system/ch17-oem/02-soc-differences.md"
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
@@ -375,12 +378,12 @@
       "p2": 5,
       "p3": 2,
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 15,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-17T20:11:00+08:00",
-      "task6_log": "logs/review/2026-05-17-20-review.md",
+      "task6_reviewed_at": "2026-05-25T12:09:00+08:00",
+      "task6_log": "logs/review/2026-05-25-12-review.md",
       "task6_new_rework": true,
-      "task6_note": "复审小修通过；常见问题后的源码调研/Game Mode 素材仍是素材块，且 Task9 已标记 Dimensity/sched_ext 证据风险，已并入 queue.json priority 95。"
+      "task6_note": "复审未发现新增 L1/L2;尾部联发科调度源码素材块仍未整合,已继续并入 queue.json priority 95。Task9 2025/2026 SoC 规格 P0 pending 保留。"
     },
     "20.4": {
       "p0": 1,
@@ -505,10 +508,10 @@
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-17T16:11:00+08:00",
-      "task6_log": "logs/review/2026-05-17-16-review.md",
+      "task6_reviewed_at": "2026-05-25T12:09:00+08:00",
+      "task6_log": "logs/review/2026-05-25-12-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；未新增 L1/L2 文风问题。既有 SF/HWC Task9 P0/P1 队列仍 pending，未新增 Task6 回炉。"
+      "task6_note": "复审未发现新增 L1/L2 或 L3/L4 写作问题。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需修。"
     },
     "20.5": {
       "p0": 3,
@@ -1918,26 +1921,24 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T10:13:00+08:00",
+  "last_updated": "2026-05-25T12:09:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "date": "2026-05-25",
-    "time": "10:13",
+    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_by": "openclaw-task6",
     "sections": [
-      "20.15"
+      "17.2",
+      "7.6"
     ],
     "files": [
-      "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
-    "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-10-review.md",
-    "reviewed_at": "2026-05-25T10:13:00+08:00",
-    "mode": "first review",
-    "l1_l2_fixes": 2,
-    "risk_marks": 0,
-    "l3_l4_issues": 0,
-    "auto_promoted": [],
-    "existing_pending_queue": []
+    "log": "logs/review/2026-05-25-12-review.md",
+    "mode": "normal-review",
+    "l1_l2_fixes": 0,
+    "new_task6_rework_items": 1,
+    "auto_finalized": []
   },
   "task9_last_review": "2026-05-24",
   "ready_to_publish": 186,
@@ -2077,10 +2078,10 @@
     "17.2": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-25T09:09:00+08:00",
+      "last_task6_at": "2026-05-25T12:09:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 95,
-      "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
+      "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
       "title": "SoC 平台差异",
       "file": "src/part4-system/ch17-oem/02-soc-differences.md",
       "task6_state": "reviewed",
@@ -2188,8 +2189,10 @@
       "reviewed_date": "2026-05-25",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-25T08:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-08-review.md"
+      "last_task6_at": "2026-05-25T12:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-25"
     },
     "20.5": {
       "status": "ready-for-review",
@@ -5399,40 +5402,36 @@
   "last_task2a_at": "2026-05-25T09:21:00+08:00",
   "last_task2a_section": "20.15",
   "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-  "last_task6_review": "2026-05-25T09:09:00+08:00",
+  "last_task6_review": "2026-05-25T12:09:00+08:00",
   "last_task6_sections": [
     "17.2",
-    "14.10"
+    "7.6"
   ],
   "last_task6_reviewed_files": [
     "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
-  "last_task6_at": "2026-05-25T09:09:00+08:00",
+  "last_task6_at": "2026-05-25T12:09:00+08:00",
   "last_task6_review_detail": {
-    "date": "2026-05-25",
-    "time": "08:15",
+    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.18",
-      "7.6",
-      "13.1"
+      "17.2",
+      "7.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md",
-      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
-    "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-08-review.md",
-    "reviewed_at": "2026-05-25T08:15:00+08:00",
-    "mode": "revisiting review",
-    "l1_l2_fixes": 24,
-    "risk_marks": 0,
-    "l3_l4_issues": 0,
-    "auto_promoted": [],
-    "existing_pending_queue": [
-      "2.18",
-      "7.6"
+    "log": "logs/review/2026-05-25-12-review.md",
+    "mode": "normal-review",
+    "results": {
+      "17.2": "needs-rework",
+      "7.6": "pass-light-edit"
+    },
+    "auto_finalized": [],
+    "queue_updates": [
+      "17.2"
     ]
   },
   "last_task9_reviewed_files": [
@@ -5442,11 +5441,11 @@
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-25T09:09:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-25-09-review.md",
+  "task6_last_review_at": "2026-05-25T12:09:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-25-12-review.md",
   "task6_last_review_sections": [
     "17.2",
-    "14.10"
+    "7.6"
   ],
   "sections_status": {
     "22.11": {
@@ -6693,29 +6692,34 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-25T09:09:00+08:00",
+    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_by": "openclaw-task6",
     "sections": [
       "17.2",
-      "14.10"
+      "7.6"
     ],
     "files": [
       "src/part4-system/ch17-oem/02-soc-differences.md",
-      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
-    "mode": "首次 review / revisiting",
-    "result": "needs-rework",
-    "small_fixes": 24,
-    "rework_items": 2,
-    "log": "logs/review/2026-05-25-09-review.md",
-    "summary": "17.2 修复正文双连字符标点;17.2 与 14.10 均存在素材块/正文块未整合问题,已合并到 queue.json priority 95。"
+    "log": "logs/review/2026-05-25-12-review.md",
+    "mode": "normal-review",
+    "results": {
+      "17.2": "needs-rework",
+      "7.6": "pass-light-edit"
+    },
+    "auto_finalized": [],
+    "queue_updates": [
+      "17.2"
+    ]
   },
   "task6_last_review_files": [
     "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
   "task6_last_reviewed_files": [
     "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6999,7 +7003,7 @@
   },
   "task6_last_reviewed_sections": [
     "17.2",
-    "14.10"
+    "7.6"
   ],
   "task2b_progress": [
     {
@@ -7028,7 +7032,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
+  "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7599,7 +7603,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-25T08:15:00+08:00",
+  "last_task6_review_at": "2026-05-25T12:09:00+08:00",
   "last_task6_review_section": "17.2,14.10",
   "section_1_22": {
     "section": "1.22",
@@ -7693,7 +7697,7 @@
   },
   "last_task6_reviewed_sections": [
     "17.2",
-    "14.10"
+    "7.6"
   ],
   "last_task6_result": "needs-rework",
   "section_20_15": {
@@ -7721,5 +7725,9 @@
     "last_task6_at": "2026-05-25T10:13:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-25-10-review.md",
     "task9_state": "pending"
-  }
+  },
+  "last_task6_review_files": [
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+  ]
 }

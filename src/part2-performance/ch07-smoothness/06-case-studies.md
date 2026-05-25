@@ -7,7 +7,7 @@ section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-25"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-05-03'
 last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
@@ -54,15 +54,15 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-task6_state: "revisiting"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 last_task2b_at: "2026-05-17T15:18:41+08:00"
-last_task6_at: "2026-05-25T08:15:00+08:00"
-task6_review_notes: "2026-05-25 Task6：小修 L1/L2 18 处；清理正文破折号残留、口水过渡和填充词。未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：SurfaceView Z-order 不能写成保证使用 HWC Overlay Plane。"
-last_task6_review_log: "logs/review/2026-05-25-08-review.md"
+last_task6_at: "2026-05-25T12:09:00+08:00"
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。"
+last_task6_review_log: "logs/review/2026-05-25-12-review.md"
 task6_reviewed_date: "2026-05-25"
 status: "ready-for-review"
 pipeline_stage: "task2b_pending"
@@ -77,6 +77,7 @@ p0: 0
 p1: 1
 p2: 0
 task2b_state: "pending"
+task6_reviewed_by: "openclaw-task6"
 ---
 
 
