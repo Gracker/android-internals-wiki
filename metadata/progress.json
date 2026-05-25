@@ -1,7 +1,7 @@
 {
   "total": 387,
-  "draft": 24,
-  "ready-for-review": 172,
+  "draft": 23,
+  "ready-for-review": 173,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-24",
@@ -1919,8 +1919,8 @@
     "17.2"
   ],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T09:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-25T09:21:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "date": "2026-05-25",
     "time": "08:15",
@@ -5312,6 +5312,26 @@
       "last_task6_at": "2026-05-25T09:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
       "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。"
+    },
+    "20.15": {
+      "section": "20.15",
+      "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+      "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-25",
+      "gap_source": "官方文档/AOSP结构/每日信息",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-25",
+      "last_verified": "2026-05-25",
+      "last_verified_against": "Android Developers Android 14/17 behavior changes; Dynamic Code Loading security guidance; Android NDK JNI tips; AOSP native library namespace docs",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task2a_result": "processed-draft",
+      "last_task2a_at": "2026-05-25T09:21:00+08:00",
+      "task6_state": "pending",
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -5329,9 +5349,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "1.22",
-  "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
-  "last_task2a_processed_date": "2026-05-24",
+  "last_task2a_processed": "20.15",
+  "last_task2a_processed_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+  "last_task2a_processed_date": "2026-05-25",
   "task9_last_review_detail": {
     "date": "2026-05-24",
     "time": "17:31",
@@ -5378,9 +5398,9 @@
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
   "total_review_files": 69,
-  "last_task2a_at": "2026-05-24T21:16:00+08:00",
-  "last_task2a_section": "1.22",
-  "last_task2a_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
+  "last_task2a_at": "2026-05-25T09:21:00+08:00",
+  "last_task2a_section": "20.15",
+  "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
   "last_task6_review": "2026-05-25T09:09:00+08:00",
   "last_task6_sections": [
     "17.2",
@@ -5423,7 +5443,7 @@
   "last_task9_at": "2026-05-24T17:31:10+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
-  "last_task2a_processed_section": "1.22",
+  "last_task2a_processed_section": "20.15",
   "task6_last_review_at": "2026-05-25T09:09:00+08:00",
   "task6_last_review_log": "logs/review/2026-05-25-09-review.md",
   "task6_last_review_sections": [
@@ -6611,15 +6631,37 @@
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 1,
       "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
+    },
+    "20.15": {
+      "section": "20.15",
+      "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+      "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-05-25",
+      "gap_source": "官方文档/AOSP结构/每日信息",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-05-25",
+      "last_verified": "2026-05-25",
+      "last_verified_against": "Android Developers Android 14/17 behavior changes; Dynamic Code Loading security guidance; Android NDK JNI tips; AOSP native library namespace docs",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task2a_result": "processed-draft",
+      "last_task2a_at": "2026-05-25T09:21:00+08:00",
+      "task6_state": "pending",
+      "queue_priority": 80
     }
   },
   "task2a_last_processed": {
-    "section": "22.16",
+    "section": "20.15",
     "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
-    "file": "src/part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md",
+    "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-05-24T17:04:00+08:00"
+    "processed_at": "2026-05-24T17:04:00+08:00",
+    "status": "ready-for-review",
+    "at": "2026-05-25T09:21:00+08:00"
   },
   "task2a_last_gap_mining": {
     "date": "2026-05-19",
@@ -7649,5 +7691,25 @@
     "17.2",
     "14.10"
   ],
-  "last_task6_result": "needs-rework"
+  "last_task6_result": "needs-rework",
+  "section_20_15": {
+    "section": "20.15",
+    "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
+    "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-05-25",
+    "gap_source": "官方文档/AOSP结构/每日信息",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-05-25",
+    "last_verified": "2026-05-25",
+    "last_verified_against": "Android Developers Android 14/17 behavior changes; Dynamic Code Loading security guidance; Android NDK JNI tips; AOSP native library namespace docs",
+    "confidence": "medium",
+    "task2a_state": "processed",
+    "task2a_result": "processed-draft",
+    "last_task2a_at": "2026-05-25T09:21:00+08:00",
+    "task6_state": "pending",
+    "queue_priority": 80
+  }
 }
