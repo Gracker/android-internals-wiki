@@ -13,7 +13,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch11-power/04-case-studies.md"
@@ -42,7 +42,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-26T02:20:00+08:00"
+      "added_at": "2026-05-26T02:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-26T03:19:12+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260525-2228-11.1-energyconsumer-type-symbol",
@@ -20160,7 +20163,7 @@
       "created_date": "2026-05-24",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
@@ -20208,7 +20211,10 @@
       "added_at": "2026-05-24T20:34:56+08:00",
       "review_log": "logs/deep-review/2026-05-24-20-deep-review.md",
       "task6_last_merged_at": "2026-05-24T21:11:52+08:00",
-      "task6_last_review_log": "logs/review/2026-05-24-21-review.md"
+      "task6_last_review_log": "logs/review/2026-05-24-21-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-26T03:19:12+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260524-2220-12.1-play-feature-delivery-version-boundary",
@@ -20422,7 +20428,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md"
@@ -20444,7 +20450,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T03:26:43+08:00",
-      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-26T03:19:12+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task9-deep-20260525-0326-18.17-ndk-surfacecontrol-signature-still-wrong",
@@ -20459,7 +20468,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
@@ -20479,7 +20488,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-25T03:26:43+08:00",
-      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md"
+      "review_log": "logs/deep-review/2026-05-25-03-deep-review.md",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-26T03:19:12+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task2a-gap-20260525-25.19-android-vitals-wakelock-governance",
@@ -21099,7 +21111,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/07-art-compilation.md"
@@ -21130,7 +21142,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-26T00:20:00+08:00"
+      "added_at": "2026-05-26T00:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-26T03:19:12+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task2a-gap-20260526-0104-26.19-client-log-diagnostic-command-channel",

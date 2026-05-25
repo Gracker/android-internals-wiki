@@ -37,6 +37,8 @@ task9_reviewed_date: 2026-05-13
 last_task9_at: 2026-05-13T07:38:00+08:00
 task9_review_notes: "2026-05-13 Task9 复审：无 P0/P1，前次 exact alarm P0 已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task9_review_log: logs/deep-review/2026-05-13-07-deep-review.md
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
 ---
 
 
@@ -50,7 +52,7 @@ last_task9_review_log: logs/deep-review/2026-05-13-07-deep-review.md
 - 🔹 [定位] 说明电量与发热是影响用户卸载 App 的重要隐性因素，解析线上 APM 如何突破系统限制进行归因监控。
 - 🔹 [Wakelock 泄漏监控] 解释 `PowerManager.WakeLock` 的申请与释放原理，介绍如何通过 ASM 字节码插桩或受控的服务代理/反射 Hook，找出忘记释放唤醒锁的代码堆栈。
 - 🔹 [Alarm 唤醒风暴] 说明后台频繁 Alarm 唤醒对系统 Doze 模式的破坏，以及如何在端侧记录异常的高频定时任务。
-- 🔹 [硬件资源耗电归因] 拆解网络模块（基带唤醒）、GPS 定位、蓝牙扫描以及后台异常高 CPU 占用在端侧的统计方法。
+- 🔹 [硬件资源耗电归因] 说明网络模块（基带唤醒）、GPS 定位、蓝牙扫描以及后台异常高 CPU 占用在端侧的统计方法。
 - 🔹 [Thermal API 应用] 重点介绍 Android 10+ 引入的 `PowerManager.OnThermalStatusChangedListener`，如何感知设备的过热状态（如 `THERMAL_STATUS_SEVERE`）。
 - 🔹 [端侧降级策略] 结合发热状态感知，给出 App 主动自保的降级策略：降低动画帧率、关闭后台预加载、停止大文件下载、降低视频分辨率。
 - 🔹 [系统级耗电账单] 分析 Android Vitals 提供的“后台耗电”及“卡死导致的耗电”大盘数据与端侧监控的互补关系。
@@ -145,16 +147,16 @@ Alarm 对耗电的影响来自“把设备叫醒”。在 Doze 模式下，系�
 
 ### Android 12+ 精确闹钟权限对 APM 归因的影响
 
-Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧精确闹钟的行为。APM 记录 Alarm 样本时，要同时记录目标进程是否持有该权限、`canScheduleExactAlarms()` 的返回值、alarm type 和 `allowWhileIdle` 标记。这样在归因时才能区分"业务设置了精确闹钟但系统拒绝了"和"业务确实只用了 inexact alarm"。
+Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧精确闹钟的行为。APM 记录 Alarm 样本时，要同时记录目标进程是否持有该权限、`canScheduleExactAlarms()` 的返回值、alarm type 和 `allowWhileIdle` 标记。这样在归因时才能区分"业务设置了精确闹钟但系统拒绝了"和"业务确实只用了非精确闹钟"。
 
 | Android 版本 | 精确闹钟行为 | APM 样本应记录的字段 |
 | --- | --- | --- |
 | Android 11 及以下 | 无权限限制，`setExact()` / `setExactAndAllowWhileIdle()` 正常工作 | alarm type、triggerAt、interval |
 | Android 12 | 新增 `SCHEDULE_EXACT_ALARM` 权限，新安装应用默认授予，预装应用视厂商策略 | 增加 permission 状态、`canScheduleExactAlarms()` 返回值 |
 | Android 13 | 权限默认不授予（除非闹钟/日历类应用），用户需在设置中手动授权；新增 `USE_EXACT_ALARM` 供特定类别申请 | 增加 app-op 状态、是否命中 `USE_EXACT_ALARM` 豁免 |
-| Android 14+ | 新安装且 target 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会抛 `SecurityException`，不会静默降级。需改用 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等 inexact API，或引导用户授权 | 调用 exact API 前必须检查 `canScheduleExactAlarms()`；未授权时记录 fallback 路径（inexact API 或权限请求），并在样本中区分"请求精确"与"实际精确" |
+| Android 14+ | 新安装且 target 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会抛 `SecurityException`，不会静默降级。需改用 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等非精确闹钟 API，或引导用户授权 | 调用精确闹钟 API 前必须检查 `canScheduleExactAlarms()`；未授权时记录回退路径（非精确闹钟 API 或权限请求），并在样本中区分"请求精确"与"实际精确" |
 
-Android 14 起精确闹钟策略收紧：未持有 `SCHEDULE_EXACT_ALARM` 权限时，调用 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()` 会直接抛出 `SecurityException`，而非静默降级。APM 归因时需要区分两种场景：一是业务确实只用了 inexact API，触发时间本身就有偏移窗口；二是业务请求了 exact API 但因权限缺失导致崩溃或被迫回退。端侧应在调用前检查 `canScheduleExactAlarms()` 返回值，并在 APM 样本中分别记录"请求精确"与"实际精确"两种口径。
+Android 14 起精确闹钟策略收紧：未持有 `SCHEDULE_EXACT_ALARM` 权限时，调用 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()` 会直接抛出 `SecurityException`，而非静默降级。APM 归因时需要区分两种场景：一是业务确实只用了非精确闹钟 API，触发时间本身就有偏移窗口；二是业务请求了精确闹钟 API 但因权限缺失导致崩溃或被迫回退。端侧应在调用前检查 `canScheduleExactAlarms()` 返回值，并在 APM 样本中分别记录"请求精确"与"实际精确"两种口径。
 
 ## 4. 硬件资源耗电归因：按占用窗口统计
 

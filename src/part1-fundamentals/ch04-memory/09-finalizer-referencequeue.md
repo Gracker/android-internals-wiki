@@ -27,16 +27,16 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task2b_pending"
-task2b_result: "pending"
-task2b_state: "pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
+task6_state: "revisiting"
 last_task6_review_log: "logs/review/2026-05-25-05-review.md"
 last_task6_at: "2026-05-25T05:08:00+08:00"
 reviewed_date: "2026-05-25"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T03:26:43+08:00"
@@ -362,7 +362,7 @@ CI 里可以把资源泄漏测试写成固定复现脚本：执行 N 轮打开/�
 
 ## Cleaner / CloseGuard 的版本对照表与源码路径
 
-三个机制在不同 API level 的可用性有明确边界，源码路径也不同。`dalvik.system.CloseGuard`（非公开）和 `android.util.CloseGuard`（API 30 公开）是两套独立的 CloseGuard 实现，分别服务于虚拟机层和应用层；`sun.misc.Cleaner`（API 26+）和 `java.lang.ref.Cleaner`（API 33 公开）是两条 Cleaner 路径，前者由 `CleanerDaemon` 独立执行，后者通过 `FinalizerReference.doClean()` 触发。
+三个机制在不同 API level 的可用性有明确边界，源码路径也不同。`dalvik.system.CloseGuard`（非公开）和 `android.util.CloseGuard`（API 30 公开）是两套独立的 CloseGuard 实现，分别服务于虚拟机层和应用层；`sun.misc.Cleaner`（API 26+）和 `java.lang.ref.Cleaner`（API 33 公开）是两条 Cleaner 路径：前者在 `ReferenceQueueDaemon.enqueuePending()` 中直接执行清理，后者由 `CleanerImpl` 创建的独立 daemon 线程处理。Android system cleaner 复用 `FinalizerReference.queue`，由 `FinalizerDaemon#doClean()` 触发。
 
 **版本对照表**:
 

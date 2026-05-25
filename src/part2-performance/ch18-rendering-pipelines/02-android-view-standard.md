@@ -2,7 +2,7 @@
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-05-05'
 last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
@@ -36,12 +36,12 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: 2026-05-24T19:29:26+08:00
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-26T03:19:12+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-24"
 task6_result: needs-rework
@@ -236,13 +236,13 @@ sequenceDiagram
 
 在 Perfetto 中分析标准管线时，以下 Slice 和信号是关键锚点。注意：具体名称可能因 Android 版本和 OEM 而异，但功能语义是稳定的。
 
-[需确认: Task9 2026-05-24 已指出本表固定 `<8ms` / `>16ms` 帧预算口径不适配高刷、可变刷新率和 Android 12+ FrameTimeline deadline，需按刷新率与 Expected Present deadline 回炉修正。]
+[已修正: Task9 2026-05-24 指出固定 16ms/8ms 阈值不适配高刷，表中正常耗时改为相对参考值。判断掉帧应基于当前 display frame interval 和 FrameTimeline expected present deadline，而非固定 16ms。]
 
 ### UI Thread 关键 Slice
 
 | Slice | 含义 | 正常耗时 | 异常信号 |
 |:---|:---|:---|:---|
-| `Choreographer#doFrame` | 一帧的完整 UI 处理 | < 8ms | 超过 16ms → 必定掉帧 |
+| `Choreographer#doFrame` | 一帧的完整 UI 处理 | < frame_interval / 2（60Hz 约 8ms） | 超过当前 display frame interval → 必定掉帧 |
 | `measure` / `layout` | 视图树的测量和布局 | < 2ms | 递归层级过深或布局复杂 |
 | `draw` | DisplayList 记录 | < 4ms | onDraw 中有耗时操作 |
 | `syncAndDrawFrame` / `DrawFrame` | 把任务投递给 RenderThread 后进入等待 | < 2ms | 这里变长时，继续看 RenderThread 的 `syncFrameState`、`dequeueBuffer` 和 GPU 提交 |
@@ -251,7 +251,7 @@ sequenceDiagram
 
 | Slice | 含义 | 正常耗时 | 异常信号 |
 |:---|:---|:---|:---|
-| `DrawFrame` | 一帧渲染任务的入口 | < 8ms | 内部若出现长 `syncFrameState` 或长 `dequeueBuffer`，说明瓶颈在状态同步或 Buffer 供给 |
+| `DrawFrame` | 一帧渲染任务的入口 | < frame_interval / 2（60Hz 约 8ms） | 内部若出现长 `syncFrameState` 或长 `dequeueBuffer`，说明瓶颈在状态同步或 Buffer 供给 |
 | `syncFrameState` | 同步 RenderNode、Bitmap、Layer 状态 | < 2ms | Bitmap 过大、Layer 更新突增、脏区域扩大 |
 | `dequeueBuffer` | 申请空闲 Buffer | < 1ms | 长等待 → Buffer 释放链或 SF 节奏跟不上 |
 | `queueBuffer` | 提交画好的 Buffer | < 1ms | 异常少见 |
@@ -371,9 +371,9 @@ Compose 与 View 系统可以互相嵌入：
 
 ### MessageQueue.DeliQueue 源码验证
 
-**文件**：`frameworks/base/core/java/android/os/MessageQueue.java`（AOSP master）
+**文件**：`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`（AOSP main，targetSdk >= 37 默认实现）
 
-[需确认: Task9 2026-05-24 已指出 Android 17 DeliQueue 源码锚点仍指向旧 `MessageQueue.java` 路径，应按 `core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 与 Android 17 behavior change 文档回炉核对。]
+[已修正: Task9 2026-05-24 指出 DeliQueue 源码锚点应指向 `ConcurrentMessageQueue/MessageQueue.java`，已修正。]
 
 DeliQueue（Treiber Stack 实现）是 Android 17 (API 37) 为 targetSdk >= 37 应用引入的 MessageQueue 优化：
 
@@ -526,9 +526,9 @@ if (last_gc_ < tried_type) {
 - 同步 GC 导致分配线程 stop-the-world，如果发生在 VSYNC 窗口则造成掉帧
 
 **Android 13+ 改进**：
-[需确认: Task9 2026-05-24 已指出 `ConcurrentCopying（CMS）` 属于 GC 术语混写，需回炉修正为 CC / CMS 的准确边界。]
+[已修正: Task9 2026-05-24 指出 CC 与 CMS 不可混写，已修正。Android 8+ 默认 GC 为 Concurrent Copying（CC），Concurrent Mark Sweep（CMS）是另一个 GC plan。]
 
-- 默认使用 ConcurrentCopying（CMS）大幅减少 stop-the-world pause
+- 默认使用 Concurrent Copying（CC）大幅减少 stop-the-world pause
 - `ChangeCollector()` 支持 young→old GC 类型切换
 - `use_generational_gc_` 参数启用分代 GC 优化
 
