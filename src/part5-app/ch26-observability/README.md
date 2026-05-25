@@ -23,6 +23,8 @@
 - 26.15 Android Vitals 与 Play Console 质量指标归因
 - 26.16 线上存储、I/O 与 SQLite 可观测性
 - 26.17 线上网络质量监控与接入层协同
+- 26.18 App Performance Score 与性能质量评分归因
+- 26.19 端侧高可用日志与诊断命令通道
 
 ## 阅读建议
 
