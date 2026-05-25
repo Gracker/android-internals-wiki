@@ -13,7 +13,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch11-power/01-power-model.md"
@@ -33,7 +33,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-25T22:28:00+08:00"
+      "added_at": "2026-05-25T22:28:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: EnergyConsumerType.CPU_CLUSTER 从 EnergyConsumer.TYPE_CPU_CLUSTER 修正为 EnergyConsumerType 枚举"
     },
     {
       "id": "task9-audit-20260525-2120-16.4-android17-gki-6.18-boundary",
@@ -48,7 +51,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 1.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md"
@@ -72,7 +75,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-25T21:20:00+08:00"
+      "added_at": "2026-05-25T21:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: 补齐 android17-6.18 GKI 分支、sched_ext dsq_insert API 重命名、AutoFDO preliminary benchmark 数据"
     },
     {
       "id": "task9-deep-20260525-19-1.5-binder-epoll-hwa-version",
@@ -87,7 +93,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
@@ -115,7 +121,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-25T19:34:07+08:00"
+      "added_at": "2026-05-25T19:34:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T23:22:00+08:00",
+      "completion_reason": "Task 2B rework: Binder 线程池从独立 epoll 循环修正为 BINDER_WRITE_READ ioctl；硬件加速版本边界从 4.4 拆为 3.0(GPU管线)+5.0(RenderThread)"
     },
     {
       "id": "task9-audit-20260525-1726-1.5-messagequeue-dispatchbatches-counter",

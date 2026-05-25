@@ -3,8 +3,8 @@ title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
@@ -25,8 +25,8 @@ last_task9_audit_at: "2026-05-25T17:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-17-audit.md"
 last_task9_audit_result: "p1-source-accuracy"
 task9_audit_notes: "2026-05-25 Task9 idle audit: fixed。P1 1：已删除不可验证的 MQ.DispatchBatches 断言，替换为官方可核验的队列区分信号。"
-task2b_state: pending
-task2b_result: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
@@ -211,7 +211,7 @@ public static void loop() {
 2. 有 Native 层的定时消息到期
 3. 有 native 层通过 `Looper.addFd()` 注册的 fd 变为可读状态（Input 事件 socket fd、VSync 信号 fd 等在 JNI/native 层通过 `messageQueue->getLooper()->addFd(...)` 注册到同一个 epoll 实例）；App 自定义 fd 可通过 `MessageQueue.addOnFileDescriptorEventListener()` 接入
 
-这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池有自己独立的 epoll 循环处理跨进程调用。
+这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
 
 [已验证: 官方文档, developer.android.com/reference/android/os/MessageQueue]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
@@ -294,7 +294,7 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 
 如果在 AndroidManifest 中设置了 `android:hardwareAccelerated="false"`，系统就不会创建 RenderThread。所有的绘制工作都在主线程上通过 CPU 调用 libSkia 完成。
 
-在 Perfetto 中，这种模式的特征是：主线程的 `draw` 阶段会显著拉长，帧与帧之间的空闲间隔变短，其他 Message 的执行时间被压缩。这也是为什么 Android 从 4.4 之后默认开启硬件加速——把渲染工作交给 GPU 和独立线程，主线程才能保持响应。
+在 Perfetto 中，这种模式的特征是：主线程的 `draw` 阶段会显著拉长，帧与帧之间的空闲间隔变短，其他 Message 的执行时间被压缩。这里涉及两个版本节点：Android 3.0（Honeycomb）引入了 GPU 加速的 2D 渲染管线，`targetSdk >= 14` 时默认启用硬件加速；Android 5.0（Lollipop）引入 RenderThread / ThreadedRenderer，把 GPU 命令提交等后半段从主线程拆到独立线程。如果看到软件绘制路径，原因要么是 App 显式关闭了硬件加速，要么是设备不支持 GPU 渲染。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md]
 

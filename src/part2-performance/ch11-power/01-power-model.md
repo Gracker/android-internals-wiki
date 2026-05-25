@@ -2,7 +2,7 @@
 title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
-status: finalized
+status: "ready-for-review"
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -39,11 +39,11 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_result: "fixed"
+task2b_state: "fixed"
+task6_state: "revisiting"
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-05-07T07:47:17+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
@@ -175,7 +175,7 @@ CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经�
 
 如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。设置页里的 CPU 百分比也是沿着这套归属流程产出的，不能一概当成 `power_profile.xml` 查表结果。
 
-在 CPU cluster 能量可用的设备上，`EnergyConsumer.TYPE_CPU_CLUSTER` 提供的是硬件测得的能量总量，Framework 再结合 UID 的 CPU time、policy running time 和 freq step 统计做归属。这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
+在 CPU cluster 能量可用的设备上，当 HAL 上报 `EnergyConsumerType.CPU_CLUSTER` 类型的 `EnergyConsumer` 时，Framework 可消费其硬件能量读数，再结合 UID 的 CPU time、policy running time 和 freq step 统计做归属。`EnergyConsumer` 是包含 `type` 字段的 parcelable，类型枚举定义在 `EnergyConsumerType.aidl`（如 `CPU_CLUSTER`、`DISPLAY`、`WIFI` 等），不是 `EnergyConsumer` 自身持有的 TYPE 常量。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl]这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
 
 组件是否走 measured energy path，取决于 HAL 和统计能力。CPU、Screen 这类组件在支持的设备上更容易拿到 hardware energy data；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先消费硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
 
