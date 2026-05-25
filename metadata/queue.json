@@ -20274,12 +20274,49 @@
       "status": "pending",
       "updated_at": "2026-05-25T09:09:00+08:00",
       "updated_by": "openclaw-task6"
+    },
+    {
+      "id": "task9-audit-8.7-startup-profile-build-time-boundary",
+      "section": "8.7",
+      "section_title": "Baseline Profiles 与编译优化实践",
+      "priority": 85,
+      "title": "Startup Profile 应区分构建期 DEX layout 与 ART/dex2oat 编译路径",
+      "description": "§8.7 把 Startup Profile 写成同时告诉 dex2oat 优先编译并改变 DEX layout，和当前官方文档对 Baseline/Profile Startup Profile 消费路径的区分不一致。",
+      "reason": "[Deep Tech Audit] §8.7 L245、L249、L271 未写出 startup-prof.txt / baseline-prof.txt 两个产物和消费路径差异；当前官方文档明确 Baseline Profile 打成 baseline.prof 供 ART on-device compilation，Startup Profile 规则在构建期由 R8/D8 用于 DEX layout，APK/AAB 不存在单独 startup.prof。",
+      "issue_type": "source-accuracy-version-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.75,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-09-audit.md",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性/版本差异/Startup Profile 消费路径",
+          "location": "L245、L249、L271：baseline-prof.txt、Startup Profile 与 dex2oat/DEX layout 的关系",
+          "detail": "当前 Android Developers 文档（2026-05-19 更新）明确区分 Baseline Profile 与 Startup Profile：AGP 会生成 baseline-prof.txt 与 startup-prof.txt；Baseline Profile 编译成 baseline.prof 后由 ART 做 on-device compilation；Startup Profile 规则在构建期由 R8/D8 用于 DEX layout，APK/AAB 中没有单独 startup.prof。正文把 Startup Profile 写成“告诉 dex2oat 优先编译哪些方法，还通过 DEX layout 优化...”，容易把安装端 ART 编译和构建期 DEX layout 两条路径混成一条。",
+          "suggestion": "把该段改成两层：Baseline Profile 规则进入 baseline.prof，交给 ART/dex2oat 做 speed-profile 编译；includeInStartupProfile=true 额外生成 startup-prof.txt，AGP/R8/D8 在构建期用它把启动关键代码放入 primary dex / 优化 DEX layout。补充 AGP 8.8+ 可通过 AAB 中 r8.json 的 dexFiles[].startup=true 验证 Startup Profile 是否生效；旧版本用 APK/AAB 的 DEX 排列检查。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T09:28:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 545,
+    "total_entries": 546,
     "p0_count": 232,
-    "last_updated": "2026-05-25T08:32:00+08:00",
+    "last_updated": "2026-05-25T09:28:00+08:00",
     "updated_by": "openclaw-task9",
     "pending_entries": 179,
     "updated_date": "2026-05-25",
@@ -20292,8 +20329,8 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T09:09:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-25T09:28:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "pending": 179,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
