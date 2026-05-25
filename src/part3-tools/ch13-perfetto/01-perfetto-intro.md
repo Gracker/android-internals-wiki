@@ -39,30 +39,35 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T07:27:11+08:00"
-task9_reviewed_date: '2026-05-25'
-task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: "2026-05-25"
+task9_reviewed_by: "openclaw-task9"
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。
   评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2
   小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。；2026-05-06 04 task6 re-review:
   pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review:
   pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
-last_task9_at: '2026-05-25T05:20:00+08:00'
-task9_review_notes: '2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-25 Task9 闲时抽检: needs-rework。P0 1 / P1 1 / P2 0 / P3 1；LMKD Perfetto event/data source 名称不可核，且 normal mode config 文件路径缺 Android 10/11 stdin 边界。'
+last_task9_at: "2026-05-25T08:32:00+08:00"
+task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Trace Processor metric 示例包含不可用的 android_jank；logcat in trace 的 userdebug 边界缺失。"
 last_task6_at: "2026-05-25T08:15:00+08:00"
 last_task6_audit: '2026-05-24'
 task6_reviewed_date: "2026-05-25"
-last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-05-25-08-deep-review.md"
 last_task9_audit: '2026-05-25'
 last_task9_audit_log: 'logs/deep-review/2026-05-25-05-audit.md'
 last_task6_review_log: "logs/review/2026-05-25-08-review.md"
 task6_review_notes: "2026-05-25 Task6：小修 L1/L2 5 处；清理提示性过渡、填充词和“需要注意”句式。未新增 Task6 L3/L4 回炉；等待 Task9 复审。"
+p0: 1
+p1: 1
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-05-25"
 ---
 
 # Perfetto 简介与演进

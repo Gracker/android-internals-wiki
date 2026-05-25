@@ -3559,3 +3559,9 @@
 - **问题**：章节给出 Adreno/Mali/Xclipse 在 Perfetto `gpu_render_stages`、内存带宽争用上的差异判断，但缺少同设备/同场景 trace 截图、counter 配置和 SQL/指标口径；读者只能得到方向，无法复现判断。
 - **建议**：至少补一组 Adreno + Mali/Immortalis 的同类场景 Perfetto 截图或查询口径，列出 `gpu_render_stages`、CPU freq、PMU/cache miss、memmgr/thermal counter 的采集配置；Xclipse 若缺公开样本，应明确标为待实机验证。
 
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-05-25
+- **类型**：源码准确性/知识盲区
+- **位置**：UprobeStats：预置的 BPF 程序
+- **问题**：正文写“预置了三类 BPF 程序模板”，只列 GenericInstrumentation、BitmapAllocation、ProcessManagement；但 android-16.0.0_r1 的 `src/bpf_progs/` 还包含 `MalwareSignal.c`，`UprobeStats.cpp` 中也有 `MalwareSignal_output_buf` 读取路径。
+- **建议**：把列表更新为四个源码文件，或说明 MalwareSignal 是否属于本章不展开的安全/异常信号监控模板，避免与前文源码路径表不一致。
+
