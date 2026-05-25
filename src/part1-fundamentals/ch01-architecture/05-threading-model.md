@@ -3,18 +3,18 @@ title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-12'
-reviewed_at: '2026-05-12T20:10:00+08:00'
-last_task6_at: '2026-05-12T20:10:00+08:00'
+reviewed_date: "2026-05-26"
+reviewed_at: "2026-05-26T01:12:00+08:00"
+last_task6_at: "2026-05-26T01:12:00+08:00"
 last_task6_audit: '2026-05-21'
-task6_reviewed_date: '2026-05-12'
-review_round: 9
-task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
-task9_state: reviewed
+task6_reviewed_date: "2026-05-26"
+review_round: 10
+task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（元叙述、禁用/高频词、直接提示语、Perfetto 观察句）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
@@ -28,7 +28,7 @@ task9_audit_notes: "2026-05-25 Task9 idle audit: fixed。P1 1：已删除不可�
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
-applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: AOSP android-16.0.0_r1, Android SDK android-Baklava stubs
 confidence: high
@@ -89,6 +89,7 @@ polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 last_task9_review_log: "logs/deep-review/2026-05-25-19-deep-review.md"
+last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 ---
 
 # 线程模型
@@ -159,17 +160,17 @@ public static void main(String[] args) {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
 
-注意最后一行 `throw new RuntimeException`，这行代码直接表明了一个事实：`Looper.loop()` 正常情况下永远不会返回。主线程进入消息循环之后，就一直在循环中取消息、处理消息，直到进程被杀掉。
+看 `throw new RuntimeException` 这一行，代码直接表明了一个事实：`Looper.loop()` 正常情况下永远不会返回。主线程进入消息循环之后，就一直在循环中取消息、处理消息，直到进程被杀掉。
 
-高爷在他的 Perfetto 系列文章中指出，ActivityThread 这个名字很容易引起误解。它表示的是运行在主线程上的一组调度逻辑，不是一个独立的 Thread 对象。真正的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
+高爷在他的 Perfetto 系列文章中指出，ActivityThread 这个名字很容易引起误解。它表示的是运行在主线程上的一组调度逻辑，不是一个独立的 Thread 对象。运行 App 代码的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### Looper → MessageQueue → Handler：消息驱动模型
 
-Android 主线程的运行模型可以用一句话概括：**一个线程，一个 Looper，一个 MessageQueue，无数个 Handler**。
+Android 主线程的运行模型可以压缩成一个模型：**一个线程，一个 Looper，一个 MessageQueue，无数个 Handler**。
 
-**Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（后面我们会展开讲 ThreadLocal 的妙用）。
+**Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（ThreadLocal 的作用在后文单独说明）。
 
 **MessageQueue** 对外暴露的语义一直没变，仍然是“按到期时间取下一条消息，再交给对应 Handler 处理”。如果只看经典实现，它可以理解成一个按 `when` 排序的链式队列，很多 Handler / Looper 教程也是按这个模型展开的。这里要补一个版本边界：章节适用范围已经覆盖到 Android 16，而 android-16 源树里已经并存 `LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三套实现。经典链表这套理解方式仍然有用，但它只准确描述 legacy 路径；android-16 的队列实现演进和锁策略变化放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。
 
@@ -270,7 +271,7 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
 
 ### 主线程与 RenderThread 的同步点：syncAndDrawFrame
 
-主线程和 RenderThread 之间的核心交互点是 `syncAndDrawFrame()`。这个调用发生在主线程的 `Choreographer.doFrame()` 流程的最后阶段——Traversal（measure/layout/draw）完成之后。
+主线程和 RenderThread 之间的核心交互点是 `syncAndDrawFrame()`。这个调用发生在主线程的 `Choreographer.doFrame()` 流程中，位于 Traversal（measure/layout/draw）阶段完成之后。
 
 ```java
 // frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
@@ -278,7 +279,7 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
 int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 ```
 
-`syncAndDrawFrame()` 不是简单的 fire-and-forget。主线程调用它之后，会先把本帧的 `RenderNode` 树和 `FrameInfo` 同步给 RenderThread，并在 `DrawFrameTask::postAndWait()` 这一段同步等待 RenderThread 接管本帧。RenderThread 完成 `syncFrameState`、判断本帧是否需要真正绘制之后，会通过 `unblockUiThread()` 让主线程继续往前跑。
+`syncAndDrawFrame()` 不是简单的 fire-and-forget。主线程调用它之后，会先把本帧的 `RenderNode` 树和 `FrameInfo` 同步给 RenderThread，并在 `DrawFrameTask::postAndWait()` 这一段同步等待 RenderThread 接管本帧。RenderThread 完成 `syncFrameState`、判断本帧是否需要执行绘制之后，会通过 `unblockUiThread()` 让主线程继续往前跑。
 
 因此，主线程和 RenderThread 的配合要拆成两个阶段看：
 
@@ -318,7 +319,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 [已验证: 官方文档, developer.android.com/reference/android/os/Process#setThreadPriority(int,int)]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Process.java]
 
-注意 `Process.setThreadPriority()` 和 `Thread.setPriority()` 是两套不同的机制。前者直接操作 Linux 的 nice 值，是 Android 推荐的方式；后者操作的是 Java 虚拟机的线程优先级（1-10），最终也会映射到 nice 值，但映射关系不够直观。在做性能优化时，始终使用 `Process.setThreadPriority()`。
+`Process.setThreadPriority()` 和 `Thread.setPriority()` 是两套不同的机制。前者直接操作 Linux 的 nice 值，是 Android 推荐的方式；后者操作的是 Java 虚拟机的线程优先级（1-10），最终也会映射到 nice 值，但映射关系不够直观。在做性能优化时，始终使用 `Process.setThreadPriority()`。
 
 ### cgroup：前台组 vs 后台组
 
@@ -326,7 +327,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 这里没有一个跨版本都成立的固定比例。不同设备会再叠加 `cpu.shares`、cpuset、uclamp 甚至 cgroup v2 的控制参数，所以不要把它理解成通用的 95:5。分析实机时，直接查看设备上的 `/dev/cpuctl/`、`/dev/stune/` 或 cgroup v2 对应目录参数，更可靠。这样解读 Perfetto 也更稳妥：后台线程的 CPU slice 往往更短、更稀疏，但具体压缩到什么程度，取决于设备配置。
 
-在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，先检查的是它的优先级设置是否正确。
+Perfetto 的 CPU 视图会呈现这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，先检查的是它的优先级设置是否正确。
 
 ### SCHED_OTHER vs SCHED_FIFO
 
@@ -398,7 +399,7 @@ Android 16 的 SDK stubs 已经带上 `Thread.isVirtual()`，但 `java/lang/Thre
 
 ## HandlerThread、IntentService 与 WorkManager
 
-上一节梳理了从 AsyncTask 到 Coroutine 的演进——这些方案解决的是「在哪个线程上执行异步任务」的问题。但 Android 还提供了一些专门的后台执行机制，定位更偏「任务调度」而非「线程切换」。这一节我们快速过一遍它们的适用场景。
+上一节梳理了从 AsyncTask 到 Coroutine 的演进——这些方案解决的是「在哪个线程上执行异步任务」的问题。但 Android 还提供了一些专门的后台执行机制，定位更偏「任务调度」而非「线程切换」。这里按适用场景区分它们的边界。
 
 ### HandlerThread：带 Looper 的后台线程
 
@@ -439,7 +440,7 @@ WorkManager 底层根据 Android 版本选择不同的执行引擎：API 23+ 使
 
 ## ThreadLocal 在 Looper 和 Choreographer 中的应用
 
-在前面分析 Looper 的「一个线程一个 Looper」设计时，我们回避了一个底层问题：Looper 是怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal。它是 Java 中实现线程本地存储的机制——每个线程都有自己独立的变量副本，互不干扰。Android Framework 中，ThreadLocal 的两个最关键用途就是 Looper 和 Choreographer。
+前面对 Looper 的「一个线程一个 Looper」设计，还留下一个底层问题：Looper 是怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal。它是 Java 中实现线程本地存储的机制——每个线程都有自己独立的变量副本，互不干扰。Android Framework 中，ThreadLocal 的两个最关键用途就是 Looper 和 Choreographer。
 
 ### Looper 中的 ThreadLocal
 
@@ -470,7 +471,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 ## 在 Perfetto 中的表现
 
-理解了线程模型之后，我们在 Perfetto 中就可以有目的地观察线程行为：
+理解线程模型之后，Perfetto 中的线程行为可以按目标观察：
 
 ### 识别关键线程
 
@@ -521,7 +522,7 @@ Android Framework 对线程数量的控制体现在多个层面。Binder 这里�
 
 ### 误区 1：主线程不能做任何耗时操作
 
-准确的说法是：主线程不能做会阻塞消息循环的耗时操作。如果一个操作耗时 5ms，但它不影响 doFrame 的按时完成（即不会导致掉帧），那它就是可接受的。关键不是操作的绝对耗时，而是它是否影响帧渲染的时序。当然，从工程实践出发，应该尽量把所有超过 1ms 的操作都放到后台线程，为消息循环留足余量。
+主线程不能做会阻塞消息循环的耗时操作。如果一个操作耗时 5ms，但它不影响 doFrame 的按时完成（即不会导致掉帧），那它就是可接受的。关键不是操作的绝对耗时，而是它是否影响帧渲染的时序。当然，从工程实践出发，应该尽量把所有超过 1ms 的操作都放到后台线程，为消息循环留足余量。
 
 ### 误区 2：Thread.sleep() 在主线程上一定会导致卡顿
 

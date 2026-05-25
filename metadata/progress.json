@@ -340,17 +340,21 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-25T20:12:00+08:00",
+    "last_review_at": "2026-05-26T01:12:00+08:00",
     "sections": [
-      "18.8"
+      "16.4",
+      "1.5",
+      "11.1"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "src/part2-performance/ch11-power/01-power-model.md"
     ],
-    "result": "pass-light-edit",
-    "small_fixes": 10,
-    "rework_items": 0,
-    "log": "logs/review/2026-05-25-20-review.md"
+    "result": "needs-rework",
+    "small_fixes": 33,
+    "rework_items": 1,
+    "log": "logs/review/2026-05-26-01-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1966,21 +1970,33 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-26T01:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-26T01:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-25T20:12:00+08:00",
+    "reviewed_at": "2026-05-26T01:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "18.8"
+      "16.4",
+      "1.5",
+      "11.1"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "src/part2-performance/ch11-power/01-power-model.md"
     ],
-    "log": "logs/review/2026-05-25-20-review.md",
+    "log": "logs/review/2026-05-26-01-review.md",
     "mode": "normal-review",
-    "l1_l2_fixes": 10,
-    "new_task6_rework_items": 0,
+    "results": {
+      "16.4": "pass-light-edit",
+      "1.5": "pass-light-edit",
+      "11.1": "needs-rework"
+    },
+    "l1_l2_fixes": 33,
+    "new_task6_rework_items": 1,
+    "queue_updates": [
+      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
+    ],
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-24",
@@ -2327,12 +2343,20 @@
       "task2b_state": "pending"
     },
     "1.5": {
+      "section": "1.5",
+      "title": "线程模型",
+      "file": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-12T20:10:00+08:00",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
       "task9_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-12-20-review.md"
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     },
     "20.4": {
       "status": "ready-for-review",
@@ -5408,6 +5432,41 @@
       "last_task9_at": "2026-05-25T20:22:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-25-20-deep-review.md",
       "task9_review_notes": "Task9 深度复核通过；P0/P1=0，历史 P2 triple buffering 口径已在 suggestions.md，不重复新增；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
+    },
+    "16.4": {
+      "section": "16.4",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "file": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
+    },
+    "11.1": {
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "file": "src/part2-performance/ch11-power/01-power-model.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 90,
+      "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
+      "task6_new_rework": true
     }
   },
   "task2b_rounds": [
@@ -5477,30 +5536,44 @@
   "last_task2a_at": "2026-05-25T09:21:00+08:00",
   "last_task2a_section": "20.15",
   "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-  "last_task6_review": "2026-05-25T20:12:00+08:00",
+  "last_task6_review": "2026-05-26T01:12:00+08:00",
   "last_task6_sections": [
-    "18.8"
+    "16.4",
+    "1.5",
+    "11.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+    "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "src/part2-performance/ch11-power/01-power-model.md"
   ],
-  "last_task6_at": "2026-05-25T20:12:00+08:00",
+  "last_task6_at": "2026-05-26T01:12:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-25T20:12:00+08:00",
+    "reviewed_at": "2026-05-26T01:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "18.8"
+      "16.4",
+      "1.5",
+      "11.1"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "src/part2-performance/ch11-power/01-power-model.md"
     ],
-    "log": "logs/review/2026-05-25-20-review.md",
+    "log": "logs/review/2026-05-26-01-review.md",
     "mode": "normal-review",
     "results": {
-      "18.8": "pass-light-edit"
+      "16.4": "pass-light-edit",
+      "1.5": "pass-light-edit",
+      "11.1": "needs-rework"
     },
-    "auto_finalized": [],
-    "queue_updates": []
+    "l1_l2_fixes": 33,
+    "new_task6_rework_items": 1,
+    "queue_updates": [
+      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
+    ],
+    "auto_finalized": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -6736,6 +6809,57 @@
       "material_count": 5,
       "last_task2a_at": "2026-05-25T19:04:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "16.4": {
+      "section": "16.4",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "file": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
+    },
+    "1.5": {
+      "section": "1.5",
+      "title": "线程模型",
+      "file": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
+    },
+    "11.1": {
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "file": "src/part2-performance/ch11-power/01-power-model.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 90,
+      "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
+      "task6_new_rework": true
     }
   },
   "task2a_last_processed": {
@@ -6774,26 +6898,31 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_at": "2026-05-26T01:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
-      "7.6"
+      "16.4",
+      "1.5",
+      "11.1"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "src/part2-performance/ch11-power/01-power-model.md"
     ],
-    "log": "logs/review/2026-05-25-12-review.md",
+    "log": "logs/review/2026-05-26-01-review.md",
     "mode": "normal-review",
     "results": {
-      "17.2": "needs-rework",
-      "7.6": "pass-light-edit"
+      "16.4": "pass-light-edit",
+      "1.5": "pass-light-edit",
+      "11.1": "needs-rework"
     },
-    "auto_finalized": [],
+    "l1_l2_fixes": 33,
+    "new_task6_rework_items": 1,
     "queue_updates": [
-      "17.2"
-    ]
+      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
+    ],
+    "auto_finalized": []
   },
   "task6_last_review_files": [
     "src/part4-system/ch17-oem/02-soc-differences.md",
@@ -7805,8 +7934,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+    "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "src/part2-performance/ch11-power/01-power-model.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -7899,5 +8029,56 @@
       "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture",
       "src/part5-app/ch26-observability/05-online-troubleshooting.md"
     ]
+  },
+  "section_16_4": {
+    "section": "16.4",
+    "title": "Android 17 + Kernel 6.12 系统级性能优化",
+    "file": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-26",
+    "last_task6_at": "2026-05-26T01:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed"
+  },
+  "section_1_5": {
+    "section": "1.5",
+    "title": "线程模型",
+    "file": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-26",
+    "last_task6_at": "2026-05-26T01:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed"
+  },
+  "section_11_1": {
+    "section": "11.1",
+    "title": "Android 功耗模型",
+    "file": "src/part2-performance/ch11-power/01-power-model.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-26",
+    "last_task6_at": "2026-05-26T01:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "queue_priority": 90,
+    "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
+    "task6_new_rework": true
   }
 }

@@ -5,11 +5,11 @@ chapter: "16.4"
 status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-07"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-26"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: reviewed
+task6_state: "reviewed"
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-25T21:20:00+08:00"
 task9_reviewed_date: "2026-05-25"
@@ -22,10 +22,10 @@ last_task9_audit_result: "p1-version-difference"
 task9_audit_notes: "2026-05-25 Task9 idle audit: P1 1;AOSP android17-6.18 已存在,Kernel 6.12/android16-6.12 与 Android 17/API37 口径需拆分。"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-05-07T01:44:08+08:00"
-last_task6_at: "2026-05-07T02:05:00+08:00"
+last_task6_at: "2026-05-26T01:12:00+08:00"
 last_task6_audit: "2026-05-24"
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
 last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲;L1 禁用词正文未命中;frontmatter 完整;outline 锚点覆盖 9/9;无回炉项。"
@@ -43,10 +43,12 @@ sources:
     path: "AOSP kernel/common android15-6.6"
   - type: kernel
     path: "AOSP kernel/common android16-6.12"
-review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已闭环,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
+  - type: kernel
+    path: "AOSP kernel/common android17-6.18"
+review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已处理,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-07-02-deep-review.md"
-last_task6_review_log: "logs/review/2026-05-07-02-review.md"
-task6_review_notes: "2026-05-07 Task6:pass-light-edit。小修 6 处:本章/本节称谓统一,替换结构性元叙述,清理核心/三重等标题措辞;无新增 Task2B 回炉项,待 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-26-01-review.md"
+task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（禁用词、标题标点、中英文间距）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -76,7 +78,7 @@ task6_review_notes: "2026-05-07 Task6:pass-light-edit。小修 6 处:本章/本�
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
-升级系统版本后出现的冷启动、滑动和安装速度改善,常常来自内核与运行时的共同演进。GKI(Generic Kernel Image)的价值,是把通用内核与 SoC / 板级代码分开:核心内核由 Google 提供 release build,厂商特定能力放进 vendor modules,并通过 stable KMI 约束接口。同一条 LTS / Android 分支内的内核更新更容易独立交付,但某台设备能否收到更新,仍取决于它是否采用兼容的 GKI release build,以及 vendor modules 是否满足对应 KMI 边界。
+升级系统版本后出现的冷启动、滑动和安装速度改善,常常来自内核与运行时的共同演进。GKI (Generic Kernel Image) 的价值,是把通用内核与 SoC / 板级代码分开:核心内核由 Google 提供 release build,厂商特定能力放进 vendor modules,并通过 stable KMI 约束接口。同一条 LTS / Android 分支内的内核更新更容易独立交付,但某台设备能否收到更新,仍取决于它是否采用兼容的 GKI release build,以及 vendor modules 是否满足对应 KMI 边界。
 
 本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实,例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为,例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch,后者 Makefile 为 6.18.21,是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。[已验证: AOSP kernel/common refs/heads/android17-6.18 Makefile 6.18.21]
 
@@ -97,9 +99,9 @@ task6_review_notes: "2026-05-07 Task6:pass-light-edit。小修 6 处:本章/本�
 
 [待补充:GKI Mainline 推送范围的设备列表截图]
 
-## 调度器变革:EEVDF fair scheduler + sched_ext 可扩展框架
+## 调度器变革：EEVDF fair scheduler + sched_ext 可扩展框架
 
-### EEVDF:fair scheduler 的 lag / deadline 模型
+### EEVDF：fair scheduler 的 lag / deadline 模型
 
 Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 AOSP `kernel/common` 的 `android15-6.6/kernel/sched/fair.c`,`pick_eevdf()`、`entity_eligible()` 和 `place_entity()` 已存在;`android16-6.12/kernel/sched/fair.c` 继续保留这些路径。因此本节不能把 `android16-6.12` 写成 EEVDF 从"可选"走向"默认"的分界。
 
@@ -109,9 +111,9 @@ Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 A
 
 [已验证: AOSP `kernel/common` `android15-6.6/kernel/sched/fair.c` 和 `android16-6.12/kernel/sched/fair.c` 均包含 `pick_eevdf()` / `entity_eligible()`;Kernel 6.12 changelog]
 
-### sched_ext:用 BPF 实现可扩展调度器
+### sched_ext：用 BPF 实现可扩展调度器
 
-sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开发者用 BPF(Berkeley Packet Filter)程序实现自定义调度策略,不需要修改内核代码。
+sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开发者用 BPF (Berkeley Packet Filter) 程序实现自定义调度策略,不需要修改内核代码。
 
 不同场景对调度器的目标不同:游戏更重视延迟,数据库更重视吞吐,Android 更重视 UI 响应。sched_ext 让 OEM 或系统开发者可以为特定场景定制调度策略,但这类策略仍需要按设备和负载单独验证。
 
@@ -161,7 +163,7 @@ struct sched_ext_ops {
 
 这些标志位通过 `p->scx.flags` 管理,允许 SCX core 安全地处理 BPF 调度器的分发请求,避免已 dequeue 任务被重复 dispatch。
 
-#### Dispatch Queue(DSQ)机制
+#### Dispatch Queue (DSQ) 机制
 
 `include/linux/sched/ext.h` 定义了内置 DSQ ID,具体集合需要以目标分支实际源码为准:
 
@@ -196,7 +198,7 @@ OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`(开源于 GitH
 
 这些参数暗示 OnePlus 使用 sched_ext 实现帧率稳定性优化(游戏场景)和 CPU 管控。BPF 调度策略主体可能以二进制固件分发,开源仓库仅含 proc 接口。
 
-#### 参考调度器:scx_simple
+#### 参考调度器：scx_simple
 
 `tools/sched_ext/scx_simple.bpf.c` 展示了两模式调度器实现:
 
@@ -247,7 +249,7 @@ multishot 的稳定结论是减少重复提交 SQE 的开销;zero-copy 的稳定
 
 [已验证: AOSP `kernel/common` `android16-6.12/io_uring/io_uring.c`; AOSP `platform/external/liburing/Android.bp`; Cronet / SQLite / OkHttp 默认采用状态待逐项核验]
 
-### dm-verity multi-buffer hashing:ARM64 吞吐提升 35%
+### dm-verity multi-buffer hashing：ARM64 吞吐提升 35%
 
 dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统路径按块计算哈希,热点函数是 `verity_hash()`。在 `android16-6.12` 中,对应源码文件是 `drivers/md/dm-verity-target.c`,多块哈希路径落在 `verity_hash_mb()`,shash 分支会调用 `crypto_shash_finup_mb(desc, data, len, digests, num_blocks)`,ahash 分支则保留逐块 fallback。
 
@@ -274,7 +276,7 @@ dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统�
 
 ## AutoFDO Profile-Guided Optimization 的内核应用
 
-在 1.12 节中我们讨论过 AutoFDO(Automatic Feedback-Directed Optimization)的基本原理:用运行时的 CPU profiling 数据(硬件性能计数器采样)指导编译器做代码布局优化。Kernel 6.12 将 AutoFDO 的覆盖范围从用户空间扩展到了内核本身。
+在 1.12 节中我们讨论过 AutoFDO (Automatic Feedback-Directed Optimization) 的基本原理:用运行时的 CPU profiling 数据(硬件性能计数器采样)指导编译器做代码布局优化。Kernel 6.12 将 AutoFDO 的覆盖范围从用户空间扩展到了内核本身。
 
 ### 量化数据
 
@@ -341,7 +343,7 @@ DeliQueue 属于 Android 17 / API 37 平台行为,不属于 `android16-6.12` 内
 
 ## MGLRU 与页面回收优化
 
-Multi-Gen LRU(MGLRU)在 Kernel 6.1 引入。它在 `android16-6.12` 中通过 `CONFIG_LRU_GEN` 和 `CONFIG_LRU_GEN_ENABLED` Kconfig 选项控制;是否在特定设备的 GKI defconfig 中默认启用,需要查看对应分支的 `defconfig` 文件。它与 Android 的 LMK 机制(4.4 节)直接协同。
+Multi-Gen LRU (MGLRU) 在 Kernel 6.1 引入。它在 `android16-6.12` 中通过 `CONFIG_LRU_GEN` 和 `CONFIG_LRU_GEN_ENABLED` Kconfig 选项控制;是否在特定设备的 GKI defconfig 中默认启用,需要查看对应分支的 `defconfig` 文件。它与 Android 的 LMK 机制(4.4 节)直接协同。
 
 ### 传统 LRU 的问题
 
@@ -394,7 +396,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 
 [待补充:Kernel 6.12 前后冷启动 Trace 对比截图]
 
-## 版本演进:把平台版本和 GKI 分支分开
+## 版本演进：把平台版本和 GKI 分支分开
 
 | 维度 | 可核验锚点 | 本节结论 |
 |------|------------|----------|
