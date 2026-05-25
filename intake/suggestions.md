@@ -3752,3 +3752,9 @@
 - **问题**：参考资料中的 `https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html` 返回 404；官方可访问 URL 是 `https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html`。正文依赖该博客限定 AutoFDO 数据口径，坏链会影响后续复核。
 - **建议**：修正参考链接；如果后续 Google Blog 提供 canonical slug，再以 canonical URL 为准。
 - **review 日志**：logs/deep-review/2026-05-26-01-deep-review.md
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-05-26
+- **类型**：源码引用/参考链接
+- **位置**：L893 Android Vitals: Excessive Wakeups 参考资料
+- **问题**：参考资料写成 `https://developer.android.com/topic/performance/vitals/wakeups`，当前官方页面为单数路径 `/wakeup`，复核时 plural URL 返回 404。
+- **建议**：改为 `https://developer.android.com/topic/performance/vitals/wakeup`，并同步检查 frontmatter sources 是否需要补该官方链接。

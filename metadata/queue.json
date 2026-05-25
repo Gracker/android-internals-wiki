@@ -1,6 +1,50 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260526-0220-11.4-jobscheduler-runtime-constants",
+      "section": "11.4",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "修正 JobScheduler runtime 常量与后台定位前台服务版本边界",
+      "description": "Task9 闲时抽检发现 §11.4 的 JobScheduler WakeLock 超时表与 android-16.0.0_r1 源码不一致，并把 location foregroundServiceType 版本边界写晚到 Android 12。",
+      "reason": "[Deep Tech Review Audit] §11.4 L642-L654 把 Expedited Job 最小保障写成 10 分钟、User-Initiated 写成 30 分钟；AOSP android-16.0.0_r1 中 DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS=3min，DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS>=6h，RUNTIME_UI_LIMIT_MS>=12h。L296 把 location FGS type 要求写成 Android 12，官方 Android 10 privacy changes 已要求 target/compile SDK 29+ 的 location foreground service 声明 foregroundServiceType=\"location\"。",
+      "issue_type": "source-accuracy-jobscheduler-runtime-location-fgs-version",
+      "severity": "P0",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch11-power/04-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-26-02-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java",
+        "https://developer.android.com/reference/android/app/job/JobService",
+        "https://developer.android.com/about/versions/10/privacy/changes",
+        "https://developer.android.com/topic/performance/vitals/wakeup"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / JobScheduler runtime 常量与 job 类型表错误",
+          "location": "L642-L654：JobScheduler 的 WakeLock 最大持有时长表与 getMaxJobExecutionTimeMs() 说明",
+          "detail": "正文把 Expedited Job 写成“10 分钟（同 Regular 保障下限）”，把 User-Initiated 写成“30 分钟（DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS）”。AOSP android-16.0.0_r1 的 JobSchedulerService.Constants 中 DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS=3min，DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min，DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min；User-Initiated 另有 DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS=max(6h,10min)、DEFAULT_RUNTIME_UI_LIMIT_MS=max(12h,30min)、DEFAULT_RUNTIME_CUMULATIVE_UI_LIMIT_MS=24h。getMinJobExecutionGuaranteeMs()/getMaxJobExecutionTimeMs() 也按这些分支处理。当前表会误导读者判断 JobService 忘记 jobFinished() 后系统持锁/停止窗口。",
+          "suggestion": "重写 JobScheduler 表：Regular 最小保障 10min、free quota 上限 30min；Expedited 最小保障 3min，正常上限不超过 regular 10min；User-Initiated 最小保障约 6h，常规上限约 12h，累计 UI limit 24h。说明最终运行上限仍会受 quota、standby bucket、timeout quota 与 QuotaController 约束。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异 / location foreground service type 版本边界写错",
+          "location": "L296：后台位置权限版本链",
+          "detail": "正文写“Android 12 要求使用后台位置的前台服务必须声明 foregroundServiceType=location”。官方 Android 10 privacy changes 已说明 Android 10 引入 ACCESS_BACKGROUND_LOCATION，并且持续访问位置的 foreground service 要声明 location 类型；文档还要求 targetSdkVersion 或 compileSdkVersion 为 29+ 才能声明该类型。Android 12 的关键变化更接近 while-in-use 权限和前台服务后台启动限制，不是 location FGS type 的起点。",
+          "suggestion": "把版本链改为：Android 10/API 29 引入 ACCESS_BACKGROUND_LOCATION 与 location FGS type 声明；Android 11 后台位置授权入口收紧；Android 12+ 重点补 while-in-use 权限/后台启动 FGS 限制；Android 14+ 再补前台服务类型权限与启动限制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-26T02:20:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-2228-11.1-energyconsumer-type-symbol",
       "section": "11.1",
       "section_title": "Android 功耗模型",
@@ -21166,24 +21210,24 @@
     }
   ],
   "metadata": {
-    "total_entries": 565,
-    "p0_count": 239,
-    "last_updated": "2026-05-26T01:04:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 179,
+    "total_entries": 567,
+    "p0_count": 240,
+    "last_updated": "2026-05-26T02:20:00+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 180,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 179,
-    "completed_entries": 383,
+    "last_updated_by": "openclaw-task9",
+    "pending": 180,
+    "completed_entries": 384,
     "last_task2a_gap_mining": "26.19",
     "last_task2a_gap_mining_at": "2026-05-26T01:04:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T01:04:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 179,
+  "last_updated": "2026-05-26T02:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 180,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
