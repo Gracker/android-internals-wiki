@@ -1,6 +1,43 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260525-1726-1.5-messagequeue-dispatchbatches-counter",
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 85,
+      "title": "核验并修正 `MQ.DispatchBatches` MessageQueue Trace 计数器口径",
+      "description": "Task9 闲时抽检发现 §1.5 把 `MQ.DispatchBatches` 写成 DeliQueue/ConcurrentMessageQueue 的专有 Trace 观察点，但 android-16.0.0_r1、AOSP main 和 Android 17 官方文档/博客均未公开这个计数器。",
+      "reason": "[Deep Tech Review Audit] §1.5 L478 引导读者结合 `MQ.DispatchBatches` 区分队列实现；公开 AOSP 源码只核到 `MQ.Delivered`，Android 17 行为变更文档和官方技术博客也未列出该 counter，属于 Trace 诊断锚点不可验证。",
+      "issue_type": "source-accuracy-messagequeue-trace-counter",
+      "severity": "P1",
+      "created_date": "2026-05-25",
+      "assigned_to": "content-team",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-25-17-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/os/CombinedMessageQueue/MessageQueue.java",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码准确性 / Trace 观察点不可验证",
+          "location": "L478：Perfetto 关键线程列表中的 `MQ.DispatchBatches`",
+          "detail": "正文建议用 `MQ.DispatchBatches` 作为 DeliQueue/ConcurrentMessageQueue 的专有 Trace 片段来区分队列实现。抽检核验 android-16.0.0_r1 的 LegacyMessageQueue、CombinedMessageQueue、ConcurrentMessageQueue，以及 AOSP main 的 Legacy/Combined/Concurrent/Semi/LockedMessageQueue，公开源码中可见的 MessageQueue Trace counter 只有 `MQ.Delivered`；Android 17 MessageQueue 行为变更文档与 Android Developers Blog 也未给出 `MQ.DispatchBatches` 这个计数器。当前写法会让读者按不存在或未公开锚定的 Trace 名称排查。",
+          "suggestion": "回炉时删除 `MQ.DispatchBatches` 断言，或改成 `[待验证]` 并补准确 AOSP commit / Perfetto trace 截图来源。区分 Android 16/17 队列实现时，优先使用官方可核验信号：targetSdk 37 / USE_NEW_MESSAGEQUEUE compat change、`mMessages` 在新实现下恒为 null 的兼容性边界、MessageQueue monitor contention 是否消失，以及 FrameTimeline/jank_type 与 Looper dispatch 片段的同窗对齐。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-25T17:26:00+08:00"
+    },
+    {
       "id": "task9-audit-20260525-1420-9.6-android17-notification-metricstyle",
       "section": "9.6",
       "section_title": "Notification 性能与 ANR",
@@ -20789,14 +20826,14 @@
     }
   ],
   "metadata": {
-    "total_entries": 555,
-    "p0_count": 233,
-    "last_updated": "2026-05-25T16:15:00+08:00",
-    "updated_by": "task2a-knowledge-gap",
-    "pending_entries": 179,
+    "total_entries": 558,
+    "p0_count": 236,
+    "last_updated": "2026-05-25T17:26:00+08:00",
+    "updated_by": "task9-deep-tech-review-audit",
+    "pending_entries": 182,
     "updated_date": "2026-05-25",
-    "last_updated_by": "task2a-knowledge-gap",
-    "pending": 179,
+    "last_updated_by": "task9-deep-tech-review-audit",
+    "pending": 182,
     "completed_entries": 373,
     "last_task2a_gap_mining": "24.19",
     "last_task2a_gap_mining_at": "2026-05-25T16:15:00+08:00",
@@ -20804,9 +20841,9 @@
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T16:15:00+08:00",
-  "last_updated_by": "task2a-knowledge-gap",
-  "pending": 179,
+  "last_updated": "2026-05-25T17:26:00+08:00",
+  "last_updated_by": "task9-deep-tech-review-audit",
+  "pending": 182,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
