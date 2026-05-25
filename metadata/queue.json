@@ -20171,7 +20171,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 2.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/16-keystore-quota-login-stability.md"
@@ -20181,7 +20181,12 @@
         "https://developer.android.com/reference/android/security/KeyStoreException"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-25T08:27:00+08:00"
+      "added_at": "2026-05-25T08:27:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-25T10:04:00+08:00",
+      "completion_reason": "Task 2A 内容加工完成：Android 17 Keystore 配额与登录故障治理已写入，status → ready-for-review，进入 Task 6 管线。",
+      "result": "ready-for-review",
+      "drafted_file": "src/part5-app/ch20-stability/16-keystore-quota-login-stability.md"
     },
     {
       "id": "task2a-gap-20260525-24-18",
