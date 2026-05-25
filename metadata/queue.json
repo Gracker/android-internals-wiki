@@ -13,7 +13,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/07-private-space-app-lock-boundary.md"
@@ -26,7 +26,10 @@
         "src/part5-app/ch24-io-network/13-photo-picker-transcoding-performance.md"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-25T13:04:00+08:00"
+      "added_at": "2026-05-25T13:04:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-25T14:04:00+08:00",
+      "completion_reason": "Task 2A draft processing: chapter drafted and moved to ready-for-review"
     },
     {
       "id": "task9-audit-20260525-1320-19.24-crash-anr-source-version-boundary",
