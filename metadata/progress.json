@@ -1,7 +1,7 @@
 {
   "total": 387,
-  "draft": 22,
-  "ready-for-review": 174,
+  "draft": 21,
+  "ready-for-review": 175,
   "finalized": 191,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -240,7 +240,8 @@
     "18.2",
     "24.17",
     "13.1",
-    "20.15"
+    "20.15",
+    "24.18"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -316,7 +317,8 @@
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
     "src/part2-performance/ch07-smoothness/06-case-studies.md",
     "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
-    "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
+    "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+    "src/part5-app/ch24-io-network/18-android17-ech-domain-encryption.md"
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
