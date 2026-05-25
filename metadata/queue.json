@@ -20192,27 +20192,83 @@
       ],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-05-25T08:27:00+08:00"
+    },
+    {
+      "section": "13.1",
+      "section_title": "Perfetto 简介与演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.1 Perfetto 简介与演进 本轮复审发现 P0 1 / P1 1：Trace Processor：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank`；常见 data source 可用性对照表：`logcat in trace` 行；LMKD 行为追踪中的日志证据链",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性/Trace Processor metric 名称",
+          "location": "Trace Processor：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank`",
+          "detail": "正文给出的内置 Metrics 示例包含 `android_jank`。复核当前 Perfetto/AOSP `external/perfetto/src/trace_processor/metrics/sql/android/`，存在 `android_cpu.sql`、`android_startup.sql`、`android_jank_cuj.sql`、`android_frame_timeline_metric.sql`、`android_hwui_metric.sql`，未找到 `android_jank.sql`。该命令会误导读者直接运行一个不存在的 metric。",
+          "suggestion": "把示例改为已存在的 metric，例如 `android_cpu,android_startup,android_jank_cuj`；如果目标是帧级 jank，按上下文补 `android_frame_timeline_metric` / `android_hwui_metric` 的适用条件。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/构建类型权限边界",
+          "location": "常见 data source 可用性对照表：`logcat in trace` 行；LMKD 行为追踪中的日志证据链",
+          "detail": "正文把 “logcat in trace” 写成 Android 10+ 常用且 user build 无额外门槛。Perfetto 官方 Android Log data source 文档明确 `android.log` 仅支持 Android userdebug builds。user build 上仍可在 trace 外用 `adb logcat` 做旁证，但不能把它等同为 Perfetto trace 内的 `android.log` data source。",
+          "suggestion": "把表格拆成两层：Perfetto trace 内 `android.log` data source 标注 userdebug-only；user build 上的 lmkd 日志改写为 trace 外 `adb logcat` 旁证，并说明不能保证进入同一份 Perfetto trace。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T08:32:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.10",
+      "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 本轮复审发现 P0 1 / P1 1：UprobeStats 工作原理：`设备上的挂载路径是 /apex/com.android.uprobestats.apex`；sched_ext 架构：`在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间`",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/APEX 挂载路径",
+          "location": "UprobeStats 工作原理：`设备上的挂载路径是 /apex/com.android.uprobestats.apex`",
+          "detail": "AOSP android-16.0.0_r1 的 `packages/modules/UprobeStats/apex/Android.bp` 中 APEX name 是 `com.android.uprobestats`。Android 设备上的 APEX 挂载目录按 package name 出现在 `/apex/com.android.uprobestats`；带 `.apex` 后缀的是 APEX 包文件名/制品语义，不是运行时挂载目录。正文路径会导致读者按错误路径排查。",
+          "suggestion": "改为 `/apex/com.android.uprobestats`，并在需要区分时说明 `/system/apex/*.apex` 是包文件，`/apex/<package>` 是运行时 mount point。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/sched_ext 调度类优先级",
+          "location": "sched_ext 架构：`在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间`",
+          "detail": "Linux sched_ext 文档描述的是 sched_class 与 policy 的组合关系：BPF scheduler 加载且未设置 `SCX_OPS_SWITCH_PARTIAL` 时，SCHED_NORMAL/BATCH/IDLE/EXT 任务可被 sched_ext 管理；设置 partial 后，只有 SCHED_EXT policy 任务进入 sched_ext，SCHED_NORMAL/BATCH/IDLE 仍由更高优先级的 fair-class 调度。把 sched_ext 写成位于 SCHED_IDLE 和 SCHED_NORMAL 之间，会混淆 policy 与 sched_class precedence。",
+          "suggestion": "删除“位于 SCHED_IDLE 和 SCHED_NORMAL 之间”的表述，改为按 `SCX_OPS_SWITCH_PARTIAL` 分两种模式解释：全量切换时 fair-policy 任务交给 sched_ext；partial 模式下 fair-class 优先处理 NORMAL/BATCH/IDLE，仅 SCHED_EXT policy 进入 sched_ext。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-25T08:32:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
-    "total_entries": 528,
-    "p0_count": 225,
-    "last_updated": "2026-05-24T22:20:00+08:00",
+    "total_entries": 545,
+    "p0_count": 232,
+    "last_updated": "2026-05-25T08:32:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 174,
-    "updated_date": "2026-05-24",
+    "pending_entries": 179,
+    "updated_date": "2026-05-25",
     "last_updated_by": "openclaw-task9",
-    "pending": 174,
-    "completed_entries": 351,
+    "pending": 179,
+    "completed_entries": 363,
     "last_task2a_gap_mining": "25.16",
     "last_task2a_gap_mining_at": "2026-05-23T23:04:00+08:00",
     "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
     "last_task2a_completed": "1.22",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-25T06:16:00+08:00",
-  "last_updated_by": "task-deepresearch-injector",
-  "pending": 175,
+  "last_updated": "2026-05-25T08:32:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 179,
   "last_task2a_completed": "1.22",
   "last_task2a_completed_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_gap_mining": {
