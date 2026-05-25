@@ -1,7 +1,7 @@
 {
   "total": 373,
-  "draft": 1,
-  "ready-for-review": 202,
+  "draft": 0,
+  "ready-for-review": 203,
   "finalized": 170,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -252,7 +252,8 @@
     "19.24",
     "18.8",
     "1.7",
-    "11.4"
+    "11.4",
+    "22.17"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -5535,13 +5536,17 @@
       "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md"
     },
     "22.17": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "title": "Hardware Bitmap 与 RenderNode 缓存策略",
       "file": "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-26",
-      "queue_priority": 80
+      "queue_priority": 80,
+      "drafted_date": "2026-05-26",
+      "last_verified": "2026-05-26",
+      "confidence": "medium",
+      "last_task2a_at": "2026-05-26T05:20:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -5559,7 +5564,7 @@
       ]
     }
   ],
-  "last_task2a_processed": "26.19",
+  "last_task2a_processed": "22.17",
   "last_task2a_processed_file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
   "last_task2a_processed_date": "2026-05-26",
   "task9_last_review_detail": {
@@ -7019,7 +7024,7 @@
     "1.7",
     "11.4"
   ],
-  "last_task2a_processed_at": "2026-05-24T21:16:00+08:00",
+  "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
