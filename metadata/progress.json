@@ -243,7 +243,10 @@
     "20.15",
     "24.18",
     "17.2",
-    "7.6"
+    "7.6",
+    "9.6",
+    "9.1",
+    "19.24"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -321,21 +324,28 @@
     "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
     "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
     "src/part5-app/ch24-io-network/18-android17-ech-domain-encryption.md",
-    "src/part4-system/ch17-oem/02-soc-differences.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+    "src/part2-performance/ch09-anr/01-anr-design.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-25T10:13:00+08:00",
+    "last_review_at": "2026-05-25T16:07:00+08:00",
     "sections": [
-      "20.15"
+      "9.6",
+      "9.1",
+      "19.24"
     ],
     "files": [
-      "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md"
+      "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+      "src/part2-performance/ch09-anr/01-anr-design.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 2,
+    "small_fixes": 23,
     "rework_items": 0,
-    "log": "logs/review/2026-05-25-10-review.md"
+    "log": "logs/review/2026-05-25-16-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1916,28 +1926,57 @@
       "summary": "pass-tech-review；既有 DeliQueue tag 建议沿用，新增 P2：HWC3 Composition DISPLAY_DECORATION 子集标注、Overlay plane/厂商差异数据支撑。Task6 已通过且 queue 无 pending，自动晋升 finalized。",
       "task9_result": "pass-tech-review",
       "auto_promoted": true
+    },
+    "9.6": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-25T16:07:00+08:00",
+      "task6_log": "logs/review/2026-05-25-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 1 处（RemoteViews 边界句去掉修正腔）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+    },
+    "9.1": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 7,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-25T16:07:00+08:00",
+      "task6_log": "logs/review/2026-05-25-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+    },
+    "19.24": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 15,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-25T16:07:00+08:00",
+      "task6_log": "logs/review/2026-05-25-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 15 处（否定-纠正句式、真正/不是高频词、标题表达）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T12:09:00+08:00",
+  "last_updated": "2026-05-25T16:07:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-25T12:09:00+08:00",
+    "reviewed_at": "2026-05-25T16:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
-      "7.6"
+      "9.6",
+      "9.1",
+      "19.24"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
-      "src/part2-performance/ch07-smoothness/06-case-studies.md"
+      "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+      "src/part2-performance/ch09-anr/01-anr-design.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
-    "log": "logs/review/2026-05-25-12-review.md",
+    "log": "logs/review/2026-05-25-16-review.md",
     "mode": "normal-review",
-    "l1_l2_fixes": 0,
-    "new_task6_rework_items": 1,
+    "l1_l2_fixes": 23,
+    "new_task6_rework_items": 0,
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-24",

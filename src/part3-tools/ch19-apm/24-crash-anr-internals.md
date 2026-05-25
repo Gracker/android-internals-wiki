@@ -9,10 +9,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: revisiting
-task6_result: pass-light-edit
-reviewed_date: "2026-05-03"
-reviewed_by: openclaw-task6
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+reviewed_date: "2026-05-25"
+reviewed_by: "openclaw-task6"
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -26,9 +26,9 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_result: "needs-rework"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: 2026-05-06
@@ -36,10 +36,12 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-25T13:20:00+08:00"
 task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。"
 last_task6_audit: "2026-05-23"
-last_task6_at: "2026-05-23T05:09:00+08:00"
+last_task6_at: "2026-05-25T16:07:00+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
+last_task6_review_log: "logs/review/2026-05-25-16-review.md"
+task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 15 处（否定-纠正句式、真正/不是高频词、标题表达）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 ---
 
 # 崩溃与 ANR 捕获机制
@@ -75,7 +77,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-稳定性 APM 要解决的不是“进程挂了”这一件事，而是四类不同现场：Java 未捕获异常、Native 信号崩溃、ANR、以及没有抛异常却把进程拖死的资源耗尽。四类现场的采样入口、线程上下文、权限边界都不同，统一看板只是收尾阶段，前面必须先把捕获路径搭对。
+稳定性 APM 要覆盖四类不同现场：Java 未捕获异常、Native 信号崩溃、ANR、以及没有抛异常却把进程拖死的资源耗尽。四类现场的采样入口、线程上下文、权限边界都不同，统一看板只是收尾阶段，前面必须先把捕获路径搭对。
 
 ## 1. 稳定性采样面：先分清谁在什么时刻还有执行机会
 
@@ -86,9 +88,9 @@ last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 | ANR | 系统生成 traces / `ApplicationExitInfo` | ANR 发生时应用未必有回调机会 | 主线程栈、binder wait、锁竞争、退出原因 |
 | 资源耗尽 | 周期采样 + 下次启动补拉 | 多数发生前仍可观测 | FD、线程数、RSS、VMA、LMK 历史 |
 
-这张表决定了后面的实现风格：Java Crash 可以做一点点同步收尾；Native Crash 只能写最小快照；ANR 更依赖系统产物和下次启动拉取；资源耗尽要靠日常采样，而不是等进程要死时临时补救。
+这张表决定了后面的实现风格：Java Crash 可以做一点点同步收尾；Native Crash 只能写最小快照；ANR 更依赖系统产物和下次启动拉取；资源耗尽要靠日常采样，不能等进程要死时临时补救。
 
-## 2. Java Crash：`setDefaultUncaughtExceptionHandler` 是第一入口，不是终点
+## 2. Java Crash：`setDefaultUncaughtExceptionHandler` 是入口，也只是入口
 
 Java 层未捕获异常最终会走到 `Thread.UncaughtExceptionHandler`。全局 APM 一般在 `Application` 里调用 `Thread.setDefaultUncaughtExceptionHandler(...)`，把默认处理器替换成自己的代理，再把原处理器保存下来。
 
@@ -134,7 +136,7 @@ class CrashHandlerInstaller {
 这样设计有两个好处：
 
 - 主线程崩溃时，系统马上会结束进程，本次网络请求大概率发不完。
-- 现场收集和真正上报解耦，便于后面统一做限流、重试和隐私裁剪。
+- 现场收集和后续上报解耦，便于后面统一做限流、重试和隐私裁剪。
 
 ## 3. Native Crash：信号处理器只负责“保命级”快照
 
@@ -143,7 +145,7 @@ Native Crash 在 Linux / Android 上通常表现为 `SIGSEGV`、`SIGABRT`、`SIG
 ### 3.1 Breakpad / Crashpad 的角色分工
 
 - Breakpad 时代常见的是进程内信号处理，再生成 minidump。
-- Crashpad 的设计更稳：客户端库在应用进程内注册，真正的 handler 运行在独立进程。崩溃发生后，信号处理器把异常信息位置通过 socket 交给 handler，由 handler 去快照进程状态并写 crash dump。
+- Crashpad 的设计更稳：客户端库在应用进程内注册，实际写 dump 的 handler 运行在独立进程。崩溃发生后，信号处理器把异常信息位置通过 socket 交给 handler，由 handler 去快照进程状态并写 crash dump。
 
 这类 out-of-process 设计有一个直接收益：崩溃线程的栈、堆、锁都可能已经损坏，但独立 handler 进程还活着，写 dump 的成功率更高。
 
@@ -213,13 +215,13 @@ ANR 的捕获链变化最大，原因是权限边界一直在收紧。
 
 - 生产环境应用进程通常没有这一路径的读取权限
 - 文件格式和命名跨版本有差异
-- 这是离线取证手段，不是稳定的 App 内实时方案
+- 这是离线取证手段，不能作为稳定的 App 内实时方案
 
 所以，这条路适合调试机和实验环境，不适合作为线上端侧默认实现。
 
 ### 4.2 中期：SIGQUIT / Signal Catcher Hook
 
-系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 SignalCatcher 线程负责生成 Java 线程 dump。SignalCatcher 不是普通的 `sigaction` handler；AOSP `art/runtime/signal_catcher.cc` 中的等待逻辑使用 `sigwait()` 同步消费 `SIGQUIT`。
+系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 SignalCatcher 线程负责生成 Java 线程 dump。SignalCatcher 并非普通的 `sigaction` handler；AOSP `art/runtime/signal_catcher.cc` 中的等待逻辑使用 `sigwait()` 同步消费 `SIGQUIT`。
 
 `sigwait()` 的前提是目标信号在相关线程中被屏蔽。信号到达后，等待线程被唤醒，内核不会再把同一个信号分发给普通 `sigaction` handler。这也是很多端侧方案“注册了 SIGQUIT handler，却抓不到稳定 ANR 信号”的原因。
 
@@ -283,7 +285,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 5. OOM 不能只盯 Java Heap
 
-线上很多“无崩溃退出”往往不是 `OutOfMemoryError`，而是资源被耗空后被系统杀掉，或者关键系统调用失败。只盯 Java Heap，很多问题会漏。
+线上很多“无崩溃退出”没有 `OutOfMemoryError`，常见原因是资源被耗空后被系统杀掉，或者关键系统调用失败。只盯 Java Heap，很多问题会漏。
 
 ### 5.1 需要分开的几类资源耗尽
 
@@ -300,7 +302,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ### 5.2 端侧怎么做预警
 
-一套实用的做法是日常轻采样，而不是等进程快死时才采：
+一套实用的做法是日常轻采样，不能等进程快死时才采：
 
 - 周期读取 `/proc/self/fd`，记录 FD 总数和增长速度
 - 周期读取 `/proc/self/status`，记录 `Threads`、`VmSize`、`VmRSS`
@@ -311,7 +313,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 6. 现场快照：崩溃当下只收最小集合，其余留到下次启动补齐
 
-现场快照的目标是帮后端聚类和复盘，不是把整台设备所有信息都塞进一条记录。一个可执行的最小集合可以是：
+现场快照的目标是帮后端聚类和复盘，不需要把整台设备所有信息都塞进一条记录。一个可执行的最小集合可以是：
 
 - 线程或 signal 基本信息：线程名、tid、signal、异常类型
 - 关键栈：Java 主线程栈、crashing thread native backtrace
@@ -324,7 +326,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 7. 多 SDK 冲突：默认假设 handler 会被覆盖
 
-项目同时接 Bugly、Firebase、自研 SDK 时，最常见的麻烦在于谁在收尾安装 handler，谁把前面的回调关系断了——“谁采得更多”反而不是重点。
+项目同时接 Bugly、Firebase、自研 SDK 时，最常见的麻烦在于谁在收尾安装 handler，谁把前面的回调关系断了，重点不在“谁采得更多”。
 
 ### 7.1 Java 层冲突
 
@@ -349,7 +351,7 @@ Native 层要额外做两件事：
 - 明确安装顺序，并保存旧 handler 指针
 - 对同一 signal 做重入保护，避免 handler 自己再触发 signal
 
-如果项目无法完全控制第三方 SDK，优先选择它们的“只采集、不接管终止逻辑”模式，把真正的退出链保留给系统。
+如果项目无法完全控制第三方 SDK，优先选择它们的“只采集、不接管终止逻辑”模式，把退出链保留给系统。
 
 ## 8. Android 11+ 之后的一套推荐组合
 
@@ -369,7 +371,7 @@ Native 层要额外做两件事：
 
 常规 Crash 报告能看到“已经崩了之后”的栈，但对 use-after-free、heap corruption 这类问题，单靠普通 minidump 有时还不够。GWP-ASan 的定位是低比例灰度抽样，提前把部分分配切到带保护页的路径，命中后给出更明确的内存破坏证据。
 
-它不适合全量开启，原因很简单：调试价值高，运行时开销也更高。对 C/C++ 模块占比较重的应用，推荐作为专项灰度开关，而不是默认全量配置。
+它不适合全量开启，原因很简单：调试价值高，运行时开销也更高。对 C/C++ 模块占比较重的应用，推荐作为专项灰度开关，不推荐默认全量配置。
 
 ## 10. 参考资料与延伸阅读
 
@@ -398,7 +400,7 @@ Native 层要额外做两件事：
 <!-- AIW-源码调研-2026-05-08 -->
 ### 12.1 核心矛盾
 
-API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己构建 "Process Exit Info" 的采集、存储和上报链路。低版本缺失的不只是一个 API，而是整套机制：
+API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己构建 "Process Exit Info" 的采集、存储和上报链路。低版本缺失的 API 只是表象，背后还缺整套机制：
 
 - **无统一存储**：进程退出时 system_server 不会写 Proto 文件
 - **无官方 trace 路径**：`/data/anr/` 对普通 App 始终不可读
@@ -499,7 +501,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 | 启动时读 `ApplicationExitInfo` (API 30+) | 普通 API | 高 | 官方方案 |
 | 反射 `ActivityManagerService` 内部接口 | 违反 Android 安全设计 | 高 | 不推荐量产 |
 
-**注**：ANR 不发信号，`sigaction` 无法截获。系统通过 SignalCatcher 线程的 `sigwait()` 消费 `SIGQUIT`，这不是普通的异步信号处理。
+**注**：ANR 不发信号，`sigaction` 无法截获。系统通过 SignalCatcher 线程的 `sigwait()` 消费 `SIGQUIT`，这不同于普通的异步信号处理。
 
 ### 12.5 KOOM fork-dump 对低版本 OOM 的补偿
 
