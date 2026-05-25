@@ -1,4 +1,5 @@
 ---
+
 task2b_rework_date: "2026-05-25T07:27:11+08:00"
 
 status: "ready-for-review"
@@ -50,23 +51,23 @@ pipeline_stage: task2b_pending
 last_task9_at: "2026-05-25T07:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-17"
-task6_result: needs-rework
+reviewed_date: "2026-05-25"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: "fixed"
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-25 07 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；FrameTimeline display_frame_token gap 不能直接判定调度器错过目标 VSYNC。"
-task6_reviewed_date: "2026-05-17"
+task6_reviewed_date: "2026-05-25"
 last_task9_review_log: "logs/deep-review/2026-05-25-07-deep-review.md"
-last_task6_at: "2026-05-17T20:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-17-20-review.md"
-task6_review_notes: "2026-05-17 Task6：小修 L1/L2 9 处；参考资料后 DeepResearch/源码调研附录仍是素材堆放，且含 Task9 已标记的 SQL/源码路径/决策层风险，已并入 queue.json priority 95。"
+last_task6_at: "2026-05-25T08:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-25-08-review.md"
+task6_review_notes: "2026-05-25 Task6：小修 L1/L2 1 处；未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：display_frame_token gap 不能单独定责 Scheduler。"
 p0: 0
 p1: 1
 p2: 0
@@ -154,7 +155,7 @@ if (display != null && display.hasArrSupport()) {
 }
 ```
 
-如果业务真的在意 45fps 这种具体目标，应该把它当成“内容自己的生产节奏”，再结合设备支持档位、系统建议值和 Surface / View 投票结果去决定策略，而不是把这个判断塞给 `getSuggestedFrameRate()`。
+如果业务在意 45fps 这种具体目标，应该把它当成“内容自己的生产节奏”，再结合设备支持档位、系统建议值和 Surface / View 投票结果去决定策略，而不是把这个判断塞给 `getSuggestedFrameRate()`。
 
 ### View / RecyclerView / Compose 这一层才是主入口
 
@@ -353,7 +354,6 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `https://developer.android.com/games/sdk/frame-pacing`
   - `https://perfetto.dev/docs/data-sources/frametimeline`
   - `https://perfetto.dev/docs/analysis/stdlib-docs`
-
 
 
 
