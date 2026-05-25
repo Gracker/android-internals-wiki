@@ -250,7 +250,9 @@
     "9.6",
     "9.1",
     "19.24",
-    "18.8"
+    "18.8",
+    "1.7",
+    "11.4"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -336,25 +338,25 @@
     "src/part2-performance/ch09-anr/01-anr-design.md",
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md"
+    "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-26T01:12:00+08:00",
+    "last_review_at": "2026-05-26T04:07:00+08:00",
     "sections": [
-      "16.4",
-      "1.5",
-      "11.1"
+      "1.7",
+      "11.4"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "src/part2-performance/ch11-power/01-power-model.md"
+      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "src/part2-performance/ch11-power/04-case-studies.md"
     ],
-    "result": "needs-rework",
-    "small_fixes": 33,
-    "rework_items": 1,
-    "log": "logs/review/2026-05-26-01-review.md"
+    "result": "pass-light-edit",
+    "small_fixes": 17,
+    "rework_items": 0,
+    "log": "logs/review/2026-05-26-04-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1965,38 +1967,53 @@
       "log": "logs/deep-review/2026-05-25-16-deep-review.md",
       "summary": "P0 2：LMK 因果链仍残留 computeOomAdj/FrozenState 错误；ProfilingManager.requestProfiling 第三个参数应为 tag；P2 1：Crashpad fork handler 说法需补源或收窄。",
       "task9_result": "needs-rework"
+    },
+    "1.7": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 10,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-26T04:07:00+08:00",
+      "task6_log": "logs/review/2026-05-26-04-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": false,
+      "summary": "Task6 复审通过；无新增 L3/L4 回炉项，保留 Task9 pending 技术复审。"
+    },
+    "11.4": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 7,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-26T04:07:00+08:00",
+      "task6_log": "logs/review/2026-05-26-04-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": false,
+      "summary": "Task6 复审通过；无新增 L3/L4 回炉项，保留 Task9 pending 技术复审。"
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-26T01:12:00+08:00",
+  "last_updated": "2026-05-26T04:07:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-26T01:12:00+08:00",
+    "reviewed_at": "2026-05-26T04:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "16.4",
-      "1.5",
-      "11.1"
+      "1.7",
+      "11.4"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "src/part2-performance/ch11-power/01-power-model.md"
+      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "src/part2-performance/ch11-power/04-case-studies.md"
     ],
-    "log": "logs/review/2026-05-26-01-review.md",
+    "log": "logs/review/2026-05-26-04-review.md",
     "mode": "normal-review",
     "results": {
-      "16.4": "pass-light-edit",
-      "1.5": "pass-light-edit",
-      "11.1": "needs-rework"
+      "1.7": "pass-light-edit",
+      "11.4": "pass-light-edit"
     },
-    "l1_l2_fixes": 33,
-    "new_task6_rework_items": 1,
-    "queue_updates": [
-      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
-    ],
+    "l1_l2_fixes": 17,
+    "new_task6_rework_items": 0,
+    "queue_updates": [],
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-24",
@@ -5467,6 +5484,38 @@
       "queue_priority": 90,
       "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
       "task6_new_rework": true
+    },
+    "1.7": {
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
+    },
+    "11.4": {
+      "section": "11.4",
+      "title": "案例集",
+      "file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     }
   },
   "task2b_rounds": [
@@ -5536,43 +5585,36 @@
   "last_task2a_at": "2026-05-25T09:21:00+08:00",
   "last_task2a_section": "20.15",
   "last_task2a_file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-  "last_task6_review": "2026-05-26T01:12:00+08:00",
+  "last_task6_review": "2026-05-26T04:07:00+08:00",
   "last_task6_sections": [
-    "16.4",
-    "1.5",
-    "11.1"
+    "1.7",
+    "11.4"
   ],
   "last_task6_reviewed_files": [
-    "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-    "src/part2-performance/ch11-power/01-power-model.md"
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task6_at": "2026-05-26T01:12:00+08:00",
+  "last_task6_at": "2026-05-26T04:07:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-26T01:12:00+08:00",
+    "reviewed_at": "2026-05-26T04:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "16.4",
-      "1.5",
-      "11.1"
+      "1.7",
+      "11.4"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "src/part2-performance/ch11-power/01-power-model.md"
+      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "src/part2-performance/ch11-power/04-case-studies.md"
     ],
-    "log": "logs/review/2026-05-26-01-review.md",
+    "log": "logs/review/2026-05-26-04-review.md",
     "mode": "normal-review",
     "results": {
-      "16.4": "pass-light-edit",
-      "1.5": "pass-light-edit",
-      "11.1": "needs-rework"
+      "1.7": "pass-light-edit",
+      "11.4": "pass-light-edit"
     },
-    "l1_l2_fixes": 33,
-    "new_task6_rework_items": 1,
-    "queue_updates": [
-      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
-    ],
+    "l1_l2_fixes": 17,
+    "new_task6_rework_items": 0,
+    "queue_updates": [],
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
@@ -5582,11 +5624,11 @@
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-25T12:09:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-25-12-review.md",
+  "task6_last_review_at": "2026-05-26T04:07:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-26-04-review.md",
   "task6_last_review_sections": [
-    "17.2",
-    "7.6"
+    "1.7",
+    "11.4"
   ],
   "sections_status": {
     "22.11": {
@@ -6860,6 +6902,38 @@
       "queue_priority": 90,
       "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
       "task6_new_rework": true
+    },
+    "1.7": {
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
+    },
+    "11.4": {
+      "section": "11.4",
+      "title": "案例集",
+      "file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-26",
+      "last_task6_at": "2026-05-26T04:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     }
   },
   "task2a_last_processed": {
@@ -6898,39 +6972,34 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-26T01:12:00+08:00",
+    "reviewed_at": "2026-05-26T04:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "16.4",
-      "1.5",
-      "11.1"
+      "1.7",
+      "11.4"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "src/part2-performance/ch11-power/01-power-model.md"
+      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "src/part2-performance/ch11-power/04-case-studies.md"
     ],
-    "log": "logs/review/2026-05-26-01-review.md",
+    "log": "logs/review/2026-05-26-04-review.md",
     "mode": "normal-review",
     "results": {
-      "16.4": "pass-light-edit",
-      "1.5": "pass-light-edit",
-      "11.1": "needs-rework"
+      "1.7": "pass-light-edit",
+      "11.4": "pass-light-edit"
     },
-    "l1_l2_fixes": 33,
-    "new_task6_rework_items": 1,
-    "queue_updates": [
-      "task6-review-20260526-0112-11.1-power-profile-cpu-active-array"
-    ],
+    "l1_l2_fixes": 17,
+    "new_task6_rework_items": 0,
+    "queue_updates": [],
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md"
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7213,8 +7282,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "17.2",
-    "7.6"
+    "1.7",
+    "11.4"
   ],
   "task2b_progress": [
     {
@@ -7243,7 +7312,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
+  "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7810,8 +7879,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-25T12:09:00+08:00",
-  "last_task6_review_section": "17.2,14.10",
+  "last_task6_review_at": "2026-05-26T04:07:00+08:00",
+  "last_task6_review_section": "1.7,11.4",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -7903,10 +7972,10 @@
     "task6_review_notes": "2026-05-24 Task6：写作复审 needs-rework；主体锚点覆盖 5/5，清理一处结构性元叙述，按 Task9 结论加 3 处需确认标注；源码调研附录仍是素材归档，已合并到 P95 queue。"
   },
   "last_task6_reviewed_sections": [
-    "17.2",
-    "7.6"
+    "1.7",
+    "11.4"
   ],
-  "last_task6_result": "needs-rework",
+  "last_task6_result": "pass-light-edit",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -7934,9 +8003,8 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-    "src/part2-performance/ch11-power/01-power-model.md"
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "section_24_19": {
     "section": "24.19",

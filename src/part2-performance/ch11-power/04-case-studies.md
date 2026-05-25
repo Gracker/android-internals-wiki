@@ -12,7 +12,7 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 sources:
   - type: aosp
@@ -31,9 +31,12 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
+last_task6_at: "2026-05-26T04:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-26-04-review.md"
+task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task6_audit: "2026-05-23"
 task9_state: "pending"
 task2b_result: "fixed"
@@ -104,7 +107,7 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobSc
 
 ### 分析思路
 
-面对"待机功耗高"的问题，分析路径很清晰：先看是谁在阻止 CPU 休眠，再看为什么。WakeLock 是阻止 CPU 休眠的最直接机制——只要有进程持有 `PARTIAL_WAKE_LOCK`，系统就不会进入深度睡眠。
+面对"待机功耗高"的问题，排查路径先看是谁在阻止 CPU 休眠，再看为什么。WakeLock 是阻止 CPU 休眠的最直接机制——只要有进程持有 `PARTIAL_WAKE_LOCK`，系统就不会进入深度睡眠。
 
 我们的分析分三步：
 
@@ -172,7 +175,7 @@ public class SyncService extends Service {
 
 根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都很常见。
 
-Android Vitals 对这个问题的度量维度是 "Stuck partial wake lock"：App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。Google Play Console 还有一个相关指标 "Excessive partial wake locks"，衡量 24 小时周期内累计 WakeLock 持有时长超过 2 小时且影响超过 5% 会话的情况。两个指标含义不同，排查时注意区分。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
+Android Vitals 对这个问题的度量维度是 "Stuck partial wake lock"：App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。Google Play Console 还有一个相关指标 "Excessive partial wake locks"，衡量 24 小时周期内累计 WakeLock 持有时长超过 2 小时且影响超过 5% 会话的情况。两个指标含义不同，排查时注意区分。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重，功耗问题会同时影响体验和分发。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -391,7 +394,7 @@ adb shell dumpsys sensorservice | grep "Active connections"
 - **Low Power（低功率）**：数据传输刚结束，等待一段时间确认没有更多数据
 - **Standby（待机）**：没有数据活动，功耗最低（约 5-10mA）
 
-关键在于状态转换的时间：从 Full Power 到 Standby 通常需要 **30-60 秒**的不活动期。如果 App 每 30 秒发一次心跳包，Radio 就永远不会进入 Standby 状态。
+决定因素是状态转换时间：从 Full Power 到 Standby 通常需要 **30-60 秒**的不活动期。如果 App 每 30 秒发一次心跳包，Radio 就永远不会进入 Standby 状态。
 
 [已验证: 官方文档, developer.android.com/training/efficient-downloads/connectivity_patterns; Radio 功耗数值参考 Google 官方培训材料中 4G LTE 典型范围，实际值因网络制式(3G/4G/5G)和 SoC 平台差异显著]
 
@@ -628,7 +631,7 @@ WorkManager 的优势：
 adb shell dumpsys alarm | grep -E "RTC_WAKEUP|ELAPSED_WAKEUP" | grep -v "android"
 ```
 
-如果 App 出现在这个列表中，而且间隔小于 15 分钟，那就值得检查一下是否有更好的替代方案。
+如果 App 出现在这个列表中，而且间隔小于 15 分钟，就需要检查是否有更合适的替代方案。
 
 ---
 
@@ -780,7 +783,7 @@ Doze 模式会大幅限制后台活动，但它只在"设备静止不动、屏�
 
 ## Android 15+ 前台服务超时与崩溃
 
-Android 15（API 35）引入了前台服务（FGS）超时机制，并在 Android 16 进一步收紧。几类 FGS 有明确的时间配额：
+Android 15（API 35）引入了前台服务（FGS）超时机制，并在 Android 16 进一步加强限制。几类 FGS 有明确的时间配额：
 
 | FGS 类型 | 配额 | 超时回调 |
 |---------|------|---------|
@@ -827,7 +830,7 @@ Fatal Exception: android.app.RemoteServiceException
 
 [待验证: 以上工具的可用性和具体操作步骤需在实机上确认]
 
-这些厂商工具的优势是：它们可以读取 SoC 级别的功耗传感器数据（ODPM / Power Rails），精度比 Battery Historian 高得多。如果目标用户群体集中在某个品牌，值得了解对应工具的使用方法。
+这些厂商工具可以读取 SoC 级别的功耗传感器数据（ODPM / Power Rails），精度比 Battery Historian 高得多。如果目标用户群体集中在某个品牌，需要了解对应工具的使用方法。
 
 ---
 
@@ -879,7 +882,7 @@ Pixel 6 及更新设备支持 Power Rails 数据源，Perfetto 可以直接读�
 
 ### 展望：ProfilingManager 自动触发（API 35+，Android 17 强化）
 
-Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取性能 trace。Android 17（API 37）进一步引入 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，允许在系统检测到性能/功耗异常时自动触发 trace 抓取，帮助捕获导致过热的真实负载现场。这两个 API 面向 Android 15+ 和 Android 17+，不属于 Android 8-16 的主要监控路径，但值得作为后续演进方向关注。[已验证: AOSP `android.os.ProfilingManager` (API 35) + Android 17 API reference]
+Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取性能 trace。Android 17（API 37）进一步引入 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，允许在系统检测到性能/功耗异常时自动触发 trace 抓取，帮助捕获导致过热的真实负载现场。这两个 API 面向 Android 15+ 和 Android 17+，不属于 Android 8-16 的主要监控路径，可作为后续演进方向关注。[已验证: AOSP `android.os.ProfilingManager` (API 35) + Android 17 API reference]
 
 ---
 

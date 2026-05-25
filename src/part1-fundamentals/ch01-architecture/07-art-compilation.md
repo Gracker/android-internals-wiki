@@ -11,7 +11,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -43,16 +43,16 @@ related_chapters:
 - '8.3'
 - '16.1'
 task2b_result: "fixed"
-task6_state: "revisiting"
-review_round: 5
+task6_state: "reviewed"
+review_round: 6
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
-last_task6_at: "2026-05-07T09:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-09-review.md"
-task6_review_notes: "2026-05-07 task6 revisiting review 09:06: pass-light-edit。小修 Cloud Compilation 命中时的 `dex2oat` 进程表述；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+last_task6_at: "2026-05-26T04:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-26-04-review.md"
+task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_result: needs-rework
 task9_state: "pending"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
@@ -109,7 +109,7 @@ last_task9_audit: 2026-05-26
 
 ## ART 编译策略的演进史
 
-要理解现在的编译架构，需要知道它为什么长成这样。Android 的编译策略经历了几个关键阶段，每个阶段都是在解决前一个阶段遗留的问题。
+要理解现在的编译架构，需要先看它的形成路径。Android 的编译策略经历了几个关键阶段，每个阶段都在解决前一个阶段遗留的问题。
 
 ### Dalvik 时代：纯 JIT（Android 2.2）和纯解释执行
 
@@ -117,7 +117,7 @@ last_task9_audit: 2026-05-26
 
 ### ART 全量 AOT（Android 4.4–6.0）：解决"热身"问题
 
-ART 在 Android 4.4 引入，核心思路是：**安装时就把所有 DEX 代码编译成机器码**（dex2oat）。这样运行时不需要解释执行也不需要 JIT，直接跑机器码，性能显著提升。
+ART 在 Android 4.4 引入，核心思路是：**安装时就把所有 DEX 代码编译成机器码**（dex2oat）。这样运行时不需要解释执行也不需要 JIT，直接跑机器码，运行期解释和 JIT 压力下降。
 
 但全量 AOT 有严重的副作用：
 
@@ -127,13 +127,13 @@ ART 在 Android 4.4 引入，核心思路是：**安装时就把所有 DEX 代�
 
 ### 混合编译模式（Android 7.0+）：JIT + Profile-Guided AOT
 
-Android 7.0 引入了当前架构的基石——**混合编译模式**。核心思路变了：不再一股脑全编译，而是：
+Android 7.0 引入了当前架构的基石——**混合编译模式**。核心思路变了：不再一次性全编译，而是：
 
 1. **安装时只做 verify**（验证 DEX 代码合法性，不做 AOT 编译），安装速度回归正常。
 2. **运行时用 JIT 编译热点方法**，同时记录 Profile（哪些方法被频繁调用）。
 3. **设备空闲充电时**，后台 dex2oat 根据 Profile 做 AOT 编译，只编译 Profile 中标记的热点方法。
 
-这个架构的核心原则是"**按需编译**"——只编译用户实际用到的代码路径。大部分应用有大量冷门功能，全量 AOT 浪费了大量编译时间和存储空间。
+这个架构的核心原则是"**按需编译**"——只编译用户实际用到的代码路径。大部分应用都有许多冷门功能，全量 AOT 会消耗额外的编译时间和存储空间。
 
 ### Android 12+：ART 模块化与持续优化
 
@@ -148,13 +148,13 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 
 **Cloud Compilation 与 SDM（Android 16）。** Android 16 公开了 Cloud Compilation 路径：Play Store 可直接下发预编译的 `.odex` / `.vdex` 产物，设备跳过本地 dex2oat。配合 SDM（Secure Dex Metadata）校验机制，确保下载的编译产物与设备上的 APK 完全匹配。这解决了两个长期问题：OTA 后首次开机的批量 dex2oat（"正在优化应用"），以及低端设备上 dex2oat 本身耗时过长。对性能分析的影响：Cloud Compilation 命中时，Perfetto 中安装阶段的 `dex2oat` 独立进程将不再出现；如果仍然看到 `dex2oat` 活动，说明该安装来源或设备策略未命中 Cloud Compilation。
 
-**Android 17 编译侧变化。** Android 17 把 `static final` 的行为约束收得更紧（运行时不可通过反射修改），这给编译器提供了更稳定的前提——常量传播、分支裁剪和内联缓存的假设空间更宽。但具体能换来多少常量折叠或内联收益，还要看 ART 版本和实际命中的优化路径。此外，Android 17 将分代 GC（Generational GC）设为默认，GC 暂停时间分布与旧版 CC 有显著差异，这在 §4.3 ART 内存管理中有详细讨论。
+**Android 17 编译侧变化。** Android 17 明确了 `static final` 的行为约束（运行时不可通过反射修改），这给编译器提供了更稳定的前提——常量传播、分支裁剪和内联缓存的假设空间更宽。但具体能换来多少常量折叠或内联收益，还要看 ART 版本和实际命中的优化路径。此外，Android 17 将分代 GC（Generational GC）设为默认，GC 暂停时间分布与旧版 CC 的差异会影响停顿分析，这在 §4.3 ART 内存管理中有详细讨论。
 
 [图：ART 编译策略演进时间线——从 Dalvik JIT 到混合编译到 Cloud Compilation]
 
 ## JIT 编译器的工作原理
 
-混合编译模式下，JIT 编译器是运行时性能的"第一道防线"。应用启动后，在还没有 AOT 编译代码可用之前，性能完全依赖解释执行和 JIT。
+混合编译模式下，JIT 编译器承担运行期的首轮性能支撑。应用启动后，在还没有 AOT 编译代码可用之前，性能依赖解释执行和 JIT。
 
 ### 方法热度追踪
 
@@ -261,7 +261,7 @@ dex2oat 的输入是 DEX 文件（APK 中的 classes.dex），输出是 OAT 文�
 3. **H 图构建**：将 DEX 字节码转换为 SSA 形式的 H 图（高级中间表示）
 4. **优化 Pass**：在 H 图上进行各种优化。H 图采用 **SSA 形式**（Static Single Assignment）——每个变量只被赋值一次，每个使用点通过 φ 函数（phi node）合并控制流分支的值。SSA 形式简化了数据流分析，使得常量传播、死代码消除等优化可以在一次遍历中完成。主要的优化 Pass 包括：
    - **方法内联**：将短小方法的调用替换为方法体本身，消除函数调用开销（参数传递、栈帧切换）
-   - **常量折叠与传播**：编译时可确定的计算直接算出结果，如 `int x = 2 * 3` → `int x = 6`。Android 17 收紧了 `static final` 的行为边界，这给此类优化提供了更稳定的前提（详见版本演进表）
+   - **常量折叠与传播**：编译时可确定的计算直接算出结果，如 `int x = 2 * 3` → `int x = 6`。Android 17 明确了 `static final` 的行为边界，这给此类优化提供了更稳定的前提（详见版本演进表）
    - **死代码消除（DCE）**：移除不可达的代码路径和未使用的变量赋值
    - **逃逸分析**：判断对象是否"逃逸"出方法范围。未逃逸的对象可以在栈上分配而非堆上，减少 GC 压力
    - **去虚化（Devirtualization）**：将虚方法调用（`invoke-virtual`）转换为直接调用，基于类型信息或 Profile 中的内联缓存
@@ -596,12 +596,12 @@ ART 编译管线与全书多个章节有交叉：
 | Android 5.0-6.0 | ART 成为默认运行时，全量 AOT 是主路径 | OTA 后批量重新编译时间长，安装与存储成本明显 |
 | Android 7.0 | 混合编译（JIT + Profile-Guided AOT）成为主路径 | 安装速度恢复，热点代码在运行和空闲维护窗口中逐步编译 |
 | Android 8.0/8.1 | `quicken` / `verify` 等 compiler filter 进入常用路径，JIT code cache 上限扩大 | 首次启动更偏向验证和轻量优化，后台再按 Profile 补 AOT |
-| Android 9.0 | Hidden API 限制开始执行，反射访问边界收紧 | 依赖隐藏 API 的热路径更容易出现兼容性和优化前提变化 |
-| Android 10 | Hidden API 限制继续收紧，灰名单 / 黑名单规则更严格 | 插件化、反射和 Mock 框架需要按目标版本核对运行时行为 |
+| Android 9.0 | Hidden API 限制开始执行，反射访问边界更严格 | 依赖隐藏 API 的热路径更容易出现兼容性和优化前提变化 |
+| Android 10 | Hidden API 限制继续加严，灰名单 / 黑名单规则更严格 | 插件化、反射和 Mock 框架需要按目标版本核对运行时行为 |
 | Android 12 | ART 模块化（Mainline，com.android.art 模块） | 编译器和运行时优化可以独立更新，不完全依赖系统 OTA |
 | Android 14 | ART Service 统一管理编译调度（取代 BackgroundDexOptService 主路径） | 编译调度更集中，设备策略对 dexopt 结果的影响更明显 |
 | Android 16 | Cloud Compilation 等云侧编译资料开始公开 | 安装侧编译流程继续演进，应用侧仍以设备上的实际编译状态为准 |
-| Android 17 | targetSdk 37+ 下 `static final` 行为进一步收紧；分代 GC（Generational GC）默认启用 | 编译器假设更稳定，但收益要结合 ART 版本与代码形态验证 |
+| Android 17 | targetSdk 37+ 下 `static final` 行为边界进一步明确；分代 GC（Generational GC）默认启用 | 编译器假设更稳定，但收益要结合 ART 版本与代码形态验证 |
 
 #### Profile 分发口径
 
@@ -614,7 +614,7 @@ Baseline Profiles、ProfileInstaller 和 Play Cloud Profiles 属于应用分发�
 
 #### Android 17 `static final` 行为变化的编译边界
 
-Android 17 公开确认的是 `static final` 的行为约束进一步收紧，运行时可变性比旧版本更小。对编译器来说，这提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
+Android 17 公开确认的是 `static final` 的行为约束进一步明确，运行时可变性比旧版本更小。对编译器来说，这提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
 
 正文把这一点落成“dex2oat 一定会更激进地做常量折叠和内联”就写过头了。更稳妥的表述是：
 
@@ -636,7 +636,7 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 
 **误区三："dex2oat 编译越快越好"**
 
-编译速度和编译质量是 trade-off。如果编译速度提升导致优化 pass 被跳过（如方法内联、常量折叠），运行时性能会下降。ART 团队在 2025 年的 18% 编译提速是在**不降低编译质量、不增加峰值内存**的前提下实现的——优化的对象是编译器内部的数据结构和调度策略，而非砍掉优化 pass。
+编译速度和编译质量存在取舍关系。如果编译速度提升导致优化 pass 被跳过（如方法内联、常量折叠），运行时性能会下降。ART 团队在 2025 年的 18% 编译提速是在**不降低编译质量、不增加峰值内存**的前提下实现的——优化的对象是编译器内部的数据结构和调度策略，而非砍掉优化 pass。
 
 **误区四："安装时不需要优化，后台慢慢编就行"**
 
