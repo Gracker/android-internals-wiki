@@ -1,11 +1,12 @@
 ---
+
 title: Perfetto 简介与演进
 chapter: '13.1'
 section: '13.1'
 status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-06'
+reviewed_date: "2026-05-25"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 2
@@ -38,11 +39,11 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "pending"
-task9_result: 'needs-rework'
-task2b_state: "fixed"
+pipeline_stage: task9_pending
+task6_state: "reviewed"
+task9_state: pending
+task9_result: needs-rework
+task2b_state: fixed
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T07:27:11+08:00"
 task9_reviewed_date: '2026-05-25'
@@ -54,12 +55,14 @@ review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix:
   pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 last_task9_at: '2026-05-25T05:20:00+08:00'
 task9_review_notes: '2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-25 Task9 闲时抽检: needs-rework。P0 1 / P1 1 / P2 0 / P3 1；LMKD Perfetto event/data source 名称不可核，且 normal mode config 文件路径缺 Android 10/11 stdin 边界。'
-last_task6_at: '2026-05-06T04:13:56+08:00'
+last_task6_at: "2026-05-25T08:15:00+08:00"
 last_task6_audit: '2026-05-24'
-task6_reviewed_date: '2026-05-06'
+task6_reviewed_date: "2026-05-25"
 last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 last_task9_audit: '2026-05-25'
 last_task9_audit_log: 'logs/deep-review/2026-05-25-05-audit.md'
+last_task6_review_log: "logs/review/2026-05-25-08-review.md"
+task6_review_notes: "2026-05-25 Task6：小修 L1/L2 5 处；清理提示性过渡、填充词和“需要注意”句式。未新增 Task6 L3/L4 回炉；等待 Task9 复审。"
 ---
 
 # Perfetto 简介与演进
@@ -248,7 +251,7 @@ TraceConfig 至少要回答四件事：
 - 录多久
 - 结束时一次性写文件，还是按 long trace 配置周期性刷盘
 
-下面是一份能直接给 perfetto normal mode 用的最小 pbtx 示例：
+这是一份能直接给 perfetto normal mode 用的最小 pbtx 示例：
 
 ```protobuf
 buffers {
@@ -300,13 +303,13 @@ cat config.bin | adb shell perfetto -c - \
 
 Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 可以是内核事件、用户空间标记、进程统计、堆分析，也可以是功耗或图形时间线。系统级 data source 多数由 `traced_probes` 这类系统进程代采；App 自定义 trace 则由 App 自己充当 Producer。
 
-除了 `linux.ftrace` 之外，入门阶段最容易混淆的是下面几类能力：
+除了 `linux.ftrace` 之外，入门阶段最容易混淆的是这些能力：
 
 - **Native heap sampling**：看“谁在分配 native 内存”，常见入口是 heapprofd。
 - **Java allocation sampling**：看“谁在频繁分配 Java 对象”，通常也走 heapprofd，但配置里要加 `heaps: "com.android.art"`。
 - **Java heap dump / retained graph**：看“谁把对象留在堆里”，走 `android.java_hprof`。
 - **logcat in trace**：把日志写进同一时间窗里，方便和 Binder、调度、渲染事件一起读。
-- **power / rail counters**：能不能抓到，要看设备和 HAL 是否真的实现了对应能力。
+- **power / rail counters**：能不能抓到，要看设备和 HAL 是否实现了对应能力。
 
 只知道名字还不够，排查效率取决于“这台设备能不能用”。先把常见能力的版本和门槛摆清楚：
 
@@ -320,7 +323,7 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 | Native heap sampling | Android 10+ | 目标 App 通常要 `profileable` 或 `debuggable`；`userdebug` / root 可以扩大到更多系统进程 | native alloc / free 调用栈 |
 | Java allocation sampling | Android 12+ | 和上面一样，目标 App 需要 `profileable` 或 `debuggable` | Java 对象分配热点 |
 | Java heap dump / retained graph | Android 11+ | 目标 App 通常要 `profileable` 或 `debuggable` | retained graph、泄漏保留关系 |
-| power / rail counters | Android 10+，并且设备实现了对应 HAL / energy 接口 | 机型能力决定是否真的有数据 | 电源 rail、子系统能耗 |
+| power / rail counters | Android 10+，并且设备实现了对应 HAL / energy 接口 | 机型能力决定是否有数据 | 电源 rail、子系统能耗 |
 
 这张表只解决“有没有入口”。真要选采集方式，还要把 Consumer 放进来一起看。Traceur、`adb shell perfetto`、`record_android_trace` 和 Android Studio Profiler 能看到的范围并不一样。
 
@@ -435,7 +438,7 @@ Perfetto 提供了一个 C++17 的 Tracing SDK，允许 App 开发者在自己�
 
 SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 schema。采集到的事件数据可以直接在 Perfetto UI 中查看，也可以通过 Trace Processor 用 SQL 查询。
 
-不过需要注意，如果定义了完全自定义的数据格式，可能需要在 Trace Processor 和 UI 中做对应的适配工作，才能正确解析和展示自定义事件。对于大多数 Android 性能分析场景，`android.os.Trace` API（atrace）已经足够，SDK 主要面向有深度定制需求的应用和引擎开发者。[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
+定义完全自定义的数据格式时，可能需要在 Trace Processor 和 UI 中做对应的适配工作，才能正确解析和展示自定义事件。对于大多数 Android 性能分析场景，`android.os.Trace` API（atrace）已经足够，SDK 主要面向有深度定制需求的应用和引擎开发者。[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
 
 ## 版本演进与抓取入口对照表 [自动发现]
 

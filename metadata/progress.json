@@ -238,7 +238,8 @@
     "7.2",
     "7.2",
     "18.2",
-    "24.17"
+    "24.17",
+    "13.1"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -310,27 +311,37 @@
     "src/part2-performance/ch07-smoothness/02-jank-causes.md",
     "src/part2-performance/ch07-smoothness/02-jank-causes.md",
     "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   ],
   "review_summary": "Task9 2026-05-24 20: 审计 7.2、18.2；P0 2 / P1 1 / P2 3；7.2 自动晋升 finalized，18.2 needs-rework。",
   "task6_review_summary": {
     "date": "2026-05-25",
-    "time": "01:12",
+    "time": "08:15",
     "sections": [
-      "24.17",
-      "1.16"
+      "2.18",
+      "7.6",
+      "13.1"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
     ],
     "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-01-review.md",
-    "reviewed_at": "2026-05-25T01:12:00+08:00",
-    "mode": "mixed first/revisiting review",
-    "l1_l2_fixes": 1,
+    "log": "logs/review/2026-05-25-08-review.md",
+    "reviewed_at": "2026-05-25T08:15:00+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 24,
     "risk_marks": 0,
-    "l3_l4_issues": 0
+    "l3_l4_issues": 0,
+    "auto_promoted": [],
+    "existing_pending_queue": [
+      "2.18",
+      "7.6"
+    ]
   },
   "issues_by_section": {
     "1.6": {
@@ -1913,29 +1924,39 @@
       "auto_promoted": true
     }
   },
-  "total_review_sections": 206,
-  "next_review_candidates": [],
+  "total_review_sections": 208,
+  "next_review_candidates": [
+    "14.10",
+    "17.2"
+  ],
   "ready_for_review": 159,
-  "last_updated": "2026-05-25T05:15:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-25T08:15:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "date": "2026-05-25",
-    "time": "01:12",
+    "time": "08:15",
     "sections": [
-      "24.17",
-      "1.16"
+      "2.18",
+      "7.6",
+      "13.1"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
     ],
     "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-01-review.md",
-    "reviewed_at": "2026-05-25T01:12:00+08:00",
-    "mode": "mixed first/revisiting review",
-    "l1_l2_fixes": 1,
+    "log": "logs/review/2026-05-25-08-review.md",
+    "reviewed_at": "2026-05-25T08:15:00+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 24,
     "risk_marks": 0,
-    "l3_l4_issues": 0
+    "l3_l4_issues": 0,
+    "auto_promoted": [],
+    "existing_pending_queue": [
+      "2.18",
+      "7.6"
+    ]
   },
   "task9_last_review": "2026-05-24",
   "ready_to_publish": 186,
@@ -2166,13 +2187,21 @@
     },
     "7.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "needs-rework",
       "task9_state": "reviewed",
       "queue_priority": 95,
       "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
-      "task2b_state": "fixed"
+      "task2b_state": "pending",
+      "title": "案例集",
+      "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-25",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-25T08:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-08-review.md"
     },
     "20.5": {
       "status": "ready-for-review",
@@ -2380,11 +2409,18 @@
     },
     "2.18": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-25T08:15:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+      "task9_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-25-08-review.md",
+      "title": "Adaptive Refresh Rate 与动态帧率控制",
+      "file": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-25",
+      "task6_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending"
     },
     "22.4": {
       "status": "ready-for-review",
@@ -5250,6 +5286,21 @@
       "material_count": 5,
       "last_task2a_at": "2026-05-25T05:15:00+08:00",
       "task2a_result": "gap-created"
+    },
+    "13.1": {
+      "title": "Perfetto 简介与演进",
+      "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-25",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-25T08:15:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-25-08-review.md",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     }
   },
   "task2b_rounds": [
@@ -5315,40 +5366,47 @@
   "task9_last_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
   ],
-  "total_review_files": 64,
+  "total_review_files": 69,
   "last_task2a_at": "2026-05-24T21:16:00+08:00",
   "last_task2a_section": "1.22",
   "last_task2a_file": "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md",
-  "last_task6_review": "2026-05-25T05:08:00+08:00",
+  "last_task6_review": "2026-05-25T08:15:00+08:00",
   "last_task6_sections": [
-    "24.17",
-    "4.9",
-    "18.17"
+    "2.18",
+    "7.6",
+    "13.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-    "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   ],
-  "last_task6_at": "2026-05-25T01:12:00+08:00",
+  "last_task6_at": "2026-05-25T08:15:00+08:00",
   "last_task6_review_detail": {
     "date": "2026-05-25",
-    "time": "01:12",
+    "time": "08:15",
     "sections": [
-      "24.17",
-      "1.16"
+      "2.18",
+      "7.6",
+      "13.1"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
     ],
     "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-01-review.md",
-    "reviewed_at": "2026-05-25T01:12:00+08:00",
-    "mode": "mixed first/revisiting review",
-    "l1_l2_fixes": 1,
+    "log": "logs/review/2026-05-25-08-review.md",
+    "reviewed_at": "2026-05-25T08:15:00+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 24,
     "risk_marks": 0,
-    "l3_l4_issues": 0
+    "l3_l4_issues": 0,
+    "auto_promoted": [],
+    "existing_pending_queue": [
+      "2.18",
+      "7.6"
+    ]
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md"
@@ -5357,11 +5415,12 @@
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.22",
-  "task6_last_review_at": "2026-05-25T01:12:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-25-01-review.md",
+  "task6_last_review_at": "2026-05-25T08:15:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-25-08-review.md",
   "task6_last_review_sections": [
-    "24.17",
-    "1.16"
+    "2.18",
+    "7.6",
+    "13.1"
   ],
   "sections_status": {
     "22.11": {
@@ -6581,30 +6640,39 @@
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "date": "2026-05-25",
-    "time": "01:12",
+    "time": "08:15",
     "sections": [
-      "24.17",
-      "1.16"
+      "2.18",
+      "7.6",
+      "13.1"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
     ],
     "result": "pass-light-edit",
-    "log": "logs/review/2026-05-25-01-review.md",
-    "reviewed_at": "2026-05-25T01:12:00+08:00",
-    "mode": "mixed first/revisiting review",
-    "l1_l2_fixes": 1,
+    "log": "logs/review/2026-05-25-08-review.md",
+    "reviewed_at": "2026-05-25T08:15:00+08:00",
+    "mode": "revisiting review",
+    "l1_l2_fixes": 24,
     "risk_marks": 0,
-    "l3_l4_issues": 0
+    "l3_l4_issues": 0,
+    "auto_promoted": [],
+    "existing_pending_queue": [
+      "2.18",
+      "7.6"
+    ]
   },
   "task6_last_review_files": [
-    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -6888,7 +6956,10 @@
   },
   "task6_last_reviewed_sections": [
     "24.17",
-    "1.16"
+    "1.16",
+    "2.18",
+    "7.6",
+    "13.1"
   ],
   "task2b_progress": [
     {
@@ -6917,7 +6988,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-24-17-audit.md",
-  "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
+  "last_task6_review_log": "logs/review/2026-05-25-08-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7488,8 +7559,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-25T01:12:00+08:00",
-  "last_task6_review_section": "24.17,1.16",
+  "last_task6_review_at": "2026-05-25T08:15:00+08:00",
+  "last_task6_review_section": "2.18,7.6,13.1",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
