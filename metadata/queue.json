@@ -1,6 +1,30 @@
 {
   "queue_entries": [
     {
+      "id": "task6-20260526-0509-18.2-source-research-appendix",
+      "section": "18.2",
+      "section_title": "Android View 标准管线（BLAST 深入）",
+      "priority": 90,
+      "title": "整合或移出正文末尾的源码调研补充素材",
+      "description": "§18.2 正文末尾仍保留 AIW 源码调研补充、调研目标、注入时间、价值等编辑痕迹，需要整理成发布稿正文或移出正文。",
+      "reason": "[review回炉] 正文末尾仍保留源码调研补充与 AIW 素材归档痕迹，不符合发布稿不留编辑痕迹的写作规范。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md L367-L542",
+          "detail": "正文交叉引用之后仍保留 AIW 源码调研补充、调研目标、注入时间、价值等素材归档和编辑痕迹；这部分还混有重复技术说明与待验证素材，不适合进入发布稿。",
+          "suggestion": "由 Task2B 将可用技术点整合进 BLAST、Compose、ART GC 相关正文小节；重复或过期素材移出正文，只保留正式参考资料和必要待验证标注。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-26T05:09:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-26-05-review.md"
+    },
+    {
       "id": "task9-20260526-0430-11.4-jobscheduler-timeout-min-guarantee",
       "section": "11.4",
       "section_title": "案例集",
@@ -21334,14 +21358,14 @@
     }
   ],
   "metadata": {
-    "total_entries": 570,
+    "total_entries": 572,
     "p0_count": 242,
-    "last_updated": "2026-05-26T04:17:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 178,
+    "last_updated": "2026-05-26T05:09:00+08:00",
+    "updated_by": "openclaw-task6",
+    "pending_entries": 180,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 178,
+    "last_updated_by": "openclaw-task6",
+    "pending": 180,
     "completed_entries": 389,
     "last_task2a_gap_mining": "22.17",
     "last_task2a_gap_mining_at": "2026-05-26T04:17:00+08:00",
@@ -21349,9 +21373,9 @@
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T04:17:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 178,
+  "last_updated": "2026-05-26T05:09:00+08:00",
+  "last_updated_by": "openclaw-task6",
+  "pending": 180,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": "22.17",

@@ -19,12 +19,12 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "pending"
-task2b_result: "fixed"
+task2b_result: "pending"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-05-26"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-26"
@@ -38,9 +38,9 @@ last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
-last_task6_at: "2026-05-25T05:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-05-review.md"
-task6_review_notes: "2026-05-25 Task6 revisiting review: pass-light-edit。L1 禁用词/高频词扫描通过，outline 锚点均有正文覆盖；正文无新增 L1/L2 小修，无新增 Task6 回炉。既有 Task9 技术问题仍在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-05-23 Task6 revisiting review: pass-light-edit。L1/L2 小修 6 处（补 H1、规范 outline 锚点、删除高频强调词、去重 frontmatter review_notes、修正 chapter、同步 task2b_result）；无新增 Task6 回炉。既有 Task9 P0 NDK SurfaceControl API 签名问题已在 queue pending，保持 task2b_pending。 历史 review_notes: 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。 | 2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据3/5。"
+last_task6_at: "2026-05-26T05:09:00+08:00"
+last_task6_review_log: "logs/review/2026-05-26-05-review.md"
+task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1 禁用词/高频词扫描通过，outline 锚点覆盖 5/5；无新增 L1/L2 小修，无新增 Task6 回炉。既有 Task9 P0/P1 NDK SurfaceControl 回调签名与示例问题仍在 queue pending，保持 task2b_pending。"
 task9_p0_issues: 2
 task9_p1_issues: 1
 task9_p2_issues: 0
@@ -48,6 +48,7 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
+task6_reviewed_date: "2026-05-26"
 ---
 # Hardware Buffer Renderer
 
