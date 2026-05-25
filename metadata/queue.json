@@ -21341,7 +21341,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
@@ -21354,7 +21354,10 @@
         "https://developer.android.com/topic/performance/rendering/profile-gpu"
       ],
       "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-05-26T04:17:00+08:00"
+      "added_at": "2026-05-26T04:17:00+08:00",
+      "completed_by": "openclaw-task2a",
+      "completed_at": "2026-05-26T05:20:00+08:00",
+      "completion_reason": "Task 2A 内容加工完成，status 已更新为 ready-for-review，进入 Task 6 管线"
     }
   ],
   "metadata": {
