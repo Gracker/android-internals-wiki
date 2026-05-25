@@ -28,6 +28,8 @@ task6_state: reviewed
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T06:05:00+08:00"
+last_task6_audit: "2026-05-26"
+last_task6_audit_log: "logs/review/2026-05-26-06-audit.md"
 last_task6_review_log: "logs/review/2026-05-08-06-review.md"
 task9_state: reviewed
 task9_result: "pass-tech-review"
@@ -41,7 +43,7 @@ pipeline_stage: ready-to-publish
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: '2026-05-08T05:42:56+08:00'
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-05-26 Task6 06:09：闲时抽检。L1 小修 2 处：删去冗余强调词，改写否定纠正式句式；frontmatter 完整，锚点覆盖完整。"
 task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。"
 ---
 # Thermal 管控
@@ -439,7 +441,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 大页使页表条目数量减少约 75%，TLB miss 率理论上下降，页表遍历功耗也会减少。社区估算 MMU 功耗可降低约 4.5%，但该数值因 SoC 和工作负载而异，尚无公开的系统性 benchmark 支撑。
 
-如果 MMU 功耗确实下降，理论上热积累斜率变缓，设备在相同工作负载下维持最高频率的时间窗可能延长。但这条因果链（16KB → TLB miss 降低 → MMU 功耗下降 → 热积累变缓 → thermal throttling 推迟）的每一环都需要实测数据验证。在缺乏同设备 A/B trace 之前，不应把 16KB 当作推迟温控降频的确定因素。
+如果 MMU 功耗下降，理论上热积累斜率变缓，设备在相同工作负载下维持最高频率的时间窗可能延长。但这条因果链（16KB → TLB miss 降低 → MMU 功耗下降 → 热积累变缓 → thermal throttling 推迟）的每一环都需要实测数据验证。在缺乏同设备 A/B trace 之前，不应把 16KB 当作推迟温控降频的确定因素。
 
 [待验证: 需要同设备 4KB/16KB kernel 页大小配置下的 thermal zone trace、CPU freq 上限曲线、time-to-throttle 与 power rail 对照数据]
 
@@ -480,7 +482,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 - **CRITICAL**：降低扫描频率（如 Wi-Fi 扫描、BLE 扫描），减少非必要唤醒
 - **EMERGENCY**：关闭调制解调器（radio）、停止充电、关闭 NFC 等外设
 
-这些动作并非 ThermalManagerService 直接执行，而是各系统组件订阅 thermal status 后各自响应。厂商 thermal engine 可能在 HAL 层独立执行更激进的策略（如直接限频/限核），绕过 Framework 层。
+这些动作通常由各系统组件订阅 thermal status 后自行响应。ThermalManagerService 负责广播状态，具体执行落在各组件或厂商 thermal engine 上；后者可能在 HAL 层执行更激进的策略（如直接限频/限核），绕过 Framework 层。
 
 ### 限制充电电流
 

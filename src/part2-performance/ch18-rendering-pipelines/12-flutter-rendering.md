@@ -28,13 +28,13 @@ sources:
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
 task6_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task9_state: reviewed
-task2b_state: pending
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -46,7 +46,6 @@ last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T06:36:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit-18.12.md"
 ---
-
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
@@ -77,6 +76,7 @@ Flutter 在 Android 上的渲染管线与原生 App 有本质区别：**Flutter 
 - **线程模型**：正文主线按 Flutter 3.29+ 的 merged model 讲，UI task 和平台回调都落在宿主 Main thread
 - **渲染后端**：Impeller 自 Flutter 3.27 起在 Android API 29+ 默认启用，低版本或不满足条件时仍可能回退到 Skia
 - **Android 侧范围**：Platform Views、SurfaceView、TextureView 的组合能力跨多个 Android 版本存在，具体代价要按嵌入控件和系统版本分别判断
+- **Platform Views 演进**：Flutter 3.44+ 新增 Hybrid Composition++（HCPP），实验性 opt-in，要求 Android API 34+ 和 Vulkan，不满足条件时回退到 HC/TLHC
 
 ## 线程模型：Merged Platform Model
 
@@ -219,9 +219,11 @@ sequenceDiagram
 
 [已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterActivity.java` `getRenderMode()` + `FlutterSurfaceView.java` 默认 z-order 行为]
 
-### `FlutterImageView` 是另一个维度的承载
+### `FlutterImageView` 与 `RenderMode.image`
 
-`FlutterImageView` **不是 `RenderMode` 枚举值**——`io.flutter.embedding.android.RenderMode` 只有 `surface` / `texture` 两个值。`FlutterImageView` 真正的角色是：
+`io.flutter.embedding.android.RenderMode` 当前包含三个枚举值：`surface`、`texture`、`image`。常规 `FlutterActivity`/`FlutterFragment` 默认路径主要在 `surface`/`texture` 之间选择；`image` 对应 `FlutterImageView`/`ImageReader`/`Canvas` 路径，多用于 PlatformView 交互、overlay 或内部转换场景。
+
+`FlutterView(Context, FlutterImageView)` 构造器会创建 `image` 模式的视图，但旧的 `FlutterView(Context, RenderMode)` 构造器不支持 `image`。`FlutterImageView` 的主要角色是：
 
 - **Hybrid Composition 下 overlay Surface 的承载 View**：`PlatformViewsController.createOverlaySurface(...)` 在 HC 路径里创建 `ImageReader` 提供的 Surface 作为 overlay，结果由 `FlutterImageView` 承载并绘回宿主 View 层级；
 - **`FlutterView.convertToImageView()` 特殊过渡场景**：内部能力，遇到需要把当前 Flutter 内容快照为 image 时使用。
@@ -243,6 +245,7 @@ sequenceDiagram
 |:---|:---|:---|:---|
 | **Hybrid Composition** | WebView、MapView、输入与无障碍要求高的控件 | 原生 View 更接近 Android 自身行为；Android 10+ 走 `SurfaceControl` 合成后，Layer 组织更稳定 | Flutter 自身渲染更容易掉帧；Android 10 之前拷贝和同步成本更高 |
 | **Texture Layer Hybrid Composition** | 需要变换、裁剪、透明度、和 Flutter 内容一起动画的控件 | Flutter 侧变换能力更完整，宿主布局融合更灵活 | WebView 快速滚动更容易 janky；若嵌入树里出现 SurfaceView，可能被挪进 virtual display，a11y 也会受影响；文本放大镜依赖 Flutter 以 TextureView 渲染 |
+| **Hybrid Composition++ (HCPP)** | Flutter 3.44+ 实验性 opt-in；目标改善原 Hybrid Composition 的合成性能与同步问题 | 减少原生 View 与 Flutter 内容之间的合成开销；同步更高效 | 要求 Android API 34+ 与 Vulkan 后端，条件不满足时自动回退到 HC/TLHC；仍为实验性方案，API 可能变化 |
 
 再按控件类型看，差异会更直观：
 

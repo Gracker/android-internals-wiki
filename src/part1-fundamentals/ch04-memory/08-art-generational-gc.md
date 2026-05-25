@@ -571,6 +571,14 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ---
 
+
+### Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿因果验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-17-art-generational-gc-compose-composition.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级验证ART CC收集器分代模式调度策略（young CC吞吐量→full-heap CC切换）、GcType三枚举、Compose短期对象分配与Young GC因果关系，young GC平均暂停1.83ms不致丢帧，但堆持续增长直到full-heap GC触发。
+- 注入时间：2026-05-26
+- 价值：首次从GC吞吐量调度策略角度量化Compose composition与Young GC的因果链，为GC调优提供数据支撑
+
 ## 附录：AIW-源码调研-20260427 补充
 
 <!-- AIW-源码调研-20260427 -->

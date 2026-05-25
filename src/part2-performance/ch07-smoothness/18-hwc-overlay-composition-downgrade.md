@@ -245,3 +245,10 @@ order by ts;
 - 摘要：从 AOSP HWC2/HWC2.4 Composer HAL 源码出发，梳理 Overlay Plane capability 查询路径、合成降级（DEVICE→CLIENT）7 条触发条件、高通/MTK 厂商行为差异、dumpsys SurfaceFlinger 与 Perfetto frametimeline 证据收集方法，建立设备级合成降级判断基准，含中端 vs 高端 SoC Overlay 能力对比表。
 - 注入时间：2026-05-23
 - 价值：首次从源码级完整梳理 HWC 合成降级触发链路和厂商差异，提供可直接操作的 dumpsys/Perfetto 验证步骤
+
+### HWC Overlay Plane 与 SurfaceFlinger 合成降级机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-hwc-overlay-plane-sf-composition-degradation.md
+- 类型：DeepResearch 调研结果
+- 摘要：从HWC HAL/Composer AIDL源码梳理Overlay Plane典型4个、presentOrValidate回调序列、Layer compositionType分类、RenderEngine GPU fallback路径，以及dumpsys/Winscope/Perfetto frametimeline设备级证据采集方法。
+- 注入时间：2026-05-26
+- 价值：补充HWC合成降级的完整调用链和设备级证据采集闭环，可直接用于卡顿排查

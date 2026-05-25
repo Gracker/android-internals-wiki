@@ -72,7 +72,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-04"
 task6_reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-05-26"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-04
@@ -131,7 +131,7 @@ WMS 与其他主要组件的协作关系可以这样概括：
 
 ## Window 与 Surface 的关系
 
-每个应用窗口在 WMS 侧对应一个 `WindowState`。服务端持有的是 `SurfaceControl` 和窗口元数据，App 侧真正写像素的是 `Surface`，SurfaceFlinger 内部对应的是 layer / layer tree。三者分别负责的内容不同：
+每个应用窗口在 WMS 侧对应一个 `WindowState`。服务端持有的是 `SurfaceControl` 和窗口元数据，App 侧写像素的是 `Surface`，SurfaceFlinger 内部对应的是 layer / layer tree。三者分别负责的内容不同：
 
 - **WMS 端**：创建或更新 `SurfaceControl`，维护 bounds、crop、alpha、layer、visibility、Insets 等属性
 - **App 端**：通过 `ViewRootImpl` 和 `BLASTBufferQueue` 获取可绘制 `Surface`，决定何时 `dequeueBuffer`、绘制、`queueBuffer`
@@ -214,7 +214,7 @@ StartingWindow 的移除时机会影响启动体感：
 - **过早移除**：App 主 Window 第一帧还没准备好时移除 starting surface，用户可能看到短暂闪白或闪黑。
 - **过晚移除**：主 Window 已经完成首帧，starting surface 仍停留在前台，用户会把这段时间感知为启动变慢。
 
-合理的切换点是 App 主 Window 首帧完成之后。服务端通过 `finishDrawing` / `reportDrawFinished` 收到首帧完成信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。分析启动 Trace 时，`reportDrawFinished` 只说明 App 首帧完成；真正的视觉切换还要看 Shell 移除 starting surface、SurfaceFlinger 消费 transaction 和后续 present。
+合理的切换点是 App 主 Window 首帧完成之后。服务端通过 `finishDrawing` / `reportDrawFinished` 收到首帧完成信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。分析启动 Trace 时，`reportDrawFinished` 只说明 App 首帧完成；视觉切换还要看 Shell 移除 starting surface、SurfaceFlinger 消费 transaction 和后续 present。
 
 ## relayoutWindow：WMS 最频繁的操作
 
@@ -225,7 +225,7 @@ StartingWindow 的移除时机会影响启动体感：
 `ViewRootImpl.performTraversals()` 并不是每一帧都跨进程调用 WMS。只有命中 relayout 条件时，当前 traversal 才会走 `IWindowSession.relayout()`。主判断可以压成 6 个条件：
 
 - **`mFirst`**：窗口首次显示，必须向 WMS 申请初始 `SurfaceControl`、frames 和 Insets
-- **`windowShouldResize`**：`requestLayout()` 后测量结果确实改变了窗口尺寸，常见于旋转、多窗口 resize、Dialog `WRAP_CONTENT` 长大
+- **`windowShouldResize`**：`requestLayout()` 后测量结果改变了窗口尺寸，常见于旋转、多窗口 resize、Dialog `WRAP_CONTENT` 长大
 - **`insetsChanged`**：IME、系统栏或 caption bar 的 Insets 状态变化，需要刷新窗口边界
 - **`viewVisibilityChanged`**：窗口从隐藏到显示、从显示到隐藏，或 `mNewSurfaceNeeded=true`
 - **`params != null`**：`setLayoutParams()`、system UI visibility、keepScreenOn 等窗口属性变化
@@ -261,7 +261,7 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 
 ### scheduleTraversals() 与 performTraversals() 的职责边界
 
-`ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。它向 Choreographer 投递 `TraversalRunnable`，在下一次 VSync 时触发 `doTraversal()` → `performTraversals()`。真正的 WMS 跨进程调用只发生在 `performTraversals()` 内部条件满足时。
+`ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。它向 Choreographer 投递 `TraversalRunnable`，在下一次 VSync 时触发 `doTraversal()` → `performTraversals()`。WMS 跨进程调用只发生在 `performTraversals()` 内部条件满足时。
 
 **关键源码路径**（android-14，`ViewRootImpl.java`）：
 
@@ -432,7 +432,7 @@ Android 16 把 connected display desktop windowing 作为正式特性公开。�
 
 1. 先枚举 system_server、App、SurfaceFlinger 中实际出现的 `relayout`、`window`、`surface`、`anim`、`draw` 相关 slice
 2. 再按线程聚类，确认这一帧落在哪个进程和哪条线程
-3. 随后只对当前 trace 里确实存在的 slice 名写 SQL
+3. 随后只对当前 trace 里存在的 slice 名写 SQL
 
 ### 典型分析场景
 

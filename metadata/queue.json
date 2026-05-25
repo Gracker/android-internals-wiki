@@ -45,7 +45,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-26T04:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-26T07:26:56+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "id": "task9-20260526-0320-4.9-cleaner-summary-stale",
@@ -68,7 +70,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-26T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-26T07:26:56+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "id": "task9-20260526-0320-18.17-surfacecontrol-ndk-callback-signature",
@@ -17313,7 +17317,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
@@ -17339,7 +17343,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T04:36:55+08:00"
+      "added_at": "2026-05-21T04:36:55+08:00",
+      "completed_at": "2026-05-26T07:26:56+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "id": "task9-20260521-3.1-input-priority-windowinfos-version-errors",
@@ -17354,7 +17360,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
@@ -17380,7 +17386,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T04:36:55+08:00"
+      "added_at": "2026-05-21T04:36:55+08:00",
+      "completed_at": "2026-05-26T07:26:56+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "id": "task2a-gap-20260521-26.15-android-vitals-play-console-quality",
@@ -17490,7 +17498,7 @@
       "created_date": "2026-05-21",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
@@ -17515,7 +17523,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-21T06:36:00+08:00"
+      "added_at": "2026-05-21T06:36:00+08:00",
+      "completed_at": "2026-05-26T07:26:56+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "id": "task9-audit-20260521-7.12-layoutinflater-android15-source",
@@ -21384,6 +21394,266 @@
       "original_review_log": "logs/deep-review/2026-05-26-05-audit.md"
     },
     {
+      "section": "04-memory",
+      "section_title": "ch04-memory",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7605097326727266350"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了 — 每次换电脑、拉新项目，最让 Android 开发者头疼的是什么？ 不是 Gradle 同步慢，不是模拟器卡——是 JDK 版本又不对了。 明明本地装了 JDK 17，但项目要 JDK 21；CI 机器",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.444263",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612812060795093002"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — Android 的消息机制，从第一个版本到 Android 16，核心实现没怎么变过。 一个 synchronized 锁，守着一条单链表，所有线程排队等着往里塞消息。跑了二十年，终于在 Androi",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.487453",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 72,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.527086",
+      "status": "pending"
+    },
+    {
+      "section": "14-other-tools",
+      "section_title": "ch14-other-tools",
+      "priority": 72,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7596710680897863686"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026年了，Android开发该如何调试布局 — Android开发工具介绍，使用Layout Inspector、AYA可以提升布局分析速度。其中AYA可以辅助排查UI问题 本文针对2026年了，Android开发该如何调试布局进行了深入分析，包含",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.565772",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7622696665740558386"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 要变天：桌面端这次真的来了！ — 键盘、鼠标、多窗口、外接显示器。 这些词放在一起，你会想到什么？Windows？macOS？ 不，Google 说：这是 Android 的未来。 上周，Android 官方博客发布了一篇重磅文章，正",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.604791",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7618226713329090610"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "从 MVVM 到 MVI：为什么说 MVVM 的 UI 状态像“网”，而 MVI 像“一条线”？ — 在 Android 开发里，大家最常听到的架构模式，基本绕不开两个：MVVM 和 MVI。 很多人会有一个直觉印象： 这句话有点抽象，但放到实际 Android 项目里，会变得非常具体。 本文针对从 ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.644623",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7638897090145075246"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": " 为什么 Android 不用接口做 Activity 通信？ — 一、一个 iOS 开发者，把我问住了 上周，一个刚从 iOS 转过来的同事问我： 我下意识想回答：“因为生命周期不稳定”。 但话到嘴边，我停住了。 这个答案——是对的，但不够本质。 于是我们从 Act",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.683952",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7605451617286553627"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "用 Now in Android 架构打造一款 NBA 应用 — 从零到一：用 Now in Android 架构打造一款 NBA 应用 目录 为什么选择 NIA 架构 项目概览 模块化设计：从单体到多模块 Convention Plugins：告别重复的构建配置 ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.722900",
+      "status": "pending"
+    },
+    {
+      "section": "04-memory",
+      "section_title": "ch04-memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Cached App Freezer 机制与 GC 触发路径 — 深入分析 CachedAppOptimizer 的冻结/解冻触发链路，厘清 Freezer 与 LMK、GC 三者的独立决策机制。涵盖 OOM Adj 边界（CACHED_APP_MIN_ADJ=90",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.761699",
+      "status": "pending"
+    },
+    {
+      "section": "02-rendering",
+      "section_title": "ch02-rendering",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 16/17 图形内存优化 DMA-BUF/Gralloc 16KB 页边界 — 验证 libdmabufheap pooling、Gralloc4 IMapper additionalOptions、Binder FDA 批量 fd 安装在 16KB 页大小下的版本实现边界。涵盖",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.807045",
+      "status": "pending"
+    },
+    {
+      "section": "07-smoothness",
+      "section_title": "ch07-smoothness",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-perfetto-jank-cuj-datagrid-scope-boundary.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Perfetto DataGrid 与 Jank CUJ 第三方 App 适用范围边界 — 厘清 Perfetto android.cujs.base 默认仅纳入 com.android.*/com.google.android.* 进程的限制，分析系统 FrameTracker 与 Per",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.849612",
+      "status": "pending"
+    },
+    {
+      "section": "04-memory",
+      "section_title": "ch04-memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 16 ART Generational CMC / userfaultfd GC 机制 — 验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.889914",
+      "status": "pending"
+    },
+    {
+      "section": "03-input",
+      "section_title": "ch03-input",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-sched-ext-eevdf-oom-research.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 sched_ext / EEVDF 调度器 OEM 落地机制 — 分析 Linux 6.12 EEVDF 取代 CFS 的结构性转变，sched_ext 框架允许 OEM 通过 BPF map 注入定制调度策略。详细追踪 GameManagerService→BPF",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-26T05:51:15.930495",
+      "status": "pending"
+    },
+    {
       "id": "task2a-gap-20260526-0616-8.13-biometric-credential-login-performance",
       "section": "8.13",
       "section_title": "BiometricPrompt 与 Credential Manager 登录链路性能",
@@ -21425,6 +21695,48 @@
       "completed_by": "openclaw-task2a",
       "completed_at": "2026-05-26T07:13:00+08:00",
       "completion_reason": "Task 2A draft completed; status ready-for-review; entering Task 6 pipeline"
+    },
+    {
+      "id": "dr-inject-2026-05-26-20-11-2026-05-26-android-mte-asymm-a",
+      "section": "20.11",
+      "section_title": "MTE memtagMode 与 Native 崩溃治理",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-mte-asymm-auto-enablement-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "MTE ASYMM 在 Android App memtagMode=async 下自动启用机制验证 — 验证ASYMM是纯设备侧内核机制：应用层/Zygote/bionic均无ASYMM枚举，内核通过mte_tcf_preferred per-CPU静默升级ASYNC→ASYMM，三层调用链完整梳理。",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-26T06:41:01.124609",
+      "status": "pending"
+    },
+    {
+      "id": "dr-inject-2026-05-26-4-11-2026-05-25-cached-app-freezer-",
+      "section": "4.11",
+      "section_title": "Cached App Freezer 与 GC 边界",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-cached-app-freezer-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android Cached App Freezer 机制深度分析 — 源码级分析CachedAppOptimizer冻结机制：adj≥900触发cgroup v2 freezer、线程TASK_FROZEN状态、Perfetto中线程slice消失但进程仍在、Binde",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-26T06:41:01.124609",
+      "status": "pending"
     }
   ],
   "metadata": {
@@ -21432,20 +21744,20 @@
     "p0_count": 242,
     "last_updated": "2026-05-26T06:16:00+08:00",
     "updated_by": "openclaw-task2a",
-    "pending_entries": 181,
+    "pending_entries": 190,
     "updated_date": "2026-05-26",
     "last_updated_by": "openclaw-task2a",
     "pending": 181,
-    "completed_entries": 390,
+    "completed_entries": 396,
     "last_task2a_gap_mining": "8.13",
     "last_task2a_gap_mining_at": "2026-05-26T06:16:00+08:00",
     "last_task2a_completed_at": "2026-05-25T23:10:00+08:00",
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T06:16:00+08:00",
-  "last_updated_by": "openclaw-task2a",
-  "pending": 181,
+  "last_updated": "2026-05-26T07:26:56+08:00",
+  "last_updated_by": "task2b-rework",
+  "pending": 183,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
