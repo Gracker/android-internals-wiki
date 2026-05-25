@@ -32,22 +32,23 @@ review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-ed
 last_task2b_at: "2026-04-26T15:45:22+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
+last_task2b_rework: "2026-05-25T15:18:38+08:00"
 rework_type: "review回炉修复（Task9 问题单）"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task9_result: "needs-rework"
 task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T10:38:04+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-23"
 last_task9_audit: 2026-05-25
@@ -296,7 +297,7 @@ Watchdog 监控的是 **system_server 自身**中的核心系统服务——Acti
 
 ANR 采用"注册超时 → 完成取消"的模式：发起一个操作的同时设置超时计时器，操作完成后取消计时器。
 
-Watchdog 采用"定期巡检"模式：它运行在 system_server 中的一个独立线程上，每隔一定时间（默认 60 秒）向所有注册的系统服务线程发送一个心跳检查。如果某个服务线程在规定时间内没有响应心跳，Watchdog 就认为它出了问题。
+Watchdog 采用"超时巡检"模式：它运行在 system_server 中的一个独立线程上，默认超时窗口 60 秒，内部按 `watchdogTimeoutMillis / 2` 设定检查间隔。先等待 30 秒进入 `WAITED_HALF` 状态（可做半程 stack dump），再等 30 秒到 `OVERDUE` 时认定服务线程无响应。每个 `HandlerChecker` 可有自定义 timeout，`scheduleCheckLocked()` 还会乘 `Build.HW_TIMEOUT_MULTIPLIER`。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/Watchdog.java
@@ -313,8 +314,8 @@ public class Watchdog {
             for (HandlerChecker hc : mHandlerCheckers) {
                 hc.scheduleCheckLocked();
             }
-            // 等待所有线程完成检查
-            wait(WAIT_INTERVAL);
+            // 两段式等待：30s WAITED_HALF → 60s OVERDUE
+            wait(checkIntervalMillis);
             
             // 检查是否有超时的
             blockedCheckers = getBlockedCheckersLocked();
@@ -378,9 +379,21 @@ ANR 发生时，系统会在 event log 中写入一条记录，包含进程名�
 
 ### Dropbox
 
-Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级错误信息。ANR 信息会被写入 Dropbox 中的 `system_app_anr` 标签。与 traces.txt 不同，Dropbox 中的信息是持久化的，即使设备重启也不会丢失。
+Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级错误信息。ANR 信息会被写入 Dropbox，标签按进程类别区分（AOSP `ProcessErrorStateRecord` 以 eventType="anr" 调用 `addErrorToDropBox`，AMS 用 `processClass(process) + "_" + eventType` 生成 tag）：
 
-通过 `adb shell dumpsys dropbox --print` 可以查看所有 Dropbox 条目，包括历史 ANR 记录。这在分析偶发性 ANR 时特别有用——用户可能无法实时提供 traces.txt，但 Dropbox 中可能保留了之前 ANR 的记录。
+- 三方应用：`data_app_anr`
+- 系统应用：`system_app_anr`
+- `system_server`：`system_server_anr`
+
+与 traces.txt 不同，Dropbox 中的信息是持久化的，即使设备重启也不会丢失。
+
+查看三方应用的 ANR 记录：
+
+```bash
+adb shell dumpsys dropbox --print data_app_anr
+```
+
+不同 ROM 可能有 rate limit 或 tag enable 差异。这在分析偶发性 ANR 时特别有用——用户可能无法实时提供 traces.txt，但 Dropbox 中可能保留了之前 ANR 的记录。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]

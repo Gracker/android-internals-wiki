@@ -34,15 +34,15 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: fixed
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T14:20:00+08:00"
@@ -342,9 +342,15 @@ SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感�
 
 从性能角度,`ProgressStyle` 的收益可以保守地理解成"优先走系统模板,减少自定义 `RemoteViews` 的需求"。
 
-### Android 17 条目暂缓
+### Android 17 (API 37)：MetricStyle 与 Live Update Semantic Coloring
 
-目前没有足够可靠的一手公开材料来确认"后台 NLS 回调限频"已经作为 Android 17 的正式行为发布。
+Android 17 新增 `Notification.MetricStyle` 通知模板，面向健康/健身、计时器、出行等场景，允许在 Always-On Display、锁屏、状态栏同时展示最多三个数据指标。相关类包括 `Notification.Metric`、`Notification.Metric.MetricValue`，用于定义指标名称、单位和数值。
+
+Live Update 扩展到新的模板类型：从 Android 16 的 `ProgressStyle` 扩展到 Android 17 的 `MetricStyle`，并引入 **Semantic Coloring API**，用语义化颜色（绿/红/蓝）标记积极/消极/中性内容，让系统根据语义自动选择展示颜色，减少应用自定义 RemoteViews 的需求。
+
+从性能角度，`MetricStyle` 与 `ProgressStyle` 一样走系统模板渲染，减少自定义 `RemoteViews` 的 inflate 和绘制开销。Live Update 通知通过 promoted ongoing 机制保持展示优先级，对通知 ANR 的影响在于：高频更新指标值时仍受 NMS 包级速率限制约束。
+
+> **边界说明**：后台 NLS 回调限频（per-package rate limiting）目前缺少足够一手公开材料，不写成固定版本结论。
 
 ## 在 Perfetto 中诊断通知 ANR
 
@@ -480,8 +486,9 @@ adb shell dumpsys notification
 | Android 12 (API 31) | NMS update path 存在包级通知速率限制 | 高频 `notify()` 更新更容易被 shed,进度型通知需要主动压频 |
 | Android 13 (API 33) | `POST_NOTIFICATIONS` 成为 runtime permission | 被拒绝的普通通知不会进入常规发布路径,系统总体通知负载会下降 |
 | Android 16 (API 36) | `Notification.ProgressStyle` 新增,promoted ongoing / Live Update 文档可用 | 进度型通知更适合走系统模板,减少自定义 `RemoteViews` 的必要性 |
+| Android 17 (API 37) | `Notification.MetricStyle` 新增,Semantic Coloring API 与 Live Update 扩展到 MetricStyle | 指标型通知走系统模板渲染,语义颜色减少自定义 RemoteViews；高频更新仍受 NMS 速率限制 |
 
-Android 14 / 15 / 17 的分发、排序和后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
+Android 14 / 15 的分发、排序和后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
 
 ## 常见问题与误区
 

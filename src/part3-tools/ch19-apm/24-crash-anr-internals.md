@@ -9,7 +9,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-05-03"
 reviewed_by: openclaw-task6
@@ -22,15 +22,15 @@ sources:
   - "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/signal_catcher.cc"
   - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
   - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
-last_task2b_at: "2026-04-27T19:40:00+08:00"
+last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task9_result: "needs-rework"
 task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-25T13:20:00+08:00"
@@ -412,23 +412,32 @@ API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己
 ```cpp
 // 伪代码，参考 KOOM native-hook 和 Breakpad 思路
 #include <signal.h>
-#include <ucontext.h>
 
 static struct sigaction g_old_handlers[64];
 
-void crash_handler(int sig, siginfo_t* info, ucontext_t* ctx) {
+// sa_sigaction 签名：void (*)(int, siginfo_t*, void*)
+// 第三参是 void*，需要自行强转为 ucontext_t*
+void crash_handler(int sig, siginfo_t* info, void* context) {
+    ucontext_t* ctx = (ucontext_t*)context;
+
     // 1. 获取 fault address（SIGSEGV 的 si_addr）
     void* fault_addr = info->si_addr;
-    
+
     // 2. 获取 instruction pointer (ARM64: ctx->uc_mcontext.pc)
     uint64_t pc = ctx->uc_mcontext.pc;
-    
+
     // 3. 通过 libunwind / libgcc 获取 native backtrace
     // 4. 写入预分配 ring buffer（不可依赖 malloc）
-    // 5. 转发给旧 handler（如果存在）
-    if (g_old_handlers[sig].sa_handler &&
-        g_old_handlers[sig].sa_handler != SIG_DFL) {
-        g_old_handlers[sig].sa_handler(sig, info, ctx);
+    // 5. 按旧 handler 类型转发（三分支模型）
+    struct sigaction* old = &g_old_handlers[sig];
+    if (old->sa_flags & SA_SIGINFO) {
+        // 旧 handler 也是三参 sigaction 型
+        old->sa_sigaction(sig, info, context);
+    } else if (old->sa_handler == SIG_IGN) {
+        // 旧 handler 设了忽略，不转发
+    } else if (old->sa_handler != SIG_DFL) {
+        // 旧 handler 是单参 sa_handler 型，只传 signum
+        old->sa_handler(sig);
     }
 }
 
@@ -454,14 +463,16 @@ LMK 的触发阈值由 `ProcessList.computeOomAdj()` 计算的 `oom_adj` 值决�
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ProcessList.java
-// Android 14 典型阈值：
+// @ AOSP android-14.0.0_r1
 static final int ZOMBIE_ADJ = 1000;
-static final int CACHED_APP_MAX_ADJ = 900;   // 可被冻结的最大值
-static final int CACHED_APP_MIN_ADJ = 700;   // 开始冻结的最小值
-static final int SERVICE_B_ADJ = 700;
+static final int CACHED_APP_MAX_ADJ = 999;   // 缓存进程上限
+static final int CACHED_APP_MIN_ADJ = 900;   // 缓存进程下限
+static final int SERVICE_B_ADJ = 800;
 static final int HOME_APP_ADJ = 600;
 static final int FOREGROUND_APP_ADJ = 0;
 ```
+
+因果链：AMS/OomAdjuster 计算进程 `oom_score_adj` → ProcessList 配置 lmkd adj/minfree 档位 → lmkd 结合内存压力和 adj 选择 kill 目标。`computeOomAdj()` 负责计算 adj 值，不是 lmkd 的触发阈值来源。
 
 **低版本 APM 监听方式**：
 | 方式 | 权限要求 | 精度 | 实现难度 |
@@ -469,13 +480,14 @@ static final int FOREGROUND_APP_ADJ = 0;
 | 轮询 `/proc/<pid>/oom_score_adj` | 需目标进程权限，普通 App 不可行 | 低 | 低 |
 | 监听 LMKd socket | 需 root 或厂商合作 | 高 | 高 |
 | cgroup v2 `memory.high` (Android 12+) | 系统服务才可读 | 高 | 高 |
-| `ActivityManager.isLowMemoryKillReportSupported()` | 普通 API，可查设备能力 | 中 | 低 |
+| `ActivityManager.isLowMemoryKillReportSupported()` (API 30) | 普通 API，查 LMK 是否上报到退出原因 | 中 | 低 |
+| `IBinder.FrozenStateChangeCallback` (API 36) | Binder 远端冻结/解冻通知 | 中 | 低 |
 
 **核心约束**：普通 App 没有权限读取他进程的 `/proc/<pid>/oom_score_adj`，只能通过系统 API 间接判断。
 
 ### 12.4 /data/anr/ 目录不可读的处理
 
-**路径**：`/data/anr/`（API 26+ 统一为 `traces_text.txt`，不再按进程名区分）
+**路径**：`/data/anr/`（现代版本按 `anr_<yyyy-MM-dd-HH-mm-ss-SSS>` 生成单次 ANR trace 文件，权限 0600；早期版本存在 `traces.txt` 路径，文件名和保留策略跨版本不同）
 
 **权限约束**：所有应用可写但不可读（安全加固）。
 
@@ -513,7 +525,7 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
 |------|---------|---------|--------|---------|
 | ApplicationExitInfo | ❌ | ❌ | ❌ | ✅ |
 | Signal Handler 捕获 native crash | ✅ | ✅ | ✅ | ✅ |
-| LMK 事件监听 | ❌ | 有限 | 有限 | ✅ (FrozenStateChangeCallback) |
+| LMK 退出原因查询 | ❌ | ❌ | ❌ | ✅ (`getHistoricalProcessExitReasons` + `REASON_LOW_MEMORY`) |
 | /data/anr/ 读取 | ❌ | ❌ | ❌ | ❌ (仍不可读) |
 | strace 监控 | 需 root | 需 root | 需 root | 需 root |
 | KOOM fork-dump | ✅ | ✅ | ✅ | ✅ |
@@ -568,27 +580,43 @@ ProfilingResult#getResultStatus()    // 状态码
 - 连续 profiling 类型建议提前开始、及时取消
 - 结果文件路径由系统管理，应用只读
 
-源码路径：`frameworks/base/core/java/android/os/ProfilingManager.java`
+源码路径：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（Mainline 模块，不在 `frameworks/base/`）
 
 ### 13.3 ProfilingTrigger（API 36+）
 
 Android 16 引入 `ProfilingTrigger` 事件触发采集：
 
-**Trigger 类型**：
+**Trigger 类型**（按 API 版本分层）：
+
+API 36：
 - `TRIGGER_TYPE_APP_FULLY_DRAWN`：app 报告首帧完成并可交互
-- `TRIGGER_TYPE_APP_REQUESTED`：app 主动请求
-- `TRIGGER_TYPE_ANR`：ANR 发生时（推测）
-- `TRIGGER_TYPE_CRASH`：crash 发生时（推测）
+- `TRIGGER_TYPE_ANR`：ANR 发生时
+
+API 36.1：
+- `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`：app 请求运行时 trace
+
+API 37 (Android 17)：
+- `TRIGGER_TYPE_OOM`：OOM 发生时
+- `TRIGGER_TYPE_COLD_START`：冷启动时
+- `TRIGGER_TYPE_KILL_*` / `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT`：各类 kill 和异常场景
 
 **使用模式**：
 ```java
-val triggerBuilder = ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
-    .setRateLimitingPeriodHours(1)
-val trigger = triggerBuilder.build()
-profilingManager.registerTrigger(trigger, executor, callback)
+// 注册触发器：通过 addProfilingTriggers 批量添加
+val triggers = listOf(
+    ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
+        .setRateLimitingPeriodHours(1)
+        .build()
+)
+profilingManager.addProfilingTriggers(triggers)
+
+// 接收结果：通过 registerForAllProfilingResults 注册回调
+profilingManager.registerForAllProfilingResults(executor) { result ->
+    // 处理 profiling 结果
+}
 ```
 
-源码路径：`frameworks/base/core/java/android/os/ProfilingTrigger.java`
+源码路径：`packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`、`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
 
 ### 13.4 Android 10-16 线上诊断能力版本表
 

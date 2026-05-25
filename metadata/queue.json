@@ -13,7 +13,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
@@ -34,7 +34,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-25T14:20:00+08:00"
+      "added_at": "2026-05-25T14:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T15:21:36+08:00",
+      "completion_reason": "Task 2B rework: Android 17 MetricStyle + Live Update Semantic Coloring 补齐版本演进"
     },
     {
       "id": "task2a-gap-20260525-17.7-private-space-app-lock-boundary",
@@ -80,7 +83,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
@@ -132,7 +135,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-05-25T13:20:00+08:00"
+      "added_at": "2026-05-25T13:20:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T15:18:38+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task9-audit-20260525-1227-9.1-dropbox-tag-boundary",
@@ -147,7 +153,7 @@
       "created_date": "2026-05-25",
       "assigned_to": "content-team",
       "estimated_hours": 0.5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch09-anr/01-anr-design.md"
@@ -175,7 +181,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-25T12:27:10+08:00"
+      "added_at": "2026-05-25T12:27:10+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_at": "2026-05-25T15:18:38+08:00",
+      "completion_reason": "Task 2B rework: source accuracy and version boundary fixes applied"
     },
     {
       "id": "task9-deep-20260525-0730-2.18-vsync-token-boundary",
