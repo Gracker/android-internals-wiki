@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-05-18T02:00:00+08:00",
+  "last_check": "2026-05-27T02:00:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -572,6 +572,91 @@
       ],
       "appendix_updates_needed": true,
       "next_scheduled_check": "2026-05-20"
+    },
+    {
+      "date": "2026-05-27",
+      "timestamp": "2026-05-27T02:00:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "Beta 2 released, stable expected June-July 2026",
+        "android_16_status": "QPR2 released 2026-05-07, Generational CMC now official capability",
+        "recent_updates": [
+          "Android 17 API 37 Beta 2 available",
+          "Android 16 QPR2 released with Generational CMC as official feature",
+          "AutoFDO expanded to android17-6.18 branch with 26.4% benchmark improvement",
+          "MessageQueue lock-free implementation stable in API 37",
+          "App Memory Limiter introduced for per-app memory limits based on device RAM"
+        ],
+        "key_changes": {
+          "generational_cmc_official": "Android 16 QPR2+ Generational CMC as official capability",
+          "app_memory_limiter": "Android 17 per-app memory limits based on device RAM (API 37)",
+          "lock_free_messagequeue": "API 37 lock-free MessageQueue stable, improves performance",
+          "profiling_anomaly_trigger": "ProfilingManager TRIGGER_TYPE_ANOMALY now available"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 351,
+        "files_with_metadata": 289,
+        "files_verified_under_14_days": 103,
+        "files_verified_under_30_days": 160,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 12,
+        "high_risk_files": 3,
+        "medium_risk_files": 4,
+        "low_risk_files": 5
+      },
+      "key_findings": [
+        "3 high-risk version evolution chapters need immediate Android 17 update",
+        "12 total outdated files across all categories",
+        "No files verified over 90 days ago - content is relatively fresh",
+        "Android 16 QPR2+ Generational CMC now official, needs documentation update",
+        "App Memory Limiter (API 37) needs coverage in memory management chapters"
+      ],
+      "action_items": [
+        "Update 1.6, 4.6, 6.4 version evolution chapters with Android 17 features",
+        "Add App Memory Limiter coverage to memory management chapters",
+        "Update applicable_versions for core chapters to include API 37",
+        "Correct CMC GC version boundary (android-14.0.0_r1 already has source)",
+        "Update queue with new priority items for 1.6, 4.6, 6.4"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+          "title": "Android 版本演进中的架构变化",
+          "last_verified": "2026-03-31",
+          "days_overdue": 57,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "Android 17 API 37架构特性，App Memory Limiter，GKI 6.12变更，QPR2 Generational CMC"
+        },
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "last_verified": "2026-03-31",
+          "days_overdue": 57,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "ART Generational GC稳定版，App Memory Limiter，CMC版本边界更正"
+        },
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "last_verified": "2026-04-14",
+          "days_overdue": 43,
+          "threshold_days": 30,
+          "risk_level": "high",
+          "missing_content": "Android 17存储架构更新，CloudCompilation对存储层影响"
+        }
+      ],
+      "queue_updates": [
+        "priority-95: 16.5 ConcurrentMessageQueue 源码结构修正 (Task 9)",
+        "priority-90: 1.6 Android 17 架构特性补充",
+        "priority-85: 4.6 ART Generational GC 稳定版更新",
+        "priority-75: 6.4 存储版本演进更新",
+        "priority-70: 2.18 Adaptive Refresh Rate API 37 更新"
+      ],
+      "appendix_updates_needed": true,
+      "next_scheduled_check": "2026-05-29"
     }
   ]
 }
