@@ -143,5 +143,25 @@
     "completed_at": "2026-05-26T19:04:00+08:00",
     "completed_by": "task2a-content-processing",
     "result": "drafted-ready-for-review"
+  },
+  {
+    "section": "9.1",
+    "section_title": "ANR 设计思想",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ProfilingManager 系统触发式 ANR Profiling API 与产物类型写错",
+    "material_paths": [
+      "logs/deep-review/2026-05-26-19-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/API签名错误",
+        "location": "L442-L447 Android 16 ProfilingManager 系统触发式追踪",
+        "detail": "正文写 ProfilingManager.registerProfilingListener() 并称 ANR 时自动采集 Java Heap Dump / Stack Sample / System Trace。Android 16 公开 API 不存在 registerProfilingListener；注册触发器应通过 addProfilingTriggers(List<ProfilingTrigger>)，结果通过 registerForAllProfilingResults(Executor, Consumer<ProfilingResult>) 接收。ProfilingTrigger.TRIGGER_TYPE_ANR 的官方口径是返回 running system trace snapshot，不是 Java heap dump / stack sample / system trace 三类都返回。",
+        "suggestion": "改为 ProfilingTrigger.Builder(TRIGGER_TYPE_ANR) + ProfilingManager.addProfilingTriggers(...) + registerForAllProfilingResults(...); ANR trigger 产物写成 system trace snapshot，并把 Android 17 新增 TRIGGER_TYPE_COLD_START / TRIGGER_TYPE_OOM / TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 与 API 37 标清。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-26T19:26:00+08:00",
+    "status": "pending"
   }
 ]
