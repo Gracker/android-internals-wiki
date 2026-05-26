@@ -45,6 +45,9 @@ last_task9_at: "2026-05-14T12:37:27+08:00"
 last_task6_at: "2026-05-14T13:06:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-13-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；吸收 Task9 P2 的示例代码接入边界，轻修术语和无数据基线的批量窗口表述。满足 Task6/Task9 通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_audit: "2026-05-26"
+last_task9_audit_log: "logs/deep-review/2026-05-26-09-audit.md"
+
 ---
 
 # 离线优先架构
