@@ -212,6 +212,7 @@ tags:
   - [18.21 EyeDropper API 与跨设备协作性能](part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md)
   - [18.22 Android XR 空间 UI 与环境资产渲染性能](part2-performance/ch18-rendering-pipelines/22-android-xr-spatial-ui-rendering.md)
   - [18.23 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)
+  - [18.24 Advanced Professional Video 与专业视频编解码管线](part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
@@ -385,6 +386,8 @@ tags:
   - [22.15 Compose First 与 View/Compose 混合迁移性能边界](part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md)
   - [22.16 Android 17 DeliQueue 与 RecyclerView 预取时序优化](part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)
   - [22.17 Hardware Bitmap 与 RenderNode 缓存策略](part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md)
+  - [22.18 Adaptive Refresh Rate 与帧率策略实战](part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md)
+  - [22.19 RuntimeColorFilter 与 RuntimeXfermode 性能实践](part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
