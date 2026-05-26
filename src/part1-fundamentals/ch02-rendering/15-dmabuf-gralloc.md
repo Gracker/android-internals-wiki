@@ -9,8 +9,8 @@ last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.google
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-13'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
 sources:
 - type: aosp
   path: frameworks/native/libs/ui/GraphicBuffer.cpp
@@ -58,9 +58,9 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: needs-rework
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: 2026-05-19
@@ -70,9 +70,9 @@ task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
 task9_review_notes: "2026-05-19 Task9 00:20：needs-rework。P1 2：libdmabufheap pooling / Binder FDA 仍停留在待验证但被放进 Android 16 版本增强与参考资料，需拆成已确认能力与研究线索。"
-last_task6_at: '2026-05-13T20:10:00+08:00'
-last_task6_review_log: logs/review/2026-05-13-20-review.md
-task6_review_notes: '2026-05-13 Task6 20:10：needs-rework。L1/L2 小修 17 处：去第一人称/元叙述、压缩填充词、修正 chapter 元数据；正文仍含 Task9 已入队 P0/P1 技术风险，Task6 不裁决技术真伪，交 Task2B/Task9 回炉。'
+last_task6_at: "2026-05-27T04:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-04-review.md"
+task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 6 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
@@ -122,7 +122,7 @@ DMA-BUF 的核心是一个 exporter-importer 模型：
 
 ### handle 的跨进程传递
 
-当 producer 侧某个 slot 第一次拿到新的 `GraphicBuffer`，或者走了 `attachBuffer()` 这类把外部分配 buffer 接进来的路径时，底层才会真的发生一次 fd 引用复制。更常见的 steady-state 情况是，producer 和 consumer 两端都已经缓存了这个 slot 对应的 buffer handle，后续每帧 `queueBuffer()` 只提交 slot 编号、fence 和时序元数据，不会重复把整份 `GraphicBuffer` 重新走一遍 Binder。
+当 producer 侧某个 slot 第一次拿到新的 `GraphicBuffer`，或者走了 `attachBuffer()` 这类把外部分配 buffer 接进来的路径时，底层才会发生一次 fd 引用复制。更常见的 steady-state 情况是，producer 和 consumer 两端都已经缓存了这个 slot 对应的 buffer handle，后续每帧 `queueBuffer()` 只提交 slot 编号、fence 和时序元数据，不会重复把整份 `GraphicBuffer` 重新走一遍 Binder。
 
 以 `dequeueBuffer()` 返回 `BUFFER_NEEDS_REALLOCATION` 的路径为例，更接近源码事实的调用过程是：
 
@@ -181,11 +181,11 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 
 **[待验证]** Android 16/17 在 DMA-BUF Heaps 之上引入了用户空间池化机制。官方 DMA-BUF Heaps 文档把 `libdmabufheap` 描述为 ION → DMA-BUF heaps 迁移抽象层；android-12 到 android-16/main 的 libdmabufheap 源码中未找到通用的“释放后缓存并按尺寸复用” pooling 路径。正文此前将池化写成已确认的 Android 16/17 机制，证据不充分。如果后续能在 `system/memory/libdmabufheap` 或具体 vendor allocator 实现中找到复用代码，可以重新补入正文。
 
-对图形管线来说，这个机制主要影响首次分配和 buffer 重建场景。正常运转时 BufferQueue 的 slot 复用已经规避了大部分分配开销，但 Surface 尺寸变化、format 变更、或者 App 从后台恢复触发 buffer 重建时，池化能减少这些路径上的延迟。
+对图形管线来说，如果后续确认存在通用用户空间池化，它主要影响首次分配和 buffer 重建场景。正常运转时 BufferQueue 的 slot 复用已经规避了大部分分配开销，但 Surface 尺寸变化、format 变更、或者 App 从后台恢复触发 buffer 重建时，池化才可能减少这些路径上的延迟。
 
-池化的 buffer 可能在进程间传递后残留上一轮的数据。内核在 buffer 回收到池时不会主动清零，安全性依赖 allocator 实现的脏数据处理策略。排查内存内容泄漏问题时，这是一个值得关注的边界条件。
+如果 allocator 实现了池化，buffer 可能在进程间传递后残留上一轮的数据。内核在 buffer 回收到池时不会主动清零，安全性依赖 allocator 实现的脏数据处理策略。排查内存内容泄漏问题时，这是一个值得关注的边界条件。
 
-[已验证: AOSP android-16.0.0_r1, source.android.com/docs/core/architecture/kernel/dma-buf-heaps]
+[已验证: 官方文档将 libdmabufheap 描述为 ION 到 DMA-BUF heaps 的迁移抽象层；待验证: 通用 libdmabufheap pooling 路径]
 
 ## Android Gralloc 与 GraphicBuffer
 
@@ -393,7 +393,7 @@ Camera ISP 通常需要大尺寸、高帧率的 DMA-BUF 用于预览和录像输
 - SurfaceFlinger 的合成耗时在 Camera 活跃期间波动加大
 - 系统总内存带宽接近饱和
 
-优化方向：先确认 vendor gralloc、camera HAL 和 BSP 是否真的把不同 heap 映射到可分离的物理内存路径，再决定是否通过 heap 选路降低竞争。heap 名称只说明 allocator 入口，不自动等于内存控制器隔离。
+优化方向：先确认 vendor gralloc、camera HAL 和 BSP 是否把不同 heap 映射到可分离的物理内存路径，再决定是否通过 heap 选路降低竞争。heap 名称只说明 allocator 入口，不自动等于内存控制器隔离。
 
 ## 版本演进
 

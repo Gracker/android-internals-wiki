@@ -257,7 +257,8 @@
     "8.13",
     "22.18",
     "22.19",
-    "9.1"
+    "9.1",
+    "8.7"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -349,21 +350,27 @@
     "src/part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md",
     "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md",
     "src/part2-performance/ch09-anr/01-anr-design.md",
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-27T03:14:00+08:00",
+    "last_review_at": "2026-05-27T04:06:00+08:00",
     "sections": [
-      "7.8"
+      "2.15",
+      "4.8",
+      "8.7"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
     ],
     "result": "pass-light-edit; Task9 pending blocks auto-finalize",
-    "small_fixes": 10,
+    "small_fixes": 18,
     "rework_items": 0,
-    "log": "logs/review/2026-05-27-03-review.md"
+    "log": "logs/review/2026-05-27-04-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -825,7 +832,14 @@
       "p0": 1,
       "p1": 3,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T04:06:00+08:00",
+      "task6_log": "logs/review/2026-05-27-04-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；L1/L2 小修 6 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
     },
     "3.4": {
       "p0": 0,
@@ -1617,12 +1631,12 @@
     },
     "4.8": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 10,
+      "task6_l1_l2_fixes": 7,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
-      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_reviewed_at": "2026-05-27T04:06:00+08:00",
+      "task6_log": "logs/review/2026-05-27-04-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；L1/L2 小修 10 处。既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理，Task6 未新增回炉。"
+      "task6_note": "复审通过；L1/L2 小修 7 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
     },
     "14.8": {
       "task6_result": "pass-light-edit",
@@ -2002,30 +2016,45 @@
       "task6_new_rework": false,
       "auto_finalized": false,
       "summary": "Task6 复审通过；无新增 L3/L4 回炉项，保留 Task9 pending 技术复审。"
+    },
+    "8.7": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 5,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T04:06:00+08:00",
+      "task6_log": "logs/review/2026-05-27-04-review.md",
+      "task6_new_rework": false,
+      "task6_note": "复审通过；L1/L2 小修 5 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T03:37:00+08:00",
-  "last_updated_by": "openclaw-task2b-verifier",
+  "last_updated": "2026-05-27T04:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T03:14:00+08:00",
+    "reviewed_at": "2026-05-27T04:06:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "7.8"
+      "2.15",
+      "4.8",
+      "8.7"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
     ],
-    "log": "logs/review/2026-05-27-03-review.md",
-    "mode": "normal-review-revisit",
+    "log": "logs/review/2026-05-27-04-review.md",
+    "mode": "首次 review / revisiting",
     "results": {
-      "7.8": "pass-light-edit"
+      "2.15": "pass-light-edit",
+      "4.8": "pass-light-edit",
+      "8.7": "pass-light-edit"
     },
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 18,
     "new_task6_rework_items": 0,
-    "queue_updates": [],
+    "queue_updates": 0,
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-26",
