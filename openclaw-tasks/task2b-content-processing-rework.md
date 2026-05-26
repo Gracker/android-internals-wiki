@@ -13,6 +13,58 @@
 
 **绝不写新章节，不主动全书精修，不重新做 review 裁决。每轮处理 1-3 个章节，默认 2 个；仅当问题范围清晰且总工作量可控时处理 3 个。若问题跨度大或存在重度源码修复，退回处理 1 个。**
 
+## Task2B 分流模型（2026-05-26）
+
+为避免 100+ 回炉 backlog 全压在单个 worker 上，Task2B 拆成三条受控 lane：
+
+| Lane | 职责 | 吞吐 | 允许改正文 |
+|------|------|------|------------|
+| Task2B 主修复 | 中重度 review 回炉，处理 Task6/Task9/External Review 明确问题单 | 每轮 1-3 章，默认 2 章 | 是 |
+| Task2B Lite | 高置信局部小修，只处理 API 名、源码路径、版本限定、交叉引用、frontmatter 状态等小问题 | 每轮 1-2 章 | 是，但单章正文改动 ≤ 20 行 |
+| Task2B Verifier | 复查刚修完的章节是否已正确回流 Task6，修正状态/queue/progress/log | 每轮最多 6 章 | 默认否；只允许状态与日志修复 |
+
+三条 lane 的共同边界：
+- 不创建新章节，不做 backup 选题，不处理空 draft。
+- 不重新做 Task6/Task9 裁决。
+- 不随机精修，只消费已经由 review/frontmatter 标记的 backlog。
+- 同一轮内只处理自己加锁成功的章节；拿不到锁就跳过。
+
+### 并发锁协议
+
+所有 Task2B lane 在修改章节前必须创建章节级锁：
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+from datetime import datetime
+import os, re
+
+AIW = Path('/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki')
+LOCK_DIR = AIW / 'metadata' / 'locks' / 'task2b'
+LOCK_DIR.mkdir(parents=True, exist_ok=True)
+
+rel = 'src/partX/example.md'  # 替换为本轮目标章节相对路径
+lane = 'main'                 # main / lite / verifier
+safe = re.sub(r'[^A-Za-z0-9_.-]+', '__', rel)
+lock = LOCK_DIR / f'{safe}.lock'
+payload = f'{lane}\n{rel}\n{datetime.now().isoformat(timespec="seconds")}\n'
+try:
+    fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    with os.fdopen(fd, 'w') as f:
+        f.write(payload)
+    print(f'LOCKED:{lock}')
+except FileExistsError:
+    print(f'SKIP_LOCKED:{lock}')
+PY
+```
+
+锁规则：
+- 锁文件存在且 mtime 小于 3 小时：必须跳过该章节。
+- 锁文件存在但 mtime 超过 3 小时：可视为 stale lock，先在报告中声明，再用 `trash` 或 Python 移动到 `metadata/locks/task2b/archive/`，然后重新加锁。
+- 修复完成、提交完成后删除自己创建的锁。
+- 如果运行失败，锁可以保留，下一轮按 stale lock 规则处理。
+- Git 提交只 add 本轮已加锁章节及必要的 `metadata/queue.json`、`metadata/progress.json`、`intake/suggestions.md`、对应日志；禁止 `git add .`。
+
 ## 本地环境
 - 项目目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/
 - 章节源文件：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/
@@ -64,7 +116,7 @@
 - `pipeline_stage: task2b_pending`
 - `task2b_state: pending`
 
-每轮最多处理 5 个，默认目标 3 个。若命中的回炉项主要是轻中度修复（如局部源码勘误、版本差异补充、trace 观察点补强），优先尝试处理 3-5 个；若包含重度结构性返工，则降回 1 个。
+主修复 lane 每轮最多处理 3 个，默认目标 2 个。若命中的回炉项主要是轻中度修复（如局部源码勘误、版本差异补充、trace 观察点补强），可处理 3 个；若包含重度结构性返工，则降回 1 个。轻量小修交给 Task2B Lite，不在主修复 lane 内追求数量。
 
 ### Step 1.1：frontmatter backlog fallback（queue 不可见时强制执行）
 
