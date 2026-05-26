@@ -1,10 +1,10 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 207,
-  "finalized": 170,
-  "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-25",
+  "ready-for-review": 205,
+  "finalized": 172,
+  "task9_result": "auto-fixed",
+  "task9_reviewed_date": "2026-05-27",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -258,7 +258,10 @@
     "22.18",
     "22.19",
     "9.1",
-    "8.7"
+    "8.7",
+    "1.1",
+    "2.15",
+    "10.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",

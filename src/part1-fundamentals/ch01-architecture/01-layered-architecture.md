@@ -3,7 +3,7 @@
 title: "Android 分层架构"
 chapter: "1.1"
 section: "1.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-05-27"
 last_verified_against: "AOSP android-11.0.0_r1/android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
@@ -36,17 +36,17 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-22"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-27"
 task2b_state: fixed
 task2b_result: fixed  # 2026-05-27 rework: SurfaceFlinger trace version matrix, 16 KB page-size scope, quantified-data source boundaries
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T04:51:16+08:00"
-task9_review_notes: "2026-05-22 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。SurfaceFlinger trace 名称矩阵漏 Android 11-12；16 KB Page Size Android 16 设备要求口径需修正；量化数据条件补强写入 suggestions。已写入 queue.json。"
+last_task9_at: "2026-05-27T05:28:00+08:00"
+task9_review_notes: "2026-05-27 Task9 05:28：pass-tech-review。复核 SurfaceFlinger 版本切片、Treble/AIDL HAL、16KB page size、Binder/SELinux 与 Perfetto 映射；无新增 P0/P1。既有 Binder/JNI 量化数据 P2 已在 suggestions.md 记录，不重复新增。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-27T05:14:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
@@ -54,7 +54,7 @@ last_task9_audit: "2026-05-17"
 task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
 last_task2b_at: "2026-05-27T04:50:00+08:00"
 ---
 
