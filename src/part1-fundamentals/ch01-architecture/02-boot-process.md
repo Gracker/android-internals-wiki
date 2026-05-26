@@ -2,23 +2,23 @@
 title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-06"
-reviewed_by: openclaw-task6
-review_type: task6-writing-quality-review
-task6_state: revisiting
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
+review_type: "task6-writing-quality-review"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task6_reviewed_date: "2026-05-27"
 task2b_state: fixed
 task2b_result: fixed-lite
-task9_state: pending
-task9_result: needs-rework
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-19
-last_task9_at: "2026-05-19T22:20:00+08:00"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T06:23:00+08:00"
 last_task2b_at: "2026-05-06T16:04:00+08:00"
 last_task2b_lite_at: "2026-05-27"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
@@ -29,7 +29,7 @@ applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-17"
 last_verified_against: "AOSP android-16.0.0_r1, source.android.com 官方文档"
 confidence: high
-last_task9_review_log: logs/deep-review/2026-05-19-22-audit.md
+last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
 sources:
   - type: aosp
     path: "system/core/init/first_stage_init.cpp @ android-16.0.0_r1"
@@ -87,12 +87,12 @@ related_chapters:
   - "1.11"
   - "8.3"
 review_notes: "2026-05-06T16:04 Task2B：P0 module.layout 修正为 modules.load / BOARD_VENDOR_KERNEL_MODULES_LOAD / BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD + MODULE_SOFTDEP() + async_probe=1。送 Task6 复审。 | 2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4。 | 2026-05-19 22:20 闲时抽检：bootstat 命令参数错误。 | 2026-05-20 03:17 Task2B 修正：bootstat -l→-p。"
-last_task6_at: "2026-05-18T17:14:29+08:00"
+task9_review_notes: "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4。 | 2026-05-19 22:20 闲时抽检：bootstat 命令参数错误。 | 2026-05-20 03:17 Task2B 修正：bootstat -l→-p。 | 2026-05-27 06:23 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task6_at: "2026-05-27T06:09:00+08:00"
 last_task6_audit: "2026-05-18"
 last_task6_audit_result: pass-no-edit
-task6_review_notes: "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_review_log: "logs/review/2026-05-06-16-review.md"
+task6_review_notes: "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-27 06:09 Task6：复审通过；禁用词扫描无新增硬伤，outline 覆盖完整，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-27-06-review.md"
 last_task9_audit: "2026-05-19"
 last_task9_audit_result: needs-rework
 ---

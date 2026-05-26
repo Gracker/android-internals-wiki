@@ -6,7 +6,7 @@ status: "ready-for-review"
 reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task9_result: needs-rework
+task9_result: "auto-fixed"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -20,15 +20,15 @@ sources:
   - type: aosp
     path: "frameworks/base/core/res/res/xml/power_profile.xml"
   - type: aosp
-    path: "services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
   - type: aosp
-    path: "services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
   - type: aosp
-    path: "services/core/java/com/android/server/power/stats/CpuPowerCalculator.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/CpuPowerCalculator.java"
   - type: aosp
-    path: "services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java"
   - type: aosp
-    path: "services/core/java/com/android/server/am/BatteryStatsService.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
   - type: aosp
     path: "hardware/interfaces/power/stats/1.0/IPowerStats.hal"
   - type: aosp
@@ -42,23 +42,24 @@ related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
 task6_state: "revisiting"
-task9_state: pending
+task9_state: "reviewed"
 pipeline_stage: "task6_pending"
 last_task2b_at: "2026-05-27T03:42:00+08:00"
 last_task2b_lite_at: "2026-05-27"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-task9_reviewed_date: "2026-05-07"
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-25T22:28:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-22-audit.md"
-task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。"
+last_task9_at: "2026-05-27T06:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
+task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。"
 last_task6_at: "2026-05-26T01:12:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 last_task9_audit: 2026-05-25
 task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。"
+last_task9_autofix_at: "2026-05-27"
 ---
 
 
@@ -175,7 +176,7 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 ### CPU：功耗敏感项
 
-CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 进入 active 状态后的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 scaling policy 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、policy running time 和 `getCpuFreqTimes()`。很多设备上 scaling policy 和 cluster 接近，但 Android 16 的源码口径已经按 policy 组织。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
+CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 进入 active 状态后的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 scaling policy 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、policy running time 和 `getCpuFreqTimes()`。很多设备上 scaling policy 和 cluster 接近，但 Android 16 的源码口径已经按 policy 组织。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
 
 如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。设置页里的 CPU 百分比也是沿着这套归属流程产出的，不能一概当成 `power_profile.xml` 查表结果。
 
@@ -199,7 +200,7 @@ CPU charge ≈ cpu.active × activeTime
 
 ### Display：最直观的耗电源
 
-屏幕依然是大头，但“屏幕功耗不归属到 App”只覆盖了旧 batterystats 视角。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
+屏幕依然是大头，但“屏幕功耗不归属到 App”只覆盖了旧 batterystats 视角。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
 
 所以，旧 batterystats 视角里常见的“屏幕是系统项”只说对了一半。到了 `BatteryUsageStats` 这层，屏幕既可能以 smear 的方式分摊到前台 UID，也可能在有硬件计量时直接带着 UID 归属结果出现。我们看设置页、电池 bugreport 和 Power Profiler 时，要先分清设备走的是哪条路径。
 
@@ -249,7 +250,7 @@ BatteryStats 的数据采集采用两种机制：
 
 ### 数据存储与持久化
 
-BatteryStats 的数据以二进制格式存储在 `/data/system/batterystats.bin` 文件中。自动 reset 不是每次充满或每次拔掉充电器都会发生。`android-16.0.0_r1` 的 `BatteryStatsImpl.shouldResetOnUnplugLocked()` 只在几类条件下触发 reset：设备处于满电或高电量区间、从很低电量充到较高电量的显著充电，或者统计 session 因反复部分充放电拖得过长。没有满足这些条件时，拔掉充电器只会继续沿用当前统计窗口，不会重置计数器。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/BatteryStatsImpl.java]
+BatteryStats 的数据以二进制格式存储在 `/data/system/batterystats.bin` 文件中。自动 reset 不是每次充满或每次拔掉充电器都会发生。`android-16.0.0_r1` 的 `BatteryStatsImpl.shouldResetOnUnplugLocked()` 只在几类条件下触发 reset：设备处于满电或高电量区间、从很低电量充到较高电量的显著充电，或者统计 session 因反复部分充放电拖得过长。没有满足这些条件时，拔掉充电器只会继续沿用当前统计窗口，不会重置计数器。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java]
 
 Battery Historian 常说的“先 reset 再采集”，指的是手动执行 `adb shell dumpsys batterystats --reset` 来切出一个干净窗口。这和系统在 unplug 时按条件自动 reset，是两套不同机制。
 
@@ -300,7 +301,7 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会�
 
 ### 归属的基本思路
 
-`BatteryStatsImpl` 先记账，再由 `BatteryUsageStatsProvider` 调各个 `*PowerCalculator` 做归属。`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等计算结果会写进 `BatteryUsageStats.Builder`，产出 `BatteryUsageStats` 和 `UidBatteryConsumer` 快照。Settings 电池页、`adb bugreport` 里的电池摘要，消费的就是这层数据；它们看的是归属后的结果，不是 HAL 原始读数。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/BatteryStatsImpl.java; services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; services/core/java/com/android/server/am/BatteryStatsService.java]
+`BatteryStatsImpl` 先记账，再由 `BatteryUsageStatsProvider` 调各个 `*PowerCalculator` 做归属。`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等计算结果会写进 `BatteryUsageStats.Builder`，产出 `BatteryUsageStats` 和 `UidBatteryConsumer` 快照。Settings 电池页、`adb bugreport` 里的电池摘要，消费的就是这层数据；它们看的是归属后的结果，不是 HAL 原始读数。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java]
 
 [图：BatteryStatsImpl 记录时长、计数器和能量桶，BatteryUsageStatsProvider 调用 CpuPowerCalculator、ScreenPowerCalculator 等生成 BatteryUsageStats 和 UidBatteryConsumer，随后供 Settings 电池页和 bugreport 展示]
 
@@ -526,11 +527,11 @@ ODPM 提供的是 meter / rail / energy consumer 读数，不是自动给 `power
 ## 参考资料
 
 - AOSP power_profile.xml: `frameworks/base/core/res/res/xml/power_profile.xml`
-- AOSP BatteryStatsImpl: `services/core/java/com/android/server/power/stats/BatteryStatsImpl.java`
-- AOSP BatteryUsageStatsProvider: `services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java`
-- AOSP CpuPowerCalculator: `services/core/java/com/android/server/power/stats/CpuPowerCalculator.java`
-- AOSP ScreenPowerCalculator: `services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java`
-- AOSP BatteryStatsService: `services/core/java/com/android/server/am/BatteryStatsService.java`
+- AOSP BatteryStatsImpl: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java`
+- AOSP BatteryUsageStatsProvider: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java`
+- AOSP CpuPowerCalculator: `frameworks/base/services/core/java/com/android/server/power/stats/CpuPowerCalculator.java`
+- AOSP ScreenPowerCalculator: `frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java`
+- AOSP BatteryStatsService: `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`
 - IPowerStats HAL (HIDL 1.0): `hardware/interfaces/power/stats/1.0/IPowerStats.hal`
 - IPowerStats HAL (AIDL): `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`
 - Android 电源概览: https://source.android.com/docs/core/power
