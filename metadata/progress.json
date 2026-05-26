@@ -1518,7 +1518,8 @@
     },
     "1.1": {
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed"
     },
     "20.2": {
       "task6_result": "pass-light-edit",
@@ -4514,10 +4515,10 @@
     },
     "1.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-22T04:07:00+08:00",
       "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
       "title": "Android 分层架构",
       "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
@@ -4525,7 +4526,10 @@
       "reviewed_date": "2026-05-22",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-27T04:50:00+08:00",
+      "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement."
     },
     "20.2": {
       "status": "ready-for-review",
@@ -7746,16 +7750,19 @@
     "title": "Android 分层架构",
     "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
+    "task2b_state": "fixed",
     "last_task9_at": "2026-05-22T04:51:16+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
     "reviewed_date": "2026-05-22",
-    "reviewed_by": "openclaw-task9"
+    "reviewed_by": "openclaw-task9",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-27T04:50:00+08:00",
+    "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement."
   },
   "section_15_8": {
     "section": "15.8",
