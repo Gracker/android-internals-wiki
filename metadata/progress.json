@@ -8302,19 +8302,25 @@
     "title": "Android 功耗模型",
     "file": "src/part2-performance/ch11-power/01-power-model.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "needs-rework",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-26",
     "last_task6_at": "2026-05-26T01:12:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
+    "task2b_state": "fixed",
     "queue_priority": 90,
     "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
-    "task6_new_rework": true
+    "task6_new_rework": true,
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-05-27",
+    "last_task2b_at": "2026-05-27T03:42:00+08:00",
+    "last_task2b_queue_source": "frontmatter-fallback",
+    "last_task2b_priority": 90,
+    "task2b_note": "Task2B Lite 修复 power_profile.xml 示例中 cpu.active 标签形态：按 AOSP android-16.0.0_r1 公共 profile 改为 array。"
   },
   "task2b_daily": {
     "2026-05-26": {
@@ -8423,5 +8429,18 @@
     "last_task2b_queue_source": "task6-review",
     "last_task2b_priority": 90,
     "last_task9_review_log": "logs/deep-review/2026-05-27-01-deep-review.md"
-  }
+  },
+  "task2b_lite_daily": {
+    "2026-05-27": {
+      "sections_processed": 1,
+      "items_completed": 1
+    }
+  },
+  "last_task2b_lite_at": "2026-05-27T03:42:00+08:00",
+  "last_task2b_lite_sections": [
+    "11.1"
+  ],
+  "last_task2b_lite_files": [
+    "src/part2-performance/ch11-power/01-power-model.md"
+  ]
 }

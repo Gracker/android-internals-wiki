@@ -39,12 +39,13 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-task2b_result: "pending"
-task2b_state: "pending"
-task6_state: "reviewed"
-task9_state: reviewed
-pipeline_stage: "task2b_pending"
-last_task2b_at: "2026-05-07T07:47:17+08:00"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: pending
+pipeline_stage: "task6_pending"
+last_task2b_at: "2026-05-27T03:42:00+08:00"
+last_task2b_lite_at: "2026-05-27"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-05-07"
@@ -131,8 +132,10 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
         <value>210</value>
     </array>
 
-    <!-- CPU 公共基础项 -->
-    <item name="cpu.active">52</item>
+    <!-- CPU 公共基础项：Android 16 公共 profile 中为 array 形态 -->
+    <array name="cpu.active">
+        <value>52</value>
+    </array>
     <item name="cpu.idle">3.5</item>
 
     <item name="wifi.on">3</item>
