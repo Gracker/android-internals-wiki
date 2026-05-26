@@ -2155,12 +2155,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-18T15:24:05+08:00",
+  "last_task2b_at": "2026-05-26T22:50:00+08:00",
   "last_task2b_sections": [
-    "4.2",
-    "7.6"
+    "9.1"
   ],
-  "last_task2b_action": "回炉修复: 4.2(MGLRU 源码锚点修正) + 7.6(SF/HWC CompositionEngine 链路修正)",
+  "last_task2b_action": "回炉修复: 9.1 ProfilingManager 系统触发式 ANR Profiling API 与产物口径修正",
   "sections": {
     "17.2": {
       "status": "ready-for-review",
@@ -7174,6 +7173,19 @@
         "§25.17: ADB重定向修正(4处) + enable/throw测试边界 + 播放失败信号 + BOOT_COMPLETED FGS限制",
         "§18.1: Flutter线程合并版本 3.29→3.32 stable"
       ]
+    },
+    {
+      "timestamp": "2026-05-26T22:50:00+08:00",
+      "sections_processed": [
+        "9.1"
+      ],
+      "sections_fixed": [
+        "9.1"
+      ],
+      "issues_addressed": 1,
+      "details": [
+        "§9.1: ProfilingManager.registerProfilingListener 删除，改为 ProfilingTrigger.Builder(TRIGGER_TYPE_ANR) + addProfilingTriggers + registerForAllProfilingResults；ANR 产物限定为 running system trace snapshot；补 API 37 触发器边界。"
+      ]
     }
   ],
   "task2a_result": "processed-draft",
@@ -7400,6 +7412,14 @@
       "fixed_date": "2026-05-20T07:21:14+08:00",
       "queue_id": "task9-17.4-sched-ext-android612-version-boundary",
       "fix_summary": "源码锚点拆分、DSQ/slice 版本拆开、SCX_OPS_SWITCH_PARTIAL 接管范围"
+    },
+    {
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "status": "fixed",
+      "fixed_date": "2026-05-26T22:50:00+08:00",
+      "queue_id": "task9-deep-review-20260526-1926-9.1-profilingmanager-anr-trigger",
+      "fix_summary": "系统触发式 ANR Profiling API 与产物口径修正"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -8248,16 +8268,16 @@
   },
   "task2b_daily": {
     "2026-05-26": {
-      "sections_processed": 5,
-      "items_completed": 5
+      "sections_processed": 6,
+      "items_completed": 6
     }
   },
   "task2b_last_run": "2026-05-26",
   "task2b_pending_counts": {
-    "p95": 33,
-    "p90": 15,
-    "p85": 81,
-    "total": 129
+    "p95": 132,
+    "p90": 2,
+    "p85": 7,
+    "total": 141
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -8280,8 +8300,29 @@
       "section": "5.2",
       "date": "2026-05-26T11:21:27+08:00",
       "by": "task2b-content-processing-rework"
+    },
+    {
+      "section": "9.1",
+      "date": "2026-05-26T22:50:00+08:00",
+      "by": "task2b-content-processing-rework"
     }
   ],
-  "last_task2b_completed": "2026-05-26T11:21:27+08:00",
-  "last_task2b_completed_at": "2026-05-26T11:21:27+08:00"
+  "last_task2b_completed": "2026-05-26T22:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-26T22:50:00+08:00",
+  "section_9_1": {
+    "section": "9.1",
+    "title": "ANR 设计思想",
+    "file": "src/part2-performance/ch09-anr/01-anr-design.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-26T22:50:00+08:00",
+    "last_task2b_queue_source": "task9-deep-tech-review",
+    "last_task2b_priority": 95
+  }
 }

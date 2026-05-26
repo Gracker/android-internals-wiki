@@ -162,6 +162,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-26T19:26:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-26T22:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "result": "fixed",
+    "fix_summary": "修正 Android 16 ProfilingManager 系统触发 API：addProfilingTriggers + registerForAllProfilingResults；ANR 产物限定为 running system trace snapshot，并补充 Android 17/API 37 触发器边界。"
   }
 ]
