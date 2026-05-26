@@ -1,5 +1,4 @@
 ---
-
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
@@ -10,7 +9,7 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-05-26"
 reviewed_by: "openclaw-task6"
 confidence: medium
 sources:
@@ -49,18 +48,19 @@ task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T19:26:00+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 last_task9_audit: 2026-05-26
 last_task9_audit_at: "2026-05-26T11:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-11-audit.md"
-last_task6_at: "2026-05-25T16:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-16-review.md"
-task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+last_task6_at: "2026-05-26T20:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-26-20-review.md"
+task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。"
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-25"
+
 ---
 
 # ANR 设计思想
@@ -92,13 +92,13 @@ auto_promoted_date: "2026-05-25"
 
 ## 为什么要了解 ANR 的设计思想
 
-当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，最后卸载你的 App。Android 的设计者很早就意识到，一个无响应的应用会严重损害用户对整个系统的信任，而不仅仅是对单个 App 的不满。
+当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，甚至卸载你的 App。Android 的设计者很早就意识到，一个无响应的应用会把单个 App 的不满扩散成对整个系统稳定性的怀疑。
 
 ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它的角色是运行时防线，而非事后诊断工具：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
 
-如果把全书的主线连起来看，ANR 属于广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想也是一篇“体验保护机制”章节，不只是异常处理机制。
+如果把全书的主线连起来看，ANR 属于广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想是一篇“体验保护机制”章节，异常处理只是其中一层。
 
-理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——ANR trace 的堆栈经常是"替罪羊"，导致超时的代码可能早已执行完毕。
+ANR 的设计思想是 Android 性能优化的核心课题之一，也会直接影响 ANR 问题的分析思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易只看堆栈下结论——ANR trace 的堆栈经常是"替罪羊"，导致超时的代码可能早已执行完毕。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
@@ -114,7 +114,7 @@ ANR 机制在这个场景中介入的方式是：设置一个超时计时器，�
 
 **第二，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户通常看不到它在做什么）。
 
-**第三，ANR 机制本身是一个"紧急刹车"，不应该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。这意味着好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
+**第三，ANR 机制本身是一个"紧急刹车"，不应该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
 
@@ -218,7 +218,7 @@ ANR 触发后，系统的处理分为两种情况：
 
 ## AMS 中 ANR 的核心代码路径
 
-上一节讲了概念流程，这一节我们深入源码，看看 Android 是怎么一步步实现这个机制的。ANR 的代码路径虽然分散在多个文件中，但有一条清晰的主线。
+从概念流程落到源码，ANR 的代码路径分散在多个文件中，但处理主线很清楚。
 
 ### 入口：不同组件的 ANR 触发点
 
@@ -288,13 +288,13 @@ class AnrHelper {
 
 [已验证: AOSP android-14.0.0_r1, `AnrHelper.java`, `ProcessErrorStateRecord.java`]
 
-这段代码揭示了几个关键细节：
+`AnrHelper` 这段路径暴露出几个排查时容易忽略的细节：
 
 **堆栈收集使用 SIGQUIT 信号。** system_server 向目标进程发送 Signal 3（SIGQUIT），触发虚拟机的堆栈 dump。这也是为什么 ANR traces 文件中会包含所有线程的堆栈——因为 SIGQUIT 的处理函数会遍历虚拟机中的所有线程。
 
 **traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
 
-**System Server 会向多个进程发送 SIGQUIT。** 不仅仅是对发生 ANR 的进程，系统可能会同时请求关联进程的堆栈信息。这意味着一个 App 收到 SIGQUIT 并不代表自己发生了 ANR，也可能是另一个 App 触发的。
+**System Server 会向多个进程发送 SIGQUIT。** 系统不只会对发生 ANR 的进程发 SIGQUIT，还可能同时请求关联进程的堆栈信息。一个 App 收到 SIGQUIT 不代表自己发生了 ANR，也可能是另一个 App 触发的。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
@@ -433,15 +433,15 @@ Android 8.0 引入了后台执行限制。后台 Service 的超时阈值一直�
 
 Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
 
-Android 12 收紧了前台服务启动失败后的异常表现。`startForegroundService()` 后没有及时调用 `startForeground()` 时，常见结果是 `ForegroundServiceDidNotStartInTimeException`；AOSP 对应宽限期仍是 10 秒。Android 13 起，这个默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`。
+Android 12 让前台服务启动失败后的异常表现更明确。`startForegroundService()` 后没有及时调用 `startForeground()` 时，常见结果是 `ForegroundServiceDidNotStartInTimeException`；AOSP 对应宽限期仍是 10 秒。Android 13 起，这个默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`。
 
-Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，进一步收紧了后台 Service 的行为约束，间接减少了后台 Service ANR 的场景。
+Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，让后台 Service 的行为约束更严格，间接减少了后台 Service ANR 的场景。
 
 Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经承担排队和线程隔离职责。
 
 Android 16 引入了系统触发式 ProfilingManager 追踪。应用通过 `ProfilingManager.registerProfilingListener()` 注册对特定系统事件的兴趣后，当 ANR 发生时系统自动采集 trace（包括 Java Heap Dump / Stack Sample / System Trace），保存到应用的 data 目录供后续分析。Android 17 进一步扩展触发类型，新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`。
 
-这项改进直接针对 traces.txt 的"刻舟求剑"问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，而不仅仅是一个堆栈快照。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对性优化不同启动路径。
+这项改进直接针对 traces.txt 的"刻舟求剑"问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，比单个堆栈快照更接近真实时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对性优化不同启动路径。
 
 [已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, AnrHelper.java；AOSP android-14.0.0_r1, BroadcastQueueModernImpl.java, ActiveServices.java]
 [已验证: Android 16/17 ProfilingManager 系统触发式追踪, developer.android.com/about/versions/16/features + intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；API 细节基于公开文档与调研综合]
