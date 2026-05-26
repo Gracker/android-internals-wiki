@@ -54,7 +54,7 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
@@ -65,8 +65,8 @@ task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;
 last_task6_review_log: "logs/review/2026-05-25-12-review.md"
 task6_reviewed_date: "2026-05-25"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
@@ -76,11 +76,11 @@ task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1
 p0: 0
 p1: 1
 p2: 0
-task2b_state: "pending"
+task2b_state: "fixed"
 task6_reviewed_by: "openclaw-task6"
+last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+task2b_verifier_result: "ready-for-task6"
 ---
-
-
 # 案例集
 
 <!-- outline-start -->

@@ -2007,8 +2007,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T03:14:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T03:37:00+08:00",
+  "last_updated_by": "openclaw-task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T03:14:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2164,18 +2164,22 @@
   "sections": {
     "17.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-25T12:09:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 95,
       "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
       "title": "SoC 平台差异",
       "file": "src/part4-system/ch17-oem/02-soc-differences.md",
-      "task6_state": "reviewed",
-      "task2b_state": "pending",
+      "task6_state": "revisiting",
+      "task2b_state": "fixed",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-25",
-      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。"
+      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。",
+      "task2b_result": "fixed",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "3.5": {
       "status": "finalized",
@@ -2263,23 +2267,26 @@
     },
     "7.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "queue_priority": 95,
       "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "title": "案例集",
       "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-25",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-25T12:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-25"
+      "task6_reviewed_date": "2026-05-25",
+      "task2b_result": "fixed",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "20.5": {
       "status": "ready-for-review",
@@ -2993,15 +3000,21 @@
     },
     "2.15": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_result": "needs-rework",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "queue_priority": 95,
       "queue_id": "task9-2.15-gralloc-api-and-dmabuf-unsupported-claims",
       "last_task6_at": "2026-05-13T20:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-20-review.md",
+      "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "23.2": {
       "status": "finalized",
@@ -5575,6 +5588,42 @@
       "last_verified": "2026-05-26",
       "last_verified_against": "Android Developers identity docs, AOSP android-16.0.0_r1 frameworks/base",
       "confidence": "medium"
+    },
+    "4.8": {
+      "file": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "title": "ART 分代垃圾回收与 GC 暂停优化",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
+    },
+    "10.5": {
+      "file": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "title": "案例集",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
+    },
+    "8.7": {
+      "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+      "title": "Baseline Profiles 与编译优化实践",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     }
   },
   "task2b_rounds": [
@@ -8341,9 +8390,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
+  "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
   "last_task2b_verifier_sections": [
-    "7.8"
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
   ],
   "section_7_8": {
     "section": "7.8",

@@ -33,15 +33,15 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-04-30"
 last_task6_audit: "2026-05-18"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: "2026-05-25"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
 rework_fixed_at: "2026-05-06T21:43:37+08:00"
 task2b_rework_date: "2026-04-30"
@@ -50,8 +50,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-07T01:20:00+08:00"
 task9_result: "needs-rework"
 last_task9_audit: "2026-05-25"
+last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+task2b_verifier_result: "ready-for-task6"
 ---
-
 # 案例集
 
 <!-- outline-start -->

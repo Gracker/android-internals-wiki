@@ -2,7 +2,7 @@
 title: Baseline Profiles 与编译优化实践
 chapter: '8.7'
 section: '8.7'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
@@ -30,10 +30,10 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
 review_round: 6
 task9_reviewed_date: "2026-05-06"
@@ -44,8 +44,9 @@ last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task9_review_notes: "2026-05-25 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 1（既有）。Startup Profile 构建期 DEX layout 与 Baseline Profile/ART 编译路径需要拆开。"
 last_task9_audit: 2026-05-25
+last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+task2b_verifier_result: "ready-for-task6"
 ---
-
 # 8.7 Baseline Profiles 与编译优化实践
 
 Android 的 ART 运行时经历了多次编译策略的演变——从 Android 5.0 的全量 AOT 编译，到 Android 7.0 的解释执行 + JIT，再到 Profile-Guided 编译。每次转变都在安装时间、运行性能和存储占用之间做不同的权衡。但有一个问题始终存在：**应用首次安装后的冷启动性能**。
