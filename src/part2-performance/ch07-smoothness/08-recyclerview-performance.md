@@ -27,8 +27,8 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-06'
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
-last_verified: '2026-04-12'
-last_verified_against: AOSP android-17.0.0_r3 + AndroidX androidx-main + AOSP android-16.0.0_r1
+last_verified: '2026-05-27'
+last_verified_against: AndroidX androidx-main + Android Developers MessageQueue docs 2026-05-12 + RecyclerView 1.4.0 release notes + Android API 35/36 refs
 confidence: medium
 polish_count: 1
 polish_date: '2026-04-08'
@@ -53,22 +53,23 @@ sources:
   path: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/recyclerview
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-05-27T01:22:00+08:00"
+last_task9_at: "2026-05-27T03:29:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
 review_notes: '2026-05-27 task6 review: needs-rework。L1/L2 已小修；2026-05-27 Task2B 已合并清理后半段调研素材，回流 Task6 复审；2026-05-27 Task6复审：pass-light-edit，L1/L2 小修 10 处，无回炉项，等待 Task9 复审。'
-task9_review_notes: "2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。 | 2026-05-27 01:22 Task9 deep-review：needs-rework。P0 0 / P1 1 / P2 0；后半段 GapWorker measure 盲区与 DeliQueue 过程材料已由 Task2B 合并进正文，等待 Task6 复审。"
+task9_review_notes: "2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。 | 2026-05-27 01:22 Task9 deep-review：needs-rework。P0 0 / P1 1 / P2 0；后半段 GapWorker measure 盲区与 DeliQueue 过程材料已由 Task2B 合并进正文，等待 Task6 复审。 | 2026-05-27 03:29 Task9 deep-review：auto-fixed。P0 0 / P1 1 / P2 1；修正 setHasFixedSize(true) 语义与 create/bind Trace 命中判断，回到 Task6 复审。"
 last_task2b_verifier_at: '2026-05-26T23:25:00+08:00'
 last_task2b_at: '2026-05-27T02:50:00+08:00'
 last_task6_at: "2026-05-27T03:14:00+08:00"
 last_review_log: "logs/review/2026-05-27-03-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-27-01-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-03-deep-review.md"
+last_task9_autofix_at: "2026-05-27"
 ---
 
 
@@ -137,7 +138,7 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 缓存查找的顺序是：AttachedScrap → CachedViews → ViewCacheExtension → RecycledViewPool。如果在所有缓存中都没找到，才会调用 `onCreateViewHolder()` 创建新的。
 
-在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。如果 fling 过程中频繁出现 create/bind slice，说明 CachedViews 或 RecycledViewPool 没有命中这些缓存层；如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取。
+在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。fling 过程中频繁出现 create slice，通常说明 scrap、CachedViews、ViewCacheExtension 和 RecycledViewPool 都没有命中，只能新建 holder；频繁出现 bind slice，则说明拿到的 holder 需要重新绑定，可能来自 RecycledViewPool，也可能来自 invalid / stale holder，不能简单判成 Pool 未命中。如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取，或者目标 holder 已经 attached / cache 命中。
 
 [已验证: AndroidX androidx-main，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
 
@@ -333,7 +334,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 **ItemAnimator 触发的额外布局** 也是常见原因。默认的 `DefaultItemAnimator` 本身就继承自 `SimpleItemAnimator`。当 change animation 开着时，RecyclerView 需要同时保留旧、新两份位置信息来计算过渡，列表高频更新时，这部分布局和动画记录开销会持续叠加。更直接的优化做法有两种：一是对默认动画器调用 `((SimpleItemAnimator) rv.getItemAnimator()).setSupportsChangeAnimations(false)`，先关掉 change animation；二是在页面不需要任何列表动画时直接 `rv.setItemAnimator(null)`。
 
-**图片加载回调触发的 requestLayout** 是一种隐性的性能问题。当图片异步加载完成后，如果在回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），会触发整个 RecyclerView 的重新布局。解决方法是为 ImageView 设置固定的宽高，或者使用 `setHasFixedSize(true)` 告知 RecyclerView 不要因为 item 内容变化而重新测量自身大小。
+**图片加载回调触发的 requestLayout** 是一种隐性的性能问题。当图片异步加载完成后，如果在回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），会触发整个 RecyclerView 的重新布局。处理方向是为 ImageView 设置固定宽高，避免占位图和真实图片切换时改变 item 测量结果；如果 Adapter 内容变化不会改变 RecyclerView 自身宽高，再配合 `setHasFixedSize(true)` 减少整表 layout invalidation。
 
 **VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧在预算时间内完成了，只是步幅不均匀。
 
@@ -424,7 +425,7 @@ ORDER BY max_ms DESC;
 
 **误区：增大 RecycledViewPool 就能解决所有滑动卡顿。** Pool 只解决 inflate 开销，如果瓶颈在 bind（比如 bind 中有 IO 操作），增大 Pool 不会有效果。要先在 Trace 中区分是 create 慢还是 bind 慢。
 
-**误区：`setHasFixedSize(true)` 是万能优化。** 这个设置只在 RecyclerView 自身大小不因 item 变化而改变时才安全。如果 item 高度可变（比如含有动态高度的文本），设置了这个会导致 item 显示不完整。
+**误区：`setHasFixedSize(true)` 是万能优化。** 这个设置的判断对象是 RecyclerView 自身尺寸，不是每个 item 是否等高。只要 Adapter 内容变化不会改变 RecyclerView 的测量宽高（例如 RecyclerView 高度固定或 `match_parent`），动态高度 item 也可以使用；如果 RecyclerView 本身是 `wrap_content`，并且新增、删除或内容变化会改变它的测量尺寸，就不该打开。
 
 **误区：`setItemViewCacheSize(0)` 总是负优化。** 在某些场景下（比如 item 数据频繁更新，CachedViews 中的 ViewHolder 经常 invalid），把缓存大小设为 0 反而可以避免无效的缓存查找，直接走 Pool 的 rebind 流程。但这属于针对性优化，不应该作为默认策略。
 
