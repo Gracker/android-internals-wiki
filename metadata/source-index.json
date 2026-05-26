@@ -15804,6 +15804,56 @@
       "source": "DeepResearch",
       "action": "inject",
       "type": "deepresearch-inject"
+    },
+    {
+      "title": "Fastbot-Android Open Source Handbook",
+      "path": "AndroidWeekly/#14/Fastbot-Android-Open-Source-Handbook",
+      "source_url": "https://github.com/bytedance/Fastbot_Android",
+      "weekly_issue": "#14",
+      "weekly_date": "2021-01-26",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-质量与性能",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Model-based testing tool for Android apps with machine learning integration for discovering stability problems",
+      "scored_at": "2026-05-26T09:05:46.469585"
+    },
+    {
+      "title": "Themis Benchmark for evaluating automated GUI testing",
+      "path": "AndroidWeekly/#14/Themis-Benchmark-for-evaluating-automated-GUI-testing",
+      "source_url": "https://github.com/the-themis-benchmarks/home",
+      "weekly_issue": "#14",
+      "weekly_date": "2021-01-26",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-质量与性能",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-自动化测试",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Research benchmark with 52 reproducible Android crash bugs for evaluating automated GUI testing tools",
+      "scored_at": "2026-05-26T09:05:46.469598"
     }
   ]
 }

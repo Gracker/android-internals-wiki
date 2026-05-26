@@ -30,7 +30,7 @@ tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher,
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
-last_task2b_at: "2026-04-26T15:45:22+08:00"
+last_task2b_at: "2026-05-26T19:25:19+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
 last_task2b_rework: "2026-05-25T15:18:38+08:00"
@@ -39,22 +39,22 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: ready-for-review
+pipeline_stage: task6_pending
 task9_result: "pass-tech-review"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T16:22:00+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
-last_task9_audit: 2026-05-25
-last_task9_audit_at: "2026-05-25T12:27:10+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-25-12-audit.md"
+last_task9_audit: 2026-05-26
+last_task9_audit_at: "2026-05-26T11:26:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-26-11-audit.md"
 last_task6_at: "2026-05-25T16:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
@@ -124,7 +124,10 @@ ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触�
 
 ### 第一阶段：注册超时
 
-当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒；Android 14+ 的 Modern Broadcast Queue 把广播超时拆成 soft timeout 和 hard timeout，官方诊断窗口扩展为前台 10-20 秒、后台 60-120 秒。
+当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒。Android 14+ 引入 `BroadcastQueueModernImpl`，把广播超时拆成两级：
+
+- **soft timeout**：前台广播 10 秒、后台广播 60 秒到期后，系统先检查接收进程的 CPU 调度延迟。如果进程确实拿到了足够的 CPU 时间，soft timeout 直接升级为 ANR
+- **hard timeout**：如果进程因 CPU starvation（系统负载高、进程刚拉起、调度优先级低）还没来得及执行 `onReceive()`，系统会追加一个 hard timeout 窗口。前台广播 hard deadline 约 20 秒，后台广播约 120 秒。hard timeout 的实际计算依赖于 `app.getCpuDelayTime()`——它衡量的是进程从被调度到实际获得 CPU 的时间差
 
 ```java
 // 概念流程（简化）
@@ -132,15 +135,22 @@ ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触�
 // frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java
 // @ AOSP android-14.0.0_r1
 
-// Android 13 及以下的典型口径：分发广播时设置固定 timeout
+// Android 13 及以下：分发广播时设置固定 timeout
 scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
-// Android 14+ Modern Broadcast Queue：先触发 soft timeout
-// dispatchReceivers() 记录 lastCpuDelayTime 并发送 MSG_DELIVERY_TIMEOUT_SOFT
-// deliveryTimeoutSoftLocked() 再按 app.getCpuDelayTime() 计算 hard timeout
+// Android 14+ Modern Broadcast Queue：两级超时
+// 第一级：soft timeout（fg=10s, bg=60s）
+//   dispatchReceivers() → scheduleDeliveryTimeoutMessageLocked(MSG_DELIVERY_TIMEOUT_SOFT)
+//   到期后 deliveryTimeoutSoftLocked() 检查 app.getCpuDelayTime()
+//     → CPU 延迟低 = 进程有足够 CPU → 判定 ANR
+//     → CPU 延迟高 = 进程被饿死 → 进入第二级
+// 第二级：hard timeout
+//   scheduleDeliveryTimeoutMessageLocked(MSG_DELIVERY_TIMEOUT_HARD)
+//   hard deadline = soft_timeout + 剩余补偿窗口（fg≈20s total, bg≈120s total）
+//   到期后无论 CPU 延迟如何，直接判定 ANR
 ```
 
-广播发送出去的同时，计时器开始倒计时。如果应用在窗口内完成 `onReceive()` 并通过 `finishReceiver()` 通知 AMS，计时器会被取消。Android 14+ 追加 hard timeout 的目的，是把 CPU starvation 和冷启动阶段的等待纳入窗口，避免系统忙或进程刚拉起时过早判定 Broadcast ANR。
+两级超时设计的目的是区分「App 自己的 onReceive() 执行太慢」和「系统没给 App 足够的 CPU 时间」。排查 Android 14+ 设备的 Broadcast ANR 时，event log 中能看到 soft timeout 还是 hard timeout 触发的标记，帮助判断瓶颈在应用侧还是系统调度侧。
 
 ### 第二阶段：主线程处理
 
@@ -429,10 +439,12 @@ Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独�
 
 Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经承担排队和线程隔离职责。
 
-Android 16 引入的系统触发式 ProfilingManager 追踪可能是迄今最有价值的 ANR 诊断改进。当 ANR 发生时，系统可以自动捕获 ANR 时刻的 Perfetto trace，提供比传统 traces.txt 远为丰富的信息。这个改进有望解决 traces.txt "刻舟求剑"的问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，而不仅仅是一个堆栈快照。
+Android 16 引入了系统触发式 ProfilingManager 追踪。应用通过 `ProfilingManager.registerProfilingListener()` 注册对特定系统事件的兴趣后，当 ANR 发生时系统自动采集 trace（包括 Java Heap Dump / Stack Sample / System Trace），保存到应用的 data 目录供后续分析。Android 17 进一步扩展触发类型，新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`。
+
+这项改进直接针对 traces.txt 的"刻舟求剑"问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，而不仅仅是一个堆栈快照。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对性优化不同启动路径。
 
 [已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, AnrHelper.java；AOSP android-14.0.0_r1, BroadcastQueueModernImpl.java, ActiveServices.java]
-[已验证: Android 16 ProfilingManager ANR 触发, intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
+[已验证: Android 16/17 ProfilingManager 系统触发式追踪, developer.android.com/about/versions/16/features + intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；API 细节基于公开文档与调研综合]
 [待验证: Android 8.0 后台 Service 200 秒超时的具体 commit]
 
 **Android 15**（[待验证]）：ANR 行为可能存在以下变更——更严格的 `startForeground()` 执行约束、前台 Service 类型声明的强制化。这些变更影响的是 ANR 的触发条件，而非 ANR 机制本身的架构。如有变更，将在后续 review 中更新。
@@ -517,4 +529,4 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
   - [Keep your app responsive](https://developer.android.com/training/articles/perf-anr)
 - 素材来源：
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
-  - Android 16/17 ProfilingManager 系统触发式追踪（intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md）
+  - Android 16/17 ProfilingManager 系统触发式追踪（[官方文档](https://developer.android.com/about/versions/16/features) + intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md）

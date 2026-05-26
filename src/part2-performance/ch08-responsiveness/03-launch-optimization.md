@@ -53,6 +53,7 @@ last_task6_review_log: "logs/review/2026-05-09-06-review.md"
 task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 8 处（结构性元叙述、主观标题、模糊/口号化表达、无条件量化表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
 task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。05:30 P0/P1 已修复；本轮仅复核到既有 P2：SplashScreen 调用文字、Baseline Profile 效果量化均已在 suggestions.md 记录。不新增阻塞项，自动晋升 finalized/ready-to-publish。"
+last_task6_audit: "2026-05-26"
 ---
 
 # 启动优化策略
@@ -825,7 +826,7 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 6. **Baseline Profile**（需要生成、打包并确认设备端进入 `speed-profile`；非 Play 渠道要核对 `ProfileInstaller` 与后台 dexopt）
 7. **线上监控与防劣化体系**（长期保障）
 
-最后的操作原则是：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
+操作原则是：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
 
 ## 常见问题与误区
 

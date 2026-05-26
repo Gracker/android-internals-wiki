@@ -72,6 +72,7 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
+last_task6_audit: "2026-05-26"
 review_notes: '2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
 ---
 # 卡顿的定义与分类
@@ -199,9 +200,9 @@ Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreogra
 
 ### BufferStuffing
 
-`BufferStuffing` 在 Perfetto 文档里被写成"more of a state than a jank"。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
+Perfetto 文档把 `BufferStuffing` 描述为一种状态，而不是独立的 jank 类型。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
 
-这类问题先看 FrameTimeline 的 `Jank Type` 和 high latency state，再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
+这类问题先看 FrameTimeline 的 `Jank Type` 和高延迟状态（`High latency state`），再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
 
 ### 扩展 JankType：Android 12+ 已有与较新 tag 补充
 
@@ -235,7 +236,7 @@ Perfetto 的颜色是 UI 层面的归因提示，不是 `JankType` 到颜色的�
 | Perfetto 颜色 | 常见归因 | 读法 | 第一观察点 |
 |---------------|----------|------|------------|
 | 绿色 | `None` | 正常 frame | 无需回溯 |
-| 浅绿色 | High latency state，常见于 `BufferStuffing` 一类状态 | 画面节奏还算平，但输入延迟在涨 | `Present Type`、`Jank Type`、BufferQueue / dequeue 佐证 |
+| 浅绿色 | 高延迟状态（`High latency state`），常见于 `BufferStuffing` 一类状态 | 画面节奏还算平，但输入延迟在涨 | `Present Type`、`Jank Type`、BufferQueue / dequeue 佐证 |
 | 红色 | `AppDeadlineMissed` | App 自己没按时交帧 | `Actual Timeline` → `doFrame` / `RenderThread` |
 | 黄色 | `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 等 App 非责任侧问题 | App 看到了 jank，但责任不在 App | SurfaceFlinger `Actual Timeline`、`onMessageReceived`、details 面板 |
 | 蓝色 | `Dropped Frame` | 这一帧被跳过 | App / SurfaceFlinger 两侧都要看 |
@@ -381,7 +382,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 更稳的做法是按场景建目标：
 
-- 持续滑动和跟手交互，优先压慢帧比例和 high latency state。
+- 持续滑动和跟手交互，优先压慢帧比例和高延迟状态（`High latency state`）。
 - 页面切换、冷启动首帧，单独看过渡阶段，不把初始化的特例混进常态滚动指标。
 - 高刷设备按 90Hz / 120Hz 的 frame period 单独统计，不拿 60Hz 口径混算。
 

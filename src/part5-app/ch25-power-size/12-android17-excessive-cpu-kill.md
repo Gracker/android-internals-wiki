@@ -230,3 +230,21 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 - 注入时间：2026-05-25
 - 价值：补充 targetSdk gating 条件修正和官方文档层面的确认，标注待验证源码路径
 
+
+
+<!-- AIW-源码调研-2026-05-26 -->
+## 源码调研补充（2026-05-26）
+
+**来源**：DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
+
+**核心验证结论**：
+
+1. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 确认存在于 API 37（Android 17），触发前提包含 targetSdk >= 37**。该 trigger 非预防机制，是系统处置进程后的事后取证入口。
+
+2. **ProfilingResult 产物**：triggerType、tag、resultFilePath、errorCode、errorMessage。应用通过 `registerForAllProfilingResults()` 全局 listener 接收。
+
+3. **关键源码位置**：Perfetto trigger.proto（`external/perfetto/protos/perfetto/trace/trigger.proto`）、ProfilingTrigger.java、ProfilingManager.java。
+
+4. **与 JobScheduler quota 关系**：两者控制路径独立——quota 管"能跑多久"，trigger 管"被处置时的现场"。AOSP 源码未发现直接关联路径。
+
+5. **标注待验证**：触发阈值、kill signal、检测服务（PowerManagerService/ProcessList）、trace buffer 时长、厂商差异——均缺 AOSP 源码闭环，建议保持"待验证"标注。

@@ -2,7 +2,7 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
@@ -41,26 +41,28 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 last_task6_audit: "2026-05-23"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: fixed
+task9_state: pending
+task2b_state: pending
 task2b_result: fixed
-last_task2b_at: "2026-05-07T17:40:00+08:00"
+last_task2b_at: "2026-05-26T19:25:19+08:00"
 review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-07"
-last_task9_at: "2026-05-07T18:28:30+08:00"
+task9_reviewed_date: "2026-05-26"
+last_task9_at: "2026-05-26T13:20:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
+last_task9_audit: "2026-05-26"
+task9_audit_notes: "2026-05-26 idle audit: P1 1 / P2 1; Macrobenchmark CI GMD guidance conflicts with current official docs; queued Task2B."
 ---
 
 
@@ -468,12 +470,25 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据,可以通过 `./gradle
 - **温度门控**:在测试脚本开头加入温度检查,如果设备温度超过阈值,先等待降温再开始测试
 - **结果缓存与对比**:将每次 CI 跑出的基准数据持久化存储(比如存在数据库或 CI artifacts 中),自动与最近 5 次的平均值做对比
 
-### Gradle 配置示例
+### CI 设备策略
 
-在 CI 中运行 Macrobenchmark,推荐使用 Gradle Managed Devices(GMD)来确保设备配置的一致性:
+Android Developers 官方 CI 文档（Last updated 2026-05-19）明确建议 Macrobenchmark 使用 **physical Android devices**，emulator 虽可运行但 strongly discouraged，因为性能数据绑定 host OS 和硬件能力，Baseline Profiles 测量在模拟器上结果 likely incorrect。CI 设备策略按用途分层：
+
+**性能回归闸门（推荐真机）：**
+- **自建设备池**：在 CI agent 上通过 USB 连接物理设备，用 `adb` 控制设备重置、温度和后台清理。适合团队有持续测试需求的场景
+- **Firebase Test Lab / Google Cloud**：通过 `gcloud firebase test android run` 调用云端真机，适合不想维护物理设备的团队
+
+```bash
+# Firebase Test Lab 运行 Macrobenchmark 示例
+gcloud firebase test android run   --type instrumentation   --app app/build/outputs/apk/release/app-release.apk   --test benchmark/build/outputs/apk/androidTest/release/benchmark-release-androidTest.apk   --device model=oriole,version=36,orientation=portrait   --directories-to-pull /sdcard/Android/media/com.example.benchmark   --results-bucket gs://benchmark-results
+```
+
+**流程连通性校验（可用 GMD / 模拟器）：**
+- Gradle Managed Devices（GMD）和模拟器可以用来做 benchmark 脚本的 **smoke test**、**dryRun** 和流程连通性验证
+- 不应用于 Macrobenchmark 性能回归判定，因为 GPU、存储和调度行为与真机差异较大
 
 ```groovy
-// build.gradle (benchmark module)
+// build.gradle (benchmark module) — 仅用于 smoke test / 流程校验
 android {
     testOptions {
         managedDevices {
@@ -489,13 +504,12 @@ android {
 }
 ```
 
-CI 命令:
-
 ```bash
+# 仅用于流程校验，不用于性能回归判定
 ./gradlew :benchmark:pixel8Api36BenchmarkAndroidTest
 ```
 
-GMD 使用的是模拟器,性能数据与真机有较大差异(特别是 GPU 和存储性能)。因此 CI 中的基准数据更适合用于**回归检测**(对比变化趋势),而不是**绝对性能评估**(判断是否达到目标)。绝对性能评估还是要在真机上进行 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]。
+[已验证: 官方文档 developer.android.com/topic/performance/benchmarking/benchmarking-in-ci（Last updated 2026-05-19）, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
 
 ### 结果的自动分析
 

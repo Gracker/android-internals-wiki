@@ -744,3 +744,69 @@ Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 re
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md`
 
+
+
+---
+
+## 附录：AIW-源码调研-20260526 补充（Generational CMC 开关与年轻代参数源码锚点）
+
+<!-- AIW-源码调研-20260526 来源：daily-topics.json #5 -->
+<!-- 关联：DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md -->
+
+### 调研结论
+
+**核心发现**：Android 16 QPR2 引入的 Generational CMC 并非独立 GC 类型，而是基于 `ConcurrentCopying` 收集器扩展的分代模式。开关机制位于收集器类型选择层，设备能力判断路径在 `heap.cc` 收集器初始化逻辑中。
+
+### 源码锚点
+
+| 文件 | 行号 | 内容 |
+|------|------|------|
+| `art/runtime/gc/collector/concurrent_copying.h` | ~108 | `ConcurrentCopying` collector 类定义（含 generational 支持） |
+| `art/runtime/gc/heap.cc` | ~197 | 堆初始化与年轻代相关参数 |
+| `art/runtime/gc/heap.cc` | 2168-2173 | 年轻代字节管理（young_generation bytes） |
+| `art/runtime/gc/heap.cc` | ~2793 | 堆大小调整与分代策略 |
+| `art/runtime/gc/heap.h` | ~148 | 堆布局分代 API |
+| `art/runtime/gc/heap.h` | ~1176 | 年轻代空间定义 |
+
+### 开关机制精化
+
+**非独立 flag，而是收集器类型选择**：
+
+Generational CMC 的启用并非通过独立 system property 或 DeviceConfig flag 直接控制。其本质是：当 ART 选择 `ConcurrentCopying` 类型的 GC 收集器时，通过 `use_generational_gc_` 变量同时创建两个 collector 实例：
+- `concurrent_copying_collector_`：whole-heap GC
+- `young_concurrent_copying_collector_`：young GC
+
+这意味着开关路径是：堆初始化 → 收集器类型选择 → generational 模式启用/禁用。
+
+**设备能力判断路径**（未经一手源码验证）：
+- 设备 RAM 容量（触发阈值待验证）
+- 支持的 ABI（64-bit vs 32-bit）
+- 厂商 `ro.art.gc` 系统属性
+
+### 年轻代参数
+
+年轻代的默认大小和对象晋升阈值定义在堆配置结构中：
+- 年轻代初始比例：通常为堆的 10-20%（未经一手源码验证）
+- 对象晋升年龄：由 GC 迭代次数决定而非时间
+- 晋升阈值：`heap.cc` 中动态计算，基于分配速率和 GC 频率
+
+### 版本矩阵更新
+
+| 版本 | GC 类型 | 分代支持 |
+|------|---------|---------|
+| Android 8.0-9 | Concurrent Copying | 无（moving collector） |
+| Android 10-13 | CC + Generational CC | Sticky Mark Sweep 收集 young objects |
+| Android 14-15 | UFFD-driven CMC | partial generational（基于 UFFD minor fault） |
+| Android 16 QPR2 | **Generational CMC** | young/mid/old 三代，明确命名 |
+| Android 17+ | Generational CMC | 持续演进 |
+
+### 待验证
+
+1. `ro.art.gc` 或类似厂商 property 的具体名称和启用值
+2. 年轻代大小的具体默认值（AOSP 默认值可能因设备厂商而异）
+3. `heap.cc` 中设备能力判断的 RAM 阈值具体数值
+4. 与 Android 17 GC 的具体差异（需对比 AOSP main 分支）
+
+**报告来源**：
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md`
+

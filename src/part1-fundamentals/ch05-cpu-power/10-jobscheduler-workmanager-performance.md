@@ -650,3 +650,23 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 - 摘要：Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 作为 ProfilingTrigger 新类型，对应系统对后台缓存态应用持续消耗 CPU 的强制干预。分析了 ProfilingManager API 从 API 35 到 37 的完整版本边界、ApplicationStartInfo 与 Cold Start Trigger 的关系、JobScheduler quota 与 excessive CPU 检测的独立性。
 - 注入时间：2026-05-20
 - 价值：为 §5.10 提供 Android 17 Power Check 机制的源码级证据，厘清 ProfilingTrigger 与 JobScheduler quota 的边界关系
+
+
+<!-- AIW-源码调研-2026-05-26 -->
+## 源码调研补充（2026-05-26）
+
+**来源**：DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
+
+**核心验证结论**：
+
+1. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 存在于 API 37（Android 17），非 API 36**。Android 17 behavior changes 确认 targetSdk >= 37 为触发前提条件之一。
+
+2. **Trigger 为事后取证机制，非预防性治理机制**。系统因过量 CPU 使用处置进程后，才生成 ProfilingResult。应用注册 trigger 不能阻止系统终止进程，只能在事后拿到 trace 文件。
+
+3. **JobScheduler quota 与 ProfilingTrigger 无直接源码关联**。两者服务于不同控制面：JobScheduler 控制"任务能否运行"，ProfilingTrigger 记录"进程被处置时的现场"。AOSP 源码中未发现两者之间有直接调用或数据传递路径。
+
+4. **关键源码位置**：Perfetto trigger.proto（`external/perfetto/protos/perfetto/trace/trigger.proto`）定义了 trigger 类型常量；`frameworks/base/core/java/android/os/ProfilingTrigger.java` 是应用侧 API；`frameworks/base/core/java/android/os/ProfilingManager.java` 是系统服务侧。
+
+5. **待验证项（缺 AOSP 源码闭环）**：触发阈值（CPU 百分比、持续时间、cached/background/foreground service 状态区分）、处置信号（SIGKILL/SIGTERM/ActivityManager 路径）、检测服务实现（PowerManagerService/ActivityManagerService/kernel CPU acct）、厂商差异、trace buffer 时长。
+
+**建议**：章节中"Power Check"相关描述保持"待验证"标注，待 AOSP android-17.0.0_r1 源码闭环后再更新具体阈值。

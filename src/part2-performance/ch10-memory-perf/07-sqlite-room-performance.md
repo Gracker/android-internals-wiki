@@ -66,6 +66,7 @@ last_task2b_at: "2026-05-08T19:44:22"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T20:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-20-review.md"
+last_task6_audit: "2026-05-26"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
 last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
 ---

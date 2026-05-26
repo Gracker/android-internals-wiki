@@ -29,6 +29,8 @@ related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "研究素材/官方发布说明"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-26"
 pipeline_stage: ready-to-publish
 task6_state: revisiting
 last_task6_at: '2026-05-15T14:12:00+08:00'

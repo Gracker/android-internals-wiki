@@ -35,13 +35,16 @@ related_chapters: ["22.3", "7.12", "2.5"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-13T06:19:26+08:00"
 last_task6_review_log: "logs/review/2026-05-13-06-review.md"
+last_task6_audit: "2026-05-26"
+last_task6_audit_log: "logs/review/2026-05-26-19-audit.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-13"
