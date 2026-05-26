@@ -167,5 +167,53 @@
     "completed_by": "openclaw-task2b-main",
     "result": "fixed",
     "fix_summary": "修正 Android 16 ProfilingManager 系统触发 API：addProfilingTriggers + registerForAllProfilingResults；ANR 产物限定为 running system trace snapshot，并补充 Android 17/API 37 触发器边界。"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 DeliQueue 版本口径与性能数字无AOSP一手验证",
+    "material_paths": [
+      "logs/deep-review/2026-05-27-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "DeliQueue章节",
+        "detail": "文中描述\"DeliQueue用Treiber Stack替代了synchronized块\"，但在AOSP android-17.0.0_r3和androidx-main中未找到相关commit证据；性能数字4%/7.7%/9.1%未明确标注来源为Google官方博客而非AOSP；targetSdk>=37描述与当前AOSP master最高targetSdkVersion为36不符",
+        "suggestion": "删除未经验证的\"Treiber Stack\"具体实现描述；明确标注性能数字来源为Google官方博客；修正targetSdk边界为当前最高支持的36；补充\"待Android SDK支持37+后生效\"的未来版本说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-27T00:25:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-05-27T00:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "result": "fixed",
+    "fix_summary": "删除未验证提示块的旧口径，改为 Android Developers Blog + Android 17 behavior change 文档支撑：DeliQueue 为 targetSdkVersion >= 37 的 lock-free MessageQueue；4%/7.7%/9.1% 标注为 Google 官方 benchmark，不写成 AOSP 源码可复算数据。"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] GapWorker时间预估机制描述与AOSP实际实现存在差异",
+    "material_paths": [
+      "logs/deep-review/2026-05-27-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理完整性",
+        "location": "GapWorker预取时间预估机制",
+        "detail": "文中提到\"willCreateInTime()/willBindInTime()读取的是按viewType维护的运行平均耗时，平均值由factorInCreateTime()/factorInBindTime()在每次成功create/bind后回写\"，但AOSP中实际使用的是简单的滑动平均算法，没有按viewType分别维护平均值，且factorInCreateTime()/factorInBindTime()方法是估算单个viewType的耗时，不是全局平均值",
+        "suggestion": "修正时间预估机制描述：明确说明是单个viewType的滑动平均估算，不是全局平均值；补充当前实现使用指数衰减滑动平均的具体计算方式"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-27T00:25:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-05-27T00:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "result": "fixed",
+    "fix_summary": "修正 GapWorker create/bind 预算描述：按 RecycledViewPool 内 viewType 对应 ScrapData 保存运行平均值，并补充 old*3/4+new*1/4 衰减滑动平均计算方式。"
   }
 ]

@@ -2006,8 +2006,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-26T23:25:00+08:00",
-  "last_updated_by": "task2b-verifier",
+  "last_updated": "2026-05-27T00:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-26T20:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -8344,6 +8344,8 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
-    "verifier_note": "queue 无 pending；正文已有 2026-05-26 DeliQueue 一手来源补证，修正回流 Task6 状态。"
+    "verifier_note": "queue 无 pending；正文已有 2026-05-26 DeliQueue 一手来源补证，修正回流 Task6 状态。",
+    "last_task2b_at": "2026-05-27T00:50:00+08:00",
+    "task2b_note": "修复 2026-05-27 Task9 回炉：DeliQueue 官方来源/targetSdk 37 口径、性能数字来源标注、GapWorker viewType 运行平均耗时公式。"
   }
 }

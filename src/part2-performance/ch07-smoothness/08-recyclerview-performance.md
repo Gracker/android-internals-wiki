@@ -66,6 +66,7 @@ review_notes: '2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码
   queue.json。'
 task9_review_notes: '2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。'
 last_task2b_verifier_at: '2026-05-26T23:25:00+08:00'
+last_task2b_at: '2026-05-27T00:50:00+08:00'
 
 ---
 
@@ -162,7 +163,7 @@ void postFromTraversal(RecyclerView recyclerView, int prefetchDx, int prefetchDy
 
 具体要预取哪些 position，由 `LayoutManager.collectAdjacentPrefetchPositions()` 和 `collectInitialPrefetchPositions()` 决定。前者服务滑动中的相邻 item，后者服务嵌套列表首次可见时的 initial prefetch。`setInitialPrefetchItemCount()` 调的就是这条 initial prefetch 路径。
 
-`GapWorker.run()` 会读取最近一次 `getDrawingTime()`，再加上刷新周期，估算下一帧 deadline。随后 `prefetchPositionWithDeadline()` 进入 `Recycler.tryGetViewHolderForPositionByDeadline()`。这里不会无条件 create/bind。创建前，Pool 先看 `willCreateInTime()`；绑定前，再看 `willBindInTime()`。这两个判断读取的是按 viewType 维护的运行平均耗时，平均值由 `factorInCreateTime()` 和 `factorInBindTime()` 在每次成功 create/bind 后回写。
+`GapWorker.run()` 会读取最近一次 `getDrawingTime()`，再加上刷新周期，估算下一帧 deadline。随后 `prefetchPositionWithDeadline()` 进入 `Recycler.tryGetViewHolderForPositionByDeadline()`。这里不会无条件 create/bind。创建前，Pool 先看 `willCreateInTime()`；绑定前，再看 `willBindInTime()`。这两个判断读取 `RecycledViewPool` 中对应 `viewType` 的 `ScrapData.mCreateRunningAverageNs` / `mBindRunningAverageNs`，用 `approxCurrentNs + expectedDurationNs < deadlineNs` 判断剩余时间是否足够。平均值以 `viewType` 为 key 保存在同一个 Pool 里，不混用不同类型 item 的 create/bind 成本；首次记录直接取本次耗时，后续通过 `old * 3/4 + new * 1/4` 的衰减滑动平均更新。
 
 ```java
 // RecyclerView.Recycler
@@ -183,20 +184,13 @@ if (deadlineNs != FOREVER_NS
 
 ### Android 17 DeliQueue 对预取调度的影响
 
-> **⚠️ 未经一手验证的标注（2026-05-20 调研）**
-> 
-> 本节中关于 DeliQueue 的以下描述**未在 AOSP master / androidx-main 公开源码中找到一手证据**，建议补充一手验证：
-> - "DeliQueue 用 Treiber Stack 替代了 synchronized 块" — cs.android.com / googlesource.com 检索无果
-> - "Google 官方观测数据...missed frames 降低约 4%，System UI 和 Launcher 降低约 7.7%，首帧 P95 耗时降低约 9.1%" — 非一手来源，数字来源待确认
-> - "DeliQueue 仅在应用 targetSdk >= 37 时生效" — 当前 AOSP master 最高 targetSdkVersion 为 36（android-17），37 属于未来版本
-> 
-> 如需确认，建议联系 Android 内部团队或查阅 Google internal bug tracker / performance release notes。
+Android 17 为 `targetSdkVersion >= 37` 的应用启用新的 lock-free `MessageQueue` 实现 DeliQueue；低于这个 target 的应用默认仍走旧的 lock-based 实现，debuggable build 可用 `adb am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试。这个边界来自 Android 17 MessageQueue behavior change 文档，不依赖 AOSP benchmark 代码。
 
-Android 17 引入的 DeliQueue（无锁消息队列）改变了 GapWorker 的执行环境。`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 `MessageQueue`；在传统 `MessageQueue` 里，`post()` 和 `next()` 都由 `synchronized` 保护。当后台线程也在往同一个队列投消息时（比如 `AsyncListDiffer` 的 diff 结果回调、`Handler.post()` 调度），`GapWorker` 的执行时机会被 Monitor Lock 阻塞，导致预取任务的发起和执行出现几毫秒的随机偏移。
+`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。DeliQueue 的设计口径来自 Google Android Developers Blog：入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是移除这条 monitor contention 路径。
 
-DeliQueue 用 Treiber Stack 替代了 `synchronized` 块，消除了 `post()` 路径上的锁竞争。Google 官方观测数据（需 `targetSdk 37+`）：应用 missed frames 降低约 4%，System UI 和 Launcher 降低约 7.7%，首帧 P95 耗时降低约 9.1%。这个收益不限于 RecyclerView，而是 `MessageQueue` Monitor Contention 减少后整个主线程调度的改善——预取任务的调度不再受后台线程锁竞争干扰，`willCreateInTime()` / `willBindInTime()` 的 deadline 判断也更准确，因为 GapWorker 被唤醒到开始执行的间隔缩短了。
+Google 官方 benchmark 给出的数字是 MessageQueue 级别收益：应用 missed frames 下降约 4%，System UI / Launcher 交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。这些数字来自 Android Developers Blog，不是 RecyclerView 专项 benchmark，也不是 AOSP commit 中可直接复算的数据。
 
-这对开发者的实际意义：在 Android 17 + `targetSdk 37+` 设备上，`setInitialPrefetchItemCount()` 的调优收益会比旧版本更稳定。之前可能因为锁延迟导致预取超时的情况，在 DeliQueue 环境下更容易在 deadline 内完成。注意：DeliQueue 仅在应用 `targetSdk >= 37` 时生效，低于该版本的应用仍使用传统 `synchronized` 消息队列。
+落到 RecyclerView，DeliQueue 影响的是 `recyclerView.post(this)` 到 `GapWorker.run()` 开始执行之间的队列等待。它不会改变 `collectAdjacentPrefetchPositions()`、`willCreateInTime()`、`willBindInTime()` 的算法，也不会降低 `onBindViewHolder()` 或 measure/layout 的耗时。只有 trace 中能看到 `MessageQueue` monitor contention 挤压主线程时，DeliQueue 才能让预取任务更稳定地进入 deadline 窗口；瓶颈在 bind、inflate、measure 时，仍要回到 item 结构和缓存策略处理。
 
 ### 反射 MessageQueue 的监控库兼容性
 
@@ -477,9 +471,9 @@ GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout �
 ### Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md
 - 类型：DeepResearch 调研结果
-- 摘要：Android 17 DeliQueue 采用 Treiber Stack + Min-Heap 无锁设计，targetSdk>=37 启用。RecyclerView GapWorker 预取机制无变化，但受益于 MessageQueue 锁竞争消除，主线程延迟降低。Google 官方博客一手参考。
+- 摘要：Android 17 DeliQueue 的公开设计口径为 Treiber stack + min-heap，`targetSdkVersion >= 37` 默认启用。RecyclerView GapWorker 预取机制无变化，收益来自 `MessageQueue` 锁竞争减少后的调度等待下降。Google 官方博客和 Android 17 behavior change 文档是一手参考。
 - 注入时间：2026-05-18
-- 价值：Google 官方博客一手参考，DeliQueue Treiber Stack 设计与 RecyclerView 预取性能关联分析
+- 价值：Google 官方博客一手参考，DeliQueue 设计与 RecyclerView 预取调度关联分析
 
 - **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java`
 - **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java`
@@ -604,15 +598,15 @@ MATCH_CONSTRAINT_SPREAD 和 MATCH_CONSTRAINT_WRAP 需要 2 轮迭代，每轮都
 <!-- AIW-源码调研-2026-05-14 -->
 ## Android 17 DeliQueue 与 RecyclerView 预取版本边界验证
 
-**来源**：每日推荐选题 id=8，`cs.android.com/platform/superproject/+/main:frameworks/base/core/java/android/os/MessageQueue.java`
+**来源**：每日推荐选题 id=8，Google Android Developers Blog 与 Android 17 MessageQueue behavior change 文档
 
 ### 核心发现
 
-Android 17 引入的 **DeliQueue** 是一种无锁 MessageQueue 实现（targetSdk >= 37 生效），通过分离消息入队与消息处理彻底消除主线程锁竞争。**DeliQueue 并非 RecyclerView 特有组件**，其性能收益对 RecyclerView 预取的影响是间接的——来自 MessageQueue 调度延迟降低。
+Android 17 引入的 **DeliQueue** 是一种 lock-free MessageQueue 实现，`targetSdkVersion >= 37` 的应用默认启用。DeliQueue 并非 RecyclerView 特有组件；它对 RecyclerView 预取的影响来自 MessageQueue 调度等待下降。
 
 ### DeliQueue 核心设计
 
-**数据结构（Google 官方博客源码片段）**：
+**数据结构（Google 官方博客设计说明）**：
 
 ```java
 // Treiber Stack - 无锁栈，任何线程可无竞争推送新消息
@@ -641,31 +635,32 @@ public class TreiberStack<E> {
 }
 ```
 
-**与 RecyclerView 的交互**：`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 MessageQueue。DeliQueue 消除了 `post()` 路径上的锁竞争，使 `GapWorker` 的执行时机更可预测。
+**与 RecyclerView 的交互**：`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 MessageQueue。DeliQueue 减少 `post()` / `next()` 路径上的 monitor contention，使 `GapWorker` 更少被队列锁等待拖出 deadline 窗口。
 
 ### 版本边界
 
 | 版本 | MessageQueue 实现 | 锁竞争 | RecyclerView 预取稳定性 |
 |------|-------------------|--------|------------------------|
 | Android 16 (API 36) | 单锁链表 | 存在 | 受后台线程干扰 |
-| Android 17 (API 37)+ targetSdk 37+ | DeliQueue 无锁 | 消除 | 更稳定 |
+| Android 17 (API 37)+ targetSdk 37+ | DeliQueue lock-free | 减少 | 更稳定 |
 
 ### 反射兼容性警告
 
-DeliQueue 改变 MessageQueue 内部字段结构。基于反射 hook `dispatchMessage` 的监控库（如部分 Espresso/Robolectric 场景），在 Android 17 上可能失效。推荐使用官方 `FrameMetrics` / `JankStats` 方案。
+DeliQueue 改变 MessageQueue 内部字段结构。Android 17 为二进制兼容保留 `MessageQueue.mMessages` 字段，但新实现中该字段始终为 null。基于反射读取内部队列的监控库、测试库或 idle 判断逻辑需要迁移到公开 API；Espresso 需升级到 3.7.0+，Robolectric 需升级到 4.17+。
 
 ### 源码位置
 
-- `frameworks/base/core/java/com/android/internal/widget/GapWorker.java` - GapWorker 预取实现
-- `frameworks/base/core/java/com/android/internal/widget/RecyclerView.java` - RecyclerView 集成
-- `frameworks/base/core/jni/android_os_MessageQueue.cpp` - Native 层 JNI
+- AndroidX `recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java` - GapWorker 预取实现
+- AndroidX `recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java` - RecyclerView 集成
+- Android Developers Blog `Under the hood: Android 17's lock-free MessageQueue` - DeliQueue 设计说明与性能数字来源
+- Android 17 `MessageQueue behavior change guidance` - targetSdk 边界、反射兼容和 compat 开关
 
 ### 验证状态
 
-- ✅ DeliQueue Treiber Stack + Min-Heap 架构：Google 官方博客源码确认
-- ✅ targetSdk >= 37 生效条件：官方文档确认
-- ⚠️ 4%/7.7%/9.1% 性能数字：来自 Google 官方博客，未找到 AOSP commit 一手源码
-- ⚠️ DeliQueue 与 RecyclerView 预取的具体交互细节：需要实机验证
+- ✅ DeliQueue Treiber stack + min-heap 设计：Google 官方博客确认
+- ✅ `targetSdkVersion >= 37` 生效条件：Android 17 behavior change 文档确认
+- ✅ 4% / 7.7% / 9.1% 性能数字：来自 Google 官方博客 benchmark
+- ⚠️ DeliQueue 与 RecyclerView 预取的业务收益：需要在具体 App trace 中按 `MessageQueue` monitor contention、`RV Prefetch`、create/bind/layout 分段验证
 
 <!-- end AIW-源码调研-2026-05-14 -->
 
@@ -673,9 +668,9 @@ DeliQueue 改变 MessageQueue 内部字段结构。基于反射 hook `dispatchMe
 ### RecyclerView 列表滑动性能深度优化 — Android 17 DeliQueue 与 MessageQueue 版本口径
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md
 - 类型：DeepResearch 调研结果
-- 摘要：验证 Android 17 DeliQueue 基于 Treiber Stack 的无锁优先级队列架构、targetSdk>=37 下 Generational CMCM 分代策略（Short/Medium/Long）、RecyclerView GapWorker 与 DeliQueue 的交互机制，以及对 4%/7.7%/9.1% 性能数字的来源溯源（未找到一手验证，建议标注数据来源待验证）。
+- 摘要：复核 Android 17 DeliQueue 的公开设计口径、`targetSdkVersion >= 37` 生效边界、RecyclerView GapWorker 与 MessageQueue 调度等待的关系，并把 4%/7.7%/9.1% 性能数字收敛为 Google Android Developers Blog benchmark。
 - 注入时间：2026-05-13
-- 价值：DeliQueue 架构与 GapWorker 交互机制的源码级验证，补充了版本差异表和性能数字可靠性评估
+- 价值：DeliQueue 版本边界与 GapWorker 调度关系复核，补充了性能数字来源说明
 
 
 <!-- AIW-源码调研-2026-05-16 -->
@@ -725,9 +720,9 @@ ORDER BY SUM(dur) DESC;
 
 来源：DeepResearch 调研 2026-05-16
 <!-- AIW-源码调研-2026-05-23 -->
-**DeliQueue + RecyclerView GapWorker 联动细节**（来源：Google Android Developers Blog + AOSP 源码）：
+**DeliQueue + RecyclerView GapWorker 联动细节**（来源：Google Android Developers Blog + AndroidX 源码）：
 - DeliQueue 触发条件：`targetSdk >= 37`（Android 17）才启用，旧版 targetSdk 仍用 legacy monitor lock MessageQueue
-- GapWorker `dispatchFromTraversal()` 的 prefetch deadline 精度受益于 MessageQueue 调度延迟降低
+- GapWorker `postFromTraversal()` 的 prefetch deadline 精度受益于 MessageQueue 调度延迟降低
 - 生产者 O(1) 无锁 push → Looper 线程 O(log N) min-heap 出队，帧处理不再因锁争用被打断
 - Tombstoning 移除模式：逻辑删除 CAS flag，实际清理 defer 到 Looper 线程，避免边遍历边修改的 ABA 问题
 - 未直接改变 RecyclerView 渲染管线，但 MessageQueue 优先级倒置消除后 `doFrame()` 时间更稳定
@@ -744,7 +739,7 @@ ORDER BY SUM(dur) DESC;
 
 **核心发现**：
 - 4%/7.7%/9.1% 性能数字来源于 **Google Android Developers Blog (2026-02-17)** 官方 benchmark
-- Google Android Developers Blog 是 DeliQueue 架构（Treiber Stack + min-heap）和性能数字的一手官方来源
+- Google Android Developers Blog 是 DeliQueue 设计（Treiber stack + min-heap）和性能数字的一手官方来源
 - **targetSdk >= 37** 是 DeliQueue 生效的必要条件（developer.android.com 官方确认）
 - 建议在章节中标注来源为 "Google Android Developers Blog"，而非 "AOSP 源码验证"
 
