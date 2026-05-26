@@ -1,8 +1,8 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 205,
-  "finalized": 172,
+  "ready-for-review": 206,
+  "finalized": 171,
   "task9_result": "auto-fixed",
   "task9_reviewed_date": "2026-05-27",
   "task9_reviewed_by": "openclaw-task9",
@@ -2049,9 +2049,9 @@
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
-  "ready_for_review": 158,
-  "last_updated": "2026-05-27T05:14:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 159,
+  "last_updated": "2026-05-27T05:51:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T04:06:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2078,7 +2078,7 @@
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-26",
-  "ready_to_publish": 187,
+  "ready_to_publish": 186,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -7716,6 +7716,14 @@
         "task9-deep-20260522-9.4-16kb-page-size-proc-path",
         "task9-deep-20260522-2.11-16kb-plugin-packaging-elf-boundary"
       ]
+    },
+    {
+      "section": "1.2",
+      "file": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "type": "frontmatter",
+      "result": "fixed-lite",
+      "at": "2026-05-27T05:51:00+08:00",
+      "summary": "修正已完成 Task2B 小修后仍停在 task2b_pending/finalized 的状态，将章节回流到 Task6 复审。"
     }
   ],
   "section_18_23": {
@@ -8513,15 +8521,15 @@
   },
   "task2b_lite_daily": {
     "2026-05-27": {
-      "sections_processed": 1,
-      "items_completed": 1
+      "sections_processed": 2,
+      "items_completed": 2
     }
   },
-  "last_task2b_lite_at": "2026-05-27T03:42:00+08:00",
+  "last_task2b_lite_at": "2026-05-27T05:51:00+08:00",
   "last_task2b_lite_sections": [
-    "11.1"
+    "1.2"
   ],
   "last_task2b_lite_files": [
-    "src/part2-performance/ch11-power/01-power-model.md"
+    "src/part1-fundamentals/ch01-architecture/02-boot-process.md"
   ]
 }
