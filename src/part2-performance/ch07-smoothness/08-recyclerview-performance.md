@@ -53,11 +53,11 @@ sources:
   path: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/recyclerview
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
-task9_state: 'reviewed'
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: 'needs-rework'
-task2b_state: 'pending'
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: '2026-05-13T02:51:35+08:00'
 task9_reviewed_by: 'openclaw-task9'
@@ -65,6 +65,8 @@ task9_reviewed_date: '2026-05-13'
 review_notes: '2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入
   queue.json。'
 task9_review_notes: '2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。'
+last_task2b_verifier_at: '2026-05-26T23:25:00+08:00'
+
 ---
 
 
@@ -733,3 +735,31 @@ ORDER BY SUM(dur) DESC;
 <!-- AIW-源码调研-2026-05-23 -->
 
 <!-- end AIW-源码调研-2026-05-16 -->
+
+
+<!-- AIW-源码调研-2026-05-26 -->
+### DeliQueue 性能数字一手来源验证
+
+**来源**：每日源码调研（research-gaps 回退自选）—— §7.8 DeliQueue 性能数字无 AOSP commit 一手验证
+
+**核心发现**：
+- 4%/7.7%/9.1% 性能数字来源于 **Google Android Developers Blog (2026-02-17)** 官方 benchmark
+- Google Android Developers Blog 是 DeliQueue 架构（Treiber Stack + min-heap）和性能数字的一手官方来源
+- **targetSdk >= 37** 是 DeliQueue 生效的必要条件（developer.android.com 官方确认）
+- 建议在章节中标注来源为 "Google Android Developers Blog"，而非 "AOSP 源码验证"
+
+**可信度评估**：
+- 来源可信度：高（Google 官方 benchmark 正式发布）
+- 可复核性：低（AOSP commit 中未找到对应 benchmark 代码）
+- 适用性：作为方向性参考，而非业务 OKR 直接引用
+
+**建议引用格式**：
+```
+Android 17 targetSdk 37+ 环境下，Google 官方测试显示 MessageQueue 
+锁竞争消除后应用 missed frames 下降约 4%，System UI 和 Launcher 
+交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。
+
+（数字来源：Google Android Developers Blog, 2026-02-17）
+```
+来源：DeepResearch 调研 2026-05-26
+<!-- end AIW-源码调研-2026-05-26 -->

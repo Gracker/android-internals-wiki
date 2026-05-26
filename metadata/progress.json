@@ -2006,8 +2006,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-26T20:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-26T23:25:00+08:00",
+  "last_updated_by": "task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-05-26T20:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -8326,5 +8326,24 @@
     "last_task2b_priority": 95,
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
+  },
+  "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
+  "last_task2b_verifier_sections": [
+    "7.8"
+  ],
+  "section_7_8": {
+    "section": "7.8",
+    "title": "RecyclerView 列表滑动性能深度优化",
+    "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
+    "verifier_note": "queue 无 pending；正文已有 2026-05-26 DeliQueue 一手来源补证，修正回流 Task6 状态。"
   }
 }
