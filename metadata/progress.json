@@ -2227,7 +2227,7 @@
       "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。",
       "task2b_result": "fixed",
       "task9_state": "pending",
-      "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+      "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
       "task2b_verifier_result": "ready-for-task6"
     },
     "3.5": {
@@ -3136,20 +3136,22 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "queue_priority": 95,
       "last_task9_at": "2026-05-14T04:36:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-04-deep-review.md",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "last_task6_at": "2026-05-21T02:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
-      "task2b_result": "pending"
+      "task2b_result": "fixed",
+      "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "23.7": {
       "status": "finalized",
@@ -6278,18 +6280,20 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
       "last_task6_at": "2026-05-21T02:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
-      "task2b_result": "pending",
-      "queue_priority": 95
+      "task2b_result": "fixed",
+      "queue_priority": 95,
+      "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "4.3": {
       "status": "ready-for-review",
@@ -8537,5 +8541,24 @@
   ],
   "last_task2b_lite_files": [
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+  ],
+  "task2b_verifier_history": [
+    {
+      "at": "2026-05-27T07:50:00+08:00",
+      "by": "task2b-verifier",
+      "reviewed": [
+        "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+        "src/part4-system/ch17-oem/02-soc-differences.md",
+        "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+        "src/part2-performance/ch11-power/01-power-model.md",
+        "src/part2-performance/ch07-smoothness/06-case-studies.md",
+        "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      ],
+      "status_corrections": [
+        "17.2",
+        "5.9"
+      ],
+      "blocked": []
+    }
   ]
 }
