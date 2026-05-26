@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: "ready-for-review"
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-26'
 last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -58,22 +58,22 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "auto-fixed"
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-27"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-27T04:23:00+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-27T05:28:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
-task9_review_notes: "2026-05-27 Task9 04:23：auto-fixed。修正 libdmabufheap pooling 与 Binder FDA 两处 Android 16/17 未证实平台能力表述，回到 Task6 复审。"
+task9_review_notes: "2026-05-27 Task9 05:28：pass-tech-review。复核前轮 libdmabufheap pooling、Binder FDA、allocator AIDL/stable-C mapper、16KB reservedSize 与 Perfetto dmabuf 表述；无新增 P0/P1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-27T05:14:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-05-27"

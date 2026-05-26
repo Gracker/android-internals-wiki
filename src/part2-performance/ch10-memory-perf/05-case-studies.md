@@ -5,11 +5,11 @@ section: "10.5"
 status: "ready-for-review"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+last_verified: "2026-05-27"
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-16.0.0_r1; Android Developers ProfilingManager/ProfilingTrigger API reference"
 confidence: medium
 sources:
   - type: blog
@@ -33,28 +33,31 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-27"
 last_task6_audit: "2026-05-18"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
-task9_state: pending
-task9_reviewed_date: "2026-05-25"
+task9_state: reviewed
+task9_reviewed_date: "2026-05-27"
 task2b_state: "fixed"
 task2b_result: fixed
 rework_fixed_at: "2026-05-06T21:43:37+08:00"
 task2b_rework_date: "2026-04-30"
 task2b_fixed_at: "2026-04-30T01:40:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-07T01:20:00+08:00"
-task9_result: "needs-rework"
+last_task9_at: "2026-05-27T05:28:00+08:00"
+task9_result: "auto-fixed"
 last_task9_audit: "2026-05-25"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-05-27T05:14:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
+last_task9_autofix_at: "2026-05-27"
+task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。"
 ---
 
 # 案例集
@@ -296,7 +299,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 这个方案的关键创新在于"轻量"。它不需要抓取完整的 Hprof 快照（那个太重了），而是通过周期性采样 `Runtime.totalMemory()` 和 `Runtime.freeMemory()` 来检测 Java 堆的变化趋势。当检测到突增时，快速扫描当前线程栈和关键数据结构的大小，记录下"谁在分配内存"。
 
-> **Android 15+ 替代采集后端**：Android 15（API 35）引入了 `ProfilingManager`，App 可主动调用 `requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal, Executor, Consumer<ProfilingResult>)` 请求系统转储 heap profile 或 trace。注意：`ProfilingTrigger` 目前只暴露 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 `TRIGGER_TYPE_ANR`，没有"内存突增"自动触发类型。所以 MemoryThrashing / 业务探针仍然负责发现内存阈值；`ProfilingManager` 可作为触发后的采集后端，比自研方案开销更低。新项目建议"探针检测 + ProfilingManager 采集"的组合模式，MemoryThrashing 作为 Android 15 以下的兼容方案。
+> **Android 15+ 替代采集后端**：Android 15（API 35）引入 `ProfilingManager.requestProfiling(...)`，App 可主动请求 system trace、Java heap dump、heap profile 或 stack sampling。Android 16（API 36）开始提供 `ProfilingTrigger` / `ProfilingManager.addProfilingTriggers(...)`：API 36 包含 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 `TRIGGER_TYPE_ANR`；36.1 增加 request-running-trace 与 kill 类触发器；API 37 增加 `TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_COLD_START` 等。这里的 OOM trigger 是 OOM 发生后的 Java heap dump，不是"内存突增阈值"预警。因此 MemoryThrashing / 业务探针仍负责发现内存阈值，`ProfilingManager` 更适合作为触发后的采集后端。
 
 ### 根因定位
 
@@ -363,4 +366,6 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 - [抖音 renderD128 系统级疑难 OOM 分析与解决 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363)
 - [MemoryThrashing：抖音直播解决内存抖动实践 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247496677)
 - [AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java — onTrimMemory 级别常量定义](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/ComponentCallbacks2.java)
+- [Android Developers ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Android Developers ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
 - [AOSP frameworks/base/core/java/android/view/View.java — setAlpha 与硬件加速离屏缓冲区](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/view/View.java)
