@@ -1,5 +1,4 @@
 ---
-
 status: ready-for-review
 title: ADPF 自适应性能框架
 chapter: '5.9'
@@ -44,11 +43,11 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: "task6_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "fixed"
-task2b_result: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: '2026-05-21T03:22:56+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
@@ -62,6 +61,8 @@ last_task6_at: "2026-05-21T04:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-04-review.md"
 task6_reviewed_date: "2026-05-21"
 task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。"
+last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
+task2b_verifier_result: ready-for-task6
 ---
 
 # 5.9 ADPF 自适应性能框架
