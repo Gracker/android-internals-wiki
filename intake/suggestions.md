@@ -3971,3 +3971,50 @@
 - **问题**：正文写“Google 官方建议 Macrobenchmark 的迭代次数至少 10 次”，但当前 Android Developers Macrobenchmark 文档只要求显式指定 iterations，公开示例仍有 5 次 / CI JSON 示例 repeatIterations=3 的口径，未能支撑“官方至少 10 次”这个硬断言。
 - **建议**：补充能支撑 10 次下限的官方来源；补不到时改成团队经验建议，例如“发布门禁建议至少 10 次，官方示例不等同于统计下限”，并把不同场景的迭代次数写成项目基线。
 
+
+## [Task2A Gap Mining] 2026-05-26 20:04
+
+- **Phase 0**：扫描 `src/` 后未发现 `status: draft` 且正文实质内容 < 15 行的空 draft 章节。
+- **source-index / daily-info / research-feeds**：本轮重点复核 Android 17 App memory limits、后台音频硬化、Headroom / ADPF、static final 不可修改、Local Network / ECH、Developer Verification、Clove / CXL 托管运行时内存管理。
+- **官方文档 / AOSP 对照**：Android 17 behavior changes、Android 16 features、Android 17 local network / ECH、MessageQueue lock-free 等方向已有现有章节承接或回炉建议。
+- **候选评估**：
+  - Android 17 App memory limits / MemoryLimiter：已在 23.9、4.1、4.4、26.12 覆盖，不重复建章。
+  - Android 17 后台音频硬化：已在 25.17、1.16、5.8、16.5 覆盖，不重复建章。
+  - Android 16/17 Headroom / ADPF：已在 5.5、5.9、25.16、22.10 覆盖，不重复建章。
+  - Android 17 static final 不可修改与 ART 编译边界：已在 1.7、16.5 覆盖，不重复建章。
+  - Android 17 Local Network / ECH / domainEncryption：已在 24.16、24.18、12.4 覆盖，不重复建章。
+  - Android 17 Developer Verification：已在 1.21 覆盖，不重复建章。
+  - Clove / CXL 托管运行时对象级内存管理：12/20。素材新，但缺少 Android / ART 官方落地证据，不建章。
+- **结论**：本轮未发现评分 ≥14 且未被现有章节覆盖的知识缺口，未创建新章节。
+
+
+## [Task2A Gap Mining] 2026-05-26 21:13 — 知识缺口挖掘扫描记录
+
+- **Phase 0**：扫描 `src/` 后未发现 `status: draft` 且正文实质内容 < 15 行的空 draft 章节。
+- **写作规范**：已先读取 `/Users/gracker/.agents/skills/technical-writing/SKILL.md`，本轮未进入正文加工。
+- **source-index / research-feeds / daily-info**：复核高分但未稳定映射的素材，重点包括 Perfetto v53/v54、Android Performance Analyzer、Clove / CXL 托管运行时内存管理，以及 `intake/daily-info/2026-05-26.md` 的 Clove 论文条目。Perfetto 与 APA 已有 13.12、13.14、14.18、14.19、26.18 等章节承接；Clove / CXL 缺少 Android / ART 官方落地证据。
+- **官方文档对照**：复核 Android Developers 性能总览、App Performance Score、Inspect performance、Improve performance、Monitor performance、Android 17 Beta 文档。App Performance Score 已在 26.18 覆盖；Inspect / Measure / Improve / Monitor 性能入口已由 13、14、15、19、26 章覆盖；Android 17 Bubbles、Handoff、大屏 resizability、ProfilingManager triggers、后台音频限制等已有相邻章节或回炉队列承接。
+- **AOSP / 模块对照**：Connectivity / netd / DnsResolver、Bluetooth、Media / Codec2、Camera、Biometric / Credential、Keystore、Notification、JobScheduler / WorkManager、ProfilingManager、MessageQueue / DeliQueue 等方向已有章节覆盖。Telephony / NFC / DownloadManager 的性能主线和素材丰富度不足，未达到独立建节阈值。
+
+### 候选评估
+
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 结论 |
+|---|---:|---:|---:|---:|---:|---|
+| Android Performance Score / 性能体检框架 | 4 | 5 | 5 | 5 | 19 | 已在 26.18 覆盖，不重复建章 |
+| Android Performance Analyzer / Android CLI agent 工作流 | 5 | 5 | 4 | 5 | 19 | 已在 14.18、14.19 覆盖，不重复建章 |
+| Perfetto v53/v54 pprof、Simpleperf、DataGrid、Jank CUJ | 4 | 5 | 4 | 5 | 18 | 已在 13.12、13.14 覆盖，不重复建章 |
+| Android 17 Bubbles / Handoff / 大屏 resizability 性能适配 | 2 | 3 | 3 | 5 | 13 | 与 18.18、22.14 相邻，暂不独立建章 |
+| Clove / CXL 托管运行时对象级内存管理映射 ART | 1 | 3 | 3 | 5 | 12 | 缺少 Android / ART 官方落地证据，不建章 |
+| Telephony / NFC / DownloadManager 性能 | 1 | 2 | 2 | 2 | 7 | 性能主线弱，不建章 |
+
+### 参考源
+
+- Android Developers App performance guide: https://developer.android.com/topic/performance/overview
+- Android Developers Inspect performance: https://developer.android.com/topic/performance/inspecting-overview
+- Android Developers Improve performance: https://developer.android.com/topic/performance/improving-overview
+- Android Developers App Performance Score: https://developer.android.com/topic/performance/app-score
+- Android 17 Beta 1/2 blog: https://developer.android.com/blog/posts/the-first-beta-of-android-17 / https://developer.android.com/blog/posts/the-second-beta-of-android-17
+
+### 结论
+
+本轮未发现评分 ≥ 14 且未被现有章节覆盖的知识缺口，未创建新章节。

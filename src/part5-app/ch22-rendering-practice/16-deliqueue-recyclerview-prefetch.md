@@ -222,3 +222,31 @@ target 37 灰度不要只看总掉帧率。官方博客给出的收益数字来�
 ## 收束
 
 Android 17 DeliQueue 给 RecyclerView 带来的变化，是减少 `GapWorker` 和业务回调进入主线程前的队列等待；预取算法本身仍沿用 AndroidX 路径。排查时按队列口、RecyclerView create/bind/layout、FrameTimeline 三段拆开，target 37 的收益和应用自身的列表成本才不会混在一起。
+
+
+<!-- AIW-源码调研-2026-05-26 -->
+### DeliQueue 性能数字一手来源验证
+
+**来源**：每日源码调研（research-gaps 回退自选）—— §7.8 DeliQueue 性能数字无 AOSP commit 一手验证
+
+**核心发现**：
+- 4%/7.7%/9.1% 性能数字来源于 **Google Android Developers Blog (2026-02-17)** 官方 benchmark
+- Google Android Developers Blog 是 DeliQueue 架构（Treiber Stack + min-heap）和性能数字的一手官方来源
+- **targetSdk >= 37** 是 DeliQueue 生效的必要条件（developer.android.com 官方确认）
+- 建议在章节中标注来源为 "Google Android Developers Blog"，而非 "AOSP 源码验证"
+
+**可信度评估**：
+- 来源可信度：高（Google 官方 benchmark 正式发布）
+- 可复核性：低（AOSP commit 中未找到对应 benchmark 代码）
+- 适用性：作为方向性参考，而非业务 OKR 直接引用
+
+**建议引用格式**：
+```
+Android 17 targetSdk 37+ 环境下，Google 官方测试显示 MessageQueue 
+锁竞争消除后应用 missed frames 下降约 4%，System UI 和 Launcher 
+交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。
+
+（数字来源：Google Android Developers Blog, 2026-02-17）
+```
+来源：DeepResearch 调研 2026-05-26
+<!-- end AIW-源码调研-2026-05-26 -->

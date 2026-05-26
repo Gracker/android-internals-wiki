@@ -504,3 +504,9 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
 - 摘要：验证 libdmabufheap pooling、Gralloc4 IMapper additionalOptions、Binder FDA 批量 fd 安装在 16KB 页大小下的版本实现边界。涵盖 ION→DMA-BUF heap 迁移路径、BufferQueue 分配链路，以及厂商 gralloc 实现对物理对齐的决定性作用。
 - 注入时间：2026-05-19
 - 价值：源码级验证 16KB 页下 DMA-BUF/Gralloc 版本边界与厂商差异，补充 BufferQueue 分配链路细节
+
+<!-- AIW-源码调研-2026-05-26 -->
+**源码调研结论更新（2026-05-26）**：
+1. **libdmabufheap 池化**：`system/memory/libdmabufheap` android16-qpr2-release 分支**未找到**通用释放后缓存复用路径。池化为厂商私有实现，建议将正文"Android 16/17 引入用户空间池化"修正为"池化机制存在于厂商 allocator 私有实现中，AOSP 层无通用池化路径"。
+2. **allocate2() additionalOptions**：在 **Android 15（API 35）已存在**，非 Android 16 新增。字段用于传递 EGL_EXT_surface_compression 等硬件约束，**非 16KB 页对齐用途**。NDK 公开入口仅为 `AHardwareBuffer_allocate()`，无 options 变体。
+3. **Binder FDA 批量传输**：android-16.0.0_r1 `GraphicBuffer.cpp` flatten/unflatten **仍为 transport fd 数组拷贝**，未接入 FDA 机制。20%-40% 收益缺少源码和 benchmark 条件支撑，应修正为待验证或删除具体数字。
