@@ -33,7 +33,7 @@ sources:
     path: "https://developer.android.com/about/versions/17/features"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
+review_notes: "2026-05-26 task6 revisiting review: pass-light-edit. L1/L2 小修完成；queue 无 pending，但 task9_result 仍为 needs-rework，等待 Task9 复核。"
 
 last_task2b_at: "2026-05-26T22:50:00+08:00"
 last_task2b_rework_at: "2026-05-26T22:50:00+08:00"
@@ -46,7 +46,7 @@ repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -55,15 +55,15 @@ task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T19:26:00+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 last_task9_audit: 2026-05-26
 last_task9_audit_at: "2026-05-26T11:26:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-11-audit.md"
-last_task6_at: "2026-05-26T20:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-26-20-review.md"
-task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。"
+last_task6_at: "2026-05-26T23:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-26-23-review.md"
+task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。 | 2026-05-26 23:07 Task6：Task2B 修复后 revisiting 复审；L1/L2 小修 13 处（冗余确认副词、第一人称叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；转 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-25"
@@ -133,7 +133,7 @@ ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触�
 
 当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒。Android 14+ 引入 `BroadcastQueueModernImpl`，把广播超时拆成两级：
 
-- **soft timeout**：前台广播 10 秒、后台广播 60 秒到期后，系统先检查接收进程的 CPU 调度延迟。如果进程确实拿到了足够的 CPU 时间，soft timeout 直接升级为 ANR
+- **soft timeout**：前台广播 10 秒、后台广播 60 秒到期后，系统先检查接收进程的 CPU 调度延迟。如果进程拿到了足够的 CPU 时间，soft timeout 直接升级为 ANR
 - **hard timeout**：如果进程因 CPU starvation（系统负载高、进程刚拉起、调度优先级低）还没来得及执行 `onReceive()`，系统会追加一个 hard timeout 窗口。前台广播 hard deadline 约 20 秒，后台广播约 120 秒。hard timeout 的实际计算依赖于 `app.getCpuDelayTime()`——它衡量的是进程从被调度到实际获得 CPU 的时间差
 
 ```java
@@ -299,7 +299,7 @@ class AnrHelper {
 
 **堆栈收集使用 SIGQUIT 信号。** system_server 向目标进程发送 Signal 3（SIGQUIT），触发虚拟机的堆栈 dump。这也是为什么 ANR traces 文件中会包含所有线程的堆栈——因为 SIGQUIT 的处理函数会遍历虚拟机中的所有线程。
 
-**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
+**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。9.3 节（ANR 分析方法）会详细讨论如何应对这个挑战。
 
 **System Server 会向多个进程发送 SIGQUIT。** 系统不只会对发生 ANR 的进程发 SIGQUIT，还可能同时请求关联进程的堆栈信息。一个 App 收到 SIGQUIT 不代表自己发生了 ANR，也可能是另一个 App 触发的。
 
@@ -376,7 +376,7 @@ Watchdog 触发时，在 Perfetto 中会表现为：
 
 ## ANR 信息的产出
 
-ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR 问题的核心素材。
+ANR 触发后，系统会产出多种诊断信息，这是分析 ANR 问题的核心素材。
 
 ### traces.txt（或 /data/anr/ 目录下的文件）
 
@@ -426,15 +426,15 @@ adb shell dumpsys dropbox --print data_app_anr
 
 这三种信息在 ANR 分析中各有侧重：
 
-- **traces.txt**：告诉我们 ANR 时刻所有线程"在哪里"（堆栈快照）
-- **event log**：告诉我们"为什么触发 ANR"（超时类型和具体原因）
-- **dropbox**：告诉我们"历史上有多少次 ANR"（持久化统计）
+- **traces.txt**：给出 ANR 时刻所有线程"在哪里"（堆栈快照）
+- **event log**：给出"为什么触发 ANR"（超时类型和具体原因）
+- **dropbox**：给出"历史上有多少次 ANR"（持久化统计）
 
-在 9.3 节（ANR 分析方法）中，我们会详细讨论如何综合使用这三种信息来定位 ANR 根因。
+9.3 节（ANR 分析方法）会详细讨论如何综合使用这三种信息来定位 ANR 根因。
 
 ## 各版本 ANR 机制的微调与改进 [扩展]
 
-ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但几乎每个大版本都在细节上有所调整。我们梳理其中影响较大的几次变化。
+ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但几乎每个大版本都在细节上有所调整。其中影响较大的变化集中在以下几处。
 
 Android 8.0 引入了后台执行限制。后台 Service 的超时阈值一直是前台超时的 10 倍（`DEFAULT_SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_TIMEOUT * 10`），对应前台 20 秒、后台 200 秒——这不是 Android 8.0 才引入的值，早期 AOSP 的 `ActivityManagerConstants` 里就已经这样定义。Android 8.0 的主要变化是后台执行限制本身：系统更倾向于直接杀掉后台应用而不是等它触发 ANR。200 秒的后台超时更多是一个保底兜底值，绝大多数后台 Service 会在远早于 200 秒时被后台限制策略回收。
 
@@ -444,7 +444,7 @@ Android 12 让前台服务启动失败后的异常表现更明确。`startForegr
 
 Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，让后台 Service 的行为约束更严格，间接减少了后台 Service ANR 的场景。
 
-Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经承担排队和线程隔离职责。
+Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经负责排队和线程隔离。
 
 Android 16 引入了系统触发式 ProfilingManager 追踪。应用先通过 `new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build()` 构造 ANR 触发器，再调用 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 注册；结果只能通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这类全局结果监听接收。`TRIGGER_TYPE_ANR` 的产物口径是 running system trace snapshot，文件会落到应用存储目录，不能写成 Java Heap Dump、Stack Sample、System Trace 三类都自动产出。
 
@@ -481,7 +481,7 @@ Play Console 提供的 ANR 信息包括：
 
 ## [自动发现] ANR trace 堆栈的"替罪羊"现象
 
-我们在前面分析 `AnrHelper` 与 `ProcessErrorStateRecord` 时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定了我们后续分析 ANR 的方法论。
+前文分析 `AnrHelper` 与 `ProcessErrorStateRecord` 时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定后续 ANR 分析的方法。
 
 **ANR trace 中主线程的堆栈，往往不是导致 ANR 的直接原因。** 根源在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
 
@@ -493,7 +493,7 @@ Play Console 提供的 ANR 信息包括：
 
 钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，导致 ANR 的实际原因是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
 
-这个认知直接决定了我们分析 ANR 的方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
+这个认知直接决定 ANR 分析方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 [自动发现]
@@ -502,7 +502,7 @@ Play Console 提供的 ANR 信息包括：
 
 ### 误区一："主线程堆栈就是 ANR 的根因"
 
-这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
+这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，导致超时的代码很可能已经执行完毕。前面的"替罪羊"现象已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
 
 ### 误区二："ANR = CPU 高负载"
 

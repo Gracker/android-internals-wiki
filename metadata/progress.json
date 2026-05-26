@@ -8314,8 +8314,8 @@
     "title": "ANR 设计思想",
     "file": "src/part2-performance/ch09-anr/01-anr-design.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "needs-rework",
@@ -8323,6 +8323,8 @@
     "task2b_result": "fixed",
     "last_task2b_at": "2026-05-26T22:50:00+08:00",
     "last_task2b_queue_source": "task9-deep-tech-review",
-    "last_task2b_priority": 95
+    "last_task2b_priority": 95,
+    "last_task6_at": "2026-05-26T23:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   }
 }
