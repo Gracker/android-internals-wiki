@@ -1,7 +1,7 @@
 {
   "total": 377,
-  "draft": 2,
-  "ready-for-review": 205,
+  "draft": 1,
+  "ready-for-review": 206,
   "finalized": 170,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -254,7 +254,8 @@
     "1.7",
     "11.4",
     "22.17",
-    "8.13"
+    "8.13",
+    "22.18"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -342,7 +343,8 @@
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
     "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch11-power/04-case-studies.md",
+    "src/part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
