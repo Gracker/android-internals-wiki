@@ -215,5 +215,26 @@
     "completed_by": "openclaw-task2b-main",
     "result": "fixed",
     "fix_summary": "修正 GapWorker create/bind 预算描述：按 RecycledViewPool 内 viewType 对应 ScrapData 保存运行平均值，并补充 old*3/4+new*1/4 衰减滑动平均计算方式。"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 90,
+    "reason": "[review回炉] 正文后半段仍保留源码调研原始块，需合并清理后再审",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "常见问题与误区之后至文末（约 line 400-760）",
+        "detail": "正文后半段仍保留多段 AIW 源码调研原始块，并与前文 GapWorker / DeliQueue 内容重复；当前形态更像素材归档，不像可发布章节正文。",
+        "suggestion": "将 GapWorker measure 盲区、DeliQueue 诊断特征和性能数字来源合并进前文对应小节；保留必要来源到参考资料；删除 AIW 调研注释、过程性小节和重复代码块。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T01:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-27-01-review.md"
   }
 ]
