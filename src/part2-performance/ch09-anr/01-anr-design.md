@@ -7,8 +7,8 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
+last_verified: "2026-05-26"
+last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs, Android Developers ProfilingManager / ProfilingTrigger docs"
 reviewed_date: "2026-05-26"
 reviewed_by: "openclaw-task6"
 confidence: medium
@@ -25,30 +25,37 @@ sources:
     path: "Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/features"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
-last_task2b_at: "2026-05-26T19:25:19+08:00"
+last_task2b_at: "2026-05-26T22:50:00+08:00"
+last_task2b_rework_at: "2026-05-26T22:50:00+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
-last_task2b_rework: "2026-05-25T15:18:38+08:00"
+last_task2b_rework: "2026-05-26T22:50:00+08:00"
 rework_type: "review回炉修复（Task9 问题单）"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T19:26:00+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 last_task9_audit: 2026-05-26
@@ -439,17 +446,19 @@ Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独�
 
 Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经承担排队和线程隔离职责。
 
-Android 16 引入了系统触发式 ProfilingManager 追踪。应用通过 `ProfilingManager.registerProfilingListener()` 注册对特定系统事件的兴趣后，当 ANR 发生时系统自动采集 trace（包括 Java Heap Dump / Stack Sample / System Trace），保存到应用的 data 目录供后续分析。Android 17 进一步扩展触发类型，新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`。
+Android 16 引入了系统触发式 ProfilingManager 追踪。应用先通过 `new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build()` 构造 ANR 触发器，再调用 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 注册；结果只能通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这类全局结果监听接收。`TRIGGER_TYPE_ANR` 的产物口径是 running system trace snapshot，文件会落到应用存储目录，不能写成 Java Heap Dump、Stack Sample、System Trace 三类都自动产出。
 
-这项改进直接针对 traces.txt 的"刻舟求剑"问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，比单个堆栈快照更接近真实时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对性优化不同启动路径。
+Android 17（API 37）把系统触发器扩到更多场景：`TRIGGER_TYPE_COLD_START` 用于冷启动，返回 system trace 和 stack sampling profile；`TRIGGER_TYPE_OOM` 用于 `OutOfMemoryError`，返回 Java Heap Dump；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 用于过量 CPU 使用导致的进程终止，返回 call stack sample；`TRIGGER_TYPE_ANOMALY` 用于系统检测到的异常资源行为。ANR 触发器仍按 Android 16 的 system trace snapshot 口径理解，不要把 Android 17 其他触发器的产物反推到 ANR 上。
+
+这项改进针对 traces.txt 的"刻舟求剑"问题：系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程行为，比单个堆栈快照更接近时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对不同启动路径优化。
 
 [已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, AnrHelper.java；AOSP android-14.0.0_r1, BroadcastQueueModernImpl.java, ActiveServices.java]
-[已验证: Android 16/17 ProfilingManager 系统触发式追踪, developer.android.com/about/versions/16/features + intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；API 细节基于公开文档与调研综合]
+[已验证: Android Developers ProfilingManager / ProfilingTrigger API reference, 2026-05-26；Android 17 features, 2026-05-26]
 [待验证: Android 8.0 后台 Service 200 秒超时的具体 commit]
 
 **Android 15**（[待验证]）：ANR 行为可能存在以下变更——更严格的 `startForeground()` 执行约束、前台 Service 类型声明的强制化。这些变更影响的是 ANR 的触发条件，而非 ANR 机制本身的架构。如有变更，将在后续 review 中更新。
 
-**Android 17**（[待验证]）：基于 Android 16 ProfilingManager 系统触发式追踪的进一步完善，可能引入更多 ANR 诊断信息的自动采集能力。ANR 机制的核心架构（超时检测 → SIGQUIT dump → 弹窗/杀进程）预计不会有根本性变化。具体变更将在 AOSP android-17 正式发布后验证。
+**Android 17**（API 37）：ProfilingManager 新增冷启动、OOM、过量 CPU 使用终止、异常资源行为等系统触发器。它们补的是性能诊断入口，ANR 机制的架构仍是超时检测 → SIGQUIT dump → 弹窗/杀进程。
 
 [待验证: Android 15/17 ANR 机制的具体变更，需在 AOSP 正式版发布后对照确认]
 
@@ -529,4 +538,4 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
   - [Keep your app responsive](https://developer.android.com/training/articles/perf-anr)
 - 素材来源：
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
-  - Android 16/17 ProfilingManager 系统触发式追踪（[官方文档](https://developer.android.com/about/versions/16/features) + intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md）
+  - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
