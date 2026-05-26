@@ -1,6 +1,43 @@
 {
   "queue_entries": [
     {
+      "id": "task9-audit-20260526-0823-18.3-software-layer-drawing-cache",
+      "section": "18.3",
+      "section_title": "Android View 软件渲染路径",
+      "priority": 95,
+      "title": "修正 LAYER_TYPE_SOFTWARE 与 drawing cache / RenderNode 软件层口径",
+      "description": "Task9 闲时抽检发现 §18.3 把 buildDrawingCache 写成基本 no-op，并把现代 LAYER_TYPE_SOFTWARE 描述成 RenderNode 软件 layer 路径；该口径与 AOSP android-16.0.0_r1 View / RenderProperties 源码不一致。",
+      "reason": "[Deep Tech Review Audit] §18.3 L83/L97 与 AOSP android-16.0.0_r1 不一致：View.updateDisplayListIfDirty() 在 LAYER_TYPE_SOFTWARE 下调用 buildDrawingCache(true) / getDrawingCache(true) 并 drawBitmap；RenderProperties.h 写明 LayerType::Software 不能直接构建 RenderLayer，由 Java 侧管理。",
+      "issue_type": "source-accuracy-layer-type-software-drawing-cache",
+      "severity": "P0",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-26-08-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/RenderProperties.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/libs/gui/Surface.cpp"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码准确性 / LAYER_TYPE_SOFTWARE 实现路径错误",
+          "location": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md L83、L97",
+          "detail": "正文写“View.buildDrawingCache() 在 API 28 已经弃用且基本 no-op，现代 LAYER_TYPE_SOFTWARE 走的是 RenderNode 软件 layer 路径”，但 AOSP android-16.0.0_r1 中 View.updateDisplayListIfDirty() 对 LAYER_TYPE_SOFTWARE 仍调用 buildDrawingCache(true) 与 getDrawingCache(true)，再把 Bitmap 画入 RecordingCanvas；RenderProperties.h 也明确 LayerType::Software 不能直接构建 software layer，相关管理由 Java 侧处理。",
+          "suggestion": "把这句改成：应用侧 drawing cache API 已废弃，不建议业务代码直接使用；但 LAYER_TYPE_SOFTWARE 的内部实现仍会通过 Java drawing cache / Bitmap 生成软件层，再由硬件路径把该 Bitmap 作为内容合成。源码锚点补 View.updateDisplayListIfDirty()、View.buildLayer()、RenderProperties.h LayerType::Software。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T08:23:00+08:00",
+      "original_review_log": "logs/deep-review/2026-05-26-08-audit.md"
+    },
+    {
       "id": "task6-20260526-0509-18.2-source-research-appendix",
       "section": "18.2",
       "section_title": "Android View 标准管线（BLAST 深入）",
@@ -21740,14 +21777,14 @@
     }
   ],
   "metadata": {
-    "total_entries": 574,
-    "p0_count": 242,
-    "last_updated": "2026-05-26T06:16:00+08:00",
-    "updated_by": "openclaw-task2a",
-    "pending_entries": 190,
+    "total_entries": 590,
+    "p0_count": 244,
+    "last_updated": "2026-05-26T08:23:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 191,
     "updated_date": "2026-05-26",
-    "last_updated_by": "openclaw-task2a",
-    "pending": 181,
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 191,
     "completed_entries": 396,
     "last_task2a_gap_mining": "8.13",
     "last_task2a_gap_mining_at": "2026-05-26T06:16:00+08:00",
@@ -21755,9 +21792,9 @@
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T07:26:56+08:00",
-  "last_updated_by": "task2b-rework",
-  "pending": 183,
+  "last_updated": "2026-05-26T08:23:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 191,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
