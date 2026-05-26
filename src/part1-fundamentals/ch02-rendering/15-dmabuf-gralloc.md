@@ -58,10 +58,10 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
-task9_state: "reviewed"
+pipeline_stage: "task9_pending"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
@@ -70,15 +70,31 @@ task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
 task9_review_notes: "2026-05-27 Task9 04:23：auto-fixed。修正 libdmabufheap pooling 与 Binder FDA 两处 Android 16/17 未证实平台能力表述，回到 Task6 复审。"
-last_task6_at: "2026-05-27T04:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-04-review.md"
-task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 6 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+last_task6_at: "2026-05-27T05:14:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-05-review.md"
+task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-05-27"
+task6_reviewed_date: "2026-05-27"
 ---
+
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 DMA-BUF 与 Gralloc 解决跨进程图形内存零拷贝的问题
+- 🔹 DMA-BUF exporter / importer、fd 传递与 DMA-BUF Heap 的关系
+- 🔹 Gralloc Allocator / Mapper / GraphicBuffer 的接口边界与 Android 12-16 版本差异
+- 🔹 BufferQueue / BLASTBufferQueue 路径下 handle 首次传递、slot 复用与 import 时机
+- 🔹 Perfetto、dmabuf_heap ftrace 与 `/proc/<pid>/fd` 中的排查方法
+- 🔹 常见问题：fd 泄漏、分配延迟、Camera 带宽竞争、版本演进
+
+<!-- outline-end -->
 
 ## 为什么要了解 DMA-BUF 和 Gralloc
 
@@ -429,7 +445,7 @@ Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Grall
 
 这一阶段，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并未“一刀切地 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
 
-这一阶段更适合只保留能从 AOSP / 官方文档落地的接口边界：
+这一阶段更适合只保留能从 AOSP / 官方文档确认的接口边界：
 
 - **allocator AIDL**：分配入口已经提供 Stable AIDL `IAllocator`，但 `mapper@4` 兼容路径仍存在
 - **约束传递**：`allocate2()` 的 `additionalOptions` 字段在 Android 15+ 已存在，可用于 compression level 等硬件约束；它不是 Android 16 新增，也不是公开 NDK 层的 16KB 页对齐入口

@@ -6,8 +6,8 @@ status: "ready-for-review"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-reviewed_date: "2026-04-21"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -33,13 +33,13 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-task6_state: "revisiting"
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-04-30"
+task6_reviewed_date: "2026-05-27"
 last_task6_audit: "2026-05-18"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
-task9_state: "pending"
+task9_state: pending
 task9_reviewed_date: "2026-05-25"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -52,7 +52,11 @@ task9_result: "needs-rework"
 last_task9_audit: "2026-05-25"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+last_task6_at: "2026-05-27T05:14:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-05-review.md"
+task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
 ---
+
 # 案例集
 
 <!-- outline-start -->
@@ -78,9 +82,9 @@ task2b_verifier_result: "ready-for-task6"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节中，我们分别讨论了内存分析的方法论（10.1）、内存泄漏的识别与修复（10.2）、内存持续增长的排查思路（10.3），以及低内存对系统性能的整体影响（10.4）。这一节，我们把这些知识放到真实的场景里——通过四个来自实际产品和线上环境的案例，完整地走一遍从"发现问题"到"定位根因"再到"验证修复"的全过程。
+前面的章节已经分别讨论了内存分析的方法论（10.1）、内存泄漏的识别与修复（10.2）、内存持续增长的排查思路（10.3），以及低内存对系统性能的整体影响（10.4）。这一节把这些知识放到真实场景里，通过四个来自实际产品和线上环境的案例，完整走一遍从"发现问题"到"定位根因"再到"验证修复"的全过程。
 
-每个案例的侧重点不同：有 Java 堆泄漏、有 Native 内存异常、有低内存引发的整机性能退化、还有内存突增导致的 OOM 崩溃。我们希望读者看完之后，面对自己遇到的内存问题时，能有一套可复用的分析框架。
+每个案例的侧重点不同：有 Java 堆泄漏、有 Native 内存异常、有低内存引发的整机性能退化、还有内存突增导致的 OOM 崩溃。读完之后，面对自己的内存问题时，应该能带走一套可复用的分析框架。
 
 ## 案例一：低内存引发整机卡顿与冷启动退化
 
@@ -94,7 +98,7 @@ task2b_verifier_result: "ready-for-task6"
 
 ### 分析思路
 
-面对这种"不是 CPU 慢而是等了什么东西"的情况，我们的第一反应是去看主线程的调度状态。在 Perfetto 中，Uninterruptible Sleep（D 状态）是最常见的线索——主线程在这个状态意味着它在等待某个内核操作完成，通常是 I/O。
+面对这种 CPU 计算时间没有明显增加、但总耗时被拉长的情况，第一步是看主线程的调度状态。在 Perfetto 中，Uninterruptible Sleep（D 状态）是最常见的线索——主线程在这个状态意味着它在等待某个内核操作完成，通常是 I/O。
 
 果然，在低内存的 Trace 中，主线程的 **Uninterruptible Sleep | WakeKill - Block I/O** 加上普通 Uninterruptible Sleep 总共占了约 **750ms**。而正常情况下只有 **130ms**。这 620ms 的差距，几乎完美解释了冷启动从 1.22s 退化到 2s 的原因。
 
@@ -151,7 +155,7 @@ API 34+ 的 App 可靠回调级别主要是 `TRIM_MEMORY_UI_HIDDEN`（20）和 `
 
 这个案例的核心规律是：**低内存会引发系统性连锁反应**。内存不足 → kswapd 频繁回收 → page cache 被清空 → I/O 增加 → 进程被杀又拉起 → CPU 和 I/O 竞争加剧 → 前台应用卡顿。
 
-当我们在 Perfetto 中看到主线程有大量 Uninterruptible Sleep - Block I/O 时，不要只关注 I/O 本身——往上看一眼系统内存水位（Perfetto 中的 `meminfo` track），往往能找到上游原因。
+在 Perfetto 中看到主线程有大量 Uninterruptible Sleep - Block I/O 时，不要只关注 I/O 本身——往上看一眼系统内存水位（Perfetto 中的 `meminfo` track），往往能找到上游原因。
 
 ---
 
@@ -264,7 +268,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 ### 举一反三
 
-从这个案例中，我们可以提炼出几条实战经验：
+这个案例可以提炼出几条实战经验：
 
 第一，**不是所有内存问题都能通过常规手段（如 LeakCanary、MAT）发现**。LeakCanary 只能检测 Java 堆的泄漏，对于 GPU 驱动内部管理的内存完全无能为力。当线上出现大量"虚拟内存 OOM"但 Java 堆远未满时，需要把排查视线转向 Native 内存和设备内存映射。
 
@@ -320,7 +324,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 ### 举一反三
 
-这里有一个容易忽略的区分：**内存问题不都是"泄漏"，还有一种是"短时间内的过度分配"**。
+**内存问题至少要区分两类：泄漏，以及短时间内的过度分配。**
 
 泄漏的特征是内存只增不减，曲线呈单调上升。而"对象风暴"的特征是内存曲线呈锯齿状——快速上升然后被 GC 回收一部分，但下一个高峰可能就突破了上限。两种问题的治理策略完全不同：泄漏需要找到那条"不该存在的引用链"，而对象风暴需要减少分配频率或复用对象。
 
@@ -330,7 +334,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 ## 案例的共通规律
 
-回顾这四个案例，我们可以总结出几条在内存性能分析中反复出现的规律：
+四个案例反复指向几条内存性能分析规律：
 
 **规律一：崩溃堆栈通常不是问题所在**。无论是 Java OOM 还是 Native OOM，崩溃发生的那个内存分配点往往只是"最后一步"。根因通常是某个一直在默默占用内存的大户。先看整体内存分布，再看具体分配点。
 
