@@ -2,7 +2,7 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
@@ -51,13 +51,13 @@ tags:
 reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 last_task9_at: "2026-05-19T11:45:22+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
 last_task6_audit: "2026-05-18"
 last_task9_audit: "2026-05-18"
@@ -69,8 +69,9 @@ task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 last_task6_at: "2026-05-19T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 10 处，清理第一人称、结构性元叙述、代码围栏语言和禁用句式；既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理。"
+last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+task2b_verifier_result: "ready-for-task6"
 ---
-
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
 
 <!-- outline-start -->

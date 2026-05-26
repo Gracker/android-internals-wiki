@@ -30,7 +30,7 @@ related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "needs-rework"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
 last_task6_at: "2026-05-25T12:09:00+08:00"
@@ -39,8 +39,8 @@ task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;
 task6_reviewed_date: "2026-05-25"
 task6_reviewed_by: "openclaw-task6"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-25"
@@ -50,9 +50,10 @@ task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0
 p0: 2
 p1: 0
 p2: 0
-task2b_state: "pending"
+task2b_state: "fixed"
+last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+task2b_verifier_result: "ready-for-task6"
 ---
-
 # SoC 平台差异
 
 <!-- outline-start -->
