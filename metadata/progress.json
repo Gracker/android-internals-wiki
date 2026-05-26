@@ -2720,13 +2720,20 @@
       "task9_reviewed_by": "openclaw-task9"
     },
     "22.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "last_task6_at": "2026-05-13T06:19:26+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-06-review.md",
+      "last_task6_audit": "2026-05-26",
+      "last_task6_audit_log": "logs/review/2026-05-26-19-audit.md",
+      "last_task9_at": "2026-05-13T06:25:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-13-06-deep-review.md",
       "file": "src/part5-app/ch22-rendering-practice/01-layout-optimization.md",
       "title": "布局优化策略"
     },

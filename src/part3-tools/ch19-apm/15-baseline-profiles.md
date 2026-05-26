@@ -39,6 +39,8 @@ review_notes: "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1
 auto_promoted: true
 last_task6_audit: "2026-05-22"
 last_task9_audit: "2026-05-23"
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-26T09:40:00+08:00"
 ---
 
 # Baseline Profiles 与编译优化
@@ -165,7 +167,7 @@ Baseline Profiles 和 Startup Profiles 的作用点不同。Baseline Profiles �
 - 首页首屏慢帧率是否下降。
 - 关键交互 P95 是否下降。
 
-这里要把用户群切清楚。老用户、刚更新用户、全新安装用户、清数据用户的编译状态不一样。只看全量平均启动耗时,容易把 profile 效果冲淡。
+需要把用户群区分清楚。老用户、刚更新用户、全新安装用户、清数据用户的编译状态不一样。只看全量平均启动耗时,容易把 profile 效果冲淡。
 
 ## 使用建议
 

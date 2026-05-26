@@ -58,6 +58,8 @@ finalized_date: "2026-05-22"
 finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
+last_deepseek_polish_at: 2026-05-26
+deepseek_polish_state: done
 ---
 
 # APM 全景图与分类体系
@@ -141,7 +143,7 @@ Android 性能监控工具可以按采集位置和使用场景分成四类：
 
 ## 工具边界优先于功能清单
 
-选 APM 时不该只看功能表。更稳的检查项是：
+选 APM 时不该只看功能表。应该检查：
 
 - **采集路径**：系统回调、字节码插桩、PLT Hook、Inline Hook、JVMTI、Perfetto SDK 分别带来不同兼容成本。
 - **运行开销**：帧级回调、主线程抓栈、Hprof dump、native 分配追踪都可能影响用户侧性能，必须有采样和限流。
@@ -173,7 +175,7 @@ APM 适合回答另一类问题：
 
 ## 使用建议
 
-刚开始搭体系时，不要一次接满所有 SDK。更稳的顺序是按 API floor 往上加：
+刚开始搭体系时，不要一次接满所有 SDK。按 API floor 往上加：
 
 1. 用 Android Vitals、Crash 平台、基础启动埋点建立版本级趋势。
 2. 先接 JankStats 作为跨版本帧信号；在 Android 8+ 设备上，再配 FrameMetrics 做窗口级拆解。
@@ -252,9 +254,9 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 
 ## 书稿中的判断边界
 
-本章不做“哪个工具最好”的排序。原因是 APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适合内存专项，JankStats 适合帧级基础信号，Firebase / Measure / Sentry / APMPlus 适合平台化，PerfDog 适合外部测试，Benchmark 适合可重复验证。
+APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适合内存专项，JankStats 适合帧级基础信号，Firebase / Measure / Sentry / APMPlus 适合平台化，PerfDog 适合外部测试，Benchmark 适合可重复验证。
 
-后文每个小节都会把边界写在正文里。读者读完后应该能回答三个问题：
+每个工具小节的正文里都会写清边界。对照这三个问题来读：
 
 1. 这个工具能放在体系里的哪一层。
 2. 它产出的数据能支撑哪类判断。

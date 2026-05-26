@@ -35,6 +35,8 @@ related_chapters:
 - '5.1'
 - '13.1'
 - '13.5'
+deepseek_polish_state: done
+last_deepseek_polish_at: "2026-05-26"
 pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
 task6_result: pass-light-edit
@@ -238,7 +240,7 @@ Runnable 状态的出现是正常的——毕竟 CPU 核心数量有限，不可
 
 ### Runnable 的三种子类型
 
-仔细观察 Perfetto 的 thread_state 轨道，Runnable 其实可以细分为三种来源：
+仔细观察 Perfetto 的 thread_state 轨道，Runnable 可以细分为三种来源：
 
 1. **从 Sleep 中唤醒**。线程因等待的资源（锁、I/O、Binder 回复）已经就绪，从 S 或 D 状态被唤醒，进入 Runnable 排队。这是最常见的类型。
 
@@ -551,11 +553,11 @@ LIMIT 20;
 
 ## 常见问题与误区
 
-**"线程 CPU 使用率高就说明有问题"**。不一定。Running 时间长可能只是因为线程确实有大量工作要做。关键看它是否影响了关键路径上的时序。一个后台线程跑满 CPU，只要不抢占 UI 线程的 CPU 时间，用户体验不受影响。
+**"线程 CPU 使用率高就说明有问题"**。不一定。Running 时间长可能只是因为线程有大量工作要做。关键看它是否影响了关键路径上的时序。一个后台线程跑满 CPU，只要不抢占 UI 线程的 CPU 时间，用户体验不受影响。
 
-**"Runnable 时间长一定是调度器的问题"**。不完全是。虽然调度器决策确实影响 Runnable 时间，但更常见的原因是系统整体负载过高或线程优先级设置不当。在分析时，先排除负载和优先级因素，再考虑调度器策略。
+**"Runnable 时间长一定是调度器的问题"**。不完全是。虽然调度器决策影响 Runnable 时间，但更常见的原因是系统整体负载过高或线程优先级设置不当。在分析时，先排除负载和优先级因素，再考虑调度器策略。
 
-**"D 状态一定会导致 ANR"**。不一定。短时间的 D 状态是正常的（比如短暂的 I/O 操作）。只有当 D 状态持续时间超过 ANR 超时阈值（前台 Service 10 秒、前台 Input 5 秒）时，才会触发 ANR。但 D 状态确实是 ANR 的常见原因之一，特别是当它与内核锁或频繁 I/O 操作关联时。
+**"D 状态一定会导致 ANR"**。不一定。短时间的 D 状态是正常的（比如短暂的 I/O 操作）。只有当 D 状态持续时间超过 ANR 超时阈值（前台 Service 10 秒、前台 Input 5 秒）时，才会触发 ANR。但 D 状态是 ANR 的常见原因之一，特别是当它与内核锁或频繁 I/O 操作关联时。
 
 **"wakeup from 信息一定准确"**。不一定。wakeup from 的准确性取决于底层 tracepoint 的类型和内核实现。某些情况下唤醒信息可能指向错误的线程，需要结合代码逻辑和 Binder 调用链来交叉验证。
 

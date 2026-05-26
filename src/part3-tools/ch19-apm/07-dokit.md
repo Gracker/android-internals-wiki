@@ -34,6 +34,8 @@ task2b_state: fixed
 review_round: 3
 last_task2b_at: "2026-04-27T04:40:00+08:00"
 review_notes: "2026-04-27 Task9 复审通过：DoKit README 版本矩阵、registerTransform/AGP8 风险、OkHttp ASM 注入、PerformanceDataManager 采样口径与 dokit.cn 出站边界已覆盖。"
+last_deepseek_polish_at: 2026-05-26
+deepseek_polish_state: done
 ---
 
 # DoraemonKit / DoKit
@@ -153,7 +155,7 @@ upstream 文档给的是构建兼容表，不是一个统一的“Android 8-17 �
 | AndroidX 兼容线 | `io.github.didi.dokit:dokitx:3.5.0.1` 与配套 plugin | Gradle 6.8 及以下，AGP 3.3.0+ | Android README 把这条线留给较旧的 Gradle 环境 |
 | 旧 groupId / support | `com.didichuxing.doraemonkit` 3.3.5 | 旧 AndroidX 或 support 工程 | upstream 写明 support 已停止更新，迁移后再继续接入 |
 
-Android 侧运行兼容性还要继续分开验证。README 没有单独给出 AGP 8.x、targetSdk 35+、Android 15-17 的兼容承诺，所以更稳的写法是：把 DoKit 当成“按构建工具链逐项目验证”的 Debug 能力，而不是写成一个统一的系统版本范围。
+Android 侧运行兼容性还要继续分开验证。README 没有单独给出 AGP 8.x、targetSdk 35+、Android 15-17 的兼容承诺，把 DoKit 当成“按构建工具链逐项目验证”的 Debug 能力，而不是写成一个统一的系统版本范围。
 
 ## Debug 工具箱的工程结构
 

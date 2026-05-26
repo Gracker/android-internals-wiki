@@ -393,3 +393,73 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 - 摘要：交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 AOSP；android.hardware.ai.npu 不存在，正确 feature 常量为 android.hardware.neural_processing_unit；NNAPI NDK C API 在 Android 15 废弃但 HAL 1.3 AIDL 仍活跃；LiteRT 是 Play Services SDK 不在 AOSP；AICore 仍为 Developer Preview。建立公开可发布事实 vs preview/vendor/待验证的边界。
 - 注入时间：2026-05-23
 - 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
+
+---
+
+## 源码调研补充（2026-05-26）
+
+### Android 17 NPU Feature 强制声明验证
+
+Android 17 Release Notes（2026-02-26）明确：
+
+> **NPU Management**: Apps targeting Android 17 must declare the `FEATURE_NEURAL_PROCESSING_UNIT` hardware feature to directly access the NPU.
+
+这意味着面向 Android 17 的应用，如果要直接访问 NPU，必须在 AndroidManifest.xml 中声明：
+
+```xml
+<uses-feature android:name="android.hardware.neural_processing_unit" android:required="false" />
+```
+
+未声明的应用在 Android 17 目标 SDK 下无法直接访问 NPU。间接访问路径（LiteRT Delegate）不在此约束范围内。
+
+**源码锚点**：
+- `frameworks/base/core/java/android/content/pm/PackageManager.java` — `hasSystemFeature()` 实现
+- `device/google/coral/manifest.xml` — 设备级 feature 声明示例
+- `hardware/interfaces/neuralnetworks/1.3/types.hal` — NN HAL 类型定义
+
+### NNAPI 废弃进程确认
+
+- **Android 14 (API 34)**：NNAPI 稳定使用，ANeuralNetworks* C API 正常
+- **Android 15 (API 35)**：NNAPI NDK C API 标记 deprecated，官方迁移文档指引转向 LiteRT in Play Services + GPU Delegate
+- **Android 17 (API 36)**：NNAPI 废弃+强制 NPU feature 声明
+
+**迁移路径确认**：
+```text
+旧：App → NNAPI C API → NPU HAL → 厂商驱动
+新：App → LiteRT CompiledModel → GPU Delegate / NPU Delegate → 厂商运行时
+```
+
+官方迁移文档（developer.android.com/ndk/guides/neuralnetworks/migration-guide）：
+> "NNAPI was deprecated in Android 15. To migrate from NNAPI, see the instructions for TensorFlow Lite in Google Play Services and optionally TFLite GPU delegate for hardware acceleration."
+
+### AICore 版本状态（2026-05）
+
+| 项目 | 状态 |
+|------|------|
+| 包名 | `com.google.ai.edge.aicore` |
+| 最新版本 | `0.0.1-exp01`（Developer Preview）|
+| minSdkVersion | 31（Android 12）|
+| 更新方式 | Google Play services OTA（不可独立卸载）|
+| 2026-04-02 更新 | AICore Developer Preview 支持 Gemma 4（Google Developers Blog）|
+| 依赖硬件 | Google AI Accelerator / MediaTek AI Processor / Qualcomm AI Engine |
+
+AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提供 on-device inference 能力，不属于 AOSP 源码，通过 Google Play services 分发。
+
+### LiteRT 分层架构确认
+
+| 层级 | 来源 | 可写成平台能力？ |
+|------|------|----------------|
+| LiteRT Core | Google Play services（私有，非 AOSP）| 否 |
+| GPU Delegate | Google Play services 分发 | 否 |
+| NPU Delegate（QNN/NeuroPilot）| 厂商 SDK | 否 |
+| XNNPACK | AOSP `external/XNNPACK/` | 可引用源码 |
+| NN HAL 1.3 | AOSP `hardware/interfaces/neuralnetworks/1.3/` | 可引用源码 |
+
+**注**：本调研结论与章节现有内容一致，对以下待验证项仍保持开放：
+- `FEATURE_NEURAL_PROCESSING_UNIT` 在 Android 17 final SDK 中的常量名
+- AICore 私有接口调用 NPU 的具体路径（AOSP 外）
+- Qualcomm QNN / MediaTek NeuroPilot 的具体算子覆盖范围
+
+
+
+---

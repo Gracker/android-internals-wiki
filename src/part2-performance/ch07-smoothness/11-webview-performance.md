@@ -27,18 +27,18 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-26"
 last_task9_at: "2026-05-26T12:24:00+08:00"
-last_task2b_at: "2026-05-07T09:42:00+08:00"
+last_task2b_at: "2026-05-26T19:25:19+08:00"
 review_round: 3
 task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。"
 
-status: finalized
+status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+task2b_state: fixed
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 last_task6_audit: "2026-05-25"
@@ -520,13 +520,19 @@ Renderer 进程退出后，事件通过以下路径传递到应用层：
 ```text
 Native Renderer Process (Chromium)
   ↓ crash / OOM-killed
-AwBrowserTerminator.ProcessTerminationStatus()
-  → SyncSocket pipe 判断是崩溃还是 SIGKILL
-AwContents.onRenderProcessGone(crashed, effectivePriority)
+crash_reporter::ChildExitObserver 检测到子进程退出
+  → 收集 TerminationInfo（pid, is_crashed, exit_status）
+AwBrowserTerminator::OnChildExit(TerminationInfo)
+  → 通过 info.is_crashed() 区分崩溃和系统杀死
+OnRenderProcessGone(java_web_contents, info.pid, info.is_crashed())
+  ↓
+AwRenderProcessGoneDelegate::OnRenderProcessGone(int pid, bool was_crashed)
+  ↓
+AwContents.onRenderProcessGone(int pid, boolean was_crashed)
   ↓
 AwContentsClient.onRenderProcessGone(AwRenderProcessGoneDetail)
   ↓
-WebViewClient.onRenderProcessGone(view, RenderProcessGoneDetail)
+WebViewClient.onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
   ↓ 应用实现
   - return true：应用已处理，WebView 实例作废，白屏
   - return false（默认）：App 崩溃（crash）或被杀死（killed）
@@ -657,8 +663,9 @@ Renderer 进程崩溃在 Perfetto 中的表现需要按 WebView provider 和 tra
 
 | 版本 | Renderer 模型 | Surface / 合成路径 | 说明 |
 |------|--------------|-------------------|------|
-| Android 7-8 (API 24-26) | In-process renderer | GLFunctor / 硬件加速兼容层 | renderer 线程在宿主进程内 |
-| Android 8-10 (API 26-29) | Out-of-process renderer（低内存 32-bit 设备可能回退 in-process） | Command Buffer → 宿主窗口 | multiprocess 逐步铺开 |
+| Android 7.x (API 24-25) | In-process renderer | GLFunctor / 硬件加速兼容层 | renderer 线程在宿主进程内，不支持多进程 |
+| Android 8-10 (API 26-29) | 默认 out-of-process；低内存 32-bit 设备回退 in-process | Command Buffer → 宿主窗口 | multiprocess 从 Android 8.0 起引入，覆盖范围逐步扩大 |
+| Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
 | Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
 | Android 13+ (API 33) | Sandbox 加强隔离 | SurfaceControl 子 Surface 路径更常见 | 安全边界收紧 |
 

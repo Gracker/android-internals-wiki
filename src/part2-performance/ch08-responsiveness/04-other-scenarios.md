@@ -46,6 +46,7 @@ review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Andro
 task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-08 Task9 09:27：pass-tech-review。P0/P1 0；P2 新增 2 条 suggestions（distinctUntilChanged 连续去重语义、Ripple 首帧绘制条件）；无 active queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish。"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T09:08:46+08:00"
+last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
 ---
