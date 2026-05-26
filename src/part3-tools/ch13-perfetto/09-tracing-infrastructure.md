@@ -46,6 +46,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-08"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T19:05:00+08:00"
+last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-19-review.md"
 review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审；清理 frontmatter 重复字段，收紧 tracing 开销表述的验证边界；未发现新增 B 类回炉项；转入 Task9 复审。"
 ---
@@ -477,4 +478,3 @@ Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工�
 - 摘要：围绕 btrace 1.0→3.0 演进，说明从编译期插桩转向运行时 Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
 - 注入时间：2026-04-21
 - 价值：把第三方 tracing 工具的架构取舍讲透，适合补强 Android tracing 生态的横向对比。
-
