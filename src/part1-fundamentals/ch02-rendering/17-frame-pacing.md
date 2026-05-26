@@ -40,6 +40,9 @@ task2b_result: "fixed"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
 review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_audit: "2026-05-26"
+last_task9_audit_at: "2026-05-26T17:38:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-05-26-17-audit.md"
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
