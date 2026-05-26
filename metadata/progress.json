@@ -348,21 +348,22 @@
     "src/part2-performance/ch11-power/04-case-studies.md",
     "src/part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md",
     "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md",
-    "src/part2-performance/ch09-anr/01-anr-design.md"
+    "src/part2-performance/ch09-anr/01-anr-design.md",
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-26T20:08:00+08:00",
+    "last_review_at": "2026-05-27T03:14:00+08:00",
     "sections": [
-      "9.1"
+      "7.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/01-anr-design.md"
+      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
     ],
-    "result": "pass-light-edit; existing Task9 pending queue blocks auto-finalize",
-    "small_fixes": 11,
+    "result": "pass-light-edit; Task9 pending blocks auto-finalize",
+    "small_fixes": 10,
     "rework_items": 0,
-    "log": "logs/review/2026-05-26-20-review.md"
+    "log": "logs/review/2026-05-27-03-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -2006,23 +2007,23 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T02:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-05-27T03:14:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-26T20:08:00+08:00",
+    "reviewed_at": "2026-05-27T03:14:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "9.1"
+      "7.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/01-anr-design.md"
+      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
     ],
-    "log": "logs/review/2026-05-26-20-review.md",
-    "mode": "normal-review",
+    "log": "logs/review/2026-05-27-03-review.md",
+    "mode": "normal-review-revisit",
     "results": {
-      "9.1": "pass-light-edit"
+      "7.8": "pass-light-edit"
     },
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 10,
     "new_task6_rework_items": 0,
     "queue_updates": [],
     "auto_finalized": []
@@ -5665,29 +5666,29 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-26T20:08:00+08:00",
+  "last_task6_review": "2026-05-27T03:14:00+08:00",
   "last_task6_sections": [
-    "9.1"
+    "7.8"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch09-anr/01-anr-design.md"
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
   ],
-  "last_task6_at": "2026-05-26T20:08:00+08:00",
+  "last_task6_at": "2026-05-27T03:14:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-26T20:08:00+08:00",
+    "reviewed_at": "2026-05-27T03:14:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "9.1"
+      "7.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/01-anr-design.md"
+      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
     ],
-    "log": "logs/review/2026-05-26-20-review.md",
-    "mode": "normal-review",
+    "log": "logs/review/2026-05-27-03-review.md",
+    "mode": "normal-review-revisit",
     "results": {
-      "9.1": "pass-light-edit"
+      "7.8": "pass-light-edit"
     },
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 10,
     "new_task6_rework_items": 0,
     "queue_updates": [],
     "auto_finalized": []
@@ -5700,10 +5701,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-26T20:08:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-26-20-review.md",
+  "task6_last_review_at": "2026-05-27T03:14:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-03-review.md",
   "task6_last_review_sections": [
-    "9.1"
+    "7.8"
   ],
   "sections_status": {
     "22.11": {
@@ -7058,29 +7059,29 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-26T20:08:00+08:00",
+    "reviewed_at": "2026-05-27T03:14:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "9.1"
+      "7.8"
     ],
     "files": [
-      "src/part2-performance/ch09-anr/01-anr-design.md"
+      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
     ],
-    "log": "logs/review/2026-05-26-20-review.md",
-    "mode": "normal-review",
+    "log": "logs/review/2026-05-27-03-review.md",
+    "mode": "normal-review-revisit",
     "results": {
-      "9.1": "pass-light-edit"
+      "7.8": "pass-light-edit"
     },
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 10,
     "new_task6_rework_items": 0,
     "queue_updates": [],
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch09-anr/01-anr-design.md"
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch09-anr/01-anr-design.md"
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7386,7 +7387,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "9.1"
+    "7.8"
   ],
   "task2b_progress": [
     {
@@ -7423,7 +7424,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-26-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-03-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7990,8 +7991,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-26T20:08:00+08:00",
-  "last_task6_review_section": "9.1",
+  "last_task6_review_at": "2026-05-27T03:14:00+08:00",
+  "last_task6_review_section": "7.8",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8091,7 +8092,7 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "9.1"
+    "7.8"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8121,7 +8122,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part2-performance/ch09-anr/01-anr-design.md"
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -8288,7 +8289,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-26T20:08:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T03:14:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -8349,9 +8350,9 @@
     "title": "RecyclerView 列表滑动性能深度优化",
     "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
@@ -8362,9 +8363,9 @@
     "task2b_note": "修复 2026-05-27 Task6/Task9 合并回炉：GapWorker measure 盲区收敛进预取机制，DeliQueue 诊断特征和官方 benchmark 来源收敛进 Android 17 小节；删除 AIW 源码调研过程块。",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-27",
-    "last_task6_at": "2026-05-27T01:06:00+08:00",
-    "task6_note": "Task2B 已合并清理后半段调研素材，回流 Task6 复审。",
-    "last_review_log": "logs/review/2026-05-27-01-review.md",
+    "last_task6_at": "2026-05-27T03:14:00+08:00",
+    "task6_note": "Task6 复审通过，L1/L2 小修 10 处；无回炉项，等待 Task9 复审。",
+    "last_review_log": "logs/review/2026-05-27-03-review.md",
     "last_task2b_queue_source": "task6-review",
     "last_task2b_priority": 90,
     "last_task9_review_log": "logs/deep-review/2026-05-27-01-deep-review.md"
