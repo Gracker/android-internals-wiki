@@ -50,7 +50,42 @@
 扫描 src/ 目录，找出所有 `status: draft` 且正文实质内容 < 15 行的章节。
 
 - 如果存在符合条件的章节 → 跳到 **Phase 2（加工流程）**
-- 如果不存在 → 进入 **Phase 1（挖掘模式）**
+- 如果不存在 → 先执行 **Phase 0.5（backlog 限流）**，再决定是否进入 Phase 1
+
+---
+
+## Phase 0.5：backlog 限流（防止空跑与越写越堵）
+
+在进入知识缺口挖掘 / 新章节创建之前，必须统计 Task2B backlog：
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+AIW = Path('/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki')
+SRC = AIW / 'src'
+def fm(p):
+    t = p.read_text('utf-8', errors='ignore')
+    if not t.startswith('---'): return {}
+    e = t.find('\n---', 3)
+    if e < 0: return {}
+    d = {}
+    for l in t[3:e].splitlines():
+        if l.strip() and not l.startswith(' ') and ':' in l and not l.lstrip().startswith('-'):
+            k, v = l.split(':', 1); d[k.strip()] = v.strip().strip('"\'')
+    return d
+n = 0
+for p in SRC.rglob('*.md'):
+    if p.name.lower() in ('readme.md', 'summary.md'): continue
+    d = fm(p)
+    if d.get('task2b_state') == 'pending' or d.get('pipeline_stage') == 'task2b_pending':
+        n += 1
+print(f'TASK2B_BACKLOG:{n}')
+PY
+```
+
+判断规则：
+- `TASK2B_BACKLOG > 20`：本轮禁止创建新章节、禁止挖掘新缺口、禁止 backup 选题。输出「当前无空 draft，但 Task2B backlog 未清，本轮不新增内容」，并列出 backlog 数量。这样避免继续扩大 review/回炉积压。
+- `TASK2B_BACKLOG <= 20`：允许进入 Phase 1；如果 Phase 1 没有合格缺口，才可以进入 backup 选题 / 文章准备。
 
 ---
 

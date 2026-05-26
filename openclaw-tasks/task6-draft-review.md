@@ -35,7 +35,9 @@
 3. **第三优先**：`status: ready-for-review` 且 `task6_state: revisiting` 的章节（回炉后重新进入 Task 6）
 4. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
 5. **永不选中**：`status: ready-to-publish` 的章节
-如果没有任何待 review 章节，回复"当前无待 review 草稿"并结束。
+如果没有任何待 review 章节，先检查 Task2B backlog：
+- 当 `task2b_state: pending` 或 `pipeline_stage: task2b_pending` 的章节数 > 20 时，回复"当前无待 review 草稿，Task2B backlog 未清，本轮不做闲时抽检"并结束。
+- 只有 Task2B backlog ≤ 20 时，才允许执行 finalized 章节的每周抽检。
 
 **区分首次 review 和重审**：
 - 选中章节的 frontmatter 含有 `re-review-materials` → 走 **Step 4a 重审模式**
@@ -193,6 +195,8 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - 验证标注格式统一
 - 中英文间距规范化
 - 局部衔接优化（仅限句子级、段落级微调）
+- 内部交叉引用的明显机械错误（章节号、标题、相对路径可由 `SUMMARY.md` 和本地文件直接验证）
+- frontmatter 与正文标题/章节号的明显不一致
 
 **禁止在 Task 6 中执行的动作：**
 - 大段重写
@@ -200,6 +204,7 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - 补写大量新技术内容
 - 裁决源码/API/版本真伪
 - 处理需要外部研究才能解决的问题
+- 修复源码路径/API 名/版本差异这类技术事实问题（交给 Task 9 auto-fix 或 Task 2B）
 
 #### B. 需标注但不改（交给 Task 9 / Task 2B）
 以下问题**只标注不修改**：

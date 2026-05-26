@@ -1,5 +1,5 @@
 # OpenClaw 知识加工 — 回炉修复（Task 2B）
-# cron: 10:50, 14:50, 18:50（每次在 Task 6 Review 之后约 80 分钟）
+# cron: 每 2 小时 :50（每次在 Task 6 / Task 9 之后约 30 分钟）
 
 ## 你是谁
 你是 OpenClaw，高爷的 AI Agent。你正在执行**回炉修复**任务。
@@ -38,9 +38,18 @@
 - queue.json 中 `priority: 90` + `status: pending` 的条目
 - 由 Task 6 写入（`added_by: "task6-review"`）
 
-**如果没有符合条件的章节**：
-- 直接输出 **"当前无回炉任务"** 并结束
-- **绝不回退到 inventory.json、queue.json 的其他条目，也不做随机精修。**
+**如果 queue.json 中没有符合条件的章节**：
+- 不要直接结束。先进入 **frontmatter backlog fallback**。
+- 扫描 `src/**/*.md`，选择满足以下任一条件的章节：
+  - `task2b_state: pending`
+  - `pipeline_stage: task2b_pending`
+  - `task2b_state` 缺失且 `pipeline_stage` 不是 `ready-to-publish`，但 `task6_result: needs-rework` 或 `task9_result: needs-rework`
+- fallback 只用于消费已经被前序 review 标记过的 backlog，不是随机精修。
+- fallback 命中后，必须从最近的 `logs/review/`、`logs/deep-review/`、`intake/suggestions.md` 或章节 frontmatter 中反查问题来源；能定位问题才修，定位不到则写入 `intake/suggestions.md` 标记为 `blocked-need-review-context`，不要凭空改。
+
+**只有当 queue.json 和 frontmatter fallback 都没有命中时**：
+- 如果 `task2b_pending` 总数为 0，才输出 **"当前无回炉任务"** 并结束。
+- 如果仍有 `task2b_pending` 但无法定位问题上下文，输出阻塞清单并结束，不进入随机精修。
 
 ---
 
@@ -55,7 +64,59 @@
 - `pipeline_stage: task2b_pending`
 - `task2b_state: pending`
 
-每轮最多处理 3 个，默认目标 2 个。若命中的回炉项主要是轻中度修复（如局部源码勘误、版本差异补充、trace 观察点补强），优先尝试处理 2-3 个；若包含重度结构性返工，则降回 1 个。
+每轮最多处理 5 个，默认目标 3 个。若命中的回炉项主要是轻中度修复（如局部源码勘误、版本差异补充、trace 观察点补强），优先尝试处理 3-5 个；若包含重度结构性返工，则降回 1 个。
+
+### Step 1.1：frontmatter backlog fallback（queue 不可见时强制执行）
+
+当 Step 1 没有选出任何 queue 条目时，执行一次 fallback 扫描：
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+AIW = Path('/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki')
+SRC = AIW / 'src'
+def fm(p):
+    t = p.read_text('utf-8', errors='ignore')
+    if not t.startswith('---'): return {}
+    e = t.find('\n---', 3)
+    if e < 0: return {}
+    d = {}
+    for l in t[3:e].splitlines():
+        if l.strip() and not l.startswith(' ') and ':' in l and not l.lstrip().startswith('-'):
+            k, v = l.split(':', 1); d[k.strip()] = v.strip().strip('"\'')
+    return d
+cands = []
+for p in SRC.rglob('*.md'):
+    if p.name.lower() in ('readme.md', 'summary.md'): continue
+    d = fm(p)
+    if (
+        d.get('task2b_state') == 'pending'
+        or d.get('pipeline_stage') == 'task2b_pending'
+        or (
+            not d.get('task2b_state')
+            and d.get('pipeline_stage') != 'ready-to-publish'
+            and (d.get('task6_result') == 'needs-rework' or d.get('task9_result') == 'needs-rework')
+        )
+    ):
+        severity = 95 if d.get('task9_result') == 'needs-rework' else 90 if d.get('task6_result') == 'needs-rework' else 85
+        cands.append((severity, d.get('chapter', ''), str(p.relative_to(AIW)), d.get('title', '')))
+for row in sorted(cands, key=lambda x: (-x[0], x[1], x[2]))[:20]:
+    print('|'.join(map(str, row)))
+print(f'TOTAL:{len(cands)}')
+PY
+```
+
+fallback 处理规则：
+1. 按 severity 95 → 90 → 85 选择 1-3 个章节。
+2. 对每个章节，先搜索最近 14 天日志：
+   - `logs/deep-review/**/*deep-review*.md`
+   - `logs/review/**/*review*.md`
+   - `intake/suggestions.md`
+3. 如果能找到该 `chapter` 的问题描述，就按问题修复。
+4. 如果找不到问题描述，只允许做两件事：
+   - 把该章节和缺失上下文写入 `intake/suggestions.md`
+   - 将本轮报告标记为 `blocked-need-review-context`
+5. fallback 不允许创建新章节、不允许抽检、不允许无问题单全章重写。
 
 **对于 Task 9 / External Review 条目（priority 95 / 85）：**
 - 条目中包含 `review_issues` 数组，每个元素有 `type`、`location`、`detail`、`suggestion`
@@ -157,6 +218,10 @@ git commit -m "[openclaw] rework: {章节号} {小节名} — review 回炉修�
 
 **如果没有回炉任务：**
 - 直接输出：当前无回炉任务
+
+**如果 queue 为空但 frontmatter backlog 命中：**
+- 输出中必须标注：`来源：frontmatter backlog fallback`
+- 列出反查到的问题来源日志；没反查到则列为 blocked
 
 ## 注意事项
 - **只修 Task 6 / Task 9 / External Review 标注的问题**，不做无关改动
