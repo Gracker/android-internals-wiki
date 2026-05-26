@@ -9,9 +9,9 @@ applicable_versions: Android 7 (API 24) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: developer.android.com create/debug/profileable docs + AOSP
   android-17-beta3 cross-check + Firebase-free local verification commands review
-reviewed_date: '2026-04-24'
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 confidence: medium
 sources:
@@ -30,8 +30,13 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+- baseline-profiles
+- art
+- dexopt
+- startup
+- performance
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -46,6 +51,9 @@ task9_review_notes: "2026-05-25 task9 idle-audit: needs-rework。P0 0 / P1 1 / P
 last_task9_audit: 2026-05-25
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+last_task6_at: "2026-05-27T04:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-04-review.md"
+task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 
@@ -154,7 +162,7 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 
 `.profm` 文件存储的是 profile 规则与 DEX 编译单元的映射关系。手动 sideload 验证或生成 `.dm`（Dex Metadata）包时，`baseline.profm` 会被重命名为 `primary.profm`，需要和 `baseline.prof` 一起处理。
 
-这两个路径说的是构建产物里的位置。应用真正安装到设备后，编译产物不会再留在这些目录里，而是表现为 `/data/app/.../oat/arm64/base.odex` 一类 OAT / VDEX 文件。运行期和后台任务收集到的 Profile 数据则继续放在 `/data/misc/profiles/...` 下。
+这两个路径说的是构建产物里的位置。应用安装到设备后，编译产物不会再留在这些目录里，而是表现为 `/data/app/.../oat/arm64/base.odex` 一类 OAT / VDEX 文件。运行期和后台任务收集到的 Profile 数据则继续放在 `/data/misc/profiles/...` 下。
 
 ### 安装时的编译流程
 
@@ -278,7 +286,7 @@ Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、8.3 默认启用。它
 
 - 生成任务是否覆盖所有核心 CUJ
 - `baseline-prof.txt` 是否随变更一起进仓
-- release 包里是否真的出现 `baseline.prof`
+- release 包里是否包含 `baseline.prof`
 
 ### Android 17 与 R8 的适配边界
 
@@ -311,7 +319,7 @@ Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们�
 
 ## 验证是否生效：先看编译状态，再看启动收益
 
-### 1. 确认包里真的带了 Profile
+### 1. 确认包里带有 Profile
 
 最简单的第一步是看构建产物。AAB 检查 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，APK 检查 `/assets/dexopt/baseline.prof`。如果这一步就缺文件，后面的 `dumpsys` 和基准测试都没有意义。
 
@@ -362,7 +370,7 @@ Perfetto 仍然有用，但更适合做补充观察：
 - AAB：`/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`
 - APK：`/assets/dexopt/baseline.prof`
 
-AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原样保留这个目录。Google Play 处理 bundle 后，真正参与编译的是 delivered APK 里的 Profile 数据和设备侧生成的 OAT 产物。
+AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原样保留这个目录。Google Play 处理 bundle 后，参与编译的是 delivered APK 里的 Profile 数据和设备侧生成的 OAT 产物。
 
 ### 非 Google Play 渠道的 Profile 处理
 

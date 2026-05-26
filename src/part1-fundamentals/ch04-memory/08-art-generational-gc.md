@@ -48,11 +48,11 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: "2026-05-19"
+reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -65,10 +65,10 @@ last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Gen-CMC/UFFD 启用链路需按 AOSP main 属性与版本矩阵回炉。"
-last_task6_at: "2026-05-19T12:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-19-12-review.md"
-task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 10 处，清理第一人称、结构性元叙述、代码围栏语言和禁用句式；既有 Gen-CMC/UFFD Task9/DeepResearch pending 队列仍由 Task2B 处理。"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Gen-CMC/UFFD 启用链路需按 AOSP main 属性与版本表回炉。"
+last_task6_at: "2026-05-27T04:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-04-review.md"
+task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 7 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 ---
@@ -148,7 +148,7 @@ ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超�
 
 **Android 10 前后的 CC 路径**：当前主线 AOSP 的 `art/runtime/gc/collector/concurrent_copying.cc` 构造函数带有 `young_gen` 和 `use_generational_cc` 两个参数，`art/runtime/gc/heap.cc` 也会在 `use_generational_gc_` 为 true 时同时创建 `concurrent_copying_collector_` 和 `young_concurrent_copying_collector_`。这说明 CC 的分代模式在运行时已经是正式实现，不是概念示意。至于“最早对应到哪一个 Android 10 tag”这一点，本节暂时不写死，等补 Android 10 分支源码再回填。
 
-**Android 15+ 的 CMC 路径（含 Android 17 Generational CMC）**：`art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 已经能直接看到 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 确实有代码落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
+**Android 15+ 的 CMC 路径（含 Android 17 Generational CMC）**：`art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 已经能直接看到 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 能在代码中找到对应落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
 
 本节后面谈 Android 17 时，默认语境是“CMC 路径下可见的分代实现”，不再把它和 Android 10 的分代 CC 混成一个机制。
 
@@ -491,7 +491,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 |---|---|---|
 | 8.0 (Oreo) | CC 成为默认 moving collector，pause time 明显短于 Android 7.0。 | 流畅性问题开始更多表现为短 pause 与 CPU 争抢，不再只有几十毫秒的长停顿。 |
 | 10 前后 | CC 路径进入分代模式，`ConcurrentCopying` 已区分 `young_gen` 和 non-young collector。首次对应的精确 tag 待补源码核对。 | 分析 GC 时要区分 young collection 和 whole-heap collection，不能把所有 GC 都当成 full GC。 |
-| 15+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`。 | 设备是否真的在跑 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
+| 15+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`。 | 设备是否启用 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
 | 17 Beta | Android 17 对外把 “Concurrent Mark-Compact collector enhanced with generational GC” 当成性能特性来讲。 | 做问题归因时，先确认设备是否已启用这条路径，再决定是否把观测到的行为套用到更早版本。 |
 
 [已验证: AOSP main, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
@@ -506,7 +506,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ### "GC 暂停只有 1-3ms，不可能导致掉帧"
 
-单次暂停确实短，但在高刷新率设备上，帧预算本身就很紧张。更关键的是，GC 的影响不只体现在暂停时间上，并发 GC 的 CPU 开销也会与渲染线程争抢计算资源。多次"小暂停"叠加后的累积效应，再加上 CPU 争用导致的帧处理变慢，完全可能变成可感知的卡顿。
+单次暂停可能只有 1-3ms，但在高刷新率设备上，帧预算本身就很紧张。更关键的是，GC 的影响不只体现在暂停时间上，并发 GC 的 CPU 开销也会与渲染线程争抢计算资源。多次"小暂停"叠加后的累积效应，再加上 CPU 争用导致的帧处理变慢，完全可能变成可感知的卡顿。
 
 ### "分代 GC 意味着我不需要关心对象分配了"
 
@@ -685,7 +685,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 3. **Compose 场景优化**：Compose Composition 阶段短生命周期可组合对象密集分配，恰好落在 Young Generation 高频收集窗口，与 Generational CMC 协同降低对象分配开销。
 
-4. **版本矩阵**：Android 8.0-13 → CC；Android 14/15 → UFFD-driven CMC；Android 16 QPR2+/17 → Generational CMC。
+4. **版本表**：Android 8.0-13 → CC；Android 14/15 → UFFD-driven CMC；Android 16 QPR2+/17 → Generational CMC。
 
 ### 源码来源
 
@@ -777,7 +777,7 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 - `concurrent_copying_collector_`：whole-heap GC
 - `young_concurrent_copying_collector_`：young GC
 
-这意味着开关路径是：堆初始化 → 收集器类型选择 → generational 模式启用/禁用。
+开关路径可以写成：堆初始化 → 收集器类型选择 → generational 模式启用/禁用。
 
 **设备能力判断路径**（未经一手源码验证）：
 - 设备 RAM 容量（触发阈值待验证）
@@ -791,7 +791,7 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 - 对象晋升年龄：由 GC 迭代次数决定而非时间
 - 晋升阈值：`heap.cc` 中动态计算，基于分配速率和 GC 频率
 
-### 版本矩阵更新
+### 版本表更新
 
 | 版本 | GC 类型 | 分代支持 |
 |------|---------|---------|
