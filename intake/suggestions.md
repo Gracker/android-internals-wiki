@@ -4026,3 +4026,9 @@
 - **问题**：正文后半段仍保留多段 AIW 源码调研原始块，并与前文 GapWorker / DeliQueue 内容重复；当前形态更像素材归档，不像可发布章节正文。
 - **建议**：将 GapWorker measure 盲区、DeliQueue 诊断特征和性能数字来源合并进前文对应小节；保留必要来源到参考资料；删除 AIW 调研注释、过程性小节和重复代码块。
 - **review 日志**：logs/review/2026-05-27-01-review.md
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-05-27
+- **类型**：数据缺失
+- **位置**：`Startup Profile 与指令缓存局部性` / `Jetpack Compose 与 Baseline Profiles`
+- **问题**：`Startup Profile 对冷启动的贡献通常占 Baseline Profile 总收益的 40-60%`、`Compose 应用 25-40% vs 传统 View 15-20%` 属于量化结论，但正文没有给出设备、应用样本、AGP/R8 版本和测试口径。当前官方 Startup Profiles 文档可直接支撑的是“相对只使用 Baseline Profiles，Startup Profiles 通常让启动再快 15-30%”，不是 40-60% 贡献占比。
+- **建议**：把 40-60% 与 Compose/View 对比改为定性结论，或补充对应 benchmark / case study 的可复核来源；若沿用官方口径，改成 Startup Profiles 相对 Baseline Profiles alone 通常再提升 15-30%。
