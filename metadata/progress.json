@@ -356,21 +356,22 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-27T04:06:00+08:00",
+    "reviewed_at": "2026-05-27T05:14:00+08:00",
+    "log": "logs/review/2026-05-27-05-review.md",
     "sections": [
+      "1.1",
       "2.15",
-      "4.8",
-      "8.7"
+      "10.5"
     ],
     "files": [
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
     ],
-    "result": "pass-light-edit; Task9 pending blocks auto-finalize",
-    "small_fixes": 18,
-    "rework_items": 0,
-    "log": "logs/review/2026-05-27-04-review.md"
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 9,
+    "l3_l4_issues": 0,
+    "auto_promoted": []
   },
   "issues_by_section": {
     "1.6": {
@@ -834,12 +835,12 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 2,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-27T04:06:00+08:00",
-      "task6_log": "logs/review/2026-05-27-04-review.md",
+      "task6_reviewed_at": "2026-05-27T05:14:00+08:00",
+      "task6_log": "logs/review/2026-05-27-05-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；L1/L2 小修 6 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+      "task6_note": "L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
     },
     "3.4": {
       "p0": 0,
@@ -1519,7 +1520,13 @@
     "1.1": {
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T05:14:00+08:00",
+      "task6_log": "logs/review/2026-05-27-05-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
     },
     "20.2": {
       "task6_result": "pass-light-edit",
@@ -2026,12 +2033,21 @@
       "task6_log": "logs/review/2026-05-27-04-review.md",
       "task6_new_rework": false,
       "task6_note": "复审通过；L1/L2 小修 5 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+    },
+    "10.5": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T05:14:00+08:00",
+      "task6_log": "logs/review/2026-05-27-05-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T04:06:00+08:00",
+  "last_updated": "2026-05-27T05:14:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T04:06:00+08:00",
@@ -3030,21 +3046,24 @@
     },
     "2.15": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_result": "needs-rework",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "queue_priority": 95,
       "queue_id": "task9-2.15-gralloc-api-and-dmabuf-unsupported-claims",
-      "last_task6_at": "2026-05-13T20:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-20-review.md",
+      "last_task6_at": "2026-05-27T05:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
       "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "reviewed_date": "2026-05-27",
+      "reviewed_by": "openclaw-task6",
+      "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
     },
     "23.2": {
       "status": "finalized",
@@ -4515,21 +4534,22 @@
     },
     "1.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-22T04:07:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-27T05:14:00+08:00",
       "task6_result": "pass-light-edit",
-      "task6_state": "revisiting",
-      "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
+      "task6_state": "reviewed",
+      "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
       "title": "Android 分层架构",
       "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-22",
+      "reviewed_date": "2026-05-27",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-27T04:50:00+08:00",
-      "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement."
+      "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement.",
+      "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
     },
     "20.2": {
       "status": "ready-for-review",
@@ -5638,13 +5658,20 @@
       "file": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
       "title": "案例集",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "reviewed_date": "2026-05-27",
+      "reviewed_by": "openclaw-task6",
+      "last_task6_at": "2026-05-27T05:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
+      "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
     },
     "8.7": {
       "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
@@ -5748,32 +5775,35 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T03:14:00+08:00",
+  "last_task6_review": "2026-05-27T05:14:00+08:00",
   "last_task6_sections": [
-    "7.8"
+    "1.1",
+    "2.15",
+    "10.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
   ],
-  "last_task6_at": "2026-05-27T03:14:00+08:00",
+  "last_task6_at": "2026-05-27T05:14:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T03:14:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-27T05:14:00+08:00",
+    "log": "logs/review/2026-05-27-05-review.md",
     "sections": [
-      "7.8"
+      "1.1",
+      "2.15",
+      "10.5"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
     ],
-    "log": "logs/review/2026-05-27-03-review.md",
-    "mode": "normal-review-revisit",
-    "results": {
-      "7.8": "pass-light-edit"
-    },
-    "l1_l2_fixes": 10,
-    "new_task6_rework_items": 0,
-    "queue_updates": [],
-    "auto_finalized": []
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 9,
+    "l3_l4_issues": 0,
+    "auto_promoted": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
@@ -5783,10 +5813,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T03:14:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-03-review.md",
+  "task6_last_review_at": "2026-05-27T05:14:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-05-review.md",
   "task6_last_review_sections": [
-    "7.8"
+    "1.1",
+    "2.15",
+    "10.5"
   ],
   "sections_status": {
     "22.11": {
@@ -7141,29 +7173,32 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T03:14:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-27T05:14:00+08:00",
+    "log": "logs/review/2026-05-27-05-review.md",
     "sections": [
-      "7.8"
+      "1.1",
+      "2.15",
+      "10.5"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
     ],
-    "log": "logs/review/2026-05-27-03-review.md",
-    "mode": "normal-review-revisit",
-    "results": {
-      "7.8": "pass-light-edit"
-    },
-    "l1_l2_fixes": 10,
-    "new_task6_rework_items": 0,
-    "queue_updates": [],
-    "auto_finalized": []
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 9,
+    "l3_l4_issues": 0,
+    "auto_promoted": []
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7469,7 +7504,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "7.8"
+    "1.1",
+    "2.15",
+    "10.5"
   ],
   "task2b_progress": [
     {
@@ -7506,7 +7543,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-03-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7750,19 +7787,22 @@
     "title": "Android 分层架构",
     "file": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
     "last_task9_at": "2026-05-22T04:51:16+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-22-04-deep-review.md",
-    "reviewed_date": "2026-05-22",
-    "reviewed_by": "openclaw-task9",
+    "reviewed_date": "2026-05-27",
+    "reviewed_by": "openclaw-task6",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-05-27T04:50:00+08:00",
-    "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement."
+    "last_task2b_note": "2026-05-27 Task2B fallback rework: fixed SurfaceFlinger Android 11-12 trace name gap and separated 16 KB page-size AOSP build support / Android 16 checks / Google Play app requirement.",
+    "last_task6_at": "2026-05-27T05:14:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
+    "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
   },
   "section_15_8": {
     "section": "15.8",
@@ -8207,7 +8247,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
   ],
   "section_24_19": {
     "section": "24.19",

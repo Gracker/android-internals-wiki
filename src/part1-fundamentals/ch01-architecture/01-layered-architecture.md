@@ -29,15 +29,15 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-05-22"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -47,16 +47,17 @@ task2b_result: fixed  # 2026-05-27 rework: SurfaceFlinger trace version matrix, 
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T04:51:16+08:00"
 task9_review_notes: "2026-05-22 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。SurfaceFlinger trace 名称矩阵漏 Android 11-12；16 KB Page Size Android 16 设备要求口径需修正；量化数据条件补强写入 suggestions。已写入 queue.json。"
-last_task6_at: "2026-05-22T04:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-04-review.md"
-task6_review_notes: "2026-05-22 task6 复审：pass-light-edit。小修 1 处（调研记录与正文口径一致：SELinux/Treble 三路隔离降低误用风险，不写成减少检查次数）。无新增 B 类问题；Task9 尚未重新通过，未自动晋升。"
+last_task6_at: "2026-05-27T05:14:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-05-review.md"
+task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
 last_task9_audit: "2026-05-17"
 task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
-task6_reviewed_date: "2026-05-22"
+task6_reviewed_date: "2026-05-27"
 last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
 last_task2b_at: "2026-05-27T04:50:00+08:00"
 ---
+
 
 # Android 分层架构
 
@@ -282,7 +283,7 @@ Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与
 > 
 > 关键性能事实在于 **AVC（Access Vector Cache）**：首次未知请求需完整策略评估（~1-10 μs），后续命中仅 O(1) 缓存查找（~50-200 ns）。Binder 高频调用特征使 AVC 命中率极高，稳态下 SELinux 开销可忽略不计。
 > 
-> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离，三路 binder 设备各自拥有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。SELinux AVC 本身是全局访问向量缓存（`security/selinux/avc.c` 中的 `static struct selinux_avc selinux_avc`），缓存键是 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。Treble 三路隔离通过 SELinux type / 权限边界限制跨域访问，降低了误用风险。三路 binder 设备各自独立的 context manager 本身并不减少 SELinux 检查次数——每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
+> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离，三路 binder 设备各自拥有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。SELinux AVC 本身是全局访问向量缓存（`security/selinux/avc.c` 中的 `static struct selinux_avc selinux_avc`），缓存键是 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。因此，三路隔离降低的是跨域误用风险，并不减少 SELinux 检查次数；每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
 > 
 > enforcing 与 permissive 的差异仅体现在拒绝路径：两者均执行完整检查，但 enforcing 额外执行拒绝操作。对于正常放行的请求，两种模式路径几乎相同。
 > 
