@@ -1,5 +1,4 @@
 ---
-
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 title: "SoC 平台差异"
 chapter: "17.2"
@@ -27,26 +26,14 @@ sources:
     path: "多来源综合(web search 验证)"
 tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-25"
-task6_result: "needs-rework"
-task6_state: "revisiting"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-17T19:17:39"
-last_task6_at: "2026-05-25T12:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-12-review.md"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。"
-task6_reviewed_date: "2026-05-25"
-task6_reviewed_by: "openclaw-task6"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T06:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。"
+last_task9_at: "2026-05-27T07:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
@@ -54,6 +41,19 @@ task2b_state: "fixed"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-05-27"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-27"
+task6_result: "pass-light-edit"
+task6_state: "revisiting"
+task6_reviewed_date: "2026-05-27"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-27T07:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-07-review.md"
+review_type: "task6-writing-quality-review"
+task9_state: "reviewed"
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 ---
 # SoC 平台差异
 
@@ -213,6 +213,11 @@ LIMIT 20;
 
 [待验证: 联发科的具体调度参数和提频策略在 AOSP 开源部分不完整,需实机确认]
 
+### 联发科调度链路源码锚点
+
+联发科调度链路的源码锚点集中在几条公开内核路径：schedutil governor（`kernel/sched/cpufreq_schedutil.c`）通过 `cpufreq_update_util()` 在每次 scheduler tick 中更新频率，iowait boost 在 IO 唤醒时频率翻倍；uclamp（`kernel/sched/sched.h`）约束任务可用频率范围，top-app 通常设置较高的 uclamp_min；EAS 选核逻辑位于 `kernel/sched/fair.c`（`find_energy_efficient_cpu()` / `compute_energy()`），在多 cluster 之间选择节能收益大于迁移成本的目标。Dimensity 的 1+3+4 拓扑中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科 vendor kernel 在 energy model 中为每个 cluster 定义不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。Dimensity 9400（代号 MT6991）的具体频率曲线定义在 vendor kernel 设备树中，通过 `operating-points-v2` 传递到 mtk-cpufreq driver。
+
+[待验证：Dimensity 9400 具体 freq table 数值、MTK EAS vendor patch 与主线的差异量、real device 实际调度行为需通过 Perfetto traces 测量]
 
 **sched_ext BPF 调度器(Linux 6.12 / Android common 6.12 分支)**:sched_ext 允许 OEM 通过 eBPF 程序替换内核默认调度策略。Linux 6.12 合入主线,Android common 6.12 分支已包含 sched_ext 基础设施(`kernel/sched/ext.c`)。部分 OEM 据报道开发了各自的 sched_ext 调度器实现,但公开检索未找到可核实的源码仓库、commit 或官方文档;具体名称和功能描述需要 vendor kernel 源码或实机确认后才能写入确定结论。设备是否启用 sched_ext 取决于 `CONFIG_SCHED_CLASS_EXT` 和具体 kernel tag 配置,AOSP 默认调度链尚未切换到 sched_ext。
 
@@ -361,11 +366,3 @@ SoC 平台差异不是一个独立的机制,它影响着本书前面讲过的几
 **「全大核架构一定更省电」**:不一定。联发科的全大核设计消除了小核,但 A720「能效核」的功耗仍然高于传统的 A5xx 小核。在轻负载场景下(如待机、听音乐),全大核的功耗可能反而更高。全大核的优势在于中高负载场景下没有性能断崖。
 
 **「Google Tensor 性能差」**:这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑,但它的设计目标是端侧 AI 体验,而不是通用峰值性能。在 Pixel 设备上,语音识别、实时翻译和计算摄影的响应速度可能优于其他平台,因为这些工作负载被 TPU 加速了。评估 Tensor 需要看具体场景是什么。
-
-
-
-<!-- 联发科调度行为要点（源码锚点，已从素材块整合） -->
-
-联发科调度链路的源码锚点：schedutil governor（`kernel/sched/cpufreq_schedutil.c`）通过 `cpufreq_update_util()` 在每次 scheduler tick 中更新频率，iowait boost 在 IO 唤醒时频率翻倍；uclamp（`kernel/sched/sched.h`）约束任务可用频率范围，top-app 通常设置较高的 uclamp_min；EAS（`kernel/sched/energy.c`）在多 cluster 之间选择节能收益大于迁移成本的目标。Dimensity 的 1+3+4 拓扑中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科 vendor kernel 在 energy model 中为每个 cluster 定义不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。Dimensity 9400（代号 MT6991）的具体频率曲线定义在 vendor kernel 设备树中，通过 `operating-points-v2` 传递到 mtk-cpufreq driver。
-
-[待验证：Dimensity 9400 具体 freq table 数值、MTK EAS vendor patch 与主线的差异量、real device 实际调度行为需通过 Perfetto traces 测量]

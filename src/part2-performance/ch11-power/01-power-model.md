@@ -2,18 +2,14 @@
 title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
-status: "ready-for-review"
-reviewed_date: "2026-05-26"
-reviewed_by: openclaw-task6
-task6_result: needs-rework
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-23"
+last_verified: "2026-05-27"
 last_verified_against: "AOSP android-16.0.0_r1 + BatteryStatsImpl.shouldResetOnUnplugLocked()"
 confidence: medium
 sources:
@@ -41,25 +37,32 @@ tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Cou
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "reviewed"
-pipeline_stage: "task6_pending"
 last_task2b_at: "2026-05-27T03:42:00+08:00"
 last_task2b_lite_at: "2026-05-27"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T06:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
-task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。"
-last_task6_at: "2026-05-26T01:12:00+08:00"
+last_task9_at: "2026-05-27T07:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
+task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_audit: "2026-05-25"
-last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 last_task9_audit: 2026-05-25
-task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。"
 last_task9_autofix_at: "2026-05-27"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-27"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-27"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-27T07:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-07-review.md"
+review_type: "task6-writing-quality-review"
+task9_state: "reviewed"
+task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 ---
 
 
