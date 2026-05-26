@@ -23,14 +23,14 @@ created_date: "2026-04-09"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-task2b_result: "pending"
+task2b_state: fixed
+task2b_result: "fixed"
 last_task9_at: "2026-05-26T08:23:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-26-08-audit.md"
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 last_task6_at: "2026-05-07T06:10:00+08:00"
@@ -84,7 +84,7 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 0 / P2 0；AOSP andro
 | `android:hardwareAccelerated="false"` 或 GPU 不可用 | 整个窗口走软件渲染 | **完全看不到 `DrawFrame`**——`ThreadedRenderer` 不会被初始化 |
 | `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` | 单个 View 子树走 software layer | `RenderThread` 仍在，`DrawFrame` 仍出现，但会额外伴随 Bitmap 分配 + `uploadToTexture` 纹理上传 slice |
 
-`View.buildDrawingCache()` 在 API 28 已经弃用且基本 no-op，现代 `LAYER_TYPE_SOFTWARE` 走的是 RenderNode 软件 layer 路径，不要再用旧缓存语义解读相关 slice。
+`View.buildDrawingCache()` 公开 API 在 API 28 已弃用，不建议业务代码直接调用。但 `LAYER_TYPE_SOFTWARE` 的内部实现仍通过 Java drawing cache / Bitmap 生成软件层：`View.updateDisplayListIfDirty()` 在 `layerType == LAYER_TYPE_SOFTWARE` 分支里调用 `buildDrawingCache(true)` / `getDrawingCache()` 并 `drawBitmap`，不会构建 RenderLayer（`RenderProperties.h` 明确 `LayerType::Software` 不能走硬件层路径）。看到 Bitmap 分配 + `uploadToTexture` 时，对应的就是这条内部 drawing cache 链路。
 
 ### LAYER_TYPE_SOFTWARE / LAYER_TYPE_HARDWARE / Canvas.saveLayer 的区别
 

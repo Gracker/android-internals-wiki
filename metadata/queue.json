@@ -13,7 +13,7 @@
       "created_date": "2026-05-26",
       "assigned_to": "content-team",
       "estimated_hours": 1.0,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md"
@@ -35,7 +35,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-26T08:23:00+08:00",
-      "original_review_log": "logs/deep-review/2026-05-26-08-audit.md"
+      "original_review_log": "logs/deep-review/2026-05-26-08-audit.md",
+      "completed_date": "2026-05-26T11:21:27+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，章节已写回并重新进入 Task6 流水线"
     },
     {
       "id": "task6-20260526-0509-18.2-source-research-appendix",
@@ -18629,7 +18632,7 @@
       "created_date": "2026-05-22",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part3-tools/ch14-other-tools/06-automation-tools.md"
@@ -18647,7 +18650,10 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-22T07:43:01+08:00"
+      "added_at": "2026-05-22T07:43:01+08:00",
+      "completed_date": "2026-05-26T11:21:27+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，章节已写回并重新进入 Task6 流水线"
     },
     {
       "id": "task9-20260522-4.5-memory-coil-trim-16kb",
@@ -19624,7 +19630,7 @@
       "added_at": "2026-05-24T06:27:54+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
@@ -19641,7 +19647,10 @@
           "detail": "正文写“android16-6.12 起即使系统 overutilized，唤醒路径仍会尝试能量估算”。复核 Android common kernel android16-6.12：`is_rd_overutilized()` 在 `rd->overutilized` 为真时返回 true；`select_task_rq_fair()` 只有在 `!is_rd_overutilized(this_rq()->rd)` 时才调用 `find_energy_efficient_cpu()`。因此 overutilized 时唤醒路径仍跳过 EAS 能量估算。",
           "suggestion": "将 6.12 口径改成“短路位置从 `find_energy_efficient_cpu()` 函数入口移到 `select_task_rq_fair()` 调用点”；删除“overutilized 时仍会尝试能量估算”的结论，并在版本演进表补一行说明 android15-6.6 与 android16-6.12 的源码差异。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-26T11:21:27+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "completion_reason": "Task2B 回炉修复完成，章节已写回并重新进入 Task6 流水线"
     },
     {
       "id": "task2a-gap-20260524-6.6-vold-fuse-scoped-storage-io",
@@ -21774,14 +21783,84 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-26T06:41:01.124609",
       "status": "pending"
+    },
+    {
+      "id": "task9-idle-audit-20260526-10-15.4-activitymetricslogger-windowsdrawn",
+      "section": "15.4",
+      "section_title": "竞品分析方法",
+      "priority": 95,
+      "title": "ActivityMetricsLogger windowsDrawn 事件触发时机与 Android 16 差异",
+      "description": "Task9 闲时抽检发现 §15.4 中 ActivityMetricsLogger.java 的 windowsDrawn 事件触发时机在 Android 16 中已重构，与旧版本存在差异。",
+      "reason": "[Deep Tech Review Audit] §15.4 ActivityMetricsLogger.java 部分计时方法在 Android 16 中已重构，windowsDrawn 事件的触发时机可能与旧版本有差异。",
+      "issue_type": "source-accuracy-activitymetricslogger-windowsdrawn",
+      "severity": "P1",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/04-competitive-analysis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-26-10-idle-audit.md",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "源码引用准确性 / windowsDrawn 事件触发时机",
+          "location": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+          "detail": "ActivityMetricsLogger.java 在 Android 16 中部分计时方法已重构，windowsDrawn 事件的触发时机可能与旧版本存在差异。",
+          "suggestion": "补充说明 Android 16 中 ActivityMetricsLogger 的具体变化，特别是 windowsDrawn 事件的触发时机变化。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T10:24:04.286273+08:00",
+      "original_review_log": "logs/deep-review/2026-05-26-10-idle-audit.md"
+    },
+    {
+      "id": "task9-idle-audit-20260526-10-15.4-screenshots-version-diff",
+      "section": "15.4",
+      "section_title": "竞品分析方法",
+      "priority": 95,
+      "title": "Android 12+ SplashScreen 机制版本差异覆盖不足",
+      "description": "Task9 闲时抽检发现 §15.4 未明确说明不同 Android 版本间的 SplashScreen 配置和时序差异。",
+      "reason": "[Deep Tech Review Audit] §15.4 SplashScreen 机制在 Android 12 有重大变化，但章节未明确说明不同版本间的 SplashScreen 配置和时序差异。",
+      "issue_type": "version-difference-splashscreen-api",
+      "severity": "P1",
+      "created_date": "2026-05-26",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch15-methodology/04-competitive-analysis.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-26-10-idle-audit.md",
+        "https://developer.android.com/guide/topics/ui/launch-screen"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异 / SplashScreen 机制变化",
+          "location": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+          "detail": "SplashScreen 机制在 Android 12 有重大变化，章节未明确说明不同版本间的 SplashScreen 配置和时序差异。",
+          "suggestion": "补充说明 Android 12+ SplashScreen 机制的版本差异，包括配置方式、时序变化对竞品对比的影响。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-26T10:24:04.286288+08:00",
+      "original_review_log": "logs/deep-review/2026-05-26-10-idle-audit.md"
     }
   ],
   "metadata": {
     "total_entries": 590,
     "p0_count": 244,
-    "last_updated": "2026-05-26T08:23:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 191,
+    "last_updated": "2026-05-26T11:21:27+08:00",
+    "updated_by": "task2b-content-processing-rework",
+    "pending_entries": 190,
     "updated_date": "2026-05-26",
     "last_updated_by": "task9-deep-tech-review",
     "pending": 191,
@@ -21792,9 +21871,9 @@
     "last_task2a_completed": "21.12",
     "blocked_entries": 3
   },
-  "last_updated": "2026-05-26T08:23:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 191,
+  "last_updated": "2026-05-26T11:21:27+08:00",
+  "last_updated_by": "task2b-content-processing-rework",
+  "pending": 190,
   "last_task2a_completed": "24.19",
   "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
   "last_task2a_gap_mining": {
