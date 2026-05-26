@@ -42,6 +42,8 @@ status: "finalized"
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-09T02:08:33+08:00"
+last_task6_audit: "2026-05-26"
+last_task6_audit_log: "logs/review/2026-05-26-15-audit.md"
 last_task6_review_log: "logs/review/2026-05-09-02-review.md"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
@@ -233,7 +235,7 @@ VkPresentInfoKHR presentInfo = {
 vkQueuePresentKHR(presentQueue, &presentInfo);
 ```
 
-- **Wait** `renderFinishedSemaphore`：确保 GPU 真的画完了
+- **Wait** `renderFinishedSemaphore`：确保 GPU 完成渲染
 - **Android 集成**：Vulkan Present 最终落到 Android 的 Surface / Buffer / Transaction 体系，通常通过 BLAST / Transaction 模型进入 SurfaceFlinger。[已验证: Android Vulkan Presentation 文档]
 
 ### 完整时序图
@@ -337,7 +339,7 @@ vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes
 ### Android 注意事项
 
 - **FIFO 最常见**：Android 上 FIFO 往往是最普遍、最保守的选择，具体可用 mode 与默认策略取决于驱动和设备
-- **MAILBOX / IMMEDIATE 不要只看枚举值**：部分设备会在驱动、SurfaceFlinger 或 vendor policy 中把请求的 mode 降级为 FIFO。是否真的拿到低延迟模式，最好把 `vkGetPhysicalDeviceSurfacePresentModesKHR` 的返回值和 Trace 中的帧节奏表现一起核对
+- **MAILBOX / IMMEDIATE 不要只看枚举值**：部分设备会在驱动、SurfaceFlinger 或 vendor policy 中把请求的 mode 降级为 FIFO。是否实际拿到低延迟模式，最好把 `vkGetPhysicalDeviceSurfacePresentModesKHR` 的返回值和 Trace 中的帧节奏表现一起核对
 - **VRR（可变刷新率）**：需要搭配 Display 的 VRR 能力
 
 ## Swappy Frame Pacing
