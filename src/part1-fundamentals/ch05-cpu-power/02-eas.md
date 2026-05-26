@@ -41,13 +41,13 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-24'
@@ -277,9 +277,9 @@ EAS 对轻任务和重任务有不同的处理方式:
 overutilized 对 EAS 的影响随内核版本有差异:
 
 - **Linux 6.6 及更早**：`find_energy_efficient_cpu()` 入口处检查 `rd->overutilized`，如果系统已 overutilized，直接跳过能量估算，回到传统选核路径。
-- **Linux 6.12 / GKI 6.12（Android 16）**：`find_energy_efficient_cpu()` 本身不再用 `rd->overutilized` 短路，但 overutilized 标志仍然存在，主要进入负载均衡判断（`load_balance()`、misfit migration 等路径），影响系统在高负载下的迁移策略。
+- **Linux 6.12 / GKI 6.12（Android 16）**：overutilized 的短路检查从 `find_energy_efficient_cpu()` 函数入口移到了调用点 `select_task_rq_fair()`。效果不变——系统 overutilized 时唤醒路径仍然跳过能量估算、回到传统选核；只是检查位置从被调函数内部挪到了调用方。overutilized 标志同时影响负载均衡判断（`load_balance()`、misfit migration 等路径），在高负载下触发更激进的性能优先迁移。
 
-因此在 Android 16/17 设备上，即使系统 overutilized，唤醒路径仍会尝试能量估算；但负载均衡路径会因 overutilized 而更激进地做性能优先的迁移。排查时要按内核版本区分,不要把 6.6 的行为外推到 6.12。
+因此无论 6.6 还是 6.12，overutilized 时唤醒路径都会跳过能量估算。区别只是短路位置不同：6.6 在 `find_energy_efficient_cpu()` 内部检查，6.12 在 `select_task_rq_fair()` 调用点检查。排查时要按内核版本区分，不要把 6.6 的行为外推到 6.12。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - overutilized flag disables EAS energy-awareness]
 
@@ -429,7 +429,7 @@ ORDER BY cpu, idle;
 
 ### EAS 与 CFS（5.1 节）
 
-EAS 建立在 CFS 之上。它不替换 CFS，而是接管了 CFS 的唤醒选核逻辑。overutilized 对 EAS 的影响随内核版本有差异：Linux 6.6 及更早版本中，overutilized 会直接跳过唤醒路径的能量估算；android16-6.12 起唤醒路径仍会做能量估算，overutilized 主要影响负载均衡和迁移策略（详见本文「负载均衡与任务迁移」小节）。
+EAS 建立在 CFS 之上。它不替换 CFS，而是接管了 CFS 的唤醒选核逻辑。overutilized 时唤醒路径始终跳过能量估算——Linux 6.6 在 `find_energy_efficient_cpu()` 入口短路，android16-6.12 把同一个检查移到 `select_task_rq_fair()` 调用点。overutilized 同时影响负载均衡和迁移策略（详见本文「负载均衡与任务迁移」小节）。
 
 ### EAS 与大小核架构（5.3 节）
 
@@ -453,7 +453,7 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 
 ### "EAS 是为了让系统变慢来省电"
 
-不是。EAS 的核心目标是“在满足性能需求的前提下省电”。对于轻任务，放在小核上既省电又不影响性能；对于重任务，EAS 仍然会分配到大核。Linux 6.6 及更早版本中，overutilized 时唤醒路径会跳过能量估算；android16-6.12 起即使 overutilized 仍会尝试能量估算，但负载均衡路径会更激进地做性能优先迁移。正常情况下不会因为 EAS 而感受到明显的性能下降——但如果 EAS 被错误配置或禁用，可能会发现耗电明显增加。
+不是。EAS 的核心目标是“在满足性能需求的前提下省电”。对于轻任务，放在小核上既省电又不影响性能；对于重任务，EAS 仍然会分配到大核。无论 6.6 还是 6.12，overutilized 时唤醒路径都会跳过能量估算（只是短路位置不同），负载均衡路径会更激进地做性能优先迁移。正常情况下不会因为 EAS 而感受到明显的性能下降——但如果 EAS 被错误配置或禁用，可能会发现耗电明显增加。
 
 ### "任务应该尽量放在大核上以保证性能"
 
@@ -480,6 +480,7 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 | AOSP 用户态 | Android 10 | task_profiles 成型,cpu controller 暴露 `cpu.util.min/max`,默认性能档位仍大量依赖 `schedtune` + `cpuset` | 看 `/dev/stune/*` 和 `/dev/cpuset/*` |
 | AOSP 用户态 | Android 11 | `cpu.uclamp.min/max` 命名到位,默认 profile 仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
 | AOSP 用户态 | Android 12+ | 默认 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`,cpuset 继续控制可运行 CPU 集 | top-app / foreground / background 的默认提示链更直观 |
+| GKI 内核 | GKI 6.12 (Android 16) | overutilized 短路位置从 `find_energy_efficient_cpu()` 内部移到 `select_task_rq_fair()` 调用点；效果不变 | 排查时注意 6.6 和 6.12 的检查位置不同，但短路行为一致 |
 | GKI 内核 | GKI 6.12 (Android 16) | UClamp 聚合仍为 max/bucket,sum 聚合为厂商分支/社区探索方向 | 排查时需按具体 kernel tree 确认聚合策略 |
 | 设备实现 | 厂商分支 | WALT、Power HAL boost、额外迁核策略按 SoC / kernel tree 变化 | Trace 结论必须落回具体设备 |
 

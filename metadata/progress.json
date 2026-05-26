@@ -8270,5 +8270,24 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-26T05:09:00+08:00"
+  "last_task6_reviewed_at": "2026-05-26T05:09:00+08:00",
+  "task2b_completed": [
+    {
+      "section": "18.3",
+      "date": "2026-05-26T11:21:27+08:00",
+      "by": "task2b-content-processing-rework"
+    },
+    {
+      "section": "14.6",
+      "date": "2026-05-26T11:21:27+08:00",
+      "by": "task2b-content-processing-rework"
+    },
+    {
+      "section": "5.2",
+      "date": "2026-05-26T11:21:27+08:00",
+      "by": "task2b-content-processing-rework"
+    }
+  ],
+  "last_task2b_completed": "2026-05-26T11:21:27+08:00",
+  "last_task2b_completed_at": "2026-05-26T11:21:27+08:00"
 }

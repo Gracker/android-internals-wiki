@@ -38,11 +38,11 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: "reviewed"
 review_round: 4
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-22"
 task6_result: "pass-light-edit"
@@ -273,11 +273,12 @@ com.example.macrobenchmark.StartupBenchmark#coldStartup
 
 这个命令行接口在 CI/CD 管线中非常重要——我们不需要打开 Android Studio，直接在终端就能运行基准测试并获取结果。Macrobenchmark 的输出包括控制台的摘要信息和一个 JSON 文件（包含每次迭代的详细指标），以及每轮迭代的 Perfetto Trace 文件。
 
-几个有用的 `am instrument` 参数：
+几个常用的 `am instrument` 参数（均需带 `androidx.benchmark.` 前缀，定义在 `benchmark-common` 的 `Arguments.kt`）：
 
-- `-e iterations N`：覆盖测试的迭代次数
+- `-e androidx.benchmark.iterations N`：覆盖 Microbenchmark 的迭代次数
 - `-e androidx.benchmark.suppressErrors ACTIVITY-MISSING`：抑制某些配置错误（调试用）
-- `-e androidLogResults true`：在 logcat 中输出详细结果
+- `-e androidx.benchmark.dryRunMode.enable true`：空跑模式，只验证配置不执行完整基准测试
+- `-e androidx.benchmark.output.enable true`：控制 JSON 结果文件输出
 
 [已验证: 官方文档, developer.android.com/training/testing/instrumented-tests]
 
