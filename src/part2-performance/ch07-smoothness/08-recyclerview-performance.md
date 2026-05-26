@@ -33,9 +33,9 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-reviewed_date: '2026-05-03'
+reviewed_date: '2026-05-27'
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+task6_result: needs-rework
 sources:
 - type: androidx
   path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java
@@ -53,20 +53,20 @@ sources:
   path: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/recyclerview
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: 'needs-rework'
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: review-rework-needed
 last_task9_at: '2026-05-13T02:51:35+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-13'
-review_notes: '2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入
-  queue.json。'
+review_notes: '2026-05-27 task6 review: needs-rework。L1/L2 已小修；正文后半段保留多段 AIW 源码调研原始块，需 Task2B 合并/清理。'
 task9_review_notes: '2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。'
 last_task2b_verifier_at: '2026-05-26T23:25:00+08:00'
 last_task2b_at: '2026-05-27T00:50:00+08:00'
+last_task6_at: '2026-05-27T01:06:00+08:00'
 
 ---
 
@@ -98,15 +98,15 @@ last_task2b_at: '2026-05-27T00:50:00+08:00'
 
 列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，内部涉及缓存复用、预取、嵌套滑动和增量更新，这几层机制都会直接影响滑动帧时间。
 
-这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，让我们在看到卡顿时，能更快判断问题落在布局、bind、缓存还是预取阶段。
+这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，用于在看到卡顿时判断问题落在布局、bind、缓存还是预取阶段。
 
 ## RecyclerView 的布局流程
 
-RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线真正打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，我们再结合调用栈和更新类型去判断 step1/2/3 落在什么位置。
+RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，分析时再结合调用栈和更新类型判断 step1/2/3 落在什么位置。
 
 `dispatchLayoutStep1()` 负责消费 Adapter 更新、决定是否运行 predictive animation、保存旧布局信息。列表收到 `notifyDataSetChanged()` 这类整表失效时，外层 slice 往往是 `RV FullInvalidate`。收到局部更新并且 `AdapterHelper` 能在一次 pass 里处理时，更常见的是 `RV PartialInvalidate`。
 
-`dispatchLayoutStep2()` 进入最终布局阶段，`LayoutManager.onLayoutChildren()` 在这里摆放 item。LinearLayoutManager、GridLayoutManager、StaggeredGridLayoutManager 的差异，主要都体现在这一段。Perfetto 里通常只能看到 `RV OnLayout` 或前面的 invalidation slice，而看不到名为 `dispatchLayoutStep2` 的独立标签。所以我们判断 step2，靠的是展开 `RV OnLayout` 的调用栈，确认时间是不是花在 `onLayoutChildren()`、子 view measure/layout，或者布局前后紧邻的 bind / inflate。
+`dispatchLayoutStep2()` 进入最终布局阶段，`LayoutManager.onLayoutChildren()` 在这里摆放 item。LinearLayoutManager、GridLayoutManager、StaggeredGridLayoutManager 的差异，主要都体现在这一段。Perfetto 里通常只能看到 `RV OnLayout` 或前面的 invalidation slice，而看不到名为 `dispatchLayoutStep2` 的独立标签。所以判断 step2，靠的是展开 `RV OnLayout` 的调用栈，确认时间是不是花在 `onLayoutChildren()`、子 view measure/layout，或者布局前后紧邻的 bind / inflate。
 
 `dispatchLayoutStep3()` 负责记录 post-layout 信息、驱动 ItemAnimator、清理 scrap 和旧状态。源码同样没有给 step3 单独打 `Trace.beginSection()`，只能通过 `dispatchLayout()` 尾部调用和随后的动画行为侧推。
 
@@ -127,11 +127,11 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 第一级是 **AttachedScrap**。当 RecyclerView 发生布局变化但不需要移除任何 ViewHolder 时（比如 item 位置移动），被移出屏幕但还会回来的 ViewHolder 会暂时放在这里。AttachedScrap 中的 ViewHolder 仍然附着在 RecyclerView 上，不需要重新 bind。在 ItemAnimator 执行动画期间，旧的 ViewHolder 就存放在 Scrap 中。
 
-第二级是 **CachedViews**。这是一个默认大小为 2 的 ArrayList，存储刚滑出屏幕的 ViewHolder。CachedViews 的特点是：存在这里的 ViewHolder 不需要重新 bind——它们的 position 和数据都是有效的，直接拿来用就行。这就好比"刚放下的东西还没收起来"，拿起来最快。缓存大小可以通过 `setItemViewCacheSize()` 调整。对于频繁上下滑动的场景，适当增大这个值（比如设为 4-6）可以减少 bind 调用次数。
+第二级是 **CachedViews**。这是一个默认大小为 2 的 ArrayList，存储刚滑出屏幕的 ViewHolder。CachedViews 的特点是：存在这里的 ViewHolder 不需要重新 bind——它们的 position 和数据都是有效的，直接拿来用就行。缓存大小可以通过 `setItemViewCacheSize()` 调整。对于频繁上下滑动的场景，适当增大这个值（比如设为 4-6）可以减少 bind 调用次数。
 
 第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但多数项目里用不到它。如果需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
 
-第四级是 **RecycledViewPool**。这是最终的缓存池，默认每个 ViewType 缓存 5 个 ViewHolder。Pool 中的 ViewHolder 会被清除绑定状态（resetInternal），再次使用时必须重新 bind。Pool 的一个重要特性是可以跨 RecyclerView 共享——对于嵌套 RecyclerView 的场景（比如外层列表中每个 item 内部都有一个水平滑动列表），共享 Pool 可以大幅减少 inflate 开销。
+第四级是 **RecycledViewPool**。这是最终的缓存池，默认每个 ViewType 缓存 5 个 ViewHolder。Pool 中的 ViewHolder 会被清除绑定状态（resetInternal），再次使用时必须重新 bind。Pool 的一个重要特性是可以跨 RecyclerView 共享——对于嵌套 RecyclerView 的场景（比如外层列表中每个 item 内部都有一个水平滑动列表），共享 Pool 可以减少重复 inflate 开销。
 
 缓存查找的顺序是：AttachedScrap → CachedViews → ViewCacheExtension → RecycledViewPool。如果在所有缓存中都没找到，才会调用 `onCreateViewHolder()` 创建新的。
 
@@ -159,7 +159,7 @@ void postFromTraversal(RecyclerView recyclerView, int prefetchDx, int prefetchDy
 }
 ```
 
-这段调用路径说明两件事。第一，GapWorker 跟随滚动事件调度，不挂在 `doFrame()` 的 COMMIT 回调里。第二，预取请求先记录滚动方向和距离，真正执行时再统一排序和消费。
+这段调用路径说明两件事。第一，GapWorker 跟随滚动事件调度，不挂在 `doFrame()` 的 COMMIT 回调里。第二，预取请求先记录滚动方向和距离，执行时再统一排序和消费。
 
 具体要预取哪些 position，由 `LayoutManager.collectAdjacentPrefetchPositions()` 和 `collectInitialPrefetchPositions()` 决定。前者服务滑动中的相邻 item，后者服务嵌套列表首次可见时的 initial prefetch。`setInitialPrefetchItemCount()` 调的就是这条 initial prefetch 路径。
 
@@ -199,7 +199,7 @@ DeliQueue 改变了 `MessageQueue` 的内部实现。部分基于反射访问 `M
 [已验证: AndroidX androidx-main，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
 ## DiffUtil 与增量更新
 
-当列表数据发生变化时，最简单的做法是调用 `notifyDataSetChanged()`——但这会触发整个列表的重新布局，即使只有一个 item 发生了变化。DiffUtil 解决的就是这个问题：它通过计算新旧列表之间的最小差异集，只更新真正变化的 item。
+当列表数据发生变化时，最简单的做法是调用 `notifyDataSetChanged()`——但这会触发整个列表的重新布局，即使只有一个 item 发生了变化。DiffUtil 解决的就是这个问题：它通过计算新旧列表之间的最小差异集，只更新变化的 item。
 
 DiffUtil 的核心算法是 Eugene W. Myers 的差分算法。这个算法的时间复杂度是 O(N + D²)，其中 N 是两个列表的总长度，D 是编辑距离（插入/删除/修改的数量）。对于大多数实际场景（少量 item 变化），D 很小，算法非常快。但如果数据变化很大（比如清空后重新加载），D 接近 N，时间复杂度会退化到 O(N²)。
 
@@ -207,7 +207,7 @@ DiffUtil 的核心算法是 Eugene W. Myers 的差分算法。这个算法的时
 
 DiffUtil 有两个核心回调需要正确实现。`areItemsTheSame()` 判断两个 item 是否代表同一个对象（通常比较 id），`areContentsTheSame()` 判断同一个对象的内容是否完全一致。这两个方法的实现直接影响 diff 的性能和正确性。
 
-一个经常被忽略的优化是 Payload 机制。当 `areItemsTheSame()` 返回 true 但 `areContentsTheSame()` 返回 false 时，DiffUtil 会调用 `getChangePayload()` 来获取变化的详情。如果返回了非 null 的 payload，Adapter 会收到 `onBindViewHolder(holder, position, payloads)` 而不是完全的重新绑定。这样我们只更新变化的部分（比如一个文字标签），而不需要重新绑定整个 item 的所有数据。
+一个经常被忽略的优化是 Payload 机制。当 `areItemsTheSame()` 返回 true 但 `areContentsTheSame()` 返回 false 时，DiffUtil 会调用 `getChangePayload()` 来获取变化的详情。如果返回了非 null 的 payload，Adapter 会收到 `onBindViewHolder(holder, position, payloads)` 而不是完全的重新绑定。这样只更新变化的部分（比如一个文字标签），而不需要重新绑定整个 item 的所有数据。
 
 对于大列表的 diff 优化，几个实用的建议：
 
@@ -293,11 +293,11 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 ## 滑动卡顿的根因分析
 
-理解了 RecyclerView 的缓存体系、预取机制和嵌套滑动之后，我们需要回到一个更实际的问题：当 Perfetto 中出现掉帧，怎么快速定位是哪一层机制出了问题？
+理解 RecyclerView 的缓存体系、预取机制和嵌套滑动之后，分析时要回到一个更实际的问题：当 Perfetto 中出现掉帧，怎么快速定位是哪一层机制出了问题？
 
 在实际工作中，RecyclerView 滑动卡顿的根因通常集中在以下几个方向。
 
-**item 布局过深** 是最常见的性能杀手。如果每个 item 的 View 层级超过 4-5 层，measure 和 layout 的时间会明显增加。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能带来显著改善。
+**item 布局过深** 是常见的耗时来源。如果每个 item 的 View 层级超过 4-5 层，measure 和 layout 的时间会明显增加。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能减少 measure/layout 时间。
 
 **onBindViewHolder 中的 IO 操作** 是另一个高频问题。图片加载的磁盘 IO、数据库查询、甚至 SharedPreferences 的同步读取，都可能在 bind 路径上引入不可预测的延迟。解决方法是将这些操作全部异步化——图片用 Glide/Coil 等库自动异步加载，数据预加载到内存，bind 方法只做轻量的视图更新。
 
@@ -307,7 +307,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 **VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧在预算时间内完成了，只是步幅不均匀。
 
-这是一种"无掉帧卡顿"，和我们在 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
+这是一种"无掉帧卡顿"，和 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
 
 [来源: 高爷卡顿知识补充 2026-04-06，VSync 时间取整问题]
 
@@ -397,6 +397,8 @@ ORDER BY max_ms DESC;
 **误区：`setItemViewCacheSize(0)` 总是负优化。** 在某些场景下（比如 item 数据频繁更新，CachedViews 中的 ViewHolder 经常 invalid），把 cache size 设为 0 反而可以避免无效的缓存查找，直接走 Pool 的 rebind 流程。但这属于针对性优化，不应该作为默认策略。
 
 **误区：高刷新率设备上 RecyclerView 不需要优化。** 高刷新率设备的帧预算更短（120Hz 下只有 8.33ms），任何在 60Hz 下勉强达标的操作在高刷新率下都可能超时。RecyclerView 的优化在高刷新率设备上反而更重要。
+
+[需重写: 从“GapWorker bindTime 盲区”到文末仍保留多段源码调研原始块，和前文 GapWorker / DeliQueue 内容重复，需要 Task2B 合并为正文或移入参考资料，删除 AIW 调研注释与过程性小节。]
 <!-- AIW-源码调研-2026-04-25 -->
 ## GapWorker bindTime 盲区：measure 阶段不计入预取预算
 
@@ -749,7 +751,7 @@ ORDER BY SUM(dur) DESC;
 - 适用性：作为方向性参考，而非业务 OKR 直接引用
 
 **建议引用格式**：
-```
+```text
 Android 17 targetSdk 37+ 环境下，Google 官方测试显示 MessageQueue 
 锁竞争消除后应用 missed frames 下降约 4%，System UI 和 Launcher 
 交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。

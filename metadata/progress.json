@@ -8336,16 +8336,21 @@
     "title": "RecyclerView 列表滑动性能深度优化",
     "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "pass-light-edit",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
     "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
+    "task2b_state": "pending",
+    "task2b_result": "review-rework-needed",
     "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
     "verifier_note": "queue 无 pending；正文已有 2026-05-26 DeliQueue 一手来源补证，修正回流 Task6 状态。",
     "last_task2b_at": "2026-05-27T00:50:00+08:00",
-    "task2b_note": "修复 2026-05-27 Task9 回炉：DeliQueue 官方来源/targetSdk 37 口径、性能数字来源标注、GapWorker viewType 运行平均耗时公式。"
+    "task2b_note": "修复 2026-05-27 Task9 回炉：DeliQueue 官方来源/targetSdk 37 口径、性能数字来源标注、GapWorker viewType 运行平均耗时公式。",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-27",
+    "last_task6_at": "2026-05-27T01:06:00+08:00",
+    "task6_note": "L1/L2 已小修；正文后半段源码调研原始块需 Task2B 合并清理。",
+    "last_review_log": "logs/review/2026-05-27-01-review.md"
   }
 }
