@@ -2,7 +2,7 @@
 title: Baseline Profiles 与编译优化实践
 chapter: '8.7'
 section: '8.7'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
@@ -12,7 +12,7 @@ last_verified_against: developer.android.com create/debug/profileable docs + AOS
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_result: needs-rework
+task9_result: "pass-tech-review"
 confidence: medium
 sources:
 - type: official
@@ -35,25 +35,26 @@ tags:
 - dexopt
 - startup
 - performance
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
 review_round: 6
-task9_reviewed_date: "2026-05-06"
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-25T09:28:00+08:00"
+last_task9_at: "2026-05-27T04:23:00+08:00"
 last_task6_audit: '2026-05-19'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-05-25 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 1（既有）。Startup Profile 构建期 DEX layout 与 Baseline Profile/ART 编译路径需要拆开。"
+task9_review_notes: "2026-05-27 Task9 04:23：pass-tech-review。未发现 P0/P1；Baseline/ProfileInstaller/Startup Profile 版本边界通过，另记录 1 条 P2 量化数据建议，自动晋升 finalized。"
 last_task9_audit: 2026-05-25
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 

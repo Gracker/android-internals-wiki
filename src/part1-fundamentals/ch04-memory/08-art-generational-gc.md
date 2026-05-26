@@ -2,7 +2,7 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
@@ -51,21 +51,21 @@ tags:
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: "needs-rework"
-last_task9_at: "2026-05-19T11:45:22+08:00"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-27T04:23:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task6_audit: "2026-05-18"
 last_task9_audit: "2026-05-18"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
-task9_reviewed_date: "2026-05-19"
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Gen-CMC/UFFD 启用链路需按 AOSP main 属性与版本表回炉。"
+last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
+task9_review_notes: "2026-05-27 Task9 04:23：pass-tech-review。未发现 P0/P1；Perfetto GC 表、Android 17 Generational CMC、ART LOS 阈值等关键技术点已抽查通过，自动晋升 finalized。"
 last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 7 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"

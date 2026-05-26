@@ -58,24 +58,25 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_date: 2026-05-19
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-19T00:30:02+08:00"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-27"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-27T04:23:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
-task9_review_notes: "2026-05-19 Task9 00:20：needs-rework。P1 2：libdmabufheap pooling / Binder FDA 仍停留在待验证但被放进 Android 16 版本增强与参考资料，需拆成已确认能力与研究线索。"
+task9_review_notes: "2026-05-27 Task9 04:23：auto-fixed。修正 libdmabufheap pooling 与 Binder FDA 两处 Android 16/17 未证实平台能力表述，回到 Task6 复审。"
 last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 6 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
-last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+last_task9_autofix_at: "2026-05-27"
 ---
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
 
@@ -177,15 +178,13 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/kernel/dma-buf-heaps]
 
-### 用户空间池化：libdmabufheap
+### 用户空间池化：AOSP 与 vendor 边界
 
-**[待验证]** Android 16/17 在 DMA-BUF Heaps 之上引入了用户空间池化机制。官方 DMA-BUF Heaps 文档把 `libdmabufheap` 描述为 ION → DMA-BUF heaps 迁移抽象层；android-12 到 android-16/main 的 libdmabufheap 源码中未找到通用的“释放后缓存并按尺寸复用” pooling 路径。正文此前将池化写成已确认的 Android 16/17 机制，证据不充分。如果后续能在 `system/memory/libdmabufheap` 或具体 vendor allocator 实现中找到复用代码，可以重新补入正文。
+`libdmabufheap` 在 AOSP 官方文档中的定位是 ION 到 DMA-BUF Heaps 的迁移抽象层：按 heap name 分配，在对应 DMA-BUF heap 不存在时回退到等价 ION heap。它不是 Android 16/17 的通用 buffer pool contract。到 android-16.0.0_r1 / android16-qpr2-release，本节没有在 `system/memory/libdmabufheap` 中确认“释放后缓存并按尺寸复用”的通用路径。
 
-对图形管线来说，如果后续确认存在通用用户空间池化，它主要影响首次分配和 buffer 重建场景。正常运转时 BufferQueue 的 slot 复用已经规避了大部分分配开销，但 Surface 尺寸变化、format 变更、或者 App 从后台恢复触发 buffer 重建时，池化才可能减少这些路径上的延迟。
+如果设备上观测到 DMA-BUF 复用或池化，更稳的归因是 vendor gralloc / allocator 的私有实现。排查分配延迟或脏数据风险时，应把池化当作设备实现细节，结合厂商源码、trace 与 heap 行为验证，不把它写成 AOSP 平台能力。
 
-如果 allocator 实现了池化，buffer 可能在进程间传递后残留上一轮的数据。内核在 buffer 回收到池时不会主动清零，安全性依赖 allocator 实现的脏数据处理策略。排查内存内容泄漏问题时，这是一个值得关注的边界条件。
-
-[已验证: 官方文档将 libdmabufheap 描述为 ION 到 DMA-BUF heaps 的迁移抽象层；待验证: 通用 libdmabufheap pooling 路径]
+[已验证: 官方 DMA-BUF Heaps 文档；AOSP android-16.0.0_r1 / android16-qpr2-release 未确认通用 libdmabufheap pooling 路径]
 
 ## Android Gralloc 与 GraphicBuffer
 
@@ -269,9 +268,11 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
-### Binder FDA 批量传输优化
+### Binder FDA 与 GraphicBuffer transport
 
-**[待验证]** `GraphicBuffer::unflatten()` 在 Android 16 上利用了 Binder 的 FDA（File Descriptor Array）机制。此前，native handle 里的每个 fd 需要逐个通过 Binder 驱动安装到目标进程。FDA 允许一次性提交所有 fd，Binder 驱动批量完成安装。正文此前称 SurfaceFlinger 处理多图层提交时 CPU 开销降低 20%-40%，但 android-16.0.0_r1 的 `GraphicBuffer.cpp` flatten/unflatten 路径仍是 transport fd 数组拷贝与 handle 重建，未找到直接利用 FDA 的源码锚点，20%-40% 的收益也缺少测试条件。如果后续能在 Binder/Parcel 层找到 FDA 真实调用链和 benchmark 数据，可以重新补入。
+`GraphicBuffer::flatten()` / `unflatten()` 的可确认行为是写入元数据，并通过 native handle transport payload 传递 fd 与整数元数据。android-16.0.0_r1 的 `GraphicBuffer.cpp` 没有显示 `GraphicBuffer::unflatten()` 直接接入 Binder FDA（File Descriptor Array）来批量安装所有 fd。此前“Android 16 通过 FDA 降低 SurfaceFlinger 多图层 CPU 开销 20%-40%”的说法缺少源码锚点和 benchmark 条件，本节不把它作为平台结论。
+
+如果后续要讨论 FDA，应从 Binder / Parcel 层源码和可复现 benchmark 入手，并与 GraphicBuffer transport fd 数组的语义分开。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
@@ -422,17 +423,17 @@ Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Grall
 
 [已验证: 官方文档, developer.android.com/guide/practices/page-sizes; AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
-### Android 16：allocator AIDL、对齐协商、池化与批量传输
+### Android 16：allocator AIDL 与接口边界
 
 到 `android-16.0.0_r1` 为止，源码里还能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 的注释甚至直接写明，如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍要实现。
 
 这一阶段，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并未“一刀切地 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
 
-Android 16 同时引入了三项影响图形内存效率的增强：
+这一阶段更适合只保留能从 AOSP / 官方文档落地的接口边界：
 
-- **对齐协商**：`allocate2()` 的 `additionalOptions` 字段（Android 15+ 已存在）让调用方显式传递约束信息
-- **用户空间池化**：**[待验证]** libdmabufheap 在用户进程缓存释放的 DMA-BUF，源码证据尚不充分
-- **Binder FDA 批量传输**：**[待验证]** `GraphicBuffer::unflatten()` 利用 FDA 一次性安装所有 fd，20%-40% 收益缺少测试条件
+- **allocator AIDL**：分配入口已经提供 Stable AIDL `IAllocator`，但 `mapper@4` 兼容路径仍存在
+- **约束传递**：`allocate2()` 的 `additionalOptions` 字段在 Android 15+ 已存在，可用于 compression level 等硬件约束；它不是 Android 16 新增，也不是公开 NDK 层的 16KB 页对齐入口
+- **vendor 实现差异**：池化、secure / carveout heap、cache policy 仍要看厂商 gralloc / allocator；AOSP `libdmabufheap` 无通用池化 contract，`GraphicBuffer::unflatten()` 也未确认直接接入 Binder FDA 批量安装路径
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
@@ -488,7 +489,7 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
   - `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` — 分配器的框架层封装
   - `hardware/interfaces/graphics/allocator/` — Gralloc Allocator HAL 接口定义
   - `hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl` — `reservedSize` 与分配描述字段
-  - `frameworks/native/libs/ui/GraphicBuffer.cpp` — Binder FDA 批量传输优化
+  - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer native_handle transport 路径（未确认直接 FDA 批量安装）
   - `hardware/interfaces/graphics/mapper/` — Gralloc Mapper HAL 接口定义
   - `drivers/dma-buf/` — Linux 内核 DMA-BUF 框架源码
 - 官方文档：
