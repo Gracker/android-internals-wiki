@@ -42,14 +42,15 @@ related_chapters:
   - "13.2"
   - "5.5"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 last_task6_audit: "2026-05-23"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-05-26"
 last_task2b_at: "2026-05-26T19:25:19+08:00"
 review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
 task9_result: pass-tech-review
