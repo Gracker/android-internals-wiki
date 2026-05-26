@@ -3958,3 +3958,16 @@
 - 关注 Android 17 正式版发布后的新 API 补充
 - 关注 KMP 稳定后可能涌现的性能实践素材
 - 关注端侧 AI（Gemini Nano / on-device LLM）的性能治理素材积累
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-05-26
+- **类型**：版本差异 / 交叉引用
+- **位置**：L668-L669 Renderer 模型版本差异表
+- **问题**：Android 11+ out-of-process renderer 行重复出现两次；虽然不改变结论，但会让版本表看起来像 API 30 有两条不同边界，削弱 Android 13+ Sandbox 行的区分度。
+- **建议**：删除重复的 Android 11+ 行；如果要保留 Android 13+ 行，应明确它补充的是 sandbox / SurfaceControl 路径趋势，不是 renderer 模型从 Android 11+ 后再次变化。
+
+## [Task9 Deep Review] 15.6 性能测试最佳实践 — 2026-05-26
+- **类型**：数据缺失
+- **位置**：L287 Macrobenchmark 采样次数
+- **问题**：正文写“Google 官方建议 Macrobenchmark 的迭代次数至少 10 次”，但当前 Android Developers Macrobenchmark 文档只要求显式指定 iterations，公开示例仍有 5 次 / CI JSON 示例 repeatIterations=3 的口径，未能支撑“官方至少 10 次”这个硬断言。
+- **建议**：补充能支撑 10 次下限的官方来源；补不到时改成团队经验建议，例如“发布门禁建议至少 10 次，官方示例不等同于统计下限”，并把不同场景的迭代次数写成项目基线。
+
