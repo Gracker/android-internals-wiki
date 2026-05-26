@@ -35,14 +35,15 @@ status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 task2b_state: fixed
+last_task2b_lite_at: "2026-05-26"
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 last_task6_audit: "2026-05-25"
-task2b_result: fixed
+task2b_result: fixed-lite
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 last_task9_audit: 2026-05-26
