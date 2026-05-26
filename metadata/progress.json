@@ -1,7 +1,7 @@
 {
   "total": 377,
-  "draft": 3,
-  "ready-for-review": 204,
+  "draft": 2,
+  "ready-for-review": 205,
   "finalized": 170,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-25",
@@ -5654,9 +5654,9 @@
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "total_review_files": 69,
-  "last_task2a_at": "2026-05-26T04:17:00+08:00",
-  "last_task2a_section": "22.17",
-  "last_task2a_file": "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md",
+  "last_task2a_at": "2026-05-26T17:19:00+08:00",
+  "last_task2a_section": "18.24",
+  "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-26T04:07:00+08:00",
   "last_task6_sections": [
     "1.7",
@@ -5694,7 +5694,7 @@
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
   "last_task9_at": "2026-05-26T04:30:00+08:00",
-  "last_task2a_result": "processed",
+  "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
   "task6_last_review_at": "2026-05-26T04:07:00+08:00",
