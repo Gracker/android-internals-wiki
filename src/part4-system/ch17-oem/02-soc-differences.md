@@ -7,8 +7,8 @@ section: "17.2"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-04"
-last_verified_against: "公开资料"
+last_verified: "2026-05-27"
+last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，AOSP android-16.0.0_r1"
 confidence: medium
 sources:
   - type: blog
@@ -40,19 +40,20 @@ task6_reviewed_date: "2026-05-25"
 task6_reviewed_by: "openclaw-task6"
 status: "ready-for-review"
 pipeline_stage: "task6_pending"
-task9_state: "pending"
-task9_result: "needs-rework"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
-last_task9_at: "2026-05-25T11:41:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。"
-p0: 2
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T06:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。"
+p0: 0
 p1: 0
 p2: 0
 task2b_state: "fixed"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+last_task9_autofix_at: "2026-05-27"
 ---
 # SoC 平台差异
 
@@ -99,15 +100,15 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 
 **高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite,高通一直保持着综合性能的领先地位,尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研:CPU 方面,从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心(开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历),不再使用 ARM 公版 Cortex 核心;GPU 方面的 Adreno 系列一直是自研的;基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
 
-**联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略:取消传统的小核心,全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势,但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心,GPU 则采用 ARM 的 Immortalis 系列(高端)或 Mali 系列(中端)。联发科的芯片通常在性价比方面有优势,在中端市场的份额尤其高。
+**联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略:取消传统的小核心,全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势,但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心,GPU 则随代际在 Immortalis 与 Mali 旗舰系列之间变化:Dimensity 9400 是 Immortalis-G925,Dimensity 9500 官方规格是 Arm Mali-G1 Ultra MC12。联发科的芯片通常在性价比方面有优势,在中端市场的份额尤其高。
 
 **三星 Exynos** 的情况比较特殊。Exynos 曾经是三星 Galaxy 系列的主力芯片,但在旗舰性能上与高通的差距导致三星多次在旗舰机型上转向骁龙。最新的 Exynos 2500 计划用于 Galaxy Z Flip 7 等折叠屏设备。Exynos 的 CPU 使用 ARM 公版核心,但 GPU 方面采用了与 AMD 合作的 Xclipse 系列,基于 AMD RDNA 架构,这在移动 GPU 中是独树一帜的选择,带来了硬件光追和 VRS 等桌面级特性。
 
 **Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 预计将是 Google 的首款完全自研芯片,由 TSMC 代工。
 
 > **2025/2026 当前旗舰更新**：截至 2026-05，四大平台均已迭代到新一代旗舰：
-> - **Qualcomm Snapdragon 8 Elite Gen 5**：第二代自研 Oryon CPU 核心，Adreno GPU 升级，支持 Vulkan 1.4；出厂搭载 Android 16 的设备必须支持
-> - **MediaTek Dimensity 9500**：采用 ARM 新一代 C1-Ultra + C1-Premium + C1-Pro 十核架构（1×C1-Ultra up to 4.2GHz + 3×C1-Premium + 4×C1-Pro + 2×C1-Pro 低功耗核），Immortalis GPU
+> - **Qualcomm Snapdragon 8 Elite Gen 5**：第三代自研 Oryon CPU 核心，Adreno GPU 升级；Qualcomm 产品规格列出的 Android 图形 API 为 OpenCL 3.0 FP / OpenGL ES 3.2 / Vulkan 1.3，Linux UMD 资料里的 Vulkan 1.4 不能直接写成 Android 设备统一能力
+> - **MediaTek Dimensity 9500**：采用 ARM C1-Ultra + C1-Premium + C1-Pro 八核架构（1×C1-Ultra + 3×C1-Premium + 4×C1-Pro），GPU 为 Arm Mali-G1 Ultra MC12；官方规格未列出额外 2 个低功耗核
 > - **Samsung Exynos 2600**：2nm GAA 工艺，十核 CPU（ARM C1 系列），Xclipse 960 GPU（基于 AMD RDNA）
 > - **Google Tensor G5**：Pixel 10 系列搭载，TSMC 代工的首款完全自研芯片，12GB RAM 配置
 >
@@ -225,7 +226,7 @@ GPU 是 Android 渲染管线的核心执行单元。§2.10 已经分析过 GPU �
 
 高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR(Tile-Based Rendering)架构。高通称其渲染方式为 FlexRender:它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
 
-ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 是 ARM 的旗舰 GPU(支持硬件光追),Mali 是高端/中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科的旗舰芯片使用 Immortalis GPU(如 Dimensity 9400 上的 Immortalis-G925),中端芯片使用 Mali。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 Cache 大小),但驱动优化的成熟度有时不如 Adreno。
+ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 曾是 ARM 旗舰 GPU 分支(支持硬件光追),Mali 覆盖高端和中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科旗舰芯片的 GPU 命名已随代际变化:Dimensity 9400 是 Immortalis-G925,Dimensity 9500 是 Arm Mali-G1 Ultra MC12。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 Cache 大小),但驱动优化的成熟度有时不如 Adreno。
 
 三星的 **Xclipse** GPU 是移动 GPU 中的异类:它基于 AMD 的 RDNA 架构,这是 PC 和主机显卡的架构。Xclipse 940(Exynos 2400)使用 RDNA 3,支持硬件光追和可变分辨率渲染(VRS)等桌面级特性。Xclipse 的理论性能很强,但由于移动端的功耗和散热限制,持续性能输出可能不如 Adreno 稳定。在驱动方面,Xclipse 的 Vulkan 支持被认为与 Adreno 接近。
 
@@ -277,7 +278,7 @@ ISP 负责相机图像处理,是影响相机启动速度和拍照延迟的关键
 
 ### LPDDR5X 带宽差异
 
-当前旗舰 SoC 都使用 LPDDR5X 内存,但具体配置不同。Snapdragon 8 Elite 支持最高 LPDDR5X 4800MHz,理论峰值带宽约 76.8 GB/s。Dimensity 9400 也支持 LPDDR5X,带宽在类似水平。Exynos 2500 和 Tensor G4 的内存带宽通常略低一些。
+当前旗舰 SoC 都使用 LPDDR5X 内存,但具体配置不同。Snapdragon 8 Elite 官方产品简报写的是 dual-channel LP-DDR5x up to 5.3GHz,不是固定 4800MHz。Dimensity 9500 官方规格为 LPDDR5X 10667,Dimensity 9400 也支持 LPDDR5X。理论带宽还取决于通道数、总线位宽和终端实际配置,跨设备分析时不要只按一个标称频率推算。
 
 实际分析更应该看有效带宽。考虑到内存控制器效率、延迟和功耗管理的差异,不同 SoC 在相同标称带宽下的有效利用率可能不同。这种差异在大规模纹理渲染(游戏)或大量数据搬运(相机 ISP 处理高像素图像)时最为明显。
 

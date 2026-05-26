@@ -4032,3 +4032,9 @@
 - **位置**：`Startup Profile 与指令缓存局部性` / `Jetpack Compose 与 Baseline Profiles`
 - **问题**：`Startup Profile 对冷启动的贡献通常占 Baseline Profile 总收益的 40-60%`、`Compose 应用 25-40% vs 传统 View 15-20%` 属于量化结论，但正文没有给出设备、应用样本、AGP/R8 版本和测试口径。当前官方 Startup Profiles 文档可直接支撑的是“相对只使用 Baseline Profiles，Startup Profiles 通常让启动再快 15-30%”，不是 40-60% 贡献占比。
 - **建议**：把 40-60% 与 Compose/View 对比改为定性结论，或补充对应 benchmark / case study 的可复核来源；若沿用官方口径，改成 Startup Profiles 相对 Baseline Profiles alone 通常再提升 15-30%。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-27
+- **类型**：数据缺失
+- **位置**：`开机性能优化的常见手段` 参考基线数据表
+- **问题**：Pixel 8 / Android 16 分段耗时表目前仍标注为公开 bootstat 输出和 AOSP 默认配置的估算值，缺少同一设备、同一冷启动条件下的 bootstat / events / Perfetto 截图或原始输出。
+- **建议**：补一组 Pixel 8 或 Pixel 9 的冷启动实测数据，至少包含 `bootstat -p`、`logcat -b events` 中 boot_progress 事件和 userspace Perfetto trace；补齐前继续保留“仅供分段比例参考”的边界。
