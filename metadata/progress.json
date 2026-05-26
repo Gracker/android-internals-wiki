@@ -2006,7 +2006,7 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T00:50:00+08:00",
+  "last_updated": "2026-05-27T02:50:00+08:00",
   "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-26T20:08:00+08:00",
@@ -2155,11 +2155,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-26T22:50:00+08:00",
+  "last_task2b_at": "2026-05-27T02:50:00+08:00",
   "last_task2b_sections": [
-    "9.1"
+    "7.8"
   ],
-  "last_task2b_action": "回炉修复: 9.1 ProfilingManager 系统触发式 ANR Profiling API 与产物口径修正",
+  "last_task2b_action": "回炉修复: 7.8 RecyclerView 后半段源码调研块合并清理",
   "sections": {
     "17.2": {
       "status": "ready-for-review",
@@ -8270,9 +8270,13 @@
     "2026-05-26": {
       "sections_processed": 6,
       "items_completed": 6
+    },
+    "2026-05-27": {
+      "sections_processed": 1,
+      "items_completed": 1
     }
   },
-  "task2b_last_run": "2026-05-26",
+  "task2b_last_run": "2026-05-27",
   "task2b_pending_counts": {
     "p95": 132,
     "p90": 2,
@@ -8305,10 +8309,19 @@
       "section": "9.1",
       "date": "2026-05-26T22:50:00+08:00",
       "by": "task2b-content-processing-rework"
+    },
+    {
+      "section": "7.8",
+      "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+      "at": "2026-05-27T02:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "task6-review",
+      "priority": 90,
+      "summary": "合并清理后半段源码调研原始块，回流 Task6。"
     }
   ],
-  "last_task2b_completed": "2026-05-26T22:50:00+08:00",
-  "last_task2b_completed_at": "2026-05-26T22:50:00+08:00",
+  "last_task2b_completed": "2026-05-27T02:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-27T02:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -8336,21 +8349,24 @@
     "title": "RecyclerView 列表滑动性能深度优化",
     "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "needs-rework",
     "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
-    "task2b_result": "review-rework-needed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
     "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
     "verifier_note": "queue 无 pending；正文已有 2026-05-26 DeliQueue 一手来源补证，修正回流 Task6 状态。",
-    "last_task2b_at": "2026-05-27T00:50:00+08:00",
-    "task2b_note": "修复 2026-05-27 Task9 回炉：DeliQueue 官方来源/targetSdk 37 口径、性能数字来源标注、GapWorker viewType 运行平均耗时公式。",
+    "last_task2b_at": "2026-05-27T02:50:00+08:00",
+    "task2b_note": "修复 2026-05-27 Task6/Task9 合并回炉：GapWorker measure 盲区收敛进预取机制，DeliQueue 诊断特征和官方 benchmark 来源收敛进 Android 17 小节；删除 AIW 源码调研过程块。",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-27",
     "last_task6_at": "2026-05-27T01:06:00+08:00",
-    "task6_note": "L1/L2 已小修；正文后半段源码调研原始块需 Task2B 合并清理。",
-    "last_review_log": "logs/review/2026-05-27-01-review.md"
+    "task6_note": "Task2B 已合并清理后半段调研素材，回流 Task6 复审。",
+    "last_review_log": "logs/review/2026-05-27-01-review.md",
+    "last_task2b_queue_source": "task6-review",
+    "last_task2b_priority": 90,
+    "last_task9_review_log": "logs/deep-review/2026-05-27-01-deep-review.md"
   }
 }
