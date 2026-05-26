@@ -21853,6 +21853,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-26T10:24:04.286288+08:00",
       "original_review_log": "logs/deep-review/2026-05-26-10-idle-audit.md"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review Audit] WebView Renderer 退出调用链使用了过期/不存在的 Chromium 源码口径",
+      "material_paths": [
+        "logs/deep-review/2026-05-26-12-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性 (P0)",
+          "location": "L522-L524 Renderer 退出调用链",
+          "detail": "章节写成 AwBrowserTerminator.ProcessTerminationStatus() 再通过 SyncSocket pipe 区分 crash / SIGKILL；当前 Chromium HEAD 的 android_webview/browser/aw_browser_terminator.cc 与 .h 中没有该方法或 SyncSocket 路径，实际由 crash_reporter::ChildExitObserver::TerminationInfo 进入 AwBrowserTerminator::OnChildExit()，再把 info.is_crashed() 传给 OnRenderProcessGone。",
+          "suggestion": "把调用链改为 AwBrowserTerminator::OnChildExit(TerminationInfo) -> OnRenderProcessGone(java_web_contents, info.pid, info.is_crashed()) -> AwRenderProcessGoneDelegate::OnRenderProcessGone(int, bool) -> AwContents.onRenderProcessGone(int, boolean) -> WebViewClient.onRenderProcessGone()；删除 ProcessTerminationStatus / SyncSocket pipe 表述，并标注基于 Chromium HEAD。"
+        },
+        {
+          "type": "版本差异 (P2)",
+          "location": "L655-L662 Renderer 模型版本差异表",
+          "detail": "表格第一行把 Android 7-8 (API 24-26) 归为 In-process renderer，第二行又把 Android 8-10 (API 26-29) 归为 Out-of-process renderer，API 26 同时落入两行。正文前文已经说明 Android 8.0 起引入 OOP renderer、O-Q 低内存 32-bit 设备可能回退 in-process，因此表格会误导 Android O 设备的 trace 判断。",
+          "suggestion": "把第一行收窄为 Android 7.x / API 24-25；第二行保留 Android 8-10 / API 26-29，并明确默认 OOP + 低内存 32-bit fallback；Android 11+ 保持全部设备默认 OOP。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-05-26T12:34:27+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
