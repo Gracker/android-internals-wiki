@@ -3798,3 +3798,163 @@
 - **问题**：交叉引用之后仍保留 `<!-- AIW-源码调研... -->`、`源码调研补充`、`调研目标`、`注入时间`、`价值` 等素材归档和编辑痕迹；这部分还混有重复技术说明与待验证素材，不适合进入发布稿正文。
 - **建议**：Task2B 将可用技术点整合进 BLAST、Compose、ART GC 相关正文小节；重复或过期素材移出正文，只保留正式参考资料和必要待验证标注。
 - **review 日志**：logs/review/2026-05-26-05-review.md
+
+## [Task14 参考书扫描] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-26
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md]
+- **建议补充**：ARM32 三级流水线与 $PC=$PC+8 对 Inline Hook 跳转指令构造的影响（LDR PC, [PC, #offset-4]）；Trap Hook 中 longjmp 跳出 async-signal-safe 环境的实践技巧；Facebook Profilo 通过 SIGPROF 信号实现卡顿监控的具体机制
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-26
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 40.md]
+- **建议补充**：Cocos 引擎节点树架构（Scene/Layer/Sprite）与游戏帧渲染循环（用户输入→动画计算→逻辑执行→UI 树遍历→OpenGL 绘制）；Draw Call 优化（合图 batching、CCRenderTexture 减少 Draw Call）；精灵池复用与场景切换纹理释放策略
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 25.6 APK 体积分析与瘦身 — 2026-05-26
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 40.md]
+- **建议补充**：游戏资源 PNG Alpha 通道分离压缩方案（RGBA→Alpha 存 PNG8 + RGB 存 JPG，压缩率约 70%），适用于游戏和富媒体应用的图片资源瘦身场景
+- **参考书覆盖深度**：概述
+
+
+## Task 2A 缺口挖掘检查记录 — 2026-05-26 08:18 Asia/Shanghai
+
+本轮 Phase 0 未发现 `status: draft` 且正文实质内容少于 15 行的章节。
+
+本轮进入 Phase 1 后检查了以下方向，未发现评分 >= 14 且尚未覆盖的新增小节候选：
+
+- `metadata/source-index.json`：存在若干历史未映射高分素材，但与 SUMMARY 对照后，ADPF、RenderEffect、16KB Page、KOOM、sched_ext、WebView Renderer、BufferQueue、ApplicationExitInfo、DeliQueue、Android Performance Analyzer 等主题已经落入现有章节或 review/queue 管线。
+- 最近研究素材：Perfetto v53/v54、Frame Timeline、Compose Pausable Composition、View 层级优化分别已由 ch13、ch14、ch02、ch07/ch22 覆盖，适合作为现有章节补充素材，不适合新建小节。
+- 最近 3 天每日信息：2026-05-26 的 Clove/CXL 托管运行时对象级内存管理论文与 ART 有启发关系，但移动端硬件前提和 Android 官方/AOSP 证据不足，评分 13/20，先不创建章节。
+- 官方文档对照：Android 17 `static final` 不可修改、MessageQueue 无锁实现、ProfilingManager triggers、本地网络权限、后台音频限制、allow-while-idle listener alarm 等已由 16.5、1.13、26.12、24.16、25.17、25.20 等章节覆盖。
+- AOSP/系统组件对照：`installd`、`vold`、`netd`、StatsD、UprobeStats、MediaProvider、Credential/Keystore、Bluetooth/Wi-Fi 等核心性能相关组件已有章节覆盖；Health Connect、NFC、UWB、Vibrator/Haptics 等方向本轮未形成“素材丰富度 + 性能相关性 + 读者需求”均达标的独立小节。
+
+结论：本轮不创建新章节。下一轮可继续从 `research-gaps.md` 的高分参考书补充项中判断是否需要拆分独立小节，但优先作为既有章节补充素材处理。
+
+## Task 2A 缺口挖掘检查记录 — 2026-05-26 09:13 Asia/Shanghai
+
+本轮 Phase 0 未发现 `status: draft` 且正文实质内容少于 15 行的章节。
+
+本轮进入 Phase 1 后检查了以下方向，未发现评分 >= 14 且尚未覆盖的新增小节候选：
+
+- `metadata/source-index.json`：存在历史未映射高分素材（脚本复核到 222 条），但与 SUMMARY 对照后，Perfetto SPAN_JOIN、MTE ASYMM、ProfilingManager 版本化诊断、Android 17 NPU、ADPF + 协程、DeliQueue、云端 Profile / SDM、Android Performance Analyzer、ApplicationExitInfo、BufferQueue、Binder Freezer 等主题已经落入现有章节或 review/queue 管线。
+- 最近研究素材：Perfetto v53/v54、Frame Timeline、Compose Pausable Composition、View 层级性能已由 13.12、13.14/13.15、2.4/22.3、7.12/22.1 等章节覆盖，适合作为既有章节补充素材，不适合新建小节。
+- 最近每日信息：2026-05-26 的 Clove/CXL 托管运行时对象级内存管理论文对 ART 内存布局有启发，但移动端硬件前提、Android 官方/AOSP 证据和读者需求不足，评分 13/20，未创建章节。
+- 官方文档对照：Android performance overview / inspect / improve / App Performance Score / Android 16 behavior changes 已由 21、22、25、26 章和 16.5 覆盖；新出现的信息更适合作为既有章节的事实更新。
+- AOSP/系统组件对照：Notification、Connectivity、netd/DnsResolver、Wi-Fi、Bluetooth、Media、vold/FUSE、StatsD、Credential/Keystore、Biometric 等核心性能相关组件已有覆盖；Health Connect、NFC、UWB、Haptics 等方向本轮未形成素材丰富度、性能相关性和读者需求同时达标的独立小节。
+
+候选评估：
+
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 处理 |
+|---|---:|---:|---:|---:|---:|---|
+| Clove / CXL 托管运行时对象级内存管理映射 ART | 3 | 3 | 2 | 5 | 13 | 暂不创建，记录观察 |
+| Perfetto v53/v54 pprof、Simpleperf、Jank CUJ、heap_graph_stats | 5 | 5 | 5 | 5 | 已覆盖 | 13.12 / 13.14 / 13.15 已收纳 |
+| Android Performance Analyzer / Agent 化分析 | 5 | 4 | 4 | 5 | 已覆盖 | 14.18 / 14.19 / 13.18 已收纳 |
+| Health Connect / sensor 权限变更 | 2 | 2 | 2 | 5 | 11 | 性能相关性不足 |
+| NFC / UWB / Haptics 系统组件 | 2 | 2 | 2 | 3 | 9 | 素材和读者需求不足 |
+
+结论：本轮不创建新章节，不更新 `src/`、`SUMMARY.md`、`progress.json` 或 `queue.json`。下一轮继续优先处理空 draft；若仍无空 draft，可从 `research-gaps.md` 的高分项继续判断是否需要拆分独立小节。
+
+
+## [Task2A Gap Scan] 2026-05-26 10:04 — 未创建新章节
+- **类型**：知识缺口检查记录
+- **检查结果**：未发现评分 >= 14 且尚未被 SUMMARY.md 覆盖的可创建小节。
+- **已覆盖高分方向**：Android Performance Analyzer → 14.18；版本化线上诊断 / ProfilingTrigger / ApplicationStartInfo → 26.12、26.13、8.10；DeliQueue / RecyclerView 预取 → 22.16、7.8；Android XR 空间 UI 性能 → 18.22。
+- **未录入方向**：Clove / CXL 对象级内存热度管理对 ART 有研究启发，但目前只有单篇论文和间接 Android 推演，缺少 AOSP / 官方文档 / 实机材料支撑，评分 11/20。
+- **下轮建议**：优先扫描 `status: draft` 章节；若继续挖掘，避开上述已覆盖方向，转向 source-index 中尚未映射且能落到现有性能章节的多素材簇。
+
+## [Task9 Idle Audit] 15.4 竞品分析方法 — 2026-05-26
+- **类型**：版本差异
+- **位置**：am start -W 计算逻辑部分
+- **问题**：Android 14+ 中 am start -W 的 WaitTime 计算可能因前台服务启动流程优化而略有变化，章节未说明
+- **建议**：补充说明 Android 14+ 中 am start -W WaitTime 计算的具体变化，以及这对竞品对比的影响
+
+
+
+## [Task2A 知识缺口挖掘] 2026-05-26 11:04
+- **结论**：本轮无评分 >= 14 的新章节候选，未创建章节。
+- **已检查方向**：
+  - 空 draft 章节：0 个。
+  - Android 16 system-triggered profiling、ApplicationStartInfo：已覆盖在 §26.12、§26.13。
+  - Baseline Profile / Startup Profile 最新官方文档：已覆盖在 §21.12、§19.15。
+  - MTE ASYMM / memtagMode 官方文档：已覆盖在 §20.11、§20.13。
+  - Private Space / 应用锁兼容性：已覆盖在 §17.7。
+  - Android Performance Analyzer：已覆盖在 §14.18。
+  - Clove / CXL 对象级托管运行时内存管理：素材新但与移动端 Android 当前落地距离较远，暂不建章，后续如出现 ART 或 Android 平台实现再评估。
+- **候选评分**：
+  - Clove/CXL 托管运行时内存分层：12/20（素材 3、相关性 2、读者需求 3、时效 4）。
+  - MTE ASYMM 应用侧治理：13/20（素材 4、相关性 4、读者需求 3、时效 2；已存在章节覆盖）。
+  - Baseline/Startup Profile 调试：13/20（素材 4、相关性 4、读者需求 4、时效 1；已存在章节覆盖）。
+
+## [Task2A 知识缺口挖掘] 2026-05-26 12:12
+- **结论**：本轮无评分 >= 14 且尚未被 `SUMMARY.md` 覆盖的新章节候选，未创建章节。
+- **Phase 0**：未发现 `status: draft` 且正文实质内容少于 15 行的章节。
+- **source-index**：未映射高分素材主要集中在 Android Performance Analyzer、版本化线上诊断、Android 17 NPU、DeliQueue、云端 Profile、ApplicationExitInfo、Binder Freezer 等方向；与目录对照后，均已落入 14.18、14.19、26.12、26.13、5.14、22.16、21.11、1.18 等章节或现有 review/queue 管线。
+- **最近素材/每日信息**：2026-05-26 Clove/CXL 托管运行时对象级内存管理对 ART 内存分层有研究启发，但缺少 Android 官方/AOSP 落地证据，评分 12/20，不建章。
+- **官方文档对照**：Android 16 system-triggered profiling、JobScheduler pending reasons、Android 17 ECH/local network/background audio 等已由 26.12、25.14、24.16/24.18、25.17 等章节覆盖。
+- **AOSP/组件对照**：Notification、Connectivity、netd/DnsResolver、Wi-Fi、Bluetooth、Media、vold/FUSE、StatsD、Keystore/KeyMint、Biometric 等核心性能相关组件已有章节覆盖；Health Connect、NFC、UWB、Haptics 本轮未达到素材丰富度、性能相关性和读者需求同时达标。
+- **下轮建议**：继续优先扫描空 draft；若仍进入挖掘模式，避开 Android 16/17 行为变更重复选题，优先从 `research-gaps.md` 中能形成多素材簇的应用层治理题拆分。
+
+
+
+## [Task2A Gap Mining] 2026-05-26 13:04
+- **模式**：Phase 1 知识缺口挖掘；Phase 0 未发现 `status: draft` 且正文实质内容 < 15 行的章节。
+- **已检查方向**：高分未映射素材、最近 5 个 research-feeds、最近 3 个 daily-info、Android 16 官方性能/电量文档、AOSP/系统服务方向、既有章节扩展点。
+- **评分未通过候选**：
+  - Clove 对象级 CXL 托管运行时内存管理：12/20。素材新，但 Android 直接落点弱，当前更适合作为 4.3/4.8/21.x 的研究备注。
+  - Android Vitals 后台移动网络指标：13/20。官方素材明确，但 26.15、26.17、24.15 已覆盖指标归因、线上网络质量和网络请求治理。
+  - Android Vitals partial wake lock / stuck wake lock 指标：已覆盖。25.19 已有独立章节，25.3 覆盖 WakeLock/Alarm 管理。
+  - Android 16 JobScheduler quota / pending reasons / abandoned job stop reason：已覆盖。25.13、25.14、25.15 和 5.10 已覆盖后台任务配额、调试和调度边界。
+  - Android 16 ProfilingManager system-triggered profiling、ApplicationStartInfo getStartComponent、ADPF Headroom API、ARR：已覆盖。对应 19.16、26.12、26.13、5.9、25.16、2.18、2.23。
+  - Telephony/NFC/Notification/Biometric/Connectivity 等服务结构缺口：多数已有章节或性能主线不足；本轮未达到独立建节阈值。
+- **结论**：本轮未发现评分 ≥14 且未被现有章节覆盖的知识缺口，未创建新章节。
+- **参考源**：Android 16 features；Android 16 behavior changes all apps；Android Vitals excessive partial wake locks；Android Vitals background mobile network usage；本地 `intake/daily-info/2026-05-26.md`。
+
+## [Task9 Deep Review Audit] 15.6 性能测试最佳实践 — 2026-05-26
+- **类型**：源码准确性
+- **位置**：L228-L230、L257 Android 16 后台 dexopt shell / ART Service 源码锚点
+- **问题**：Android 16 中 `pm bg-dexopt-job --cancel/--disable/--enable` 先由 `PackageManagerShellCommand.runArtServiceCommand()` 兼容转发，再进入 `art/libartservice/service/java/com/android/server/art/ArtShellCommand.java` 解析 shell 选项；具体 `--disable` 调用 `ArtManagerLocal.unscheduleBackgroundDexoptJob()`、`--cancel` 调用 `cancelBackgroundDexoptJob()`。当前章节只列 `PackageManagerShellCommand.java` 和 `ArtManagerLocal.java`，读者按源码锚点排查 shell 参数语义时会漏掉 `ArtShellCommand.java`。
+- **建议**：在正文“Android 16 中...”和“环境控制的源码锚点”里补 `ArtShellCommand.java`，区分 `PackageManagerShellCommand` 兼容命令入口、`ArtShellCommand` shell 分发、`ArtManagerLocal` 执行 API。
+
+
+## [Task2A Gap Mining] 2026-05-26 14:13
+
+- **Phase 0**：扫描 `src/` 后未发现 `status: draft` 且正文实质内容 < 15 行的空 draft 章节。
+- **source-index / research-feeds**：Perfetto v53/v54、MessageQueue / DeliQueue、Android 17 ECH / Local Network / Background Audio、Clove / CXL 等方向已检查；Perfetto 与 Android 17 行为变化已有对应章节或回炉队列承接，Clove / CXL 与 Android 当前落地距离较远。
+- **官方文档对照**：Android 17 MessageQueue lock-free、Background Audio Hardening、`ACCESS_LOCAL_NETWORK`、ECH / `domainEncryption`、Android 16 edge-to-edge / predictive back、大屏 resizability 等均已有章节覆盖或相邻章节承接。
+- **候选评分**：
+  - Clove / CXL 托管运行时对象级内存管理映射 ART：12/20。素材新，但缺少 Android 官方 / AOSP 落地证据，不建章。
+  - Android 17 MediaRecorder constant quality video recording：13/20。官方素材新，但更偏媒体能力补充，可并入 8.8 / 18.23 / 14.9，不独立建章。
+  - Android 17 CP2 严格 SQL / PII 字段限制：11/20。安全和兼容性为主，性能主线弱，不建章。
+- **结论**：本轮未发现评分 ≥ 14 且未被现有章节覆盖的知识缺口，未创建新章节。
+
+
+## [Task2A Gap Mining] 2026-05-26 15:04 — 知识缺口挖掘扫描记录
+
+### 扫描范围
+- source-index.json: 1130 素材条目，0 条高质量未映射（所有 quality_score≥16 素材均已映射到现有章节）
+- AOSP 结构对照: frameworks/base 核心服务（AMS/PMS/SF/InputDispatcher/WMS/ConnectivityService/SensorService/vold/Netd/ProfilingManager/NotificationManager）均已覆盖
+- Android 17 新特性: TRIGGER_TYPE_ANOMALY（6 章覆盖）、PowerPolicy hint（5 章覆盖）、App Memory Limits（3 章覆盖）、MessageQueue 行为变更（2 章覆盖）、Post-quantum crypto（非性能主题）
+- research-gaps.md: 836 行，全部为现有章节的验证/补充需求，无独立成节的高分候选
+- research-feeds: 最近 5 个文件（2026-04-08 至 2026-04-14），内容已映射到现有章节
+- suggestions.md: 3931 行历史记录，全部为 Task6/Task9 反馈，指向现有章节修复
+
+### 候选评估
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 结论 |
+|---------|------|--------|------|------|------|------|
+| Android 17 Anomaly Detection 独立章节 | 3 | 4 | 3 | 5 | 15 | 已在 26.12/8.10 覆盖，不重复创建 |
+| PowerPolicy hint WorkRequest | 3 | 4 | 3 | 4 | 14 | 已在 25.16/5.10 覆盖 |
+| NotificationManager 性能 | 2 | 3 | 3 | 2 | 10 | <14 |
+| KMP/Kotlin Multiplatform 性能 | 3 | 3 | 4 | 4 | 14 | 素材不足支撑独立章节，适合作为 19.26 扩展 |
+| Android Automotive 性能 | 2 | 2 | 2 | 3 | 9 | <14 |
+| DownloadManager 性能 | 1 | 2 | 2 | 1 | 6 | <14 |
+| Telephony/RIL 性能 | 1 | 2 | 2 | 2 | 7 | <14 |
+
+### 结论
+本轮未发现评分 ≥ 14 的知识缺口（排除已在现有章节覆盖的方向）。全书 373 章节，覆盖度极高。
+
+### 下一轮建议
+- 关注 Android 17 正式版发布后的新 API 补充
+- 关注 KMP 稳定后可能涌现的性能实践素材
+- 关注端侧 AI（Gemini Nano / on-device LLM）的性能治理素材积累
