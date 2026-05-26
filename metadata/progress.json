@@ -2959,12 +2959,18 @@
     },
     "18.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-13T17:55:27+08:00",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "queue_priority": 85,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
+      "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
+      "last_task2b_note": "Task2B Lite 修复 FrameTimeline fallback、ASurfaceControl release/display-tree 边界和 ch18->ch02 交叉引用。"
     },
     "19.13": {
       "status": "ready-for-review",
@@ -8521,15 +8527,15 @@
   },
   "task2b_lite_daily": {
     "2026-05-27": {
-      "sections_processed": 2,
-      "items_completed": 2
+      "sections_processed": 3,
+      "items_completed": 3
     }
   },
-  "last_task2b_lite_at": "2026-05-27T05:51:00+08:00",
+  "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
   "last_task2b_lite_sections": [
-    "1.2"
+    "18.10"
   ],
   "last_task2b_lite_files": [
-    "src/part1-fundamentals/ch01-architecture/02-boot-process.md"
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ]
 }
