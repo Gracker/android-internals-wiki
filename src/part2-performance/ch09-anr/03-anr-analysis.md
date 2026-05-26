@@ -51,6 +51,7 @@ task9_state: reviewed
 pipeline_stage: ready-to-publish
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T20:05:00+08:00"
+last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-20-review.md"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
 last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
@@ -95,11 +96,11 @@ ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同�
 
 [已验证：官方文档， developer.android.com/topic/performance/anrs]
 
-当 ANR 发生时，系统会通过发送 `SIGQUIT` 信号给目标进程，触发 ART 虚拟机 dump 所有线程的调用栈。这份输出就是 traces.txt。在较新的 Android 版本中，我们可以通过 `adb bugreport` 获取，也可以直接从设备的 `/data/anr/` 目录拉取。
+当 ANR 发生时，系统会通过发送 `SIGQUIT` 信号给目标进程，触发 ART 虚拟机 dump 所有线程的调用栈。这份输出就是 traces.txt。在较新的 Android 版本中，可以通过 `adb bugreport` 获取，也可以直接从设备的 `/data/anr/` 目录拉取。
 
 ### traces.txt 的结构
 
-一份典型的 traces.txt 以 ANR 进程的 PID 和触发原因开头，后面跟着进程中每一个线程的详细信息。我们最关心的是主线程（通常名为 `"main"`）的段落。
+一份典型的 traces.txt 以 ANR 进程的 PID 和触发原因开头，后面跟着进程中每一个线程的详细信息。最先关注的是主线程（通常名为 `"main"`）的段落。
 
 下面是一段主线程处于空闲等待状态的 trace（这是正常的）：
 
@@ -122,7 +123,7 @@ ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同�
 
 [来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
-这段 trace 告诉我们：主线程停在 `nativePollOnce`，也就是在 `Looper` 中等待下一条 Message。这是正常状态——如果 ANR 时主线程显示的是这个堆栈，说明 ANR 发生的时刻主线程并没有在执行耗时操作，问题很可能出在别的地方。
+这段 trace 表明：主线程停在 `nativePollOnce`，也就是在 `Looper` 中等待下一条 Message。这是正常状态——如果 ANR 时主线程显示的是这个堆栈，说明 ANR 发生的时刻主线程并没有在执行耗时操作，问题很可能出在别的地方。
 
 ### 头部元数据字段
 
@@ -164,7 +165,7 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
   - waiting to lock <0x0e57c91f> (a java.lang.Object) held by thread 89
 ```
 
-这里的信息非常明确：主线程在等待一个 Object 锁（地址 `0x0e57c91f`），而这个锁被线程 89 持有。接下来我们需要在 trace 文件中搜索 `tid=89`，看看那个线程在做什么——如果它也在等主线程持有的锁，那就是死锁；如果它在做耗时操作，那就是锁竞争导致的阻塞。
+这里的信息非常明确：主线程在等待一个 Object 锁（地址 `0x0e57c91f`），而这个锁被线程 89 持有。下一步是在 trace 文件中搜索 `tid=89`，检查那个线程在做什么——如果它也在等主线程持有的锁，那就是死锁；如果它在做耗时操作，那就是锁竞争导致的阻塞。
 
 ### 线程状态对照
 
@@ -185,7 +186,7 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 [来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Android-ANR-03-ANR-Case-Share.md]
 
-traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是一个时间点的快照。Perfetto 补上的是 ANR 前后一段时间内的过程视角：主线程什么时候开始忙、什么时候被调度、什么时候恢复空闲，都需要回到时间线里看。
+traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个时间点的快照。Perfetto 补上的是 ANR 前后一段时间内的过程视角：主线程什么时候开始忙、什么时候被调度、什么时候恢复空闲，都需要回到时间线里看。
 
 ### 抓取包含 ANR 的 Perfetto Trace
 
@@ -221,11 +222,11 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 
 分析 ANR 的核心思路是区分"应用的问题"还是"系统的问题"。这个判断会直接决定后续的优化方向。
 
-ANR 的根因可以归为三类：主线程被阻塞（等着拿不到的东西）、主线程在干不该干的事（I/O、计算）；主线程拿不到 CPU（别人占着）。下面的分类就是按照这三种模式展开的，每一类都有对应的 trace 特征和排查路径。
+ANR 的根因可以归为三类：主线程被阻塞（等着拿不到的东西）、主线程在干不该干的事（I/O、计算）；主线程拿不到 CPU（别人占着）。后面的分类按照这三种模式展开，每一类都有对应的 trace 特征和排查路径。
 
 ### 死锁
 
-死锁是最容易排查的 ANR 类型。在 traces.txt 中，主线程的状态为 `Blocked`，trace 会明确告诉我们"waiting to lock <地址> held by thread X"。
+死锁是最容易排查的 ANR 类型。在 traces.txt 中，主线程的状态为 `Blocked`，trace 会明确给出"waiting to lock <地址> held by thread X"。
 
 排查步骤：
 1. 找到主线程 trace 中的 `waiting to lock` 信息
@@ -249,7 +250,7 @@ SharedPreferences 容易踩一个坑：`apply()` 看起来是异步的，但在 
 
 主线程通过 Binder 与 system_server 或其他进程通信时，如果对端处理慢或线程池满了，主线程就会被阻塞。在 trace 中，堆栈通常包含 `Binder.proxyXXX`、或 native 层的 `IPCThreadState::waitForResponse`。
 
-系统日志中的 `binder_sample` 条目能直接告诉我们哪个 Binder 调用耗时多久：
+系统日志中的 `binder_sample` 条目能直接给出哪个 Binder 调用耗时多久：
 
 ```text
 binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.community,100]
@@ -349,7 +350,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 **第六步：得出结论。** 综合判断是应用问题、系统问题、还是两者叠加。
 
-**重要提示（Android 14+）**：ANR trace 中出现的非主进程堆栈来源由 `ProcessErrorStateRecord.appNotResponding()` 中的 `firstPids` / `lastPids` / `nativePids` 三组列表决定。`firstPids` 包含 ANR 目标进程、parent 进程、system_server、persistent 进程、top-app IME 以及按 CPU 占用排序的热点进程；`lastPids` 包含被收集了 Binder 对端 pid 的进程；`nativePids` 是 native daemon 列表。因此 trace 中出现其他进程的堆栈，不一定是 Binder 对端——可能是 parent、system_server、IME、CPU 热点进程或 native daemon。排查时应先按分组判断来源，只有在线程栈、Binder 日志或调用链能闭合时，再判定为对端因果进程。
+**Android 14+ trace 分组边界**：ANR trace 中出现的非主进程堆栈来源由 `ProcessErrorStateRecord.appNotResponding()` 中的 `firstPids` / `lastPids` / `nativePids` 三组列表决定。`firstPids` 包含 ANR 目标进程、parent 进程、system_server、persistent 进程、top-app IME 以及按 CPU 占用排序的热点进程；`lastPids` 包含被收集了 Binder 对端 pid 的进程；`nativePids` 是 native daemon 列表。因此 trace 中出现其他进程的堆栈，不一定是 Binder 对端——可能是 parent、system_server、IME、CPU 热点进程或 native daemon。排查时应先按分组判断来源，只有在线程栈、Binder 日志或调用链能闭合时，再判定为对端因果进程。
 
 线上排查不一定按六步机械执行。经验丰富的工程师通常会先快速扫描 traces.txt 主线程堆栈和 CPU 使用率（第三步和第四步），形成初步假设，再根据假设决定深入哪个方向。完整流程的价值是避免漏掉关键线索，尤其是线上偶现 ANR 这种“可能只有一次机会拿到日志”的场景。
 
@@ -361,7 +362,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 **ApplicationExitInfo 主路径**（Android 11+）：线上先调用 `ActivityManager.getHistoricalProcessExitReasons()` 拉取最近的进程退出记录，再筛出 `ApplicationExitInfo.reason == REASON_ANR` 的条目，并通过 `getTraceInputStream()` 读取系统在进程死亡前保存的 ANR trace。这个入口不需要拦截 `SIGQUIT`，适合做合规的离线回捞；边界是它拿到的是该进程的历史 trace 子集，不等于一份完整的 bugreport。
 
-下面这段 Kotlin 代码只演示 Android 11+ 的最小回捞流程，重点看 `getHistoricalProcessExitReasons()`、`REASON_ANR` 和 `getTraceInputStream()` 三个入口：
+这段 Kotlin 代码只演示 Android 11+ 的最小回捞流程，重点看 `getHistoricalProcessExitReasons()`、`REASON_ANR` 和 `getTraceInputStream()` 三个入口：
 
 ```kotlin
 val am = context.getSystemService(ActivityManager::class.java)
@@ -381,7 +382,7 @@ anrExit?.getTraceInputStream()?.use { input ->
 
 **Perfetto 系统触发式追踪**：`ProfilingManager` 是 Android 15（API 35）新增的 profiling 服务，先提供 `requestProfiling()` 和 `registerForAllProfilingResults()` 这类基础能力；到 Android 16（API 36），再加入 `ProfilingTrigger.TRIGGER_TYPE_ANR`、`ProfilingTrigger.Builder` 和 `addProfilingTriggers()`，应用才可以把“发生 ANR 时抓一份系统 trace”注册给系统。
 
-下面这段 Kotlin 代码展示 Android 16+ 的注册流程，重点看全局结果回调和 `TRIGGER_TYPE_ANR` 的绑定关系：
+这段 Kotlin 代码展示 Android 16+ 的注册流程，重点看全局结果回调和 `TRIGGER_TYPE_ANR` 的绑定关系：
 
 ```kotlin
 if (Build.VERSION.SDK_INT >= 36) {
