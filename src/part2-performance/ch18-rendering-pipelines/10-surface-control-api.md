@@ -23,17 +23,18 @@ related_chapters:
 - '18.13'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-last_task2b_at: '2026-05-06T19:28:51+08:00'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+last_task2b_at: '2026-05-27T07:44:00+08:00'
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 last_task9_at: '2026-05-13T17:55:27+08:00'
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed-lite
+last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 task9_review_notes: '2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。
@@ -341,7 +342,7 @@ static size_t chooseFrameTimeline(
             return i;
         }
     }
-    return preferred;
+    return count - 1;
 }
 
 static void onVsync(const AChoreographerFrameCallbackData* data, void* userData) {
@@ -439,7 +440,9 @@ ASurfaceControl* sc = ASurfaceControl_create(parent, "layer");
 ASurfaceControl_release(sc);
 ```
 
-不释放的直接后果是 Layer 节点仍留在 SurfaceFlinger 里，长时间运行后会表现为 Layer 树越来越大，排查时 `dumpsys SurfaceFlinger --list` 里会看到同类节点不断累积。[已验证: Android NDK surface_control 文档]
+`ASurfaceControl_release()` 只释放调用方持有的本地引用，不等于把 Layer 从显示树删除。结束显示时，先用 transaction 把目标节点 `reparent` 到 `nullptr` 或隐藏，等待事务边界生效，再释放本地句柄；否则父节点仍显示时，surface 及其子节点可能继续留在屏幕上。[已验证: AOSP android-16.0.0_r1 `surface_control.h` release 注释]
+
+不处理显示树移除和本地引用释放的边界，长时间运行后会表现为 Layer 树越来越大，排查时 `dumpsys SurfaceFlinger --list` 里会看到同类节点不断累积。[已验证: Android NDK surface_control 文档]
 
 ### AHardwareBuffer 生命周期
 
@@ -696,6 +699,6 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 > - SurfaceView 的 SurfaceControl 集成详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
 > - Vulkan Presentation 与 SurfaceControl 详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
 > - WebView 的多种合成模式详见 [18.13 WebView 渲染路径](13-webview-rendering.md)
-> - BufferQueue 详见 [2.13 图形缓冲区管理 (BufferQueue)](13-buffer-queue.md)
-> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](06-surfaceflinger.md)
-> - Fence 所有权与同步模型详见 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md)
+> - BufferQueue 详见 [2.13 图形缓冲区管理 (BufferQueue)](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
+> - Fence 所有权与同步模型详见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)
