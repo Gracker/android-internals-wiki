@@ -5,8 +5,8 @@ chapter: "1.1"
 section: "1.1"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
+last_verified: "2026-05-27"
+last_verified_against: "AOSP android-11.0.0_r1/android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
 confidence: high
 sources:
   - type: official
@@ -21,6 +21,10 @@ sources:
     path: "https://source.android.com/docs/core/ota/modular-system"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
   - type: blog
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
@@ -32,14 +36,14 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-22"
-task2b_state: pending
-task2b_result: fixed  # 2026-05-22 rework: SF version boundary, memfd claim, SELinux causal
+task2b_state: fixed
+task2b_result: fixed  # 2026-05-27 rework: SurfaceFlinger trace version matrix, 16 KB page-size scope, quantified-data source boundaries
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T04:51:16+08:00"
 task9_review_notes: "2026-05-22 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。SurfaceFlinger trace 名称矩阵漏 Android 11-12；16 KB Page Size Android 16 设备要求口径需修正；量化数据条件补强写入 suggestions。已写入 queue.json。"
@@ -51,6 +55,7 @@ task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-05-22"
 last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
+last_task2b_at: "2026-05-27T04:50:00+08:00"
 ---
 
 # Android 分层架构
@@ -181,7 +186,16 @@ private void run() {
 
 SurfaceFlinger 是一个独立的 Native 进程，它的职责很单一：把各个 App 产生的 Surface 合成为最终的画面，交给屏幕显示。它不属于 SystemServer，但与 SystemServer 中的 WMS 紧密协作——WMS 负责决定窗口的层级和位置，SurfaceFlinger 负责把这些窗口画出来。
 
-SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。Android 16 的主路径切片是 `commit`（WorkloadTracer Commit）→ `composite`（Composition）→ `postComposition`。Android 13–15 同样使用 `SurfaceFlinger::commit()` + `composite()` 路径（命名略有调整），旧版本（Android 10 及之前）的切片名是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。排查时先确认设备版本，再按对应名称搜索。
+SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。不同 Android 版本的主路径切片名不完全相同，排查前先按设备版本选搜索词。
+
+| Android 版本 | Perfetto / ATrace 中优先搜索的 SurfaceFlinger 切片 | 说明 |
+| --- | --- | --- |
+| Android 16 | `commit <vsyncId>` → `composite <vsyncId>` → `postComposition` | `commit()` 负责 layer 状态提交与 WorkloadTracer 记录，`composite()` 进入 CompositionEngine 合成路径。 |
+| Android 13–15 | `commit` / `composite` / `postComposition` | 这几版已经进入 `SurfaceFlinger::commit()` + `SurfaceFlinger::composite()` 的主路径，trace 名称会带或不带 vsync id。 |
+| Android 11–12 | `onMessageInvalidate` → `onMessageRefresh` → `CompositionEngine::present` / `postComposition` | Android 11 和 12 的刷新路径仍由消息驱动，`onMessageRefresh()` 内部组装 `CompositionRefreshArgs` 并调用 CompositionEngine。 |
+| Android 10 及之前 | `onMessageReceived` → `handleMessageRefresh` → `doComposition` → `postComposition` | 旧路径仍能在历史设备或旧 trace 中看到，不能直接套用 Android 13+ 的 `commit` / `composite` 搜索词。 |
+
+[已验证: AOSP android-11.0.0_r1 / android-12.1.0_r1 / android-13.0.0_r1 / android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
 ### Zygote：应用进程 fork 入口
 
@@ -238,11 +252,16 @@ Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack �
 
 [已验证: 官方文档, https://source.android.com/docs/core/ota/modular-system]
 
-### 16 KB Page Size 对 Android 16 的影响
+### 16 KB Page Size 的版本边界和兼容性影响
 
 > **版本澄清**：16 KB Page Size 特性由 **Android 15** 引入（Android 16 继续完善）。Android 16 的主要变化是要求部分设备必须支持 16 KB Page Size，而非重新引入该特性。
 
-Android 15 引入了 16 KB 页大小支持（传统是 4 KB），Android 16 在此基础上继续完善。更大的页意味着页表项减少约 75%，TLB 命中率提升，对大块连续内存访问（如 GPU Buffer）有正面影响，但也会增加内存碎片和小对象的内存浪费。Google 报告的数据：应用启动平均提升 3.16%，系统启动缩短约 0.8 s，内存开销增加约 9%。Thread Local Storage（TLS）的缓冲区做了专项优化，将其隔离到专用内存页面，减少了对整体内存的消耗。
+Android 15 开始，AOSP 支持构建 16 KB page-size 的 Android；Android 16 继续补齐构建期和设备侧校验，例如 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 可在构建时检查 prebuilt ELF 对齐，`ro.product.page_size` / `ro.product.cpu.pagesize.max` 等属性可用于判断设备配置。Google Play 的要求又是另一层：自 2025-11-01 起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新需要支持 16 KB page size。这三件事分别属于 AOSP 构建能力、设备配置校验和应用发布兼容性，不能混成“Android 16 强制所有设备切到 16 KB”。
+
+更大的页会减少页表项数量，通常有利于 TLB 命中和大块连续内存访问；代价是小块 `mmap` / 文件映射 / native 堆分配更容易产生页内浪费。Android Developers 兼容性页给出的初始测试数据包括：内存压力下应用启动平均降低 3.16%，启动过程功耗平均降低 4.56%，系统启动时间平均改善 8%（约 950 ms）。这些数字来自 Google 初始测试，设备、工作负载和内核配置会影响结果；正文不再把未给出清晰来源的“内存开销约 9%”写成稳定结论。排查时用 `adb shell getconf PAGE_SIZE` 确认运行页大小，用 `zipalign -c -P 16 -v 4 APK_NAME.apk` 和 ELF alignment 检查确认应用侧兼容性。
+
+[已验证: Android Developers, https://developer.android.com/guide/practices/page-sizes]
+[已验证: AOSP, https://source.android.com/docs/core/architecture/16kb-page-size/16kb]
 
 ## 从性能视角看分层：瓶颈热点的分布
 
@@ -311,7 +330,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 **Framework 层**主要体现在 `system_server` 进程中。展开它会看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，Trace 中会出现一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
 
-`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。旧版本（Android 10 及之前）的主路径是 `onMessageReceived` → `handleMessageRefresh` → `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
+`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。Android 13–15 也主要搜索 `commit` / `composite` / `postComposition`；Android 11–12 要改查 `onMessageInvalidate`、`onMessageRefresh`、`CompositionEngine::present` 和 `postComposition`；Android 10 及之前才主要查 `onMessageReceived`、`handleMessageRefresh` 和 `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
 
 **Native/HAL 层**的表现比较分散。Treble 之后的 HAL 服务按传输模式区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到调用方进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在调用方进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
@@ -323,12 +342,12 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 正常 vs 异常的表现对比
 
-**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的合成阶段（Android 13+ 为 `composite`，Android 10 及之前为 `doComposition`）耗时稳定。
+**正常情况：** App 主线程的 `doFrame()` 在每个 VSync 周期内完成（16.6 ms @60 Hz 或 8.3 ms @120 Hz）。Binder 调用箭头短而快。SurfaceFlinger 的合成阶段耗时稳定：Android 13+ 常看 `composite`，Android 11–12 常看 `onMessageRefresh` / `CompositionEngine::present`，Android 10 及之前常看 `doComposition`。
 
 **异常情况（举例）：**
 - 如果 App 主线程出现长时间 "Runnable" 但没有 CPU 切片，说明线程已经就绪但迟迟没拿到 CPU——可能是 CPU 被其他高优先级线程占满，或者系统处于 Thermal 降频状态。
 - 如果 App 主线程的 Binder 调用箭头指向 `system_server` 后长时间没有返回，说明 SystemServer 在处理请求时被其他工作阻塞——可能是锁竞争，也可能是某个服务初始化慢。
-- 如果 `surfaceflinger` 的合成阶段（Android 13+ `composite` / Android 10 及之前 `doComposition`）突然变长，可能是新增了一个复杂的 Surface（比如 Dialog 弹出），或者 GPU 驱动进入了低功耗模式需要唤醒。
+- 如果 `surfaceflinger` 的合成阶段突然变长，先按版本确认切片名，再判断是否新增了复杂 Surface（比如 Dialog 弹出）、HWC 回退到 client composition，或者 GPU 驱动进入低功耗模式后需要唤醒。
 
 [待补充：Trace 截图——正常帧 vs 掉帧对比]
 
@@ -448,4 +467,3 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 <!-- AIW-源码调研-2026-04-19 -->
 - **2026-04-19**: 源码调研「SELinux 开销对 Binder 性能的影响」已完成。发现：SELinux 通过 `selinux_binder_transaction()` 钩子对每次 Binder transaction 执行 `avc_has_perm()` 检查；AVC 缓存使稳态开销极低（~50-200 ns/次）；Android 8+ Treble 三路 binder 设备隔离设计降低了跨域误用风险。报告：`OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-19-selinux-binder-performance-overhead.md`
-
