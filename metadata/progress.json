@@ -256,7 +256,8 @@
     "22.17",
     "8.13",
     "22.18",
-    "22.19"
+    "22.19",
+    "9.1"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -346,25 +347,22 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md",
     "src/part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md",
-    "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md"
+    "src/part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md",
+    "src/part2-performance/ch09-anr/01-anr-design.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "last_review_at": "2026-05-26T05:09:00+08:00",
+    "last_review_at": "2026-05-26T20:08:00+08:00",
     "sections": [
-      "4.9",
-      "18.2",
-      "18.17"
+      "9.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      "src/part2-performance/ch09-anr/01-anr-design.md"
     ],
-    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
-    "small_fixes": 2,
-    "rework_items": 1,
-    "log": "logs/review/2026-05-26-05-review.md"
+    "result": "pass-light-edit; existing Task9 pending queue blocks auto-finalize",
+    "small_fixes": 11,
+    "rework_items": 0,
+    "log": "logs/review/2026-05-26-20-review.md"
   },
   "issues_by_section": {
     "1.6": {
@@ -1964,7 +1962,15 @@
       "reviewed_at": "2026-05-25T16:22:00+08:00",
       "log": "logs/deep-review/2026-05-25-16-deep-review.md",
       "summary": "P0/P1 0；P2 1：Android 10/13 ANR trace 存储演进口径需补源或去重；自动晋升 finalized。",
-      "task9_result": "pass-tech-review"
+      "task9_result": "pass-tech-review",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-26T20:08:00+08:00",
+      "task6_log": "logs/review/2026-05-26-20-review.md",
+      "task6_new_rework": false,
+      "auto_finalized": false,
+      "task6_summary": "Task6 revisiting 复审通过；L1/L2 小修 11 处；无新增 L3/L4 回炉项；既有 Task9 pending 队列项阻止自动晋升。"
     },
     "19.24": {
       "p0": 2,
@@ -2000,33 +2006,25 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-26T06:16:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-26T20:08:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-26T05:09:00+08:00",
+    "reviewed_at": "2026-05-26T20:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "4.9",
-      "18.2",
-      "18.17"
+      "9.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md",
-      "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      "src/part2-performance/ch09-anr/01-anr-design.md"
     ],
-    "log": "logs/review/2026-05-26-05-review.md",
+    "log": "logs/review/2026-05-26-20-review.md",
     "mode": "normal-review",
     "results": {
-      "4.9": "pass-light-edit",
-      "18.2": "needs-rework",
-      "18.17": "pass-light-edit"
+      "9.1": "pass-light-edit"
     },
-    "l1_l2_fixes": 2,
-    "new_task6_rework_items": 1,
-    "queue_updates": [
-      "task6-20260526-0509-18.2-source-research-appendix"
-    ],
+    "l1_l2_fixes": 11,
+    "new_task6_rework_items": 0,
+    "queue_updates": [],
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-26",
@@ -5668,34 +5666,29 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-26T04:07:00+08:00",
+  "last_task6_review": "2026-05-26T20:08:00+08:00",
   "last_task6_sections": [
-    "1.7",
-    "11.4"
+    "9.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch09-anr/01-anr-design.md"
   ],
-  "last_task6_at": "2026-05-26T04:07:00+08:00",
+  "last_task6_at": "2026-05-26T20:08:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-26T04:07:00+08:00",
+    "reviewed_at": "2026-05-26T20:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "1.7",
-      "11.4"
+      "9.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "src/part2-performance/ch11-power/04-case-studies.md"
+      "src/part2-performance/ch09-anr/01-anr-design.md"
     ],
-    "log": "logs/review/2026-05-26-04-review.md",
+    "log": "logs/review/2026-05-26-20-review.md",
     "mode": "normal-review",
     "results": {
-      "1.7": "pass-light-edit",
-      "11.4": "pass-light-edit"
+      "9.1": "pass-light-edit"
     },
-    "l1_l2_fixes": 17,
+    "l1_l2_fixes": 11,
     "new_task6_rework_items": 0,
     "queue_updates": [],
     "auto_finalized": []
@@ -5708,11 +5701,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-26T04:07:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-26-04-review.md",
+  "task6_last_review_at": "2026-05-26T20:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-26-20-review.md",
   "task6_last_review_sections": [
-    "1.7",
-    "11.4"
+    "9.1"
   ],
   "sections_status": {
     "22.11": {
@@ -7067,34 +7059,29 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-26T04:07:00+08:00",
+    "reviewed_at": "2026-05-26T20:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "1.7",
-      "11.4"
+      "9.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "src/part2-performance/ch11-power/04-case-studies.md"
+      "src/part2-performance/ch09-anr/01-anr-design.md"
     ],
-    "log": "logs/review/2026-05-26-04-review.md",
+    "log": "logs/review/2026-05-26-20-review.md",
     "mode": "normal-review",
     "results": {
-      "1.7": "pass-light-edit",
-      "11.4": "pass-light-edit"
+      "9.1": "pass-light-edit"
     },
-    "l1_l2_fixes": 17,
+    "l1_l2_fixes": 11,
     "new_task6_rework_items": 0,
     "queue_updates": [],
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch09-anr/01-anr-design.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch09-anr/01-anr-design.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7387,8 +7374,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.7",
-    "11.4"
+    "9.1"
   ],
   "task2b_progress": [
     {
@@ -7417,7 +7403,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-26-04-review.md",
+  "last_task6_review_log": "logs/review/2026-05-26-20-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7984,8 +7970,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-26T04:07:00+08:00",
-  "last_task6_review_section": "1.7,11.4",
+  "last_task6_review_at": "2026-05-26T20:08:00+08:00",
+  "last_task6_review_section": "9.1",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8085,9 +8071,7 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "4.9",
-    "18.2",
-    "18.17"
+    "9.1"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8117,8 +8101,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch09-anr/01-anr-design.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -8281,7 +8264,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-26T05:09:00+08:00",
+  "last_task6_reviewed_at": "2026-05-26T20:08:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
