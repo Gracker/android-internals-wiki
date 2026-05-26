@@ -21,7 +21,7 @@
 
 ## ⚠️ 铁律
 
-1. **只 Review 不修改**——发现问题标注并写入建议，不直接改章节内容；审计结论必须足够具体，能直接指导下一轮精修
+1. **Review 为主，允许高置信局部 auto-fix**——默认发现问题标注并写入建议；但对源码路径/API 名称/版本说明/交叉引用这类可用一手资料立即验证、修改范围很小的问题，可以直接修正文。审计结论必须足够具体，auto-fix 必须可回溯。
 2. **每次 Review 3-4 个章节**，深度优先，默认 3 个；仅当章节都较短、问题较聚焦或属于同一主题簇时处理 4 个。若章节极长、源码链复杂，则降回 2 个
 3. **不重复 Task 6 的工作**——不管措辞、格式、中英文间距、段落流畅度等写作质量问题
 4. **只审技术，不做写作层结论**——源码、原理链、版本差异、数据支撑、知识盲区是你的边界
@@ -47,8 +47,9 @@
 2. 其次选择 `task9_state: pending` 的其他章节
 3. 同优先级时按章节号顺序（1.1 → 1.2 → 2.1...）
 4. 追踪已 Review 章节：在日志中维护，避免重复（同一章节至少间隔 3 天才可重审）
-5. 如果没有可 Review 的章节 → 回复"当前无可 Review 章节"并结束
-6. 当 recent external-review backlog 较多时，优先处理已被 external-review 标记出明确高风险点、且可在 1 轮内完成技术审计闭环的章节
+5. 如果没有可 Review 的章节，先检查 Task2B backlog；当 `task2b_state: pending` 或 `pipeline_stage: task2b_pending` 的章节数 > 20 时，回复"当前无可 Review 章节，Task2B backlog 未清，本轮不做闲时抽检"并结束，避免继续扩大问题单。
+6. 只有 Task2B backlog ≤ 20 时，才允许做 finalized 章节的闲时抽检或 backup 选题。
+7. 当 recent external-review backlog 较多时，优先处理已被 external-review 标记出明确高风险点、且可在 1 轮内完成技术审计闭环的章节
 
 ---
 
@@ -145,7 +146,43 @@
 | **P2 建议改进** | 数据/案例支撑不足、交叉引用不一致、中低优知识盲区 | 写入 intake/suggestions.md |
 | **P3 锦上添花** | 非必要但有价值的信息补充 | 仅记录在日志中 |
 
-### 3a. P0/P1 → 写入 queue.json（自动闭环）
+### 3a. P0/P1 → auto-fix 或写入 queue.json（自动闭环）
+
+先判断是否属于 **高置信局部 auto-fix**：
+
+允许直接修的条件必须同时满足：
+1. 问题可由一手资料立即验证：AOSP / Android 官方文档 / Perfetto 官方文档 / 本地已验证章节。
+2. 修改范围小：单个问题改动不超过 15 行，本轮 auto-fix 总改动不超过 60 行。
+3. 不需要重构章节结构，不新增未经验证的大段技术解释。
+4. 不涉及有争议的设计判断、性能结论或跨版本复杂行为。
+
+可 auto-fix 的典型问题：
+- AOSP 源码路径、类名、方法名、常量名写错。
+- Android 版本号/API level 对应关系写错。
+- 本书内部章节交叉引用路径或标题明显错误。
+- 已有段落里缺少一句必要的版本限定或边界条件。
+- Perfetto 表名/字段名/命令名明显拼错，且官方文档可查。
+
+禁止 auto-fix 的问题：
+- 需要重新做源码级研究才能判断的机制解释。
+- 需要新增整节内容或重写超过一个小节。
+- 只有 external-review 单方判断、未被本轮复核的一手资料支撑。
+- 涉及高爷技术观点取舍的表述。
+
+auto-fix 执行动作：
+1. 直接修改对应章节文件。
+2. 在 deep-review 日志中写明 `AUTO-FIX`、证据来源、改动位置和修改摘要。
+3. 更新 frontmatter：
+   - `task9_result: auto-fixed`
+   - `task9_state: reviewed`
+   - `task2b_state: fixed`
+   - `task6_state: revisiting`
+   - `pipeline_stage: task6_pending`
+   - `last_task9_autofix_at: YYYY-MM-DD`
+4. 不再为该问题写入 queue.json。
+5. 报告里标注「已直接修复，回到 Task6 复审」。
+
+不满足 auto-fix 条件的 P0/P1，按下面规则写入 queue.json：
 
 写入 queue 后，同时在章节 frontmatter 中更新：
 - `task9_result: needs-rework`
