@@ -48,6 +48,9 @@ last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 task2b_result: fixed
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；清理形容词冒号起手句 1 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
+
 ---
 
 

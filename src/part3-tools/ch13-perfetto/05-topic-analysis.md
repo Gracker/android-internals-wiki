@@ -69,6 +69,9 @@ last_task2b_at: "2026-05-19T15:20:11+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-26
+
 ---
 
 # 专题解读
@@ -110,7 +113,7 @@ finalized_by: openclaw-task9-auto-promote
 
 Trace 里通常会同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 在几百毫秒内的密集协作。没有一套清晰的分析顺序，很容易在信息洪流里迷路。
 
-在开始之前，建议先回顾 §1.2 系统启动全流程和 §8.1 响应速度原则，了解冷启动各阶段在系统层面的含义。本节的侧重点是如何用 Perfetto 把这些阶段拆开，逐一测量耗时。
+在开始之前，建议先回顾 §1.2 系统启动全流程和 §8.1 响应速度原则，了解冷启动各阶段在系统层面的含义。以下内容侧重用 Perfetto 把这些阶段拆开，逐一测量耗时。
 
 ### 抓取配置
 
@@ -170,13 +173,13 @@ data_sources {
 
 **第一阶段：Zygote fork**
 
-当 `system_server` 的 `ActivityManagerService` 决定启动一个新进程时，会向 Zygote 发送 socket 请求。Zygote 进程收到请求后执行 fork，产生新的 App 进程。在 Trace 中我们可以这样定位：
+当 `system_server` 的 `ActivityManagerService` 决定启动一个新进程时，会向 Zygote 发送 socket 请求。Zygote 进程收到请求后执行 fork，产生新的 App 进程。在 Trace 中的定位方式如下：
 
 - 在 `system_server` 进程中搜索 `ActivityManagerService` 相关的 Slice，找到 `startProcess` 或 `handleProcessStartedLocked` 调用
 - 在 Zygote 进程（64 位设备上是 `zygote64`）中搜索 `Zygote` 相关的 Slice
 - 新进程出现的时间点可以通过 Process Stats 区域的进程创建事件来确认
 
-`task/task_newtask` 和 `task/task_rename` 这两个 ftrace 事件可以帮助我们精确确认进程创建的时间点。当新进程被创建时，内核会产生 `task_newtask` 事件；当进程从 `zygote64` 改名为目标 App 的包名时，会产生 `task_rename` 事件。
+`task/task_newtask` 和 `task/task_rename` 这两个 ftrace 事件可以精确确认进程创建的时间点。当新进程被创建时，内核会产生 `task_newtask` 事件；当进程从 `zygote64` 改名为目标 App 的包名时，会产生 `task_rename` 事件。
 
 **第二阶段：Application 初始化与 ContentProvider**
 
@@ -209,7 +212,7 @@ fork 完成后，新进程进入 `ActivityThread.main()`，开始执行 `Applica
 
 分析启动 Trace 时，一个高效的切入点是看主线程的 **CPU 状态占比**。在 Perfetto 中选中主线程从进程创建到首帧完成的时间范围，底部信息区会显示这段时间内 `Running`、`Runnable`、`Sleep`、`D`（Uninterruptible Sleep）的占比。
 
-这个占比能直接告诉我们瓶颈在哪里：
+这个占比能直接看出瓶颈所在：
 
 - **Running 占比高但整体很慢**：主线程在做太多事情（通常是 `onCreate` 里塞了太多逻辑），需要拆分或延迟初始化
 - **Runnable 占比高**：主线程已就绪但 CPU 被其他线程抢占，需要看 CPU 摆核和调度情况（参见 §5.1）
@@ -218,11 +221,11 @@ fork 完成后，新进程进入 `ActivityThread.main()`，开始执行 `Applica
 
 [图：冷启动主线程 CPU 状态面板。时间范围从进程创建到首帧上屏，右侧标出 Running / Runnable / S / D 占比，下方同步显示主线程、RenderThread、关键 Binder 线程的时间窗。]
 
-另一个常用技巧是 Perfetto 的 **Critical Path** 功能。选中主线程的某个长耗时 Slice，在底部信息区点击 "Critical path"，Perfetto 会自动高亮与这个 Slice 有依赖关系的所有 Task，帮我们快速追溯"到底是谁拖了后腿"。这个功能在启动分析中尤其好用，因为冷启动的流程很长，手动追踪唤醒关系非常耗时。
+另一个常用技巧是 Perfetto 的 **Critical Path** 功能。选中主线程的某个长耗时 Slice，在底部信息区点击 "Critical path"，Perfetto 会自动高亮与这个 Slice 有依赖关系的所有 Task，快速追溯"到底是谁拖了后腿"。这个功能在启动分析中尤其好用，因为冷启动的流程很长，手动追踪唤醒关系非常耗时。
 
 ### Perfetto SQL 辅助分析
 
-对于需要量化分析的场景，Perfetto SQL 可以帮我们快速统计关键阶段耗时。以下是一个查询冷启动各阶段耗时的示例：
+对于需要量化分析的场景，Perfetto SQL 可以快速统计关键阶段耗时。以下是一个查询冷启动各阶段耗时的示例：
 
 ```sql
 -- 查询冷启动各关键阶段的耗时
@@ -358,7 +361,7 @@ Binder 分析的难点在于"跨进程"——一次调用涉及 Client 和 Serve
 
 ### 抓取配置
 
-公开可复现的 Binder 方案还是 `linux.ftrace` + `sched`。`android.binder` 这个数据源和 `android_binder_config` 这组字段，在公开的 `DataSourceConfig` 文档里找不到，本节不再把它写成通用配置。
+公开可复现的 Binder 方案还是 `linux.ftrace` + `sched`。`android.binder` 这个数据源和 `android_binder_config` 这组字段，在公开的 `DataSourceConfig` 文档里找不到，因此不列入通用配置。
 
 ```protobuf
 data_sources {
@@ -556,7 +559,7 @@ data_sources {
 
 Java heap dump 也会落在 `Heap Profile` 轨道上，但点开后看的是 retention graph。这里要找的是大对象、长引用链、GC roots 到目标对象的保留路径，不是 alloc call stack。要查 `Bitmap`、`Activity`、`View` 为何还活着，这条链最直接。
 
-Java heap sampling 和 Java heap dump 经常一起用。前者告诉我们谁在分配，后者告诉我们谁没被释放。
+Java heap sampling 和 Java heap dump 经常一起用。前者定位谁在分配，后者定位谁没被释放。
 
 ### 进程级内存 Counter
 
@@ -618,7 +621,7 @@ data_sources {
 
 Android 上的 I/O 性能问题通常表现为线程进入 `D`（Uninterruptible Sleep）状态，即“不可中断的磁盘睡眠”。和普通的 `S` 状态不同，`D` 状态的线程不响应信号。即使 ANR 的超时计时已经开始，线程也只能等 I/O 完成后再恢复执行，这也是主线程做磁盘 I/O 特别危险的原因。
 
-I/O 分析的难点在于，"线程在等 I/O"只是表象，我们需要知道等的是什么 I/O、请求的扇区在哪里、排队等了多久。Perfetto 通过 ftrace 的 block 层事件提供了这些信息。
+I/O 分析的难点在于，"线程在等 I/O"只是表象，需要知道等的是什么 I/O、请求的扇区在哪里、排队等了多久。Perfetto 通过 ftrace 的 block 层事件提供了这些信息。
 
 ### 抓取配置
 
@@ -667,7 +670,7 @@ data_sources {
 
 ### 常见的 App 端 I/O 场景
 
-在实际分析中，我们遇到的 App 端 I/O 问题大多集中在以下场景：
+实际分析中，App 端 I/O 问题大多集中在以下场景：
 
 - **启动时读取 DEX 和资源文件**：冷启动时 ART 需要加载 DEX 文件，布局渲染需要读取资源 XML 和图片。如果这些文件没有被优化（如未启用 DEX 布局优化或资源压缩），会导致大量随机 I/O
 - **SharedPreference 的同步写入**：`SharedPreferences.commit()` 是同步写磁盘操作，如果在主线程调用，线程会进入 `D` 状态直到写入完成。这就是为什么 Google 推荐使用 `apply()` 代替 `commit()`
@@ -704,13 +707,13 @@ LIMIT 20;
 
 ### 为什么功耗分析需要 Perfetto
 
-功耗优化的本质是让 CPU 和外设尽可能多地处于低功耗状态。Perfetto 可以帮我们看到系统在每个时刻的运行状态：CPU 跑在什么频率、是否进入了 suspend、哪些 Wakelock 阻止了系统休眠。
+功耗优化的本质是让 CPU 和外设尽可能多地处于低功耗状态。Perfetto 可以呈现系统在每个时刻的运行状态：CPU 跑在什么频率、是否进入了 suspend、哪些 Wakelock 阻止了系统休眠。
 
 ### 关键轨道与指标
 
 **CPU 频率轨道**
 
-在 CPU Info 区域，每个 CPU 核心下方都有频率变化曲线（`cpufreq`）。如果某个核心长时间运行在高频率（如 2.84 GHz），说明有持续的 CPU 密集任务。对于功耗优化，我们希望看到核心在空闲时能降到最低频率、甚至被 hotplug off。
+在 CPU Info 区域，每个 CPU 核心下方都有频率变化曲线（`cpufreq`）。如果某个核心长时间运行在高频率（如 2.84 GHz），说明有持续的 CPU 密集任务。对于功耗优化，理想情况是核心在空闲时降到最低频率、甚至被 hotplug off。
 
 **Suspend/Resume 事件**
 
