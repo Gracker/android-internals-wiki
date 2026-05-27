@@ -13,12 +13,16 @@ sources:
     path: "https://perfetto.dev/docs/instrumentation/tracing-sdk"
   - type: official
     path: "https://perfetto.dev/docs/getting-started/in-app-tracing"
+  - type: official
+    path: "https://perfetto.dev/docs/design-docs/api-and-abi"
   - type: aosp
     path: "external/perfetto/docs/instrumentation/tracing-sdk.md"
   - type: official
     path: "https://developer.android.com/topic/performance/tracing/custom-events"
   - type: official
     path: "https://developer.android.com/topic/performance/tracing"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles"
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md"
 tags: [perfetto, tracing-sdk, in-app-tracing, custom-data-source, observability]
@@ -28,17 +32,18 @@ created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
 gap_score: 16
 material_count: 4
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-17T10:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-17-10-review.md"
-task9_state: reviewed
+task9_state: pending
 task9_result: "needs-rework"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-05-28"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-17T10:20:00+08:00"
@@ -224,15 +229,15 @@ write_into_file: true
 
 ## 启动早期 trace 与线上触发式采集
 
-启动早期事件的难点是 trace session 还没建立，Native 初始化、引擎加载、SoLoader、JNI 注册可能已经跑完。Perfetto SDK 提供 startup tracing 方案，可以在正式 session 建立前缓存事件，后续合并进 trace。官方示例把它放在 system backend 场景下使用：进程初始化后设置 startup tracing，早期 data source 事件先写入，session 建立后再统一导出。
+启动早期事件的难点是 trace session 还没建立，Native 初始化、引擎加载、SoLoader、JNI 注册可能已经跑完。Perfetto SDK 提供 startup tracing 方案，但官方 `example_startup_trace.cc` 走的是 `kSystemBackend`：进程初始化后设置 startup tracing，早期 data source 事件先写入，外部 system trace session 建立后再统一导出。in-process backend 只在应用进程内控制 session 生命周期，不应承诺缓存 session 建立前事件。
 
 [已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
 
-这类能力适合三种问题：
+这组方案要拆开看：
 
 - 冷启动首屏：Native 运行时、引擎初始化、资源预热在 Java 层 trace 建立前已经发生，需要把它们补进启动时间轴。
-- 短窗口触发：只在卡顿、超时、异常前后开启数秒 trace，减少常开成本。
-- 环形缓冲：低频记录关键状态，高危事件发生后停止并导出窗口内数据。
+- 短窗口触发：只在卡顿、超时、异常前后开启数秒 trace，减少常开成本；这不等同 startup tracing。
+- 环形缓冲：低频记录关键状态，高危事件发生后停止并导出窗口内数据；它依赖预先存在的采集会话或应用内缓冲。
 
 线上触发式采集要拆成两层。应用内事件可以由 SDK 自己写，trace 是否导出要受采样率、用户授权、文件大小、网络状态和隐私策略控制。系统级事件不能由普通应用私自读取；如果需要系统调度、ftrace、全进程信息，应走内测 adb、系统签名工具、Android 15+ 公开 profiling API，或者由用户显式触发 bug report。
 
@@ -249,7 +254,7 @@ Perfetto SDK 发布包通常以两个 amalgamated 文件接入：`perfetto.h` �
 - 初始化时机：`Tracing::Initialize()` 和 `TrackEvent::Register()` 要早于事件写入。启动期采集要把初始化放到 Native 模块入口或进程早期初始化位置。
 - 低版本降级：Android 10 以后系统 trace 文件使用 Perfetto 格式；系统 backend 还依赖设备上的 `traced` 能力和抓取权限。低版本或权限不足时，保留 `android.os.Trace` / `ATrace_*` 标记，保证线下工具仍能看到基础区间。
 
-C SDK 和 C++ SDK 的差异可以按团队语言栈判断。纯 C / Rust FFI / 需要最小 ABI 面的模块倾向 C SDK；已有 C++17 工程、需要 `TrackEvent` category、counter、`debug annotation`、custom data source 的模块倾向 C++ SDK。不要为了“统一工具”把 Java/Kotlin 业务层全部迁到 Perfetto SDK，平台 trace API 已经能覆盖大部分应用层区间。
+C SDK 和 C++ SDK 的差异可以按团队语言栈判断。纯 C / Rust FFI / 需要最小 ABI 面的模块才考虑 `include/perfetto/public` C API/ABI；Perfetto 官方 API/ABI 文档仍把这层标为 not stable yet，生产接入要锁定 SDK revision 并把升级验证写进构建流程。已有 C++17 工程、需要 `TrackEvent` category、counter、`debug annotation`、custom data source 的模块优先走 C++ SDK。不要为了“统一工具”把 Java/Kotlin 业务层全部迁到 Perfetto SDK，平台 trace API 已经能覆盖大部分应用层区间。
 
 ## 隐私和数据治理
 
@@ -269,7 +274,7 @@ trace 数据比日志更容易暴露上下文，因为它把时间、线程、�
 
 ## Perfetto SDK、ProfilingManager、APM 自定义 trace 的组合方案
 
-Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto 原生数据；APM 负责采样、触发、上传、去重、归档和告警；`ProfilingManager` / `ProfilingTrigger` 负责 Android 15+ 的平台公开 profiling 入口。三者组合时按环境拆分：
+Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto 原生数据；APM 负责采样、触发、上传、去重、归档和告警；`ProfilingManager` / `ProfilingTrigger` 负责 Android 15+ 的平台公开 profiling 入口。`ProfilingManager` 返回的是请求应用相关的 redacted 结果，不能当作 adb 或系统签名工具可拿到的全设备 trace。三者组合时按环境拆分：
 
 | 环境 | 采集方式 | 适用数据 | 产物 |
 | --- | --- | --- | --- |
