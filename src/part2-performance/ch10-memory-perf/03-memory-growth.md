@@ -40,12 +40,12 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_result: "pending"
-task2b_state: "pending"
+task9_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-19"
@@ -54,6 +54,7 @@ last_task6_at: '2026-05-18T05:08:00+08:00'
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
 last_task9_audit: "2026-05-19"
+last_task2b_lite_at: "2026-05-27"
 ---
 
 # 内存持续增长
@@ -297,13 +298,13 @@ protected void entryRemoved(boolean evicted, String key,
 
 PSS（Proportional Set Size）仍然是理解进程真实物理内存占用的重要口径，但更适合做低频校准，不适合做秒级时序指标。
 
-一方面，PSS 查询本身成本高。`Debug.getPss()` 直接读 `smaps`，调用频率过高会给线上监控带来额外负担。另一方面，Android 14 之后系统对更快的 PSS 查询路径做了节流，高频调用时可能拿到历史值。把 PSS 放在 30 秒、1 分钟或页面切换点上做校准更稳妥，连续趋势更适合交给 RSS、Java Heap 和 Native Heap 指标。
+一方面，PSS 查询本身成本高。Android 16 的 `Debug.getPss()` 路径会通过 `ProcMemInfo.SmapsOrRollup()` 聚合 `smaps_rollup` / `smaps`，并叠加 memtrack 与 swapPss；它适合低频校准，不适合高频轮询。Android 14+ 系统侧更快的 PSS 采集路径可能被节流，App 内同进程 `Debug.getPss()` 不应被写成通用秒级指标。把 PSS 放在 30 秒、1 分钟或页面切换点上做校准更稳妥，连续趋势更适合交给 RSS、Java Heap 和 Native Heap 指标。
 
 Android 15 的 16KB Page Size 还会改变这组指标的解释方式。页变大以后，TLB miss 和页表开销会下降，但小块分配的内部碎片会变多。同样一段业务路径，在 16KB 设备上看到的 RSS / PSS 往往会比 4KB 设备更高。跨设备比对内存曲线前，先用 `adb shell getconf PAGE_SIZE` 确认页大小，再判断增长是不是异常。
 
 在实际工程里，更稳妥的组合是三层指标一起看：
 
-- **RSS**：用 `Debug.getRss()` 或 `dumpsys meminfo` 看驻留页变化，适合做连续趋势
+- **RSS**：Android 15/16 在编译 SDK 与 flagged API 可用时可用 `Debug.getRss()`；Android 8-14 用 `/proc/self/status` 的 `VmRSS`、`/proc/self/statm` 或低频 `dumpsys meminfo` 看驻留页变化
 - **Java Heap**：用 `Runtime.getRuntime()` 看托管堆预算和回落幅度
 - **Native Heap**：用 `Debug.getNativeHeapAllocatedSize()` 看 Native 分配是否持续抬高
 

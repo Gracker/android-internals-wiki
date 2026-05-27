@@ -8280,6 +8280,16 @@
       ],
       "result": "fixed-returned-to-task6",
       "summary": "文末源码调研块已清理，素材并入正文。"
+    },
+    {
+      "section": "10.3",
+      "file": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "at": "2026-05-27T21:35:00+08:00",
+      "by": "task2b-lite",
+      "source": "frontmatter-fallback/task9-audit",
+      "priority": 85,
+      "result": "fixed-lite",
+      "summary": "修正 Debug.getRss() API 版本边界与 Debug.getPss() smaps_rollup/memtrack 口径。"
     }
   ],
   "section_18_23": {
@@ -9155,17 +9165,17 @@
   },
   "task2b_lite_daily": {
     "2026-05-27": {
-      "sections_processed": 4,
-      "items_completed": 4,
-      "last_section": "1.19"
+      "sections_processed": 5,
+      "items_completed": 5,
+      "last_section": "10.3"
     }
   },
-  "last_task2b_lite_at": "2026-05-27T17:38:00+08:00",
+  "last_task2b_lite_at": "2026-05-27T21:35:00+08:00",
   "last_task2b_lite_sections": [
-    "1.19"
+    "10.3"
   ],
   "last_task2b_lite_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "task2b_verifier_history": [
     {
