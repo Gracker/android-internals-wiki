@@ -14,10 +14,12 @@ sources:
     path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-14
 task6_result: pass-light-edit
@@ -157,7 +159,8 @@ public class WaveformView extends View {
 | `canvas.drawText(String.valueOf(value), ...)` | `String` | 用 `Integer.toString()` 预转换 |
 | `new float[]` / `new int[]` 传给 `drawLines()` / `drawBitmapMesh()` | 数组 | 复用成员数组 |
 | `paint.setColor(Color.parseColor("#FF5722"))` | 内部 `long` 转换 | 构造函数中解析一次 |
-| `canvas.save()` + `canvas.restore()` 的嵌套过多 | `Canvas` 内部栈帧 | 减少嵌套层数，改用 `save()/restore()` 的指定 flag 版本 |
+
+`canvas.save()` / `restore()` 本身不是 Java 对象分配来源；它的成本主要来自 Canvas 状态栈和裁剪/变换状态管理。现代 API 中不要再推荐带 save flags 的旧重载，控制最小必要保存范围即可。
 
 ### 检测方法
 
@@ -193,7 +196,7 @@ LIMIT 30
 
 ### setLayerType 的使用时机
 
-`setLayerType()` 控制的是 View 的缓存策略，不是硬件加速的开关。
+`setLayerType()` 不是全局硬件加速开关；它在单个 View 维度选择无 layer / hardware layer / software layer。`LAYER_TYPE_SOFTWARE` 会让该 View 走软件绘制 fallback，即使窗口整体仍开启硬件加速。
 
 | Layer Type | 缓存位置 | 适用场景 | 代价 |
 |-----------|---------|---------|------|

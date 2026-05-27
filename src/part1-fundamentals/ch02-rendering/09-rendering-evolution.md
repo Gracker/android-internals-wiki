@@ -15,14 +15,15 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
 last_task2b_at: "2026-05-13T23:35:47+08:00"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: '2026-05-27'
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -131,7 +132,7 @@ Android 5.0 Lollipop(API 21,2014 年)引入了 **RenderThread**——一个系�
 1. **主线程**执行 `measure → layout → draw`,在 `draw` 阶段将绘制操作录制到 `DisplayListCanvas`(后改为 `RecordingCanvas`),生成 `RenderNode` 树
 2. 主线程将 `RenderNode` 树**同步**到 RenderThread
 3. **RenderThread** 独立执行 GPU 命令:遍历 `RenderNode` 树,将 Skia draw 命令转为 GL/Vulkan 调用,提交给 GPU
-4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
+4. RenderThread 完成 DisplayList 回放和 buffer 提交；帧耗时随后可通过 `FrameMetrics`(App 侧)或 `FrameTimeline` / Perfetto(系统侧)观察
 
 在 Perfetto 中,`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后,`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长,但 `UI Thread` 已经空闲,说明 GPU 是瓶颈,而非主线程代码问题。反过来,如果 `DrawFrame` 还没开始,`UI Thread` 上的 `performTraversals` 就已经超了帧预算,那瓶颈在主线程的 measure/layout/draw——RenderThread 再快也救不回来。
 
@@ -442,7 +443,6 @@ Unreal Engine 已集成 Swappy。
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升;自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | VP_ANDROID_16_minimums Vulkan 最低要求 profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 1.4 新设备准入 + VP_ANDROID_16_minimums 强制扩展集；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
-| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上实现 | TLB 命中率提升约 9%，渲染管线有效带宽增益 [需补充素材: 16KB Page Size 对 TLB 命中率和渲染管线有效带宽增益的测试条件、数据来源] |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布(稳定版 BP2A.250605.031.A2),确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
