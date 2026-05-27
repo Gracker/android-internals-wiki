@@ -32,14 +32,15 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: 'reviewed'
+task9_state: pending
 task9_result: 'needs-rework'
-task2b_state: 'pending'
-task2b_result: fixed
-last_task2b_at: '2026-04-28T02:40:00+08:00'
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_at: '2026-05-27T13:35:00+08:00'
+last_task2b_lite_at: '2026-05-27'
 reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
 review_round: 7
@@ -126,9 +127,9 @@ ContentProvider 最容易被忽视的性能问题,出在它的初始化时机上
 
 [已验证:AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java, handleBindApplication() → installContentProviders()]
 
-要点是第 4 步:`installContentProviders()` 会遍历 manifest 中声明的所有 `<provider>`,对每一个调用 `installProvider()`,而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**所有 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行,而且在主线程上顺序执行。**
+要点是第 4 步:`installContentProviders()` 会遍历当前进程需要安装的 `<provider>`,对每一个调用 `installProvider()`,而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**当前进程内 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行,而且在主线程上顺序执行。**
 
-实际场景中的影响:假设 App 集成了 Firebase Analytics、Crashlytics、WorkManager、LeakCanary,每个库都在 manifest 中声明了一个 ContentProvider 来做自动初始化。那么冷启动时,系统会在主线程上按顺序执行这四个 CP 的 `onCreate()`--每个 CP 的初始化耗时直接累加到冷启动时间中。在实际项目中,多个 SDK 的 ContentProvider 初始化叠加可以产生几十到数百毫秒的额外启动延迟。
+实际场景中的影响:假设 App 集成了 Firebase Analytics、Crashlytics、WorkManager、LeakCanary,每个库都在主进程声明了一个 ContentProvider 来做自动初始化。那么冷启动时,系统会在主线程上按顺序执行这四个 CP 的 `onCreate()`--每个 CP 的初始化耗时直接累加到冷启动时间中。`android:process=":remote"` 的 Provider 不会随主进程冷启动自动安装;只有远程进程启动,或主进程同步访问该 Provider 时,才会触发对应进程启动和跨进程等待。在实际项目中,多个 SDK 的 ContentProvider 初始化叠加可以产生几十到数百毫秒的额外启动延迟。
 
 ### 初始化顺序的控制
 
@@ -632,4 +633,3 @@ App Startup 减少的是 ContentProvider 的**数量**(从 N 个变为 1 个),�
   - `intake/research-feeds/2026-04-05-07-jetpack-app-startup-cp-consolidation.md`
   - `intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md`
   - `intake/research-feeds/2026-04-05-07-multiprocess-cp-deadlock-anr.md`
-
