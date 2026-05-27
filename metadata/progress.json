@@ -368,17 +368,17 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T20:05:00+08:00",
-    "log": "logs/review/2026-05-27-20-review.md",
+    "reviewed_at": "2026-05-27T22:05:00+08:00",
+    "log": "logs/review/2026-05-27-22-review.md",
     "sections": [
-      "23.8"
+      "10.3"
     ],
     "files": [
-      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
     ],
     "result": "needs-rework",
-    "l1_l2_fixes": 1,
-    "l3_l4_issues": 2,
+    "l1_l2_fixes": 9,
+    "l3_l4_issues": 1,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -2130,17 +2130,17 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T21:10:00+08:00",
+  "last_updated": "2026-05-27T22:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T21:10:00+08:00",
-    "log": "logs/review/2026-05-27-21-review.md",
+    "reviewed_at": "2026-05-27T22:05:00+08:00",
+    "log": "logs/review/2026-05-27-22-review.md",
     "sections": [
-      "23.8"
+      "10.3"
     ],
-    "result": "pass-light-edit",
-    "small_fixes": 3,
-    "rework_items": 0
+    "result": "needs-rework",
+    "small_fixes": 9,
+    "rework_items": 1
   },
   "task9_last_review": "2026-05-27",
   "ready_to_publish": 186,
@@ -6057,22 +6057,22 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T21:10:00+08:00",
+  "last_task6_review": "2026-05-27T22:05:00+08:00",
   "last_task6_sections": [
-    "23.8"
+    "10.3"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
-  "last_task6_at": "2026-05-27T21:10:00+08:00",
+  "last_task6_at": "2026-05-27T22:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T21:10:00+08:00",
-    "log": "logs/review/2026-05-27-21-review.md",
+    "reviewed_at": "2026-05-27T22:05:00+08:00",
+    "log": "logs/review/2026-05-27-22-review.md",
     "sections": [
-      "23.8"
+      "10.3"
     ],
-    "small_fixes": 3,
-    "rework_items": 0,
+    "small_fixes": 9,
+    "rework_items": 1,
     "auto_promoted": []
   },
   "last_task9_reviewed_files": [
@@ -6083,9 +6083,9 @@
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
   "task6_last_review_at": "2026-05-27T21:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-21-review.md",
+  "task6_last_review_log": "logs/review/2026-05-27-22-review.md",
   "task6_last_review_sections": [
-    "23.8"
+    "10.3"
   ],
   "sections_status": {
     "22.11": {
@@ -7587,30 +7587,30 @@
   "last_task2b_run": "2026-05-27T16:50:00+08:00",
   "task2b_sections_fixed": 3,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T21:10:00+08:00",
+    "reviewed_at": "2026-05-27T22:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "23.8"
+      "10.3"
     ],
     "files": [
-      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
     ],
-    "log": "logs/review/2026-05-27-21-review.md",
+    "log": "logs/review/2026-05-27-22-review.md",
     "mode": "revisiting",
     "results": {
-      "23.8": "pass-light-edit"
+      "10.3": "needs-rework"
     },
-    "l1_l2_fixes": 0,
-    "metadata_updates": 3,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
+    "l1_l2_fixes": 9,
+    "metadata_updates": 6,
+    "new_task6_rework_items": 1,
+    "queue_updates": 1,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -8044,7 +8044,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-21-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-22-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8698,8 +8698,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T21:10:00+08:00",
-  "last_task6_review_section": "23.8",
+  "last_task6_review_at": "2026-05-27T22:05:00+08:00",
+  "last_task6_review_section": "10.3",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8799,9 +8799,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "23.8"
+    "10.3"
   ],
-  "last_task6_result": "pass-light-edit",
+  "last_task6_result": "needs-rework",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -8829,7 +8829,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -9251,5 +9251,21 @@
   ],
   "task9_last_reviewed_sections": [
     "23.8"
-  ]
+  ],
+  "section_10_3": {
+    "section": "10.3",
+    "title": "内存持续增长",
+    "file": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-27",
+    "last_task6_at": "2026-05-27T22:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-22-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending"
+  }
 }

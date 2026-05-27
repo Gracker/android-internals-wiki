@@ -472,5 +472,26 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-05-27T20:50:00+08:00",
     "completion_reason": "补充公开脱敏内存治理案例证据：治理前后指标、Heap Dump/引用链、byte[] 与 Bitmap 观察点、修复和防复发口径。"
+  },
+  {
+    "section": "10.3",
+    "section_title": "内存持续增长",
+    "priority": 90,
+    "reason": "[review回炉] 常见误区段落混用 OOM / LMK / PSS 触发条件，需要技术复核",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "常见问题与误区 / \"内存没泄漏就不会 OOM\"",
+        "detail": "段落把 OOM 的触发条件写成进程 PSS 达到系统为进程分配的内存上限，并把系统整体内存耗尽触发 LMK 放在同一括号内。这里可能混淆 Java Heap OOM、Native 分配失败和 LMK 回收三类路径。",
+        "suggestion": "由 Task 9 先确认不同触发路径，再由 Task 2B 拆分改写：Java Heap 上限、Native/虚拟地址空间分配失败、系统内存压力下 LMK 回收分别处理。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T22:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-27-22-review.md"
   }
 ]
