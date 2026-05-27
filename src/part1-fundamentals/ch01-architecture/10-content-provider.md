@@ -1,5 +1,6 @@
 ---
 
+
 title: ContentProvider 性能与优化
 chapter: '1.10'
 section: '1.10'
@@ -32,27 +33,27 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "auto-fixed"
-task2b_state: "fixed"
+task9_state: reviewed
+task9_result: auto-fixed
+task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
 last_task2b_lite_at: '2026-05-27'
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 8
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T14:20:00+08:00"
-task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。"
+last_task9_at: "2026-05-27T15:22:00+08:00"
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。"
 review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分:
   结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
 task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
@@ -228,17 +229,18 @@ ContentProvider 的 ANR 机制和 Service、Broadcast 的 ANR 机制不同——
 
 ### 超时时间线
 
-ContentProvider 的 ANR 涉及三个不同的超时机制，容易混淆:
+ContentProvider 的 ANR 涉及几类不同的超时和等待窗口，容易混淆:
 
 | 超时类型 | 时间 | 管理机制 | 触发场景 |
 |---------|------|---------|---------|
-| **Provider 发布超时** | 10 秒 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT`(system_server 端计时) | 目标进程已启动,但 ContentProvider 迟迟未调用 `publishContentProviders()` 通知系统自己已就绪。onCreate() 的执行时间包含在这个 10 秒窗口内 |
+| **Provider 发布超时** | 10 秒 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` / `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` | 提供方进程已 attach 到 system_server 后，迟迟没有通过 `publishContentProviders()` 发布 provider。`ContentProvider.onCreate()` 的执行时间包含在这个 10 秒窗口内 |
+| **Provider ready 等待超时** | 20 秒 | `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` / `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG` | 调用方等待新启动 provider 发布；该窗口比 publish timeout 多 10 秒，用于 acquire provider 的等待与清理 |
 | **CRUD 操作超时** | 无独立超时 | 无 ContentProvider 专用超时;依赖调用方所在组件的 ANR 机制 | query/insert/update/delete 操作本身没有独立的 ContentProvider 级超时。ANR 来自调用方所在的组件(如 Activity 的 Input 超时 5 秒、Service 超时等),而非 ContentProvider 自身 |
-| **getProviderMimeType 超时** | 1 秒 | AMS 内部超时 | 系统解析 Intent MIME 类型时调用,1 秒未返回即触发 ANR |
+| **MIME / canonicalize 等已连接 provider 异步回调超时** | 3 秒 | `ContentResolver.CONTENT_PROVIDER_TIMEOUT_MILLIS` | Provider 已获取后，`getTypeAsync()`、`canonicalizeAsync()` 等异步回调默认等待 3 秒；这不是普通 CRUD 的统一超时 |
 
-[已验证: AOSP android-16.0.0_r1, `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT` = 10s;CRUD 操作无独立超时常量，ANR 由调用方组件超时机制触发]
+[已验证: AOSP master / android-16-qpr2, `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` = 10s, `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` = 20s, `CONTENT_PROVIDER_TIMEOUT_MILLIS` = 3s；CRUD 操作无独立超时常量，ANR 由调用方组件超时机制触发]
 
-这三类超时中最容易误判的是"CRUD 操作超时"。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**--常见误解是 ContentProvider 有一套类似 Service 的独立超时，但 AOSP 中并不存在这样的常量。traces.txt 中出现 ContentProvider 调用导致的 ANR 时，超时来源是调用方所在的组件(比如 Activity 的 Input dispatching timeout 5 秒)。
+这些超时里最容易误判的是"CRUD 操作超时"。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**--常见误解是 ContentProvider 有一套类似 Service 的独立超时，但 AOSP 中并不存在这样的常量。traces.txt 中出现 ContentProvider 调用导致的 ANR 时，超时来源是调用方所在的组件(比如 Activity 的 Input dispatching timeout 5 秒)。
 
 ### 远程 ContentProvider 的 Binder 线程池模型与线程耗尽
 
@@ -278,8 +280,8 @@ Binder 线程池的关键参数:
 1. App A(前台)通过 `ContentResolver.query()` 查询 App B 的 ContentProvider
 2. App B 的进程尚未启动(冷进程)
 3. 系统需要先启动 App B 的进程，等 App B 的 ContentProvider 发布完成后才能返回结果
-4. App B 的启动过程包括：fork 进程 → 加载 APK → 初始化所有 ContentProvider → 执行 Application.onCreate()
-5. 如果 App B 的启动过程超过 10 秒，App A 的 ContentProvider 调用超时触发 ANR
+4. App B 的 provider ready 前置路径包括：fork 进程 → 加载 APK → 创建 Application 并执行 `attachBaseContext()` → 安装并发布 ContentProvider；`Application.onCreate()` 在 provider 发布之后执行，通常不属于 provider ready 的前置等待条件
+5. 如果 App B 已 attach 但 provider 10 秒内仍未发布，system_server 会按 provider publish timeout 处理；调用方等待 provider ready 的窗口是 20 秒，超时后本次 acquire/query 失败或触发调用方侧阻塞后果
 
 **注意：ANR 发生在 App A(调用方),但根因在 App B(提供方)。** 这种"远程 ContentProvider 冷启动"场景在系统内置 Provider(如 Contacts、MediaStore)中不常见(它们的进程通常已运行),但在自定义 ContentProvider 之间调用时很容易发生。
 
@@ -313,7 +315,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 独立进程带来的核心变化:
 
 - **独立的 Application 生命周期**：新进程启动时会完整执行一次 Application 的 `attachBaseContext()` 和 `onCreate()`；其中 `attachBaseContext()` 发生在 provider 安装前，`Application.onCreate()` 发生在 provider 发布后。如果这两个阶段中有大量初始化(SDK 初始化、数据库预热),Provider 进程也会承受同样的启动开销
-- **独立的 Binder 线程池**：Provider 进程有自己的 16 个 Binder 线程，不会和主进程的线程池互相竞争。这是多进程 CP 的主要优势——数据操作的负载不会直接影响主进程的 Binder 通信
+- **独立的 Binder 线程池**：Provider 进程有自己的 Binder worker 池，AOSP `ProcessState.cpp` 默认上限是 15 个 worker；trace 现场常按 15-16 个并发执行上下文观察。它不会和主进程的线程池互相竞争，这是多进程 CP 的主要优势——数据操作的负载不会直接影响主进程的 Binder 通信
 - **独立的内存空间**：Provider 进程有独立的堆内存和 GC 周期，Provider 侧的 GC 暂停不会造成主进程卡顿。代价是多了一份完整的进程内存开销
 
 ### Provider 进程冷启动对调用方的性能影响
@@ -462,7 +464,7 @@ ContentProvider 相关的性能问题在 Perfetto 中有几个典型的观测点
 - **Binder track**：记录从 App A 到 App B 的 Binder 调用
 - **App B 的 Binder 线程 track**：出现 `ContentProvider$Transport.query` 栈帧对应的执行区间
 
-这里要把两类超时分开看：如果 App B 的 ContentProvider 发布超时(10 秒),App A 会收到 system_server 的 `contentProviderTimeout` 信号。如果 App B 已发布但 CRUD 执行慢，App A 的 ANR 来自调用方自身的组件超时(如 Input dispatching 5 秒),不是 ContentProvider 的独立 10 秒阈值。
+这里要把几类超时分开看：如果 App B 的 ContentProvider 发布超时(10 秒)，system_server 会按 provider publish timeout 处理提供方；调用方等待新启动 provider ready 的窗口是 20 秒。如果 App B 已发布但 CRUD 执行慢，App A 的 ANR 来自调用方自身的组件超时(如 Input dispatching 5 秒),不是 ContentProvider 的独立 10 秒阈值。
 
 ### ContentProvider ANR 时间线
 
@@ -495,7 +497,7 @@ ORDER BY slice.dur DESC;
 
 ContentProvider 不是孤立存在的，它和系统中的多个机制有紧密关联:
 
-- **Binder IPC(§1.4)**：ContentProvider 的所有跨进程调用都基于 Binder。理解 Binder 线程池的模型(默认最大 16 个线程)是排查 ContentProvider ANR 的关键基础——如果所有 Binder 线程都在等待数据库锁或 I/O,新的 ContentProvider 请求就会排队，导致超时。
+- **Binder IPC(§1.4)**：ContentProvider 的所有跨进程调用都基于 Binder。理解 Binder 线程池的模型（AOSP 默认最多 15 个 Binder worker，trace 中常见 15-16 个执行上下文）是排查 ContentProvider ANR 的关键基础——如果所有 Binder worker 都在等待数据库锁或 I/O,新的 ContentProvider 请求就会排队，导致超时。
 - **进程模型(§1.3)**：ContentProvider 的"冷启动级联 ANR"问题和 Android 的进程管理直接相关。系统在需要时才启动提供方进程，启动开销直接计入调用方的超时预算。
 - **启动优化(§8.3)**：ContentProvider 初始化是冷启动路径上的一环。App Startup 的合并优化是启动优化策略的一部分。
 - **ANR 机制(§9.1-9.4)**：ContentProvider ANR 是 ANR 体系中的一个子类型，诊断方法和其他类型的 ANR 有共性也有个性。
@@ -594,15 +596,16 @@ Android 14 在 Photo Picker 基础上增加了 Selected Photos Access 能力。�
 
 ### Android 16(API 36):超时口径继续沿用旧模型
 
-截至 Android 16,本章前面列出的三类超时口径没有新增统一的 CRUD 10 秒阈值:
+截至 Android 16,ContentProvider 仍没有新增统一的 CRUD 10 秒阈值，容易混淆的超时口径要拆开看:
 
-- publish / ready timeout 仍是 10 秒。
-- MIME type 查询仍是 framework 内部的 1 秒等待窗口。
+- provider publish timeout 是 10 秒。
+- provider ready wait timeout 是 20 秒，用于调用方等待新启动 provider 发布。
+- 已连接 provider 的 MIME / canonicalize 等异步回调默认等待 3 秒。
 - `query()`、`insert()`、`update()`、`delete()` 仍然没有 ContentProvider 专用超时，ANR 归到调用方组件或系统内部 watchdog。
 
 Android 15/16 的变化更多在 ANR 收集和异步处理流程，例如 `AnrHelper` 一类实现继续演进；它没有把 CRUD 操作改成"常规 10 秒超时"。
 
-[已验证: AOSP android-16.0.0_r1, ActivityManagerService 中 ContentProvider 超时常量未变化；CRUD 仍无独立超时常量]
+[已验证: AOSP master / android-16-qpr2, ContentResolver 与 ContentProviderHelper 超时路径；CRUD 仍无独立 10 秒超时常量]
 
 ## 常见问题与误区
 
