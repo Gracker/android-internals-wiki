@@ -1,13 +1,10 @@
 ---
 
-
 title: 案例集
 chapter: '7.6'
 section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-25"
-reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-05-03'
 last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
@@ -54,32 +51,35 @@ related_chapters:
 - '2.7'
 - '4.4'
 review_count: 2
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
-last_task2b_at: "2026-05-17T15:18:41+08:00"
-last_task6_at: "2026-05-25T12:09:00+08:00"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。"
-last_task6_review_log: "logs/review/2026-05-25-12-review.md"
-task6_reviewed_date: "2026-05-25"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task9_state: "pending"
-task9_result: "needs-rework"
+last_task2b_at: "2026-05-27T06:51:00+08:00"
+task9_result: "pass-tech-review"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
-last_task9_at: "2026-05-25T11:41:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T08:22:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-08-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。 | 2026-05-27 08:22 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0；案例六 HWC 降级已改为设备证据条件判断，7 个案例的数据占位均有明确待验证边界；自动晋升 finalized。"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
 task2b_state: "fixed"
-task6_reviewed_by: "openclaw-task6"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-27"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-27"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-27T07:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-07-review.md"
+review_type: "task6-writing-quality-review"
+task9_state: reviewed
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
 ---
 # 案例集
 
@@ -315,7 +315,7 @@ GC 导致卡顿的 Perfetto 特征:
 - Heap 使用量呈持续上升趋势
 - `Concurrent GC` 和 `GC For Alloc` 频率异常高
 
-排查口诀:**随时间劣化的卡顿,先看 Heap 趋势线,再看 GC 频率。**
+排查入口:**随时间劣化的卡顿,先看 Heap 趋势线,再看 GC 频率。**
 
 ---
 
@@ -357,7 +357,7 @@ Perfetto 中同时观察主线程和 RenderThread。示例 trace 的现象是:
 
 ### 根因
 
-多个动画表情同时播放,每帧触发 DisplayList 重录制,向量路径和变换让 RenderThread 承担更多绘制、栅格化和 GPU 提交工作。RenderThread 处理变慢后,主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms 这一类风险区间,直接导致帧超时。若同时命中 AVD UI fallback,主线程还会承担动画推进,帧预算会被进一步压缩;两类原因需要通过 trace 分开确认。
+多个动画表情同时播放,每帧触发 DisplayList 重录制,向量路径和变换会增加 RenderThread 的绘制、栅格化和 GPU 提交工作。RenderThread 处理变慢后,主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms 这一类风险区间,直接导致帧超时。若同时命中 AVD UI fallback,主线程还会负责动画推进,帧预算会被进一步压缩;两类原因需要通过 trace 分开确认。
 
 ### 修复方案
 
@@ -406,7 +406,64 @@ RenderThread 相关卡顿的 Perfetto 特征:
 | RT 加速 | API 25+ 可走 VectorDrawableAnimatorRT | 无 RT 加速路径 |
 | 典型卡顿场景 | 同屏多个 AVD 同时播放 | 首次播放复杂 JSON / dynamic property 切换 / hardware path 下多层 mask 叠加 |
 
-排查 Lottie 卡顿的入口:先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长,考虑预加载(后台线程解析后缓存 `LottieComposition`)、简化 JSON 或改用序列帧。如果是渲染侧,检查 Lottie 的 RenderMode:SOFTWARE 路径走内部位图渲染,主线程承担绘制;HARDWARE 路径走 GPU,mask/matte/merge path 会增加纹理上传和 GPU 工作量。切换 RenderMode 前后用 Perfetto 对比 `draw` slice 和 GPU `textureUpload` 来确认瓶颈归属。
+排查 Lottie 卡顿的入口:先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长,考虑预加载(后台线程解析后缓存 `LottieComposition`)、简化 JSON 或改用序列帧。如果是渲染侧,检查 Lottie 的 RenderMode:SOFTWARE 路径走内部位图渲染,绘制由主线程完成;HARDWARE 路径走 GPU,mask/matte/merge path 会增加纹理上传和 GPU 工作量。切换 RenderMode 前后用 Perfetto 对比 `draw` slice 和 GPU `textureUpload` 来确认瓶颈归属。
+
+### 补充:AnimatedVectorDrawable 线程退化机制(源码级)
+
+本节案例四(RenderThread sync 阻塞主线程)涉及 AnimatedVectorDrawable 动画,以下是 AOSP 源码层面的补充发现。
+
+#### AVD 线程模型双轨架构
+
+在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中,AVD 同时实例化两个 Animator:
+
+```java
+// 构造函数中同时实例化两个版本
+private AnimatedVectorDrawable(AnimatedVectorDrawableState state, Resources res) {
+    mAnimatedVectorState = new AnimatedVectorDrawableState(state, mCallback, res);
+    mAnimatorSet = new VectorDrawableAnimatorRT(this);  // RenderThread 版本
+}
+```
+
+关键字段 `mAnimatorSet`(类型 `VectorDrawableAnimator` 接口)运行时可能是:
+- `VectorDrawableAnimatorRT` - RenderThread 加速(API 25+)
+- 纯 UI 线程版本 - 软件退化模式
+
+#### 线程退化触发条件
+
+```java
+// draw() 方法中的退化逻辑
+@Override
+public void draw(Canvas canvas) {
+    if (!canvas.isHardwareAccelerated() && mAnimatorSet instanceof VectorDrawableAnimatorRT) {
+        if (!mAnimatorSet.isRunning() &&
+                ((VectorDrawableAnimatorRT) mAnimatorSet).mPendingAnimationActions.size() > 0) {
+            fallbackOntoUI();  // 退化到 UI 线程
+        }
+    }
+    mAnimatorSet.onDraw(canvas);
+    mAnimatedVectorState.mVectorDrawable.draw(canvas);
+}
+```
+
+`fallbackOntoUI()` 这一路径需要同时满足三项条件:
+1. `!canvas.isHardwareAccelerated()` - 当前是 Software Canvas
+2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` - 当前使用 RT 版本
+3. `!isRunning() && mPendingAnimationActions.size() > 0` - 仍有待提交的动画动作
+
+另外,代码主动调用 `forceAnimationOnUI()` 会直接切到 UI 线程。RT 不支持的属性一般在 RT animator 构建阶段跳过或抛出异常,不能写成播放过程中自动 fallback。
+
+#### 版本演进
+
+| 版本 | 动画执行线程 | 退化机制 |
+|------|-------------|---------|
+| API 21-24 | UI Thread(AnimatorSet) | 无 RenderThread 版本 |
+| API 25+ | RenderThread(VectorDrawableAnimatorRT) | Software Canvas 时退化 |
+
+#### 实战影响
+
+当 AVD 退化到 UI 线程运行时,动画推进和 View invalidation 都会回到主线程;没有 fallback 但同屏向量动画过多时,RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看:主线程动画 slice / Choreographer 动画回调增多,指向 UI fallback;RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`,指向 RT 积压。
+
+**源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-16.0.0_r1)
 
 ---
 
@@ -510,7 +567,7 @@ override fun onTrimMemory(level: Int) {
 - Perfetto 中 `kswapd0` 线程持续活跃
 - 多个 App 同时出现性能下降(不是单一 App 的问题)
 
-**关键认知:当发现前台 App 性能差但代码层面找不到问题时,先看看是不是系统内存不足在拖全局后腿。**
+**判断入口:** 当发现前台 App 性能差但代码层面找不到问题时,先看看是不是系统内存不足在拖全局后腿。
 
 ---
 
@@ -542,40 +599,39 @@ App 侧线程都在预算内、但帧仍然超时——瓶颈在 App 进程下�
 
 **第二步:看 SF 的帧耗时。** 在 Perfetto 中展开 `surfaceflinger` 进程，找到主线程的合成入口 slice。Android 13+ 看 `SurfaceFlinger::composite()` → `CompositionEngine::present()` → `Output::present()` → `Output::composeSurfaces()` → `RenderEngine::drawLayers()`；Android 11/12 看 `onMessageRefresh()`；Android 8-10 看 `handleMessageRefresh`。示例观察:部分帧的 CLIENT 合成阶段（`composeSurfaces()` → `RenderEngine::drawLayers()`）耗时明显拉长(从正常的 1-3ms 拉到 6-10ms),超过了 SF 的 VSync 周期预算。[待验证:需补原始 trace]
 
-**第三步:查合成类型。** HWC 通过 `validateDisplay()` 向 SF 报告每个 Layer 应走哪条合成路径。HWC 的决策不仅看 Layer 数量，还受像素格式、transform、dataspace、alpha 混合、受保护内容、缩放比例、带宽和 plane capability 等约束影响。当这些约束导致部分 Layer 无法走 Overlay Plane 时，HWC 会将它们标记为 `CLIENT` 合成类型——SF 必须用 `RenderEngine::drawLayers()` 把这些 Layer 渲染到一个中间 Buffer，再交给 HWC 输出。
+**第三步:查合成类型。** HWC 通过 `validateDisplay()` 向 SF 报告每个 Layer 应走哪条合成路径。HWC 的决策会同时评估 Layer 数量、像素格式、transform、dataspace、alpha 混合、受保护内容、缩放比例、带宽和 plane capability。当设备侧证据显示某些 Layer 不满足 Overlay 条件时，HWC 会将它们标记为 `CLIENT` 合成类型;SF 必须用 `RenderEngine::drawLayers()` 把这些 Layer 渲染到一个中间 Buffer，再交给 HWC 输出。
 
-Overlay Plane 数量因 SoC 和显示管线配置而异，没有统一的公开参数。[待验证："中端 SoC 通常 4 个 plane / 高端 6-8 个"需补充厂商文档或 `dumpsys SurfaceFlinger` 实测证据]
+Overlay Plane 数量因 SoC、显示控制器、屏幕配置和厂商 HWC 实现而异，Android 不提供应用侧 public API 查询固定数量。这里不能只按“几层 UI”反推出根因，必须同时拿到设备型号、HWC 版本、Layer 属性和每帧 composition type。
 
-视频通话场景的 Layer 堆叠:远端视频 SurfaceView + 本地预览 SurfaceView + App UI overlay + 系统状态栏 + 导航栏。总共 5 层,超过了 4 个 Overlay Plane。其中一层被迫走 `CLIENT` 合成,SF 每帧多了一次 GPU 渲染。
+视频通话场景的 Layer 堆叠可能是:远端视频 SurfaceView + 本地预览 SurfaceView + App UI overlay + 系统状态栏 + 导航栏。这个结构只说明 Layer 输入变复杂，不能直接推出“5 层超过 4 个 Overlay Plane”。可成立的证据链是:Layer trace 或 `dumpsys SurfaceFlinger` 显示目标设备在该窗口组合下存在 `CLIENT` composition，且 `CLIENT` 帧与 `RenderEngine::drawLayers()` 耗时拉长、FrameTimeline SF missed 帧在时间上对应。
 
 **第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `composeSurfaces()` 拉长的帧一一对应。
 
 [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 调用 `CompositionEngine` 链路: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
-[注意: HWC Overlay Plane 数量因 SoC 和显示管线配置而异，没有统一公开参数。具体数值需从厂商文档、`dumpsys SurfaceFlinger` 输出或 Layer trace 实测获取，不能用泛化结论]
 
 ### 根因
 
-视频通话场景的 Layer 数量超过了 HWC Overlay Plane 容量（且 Layer 属性组合不满足 HWC 的 Overlay 约束），多余的 Layer 被 HWC 退回给 SF 做 GPU 合成（`CLIENT` composition）。SF 的 `composeSurfaces()` 多了一次 `RenderEngine::drawLayers()` GPU 渲染 Pass,帧耗时从正常的 1-3ms 拉到 6-10ms,超过了 SF 的 VSync 预算,导致帧呈现延迟。
+在具体设备证据显示 plane capacity、format、alpha、transform、crop、dataspace、受保护内容或带宽约束触发 `CLIENT` composition 时，视频通话场景的部分 Layer 会被 HWC 退回给 SF 做 GPU 合成。SF 的 `composeSurfaces()` 会进入 `RenderEngine::drawLayers()` 路径；如果这段 GPU 合成耗时从正常的 1-3ms 拉到 6-10ms，并与 SF missed 帧对应，才能把根因收敛到 HWC 合成降级。
 
-高端设备通常受影响更小，是因为高端 SoC 的 HWC 通常支持更多 Overlay Plane，同样的 5 层有更高概率全部走 `DEVICE` 合成。[待验证：高端 SoC plane 数量需补厂商文档证据]
+高端设备是否受影响更小，取决于该设备的 HWC 能力和当前 Layer 属性组合。不能用“高端 SoC plane 更多”作默认解释；同一组 UI 在不同厂商 HWC 上可能出现不同的 DEVICE/CLIENT 分配。
 
 ### 修复方案
 
-1. **减少 Layer 数量**:把 App UI overlay 合并到主 Surface,避免额外的 Layer。用 `SurfaceView` 的 Z-order 排列让 HWC 直接叠加视频和预览窗口
+1. **减少 Layer 数量**:把 App UI overlay 合并到主 Surface,避免额外的 Layer。用 `SurfaceView` 的 Z-order 排列降低 HWC validateDisplay() 的输入复杂度
 2. **控制 Layer 叠放顺序**:使用 `SurfaceView.setZOrderMediaOverlay(true)` 或 `setZOrderOnTop(true)` 等 public API 调整 Surface 的 Z-order 关系，让 HWC 在 validateDisplay() 时拿到不同的 layer 属性输入。Z-order 变化可能影响 HWC 的 DEVICE/CLIENT 合成决策，但 App 侧不能强制指定或保证 plane 分配——plane 分配由 HWC 基于 layer 属性、带宽、格式、alpha、transform 和 device-specific plane capability 决定。优化方向仍是减少 Layer 数量、降低 alpha/transform/crop 复杂度，并用 Perfetto Layer trace 或 `dumpsys SurfaceFlinger` 验证实际 composition 类型。注意 `SurfaceControl.Transaction.setRelativeLayer()` 是 `@hide` API,仅系统/特权组件可用，普通应用无法调用
 3. **用 Perfetto/dumpsys 确认 HWC 合成类型**:Android 应用侧没有稳定的 public API 查询 HWC overlay plane 数量。可通过 Perfetto 的 SurfaceFlinger/Layer trace、`dumpsys SurfaceFlinger` 输出或 Winscope 观察 Layer 合成类型（`DEVICE`/`CLIENT`），据此决定是否降低 UI 复杂度
 
 ```kotlin
 // 视频通话场景:合并 UI overlay 到主 Surface,减少 Layer 数量
-// 只保留远端视频 + 本地预览 + 系统 UI,控制在 4 层以内
+// 只保留远端视频 + 本地预览 + 系统 UI,降低 Layer 数量和叠放复杂度
 surfaceView.setZOrderMediaOverlay(true)  // 调整预览窗口 Z-order，可能影响 HWC 合成决策
 ```
 
-[已验证: developer.android.com - SurfaceView Z-order 控制对 HWC 合成的影响]
+[已验证: developer.android.com - SurfaceView Z-order 控制会改变 Surface 叠放关系；实际 HWC 合成类型必须用 Layer trace、Winscope 或 `dumpsys SurfaceFlinger` 复核]
 
 ### 效果对比
 
-示例复盘口径中,将 Layer 数从 5 减到 4 后,SF 的 CLIENT 合成耗时从 6-10ms 区间降回 1-3ms,中端设备上的 FrameTimeline 不再出现 `missed` 帧。[待验证:正式落盘时需补同一设备、同一 HWC 版本下的前后 trace]
+示例复盘口径中,如果同一设备、同一 HWC 版本、同一刷新率下的前后 trace 显示 Layer 简化后 `CLIENT` composition 消失或减少，且 SF 的 `RenderEngine::drawLayers()` 耗时从 6-10ms 区间降回 1-3ms，FrameTimeline 不再出现对应的 SF missed 帧，才能确认优化有效。[待验证:正式落盘时需补同一设备、同一 HWC 版本下的前后 trace]
 
 ### 举一反三
 
@@ -767,94 +823,3 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略,
 - [Bitmap 缓存管理](https://developer.android.com/topic/performance/graphics/cache-bitmap)
 - [onTrimMemory 回调](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [Hardware Layer 详解](https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/)(高爷原创)
-
-### 补充:AnimatedVectorDrawable 线程退化机制(源码级)
-
-本节案例四(RenderThread sync 阻塞主线程)涉及 AnimatedVectorDrawable 动画,以下是 AOSP 源码层面的补充发现。
-
-#### AVD 线程模型双轨架构
-
-在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中,AVD 同时实例化两个 Animator:
-
-```java
-// 构造函数中同时实例化两个版本
-private AnimatedVectorDrawable(AnimatedVectorDrawableState state, Resources res) {
-    mAnimatedVectorState = new AnimatedVectorDrawableState(state, mCallback, res);
-    mAnimatorSet = new VectorDrawableAnimatorRT(this);  // RenderThread 版本
-}
-```
-
-关键字段 `mAnimatorSet`(类型 `VectorDrawableAnimator` 接口)运行时可能是:
-- `VectorDrawableAnimatorRT` - RenderThread 加速(API 25+)
-- 纯 UI 线程版本 - 软件退化模式
-
-#### 线程退化触发条件
-
-```java
-// draw() 方法中的退化逻辑
-@Override
-public void draw(Canvas canvas) {
-    if (!canvas.isHardwareAccelerated() && mAnimatorSet instanceof VectorDrawableAnimatorRT) {
-        if (!mAnimatorSet.isRunning() &&
-                ((VectorDrawableAnimatorRT) mAnimatorSet).mPendingAnimationActions.size() > 0) {
-            fallbackOntoUI();  // 退化到 UI 线程
-        }
-    }
-    mAnimatorSet.onDraw(canvas);
-    mAnimatedVectorState.mVectorDrawable.draw(canvas);
-}
-```
-
-`fallbackOntoUI()` 这一路径需要同时满足三项条件:
-1. `!canvas.isHardwareAccelerated()` - 当前是 Software Canvas
-2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` - 当前使用 RT 版本
-3. `!isRunning() && mPendingAnimationActions.size() > 0` - 仍有待提交的动画动作
-
-另外,代码主动调用 `forceAnimationOnUI()` 会直接切到 UI 线程。RT 不支持的属性一般在 RT animator 构建阶段跳过或抛出异常,不能写成播放过程中自动 fallback。
-
-#### 版本演进
-
-| 版本 | 动画执行线程 | 退化机制 |
-|------|-------------|---------|
-| API 21-24 | UI Thread(AnimatorSet) | 无 RenderThread 版本 |
-| API 25+ | RenderThread(VectorDrawableAnimatorRT) | Software Canvas 时退化 |
-
-#### 实战影响
-
-当 AVD 退化到 UI 线程运行时,主线程会同时承担动画推进和 View invalidation;没有 fallback 但同屏向量动画过多时,RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看:主线程动画 slice / Choreographer 动画回调增多,指向 UI fallback;RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`,指向 RT 积压。
-
-**源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-16.0.0_r1)
-
----
-
-<!-- AIW-源码调研-2026-05-25 -->
-
-## 补充：HWC Overlay Plane 合成降级源码锚点（2026-05-25）
-
-### 核心结论
-- **Overlay Plane 典型数量**: 4 个（source.android.com 确认），但由厂商 HWC 实现定义，非 Android 标准强制
-- **合成降级触发条件**: Layer 数量超过可用 Plane 数时，多余 Layer 退回 GLES 合成
-- **性能影响**: GPU 合成功耗显著高于 HWC 合成，主线程等待 GPU 完成导致 SurfaceFlinger jank
-
-### 关键源码路径
-- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` L620+ — presentOrValidate 模式
-- `frameworks/native/libs/renderengine/skia/SkiaGLRenderEngine.cpp` L615, L1395 — drawLayers()
-- `frameworks/native/libs/renderengine/gl/GLESRenderEngine.cpp` L798 — GLES 合成路径
-- `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCapability.aidl` — DisplayCapability AIDL
-
-### 设备级证据采集
-1. **dumpsys SurfaceFlinger** — 查 Overlay Plane 数、每 Layer composition type
-2. **Layer Trace / Winscope** — 追踪 compositionType 随时间变化
-3. **Perfetto android.surfaceflinger.frametimeline** — 查 CLIENT 类型 layer 的帧时间
-
-### 版本差异
-| 版本 | Overlay Plane 数 | 合成路径 |
-|-----|-----------------|---------|
-| Android 10+ | 典型 4 个（厂商定义） | presentOrValidate 稳定 |
-| Android 12+ | 设备差异化 | Composer 3 AIDL 化 |
-| Android 14+ | 厂商自定义 | Dynamic DisplayCapability |
-
-### 信息源
-- 一手：source.android.com/docs/core/graphics/hwc（HWC 官方文档）
-- 一手：cs.android.com SurfaceFlinger.cpp, RenderEngine.cpp（HWC presentOrValidate 源码）
-- 一手：hardware/interfaces DisplayCapability.aidl（AIDL 定义）
