@@ -2,7 +2,7 @@
 title: "稳定性治理案例集"
 chapter: "20.9"
 section: "20.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-28"
 last_verified_against: "AOSP android-16.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
@@ -24,24 +24,24 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
+task9_result: pass-tech-review
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T02:31:47+08:00"
+last_task9_at: "2026-05-28T03:32:12+08:00"
 task2b_result: "fixed"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
 last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
-task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。"
+last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
+task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 last_task2b_at: "2026-05-28T02:50:00+08:00"
 last_task2b_source: "task9-deep-tech-review"
 last_task2b_priority: 95
