@@ -246,5 +246,152 @@
     "completed_at": "2026-05-27T02:50:00+08:00",
     "completed_by": "openclaw-task2b-main",
     "completion_reason": "已将 GapWorker measure 盲区合并进预取机制小节，将 DeliQueue 诊断特征与性能数字来源合并进 Android 17 小节和参考资料；删除正文后半段 AIW 源码调研原始块。"
+  },
+  {
+    "section": "01-aritecture",
+    "section_title": "第01-aritecture章",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "掘金Android技术文章抓取 — 从零到一：用 Now in Android 架构打造一款 NBA 应用 目录 为什么选择 NIA 架构 项目概览 模块化设计：从单体到多模块 Convention Plugins：告别重复的构建配置...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-27T05:46:17.789333",
+    "status": "pending"
+  },
+  {
+    "section": "17",
+    "section_title": "第17章",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "掘金Android技术文章抓取 — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-27T05:46:17.805633",
+    "status": "pending"
+  },
+  {
+    "section": "17",
+    "section_title": "第17章",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "掘金Android技术文章抓取 — 借手机给朋友看个照片，心里却在默念\"千万别乱翻\"——这种焦虑，Android 用户应该都体会过。 小米、三星等厂商早就给出了答案：应用锁。但原生 Android？一直缺席。 现在，Android 17...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-27T05:46:17.820646",
+    "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 90,
+    "reason": "[review回炉] 案例六 HWC Overlay Plane 证据边界仍未收敛，且文末保留源码调研原始块",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
+      "logs/review/2026-05-27-06-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理链/数据支撑",
+        "location": "案例六：SurfaceFlinger HWC 合成降级导致掉帧；文末 HWC Overlay Plane 源码调研块",
+        "detail": "正文仍把“5 层超过 4 个 Overlay Plane → 一层被迫 CLIENT 合成 → 根因成立”写成偏确定链路；文末 AIW 源码调研块继续保留“Overlay Plane 典型数量 4 个（source.android.com 确认）”等过程性表述。Task6 不裁决 HWC/plane 技术真伪，但这与既有 Task9 P1 风险一致，需要补实机 Layer trace、dumpsys SurfaceFlinger 或厂商文档后收敛为条件判断。",
+        "suggestion": "Task2B 将案例六改成“在具体设备证据显示 plane capacity/format/alpha/transform/bandwidth 等约束导致 CLIENT 合成时”的条件判断；删除或整合文末源码调研原始块；补设备型号、HWC 版本、Layer trace / dumpsys 证据，再交 Task9 复审。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T06:09:00+08:00",
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-27-06-review.md",
+    "completed_at": "2026-05-27T06:51:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "案例六 HWC 合成降级改为设备证据约束下的条件判断，删除文末 HWC Overlay Plane 源码调研原始块，回流 Task6/Task9 复审。"
+  },
+  {
+    "section": "ch04",
+    "section_title": "内存管理",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 ART 分代 GC 与 Compose Composition — Android 17 正式启用分代 GC 为默认配置，优化 Snapshot、SlotTable、LayoutNode 等短期对象回收。年轻代收集频率高成本低，减少 Full GC 触发。Androi",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-27T06:40:04.480543",
+    "status": "pending"
+  },
+  {
+    "section": "ch04",
+    "section_title": "内存管理",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 16 QPR2 Generational CMC 开关与年轻代参数源码锚点验证 — Generational CMC 基于 ConcurrentCopying 扩展，开关非独立 flag 而是设备能力判断。源码锚点：concurrent_copying.h L108、heap.cc ",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-27T06:40:04.480543",
+    "status": "pending"
+  },
+  {
+    "section": "5.9",
+    "section_title": "ADPF 自适应性能框架",
+    "priority": 90,
+    "reason": "[review回炉] 正文仍保留源码调研补充块和 DeepResearch 注入摘要，发布稿存在编辑过程痕迹",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
+      "logs/review/2026-05-27-08-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "正文“源码调研补充（2026-05-01 / 2026-05-07）”与参考资料中的 DeepResearch 注入摘要",
+        "detail": "章节正文仍保留 AIW 源码调研原始块、DeepResearch 注入摘要，以及“Task2B 已修正”“Task9 已确认”等过程性标记。发布稿会暴露编辑流水线痕迹，且部分素材还没有按主线叙述整合。",
+        "suggestion": "Task2B 将 API 版本边界、协程线程迁移、NDK workload hint 等有效内容并入对应正文小节或参考资料；删除 HTML 注释标记、过程性修正说明和未整合的原始调研块，再交 Task6/Task9 复审。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T08:07:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-27-08-review.md"
   }
 ]

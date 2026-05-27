@@ -261,7 +261,8 @@
     "8.7",
     "1.1",
     "2.15",
-    "10.5"
+    "10.5",
+    "11.1"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -355,25 +356,27 @@
     "src/part2-performance/ch09-anr/01-anr-design.md",
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+    "src/part2-performance/ch11-power/01-power-model.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T05:14:00+08:00",
-    "log": "logs/review/2026-05-27-05-review.md",
+    "reviewed_at": "2026-05-27T08:07:00+08:00",
+    "log": "logs/review/2026-05-27-08-review.md",
     "sections": [
-      "1.1",
-      "2.15",
-      "10.5"
+      "17.2",
+      "5.9",
+      "18.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "result": "pass-light-edit",
+    "result": "mixed-needs-rework",
     "l1_l2_fixes": 9,
-    "l3_l4_issues": 0,
+    "l3_l4_issues": 1,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -412,17 +415,13 @@
       "task6_note": "Task2B fixed 后复审通过；修复结构性元叙述、AIW 编辑标记和无来源量化口径，转 Task9 复核。"
     },
     "17.2": {
-      "p0": 3,
-      "p1": 4,
-      "p2": 5,
-      "p3": 2,
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 0,
-      "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-25T12:09:00+08:00",
-      "task6_log": "logs/review/2026-05-25-12-review.md",
-      "task6_new_rework": true,
-      "task6_note": "复审未发现新增 L1/L2;尾部联发科调度源码素材块仍未整合,已继续并入 queue.json priority 95。Task9 2025/2026 SoC 规格 P0 pending 保留。"
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T08:07:00+08:00",
+      "task6_log": "logs/review/2026-05-27-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L1/L2 复扫通过；outline 5/5 覆盖；无新增回炉项。Task9 result 为 auto-fixed，未自动晋升 finalized。"
     },
     "20.4": {
       "p0": 1,
@@ -537,20 +536,13 @@
       "p3": 0
     },
     "7.6": {
-      "p0": 2,
-      "p1": 1,
-      "p2": 1,
-      "p3": 0,
-      "reviewed_at": "2026-05-17T12:32:07+08:00",
-      "log": "logs/deep-review/2026-05-17-12-deep-review.md",
-      "summary": "P0 2：SF/HWC trace 源码锚点 handleMessageRefresh/doComposition 不存在；ThermalManager 示例 API 不存在。P1 1：Overlay plane 能力/API 边界缺设备证据。P2 1：案例数值证据包未归档。",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 0,
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-25T12:09:00+08:00",
-      "task6_log": "logs/review/2026-05-25-12-review.md",
+      "task6_reviewed_at": "2026-05-27T07:11:00+08:00",
+      "task6_log": "logs/review/2026-05-27-07-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审未发现新增 L1/L2 或 L3/L4 写作问题。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需修。"
+      "task6_note": "2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
     },
     "20.5": {
       "p0": 3,
@@ -779,10 +771,13 @@
       "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。"
     },
     "18.10": {
-      "p0": 0,
-      "p1": 1,
-      "p2": 2,
-      "p3": 0
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 4,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T08:07:00+08:00",
+      "task6_log": "logs/review/2026-05-27-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
     },
     "19.13": {
       "p0": 1,
@@ -891,19 +886,13 @@
       "p3": 0
     },
     "5.9": {
-      "p0": 3,
-      "p1": 1,
-      "p2": 1,
-      "p3": 0,
-      "task6_l3_l4": 1,
-      "task9_pending": 4,
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 4,
+      "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
-      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_reviewed_at": "2026-05-27T08:07:00+08:00",
+      "task6_log": "logs/review/2026-05-27-08-review.md",
       "task6_new_rework": true,
-      "task6_note": "L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，新增 Task6 queue priority 90。"
+      "task6_note": "补齐 outline 并清理第一人称/AI 过渡；正文仍保留源码调研补充块、DeepResearch 注入摘要和过程性标记，已写入 queue.json priority 90。"
     },
     "23.6": {
       "p0": 0,
@@ -2039,42 +2028,51 @@
     },
     "10.5": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-27T05:14:00+08:00",
-      "task6_log": "logs/review/2026-05-27-05-review.md",
+      "task6_reviewed_at": "2026-05-27T07:11:00+08:00",
+      "task6_log": "logs/review/2026-05-27-07-review.md",
       "task6_new_rework": false,
-      "task6_note": "L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
+      "task6_note": "2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
+    },
+    "11.1": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T07:11:00+08:00",
+      "task6_log": "logs/review/2026-05-27-07-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T05:51:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-27T08:07:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T04:06:00+08:00",
+    "reviewed_at": "2026-05-27T08:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.15",
-      "4.8",
-      "8.7"
+      "17.2",
+      "5.9",
+      "18.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-04-review.md",
+    "log": "logs/review/2026-05-27-08-review.md",
     "mode": "首次 review / revisiting",
     "results": {
-      "2.15": "pass-light-edit",
-      "4.8": "pass-light-edit",
-      "8.7": "pass-light-edit"
+      "17.2": "pass-light-edit",
+      "5.9": "needs-rework",
+      "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 18,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
+    "l1_l2_fixes": 9,
+    "new_task6_rework_items": 1,
+    "queue_updates": 1,
     "auto_finalized": []
   },
   "task9_last_review": "2026-05-26",
@@ -2205,30 +2203,39 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T02:50:00+08:00",
+  "last_task2b_at": "2026-05-27T06:51:00+08:00",
   "last_task2b_sections": [
-    "7.8"
+    "7.6"
   ],
-  "last_task2b_action": "回炉修复: 7.8 RecyclerView 后半段源码调研块合并清理",
+  "last_task2b_action": "回炉修复: 7.6 案例六 HWC Overlay Plane 证据边界收敛",
   "sections": {
     "17.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-25T12:09:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 95,
-      "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-27T08:07:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-27-08-review.md",
       "title": "SoC 平台差异",
       "file": "src/part4-system/ch17-oem/02-soc-differences.md",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task2b_state": "fixed",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-25",
-      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_review_summary": "L1/L2 复扫通过；outline 5/5 覆盖；无新增回炉项。Task9 result 为 auto-fixed，未自动晋升 finalized。",
       "task2b_result": "fixed",
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "section": "17.2",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-27",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-27",
+      "last_task9_at": "2026-05-27T06:23:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-06-deep-review.md",
+      "task9_review_notes": "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。",
+      "last_task9_autofix_at": "2026-05-27"
     },
     "3.5": {
       "status": "finalized",
@@ -2316,26 +2323,34 @@
     },
     "7.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task9_at": "2026-05-12T18:24:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task9_at": "2026-05-25T11:41:00+08:00",
       "task9_result": "needs-rework",
       "task9_state": "pending",
-      "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-25-11-deep-review.md",
       "task2b_state": "fixed",
       "title": "案例集",
       "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
-      "task6_state": "revisiting",
+      "reviewed_date": "2026-05-27",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-25T12:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-12-review.md",
+      "last_task6_at": "2026-05-27T07:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-07-review.md",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-25",
+      "task6_reviewed_date": "2026-05-27",
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "section": "7.6",
+      "task6_review_summary": "2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。",
+      "last_task2b_at": "2026-05-27T06:51:00+08:00",
+      "last_task2b_queue_source": "task6-review",
+      "last_task2b_priority": 90,
+      "task2b_note": "2026-05-27 Task2B main: 案例六 HWC Overlay Plane 归因收敛为设备证据条件判断；删除文末源码调研原始块。",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-25",
+      "task9_review_notes": "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。"
     },
     "20.5": {
       "status": "ready-for-review",
@@ -2959,18 +2974,26 @@
     },
     "18.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-13T17:55:27+08:00",
       "task9_result": "needs-rework",
       "task9_state": "pending",
-      "queue_priority": 85,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
+      "queue_priority": 85,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
       "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
-      "last_task2b_note": "Task2B Lite 修复 FrameTimeline fallback、ASurfaceControl release/display-tree 边界和 ch18->ch02 交叉引用。"
+      "last_task2b_note": "Task2B Lite 修复 FrameTimeline fallback、ASurfaceControl release/display-tree 边界和 ch18->ch02 交叉引用。",
+      "last_task6_at": "2026-05-27T08:07:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-27-08-review.md",
+      "title": "SurfaceControl API 深入",
+      "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_review_summary": "补正文 H1，删除填充修饰词；FrameTimeline 小节清理冗余强调词；outline 9/9 覆盖；无新增回炉项。"
     },
     "19.13": {
       "status": "ready-for-review",
@@ -3136,22 +3159,25 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed",
-      "queue_priority": 95,
+      "task2b_state": "pending",
+      "queue_priority": 90,
       "last_task9_at": "2026-05-14T04:36:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-04-deep-review.md",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "needs-rework",
-      "last_task6_at": "2026-05-21T02:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
+      "last_task6_at": "2026-05-27T08:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-08-review.md",
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_review_summary": "补齐 outline 并清理第一人称/AI 过渡；源码调研补充块/DeepResearch 摘要仍需 Task2B 整合。"
     },
     "23.7": {
       "status": "finalized",
@@ -5572,19 +5598,25 @@
       "title": "Android 功耗模型",
       "file": "src/part2-performance/ch11-power/01-power-model.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-26",
-      "last_task6_at": "2026-05-26T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
-      "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "queue_priority": 90,
-      "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
-      "task6_new_rework": true
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T07:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-07-review.md",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
+      "task6_review_summary": "2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-27",
+      "last_task9_at": "2026-05-27T06:23:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-06-deep-review.md",
+      "task9_review_notes": "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。",
+      "last_task9_autofix_at": "2026-05-27"
     },
     "1.7": {
       "section": "1.7",
@@ -5677,12 +5709,22 @@
       "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
       "task2b_verifier_result": "ready-for-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "reviewed_date": "2026-05-27",
       "reviewed_by": "openclaw-task6",
-      "last_task6_at": "2026-05-27T05:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
-      "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。"
+      "last_task6_at": "2026-05-27T07:11:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-07-review.md",
+      "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。",
+      "section": "10.5",
+      "task6_review_summary": "2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-05-27",
+      "last_task9_at": "2026-05-27T05:28:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-05-deep-review.md",
+      "task9_review_notes": "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。",
+      "last_task9_autofix_at": "2026-05-27"
     },
     "8.7": {
       "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
@@ -5695,6 +5737,44 @@
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
       "task2b_verifier_result": "ready-for-task6"
+    },
+    "1.2": {
+      "section": "1.2",
+      "title": "系统启动全流程",
+      "file": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-06-review.md",
+      "task6_review_summary": "复审通过；outline 覆盖完整，无新增 L3/L4 回炉项，送 Task9 复审。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27"
+    },
+    "7.8": {
+      "section": "7.8",
+      "title": "RecyclerView 列表滑动性能深度优化",
+      "file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T06:09:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-06-review.md",
+      "task6_review_summary": "复审通过；queue 无 pending 项，outline 覆盖完整，无新增回炉项，等待 Task9 复审。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27"
     }
   },
   "task2b_rounds": [
@@ -5786,33 +5866,37 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T05:14:00+08:00",
+  "last_task6_review": "2026-05-27T07:11:00+08:00",
   "last_task6_sections": [
-    "1.1",
-    "2.15",
-    "10.5"
+    "17.2",
+    "11.1",
+    "10.5",
+    "7.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch11-power/01-power-model.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
-  "last_task6_at": "2026-05-27T05:14:00+08:00",
+  "last_task6_at": "2026-05-27T07:11:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T05:14:00+08:00",
-    "log": "logs/review/2026-05-27-05-review.md",
+    "reviewed_at": "2026-05-27T07:11:00+08:00",
+    "log": "logs/review/2026-05-27-07-review.md",
     "sections": [
-      "1.1",
-      "2.15",
-      "10.5"
+      "17.2",
+      "11.1",
+      "10.5",
+      "7.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part2-performance/ch11-power/01-power-model.md",
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 9,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
     "auto_promoted": []
   },
@@ -5824,12 +5908,13 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T05:14:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-05-review.md",
+  "task6_last_review_at": "2026-05-27T07:11:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-07-review.md",
   "task6_last_review_sections": [
-    "1.1",
-    "2.15",
-    "10.5"
+    "17.2",
+    "11.1",
+    "10.5",
+    "7.6"
   ],
   "sections_status": {
     "22.11": {
@@ -7186,32 +7271,36 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T05:14:00+08:00",
-    "log": "logs/review/2026-05-27-05-review.md",
+    "reviewed_at": "2026-05-27T07:11:00+08:00",
+    "log": "logs/review/2026-05-27-07-review.md",
     "sections": [
-      "1.1",
-      "2.15",
-      "10.5"
+      "17.2",
+      "11.1",
+      "10.5",
+      "7.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part2-performance/ch11-power/01-power-model.md",
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "src/part2-performance/ch07-smoothness/06-case-studies.md"
     ],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 9,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
     "auto_promoted": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch11-power/01-power-model.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch11-power/01-power-model.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7517,9 +7606,10 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.1",
-    "2.15",
-    "10.5"
+    "17.2",
+    "11.1",
+    "10.5",
+    "7.6"
   ],
   "task2b_progress": [
     {
@@ -7556,7 +7646,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-05-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-07-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -7734,6 +7824,28 @@
       "result": "fixed-lite",
       "at": "2026-05-27T05:51:00+08:00",
       "summary": "修正已完成 Task2B 小修后仍停在 task2b_pending/finalized 的状态，将章节回流到 Task6 复审。"
+    },
+    {
+      "date": "2026-05-27T06:51:00+08:00",
+      "sections": [
+        {
+          "section": "7.6",
+          "title": "案例集",
+          "source": "task6-review",
+          "priority": 90,
+          "fixes": [
+            "案例六第三步：删除 5 层超过 4 个 plane 的确定性推导，改为设备证据条件链",
+            "根因/效果对比：要求 composition type、RenderEngine 耗时与 SF missed 帧对应后再归因",
+            "删除文末 HWC Overlay Plane 源码调研原始块"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 1,
+        "remaining_p95": 0,
+        "remaining_p90": 0,
+        "remaining_p85": 0
+      }
     }
   ],
   "section_18_23": {
@@ -7853,7 +7965,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 4,
+  "task2b_total_fixed": 5,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -8137,7 +8249,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T03:14:00+08:00",
+  "last_task6_review_at": "2026-05-27T07:11:00+08:00",
   "last_task6_review_section": "7.8",
   "section_1_22": {
     "section": "1.22",
@@ -8238,7 +8350,10 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "7.8"
+    "17.2",
+    "11.1",
+    "10.5",
+    "7.6"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8268,9 +8383,10 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part2-performance/ch11-power/01-power-model.md",
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -8401,25 +8517,31 @@
     "title": "Android 功耗模型",
     "file": "src/part2-performance/ch11-power/01-power-model.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-26",
-    "last_task6_at": "2026-05-26T01:12:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-26-01-review.md",
+    "reviewed_date": "2026-05-27",
+    "last_task6_at": "2026-05-27T07:11:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-07-review.md",
     "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_result": "auto-fixed",
     "task2b_state": "fixed",
-    "queue_priority": 90,
-    "queue_id": "task6-review-20260526-0112-11.1-power-profile-cpu-active-array",
-    "task6_new_rework": true,
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-27",
     "last_task2b_at": "2026-05-27T03:42:00+08:00",
     "last_task2b_queue_source": "frontmatter-fallback",
     "last_task2b_priority": 90,
-    "task2b_note": "Task2B Lite 修复 power_profile.xml 示例中 cpu.active 标签形态：按 AOSP android-16.0.0_r1 公共 profile 改为 array。"
+    "task2b_note": "Task2B Lite 修复 power_profile.xml 示例中 cpu.active 标签形态：按 AOSP android-16.0.0_r1 公共 profile 改为 array。",
+    "task6_review_summary": "2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-27",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_reviewed_date": "2026-05-27",
+    "last_task9_at": "2026-05-27T06:23:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-27-06-deep-review.md",
+    "task9_review_notes": "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。",
+    "last_task9_autofix_at": "2026-05-27"
   },
   "task2b_daily": {
     "2026-05-26": {
@@ -8433,17 +8555,16 @@
   },
   "task2b_last_run": "2026-05-27",
   "task2b_pending_counts": {
-    "p95": 132,
-    "p90": 2,
-    "p85": 7,
-    "total": 141
+    "p95": 0,
+    "p90": 0,
+    "p85": 0
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T03:14:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T07:11:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -8473,10 +8594,19 @@
       "source": "task6-review",
       "priority": 90,
       "summary": "合并清理后半段源码调研原始块，回流 Task6。"
+    },
+    {
+      "section": "7.6",
+      "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "at": "2026-05-27T06:51:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "task6-review",
+      "priority": 90,
+      "summary": "案例六 HWC 合成降级改为 Layer trace/dumpsys 证据约束下的条件判断，删除 HWC Overlay Plane 源码调研原始块。"
     }
   ],
-  "last_task2b_completed": "2026-05-27T02:50:00+08:00",
-  "last_task2b_completed_at": "2026-05-27T02:50:00+08:00",
+  "last_task2b_completed": "2026-05-27T06:51:00+08:00",
+  "last_task2b_completed_at": "2026-05-27T06:51:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -8513,7 +8643,7 @@
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_result": "auto-fixed",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_verifier_at": "2026-05-26T23:25:00+08:00",
@@ -8522,12 +8652,16 @@
     "task2b_note": "修复 2026-05-27 Task6/Task9 合并回炉：GapWorker measure 盲区收敛进预取机制，DeliQueue 诊断特征和官方 benchmark 来源收敛进 Android 17 小节；删除 AIW 源码调研过程块。",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-27",
-    "last_task6_at": "2026-05-27T03:14:00+08:00",
+    "last_task6_at": "2026-05-27T06:09:00+08:00",
     "task6_note": "Task6 复审通过，L1/L2 小修 10 处；无回炉项，等待 Task9 复审。",
-    "last_review_log": "logs/review/2026-05-27-03-review.md",
+    "last_review_log": "logs/review/2026-05-27-06-review.md",
     "last_task2b_queue_source": "task6-review",
     "last_task2b_priority": 90,
-    "last_task9_review_log": "logs/deep-review/2026-05-27-01-deep-review.md"
+    "last_task9_review_log": "logs/deep-review/2026-05-27-01-deep-review.md",
+    "last_task6_review_log": "logs/review/2026-05-27-06-review.md",
+    "task6_review_summary": "复审通过；queue 无 pending 项，outline 覆盖完整，无新增回炉项，等待 Task9 复审。",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-27"
   },
   "task2b_lite_daily": {
     "2026-05-27": {
