@@ -18,6 +18,7 @@ material_paths:
   - "cs.android.com frameworks/base/core/java/com/android/internal/os/ZygoteInit.java"
   - "cs.android.com frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp"
   - "cs.android.com frameworks/base/core/java/android/os/GraphicsEnvironment.java"
+task6_reviewed_date: "2026-05-27"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1"
@@ -34,14 +35,14 @@ sources:
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 2
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "reviewed"
-pipeline_stage: "task6_pending"
-task6_review_notes: "2026-05-27 Task6：回炉复审通过；完成 2 处 L2 表达小修；无 L3/L4 回炉项，送 Task9 技术复审。"
-last_task6_at: "2026-05-27T18:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-18-review.md"
-task6_l1_l2_fixes: 2
+task9_state: pending
+pipeline_stage: task9_pending
+task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
+last_task6_at: "2026-05-27T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-19-review.md"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task9_result: "auto-fixed"
 task2b_result: "fixed-lite"

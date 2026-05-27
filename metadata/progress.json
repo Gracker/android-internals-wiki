@@ -368,16 +368,20 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T18:06:00+08:00",
-    "log": "logs/review/2026-05-27-18-review.md",
+    "reviewed_at": "2026-05-27T19:05:00+08:00",
+    "log": "logs/review/2026-05-27-19-review.md",
     "sections": [
-      "1.19"
+      "1.18",
+      "1.19",
+      "1.20"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
     ],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 17,
     "l3_l4_issues": 0,
     "auto_promoted": []
   },
@@ -1289,12 +1293,12 @@
       "p2": 2,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 7,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-15T22:12:00+08:00",
-      "task6_log": "logs/review/2026-05-15-22-review.md",
+      "task6_reviewed_at": "2026-05-27T19:05:00+08:00",
+      "task6_log": "logs/review/2026-05-27-19-review.md",
       "task6_new_rework": false,
-      "task6_note": "首次 review 通过；修正标题、少量措辞和中英文/斜杠格式，补齐 Task6 frontmatter。Task9 pending，未自动晋升。",
+      "task6_note": "回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。",
       "task9_result": "needs-rework",
       "reviewed_at": "2026-05-15T22:35:05+08:00",
       "log": "logs/deep-review/2026-05-15-22-deep-review.md",
@@ -1304,7 +1308,14 @@
       "p0": 0,
       "p1": 1,
       "p2": 2,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T19:05:00+08:00",
+      "task6_log": "logs/review/2026-05-27-19-review.md",
+      "task6_new_rework": false,
+      "task6_note": "回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。"
     },
     "22.12": {
       "p0": 0,
@@ -1448,7 +1459,14 @@
       "p3": 0,
       "reviewed_at": "2026-05-17T04:33:15+08:00",
       "log": "logs/deep-review/2026-05-17-04-deep-review.md",
-      "summary": "P1 2：requestArchive 前置条件缺 installer/opt-out/system-app/launcher activity 等失败路径；Activity start unarchive listener 误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与 4.2/16.2 回跳不一致。"
+      "summary": "P1 2：requestArchive 前置条件缺 installer/opt-out/system-app/launcher activity 等失败路径；Activity start unarchive listener 误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与 4.2/16.2 回跳不一致。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 17,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T19:05:00+08:00",
+      "task6_log": "logs/review/2026-05-27-19-review.md",
+      "task6_new_rework": false,
+      "task6_note": "回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。"
     },
     "26.12": {
       "p0": 0,
@@ -2086,8 +2104,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T18:50:00+08:00",
-  "last_updated_by": "task2b-content-processing-rework",
+  "last_updated": "2026-05-27T19:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T18:06:00+08:00",
     "log": "logs/review/2026-05-27-18-review.md",
@@ -4008,29 +4026,31 @@
       "title": "Binder Freezer 与缓存进程冻结性能",
       "file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_source": "素材驱动/AOSP结构/官方文档",
       "last_task2a_at": "2026-05-15T21:09:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "task6_reviewed_date": "2026-05-15",
-      "last_task6_at": "2026-05-15T22:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-22-review.md",
-      "task6_review_notes": "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 7 处；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "reviewed_date": "2026-05-27",
+      "task6_reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task9_result": "needs-rework",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
       "last_task2b_source": "frontmatter backlog fallback/task9-deep-review",
-      "last_task2b_summary": "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。"
+      "last_task2b_summary": "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0
     },
     "16.6": {
       "title": "Android 16 云端 Profile 与 dexopt 安装优化",
@@ -4163,12 +4183,12 @@
       "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T18:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-18-review.md",
-      "task6_l1_l2_fixes": 2,
+      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；完成 2 处 L2 表达小修；无 L3/L4 回炉项，送 Task9 技术复审。",
-      "task9_result": "needs-rework",
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
+      "task9_result": "auto-fixed",
       "last_task9_at": "2026-05-16T06:31:25+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
       "task2b_state": "fixed",
@@ -4177,7 +4197,8 @@
       "last_task2b_lite_at": "2026-05-27",
       "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
       "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
-      "section": "1.19"
+      "section": "1.19",
+      "task6_reviewed_date": "2026-05-27"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -4531,7 +4552,7 @@
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "task9_state": "pending",
@@ -4542,16 +4563,20 @@
       "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
       "queue_priority": 90,
-      "task6_state": "revisiting",
-      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-17",
-      "last_task6_at": "2026-05-17T05:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-05-review.md",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
       "last_task2b_source": "frontmatter backlog fallback/task9/task6-review",
-      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
+      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_l1_l2_fixes": 17,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
@@ -6007,21 +6032,27 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T18:06:00+08:00",
+  "last_task6_review": "2026-05-27T19:05:00+08:00",
   "last_task6_sections": [
-    "1.19"
+    "1.18",
+    "1.19",
+    "1.20"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
-  "last_task6_at": "2026-05-27T18:06:00+08:00",
+  "last_task6_at": "2026-05-27T19:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T18:06:00+08:00",
-    "log": "logs/review/2026-05-27-18-review.md",
+    "reviewed_at": "2026-05-27T19:05:00+08:00",
+    "log": "logs/review/2026-05-27-19-review.md",
     "sections": [
-      "1.19"
+      "1.18",
+      "1.19",
+      "1.20"
     ],
-    "small_fixes": 2,
+    "small_fixes": 17,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -6033,10 +6064,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T18:06:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-18-review.md",
+  "task6_last_review_at": "2026-05-27T19:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-19-review.md",
   "task6_last_review_sections": [
-    "1.19"
+    "1.18",
+    "1.19",
+    "1.20"
   ],
   "sections_status": {
     "22.11": {
@@ -6121,12 +6154,12 @@
       "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T18:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-18-review.md",
-      "task6_l1_l2_fixes": 2,
+      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；完成 2 处 L2 表达小修；无 L3/L4 回炉项，送 Task9 技术复审。",
-      "task9_result": "needs-rework",
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
+      "task9_result": "auto-fixed",
       "last_task9_at": "2026-05-16T06:31:25+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
       "task2b_state": "fixed",
@@ -6135,7 +6168,8 @@
       "last_task2b_lite_at": "2026-05-27",
       "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
       "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
-      "section": "1.19"
+      "section": "1.19",
+      "task6_reviewed_date": "2026-05-27"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -6565,7 +6599,7 @@
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "task9_state": "pending",
@@ -6576,16 +6610,20 @@
       "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
       "queue_priority": 90,
-      "task6_state": "revisiting",
-      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-17",
-      "last_task6_at": "2026-05-17T05:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-05-review.md",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
       "last_task2b_source": "frontmatter backlog fallback/task9/task6-review",
-      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
+      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_l1_l2_fixes": 17,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
@@ -7530,30 +7568,40 @@
   "last_task2b_run": "2026-05-27T16:50:00+08:00",
   "task2b_sections_fixed": 3,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T18:06:00+08:00",
+    "reviewed_at": "2026-05-27T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "1.19"
+      "1.18",
+      "1.19",
+      "1.20"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
     ],
-    "log": "logs/review/2026-05-27-18-review.md",
+    "log": "logs/review/2026-05-27-19-review.md",
     "mode": "revisiting",
     "results": {
-      "1.19": "pass-light-edit"
+      "1.18": "pass-light-edit",
+      "1.19": "pass-light-edit",
+      "1.20": "pass-light-edit"
     },
-    "l1_l2_fixes": 2,
-    "metadata_updates": 1,
+    "l1_l2_fixes": 17,
+    "metadata_updates": 3,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7918,7 +7966,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.19"
+    "1.18",
+    "1.19",
+    "1.20"
   ],
   "task2b_progress": [
     {
@@ -7987,7 +8037,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-18-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8631,7 +8681,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T11:10:56+08:00",
+  "last_task6_review_at": "2026-05-27T19:05:00+08:00",
   "last_task6_review_section": "18.10",
   "section_1_22": {
     "section": "1.22",
@@ -8732,7 +8782,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "1.19"
+    "1.18",
+    "1.19",
+    "1.20"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8762,7 +8814,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -8940,7 +8994,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T13:05:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T19:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
