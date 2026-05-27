@@ -366,18 +366,18 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T12:06:00+08:00",
-    "log": "logs/review/2026-05-27-12-review.md",
+    "reviewed_at": "2026-05-27T14:05:00+08:00",
+    "log": "logs/review/2026-05-27-14-review.md",
     "sections": [
-      "22.4",
-      "2.9"
+      "5.9",
+      "1.10"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-      "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
     ],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 8,
     "l3_l4_issues": 0,
     "auto_promoted": []
   },
@@ -2068,26 +2068,26 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T13:35:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-27T14:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T13:05:00+08:00",
+    "reviewed_at": "2026-05-27T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "22.4",
-      "1.13"
+      "5.9",
+      "1.10"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
     ],
-    "log": "logs/review/2026-05-27-13-review.md",
+    "log": "logs/review/2026-05-27-14-review.md",
     "mode": "revisiting",
     "results": {
-      "22.4": "pass-light-edit",
-      "1.13": "pass-light-edit"
+      "5.9": "pass-light-edit",
+      "1.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 4,
+    "l1_l2_fixes": 8,
     "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
@@ -3223,21 +3223,23 @@
       "title": "ADPF 自适应性能框架",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-27T10:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
+      "last_task6_at": "2026-05-27T14:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-14-review.md",
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
       "task2b_verifier_result": "ready-for-task6",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 Task9 auto-fix 后的 Unity 支持版本修正；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
+      "task6_review_summary": "2026-05-27 14:05 Task6：pass-light-edit。复审 Task9 auto-fix 后正文主线、术语与 outline 覆盖；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
       "section": "5.9",
       "last_task2b_at": "2026-05-27T08:50:00+08:00",
       "task2b_summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
       "last_task9_autofix_at": "2026-05-27",
-      "task9_review_summary": "AUTO-FIX：Unity ADPF 支持版本修正为 Unity 2021.3+ / Adaptive Performance 5.0+，回到 Task6 复审。"
+      "task9_review_summary": "AUTO-FIX：Unity ADPF 支持版本修正为 Unity 2021.3+ / Adaptive Performance 5.0+，回到 Task6 复审。",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0
     },
     "23.7": {
       "status": "finalized",
@@ -4164,23 +4166,25 @@
       "title": "ContentProvider 性能与优化",
       "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-16",
-      "last_task6_at": "2026-05-16T06:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
-      "task6_l1_l2_fixes": 11,
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T14:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-14-review.md",
+      "task6_l1_l2_fixes": 6,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；无新增 L3/L4 回炉项；保留既有 Task9 needs-rework.",
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；无新增 L3/L4 回炉项；保留既有 Task9 needs-rework. | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。",
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-27",
       "last_task2b_at": "2026-05-27T13:35:00+08:00",
-      "task2b_lite_notes": "2026-05-27 Task2B Lite：修正 ContentProvider 当前进程/remote provider 启动语义，回流 Task6。"
+      "task2b_lite_notes": "2026-05-27 Task2B Lite：修正 ContentProvider 当前进程/remote provider 启动语义，回流 Task6。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27"
     },
     "2.21": {
       "title": "文字渲染性能",
