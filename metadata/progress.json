@@ -2189,8 +2189,8 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T05:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T05:31:07+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T05:12:00+08:00",
     "sections": [
@@ -2209,7 +2209,7 @@
     "rework_items": 0,
     "auto_promoted": []
   },
-  "task9_last_review": "2026-05-27",
+  "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
   "rework_history": [
     {
@@ -5113,16 +5113,16 @@
       "title": "网络性能深入：连接池、TLS 与传输优化",
       "file": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-19T19:36:17+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "pipeline_stage": "task6_pending",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-05-28T05:31:07+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
       "p0": 0,
-      "p1": 1,
+      "p1": 0,
       "p2": 0,
       "task2b_state": "fixed",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-28T05:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
@@ -5134,7 +5134,9 @@
       "task2b_note": "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
+      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。",
+      "last_task9_autofix_at": "2026-05-28",
+      "task9_review_notes": "Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。"
     },
     "20.3": {
       "title": "Native Crash 分析与治理",
@@ -6153,11 +6155,11 @@
       "title": "网络性能优化",
       "file": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-28T04:50:00+08:00",
@@ -6168,7 +6170,14 @@
       "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
+      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。",
+      "last_task9_at": "2026-05-28T05:31:07+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
+      "last_task9_autofix_at": "2026-05-28",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "task9_review_notes": "Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。"
     }
   },
   "task2b_rounds": [
@@ -6190,61 +6199,67 @@
   "last_task2a_processed_file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
   "last_task2a_processed_date": "2026-05-26",
   "task9_last_review_detail": {
-    "date": "2026-05-27",
-    "time": "21:20",
-    "reviewed_at": "2026-05-27T21:20:00+08:00",
+    "date": "2026-05-28",
+    "time": "05:30",
+    "reviewed_at": "2026-05-28T05:31:07+08:00",
     "mode": "deep-review",
     "sections": [
-      "23.8"
+      "12.2",
+      "12.3"
     ],
     "files": [
-      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
     ],
-    "log": "logs/deep-review/2026-05-27-21-deep-review.md",
+    "log": "logs/deep-review/2026-05-28-05-deep-review.md",
     "p0": 0,
-    "p1": 0,
+    "p1": 4,
     "p2": 0,
     "p3": 0,
-    "result": "pass-tech-review",
-    "auto_promoted": [
-      "23.8"
-    ],
-    "auto_finalized": [
-      "23.8"
+    "result": "auto-fixed",
+    "auto_promoted": [],
+    "auto_finalized": [],
+    "auto_fixed": [
+      "12.2",
+      "12.3"
     ],
     "needs_rework": []
   },
-  "last_task9_review": "2026-05-27T21:20:00+08:00",
+  "last_task9_review": "2026-05-28T05:31:07+08:00",
   "last_task9_sections": [
-    "23.8 内存优化案例集"
+    "12.2",
+    "12.3"
   ],
   "last_task9_review_detail": {
-    "date": "2026-05-27",
-    "time": "21:20",
-    "reviewed_at": "2026-05-27T21:20:00+08:00",
+    "date": "2026-05-28",
+    "time": "05:30",
+    "reviewed_at": "2026-05-28T05:31:07+08:00",
     "mode": "deep-review",
     "sections": [
-      "23.8"
+      "12.2",
+      "12.3"
     ],
     "files": [
-      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
     ],
-    "log": "logs/deep-review/2026-05-27-21-deep-review.md",
+    "log": "logs/deep-review/2026-05-28-05-deep-review.md",
     "p0": 0,
-    "p1": 0,
+    "p1": 4,
     "p2": 0,
     "p3": 0,
-    "result": "pass-tech-review",
-    "auto_promoted": [
-      "23.8"
-    ],
-    "auto_finalized": [
-      "23.8"
+    "result": "auto-fixed",
+    "auto_promoted": [],
+    "auto_finalized": [],
+    "auto_fixed": [
+      "12.2",
+      "12.3"
     ],
     "needs_rework": []
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
   "total_review_files": 70,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
@@ -6284,9 +6299,10 @@
     "auto_finalized": []
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "last_task9_at": "2026-05-26T04:30:00+08:00",
+  "last_task9_at": "2026-05-28T05:31:07+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
@@ -7149,19 +7165,19 @@
       "title": "网络性能深入：连接池、TLS 与传输优化",
       "file": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-28T05:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task9_at": "2026-05-19T19:36:17+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-19-19-deep-review.md",
+      "last_task9_at": "2026-05-28T05:31:07+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
       "p0": 0,
-      "p1": 1,
+      "p1": 0,
       "p2": 0,
       "section": "12.3",
       "last_task2b_at": "2026-05-28T04:50:00+08:00",
@@ -7170,7 +7186,9 @@
       "task2b_note": "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
+      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。",
+      "last_task9_autofix_at": "2026-05-28",
+      "task9_review_notes": "Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。"
     },
     "8.2": {
       "title": "App 启动全流程",
@@ -7786,11 +7804,11 @@
       "title": "网络性能优化",
       "file": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-28T04:50:00+08:00",
@@ -7801,7 +7819,14 @@
       "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
+      "task6_review_notes": "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。",
+      "last_task9_at": "2026-05-28T05:31:07+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
+      "last_task9_autofix_at": "2026-05-28",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "task9_review_notes": "Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。"
     }
   },
   "task2a_last_processed": {
@@ -7827,18 +7852,18 @@
     "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
   },
   "task9_last_sections": [
-    "1.7",
-    "11.4"
+    "12.2",
+    "12.3"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-26-04-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-05-28-05-deep-review.md",
   "task9_last_files": [
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-    "src/part2-performance/ch11-power/04-case-studies.md"
+    "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
   "last_task2b_run": "2026-05-28-04-task2b-main",
   "task2b_sections_fixed": [
@@ -7878,33 +7903,31 @@
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
-    "date": "2026-05-26",
-    "time": "04:30",
-    "reviewed_at": "2026-05-26T04:30:00+08:00",
+    "date": "2026-05-28",
+    "time": "05:30",
+    "reviewed_at": "2026-05-28T05:31:07+08:00",
     "mode": "deep-review",
     "sections": [
-      "1.7",
-      "11.4"
+      "12.2",
+      "12.3"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "src/part2-performance/ch11-power/04-case-studies.md"
+      "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
     ],
-    "log": "logs/deep-review/2026-05-26-04-deep-review.md",
-    "p0": 1,
-    "p1": 0,
-    "p2": 3,
+    "log": "logs/deep-review/2026-05-28-05-deep-review.md",
+    "p0": 0,
+    "p1": 4,
+    "p2": 0,
     "p3": 0,
-    "result": "mixed",
-    "auto_promoted": [
-      "1.7"
+    "result": "auto-fixed",
+    "auto_promoted": [],
+    "auto_finalized": [],
+    "auto_fixed": [
+      "12.2",
+      "12.3"
     ],
-    "auto_finalized": [
-      "1.7"
-    ],
-    "needs_rework": [
-      "11.4"
-    ]
+    "needs_rework": []
   },
   "task2b_history": [
     {
@@ -8207,7 +8230,7 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed"
   },
-  "last_task9_review_summary": "Task9 04:30 reviewed 1.7 and 11.4; 1.7 auto-finalized; 11.4 returned to Task2B for JobScheduler timeout min-guarantee correction.",
+  "last_task9_review_summary": "P0 0 / P1 4 auto-fixed / P2 0；12.2、12.3 回到 Task6 复审。",
   "last_task2a_gap_mining": {
     "date": "2026-05-26",
     "time": "06:16",
@@ -8380,7 +8403,7 @@
       "fix_summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
   "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -9646,14 +9669,12 @@
     "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
   },
   "last_task9_reviewed_sections": [
-    "2.21",
-    "10.3",
-    "13.13"
+    "12.2",
+    "12.3"
   ],
   "task9_last_reviewed_sections": [
-    "2.21",
-    "10.3",
-    "13.13"
+    "12.2",
+    "12.3"
   ],
   "section_10_3": {
     "section": "10.3",

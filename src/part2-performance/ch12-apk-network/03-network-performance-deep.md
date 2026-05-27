@@ -1,5 +1,4 @@
 ---
-
 title: "网络性能深入：连接池、TLS 与传输优化"
 chapter: "12.3"
 section: "12.3"
@@ -53,22 +52,22 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "reviewed"
-pipeline_stage: "task9_pending"
-task9_state: "pending"
-task9_result: "needs-rework"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-19T19:36:17+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-19
+last_task9_at: "2026-05-28T05:31:07+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-19"
 last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-05-deep-review.md"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-28T05:12:00+08:00"
 task6_reviewed_at: "2026-05-28T05:12:00+08:00"
@@ -79,6 +78,7 @@ last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
+last_task9_autofix_at: "2026-05-28"
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
@@ -181,7 +181,7 @@ HTTP/2 的收益来自把同域名并发请求压到一条已建立的连接上�
 
 一个 OkHttp 请求的连接建立过程大致如下：
 
-1. **Route Selection**：OkHttp 的 `RouteSelector` 根据 DNS 解析结果、代理配置、HTTP/2 支持情况选择一条最优路由。
+1. **Route Selection**：OkHttp 的 `RouteSelector` 根据代理配置、DNS 地址列表和连接失败历史生成候选 `Route`；HTTP/2 是否可用要等连接后的 ALPN 或 prior knowledge 路径确认。
 2. **DNS 解析**：调用 `Dns` 接口的 `lookup()` 方法，将 hostname 解析为 IP 地址列表。
 3. **TCP 连接**：通过 `Socket` 连接到目标 IP 和端口。
 4. **TLS 握手**（如果是 HTTPS）：在 TCP 连接之上建立加密通道。
@@ -197,7 +197,7 @@ dnsEnd()              // DNS 解析结束 → 得到 DNS 耗时
 connectStart()        // TCP 连接开始
 secureConnectStart()  // TLS 握手开始
 secureConnectEnd()    // TLS 握手结束 → 得到 TLS 耗时
-connectEnd()          // 连接建立完成 → 得到 TCP 连接耗时
+connectEnd()          // 建连完成；HTTPS 下已经包含 TLS 阶段
 connectionAcquired()  // 从连接池获取连接（可能是复用）
 requestHeadersStart() // 发送请求头
 responseHeadersStart()// 收到响应头 → 得到 TTFB
@@ -206,7 +206,7 @@ responseBodyEnd()     // body 接收完成 → 得到传输耗时
 callEnd()             // 请求完成
 ```
 
-这套回调机制是网络性能监控的基础。在线上环境中，我们可以通过 EventListener 收集每个阶段的耗时，建立网络性能的基线数据。
+这套回调机制是网络性能监控的基础。HTTPS 请求里，`connectEnd - connectStart` 是建连总耗时，不是纯 TCP socket 耗时；TLS 耗时应使用 `secureConnectEnd - secureConnectStart`，TCP socket connect 可用 `secureConnectStart - connectStart` 近似。在线上环境中，我们可以通过 EventListener 收集每个阶段的耗时，建立网络性能的基线数据。
 
 ## TLS 握手性能与优化
 
@@ -428,9 +428,9 @@ Perfetto 里更常见的现象是主线程等待网络线程，而不是主线�
 线上环境中，通过 OkHttp `EventListener` 收集的网络性能指标通常包括：
 
 - **DNS 时间**：`dnsEnd - dnsStart`
-- **连接时间**：`connectEnd - connectStart`
+- **建连总耗时**：`connectEnd - connectStart`，HTTPS 下包含 TLS
 - **TLS 时间**：`secureConnectEnd - secureConnectStart`
-- **首字节时间（TTFB）**：`responseHeadersStart - requestHeadersStart`
+- **首字节时间（TTFB）**：GET 可用 `responseHeadersStart - requestHeadersEnd`；有请求体时从 `requestBodyEnd` 起算
 - **内容传输时间**：`responseBodyEnd - responseBodyStart`
 - **总耗时**：`callEnd - callStart`
 
