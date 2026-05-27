@@ -44,12 +44,12 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-21T03:22:56+08:00'
+last_task2b_at: '2026-05-27T08:50:00+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: needs-rework
@@ -61,7 +61,7 @@ last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
 last_task6_at: "2026-05-27T08:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-08-review.md"
 task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。 | 2026-05-27 08:07 Task6：needs-rework。补齐 outline，清理第一人称/AI 过渡 4 处；正文仍保留源码调研补充块、DeepResearch 注入摘要和 Task2B/Task9 过程性标记，已写入 queue.json priority 90 交 Task2B 整合。"
+task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。"
 last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: openclaw-task6
@@ -71,7 +71,6 @@ review_type: task6-writing-quality-review
 
 # 5.9 ADPF 自适应性能框架
 
-<!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点(必须覆盖)
@@ -88,7 +87,6 @@ review_type: task6-writing-quality-review
 - 🔸 Unity / Unreal Engine 的 ADPF 集成
 - 🔸 OEM 对 ADPF 的定制差异
 - 🔸 Kotlin 协程线程迁移与 HintSession TID 绑定边界
-<!-- outline-end -->
 
 ## 为什么需要 ADPF
 
@@ -96,9 +94,7 @@ review_type: task6-writing-quality-review
 
 这个滞后在高帧率场景中尤为致命。以 120 fps 为例，一帧的预算只有 8.33 ms。如果系统在 2-3 个采样周期（可能 10-30 ms）后才完成提频，App 已经连续掉了几帧。反过来，负载下降后系统缓慢降频又浪费了功耗。
 
-ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后：App 直接告诉系统"我接下来需要多少性能"，系统再据此调整 CPU/GPU 频率和核心分配。ADPF 由 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成，覆盖"预告需求→动态调频→热管理→模式适配"的性能调控流程。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager]
+ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后：App 直接告诉系统"我接下来需要多少性能"，系统再据此调整 CPU / GPU 频率和核心分配。ADPF 由 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成，覆盖"预告需求→动态调频→热管理→模式适配"的性能调控流程。
 
 ## Performance Hint API：App 与系统的性能契约
 
@@ -133,27 +129,21 @@ session.updateTargetWorkDuration(16_666_667L);
 
 第二，target work duration 要和当前目标帧率对应。120 fps 是 8.33 ms，60 fps 是 16.67 ms。把这两个数字和注释写反，后面的调频判断也会跟着偏。
 
-[已验证: 官方文档 + AOSP android-16.0.0_r1, PerformanceHintManager#createHintSession]
-
 ### 系统侧的响应机制
 
 App 调 `reportActualWorkDuration()` 之后，信息不会直接到 SoC。公开 API 先进入 `PerformanceHintManager.Session`，再到 system_server 中的 `com.android.server.power.hint.HintManagerService`，再经 `IHintManager` 与厂商的 power hint HAL / AIDL 实现交互。排查 ADPF 失效时，也要按这三层拆开看：App 有没有正确上报，system_server 有没有收到 session 更新，OEM 实现有没有把 hint 变成提频或核心分配动作。
 
 这种设计决定了 ADPF 的实际效果会有设备差异。同一款游戏在 Pixel 上和在某款定制 ROM 上，帧时间稳定性的改善幅度可能不同。分析时不能只看 App 代码，还要把 system_server 和 OEM 实现一起纳入判断。
 
-Native 层的公开入口仍在 `frameworks/base/native/android/performance_hint.cpp`，对应 `APerformanceHint_*` 系列接口，方便 C/C++ 游戏引擎直接接入。
+Native 层的公开入口仍在 `frameworks/base/native/android/performance_hint.cpp`，对应 `APerformanceHint_*` 系列接口，方便 C / C++ 游戏引擎直接接入。Java JNI 层会通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定这些 NDK C API 符号；排查 native 接入问题时，公开 C API 与 Java framework wrapper 要分开看。
 
-[已验证: AOSP android-16.0.0_r1, performance_hint.cpp + HintManagerService.java]
+### CPU/GPU 工作时长、能效模式与 workload hint
 
-### Android 15 的增强：GPU 时长上报与能效模式
+Performance Hint API 的基础用法是周期性上报实际工作时长。Android 15 之后，ADPF 开始补齐 GPU-bound 场景的表达能力：同一个 work period 可以拆出 total、CPU、GPU 几类耗时，让系统知道瓶颈来自 CPU 线程还是 GPU 工作。AOSP 中的 `WorkDuration` overload 仍带有 feature flag，工程接入时要同时看 compile SDK、设备系统版本和 OEM 是否打开对应能力，不能只按单个 API level 下结论。
 
-Android 15 为 Performance Hint API 引入了两个重要增强。
+能效模式用于表达"这组线程可以优先走低功耗路径"。公开入口是 `PerformanceHintManager.Session#setPreferPowerEfficiency(boolean)`，从 API 35 开始进入公开 API 面。它不依赖 `GameManager`，因此可以用于后台批处理、长时间同步、视频处理、AI 推理这类非游戏负载；前提是业务能接受更长的完成时间。
 
-第一个是 GPU 工作时长上报。之前的 ADPF 只能上报 CPU 工作时长，系统据此只能调整 CPU 频率。Android 15 允许 App 在同一个 HintSession 中同时上报 CPU 和 GPU 的工作时长，系统可以据此同时调整 CPU 和 GPU 的频率。这对 GPU-bound 的游戏场景尤为重要——如果系统只根据 CPU 耗时来调频，而瓶颈在 GPU 上，调频方向就会偏。
-
-第二个是能效模式（power-efficiency mode）。HintSession 可以设置能效优先模式，让系统将关联线程调度到效率核（E-core）上，优先功耗而非性能。这个模式适合后台长时间运行的任务，比如游戏加载场景中的资源解压——不需要极致性能，但希望功耗尽可能低。
-
-[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15]
+Java 层还有 `sendHint()` 及 `CPU_LOAD_*` / `GPU_LOAD_*` 这类即时 hint 常量，但它们标注为 `@TestApi` / `@hide`，不属于普通 App 的 public SDK 接入面。C / C++ 侧如果要表达负载突增、重置、尖峰，应优先看 NDK `performance_hint.h` 中的 `APerformanceHint_notifyWorkloadIncrease`、`APerformanceHint_notifyWorkloadReset`、`APerformanceHint_notifyWorkloadSpike` 等公开函数，并按头文件标注的 API 版本做条件编译。
 
 ### Android 16 的 Headroom API
 
@@ -165,17 +155,12 @@ Android 16 新增的是 `SystemHealthManager#getCpuHeadroom(@Nullable CpuHeadroo
 
 Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal headroom listener。Java 层的 `PowerManager#getThermalHeadroom()` 适合做热趋势预测，`SystemHealthManager` 的 CPU / GPU headroom 更适合判断容量余量，这两类信号不要混成一件事。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager]
-
-### Android 17 的 `setPreferIdle`
-
-[待验证: Task9 已确认当前公开 API 37 文档和 NDK `performance_hint.h` 中均未检索到 `setPreferIdle(boolean)`。以下内容在找到 AOSP commit / API stub 或官方 release note 确认前，不作为确定信息使用。]
+### 公开 API 边界：`setPreferIdle`
 
 有调研素材提到 API 37 可能在 `PerformanceHintManager.Session` 上引入 `setPreferIdle(boolean)`，语义比 `setPreferPowerEfficiency` 更偏向"任务可以暂停"。但当前 Android Developers API 37 参考文档和 NDK `performance_hint.h` 中均未找到该方法。如果该 API 存在，可能是 preview/vendor SDK 的一部分，不属于公开 SDK。
 
 能效模式的公开入口仍然是 `setPreferPowerEfficiency(boolean)`（API 35 已确认可用），建议以它为优先选择。
 
-> [已修正: 原文声称已验证 developer.android.com，但实际该 URL 不存在此方法。]
 ## Thermal API：从被动降频到主动管理
 
 ### 热状态的层级模型
@@ -197,8 +182,6 @@ App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`g
 [图：热状态等级变化示意图——时间线上展示状态从 NONE 到 SEVERE 再回到 NONE 的过程，标注每个阶段对应的系统行为和 App 建议行为]
 
 App 通过 `PowerManager.addThermalStatusListener()` 注册监听器，在状态变化时收到回调。不要等到 `THERMAL_STATUS_SEVERE` 再动作。到那时系统通常已经开始明显限频，帧时间也已经变差。更合理的做法是在 `LIGHT` 或 `MODERATE` 就提前降低部分负载，把体验变化摊平。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/PowerManager]
 
 ### Thermal Headroom：预测式热管理
 
@@ -222,8 +205,6 @@ if (!Float.isNaN(headroom) && headroom >= 1.0f) {
 ```
 
 这里的判断只是示意。分档阈值要结合设备的 `getThermalHeadroomThresholds()`、机型散热能力和业务自己的帧率目标来定，不能把单一阈值当成通用规则。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/PowerManager#getThermalHeadroom]
 
 ### 与 PowerManagerService 的关系
 
@@ -263,8 +244,6 @@ switch (gameMode) {
 }
 ```
 
-[已验证: 官方文档, developer.android.com/reference/android/app/GameManager]
-
 ### Game State：细粒度的性能标注
 
 Android 13 没有新增 `GameStateManager` 这个公开类。游戏仍然通过 `GameManager#setGameState(GameState)` 向系统上报当前阶段，只是 `GameState` 这个对象把 `isLoading`、`mode`、`label`、`quality` 等状态收进去。
@@ -281,7 +260,15 @@ gameManager.setGameState(
 
 `isLoading` 用来告诉系统当前是否处在加载阶段，`mode` 用来区分 menu、可中断 gameplay、不可中断 gameplay 等状态。它不是一个“性能关键开关”，公开 API 里也没有 `isPerformanceCritical` 这样的字段。
 
-[已验证: 官方文档, developer.android.com/reference/android/app/GameManager + GameState]
+`GameState.MODE_CONTENT` 表达的是游戏内非 gameplay 内容，比如广告、网页、文字或视频，不是所有非游戏 App 的通用状态标记。视频播放、视频通话、地图导航这类性能敏感但非游戏的场景，应直接使用 `PerformanceHintManager.Session`、`setPreferPowerEfficiency()` 和 headroom 采样，不要绕到 Game State 模型里。
+
+## 非游戏场景与协程线程迁移边界
+
+ADPF 不只服务游戏。只要应用能把一组长期运行的线程、目标工作时长和实际耗时稳定地报给系统，就可以使用 Performance Hint API。非游戏场景的难点通常不在 API 调用本身，而在"线程集合是否稳定"。
+
+HintSession 绑定的是 Linux TID，不是协程 ID、任务 ID 或业务请求 ID。Kotlin 协程在 `Dispatchers.Default` / `Dispatchers.IO` 上发生线程迁移时，如果新 TID 没有纳入 session，后续 work duration 上报就很难和真实执行线程对应。API 31-33 的保守做法是控制协程执行上下文，必要时重建 session；API 34 之后可以用 `Session#setThreads(int[])` 动态更新线程集合，但仍要控制更新频率，避免把每次协程调度都变成 Binder 往返。
+
+`reportActualWorkDuration()` 本身也会进入系统服务。高帧率渲染、音视频处理、AI 推理这类场景要把 ADPF 上报放在帧或任务边界，不要在细碎的子任务里频繁调用。120 fps 下一帧只有 8.33 ms，任何同步 IPC 都会占掉可观预算。
 
 ## ADPF 的完整工作流
 
@@ -317,9 +304,7 @@ gameManager.setGameState(
 3. 接着对照 thermal status / thermal counter，确认是不是热约束把提频压住了。
 4. 再回到 App 自己的 trace section，看 `reportActualWorkDuration()` 与画质切换是否发生在正确时机。
 
-如果 frame time 已经超 budget，但 CPU 频率和调度没有明显响应，问题更像是 HintSession 接入或 OEM 实现。如果 CPU 频率已经抬高，但 thermal status 同时上升并很快限频，问题更像是热约束。
-
-[待补充：一组真实 trace，覆盖 FrameTimeline、CPU frequency、thermal status 与 App 自定义 ADPF 标记]
+如果 frame time 已经超 budget，但 CPU 频率和调度没有明显响应，问题更像是 HintSession 接入或 OEM 实现。如果 CPU 频率已经抬高，但 thermal status 同时上升并很快限频，问题更像是热约束。没有 App 自定义 trace 标记时，只能判断相关性，很难证明某次上报和某次提频之间的因果关系。
 
 ## 版本演进
 
@@ -328,189 +313,10 @@ gameManager.setGameState(
 | Android 11 (API 30) | `PowerManager#getThermalHeadroom()` 与 NDK thermal manager 可用，这一层是后续 ADPF 热预测能力的基础 |
 | Android 12 (API 31) | `PerformanceHintManager` 与 `GameManager` 引入，ADPF 主框架成形 |
 | Android 13 (API 33) | 继续通过 `GameManager#setGameState(GameState)` 上报游戏状态，不新增 `GameStateManager` 公开类 |
-| Android 14 | 更多 OEM 开始接入 ADPF HAL，设备差异仍然明显 |
-| Android 15 (API 35) | GPU 工作时长上报；HintSession 能效模式；`PowerManager#getThermalHeadroomThresholds()` |
-| Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom(CpuHeadroomParams)` / `getGpuHeadroom(GpuHeadroomParams)`（传 null 用默认值）；NDK thermal headroom listener |
-| Android 17 (API 37) | `PerformanceHintManager.Session#setPreferIdle()` [待验证：公开 API 文档未确认]；RecyclerView 1.4 自适应刷新率支持（非 ADPF HintSession） |
-
-
-
-<!-- AIW-源码调研-20260501: ADPF 非游戏场景 + TRIGGER_TYPE_ANOMALY 机制验证 -->
-## 源码调研补充（2026-05-01）
-
-### ADPF 非游戏场景的适用性
-
-`PerformanceHintManager.Session.setPreferPowerEfficiency(true)` 从 **API 35 (Android 15)** 起即可用于任何性能密集型应用，而非仅限游戏。源码位置：
-
-```java
-// frameworks/base/core/java/android/os/PerformanceHintManager.java, 行 218-223
-@FlaggedApi(Flags.FLAG_ADPF_PREFER_POWER_EFFICIENCY)
-public void setPreferPowerEfficiency(boolean enabled) {
-    nativeSetPreferPowerEfficiency(mNativeSessionPtr, enabled);
-}
-```
-
-设计意图：Session 代表一组长期运行的关联线程，`setPreferPowerEfficiency(true)` 信号告知系统这些线程可以安全地优先调度到低功耗路径。典型非游戏场景包括：后台 AI 推理批处理（功耗降低 15-30%）、长尾网络同步、批量文件处理。
-
-**Game Mode 与 ADPF 是两条互补路径**：Game Mode 设全局策略（PERFORMANCE/BATTERY/STANDARD），ADPF 提供帧级控制。两者无绑定关系，`setPreferPowerEfficiency` 独立于用户选择的 Game Mode。
-
-### ProfilingManager TRIGGER_TYPE_ANOMALY（API 37）
-
-**关键澄清：TRIGGER_TYPE_ANOMALY 是 API 37 新增的 trigger type（value=8），不在 API 36**。
-
-| Trigger（API 37） | 触发条件 | 产出 artifact |
-|---|---|---|
-| `TRIGGER_TYPE_COLD_START` | 应用冷启动 | call stack sample + system trace |
-| `TRIGGER_TYPE_OOM` | 应用抛出 OutOfMemoryError | Java Heap Dump |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 应用因异常高 CPU 使用被终止 | call stack sample |
-| `TRIGGER_TYPE_ANOMALY` | 系统检测到 binder spam / 内存超限 | heap dump 或 stack sampling |
-
-`TRIGGER_TYPE_ANOMALY` 由 AnomalyDetectionService（Android 17 新增的设备端异常检测服务）驱动，监控资源密集型行为和潜在兼容性回归。在进程被系统终止**之前**触发，给予开发者收集调试数据的机会。`ApplicationExitInfo` 会包含 "MemoryLimiter" 字符串，表明受 MemoryLimiter 影响。
-
-**TRIGGER_TYPE_ANOMALY 与 ADPF 是两条独立设计路径**：AnomalyDetectionService 独立于 ADPF 运行，两者之间无自动数据流。开发者需手动整合 PowerMonitor 采样数据到 ADPF hint 策略决策。
-
-ProfilingManager 是 **Profiling APEX 模块**（`packages/modules/Profiling/`）的 API surface：
-- `packages/modules/Profiling/framework/` — Java API surface（`android.os.ProfilingManager`）
-- `packages/modules/Profiling/service/ProfilingService.java` — system_server 中运行的系统服务
-
-注册方式：
-```java
-ProfilingManager pm = (ProfilingManager) context.getSystemService(Context.PROFILING_SERVICE);
-pm.addProfilingTriggers(executor, Arrays.asList(ProfilingTrigger.TRIGGER_TYPE_ANOMALY));
-pm.registerForAllProfilingResults(executor, result -> {
-    // result.getFile() 返回 artifact 文件路径
-    // result.getTag() 携带异常类型信息
-});
-```
-
-### 版本演进（修正）
-
-| API Level | 版本 | 主要变化 |
-|---|---|---|
-| 31 | Android 12 | PerformanceHintManager 初始引入 |
-| 35 | Android 15 | `setPreferPowerEfficiency(true)` 新增，PowerMonitor API 引入 |
-| 36 | Android 16 | `addProfilingTriggers()` API 引入，**TRIGGER_TYPE_ANOMALY 不在此版本** |
-| 37 | Android 17 | TRIGGER_TYPE_ANOMALY 新增，AnomalyDetectionService 设备端异常检测引入 |
-
-<!-- AIW-源码调研-20260501 END -->
-
-<!-- AIW-源码调研-20260507: ADPF Hint 信号体系 + 非游戏语义 + JNI 实现细节 -->
-## 源码调研补充（2026-05-07）
-
-### Hint 信号体系：sendHint() 的完整语义
-
-**重要边界**：Java 层 `sendHint()` 标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。面向 NDK 的公开替代是 `APerformanceHint_notifyWorkloadIncrease` / `Reset` / `Spike` 系列函数（Android 16 / API 36+，NDK `performance_hint.h` 标注 `__INTRODUCED_IN(36)`），这些是 CTS 验证的公开接口。Java 层 `sendHint()` 及其 `CPU_LOAD_*` / `GPU_LOAD_*` 常量标注为 `@TestApi` + `@hide`，**不属于公开 SDK API**，普通 App 不能按 public SDK 路径使用。下文描述的 `sendHint()` 语义仅供理解系统内部设计使用，公开接入示例应只使用 `reportActualWorkDuration()` 和 API 36+ 的 NDK workload hint。
-
-`PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
-
-**源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（AOSP master）
-
-Hint 信号定义（全部 `@TestApi`，对外 `@hide`）：
-
-```java
-// 行 ~125-175，Session 类内嵌类
-public static class Session implements Closeable {
-    // CPU 类 hints
-    public static final int CPU_LOAD_UP = 0;        // 突发增加，立即需要额外 CPU 资源
-    public static final int CPU_LOAD_DOWN = 1;      // 负载降低，可减少 CPU 资源  
-    public static final int CPU_LOAD_RESET = 2;     // 负载完全变化，需重置到已知基准线
-    public static final int CPU_LOAD_RESUME = 3;    // 从非活跃恢复，恢复之前资源分配
-
-    // GPU 类 hints（API 36+，需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION）
-    public static final int GPU_LOAD_UP = 5;
-    public static final int GPU_LOAD_DOWN = 6;
-    public static final int GPU_LOAD_RESET = 7;
-}
-
-// sendHint() 方法签名
-@TestApi
-public void sendHint(@Hint int hint) {
-    Preconditions.checkArgumentNonNegative(hint, "the hint ID should be at least zero.");
-    try {
-        nativeSendHint(mNativeSessionPtr, hint);
-    } finally {
-        Reference.reachabilityFence(this);
-    }
-}
-```
-
-**设计意图**：`sendHint()` 提供比 `reportActualWorkDuration()` 更快的信号通道。以视频编码场景为例：I-frame 到 P-frame 的切换（负载突变），可以在报告 actual duration 之前先发 `CPU_LOAD_RESET`，让调度器立即重置到基准再预测。
-
-**与 reportActualWorkDuration 的关系**：两者可以组合使用——`sendHint()` 提供快速预信号，`reportActualWorkDuration()` 提供周期精确反馈。在大多数场景下单独使用 `reportActualWorkDuration()` 足够，`sendHint()` 是针对"突变"的优化路径。
-
-### WorkDuration 分拆版本：CPU/GPU 分别计时
-
-Android 15 (API 35) 通过 `WorkDuration` 结构将 CPU 和 GPU 耗时分别上报。
-
-**源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java` JNI 签名
-
-```java
-// 行 ~255-270
-@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)
-public void reportActualWorkDuration(@NonNull WorkDuration workDuration) {
-    // 校验：workPeriodStartTimestamp > 0
-    // 校验：actualTotalDuration > 0
-    // 校验：actualCpuDuration >= 0 && actualGpuDuration >= 0
-    // 校验：(actualCpu + actualGpu) > 0
-    nativeReportActualWorkDuration(mNativeSessionPtr,
-            workDuration.mWorkPeriodStartTimestampNanos,
-            workDuration.mActualTotalDurationNanos,
-            workDuration.mActualCpuDurationNanos,
-            workDuration.mActualGpuDurationNanos);
-}
-```
-
-WorkDuration 四字段（从 JNI 签名推断）：
-- `mWorkPeriodStartTimestampNanos`：工作周期开始时间戳（`SystemClock.uptimeNanos()`）
-- `mActualTotalDurationNanos`：总实际耗时
-- `mActualCpuDurationNanos`：CPU 耗时
-- `mActualGpuDurationNanos`：GPU 耗时
-
-这对 GPU-bound 场景关键：只报 CPU 耗时，系统只能调 CPU 频率；如果瓶颈在 GPU，调 CPU 频率完全打偏。
-
-### JNI 实现：dlopen libandroid.so
-
-**源码位置**：`frameworks/base/core/jni/android_os_PerformanceHintManager.cpp`（AOSP master）
-
-> [Task2B 已修正：JNI 侧通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定 NDK C API 符号；C API 源码入口在 `frameworks/base/native/android/performance_hint.cpp`，是公开可查阅的 AOSP 代码。]
-
-```cpp
-// 行 46-58
-void ensureAPerformanceHintBindingInitialized() {
-    if (gAPerformanceHintBindingInitialized) return;
-    
-    void* handle_ = dlopen("libandroid.so", RTLD_NOW | RTLD_NODELETE);
-    LOG_ALWAYS_FATAL_IF(handle_ == nullptr, "Failed to dlopen libandroid.so!");
-    
-    // 函数指针通过 dlsym 绑定
-    gAPH_getManagerFn = (APH_getManager)dlsym(handle_, "APerformanceHint_getManager");
-    gAPH_createSessionFn = (APH_createSession)dlsym(handle_, 
-        "APerformanceHint_createSessionFromJava");
-    gAPH_setPreferPowerEfficiencyFn = (APH_setPreferPowerEfficiency)dlsym(handle_,
-        "APerformanceHint_setPreferPowerEfficiency");
-    // ... 其他函数指针
-    gAPerformanceHintBindingInitialized = true;
-}
-```
-
-`android_os_PerformanceHintManager.cpp` 通过 `dlopen("libandroid.so")` / `dlsym` 延迟绑定 NDK C API 符号（`APerformanceHint_getManager`、`APerformanceHint_createSession` 等）。这些 C API 的源码入口在 `frameworks/base/native/android/performance_hint.cpp`，是公开可查阅的 AOSP 代码；JNI 层的延迟绑定机制保证了 Java API 变化不会影响 native 层已绑定的符号地址，但新 API 的暴露仍然依赖 NDK 头文件的版本声明。
-
-### GameState.MODE_CONTENT：游戏内非 Gameplay 内容的状态标记
-
-`GameState` 的 AOSP 注释写的是 "State of the game passed to the GameManager"；`GameManager#getGameMode()` 对非 game 应用返回 `GAME_MODE_UNSUPPORTED`。`MODE_CONTENT = 4` 的语义是游戏内非 gameplay 内容（广告、网页、文字、视频），不是通用非游戏 App 的锚点。
-
-```java
-// frameworks/base/core/java/android/app/GameState.java, 行 48
-/**
- * Indicates that the current content shown is not gameplay related.
- * For example it can be an ad, a web page, a text, or a video.
- */
-public static final int MODE_CONTENT = 4;
-```
-
-非游戏性能密集型应用（视频播放、视频通话、地图导航）不应通过 `GameState` 管理 ADPF 行为。正确的路径是 `PerformanceHintManager.Session.setPreferPowerEfficiency()`（API 35+）和 `SystemHealthManager` headroom 轮询——它们不依赖 `GameManager` 的游戏分类。
-
-<!-- AIW-源码调研-20260507 END -->
+| Android 14 (API 34) | `PerformanceHintManager.Session#setThreads(int[])` 公开，适合动态修正 HintSession 绑定的线程集合 |
+| Android 15 (API 35) | GPU 工作时长上报能力进入 ADPF 演进主线；HintSession 能效模式；`PowerManager#getThermalHeadroomThresholds()` |
+| Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom(CpuHeadroomParams)` / `getGpuHeadroom(GpuHeadroomParams)`（传 null 用默认值）；NDK thermal headroom listener；NDK workload hint 系列函数 |
+| Android 17 (API 37) | 当前不把 `setPreferIdle(boolean)` 写成公开 SDK 能力；RecyclerView 1.4 自适应刷新率支持属于 ARR，不是 ADPF HintSession |
 
 
 ## 常见问题与误区
@@ -529,9 +335,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 ### 误区四：ADPF 只对游戏有用
 
-虽然 ADPF 的主要场景是游戏，但任何帧率敏感的应用都可以从中受益。Camera 应用在录制高帧率视频时、视频编辑 App 在实时预览时、AR 应用在渲染时，都可以通过 Performance Hint API 向系统预告性能需求。Android 16 的 Headroom API 更是降低了非游戏场景的使用门槛——不需要建立完整的 HintSession 反馈循环，直接查询当前性能余量即可。
-
-[已修正: Task9 确认 RecyclerView 1.4 release notes 只提到 `setFrameContentVelocity` 支持自适应刷新率（Adaptive Refresh Rate），未出现 `PerformanceHintManager` / `HintSession` / `reportActualWorkDuration` 等 ADPF 相关内容。]
+虽然 ADPF 的主要场景是游戏，但任何帧率敏感的应用都可以从中受益。Camera 应用在录制高帧率视频时、视频编辑 App 在实时预览时、AR 应用在渲染时，都可以通过 Performance Hint API 向系统预告性能需求。Android 16 的 Headroom API 降低了非游戏场景的使用门槛：不需要建立完整的 HintSession 反馈循环，也可以低频查询当前性能余量。
 
 **RecyclerView 1.4 的自适应刷新率支持**：AndroidX RecyclerView 1.4.0 引入了 `setFrameContentVelocity()` API，用于在快速滚动时向系统上报滑动速度，配合 Adaptive Refresh Rate（自适应刷新率）机制动态调整屏幕刷新率。这不是 ADPF HintSession 集成——RecyclerView 1.4 不会自动创建 `PerformanceHintManager.Session`，也不会自动上报 work duration。如果需要 ADPF 能力，应用仍需自行创建和管理 HintSession。
 
@@ -552,8 +356,6 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 对于大多数游戏，自动模式足够。但如果游戏有非常特殊的帧率需求（比如 VR 场景要求精确的 72 fps、或者有可变刷新率的渲染管线），手动模式能提供更精确的控制。
 
-[待补充：Unity ADPF 插件的具体配置步骤]
-
 ### OEM 对 ADPF 的定制
 
 不同 SoC 厂商对 ADPF 的实现策略存在差异，这是分析 ADPF 效果时需要考虑的变量。
@@ -562,46 +364,15 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量。
 
-[需补充素材: Task9 已登记该 2026 旗舰机延迟表缺少测试方法、固件版本、样本数和原始 trace；Pixel 10 SoC 口径也需确认。]
-
 **OEM ADPF 响应差异**：不同 SoC 厂商对 ADPF Hint 的响应延迟存在显著差异，直接影响“掉帧后补频能否挽回当前帧”。120 fps 下一帧只有 8.33 ms，响应延迟超过 4 ms 就意味着近半帧预算耗在等待上。
-
-[待验证素材：2026 Q1 设备测试数据缺少测试方法（Perfetto CPU frequency + App 自定义 ADPF marker）、固件版本、样本数和原始 trace；Pixel 10 SoC 名称（Tensor G5 vs G6）也需按公开资料确认。待补齐数据来源后再发布对照表。]
 
 跨设备调优策略不能一刀切。响应延迟较快的设备上，ADPF 可以做帧级补救；响应延迟接近半帧预算的设备上，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
 
 ## 参考资料
 
-### Android ADPF PerformanceHintManager 与 Kotlin 协程调度深度验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-adpf-performance-hint-session-kotlin-coroutine-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 AOSP android-16.0.0_r1 源码验证 createHintSession/setThreads/close 状态机、Flagged API 双栅栏机制（GPU_LOAD_* 需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION）、CoroutineScheduler work-stealing 与线程迁移对 hint session 的影响、reportActualWorkDuration 单次 Binder IPC 约 1ms 在 120Hz 下消耗 12% 帧预算的量化分析。
-- 注入时间：2026-05-23
-- 价值：提供了 ADPF hint session 与协程线程迁移冲突的工程解法，以及 Binder IPC 开销的精确量化数据
-
-### ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级验证 Android 16 PerformanceHintManager API：createHintSession() 非 null/空数组校验逻辑；Session close 后 setThreads() 为 no-op；GPU hints 需要 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION gate；reportActualWorkDuration 支持 per-component CPU/GPU 时间分离报告；与 Kotlin 协程 ContinuationInterceptor 线程迁移的工程化边界。
-- 注入时间：2026-05-14
-- 价值：含 Android 16 最新 API 变化和协程线程迁移的工程化约束，对 ADPF 实战有直接指导意义
-### Kotlin 协程线程迁移与 ADPF Hint Session 工程化边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md
-- 类型：DeepResearch 调研结果
-- 摘要：ADPF PerformanceHintManager.Session 基于 TID 而非协程 ID 绑定线程，协程在 Dispatchers.Default 线程池迁移时若新 TID 未纳入 Session 会导致 hint 失效。Android 16 新增 GPU 负载上报 API reportActualWorkDuration(WorkDuration)，需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION 特性标志。
-- 注入时间：2026-05-15
-- 价值：揭示 ADPF Session 与 Kotlin 协程调度器的协同边界问题，为高并发场景 ADPF 集成提供源码级指导
-
-### Kotlin Coroutine 线程迁移与 ADPF Hint 工程化边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md
-- 类型：DeepResearch 调研结果
-- 摘要：ADPF hint session 基于 TID 绑定，Kotlin 协程线程迁移导致无法精确绑定 hint。API 33 只能重建 session，API 34 支持 setThreads 动态调整。评估了 Dispatchers.Default/IO 场景下 ADPF IPC 开销与工程化约束。
-- 注入时间：2026-05-17
-- 价值：建立 ADPF TID 绑定与协程调度的工程化边界，指导 ADPF 在 Kotlin 协程场景下的正确使用策略
-
-### ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md
-- 类型：DeepResearch 调研结果
-- 摘要：PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；WorkDuration 为 API 36 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。
-- 注入时间：2026-05-27
-- 价值：源码级验证 ADPF hint session 版本边界，纠正 AIW 章节中的版本标注错误，含 AOSP android-16.0.0_r1 锚点
+- Android Developers：`PerformanceHintManager` API reference，覆盖 session 创建、target duration、actual duration、thread set 更新等公开接口。
+- Android Developers：Android 15 ADPF 说明，覆盖 GPU 工作时长上报和能效模式的版本背景。
+- Android Developers：`PowerManager` thermal API reference，覆盖 thermal status、thermal headroom 与预测采样边界。
+- Android Developers：`SystemHealthManager` API reference，覆盖 CPU / GPU headroom 的调用入口和低频采样要求。
+- AOSP：`frameworks/base/core/java/android/os/PerformanceHintManager.java`，用于核对 Java API surface、flagged API 与 session 状态机。
+- AOSP：`frameworks/base/native/android/performance_hint.cpp` 与 NDK `performance_hint.h`，用于核对 native workload hint 接入边界。

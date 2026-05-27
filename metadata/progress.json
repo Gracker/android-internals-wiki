@@ -2048,8 +2048,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T08:07:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T08:50:00+08:00",
+  "last_updated_by": "task2b-content-processing-rework",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T08:07:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2203,11 +2203,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T06:51:00+08:00",
+  "last_task2b_at": "2026-05-27T08:50:00+08:00",
   "last_task2b_sections": [
-    "7.6"
+    "5.9"
   ],
-  "last_task2b_action": "回炉修复: 7.6 案例六 HWC Overlay Plane 证据边界收敛",
+  "last_task2b_action": "回炉修复: 5.9 ADPF 发布稿过程痕迹清理与正文整合",
   "sections": {
     "17.2": {
       "status": "ready-for-review",
@@ -3159,16 +3159,16 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "queue_priority": 90,
       "last_task9_at": "2026-05-14T04:36:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-04-deep-review.md",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "last_task6_at": "2026-05-27T08:07:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-27-08-review.md",
@@ -3177,7 +3177,10 @@
       "task2b_verifier_result": "ready-for-task6",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "补齐 outline 并清理第一人称/AI 过渡；源码调研补充块/DeepResearch 摘要仍需 Task2B 整合。"
+      "task6_review_summary": "已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文。",
+      "section": "5.9",
+      "last_task2b_at": "2026-05-27T08:50:00+08:00",
+      "task2b_summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
     },
     "23.7": {
       "status": "finalized",
@@ -6373,12 +6376,15 @@
       "task2b_state": "fixed",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "last_task6_at": "2026-05-21T02:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-02-review.md",
+      "last_task6_at": "2026-05-27T08:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-08-review.md",
       "task2b_result": "fixed",
-      "queue_priority": 95,
+      "queue_priority": 90,
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
-      "task2b_verifier_result": "ready-for-task6"
+      "task2b_verifier_result": "ready-for-task6",
+      "section": "5.9",
+      "last_task2b_at": "2026-05-27T08:50:00+08:00",
+      "task2b_summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
     },
     "4.3": {
       "status": "ready-for-review",
@@ -7846,6 +7852,15 @@
         "remaining_p90": 0,
         "remaining_p85": 0
       }
+    },
+    {
+      "section": "5.9",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "at": "2026-05-27T08:50:00+08:00",
+      "source": "task6-review",
+      "priority": 90,
+      "result": "fixed",
+      "summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
     }
   ],
   "section_18_23": {
@@ -7965,7 +7980,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 5,
+  "task2b_total_fixed": 6,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -8549,8 +8564,8 @@
       "items_completed": 6
     },
     "2026-05-27": {
-      "sections_processed": 1,
-      "items_completed": 1
+      "sections_processed": 2,
+      "items_completed": 2
     }
   },
   "task2b_last_run": "2026-05-27",
@@ -8603,10 +8618,19 @@
       "source": "task6-review",
       "priority": 90,
       "summary": "案例六 HWC 合成降级改为 Layer trace/dumpsys 证据约束下的条件判断，删除 HWC Overlay Plane 源码调研原始块。"
+    },
+    {
+      "section": "5.9",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "at": "2026-05-27T08:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "task6-review",
+      "priority": 90,
+      "summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
     }
   ],
-  "last_task2b_completed": "2026-05-27T06:51:00+08:00",
-  "last_task2b_completed_at": "2026-05-27T06:51:00+08:00",
+  "last_task2b_completed": "2026-05-27T08:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-27T08:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
