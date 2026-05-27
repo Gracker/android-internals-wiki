@@ -34,24 +34,25 @@ sources:
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 2
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；完成 2 处 L2 表达小修；无 L3/L4 回炉项，送 Task9 技术复审。"
 last_task6_at: "2026-05-27T18:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-18-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T06:31:25+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-16-06-deep-review.md"
-task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T18:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-18-deep-review.md"
+task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GraphicsEnvironment chooseDriverInternal 的 privileged/system app 排除与 prerelease driver gating 口径；P0 0 / P1 0 / P2 1（已修复）。"
 last_task2b_lite_at: "2026-05-27"
+last_task9_autofix_at: "2026-05-27"
 ---
 
 # 1.19 Zygote 图形驱动预加载与启动性能
@@ -211,7 +212,7 @@ if (!chooseDriver(context, coreSettings, pm, packageName, appInfoWithMetaData)) 
 Trace.traceEnd(Trace.TRACE_TAG_GRAPHICS);
 ```
 
-`chooseDriverInternal()` 的优先级从全局开关开始：`UPDATABLE_DRIVER_ALL_APPS` 可强制关闭 updatable driver，也可让所有 App 使用 production 或 prerelease driver。随后再看 production opt-out、prerelease opt-in、production opt-in、production denylist 和 production allowlist。privileged app 以及未更新的 system app 会直接回退到 system driver，避免驱动更新影响预装系统组件。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/GraphicsEnvironment.java]
+`chooseDriverInternal()` 的第一层保护是系统组件排除：privileged app 以及未更新的 system app 会直接回退到 system driver，避免驱动更新影响预装系统组件。对其余应用，`UPDATABLE_DRIVER_ALL_APPS` 可以关闭 updatable driver，也可以把普通应用整体导向 production driver；prerelease driver 还要满足 debuggable 或 manifest metadata 允许。随后再看 production opt-out、prerelease opt-in、production opt-in、production denylist 和 production allowlist。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/GraphicsEnvironment.java]
 
 updatable driver 生效后，`chooseDriver()` 会拼出 driver APK 的 native library 搜索路径，并读取 APK assets 里的 `sphal_libraries.txt`，通过 `setDriverPathAndSphalLibraries()` 交给 native 层。这里的 `sphal` 指 Same-Process HAL 相关 linker namespace，不是业务层的“单点”概念。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/GraphicsEnvironment.java]
 
