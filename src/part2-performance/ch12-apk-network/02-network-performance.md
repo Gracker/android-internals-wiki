@@ -5,13 +5,13 @@ section: '12.2'
 status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-28"
 polish_count: 1
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -19,7 +19,7 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-05-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T18:30:26+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
@@ -48,9 +48,16 @@ last_task6_audit: '2026-05-22'
 last_task2b_at: "2026-05-28T04:50:00+08:00"
 last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "修复 OkHttp EventListener 文档锚点、Cronet 0-RTT 配置边界、16KB Cronet 冷启动无来源百分比、NetworkCapabilities 带宽估算 Android 16/eBPF 口径。"
+last_task6_at: "2026-05-28T05:12:00+08:00"
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T05:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-05-review.md"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
 ---
 
-# 网络性能优化
+# 12.2 网络性能优化
 
 <!-- outline-start -->
 ## 本节要点大纲

@@ -50,11 +50,11 @@ gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 14
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-19"
+reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "task9_pending"
 task9_state: "pending"
 task9_result: "needs-rework"
 task2b_state: "fixed"
@@ -70,14 +70,15 @@ p1: 1
 p2: 0
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-19T20:25:44+08:00"
-task6_reviewed_at: "2026-05-19T20:25:44+08:00"
-last_task6_review_log: "logs/review/2026-05-19-20-review.md"
-task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。"
+last_task6_at: "2026-05-28T05:12:00+08:00"
+task6_reviewed_at: "2026-05-28T05:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-05-review.md"
+task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。 | 2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
 last_task2b_at: "2026-05-28T04:50:00+08:00"
 last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
-
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
@@ -237,7 +238,7 @@ TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直�
 
 Android 平台的标准 TLS 入口（JSSE/Conscrypt）目前不支持 0-RTT。官方 TLS 1.3 行为文档明确标注“0-RTT mode isn't supported”。Conscrypt 在 Android 15 的变化是限制 TLS 1.0/1.1，并未引入 0-RTT 或 Anti-replay 能力。如果 App 需要在移动端利用类似 0-RTT 的加速，唯一可用的路径是 Cronet/HttpEngine 的 QUIC 会话恢复（0-RTT QUIC handshake），这和标准 JSSE/Conscrypt 的 TLS 1.3 路径完全不同。
 
-分析网络 trace 时，区分“TLS 1.3 完整握手”、“TLS 1.3 恢复（1-RTT）”和 QUIC 0-RTT 三种情况——只有最后一种在首包就携带了应用数据，但走的是 QUIC/UDP 传输而非标准 TLS/TCP。
+分析网络 trace 时，区分“TLS 1.3 完整握手”、“TLS 1.3 恢复（1-RTT）”和 QUIC 0-RTT 三种情况——其中只有 QUIC 0-RTT 会在首包携带应用数据，但走的是 QUIC/UDP 传输而非标准 TLS/TCP。
 
 ### Conscrypt 与 Android TLS 实现
 
