@@ -24,21 +24,21 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-task6_review_notes: 2026-05-12 task6 review: 完成格式规范统一、术语一致性修复、标点标准化；L1/L2 通过，无新增 L3/L4 回炉项。
+task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-05-28T02:31:47+08:00"
 task2b_result: "fixed"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
 task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。"
@@ -46,6 +46,10 @@ last_task2b_at: "2026-05-28T02:50:00+08:00"
 last_task2b_source: "task9-deep-tech-review"
 last_task2b_priority: 95
 task2b_note: "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。"
+last_task6_at: "2026-05-28T03:16:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-03-review.md"
+task6_l1_l2_fixes: 6
+task6_l3_l4_issues: 0
 ---
 
 # 稳定性治理案例集
@@ -76,7 +80,7 @@ task2b_note: "重写 Native Crash 统一 signal handler 示例：handler 内只�
 
 OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆栈出现在 `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` 路径上（详见 20.5 节）。后者的特征是崩溃点在 `malloc`、`pthread_create`、`mmap` 等 Native 分配路径上，Java 堆有余量。
 
-本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。接下来要回答：为什么线程创建会失败？
+本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。要回答的问题是：为什么线程创建会失败？
 
 ### 追踪：从 FD 和线程数入手
 
@@ -89,7 +93,7 @@ OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆�
 
 查看崩溃报告附带的 `/proc/self/status`：
 
-```
+```text
 Threads: 387
 VmSize: 3987124 kB    (约 3.8 GB，接近 32 位进程上限)
 FDSize: 342
@@ -97,7 +101,7 @@ FDSize: 342
 
 线程数 387，每个线程默认栈大小 1 MB（64 位设备上可能更大），仅线程栈就占用了接近 400 MB 虚拟内存。再加上线程的 TLS、JNI Env、guard page 等，每个线程实际占用约 1.2-1.5 MB 虚拟地址空间。387 个线程 ≈ 500 MB 虚拟内存被线程独占。
 
-但问题不是"线程太多"本身，而是：**为什么会有 387 个线程？**
+排查重点要放到 387 个线程的来源上。
 
 ### 根因定位：匿名线程泄漏
 
@@ -339,7 +343,7 @@ void register_unified_handler() {
 
 查看 ANR traces 文件：
 
-```
+```text
 "main" prio=5 tid=1 TimedWaiting
   at java.lang.Object.wait(Native method)
   - waiting on <0x01234567> (a java.lang.Object)
@@ -366,7 +370,7 @@ ContentProvider 的 `onCreate()` 在主线程上同步执行。如果有多个 S
 
 用 Perfetto 的 `atrace` 轨道抓取冷启动 trace，观察到：
 
-```
+```text
 handleBindApplication     │████████████████████████████████████████ 3200ms
   ├ installContentProviders│████████████████████████████            2100ms
   │   ├ SDK-A Provider     │██████████████                          900ms

@@ -33,21 +33,21 @@ gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-28T02:11:48+08:00"
+last_task6_at: "2026-05-28T03:16:00+08:00"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-28T02:31:47+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: reviewed
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-05-28"
-last_task6_review_log: "logs/review/2026-05-28-02-review.md"
-task6_l1_l2_fixes: 4
+last_task6_review_log: "logs/review/2026-05-28-03-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：修复禁用词、代码围栏语言和重复参考资料 4 处；无 L3/L4 回炉项，送 Task9 复核。"
+task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
 task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。"
@@ -83,10 +83,6 @@ v54 删除 `slice.stack_id` 和 `slice.parent_stack_id`，把相关能力迁移�
 
 ### 🔸 Collapsed Stack / Firefox Profiler 格式导入
 v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON 导入。它适合迁移历史 profile 资产，但这类格式通常缺少 Android trace 的 FrameTimeline、Binder 和调度上下文。
-
-
-
-<!-- AIW-源码调研-2026-05-18 -->
 
 ## 补充：系统 CUJ 与第三方 App 适用范围边界（源码验证）
 
@@ -139,10 +135,6 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 | AndroidX JankStats 1.0.0 | API 16+ 可用；API 24+ 依赖 FrameMetrics，API 31+ 计时数据更准 |
 | Android 13+ | InteractionJankMonitor 稳定化 |
 
-<!-- AIW-源码调研-2026-05-18 -->
-
-
-<!-- AIW-源码调研-2026-05-22 -->
 ### 第三方 App CUJ 分析的三条执行路径（补充验证）
 
 **来源**：Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 · 源码调研（2026-05-22）  
@@ -224,8 +216,6 @@ Choreographer#doFrame()
 | `android/performance-samples/JankStatsSample/` | JankStats 官方示例代码 |
 
 **版本备注**：sched_ext 调度器可能影响 CUJ 帧时间判断（线程调度延迟 → 帧耗时），此方向有待进一步验证。
-
-<!-- AIW-源码调研-2026-05-22 -->
 
 <!-- outline-end -->
 
@@ -392,7 +382,6 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
-
 
 ## 参考资料
 
