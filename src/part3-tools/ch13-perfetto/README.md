@@ -5,7 +5,7 @@ section: "13.0"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-21"
-last_verified_against: "ch13 README + 13.1-13.10 目录 + DeepResearch/Perfetto 2026 与 AndroidX Tracing 2.0"
+last_verified_against: "ch13 README + 13.1-13.16 目录 + DeepResearch/Perfetto 2026 与 AndroidX Tracing 2.0"
 confidence: medium
 sources:
   - type: official
@@ -15,7 +15,7 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md"
 tags: ['perfetto', 'tracing', 'overview', 'chapter-intro']
-related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10"]
+related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10", "13.11", "13.12", "13.13", "13.14", "13.15", "13.16"]
 pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
@@ -58,13 +58,20 @@ task9_reviewed_date: "2026-04-28"
 - 13.8 Perfetto 输入延迟 SQL 深度分析
 - 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
 - 13.10 Perfetto SQL 性能分析实战手册
+- 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
+- 13.12 Perfetto Profile 导入与 Flamegraph 分析
+- 13.13 Perfetto CPU 频率与 DVFS 关联分析
+- 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
+- 13.15 BufferQueue 阻塞的 Perfetto 识别
+- 13.16 Agent 辅助 Perfetto 分析协议
 
 ## 阅读顺序建议
 
 - 第一次接触 Perfetto，按 13.1 → 13.3 → 13.5 读，先建立 UI 和专题分析的基本视角。
 - 需要稳定抓 Trace 或处理大文件，接着看 13.2、13.4、13.7。
-- 需要把问题量化到 SQL，重点看 13.8、13.10。
-- 需要理解采集路径和扩展 tracing 能力，重点看 13.9，再回看 13.7 里的高级用法。
+- 需要把问题量化到 SQL，重点看 13.8、13.10、13.11、13.13。
+- 需要理解采集路径和扩展 tracing 能力，重点看 13.9、13.12、13.16，再回看 13.7 里的高级用法。
+- 需要分析 FrameTimeline、Jank CUJ 或 BufferQueue 阻塞，重点看 13.14、13.15。
 
 如果你是在真实排障中第一次翻到这一章，最实用的方式通常是：
 

@@ -13,15 +13,17 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task2b_result: fixed-lite
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-17T09:06:00+08:00"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+last_task2b_lite_at: "2026-05-28"
 last_task9_at: "2026-05-17T08:23:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
@@ -35,11 +37,11 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/analysis/sql-tables"
   - type: research
-    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
   - type: material
-    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
   - type: material
-    path: "../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -119,7 +121,7 @@ Agent 分析 trace 前必须拿到最小输入。输入越含糊，后面的查�
 
 ## Scratchpad 证据链：事实和假设分开
 
-`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: android/skills profilers/perfetto-trace-analysis/SKILL.md]
+`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md]
 
 下面的模板用于约束 scratchpad 内容。排版只是附带要求，每条记录都要能回到一次查询或一次 UI 观察。
 
@@ -147,7 +149,7 @@ Agent 分析 trace 前必须拿到最小输入。输入越含糊，后面的查�
 
 ## Perfetto SQL 生成守卫：先查 schema，再写查询
 
-Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。[已验证: android/skills profilers/perfetto-sql/SKILL.md]
+Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md]
 
 几条守卫规则应该固定下来：
 
@@ -155,7 +157,7 @@ Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和�
 |---|---|---|
 | 固定入口 | 使用项目根目录的 `./trace_processor`，必要时下载官方 wrapper | 查询只停在生成文本，或工具路径不稳定 |
 | schema 检索 | 用 Perfetto stdlib / SQL table 文档确认表名、列名、模块名 | 编造字段、混用旧版本字段 |
-| stdlib 优先 | 优先查 `android.startup`、`android.frames`、`sched`、`linux.cpu.frequency` 等标准库 | 手写复杂 join 时漏掉边界 |
+| stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched`、`linux.cpu.frequency` 等具体模块；`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界 |
 | `utid/upid` | 线程和进程 join 使用 trace 内唯一 ID | `tid/pid` 复用导致错配 |
 | `dur = -1` | 统计时用 `trace_end() - ts` 替代未闭合 duration | 总耗时和 overlap 计算错误 |
 | overlap 过滤 | 时间窗查询使用区间相交条件 | 漏掉跨越窗口边界的长 slice |
@@ -198,20 +200,26 @@ overlap_state AS (
     AND target_slice.ts < thread_state.ts + IIF(thread_state.dur = -1, trace_end() - thread_state.ts, thread_state.dur)
 )
 SELECT
-  overlap_state.state,
+  CASE overlap_state.state
+    WHEN 'R' THEN 'Runnable'
+    WHEN 'R+' THEN 'Runnable'
+    WHEN 'S' THEN 'Sleeping'
+    WHEN 'D' THEN 'Uninterruptible Sleep'
+    ELSE overlap_state.state
+  END AS state_label,
   COUNT(*) AS segments,
   SUM(overlap_state.overlap_dur) / 1000000.0 AS dur_ms
 FROM overlap_state
 WHERE overlap_state.overlap_dur > 0
-GROUP BY overlap_state.state
+GROUP BY state_label
 ORDER BY dur_ms DESC;
 ```
 
-这条查询只回答状态分布，不直接给根因。`Running` 占比高，后续转向 CPU 采样、子 slice、频率和大核/小核分布；`Runnable` 占比高，转向调度竞争和同 CPU 其他线程；`Sleeping` 或 `Uninterruptible Sleep` 占比高，继续追 Binder、锁、I/O、futex 或内核等待。
+这条查询只回答状态分布，不直接给根因。Perfetto raw state 常见为 `Running`、`R/R+`、`S`、`D`，上面的 `state_label` 把它们映射成人类可读标签。`Running` 占比高，后续转向 CPU 采样、子 slice、频率和大核/小核分布；`Runnable` 占比高，转向调度竞争和同 CPU 其他线程；`Sleeping` 或 `Uninterruptible Sleep` 占比高，继续追 Binder、锁、I/O、futex 或内核等待。
 
 ## 六类调查域：把开放问题拆成可执行动作
 
-`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/references/hints_*.md]
+`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/references/hints_*.md]
 
 | 调查域 | 触发条件 | 起手证据 | 下一跳 | 常见误判 |
 |---|---|---|---|---|
@@ -232,7 +240,7 @@ ORDER BY dur_ms DESC;
 
 1. 定位目标 slice 的 `ts`、`dur`、线程和进程。
 2. 查同一时间窗内该线程的 `thread_state` overlap。
-3. 计算 Running、Runnable、Sleeping、Uninterruptible Sleep 的占比。
+3. 将 `thread_state.state` 的 `R/R+`、`S`、`D` 映射为 Runnable、Sleeping、Uninterruptible Sleep，再计算各状态占比。
 4. 按最大状态选择调查域：CPU、调度、Binder / 锁、I/O。
 5. 找到阻塞方后，再回到全局视角确认没有更大的系统异常。
 
@@ -327,7 +335,7 @@ Agent 的最终报告不应该像 Perfetto UI 截图说明，而应该像一次�
 | 问题类型 | 必要数据 | 建议补充 | 缺失风险 |
 |---|---|---|---|
 | 冷启动 / 热启动 | `sched`、`freq`、`am`、`wm`、`view`、Binder、App trace marker | 调用栈采样、I/O 事件 | 只能看到阶段耗时，难定位等待方 |
-| 滑动 / 掉帧 | FrameTimeline、`gfx`、`view`、SurfaceFlinger、RenderThread、CPU frequency | GPU counter、BufferQueue / dmabuf | 难区分 UI、RT、GPU、SF |
+| 滑动 / 掉帧 | Android 12+ 优先 FrameTimeline；Android 10/11 回退到 `Choreographer#doFrame`、RenderThread、SurfaceFlinger、`gfx`、`view`、CPU frequency | GPU counter、BufferQueue / dmabuf | 难区分 UI、RT、GPU、SF |
 | ANR / 点击无响应 | `sched`、Binder、input、锁等待、App marker | Java / native 栈、system_server 事件 | 等待方可能断在客户端 |
 | I/O 卡顿 | `sched`、`sched_blocked_reason`、block I/O、page fault | kworker、dm-verity、文件名映射 | D-state 无法继续归因 |
 | 内存 / OOM | memory counters、LMK、PSI、dmabuf / dma_heap | heapprofd、Java heap graph | 只能看到结果，看不到持有路径 |
@@ -342,7 +350,7 @@ Perfetto SQL 模板不能假设所有 trace 都来自最新 Pixel。Android 10 �
 实际调查时建议把兼容性分成三层：
 
 - **标准层**：Perfetto 基础表，如 `slice`、`sched`、`thread_state`、`counter`、`thread`、`process`。这层通常最稳，适合做兜底查询。
-- **Android 标准库层**：如 startup、frames、Binder、memory 相关模块。优先使用，但要在执行前确认模块和字段存在。
+- **Android 标准库层**：如 `android.startup.startups`、`android.frames.timeline`、Binder、memory 相关模块。Android 12+ trace 才能稳定使用 FrameTimeline 口径；Android 10/11 需要回退到 UI/RenderThread/SF slice 和自定义 marker。
 - **厂商扩展层**：如 MTK / vendor display、thermal、power、scheduler 轨道。只能按设备和 ROM 建词典，不能写成通用结论。
 
 报告中的可信度要和这三层绑定。如果问题依赖 FrameTimeline，但 trace 来自字段不完整的旧版本或厂商裁剪 ROM，结论只能写 medium 或 low，并给出补采或手工 UI 对齐建议。
