@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: ADPF 自适应性能框架
 chapter: '5.9'
@@ -43,29 +44,51 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-21T03:22:56+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-21"
+reviewed_date: "2026-05-27"
 task6_result: needs-rework
 task9_result: needs-rework
 last_task9_at: "2026-05-21T04:36:55+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
-last_task6_at: "2026-05-21T04:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-21-04-review.md"
-task6_reviewed_date: "2026-05-21"
-task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。"
+last_task6_at: "2026-05-27T08:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-08-review.md"
+task6_reviewed_date: "2026-05-27"
+task6_review_notes: "2026-05-21 Task6 04: L1/L2 小修 4 处；源码调研注释块和 DeepResearch 摘要仍打断发布主线，已回炉 Task2B。 | 2026-05-27 08:07 Task6：needs-rework。补齐 outline，清理第一人称/AI 过渡 4 处；正文仍保留源码调研补充块、DeepResearch 注入摘要和 Task2B/Task9 过程性标记，已写入 queue.json priority 90 交 Task2B 整合。"
 last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
+task6_reviewed_by: openclaw-task6
+review_type: task6-writing-quality-review
+
 ---
 
 # 5.9 ADPF 自适应性能框架
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点(必须覆盖)
+
+- 🔹 ADPF 的问题背景：负载波动、调频滞后与帧预算压力
+- 🔹 Performance Hint API：HintSession、target duration、actual duration 与系统侧响应
+- 🔹 Thermal API / Headroom API：热状态、热余量与低频异步采样边界
+- 🔹 Game Mode / GameState：用户模式、游戏状态与 ADPF 的协同边界
+- 🔹 Perfetto 观测路径：FrameTimeline、CPU frequency、thermal status 与 App 自定义 trace 标记
+- 🔹 版本演进与公开 API 边界
+
+### 扩展(可选深入)
+
+- 🔸 Unity / Unreal Engine 的 ADPF 集成
+- 🔸 OEM 对 ADPF 的定制差异
+- 🔸 Kotlin 协程线程迁移与 HintSession TID 绑定边界
+<!-- outline-end -->
 
 ## 为什么需要 ADPF
 
@@ -114,7 +137,7 @@ session.updateTargetWorkDuration(16_666_667L);
 
 ### 系统侧的响应机制
 
-App 调 `reportActualWorkDuration()` 之后，信息不会直接到 SoC。公开 API 先进入 `PerformanceHintManager.Session`，再到 system_server 中的 `com.android.server.power.hint.HintManagerService`，再经 `IHintManager` 与厂商的 power hint HAL / AIDL 实现交互。排查 ADPF 失效时，我们也要按这三层拆开看，App 有没有正确上报，system_server 有没有收到 session 更新，OEM 实现有没有把 hint 变成提频或核心分配动作。
+App 调 `reportActualWorkDuration()` 之后，信息不会直接到 SoC。公开 API 先进入 `PerformanceHintManager.Session`，再到 system_server 中的 `com.android.server.power.hint.HintManagerService`，再经 `IHintManager` 与厂商的 power hint HAL / AIDL 实现交互。排查 ADPF 失效时，也要按这三层拆开看：App 有没有正确上报，system_server 有没有收到 session 更新，OEM 实现有没有把 hint 变成提频或核心分配动作。
 
 这种设计决定了 ADPF 的实际效果会有设备差异。同一款游戏在 Pixel 上和在某款定制 ROM 上，帧时间稳定性的改善幅度可能不同。分析时不能只看 App 代码，还要把 system_server 和 OEM 实现一起纳入判断。
 
@@ -173,7 +196,7 @@ App 侧公开的 thermal 入口在 `PowerManager`，不是 `ThermalManager`。`g
 
 [图：热状态等级变化示意图——时间线上展示状态从 NONE 到 SEVERE 再回到 NONE 的过程，标注每个阶段对应的系统行为和 App 建议行为]
 
-App 通过 `PowerManager.addThermalStatusListener()` 注册监听器，在状态变化时收到回调。我们不该等到 `THERMAL_STATUS_SEVERE` 再动作。到那时系统通常已经开始明显限频，帧时间也已经变差。更合理的做法是在 `LIGHT` 或 `MODERATE` 就提前降低部分负载，把体验变化摊平。
+App 通过 `PowerManager.addThermalStatusListener()` 注册监听器，在状态变化时收到回调。不要等到 `THERMAL_STATUS_SEVERE` 再动作。到那时系统通常已经开始明显限频，帧时间也已经变差。更合理的做法是在 `LIGHT` 或 `MODERATE` 就提前降低部分负载，把体验变化摊平。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager]
 
@@ -283,7 +306,7 @@ gameManager.setGameState(
 - **CPU frequency / 调度行为**：看上报 work duration 之后，big core 频率和线程调度有没有跟着变化。
 - **thermal status / 温度相关 counter**：看掉帧区间前后，thermal status 是否上升，或者 thermal / power counter 是否同步显示热约束增强。
 
-如果项目自己接了 ADPF，最好再补两类自定义 trace 标记，一类包住 `reportActualWorkDuration()`，一类包住画质或帧率策略切换。这样回放 trace 时，我们能把“App 何时上报 hint”“系统何时提频”“热状态何时升高”放到同一条时间线上。
+如果项目自己接了 ADPF，最好再补两类自定义 trace 标记，一类包住 `reportActualWorkDuration()`，一类包住画质或帧率策略切换。这样回放 trace 时，可以把“App 何时上报 hint”“系统何时提频”“热状态何时升高”放到同一条时间线上。
 
 ### 分析 ADPF 是否生效
 
@@ -494,7 +517,7 @@ public static final int MODE_CONTENT = 4;
 
 ### 误区一：ADPF 能提升 SoC 的绝对性能
 
-ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无法在目标帧时间内完成渲染，ADPF 也无能为力。ADPF 解决的是"系统资源没有及时跟上 App 需求"的问题，而不是"硬件性能不够"的问题。简单来说，ADPF 让系统更快地把频率拉到最高，但不能让最高频率变得更高。
+ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无法在目标帧时间内完成渲染，ADPF 也无能为力。ADPF 解决的是"系统资源没有及时跟上 App 需求"的问题，而不是"硬件性能不够"的问题。它能让系统更快地把频率拉到最高，但不能让最高频率变得更高。
 
 ### 误区二：HintSession 创建后就能自动优化
 
@@ -575,3 +598,10 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 - 摘要：ADPF hint session 基于 TID 绑定，Kotlin 协程线程迁移导致无法精确绑定 hint。API 33 只能重建 session，API 34 支持 setThreads 动态调整。评估了 Dispatchers.Default/IO 场景下 ADPF IPC 开销与工程化约束。
 - 注入时间：2026-05-17
 - 价值：建立 ADPF TID 绑定与协程调度的工程化边界，指导 ADPF 在 Kotlin 协程场景下的正确使用策略
+
+### ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；WorkDuration 为 API 36 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。
+- 注入时间：2026-05-27
+- 价值：源码级验证 ADPF hint session 版本边界，纠正 AIW 章节中的版本标注错误，含 AOSP android-16.0.0_r1 锚点

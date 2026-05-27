@@ -1,4 +1,5 @@
 ---
+
 title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
@@ -24,12 +25,12 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T07:44:00+08:00'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-06'
+reviewed_date: "2026-05-27"
 last_task9_at: '2026-05-13T17:55:27+08:00'
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -41,14 +42,20 @@ task9_review_notes: '2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / 
   | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。'
-last_task6_at: '2026-05-06T08:15:00+08:00'
-task6_review_notes: '2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作
-  L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。'
+last_task6_at: "2026-05-27T08:07:00+08:00"
+task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
 last_task9_review_log: 'logs/deep-review/2026-05-13-17-deep-review.md'
 review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。
+task6_reviewed_date: "2026-05-27"
+task6_reviewed_by: openclaw-task6
+last_task6_review_log: "logs/review/2026-05-27-08-review.md"
+review_type: task6-writing-quality-review
+
 ---
+
+# 18.10 SurfaceControl API 深入
 
 
 <!-- outline-start -->
@@ -106,7 +113,7 @@ NDK 的 SurfaceControl API 和 BLAST 共享同一套 Transaction + Buffer 协同
 
 ### Sync 语义
 
-Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生效”。真正的 latch / present 时机仍由 acquire fence、VSync、SurfaceFlinger 调度和 HWC 合成窗口共同决定。[已验证: SurfaceFlinger transaction + sync fence 模型] `apply()` 返回，只能说明事务已经送出，不能说明这一帧已经上屏。[已验证: NDK transaction apply 语义]
+Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生效”。latch / present 的生效时机仍由 acquire fence、VSync、SurfaceFlinger 调度和 HWC 合成窗口共同决定。[已验证: SurfaceFlinger transaction + sync fence 模型] `apply()` 返回，只能说明事务已经送出，不能说明这一帧已经上屏。[已验证: NDK transaction apply 语义]
 
 ## 典型使用流程
 
@@ -317,7 +324,7 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 
 ## FrameTimeline API（完整 NDK 用法需 Android 13+）
 
-Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧真正可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。[已验证: `android/choreographer.h`、`android/surface_control.h` API level 注释] 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。
+Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。[已验证: `android/choreographer.h`、`android/surface_control.h` API level 注释] 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。
 
 ### 核心 API
 
@@ -371,7 +378,7 @@ static void onVsync(const AChoreographerFrameCallbackData* data, void* userData)
 
 `AChoreographer_postVsyncCallback()` 交回的是一组 candidate frame timelines，`vsyncId` 只是其中一个字段。每条 timeline 都带 3 个关键信息：
 
-1. `expectedPresentTimeNanos`，这条 timeline 预计真正上屏的时间
+1. `expectedPresentTimeNanos`，这条 timeline 预计上屏的时间
 2. `deadlineNanos`，应用最晚需要在这个时间前把内容准备好
 3. `vsyncId`，提交给 `ASurfaceTransaction_setFrameTimeline()` 的标识符
 

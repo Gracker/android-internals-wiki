@@ -4033,8 +4033,61 @@
 - **问题**：`Startup Profile 对冷启动的贡献通常占 Baseline Profile 总收益的 40-60%`、`Compose 应用 25-40% vs 传统 View 15-20%` 属于量化结论，但正文没有给出设备、应用样本、AGP/R8 版本和测试口径。当前官方 Startup Profiles 文档可直接支撑的是“相对只使用 Baseline Profiles，Startup Profiles 通常让启动再快 15-30%”，不是 40-60% 贡献占比。
 - **建议**：把 40-60% 与 Compose/View 对比改为定性结论，或补充对应 benchmark / case study 的可复核来源；若沿用官方口径，改成 Startup Profiles 相对 Baseline Profiles alone 通常再提升 15-30%。
 
+
+## [Task6 Review] 7.6 案例集 — 2026-05-27
+- **类型**：原理链/数据支撑
+- **位置**：案例六「SurfaceFlinger HWC 合成降级导致掉帧」与文末 HWC Overlay Plane 源码调研块
+- **问题**：正文仍把 5 层超过 4 个 Overlay Plane 导致 CLIENT 合成写成偏确定链路；文末源码调研块保留过程性技术断言，缺少具体设备/HWC/Layer trace 证据。
+- **建议**：补实机 Layer trace、`dumpsys SurfaceFlinger` 或厂商文档；将 plane 数量和 CLIENT 合成归因改成有证据条件；删除或整合文末源码调研原始块。
+- **review 日志**：logs/review/2026-05-27-06-review.md
+
 ## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-27
 - **类型**：数据缺失
 - **位置**：`开机性能优化的常见手段` 参考基线数据表
 - **问题**：Pixel 8 / Android 16 分段耗时表目前仍标注为公开 bootstat 输出和 AOSP 默认配置的估算值，缺少同一设备、同一冷启动条件下的 bootstat / events / Perfetto 截图或原始输出。
 - **建议**：补一组 Pixel 8 或 Pixel 9 的冷启动实测数据，至少包含 `bootstat -p`、`logcat -b events` 中 boot_progress 事件和 userspace Perfetto trace；补齐前继续保留“仅供分段比例参考”的边界。
+
+
+## [Task14 参考书扫描] ch21 启动优化 — 2026-05-27
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 44.md]
+- **建议补充**：热修复框架对启动性能的负面影响——App启动变慢约15%、OTA首次卡顿；Android Q后动态加载的Dex只使用解释模式执行，进一步加剧启动性能影响。大公司已基本暂停全量用户热修复，仅用于灰度和测试。
+- **参考书覆盖深度**：深入（含具体性能数据）
+
+## [Task14 参考书扫描] ch20 稳定性治理 — 2026-05-27
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 44.md]
+- **建议补充**：Android Q新增AppComponentFactory API和instantiateClassloader接口，可实现运行时替换ClassLoader和四大组件，为官方热修复方案铺路。插件化可结合此API实现四大组件代理（需预先在AndroidManifest注册）。爱奇艺Qigsaw基于AAB实现国内可用的动态模块加载方案。
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-27
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md]
+- **建议补充**：Breakpad Native Crash日志完整获取流程——minidump_stackwalk解析Crash dump、dump_syms提取符号表、addr2line反解地址；目录结构要求严格（Symbol/libxxx.so/HASH/）。模拟器x86平台Clang编译Breakpad存在兼容问题需降级GCC。NDK从r13默认Clang，r18完全删除GCC。
+- **参考书覆盖深度**：深入（含完整操作流程）
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-27
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md]
+- **建议补充**：PLT Hook vs Inline Hook对比——PLT Hook更稳定但只能hook PLT表中的函数；Inline Hook可hook整个so但需针对各平台做指令修复，兼容性较差。函数符号通过Name Mangling生成，可用c++filt工具反解。Hook点需确认符号存在（强制inline或过短函数可能无符号）。
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch22 内存优化 — 2026-05-27
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md]
+- **建议补充**：Memory Allocation Trace监控模块——可监控大对象分配数量、分析分配对象调用栈，配合自动性能分析体系发现内存问题。实现涉及ndk_dlopen绕过Android Classloader-Namespace Restriction机制。
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 框架选型参考 — 2026-05-27
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 41.md]
+- **过时内容**：Flutter动态化能力仅能通过JIT编译模式解决、Dart AOT无法动态更新
+- **建议更新至**：Flutter 3.x+ 已支持 Dart 3，动态化方案已有社区成熟实现（如Fair等），Google Play对so更新的政策可能有变化
+
+
+## [Task6 Review] 5.9 ADPF 自适应性能框架 — 2026-05-27
+- **类型**：需重写 / 需整合
+- **位置**：正文“源码调研补充（2026-05-01 / 2026-05-07）”与参考资料中的 DeepResearch 注入摘要
+- **问题**：章节正文仍保留 AIW 源码调研原始块、DeepResearch 注入摘要，以及“Task2B 已修正”“Task9 已确认”等过程性标记。发布稿会暴露编辑流水线痕迹，且部分素材还没有按主线叙述整合。
+- **建议**：将 API 版本边界、协程线程迁移、NDK workload hint 等有效内容并入对应正文小节或参考资料；删除 HTML 注释标记、过程性修正说明和未整合的原始调研块，再交 Task6/Task9 复审。
+- **review 日志**：logs/review/2026-05-27-08-review.md
