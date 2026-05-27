@@ -2,7 +2,7 @@
 title: "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略"
 chapter: "2.23"
 section: "2.23"
-status: "ready-for-review"
+status: finalized
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -43,18 +43,18 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: reviewed
 last_task6_at: "2026-05-27T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-10-review.md"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-18"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T19:44:00+08:00"
+last_task9_at: "2026-05-27T13:20:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-27"
@@ -62,6 +62,11 @@ task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
 review_type: "task6-writing-quality-review"
 task6_review_notes: "2026-05-27 10:05 Task6：pass-light-edit。复扫 Scheduler/VSyncPredictor/ARR 文稿；L1 禁用词、高频词和结构性元叙述 0 命中；outline 8/8 覆盖；无新增 L3/L4 回炉项。Task9 result 仍非 pass-tech-review，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-27-13-deep-review.md"
+p0: 0
+p1: 0
+p2: 0
+task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
