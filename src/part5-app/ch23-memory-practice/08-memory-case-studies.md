@@ -2,7 +2,7 @@
 title: "内存优化案例集"
 chapter: "23.8"
 section: "23.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-27"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
@@ -43,9 +43,9 @@ sources:
     path: "Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md"
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-27"
@@ -53,13 +53,13 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
 last_task6_review_log: logs/review/2026-05-27-21-review.md
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T20:20:00+08:00"
+last_task9_at: "2026-05-27T21:20:00+08:00"
 last_task9_autofix_at: "2026-05-27"
-last_task9_review_log: logs/deep-review/2026-05-27-20-deep-review.md
-task9_review_notes: "2026-05-27 Task9 20: auto-fixed。P1 heapprofd/smaps 运行边界已按 Perfetto + Android Developers profileable 文档补齐；P2 案例证据已由 Task2B 20:50 补齐，Task6 21:10 文稿复审通过，待 Task9 复审。"
+last_task9_review_log: logs/deep-review/2026-05-27-21-deep-review.md
+task9_review_notes: "2026-05-27 21:20 Task9 复审通过。P0/P1/P2=0；AOSP Bitmap/Debug、Android Developers Bitmap memory/load-bitmap、Perfetto heapprofd/profileable 边界复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-27T21:10:00+08:00"
 last_task2b_at: "2026-05-27T20:50:00+08:00"
 ---
