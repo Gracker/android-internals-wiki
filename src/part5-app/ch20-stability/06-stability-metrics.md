@@ -11,36 +11,37 @@ drafted_date: "2026-05-11"
 polish_count: 1
 sources:
   - type: official
-    path: "https://support.google.com/googleplay/android-developer/answer/9844476"
+    path: "https://support.google.com/googleplay/android-developer/answer/9844486"
   - type: clippings-structure-ref
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-17
 task6_result: needs-rework
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T11:28:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
-task9_result: "needs-rework"
-task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
+last_task9_at: "2026-05-28T01:28:49+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
+task9_result: "auto-fixed"
+task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 1；Android Vitals 官方 URL 从 answer/9844476 修正为 answer/9844486，回到 Task6 复审。"
 rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
 p0: 0
-p1: 3
+p1: 0
 p2: 1
 last_task6_at: "2026-05-17T12:11:00+08:00"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 无正文改动；正文仍有行业对标来源待补，且 Task9 已有 needs-rework 队列项，本轮确认并合并回炉。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task9_autofix_at: "2026-05-28"
 ---
 
 # 稳定性度量与指标体系
@@ -119,7 +120,7 @@ $$\text{User-Perceived ANR Rate} = \frac{\text{在前台经历过至少一次用
 
 > **Android Vitals 的"用户感知 ANR"口径**：Google Play Vitals 只把 `Input dispatching timed out` 类型的 ANR 计入 User-Perceived ANR Rate，Service ANR、Broadcast ANR 等类型即使发生在前台也不计入。团队内部度量通常会统计所有前台 ANR，口径比 Vitals 更宽，做内外数据对比时要注意这个差异。
 
-[已验证: Android Vitals 文档, support.google.com/googleplay/android-developer/answer/9844476]
+[已验证: Android Vitals 文档, support.google.com/googleplay/android-developer/answer/9844486]
 
 Google Play 的不良行为阈值（Bad Behavior Threshold）：
 
@@ -130,7 +131,7 @@ Google Play 的不良行为阈值（Bad Behavior Threshold）：
 
 超过全机型阈值，Play Store 在应用详情页展示警告标签，搜索排名和推荐权重下降。超过单机型阈值但未超全机型，只在特定设备上触发警告。
 
-[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
+[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844486]
 
 ### 团队内部的 ANR 率度量
 

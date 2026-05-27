@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: "finalized"
 last_task2b_at: '2026-05-09T12:43:00+08:00'
 title: EAS 能量感知调度
 chapter: '5.2'
@@ -39,8 +39,8 @@ last_task6_audit: '2026-05-21'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -48,10 +48,10 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-24'
-last_task9_at: '2026-05-24T06:27:54+08:00'
-task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T01:28:49+08:00"
+task9_result: "pass-tech-review"
 review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。'
 last_task9_audit: '2026-05-24'
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
@@ -59,6 +59,8 @@ task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审�
 last_task6_at: '2026-05-28T01:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 2 处；既有 Task9 needs-rework 技术项不由 Task6 裁决，继续流转 task9_pending。"
+last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
+task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 
