@@ -10,8 +10,8 @@ created_date: "2026-04-06"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 gap_source: "研究素材+AOSP结构+官方文档+读者需求"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-05-28"
+last_verified_against: "AOSP android-17-beta3；Android Developers excessive partial wake locks docs 2026-05-19；Android Developers Blog 2025-10-02"
 confidence: medium
 sources:
   - type: official
@@ -38,37 +38,38 @@ sources:
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T16:30:00+08:00"
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T02:31:47+08:00"
 last_task2b_at: "2026-05-28T00:50:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 last_task6_at: "2026-05-28T02:11:48+08:00"
 last_task6_review_log: "logs/review/2026-05-28-02-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task2B 修复后写作复审通过；L1/L2 未发现新增正文问题；无 L3/L4 回炉项，送 Task9 复核。"
 review_round: 6
+last_task9_autofix_at: "2026-05-28"
 ---
 
 # 11.5 Wakelock 机制与功耗分析
 
 Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是让 CPU 在需要时保持工作，但使用不当（忘记释放、异常路径泄漏、后台长期持有）就会直接导致电池快速耗尽。
 
-2026 年 3 月起，Play Store 对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
+2026 年 3 月起，Play Store 会对 excessive partial wake lock 指标超阈值的 App 影响重要发现入口曝光，并可能在详情页显示耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
 
 本节要回答几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及怎么避免 wakelock 变成功耗灾难。
 
@@ -469,7 +470,7 @@ networkClient.request(new Callback() {
 
 **模式 4：后台服务长期持有**
 
-这是最严重也最常见的模式。App 进入后台后，Foreground Service 或后台 Service 持有 wakelock 不释放，导致设备在屏幕关闭后 CPU 仍然全速运行。
+这是最严重也最常见的模式。App 进入后台后，Foreground Service 或后台 Service 持有 wakelock 不释放，导致设备在屏幕关闭后仍无法进入 deep suspend；CPU 频率和 idle 深度仍由调度器、电源策略和实际负载决定。
 
 ### Battery Historian 中的可视化
 
@@ -613,11 +614,11 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 2026 年 3 月正式生效。核心规则（来源：Android Vitals 官方文档）：
 
 - **阈值**：非豁免 partial wake lock 在 24 小时内累计超过 2 小时，且超过 5% 的用户 session（28 天窗口）
-- **惩罚**：Play Store 搜索/推荐降权 + App 详情页显示「可能加速耗电」警告标签
-- **豁免类型**：音频播放、位置访问、用户主动发起的数据传输（JobScheduler 等系统管理的 wakelock 自动豁免）
+- **惩罚**：Play Store 重要发现入口曝光受影响（如推荐位）+ App 详情页可能显示「可能加速耗电」警告标签
+- **豁免类型**：音频播放、位置访问、JobScheduler user-initiated APIs；普通后台 Job / WorkManager 任务不能一概视为豁免
 - **开发者工具**：Play Console → Android Vitals → Wake Lock 指标，可看各 wakelock 名称的 P90/P99 时长
 
-这里"非豁免"的含义是：系统持有的 wakelock（如音频、位置导航、JobScheduler 代持的 wakelock）不计入阈值。App 自己通过 `PowerManager.WakeLock` 持有的 partial wakelock 才受此约束。
+这里"非豁免"的含义是：Android Vitals 明确豁免 audio、location、JobScheduler user-initiated APIs。App 自己通过 `PowerManager.WakeLock` 持有的 partial wakelock，以及未命中这些豁免条件的系统代持 wakelock，都要在 Play Console 里继续看 wakelock 名称、affected sessions 和持续时间。
 
 [已验证: developer.android.com/topic/performance/vitals/wakelock（Android Vitals excessive wake lock 定义）；googleblog.com（Play Store 政策公告）]
 
@@ -733,7 +734,7 @@ Wakelock 不是一个孤立的话题，它与全书多个章节紧密关联：
 | Android 14 (API 34) | 前台服务类型 | 必须声明服务类型 |
 | Android 14 (API 34) | `OnAlarmListener` 精确闹钟权限例外明确写入文档 | `OnAlarmListener` 路径不需要 `SCHEDULE_EXACT_ALARM` 权限（API 24 即已存在），Android 14 在文档中正式明确了此例外；`setExactAndAllowWhileIdle` + `OnAlarmListener` 重载仍为 `@SystemApi` |
 | Android 16 (API 36) | 后台执行限制继续细化 | Alarm / Job / 网络等后台入口约束更细 |
-| 2026-03 | Play Store Wakelock 惩罚政策 | 2h/24h 阈值，搜索降权 |
+| 2026-03 | Play Store Wakelock 惩罚政策 | 2h/24h + 5% sessions / 28 天阈值，影响重要发现入口曝光 |
 
 ## 常见问题与误区
 

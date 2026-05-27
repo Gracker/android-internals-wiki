@@ -5,8 +5,8 @@ section: "13.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "Perfetto v54.0 release notes + google/perfetto main ab21398 + FrameTimeline docs"
+last_verified: "2026-05-28"
+last_verified_against: "Perfetto v54.0 release notes；google/perfetto v54.0 cujs/base.sql + frametimeline docs；AndroidX JankStats docs 2026-02-19"
 confidence: medium
 sources:
   - type: official
@@ -34,20 +34,23 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-28T02:11:48+08:00"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-16"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-16T14:20:00+08:00"
+last_task9_at: "2026-05-28T02:31:47+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-05-28-02-review.md"
 task6_l1_l2_fixes: 4
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：修复禁用词、代码围栏语言和重复参考资料 4 处；无 L3/L4 回炉项，送 Task9 复核。"
+last_task9_autofix_at: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。"
 ---
 
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
@@ -93,7 +96,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 ### 关键发现
 
 1. **`android_jank_cuj` 表默认只包含系统进程**
-   - `android.cujs.base` 模块（`external/perfetto/src/trace_processor/metrics/sql/android/jank/`）中的 `android_jank_cuj` 表默认按进程名过滤
+   - `android.cujs.base` 模块（`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql`）中的 `android_jank_cuj` 表默认按进程名过滤
    - `com.android.*` / `com.google.android*` 进程数据进入 CUJ 分析，第三方 App 的 CUJ marker 不自动进入该表
    - 第三方 App 需要使用 AndroidX JankStats API 或自定义 SQL 扩展
 
@@ -132,9 +135,8 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 
 | Android 版本 | CUJ 支持 |
 |--------------|---------|
-| Android 10 (API 29) | FrameTimeline 引入 |
-| Android 11 (API 30) | JankStats API 加入 |
-| Android 12 (API 31) | FrameTracker 增强 |
+| Android 12 (API 31) | FrameTimeline trace 数据可用 |
+| AndroidX JankStats 1.0.0 | API 16+ 可用；API 24+ 依赖 FrameMetrics，API 31+ 计时数据更准 |
 | Android 13+ | InteractionJankMonitor 稳定化 |
 
 <!-- AIW-源码调研-2026-05-18 -->
@@ -148,7 +150,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 
 前次调研已厘清 `android.cujs.base` 默认仅覆盖系统进程的边界。本补充提供三条**可直接执行**的路径，适用于第三方 App 做 CUJ 分析：
 
-#### 路径一：AndroidX JankStats（推荐，API 30+）
+#### 路径一：AndroidX JankStats（API 16+ 可用，API 24/31 后计时更准）
 
 ```kotlin
 val jankStats = JankStats.createAndTrack(window) { frameData ->
@@ -202,7 +204,7 @@ ORDER BY actual.ts
 LIMIT 50;
 ```
 - 不依赖 CUJ marker，直接用 `on_time_finish = 0` 判断异常帧
-- 需要 trace 配置开启 `gfx` category（FrameTimeline 数据源）
+- 需要 trace 配置开启 `android.surfaceflinger.frametimeline`；若还要联动 `Choreographer#doFrame` / `DrawFrame` slice，再同时开启 `gfx` / `view` atrace category
 
 #### FrameTracker 数据流（系统进程视角）
 

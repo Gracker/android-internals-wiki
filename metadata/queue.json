@@ -499,5 +499,25 @@
     "completed_at": "2026-05-27T22:20:00+08:00",
     "completion_reason": "Task9 auto-fix：拆分 Java Heap OOM、Native/虚拟地址分配失败、LMK/lmkd 回收三条触发路径。",
     "resolution_log": "logs/deep-review/2026-05-27-22-deep-review.md"
+  },
+  {
+    "section": "20.9",
+    "section_title": "稳定性治理案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Native signal handler 示例违反 async-signal-safe 约束",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性/信号安全",
+        "location": "案例二：统一信号处理器管理（L228-L285）",
+        "detail": "示例在 signal handler 内直接执行 dump_native_stack(sig, info, context)、dump_registers、write_crash_report，并注明 dlopen + dladdr。dlopen、堆栈展开、复杂日志/文件写入和锁相关逻辑不满足 async-signal-safe 约束；同一节又要求 handler 中只能调用 async-signal-safe 函数，前后矛盾。读者按该示例实现 Native Crash SDK 可能引入二次崩溃或死锁。",
+        "suggestion": "重写该示例：signal handler 只做最小 async-signal-safe 动作（记录 siginfo/ucontext 到预分配缓冲区或 pipe/eventfd、恢复默认处理并 re-raise），复杂 unwind、符号化、文件写入交给安全上下文或崩溃后处理；同时补充 altstack、SA_SIGINFO、SA_ONSTACK、sigaction 旧 handler 链边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-28T02:31:47+08:00",
+    "status": "pending"
   }
 ]
