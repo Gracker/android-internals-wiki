@@ -40,22 +40,22 @@ reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T16:30:00+08:00"
-last_task2b_at: "2026-05-06T14:51:22+08:00"
+last_task2b_at: "2026-05-28T00:50:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 4
@@ -102,7 +102,7 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 
 ## Wakelock 为什么存在：Android 需要“阻止睡眠”的场景
 
-移动设备的 CPU 大部分时间应该处于低功耗状态。屏幕关闭后，如果没有任何工作要做，系统会在几百毫秒内依次进入浅度空闲、深度空闲，最终挂起（suspend）——此时 CPU 几乎不耗电，整机功耗可以降到 1mA 以下。
+移动设备的 CPU 大部分时间应该处于低功耗状态。屏幕关闭后，如果没有任何工作要做，系统会在几百毫秒内依次进入浅度空闲、深度空闲，最终挂起（suspend）。在屏幕、基带和后台任务都静默的测试条件下，整机功耗可能降到 mA 级；具体数值要以设备电源轨或外接电流计实测为准。
 
 但有些场景 CPU 必须保持工作：音乐播放、GPS 持续定位、即时通讯的长连接心跳、正在进行的下载任务。如果 CPU 在这些任务完成之前就进入 suspend，任务会被中断，用户体验直接受损。
 
@@ -244,7 +244,7 @@ Android 9（API 28）引入了 App Standby Bucket，根据 App 的使用频率�
   2. Doze 模式下非白名单 App 的 partial wakelock 会被完全忽略
   3. Jobs 配额受限 → 后台工作量减少 → 持锁场景间接减少
 
-> ⚠️ **重要修正**（2026-04-22 源码调研）：AIW 正文原描述"从 Rare 桶开始对 wakelock 施加配额限制"不准确。Wakelock 的 bucket 限制是间接的，不存在类似 Jobs 的 QuotaController 那样的直接配额系统。`RESTRICTED_WAKELOCK_MAX_TIMEOUT` 是超时限制，不是配额限制。详见调研报告 `2026-04-22-app-standby-bucket-wakelock-restrictions.md`。<!-- AIW-源码调研-2026-04-22 -->
+> 源码核对后的结论：App Standby Bucket 对 wakelock 的限制是间接约束，不存在类似 Jobs `QuotaController` 的直接配额系统。`RESTRICTED_WAKELOCK_MAX_TIMEOUT` 是单次超时限制，不是累计配额限制。详见调研报告 `2026-04-22-app-standby-bucket-wakelock-restrictions.md`。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
@@ -426,7 +426,7 @@ SystemSuspend: 用户态 wakelock 计数增加
 
 屏幕关闭时还会并行发生两类动作：`nativeSetAutoSuspend(true)` 允许 autosuspend 工作；Power HAL 收到 `INTERACTIVE=false` 一类 mode/hint，用于调整 CPU/GPU/调度策略。前者决定系统能否进入 deep suspend，后者影响性能与功耗策略，不能混成一条 wakelock 调用链。
 
-[自动发现: 源码调研 2026-04-27，核对 `hardware/libhardware_legacy/power.cpp`、`SystemSuspend.cpp`、`IPower.aidl` 与 `PowerHalController` 路径]
+[已验证: AOSP `hardware/libhardware_legacy/power.cpp`、`SystemSuspend.cpp`、`IPower.aidl` 与 `PowerHalController` 路径]
 
 
 ## Wakelock 泄漏的常见模式与诊断
@@ -756,21 +756,21 @@ Foreground Service 提高的是进程存活优先级，不是 CPU 的唤醒状�
 
 ### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测
 
-Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可实现"提示系统→观察效果"的完整验证循环。
+Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可以把性能提示和能耗观测放在同一条验证路径里。
 
 #### PerformanceHintManager 与 Power Efficiency Mode
 
 **源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 31+，Android 15 扩展）
 
-`PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，影响 CPU 频率和核心类型决策。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程应优先节能，适用于长时后台工作负载。
+`PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，辅助调度器和 Power HAL 估计工作负载。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程应优先节能，适用于长时后台工作负载。
 
 核心 API：
 - `createHintSession(int[] tids, long initialTargetNanos)` — 创建 hint session，`tids` 为关联线程 ID 数组（`int[]`，非 `long[]`），目标时长单位为纳秒
 - `reportActualWorkDuration(long actualDurationNanos)` — 报告单次实际工作耗时（纳秒）
 - `updateTargetWorkDuration(long targetDurationNanos)` — 更新目标工作时长（纳秒）
-- `setPreferPowerEfficiency(boolean preferEfficiency)` — API 35 / `FLAG_ADPF_PREFER_POWER_EFFICIENCY`，声明会话线程应优先节能；系统可更积极地将线程调度到效率核、降低 CPU/GPU 频率。适用于后台长时工作负载（如同步、上传、压缩），不适合前台交互场景
+- `setPreferPowerEfficiency(boolean preferEfficiency)` — API 35 / `FLAG_ADPF_PREFER_POWER_EFFICIENCY`，声明会话线程可以按能效优先调度；是否迁移到效率核、降低频率或联动 GPU，由设备的 scheduler / Power HAL 实现决定。适用于后台长时工作负载（如同步、上传、压缩），不适合前台交互场景
 
-Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能核心、降低 CPU/GPU 频率，而非追求最低延迟。这解决了"busy loop"场景下 CPU 空转的高功耗问题——传统方式是应用自行 Sleep，但会引入调度延迟；Power Efficiency Mode 让系统理解工作负载特征，在保证性能需求的前提下主动降频。
+Power Efficiency Mode 的语义是调度偏好：应用告诉系统，这组线程可以牺牲部分响应速度来换取能效。它的 API 契约不包含降频或 GPU 频率变化保证；实测时要同时看线程运行位置、CPU/GPU freq counter、rail 能耗和任务耗时。
 
 #### PowerMonitor API（API 35 新增）
 
@@ -818,7 +818,7 @@ android_power_config {
 ```text
 应用调用 Power Efficiency Hint
   ↓
-系统调整 CPU/GPU 频率策略
+线程按能效优先调度；设备实现可能调整核心选择或频率
   ↓
 IPowerStats HAL 累计能耗变化
   ↓
@@ -832,32 +832,19 @@ Perfetto android.power 数据源记录 rail 数据（SQL 表名 `android_power_r
 
 #### 非游戏场景的 ADPF 应用
 
-ADPF 不仅适用于游戏，视频剪辑、AI 推理、后台批处理等场景也能利用 hint session 优化能效：
+ADPF 的适用范围包括游戏，也包括视频剪辑、AI 推理、后台批处理等 performance-intensive app。这类应用可以使用 hint session 描述工作负载：
 
-**非游戏内容类型声明**（API 33+）：非游戏应用可通过 `GameManager.setGameState(GameState)` 传递 `GameState.MODE_CONTENT`（值 4），向系统声明当前内容类型。系统据此决定是否应用 Game Mode 优化策略：
+| 场景 | 建议 API | 说明 |
+|------|----------|------|
+| 视频导出 | `createHintSession()` + `reportActualWorkDuration(...)` | 让系统看到周期性工作耗时，便于维持可持续吞吐 |
+| 实时 AI 推理 | `reportActualWorkDuration(...)` / `reportActualWorkDuration(WorkDuration)` | Android 15 起可把 CPU/GPU 工作时长作为 hint session 输入，设备再决定是否联动调度 |
+| 后台批处理 | `setPreferPowerEfficiency(true)` + `reportActualWorkDuration(...)` | 延迟不敏感时声明能效优先，再用耗时和能耗数据验证收益 |
 
-```java
-GameManager gameManager = context.getSystemService(GameManager.class);
-GameState gameState = new GameState(false, GameState.MODE_CONTENT, -1, -1);
-gameManager.setGameState(gameState);
-```
-
-**Hint session 的常量与策略适配**：
-
-| 场景 | Hint 组合 | 说明 |
-|------|-----------|------|
-| 视频导出 | `CPU_LOAD_UP` + `reportActualWorkDuration` + `MODE_CONTENT` | 需要 CPU 持续高频 |
-| 实时 AI 推理 | `CPU_LOAD_UP` + `GPU_LOAD_UP` + `MODE_CONTENT` | 需要 CPU + GPU 协同 |
-| 后台批处理 | `setPreferPowerEfficiency(true)` + `MODE_NONE` | 不追求延迟，优先节能 |
-
-`PerformanceHintManager` 专注于线程级精细频率控制；`GameManager` 影响进程级调度优先级和 OOM 策略。两者协同可形成更完整的调度决策。
+`GameManager.setGameState(GameState)` 是游戏状态上报 API。`GameState.MODE_CONTENT` 表示游戏内当前展示的不是 gameplay 内容，例如广告、网页、文本或视频；普通视频、AI 推理和后台批处理应用不应把它当成通用内容类型声明。非游戏场景保留 `PerformanceHintManager`、Thermal API、PowerMonitor 和 Perfetto 观测路径即可。
 
 > USB 充电场景下，电池计数器显示的是正向充电电流，不是设备真实功耗。官方建议使用专用 USB Hub 切断充电电路，以获得准确测量。
 
-[已验证: developer.android.com — ADPF Power Efficiency Mode 官方文档；PowerMonitor API Reference (API 35)；perfetto.dev/docs/analysis-sql/android-power-rails]
-
-<!-- AIW-源码调研-2026-04-30 -->
-
+[已验证: developer.android.com — ADPF Power Efficiency Mode 官方文档；PerformanceHintManager.Session#setPreferPowerEfficiency；GameManager / GameState API Reference；PowerMonitor API Reference (API 35)；perfetto.dev/docs/analysis-sql/android-power-rails]
 
 ## 参考资料
 

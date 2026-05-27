@@ -2175,8 +2175,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T23:15:00+08:00",
-  "last_updated_by": "openclaw-task6-draft-review",
+  "last_updated": "2026-05-28T00:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T23:15:00+08:00",
     "log": "logs/review/2026-05-27-23-review.md",
@@ -2316,11 +2316,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T22:50:00+08:00",
+  "last_task2b_at": "2026-05-28T00:50:00+08:00",
   "last_task2b_sections": [
-    "1.8"
+    "11.5"
   ],
-  "last_task2b_action": "frontmatter backlog fallback Task9 P95 repair",
+  "last_task2b_action": "frontmatter backlog fallback rework",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -4538,11 +4538,11 @@
       "title": "Wakelock 机制与功耗分析",
       "file": "src/part2-performance/ch11-power/05-wakelock.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "pending",
+      "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_l1_l2_fixes": 4,
@@ -4551,7 +4551,10 @@
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T16:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
-      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
+      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。",
+      "last_task2b_at": "2026-05-28T00:50:00+08:00",
+      "last_task2b_source": "frontmatter-backlog-fallback/logs/deep-review/2026-05-16-16-deep-review.md",
+      "last_task2b_summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
     },
     "5.13": {
       "title": "移动端 LLM 推理的 DVFS 与能效边界",
@@ -6552,11 +6555,11 @@
       "title": "Wakelock 机制与功耗分析",
       "file": "src/part2-performance/ch11-power/05-wakelock.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "pending",
+      "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_l1_l2_fixes": 4,
@@ -6565,7 +6568,10 @@
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T16:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
-      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
+      "task6_review_notes": "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。",
+      "last_task2b_at": "2026-05-28T00:50:00+08:00",
+      "last_task2b_source": "frontmatter-backlog-fallback/logs/deep-review/2026-05-16-16-deep-review.md",
+      "last_task2b_summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
     },
     "20.1": {
       "title": "应用稳定性全景",
@@ -7658,7 +7664,7 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task2b_run": "2026-05-27T22:50:00+08:00",
+  "last_task2b_run": "2026-05-28T00:50:00+08:00",
   "task2b_sections_fixed": 1,
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-27T23:15:00+08:00",
@@ -7874,6 +7880,25 @@
       ],
       "files_modified": [
         "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+      ]
+    },
+    {
+      "timestamp": "2026-05-28T00:50:00+08:00",
+      "sections_processed": [
+        "11.5"
+      ],
+      "sections_fixed": [
+        "11.5"
+      ],
+      "issues_addressed": 3,
+      "queue_ids_completed": [
+        "frontmatter-backlog-fallback-logs/deep-review/2026-05-16-16-deep-review.md"
+      ],
+      "source_types": [
+        "frontmatter-backlog-fallback/task9-deep-tech-review"
+      ],
+      "details": [
+        "§11.5: setPreferPowerEfficiency 调度偏好边界、GameManager/GameState 游戏场景边界、低功耗 mA 级数据条件修正。"
       ]
     }
   ],
@@ -8156,6 +8181,14 @@
       "fixed_date": "2026-05-27T22:50:00+08:00",
       "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-18-19-deep-review.md",
       "fix_summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+    },
+    {
+      "section": "11.5",
+      "title": "Wakelock 机制与功耗分析",
+      "status": "fixed",
+      "fixed_date": "2026-05-28T00:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-16-16-deep-review.md",
+      "fix_summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -9230,12 +9263,21 @@
       "source": "frontmatter backlog fallback / task9-deep-tech-review",
       "priority": 95,
       "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+    },
+    {
+      "section": "11.5",
+      "file": "src/part2-performance/ch11-power/05-wakelock.md",
+      "at": "2026-05-28T00:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter-fallback/task9-deep-review",
+      "priority": 95,
+      "summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
     }
   ],
   "last_task2b_completed": [
-    "1.8"
+    "11.5"
   ],
-  "last_task2b_completed_at": "2026-05-27T22:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T00:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9350,20 +9392,16 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+    "src/part2-performance/ch11-power/05-wakelock.md"
   ],
   "last_task2b_completed_entry": {
-    "sections": [
-      "1.8"
-    ],
-    "files": [
-      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
-    ],
-    "at": "2026-05-27T22:50:00+08:00",
+    "section": "11.5",
+    "file": "src/part2-performance/ch11-power/05-wakelock.md",
+    "at": "2026-05-28T00:50:00+08:00",
     "by": "task2b-content-processing-rework-main",
-    "source": "frontmatter backlog fallback / task9-deep-tech-review",
+    "source": "frontmatter-backlog-fallback/task9-deep-review",
     "priority": 95,
-    "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+    "summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
   },
   "task2b_last_rework": {
     "section": "1.8",
