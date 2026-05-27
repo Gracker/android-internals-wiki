@@ -2068,23 +2068,26 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T12:06:00+08:00",
+  "last_updated": "2026-05-27T13:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T11:10:56+08:00",
+    "reviewed_at": "2026-05-27T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "18.10"
+      "22.4",
+      "1.13"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+      "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
     ],
-    "log": "logs/review/2026-05-27-11-review.md",
+    "log": "logs/review/2026-05-27-13-review.md",
     "mode": "revisiting",
     "results": {
-      "18.10": "pass-light-edit"
+      "22.4": "pass-light-edit",
+      "1.13": "pass-light-edit"
     },
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 4,
     "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
@@ -2613,10 +2616,10 @@
       "pipeline_stage": "task9_pending",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "last_task9_at": "2026-05-13T01:43:00+08:00",
-      "last_task6_at": "2026-05-27T12:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-12-review.md",
+      "last_task6_at": "2026-05-27T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-13-review.md",
       "task6_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
@@ -2629,7 +2632,7 @@
       "reviewed_date": "2026-05-27",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除自动发现编辑前缀，压掉两处评价性表达；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+      "task6_review_summary": "2026-05-27 13:05 Task6 revisiting：pass-light-edit。补齐 outline 锚点并清理多余空行；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "5.10": {
       "status": "ready-for-review",
@@ -5935,34 +5938,34 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T12:06:00+08:00",
+  "last_task6_review": "2026-05-27T13:05:00+08:00",
   "last_task6_sections": [
     "22.4",
-    "2.9"
+    "1.13"
   ],
   "last_task6_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
-  "last_task6_at": "2026-05-27T12:06:00+08:00",
+  "last_task6_at": "2026-05-27T13:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T12:06:00+08:00",
+    "reviewed_at": "2026-05-27T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "22.4",
-      "2.9"
+      "1.13"
     ],
     "files": [
       "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-      "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
     ],
-    "log": "logs/review/2026-05-27-12-review.md",
+    "log": "logs/review/2026-05-27-13-review.md",
     "mode": "revisiting",
     "results": {
       "22.4": "pass-light-edit",
-      "2.9": "pass-light-edit"
+      "1.13": "pass-light-edit"
     },
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 4,
     "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
@@ -5976,11 +5979,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T12:06:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-12-review.md",
+  "task6_last_review_at": "2026-05-27T13:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-13-review.md",
   "task6_last_review_sections": [
     "22.4",
-    "2.9"
+    "1.13"
   ],
   "sections_status": {
     "22.11": {
@@ -7374,13 +7377,14 @@
       "title": "自定义 View 性能优化",
       "section": "22.4",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-27T12:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-12-review.md",
+      "last_task6_at": "2026-05-27T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-13-review.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除自动发现编辑前缀，压掉两处评价性表达；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+      "task6_review_summary": "2026-05-27 13:05 Task6 revisiting：pass-light-edit。补齐 outline 锚点并清理多余空行；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。",
+      "task9_result": "auto-fixed"
     },
     "2.9": {
       "status": "ready-for-review",
@@ -7443,23 +7447,23 @@
   "last_task2b_run": "2026-05-27T10:50:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T12:06:00+08:00",
+    "reviewed_at": "2026-05-27T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "22.4",
-      "2.9"
+      "1.13"
     ],
     "files": [
       "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-      "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
     ],
-    "log": "logs/review/2026-05-27-12-review.md",
+    "log": "logs/review/2026-05-27-13-review.md",
     "mode": "revisiting",
     "results": {
       "22.4": "pass-light-edit",
-      "2.9": "pass-light-edit"
+      "1.13": "pass-light-edit"
     },
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 4,
     "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
@@ -7467,7 +7471,7 @@
   },
   "task6_last_review_files": [
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
   "task6_last_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
@@ -7797,7 +7801,7 @@
   },
   "task6_last_reviewed_sections": [
     "22.4",
-    "2.9"
+    "1.13"
   ],
   "task2b_progress": [
     {
@@ -7842,7 +7846,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-12-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-13-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8269,19 +8273,22 @@
     "title": "MessageQueue 机制与 DeliQueue 无锁优化",
     "file": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-23",
-    "last_task6_at": "2026-05-23T01:24:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-23-01-review.md",
+    "reviewed_date": "2026-05-27",
+    "last_task6_at": "2026-05-27T13:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-13-review.md",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-05-27T12:50:00+08:00",
-    "task2b_note": "Task2B fallback 修复：删除源码调研补充块并回流 Task6。"
+    "task2b_note": "Task2B fallback 修复：删除源码调研补充块并回流 Task6。",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-27",
+    "task6_review_summary": "2026-05-27 13:05 Task6 revisiting：pass-light-edit。将参考资料中的 DeepResearch 注入块整理为普通来源条目；outline 5/5 覆盖；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
   },
   "rework_log": [
     {
@@ -8558,7 +8565,7 @@
   },
   "last_task6_reviewed_sections": [
     "22.4",
-    "2.9"
+    "1.13"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8589,7 +8596,7 @@
   },
   "last_task6_review_files": [
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -8767,7 +8774,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T12:06:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T13:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",

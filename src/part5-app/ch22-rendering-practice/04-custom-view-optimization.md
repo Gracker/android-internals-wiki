@@ -20,9 +20,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/Color.java"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-27"
@@ -35,15 +35,33 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
 last_task9_at: "2026-05-27T12:21:00+08:00"
 task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除自动发现编辑前缀，压掉两处评价性表达；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_review_log: "logs/review/2026-05-27-12-review.md"
-last_task6_at: "2026-05-27T12:06:00+08:00"
+task6_review_notes: "2026-05-27 13:05 Task6 revisiting：pass-light-edit。补齐 outline 锚点并清理多余空行；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-27-13-review.md"
+last_task6_at: "2026-05-27T13:05:00+08:00"
 task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-05-27"
 ---
 # 自定义 View 性能优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点(必须覆盖)
+
+- 🔹 onMeasure / onLayout / onDraw 的调用频率与优化优先级
+- 🔹 onDraw() 中对象分配的 GC 压力与零分配写法
+- 🔹 硬件加速、Layer 与 setWillNotDraw 的使用边界
+- 🔹 invalidate()、postInvalidateOnAnimation() 与 requestLayout() 的重绘范围差异
+- 🔹 RenderNode 拆分静态层和动态层的适用场景
+- 🔹 Perfetto 中观察自定义 View 绘制耗时的方法
+
+### 扩展(可选深入)
+
+- 🔸 ViewCompat.postInvalidateOnAnimation 的旧版本兼容性
+- 🔸 RenderThread DrawFrame 与 UI Thread draw 的耗时对照
+<!-- outline-end -->
 
 自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘。
 
@@ -326,8 +344,6 @@ public void startAnimation() {
     mAnimator.start();
 }
 ```
-
-
 
 ## ViewCompat.postInvalidateOnAnimation 的兼容性
 

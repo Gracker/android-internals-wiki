@@ -5,7 +5,7 @@ section: "1.13"
 status: ready-for-review
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
-reviewed_date: "2026-05-23"
+reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 last_verified: "2026-04-24"
 last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers MessageQueue 行为变更页 + Android Developers Blog 2026-02-17"
@@ -35,9 +35,9 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: revisiting
-task6_result: needs-rework
-last_task6_review_log: "logs/review/2026-05-23-01-review.md"
+task6_state: reviewed
+task6_result: pass-light-edit
+last_task6_review_log: "logs/review/2026-05-27-13-review.md"
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-23T00:20:00+08:00"
@@ -45,12 +45,12 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 task9_review_notes: "2026-05-23 task9 deep-review: needs-rework。P0 1 / P1 1。android-16 tag 目录表误列 Locked/SemiConcurrentMessageQueue，且 CombinedMessageQueue 方法名/Android17 DeliQueue 数据结构边界仍需 Task2B 回炉。"
-task6_reviewed_date: "2026-05-23"
-last_task6_at: "2026-05-23T01:24:00+08:00"
-task6_review_notes: "2026-05-23 Task6 revisiting-review: needs-rework。L1/L2 小修：移除 AIW 源码调研 HTML 注释，修正 8 处措辞/术语，补 [需重写] 标注。L3/L4：参考资料前后仍有源码调研补充块，需 Task2B 整合进正文/附录或移出发布稿；Task9 P0/P1 继续沿用 pending queue。"
+task6_reviewed_date: "2026-05-27"
+last_task6_at: "2026-05-27T13:05:00+08:00"
+task6_review_notes: "2026-05-27 13:05 Task6 revisiting：pass-light-edit。将参考资料中的 DeepResearch 注入块整理为普通来源条目；outline 5/5 覆盖；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-21-audit.md"
 task9_audit_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：CombinedDeliMessageQueue / MessageStack / MessageHeap AOSP mainline 路径不可验证，SemiConcurrentMessageQueue 主线/分支边界混写。"
@@ -382,13 +382,9 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 - retarget 到 Android 17 后,如果测试框架、反射代码、旧监控脚本先出问题,先查 `mMessages` 和测试库版本,再查业务逻辑。
 
 ## 参考资料
-### Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 DeliQueue 无锁 MessageQueue 实现的源码验证，Treiber Stack + Min-Heap 混合数据结构，ARM64 LSE 原子指令优化（高竞争场景 CAS 性能提升约 3x），DeliQueue 消息入队全流程与 RecyclerView GapWorker 预取链路的性能关联分析。
-- 注入时间：2026-05-24
-- 价值：补充 ARM64 LSE 原子指令优化细节和 DeliQueue 对 RecyclerView 滑动性能的量化影响路径
 
+- DeepResearch, Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取机制
+  `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-deli-queue-recyclerview-prefetch.md`
 
 - Android Developers, MessageQueue behavior change guidance
   https://developer.android.com/about/versions/17/changes/messagequeue
