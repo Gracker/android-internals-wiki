@@ -391,7 +391,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-27T08:07:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-05-27-08-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-27-08-review.md",
+    "completed_at": "2026-05-27T08:50:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
   }
 ]
