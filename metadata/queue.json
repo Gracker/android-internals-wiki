@@ -438,7 +438,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-27T15:08:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-05-27-15-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-27-15-review.md",
+    "completed_at": "2026-05-27T16:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "result": "fixed",
+    "completion_reason": "清理文末 AIW 源码调研原始块，AMS 双锁与 PI-futex 边界已合并入正文。"
   }
 ]
