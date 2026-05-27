@@ -46,18 +46,18 @@ related_chapters:
 - '8.3'
 - '14.1'
 - '15.6'
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed-lite
 task9_reviewed_date: '2026-05-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-24T22:20:00+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 repaired_date: '2026-04-24'
 repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
@@ -72,6 +72,7 @@ last_task9_review_log: logs/deep-review/2026-05-24-22-audit.md
 last_task9_audit: '2026-05-24'
 last_task9_audit_log: logs/deep-review/2026-05-24-22-audit.md
 rework_type: review回炉修复（Task9 闲时抽检问题单）
+last_task2b_lite_at: '2026-05-27'
 ---
 
 # APK 体积优化
@@ -366,7 +367,7 @@ android {
 
 对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但收益明确：主包体积可以减少数十 MB，直接提升安装转化率。
 
-一个折中方案是使用 Play Core Library 的 **on-demand delivery**：将大型 so 库放在 Dynamic Feature Module 中（下一节讨论），用户安装基础 APK 时不包含这些库，只有当用户导航到需要该库的功能页面时才触发下载。
+一个折中方案是使用 Play Feature Delivery Library 的 **on-demand delivery**：将大型 so 库放在 Dynamic Feature Module 中（下一节讨论），用户安装基础 APK 时不包含这些库，只有当用户导航到需要该库的功能页面时才触发下载。
 
 ## App Bundle 与 Dynamic Feature Module
 
@@ -443,7 +444,7 @@ dependencies {
 </dist:module>
 ```
 
-在运行时使用 Play Core Library 请求加载：
+在运行时使用 Play Feature Delivery Library 请求加载：
 
 ```kotlin
 val splitInstallManager = SplitInstallManagerFactory.create(context)
@@ -460,7 +461,7 @@ splitInstallManager.startInstall(request)
     }
 ```
 
-[适用版本: Play Core Library 1.6+ / Android 5.0 (API 21)+]
+[适用版本: Play Feature Delivery Library 2.1.0+ / Android 5.0 (API 21)+；target Android 14 (API 34)+ 的工程必须使用 2.1.0 或更高版本，旧 monolithic Play Core Library 不再适合作为现代基线]
 
 使用 Dynamic Feature Module 时，有几个工程上的注意点。第一，模块之间的代码依赖需要仔细规划——feature module 可以依赖 base module，但两个 feature module 之间不能直接依赖。第二，导航需要特殊处理——因为目标 Activity 在下载前还不存在于设备上，标准的 `startActivity()` 会崩溃。Android Navigation Component 提供了 Dynamic Feature Module 的原生支持来处理这个问题。
 
