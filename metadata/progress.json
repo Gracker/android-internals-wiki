@@ -625,7 +625,12 @@
       "p0": 2,
       "p1": 2,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task2b_verifier_result": "ready-for-task6",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_note": "Task2B Verifier confirmed queue has no pending rework and routed section back to Task6."
     },
     "21.4": {
       "p0": 0,
@@ -673,7 +678,12 @@
       "p0": 2,
       "p1": 0,
       "p2": 2,
-      "p3": 0
+      "p3": 0,
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task2b_verifier_result": "ready-for-task6",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_note": "Task2B Verifier confirmed queue has no pending rework and routed section back to Task6."
     },
     "20.1": {
       "p0": 1,
@@ -2050,8 +2060,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T11:39:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-27T11:44:00+08:00",
+  "last_updated_by": "openclaw-task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T11:10:56+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2556,11 +2566,19 @@
     },
     "2.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-13T01:20:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md",
+      "task6_state": "revisiting",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_verifier_result": "ready-for-task6",
+      "file": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "title": "渲染机制的版本演进",
+      "section": "2.9"
     },
     "2.18": {
       "status": "ready-for-review",
@@ -2579,13 +2597,21 @@
     },
     "22.4": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-13T01:43:00+08:00",
       "last_task6_at": "2026-05-12T08:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-12-08-review.md"
+      "last_task6_review_log": "logs/review/2026-05-12-08-review.md",
+      "task6_state": "revisiting",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_verifier_result": "ready-for-task6",
+      "file": "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+      "title": "自定义 View 性能优化",
+      "section": "22.4"
     },
     "5.10": {
       "status": "ready-for-review",
@@ -7310,6 +7336,32 @@
       "last_task2b_at": "2026-05-27T10:50:00+08:00",
       "last_task2b_source": "task9-deep-tech-review",
       "last_task2b_priority": 95
+    },
+    "22.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_verifier_result": "ready-for-task6",
+      "file": "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+      "title": "自定义 View 性能优化",
+      "section": "22.4"
+    },
+    "2.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-27T11:44:00+08:00",
+      "task2b_verifier_result": "ready-for-task6",
+      "file": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "title": "渲染机制的版本演进",
+      "section": "2.9"
     }
   },
   "task2a_last_processed": {
