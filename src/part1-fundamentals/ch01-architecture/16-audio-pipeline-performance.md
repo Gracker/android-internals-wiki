@@ -37,7 +37,7 @@ sources:
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T14:50:00+08:00"
@@ -54,6 +54,8 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。"
 task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
 last_task9_autofix_at: "2026-05-27"
+last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
+task2b_verifier_result: ready-for-task6
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
