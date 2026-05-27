@@ -491,7 +491,13 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-27T22:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-05-27-22-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-27-22-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-05-27T22:20:00+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "completed_at": "2026-05-27T22:20:00+08:00",
+    "completion_reason": "Task9 auto-fix：拆分 Java Heap OOM、Native/虚拟地址分配失败、LMK/lmkd 回收三条触发路径。",
+    "resolution_log": "logs/deep-review/2026-05-27-22-deep-review.md"
   }
 ]
