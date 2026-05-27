@@ -444,5 +444,33 @@
     "completed_by": "openclaw-task2b-main",
     "result": "fixed",
     "completion_reason": "清理文末 AIW 源码调研原始块，AMS 双锁与 PI-futex 边界已合并入正文。"
+  },
+  {
+    "section": "23.8",
+    "section_title": "内存优化案例集",
+    "priority": 90,
+    "reason": "[review回炉] 案例证据仍不足，且 heapprofd / smaps 工具运行边界尚未补齐",
+    "material_paths": [
+      "intake/suggestions.md（含 2026-05-27 Task6 Review 意见）",
+      "logs/deep-review/2026-05-14-06-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "全文，尤其是开头、Bitmap、Native、预算三类案例小节",
+        "detail": "章节仍以排查模板和治理口径为主，缺少 1-2 个可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势；作为案例集，L3 论据支撑和 L4 作者在场感仍不足。",
+        "suggestion": "补至少 1 个可脱敏案例，包含现象、指标、证据、根因、修复、验证和防复发；新增技术细节继续交 Task9 复核。"
+      },
+      {
+        "type": "需确认",
+        "location": "Native 内存泄漏排查案例：smaps / heapprofd 命令块及前置说明",
+        "detail": "Task9 2026-05-14 已指出 heapprofd / smaps 运行条件缺少 user build、userdebug/eng、profileable/debuggable、root/run-as 与权限边界。Task2B Lite 本轮只修复了 26.3 交叉引用，正文仍未补齐该工具边界。",
+        "suggestion": "补充生产 user 设备、debuggable/profileable 应用、userdebug/eng/root 环境下 heapprofd 与 /proc/<pid>/smaps 的可用范围；无法保证的路径改为 dumpsys meminfo 或说明需开发/调试包。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T20:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-27-20-review.md"
   }
 ]
