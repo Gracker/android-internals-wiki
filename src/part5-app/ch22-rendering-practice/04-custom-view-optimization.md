@@ -14,24 +14,24 @@ sources:
     path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-14
+reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
 task9_result: needs-rework
 last_task2b_at: "2026-05-13T23:35:47+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T02:37:00+08:00"
-task6_reviewed_date: "2026-05-14"
-task6_review_notes: "2026-05-14 task6 review: 修正 sources frontmatter 缩进，替换两处填充表达；四层质检通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_review_log: "logs/review/2026-05-14-02-review.md"
-last_task6_at: "2026-05-14T02:13:00+08:00"
+task6_reviewed_date: "2026-05-27"
+task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除自动发现编辑前缀，压掉两处评价性表达；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-27-12-review.md"
+last_task6_at: "2026-05-27T12:06:00+08:00"
 task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；invalidate 重绘范围、Perfetto 观测命令、Canvas save/restore 与 setLayerType 边界需回炉。"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
@@ -100,7 +100,7 @@ protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
 ## Canvas 绘制优化：避免在 onDraw 中分配对象
 
-这是自定义 View 性能优化中收益最高的一条。
+这条规则在高频绘制场景里通常最先检查。
 
 ### 为什么 onDraw 不能分配对象
 
@@ -238,7 +238,7 @@ animator.start();
 
 ### View.setWillNotDraw
 
-如果一个自定义 ViewGroup 不需要绘制自身内容（只负责排列子 View），设置 `setWillNotDraw(true)` 可以让系统跳过它的 `onDraw()` 调用。这是零成本的优化。
+如果一个自定义 ViewGroup 不需要绘制自身内容（只负责排列子 View），设置 `setWillNotDraw(true)` 可以让系统跳过它的 `onDraw()` 调用，减少一次不必要的绘制回调。
 
 ```java
 // 纯布局容器 → 跳过绘制
@@ -322,13 +322,13 @@ public void startAnimation() {
 
 
 
-## [自动发现] ViewCompat.postInvalidateOnAnimation 的兼容性
+## ViewCompat.postInvalidateOnAnimation 的兼容性
 
 `postInvalidateOnAnimation()` 在 API 16 以下的行为是 `postInvalidate()`，即延迟 16ms 而非等到下一个 VSync。`ViewCompat.postInvalidateOnAnimation()` 提供了向后兼容。当前 Android 10+ 的目标版本下这不是问题，但在维护旧版本兼容时需要注意。
 
 [来源: AOSP View.java 源码注释]
 
-## [自动发现] RenderNode 与自定义 View
+## RenderNode 与自定义 View
 
 Android 10 (API 29) 引入了公开的 `RenderNode` API。自定义 View 可以利用 `RenderNode` 把复杂的绘制内容拆成多个独立节点，每个节点单独缓存和更新。这在以下场景有收益：
 
