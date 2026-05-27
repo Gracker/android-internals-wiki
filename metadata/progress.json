@@ -2079,30 +2079,19 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T14:50:00+08:00",
-  "last_updated_by": "task2b-main",
+  "last_updated": "2026-05-27T15:08:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T14:05:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-27T15:08:00+08:00",
+    "log": "logs/review/2026-05-27-15-review.md",
     "sections": [
-      "5.9",
-      "1.10"
+      "1.16",
+      "1.10",
+      "1.14"
     ],
-    "files": [
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-      "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
-    ],
-    "log": "logs/review/2026-05-27-14-review.md",
-    "mode": "revisiting",
-    "results": {
-      "5.9": "pass-light-edit",
-      "1.10": "pass-light-edit"
-    },
-    "l1_l2_fixes": 8,
-    "metadata_updates": 2,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
-    "auto_finalized": []
+    "result": "needs-rework",
+    "small_fixes": 32,
+    "rework_items": 1
   },
   "task9_last_review": "2026-05-26",
   "ready_to_publish": 186,
@@ -4182,15 +4171,15 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T14:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-14-review.md",
-      "task6_l1_l2_fixes": 6,
+      "last_task6_at": "2026-05-27T15:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-15-review.md",
+      "task6_l1_l2_fixes": 18,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；无新增 L3/L4 回炉项；保留既有 Task9 needs-rework. | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。",
+      "task6_review_notes": "2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。",
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-27",
       "last_task2b_at": "2026-05-27T13:35:00+08:00",
@@ -5545,22 +5534,22 @@
       "title": "Audio Pipeline 延迟与性能",
       "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "queue_priority": 85,
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
-      "last_task6_at": "2026-05-25T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-01-review.md",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T15:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-15-review.md",
       "last_task9_at": "2026-05-25T00:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-25-00-deep-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。",
+      "task6_review_notes": "2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。",
       "task2b_note": "2026-05-27 Task2B fallback fixed Task9 P1: separated Android 17 background audio hardening from AAudio offloaded playback; added targetSdk 37+ WIU / USAGE_ALARM boundaries and cmd audio forced-test semantics.",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-27T14:50:00+08:00"
@@ -5879,14 +5868,22 @@
       "last_task9_review_log": "logs/deep-review/2026-05-18-05-audit.md",
       "task2b_note": "2026-05-27 Task2B fallback fixed Task9 audit P0/P1: bionic PI protocol, owner TID boundary, SF/Input PI-futex claim, DeliQueue URL and targetSdk 37+ scope.",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-05-27T14:50:00+08:00"
+      "last_task2b_at": "2026-05-27T14:50:00+08:00",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-27",
+      "last_task6_at": "2026-05-27T15:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-15-review.md",
+      "task6_l1_l2_fixes": 14,
+      "task6_l3_l4_issues": 1,
+      "task2b_pending_queue": 1,
+      "task6_review_notes": "2026-05-27 15:08 Task6：修复若干口语化/编辑痕迹表达；发现文末仍保留两段 AIW 源码调研原始块，需 Task2B 整合/清理后再审，已写入 queue.json。"
     }
   },
   "task2b_rounds": [
@@ -5980,36 +5977,27 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-27T13:05:00+08:00",
   "last_task6_sections": [
-    "22.4",
-    "1.13"
+    "1.16",
+    "1.10",
+    "1.14"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
   ],
-  "last_task6_at": "2026-05-27T13:05:00+08:00",
+  "last_task6_at": "2026-05-27T15:08:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T13:05:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-27T15:08:00+08:00",
+    "log": "logs/review/2026-05-27-15-review.md",
     "sections": [
-      "22.4",
-      "1.13"
+      "1.16",
+      "1.10",
+      "1.14"
     ],
-    "files": [
-      "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-      "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
-    ],
-    "log": "logs/review/2026-05-27-13-review.md",
-    "mode": "revisiting",
-    "results": {
-      "22.4": "pass-light-edit",
-      "1.13": "pass-light-edit"
-    },
-    "l1_l2_fixes": 4,
-    "metadata_updates": 2,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
-    "auto_finalized": []
+    "small_fixes": 32,
+    "rework_items": 1,
+    "auto_promoted": []
   },
   "last_task9_reviewed_files": [
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
@@ -6019,11 +6007,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T13:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-13-review.md",
+  "task6_last_review_at": "2026-05-27T15:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-15-review.md",
   "task6_last_review_sections": [
-    "22.4",
-    "1.13"
+    "1.16",
+    "1.10",
+    "1.14"
   ],
   "sections_status": {
     "22.11": {
@@ -7514,8 +7503,9 @@
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
   ],
   "task6_last_reviewed_files": [
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
@@ -7890,7 +7880,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-13-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-15-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8625,7 +8615,7 @@
     "22.4",
     "1.13"
   ],
-  "last_task6_result": "pass-light-edit",
+  "last_task6_result": "needs-rework",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -8653,8 +8643,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
   ],
   "section_24_19": {
     "section": "24.19",
