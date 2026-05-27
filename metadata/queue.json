@@ -419,5 +419,26 @@
     "completed_at": "2026-05-27T10:50:00+08:00",
     "completed_by": "task2b-content-processing-rework-main",
     "completion_reason": "Task2B main 修正 FramebufferSurface 显示输出路径，并补齐 SurfaceControl 跨进程 Java Parcelable + API 34 NDK bridge 边界。"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 90,
+    "reason": "[review回炉] 文末仍保留源码调研原始块，需整合入正文或移出发布稿",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "文末源码调研补充块（AIW-源码调研-2026-05-06 / 2026-05-09）",
+        "detail": "章节主体后仍保留两段源码调研原始块和过程性注释，发布稿会暴露编辑流水线痕迹；需要判断哪些内容已进入正文，剩余素材应合并到对应小节、移入素材库或删除。",
+        "suggestion": "Task2B 清理文末 AIW 源码调研块：有效内容并入 AMS 双锁、PI-futex 边界或参考资料；过程性注释与未整合原始块从发布正文移除。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-27T15:08:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-27-15-review.md"
   }
 ]

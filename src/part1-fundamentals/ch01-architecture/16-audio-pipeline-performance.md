@@ -13,9 +13,9 @@ last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-25"
-last_task6_review_log: "logs/review/2026-05-25-01-review.md"
-last_task6_at: "2026-05-25T01:12:00+08:00"
+reviewed_date: "2026-05-27"
+last_task6_review_log: "logs/review/2026-05-27-15-review.md"
+last_task6_at: "2026-05-27T15:08:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -34,8 +34,8 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -50,7 +50,7 @@ last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。"
+task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。"
 task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
 ---
 
@@ -249,7 +249,7 @@ Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_
 
 这个模式本身不要求 App 持有 while-in-use（WIU）能力的前台服务。WIU 是 Android 17 后台音频硬化的生命周期条件，和 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 的省电输出路径是两组问题。使用该模式后仍要用 `AAudioStream_getPerformanceMode()`、`dumpsys audio` 和 output profile 核对最终是否进入 offloaded path。
 
-[待验证：最终 API 入口、最小 API level、支持格式组合、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
+[待验证: 最终 API 入口、最小 API level、支持格式组合、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
 
 ### Oboe：Google 推荐的跨版本封装
 
