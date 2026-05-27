@@ -38,11 +38,13 @@ sources:
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
-related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5", "26.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: needs-rework
@@ -83,7 +85,7 @@ task9_review_notes: "2026-05-14 Task9 06: needs-rework。P1 1：heapprofd / smap
 
 前面几节已经把内存泄漏、Bitmap、Native Heap、Java Heap、GC 抖动和线上监控拆开讲过。案例集换一个视角：把线上现象、排查路径、验证材料和修复动作放在同一张表里，避免只得到“内存涨了”这种不可执行的结论。
 
-本节不重复展开 ART 堆结构、Bitmap 解码 API、heapprofd 配置和线上指标采集。相关机制详见 23.1、23.2、23.3、23.4、23.7 节；OOM 分类与稳定性口径详见 20.5 节；指标上报体系详见 26.3 节。
+本节不重复展开 ART 堆结构、Bitmap 解码 API、heapprofd 配置和线上指标采集。相关机制详见 23.1、23.2、23.3、23.4、23.7 节；OOM 分类与稳定性口径详见 20.5 节。
 
 [需补充素材: 本节目前主要是排查模板和治理口径，缺少 1-2 个可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势。建议 Task 2B 补齐案例证据后再进入终审。]
 
@@ -198,7 +200,7 @@ adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/nativ
 
 预算表要服务排查，不是做展示。每个场景至少保留三类数据：基线版本、当前版本、变更模块。这样才能把“这个版本 PSS 多了 40 MB”变成“图片缓存多 18 MB、直播 SDK Native Heap 多 12 MB、线程栈多 6 MB”。如果没有拆分口径，评审会上只能互相猜。
 
-[自动发现] 预算应接入发版门禁：灰度包采样记录关键场景的 P50 / P90 / P99，超过阈值时阻断发版或要求模块 owner 给出解释。阈值要保留机型维度，不能把高端机的结果拿去代表低端机。Android Studio Memory Profiler 适合单机定位；线上侧更适合采样 PSS、Java Heap、Native Heap、OOM 前兆和场景标签。完整监控设计详见 23.7 与 26.3 节。
+[自动发现] 预算应接入发版门禁：灰度包采样记录关键场景的 P50 / P90 / P99，超过阈值时阻断发版或要求模块 owner 给出解释。阈值要保留机型维度，不能把高端机的结果拿去代表低端机。Android Studio Memory Profiler 适合单机定位；线上侧更适合采样 PSS、Java Heap、Native Heap、OOM 前兆和场景标签。完整监控设计先以 23.7 节为准，26.3 成稿后再恢复正式引用。
 
 团队看板至少需要保留这些字段。
 
