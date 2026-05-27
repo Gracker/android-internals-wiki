@@ -493,7 +493,15 @@
       "p0": 2,
       "p1": 2,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "2.18": {
       "p0": 0,
@@ -527,7 +535,15 @@
       "p0": 0,
       "p1": 0,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "5.7": {
       "p0": 0,
@@ -955,7 +971,15 @@
       "summary": "行业对标/阈值来源仍未闭合；Task9 needs-rework 队列继续 pending。",
       "task6_result": "needs-rework",
       "l3": 1,
-      "l4": 0
+      "l4": 0,
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "23.8": {
       "section": "23.8",
@@ -1076,7 +1100,15 @@
       "p3": 0,
       "reviewed_at": "2026-05-14T13:30:11+08:00",
       "log": "logs/deep-review/2026-05-14-13-deep-review.md",
-      "summary": "P0 1：debuggerd 源码路径错误；P1 4：线程创建失败归因、OOM 预警代码、signal handler 代码与注册时机错误。"
+      "summary": "P0 1：debuggerd 源码路径错误；P1 4：线程创建失败归因、OOM 预警代码、signal handler 代码与注册时机错误。",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "24.8": {
       "task9_result": "needs-rework",
@@ -2371,11 +2403,17 @@
       "task2b_state": "fixed"
     },
     "5.2": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-12T17:09:00+08:00",
       "task9_result": "pass-tech-review",
-      "auto_promoted": true
+      "auto_promoted": true,
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "5.7": {
       "status": "ready-for-review",
@@ -2445,20 +2483,22 @@
     },
     "20.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-17T12:11:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 95,
       "last_task6_review_log": "logs/review/2026-05-17-12-review.md",
       "title": "稳定性度量与指标体系",
       "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T11:28:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "task6_state": "reviewed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "21.2": {
       "status": "ready-for-review",
@@ -2588,13 +2628,18 @@
     },
     "2.14": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-12T23:18:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 95,
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T03:44:00+08:00"
+      "last_task9_at": "2026-05-14T03:44:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "16.5": {
       "status": "ready-for-review",
@@ -3440,13 +3485,17 @@
     },
     "20.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T13:30:11+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "queue_priority": 95,
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "24.8": {
       "status": "ready-for-review",
@@ -4277,19 +4326,22 @@
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue.",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "task2b_result": "fixed"
     },
     "22.12": {
       "status": "ready-for-review",
@@ -6234,19 +6286,22 @@
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue."
+      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue.",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "task2b_result": "fixed"
     },
     "19.26": {
       "status": "ready-for-review",
@@ -6742,17 +6797,19 @@
     },
     "20.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-17T12:11:00+08:00",
       "task6_result": "needs-rework",
       "last_task6_review_log": "logs/review/2026-05-17-12-review.md",
       "title": "稳定性度量与指标体系",
       "file": "src/part5-app/ch20-stability/06-stability-metrics.md",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "task6_state": "reviewed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
     },
     "2.10": {
       "status": "ready-for-review",
@@ -9082,7 +9139,15 @@
     {
       "section": "5.2",
       "date": "2026-05-26T11:21:27+08:00",
-      "by": "task2b-content-processing-rework"
+      "by": "task2b-content-processing-rework",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "task2b_result": "fixed"
     },
     {
       "section": "9.1",

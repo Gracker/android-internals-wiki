@@ -53,10 +53,10 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: "task6_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
 task6_result: needs-rework
@@ -70,6 +70,8 @@ task9_review_notes: "2026-05-19 Task9 00:20：pass-tech-review。无 P0/P1；P2 
 review_type: task6-writing-quality-review
 review_notes: "2026-05-12 task6 review: needs-rework。L1/L2 小修 4 处；WebGPU 90%-95% 吞吐量缺基准条件，已写入 queue。"
 last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 
 

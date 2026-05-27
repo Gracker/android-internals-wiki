@@ -39,8 +39,8 @@ reviewed_date: "2026-05-11"
 last_task6_audit: '2026-05-21'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 pipeline_stage: task6_pending
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
@@ -55,6 +55,8 @@ last_task9_at: '2026-05-24T06:27:54+08:00'
 task9_result: needs-rework
 review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。'
 last_task9_audit: '2026-05-24'
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 
 

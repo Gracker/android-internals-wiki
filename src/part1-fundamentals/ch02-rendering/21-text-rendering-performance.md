@@ -1,5 +1,5 @@
 ---
-status: 'ready-for-review'
+status: ready-for-review
 title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
@@ -7,9 +7,9 @@ drafted_date: '2026-04-09'
 reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: 'reviewed'
-pipeline_stage: 'task6_pending'
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -56,13 +56,15 @@ task9_result: 'needs-rework'
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: 'fixed'
+task2b_state: fixed
 last_task2b_at: '2026-05-09T17:52:02+08:00'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-13T21:57:00+08:00'
 review_round: 2
 task6_review_notes: "2026-05-16 Task6 stale-recheck:修复文风禁令/冗余副词 5 处;未新增 L3/L4 回炉项;保留既有 Task9 needs-rework。"
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 
 

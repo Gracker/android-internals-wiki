@@ -19,8 +19,8 @@ sources:
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: "reviewed"
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
@@ -39,6 +39,8 @@ p1: 3
 p2: 1
 last_task6_at: "2026-05-17T12:11:00+08:00"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 无正文改动；正文仍有行业对标来源待补，且 Task9 已有 needs-rework 队列项，本轮确认并合并回炉。"
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 
 # 稳定性度量与指标体系
