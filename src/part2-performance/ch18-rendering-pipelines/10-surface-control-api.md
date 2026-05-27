@@ -1,9 +1,8 @@
 ---
-
 title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 tags:
 - SurfaceControl
@@ -25,9 +24,9 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T07:44:00+08:00'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
@@ -39,15 +38,15 @@ last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
 task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。"
-last_task6_at: "2026-05-27T08:07:00+08:00"
-task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
+last_task6_at: "2026-05-27T09:16:48+08:00"
+task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-27-08-deep-review.md"
 review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: openclaw-task6
-last_task6_review_log: "logs/review/2026-05-27-08-review.md"
+last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
 
 last_task9_autofix_at: "2026-05-27"
@@ -385,7 +384,7 @@ static void onVsync(const AChoreographerFrameCallbackData* data, void* userData)
 
 平台会给出一个 preferred timeline，它对应当前调度器默认希望应用追上的那一拍。应用如果只是尽快提交下一帧，直接用 preferred index 就够了。应用如果有自己的目标节奏，例如 24fps 视频、30fps 阅读器、或主动降帧的省电模式，就要先根据 `desiredPresentTime` 选择一个 `expectedPresentTime` 不早于目标时间的 timeline，再把这条 timeline 的 `vsyncId` 填进 transaction。[已验证: `AChoreographerFrameCallbackData_getFrameTimelinesLength()`、`getPreferredFrameTimelineIndex()`、`getFrameTimelineExpectedPresentationTimeNanos()`、`getFrameTimelineDeadlineNanos()`、`getFrameTimelineVsyncId()` 的头文件注释]
 
-`setDesiredPresentTime()` 和 `setFrameTimeline()`负责的是两个不同层面的信息。前者描述“应用希望这帧何时展示”，后者描述“这帧绑定到哪一个候选显示节拍”。二者一起使用时，SurfaceFlinger 才能区分“应用主动晚一点交帧”和“应用错过了原本该赶上的节拍”。
+`setDesiredPresentTime()` 和 `setFrameTimeline()` 负责的是两个不同层面的信息。前者描述“应用希望这帧何时展示”，后者描述“这帧绑定到哪一个候选显示节拍”。二者一起使用时，SurfaceFlinger 才能区分“应用主动晚一点交帧”和“应用错过了原本该赶上的节拍”。
 
 ```mermaid
 sequenceDiagram
@@ -696,9 +695,6 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 | `hardware/interfaces/graphics/mapper/4.0/IMapper.hal` | Gralloc Mapper HAL 4.0（HIDL） |
 | `frameworks/native/libs/ui/GraphicBufferMapper.cpp` | `GraphicBufferMapper` 实现，Android 16 优先 Gralloc5/AIDL（旧版本在 `libs/gui/GrallocMapper.cpp`） |
 | Perfetto `protos/perfetto/trace/android/surfaceflinger_layers.proto` | `HwcCompositionType` enum（替代旧版 `layers.proto` 路径） |
-
----
-
 
 ---
 
