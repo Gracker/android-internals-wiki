@@ -1966,7 +1966,10 @@
       "task6_log": "logs/review/2026-05-24-16-review.md",
       "task6_new_rework": false,
       "task6_note": "revisiting 复审；清理第一人称/比喻化标题/夸张表达等 L1/L2 文风问题。Task9 已有 Android 16 AIDL CAP/IConfig pending queue，Task6 未新增回炉。",
-      "task9_pending_queue": 1
+      "task9_pending_queue": 0,
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task2b_fixed_at": "2026-05-27T14:50:00+08:00"
     },
     "7.2": {
       "p0": 0,
@@ -2063,13 +2066,21 @@
       "task6_log": "logs/review/2026-05-27-07-review.md",
       "task6_new_rework": false,
       "task6_note": "2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
+    },
+    "1.14": {
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task2b_fixed_at": "2026-05-27T14:50:00+08:00",
+      "task9_pending_queue": 0
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T14:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T14:50:00+08:00",
+  "last_updated_by": "task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2221,11 +2232,12 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T10:50:00+08:00",
+  "last_task2b_at": "2026-05-27T14:50:00+08:00",
   "last_task2b_sections": [
-    "18.10"
+    "1.14",
+    "1.16"
   ],
-  "last_task2b_action": "task9-deep-tech-review rework: FramebufferSurface client target + SurfaceControl cross-process sharing boundary",
+  "last_task2b_action": "frontmatter backlog fallback rework fixed 2 sections and returned them to task6_pending",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5533,12 +5545,12 @@
       "title": "Audio Pipeline 延迟与性能",
       "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "queue_priority": 85,
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-25",
@@ -5548,7 +5560,10 @@
       "last_task9_review_log": "logs/deep-review/2026-05-25-00-deep-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。"
+      "task6_review_notes": "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。",
+      "task2b_note": "2026-05-27 Task2B fallback fixed Task9 P1: separated Android 17 background audio hardening from AAudio offloaded playback; added targetSdk 37+ WIU / USAGE_ALARM boundaries and cmd audio forced-test semantics.",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-27T14:50:00+08:00"
     },
     "25.19": {
       "title": "Android Vitals 过度 WakeLock 指标与治理",
@@ -5855,6 +5870,23 @@
       "task9_reviewed_date": "2026-05-27",
       "last_task9_review_log": "logs/deep-review/2026-05-27-09-deep-review.md",
       "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
+    },
+    "1.14": {
+      "title": "锁竞争与同步性能分析",
+      "file": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-18T05:21:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-18-05-audit.md",
+      "task2b_note": "2026-05-27 Task2B fallback fixed Task9 audit P0/P1: bionic PI protocol, owner TID boundary, SF/Input PI-futex claim, DeliQueue URL and targetSdk 37+ scope.",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-27T14:50:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -8067,6 +8099,20 @@
       "priority": 90,
       "result": "fixed",
       "summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
+    },
+    {
+      "at": "2026-05-27T14:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback",
+      "sections": [
+        "1.14",
+        "1.16"
+      ],
+      "files": [
+        "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      ],
+      "result": "fixed-returned-to-task6"
     }
   ],
   "section_18_23": {
@@ -8845,8 +8891,8 @@
       "summary": "修正 FramebufferSurface 为显示输出 / client target 路径，补齐 SurfaceControl 跨进程 Java Parcelable + API 34 NDK bridge 边界。"
     }
   ],
-  "last_task2b_completed": "18.10",
-  "last_task2b_completed_at": "2026-05-27T10:50:00+08:00",
+  "last_task2b_completed": "1.14,1.16",
+  "last_task2b_completed_at": "2026-05-27T14:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -8942,6 +8988,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
   ]
 }
