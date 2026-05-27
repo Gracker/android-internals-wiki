@@ -36,8 +36,8 @@ related_chapters:
 - '15.3'
 - '15.7'
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
@@ -54,6 +54,8 @@ task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T22:07:00+08:00"
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-08-audit.md"
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 # 性能优化的术、道、器
 

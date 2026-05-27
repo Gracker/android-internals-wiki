@@ -25,8 +25,8 @@ sources:
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
@@ -38,6 +38,8 @@ task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T13:30:11+08:00"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
+last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 ---
 
 # 稳定性治理案例集
