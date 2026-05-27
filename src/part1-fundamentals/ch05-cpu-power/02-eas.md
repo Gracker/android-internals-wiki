@@ -1,5 +1,4 @@
 ---
-
 status: ready-for-review
 last_task2b_at: '2026-05-09T12:43:00+08:00'
 title: EAS 能量感知调度
@@ -35,13 +34,13 @@ related_chapters:
 - '5.4'
 - '2.5'
 drafted_date: '2026-03-31'
-reviewed_date: "2026-05-11"
+reviewed_date: "2026-05-28"
 last_task6_audit: '2026-05-21'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -57,6 +56,9 @@ review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 o
 last_task9_audit: '2026-05-24'
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task6_at: '2026-05-28T01:05:00+08:00'
+last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 2 处；既有 Task9 needs-rework 技术项不由 Task6 裁决，继续流转 task9_pending。"
 ---
 
 
@@ -160,7 +162,7 @@ OPP 数据通常定义在 Device Tree（设备树）中,使用 `operating-points
 
 Linux 内核的 Energy Model（EM）是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table，表项对应不同的 performance state / OPP，调度器通过 `em_cpu_energy()` 接口估算“把任务放进这个簇后，活跃运行态大概要花多少能量”。调用链是 `kernel/sched/fair.c::compute_energy()` → `em_cpu_energy()` → EM performance state / power table。
 
-这里有个边界要拆开。EM 只描述活跃运行态的功耗成本,不负责 CPU idle state。C-State 进入多深、停留多久,属于 CPUIdle governor 和 driver 的职责,观测时要看 `cpu_idle` 轨、平台 idle 统计或内核 idle 数据。把 EM 和 CPUIdle 写成一张表,会把"频率点功耗"和"空闲驻留功耗"混成同一层概念。
+这个边界要拆开。EM 只描述活跃运行态的功耗成本,不负责 CPU idle state。C-State 进入多深、停留多久,属于 CPUIdle governor 和 driver 的职责,观测时要看 `cpu_idle` 轨、平台 idle 统计或内核 idle 数据。把 EM 和 CPUIdle 写成一张表,会把"频率点功耗"和"空闲驻留功耗"混成同一层概念。
 
 EM 之所以重要,是因为 EAS、thermal IPA、powercap 这类子系统都能复用同一套 active power 基线。EAS 负责把任务放到合适的簇,CPUIdle 负责在空闲时选 C-State,两个方向都会影响整机功耗,但读取的不是同一组接口。
 
@@ -170,7 +172,7 @@ EM 之所以重要,是因为 EAS、thermal IPA、powercap 这类子系统都能�
 
 EAS 的能耗预测并不复杂。对每个候选 CPU,它计算的是一个能量增量(energy delta):
 
-```
+```text
 energy_delta = 放置任务后的系统总能耗 - 当前的系统总能耗
 ```
 

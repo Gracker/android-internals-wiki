@@ -1,8 +1,8 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 205,
-  "finalized": 172,
+  "ready-for-review": 204,
+  "finalized": 173,
   "task9_result": "auto-fixed",
   "task9_reviewed_date": "2026-05-27",
   "task9_reviewed_by": "openclaw-task9",
@@ -370,20 +370,24 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T23:15:00+08:00",
-    "log": "logs/review/2026-05-27-23-review.md",
+    "reviewed_at": "2026-05-28T01:05:00+08:00",
+    "log": "logs/review/2026-05-28-01-review.md",
     "sections": [
-      "1.8",
-      "10.3"
+      "2.14",
+      "2.21",
+      "5.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+      "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
     ],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 15,
     "l3_l4_issues": 0,
-    "auto_promoted": []
+    "auto_promoted": [
+      "2.14"
+    ]
   },
   "issues_by_section": {
     "1.6": {
@@ -2175,21 +2179,30 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T00:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-05-28T01:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T23:15:00+08:00",
-    "log": "logs/review/2026-05-27-23-review.md",
+    "reviewed_at": "2026-05-28T01:05:00+08:00",
+    "log": "logs/review/2026-05-28-01-review.md",
     "sections": [
-      "1.8",
-      "10.3"
+      "2.14",
+      "2.21",
+      "5.2"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
     ],
     "result": "pass-light-edit",
-    "small_fixes": 8,
-    "rework_items": 0
+    "small_fixes": 15,
+    "rework_items": 0,
+    "auto_promoted": [
+      "2.14"
+    ]
   },
   "task9_last_review": "2026-05-27",
-  "ready_to_publish": 186,
+  "ready_to_publish": 187,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -2404,16 +2417,26 @@
     },
     "5.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task9_at": "2026-05-12T17:09:00+08:00",
-      "task9_result": "pass-tech-review",
-      "auto_promoted": true,
+      "pipeline_stage": "task9_pending",
+      "last_task9_at": "2026-05-24T06:27:54+08:00",
+      "task9_result": "needs-rework",
+      "auto_promoted": false,
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
-      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "title": "EAS 能量感知调度",
+      "file": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；既有 Task9 needs-rework 技术项继续流转 task9_pending。"
     },
     "5.7": {
       "status": "ready-for-review",
@@ -2627,19 +2650,28 @@
       "last_task6_review_log": "logs/review/2026-05-17-12-review.md"
     },
     "2.14": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-12T23:18:00+08:00",
-      "task6_result": "needs-rework",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-28T01:05:00+08:00",
+      "task6_result": "pass-light-edit",
       "queue_priority": 95,
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T03:44:00+08:00",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-28T00:33:51+08:00",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
-      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "auto_promoted": true,
+      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；自动晋升 finalized。"
     },
     "16.5": {
       "status": "ready-for-review",
@@ -4326,22 +4358,24 @@
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-16",
-      "last_task6_at": "2026-05-16T06:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue.",
+      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；未新增 L3/L4 回炉项；转 task9_pending。",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
       "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "auto_promoted": false,
+      "last_task9_at": "2026-05-28T00:33:51+08:00"
     },
     "22.12": {
       "status": "ready-for-review",
@@ -6125,26 +6159,31 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T23:15:00+08:00",
+  "last_task6_review": "2026-05-28",
   "last_task6_sections": [
-    "1.8",
-    "10.3"
+    "2.14",
+    "2.21",
+    "5.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
   ],
-  "last_task6_at": "2026-05-27T23:15:00+08:00",
+  "last_task6_at": "2026-05-28T01:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T23:15:00+08:00",
-    "log": "logs/review/2026-05-27-23-review.md",
+    "reviewed_at": "2026-05-28T01:05:00+08:00",
+    "log": "logs/review/2026-05-28-01-review.md",
     "sections": [
-      "1.8",
-      "10.3"
+      "2.14",
+      "2.21",
+      "5.2"
     ],
-    "small_fixes": 8,
+    "small_fixes": 15,
     "rework_items": 0,
-    "auto_promoted": []
+    "auto_promoted": [
+      "2.14"
+    ]
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
@@ -6153,11 +6192,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T23:15:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-23-review.md",
+  "task6_last_review_at": "2026-05-28T01:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-01-review.md",
   "task6_last_review_sections": [
-    "1.8",
-    "10.3"
+    "2.14",
+    "2.21",
+    "5.2"
   ],
   "sections_status": {
     "22.11": {
@@ -6289,22 +6329,24 @@
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-16",
-      "last_task6_at": "2026-05-16T06:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-06-review.md",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
       "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 5 处；无新增 L3/L4 回炉项；保留既有 Task9 P0 queue.",
+      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；未新增 L3/L4 回炉项；转 task9_pending。",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
       "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "auto_promoted": false,
+      "last_task9_at": "2026-05-28T00:33:51+08:00"
     },
     "19.26": {
       "status": "ready-for-review",
@@ -7690,12 +7732,14 @@
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -8106,8 +8150,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.8",
-    "10.3"
+    "2.14",
+    "2.21",
+    "5.2"
   ],
   "task2b_progress": [
     {
@@ -8192,7 +8237,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-23-review.md",
+  "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8846,8 +8891,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T22:05:00+08:00",
-  "last_task6_review_section": "10.3",
+  "last_task6_review_at": "2026-05-28T01:05:00+08:00",
+  "last_task6_review_section": "5.2",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8947,8 +8992,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "1.8",
-    "10.3"
+    "2.14",
+    "2.21",
+    "5.2"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -8978,8 +9024,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -9157,7 +9204,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T21:10:00+08:00",
+  "last_task6_reviewed_at": "2026-05-28T01:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",

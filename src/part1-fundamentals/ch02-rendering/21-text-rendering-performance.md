@@ -4,12 +4,12 @@ title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
 drafted_date: '2026-04-09'
-reviewed_date: '2026-05-16'
+reviewed_date: '2026-05-28'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -62,12 +62,14 @@ task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T00:33:51+08:00"
 review_round: "3"
-task6_review_notes: "2026-05-16 Task6 stale-recheck:修复文风禁令/冗余副词 5 处;未新增 L3/L4 回炉项;保留既有 Task9 needs-rework。"
+task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 5 处；未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足自动晋升条件，转 task9_pending。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
 last_task9_autofix_at: "2026-05-28"
 task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Minikin LayoutCache key 的宽度描述；P2 1 处写入 suggestions；回到 Task6 复审。"
+last_task6_at: '2026-05-28T01:05:00+08:00'
+last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 ---
 
 
@@ -85,7 +87,7 @@ task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Minikin LayoutCache key �
 
 ## 为什么要了解文字渲染
 
-打开手机上任何一个 App--微信聊天、微博信息流、新闻客户端--占据屏幕面积最大的元素是什么?文字。
+打开手机上任何一个 App（微信聊天、微博信息流、新闻客户端），占据屏幕面积最大的元素是什么？文字。
 
 文字看起来简单,像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
@@ -137,7 +139,7 @@ Minikin 是 Android 文字渲染的核心库,负责文字整形(text shaping)、
 
 Minikin 的内部架构可以简化为三层:
 
-```
+```text
 FontCollection(字体集合)
   → Layout(单行整形结果)
     → LineBreaker(多行换行结果)
@@ -179,7 +181,7 @@ Minikin 内部维护了几层缓存来避免重复计算:
 
 StaticLayout 是多行文字测量的核心类。它的构建过程可以简化为:
 
-```
+```text
 new StaticLayout(text, paint, width, align, spacingMult, spacingAdd)
   1. 将文本按 run 分组(相同字体、相同样式)
   2. 对每个 run 调用 Minikin 进行整形
@@ -338,7 +340,7 @@ textView.setIncludeFontPadding(false);
 
 [待验证: 正文原先宣称“Android 16 Minikin 为 Variation Axes 中间计算结果引入缓存、动态字重开销降低约 40%”，但当前可核验材料只显示 Minikin 支持 variation family/axis；缓存机制和定量收益缺少 AOSP commit 或 benchmark 条件佐证，降级为待验证]
 
-如果该缓存机制确实存在，对高刷场景下的文本动画会有直接意义。在 120Hz 设备上，8.33ms 的帧预算内完成“测量 → 布局 → 绘制”已经很紧张，如果动画涉及字重变化，轴向缓存能把 measure 阶段的额外开销压缩到可接受范围。不过缓存的前提是轴值在短时间内有重复，如果是单次跳变（从 300 直接跳到 700 且不再回退），缓存命中率会很低，优化效果有限。
+如果能确认该缓存机制存在，它对高刷场景下的文本动画会有直接意义。在 120Hz 设备上，8.33ms 的帧预算内完成“测量 → 布局 → 绘制”已经很紧张，如果动画涉及字重变化，轴向缓存能把 measure 阶段的额外开销压缩到可接受范围。不过缓存的前提是轴值在短时间内有重复，如果是单次跳变（从 300 直接跳到 700 且不再回退），缓存命中率会很低，优化效果有限。
 
 ### 文字缓存策略
 
@@ -387,7 +389,7 @@ RenderThread / HWUI 侧当然也可能有文字相关成本,但要分清"能推�
 
 ## 版本演进
 
-下面只保留能直接核对到 tag、源码或官方文档的节点。
+版本表只保留能直接核对到 tag、源码或官方文档的节点。
 
 | 版本 / 组件 | 可直接核对的变化 | 证据锚点 |
 |-------------|------------------|----------|
@@ -443,7 +445,7 @@ Minikin 的缓存是进程级的,跨 TextView 共享。但缓存的 key 包含�
 
 **常见面试问题:RecyclerView 列表中,聊天消息的 TextView 经常导致 jank,你会怎么优化?**
 
-思路:
+优化路径:
 1. 先确认是否是 StaticLayout 测量耗时(Perfetto 中验证)
 2. 如果确认,优先使用 PrecomputedText 将测量移到 DiffUtil 的后台线程
 3. 关闭不必要的 hyphenation 和 IncludeFontPadding

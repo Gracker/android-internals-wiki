@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
 drafted_date: '2026-04-05'
@@ -53,13 +53,13 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-12'
-task6_result: needs-rework
+reviewed_date: '2026-05-28'
+task6_result: pass-light-edit
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-28"
 task2b_result: "fixed"
@@ -68,10 +68,12 @@ last_task9_at: "2026-05-28T00:33:51+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-28 Task9 00:33：pass-tech-review。无 P0/P1；P2 1 处已写入 suggestions。Task6 仍需回炉，未自动晋升。"
 review_type: task6-writing-quality-review
-review_notes: "2026-05-12 task6 review: needs-rework。L1/L2 小修 4 处；WebGPU 90%-95% 吞吐量缺基准条件，已写入 queue。"
+review_notes: "2026-05-28 task6 review: pass-light-edit。L1/L2 小修 8 处；Task9 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task6_at: '2026-05-28T01:05:00+08:00'
+last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 ---
 
 
@@ -106,7 +108,7 @@ OpenGL ES 2.0 是一个分水岭。在它之前（ES 1.x），开发者只能用
 
 ES 3.0/3.1/3.2 在 ES 2.0 的基础上逐步添加了更高级的 GPU 特性：多重渲染目标允许一次绘制输出多张纹理（延迟渲染的基础）、Compute Shader 让 GPU 执行通用计算、实例化绘制减少了 draw call 数量。
 
-但 OpenGL ES 有一个根本性的架构限制：它是一个**状态机模型**。每次调用 `glBindTexture()`、`glBlendFunc()`、`glDrawArrays()` 时，都在改变一个全局状态机的状态。驱动需要在每次 draw call 时检查完整的状态组合是否合法、是否需要重新编译着色器、是否需要同步 CPU 和 GPU——这些都在调用线程上同步完成。这个设计在高 draw call 数量的场景下会成为严重的 CPU 瓶颈。
+但 OpenGL ES 有一个关键架构限制：它是一个**状态机模型**。每次调用 `glBindTexture()`、`glBlendFunc()`、`glDrawArrays()` 时，都在改变一个全局状态机的状态。驱动需要在每次 draw call 时检查完整的状态组合是否合法、是否需要重新编译着色器、是否需要同步 CPU 和 GPU——这些都在调用线程上同步完成。这个设计在高 draw call 数量的场景下会成为严重的 CPU 瓶颈。
 
 ### 第二代：Vulkan——显式控制的现代 API
 
@@ -171,7 +173,7 @@ Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of V
 
 排查 Perfetto 时，仍建议先确认"本次进程启动时 GLES driver 最终选中了谁"，不要默认所有 Android 17+ 设备都走 ANGLE。
 
-AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，最后才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，最后再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
+AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，前两类配置都未命中时才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，两者都不可用时再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
 
 ```java
 // frameworks/base/core/java/android/os/GraphicsEnvironment.java
@@ -254,9 +256,9 @@ vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
 OpenGL ES 的全局状态机设计导致它是一个单线程 API。虽然可以通过 EGL 共享上下文在多个线程中使用 OpenGL ES，但状态机的全局性使得多线程同时操作 GL 上下文需要大量的锁同步，实际收益有限。
 
-Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独立地构建 Command Buffer，最后在一个线程上统一提交：
+Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独立地构建 Command Buffer，再由提交线程统一提交：
 
-```
+```text
 线程 A: 构建 Command Buffer (场景渲染命令)
 线程 B: 构建 Command Buffer (UI 覆盖层命令)
 线程 C: 构建 Command Buffer (后处理命令)
@@ -278,7 +280,7 @@ OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（�
 
 ANGLE 在 AOSP 中的源码路径为 `external/angle/`，其核心翻译流程如下：
 
-```
+```text
 App 的 GLES 调用
     ↓
 GLES 入口函数 (eglMakeCurrent, glDrawArrays, ...)
@@ -388,7 +390,7 @@ Vulkan 则要求开发者自己做这些优化。它不会替你合并 draw call
 | 进程 maps / 已加载共享库 | `libEGL.so`、`libGLESv2.so`、`libvulkan.so`、ANGLE 相关库是否出现 | 很多栈会同时加载多种库，不能只凭 loaded libs 判断最终渲染后端 |
 | App 侧自检日志 | 当前进程向上暴露的 renderer / backend 信息 | 需要应用配合，单独使用时也看不到 GPU 负载细节 |
 
-靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，最后再把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
+靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，同时把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
 
 GPU counter 的配置方式（在 TraceConfig 中）：
 
@@ -435,7 +437,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 
 ### 何时选择 Vulkan，何时保持 GLES
 
-```
+```text
 新项目？
   ├─ 是 → 直接使用 Vulkan（推荐）
   ├─ 否（已有 GLES 代码）
@@ -525,7 +527,7 @@ ANGLE 的 Vulkan backend 在 Android 上通过 `EGL_ANDROID_native_fence_sync` �
 
 **关键调用链**（ANGLE Vulkan backend，源码位于 `external/angle/src/libANGLE/renderer/vulkan/android/`）：
 
-```
+```text
 eglCreateSync(EGL_ANDROID_native_fence_sync, fd)
   ├─ if fd provided: vkImportFenceFdKHR → VkFence
   └─ if no fd: create VkFence → vkGetFenceFdKHR → export fd
@@ -590,7 +592,7 @@ VkResult vkAcquireImageANDROID(
 RenderThread 的 CPU 亲和性通过 cgroup/task_profiles 体系由系统统一分配，**不是**通过显式 `sched_setaffinity` 调用管理。
 
 **关键源码路径**：
-```
+```text
 frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
 ```
 
@@ -608,7 +610,7 @@ if (SystemProperties.get("sys.use_fifo_ui", "0").equals("1")) {
 ```
 
 **完整调度链**：
-```
+```text
 sys.use_fifo_ui=1
   → ActivityManagerService identifies top-app process
   → ProcessList.SCHED_GROUP_TOP_APP
@@ -620,7 +622,7 @@ sys.use_fifo_ui=1
 
 `SCHED_GROUP_TOP_APP` 是 Android 资源管理框架的调度组概念，与 cpuset 相关但不完全等同于 cpuset 绑定：
 
-```
+```text
 /dev/cpuset/
 ├── cpuset.top-app/      ← TOP_APP 调度组的 cpuset
 │   ├── cpus             ← 大核（big cores）分配
