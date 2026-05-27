@@ -46,6 +46,8 @@ task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 1 / P1 0 / 
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修（Vulkan profile 术语、BLAST 版本总结、标点）；发现 16KB Page Size 收益数据缺少测试条件/来源，已标注并写入 queue 回炉。"
 last_task6_review_log: "logs/review/2026-05-14-08-review.md"
 last_task6_at: "2026-05-14T08:11:00+08:00"
+last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
+task2b_verifier_result: ready-for-task6
 ---
 # 渲染机制的版本演进
 

@@ -33,8 +33,9 @@ task6_review_notes: "2026-05-14 task6 review: 修正 sources frontmatter 缩进�
 last_task6_review_log: "logs/review/2026-05-14-02-review.md"
 last_task6_at: "2026-05-14T02:13:00+08:00"
 task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；invalidate 重绘范围、Perfetto 观测命令、Canvas save/restore 与 setLayerType 边界需回炉。"
+last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
+task2b_verifier_result: ready-for-task6
 ---
-
 # 自定义 View 性能优化
 
 自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘。
