@@ -5,7 +5,7 @@ section: "1.8"
 status: "ready-for-review"
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-18"
+last_verified: "2026-05-27"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 11/12/13/14/17"
 confidence: medium
 sources:
@@ -14,15 +14,21 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastProcessQueue.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java"
   - type: aosp
@@ -77,13 +83,13 @@ rework_by: "task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-18"
 task6_result: "pass-light-edit"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 last_task6_audit: "2026-05-17"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task9_at: "2026-05-18T19:44:00+08:00"
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
@@ -94,6 +100,9 @@ task6_reviewed_at: "2026-05-18T20:16:50+08:00"
 last_task6_at: "2026-05-18T20:16:50+08:00"
 last_task6_review_log: "logs/review/2026-05-18-20-review.md"
 task6_review_notes: "2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 2 项（移动 outline 块到正文前，恢复流水线可识别结构；为 4 个无语言代码块补充 text 标记）；既有 Task9/Task2B pending 技术项 1 个保留，不在 Task6 裁决。"
+last_task2b_at: "2026-05-27T22:50:00+08:00"
+last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
+task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
 ---
 
 
@@ -204,7 +213,7 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 | FOREGROUND | 0 | 前台进程 | 当前可见且正在交互的 Activity 所在进程 |
 | PERCEPTIBLE_RECENT_FOREGROUND | 50 | 最近从 TOP 切到 FGS 的短期宽限 | 刚从前台退到后台,但还在执行 non-short FGS |
 | VISIBLE | 100 | 可见进程 | Activity 可见但不在前台(如被透明 Activity 遮挡) |
-| TOP_SLEEPING | 200 | 顶层休眠 | 屏幕关闭但之前是前台(与 PERCEPTIBLE 同档位,adj 值均为 200) |
+| TOP_SLEEPING(`adjType`) | 0 | 顶层休眠分支 | 屏幕关闭前的 top app;`OomAdjuster` 标记 `adjType=top-sleeping`,但 `adj` 仍是 `FOREGROUND_APP_ADJ` |
 | PERCEPTIBLE | 200 | 可感知 | 音乐播放、导航、常规 non-short 前台 Service |
 | PERCEPTIBLE_MEDIUM | 225 | 中可感知 | 介于可感知与低可感知之间的缓冲档(android-16.0.0_r1 已存在) |
 | PERCEPTIBLE_LOW | 250 | 低可感知 | 后台有轻量级操作 |
@@ -219,7 +228,7 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 
 这里要避免把前台 Service 写成固定的 100 档位。AOSP android-16.0.0_r1 的 `OomAdjuster` 里,常规 non-short FGS 会被抬到 `PERCEPTIBLE_APP_ADJ = 200`;只有最近刚从 TOP Activity 切到 FGS 的短期宽限窗口,才会临时抬到 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50`。
 
-> 上表中 `PERCEPTIBLE_MEDIUM_APP_ADJ = 225` 和 `CACHED_APP_LMK_FIRST_ADJ = 950` 在 AOSP android-16.0.0_r1 的 `ProcessList.java` 中已存在,非 Android 17 新增。其余细分档位在厂商 ROM 中可能继续调整;FGS 的 50 / 200 档位已按 AOSP android-16.0.0_r1 的 `ProcessList.java` 与 `OomAdjuster.java` 核对。
+> 上表中 `PERCEPTIBLE_MEDIUM_APP_ADJ = 225` 和 `CACHED_APP_LMK_FIRST_ADJ = 950` 在 AOSP android-16.0.0_r1 的 `ProcessList.java` 中已存在,非 Android 17 新增。`TOP_SLEEPING` 在 `OomAdjuster.java` 中是 `adjType` 分支,不是 `PERCEPTIBLE_APP_ADJ = 200` 的独立表项。其余细分档位在厂商 ROM 中可能继续调整;FGS 的 50 / 200 档位已按 AOSP android-16.0.0_r1 的 `ProcessList.java` 与 `OomAdjuster.java` 核对。
 
 AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked()`。这个方法会遍历所有进程,根据每个进程中运行的组件(Activity、Service、Provider、广播接收器)的状态重新计算优先级。
 
@@ -269,15 +278,15 @@ AMS 与 lmkd 的协作在 §4.4 中有详细讲解,这里简要提一下:当系�
 
 ANR(Application Not Responding)是 Android 稳定性的核心防线。AMS 不直接导致 ANR--它是"裁判",负责检测 App 是否在规定时间内完成了应完成的操作。
 
-ANR 检测的核心模式可以用三个字概括:**埋雷、拆雷、爆雷**。
+ANR 检测可以先按三步理解:**开始计时、取消计时、超时上报**。
 
-1. **埋雷**:AMS 在发起一个操作时(如启动 Service、分发广播),同时在主线程 Handler 上 post 一个延时消息。
-2. **拆雷**:目标操作完成时,App 通过 Binder 通知 AMS,AMS 移除那个延时消息。
-3. **爆雷**:如果延时消息到期时还没有被移除,说明 App 没有按时完成操作,触发 ANR 流程。
+1. **开始计时**:AMS 在发起一个操作时(如启动 Service、分发广播),同时启动对应的超时计时器或延时消息。
+2. **取消计时**:目标操作完成时,App 通过 Binder 通知 AMS,AMS 取消对应计时。
+3. **超时上报**:如果计时到期时操作还没有完成,系统进入 ANR 处理流程。
 
 > [来源: 掘金《Android ANR的设计原理》]
 
-这个"埋雷-拆雷-爆雷"模式贯穿所有 ANR 类型,后面按类型说明。
+这个模式贯穿所有 ANR 类型,后面按类型说明。
 
 ### Input ANR
 
@@ -315,33 +324,36 @@ InputDispatcher.processAnrsLocked()
 
 **超时阈值:前台 Service 20 秒 / 后台 Service 200 秒;`startForegroundService()` 的前台提升窗口需要单独看**
 
-Service ANR 的"埋雷"发生在 `ActiveServices.realStartServiceLocked()` 中。当 AMS 通过 Binder 通知 App 端的 `ActivityThread` 创建 Service 时,同时在 `mAm.mHandler`(AMS 主线程 Handler)上 post 一个延时消息 `SERVICE_TIMEOUT_MSG`:
+Service ANR 的计时发生在 `ActiveServices.realStartServiceLocked()` 调起 Service 的过程中。旧文章里常见的 `mAm.mHandler.sendMessageDelayed(SERVICE_TIMEOUT_MSG)` 口径不适用于 AOSP android-16.0.0_r1;当前实现通过 `ProcessAnrTimer` 管理执行中 Service 的超时。
 
 ```java
 // 伪代码,基于 AOSP android-16.0.0_r1 ActiveServices.java 逻辑
 // realStartServiceLocked 签名已简化,保留核心流程
 void realStartServiceLocked(ServiceRecord r, ProcessRecord app,
         boolean execInFg) throws RemoteException {
-    // 埋雷:开始 ANR 检测(bumpServiceExecutingLocked 内部 post 延时消息)
+    // 开始 Service 执行计时
     bumpServiceExecutingLocked(r, execInFg, "create");
-    // 启动服务(拆雷的操作由 App 端 serviceDoneExecuting 回调触发)
+    // 启动服务;完成回调由 App 端 serviceDoneExecuting 触发
     app.thread.scheduleCreateService(r, app.info, ...);
 }
 
 // scheduleServiceTimeoutLocked 在 bumpServiceExecutingLocked 中被调用
 // 前台 20s,后台 200s
 void scheduleServiceTimeoutLocked(ProcessRecord proc) {
-    Message msg = mAm.mHandler.obtainMessage(
-        SERVICE_TIMEOUT_MSG);
-    msg.obj = proc;
-    mAm.mHandler.sendMessageDelayed(msg,
-        proc.execServicesFg ? SERVICE_TIMEOUT : SERVICE_BACKGROUND_TIMEOUT);
+    if (proc.mServices.numberOfExecutingServices() == 0
+            || proc.getThread() == null) {
+        return;
+    }
+    long delay = proc.mServices.shouldExecServicesFg()
+            ? SERVICE_TIMEOUT : SERVICE_BACKGROUND_TIMEOUT;
+    mActiveServiceAnrTimer.start(proc, delay);
+    proc.mServices.noteScheduleServiceTimeoutPending(false);
 }
 ```
 
-"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`,完成 Service 创建,然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`onCreate()` 本身就在 Service ANR 的计时窗口里;如果这里阻塞太久,AMS 会把这段时间直接算进超时。
+完成回调不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`,完成 Service 创建,然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`ActiveServices.serviceDoneExecutingLocked()` 在进程没有执行中的 Service 后调用 `mActiveServiceAnrTimer.cancel(r.app)`;如果计时先到期,`ActiveServices.serviceTimeout()` 会生成 `TimeoutRecord` 并交给 `mAnrHelper.appNotResponding()`。
 
-> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()` 与 `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()`]
+> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()`、`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()` / `serviceTimeout()`、`frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java`]
 
 在 `startForegroundService()` 这段超时判责里,现代版本不能直接写成"固定 5 秒未调用 `startForeground()` 就 ANR"。AOSP android-16.0.0_r1 把这段窗口拆成了两段:`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30000`,`DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10000`。系统先给 Service 30 秒完成前台提升,超时后再进入额外 10 秒的 ANR 判责缓冲,对应 `ActiveServices.serviceForegroundTimeout()` 这条处理路径。更早版本里常见的 5 秒说法,只能带着版本前提使用。
 
@@ -362,13 +374,13 @@ Provider 卡死时,需要分清卡在 publish、ready 还是 remote-provider 调
 当任何类型的 ANR 触发后,AMS 会通过 `AnrHelper.appNotResponding()` 进入统一的处理管线:
 
 1. **pre-dump**:如果检测到 AMS 或 WMS 的锁被长时间持有(> 500ms),先 dump 锁持有者的堆栈。
-2. **dump stack traces**:向目标进程发送 `SIGNAL_ANR`(或通过 `Debug.dumpJavaBacktraces()`),获取主线程和所有线程的调用栈。结果写入 `/data/anr/traces.txt`。
+2. **dump stack traces**:向目标进程发送 `SIGNAL_ANR`(或通过 `Debug.dumpJavaBacktraces()`),获取主线程和相关线程的调用栈。android-16.0.0_r1 的 `StackTracesDumpHelper` 在 `/data/anr` 下创建 `anr_yyyy-MM-dd-HH-mm-ss-SSS` 形式的文件,不再是固定 `/data/anr/traces.txt`。
 3. **CPU 使用率采集**:记录 ANR 发生前后各进程的 CPU 使用率,帮助判断是否因 CPU 争抢导致。
 4. **弹出 ANR 对话框**:由 `AppNotRespondingDialog` 展示给用户(系统设置可关闭)。
 
 `ProcessErrorStateRecord` 是管理单个进程错误状态(ANR/Crash)的核心类,在现代 Android 版本中接管了原来直接在 AMS 中处理的部分逻辑。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
+> [已验证: AOSP android-16.0.0_r1,`frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`、`frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java`]
 
 在 Perfetto 中,ANR 事件可以通过 `android_logs` 里的 `am_anr` 精确定位。SQL 查询:
 
@@ -554,11 +566,11 @@ AMS 仍然负责广播匹配、调度和 ANR 判责,但源码入口不能只盯�
 1. 发送方通过 `Context.sendBroadcast()` → Binder 调用到 AMS。
 2. AMS 根据 Intent 匹配已注册的 Receiver(包括静态和动态),生成目标列表。
 3. 对于有序广播,按 priority 排序后依次分发;对于无序广播,并行分发。
-4. Receiver 执行 `onReceive()` 后,系统按对应广播配置计时;超时未完成时,`BroadcastQueueImpl` 进入广播 ANR 管线。
+4. `BroadcastQueueImpl.dispatchReceivers()` 在调度 Receiver 前把投递状态切到 `DELIVERY_SCHEDULED`,并按前台 / 后台广播配置启动 delivery timeout;Receiver 完成后再取消计时。超时先到时,`finishReceiverActiveLocked(... DELIVERY_TIMEOUT ...)` 进入广播 ANR 路径。
 
-> **ModernBroadcastQueue 架构（Android 15+）**：AOSP 从 Android 15 起引入了按进程组织的广播队列，取代了旧版按全局 FIFO 排列的模式。旧实现中，一个进程内多个 Receiver 的分发是串行的，如果前面的 Receiver 执行慢，后面同一进程内的 Receiver 也会被阻塞——这就是"队头阻塞"（head-of-line blocking）。新版实现把分发粒度从"全局队列"收窄到"按进程独立队列"（`BroadcastProcessQueue`），同一个进程的 Receiver 仍然串行，但不同进程之间可以并行分发，避免了慢进程拖累全局。对性能分析的影响：在 Perfetto 中，如果看到广播 ANR 但对应进程的 `onReceive()` 执行并不慢，应该检查是否是旧队列模型下被其他进程的慢 Receiver 阻塞；Android 15+ 上这个问题会被按进程队列缓解。
+> **按进程广播队列架构（Android 14/15/16）**：Android 14/15 的源码类名是 `BroadcastQueueModernImpl`,Android 16 的类名是 `BroadcastQueueImpl`,两者都围绕 `BroadcastProcessQueue` 按进程组织广播投递。旧实现中,一个进程内多个 Receiver 的分发是串行的,如果前面的 Receiver 执行慢,后面同一进程内的 Receiver 也会被阻塞--这就是"队头阻塞"（head-of-line blocking）。按进程队列把分发粒度从"全局队列"改到"进程队列":同一个进程的 Receiver 仍然串行,不同进程之间可以并行分发,减少慢进程拖累全局广播。对性能分析的影响是,在 Perfetto 中看到广播 ANR 时,要把 `BroadcastQueueImpl` 的 delivery timeout、目标进程主线程 `onReceive()`、以及同进程前序 Receiver 放在一起判断。
 >
-> [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` + `BroadcastProcessQueue.java`——android-16 的广播队列主类是 `BroadcastQueueImpl`，按进程分发由 `BroadcastProcessQueue` 实现，不存在独立的 `ModernBroadcastQueue.java` 文件]
+> [已验证: AOSP android-14/15 `BroadcastQueueModernImpl.java`;AOSP android-16.0.0_r1 `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` + `BroadcastProcessQueue.java`]
 
 ### 静态广播 vs 动态广播的性能差异
 
@@ -690,13 +702,16 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 - `frameworks/base/services/core/java/com/android/server/wm/Task.java` - Task 定义与 Recents 语义
 - `frameworks/base/core/res/res/values/attrs_manifest.xml` - `recreateOnConfigChanges` 定义
 - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` - Service 管理与 create-service ANR
+- `frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java` - Service ANR 计时器抽象
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java` - startForegroundService 相关超时配置
 - `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` - `oom_adj` / `procState` 动态计算
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java` - 广播超时与调度参数
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` - 广播分发与超时执行
+- `frameworks/base/services/core/java/com/android/server/am/BroadcastProcessQueue.java` - 按进程组织的广播投递队列
 - `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java` - Provider 获取与等待流程
 - `frameworks/base/core/java/android/content/ContentResolver.java` - Provider publish / ready / remote-provider timeout 常量
 - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java` - ANR 统一处理管线
+- `frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java` - ANR 堆栈 dump 文件创建与写入
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` - 进程列表与 lmkd 交互
 - `frameworks/base/core/java/android/app/ActivityThread.java` - App 端主线程入口
 - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` - `am_*` EventLog 标签定义
@@ -722,5 +737,3 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 - 《从 ApplicationExitInfo 看 Android 应用的退出类型》- 进程退出原因分类
 
 ---
-
-> [自动发现] AMS 内部的锁竞争(`mService` 全局锁)和 `system_server` Binder 线程池饱和问题,是分析 system_server 侧性能瓶颈时的重要切入点。这部分内容计划在扩展章节中详细展开。
