@@ -1857,7 +1857,11 @@
       "task6_new_rework": false,
       "task6_note": "复审小修 10 处；补充段仍像源码调研素材块，已并入既有 Task9 pending queue（priority 95）交 Task2B 整合。",
       "task9_result": "needs-rework",
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending",
+      "last_task2b_at": "2026-05-27T12:50:00+08:00",
+      "task2b_note": "Task2B fallback 修复：删除参考资料前后的源码调研补充块，移除无关 16KB Page Size 线程栈内容，收束 Android 16 legacy/concurrent 版本边界，回流 Task6。"
     },
     "7.5": {
       "p0": 1,
@@ -8265,17 +8269,19 @@
     "title": "MessageQueue 机制与 DeliQueue 无锁优化",
     "file": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "needs-rework",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-23",
     "last_task6_at": "2026-05-23T01:24:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-23-01-review.md",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
-    "task2b_result": "pending"
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-27T12:50:00+08:00",
+    "task2b_note": "Task2B fallback 修复：删除源码调研补充块并回流 Task6。"
   },
   "rework_log": [
     {

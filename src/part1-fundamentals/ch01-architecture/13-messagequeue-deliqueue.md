@@ -35,18 +35,18 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 last_task6_review_log: "logs/review/2026-05-23-01-review.md"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-23T00:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-05-22T23:21:23+08:00"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+last_task2b_at: "2026-05-27T12:50:00+08:00"
 task9_review_notes: "2026-05-23 task9 deep-review: needs-rework。P0 1 / P1 1。android-16 tag 目录表误列 Locked/SemiConcurrentMessageQueue，且 CombinedMessageQueue 方法名/Android17 DeliQueue 数据结构边界仍需 Task2B 回炉。"
 task6_reviewed_date: "2026-05-23"
 last_task6_at: "2026-05-23T01:24:00+08:00"
@@ -374,116 +374,12 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ## 收尾
 
-排查主线程调度问题时,先把流程切成三段:**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor。Android 16 的公开源码已经能看到 legacy / semi-concurrent / concurrent 多变体试点,Android 17 把这件事推到了面向应用的默认行为。
+排查主线程调度问题时,先把流程切成三段:**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor。Android 16 的公开源码已经能看到 legacy / concurrent 多变体试点,Android 17 把这件事推到了面向应用的默认行为。
 
 这节最该带走的判断只有两个:
 
 - trace 里看到 `dispatchMessage()` 长，不要先归因到 MessageQueue。
 - retarget 到 Android 17 后,如果测试框架、反射代码、旧监控脚本先出问题,先查 `mMessages` 和测试库版本,再查业务逻辑。
-
-
-
-[需重写: 以下“补充”段仍像源码调研素材块，和本文主线、参考资料顺序断开；请 Task2B 重新整合到正文、改成正式附录，或移出发布稿。]
-
-## 补充:16KB Page Size 对线程栈内存的影响
-
-这组补充核对线程栈、测试框架和 DeliQueue 性能三组边界：
-
-### PTHREAD_STACK_MIN 与 FixStackSize(16KB Page Size 场景)
-
-**源码位置**:
-- `bionic/libc/include/pthread.h` - PTHREAD_STACK_MIN 定义(ARM64 固定为 16384)
-- `bionic/libc/bionic/pthread_create.cpp` - FixStackSize 实现
-- `art/runtime/thread.cc` - ART 线程创建时调用 FixStackSize
-
-**关键逻辑**:
-1. `PTHREAD_STACK_MIN` 在 ARM64 Android 上定义为 `16384`(16KB),是固定常量而非 `PAGE_SIZE` 的倍数。4KB 页系统中 PTHREAD_STACK_MIN 仍然是 16KB,不是 4KB
-2. `pthread_attr_setstacksize()` 检查请求大小 < PTHREAD_STACK_MIN 时返回 EINVAL
-3. `FixStackSize()` 在 ART 创建线程时使用,确保栈大小满足 PTHREAD_STACK_MIN
-4. 默认线程栈大小为 1MB,仅活跃页面消耗物理内存
-
-**16KB vs 4KB Page 系统对比**:
-
-| 方面 | 4KB Page 系统 | 16KB Page 系统 |
-|------|-------------|--------------|
-| PTHREAD_STACK_MIN | 16KB(固定常量 16384) | 16KB(固定常量 16384) |
-| 最小分配粒度 | 4KB | 16KB |
-| 小线程栈内部碎片 | 较低 | 较高(min 分配粒度增加 4×) |
-| 栈溢出检测 | 4KB guard page | 16KB guard page |
-| 页表内存(1GB 映射) | 2MB PTE | 0.5MB PTE(节省 75%) |
-
-### DeliQueue 对测试框架的影响(实测数据)
-
-Android 17 DeliQueue 对工具链的具体影响:
-
-| 工具 | 影响 | 解决版本 |
-|------|------|---------|
-| Espresso | 依赖反射检查 MessageQueue 状态 | ≥ 3.7.0 |
-| Robolectric | 内部 MessageQueue 检查逻辑失效 | 4.17+ |
-| KOOM / APM SDK | 依赖反射采样消息队列状态 | 需适配 DeliQueue API |
-
-**mMessages 反射失效的确认**:官方文档明确说明 DeliQueue 下 `mMessages` 永远返回 null,维持二进制兼容性但数据无意义。
-
-### DeliQueue 性能数据(Google 内部测试)
-
-- 多线程插入:最高 **5000×** 提升(合成基准)
-- 主线程锁竞争时间:减少 **15%**(内部 beta 设备 trace)
-- 丢帧率:App 降低 **4%**,SystemUI/Launcher 降低 **7.7%**(相同测试设备)
-- 冷启动到首帧:提升 **9.1%**(95 分位)
-
-> 数据来源:Android Developers Blog 2026-02-17《Under the hood: Android 17's lock-free MessageQueue》
-
-
-## 补充:DeliQueue 反射失效后的 Idle 判断替代方案
-
-这组源码核对补上 §1.13 / §1.5 / §1.14 的 Idle 判断边界：
-
-### mMessages 反射失效的根因
-
-DeliQueue 的内部数据结构不再是链表,而是:
-- **Treiber Stack**(原子指针 mStack):任何线程通过 CAS 无锁并发入队
-- **Min-Heap**(Looper 线程独享):按 when 时间顺序出队
-
-mMessages 作为字段被保留用于二进制兼容性,但永远返回 null。官方文档明确说明:`mMessages` **always null** in the new implementation。
-
-### 反射失效影响的具体场景
-
-| 依赖方 | 影响 | 适配方式 |
-|--------|------|---------|
-| **Espresso** | 依赖反射检查消息队列状态 | ≥ 3.7.0,使用 TestLooperManager API |
-| **Robolectric** | 内部 MessageQueue 检查逻辑失效 | 4.17+,@LooperMode(PAUSED) |
-| **APM SDK** | 依赖反射采样消息队列判断 idle | 需适配 DeliQueue API |
-| **主线程 idle 判断脚本** | mMessages 永远为 null | 使用 IdleHandler 机制 |
-
-### IdleHandler:DeliQueue 下判断主线程 idle 的正确方式
-
-```java
-// 正确方式:使用 IdleHandler 回调
-Looper.myQueue().addIdleHandler(new IdleHandler() {
-    @Override
-    public boolean queueIdle() {
-        // 主线程当前处于 idle 状态
-        // 适合执行低优先级任务(GC、预加载等)
-        return false;  // false = 一次性触发,true = 保留重复触发
-    }
-});
-```
-
-IdleHandler 只在队列为空或最早消息尚未到期时触发。DeliQueue 的 Min-Heap 使 IdleHandler 判断更精确,不需要通过反射访问内部数据结构。
-
-### 与 ConcurrentMessageQueue 的关系
-
-AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentMessageQueue` 两个实现，`CombinedMessageQueue` 通过 `mUseConcurrent` 标志在 legacy 和 concurrent 之间切换。`SemiConcurrentMessageQueue` 在公开源码中不存在，应忽略。版本演进：
-
-| 版本 | 实现 | 数据结构 |
-|------|------|----------|
-| Android 14 (Legacy) | 单链表 + monitor lock | 单向链表 |
-| Android 15-16 (内部试点) | 多种变体并行(allowlist 控制) | Treiber Stack + SkipList/PriorityQueue |
-| Android 17+ (默认) | DeliQueue(lock-free) | Treiber Stack + Min-Heap |
-
-> 注：`ConcurrentMessageQueue` 和 `CombinedMessageQueue` 已在 `android-16.0.0_r1` 的 `core/java/android/os/` 目录下确认存在。`SemiConcurrentMessageQueue` 在公开源码中不存在，前版误引已删除。
-
-
 
 ## 参考资料
 ### Android 17 DeliQueue 无锁 MessageQueue 与 RecyclerView 预取机制
@@ -510,36 +406,3 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
   `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
 - Treiber stack
   https://en.wikipedia.org/wiki/Treiber_Stack
-
-## 补充:Android 16 并发实现与 Android 17 DeliQueue 方向
-
-### 第一层:Android 16 tag 可确认的源码(AOSP `android-16.0.0_r1`)
-
-AOSP `android-16.0.0_r1` 的 `core/java/android/os/` 下存在以下 MessageQueue 变体目录：
-
-| 目录 | 性质 | 核心实现 |
-|------|------|----------|
-| `LegacyMessageQueue/MessageQueue.java` | 纯旧实现（单向链表 + synchronized） | 单链表 + monitor lock |
-| `ConcurrentMessageQueue/MessageQueue.java` | 并发实现(系统进程 allowlist) | `ConcurrentSkipListSet<Message>` + 两组 Priority Queue(`mPriorityQueue` / `mAsyncPriorityQueue`) |
-| `CombinedMessageQueue/MessageQueue.java` | 合并入口,静态开关选择实现 | 同时保留 Legacy 和 Concurrent 字段,按 `computeUseConcurrent()` 选择 |
-| `LockedMessageQueue/MessageQueue.java` | 带 lock 的中间实现 | 内部仍用 synchronized |
-| `SemiConcurrentMessageQueue/MessageQueue.java` | 半并发实现(当前 AOSP main 已出现,android-16 tag 不存在) | 介于 Concurrent 和 Legacy 之间 |
-
-`ConcurrentMessageQueue` 的并发安全依赖 `ConcurrentSkipListSet` 的 CAS 语义,入队和出队不需要获取 monitor lock。两组 Priority Queue 分别处理同步消息和异步消息,按 `when` 排序。`CombinedMessageQueue` 作为统一入口,在类加载时通过 `computeUseConcurrent()` 决定走哪套实现。
-
-> 版本边界:`ConcurrentMessageQueue` / `CombinedMessageQueue` 在 `android-16.0.0_r1` tag 下可确认存在,但仅对系统进程(UID < 1000)和 SystemUI 生效;普通 App 仍走 `LegacyMessageQueue`。
-
-### 第二层:Android 17 DeliQueue 方向(概念性说明)
-
-Android Developers Blog(2026-02-17 "Under the hood: Android 17's lock-free MessageQueue")和 Android Developers 行为变更页描述了 Android 17 的 DeliQueue 设计方向:
-
-- **数据结构**:Treiber Stack + min-heap + tombstoning,替代传统单链表
-- **核心语义**:DeliQueue 模式下 `mMessages` 始终为 null,消息入队通过 CAS 无锁操作完成
-- **启用条件**:`targetSdk 37` 的 App 默认启用 DeliQueue;非 targetSdk 37 的 App 仍走 Legacy
-- **性能收益**:消除 `synchronized` 锁竞争,多线程入队不再阻塞 UI 线程
-
-截至 2026-05-22,AOSP main 公开源码中**未检出** `CombinedDeliMessageQueue/`、`DeliQueue/`、`MessageStack.java`、`MessageHeap.java` 这些路径。当前 AOSP main 下可见的变体仍为 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`、`LockedMessageQueue/`、`SemiConcurrentMessageQueue/`。DeliQueue 的具体实现细节(VarHandle 替代 Atomic、mPtr 引用计数 TEARDOWN_MASK 等)暂按 Android Developers Blog 做概念性引用,待 AOSP 公开对应 commit/路径后再补源码锚点。
-
-### SemiConcurrentMessageQueue 的来源
-
-`SemiConcurrentMessageQueue` 在 `android-16.0.0_r1` tag 下不存在,但当前 AOSP main 分支已出现。前版将其标注为"ROM fork,非 AOSP 主线",这是基于 android-16 tag 的核验结果,不适用于 AOSP main 的后续状态。具体引入 commit 和功能边界待后续审校补齐。
