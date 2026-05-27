@@ -43,12 +43,12 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-18"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 last_task6_at: "2026-05-18T19:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-19-review.md"
 task9_result: "needs-rework"
@@ -56,7 +56,8 @@ task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T19:44:00+08:00"
 task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-05-27"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略

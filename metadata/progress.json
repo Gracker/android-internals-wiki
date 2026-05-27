@@ -1572,7 +1572,11 @@
       "task6_reviewed_at": "2026-05-18T19:12:00+08:00",
       "task6_log": "logs/review/2026-05-18-19-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作质量通过；清理“对齐”、形容词起手和否定-纠正结构。既有 FrameRateEligibility 路径待验证标注交 Task9 复核，未新增 Task2B 回炉。"
+      "task6_note": "写作质量通过；清理“对齐”、形容词起手和否定-纠正结构。既有 FrameRateEligibility 路径待验证标注交 Task9 复核，未新增 Task2B 回炉。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task2b_note": "Task2B Lite repaired stale frontmatter/progress routing after verified API fix; section returns to Task6.",
+      "last_task2b_lite_at": "2026-05-27"
     },
     "1.8": {
       "task6_result": "pass-light-edit",
@@ -4680,16 +4684,19 @@
     },
     "2.23": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "title": "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略",
       "file": "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-18",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-18T19:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-18-19-review.md",
-      "task9_state": "pending"
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_lite_at": "2026-05-27"
     },
     "13.18": {
       "status": "ready-for-review",
