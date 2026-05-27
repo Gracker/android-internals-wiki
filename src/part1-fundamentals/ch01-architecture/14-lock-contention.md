@@ -45,18 +45,18 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-27T15:22:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-27T14:50:00+08:00"
-task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-18 抽检问题；收窄适用版本，修正 DeliQueue URL/targetSdk 37+ 条件，删除 PTHREAD_PRIO_PROTECT、android_pid_t/ANDROID_PID_MAX 与 SF/Input PI-futex 错误断言。"
+last_task2b_at: "2026-05-27T16:50:00+08:00"
+task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
 last_task6_audit: "2026-05-17"
 last_task6_at: "2026-05-27T15:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-15-review.md"
@@ -185,6 +185,10 @@ futex 的价值在于把“无竞争时的原子操作”和“有竞争时的�
 
 但这里有一个很容易写错的地方。**“系统支持 futex”不等于“所有等待都叫 futex 锁竞争”，也不等于“具体锁路径启用了 PI-futex”。** `android-9.0.0_r1` 的 bionic 里已经提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`，这说明 native mutex 层具备 PI mutex 能力；可它只说明“可以这样配置”，并不说明系统里每一把 mutex 都真的这么配了。[已验证: AOSP android-9.0.0_r1, `platform/bionic/libc/bionic/pthread_mutex.cpp`]
 
+普通 futex 等待走 `FUTEX_WAIT` / `FUTEX_WAKE`，内核负责睡眠和唤醒，不处理等待者优先级。PI-futex 走 `FUTEX_LOCK_PI` / `FUTEX_UNLOCK_PI`，内核会把等待者优先级传给持锁线程，并在释放锁时唤醒优先级最高的等待者。这个差异只在 mutex 按 PI 协议初始化后成立；同样看到 `futex_*`，不能直接推断成 PI 行为。
+
+还有一个容易被写过头的边界：PI futex 的用户态 word 会编码 owner TID，32 位 ABI 下 `pthread_mutex_t` 布局更紧，owner TID 编码空间需要按 bionic tag 核对。公开 AOSP 证据不能支撑 `android_pid_t` / `ANDROID_PID_MAX` 或“Android 12+ 64-bit PID 修复”这类结论，正文只保留可验证的 ABI 边界。
+
 Binder 更不能直接写成 “Binder = futex / PI-futex”。Binder 的等待和唤醒主要由 binder driver 的 wait queue、事务分发和线程选择逻辑处理。驱动里需要重点核对的入口，是 `binder_transaction_priority()`、`binder_select_thread_ilocked()`、`binder_wakeup_thread_ilocked()` 这一类函数，而不是把它硬套到 Java monitor 的语义里。[已验证: kernel/common `drivers/android/binder.c`]
 
 ## 优先级反转：从模型到 Android 现场
@@ -206,6 +210,10 @@ Binder 的问题，通常不是“调用慢”这四个字能概括的。调用�
 `ProcessState.cpp` 在 `android-7.1.2_r39` 和 `android-8.0.0_r1` 两个 tag 里都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-7.1.2_r39` / `android-8.0.0_r1`]
 
 system_server 里的典型热点在服务端全局锁，不在 Binder 驱动本身。比如 WindowManager 的 `WindowManagerGlobalLock`，AMS/PMS 的大对象锁，都会把一个 Binder 调用拖成一整串等待。调用方主线程睡在 `binder_thread_read`，服务端 Binder worker 可能睡在 `futex_wait`，而持锁的 owner 线程可能又在跑磁盘 I/O、跨服务调用，或者干脆在等另一把锁。只看调用方只能看到结果；把 Binder worker 和 owner 一起看，根因才会露出来。
+
+AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10 之后，AMS 逐步把进程状态保护从单一 `ActivityManagerService.this` 拆到 `mGlobalLock` 与 `mProcLock`：前者仍保护组件生命周期、进程启动、ANR 判定这类全局状态，后者更多保护 LRU list、`ProcessRecord` 和 OOM 调整里的进程状态读取。到 Android 12+，`ENABLE_PROC_LOCK` 已经固定为 true，`OomAdjuster.updateOomAdjLSP()`、`ProcessList.forEachLruProcessesLOSP()` 这类路径会进入 `mProcLock` 保护范围。[已验证: AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` + `OomAdjuster.java`]
+
+落到 Perfetto 里，AMS 锁竞争通常表现为 App 线程或 system_server Binder worker 的长 `binder_transaction`，再接上 `ActivityManagerService.onTransact()`、`updateOomAdjLocked()`、`attachApplicationLocked()` 等调用栈。如果同一时间 `android_monitor_contention` 能看到 AMS 相关 owner / waiter，或者服务端 worker 停在 `futex_*`，就应该沿着 owner 线程继续查，而不是把这次等待归因到 Binder 驱动本身。
 
 这就是为什么 Binder 场景里要同时看三层信息，调用方在等什么，服务端 worker 在干什么，持锁线程是不是又被别人卡住了。少看一层，就会把跨进程等待误判成“单点慢函数”。
 
@@ -321,115 +329,3 @@ Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37
 ## 小结
 
 锁竞争分析难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才会变成有目标的修改。
-
-[需重写: 文末仍保留源码调研原始块，需判断哪些内容已进入正文，剩余素材移入素材库或合并后删除。]
-
-<!-- AIW-源码调研-2026-05-06 -->
-## 补充：AMS mGlobalLock / mProcLock 双锁架构与 Perfetto 识别
-
-本节于 2026-05-06 通过源码调研补充，聚焦 Android 10+ 双锁架构及其在 Perfetto 中的识别路径。
-
-### 双锁架构演进
-
-| 版本 | 锁配置 | 关键变化 |
-|------|--------|---------|
-| Android 9- | 单一全局锁（AMS.this） | 所有组件竞争同一锁 |
-| Android 10-11 | mGlobalLock + mProcLock | 读写分离，ENABLE_PROC_LOCK 可能为 false |
-| Android 12+ | mGlobalLock + mProcLock | ENABLE_PROC_LOCK 恒为 true，双锁完全并行 |
-
-**源码锚点**：`ActivityManagerService.java` 行 668-707（android14-release）
-```java
-final ActivityManagerGlobalLock mGlobalLock = ActivityManagerService.this;
-private static final boolean ENABLE_PROC_LOCK = true;
-final ActivityManagerProcLock mProcLock = ENABLE_PROC_LOCK
-        ? new ActivityManagerProcLock() : mGlobalLock;
-```
-
-### @CompositeRWLock 读写语义
-
-```java
-@CompositeRWLock({"this", "mProcLock"})
-int getUidState(int uid) { ... }
-```
-- **读取**：持有 `this`（mGlobalLock）或 `mProcLock` 任一即可
-- **写入**：需同时持有两者
-
-### mGlobalLock 热区函数
-
-| 函数 | 行号 | 触发场景 |
-|------|------|----------|
-| `updateOomAdjLocked()` | 567 | OomAdjuster 回调，每帧可达多次 |
-| `attachApplicationLocked()` | 4920 | 进程绑定/启动 |
-| `serviceTimeoutLocked()` | ~1810 | Service ANR 判定 |
-| `processStartTimedOutLocked()` | ~3425 | App 启动超时 |
-
-### mProcLock 职责
-
-`mProcLock` 主要保护进程状态读取（LRU list、ProcessRecord 读写），由 `OomAdjuster.updateOomAdjLSP()` 使用：
-```java
-// OomAdjuster.java 行 574-595
-mProcessList.forEachLruProcessesLOSP(false, process -> {
-    // mProcLock 保护的遍历
-});
-```
-
-### Perfetto 识别模式
-
-```
-binder_transaction (thread: system_server binder #N, duration: >16ms)
-  → android.os.Binder.execTransact()
-    → ActivityManagerService.onTransact()
-      → updateOomAdjLocked() 或 attachApplicationLocked()
-        → [synchronized(mGlobalLock/mProcLock) 持锁等待]
-```
-当 `binder_transaction` duration 超过单帧（>16.67ms@60Hz）且 call stack 包含 AMS 内部同步块，即为锁竞争根因。关键 trace points：`binder_transaction`、`ActivityManagerService.updateOomAdjLocked`、`ActivityManagerService.attachApplicationLocked`。
-
-> 本调研同步更新至 §1.8 AMS 章节原始素材。
-
-<!-- AIW-源码调研-2026-05-06 END -->
-
-
-
-<!-- AIW-源码调研-2026-05-09: PI-Mutex 实现细节补充 -->
-
-## PI-Mutex 实现细节补充（源码级）
-
-> 本节补充 2026-05-09 源码调研成果，关于 Bionic `pthread_mutex` 的 `PTHREAD_PRIO_INHERIT` 实现及 32 位架构限制。
-
-### Bionic PI-Mutex 协议配置接口
-
-Bionic 从 `android-9.0.0_r1` 起提供完整的 PI-Mutex 属性接口：
-
-```cpp
-// bionic/libc/include/pthread.h
-// @ AOSP android-9.0.0_r1
-#define PTHREAD_PRIO_NONE        0
-#define PTHREAD_PRIO_INHERIT     1  // 继承等待者最高优先级
-```
-
-`pthread_mutexattr_setprotocol(attr, PTHREAD_PRIO_INHERIT)` 设置后，后续 `pthread_mutex_init()` 创建的 mutex 才会请求优先级继承协议。`PTHREAD_PRIO_PROTECT` 不在这些公开 tag 的 bionic `pthread.h` 可用协议里，文档中不要把 POSIX 可选协议直接写成 Android 已实现能力。
-
-### PI-Futex 与普通 Futex 的区别
-
-**普通 futex 等待**（`FUTEX_WAIT` / `FUTEX_WAKE`）：
-- 内核以 FIFO 顺序维护 wait queue
-- 不涉及优先级调度
-- Perfetto 中表现为 `futex_wait` / `futex_wake`
-
-**PI-futex 等待**（`FUTEX_LOCK_PI` / `FUTEX_UNLOCK_PI`）：
-- 内核以 priority order 维护 wait queue（按优先级排序）
-- 持锁线程优先级被动态提升
-- Perfetto 中表现为 `futex_wait_requeue_pi`
-- `FUTEX_UNLOCK_PI` 时内核自动唤醒最高优先级等待者
-
-关键差异：PI-futex 的 `FUTEX_UNLOCK_PI` 语义保证"持锁线程释放时最高优先级等待者立即被唤醒"，不需要额外的 wake 操作。
-
-### 32 位架构 owner TID 编码边界
-
-PI futex 的用户态 word 里会编码 owner TID。bionic 在 32 位 ABI 上对 `pthread_mutex_t` 的布局更紧，公开实现里有 owner tid 编码位数的限制；讨论这类边界时，应写成“32 位 ABI 下 owner TID 编码空间有限，需要按 bionic tag 核对”，不要写成 `android_pid_t` / `ANDROID_PID_MAX` 或“Android 12+ 64-bit PID 修复”。当前公开 AOSP 证据不足以支撑这些符号和版本结论。
-
-### SurfaceFlinger / InputDispatcher 锁路径核对
-
-Task9 抽检没有在公开 AOSP 锚点中确认 SurfaceFlinger / InputDispatcher 核心锁统一启用 PI-futex。可确认的边界是：bionic 支持 `PTHREAD_PRIO_INHERIT`，但具体锁是否启用取决于初始化属性；SurfaceFlinger、InputDispatcher 这类路径要逐个看 `pthread_mutexattr_setprotocol()`、`android::Mutex` 初始化参数或 `std::mutex` 实现，不能按模块名推断。
-
-Perfetto 里出现 SF / Input 相关锁等待时，排查顺序仍然是 owner / waiter、线程优先级、持锁期间调用栈和被等待资源。只有源码锚点能证明该锁启用了 PI，才把优先级继承纳入结论。

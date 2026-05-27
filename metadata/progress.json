@@ -2068,19 +2068,20 @@
       "task6_note": "2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
     },
     "1.14": {
-      "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task6_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task2b_fixed_at": "2026-05-27T14:50:00+08:00",
-      "task9_pending_queue": 0
+      "task2b_fixed_at": "2026-05-27T16:50:00+08:00",
+      "task9_pending_queue": 0,
+      "task6_pending_queue": 0
     }
   },
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T16:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T16:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T16:08:00+08:00",
     "log": "logs/review/2026-05-27-16-review.md",
@@ -2220,12 +2221,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T14:50:00+08:00",
+  "last_task2b_at": "2026-05-27T16:50:00+08:00",
   "last_task2b_sections": [
-    "1.14",
-    "1.16"
+    "1.14"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework fixed 2 sections and returned them to task6_pending",
+  "last_task2b_action": "task6-review rework fixed and returned to Task6",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5875,22 +5875,26 @@
       "last_task9_review_log": "logs/deep-review/2026-05-18-05-audit.md",
       "task2b_note": "2026-05-27 Task2B fallback fixed Task9 audit P0/P1: bionic PI protocol, owner TID boundary, SF/Input PI-futex claim, DeliQueue URL and targetSdk 37+ scope.",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-05-27T14:50:00+08:00",
+      "last_task2b_at": "2026-05-27T16:50:00+08:00",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
       "last_task6_at": "2026-05-27T15:08:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-27-15-review.md",
       "task6_l1_l2_fixes": 14,
       "task6_l3_l4_issues": 1,
-      "task2b_pending_queue": 1,
-      "task6_review_notes": "2026-05-27 15:08 Task6：修复若干口语化/编辑痕迹表达；发现文末仍保留两段 AIW 源码调研原始块，需 Task2B 整合/清理后再审，已写入 queue.json。"
+      "task2b_pending_queue": 0,
+      "task6_review_notes": "2026-05-27 15:08 Task6：修复若干口语化/编辑痕迹表达；发现文末仍保留两段 AIW 源码调研原始块，需 Task2B 整合/清理后再审，已写入 queue.json。",
+      "section": "1.14",
+      "last_task2b_source": "task6-review",
+      "last_task2b_priority": 90,
+      "last_task2b_note": "清理文末 AIW 源码调研原始块；将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文，回流 Task6。"
     }
   },
   "task2b_rounds": [
@@ -7502,8 +7506,8 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task2b_run": "2026-05-27T10:50:00+08:00",
-  "task2b_sections_fixed": 2,
+  "last_task2b_run": "2026-05-27T16:50:00+08:00",
+  "task2b_sections_fixed": 3,
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-27T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -7658,6 +7662,25 @@
       ],
       "details": [
         "§18.10: FramebufferSurface 从 App layer 消费路径改为 SurfaceFlinger client target；跨进程共享改为 Java Parcelable + API 34 ASurfaceControl_fromJava 边界。"
+      ]
+    },
+    {
+      "timestamp": "2026-05-27T16:50:00+08:00",
+      "sections_processed": [
+        "1.14"
+      ],
+      "sections_fixed": [
+        "1.14"
+      ],
+      "issues_addressed": 1,
+      "queue_ids_completed": [
+        "task6-review-20260527-1508-1.14-aiw-source-blocks"
+      ],
+      "source_types": [
+        "task6-review"
+      ],
+      "details": [
+        "§1.14: 删除文末 AIW 源码调研块；AMS mGlobalLock/mProcLock 与 PI-futex 边界并入正文。"
       ]
     }
   ],
@@ -7902,6 +7925,14 @@
       "fixed_date": "2026-05-27T10:50:00+08:00",
       "queue_id": "task9-deep-review-20260527-1050-18.10-framebuffersurface-cross-process",
       "fix_summary": "FramebufferSurface 显示输出路径与 SurfaceControl 跨进程共享边界修正"
+    },
+    {
+      "section": "1.14",
+      "title": "锁竞争与同步性能分析",
+      "status": "fixed",
+      "fixed_date": "2026-05-27T16:50:00+08:00",
+      "queue_id": "task6-review-20260527-1508-1.14-aiw-source-blocks",
+      "fix_summary": "清理文末 AIW 源码调研原始块；AMS 双锁与 PI-futex 边界合并入正文"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -8128,6 +8159,19 @@
         "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
       ],
       "result": "fixed-returned-to-task6"
+    },
+    {
+      "at": "2026-05-27T16:50:00+08:00",
+      "lane": "main",
+      "source": "task6-review",
+      "sections": [
+        "1.14"
+      ],
+      "files": [
+        "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
+      ],
+      "result": "fixed-returned-to-task6",
+      "summary": "文末源码调研块已清理，素材并入正文。"
     }
   ],
   "section_18_23": {
@@ -8247,7 +8291,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 6,
+  "task2b_total_fixed": 7,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -8833,11 +8877,11 @@
       "items_completed": 6
     },
     "2026-05-27": {
-      "sections_processed": 2,
-      "items_completed": 2
+      "sections_processed": 3,
+      "items_completed": 3
     }
   },
-  "task2b_last_run": "2026-05-27T10:50:00+08:00",
+  "task2b_last_run": "2026-05-27T16:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -8905,10 +8949,19 @@
       "source": "task9-deep-tech-review",
       "priority": 95,
       "summary": "修正 FramebufferSurface 为显示输出 / client target 路径，补齐 SurfaceControl 跨进程 Java Parcelable + API 34 NDK bridge 边界。"
+    },
+    {
+      "section": "1.14",
+      "file": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+      "at": "2026-05-27T16:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "task6-review",
+      "priority": 90,
+      "summary": "删除文末 AIW 源码调研原始块，将 AMS 双锁与 PI-futex 边界合并入正文，回流 Task6。"
     }
   ],
-  "last_task2b_completed": "1.14,1.16",
-  "last_task2b_completed_at": "2026-05-27T14:50:00+08:00",
+  "last_task2b_completed": "1.14",
+  "last_task2b_completed_at": "2026-05-27T16:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9024,7 +9077,15 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
-  ]
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
+  ],
+  "last_task2b_completed_entry": {
+    "section": "1.14",
+    "file": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+    "at": "2026-05-27T16:50:00+08:00",
+    "by": "task2b-content-processing-rework-main",
+    "source": "task6-review",
+    "priority": 90,
+    "summary": "删除文末 AIW 源码调研原始块，将 AMS 双锁与 PI-futex 边界合并入正文，回流 Task6。"
+  }
 }
