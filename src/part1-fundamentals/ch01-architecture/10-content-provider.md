@@ -4,7 +4,7 @@
 title: ContentProvider 性能与优化
 chapter: '1.10'
 section: '1.10'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -33,11 +33,11 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
@@ -47,13 +47,13 @@ reviewed_by: openclaw-task6
 review_round: 8
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T15:22:00+08:00"
-task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。"
+last_task9_at: "2026-05-27T16:21:00+08:00"
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分:
   结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-16-deep-review.md"
 task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
