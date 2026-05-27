@@ -44,28 +44,28 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: '2026-05-27T08:50:00+08:00'
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task9_result: "auto-fixed"
 last_task9_at: "2026-05-27T09:40:09+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
 last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
-last_task6_at: "2026-05-27T09:16:48+08:00"
-last_task6_review_log: "logs/review/2026-05-27-09-review.md"
+last_task6_at: "2026-05-27T10:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-10-review.md"
 task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。 | 2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
+task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。 | 2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 Task9 auto-fix 后的 Unity 支持版本修正；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
 last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
-task6_reviewed_by: openclaw-task6
-review_type: task6-writing-quality-review
+task6_reviewed_by: "openclaw-task6"
+review_type: "task6-writing-quality-review"
 task9_review_notes: "2026-05-27 09:40 Task9 auto-fix：Unity ADPF 支持版本从 2021.2 修正为 Unity 2021.3+ / Adaptive Performance 5.0+ Android provider；回到 Task6 复审。"
 last_task9_autofix_at: "2026-05-27"
 p0: 0

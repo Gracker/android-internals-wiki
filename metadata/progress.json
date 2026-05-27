@@ -2052,29 +2052,30 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T09:16:48+08:00",
+  "last_updated": "2026-05-27T10:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T09:16:48+08:00",
+    "reviewed_at": "2026-05-27T10:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
+      "2.23",
       "5.9",
       "18.10"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
       "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-09-review.md",
+    "log": "logs/review/2026-05-27-10-review.md",
     "mode": "首次 review / revisiting",
     "results": {
-      "17.2": "pass-light-edit",
+      "2.23": "pass-light-edit",
       "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 0,
+    "metadata_updates": 5,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
@@ -2979,26 +2980,26 @@
     },
     "18.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_result": "auto-fixed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "queue_priority": 85,
       "last_task9_review_log": "logs/deep-review/2026-05-27-09-deep-review.md",
       "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
       "last_task2b_note": "Task2B Lite 修复 FrameTimeline fallback、ASurfaceControl release/display-tree 边界和 ch18->ch02 交叉引用。",
-      "last_task6_at": "2026-05-27T09:16:48+08:00",
+      "last_task6_at": "2026-05-27T10:05:00+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_review_log": "logs/review/2026-05-27-09-review.md",
+      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
       "title": "SurfaceControl API 深入",
       "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
+      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
       "section": "18.10",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
@@ -3169,8 +3170,8 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "queue_priority": 90,
@@ -3178,16 +3179,16 @@
       "last_task9_review_log": "logs/deep-review/2026-05-27-09-deep-review.md",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-27T09:16:48+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-09-review.md",
+      "last_task6_at": "2026-05-27T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
       "task2b_verifier_result": "ready-for-task6",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。",
+      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 Task9 auto-fix 后的 Unity 支持版本修正；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
       "section": "5.9",
       "last_task2b_at": "2026-05-27T08:50:00+08:00",
       "task2b_summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。",
@@ -4684,19 +4685,23 @@
     },
     "2.23": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "title": "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略",
       "file": "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-18",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-18T19:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-18-19-review.md",
+      "last_task6_at": "2026-05-27T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "last_task2b_lite_at": "2026-05-27"
+      "last_task2b_lite_at": "2026-05-27",
+      "section": "2.23",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-27",
+      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 Scheduler/VSyncPredictor/ARR 文稿；L1 禁用词、高频词和结构性元叙述 0 命中；outline 8/8 覆盖；无新增 L3/L4 回炉项。Task9 result 仍非 pass-tech-review，送 Task9 复审。"
     },
     "13.18": {
       "status": "ready-for-review",
@@ -5891,39 +5896,40 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T09:16:48+08:00",
+  "last_task6_review": "2026-05-27T10:05:00+08:00",
   "last_task6_sections": [
-    "17.2",
+    "2.23",
     "5.9",
     "18.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
-  "last_task6_at": "2026-05-27T09:16:48+08:00",
+  "last_task6_at": "2026-05-27T10:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T09:16:48+08:00",
+    "reviewed_at": "2026-05-27T10:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
+      "2.23",
       "5.9",
       "18.10"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
       "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-09-review.md",
+    "log": "logs/review/2026-05-27-10-review.md",
     "mode": "首次 review / revisiting",
     "results": {
-      "17.2": "pass-light-edit",
+      "2.23": "pass-light-edit",
       "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 0,
+    "metadata_updates": 5,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
@@ -5936,10 +5942,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T09:16:48+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-09-review.md",
+  "task6_last_review_at": "2026-05-27T10:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-10-review.md",
   "task6_last_review_sections": [
-    "17.2",
+    "2.23",
     "5.9",
     "18.10"
   ],
@@ -6392,16 +6398,16 @@
     },
     "5.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "title": "ADPF 自适应性能框架",
-      "last_task6_at": "2026-05-27T09:16:48+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-09-review.md",
+      "last_task6_at": "2026-05-27T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
       "task2b_result": "fixed",
       "queue_priority": 90,
       "last_task2b_verifier_at": "2026-05-27T07:50:00+08:00",
@@ -6411,7 +6417,7 @@
       "task2b_summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。",
+      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 Task9 auto-fix 后的 Unity 支持版本修正；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
@@ -7296,15 +7302,15 @@
       "title": "SurfaceControl API 深入",
       "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T09:16:48+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-09-review.md",
-      "task6_review_summary": "2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
+      "last_task6_at": "2026-05-27T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
+      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
@@ -7354,37 +7360,38 @@
   "last_task2b_run": "2026-05-24T07:32:43+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T09:16:48+08:00",
+    "reviewed_at": "2026-05-27T10:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "17.2",
+      "2.23",
       "5.9",
       "18.10"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
+      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
       "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-09-review.md",
+    "log": "logs/review/2026-05-27-10-review.md",
     "mode": "首次 review / revisiting",
     "results": {
-      "17.2": "pass-light-edit",
+      "2.23": "pass-light-edit",
       "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 10,
+    "l1_l2_fixes": 0,
+    "metadata_updates": 5,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
@@ -7692,7 +7699,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "17.2",
+    "2.23",
     "5.9",
     "18.10"
   ],
@@ -7731,7 +7738,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-09-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8476,7 +8483,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
@@ -8656,7 +8663,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T09:16:48+08:00",
+  "last_task6_reviewed_at": "2026-05-27T10:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
