@@ -24,24 +24,24 @@ related_chapters:
 - '18.13'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-last_task2b_at: '2026-05-27T07:44:00+08:00'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+last_task2b_at: '2026-05-27T10:50:00+08:00'
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 last_task9_at: "2026-05-27T09:40:09+08:00"
 task6_result: "pass-light-edit"
-task9_result: "auto-fixed"
-task2b_result: fixed-lite
+task9_result: "needs-rework"
+task2b_result: fixed
 last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。 | 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。"
+task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。 | 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。 | 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。"
 last_task6_at: "2026-05-27T10:05:00+08:00"
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-10-deep-review.md"
 review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。
@@ -241,12 +241,14 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 
 #### 跨进程 Layer 共享
 
-NDK `surface_control.h` 当前没有公开的 Parceling 入口（`ASurfaceControl_writeToParcel` / `ASurfaceControl_readFromParcel` 在 NDK r29 及 AOSP android-16.0.0_r1 的 `surface_control.h` 中均不存在）。跨进程共享 `SurfaceControl` 句柄，需要回到 Java 层的 `android.view.SurfaceControl`，通过其 Parcelable 实现把句柄写入 `Parcel` 传给另一个进程；或者交给 WindowManager / Shell 维护跨进程树结构。[已验证: Android Framework `SurfaceControl` Parcelable 能力；AOSP android-16.0.0_r1 `frameworks/native/include/android/surface_control.h` 全文复核]
+跨进程共享 `SurfaceControl` 时，公开入口分成 Java Parcelable 和 API 34 JNI bridge 两层。`android.view.SurfaceControl` 自 API 29 起实现 Parcelable，`writeToParcel()` 把 SurfaceFlinger 侧的 layer handle / client binder 写入 `Parcel`，目标进程 `readFromParcel()` 后得到新的 Java `SurfaceControl` 本地引用。Framework native 内部对应 `frameworks/native/libs/gui/include/gui/SurfaceControl.h` 的 `SurfaceControl::writeToParcel()` / `SurfaceControl::readFromParcel()`。[已验证: Android Framework `SurfaceControl` Parcelable 文档；AOSP `libs/gui/include/gui/SurfaceControl.h`]
+
+公开 NDK C API 侧没有 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()` 这类函数（AOSP android-16.0.0_r1 的 `include/android/surface_control.h` 未暴露）。API 34 起，native 代码可以在目标进程拿到 Java `SurfaceControl` 后，包含 `android/surface_control_jni.h` 并调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 转成 `ASurfaceControl*`；调用方取得所有权，用完后必须 `ASurfaceControl_release()`。因此完整路径是：Java / Binder 负责跨进程序列化，NDK 在本进程继续提交 Transaction；不能把 `ASurfaceControl*` 当作可直接写入 Binder 的裸指针。[已验证: Android NDK `ASurfaceControl_fromJava` 文档；AOSP android-16.0.0_r1 `surface_control.h` 公开符号复核]
 
 普通应用跨进程操作 Layer 树时，通常走以下几条路径之一：
 
 1. **系统托管**：WindowManager / Shell transition 负责跨进程 Layer 树的调整（如画中画、分屏），应用只需提交内容 buffer
-2. **Java Parceling**：持有 `android.view.SurfaceControl` 的一方通过 `writeToParcel()` / `readFromParcel()` 序列化句柄，传递给另一个进程
+2. **Java Parceling + NDK bridge**：持有 `android.view.SurfaceControl` 的一方通过 `writeToParcel()` / `readFromParcel()` 序列化句柄，目标进程再用 `ASurfaceControl_fromJava()` 接回 native 渲染代码
 3. **系统服务中转**：通过 `WindowManagerService` 或 `ActivityTaskManagerService` 代理跨进程的 reparent / z-order 调整
 
 ### Color Layer
@@ -492,7 +494,7 @@ PiP 是 SurfaceControl 最适合观察的系统场景之一。进入小窗时，
 
 Perfetto 里可以沿着这个顺序看：WindowManager / shell transition 发起 PiP 进入，SurfaceFlinger 收到几何 Transaction，随后 `latchBuffer` 是否顺利跟上；如果 `latchBuffer` 之前有明显等待，通常是内容准备慢；如果几何变换很顺，但合成时间突然上升，通常是小窗的圆角、阴影或额外 overlay 让 HWC 直合成失败，掉回 GPU 合成。[待验证: 具体回退条件按设备而异]
 
-PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，App 也不能指望纯 NDK 把一个 `ASurfaceControl*` 直接交给系统 PiP 容器继续 `reparent`；跨进程树调整通常还是走 WindowManager / shell 的 Java / Binder 路径。
+PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，公开 NDK C API 不能单独把 `ASurfaceControl*` 写入 Binder；系统 PiP 容器通常仍由 WindowManager / shell 持有 Java / Binder 侧句柄，并在目标进程按需桥接到 native。
 
 ### 自绘引擎
 
@@ -665,8 +667,9 @@ enum HwcCompositionType {
 
 ### BLAST 模式下的位置变化
 
-Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程侧的 Layer 路径中，由 `Layer::onBufferAvailable` → `latchBuffer` 消费 buffer 并参与合成。注意 `FramebufferSurface` 属于显示输出 / client target 路径（用于 HWC CLIENT 合成结果写回），不参与 App layer 的 buffer 消费。
-BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemConsumer` 持有 Consumer 端，`BBQBufferQueueProducer` 继承 `BufferQueueProducer`，通过异步 ProducerListener 回调同步。Buffer + Geometry 原子提交解决了帧内不一致问题。
+Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程侧的 Layer 路径中，由 `Layer::onBufferAvailable` → `latchBuffer` 锁定 App buffer 并参与合成。`FramebufferSurface` 不在这条 App layer 输入链路上；它是物理显示的 client target 路径。当部分 layer 被判为 CLIENT composition 时，SurfaceFlinger 先用 GLES 把这些 layer 合成到 framebuffer buffer，再由 `FramebufferSurface::advanceFrame()` acquire 这块 buffer，并调用 `HWComposer::setClientTarget()` 交给 HWC。它消费的是 SurfaceFlinger 的 GLES 合成结果，不是 App 通过 BufferQueue / Transaction 提交的 layer buffer。
+
+BLAST 模式（Android 11+）：`BLASTBufferItemConsumer` 在 App 进程从本地队列 acquire 已绘制 buffer，并把 buffer、acquire fence、几何属性封装进 `SurfaceControl.Transaction`；SurfaceFlinger 收到 Transaction 后仍在 BufferStateLayer 路径 latch 该 buffer，再交给 HWC 合成。这里说的“Consumer 移入 App 进程”指 BufferQueue 管理位置变化，不代表 App 取代 SurfaceFlinger 做最终 layer 消费。
 
 ### Perfetto / dumpsys 观测点
 
@@ -688,6 +691,10 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 | `frameworks/native/libs/gui/Surface.cpp` | ANativeWindow 实现，`dequeueBuffer`/`queueBuffer` |
 | `frameworks/native/libs/gui/BufferQueue.cpp` | `createBufferQueue()` 工厂方法 |
 | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` | App 进程内 BufferQueue（BLAST 模式） |
+| `frameworks/base/core/java/android/view/SurfaceControl.java` | Java `SurfaceControl` Parcelable 与 Transaction API |
+| `frameworks/native/libs/gui/include/gui/SurfaceControl.h` | Framework native `SurfaceControl::writeToParcel()` / `readFromParcel()` |
+| `frameworks/native/include/android/surface_control_jni.h` | API 34 `ASurfaceControl_fromJava()` JNI bridge |
+| `frameworks/native/services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp` | 显示输出 client target 路径，`advanceFrame()` → `HWComposer::setClientTarget()` |
 | `frameworks/native/libs/gui/GLConsumer.cpp` | SurfaceTexture 消费者端实现 |
 | `frameworks/native/libs/ui/GraphicBuffer.cpp` | Framework 层 buffer 对象封装（旧版本在 `libs/gui/`） |
 | `system/core/libcutils/include/cutils/native_handle.h` | `native_handle_t` / `buffer_handle_t` 定义 |
