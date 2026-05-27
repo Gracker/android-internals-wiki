@@ -39,13 +39,15 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
+  - type: case-study
+    path: "Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md"
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_result: fixed-lite
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
@@ -59,6 +61,7 @@ last_task9_autofix_at: "2026-05-27"
 last_task9_review_log: logs/deep-review/2026-05-27-20-deep-review.md
 task9_review_notes: "2026-05-27 Task9 20: auto-fixed。P1 heapprofd/smaps 运行边界已按 Perfetto + Android Developers profileable 文档补齐；剩余 P2 为案例证据不足，queue.json 仍保留 Task2B pending。"
 last_task6_at: "2026-05-27T20:05:00+08:00"
+last_task2b_at: "2026-05-27T20:50:00+08:00"
 ---
 
 # 内存优化案例集
@@ -91,11 +94,16 @@ last_task6_at: "2026-05-27T20:05:00+08:00"
 
 本节不重复展开 ART 堆结构、Bitmap 解码 API、heapprofd 配置和线上指标采集。相关机制详见 23.1、23.2、23.3、23.4、23.7 节；OOM 分类与稳定性口径详见 20.5 节。
 
-[需补充素材: 本节目前主要是排查模板和治理口径，缺少 1-2 个可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势。建议 Task 2B 补齐案例证据后再进入终审。]
-
 [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+[案例参考: Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md]
+
+一个公开的脱敏案例能说明案例集应该保留哪些证据。货拉拉司机端的内存治理复盘里，治理前 OOM 设备崩溃率峰值为 0.8‱，约占整体崩溃率 20%；线上内存触顶率为 0.64%，高频页面集中在首页和车贴拍摄页。治理后，OOM 设备崩溃率降到 0.01‱，线上内存触顶率降到 0.01%，核心页面和核心流程 OOM 崩溃率降到 0。
+
+这类案例不是只写“修了泄漏”。复盘里至少保留了四组证据：离线日志显示首页 OOM 与大量新单推送弹窗相关；线下每 2 秒触发一次弹窗、运行约 8 分钟后内存上涨约 50 MB；Heap Dump 里 `SolverVariable[]` / `ArrayRow` 等布局对象增长，引用链落到弹窗 View、`LifecycleRegistry.mObserverMap` 和 `MainActivity`；修复点是弹窗 `dismiss` 时移除 Lifecycle 监听。车贴拍摄页的另一条线索来自 OOM 快照，`byte[]` 占比超过 90%，对象主要由录制和图像处理类持有，后续通过对象复用减少频繁分配和 GC。
+
+这个案例的价值在于证据链完整：现象、指标、Heap Dump、引用链、根因、修复和线上结果都能对上。后面的 Bitmap、Native 和预算场景都按这条标准组织。
 
 ## Bitmap 内存治理实战：先拆成“大图”和“泄漏”两类
 
@@ -145,6 +153,8 @@ fun Bitmap.reportBitmapBudget(
 这段日志只适合开发包、灰度包或采样用户。线上全量记录会增加 I/O 和隐私风险，栈信息也要脱敏。进入治理阶段后，阈值不要写成一个全局常量，要按页面类型、设备内存档位和图片角色拆开：头像、缩略图、长图预览、高清查看器不应该共用同一条线。
 
 修复顺序建议按收益和风险排序：先修明显超出显示尺寸的大图，再修页面退出后仍存活的 Bitmap，后处理复用池策略。`inBitmap` 复用能降低反复分配，但复用池本身也会保留内存；没有命中率数据时扩大复用池，可能把峰值问题改成常驻占用问题。
+
+公开案例里的图片发送场景给出了一条 Bitmap 证据链：发送图片后 Native 内存出现突刺，dump 突刺时的内存信息后，增长点落到一个大 Bitmap；代码排查发现发送前有图片旋转逻辑，直接把原图加载成 Bitmap 再处理。Android 8.0 及以后 Bitmap 像素内存进入 Native Heap，这类问题在 `dumpsys meminfo` 里更容易表现为 Native Heap 或 PSS 峰值，Java Heap 单项曲线可能不明显。修复方向应从图像入口处理：旋转、压缩、上传前预览都先按目标尺寸解码，再进入后续图像处理。
 
 ## Native 内存泄漏排查案例：Java Heap 稳定时看 Native Heap 和匿名映射
 
@@ -206,6 +216,8 @@ adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/nativ
 | 内存类型 | Java Heap、Native Heap、Graphics、Code、Stack、PSS 分列 | 只看总量导致归因错误 |
 
 预算表要服务排查，不是做展示。每个场景至少保留三类数据：基线版本、当前版本、变更模块。这样才能把“这个版本 PSS 多了 40 MB”变成“图片缓存多 18 MB、直播 SDK Native Heap 多 12 MB、线程栈多 6 MB”。如果没有拆分口径，评审会上只能互相猜。
+
+把上面的公开案例放进预算表，需要拆成三条记录：首页弹窗对应常驻页面在重复业务事件下持续留存 View 和布局求解对象；车贴拍摄页对应录制和识别链路在高频回调下产生 `byte[]` 分配抖动；发送图片对应原图旋转前缺少尺寸预算。预算表要把这些问题拆到 `scene`、`trigger`、`memory_type`、`evidence` 和 `owner`，否则同一个版本里多个模块同时涨内存时，很难确认先修哪一条。
 
 [自动发现] 预算应接入发版门禁：灰度包采样记录关键场景的 P50 / P90 / P99，超过阈值时阻断发版或要求模块 owner 给出解释。阈值要保留机型维度，不能把高端机的结果拿去代表低端机。Android Studio Memory Profiler 适合单机定位；线上侧更适合采样 PSS、Java Heap、Native Heap、OOM 前兆和场景标签。完整监控设计先以 23.7 节为准，26.3 成稿后再恢复正式引用。
 

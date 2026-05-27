@@ -961,7 +961,13 @@
       "task6_result": "needs-rework",
       "reviewed_at": "2026-05-14T06:10:39+08:00",
       "log": "logs/review/2026-05-14-06-review.md",
-      "summary": "Task9 P1 1：heapprofd/smaps 工具运行条件缺失；Task6 L3/L4：案例集缺少真实/可脱敏案例证据，已写入 queue.json priority 90。"
+      "summary": "Task9 P1 1：heapprofd/smaps 工具运行条件缺失；Task6 L3/L4：案例集缺少真实/可脱敏案例证据，已写入 queue.json priority 90。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-27T20:50:00+08:00",
+      "task2b_fixed_by": "task2b-main",
+      "pipeline_stage": "task6_pending",
+      "task2b_note": "补充公开脱敏内存治理案例证据，覆盖治理前后指标、Heap Dump 引用链、byte[]/Bitmap 观察点、修复和预算防复发口径；回流 Task6。"
     },
     "22.9": {
       "p0": 0,
@@ -2114,8 +2120,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T20:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T20:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T20:05:00+08:00",
     "log": "logs/review/2026-05-27-20-review.md",
@@ -9217,5 +9223,16 @@
     "source": "frontmatter backlog fallback",
     "priority": 95,
     "summary": "1.18 Binder Freezer 与 1.20 App Archiving 回炉修复完成，回流 Task6。"
+  },
+  "task2b_last_rework": {
+    "fixed_at": "2026-05-27T20:50:00+08:00",
+    "sections": [
+      "23.8"
+    ],
+    "files": [
+      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    ],
+    "queue_items_completed": 1,
+    "result": "fixed"
   }
 }

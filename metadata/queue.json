@@ -465,9 +465,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-27T20:05:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-05-27-20-review.md",
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-05-27T20:20:00+08:00"
+    "updated_at": "2026-05-27T20:20:00+08:00",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-05-27T20:50:00+08:00",
+    "completion_reason": "补充公开脱敏内存治理案例证据：治理前后指标、Heap Dump/引用链、byte[] 与 Bitmap 观察点、修复和防复发口径。"
   }
 ]
