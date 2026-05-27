@@ -2,7 +2,7 @@
 title: 性能优化的术、道、器
 chapter: '15.1'
 section: '15.1'
-status: ready-for-review
+status: "finalized"
 drafted_date: '2026-04-04'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
@@ -35,27 +35,28 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 task6_state: revisiting
-task9_state: pending
+task9_state: "reviewed"
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-30
-last_task9_at: "2026-05-23T08:36:45+08:00"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T01:28:49+08:00"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
-task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0。"
+task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T22:07:00+08:00"
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-08-audit.md"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
 ---
 # 性能优化的术、道、器
 
