@@ -33,15 +33,17 @@ gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task6_state: reviewed
 last_task6_at: "2026-05-16T19:11:00+08:00"
-pipeline_stage: task2b_pending
-task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-16T14:20:00+08:00"
-task2b_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: "2026-05-28"
 ---
 
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
@@ -243,7 +245,7 @@ DataGrid 的价值在三类场景里最明显：
 
 PerfettoSQL 的稳定工作方式是先写出一个“窄表”：每一行对应一个可解释对象，例如一个 CUJ、一个 frame、一个 slice 或一个线程状态区间；每一列对应一个判断维度，例如是否 app missed、是否 SF missed、帧耗时、线程状态、blocked function、counter 值。窄表进入 DataGrid 后，排序、过滤、分组才有意义。
 
-下面这段查询用于把 Jank CUJ metric 初始化，并列出 weighted jank 最重的 CUJ。重点看 `weighted_missed_frames`、`missed_app_frames` 和 `missed_sf_frames` 三组字段：
+下面这段查询用于把 Jank CUJ metric 初始化，并列出 counter 口径下总 weighted jank 最重的 CUJ。重点看 `weighted_missed_frames_total`、`missed_app_frames` 和 `missed_sf_frames` 三组字段：
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
@@ -256,16 +258,16 @@ SELECT
   missed_frames,
   missed_app_frames,
   missed_sf_frames,
-  weighted_missed_frames,
-  weighted_missed_app_frames,
-  weighted_missed_sf_frames,
+  weighted_missed_frames * anim_duration_ms / 1000 AS weighted_missed_frames_total,
+  weighted_missed_app_frames * anim_duration_ms / 1000 AS weighted_missed_app_frames_total,
+  weighted_missed_sf_frames * anim_duration_ms / 1000 AS weighted_missed_sf_frames_total,
   frame_dur_max / 1e6 AS frame_dur_max_ms
 FROM android_jank_cuj_counter_metrics
-ORDER BY weighted_missed_frames DESC
+ORDER BY weighted_missed_frames_total DESC
 LIMIT 20;
 ```
 
-这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_frames` 回答“掉帧有多重”，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。[已验证: google/perfetto src/trace_processor/metrics/sql/android/android_jank_cuj.sql @ ab21398]
+这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_frames_total` 回答 counter 口径下“这段 CUJ 总共多重”，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。[已验证: google/perfetto src/trace_processor/metrics/sql/android/android_jank_cuj.sql @ main, 2026-05-28]
 
 ## Jank CUJ 标准库模块怎样组织线程
 
@@ -292,7 +294,7 @@ ORDER BY c.ts;
 
 ## weighted jank counter 解决什么问题
 
-只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedJank`、`weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成浮点值。
+只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedJank`、`weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成每秒 jank 口径的浮点值。若要和最终 metric 的 counter metrics 对齐，还要乘以 `anim_duration_ms / 1000` 转成该 CUJ 的总 weighted missed frames。
 
 这类 counter 有两个使用边界：
 
