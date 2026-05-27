@@ -518,6 +518,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-28T02:31:47+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-28T02:50:00+08:00",
+    "completed_by": "task2b-content-processing-rework-main",
+    "completion_reason": "重写 Native signal handler 示例，移除 handler 内 unwind/dlopen/dladdr/复杂写文件；补充 async-signal-safe 最小快照、altstack、re-raise 和旧 handler 链边界。"
   }
 ]
