@@ -2050,8 +2050,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T11:10:56+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T11:39:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T11:10:56+08:00",
     "reviewed_by": "openclaw-task6",
@@ -8794,12 +8794,14 @@
       "items_completed": 3
     }
   },
-  "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
+  "last_task2b_lite_at": "2026-05-27T11:39:00+08:00",
   "last_task2b_lite_sections": [
-    "18.10"
+    "2.9",
+    "22.4"
   ],
   "last_task2b_lite_files": [
-    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
   ],
   "task2b_verifier_history": [
     {
