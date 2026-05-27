@@ -1,4 +1,5 @@
 ---
+
 title: "Audio Pipeline 延迟与性能"
 chapter: "1.16"
 status: ready-for-review
@@ -18,7 +19,7 @@ last_task6_review_log: "logs/review/2026-05-27-15-review.md"
 last_task6_at: "2026-05-27T15:08:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: auto-fixed
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -34,24 +35,25 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T14:50:00+08:00"
-task9_reviewed_date: "2026-05-25"
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-25T00:20:00+08:00"
+last_task9_at: "2026-05-27T15:22:00+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。 | 2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Android 17 background audio hardening 的 visible Activity/非 SHORT_SERVICE FGS、target API 37 WIU、USAGE_ALARM exact alarm 豁免条件与 AAudio offloaded playback 前提混写，已写入 metadata/queue.json。"
+task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。 | 2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Android 17 background audio hardening 的 visible Activity/非 SHORT_SERVICE FGS、target API 37 WIU、USAGE_ALARM exact alarm 豁免条件与 AAudio offloaded playback 前提混写，已写入 metadata/queue.json。 | 2026-05-27 15:22 Task9 auto-fix：收窄 AAudio Power Saving Offloaded 与 DSP 解码表述，避免把省电 output path 写成无条件 DSP 解码；回到 Task6 复审。"
 review_type: "task6-writing-quality-review"
 last_task9_audit: "2026-05-24"
-last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。"
 task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
+last_task9_autofix_at: "2026-05-27"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -409,7 +411,7 @@ Audio Pipeline 与全书其他章节的关联点：
 
 - **§1.4 Binder IPC**：AudioFlinger 与 App 之间通过 Binder IPC 和共享内存传输音频数据。传统路径下 Binder 调用的开销是延迟的一部分。
 - **§5.1 CPU 调度**：FAST Mixer 使用 `SCHED_FIFO` 实时调度策略。音频线程的调度行为直接影响延迟稳定性。
-- **§5.6 功耗管理**：持续的音频播放会阻止 CPU 进入低功耗状态。AAudio Offload 模式通过将解码工作交给 DSP 来降低 CPU 功耗。
+- **§5.6 功耗管理**：持续的音频播放会阻止 CPU 进入低功耗状态。AAudio Power Saving Offloaded 模式请求省电型 offloaded output path，通过减少长时播放中的 framework data pipe 活跃时间和 CPU 唤醒来降低功耗。
 - **§16.5 Android 17 变更**：后台音频强化是该版本最重要的音频相关行为变更。
 - **§2.6 SurfaceFlinger**：SurfaceFlinger 和 AudioFlinger 是 Android 框架层中对称的两个核心服务，理解其中一个的架构有助于学习另一个。
 
