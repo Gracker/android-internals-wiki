@@ -262,7 +262,8 @@
     "1.1",
     "2.15",
     "10.5",
-    "11.1"
+    "11.1",
+    "18.10"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -358,25 +359,22 @@
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
     "src/part2-performance/ch11-power/01-power-model.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T08:07:00+08:00",
-    "log": "logs/review/2026-05-27-08-review.md",
+    "reviewed_at": "2026-05-27T11:10:56+08:00",
+    "log": "logs/review/2026-05-27-11-review.md",
     "sections": [
-      "17.2",
-      "5.9",
       "18.10"
     ],
     "files": [
-      "src/part4-system/ch17-oem/02-soc-differences.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "result": "mixed-needs-rework",
-    "l1_l2_fixes": 9,
-    "l3_l4_issues": 1,
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 7,
+    "l3_l4_issues": 0,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -2052,30 +2050,24 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T10:50:00+08:00",
-  "last_updated_by": "task2b-content-processing-rework-main",
+  "last_updated": "2026-05-27T11:10:56+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T10:05:00+08:00",
+    "reviewed_at": "2026-05-27T11:10:56+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.23",
-      "5.9",
       "18.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-10-review.md",
-    "mode": "首次 review / revisiting",
+    "log": "logs/review/2026-05-27-11-review.md",
+    "mode": "revisiting",
     "results": {
-      "2.23": "pass-light-edit",
-      "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 0,
-    "metadata_updates": 5,
+    "l1_l2_fixes": 7,
+    "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
@@ -2980,26 +2972,26 @@
     },
     "18.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_result": "needs-rework",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "queue_priority": 85,
       "last_task9_review_log": "logs/deep-review/2026-05-27-10-deep-review.md",
       "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
       "last_task2b_note": "Task2B main 修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 ASurfaceControl_fromJava 跨进程共享边界。",
-      "last_task6_at": "2026-05-27T10:05:00+08:00",
+      "last_task6_at": "2026-05-27T11:10:56+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
+      "last_task6_review_log": "logs/review/2026-05-27-11-review.md",
       "title": "SurfaceControl API 深入",
       "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
+      "task6_review_summary": "2026-05-27 11:10 Task6：pass-light-edit。复扫 Task2B 修正后的文稿；清理评价性表达与元叙述；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。",
       "section": "18.10",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
@@ -5899,40 +5891,30 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T10:05:00+08:00",
+  "last_task6_review": "2026-05-27T11:10:56+08:00",
   "last_task6_sections": [
-    "2.23",
-    "5.9",
     "18.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
-  "last_task6_at": "2026-05-27T10:05:00+08:00",
+  "last_task6_at": "2026-05-27T11:10:56+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T10:05:00+08:00",
+    "reviewed_at": "2026-05-27T11:10:56+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.23",
-      "5.9",
       "18.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-10-review.md",
-    "mode": "首次 review / revisiting",
+    "log": "logs/review/2026-05-27-11-review.md",
+    "mode": "revisiting",
     "results": {
-      "2.23": "pass-light-edit",
-      "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 0,
-    "metadata_updates": 5,
+    "l1_l2_fixes": 7,
+    "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
@@ -5945,11 +5927,9 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T10:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-10-review.md",
+  "task6_last_review_at": "2026-05-27T11:10:56+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-11-review.md",
   "task6_last_review_sections": [
-    "2.23",
-    "5.9",
     "18.10"
   ],
   "sections_status": {
@@ -7301,30 +7281,33 @@
       "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
     },
     "18.10": {
-      "section": "18.10",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task9_at": "2026-05-27T09:40:09+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "reviewed",
+      "queue_priority": 85,
+      "last_task9_review_log": "logs/deep-review/2026-05-27-10-deep-review.md",
+      "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
+      "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
+      "last_task2b_note": "Task2B main 修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 ASurfaceControl_fromJava 跨进程共享边界。",
+      "last_task6_at": "2026-05-27T11:10:56+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-27-11-review.md",
       "title": "SurfaceControl API 深入",
       "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task6_result": "pass-light-edit",
-      "task9_state": "pending",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T10:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
-      "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。",
-      "last_task9_at": "2026-05-27T09:40:09+08:00",
+      "task6_review_summary": "2026-05-27 11:10 Task6：pass-light-edit。复扫 Task2B 修正后的文稿；清理评价性表达与元叙述；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。",
+      "section": "18.10",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
-      "last_task9_review_log": "logs/deep-review/2026-05-27-10-deep-review.md",
-      "task9_result": "needs-rework",
-      "task2b_state": "fixed",
       "last_task9_autofix_at": "2026-05-27",
       "task9_review_summary": "AUTO-FIX：补 API 34 ASurfaceControl_fromJava JNI 桥接路径，回到 Task6 复审。",
-      "task2b_result": "fixed",
       "last_task2b_at": "2026-05-27T10:50:00+08:00",
-      "last_task2b_note": "Task2B main 修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 ASurfaceControl_fromJava 跨进程共享边界。",
       "last_task2b_source": "task9-deep-tech-review",
       "last_task2b_priority": 95
     }
@@ -7368,39 +7351,29 @@
   "last_task2b_run": "2026-05-27T10:50:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T10:05:00+08:00",
+    "reviewed_at": "2026-05-27T11:10:56+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.23",
-      "5.9",
       "18.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-      "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/review/2026-05-27-10-review.md",
-    "mode": "首次 review / revisiting",
+    "log": "logs/review/2026-05-27-11-review.md",
+    "mode": "revisiting",
     "results": {
-      "2.23": "pass-light-edit",
-      "5.9": "pass-light-edit",
       "18.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 0,
-    "metadata_updates": 5,
+    "l1_l2_fixes": 7,
+    "metadata_updates": 2,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "last_task2a_date": "2026-05-19",
@@ -7726,8 +7699,6 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "2.23",
-    "5.9",
     "18.10"
   ],
   "task2b_progress": [
@@ -7773,7 +7744,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-11-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8385,8 +8356,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T07:11:00+08:00",
-  "last_task6_review_section": "7.8",
+  "last_task6_review_at": "2026-05-27T11:10:56+08:00",
+  "last_task6_review_section": "18.10",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8518,8 +8489,6 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md",
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "section_24_19": {
@@ -8698,7 +8667,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T10:05:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T11:10:56+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
