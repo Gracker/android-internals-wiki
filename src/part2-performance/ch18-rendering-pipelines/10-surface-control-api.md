@@ -1,5 +1,4 @@
 ---
-
 title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
@@ -25,8 +24,8 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
@@ -39,15 +38,15 @@ last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。 | 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。 | 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。"
-last_task6_at: "2026-05-27T10:05:00+08:00"
-task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
+last_task6_at: "2026-05-27T11:10:56+08:00"
+task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 11:10 Task6：pass-light-edit。复扫 Task2B 修正后的文稿；清理评价性表达与元叙述；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-27-10-deep-review.md"
 review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-27-10-review.md"
+last_task6_review_log: "logs/review/2026-05-27-11-review.md"
 review_type: "task6-writing-quality-review"
 
 last_task9_autofix_at: "2026-05-27"
@@ -96,7 +95,7 @@ p2: 0
 
 `ASurfaceTransaction` 代表一组原子提交的 Layer 属性更新。应用可以一次性修改多个 `ASurfaceControl` 的 Buffer、位置、裁剪区域、Z-Order、可见性，再通过 `apply()` 把这组更新作为统一快照送给系统。[已验证: Android NDK surface_control 文档]
 
-原子提交的价值主要体现在三个地方：
+原子提交主要解决三个问题：
 
 - Buffer 更新和几何属性可以在同一个提交边界里生效，减少中间态被用户看到的机会
 - 多个 Layer 的变化可以作为一个快照出现，不必担心前一层已经移动、后一层还没跟上的错位
@@ -282,13 +281,13 @@ ASurfaceTransaction_setOnComplete(transaction, context,
     });
 ```
 
-`OnComplete` 里最有用的两类信息是 present 相关统计和 previous release fence。API 29-35 回收上一块 buffer 时，要从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取 per-layer release fence；API 36 起再按 `setBufferWithRelease()` 的专用 callback 接 buffer pool 更顺手。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 与 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+`OnComplete` 里主要看两类信息：present 相关统计和 previous release fence。API 29-35 回收上一块 buffer 时，要从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取 per-layer release fence；API 36 起再按 `setBufferWithRelease()` 的专用 callback 接 buffer pool 更顺手。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 与 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
 
 `ASurfaceTransactionStats_getAcquireTime()` 已被标记 deprecated。排查 acquire 时序时，更稳妥的做法是回到应用自己持有的 acquire fence，或回到 GPU / codec 生产端时间线看 signal 时刻。
 
 ## Layer 层级管理
 
-SurfaceControl 最有价值的能力之一，是把一组图层组织成一棵可动态调整的子树。应用可以在运行时增删子节点、改父子关系、改 Z 序，而不用回到 View 树里做整页重绘。
+SurfaceControl 的核心能力之一，是把一组图层组织成一棵可动态调整的子树。应用可以在运行时增删子节点、改父子关系、改 Z 序，而不用回到 View 树里做整页重绘。
 
 ### 典型 Layer 结构
 
@@ -318,7 +317,7 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 如果要把“Layer 变多了，SurfaceFlinger 变重了”这句话落到可复查证据，最小证据可以这样抓：
 
 1. `adb shell dumpsys SurfaceFlinger --list`，确认父子 Layer 数量和命名有没有明显增加
-2. Perfetto 里看 `setTransactionState`、`latchBuffer` 是否随着 child layer 增多而变密
+2. Perfetto 里看 `setTransactionState`、`latchBuffer` 是否在 child layer 增多后变密
 3. 在 `dumpsys SurfaceFlinger` 的 layer dump 里看 CompositionType 是否从 HWC DEVICE 退回 GPU CLIENT
 4. 再回到 App 侧线程，确认 RenderThread 的 `DrawFrame` 范围有没有真的缩小
 
@@ -467,7 +466,7 @@ Android 10-15 没有专用的 NDK release callback，但仍然有官方回收路
 
 WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍可能走 GL Functor 或其他宿主参与度更高的模式；只有 provider、feature 和场景条件满足时，Chromium 才会把网页合成结果放到独立的 child layer，再由宿主窗口在对应区域留出透明占位。[已验证: Chromium WebView 架构文档对多种渲染模式的划分；待验证: 具体 feature flag 和默认启用条件按 provider 版本而异]
 
-这个模式的价值，是把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染模式对 WebView 多模式的描述一致]
+这个模式把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染模式对 WebView 多模式的描述一致]
 
 排查时，重点看三处证据。第一，看 `dumpsys SurfaceFlinger`，宿主窗口下面是否多出一个属于 WebView 的 child layer。第二，看 Perfetto，是否能看到 Viz / Compositor 相关线程在提交独立 buffer，而不是所有网页绘制都堆在宿主 RenderThread 的 `DrawFrame` 里。第三，看 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer` 和 FrameTimeline，如果网页内容单独更新，宿主窗口的产帧节奏和网页 layer 的产帧节奏通常不会完全重合。
 
@@ -498,7 +497,7 @@ PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几�
 
 ### 自绘引擎
 
-浏览器内核、视频编辑器、游戏引擎或其他自绘系统，经常已经有自己的合成器和 buffer 池。对这类系统，SurfaceControl 的价值在于“把更新节奏不同的内容拆开交给系统合成”，例如把主画面、字幕、HUD、调试层分别做成少量独立 layer，再用一个 transaction 同时提交 buffer、位置和透明度。
+浏览器内核、视频编辑器、游戏引擎或其他自绘系统，经常已经有自己的合成器和 buffer 池。对这类系统，SurfaceControl 负责把更新节奏不同的内容拆开交给系统合成，例如把主画面、字幕、HUD、调试层分别做成少量独立 layer，再用一个 transaction 同时提交 buffer、位置和透明度。
 
 这种做法在两类场景里很有用。一类是主画面更新频率高，叠加层更新频率低，例如游戏画面 60fps，字幕和调试面板只在状态变化时更新；另一类是不同内容来源本来就在不同线程或不同进程里生产，例如视频轨和贴纸轨由不同模块生成。独立 layer 能减少“为了改一行字幕，整帧场景都重画一遍”的额外开销。
 
@@ -510,7 +509,7 @@ PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几�
 
 ## Trace 视角
 
-具体 slice 名称会随 Android 版本和 trace 配置变化。下面列的是常见观察点；抓不到完全同名的 slice 时，要回到线程、Layer 和 buffer 提交关系来判断。[待验证: 不同版本命名差异]
+具体 slice 名称会随 Android 版本和 trace 配置变化。这里列出常见观察点；抓不到完全同名的 slice 时，要回到线程、Layer 和 buffer 提交关系来判断。[待验证: 不同版本命名差异]
 
 ### 识别 SurfaceControl 路径
 
