@@ -31,14 +31,18 @@ sources:
     path: "frameworks/native/libs/ui/GraphicBufferMapper.cpp @ android-13.0.0_r1 / android-14.0.0_r1 / AOSP main"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md"
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
-review_round: 1
-task6_state: revisiting
+review_round: 2
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "pending"
-pipeline_stage: "task6_pending"
-task6_review_notes: "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审。"
+pipeline_stage: "task9_pending"
+task6_review_notes: "2026-05-27 Task6：回炉复审通过；完成 2 处 L2 表达小修；无 L3/L4 回炉项，送 Task9 技术复审。"
+last_task6_at: "2026-05-27T18:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-18-review.md"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
 task9_result: "needs-rework"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
@@ -99,7 +103,7 @@ App 冷启动的前半段由系统进程和 Zygote 完成，后半段才进入�
 
 ## Zygote preload 中有两个图形节点
 
-Android 16 的 `ZygoteInit.preload()` 里，图形相关节点位于资源预加载之后、共享库和字体预加载之前。下面这段代码只看顺序：`nativePreloadAppProcessHALs()` 先跑，`maybePreloadGraphicsDriver()` 后跑。
+Android 16 的 `ZygoteInit.preload()` 里，图形相关节点位于资源预加载之后、共享库和字体预加载之前。这段代码的重点是调用顺序：`nativePreloadAppProcessHALs()` 先执行，`maybePreloadGraphicsDriver()` 后执行。
 
 ```java
 bootTimingsTraceLog.traceBegin("PreloadResources");
@@ -133,7 +137,7 @@ void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(JNIEnv* env, jcl
 
 这个选择很克制。Zygote 进程是所有普通 App 进程的父进程，放进这里的 HAL 会影响全局启动、内存和兼容性；只有覆盖面足够大、加载行为足够稳定、适合 fork 前共享的 HAL，才适合进入这条路径。厂商私有 HAL、只服务特定硬件能力的 HAL、依赖应用上下文或权限状态的 HAL，都不该从单机 trace 推成平台规律。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp]
 
-`GraphicBufferMapper::preloadHal()` 的版本边界要分开写：Android 13 tag 只预加载 Gralloc 2/3/4 mapper；Android 14 tag 与 AOSP main 已包含 Gralloc 5。构造 `GraphicBufferMapper` 时，运行时会从当前分支支持的最高 mapper 版本往前尝试，选中设备可用的实现。
+`GraphicBufferMapper::preloadHal()` 的版本边界分为两段：Android 13 tag 只预加载 Gralloc 2/3/4 mapper；Android 14 tag 与 AOSP main 已包含 Gralloc 5。构造 `GraphicBufferMapper` 时，运行时会从当前分支支持的最高 mapper 版本往前尝试，选中设备可用的实现。
 
 ```cpp
 void GraphicBufferMapper::preloadHal() {
