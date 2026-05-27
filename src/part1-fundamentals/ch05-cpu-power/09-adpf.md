@@ -1,6 +1,5 @@
 ---
-
-status: ready-for-review
+status: "ready-for-review"
 title: ADPF 自适应性能框架
 chapter: '5.9'
 section: '5.9'
@@ -44,33 +43,33 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-27T08:50:00+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: needs-rework
 last_task9_at: "2026-05-21T04:36:55+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
-last_task6_at: "2026-05-27T08:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-08-review.md"
+last_task6_at: "2026-05-27T09:16:48+08:00"
+last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。"
+task6_review_notes: "2026-05-27 08:50：已删除原始调研块、素材摘要和过程性说明；API 版本边界、NDK workload hint、协程线程迁移内容已并入正文，等待复审。 | 2026-05-27 09:16 Task6：pass-light-edit。补齐 outline 标记；复核 Task2B 已清理编辑过程痕迹；L1/L2 通过；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
 last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-
 ---
 
 # 5.9 ADPF 自适应性能框架
 
+<!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点(必须覆盖)
@@ -87,6 +86,7 @@ review_type: task6-writing-quality-review
 - 🔸 Unity / Unreal Engine 的 ADPF 集成
 - 🔸 OEM 对 ADPF 的定制差异
 - 🔸 Kotlin 协程线程迁移与 HintSession TID 绑定边界
+<!-- outline-end -->
 
 ## 为什么需要 ADPF
 

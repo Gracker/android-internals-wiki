@@ -1,5 +1,4 @@
 ---
-
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 title: "SoC 平台差异"
 chapter: "17.2"
@@ -43,19 +42,18 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-05-27"
 status: "ready-for-review"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-27T08:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-08-review.md"
+last_task6_at: "2026-05-27T09:16:48+08:00"
+last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
-task9_state: reviewed
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
-
+task9_state: pending
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
 ---
 # SoC 平台差异
 
@@ -140,7 +138,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 ### 微架构差异对 IPC 的影响
 
-同样是 ARMv9 指令集,不同核心的微架构设计会导致 IPC(Instructions Per Cycle)有显著差异。这直接影响在 Perfetto 中分析 CPU 利用率时的判断。
+同样是 ARMv9 指令集,不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响在 Perfetto 中分析 CPU 利用率时的判断。
 
 高通的 Oryon 核心是自研微架构,开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计(每个核心独占 L2),但缓存拓扑的具体参数(容量、延迟周期)尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认,容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是:大容量 L1 带来更好的命中率,私有 L2 消除了多核共享缓存带来的竞争延迟,但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中,Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰,但整体吞吐量很好。
 
@@ -152,7 +150,7 @@ Google Tensor G4 使用 Arm Cortex-X4/A720/A520 公版核心,微架构与同代 
 
 ### 厂商调度策略差异
 
-硬件只是基础,直接影响分析结论的是各家的软件调度策略。同样是基于 EAS(Energy Aware Scheduler)的 Android 内核,不同厂商的参数调优会导致 Perfetto 中看到完全不同的调度行为。
+硬件只是基础,直接影响分析结论的是各家的软件调度策略。同样是基于 EAS（Energy Aware Scheduler）的 Android 内核,不同厂商的参数调优会导致 Perfetto 中看到完全不同的调度行为。
 
 高通的调度策略通常偏向性能:在检测到重负载时会快速将任务迁移到大核并拉高频率。高通还有一套独有的 Perflock 机制(封装在 `libqti-perfd-client.so` 中),允许系统服务或应用直接请求锁定 CPU 频率。例如打开相机时,系统会通过 Perflock 将所有核心频率拉到最高,同时关闭 Power Collapse:
 
@@ -231,7 +229,7 @@ GPU 是 Android 渲染管线的核心执行单元。§2.10 已经分析过 GPU �
 
 ### 四大 GPU 架构概览
 
-高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR(Tile-Based Rendering)架构。高通称其渲染方式为 FlexRender:它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
+高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR（Tile-Based Rendering）架构。高通称其渲染方式为 FlexRender:它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
 
 ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 曾是 ARM 旗舰 GPU 分支(支持硬件光追),Mali 覆盖高端和中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科旗舰芯片的 GPU 命名已随代际变化:Dimensity 9400 是 Immortalis-G925,Dimensity 9500 是 Arm Mali-G1 Ultra MC12。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 Cache 大小),但驱动优化的成熟度有时不如 Adreno。
 
@@ -259,7 +257,7 @@ Xclipse GPU 的 Perfetto 支持相对有限。由于 AMD 的 RDNA 架构在移�
 
 SoC 上除了 CPU 和 GPU,还有几个专用处理器对实际性能有重要影响。它们通常不直接出现在 Perfetto 的常规 Track 中,但它们的工作会间接影响 CPU 负载和功耗。
 
-### NPU(神经网络处理单元)
+### NPU（神经网络处理单元）
 
 NPU 专门用于加速 AI 推理任务。高通的 Hexagon NPU、联发科的 APU、三星的 NPU 和 Google 的 TPU 在架构和性能上有明显差异。
 
@@ -267,11 +265,11 @@ NPU 专门用于加速 AI 推理任务。高通的 Hexagon NPU、联发科的 AP
 
 Google 的 TPU 是 Tensor 芯片的核心卖点。TPU 专门针对 Google 的 AI 服务(如语音识别、实时翻译、计算摄影)做了深度优化,在 Pixel 设备上这些功能的响应速度和精度通常优于其他平台。但 TPU 在通用 AI 工作负载上不一定比高通或联发科的 NPU 更快。
 
-### DSP(数字信号处理器)
+### DSP（数字信号处理器）
 
 高通的 Hexagon DSP 是其 SoC 中非常重要的一个组件,除了 AI 推理外还负责音频处理、传感器融合、相机 ISP 的部分计算等工作。DSP 的工作不会直接出现在 Perfetto 的 CPU Track 上,但它会占用内存带宽和功耗。在分析高通设备的功耗异常时,有时候问题根源不在 CPU 或 GPU,而在于 DSP 在后台持续工作(比如始终监听的语音助手)。
 
-### ISP(图像信号处理器)
+### ISP（图像信号处理器）
 
 ISP 负责相机图像处理,是影响相机启动速度和拍照延迟的关键组件。各家的 ISP 都在持续加强 AI 摄影能力(夜景增强、人像虚化、HDR+ 等),这些计算量的增加直接影响相机 App 的启动速度和拍照响应,这也正是 §8.4 中讲响应速度时需要考虑的跨平台因素。
 
@@ -325,7 +323,7 @@ ARM Streamline 是面向所有使用 ARM CPU 和 GPU(Mali/Immortalis)的设备�
 
 Streamline 的核心优势在于它对 ARM Mali GPU 的深度分析能力。它可以展示 Mali GPU 的着色器核心利用率、Pipeline Stall 原因分解、L2 缓存命中率等详细信息。如果在 Perfetto 中发现 Mali GPU 上有渲染耗时异常,但无法确定瓶颈位置,Streamline 可以帮助精确定位。
 
-Streamline 还支持采集 ARM CPU 的 PMU(Performance Monitoring Unit)事件,包括缓存未命中(Cache Miss)、分支预测失败(Branch Mispredict)、TLB Miss 等微架构级指标。这些指标在 Perfetto 中需要额外配置 `linux.ftrace` 的 `pmu` 事件才能部分获取,而 Streamline 可以直接采集。
+Streamline 还支持采集 ARM CPU 的 PMU（Performance Monitoring Unit）事件,包括缓存未命中(Cache Miss)、分支预测失败(Branch Mispredict)、TLB Miss 等微架构级指标。这些指标在 Perfetto 中需要额外配置 `linux.ftrace` 的 `pmu` 事件才能部分获取,而 Streamline 可以直接采集。
 
 [已验证: 官方文档, developer.arm.com/Tools%20and%20Software/ARM%20Streamline%20Performance%20Analyzer]
 
