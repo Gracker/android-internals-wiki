@@ -39,22 +39,23 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed-lite
-task2b_state: fixed
+task2b_state: pending
 last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-27"
 task6_result: needs-rework
-last_task6_review_log: "logs/review/2026-05-14-06-review.md"
+last_task6_review_log: logs/review/2026-05-27-20-review.md
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-14T06:32:15+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
 task9_review_notes: "2026-05-14 Task9 06: needs-rework。P1 1：heapprofd / smaps 运行条件缺少 user/userdebug、profileable/debuggable 与权限边界；P2 1：26.3 仍为 draft 引用。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
+last_task6_at: "2026-05-27T20:05:00+08:00"
 ---
 
 # 内存优化案例集
@@ -162,7 +163,9 @@ Native 内存泄漏常见于音视频 SDK、地图 SDK、图片库、加密库�
 
 Native 泄漏修复不建议一开始就使用 Hook。参考书里把 Native Hook、PLT Hook、Inline Hook 放在排查方案中，适合做专项工具或内部平台；日常业务排查优先用系统工具。Hook 会引入兼容性和稳定性成本，尤其是线上环境。
 
-下面这组命令用于把“哪类内存在涨”先确认下来。重点看趋势，不用单次快照下结论。
+[需确认: heapprofd / smaps 在 user build、userdebug/eng、profileable/debuggable、root/run-as 条件下的可用边界。Task9 2026-05-14 已标 P1，Task2B Lite 本轮只处理了交叉引用，尚未补齐工具运行条件。]
+
+这组命令用于把“哪类内存在涨”先确认下来。重点看趋势，不用单次快照下结论。
 
 ```bash
 # 记录进程级分类，适合对比每轮操作后的 Native Heap / Graphics / PSS

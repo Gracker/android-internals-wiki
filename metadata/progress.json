@@ -368,21 +368,17 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T19:05:00+08:00",
-    "log": "logs/review/2026-05-27-19-review.md",
+    "reviewed_at": "2026-05-27T20:05:00+08:00",
+    "log": "logs/review/2026-05-27-20-review.md",
     "sections": [
-      "1.18",
-      "1.19",
-      "1.20"
+      "23.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
     ],
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 17,
-    "l3_l4_issues": 0,
+    "result": "needs-rework",
+    "l1_l2_fixes": 1,
+    "l3_l4_issues": 2,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -2118,17 +2114,17 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T19:05:00+08:00",
+  "last_updated": "2026-05-27T20:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T18:06:00+08:00",
-    "log": "logs/review/2026-05-27-18-review.md",
+    "reviewed_at": "2026-05-27T20:05:00+08:00",
+    "log": "logs/review/2026-05-27-20-review.md",
     "sections": [
-      "1.19"
+      "23.8"
     ],
-    "result": "pass-light-edit",
+    "result": "needs-rework",
     "small_fixes": 2,
-    "rework_items": 0
+    "rework_items": 2
   },
   "task9_last_review": "2026-05-26",
   "ready_to_publish": 186,
@@ -3303,8 +3299,8 @@
       "task2b_state": "pending",
       "task9_state": "pending",
       "queue_priority": 90,
-      "last_task6_at": "2026-05-14T06:10:39+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-06-review.md",
+      "last_task6_at": "2026-05-27T20:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-20-review.md",
       "file": "src/part5-app/ch23-memory-practice/08-memory-case-studies.md",
       "title": "内存优化案例集"
     },
@@ -6053,28 +6049,22 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T19:05:00+08:00",
+  "last_task6_review": "2026-05-27T20:05:00+08:00",
   "last_task6_sections": [
-    "1.18",
-    "1.19",
-    "1.20"
+    "23.8"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
-  "last_task6_at": "2026-05-27T19:05:00+08:00",
+  "last_task6_at": "2026-05-27T20:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T19:05:00+08:00",
-    "log": "logs/review/2026-05-27-19-review.md",
+    "reviewed_at": "2026-05-27T20:05:00+08:00",
+    "log": "logs/review/2026-05-27-20-review.md",
     "sections": [
-      "1.18",
-      "1.19",
-      "1.20"
+      "23.8"
     ],
-    "small_fixes": 17,
-    "rework_items": 0,
+    "small_fixes": 2,
+    "rework_items": 2,
     "auto_promoted": []
   },
   "last_task9_reviewed_files": [
@@ -6085,12 +6075,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T19:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-19-review.md",
+  "task6_last_review_at": "2026-05-27T20:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-20-review.md",
   "task6_last_review_sections": [
-    "1.18",
-    "1.19",
-    "1.20"
+    "23.8"
   ],
   "sections_status": {
     "22.11": {
@@ -7592,40 +7580,30 @@
   "last_task2b_run": "2026-05-27T16:50:00+08:00",
   "task2b_sections_fixed": 3,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T19:05:00+08:00",
+    "reviewed_at": "2026-05-27T20:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "1.18",
-      "1.19",
-      "1.20"
+      "23.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-      "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
     ],
-    "log": "logs/review/2026-05-27-19-review.md",
+    "log": "logs/review/2026-05-27-20-review.md",
     "mode": "revisiting",
     "results": {
-      "1.18": "pass-light-edit",
-      "1.19": "pass-light-edit",
-      "1.20": "pass-light-edit"
+      "23.8": "needs-rework"
     },
-    "l1_l2_fixes": 17,
-    "metadata_updates": 3,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
+    "l1_l2_fixes": 1,
+    "metadata_updates": 1,
+    "new_task6_rework_items": 2,
+    "queue_updates": 1,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -7990,9 +7968,7 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "1.18",
-    "1.19",
-    "1.20"
+    "23.8"
   ],
   "task2b_progress": [
     {
@@ -8061,7 +8037,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-20-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8705,8 +8681,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T19:05:00+08:00",
-  "last_task6_review_section": "18.10",
+  "last_task6_review_at": "2026-05-27T20:05:00+08:00",
+  "last_task6_review_section": "23.8",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -8806,11 +8782,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "1.18",
-    "1.19",
-    "1.20"
+    "23.8"
   ],
-  "last_task6_result": "pass-light-edit",
+  "last_task6_result": "needs-rework",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -8838,9 +8812,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -9018,7 +8990,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T19:05:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T20:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
