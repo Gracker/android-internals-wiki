@@ -2,7 +2,7 @@
 title: "Android 网络安全与 TLS 性能优化"
 chapter: "12.4"
 section: "12.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -24,14 +24,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+pipeline_stage: task6_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 last_task6_at: "2026-05-19T19:09:00+08:00"
@@ -42,12 +42,12 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-05-20T19:20:00+08:00"
-last_task2b_at: "2026-05-07T03:43:33+08:00"
+last_task2b_at: "2026-05-28T06:50:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
@@ -83,9 +83,9 @@ TLS 1.3 还定义了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端�
 
 OkHttp 可以通过平台 TLS provider 使用 TLS 1.3，但 OkHttp 5 的公开 `protocols` 配置面仍以 `http/1.1`、`h2`、`h2_prior_knowledge` 为主，没有稳定公开的 0-RTT early data 开关。需要 QUIC / HTTP/3 / 0-RTT 时，优先评估 Cronet 或平台 `HttpEngine`。
 
-**0-RTT 的安全状态在 Android 15 后发生了变化**。传统上，0-RTT early data 不具备前向安全性且可被重放，因此只适用于幂等请求（GET / HEAD），不能用于有副作用的操作（POST /transfer）。Android 15（API 35）起，Conscrypt + `HttpEngine` 实现了自动化 TLS 1.3 Anti-replay 机制：利用单次性 Ticket 校验和 Ticket Age 限制，在协议层阻断了 0-RTT 数据包的重放可能。这使得 0-RTT 从"生产环境慎用"变成了"受控的安全加速器"。
+0-RTT early data 不具备前向安全性且可被重放，因此只适用于幂等请求（GET / HEAD），不能用于有副作用的操作（POST /transfer）。Android 10 的 TLS 1.3 文档明确说明平台 TLS 1.3 不支持 0-RTT；后续可用性主要取决于网络栈是否公开 QUIC / HTTP/3 / TLS 0-RTT 能力。`HttpEngine.Builder.addQuicHint()` 只说明开启 HTTP cache 后可辅助 QUIC 0-RTT connection establishment；Cronet `QuicOptions.Builder.enableTlsZeroRtt()` 是 QUIC/TLS 0-RTT 开关。当前公开文档不能推出“Android 15 Conscrypt 自动阻断 0-RTT 重放”。
 
-工程建议：GET 类请求和首屏元数据请求，如果通过 `HttpEngine` / Cronet 发起，可以显式开启 0-RTT 获取连接延迟收益；有副作用的写操作（POST / PUT / DELETE）仍然不应走 0-RTT，即使平台提供了 Anti-replay，服务端侧的幂等保证也需要额外设计。[已验证: Android 15 API 35 Conscrypt Anti-replay; developer.android.com/reference/android/net/HttpEngine]
+工程建议：GET 类请求和首屏元数据请求，只有在网络库明确支持 QUIC / TLS 0-RTT、服务端实现 anti-replay 并完成灰度验证后，才把 0-RTT 纳入连接延迟优化；有副作用的写操作（POST / PUT / DELETE）不应走 0-RTT。Android 侧只把 `HttpEngine` / Cronet 视为能力入口，不能把平台 TLS provider 当作自动安全兜底。[已验证: Android 10 TLS 1.3 文档；developer.android.com/reference/android/net/http/HttpEngine.Builder；Cronet QuicOptions API]
 
 ### Session Resumption：被低估的优化手段
 
@@ -121,7 +121,7 @@ Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供 `opportunistic`、`enabled`、`disabled` 等模式。ECH 是否真正生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。协商失败时，连接会回退到普通 TLS 握手。
+Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。当前官方文档公开示例使用 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled；不要把旧草案或二手资料里的 `opportunistic` 写成可用枚举。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。协商失败时，连接会回退到普通 TLS 握手。
 
 ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
 
@@ -135,7 +135,7 @@ ECH 的额外开销来自两部分：
 
 在性能排查里，先拆 DNS HTTPS/SVCB 获取、TLS 握手、连接复用和证书验证四段，再决定是否需要单独压测 HPKE suite。
 
-**Android 17 Advanced Protection Mode 的强制 ECH**：Android 17 引入了 Advanced Protection Mode。在此模式下，系统无视 App 的 Network Security Config 偏好，强制要求所有具备条件的域名走 ECH + DoH3 路径。如果后端 DNS 记录未适配 ECH（缺少 DNS Type 65 / HTTPS 记录），连接可能失败。开发者需要确保服务端已配置 ECH 支持后再启用此模式。
+Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 2G/WEP 限制、sideloading 防护、forensic logging、未知号码来电和消息链接防护等。公开文档没有给出“无视 App Network Security Config、强制所有可用域名走 ECH + DoH3”的依据。把 APM 与 ECH 放在一起排查时，只能确认设备是否处于 APM 状态，不能把它当作 ECH 失败或 DoH3 路径切换的直接原因。
 
 **ECH 的 CPU 开销**：ECH 握手涉及 HPKE 两阶段非对称加解密（X25519 KEM + AES-128-GCM / ChaCha20-Poly1305），在低端机上握手 CPU 占用相对普通 TLS 1.3 约上升 10%-15%。这一开销集中在握手阶段，连接建立后不再出现。对高频短连接场景（如消息轮询、推送心跳），需要把 ECH 开销计入建连成本基线。[待验证: ECH HPKE 具体耗时需要同设备 A/B 对照，不同 SoC 和 TLS provider 实现差异较大]
 
@@ -275,7 +275,7 @@ OkHttpClient client = new OkHttpClient.Builder()
 
 ### DNS-over-HTTPS / DNS-over-TLS 的权衡
 
-Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支持了 DoH。加密 DNS 查询增加了 DNS 解析延迟（首次），但可以防止 DNS 劫持和 SNI 泄露。
+Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支持了 DoH。加密 DNS 查询增加了 DNS 解析延迟（首次），但它保护的是 DNS 查询通道，只能降低 DNS 劫持和明文查询泄露风险。TLS SNI 隐私需要 ECH；单独使用 DoH/DoT 不能隐藏 ClientHello 里的 SNI。
 
 从性能角度：
 

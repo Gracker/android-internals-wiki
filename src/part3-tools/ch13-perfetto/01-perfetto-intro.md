@@ -39,13 +39,13 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
-task2b_rework_date: "2026-05-25T07:27:11+08:00"
+task2b_rework_date: "2026-05-28T06:50:00+08:00"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。
@@ -54,7 +54,7 @@ review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix:
   pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review:
   pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 last_task9_at: "2026-05-25T08:32:00+08:00"
-task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Trace Processor metric 示例包含不可用的 android_jank；logcat in trace 的 userdebug 边界缺失。"
+task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Trace Processor metric 示例包含不可用的 android_jank；logcat in trace 的 userdebug 边界缺失。2026-05-28 Task2B fallback 已修复 metric 名、android.log userdebug 边界与 Android 10/11 normal mode 配置输入边界，回流 Task6/Task9。"
 last_task6_at: "2026-05-25T08:15:00+08:00"
 last_task6_audit: '2026-05-24'
 task6_reviewed_date: "2026-05-25"
@@ -221,7 +221,7 @@ Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件�
 
 Trace Processor 的分析能力分为三层，从高层到底层依次是：
 
-1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank` 可以直接输出 CPU、启动、jank 等维度的结构化指标报告。不需要手写 SQL，适合快速拿到结论。
+1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_frame_timeline_metric` 可以直接输出 CPU、启动、Frame Timeline 等维度的结构化指标报告。Perfetto 当前可核到的 Android 指标包括 `android_frame_timeline_metric`、`android_hwui_metric`、`android_jank_cuj` 等；不要把 `android_jank` 当成内置 metric 名使用。
 2. **Standard Library + Trace Summary v2**：PerfettoSQL Standard Library 封装了常用分析逻辑为可复用的 MODULE（如 `linux.memory.process`）。Trace Summary v2 通过 `referenced_modules` 字段声明依赖的官方模块，避免重复实现同一套分析逻辑。优先复用官方模块；只有缺口指标才写自定义 PerfettoSQL。
 3. **原始 SQL 查询**：直接对 `slice`、`sched`、`counter` 等底层表写 SQL，灵活度最高，但需要熟悉表结构。
 
@@ -313,7 +313,7 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 - **Native heap sampling**：看“谁在分配 native 内存”，常见入口是 heapprofd。
 - **Java allocation sampling**：看“谁在频繁分配 Java 对象”，通常也走 heapprofd，但配置里要加 `heaps: "com.android.art"`。
 - **Java heap dump / retained graph**：看“谁把对象留在堆里”，走 `android.java_hprof`。
-- **logcat in trace**：把日志写进同一时间窗里，方便和 Binder、调度、渲染事件一起读。
+- **logcat in trace**：把日志写进同一时间窗里，方便和 Binder、调度、渲染事件一起读；官方 `android.log` data source 标注为 Android userdebug builds 支持，普通 user build 不应默认视为可用。
 - **power / rail counters**：能不能抓到，要看设备和 HAL 是否实现了对应能力。
 
 只知道名字还不够，排查效率取决于“这台设备能不能用”。先把常见能力的版本和门槛摆清楚：
@@ -324,7 +324,7 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 | --- | --- | --- | --- |
 | ftrace + atrace（调度、Binder、gfx、view、input 等） | Android 9+ 有 Perfetto services；Android 9/10 非 Pixel 设备常见要手动 enable | 常规系统追踪一般不要求 App manifest gate | CPU 调度、Binder、渲染、输入、系统服务时序 |
 | FrameTimeline | Android 12+ | 无额外 App gate | 帧级 jank 分类、`Expected/Actual Timeline` |
-| logcat in trace | Android 10+ 常用 | 无额外 App gate | 把日志与同一时间窗里的系统事件放在一起看 |
+| logcat in trace | Android 10+ 常用；官方 `android.log` data source 标注为 userdebug builds 支持 | 普通 user build 不应默认可用，先以设备实测能力为准 | 把日志与同一时间窗里的系统事件放在一起看 |
 | Native heap sampling | Android 10+ | 目标 App 通常要 `profileable` 或 `debuggable`；`userdebug` / root 可以扩大到更多系统进程 | native alloc / free 调用栈 |
 | Java allocation sampling | Android 12+ | 和上面一样，目标 App 需要 `profileable` 或 `debuggable` | Java 对象分配热点 |
 | Java heap dump / retained graph | Android 11+ | 目标 App 通常要 `profileable` 或 `debuggable` | retained graph、泄漏保留关系 |
@@ -455,10 +455,11 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | --- | --- | --- | --- | --- | --- |
 | Android 9 (P) | 服务已进 system image | binary protobuf（仅 stdin） | 不支持 `--txt`，无配置文件路径问题 | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 不是“只能用 Systrace”，只是文本 `--txt` 还不可用 |
 | Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf + `--txt` | 非 root 设备 SELinux 限制配置文件读取，需用 stdin 传入 | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
-| Android 11+ (R+) | 大多数设备默认启用 | binary protobuf + `--txt` | 同 Android 10，非 root 设备建议 stdin | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
+| Android 11 (R) | 大多数设备默认启用 | binary protobuf + `--txt` | 同 Android 10，非 root 设备建议 stdin | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
 | Android 12 (S) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用，SELinux 已放行 | FrameTimeline 成为帧级 jank 分类的主入口 | Perfetto 组件（`traced`/`traced_probes`）仍为平台二进制部署；部分设备通过 Mainline 机制提供更新，具体包名和覆盖范围因设备和 build 而异 [待验证] |
-| Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从"手动 adb 抓取"向"App 发起、系统执行"的触发式 profiling 演进 |
-| Android 16+ | 默认启用 | binary protobuf + `--txt` | System Triggered Profiling：ANR 等场景自动捕获背景 trace | Profiling 能力从"主动采集"扩展到"被动捕获" |
+| Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用 | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从手动 adb 抓取转向 App 发起、系统执行的触发式 profiling |
+| Android 16 (API 36) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用 | System Triggered Profiling 覆盖 ANR 等场景的背景 trace 捕获 | Profiling 能力从主动采集扩展到被动捕获 |
+| Android 17 (API 37, Beta) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用 | system-triggered profiling 继续扩展 anomaly / OOM / excessive CPU 触发方向 | 版本表按能力来源拆分，避免把 15-17 的 profiling 变化混成一行 |
 
 注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不在独立 APEX 包内。Android 12+ 部分设备将 Perfetto 组件通过 Mainline 机制提供更新，但 AOSP `external/perfetto/Android.bp` 中并未定义 `com.android.os.perfetto` APEX 模块——实际 Mainline 更新的载体和覆盖范围因设备 build 而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/src/traced/traced.rc, AOSP android-16.0.0_r1]
 
