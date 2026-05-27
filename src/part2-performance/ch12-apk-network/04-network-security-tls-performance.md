@@ -24,13 +24,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: reviewed
-pipeline_stage: task9_pending
+task6_state: revisiting
+pipeline_stage: task6_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
@@ -39,19 +39,26 @@ last_task6_audit: "2026-05-19"
 task6_result: pass-light-edit
 review_round: 2
 task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-05-20T19:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T07:24:44+08:00"
 last_task2b_at: "2026-05-28T06:50:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-05-28-07-review.md"
 task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 1
 task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。"
+last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-28"
+last_task9_autofix_at: "2026-05-28"
+p0: 0
+p1: 1
+p2: 0
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
@@ -125,7 +132,7 @@ Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。当前官方文档公开示例使用 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled；不要把旧草案或二手资料里的 `opportunistic` 写成可用枚举。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。协商失败时，连接会回退到普通 TLS 握手。
+Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。当前官方文档公开示例使用 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled；不要把旧草案或二手资料里的 `opportunistic` 写成可用枚举。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。不要把“ECH 协商失败”笼统写成普通 TLS 回退，失败处理要以具体网络库和服务端配置为准。
 
 ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
 

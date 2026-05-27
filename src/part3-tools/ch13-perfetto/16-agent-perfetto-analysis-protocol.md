@@ -17,16 +17,16 @@ pipeline_stage: task6_pending
 task2b_result: fixed-lite
 task6_state: revisiting
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-17"
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-17T09:06:00+08:00"
-task9_state: pending
-task9_result: needs-rework
+last_task6_at: "2026-05-28T06:11:00+08:00"
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
-last_task9_at: "2026-05-17T08:23:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-17"
+last_task9_at: "2026-05-28T07:24:44+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-28"
 sources:
   - type: official
     path: "https://github.com/android/skills/tree/main/profilers"
@@ -42,6 +42,20 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
   - type: material
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_at: "2026-05-28T06:11:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-06-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复核。"
+last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-28"
+last_task9_autofix_at: "2026-05-28"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。"
+p0: 1
+p1: 0
+p2: 0
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -157,7 +171,7 @@ Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和�
 |---|---|---|
 | 固定入口 | 使用项目根目录的 `./trace_processor`，必要时下载官方 wrapper | 查询只停在生成文本，或工具路径不稳定 |
 | schema 检索 | 用 Perfetto stdlib / SQL table 文档确认表名、列名、模块名 | 编造字段、混用旧版本字段 |
-| stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched`、`linux.cpu.frequency` 等具体模块；`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界 |
+| stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched.with_context`、`linux.cpu.utilization.process` 等具体模块；CPU 频率明细先用 prelude 的 `cpu_freq` 表或 CPU utilization 模块产出的聚合视图，`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界，或把原始表名误写成 stdlib 模块 |
 | `utid/upid` | 线程和进程 join 使用 trace 内唯一 ID | `tid/pid` 复用导致错配 |
 | `dur = -1` | 统计时用 `trace_end() - ts` 替代未闭合 duration | 总耗时和 overlap 计算错误 |
 | overlap 过滤 | 时间窗查询使用区间相交条件 | 漏掉跨越窗口边界的长 slice |
