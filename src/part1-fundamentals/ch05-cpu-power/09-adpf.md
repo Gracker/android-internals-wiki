@@ -1,4 +1,5 @@
 ---
+
 status: "ready-for-review"
 title: ADPF 自适应性能框架
 chapter: '5.9'
@@ -43,20 +44,20 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: '2026-05-27T08:50:00+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task9_result: needs-rework
-last_task9_at: "2026-05-21T04:36:55+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-21"
-last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
+task9_result: "auto-fixed"
+last_task9_at: "2026-05-27T09:40:09+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-27"
+last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
 last_task6_at: "2026-05-27T09:16:48+08:00"
 last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 task6_reviewed_date: "2026-05-27"
@@ -65,8 +66,12 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
+task9_review_notes: "2026-05-27 09:40 Task9 auto-fix：Unity ADPF 支持版本从 2021.2 修正为 Unity 2021.3+ / Adaptive Performance 5.0+ Android provider；回到 Task6 复审。"
+last_task9_autofix_at: "2026-05-27"
+p0: 0
+p1: 0
+p2: 0
 ---
-
 # 5.9 ADPF 自适应性能框架
 
 <!-- outline-start -->
@@ -350,7 +355,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 ### Unity/Unreal Engine 的 ADPF 集成
 
-主流游戏引擎已经开始内置 ADPF 支持。Unity 从 2021.2 版本开始提供 ADPF 集成插件，Unreal Engine 通过 Android Platform Extensions 支持相关 API。
+主流游戏引擎已经开始提供 ADPF 接入。Unity 侧官方支持范围是 Unity 2021.3+，并要求使用 Adaptive Performance 5.0+ 的 Android provider；Unity 2021 / 2022 的包管理器可能默认拉取 Adaptive Performance 4.0，需要手动升级。Unreal Engine 侧有 Android Developers 维护的 ADPF plugin 与 GitHub 仓库，支持范围以当前插件文档为准。
 
 **自动 ADPF vs 手动 ADPF** 的取舍是一个实际决策点。自动模式由引擎统一管理 HintSession 的创建、target duration 的设定、actual duration 的上报——开发者只需要启用开关。手动模式允许开发者精细控制：哪些线程纳入 session、target duration 根据场景动态调整、上报时机精确到每帧。
 
