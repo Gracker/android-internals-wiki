@@ -4167,8 +4167,8 @@
       "title": "ContentProvider 性能与优化",
       "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
@@ -4185,7 +4185,10 @@
       "last_task2b_at": "2026-05-27T13:35:00+08:00",
       "task2b_lite_notes": "2026-05-27 Task2B Lite：修正 ContentProvider 当前进程/remote provider 启动语义，回流 Task6。",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-27"
+      "task6_reviewed_date": "2026-05-27",
+      "section": "1.10",
+      "last_task2b_verifier_at": "2026-05-27T15:34:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "2.21": {
       "title": "文字渲染性能",
@@ -5534,11 +5537,11 @@
       "title": "Audio Pipeline 延迟与性能",
       "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "queue_priority": 85,
       "reviewed_by": "openclaw-task6",
@@ -5552,7 +5555,10 @@
       "task6_review_notes": "2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。",
       "task2b_note": "2026-05-27 Task2B fallback fixed Task9 P1: separated Android 17 background audio hardening from AAudio offloaded playback; added targetSdk 37+ WIU / USAGE_ALARM boundaries and cmd audio forced-test semantics.",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-05-27T14:50:00+08:00"
+      "last_task2b_at": "2026-05-27T14:50:00+08:00",
+      "section": "1.16",
+      "last_task2b_verifier_at": "2026-05-27T15:34:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "25.19": {
       "title": "Android Vitals 过度 WakeLock 指标与治理",
@@ -6117,7 +6123,7 @@
       "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
@@ -6129,7 +6135,10 @@
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-27",
       "last_task2b_at": "2026-05-27T13:35:00+08:00",
-      "task2b_lite_notes": "2026-05-27 Task2B Lite：修正 ContentProvider 当前进程/remote provider 启动语义，回流 Task6。"
+      "task2b_lite_notes": "2026-05-27 Task2B Lite：修正 ContentProvider 当前进程/remote provider 启动语义，回流 Task6。",
+      "section": "1.10",
+      "last_task2b_verifier_at": "2026-05-27T15:34:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     },
     "2.21": {
       "title": "文字渲染性能",
@@ -7439,6 +7448,21 @@
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-27",
       "task6_review_summary": "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+    },
+    "1.16": {
+      "title": "Audio Pipeline 延迟与性能",
+      "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "section": "1.16",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_result": "pass-light-edit",
+      "task9_result": "auto-fixed",
+      "last_task2b_verifier_at": "2026-05-27T15:34:00+08:00",
+      "task2b_verifier_result": "ready-for-task6"
     }
   },
   "task2a_last_processed": {
@@ -8902,14 +8926,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-27T03:37:00+08:00",
+  "last_task2b_verifier_at": "2026-05-27T15:34:00+08:00",
   "last_task2b_verifier_sections": [
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-    "src/part2-performance/ch07-smoothness/06-case-studies.md",
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md",
-    "src/part4-system/ch17-oem/02-soc-differences.md",
-    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md"
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -8976,6 +9000,26 @@
         "5.9"
       ],
       "blocked": []
+    },
+    {
+      "at": "2026-05-27T15:34:00+08:00",
+      "reviewed": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+        "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+        "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+        "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+      ],
+      "status_fixed": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+        "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md"
+      ],
+      "blocked": [
+        "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      ],
+      "result": "ready-for-task6"
     }
   ],
   "last_task2b_files": [

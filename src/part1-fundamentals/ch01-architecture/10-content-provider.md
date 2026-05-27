@@ -36,7 +36,7 @@ tags:
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -66,6 +66,8 @@ p2: 0
 last_task9_autofix_at: "2026-05-27"
 task6_l1_l2_fixes: 18
 task6_l3_l4_issues: 0
+last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
+task2b_verifier_result: ready-for-task6
 ---
 
 <!-- outline-start -->
