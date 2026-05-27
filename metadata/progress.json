@@ -264,7 +264,8 @@
     "10.5",
     "11.1",
     "18.10",
-    "1.19"
+    "1.19",
+    "10.3"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -364,21 +365,24 @@
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
     "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-27T22:05:00+08:00",
-    "log": "logs/review/2026-05-27-22-review.md",
+    "reviewed_at": "2026-05-27T23:15:00+08:00",
+    "log": "logs/review/2026-05-27-23-review.md",
     "sections": [
+      "1.8",
       "10.3"
     ],
     "files": [
+      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
     ],
-    "result": "needs-rework",
-    "l1_l2_fixes": 9,
-    "l3_l4_issues": 1,
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 0,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -1636,13 +1640,13 @@
     },
     "1.8": {
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 2,
+      "task6_l1_l2_fixes": 5,
       "task6_l3_l4_issues": 0,
       "task6_technical_risk_markers": 1,
-      "task6_reviewed_at": "2026-05-18T20:16:50+08:00",
-      "task6_log": "logs/review/2026-05-18-20-review.md",
+      "task6_reviewed_at": "2026-05-27T23:15:00+08:00",
+      "task6_log": "logs/review/2026-05-27-23-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作层通过；既有 pending 技术/素材队列项保留。"
+      "task6_note": "revisiting 复审通过；仅 L1/L2 小修，转 Task9 复核。"
     },
     "20.3": {
       "task6_result": "pass-light-edit",
@@ -2125,22 +2129,32 @@
       "task6_log": "logs/review/2026-05-27-17-review.md",
       "task6_new_rework": false,
       "task6_note": "Task2B fixed 后复审通过；修复 6 处 L1/L2 表达与验证标注，自动晋升 finalized。"
+    },
+    "10.3": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-27T23:15:00+08:00",
+      "task6_log": "logs/review/2026-05-27-23-review.md",
+      "task6_new_rework": false,
+      "task6_note": "revisiting 复审通过；仅 L1/L2 小修，转 Task9 复核。"
     }
   },
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T22:50:00+08:00",
-  "last_updated_by": "task2b-content-processing-rework-main",
+  "last_updated": "2026-05-27T23:15:00+08:00",
+  "last_updated_by": "openclaw-task6-draft-review",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T22:05:00+08:00",
-    "log": "logs/review/2026-05-27-22-review.md",
+    "reviewed_at": "2026-05-27T23:15:00+08:00",
+    "log": "logs/review/2026-05-27-23-review.md",
     "sections": [
+      "1.8",
       "10.3"
     ],
-    "result": "needs-rework",
-    "small_fixes": 9,
-    "rework_items": 1
+    "result": "pass-light-edit",
+    "small_fixes": 8,
+    "rework_items": 0
   },
   "task9_last_review": "2026-05-27",
   "ready_to_publish": 186,
@@ -6056,22 +6070,25 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T22:05:00+08:00",
+  "last_task6_review": "2026-05-27T23:15:00+08:00",
   "last_task6_sections": [
+    "1.8",
     "10.3"
   ],
   "last_task6_reviewed_files": [
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
-  "last_task6_at": "2026-05-27T22:05:00+08:00",
+  "last_task6_at": "2026-05-27T23:15:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T22:05:00+08:00",
-    "log": "logs/review/2026-05-27-22-review.md",
+    "reviewed_at": "2026-05-27T23:15:00+08:00",
+    "log": "logs/review/2026-05-27-23-review.md",
     "sections": [
+      "1.8",
       "10.3"
     ],
-    "small_fixes": 9,
-    "rework_items": 1,
+    "small_fixes": 8,
+    "rework_items": 0,
     "auto_promoted": []
   },
   "last_task9_reviewed_files": [
@@ -6081,9 +6098,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T21:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-22-review.md",
+  "task6_last_review_at": "2026-05-27T23:15:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-23-review.md",
   "task6_last_review_sections": [
+    "1.8",
     "10.3"
   ],
   "sections_status": {
@@ -7586,29 +7604,34 @@
   "last_task2b_run": "2026-05-27T22:50:00+08:00",
   "task2b_sections_fixed": 1,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T22:05:00+08:00",
+    "reviewed_at": "2026-05-27T23:15:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
+      "1.8",
       "10.3"
     ],
     "files": [
+      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
     ],
-    "log": "logs/review/2026-05-27-22-review.md",
-    "mode": "revisiting",
+    "log": "logs/review/2026-05-27-23-review.md",
+    "mode": "首次 review / revisiting 复审",
     "results": {
-      "10.3": "needs-rework"
+      "1.8": "pass-light-edit",
+      "10.3": "pass-light-edit"
     },
-    "l1_l2_fixes": 9,
-    "metadata_updates": 6,
-    "new_task6_rework_items": 1,
-    "queue_updates": 1,
+    "l1_l2_fixes": 8,
+    "metadata_updates": 2,
+    "new_task6_rework_items": 0,
+    "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "task6_last_reviewed_files": [
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "last_task2a_date": "2026-05-19",
@@ -7880,11 +7903,11 @@
     "section": "1.8",
     "title": "Activity Manager Service 与性能分析",
     "status": "ready-for-review",
-    "task6_state": "revisiting",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-18T20:16:50+08:00",
-    "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
-    "pipeline_stage": "task6_pending",
+    "last_task6_at": "2026-05-27T23:15:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-23-review.md",
+    "pipeline_stage": "task9_pending",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "last_task9_at": "2026-05-18T19:44:00+08:00",
@@ -7894,7 +7917,10 @@
     "task2b_result": "fixed",
     "last_task2b_at": "2026-05-27T22:50:00+08:00",
     "last_task2b_log": "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md",
-    "task2b_notes": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+    "task2b_notes": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。",
+    "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-27"
   },
   "section_20_3": {
     "section": "20.3",
@@ -7998,7 +8024,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "23.8"
+    "1.8",
+    "10.3"
   ],
   "task2b_progress": [
     {
@@ -8075,7 +8102,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-22-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-23-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8830,9 +8857,10 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
+    "1.8",
     "10.3"
   ],
-  "last_task6_result": "needs-rework",
+  "last_task6_result": "pass-light-edit",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -8860,6 +8888,7 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
   ],
   "section_24_19": {
@@ -9290,15 +9319,17 @@
     "title": "内存持续增长",
     "file": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "task9_pending",
     "task6_state": "reviewed",
-    "task6_result": "needs-rework",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-27",
-    "last_task6_at": "2026-05-27T22:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-27-22-review.md",
+    "last_task6_at": "2026-05-27T23:15:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-27-23-review.md",
     "task9_state": "pending",
-    "task9_result": "needs-rework",
-    "task2b_state": "pending"
+    "task9_result": "auto-fixed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-05-27T21:35:00+08:00"
   }
 }

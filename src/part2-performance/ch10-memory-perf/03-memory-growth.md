@@ -8,8 +8,8 @@ drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-02'
 last_verified_against: AOSP android-16.0.0_r1
-reviewed_date: '2026-05-27'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-27"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
@@ -40,23 +40,24 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task6_result: needs-rework
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task2b_result: "fixed-lite"
-task2b_state: fixed
+task2b_state: "fixed"
 task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
 last_task9_at: "2026-05-27T22:20:00+08:00"
-last_task6_at: '2026-05-27T22:05:00+08:00'
+last_task6_at: "2026-05-27T23:15:00+08:00"
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
 last_task9_audit: "2026-05-19"
 last_task2b_lite_at: "2026-05-27"
-last_task6_review_log: "logs/review/2026-05-27-22-review.md"
+last_task6_review_log: "logs/review/2026-05-27-23-review.md"
 last_task9_autofix_at: "2026-05-27"
+task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 3 项（删除正文编辑标记 2 处，压缩否定-纠正式句式 1 处）；无新增 L3/L4 回炉项。"
 ---
 
 # 内存持续增长
@@ -92,7 +93,7 @@ last_task9_autofix_at: "2026-05-27"
 
 这种场景在 Perfetto 中表现为 Java Heap 或 Native Heap 的曲线呈阶梯式或锯齿式上升，每个锯齿的波谷都比上一个高。用 `dumpsys meminfo` 观察会发现 PSS 在用户使用过程中逐步攀升，即使退回主界面也没有明显回落。
 
-这种情况和内存泄漏的区别在于：增长的对象有明确的业务用途——可能是图片缓存、可能是预加载的数据、可能是 Native 层的内存池——但它们的总量没有被有效控制。这里的问题不是忘记释放，而是缺少容量上限。
+这种情况和内存泄漏的区别在于：增长的对象有明确的业务用途——可能是图片缓存、可能是预加载的数据、可能是 Native 层的内存池——但它们的总量没有被有效控制。问题集中在容量上限缺失。
 
 理解内存持续增长的成因和治理方法，对于长生命周期应用（新闻客户端、社交 App、音乐播放器、电商应用）尤为重要。这类应用通常运行数小时不重启，如果内存以每小时几十 MB 的速度增长，最终可能先撞到 Java Heap 上限、Native / 虚拟地址分配失败，或在系统内存压力下提高被 lmkd 回收的概率。
 
@@ -134,7 +135,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiling]
 
-### [自动发现] 匿名内存页（Anonymous Pages）累积
+### 匿名内存页（Anonymous Pages）累积
 
 除了上述三个主要原因外，还有一种容易被忽视的增长来源：匿名内存页（anon RSS / Private Anonymous）。这部分内存不在 Java Heap 也不在 Native Heap 的常规统计中，通常来自：
 
@@ -144,7 +145,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 在 `dumpsys meminfo` 中，这部分通常体现在 "Private Other" 或 "Unnamed" 行中。如果发现这部分持续增长但 Heap 区域没有对应变化，需要检查是否有线程泄漏或 Native 层的 mmap 操作。
 
-[自动发现] 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
+16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
 排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 可以先覆盖 DMA-BUF 这一类来源。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，帮助确认匿名页增长是否来自图形 buffer。操作步骤：
 

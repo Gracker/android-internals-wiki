@@ -81,10 +81,10 @@ gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-18"
+reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 last_task6_audit: "2026-05-17"
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -97,9 +97,9 @@ review_round: 4
 last_task9_audit: "2026-05-18"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-last_task6_at: "2026-05-18T20:16:50+08:00"
-last_task6_review_log: "logs/review/2026-05-18-20-review.md"
-task6_review_notes: "2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 2 项（移动 outline 块到正文前，恢复流水线可识别结构；为 4 个无语言代码块补充 text 标记）；既有 Task9/Task2B pending 技术项 1 个保留，不在 Task6 裁决。"
+last_task6_at: "2026-05-27T23:15:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-23-review.md"
+task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 5 项（压缩否定-纠正式句式 3 处，移除 AIW 调研编辑标记 2 处）；无新增 L3/L4 回炉项。"
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
@@ -236,7 +236,7 @@ AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked
 
 ### 进程启动流程
 
-当用户点击一个 App 图标时,客户端入口并不是 AMS,而是 Launcher 进程里的 `Instrumentation.execStartActivity()`。它通过 `ActivityTaskManager.getService().startActivity()` 进入 `system_server`,先由 ATMS / `ActivityStarter` 做任务容器和启动模式决策;只有在发现目标进程还不存在时,才会继续落到 AMS 的进程启动链路。`ActivityManagerService.startActivity()` 在现代版本里更多是兼容旧接口的转发层。
+当用户点击一个 App 图标时,客户端入口是 Launcher 进程里的 `Instrumentation.execStartActivity()`。它通过 `ActivityTaskManager.getService().startActivity()` 进入 `system_server`,先由 ATMS / `ActivityStarter` 做任务容器和启动模式决策;只有在发现目标进程还不存在时,才会继续落到 AMS 的进程启动链路。`ActivityManagerService.startActivity()` 在现代版本里更多是兼容旧接口的转发层。
 
 ```text
 Launcher / Instrumentation.execStartActivity()
@@ -410,7 +410,7 @@ RootWindowContainer
               └─ ActivityRecord
 ```
 
-`RootWindowContainer` 是整台设备的顶层窗口容器;每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`;`TaskDisplayArea` 的孩子既可以是 `Task`,也可以是嵌套的 `TaskDisplayArea`;`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片,也可能继续包含子 `Task`。所以我们今天谈"Activity 落在哪个栈里"时,更准确的说法不是"AMS 把它塞进某个 TaskStack",而是"ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`,再把 `ActivityRecord` 挂进去"。
+`RootWindowContainer` 是整台设备的顶层窗口容器;每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`;`TaskDisplayArea` 的孩子既可以是 `Task`,也可以是嵌套的 `TaskDisplayArea`;`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片,也可能继续包含子 `Task`。所以今天谈"Activity 落在哪个栈里"时,更准确的表述是:ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`,再把 `ActivityRecord` 挂进去。
 
 落实到启动链路,`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`,再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task,最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响:我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。应该把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice,以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来,ATMS 负责把 Activity 放到正确的容器里,这两条线要放在一起看,启动链路才完整。
 
@@ -454,7 +454,7 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 因此我们分析配置变更带来的重启问题时,不能把 `recreateOnConfigChanges` 当成一个"通用的 Activity 重启开关"。就公开源码可验证的语义来看,它主要针对 `mcc` / `mnc` 这类运营商和区域配置变化。屏幕旋转、夜间模式、窗口尺寸变化这类更常见的场景,仍然应该先看 `android:configChanges`、`onConfigurationChanged()` 和实际生命周期回调,而不是先假设系统会因为 `recreateOnConfigChanges` 把 Activity 杀掉重建。
 
-从性能角度,这个属性影响的不是高频日常交互,而是少见但难查的区域 / 运营商切换场景。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建,先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`,再决定是否继续沿着 AMS / ATMS 的重启链路追。至少就当前公开的 AOSP 与 Android Developers 文档,我们没有证据把它解释成 Android 17 的通用行为变更。
+从性能角度,这个属性主要影响少见但难查的区域 / 运营商切换场景,不是高频日常交互。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建,先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`,再决定是否继续沿着 AMS / ATMS 的重启链路追。至少就当前公开的 AOSP 与 Android Developers 文档,我们没有证据把它解释成 Android 17 的通用行为变更。
 
 > [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/res/res/values/attrs_manifest.xml`;Android Developers `android.R.attr#recreateOnConfigChanges`]
 
@@ -505,10 +505,9 @@ Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台�
 ---
 
 
-<!-- AIW-源码调研-2026-04-25 -->
 ### AMS mServices 锁竞争与 Perfetto 诊断
 
-在 §1.8 的 Service 管理基础上,这里补充 `mServices`(`ActiveServices` 实例)内部锁竞争的结构性来源,以及 Perfetto 中的识别方法。
+Service 管理还有一个容易在性能分析中暴露的点:`mServices`(`ActiveServices` 实例)内部锁竞争。它的结构性来源和 Perfetto 识别方法如下。
 
 **结构位置**:`ActivityManagerService` 持有 `ActiveServices mServices` 引用,`ActiveServices` 构造时保存 `final ActivityManagerService mAm`:
 
@@ -550,7 +549,7 @@ LIMIT 20;
 
 **因果链还原**:在 Perfetto UI 中,`binder_transaction` 结束时间点与紧接着的 `monitor_contention` 开始时间点重叠,说明是 Binder 线程在等待 AMS 锁。Thread State track 中 Binder 线程从 Running 切换到 Sleeping(`futex_wait`)的切片宽度即为锁等待时长。
 
-> [AIW-源码调研-2026-04-25: ActiveServices.java (android14-release) + ActivityManagerService.java (android14-release) + perfetto.dev docs]
+> [来源: AOSP android14-release `ActiveServices.java` / `ActivityManagerService.java`;Perfetto monitor contention 文档]
 
 ---
 
