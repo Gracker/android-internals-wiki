@@ -12,29 +12,36 @@ polish_count: 0
 sources:
   - type: official
     path: "developer.android.com/topic/performance/rendering/optimizing-view"
+  - type: official
+    path: "developer.android.com/develop/ui/views/graphics/hardware-accel"
+  - type: official
+    path: "perfetto.dev/docs/getting-started/system-tracing"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/Color.java"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: auto-fixed
 last_task2b_at: "2026-05-13T23:35:47+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T02:37:00+08:00"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T12:21:00+08:00"
 task6_reviewed_date: "2026-05-27"
 task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除自动发现编辑前缀，压掉两处评价性表达；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-12-review.md"
 last_task6_at: "2026-05-27T12:06:00+08:00"
-task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；invalidate 重绘范围、Perfetto 观测命令、Canvas save/restore 与 setLayerType 边界需回炉。"
+task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
+last_task9_autofix_at: "2026-05-27"
 ---
 # 自定义 View 性能优化
 
@@ -106,7 +113,7 @@ protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
 硬件加速模式下（Android 4.0+ 默认开启），onDraw() 的 Canvas 参数是 RecordingCanvas（AOSP: frameworks/base/libs/hwui/RecordingCanvas.cpp）。每次 onDraw() 调用，系统会把绘制命令录制到 DisplayList 中，由 RenderThread 在 GPU 上回放执行。
 
-如果 onDraw() 里创建了 Paint、Path、Rect、Bitmap 等对象，这些对象会在每帧的录制过程中分配，在 GC 回收时造成内存抖动。Perfetto 里的表现是 RenderThread 的 drawFrame 调用伴随着频繁的 GC slice。
+如果 onDraw() 里创建了 Paint、Path、Rect、Bitmap 等对象，这些对象会在每帧的录制过程中分配，在 GC 回收时造成内存抖动。Perfetto 里的表现通常先落在 App 进程的 `main` / `HeapTaskDaemon` GC slice 上；这些暂停会挤占 `Choreographer#doFrame` 的时间窗口，进而让 RenderThread 更晚拿到要回放的 DisplayList。
 
 一个每帧分配 2-3 个 Paint 对象的自定义 View，在 120fps 设备上每秒分配 240-360 个短命对象。这在低端设备上会导致明显的帧率不稳定。
 
@@ -159,7 +166,7 @@ public class WaveformView extends View {
 | `String.format()` 在 `drawText()` 中 | `String` + 内部 `Formatter` | 预格式化文本，存为成员变量 |
 | `canvas.drawText(String.valueOf(value), ...)` | `String` | 用 `Integer.toString()` 预转换 |
 | `new float[]` / `new int[]` 传给 `drawLines()` / `drawBitmapMesh()` | 数组 | 复用成员数组 |
-| `paint.setColor(Color.parseColor("#FF5722"))` | 内部 `long` 转换 | 构造函数中解析一次 |
+| `paint.setColor(Color.parseColor("#FF5722"))` | `substring` + 颜色字符串解析 | 构造函数中解析一次，保存 `int` 色值 |
 
 `canvas.save()` / `restore()` 本身不是 Java 对象分配来源；它的成本主要来自 Canvas 状态栈和裁剪/变换状态管理。现代 API 中不要再推荐带 save flags 的旧重载，控制最小必要保存范围即可。
 
@@ -193,7 +200,7 @@ LIMIT 30
 2. 如果 View 的绘制内容没变（没有 invalidate()），系统直接复用上一帧的 DisplayList，跳过整个 onDraw() 调用
 3. Canvas 的部分 API 在硬件加速下不支持，会静默忽略或降级处理
 
-硬件加速不支持的 API 列表在 Android 官方文档中有完整记录（`Canvas` 兼容性列表）。常见的包括：`Canvas.clipPath()` 的某些复杂模式、`Canvas.drawPicture()`、`Canvas.drawVertices()` 等。遇到这些 API 失效时，不要关闭整个 View 的硬件加速，而是评估是否可以用支持的 API 替代。
+硬件加速兼容列表是版本相关的，不能把 Android 3.x 时代的 unsupported 清单直接套到 Android 10+。官方表中 `clipPath()` 从 API 18 支持，`drawPicture()` 从 API 23 支持，`drawVertices()` 从 API 29 支持；本节覆盖的 Android 10+ 范围内，这几类调用不应再按“硬件加速不支持”处理。仍需要逐项核对的是表中标记为不支持或有版本边界的 Paint / Xfermode 行为，例如 `setLinearText()`、`setMaskFilter()`，以及旧 API 上的 `PathEffect`、非文字阴影等差异。
 
 ### setLayerType 的使用时机
 
@@ -298,14 +305,14 @@ public void setColor(int color) {
 
 ### onDraw 中不要调 invalidate
 
-在 `onDraw()` 中调用 `invalidate()` 会造成当前帧绘制未完成就标记下一帧重绘，形成无限循环。如果需要持续动画效果，用 `postInvalidateOnAnimation()` 或 `ValueAnimator`：
+在 `onDraw()` 中调用 `invalidate()` 会造成当前帧绘制未完成就标记下一帧重绘，形成连续重绘循环。如果需要持续动画效果，用 `postInvalidateOnAnimation()` 或 `ValueAnimator`：
 
 ```java
 // ❌ 永远不要这样写
 @Override
 protected void onDraw(Canvas canvas) {
     drawFrame(canvas, mFrameIndex++);
-    invalidate(); // 无限递归
+    invalidate(); // 持续触发下一帧重绘
 }
 
 // ✅ 用 Animator 控制帧率
@@ -406,7 +413,7 @@ protected void onDraw(Canvas canvas) {
 在 Perfetto trace 中定位自定义 View 的绘制耗时：
 
 1. 找到 `UI Thread` 上的 `performDraw` → `draw` slice
-2. 如果启用了 `android.view.View` 的 trace tag（`adb shell setprop debug.hwui.profile true`），能观察到每个 View 的 `onDraw` 耗时
+2. `debug.hwui.profile=true` 对应的是 Profile HWUI / GPU Rendering 柱状图，不能保证在 Perfetto 中自动生成每个自定义 View 的 `onDraw` slice。要定位具体 View，优先在自定义 View 的 `onDraw()` 周围加 `Trace.beginSection()` / `Trace.endSection()`，录制时启用 `view` / `gfx` / `hwui` atrace 类别
 3. 关注 `RenderThread` 上的 `DrawFrame` 耗时——如果 `DrawFrame` 远大于 `UI Thread` 的 `draw`，说明 `DisplayList` 回放到 GPU 的阶段是瓶颈，需要减少绘制命令数量或降低绘制复杂度
 
 ```sql
