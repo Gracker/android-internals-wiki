@@ -2,7 +2,7 @@
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-27"
@@ -83,14 +83,14 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_task6_audit: "2026-05-17"
-task9_state: pending
-task9_result: "auto-fixed"
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-28T00:33:51+08:00"
+last_task9_at: "2026-05-28T03:32:12+08:00"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 review_round: "5"
@@ -103,9 +103,9 @@ task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
-last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
 last_task9_autofix_at: "2026-05-28"
-task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。"
+task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
 task6_l1_l2_fixes: 5
