@@ -2120,17 +2120,17 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T20:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-05-27T21:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-27T20:05:00+08:00",
-    "log": "logs/review/2026-05-27-20-review.md",
+    "reviewed_at": "2026-05-27T21:10:00+08:00",
+    "log": "logs/review/2026-05-27-21-review.md",
     "sections": [
       "23.8"
     ],
-    "result": "needs-rework",
-    "small_fixes": 2,
-    "rework_items": 2
+    "result": "pass-light-edit",
+    "small_fixes": 3,
+    "rework_items": 0
   },
   "task9_last_review": "2026-05-26",
   "ready_to_publish": 186,
@@ -3299,16 +3299,18 @@
     },
     "23.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task6_result": "needs-rework",
-      "task2b_state": "pending",
+      "task6_result": "pass-light-edit",
+      "task2b_state": "fixed",
       "task9_state": "pending",
-      "queue_priority": 90,
-      "last_task6_at": "2026-05-27T20:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-27-20-review.md",
+      "last_task6_at": "2026-05-27T21:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-27-21-review.md",
       "file": "src/part5-app/ch23-memory-practice/08-memory-case-studies.md",
-      "title": "内存优化案例集"
+      "title": "内存优化案例集",
+      "task2b_result": "fixed",
+      "task9_result": "auto-fixed",
+      "last_task2b_at": "2026-05-27T20:50:00+08:00"
     },
     "24.1": {
       "status": "finalized",
@@ -6055,22 +6057,22 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-05-27T20:05:00+08:00",
+  "last_task6_review": "2026-05-27T21:10:00+08:00",
   "last_task6_sections": [
     "23.8"
   ],
   "last_task6_reviewed_files": [
     "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
-  "last_task6_at": "2026-05-27T20:05:00+08:00",
+  "last_task6_at": "2026-05-27T21:10:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-27T20:05:00+08:00",
-    "log": "logs/review/2026-05-27-20-review.md",
+    "reviewed_at": "2026-05-27T21:10:00+08:00",
+    "log": "logs/review/2026-05-27-21-review.md",
     "sections": [
       "23.8"
     ],
-    "small_fixes": 2,
-    "rework_items": 2,
+    "small_fixes": 3,
+    "rework_items": 0,
     "auto_promoted": []
   },
   "last_task9_reviewed_files": [
@@ -6081,8 +6083,8 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-27T20:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-27-20-review.md",
+  "task6_last_review_at": "2026-05-27T21:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-27-21-review.md",
   "task6_last_review_sections": [
     "23.8"
   ],
@@ -7586,7 +7588,7 @@
   "last_task2b_run": "2026-05-27T16:50:00+08:00",
   "task2b_sections_fixed": 3,
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-27T20:05:00+08:00",
+    "reviewed_at": "2026-05-27T21:10:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "23.8"
@@ -7594,15 +7596,15 @@
     "files": [
       "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
     ],
-    "log": "logs/review/2026-05-27-20-review.md",
+    "log": "logs/review/2026-05-27-21-review.md",
     "mode": "revisiting",
     "results": {
-      "23.8": "needs-rework"
+      "23.8": "pass-light-edit"
     },
-    "l1_l2_fixes": 1,
-    "metadata_updates": 1,
-    "new_task6_rework_items": 2,
-    "queue_updates": 1,
+    "l1_l2_fixes": 0,
+    "metadata_updates": 3,
+    "new_task6_rework_items": 0,
+    "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
@@ -8043,7 +8045,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-27-20-review.md",
+  "last_task6_review_log": "logs/review/2026-05-27-21-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -8687,7 +8689,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-27T20:05:00+08:00",
+  "last_task6_review_at": "2026-05-27T21:10:00+08:00",
   "last_task6_review_section": "23.8",
   "section_1_22": {
     "section": "1.22",
@@ -8790,7 +8792,7 @@
   "last_task6_reviewed_sections": [
     "23.8"
   ],
-  "last_task6_result": "needs-rework",
+  "last_task6_result": "pass-light-edit",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -8996,7 +8998,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-27T20:05:00+08:00",
+  "last_task6_reviewed_at": "2026-05-27T21:10:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
