@@ -2179,8 +2179,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T01:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T01:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T01:05:00+08:00",
     "log": "logs/review/2026-05-28-01-review.md",
@@ -6497,7 +6497,15 @@
       "task2a_result": "draft-ready-for-review",
       "drafted_date": "2026-05-16",
       "last_verified": "2026-05-16",
-      "confidence": "medium"
+      "confidence": "medium",
+      "section": "13.14",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_lite_at": "2026-05-28T01:35:00+08:00",
+      "last_task2b_lite_log": "logs/rework/2026-05-28-01-task2b-lite.md",
+      "last_task2b_note": "修正 Jank CUJ counter weighted_missed_frames 口径：中间表为每秒 jank 口径，DataGrid 排序需乘 anim_duration_ms / 1000 转总 weighted missed frames。"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
