@@ -1299,10 +1299,14 @@
       "task6_log": "logs/review/2026-05-27-19-review.md",
       "task6_new_rework": false,
       "task6_note": "回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "reviewed_at": "2026-05-15T22:35:05+08:00",
       "log": "logs/deep-review/2026-05-15-22-deep-review.md",
-      "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。"
+      "summary": "P1 3：冻结资格漏 CPU capability/shouldNotFreeze；ApplicationExitInfo freezer reason/subReason 版本矩阵错误；addFrozenStateChangeCallback 缺 API/flag/低版本边界。P2 2：DeepResearch 来源路径、Freezer trace 事件名模板。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "ready-to-publish",
+      "status": "finalized"
     },
     "1.19": {
       "p0": 0,
@@ -1315,7 +1319,12 @@
       "task6_reviewed_at": "2026-05-27T19:05:00+08:00",
       "task6_log": "logs/review/2026-05-27-19-review.md",
       "task6_new_rework": false,
-      "task6_note": "回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。"
+      "task6_note": "回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "pipeline_stage": "ready-to-publish",
+      "status": "finalized"
     },
     "22.12": {
       "p0": 0,
@@ -1466,7 +1475,12 @@
       "task6_reviewed_at": "2026-05-27T19:05:00+08:00",
       "task6_log": "logs/review/2026-05-27-19-review.md",
       "task6_new_rework": false,
-      "task6_note": "回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。"
+      "task6_note": "回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "ready-to-publish",
+      "status": "finalized"
     },
     "26.12": {
       "p0": 0,
@@ -4025,8 +4039,8 @@
     "1.18": {
       "title": "Binder Freezer 与缓存进程冻结性能",
       "file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
@@ -4034,7 +4048,7 @@
       "last_task2a_at": "2026-05-15T21:09:00+08:00",
       "task2a_result": "drafted",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
@@ -4044,13 +4058,17 @@
       "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
       "last_task2b_source": "frontmatter backlog fallback/task9-deep-review",
       "last_task2b_summary": "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。",
       "task6_l1_l2_fixes": 0,
-      "task6_l3_l4_issues": 0
+      "task6_l3_l4_issues": 0,
+      "last_task9_at": "2026-05-27T19:20:00+08:00",
+      "task9_reviewed_date": "2026-05-27",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
+      "section": "1.18"
     },
     "16.6": {
       "title": "Android 16 云端 Profile 与 dexopt 安装优化",
@@ -4168,8 +4186,8 @@
       "task2b_result": "fixed"
     },
     "1.19": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "created_by": "task2a-knowledge-gap",
@@ -4180,7 +4198,7 @@
       "task2a_result": "gap-created",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
       "last_task6_at": "2026-05-27T19:05:00+08:00",
@@ -4188,9 +4206,9 @@
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
-      "task9_result": "auto-fixed",
-      "last_task9_at": "2026-05-16T06:31:25+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-27T19:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap",
@@ -4198,7 +4216,8 @@
       "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
       "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
       "section": "1.19",
-      "task6_reviewed_date": "2026-05-27"
+      "task6_reviewed_date": "2026-05-27",
+      "task9_reviewed_date": "2026-05-27"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -4551,14 +4570,14 @@
     "1.20": {
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-17T04:33:15+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-27T19:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
@@ -4576,7 +4595,9 @@
       "task6_reviewed_date": "2026-05-27",
       "task6_l1_l2_fixes": 17,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。",
+      "task9_reviewed_date": "2026-05-27",
+      "section": "1.20"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
@@ -6141,8 +6162,8 @@
     "1.19": {
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 85,
@@ -6151,7 +6172,7 @@
       "task2a_result": "gap-created",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
       "last_task6_at": "2026-05-27T19:05:00+08:00",
@@ -6159,9 +6180,9 @@
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。",
-      "task9_result": "auto-fixed",
-      "last_task9_at": "2026-05-16T06:31:25+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-27T19:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap",
@@ -6169,7 +6190,8 @@
       "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
       "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
       "section": "1.19",
-      "task6_reviewed_date": "2026-05-27"
+      "task6_reviewed_date": "2026-05-27",
+      "task9_reviewed_date": "2026-05-27"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -6598,14 +6620,14 @@
     "1.20": {
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-17T04:33:15+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-27T19:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
@@ -6623,7 +6645,9 @@
       "task6_reviewed_date": "2026-05-27",
       "task6_l1_l2_fixes": 17,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
+      "task6_review_notes": "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。",
+      "task9_reviewed_date": "2026-05-27",
+      "section": "1.20"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
