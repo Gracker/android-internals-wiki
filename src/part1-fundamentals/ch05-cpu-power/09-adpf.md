@@ -1,5 +1,4 @@
 ---
-
 status: "ready-for-review"
 title: ADPF 自适应性能框架
 chapter: '5.9'
@@ -19,7 +18,7 @@ related_chapters:
 - '5.5'
 - '5.6'
 - '7.5'
-- '14.7'
+- '13.14'
 created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 官方文档+研究素材+AOSP结构
@@ -44,20 +43,20 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-27T08:50:00+08:00'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task9_result: "auto-fixed"
-last_task9_at: "2026-05-27T09:40:09+08:00"
+task9_result: auto-fixed
+last_task9_at: "2026-05-27T13:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-13-deep-review.md"
 last_task6_at: "2026-05-27T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-10-review.md"
 task6_reviewed_date: "2026-05-27"
@@ -66,7 +65,7 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: "openclaw-task6"
 review_type: "task6-writing-quality-review"
-task9_review_notes: "2026-05-27 09:40 Task9 auto-fix：Unity ADPF 支持版本从 2021.2 修正为 Unity 2021.3+ / Adaptive Performance 5.0+ Android provider；回到 Task6 复审。"
+task9_review_notes: "2026-05-27 13:20 Task9 auto-fix：将 §14.7 Perfetto 高级分析 交叉引用修正为实际存在的 §13.14 Perfetto DataGrid 与 Jank CUJ 标准库，并同步 related_chapters；回到 Task6 复审。"
 last_task9_autofix_at: "2026-05-27"
 p0: 0
 p1: 0
@@ -349,7 +348,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 - **§5.5 Thermal 管控**：本章侧重 App 侧的 Thermal API 使用，§5.5 侧重系统侧的热管理机制（HAL、内核温控策略）
 - **§5.6 Android 功耗管理**：从调频机制看，ADPF 属于功耗管理的一部分，与 §5.6 的 DVFS、EAS 机制有底层关联
 - **§7.5 优化策略**：ADPF 是帧率优化的手段之一，§7.5 中的"动态画质调节"策略通常需要结合 ADPF 使用
-- **§14.7 Perfetto 高级分析**：本章涉及的 Perfetto Track 分析是 §13/14 工具使用的基础应用
+- **§13.14 Perfetto DataGrid 与 Jank CUJ 标准库**：本章涉及的 Perfetto Track 分析可与 Perfetto 数据查询和 Jank CUJ 章节交叉阅读
 
 ## 扩展
 
