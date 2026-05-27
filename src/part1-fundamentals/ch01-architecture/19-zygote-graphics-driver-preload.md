@@ -2,7 +2,7 @@
 title: "Zygote 图形驱动预加载与启动性能"
 chapter: "1.19"
 section: "1.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -37,23 +37,26 @@ reviewed_by: openclaw-task6
 review_round: 2
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
 last_task6_at: "2026-05-27T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task9_result: "auto-fixed"
+task9_result: pass-tech-review
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T18:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-18-deep-review.md"
-task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GraphicsEnvironment chooseDriverInternal 的 privileged/system app 排除与 prerelease driver gating 口径；P0 0 / P1 0 / P2 1（已修复）。"
+last_task9_at: "2026-05-27T19:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
+task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 ZygoteInit preload 顺序、GraphicBufferMapper preloadHal、zygote_preload_graphics Android 13-16 分支、GraphicsEnvironment chooseDriverInternal；18 点 AUTO-FIX 后口径正确。 P0 0 / P1 0 / P2 0；Task6 已通过且 queue.json 无 pending，自动晋升 finalized。"
 last_task2b_lite_at: "2026-05-27"
 last_task9_autofix_at: "2026-05-27"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 1.19 Zygote 图形驱动预加载与启动性能
