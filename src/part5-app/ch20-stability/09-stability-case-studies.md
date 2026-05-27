@@ -4,8 +4,8 @@ chapter: "20.9"
 section: "20.9"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-11"
-last_verified_against: "AOSP android-16.0.0_r1, public engineering blogs"
+last_verified: "2026-05-28"
+last_verified_against: "AOSP android-16.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -24,22 +24,25 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
 task6_review_notes: 2026-05-12 task6 review: 完成格式规范统一、术语一致性修复、标点标准化；L1/L2 通过，无新增 L3/L4 回炉项。
 task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-14
-last_task9_at: "2026-05-14T13:30:11+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T02:31:47+08:00"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task9_autofix_at: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
+task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95 等待 Task2B 回炉。"
 ---
 
 # 稳定性治理案例集
@@ -313,12 +316,12 @@ void register_unified_handler() {
 
 ### 追踪：ContentProvider 的初始化机制
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java；frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java]
 
 `ActivityThread.handleBindApplication` 在应用启动时按以下顺序执行：
 
 1. 创建 `Application` 对象
-2. **安装所有 ContentProvider**（顺序由 manifest 中的声明顺序决定）
+2. **安装所有 ContentProvider**（`ProviderInfo.initOrder` 值高的 provider 先安装；未设置 `initOrder` 时，沿用 PackageManager 解析 / manifest merge 后的 provider 列表顺序）
 3. 调用 `Application.onCreate()`
 
 ContentProvider 的 `onCreate()` 在主线程上同步执行。如果有多个 SDK 都声明了 `<provider android:authorities="..." android:name=".InitProvider">`，它们会在主线程上依次执行初始化逻辑。
@@ -431,7 +434,7 @@ override fun onCreate(): Boolean {
 }
 ```
 
-`[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java installContentProviders]`
+`[已验证: AOSP android-16.0.0_r1, ActivityThread.installContentProviders；ComputerEngine.queryContentProviders / sProviderInitOrderSorter]`
 
 ### 验证
 
