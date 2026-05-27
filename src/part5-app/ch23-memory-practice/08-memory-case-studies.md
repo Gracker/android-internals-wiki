@@ -4,8 +4,8 @@ chapter: "23.8"
 section: "23.8"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
+last_verified: "2026-05-27"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 drafted_by: openclaw-task2a
@@ -25,6 +25,8 @@ sources:
     path: "https://source.android.com/docs/core/tests/debug/native-memory"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+  - type: official
+    path: "https://developer.android.com/guide/topics/manifest/profileable-element"
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/Bitmap.java @ android-16.0.0_r1"
   - type: aosp
@@ -40,8 +42,8 @@ sources:
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
 pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: pending
 last_task2b_lite_at: "2026-05-27"
@@ -49,12 +51,13 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: needs-rework
 last_task6_review_log: logs/review/2026-05-27-20-review.md
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-14"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T06:32:15+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
-task9_review_notes: "2026-05-14 Task9 06: needs-rework。P1 1：heapprofd / smaps 运行条件缺少 user/userdebug、profileable/debuggable 与权限边界；P2 1：26.3 仍为 draft 引用。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
+last_task9_at: "2026-05-27T20:20:00+08:00"
+last_task9_autofix_at: "2026-05-27"
+last_task9_review_log: logs/deep-review/2026-05-27-20-deep-review.md
+task9_review_notes: "2026-05-27 Task9 20: auto-fixed。P1 heapprofd/smaps 运行边界已按 Perfetto + Android Developers profileable 文档补齐；剩余 P2 为案例证据不足，queue.json 仍保留 Task2B pending。"
 last_task6_at: "2026-05-27T20:05:00+08:00"
 ---
 
@@ -147,23 +150,24 @@ fun Bitmap.reportBitmapBudget(
 
 [已验证: 官方文档, source.android.com/docs/core/tests/debug/native-memory]
 [已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
+[已验证: 官方文档, developer.android.com/guide/topics/manifest/profileable-element]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Debug.java]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
 
 Native 内存泄漏常见于音视频 SDK、地图 SDK、图片库、加密库和自研 JNI 模块。典型现象是 Java Heap 曲线稳定，PSS 或 Native Heap 随场景次数增长；重启进程后恢复，清理 Java 缓存没有效果。
 
-排查时先确认增长口径，再抓分配栈。`dumpsys meminfo <pid>` 可以看 Native Heap、Dalvik Heap、Graphics、Stack、Code 等分类；`/proc/<pid>/smaps` 可以进一步确认增长区域是 `[anon:libc_malloc]`、`[anon:scudo:*]`、so 私有脏页，还是图形缓冲。分类对了，工具才选得对。
+排查时先确认增长口径，再抓分配栈。`dumpsys meminfo <pid>` 可以看 Native Heap、Dalvik Heap、Graphics、Stack、Code 等分类；在调试包、自有进程可读、root 或 userdebug/eng 环境下，`/proc/<pid>/smaps` 可以进一步确认增长区域是 `[anon:libc_malloc]`、`[anon:scudo:*]`、so 私有脏页，还是图形缓冲。分类对了，工具才选得对。
 
 常用排查路径分成四步：
 
 1. **复现场景**：固定一次业务路径，例如“进入预览 → 拍照 → 退出”重复 10 轮，每轮记录 PSS、Native Heap、Graphics 和线程数。
-2. **区分来源**：Native Heap 增长优先采 heapprofd；Graphics / dma-buf 增长回到图片、Surface、纹理释放；so 私有脏页异常看库装载和初始化写入。
-3. **抓调用栈**：Android 10 及以上优先用 heapprofd。Perfetto 文档说明 heapprofd 会跟踪指定时间窗口内的堆分配和释放，并把内存归因到调用栈。
+2. **区分来源**：Native Heap 增长先确认工具条件，Android 10+ 且目标 app 可 profile 时优先采 heapprofd；Graphics / dma-buf 增长回到图片、Surface、纹理释放；so 私有脏页异常看库装载和初始化写入。
+3. **抓调用栈**：Perfetto 文档说明 heapprofd 需要 Android 10+；调试 Android build（userdebug/eng）可分析所有 app 和大多数系统服务，user build 只能分析 manifest 带 `debuggable` 或 `<profileable android:shell="true"/>` 的 app。条件满足后，heapprofd 会跟踪指定时间窗口内的堆分配和释放，并把内存归因到调用栈。
 4. **回到所有权**：找到调用栈后检查 JNI handle、`malloc/free` 配对、C++ 对象析构、SDK `release()` 时机，以及 Java 层对象是否还持有 native 句柄。
 
 Native 泄漏修复不建议一开始就使用 Hook。参考书里把 Native Hook、PLT Hook、Inline Hook 放在排查方案中，适合做专项工具或内部平台；日常业务排查优先用系统工具。Hook 会引入兼容性和稳定性成本，尤其是线上环境。
 
-[需确认: heapprofd / smaps 在 user build、userdebug/eng、profileable/debuggable、root/run-as 条件下的可用边界。Task9 2026-05-14 已标 P1，Task2B Lite 本轮只处理了交叉引用，尚未补齐工具运行条件。]
+工具权限要单独记录在排查单里：量产 user 设备上，heapprofd 不等于任意进程可采；没有 `debuggable` / `profileable` 的第三方 app 会得到空 profile。`/proc/<pid>/smaps` 更适合实验室或调试环境；如果 adb shell 没有权限读取目标 smaps，先保留 `dumpsys meminfo` 的分类趋势，再换调试包、root 或 userdebug/eng 设备补 VMA 明细。
 
 这组命令用于把“哪类内存在涨”先确认下来。重点看趋势，不用单次快照下结论。
 
@@ -171,10 +175,10 @@ Native 泄漏修复不建议一开始就使用 Hook。参考书里把 Native Hoo
 # 记录进程级分类，适合对比每轮操作后的 Native Heap / Graphics / PSS
 adb shell dumpsys meminfo <package_or_pid>
 
-# 保存 VMA 明细，适合确认增长来自 libc malloc、scudo、mmap、so 映射还是图形缓冲
+# 保存 VMA 明细，仅适用于 adb shell/root/userdebug 或自有调试进程可读 smaps 的环境
 adb shell cat /proc/<pid>/smaps > smaps-after-round-10.txt
 
-# 采集 Native Heap 分配画像，具体配置按 Perfetto heapprofd 文档生成
+# 采集 Native Heap 分配画像；user build 需要目标 app debuggable/profileable
 adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/native.pb
 ```
 
