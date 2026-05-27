@@ -2052,8 +2052,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 159,
-  "last_updated": "2026-05-27T10:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T10:50:00+08:00",
+  "last_updated_by": "task2b-content-processing-rework-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T10:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2208,11 +2208,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T08:50:00+08:00",
+  "last_task2b_at": "2026-05-27T10:50:00+08:00",
   "last_task2b_sections": [
-    "5.9"
+    "18.10"
   ],
-  "last_task2b_action": "回炉修复: 5.9 ADPF 发布稿过程痕迹清理与正文整合",
+  "last_task2b_action": "task9-deep-tech-review rework: FramebufferSurface client target + SurfaceControl cross-process sharing boundary",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2980,18 +2980,18 @@
     },
     "18.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
-      "task9_result": "auto-fixed",
+      "task9_result": "needs-rework",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task2b_result": "fixed-lite",
-      "task6_state": "reviewed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
       "queue_priority": 85,
-      "last_task9_review_log": "logs/deep-review/2026-05-27-09-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-10-deep-review.md",
       "last_task2b_lite_at": "2026-05-27T07:44:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-05-27-07-task2b-lite.md",
-      "last_task2b_note": "Task2B Lite 修复 FrameTimeline fallback、ASurfaceControl release/display-tree 边界和 ch18->ch02 交叉引用。",
+      "last_task2b_note": "Task2B main 修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 ASurfaceControl_fromJava 跨进程共享边界。",
       "last_task6_at": "2026-05-27T10:05:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-05-27-10-review.md",
@@ -3004,7 +3004,10 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
       "last_task9_autofix_at": "2026-05-27",
-      "task9_review_summary": "AUTO-FIX：补 API 34 ASurfaceControl_fromJava JNI 桥接路径，回到 Task6 复审。"
+      "task9_review_summary": "AUTO-FIX：补 API 34 ASurfaceControl_fromJava JNI 桥接路径，回到 Task6 复审。",
+      "last_task2b_at": "2026-05-27T10:50:00+08:00",
+      "last_task2b_source": "task9-deep-tech-review",
+      "last_task2b_priority": 95
     },
     "19.13": {
       "status": "ready-for-review",
@@ -7302,8 +7305,8 @@
       "title": "SurfaceControl API 深入",
       "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task6_reviewed_by": "openclaw-task6",
@@ -7314,11 +7317,16 @@
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-27",
-      "last_task9_review_log": "logs/deep-review/2026-05-27-09-deep-review.md",
-      "task9_result": "auto-fixed",
+      "last_task9_review_log": "logs/deep-review/2026-05-27-10-deep-review.md",
+      "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "last_task9_autofix_at": "2026-05-27",
-      "task9_review_summary": "AUTO-FIX：补 API 34 ASurfaceControl_fromJava JNI 桥接路径，回到 Task6 复审。"
+      "task9_review_summary": "AUTO-FIX：补 API 34 ASurfaceControl_fromJava JNI 桥接路径，回到 Task6 复审。",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-27T10:50:00+08:00",
+      "last_task2b_note": "Task2B main 修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 ASurfaceControl_fromJava 跨进程共享边界。",
+      "last_task2b_source": "task9-deep-tech-review",
+      "last_task2b_priority": 95
     }
   },
   "task2a_last_processed": {
@@ -7357,7 +7365,7 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task2b_run": "2026-05-24T07:32:43+08:00",
+  "last_task2b_run": "2026-05-27T10:50:00+08:00",
   "task2b_sections_fixed": 2,
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-27T10:05:00+08:00",
@@ -7498,6 +7506,25 @@
       "issues_addressed": 1,
       "details": [
         "§9.1: ProfilingManager.registerProfilingListener 删除，改为 ProfilingTrigger.Builder(TRIGGER_TYPE_ANR) + addProfilingTriggers + registerForAllProfilingResults；ANR 产物限定为 running system trace snapshot；补 API 37 触发器边界。"
+      ]
+    },
+    {
+      "timestamp": "2026-05-27T10:50:00+08:00",
+      "sections_processed": [
+        "18.10"
+      ],
+      "sections_fixed": [
+        "18.10"
+      ],
+      "issues_addressed": 1,
+      "queue_ids_completed": [
+        "task9-deep-review-20260527-1050-18.10-framebuffersurface-cross-process"
+      ],
+      "source_types": [
+        "task9-deep-tech-review"
+      ],
+      "details": [
+        "§18.10: FramebufferSurface 从 App layer 消费路径改为 SurfaceFlinger client target；跨进程共享改为 Java Parcelable + API 34 ASurfaceControl_fromJava 边界。"
       ]
     }
   ],
@@ -7735,6 +7762,14 @@
       "fixed_date": "2026-05-26T22:50:00+08:00",
       "queue_id": "task9-deep-review-20260526-1926-9.1-profilingmanager-anr-trigger",
       "fix_summary": "系统触发式 ANR Profiling API 与产物口径修正"
+    },
+    {
+      "section": "18.10",
+      "title": "SurfaceControl API 深入",
+      "status": "fixed",
+      "fixed_date": "2026-05-27T10:50:00+08:00",
+      "queue_id": "task9-deep-review-20260527-1050-18.10-framebuffersurface-cross-process",
+      "fix_summary": "FramebufferSurface 显示输出路径与 SurfaceControl 跨进程共享边界修正"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -8652,7 +8687,7 @@
       "items_completed": 2
     }
   },
-  "task2b_last_run": "2026-05-27",
+  "task2b_last_run": "2026-05-27T10:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -8711,10 +8746,19 @@
       "source": "task6-review",
       "priority": 90,
       "summary": "删除原始调研块和素材摘要，整合 API 版本边界、NDK workload hint、协程线程迁移边界，回流 Task6。"
+    },
+    {
+      "section": "18.10",
+      "file": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+      "at": "2026-05-27T10:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "summary": "修正 FramebufferSurface 为显示输出 / client target 路径，补齐 SurfaceControl 跨进程 Java Parcelable + API 34 NDK bridge 边界。"
     }
   ],
-  "last_task2b_completed": "2026-05-27T08:50:00+08:00",
-  "last_task2b_completed_at": "2026-05-27T08:50:00+08:00",
+  "last_task2b_completed": "18.10",
+  "last_task2b_completed_at": "2026-05-27T10:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -8806,5 +8850,8 @@
       ],
       "blocked": []
     }
+  ],
+  "last_task2b_files": [
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ]
 }
