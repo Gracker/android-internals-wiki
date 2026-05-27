@@ -32,16 +32,16 @@ sources:
     path: "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - type: obsidian
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-16"
-last_task6_at: "2026-05-16T10:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-10-review.md"
-task6_l1_l2_fixes: 7
+reviewed_date: "2026-05-28"
+last_task6_at: "2026-05-28T04:13:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-04-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 7 处；无新增 L3/L4 回炉项，既有 Task9 技术回炉项不由 Task6 裁决。"
+task6_review_notes: "2026-05-28 Task6：Task2B fixed-lite 后复审通过；L1/L2 小修 1 处，禁用词与高频词扫描无命中；outline 10/10 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，未自动晋升。"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
@@ -52,7 +52,6 @@ task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T09:20:00+08:00"
 task9_review_notes: "2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；P1 为采集配置缺少 sched 事件、SQL 使用 cpu/ucpu 口径需按当前 Trace Processor schema 复核，已写入 queue。"
 last_task9_review_log: "logs/deep-review/2026-05-16-09-deep-review.md"
-
 ---
 
 # 13.13 Perfetto CPU 频率与 DVFS 关联分析
@@ -276,7 +275,7 @@ WHERE dur > 0;
 
 这张临时表会把每段调度运行时间切成更小的片段，每个片段带上当时 CPU 的频率。后续可以按线程、进程、帧窗口继续聚合。`SPAN_JOIN` 要求同一 partition 内输入 span 不重叠；对 `sched` 和按 track 重建的 `cpufreq` 区间来说，这个条件通常成立。
 
-下面这个模板计算某个线程在 Running 时间上的频率分布。`target_tid` 换成线程的 Linux tid，结果能回答“它主要跑在哪些频点上”。
+这个模板计算某个线程在 Running 时间上的频率分布。`target_tid` 换成线程的 Linux tid，结果能回答“它主要跑在哪些频点上”。
 
 ```sql
 WITH target_thread AS (
