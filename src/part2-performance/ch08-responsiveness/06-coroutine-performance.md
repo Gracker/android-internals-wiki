@@ -692,3 +692,6 @@ hintSession?.setPreferPowerEfficiency(true)
 详见：[DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md](DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md)
 
 <!-- AIW-源码调研-2026-05-14 -->
+
+<!-- AIW-源码调研-2026-05-27: ADPF API 版本边界修正 -->
+> **源码调研修正**：Session.setThreads() 为 API 34 公开方法（非 flagged API）。setPreferPowerEfficiency() 和 WorkDuration 分离上报为 flagged API，需运行时 flag 判断。详见 [DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md](DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md)

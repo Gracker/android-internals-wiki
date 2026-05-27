@@ -71,35 +71,11 @@ p0: 0
 p1: 0
 p2: 1
 task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-27
 ---
 
 # ART 虚拟机内存管理
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ART 堆结构：Image Space、Zygote Space、Allocation Space、Large Object Space
-- 🔹 GC 策略演进：CMS → CC (Concurrent Copying) GC
-- 🔹 GC 对性能的影响：暂停时间（Pause Time）、吞吐量、Allocation Stall
-- 🔹 对象分配路径：TLAB → Region → Full GC
-- 🔹 ART Profile-Guided Compilation：Install-time、Runtime、Cloud Profile
-
-### 扩展（可选深入）
-
-- 🔸 JIT Compilation 的内存开销与 Code Cache 管理
-- 🔸 Reference Processing（SoftRef、WeakRef、PhantomRef）与 GC 的交互
-- 🔸 ART 在 Android 16 上的最新优化
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要了解 ART 的内存管理
 
@@ -121,7 +97,6 @@ task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已
 ART 的 Heap 由多个功能不同的 Space（空间）组合而成，单一连续内存这个模型不足以解释 ART 的分配策略和 GC 行为。理解这些 Space 的分工，是理解整个内存管理体系的基础。
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
-[来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md]
 
 ### Image Space：系统启动时就位的基础对象
 
@@ -192,14 +167,12 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 有一个容易踩到的坑：Non-moving Space 和 Zygote Space 共享 64MB 的地址空间。如果应用大量使用 `DirectByteBuffer`，即使总体堆内存还有空闲，也可能因为 Non-moving Space 耗尽而抛出 `OutOfMemoryError`。
 
-[来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/dlmalloc_space.cc]
 
 [图：ART Heap 的五个 Space 在虚拟地址空间中的布局示意]
 
-### [自动发现: 堆地址空间的 4GB 限制] 
+### 堆地址空间的 4GB 限制
 
-来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md
 
 一个容易忽略的细节是，ART 的主要托管堆和相关 card table 布局会尽量放在 low 4GB 区间。`heap.cc` 里能直接看到 `/* low_4gb= */ true` 的映射请求，以及“card table 覆盖 whole low_4gb”的注释。这样做，是为了让 `CompressedReference` / `HeapReference` 继续用 32 位压缩引用表示 Java 对象引用，在 64 位进程里减少引用字段的内存开销，并减轻缓存压力。
 
@@ -271,7 +244,6 @@ UFFD 允许用户空间监听一段虚拟内存的缺页事件。GC 压缩对象
 
 CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这类更简单的线性分配结构。对性能分析来说，重点是把 Android 8.0-13 的 CC、Android 14 / 15 的 CMC 路径、Android 16 QPR2 之后的 Generational CMC 分开看。
 
-[来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
 [已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector_type.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
@@ -414,7 +386,6 @@ AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`、`kRe
 
 前面提到，超过 12KB 的基本类型数组或 `String` 会进入 Large Object Space。大对象的分配路径与小对象完全独立，走的是 `FreeListSpace` 或 `LargeObjectMapSpace` 的分配逻辑。由于大对象不会被移动，GC 对它们的处理也更简单——只需要标记存活和清除死亡，不需要拷贝或压缩。
 
-[来源: Cubox/ART虚拟机内存分配原理浅析-2024-03-17.md]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc TryToAllocate]
 
 ## ART Profile-Guided Compilation：让代码越跑越快
@@ -465,7 +436,6 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 ### Android 15/16 的 16KB Page Size 对 ART 的影响
 
-[来源: intake/research-feeds/2026-03-31-11-ch04-art-16kb-page-memory.md]
 
 16KB page size 是 Android 15 开始支持的系统能力。在 ART 内存管理语境里，需要把 ART 直接受到的影响和系统级收益拆开。
 

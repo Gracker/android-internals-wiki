@@ -68,6 +68,8 @@ pipeline_stage: "ready-to-publish"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-08T10:29:04+08:00"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
 ---
@@ -107,7 +109,7 @@ review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1�
 
 对系统开发者来说，理解 App 耗电的原因更关键——要判断某个 App 为什么在目标设备上特别费电，是 WakeLock 没释放、后台频繁拉起，还是网络轮询间隔太短。这些分析能力直接影响用户对设备续航的体感评价。
 
-本章从五个最常见的耗电入口切入：WakeLock、后台任务调度、位置服务、网络请求和闹钟，覆盖 App 端耗电的主要来源，每个入口都会给出"在 Battery Historian / Perfetto 中怎么看到它"的分析方法。
+本章从五个耗电入口切入：WakeLock、后台任务调度、位置服务、网络请求和闹钟，覆盖 App 端耗电的主要来源，每个入口都会给出"在 Battery Historian / Perfetto 中怎么看到它"的分析方法。
 
 ## WakeLock 最佳实践
 
@@ -137,7 +139,7 @@ WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp:MyTag"
 
 ### 获取与释放的正确姿势
 
-WakeLock 最关键的原则只有一条：**一定要释放**。不管代码走了哪个分支，不管有没有异常，WakeLock 必须被释放。
+WakeLock 的原则只有一条：**一定要释放**。不管代码走了哪个分支，不管有没有异常，WakeLock 必须被释放。
 
 ```java
 wakeLock.acquire(60 * 1000L); // 带超时:最多持有 1 分钟
@@ -197,7 +199,7 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 
 WorkManager 的几个关键省电配置：
 
-**最小间隔 15 分钟**。周期性任务（PeriodicWorkRequest）的最小间隔是 15 分钟，这不是随便设的，而是系统 JobScheduler 的最小调度窗口。不要试图绕过这个限制。
+**最小间隔 15 分钟**。周期性任务（PeriodicWorkRequest）的最小间隔是 15 分钟。这个值对应系统 JobScheduler 的最小调度窗口，不是随意定的下限。不要试图绕过这个限制。
 
 **谨慎使用 Expedited Work**。`setExpedited()` 会争取更快启动，但它仍受 quota 和 `OutOfQuotaPolicy` 约束。它适合用户刚触发、需要尽快开始且执行时间较短的任务；如果只是常规同步或周期性工作，继续用普通 WorkRequest。更细的配额和 fallback 语义可对照 §5.10。
 
@@ -250,7 +252,7 @@ val locationRequest = LocationRequest.Builder(
 }.build()
 ```
 
-这段代码有两个省电要点。第一，`setMaxUpdateDelayMillis()` 启用了批量交付模式：FLP 内部按 60 秒间隔计算位置，但不是每次都唤醒 App，而是积累最多 5 分钟后一次性交付一批位置更新。这用延迟换取了功耗——App 唤醒次数从每分钟一次降低到每 5 分钟一次。
+这段代码有两个省电要点。第一，`setMaxUpdateDelayMillis()` 启用了批量交付模式：FLP 内部按 60 秒间隔计算位置，积累最多 5 分钟后一次性交付一批位置更新。App 唤醒次数从每分钟一次降到每 5 分钟一次——以延迟换功耗。
 
 第二，`setDurationMillis()` 设置了自动超时。即使忘记移除位置请求，1 小时后 FLP 会自动停止更新，防止因代码缺陷导致无限定位。
 
@@ -290,7 +292,7 @@ Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连
 
 ### 批量请求与减少轮询
 
-网络请求功耗优化的核心原则是**减少射频模块的唤醒次数**。
+优化网络请求功耗，就是减少射频模块的唤醒次数。
 
 假设一个 App 每 5 秒向服务器轮询一次数据，每次传输 100 字节。从数据量看，一小时只有 72KB，微不足道。但从射频模块的角度看，每小时 720 次唤醒——每次唤醒射频模块都要从休眠状态切换到活跃状态，这个过程消耗的能量可能比传输 100 字节本身还多。
 
@@ -358,7 +360,7 @@ Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多�
 
 ### setAndAllowWhileIdle 的使用限制
 
-`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类理解更清楚：
+`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类区分：
 
 - `setAlarmClock()`：面向用户可见闹钟，正常触发。
 - allow-while-idle alarms：可以穿过 Doze，但受频率限制，文档给出的节流口径大约是每个 App 每 9 分钟一次。
@@ -390,7 +392,7 @@ Android 14 要求前台服务同时满足三层约束：Manifest 里的 `android
 
 新增的 FGS 类型中，有两个值得特别关注：
 
-**shortService**：专为短时间(约 3 分钟)的关键工作设计。如果超时未完成，系统会停止服务。这个类型适合一次性文件加密、紧急数据保存等场景——它的功耗上限是明确的，不会无限持有。
+**shortService**：专为短时间(约 3 分钟)的关键工作设计。如果超时未完成，系统会停止服务。这个类型适合一次性文件加密、紧急数据保存等场景——它有明确的功耗上限，不会无限持有。
 
 **dataSync**：`dataSync` 仍是有效的 foreground service type，但官方已经给出替代方向，例如 WorkManager、user-initiated data transfer jobs 和 DownloadManager。对于系统开发者来说，长时间运行的 `dataSync` FGS 仍然应该被视为优先优化对象，只是不能把它写成"已经 deprecated"。
 

@@ -15854,6 +15854,132 @@
       ],
       "summary": "Research benchmark with 52 reproducible Android crash bugs for evaluating automated GUI testing tools",
       "scored_at": "2026-05-26T09:05:46.469598"
+    },
+    {
+      "path": "DeepResearch/2026-05-26-android-16-17-dmabuf-gralloc-graphics-memory-version-boundary.md",
+      "title": "05-26-Android 16/17 DMA-BUF/Gralloc 图形内存版本边界",
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch02",
+        "reason": "渲染/SurfaceFlinger/VSync/Choreographer - DMA-BUF, Gralloc 图形内存"
+      }
+    },
+    {
+      "path": "DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md",
+      "title": "05-26-Android 16 Generational CMC 开关源码锚点",
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch04",
+        "reason": "内存/LMK/zRAM/memcg - ART 虚拟机内存管理"
+      }
+    },
+    {
+      "path": "DeepResearch/2026-05-26-android17-deliqueue-performance-numbers-primary-source.md",
+      "title": "05-26-Android 17 DeliQueue 性能数据一手来源",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch07",
+        "reason": "流畅度/jank/卡顿/fps - MessageQueue 优化"
+      }
+    },
+    {
+      "path": "DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md",
+      "title": "05-27-android-17-art-Generational GC Compose Composition",
+      "score": 19,
+      "quality": "medium",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch04",
+        "reason": "内存/LMK/zRAM/memcg - ART 虚拟机内存管理"
+      }
+    },
+    {
+      "path": "DeepResearch/安卓wms窗口类闪黑，黑屏等疑难问题你会吗？-vip学员作业-2026-05-26.md",
+      "title": "安卓wms窗口类闪黑，黑屏等疑难问题你会吗？-VIP学员作业-2026-05-26",
+      "score": 16,
+      "quality": "medium",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch03",
+        "reason": "输入/InputDispatcher/触摸 - WMS 窗口管理"
+      }
+    },
+    {
+      "path": "DeepResearch/长文：打破 zswap 和 zram 的迷思-2026-05-26.md",
+      "title": "长文：打破 zswap 和 zram 的迷思-2026-05-26",
+      "score": 19,
+      "quality": "medium",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch04",
+        "reason": "内存/LMK/zRAM/memcg - Linux 内存压缩技术"
+      }
+    },
+    {
+      "path": "DeepResearch/GPU 的工作原理，为什么 GPU 适合 AI？-2026-05-26.md",
+      "title": "GPU 的工作原理，为什么 GPU 适合 AI？-2026-05-26",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-05-27T05:57:00Z",
+      "source": "Task11-incremental-scan",
+      "chapter": {
+        "chapter": "ch16",
+        "reason": "其他 - GPU 架构与并行计算"
+      }
+    }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md",
+      "title": "ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束",
+      "summary": "PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；WorkDuration 为 API 36 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。",
+      "chapters": "ch25, ch05",
+      "processed_at": "2026-05-27T06:40:04.480543",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md",
+      "title": "Android 17 ART 分代 GC 与 Compose Composition",
+      "summary": "Android 17 正式启用分代 GC 为默认配置，优化 Snapshot、SlotTable、LayoutNode 等短期对象回收。年轻代收集频率高成本低，减少 Full GC 触发。Android 16 QPR2 已有 Generational CMC 初步实现，Android 17 完整启用并优化编译时间 18%。",
+      "chapters": "ch04, ch22",
+      "processed_at": "2026-05-27T06:40:04.480543",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-17-dmabuf-gralloc-graphics-memory-version-boundary.md",
+      "title": "Android 16/17 DMA-BUF/Gralloc 图形内存版本边界验证",
+      "summary": "源码级验证三个关键论点：AOSP libdmabufheap 无通用池化路径；allocate2() additionalOptions 在 Android 15 已存在非 16 新增；GraphicBuffer flatten/unflatten 未用 FDA 批量安装。此前引用的 20%-40% 收益缺 benchmark 支撑。",
+      "chapters": "ch02",
+      "processed_at": "2026-05-27T06:40:04.480543",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md",
+      "title": "Android 17 Excessive CPU Kill 机制边界验证",
+      "summary": "TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 是事后取证机制非预防性治理。确认存在于 API 37 非 36；targetSdk>=37 触发前提；JobScheduler quota 与 trigger 无直接源码关联。含 Perfetto trigger.proto、ProfilingTrigger.java 源码位置。",
+      "chapters": "ch25",
+      "processed_at": "2026-05-27T06:40:04.480543",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md",
+      "title": "Android 16 QPR2 Generational CMC 开关与年轻代参数源码锚点验证",
+      "summary": "Generational CMC 基于 ConcurrentCopying 扩展，开关非独立 flag 而是设备能力判断。源码锚点：concurrent_copying.h L108、heap.cc L197/2168-2173/2793、heap.h L148/1176。年轻代比例约 10-20%，晋升由 GC 迭代次数决定。",
+      "chapters": "ch04",
+      "processed_at": "2026-05-27T06:40:04.480543",
+      "type": "DeepResearch"
     }
   ]
 }

@@ -39,34 +39,11 @@ sources:
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.7"]
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-27
 ---
 
 # AOSP 源码编译与调试环境
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 AOSP 下载与编译环境搭建（Ubuntu / Mac 环境）
-- 🔹 Lunch target 选择与 build variant（userdebug / eng）
-- 🔹 模拟器运行 AOSP（emulator / Cuttlefish）
-- 🔹 修改 Framework 代码并验证的工作流
-- 🔹 常用 debug 手段：增加 Log、修改 SystemProperties、dumpsys
-
-### 扩展（可选深入）
-
-- 🔸 使用 ADB root + 修改 system partition 的快速调试方式
-- 🔸 Pixel 设备刷 AOSP 自编译 ROM 的流程
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 要理解 Android 系统的深层行为——比如 Zygote fork 后主线程的 200ms 卡顿、SurfaceFlinger 选择 GPU 合成的条件——仅阅读源码不够，需要实际修改代码、编译模块、验证效果。本节构建完整的「修改 Framework 代码并验证假设」工作流：从环境搭建、源码下载到编译、模拟器运行、修改验证。
 
@@ -78,8 +55,6 @@ related_chapters: ["16.1", "16.2", "15.7", "14.7"]
 
 **操作系统方面，Linux 是唯一官方支持的编译平台。**Ubuntu 20.04 LTS 和 22.04 LTS 都可以正常编译 Android 11+（包括 Android 16）。macOS 自 2021 年起（Android 11+）已不再官方支持作为 AOSP 编译平台。即使通过 case-sensitive APFS 卷做 workaround，也经常会遇到路径大小写敏感性问题。如果主力机是 Mac，推荐用 Ubuntu 虚拟机或远程 Linux 服务器来编译。
 
-[已验证: 官方文档, source.android.com/docs/setup/build/requirements]
-
 Ubuntu 上需要安装一系列编译依赖包。Android 16 的编译环境要求可以通过以下命令一次性安装：
 
 ```bash
@@ -88,8 +63,6 @@ sudo apt-get install git-core gnupg flex bison build-essential \
   libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils \
   xsltproc unzip fontconfig
 ```
-
-[已验证: 官方文档, source.android.com/docs/setup/initializing]
 
 源码下载使用 Google 的 `repo` 工具。`repo` 是一个 Python 脚本，封装了数百个 Git 仓库的批量管理。初始化和同步的标准流程是：
 
@@ -106,7 +79,7 @@ repo sync -j32
 
 [已验证: 官方文档, source.android.com/docs/setup/build/downloading]
 
-[自动发现] AOSP 的构建系统由三层组成：Soong、Kati 和 Ninja。Soong 解析 `Android.bp` 文件（声明式模块描述），生成 Ninja 构建清单；Kati 将遗留的 `Android.mk` 文件翻译为 Ninja 清单；Ninja 作为执行引擎负责实际的编译调度。Google 曾计划将构建系统迁移到 Bazel，但该迁移已于 2024 年中止。了解这三层的关系有助于理解为什么修改一个 `.bp` 文件后需要先跑 `m nothing` 来验证构建描述是否正确。
+AOSP 的构建系统由三层组成：Soong、Kati 和 Ninja。Soong 解析 `Android.bp` 文件（声明式模块描述），生成 Ninja 构建清单；Kati 将遗留的 `Android.mk` 文件翻译为 Ninja 清单；Ninja 作为执行引擎负责实际的编译调度。Google 曾计划将构建系统迁移到 Bazel，但该迁移已于 2024 年中止。了解这三层的关系，有助于理解为什么修改一个 `.bp` 文件后需要先跑 `m nothing` 来验证构建描述是否正确。
 
 ## Lunch Target 与 Build Variant
 
@@ -128,8 +101,6 @@ Build variant 是一个容易混淆的概念，三种变体各有用途：
 **`userdebug`** 是最常用的开发变体。在 `user` 的基础上开放了 root 和 adb 访问，保留了大部分安全检查。性能优化分析、Perfetto 抓 Trace、框架层调试都用这个变体。它在性能表现上与 `user` 足够接近，调试数据有参考价值。
 
 **`eng`** 是工程开发变体。开启了所有调试选项，包括更详细的日志输出、禁用部分安全检查、预装开发工具。eng 构建的自测更方便，但性能数据不可用于 benchmark——因为额外的调试开销会显著影响调度、GC、渲染等行为。
-
-[已验证: 官方文档, source.android.com/docs/setup/build/building]
 
 对于性能分析场景，建议用 `userdebug` 做主要验证，`eng` 做快速自测。做 benchmark 之前一定要确认当前是 `userdebug` 而非 `eng`，否则数据基本不可信。
 
@@ -168,9 +139,6 @@ Cuttlefish 是 Google 推荐的 AOSP 测试方案。它是一个运行在 Linux 
 
 与 Android Emulator（基于 QEMU）不同，Cuttlefish 基于 **crosvm**（Google 自研的 VMM）和 **virtio** 设备模型。crosvm 是一个轻量级虚拟机监视器，专门为 Chrome OS / Android 虚拟化场景设计；virtio 提供了标准化且低开销的半虚拟化 I/O 接口（网络、块设备、输入设备等）。这套架构使 Cuttlefish 比 QEMU 更轻量、启动更快，也因此被 AOSP CI 和 Android 仪表盘选作标准测试平台。Host 侧通过 WebRTC 暴露交互界面（浏览器 `https://localhost:8443`），同时通过 ADB 提供命令行访问。
 
-[已验证: source.android.com/docs/setup/create/avd, device/google/cuttlefish]
-
-[已验证: 官方文档, source.android.com/docs/setup/create/avd]
 
 Cuttlefish 的设置流程（以 AOSP 编译产物路径为例）：
 
