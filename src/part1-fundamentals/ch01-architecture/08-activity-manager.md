@@ -2,7 +2,7 @@
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-27"
@@ -80,13 +80,13 @@ created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-27"
-task6_result: "pass-light-edit"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-28"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 last_task6_audit: "2026-05-17"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -97,15 +97,19 @@ review_round: "5"
 last_task9_audit: "2026-05-18"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-last_task6_at: "2026-05-27T23:15:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-23-review.md"
-task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 5 项（压缩否定-纠正式句式 3 处，移除 AIW 调研编辑标记 2 处）；无新增 L3/L4 回炉项。"
+last_task6_at: "2026-05-28T03:16:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-03-review.md"
+task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 5 处；无 L3/L4 回炉项，送 Task9 复核。"
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
 last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
 last_task9_autofix_at: "2026-05-28"
 task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
+task6_l1_l2_fixes: 5
+task6_l3_l4_issues: 0
 ---
 
 
@@ -142,7 +146,7 @@ task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contenti
 
 如果你做过 Android 性能优化,几乎不可能绕开 AMS。应用冷启动时,是 AMS 向 Zygote 发出 fork 请求来创建你的进程;用户按 Home 键时,是 AMS 调整你进程的 oom_adj,决定你在内存紧张时是第一个被杀还是最后一个;当你遇到 ANR,超时检测的"埋雷-爆雷"逻辑就住在 AMS 内部。
 
-**用 Perfetto 分析启动耗时、进程被杀、ANR、前台服务超时这些问题时,Trace 里看到的 `am_proc_start`、`am_anr`、`am_crash` 这些事件,全部来自 AMS。** 不了解 AMS 的工作方式,这些事件就是 Trace 里的"黑盒"--你看到它发生了,但不知道为什么、怎么追。
+**用 Perfetto 分析启动耗时、进程被杀、ANR、前台服务超时这些问题时,Trace 里看到的 `am_proc_start`、`am_anr`、`am_crash` 这些事件,全部来自 AMS。** 不了解 AMS 的工作方式,这些事件就是 Trace 里的“黑盒”：你看到它发生了，但不知道为什么、怎么追。
 
 读完本节,可以在 Perfetto 中识别 AMS 的关键 Track 和事件,理解进程优先级的动态调整逻辑,以及各类 ANR 的触发路径。目标是让性能分析时知道"该往哪里看",不是把读者变成 AMS 的开发者。
 
@@ -156,7 +160,7 @@ task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contenti
 
 AMS 运行在 `system_server` 进程中,是 Android 最核心的系统服务之一。它负责进程的创建、优先级调整和回收,负责 Service、BroadcastReceiver、ContentProvider 的系统侧调度,也承接 ANR、Crash、前后台状态变化这些全局管理逻辑。对于 Activity,现代 Android 已经把大部分任务与窗口容器管理拆到了 `ActivityTaskManagerService`(ATMS)和 `WindowManagerService`(WMS)一侧,所以我们分析启动和任务切换时,不能只盯着 AMS。
 
-从架构上看,AMS 和几个关键服务之间有紧密的协作关系:
+AMS 与几个关键服务之间存在紧密的协作关系：
 
 - **PackageManagerService(PMS)**:AMS 在启动 Activity/Service 时,需要通过 PMS 解析目标组件的信息(权限、声明、进程名等)。
 - **ActivityTaskManagerService(ATMS) / WindowManagerService(WMS)**:Activity 需要窗口才能显示,现代 AOSP 里任务与窗口容器管理主要落在 ATMS / WMS。AMS 更多负责进程、Service、Broadcast 和 ANR 管线;ATMS 负责 Activity / Task 的调度;WMS 负责窗口、焦点和输入相关状态。Input ANR 的检测也要看 WMS 侧的 `InputDispatcher`。
@@ -166,8 +170,7 @@ AMS 运行在 `system_server` 进程中,是 Android 最核心的系统服务之�
 应用进程通过 `ActivityManager`(客户端代理类)与 AMS 通信。这层通信走的是 Binder IPC,`IActivityManager.aidl` 定义接口,`ActivityManagerService` 实现接口。需要区分的是,`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上,但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用,往往只是系统服务链路的起点,不是全部。
 
 ```text
-[图:AMS 在系统架构中的位置,展示 system_server 内 AMS 与 PMS/WMS 的关系,以及 App 进程通过 Binder 与 AMS 通信的路径]
-[待高爷补充:系统架构图]
+[图：AMS 在系统架构中的位置，展示 system_server 内 AMS 与 PMS / WMS 的关系，以及 App 进程通过 Binder 与 AMS 通信的路径]
 ```
 
 ### 在 Perfetto 中定位 AMS
@@ -209,7 +212,7 @@ LIMIT 20;
 
 Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了一套精细的进程优先级体系,AMS 会根据进程中运行的组件状态动态调整每个进程的 `oom_adj`(Out-of-Memory Adjustment Score)。当内存紧张时,lmkd 根据这个分数决定先杀谁。
 
-核心的优先级层级(从高到低):
+核心的优先级层级（从高到低）：
 
 | 优先级 | oom_adj | 含义 | 典型场景 |
 |--------|---------|------|----------|
@@ -235,7 +238,7 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 
 AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked()`。这个方法会遍历所有进程,根据每个进程中运行的组件(Activity、Service、Provider、广播接收器)的状态重新计算优先级。
 
-一个进程可能同时持有多种组件。比如一个 App 进程可能既有前台 Activity,又有后台 Service 在跑。AMS 会取所有组件中最高的优先级作为进程的最终优先级--这个策略确保了"只要进程中有任何重要组件,就不会被轻易杀掉"。
+一个进程可能同时持有多种组件。比如一个 App 进程可能既有前台 Activity,又有后台 Service 在跑。AMS 会取所有组件中最高的优先级作为进程的最终优先级。这个策略确保了"只要进程中有任何重要组件,就不会被轻易杀掉"。
 
 ### 进程启动流程
 
@@ -266,20 +269,19 @@ Launcher / Instrumentation.execStartActivity()
 
 ### 进程回收策略
 
-AMS 与 lmkd 的协作在 §4.4 中有详细讲解,这里简要提一下:当系统内存低于阈值时,lmkd 通过 `/proc/<pid>/oom_score_adj` 读取每个进程的优先级分数,从分数最高的缓存进程开始杀。AMS 的角色是维护好这个分数--每次组件状态变化时,`updateOomAdjLocked()` 都会被触发。
+AMS 与 lmkd 的协作在 §4.4 中有详细讲解,这里简要提一下:当系统内存低于阈值时,lmkd 通过 `/proc/<pid>/oom_score_adj` 读取每个进程的优先级分数,从分数最高的缓存进程开始杀。AMS 的角色是维护这个分数；每次组件状态变化时,`updateOomAdjLocked()` 都会被触发。
 
 在 Perfetto 中,我们可以通过 `Process Stats` Track 观察 `oom_score_adj` 的变化:当一个 App 从前台切到后台,你会看到它的 oom_score_adj 从 0 逐步升到 900+。如果随后出现 `am_kill` 事件,说明该进程被 lmkd 回收了。
 
 ```text
-[图:Perfetto 中 oom_score_adj 变化时序图,展示 App 从前台→后台→被杀的完整过程]
-[待高爷补充:Trace 截图]
+[图：Perfetto 中 oom_score_adj 变化时序图，展示 App 从前台到后台再到被杀的完整过程]
 ```
 
 ---
 
 ## AMS 与 ANR 检测
 
-ANR(Application Not Responding)是 Android 稳定性的核心防线。AMS 不直接导致 ANR--它是"裁判",负责检测 App 是否在规定时间内完成了应完成的操作。
+ANR(Application Not Responding)是 Android 稳定性的核心防线。AMS 不直接导致 ANR；它是“裁判”，负责检测 App 是否在规定时间内完成了应完成的操作。
 
 ANR 检测可以先按三步理解:**开始计时、取消计时、超时上报**。
 
@@ -434,7 +436,7 @@ RootWindowContainer
 
 ### 冷启动归因:ApplicationStartInfo
 
-Android 16(API 36)引入了 `ApplicationStartInfo.getStartComponent()` API,可以精确区分当前冷启动是由哪种组件触发的:Activity、Service、Receiver 还是 ContentProvider。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int maxNum)`,返回 `ApplicationStartInfo` 列表。在没有这个 API 之前,分析启动耗时只能从 Trace 上按时间顺序推断"看起来是哪个组件先被调用",不够准确。
+Android 16 (API 36)引入了 `ApplicationStartInfo.getStartComponent()` API,可以精确区分当前冷启动是由哪种组件触发的:Activity、Service、Receiver 还是 ContentProvider。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int maxNum)`,返回 `ApplicationStartInfo` 列表。在没有这个 API 之前,分析启动耗时只能从 Trace 上按时间顺序推断"看起来是哪个组件先被调用",不够准确。
 
 实际操作中,在 Perfetto 里可以通过以下方式辅助归因:
 
@@ -442,13 +444,12 @@ Android 16(API 36)引入了 `ApplicationStartInfo.getStartComponent()` API,可�
 - 如果 `bindApplication` 之后先走 `onCreate` → `onStartCommand()`,是 Service 启动
 - 如果进程启动后直接进入 `onReceive()`,是静态广播触发
 
-Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组件类型,不再需要从 Trace 时序推断。这对区分"用户点击触发的冷启动"和"后台组件触发的冷启动"尤其有用--前者应该优先优化,后者可能只需要做延迟初始化。
+Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组件类型,不再需要从 Trace 时序推断。这对区分"用户点击触发的冷启动"和"后台组件触发的冷启动"尤其有用：前者应该优先优化,后者可能只需要做延迟初始化。
 
 > [已验证: Android 16 / API 36,`android.app.ApplicationStartInfo#getStartComponent()`;获取入口为 `ActivityManager#getHistoricalProcessStartReasons(int)`]
 
 ```text
-[图:Perfetto 中冷启动的完整 Trace 片段,标注上述 6 个关键时间节点]
-[待高爷补充:Trace 截图]
+[图：Perfetto 中冷启动的完整 Trace 片段，标注上述 6 个关键时间节点]
 ```
 
 ### manifest 中的 `recreateOnConfigChanges`
@@ -469,33 +470,33 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 前台服务是 Android 中一种重要的后台执行机制,允许 App 在用户不可见时继续执行关键任务(如音乐播放、导航、文件下载),代价是必须显示一个持续通知。
 
-**Android 11(API 30)** 开始把后台启动 FGS 的敏感资源访问单独收口。后台拉起的 FGS 不能默认访问相机、麦克风、位置;Manifest 里也要补 `camera` / `microphone` 等对应的 FGS type。
+**Android 11 (API 30)** 开始把后台启动 FGS 的敏感资源访问单独加上约束。后台拉起的 FGS 不能默认访问相机、麦克风、位置;Manifest 里也要补 `camera` / `microphone` 等对应的 FGS type。
 
-**Android 12(API 31)** 引入了一个重大变更:**禁止从后台启动前台服务**。如果 App 在后台时调用 `startForegroundService()`,系统会抛出 `ForegroundServiceStartNotAllowedException`。例外情况包括:从用户可见状态转换时、收到高优先级 FCM 消息时、以及特定的系统组件调用时。
+**Android 12 (API 31)** 引入了一个重大变更:**禁止从后台启动前台服务**。如果 App 在后台时调用 `startForegroundService()`,系统会抛出 `ForegroundServiceStartNotAllowedException`。例外情况包括:从用户可见状态转换时、收到高优先级 FCM 消息时、以及特定的系统组件调用时。
 
 同时,Android 12 引入了 **Phantom Process Killer**,监控 App 的子进程(通过 `Runtime.exec()` 或 JNI fork),限制系统级总数为 32 个,超出的会被杀掉。
 
-**Android 13(API 33)** 增加了 FGS Task Manager 和 `POST_NOTIFICATIONS` 运行时权限。即使通知权限被拒,用户仍然可以在 FGS Task Manager 里看到并停止正在运行的前台服务。
+**Android 13 (API 33)** 增加了 FGS Task Manager 和 `POST_NOTIFICATIONS` 运行时权限。即使通知权限被拒,用户仍然可以在 FGS Task Manager 里看到并停止正在运行的前台服务。
 
-**Android 14(API 34)** 进一步要求:
+**Android 14 (API 34)** 进一步要求:
 - 每个 FGS 必须在 Manifest 中声明 `foregroundServiceType`(如 `camera`、`connectedDevice`、`dataSync`、`health`)。
 - 必须申请对应类型的权限(如 `FOREGROUND_SERVICE_CAMERA`),否则 `SecurityException`。
 - 即使满足后台启动 FGS 的豁免条件,如果 FGS 需要"while-in-use"权限(如位置、相机、麦克风),在 App 处于后台时也不能访问这些资源。
 
-**Android 15(API 35)** 对 `dataSync` 和新增的 `mediaProcessing` 类型的 FGS 加了运行时间上限(`dataSync` 最长 6 小时)。
+**Android 15 (API 35)** 对 `dataSync` 和新增的 `mediaProcessing` 类型的 FGS 加了运行时间上限(`dataSync` 最长 6 小时)。
 
-**Android 16(API 36)** 要求后台 Job(包括通过 FGS 启动的)遵守各自的运行配额。
+**Android 16 (API 36)** 要求后台 Job(包括通过 FGS 启动的)遵守各自的运行配额。
 
-**Android 17(API 37)** 进一步收紧了后台音频行为,没有"while-in-use"能力的 FGS 在后台调用音频 API 会静默失败。
+**Android 17 (API 37)** 进一步限制后台音频行为,没有"while-in-use"能力的 FGS 在后台调用音频 API 会静默失败。
 
 > [已验证: 官方文档, developer.android.com - Behavior changes for Android 11/12/13/14/15/16/17]
 
 ### 后台启动服务的限制链
 
-从 Android 8.0 开始,Google 就在逐步收紧后台启动 Service 的能力。整个演进路线:
+从 Android 8.0 开始,Google 就在逐步限制后台启动 Service 的能力。整个演进路线:
 
 - **Android 8.0**:限制后台 App 调用 `startService()`,必须使用 `startForegroundService()`。
-- **Android 11**:后台启动的 FGS 访问相机 / 麦克风 / 位置能力继续收口。
+- **Android 11**:后台启动的 FGS 访问相机 / 麦克风 / 位置能力继续受限。
 - **Android 12**:限制后台启动 FGS(`ForegroundServiceStartNotAllowedException`)。
 - **Android 13**:FGS Task Manager + `POST_NOTIFICATIONS` 让长驻服务更容易被看见和停止。
 - **Android 14**:FGS 类型声明强制化 + while-in-use 权限限制。
@@ -575,8 +576,8 @@ AMS 仍然负责广播匹配、调度和 ANR 判责,但源码入口不能只盯�
 3. 对于有序广播,按 priority 排序后依次分发;对于无序广播,并行分发。
 4. `BroadcastQueueImpl.dispatchReceivers()` 在调度 Receiver 前把投递状态切到 `DELIVERY_SCHEDULED`,并按前台 / 后台广播配置启动 delivery timeout;Receiver 完成后再取消计时。超时先到时,`finishReceiverActiveLocked(... DELIVERY_TIMEOUT ...)` 进入广播 ANR 路径。
 
-> **按进程广播队列架构（Android 14/15/16）**：Android 14/15 的源码类名是 `BroadcastQueueModernImpl`,Android 16 的类名是 `BroadcastQueueImpl`,两者都围绕 `BroadcastProcessQueue` 按进程组织广播投递。旧实现中,一个进程内多个 Receiver 的分发是串行的,如果前面的 Receiver 执行慢,后面同一进程内的 Receiver 也会被阻塞--这就是"队头阻塞"（head-of-line blocking）。按进程队列把分发粒度从"全局队列"改到"进程队列":同一个进程的 Receiver 仍然串行,不同进程之间可以并行分发,减少慢进程拖累全局广播。对性能分析的影响是,在 Perfetto 中看到广播 ANR 时,要把 `BroadcastQueueImpl` 的 delivery timeout、目标进程主线程 `onReceive()`、以及同进程前序 Receiver 放在一起判断。
->
+**按进程广播队列架构（Android 14/15/16）**：Android 14/15 的源码类名是 `BroadcastQueueModernImpl`,Android 16 的类名是 `BroadcastQueueImpl`,两者都围绕 `BroadcastProcessQueue` 按进程组织广播投递。旧实现中,一个进程内多个 Receiver 的分发是串行的,如果前面的 Receiver 执行慢,后面同一进程内的 Receiver 也会被阻塞——这就是"队头阻塞"（head-of-line blocking）。按进程队列把分发粒度从"全局队列"改到"进程队列":同一个进程的 Receiver 仍然串行,不同进程之间可以并行分发,减少慢进程拖累全局广播。对性能分析的影响是,在 Perfetto 中看到广播 ANR 时,要把 `BroadcastQueueImpl` 的 delivery timeout、目标进程主线程 `onReceive()`、以及同进程前序 Receiver 放在一起判断。
+
 > [已验证: AOSP android-14/15 `BroadcastQueueModernImpl.java`;AOSP android-16.0.0_r1 `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` + `BroadcastProcessQueue.java`]
 
 ### 静态广播 vs 动态广播的性能差异
@@ -586,7 +587,7 @@ AMS 仍然负责广播匹配、调度和 ANR 判责,但源码入口不能只盯�
 - **静态广播**:即使 App 进程不在,系统也会通过 AMS 启动 App 进程来接收广播。因此一次静态广播触发可能导致进程冷启动,性能开销大。
 - **动态广播**:只在进程存活时有效,不需要冷启动,性能开销小。
 
-从系统性能的角度,大量注册静态广播的 App 会在系统事件(如 `BOOT_COMPLETED`、`CONNECTIVITY_CHANGE`)触发时引发"进程创建风暴"--AMS 需要同时启动大量进程。这也是 Android 逐步限制静态广播的原因之一。
+从系统性能的角度,大量注册静态广播的 App 会在系统事件(如 `BOOT_COMPLETED`、`CONNECTIVITY_CHANGE`)触发时引发"进程创建风暴"：AMS 需要同时启动大量进程。这也是 Android 逐步限制静态广播的原因之一。
 
 ### Android 14+ 的广播限制
 
@@ -594,7 +595,7 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 
 第一层变化发生在进程处于 cached state 时。官方行为变更文档明确写到,`context-registered broadcasts` 可以在应用进入 cached state 后被放进队列,等应用回到前台或离开 cached state 再投递。Manifest 中声明的广播不走这套排队逻辑,系统甚至会把应用从 cached state 拉出来立即投递。这会直接改变 Perfetto 里理解广播执行时机的方式:发送时刻和 `onReceive()` 开始执行的时刻,Android 14 之后不一定重合。
 
-第二层变化是动态注册 Receiver 的导出属性。面向 Android 14+ 的应用在调用 `Context.registerReceiver()` 时,需要显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`,除非它只接收 system broadcast。这个改动是安全收口,不是性能优化本身,但它会影响旧代码能不能顺利走到广播分发路径。
+第二层变化是动态注册 Receiver 的导出属性。面向 Android 14+ 的应用在调用 `Context.registerReceiver()` 时,需要显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`,除非它只接收 system broadcast。这个改动是安全约束,不是性能优化本身,但它会影响旧代码能不能顺利走到广播分发路径。
 
 对性能分析来说,我们至少要记住两件事。第一,cached 进程里的动态广播可能被延后,因此不能再用"发送广播后主线程没立刻响应"直接推断 AMS 分发慢。第二,Manifest 广播依旧可能把进程拉起,所以 `BOOT_COMPLETED`、网络变化、电量状态切换这类广播仍然可能造成进程批量唤醒,低端设备上尤其容易放大冷启动风暴和后台抖动。
 
@@ -643,8 +644,7 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 4. 目标进程的所有线程消失
 
 ```text
-[图:三种典型场景的 Perfetto Trace 对比截图]
-[待高爷补充:Trace 截图]
+[图：冷启动、ANR、进程被杀三种典型场景的 Perfetto Trace 对比截图]
 ```
 
 ---

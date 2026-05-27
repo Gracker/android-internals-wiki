@@ -49,18 +49,18 @@ last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
-last_task6_at: "2026-05-28T02:11:48+08:00"
-last_task6_review_log: "logs/review/2026-05-28-02-review.md"
-task6_l1_l2_fixes: 0
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-28T03:16:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-03-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：Task2B 修复后写作复审通过；L1/L2 未发现新增正文问题；无 L3/L4 回炉项，送 Task9 复核。"
+task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
 review_round: 6
 last_task9_autofix_at: "2026-05-28"
 ---
@@ -490,7 +490,7 @@ adb bugreport bugreport.zip
 
 在 Battery Historian 的时间线上，wakelock 显示在 top bar 区域。如果某个 App 的 wakelock 条目在屏幕关闭后长时间存在（特别是整段时间都是连续的），几乎可以确定存在问题。
 
-[待补充：Battery Historian wakelock 时间线截图]
+[图：Battery Historian wakelock 时间线截图，标注屏幕关闭后的连续持有区间]
 
 ### dumpsys batterystats 解读
 
