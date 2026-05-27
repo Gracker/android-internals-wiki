@@ -11,15 +11,15 @@ polish_date: '2026-04-10'
 polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task6_state: "revisiting"
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
-task9_result: needs-rework
-task9_reviewed_date: '2026-05-22'
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T18:30:26+08:00"
-pipeline_stage: task9_pending
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-28"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-28T05:31:07+08:00"
+pipeline_stage: "task6_pending"
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
@@ -55,6 +55,12 @@ last_task6_review_log: "logs/review/2026-05-28-05-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（补齐正文 H1 章节号）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。"
+last_task9_autofix_at: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-05-28-05-deep-review.md"
+p0: 0
+p1: 0
+p2: 0
+task9_review_notes: "2026-05-28 Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。"
 ---
 
 # 12.2 网络性能优化
@@ -248,14 +254,14 @@ public final class PreconnectManager {
 
 ### 网络线程的能效分档
 
-Android 15 在 ADPF（Adaptive Performance Framework）的 `PerformanceHintManager.Session` 中新增了 `setPreferPowerEfficiency(boolean)` 方法，用于向系统声明线程组的能效偏好。声明了 `true` 的 session，调度器在满足目标帧时间的前提下会优先选择能效更高的调度策略（如分配到低功耗核心、降低频率目标）。不声明时，ADPF 默认按性能优先处理。
+Android 15 在 ADPF（Adaptive Performance Framework）的 `PerformanceHintManager.Session` 中新增了 `setPreferPowerEfficiency(boolean)` 方法，用于声明这个 hint session 绑定的线程可以偏向能效调度。公开 API 的承诺是调度偏好，不保证固定落到低功耗核心，也不保证直接降低 CPU 频率；实际效果取决于设备的系统服务和 vendor power HAL 策略。
 
-两类网络线程应该分开配置：
+网络线程是否适合加入 power-efficient session，要先区分请求类型：
 
-- **交互式网络线程**：用户正在等待结果（列表加载、搜索请求）。这类线程需要低延迟，不应声明能效偏好，保持默认的响应优先级调度。
-- **能效式网络线程**：用户不感知的后台任务（日志上报、数据同步、预加载）。这类线程声明能效偏好后，系统可以在节能模式下执行，避免一个 200ms 的 TCP 超时把大核唤醒并拉高频率。
+- **交互式网络线程**：用户正在等待结果（列表加载、搜索请求）。这类线程优先保证尾延迟，通常不应声明能效偏好。
+- **后台网络队列**：日志上报、数据同步、预加载等用户不直接等待的任务，可以在独立线程组上实验能效偏好，并用 PowerMonitor、Perfetto rail 或电量 A/B 结果验证收益。
 
-2026 年的网络层设计，应把"显式声明能效偏好"作为后台网络任务的准入指标。不声明的代价是后台日志上报把大核唤醒、CPU 频率拉高，电池消耗在等一个本可以用 LITTLE 核处理完的请求上。
+`setPreferPowerEfficiency(true)` 适合作为后台网络队列的可选优化项，不应写成通用准入指标。没有实测数据前，不能把它等同于“避免大核唤醒”或“降低频率”。
 
 ## 弱网优化策略：超时、重试与降级
 
@@ -328,10 +334,10 @@ OkHttp 的 EventListener 是一个回调接口，覆盖了 HTTP 请求从发起�
 |---------|---------|-----------|
 | `callStart` | 请求开始 | 总耗时起点 |
 | `dnsStart` / `dnsEnd` | DNS 解析 | DNS 解析时间 |
-| `connectStart` / `connectEnd` | TCP 连接 | 连接时间 |
+| `connectStart` / `connectEnd` | 建连阶段 | 建连总耗时；HTTPS 下包含 TLS 握手 |
 | `secureConnectStart` / `secureConnectEnd` | TLS 握手 | TLS 握手时间 |
 | `requestHeadersStart` / `requestHeadersEnd` | 发送请求头 | 请求头发送时间 |
-| `responseHeadersStart` / `responseHeadersEnd` | 接收响应头 | TTFB（近似） |
+| `responseHeadersStart` | 响应头开始返回 | TTFB 近似；GET 可用 `requestHeadersEnd` → `responseHeadersStart` |
 | `responseBodyStart` / `responseBodyEnd` | 接收响应体 | 响应体传输时间 |
 | `callEnd` / `callFailed` | 请求结束 | 总耗时 / 失败原因 |
 
@@ -341,7 +347,7 @@ OkHttp 的 EventListener 是一个回调接口，覆盖了 HTTP 请求从发起�
 public class PerfEventListener extends EventListener {
     private long dnsStartNanos;
     private long connectStartNanos;
-    private long requestEndNanos;
+    private long requestHeadersEndNanos;
 
     @Override
     public void dnsStart(Call call, String domainName) {
@@ -362,9 +368,14 @@ public class PerfEventListener extends EventListener {
     }
 
     @Override
+    public void requestHeadersEnd(Call call, Request request) {
+        requestHeadersEndNanos = System.nanoTime();
+    }
+
+    @Override
     public void responseHeadersStart(Call call) {
-        long ttfbMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - callStartNanos);
-        // 上报 TTFB 指标（DNS + 连接 + TLS + 服务端处理的综合耗时）
+        long ttfbMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - requestHeadersEndNanos);
+        // GET 场景上报近似 TTFB；有请求体时应从 requestBodyEnd 重新起算
     }
 
     public static final Factory FACTORY = call -> new PerfEventListener();
