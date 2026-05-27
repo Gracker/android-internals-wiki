@@ -8,7 +8,7 @@ drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-02'
 last_verified_against: AOSP android-16.0.0_r1
-reviewed_date: '2026-04-16'
+reviewed_date: '2026-05-27'
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-08'
@@ -40,21 +40,22 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: "task2b_pending"
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: "pending"
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_state: pending
 task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-19"
 last_task9_at: "2026-05-19T02:27:04+08:00"
-last_task6_at: '2026-05-18T05:08:00+08:00'
+last_task6_at: '2026-05-27T22:05:00+08:00'
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
 last_task9_audit: "2026-05-19"
 last_task2b_lite_at: "2026-05-27"
+last_task6_review_log: "logs/review/2026-05-27-22-review.md"
 ---
 
 # 内存持续增长
@@ -86,7 +87,7 @@ last_task2b_lite_at: "2026-05-27"
 
 ## 为什么要了解内存持续增长
 
-在上一章（§10.2）我们讨论了内存泄漏——对象被无意识地持有引用，导致 GC 无法回收。但现实中还有一类更隐蔽的问题：内存并没有泄漏，GC 也在正常工作，但应用的内存占用就是一直在涨。
+上一章（§10.2）讨论的是内存泄漏——对象被无意识地持有引用，导致 GC 无法回收。但现实中还有一类更隐蔽的问题：内存并没有泄漏，GC 也在正常工作，应用的内存占用却一直在涨。
 
 这种场景在 Perfetto 中表现为 Java Heap 或 Native Heap 的曲线呈阶梯式或锯齿式上升，每个锯齿的波谷都比上一个高。用 `dumpsys meminfo` 观察会发现 PSS 在用户使用过程中逐步攀升，即使退回主界面也没有明显回落。
 
@@ -104,7 +105,7 @@ last_task2b_lite_at: "2026-05-27"
 
 这种情况在 `dumpsys meminfo` 中的表现是 Java Heap 的 Alloc 值持续增长，而且 GC 后回落不明显——因为被缓存引用的 Bitmap 属于可达对象，GC 不会回收它们。
 
-另一个常见变体是"无限追加的列表"。有些应用在首页信息流中持续加载新数据，把所有已加载的数据都保存在内存中的列表里。用户下拉加载越多，列表越长，内存占用越大。虽然每个数据对象本身不大，但数千条数据加上其中的嵌套对象（图片 URL、富文本、嵌套 JSON）的累积效应非常可观。
+另一个常见变体是"无限追加的列表"。有些应用在首页信息流中持续加载新数据，把所有已加载的数据都保存在内存中的列表里。用户下拉加载越多，列表越长，内存占用越大。虽然每个数据对象本身不大，但数千条数据加上其中的嵌套对象（图片 URL、富文本、嵌套 JSON）会逐步抬高 Java Heap 和 PSS。
 
 ### Bitmap 累积
 
@@ -144,7 +145,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 [自动发现] 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
-排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 是完成归因的关键工具。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，直接回答"这些匿名页到底被谁拿了"。操作步骤：
+排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 可以先覆盖 DMA-BUF 这一类来源。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，帮助确认匿名页增长是否来自图形 buffer。操作步骤：
 
 1. `adb shell dmabuf_dump -b` 获取全系统 DMA-BUF 快照
 2. 按进程名过滤目标 App，看其名下的 buffer 尺寸分布
@@ -292,7 +293,7 @@ protected void entryRemoved(boolean evicted, String key,
 
 ## 内存增长的监控指标
 
-知道问题存在和能系统性地发现问题，是两件不同的事。在生产环境中，我们需要一套指标体系来持续监控内存增长趋势。
+知道问题存在和能系统性地发现问题，是两件不同的事。生产环境需要一套指标体系来持续监控内存增长趋势。
 
 ### PSS 趋势
 
@@ -338,7 +339,7 @@ Graphics 内存（GPU 纹理、Buffer）的监控可以通过 `dumpsys gpu` 或 
 
 ### 监控数据的可视化
 
-采集到 PSS 和 Heap 数据后，需要将它们可视化才能发现趋势。推荐的做法是：
+采集到 PSS 和 Heap 数据后，需要将它们可视化才能发现趋势。可以按三个层次观察：
 
 1. **按会话聚合**：将一次完整使用过程（从打开应用到退出）的所有采样点连成一条曲线
 2. **多会话对比**：将多次使用过程的曲线叠在一起，观察是否有会话级别的增长趋势
@@ -386,9 +387,9 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 ## WebView 内存增长问题与多进程 WebView
 
-前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身就非常消耗内存——每个 WebView 实例背后都有一个 Renderer 进程的内存开销，包括 V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 进程的纹理缓存等。
+前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身的内存开销很高——每个 WebView 实例背后都有一个 Renderer 进程的内存占用，包括 V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 进程的纹理缓存等。
 
-在一个典型的混合应用中（原生 + WebView），如果用户在 WebView 中连续浏览多个页面，WebView 内部的缓存（HTTP 缓存、图片缓存、JS Heap）会持续增长。更严重的是，WebView 的一些内部数据结构（如 Visited Links 表、Service Worker 缓存）的生命周期与 WebView 进程绑定，即使销毁 WebView 实例也可能无法完全释放。
+在一个典型的混合应用中（原生 + WebView），如果用户在 WebView 中连续浏览多个页面，WebView 内部的缓存（HTTP 缓存、图片缓存、JS Heap）会持续增长。还要看 WebView 进程级数据结构（如 Visited Links 表、Service Worker 缓存）的生命周期：它们与 WebView 进程绑定，即使销毁 WebView 实例也可能无法完全释放。
 
 [来源: Cubox/WebView 经历的各种干货方案分享-2024-11-28.md]
 
@@ -427,13 +428,15 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 ### "内存没泄漏就不会 OOM"
 
-这是最大的误区。OOM 的触发条件是进程的 PSS 达到了系统为该进程分配的内存上限（或系统整体内存耗尽触发 LMK）。这个上限取决于 Heap 大小、Native 分配、Graphics 内存等所有组成部分的总和。即使没有泄漏，缓存无上限增长同样会触碰上限。
+[需确认: 这里把 Java Heap OOM、Native 分配失败和 LMK 回收混在一起，需要由 Task 9 拆开确认触发条件。]
 
-### "LRU Cache 用上就万事大吉"
+OOM 的触发条件是进程的 PSS 达到了系统为该进程分配的内存上限（或系统整体内存耗尽触发 LMK）。这个上限取决于 Heap 大小、Native 分配、Graphics 内存等所有组成部分的总和。即使没有泄漏，缓存无上限增长同样会触碰上限。
+
+### "`LruCache` 用上就能控制内存"
 
 `LruCache` 只解决了"有限容量"的问题，但如果 `maxSize` 设置不合理（比如设得太大），缓存依然会占用过多内存。另外，`LruCache` 只管理 `put` 和 `get` 操作涉及的条目，如果你的代码在 `LruCache` 之外还持有对这些条目的引用（比如在某个全局列表中同时缓存了 Bitmap 引用），那么 `LruCache` 淘汰这些条目后，它们不会被 GC 回收，等于缓存限制失效了。
 
-### "Native 碎片化是系统问题，App 开发者无能为力"
+### "Native 碎片化只能靠系统解决"
 
 虽然物理内存碎片化属于系统层面的问题，但 App 开发者可以通过优化自身的内存分配模式来减轻碎片化。使用内存池、避免频繁的小尺寸分配和释放、合理管理 Native 对象的生命周期，都能显著降低碎片化的程度。
 
