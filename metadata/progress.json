@@ -1113,7 +1113,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
-      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "last_task2b_at": "2026-05-28T02:50:00+08:00",
+      "last_task2b_source": "task9-deep-tech-review",
+      "last_task2b_priority": 95,
+      "last_task2b_note": "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。",
+      "last_task9_at": "2026-05-28T02:31:47+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-02-deep-review.md"
     },
     "24.8": {
       "task9_result": "needs-rework",
@@ -2331,11 +2337,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-28T00:50:00+08:00",
+  "last_task2b_at": "2026-05-28T02:50:00+08:00",
   "last_task2b_sections": [
-    "11.5"
+    "20.9"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework",
+  "last_task2b_action": "task9-deep-tech-review rework",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -3527,14 +3533,18 @@
       "pipeline_stage": "task6_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-14T13:30:11+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "last_task9_at": "2026-05-28T02:31:47+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-02-deep-review.md",
       "queue_priority": 95,
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "revisiting",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
-      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "last_task2b_at": "2026-05-28T02:50:00+08:00",
+      "last_task2b_source": "task9-deep-tech-review",
+      "last_task2b_priority": 95,
+      "last_task2b_note": "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。"
     },
     "24.8": {
       "status": "ready-for-review",
@@ -7726,7 +7736,7 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task2b_run": "2026-05-28T00:50:00+08:00",
+  "last_task2b_run": "2026-05-28T02:50:00+08:00",
   "task2b_sections_fixed": 1,
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-27T23:15:00+08:00",
@@ -8503,6 +8513,15 @@
       "priority": 85,
       "result": "fixed-lite",
       "summary": "修正 Debug.getRss() API 版本边界与 Debug.getPss() smaps_rollup/memtrack 口径。"
+    },
+    {
+      "section": "20.9",
+      "file": "src/part5-app/ch20-stability/09-stability-case-studies.md",
+      "at": "2026-05-28T02:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "summary": "重写 Native signal handler 示例，收敛为 async-signal-safe 最小快照、altstack、默认动作恢复与 re-raise；复杂 unwind/符号化/落盘移出 handler。"
     }
   ],
   "section_18_23": {
@@ -9213,7 +9232,7 @@
       "items_completed": 3
     }
   },
-  "task2b_last_run": "2026-05-27T22:50:00+08:00",
+  "task2b_last_run": "2026-05-28T02:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -9339,6 +9358,15 @@
       "source": "frontmatter-fallback/task9-deep-review",
       "priority": 95,
       "summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
+    },
+    {
+      "section": "20.9",
+      "file": "src/part5-app/ch20-stability/09-stability-case-studies.md",
+      "at": "2026-05-28T02:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "summary": "重写 Native signal handler 示例，收敛为 async-signal-safe 最小快照、altstack、默认动作恢复与 re-raise；复杂 unwind/符号化/落盘移出 handler。"
     }
   ],
   "last_task2b_completed": [
@@ -9459,16 +9487,16 @@
     }
   ],
   "last_task2b_files": [
-    "src/part2-performance/ch11-power/05-wakelock.md"
+    "src/part5-app/ch20-stability/09-stability-case-studies.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "11.5",
-    "file": "src/part2-performance/ch11-power/05-wakelock.md",
-    "at": "2026-05-28T00:50:00+08:00",
+    "section": "20.9",
+    "file": "src/part5-app/ch20-stability/09-stability-case-studies.md",
+    "at": "2026-05-28T02:50:00+08:00",
     "by": "task2b-content-processing-rework-main",
-    "source": "frontmatter-backlog-fallback/task9-deep-review",
+    "source": "task9-deep-tech-review",
     "priority": 95,
-    "summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
+    "summary": "重写 Native signal handler 示例，收敛为 async-signal-safe 最小快照、altstack、默认动作恢复与 re-raise；复杂 unwind/符号化/落盘移出 handler。"
   },
   "task2b_last_rework": {
     "section": "1.8",

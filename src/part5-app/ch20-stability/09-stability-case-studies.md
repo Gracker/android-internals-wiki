@@ -24,10 +24,10 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -37,12 +37,15 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-05-28T02:31:47+08:00"
 task2b_result: "fixed"
-last_task2b_at: "2026-05-23T11:17:28+08:00"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
-task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95 等待 Task2B 回炉。"
+task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。"
+last_task2b_at: "2026-05-28T02:50:00+08:00"
+last_task2b_source: "task9-deep-tech-review"
+last_task2b_priority: 95
+task2b_note: "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。"
 ---
 
 # 稳定性治理案例集
@@ -188,7 +191,7 @@ public void onMethodEnter() {
 
 Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。当进程收到 SIGSEGV、SIGABRT 等信号时，内核把控制权交给注册的处理器，处理器负责 dump 调用栈和寄存器状态。
 
-问题是：**一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
+**一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
 
 - SDK A 注册了 SIGSEGV 处理器
 - SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
@@ -228,44 +231,77 @@ Android 5.0 以后，系统的 debuggerd 也有自己的信号处理器链。应
 
 **统一信号处理器管理**：
 
+统一 handler 的职责要收窄到 async-signal-safe 范围。handler 内不能做 `dlopen`、`dladdr`、堆栈展开、C++ 分配、锁、复杂日志或常规文件写入；这些动作可能再次触发崩溃，或者卡在崩溃前已经被持有的锁上。
+
+实现拆法是：初始化阶段预分配 altstack、pipe/eventfd 和快照缓冲区；handler 只把信号、`siginfo_t` 中的关键字段、`ucontext_t` 里的 PC/SP 写入预分配位置，再用 `write()` 通知安全上下文，随后恢复默认处理并重新投递信号。完整 unwind、符号化、crash report 落盘交给 debuggerd/tombstone、独立采集进程、下一次启动时的 tombstone 解析，或一个不会在 handler 中执行复杂逻辑的安全采集路径。
+
 ```c
-// 全局信号处理器管理器
-static struct sigaction g_old_handlers[32];  // 保存旧处理器
+// 初始化阶段创建 pipe/eventfd，并设置为 O_NONBLOCK。
+// handler 中只允许使用预分配内存和 async-signal-safe 函数。
+static int g_crash_fd = -1;
+static volatile sig_atomic_t g_handling_crash = 0;
+static struct sigaction g_old_handlers[NSIG];
+
+struct crash_snapshot {
+    int sig;
+    int code;
+    void* fault_addr;
+    void* pc;
+    void* sp;
+};
+
+static struct crash_snapshot g_snapshot;
 
 void unified_signal_handler(int sig, siginfo_t* info, void* context) {
-    // 1. 采集调用栈（dlopen + dladdr）
-    dump_native_stack(sig, info, context);
+    if (g_handling_crash == 0) {
+        g_handling_crash = 1;
+        g_snapshot.sig = sig;
+        g_snapshot.code = info ? info->si_code : 0;
+        g_snapshot.fault_addr = info ? info->si_addr : 0;
 
-    // 2. 采集寄存器
-    dump_registers(context);
+#if defined(__aarch64__)
+        ucontext_t* uc = (ucontext_t*) context;
+        g_snapshot.pc = (void*) uc->uc_mcontext.pc;
+        g_snapshot.sp = (void*) uc->uc_mcontext.sp;
+#elif defined(__arm__)
+        ucontext_t* uc = (ucontext_t*) context;
+        g_snapshot.pc = (void*) uc->uc_mcontext.arm_pc;
+        g_snapshot.sp = (void*) uc->uc_mcontext.arm_sp;
+#endif
 
-    // 3. 写入 crash 文件
-    write_crash_report(sig, info);
-
-    // 4. 调用旧处理器链
-    if (g_old_handlers[sig].sa_flags & SA_SIGINFO) {
-        if (g_old_handlers[sig].sa_sigaction != NULL &&
-            g_old_handlers[sig].sa_sigaction != SIG_DFL &&
-            g_old_handlers[sig].sa_sigaction != SIG_IGN) {
-            g_old_handlers[sig].sa_sigaction(sig, info, context);
-        }
-    } else {
-        if (g_old_handlers[sig].sa_handler != NULL &&
-            g_old_handlers[sig].sa_handler != SIG_DFL &&
-            g_old_handlers[sig].sa_handler != SIG_IGN) {
-            g_old_handlers[sig].sa_handler(sig);
+        if (g_crash_fd >= 0) {
+            (void) write(g_crash_fd, &g_snapshot, sizeof(g_snapshot));
         }
     }
 
-    // 5. 恢复默认动作后重新投递信号，让 debuggerd 处理
-    signal(sig, SIG_DFL);
-    tgkill(getpid(), gettid(), sig);
+    // 恢复默认动作后重新投递，让系统 crash_dump/debuggerd 生成 tombstone。
+    struct sigaction dfl;
+    dfl.sa_handler = SIG_DFL;
+    sigemptyset(&dfl.sa_mask);
+    dfl.sa_flags = 0;
+    sigaction(sig, &dfl, NULL);
+
+    sigset_t unblocked;
+    sigemptyset(&unblocked);
+    sigaddset(&unblocked, sig);
+    sigprocmask(SIG_UNBLOCK, &unblocked, NULL);
+
+    raise(sig);
+    _exit(128 + sig);
 }
 
 void register_unified_handler() {
-    struct sigaction sa = {};
+    static uint8_t altstack_mem[SIGSTKSZ * 2];
+    stack_t ss;
+    ss.ss_sp = altstack_mem;
+    ss.ss_size = sizeof(altstack_mem);
+    ss.ss_flags = 0;
+    sigaltstack(&ss, NULL);
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
     sa.sa_sigaction = unified_signal_handler;
-    sa.sa_flags = SA_SIGINFO | SA_RESTART;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigfillset(&sa.sa_mask);
 
     int signals[] = {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL};
@@ -275,17 +311,19 @@ void register_unified_handler() {
 }
 ```
 
+`g_old_handlers` 仍然要保存，但不要默认在崩溃现场调用未知 SDK 的旧 handler。旧 handler 可能持锁、分配内存、执行 `longjmp`，也可能再次注册信号处理器。只有在对方明确提供 async-signal-safe 的薄 adapter 时，才把它放入链中；否则优先让系统默认动作接管，避免把一次崩溃扩散成死锁或双重崩溃。
+
 **初始化时机控制**：统一处理器注册有两种策略，各有取舍。
 
 策略一：在 `Application.attachBaseContext()` 阶段注册，此时第三方 SDK 还没有初始化，统一处理器最先入链。风险是后续 SDK 可能覆盖它。
 
 策略二：在所有第三方 SDK 初始化完毕后注册总 handler，用 `sigaction(oldact)` 捕获已有链路。风险是不规范 SDK 可能在初始化后再次注册，绕过统一处理器。
 
-两种策略都无法 100% 保证覆盖所有 SDK 的信号注册行为。实际操作中推荐策略二并在 APM SDK 中增加信号处理器监控，定期检查目标信号是否仍指向统一处理器，被覆盖时报警。
+两种策略都无法 100% 保证覆盖所有 SDK 的信号注册行为。工程上推荐策略二，并在 APM SDK 中增加信号处理器监控，定期检查目标信号是否仍指向统一处理器，被覆盖时报警。
 
-**禁止 SDK 的 longjmp 恢复**：在信号处理器中执行 `longjmp` 是未定义行为——信号处理器中只能调用异步信号安全函数（async-signal-safe）。`longjmp` 会跳过 RAII 析构、锁释放等清理步骤，导致死锁或内存损坏。正确的做法是 dump 信息后让进程终止。
+**禁止 SDK 的 longjmp 恢复**：在信号处理器中执行 `longjmp` 会跳过 RAII 析构、锁释放等清理步骤，导致死锁或内存损坏。正确做法是记录最小快照、恢复默认动作、重新投递信号，让进程按系统 crash 流程终止。
 
-`[待验证: 信号处理器中 longjmp 的安全性 — POSIX 标准明确禁止，但部分 SDK 仍在使用]`
+`[已验证: POSIX async-signal-safe 约束；handler 内只保留 write/sigaction/sigprocmask/raise/_exit 等安全动作，unwind/符号化/文件写入移出 handler]`
 
 ### 验证
 
