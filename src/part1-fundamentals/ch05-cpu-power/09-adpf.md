@@ -1,5 +1,5 @@
 ---
-status: "ready-for-review"
+status: "finalized"
 title: ADPF 自适应性能框架
 chapter: '5.9'
 section: '5.9'
@@ -43,20 +43,20 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: '2026-05-27T08:50:00+08:00'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task9_result: auto-fixed
-last_task9_at: "2026-05-27T13:20:00+08:00"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-27T14:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-27-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
 last_task6_at: "2026-05-27T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-14-review.md"
 task6_reviewed_date: "2026-05-27"
@@ -65,7 +65,7 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: "openclaw-task6"
 review_type: "task6-writing-quality-review"
-task9_review_notes: "2026-05-27 13:20 Task9 auto-fix：将 §14.7 Perfetto 高级分析 交叉引用修正为实际存在的 §13.14 Perfetto DataGrid 与 Jank CUJ 标准库，并同步 related_chapters；回到 Task6 复审。"
+task9_review_notes: "2026-05-27 13:20 Task9 auto-fix：将 §14.7 Perfetto 高级分析 交叉引用修正为实际存在的 §13.14 Perfetto DataGrid 与 Jank CUJ 标准库，并同步 related_chapters；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 ADPF API level、Headroom 同步 Binder 边界、GameState/RecyclerView ARR 边界与 Perfetto 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-05-27"
 p0: 0
 p1: 0

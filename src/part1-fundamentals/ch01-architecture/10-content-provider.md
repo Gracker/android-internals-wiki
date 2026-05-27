@@ -32,36 +32,37 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: 'needs-rework'
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
 last_task2b_lite_at: '2026-05-27'
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 8
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-11'
-last_task9_at: '2026-05-11T10:20:00+08:00'
-task9_review_notes: '2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28
-  task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review:
-  needs-rework。P0 0 / P1 1 / P2 0。'
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T14:20:00+08:00"
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。"
 review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分:
   结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: 'logs/deep-review/2026-05-11-10-deep-review.md'
-
+last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
 task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
 last_task6_at: "2026-05-27T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-14-review.md"
 review_type: "task6-writing-quality-review"
+p0: 0
+p1: 0
+p2: 0
+last_task9_autofix_at: "2026-05-27"
 ---
 
 <!-- outline-start -->
@@ -309,7 +310,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 
 独立进程带来的核心变化:
 
-- **独立的 Application.onCreate()**:新进程启动时会完整执行一次 Application 的 `attachBaseContext()` 和 `onCreate()`。如果 Application.onCreate() 中做了大量初始化(SDK 初始化、数据库预热),Provider 进程也会承受同样的启动开销
+- **独立的 Application 生命周期**:新进程启动时会完整执行一次 Application 的 `attachBaseContext()` 和 `onCreate()`；其中 `attachBaseContext()` 发生在 provider 安装前，`Application.onCreate()` 发生在 provider 发布后。如果这两个阶段中有大量初始化(SDK 初始化、数据库预热),Provider 进程也会承受同样的启动开销
 - **独立的 Binder 线程池**:Provider 进程有自己的 16 个 Binder 线程,不会和主进程的线程池互相竞争。这是多进程 CP 的主要优势--数据操作的负载不会直接影响主进程的 Binder 通信
 - **独立的内存空间**:Provider 进程有独立的堆内存和 GC 周期,Provider 侧的 GC 暂停不会造成主进程卡顿。代价是多了一份完整的进程内存开销
 
@@ -319,11 +320,12 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 
 1. fork 新进程(Provider 进程)
 2. 加载 APK 并初始化运行时
-3. 执行 Application.attachBaseContext() + Application.onCreate()
+3. 创建 Application 对象并执行 attachBaseContext()
 4. 执行 ContentProvider.attachInfo() + ContentProvider.onCreate()
 5. 通过 publishContentProviders() 通知 system_server Provider 已就绪
+6. 执行 Application.onCreate()
 
-步骤 2-4 的耗时直接叠加在调用方的 ContentProvider 请求上。如果 Provider 进程的 Application.onCreate() 耗时 500ms、Provider.onCreate() 耗时 200ms,调用方的首次 query() 至少需要等待 700ms+(加上进程创建和 IPC 开销)。
+步骤 2-5 的耗时直接叠加在调用方的 ContentProvider 请求上。如果 Provider 进程的 `attachBaseContext()` 耗时 500ms、Provider.onCreate() 耗时 200ms,调用方的首次 query() 至少需要等待 700ms+(加上进程创建和 IPC 开销)。`Application.onCreate()` 在 provider 发布之后执行，通常不是 provider 发布超时的前置条件；但如果它占用 CPU / I/O 或持有数据库锁，仍可能拖慢随后到达的 provider query。
 
 在 Perfetto 中观察这个冷启动过程:调用方主线程出现一个长 binder transaction 切片,同一时间段能看到 Provider 进程从无到有的启动轨迹,包括 `handleBindApplication` 和 `installContentProviders` 两个关键切片。
 
