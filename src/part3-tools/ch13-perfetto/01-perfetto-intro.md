@@ -1,12 +1,11 @@
 ---
-
 title: Perfetto 简介与演进
 chapter: '13.1'
 section: '13.1'
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 2
@@ -39,9 +38,9 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "pending"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: "needs-rework"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -55,19 +54,21 @@ review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix:
   pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 last_task9_at: "2026-05-25T08:32:00+08:00"
 task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Trace Processor metric 示例包含不可用的 android_jank；logcat in trace 的 userdebug 边界缺失。2026-05-28 Task2B fallback 已修复 metric 名、android.log userdebug 边界与 Android 10/11 normal mode 配置输入边界，回流 Task6/Task9。"
-last_task6_at: "2026-05-25T08:15:00+08:00"
+last_task6_at: "2026-05-28T07:05:00+08:00"
 last_task6_audit: '2026-05-24'
 task6_reviewed_date: "2026-05-25"
 last_task9_review_log: "logs/deep-review/2026-05-25-08-deep-review.md"
 last_task9_audit: '2026-05-25'
 last_task9_audit_log: 'logs/deep-review/2026-05-25-05-audit.md'
-last_task6_review_log: "logs/review/2026-05-25-08-review.md"
-task6_review_notes: "2026-05-25 Task6：小修 L1/L2 5 处；清理提示性过渡、填充词和“需要注意”句式。未新增 Task6 L3/L4 回炉；等待 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-28-07-review.md"
+task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 2 处，压掉否定纠正式句型和限制句式；无 L3/L4 回炉项，送 Task9 复核。"
 p0: 1
 p1: 1
 p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-05-25"
+task6_l3_l4_issues: 0
+task6_l1_l2_fixes: 2
 ---
 
 # Perfetto 简介与演进
@@ -247,7 +248,7 @@ Trace Processor 可以通过命令行工具（`trace_processor_shell`）使用�
 
 ### TraceConfig：采集配置
 
-每次 trace 会话都由一个 TraceConfig 定义。TraceConfig 不是 JSON，而是 protobuf message。对 perfetto normal mode 来说，设备侧接收的是 protobuf 配置：Android 10 起可以用 `--txt` 让 CLI 读取人类可读的 pbtx / pbtxt；Android 9 只有 binary protobuf 输入。与之相对，simple mode 不读 TraceConfig 文件，而是直接吃命令行 flags，只覆盖 ftrace / atrace 子集。
+每次 trace 会话都由一个 TraceConfig 定义。TraceConfig 的格式是 protobuf message，不是 JSON。对 perfetto normal mode 来说，设备侧接收的是 protobuf 配置：Android 10 起可以用 `--txt` 让 CLI 读取人类可读的 pbtx / pbtxt；Android 9 只有 binary protobuf 输入。与之相对，simple mode 不读 TraceConfig 文件，而是直接吃命令行 flags，只覆盖 ftrace / atrace 子集。
 
 TraceConfig 至少要回答四件事：
 
@@ -435,7 +436,7 @@ Perfetto 不止服务于 Android。作为一个开源项目，它的设计目标
 
 Perfetto 提供了一个 C++17 的 Tracing SDK，允许 App 开发者在自己的代码中添加自定义的 trace 点。它的能力范围比 `android.os.Trace` 更大，后者最终落到 atrace：
 
-- **自定义事件类型**：不只是简单的 begin/end，可以定义带结构化数据的复杂事件。
+- **自定义事件类型**：除简单的 begin/end 外，还可以定义带结构化数据的复杂事件。
 - **自定义 Counter**：可以追踪 App 特有的指标（队列长度、缓存命中率等），和系统级数据在同一时间线上展示。
 - **两种运行模式**：
   - *In-process 模式*：Perfetto 服务运行在 App 进程内部，只采集 App 自己的事件，不需要特殊权限。支持 Android、Linux、macOS、Windows。
