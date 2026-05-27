@@ -40,22 +40,23 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: "pending"
+task9_state: reviewed
 task2b_result: "fixed-lite"
-task2b_state: pending
-task9_result: "needs-rework"
+task2b_state: fixed
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-19"
-last_task9_at: "2026-05-19T02:27:04+08:00"
+task9_reviewed_date: "2026-05-27"
+last_task9_at: "2026-05-27T22:20:00+08:00"
 last_task6_at: '2026-05-27T22:05:00+08:00'
 last_task6_audit: '2026-05-18'
 last_task6_audit_result: l1-light-edit
 last_task9_audit: "2026-05-19"
 last_task2b_lite_at: "2026-05-27"
 last_task6_review_log: "logs/review/2026-05-27-22-review.md"
+last_task9_autofix_at: "2026-05-27"
 ---
 
 # 内存持续增长
@@ -93,7 +94,7 @@ last_task6_review_log: "logs/review/2026-05-27-22-review.md"
 
 这种情况和内存泄漏的区别在于：增长的对象有明确的业务用途——可能是图片缓存、可能是预加载的数据、可能是 Native 层的内存池——但它们的总量没有被有效控制。这里的问题不是忘记释放，而是缺少容量上限。
 
-理解内存持续增长的成因和治理方法，对于长生命周期应用（新闻客户端、社交 App、音乐播放器、电商应用）尤为重要。这类应用通常运行数小时不重启，如果内存以每小时几十 MB 的速度增长，最终必然触发 LMK 或 OOM。
+理解内存持续增长的成因和治理方法，对于长生命周期应用（新闻客户端、社交 App、音乐播放器、电商应用）尤为重要。这类应用通常运行数小时不重启，如果内存以每小时几十 MB 的速度增长，最终可能先撞到 Java Heap 上限、Native / 虚拟地址分配失败，或在系统内存压力下提高被 lmkd 回收的概率。
 
 ## 内存持续增长的常见原因
 
@@ -111,7 +112,7 @@ last_task6_review_log: "logs/review/2026-05-27-22-review.md"
 
 Bitmap 累积可以看作是缓存无上限的一个特例，但它值得单独讨论，因为 Bitmap 的内存影响远大于普通 Java 对象。
 
-一张 1080×1920 的 ARGB_8888 图片，解码后占用的内存是 1080 × 1920 × 4 = 约 7.9 MB。如果应用内同时持有 20 张这样的图片，仅图片像素数据就占了近 160 MB。在 Android 8.0（API 26）之前，Bitmap 的像素数据存储在 Java Heap 中，会直接挤占 Java 对象的分配空间；Android 8.0 之后像素数据移到了 Native Heap，虽然不再直接影响 Java Heap 的 GC 压力，但依然计入应用的总内存（PSS），同样会触发系统的 LMK 机制。
+一张 1080×1920 的 ARGB_8888 图片，解码后占用的内存是 1080 × 1920 × 4 = 约 7.9 MB。如果应用内同时持有 20 张这样的图片，仅图片像素数据就占了近 160 MB。Bitmap 像素数据的存放位置有明确版本边界：Android 2.3.3（API 10）及以下在 Native 内存，Android 3.0 到 7.1（API 11-25）在 Dalvik Heap，Android 8.0（API 26）及以上在 Native Heap。对本章覆盖的 API 26+，Bitmap 累积主要抬高 Native Heap、RSS 和 PSS；它不会直接吃掉 Java Heap 上限，但会增加 Native 分配失败风险，并在系统内存压力下提高被 lmkd 选择的概率。
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
 
@@ -138,7 +139,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 除了上述三个主要原因外，还有一种容易被忽视的增长来源：匿名内存页（anon RSS / Private Anonymous）。这部分内存不在 Java Heap 也不在 Native Heap 的常规统计中，通常来自：
 
 - **mmap 的匿名映射**：某些 Native 库使用 mmap 分配大块内存作为内部缓冲区
-- **线程栈**：每个线程默认分配 1-8 MB 的栈空间（取决于配置），大量创建线程但不销毁会导致栈内存累积
+- **线程栈**：每个线程会保留一段栈虚拟地址空间，实际 RSS / PSS 取决于被触碰的栈页；大量线程或深调用栈会抬高匿名页占用
 - **GPU 内存映射**：通过 GPU 驱动映射到进程地址空间的图形资源
 
 在 `dumpsys meminfo` 中，这部分通常体现在 "Private Other" 或 "Unnamed" 行中。如果发现这部分持续增长但 Heap 区域没有对应变化，需要检查是否有线程泄漏或 Native 层的 mmap 操作。
@@ -180,9 +181,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 ### 用 LeakCanary 排除泄漏
 
-如果不确定是泄漏还是非泄漏性增长，最直接的方法是用 LeakCanary 做一次检测。LeakCanary 通过监控 Activity、Fragment 和 View 的生命周期，能自动检测到这些组件的泄漏。如果 LeakCanary 没有报告泄漏，但内存仍在增长，那基本可以确认是非泄漏性的增长问题。
-
-LeakCanary 主要检测 Java 层的泄漏，对于 Native 层的泄漏（如 C/C++ 层分配后未释放的内存）无法检测。如果怀疑 Native 泄漏，需要使用 heapprofd 进行 Native Heap Profiling。
+如果不确定是泄漏还是非泄漏性增长，可以先用 LeakCanary 排除 Activity、Fragment、Fragment View、ViewModel 这类生命周期对象的泄漏。没有报告只能说明这些自动监控对象没有明显 retained path，不能排除普通 Java 对象、单例缓存、线程、JNI 全局引用或 Native 层泄漏。若 PSS 仍在增长，需要继续看 Heap Dump 的 dominant retainers、对象数量趋势和 heapprofd。
 
 ## LRU Cache 策略的正确实现
 
@@ -271,23 +270,19 @@ public void onTrimMemory(int level) {
 
 ### entryRemoved 的资源释放
 
-当条目从 `LruCache` 中被淘汰时，`entryRemoved()` 方法会被回调。如果缓存值持有需要显式释放的资源（比如 Bitmap），可以在这里做清理：
+当条目从 `LruCache` 中被淘汰时，`entryRemoved()` 方法会被回调。它适合释放缓存条目持有的明确资源，但普通 Bitmap 缓存不要默认在这里调用 `recycle()`：
 
 ```java
 @Override
 protected void entryRemoved(boolean evicted, String key,
         Bitmap oldValue, Bitmap newValue) {
-    if (oldValue != null && !oldValue.isRecycled()) {
-        // Android 8.0 以下需要手动 recycle
-        // 8.0+ 的 Native Bitmap 会由 GC 自动回收
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            oldValue.recycle();
-        }
-    }
+    // LruCache 淘汰只移除缓存这一条强引用。
+    // 如果 value 持有 Closeable / 硬件句柄，在这里 release / close；
+    // 普通 Bitmap 让最后一个强引用消失后交给 GC 回收。
 }
 ```
 
-注意在 Android 8.0（API 26）之后，Bitmap 的像素数据存储在 Native Heap，GC 可以自动回收。但在更早版本上，像素数据在 Java Heap 中，手动调用 `recycle()` 可以加速释放。
+对本章覆盖的 Android 8.0（API 26）及以上，Bitmap 像素数据在 Native Heap 中，Bitmap 对象不可达后由 GC 触发释放。`recycle()` 不是缓存淘汰的通用动作；只有确定没有任何显示引用或缓存引用时才可以主动调用，且官方推荐主要针对 Android 2.3.3（API 10）及以下的历史内存管理方式。
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
 
@@ -387,7 +382,7 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 ## WebView 内存增长问题与多进程 WebView
 
-前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身的内存开销很高——每个 WebView 实例背后都有一个 Renderer 进程的内存占用，包括 V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 进程的纹理缓存等。
+前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身的内存开销很高。在多进程 WebView 中，WebView 会关联到 renderer 进程，但多个 WebView 可能共享同一个 renderer；一个 renderer 的终止也可能影响多个 WebView。V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 纹理缓存等进程级开销都要纳入预算。
 
 在一个典型的混合应用中（原生 + WebView），如果用户在 WebView 中连续浏览多个页面，WebView 内部的缓存（HTTP 缓存、图片缓存、JS Heap）会持续增长。还要看 WebView 进程级数据结构（如 Visited Links 表、Service Worker 缓存）的生命周期：它们与 WebView 进程绑定，即使销毁 WebView 实例也可能无法完全释放。
 
@@ -428,9 +423,11 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 ### "内存没泄漏就不会 OOM"
 
-[需确认: 这里把 Java Heap OOM、Native 分配失败和 LMK 回收混在一起，需要由 Task 9 拆开确认触发条件。]
+这类问题要拆成三条路径看：
 
-OOM 的触发条件是进程的 PSS 达到了系统为该进程分配的内存上限（或系统整体内存耗尽触发 LMK）。这个上限取决于 Heap 大小、Native 分配、Graphics 内存等所有组成部分的总和。即使没有泄漏，缓存无上限增长同样会触碰上限。
+- **Java Heap OOM**：应用达到设备给当前进程的托管堆上限后继续分配 Java / Kotlin 对象，ART 抛出 `OutOfMemoryError`。
+- **Native / 虚拟地址分配失败**：Native Heap、`mmap`、线程栈、图形映射等持续增长，可能导致 `malloc` / `mmap` 失败；32 位进程还要看连续虚拟地址空间。
+- **LMK / lmkd 回收**：系统出现内存压力时，`lmkd` 结合 PSI / vmpressure、`oom_adj_score`、进程重要性和内存收益选择目标进程。PSS / RSS 是风险指标，不是“PSS 到某个进程上限就触发 OOM”的单一条件。
 
 ### "`LruCache` 用上就能控制内存"
 
