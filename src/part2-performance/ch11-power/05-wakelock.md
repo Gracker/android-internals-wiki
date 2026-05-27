@@ -48,20 +48,20 @@ review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 1
 last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-task6_state: revisiting
+reviewed_date: "2026-05-28"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
-last_task6_at: "2026-05-16T16:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-16-review.md"
-task6_l1_l2_fixes: 4
+pipeline_stage: task9_pending
+last_task6_at: "2026-05-28T02:11:48+08:00"
+last_task6_review_log: "logs/review/2026-05-28-02-review.md"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-16 Task6：Task2B 修复后写作复审通过；修复禁用词/填充句式/开头表述 4 处；无新增 L3/L4 回炉项，送 Task9 复核。"
-review_round: 5
+task6_review_notes: "2026-05-28 Task6：Task2B 修复后写作复审通过；L1/L2 未发现新增正文问题；无 L3/L4 回炉项，送 Task9 复核。"
+review_round: 6
 ---
 
 # 11.5 Wakelock 机制与功耗分析

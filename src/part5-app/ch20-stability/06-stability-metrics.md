@@ -18,14 +18,14 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-17
-task6_result: needs-rework
+reviewed_date: "2026-05-28"
+task6_result: pass-light-edit
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T01:28:49+08:00"
@@ -37,11 +37,14 @@ last_task2b_at: "2026-05-23T11:17:28+08:00"
 p0: 0
 p1: 0
 p2: 1
-last_task6_at: "2026-05-17T12:11:00+08:00"
-task6_review_notes: "2026-05-17 Task6 12: L1/L2 无正文改动；正文仍有行业对标来源待补，且 Task9 已有 needs-rework 队列项，本轮确认并合并回炉。"
+last_task6_at: "2026-05-28T02:11:48+08:00"
+task6_review_notes: "2026-05-28 Task6：Task9 auto-fix 后写作复审通过；修复 frontmatter 禁用词和结尾否定-纠正式表达 2 处；无 L3/L4 回炉项，送 Task9 复核。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
 last_task9_autofix_at: "2026-05-28"
+last_task6_review_log: "logs/review/2026-05-28-02-review.md"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
 ---
 
 # 稳定性度量与指标体系
@@ -325,4 +328,4 @@ $$\text{Error Budget} = 1 - \text{SLO Target}$$
 - 设备分布差异：出海东南亚（大量低端机）和只做国内旗舰机型的崩溃率基准不同
 - 采集 SDK 差异：用 try-catch 吞掉异常，或者不采集 Native Crash，数字会好看但问题没解决
 
-稳定性 SLO 的价值不在于追求数字好看，而是建立一套可量化、可追溯、可改进的治理机制。
+稳定性 SLO 的价值是建立一套可量化、可追溯、可改进的治理机制，避免只追求表面数字。

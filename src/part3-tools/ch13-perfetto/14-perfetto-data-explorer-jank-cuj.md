@@ -31,19 +31,23 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-16T19:11:00+08:00"
+last_task6_at: "2026-05-28T02:11:48+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-16T14:20:00+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-05-28"
+last_task6_review_log: "logs/review/2026-05-28-02-review.md"
+task6_l1_l2_fixes: 4
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 Task6：修复禁用词、代码围栏语言和重复参考资料 4 处；无 L3/L4 回炉项，送 Task9 复核。"
 ---
 
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
@@ -94,7 +98,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
    - 第三方 App 需要使用 AndroidX JankStats API 或自定义 SQL 扩展
 
 2. **FrameTracker 与 CUJ 的数据流**
-   ```
+   ```text
    Choreographer#doFrame()
      → ViewRootImpl.doTraversals()  (L1713)
        → JankTracker.doFrame(jankInfo)  // frameworks/base/libs/hwui/JankTracker.cpp
@@ -142,7 +146,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 **来源**：Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 · 源码调研（2026-05-22）  
 **验证状态**：一手源码验证完成（部分细节待进一步确认）
 
-前次调研已厘清 `android.cujs.base` 默认仅覆盖系统进程的边界。本补充提供三条**可落地执行**的路径，适用于第三方 App 做 CUJ 分析：
+前次调研已厘清 `android.cujs.base` 默认仅覆盖系统进程的边界。本补充提供三条**可直接执行**的路径，适用于第三方 App 做 CUJ 分析：
 
 #### 路径一：AndroidX JankStats（推荐，API 30+）
 
@@ -202,7 +206,7 @@ LIMIT 50;
 
 #### FrameTracker 数据流（系统进程视角）
 
-```
+```text
 Choreographer#doFrame()
   → ViewRootImpl.doTraversals()  // frameworks/base/core/java/android/view/ViewRootImpl.java:1713
     → JankTracker.doFrame(jankInfo)  // frameworks/base/libs/hwui/JankTracker.cpp
@@ -387,12 +391,6 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
 
-### Perfetto DataGrid 与 Jank CUJ 第三方 App 适用范围边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-perfetto-jank-cuj-datagrid-scope-boundary.md
-- 类型：DeepResearch 调研结果
-- 摘要：厘清 Perfetto android.cujs.base 默认仅纳入 com.android.*/com.google.android.* 进程的限制，分析系统 FrameTracker 与 Perfetto SQL 模块的两级数据源架构，提供第三方 App 扩展 CUJ 分析的三种方案（JankStats/自定义 atrace/FrameTimeline join）。
-- 注入时间：2026-05-19
-- 价值：填补第三方 App CUJ 分析方案的空白，厘清系统级与 App 级 CUJ 数据源边界
 
 ## 参考资料
 
