@@ -55,6 +55,8 @@ last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-19-deep-review.md"
 last_task9_audit_log: "logs/deep-review/2026-05-23-16-audit.md"
 task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 ---
 
 # 案例集
@@ -422,7 +424,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第三，系统化 > 贴膏药。** 抖音的启动任务调度框架、Reddit 的 CUJ Profile 管理——它们把优化过程从"每次手动排查"变成了"系统自动处理"。这种投入的 ROI 是长期累积的。
 
-**第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
+**第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，取得一次优化不容易，守住不退步更难——每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
 **第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（内存超限）等触发类型，配合 `ProfilingResult.getTag()` 可以区分不同触发源产出的 trace 文件。接入时注意：系统触发受采样策略和设备版本约束，不能保证每次事件都产出 trace；线上仍需补充采样率控制和隐私脱敏。
 

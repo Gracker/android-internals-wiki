@@ -49,6 +49,8 @@ last_task6_at: "2026-05-08T19:05:00+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-19-review.md"
 review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审；清理 frontmatter 重复字段，收紧 tracing 开销表述的验证边界；未发现新增 B 类回炉项；转入 Task9 复审。"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -149,7 +151,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 [已验证: AOSP android-16.0.0_r1 / main, frameworks/native/cmds/atrace/atrace.cpp k_categories]
 
-Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。它比 atrace 更灵活：可以精确指定需要哪些 tracepoint，不受 atrace 预设分类限制。
+Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。因此可以精确指定需要哪些 tracepoint，不受 atrace 预设分类限制。
 
 ### 用户空间 Trace tag 的底层实现
 

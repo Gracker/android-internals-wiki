@@ -36,6 +36,8 @@ last_task2b_at: "2026-04-27T12:54:09+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。"
 last_task6_audit: "2026-05-21"
 last_task9_audit: "2026-05-22"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 ---
 
 # 命令行打开超大 Trace
@@ -201,7 +203,7 @@ SELECT COUNT(*) FROM slice WHERE name = 'inflate';
 
 ### 几个典型查询
 
-让我们用几个实际的查询来感受 PerfettoSQL 的使用方式。
+下面通过几个实际查询来理解 PerfettoSQL 的用法。
 
 **查询某个进程中耗时最长的 10 个 Slice：**
 

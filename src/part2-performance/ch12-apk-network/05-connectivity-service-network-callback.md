@@ -41,6 +41,8 @@ task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元�
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-17T12:32:07+08:00"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
 task9_result: "pass-tech-review"
 task9_review_notes: "2026-05-17 Task9 12: pass-tech-review。未发现 P0/P1；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码路径、100 outstanding request 限额、CONNECTIVITY_ACTION 限制和 5G slicing 边界与 AOSP main / 官方文档一致；Task6 已通过且无 pending queue，自动晋升 finalized。"
@@ -48,13 +50,13 @@ task9_review_notes: "2026-05-17 Task9 12: pass-tech-review。未发现 P0/P1；C
 
 # 12.5 ConnectivityService 与网络状态监听性能
 
-网络状态监听看起来只是一个 `NetworkCallback`，放到性能问题里会牵出三类成本：系统侧要维护请求和回调，应用侧要避免重复注册与后台唤醒，网络请求侧要把“网络可用”转成可执行的降级策略。12.2、12.3、12.4 已经讲请求耗时、连接池和 TLS，本节补平台连接状态这一层；连接池、HTTPDNS 和 TLS 细节只做交叉引用，不重复展开。
+网络状态监听看起来只是一个 `NetworkCallback`，放到性能问题里涉及三类成本：系统侧要维护请求和回调，应用侧要避免重复注册与后台唤醒，网络请求侧要把“网络可用”转成可执行的降级策略。12.2、12.3、12.4 已经讲请求耗时、连接池和 TLS，本节补平台连接状态这一层；连接池、HTTPDNS 和 TLS 细节只做交叉引用，不重复展开。
 
 [已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state] 官方建议用 `ConnectivityManager` 与 `NetworkCallback` 监听网络状态变化，而不是靠高频轮询。`NetworkCapabilities` 的 AOSP 注释也提醒，一次性读取到的能力可能很快过期，生产代码应通过回调持续接收变化。[已验证: AOSP main, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
 
 ## 平台网络状态模型
 
-应用侧看到的网络状态由四个对象拼出来：`ConnectivityManager` 是入口，`Network` 是一条网络路径的句柄，`NetworkCapabilities` 描述这条路径的能力，`LinkProperties` 描述 DNS、接口名、路由等连接参数。弱网判断不要只看“有没有网络”，因为 `NET_CAPABILITY_INTERNET` 只表示这条网络声明可达互联网，`NET_CAPABILITY_VALIDATED` 才表示系统探测过公共互联网可达；Captive Portal、DNS 失效或局域网直连会把这两类状态拉开。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
+应用侧看到的网络状态由四个对象组成：`ConnectivityManager` 是入口，`Network` 是一条网络路径的句柄，`NetworkCapabilities` 描述这条路径的能力，`LinkProperties` 描述 DNS、接口名、路由等连接参数。弱网判断不要只看“有没有网络”，因为 `NET_CAPABILITY_INTERNET` 只表示这条网络声明可达互联网，`NET_CAPABILITY_VALIDATED` 才表示系统探测过公共互联网可达；Captive Portal、DNS 失效或局域网直连会把这两类状态拉开。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
 
 这几个对象回答的问题不同：
 
@@ -189,7 +191,7 @@ Network Slicing 适合低延迟、专用带宽这类明确网络质量诉求，�
 
 网络状态监听只回答“系统现在认为哪条网络路径可用、具备哪些能力”。它不替代 HTTPDNS，不负责选择服务端 IP；不替代 OkHttp 连接池，不负责复用 socket；不替代 WorkManager，不负责在后台找合适时机执行任务。
 
-更稳的分工是：
+建议的分工：
 
 - `NetworkCallback`：维护网络画像，输出计费、验证、传输类型、VPN、多网络等状态。
 - HTTPDNS / `Dns`：在业务域名层做解析策略，处理运营商 DNS 污染、跨地域调度和兜底解析。

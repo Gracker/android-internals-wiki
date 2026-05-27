@@ -248,3 +248,11 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 4. **与 JobScheduler quota 关系**：两者控制路径独立——quota 管"能跑多久"，trigger 管"被处置时的现场"。AOSP 源码未发现直接关联路径。
 
 5. **标注待验证**：触发阈值、kill signal、检测服务（PowerManagerService/ProcessList）、trace buffer 时长、厂商差异——均缺 AOSP 源码闭环，建议保持"待验证"标注。
+
+### Android 17 Excessive CPU Kill 机制边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 是事后取证机制非预防性治理。确认存在于 API 37 非 36；targetSdk>=37 触发前提；JobScheduler quota 与 trigger 无直接源码关联。含 Perfetto trigger.proto、ProfilingTrigger.java 源码位置。
+- 注入时间：2026-05-27
+- 价值：明确 Android 17 Excessive CPU Kill 为取证机制而非预防机制，纠正章节可能存在的误解
+

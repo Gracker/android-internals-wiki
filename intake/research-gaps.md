@@ -833,3 +833,39 @@ Measure 章节需要补齐错误监控能力边界：Android JVM crash、Android
 - Xlog + Logan 可作为 ch26.5 线上排查的核心日志工具方案
 - 远程调试和 Lua 脚本控制可作为 ch26.5 的进阶排查手段
 - 全链路追踪可作为 ch26.5/ch26.17 的跨层排查方法论
+
+## [2026-05-27] 18.10 SurfaceControl API 深入 — 知识盲区
+
+### 盲区描述
+缺少跨进程SurfaceControl共享的完整实现路径。当前章节提到了Java层的Parcelable能力，但未详细说明native层面如何实现跨进程的ASurfaceControl句柄传递和同步机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 深入研究AOSP android-16.0.0_r1中surface_control.h的跨进程机制
+- 分析SurfaceControl在WindowManager/Shell中的跨进程管理模式
+- 补充完整的应用场景：WebView OOP、画中画、跨进程UI组件的具体实现示例
+
+### 关联章节
+- 18.2 SurfaceFlinger基础
+- 13.14 WebView渲染管线
+- 2.6 SurfaceFlinger架构基础
+
+## [2026-05-27] 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略 — 知识盲区
+
+### 盲区描述
+VSyncPredictor在不同SoC厂商的实现差异和硬件适配特性。当前章节主要基于AOSP标准实现，但实际在不同厂商设备上可能存在定制化实现，影响预测准确性和调度效率。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究主流SoC厂商（Qualcomm、MediaTek、Samsung等）对VSyncPredictor的定制实现
+- 分析不同硬件VSync源（HW_VSYNC_0、TE信号等）对预测算法的影响
+- 收集实际设备上的调度问题案例和厂商优化方案
+
+### 关联章节
+- 2.3 VSync基础原理
+- 2.18 Android图形栈架构
+- 8.8 多媒体管线性能

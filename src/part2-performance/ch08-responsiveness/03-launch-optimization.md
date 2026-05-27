@@ -54,6 +54,8 @@ task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻
 last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
 task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。05:30 P0/P1 已修复；本轮仅复核到既有 P2：SplashScreen 调用文字、Baseline Profile 效果量化均已在 suggestions.md 记录。不新增阻塞项，自动晋升 finalized/ready-to-publish。"
 last_task6_audit: "2026-05-26"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 ---
 
 # 启动优化策略
@@ -84,7 +86,7 @@ last_task6_audit: "2026-05-26"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解启动优化策略
+## 启动优化：时间花在哪、怎么省
 
 上一节（8.2 App 启动全流程）已经梳理了从用户点击图标到首帧绘制的冷启动路径。在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，常会看到从 `BindApplication` 到 `performTraversals` 之间有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
 
@@ -184,7 +186,7 @@ val locationManager by lazy {
 
 ### 在 Perfetto 中验证延迟初始化的效果
 
-延迟初始化优化前后，Perfetto 中的差异很直接：
+延迟初始化优化前后，在 Perfetto 中对比：
 
 - **优化前**：主线程在 `Application.onCreate` 中有大量的 CPU 活动（一段厚厚的执行块），对应的是 SDK 的同步初始化。主线程在这段期间持续运行，没有 idle。
 - **优化后**：`Application.onCreate` 变得很薄（可能只有几十毫秒），因为大部分 SDK 已经被移到后台线程或延迟了。其他线程上可能会出现初始化活动，但不阻塞首帧绘制。
@@ -697,7 +699,7 @@ fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
 
 除了开发者随包提供的 Baseline Profile，Google Play 还有 Cloud Profile 机制。当大量用户使用应用后，Play Store 会收集并聚合 ART 运行时 profile，把聚合结果提供给后续安装或更新该应用的用户。
 
-Cloud Profile 的边界很清楚：它依赖 Google Play 分发和足够多的真实用户样本，通常需要数小时到数天才能覆盖新版本。Baseline Profile 可以填这段空窗期，也能覆盖没有 Play Cloud Profile 的安装路径；非 Play 渠道的差异主要在编译触发时机，APK 仍然可以携带 Baseline Profile。
+Cloud Profile 依赖 Google Play 分发和足够多的真实用户样本，通常需要数小时到数天才能覆盖新版本。Baseline Profile 可以填这段空窗期，也能覆盖没有 Play Cloud Profile 的安装路径；非 Play 渠道的差异主要在编译触发时机，APK 仍然可以携带 Baseline Profile。
 
 关于 Baseline Profile 的制作流程、Cloud Profile 的分发机制以及与 AutoFDO（Android 16 引入的内核级反馈编译优化）的协同关系，8.7 节（Baseline Profiles 与编译优化实践）和 1.12 节（AutoFDO 反馈导向编译优化）会展开讨论。
 

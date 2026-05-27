@@ -63,6 +63,8 @@ last_task6_review_log: "logs/review/2026-05-27-07-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
 task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
+deepseek_polish_state: done
+last_deepseek_polish_at: 2026-05-27
 ---
 
 
@@ -276,7 +278,7 @@ Battery Historian 常说的“先 reset 再采集”，指的是手动执行 `ad
 
 ### Coulomb Counter（库仑计）
 
-Coulomb Counter 是一个集成在设备主板上的专用芯片，通常位于 Fuel Gauge IC 中（如 Maxim MAX17050、TI BQ 系列）。它通过直接测量流入和流出电池的电流来计算电量变化。原理很直观：对电流进行时间积分，就得到了电荷量（mAh）。
+Coulomb Counter 是一个集成在设备主板上的专用芯片，通常位于 Fuel Gauge IC 中（如 Maxim MAX17050、TI BQ 系列）。它通过直接测量流入和流出电池的电流来计算电量变化。对电流进行时间积分，就得到了电荷量（mAh）。
 
 这种方式的精度远高于软件估算，通常可以达到 ±2-5% 的误差范围。它不受 power_profile 参数不准确的影响，也不需要对硬件模块进行抽象建模；数据来自电池侧电流积分。
 

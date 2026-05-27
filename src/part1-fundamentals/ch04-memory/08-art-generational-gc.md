@@ -71,31 +71,10 @@ last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 7 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
+deepseek_cn_review_state: needs-structure-rework
+last_deepseek_cn_review_at: 2026-05-27
 ---
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 GC 暂停为什么会影响流畅性
-- 🔹 ART 分代 GC 的演进路径，以及 Android 17 的变化
-- 🔹 Write Barrier、Card Table、Remembered Set 与 Young GC 的执行流程
-- 🔹 在 Perfetto 中识别 GC 暂停、GC 频率与掉帧的关系
-- 🔹 App 端减轻 GC 压力的常见手段
-
-### 扩展（可选深入）
-
-- 🔸 分代 GC 与 §4.3 ART 内存管理、§7.2 滑动卡顿分析的关系
-- 🔸 版本演进与常见误区
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 涉及具体 API、AOSP 路径、Perfetto 表名或量化数据时，如暂时无法确认来源，保留 `[待验证]` 比写成确定结论更稳妥。
-<!-- outline-end -->
 
 阅读本节之前，建议先了解 §4.3 中 ART 堆结构和 GC 策略演进的基础内容。本节在 §4.3 的基础上，深入分代垃圾回收的内部实现——Write Barrier 如何工作、Card Table 怎么记录跨代引用、Android 17 对分代 GC 做了哪些增强——然后把视角拉回到实际工作：GC 暂停怎么导致掉帧，在 Perfetto 中怎么分析，App 端有哪些手段可以减轻 GC 压力。
 
@@ -431,7 +410,6 @@ class ObjectPool<T>(private val factory: () -> T, private val maxSize: Int = 16)
 - **池大小要合理**：过大的池等于另一种形式的内存泄漏，过小的池起不到复用效果
 - **注意线程安全**：如果对象在多线程间共享，需要用 `ConcurrentLinkedDeque` 或加锁
 
-[来源: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
 ### 避免 finalize()
 
@@ -521,7 +499,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android17-art-generational-gc-compose-composition.md
 - 类型：DeepResearch 调研结果
 - 摘要：ART CC 收集器分代架构（Young Gen BumpPointerSpace + Old Gen MarkCompactSpace）源码分析，Compose Composition 阶段 SlotTable/LayoutNode/Snapshot 短生命周期对象分配模式，年轻代 STW copy 快速回收对帧停顿的影响路径，含完整调用链和 Perfetto 可观测性指标。
-- 注入时间：2026-05-24
 - 价值：建立 ART 分代 GC 与 Compose Composition 对象分配的完整因果链，含可观测性指标
 
 
@@ -529,7 +506,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md
 - 类型：DeepResearch 调研结果
 - 摘要：从 AOSP art/runtime 源码验证 Generational CMC 三代模型（young/mid/old）演进路径、YoungMarkCompact 复用 MarkCompact 主实现的设计、Write Barrier + Card Table 协同机制、Compose recomposition 短期对象（lambda/Snapshot/remember）与 Young GC 的因果链。明确指出「20% 对象分配开销降低」无一手 Benchmark 证据，标注为未经验证。
-- 注入时间：2026-05-23
 - 价值：首次从源码级梳理 ART 三代 GC 与 Compose 对象分配的因果链，并对官方定性描述做了严谨的验证状态标注
 
 ### AOSP 源码路径
@@ -566,7 +542,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 QPR2 Gen-CMC 源码级深度技术分析 .md
 - 类型：DeepResearch 调研结果
 - 摘要：围绕 Android 16 QPR2 的 Gen-CMC，追溯 CC→Gen-CC→CMC→Gen-CMC 演进，分析分代假说、card table/write barrier 回归、young/old 回收边界，以及对 jank、CPU 与续航的潜在收益。
-- 注入时间：2026-04-19
 - 价值：能帮助理解 Android 16 ART GC 变化对卡顿与功耗的影响。
 
 
@@ -577,12 +552,10 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-17-art-generational-gc-compose-composition.md
 - 类型：DeepResearch 调研结果
 - 摘要：源码级验证ART CC收集器分代模式调度策略（young CC吞吐量→full-heap CC切换）、GcType三枚举、Compose短期对象分配与Young GC因果关系，young GC平均暂停1.83ms不致丢帧，但堆持续增长直到full-heap GC触发。
-- 注入时间：2026-05-26
 - 价值：首次从GC吞吐量调度策略角度量化Compose composition与Young GC的因果链，为GC调优提供数据支撑
 
-## 附录：AIW-源码调研-20260427 补充
+## 附录：mid_generation 晋升阈值确认
 
-<!-- AIW-源码调研-20260427 -->
 ### mid_generation 晋升阈值的源码级确认
 
 **调研主题**：mid_generation 具体晋升阈值——确认是否硬编码为 1 次或存在动态调整逻辑
@@ -620,9 +593,8 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ---
 
-## 附录：AIW-源码调研-20260516 补充
+## 附录：userfaultfd CMC GC 机制与设备能力判断
 
-<!-- AIW-源码调研-20260516 -->
 ### userfaultfd-based CMC GC 机制与设备能力判断
 
 **调研主题**：Android 17 Generational CMC 机制源码与设备能力判断路径验证
@@ -667,15 +639,12 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md
 - 类型：DeepResearch 调研结果
 - 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 属于描述性概念，不对应独立开关。
-- 注入时间：2026-05-19
 - 价值：源码级完整 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径
 
 ---
 
-## 附录：Android 17 ART Generational CMC 调研补充（2026-05-20）
+## 附录：Android 17 ART Generational CMC 调研补充
 
-<!-- AIW-源码调研-2026-05-20 来源：daily-topics.json #5 -->
-<!-- 关联：DeepResearch/2026-05-20-android-17-art-generational-cmc-memory-management.md -->
 
 ### 调研结论
 
@@ -703,10 +672,8 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ---
 
-## 附录：AIW-源码调研-20260521 补充（三代晋升阈值精化）
+## 附录：三代晋升阈值精化
 
-<!-- AIW-源码调研-20260521 来源：daily-topics.json #5 -->
-<!-- 关联：DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md -->
 
 ### 三代晋升阈值：硬编码为 1，无动态调整
 
@@ -749,10 +716,8 @@ Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 re
 
 ---
 
-## 附录：AIW-源码调研-20260526 补充（Generational CMC 开关与年轻代参数源码锚点）
+## 附录：Generational CMC 开关与年轻代参数
 
-<!-- AIW-源码调研-20260526 来源：daily-topics.json #5 -->
-<!-- 关联：DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md -->
 
 ### 调研结论
 

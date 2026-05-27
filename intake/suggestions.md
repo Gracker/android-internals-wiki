@@ -4092,6 +4092,30 @@
 - **建议**：将 API 版本边界、协程线程迁移、NDK workload hint 等有效内容并入对应正文小节或参考资料；删除 HTML 注释标记、过程性修正说明和未整合的原始调研块，再交 Task6/Task9 复审。
 - **review 日志**：logs/review/2026-05-27-08-review.md
 
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-05-27
+- **类型**：源码准确性
+- **位置**：FramebufferSurface路径描述 (L668)
+- **问题**：将FramebufferSurface描述为"消费路径"，但实际上这是SurfaceFlinger的显示输出路径，用于HWC CLIENT合成结果写回
+- **建议**：修正描述为"显示输出路径"，并明确其与App layer消费路径的区别
+
+## [Task9 Deep Review] 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略 — 2026-05-27
+- **类型**：原理链完整性
+- **位置**：VSyncPredictor与DispSync关系描述 (L149-151)
+- **问题**：从"老资料把SurfaceFlinger的软件节拍器叫DispSync"跳到"当前主入口是VSyncPredictor"，缺少版本演进主线
+- **建议**：补充Android 11-17的调度架构演进：DispSync（Android 11及以前）→ VSyncPredictor（Android 12+）的迁移路径和API变化
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-05-27
+- **类型**：原理链完整性
+- **位置**：ADPF与GameManager协同工作机制
+- **问题**：未详细说明GameManager.getGameMode()如何影响PerformanceHintManager的资源分配决策
+- **建议**：补充GameManager不同模式（PERFORMANCE/BATTERY/STANDARD）对CPU/GPU频率分配的具体影响机制
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-05-27
+- **类型**：版本准确性
+- **位置**：Unity ADPF支持版本 (L358)
+- **问题**："Unity 2021.3+"描述与官方文档存在细微差异，未注明具体版本边界条件
+- **建议**：明确标注"Unity 2021.3.0+ / Adaptive Performance 5.1+"，并说明2021.3.0以下版本需要手动升级provider的具体方法
+
 ## [Task6 Review] 1.14 锁竞争与同步性能分析 — 2026-05-27
 - **类型**：需重写 / 需整合
 - **位置**：文末源码调研补充块（AIW-源码调研-2026-05-06 / 2026-05-09）
@@ -4106,3 +4130,43 @@
 - **问题**：A2DP/SBC、aptX、LDAC、LC3 的延迟范围目前没有绑定测试条件、codec profile、耳机/SoC/固件版本或官方/实测来源；正文虽提示设备差异，但数值本身仍容易被读者当成稳定基线。
 - **建议**：补充一组来源明确的端到端测试条件，或将这些数值改成“经验范围 / 需实测确认”，并说明蓝牙栈缓冲、耳机固件、game mode、LE Audio 配置会改变结论。
 - **review 日志**：logs/deep-review/2026-05-27-15-deep-review.md
+
+---
+
+## DeepSeek 中文读者终审建议 — 2026-05-27
+
+**章节**: `src/part1-fundamentals/ch04-memory/08-art-generational-gc.md`
+
+**问题**: 素材拼接感严重，文末 5 个附录小节存在大量内容重复。
+
+具体表现：
+1. 附录 "mid_generation 晋升阈值确认" 与 "三代晋升阈值精化" 两次记录了相同的晋升阈值结论（Young→Mid 需存活 1 次 GC，Mid→Old 需再存活 1 次 GC），核心源码引用也相同（`mark_compact.h` 注释）。
+2. "userfaultfd CMC GC 机制"、"Android 17 ART Generational CMC 调研补充"、"Generational CMC 开关与年轻代参数" 三个附录的 CMC 架构描述、版本表、设备能力判断路径存在大量交叉重复。
+3. "参考资料" 节混入了 13 条 DeepResearch 调研报告路径和内部元数据（注入时间、价值评估等），这些不应出现在面向读者的已发布文章中。
+
+**建议**: 将 5 个附录合并为 2 个以内：一个聚焦分代晋升机制（合并附录 1 和 4），一个聚焦 CMC/UFFD 开关与设备判断（合并附录 2、3、5）。参考资料节仅保留可直接访问的官方文档和 AOSP 源码路径，内部调研报告移到独立的调研索引中。
+
+**当前状态**: `deepseek_cn_review_state: needs-structure-rework`
+
+
+## [Task6 Review] 23.8 内存优化案例集 — 2026-05-27
+- **类型**：需补充素材 / 内容深度 / 活人感
+- **位置**：全文，尤其是“为什么要看内存优化案例”、Bitmap、Native、预算管理三类案例小节
+- **问题**：Task2B Lite 本轮主要处理交叉引用，章节仍缺少可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势。作为“案例集”，L3 论据支撑和 L4 作者在场感仍不足。
+- **建议**：Task2B 补至少 1 个可脱敏案例，包含现象、指标、证据、根因、修复、验证和防复发字段；新增技术细节再交 Task9 复核。
+- **review 日志**：logs/review/2026-05-27-20-review.md
+
+## [Task6 Review] 23.8 内存优化案例集 — 2026-05-27（工具边界）
+- **类型**：需确认 / 技术边界
+- **位置**：Native 内存泄漏排查案例：smaps / heapprofd 命令块及前置说明
+- **问题**：Task9 2026-05-14 已指出 heapprofd / smaps 运行条件缺少 user build、userdebug/eng、profileable/debuggable、root/run-as 与权限边界。Task2B Lite 本轮只修复了 26.3 交叉引用，正文仍未补齐该工具边界。
+- **建议**：补充生产 user 设备、debuggable/profileable 应用、userdebug/eng/root 环境下 heapprofd 与 `/proc/<pid>/smaps` 的可用范围；无法保证的路径改为 `dumpsys meminfo` 或说明需开发/调试包。
+- **review 日志**：logs/review/2026-05-27-20-review.md
+
+
+## [Task6 Review] 10.3 内存持续增长 — 2026-05-27
+- **类型**：需确认
+- **位置**：常见问题与误区 / "内存没泄漏就不会 OOM"
+- **问题**：段落把 OOM 的触发条件写成进程 PSS 达到系统为进程分配的内存上限，并把系统整体内存耗尽触发 LMK 放在同一括号内。这里可能混淆 Java Heap OOM、Native 分配失败和 LMK 回收三类路径。
+- **建议**：由 Task 9 先确认不同触发路径，再由 Task 2B 拆分改写：Java Heap 上限、Native/虚拟地址空间分配失败、系统内存压力下 LMK 回收分别处理。
+- **review 日志**：logs/review/2026-05-27-22-review.md

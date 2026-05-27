@@ -184,3 +184,11 @@ AOSP 能验证的是接口和通用实现：`libdmabufheap` 怎么打开 `/dev/d
 - [已验证: AOSP refs/heads/master] `frameworks/native/libs/gui/IGraphicBufferProducer.cpp`
 - [已验证: AOSP refs/heads/master] `frameworks/native/libs/ui/GraphicBuffer.cpp`
 - [来源: Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md] 源码调研：Android 16/17 图形内存优化 DMA-BUF/Gralloc 公开边界验证
+
+### Android 16/17 DMA-BUF/Gralloc 图形内存版本边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-17-dmabuf-gralloc-graphics-memory-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级验证三个关键论点：AOSP libdmabufheap 无通用池化路径；allocate2() additionalOptions 在 Android 15 已存在非 16 新增；GraphicBuffer flatten/unflatten 未用 FDA 批量安装。此前引用的 20%-40% 收益缺 benchmark 支撑。
+- 注入时间：2026-05-27
+- 价值：纠正 AIW 章节中多处版本边界错误，含 AOSP android-16.0.0_r1 源码锚点验证
+

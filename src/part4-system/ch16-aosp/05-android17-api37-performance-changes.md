@@ -163,6 +163,43 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 - Robolectric 升级到 **4.17+**,并把 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`
 - 如果怀疑问题就是新的 `MessageQueue` 导致，可先在 Developer Options 的 App Compatibility Changes 里关闭该变更，或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
 
+<!-- AIW-源码调研-2026-05-27 -->
+### DeliQueue 算法细节补充（来源：Android Developers Blog 2026-02-17）
+
+以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**：
+
+**TreiberStack push 伪代码**（来自 Google 官方博客）：
+```java
+public void push(E item) {
+  Node<E> newHead = new Node<E>(item);
+  Node<E> oldHead;
+  do {
+    oldHead = top.get();
+    newHead.next = oldHead;
+  } while (!top.compareAndSet(oldHead, newHead));
+}
+```
+CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实现了 lock-free 的 O(1) 插入。
+
+**消息排序逻辑**：min-heap 按 `when`（执行时间）为主键、`insertSeq`（插入序列号）为次键排序。这意味着相同 `when` 的消息按插入顺序处理。
+
+**Tombstone 机制细节**：当调用 `removeMessages()` 时，线程不立即从数据结构中物理移除消息，而是：
+1. CAS 将消息的 `removed` 标志设为 true（逻辑删除）
+2. 将消息加入 lock-free freelist
+3. Looper 在后续循环中批量处理 freelist，清理链表和 heap 中的物理链接
+
+**Looper 退出机制（Native Refcount）**：使用 tagged refcount，其中 one bit 标识 quitting 状态。其他线程在使用 native allocation 前必须检查该 bit，避免 use-after-free。
+
+**分支消除优化**：Message 比较器原本使用条件分支，在高端 ARM64（如 Tensor G 系列）上导致 pipeline flush。Google 团队使用 SIMD-like 技术重写比较逻辑，避免分支预测失败的开销。
+
+**性能数字来源说明**：DeliQueue 的 5,000x synthetic benchmark、15% lock contention 下降、4%/7.7%/9.1% 用户体验指标均来自 Google 内部 benchmark，**非 AOSP commit 可独立复核验证**。建议在向读者引用时注明来源为 Google 内部 benchmark。
+
+**AOSP 源码路径**：`frameworks/base/core/java/android/os/MessageQueue.java`，在 cs.android.com 的 android-16.0.0_r1 或 master 分支可查看具体实现。
+
+**Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
+<!-- AIW-源码调研-2026-05-27 -->
+
+
 ---
 
 ## ART 分代垃圾回收
