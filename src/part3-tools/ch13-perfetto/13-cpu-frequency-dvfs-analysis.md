@@ -32,8 +32,8 @@ sources:
     path: "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - type: obsidian
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-16"
@@ -42,10 +42,11 @@ last_task6_review_log: "logs/review/2026-05-16-10-review.md"
 task6_l1_l2_fixes: 7
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-16 Task6：四层质检通过；L1/L2 轻量修复 7 处；无新增 L3/L4 回炉项，既有 Task9 技术回炉项不由 Task6 裁决。"
-task9_state: "reviewed"
-task2b_state: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
-task2b_result: "pending"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T09:20:00+08:00"
@@ -103,7 +104,7 @@ Perfetto 采集 CPU 频率有两条来源。`power/cpu_frequency` 走 ftrace 事
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-freq]
 
-这段配置用于同时抓三类信息：频率变更、空闲态变更、当前频率轮询和可用频点列表。
+这段配置用于同时抓频率变更、空闲态变更、当前频率轮询和可用频点列表；如果后续要计算线程 Running/Runnable 占比，还要同时启用 sched 事件。
 
 ```protobuf
 data_sources: {
@@ -113,6 +114,9 @@ data_sources: {
       ftrace_events: "power/cpu_frequency"
       ftrace_events: "power/cpu_idle"
       ftrace_events: "power/suspend_resume"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup_new"
+      ftrace_events: "sched/sched_waking"
     }
   }
 }
@@ -173,17 +177,18 @@ Linux CPUFreq 用 policy 表示一组共享 P-state 控制接口的 CPU。多个
 
 [已验证: 官方文档, docs.kernel.org/admin-guide/pm/cpufreq.html]
 
-Perfetto 的 `linux.system_info` 会记录每个 CPU 的 `scaling_available_frequencies`，Trace Processor 解析后可通过 `cpu_freq` 表读取。频点集合相同的一组 CPU，通常属于同一个 cluster；最高频率更高的一组，多数情况下对应大核或超大核。厂商也可能把同簇 CPU 拆成更细 policy，结论以设备实测为准。
+Perfetto 的 `linux.system_info` 会记录每个 CPU 的 `scaling_available_frequencies`，Trace Processor 解析后可通过 `cpu_freq` 表读取。当前 Trace Processor 的 `cpu` 表在有数据时还会暴露 `cluster_id` 与 `capacity`，识别顺序应先看 `cpu.cluster_id` / `capacity`，再用频点集合和同步变频交叉验证；缺字段时退回 sysfs `policy*/affected_cpus`。
 
 这段 SQL 用于查看 trace 中记录到的可用频点，帮助识别 cluster。
 
 ```sql
-SELECT cpu, freq
-FROM cpu_freq
-ORDER BY cpu, freq;
+SELECT c.cpu, c.cluster_id, c.capacity, cf.freq
+FROM cpu_freq AS cf
+JOIN cpu AS c ON cf.ucpu = c.id
+ORDER BY c.cpu, cf.freq;
 ```
 
-结果要按频点集合读：把每个 `cpu` 的频点集合做横向对比。集合完全相同且频率变化同步的一组 CPU，可作为同一 cluster 处理；只有最高频率高低差异时，再结合设备 SoC 拓扑确认小核、大核和超大核的编号。
+结果先按 `cluster_id` / `capacity` 分组；字段缺失或全为默认值时，再横向对比每个 `cpu` 的频点集合。集合完全相同且频率变化同步的一组 CPU，可作为同一 cluster 处理；只有最高频率高低差异时，再结合设备 SoC 拓扑确认小核、大核和超大核的编号。
 
 如果 trace 里没有 `cpu_freq` 表数据，可以退回设备 sysfs：
 
@@ -246,22 +251,23 @@ LIMIT 200;
 
 ```sql
 CREATE VIEW sp_sched AS
-SELECT ts, dur, cpu, utid
-FROM sched
+SELECT s.ts, s.dur, s.ucpu AS cpu_id, c.cpu, s.utid
+FROM sched AS s
+JOIN cpu AS c ON s.ucpu = c.id
 WHERE dur > 0;
 
 CREATE VIEW sp_frequency AS
 SELECT
   c.ts,
   LEAD(c.ts) OVER (PARTITION BY c.track_id ORDER BY c.ts) - c.ts AS dur,
-  t.cpu,
+  t.cpu AS cpu_id,
   c.value AS freq
 FROM counter AS c
 JOIN cpu_counter_track AS t ON c.track_id = t.id
 WHERE t.name = 'cpufreq';
 
 CREATE VIRTUAL TABLE sched_with_frequency
-USING SPAN_JOIN(sp_sched PARTITIONED cpu, sp_frequency PARTITIONED cpu);
+USING SPAN_JOIN(sp_sched PARTITIONED cpu_id, sp_frequency PARTITIONED cpu_id);
 
 SELECT ts, dur, cpu, utid, freq
 FROM sched_with_frequency
@@ -300,7 +306,7 @@ ORDER BY running_ms DESC;
 
 [已验证: arXiv 2507.02135v1]
 
-论文中的一个现象很适合放进 Perfetto 分析口径：decode 阶段 GPU 利用率不一定持续打满，GPU governor 可能降频；CPU 侧看到自己的利用率也不高，EAS / CPU governor 继续降频；但 GPU 仍依赖 CPU 及时喂下一批 kernel，两个组件同时降频会拉长 token 输出时间。论文把这种现象描述为 CPU/GPU governor 的负反馈级联，并给出 Pixel 7 / 7 Pro 上默认 governor 与固定频率组合的对比：在相同能量约束下，部分 prefill / decode 延迟有 40.4% 的优化空间；FUSE 方案在 ShareGPT 数据集上让 TTFT 降低 7.0%-16.9%，TPOT 降低 25.4%-36.8%。
+论文中的一个现象很适合放进 Perfetto 分析口径：decode 阶段 GPU 利用率不一定持续打满，GPU governor 可能降频；CPU 侧看到自己的利用率也不高，EAS / CPU governor 继续降频；但 GPU 仍依赖 CPU 及时喂下一批 kernel，两个组件同时降频会拉长 token 输出时间。论文实验条件是 Android 13、root/open 设备、battery bypass、屏幕关闭、Monsoon 0.2 ms 功耗采样、ShareGPT 数据集和固定频率搜索口径；在这个前提下，Pixel 7 / 7 Pro 上部分 prefill / decode 延迟有 40.4% 的优化空间，FUSE 方案让 TTFT 降低 7.0%-16.9%，TPOT 降低 25.4%-36.8%。
 
 [来源: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md]
 

@@ -2189,8 +2189,8 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T03:16:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T03:35:00+08:00",
+  "last_updated_by": "task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T03:16:00+08:00",
     "sections": [
@@ -9402,9 +9402,9 @@
     }
   ],
   "last_task2b_completed": [
-    "11.5"
+    "13.13"
   ],
-  "last_task2b_completed_at": "2026-05-28T00:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T03:35:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9470,14 +9470,25 @@
       "sections_processed": 5,
       "items_completed": 5,
       "last_section": "10.3"
-    }
+    },
+    "2026-05-28": [
+      {
+        "section": "13.13",
+        "title": "Perfetto CPU 频率与 DVFS 关联分析",
+        "file": "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-05-28T03:35:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review",
+        "fix_summary": "补 sched 采集事件、cpu/ucpu SQL schema 口径、cluster_id/capacity 优先识别与 LLM DVFS 实验边界"
+      }
+    ]
   },
-  "last_task2b_lite_at": "2026-05-27T21:35:00+08:00",
+  "last_task2b_lite_at": "2026-05-28T03:35:00+08:00",
   "last_task2b_lite_sections": [
-    "10.3"
+    "13.13"
   ],
   "last_task2b_lite_files": [
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md"
+    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
   ],
   "task2b_verifier_history": [
     {
@@ -9522,13 +9533,13 @@
     "src/part5-app/ch20-stability/09-stability-case-studies.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "20.9",
-    "file": "src/part5-app/ch20-stability/09-stability-case-studies.md",
-    "at": "2026-05-28T02:50:00+08:00",
-    "by": "task2b-content-processing-rework-main",
-    "source": "task9-deep-tech-review",
-    "priority": 95,
-    "summary": "重写 Native signal handler 示例，收敛为 async-signal-safe 最小快照、altstack、默认动作恢复与 re-raise；复杂 unwind/符号化/落盘移出 handler。"
+    "section": "13.13",
+    "title": "Perfetto CPU 频率与 DVFS 关联分析",
+    "file": "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
+    "status": "fixed-lite",
+    "fixed_date": "2026-05-28T03:35:00+08:00",
+    "source": "frontmatter-fallback/task9-deep-review",
+    "fix_summary": "补 sched 采集事件、cpu/ucpu SQL schema 口径、cluster_id/capacity 优先识别与 LLM DVFS 实验边界"
   },
   "task2b_last_rework": {
     "section": "1.8",
@@ -9561,5 +9572,19 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-27T21:35:00+08:00"
+  },
+  "section_13_13": {
+    "section": "13.13",
+    "title": "Perfetto CPU 频率与 DVFS 关联分析",
+    "file": "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-05-28T03:35:00+08:00"
   }
 }
