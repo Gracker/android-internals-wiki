@@ -26,24 +26,28 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/GraphicsEnvironment.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/native/libs/ui/GraphicBufferMapper.cpp @ AOSP main"
+    path: "frameworks/base/libs/hwui/apex/jni_runtime.cpp @ android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/libs/ui/GraphicBufferMapper.cpp @ android-13.0.0_r1 / android-14.0.0_r1 / AOSP main"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md"
 reviewed_date: "2026-05-16"
 reviewed_by: openclaw-task6
 review_round: 1
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
-pipeline_stage: "task2b_pending"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 task6_review_notes: "2026-05-16 Task6：四层质检通过；无 L1/L2 正文小修；无 L3/L4 回炉项，送 Task9 技术复审。"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T06:31:25+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-06-deep-review.md"
 task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
+last_task2b_lite_at: "2026-05-27"
 ---
 
 # 1.19 Zygote 图形驱动预加载与启动性能
@@ -129,7 +133,7 @@ void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(JNIEnv* env, jcl
 
 这个选择很克制。Zygote 进程是所有普通 App 进程的父进程，放进这里的 HAL 会影响全局启动、内存和兼容性；只有覆盖面足够大、加载行为足够稳定、适合 fork 前共享的 HAL，才适合进入这条路径。厂商私有 HAL、只服务特定硬件能力的 HAL、依赖应用上下文或权限状态的 HAL，都不该从单机 trace 推成平台规律。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp]
 
-`GraphicBufferMapper::preloadHal()` 在 AOSP main 中依次预加载 Gralloc 2/3/4/5 mapper。构造 `GraphicBufferMapper` 时，运行时会从 Gralloc 5 往前尝试，选中当前设备可用的 mapper 版本。
+`GraphicBufferMapper::preloadHal()` 的版本边界要分开写：Android 13 tag 只预加载 Gralloc 2/3/4 mapper；Android 14 tag 与 AOSP main 已包含 Gralloc 5。构造 `GraphicBufferMapper` 时，运行时会从当前分支支持的最高 mapper 版本往前尝试，选中设备可用的实现。
 
 ```cpp
 void GraphicBufferMapper::preloadHal() {
@@ -149,7 +153,7 @@ GraphicBufferMapper::GraphicBufferMapper() {
 }
 ```
 
-这段代码验证了一个边界：这里预热的是 graphics mapper / gralloc mapper 入口，不是提前为 App 创建 `GraphicBuffer`，也不是提前映射某个具体 buffer 的 dma-buf。buffer 分配、导入、lock/unlock 仍发生在应用和系统图形管线运行时。预加载减少的是 HAL 发现和库加载的冷路径成本。[已验证: AOSP main, frameworks/native/libs/ui/GraphicBufferMapper.cpp]
+这段代码验证了一个边界：这里预热的是 graphics mapper / gralloc mapper 入口，不是提前为 App 创建 `GraphicBuffer`，也不是提前映射某个具体 buffer 的 dma-buf。buffer 分配、导入、lock/unlock 仍发生在应用和系统图形管线运行时。预加载减少的是 HAL 发现和库加载的冷路径成本。[已验证: AOSP android-13.0.0_r1 / android-14.0.0_r1 / AOSP main, frameworks/native/libs/ui/GraphicBufferMapper.cpp]
 
 ## Graphics driver 预加载由系统属性兜底
 
@@ -167,6 +171,8 @@ private static void maybePreloadGraphicsDriver() {
 ```
 
 `nativePreloadGraphicsDriver()` 的 Java 注释说明了设计意图：通过一次 OpenGL 或 Vulkan 调用加载并初始化 graphics driver；调用本身应当低成本、无状态，首次之后再次调用基本等价于空操作。JNI 层把它转到 `zygote_preload_graphics()`。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java][已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp]
+
+`zygote_preload_graphics()` 位于 `frameworks/base/libs/hwui/apex/jni_runtime.cpp`。Android 13/14 的分支较窄：HWUI 选择 SkiaGL 时调用 `eglGetDisplay(EGL_DEFAULT_DISPLAY)`，选择 Vulkan 时调用 `vkEnumerateInstanceVersion()`。Android 15/16 在 Vulkan 分支后又检查 `Properties::initializeGlAlways()`；该属性为真时，即使 HWUI 使用 Vulkan，也会额外调用一次 `eglGetDisplay(EGL_DEFAULT_DISPLAY)`，为仍使用 GL 的 App 预热 GL driver。[已验证: AOSP android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1, frameworks/base/libs/hwui/apex/jni_runtime.cpp]
 
 这个开关的价值在异常设备上更明显。GPU driver 属于强厂商相关组件，某些 vendor EGL / Vulkan 实现如果不适合在 Zygote 期加载，失败会影响所有 App 进程的父进程。`ro.zygote.disable_gl_preload=true` 给 OEM 留出降级入口：牺牲首个图形调用的预热收益，换取 Zygote 启动稳定性。[待验证: 具体厂商触发条件需要实机日志或 vendor issue]
 
@@ -243,12 +249,13 @@ private String getSphalLibraries(Context context, String driverPackageName) {
 
 | 范围 | 可确认内容 | 边界 |
 | --- | --- | --- |
-| Android 13-17 | `nativePreloadAppProcessHALs()` 和 graphics driver preload 属于 Zygote preload 路径 | 不同分支的行号和具体 mapper 实现可能变化 |
+| Android 13-14 | `zygote_preload_graphics()` 已覆盖 SkiaGL 的 `eglGetDisplay()` 与 Vulkan 的 `vkEnumerateInstanceVersion()`；Android 13 的 mapper 预加载停在 Gralloc 2/3/4 | Android 14 起 mapper 预加载包含 Gralloc 5 |
+| Android 15-17 | Vulkan 分支可因 `Properties::initializeGlAlways()` 额外预热 GL driver | 是否走这条分支取决于 HWUI 属性和设备配置 |
 | Android 16 | `GraphicsEnvironment` 包含 ANGLE、updatable production / prerelease driver、`sphal_libraries.txt` 读取 | settings 名称和 OEM 默认值由系统镜像决定 |
 | AOSP main | `GraphicBufferMapper::preloadHal()` 预加载 Gralloc 2/3/4/5 mapper | 设备最终加载哪个 mapper 取决于 vendor 实现 |
 | OEM 设备 | `ro.zygote.disable_gl_preload`、`ro.gfx.driver.*`、vendor EGL / Vulkan 包会改变行为 | 需要 boot trace、属性快照、logcat 和 driver 包信息交叉验证 |
 
-还要保留一个未闭合点：`zygote_preload_graphics()` 的内部 GL / Vulkan 调用细节在本轮只验证到 JNI 入口和 Java 注释，未追到 native graphics runtime 的完整实现。涉及“具体调用了哪个 API、哪些库被加载、不同 SoC 的耗时分布”时，应标为设备实测问题，不能只靠 AOSP Java 层断言。[待验证: native graphics runtime 内部实现与实机耗时]
+AOSP 已能闭合 `zygote_preload_graphics()` 的平台调用边界；仍需实测的是不同 SoC、不同 vendor EGL / Vulkan 包在这些调用上的耗时和失败模式。
 
 ## 排查入口
 

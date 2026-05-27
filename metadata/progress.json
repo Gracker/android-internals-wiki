@@ -2086,8 +2086,8 @@
   "total_review_sections": 209,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T17:16:52+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T17:38:00+08:00",
+  "last_updated_by": "task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T16:08:00+08:00",
     "log": "logs/review/2026-05-27-16-review.md",
@@ -4142,7 +4142,7 @@
     },
     "1.19": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "created_by": "task2a-knowledge-gap",
@@ -4151,9 +4151,9 @@
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
       "task2a_result": "gap-created",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
@@ -4164,9 +4164,13 @@
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-16T06:31:25+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap",
+      "last_task2b_lite_at": "2026-05-27",
+      "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
+      "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
+      "section": "1.19"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -6096,16 +6100,16 @@
       "title": "Zygote 图形驱动预加载与启动性能",
       "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 85,
       "gap_source": "素材驱动/AOSP结构",
       "last_task2a_at": "2026-05-16T04:10:00+08:00",
       "task2a_result": "gap-created",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
       "last_task6_at": "2026-05-16T06:09:00+08:00",
@@ -6116,9 +6120,13 @@
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-16T06:31:25+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-16-06-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "queue_entry": "task9-20260516-1.19-zygote-graphics-native-version-gap",
+      "last_task2b_lite_at": "2026-05-27",
+      "last_task2b_lite_log": "logs/rework/2026-05-27-17-task2b-lite.md",
+      "task2b_lite_summary": "补齐 zygote_preload_graphics() GL/Vulkan 调用边界，并修正 GraphicBufferMapper Gralloc 5 版本边界。",
+      "section": "1.19"
     },
     "1.10": {
       "title": "ContentProvider 性能与优化",
@@ -8952,10 +8960,19 @@
       "source": "task6-review",
       "priority": 90,
       "summary": "删除文末 AIW 源码调研原始块，将 AMS 双锁与 PI-futex 边界合并入正文，回流 Task6。"
+    },
+    {
+      "section": "1.19",
+      "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+      "at": "2026-05-27T17:38:00+08:00",
+      "by": "task2b-lite",
+      "source": "frontmatter-fallback/task9-deep-review",
+      "priority": 85,
+      "summary": "fixed-lite: jni_runtime.cpp zygote_preload_graphics 调用边界；GraphicBufferMapper Gralloc 版本边界。"
     }
   ],
-  "last_task2b_completed": "1.14",
-  "last_task2b_completed_at": "2026-05-27T16:50:00+08:00",
+  "last_task2b_completed": "1.19",
+  "last_task2b_completed_at": "2026-05-27T17:38:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9018,18 +9035,17 @@
   },
   "task2b_lite_daily": {
     "2026-05-27": {
-      "sections_processed": 3,
-      "items_completed": 3
+      "sections_processed": 4,
+      "items_completed": 4,
+      "last_section": "1.19"
     }
   },
-  "last_task2b_lite_at": "2026-05-27T11:39:00+08:00",
+  "last_task2b_lite_at": "2026-05-27T17:38:00+08:00",
   "last_task2b_lite_sections": [
-    "2.9",
-    "22.4"
+    "1.19"
   ],
   "last_task2b_lite_files": [
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "task2b_verifier_history": [
     {
@@ -9071,15 +9087,15 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md"
+    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "1.14",
-    "file": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
-    "at": "2026-05-27T16:50:00+08:00",
-    "by": "task2b-content-processing-rework-main",
-    "source": "task6-review",
-    "priority": 90,
-    "summary": "删除文末 AIW 源码调研原始块，将 AMS 双锁与 PI-futex 边界合并入正文，回流 Task6。"
+    "section": "1.19",
+    "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
+    "at": "2026-05-27T17:38:00+08:00",
+    "by": "task2b-lite",
+    "source": "frontmatter-fallback/task9-deep-review",
+    "priority": 85,
+    "summary": "fixed-lite: jni_runtime.cpp zygote_preload_graphics 调用边界；GraphicBufferMapper Gralloc 版本边界。"
   }
 }
