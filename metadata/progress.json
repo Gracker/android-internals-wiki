@@ -2086,8 +2086,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T18:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T18:50:00+08:00",
+  "last_updated_by": "task2b-content-processing-rework",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T18:06:00+08:00",
     "log": "logs/review/2026-05-27-18-review.md",
@@ -2226,11 +2226,12 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T16:50:00+08:00",
+  "last_task2b_at": "2026-05-27T18:50:00+08:00",
   "last_task2b_sections": [
-    "1.14"
+    "1.18",
+    "1.20"
   ],
-  "last_task2b_action": "task6-review rework fixed and returned to Task6",
+  "last_task2b_action": "frontmatter backlog fallback rework; fixed Task9/Task6 issues and returned sections to Task6 pending",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -4007,14 +4008,14 @@
       "title": "Binder Freezer 与缓存进程冻结性能",
       "file": "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_source": "素材驱动/AOSP结构/官方文档",
       "last_task2a_at": "2026-05-15T21:09:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -4022,7 +4023,14 @@
       "task6_reviewed_date": "2026-05-15",
       "last_task6_at": "2026-05-15T22:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-22-review.md",
-      "task6_review_notes": "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 7 处；无 L3/L4 回炉项，送 Task9 技术复审。"
+      "task6_review_notes": "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 7 处；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task9_result": "needs-rework",
+      "last_task2b_at": "2026-05-27T18:50:00+08:00",
+      "last_task2b_by": "task2b-content-processing-rework",
+      "last_task2b_source": "frontmatter backlog fallback/task9-deep-review",
+      "last_task2b_summary": "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。"
     },
     "16.6": {
       "title": "Android 16 云端 Profile 与 dexopt 安装优化",
@@ -4523,23 +4531,27 @@
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T04:33:15+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
       "queue_priority": 90,
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T05:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
+      "last_task6_review_log": "logs/review/2026-05-17-05-review.md",
+      "last_task2b_at": "2026-05-27T18:50:00+08:00",
+      "last_task2b_by": "task2b-content-processing-rework",
+      "last_task2b_source": "frontmatter backlog fallback/task9/task6-review",
+      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
@@ -6553,23 +6565,27 @@
       "title": "App Archiving 机制与恢复性能",
       "file": "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T04:33:15+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-04-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-1-20-archive-conditions-callback",
       "queue_priority": 90,
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-17",
       "last_task6_at": "2026-05-17T05:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-05-review.md"
+      "last_task6_review_log": "logs/review/2026-05-17-05-review.md",
+      "last_task2b_at": "2026-05-27T18:50:00+08:00",
+      "last_task2b_by": "task2b-content-processing-rework",
+      "last_task2b_source": "frontmatter backlog fallback/task9/task6-review",
+      "last_task2b_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
     },
     "26.12": {
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
@@ -7681,6 +7697,27 @@
       "details": [
         "§1.14: 删除文末 AIW 源码调研块；AMS mGlobalLock/mProcLock 与 PI-futex 边界并入正文。"
       ]
+    },
+    {
+      "timestamp": "2026-05-27T18:50:00+08:00",
+      "sections_processed": [
+        "1.18",
+        "1.20"
+      ],
+      "sections_fixed": [
+        "1.18",
+        "1.20"
+      ],
+      "issues_addressed": 8,
+      "source": "frontmatter backlog fallback",
+      "details": [
+        "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。",
+        "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
+      ],
+      "files_modified": [
+        "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+        "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      ]
     }
   ],
   "task2a_result": "processed-draft",
@@ -7931,6 +7968,22 @@
       "fixed_date": "2026-05-27T16:50:00+08:00",
       "queue_id": "task6-review-20260527-1508-1.14-aiw-source-blocks",
       "fix_summary": "清理文末 AIW 源码调研原始块；AMS 双锁与 PI-futex 边界合并入正文"
+    },
+    {
+      "section": "1.18",
+      "title": "Binder Freezer 与缓存进程冻结性能",
+      "status": "fixed",
+      "fixed_date": "2026-05-27T18:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback",
+      "fix_summary": "补齐冻结资格 CPU_TIME/shouldNotFreeze 保护链、ApplicationExitInfo API 30-35+ 版本矩阵、IBinder.addFrozenStateChangeCallback 可用性边界、Freezer trace 事件名模板与 DeepResearch 路径。"
+    },
+    {
+      "section": "1.20",
+      "title": "App Archiving 机制与恢复性能",
+      "status": "fixed",
+      "fixed_date": "2026-05-27T18:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback",
+      "fix_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -8962,10 +9015,27 @@
       "source": "frontmatter-fallback/task9-deep-review",
       "priority": 85,
       "summary": "fixed-lite: jni_runtime.cpp zygote_preload_graphics 调用边界；GraphicBufferMapper Gralloc 版本边界。"
+    },
+    {
+      "sections": [
+        "1.18",
+        "1.20"
+      ],
+      "files": [
+        "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+        "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      ],
+      "at": "2026-05-27T18:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "frontmatter backlog fallback",
+      "summary": "Binder Freezer / App Archiving 回炉修复，状态回流 Task6。"
     }
   ],
-  "last_task2b_completed": "1.19",
-  "last_task2b_completed_at": "2026-05-27T17:38:00+08:00",
+  "last_task2b_completed": [
+    "1.18",
+    "1.20"
+  ],
+  "last_task2b_completed_at": "2026-05-27T18:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9080,15 +9150,22 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md"
+    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "1.19",
-    "file": "src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md",
-    "at": "2026-05-27T17:38:00+08:00",
-    "by": "task2b-lite",
-    "source": "frontmatter-fallback/task9-deep-review",
-    "priority": 85,
-    "summary": "fixed-lite: jni_runtime.cpp zygote_preload_graphics 调用边界；GraphicBufferMapper Gralloc 版本边界。"
+    "sections": [
+      "1.18",
+      "1.20"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
+      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    ],
+    "at": "2026-05-27T18:50:00+08:00",
+    "by": "task2b-content-processing-rework",
+    "source": "frontmatter backlog fallback",
+    "priority": 95,
+    "summary": "1.18 Binder Freezer 与 1.20 App Archiving 回炉修复完成，回流 Task6。"
   }
 }

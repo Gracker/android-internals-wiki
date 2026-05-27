@@ -33,15 +33,15 @@ sources:
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T04:33:15+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-04-deep-review.md
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 queue_entry: task9-2026-05-17-1-20-archive-conditions-callback
 p0: 0
 p1: 2
@@ -49,7 +49,7 @@ p2: 1
 task9_review_notes: "2026-05-17 Task9 04: needs-rework。P1 2：requestArchive 入口条件漏掉 installer/opt-out/system-app/launcher activity 等失败路径；ActivityStarter 点击恢复回调误写为 Launcher 侧 IntentSender。P2 1：related_chapters 与正文 4.2/16.2 回跳不一致。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-17"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 last_task6_at: "2026-05-17T05:10:00+08:00"
 last_task6_review_log: logs/review/2026-05-17-05-review.md
@@ -129,7 +129,7 @@ public void requestArchive(@NonNull String packageName, @NonNull IntentSender st
 
 `mInstallerPackageName` 是当前 `PackageInstaller` 实例关联的安装器包名。进入系统服务后，`PackageArchiver.requestArchive()` 还会做三层校验：调用 UID 与 caller package 对上、跨用户权限通过、调用者拥有 `DELETE_PACKAGES` 或 `REQUEST_DELETE_PACKAGES`。普通应用不能拿一个包名就归档任意目标包，拦截点不只在 SDK 注解上。 [已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L202-L246]
 
-[需补充素材: Task9 已指出这里还缺 `createAndStoreArchiveState()` 的归档前置条件，包括 system / updated-system app、responsible installer、opt-out、launcher activity 等失败路径；待 Task2B 按 deep-review 锚点补齐。]
+权限通过后，`createAndStoreArchiveState()` 还会继续判断归档是否能成立。关键失败路径包括：目标包必须已安装；系统应用、更新后的系统应用或声明 opt-out 的包不能直接归档；PMS 要能找到负责恢复的安装器（responsible installer），且安装器支持 `Intent.ACTION_UNARCHIVE_PACKAGE`；目标包需要存在可保存的 Launcher activity，后续灰显入口和点击恢复才有原始 component 可回连。这个检查解释了为什么“有删除权限”不等于“所有包都可归档”：归档删除的是代码包，但系统必须先保存恢复入口和负责恢复的安装器，否则用户会得到一个不可恢复的灰显入口。 [已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java]
 
 归档落到删除语义时，`PackageArchiver` 组合了两个标志位：
 
@@ -189,9 +189,7 @@ if (err == ActivityManager.START_SUCCESS && aInfo == null) {
 }
 ```
 
-`requestUnarchiveOnActivityStart()` 对调用者还有一层限制：允许默认 Launcher、Shell，或预装系统 Launcher 类应用发起点击恢复；其他调用者会返回 `START_PERMISSION_DENIED`。校验通过后，系统调用 `requestUnarchive()`，并复用 Launcher 侧的 `IntentSender` 接收恢复状态。 [已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L274-L352]
-
-[存疑: Task9 已指出点击恢复路径使用 `PackageArchiver` 内部 `UnarchiveIntentSender`，不是 Launcher 侧传入的 `IntentSender`；待 Task2B 按源码锚点修正。]
+`requestUnarchiveOnActivityStart()` 对调用者还有一层限制：允许默认 Launcher、Shell，或预装系统 Launcher 类应用发起点击恢复；其他调用者会返回 `START_PERMISSION_DENIED`。校验通过后，系统调用 `requestUnarchive()`，传入的是 `PackageArchiver.getOrCreateLauncherListener()` 创建并缓存的内部 `UnarchiveIntentSender`。这个 listener 负责接收恢复状态并继续拉起系统 UI；调用方自己传入的 `statusReceiver` 只对应公开 `PackageInstaller.requestUnarchive()` 路径，不是 Launcher 点击恢复路径的一部分。 [已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L274-L352]
 
 恢复请求发送给负责恢复的安装器（responsible installer）。`PackageArchiver.getResponsibleInstallerPackage()` 优先使用 `InstallSource.mUpdateOwnerPackageName`，为空时使用 `mInstallerPackageName`。发送广播时，系统构造 `Intent.ACTION_UNARCHIVE_PACKAGE`，写入 `EXTRA_UNARCHIVE_ID`、`EXTRA_UNARCHIVE_PACKAGE_NAME` 和 `EXTRA_UNARCHIVE_ALL_USERS`，再 `setPackage(installerPackage)` 发给安装器。 [已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L1103-L1128]
 
@@ -201,7 +199,25 @@ if (err == ActivityManager.START_SUCCESS && aInfo == null) {
 
 归档恢复耗时不能只算 `startActivity()`。点击灰显图标之后，用户感知到的等待时间由六段组成：
 
-[需补充素材: 恢复链路建议补一张时序图，覆盖 Launcher 点击、ActivityStarter 归档分支、PackageArchiver、负责恢复的安装器、PackageInstaller session 和恢复后首帧。]
+```mermaid
+sequenceDiagram
+    participant L as Launcher
+    participant AS as ActivityStarter
+    participant PA as PackageArchiver
+    participant I as responsible installer
+    participant PI as PackageInstaller session
+    participant App as restored app
+    L->>AS: startActivity(archived entry)
+    AS->>PA: isIntentResolvedToArchivedApp()
+    PA->>PA: requestUnarchiveOnActivityStart()
+    PA->>I: ACTION_UNARCHIVE_PACKAGE
+    I->>PI: create/write/commit session
+    PI-->>PA: unarchive status
+    PA-->>AS: launch / show result UI
+    AS->>App: cold start after restore
+```
+
+Trace 对照时，把 `ActivityStarter` 的类找不到分支、`PackageArchiverService` 日志、安装器进程下载/写 session、PMS commit、目标应用进程创建和首帧放在同一条时间线上。`PackageInstaller.EXTRA_UNARCHIVE_STATUS` 到达只能说明安装器或系统接收了恢复状态，不代表应用已经完成首帧。
 
 1. **Framework 判定段**：`ActivityStarter` 进入 `START_CLASS_NOT_FOUND` 分支，`PackageArchiver` 查 `PackageState`、`PackageUserState`、`ArchiveState`。这段在 system_server 内完成，通常不是瓶颈；异常时看 `ActivityTaskManager`、`PackageArchiverService` 日志。
 2. **安装器确认段**：无 `INSTALL_PACKAGES` 权限或需要用户确认时，系统走 unarchival confirmation。AOSP 还会用 `OP_UNARCHIVAL_CONFIRMATION` 处理进行中的恢复 session。
