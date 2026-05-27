@@ -83,17 +83,17 @@ rework_by: "task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 last_task6_audit: "2026-05-17"
-task9_state: "pending"
-task9_result: "needs-rework"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-18T19:44:00+08:00"
-task9_reviewed_date: "2026-05-18"
+last_task9_at: "2026-05-28T00:33:51+08:00"
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
-review_round: 4
+review_round: "5"
 last_task9_audit: "2026-05-18"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
@@ -103,6 +103,9 @@ task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
+last_task9_autofix_at: "2026-05-28"
+task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。"
 ---
 
 
@@ -532,18 +535,23 @@ public final class ActiveServices {
 **Perfetto 诊断路径**:
 
 ```sql
--- Perfetto SQL:在 system_server 中定位 AMS 锁竞争
+-- Perfetto SQL:在 system_server 中定位 AMS / ActiveServices monitor contention
+INCLUDE PERFETTO MODULE android.monitor_contention;
+
 SELECT
   blocked_thread_name,
   blocking_thread_name,
-  lock_class_name,
-  duration_ns / 1e6 AS duration_ms,
-  num_waiters
-FROM android.monitor_contention
+  short_blocked_method,
+  short_blocking_method,
+  dur / 1e6 AS duration_ms,
+  waiter_count
+FROM android_monitor_contention
 WHERE process_name = 'system_server'
-  AND (lock_class_name LIKE '%ActivityManagerService%'
-       OR lock_class_name LIKE '%ActiveServices%')
-ORDER BY duration_ns DESC
+  AND (blocked_method LIKE '%ActivityManagerService%'
+       OR blocking_method LIKE '%ActivityManagerService%'
+       OR blocked_method LIKE '%ActiveServices%'
+       OR blocking_method LIKE '%ActiveServices%')
+ORDER BY dur DESC
 LIMIT 20;
 ```
 
