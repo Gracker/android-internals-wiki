@@ -2,7 +2,7 @@
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
 status: ready-for-review
-applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
 section: "1.14"
@@ -35,7 +35,7 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency/priority-inversion"
   - type: blog
-    path: "https://android-developers.googleblog.com/2026/03/android-17-lock-free-messagequeue.html"
+    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
   - type: note
     path: "intake/research-feeds/2026-04-06-15-perfetto-monitor-contention-art-lock-analysis.md"
   - type: note
@@ -44,18 +44,20 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-18T05:21:00+08:00"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-27T14:50:00+08:00"
+task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-18 抽检问题；收窄适用版本，修正 DeliQueue URL/targetSdk 37+ 条件，删除 PTHREAD_PRIO_PROTECT、android_pid_t/ANDROID_PID_MAX 与 SF/Input PI-futex 错误断言。"
 last_task6_audit: "2026-05-17"
 last_task6_at: "2026-05-17T23:12:06+08:00"
 ---
@@ -189,7 +191,7 @@ Linux 提供 PI-futex，是为了解决这类问题的一种机制。但 Android
 
 Binder 这一侧也应该分开写。它要看的重点是驱动怎样给事务传播优先级，怎样挑 Binder worker，怎样唤醒等待线程。把“Binder transaction priority inheritance”和“Java / ART monitor 等待”混成一条实现链，读者到了 trace 现场基本一定会判断错。
 
-SurfaceFlinger 主线程和 InputDispatcher 的核心锁从 Android 14 起已全面启用 PI-futex（优先级继承 futex）。这意味着在高刷新率（120Hz / 144Hz）场景下，SF 主线程即使被中优先级线程抢占，也能通过 PI 机制在锁释放后立刻恢复执行，维持 vsync 投递的及时性。在 Perfetto 中观察时，如果发现 SF 主线程的锁等待时间仍然异常，应优先排查是否涉及未启用 PI 的第三方路径，而非 SF 核心锁本身。[已验证: AOSP android-14.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` + `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`]
+SurfaceFlinger 和 InputDispatcher 不能直接写成“Android 14+ 全面启用 PI-futex”。公开源码里，SurfaceFlinger 常见的 `mStateLock` 路径经 `android::Mutex` 默认初始化，InputDispatcher 主分发路径使用 `std::mutex`；这些锚点本身不足以证明已配置 `PTHREAD_PRIO_INHERIT`。在 Perfetto 中观察到 SF 或 Input 路径锁等待异常时，仍要回到 owner / waiter、调用栈和具体锁初始化代码核对，不要把“内核支持 PI-futex”扩写成“该子系统核心锁已启用 PI”。[已确认: 2026-05-18 Task9 抽检]
 
 ## Binder 框架中的锁竞争
 
@@ -259,7 +261,7 @@ LIMIT 40;
 
 如果问题出在 Java monitor，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。Android 16 起，ART 的逃逸分析已经能自动消除线程私有对象上的冗余 `synchronized` 指令——比如局部变量中的 `StringBuffer` 锁。如果 trace 里的 monitor contention 消失了但问题仍在，要考虑是否被编译器静默优化过。 如果问题出在 native mutex，要看是不是把计算、I/O、等待别的条件也塞进了持锁路径。 如果问题出在 Binder，重点是避免 Binder worker 持锁时再去做跨服务调用、磁盘 I/O，或者长时间等待。 Binder 事务的持锁区间一旦拉长，整个线程池都会跟着排队。
 
-Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它只把多生产者插入路径改成无锁，单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 的 missed frames 下降 7.7% 到 9.1%。这里值得学的是：先找出高频竞争点，再只替换该替换的那一段。[已验证: Android Developers Blog, 2026-03 DeliQueue]
+Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37+ 应用，把多生产者插入路径改成无锁，单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 的 missed frames 下降 7.7% 到 9.1%。这组数据只支撑 MessageQueue 生产者路径的优化收益，不能外推到其他锁路径。[已验证: Android Developers Blog, 2026-02-17 DeliQueue]
 
 当然，无锁也不是白送的。CAS 重试、cache line bouncing、生产者突发写入带来的 drain 压力，都会把收益吃回去。所以我们在 trace 里看见“没有 monitor contention 了”，并不代表问题自然消失，还要继续看 CPU 时间、owner 行为和关键线程延迟有没有一起变好。
 
@@ -271,8 +273,8 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它只把�
 | Android 7.1.2 / 8.0 | `ProcessState.cpp` 两个 tag 的 `DEFAULT_MAX_BINDER_THREADS` 都是 15 | “Android 8 把 Binder 线程从 8 提到 16”这个说法不成立 |
 | Android 9 | bionic 已提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)` | 说明 native 层具备 PI mutex 能力，但是否真的启用要看具体锁属性 |
 | Android 16 | ART 强化逃逸分析，可自动消除线程私有对象上的冗余 `synchronized` 指令（如局部变量中的 `StringBuffer` 锁） | 分析 monitor contention 时，如果对象是方法局部变量且未逃逸，可能已被编译器移除，trace 里不会出现 | 
-| Android 14+ | SurfaceFlinger 主线程和 InputDispatcher 核心锁全面启用 PI-futex 优先级继承 | 分析 SF/Input 路径的锁等待时，优先级反转风险已被系统侧 PI 机制覆盖；高刷新率下的响应性依赖于此 |
-| Android 17 | DeliQueue 把 MessageQueue 生产者路径改成无锁 | 分析主线程消息投递等待时，要把 Android 17 和旧版本分开看 |
+| Android 14+ | 未找到公开源码证据证明 SurfaceFlinger / InputDispatcher 核心锁“全面启用 PI-futex” | 分析 SF/Input 路径锁等待时，要按具体锁初始化代码核对，不能按版本直接假设 PI 保护 |
+| Android 17 | DeliQueue 把 targetSdk 37+ 应用的 MessageQueue 生产者路径改成无锁 | 分析主线程消息投递等待时，要把 Android 17 targetSdk 37+ 与旧行为分开看 |
 
 ## 常见问题与误区
 
@@ -395,10 +397,9 @@ Bionic 从 `android-9.0.0_r1` 起提供完整的 PI-Mutex 属性接口：
 // @ AOSP android-9.0.0_r1
 #define PTHREAD_PRIO_NONE        0
 #define PTHREAD_PRIO_INHERIT     1  // 继承等待者最高优先级
-#define PTHREAD_PRIO_PROTECT     2  // 持锁线程以指定上限优先级运行
 ```
 
-`pthread_mutexattr_setprotocol(attr, PTHREAD_PRIO_INHERIT)` 设置后，后续 `pthread_mutex_init()` 创建的 mutex 启用优先级继承协议。持锁线程的优先级会被内核动态提升到 waiters 中的最高优先级，防止中优先级线程抢占导致的高优先级等待者饿死。
+`pthread_mutexattr_setprotocol(attr, PTHREAD_PRIO_INHERIT)` 设置后，后续 `pthread_mutex_init()` 创建的 mutex 才会请求优先级继承协议。`PTHREAD_PRIO_PROTECT` 不在这些公开 tag 的 bionic `pthread.h` 可用协议里，文档中不要把 POSIX 可选协议直接写成 Android 已实现能力。
 
 ### PI-Futex 与普通 Futex 的区别
 
@@ -415,30 +416,12 @@ Bionic 从 `android-9.0.0_r1` 起提供完整的 PI-Mutex 属性接口：
 
 关键差异：PI-futex 的 `FUTEX_UNLOCK_PI` 语义保证"持锁线程释放时最高优先级等待者立即被唤醒"，不需要额外的 wake 操作。
 
-### 32 位架构 PID 回绕问题
+### 32 位架构 owner TID 编码边界
 
-32 位系统的 `pid_t`（`int32_t`）上限为 32767。长期运行的 32 位设备（如智能电视、机顶盒）可能出现 PID 回绕，导致：
+PI futex 的用户态 word 里会编码 owner TID。bionic 在 32 位 ABI 上对 `pthread_mutex_t` 的布局更紧，公开实现里有 owner tid 编码位数的限制；讨论这类边界时，应写成“32 位 ABI 下 owner TID 编码空间有限，需要按 bionic tag 核对”，不要写成 `android_pid_t` / `ANDROID_PID_MAX` 或“Android 12+ 64-bit PID 修复”。当前公开 AOSP 证据不足以支撑这些符号和版本结论。
 
-- PI mutex owner 识别错误（owner PID 已回绕到新 PID）
-- futex wait queue 关联错误
+### SurfaceFlinger / InputDispatcher 锁路径核对
 
-**Android 12+ 的修复**：AOSP 引入 64-bit PID 类型：
-```cpp
-typedef int64_t android_pid_t;
-#define ANDROID_PID_MAX  999999
-```
-现代 64 位设备不受此问题影响。主流 32 位 Android 设备支持已大幅缩减。
+Task9 抽检没有在公开 AOSP 锚点中确认 SurfaceFlinger / InputDispatcher 核心锁统一启用 PI-futex。可确认的边界是：bionic 支持 `PTHREAD_PRIO_INHERIT`，但具体锁是否启用取决于初始化属性；SurfaceFlinger、InputDispatcher 这类路径要逐个看 `pthread_mutexattr_setprotocol()`、`android::Mutex` 初始化参数或 `std::mutex` 实现，不能按模块名推断。
 
-### SurfaceFlinger / InputDispatcher PI-Futex 启用确认（Android 14+）
-
-从 Android 14 起，以下核心锁已启用 PI-futex：
-
-- `SurfaceFlinger.cpp` 中的主线程互斥锁
-- `InputDispatcher.cpp` 中的分发锁
-
-启用后的效果：高刷新率场景（120Hz / 144Hz）下，即使 SF 主线程被中优先级线程抢占，PI 机制也保证锁释放后立即恢复执行，维持 VSync 投递及时性。
-
-在 Perfetto 中，如果 SF 主线程的锁等待时间异常，应优先排查是否涉及**未启用 PI 的第三方路径**，而非 SF 核心锁本身。
-
-> 源码确认：AOSP android-14.0.0_r1 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 和 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`。PI-futex 启用需要内核 `CONFIG_RT_MUTEXES` 和 `CONFIG_FUTEX_PI` 支持，主流 Android 设备 GKI 内核均已启用。
-
+Perfetto 里出现 SF / Input 相关锁等待时，排查顺序仍然是 owner / waiter、线程优先级、持锁期间调用栈和被等待资源。只有源码锚点能证明该锁启用了 PI，才把优先级继承纳入结论。

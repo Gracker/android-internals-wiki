@@ -34,12 +34,12 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-24T15:15:46+08:00"
+last_task2b_at: "2026-05-27T14:50:00+08:00"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-25T00:20:00+08:00"
@@ -51,6 +51,7 @@ last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。"
+task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -246,7 +247,7 @@ EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写�
 
 Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`），请求省电型 offloaded output path。NDK r29 的 `aaudio/AAudio.h` 描述该模式会走 offloaded audio path，可向 hardware buffer 写入数秒数据、让 framework data pipe 暂停并允许 CPU sleep。该模式面向长音频省电，不是低延迟 MMAP 的替代方案。两者不能同时生效。
 
-使用这个模式有前提条件：App 需要持有具备 while-in-use（WIU）能力的前台服务，短音乐播放器如果不想维护前台服务，仍然应该走传统 PCM 路径。
+这个模式本身不要求 App 持有 while-in-use（WIU）能力的前台服务。WIU 是 Android 17 后台音频硬化的生命周期条件，和 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 的省电输出路径是两组问题。使用该模式后仍要用 `AAudioStream_getPerformanceMode()`、`dumpsys audio` 和 output profile 核对最终是否进入 offloaded path。
 
 [待验证：最终 API 入口、最小 API level、支持格式组合、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
 
@@ -300,7 +301,7 @@ ORDER BY slice.ts
 | 音频断续 | AudioFlinger 线程执行间隔不均匀 | CPU 被其他高优先级任务抢占 |
 | 延迟过大 | App write → 声音输出间隔过长 | 走了 Normal Mixer 路径而非 FAST |
 | Underrun | AudioFlinger 读取时缓冲区为空 | App 写入不及时或缓冲区太小 |
-| 后台音频卡顿 | App 侧 write/callback 停止，随后 track 在 `dumpsys audio` 中变为 inactive 或被 teardown | Android 17 后台限制、前台服务 / WIU 状态不满足 |
+| 后台音频卡顿 | App 侧 write/callback 停止，随后 track 在 `dumpsys audio` 中变为 inactive 或被 teardown | Android 17 后台音频硬化：无可见 Activity、无合规 FGS，或 targetSdk 37+ 未满足 WIU / `USAGE_ALARM` 豁免条件 |
 
 [图：Perfetto 中音频 underrun 的 Trace 表现，标注缓冲区空的时间段]
 
@@ -310,7 +311,7 @@ Android 17（API 37）对音频子系统引入了多项重要变更，对 App �
 
 ### 后台音频强化（Audio Hardening）
 
-Android 17 对后台音频播放实施了严格管控。后台执行限制继续加强，影响范围比以往更广：
+Android 17 对后台音频播放实施更严格的管控，影响范围包括播放写入、音频焦点和音量变更：
 
 **受影响的主线 API**：
 - 播放写入路径（以 `AudioTrack` 为代表）
@@ -319,17 +320,17 @@ Android 17 对后台音频播放实施了严格管控。后台执行限制继续
 
 这里先只讨论播放侧硬化。`AudioRecord`、Telecom 和录音权限相关行为是另一组约束，不能直接和这组后台播放限制混成一类。
 
-**新规则**：App 在后台（没有可见 Activity）调用这些 API 时，必须持有具备 while-in-use（WIU）能力的前台服务。`SHORT_SERVICE` 类型的前台服务不具备 WIU 能力。不合规时，播放和音量变更会静默失败，`requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`。
+**新规则**：运行在 Android 17 上的 App，如果在后台调用这些 API，需要有可见 Activity，或运行非 `SHORT_SERVICE` 类型的前台服务。targetSdk 37+ 还要满足额外条件：前台服务具备 while-in-use（WIU）能力，或者 App 已获 exact alarm 权限并且操作的是 `USAGE_ALARM` 音频流。不合规时，播放和音量变更会静默失败，`requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`。
 
 [已验证: developer.android.com/about/versions/17/changes/bg-audio]
 
 **调试方法**：
 
 ```bash
-# 对所有 app 打开约束，提前做兼容性测试
+# 对所有 app 打开约束，提前做兼容性测试；该模式会强制应用 WIU 要求，并且不会放过 exact alarm + USAGE_ALARM 豁免
 adb shell cmd audio set-enable-hardening enable
 
-# 打开 loud failure：volume/focus 直接抛 IllegalStateException，播放 write 持续报错
+# 打开 loud failure：volume/focus 抛 IllegalStateException，播放 write 持续返回错误
 adb shell cmd audio set-enable-hardening throw
 
 # 临时关闭约束，做 A/B 对比
@@ -342,7 +343,7 @@ adb logcat -s AudioHardening
 adb dumpsys audio
 ```
 
-**对性能分析的影响**：这个变更的主体是 app 生命周期与音频 API 可用性，不是 AudioFlinger 线程被冻结。Perfetto 里更常见的现象是应用自己的写入线程、AAudio callback 或播放器工作线程先停止推数据，随后对应 track 在 `dumpsys audio` 里变成 inactive，必要时还会被 teardown。定位这类问题时，先对照 `logcat -s AudioHardening` 看是否命中后台限制，再用 `dumpsys audio` 核对 output / track 状态，再回看 trace 中的 app 写入停止时点。
+**对性能分析的影响**：这个变更的主体是 app 生命周期与音频 API 可用性，不是 AudioFlinger 线程被冻结。Perfetto 里更常见的现象是应用自己的写入线程、AAudio callback 或播放器工作线程先停止推数据，随后对应 track 在 `dumpsys audio` 里变成 inactive，必要时还会被 teardown。定位这类问题时，先对照 `logcat -s AudioHardening` 看是否命中后台限制，再用 `dumpsys audio` 核对 output / track 状态，再回看 trace 中的 app 写入停止时点。用 `cmd audio set-enable-hardening enable` 得到的问题要单独标注为强制测试结果，不能直接等同于默认发布行为。
 
 ### AudioTrack 新增精确 Flush 控制
 
