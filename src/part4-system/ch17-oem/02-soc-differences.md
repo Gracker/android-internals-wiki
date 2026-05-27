@@ -8,7 +8,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-27"
-last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，AOSP android-16.0.0_r1"
+last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，AOSP android-16.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12"
 confidence: medium
 sources:
   - type: blog
@@ -32,9 +32,9 @@ last_task2b_at: "2026-05-17T19:17:39"
 task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T07:24:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。"
+last_task9_at: "2026-05-27T08:22:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-27-08-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。 | 2026-05-27 08:22 Task9 auto-fix：按 Android common 6.1/6.6/6.12 复核 EEVDF 版本口径，避免把调度器切换绑定到 Android API；回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
@@ -43,17 +43,17 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-05-27"
 status: "ready-for-review"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-27T08:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-08-review.md"
 review_type: task6-writing-quality-review
-task9_state: pending
+task9_state: reviewed
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 
 ---
@@ -339,7 +339,7 @@ Perfetto 作为通用工具,在不同 SoC 上的数据可用性和精度有差�
 
 **Thermal Track**:各厂商的温控策略和温度传感器配置不同,Perfetto 中 `linux.thermal` Track 上报的温度区间和降频行为会有明显差异。高通的温控通常更激进(快速降频保功耗),联发科在全大核设计下需要更精细的温控。
 
-**Scheduling Track**:Android 统一使用基于 Linux CFS(Android 16 及之前)或 EEVDF(Android 17 / GKI 6.12)的调度器。但各厂商的 schedutil 调频策略、uclamp 配置和 cgroup 设置不同,会导致相同的负载在不同设备上表现出不同的频率曲线。
+**Scheduling Track**:Android 设备的公平调度器口径要按内核分支判断:Android common 6.1 仍是 CFS,android15-6.6 / android16-6.12 的 fair scheduler 已包含 EEVDF。具体量产设备取决于 GKI/vendor kernel 分支。各厂商的 schedutil 调频策略、uclamp 配置和 cgroup 设置不同,会导致相同的负载在不同设备上表现出不同的频率曲线。
 
 [已验证: 实际分析经验 + Perfetto 官方文档]
 
@@ -347,7 +347,7 @@ Perfetto 作为通用工具,在不同 SoC 上的数据可用性和精度有差�
 
 SoC 平台差异不是一个独立的机制,它影响着本书前面讲过的几乎每一个性能相关机制。
 
-与 **§5.1 Linux 进程调度** 的关系:调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑(双集群 vs 三集群 vs 全大核)直接决定了负载均衡和迁移策略。Android 16 及之前基于 CFS 的 EAS(Energy Aware Scheduling)在选核时权衡算力与功耗,Android 17 / GKI 6.12 切换到 EEVDF 后,调度决策基于虚拟截止时间,但能效感知的选核逻辑仍然存在(详见 §5.1)。联发科的全大核架构消除了大小核之间的性能断崖,迁移更多发生在同性能级别的核心之间;高通的 Oryon 双集群让迁移更简洁。
+与 **§5.1 Linux 进程调度** 的关系:调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑(双集群 vs 三集群 vs 全大核)直接决定了负载均衡和迁移策略。Android common 6.1 的 CFS/EAS 在选核时权衡算力与功耗;android15-6.6 / android16-6.12 的 fair scheduler 已包含 EEVDF,调度决策会引入虚拟截止时间,但能效感知的选核逻辑仍然存在(详见 §5.1)。联发科的全大核架构消除了大小核之间的性能断崖,迁移更多发生在同性能级别的核心之间;高通的 Oryon 双集群让迁移更简洁。
 
 与 **§5.3 大小核架构** 的关系:联发科的全大核策略明显改变了传统大小核架构的分析前提。它改变了分析 Perfetto 时对「小核」的预期:在传统架构上,任务在小核上执行慢是正常的;在全大核架构上,任何核心上的性能都不应该太差。
 
