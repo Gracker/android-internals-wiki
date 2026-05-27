@@ -53,12 +53,12 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-19"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "reviewed"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task9_at: "2026-05-19T19:36:17+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-19
@@ -68,12 +68,15 @@ last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
 p0: 0
 p1: 1
 p2: 0
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证。"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-19T20:25:44+08:00"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-05-19-20-review.md"
 task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。"
+last_task2b_at: "2026-05-28T04:50:00+08:00"
+last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
+last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
 
 ---
 
@@ -294,11 +297,11 @@ Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 
 
 [已验证: Google Online Security Blog 2022-07 / Android Private DNS 文档]
 
-### UI 焦点预解析（Android 16）
+### App 侧预解析策略
 
-Android 16（API 36）的 `DnsResolver` 新增了 Predictive Prefetching 能力。当用户手指悬停在可点击链接上，或 TalkBack 辅助功能聚焦到 URL 时，系统 resolver 会静默发起 DNS 查询。用户点击该链接时，DNS 结果已经在缓存中，“点击到建连”的 DNS 解析时间趋近于 0。
+公开 Android 16 / API 36 文档没有提供 `DnsResolver` Predictive Prefetching API，也没有确认系统会在链接 hover 或 TalkBack 聚焦 URL 时自动预解析。不能把这类行为写成平台保证。
 
-这个红利的触发条件是 App 使用标准系统控件（`TextView`、`WebView`、`CustomView` 中的 `autoLink` 等）。自定义渲染引擎（如 Flutter、React Native）如果自行处理点击事件而不经过 Android 的输入系统，无法享受预解析。这类 App 需要自行实现类似的预解析逻辑：在 `onHoverEvent` 或 `AccessibilityNodeInfo` 聚焦回调中提前调用 `InetAddress.getAllByName()`。
+如果业务能明确识别“用户很可能点击某个链接”的交互，例如搜索建议、文章内链接 hover、无障碍焦点移动或下一页预加载，可以在 App 层做受控预解析：把 host 交给自有 DNS 层或 OkHttp `Dns` 实现提前查询，并设置并发上限、缓存 TTL 和取消策略。不要在主线程直接调用 `InetAddress.getAllByName()`；自定义 DNS 也要避免把阻塞查询带回 UI 线程。
 
 ### DNS HTTPS Record（Type 65）
 

@@ -11,15 +11,15 @@ polish_date: '2026-04-10'
 polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T18:30:26+08:00"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
@@ -45,6 +45,9 @@ related_chapters:
 - '8.1'
 last_task9_audit: '2026-05-20'
 last_task6_audit: '2026-05-22'
+last_task2b_at: "2026-05-28T04:50:00+08:00"
+last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
+last_task2b_note: "修复 OkHttp EventListener 文档锚点、Cronet 0-RTT 配置边界、16KB Cronet 冷启动无来源百分比、NetworkCapabilities 带宽估算 Android 16/eBPF 口径。"
 ---
 
 # 网络性能优化
@@ -103,7 +106,7 @@ DNS 查询 → TCP 连接 → TLS 握手 → 发送请求头 → 发送请求体
 
 为什么这三个指标如此重要？因为它们各自对应不同的优化方向。DNS 慢 → 用 DNS 预解析或 HTTPDNS；连接慢 → 用连接复用或预连接；TTFB 慢 → 优化服务端或用 CDN。如果我们在做性能优化时不拆分指标，只是简单地看到"请求花了 2 秒"，就无从下手。
 
-[已验证: 官方文档, developer.android.com/reference/okhttp3/EventListener]
+[已验证: Square OkHttp EventListener 官方文档 / Android ConnectivityManager 官方文档]
 
 ### 传输速率
 
@@ -131,7 +134,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 **零/一次 RTT 连接建立**：QUIC 将传输层握手和 TLS 1.3 加密握手合并为一次交互。首次连接只需 1-RTT，后续连接可以利用保存的会话信息实现 0-RTT，即第一个包就可以携带请求数据。在移动网络下，一个 RTT 可能是 50-100ms，省掉一次往返意味着白屏时间直接减少 50-100ms。
 
-> **⚠️ 0-RTT 安全边界**：0-RTT 数据不具备前向安全性（Forward Secrecy），且易受重放攻击（Replay Attack）（RFC 9001 §9.2）。业务层必须确保通过 0-RTT 发送的请求是幂等的（如 GET、PUT），或者携带服务端幂等键（Idempotency Key）来防止重复执行。对非幂等请求（POST、PATCH），应在 QUIC 配置中显式禁用 0-RTT，或在应用层降级到 1-RTT 发送。Cronet 的 `QuicOptions` 允许通过 `addAllowedQuicHost()` 控制哪些域名启用 QUIC，建议只对幂等读接口的域名启用 0-RTT。
+> **⚠️ 0-RTT 安全边界**：0-RTT 数据不具备前向安全性（Forward Secrecy），且易受重放攻击（Replay Attack）（RFC 9001 §9.2）。业务层必须确保通过 0-RTT 发送的请求是幂等的（如 GET、PUT），或者携带服务端幂等键（Idempotency Key）来防止重复执行。对非幂等请求（POST、PATCH），应在 QUIC 配置中显式禁用 0-RTT，或在应用层降级到 1-RTT 发送。Cronet 的 `QuicOptions.Builder.addAllowedQuicHost()` 只负责 QUIC host allowlist；0-RTT 还要结合 `enableTlsZeroRtt(boolean)`、HTTP disk cache / session state 和服务端 replay 防护一起配置。
 
 **独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的薄弱环节。
 
@@ -145,7 +148,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 因此，“引入 Cronet 会让 APK 增加 1-2MB”不是通用结论。体积、更新路径和可用性要分开看。GMS 设备更看重 provider 是否已经安装、版本是否满足要求；非 GMS 设备更看重包体积、ABI 覆盖和发布节奏。生产实践里通常会先探测 Play Services provider，可用时优先走 Cronet；探测失败时回退到 bundled Cronet 或 OkHttp/HTTP/2。这样才能把性能收益、包体积和设备覆盖率放在同一个决策框架里。
 
-16KB 分页对 Cronet 冷启动的影响：`libcronet.so` 是一个大型 native 库，在 4KB 分页下页表条目数量多、page fault 频繁。切换到 16KB 页后，同一库的页表条目减少约 75%，冷启动时从 `dlopen` 到首次 HTTP 请求发出的间隔缩短约 10%。这个收益对 App 启动阶段的预连接尤其明显——如果启动时同时在做布局渲染和 Cronet 初始化，16KB 环境下网络就绪的时点会更早。
+16KB 分页对 Cronet 冷启动的影响要按 provider 与设备实测。`libcronet.so` 是大型 native 库，4KB 分页下页表条目更多，page fault 与重定位成本更容易出现在冷启动路径；16KB page size 可能降低页表项数量和部分 fault 成本，但不能直接推出固定百分比收益。若要把 Cronet 初始化放进启动阶段的预连接策略，建议用同一设备、同一 ABI、同一 Cronet provider 版本，对比 4KB / 16KB 环境下 `dlopen`、provider install、首次请求发出三个时间点。
 
 [已验证: Android Developers Cronet 文档 / Google Play services CronetProviderInstaller]
 
@@ -368,7 +371,7 @@ OkHttpClient client = new OkHttpClient.Builder()
 
 在实际项目中，EventListener 收集的指标通常会上报到 APM（Application Performance Monitoring）平台，形成 P50/P90/P99 的分位数统计。我们关注的不是单个请求的耗时，而是大盘数据——如果 P90 的 DNS 时间从 50ms 涨到 200ms，说明 DNS 基础设施出了问题，需要考虑引入 HTTPDNS。
 
-[已验证: 官方文档, developer.android.com — OkHttp EventListener API]
+[已验证: Square OkHttp EventListener 官方文档]
 
 ### ConnectivityManager.NetworkCallback：感知网络环境变化
 
@@ -426,7 +429,7 @@ public final class NetworkMonitor {
 ```
 
 
-Android 16 在 `ConnectivityManager` 底层引入了基于 eBPF 的网络带宽估算增强，`getLinkDownstreamBandwidthKbps()` 的估算来源从纯驱动声明扩展到内核网络栈的实际传输统计。置信区间收窄后，动态码率切换可以更激进。[待验证：具体精度提升百分比、设备条件和测试方法尚未公开]
+`getLinkDownstreamBandwidthKbps()` 返回的是系统估算值，公开文档只承诺它表示 first-hop transport 的估计下行带宽。它适合做粗粒度分档，例如是否预加载大图、是否进入低码率模式；不适合当成真实吞吐或 RTT 判断。Android 16 公开文档没有说明该 API 已改由 eBPF 实测统计提供，也没有给出可依赖的精度变化。
 
 这段代码给的是策略输入，不是最终网络质量结论。网络是否真的“快”，还要结合 EventListener 里的 DNS、connect、TTFB 和响应体传输时间一起看。`NET_CAPABILITY_VALIDATED` 为 true 只能说明系统探测到这条网络能访问公网；`getLinkDownstreamBandwidthKbps()` 很高，也不代表当前请求就一定能跑到这个速率。
 
