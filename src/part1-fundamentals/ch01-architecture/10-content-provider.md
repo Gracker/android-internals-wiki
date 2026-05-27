@@ -32,8 +32,8 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: 'needs-rework'
@@ -41,9 +41,9 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
 last_task2b_lite_at: '2026-05-27'
-reviewed_date: '2026-05-16'
+reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
-review_round: 7
+review_round: 8
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-11'
 last_task9_at: '2026-05-11T10:20:00+08:00'
@@ -56,12 +56,15 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: 'logs/deep-review/2026-05-11-10-deep-review.md'
 
-task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。"
+task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-27"
+last_task6_at: "2026-05-27T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-14-review.md"
+review_type: "task6-writing-quality-review"
 ---
 
-
-
-<!-- outline-start
+<!-- outline-start -->
 1. [why-cp] 为什么要了解 ContentProvider 的性能
 2. [architecture] ContentProvider 在 Android 架构中的角色
 3. [initialization] ContentProvider 的初始化与启动流程
@@ -86,7 +89,7 @@ task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余�
 9. [jetpack] ContentProvider 与 Jetpack 架构组件
 10. [versions] ContentProvider 的版本演进
 11. [faq] 常见问题与误区
-outline-end -->
+<!-- outline-end -->
 
 # 1.10 ContentProvider 性能与优化
 
@@ -150,7 +153,7 @@ ContentProvider 最容易被忽视的性能问题,出在它的初始化时机上
 
 [已验证:AOSP, ActivityThread.installContentProviders() 按 initOrder 排序后遍历]
 
-需要注意:**这个顺序控制非常脆弱**。它依赖于所有 CP 在同一个 manifest 中(包括合并后的 manifest),而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系(比如 CP B 需要 CP A 初始化完成),应该使用 Jetpack App Startup 的依赖图机制(下面会讲),而不是依赖 initOrder。
+这个顺序控制很脆弱：它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制，而不是依赖 initOrder。
 
 ## ContentProvider 的跨进程通信机制
 
@@ -236,7 +239,7 @@ ContentProvider 的 ANR 涉及三个不同的超时机制,容易混淆:
 
 ### 远程 ContentProvider 的 Binder 线程池模型与线程耗尽
 
-这一节只讨论跨进程远程调用。App A 通过 `ContentResolver` 访问 App B 的 provider 时,`query()` / `insert()` / `update()` / `delete()` 会在提供方进程的 Binder 线程中执行。同进程 provider,或调用方拿到本地 provider 引用的路径,可以在调用方线程内直接执行,不会进入远端 Binder 线程池。判读 ANR traces 时先确认调用是否跨进程,否则容易把本地数据库耗时误判为提供方 Binder 线程耗尽。
+跨进程远程调用才会占用提供方进程的 Binder 线程池。App A 通过 `ContentResolver` 访问 App B 的 provider 时，`query()` / `insert()` / `update()` / `delete()` 会在提供方进程的 Binder 线程中执行。同进程 provider，或调用方拿到本地 provider 引用的路径，可以在调用方线程内直接执行，不会进入远端 Binder 线程池。判读 ANR traces 时先确认调用是否跨进程，否则容易把本地数据库耗时误判为提供方 Binder 线程耗尽。
 
 Binder 线程池的关键参数:
 
@@ -248,7 +251,7 @@ Binder 线程池的关键参数:
 
 1. App A 调用 App B 的 ContentProvider.query() → Binder 线程 1 进入 query() → 等待数据库锁 → 阻塞
 2. App C 也调用 App B 的 ContentProvider.query() → Binder 线程 2 进入 query() → 等待同一把锁 → 阻塞
-3. ... 重复 N 次,Binder 线程池被耗尽
+3. 同样的等待重复 N 次，Binder 线程池被耗尽
 4. 此时 system_server 向 App B 发送的任何 Binder 调用(包括 ANR 相关的心跳检测)都无法获得线程 → App B 被判定为无响应 → ANR
 
 在 traces.txt 中识别 Binder 线程池耗尽的标志:
@@ -499,7 +502,7 @@ ContentProvider 不是孤立存在的,它和系统中的多个机制有紧密关
 
 Room 是 Android 官方推荐的数据库访问层,它在 SQLite 之上提供了类型安全的抽象。Room 本身不直接使用 ContentProvider,但通过 `RoomDatabase` 的 `SupportSQLiteOpenHelper` 封装了数据库操作。如果需要暴露数据给其他 App,可以在 Room 的 `@Dao` 之上包装一层 ContentProvider。
 
-需要注意:**Room + ContentProvider 的组合会增加额外的 Binder 开销**。如果数据只在 App 内部使用,直接用 Room 即可,不需要经过 ContentProvider 的跨进程机制。只有在需要跨 App 共享数据时才值得引入 ContentProvider。
+Room + ContentProvider 的组合会增加额外的 Binder 开销。如果数据只在 App 内部使用，直接用 Room 即可，不需要经过 ContentProvider 的跨进程机制。只有在需要跨 App 共享数据时才值得引入 ContentProvider。
 
 ### ContentProvider vs Room + Repository 模式
 
@@ -543,7 +546,7 @@ AOSP android-11.0.0_r1 的 `ContentProviderClient` 加入了 `setDetectNotRespon
 - 需要超时控制时,用调用侧超时包裹,再配合 `CancellationSignal` 取消。
 - 需要隔离 provider 崩溃影响时,才考虑 `acquireUnstableContentProviderClient()` 这类公开 API;它解决的是进程稳定性边界,不是 CRUD 的统一超时。
 
-下面这段代码只展示应用侧可用的超时包装方式,重点看 `CancellationSignal` 和调用侧超时:
+这段代码只展示应用侧可用的超时包装方式，重点看 `CancellationSignal` 和调用侧超时：
 
 ```kotlin
 suspend fun queryWithTimeout(
