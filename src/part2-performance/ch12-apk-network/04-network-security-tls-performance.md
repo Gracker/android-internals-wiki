@@ -24,19 +24,19 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-24"
-last_task6_at: "2026-05-19T19:09:00+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-28"
+last_task6_at: "2026-05-28T07:05:00+08:00"
 last_task6_audit: "2026-05-19"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 review_round: 2
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -48,6 +48,10 @@ repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
 task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。"
+last_task6_review_log: "logs/review/2026-05-28-07-review.md"
+task6_l3_l4_issues: 0
+task6_l1_l2_fixes: 1
+task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
@@ -290,6 +294,7 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 在 Perfetto 或网络 profiler 中看到异常后，可以对照下表定位可能的安全机制因素：
 
 | 现象 | 可能原因 | 排查方向 |
+|---|---|---|
 | 每次请求都出现 TLS 握手段 | 连接池未复用 | 检查 ConnectionPool 配置和 keep-alive |
 | 首次请求延迟明显高于后续 | DNS + TLS 握手叠加 | DNS 预解析 + Session Resumption |
 | targetSdk 37 升级后大量连接失败 | CT 验证不通过 | 检查服务器证书 SCT 数量 |

@@ -33,21 +33,21 @@ gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-28T03:16:00+08:00"
+last_task6_at: "2026-05-28T07:05:00+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T06:28:00+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "reviewed"
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-05-28"
-last_task6_review_log: "logs/review/2026-05-28-03-review.md"
+last_task6_review_log: "logs/review/2026-05-28-07-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
+task6_review_notes: "2026-05-28 Task6：Task9 auto-fix 回流后写作复审通过；L1/L2 小修 1 处，统一参考资料中的 JankStats API 版本口径；无 L3/L4 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-06-deep-review.md"
 task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。"
@@ -398,6 +398,6 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 ### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
 - 类型：DeepResearch 调研结果
-- 摘要：验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认第三方 App CUJ 不自动进入 android_jank_cuj 表。给出三条替代路径：AndroidX JankStats（API 30+）、自定义 atrace marker（Trace.beginSection）、FrameTimeline direct join。梳理 FrameTracker 数据流从 Choreographer→ViewRootImpl→JankTracker→SF FrameTimeline→Perfetto。
+- 摘要：验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认第三方 App CUJ 不自动进入 android_jank_cuj 表。给出三条替代路径：AndroidX JankStats（API 16+，API 24+ 计时数据更可靠，API 31+ 精度更高）、自定义 atrace marker（Trace.beginSection）、FrameTimeline direct join。梳理 FrameTracker 数据流从 Choreographer→ViewRootImpl→JankTracker→SF FrameTimeline→Perfetto。
 - 注入时间：2026-05-23
 - 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料

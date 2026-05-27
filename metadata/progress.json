@@ -373,21 +373,23 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T02:11:48+08:00",
-    "log": "logs/review/2026-05-28-02-review.md",
+    "reviewed_at": "2026-05-28T07:05:00+08:00",
     "sections": [
-      "11.5",
-      "13.14",
-      "20.6"
+      "12.4",
+      "13.1",
+      "13.14"
     ],
-    "files": [
-      "src/part2-performance/ch11-power/05-wakelock.md",
-      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-      "src/part5-app/ch20-stability/06-stability-metrics.md"
-    ],
+    "log": "logs/review/2026-05-28-07-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 6,
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
+    "files": [
+      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+    ],
+    "small_fixes": 4,
+    "rework_items": 0,
     "auto_promoted": []
   },
   "issues_by_section": {
@@ -2189,23 +2191,25 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T05:31:07+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-28T07:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T05:12:00+08:00",
+    "reviewed_at": "2026-05-28T07:05:00+08:00",
     "sections": [
-      "12.2",
-      "12.3"
+      "12.4",
+      "13.1",
+      "13.14"
     ],
-    "log": "logs/review/2026-05-28-05-review.md",
+    "log": "logs/review/2026-05-28-07-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 4,
     "l3_l4_issues": 0,
     "files": [
-      "src/part2-performance/ch12-apk-network/02-network-performance.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
     ],
-    "small_fixes": 2,
+    "small_fixes": 4,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -4514,19 +4518,20 @@
       "drafted_date": "2026-05-16",
       "last_verified": "2026-05-16",
       "confidence": "medium",
-      "last_task6_at": "2026-05-28T03:16:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-03-review.md",
+      "last_task6_at": "2026-05-28T07:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
-      "task6_review_notes": "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 Task6：Task9 auto-fix 回流后写作复审通过；L1/L2 小修 1 处，统一参考资料中的 JankStats API 版本口径；无 L3/L4 回炉项，送 Task9 复核。",
       "task2b_result": "fixed-lite",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
       "task6_l1_l2_fixes": 1,
-      "task6_l3_l4_issues": 0
+      "task6_l3_l4_issues": 0,
+      "section": "13.14"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
@@ -5820,14 +5825,24 @@
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
+      "reviewed_date": "2026-05-28",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-25T08:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-08-review.md",
+      "last_task6_at": "2026-05-28T07:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "section": "13.1",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T06:50:00+08:00",
+      "task2b_source": "frontmatter backlog fallback",
+      "last_task9_review_log": "logs/deep-review/2026-05-25-08-deep-review.md",
+      "last_task9_audit_log": "logs/deep-review/2026-05-25-05-audit.md",
+      "task2b_summary": "修复 Trace Processor metric 示例、android.log userdebug 边界、Android 10/11 配置输入路径边界，并拆分 Android 15-17 profiling 版本表。",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 2 处，压掉否定纠正式句型和限制句式；无 L3/L4 回炉项，送 Task9 复核。"
     },
     "14.10": {
       "title": "eBPF/BPF 在 Android 性能分析中的应用",
@@ -6181,6 +6196,30 @@
       "p1": 0,
       "p2": 0,
       "task9_review_notes": "Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。"
+    },
+    "12.4": {
+      "section": "12.4",
+      "title": "Android 网络安全与 TLS 性能优化",
+      "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T06:50:00+08:00",
+      "task2b_source": "frontmatter backlog fallback",
+      "last_task9_audit_log": "logs/deep-review/2026-05-20-19-audit.md",
+      "task2b_summary": "修复 0-RTT anti-replay、Advanced Protection Mode 强制 ECH+DoH3、DoH/DoT 隐藏 SNI、domainEncryption opportunistic 枚举四项口径。",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T07:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。"
     }
   },
   "task2b_rounds": [
@@ -6603,7 +6642,7 @@
       "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -6617,11 +6656,19 @@
       "section": "13.14",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2b_lite_at": "2026-05-28T01:35:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-05-28-01-task2b-lite.md",
-      "last_task2b_note": "修正 Jank CUJ counter weighted_missed_frames 口径：中间表为每秒 jank 口径，DataGrid 排序需乘 anim_duration_ms / 1000 转总 weighted missed frames。"
+      "last_task2b_note": "修正 Jank CUJ counter weighted_missed_frames 口径：中间表为每秒 jank 口径，DataGrid 排序需乘 anim_duration_ms / 1000 转总 weighted missed frames。",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-28T07:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_review_notes": "2026-05-28 Task6：Task9 auto-fix 回流后写作复审通过；L1/L2 小修 1 处，统一参考资料中的 JankStats API 版本口径；无 L3/L4 回炉项，送 Task9 复核。"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
