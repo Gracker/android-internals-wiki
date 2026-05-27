@@ -4170,3 +4170,17 @@
 - **问题**：段落把 OOM 的触发条件写成进程 PSS 达到系统为进程分配的内存上限，并把系统整体内存耗尽触发 LMK 放在同一括号内。这里可能混淆 Java Heap OOM、Native 分配失败和 LMK 回收三类路径。
 - **建议**：由 Task 9 先确认不同触发路径，再由 Task 2B 拆分改写：Java Heap 上限、Native/虚拟地址空间分配失败、系统内存压力下 LMK 回收分别处理。
 - **review 日志**：logs/review/2026-05-27-22-review.md
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-05-28
+- **类型**：数据缺失
+- **位置**：WebGPU / Dawn：另一条新接口（L348）
+- **问题**：正文称 Jetpack WebGPU 的 API 代码量比 Vulkan 少一个数量级，并进一步推导“计算管线抽象开销低于渲染管线 / GPU 活动开销比例较低”。当前官方 WebGPU / AndroidX 文档能支撑定位与 API 抽象层级，但未给出这组定量或半定量性能结论。
+- **建议**：补充绑定 AndroidX WebGPU / Dawn 版本、设备和 workload 的 benchmark；若没有实测，改为定性描述并标注需按目标 workload 验证。
+- **review 日志**：logs/deep-review/2026-05-28-00-deep-review.md
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-05-28
+- **类型**：数据缺失
+- **位置**：Android 15 的排版 API：解决悬挂剪裁与对齐偏差（L423）
+- **问题**：`setUseBoundsForWidth()` / `setShiftDrawingOffsetForStartOverhang()` 的“开销在微秒量级，对帧预算几乎无影响”缺少设备、文本语种、字体和文本长度条件；官方文档只支撑 API 语义与 Added API 35。
+- **建议**：补一组 API 35+ 设备上的简单 benchmark，或把性能结论降级为“会增加少量测量计算，实际开销需按语种/字体/文本长度确认”。
+- **review 日志**：logs/deep-review/2026-05-28-00-deep-review.md

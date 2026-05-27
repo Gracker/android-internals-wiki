@@ -7,9 +7,9 @@ drafted_date: '2026-04-09'
 reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -52,19 +52,22 @@ related_chapters:
 - '2.5'
 - '7.8'
 - '7.12'
-task9_result: 'needs-rework'
+task9_result: "auto-fixed"
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "fixed"
 last_task2b_at: '2026-05-09T17:52:02+08:00'
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-13T21:57:00+08:00'
-review_round: 2
+task9_reviewed_date: "2026-05-28"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-28T00:33:51+08:00"
+review_round: "3"
 task6_review_notes: "2026-05-16 Task6 stale-recheck:修复文风禁令/冗余副词 5 处;未新增 L3/L4 回炉项;保留既有 Task9 needs-rework。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
+last_task9_autofix_at: "2026-05-28"
+task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Minikin LayoutCache key 的宽度描述；P2 1 处写入 suggestions；回到 Task6 复审。"
 ---
 
 
@@ -160,14 +163,14 @@ Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了显�
 
 Minikin 内部维护了几层缓存来避免重复计算:
 
-1. **Layout cache**:缓存相同文本+字体+宽度的整形结果。key 是 (text hash, paint params, available width)。如果文本内容相同且测量参数不变,直接命中缓存。
+1. **Layout cache**:缓存相同文本片段、字体和测量参数下的整形结果。AOSP android-16.0.0_r1 的 `LayoutCacheKey` 包含 text range、`MinikinPaint`、方向和 hyphen edit,不包含最终可用宽度;宽度变化会触发 StaticLayout 重新换行,但不必然让 Minikin 的 glyph shaping cache 失效。
 2. **FontCollection cache**:缓存字体集合的查找结果。
 3. **ICU LineBreaker cache**:缓存换行迭代器的状态。
 
 缓存失效的常见触发条件:
 - 文本内容变化(最常见)
 - 字体参数变化(textSize、textStyle、typeface)
-- 可用宽度变化(比如屏幕旋转、RecyclerView 宽度变化)
+- 换行约束变化(比如屏幕旋转、RecyclerView 宽度变化):会让 StaticLayout 重新 line breaking / layout,即使底层 Layout cache 仍可能命中
 - Locale 变化
 
 在列表滑动场景中,RecyclerView 的 Item 宽度通常是固定的,文本内容会变化但可能存在重复(比如聊天消息中的相同文字)。理解这些缓存行为有助于我们判断:哪些情况下文字测量是"快"的(缓存命中),哪些情况下是"慢"的(缓存全miss)。
