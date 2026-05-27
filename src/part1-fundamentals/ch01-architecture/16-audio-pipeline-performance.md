@@ -15,8 +15,8 @@ last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
-last_task6_review_log: "logs/review/2026-05-27-15-review.md"
-last_task6_at: "2026-05-27T15:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-27-16-review.md"
+last_task6_at: "2026-05-27T16:08:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_result: pass-light-edit
 task9_result: auto-fixed
@@ -35,8 +35,8 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -49,13 +49,15 @@ task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastM
 review_type: "task6-writing-quality-review"
 last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
-task6_l1_l2_fixes: 0
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。"
+task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；删除开头主观填充词，维持 Android 17 后台音频与 AAudio offloaded 边界表述；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。"
 task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
 last_task9_autofix_at: "2026-05-27"
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-27"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -87,7 +89,7 @@ task2b_verifier_result: ready-for-task6
 
 讨论 Android 性能时，注意力通常集中在渲染管线上——帧率、掉帧、VSync。但用户的感知不止来自视觉。点击一个钢琴 App 的琴键，如果声音在手指触摸后 100ms 才响起，用户会觉得这台设备「卡了」。在视频会议中，200ms 的往返延迟会让对话变得不自然。游戏里 50ms 的音效延迟，足以让打击感明显变弱。
 
-音频延迟和渲染延迟在技术结构上有一个有趣的对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是 Android 框架层中承上启下的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。理解其中之一的架构后，再看另一个会更容易。
+音频延迟和渲染延迟在技术结构上存在一组对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是 Android 框架层中承上启下的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。理解其中之一的架构后，再看另一个会更容易。
 
 人类对音频延迟的感知阈值比视觉更严苛：超过 20ms 的往返延迟就能被训练过的耳朵察觉，专业音乐制作要求低于 10ms。Android 设备的音频延迟，也从早期的 100ms 以上逐步压到如今 Pixel 设备的 10ms 以下。
 
