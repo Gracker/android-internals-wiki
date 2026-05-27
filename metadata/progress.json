@@ -2130,8 +2130,8 @@
   "total_review_sections": 210,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-27T22:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-27T22:50:00+08:00",
+  "last_updated_by": "task2b-content-processing-rework-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-27T22:05:00+08:00",
     "log": "logs/review/2026-05-27-22-review.md",
@@ -2270,12 +2270,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T18:50:00+08:00",
+  "last_task2b_at": "2026-05-27T22:50:00+08:00",
   "last_task2b_sections": [
-    "1.18",
-    "1.20"
+    "1.8"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework; fixed Task9/Task6 issues and returned sections to Task6 pending",
+  "last_task2b_action": "frontmatter backlog fallback Task9 P95 repair",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -7584,8 +7583,8 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
     "src/part2-performance/ch11-power/04-case-studies.md"
   ],
-  "last_task2b_run": "2026-05-27T16:50:00+08:00",
-  "task2b_sections_fixed": 3,
+  "last_task2b_run": "2026-05-27T22:50:00+08:00",
+  "task2b_sections_fixed": 1,
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-27T22:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -7775,6 +7774,27 @@
         "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
         "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
       ]
+    },
+    {
+      "timestamp": "2026-05-27T22:50:00+08:00",
+      "sections_processed": [
+        "1.8"
+      ],
+      "sections_fixed": [
+        "1.8"
+      ],
+      "issues_addressed": 5,
+      "source": "frontmatter backlog fallback / task9-deep-tech-review",
+      "details": [
+        "§1.8: top-sleeping 从 oom_adj=200 改为 OomAdjuster adjType 分支，adj=FOREGROUND_APP_ADJ。",
+        "§1.8: Service ANR 伪代码改为 ProcessAnrTimer start/cancel/serviceTimeout 路径。",
+        "§1.8: ANR stack trace 输出从固定 traces.txt 改为 StackTracesDumpHelper 创建 /data/anr/anr_<timestamp> 文件。",
+        "§1.8: Broadcast ANR 计时起点改为调度 Receiver 前启动 delivery timeout。",
+        "§1.8: 广播队列版本归属改为 Android 14/15 BroadcastQueueModernImpl、Android 16 BroadcastQueueImpl。"
+      ],
+      "files_modified": [
+        "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+      ]
     }
   ],
   "task2a_result": "processed-draft",
@@ -7860,18 +7880,21 @@
     "section": "1.8",
     "title": "Activity Manager Service 与性能分析",
     "status": "ready-for-review",
-    "task6_state": "reviewed",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
     "last_task6_at": "2026-05-18T20:16:50+08:00",
     "last_task6_review_log": "logs/review/2026-05-18-20-review.md",
-    "pipeline_stage": "task2b_pending",
-    "task9_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
     "last_task9_at": "2026-05-18T19:44:00+08:00",
     "task9_reviewed_date": "2026-05-18",
     "task9_reviewed_by": "openclaw-task9",
-    "task2b_state": "pending",
-    "task2b_result": "pending"
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-27T22:50:00+08:00",
+    "last_task2b_log": "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md",
+    "task2b_notes": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
   },
   "section_20_3": {
     "section": "20.3",
@@ -8041,6 +8064,14 @@
       "fixed_date": "2026-05-27T18:50:00+08:00",
       "queue_id": "frontmatter-backlog-fallback",
       "fix_summary": "补齐 requestArchive createAndStoreArchiveState 前置条件、点击恢复内部 UnarchiveIntentSender 口径，并加入恢复链路 Mermaid 时序图与 Trace 对照。"
+    },
+    {
+      "section": "1.8",
+      "title": "Activity Manager Service 与性能分析",
+      "status": "fixed",
+      "fixed_date": "2026-05-27T22:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-18-19-deep-review.md",
+      "fix_summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-26-04-deep-review.md",
@@ -8996,7 +9027,7 @@
       "items_completed": 3
     }
   },
-  "task2b_last_run": "2026-05-27T16:50:00+08:00",
+  "task2b_last_run": "2026-05-27T22:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -9096,13 +9127,21 @@
       "by": "task2b-content-processing-rework",
       "source": "frontmatter backlog fallback",
       "summary": "Binder Freezer / App Archiving 回炉修复，状态回流 Task6。"
+    },
+    {
+      "section": "1.8",
+      "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "at": "2026-05-27T22:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter backlog fallback / task9-deep-tech-review",
+      "priority": 95,
+      "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
     }
   ],
   "last_task2b_completed": [
-    "1.18",
-    "1.20"
+    "1.8"
   ],
-  "last_task2b_completed_at": "2026-05-27T18:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-27T22:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9217,34 +9256,28 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-    "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
   ],
   "last_task2b_completed_entry": {
     "sections": [
-      "1.18",
-      "1.20"
+      "1.8"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/18-binder-freezer-cached-process.md",
-      "src/part1-fundamentals/ch01-architecture/20-app-archiving-performance.md"
+      "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
     ],
-    "at": "2026-05-27T18:50:00+08:00",
-    "by": "task2b-content-processing-rework",
-    "source": "frontmatter backlog fallback",
+    "at": "2026-05-27T22:50:00+08:00",
+    "by": "task2b-content-processing-rework-main",
+    "source": "frontmatter backlog fallback / task9-deep-tech-review",
     "priority": 95,
-    "summary": "1.18 Binder Freezer 与 1.20 App Archiving 回炉修复完成，回流 Task6。"
+    "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
   },
   "task2b_last_rework": {
-    "fixed_at": "2026-05-27T20:50:00+08:00",
-    "sections": [
-      "23.8"
-    ],
-    "files": [
-      "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
-    ],
-    "queue_items_completed": 1,
-    "result": "fixed"
+    "section": "1.8",
+    "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+    "at": "2026-05-27T22:50:00+08:00",
+    "source": "frontmatter backlog fallback / task9-deep-tech-review",
+    "priority": 95,
+    "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
   },
   "last_task9_reviewed_sections": [
     "23.8"
