@@ -34,25 +34,27 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-28T03:16:00+08:00"
-task9_result: auto-fixed
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T02:31:47+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-28T06:28:00+08:00"
 task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-02-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-28-06-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。"
+p0: 0
+p1: 0
+p2: 0
 ---
-
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
 <!-- outline-start -->
@@ -113,7 +115,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
    - `android_jank_cuj_boundary`：整体 CUJ 边界（app process 级别）
 
 4. **第三方 App 扩展路径**
-   - **AndroidX JankStats**（API 30+）：`androidx.performance:performance-jankstats` → `JankStats.createJankStats()`
+   - **AndroidX JankStats**（API 16+ 可用；API 24+ 计时数据更可靠，API 31+ 精度更高）：`androidx.performance:performance-jankstats` → `JankStats.createJankStats()`
    - **自定义 atrace marker**：使用 `Trace.beginSection()` 标记 CUJ，配合 Perfetto SQL 扩展 `_is_jank_slice`
    - **FrameTimeline direct join**：直接 join `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 计算自定义帧耗时
 
@@ -241,7 +243,7 @@ DataGrid 的价值在三类场景里最明显：
 
 PerfettoSQL 的稳定工作方式是先写出一个“窄表”：每一行对应一个可解释对象，例如一个 CUJ、一个 frame、一个 slice 或一个线程状态区间；每一列对应一个判断维度，例如是否 app missed、是否 SF missed、帧耗时、线程状态、blocked function、counter 值。窄表进入 DataGrid 后，排序、过滤、分组才有意义。
 
-下面这段查询用于把 Jank CUJ metric 初始化，并列出 counter 口径下总 weighted jank 最重的 CUJ。重点看 `weighted_missed_frames_total`、`missed_app_frames` 和 `missed_sf_frames` 三组字段：
+下面这段查询用于把 Jank CUJ metric 初始化，并列出 counter 口径下 App / SF weighted jank 最重的 CUJ。重点看 `weighted_missed_app_frames_total`、`weighted_missed_sf_frames_total`、`missed_app_frames` 和 `missed_sf_frames` 四组字段：
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
@@ -254,16 +256,17 @@ SELECT
   missed_frames,
   missed_app_frames,
   missed_sf_frames,
-  weighted_missed_frames * anim_duration_ms / 1000 AS weighted_missed_frames_total,
   weighted_missed_app_frames * anim_duration_ms / 1000 AS weighted_missed_app_frames_total,
   weighted_missed_sf_frames * anim_duration_ms / 1000 AS weighted_missed_sf_frames_total,
   frame_dur_max / 1e6 AS frame_dur_max_ms
 FROM android_jank_cuj_counter_metrics
-ORDER BY weighted_missed_frames_total DESC
+ORDER BY
+  COALESCE(weighted_missed_app_frames_total, 0) +
+  COALESCE(weighted_missed_sf_frames_total, 0) DESC
 LIMIT 20;
 ```
 
-这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_frames_total` 回答 counter 口径下“这段 CUJ 总共多重”，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。[已验证: google/perfetto src/trace_processor/metrics/sql/android/android_jank_cuj.sql @ main, 2026-05-28]
+这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_app_frames_total` 和 `weighted_missed_sf_frames_total` 回答 counter 口径下 App / SF 两侧各自多重，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。[已验证: google/perfetto v54.0 src/trace_processor/metrics/sql/android/android_jank_cuj.sql + jank/internal/counters.sql, 2026-05-28]
 
 ## Jank CUJ 标准库模块怎样组织线程
 
@@ -290,7 +293,7 @@ ORDER BY c.ts;
 
 ## weighted jank counter 解决什么问题
 
-只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedJank`、`weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成每秒 jank 口径的浮点值。若要和最终 metric 的 counter metrics 对齐，还要乘以 `anim_duration_ms / 1000` 转成该 CUJ 的总 weighted missed frames。
+只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；Perfetto v54.0 源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成每秒 jank 口径的浮点值。若要和最终 metric 的 counter metrics 对齐，还要乘以 `anim_duration_ms / 1000` 转成 App / SF 各自的 total weighted missed frames。`weightedJank` / `weighted_missed_frames` 总量字段出现在 main 分支后续版本，不能写成 v54.0 SQL 的固定字段。
 
 这类 counter 有两个使用边界：
 
@@ -374,7 +377,7 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 一条可复用的 Jank CUJ 分析顺序如下：
 
-1. 用 `android/android_jank_cuj.sql` 生成 CUJ metric，按 `weighted_missed_frames` 找最重的 CUJ。
+1. 用 `android/android_jank_cuj.sql` 生成 CUJ metric，按 App / SF weighted total 或 `missed_frames` 找最重的 CUJ。
 2. 在 DataGrid 里按 `cuj_name`、进程、`missed_app_frames`、`missed_sf_frames` 分组，确认问题集中在哪类场景。
 3. 展开 `android_jank_cuj_frame`，找 `jank_score` 最高的帧。
 4. 回到该帧时间窗，看 UI 线程、RenderThread、GPU completion、HWC release、SurfaceFlinger main / RenderEngine 的 slice。
