@@ -30,11 +30,11 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 last_task2b_at: "2026-05-28T14:50:00+08:00"
-task9_reviewed_date: "2026-05-24"
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T01:38:24+08:00"
+last_task9_at: "2026-05-28T15:23:00+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
@@ -43,7 +43,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
 status: "ready-for-review"
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
@@ -52,8 +52,9 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 3 处（清理 AIW 编辑注释、标题措辞、无条件量化收益）。无新增 Task6 回炉；Task9 P0 已由 Task2B 修复，等待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
-task9_review_notes: "2026-05-24 Task9 deep review: needs-rework。P0 0 / P1 1 / P2 0；gfxinfo framestats 版本边界需修正：FrameDeadline/FrameInterval 并非 Android 14+，WorkloadTarget 为 Android 16+；详见 logs/deep-review/2026-05-24-01-deep-review.md。2026-05-28 Task2B 已按 AOSP android-12.0.0_r1 / android-16.0.0_r1 拆分字段版本边界，回流 Task6。"
+last_task9_review_log: "logs/deep-review/2026-05-28-15-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。"
+last_task9_autofix_at: "2026-05-28"
 ---
 # dumpsys 系列命令
 
@@ -112,9 +113,9 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 - `Task`（旧版资料中常写作 `TaskRecord`）中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
 - `ActivityRecord` 中的 `state` 表示 Activity 当前状态（resumed、paused、stopped 等）
-- `mFocusedActivity` 和 `mFocusedApp` 标记当前获得焦点的 Activity 和应用
+- `dumpsys activity activities` 会打印 `topDisplayFocusedRootTask` 和各 TaskDisplayArea 的 `Resumed:` Activity；窗口焦点本身要回到 `dumpsys window displays` 的 `mCurrentFocus` / `mFocusedApp` 交叉确认
 
-在分析启动速度时，我们可以反复执行这个命令，观察目标 Activity 从 `initiating` 到 `resumed` 的状态变化，来确认各阶段的耗时是否正常。
+在分析启动速度时，可以反复执行这个命令，观察目标 Activity 从 `INITIALIZING` / `STARTED` 到 `RESUMED` 的状态变化，来确认各阶段的耗时是否正常。
 
 ### 进程优先级与 ANR
 
@@ -272,17 +273,17 @@ adb shell top -H -p <pid>
 
 ### 关键指标
 
-输出中每行是一个进程的 CPU 占用百分比，分为几个部分：
+每个进程行主要拆成 user 和 kernel 两部分；`TOTAL` 行才会把全局 iowait、irq、softirq 也列出来。
 
-- **User**：用户态 CPU 时间占比（应用代码执行）
-- **System**：内核态 CPU 时间占比（系统调用、I/O 等待）
-- **IRQ / SoftIRQ**：中断处理时间占比（硬件中断和软中断）
+- **user**：用户态 CPU 时间占比（应用代码执行）
+- **kernel**：内核态 CPU 时间占比（系统调用、内核执行）
+- **iowait / irq / softirq**：只在全局 `TOTAL` 行有意义，用来判断 I/O 等待或中断处理是否异常
 
 在性能排查中，如果一个后台进程的 CPU 占用持续超过 5%，就值得调查。常见的异常模式：
 
-- User 占用高 → 应用层在做密集计算（如 JSON 解析、图片解码）
-- System 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
-- IRQ 占用高 → 硬件中断频繁（可能是驱动问题）
+- user 占用高 → 应用层在做密集计算（如 JSON 解析、图片解码）
+- kernel 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
+- `TOTAL` 行 iowait / irq / softirq 高 → I/O 等待或中断处理异常，需结合 Perfetto CPU / irq / sched 轨道继续定位
 
 `dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 做持续观察。
 
@@ -423,42 +424,32 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 | `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchy.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
 | `LayerSnapshotBuilder` | `FrontEnd/LayerSnapshotBuilder.h` | 从 LayerHierarchy 生成可消费的 `LayerSnapshot`，含 `tryFastUpdate()` 快速路径 |
 
-**热路径无锁设计（核心设计原则）：**
+**事务收集与状态锁边界：**
 
-`SurfaceFlinger.cpp` 的 `commit()` 阶段协作顺序（约行 2455-2493）：
+`SurfaceFlinger.cpp` 的 `updateLayerSnapshots()` 在 Android 16 中大致按下面顺序协作：
 
 ```cpp
-// 1. 异步收集事务（主线程外）
+// 1. 收集事务
 mTransactionHandler.collectTransactions();
 
-// 2. 新增层
+// 2. 新增层、flush 事务
 mLayerLifecycleManager.addLayers(std::move(update.newLayers));
-
-// 3. Flush 事务
 update.transactions = mTransactionHandler.flushTransactions();
 
-// 4. 应用事务
+// 3. 应用事务、处理 handle 销毁
 mLayerLifecycleManager.applyTransactions(update.transactions);
-
-// 5. Handle 销毁
 mLayerLifecycleManager.onHandlesDestroyed(update.destroyedHandles);
 
-// 6. 构建 Hierarchy（此时无锁）
+// 4. 构建 Hierarchy（仍在 mStateLock 之前）
 mLayerHierarchyBuilder.update(mLayerLifecycleManager);
 
-// 7. 生成 Snapshot（此时无锁）
-mLayerSnapshotBuilder.update();
-
-// ===== mStateLock 在 commitTransactionsLocked() 前才持有（约行 2501）=====
-
-// 8. 持有 mStateLock
+// 5. 进入状态锁，提交 display transaction 并更新 Snapshot
 Mutex::Autolock lock(mStateLock);
-
-// 9. 提交事务
-commitTransactionsLocked();
+applyAndCommitDisplayTransactionStatesLocked(update.transactions);
+mLayerSnapshotBuilder.update(args);
 ```
 
-`mStateLock` 延迟到事务应用完毕后才持有，确保热路径（commit/composite）不因锁竞争而卡顿。
+`mStateLock` 被推迟到事务收集、应用和 hierarchy 更新之后；但 Android 16 的 `LayerSnapshotBuilder.update()` 仍在 `mStateLock` 内执行，不能把 snapshot 生成描述成无锁路径。
 
 **`RequestedLayerState::Changes` 位掩码设计：**
 
@@ -519,7 +510,7 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 |---|---|---|
 | 第一列 | `desired_present_time` | 该帧期望的呈现时间 |
 | 第二列 | `actual_present_time` | 该帧实际呈现时间 |
-| 第三列 | `frame_ready_time` | AOSP 记录的帧就绪时间，表示帧提交给 HWC 的时间点（非 GPU 完成时间） |
+| 第三列 | `frame_ready_time` | AOSP 记录的帧就绪时间；Android 16 新路径来自 FrameTimeline 的 SurfaceFrame endTime，旧 FrameTracker 口径是帧内容准备好可显示的时间，不等同于 HWC 提交或 GPU 完成时间 |
 
 判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
 
