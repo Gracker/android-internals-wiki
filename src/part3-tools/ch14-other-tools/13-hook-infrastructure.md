@@ -39,16 +39,16 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: '2026-05-28'
 last_task2b_at: "2026-05-22T07:21:00+08:00"
-task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
+task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。"
 last_task6_at: "2026-05-28T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-14-review.md"
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 1，P1 1，P2 0；问题已写入 queue/suggestions，等待 Task2B 回炉。'
@@ -56,13 +56,14 @@ task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；frontmatter 流水线状态归一；L1/L2 正文无新增问题；无 L3/L4 回炉项，送 Task9 复审。"
-task9_result: "pending"
-task9_reviewed_date: "2026-05-22"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T07:43:01+08:00"
-last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
+last_task9_at: "2026-05-28T14:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-05-28-14-deep-review.md
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-28"
+last_task9_autofix_at: "2026-05-28"
 ---
 
 
@@ -172,8 +173,8 @@ PLT Hook 的入口在动态库边界。
 代表工具包括：
 
 - `ByteHook`：字节跳动开源的现代 PLT Hook 框架，支持 Android 4.1–15
-- `xHook`：爱奇艺开源的早期 PLT Hook 方案，不支持 Android 14+
-- `Matrix IO Canary` / `KOOM`：腾讯的 IO 监控和内存治理工具，底层用 PLT Hook 拦截 open/read/write 等系统调用
+- `xHook`：爱奇艺开源的早期 PLT Hook 方案，README 标注支持 Android 4.0-10（API 14-29），不适合作为 Android 11+ 新项目的 Hook 基础设施
+- `Matrix IO Canary`：腾讯的 IO 监控模块，底层可用 PLT Hook 拦截 `open` / `read` / `write` / `close` 等文件 IO API；`KOOM` 是快手的内存治理工具，native/thread 模块依赖 xHook 拦截 `malloc` / `free`、`pthread_create` / `pthread_exit` 等分配与线程生命周期函数
 
 这条路线的优点在于相对稳。因为它不去改目标函数的机器码，而是改动态链接层的指针引用，所以很多指令级兼容问题会轻一些。
 
@@ -227,7 +228,7 @@ ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实�
 | 工具 | 主要路线 | 更适合做什么 |
 |---|---|---|
 | `ByteHook` | PLT Hook | 稳定拦截动态库函数、做 IO / malloc 类监控 |
-| `xHook` | PLT Hook | 较早期的 Android PLT Hook 基础设施 |
+| `xHook` | PLT Hook | 较早期的 Android PLT Hook 基础设施，README 标注支持到 Android 10 / API 29 |
 | `ShadowHook` | Inline Hook | 覆盖更广的 native 拦截场景 |
 | `SandHook` / `Epic` | ART 运行时 Hook | 运行期拦截 Java 方法入口、实验室诊断 |
 | `Booster` | 字节码插桩 | 编译期优化、主线程风险扫描、代码注入 |
@@ -422,7 +423,7 @@ Android 14（API 34）针对 targetSdkVersion 34 的应用引入了 “Safer dyn
 |----|------|---------|---------|
 | ShadowHook（字节跳动） | Inline Hook | Android 4.1 - 16（API 16-36） | upstream 使用 RWX mmap/mprotect，依赖 execmem 可用；W^X 严格设备可能失效 |
 | ByteHook（字节跳动） | PLT Hook | Android 4.1 - 15（API 16-35） | PLT/GOT 改写不 patch 目标函数代码页；但 ARM/ARM64 上 upstream 通过 shadowhook 依赖 RWX trampoline 与 dlopen 监控，仍需验证 execmem/RWX 可用性 |
-| xHook（爱奇艺） | PLT Hook | Android 4.0 - 10（API 14-29） | **不支持 Android 14+** |
+| xHook（爱奇艺） | PLT Hook | Android 4.0 - 10（API 14-29） | README 标注仅支持到 Android 10；Android 11+ 不再作为可用选型边界 |
 
 ### 16KB Page Size 对 mprotect 页边界的影响
 
