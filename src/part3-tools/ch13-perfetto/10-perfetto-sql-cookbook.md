@@ -32,16 +32,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 last_task6_audit: "2026-05-22"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: auto-fixed
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
@@ -52,13 +52,13 @@ rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。"
 last_task9_audit: "2026-05-22"
-last_task6_at: "2026-05-28T09:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-09-review.md"
-task6_l1_l2_fixes: 2
+last_task6_at: "2026-05-28T10:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-10-review.md"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
+task6_review_notes: "2026-05-28 10 Task6 revisiting-review: pass-light-edit；L1/L2 无需修改；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 auto-fixed 后复审通过，按流水线送 Task9 状态收敛/发布前检查。"
 task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-28T09:06:00+08:00"
+task6_reviewed_at: "2026-05-28T10:05:00+08:00"
 updated_by: openclaw-task9
 updated_date: "2026-05-28"
 task9_reviewed_at: "2026-05-28T09:20:00+08:00"
