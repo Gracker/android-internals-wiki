@@ -2,12 +2,12 @@
 title: "Perfetto View 解读"
 chapter: "13.3"
 section: "13.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-25"
-last_verified_against: "perfetto.dev docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-16.0.0_r1"
+last_verified: "2026-05-28"
+last_verified_against: "perfetto.dev FrameTimeline docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1"
 confidence: medium-high
 reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
@@ -41,13 +41,13 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: "needs-rework"
-last_task2b_at: "2026-04-26T01:40:00+08:00"
+last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 updated_date: "2026-05-17"
 updated_by: "openclaw-task9-audit"
@@ -201,7 +201,7 @@ FrameTimeline 是 Android 12（API 31）引入的轨道，位于 App 进程的�
 
 Expected Timeline 表示系统为这一帧预留的完成窗口。60 Hz 设备上一格约 16.6ms，120 Hz 设备上一格约 8.3ms。Actual Timeline 表示这帧最终的实际结果。把两行放在同一时间轴下比较，超时帧会直接冒出来。
 
-选中 Actual Timeline 里的单帧后，先看 Details 面板里的 `Jank Type`。公开口径里常见的值包括 `App Deadline Missed`、`Buffer Stuffing`、`SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`SurfaceFlinger Scheduling`、`Prediction Error`、`Display HAL`、`Dropped Frame`。颜色只适合快速扫异常，精确归因以 `Jank Type` 字段为准。
+选中 Actual Timeline 里的单帧后，先看 Details 面板里的 `Jank Type`。官方 FrameTimeline 文档列出的 jank 类型包括 `AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError`。Perfetto UI 可能显示带空格的中文/英文文案，报告里应保留原始字段值。蓝色 Dropped frame 是帧状态，文档标注为不属于 jank，不能和 `Jank Type` 枚举并列归因。
 
 | Android 版本 | 主入口 | 回看哪些轨道 | 归因方式 |
 | --- | --- | --- | --- |
@@ -220,17 +220,17 @@ Expected Timeline 表示系统为这一帧预留的完成窗口。60 Hz 设备�
 
 SurfaceFlinger 是 Android 系统的合成服务（详见 2.6 节），读这条 Track 一定要按版本拆开。
 
-Android 12-13 的主线程更常见 `onMessageReceived`、`INVALIDATE`、`REFRESH`。这组 slice 对应旧的消息模型：先收事务、检查 Buffer，再组织本帧合成。
+Android 12.1 仍能看到 `SurfaceFlinger::onMessageReceived`、`onMessageInvalidate`、`onMessageRefresh` 这组旧消息入口。读 Android 12 trace 时，可以先用 `INVALIDATE` / `REFRESH` 判断事务收敛和合成窗口。
 
-Android 14+ 的主流程更适合直接看 `commit`、`composite`、`present`。`commit` 更接近事务收敛和 Buffer latch，`composite` 对应合成决策与执行，`present` 对应向显示设备提交结果。到了 Android 14-16，再把 `onMessageReceived` 当成默认观察入口，读 trace 时就会跑偏。
+Android 13 已经进入 `Scheduler/MessageQueue.cpp::Handler::handleMessage` 直接调用 `compositor.commit()`、`compositor.composite()`、`sample()` 的路径，`SurfaceFlinger.cpp` 中也已有 `SurfaceFlinger::commit()`。从 Android 13 开始，trace 入口不能继续按 Android 12 的旧消息模型归类。
 
-分析掉帧时，App Track 只是入口，SurfaceFlinger Track 是下游验证点。Android 12-13 上先对照 `REFRESH` 是否跨了当前刷新窗口；Android 14+ 上更该看 `commit` / `composite` / `present` 有没有明显拉长，再判断是事务处理、Client composition 还是显示提交拖慢了这一帧。
+Android 14-16 继续由 `Scheduler::onFrameSignal()` 组织 `commit` / `composite`，提交显示结果落到 CompositionEngine 的 `Output::present()` / `presentFrameAndReleaseLayers()`。分析掉帧时，App Track 只是入口，SurfaceFlinger Track 是下游验证点：Android 12.1 看 `REFRESH` 是否跨过刷新窗口；Android 13+ 看 `commit` / `composite` / `present` 是否拉长，再判断是事务处理、Client composition 还是显示提交拖慢了这一帧。
 
 如果 `composite` 下方出现 `drawLayers`、`renderengine` 或 GPU render stage 相关子调用，通常表示本帧触发了 Client Composition。此时再回看图层数量、透明混合、圆角/阴影、Protected content 等因素，判断是 HWC 无法直接接管，还是 GPU 合成工作本身过重。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
-### [自动发现] Counter Track
+### Counter Track
 
 除了 Slice Track 外，Perfetto 还有一种 Counter Track，展示数值随时间的变化。常见的 Counter Track 包括：
 
@@ -238,7 +238,7 @@ Android 14+ 的主流程更适合直接看 `commit`、`composite`、`present`。
 - **CPU Counter**：在 CPU 分组下展示各核心的频率曲线、系统 CPU 使用率。
 - **GPU Counter**：如果抓 Trace 时启用了 GPU 数据源，可以查看 GPU 各单元的利用率和带宽。
 
-Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_INT` 调用，以及内核的 ftrace 事件。它们以面积图（Area Chart）的形式呈现——底色填充的区域表示数值的变化范围，鼠标悬停时会显示每个点的精确值。在内存分析场景中，面积图的"持续上升"形态比表格数据更直观。
+Counter Track 的数值点来自应用、系统模块、native 代码和内核数据源。普通 App 侧公开入口是 `Trace.setCounter(String, long)`；平台代码和系统模块可见隐藏的 `Trace.traceCounter()`；native 侧常用 `ATRACE_INT` / `ATRACE_INT64`；内核侧则来自 ftrace 事件。它们以面积图（Area Chart）的形式呈现，底色填充区域表示数值变化范围，鼠标悬停时会显示每个点的精确值。在内存分析场景中，面积图的"持续上升"形态比表格数据更直观。
 
 [来源: Perfetto 分析进阶, https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984]
 [已验证: 官方文档, perfetto.dev/docs/data-sources]
