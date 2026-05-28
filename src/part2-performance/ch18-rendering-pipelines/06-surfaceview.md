@@ -50,14 +50,14 @@ last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-24"
-task6_reviewed_date: "2026-05-24"
-last_task6_at: "2026-05-24T13:10:00+08:00"
+reviewed_date: "2026-05-28"
+task6_reviewed_date: "2026-05-28"
+last_task6_at: "2026-05-28T20:05:00+08:00"
 last_task6_audit: '2026-05-24'
 last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
 last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
@@ -74,12 +74,16 @@ last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
 p0: 2
 p1: 1
 p2: 2
-last_task6_review_log: "logs/review/2026-05-24-13-review.md"
-task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 5 处，清理 frontmatter 禁用词与口语化绝对表达；既有 Task9 P0/P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
+last_task6_review_log: "logs/review/2026-05-28-20-review.md"
+task6_review_notes: "2026-05-28 20:05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 9 处，补正文 H1 章节号，清理第二人称、否定纠正式句型和模糊改善表述；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
+task6_l1_l2_fixes: 9
+task6_l3_l4_issues: 0
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T20:05:00+08:00"
 ---
 
 
-# SurfaceView 直出路径
+# 18.6 SurfaceView 直出路径
 
 <!-- outline-start -->
 
@@ -102,7 +106,7 @@ task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小
 
 ## 为什么需要 SurfaceView
 
-当你在 Perfetto 中看到 App 主线程卡了 50ms，但视频画面依然在流畅播放——你正在看的就是 SurfaceView 的效果。
+Perfetto 中如果出现 App 主线程卡了 50ms、视频画面仍然流畅播放的现象，背后通常就是 SurfaceView 的独立路径。
 
 SurfaceView 是 Android 里效率很高的视图组件之一，设计目标是 **去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
 
@@ -161,7 +165,7 @@ Android 14 起，`SurfaceView#setAlpha()` 支持 0 到 1 之间的连续透明�
 
 Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方没有其他 UI 元素遮挡（即"挖洞"区域只有 App 主窗口的透明部分），HWC 可以将 SurfaceView Layer 作为独立 Overlay 直接输出到屏幕，这是 GPU 成本最低的路径。
 
-一旦在 SurfaceView 上方叠加了 UI 元素（比如弹幕、控制按钮），Overlay 可能失效，退化为 GPU 合成。如果你的视频播放器需要悬浮控件，就要把这部分代价算进去。
+一旦在 SurfaceView 上方叠加了 UI 元素（比如弹幕、控制按钮），Overlay 可能失效，退化为 GPU 合成。视频播放器需要悬浮控件时，需要把这部分合成代价算进去。
 
 ### 挖洞的实现
 
@@ -182,7 +186,7 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
    - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
    - **Android 16+ 优化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 替代 `notify_all()`，实现精确唤醒，减少无效唤醒竞争
-   - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这是避免分配期间整个 BufferQueue 冻结的关键设计
+   - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这能防止分配期间整个 BufferQueue 冻结
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
    - **GLES 模式**：`eglMakeCurrent()` → `glDraw*()` → `eglSwapBuffers()`。游戏、地图常用
@@ -193,7 +197,7 @@ SurfaceView 解耦的是独立 Surface/BufferQueue 与 View hierarchy 的逐帧�
 
 - **视频硬解**（MediaCodec）：按媒体时钟推帧，帧率由视频源决定（24/30/60fps），与 App 的 Choreographer 完全独立
 - **Camera 预览**：按 sensor/HAL cadence 输出（通常 30fps），同样独立于 App 的 VSync 节奏
-- **游戏/地图**（App 内 EGL/Vulkan Producer）：虽然不经过 App 主窗口 RenderThread，但 Producer 本身仍可由 Choreographer、AChoreographer、Swappy/Frame Pacing 或引擎内部时钟驱动——并非所有 Producer 都与 VSync 无关
+- **游戏/地图**（App 内 EGL/Vulkan Producer）：虽然不经过 App 主窗口 RenderThread，但 Producer 本身仍可由 Choreographer、AChoreographer、Swappy/Frame Pacing 或引擎内部时钟驱动——Producer 与 VSync 的关系取决于内容类型
 
 因此 SurfaceView 的帧率可以与 App UI 帧率不同（视频以 24fps 播放时，App UI 仍以 60fps 刷新），但「Producer 不受 Choreographer 调度」这个说法只对视频和 Camera 成立，对游戏类 Producer 过于绝对。
 
@@ -272,7 +276,7 @@ Triple Buffering 的优势在于：当 Producer 生产速度偶尔超过 Display
 
 ### 数据流对比
 
-从数据流的角度，两者的核心差异可以用一句话概括：
+从数据流看，两者的差异如下：
 
 ```text
 SurfaceView:  Producer → BufferQueueProducer → BLASTBufferQueue / Transaction → SurfaceFlinger → HWC → Display
@@ -350,7 +354,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 在 Perfetto 中确认 SurfaceView 路径，看两个信号：**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
 
-1. **多个 BufferQueue Track**：在 SurfaceFlinger 进程中，你会看到至少两个 Layer——一个是 App 主窗口，一个是 SurfaceView 的独立 Layer
+1. **多个 BufferQueue Track**：在 SurfaceFlinger 进程中，通常能看到至少两个 Layer——一个是 App 主窗口，一个是 SurfaceView 的独立 Layer
 2. **Producer Thread 不在 App 主线程**：Producer 出现的进程取决于内容来源——
    - **MediaCodec / 视频硬解**：常见在 `media.codec` / `media.swcodec`、Codec2 vendor service、厂商 codec HAL 进程，应用进程往往只看到 output Surface 的回调
    - **Camera 预览**：常见在 `cameraserver`、camera provider / HAL 或厂商 camera 进程
@@ -373,7 +377,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 **视频播放**：Producer Thread 以稳定的帧间隔（24fps = ~41ms）queueBuffer。App 主线程的 `Choreographer#doFrame` 与 Producer Thread 完全解耦。
 
-**Camera 预览**：Producer Thread 以 Camera 采样率（通常 30fps）queueBuffer。如果 Camera 处理耗时突然增大（如自动对焦），你会看到 `dequeueBuffer` 的等待时间增大。
+**Camera 预览**：Producer Thread 以 Camera 采样率（通常 30fps）queueBuffer。如果 Camera 处理耗时突然增大（如自动对焦），Trace 中会出现 `dequeueBuffer` 等待时间增长。
 
 **游戏渲染**：Producer Thread 通常以 60fps 运行，通过 EGL/Vulkan 提交。在 Perfetto 中，GLES 的 `eglSwapBuffers` 或 Vulkan 的 `vkQueuePresentKHR` 可以作为帧提交标记。
 
@@ -396,7 +400,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 **原因**：Buffer 更新和窗口几何更新没有在同一 Transaction 中提交。
 
-**改善**：BLAST 模式（Android 12+）显著改善了这个问题。如果你在 Android 11 及以下设备上遇到此问题，延迟 Buffer 更新或减少频繁 resize 仍然是常见缓解手段。
+**改善**：BLAST 模式（Android 12+）减少了 resize 错拍问题。Android 11 及以下设备出现此问题时，延迟 Buffer 更新或减少频繁 resize 仍然是常见缓解手段。
 
 ### 3. Z-Order 冲突导致 Overlay 失效
 
