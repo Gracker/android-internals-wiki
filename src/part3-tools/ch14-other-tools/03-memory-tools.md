@@ -42,10 +42,10 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task9_pending
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
 task2b_result: fixed-lite
@@ -53,19 +53,22 @@ task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
 task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T16:20:00+08:00"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。"
+last_task9_at: "2026-05-29T05:20:00+08:00"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 LMKD 选杀口径，不再写成由 PSS 总量直接决定，回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 last_task6_at: "2026-05-28T17:18:00+08:00"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-17-review.md"
 task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理 procrank 小节汇报腔 1 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-16-deep-review.md"
+last_task9_autofix_at: "2026-05-29"
+last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
 reviewed_at: "2026-05-28T17:18:00+08:00"
+task9_reviewed_at: "2026-05-29T05:20:00+08:00"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-29"
 ---
 
 
@@ -373,7 +376,7 @@ App Summary
 
 **用 `-d` 参数获取更详细的信息**：`adb shell dumpsys meminfo -d <package>` 会额外输出 Dalvik/ART 的详细内存统计，包括线性分配器（LinearAlloc）和代码缓存的占用情况。
 
-**内存分级与 LMK 的关系**：`dumpsys meminfo` 的输出与系统 LMK（Low Memory Killer）的决策直接相关。LMK 根据 PSS 总量和进程优先级（oom_adj）决定杀谁。了解我们的应用的 PSS 水平，可以评估它在低内存场景下被杀的风险。
+**内存分级与 LMK 的关系**：`dumpsys meminfo` 的 PSS 能评估应用对系统内存压力的贡献，但不要把它理解成 LMKD 的唯一选杀输入。现代 userspace `lmkd` 先根据 PSI / vmpressure、swap 利用率、thrashing 等信号判断是否需要杀进程，再按 `oom_score_adj` 和设备策略选择候选；启用 `ro.lmk.kill_heaviest_task` 时才会倾向选择符合条件的重内存进程。了解应用的 PSS 水平可以评估低内存风险，但归因时还要回到 `oom_score_adj`、LMKD 日志、PSI 和进程 RSS / swap 线索。
 
 [已验证: 官方文档, https://developer.android.com/studio/command-line/dumpsys#meminfo]
 [适用版本: Android 8 (API 26) - Android 16 (API 36)]
