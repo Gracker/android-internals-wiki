@@ -48,14 +48,14 @@ polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: auto-fixed
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 updated_date: "2026-05-28"
-updated_by: openclaw-task9
+updated_by: openclaw-task2b-verifier
 last_task9_audit: "2026-05-17"
 last_task9_at: "2026-05-28T11:20:00+08:00"
 last_task6_audit: "2026-05-19"
