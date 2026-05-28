@@ -2,7 +2,7 @@
 title: "Perfetto DataGrid 与 Jank CUJ 标准库"
 chapter: "13.14"
 section: "13.14"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-28"
@@ -34,26 +34,29 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-28T07:05:00+08:00"
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T06:28:00+08:00"
+last_task9_at: "2026-05-28T17:29:00+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-05-28-07-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task9 auto-fix 回流后写作复审通过；L1/L2 小修 1 处，统一参考资料中的 JankStats API 版本口径；无 L3/L4 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-06-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-28-17-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 p0: 0
 p1: 0
 p2: 0
+task9_reviewed_at: "2026-05-28T17:29:00+08:00"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-28"
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
