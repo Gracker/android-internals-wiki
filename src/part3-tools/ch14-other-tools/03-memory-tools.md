@@ -42,10 +42,10 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task9_result: auto-fixed
 task2b_result: fixed-lite
@@ -58,13 +58,14 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-28T16:20:00+08:00"
 task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
-last_task6_at: "2026-05-28T16:06:00+08:00"
+last_task6_at: "2026-05-28T17:18:00+08:00"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-16-review.md"
-task6_review_notes: "2026-05-28 Task6 16:06 review: pass-light-edit。清理 L1 填充词和汇报腔小标题 4 处；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-28-17-review.md"
+task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理 procrank 小节汇报腔 1 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-16-deep-review.md"
+reviewed_at: "2026-05-28T17:18:00+08:00"
 ---
 
 
@@ -405,7 +406,7 @@ showmap 最常用的场景是确认"某类内存到底有多大"。当 `dumpsys 
 
 ### procrank：全系统进程内存排名
 
-`procrank` 的功能很简单：列出系统上所有进程的 VSS、RSS、PSS、USS，并按 PSS 排序。它让我们一眼就能看出"谁在吃内存"。
+`procrank` 会列出系统上所有进程的 VSS、RSS、PSS、USS，并按 PSS 排序，适合快速判断"谁在吃内存"。
 
 ```bash
 adb shell procrank
