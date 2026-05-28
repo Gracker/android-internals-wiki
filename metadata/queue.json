@@ -622,8 +622,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-28T16:06:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-05-28-16-review.md",
-    "last_reviewed_by_task9": "2026-05-28T16:20:00+08:00"
+    "last_reviewed_by_task9": "2026-05-28T16:20:00+08:00",
+    "completed_at": "2026-05-28T16:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "result": "fixed",
+    "completion_reason": "Task2B 主修复：整合参考资料后源码调研补遗，统一 Secure Dex Metadata / .sdm 口径，修正 installd Binder 版本断点，回流 Task6。"
   }
 ]
