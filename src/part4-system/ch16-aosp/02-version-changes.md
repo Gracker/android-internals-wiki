@@ -3,8 +3,8 @@ title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 drafted_date: "2026-04-04"
-last_verified: "2026-04-21"
-last_verified_against: "developer.android.com API reference + AOSP android-16.0.0_r1 SystemHealthManager / Display"
+last_verified: "2026-05-29"
+last_verified_against: "developer.android.com API reference + AOSP android-16.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
 confidence: medium
 sources:
   - type: official
@@ -28,6 +28,8 @@ sources:
   - type: official
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
   - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/android-16.0.0_r1/framework/java/android/os/ProfilingManager.java"
+  - type: official
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java"
   - type: official
     path: "developer.android.com/reference/android/view/Choreographer"
@@ -37,18 +39,19 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 last_task6_audit: "2026-05-18"
 section: "16.2"
-status: finalized
-pipeline_stage: task2b_pending
-task9_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-05-18T18:30:00+08:00"
