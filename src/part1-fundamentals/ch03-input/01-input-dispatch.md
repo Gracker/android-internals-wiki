@@ -52,9 +52,9 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: needs-rework
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-21"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: needs-rework
 task2b_state: "fixed"
 task2b_result: "fixed"
