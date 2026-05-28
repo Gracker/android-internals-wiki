@@ -2254,8 +2254,8 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T11:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T12:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T11:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2405,11 +2405,12 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-28T09:35:00+08:00",
+  "last_task2b_at": "2026-05-28T12:50:00+08:00",
   "last_task2b_sections": [
-    "22.5"
+    "14.10",
+    "14.12"
   ],
-  "last_task2b_action": "fixed-lite",
+  "last_task2b_action": "frontmatter backlog fallback rework",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5996,16 +5997,25 @@
       "title": "eBPF/BPF 在 Android 性能分析中的应用",
       "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "queue_priority": 95,
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-25",
       "last_task6_at": "2026-05-25T09:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
-      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。"
+      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。",
+      "section": "14.10",
+      "task2b_result": "fixed",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "last_task2b_at": "2026-05-28T12:50:00+08:00",
+      "last_task2b_by": "openclaw-task2b-main",
+      "task2b_source": "frontmatter backlog fallback",
+      "task2b_issue_source": "logs/deep-review/2026-05-25-08-deep-review.md + logs/review/2026-05-25-09-review.md",
+      "task2b_summary": "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。"
     },
     "20.15": {
       "section": "20.15",
@@ -6439,6 +6449,23 @@
       "last_task6_at": "2026-05-28T12:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
       "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
+    },
+    "14.12": {
+      "section": "14.12",
+      "title": "APM / 可观测性平台与 SDK 选型",
+      "file": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "last_task2b_at": "2026-05-28T12:50:00+08:00",
+      "last_task2b_by": "openclaw-task2b-main",
+      "task2b_source": "frontmatter backlog fallback",
+      "task2b_issue_source": "logs/deep-review/2026-05-22-05-audit.md + logs/external-review/archive/2026-04-25-14-14.12-external-review.md",
+      "task2b_summary": "修复 AppExitInfoTracker 持久化路径、默认历史条数和 KillHandler 多来源消息链，并把 AppExitInfo/KOOM 源码调研块并入主体。"
     }
   },
   "task2b_rounds": [
@@ -8591,6 +8618,16 @@
       ],
       "result": "fixed",
       "log": "logs/rework/2026-05-28-08-task2b-main.md"
+    },
+    {
+      "at": "2026-05-28T12:50:00+08:00",
+      "lane": "main",
+      "sections": [
+        "14.10",
+        "14.12"
+      ],
+      "result": "fixed",
+      "log": "logs/rework/2026-05-28-12-task2b-main.md"
     }
   ],
   "task2a_result": "processed-draft",
@@ -9239,6 +9276,38 @@
         "remaining_p85_queue": 0,
         "fallback_remaining_after_this_run": 105
       }
+    },
+    {
+      "date": "2026-05-28T12:50:00+08:00",
+      "sections": [
+        {
+          "section": "14.10",
+          "title": "eBPF/BPF 在 Android 性能分析中的应用",
+          "source": "frontmatter backlog fallback",
+          "priority": 95,
+          "issue_source": "logs/deep-review/2026-05-25-08-deep-review.md + logs/review/2026-05-25-09-review.md",
+          "fixes": [
+            "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。"
+          ]
+        },
+        {
+          "section": "14.12",
+          "title": "APM / 可观测性平台与 SDK 选型",
+          "source": "frontmatter backlog fallback",
+          "priority": 95,
+          "issue_source": "logs/deep-review/2026-05-22-05-audit.md + logs/external-review/archive/2026-04-25-14-14.12-external-review.md",
+          "fixes": [
+            "修复 AppExitInfoTracker 持久化路径、默认历史条数和 KillHandler 多来源消息链，并把 AppExitInfo/KOOM 源码调研块并入主体。"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 0,
+        "remaining_p95_queue": 0,
+        "remaining_p90_queue": 0,
+        "remaining_p85_queue": 0,
+        "fallback_remaining_after_this_run": 99
+      }
     }
   ],
   "section_18_23": {
@@ -9358,7 +9427,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 9,
+  "task2b_total_fixed": 11,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -9945,16 +10014,20 @@
     "2026-05-27": {
       "sections_processed": 3,
       "items_completed": 3
+    },
+    "2026-05-28": {
+      "sections_processed": 2,
+      "items_completed": 2
     }
   },
   "task2b_last_run": "2026-05-28T02:50:00+08:00",
   "task2b_pending_counts": {
-    "p95": 96,
+    "p95": 90,
     "p90": 2,
     "p85": 7,
-    "total": 105,
-    "task6_needs_rework": 2,
-    "task9_needs_rework": 96
+    "total": 99,
+    "task6_needs_rework": 14,
+    "task9_needs_rework": 90
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -10121,13 +10194,31 @@
       "source": "frontmatter backlog fallback / task9 deep-review",
       "priority": 85,
       "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+    },
+    {
+      "section": "14.10",
+      "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "at": "2026-05-28T12:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter backlog fallback",
+      "priority": 95,
+      "summary": "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。"
+    },
+    {
+      "section": "14.12",
+      "file": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+      "at": "2026-05-28T12:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter backlog fallback",
+      "priority": 95,
+      "summary": "修复 AppExitInfoTracker 持久化路径、默认历史条数和 KillHandler 多来源消息链，并把 AppExitInfo/KOOM 源码调研块并入主体。"
     }
   ],
   "last_task2b_completed": [
-    "13.10",
-    "13.15"
+    "14.10",
+    "14.12"
   ],
-  "last_task2b_completed_at": "2026-05-28T08:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T12:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -10269,17 +10360,22 @@
     }
   ],
   "last_task2b_files": [
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
-    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md"
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "13.15",
-    "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "at": "2026-05-28T08:50:00+08:00",
-    "by": "task2b-content-processing-rework-main",
-    "source": "frontmatter backlog fallback / task9 deep-review",
-    "priority": 85,
-    "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+    "at": "2026-05-28T12:50:00+08:00",
+    "lane": "main",
+    "sections": [
+      "14.10",
+      "14.12"
+    ],
+    "files": [
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "src/part3-tools/ch14-other-tools/12-apm-observability.md"
+    ],
+    "source": "frontmatter backlog fallback",
+    "result": "fixed"
   },
   "task2b_last_rework": {
     "section": "13.15",

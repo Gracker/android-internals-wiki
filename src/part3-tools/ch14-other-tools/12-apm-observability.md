@@ -41,22 +41,22 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T05:34:00+08:00"
-task2b_state: pending
-repaired_date: '2026-04-22'
-repaired_by: codex
-task2b_result: pending
-last_task2b_at: "2026-04-25T16:44:10+08:00"
-task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0：AppExitInfoTracker 持久化路径 `/data/system/procexitstore/procexitinfo` 与历史条数默认 16 被写错；P1：KillHandler 消息来源链路遗漏 MSG_APP_KILL / MSG_APP_RECOVERABLE_CRASH / LMKD / Zygote 补充路径；写入 queue 条目 task9-audit-20260522-14.12-appexitinfo-source-path-message-chain。"
+task2b_state: fixed
+repaired_date: '2026-05-28'
+repaired_by: openclaw-task2b-main
+task2b_result: fixed
+last_task2b_at: "2026-05-28T12:50:00+08:00"
+task9_review_notes: "2026-05-28 Task2B fixed: AppExitInfoTracker 持久化路径修为 /data/system/procexitstore/procexitinfo；默认历史条数修为 config_app_exit_info_history_list_size=16；补 KillHandler 多来源消息链与 Android 16 rss_kb 边界；尾部源码调研块已并入主体。"
 last_task6_at: "2026-05-20T17:09:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task6_audit_result: l1-light-edit
@@ -165,6 +165,8 @@ last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
 
 它的版本边界要单独写清：`ApplicationExitInfo` 从 Android 11（API 30）开始可用，API 26-29 不能把它当作基础能力。低版本上的 ANR、crash、low-memory 归因仍要依赖 traces、崩溃回调、前后台状态、进程重启痕迹和服务端会话拼接。接入时也不要在冷启动主线程同步拉取大量历史记录，`ActivityManager.getHistoricalProcessExitReasons()` 经过 `system_server`，适合延后到首帧后或后台线程。
 
+系统侧记录逻辑在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。按 android-16.0.0_r1 源码核对，默认持久化文件落在 `/data/system/procexitstore/procexitinfo`，历史条数由 `config_app_exit_info_history_list_size` 控制，android-15/16 默认值是 16。`KillHandler` 也不是单一的 `MSG_PROC_DIED` 主线，它还会处理 `MSG_LMKD_PROC_KILLED`、`MSG_CHILD_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`、`MSG_STATSD_LOG` 等消息。Android 16 的 lmkd 外部来源还会把 `rss_kb` 传入 `onProcDied()`，所以线上平台展示退出原因时，最好保留 reason、status、importance、pss/rss、trace file 和 timestamp 这些字段，不要只存一个“疑似 ANR / OOM”的二值标签。
+
 ### Android Vitals：最粗，但也最不能忽视
 
 Android Vitals 的问题大家都知道：粒度不够细，自定义空间有限，很多时候只能看到趋势，拿不到足够多的现场。
@@ -203,6 +205,8 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 
 那 KOOM 的优先级会非常高。  
 但如果团队当前主要卡在首页慢、列表卡、响应延迟，它通常不应该作为第一站。
+
+KOOM 的 Java heap 方案常见做法是让主进程短暂停住 ART VM，`fork()` 出子进程后立刻恢复主进程，再由子进程完成 hprof dump、strip 和分析。这样可以避开 `Debug.dumpHprofData()` 长时间阻塞主进程的问题。落到平台选型时，除了“能不能抓 OOM”，还要看 dump 触发阈值、子进程失败兜底、裁剪后 hprof 的可还原性，以及上传体积是否会压垮低端设备。
 
 ### LeakCanary：本地排泄漏，仍然非常强
 
@@ -308,7 +312,7 @@ Firebase Performance 最大的优点，是上手快。
 
 ## 按团队成熟度选，而不是按流行度选
 
-### 阶段 1：先把基础信号立住
+### 阶段 1：先建立基础信号
 
 如果团队现在还没有稳定线上信号，那最合理的顺序通常是：
 
@@ -361,86 +365,7 @@ Firebase Performance 最大的优点，是上手快。
 
 这个顺序不够激进，但更容易推行。
 
-
-
-<!-- AIW-源码调研-2026-05-03 -->
-## 源码调研补充：AppExitInfoTracker 系统实现与 KOOM fork dump 机制
-
-> 本节补充内容基于 AOSP 源码（AppExitInfoTracker.java）和 KOOM GitHub 仓库源码研究。
-
-### AppExitInfoTracker 系统实现（源码级）
-
-`AppExitInfoTracker` 是 `ActivityManagerService` 内部的进程退出信息追踪组件，位于 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。
-
-**核心职责**：记录所有进程退出事件（含 Zygote 子进程 fork/exit、LMKD low-memory kill、ANR 等），持久化到 Proto 文件，支持 `ActivityManager.getHistoricalProcessExitReasons()` 查询。
-
-**关键设计**：
-- 持久化路径：`/data/system/proc_exit_store/proc_exit_info`（Proto 格式）
-- 持久化周期：30 分钟（`APP_EXIT_INFO_PERSIST_INTERVAL`）
-- 支持最多 8 条历史记录 per（package, UID）组合
-- Zygote 和 LMKD 作为两个独立外部来源，标记 `REASON_LOW_MEMORY` / `REASON_SIGNALED` 等
-
-**关键字段**（`ApplicationExitInfo`）：
-| 方法 | 含义 |
-|------|------|
-| `getReason()` | 退出原因：REASON_OTHER / REASON_LOW_MEMORY / REASON_SIGNALED / REASON_VETOED / ... |
-| `getStatus()` | 依赖 reason 的扩展状态码（如 `REASON_EXCESSIVE_RESOURCE_USAGE` 时含 WIFEXITED 等） |
-| `getImportance()` | 退出时进程优先级 |
-| `getPss() / getRss()` | 内存占用（KB） |
-| `getTraceFile()` | 关联的 ANR trace 文件路径（.gz 压缩） |
-| `getTimestamp()` | 退出时间戳 |
-
-**触发链**：
-```
-AMS.killProcess() / Zygote SIGCHLD
-  → scheduleNoteProcessDied()
-  → MSG_PROC_DIED (KillHandler)
-    → handleNoteProcessDiedLocked()
-      → AppExitInfoTracker.handleNoteProcessDiedLocked()
-        → 合并 Zygote/LMKD 来源的额外信息
-        → addExitInfoLocked() / updateExistingExitInfoRecordLocked()
-        → scheduleLogToStatsd()
-```
-
-### KOOM fork 子进程 dump Hprof 机制（源码级）
-
-KOOM（快手）解决传统 hprof dump 阻塞主进程 20 秒的核心思路：
-
-**传统方案问题**：`Debug.dumpHprofData()` 在主进程执行，整个 App 卡死约 20 秒。
-
-**KOOM 解决方案**：
-```
-主进程 Suspend ART VM → fork() → 主进程 Resume ART VM → 子进程独立 dump
-```
-
-**主进程实际阻塞：< 20ms**。子进程在后台完成 dump + strip + 分析。
-
-**关键 API 链**（`koom-java-leak` 模块）：
-```kotlin
-OOMMonitor.startLoop(loopInterval)
-  → dumpAndAnalysis()
-    → ForkStripHeapDumper.getInstance().dump(path)
-      // JNI 层：
-      // 1. art::Dbg::SuspendVM()
-      // 2. fork() 创建子进程
-      // 3. art::Dbg::ResumeVM()
-      // 4. 子进程：hprof 写入 → strip 裁剪 → 上报
-```
-
-**文件裁剪与补全**：KOOM 在子进程中对 hprof 进行裁剪以减小体积（约 50-70% 减小），使用 `koom-fill-crop.jar` 在 PC 端补全被裁剪的 STRING/CLASS/PROXY DUMP 段，使文件可被 AS Profiler / MAT 解析。
-
-**泄漏判定规则**：
-- Activity：`mFinished || mDestroyed == true` 且存在到 GC Root 的引用链
-- Fragment：`mFragmentManager == null && mCalled == true`（生命周期回调已完成）
-
-**版本支持**：minSdk 21，armeabi-v7a / arm64-v8a / x86 / x86-64，支持 `c++_shared` 或 `c++_static` 两种链接模式。
-
-**数据来源**：
-- `AppExitInfoTracker` 源码：AOSP `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`（约 2100 行）
-- KOOM 源码：`github.com/KwaiAppTeam/KOOM`（Apache 2.0）
-<!-- AIW-源码调研-2026-05-03 -->
-
-## 这一章在全书里的位置
+## 与全书主线的关系
 
 这一章把工具能力放回治理体系里看：
 
