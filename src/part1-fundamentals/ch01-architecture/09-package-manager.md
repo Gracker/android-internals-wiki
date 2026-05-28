@@ -12,12 +12,12 @@ reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
 reviewed_at: "2026-05-28T16:06:00+08:00"
 task6_result: "needs-rework"
-task6_state: "reviewed"
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: "revisiting"
+task9_state: pending
+pipeline_stage: task6_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
-last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview
+last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview
 confidence: medium
 sources:
 - type: aosp
@@ -41,6 +41,8 @@ sources:
 - type: aosp
   path: art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java
 - type: aosp
+  path: art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java
+- type: aosp
   path: art/libartservice/service/java/com/android/server/art/ArtShellCommand.java
 - type: aosp
   path: art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java
@@ -60,12 +62,15 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: needs-rework
+task9_result: pending
 last_task9_at: "2026-05-28T16:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-28"
-task2b_result: "pending"
-task2b_state: pending
+task2b_result: "fixed"
+task2b_state: fixed
+last_task2b_at: "2026-05-28T16:50:00+08:00"
+last_task2b_by: "task2b-content-processing-rework-main"
+last_task2b_summary: "整合 Android 16 Cloud Compilation / SDM 回炉问题，删除参考资料后的源码调研补遗，修正 installd 版本断点。"
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。"
 last_task6_at: "2026-05-28T16:06:00+08:00"
@@ -148,7 +153,7 @@ PMS 在内存中维护了几个关键的数据结构：
 
 ### PMS 与 installd 的协作关系
 
-PMS 维护包状态和安装策略，具体落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。「Android 16」里的 `Installer.connect()` 改为通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。旧版 `/dev/socket/installd` 的 socket 路径已弃用。
+PMS 维护包状态和安装策略，具体落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。从 `android-9.0.0_r1` 到 `android-16.0.0_r1`，`Installer.connect()` 都通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。本节不把 `installd` Binder 化写成 Android 16 的版本断点。
 
 现代安装路径里，dexopt 的控制面和执行面还要再拆一层：
 
@@ -161,7 +166,7 @@ PMS 维护包状态和安装策略，具体落到文件系统和应用数据目�
 
 因此，安装路径更适合按 `PackageInstallerSession -> InstallPackageHelper -> DexOptHelper -> ART Service -> artd -> dex2oat` 来看。`system_server` 里的 Slice 主要反映控制面决策，`dex2oat` 进程承接执行面里最重的编译开销。
 
-[已验证: AOSP android-16.0.0_r1 `Installer.java` / `DexOptHelper.java` / `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `ArtShellCommand.java`]
+[已验证: AOSP android-9.0.0_r1 到 android-16.0.0_r1 `Installer.java`; AOSP android-16.0.0_r1 `DexOptHelper.java` / `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `ArtShellCommand.java`]
 
 ### Computer 模式与无锁读
 
@@ -365,10 +370,23 @@ Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关�
 
 ## Android 16 云端编译与 SDM
 
-公开资料把 Android 16 的一条安装优化路径称为 Cloud Compilation。当前能稳妥写下来的信息很有限，本节只保留和安装性能直接相关的边界，不把缺少一手佐证的实现细节写成定论。
+公开资料把 Android 16 的一条安装优化路径称为 Cloud Compilation。AOSP 设备侧能确认的是 `.sdm` 文件进入安装会话后的校验、暂存和 ART 生命周期管理；Play 服务端如何生成产物、哪些设备和包会命中、命中后是否一定免除本机 `dex2oat`，公开源码还不能串起完整链条。
 
+设备侧链路可以拆成三段：
 
-### App Archiving 机制（Android 15+）
+- `PackageInstallerSession.maybeStageArtManagedInstallFilesLocked()` 会把与 APK 匹配的 ART-managed install files 暂存到目标路径。
+- `PackageInstallerSession.verifySdmSignatures()` 对 `.sdm` 文件做签名校验。源码注释把 SDM 定义为包含 cloud compilation artifacts 的文件，并要求 `.sdm` 与 APK 使用同一签名密钥。
+- `ArtManagedInstallFileHelper` 把 `.dm`、`.prof`、`.sdm` 都纳入 ART-managed install files，并按 APK 路径匹配对应文件；`ArtManagerLocal` 在删除 dexopt artifacts 时同时处理 VDEX、ODEX、ART、SDM、SDC 等产物。
+
+因此，本节统一把 SDM 写作 Secure Dex Metadata / `.sdm` cloud compilation artifact，并删除历史补遗中那些互相冲突的全称和不存在的源码目录。
+
+性能分析时要把源码证据和分发侧推断分开。能写成确定事实的是：安装会话可以接收并校验 `.sdm`，ART 侧能管理 SDM/SDC 等 cloud dexopt artifacts。不能写成定稿结论的是：Play Store 一定为目标包预生成 SDM、安装时一定免除本机编译、冻结窗口一定达到某个固定毫秒数量级。
+
+抓 Play 安装 Trace 时，如果 `system_server` 仍有安装提交 Slice，但几乎没有明显的 `dex2oat` CPU 段，可以把它作为“可能命中云端产物”的线索，再对照安装来源、ART dump、`dumpsys package dexopt` 和包状态输出。没有 `.sdm` 或没有公开命中字段时，仍按常规本机 dexopt 路径排查。
+
+[已验证: AOSP android-16.0.0_r1 `PackageInstallerSession.verifySdmSignatures()` / `maybeStageArtManagedInstallFilesLocked()`; `art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java`; `ArtManagerLocal.deleteDexoptArtifacts()`]
+
+## App Archiving 机制（Android 15+）
 
 Android 15 引入 OS 级 App Archiving，通过 `PackageArchiver`（`services/core/java/com/android/server/pm/PackageArchiver.java`）实现。归档后的应用移除 APK 和缓存文件，但保留用户数据，Launcher 显示灰显图标。
 
@@ -393,24 +411,7 @@ if (isArchivingEnabled()) {
 
 **与 LMK 的关系**：App Archiving 与 LowMemoryKiller 无直接关联。归档操作通过 `DELETE_ARCHIVE | DELETE_KEEP_DATA` 标志位移除 APK，data 目录保留，归档 App 不直接触发 LMK。
 
-**SDM（Signature Delegation Mechanism）**：Android 16 引入的签名委托格式，`verifySdmSignatures()` 在安装时验证 `.sdm` 文件签名与 APK 一致性，与 App Archiving 是独立机制。
-
 [AIW-源码调研-2026-05-01: 基于 AOSP mainline PackageArchiver.java / ActivityStarter.java / ArchiveState.java 一手源码验证]
-
-### 目前能确认的范围
-
-- **分发侧**：这条路径指向 Google Play 分发路径，普通侧载不在这个范围内。
-- **fallback**：设备没有拿到云端产物，或者安装来源不支持时，仍然回到本机 dexopt。
-- **性能含义**：命中云端产物时，本机安装阶段的 `dex2oat` 压力可能下降；没有命中时，Trace 里仍会看到常规的本机编译开销。
-- **设备侧观测**：目前没有公开稳定字段可以直接判断“本次安装命中 cloud compilation”。分析时只能把安装来源、`dex2oat` 是否出现、`cmd package art dump` / `dumpsys package dexopt` 输出放在一起看。
-
-### 本节不下结论的部分
-
-以下几项缺少可公开核对的一手材料，本节不展开确定性描述：SDM 的签名与校验由哪一层完成、设备侧的落盘格式和加载入口、Play 服务端如何生成产物、命中失败后的详细原因码。
-
-放回性能分析场景，Cloud Compilation 更适合当成一个“可能减少本机 dexopt 的分发侧变量”。抓 Play 安装 Trace 时，如果 `system_server` 仍有安装提交 Slice，但几乎没有明显的 `dex2oat` CPU 段，再去对照 ART dump 和包状态输出。
-
-[资料边界: 当前公开材料主要来自外部报道，缺少可交叉核对的 AOSP 或官方集成文档，本节按可观测现象表述。]
 
 ## 应用更新与 OTA 更新的性能影响
 
@@ -566,7 +567,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 13 | `Computer` 接口引入 PMS 读写分离 | 并发查询不再被写操作阻塞 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | android-16 源码中可见 APEX 模块并发解析路径（并行扫描框架在更早版本已存在）；Play 分发侧引入 SDM 预编译产物分发 | 安装场景可减少本机 dexopt |
+| Android 16 | android-16 源码中可见 APEX 模块并发解析路径（并行扫描框架在更早版本已存在）；安装会话可处理 `.sdm` ART-managed install files，并校验其签名与 APK 一致 | 命中云端产物时可能减少本机 dexopt；Play 生成和命中条件需用安装来源、Trace 与 ART 状态交叉验证 |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区
@@ -591,11 +592,6 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 
 `speed-profile` 只是编译级别，不代表实际编译了多少方法。对 Android 12+ 的常见安装路径，没有可用 profile 时它往往会退到 `verify`；更早版本还要看 quicken 等历史行为。要确认真实覆盖率，仍然要结合 `oatdump` 或 `profman`。
 
-
-
-
-<!-- AIW-源码调研-2026-05-12 已删除：原文包含 Task9 确认不存在的类名（PackageSnapshotCompiler/SDM/CloudCompilerNetworkService）、方法签名和性能数据（30-50%/15-25%），已整体移除。云端编译/SDM 的保守描述见前文"Android 16 云端编译与 SDM"小节。 -->
-
 ## 参考资料
 ### OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md
@@ -617,6 +613,7 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - `frameworks/native/cmds/installd/InstalldNativeService.cpp`：installd native 服务实现
 - `art/dex2oat/`：dex2oat 编译器
 - `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`：ART Service 的本地调度入口
+- `art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java`：`.dm` / `.prof` / `.sdm` ART-managed install files 匹配
 - `art/libartservice/service/java/com/android/server/art/ArtShellCommand.java`：`cmd package art ...` 子命令实现
 - `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`：后台 dexopt 的 JobScheduler 调度
 
@@ -630,315 +627,3 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 
 ### 深入阅读
 - Android Authority: Android 16 Cloud Compilation（外部报道，适合补背景，不适合单独当作平台契约）
-
-[需重写: 参考资料后方仍保留 2026-05-13 至 2026-05-28 多段源码调研补遗，内容以问题单和素材清单形式堆叠，且 Cloud Compilation / SDM 名称、格式与加载入口存在互相冲突的表述。Task 2B 需把这些材料整合进正文或移入研究日志；Task 9 复核技术口径。]
-
-<!-- AIW-源码调研-2026-05-13 -->
-## 🔍 源码调研勘误：§1.9 Android 16 云端编译 / SDM 深度段
-
-**调研日期**：2026-05-13
-**调研人**：AIW · 每日源码调研（research-gaps 驱动）
-**报告位置**：DeepResearch/2026-05-13-android16-cloud-compilation-sdm-verification.md
-
-### 核心发现
-
-经源码级验证，§1.9 原文中「Android 16 云端编译与 SDM 机制深度分析」一节存在多处**P0 级技术错误**——引用了 AOSP android-16.0.0_r1 中不存在的类和方法。错误根源是选题提案中假设了 `CloudCompilationService` 等类名，而 AOSP 实际实现机制完全不同。
-
-#### 原文引用但实际不存在的类（需删除/替换）
-
-| 原文引用（错误） | 实际状态 |
-|----------------|---------|
-| `PackageSnapshotCompiler` | ❌ AOSP 中不存在 |
-| `frameworks/base/services/core/java/com/android/server/pm/SDM.java` | ❌ AOSP 中不存在 |
-| `CloudCompilerNetworkService` | ❌ AOSP 中不存在 |
-| `CompilerFallback` | ❌ AOSP 中不存在 |
-| `PackageManagerService.snapshotCompiler()` | ❌ 方法不存在 |
-
-#### 实际存在的机制（应替换为）
-
-| 实际类/方法 | 文件路径 | 说明 |
-|-----------|---------|------|
-| `BackgroundDexOptService` | `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` | 设备空闲时执行后台 dexopt |
-| Dex Metadata (`.dm`) | Play Store 分发 | 包含聚合 Cloud Profile 数据 |
-| `system/extras/sdm/` | 目录 | System Dexopt Manager 实际位置（工具类，非服务） |
-| `ArtManagerLocal` | `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` | ART Service 编译调度 |
-
-### 实际云编译机制
-
-Android 16 的"云编译"是以下组件的组合：
-
-1. **Dex Metadata (`.dm`)**：Play Store 分发的元数据文件，包含聚合的 Cloud Profile
-2. **BackgroundDexOptService**：在设备 idle 时调度后台编译
-3. **ART Service** (`ArtManagerLocal` / `ArtShellCommand`)：控制面，管理编译任务
-4. **artd**：ART 守护进程
-5. **dex2oat**：实际编译执行进程（speed-profile）
-
-设备侧的调用链为 Play Store 分发 `.dm` 文件 → `BackgroundDexoptJob` 调度 → `ArtManagerLocal` 编译 → `artd` → `dex2oat`。`.dm` 文件中的 Profile 数据让安装时 `speed-profile` 编译有实际覆盖，而不是退回 `verify`。
-
-### 实际 SDM 位置
-
-SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含：
-- `DexoptUtils.java`
-- `PackageDexoptUsageRecord.java`
-
-这是 OTA 场景下的设备级编译策略工具类，与 Cloud Compilation 是**两个独立的机制**：
-- Cloud Compilation = 云端 Profile 引导的后台编译（来源：Play Store）
-- SDM = 本地系统级编译调度管理（来源：OTA 场景）
-
-### 性能数据的可信度
-
-原文引用的性能数据（"减少首次安装时间 30-50%"、"提升运行性能 15-25%"、"减少网络流量 60-80%"）**未经一手源码验证**，属于外部报道推断，不应作为 AIW 定稿结论。
-
-### 修正方向
-
-1. 删除「Android 16 云端编译与 SDM 机制深度分析」整节（595-810 行）
-2. 在「版本演进」表中为 Android 16 列补充正确的实现机制描述
-3. 在「关键源码文件」表中替换为实际存在的文件路径
-4. 或将存疑段落的 [存疑] 标注升级为「以下内容已被源码调研证实为不存在的类，详见 DeepResearch/2026-05-13-...」
-
-### 参考资料
-
-- AOSP android-16.0.0_r1 `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java`（已验证存在）
-- AOSP android-16.0.0_r1 `frameworks/base/core/java/android/content/pm/PackageManager.java`（已验证存在）
-- AOSP android-16.0.0_r1 `system/extras/sdm/`（已验证目录存在）
-- AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（已验证存在）
-
-
-<!-- AIW-源码调研-2026-05-17：原“Android 16 云编译与 SDM 机制（2026-05-17 源码调研补充）”段已删除。该段仍包含未经验证的内容：SDM 被错误描述为“Speed-compiled Dex Metadata”（实际为 Secure Dex Metadata，扩展名 .sdm）、installFilter 判断机制缺少 AOSP 佐证、性能数据“20-60s to 1-3s”无来源。云端编译的保守描述见前文“Android 16 云端编译与 SDM”小节。 -->
-
-### Android 16 SDM / Cloud Compilation 安装链路源码复核
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-16-sdm-cloud-compilation-install-linkage.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 16 引入 SDM（Secure Dex Metadata）新文件格式，Play 渠道下载后直接注入安装流程跳过本地 dex2oat。源码级分析了 ArtFileManager 中 SDM_DALVIK_CACHE / SDM_NEXT_TO_DEX 枚举、PackageInstallerSession 的 .sdm/.dm 配对验证、ArtManagerLocal 的云端编译产物生命周期管理。
-- 注入时间：2026-05-20
-- 价值：为 §1.9 安装链路提供 Android 16 Cloud Compilation 的源码级链路证据，包含 SDM 格式定义、版本差异表和安装性能影响分析
-
-
-<!-- AIW-源码调研-2026-05-21 -->
-## 源码调研补遗：Android 16 Cloud Compilation 与 SDM 机制
-
-**调研时间**：2026-05-21  
-**关联源码文件**：
-- `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`
-- `frameworks/base/services/core/java/com/android/server/pm/dex/ArtManagerService.java`
-- `frameworks/base/core/java/android/content/pm/dex/ArtManagerInternal.java`
-
-### 核心机制
-
-Android 16 引入 **Cloud Compilation**（云端编译），调整了安装链路：
-
-1. **传统链路（Android ≤14）**：安装时执行 dex2oat → 应用冻结窗口秒级
-2. **Android 16 云编译链路**：Play Store 预生成 SDM 签名文件 → 安装时跳过 dex2oat → 冻结窗口毫秒级
-
-### 关键组件职责
-
-| 组件 | 职责 |
-|------|------|
-| PackageInstallerSession | 安装会话管理、状态流转、commit 触发 |
-| ArtManagerService | ART 编译配置、Profile 验证、dexopt 调度 |
-| ArtManagerInternal | Local-only 隐藏接口，供 PMS 调用编译 layout 等 |
-| InstallPackageHelper | 实际安装逻辑，解析包、迁移数据、调用 PMS |
-
-### .sdm / .sdc 文件角色（基于公开技术报道）
-
-- **.sdm**：Signed Data and Metadata，云编译的签名前置产物，携带预编译 oat 的元数据
-- **.sdc**：可能为 Cloud 编译的 Data Container（待进一步验证）
-- **.dm**：Delta Manifest，增量安装描述
-
-### Android 16 dexopt 前移
-
-Android 16 release notes 明确：
-> "When a package is being updated, it halted and put into a frozen state... **Android 16 reduces the time an app is unrunnable by moving dexopt or dex2oat to an earlier phase of the install process**."
-
-这不仅为云编译铺路，也减少了所有安装场景的冻结时间。
-
-#
-<!-- AIW-源码调研-2026-05-28：vivo Turbo vs 小米 HyperOS 安装优化路径验证 -->
-
-## 源码调研补遗（2026-05-28）：厂商安装优化路径实机验证
-
-**来源**：每日选题 #2 | DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md
-
-### 核心发现
-
-基于 AOSP 标准安装链路 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat`，vivo Turbo 与小米 HyperOS 的定制优化主要在**编译过滤器差异化**和**installd 扩展命令**两个层面，均属于安装控制面的优化，未见源码证明其在执行面（dex2oat 本身）有算法级改动。
-
-### 安装链路差异对比
-
-| 优化层面 | AOSP 标准行为 | vivo Turbo（推测） | 小米 HyperOS（推测） |
-|---------|-------------|-------------------|---------------------|
-| 编译过滤器 | `verify`（无 profile）| 预装强制 `speed` | 优先 `speed-profile` |
-| installd 扩展 | 标准 IInstalld 命令 | 新增 `install_hint` 等 | 云编译 .dm 优先 |
-| 云编译集成 | 无 | 无 | Play .dm 定制接入 |
-| 编译触发时机 | idle + charging | 立即后台编译 | 首次启动后编译 |
-
-### Android 16+ installd 连接方式变更
-
-| 版本 | 连接方式 | 源码路径 |
-|------|---------|---------|
-| Android ≤14 | Unix Domain Socket `/dev/socket/installd` | `Installer.java`（旧版 socket 连接）|
-| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 | `Installer.java`（android-16 已改用 Binder）|
-
-### 实机验证方法
-
-```bash
-# 查看编译状态以验证厂商优化效果
-adb shell pm compile -m speed-profile -f -v com.example.app
-adb shell dumpsys package dexopt | grep -A 6 com.example.app
-
-# 查看 installd 连接方式（Android 16+）
-adb shell "cmd package install-commit --has-dexopt-old-api false" 2>&1 || true
-
-# 对比编译过滤器结果
-echo "检查 actualCompilerFilter 是否为 speed-profile/speed"
-```
-
-### 性能影响总结
-
-- **vivo Turbo**：牺牲安装耗时（预装使用 `speed`），换取首次启动零 JIT 开销
-- **小米 HyperOS**：平衡安装速度与首次启动（Play 渠道优先使用 `speed-profile`），依赖后台编译补全
-- **存储差异**：`speed` 过滤器产物约 1.5-2x DEX 原大小，`speed-profile` 更精简
-
-**注意**：厂商定制 installd 源码为闭源，实机性能需厂商开放接口或通过 Perfetto Trace 验证。
-
-## 待验证
-- `.dm/.sdm/.sdc` 具体二进制格式（需进一步定位 art 源码）
-- ArtManagedInstallFileHelper 在 AOSP 的具体路径
-- SDM 与 OatFileManager 的绑定机制（需验证 art/runtime/oat_file_manager.cc）
-
-<!-- AIW-源码调研-2026-05-23：每日选题 #1 调研补充 -->
-
-### 源码调研补遗（2026-05-23）
-
-**来源**：每日选题 #1 | DeepResearch/2026-05-23-android16-cloud-compilation-sdm.md
-
-**关键源码路径**：
-- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`
-- `frameworks/native/cmds/installd/dexopt.cpp`
-- `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`
-
-**已验证事实**：
-- Android 16 Cloud Compilation 通过 SDM（Secure Diamond Mirror）云端预编译绕过设备端 dex2oat，Play Store 上传时预编译，SDM 文件存 CDN，设备安装时下载映射
-- installd 连接改为 `ServiceManager.getService("installd")` 获取 Binder 服务（android-16），旧版 `/dev/socket/installd` socket 路径已弃用
-- ParallelPackageParser 线程池在 Android 13-16 均存在，非 Android 16 新引入
-- SDM 实际位于 `system/extras/sdm/` 目录（工具类，非服务），与 Cloud Compilation 是两个独立机制
-
-**存疑/未验证**（cs.android.com 访问受限）：
-- Cloud Compilation 在 PMS 中的具体判断分支方法名（`getCloudCompiledArtifact` 等）
-- SDM 二进制格式结构
-- Play Store 编译触发机制
-
-**版本演进表补充**（Android 16）：
-| 机制 | 描述 |
-|------|------|
-| Cloud Compilation | 云端预编译 + SDM 下载映射，跳过本地 dex2oat |
-| SDM | System Dexopt Manager，位于 system/extras/sdm/，OTA 场景本地调度工具 |
-|installd 连接 | ServiceManager Binder（android-16），非 socket |
-
-<!-- AIW-源码调研-2026-05-24 -->
-## 源码调研补遗（2026-05-24）：OEM 厂商定制安装优化路径
-
-**来源**：每日选题 #1 | DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md
-
-### 核心发现
-
-Android 安装优化分为 **AOSP 标准路径**和**OEM 厂商定制路径**。AOSP 标准路径以 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat` 为主链路。
-
-**OEM 厂商（vivo Turbo / 小米 HyperOS 等）定制优化的核心层面**：
-
-| 优化层面 | 厂商定制内容（推测） |
-|---------|-------------------|
-| dexopt 参数 | 跳过 verify，直接 speed/speed-profile |
-| installd 扩展 | 厂商新增 install hint 命令 |
-| 编译策略 | 差异化过滤器（预装 vs 第三方） |
-| 云编译集成 | Play .dm + OTA 云编译产物预生成 |
-
-### 关键源码路径
-
-| 组件 | AOSP 源码路径 |
-|------|-------------|
-| 安装 session | `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java` |
-| 安装辅助 | `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java` |
-| dexopt 决策 | `frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java` |
-| 后台编译 | `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` |
-| ART Service | `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` |
-| dex2oat | `frameworks/native/cmds/installd/dexopt.cpp` |
-
-### installd 连接方式变化（Android 16+）
-
-| 版本 | 连接方式 |
-|------|---------|
-| Android ≤14 | Unix Domain Socket `/dev/socket/installd` |
-| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 |
-
-### 版本演进补充
-
-| Android 版本 | 机制 |
-|------------|------|
-| Android 7.0 | JIT + AOT 混合编译 |
-| Android 9 | Cloud Profiles (.dm) |
-| Android 14 | ART Service 统一调度 |
-| Android 16 | Cloud Compilation + SDM，Play 预编译产物分发 |
-
-#
-### Android 16 Cloud Compilation / SDM 机制验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-android16-cloud-compilation-sdm-mechanism-verification.md
-- 类型：DeepResearch 调研结果
-- 摘要：确认 SDM 全称为 Secure Dex Metadata（非 Signature Delegation Mechanism），Cloud Compilation 通过 Play Store 预生成编译产物，设备侧跳过 dex2oat。SDM 文件使用 APK 同密钥签名。但 SDM 二进制格式、设备侧加载入口等关键细节仍缺 AOSP 源码闭环，§1.9 章节已有错误标注待修正。
-- 注入时间：2026-05-25
-- 价值：纠正 SDM 名称错误，补充 Cloud Compilation 分发链路和 fallback 机制
-
-
-<!-- AIW-源码调研-2026-05-28：vivo Turbo vs 小米 HyperOS 安装优化路径验证 -->
-
-## 源码调研补遗（2026-05-28）：厂商安装优化路径实机验证
-
-**来源**：每日选题 #2 | DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md
-
-### 核心发现
-
-基于 AOSP 标准安装链路 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat`，vivo Turbo 与小米 HyperOS 的定制优化主要在**编译过滤器差异化**和**installd 扩展命令**两个层面，均属于安装控制面的优化，未见源码证明其在执行面（dex2oat 本身）有算法级改动。
-
-### 安装链路差异对比
-
-| 优化层面 | AOSP 标准行为 | vivo Turbo（推测） | 小米 HyperOS（推测） |
-|---------|-------------|-------------------|---------------------|
-| 编译过滤器 | `verify`（无 profile）| 预装强制 `speed` | 优先 `speed-profile` |
-| installd 扩展 | 标准 IInstalld 命令 | 新增 `install_hint` 等 | 云编译 .dm 优先 |
-| 云编译集成 | 无 | 无 | Play .dm 定制接入 |
-| 编译触发时机 | idle + charging | 立即后台编译 | 首次启动后编译 |
-
-### Android 16+ installd 连接方式变更
-
-| 版本 | 连接方式 | 源码路径 |
-|------|---------|---------|
-| Android ≤14 | Unix Domain Socket `/dev/socket/installd` | `Installer.java`（旧版 socket 连接）|
-| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 | `Installer.java`（android-16 已改用 Binder）|
-
-### 实机验证方法
-
-```bash
-# 查看编译状态以验证厂商优化效果
-adb shell pm compile -m speed-profile -f -v com.example.app
-adb shell dumpsys package dexopt | grep -A 6 com.example.app
-
-# 查看 installd 连接方式（Android 16+）
-adb shell "cmd package install-commit --has-dexopt-old-api false" 2>&1 || true
-
-# 对比编译过滤器结果
-echo "检查 actualCompilerFilter 是否为 speed-profile/speed"
-```
-
-### 性能影响总结
-
-- **vivo Turbo**：牺牲安装耗时（预装使用 `speed`），换取首次启动零 JIT 开销
-- **小米 HyperOS**：平衡安装速度与首次启动（Play 渠道优先使用 `speed-profile`），依赖后台编译补全
-- **存储差异**：`speed` 过滤器产物约 1.5-2x DEX 原大小，`speed-profile` 更精简
-
-**注意**：厂商定制 installd 源码为闭源，实机性能需厂商开放接口或通过 Perfetto Trace 验证。
-
-## 待验证
-
-- vivo / 小米 installd 源码（厂商闭源，需反编译或厂商开放）
-- Game Turbo 联动机制（JobScheduler priority？）
-- 实机验证性能数据
