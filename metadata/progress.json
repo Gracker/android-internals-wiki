@@ -775,7 +775,18 @@
       "p0": 0,
       "p1": 1,
       "p2": 2,
-      "p3": 0
+      "p3": 0,
+      "section": "22.5",
+      "title": "动画性能优化",
+      "file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_lite_at": "2026-05-28T09:35:00+08:00",
+      "task2b_lite_note": "修复帧动画 RGBA_8888 内存估算单位边界；补 API31+ FrameTimeline 与 API29-30 Perfetto 替代观测口径；回流 Task6。"
     },
     "22.6": {
       "p0": 0,
@@ -2223,8 +2234,8 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T09:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T09:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T09:06:00+08:00",
     "sections": [
@@ -2373,12 +2384,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-28T08:50:00+08:00",
+  "last_task2b_at": "2026-05-28T09:35:00+08:00",
   "last_task2b_sections": [
-    "13.10",
-    "13.15"
+    "22.5"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework",
+  "last_task2b_action": "fixed-lite",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -6390,6 +6400,15 @@
         "task9-2.18-gamma-compensation-evidence",
         "task9-2026-05-12-5.10-api37-energy-reason"
       ]
+    },
+    {
+      "at": "2026-05-28T09:35:00+08:00",
+      "lane": "lite",
+      "sections": [
+        "22.5"
+      ],
+      "result": "fixed-lite",
+      "log": "logs/rework/2026-05-28-09-task2b-lite.md"
     }
   ],
   "last_task2a_processed": "22.17",
