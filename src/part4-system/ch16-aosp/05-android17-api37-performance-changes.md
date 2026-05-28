@@ -38,12 +38,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
-last_task2b_at: "2026-05-15T07:22:00+08:00"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-28T22:50:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task9_reviewed_by: "openclaw-task9"
@@ -57,6 +57,7 @@ last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
+task2b_notes: "2026-05-28 Task2B 修复旧 MessageQueue priority inversion 模型、DeliQueue 数据结构口径、ProfilingTrigger cold start/anomaly 产物边界；回流 Task6/Task9。"
 
 ---
 
@@ -88,26 +89,26 @@ last_task6_review_log: logs/review/2026-05-16-08-review.md
 
 ### 旧实现的问题
 
-从 Android 1.0 开始，`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时，都需要获取同一把锁。在 Looper 线程（通常是主线程）从队列头部取消息执行时，其他线程如果想投递消息，就必须等主线程释放锁。
+从 Android 1.0 开始，`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时，都需要获取同一把锁；Looper 线程（通常是主线程）在维护队列并取出下一条消息时也要获取这把锁。
 
-在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，问题就暴露出来了。一个典型案例：Launcher 在后台加载应用列表时，多个工作线程同时向主线程投递消息，而主线程正在执行一次耗用的布局计算。此时所有投递操作都被阻塞在 synchronized 块上，主线程的 `enqueueMessage()` 等待时间在 Perfetto 中表现为一截 Lock Wait 切片。如果这个等待恰好发生在 VSync 周期内，就会导致掉帧。
+在日常场景下这个锁争用很少出现：`enqueueMessage()` 和 `next()` 维护队列的临界区通常很短，Looper 取出 `Message` 后执行回调、布局或绘制时不会继续持有 `MessageQueue` monitor。高并发场景下的问题来自 producer 和 Looper 对同一把 monitor 的争用：低优先级后台线程可能在投递消息时拿到锁，又被中优先级线程抢占；高优先级 UI 线程随后进入 `MessageQueue.next()` 读取下一条消息，却被后台线程持有的锁挡住。这就是官方博客强调的 priority inversion 模型。
 
 在 Perfetto Trace 中，旧实现的锁争用表现为：
-- Main Thread Track 中出现名为 "monitor contention with MessageQueue" 的切片
-- 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 Handler 相关代码
-- 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms(60fps)
-- 特别出现在 `Choreographer.doFrame` 期间的消息投递操作中
+- UI 线程或 producer 线程出现名为 "monitor contention with MessageQueue" 的切片
+- 被挡住的一侧处在 monitor wait；持锁线程通常位于 `MessageQueue.enqueueMessage()` 或 `MessageQueue.next()` 的队列维护阶段
+- 等待如果落在 VSync 周期内，会侵占 `Choreographer#doFrame` 之前或之间的帧预算
+- 线程优先级不同的 producer/UI 组合比单线程密集投递更容易暴露 priority inversion
 
-如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看它是否和 `Choreographer#doFrame`、`Handler.enqueueMessage()` 或主线程布局计算重叠。旧实现下，消耗帧预算的通常就是这类重叠区间。
+如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看等待线程是否落在 UI 线程的 `MessageQueue.next()` 或 producer 的 `Handler.enqueueMessage()` 附近。旧实现下，消耗帧预算的是队列维护锁等待，不是 Looper 执行业务回调时持续持锁。
 
 ### 新实现：DeliQueue 的混合数据结构
 
 对外行为上，Android 17 为 targetSdk 37 的应用引入了新的 lock-free `MessageQueue`。Android Developers Blog 将这套实现称为 DeliQueue。核心设计思路是把"多线程写入"和"单线程读取"拆开：
 
 - **Android Developers Blog 的概念模型**：使用 Treiber Stack（一种无锁栈），通过 CAS（Compare-And-Swap）操作实现多线程并发入队，不需要任何锁
-- **读取端**：使用 min-heap（最小堆），由 Looper 线程独占访问，按消息的 `when`（执行时间）排序，天然有序
+- **读取端**：使用 deadline-ordered min-heap（最小堆），由 Looper 线程独占访问，按消息的 `when`（执行时间）排序，天然有序
 
-工作流程是这样的：当任何线程通过 `Handler` 投递一条消息时，消息被概念性地 push 到 Treiber Stack 中，这是一个 O(1) 的 CAS 操作，不需要获取锁。当 Looper 线程进入 `loop()` 的下一次迭代时，它会将并发入队的消息批量"搬"到 min-heap 中（drain 操作），然后从 min-heap 中按时间顺序取出下一条消息执行。
+工作流程是这样的：当任何线程通过 `Handler` 投递一条消息时，消息被 push 到 Treiber Stack 中，这是一个 O(1) 的 CAS 操作，不需要获取 Java monitor。当 Looper 线程进入 `loop()` 的下一次迭代时，它会将并发入队的消息批量搬到 min-heap 中（drain 操作），然后从 min-heap 中按时间顺序取出下一条消息执行。
 
 ```
 [图:DeliQueue 数据流示意图]
@@ -133,21 +134,21 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码能看到 `CombinedMessageQueue/MessageQueue.java` 保留 legacy 视角下的字段与实现选择逻辑，`ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构；不要再引用旧草稿里那条不存在的 legacy fallback 路径。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
 
 - **Treiber Stack**（无锁栈）：写入端使用 `AtomicReference` + CAS 实现并发入队，任何线程都可以无竞争地 push 消息
-- **min-heap**（最小堆）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。博客明确指出这是堆结构，不是 `ConcurrentSkipListSet` 排序集合
+- **min-heap / priority queue**（最小堆 / 优先级队列）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。这个结构是 Looper 独占访问的堆，不是并发跳表排序集合
 - **tombstoning**（墓碑标记）：移除操作通过 CAS 原子设置移除标记（逻辑移除），物理移除由 Looper 线程延迟完成
 
 AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同步屏障语义仍由队列实现维护。排障时不要把这次变化简化成“某个字段改名”。
 
-从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 批量搬运和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
+从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除 producer 与 Looper 共用 monitor 带来的锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 批量搬运和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 UI 线程在 `MessageQueue.next()` 附近的 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
 
 源码层可以拆成三点：
 
-- `CombinedMessageQueue/MessageQueue.java` 还保留 legacy 视角下可见的字段和选择逻辑。
-- `ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。
-- 因此这次变化的实质是"保留兼容字段 + 切换底层实现";不要按"`mMessages` 改名"理解。
+- `CombinedMessageQueue/MessageQueue.java` 保留 legacy 视角下可见的字段和选择逻辑。
+- `ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的 lock-free 入队、Looper 侧 drain 和 min-heap 排序。
+- 这次变化的实质是"保留兼容字段 + 切换底层实现";不要按"`mMessages` 改名"或"换成并发跳表集合"理解。
 - 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
 
 如果你的项目中有以下情况，需要检查：
@@ -265,17 +266,18 @@ ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump
 
 | 触发器 | 触发时机 | 产物类型 | 典型用途 |
 |--------|---------|---------|---------|
-| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 系统触发的 profiling artifact；running trace snapshot / stack sample 的最终组合按 API 37 reference 核验 | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 新启动的 system trace + stack sampling profile；持续到 `Activity.reportFullyDrawn()` 或默认超时 | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` | 系统检测到 App 异常行为 | 按异常类型交付 Java heap dump、stack sampling profile 或 system trace；tag 会携带 anomaly 类型信息 | Binder spam、内存限制、系统侧异常入口 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证：上述三个触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口，不要自行收窄成某一类 Binder 或内存事件。]
+[已验证：上述触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项。`TRIGGER_TYPE_COLD_START` 公开产物是 system trace 与 stack sampling profile；`TRIGGER_TYPE_ANOMALY` 是 OS-defined / system-detected 入口，公开示例包括 excessive binder calls、excessive memory usage、memory limit breach 等，内部阈值和组合条件未公开。]
 
 ### 注册流程和适配建议
 
-冷启动触发器的文档口径是"app cold start 时尽早触发"。使用时先把它看作采样入口；产物类型以 API 37 reference 的 `ProfilingResult` 为准，不能固定写成 "newly started system trace"。[待验证：API37 reference 对 cold start artifact 的最终描述]
+冷启动触发器的文档口径是"app cold start 时尽早触发"。系统会启动一段新的 system trace 和 stack sampling profile，持续到应用调用 `Activity.reportFullyDrawn()`；如果应用没有上报，系统会按默认时长停止采集。字段名、文件交付形态和 tag 解释仍以 API 37 SDK reference 为准。
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
+`TRIGGER_TYPE_ANOMALY` 不应收窄成单一事件。Android 17 features 页给出的可执行口径是：memory limit breach 这类内存异常可交付 heap dump，binder spam 这类调用异常可交付 stack sampling profile，回调发生在系统强制处理之前。`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、anomaly、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
@@ -513,7 +515,6 @@ DCL (Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `S
 - [Android 17 适配要点(掘金)](https://juejin.cn/post/7610233341305389099)
 - AOSP: `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`
 - AOSP: `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
-- AOSP: `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
@@ -587,13 +588,13 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | 触发器常量 | Added in | 公开口径 | 排障定位 |
 |-----------|----------|---------|----------|
 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 36 | App 完成首次绘制后触发 | 启动尾段 |
-| `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | 整个启动窗口 |
-| `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | 系统侧异常判断入口 |
+| `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发；系统交付新启动的 system trace 和 stack sampling profile | 整个启动窗口 |
+| `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发；按异常类型交付 heap dump、stack sampling profile 或 system trace | Binder spam、内存限制、系统侧异常入口 |
 | `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | 后台 CPU 诊断 |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
 
-[待验证：API 37 reference 对 cold start artifact 的最终描述；anomaly 触发器内部的多维度判断阈值和组合条件未公开]
+[边界：cold start 的字段名和交付文件形态以 API 37 SDK reference 为准；anomaly 触发器内部的多维度判断阈值和组合条件未公开]
 
 ### ConcurrentMessageQueue 实际数据结构
 
@@ -601,7 +602,7 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
 
 **关键数据结构发现**：
-根据 Android Developers Blog 官方描述，DeliQueue 使用 Treiber Stack + min-heap 的混合结构，不是 `ConcurrentSkipListSet` 排序集合：
+根据 Android Developers Blog 官方描述，DeliQueue 使用 Treiber Stack + min-heap 的混合结构，不是并发跳表排序集合：
 
 ```java
 // DeliQueue 核心结构（基于 Android Developers Blog 官方描述）

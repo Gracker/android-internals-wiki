@@ -2316,11 +2316,11 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-27T22:50:00+08:00",
+  "last_task2b_at": "2026-05-28T22:50:00+08:00",
   "last_task2b_sections": [
-    "1.8"
+    "16.5"
   ],
-  "last_task2b_action": "frontmatter backlog fallback Task9 P95 repair",
+  "last_task2b_action": "Task2B main rework fixed 16.5 MessageQueue priority inversion / DeliQueue source path / ProfilingTrigger artifact boundary; returned to Task6.",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -9233,9 +9233,9 @@
     }
   ],
   "last_task2b_completed": [
-    "1.8"
+    "16.5"
   ],
-  "last_task2b_completed_at": "2026-05-27T22:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T22:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9350,7 +9350,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
   ],
   "last_task2b_completed_entry": {
     "sections": [
@@ -9396,5 +9396,14 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-27T21:35:00+08:00"
+  },
+  "section_16_5": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "updated_at": "2026-05-28T22:50:00+08:00"
   }
 }
