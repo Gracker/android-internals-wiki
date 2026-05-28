@@ -39,28 +39,31 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
 last_task6_audit: "2026-05-18"
 section: "16.2"
 status: ready-for-review
-pipeline_stage: task9_pending
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-05-18T18:30:00+08:00"
+last_task9_at: "2026-05-29T06:27:31+08:00"
 last_task9_audit: "2026-05-18"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-29T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。L1/L2 通过；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_autofix_at: "2026-05-29"
+last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
+task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 Android 15 FGS timeout 处理、Android 14/15 低 targetSdk 安装限制与 Google Play target API 政策边界；无 queue P0/P1。"
 ---
 
 # 各 Android 版本性能变更追踪
@@ -249,7 +252,7 @@ Android 15 在 ADPF 中引入了两个重要增强：
 
 ### 前台服务时间限制
 
-Android 15 对 `dataSync` 和 `mediaProcessing` 类型的前台服务引入了 6 小时的时间上限。超过这个时间后，服务不再被视为前台服务，会被系统停止。如果你的性能数据同步任务依赖 `dataSync` 前台服务，需要设计成能在 6 小时内完成，或者改用 `WorkManager` 分批处理。
+Android 15 对 `dataSync` 和 `mediaProcessing` 类型的前台服务引入了 6 小时的时间上限。超过这个时间后，系统会调用 `Service.onTimeout(int, int)`；服务需要在回调里调用 `stopSelf()` 或停止前台状态收尾，否则会进入前台服务超时错误。若配额已经耗尽，继续启动同类型前台服务会抛出 `ForegroundServiceStartNotAllowedException`。如果性能数据同步任务依赖 `dataSync` 前台服务，需要设计成能在 6 小时内完成，或者改用 `WorkManager` 分批处理。
 
 [已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15#fgs-time-limit]
 
@@ -461,11 +464,11 @@ Android 16 废弃了 `elegantTextHeight` 属性，在 targetSdkVersion 36+ 上�
 - `shortService` 类型有 3 分钟超时 + `onTimeout()` 回调：如果使用此类型，实现超时处理。
 - JobScheduler 反复 ANR 会被降级：确保 `onStartJob()` 不做耗时操作。
 - 缓存 App 广播队列化：如果依赖实时广播触发后台性能采集，改为前台触发或 `WorkManager`。
-- 最低 targetSdkVersion 要求为 23：如果你的 App 还在用更低的 targetSdkVersion，Google Play 不允许上架。
+- Android 14 设备不允许安装 `targetSdkVersion < 23` 的新包；已安装旧包保留，测试旧包可通过 `adb install --bypass-low-target-sdk-block` 绕过。这个限制是系统安装限制，不是 Google Play 上架门槛。
 
 ### 升级到 targetSdkVersion 35（Android 15）
 
-- 最低 targetSdkVersion 要求为 24：又一次提高门槛。
+- Android 15 设备不允许安装 `targetSdkVersion < 24` 的新包；Google Play target API 要求按当年 Play 政策单独检查，例如 2025-08-31 起新应用和更新需 target Android 15（API 35）或更高。
 - `dataSync` 和 `mediaProcessing` 前台服务有 6 小时上限：检查是否有超过此时长的任务。
 - `FLAG_STOPPED` 状态变化：被强制停止的 App 的状态会持续到用户主动重新打开。
 - 16KB 页面大小：如果使用 NDK 库，需要重新编译。

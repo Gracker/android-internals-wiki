@@ -38,9 +38,9 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T11:30:20+08:00"
+last_task9_at: "2026-05-29T06:27:31+08:00"
 task9_reviewed_date: "2026-05-24"
 task2b_result: fixed-lite
 task2b_rework_date: '2026-04-20'
@@ -50,10 +50,10 @@ last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: ready-for-review
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_reviewed_date: "2026-05-28"
@@ -69,17 +69,18 @@ review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 Surfac
   API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。
   | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4
   回炉项，送 Task9 复审。'
-task9_review_notes: "2026-05-24 Task9 复审: needs-rework。P0 2 / P1 1 / P2 2；BufferQueue BUFFER_RELEASE_CHANNEL 版本写成 Android 14+，AOSP r14/r15 无该 flag；SurfaceView BLAST 边界仍残留 Android 11+ 口径，首帧版本拆分漏 Android 11。"
-last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
-p0: 2
-p1: 1
-p2: 2
+task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 SurfaceView punchHole 版本边界与 BufferQueue notifyBufferReleased 精确唤醒误述；无 queue P0/P1。"
+last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
+p0: 0
+p1: 0
+p2: 0
 last_task6_review_log: "logs/review/2026-05-28-20-review.md"
 task6_review_notes: "2026-05-28 20:05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 9 处，补正文 H1 章节号，清理第二人称、否定纠正式句型和模糊改善表述；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T20:05:00+08:00"
+last_task9_autofix_at: "2026-05-29"
 ---
 
 
@@ -169,10 +170,10 @@ Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方�
 
 ### 挖洞的实现
 
-挖洞这件事本身一直没有消失。旧资料常用 `CLEAR` / transparent region 理解宿主 window 的透明洞；Android 14+ 源码中的 `clearSurfaceViewPort()` 使用 `Canvas.punchHole(...)` 处理对应视口。版本差异主要在“洞”和 surface 内容怎么同步：
+挖洞这件事本身一直没有消失。旧资料常用 `CLEAR` / transparent region 理解宿主 window 的透明洞；Android 11 的 `clearSurfaceViewPort()` 仍走 `drawColor(..., PorterDuff.Mode.CLEAR)`，Android 12+ 对圆角洞改用 `Canvas.punchHole(...)`，Android 14+ 再把 alpha 参数纳入 punch-hole 路径。版本差异主要在“洞”和 surface 内容怎么同步：
 
 - **Android 11（R）**：ViewRootImpl 已引入 BLASTBufferQueue，但 SurfaceView 仍通过 WMS 的 `WindowState` 分配 Surface；透明洞和 Buffer 更新错拍问题改善有限
-- **Android 12+（S，BLASTBufferQueue）**：SurfaceView 正式采用 `createBlastSurfaceControls()` 在 App 进程内创建 container layer / BLAST layer / background layer。App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
+- **Android 12+（S，BLASTBufferQueue）**：SurfaceView 正式采用 `createBlastSurfaceControls()` 在 App 进程内创建 container layer / BLAST layer / background layer。App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，宿主窗口的挖洞语义仍保留
 
 ## 完整渲染路径
 
@@ -185,7 +186,7 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
    - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
-   - **Android 16+ 优化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 替代 `notify_all()`，实现精确唤醒，减少无效唤醒竞争
+   - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / master 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已落地的精确唤醒优化
    - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这能防止分配期间整个 BufferQueue 冻结
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
