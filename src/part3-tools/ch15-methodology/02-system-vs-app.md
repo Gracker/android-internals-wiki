@@ -26,23 +26,24 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-21"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-04-27T20:35:19+08:00"
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
 review_round: 2
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T14:50:00+08:00"
+last_task2b_lite_at: "2026-05-28"
 finalized_date: "2026-04-27"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-05-22"
@@ -396,7 +397,7 @@ AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一�
 | Service timeout（后台进程） | 200 秒 | 后台 service 窗口更长 |
 | BroadcastReceiver（前台优先级） | 10 秒，Android 14+ 在 CPU 饥饿时可放宽到 20 秒 | 冷启动时间也算在窗口内 |
 | BroadcastReceiver（后台优先级） | 60 秒，Android 14+ 在 CPU 饥饿时可放宽到 120 秒 | `goAsync()` 也算在窗口内 |
-| `startForegroundService()` 后未及时调用 `startForeground()` | 5 秒 | 会触发前台服务启动超时 |
+| `startForegroundService()` 后未及时调用 `startForeground()` | Android 8 默认 5 秒；Android 9-12 常见 AOSP 默认 10 秒；Android 13+ 拆成 `fgs_start_foreground_timeout`、`service_start_foreground_timeout_ms` 和 `service_start_foreground_anr_delay_ms` | OEM / DeviceConfig 可能调整具体阈值 |
 
 具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。
 

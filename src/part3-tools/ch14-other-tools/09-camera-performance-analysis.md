@@ -34,17 +34,17 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
 task9_result: "needs-rework"
 last_task9_at: "2026-05-19T19:36:17+08:00"
 task9_reviewed_by: openclaw-task9
@@ -54,6 +54,7 @@ repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。TextureView 残留 GPU 纹理上传错误表述；CameraHal::openSession 示例缺 vendor slice 兜底。"
 task2b_rework_date: '2026-05-19'
+last_task2b_lite_at: "2026-05-28"
 last_task6_at: "2026-05-19T20:25:44+08:00"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 task6_reviewed_by: "openclaw-task6"
@@ -449,11 +450,22 @@ click = tp.query("""
 """).as_pandas_dataframe()
 click_ms = click.values[0][0]
 
-# 2. HAL openSession
+# 2. HAL openSession；没有 vendor slice 时回退到 AOSP connectDevice
 open_session = tp.query("""
     SELECT ts/1e6 as begin_ms, dur/1e6 as dur_ms
     FROM slice WHERE name LIKE "%CameraHal::openSession%"
+    ORDER BY ts ASC LIMIT 1
 """).as_pandas_dataframe()
+session_label = "CameraHal::openSession"
+if open_session.empty:
+    open_session = tp.query("""
+        SELECT ts/1e6 as begin_ms, dur/1e6 as dur_ms
+        FROM slice WHERE name == "connectDevice"
+        ORDER BY ts ASC LIMIT 1
+    """).as_pandas_dataframe()
+    session_label = "connectDevice"
+if open_session.empty:
+    raise RuntimeError("trace 中没有 CameraHal::openSession 或 connectDevice slice")
 os_begin = open_session.values[0][0]
 os_dur = open_session.values[0][1]
 
@@ -474,8 +486,8 @@ first_buf_ms = first_buf.values[0][0] + first_buf.values[0][1]
 
 total = round(first_buf_ms - click_ms, 2)
 print(f"Total launch: {total} ms")
-print(f"  [App] Click -> openSession: {round(os_begin - click_ms, 2)} ms")
-print(f"  [HAL] openSession: {round(os_dur, 2)} ms")
+print(f"  [App] Click -> {session_label}: {round(os_begin - click_ms, 2)} ms")
+print(f"  [HAL] {session_label}: {round(os_dur, 2)} ms")
 print(f"  [HAL] submitRequest -> first frame: {round(first_buf_ms - submit_ms, 2)} ms")
 ```
 
@@ -556,7 +568,7 @@ Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 B
 
 **误区一：Camera 卡顿一定是 HAL 的问题。** 很多时候卡顿的根因在 App 侧——比如在 `onImageAvailable` 回调中做了耗时操作，导致 Buffer 被持有时间过长，BufferQueue 耗尽。先用 SQL 确认 HAL 的帧处理速率，再去看 App 侧的 Buffer 持有时长。
 
-**误区二：Camera 预览用 TextureView 和 SurfaceView 性能差不多。** TextureView 需要经过一次 GPU 纹理上传，而 SurfaceView 可以直接由 SurfaceFlinger 从 BufferQueue 中 latch Buffer 合成上屏，省了一次 GPU 操作。在低端设备上这个差异很明显。
+**误区二：Camera 预览用 TextureView 和 SurfaceView 性能差不多。** TextureView 多出 SurfaceTexture/GLConsumer 外部纹理采样和 App View 树合成；SurfaceView 可以由 SurfaceFlinger 从 BufferQueue 中 latch Buffer，再交给 HWC 直接合成上屏。低端设备上的差异通常来自中间层、外部纹理采样和 View 树合成，不是 App 每帧把 YUV 数据上传成 GL 纹理。
 
 **误区三：CameraMetadataNative 内存增长要沿着结果对象引用排查。** 这类问题更接近“框架对象被长期强引用后，native metadata 无法尽快清理”。以 AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java` 为准，android-16.0.0_r1 中仍通过 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 管理 native metadata；未看到 `NativeAllocationRegistry` / `Cleaner` 迁移。App 层拿到的仍是 `TotalCaptureResult` / `CaptureResult` 等包装对象，没有公开的 `CameraMetadataNative.close()` 可调接口。
 
