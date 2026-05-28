@@ -6,7 +6,7 @@ section: "14.1"
 status: ready-for-review
 polish_count: 1
 drafted_date: "2026-04-03"
-reviewed_date: "2026-05-19"
+reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -28,23 +28,25 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "pending"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-28"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T12:20:00+08:00"
-last_task6_at: "2026-05-19T12:07:00+08:00"
-task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 4 处，清理结构性元叙述与复述型过渡；Task9 仍 pending/needs-rework，未自动晋升。"
+last_task6_at: "2026-05-28T12:10:00+08:00"
+task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。2026-05-28 Task2B Lite 已做局部修复，回流 Task6。"
-last_task6_review_log: "logs/review/2026-05-19-12-review.md"
+last_task6_review_log: "logs/review/2026-05-28-12-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-19-12-deep-review.md"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
 ---
 
 
@@ -143,7 +145,7 @@ Callstack Sample 最适合找"CPU 热点"——那些长时间占用 CPU 的方�
 
 把这三种模式放在一个决策框架中，选择逻辑是这样的：
 
-面对一个性能问题、还不知道问题位置时，第一步永远用 System Trace。它的开销最低、数据最可信，能快速回答：卡顿发生在主线程的哪个阶段？是 input 处理慢、动画计算慢、还是 measure/layout/draw 慢？是线程调度的问题（线程被挂起或者跑在了小核上），还是本身的执行就慢？
+面对一个性能问题、还不知道问题位置时，第一步优先用 System Trace。它的开销最低、数据最可信，能快速回答：卡顿发生在主线程的哪个阶段？是 input 处理慢、动画计算慢、还是 measure/layout/draw 慢？是线程调度的问题（线程被挂起或者跑在了小核上），还是本身的执行就慢？
 
 System Trace 定位到大致范围后，如果需要进一步看某个方法内部的调用关系和层级，第二步用 Callstack Sample。它能在可接受的开销下定位：那个耗时很长的 draw 阶段，到底是哪个方法在吃 CPU？
 

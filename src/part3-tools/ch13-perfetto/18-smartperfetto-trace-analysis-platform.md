@@ -9,7 +9,7 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace
 last_verified: "2026-05-28"
 last_verified_against: "SmartPerfetto README + SmartPerfetto main backend/src/types/multiTraceComparison.ts + standardMetricBackfillService.ts + AIW 13.3/13.10/13.16/13.17/26.3/26.12/26.14"
 confidence: medium
-task6_review_notes: "2026-05-28 11: Task6 revisiting review: L1/L2 通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
 tags: [perfetto, smartperfetto, trace-analysis, ai-assistant, sql-guardrail, observability]
 related_chapters: ["13.3", "13.10", "13.14", "13.16", "13.17", "26.3", "26.12", "26.14"]
 created_by: "task2a-knowledge-gap"
@@ -17,9 +17,9 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 0
@@ -35,8 +35,8 @@ last_task9_review_log: "logs/deep-review/2026-05-28-11-deep-review.md"
 task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。"
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-last_task6_at: "2026-05-28T11:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-11-review.md"
+last_task6_at: "2026-05-28T12:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-12-review.md"
 sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md"
