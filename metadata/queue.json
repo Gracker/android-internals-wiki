@@ -522,5 +522,108 @@
     "completed_at": "2026-05-28T02:50:00+08:00",
     "completed_by": "task2b-content-processing-rework-main",
     "completion_reason": "重写 Native signal handler 示例，移除 handler 内 unwind/dlopen/dladdr/复杂写文件；补充 async-signal-safe 最小快照、altstack、re-raise 和旧 handler 链边界。"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "第17章",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://example.com/test1"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Test Entry 1 — Test summary 1",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-28T05:45:50.304764",
+    "status": "pending"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "第17章",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://example.com/test2"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Test Entry 2 — Test summary 2",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-28T05:45:50.304772",
+    "status": "pending"
+  },
+  {
+    "section": "ch04",
+    "section_title": "Android 16/17 ART Generational CMC 内存管理机制",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android16-17-generational-collector-cmc-memory-management.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 16/17 ART Generational CMC 内存管理机制 — Android 16/17 ART 引入 Generational CMC 收集器，采用分代回收+并发标记-压缩设计。Young Generation 用 Semi-space 复制算法，Old Ge",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-28T06:21:13.783499+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] §1.9 Android 16 Cloud Compilation / SDM 源码口径仍不闭环",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
+      "logs/review/2026-05-28-16-review.md",
+      "logs/deep-review/2026-05-28-16-deep-review.md",
+      "AOSP android-16.0.0_r1 PackageInstallerSession / ArtManagedInstallFileHelper / ArtManagerLocal / Installer.java"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "参考资料之后的源码调研补遗（约 631 行以后）",
+        "detail": "正文在参考资料后继续堆叠 2026-05-13 至 2026-05-28 多段源码调研补遗，呈现为问题单和素材清单，不是发布稿结构；同时 Cloud Compilation / SDM 名称、文件格式、加载入口和厂商优化路径描述出现互相冲突的风险信号，Task 6 不裁决技术真伪。",
+        "suggestion": "Task 2B 将补遗材料整合进正文的版本演进、安装链路和参考资料小节，删除或迁移研究日志式段落；涉及 SDM / Cloud Compilation 的技术口径交 Task 9 复核。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L396、L663-L686、L742-L746、L820-L835、L884-L889",
+        "detail": "SDM 在同一章节中被写成 Signature Delegation Mechanism、System Dexopt Manager、Signed Data and Metadata、Secure Diamond Mirror、Secure Dex Metadata，且声称 system/extras/sdm/ 是 android-16 源码目录。复核 AOSP android-16.0.0_r1：PackageInstallerSession.verifySdmSignatures() 注释定义 SDM 为包含 cloud compilation artifacts 的文件并要求与 APK 同签名；ArtManagedInstallFileHelper 处理 SECURE_DEX_METADATA_FILE_EXT；system/extras/sdm/ 在该 tag 下不存在。",
+        "suggestion": "统一口径为 Secure Dex Metadata / .sdm cloud compilation artifact；删除 system/extras/sdm/System Dexopt Manager/Secure Diamond Mirror 等互斥表述，并用 PackageInstallerSession、ArtManagedInstallFileHelper、ArtManagerLocal 作为源码锚点。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L775-L780、L911-L916",
+        "detail": "版本表把 installd 连接方式写成 Android ≤14 使用 /dev/socket/installd、Android 16+ 才改用 ServiceManager Binder。复核 AOSP android-9.0.0_r1 到 android-16.0.0_r1 的 frameworks/base/services/core/java/com/android/server/pm/Installer.java，均通过 ServiceManager.getService(\"installd\") 获取 IInstalld Binder。",
+        "suggestion": "删除 Android 16+ 才从 socket 切 Binder 的版本断点；如需写历史演进，必须限定到更早版本并给出实际源码 tag。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L728-L753、L820-L835",
+        "detail": "正文把 Play Store 预生成 SDM、安装时跳过 dex2oat、冻结窗口毫秒级写成确定链路，但本轮一手源码只复核到 .sdm 签名校验、ART-managed install file staging、ArtManagerLocal 对 SDM/SDC 与 cloud dexopt artifacts 的生命周期管理；Play 服务端生成、命中条件、是否一定跳过本机 dex2oat 仍缺公开源码闭环。",
+        "suggestion": "正文保留可验证设备侧链路：PackageInstallerSession 收集并验证 .sdm，ArtManagedInstallFileHelper 按 APK 匹配 .dm/.prof/.sdm，ArtManagerLocal 管理 SDM/SDC 和 fallback dexopt；把 Play 服务端与性能收益写成外部报道/待实测，不作为定稿结论。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-28T16:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-28-16-review.md",
+    "last_reviewed_by_task9": "2026-05-28T16:20:00+08:00"
   }
 ]
