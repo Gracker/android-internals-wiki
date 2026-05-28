@@ -8529,7 +8529,8 @@
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
-    "14.4"
+    "14.4",
+    "18.6"
   ],
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-28T19:05:00+08:00",
@@ -9120,6 +9121,15 @@
       "fixed_date": "2026-05-28T08:50:00+08:00",
       "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-17-01-deep-review.md",
       "fix_summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+    },
+    {
+      "section": "18.6",
+      "title": "SurfaceView 直出路径",
+      "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "status": "fixed-lite",
+      "fixed_date": "2026-05-28T19:35:00+08:00",
+      "source": "frontmatter-fallback/task9-deep-review+task6-audit",
+      "fix_summary": "修正 SurfaceView BLAST Android 12+ 边界、Android 11 单独分档、Canvas.punchHole 挖洞口径、BUFFER_RELEASE_CHANNEL Android 16+ 边界与 Android 15 圆角归因"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
@@ -9554,6 +9564,17 @@
         "completed": 0,
         "note": "queue had no pending task6/task9/external entries; consumed frontmatter backlog contexts"
       }
+    },
+    {
+      "time": "2026-05-28T19:35:00+08:00",
+      "lane": "lite",
+      "sections": [
+        "18.6"
+      ],
+      "files": [
+        "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      ],
+      "result": "fixed-lite"
     }
   ],
   "section_18_23": {
@@ -9673,7 +9694,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 12,
+  "task2b_total_fixed": 13,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -10577,15 +10598,24 @@
         "fixed_date": "2026-05-28T03:35:00+08:00",
         "source": "frontmatter-fallback/task9-deep-review",
         "fix_summary": "补 sched 采集事件、cpu/ucpu SQL schema 口径、cluster_id/capacity 优先识别与 LLM DVFS 实验边界"
+      },
+      {
+        "section": "18.6",
+        "title": "SurfaceView 直出路径",
+        "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-05-28T19:35:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review+task6-audit",
+        "fix_summary": "修正 SurfaceView BLAST Android 12+ 边界、Android 11 单独分档、Canvas.punchHole 挖洞口径、BUFFER_RELEASE_CHANNEL Android 16+ 边界与 Android 15 圆角归因"
       }
     ]
   },
-  "last_task2b_lite_at": "2026-05-28T03:35:00+08:00",
+  "last_task2b_lite_at": "2026-05-28T19:35:00+08:00",
   "last_task2b_lite_sections": [
-    "13.13"
+    "18.6"
   ],
   "last_task2b_lite_files": [
-    "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md"
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
   "task2b_verifier_history": [
     {
@@ -10673,11 +10703,15 @@
     "source_log": "logs/review/2026-05-28-16-review.md; logs/deep-review/2026-05-28-16-deep-review.md"
   },
   "task2b_last_rework": {
-    "section": "14.5,15.5",
-    "file": "src/part3-tools/ch14-other-tools/05-third-party-libs.md, src/part3-tools/ch15-methodology/05-online-monitoring.md",
-    "at": "2026-05-28T18:50:00+08:00",
-    "by": "task2b-content-processing-rework",
-    "source": "frontmatter backlog fallback"
+    "time": "2026-05-28T19:35:00+08:00",
+    "lane": "lite",
+    "result": "fixed-lite",
+    "sections": [
+      "18.6"
+    ],
+    "files": [
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    ]
   },
   "last_task9_reviewed_sections": [
     "12.2",
