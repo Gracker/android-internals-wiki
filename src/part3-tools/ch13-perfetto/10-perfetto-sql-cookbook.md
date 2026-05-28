@@ -32,25 +32,25 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 last_task6_audit: "2026-05-22"
-pipeline_stage: task9_pending
-task9_result: needs-rework
-task9_reviewed_date: '2026-04-29'
+pipeline_stage: task6_pending
+task9_result: auto-fixed
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-29T04:38:09+08:00"
+last_task9_at: "2026-05-28T09:20:00+08:00"
 last_task2b_at: "2026-05-28T08:50:00+08:00"
 rework_date: "2026-05-28"
 rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。"
 last_task9_audit: "2026-05-22"
 last_task6_at: "2026-05-28T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-09-review.md"
@@ -59,8 +59,11 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
-updated_by: openclaw-task6
+updated_by: openclaw-task9
 updated_date: "2026-05-28"
+task9_reviewed_at: "2026-05-28T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-09-deep-review.md"
+last_task9_autofix_at: "2026-05-28"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -803,6 +806,7 @@ SELECT
   CAST(dur / 1e6 AS FLOAT) AS wait_ms,
   blocked_thread_name AS waiter_thread,
   blocking_thread_name AS owner_thread,
+  lock_name,
   short_blocked_method,
   short_blocking_method,
   waiter_count
@@ -812,7 +816,7 @@ ORDER BY dur DESC
 LIMIT 10;
 ```
 
-`android_monitor_contention` 已经把 owner 线程、blocked 线程和相关方法都解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。注意：Perfetto stdlib 当前版本的 `android_monitor_contention` 不提供 `lock_name` 列；如果需要锁对象名，要从原始 `slice` 表配合 `args` 另写限定查询。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
+`android_monitor_contention` 已经把 owner 线程、blocked 线程、相关方法和 `lock_name` 解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。旧版 Trace Processor 若缺少 `lock_name` 列，可以先去掉该列运行查询，再从原始 `slice` / `args` 表补查锁对象名。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
 
 ### 锁竞争与帧时间关联
 

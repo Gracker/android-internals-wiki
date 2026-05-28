@@ -2,19 +2,19 @@
 title: "BufferQueue 阻塞的 Perfetto 识别"
 chapter: "13.15"
 section: "13.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
 confidence: medium
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
@@ -46,10 +46,10 @@ source_refs:
   - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
   - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
   - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueConsumer.cpp
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_at: "2026-05-17T01:36:14+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
+task9_reviewed_at: "2026-05-28T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-09-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-28T08:50:00+08:00"
@@ -63,8 +63,10 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界，送 Task9 复核。"
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
-updated_by: openclaw-task6
+updated_by: openclaw-task9
 updated_date: "2026-05-28"
+last_task9_at: "2026-05-28T09:20:00+08:00"
+task9_review_notes: "2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
