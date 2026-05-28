@@ -269,7 +269,8 @@
     "12.4",
     "13.17",
     "13.16",
-    "13.10"
+    "13.10",
+    "13.3"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -378,26 +379,30 @@
     "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
     "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T10:05:00+08:00",
+    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_by": "openclaw-task6",
     "sections": [
-      "22.5",
-      "13.10"
+      "13.18",
+      "13.3"
     ],
-    "log": "logs/review/2026-05-28-10-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 0,
-    "l3_l4_issues": 0,
     "files": [
-      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
     ],
-    "small_fixes": 0,
+    "log": "logs/review/2026-05-28-11-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 30,
+    "l3_l4_issues": 0,
+    "small_fixes": 30,
     "rework_items": 0,
-    "auto_promoted": []
+    "auto_promoted": [],
+    "mode": "revisiting review",
+    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2235,25 +2240,28 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T10:05:00+08:00",
+  "last_updated": "2026-05-28T11:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T10:05:00+08:00",
+    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_by": "openclaw-task6",
     "sections": [
-      "22.5",
-      "13.10"
+      "13.18",
+      "13.3"
     ],
-    "log": "logs/review/2026-05-28-10-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 0,
-    "l3_l4_issues": 0,
     "files": [
-      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
     ],
-    "small_fixes": 0,
+    "log": "logs/review/2026-05-28-11-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 30,
+    "l3_l4_issues": 0,
+    "small_fixes": 30,
     "rework_items": 0,
-    "auto_promoted": []
+    "auto_promoted": [],
+    "mode": "revisiting review",
+    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
@@ -5105,15 +5113,16 @@
       "gap_score": 17,
       "material_count": 4,
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-18",
+      "reviewed_date": "2026-05-28",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task9_state": "pending",
-      "last_task6_at": "2026-05-18T22:15:21+08:00",
-      "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
-      "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
+      "last_task6_at": "2026-05-28T11:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+      "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "section": "13.18"
     },
     "3.10": {
       "status": "ready-for-review",
@@ -6392,6 +6401,23 @@
       "updated_date": "2026-05-28",
       "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。",
       "task9_reviewed_date": "2026-05-28"
+    },
+    "13.3": {
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "file": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 30,
+      "task6_l3_l4_issues": 0,
+      "task9_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T11:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+      "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2b_rounds": [
@@ -6490,41 +6516,34 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-28",
   "last_task6_sections": [
-    "12.4",
-    "13.17",
-    "13.16"
+    "13.18",
+    "13.3"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
   ],
-  "last_task6_at": "2026-05-28T08:10:00+08:00",
+  "last_task6_at": "2026-05-28T11:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T08:10:00+08:00",
+    "reviewed_at": "2026-05-28T11:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "12.4",
-      "13.17",
-      "13.16"
+      "13.18",
+      "13.3"
     ],
     "files": [
-      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
     ],
-    "log": "logs/review/2026-05-28-08-review.md",
-    "mode": "revisiting 复审",
-    "results": {
-      "12.4": "pass-light-edit",
-      "13.17": "pass-light-edit",
-      "13.16": "pass-light-edit"
-    },
-    "l1_l2_fixes": 1,
-    "metadata_updates": 3,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
-    "auto_finalized": []
+    "log": "logs/review/2026-05-28-11-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 30,
+    "l3_l4_issues": 0,
+    "small_fixes": 30,
+    "rework_items": 0,
+    "auto_promoted": [],
+    "mode": "revisiting review",
+    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
   },
   "last_task9_reviewed_files": [
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -6534,12 +6553,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T09:06:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-09-review.md",
+  "task6_last_review_at": "2026-05-28T11:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-11-review.md",
   "task6_last_review_sections": [
-    "12.4",
-    "13.15",
-    "13.10"
+    "13.18",
+    "13.3"
   ],
   "sections_status": {
     "22.11": {
@@ -7362,15 +7380,16 @@
       "gap_score": 17,
       "material_count": 4,
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-18",
+      "reviewed_date": "2026-05-28",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task9_state": "pending",
-      "last_task6_at": "2026-05-18T22:15:21+08:00",
-      "last_task6_review_log": "logs/review/2026-05-18-22-review.md",
-      "task6_review_notes": "2026-05-18 Task6：四层质检通过；清理 AI 加工标记、outline 锚点和少量抽象/口语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
+      "last_task6_at": "2026-05-28T11:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+      "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "section": "13.18"
     },
     "3.10": "ready-for-review",
     "4.10": {
@@ -8241,6 +8260,23 @@
       "updated_date": "2026-05-28",
       "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。",
       "task9_reviewed_date": "2026-05-28"
+    },
+    "13.3": {
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "file": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-28T11:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+      "task6_l1_l2_fixes": 30,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2a_last_processed": {
@@ -8285,45 +8321,33 @@
     "13.15"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T09:06:00+08:00",
+    "reviewed_at": "2026-05-28T11:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "12.4",
-      "13.15",
-      "13.10"
+      "13.18",
+      "13.3"
     ],
     "files": [
-      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
     ],
-    "log": "logs/review/2026-05-28-09-review.md",
-    "mode": "revisiting 复审",
-    "results": {
-      "12.4": "pass-light-edit",
-      "13.15": "pass-light-edit",
-      "13.10": "pass-light-edit"
-    },
-    "l1_l2_fixes": 2,
-    "l1_l2_fixes_by_section": {
-      "12.4": 0,
-      "13.15": 0,
-      "13.10": 2
-    },
-    "metadata_updates": 3,
-    "new_task6_rework_items": 0,
-    "queue_updates": 0,
-    "auto_finalized": []
+    "log": "logs/review/2026-05-28-11-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 30,
+    "l3_l4_issues": 0,
+    "small_fixes": 30,
+    "rework_items": 0,
+    "auto_promoted": [],
+    "mode": "revisiting review",
+    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -8752,9 +8776,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "12.4",
-    "13.17",
-    "13.16"
+    "13.18",
+    "13.3"
   ],
   "task2b_progress": [
     {
@@ -8855,7 +8878,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
+  "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9603,7 +9626,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-28T08:10:00+08:00",
+  "last_task6_review_at": "2026-05-28T11:05:00+08:00",
   "last_task6_review_section": "5.2",
   "section_1_22": {
     "section": "1.22",
@@ -9704,9 +9727,8 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "12.4",
-    "13.17",
-    "13.16"
+    "13.18",
+    "13.3"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -9736,9 +9758,8 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -10320,5 +10341,39 @@
     "task9_review_notes": "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。",
     "last_task6_at": "2026-05-28T01:05:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-28-01-review.md"
+  },
+  "section_13_18": {
+    "section": "13.18",
+    "title": "SmartPerfetto 与可复用 Trace 分析平台",
+    "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task6_l1_l2_fixes": 0,
+    "task6_l3_l4_issues": 0,
+    "task9_state": "pending",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-28",
+    "last_task6_at": "2026-05-28T11:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+    "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+  },
+  "section_13_3": {
+    "section": "13.3",
+    "title": "Perfetto View 解读",
+    "file": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task6_l1_l2_fixes": 30,
+    "task6_l3_l4_issues": 0,
+    "task9_state": "pending",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-28",
+    "last_task6_at": "2026-05-28T11:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+    "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
   }
 }
