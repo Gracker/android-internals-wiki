@@ -32,13 +32,13 @@ created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
 gap_score: 16
 material_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-17"
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-17T10:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-17-10-review.md"
+last_task6_at: "2026-05-28T08:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-08-review.md"
 task9_state: pending
 task9_result: "needs-rework"
 task2b_state: fixed
@@ -49,6 +49,11 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-17T10:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-10-deep-review.md"
 task9_review_notes: "2026-05-17 10:20 Task9 deep-review: needs-rework。P0 0 / P1 3 / P2 0。Top: startup tracing 仅 kSystemBackend；Perfetto C API/ABI 稳定性未写清；ProfilingManager system trace 是请求进程脱敏结果，不能等同全设备/全进程 trace。"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T08:10:00+08:00"
+task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
 ---
 
 # 13.17 Perfetto SDK 与应用内 Trace 数据源

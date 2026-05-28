@@ -265,7 +265,10 @@
     "11.1",
     "18.10",
     "1.19",
-    "10.3"
+    "10.3",
+    "12.4",
+    "13.17",
+    "13.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -369,26 +372,29 @@
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
     "src/part2-performance/ch11-power/05-wakelock.md",
     "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md"
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T07:05:00+08:00",
+    "reviewed_at": "2026-05-28T08:10:00+08:00",
     "sections": [
       "12.4",
-      "13.1",
-      "13.14"
+      "13.17",
+      "13.16"
     ],
-    "log": "logs/review/2026-05-28-07-review.md",
+    "log": "logs/review/2026-05-28-08-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 4,
+    "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
     "files": [
       "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
-      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "small_fixes": 4,
+    "small_fixes": 1,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -2185,31 +2191,31 @@
       "task6_note": "revisiting 复审通过；仅 L1/L2 小修，转 Task9 复核。"
     }
   },
-  "total_review_sections": 210,
+  "total_review_sections": 213,
   "next_review_candidates": [
     "20.9",
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T07:05:00+08:00",
+  "last_updated": "2026-05-28T08:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T07:05:00+08:00",
+    "reviewed_at": "2026-05-28T08:10:00+08:00",
     "sections": [
       "12.4",
-      "13.1",
-      "13.14"
+      "13.17",
+      "13.16"
     ],
-    "log": "logs/review/2026-05-28-07-review.md",
+    "log": "logs/review/2026-05-28-08-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 4,
+    "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
     "files": [
       "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
-      "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md"
+      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "small_fixes": 4,
+    "small_fixes": 1,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -4794,18 +4800,18 @@
     },
     "13.16": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-28T06:11:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "queue_priority": 85,
-      "last_task6_review_log": "logs/review/2026-05-28-06-review.md",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "last_task2b_lite_at": "2026-05-28",
       "section": "13.16",
       "title": "Agent 辅助 Perfetto 分析协议",
@@ -4813,10 +4819,10 @@
       "task6_reviewed_by": "openclaw-task6",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "task6_reviewed_at": "2026-05-28T06:11:00+08:00",
-      "task6_l1_l2_fixes": 0,
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00",
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处，删除一处否定纠正式开场句；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "last_task9_autofix_at": "2026-05-28",
       "task9_review_notes": "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。",
       "p0": 1,
@@ -4831,15 +4837,15 @@
       "title": "Perfetto SDK 与应用内 Trace 数据源",
       "file": "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "gap_source": "素材驱动/官方文档",
       "queue_priority": 85,
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-17T10:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-10-review.md",
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T10:20:00+08:00",
@@ -4847,7 +4853,15 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "queue_entry": "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries",
-      "last_task2b_lite_at": "2026-05-28"
+      "last_task2b_lite_at": "2026-05-28",
+      "section": "13.17",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
     },
     "12.5": {
       "title": "ConnectivityService 与网络状态监听性能",
@@ -6253,10 +6267,10 @@
       "title": "Android 网络安全与 TLS 性能优化",
       "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -6266,11 +6280,11 @@
       "task2b_summary": "修复 0-RTT anti-replay、Advanced Protection Mode 强制 ECH+DoH3、DoH/DoT 隐藏 SNI、domainEncryption opportunistic 枚举四项口径。",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T07:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
-      "task6_l1_l2_fixes": 1,
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
       "last_task9_autofix_at": "2026-05-28",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
@@ -6281,7 +6295,9 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-28",
       "updated_by": "openclaw-task9",
-      "updated_date": "2026-05-28"
+      "updated_date": "2026-05-28",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -6365,39 +6381,44 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "total_review_files": 70,
+  "total_review_files": 73,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-28",
   "last_task6_sections": [
-    "12.2",
-    "12.3"
+    "12.4",
+    "13.17",
+    "13.16"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch12-apk-network/02-network-performance.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
-  "last_task6_at": "2026-05-28T05:12:00+08:00",
+  "last_task6_at": "2026-05-28T08:10:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T05:12:00+08:00",
+    "reviewed_at": "2026-05-28T08:10:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "12.2",
-      "12.3"
+      "12.4",
+      "13.17",
+      "13.16"
     ],
     "files": [
-      "src/part2-performance/ch12-apk-network/02-network-performance.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "log": "logs/review/2026-05-28-05-review.md",
+    "log": "logs/review/2026-05-28-08-review.md",
     "mode": "revisiting 复审",
     "results": {
-      "12.2": "pass-light-edit",
-      "12.3": "pass-light-edit"
+      "12.4": "pass-light-edit",
+      "13.17": "pass-light-edit",
+      "13.16": "pass-light-edit"
     },
-    "l1_l2_fixes": 2,
-    "metadata_updates": 2,
+    "l1_l2_fixes": 1,
+    "metadata_updates": 3,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
@@ -6410,11 +6431,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T05:12:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-05-review.md",
+  "task6_last_review_at": "2026-05-28T08:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-08-review.md",
   "task6_last_review_sections": [
-    "12.2",
-    "12.3"
+    "12.4",
+    "13.17",
+    "13.16"
   ],
   "sections_status": {
     "22.11": {
@@ -7029,30 +7051,30 @@
       "title": "Agent 辅助 Perfetto 分析协议",
       "file": "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "queue_priority": 85,
       "gap_source": "研究素材+官方仓库",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T06:11:00+08:00",
-      "task9_state": "reviewed",
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-06-review.md",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-28",
       "section": "13.16",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_at": "2026-05-28T06:11:00+08:00",
-      "task6_l1_l2_fixes": 0,
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00",
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处，删除一处否定纠正式开场句；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "last_task9_autofix_at": "2026-05-28",
       "task9_review_notes": "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。",
       "p0": 1,
@@ -7067,15 +7089,15 @@
       "title": "Perfetto SDK 与应用内 Trace 数据源",
       "file": "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "gap_source": "素材驱动/官方文档",
       "queue_priority": 85,
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-17T10:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-10-review.md",
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T10:20:00+08:00",
@@ -7083,7 +7105,15 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "queue_entry": "task9-2026-05-17-13-17-perfetto-sdk-backend-boundaries",
-      "last_task2b_lite_at": "2026-05-28"
+      "last_task2b_lite_at": "2026-05-28",
+      "section": "13.17",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
     },
     "5.10": {
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
@@ -8015,22 +8045,22 @@
       "title": "Android 网络安全与 TLS 性能优化",
       "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
-      "last_task6_at": "2026-05-28T07:05:00+08:00",
+      "last_task6_at": "2026-05-28T08:10:00+08:00",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
       "last_task2b_at": "2026-05-28T06:50:00+08:00",
       "last_task9_autofix_at": "2026-05-28",
-      "last_task6_review_log": "logs/review/2026-05-28-07-review.md",
+      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
-      "task6_l1_l2_fixes": 1,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "task9_review_notes": "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。",
       "p0": 0,
       "p1": 1,
@@ -8040,7 +8070,9 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-28",
       "updated_by": "openclaw-task9",
-      "updated_date": "2026-05-28"
+      "updated_date": "2026-05-28",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T08:10:00+08:00"
     }
   },
   "task2a_last_processed": {
@@ -8085,35 +8117,40 @@
     "12.3"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T05:12:00+08:00",
+    "reviewed_at": "2026-05-28T08:10:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "12.2",
-      "12.3"
+      "12.4",
+      "13.17",
+      "13.16"
     ],
     "files": [
-      "src/part2-performance/ch12-apk-network/02-network-performance.md",
-      "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
     ],
-    "log": "logs/review/2026-05-28-05-review.md",
+    "log": "logs/review/2026-05-28-08-review.md",
     "mode": "revisiting 复审",
     "results": {
-      "12.2": "pass-light-edit",
-      "12.3": "pass-light-edit"
+      "12.4": "pass-light-edit",
+      "13.17": "pass-light-edit",
+      "13.16": "pass-light-edit"
     },
-    "l1_l2_fixes": 2,
-    "metadata_updates": 2,
+    "l1_l2_fixes": 1,
+    "metadata_updates": 3,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
     "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch12-apk-network/02-network-performance.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch12-apk-network/02-network-performance.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -8532,8 +8569,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "12.2",
-    "12.3"
+    "12.4",
+    "13.17",
+    "13.16"
   ],
   "task2b_progress": [
     {
@@ -8618,7 +8656,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-28-05-review.md",
+  "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9334,7 +9372,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-28T01:05:00+08:00",
+  "last_task6_review_at": "2026-05-28T08:10:00+08:00",
   "last_task6_review_section": "5.2",
   "section_1_22": {
     "section": "1.22",
@@ -9435,8 +9473,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "12.2",
-    "12.3"
+    "12.4",
+    "13.17",
+    "13.16"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -9466,8 +9505,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part2-performance/ch12-apk-network/02-network-performance.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
   ],
   "section_24_19": {
     "section": "24.19",
