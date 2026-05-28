@@ -7,7 +7,7 @@ reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 section: "15.5"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
@@ -41,24 +41,24 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-task9_state: pending
-last_task9_at: "2026-05-21T20:31:42+08:00"
+task9_state: reviewed
+last_task9_at: "2026-05-28T19:20:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-21"
-task9_result: needs-rework
+task9_reviewed_date: "2026-05-28"
+task9_result: pass-tech-review
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-28T18:50:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T13:31:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-20-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
 review_notes: "2026-05-21 Task9 deep review: needs-rework。P0：FrameMetrics 指标表使用不存在的公开常量名；P1：GPU_DURATION/API31 版本边界与 ANR 触发口径需补。"
-task9_review_notes: "2026-05-21 Task9 deep review: P0 FrameMetrics 常量名错误写入 queue；P1 GPU_DURATION/API31 版本边界、ANR 系统触发分类与 ApplicationExitInfo trace 处理写入 queue；P2 App Startup 2ms 数据口径写入 suggestions。"
+task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized."
 ---
 # 线上性能监控
 
