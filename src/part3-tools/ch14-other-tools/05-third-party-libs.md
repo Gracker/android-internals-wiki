@@ -2,7 +2,7 @@
 title: "三方性能库"
 chapter: "14.5"
 section: "14.5"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -45,23 +45,24 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 review_round: 4
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-23T10:24:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-22T21:05:00+08:00"
+last_task6_at: "2026-05-28T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-19-review.md"
 last_task6_audit: "2026-05-22"
 task2b_result: fixed
-last_task2b_at: "2026-05-01T06:48:44"
-repaired_date: "2026-04-25"
+last_task2b_at: "2026-05-28T18:50:00+08:00"
+repaired_date: "2026-05-28"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-23"
 ---
@@ -145,7 +146,7 @@ Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和�
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
-Resource Canary 采用弱引用（WeakReference）机制来检测 Activity 的泄漏（上游公开的监听入口主要是 `ActivityLifecycleCallbacks`，对应 `DestroyActivityLifecycleListener` 在 `onActivityDestroyed` 回调中执行入队）。它的做法是：将已销毁的 Activity 实例包装成弱引用并存入观察队列，然后定期触发 GC 并轮询检查队列中的弱引用是否已被回收。如果在多次检查后仍然存活，就认为发生了泄漏。Fragment 泄漏检测不在上游主干的默认路径中，Matrix 上游公开能力主要是 Activity leak 与 duplicated bitmap；如果团队确实需要 Fragment 级别监控，需要确认使用的 fork 是否自行注册了 `FragmentManager.FragmentLifecycleCallbacks` 并实现了对应的弱引用追踪。
+Resource Canary 采用弱引用（WeakReference）机制来检测 Activity 的泄漏（上游公开的监听入口主要是 `ActivityLifecycleCallbacks`，对应 `DestroyActivityLifecycleListener` 在 `onActivityDestroyed` 回调中执行入队）。它的做法是：将已销毁的 Activity 实例包装成弱引用并存入观察队列，然后定期触发 GC 并轮询检查队列中的弱引用是否已被回收。如果在多次检查后仍然存活，就认为发生了泄漏。Fragment 泄漏检测不在上游主干的默认路径中，Matrix 上游公开能力主要是 Activity leak 与 duplicated bitmap；如果团队需要 Fragment 级别监控，需要确认使用的 fork 是否自行注册了 `FragmentManager.FragmentLifecycleCallbacks` 并实现了对应的弱引用追踪。
 
 检测到泄漏后，Resource Canary 会 Dump 出 Hprof 文件，但它不会把整个文件上传——那样太大了。它会在客户端对 Hprof 进行裁剪，只保留泄漏 Activity 到 GC Root 的强引用链和 Bitmap 数据缓冲区，大幅压缩文件大小后再上报。服务端收到后进行解析，还原出完整的引用链。
 
@@ -171,11 +172,11 @@ IO Canary 通过 Native Hook 的方式拦截 POSIX 层的文件操作接口（op
 
 ## KOOM：把内存问题单独拉出来处理
 
-KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解决的，不是“所有性能问题”，而是**那些已经明确落在内存侧的问题**。相比 Matrix 的 Resource Canary，KOOM 更像一个专项治理工具。
+KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解决已经明确落在内存侧的问题。相比 Matrix 的 Resource Canary，KOOM 更像一个专项治理工具。
 
 ### Java 堆泄漏检测
 
-KOOM 的 Java 堆泄漏检测采用"阈值触发 + Hprof 裁剪"的方案。它通过 Runtime.totalMemory() 和 maxMemory() 计算当前 Java 堆使用率，当使用率超过阈值（如 80%）时触发 Dump。Dump 出的 Hprof 文件会在客户端进行裁剪——KOOM 实现了一套高效的 Hprof 文件解析和裁剪机制，能够只保留泄漏分析所需的关键数据（如 GC Root 引用链），将文件大小压缩到原来的 10%~20%。
+KOOM 的 Java 堆泄漏检测采用"阈值触发 + Hprof 裁剪"的方案。它通过 Runtime.totalMemory() 和 maxMemory() 计算当前 Java 堆使用率，当使用率超过阈值（如 80%）时触发 Dump。Dump 出的 Hprof 文件会在客户端进行裁剪——KOOM 实现了一套 Hprof 文件解析和裁剪机制，只保留泄漏分析所需的关键数据（如 GC Root 引用链、必要对象记录和 bitmap buffer 相关信息）。公开 README 与源码能支撑“裁剪后再上报”这个机制，但具体压缩比例要看堆内容、bitmap 占比和裁剪策略，线上文档里不应写成固定 10%~20%。
 
 一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。
 <!-- AIW-源码调研-2026-05-08 -->
@@ -200,9 +201,11 @@ KOOM 的 Native 泄漏检测模块（koom-native-leak）采用了与 Android 系
 
 ### 线程泄漏检测
 
-KOOM 还提供了线程泄漏检测能力。这里的“泄漏”分两类：线程长时间存活；POSIX 默认 joinable 线程已经退出、但没有被 `pthread_join()` 或 `pthread_detach()` 回收。joinable 线程结束后仍会保留线程描述符、栈等 native 资源，数量累积后会推高 native 内存和线程相关资源占用。KOOM 通过 Hook `pthread_create`、`pthread_exit` 并跟踪 join/detach 状态，识别长时间存活的线程和退出后未回收的 joinable 线程。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
+KOOM 还提供了线程泄漏检测能力。这里的“泄漏”分两类：线程长时间存活；POSIX 默认 joinable 线程已经退出、但没有被 `pthread_join()` 或 `pthread_detach()` 回收。joinable 线程结束后仍会保留线程描述符、栈等 native 资源，数量累积后会推高 native 内存和线程相关资源占用。KOOM ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 并跟踪 join/detach 状态，识别长时间存活的线程和退出后未回收的 joinable 线程。
 
-[待验证: KOOM 线程泄漏模块的线上稳定性表现]
+官方 README 给这个模块的适用范围很窄：只支持 Android N（API 24）及以上，只支持 `arm64-v8a`。它不适合直接覆盖 Android 5/6 或 32 位设备。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
+
+[已验证: KwaiAppTeam/KOOM koom-thread-leak README, Scope: Android N+ / arm64-v8a]
 
 ## Booster：把问题尽量拦在编译期
 
@@ -234,9 +237,17 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 ### Booster 的局限性
 
-Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP 7.x 已经进入废弃阶段，到了 AGP 8.0 被彻底移除。旧版 Booster 或自研 Transform 插件在 AGP 8.0+ 环境下会直接失去接入点，继续做同类字节码改写需要迁移到 Instrumentation API 的 `AsmClassVisitorFactory`，以及处理产物编排的 Artifacts API。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现“这段代码在主线程调用了 I/O”，但无法判断“这个 I/O 在实际运行中到底耗时多久”。
+Booster 基于 Transform API 的经典方案也有局限，但不能简单等同为“AGP 8 后都不可用”。当前 didi/Booster README 的兼容表写得更细：
 
-[已验证: AGP 8.0 Release Notes，Booster 的兼容性边界仍要看具体版本或 fork]
+| 构建环境 | Booster 选择 | 迁移判断 |
+|---|---|---|
+| AGP 7.x 及以下 | Booster 4.x | 继续使用 4.x 线，不升级到 Booster 5.x |
+| AGP 8.0 / 8.1 / 8.2 | Booster 5.0.0+ | 5.x 线面向 AGP 8；README 说明大多数 Task based modules 不再支持，但 Transform based modules 在 5.x 中仍 supported without breaking changes |
+| AGP 8.3 / 8.4 / 8.5 | N/A | README 兼容表未给可用 Booster 版本，接入前需要验证 fork 或替代方案 |
+
+因此，正确的迁移判断是按 AGP 与 Booster 双版本一起看：AGP 8.0 移除了 Android Gradle Plugin 原有 `registerTransform` 接口，但 Booster 5.x 已把一部分 Transform based modules 留在 8.0-8.2 的兼容范围内；AGP 8.3+ 则不能按旧经验假设可用。自研字节码改写继续往后迁移时，应优先评估 Android Components instrumentation API 的 `AsmClassVisitorFactory`，以及 Artifacts API 对产物编排的影响。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现“这段代码在主线程调用了 I/O”，但无法判断“这个 I/O 在实际运行中到底耗时多久”。
+
+[已验证: didi/Booster README compatibility table + 5.x migration notes]
 
 ## 启动优化框架：组织启动阶段的任务依赖
 
@@ -258,13 +269,13 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 **AppInit** 采用注解驱动的方式，通过 @AppInit 注解标记初始化方法，编译期自动收集所有初始化方法并生成调度代码。它的优势是接入成本低——只需要加注解，不需要手动构建依赖图。但灵活性相应较低，复杂依赖关系不如编程式 API 好控制。
 
-在实际项目中，选择哪个框架不如理解背后的设计原则重要：**任务颗粒化、依赖显式化、并行最大化、监控可量化**。即使不引入三方框架，团队也应该按这个思路组织自己的启动任务。
+在实际项目中，选择哪个框架不如理解背后的设计原则重要：**任务拆细、依赖显式化、并行最大化、监控可量化**。即使不引入三方框架，团队也应该按这个思路组织自己的启动任务。
 
 [待验证: 各框架的最新维护状态]
 
 ## 再补几类经常被漏掉的工具
 
-### LeakCanary：本地排泄漏时最好用
+### LeakCanary：本地泄漏排查工具
 
 `LeakCanary` 是开发和测试阶段最实用的内存泄漏分析工具之一。它最大的价值是能在本地把对象引用链解释得非常清楚。
 
@@ -277,9 +288,9 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 [已验证: github.com/square/leakcanary]
 
-### Firebase Performance：平台型方案里最容易上手的一类
+### Firebase Performance：接入成本较低的平台型方案
 
-`Firebase Performance Monitoring` 的优点是接入成本低、启动 / 渲染 / HTTP 监控开箱即用，适合快速建立“线上能看到一些性能指标”的基础盘。它的边界也很明显：对复杂归因、私有化部署、自定义 trace 流程的控制不如自建方案灵活。
+`Firebase Performance Monitoring` 的优点是接入成本低、启动 / 渲染 / HTTP 监控开箱即用，适合快速建立“线上能看到一些性能指标”的基础能力。它的边界也很明显：对复杂归因、私有化部署、自定义 trace 流程的控制不如自建方案灵活。
 
 在本章里，它更适合被当成“平台型 APM”的典型代表，而不是和 `Matrix`、`KOOM` 按同一种维度比较。
 
@@ -377,13 +388,11 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 
 **线下深度 Trace**中 Perfetto 仍然是首选，Rhea 的价值在于：当我们需要在真实用户环境中远程抓取 Trace（比如灰度用户反馈的特定场景卡顿），Rhea 可以不依赖 PC、不依赖 adb 就在 App 侧完成 Trace 抓取。
 
-[自动发现]
-
 ### 组合使用的注意事项
 
 同时接入多个性能库时，通常会遇到三类额外成本。
 
-一是**性能开销叠加**。每个运行时监控工具都有一定的性能开销（Matrix 约 2~5%，KOOM 的 Native Hook 也有少量开销），多个工具叠加后，低端机更容易出现用户可感知的卡顿。通常的做法是对监控工具本身做采样，只对部分用户开启完整监控。
+一是**性能开销叠加**。每个运行时监控工具都会引入额外成本，例如字节码插桩、Looper 监听、native Hook、Hprof 裁剪和上报队列；多个工具叠加后，低端机更容易出现用户可感知的卡顿。不要在选型文档里直接套用固定百分比，应在目标设备、目标版本和目标采样率下用 Macrobenchmark、Perfetto 或线上灰度指标测出基线。通常的做法是对监控工具本身做采样，只对部分用户开启完整监控。
 
 二是**Hook 冲突**。如果 Matrix 和 KOOM 都 Hook 了 libc 的 open/write，可能出现 Hook 链冲突。xHook 本身支持 Hook 链（多个 Hook 函数按序执行），但不同工具使用不同的 Hook 库时可能冲突。建议统一使用同一个底层 Hook 库。
 

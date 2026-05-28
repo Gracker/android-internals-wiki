@@ -275,7 +275,8 @@
     "13.18",
     "14.1",
     "14.10",
-    "14.12"
+    "14.12",
+    "14.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -390,31 +391,30 @@
     "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
     "src/part3-tools/ch14-other-tools/01-as-profiler.md",
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
-    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T18:20:12+08:00",
+    "reviewed_at": "2026-05-28T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.9",
-      "15.2",
-      "13.10"
+      "14.5",
+      "15.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
     ],
-    "log": "logs/review/2026-05-28-18-review.md",
+    "log": "logs/review/2026-05-28-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 16,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 16,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.9/15.2/13.10 完成 Task6 写作复审；修复 Markdown 表格、代码省略占位与元叙述/填充词；无新增回炉项，送 Task9 复审。"
+    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
   },
   "issues_by_section": {
     "1.6": {
@@ -427,7 +427,14 @@
       "p0": 1,
       "p1": 1,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T17:18:00+08:00",
+      "task6_log": "logs/review/2026-05-28-17-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task2B 回流后复审通过；清理编辑痕迹与参考资料表述，无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "1.10": {
       "p0": 1,
@@ -727,7 +734,14 @@
       "p0": 1,
       "p1": 1,
       "p2": 1,
-      "p3": 0
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T17:18:00+08:00",
+      "task6_log": "logs/review/2026-05-28-17-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task9 auto-fixed / Task2B fixed-lite 回流后复审通过；清理 procrank 小节评价式起手，无新增回炉项，送 Task9 复审。"
     },
     "2.9": {
       "p0": 2,
@@ -842,10 +856,10 @@
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-22T08:20:00+08:00",
-      "task6_log": "logs/review/2026-05-22-08-review.md",
+      "task6_reviewed_at": "2026-05-28T16:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-16-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。"
+      "task6_note": "Task6 复审通过；task9_result 非 pass-tech-review，送 Task9 复审。"
     },
     "18.10": {
       "task6_result": "pass-light-edit",
@@ -1897,12 +1911,12 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 10,
+      "task6_l1_l2_fixes": 8,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
-      "task6_log": "logs/review/2026-05-21-20-review.md",
+      "task6_reviewed_at": "2026-05-28T19:05:00+08:00",
+      "task6_log": "logs/review/2026-05-28-19-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；补 section 元数据，修禁用/填充表达、COMMAND_ISSUE_DURATION 口径表述与重复采样段。Task9 重新进入 pending。"
+      "task6_note": "Task6 写作复审通过；仅做 L1/L2 轻量修复，无新增回炉项，送 Task9 pending。"
     },
     "14.19": {
       "task6_result": "pass-light-edit",
@@ -2037,21 +2051,21 @@
       "task6_note": "revisiting review；修复代码占位省略号、PowerManagerService 路径和 AIDL 路径表达。既有 Task9 P0/P1 queue pending，未自动晋升。"
     },
     "14.4": {
-      "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 3,
-      "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
-      "task6_log": "logs/review/2026-05-24-01-review.md",
-      "task6_new_rework": false,
-      "task6_note": "revisiting 复审通过；清理 AIW 编辑注释、FrontEnd 标题措辞和无测试条件量化收益。Task9 P0 路径项已由 Task2B 修复，等待 Task9 复审。",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_fixed_at": "2026-05-28T14:50:00+08:00",
       "task2b_log_source": "logs/deep-review/2026-05-24-01-deep-review.md",
-      "task2b_note": "修正 gfxinfo framestats 字段版本边界，等待 Task6 复审。"
+      "task2b_note": "修正 gfxinfo framestats 字段版本边界，等待 Task6 复审。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T16:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-16-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 复审通过；task9_result 非 pass-tech-review，送 Task9 复审。"
     },
     "19.14": {
       "task6_result": "pass-light-edit",
@@ -2263,38 +2277,46 @@
       "task6_log": "logs/review/2026-05-28-09-review.md",
       "task6_new_rework": false,
       "task6_note": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
+    },
+    "14.5": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T19:05:00+08:00",
+      "task6_log": "logs/review/2026-05-28-19-review.md",
+      "task6_new_rework": false,
+      "task6_note": "Task6 写作复审通过；仅做 L1/L2 轻量修复，无新增回炉项，送 Task9 pending。"
     }
   },
-  "total_review_sections": 214,
-  "next_review_candidates": [
-    "20.9",
-    "1.8"
-  ],
+  "total_review_sections": 270,
+  "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T18:20:12+08:00",
+  "last_updated": "2026-05-28T19:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T18:20:12+08:00",
+    "reviewed_at": "2026-05-28T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.9",
-      "15.2",
-      "13.10"
+      "14.5",
+      "15.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
     ],
-    "log": "logs/review/2026-05-28-18-review.md",
+    "log": "logs/review/2026-05-28-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 16,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 16,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.9/15.2/13.10 完成 Task6 写作复审；修复 Markdown 表格、代码省略占位与元叙述/填充词；无新增回炉项，送 Task9 复审。"
+    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
@@ -2434,11 +2456,12 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-05-28T14:50:00+08:00",
+  "last_task2b_at": "2026-05-28T18:50:00+08:00",
   "last_task2b_sections": [
-    "14.4"
+    "14.5",
+    "15.5"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework",
+  "last_task2b_action": "frontmatter backlog fallback rework: task9 issues fixed, returned to task6_pending",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2738,18 +2761,28 @@
     },
     "1.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-12T21:56:00+08:00",
-      "task6_result": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-28T17:18:00+08:00",
+      "task6_result": "pass-light-edit",
       "section": "1.9",
       "title": "Package Manager Service 与应用安装性能",
       "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00"
+      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_review_log": "logs/review/2026-05-28-17-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-28",
+      "task6_review_notes": "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。",
+      "last_task2b_at": "2026-05-28T16:50:00+08:00",
+      "last_task2b_by": "task2b-content-processing-rework-main",
+      "last_task2b_summary": "整合 SDM / Cloud Compilation 回炉问题并回流 Task6。",
+      "last_task9_review_log": "logs/deep-review/2026-05-28-16-deep-review.md"
     },
     "2.10": {
       "status": "ready-for-review",
@@ -3153,19 +3186,24 @@
     },
     "14.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task6_result": "revisited",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "pending-lite-fix",
+      "task9_result": "pending",
       "task2b_state": "fixed",
-      "last_task6_at": "2026-05-13T08:13:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-08-review.md",
+      "last_task6_at": "2026-05-28T17:18:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-17-review.md",
       "file": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
       "title": "内存分析工具",
       "section": "14.3",
       "task2b_result": "fixed-lite",
-      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00"
+      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-28",
+      "task6_review_notes": "2026-05-28 17:18 Task6 review: pass-light-edit。清理 procrank 小节汇报腔 1 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "22.6": {
       "status": "ready-for-review",
@@ -3231,18 +3269,18 @@
     },
     "14.13": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-28T14:20:00+08:00",
-      "task9_result": "auto-fixed",
+      "task9_result": "pending",
       "title": "Hook 基础设施与性能工具实现原理",
       "file": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T14:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-14-review.md",
-      "task9_state": "reviewed",
+      "last_task6_at": "2026-05-28T16:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-16-review.md",
+      "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-28",
@@ -3254,7 +3292,8 @@
       "task6_review_summary": "内容充分；五条 Hook 路线和 16KB/Page Size 风险覆盖完整；仅做 frontmatter 流水线状态归一，无新增正文回炉项。",
       "last_task9_autofix_at": "2026-05-28",
       "last_task9_review_log": "logs/deep-review/2026-05-28-14-deep-review.md",
-      "task9_review_notes": "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。"
+      "task9_review_notes": "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。",
+      "task6_review_notes": "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。清理 frontmatter 重复字段；正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
     },
     "2.0": {
       "status": "ready-for-review",
@@ -5521,13 +5560,14 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "pending",
+      "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-21",
-      "last_task6_at": "2026-05-21T20:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-20-review.md"
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-19-review.md",
+      "last_task2b_at": "2026-05-28T18:50:00+08:00"
     },
     "19.01": {
       "status": "ready-for-review",
@@ -6532,6 +6572,24 @@
       "reviewed_date": "2026-05-28",
       "task6_new_rework": false
     },
+    "14.4": {
+      "section": "14.4",
+      "title": "dumpsys 系列命令",
+      "file": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T16:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-16-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-28",
+      "task6_review_notes": "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。",
+      "task9_state": "pending",
+      "task9_result": "pending"
+    },
     "15.2": {
       "section": "15.2",
       "title": "如何区分系统问题和 App 问题",
@@ -6541,9 +6599,7 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
       "task2b_state": "fixed",
-      "task2b_result": "fixed-lite",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
       "last_task6_at": "2026-05-28T18:20:12+08:00",
@@ -6552,7 +6608,26 @@
       "task6_reviewed_at": "2026-05-28T18:20:12+08:00",
       "task6_l1_l2_fixes": 8,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
+      "task6_review_notes": "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed-lite"
+    },
+    "14.5": {
+      "title": "三方性能库",
+      "file": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T18:50:00+08:00",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-19-review.md"
     }
   },
   "task2b_rounds": [
@@ -6645,44 +6720,40 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "total_review_files": 73,
+  "total_review_files": 114,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-05-28-18-review.md",
+  "last_task6_review": "logs/review/2026-05-28-19-review.md",
   "last_task6_sections": [
-    "14.9",
-    "15.2",
-    "13.10"
+    "14.5",
+    "15.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
   ],
-  "last_task6_at": "2026-05-28T18:20:12+08:00",
+  "last_task6_at": "2026-05-28T19:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T18:20:12+08:00",
+    "reviewed_at": "2026-05-28T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.9",
-      "15.2",
-      "13.10"
+      "14.5",
+      "15.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
     ],
-    "log": "logs/review/2026-05-28-18-review.md",
+    "log": "logs/review/2026-05-28-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 16,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 16,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.9/15.2/13.10 完成 Task6 写作复审；修复 Markdown 表格、代码省略占位与元叙述/填充词；无新增回炉项，送 Task9 复审。"
+    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
   },
   "last_task9_reviewed_files": [
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -6692,12 +6763,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T18:20:12+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-18-review.md",
+  "task6_last_review_at": "2026-05-28T19:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-19-review.md",
   "task6_last_review_sections": [
-    "14.9",
-    "15.2",
-    "13.10"
+    "14.5",
+    "15.5"
   ],
   "sections_status": {
     "22.11": {
@@ -8455,44 +8525,40 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "last_task2b_run": "2026-05-28T14:50:00+08:00",
+  "last_task2b_run": "2026-05-28T18:50:00+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
     "14.4"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T18:20:12+08:00",
+    "reviewed_at": "2026-05-28T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.9",
-      "15.2",
-      "13.10"
+      "14.5",
+      "15.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
     ],
-    "log": "logs/review/2026-05-28-18-review.md",
+    "log": "logs/review/2026-05-28-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 16,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 16,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.9/15.2/13.10 完成 Task6 写作复审；修复 Markdown 表格、代码省略占位与元叙述/填充词；无新增回炉项，送 Task9 复审。"
+    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -8735,6 +8801,20 @@
       "result": "fixed",
       "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-28T16:50:00+08:00",
+      "sections_processed": [
+        "1.9"
+      ],
+      "sections_fixed": [
+        "1.9"
+      ],
+      "issues_addressed": 4,
+      "queue_ids_completed": [
+        "queue[26]:1.9-task6-review-sdm-cloud-compilation"
+      ],
+      "summary": "Fixed §1.9 SDM/Cloud Compilation source wording, installd version boundary, and removed post-reference research-log appendix."
     }
   ],
   "task2a_result": "processed-draft",
@@ -8941,9 +9021,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "14.13",
-    "14.10",
-    "14.12"
+    "14.5",
+    "15.5"
   ],
   "task2b_progress": [
     {
@@ -9044,7 +9123,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-28-18-review.md",
+  "last_task6_review_log": "logs/review/2026-05-28-19-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9426,6 +9505,55 @@
       "result": "fixed",
       "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "date": "2026-05-28T16:50:00+08:00",
+      "sections": [
+        {
+          "section": "1.9",
+          "title": "Package Manager Service 与应用安装性能",
+          "queue_index": 26,
+          "source": "task6-review/task9-deep-tech-review",
+          "priority": 95,
+          "fixes": [
+            "删除参考资料后 2026-05-13 至 2026-05-28 源码调研补遗堆叠",
+            "统一 SDM 为 Secure Dex Metadata / .sdm cloud compilation artifact，并补 PackageInstallerSession / ArtManagedInstallFileHelper / ArtManagerLocal 源码锚点",
+            "修正 installd 连接方式：android-9.0.0_r1 至 android-16.0.0_r1 均通过 ServiceManager Binder 获取 IInstalld",
+            "将 Play 服务端生成、命中条件和性能收益降级为需 Trace/ART 状态交叉验证的分发侧变量"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-05-28T18:50:00+08:00",
+      "sections": [
+        {
+          "section": "14.5",
+          "title": "三方性能库",
+          "source": "frontmatter backlog fallback",
+          "priority": 95,
+          "fixes": [
+            "补 Booster 4.x/5.x 与 AGP 7.x/8.0-8.2/8.3+ 兼容矩阵",
+            "补 KOOM ThreadLeakMonitor Android N+/arm64-v8a 适用范围",
+            "删除 KOOM Hprof 裁剪与 Matrix 开销固定比例口径"
+          ]
+        },
+        {
+          "section": "15.5",
+          "title": "线上性能监控",
+          "source": "frontmatter backlog fallback",
+          "priority": 95,
+          "fixes": [
+            "FrameMetrics 表改为公开常量名并补 GPU_DURATION/DEADLINE API31+ 边界",
+            "补系统 ANR 分类口径与 Watchdog 边界",
+            "调整 ApplicationExitInfo trace 读取分支并删除 App Startup 固定 2ms 数字"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 0,
+        "note": "queue had no pending task6/task9/external entries; consumed frontmatter backlog contexts"
+      }
     }
   ],
   "section_18_23": {
@@ -9844,7 +9972,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-28T18:20:12+08:00",
+  "last_task6_review_at": "2026-05-28T19:05:00+08:00",
   "last_task6_review_section": "14.9, 15.2, 13.10",
   "section_1_22": {
     "section": "1.22",
@@ -9945,9 +10073,8 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "14.9",
-    "15.2",
-    "13.10"
+    "14.5",
+    "15.5"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -9977,9 +10104,8 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
-    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -10150,13 +10276,13 @@
       "items_completed": 2
     }
   },
-  "task2b_last_run": "2026-05-28T14:50:00+08:00",
+  "task2b_last_run": "2026-05-28T16:50:00+08:00",
   "task2b_pending_counts": {
-    "p95": 88,
-    "p90": 2,
-    "p85": 7,
-    "total": 97,
-    "source": "frontmatter backlog fallback scan after 2026-05-28T14:50 task2b main"
+    "p95": 0,
+    "p90": 0,
+    "p85": 0,
+    "total": 0,
+    "source": "queue allowed review sources after 2026-05-28T16:50 task2b main"
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -10351,12 +10477,31 @@
       "result": "fixed",
       "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "section": "14.5",
+      "title": "三方性能库",
+      "file": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "date": "2026-05-28T18:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "frontmatter backlog fallback",
+      "status": "fixed"
+    },
+    {
+      "section": "15.5",
+      "title": "线上性能监控",
+      "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "date": "2026-05-28T18:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "frontmatter backlog fallback",
+      "status": "fixed"
     }
   ],
   "last_task2b_completed": [
-    "14.4"
+    "14.5",
+    "15.5"
   ],
-  "last_task2b_completed_at": "2026-05-28T14:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T18:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -10514,26 +10659,25 @@
     }
   ],
   "last_task2b_files": [
-    "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
   ],
   "last_task2b_completed_entry": {
-    "at": "2026-05-28T14:50:00+08:00",
+    "at": "2026-05-28T16:50:00+08:00",
     "lane": "main",
-    "source": "frontmatter backlog fallback",
-    "section": "14.4",
-    "file": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+    "source": "queue task6-review / task9-deep-tech-review",
+    "section": "1.9",
+    "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
     "result": "fixed",
-    "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
-    "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    "summary": "§1.9 Android 16 Cloud Compilation / SDM 回炉修复完成，回流 Task6。",
+    "source_log": "logs/review/2026-05-28-16-review.md; logs/deep-review/2026-05-28-16-deep-review.md"
   },
   "task2b_last_rework": {
-    "section": "13.15",
-    "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
-    "at": "2026-05-28T08:50:00+08:00",
-    "by": "task2b-content-processing-rework-main",
-    "source": "frontmatter backlog fallback / task9 deep-review",
-    "priority": 85,
-    "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+    "section": "14.5,15.5",
+    "file": "src/part3-tools/ch14-other-tools/05-third-party-libs.md, src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "at": "2026-05-28T18:50:00+08:00",
+    "by": "task2b-content-processing-rework",
+    "source": "frontmatter backlog fallback"
   },
   "last_task9_reviewed_sections": [
     "12.2",
@@ -10641,5 +10785,9 @@
     "last_task6_at": "2026-05-28T12:10:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
     "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
-  }
+  },
+  "last_task6_files": [
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+  ]
 }
