@@ -2,19 +2,19 @@
 title: Package Manager Service 与应用安装性能
 chapter: '1.9'
 section: '1.9'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-05'
 polish_count: 1
 polish_date: '2026-04-09'
 polish_by: task2b-polish
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-12'
-reviewed_by: openclaw-task6
-reviewed_at: '2026-05-12T21:56:00+08:00'
-task6_result: revisiting
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+reviewed_date: "2026-05-28"
+reviewed_by: "openclaw-task6"
+reviewed_at: "2026-05-28T16:06:00+08:00"
+task6_result: "needs-rework"
+task6_state: "reviewed"
+task9_state: reviewed
+pipeline_stage: task2b_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
 last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview
@@ -60,18 +60,21 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: pending
-last_task9_at: "2026-05-17T19:30:43+08:00"
+task9_result: needs-rework
+last_task9_at: "2026-05-28T16:20:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-17"
-task2b_result: fixed
-task2b_state: fixed
+task9_reviewed_date: "2026-05-28"
+task2b_result: "pending"
+task2b_state: pending
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
-task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；Android 16 Cloud Compilation / SDM 段再次出现不存在方法、错误文件格式和无来源性能数据。"
-last_task6_at: '2026-05-12T21:56:00+08:00'
-task6_reviewed_date: '2026-05-12'
-last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。"
+last_task6_at: "2026-05-28T16:06:00+08:00"
+task6_reviewed_date: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-05-28-16-deep-review.md"
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-28-16-review.md"
+task6_review_notes: "2026-05-28 Task6 16:06 review: needs-rework。参考资料后方仍堆叠多段源码调研补遗，且 Cloud Compilation / SDM 表述互相冲突；已写入 Task2B queue。L1 小修 1 处。"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -628,6 +631,8 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 ### 深入阅读
 - Android Authority: Android 16 Cloud Compilation（外部报道，适合补背景，不适合单独当作平台契约）
 
+[需重写: 参考资料后方仍保留 2026-05-13 至 2026-05-28 多段源码调研补遗，内容以问题单和素材清单形式堆叠，且 Cloud Compilation / SDM 名称、格式与加载入口存在互相冲突的表述。Task 2B 需把这些材料整合进正文或移入研究日志；Task 9 复核技术口径。]
+
 <!-- AIW-源码调研-2026-05-13 -->
 ## 🔍 源码调研勘误：§1.9 Android 16 云端编译 / SDM 深度段
 
@@ -720,7 +725,7 @@ SDM（System Dexopt Manager）实际位于 `system/extras/sdm/` 目录，包含�
 
 ### 核心机制
 
-Android 16 引入 **Cloud Compilation**（云端编译），彻底重构安装链路：
+Android 16 引入 **Cloud Compilation**（云端编译），调整了安装链路：
 
 1. **传统链路（Android ≤14）**：安装时执行 dex2oat → 应用冻结窗口秒级
 2. **Android 16 云编译链路**：Play Store 预生成 SDM 签名文件 → 安装时跳过 dex2oat → 冻结窗口毫秒级
@@ -747,7 +752,56 @@ Android 16 release notes 明确：
 
 这不仅为云编译铺路，也减少了所有安装场景的冻结时间。
 
-### 待验证
+#
+<!-- AIW-源码调研-2026-05-28：vivo Turbo vs 小米 HyperOS 安装优化路径验证 -->
+
+## 源码调研补遗（2026-05-28）：厂商安装优化路径实机验证
+
+**来源**：每日选题 #2 | DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md
+
+### 核心发现
+
+基于 AOSP 标准安装链路 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat`，vivo Turbo 与小米 HyperOS 的定制优化主要在**编译过滤器差异化**和**installd 扩展命令**两个层面，均属于安装控制面的优化，未见源码证明其在执行面（dex2oat 本身）有算法级改动。
+
+### 安装链路差异对比
+
+| 优化层面 | AOSP 标准行为 | vivo Turbo（推测） | 小米 HyperOS（推测） |
+|---------|-------------|-------------------|---------------------|
+| 编译过滤器 | `verify`（无 profile）| 预装强制 `speed` | 优先 `speed-profile` |
+| installd 扩展 | 标准 IInstalld 命令 | 新增 `install_hint` 等 | 云编译 .dm 优先 |
+| 云编译集成 | 无 | 无 | Play .dm 定制接入 |
+| 编译触发时机 | idle + charging | 立即后台编译 | 首次启动后编译 |
+
+### Android 16+ installd 连接方式变更
+
+| 版本 | 连接方式 | 源码路径 |
+|------|---------|---------|
+| Android ≤14 | Unix Domain Socket `/dev/socket/installd` | `Installer.java`（旧版 socket 连接）|
+| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 | `Installer.java`（android-16 已改用 Binder）|
+
+### 实机验证方法
+
+```bash
+# 查看编译状态以验证厂商优化效果
+adb shell pm compile -m speed-profile -f -v com.example.app
+adb shell dumpsys package dexopt | grep -A 6 com.example.app
+
+# 查看 installd 连接方式（Android 16+）
+adb shell "cmd package install-commit --has-dexopt-old-api false" 2>&1 || true
+
+# 对比编译过滤器结果
+echo "检查 actualCompilerFilter 是否为 speed-profile/speed"
+```
+
+### 性能影响总结
+
+- **vivo Turbo**：牺牲安装耗时（预装使用 `speed`），换取首次启动零 JIT 开销
+- **小米 HyperOS**：平衡安装速度与首次启动（Play 渠道优先使用 `speed-profile`），依赖后台编译补全
+- **存储差异**：`speed` 过滤器产物约 1.5-2x DEX 原大小，`speed-profile` 更精简
+
+**注意**：厂商定制 installd 源码为闭源，实机性能需厂商开放接口或通过 Perfetto Trace 验证。
+
+## 待验证
 - `.dm/.sdm/.sdc` 具体二进制格式（需进一步定位 art 源码）
 - ArtManagedInstallFileHelper 在 AOSP 的具体路径
 - SDM 与 OatFileManager 的绑定机制（需验证 art/runtime/oat_file_manager.cc）
@@ -833,6 +887,55 @@ Android 安装优化分为 **AOSP 标准路径**和**OEM 厂商定制路径**。
 - 摘要：确认 SDM 全称为 Secure Dex Metadata（非 Signature Delegation Mechanism），Cloud Compilation 通过 Play Store 预生成编译产物，设备侧跳过 dex2oat。SDM 文件使用 APK 同密钥签名。但 SDM 二进制格式、设备侧加载入口等关键细节仍缺 AOSP 源码闭环，§1.9 章节已有错误标注待修正。
 - 注入时间：2026-05-25
 - 价值：纠正 SDM 名称错误，补充 Cloud Compilation 分发链路和 fallback 机制
+
+
+<!-- AIW-源码调研-2026-05-28：vivo Turbo vs 小米 HyperOS 安装优化路径验证 -->
+
+## 源码调研补遗（2026-05-28）：厂商安装优化路径实机验证
+
+**来源**：每日选题 #2 | DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md
+
+### 核心发现
+
+基于 AOSP 标准安装链路 `PMS → InstallPackageHelper → DexOptHelper → ART Service → artd → dex2oat`，vivo Turbo 与小米 HyperOS 的定制优化主要在**编译过滤器差异化**和**installd 扩展命令**两个层面，均属于安装控制面的优化，未见源码证明其在执行面（dex2oat 本身）有算法级改动。
+
+### 安装链路差异对比
+
+| 优化层面 | AOSP 标准行为 | vivo Turbo（推测） | 小米 HyperOS（推测） |
+|---------|-------------|-------------------|---------------------|
+| 编译过滤器 | `verify`（无 profile）| 预装强制 `speed` | 优先 `speed-profile` |
+| installd 扩展 | 标准 IInstalld 命令 | 新增 `install_hint` 等 | 云编译 .dm 优先 |
+| 云编译集成 | 无 | 无 | Play .dm 定制接入 |
+| 编译触发时机 | idle + charging | 立即后台编译 | 首次启动后编译 |
+
+### Android 16+ installd 连接方式变更
+
+| 版本 | 连接方式 | 源码路径 |
+|------|---------|---------|
+| Android ≤14 | Unix Domain Socket `/dev/socket/installd` | `Installer.java`（旧版 socket 连接）|
+| Android 16+ | `ServiceManager.getService("installd")` Binder 服务 | `Installer.java`（android-16 已改用 Binder）|
+
+### 实机验证方法
+
+```bash
+# 查看编译状态以验证厂商优化效果
+adb shell pm compile -m speed-profile -f -v com.example.app
+adb shell dumpsys package dexopt | grep -A 6 com.example.app
+
+# 查看 installd 连接方式（Android 16+）
+adb shell "cmd package install-commit --has-dexopt-old-api false" 2>&1 || true
+
+# 对比编译过滤器结果
+echo "检查 actualCompilerFilter 是否为 speed-profile/speed"
+```
+
+### 性能影响总结
+
+- **vivo Turbo**：牺牲安装耗时（预装使用 `speed`），换取首次启动零 JIT 开销
+- **小米 HyperOS**：平衡安装速度与首次启动（Play 渠道优先使用 `speed-profile`），依赖后台编译补全
+- **存储差异**：`speed` 过滤器产物约 1.5-2x DEX 原大小，`speed-profile` 更精简
+
+**注意**：厂商定制 installd 源码为闭源，实机性能需厂商开放接口或通过 Perfetto Trace 验证。
 
 ## 待验证
 

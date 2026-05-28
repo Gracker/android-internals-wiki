@@ -2,15 +2,15 @@
 title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
-status: ready-for-review
-reviewed_date: "2026-05-13"
-reviewed_by: openclaw-task6
+status: "ready-for-review"
+reviewed_date: "2026-05-28"
+reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-03'
-last_verified_against: AOSP android-16.0.0_r1
-confidence: medium
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-05-28'
+last_verified_against: AOSP android-17.0.0_r1
+confidence: high
 sources:
 - type: blog
   path: https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT/
@@ -44,20 +44,27 @@ related_chapters:
 - '13.1'
 pipeline_stage: task6_pending
 task6_state: revisiting
-task6_result: revisited
-task9_state: pending
+task6_result: "pass-light-edit"
+task9_state: reviewed
 task2b_state: fixed
-task9_result: pending-lite-fix
+task9_result: auto-fixed
 task2b_result: fixed-lite
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
 task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
-task9_reviewed_date: '2026-05-13'
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T04:11:19+08:00'
-task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
+last_task9_at: "2026-05-28T16:20:00+08:00"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
+last_task6_at: "2026-05-28T16:06:00+08:00"
+task6_reviewed_date: "2026-05-28"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-28-16-review.md"
+task6_review_notes: "2026-05-28 Task6 16:06 review: pass-light-edit。清理 L1 填充词和汇报腔小标题 4 处；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_autofix_at: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-05-28-16-deep-review.md"
 ---
 
 
@@ -102,7 +109,7 @@ last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 
 在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。我们不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
 
-这个工具的核心定位是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
+这个工具的核心定位是"泄漏的早期发现"。很多内存泄漏在开发阶段通常不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
 
 ### 工作原理
 
@@ -141,20 +148,16 @@ LeakCanary.config = LeakCanary.config.copy(
 
 **观察等待时间**（`AppWatcher.manualInstall`）：
 
-`retainedDelayMillis`（组件销毁后等待多久再检查可达性）不在 `LeakCanary.Config` 上，需要通过 `AppWatcher` 的手动安装路径配置。使用前需先禁用自动安装：
+`retainedDelayMillis`（组件销毁后等待多久再检查可达性）不在 `LeakCanary.Config` 上，需要通过 `AppWatcher` 的手动安装路径配置。使用前先关闭自动安装，官方入口是覆盖 `leak_canary_watcher_auto_install` 资源；也可以直接依赖 `leakcanary-android-core`，避开带自动安装器的 artifact。
+
+```xml
+<!-- res/values/leak_canary.xml -->
+<resources>
+    <bool name="leak_canary_watcher_auto_install">false</bool>
+</resources>
+```
 
 ```kotlin
-// build.gradle: 禁用自动安装
-dependencies {
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14") {
-        exclude group: 'com.squareup.leakcanary', module: 'leakcanary-object-watcher-android'
-    }
-    debugImplementation("com.squareup.leakcanary:leakcanary-object-watcher-android:2.14") {
-        // 阻止 ContentProvider 自动初始化
-        isTransitive = false
-    }
-}
-
 // Application.onCreate(): 手动安装并自定义等待时间
 AppWatcher.manualInstall(
     application = this,
@@ -187,7 +190,7 @@ MAT 分析的输入是 Java 堆转储文件（.hprof）。在 Android 上有几�
 
 最直接的方式是通过 Android Studio。在 Memory Profiler 中，点击 "Dump Java Heap" 按钮（内存面板左上角的下载图标），即可抓取当前应用的 Java 堆。抓取后，Android Studio 会自动将 Dalvik 格式的 hprof 转换为标准 Java hprof 格式。
 
-> **一个重要的操作习惯**：在抓取堆转储之前，先点击 Memory Profiler 中的"Initiate GC"按钮手动触发一次 GC。这样抓到的 hprof 文件中就不包含 Unreachable 对象——那些已经可以被 GC 回收但还没有被回收的对象。如果不先触发 GC，Unreachable 对象会干扰分析，让你在大量"将被回收"的对象中寻找真正的泄漏。
+> **推荐操作**：在抓取堆转储之前，先点击 Memory Profiler 中的"Initiate GC"按钮手动触发一次 GC。这样抓到的 hprof 文件中就不包含 Unreachable 对象——那些已经可以被 GC 回收但还没有被回收的对象。如果不先触发 GC，Unreachable 对象会干扰分析，让你在大量"将被回收"的对象中寻找泄漏对象。
 
 也可以通过命令行抓取：
 
@@ -576,10 +579,10 @@ MTE 与 HWASAN 的目标相同——检测内存安全错误——但实现方�
 
 MTE 与 HWASAN 的适用场景不同：
 
-- **MTE**：性能开销极低（1-5%），适合生产环境的抽样检测和异步监控。异步模式下只记录日志不崩溃，可用于线上灰度。检测粒度受 16 字节 tag 限制，对同一 tag 块内的越界访问可能漏报。
+- **MTE**：性能开销较低，适合低开销检测和生产环境抽样。ASYNC 不是“只记录日志不崩溃”：tag mismatch 会在最近的内核入口以 `SIGSEGV` 终止进程，只是错误地址和访问类型不如 SYNC 精确。检测粒度受 16 字节 tag 限制，对同一 tag 块内的越界访问可能漏报。
 - **HWASAN**：依赖编译器插桩，需要重新编译目标代码。性能开销较高（10-20%），但诊断信息更完整，能提供精确的分配/释放调用栈，适合测试阶段的深度排查。
 
-Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应用开发者来说，在支持 MTE 的设备上可以通过开发者选项启用异步 MTE 模式（async mode），这种模式通常记录错误日志而不是立刻让应用崩溃，适合测试阶段使用。
+Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应用开发者来说，在支持 MTE 的设备上可以通过 `android:memtagMode="async"` 或开发者选项启用异步 MTE 模式；它适合测试和灰度采样，但命中 tag mismatch 后仍应按进程崩溃处理。
 
 [已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
 [已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
@@ -594,7 +597,7 @@ MTE 除了常见的 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）�
 | ASYNC | 延迟 SIGSEGV | 延迟 SIGSEGV | **1-2%** | ✅ 可用 |
 | ASYMM | 立即 SIGSEGV | 延迟 SIGSEGV | 接近 ASYNC | **✅ 推荐** |
 
-**ASYMM 核心价值**：读取越界（use-after-free read）提供精确错误位置，写入越界保持低开销。在 SPEC INT 2006 实测中，SYNC 最高可达 6.64x 减速，ASYMM 保持在 1-2% 区间（Pixel 8/9，来源：arxiv:2405.02735）。
+**ASYMM 的优势**：读取越界（use-after-free read）提供精确错误位置，写入越界保持低开销。在 SPEC INT 2006 实测中，SYNC 最高可达 6.64x 减速，ASYMM 保持在 1-2% 区间（Pixel 8/9，来源：arxiv:2405.02735）。
 
 **Android 系统行为**：App 通过 `android:memtagMode="async"` 请求 MTE 时，如果硬件支持 ASYMM，OS 自动静默升级到 ASYMM，无需 App 感知。系统组件（蓝牙 / NFC / 网络 daemon）以 ASYNC 模式运行，实际也受益于 ASYMM 硬件。
 
@@ -602,11 +605,11 @@ MTE 除了常见的 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）�
 
 **sysfs 控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred`（root）可设置 per-CPU preferred 模式为 `async` / `sync` / `asymm`。
 
-**Android 15+ 默认状态**：MTE 在所有 Android 版本中均默认**关闭**。Compatibility Framework 明确 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 的默认状态为"对所有 App 禁用"。Android 15 强烈建议生产环境使用 MTE，但保持关闭，由 OEM / 设备配置决定。
+**默认状态边界**：第三方 App 未声明 `android:memtagMode` 时默认关闭；Compatibility Framework 中的 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 默认也不对所有 App 强制打开。系统组件和 OEM 组件可以通过产品配置启用 MTE，不能把“App 默认关闭”推广成“整个系统默认关闭”。
 
 **Scudo 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）应用 MTE tag。
 
-[已验证: Android 15 MTE 默认关闭，来源：Android 15 Compatibility Definition Document]
+[已验证: Android MTE 官方文档 / MTE configuration，ASYNC 触发延迟 SIGSEGV，App 默认需显式启用]
 [来源: arxiv:2405.02735 - ARM MTE Performance in Practice]
 [来源: AOSP frameworks/base/core/java/com/android/internal/os/Zygote.java]
 
@@ -617,7 +620,7 @@ MTE 除了常见的 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）�
 
 **场景：Java 堆内存持续增长，怀疑泄漏**
 
-- 第一步：用 `dumpsys meminfo` 确认 Java Heap 是否确实在增长
+- 第一步：用 `dumpsys meminfo` 确认 Java Heap 是否持续增长
 - 第二步：用 LeakCanary 自动检测 Activity/Fragment 级别的泄漏
 - 第三步：如果 LeakCanary 没有检出，用 MAT 分析 hprof 文件中的引用链
 
