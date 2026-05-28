@@ -3,7 +3,7 @@ title: SurfaceView 直出路径
 section: '18.6'
 chapter: '18.6'
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-05-06'
+last_verified: '2026-05-28'
 last_verified_against: AOSP SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
 confidence: medium
 sources:
@@ -37,22 +37,23 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-24T11:30:20+08:00"
 task9_reviewed_date: "2026-05-24"
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-26T13:40:00+08:00'
 last_task2b_at: "2026-05-24T11:16:52+08:00"
+last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
@@ -107,7 +108,7 @@ SurfaceView 是 Android 里效率很高的视图组件之一，设计目标是 *
 
 SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这也是视频播放器、游戏引擎、Camera 预览通常优先使用 SurfaceView 的原因。[已验证: AOSP SurfaceView 实现]
 
-SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 TextureView。旧版本里的平移、缩放和透明度支持都很受限，圆角、复杂变换、特效叠加也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。Android 15 进一步改善了 SurfaceView 圆角的同步机制，宿主窗口的圆角 Outline 和 SurfaceView Layer 的几何边界可以在同一 Transaction 中协调，不再像旧版本那样因错拍产生可见抖动。涉及复杂动画、裁剪和多层混合时，TextureView 的实现成本仍然更低。
+SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 TextureView。旧版本里的平移、缩放和透明度支持都很受限，圆角、复杂变换、特效叠加也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。圆角能力需要按 Android 11/12+ 的 `setCornerRadius()` 与具体设备合成能力判断；缺少源码差异时，不把它归因到 Android 15 的新增同步机制。涉及复杂动画、裁剪和多层混合时，TextureView 的实现成本仍然更低。
 
 ## 独立 Surface 与挖洞机制
 
@@ -164,7 +165,7 @@ Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方�
 
 ### 挖洞的实现
 
-挖洞这件事本身一直没有消失。`SurfaceView` 在宿主 window 的绘制阶段仍会用 `CLEAR` 模式把对应矩形区域清成透明，让独立 surface 从下面露出来。版本差异主要在“洞”和 surface 内容怎么同步：
+挖洞这件事本身一直没有消失。旧资料常用 `CLEAR` / transparent region 理解宿主 window 的透明洞；Android 14+ 源码中的 `clearSurfaceViewPort()` 使用 `Canvas.punchHole(...)` 处理对应视口。版本差异主要在“洞”和 surface 内容怎么同步：
 
 - **Android 11（R）**：ViewRootImpl 已引入 BLASTBufferQueue，但 SurfaceView 仍通过 WMS 的 `WindowState` 分配 Surface；透明洞和 Buffer 更新错拍问题改善有限
 - **Android 12+（S，BLASTBufferQueue）**：SurfaceView 正式采用 `createBlastSurfaceControls()` 在 App 进程内创建 container layer / BLAST layer / background layer。App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
@@ -180,7 +181,7 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
    - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
-   - **Android 14+ 优化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 替代 `notify_all()`，实现精确唤醒，减少无效唤醒竞争
+   - **Android 16+ 优化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 替代 `notify_all()`，实现精确唤醒，减少无效唤醒竞争
    - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这是避免分配期间整个 BufferQueue 冻结的关键设计
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
@@ -415,6 +416,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 **原因**（按版本拆开）：
 
 - **Android 10 及以下**：SurfaceView 的独立 Layer 注册和位置同步依赖 WMS 的 `WindowState` / `WindowSurfacePlacer` 跨进程协调。Layer 创建、BufferQueue 初始化、窗口位置同步分别由不同模块处理，容易错拍——首帧延迟主要来自这个跨进程窗口模型的协调开销
+- **Android 11**：App 主窗口已有 ViewRootImpl BLAST，但 SurfaceView 仍走旧窗口模型创建 Layer。排查首帧时要把 App Window BLAST 和 SurfaceView BLAST 分开看
 - **Android 12+（BLAST/SurfaceControl）**：SurfaceView 通过 `updateSurface()` → `createBlastSurfaceControls()` 在 App 进程内创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。首帧延迟的构成变成：ViewRoot/window 就绪 → SurfaceControl/BLASTBufferQueue 初始化 → Transaction 提交到 SurfaceFlinger → Producer 第一帧 buffer/fence 就绪。每一步都有明确的边界，但 BLAST 模式下的同步协调比旧模型可靠得多
 
 **优化**：使用 `SurfaceView.getHolder().addCallback()` 监听 `surfaceCreated` 回调，在回调后才启动 Producer，避免在 Surface 就绪前就开始绘制。
