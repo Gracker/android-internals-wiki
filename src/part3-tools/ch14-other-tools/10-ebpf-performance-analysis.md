@@ -53,7 +53,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-19"
@@ -62,29 +62,30 @@ task2b_result: "fixed"
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 repaired_date: "2026-05-28"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-28 Task2B fixed: UprobeStats APEX 挂载路径修为 /apex/com.android.uprobestats；补 MalwareSignal.c；修正 sched_ext class/policy 优先级说明；参考资料后的 sched_ext 素材已并入主体。"
+task9_review_notes: "2026-05-28 Task9 auto-fix: 收窄 netd/eBPF 能耗表述，明确 BPF 统计网络流量，上层再做 BatteryStats 归因。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
-task9_state: "pending"
-task9_result: "pending"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-25"
-last_task9_at: "2026-05-25T08:32:00+08:00"
+task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-05-28T13:20:00+08:00"
 task2b_state: "fixed"
-p0: 1
-p1: 1
+p0: 0
+p1: 0
 p2: 1
 updated_by: "openclaw-task2b-main"
 updated_date: "2026-05-28"
 review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 last_task9_audit: "2026-05-22"
-last_task9_review_log: "logs/deep-review/2026-05-25-08-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-13-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-28T13:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-13-review.md"
 task6_review_notes: "2026-05-28 Task6 revisiting: L1/L2 小修通过；无 L3/L4 回炉项，等待 Task9 技术复审。"
+last_task9_autofix_at: "2026-05-28"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -171,7 +172,7 @@ Android 已经在系统级使用 eBPF 的场景包括：
 
 - **GPU 内存追踪**：Android 12 引入的 `gpu_mem` eBPF 程序，追踪每个进程和整个系统的 GPU 内存使用量。
 
-- **能耗统计**：`netd` 中的 eBPF 程序还用于统计每个 UID 的网络流量相关的功耗。
+- **网络流量归因 / 策略控制**：`netd` 的 eBPF 程序统计 UID / tag / iface 维度的网络流量，并支撑前后台、防火墙、Data Saver 等策略。上层可以把这些流量数据用于 BatteryStats 归因；BPF 程序本身不计算能耗模型。
 
 [已验证: AOSP, system/bpf/ + source.android.com]
 
