@@ -53,11 +53,11 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-19"
-task6_result: "needs-rework"
+task6_result: "pass-light-edit"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 repaired_date: "2026-05-28"
@@ -65,7 +65,7 @@ repaired_by: openclaw-task2b
 task9_review_notes: "2026-05-28 Task2B fixed: UprobeStats APEX 挂载路径修为 /apex/com.android.uprobestats；补 MalwareSignal.c；修正 sched_ext class/policy 优先级说明；参考资料后的 sched_ext 素材已并入主体。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_state: "pending"
 task9_result: "pending"
 task9_reviewed_by: "openclaw-task9"
@@ -80,11 +80,11 @@ updated_date: "2026-05-28"
 review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 last_task9_audit: "2026-05-22"
 last_task9_review_log: "logs/deep-review/2026-05-25-08-deep-review.md"
-task6_reviewed_date: "2026-05-25"
+task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-25T09:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-09-review.md"
-task6_review_notes: "2026-05-25 Task6:文风 L1 基本通过;参考资料后仍有正文小节和 AIW 源码调研注释,已并入 queue.json priority 95。Task9 技术回炉项保持 pending。"
+last_task6_at: "2026-05-28T13:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-13-review.md"
+task6_review_notes: "2026-05-28 Task6 revisiting: L1/L2 小修通过；无 L3/L4 回炉项，等待 Task9 技术复审。"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -280,7 +280,7 @@ uretprobe:/system/lib64/libEGL.so:eglSwapBuffers
 }'
 ```
 
-`stats()` 输出 count、average、total。最大值和最小值要分别用 `max()` / `min()`，分布用 `hist()` / `lhist()`，分位数通常在导出数据后离线计算。
+`stats()` 输出 `count`、`average`、`total`。最大值和最小值要分别用 `max()` / `min()`，分布用 `hist()` / `lhist()`，分位数通常在导出数据后离线计算。
 
 [图：bpftrace 输出示例——展示 eglSwapBuffers 调用耗时的直方图、count、average、total、max、min]
 
@@ -360,7 +360,7 @@ sched_ext 是 Linux 6.12 合并的可扩展调度器类，它可能是 eBPF 对 
 
 Linux 内核的默认调度器（从 CFS 到 EEVDF）追求通用性——在各种工作负载下都"还行"。但"还行"和"最优"之间有巨大的差距。一个具体的例子：
 
-在 big.LITTLE 架构上，如果进程 A 频繁通过 pipe 唤醒进程 B，默认调度器可能把它们放在不同的 cluster 上。跨 cluster 的 cache 同步开销远高于 cluster 内部，导致通信性能下降。如果把 A 和 B 手动放在同一个 cluster，pipe 吞吐量会有显著提升（取决于 cache 大小和 cluster 拓扑，实测中可能有显著差异 [待验证: 来源为 sched_ext 社区实验数据，具体取决于 cache 大小和 cluster 拓扑]）。
+在 big.LITTLE 架构上，如果进程 A 频繁通过 pipe 唤醒进程 B，默认调度器可能把它们放在不同的 cluster 上。跨 cluster 的缓存同步开销远高于 cluster 内部，导致通信性能下降。如果把 A 和 B 手动放在同一个 cluster，pipe 吞吐量会有显著提升（取决于缓存大小和 cluster 拓扑，实测中可能有显著差异 [待验证: 来源为 sched_ext 社区实验数据，具体取决于缓存大小和 cluster 拓扑]）。
 
 这种"针对特定场景的手动调度优于通用调度器"的情况在实践中反复出现。但在 sched_ext 之前，定制调度策略只有两条路：向内核打补丁（SCHED_CLUSTER 从提交到合入主线花了 2 年），或者让应用开发者用 `sched_setattr()` 表达需求（开发者往往不知道怎么表达，甚至乱表达）。
 

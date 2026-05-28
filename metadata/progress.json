@@ -273,7 +273,9 @@
     "13.3",
     "13.3",
     "13.18",
-    "14.1"
+    "14.1",
+    "14.10",
+    "14.12"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -386,7 +388,9 @@
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
     "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+    "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
@@ -2254,28 +2258,28 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T12:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-05-28T13:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_at": "2026-05-28T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "13.18",
-      "13.3"
+      "14.10",
+      "14.12"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-11-review.md",
+    "log": "logs/review/2026-05-28-13-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 30,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "small_fixes": 30,
+    "small_fixes": 7,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
+    "notes": "14.10 完成术语/格式小修；14.12 隐藏 outline 脚手架并压掉少量泛化表达；两章均等待 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
@@ -5997,16 +6001,15 @@
       "title": "eBPF/BPF 在 Android 性能分析中的应用",
       "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task6_result": "needs-rework",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
       "task2b_state": "fixed",
-      "queue_priority": 95,
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-25",
-      "last_task6_at": "2026-05-25T09:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-09-review.md",
-      "task6_review_summary": "L1/L2 小修后仍有正文素材块/结构整合问题,已写入 queue.json;保留 Task9 needs-rework。",
+      "task6_reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-13-review.md",
+      "task6_review_summary": "L1/L2 小修：cache 译法归一为缓存、补代码标识反引号；结构与锚点覆盖通过，无回炉项。",
       "section": "14.10",
       "task2b_result": "fixed",
       "task9_state": "pending",
@@ -6455,17 +6458,23 @@
       "title": "APM / 可观测性平台与 SDK 选型",
       "file": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "pending",
       "last_task2b_at": "2026-05-28T12:50:00+08:00",
       "last_task2b_by": "openclaw-task2b-main",
       "task2b_source": "frontmatter backlog fallback",
       "task2b_issue_source": "logs/deep-review/2026-05-22-05-audit.md + logs/external-review/archive/2026-04-25-14-14.12-external-review.md",
-      "task2b_summary": "修复 AppExitInfoTracker 持久化路径、默认历史条数和 KillHandler 多来源消息链，并把 AppExitInfo/KOOM 源码调研块并入主体。"
+      "task2b_summary": "修复 AppExitInfoTracker 持久化路径、默认历史条数和 KillHandler 多来源消息链，并把 AppExitInfo/KOOM 源码调研块并入主体。",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-13-review.md",
+      "task6_review_summary": "L1/L2 小修：outline 脚手架改为注释、metrics state 译法补正、压掉基础盘/重要性套话；无回炉项。"
     }
   },
   "task2b_rounds": [
@@ -6564,34 +6573,34 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-28",
   "last_task6_sections": [
-    "13.18",
-    "13.3"
+    "14.10",
+    "14.12"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
-  "last_task6_at": "2026-05-28T11:05:00+08:00",
+  "last_task6_at": "2026-05-28T13:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_at": "2026-05-28T13:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "13.18",
-      "13.3"
+      "14.10",
+      "14.12"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-11-review.md",
+    "log": "logs/review/2026-05-28-13-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 30,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "small_fixes": 30,
+    "small_fixes": 7,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
+    "notes": "14.10 完成术语/格式小修；14.12 隐藏 outline 脚手架并压掉少量泛化表达；两章均等待 Task9 复审。"
   },
   "last_task9_reviewed_files": [
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -6601,11 +6610,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T11:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-11-review.md",
+  "task6_last_review_at": "2026-05-28T13:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-13-review.md",
   "task6_last_review_sections": [
-    "13.18",
-    "13.3"
+    "14.10",
+    "14.12"
   ],
   "sections_status": {
     "22.11": {
@@ -8390,12 +8399,12 @@
     "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {

@@ -2,7 +2,7 @@
 title: APM / 可观测性平台与 SDK 选型
 chapter: '14.12'
 section: '14.12'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -41,12 +41,12 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-25'
-task6_result: pass-light-edit
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-28"
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task9_result: pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
@@ -57,7 +57,7 @@ repaired_by: openclaw-task2b-main
 task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 task9_review_notes: "2026-05-28 Task2B fixed: AppExitInfoTracker 持久化路径修为 /data/system/procexitstore/procexitinfo；默认历史条数修为 config_app_exit_info_history_list_size=16；补 KillHandler 多来源消息链与 Android 16 rss_kb 边界；尾部源码调研块已并入主体。"
-last_task6_at: "2026-05-20T17:09:00+08:00"
+last_task6_at: "2026-05-28T13:05:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task6_audit_result: l1-light-edit
 last_task6_audit_log: "logs/review/2026-05-20-17-audit.md"
@@ -65,15 +65,20 @@ last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
+task6_reviewed_date: "2026-05-28"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-28-13-review.md"
+task6_review_notes: "2026-05-28 Task6 revisiting: L1/L2 小修通过；无 L3/L4 回炉项，等待 Task9 技术复审。"
 ---
 
 
 # APM / 可观测性平台与 SDK 选型
 
 <!-- outline-start -->
-## 本节要点大纲
+<!--
+本节要点大纲
 
-### 锚点（必须覆盖）
+锚点（必须覆盖）
 
 - 🔹 先把“官方指标能力”“客户端 SDK”“后端 / 平台能力”分层
 - 🔹 `androidx.metrics` / `JankStats` 解决的是帧级指标采集，不是完整 APM
@@ -81,10 +86,11 @@ last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
 - 🔹 `Firebase Performance`、`Measure` 这类平台型方案的价值和边界
 - 🔹 选型先看目标：感知、定位、问题解决、成本、隐私
 
-### 扩展（可选深入）
+扩展（可选深入）
 
 - 🔸 海外 SaaS APM 的客户端埋点与采样策略
 - 🔸 自建平台时的埋点 schema 和 trace-id 设计
+-->
 <!-- outline-end -->
 
 ## 为什么很多团队一开始就把选型做偏了
@@ -118,7 +124,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
 
 ## 第一层：官方基线能力，决定了你的最低起点
 
-官方能力最适合拿来做基础盘。它们的优点很明显：系统支持、口径相对稳定、兼容性通常更好。缺点也一样直接：系统没暴露的东西，它们给不了。
+官方能力最适合拿来做基础信号。它们的优点很明显：系统支持、口径相对稳定、兼容性通常更好。缺点也一样直接：系统没暴露的东西，它们给不了。
 
 ### JankStats：先把帧级信号拿稳
 
@@ -130,7 +136,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
 - 这帧是否被判为 jank
 - 当时 UI 正在什么状态
 
-`PerformanceMetricsState` 是 `JankStats` 区别于原始 `FrameMetrics` 的关键能力。它允许把页面名、列表滚动状态、业务场景等状态写入当前窗口的 metrics state，回调里的帧数据会带上这些状态。平台收到帧记录时，可以直接知道 jank 发生在首页首屏、列表 fling 还是某个弹窗过渡期。
+`PerformanceMetricsState` 是 `JankStats` 区别于原始 `FrameMetrics` 的关键能力。它允许把页面名、列表滚动状态、业务场景等状态写入当前窗口的指标状态，回调里的帧数据会带上这些状态。平台收到帧记录时，可以直接知道 jank 发生在首页首屏、列表 fling 还是某个弹窗过渡期。
 
 这个能力非常适合当第一层信号源。对一个刚开始做线上流畅性监控的团队来说，能先知道“哪些页面、哪些交互、哪些版本的帧开始变差”，已经非常有价值。
 
@@ -182,7 +188,7 @@ Android Vitals 的问题大家都知道：粒度不够细，自定义空间有�
 
 Matrix 最值得写的一点，是它把客户端常见的监控问题组织成了一套框架。
 
-这件事的重要性在于：很多团队接监控时，卡住的地方通常是缺少统一入口。流畅性一套、IO 一套、内存一套、battery 一套，结果谁都接了一点，谁也接不完整。Matrix 提供的恰好是一种更容易收敛的接入方式。
+这能解决一个常见卡点：很多团队接监控时，卡住的地方通常是缺少统一入口。流畅性一套、IO 一套、内存一套、battery 一套，结果谁都接了一点，谁也接不完整。Matrix 提供的恰好是一种更容易收敛的接入方式。
 
 它更适合的团队通常有两个特征：
 
@@ -253,7 +259,7 @@ DoKit 覆盖的能力很杂，实用点也不少：FPS、启动耗时、网络�
 ### Firebase Performance：最容易进入团队视野的平台型能力
 
 Firebase Performance 最大的优点，是上手快。  
-对一个刚开始做线上性能治理的团队来说，它很适合解决“先把基础盘立起来”这个问题。
+对一个刚开始做线上性能治理的团队来说，它很适合解决“先把基础指标跑起来”这个问题。
 
 但这类平台也有很清楚的边界：越往深走，越会碰到定制能力、私有化、trace 流程控制这些限制。  
 它适合做第一层平台，不一定适合承载整个治理体系。
