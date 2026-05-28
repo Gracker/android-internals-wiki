@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-05-09'
-last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + bionic linker libdl.map.txt (android-9/10/11 tags) + Android 16KB page size docs + ART TI + GitHub upstream READMEs
+last_verified: '2026-05-28'
+last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + bionic linker libdl.map.txt (android-9/10/11 tags) + Android Developers 16KB page size docs (2026-04-24) + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
 - type: official
@@ -39,13 +39,14 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: pending
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
-task2b_result: fixed
-task2b_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: '2026-05-28'
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
 last_task6_at: "2026-05-22T08:20:00+08:00"
@@ -622,14 +623,13 @@ ShadowHook 仅对 arm64-v8a 强制 16KB 对齐。
 - `kPageSize == 16384 && min_palign == 4096` → 触发 compat mode（`bionic.linker.16kb.app_compat.enabled`）
 - `min_palign >= kPageSize` → 正常加载
 
-compat mode 使用匿名映射将 4KB 对齐的 ELF 段内容读入进程空间，PSS 和共享内存都有额外代价。RELRO 保护在 compat mode 下仍然执行（`soinfo::protect_relro()` 调用 `mprotect(PROT_READ|PROT_EXEC)`），但布局受连续约束限制：兼容布局为 RO|RX + RELRO prefix + RW，`IsEligibleFor16KiBAppCompat()` 负责检查段排列是否满足此要求。Google Play 强制截止日期：2025-11-01。
+compat mode 使用匿名映射将 4KB 对齐的 ELF 段内容读入进程空间，PSS 和共享内存都有额外代价。RELRO 保护在 compat mode 下仍然执行（`soinfo::protect_relro()` 调用 `mprotect(PROT_READ|PROT_EXEC)`），但布局受连续约束限制：兼容布局为 RO|RX + RELRO prefix + RW，`IsEligibleFor16KiBAppCompat()` 负责检查段排列是否满足此要求。Google Play 的 2025-11-01 要求适用于提交到 Google Play、面向 Android 15 (API 35)+ 设备的新应用和既有应用更新，不是所有存量应用或所有设备在同一天统一强制。
 
-| NDK 版本 | 默认 p_align | 说明 |
-|----------|-------------|------|
-| r27 及以下 | 0x1000 (4KB) | 需手动加链接器参数 |
-| r28+ | 0x4000 (16KB) | 默认对齐 |
-| AGP 8.3-8.5 | 0x4000 (16KB) | App 默认对齐 |
-| AGP 8.5.1+ | 0x4000 (16KB) | 强烈推荐 |
+| 构建层 | 负责对象 | 16KB 边界 |
+|--------|----------|-----------|
+| NDK/LLD r27 及以下 | ELF `PT_LOAD.p_align` | 通常需要显式补 `-Wl,-z,max-page-size=16384` |
+| NDK/LLD r28+ | ELF `PT_LOAD.p_align` | 默认生成 16KB 对齐的 native library |
+| AGP 8.5.1+ / zipalign | APK 内未压缩 native library 的打包对齐与检查 | 解决 APK 打包侧对齐，不等同于修改 ELF `p_align` |
 
 ### mprotect 在 16KB 页面下的约束
 
@@ -896,4 +896,3 @@ intercept 支持 FPSIMD 寄存器读写（ARM64 的 `vregs[0].q` 等），可获
 | unique | ❌ 互斥 | ❌ 需自行处理 | 同 multi | 安全/隐私 SDK |
 
 shared 模式的 proxy 函数链自动避免递归/环形调用，每个 proxy 函数执行前会检测目标是否已在执行栈中。
-
