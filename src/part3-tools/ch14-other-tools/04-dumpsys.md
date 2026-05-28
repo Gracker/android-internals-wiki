@@ -31,7 +31,7 @@ related_chapters:
 - '13.1'
 - '14.1'
 task9_result: "needs-rework"
-last_task2b_at: "2026-04-30T17:46:37.750688"
+last_task2b_at: "2026-05-28T14:50:00+08:00"
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-24T01:38:24+08:00"
@@ -41,10 +41,10 @@ review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHi
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
@@ -53,7 +53,7 @@ last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 3 处（清理 AIW 编辑注释、标题措辞、无条件量化收益）。无新增 Task6 回炉；Task9 P0 已由 Task2B 修复，等待 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
-task9_review_notes: "2026-05-24 Task9 deep review: needs-rework。P0 0 / P1 1 / P2 0；gfxinfo framestats 版本边界需修正：FrameDeadline/FrameInterval 并非 Android 14+，WorkloadTarget 为 Android 16+；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
+task9_review_notes: "2026-05-24 Task9 deep review: needs-rework。P0 0 / P1 1 / P2 0；gfxinfo framestats 版本边界需修正：FrameDeadline/FrameInterval 并非 Android 14+，WorkloadTarget 为 Android 16+；详见 logs/deep-review/2026-05-24-01-deep-review.md。2026-05-28 Task2B 已按 AOSP android-12.0.0_r1 / android-16.0.0_r1 拆分字段版本边界，回流 Task6。"
 ---
 # dumpsys 系列命令
 
@@ -228,7 +228,9 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 ### framestats：逐帧时间线
 
-`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`（Android 14+ 新增）、`FrameStartTime`、`FrameInterval`（Android 14+ 新增）、`WorkloadTarget`（Android 14+ 新增）、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
+`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`（Android 12+ 已存在）、`FrameStartTime`、`FrameInterval`（Android 12+ 已存在）、`WorkloadTarget`（Android 16+ 新增）、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
+
+这个版本边界会影响解析脚本：Android 12 到 Android 15 的 `FrameInfo.h` 已经包含 `FrameDeadline` 和 `FrameInterval`，但没有 `WorkloadTarget`。兼容多版本设备时，解析器应按 header 列名或字段数量识别列，避免把三列都绑定到 Android 14+。
 
 所有时间戳均为纳秒（ns）。固定刷新率设备上可以用 60Hz 的 16667000ns（约 16.67ms）或 120Hz 的 8333000ns（约 8.33ms）做粗略基准；VRR / ARR 设备要读每行的 `FrameInterval` 和 `FrameDeadline`，不能把整段测试都按一个固定 VSync 周期判定。
 
