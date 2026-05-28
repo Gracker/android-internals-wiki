@@ -396,25 +396,27 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T19:05:00+08:00",
+    "reviewed_at": "2026-05-29T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.5",
-      "15.5"
+      "16.2",
+      "14.3",
+      "14.4"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      "src/part4-system/ch16-aosp/02-version-changes.md",
+      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "src/part3-tools/ch14-other-tools/04-dumpsys.md"
     ],
-    "log": "logs/review/2026-05-28-19-review.md",
+    "log": "logs/review/2026-05-29-06-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
-    "small_fixes": 16,
+    "small_fixes": 2,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
+    "notes": "16.2/14.3/14.4 完成 Task6 复审；14.3 补 2 处示例代码块语言标记；无新增回炉项，送 Task9 复审。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2295,28 +2297,30 @@
   "total_review_sections": 270,
   "next_review_candidates": [],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T19:05:00+08:00",
+  "last_updated": "2026-05-29T06:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T19:05:00+08:00",
+    "reviewed_at": "2026-05-29T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.5",
-      "15.5"
+      "16.2",
+      "14.3",
+      "14.4"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      "src/part4-system/ch16-aosp/02-version-changes.md",
+      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "src/part3-tools/ch14-other-tools/04-dumpsys.md"
     ],
-    "log": "logs/review/2026-05-28-19-review.md",
+    "log": "logs/review/2026-05-29-06-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
-    "small_fixes": 16,
+    "small_fixes": 2,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
+    "notes": "16.2/14.3/14.4 完成 Task6 复审；14.3 补 2 处示例代码块语言标记；无新增回炉项，送 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
@@ -3192,18 +3196,18 @@
       "task9_state": "pending",
       "task9_result": "pending",
       "task2b_state": "fixed",
-      "last_task6_at": "2026-05-28T17:18:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-17-review.md",
+      "last_task6_at": "2026-05-29T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-06-review.md",
       "file": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
       "title": "内存分析工具",
       "section": "14.3",
       "task2b_result": "fixed-lite",
       "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-28",
+      "reviewed_date": "2026-05-29",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-28",
-      "task6_review_notes": "2026-05-28 17:18 Task6 review: pass-light-edit。清理 procrank 小节汇报腔 1 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+      "task6_reviewed_date": "2026-05-29",
+      "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。补 2 处示例代码块语言标记；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "22.6": {
       "status": "ready-for-review",
@@ -6587,12 +6591,12 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T16:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-16-review.md",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-06-review.md",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-28",
-      "task6_review_notes": "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。",
+      "task6_reviewed_date": "2026-05-29",
+      "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。",
       "task9_state": "pending",
       "task9_result": "pending"
     },
@@ -6732,8 +6736,9 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "logs/review/2026-05-28-19-review.md",
   "last_task6_sections": [
-    "14.5",
-    "15.5"
+    "16.2",
+    "14.3",
+    "14.4"
   ],
   "last_task6_reviewed_files": [
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
@@ -10848,18 +10853,26 @@
     "title": "各 Android 版本性能变更追踪",
     "file": "src/part4-system/ch16-aosp/02-version-changes.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-29T05:35:00+08:00",
-    "task2b_lite_note": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点；旧 frameworks/base 路径已验证 404，回流 Task6。"
+    "task2b_lite_note": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点；旧 frameworks/base 路径已验证 404，回流 Task6。",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T06:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-06-review.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-29",
+    "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。L1/L2 通过；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
   },
   "last_task6_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part4-system/ch16-aosp/02-version-changes.md",
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "src/part3-tools/ch14-other-tools/04-dumpsys.md"
   ]
 }

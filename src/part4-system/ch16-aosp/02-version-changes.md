@@ -39,14 +39,14 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-29"
 last_task6_audit: "2026-05-18"
 section: "16.2"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -56,6 +56,11 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-05-18T18:30:00+08:00"
 last_task9_audit: "2026-05-18"
+task6_reviewed_date: "2026-05-29"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-29T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-29-06-review.md"
+task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。L1/L2 通过；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 各 Android 版本性能变更追踪
