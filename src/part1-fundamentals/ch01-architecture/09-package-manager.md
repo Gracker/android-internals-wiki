@@ -10,11 +10,11 @@ polish_by: task2b-polish
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
-reviewed_at: "2026-05-28T16:06:00+08:00"
-task6_result: "needs-rework"
-task6_state: "revisiting"
+reviewed_at: "2026-05-28T17:18:00+08:00"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
 last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview
@@ -73,13 +73,13 @@ last_task2b_by: "task2b-content-processing-rework-main"
 last_task2b_summary: "整合 Android 16 Cloud Compilation / SDM 回炉问题，删除参考资料后的源码调研补遗，修正 installd 版本断点。"
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。"
-last_task6_at: "2026-05-28T16:06:00+08:00"
+last_task6_at: "2026-05-28T17:18:00+08:00"
 task6_reviewed_date: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-16-deep-review.md"
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-16-review.md"
-task6_review_notes: "2026-05-28 Task6 16:06 review: needs-rework。参考资料后方仍堆叠多段源码调研补遗，且 Cloud Compilation / SDM 表述互相冲突；已写入 Task2B queue。L1 小修 1 处。"
+last_task6_review_log: "logs/review/2026-05-28-17-review.md"
+task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -378,7 +378,7 @@ Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关�
 - `PackageInstallerSession.verifySdmSignatures()` 对 `.sdm` 文件做签名校验。源码注释把 SDM 定义为包含 cloud compilation artifacts 的文件，并要求 `.sdm` 与 APK 使用同一签名密钥。
 - `ArtManagedInstallFileHelper` 把 `.dm`、`.prof`、`.sdm` 都纳入 ART-managed install files，并按 APK 路径匹配对应文件；`ArtManagerLocal` 在删除 dexopt artifacts 时同时处理 VDEX、ODEX、ART、SDM、SDC 等产物。
 
-因此，本节统一把 SDM 写作 Secure Dex Metadata / `.sdm` cloud compilation artifact，并删除历史补遗中那些互相冲突的全称和不存在的源码目录。
+后续分析统一把 SDM 写作 Secure Dex Metadata / `.sdm` cloud compilation artifact；无法在 AOSP android-16.0.0_r1 中对应到源码的全称和目录，不作为正文口径使用。
 
 性能分析时要把源码证据和分发侧推断分开。能写成确定事实的是：安装会话可以接收并校验 `.sdm`，ART 侧能管理 SDM/SDC 等 cloud dexopt artifacts。不能写成定稿结论的是：Play Store 一定为目标包预生成 SDM、安装时一定免除本机编译、冻结窗口一定达到某个固定毫秒数量级。
 
@@ -411,7 +411,7 @@ if (isArchivingEnabled()) {
 
 **与 LMK 的关系**：App Archiving 与 LowMemoryKiller 无直接关联。归档操作通过 `DELETE_ARCHIVE | DELETE_KEEP_DATA` 标志位移除 APK，data 目录保留，归档 App 不直接触发 LMK。
 
-[AIW-源码调研-2026-05-01: 基于 AOSP mainline PackageArchiver.java / ActivityStarter.java / ArchiveState.java 一手源码验证]
+[已验证: AOSP mainline `PackageArchiver.java` / `ActivityStarter.java` / `ArchiveState.java`]
 
 ## 应用更新与 OTA 更新的性能影响
 
@@ -593,12 +593,8 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 `speed-profile` 只是编译级别，不代表实际编译了多少方法。对 Android 12+ 的常见安装路径，没有可用 profile 时它往往会退到 `verify`；更早版本还要看 quicken 等历史行为。要确认真实覆盖率，仍然要结合 `oatdump` 或 `profman`。
 
 ## 参考资料
-### OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 标准安装链路（PMS→InstallPackageHelper→DexOptHelper→ART Service→artd→dex2oat）与 vivo Turbo/小米 HyperOS 厂商定制安装优化路径的源码级对比，包含编译过滤器决策表、installd 改造机制、云编译 .dm 集成方式及厂商差异化策略分析。
-- 注入时间：2026-05-24
-- 价值：首次系统对比 AOSP 标准安装链路与 vivo/小米厂商定制路径，包含编译过滤器决策表和云编译集成方式
+### 延伸调研
+- OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md`。对比 AOSP 标准安装链路与 vivo Turbo / 小米 HyperOS 厂商定制安装优化路径，包含编译过滤器决策表、`installd` 改造机制、云编译 `.dm` 集成方式及厂商差异化策略分析。
 
 
 ### AOSP 源码路径
