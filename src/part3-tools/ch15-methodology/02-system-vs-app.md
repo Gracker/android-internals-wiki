@@ -2,7 +2,7 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -26,13 +26,13 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-21"
-task6_result: pass-light-edit
-task9_state: pending
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task9_result: needs-rework
 last_task9_at: "2026-04-27T20:35:19+08:00"
 task9_reviewed_date: "2026-04-27"
@@ -48,6 +48,13 @@ finalized_date: "2026-04-27"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
+last_task6_at: "2026-05-28T18:20:12+08:00"
+task6_reviewed_at: "2026-05-28T18:20:12+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-28-18-review.md"
+task6_l1_l2_fixes: 8
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
 ---
 
 # 如何区分系统问题和 App 问题
@@ -79,7 +86,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
 
 ## 为什么一定要区分系统问题和 App 问题
 
-很多性能排查最后卡住，不是因为 trace 不够，也不是因为工具不会用，而是因为一开始就把责任链看错了。
+很多性能排查卡在后半段，不是因为 trace 不够，也不是因为工具不会用，而是因为一开始就把责任链看错了。
 用户反馈你的 App 滑动卡顿，你打开 Perfetto 一看，主线程每一帧都在 20ms 左右——超标了，但 MainThread 的 Slice 里没有特别长的耗时段。放大去看，主线程大部分时间处于 Runnable 状态，也就是“准备好了但上不去 CPU”。同时 CPU 区域里 8 个核心全满，system_server、媒体扫描器、另一个游戏进程各占了不少核。
 
 这种情况，该谁改？
@@ -88,17 +95,17 @@ last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
 
 **区分系统问题和 App 问题，不是甩锅，而是决定优化方向的分水岭。**方向错了，花再多时间也出不了结果。App 开发者去优化系统调度，或者系统工程师去改 App 的布局层级，都是南辕北辙。更现实的一点是，在很多团队里，App 组和系统组本来就是分开的。能不能把责任链说清楚，直接影响后面的排期和资源分配。
 
-这一节我们来建立一套系统的判断方法：打开 Perfetto 之后，按照什么顺序看、看什么信号、怎么下结论。
+后面的判断方法围绕三个问题展开：打开 Perfetto 之后，按照什么顺序看、看什么信号、怎么下结论。
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-scheduling] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## 核心判断框架：从 Trace 里把责任链读出来
 
-打开一份 Perfetto Trace，面对一个已知的性能问题（比如滑动卡顿、启动慢、ANR），我们可以按以下顺序进行归因：
+打开一份 Perfetto Trace，面对一个已知的性能问题（比如滑动卡顿、启动慢、ANR），按以下顺序进行归因：
 
 ### 第一步：看主线程的 Wall 时间 vs CPU 时间
 
-在 Perfetto 中选中主线程的某个关键 Slice（比如 `Choreographer#doFrame`），下方的详情面板会显示 `Wall` 和 `CPU` 两个时间。`Wall` 是这个 Slice 从开始到结束的真实世界耗时；`CPU` 是这个线程真正在 CPU 上执行代码的时间。两者的关系是：
+在 Perfetto 中选中主线程的某个关键 Slice（比如 `Choreographer#doFrame`），下方的详情面板会显示 `Wall` 和 `CPU` 两个时间。`Wall` 是这个 Slice 从开始到结束的真实世界耗时；`CPU` 是这个线程在 CPU 上执行代码的时间。两者的关系是：
 
 ```
 Wall = CPU 时间 + Runnable 时间 + Sleep 时间
@@ -127,7 +134,7 @@ Wall = CPU 时间 + Runnable 时间 + Sleep 时间
 - **内存压力**：有没有看到 `kswapd` 线程活跃？有没有大量的 `direct reclaim` 事件？
 - **SurfaceFlinger 轨道**：Android 14+ 的 trace 里优先看 `commit` 和 `composite`。`commit` 处理事务、状态更新和 buffer latch；`composite` 负责合成决策、HWC/GPU 提交和 present 前后的工作。旧 trace 或部分设备上仍可能看到 `onMessageRefresh`，它更像外层刷新入口，不要把它当成唯一耗时归因点。
 
-这三步形成了一个从局部到全局的判断链：先看问题线程本身，再看它在等什么，最后看系统环境是否支持它。
+这三步形成了一个从局部到全局的判断链：先看问题线程本身，再看等待类型，再结合系统环境佐证。
 
 ## 系统问题的典型特征
 
@@ -194,7 +201,7 @@ LIMIT 10;
 
 不同 Android 版本和采集配置下，track 名称可能略有差异。查询没有结果时，先在 Perfetto UI 搜索 `rss_stat`、`anon_rss`、`file_rss`，确认 trace 是否采到了进程级内存 counter。
 
-所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，可以判定这是系统级内存压力。App 端仍要确认自身 RSS 是否异常增长；如果自身内存稳定，根本解决通常需要系统层面调整 LMK 策略或增加物理内存。
+所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，可以判定这是系统级内存压力。App 端仍要确认自身 RSS 是否异常增长；如果自身内存稳定，最终解决通常需要系统层面调整 LMK 策略或增加物理内存。
 
 ### SurfaceFlinger 合成延迟
 
@@ -278,7 +285,7 @@ App 侧问题的另一个特征是**可重现、可关联到特定用户操作**
 
 ## 多 App 共存时的性能归因
 
-现代 Android 设备上通常同时运行着几十个进程。当一个 App 出现性能问题时，凶手可能是另一个 App。这时候归因需要做"跨进程分析"。
+现代 Android 设备上通常同时运行着几十个进程。当一个 App 出现性能问题时，影响来源可能是另一个 App。这时候归因需要做"跨进程分析"。
 
 ### 方法一：CPU 时间排行
 
@@ -380,7 +387,7 @@ Android 大版本升级往往会引入新的系统服务，或者让既有服务
 
 **误区二："系统问题我改不了，不用分析"**
 
-即使问题确实是系统侧的（比如 OEM 的调度策略不合理），你也应该分析清楚并量化影响。原因有三：一是你可以向系统组提供详细的 Trace 分析报告来推动修复；二是你可以在 App 端做防御性优化（减少计算量、异步化），降低对系统资源的依赖；三是在与 OEM 或合作方沟通时，有数据支撑的分析比模糊的"系统卡"有效得多。
+即使问题属于系统侧（比如 OEM 的调度策略不合理），你也应该分析清楚并量化影响。原因有三：一是你可以向系统组提供详细的 Trace 分析报告来推动修复；二是你可以在 App 端做防御性优化（减少计算量、异步化），降低对系统资源的依赖；三是在与 OEM 或合作方沟通时，有数据支撑的分析比模糊的"系统卡"有效得多。
 
 **误区三："CPU 利用率低就说明没问题"**
 

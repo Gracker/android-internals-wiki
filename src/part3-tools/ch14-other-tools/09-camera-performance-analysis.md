@@ -9,7 +9,7 @@ drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
-reviewed_date: "2026-05-19"
+reviewed_date: "2026-05-28"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
@@ -34,8 +34,8 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
@@ -55,15 +55,16 @@ last_task9_review_log: "logs/deep-review/2026-05-19-19-deep-review.md"
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。TextureView 残留 GPU 纹理上传错误表述；CameraHal::openSession 示例缺 vendor slice 兜底。"
 task2b_rework_date: '2026-05-19'
 last_task2b_lite_at: "2026-05-28"
-last_task6_at: "2026-05-19T20:25:44+08:00"
-task6_reviewed_at: "2026-05-19T20:25:44+08:00"
+last_task6_at: "2026-05-28T18:20:12+08:00"
+task6_reviewed_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-19-20-review.md"
-task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1/L2 无新增正文问题。既有 Task9 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。"
+last_task6_review_log: "logs/review/2026-05-28-18-review.md"
+task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
 p0: 0
 p1: 1
 p2: 1
-
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
 ---
 
 
@@ -427,18 +428,23 @@ Camera 启动（从用户点击相机图标到预览首帧出现）可以拆解�
 |------|-----------|-----------|
 | App 点击 → openSession | `deliverInputEvent` | `connectDevice` / `CameraHal::openSession` 开始 |
 | HAL openSession | `connectDevice` / vendor `openSession` | `connectDevice` 结束 / vendor `openSession` 结束 |
-
-> `CameraHal::openSession` 是 Qualcomm CamX/CHI 侧的 vendor-specific 命名，在非高通设备上对应的 slice 名称可能不同。AOSP 通用入口是 `CameraService::connectDevice`，多数设备在 `cameraserver` 进程中可以找到。如果 vendor slice 名不可用，用 `connectDevice` 作为替代锚点。
 | App 配置 → beginConfigure | openSession 结束 | `beginConfigure` |
 | HAL configure | `beginConfigure` | `endConfigure` 结束 |
 | App → submitRequest | `endConfigure` 结束 | `submitRequestList` |
 | HAL 首帧 | `submitRequestList` | `first full buffer` 结束 |
 
+> `CameraHal::openSession` 是 Qualcomm CamX/CHI 侧的 vendor-specific 命名，在非高通设备上对应的 slice 名称可能不同。AOSP 通用入口是 `CameraService::connectDevice`，多数设备在 `cameraserver` 进程中可以找到。如果 vendor slice 名不可用，用 `connectDevice` 作为替代锚点。
+
 用 Python SDK 自动拆解：
 
 ```python
 # Camera 启动性能拆解脚本
-tp = TraceProcessor(trace='camera_launch.trace', config=...)
+from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
+
+tp = TraceProcessor(
+    trace='camera_launch.trace',
+    config=TraceProcessorConfig(bin_path='trace_processor_shell')
+)
 
 # 1. 用户点击时间
 click = tp.query("""
