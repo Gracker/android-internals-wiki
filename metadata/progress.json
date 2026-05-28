@@ -2738,10 +2738,18 @@
     },
     "1.9": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-12T21:56:00+08:00",
-      "task6_result": "needs-rework",
-      "queue_priority": 90
+      "task6_result": "revisiting",
+      "section": "1.9",
+      "title": "Package Manager Service 与应用安装性能",
+      "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task9_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00"
     },
     "2.10": {
       "status": "ready-for-review",
@@ -3137,17 +3145,19 @@
     },
     "14.3": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "queue_priority": 85,
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "revisited",
+      "task9_state": "pending",
+      "task9_result": "pending-lite-fix",
+      "task2b_state": "fixed",
       "last_task6_at": "2026-05-13T08:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-08-review.md",
       "file": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-      "title": "内存分析工具"
+      "title": "内存分析工具",
+      "section": "14.3",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00"
     },
     "22.6": {
       "status": "ready-for-review",
@@ -10335,14 +10345,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-28T07:27:00+08:00",
+  "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00",
   "last_task2b_verifier_sections": [
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-    "src/part2-performance/ch12-apk-network/02-network-performance.md"
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -10455,6 +10465,22 @@
       "result": "ready-for-task6",
       "log": "logs/rework/2026-05-28-07-task2b-verifier.md",
       "summary": "同步最近 6 个 fixed/fixed-lite/auto-fixed 章节的 progress 状态；queue 无 pending，正文充分，无阻塞。"
+    },
+    {
+      "at": "2026-05-28T15:47:00+08:00",
+      "sections": [
+        "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+        "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+        "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+        "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+        "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+      ],
+      "status_corrections": 2,
+      "blocked": 0,
+      "result": "ready-for-task6",
+      "log": "logs/rework/2026-05-28-15-task2b-verifier.md",
+      "summary": "复查最近 6 个 fixed/fixed-lite/auto-fixed/task6_pending 章节；修正 14.3 task2b_state 与 1.9 Task6 回流状态；queue 无 pending，正文充分，无阻塞。"
     }
   ],
   "last_task2b_files": [
