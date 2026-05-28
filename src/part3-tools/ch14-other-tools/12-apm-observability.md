@@ -41,22 +41,22 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: pending
-task9_reviewed_date: "2026-05-22"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T05:34:00+08:00"
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-28"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-28T13:20:00+08:00"
+task2b_state: "fixed"
 repaired_date: '2026-05-28'
 repaired_by: openclaw-task2b-main
 task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
-task9_review_notes: "2026-05-28 Task2B fixed: AppExitInfoTracker 持久化路径修为 /data/system/procexitstore/procexitinfo；默认历史条数修为 config_app_exit_info_history_list_size=16；补 KillHandler 多来源消息链与 Android 16 rss_kb 边界；尾部源码调研块已并入主体。"
+task9_review_notes: "2026-05-28 Task9 auto-fix: 补 Matrix Trace Canary 上游 README 标注的 AGP 3.5/4.0/4.1 兼容边界，提醒 AGP 7/8+ 先做最小样本验证或确认 fork 适配。"
 last_task6_at: "2026-05-28T13:05:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task6_audit_result: l1-light-edit
@@ -64,11 +64,15 @@ last_task6_audit_log: "logs/review/2026-05-20-17-audit.md"
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-13-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-13-review.md"
 task6_review_notes: "2026-05-28 Task6 revisiting: L1/L2 小修通过；无 L3/L4 回炉项，等待 Task9 技术复审。"
+last_task9_autofix_at: "2026-05-28"
+p0: 0
+p1: 1
+p2: 0
 ---
 
 
@@ -197,6 +201,8 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 
 它不适合被想象成“接了以后平台就有了”。  
 很多团队用 Matrix 的难点，往往不在 SDK 接入，而在 schema、采样、回查和治理流程。
+
+版本兼容要单独核。Matrix README 仍把 Android Gradle Plugin 支持范围写在 3.5.0 / 4.0.0 / 4.1.0；AGP 7/8+ 项目接 Trace Canary 前，应先用最小样本验证 Gradle plugin、ASM 插桩和混淆流程，或确认团队使用的 fork 已完成适配。
 
 ### KOOM：内存问题成为主矛盾时，它的价值更明显
 
