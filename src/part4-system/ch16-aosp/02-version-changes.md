@@ -39,16 +39,16 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_by: "openclaw-task6"
+reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 last_task6_audit: "2026-05-18"
 section: "16.2"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_state: reviewed
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-29"
@@ -57,13 +57,16 @@ task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-05-29T06:27:31+08:00"
 last_task9_audit: "2026-05-18"
 task6_reviewed_date: "2026-05-29"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-29T06:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-29-06-review.md"
-task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。L1/L2 通过；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-29T07:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-29-07-review.md"
+task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
 last_task9_autofix_at: "2026-05-29"
 last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 Android 15 FGS timeout 处理、Android 14/15 低 targetSdk 安装限制与 Google Play target API 政策边界；无 queue P0/P1。"
+task6_reviewed_at: "2026-05-29T07:07:00+08:00"
+task6_l1_l2_fixes: 3
+task6_l3_l4_issues: 0
 ---
 
 # 各 Android 版本性能变更追踪
@@ -524,7 +527,7 @@ ADPF、ProfilingManager、ApplicationStartInfo 等新 API 都设计为增量可�
 
 ### "Predictive Back 只影响动画，和性能无关"
 
-Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的返回目标需要重新加载大量数据或执行复杂布局，Predictive Back 的"预准备"阶段可能成为新的性能瓶颈。这不是传统的卡顿（用户看不到帧丢失），而是手势响应不够流畅。
+Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的返回目标需要重新加载大量数据或执行复杂布局，Predictive Back 的"预准备"阶段可能成为新的性能瓶颈。这类问题不属于传统卡顿（用户看不到帧丢失），更接近手势响应不够流畅。
 
 ### "ProfilingManager 能替代 adb 抓取 Perfetto"
 
@@ -570,17 +573,17 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 ### Android15适配之targetSdkVersion升到35后全是坑
 - 来源：https://juejin.cn/post/7584295332340858943
 - 类型：技术文章
-- 摘要：详尽记录将targetSdkVersion升级到35（Android 15）过程中遇到的所有适配问题。涵盖隐私变更、前台服务类型强制分类、16KB页面大小对native库的影响。
+- 摘要：详尽记录将 targetSdkVersion 升级到 35（Android 15）过程中遇到的所有适配问题。涵盖隐私变更、前台服务类型强制分类、16KB 页面大小对 native 库的影响。
 - 入库时间：2026-04-06
 ### Android 17 有什么需要适配的？
 - 来源：https://juejin.cn/post/7610233341305389099
 - 类型：技术文章
-- 摘要：Android 17官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back强制适配、禁止侧载政策详解。
+- 摘要：Android 17 官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back强制适配、禁止侧载政策详解。
 - 入库时间：2026-04-06
 ### 了解一下Android16更新事项
 - 来源：https://juejin.cn/post/7595053284915822632
 - 类型：技术文章
-- 摘要：Android 16主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
+- 摘要：Android 16 主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
 - 入库时间：2026-04-06
 
 

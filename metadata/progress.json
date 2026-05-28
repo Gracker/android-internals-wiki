@@ -1,8 +1,8 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 202,
-  "finalized": 175,
+  "ready-for-review": 200,
+  "finalized": 177,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-28",
   "task9_reviewed_by": "openclaw-task9",
@@ -396,27 +396,32 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-29T06:05:00+08:00",
+    "reviewed_at": "2026-05-29T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
+      "16.5",
       "16.2",
-      "14.3",
-      "14.4"
+      "17.4",
+      "18.6"
     ],
     "files": [
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "src/part4-system/ch16-aosp/02-version-changes.md",
-      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-      "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
     ],
-    "log": "logs/review/2026-05-29-06-review.md",
+    "log": "logs/review/2026-05-29-07-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 13,
     "l3_l4_issues": 0,
-    "small_fixes": 2,
+    "small_fixes": 13,
     "rework_items": 0,
-    "auto_promoted": [],
+    "auto_promoted": [
+      "16.2",
+      "18.6"
+    ],
     "mode": "revisiting review",
-    "notes": "16.2/14.3/14.4 完成 Task6 复审；14.3 补 2 处示例代码块语言标记；无新增回炉项，送 Task9 复审。"
+    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2296,8 +2301,8 @@
   },
   "total_review_sections": 270,
   "next_review_candidates": [],
-  "ready_for_review": 158,
-  "last_updated": "2026-05-29T06:05:00+08:00",
+  "ready_for_review": 156,
+  "last_updated": "2026-05-29T07:07:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-05-29T06:05:00+08:00",
@@ -2323,7 +2328,7 @@
     "notes": "16.2/14.3/14.4 完成 Task6 复审；14.3 补 2 处示例代码块语言标记；无新增回炉项，送 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
-  "ready_to_publish": 187,
+  "ready_to_publish": 189,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -6734,37 +6739,47 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-05-28-19-review.md",
+  "last_task6_review": "logs/review/2026-05-29-07-review.md",
   "last_task6_sections": [
+    "16.5",
     "16.2",
-    "14.3",
-    "14.4"
+    "17.4",
+    "18.6"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part4-system/ch16-aosp/02-version-changes.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
-  "last_task6_at": "2026-05-28T19:05:00+08:00",
+  "last_task6_at": "2026-05-29T07:07:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T19:05:00+08:00",
+    "reviewed_at": "2026-05-29T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.5",
-      "15.5"
+      "16.5",
+      "16.2",
+      "17.4",
+      "18.6"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part4-system/ch16-aosp/02-version-changes.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
     ],
-    "log": "logs/review/2026-05-28-19-review.md",
+    "log": "logs/review/2026-05-29-07-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 13,
     "l3_l4_issues": 0,
-    "small_fixes": 16,
+    "small_fixes": 13,
     "rework_items": 0,
-    "auto_promoted": [],
+    "auto_promoted": [
+      "16.2",
+      "18.6"
+    ],
     "mode": "revisiting review",
-    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
+    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
   },
   "last_task9_reviewed_files": [
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -6774,11 +6789,13 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T19:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-19-review.md",
+  "task6_last_review_at": "2026-05-29T07:07:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-29-07-review.md",
   "task6_last_review_sections": [
-    "14.5",
-    "15.5"
+    "16.5",
+    "16.2",
+    "17.4",
+    "18.6"
   ],
   "sections_status": {
     "22.11": {
@@ -8550,33 +8567,44 @@
     "18.6"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T19:05:00+08:00",
+    "reviewed_at": "2026-05-29T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "14.5",
-      "15.5"
+      "16.5",
+      "16.2",
+      "17.4",
+      "18.6"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-      "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "src/part4-system/ch16-aosp/02-version-changes.md",
+      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
     ],
-    "log": "logs/review/2026-05-28-19-review.md",
+    "log": "logs/review/2026-05-29-07-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 16,
+    "l1_l2_fixes": 13,
     "l3_l4_issues": 0,
-    "small_fixes": 16,
+    "small_fixes": 13,
     "rework_items": 0,
-    "auto_promoted": [],
+    "auto_promoted": [
+      "16.2",
+      "18.6"
+    ],
     "mode": "revisiting review",
-    "notes": "14.5/15.5 完成 Task6 写作复审；修复禁用/填充表达、标题重复、Frontmatter 与个别一致性问题；无新增回炉项，送 Task9 复审。"
+    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
   },
   "task6_last_review_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part4-system/ch16-aosp/02-version-changes.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part4-system/ch16-aosp/02-version-changes.md",
+    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -10852,27 +10880,84 @@
     "section": "16.2",
     "title": "各 Android 版本性能变更追踪",
     "file": "src/part4-system/ch16-aosp/02-version-changes.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-29T05:35:00+08:00",
     "task2b_lite_note": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点；旧 frameworks/base 路径已验证 404，回流 Task6。",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-29",
-    "last_task6_at": "2026-05-29T06:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-29-06-review.md",
+    "last_task6_at": "2026-05-29T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
     "task6_reviewed_by": "openclaw-task6",
     "task6_reviewed_date": "2026-05-29",
-    "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。L1/L2 通过；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+    "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
     "src/part4-system/ch16-aosp/02-version-changes.md",
     "src/part3-tools/ch14-other-tools/03-memory-tools.md",
     "src/part3-tools/ch14-other-tools/04-dumpsys.md"
-  ]
+  ],
+  "section_16_5": {
+    "section": "16.5",
+    "title": "Android 17 (API 37) 性能行为变更与适配方法",
+    "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "task2b_state": "fixed",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-29",
+    "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；补齐 outline 块；修正中英文间距与括号格式；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
+  },
+  "section_17_4": {
+    "section": "17.4",
+    "title": "sched_ext 与 OEM BPF 调度器",
+    "file": "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "task2b_state": "fixed",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-29",
+    "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；L1/L2 通过；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
+  },
+  "section_18_6": {
+    "section": "18.6",
+    "title": "SurfaceView 直出路径",
+    "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "fixed",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-05-29",
+    "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；替换 1 处禁用词；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
+  }
 }

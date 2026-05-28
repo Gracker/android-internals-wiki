@@ -38,7 +38,7 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task2b_state: fixed
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-29T06:27:31+08:00"
 task9_reviewed_date: "2026-05-24"
@@ -49,15 +49,15 @@ last_task2b_at: "2026-05-24T11:16:52+08:00"
 last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
-task6_reviewed_date: "2026-05-28"
-last_task6_at: "2026-05-28T20:05:00+08:00"
+reviewed_date: "2026-05-29"
+task6_reviewed_date: "2026-05-29"
+last_task6_at: "2026-05-29T07:07:00+08:00"
 last_task6_audit: '2026-05-24'
 last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
 last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
@@ -74,15 +74,14 @@ last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
 p0: 0
 p1: 0
 p2: 0
-last_task6_review_log: "logs/review/2026-05-28-20-review.md"
-task6_review_notes: "2026-05-28 20:05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 9 处，补正文 H1 章节号，清理第二人称、否定纠正式句型和模糊改善表述；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
-task6_l1_l2_fixes: 9
+last_task6_review_log: "logs/review/2026-05-29-07-review.md"
+task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；替换 1 处禁用词；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-28T20:05:00+08:00"
+task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 last_task9_autofix_at: "2026-05-29"
 ---
-
 
 # 18.6 SurfaceView 直出路径
 
@@ -186,7 +185,7 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
    - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
-   - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / master 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已落地的精确唤醒优化
+   - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / master 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已经实现的精确唤醒优化
    - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这能防止分配期间整个 BufferQueue 冻结
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
