@@ -2302,8 +2302,8 @@
   "total_review_sections": 270,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-29T07:21:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-29T07:47:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-29T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -9676,6 +9676,14 @@
         "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
       ],
       "result": "fixed-lite"
+    },
+    {
+      "at": "2026-05-29T07:47:00+08:00",
+      "lane": "lite",
+      "section": "18.17",
+      "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "result": "fixed-lite",
+      "source_log": "logs/deep-review/2026-05-26-03-deep-review.md"
     }
   ],
   "section_18_23": {
@@ -10617,6 +10625,16 @@
       "by": "task2b-content-processing-rework",
       "source": "frontmatter backlog fallback",
       "status": "fixed"
+    },
+    {
+      "section": "18.17",
+      "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "at": "2026-05-29T07:47:00+08:00",
+      "by": "task2b-lite",
+      "source": "frontmatter-fallback/task9-deep-review",
+      "priority": 95,
+      "result": "fixed-lite",
+      "summary": "NDK SurfaceControl API 示例局部修复，回流 Task6。"
     }
   ],
   "last_task2b_completed": [
@@ -10719,15 +10737,24 @@
         "fixed_date": "2026-05-29T05:35:00+08:00",
         "source": "frontmatter-fallback/task9-audit",
         "fix_summary": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点，修复 frameworks/base 404 路径问题"
+      },
+      {
+        "section": "18.17",
+        "title": "Hardware Buffer Renderer",
+        "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-05-29T07:47:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review",
+        "fix_summary": "修正 NDK SurfaceControl API 36 OnBufferRelease 签名与 API 29-35/36+ buffer 回收分支。"
       }
     ]
   },
-  "last_task2b_lite_at": "2026-05-29T05:35:00+08:00",
+  "last_task2b_lite_at": "2026-05-29T07:47:00+08:00",
   "last_task2b_lite_sections": [
-    "16.2"
+    "18.17"
   ],
   "last_task2b_lite_files": [
-    "src/part4-system/ch16-aosp/02-version-changes.md"
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "task2b_verifier_history": [
     {
@@ -10815,14 +10842,14 @@
     "source_log": "logs/review/2026-05-28-16-review.md; logs/deep-review/2026-05-28-16-deep-review.md"
   },
   "task2b_last_rework": {
-    "time": "2026-05-28T19:35:00+08:00",
+    "time": "2026-05-29T07:47:00+08:00",
     "lane": "lite",
     "result": "fixed-lite",
     "sections": [
-      "18.6"
+      "18.17"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
     ]
   },
   "last_task9_reviewed_sections": [
@@ -11028,5 +11055,19 @@
     "task6_reviewed_by": "openclaw-task6",
     "task6_reviewed_date": "2026-05-29",
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；替换 1 处禁用词；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
+  },
+  "section_18_17": {
+    "section": "18.17",
+    "title": "Hardware Buffer Renderer",
+    "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-05-29T07:47:00+08:00",
+    "last_task2b_lite_log": "logs/rework/2026-05-29-07-task2b-lite.md",
+    "fix_summary": "修正 NDK ASurfaceTransaction_OnBufferRelease 签名，拆分 API 29-35 setBuffer+OnComplete 与 API 36+ setBufferWithRelease 互斥路径，删除 OnComplete 示例残留尾巴。"
   }
 }
