@@ -11,9 +11,9 @@ drafted_by: openclaw-task2a
 reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 reviewed_at: '2026-05-12T21:56:00+08:00'
-task6_result: pending
-task6_state: reviewed
-task9_state: reviewed
+task6_result: revisiting
+task6_state: revisiting
+task9_state: pending
 pipeline_stage: task6_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-18'
@@ -60,7 +60,7 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: needs-rework
+task9_result: pending
 last_task9_at: "2026-05-17T19:30:43+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
@@ -71,6 +71,7 @@ task9_review_notes: "2026-05-17 task9 deep-review: needs-rework。P0 2 / P1 1 / 
 last_task6_at: '2026-05-12T21:56:00+08:00'
 task6_reviewed_date: '2026-05-12'
 last_task9_review_log: "logs/deep-review/2026-05-17-19-deep-review.md"
+last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
 ---
 
 # 1.9 Package Manager Service 与应用安装性能

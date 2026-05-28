@@ -42,19 +42,22 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task9_result: needs-rework
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: revisited
+task9_state: pending
+task2b_state: fixed
+task9_result: pending-lite-fix
+task2b_result: fixed-lite
 task2b_rework_date: '2026-05-01'
-task2b_fixed_at: '2026-04-20'
+task2b_fixed_at: '2026-05-28'
+task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
+last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T04:11:19+08:00'
 task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
+last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 ---
 
 
