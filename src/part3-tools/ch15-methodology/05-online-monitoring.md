@@ -1,12 +1,12 @@
 ---
 title: "线上性能监控"
 chapter: "15.5"
-last_task6_review_log: "logs/review/2026-05-21-20-review.md"
-last_task6_at: "2026-05-21T20:11:00+08:00"
-reviewed_date: "2026-05-21"
+last_task6_review_log: "logs/review/2026-05-28-19-review.md"
+last_task6_at: "2026-05-28T19:05:00+08:00"
+reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-section: 15.5
+section: "15.5"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
@@ -41,18 +41,18 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task2b_pending
-task2b_result: pending
-task2b_state: pending
+pipeline_stage: task9_pending
+task2b_result: fixed
+task2b_state: fixed
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 last_task9_at: "2026-05-21T20:31:42+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 task9_result: needs-rework
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-25T19:43:07+08:00"
+last_task2b_at: "2026-05-28T18:50:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T13:31:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
@@ -148,26 +148,28 @@ Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() 
 
 FrameCallback 的方式虽然简单直接，但它有一个明显的短板：只知道"掉了多少帧"，不知道"为什么掉"。它是纯时序层面的感知，没有渲染管线内部的细节。
 
-### FrameMetrics API：拿到每一帧的完整耗时拆解
+### FrameMetrics API：拿到每一帧的完整耗时分项
 
 Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、不知道原因"的问题。它提供了每一帧从 VSync 到最终上屏的完整耗时分项，包括以下几个维度：
 
 | 指标 | 含义 | 对应渲染阶段 |
 |------|------|-------------|
-| `UNKNOWN_DELAY` | VSync 到开始处理之间的等待 | 消息队列延迟 |
-| `INPUT_HANDLING` | Input 事件处理耗时 | Input 回调 |
-| `ANIMATION` | 动画计算耗时 | Animation 回调 |
-| `LAYOUT_MEASURE` | measure/layout 耗时 | Traversal 回调 |
-| `DRAW` | draw 耗时 | Traversal 回调 |
-| `SYNC` | 同步阶段耗时 | RenderThread |
-| `COMMAND_ISSUE_DURATION` | 向图形驱动下发绘制命令耗时 | RenderThread / graphics driver command issue |
-| `SWAP_BUFFERS` | Buffer 交换耗时 | BufferQueue |
+| `UNKNOWN_DELAY_DURATION` | UI 线程开始处理这一帧之前的等待时间 | 消息队列延迟 |
+| `INPUT_HANDLING_DURATION` | Input 回调耗时 | Input 回调 |
+| `ANIMATION_DURATION` | Animation 回调耗时 | Animation 回调 |
+| `LAYOUT_MEASURE_DURATION` | measure/layout 耗时 | Traversal 回调 |
+| `DRAW_DURATION` | 生成 DisplayList 的耗时 | Traversal 回调 |
+| `SYNC_DURATION` | UI 线程与 RenderThread 同步耗时 | RenderThread |
+| `COMMAND_ISSUE_DURATION` | HWUI / RenderThread 向 GPU 下发绘制命令的耗时 | RenderThread / command issue |
+| `SWAP_BUFFERS_DURATION` | Buffer 交换耗时 | BufferQueue / EGL swap |
 | `TOTAL_DURATION` | 帧总耗时 | 全流程 |
-| `FIRST_DRAW_FRAME` | 首帧绘制标记 | 冷启动首帧 |
+| `FIRST_DRAW_FRAME` | 是否为窗口首帧 | 冷启动首帧 |
+| `GPU_DURATION` | GPU 完成这一帧的耗时，API 31+ 可用 | GPU |
+| `DEADLINE` | 系统分配给 App 产出这一帧的时间预算，API 31+ 可用 | Frame deadline |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
-有了这些分项数据，才能区分掉帧是因为布局太复杂、GPU 渲染太慢、还是主线程消息队列堵塞——没有这个粒度的拆解，性能优化就是盲人摸象。
+有了这些分项数据，才能区分掉帧是因为布局太复杂、UI 线程响应延迟、RenderThread 同步慢，还是高版本设备上的 GPU 执行时间过长。这里要把两个口径分开：`COMMAND_ISSUE_DURATION` 只表示向 GPU 下发绘制命令的阶段；API 31+ 的 `GPU_DURATION` 才表示 GPU 完成这一帧的耗时。
 
 从 API 31 开始，FrameMetrics 还新增了 `DEADLINE` 指标，直接告诉你这一帧的 deadline 是多少（取决于当前屏幕刷新率）。有了 deadline，判断掉帧就不再需要硬编码 16ms，而是直接比较 `TOTAL_DURATION` 和 `DEADLINE`：
 
@@ -271,7 +273,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 **系统 API 自动采集**则依赖 Android 框架提供的能力。从 API 24 开始，系统在 logcat 中输出的 `Displayed` 日志就包含了 TTID 信息。更现代的做法是使用 Jetpack Macrobenchmark 库在 CI 环境中持续度量启动时间，但这属于测试侧，不是线上监控。
 
-**Jetpack App Startup** 库本身不直接提供启动耗时监控能力，但它在启动优化中扮演重要角色：它通过合并多个 ContentProvider 的初始化到单一的 `InitializationProvider` 中，减少了每个 ContentProvider 约 2ms 的开销。在使用 App Startup 后，启动流程变得更加结构化，也更容易在关键节点插入埋点。
+**Jetpack App Startup** 库本身不直接提供启动耗时监控能力，但它在启动优化中扮演重要角色：它通过单一 `InitializationProvider` 统一发现和调度 initializer，减少多个库各自声明 ContentProvider 带来的初始化分发开销。在使用 App Startup 后，启动流程变得更加结构化，也更容易在关键节点插入埋点。具体收益要用项目内的 Macrobenchmark 或线上启动阶段埋点确认，不能套用固定毫秒数。
 
 [已验证: 官方文档, developer.android.com/topic/libraries/architecture/startup]
 
@@ -288,17 +290,17 @@ ANR（Application Not Responding）是线上监控中优先级最高的一类问
 
 ### 为什么 ANR 监控比想象的困难
 
-ANR 监控面临一个主要矛盾：**ANR 的定义是主线程被阻塞超过阈值（通常 5 秒），而你要监控 ANR 的代码也运行在同一个 App 里。** 如果主线程卡死了，你的监控代码怎么执行？
+ANR 监控面临一个主要矛盾：**系统 ANR 裁决不只有“主线程卡 5 秒”这一种口径，而客户端侧最容易观测到的信号通常只是主 Looper stall。** input dispatch、service、foreground service、broadcast、JobService 等路径都有各自的超时条件和系统上下文。§9.3 会从系统侧展开这些分类，本节只讨论线上 SDK 如何拿到足够接近系统口径的证据。
 
-这催生了两种截然不同的监控思路。
+这催生了几种互补的监控思路。
 
 ### 思路一：Watchdog 线程（ANR Watchdog）
 
-最经典的方案是用一个独立的后台线程充当"看门狗"。它的工作方式很直观：每隔一段时间（比如 5 秒）向主线程的 Handler 投递一个 Runnable，然后 sleep 等待。如果主线程在超时前执行了这个 Runnable，说明主线程还活着，一切正常；如果超时了还没执行，说明主线程被阻塞了，很可能发生了 ANR。
+最经典的方案是用一个独立的后台线程充当 Watchdog。它的工作方式很直观：每隔一段时间（比如 5 秒）向主线程的 Handler 投递一个 Runnable，然后 sleep 等待。如果主线程在超时前执行了这个 Runnable，说明主线程还在处理消息；如果超时了还没执行，说明主线程发生了长时间 stall。
 
 开源库 `ANR-WatchDog` 就实现了这个思路。当检测到主线程无响应时，它会抓取所有线程的堆栈信息并上报。
 
-这个方案的优点是实现简单、兼容性好（所有 Android 版本都能用）。缺点是**精度有限**——5 秒的轮询间隔意味着检测延迟至少是 5 秒，而且有较高的误报率。如果主线程只是偶尔卡了一下（比如 GC 暂停 200ms），但还没到 ANR 的程度，Watchdog 可能不会触发；反过来，如果轮询间隔设得太短，又容易把短暂的 UI 卡顿误判为 ANR。
+这个方案的优点是实现简单、兼容性好（所有 Android 版本都能用）。缺点是**精度有限**：它只能近似判断主 Looper 是否长时间没有执行消息，不等同于系统的 input、service、broadcast 或 JobService ANR 裁决。轮询间隔设得太长会延迟发现问题；设得太短，又容易把短暂的 UI 卡顿误判成 ANR 候选。
 
 ### 思路二：系统级监控（ApplicationExitInfo）
 
@@ -311,22 +313,26 @@ List<ApplicationExitInfo> exitInfos = am.getHistoricalProcessExitReasons(
 );
 
 for (ApplicationExitInfo info : exitInfos) {
-    if (info.getReason() == ApplicationExitInfo.REASON_ANR) {
-        InputStream traceStream = info.getTraceInputStream();
-        if (traceStream != null) {
+    int reason = info.getReason();
+    InputStream traceStream = info.getTraceInputStream();
+    if (traceStream != null) {
+        if (reason == ApplicationExitInfo.REASON_ANR) {
             parseAndReportAnrTrace(traceStream);
+        } else {
+            reportExitTraceForLaterAnalysis(reason, traceStream);
         }
-        long timestamp = info.getTimestamp();
-        int importance = info.getImportance();
-        int pid = info.getPid();
     }
+
+    long timestamp = info.getTimestamp();
+    int importance = info.getImportance();
+    int pid = info.getPid();
 }
 ```
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
 [适用版本: Android 11 (API 30)+]
 
-`ApplicationExitInfo` 的优势在于数据来自系统，与 Google Play Console 的 ANR 统计口径一致。对 `REASON_ANR`，`getTraceInputStream()` 通常返回系统保留的 ANR traces；对 `REASON_CRASH` / `REASON_CRASH_NATIVE`，它能把 Java Crash、Native Crash 和 ANR 纳入同一套退出历史模型。Android 12（API 31）之后，Native Crash 场景可能返回 Protobuf 格式的 tombstone trace，解析流程要按二进制 tombstone 处理，不能假设它一定是纯文本。`getTraceInputStream()` 不是所有退出原因都有值，线上代码要把 `null` 当成正常分支。
+`ApplicationExitInfo` 的优势在于数据来自系统，与 Google Play Console 的 ANR 统计口径一致。对 `REASON_ANR`，`getTraceInputStream()` 通常返回系统保留的 ANR traces；如果进程曾经发生 ANR 后恢复、后续又因为其他 reason 退出，记录里仍可能带着那次 ANR trace，所以上报逻辑不能只在 `REASON_ANR` 分支里读取 trace。对 `REASON_CRASH` / `REASON_CRASH_NATIVE`，它能把 Java Crash、Native Crash 和 ANR 纳入同一套退出历史模型。Android 12（API 31）之后，Native Crash 场景可能返回 Protobuf 格式的 tombstone trace，解析流程要按二进制 tombstone 处理，不能假设它一定是纯文本。`getTraceInputStream()` 不是所有退出原因都有值，线上代码要把 `null` 当成正常分支。
 
 `ApplicationExitInfo` 只有在 API 30+ 的设备上才可用。对于覆盖 API 30 以下设备的应用，需要同时保留 Watchdog 方案作为兜底。大多数成熟的 APM SDK（如 Firebase Crashlytics、Sentry）都采用了这种分层策略：API 30+ 用 ApplicationExitInfo，低版本回退到 Watchdog。
 
@@ -336,7 +342,7 @@ for (ApplicationExitInfo info : exitInfos) {
 
 这个方案在现代 Android 上已经不太实用了，原因有三：
 
-1. **权限限制**：从 Android 10 开始，`/data/anr/` 目录的访问权限被大幅收紧。普通 App 无法直接读取其他进程的 traces 文件。即使通过 FileObserver 检测到了文件创建，也未必能读取内容。
+1. **权限限制**：从 Android 10 开始，`/data/anr/` 目录的访问限制加严。普通 App 无法直接读取其他进程的 traces 文件。即使通过 FileObserver 检测到了文件创建，也未必能读取内容。
 2. **SELinux 策略**：许多厂商 ROM 的 SELinux 策略阻止 App 进程访问 ANR traces 目录。
 3. **ApplicationExitInfo 更优**：在 API 30+ 设备上，`ApplicationExitInfo.getTraceInputStream()` 直接提供了 traces 数据，无需自行处理文件访问。
 
@@ -365,7 +371,7 @@ for (ApplicationExitInfo info : exitInfos) {
 
 **第一层：全量采集基础指标（低开销）**。每个用户会话都采集聚合数据：会话总帧数、掉帧总数、冷启动 TTID/TTFD、ANR 次数、崩溃次数。这些数据量很小（每次会话几十字节），但对建立性能基线是必需的。它能回答"我们的 App 整体性能怎么样"这个问题。
 
-**第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 拆解数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。要保证采样是随机的，不能只采高端设备。
+**第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 分阶段数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。要保证采样是随机的，不能只采高端设备。
 
 **第三层：定向全量采集（高开销）**。对于异常会话（发生 ANR、崩溃、或启动超过阈值），不受采样比例限制，全量采集所有数据。这是"发现问题"的关键——你不需要所有用户的详细数据，但你绝对需要出问题的那些用户的详细数据。
 
@@ -501,7 +507,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 - **§14.1 Android Studio Profiler** 和 **§14.6 自动化测试工具**：开发阶段的性能分析工具，与线上监控互补
 - **§15.4 竞品分析方法**：线上监控数据也常用于竞品对比
 
-如果换一个更强的主线视角，也可以这么理解：
+也可以按主线关系理解：
 
 - `7/8/9` 定义了用户到底在抱怨什么
 - `15.3` 定义了我们该看哪些数字
@@ -509,7 +515,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 - `15.9` 负责构建从数据到修复的完整流程
 - `15.10` 负责把这套流程变成团队机制
 
-## 常见问题与误区
+## 接入口径 FAQ
 
 **"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。拖慢 App 的通常是回调中的 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
 
