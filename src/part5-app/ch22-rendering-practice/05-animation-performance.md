@@ -37,17 +37,18 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T10:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。"
+last_task2b_lite_at: "2026-05-28"
 
 ---
 
@@ -131,9 +132,9 @@ view.animate()
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
 
-帧动画的主要风险来自资源侧。30 张 1080p RGBA 图片在内存里接近 240MB，哪怕解码策略做了延迟加载，也会把 GPU 纹理上传压力放到动画开始后的几帧。帧动画只建议用于小尺寸、短时长、不可用矢量或属性动画表达的视觉效果；长时长动效优先评估矢量、Lottie 或自绘方案。
+帧动画的主要风险来自资源侧。30 张 1920×1080 RGBA_8888 图片解码后约 248.8 MB，按二进制单位约 237.3 MiB，计算口径是 `1920 × 1080 × 4 × 30`。压缩包体积、硬件位图、采样缩放和目标纹理格式会改变实际占用，但解码后内存与 GPU 纹理上传压力仍会集中到动画开始后的几帧。帧动画只建议用于小尺寸、短时长、不可用矢量或属性动画表达的视觉效果；长时长动效优先评估矢量、Lottie 或自绘方案。
 
-[待验证: 帧动画内存估算需结合实际图片尺寸、解码格式和采样策略复核]
+[已确认: 帧动画内存估算按 RGBA_8888 解码后内存计算，实际项目需结合图片尺寸、采样策略和纹理格式复核]
 
 ## Lottie / RenderEffect 性能注意事项
 
@@ -150,7 +151,7 @@ Lottie 官方源码中 `LottieAnimationView.setRenderMode()` 的注释说明，�
 1. **设计稿约束**：控制 layer 数、mask/matte 数量、路径点数量，避免在一个首屏动画里放大面积半透明遮罩。
 2. **资源约束**：图片资源单独评估尺寸和复用；能用矢量表达的元素不要导出成多张大图。
 3. **运行时约束**：首屏或列表内 Lottie 禁止同步解析 JSON；composition 缓存打开后，再评估内存占用。
-4. **渲染模式验证**：同一动画在目标机型上对比 `AUTOMATIC`、`HARDWARE`、`SOFTWARE`，以 `FrameTimeline` jank、RenderThread `DrawFrame` 耗时和 CPU 使用率决定。
+4. **渲染模式验证**：同一动画在目标机型上对比 `AUTOMATIC`、`HARDWARE`、`SOFTWARE`。API 31+ 优先看 `FrameTimeline` jank，API 29-30 回退到 UI Thread、RenderThread `DrawFrame`、SurfaceFlinger/gfx 帧间隔和 CPU 使用率。
 
 Lottie 不适合放在 RecyclerView 大量 item 中同时播放。列表里如果需要动效，只让可见且有交互焦点的 item 播放，其余 item 停在静态帧。这个策略能同时压住 CPU 求值、GPU 绘制和电量消耗。
 
@@ -295,7 +296,7 @@ MotionLayout 的调试重点放在 trace 里每帧成本是否稳定；动画能
 - Lottie 动画限制 layer、mask、matte 和图片资源数量，首屏和列表场景禁止同步解析。
 - RenderEffect 限制作用范围和 blur 半径，低端机、省电模式、后台状态有关闭路径。
 - 转场动画只包住变化区域，RecyclerView / ViewPager2 默认排除。
-- Perfetto 同时看 UI Thread、RenderThread、FrameTimeline 和 CPU/GPU 频率，不只看单个方法耗时。
+- Perfetto 在 API 31+ 同时看 UI Thread、RenderThread、FrameTimeline 和 CPU/GPU 频率；API 29-30 用 UI Thread、RenderThread、SurfaceFlinger/gfx 帧间隔和调度信号推断卡顿。
 
 ## 参考资料
 
