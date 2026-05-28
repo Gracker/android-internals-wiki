@@ -36,12 +36,12 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: '2026-04-28'
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-28"
+reviewed_by: openclaw-task6
 last_task6_audit: "2026-05-22"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-29'
 task9_reviewed_by: openclaw-task9
@@ -52,6 +52,15 @@ rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。"
 last_task9_audit: "2026-05-22"
+last_task6_at: "2026-05-28T09:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-09-review.md"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T09:06:00+08:00"
+updated_by: openclaw-task6
+updated_date: "2026-05-28"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -59,6 +68,16 @@ last_task9_audit: "2026-05-22"
 在前面的章节中，我们分别介绍了 Perfetto 的 UI 可视化（§13.3）、专题解读（§13.5）和命令行工具（§13.4）。但在实际工作中，很多性能问题无法单靠肉眼在 UI 中定位——我们需要精确的数字：第 47 帧耗时多少毫秒？主线程有多少时间花在等锁上？Binder 调用中排队占了多少时间？这类定量分析，离不开 SQL。
 
 Perfetto Trace Processor 内置了一个完整的 SQL 引擎（基于 SQLite），我们可以用它对 Trace 数据做任意维度的查询和聚合。本节不会逐个罗列 SQL 语法，而是围绕性能分析中最常见的几类问题——帧时间与卡顿、线程调度、Binder 事务、内存与 GC、启动时间、ANR、锁竞争——逐个给出**从问题到 SQL 到结论**的完整分析路径。每条 SQL 都可以直接在 Perfetto UI 的 Query 标签页或 `trace_processor_shell` 中运行。
+
+<!-- outline-start -->
+## 本节导读
+- 🔹 Trace Processor SQL 基础：建立 PerfettoSQL、标准库模块、核心表、时间单位和大 Trace 查询约束。
+- 🔹 帧时间与卡顿分析：用 `Choreographer#doFrame`、Frame Timeline 和分桶统计定位慢帧。
+- 🔹 线程调度与 CPU 使用：通过 `sched`、`thread_state` 和调度延迟判断 CPU bound、Runnable 排队与阻塞。
+- 🔹 Binder、GC、启动与 ANR：把常见性能场景拆成可复查的 SQL 查询路径。
+- 🔹 锁竞争与 SPAN_JOIN：用 stdlib 视图、时间窗口和 `SPAN_JOIN` 做跨维度关联分析。
+- 🔹 交叉引用与分析路径：把单条 SQL 模板组合成卡顿、ANR 和启动分析流程。
+<!-- outline-end -->
 
 ## Trace Processor SQL 基础
 
@@ -97,7 +116,7 @@ Perfetto 有几十张底层表，但性能分析中最常用的只有五张：
 
 这些表之间的 JOIN 关系可以简化为：
 
-```
+```text
 slice → thread_track (via track_id) → thread (via utid) → process (via upid)
 sched → thread (via utid) → process (via upid)
 counter → counter_track (via track_id)

@@ -9,10 +9,10 @@ applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
 confidence: medium
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-17"
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task9_state: pending
 sources:
@@ -56,6 +56,15 @@ last_task2b_at: "2026-05-28T08:50:00+08:00"
 rework_date: "2026-05-28"
 rework_by: openclaw-task2b
 review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary to Android 16+/main pending verification and returned to Task6."
+last_task6_at: "2026-05-28T09:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-09-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界，送 Task9 复核。"
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T09:06:00+08:00"
+updated_by: openclaw-task6
+updated_date: "2026-05-28"
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
