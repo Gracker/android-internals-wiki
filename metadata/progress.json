@@ -394,25 +394,27 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_at": "2026-05-28T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "13.18",
-      "13.3"
+      "14.13",
+      "14.10",
+      "14.12"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-11-review.md",
+    "log": "logs/review/2026-05-28-14-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 30,
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "small_fixes": 30,
+    "small_fixes": 19,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
+    "notes": "14.13/14.10 完成写作复审与流水线状态归一；14.12 清理禁用句式和 Markdown 硬换行；三章均无新增回炉项，送 Task9 复审。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2261,28 +2263,30 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T13:05:00+08:00",
+  "last_updated": "2026-05-28T14:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T13:05:00+08:00",
+    "reviewed_at": "2026-05-28T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
+      "14.13",
       "14.10",
       "14.12"
     ],
     "files": [
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
       "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-13-review.md",
+    "log": "logs/review/2026-05-28-14-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "small_fixes": 7,
+    "small_fixes": 19,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.10 完成术语/格式小修；14.12 隐藏 outline 脚手架并压掉少量泛化表达；两章均等待 Task9 复审。"
+    "notes": "14.13/14.10 完成写作复审与流水线状态归一；14.12 清理禁用句式和 Markdown 硬换行；三章均无新增回炉项，送 Task9 复审。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 187,
@@ -3192,24 +3196,27 @@
     },
     "14.13": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-13T15:31:00+08:00",
-      "task9_result": "needs-rework",
-      "queue_priority": 95,
+      "task9_result": "pending",
       "title": "Hook 基础设施与性能工具实现原理",
       "file": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-22",
-      "last_task6_at": "2026-05-22T08:20:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-22-08-review.md",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T14:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-14-review.md",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-05-28",
       "task6_new_rework": false,
-      "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。"
+      "task6_note": "Task9 07:43：P0 16KB NDK/AGP p_align 口径；P1 Google Play 2025-11-01 发布范围。Task6 08:20 L1/L2 小修 1 处，无新增回炉。",
+      "section": "14.13",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-28",
+      "task6_review_summary": "内容充分；五条 Hook 路线和 16KB/Page Size 风险覆盖完整；仅做 frontmatter 流水线状态归一，无新增正文回炉项。"
     },
     "2.0": {
       "status": "ready-for-review",
@@ -6012,9 +6019,9 @@
       "task2b_state": "fixed",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T13:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-13-review.md",
-      "task6_review_summary": "L1/L2 小修：cache 译法归一为缓存、补代码标识反引号；结构与锚点覆盖通过，无回炉项。",
+      "last_task6_at": "2026-05-28T14:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-14-review.md",
+      "task6_review_summary": "内容充分；Android eBPF 基础设施、UprobeStats、sched_ext 与实战边界覆盖完整；仅做 frontmatter 流水线状态归一，无新增正文回炉项。",
       "section": "14.10",
       "task2b_result": "fixed",
       "task9_state": "pending",
@@ -6023,7 +6030,10 @@
       "last_task2b_by": "openclaw-task2b-main",
       "task2b_source": "frontmatter backlog fallback",
       "task2b_issue_source": "logs/deep-review/2026-05-25-08-deep-review.md + logs/review/2026-05-25-09-review.md",
-      "task2b_summary": "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。"
+      "task2b_summary": "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_new_rework": false
     },
     "20.15": {
       "section": "20.15",
@@ -6477,9 +6487,12 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T13:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-13-review.md",
-      "task6_review_summary": "L1/L2 小修：outline 脚手架改为注释、metrics state 译法补正、压掉基础盘/重要性套话；无回炉项。"
+      "last_task6_at": "2026-05-28T14:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-14-review.md",
+      "task6_review_summary": "内容充分；三层能力分层、工具定位和团队成熟度路径覆盖完整；清理 1 处禁用句式和正文硬换行，无新增回炉项。",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_new_rework": false
     }
   },
   "task2b_rounds": [
@@ -6578,34 +6591,38 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-05-28",
   "last_task6_sections": [
+    "14.13",
     "14.10",
     "14.12"
   ],
   "last_task6_reviewed_files": [
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
-  "last_task6_at": "2026-05-28T13:05:00+08:00",
+  "last_task6_at": "2026-05-28T14:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-28T13:05:00+08:00",
+    "reviewed_at": "2026-05-28T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
+      "14.13",
       "14.10",
       "14.12"
     ],
     "files": [
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
       "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-13-review.md",
+    "log": "logs/review/2026-05-28-14-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "small_fixes": 7,
+    "small_fixes": 19,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "14.10 完成术语/格式小修；14.12 隐藏 outline 脚手架并压掉少量泛化表达；两章均等待 Task9 复审。"
+    "notes": "14.13/14.10 完成写作复审与流水线状态归一；14.12 清理禁用句式和 Markdown 硬换行；三章均无新增回炉项，送 Task9 复审。"
   },
   "last_task9_reviewed_files": [
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -6615,9 +6632,10 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T13:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-13-review.md",
+  "task6_last_review_at": "2026-05-28T14:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-14-review.md",
   "task6_last_review_sections": [
+    "14.13",
     "14.10",
     "14.12"
   ],
@@ -8383,31 +8401,35 @@
     "13.15"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T11:05:00+08:00",
+    "reviewed_at": "2026-05-28T14:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "13.18",
-      "13.3"
+      "14.13",
+      "14.10",
+      "14.12"
     ],
     "files": [
-      "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "src/part3-tools/ch14-other-tools/12-apm-observability.md"
     ],
-    "log": "logs/review/2026-05-28-11-review.md",
+    "log": "logs/review/2026-05-28-14-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 30,
+    "l1_l2_fixes": 19,
     "l3_l4_issues": 0,
-    "small_fixes": 30,
+    "small_fixes": 19,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "13.18 无正文问题；13.3 完成句子级文风小修；两章均送 Task9 复审。"
+    "notes": "14.13/14.10 完成写作复审与流水线状态归一；14.12 清理禁用句式和 Markdown 硬换行；三章均无新增回炉项，送 Task9 复审。"
   },
   "task6_last_review_files": [
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "task6_last_reviewed_files": [
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
@@ -8848,8 +8870,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "13.18",
-    "13.3"
+    "14.13",
+    "14.10",
+    "14.12"
   ],
   "task2b_progress": [
     {
@@ -8950,7 +8973,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
+  "last_task6_review_log": "logs/review/2026-05-28-14-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9730,8 +9753,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-28T11:05:00+08:00",
-  "last_task6_review_section": "5.2",
+  "last_task6_review_at": "2026-05-28T14:05:00+08:00",
+  "last_task6_review_section": "14.13, 14.10, 14.12",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -9831,8 +9854,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "13.18",
-    "13.3"
+    "14.13",
+    "14.10",
+    "14.12"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -9862,8 +9886,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part3-tools/ch14-other-tools/12-apm-observability.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -10048,7 +10073,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-28T05:12:00+08:00",
+  "last_task6_reviewed_at": "2026-05-28T14:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",

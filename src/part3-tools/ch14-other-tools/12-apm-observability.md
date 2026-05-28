@@ -41,13 +41,13 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
-task9_result: "auto-fixed"
+task9_state: "pending"
+task9_result: "pending"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T13:20:00+08:00"
@@ -57,7 +57,7 @@ repaired_by: openclaw-task2b-main
 task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 task9_review_notes: "2026-05-28 Task9 auto-fix: 补 Matrix Trace Canary 上游 README 标注的 AGP 3.5/4.0/4.1 兼容边界，提醒 AGP 7/8+ 先做最小样本验证或确认 fork 适配。"
-last_task6_at: "2026-05-28T13:05:00+08:00"
+last_task6_at: "2026-05-28T14:05:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task6_audit_result: l1-light-edit
 last_task6_audit_log: "logs/review/2026-05-20-17-audit.md"
@@ -67,8 +67,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-28-13-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-13-review.md"
-task6_review_notes: "2026-05-28 Task6 revisiting: L1/L2 小修通过；无 L3/L4 回炉项，等待 Task9 技术复审。"
+last_task6_review_log: "logs/review/2026-05-28-14-review.md"
+task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；L1/L2 小修 17 处（禁用句式 1、Markdown 硬换行 16）；无 L3/L4 回炉项，送 Task9 复审。"
 last_task9_autofix_at: "2026-05-28"
 p0: 0
 p1: 1
@@ -101,7 +101,7 @@ p2: 0
 
 刚开始做线上性能治理时，最容易出现一种很自然的冲动：先去找“最强的那套方案”。于是大家开始比工具名、比功能表、比 README，问题逐渐变成“Matrix 和 Firebase 哪个更适合我们”“Measure 要不要一上来就接”“是不是再加一个 btrace 会更稳”。
 
-这些问题看起来都很像选型问题，但它们的共同前提还没成立：团队到底想先解决哪一类问题？  
+这些问题看起来都很像选型问题，但它们的共同前提还没成立：团队到底想先解决哪一类问题？
 如果这个前提没说清楚，选型越认真，越容易把事情做偏。因为这些工具解决的并不是同一件事。
 
 有些工具负责把线上问题先感知到，有些工具负责在异常发生时把现场保留下来，有些平台负责聚合、告警和回查，还有一些工具更偏开发阶段的调试现场。把它们都放进“性能库”这个大桶里看，结论往往只剩一个：信息很多，但判断不出来。
@@ -155,7 +155,7 @@ p2: 0
 
 ### FrameMetrics：在高版本上把帧拆得更细
 
-如果说 `JankStats` 解决的是“这一帧有没有问题”，那 `FrameMetrics` 更接近“问题更像发生在哪一段”。  
+如果说 `JankStats` 解决的是“这一帧有没有问题”，那 `FrameMetrics` 更接近“问题更像发生在哪一段”。
 它在高版本设备上能补更细的帧阶段信息，所以更适合作为增强层，而不是唯一入口。
 
 工程上更稳的理解不是“二选一”，而是：
@@ -167,10 +167,10 @@ p2: 0
 
 ### ApplicationExitInfo：先把稳定性事实说准
 
-线上治理最怕误判。  
+线上治理最怕误判。
 `ApplicationExitInfo` 的价值，不在信息量特别大，而在于它提供了一种更接近系统真相的出口：到底是 ANR、崩溃、后台被杀，还是其他退出原因。
 
-没有这层能力，很多团队只能靠客户端自己的启发式判断去猜测“像不像 ANR”“是不是被系统回收了”。  
+没有这层能力，很多团队只能靠客户端自己的启发式判断去猜测“像不像 ANR”“是不是被系统回收了”。
 一旦口径建立在猜测上，后面的聚合和报警很容易一路变形。
 
 它的版本边界要单独写清：`ApplicationExitInfo` 从 Android 11（API 30）开始可用，API 26-29 不能把它当作基础能力。低版本上的 ANR、crash、low-memory 归因仍要依赖 traces、崩溃回调、前后台状态、进程重启痕迹和服务端会话拼接。接入时也不要在冷启动主线程同步拉取大量历史记录，`ActivityManager.getHistoricalProcessExitReasons()` 经过 `system_server`，适合延后到首帧后或后台线程。
@@ -181,7 +181,7 @@ p2: 0
 
 Android Vitals 的问题大家都知道：粒度不够细，自定义空间有限，很多时候只能看到趋势，拿不到足够多的现场。
 
-但它仍然是很多团队最早的性能入口。原因很简单：它来自真实分发面，而且几乎没有接入成本。  
+但它仍然是很多团队最早的性能入口：来自真实分发面，几乎没有接入成本。
 对于刚开始搭体系的团队来说，完全不看 Vitals，等于把一块已经放在手边的基础看板直接丢掉。
 
 ## 第二层：客户端增强层，决定了你能不能把现场留下来
@@ -199,14 +199,14 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 - 已经有自己的上报通道
 - 需要更强的客户端现场
 
-它不适合被想象成“接了以后平台就有了”。  
+它不适合被想象成“接了以后平台就有了”。
 很多团队用 Matrix 的难点，往往不在 SDK 接入，而在 schema、采样、回查和治理流程。
 
 版本兼容要单独核。Matrix README 仍把 Android Gradle Plugin 支持范围写在 3.5.0 / 4.0.0 / 4.1.0；AGP 7/8+ 项目接 Trace Canary 前，应先用最小样本验证 Gradle plugin、ASM 插桩和混淆流程，或确认团队使用的 fork 已完成适配。
 
 ### KOOM：内存问题成为主矛盾时，它的价值更明显
 
-`KOOM` 的优势很集中：Java Heap、Native Heap、线程泄漏、OOM 治理。  
+`KOOM` 的优势很集中：Java Heap、Native Heap、线程泄漏、OOM 治理。
 所以它更像一把专项刀，而不是总平台入口。
 
 如果团队当前最痛的是：
@@ -215,14 +215,14 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 - Native 泄漏难定位
 - OOM 突增
 
-那 KOOM 的优先级会非常高。  
+那 KOOM 的优先级会非常高。
 但如果团队当前主要卡在首页慢、列表卡、响应延迟，它通常不应该作为第一站。
 
 KOOM 的 Java heap 方案常见做法是让主进程短暂停住 ART VM，`fork()` 出子进程后立刻恢复主进程，再由子进程完成 hprof dump、strip 和分析。这样可以避开 `Debug.dumpHprofData()` 长时间阻塞主进程的问题。落到平台选型时，除了“能不能抓 OOM”，还要看 dump 触发阈值、子进程失败兜底、裁剪后 hprof 的可还原性，以及上传体积是否会压垮低端设备。
 
 ### LeakCanary：本地排泄漏，仍然非常强
 
-`LeakCanary` 的位置很清楚：它更偏开发和测试阶段的本地排查工具。  
+`LeakCanary` 的位置很清楚：它更偏开发和测试阶段的本地排查工具。
 它最擅长的是把“谁没有被回收、为什么还活着”讲清楚。
 
 所以更稳的理解是：
@@ -247,12 +247,12 @@ Matrix Trace Canary 和 btrace 都能补方法级现场，但路线不同。Matr
 DoKit 覆盖的能力很杂，实用点也不少：FPS、启动耗时、网络、页面检查、调试辅助、沙盒浏览。
 它解决的是开发和测试现场怎样更快看到问题。
 
-所以它更接近研发工具箱，而不是线上治理平台。  
+所以它更接近研发工具箱，而不是线上治理平台。
 这也是为什么它和 Firebase、Measure 看起来都“能看性能”，但并不在同一条线上。
 
 ## 第三层：平台层，决定治理能不能持续运转
 
-客户端能力再强，没有平台，很多时候也只能停留在“拿到了一些点状证据”。  
+客户端能力再强，没有平台，很多时候也只能停留在“拿到了一些点状证据”。
 平台层补上的，是这些能力：
 
 - 版本对比
@@ -264,10 +264,10 @@ DoKit 覆盖的能力很杂，实用点也不少：FPS、启动耗时、网络�
 
 ### Firebase Performance：最容易进入团队视野的平台型能力
 
-Firebase Performance 最大的优点，是上手快。  
+Firebase Performance 最大的优点，是上手快。
 对一个刚开始做线上性能治理的团队来说，它很适合解决“先把基础指标跑起来”这个问题。
 
-但这类平台也有很清楚的边界：越往深走，越会碰到定制能力、私有化、trace 流程控制这些限制。  
+但这类平台也有很清楚的边界：越往深走，越会碰到定制能力、私有化、trace 流程控制这些限制。
 它适合做第一层平台，不一定适合承载整个治理体系。
 
 ### Measure：更接近完整治理平台
@@ -291,7 +291,7 @@ Firebase Performance 最大的优点，是上手快。
 
 ### 3. 团队有没有平台承接能力？
 
-没有平台承接时，客户端采再多，也很容易堆成日志。  
+没有平台承接时，客户端采再多，也很容易堆成日志。
 有平台能力时，才值得把 trace-id、场景上下文、会话时间线这些字段认真组织起来。
 
 ### 4. 团队能承受多少运行时开销和维护成本？
@@ -319,7 +319,7 @@ Firebase Performance 最大的优点，是上手快。
 | 工程成本 | 接入复杂度、运行时开销、运维成本如何？ |
 | 数据边界 | 隐私、留存、自托管、上传策略是否可控？ |
 
-没有哪套方案会在所有维度都最优。  
+没有哪套方案会在所有维度都最优。
 选型要做的，是把“换来了什么”以及“付出了什么”同时看清楚。
 
 ## 按团队成熟度选，而不是按流行度选
