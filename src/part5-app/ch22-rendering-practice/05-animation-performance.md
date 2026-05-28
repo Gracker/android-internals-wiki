@@ -10,7 +10,7 @@ confidence: medium
 drafted_date: "2026-05-13"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-28"
 polish_count: 1
 sources:
   - type: clippings
@@ -37,8 +37,8 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -49,7 +49,13 @@ last_task9_at: "2026-05-14T10:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。"
 last_task2b_lite_at: "2026-05-28"
-
+last_task6_at: "2026-05-28T10:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-10-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 10 Task6 revisiting-review: pass-light-edit；L1/L2 无需修改；outline 4/4 覆盖；无 L3/L4 回炉项。Task2B 已补齐 Task9 上轮指出的 scaleX 初始状态、帧动画内存口径和 FrameTimeline 版本边界，送 Task9 复核。"
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T10:05:00+08:00"
 ---
 
 # 动画性能优化

@@ -268,7 +268,8 @@
     "10.3",
     "12.4",
     "13.17",
-    "13.16"
+    "13.16",
+    "13.10"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -375,26 +376,26 @@
     "src/part5-app/ch20-stability/06-stability-metrics.md",
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
     "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
+    "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-28T08:10:00+08:00",
+    "reviewed_at": "2026-05-28T10:05:00+08:00",
     "sections": [
-      "12.4",
-      "13.17",
-      "13.16"
+      "22.5",
+      "13.10"
     ],
-    "log": "logs/review/2026-05-28-08-review.md",
+    "log": "logs/review/2026-05-28-10-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 1,
+    "l1_l2_fixes": 0,
     "l3_l4_issues": 0,
     "files": [
-      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
     ],
-    "small_fixes": 1,
+    "small_fixes": 0,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -2228,31 +2229,29 @@
       "task6_note": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
     }
   },
-  "total_review_sections": 213,
+  "total_review_sections": 214,
   "next_review_candidates": [
     "20.9",
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T09:35:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-28T10:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T09:06:00+08:00",
+    "reviewed_at": "2026-05-28T10:05:00+08:00",
     "sections": [
-      "12.4",
-      "13.15",
+      "22.5",
       "13.10"
     ],
-    "log": "logs/review/2026-05-28-09-review.md",
+    "log": "logs/review/2026-05-28-10-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 2,
+    "l1_l2_fixes": 0,
     "l3_l4_issues": 0,
     "files": [
-      "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
       "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
     ],
-    "small_fixes": 2,
+    "small_fixes": 0,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -3060,8 +3059,16 @@
       "file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
       "title": "动画性能优化",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-14T09:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-09-review.md"
+      "last_task6_at": "2026-05-28T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-10-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T10:05:00+08:00",
+      "task6_review_notes": "2026-05-28 10 Task6 revisiting-review: pass-light-edit；L1/L2 无需修改；outline 4/4 覆盖；无 L3/L4 回炉项。Task2B 已补齐 Task9 上轮指出的 scaleX 初始状态、帧动画内存口径和 FrameTimeline 版本边界，送 Task9 复核。",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_log": "logs/review/2026-05-28-10-review.md"
     },
     "8.6": {
       "status": "ready-for-review",
@@ -6356,26 +6363,26 @@
       "title": "Perfetto SQL 性能分析实战手册",
       "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-28T08:50:00+08:00",
       "last_task2b_summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。",
       "section": "13.10",
-      "task6_l1_l2_fixes": 2,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T09:06:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
+      "last_task6_at": "2026-05-28T10:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-10-review.md",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
-      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。",
-      "task6_log": "logs/review/2026-05-28-09-review.md",
+      "task6_reviewed_at": "2026-05-28T10:05:00+08:00",
+      "task6_review_notes": "2026-05-28 10 Task6 revisiting-review: pass-light-edit；L1/L2 无需修改；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 auto-fixed 后复审通过，按流水线送 Task9 状态收敛/发布前检查。",
+      "task6_log": "logs/review/2026-05-28-10-review.md",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_at": "2026-05-28T09:20:00+08:00",
       "last_task9_at": "2026-05-28T09:20:00+08:00",
