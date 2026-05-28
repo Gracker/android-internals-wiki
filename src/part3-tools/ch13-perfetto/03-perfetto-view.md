@@ -9,9 +9,14 @@ applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-28"
 last_verified_against: "perfetto.dev FrameTimeline docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1"
 confidence: medium-high
-reviewed_date: "2026-04-21"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-28"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task6_l1_l2_fixes: 30
+task6_l3_l4_issues: 0
+last_task6_at: "2026-05-28T11:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-11-review.md"
+task6_review_notes: "2026-05-28 11: Task6 revisiting review: 清理预设读者、空泛强调、结构性过渡和少量翻译腔；无 L3/L4 回炉项，送 Task9 技术复审。"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
@@ -41,8 +46,8 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -86,13 +91,13 @@ last_task6_audit: "2026-05-19"
 
 ## 为什么要专门学 Perfetto View
 
-在 13.1 节我们了解了 Perfetto 的定位和架构，13.2 节学会了怎么抓 Trace。但抓到 Trace 只是第一步——面对一个动辄几百 MB 的 `.perfetto-trace` 文件，如果不知道怎么看，数据再多也没用。
+13.1 节讲了 Perfetto 的定位和架构，13.2 节讲了怎么抓 Trace。但抓到 Trace 只是第一步——面对一个动辄几百 MB 的 `.perfetto-trace` 文件，如果不知道怎么看，数据再多也没用。
 
-很多初学者第一次打开 Perfetto UI 的时候会有一种"信息过载"的感觉：满屏幕的色块、密密麻麻的 Track、各种看不懂的缩写。这种感觉是正常的。Perfetto 展示的是整个 Android 系统在抓取时段内的全部活动——所有进程、所有线程、所有 CPU 核心、所有图形管线——信息量很大。
+第一次打开 Perfetto UI，常见感受是"信息过载"：满屏幕的色块、密密麻麻的 Track、各种看不懂的缩写。Perfetto 展示的是整个 Android 系统在抓取时段内的全部活动——所有进程、所有线程、所有 CPU 核心、所有图形管线——信息量很大。
 
-但如果我们换一个角度想：Perfetto 给我们的是整台手机的"监控录像"。就像看监控不需要盯着每一个像素一样，读 Trace 也不需要逐条看每一个事件。关键在于：知道要看哪里、知道每种颜色代表什么、知道怎么快速定位到感兴趣的时间区间。
+换成分析动作看，读 Trace 不需要逐条看每一个事件，而是先定位时间区间、关键 Track 和线程状态颜色，再顺着异常片段往下追。
 
-本节的目标就是解决这三个问题。读完之后，我们再打开一个 Perfetto Trace，应该能快速找到主线程在做什么、渲染线程跑在哪个核心、Binder 调用跳到了哪个进程、掉帧发生时系统各模块的状态——这些是日常性能分析最核心的操作。
+本节解决这三个问题。读完之后，再打开一个 Perfetto Trace，应该能快速找到主线程在做什么、渲染线程跑在哪个核心、Binder 调用跳到了哪个进程、掉帧发生时系统各模块的状态——这些是日常性能分析最常用的操作。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -112,13 +117,13 @@ Perfetto UI 对浏览器内存有要求。如果 Trace 文件超过 500 MB，浏
 
 Trace 加载完成后，界面可以分为四个区域：
 
-最左边（侧边栏）是导航区，包含几个常用入口：Show Timeline（回到 Trace 主视图）、Query（SQL 查询）、Metrics（预设分析指标）、Info and Stats（Trace 概要信息）。日常分析中我们大部分时间都在 Timeline 主视图里操作，侧边栏只在需要 SQL 查询或查看预设指标时才会切换过去。
+最左边（侧边栏）是导航区，包含几个常用入口：Show Timeline（回到 Trace 主视图）、Query（SQL 查询）、Metrics（预设分析指标）、Info and Stats（Trace 概要信息）。日常分析中大部分时间都在 Timeline 主视图里操作，侧边栏只在需要 SQL 查询或查看预设指标时才会切换过去。
 
-上方是时间标尺区，显示时间轴和缩放级别。通过时间标尺我们可以快速判断当前查看的时间窗口是毫秒级、秒级还是分钟级。
+上方是时间标尺区，显示时间轴和缩放级别。通过时间标尺可以快速判断当前查看的时间窗口是毫秒级、秒级还是分钟级。
 
-中间是 Trace 内容区，这是我们操作最多的区域。最上面的几组 Track 是系统级的：CPU 各核心的调度和频率、ftrace 事件等。下面是以进程为单位组织的：每个进程下面展示它的各种线程、Input 事件、Binder 调用、Memory 信息等。进程之间用进程名分隔，比如 `com.android.systemui`、`system_server`、`surfaceflinger` 等。
+中间是 Trace 内容区，也是操作最多的区域。最上面的几组 Track 是系统级的：CPU 各核心的调度和频率、ftrace 事件等。下面是以进程为单位组织的：每个进程下面展示它的各种线程、Input 事件、Binder 调用、Memory 信息等。进程之间用进程名分隔，比如 `com.android.systemui`、`system_server`、`surfaceflinger` 等。
 
-最下方是详情面板，选中任何一个 Slice（Trace 中的一个事件块）后，这里会展示该事件的详细信息：耗时、CPU 时间、线程状态分布、唤醒源等。这个面板是我们做深入分析的核心工具。
+最下方是详情面板，选中任何一个 Slice（Trace 中的一个事件块）后，这里会展示该事件的详细信息：耗时、CPU 时间、线程状态分布、唤醒源等。这个面板是深入分析的主要入口。
 
 [图：Perfetto UI 四大区域标注——侧边栏、时间标尺、Trace 内容区、详情面板]
 
@@ -130,9 +135,9 @@ Perfetto 的导航操作继承了 Systrace 的设计，但流畅度有了质的�
 
 核心导航操作围绕 WASD 键布局：`W` 放大、`S` 缩小、`A` 左移、`D` 右移。这套键位设计让左手可以不离开键盘就能完成大部分浏览操作，右手操作鼠标做选择和点击。
 
-最常用的操作是 `F`（Fit）：选中一个 Slice 后按 `F`，视图会自动缩放到刚好容纳这个 Slice 的大小。再按一次 `F`，会进一步缩放到填满整个视图。这个操作在日常分析中使用频率极高——比如我们在主线程看到一个很长的 `doFrame` Slice，按 `F` 就可以立刻看到这一帧内部的全部细节。
+最常用的操作是 `F`（Fit）：选中一个 Slice 后按 `F`，视图会自动缩放到刚好容纳这个 Slice 的大小。再按一次 `F`，会进一步缩放到填满整个视图。日常分析中经常用它处理长 Slice——比如主线程出现一个很长的 `doFrame` Slice，按 `F` 就可以立刻看到这一帧内部的全部细节。
 
-时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比，并结合红色锁竞争标记判断等待原因。这在分析 App 启动场景时非常有用——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在真正执行代码，多少时间在等待 CPU 或 I/O。
+时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比，并结合红色锁竞争标记判断等待原因。这适合分析 App 启动场景——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在真正执行代码，多少时间在等待 CPU 或 I/O。
 
 [已验证: 官方文档, perfetto.dev UI keyboard shortcuts]
 
@@ -142,17 +147,17 @@ Perfetto 的导航操作继承了 Systrace 的设计，但流畅度有了质的�
 
 ### Pin Track
 
-每个 Thread Track 的最左边有一个图钉图标，点击后这个 Track 会被固定到 Trace 内容区的顶部，不再随进程分组滚动。这个功能在分析跨进程问题时非常实用——比如我们可以把 App 的 MainThread、RenderThread 和 SurfaceFlinger 的主线程都 Pin 到顶部，这样观察掉帧时，三个关键线程的时间线就在同一个视野里，不需要上下滚动来回对照。
+每个 Thread Track 的最左边有一个图钉图标，点击后这个 Track 会被固定到 Trace 内容区的顶部，不再随进程分组滚动。这个功能适合分析跨进程问题——比如把 App 的 MainThread、RenderThread 和 SurfaceFlinger 的主线程都 Pin 到顶部，观察掉帧时，三个关键线程的时间线就在同一个视野里，不需要上下滚动来回对照。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
 ### 标记与旗子
 
-Perfetto 提供了两种标记方式来帮助我们在 Trace 上做注释。
+Perfetto 提供了两种标记方式，用来在 Trace 上做注释。
 
 `M` 键创建临时标记（Temporary Mark）。选中一个时间区间后按 `M`，区间会被高亮标注。但它只保留最新的一个——如果再对另一个区间按 `M`，前一个就会自动消失。临时标记适合快速对比两个点的时间差。
 
-`Shift+M` 创建持久标记（Sticky Mark）。持久标记不会自动消失，除非手动删除。这非常适合在分析一个长 Trace 时标记所有掉帧点，然后逐个检查。标记创建后，点击小旗子图标就能查看标记区间的详细信息。删除标记的方法是点击标记上方的三角箭头，在底部的 Current Selection 面板中点击 Remove。
+`Shift+M` 创建持久标记（Sticky Mark）。持久标记不会自动消失，除非手动删除。分析长 Trace 时，可以用它标记所有掉帧点，然后逐个检查。标记创建后，点击小旗子图标就能查看标记区间的详细信息。删除标记的方法是点击标记上方的三角箭头，在底部的 Current Selection 面板中点击 Remove。
 
 此外，把鼠标放到 Trace 最上方的时间轴上会出现一个旗子图标，点击可以在时间轴上插一个点标记（不是区间标记），用来标注某个关键时间点，比如"用户点击了按钮"。
 
@@ -167,7 +172,7 @@ Perfetto 的 Trace 内容区由许多水平排列的 Track 组成。每个 Track
 
 CPU 相关的 Track 位于 Trace 内容区的最顶部，分为三组。
 
-**CPU Frequency Track** 展示每个 CPU 核心的运行频率随时间的变化。频率用阶梯状的折线表示——因为 CPU 频率是离散调节的，不会平滑变化。在分析性能问题时，频率 Track 是排查"CPU 跑低了"的第一站。比如我们发现主线程的一段代码执行了 10ms，但看代码逻辑不应该这么慢，这时候就应该去查对应时间点大核频率是否被限制在了低频。这种情况在厂商的温控策略或调度策略配置不当时经常出现。
+**CPU Frequency Track** 展示每个 CPU 核心的运行频率随时间的变化。频率用阶梯状的折线表示——因为 CPU 频率是离散调节的，不会平滑变化。在分析性能问题时，频率 Track 是排查"CPU 跑低了"的第一站。比如主线程的一段代码执行了 10ms，但看代码逻辑不应该这么慢，这时候就应该去查对应时间点大核频率是否被限制在了低频。这种情况在厂商的温控策略或调度策略配置不当时经常出现。
 
 **CPU Scheduling Track** 展示每个核心上正在执行哪个线程。每个色块代表一个线程在某个时间段内占用了这个核心。鼠标悬停在色块上时，同一线程的其他执行段也会高亮——这个功能可以快速了解某个线程的"摆核"情况，即它在大核和小核之间迁移的规律。对于性能敏感的线程（如主线程、RenderThread），理想情况是稳定跑在大核上；如果频繁被迁移到小核，可能意味着调度策略需要优化。
 
@@ -182,7 +187,7 @@ CPU 相关的 Track 位于 Trace 内容区的最顶部，分为三组。
 
 CPU Track 下面是以进程为单位组织的 Track 区域。每个进程有一个可折叠的分组，展开后会列出该进程下的各个线程。
 
-**Thread Track** 是我们分析最多的 Track 类型。每个线程 Track 上展示两种信息：下方是 Slice（事件片段），对应代码中 `Trace.beginSection()` / `ATRACE_BEGIN` 记录的事件；上方是线程状态条，用不同颜色表示线程在每个时刻的 CPU 状态（Running、Runnable、Sleep、Uninterruptible Sleep），并用红色锁竞争 slice 提醒 Java/ART monitor 等等待问题。线程状态条的颜色编码在下一节详细介绍。
+**Thread Track** 是日常分析最多的 Track 类型。每个线程 Track 上展示两种信息：下方是 Slice（事件片段），对应代码中 `Trace.beginSection()` / `ATRACE_BEGIN` 记录的事件；上方是线程状态条，用不同颜色表示线程在每个时刻的 CPU 状态（Running、Runnable、Sleep、Uninterruptible Sleep），并用红色锁竞争 slice 提醒 Java/ART monitor 等等待问题。线程状态条的颜色编码在下一节详细介绍。
 
 对于 App 进程，我们最常关注的线程是：
 
@@ -251,7 +256,7 @@ Counter Track 的数值点来自应用、系统模块、native 代码和内核�
 
 ### Wall Duration 与 CPU Duration
 
-**Wall Duration**（墙上时间）是 Slice 从开始到结束的真实经过时间。就像用秒表计时一样，不管线程是在运行还是在睡觉，Wall Duration 都在走。这是我们在 Trace 中看到 Slice 宽度的直接对应——越宽的 Slice，Wall Duration 越长。
+**Wall Duration**（墙上时间）是 Slice 从开始到结束的真实经过时间。就像用秒表计时一样，不管线程是在运行还是在睡觉，Wall Duration 都在走。它直接对应 Trace 中看到的 Slice 宽度——越宽的 Slice，Wall Duration 越长。
 
 **CPU Duration**（CPU 时间）是线程在这个 Slice 期间真正在 CPU 上执行指令的时间。它排除了线程被挂起（Sleep）、等待 CPU 调度（Runnable）、等待 I/O（Uninterruptible Sleep）的时间。
 
@@ -259,7 +264,7 @@ Counter Track 的数值点来自应用、系统模块、native 代码和内核�
 
 > Wall Duration = CPU Duration + 等待时间（Runnable + Sleep + Uninterruptible）
 
-举一个具体的例子：假设我们看到 MainThread 上一个 `bindApplication` Slice 的 Wall Duration 是 200ms，但 CPU Duration 只有 30ms。也就是说，200ms 中有 170ms 线程没有在执行代码——它在等什么？切换到详情面板的 Thread States 标签，就能看到这 170ms 的组成：可能是 80ms 的 Sleep（等 Binder 调用返回），60ms 的 Runnable（等 CPU 调度），30ms 的 Uninterruptible Sleep（等磁盘 I/O）。每种等待的优化方向完全不同，这就是为什么我们需要同时看 Wall Duration 和 CPU Duration。
+举一个具体的例子：MainThread 上一个 `bindApplication` Slice 的 Wall Duration 是 200ms，但 CPU Duration 只有 30ms。也就是说，200ms 中有 170ms 线程没有在执行代码——它在等什么？切换到详情面板的 Thread States 标签，就能看到这 170ms 的组成：可能是 80ms 的 Sleep（等 Binder 调用返回），60ms 的 Runnable（等 CPU 调度），30ms 的 Uninterruptible Sleep（等磁盘 I/O）。每种等待的优化方向完全不同，因此要同时看 Wall Duration 和 CPU Duration。
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/trace-protractor — slice details]
 
@@ -267,7 +272,7 @@ Counter Track 的数值点来自应用、系统模块、native 代码和内核�
 
 **Self Time**（自身时间）是 Slice 的 Wall Duration 减去其子 Slice 的 Wall Duration。它表示"这个 Slice 自身直接消耗的时间"，不包括它调用的子函数。
 
-Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration 是 20ms，但 Self Time 只有 1ms——说明时间都花在了它的子 Slice 里（比如 `performTraversals` 里的 `measure` 5ms + `layout` 3ms + `draw` 11ms）。进一步看 `draw` 的 Self Time 可能也只有 2ms，因为大部分时间在子 Slice `RenderThread:DrawFrame` 里。这样逐层 drill-down，我们就能精确找到时间花在了哪一层。
+Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration 是 20ms，但 Self Time 只有 1ms——说明时间都花在了它的子 Slice 里（比如 `performTraversals` 里的 `measure` 5ms + `layout` 3ms + `draw` 11ms）。进一步看 `draw` 的 Self Time 可能也只有 2ms，因为大部分时间在子 Slice `RenderThread:DrawFrame` 里。这样逐层展开，就能精确找到时间花在了哪一层。
 
 做批量分析时，不要手写一长串父子 Slice 扣减逻辑。新版 Trace Processor 的 `slices.self_dur` stdlib 模块提供 `slice_self_dur` 表，`self_dur` 列就是已经扣掉子 Slice 的自身耗时；旧版本没有这组 stdlib 时，再退回到 `slice` 表父子关系手工计算。
 
@@ -284,15 +289,15 @@ Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration
 
 ### 唤醒源（Waker）
 
-当选中一个线程的 Runnable 状态段时，详情面板会显示"Related thread states"，其中最重要的信息是 Waker（唤醒源）：是哪个线程、在哪个 CPU 核心上唤醒了当前线程。这个信息在追踪事件传递链时非常关键。
+当选中一个线程的 Runnable 状态段时，详情面板会显示"Related thread states"，其中最重要的信息是 Waker（唤醒源）：是哪个线程、在哪个 CPU 核心上唤醒了当前线程。这个信息直接决定能否还原事件传递链。
 
-比如我们发现主线程在某个时刻从 Sleep 变为 Runnable，通过查看唤醒源，有时会看到唤醒线程来自 SurfaceFlinger 的 `app` 线程——这通常对应 VSync-app 信号到达后，SurfaceFlinger 通过 callback 通知 Choreographer，Choreographer 再唤醒主线程开始这一帧的渲染。
+比如主线程在某个时刻从 Sleep 变为 Runnable，通过查看唤醒源，有时会看到唤醒线程来自 SurfaceFlinger 的 `app` 线程——这通常对应 VSync-app 信号到达后，SurfaceFlinger 通过 callback 通知 Choreographer，Choreographer 再唤醒主线程开始这一帧的渲染。
 
-在 Perfetto 中追踪唤醒链非常方便：点击线程状态条上的 Runnable 段，底部面板展示唤醒源，点击唤醒源旁边的小箭头可以直接跳转到唤醒线程的对应位置。连续点击这个箭头，我们可以沿着唤醒链一路往回追溯，直到找到最初的触发者。这个操作在分析"响应为什么慢"时特别有用——响应慢往往是因为中间某个环节的唤醒延迟过大。
+在 Perfetto 中追踪唤醒链的步骤很短：点击线程状态条上的 Runnable 段，底部面板展示唤醒源，点击唤醒源旁边的小箭头可以直接跳转到唤醒线程的对应位置。连续点击这个箭头，可以沿着唤醒链一路往回追溯，直到找到最初的触发者。这个操作适合分析"响应为什么慢"——响应慢往往是因为中间某个环节的唤醒延迟过大。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
-上面我们分析了单个 Slice 的内部细节。但很多性能问题不是单个线程能解释的——Binder 调用跨了进程、VSync 信号连接了 App 和 SurfaceFlinger、Input 事件从内核一路传到了 App 主线程。要追踪这些跨线程、跨进程的事件流，就需要用到 Flow Events。
+单个 Slice 只能解释当前线程的内部细节。很多性能问题跨线程、跨进程：Binder 调用跨了进程，VSync 信号连接了 App 和 SurfaceFlinger，Input 事件从内核一路传到 App 主线程。追踪这些事件流，需要用到 Flow Events。
 
 ## Flow Events 的跟踪
 
@@ -300,19 +305,19 @@ Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration
 
 Flow Events（流事件）是 Perfetto 中连接跨线程、跨进程事件的机制。在 UI 中，Flow Events 表现为从一个 Slice 到另一个 Slice 的箭头。最典型的场景就是 Binder IPC：App 进程发起一个 Binder 调用，这个调用通过内核传递到 `system_server`（或其他服务进程）的 Binder 线程执行，执行结果再通过内核返回给 App。
 
-如果不看 Flow Events，我们只能看到 App 的某个 Slice 里有一段 Sleep 或 Binder 等待，但不知道对端在做什么。有了 Flow Events 的箭头，我们可以直接看到这段等待对应的是哪个进程的哪个方法执行。
+如果不看 Flow Events，只能看到 App 的某个 Slice 里有一段 Sleep 或 Binder 等待，但不知道对端在做什么。有了 Flow Events 的箭头，就可以直接看到这段等待对应的是哪个进程的哪个方法执行。
 
 ### Binder 调用的追踪
 
-在 Perfetto 中追踪 Binder 调用非常直观。选中一个包含 Binder 调用的 Slice 后，底部面板会显示与这个调用相关的 Flow 信息。点击箭头可以在发起端和响应端之间跳转。
+在 Perfetto 中追踪 Binder 调用的步骤很短。选中一个包含 Binder 调用的 Slice 后，底部面板会显示与这个调用相关的 Flow 信息。点击箭头可以在发起端和响应端之间跳转。
 
-具体操作流程是这样的：假设我们在 App 的主线程上看到一个 `bindService` Slice，它内部包含一段 Binder 通信。选中这段 Binder 通信的 Slice 后，详情面板会展示目标进程和目标方法。点击跳转箭头，视图会自动跳转到 `system_server` 中处理这个调用的 Binder 线程，我们会看到 `ActiveServices.bindServiceInstance` 这个 Slice 以及它的完整执行过程。
+具体操作流程是这样的：假设 App 主线程上有一个 `bindService` Slice，它内部包含一段 Binder 通信。选中这段 Binder 通信的 Slice 后，详情面板会展示目标进程和目标方法。点击跳转箭头，视图会自动跳转到 `system_server` 中处理这个调用的 Binder 线程，并看到 `ActiveServices.bindServiceInstance` 这个 Slice 以及它的完整执行过程。
 
 这种跨进程跳转能力是 Perfetto 相比传统日志分析的核心优势。在日志里分析 Binder 调用需要手动匹配两个进程的时间戳和调用 ID；在 Perfetto 里，点一下箭头就完成了。
 
 [图：Binder Flow Event 箭头——App 主线程到 system_server Binder 线程的跨进程跳转]
 
-需要注意，Flow Events 的箭头在默认视图中可能不会全部显示。如果箭头太密集，Perfetto 会自动省略一些。当我们选中某个 Slice 后，与它相关的 Flow 箭头会高亮显示。
+Flow Events 的箭头在默认视图中可能不会全部显示。如果箭头太密集，Perfetto 会自动省略一些。选中某个 Slice 后，与它相关的 Flow 箭头会高亮显示。
 
 [已验证: 官方文档, perfetto.dev — Flow events documentation]
 [已验证: 官方文档, perfetto.dev — Binder transaction analysis]
@@ -321,7 +326,7 @@ Flow Events（流事件）是 Perfetto 中连接跨线程、跨进程事件的�
 
 除了单个 Flow Event 的追踪，Perfetto 还提供了一个更高级的功能：**Critical Path**。选中一个 Slice 的 Running 状态段后，在底部面板中点击 "Critical path"，Perfetto 会自动计算并高亮显示所有与这个 Slice 有依赖关系的上游 Slice。
 
-打个比方：如果我们选中的 Slice 是 e，它依赖 d 的完成，d 依赖 c，c 依赖 b，b 依赖 a，那么 Critical Path 会把 a → b → c → d → e 这条依赖路径全部高亮出来。这在分析启动流程的端到端耗时时特别有用——我们就能看到从用户点击到界面显示的完整依赖链上，每个环节花了多少时间，瓶颈在哪里。
+例如，选中的 Slice 是 e，它依赖 d 的完成，d 依赖 c，c 依赖 b，b 依赖 a，那么 Critical Path 会把 a → b → c → d → e 这条依赖路径全部高亮出来。这适合分析启动流程的端到端耗时——从用户点击到界面显示的完整依赖链上，每个环节花了多少时间，瓶颈在哪里，都能沿着高亮路径检查。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -362,7 +367,7 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 [已验证: Linux 内核, kernel/sched/core.c — TASK_UNINTERRUPTIBLE state]
 [已验证: 官方文档, perfetto.dev — thread_state color coding]
 
-### 快速判断口诀
+### 快速判断思路
 
 总结一下，在 Trace 中看到线程状态条时，可以用这个思路快速判断：
 
@@ -372,7 +377,7 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 - **红色长**：锁竞争瓶颈，先跳到持锁线程，看它为什么不释放锁。
 - **橙色长**：I/O 瓶颈，需要看具体在读什么。
 
-当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
+实际情况往往比这组判断更复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
 Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
 
@@ -384,11 +389,11 @@ Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起
 
 除了前面提到的 WASD、F、M 键外，以下几个快捷键在日常分析中使用频率也很高：
 
-`Q` 键切换底部详情面板的显示和隐藏。Perfetto 非常占屏幕空间，底部面板展开后 Trace 区域会被压缩。熟练使用 Q 键——看 Slice 时打开面板，浏览 Trace 时关闭面板——可以显著提升分析效率。
+`Q` 键切换底部详情面板的显示和隐藏。底部面板展开后，Trace 区域会被压缩。熟练使用 Q 键——看 Slice 时打开面板，浏览 Trace 时关闭面板——可以减少来回缩放和滚动。
 
 `,` 和 `.` 键在同一个 Track 上移动到前一个/后一个 Slice。这在逐帧检查掉帧时很有用：定位到 `Choreographer#doFrame` 后，按 `.` 就能跳到下一帧的 `doFrame`，不需要鼠标点击。
 
-`R` 键将当前选中的 Slice 转换为时间选区。当我们想要统计某个 Slice 期间所有线程的活动时，这个操作比手动拖拽精确得多。
+`R` 键将当前选中的 Slice 转换为时间选区。统计某个 Slice 期间所有线程的活动时，这个操作比手动拖拽精确得多。
 
 `Ctrl+Shift+P`（Mac 上 `Cmd+Shift+P`）打开命令面板，可以快速执行各种操作，比如切换到 Query 面板、调整 Trace 配置等。也可以在搜索栏中输入 `>` 来激活命令面板模式。
 
@@ -398,7 +403,7 @@ Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起
 
 ### 查看 Buffer 消费关系
 
-App 的渲染输出通过 BufferQueue 传递给 SurfaceFlinger 消费。在 Perfetto 中，我们可以通过 App 进程的 Actual Timeline Track 追踪每一帧 Buffer 的消费情况：点击 Actual Timeline 上的一个色块，可以查到这个 Buffer 具体被 SurfaceFlinger 的哪一次合成操作消费了。这在分析"帧渲染完成但显示延迟"问题时很有用——可能帧画好了，但 SurfaceFlinger 等了两个 VSync 周期才合成它。
+App 的渲染输出通过 BufferQueue 传递给 SurfaceFlinger 消费。在 Perfetto 中，可以通过 App 进程的 Actual Timeline Track 追踪每一帧 Buffer 的消费情况：点击 Actual Timeline 上的一个色块，可以查到这个 Buffer 具体被 SurfaceFlinger 的哪一次合成操作消费了。这在分析"帧渲染完成但显示延迟"问题时很有用——可能帧画好了，但 SurfaceFlinger 等了两个 VSync 周期才合成它。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -414,7 +419,7 @@ App 的渲染输出通过 BufferQueue 传递给 SurfaceFlinger 消费。在 Perf
 
 Perfetto 支持在 Trace 上叠加显示 Logcat 日志。在底部面板切换到 "Android Logs" 标签，会列出抓取期间的所有日志输出。鼠标悬停到某一行日志上，Perfetto 会在 Trace 时间轴上画一条竖线标记这条日志对应的时刻。
 
-这个功能把日志和 Trace 时间线关联了起来，非常适合那些"日志说到了某一步，但 Trace 上不知道对应哪里"的场景。同样，切换到 "Ftrace Events" 标签会列出内核级别的 ftrace 事件，比如 `sched_switch`（调度切换）、`binder_transaction`（Binder 事务）等。
+这个功能把日志和 Trace 时间线关联起来，适合那些"日志说到了某一步，但 Trace 上不知道对应哪里"的场景。同样，切换到 "Ftrace Events" 标签会列出内核级别的 ftrace 事件，比如 `sched_switch`（调度切换）、`binder_transaction`（Binder 事务）等。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -432,9 +437,9 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 ## 实战示例：快速定位掉帧原因
 
-前面的内容分别介绍了操作、Track、详情面板、Flow Events、颜色编码。在实际分析中，这些能力往往是组合使用的。下面用一个完整的场景演示如何把它们放到同一个排查流程里。
+前面的操作、Track、详情面板、Flow Events 和颜色编码，在实际分析中通常要组合使用。可以用一个滑动卡顿场景把它们放到同一个排查流程里。
 
-假设我们拿到了一个用户反馈"滑动时偶尔卡一下"的 Trace。按照以下步骤可以在几分钟内定位到原因：
+假设拿到一个用户反馈"滑动时偶尔卡一下"的 Trace。按照以下步骤可以在几分钟内定位到原因：
 
 **第一步：按版本选入口**。Android 12+ 先在 App 进程里看 `Actual Timeline`，扫描异常颜色的帧。Android 10/11 没有 FrameTimeline 主表，就从 `Choreographer#doFrame`、`VSYNC-app` / `VSYNC-sf` 和 `SurfaceFlinger` 轨道开始，先圈出超时窗口。
 
@@ -454,7 +459,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 ## 常见问题与误区
 
-**误区一：Trace 上绿色的 Slice 就是"正常"的。** 绿色只是表示线程在运行，不代表运行得快。一个绿色 Slice 可能只有 2ms，也可能是 200ms——我们需要看它的 Wall Duration 数值，而不是凭颜色判断。
+**误区一：Trace 上绿色的 Slice 就是"正常"的。** 绿色只是表示线程在运行，不代表运行得快。一个绿色 Slice 可能只有 2ms，也可能是 200ms——要看它的 Wall Duration 数值，而不是凭颜色判断。
 
 **误区二：CPU Duration 低就说明没问题。** CPU Duration 低可能意味着大部分时间在等待——等 CPU 调度、等锁、等 I/O。等待本身也是性能问题，只是优化方向不同。
 
