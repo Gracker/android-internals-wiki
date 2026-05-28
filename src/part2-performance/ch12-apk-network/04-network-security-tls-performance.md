@@ -24,12 +24,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: reviewed
-pipeline_stage: task9_pending
+task6_state: revisiting
+pipeline_stage: task6_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -41,24 +41,24 @@ review_round: 2
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T07:24:44+08:00"
+last_task9_at: "2026-05-28T08:28:23+08:00"
 last_task2b_at: "2026-05-28T06:50:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 2。AUTO-FIX: 删除 ECH CPU 固定比例无源断言，替换 CT Policy stale 待验证注记，回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-05-28-08-review.md"
 task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 0
 task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-28-08-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
 last_task9_autofix_at: "2026-05-28"
 p0: 0
-p1: 1
-p2: 0
+p1: 0
+p2: 2
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T08:10:00+08:00"
 ---
@@ -150,7 +150,7 @@ ECH 的额外开销来自两部分：
 
 Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 2G/WEP 限制、sideloading 防护、forensic logging、未知号码来电和消息链接防护等。公开文档没有给出“无视 App Network Security Config、强制所有可用域名走 ECH + DoH3”的依据。把 APM 与 ECH 放在一起排查时，只能确认设备是否处于 APM 状态，不能把它当作 ECH 失败或 DoH3 路径切换的直接原因。
 
-**ECH 的 CPU 开销**：ECH 握手涉及 HPKE 两阶段非对称加解密（X25519 KEM + AES-128-GCM / ChaCha20-Poly1305），在低端机上握手 CPU 占用相对普通 TLS 1.3 约上升 10%-15%。这一开销集中在握手阶段，连接建立后不再出现。对高频短连接场景（如消息轮询、推送心跳），需要把 ECH 开销计入建连成本基线。[待验证: ECH HPKE 具体耗时需要同设备 A/B 对照，不同 SoC 和 TLS provider 实现差异较大]
+**ECH 的 CPU 开销**：ECH 握手会多一次 HPKE 封装 / 解封装路径，成本集中在握手阶段，连接建立后不再出现。公开 Android 文档没有给出跨设备可复用的固定比例；对高频短连接场景（如消息轮询、推送心跳），需要按 ECHConfig 获取方式、KEM / AEAD suite、SoC 加速能力和网络库实现做同设备 A/B。
 
 [图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，经 DNS HTTPS/SVCB 获取 ECH 配置）的流程差异，重点展示 DNS 解析阶段与 TLS 握手阶段的分界]
 
@@ -182,7 +182,7 @@ CT 验证通常不该成为移动网络请求的首要耗时项。更常见的�
 排查方法：在 OkHttp 的 `EventListener` 中监听 `connectEnd` / `connectFailed` 回调，如果 targetSdk >= 37 的 App 在升级后出现大量 TLS 连接失败，优先检查服务器证书的 SCT 配置。可以用 `openssl s_client -connect host:443 -ct` 命令查看证书的 SCT 数量。
 
 [已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
-[待验证: Android 17 CT 验证的具体 SCT 数量要求——官方文档提到"至少 2 个"，但具体阈值和 fallback 行为需对照正式版确认]
+[已验证: Android Certificate Transparency Policy, developer.android.com/privacy-and-security/certificate-transparency-policy]
 
 ## 从 HTTP 到 HTTPS：迁移中的延迟陷阱
 
