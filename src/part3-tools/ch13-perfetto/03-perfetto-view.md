@@ -21,7 +21,7 @@ sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
   - type: official
-    path: "https://perfetto.dev/docs/visualization/lifecycle"
+    path: "https://perfetto.dev/docs/visualization/perfetto-ui"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-protractor"
   - type: official
@@ -46,19 +46,24 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: "needs-rework"
+task9_result: auto-fixed
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-updated_date: "2026-05-17"
-updated_by: "openclaw-task9-audit"
+updated_date: "2026-05-28"
+updated_by: openclaw-task9
 last_task9_audit: "2026-05-17"
-last_task9_at: "2026-05-17T17:27:00+08:00"
+last_task9_at: "2026-05-28T11:20:00+08:00"
 last_task6_audit: "2026-05-19"
+last_task9_review_log: "logs/deep-review/2026-05-28-11-deep-review.md"
+last_task9_autofix_at: "2026-05-28"
+task9_review_notes: "2026-05-28 11 Task9 auto-fix: 修正 Perfetto UI 404 文档链接/打开入口说明，并修正 SurfaceFlinger Android 13+ commit/composite/present 排查入口；回到 Task6 复审。"
+task9_reviewed_date: "2026-05-28"
+task9_reviewed_by: openclaw-task9
 ---
 
 
@@ -105,13 +110,13 @@ last_task6_audit: "2026-05-19"
 
 ### 打开 Trace 文件
 
-Perfetto Trace 文件在 [ui.perfetto.dev](https://ui.perfetto.dev/) 中打开。打开后会出现一个白色的上传区域，可以点击 "Open trace file" 选择文件，也可以直接把 Trace 文件拖拽到这个区域。
+Perfetto Trace 文件在 [ui.perfetto.dev](https://ui.perfetto.dev/) 中打开。当前 UI 可以从侧边栏点击 "Open trace file" 选择本地文件，也可以直接把 Trace 文件拖进浏览器窗口。
 
 如果使用的是 13.2 节介绍的官方脚本抓取，脚本会在抓取结束后自动在浏览器中打开这个页面并加载 Trace。
 
 Perfetto UI 对浏览器内存有要求。如果 Trace 文件超过 500 MB，浏览器加载可能会很慢甚至失败。这种情况下可以参考 13.4 节介绍的命令行方案，用 Trace Processor Shell 直接做 SQL 分析，或者用官方 `traceconv text <input> <output>` 把 `.perfetto-trace` 转成文本再查。`traceconv` 是 Perfetto 对外公开的 CLI，`trace_to_text` 更接近仓库内部脚本名，不适合写成读者默认入口。
 
-[已验证: 官方文档, perfetto.dev/docs/visualization/lifecycle]
+[已验证: 官方文档, perfetto.dev/docs/visualization/perfetto-ui]
 
 ### 界面布局
 
@@ -451,7 +456,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 **第五步：继续看 RenderThread**。如果 `doFrame` 本身不长，但 `DrawFrame`、GPU work 或 fence wait 明显拉长，就把同一时间窗切到 `RenderThread`。这里要区分是 App 侧 GPU 提交慢，还是下游消费慢。
 
-**第六步：按版本看 SurfaceFlinger**。Android 12-13 重点检查 `onMessageReceived` / `REFRESH`；Android 14+ 重点检查 `commit` / `composite` / `present`。如果 SurfaceFlinger 侧也超时，再判断是 Client composition 增多、事务处理变重，还是显示提交阶段晚了。
+**第六步：按版本看 SurfaceFlinger**。Android 12/12L 重点检查 `onMessageReceived` / `REFRESH`；Android 13+ 重点检查 `commit` / `composite` / `present`。如果 SurfaceFlinger 侧也超时，再判断是 Client composition 增多、事务处理变重，还是显示提交阶段晚了。
 
 通过这个流程，大部分掉帧问题都能在 5-10 分钟内定位到根因层级。剩下的是继续结合 13.5 节的专题 SQL、Android Studio Profiler 或源码做深挖。
 
@@ -471,8 +476,8 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 ## 参考资料
 
-- Perfetto UI 官方文档：[https://perfetto.dev/docs/visualization/lifecycle](https://perfetto.dev/docs/visualization/lifecycle)
-- Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
+- Perfetto UI 官方文档：[https://perfetto.dev/docs/visualization/perfetto-ui](https://perfetto.dev/docs/visualization/perfetto-ui)
+- Perfetto UI 当前快捷键入口：`?` / Support > Keyboard shortcuts（[https://ui.perfetto.dev/](https://ui.perfetto.dev/)）
 - traceconv 官方文档：[https://perfetto.dev/docs/quickstart/traceconv](https://perfetto.dev/docs/quickstart/traceconv)
 - FrameTimeline 官方文档：[https://source.android.com/docs/core/display/frame_timeline](https://source.android.com/docs/core/display/frame_timeline)
 - Android Performance — Perfetto 系列 3：[https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/](https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
