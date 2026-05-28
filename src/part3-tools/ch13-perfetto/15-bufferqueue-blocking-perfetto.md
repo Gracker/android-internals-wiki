@@ -9,12 +9,12 @@ applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
 confidence: medium
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
@@ -50,8 +50,12 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_at: "2026-05-17T01:36:14+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-28T08:50:00+08:00"
+rework_date: "2026-05-28"
+rework_by: openclaw-task2b
+review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary to Android 16+/main pending verification and returned to Task6."
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
@@ -79,8 +83,8 @@ task2b_result: pending
 
 ## 扩展
 
-### 🔸 Android 14 BUFFER_RELEASE_CHANNEL 影响
-验证精确 release 通知对虚假唤醒和锁竞争的影响。
+### 🔸 Android 16+/main BUFFER_RELEASE_CHANNEL 待验证
+区分传统条件变量唤醒与 release channel 分支的版本边界。
 
 ### 🔸 Perfetto SQL 模板
 整理 FrameTimeline + thread_state + slice 关联查询。
@@ -108,7 +112,7 @@ Android 12 之后，FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 
 
 ## RenderThread 上的 dequeueBuffer 阻塞特征
 
-`Buffer Stuffing` 是结果标签，RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot；没有空闲 slot，或内部队列超过 `maxBufferCount` 时，producer 会等待 buffer release。传统路径使用 `mDequeueCondition.wait()` / `wait_for()`；调研素材记录 Android 14 之后部分分支会走 `BUFFER_RELEASE_CHANNEL` 相关通知路径。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueProducer.cpp] [来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md]
+`Buffer Stuffing` 是结果标签，RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot；没有空闲 slot，或内部队列超过 `maxBufferCount` 时，producer 会等待 buffer release。android14-release / android15-release 的已复核路径仍按 `mDequeueCondition.wait()` / `wait_for()` 这类条件变量等待理解；`BUFFER_RELEASE_CHANNEL` 只作为 Android 16+/main 分支待验证差异，不写成 Android 14/15 设备通用机制。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueProducer.cpp] [待验证: BUFFER_RELEASE_CHANNEL 在 Android 16+/main 的启用条件]
 
 Trace 中可以按组合证据判断，而不是只盯一个 slice 名称：
 
@@ -185,9 +189,9 @@ BufferQueue 背压和另外四类问题很像，排查时按下面顺序剥离�
 
 最终结论要写成带证据的句子，例如：“`TX - playerSurface#0` 连续 6 帧标记为 `Buffer Stuffing`，`QueuedBuffer - playerSurface` 在 3 个 VSync 内保持高位，RenderThread 的 `dequeueBuffer` 等待覆盖 18.4 ms；该窗口内主线程没有长 slice，SF 对应帧 present 晚一帧。” 这种写法比“视频导致卡顿”更容易交给团队复现和修复。
 
-## Android 14 BUFFER_RELEASE_CHANNEL 影响
+## Android 16+/main BUFFER_RELEASE_CHANNEL 待验证
 
-调研素材记录 Android 14 之后部分源码路径引入 `BUFFER_RELEASE_CHANNEL` flag，将传统 `mDequeueCondition.notify_all()` 替换为更精细的 release 通知，用于减少多 producer 或多等待线程场景下的无效唤醒和锁竞争。[来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md]
+Task 9 复核口径是：android14-release 与 android15-release 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`，该 flag 属于 Android 16+/main 分支待验证差异。android14-release 只能作为传统 `mDequeueCondition.notify_all()` / 条件变量等待路径的锚点，不能支撑“Android 14 引入 release channel”的结论。[来源: logs/deep-review/2026-05-17-01-deep-review.md]
 
 本节保留为待复核项：当前已核对到传统条件变量等待与 release 唤醒机制，`BUFFER_RELEASE_CHANNEL` 的具体分支、启用范围和 Android 16/17 行为仍需在 AOSP main / 对应 release tag 逐行确认。[待验证: BUFFER_RELEASE_CHANNEL 在目标 release tag 的启用条件]
 
