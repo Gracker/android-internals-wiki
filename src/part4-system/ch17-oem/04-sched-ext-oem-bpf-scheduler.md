@@ -2,12 +2,12 @@
 title: "sched_ext 与 OEM BPF 调度器"
 chapter: "17.4"
 section: "17.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 16 (GKI 6.12) - Android 17 (API 37); OEM backport depends on vendor kernel"
-last_verified: "2026-05-15"
-last_verified_against: "Linux mainline sched_ext documentation + OPPO public hmbird_sched proc source + Android common kernel search result"
+last_verified: "2026-05-29"
+last_verified_against: "Linux sched_ext documentation, Android common android16-6.12 ext.c/ext.h/cpufreq_schedutil.c, OPPO hmbird_sched proc source"
 confidence: medium
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
@@ -44,16 +44,16 @@ reviewed_date: "2026-05-29"
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-29"
-task9_state: pending
-task9_result: pending
-task9_reviewed_date: "2026-05-20"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
-last_task9_at: "2026-05-20T07:37:11+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
-task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 3 / P1 2 / P2 2 / P3 1。P0 3：EEVDF 源码路径/weight 体系错误、GameManager→BPF 链路无证据、AOSP kernel/common 集成结论自相矛盾；P1 2：scx_bpf_cpuperf_set cpufreq 通用路径缺失、Android 14/15/17 时间线无锚点；P2 2。"
+last_task9_at: "2026-05-29T07:21:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
+task9_review_notes: "2026-05-29 Task9 deep-review: pass-tech-review。复核 2026-05-20 P0/P1 已修复；Android common 6.12 sched_ext、DSQ、partial switch、scx_bpf_cpuperf_set 与 hmbird_sched proc 控制面口径一致；无新增 P0/P1。queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task6_at: "2026-05-29T07:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；L1/L2 通过；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"

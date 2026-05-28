@@ -5,13 +5,15 @@ section: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-04-27"
-last_verified_against: "Android 17 behavior changes / API 36 JobScheduler pending reasons / API 37 JobScheduler reference / MessageQueue guidance / Activity configuration change guidance / static final reflection and JNI behavior"
+last_verified: "2026-05-29"
+last_verified_against: "Android 17 behavior changes all/target 37 pages updated 2026-05-19/2026-05-28, Network Security Configuration domainEncryption schema, ProfilingTrigger API reference"
 confidence: medium
 reviewed_at: "2026-05-11T19:05:00+08:00"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/about/versions/17/features"
   - type: official
@@ -38,22 +40,22 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-29T06:50:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-29"
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
-last_task9_at: "2026-05-16T08:33:00+08:00"
-task9_review_notes: "2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；P1 为旧 MessageQueue 锁竞争机制描述与 AOSP/官方 DeliQueue 说明不一致，已写入 queue。"
+last_task9_at: "2026-05-29T07:21:00+08:00"
+task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
 review_type: task6-writing-quality-review
-task9_result: pending
-last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
+task9_result: auto-fixed
+last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-29T07:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
@@ -64,6 +66,7 @@ task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；补齐 outline 块；修正中英文间距与括号格式；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
+last_task9_autofix_at: "2026-05-29"
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -290,7 +293,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 | `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | call stack sample + system trace | 定位冷启动瓶颈 |
 | `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` | 系统检测到 App 异常行为 | heap dump 或 stack sampling profile，取决于 memory limit breach、Binder spam 等系统判定 | 诊断系统侧异常行为 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
-| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
+| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample / system trace snapshot（文档口径存在差异，以 `ProfilingResult` 为准） | 定位后台 CPU 异常占用 |
 
 [已验证：上述触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。Android 17 features 页对 anomaly 给出的公开例子包括 excessive binder calls、excessive memory usage 和 memory limit breach；其中 memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile。内部阈值和组合条件未公开，排障时应把它理解为 OS-defined / system-detected 触发入口。]
 
@@ -298,7 +301,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 
 冷启动触发器的文档口径是"app cold start 时尽早触发"，公开产物是 call stack sample 和 system trace。使用时先把它看作采样入口；具体字段名和交付文件形态以 API 37 SDK reference 的 `ProfilingResult` 为准。
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程。Android 17 features 页写 call stack sample，API reference 当前写 running system trace snapshot；接入时不要把产物类型硬编码为单一文件，按 `ProfilingResult` 返回的结果路径和类型分流处理。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump、system trace 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
@@ -410,7 +413,7 @@ try {
 
 ### 明文流量迁移到 Network Security Configuration
 
-Android 17 持续提高明文流量约束，`android:usesCleartextTraffic` 的 manifest 级全局开关在 targetSdk 递增过程中逐步退出推荐路径。当前更稳妥的做法是优先通过 Network Security Configuration 按域名管理明文例外，把必须保留的 HTTP 端点迁到 `network_security_config.xml` 的 `<domain-config>` 白名单中。Android 17 官方 behavior changes 页面没有明确标注 `usesCleartextTraffic` 为 deprecated；ECH `<domainEncryption>` 和 CT 默认行为是这版更确定的网络层变更。
+Android 17 持续提高明文流量约束，`android:usesCleartextTraffic` 的 manifest 级全局开关已进入未来 deprecation plan。当前更稳妥的做法是优先通过 Network Security Configuration 按域名管理明文例外，把必须保留的 HTTP 端点迁到 `network_security_config.xml` 的 `<domain-config>` 白名单中；如果 `minSdkVersion < 24`，仍需要同时保留 manifest 属性和 network security config。ECH `<domainEncryption>` 和 CT 默认行为是这版更确定的网络层变更。
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
@@ -430,7 +433,7 @@ Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncr
 <network-security-config>
     <domain-config>
         <domain includeSubdomains="true">example.com</domain>
-        <domainEncryption mode="opportunistic" />
+        <domainEncryption mode="enabled" />
     </domain-config>
 </network-security-config>
 ```
@@ -439,7 +442,7 @@ Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncr
 
 Android 17 支持 ECH (Encrypted Client Hello)。ECH 是 TLS 1.3 扩展，加密 TLS 握手中的 SNI (Server Name Indication)，防止网络观察者识别 App 连接的域名。
 
-这一版平台先补了 ECH 所需 API，包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录，以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App，ECH 更接近 opportunistic 使用：库和服务端都支持时启用，失败时回退到普通 TLS。具体到 HttpEngine、WebView、OkHttp 等库，要看各自版本何时接入这些平台 API。平台支持和库已经可用，是两回事。
+这一版平台先补了 ECH 所需 API，包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录，以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App，`<domainEncryption>` 默认 `mode="enabled"`：建立 TLS 握手时如果提供了 ECH 配置就启用 ECH，否则启用 ECH GREASE；也可以按域设置 `mode="disabled"`。具体到 HttpEngine、WebView、OkHttp 等库，要看各自版本何时接入这些平台 API。平台支持和库已经可用，是两回事。
 
 从性能角度看，ECH 的额外成本取决于 DNS / HTTPS 记录查询、库实现和服务端部署方式。连接协商失败时会回退到普通 TLS 握手，不适合给一个固定的延迟数字。
 
@@ -496,6 +499,10 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 
 详见 **4.7 16KB 页面大小** 章节。
 
+### App memory limits 与异常触发器
+
+Android 17 对部分设备引入基于设备总 RAM 的 app memory limits。这项限制影响所有运行在 Android 17 的应用，但只在部分设备上施加；触发后 `ApplicationExitInfo.getReason()` 可能是 `REASON_OTHER`，`getDescription()` 会包含 `MemoryLimiter:AnonSwap`。排障时可结合 `TRIGGER_TYPE_ANOMALY` 获取 memory limit hit 时的 heap dump，并用 `adb shell am memory-limiter status` 查看当前限制状态；`ignore` / `manual` 子命令只适合测试或复现实验。不要把这一路径和 LMKD 普通低内存杀进程混为一类。
+
 ### 后台音频限制加强
 
 Android 17 对所有 App（无论 `targetSdkVersion`）强制执行后台音频限制。当 App 不在有效生命周期状态时，音频播放和音量调节 API 会静默失败；`AudioManager.requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`，而不是静默丢弃。targetSdk 37 的应用还面临更严格的 FGS 约束：后台音频相关的 foreground service 需要 while-in-use capability，或同时持有 exact alarm schedule 权限并使用 `USAGE_ALARM` 用途。这对音乐播放器和语音通话类 App 有影响。
@@ -516,6 +523,7 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 - [ ] 在 600dp+ 设备上测试 App 的方向和多窗口行为
 - [ ] 检查 JNI 代码中是否有直接操作 `MessageQueue` native 层的逻辑
 - [ ] 确认 NDK 原生库在 16KB 页面大小设备上的兼容性
+- [ ] 检查 `ApplicationExitInfo` 中是否出现 `MemoryLimiter:AnonSwap`，并为 Android 17 memory limits 准备 heap dump / anomaly trigger 排障路径
 - [ ] 检查 `System.load()` 加载动态下载的 .so 文件是否设置了只读权限
 - [ ] 验证 `JobScheduler` 任务在新 API 下的行为是否符合预期
 
@@ -613,10 +621,10 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | call stack sample + system trace |
 | `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile |
 | `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | 后台 CPU 诊断 |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | call stack sample / system trace snapshot 口径需按 `ProfilingResult` 实际返回判断 |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
 
-[已验证：Android 17 features 页已公开 cold start、memory limit breach 和 Binder spam 的产物口径；anomaly 触发器内部的多维度判断阈值和组合条件未公开。]
+[已验证：Android 17 features 页已公开 cold start、memory limit breach 和 Binder spam 的产物口径；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 在 features 页与 API reference 的产物描述不完全一致，正文已按 `ProfilingResult` 实际返回做边界处理；anomaly 触发器内部的多维度判断阈值和组合条件未公开。]
 
 ### ConcurrentMessageQueue 实际数据结构
 
