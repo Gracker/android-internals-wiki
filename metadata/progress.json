@@ -1508,12 +1508,12 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 5,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
-      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作质量通过；修正结构性元叙述、否定-纠正句式计数、锚点标题一致性和 frontmatter，转 Task9 技术复核。"
+      "task6_note": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界，送 Task9 复核。"
     },
     "26.11": {
       "p0": 0,
@@ -2189,6 +2189,32 @@
       "task6_log": "logs/review/2026-05-27-23-review.md",
       "task6_new_rework": false,
       "task6_note": "revisiting 复审通过；仅 L1/L2 小修，转 Task9 复核。"
+    },
+    "12.4": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+    },
+    "13.10": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md",
+      "task6_new_rework": false,
+      "task6_note": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。"
     }
   },
   "total_review_sections": 213,
@@ -2197,25 +2223,25 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T08:50:00+08:00",
-  "last_updated_by": "openclaw-task2b",
+  "last_updated": "2026-05-28T09:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-28T08:10:00+08:00",
+    "reviewed_at": "2026-05-28T09:06:00+08:00",
     "sections": [
       "12.4",
-      "13.17",
-      "13.16"
+      "13.15",
+      "13.10"
     ],
-    "log": "logs/review/2026-05-28-08-review.md",
+    "log": "logs/review/2026-05-28-09-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 1,
+    "l1_l2_fixes": 2,
     "l3_l4_issues": 0,
     "files": [
       "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
     ],
-    "small_fixes": 1,
+    "small_fixes": 2,
     "rework_items": 0,
     "auto_promoted": []
   },
@@ -4725,7 +4751,7 @@
       "title": "BufferQueue 阻塞的 Perfetto 识别",
       "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "gap_source": "素材驱动/章节深挖",
@@ -4733,10 +4759,10 @@
       "drafted_date": "2026-05-17",
       "last_verified": "2026-05-17",
       "confidence": "medium",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
-      "task6_log": "logs/review/2026-05-17-01-review.md",
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md",
       "task9_state": "pending",
       "queue_priority": 85,
       "material_count": 4,
@@ -4747,7 +4773,16 @@
       "task2b_result": "fixed",
       "queue_entry": "task9-2026-05-17-13-15-buffer-release-channel-version",
       "last_task2b_at": "2026-05-28T08:50:00+08:00",
-      "last_task2b_summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+      "last_task2b_summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。",
+      "section": "13.15",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界，送 Task9 复核。"
     },
     "1.20": {
       "title": "App Archiving 机制与恢复性能",
@@ -6282,11 +6317,11 @@
       "task2b_summary": "修复 0-RTT anti-replay、Advanced Protection Mode 强制 ECH+DoH3、DoH/DoT 隐藏 SNI、domainEncryption opportunistic 枚举四项口径。",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T08:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
       "last_task9_autofix_at": "2026-05-28",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
@@ -6299,21 +6334,33 @@
       "updated_by": "openclaw-task9",
       "updated_date": "2026-05-28",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_at": "2026-05-28T08:10:00+08:00"
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md"
     },
     "13.10": {
       "title": "Perfetto SQL 性能分析实战手册",
       "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-28T08:50:00+08:00",
-      "last_task2b_summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。"
+      "last_task2b_summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。",
+      "section": "13.10",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。",
+      "task6_log": "logs/review/2026-05-28-09-review.md"
     }
   },
   "task2b_rounds": [
@@ -6447,12 +6494,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-28T08:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-28-08-review.md",
+  "task6_last_review_at": "2026-05-28T09:06:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-28-09-review.md",
   "task6_last_review_sections": [
     "12.4",
-    "13.17",
-    "13.16"
+    "13.15",
+    "13.10"
   ],
   "sections_status": {
     "22.11": {
@@ -8068,15 +8115,15 @@
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
-      "last_task6_at": "2026-05-28T08:10:00+08:00",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
       "last_task9_at": "2026-05-28T07:24:44+08:00",
       "last_task2b_at": "2026-05-28T06:50:00+08:00",
       "last_task9_autofix_at": "2026-05-28",
-      "last_task6_review_log": "logs/review/2026-05-28-08-review.md",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
       "task9_review_notes": "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。",
       "p0": 0,
       "p1": 1,
@@ -8088,7 +8135,58 @@
       "updated_by": "openclaw-task9",
       "updated_date": "2026-05-28",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_at": "2026-05-28T08:10:00+08:00"
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_log": "logs/review/2026-05-28-09-review.md"
+    },
+    "13.15": {
+      "title": "BufferQueue 阻塞的 Perfetto 识别",
+      "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-17T01:36:14+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-01-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T08:50:00+08:00",
+      "section": "13.15",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界，送 Task9 复核。",
+      "task6_log": "logs/review/2026-05-28-09-review.md"
+    },
+    "13.10": {
+      "title": "Perfetto SQL 性能分析实战手册",
+      "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T08:50:00+08:00",
+      "section": "13.10",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "last_task6_at": "2026-05-28T09:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-09-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_at": "2026-05-28T09:06:00+08:00",
+      "task6_review_notes": "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 2 处：补齐 outline 锚点块、补充文本代码围栏语言；outline 6/6 覆盖；无 L3/L4 回炉项。Task2B 已修复 doFrame 与 SPAN_JOIN 问题，送 Task9 复核。",
+      "task6_log": "logs/review/2026-05-28-09-review.md"
     }
   },
   "task2a_last_processed": {
@@ -8133,26 +8231,31 @@
     "13.15"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-28T08:10:00+08:00",
+    "reviewed_at": "2026-05-28T09:06:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "12.4",
-      "13.17",
-      "13.16"
+      "13.15",
+      "13.10"
     ],
     "files": [
       "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-      "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+      "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
     ],
-    "log": "logs/review/2026-05-28-08-review.md",
+    "log": "logs/review/2026-05-28-09-review.md",
     "mode": "revisiting 复审",
     "results": {
       "12.4": "pass-light-edit",
-      "13.17": "pass-light-edit",
-      "13.16": "pass-light-edit"
+      "13.15": "pass-light-edit",
+      "13.10": "pass-light-edit"
     },
-    "l1_l2_fixes": 1,
+    "l1_l2_fixes": 2,
+    "l1_l2_fixes_by_section": {
+      "12.4": 0,
+      "13.15": 0,
+      "13.10": 2
+    },
     "metadata_updates": 3,
     "new_task6_rework_items": 0,
     "queue_updates": 0,
@@ -8160,8 +8263,8 @@
   },
   "task6_last_review_files": [
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-    "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md"
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md"
   ],
   "task6_last_reviewed_files": [
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
