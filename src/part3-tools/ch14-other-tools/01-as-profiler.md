@@ -28,10 +28,12 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-05-28"
 task6_result: "pass-light-edit"
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
@@ -40,7 +42,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T12:20:00+08:00"
 last_task6_at: "2026-05-19T12:07:00+08:00"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 小修 4 处，清理结构性元叙述与复述型过渡；Task9 仍 pending/needs-rework，未自动晋升。"
-task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。"
+task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。2026-05-28 Task2B Lite 已做局部修复，回流 Task6。"
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-19-12-deep-review.md"
 ---
@@ -87,7 +89,7 @@ last_task9_review_log: "logs/deep-review/2026-05-19-12-deep-review.md"
 
 打开 Android Studio，点击底部的 Profiler 标签页（或者 View → Tool Windows → Profiler），就能看到 Profiler 的主界面。在 Android Studio Koala（2024.1）及之后的版本中，Profiler 采用了任务导向的新界面：首页列出了几个常见的分析任务，点击即可开始，相比旧版本启动速度提升了约 60%。[已验证: 官方文档, developer.android.com/studio/releases]
 
-Profiler 的核心分析模块对应不同类别的性能问题（Network Profiler 在 Android Studio 2020.3.1+ 已迁移到 App Inspection > Network Inspector）：
+Profiler 的核心分析模块对应不同类别的性能问题。Android Studio 2020.3.1+ 中，旧版 Network Profiler 已迁移到 App Inspection > Network Inspector，不再作为 Profiler 同级模块共享同一条 timeline：
 
 CPU Profiler 解决"App 慢在哪里"的问题。它提供了三种 CPU 分析模式——System Trace、Java Method Trace 和 Callstack Sample——分别对应不同的精度和开销级别，适用于不同的分析场景。三种模式的取舍会直接影响数据可信度。
 
@@ -97,7 +99,7 @@ Network Inspector（Android Studio 2020.3.1+ 从 Profiler 内的 Network Profile
 
 Energy Profiler（在 Android Studio Hedgehog 之后升级为 Power Profiler）展示 App 的功耗来源。它分别展示 CPU、网络、GPS 等子系统的电量消耗，帮助定位高耗电的行为。
 
-这四个模块共享同一个时间轴。当在 CPU 时间轴上看到一段异常的 CPU 高占用时，可以同步查看同一时间段内存是否有激增、网络是否有大量请求——这种多维度的交叉视角是 Profiler 最大的优势之一。
+CPU、Memory 与 Power 视图适合按同一操作窗口做交叉排查；网络请求在新版本 Android Studio 中要切到 Network Inspector 对照时间范围。
 
 ## CPU Profiler：三种分析模式的深度对比
 
@@ -193,7 +195,7 @@ CPU 的三种模式已经按 System Trace、Callstack Sample、Java Method Trace
 
 Memory 方面也有开销边界。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
 
-一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来 profiling。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许 Profiler 进行基本的性能分析，但跳过了 debug 构建中的额外检查和 hook。根据 Google 的测试数据，`profileable` 构建相比 `debuggable` 构建约有 28% 的性能提升，profiling 数据也更接近真实发布版本的表现。
+一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来 profiling。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许 Profiler 进行基本的性能分析，同时避开 debug 构建中的额外检查和 hook，profiling 数据也更接近真实发布版本的表现。
 
 两种构建类型的能力边界：
 
@@ -201,7 +203,7 @@ Memory 方面也有开销边界。实时内存曲线的监控开销很低，可�
 |------|:---:|:---:|
 | System Trace / CPU Trace | ✅ | ✅ |
 | Callstack Sample | ✅ | ✅ |
-| Java Method Trace | ❌ | ✅ |
+| Java Method Trace | [待验证: 依 Android Studio / 平台版本确认] | ✅ |
 | Java/Kotlin Allocation Recording | ❌ | ✅ |
 | Heap Dump | ❌ | ✅ |
 | Native Allocation Tracking | ✅ | ✅ |
@@ -230,7 +232,7 @@ Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取�
 
 从 Android Studio Hedgehog（2023.1）开始，原来的 Energy Profiler 升级为 Power Profiler。两者的核心区别是：Energy Profiler 只能估算功耗（基于 CPU 使用率、网络活动等的模型推算），而 Power Profiler 能直接测量设备各子系统的实际功耗。
 
-Power Profiler 的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备的功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。这使得不仅能看到 App 的总功耗，还能精确知道功耗花在了哪个子系统上（与 §5.4 DVFS 中 CPU 频率调控的功耗数据可以交叉印证）。
+Power Profiler 的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备级功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。它适合把 App 操作时间窗与设备功耗变化做相关分析，但 ODPM 不是 app-specific 归因数据，其他活跃进程也可能贡献噪声。
 
 举个例子：如果在 Power Profiler 中看到 Cellular 的 Power Rail 在 App 启动后持续高消耗，就可以推断出启动期间的网络请求过于密集，可能需要延迟或者合并请求。
 
@@ -242,7 +244,7 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 `ProfilingManager` 允许 App 注册系统级的 profiling 触发器。Android 16 API 36 中公开的触发器类型包括：
 
-- `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN`：App 完成首帧绘制时触发
+- `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN`：cold start 中 `Activity.reportFullyDrawn()` 被调用后触发，系统提供 running system trace snapshot
 - `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时触发
 
 注册使用 `addProfilingTriggers()` 方法提交触发器列表，结果通过 `registerForAllProfilingResults(Executor, Consumer)` 回调接收（需先注册回调再添加触发器）。注册示例：
@@ -278,7 +280,7 @@ profilingManager.addProfilingTriggers(
 
 **"Method Trace 报告的方法耗时就是真实的耗时。"** 不是。Method Trace 的插桩开销非常大，对于短方法（< 10ms）可能导致耗时膨胀 10 倍以上。只有 System Trace 给出的时间数据接近真实情况。Method Trace 的价值在于看调用关系，不是看绝对时间。
 
-**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建性能更好（约 28% 提升），数据更接近真实发布版。限制是 profileable 构建不能做 Java Method Trace、Java/Kotlin Allocation Recording 和 Heap Dump——但 System Trace、Callstack Sample 和 Native Allocation Tracking 都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
+**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建更接近真实发布版。限制是 profileable 构建不能做 Java/Kotlin Allocation Recording 和 Heap Dump；Java Method Trace 需按 Android Studio / 平台版本复核。System Trace、Callstack Sample 和 Native Allocation Tracking 都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
 
 **"Profiler 能分析系统性能问题。"** Profiler 的视角是 App-centric 的，它主要展示单个 App 的 CPU、内存、网络数据。要分析系统级的性能问题（如调度延迟、多进程竞争、SurfaceFlinger 合成慢），需要使用 Perfetto 的全局视图。
 
