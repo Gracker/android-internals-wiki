@@ -38,31 +38,54 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-29T06:50:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-16"
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 last_task9_at: "2026-05-16T08:33:00+08:00"
 task9_review_notes: "2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；P1 为旧 MessageQueue 锁竞争机制描述与 AOSP/官方 DeliQueue 说明不一致，已写入 queue。"
 review_type: task6-writing-quality-review
-task9_result: "needs-rework"
+task9_result: pending
 last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-16T08:16:00+08:00"
-last_task6_review_log: logs/review/2026-05-16-08-review.md
+last_task6_at: "2026-05-29T07:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task2b_fixed_by: openclaw-task2b-main
-
+task6_reviewed_date: "2026-05-29"
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-29T07:07:00+08:00"
+task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；补齐 outline 块；修正中英文间距与括号格式；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
+task6_l1_l2_fixes: 9
+task6_l3_l4_issues: 0
 ---
 
-
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Android 17 行为变更的性能影响与公开量化数据
+- 🔹 DeliQueue 对 MessageQueue 锁竞争的改造与适配边界
+- 🔹 ART 分代 CMC、ProfilingManager 与 JobScheduler 诊断能力
+- 🔹 static final、Network Security Configuration、16KB 页面等 targetSdk 37 适配项
+- 🔹 迁移检查清单与跨章节参考
+
+### 扩展（可选深入）
+
+- 🔸 DeliQueue drain 触发机制与 ConcurrentMessageQueue 数据结构
+- 🔸 Generational CMC gating 条件
+- 🔸 Choreographer Buffer Stuffing Recovery
+
+<!-- outline-end -->
 
 ## 为什么要了解 Android 17 的性能行为变更
 
@@ -96,7 +119,7 @@ task2b_fixed_by: openclaw-task2b-main
 在 Perfetto Trace 中，旧实现的锁争用表现为：
 - Main Thread Track 或目标 Looper 线程上出现名为 "monitor contention with MessageQueue" 的切片
 - 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 `MessageQueue.enqueueMessage()` 或相邻的 Handler 投递路径
-- 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms(60fps)
+- 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms（60fps）
 - 如果等待发生在 `Choreographer.doFrame` 前后，就会直接挤占本帧预算
 
 如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看 UI 线程是否在 `MessageQueue.next()` 附近等待，以及持锁线程是否落在 `Handler.enqueueMessage()` / `MessageQueue.enqueueMessage()` 路径。旧实现下，消耗帧预算的通常就是这类等待区间。
@@ -205,7 +228,7 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 ### 从 Concurrent Copying 到 Generational CMC
 
-ART 的垃圾回收器经历过多次演进。「Android 8」（Oreo）将 Concurrent Copying (CC)作为默认 GC，解决了 Compact GC 的长暂停问题。「Android 10」引入了分代 CC (Generational Concurrent Copying)，将堆空间分为 young generation 和 old generation，优先回收存活时间短的 young 对象。
+ART 的垃圾回收器经历过多次演进。「Android 8」（Oreo）将 Concurrent Copying (CC) 作为默认 GC，解决了 Compact GC 的长暂停问题。「Android 10」引入了分代 CC (Generational Concurrent Copying)，将堆空间分为 young generation 和 old generation，优先回收存活时间短的 young 对象。
 
 Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact (CMC)** 收集器中。CMC 的特点是：标记和压缩都是并发执行的，应用线程只需要在标记开始和结束时经历极短的暂停。分代 CMC 在此基础上增加了 young generation 的快速回收路径，**但实际启用需要满足多个条件**：
 
@@ -240,7 +263,7 @@ Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact (CMC)** �
 
 ### 对 RecyclerView 滑动的实际影响
 
-RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`onBindViewHolder()` 会为每个即将显示的 item 创建临时对象(字符串、Drawable、Bitmap 相关的配置对象等)。这些对象在 item 滑出屏幕后就变成垃圾。
+RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`onBindViewHolder()` 会为每个即将显示的 item 创建临时对象（字符串、Drawable、Bitmap 相关的配置对象等）。这些对象在 item 滑出屏幕后就变成垃圾。
 
 在旧的非分代 GC 中，这些 young 对象会在 full GC 时才被回收。如果 full GC 恰好在 `doFrame()` 期间触发，就会造成帧延迟。在分代 GC 中，这些短命对象被 young GC 快速回收，full GC 的触发频率大幅降低。
 
@@ -256,7 +279,7 @@ Android 17 的分代 GC 变化会改变 GC 切片模式和暂停分布。Concurr
 
 ### 从手动埋点到系统自动触发
 
-ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17 (API 37)新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
+ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17 (API 37) 新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
 
 要用这套能力，App 仍要完成两步：先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调，再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`，产物交付仍由 ProfilingManager 完成。[已验证：Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力，而不是无需代码的默认抓取]
 
@@ -293,7 +316,7 @@ ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump
 |:---|:---|:---|:---|:---|
 | `JobScheduler.getPendingJobReasons(int jobId)` | API 36 | `int[]` | 返回当前可能导致该 job pending 的 reason code | AOSP android-16.0.0_r1 已检出 |
 | `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图，包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
-| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证：API37 preview/reference；AOSP android-16.0.0_r1 未检出] |
+| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证：API 37 preview/reference；AOSP android-16.0.0_r1 未检出] |
 
 这几组接口合在一起，才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler，调试时最好先拿到对应的 jobId，再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
 
@@ -305,7 +328,7 @@ ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump
 
 ### 变更内容
 
-从 Android 17 (API 37)开始，平台强化 `static final` 字段的不可变约束。反射路径和 JNI 路径的失败形态不同:
+从 Android 17 (API 37) 开始，平台强化 `static final` 字段的不可变约束。反射路径和 JNI 路径的失败形态不同:
 
 - Java 反射：`Field.set()`、`Field.setInt()` 等 `Field.set*()` 路径会抛出可捕获的 `IllegalAccessException`。
 - JNI：`SetStatic<FieldType>Field` 系列可能触发 ART 层不可恢复的 abort / crash，不能按普通 Java 异常处理。
@@ -316,7 +339,7 @@ ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump
 
 为什么 Android 要强制这个限制?答案是 **ART 的常量折叠优化**。
 
-当 ART 编译器确认一个 `static final` 字段的值在运行时不会改变时，它可以在编译时将所有引用该字段的代码直接替换为常量值(内联)。这消除了字段访问的开销，也使得后续的优化 pass(如死代码消除、循环优化)有更大的发挥空间。
+当 ART 编译器确认一个 `static final` 字段的值在运行时不会改变时，它可以在编译时将所有引用该字段的代码直接替换为常量值（内联）。这消除了字段访问的开销，也使得后续的优化 pass（如死代码消除、循环优化）有更大的发挥空间。
 
 如果允许运行时修改 `static final` 字段，ART 就不能做这个优化——它必须假设字段值可能被修改，每次访问都要从内存中读取。
 
@@ -357,7 +380,7 @@ try {
 - `android:resizeableActivity="false"`(禁止调整大小)
 - 宽高比限制
 
-方向和 resize 限制被忽略后，配置变化仍然走 Android 现有的配置变更机制。默认情况下，屏幕尺寸或方向变化会触发 Activity 销毁重建；只有 App 在 manifest 中通过 `android:configChanges` 声明了对应配置类型，并在代码中正确处理 `onConfigurationChanged()`，才能避免重建导致的中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以进一步减少对 `configChanges` 声明的依赖。Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。
+方向和 resize 限制被忽略后，配置变化仍然走 Android 现有的配置变更机制。默认情况下，屏幕尺寸或方向变化会触发 Activity 销毁重建；只有 App 在 manifest 中通过 `android:configChanges` 声明了对应配置类型，并在代码中正确处理 `onConfigurationChanged()`，才能避免重建导致的中断。使用自适应布局（Jetpack WindowManager、`SlidingPaneLayout` 等）可以进一步减少对 `configChanges` 声明的依赖。Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。
 
 ### 对渲染性能的影响
 
@@ -371,7 +394,7 @@ try {
 
 **2. Configuration Change 的过渡路径**
 
-屏幕方向或尺寸变化触发配置变更后，走哪条路径取决于 App 的 manifest 声明：如果 App 在 `<activity>` 中通过 `android:configChanges` 声明了 `screenSize|smallestScreenSize|screenLayout|orientation`，并在代码中正确处理 `onConfigurationChanged()`，可以在不销毁 Activity 的情况下完成布局切换——在 Perfetto 中表现为连续的帧序列。如果 App 没有声明对应的 configChanges，系统仍然会销毁并重建 Activity，在 Trace 中表现为生命周期中断。使用自适应布局(Jetpack WindowManager、`SlidingPaneLayout` 等)可以减少对 configChanges 声明的依赖，但前提是布局本身能响应尺寸变化。
+屏幕方向或尺寸变化触发配置变更后，走哪条路径取决于 App 的 manifest 声明：如果 App 在 `<activity>` 中通过 `android:configChanges` 声明了 `screenSize|smallestScreenSize|screenLayout|orientation`，并在代码中正确处理 `onConfigurationChanged()`，可以在不销毁 Activity 的情况下完成布局切换——在 Perfetto 中表现为连续的帧序列。如果 App 没有声明对应的 configChanges，系统仍然会销毁并重建 Activity，在 Trace 中表现为生命周期中断。使用自适应布局（Jetpack WindowManager、`SlidingPaneLayout` 等）可以减少对 configChanges 声明的依赖，但前提是布局本身能响应尺寸变化。
 
 ### 适配建议
 
@@ -414,7 +437,7 @@ Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncr
 
 ### Encrypted Client Hello(ECH)
 
-Android 17 支持 ECH (Encrypted Client Hello)。ECH 是 TLS 1.3 扩展，加密 TLS 握手中的 SNI(Server Name Indication)，防止网络观察者识别 App 连接的域名。
+Android 17 支持 ECH (Encrypted Client Hello)。ECH 是 TLS 1.3 扩展，加密 TLS 握手中的 SNI (Server Name Indication)，防止网络观察者识别 App 连接的域名。
 
 这一版平台先补了 ECH 所需 API，包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录，以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App，ECH 更接近 opportunistic 使用：库和服务端都支持时启用，失败时回退到普通 TLS。具体到 HttpEngine、WebView、OkHttp 等库，要看各自版本何时接入这些平台 API。平台支持和库已经可用，是两回事。
 
@@ -422,13 +445,13 @@ Android 17 支持 ECH (Encrypted Client Hello)。ECH 是 TLS 1.3 扩展，加密
 
 ### Certificate Transparency 默认启用
 
-对于 `targetSdkVersion` ≥ 37 的 App，Certificate Transparency (CT)默认启用。系统会增加证书和 SCT(Signed Certificate Timestamp)校验约束。如果证书链或服务器提供的 SCT 不满足要求，连接会被拒绝。localhost / 本地调试域名通常不按公网证书链处理，排障时要把本地例外和公网域名分开。
+对于 `targetSdkVersion` ≥ 37 的 App，Certificate Transparency (CT) 默认启用。系统会增加证书和 SCT (Signed Certificate Timestamp) 校验约束。如果证书链或服务器提供的 SCT 不满足要求，连接会被拒绝。localhost / 本地调试域名通常不按公网证书链处理，排障时要把本地例外和公网域名分开。
 
 排障时不要把 CT 理解成"每次 HTTPS 建连都会额外请求一次 CT Log 服务器"。更常见的路径是校验证书里内嵌或握手携带的 SCT；是否出现额外网络往返，取决于证书链和服务器交付方式。
 
 ### HPKE 混合加密 SPI
 
-Android 17 新增了 HPKE (Hybrid Public Key Encryption)的加密服务提供者接口(SPI)。HPKE 是一种标准化的公钥加密方案，设计目标是简化和标准化加密消息的发送。这个 API 主要用于端到端加密场景，对大多数 App 的性能没有直接影响，但如果你在实现自定义加密协议，可以考虑使用平台提供的 HPKE 实现来替代自研方案。
+Android 17 新增了 HPKE (Hybrid Public Key Encryption) 的加密服务提供者接口 (SPI)。HPKE 是一种标准化的公钥加密方案，设计目标是简化和标准化加密消息的发送。这个 API 主要用于端到端加密场景，对大多数 App 的性能没有直接影响，但如果你在实现自定义加密协议，可以考虑使用平台提供的 HPKE 实现来替代自研方案。
 
 ---
 
@@ -465,13 +488,13 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 
 **官方文档与工具链配置：**
 - 官方指南：[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
-- Google Play 强制要求:2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
+- Google Play 强制要求：2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
 - AOSP 构建：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
-- NDK 编译：使用 `-Wl,-z,max-page-size=16384` 链接标志(NDK r27 及以下版本)
+- NDK 编译：使用 `-Wl,-z,max-page-size=16384` 链接标志（NDK r27 及以下版本)
 - 运行时检测：使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
 - 验证工具：`readelf -l lib.so` 检查 ELF 段匹配；Android Studio APK Analyzer 可自动识别未匹配的 .so 文件
 
-详见 **4.7 16KB 页面大小**章节。
+详见 **4.7 16KB 页面大小** 章节。
 
 ### 后台音频限制加强
 
@@ -479,7 +502,7 @@ Android 17 对所有 App（无论 `targetSdkVersion`）强制执行后台音频�
 
 ### 更安全的 Native 动态代码加载
 
-DCL (Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `System.load()` 加载的所有 native 文件必须标记为只读，否则抛出 `UnsatisfiedLinkError`。如果你有动态下载 .so 文件并加载的逻辑，需要确保在加载前调用 `chmod` 设置只读权限。
+DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `System.load()` 加载的所有 native 文件必须标记为只读，否则抛出 `UnsatisfiedLinkError`。如果你有动态下载 .so 文件并加载的逻辑，需要确保在加载前调用 `chmod` 设置只读权限。
 
 ---
 
