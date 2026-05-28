@@ -1,5 +1,5 @@
 ---
-task2b_rework_date: "2026-05-25T07:27:11+08:00"
+task2b_rework_date: "2026-05-28T12:50:00+08:00"
 
 title: "eBPF/BPF 在 Android 性能分析中的应用"
 chapter: "14.10"
@@ -53,30 +53,30 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 last_task6_audit: "2026-05-19"
 task6_result: "needs-rework"
 task2b_result: "fixed"
-last_task2b_at: "2026-04-27T03:40:00+08:00"
-repaired_date: "2026-04-27"
+last_task2b_at: "2026-05-28T12:50:00+08:00"
+repaired_date: "2026-05-28"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。UprobeStats APEX 挂载路径写错；sched_ext class/policy 优先级描述不准确；UprobeStats BPF 程序列表漏 MalwareSignal。"
+task9_review_notes: "2026-05-28 Task2B fixed: UprobeStats APEX 挂载路径修为 /apex/com.android.uprobestats；补 MalwareSignal.c；修正 sched_ext class/policy 优先级说明；参考资料后的 sched_ext 素材已并入主体。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
-task9_result: "needs-rework"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
+task9_result: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-25"
 last_task9_at: "2026-05-25T08:32:00+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 p0: 1
 p1: 1
 p2: 1
-updated_by: "openclaw-task9"
-updated_date: "2026-05-25"
+updated_by: "openclaw-task2b-main"
+updated_date: "2026-05-28"
 review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 last_task9_audit: "2026-05-22"
 last_task9_review_log: "logs/deep-review/2026-05-25-08-deep-review.md"
@@ -113,7 +113,7 @@ eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我
    - 实战示例：追踪 RenderThread 帧耗时
 4. UprobeStats 与动态埋点
    - 工作原理（StatsD → 配置 → uprobe attach → RingBuf → 上报）
-   - 预置 BPF 程序（GenericInstrumentation / BitmapAllocation / ProcessManagement）
+   - 预置 BPF 程序（GenericInstrumentation / BitmapAllocation / ProcessManagement / MalwareSignal）
    - 安全限制（user 版本仅允许特定类前缀）
 5. sched_ext 与可扩展调度器
    - 为什么需要可扩展调度器
@@ -195,13 +195,13 @@ eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编
 | `packages/modules/UprobeStats/src/bpf_progs/` | UprobeStats 随模块下发的 BPF 程序，如 `BitmapAllocation.c`、`GenericInstrumentation.c`、`MalwareSignal.c`、`ProcessManagement.c` | 动态埋点与 user space instrumentation 的主线源码 |
 | `frameworks/native/services/gpuservice/bpfprogs/gpuMem.c` | GPU 内存统计用的 BPF 程序 | GPU memory tracking 的具体实现锚点 |
 
-`netd` 确实大量使用 BPF maps 和程序，但在 android-16.0.0_r1 中，`system/netd/bpf_progs/` 不是可直接定位到源码文件的目录。`frameworks/base/services/core/jni/` 里也没有适合作为本章锚点的 BPF program，它更接近 JNI bridge 和服务侧 native 代码。写 AOSP 路径时，最好把“谁在使用 BPF”和“BPF 程序源码放在哪里”拆开。
+`netd` 大量使用 BPF maps 和程序，但在 android-16.0.0_r1 中，`system/netd/bpf_progs/` 不是可直接定位到源码文件的目录。`frameworks/base/services/core/jni/` 里也没有适合作为本章锚点的 BPF program，它更接近 JNI bridge 和服务侧 native 代码。写 AOSP 路径时，最好把“谁在使用 BPF”和“BPF 程序源码放在哪里”拆开。
 
 [已验证: AOSP android-16.0.0_r1]
 
 ## Simpleperf 动态 Probe：perf_event 路径的 kprobe / uprobe
 
-Simpleperf 的 `--kprobe` / `--uprobe` 通过 tracefs 的 `kprobe_events` / `uprobe_events` 创建动态探针，再通过 `perf_event_open()` 采样。这条路径与 eBPF 探针共享内核中的 kprobe / uprobe 挂载点，但 Simpleperf 侧的实现在 `system/extras/simpleperf/ProbeEvents.cpp` 中并没有加载 eBPF program 或操作 BPF map——它走的是 perf_event 子系统，不是 eBPF 子系统。两者的区别在于：perf_event 路径以采样（sampling）为主，事件写入 ring buffer 后由用户态读取；eBPF 路径可以在内核态做过滤、聚合、map 更新等逻辑。本章前面介绍的 UprobeStats 才是 Android 上真正的 eBPF 动态埋点方案（由 bpfloader 加载 BPF 程序，通过 BPF map 输出统计结果）。
+Simpleperf 的 `--kprobe` / `--uprobe` 通过 tracefs 的 `kprobe_events` / `uprobe_events` 创建动态探针，再通过 `perf_event_open()` 采样。这条路径与 eBPF 探针共享内核中的 kprobe / uprobe 挂载点，但 Simpleperf 侧的实现在 `system/extras/simpleperf/ProbeEvents.cpp` 中并没有加载 eBPF program 或操作 BPF map——它走的是 perf_event 子系统，不是 eBPF 子系统。两者的区别在于：perf_event 路径以采样（sampling）为主，事件写入 ring buffer 后由用户态读取；eBPF 路径可以在内核态做过滤、聚合、map 更新等逻辑。本章前面介绍的 UprobeStats 才是 Android 上的 eBPF 动态埋点方案（由 bpfloader 加载 BPF 程序，通过 BPF map 输出统计结果）。
 
 Simpleperf 的 perf_event 动态 probe 用法用于定位探针定义和录制方式；UprobeStats 则代表 eBPF 路径的动态埋点方案。
 
@@ -291,15 +291,15 @@ uretprobe:/system/lib64/libEGL.so:eglSwapBuffers
 
 Android 16 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 uprobe 机制做“无需改业务代码”的动态埋点：系统按配置 attach 到目标方法，把命中事件写进 BPF map / ring buffer，再汇总给 StatsD。
 
-版本边界要分开：android-15.0.0_r1 中没有正式的 `/apex/com.android.uprobestats.apex` 打包，也没有 Android 16 这一版的 `GenericInstrumentation.c` / `ProcessManagement.c` 模板。相关动态埋点能力按 Android 16 的正式 APEX 发布口径描述。
+版本边界要分开：android-15.0.0_r1 中没有正式的 `/apex/com.android.uprobestats` 打包，也没有 Android 16 这一版的 `GenericInstrumentation.c` / `ProcessManagement.c` 模板。相关动态埋点能力按 Android 16 的正式 APEX 发布口径描述。
 
 ### UprobeStats 的工作原理
 
-UprobeStats 以 APEX 模块形式集成，设备上的挂载路径是 `/apex/com.android.uprobestats.apex`。源码主目录是 `packages/modules/UprobeStats/`，主要组件包括：
+UprobeStats 以 APEX 模块形式集成，APEX name 是 `com.android.uprobestats`，设备上的挂载路径是 `/apex/com.android.uprobestats`。源码主目录是 `packages/modules/UprobeStats/`，主要组件包括：
 
 - `uprobestats`：主执行程序，负责读取配置、解析方法偏移、attach BPF 程序、收集数据
 - `uprobestatsbpfload`：BPF 程序加载器，开机时加载预编译的 eBPF 程序到内核
-- `etc/bpf/*.o`：预编译的 BPF 程序模板（BitmapAllocation、GenericInstrumentation、ProcessManagement）
+- `etc/bpf/*.o`：预编译的 BPF 程序模板（BitmapAllocation、GenericInstrumentation、ProcessManagement、MalwareSignal）
 - `libuprobestats_client.so`：提供给 StatsD 动态加载的客户端库
 
 整个流程如下：
@@ -315,17 +315,19 @@ UprobeStats 以 APEX 模块形式集成，设备上的挂载路径是 `/apex/com
 [图：UprobeStats 端到端数据流——StatsD 订阅触发 → 配置解析 → BPF attach → RingBuf 读取 → StatsD 上报]
 
 [来源: Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md]
-[已验证: AOSP, packages/modules/UprobeStats/src/bpf_progs/ + packages/modules/UprobeStats/src/bpf/]
+[已验证: AOSP android-16.0.0_r1, packages/modules/UprobeStats/apex/Android.bp + packages/modules/UprobeStats/src/bpf_progs/]
 
 ### 预置的 BPF 程序
 
-AOSP 中 UprobeStats 预置了三类 BPF 程序模板：
+AOSP 中 UprobeStats 预置了四类 BPF 程序模板：
 
 **GenericInstrumentation.c** 是通用模板，负责提取寄存器上下文、拿时间戳、把采集结果写到 ring buffer。
 
 **BitmapAllocation.c** 用于追踪 Bitmap 分配相关调用，偏向计数和事件采样。
 
 **ProcessManagement.c** 面向特定系统方法，直接按 ART / ABI 约定读取参数。
+
+**MalwareSignal.c** 追踪信号发送相关路径，给进程异常退出和恶意信号诊断提供事件来源。
 
 ### 频率边界与性能陷阱
 
@@ -368,7 +370,7 @@ sched_ext 打开了第三条路：通过 eBPF 程序实现自定义调度策略�
 
 ### sched_ext 的架构
 
-sched_ext 在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间。未设置 `SCX_OPS_SWITCH_PARTIAL` 时，它管理 SCHED_NORMAL / BATCH / IDLE / EXT 任务；设置 `SCX_OPS_SWITCH_PARTIAL` 后，只把显式设为 SCHED_EXT policy 的任务交给 BPF 调度器，其余 NORMAL / BATCH / IDLE 任务继续走默认调度器。SCHED_FIFO / RR / DEADLINE 等实时调度类不受影响。
+sched_ext 是独立的 scheduler class，不应描述成某个 policy 位于另一个 policy 之间。未设置 `SCX_OPS_SWITCH_PARTIAL` 时，NORMAL / BATCH / IDLE / EXT 任务可由 sched_ext 管理；设置 `SCX_OPS_SWITCH_PARTIAL` 后，只有显式设为 SCHED_EXT policy 的任务交给 BPF 调度器，其余 NORMAL / BATCH / IDLE 任务继续走 fair class。Linux 文档还明确说明 partial 模式下 fair class 对 NORMAL / BATCH / IDLE 保持更高 precedence。SCHED_FIFO / RR / DEADLINE 等实时调度类不受影响。
 
 关键设计特征：
 
@@ -395,9 +397,24 @@ Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 A
 - **scx_rustland**：在游戏等持续负载场景里验证帧稳定性收益。
 - **scx_chaos**：故意注入调度抖动，用来暴露竞态和时序依赖问题。
 
-放到 Android 平台上，先要看 GKI 版本时间线。官方 release builds 已经给出比较清楚的映射：Android 14 对应 `android14-6.1`，Android 15 对应 `android15-6.6`，Android 16 对应 `android16-6.12`。因此，`sched_ext` 真正开始具备平台侧评估条件，是 Android 16 / GKI 6.12 这一代，不是 Android 17 才第一次出现。
+放到 Android 平台上，先要看 GKI 版本时间线。官方 release builds 已经给出比较清楚的映射：Android 14 对应 `android14-6.1`，Android 15 对应 `android15-6.6`，Android 16 对应 `android16-6.12`。因此，`sched_ext` 从 Android 16 / GKI 6.12 这一代开始具备平台侧评估条件，不是 Android 17 才第一次出现。
 
-这只解决了“底层内核版本够不够”的问题。判断一台设备是否具备实验条件，至少看两处：内核配置是否包含 `CONFIG_SCHED_CLASS_EXT`，运行时是否存在 `/sys/kernel/sched_ext` 相关节点。设备上能不能启用，还要继续看 CTS / VTS、OEM 适配、功耗与稳定性回归，以及是否允许在 shipping build 中开放相应能力。
+这只解决了“内核版本够不够”的问题。判断一台设备是否具备实验条件，至少看两处：内核配置是否包含 `CONFIG_SCHED_CLASS_EXT`，运行时是否存在 `/sys/kernel/sched_ext` 相关节点。设备上能不能启用，还要继续看 CTS / VTS、OEM 适配、功耗与稳定性回归，以及是否允许在 shipping build 中开放相应能力。AOSP 默认调度路径仍由 EAS、schedutil、`task_profiles.json`、`cgroups.json` 和 `system/core/libprocessgroup/` 管理；有没有 sched_ext 基础设施，不等于 Android 进程调度组已经切到 BPF 调度器。
+
+排查 sched_ext 是否可用时，可以先看三个入口：
+
+```bash
+# 检查内核配置
+adb shell zcat /proc/config.gz | grep SCHED_CLASS_EXT
+
+# 检查 sched_ext 运行时接口
+adb shell ls /sys/kernel/sched_ext/
+
+# 查看当前 sched_ext root ops
+adb shell cat /sys/kernel/sched_ext/root/ops
+```
+
+部分 OEM 可能会实验自己的 sched_ext 调度器，但公开资料里若没有可访问源码、commit 或 benchmark 数据，就不能把具体 OEM 调度器名称、函数名和量化收益写成确定结论。
 
 [来源: intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md + Android GKI release builds]
 
@@ -522,36 +539,3 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 - Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md
 - Cubox/simpleperf的使用技巧-2025-11-18.md
 - Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md
-
-
-<!-- AIW-源码调研-2026-05-07（原始 OEM 素材已移除：源码路径/函数名/OEM 调度器名称未能核验，量化收益无来源。保留 sched_ext 基础设施描述） -->
-
-## sched_ext 在 Android 中的可用性现状
-
-sched_ext 允许 OEM 通过 eBPF 程序替换内核默认调度策略。Android common kernel 从 Linux 6.12 分支（对应 Android 16 / GKI 6.12）开始包含完整的 sched_ext 基础设施（`kernel/sched/ext.c`）。
-
-设备是否实际启用 sched_ext 取决于多个条件：
-
-- 内核配置 `CONFIG_SCHED_CLASS_EXT=y`
-- 设备 `/sys/kernel/sched_ext` 目录是否存在
-- CTS/VTS 是否要求启用
-- OEM 在 shipping build 中的具体配置策略
-
-AOSP 默认调度链尚未切换到 sched_ext，当前 Android 16 设备上多数仍使用传统 EAS + schedutil 调度。
-
-部分 OEM 据报道在开发各自的 sched_ext 调度器，但公开检索未找到可核实的源码仓库、commit 或官方文档。在没有可访问源码和 benchmark 数据之前，不能将具体的 OEM 调度器名称、函数名和量化收益写入确定结论。
-
-**排查 sched_ext 是否启用**：
-
-```bash
-# 检查内核配置
-adb shell zcat /proc/config.gz | grep SCHED_CLASS_EXT
-
-# 检查 sched_ext 运行状态
-adb shell ls /sys/kernel/sched_ext/
-
-# 查看当前调度器是否为 sched_ext
-adb shell cat /sys/kernel/sched_ext/root/ops
-```
-
-Android 进程调度组仍由 `task_profiles.json`、`cgroups.json`、`task_profiles.cpp`（`system/core/libprocessgroup/`）管理，不依赖 sched_ext。
