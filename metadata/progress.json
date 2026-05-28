@@ -1635,7 +1635,15 @@
       "task6_l1_l2_fixes": 4,
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
-      "task6_note": "复审通过；L1/L2 小修 4 处。Task9 仍 pending/needs-rework，未自动晋升。"
+      "task6_note": "复审通过；L1/L2 小修 4 处。Task9 仍 pending/needs-rework，未自动晋升。",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_lite_at": "2026-05-28",
+      "task2b_lite_note": "修复 Network Inspector timeline 口径、profileable 量化来源、Java Method Trace 能力边界、ODPM 设备级归因、APP_FULLY_DRAWN 触发语义。"
     },
     "1.1": {
       "task6_result": "pass-light-edit",
