@@ -30,7 +30,7 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: "auto-fixed"
+task9_result: pending
 last_task2b_at: "2026-05-28T14:50:00+08:00"
 task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
@@ -40,27 +40,28 @@ repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-28"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-05-28T16:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-16-review.md"
-task6_review_notes: "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
+reviewed_date: "2026-05-29"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-29T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-29-06-review.md"
+task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
 task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。"
 last_task9_autofix_at: "2026-05-29"
-task6_reviewed_date: "2026-05-28"
+task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
 task9_reviewed_at: "2026-05-29T05:20:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-29"
 ---
+
 # dumpsys 系列命令
 
 <!-- outline-start -->

@@ -2,8 +2,8 @@
 title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
-status: "ready-for-review"
-reviewed_date: "2026-05-28"
+status: ready-for-review
+reviewed_date: "2026-05-29"
 reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -42,12 +42,12 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: "pass-light-edit"
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
 task2b_state: fixed
-task9_result: auto-fixed
+task9_result: pending
 task2b_result: fixed-lite
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
@@ -58,19 +58,18 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-29T05:20:00+08:00"
 task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 LMKD 选杀口径，不再写成由 PSS 总量直接决定，回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
-last_task6_at: "2026-05-28T17:18:00+08:00"
-task6_reviewed_date: "2026-05-28"
+last_task6_at: "2026-05-29T06:05:00+08:00"
+task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-17-review.md"
-task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理 procrank 小节汇报腔 1 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-29-06-review.md"
+task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。补 2 处示例代码块语言标记；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_autofix_at: "2026-05-29"
 last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
-reviewed_at: "2026-05-28T17:18:00+08:00"
+reviewed_at: "2026-05-29T06:05:00+08:00"
 task9_reviewed_at: "2026-05-29T05:20:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-29"
 ---
-
 
 # 内存分析工具
 
@@ -352,7 +351,7 @@ data_sources: {
 
 **App Summary 区域**在分类汇总表之后，用更简洁的方式总结了几个关键数字：
 
-```
+```text
 App Summary
                        Pss(KB)        Rss(KB)
            ----        ------        ------
@@ -417,7 +416,7 @@ adb shell procrank
 
 输出示例：
 
-```
+```text
   PID      Vss      Rss      Pss      Uss  cmdline
  1234  2048576  185432   43210   38760  com.example.myapp
  5678  1536000  120432   38900   34560  com.android.systemui
