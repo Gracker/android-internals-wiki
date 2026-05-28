@@ -32,9 +32,9 @@ related_chapters:
 - '14.1'
 task9_result: "auto-fixed"
 last_task2b_at: "2026-05-28T14:50:00+08:00"
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T15:23:00+08:00"
+last_task9_at: "2026-05-29T05:20:00+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
@@ -47,14 +47,19 @@ task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-24"
+reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
-last_task6_at: "2026-05-24T01:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-24-01-review.md"
-task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 3 处（清理 AIW 编辑注释、标题措辞、无条件量化收益）。无新增 Task6 回炉；Task9 P0 已由 Task2B 修复，等待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-28-15-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。"
-last_task9_autofix_at: "2026-05-28"
+last_task6_at: "2026-05-28T16:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-16-review.md"
+task6_review_notes: "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。"
+last_task9_autofix_at: "2026-05-29"
+task6_reviewed_date: "2026-05-28"
+task6_reviewed_by: "openclaw-task6"
+task9_reviewed_at: "2026-05-29T05:20:00+08:00"
+updated_by: "openclaw-task9"
+updated_date: "2026-05-29"
 ---
 # dumpsys 系列命令
 
@@ -174,7 +179,7 @@ meminfo 输出把进程的内存使用分为多个类别。在性能分析中，
 
 **Dalvik Heap / ART Heap** 是 Java/Kotlin 对象的驻留之地。如果 `Heap Alloc` 持续增长而不回落，很可能存在内存泄漏。频繁的大对象分配则会导致 `memory churn`（内存抖动），引发频繁 GC，进而导致主线程暂停、帧丢失。在 Perfetto 中，这对应于 Main Thread 上出现的 GC slice。
 
-**Native Heap** 是 C/C++ 代码通过 `malloc` 分配的内存。图形缓冲区（GraphicBuffer）、第三方 native 库（如图片解码库）、JNI 代码分配的对象都在这里。如果 Native Heap 增长但 ART Heap 稳定，说明泄漏发生在 native 层，需要用 `heapprofd`（§14.3）或 `ddms` 的 Native Heap Dump 来定位。
+**Native Heap** 是 C/C++ 代码通过 `malloc` 分配的内存，第三方 native 库（如图片解码库）、JNI 代码分配的对象通常落在这里。GraphicBuffer / dma-buf 这类图形缓冲区的 backing memory 通常归到 `Graphics` / 设备映射路径，不能简单按 Native Heap 泄漏处理。如果 Native Heap 增长但 ART Heap 和 Graphics 都稳定，说明问题更可能在 native malloc 层，需要用 `heapprofd`（§14.3）或 `ddms` 的 Native Heap Dump 来定位。
 
 **Graphics** 包括 GL surface、纹理缓冲区、EGL 相关的图形资源。在图片密集型 App 或游戏中，这个值可能很大。如果退出一个界面后 Graphics 内存没有下降，说明纹理或 surface 没有被正确释放。
 
@@ -255,7 +260,7 @@ adb shell dumpsys gfxinfo com.example.app
 
 如果输出显示 `Number Slow UI thread` 很高，说明是主线程做了太多工作（比如 `onBindViewHolder` 中有耗时操作）。如果 `Number Slow bitmap uploads` 很高，说明图片解码阻塞了渲染。如果 `Number Slow RenderThread` 高但 UI thread 正常，可能是因为视图层次太复杂导致 GPU 合成压力过大。
 
-确认了阶段之后，再用 Perfetto 抓 Trace 做精确定位——gfxinfo 帮我们缩小了排查范围。
+确认了问题阶段之后，再用 Perfetto 抓 Trace 做精确定位——gfxinfo 帮我们缩小了排查范围。
 
 ## dumpsys cpuinfo：CPU 占用快速排查
 
@@ -285,7 +290,7 @@ adb shell top -H -p <pid>
 - kernel 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
 - `TOTAL` 行 iowait / irq / softirq 高 → I/O 等待或中断处理异常，需结合 Perfetto CPU / irq / sched 轨道继续定位
 
-`dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 做持续观察。
+`dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 进行持续观察。
 
 如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15/16 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
 
@@ -514,7 +519,7 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 
 判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
 
-在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为粗筛：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的真实 deadline。
+在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为初步筛选：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的真实 deadline。
 
 当 desired_present_time 为 0 时，表示该帧没有期望呈现时间（通常是未使用的缓冲区槽位），应跳过不计。
 
