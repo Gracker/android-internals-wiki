@@ -29,6 +29,10 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/ext.c"
   - type: aosp
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/ext.h"
+  - type: aosp
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/include/linux/sched/ext.h"
+  - type: aosp
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/kernel/sched/cpufreq_schedutil.c"
   - type: oem-source
     path: "https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c"
   - type: official
@@ -37,22 +41,25 @@ tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-20"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-20"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-pipeline_stage: task2b_pending
-task2b_result: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
+task2b_result: fixed
 last_task9_at: "2026-05-20T07:37:11+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
 task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 3 / P1 2 / P2 2 / P3 1。P0 3：EEVDF 源码路径/weight 体系错误、GameManager→BPF 链路无证据、AOSP kernel/common 集成结论自相矛盾；P1 2：scx_bpf_cpuperf_set cpufreq 通用路径缺失、Android 14/15/17 时间线无锚点；P2 2。"
 last_task6_at: "2026-05-20T08:14:00+08:00"
 last_task6_review_log: "logs/review/2026-05-20-08-review.md"
 task6_review_notes: "2026-05-20 task6 review 08:14：复审 sched_ext 与 OEM BPF 调度器；L1/L2 基本通过，仅同步 Task6 元数据；未新增写作回炉项；保留 Task9 needs-rework 与 task2b_pending。"
+last_task2b_at: "2026-05-29T06:50:00+08:00"
+task2b_fixed_by: openclaw-task2b-main
+
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器
@@ -138,9 +145,9 @@ flowchart TD
     Vendor --> Freq
 ```
 
-图里容易误判的是 `sched_ext` 和频率治理的关系。`sched_ext` 直接处理任务调度，cpufreq 仍由 governor 和 util 信号驱动。厂商策略可能把两者绑在一起，例如同时调整 BPF scheduler 参数和频率 governor 参数，但那是 vendor 实现，不是 Linux `sched_ext` 的通用语义。
+图里容易误判的是 `sched_ext` 和频率治理的关系。`sched_ext` 直接处理任务调度，cpufreq 仍由 governor 和 util 信号驱动；同时，Android common `android16-6.12` 已包含一条 Linux sched_ext 通用 CPU performance target 路径：BPF scheduler 可通过 `scx_bpf_cpuperf_set()` 设置 CPU performance target，`cpufreq_schedutil.c` 中的 `sugov_get_util()` 读取 `scx_cpuperf_target(cpu)` 并参与 schedutil 的 util 计算。厂商的 `scx_gov_ctrl`、`cpuctrl_high/low` 属于额外控制面，不能反过来否定这条通用路径。
 
-[已验证: Linux Documentation/scheduler/sched-ext.rst；Linux include/linux/sched/ext.h；详见 5.1 节、5.2 节、14.10 节]
+[已验证: Linux Documentation/scheduler/sched-ext.rst；Android common android16-6.12 `kernel/sched/ext.c`、`include/linux/sched/ext.h`、`kernel/sched/cpufreq_schedutil.c`；详见 5.1 节、5.2 节、14.10 节]
 
 ## BPF 调度器入口：`struct sched_ext_ops`
 
@@ -227,7 +234,7 @@ OPPO/OnePlus 的 `partial_ctrl` proc 节点与 `SCX_OPS_SWITCH_PARTIAL` 的对�
 
 **队列策略改变线程之间的相对顺序。** BPF scheduler 可以把任务放入自定义 DSQ，再按自定义规则移动到 local DSQ。厂商可能给前台进程、游戏线程、SurfaceFlinger 相关线程或 binder reply 更高权重。收益是交互路径更快；代价是后台任务、IO worker 或低优先级 binder 请求被推迟。
 
-**频率策略可能和调度策略一起变化。** 如果 vendor 同时调整 `scx_gov_ctrl`、`cpuctrl_high/low` 这类参数，Perfetto 中会出现“线程迁移变少 + 频率响应更快”的组合。分析时不能只盯 `sched` 表，也要看 `cpufreq`、CPU idle、thermal、binder transaction 和 frame timeline。
+**频率策略可能和调度策略一起变化。** 先区分两条路径：Linux sched_ext 通用路径可以通过 `scx_bpf_cpuperf_set()` 影响 schedutil 读取到的 CPU performance target；vendor 路径可能再叠加 `scx_gov_ctrl`、`cpuctrl_high/low` 这类私有参数。Perfetto 中如果出现“线程迁移变少 + 频率响应更快”的组合，分析时不能只盯 `sched` 表，也要看 `cpufreq`、CPU idle、thermal、binder transaction 和 frame timeline。
 
 误配通常表现为一组信号同时出现：前台线程 runnable 时间变长、binder reply 延迟上升、CPU 频率长期维持高位、温度触发降频、后台任务 tail latency 变差。遇到这类设备差异，先确认是否存在 `sched_ext` 或 vendor proc 节点，再把 trace 和同 SoC 不同 ROM、同 ROM 不同开关状态做对比。
 
@@ -244,11 +251,14 @@ adb shell 'zcat /proc/config.gz 2>/dev/null | grep CONFIG_SCHED_CLASS_EXT'
 adb shell 'cat /sys/kernel/sched_ext/state 2>/dev/null'
 adb shell 'cat /sys/kernel/sched_ext/root/ops 2>/dev/null'
 adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
+adb shell 'cat /sys/kernel/sched_ext/switch_all 2>/dev/null'
+adb shell 'cat /sys/kernel/sched_ext/nr_rejected 2>/dev/null'
+adb shell 'cat /sys/kernel/sched_ext/hotplug_seq 2>/dev/null'
 adb shell 'grep ext /proc/self/sched 2>/dev/null'
 adb shell 'ls -la /proc/hmbird_sched 2>/dev/null'
 ```
 
-这组命令分别回答：内核是否编进 `CONFIG_SCHED_CLASS_EXT`，当前是否有 BPF scheduler 运行，运行的 ops 名称是什么，本次 boot 是否曾加载过 scheduler，当前 task 是否在 ext class 上，以及设备是否暴露 OPPO/OnePlus 风格的 vendor 控制节点。user build 可能因为 SELinux、内核配置隐藏或 `/proc/config.gz` 关闭而读不到结果，读不到不等于未启用。
+这组命令分别回答：内核是否编进 `CONFIG_SCHED_CLASS_EXT`，当前是否有 BPF scheduler 运行，运行的 ops 名称是什么，本次 boot 是否曾加载过 scheduler，是否发生过全局切换、拒绝加载或热插拔序列变化，当前 task 是否在 ext class 上，以及设备是否暴露 OPPO/OnePlus 风格的 vendor 控制节点。user build 可能因为 SELinux、内核配置隐藏或 `/proc/config.gz` 关闭而读不到结果，读不到不等于未启用。
 
 Perfetto 里可以先看迁移和 runnable 时间。下面的 SQL 用 `sched` 表统计目标线程的 CPU 迁移次数，适合比较开关前后或不同设备的差异：
 
@@ -337,38 +347,6 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 
 这套边界也适用于其它 vendor 调度功能。性能文章里要避免把单一厂商、单一固件版本的行为写成 Android 通用规律；承认未知反而更稳。
 
-
-
-<!-- AIW-源码调研-2026-05-18 -->
-## 补充：2026-05-18 每日调研
-
-**选题来源：** daily-topics.json §17.4  
-**核心发现（待一手验证）：**
-
-1. **EEVDF 全面取代 CFS**：Linux 6.12 内核中 EEVDF（Earliest Eligible Virtual Deadline First）成为唯一 fair-class 调度策略，完全移除了 CFS 的 `weight` 权重体系。关键源码路径：`kernel/common/sched/core.c` 的 `pick_eevdf()` 函数依赖 `vruntime` + `eligibility` 双边界机制。
-
-2. **sched_ext（SCX）三层联动**：
-   - 用户态：`GameManagerService.java` L616-682 提供 `writeGameStateToBpMap()`，通过 `game_state_map` BPF map 推送游戏优先级
-   - BPF 加载：`BpfLoader.cpp` L117, L250 负责加载 BPF 程序
-   - 内核态：`kernel/common/sched/ext.c` 注册 `sched_ext_sched_class`，OEM 可通过 `struct sched_ext_ops` 注入自定义调度逻辑
-
-3. **版本差异**：Android 14 引入 sched_ext 预览，Android 15 官方支持，Android 16 EEVDF 混用，Android 17 EEVDF only + SCX 完整框架
-
-**源码位置（待深入）：**
-- `kernel/common/sched/core.c` - EEVDF pick path（需验证）
-- `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java` L616-682 - BPF map 写入
-- `system/bpf/bpfloader/BpfLoader.cpp` L117, L250 - BPF 程序加载
-- `packages/modules/Connectivity/bpf_progs/bpf_shared.h` - BPF map 结构共享
-
-**未验证项（标注未经一手验证）：**
-- `kernel/common/sched/ext.c` 实际内容，基于 upstream kernel 6.12 推测
-- `ext_bpf.c` BPF map 结构体定义，AOSP master 未找到
-- 高通/联发科 OEM SCX 模块实现案例
-
-**关联报告：** `2026-05-18-android-17-sched-ext-eevdf-oom-research.md`（DeepResearch/）
-<!-- AIW-源码调研-2026-05-18 -->
-
-
 ## 参考资料
 
 ### sched_ext OEM 调度器公开证据与生产就绪度分析
@@ -386,129 +364,9 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 - [来源: AIW AutoResearchClaw 调研报告, `2026-05-04-sched-ext-oplus-impl.md`]
 - [待验证: Android common kernel `android16-6.12` 分支与各 OEM user build 默认启用状态]
 
-### Android 17 sched_ext / EEVDF 调度器 OEM 实现机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-17-sched-ext-eevdf-oom-research.md
-- 类型：DeepResearch 调研结果
-- 摘要：分析 Linux 6.12 EEVDF 取代 CFS 的结构性转变，sched_ext 框架允许 OEM 通过 BPF map 注入定制调度策略。详细追踪 GameManagerService→BPF map→kernel SCX 的三层联动链路，以及厂商定制化输入优先级绑定机制。
-- 注入时间：2026-05-19
-- 价值：源码级追踪 EEVDF/SCX 三层联动链路，补充 GameManagerService BPF 交互与 OEM 定制化输入
-
-
 ### SoC 平台差异 sched_ext OEM 调度器公开证据收集
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-soc-platform-sched-ext-oom-scheduler.md
 - 类型：DeepResearch 调研结果
-- 摘要：系统检索 AOSP kernel/common、Google Pixel coral-kernel 及 GitHub sched-ext/scx 项目，确认 sched_ext 已在 Linux 6.12 正式合入但 AOSP 尚未集成。上游项目维护 scx_simple / scx_rusty / scx_bpfland / scx_lavd 等实验性调度器，Meta 和 Google 正在推进生产部署。SCX_Oplus / SCX_Mtk / SCX_Litto 未发现公开源码，属厂商私有实现。
+- 摘要：系统检索 AOSP kernel/common、Google Pixel coral-kernel 及 GitHub sched-ext/scx 项目。该报告中的“kernel/common 尚未集成”结论已被 2026-05-22 复核修正：Android common `android16-6.12` 已包含 `kernel/sched/ext.c`、`include/linux/sched/ext.h` 与 `tools/sched_ext/` 示例；SCX_Oplus / SCX_Mtk / SCX_Litto 未发现公开源码，仍属厂商私有或未验证线索。
 - 注入时间：2026-05-20
-- 价值：为 §17.4 sched_ext OEM 调度器章节提供完整的公开证据地图，明确哪些有源码验证、哪些仍是未验证信息
-
-
-## 补充：公开源码调研现状（2026-05-19）
-
-本次每日调研（选题来自 daily-topics.json id=3）进一步核查了 AOSP 公开仓库和 GitHub 中与 sched_ext OEM 调度器相关的源码，结论如下：
-
-### AOSP kernel/common 现状
-
-在 cs.android.com 检索 `kernel/common/sched/`、`kernel/common/sched/ext.c` 和 `CONFIG_SCHED_CLASS_EXT`，均未发现 sched_ext 相关文件。`bionic/libc/kernel/uapi/linux/` 下仅有标准 Linux 头文件，无 sched_ext 专用接口。
-
-**结论**：截至 AOSP master 分支（对应 Android 正在开发的未来版本），kernel/common 尚未合入 sched_ext。这与 Linux 6.12 正式 upstream 的时间线一致——AOSP 通常跟踪稳定版内核，而非 mainline 开发分支。
-
-### Google Pixel 设备 kernel fork
-
-检索 `device/google/coral-kernel` 和 `device/google/sched/`：
-- coral-kernel 仓库存在，但不含 sched_ext 相关文件或配置
-- 未发现 `SCX_Litto` 或 Pixel 专用调度器的公开源码证据
-- `BoardConfig-common.mk` 和 `init.hardware.rc` 中未发现 sched_ext 启用逻辑
-
-### 上游 sched_ext 调度器生态（github.com/sched-ext/scx）
-
-| 调度器 | 实现语言 | 定位 |
-|--------|----------|------|
-| scx_simple | C | 最小全局 FIFO 示例 |
-| scx_rusty | Rust | 多级反馈队列，负载均衡 |
-| scx_bpfland | Rust | 拓扑感知 BPF 调度器 |
-| scx_lavd | Rust | Latency-Oriented Virtual Deadline |
-| scx_rustland | Rust | 用户态决策，用于 FPS 优化演示 |
-
-该项目明确指出 Meta 和 Google 正在推进 sched_ext 生产环境部署，且 upstream Linux 6.12 已正式支持。
-
-### Qualcomm SCX_Oplus / MediaTek SCX_Mtk / Pixel SCX_Litto
-
-**本次检索未在公开仓库发现上述三个定制调度器的源码。** 这些名称可能属于：
-1. 厂商内部 kernel fork（未公开）
-2. 非 AOSP 公开仓库的厂商 repository（如 qcom/opensource、mtk 的 kernel 仓库）
-3. 已公开但不在 AOSP 主线而在厂商单独维护的 kernel 分支
-
-现有章节已覆盖 OPPO/OnePlus `hmbird_sched` 的公开线索，对高通和联发科平台，公开证据仍不足。**本调研报告结论：Qualcomm SCX_Oplus、MediaTek SCX_Mtk、Google Pixel SCX_Litto 的实际源码位置和实现细节，仍属于未经一手验证的盲区。**
-
-<!-- AIW-源码调研-2026-05-19 -->
-
-<!-- AIW-源码调研-2026-05-22 -->
-## 补充：2026-05-22 每日调研（sched_ext OEM 调度器公开证据与生产就绪度）
-
-**选题来源：** daily-topics.json id=5（pending）
-**核心发现：**
-
-### 1. Android kernel/common android16-6.12 实际包含 sched_ext 工具链
-
-本次调研确认：`https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/tools/sched_ext/` 包含完整的 sched_ext 示例调度器，而非之前认为的"kernel/common 无 sched_ext"。**区分点在于：kernel 源码位于 `kernel/sched/ext.c`（核心实现），而 AOSP 提供的示例工具位于 `tools/sched_ext/`（用户态调度器二进制）。**
-
-包含的示例调度器：
-- `scx_simple.bpf.c` / `scx_simple.c` — 简单全局 vtime 或 FIFO 调度器
-- `scx_central.bpf.c` / `scx_central.c` — 集中式调度器
-- `scx_flatcg.bpf.c` / `scx_flatcg.c` — 扁平 cgroup 调度器
-- `scx_qmap.bpf.c` — 多层队列映射调度器
-- `include/` — 共享 BPF 和用户态 C 头文件，包含 vmlinux.h
-
-### 2. SCX_OPS_SWITCH_PARTIAL 行为精确语义
-
-当 BPF 调度器加载且设置了 `SCX_OPS_SWITCH_PARTIAL` 标志时：
-- **仅 SCHED_EXT 策略的任务由 sched_ext 调度**
-- SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE 任务由 fair-class 调度（具有更高的 sched_class 优先级）
-
-当**未设置**该标志时：所有 SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE 和 SCHED_EXT 任务都由 sched_ext 调度。
-
-这与章节 §17.4 中 partial enable 的描述一致，并补充了精确的调度类分工边界。
-
-### 3. 任务状态机（enum scx_task_state）
-
-| 状态 | 含义 |
-|------|------|
-| `SCX_TASK_INIT` | ops.init_task() 成功，任务可被取消 |
-| `SCX_TASK_READY` | 完全初始化，但未加入 sched_ext |
-| `SCX_TASK_ENABLED` | 完全初始化且已加入 sched_ext |
-
-### 4. kernel config 要求（已确认）
-
-```
-CONFIG_BPF=y
-CONFIG_BPF_SYSCALL=y
-CONFIG_BPF_JIT=y
-CONFIG_DEBUG_INFO_BTF=y
-CONFIG_BPF_JIT_ALWAYS_ON=y
-CONFIG_BPF_JIT_DEFAULT_ON=y
-CONFIG_SCHED_CLASS_EXT=y
-```
-
-可通过 `zcat /proc/config.gz | grep CONFIG_SCHED_CLASS_EXT` 核查。
-
-### 5. sysfs 运行时状态接口（已确认）
-
-```
-cat /sys/kernel/sched_ext/state        # enabled / disabled
-cat /sys/kernel/sched_ext/*/ops        # 当前加载的调度器名称
-```
-
-### 6. Qualcomm SCX_Oplus / MediaTek SCX_Mtk / Google Pixel SCX_Litto 仍未找到公开源码
-
-本次调研在 cs.android.com 和 android.googlesource.com 上进行了 10+ 次针对性搜索，**未搜索到这三个定制调度器的具体实现源码**。这些名称可能属于：
-1. Vendor-specific kernel fork 中的私有实现（不在 AOSP/mainline 中）
-2. 尚未上传或仅在 vendor 分支中存在
-3. 内部代号，非实际源码中的符号名称
-
-**生产就绪度判断：**
-- Linux 6.12+ 上游支持已成熟，Meta 和 Google 均表态支持，Meta 处于规模化部署阶段
-- Android kernel/common android16-6.12 分支已包含 sched_ext 工具链
-- 但各设备是否实际启用、加载哪个 BPF 调度器，由厂商 kernel config 和运行时决定，不可泛化
-
-**关联报告：** `2026-05-22-sched-ext-oem-scheduler-production-readiness.md`（DeepResearch/）
-<!-- AIW-源码调研-2026-05-22 -->
+- 价值：为 §17.4 sched_ext OEM 调度器章节提供公开证据地图；其中已被后续复核否定的 AOSP 集成结论不再作为正文依据

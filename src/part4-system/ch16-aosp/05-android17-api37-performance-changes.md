@@ -38,12 +38,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
-last_task2b_at: "2026-05-15T07:22:00+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-29T06:50:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task9_reviewed_by: "openclaw-task9"
@@ -57,6 +57,7 @@ last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
+task2b_fixed_by: openclaw-task2b-main
 
 ---
 
@@ -90,15 +91,15 @@ last_task6_review_log: logs/review/2026-05-16-08-review.md
 
 从 Android 1.0 开始，`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时，都需要获取同一把锁。在 Looper 线程（通常是主线程）从队列头部取消息执行时，其他线程如果想投递消息，就必须等主线程释放锁。
 
-在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，问题就暴露出来了。一个典型案例：Launcher 在后台加载应用列表时，多个工作线程同时向主线程投递消息，而主线程正在执行一次耗用的布局计算。此时所有投递操作都被阻塞在 synchronized 块上，主线程的 `enqueueMessage()` 等待时间在 Perfetto 中表现为一截 Lock Wait 切片。如果这个等待恰好发生在 VSync 周期内，就会导致掉帧。
+在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，队列维护阶段的共享 monitor 会放大优先级反转：低优先级投递线程正在 `enqueueMessage()` 中持有 monitor，高优先级 UI 线程下一次进入 `MessageQueue.next()` 取消息时被卡在 monitor contention 上。Message 被取出以后，Looper 执行业务回调或布局计算时不再持有 `MessageQueue` monitor，所以不能把掉帧原因写成“主线程执行布局期间锁住所有投递线程”。
 
 在 Perfetto Trace 中，旧实现的锁争用表现为：
-- Main Thread Track 中出现名为 "monitor contention with MessageQueue" 的切片
-- 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 Handler 相关代码
+- Main Thread Track 或目标 Looper 线程上出现名为 "monitor contention with MessageQueue" 的切片
+- 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 `MessageQueue.enqueueMessage()` 或相邻的 Handler 投递路径
 - 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms(60fps)
-- 特别出现在 `Choreographer.doFrame` 期间的消息投递操作中
+- 如果等待发生在 `Choreographer.doFrame` 前后，就会直接挤占本帧预算
 
-如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看它是否和 `Choreographer#doFrame`、`Handler.enqueueMessage()` 或主线程布局计算重叠。旧实现下，消耗帧预算的通常就是这类重叠区间。
+如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看 UI 线程是否在 `MessageQueue.next()` 附近等待，以及持锁线程是否落在 `Handler.enqueueMessage()` / `MessageQueue.enqueueMessage()` 路径。旧实现下，消耗帧预算的通常就是这类等待区间。
 
 ### 新实现：DeliQueue 的混合数据结构
 
@@ -107,7 +108,7 @@ last_task6_review_log: logs/review/2026-05-16-08-review.md
 - **Android Developers Blog 的概念模型**：使用 Treiber Stack（一种无锁栈），通过 CAS（Compare-And-Swap）操作实现多线程并发入队，不需要任何锁
 - **读取端**：使用 min-heap（最小堆），由 Looper 线程独占访问，按消息的 `when`（执行时间）排序，天然有序
 
-工作流程是这样的：当任何线程通过 `Handler` 投递一条消息时，消息被概念性地 push 到 Treiber Stack 中，这是一个 O(1) 的 CAS 操作，不需要获取锁。当 Looper 线程进入 `loop()` 的下一次迭代时，它会将并发入队的消息批量"搬"到 min-heap 中（drain 操作），然后从 min-heap 中按时间顺序取出下一条消息执行。
+工作流程是这样的：当任何线程通过 `Handler` 投递一条消息时，消息被概念性地 push 到 Treiber Stack 中，这是一个 O(1) 的 CAS 操作，不需要获取锁。当 Looper 线程进入 `loop()` 的下一次迭代时，它会将并发入队的消息批量转入 min-heap（drain 操作），然后从 min-heap 中按时间顺序取出下一条消息执行。
 
 ```
 [图:DeliQueue 数据流示意图]
@@ -141,7 +142,7 @@ DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message
 
 AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同步屏障语义仍由队列实现维护。排障时不要把这次变化简化成“某个字段改名”。
 
-从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 批量搬运和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
+从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
 
 源码层可以拆成三点：
 
@@ -163,7 +164,6 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 - Robolectric 升级到 **4.17+**,并把 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`
 - 如果怀疑问题就是新的 `MessageQueue` 导致，可先在 Developer Options 的 App Compatibility Changes 里关闭该变更，或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
 
-<!-- AIW-源码调研-2026-05-27 -->
 ### DeliQueue 算法细节补充（来源：Android Developers Blog 2026-02-17）
 
 以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**：
@@ -197,7 +197,6 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 **AOSP 源码路径**：`frameworks/base/core/java/android/os/MessageQueue.java`，在 cs.android.com 的 android-16.0.0_r1 或 master 分支可查看具体实现。
 
 **Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
-<!-- AIW-源码调研-2026-05-27 -->
 
 
 ---
@@ -265,15 +264,16 @@ ProfilingManager 在 Android 15 (API 35)引入，提供运行时请求 heap dump
 
 | 触发器 | 触发时机 | 产物类型 | 典型用途 |
 |--------|---------|---------|---------|
-| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 系统触发的 profiling artifact；running trace snapshot / stack sample 的最终组合按 API 37 reference 核验 | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | call stack sample + system trace | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` | 系统检测到 App 异常行为 | heap dump 或 stack sampling profile，取决于 memory limit breach、Binder spam 等系统判定 | 诊断系统侧异常行为 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证：上述三个触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。reference 对 anomaly 的公开口径是"system detects an anomalous behavior by the app",排障时应把它理解为系统侧异常行为触发入口，不要自行收窄成某一类 Binder 或内存事件。]
+[已验证：上述触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。Android 17 features 页对 anomaly 给出的公开例子包括 excessive binder calls、excessive memory usage 和 memory limit breach；其中 memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile。内部阈值和组合条件未公开，排障时应把它理解为 OS-defined / system-detected 触发入口。]
 
 ### 注册流程和适配建议
 
-冷启动触发器的文档口径是"app cold start 时尽早触发"。使用时先把它看作采样入口；产物类型以 API 37 reference 的 `ProfilingResult` 为准，不能固定写成 "newly started system trace"。[待验证：API37 reference 对 cold start artifact 的最终描述]
+冷启动触发器的文档口径是"app cold start 时尽早触发"，公开产物是 call stack sample 和 system trace。使用时先把它看作采样入口；具体字段名和交付文件形态以 API 37 SDK reference 的 `ProfilingResult` 为准。
 
 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
 
@@ -587,13 +587,13 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | 触发器常量 | Added in | 公开口径 | 排障定位 |
 |-----------|----------|---------|----------|
 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 36 | App 完成首次绘制后触发 | 启动尾段 |
-| `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | 整个启动窗口 |
-| `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | 系统侧异常判断入口 |
+| `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | call stack sample + system trace |
+| `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile |
 | `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | 后台 CPU 诊断 |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
 
-[待验证：API 37 reference 对 cold start artifact 的最终描述；anomaly 触发器内部的多维度判断阈值和组合条件未公开]
+[已验证：Android 17 features 页已公开 cold start、memory limit breach 和 Binder spam 的产物口径；anomaly 触发器内部的多维度判断阈值和组合条件未公开。]
 
 ### ConcurrentMessageQueue 实际数据结构
 
@@ -673,5 +673,3 @@ Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新
 - **Buffer Stuffing Recovery**：解决 Buffer Dequeue 阻塞导致的帧节拍错位
 
 两者共同改善滑动流畅性，但针对的问题根源不同。
-
-<!-- AIW-源码调研-2026-05-20 -->
