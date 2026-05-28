@@ -10,13 +10,13 @@ last_verified: "2026-05-28"
 last_verified_against: "perfetto.dev FrameTimeline docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1"
 confidence: medium-high
 reviewed_date: "2026-05-28"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_l1_l2_fixes: 30
+task6_l1_l2_fixes: 4
 task6_l3_l4_issues: 0
-last_task6_at: "2026-05-28T11:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-11-review.md"
-task6_review_notes: "2026-05-28 11: Task6 revisiting review: 清理预设读者、空泛强调、结构性过渡和少量翻译腔；无 L3/L4 回炉项，送 Task9 技术复审。"
+last_task6_at: "2026-05-28T12:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-12-review.md"
+task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
@@ -46,8 +46,8 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -142,7 +142,7 @@ Perfetto 的导航操作继承了 Systrace 的设计，但流畅度有了质的�
 
 最常用的操作是 `F`（Fit）：选中一个 Slice 后按 `F`，视图会自动缩放到刚好容纳这个 Slice 的大小。再按一次 `F`，会进一步缩放到填满整个视图。日常分析中经常用它处理长 Slice——比如主线程出现一个很长的 `doFrame` Slice，按 `F` 就可以立刻看到这一帧内部的全部细节。
 
-时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比，并结合红色锁竞争标记判断等待原因。这适合分析 App 启动场景——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在真正执行代码，多少时间在等待 CPU 或 I/O。
+时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比，并结合红色锁竞争标记判断等待原因。这适合分析 App 启动场景——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在执行代码，多少时间在等待 CPU 或 I/O。
 
 [已验证: 官方文档, perfetto.dev UI keyboard shortcuts]
 
@@ -257,13 +257,13 @@ Counter Track 的数值点来自应用、系统模块、native 代码和内核�
 
 ## Slice 详情面板的解读
 
-选中任何一个 Slice 后，底部面板会展示该 Slice 的详细信息。这个面板是 Perfetto 最强大的分析入口之一——它不仅展示"这个事件持续了多久"，还展示"这段时间里线程在干什么"。
+选中任何一个 Slice 后，底部面板会展示该 Slice 的详细信息：事件持续时间、线程状态、唤醒源，以及这段时间里的 CPU / 等待组成。
 
 ### Wall Duration 与 CPU Duration
 
 **Wall Duration**（墙上时间）是 Slice 从开始到结束的真实经过时间。就像用秒表计时一样，不管线程是在运行还是在睡觉，Wall Duration 都在走。它直接对应 Trace 中看到的 Slice 宽度——越宽的 Slice，Wall Duration 越长。
 
-**CPU Duration**（CPU 时间）是线程在这个 Slice 期间真正在 CPU 上执行指令的时间。它排除了线程被挂起（Sleep）、等待 CPU 调度（Runnable）、等待 I/O（Uninterruptible Sleep）的时间。
+**CPU Duration**（CPU 时间）是线程在这个 Slice 期间在 CPU 上执行指令的时间。它排除了线程被挂起（Sleep）、等待 CPU 调度（Runnable）、等待 I/O（Uninterruptible Sleep）的时间。
 
 理解这两个指标的关系是性能分析的核心基本功。它们之间的关系可以写成：
 
@@ -384,7 +384,7 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 
 实际情况往往比这组判断更复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
-Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
+Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起正式支持（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
 
 [图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Blocked 锁竞争(红)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
 

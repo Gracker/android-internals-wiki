@@ -270,7 +270,10 @@
     "13.17",
     "13.16",
     "13.10",
-    "13.3"
+    "13.3",
+    "13.3",
+    "13.18",
+    "14.1"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -380,7 +383,10 @@
     "src/part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md",
     "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+    "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+    "src/part3-tools/ch14-other-tools/01-as-profiler.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
@@ -4963,20 +4969,27 @@
     },
     "14.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
       "last_task9_at": "2026-05-17T16:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-16-deep-review.md",
-      "last_task6_at": "2026-05-17T16:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-17-16-review.md",
+      "last_task6_at": "2026-05-28T12:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
       "queue_priority": 95,
       "title": "Android Studio Profiler",
-      "file": "src/part3-tools/ch14-other-tools/01-as-profiler.md"
+      "file": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "section": "14.1",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-28",
+      "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "last_task2b_lite_at": "2026-05-28"
     },
     "7.16": {
       "title": "耗电/发热伴随卡顿排障入口",
@@ -5127,9 +5140,9 @@
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task9_state": "pending",
-      "last_task6_at": "2026-05-28T11:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-      "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "last_task6_at": "2026-05-28T12:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+      "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
       "section": "13.18"
     },
     "3.10": {
@@ -6418,14 +6431,14 @@
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 30,
+      "task6_l1_l2_fixes": 4,
       "task6_l3_l4_issues": 0,
       "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "last_task6_at": "2026-05-28T11:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-      "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+      "last_task6_at": "2026-05-28T12:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+      "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2b_rounds": [
@@ -7394,9 +7407,9 @@
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
       "task9_state": "pending",
-      "last_task6_at": "2026-05-28T11:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-      "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
+      "last_task6_at": "2026-05-28T12:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+      "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。",
       "section": "13.18"
     },
     "3.10": "ready-for-review",
@@ -8278,13 +8291,13 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "last_task6_at": "2026-05-28T11:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-      "task6_l1_l2_fixes": 30,
+      "last_task6_at": "2026-05-28T12:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+      "task6_l1_l2_fixes": 4,
       "task6_l3_l4_issues": 0,
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+      "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
     }
   },
   "task2a_last_processed": {
@@ -10363,9 +10376,9 @@
     "task9_state": "pending",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-28",
-    "last_task6_at": "2026-05-28T11:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-    "task6_review_notes": "2026-05-28 11 Task6：复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+    "last_task6_at": "2026-05-28T12:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+    "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
   },
   "section_13_3": {
     "section": "13.3",
@@ -10375,13 +10388,13 @@
     "pipeline_stage": "task9_pending",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task6_l1_l2_fixes": 30,
+    "task6_l1_l2_fixes": 4,
     "task6_l3_l4_issues": 0,
     "task9_state": "pending",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-28",
-    "last_task6_at": "2026-05-28T11:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-28-11-review.md",
-    "task6_review_notes": "2026-05-28 11 Task6：句子级文风小修，禁用词复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+    "last_task6_at": "2026-05-28T12:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
+    "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
   }
 }
