@@ -1,11 +1,11 @@
 ---
 title: "Perfetto SQL 性能分析实战手册"
 chapter: "13.10"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-25"
+last_verified: "2026-05-28"
 last_verified_against: "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs, Trace Processor large trace query patterns"
 confidence: medium
 sources:
@@ -32,25 +32,25 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 last_task6_audit: "2026-05-22"
-pipeline_stage: task9_pending
-task9_result: auto-fixed
+pipeline_stage: "task6_pending"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T09:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-28T17:29:00+08:00"
 last_task2b_at: "2026-05-28T08:50:00+08:00"
 rework_date: "2026-05-28"
 rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 1；修正 Perfetto v54.0 monitor_contention.lock_name 版本口径，并把不存在的 INTERVAL_INTERSECT 名称改为 intervals 标准库入口，回到 Task6 复审。"
 last_task9_audit: "2026-05-22"
 last_task6_at: "2026-05-28T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-10-review.md"
@@ -59,10 +59,10 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 10 Task6 revisiting-review: pass-light-edit；L1/L2 无需修改；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 auto-fixed 后复审通过，按流水线送 Task9 状态收敛/发布前检查。"
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T10:05:00+08:00"
-updated_by: openclaw-task9
+updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
-task9_reviewed_at: "2026-05-28T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-28-09-deep-review.md"
+task9_reviewed_at: "2026-05-28T17:29:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-17-deep-review.md"
 last_task9_autofix_at: "2026-05-28"
 ---
 
@@ -155,7 +155,7 @@ SELECT * FROM main_thread;
 
 > 如果当前 Trace Processor 版本没有 `thread.is_main_thread` 字段，就保留 `thread.tid = process.pid` 作为主线程兜底，并在 Perfetto UI 中确认该线程是否承载 `Choreographer#doFrame`、`bindApplication` 等主线程 slice。
 
-大 Trace 上的查询要先裁剪再关联。不要让全量 `thread_state` 与全量 `slice` 做非等值 JOIN；先把目标进程、目标时间窗和中间结果固化，再做 `SPAN_JOIN` / `INTERVAL_INTERSECT` 或重叠区间查询。
+大 Trace 上的查询要先裁剪再关联。不要让全量 `thread_state` 与全量 `slice` 做非等值 JOIN；先把目标进程、目标时间窗和中间结果固化，再用 `SPAN_JOIN`、`intervals.intersect` / `intervals.overlap` 标准库宏，或普通重叠区间条件处理。
 
 ```sql
 -- 大 Trace 查询前先固化目标窗口内的主线程状态
@@ -552,7 +552,7 @@ WHERE (gc.name GLOB '*GC*' OR gc.name GLOB '*GarbageCollector*')
 ORDER BY gc.dur DESC;
 ```
 
-这个查询找出与目标进程主线程 `doFrame` 重叠的 GC 暂停。结果中如果有 `gc_ms` 接近或超过 5ms 的记录，再沿着同一进程的分配热点继续查。大规模 Trace 上，优先把目标进程和时间窗加进 WHERE；更复杂的区间交集可以改用 PerfettoSQL 的 `SPAN_JOIN` / `INTERVAL_INTERSECT`。
+这个查询找出与目标进程主线程 `doFrame` 重叠的 GC 暂停。结果中如果有 `gc_ms` 接近或超过 5ms 的记录，再沿着同一进程的分配热点继续查。大规模 Trace 上，优先把目标进程和时间窗加进 WHERE；更复杂的区间交集可以改用 PerfettoSQL 的 `SPAN_JOIN` 或 `intervals.intersect` / `intervals.overlap` 标准库宏。
 
 ### Java Heap 变化趋势
 
@@ -790,7 +790,7 @@ GROUP BY block_reason
 ORDER BY total_ms DESC;
 ```
 
-这个结果按裁剪后的 `thread_state.dur` 统计，每段状态只计一次。大规模 Trace 上，先缩小 `window.start_ts` / `window.end_ts`；更复杂的多区间交集，优先使用 PerfettoSQL 的 `SPAN_JOIN` / `INTERVAL_INTERSECT` 或标准库视图。
+这个结果按裁剪后的 `thread_state.dur` 统计，每段状态只计一次。大规模 Trace 上，先缩小 `window.start_ts` / `window.end_ts`；更复杂的多区间交集，优先使用 PerfettoSQL 的 `SPAN_JOIN`、`intervals.intersect` / `intervals.overlap` 标准库宏，或对应标准库视图。
 
 ## 锁竞争与同步分析
 
@@ -806,7 +806,6 @@ SELECT
   CAST(dur / 1e6 AS FLOAT) AS wait_ms,
   blocked_thread_name AS waiter_thread,
   blocking_thread_name AS owner_thread,
-  lock_name,
   short_blocked_method,
   short_blocking_method,
   waiter_count
@@ -816,7 +815,7 @@ ORDER BY dur DESC
 LIMIT 10;
 ```
 
-`android_monitor_contention` 已经把 owner 线程、blocked 线程、相关方法和 `lock_name` 解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。旧版 Trace Processor 若缺少 `lock_name` 列，可以先去掉该列运行查询，再从原始 `slice` / `args` 表补查锁对象名。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
+`android_monitor_contention` 在 Perfetto v54.0 中已经把 owner 线程、blocked 线程和相关方法解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。当前 Perfetto stdlib 文档还提供 `lock_name` 列；如果本机 Trace Processor 支持该列，可以把它加回 SELECT，否则从原始 `slice` / `args` 表补查锁对象名。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
 
 ### 锁竞争与帧时间关联
 
@@ -830,7 +829,9 @@ SELECT
   frame.dur / 1e6 AS frame_ms,
   contention.dur / 1e6 AS lock_wait_ms,
   ROUND(contention.dur * 100.0 / frame.dur, 1) AS lock_pct,
-  contention.blocking_thread_name AS owner_thread
+  contention.blocking_thread_name AS owner_thread,
+  contention.short_blocking_method,
+  contention.short_blocked_method
 FROM slice AS frame
 JOIN thread_track AS ft ON frame.track_id = ft.id
 JOIN thread AS ft_thread ON ft.utid = ft_thread.utid
@@ -846,9 +847,9 @@ WHERE frame.name GLOB 'Choreographer#doFrame*'
 ORDER BY contention.dur DESC;
 ```
 
-如果 `lock_pct` 超过 30%，说明这一帧卡顿的主要原因是锁等待。根因分析方法：从 `owner_thread` 和 `lock_name` 继续沿着持锁线程的时间线往后查，分析它为什么持锁时间过长。参见 §1.14 锁竞争与同步性能分析章节。
+如果 `lock_pct` 超过 30%，说明这一帧卡顿的主要原因是锁等待。根因分析方法：从 `owner_thread`、`short_blocking_method` 和 `short_blocked_method` 继续沿着持锁线程的时间线往后查；本机 Trace Processor 若支持 `lock_name`，再把锁对象名纳入判断。参见 §1.14 锁竞争与同步性能分析章节。
 
-[已验证: Perfetto stdlib android.monitor_contention 表结构, perfetto.dev/docs/analysis/stdlib-docs]
+[已验证: google/perfetto v54.0 `android.monitor_contention.sql` + Perfetto 当前 stdlib docs]
 
 ## SPAN_JOIN 与窗口函数：跨维度时间序列交叉分析
 
@@ -935,4 +936,4 @@ JOIN frame_lock_cpu ...
 
 每条路径中的 SQL 查询都可以在本章找到对应的模板。建议读者把常用的查询保存为 SQL 文件，在实际分析时直接加载执行，而不是每次从零开始写。
 
-> 本章所有 SQL 均基于 Perfetto v54.0 文档验证，建议在 Perfetto UI 的 Query 标签页中直接运行。部分查询可能因 Trace 配置差异（未开启 sched/ftrace 等数据源）而无结果，请确保 Trace 抓取配置覆盖了分析所需的数据源（参见 §13.2 Trace 抓取章节）。
+> 本章 SQL 基于 Perfetto v54.0 源码与当前 Perfetto stdlib 文档交叉验证，建议在 Perfetto UI 的 Query 标签页中直接运行。部分查询可能因 Trace 配置差异（未开启 sched/ftrace 等数据源）而无结果，请确保 Trace 抓取配置覆盖了分析所需的数据源（参见 §13.2 Trace 抓取章节）。
