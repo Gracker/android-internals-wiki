@@ -32,24 +32,24 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: '2026-04-28'
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-05-22"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-29'
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T04:38:09+08:00"
-last_task2b_at: "2026-04-27T20:58:38+08:00"
-rework_date: "2026-04-27"
+last_task2b_at: "2026-05-28T08:50:00+08:00"
+rework_date: "2026-05-28"
 rework_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录"
+review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。"
 last_task9_audit: "2026-05-22"
 ---
@@ -190,7 +190,7 @@ Perfetto 中所有时间戳和持续时间都用**纳秒（ns）**。这个单�
 
 ### 基本帧时间查询
 
-最直接的方式是查询 `Choreographer#doFrame` slice 的持续时间，这代表主线程处理一帧的总耗时（包括 Input、Animation、Traversal 三个阶段）。
+最直接的方式是查询 `Choreographer#doFrame` slice 的持续时间，这代表主线程处理一帧的总耗时（包括 Input、Animation、Traversal 三个阶段）。Android 10/11 的 trace section 通常是精确名称；Android 12 起 AOSP 会在名称后追加 vsync id，例如 `Choreographer#doFrame 12345`。本节的 SQL 用 `GLOB 'Choreographer#doFrame*'` 覆盖这两类 trace。
 
 ```sql
 -- 查询所有 doFrame 的帧时间
@@ -199,7 +199,7 @@ SELECT
   CAST(dur / 1e6 AS FLOAT) AS frame_ms,
   name
 FROM slice
-WHERE name = 'Choreographer#doFrame'
+WHERE name GLOB 'Choreographer#doFrame*'
 ORDER BY ts;
 ```
 
@@ -227,7 +227,7 @@ FROM (
     END AS bucket_name,
     dur
   FROM slice
-  WHERE name = 'Choreographer#doFrame'
+  WHERE name GLOB 'Choreographer#doFrame*'
 )
 GROUP BY bucket_name
 ORDER BY MIN(dur);
@@ -241,7 +241,7 @@ ORDER BY MIN(dur);
 
 > **版本边界**：Frame Timeline 表（`actual_frame_timeline_slice` / `expected_frame_timeline_slice`）从 Android 12 起稳定可用。在 Android 10/11 的 trace 上运行下面的查询会返回空结果；旧版本需要退回 `Choreographer#doFrame`、`DrawFrame`、SurfaceFlinger 合成 slice、fence / sched 组合来判断帧时序。
 
-在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。这里要单独记一条：配对同一帧时不能拿 `track_id` 当主键；`track_id` 只表示 slice 落在哪条轨道上，真正稳定的帧标识是 `display_frame_token`，surface frame 还要再带上 `surface_frame_token`。如果要用标准库高层视图，可以先加载 `android.frames.timeline`：
+在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。这里要单独记一条：配对同一帧时不能拿 `track_id` 当主键；`track_id` 只表示 slice 落在哪条轨道上，稳定的帧标识是 `display_frame_token`，surface frame 还要再带上 `surface_frame_token`。如果要用标准库高层视图，可以先加载 `android.frames.timeline`：
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -516,7 +516,7 @@ JOIN thread_track AS gc_track ON gc.track_id = gc_track.id
 JOIN thread AS gc_thread ON gc_track.utid = gc_thread.utid
 JOIN process AS gc_process ON gc_thread.upid = gc_process.upid
 JOIN slice AS frame
-  ON frame.name = 'Choreographer#doFrame'
+  ON frame.name GLOB 'Choreographer#doFrame*'
  AND frame.ts < gc.ts + gc.dur
  AND gc.ts < frame.ts + frame.dur
 JOIN thread_track AS frame_track ON frame.track_id = frame_track.id
@@ -607,11 +607,8 @@ LEFT JOIN process AS track_process ON process_track.upid = track_process.upid
 WHERE slice.name GLOB '*am_proc_start*'
    OR slice.name GLOB '*bindApplication*'
    OR slice.name GLOB '*ActivityThread*'
-   OR slice.name IN (
-     'Application.onCreate',
-     'Activity.onCreate',
-     'Choreographer#doFrame'
-   )
+   OR slice.name IN ('Application.onCreate', 'Activity.onCreate')
+   OR slice.name GLOB 'Choreographer#doFrame*'
 ORDER BY slice.ts;
 ```
 
@@ -638,7 +635,7 @@ main_thread AS (
 startup_window AS (
   SELECT
     MIN(CASE WHEN slice.name GLOB '*bindApplication*' THEN slice.ts END) AS start_ts,
-    MIN(CASE WHEN slice.name = 'Choreographer#doFrame' THEN slice.ts END) AS end_ts
+    MIN(CASE WHEN slice.name GLOB 'Choreographer#doFrame*' THEN slice.ts END) AS end_ts
   FROM slice
   JOIN thread_track ON slice.track_id = thread_track.id
   JOIN main_thread ON thread_track.utid = main_thread.utid
@@ -819,7 +816,7 @@ JOIN android_monitor_contention AS contention
   ON contention.blocked_utid = ft_thread.utid
  AND contention.ts >= frame.ts
  AND contention.ts + contention.dur <= frame.ts + frame.dur
-WHERE frame.name = 'Choreographer#doFrame'
+WHERE frame.name GLOB 'Choreographer#doFrame*'
   AND ft_process.name = 'com.example.app'
   AND (ft_thread.is_main_thread = 1 OR ft_thread.tid = ft_process.pid)
   AND contention.dur > 500000  -- 过滤 < 0.5ms 的短暂等待
@@ -876,17 +873,19 @@ INCLUDE PERFETTO MODULE android.monitor_contention;
 -- 先用窗口函数把主线程锁等待转为 span
 CREATE VIEW main_lock_span AS
 SELECT
+  blocked_utid AS utid,
   ts,
   dur,
   blocking_thread_name
 FROM android_monitor_contention
-WHERE is_blocked_thread_main = 1;
+WHERE is_blocked_thread_main = 1
+  AND blocked_utid IS NOT NULL;
 
 -- 再 SPAN_JOIN 调度切片
 CREATE VIRTUAL TABLE frame_lock_cpu
 USING SPAN_JOIN(
   main_lock_span PARTITIONED utid,
-  sp_sched
+  sp_sched PARTITIONED utid
 );
 
 -- 帧 × 锁等待 × CPU 频率三维交叉（示意）

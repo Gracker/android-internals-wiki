@@ -2197,8 +2197,8 @@
     "1.8"
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-05-28T08:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-28T08:50:00+08:00",
+  "last_updated_by": "openclaw-task2b",
   "task6_last_review": {
     "reviewed_at": "2026-05-28T08:10:00+08:00",
     "sections": [
@@ -2347,10 +2347,10 @@
       "summary": "5节8处P95回炉修复：25.6 Raw File Size口径、14.7 ProfilingResult import包路径、2.6 expectedVSyncTime标识符+BLASTBufferQueue路径、5.3 thread_state→sched SQL+schedutil公式、13.12 Data Explorer→DataGrid命名+linux.perf版本边界"
     }
   ],
-  "last_task2b_at": "2026-05-28T06:50:00+08:00",
+  "last_task2b_at": "2026-05-28T08:50:00+08:00",
   "last_task2b_sections": [
-    "12.4",
-    "13.1"
+    "13.10",
+    "13.15"
   ],
   "last_task2b_action": "frontmatter backlog fallback rework",
   "sections": {
@@ -4725,7 +4725,7 @@
       "title": "BufferQueue 阻塞的 Perfetto 识别",
       "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "gap_source": "素材驱动/章节深挖",
@@ -4733,19 +4733,21 @@
       "drafted_date": "2026-05-17",
       "last_verified": "2026-05-17",
       "confidence": "medium",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-17T01:15:00+08:00",
       "task6_log": "logs/review/2026-05-17-01-review.md",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "queue_priority": 85,
       "material_count": 4,
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T01:36:14+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-01-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_entry": "task9-2026-05-17-13-15-buffer-release-channel-version"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "queue_entry": "task9-2026-05-17-13-15-buffer-release-channel-version",
+      "last_task2b_at": "2026-05-28T08:50:00+08:00",
+      "last_task2b_summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
     },
     "1.20": {
       "title": "App Archiving 机制与恢复性能",
@@ -6298,6 +6300,20 @@
       "updated_date": "2026-05-28",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_at": "2026-05-28T08:10:00+08:00"
+    },
+    "13.10": {
+      "title": "Perfetto SQL 性能分析实战手册",
+      "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-28T08:50:00+08:00",
+      "last_task2b_summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。"
     }
   },
   "task2b_rounds": [
@@ -8111,10 +8127,10 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md",
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md"
   ],
-  "last_task2b_run": "2026-05-28-04-task2b-main",
+  "last_task2b_run": "2026-05-28-08-task2b-main",
   "task2b_sections_fixed": [
-    "12.2",
-    "12.3"
+    "13.10",
+    "13.15"
   ],
   "task6_last_review_detail": {
     "reviewed_at": "2026-05-28T08:10:00+08:00",
@@ -8363,6 +8379,16 @@
       ],
       "result": "fixed",
       "log": "logs/rework/2026-05-28-04-task2b-main.md"
+    },
+    {
+      "at": "2026-05-28T08:50:00+08:00",
+      "lane": "main",
+      "sections": [
+        "13.10",
+        "13.15"
+      ],
+      "result": "fixed",
+      "log": "logs/rework/2026-05-28-08-task2b-main.md"
     }
   ],
   "task2a_result": "processed-draft",
@@ -8653,6 +8679,22 @@
       "fixed_date": "2026-05-28T00:50:00+08:00",
       "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-16-16-deep-review.md",
       "fix_summary": "收窄 setPreferPowerEfficiency 为能效调度偏好；移除 GameManager/GameState 在非游戏场景的通用声明；补充 mA 级功耗条件边界。"
+    },
+    {
+      "section": "13.10",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "status": "fixed",
+      "fixed_date": "2026-05-28T08:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-22-09-audit.md",
+      "fix_summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。"
+    },
+    {
+      "section": "13.15",
+      "title": "BufferQueue 阻塞的 Perfetto 识别",
+      "status": "fixed",
+      "fixed_date": "2026-05-28T08:50:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback-logs/deep-review/2026-05-17-01-deep-review.md",
+      "fix_summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-28-05-deep-review.md",
@@ -8964,6 +9006,38 @@
         "remaining_p85_queue": 0,
         "fallback_remaining_after_this_run": 108
       }
+    },
+    {
+      "date": "2026-05-28T08:50:00+08:00",
+      "sections": [
+        {
+          "section": "13.10",
+          "title": "Perfetto SQL 性能分析实战手册",
+          "source": "frontmatter backlog fallback",
+          "priority": 95,
+          "issue_source": "logs/deep-review/2026-05-22-09-audit.md",
+          "fixes": [
+            "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。"
+          ]
+        },
+        {
+          "section": "13.15",
+          "title": "BufferQueue 阻塞的 Perfetto 识别",
+          "source": "frontmatter backlog fallback",
+          "priority": 85,
+          "issue_source": "logs/deep-review/2026-05-17-01-deep-review.md",
+          "fixes": [
+            "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 0,
+        "remaining_p95_queue": 0,
+        "remaining_p90_queue": 0,
+        "remaining_p85_queue": 0,
+        "fallback_remaining_after_this_run": 105
+      }
     }
   ],
   "section_18_23": {
@@ -9083,7 +9157,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 7,
+  "task2b_total_fixed": 9,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -9676,9 +9750,12 @@
   },
   "task2b_last_run": "2026-05-28T02:50:00+08:00",
   "task2b_pending_counts": {
-    "p95": 0,
-    "p90": 0,
-    "p85": 0
+    "p95": 96,
+    "p90": 2,
+    "p85": 7,
+    "total": 105,
+    "task6_needs_rework": 2,
+    "task9_needs_rework": 96
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -9827,13 +9904,31 @@
       "source": "frontmatter backlog fallback / task9 deep-review",
       "priority": 95,
       "summary": "修复 Trace Processor metric 示例、android.log userdebug 边界、Android 10/11 配置输入路径边界，并拆分 Android 15-17 profiling 版本表。"
+    },
+    {
+      "section": "13.10",
+      "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "at": "2026-05-28T08:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter backlog fallback / task9 deep-review",
+      "priority": 95,
+      "summary": "修复 doFrame Android 12+ trace 名称匹配边界，并补齐 SPAN_JOIN 示例中的 utid 输出与分区。"
+    },
+    {
+      "section": "13.15",
+      "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+      "at": "2026-05-28T08:50:00+08:00",
+      "by": "task2b-content-processing-rework-main",
+      "source": "frontmatter backlog fallback / task9 deep-review",
+      "priority": 85,
+      "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
     }
   ],
   "last_task2b_completed": [
-    "12.4",
-    "13.1"
+    "13.10",
+    "13.15"
   ],
-  "last_task2b_completed_at": "2026-05-28T06:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-28T08:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -9975,25 +10070,26 @@
     }
   ],
   "last_task2b_files": [
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+    "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md"
   ],
   "last_task2b_completed_entry": {
-    "section": "13.13",
-    "title": "Perfetto CPU 频率与 DVFS 关联分析",
-    "file": "src/part3-tools/ch13-perfetto/13-cpu-frequency-dvfs-analysis.md",
-    "status": "fixed-lite",
-    "fixed_date": "2026-05-28T03:35:00+08:00",
-    "source": "frontmatter-fallback/task9-deep-review",
-    "fix_summary": "补 sched 采集事件、cpu/ucpu SQL schema 口径、cluster_id/capacity 优先识别与 LLM DVFS 实验边界"
+    "section": "13.15",
+    "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "at": "2026-05-28T08:50:00+08:00",
+    "by": "task2b-content-processing-rework-main",
+    "source": "frontmatter backlog fallback / task9 deep-review",
+    "priority": 85,
+    "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
   },
   "task2b_last_rework": {
-    "section": "1.8",
-    "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-    "at": "2026-05-27T22:50:00+08:00",
-    "source": "frontmatter backlog fallback / task9-deep-tech-review",
-    "priority": 95,
-    "summary": "修复 top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
+    "section": "13.15",
+    "file": "src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md",
+    "at": "2026-05-28T08:50:00+08:00",
+    "by": "task2b-content-processing-rework-main",
+    "source": "frontmatter backlog fallback / task9 deep-review",
+    "priority": 85,
+    "summary": "修正 BUFFER_RELEASE_CHANNEL 版本边界：android14/15 仍按传统条件变量路径，Android 16+/main 作为待验证差异。"
   },
   "last_task9_reviewed_sections": [
     "12.2",
