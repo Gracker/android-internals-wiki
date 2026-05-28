@@ -24,17 +24,17 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task6-auto-promote
 finalized_date: "2026-05-07"
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-last_task6_at: "2026-05-28T07:05:00+08:00"
+last_task6_at: "2026-05-28T08:10:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_result: pass-light-edit
 review_round: 2
@@ -48,10 +48,10 @@ repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
 task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-05-28-07-review.md"
+last_task6_review_log: "logs/review/2026-05-28-08-review.md"
 task6_l3_l4_issues: 0
-task6_l1_l2_fixes: 1
-task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 1 处，修复快速排查表 Markdown 分隔行；无 L3/L4 回炉项，送 Task9 复核。"
+task6_l1_l2_fixes: 0
+task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
@@ -59,6 +59,8 @@ last_task9_autofix_at: "2026-05-28"
 p0: 0
 p1: 1
 p2: 0
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T08:10:00+08:00"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化

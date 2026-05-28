@@ -13,14 +13,14 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed-lite
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-28T06:11:00+08:00"
-task9_state: reviewed
+last_task6_at: "2026-05-28T08:10:00+08:00"
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
@@ -42,12 +42,12 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
   - type: material
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_at: "2026-05-28T06:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-06-review.md"
-task6_l1_l2_fixes: 0
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: "2026-05-28T08:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-08-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复核。"
+task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处，删除一处否定纠正式开场句；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
@@ -103,7 +103,7 @@ p2: 0
 
 <!-- outline-end -->
 
-Agent 辅助 Perfetto 分析解决的不是“怎么打开 trace”，而是“怎么让一次 trace 调查能复查”。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的思路改写成 AIW 的工作协议：输入要收齐，SQL 要查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
+Agent 辅助 Perfetto 分析要解决的问题是让一次 trace 调查能复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的思路改写成 AIW 的工作协议：输入要收齐，SQL 要查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
 
 13.2 节已经覆盖 Trace 抓取，13.10 节已经覆盖 Perfetto SQL 常用模板，13.15 节展示了 BufferQueue 阻塞案例。在这三节基础上，13.16 聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免早停。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
 
