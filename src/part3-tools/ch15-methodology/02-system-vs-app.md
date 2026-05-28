@@ -2,7 +2,7 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -26,25 +26,25 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-21"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: needs-rework
-last_task9_at: "2026-04-27T20:35:19+08:00"
-task9_reviewed_date: "2026-04-27"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-28T18:28:00+08:00"
+task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_result: fixed-lite
 review_round: 2
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T14:50:00+08:00"
 last_task2b_lite_at: "2026-05-28"
-finalized_date: "2026-04-27"
+finalized_date: "2026-05-28"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
@@ -55,6 +55,11 @@ last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 task6_l1_l2_fixes: 8
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
+last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
+task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 FGS timeout 版本边界、ANR 阈值、Perfetto scheduling/FrameTimeline、SF commit/composite；未发现阻断问题，自动晋升 finalized。"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 如何区分系统问题和 App 问题
