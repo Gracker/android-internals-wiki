@@ -2,7 +2,7 @@
 title: "稳定性度量与指标体系"
 chapter: "20.6"
 section: "20.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, Google Play Console"
@@ -18,25 +18,25 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T01:28:49+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
-task9_result: "auto-fixed"
-task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 1；Android Vitals 官方 URL 从 answer/9844476 修正为 answer/9844486，回到 Task6 复审。"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-28T10:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-10-deep-review.md"
+task9_result: pass-tech-review
+task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 1；Android Vitals 官方 URL 从 answer/9844476 修正为 answer/9844486，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Google Play Vitals 阈值和 User-Perceived ANR 仅计 input dispatching timed out 的边界与官方文档一致；无 P0/P1。 自动晋升 finalized。"
 rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
 p0: 0
 p1: 0
-p2: 1
+p2: 0
 last_task6_at: "2026-05-28T02:11:48+08:00"
 task6_review_notes: "2026-05-28 Task6：Task9 auto-fix 后写作复审通过；修复 frontmatter 禁用词和结尾否定-纠正式表达 2 处；无 L3/L4 回炉项，送 Task9 复核。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
@@ -45,6 +45,8 @@ last_task9_autofix_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-05-28-02-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
+finalized_by: openclaw-task9-auto-promote
+finalized_date: "2026-05-28"
 ---
 
 # 稳定性度量与指标体系
