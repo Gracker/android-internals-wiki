@@ -10620,14 +10620,25 @@
         "source": "frontmatter-fallback/task9-deep-review+task6-audit",
         "fix_summary": "修正 SurfaceView BLAST Android 12+ 边界、Android 11 单独分档、Canvas.punchHole 挖洞口径、BUFFER_RELEASE_CHANNEL Android 16+ 边界与 Android 15 圆角归因"
       }
+    ],
+    "2026-05-29": [
+      {
+        "section": "16.2",
+        "title": "各 Android 版本性能变更追踪",
+        "file": "src/part4-system/ch16-aosp/02-version-changes.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-05-29T05:35:00+08:00",
+        "source": "frontmatter-fallback/task9-audit",
+        "fix_summary": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点，修复 frameworks/base 404 路径问题"
+      }
     ]
   },
-  "last_task2b_lite_at": "2026-05-28T19:35:00+08:00",
+  "last_task2b_lite_at": "2026-05-29T05:35:00+08:00",
   "last_task2b_lite_sections": [
-    "18.6"
+    "16.2"
   ],
   "last_task2b_lite_files": [
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part4-system/ch16-aosp/02-version-changes.md"
   ],
   "task2b_verifier_history": [
     {
@@ -10831,6 +10842,21 @@
     "last_task6_at": "2026-05-28T12:10:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-28-12-review.md",
     "task6_review_notes": "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
+  },
+  "section_16_2": {
+    "section": "16.2",
+    "title": "各 Android 版本性能变更追踪",
+    "file": "src/part4-system/ch16-aosp/02-version-changes.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-05-29T05:35:00+08:00",
+    "task2b_lite_note": "补 ProfilingManager android-16.0.0_r1 packages/modules/Profiling 源码锚点；旧 frameworks/base 路径已验证 404，回流 Task6。"
   },
   "last_task6_files": [
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
