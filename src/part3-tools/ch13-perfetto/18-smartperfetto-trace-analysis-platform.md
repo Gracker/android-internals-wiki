@@ -7,7 +7,7 @@ drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace schema / stdlib 能力按工具版本降级"
 last_verified: "2026-05-28"
-last_verified_against: "SmartPerfetto README + SmartPerfetto 2026-05-17 更新文 + AIW 13.3/13.10/13.16/13.17/26.3/26.12/26.14"
+last_verified_against: "SmartPerfetto README + SmartPerfetto main backend/src/types/multiTraceComparison.ts + standardMetricBackfillService.ts + AIW 13.3/13.10/13.16/13.17/26.3/26.12/26.14"
 confidence: medium
 task6_review_notes: "2026-05-28 11: Task6 revisiting review: L1/L2 通过；无 L3/L4 回炉项，送 Task9 技术复审。"
 tags: [perfetto, smartperfetto, trace-analysis, ai-assistant, sql-guardrail, observability]
@@ -17,22 +17,22 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-05-18"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T22:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-18-22-deep-review.md"
-task9_review_notes: "2026-05-18 22: Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Top: 多 Trace 对比标准指标/回填能力写得超出当前实现。"
+task9_reviewed_date: "2026-05-28"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-28T11:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-28-11-deep-review.md"
+task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。"
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 last_task6_at: "2026-05-28T11:05:00+08:00"
@@ -52,6 +52,9 @@ sources:
     path: "src/part5-app/ch26-observability/03-performance-collection.md"
   - type: internal
     path: "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
+last_task9_autofix_at: "2026-05-28"
+updated_date: "2026-05-28"
+updated_by: openclaw-task9
 ---
 
 # 13.18 SmartPerfetto 与可复用 Trace 分析平台
@@ -138,7 +141,7 @@ Perfetto SQL 的常见错误集中在字段漂移、stdlib module 漏 include、
 
 SmartPerfetto 有两类对比对象。实时 reference trace 对比要求当前分析能访问 current / reference 两条 raw trace，适合临时比较一台设备上的两次抓取。analysis result snapshot 对比比较的是已经完成的分析结果，适合回归、A/B、多人协作和跨窗口复盘；候选 trace 不必仍在另一个 Perfetto UI 窗口里打开。
 
-回归判断要先区分当前实现里的标准指标和报告里可自定义补充的指标。SmartPerfetto 的标准对比指标目前以 `startup.total_ms` 和 scrolling FPS / Jank 基础指标为主；标准回填也只覆盖启动总耗时和滑动基础帧指标。TTFD、PSS、Native / Java Heap、dmabuf、bitmap、RSS / swap 这类指标可以由 Skill、SQL 表格或报告模板补充，但不应写成内置标准键或通用自动回填能力。缺指标时报告必须列出缺失字段和补采建议，避免把“缺数据”当成“没有变化”。
+回归判断要先区分当前实现里的标准指标和报告里可自定义补充的指标。SmartPerfetto `main` 的标准对比键已经覆盖启动总耗时 / 首帧 / bindApplication / Activity start / 主线程 blocked、滑动 FPS / Jank、主线程 Running / Runnable、CPU 大核占比 / 平均频率和 trace 环境信息；但标准回填目前只覆盖 `startup.total_ms` 与滑动 FPS / Jank 基础指标。TTFD、PSS、Native / Java Heap、dmabuf、bitmap、RSS / swap 这类指标可以由 Skill、SQL 表格或报告模板补充，但不应写成内置标准回填能力。缺指标时报告必须列出缺失字段和补采建议，避免把“缺数据”当成“没有变化”。
 
 这类对比和 26.14 节的实验统计互相补位。线上实验负责判断分位值和阈值违约率是否变化，SmartPerfetto 负责在少量代表性 trace 上解释变化来源。一个版本的启动 P90 上升后，应该抽取 baseline / candidate trace，各自生成 result snapshot，再比较启动阶段、线程状态、Binder、I/O 和帧提交证据。这样可以把“线上变慢”继续追到“哪类 trace 证据变了”。
 
