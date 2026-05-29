@@ -392,36 +392,33 @@
     "src/part3-tools/ch14-other-tools/01-as-profiler.md",
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "src/part3-tools/ch14-other-tools/12-apm-observability.md",
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md"
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md"
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-29T07:07:00+08:00",
+    "reviewed_at": "2026-05-30T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "16.5",
-      "16.2",
-      "17.4",
-      "18.6"
+      "2.19",
+      "3.1",
+      "14.3"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch16-aosp/02-version-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "src/part3-tools/ch14-other-tools/03-memory-tools.md"
     ],
-    "log": "logs/review/2026-05-29-07-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 13,
-    "l3_l4_issues": 0,
-    "small_fixes": 13,
-    "rework_items": 0,
-    "auto_promoted": [
-      "16.2",
-      "18.6"
-    ],
+    "log": "logs/review/2026-05-30-01-review.md",
+    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 1,
+    "small_fixes": 8,
+    "rework_items": 1,
+    "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
+    "notes": "2.19/14.3 通过 Task6 复审并送 Task9；3.1 参考资料后仍有未融合源码调研素材块，已回炉 Task2B。"
   },
   "issues_by_section": {
     "1.6": {
@@ -731,17 +728,17 @@
       "p3": 0
     },
     "14.3": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-30T01:05:00+08:00",
+      "task6_log": "logs/review/2026-05-30-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "outline 5/5 覆盖；无新增 L1/L2 小修，无新增 L3/L4 回炉项，送 Task9 复审。",
       "p0": 1,
       "p1": 1,
       "p2": 1,
-      "p3": 0,
-      "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 1,
-      "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-28T17:18:00+08:00",
-      "task6_log": "logs/review/2026-05-28-17-review.md",
-      "task6_new_rework": false,
-      "task6_note": "Task9 auto-fixed / Task2B fixed-lite 回流后复审通过；清理 procrank 小节评价式起手，无新增回炉项，送 Task9 复审。"
+      "p3": 0
     },
     "2.9": {
       "p0": 2,
@@ -944,13 +941,13 @@
       "p3": 0
     },
     "2.19": {
-      "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 1,
-      "task6_l3_l4_issues": 2,
-      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
-      "task6_log": "logs/review/2026-05-29-08-review.md",
-      "task6_new_rework": true,
-      "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-30T01:05:00+08:00",
+      "task6_log": "logs/review/2026-05-30-01-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L1/L2 小修 2 处；保留既有截图/厂商数据待补充标注，无新增回炉项，送 Task9 复审。",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task2b_fixed_at": "2026-05-30T00:50:00+08:00",
@@ -1893,16 +1890,17 @@
     },
     "3.1": {
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 2,
-      "task6_l3_l4_issues": 2,
-      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
-      "task6_log": "logs/review/2026-05-29-08-review.md",
+      "task6_l1_l2_fixes": 6,
+      "task6_l3_l4_issues": 1,
+      "task6_reviewed_at": "2026-05-30T01:05:00+08:00",
+      "task6_log": "logs/review/2026-05-30-01-review.md",
       "task6_new_rework": true,
-      "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed",
+      "task6_note": "L1/L2 小修 6 处；参考资料后仍有未融合源码调研素材块，新增 queue 回炉。",
+      "task2b_state": "pending",
+      "task2b_result": "needs-rework",
+      "task2b_priority": 90,
       "task2b_fixed_at": "2026-05-30T00:50:00+08:00",
-      "task2b_note": "Task2B 主修复完成，回流 Task6。"
+      "task2b_note": "Task2B 主修复完成，回流 Task6；Task6 2026-05-30 发现参考资料后仍有未融合素材块，重新回炉。"
     },
     "18.15": {
       "p0": 0,
@@ -2316,32 +2314,58 @@
     }
   },
   "total_review_sections": 270,
-  "next_review_candidates": [],
+  "next_review_candidates": [
+    {
+      "section": "14.4",
+      "title": "dumpsys 系列命令",
+      "file": "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+    },
+    {
+      "section": "14.10",
+      "title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    },
+    {
+      "section": "14.13",
+      "title": "Hook 基础设施与性能工具实现原理",
+      "file": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+    },
+    {
+      "section": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+    },
+    {
+      "section": "18.17",
+      "title": "Hardware Buffer Renderer",
+      "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    }
+  ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-30T00:50:00+08:00",
+  "last_updated": "2026-05-30T01:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-29T06:05:00+08:00",
+    "reviewed_at": "2026-05-30T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "16.2",
-      "14.3",
-      "14.4"
+      "2.19",
+      "3.1",
+      "14.3"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/02-version-changes.md",
-      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-      "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "src/part3-tools/ch14-other-tools/03-memory-tools.md"
     ],
-    "log": "logs/review/2026-05-29-06-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 2,
-    "l3_l4_issues": 0,
-    "small_fixes": 2,
-    "rework_items": 0,
+    "log": "logs/review/2026-05-30-01-review.md",
+    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 1,
+    "small_fixes": 8,
+    "rework_items": 1,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "16.2/14.3/14.4 完成 Task6 复审；14.3 补 2 处示例代码块语言标记；无新增回炉项，送 Task9 复审。"
+    "notes": "2.19/14.3 完成 Task6 复审并送 Task9；3.1 因参考资料后未融合素材块回炉 Task2B。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 189,

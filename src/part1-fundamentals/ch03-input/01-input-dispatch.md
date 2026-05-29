@@ -5,12 +5,12 @@ status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-05-29T08:16:26+08:00"
+last_task6_at: "2026-05-30T01:05:00+08:00"
 last_task2b_lite_at: "2026-05-29"
 task2b_lite_notes: "手势排除区域 / Predictive Back 版本边界已局部小修；文末 InputChannel 素材融入仍保留给主 Task2B。"
-last_task6_review_log: "logs/review/2026-05-29-08-review.md"
-task6_review_notes: "2026-05-29 08: Task6 revisiting review: needs-rework；L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。"
-pipeline_stage: "task6_pending"
+last_task6_review_log: "logs/review/2026-05-30-01-review.md"
+task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework；L1/L2 小修 6 处；参考资料后仍有未融合源码调研素材块，新增 queue 回炉。"
+pipeline_stage: "task2b_pending"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -19,7 +19,7 @@ version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 Inpu
   13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及
   Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。
 confidence: high
-reviewed_date: "2026-05-29"
+reviewed_date: "2026-05-30"
 reviewed_by: "openclaw-task6"
 rework2_date: '2026-04-15'
 rework2_by: openclaw-task2b
@@ -54,12 +54,12 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: "needs-rework"
-task6_state: "revisiting"
-task6_reviewed_date: "2026-05-29"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-30"
 task9_state: "pending"
 task9_result: needs-rework
-task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_state: "pending"
+task2b_result: "needs-rework"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T04:36:55+08:00"
@@ -72,8 +72,8 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
 task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 2
+task6_l1_l2_fixes: 6
+task6_l3_l4_issues: 1
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
@@ -260,7 +260,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 ### 手势排除区域（Android 16 口径）
 
-截至 AOSP android-16.0.0_r1，本节不把手势排除区域写成已落地的输入分发优化：`InputDispatcher.cpp` 未再使用旧文常见的 `findTouchedWindowTargetsLocked()` 锚点，`WindowInfo.h` 也未检出 `gesture exclusion` / `exclusion region` 字段。没有源码或 trace 样本支撑时，不应把"10ms 收益"写成 Android 16 结论。
+截至 AOSP android-16.0.0_r1，本节不把手势排除区域写成已进入 AOSP 主线的输入分发优化：`InputDispatcher.cpp` 未再使用旧文常见的 `findTouchedWindowTargetsLocked()` 锚点，`WindowInfo.h` 也未检出 `gesture exclusion` / `exclusion region` 字段。没有源码或 trace 样本支撑时，不应把"10ms 收益"写成 Android 16 结论。
 
 排查边缘触控时，仍以命中窗口、系统手势占用区域和 `InputDispatcher` slice 对比为准；若后续版本确认相关逻辑下沉到 Native 循环，需要单独标注源码 tag 和 trace 证据。
 
@@ -276,7 +276,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 这三个队列的生命周期反映了一个事件在 `InputDispatcher` 中的完整旅程：
 
-```
+```text
 iq（等待分发）→ oq（准备发送）→ wq（等待 App 反馈）→ 移除
 ```
 
@@ -334,7 +334,7 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 
 [图：InputChannel 创建时序图——ViewRootImpl -> WMS -> InputDispatcher 的 socketpair 建立过程]
 
-```
+```text
 ViewRootImpl.setView()
   → Session.addToDisplay()
     → WindowManagerService.addWindow()
@@ -413,7 +413,7 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 
 在 `ViewPostImeInputStage` 中，触摸事件的处理路径如下：
 
-```
+```text
 ViewPostImeInputStage.processPointerEvent()
   → mView.dispatchPointerEvent(event)     // mView 是 DecorView
     → DecorView.dispatchTouchEvent()
@@ -814,6 +814,8 @@ if (nextTimeout <= currentTime) {
 - 注入时间：2026-04-18
 - 价值：能补强 3.1 里最容易缺失的失败处理语义和 Input-SF 协同链路。
 
+[需重写: 参考资料之后仍保留多段源码调研补充和素材卡片，包含 mainline 引用（未进入 Android 17，不得作为正文结论）、未整合代码片段和重复版本演进。需要 Task2B 将有价值内容并入正文对应小节，剩余材料移入 intake/suggestions 或日志。]
+
 <!-- AIW-源码调研-2026-05-03 -->
 ## Input 事件分发全流程 — stale-event 与 WindowInfosListener 逐版本深化（2026-05-03 补核）
 
@@ -855,7 +857,7 @@ stale 判定优先级**低于** policy 消费和 DISABLED，高于 BLOCKED 和 A
 
 ### 4. AnrTracker 的完整调用链
 
-```
+```text
 processAnrsLocked()
   → mAnrTracker.findExpired(currentTime)
   → if found: mPolicy->inputDispatchingTimedOut(connectionInfo, ...)
@@ -1114,7 +1116,7 @@ std::vector<InputTarget> InputDispatcher::findTouchedWindowTargetsLocked(
 
 #### WindowInfosListener 实时协同机制（Android 13+）
 
-Android 13 引入的异步窗口信息推送机制彻底改变了焦点解析的实时性：
+Android 13 引入的异步窗口信息推送机制，把焦点解析从同步更新推进到异步推送：
 
 ```cpp
 // WindowInfosListener 回调实现实时更新

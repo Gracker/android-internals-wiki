@@ -4,15 +4,15 @@ chapter: "2.19"
 section: "2.19"
 status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-05-29"
+reviewed_date: "2026-05-30"
 reviewed_by: "openclaw-task6"
-task6_result: "needs-rework"
-task6_state: "revisiting"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: "needs-rework"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -41,14 +41,14 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-13T21:57:00+08:00"
-last_task6_at: "2026-05-29T08:16:26+08:00"
-task6_review_notes: "2026-05-29 08: Task6 revisiting review: needs-rework；L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。"
-last_task6_review_log: "logs/review/2026-05-29-08-review.md"
-task6_reviewed_date: "2026-05-29"
+last_task6_at: "2026-05-30T01:05:00+08:00"
+task6_review_notes: "2026-05-30 01: Task6 revisiting review: pass-light-edit；L1/L2 小修 2 处；保留既有截图/厂商数据待补充标注，无新增回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-30-01-review.md"
+task6_reviewed_date: "2026-05-30"
 task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 2
-task6_new_rework: true
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_new_rework: false
 review_type: "task6-writing-quality-review"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
 task2b_notes: "修复 Task6 2026-05-29 回炉问题：补准 ARR API 公开/flagged 边界，拆入 VRR/ARR 与 RefreshRateSelector 口径，删除尾部素材卡片。"
@@ -254,7 +254,7 @@ ORDER BY ts
 - **JankType 可能显示 `SfCpuDeadlineMissed` 或 `SfGpuDeadlineMissed`**：SurfaceFlinger 在切换期间可能来不及完成合成，导致自己的 deadline 被突破。
 - **但不会出现 `AppDeadlineMissed`**：App 的渲染工作正常完成了，问题不在 App。
 
-这个区分非常关键。如果我们在 FrameTimeline 中看到 `AppDeadlineMissed`，那说明 App 本身有性能问题，不是刷新率切换的锅。如果只有 SurfaceFlinger 侧的 deadline miss，且时间点与 VSync 间隔跳变吻合，才能判定为刷新率切换卡顿。
+这个区分会决定排查方向。如果我们在 FrameTimeline 中看到 `AppDeadlineMissed`，那说明 App 本身有性能问题，不是刷新率切换的锅。如果只有 SurfaceFlinger 侧的 deadline miss，且时间点与 VSync 间隔跳变吻合，才能判定为刷新率切换卡顿。
 
 ### SurfaceFlinger 日志
 
@@ -287,7 +287,7 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 ## ARR 与帧率切换的关系
 
-2.18 节已经展开 Adaptive Refresh Rate 的工作原理。本节只看 ARR 对帧率切换性能的影响。
+2.18 节已经展开 Adaptive Refresh Rate 的工作原理。这里聚焦 ARR 对帧率切换性能的影响。
 
 ### ARR 减少了切换的"硬代价"
 

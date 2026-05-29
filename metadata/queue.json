@@ -731,5 +731,26 @@
     "completed_at": "2026-05-30T00:50:00+08:00",
     "completed_by": "openclaw-task2b-main",
     "completion_reason": "Task2B 主修复已按 Task6 问题单完成正文融入与尾部素材卡片清理，回流 Task6。"
+  },
+  {
+    "section": "3.1",
+    "section_title": "Input 事件分发全流程",
+    "priority": 90,
+    "reason": "[review回炉] Task6 2026-05-30 发现参考资料后仍保留未融合源码调研素材块",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "参考资料之后的源码调研素材块",
+        "detail": "参考资料之后仍保留多段未融合源码调研补充和素材卡片，包含 mainline 引用（未进入 Android 17，不得作为正文结论）、未整合代码片段、重复版本演进和编辑痕迹。",
+        "suggestion": "将有价值内容并入正文对应小节；无法证明进入 Android 17/API 37 的 main/master 依据移出正文或明确标注“未进入 Android 17”。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-30T01:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-30-01-review.md"
   }
 ]

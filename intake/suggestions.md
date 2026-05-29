@@ -4336,3 +4336,10 @@
 - **问题**：章节末尾新增调研素材仍以素材卡片形式附在正文之后，未融入 InputChannel 生命周期、失败处理和 ANR 诊断主线。
 - **建议**：Task2B 将素材拆入 InputChannel 创建、断开清理和 FD/ENOMEM 排障段落；删除素材卡片式尾巴。
 - **review 日志**：logs/review/2026-05-29-08-review.md
+
+## [Task6 Review] 3.1 Input 事件分发全流程 — 2026-05-30
+- **类型**：需重写
+- **位置**：参考资料之后的 `AIW-源码调研-2026-05-03`、`2026-05-10`、`2026-05-27` 等素材块
+- **问题**：正文参考资料之后仍保留多段源码调研补充和素材卡片，包含 mainline 引用（未进入 Android 17，不得作为正文结论）、未整合代码片段、重复版本演进和“源码调研补充”编辑痕迹；这部分已经脱离章节正文结构，读者会把素材库当成正式内容阅读。
+- **建议**：Task2B 将有价值内容并入 `Stale Event`、`WindowInfosListener`、`InputDispatcher` 反压和调试技巧等对应小节；无法进入 Android 17/API 37 范围或只有 main/master 依据的内容移出正文，保留到 intake/suggestions 或 review 日志。
+- **review 日志**：logs/review/2026-05-30-01-review.md
