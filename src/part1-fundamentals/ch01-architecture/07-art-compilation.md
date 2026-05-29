@@ -65,6 +65,8 @@ last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
 last_task9_audit: 2026-05-26
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -186,18 +188,17 @@ JIT 编译后的机器码存放在代码缓存（JIT code cache）中。这个�
 
 在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右。[待验证: 此数值为工程经验值，需在不同设备/应用规模下验证] 这不会对前台应用的内存造成显著压力。
 
-[已验证: AOSP art/runtime/jit/jit_code_cache.cc, JIT 代码缓存管理]
 
 ### JIT 的优化策略
 
-JIT 编译器在编译单个方法时，会进行一系列优化：
+JIT 编译器在编译单个方法时会做几类关键优化：
 
 - **方法内联**：将短小的方法体直接嵌入调用处，消除函数调用开销
 - **逃逸分析**：判断对象是否逃逸出方法范围，未逃逸的对象可以在栈上分配而非堆上
 - **循环优化**：循环不变量外提、强度削减等
 - **类型推导与内联缓存（Inline Cache）**：记录虚方法的实际调用目标，后续可以将虚调用去虚化（devirtualize）为直接调用
 
-JIT 的优化深度通常不及 dex2oat 的 AOT 编译。JIT 受限于编译时间预算，不能让用户在前台感到卡顿；而 dex2oat 在后台编译时有更充足的时间做激进优化。
+JIT 的优化深度通常不如 dex2oat 的 AOT 编译——JIT 要在前台跑，编译时间预算很紧，不能让用户感到卡顿；dex2oat 在后台空闲时编译，时间充裕，可以做更深层的优化。
 
 
 ### 去优化机制（Deoptimization）
@@ -293,13 +294,10 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 | `speed-profile` | 只编译 Profile 中标记的方法 | 命中 Baseline / JIT / Cloud Profile 时的常见选择 |
 | `everything` | 编译所有方法（含未验证的） | 极少使用 |
 
-[已验证: AOSP art/libartbase/base/compiler_filter.h / compiler_filter.cc, 编译过滤器枚举定义；dex2oat_options.cc 为参数解析入口]
 
 `speed-profile` 在 Android 12+ 设备上很常见，但它不是所有安装来源、所有设备策略下的固定默认值。Baseline Profiles、本地 JIT Profile、Cloud Profile 是否命中，都会影响最终选中的 compiler filter；没有可用 Profile 时，结果可能直接落到 `verify`。判断一台设备上的真实状态，直接看 `cmd package art dump`（Android 14+ 常用）或 `dumpsys package dexopt` 的输出更可靠。
 
-<!-- AIW-源码调研-2026-05-23 -->
-
-## 源码调研补充：ART Verifier Quickening 机制（2026-05-23）
+### Quicken 过滤器的深入分析
 
 > 本补充基于 AOSP 源码分析，验证了 dex2oat quicken 过滤器的具体含义和 vdex 文件的作用。
 
@@ -307,7 +305,6 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 
 官方文档对 `quicken` 的描述（Android 11 及更低）：Runs DEX code verification and optimizes some DEX instructions to get better interpreter performance。"优化 DEX 指令"指的是将符号引用替换为实际偏移量，例如 `INVOKE_VIRTUAL` 的方法索引在 quickened 后变为直接偏移，去掉了运行时符号查找开销。
 
-[已验证: AOSP source.android.com/docs/core/runtime/configure — quicken 官方描述]
 
 ### DexToDex 变换的源码证据
 
@@ -315,7 +312,6 @@ AOSP art 仓库中，DexToDex 转换在 `kOptimize` 级别可能引入 quickened
 
 > // DexToDex at the kOptimize level may introduce quickened opcodes, which replace symbolic references with actual offsets
 
-[已验证: AOSP android.googlesource.com/platform/art/+/2ed8def — DexToDex quickening 说明]
 
 ### Vdex 文件的结构与作用
 
@@ -323,7 +319,6 @@ AOSP art 仓库中，DexToDex 转换在 `kOptimize` 级别可能引入 quickened
 
 vdex 的核心价值在于"加速验证的元数据"：verifier 在首次验证时记录类解析结果（方法签名一致性、字段偏移合法性），这些结果写入 vdex。下次加载时，verifier 直接读预计算结果，跳过符号解析过程。
 
-[已验证: AOSP source.android.com/docs/core/runtime/configure — vdex 描述]
 
 ### Quicken 与 AOT 的正交关系
 
@@ -340,11 +335,7 @@ quicken 不生成原生代码，不能替代 speed/speed-profile。两者可以�
 | Android 8-11 | 官方支持的过滤器 |
 | Android 12+ | 官方文档将 quicken 限定在"Android 11 or lower"，具体状态需 AOSP android-12+ 源码确认 |
 
-[已验证: AOSP source.android.com/docs/core/runtime/configure — quicken 版本标注]
 
-*原始调研报告：[`DeepResearch/2026-05-23-android-art-verifier-quickening-mechanism.md`](obsidian://open?vault=Obsidian&file=DeepResearch%2F2026-05-23-android-art-verifier-quickening-mechanism)*
-
-<!-- AIW-源码调研-2026-05-23 -->
 
 ### dex2oat 的多线程编译
 
@@ -361,7 +352,6 @@ ART 团队持续在优化 dex2oat 的编译速度。2025 年的两个里程碑�
 
 这些优化通过 Mainline 更新推送到 Android 12+ 的设备。
 
-[已验证: Google Blog, Android Performance Updates 2025, dex2oat 18% 编译时间缩减]
 
 ## Profile-Guided Optimization (PGO) 体系
 
@@ -412,7 +402,6 @@ Startup Profiles 是 Baseline Profiles 的**启动子集**，它影响的是 DEX
 
 AGP 8.3 起，DEX 布局优化（`dexLayoutOptimization`）默认启用。它的目标是减少启动路径上的类加载 I/O；收益要用同一 release 包、同一设备、同一 Android 版本和同一 Macrobenchmark 脚本对照确认。
 
-[已验证: 官方文档 developer.android.com, Startup Profiles 与 DEX Layout 优化]
 
 ### AutoFDO：内核级 PGO
 
@@ -430,7 +419,6 @@ AutoFDO 在 Pixel 设备上的量化效果：
 
 目前 AutoFDO 优化已合入 `android16-6.12` 和 `android15-6.6` 两个 GKI 内核分支，覆盖 Pixel 6 及更新设备。非 Pixel 设备需要 OEM 自行集成（依赖 perf 事件采集和 LLVM AutoFDO 工具链）。关于 AutoFDO 的内核实现细节和 OEM 集成方法，详见 §1.12 AutoFDO 反馈导向编译优化。
 
-[已验证: Google Blog, AutoFDO GKI 内核级优化, Pixel 8 量化数据]
 
 ## 在 Perfetto 和工具中的表现
 
@@ -552,7 +540,6 @@ Startup Profiles 的文件名通常是 `startup-prof.txt`，放在 `src/main/` �
 
 效果验证要拆成两组：Baseline Profiles 看解释执行 / JIT 热身是否减少，Startup Profiles 看启动路径类加载 I/O 是否减少。不要把两者的收益合成一个通用百分比。
 
-[已验证: 官方文档, Baseline + Startup Profiles 综合效果]
 
 ### 如何在 CI 中自动生成和更新 Profiles
 
@@ -671,10 +658,3 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化、AutoFDO）
 - Google Blog: AutoFDO for Android Kernel（内核级 PGO）
 - Android 17 Developer Features: static final field 不可变性行为变更
-
-### ART 编译管线中的 Deoptimization 机制深度解析:触发路径、内部机制与可观测性
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ART 编译管线中的 Deoptimization 机制深度解析-触发路径、内部机制与可观测性.md
-- 类型：DeepResearch 调研结果
-- 摘要：系统梳理 ART deoptimization 的触发路径与运行时实现：从 `QuickExceptionHandler`、`Instrumentation`、CHA 失效到 JVMTI/Hook/Apply Changes，解释编译代码如何回退解释器与 shadow frame，并给出 Perfetto/atrace 的可观测信号，适合定位 attach 调试、热更与 Hook 带来的 jank。
-- 注入时间：2026-04-23
-- 价值：把 deopt 机制、触发源与观测手段串到一起，适合补强 ART 编译章节的诊断深度。

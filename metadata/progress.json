@@ -450,20 +450,13 @@
       "p3": 0
     },
     "16.5": {
-      "p0": 0,
-      "p1": 1,
-      "p2": 1,
-      "p3": 0,
-      "reviewed_at": "2026-05-15T07:35:58+08:00",
-      "log": "logs/deep-review/2026-05-15-07-deep-review.md",
-      "summary": "P1 1：ProfilingManagerService anomaly 伪代码缺 API37 源码锚点；P2 1：DeliQueue 内存开销 20-30% 缺测量口径。",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 4,
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-16T08:16:00+08:00",
-      "task6_log": "logs/review/2026-05-16-08-review.md",
+      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
+      "task6_log": "logs/review/2026-05-29-08-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task2B fixed 后复审通过；修复结构性元叙述、AIW 编辑标记和无来源量化口径，转 Task9 复核。"
+      "task6_note": "L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
     },
     "17.2": {
       "task6_result": "pass-light-edit",
@@ -950,9 +943,15 @@
       "p2": 2,
       "p3": 0
     },
-    "2.19": [
-      "Task6 2026-05-13: 已补 [存疑] 标注，沿用 Task9 P0 队列项，待 Task2B 修正。"
-    ],
+    "2.19": {
+      "task6_result": "needs-rework",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 2,
+      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
+      "task6_log": "logs/review/2026-05-29-08-review.md",
+      "task6_new_rework": true,
+      "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。"
+    },
     "23.2": {
       "p0": 0,
       "p1": 0,
@@ -1890,12 +1889,12 @@
     },
     "3.1": {
       "task6_result": "needs-rework",
-      "task6_l1_l2_fixes": 1,
-      "task6_l3_l4_issues": 1,
-      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
-      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 2,
+      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
+      "task6_log": "logs/review/2026-05-29-08-review.md",
       "task6_new_rework": true,
-      "task6_note": "L1 小修 1 处；参考资料后源码调研素材块/AIW 注释仍需主线融合，新增 Task6 queue priority 90。"
+      "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。"
     },
     "18.15": {
       "p0": 0,
@@ -2297,13 +2296,22 @@
       "task6_log": "logs/review/2026-05-28-19-review.md",
       "task6_new_rework": false,
       "task6_note": "Task6 写作复审通过；仅做 L1/L2 轻量修复，无新增回炉项，送 Task9 pending。"
+    },
+    "18.17": {
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-05-29T08:16:26+08:00",
+      "task6_log": "logs/review/2026-05-29-08-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
     }
   },
   "total_review_sections": 270,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-05-29T07:47:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-29T08:16:26+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-05-29T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2836,7 +2844,7 @@
     "16.5": {
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-29T07:07:00+08:00",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
       "task6_result": "pass-light-edit",
       "last_task9_at": "2026-05-29T07:21:00+08:00",
       "task9_result": "auto-fixed",
@@ -2848,7 +2856,7 @@
       "task9_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-29",
-      "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
       "task2b_result": "fixed",
       "section": "16.5",
       "task6_reviewed_by": "openclaw-task6",
@@ -2857,7 +2865,12 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-29",
       "task9_review_notes": "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。",
-      "last_task9_autofix_at": "2026-05-29"
+      "last_task9_autofix_at": "2026-05-29",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。",
+      "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00"
     },
     "21.5": {
       "status": "ready-for-review",
@@ -5539,14 +5552,20 @@
       "task6_state": "reviewed",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-21",
-      "last_task6_at": "2026-05-21T01:15:21+08:00",
-      "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
       "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "title": "Input 事件分发全流程"
+      "title": "Input 事件分发全流程",
+      "section": "3.1",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 2,
+      "task6_new_rework": true,
+      "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。",
+      "task2b_result": "pending"
     },
     "26.15": {
       "title": "Android Vitals 与 Play Console 质量指标归因",
@@ -5775,24 +5794,26 @@
     },
     "18.17": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "title": "Hardware Buffer Renderer",
       "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-26",
-      "task6_state": "reviewed",
+      "reviewed_date": "2026-05-29",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-26T05:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-26-05-review.md",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
       "task6_new_rework": false,
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
       "queue_priority": 95,
-      "task6_note": "Task6 05:09 写作复审通过；无新增回炉，既有 Task9 NDK API 问题由 Task2B 处理。",
-      "task2b_result": "pending",
+      "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。",
+      "task2b_result": "fixed-lite",
       "task6_l1_l2_fixes": 0,
-      "task6_l3_l4_issues": 0
+      "task6_l3_l4_issues": 0,
+      "section": "18.17",
+      "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00"
     },
     "20.14": {
       "status": "ready-for-review",
@@ -6118,8 +6139,8 @@
       "title": "eBPF/BPF 在 Android 性能分析中的应用",
       "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task2b_state": "fixed",
       "task6_reviewed_by": "openclaw-task6",
@@ -6129,8 +6150,8 @@
       "task6_review_summary": "内容充分；Android eBPF 基础设施、UprobeStats、sched_ext 与实战边界覆盖完整；仅做 frontmatter 流水线状态归一，无新增正文回炉项。",
       "section": "14.10",
       "task2b_result": "fixed",
-      "task9_state": "pending",
-      "task9_result": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
       "last_task2b_at": "2026-05-28T12:50:00+08:00",
       "last_task2b_by": "openclaw-task2b-main",
       "task2b_source": "frontmatter backlog fallback",
@@ -6138,7 +6159,8 @@
       "task2b_summary": "修复 UprobeStats APEX 挂载路径、补 MalwareSignal.c、修正 sched_ext class/policy 优先级，并把参考资料后的 sched_ext 素材并入主体。",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-28",
-      "task6_new_rework": false
+      "task6_new_rework": false,
+      "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00"
     },
     "20.15": {
       "section": "20.15",
@@ -6655,6 +6677,25 @@
       "reviewed_date": "2026-05-28",
       "last_task6_at": "2026-05-28T19:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-28-19-review.md"
+    },
+    "2.19": {
+      "section": "2.19",
+      "title": "刷新率切换与帧率适配性能",
+      "file": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+      "task2b_state": "pending",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 2,
+      "task6_new_rework": true,
+      "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
+      "task2b_result": "pending"
     }
   },
   "task2b_rounds": [
@@ -6757,47 +6798,46 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-05-29-07-review.md",
+  "last_task6_review": "logs/review/2026-05-29-08-review.md",
   "last_task6_sections": [
     "16.5",
-    "16.2",
-    "17.4",
-    "18.6"
+    "2.19",
+    "3.1",
+    "18.17"
   ],
   "last_task6_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch16-aosp/02-version-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
-  "last_task6_at": "2026-05-29T07:07:00+08:00",
+  "last_task6_at": "2026-05-29T08:16:26+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-29T07:07:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-29T08:16:26+08:00",
+    "review_log": "logs/review/2026-05-29-08-review.md",
     "sections": [
       "16.5",
-      "16.2",
-      "17.4",
-      "18.6"
+      "2.19",
+      "3.1",
+      "18.17"
     ],
     "files": [
       "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch16-aosp/02-version-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
     ],
-    "log": "logs/review/2026-05-29-07-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 13,
-    "l3_l4_issues": 0,
-    "small_fixes": 13,
-    "rework_items": 0,
-    "auto_promoted": [
-      "16.2",
-      "18.6"
+    "pass_light_edit": [
+      "16.5",
+      "18.17"
     ],
-    "mode": "revisiting review",
-    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
+    "needs_rework": [
+      "2.19",
+      "3.1"
+    ],
+    "auto_finalized": [],
+    "task6_l1_l2_fixes": 4,
+    "task6_l3_l4_issues": 4
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -6807,13 +6847,13 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-29T07:07:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-29-07-review.md",
+  "task6_last_review_at": "2026-05-29T08:16:26+08:00",
+  "task6_last_review_log": "logs/review/2026-05-29-08-review.md",
   "task6_last_review_sections": [
     "16.5",
-    "16.2",
-    "17.4",
-    "18.6"
+    "2.19",
+    "3.1",
+    "18.17"
   ],
   "sections_status": {
     "22.11": {
@@ -6982,16 +7022,16 @@
     },
     "16.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-29",
-      "last_task6_at": "2026-05-29T07:07:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
-      "task9_state": "reviewed",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+      "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -7004,7 +7044,11 @@
       "last_task9_at": "2026-05-29T07:21:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
       "task9_review_notes": "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。",
-      "last_task9_autofix_at": "2026-05-29"
+      "last_task9_autofix_at": "2026-05-29",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
     },
     "21.7": {
       "status": "finalized",
@@ -8574,6 +8618,63 @@
       "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
       "task9_review_notes": "2026-05-29 Task9 deep-review: pass-tech-review。复核 2026-05-20 P0/P1 已修复；Android common 6.12 sched_ext、DSQ、partial switch、scx_bpf_cpuperf_set 与 hmbird_sched proc 控制面口径一致；无新增 P0/P1。queue 无 pending，Task6 已通过，自动晋升 finalized。",
       "task2b_result": "fixed"
+    },
+    "2.19": {
+      "section": "2.19",
+      "title": "刷新率切换与帧率适配性能",
+      "file": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+      "task2b_state": "pending",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 2,
+      "task6_new_rework": true,
+      "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
+      "task2b_result": "pending"
+    },
+    "3.1": {
+      "section": "3.1",
+      "title": "Input 事件分发全流程",
+      "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+      "task2b_state": "pending",
+      "task6_l1_l2_fixes": 2,
+      "task6_l3_l4_issues": 2,
+      "task6_new_rework": true,
+      "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。",
+      "task2b_result": "pending"
+    },
+    "18.17": {
+      "section": "18.17",
+      "title": "Hardware Buffer Renderer",
+      "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-29",
+      "last_task6_at": "2026-05-29T08:16:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+      "task2b_state": "fixed",
+      "task6_l1_l2_fixes": 0,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。",
+      "task9_state": "pending"
     }
   },
   "task2a_last_processed": {
@@ -8620,44 +8721,43 @@
     "18.6"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-29T07:07:00+08:00",
-    "reviewed_by": "openclaw-task6",
+    "reviewed_at": "2026-05-29T08:16:26+08:00",
+    "review_log": "logs/review/2026-05-29-08-review.md",
     "sections": [
       "16.5",
-      "16.2",
-      "17.4",
-      "18.6"
+      "2.19",
+      "3.1",
+      "18.17"
     ],
     "files": [
       "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch16-aosp/02-version-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
     ],
-    "log": "logs/review/2026-05-29-07-review.md",
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 13,
-    "l3_l4_issues": 0,
-    "small_fixes": 13,
-    "rework_items": 0,
-    "auto_promoted": [
-      "16.2",
-      "18.6"
+    "pass_light_edit": [
+      "16.5",
+      "18.17"
     ],
-    "mode": "revisiting review",
-    "notes": "16.5/16.2/17.4/18.6 完成 Task6 复审；16.2/18.6 自动晋升 finalized；无新增回炉项。"
+    "needs_rework": [
+      "2.19",
+      "3.1"
+    ],
+    "auto_finalized": [],
+    "task6_l1_l2_fixes": 4,
+    "task6_l3_l4_issues": 4
   },
   "task6_last_review_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch16-aosp/02-version-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "task6_last_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch16-aosp/02-version-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md",
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -9123,8 +9223,10 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "14.5",
-    "15.5"
+    "16.5",
+    "2.19",
+    "3.1",
+    "18.17"
   ],
   "task2b_progress": [
     {
@@ -9234,7 +9336,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-28-19-review.md",
+  "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9321,12 +9423,17 @@
     "task6_state": "reviewed",
     "task6_result": "needs-rework",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-21",
-    "last_task6_at": "2026-05-21T01:15:21+08:00",
-    "last_task6_review_log": "logs/review/2026-05-21-01-review.md",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T08:16:26+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
     "task9_state": "reviewed",
     "task9_result": "needs-rework",
-    "task2b_state": "pending"
+    "task2b_state": "pending",
+    "task6_l1_l2_fixes": 2,
+    "task6_l3_l4_issues": 2,
+    "task6_new_rework": true,
+    "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。",
+    "task2b_result": "pending"
   },
   "section_14_18": {
     "section": "14.18",
@@ -10203,10 +10310,12 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "14.5",
-    "15.5"
+    "16.5",
+    "2.19",
+    "3.1",
+    "18.17"
   ],
-  "last_task6_result": "pass-light-edit",
+  "last_task6_result": "mixed: pass-light-edit 2 / needs-rework 2",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -10660,7 +10769,7 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-28T15:47:00+08:00",
+  "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00",
   "last_task2b_verifier_sections": [
     "src/part3-tools/ch14-other-tools/03-memory-tools.md",
     "src/part3-tools/ch14-other-tools/04-dumpsys.md",
@@ -10982,26 +11091,27 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part4-system/ch16-aosp/02-version-changes.md",
-    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-    "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
   ],
   "section_16_5": {
     "section": "16.5",
     "title": "Android 17 (API 37) 性能行为变更与适配方法",
     "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "auto-fixed",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-29",
-    "last_task6_at": "2026-05-29T07:07:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-29-07-review.md",
+    "last_task6_at": "2026-05-29T08:16:26+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
     "task6_reviewed_by": "openclaw-task6",
     "task6_reviewed_date": "2026-05-29",
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；补齐 outline 块；修正中英文间距与括号格式；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。",
@@ -11010,7 +11120,11 @@
     "last_task9_at": "2026-05-29T07:21:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
     "task9_review_notes": "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。",
-    "last_task9_autofix_at": "2026-05-29"
+    "last_task9_autofix_at": "2026-05-29",
+    "task6_l1_l2_fixes": 1,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_note": "L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
   },
   "section_17_4": {
     "section": "17.4",
@@ -11061,13 +11175,41 @@
     "title": "Hardware Buffer Renderer",
     "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task9_state": "pending",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
     "last_task2b_lite_at": "2026-05-29T07:47:00+08:00",
     "last_task2b_lite_log": "logs/rework/2026-05-29-07-task2b-lite.md",
-    "fix_summary": "修正 NDK ASurfaceTransaction_OnBufferRelease 签名，拆分 API 29-35 setBuffer+OnComplete 与 API 36+ setBufferWithRelease 互斥路径，删除 OnComplete 示例残留尾巴。"
+    "fix_summary": "修正 NDK ASurfaceTransaction_OnBufferRelease 签名，拆分 API 29-35 setBuffer+OnComplete 与 API 36+ setBufferWithRelease 互斥路径，删除 OnComplete 示例残留尾巴。",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T08:16:26+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+    "task6_l1_l2_fixes": 0,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
+  },
+  "section_2_19": {
+    "section": "2.19",
+    "title": "刷新率切换与帧率适配性能",
+    "file": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-29",
+    "last_task6_at": "2026-05-29T08:16:26+08:00",
+    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+    "task2b_state": "pending",
+    "task6_l1_l2_fixes": 1,
+    "task6_l3_l4_issues": 2,
+    "task6_new_rework": true,
+    "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
+    "task2b_result": "pending"
   }
 }

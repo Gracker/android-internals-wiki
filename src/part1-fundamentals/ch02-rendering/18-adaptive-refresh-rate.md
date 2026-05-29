@@ -72,6 +72,8 @@ task9_review_notes: "2026-05-25 11 Task9 deep-review: pass-tech-review。P0 0 / 
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -110,7 +112,7 @@ p2: 0
 
 ## 为什么要了解 ARR
 
-在固定刷新率设备上，60Hz 可以按 16.67ms、120Hz 按 8.33ms 理解，然后用这个固定周期判断是否掉帧。到了支持 ARR 的设备，这个前提不再稳定。滚动时面板可能跑到较高刷新率，静止后又降到更低值，VSYNC-app 和 VSYNC-sf 的间隔会跟着变化。如果还用“超过 16.67ms 就一定异常”的老办法看 Trace，很容易把正常降频看成故障。
+在固定刷新率设备上，60Hz 可以按 16.67ms、120Hz 按 8.33ms 理解，然后用这个固定周期判断是否掉帧。到了支持 ARR 的设备，这个前提不再成立。滚动时面板可能跑到较高刷新率，静止后又降到更低值，VSYNC-app 和 VSYNC-sf 的间隔会跟着变化。如果还用“超过 16.67ms 就一定异常”的老办法看 Trace，很容易把正常降频看成故障。
 
 ARR 解决的是内容节奏和面板刷新率不匹配的问题。内容只有 24fps、30fps 或静态页面时，面板没有必要一直以 120Hz 工作。系统把刷新率压到更合适的档位，可以少做无效刷新，显示子系统的功耗也会跟着下降。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
@@ -126,7 +128,7 @@ LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到�
 
 ## 系统里谁在做什么
 
-DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP android-16.0.0_r1 里，`DisplayModeDirector#getDesiredDisplayModeSpecs()` 会把用户设置、低电量、亮度区间、App request range 和 switching type 折叠成 `DesiredDisplayModeSpecs`，里面带着 base mode、physical/render refresh-rate ranges 和 `allowGroupSwitching`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java]
+DisplayManager 这一层先决定系统允许在哪些显示模式里做选择。AOSP android-16.0.0_r1 里，`DisplayModeDirector#getDesiredDisplayModeSpecs()` 会把用户设置、低电量、亮度区间、App request range 和 switching type 折叠成 `DesiredDisplayModeSpecs`，里面带着 base mode、physical/render refresh-rate ranges 和 `allowGroupSwitching`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java]
 
 `DisplayManagerService` 的 `DesiredDisplayModeSpecsObserver` 取到这组 specs 后，会把它写进 `LogicalDisplay`，再由 `LocalDisplayAdapter` 转成 `SurfaceControl.DesiredDisplayModeSpecs` 下发给 SurfaceFlinger。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/LogicalDisplay.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java]
 
@@ -309,7 +311,7 @@ LTPO 面板可以把刷新率压到极低（1Hz 甚至更低），用于 AOD 或
 ## 常见误区
 
 **把 `getSuggestedFrameRate()` 当成任意 fps 映射器。**  
-它吃的是类别参数，不是 45、72、90 这类任意目标帧率。要谈具体 fps 到面板档位的关系，应该放到系统选择策略里讲。
+它接收的是类别参数，不是 45、72、90 这类任意目标帧率。要谈具体 fps 到面板档位的关系，应该放到系统选择策略里讲。
 
 **把 `FrameData` 写成带 `refreshRate` 字段的公开对象。**  
 公开回调只有 `FrameData` 和 `FrameTimeline` 这些 API。`VsyncEventData` 是内部承载结构，不是 App 直接操作的对象。
@@ -327,13 +329,6 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
 这部分和普通 View UI 的 ARR 不是同一层。前者更接近游戏渲染循环和 Surface / EGL / Vulkan 的提交时序，后者更偏向 View、Compose 和系统滚动组件的刷新率投票。
 
 ## 参考资料
-
-### Android 17 RefreshRateSelector 多维度评分算法与 ARR 实现机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-refreshrate-selector-arr.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级解析 Android 15 引入的 ARR（Adaptive Refresh Rate）机制：RefreshRateSelector 多维度评分算法（帧率 divisor 匹配、亮度阈值、场景优先级、功耗预算），DisplayModeDirector 核心编排逻辑，HWC HAL v3 帧率提示接口。厘清 ARR 与传统 VRR 的本质差异（单模内动态调整 vs 模式切换）。
-- 注入时间：2026-05-14
-- 价值：对理解 Android 自适应刷新率完整架构和 VSync 解耦机制有直接帮助，填补 ARR 概念盲区
 
 
 - AOSP 源码路径：

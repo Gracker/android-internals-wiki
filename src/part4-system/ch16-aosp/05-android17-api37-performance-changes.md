@@ -2,7 +2,7 @@
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: "16.5"
 section: "16.5"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-05-29"
@@ -40,33 +40,35 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-05-29T06:50:00+08:00"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-29"
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 last_task9_at: "2026-05-29T07:21:00+08:00"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
-review_type: task6-writing-quality-review
+review_type: "task6-writing-quality-review"
 task9_result: auto-fixed
 last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
-task6_result: pass-light-edit
-last_task6_at: "2026-05-29T07:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-29-07-review.md"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-05-29T08:16:26+08:00"
+last_task6_review_log: "logs/review/2026-05-29-08-review.md"
 task2b_fixed_by: openclaw-task2b-main
 task6_reviewed_date: "2026-05-29"
-task6_reviewed_by: openclaw-task6
+task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
-task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；补齐 outline 块；修正中英文间距与括号格式；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
-task6_l1_l2_fixes: 9
+task6_review_notes: "2026-05-29 08: Task6 revisiting review: pass-light-edit；L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 last_task9_autofix_at: "2026-05-29"
+task6_new_rework: false
+last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -207,7 +209,7 @@ public void push(E item) {
 ```
 CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实现了 lock-free 的 O(1) 插入。
 
-**消息排序逻辑**：min-heap 按 `when`（执行时间）为主键、`insertSeq`（插入序列号）为次键排序。这意味着相同 `when` 的消息按插入顺序处理。
+**消息排序逻辑**：min-heap 按 `when`（执行时间）为主键、`insertSeq`（插入序列号）为次键排序。因此，相同 `when` 的消息按插入顺序处理。
 
 **Tombstone 机制细节**：当调用 `removeMessages()` 时，线程不立即从数据结构中物理移除消息，而是：
 1. CAS 将消息的 `removed` 标志设为 true（逻辑删除）

@@ -869,3 +869,103 @@ VSyncPredictor在不同SoC厂商的实现差异和硬件适配特性。当前章
 - 2.3 VSync基础原理
 - 2.18 Android图形栈架构
 - 8.8 多媒体管线性能
+
+## [2026-05-28] 26.5 线上问题排查方法论 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
+
+### 知识点
+1. Page fault 三种类型（minor/major/invalid）的深度分析方法：minor=内核延迟分配物理页；major=需从慢速设备/Swap载入；invalid=无效地址访问。结合 faults 计数可估算内存分配量（页数×4KB）
+2. 基于 /proc 伪文件系统的 CPU 瓶颈定位实战方法论：从 System TOTAL 判断整体负载→Load Average 判断 CPU 饱和度→Process 级别定位→Thread 级别归因→page faults/iowait 交叉分析
+3. 线程状态 R/S 与性能瓶颈关联：R(Running/Runnable)表示持续执行，S(TASK_INTERRUPTIBLE)表示自愿让出CPU（等待IO/IPC），结合 iowait 比例可区分计算密集型 vs IO密集型瓶颈
+
+### 重要程度
+高
+
+### 建议加工方向
+- 提炼为"线上CPU瓶颈排查决策树"，以流程图形式嵌入 ch26.5
+- page fault 分析作为 ANR 日志深度解读的补充案例
+- 参考 ProcessCpuTracker 源码注释中的数据字段含义表
+
+---
+
+## [2026-05-28] 26.3 性能指标采集与上报 — 参考书素材（atrace/ftrace 采集）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md]
+
+### 知识点
+1. 线上 atrace 日志采集实现：两种方案——(1)Hook trace-dev.cpp写入方法（需版本适配）；(2)PLT Hook write接口过滤 trace_marker fd（通用性高）
+2. atrace_enabled_tags 位运算机制：将所有位置1可匹配任意 tag，通过 dlsym 获取 atrace_marker_fd
+3. ftrace/trace_marker 机制：用户态事件通过 write 系统调用写入 trace_marker，与内核事件拼接；会产生用户态→内核态切换开销
+
+### 重要程度
+高
+
+### 建议加工方向
+- 补充到 ch26.3 性能指标采集的"线上trace采集"小节
+- 注意版本适配：trace-dev.cpp 在 Android 9-14 间有多次重构，需标注源码位置变化
+- 可结合 Profilo 开源框架讲解实现细节
+
+---
+
+## [2026-05-28] 26.2 Crash 上报体系搭建 — 参考书素材（Crash 下获取堆栈）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md]
+
+### 知识点
+1. Crash 状态下获取 Java 线程堆栈的两种方案：(1)ThreadList::ForEach 接口遍历；(2)Profilo 的 Unwinder 机制（模拟 StackVisitor 逻辑）
+2. 信号处理函数中安全获取调用栈的注意事项和兼容性处理
+
+### 重要程度
+中
+
+### 建议加工方向
+- 作为 ch26.2 Crash 上报的补充技术方案
+- 需确认 Android 14+ 对信号处理和内部 API 访问的限制（[需确认: 新版本兼容性]）
+
+
+## [2026-05-29] ch26 可观测性 — JVM TI 机制详解
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md]
+
+### 知识点
+1. JVM TI（Java Virtual Machine Tool Interface）是开发虚拟机监控工具的编程接口，Android 8.0+ 支持 JVM TI v1.2
+2. JVM TI 支持的功能分类：线程事件(ThreadStart/End)、类加载(ClassFileLoadHook)、异常(Exception)、调试(断点/步进)、方法执行(Entry/Exit/FieldAccess)、GC(GCStart/Finish)、对象分配(VMObjectAlloc)
+3. JVM TI Agent 使用 C/C++ 开发，通过 Debug.attachJvmtiAgent 加载（API 28+，需 debuggable）
+4. 字节码增强三种方式：Static（加载前修改）、Load-Time（加载时通过 ClassFileLoadHook）、Dynamic（RetransformClasses 触发对已加载类修改）
+5. Dalvik Bytecode 操作相比 Java Bytecode 更简单（寄存器实现，无需处理本地变量和操作数栈交互）
+6. 使用 AddToBootstrapClassLoaderSearch 解决修改 BootClassLoader 加载类时的 ClassLoader 问题
+7. 可通过强制开启 debug 在 release 版启动 JVM TI 功能
+
+### 重要程度
+高
+
+### 建议加工方向
+- 在 ch26 可观测性架构设计中增加 JVM TI 作为高级端侧监控手段的介绍
+- 可扩展为独立章节：JVM TI 在线上诊断中的应用（方法耗时采集、GC 监控、对象分配追踪）
+- 与现有 eBPF 方案对比：JVM TI 侧重 Java 层，eBPF 侧重系统层，互补关系
+- 注意版本兼容性：API 28+ 要求，低版本需 fallback 方案
+
+## [2026-05-29] ch26 可观测性 — 字节码插桩工具链对比（AspectJ vs ASM）
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 52.md]
+
+### 知识点
+1. AspectJ 插桩：使用注解(@Aspect/@Before/@After/@Around/@Pointcut)实现 AOP，上手简单但灵活性较低
+2. ASM 插桩：通过 Transform + ClassVisitor + AdviceAdapter 实现字节码修改，灵活高效但需了解字节码指令
+3. 实际应用场景对比：方法耗时统计、try-catch 注入、特定 API 调用检测（如 IMEI 获取）
+4. ASM Bytecode Outline 插件是辅助开发的好工具
+5. ASM 可实现细粒度操作：方法级别 try-catch 注入（visitTryCatchBlock）、特定方法调用检测（visitMethodInsn）
+
+### 重要程度
+中
+
+### 建议加工方向
+- 在 ch26 可观测性或 ch19 APM 工具链中增加插桩工具选型指南
+- 补充 ASM 与 AspectJ 的性能对比数据
+- 考虑 KSP/KAPT 时代的现代插桩方案演进（与 Gradle Transform API deprecation 的关系）

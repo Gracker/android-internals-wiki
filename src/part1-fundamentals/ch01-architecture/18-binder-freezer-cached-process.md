@@ -61,6 +61,8 @@ task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 OomAdjuster �
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-29
 ---
 
 # 1.18 Binder Freezer 与缓存进程冻结性能
@@ -171,7 +173,7 @@ write cgroup.freeze = 1
 - 冻结态不是 busy wait。线程不在 CPU 上轮询，也不会继续执行 Java/Kotlin 协程、Handler 消息或 native worker 循环。
 - 冻结态不释放内存。进程的 RSS/PSS 还在，文件描述符和 Binder 引用也还在；内存压力上来时，LMK 仍可能选择这些 cached 进程回收。
 
-这解释了 freezer 的收益边界：它主要节省 CPU 和唤醒成本，不是内存优化工具。内存章节讨论 PSS/RSS 时，不能把“冻结后 CPU 降低”误写成“冻结后内存回收”。
+到这里，freezer 的收益范围就很清楚了：它主要节省 CPU 和唤醒成本，不是内存优化工具。内存章节讨论 PSS/RSS 时，不能把“冻结后 CPU 降低”误写成“冻结后内存回收”。
 
 ## Binder Freezer：同步事务拒绝，异步事务缓存
 
@@ -292,8 +294,7 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [AOSP: ProcessList.java](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/am/ProcessList.java)
 - [Linux: Binder driver UAPI](https://github.com/torvalds/linux/blob/master/include/uapi/linux/android/binder.h)
 - [Linux: cgroup freezer](https://github.com/torvalds/linux/blob/master/kernel/cgroup/freezer.c)
-- [来源: ../DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md]
-
+-
 ### Android Cached App Freezer 机制与 GC 触发路径
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md
 - 类型：DeepResearch 调研结果

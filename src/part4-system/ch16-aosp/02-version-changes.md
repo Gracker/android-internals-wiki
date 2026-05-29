@@ -67,6 +67,8 @@ task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 Android 1
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-29
 ---
 
 # 各 Android 版本性能变更追踪
@@ -110,7 +112,7 @@ Android 12 在性能方面的影响，主要集中在**后台执行限制**和**
 
 ### 后台启动前台服务被禁止
 
-从 Android 12 开始，App 在后台运行时一般不能再启动前台服务（Foreground Service）。如果强行调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。这个变化的直接影响是：你不能再依赖后台服务来维持长时间运行的性能监控或数据上传任务。
+从 Android 12 开始，App 在后台运行时一般不能再启动前台服务（Foreground Service）。如果强行调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。这意味着：你不能再依赖后台服务来维持长时间运行的性能监控或数据上传任务。
 
 替代方案是使用 `WorkManager`。对于需要在后台执行的性能分析任务（如定期采样 CPU 使用率、上报 ANR 统计），`WorkManager` 的约束调度机制是更合适的方案，因为它与系统的 Doze 模式和 App Standby Bucket 配合工作，不会触发系统限制。
 
@@ -173,7 +175,6 @@ Android 13 在 Choreographer 的演进中是一个重要节点。它引入了 `C
 在 Android 13+ 上，App 可以在渲染截止时间过近时动态简化渲染（比如跳过某些非关键绘制），而不必总是努力在下一个 VSync 前完成所有工作。这个能力是后续版本中 Frame Pacing 和自适应刷新率的基础。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.VsyncCallback]
-[来源: intake/research-feeds/2026-04-02-11-ch02-choreographer-api-evolution-history.md]
 
 ## Android 14（API 34）：冻结缓存应用与前台服务类型
 
@@ -193,10 +194,9 @@ Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进
 
 Android 14 要求每个前台服务声明至少一个 `foregroundServiceType`，并请求对应的权限。这个变化对性能分析工具尤其重要：如果你的 App 使用前台服务来保持性能数据采集（如持续 Perfetto 抓取），需要选择合适的服务类型。常见选择是 `specialUse`（需要在 Google Play Console 中说明理由）或 `dataSync`（但 Android 15 开始有 6 小时限制）。
 
-一个需要注意的变体是 `shortService` 类型：它有严格的大约 3 分钟生命周期限制。超时后系统会调用 `Service.onTimeout()`，如果 App 没有在短时间内调用 `stopSelf()`，会触发 ANR。这个机制是全新的——以前前台服务没有这种硬超时。
+还有个类型值得留意：`shortService`：它有严格的大约 3 分钟生命周期限制。超时后系统会调用 `Service.onTimeout()`，如果 App 没有在短时间内调用 `stopSelf()`，会触发 ANR。这个机制是全新的——以前前台服务没有这种硬超时。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#fgs-types]
-[来源: intake/research-feeds/2026-04-02-19-ch09-fg-service-anr-timeout-evolution.md]
 
 ### JobScheduler 对 ANR 的惩罚
 
@@ -233,7 +233,6 @@ pm.registerForAllProfilingResults(
 ```
 
 [已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
 
 ### ApplicationStartInfo：启动分析的数据基础
 
@@ -264,7 +263,6 @@ Android 15 对 `dataSync` 和 `mediaProcessing` 类型的前台服务引入了 6
 Android 15 开始支持 16KB 内存页面大小。这对 App 性能有几个影响：内存分配更粗粒度（每个页 16KB 而不是 4KB），但 TLB miss 减少，大内存访问性能可能提升。如果你的 App 使用 NDK 库，需要重新编译以支持 16KB 页面对齐。未重新编译的库在 16KB 页面设备上可能导致内存使用增加和性能退化。
 
 [已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15#16kb]
-[自动发现: 与 §4.2 Linux 内存管理和 §4.6 内存版本演进交叉]
 
 ## Android 16（API 36）：系统触发式 Profiling 与自适应应用
 
@@ -312,7 +310,6 @@ Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法�
 有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent()]
-[来源: intake/research-feeds/2026-04-04-07-ch08-application-startinfo-getstartcomponent.md]
 
 ### 自适应应用：大屏强制可调整
 
@@ -321,7 +318,6 @@ Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrie
 从性能角度看，Activity 因窗口尺寸变化会更频繁地 recreate。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
 
 [已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#adaptive-apps]
-[来源: intake/research-feeds/2026-04-03-11-android16-adaptive-apps-orientation-resize.md]
 
 ### Predictive Back 默认启用
 
@@ -332,7 +328,6 @@ Android 16 将 Predictive Back（预测性返回）设为默认启用。系统�
 `onBackPressed()` 在 Android 16 中被进一步标记为废弃。如果你还在用旧 API，建议迁移到 `OnBackInvokedDispatcher`。
 
 [已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#predictive-back]
-[来源: intake/research-feeds/2026-04-03-11-android16-predictive-back-enhancement.md]
 
 ### FrameMetrics 新增 FRAME_TIMELINE_VSYNC_ID
 
@@ -368,7 +363,6 @@ Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 stand
 Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 字段让帧追踪跨越了 App↔SurfaceFlinger 的边界。配合 `Choreographer` 的多时间线选择（API 33 引入），开发者现在可以精确知道：我选了哪条时间线渲染这一帧，这一帧最终在 SurfaceFlinger 端是否按时合成。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
-[自动发现: 与 §2.4 Choreographer 和 §2.6 SurfaceFlinger 的版本演进交叉]
 
 ### ProfilingManager 演进
 
@@ -562,14 +556,14 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - ActiveServices (前台服务超时): frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
 
 ### 研究素材
-- [来源: intake/research-feeds/2026-04-02-11-ch02-choreographer-api-evolution-history.md]
-- [来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
-- [来源: intake/research-feeds/2026-04-02-19-ch09-fg-service-anr-timeout-evolution.md]
-- [来源: intake/research-feeds/2026-04-03-11-android16-adaptive-apps-orientation-resize.md]
-- [来源: intake/research-feeds/2026-04-04-11-android17-fewer-activity-restarts.md]
-- [来源: intake/research-feeds/2026-04-02-19-ch09-profiling-manager-anr-trigger.md]
-- [来源: intake/research-feeds/2026-04-04-07-ch08-application-startinfo-getstartcomponent.md]
-- [来源: intake/research-feeds/2026-04-03-11-android16-predictive-back-enhancement.md]
+-
+-
+-
+-
+-
+-
+-
+-
 ### Android15适配之targetSdkVersion升到35后全是坑
 - 来源：https://juejin.cn/post/7584295332340858943
 - 类型：技术文章
@@ -586,8 +580,6 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - 摘要：Android 16 主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
 - 入库时间：2026-04-06
 
-
-<!-- AIW-源码调研-2026-05-18 -->
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
 
 **调研时间**：2026-05-18

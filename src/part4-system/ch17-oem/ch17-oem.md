@@ -5,7 +5,7 @@
 ### Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？
 - 来源：https://juejin.cn/post/7610233341305389099
 - 类型：技术文章
-- 摘要：Android 17 适配指南：usesCleartextTraffic 未来弃用需迁移到 Network Security Config；隐式 URI grant 在 Android 18 将不再自动授予需显式授权；后台音频收紧需前台服务+while-in-use；targetSdk=37 有多项 Breaking Change 包括 DeliQueue 无锁 MessageQueue、Certificate Transparency 默认启用、本地 localhost 通信需声明 USE_LOOPBACK_INTERFACE 权限、native DCL 扩展到 System.load() 等。2026 年 9 月起部分地区强制开发者身份验证后才能侧载 APK。
+- 摘要：Android 17 适配指南：usesCleartextTraffic 未来弃用需迁移到 Network Security Config；后台音频收紧需前台服务+while-in-use；证书透明度、本地环回通信声明、native DCL 只读加载等适配点需要结合 Android 17 官方文档逐项核验。2026 年 9 月起部分地区强制开发者身份验证后才能侧载 APK。
 - 入库时间：2026-05-10
 - 评分：13/20
 
@@ -172,3 +172,12 @@
 - 入库时间：2026-05-20
 - 评分：12/20
 
+
+
+
+### 用 Now in Android 架构打造一款 NBA 应用
+- 来源：https://juejin.cn/post/7605451617286553627
+- 类型：技术文章
+- 摘要：智先森zhi分享了如何使用 Now in Android 架构从零开始构建一款 NBA 应用，详细介绍了模块化设计和 Convention Plugins 构建配置，帮助开发者摆脱重复配置工作，专注于核心业务逻辑实现。
+- 入库时间：2026-05-28
+- 评分：12/20

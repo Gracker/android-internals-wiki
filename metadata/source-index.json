@@ -15938,48 +15938,443 @@
         "chapter": "ch16",
         "reason": "其他 - GPU 架构与并行计算"
       }
-    }
-  ],
-  "entries": [
+    },
     {
+      "title": "源码调研：ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md",
-      "title": "ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束",
-      "summary": "PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；WorkDuration 为 API 36 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。",
-      "chapters": "ch25, ch05",
-      "processed_at": "2026-05-27T06:40:04.480543",
-      "type": "DeepResearch"
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch05",
+      "content_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#ADPF",
+        "#Performance",
+        "#Kotlin",
+        "#API边界"
+      ]
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md",
-      "title": "Android 17 ART 分代 GC 与 Compose Composition",
-      "summary": "Android 17 正式启用分代 GC 为默认配置，优化 Snapshot、SlotTable、LayoutNode 等短期对象回收。年轻代收集频率高成本低，减少 Full GC 触发。Android 16 QPR2 已有 Generational CMC 初步实现，Android 17 完整启用并优化编译时间 18%。",
-      "chapters": "ch04, ch22",
-      "processed_at": "2026-05-27T06:40:04.480543",
-      "type": "DeepResearch"
+      "title": "源码调研：Android RenderThread 与 Choreographer 协同机制深度解析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-rendertthread-choreographer-sync-mechanism.md",
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-rendertthread-choreographer-sync-mechanism.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch02",
+      "content_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#渲染",
+        "#SurfaceFlinger",
+        "#Choreographer",
+        "#VSync"
+      ]
     },
     {
+      "title": "源码调研：Android 17 Deliqueue 架构源码分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android17-deliqueue-architecture-source-analysis.md",
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android17-deliqueue-architecture-source-analysis.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch16",
+      "content_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#源码分析",
+        "#架构",
+        "#Android17"
+      ]
+    },
+    {
+      "title": "源码调研：InputDispatcher 焦点解析机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-input-dispatcher-focus-resolution.md",
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-input-dispatcher-focus-resolution.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch03",
+      "content_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#输入系统",
+        "#InputDispatcher",
+        "#焦点"
+      ]
+    },
+    {
+      "title": "源码调研：Native Crash ApplicationExitInfo 补偿链分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-native-crash-applicationexitinfo-compensation-chain.md",
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-native-crash-applicationexitinfo-compensation-chain.md",
+      "quality": "high",
+      "score": 17,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch09",
+      "content_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#崩溃",
+        "#Native",
+        "#ANR"
+      ]
+    },
+    {
+      "title": "从抓包看 Claude Code 的 Token 经济学",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/从抓包看 Claude Code 的 Token 经济学-2026-05-27.md",
+      "source_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/从抓包看 Claude Code 的 Token 经济学-2026-05-27.md",
+      "quality": "medium",
+      "score": 14,
+      "scored_at": "2026-05-28T06:01:00Z",
+      "chapter_mapping": "ch16",
+      "content_type": "cubox",
+      "tags": [
+        "#AI",
+        "#Claude",
+        "#Token",
+        "#经济学"
+      ]
+    },
+    {
+      "title": "Android 16/17 ART Generational CMC 内存管理机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android16-17-generational-collector-cmc-memory-management.md",
+      "summary": "Android 16/17 ART 引入 Generational CMC 收集器，采用分代回收+并发标记-压缩设计。Young Generation 用 Semi-space 复制算法，Old Generation 用 CMC 标记-压缩。关键源码位于 art/runtime/gc/collector/ 和 heap.cc。targetSdk>=33 是部分优化前提，API 36+ Generational CMC 成为默认。含完整源码路径和版本差异矩阵。",
+      "chapter_mapping": "ch04",
+      "processed_at": "2026-05-28T06:21:13.783499+08:00",
+      "type": "deepresearch"
+    },
+    {
+      "title": "Android 16/17 DMA-BUF/Gralloc 图形内存优化版本边界验证",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-17-dmabuf-gralloc-graphics-memory-version-boundary.md",
-      "title": "Android 16/17 DMA-BUF/Gralloc 图形内存版本边界验证",
-      "summary": "源码级验证三个关键论点：AOSP libdmabufheap 无通用池化路径；allocate2() additionalOptions 在 Android 15 已存在非 16 新增；GraphicBuffer flatten/unflatten 未用 FDA 批量安装。此前引用的 20%-40% 收益缺 benchmark 支撑。",
-      "chapters": "ch02",
-      "processed_at": "2026-05-27T06:40:04.480543",
-      "type": "DeepResearch"
+      "summary": "源码级验证三个关键论点：(1) AOSP libdmabufheap 无通用池化路径，池化属厂商私有实现；(2) IAllocator allocate2() additionalOptions 在 Android 15 已存在非 Android 16 新增；(3) GraphicBuffer flatten/unflatten 仍为传统 transport fd 路径，未利用 FDA。此前引用的 20%-40% 收益缺 AOSP 支撑。",
+      "chapter_mapping": "ch02",
+      "processed_at": "2026-05-28T06:21:13.783499+08:00",
+      "type": "deepresearch"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md",
-      "title": "Android 17 Excessive CPU Kill 机制边界验证",
-      "summary": "TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 是事后取证机制非预防性治理。确认存在于 API 37 非 36；targetSdk>=37 触发前提；JobScheduler quota 与 trigger 无直接源码关联。含 Perfetto trigger.proto、ProfilingTrigger.java 源码位置。",
-      "chapters": "ch25",
-      "processed_at": "2026-05-27T06:40:04.480543",
-      "type": "DeepResearch"
+      "title": "Android 转型为智能系统，为您开启全新可能",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Android 转型为智能系统，为您开启全新可能-2026-05-28.md",
+      "score": 16,
+      "chapter": "ch03",
+      "timestamp": "2026-05-29 05:46",
+      "scored_at": "2026-05-29T05:46:18.513099"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md",
-      "title": "Android 16 QPR2 Generational CMC 开关与年轻代参数源码锚点验证",
-      "summary": "Generational CMC 基于 ConcurrentCopying 扩展，开关非独立 flag 而是设备能力判断。源码锚点：concurrent_copying.h L108、heap.cc L197/2168-2173/2793、heap.h L148/1176。年轻代比例约 10-20%，晋升由 GC 迭代次数决定。",
-      "chapters": "ch04",
-      "processed_at": "2026-05-27T06:40:04.480543",
-      "type": "DeepResearch"
+      "title": "That’s a wrap: Everything Flutter at Google I/O 2026",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_f67de04bfd.md",
+      "score": 16,
+      "chapter": "ch06",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"That’s a wrap: Everything Flutter at Google I/O 2026\" source: \"rss\" category: \"tech\" feed: \"rss_flutter_-_medium_1a0239e2\" group: \"Articles/Android 开发者/Flutter - Medium\" url: \"https://blog...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:34.577462"
+    },
+    {
+      "title": "高通发布Snapdragon C处理器瞄准300美元级Windows笔记本市场- Qualcomm 高通 - cnBeta.COM",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_60f2d1ef4a.md",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"高通发布Snapdragon C处理器瞄准300美元级Windows笔记本市场- Qualcomm 高通 - cnBeta.COM\" source: \"rss\" category: \"tech\" feed: \"rss_item_300d45d8\" group: \"Notifications/Android 开发者/高通新闻\" url: \"https://news.googl...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:34.695992"
+    },
+    {
+      "title": "$高通(QCOM.US)$ 推出了新的入门级Snapdragon C平台，搭载该处理器的设 - Moomoo",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_3f0fc6cf26.md",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"$高通(QCOM.US)$ 推出了新的入门级Snapdragon C平台，搭载该处理器的设 - Moomoo\" source: \"rss\" category: \"tech\" feed: \"rss_item_300d45d8\" group: \"Notifications/Android 开发者/高通新闻\" url: \"https://news.google.com/rss/a...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:34.810598"
+    },
+    {
+      "title": "【🚀限时双重福利】IPPeak 6 月惊喜加码 | 多买多送 + 首购低价！| 全球超 8000 万纯净住宅 IP",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_2d613265b2.md",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"【🚀限时双重福利】IPPeak 6 月惊喜加码 | 多买多送 + 首购低价！| 全球超 8000 万纯净住宅 IP\" source: \"rss\" category: \"tech\" feed: \"rss_w2solo_-_01d965c2\" group: \"Articles/Android 开发者/w2solo - 独立开发者社区\" url: \"https://w2solo....",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:34.982504"
+    },
+    {
+      "title": "Android 转型为智能系统，为您开启全新可能",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_8a3422f8db.md",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"Android 转型为智能系统，为您开启全新可能\" source: \"rss\" category: \"tech\" feed: \"rss_android_5b72f020\" group: \"Articles/Android 开发者/Android 开发者\" url: \"https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw==&mid=...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:35.150863"
+    },
+    {
+      "title": "$高通(QCOM.US)$ 推出了新的入门级Snapdragon C平台，搭载该处理器的设 - 富途牛牛",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_010d2a559b.md",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"$高通(QCOM.US)$ 推出了新的入门级Snapdragon C平台，搭载该处理器的设 - 富途牛牛\" source: \"rss\" category: \"tech\" feed: \"rss_item_300d45d8\" group: \"Notifications/Android 开发者/高通新闻\" url: \"https://news.google.com/rss/art...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:35.377342"
+    },
+    {
+      "title": "Hands-On Apple 233: Apple Watch Customization",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-29_RSS_6ab51c52df.md",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: \"Hands-On Apple 233: Apple Watch Customization\" source: \"rss\" category: \"tech\" feed: \"rss_podcast_-_all_twittv_shows_777fb4bb\" group: \"Articles/Android 开发者/Podcast - All TWiT.tv Shows\" url:...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:35.710299"
+    },
+    {
+      "title": "Gracker 的 Rss 订阅 · 2026-05-29",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-05-29-Gracker的Rss订阅.md",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# Gracker 的 Rss 订阅 · 2026-05-29  ## 03:03  # Gracker 的 Rss 订阅 · 2026-05-29 03:03  - 本轮新增条目：477 - 技术候选：20｜非技术候选：0 - 已归档高价值：15（技术 15｜非技术 0）  ## 今日总结 - 热点聚焦：RAG / Agent / Android - 阅读优先级：建议先看技术前 6 条，再看非技...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:36.310295"
+    },
+    {
+      "title": "今天 OpenClaw 帮我干了点啥？！· 2026-05-28",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-05-28-今天干了啥日报（OpenClaw）.md",
+      "score": 13,
+      "chapter": "ch03",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 今天 OpenClaw 帮我干了点啥？！· 2026-05-28  ## 取证范围 - cron 运行记录（最近24小时） - 当日任务落盘文件 - memory/2026-05-28.md  ## 正文（6条）  ### 1. AIW管道健康检查与瓶颈识别 - **做了什么**：执行AIW任务管道健康检查，分析16个相关cron任务运行状态 - **结果/证据**：确认Task2A->Tas...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:36.479102"
+    },
+    {
+      "title": "2026-05-28-Perfetto每日提交监控",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交监控/2026-05-28-Perfetto每日提交监控.md",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "--- title: Perfetto 提交监控 - 2026-05-28 date: 2026-05-28 tags:   - perfetto   - daily   - android aliases:   - Perfetto 2026-05-28 ---  ## 执行脚本 bash -lc 'source ~/.zshrc >/dev/null 2>&1 || true; python3...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:36.702325"
+    },
+    {
+      "title": "Evolver 周检（只读）· 2026-05-29",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Evolver周检只读/2026-05-29-Evolver周检只读.md",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# Evolver 周检（只读）· 2026-05-29  ## 本周结论 记忆晋升系统在持续两周的\"0.58 阈值卡点 → 完全无响应\"后，于 5 月 28 日恢复——light sleep 产出 4 个 staged candidate（confidence 0.62），deep sleep 成功 promoted 2 条到 MEMORY.md。Evolver 本身本周未执行过 `node i...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:37.232701"
+    },
+    {
+      "title": "资讯简报（综合）· 2026-05-28",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/资讯简报（综合）/YYYY-MM-DD-资讯简报（综合）.md",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 资讯简报（综合）· 2026-05-28  ## 🔥 今日必读  **AI模型突破带来内存优化新方案** **链接：** https://www.crescendo.ai/news/latest-ai-news-and-updates **来源：** Crescendo AI **标签：** #人工智能 #机器学习  解读：Google研究团队在ICLR 2026上发布了TurboQuant算...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:37.647596"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 06:28",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-06-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch07",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 06:28  ## Review 目标 - 章节：12.2 网络性能优化 - 文件：src/part2-performance/ch12-apk-network/02-network-performance.md - 状态：ready-for-review -> finalized（Task6 已通过，queue 无 pending，自动晋升）...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:37.867078"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 11:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-11-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch02",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 11:20  ## Review 目标 - 章节：13.3 Perfetto View 解读 - 文件：src/part3-tools/ch13-perfetto/03-perfetto-view.md - 状态：ready-for-review -> task6_pending（AUTO-FIX 后回 Task6） - 章节：13.18 Sm...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:37.984011"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 15:23",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-15-深度技术Review.md",
+      "score": 14,
+      "chapter": "ch02",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 15:23  ## Review 目标 - 章节：14.4 dumpsys 系列命令 - 文件：src/part3-tools/ch14-other-tools/04-dumpsys.md - 状态：ready-for-review - 选择说明：preflight 候选 5 个；13.10、13.14、14.10、14.12 今日已被 Tas...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.100183"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 12:26",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-12-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch02",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 12:26  ## Review 目标 - 章节：14.1 Android Studio Profiler - 文件：src/part3-tools/ch14-other-tools/01-as-profiler.md - 状态：ready-for-review -> finalized（pass-tech-review，自动晋升） - 章节：...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.214694"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 16:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-16-深度技术Review.md",
+      "score": 16,
+      "chapter": "ch04",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 16:20  ## Preflight - CANDIDATES: 8 - IDLE_AUDIT: 204 - TASK2B_BACKLOG: 97 - 本轮实际审计：14.3、1.9 - 跳过：14.13、14.10、14.4、14.12、13.14、13.10 今日已被 Task9 审计，按同日防重复规则跳过。 - external-rev...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.392716"
+    },
+    {
+      "title": "2026-05-28-18-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-18-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch13",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "🔬 **Task 9 · 深度技术Review** — 对章节做技术审计（源码准确性、原理链、版本差异、数据支撑），默认写问题单；高置信局部问题可直接修复并回到 Task6 复审。  📋 本轮审计：src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md；src/part3-tools/ch15-methodology/0...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.507333"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 08:28",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-08-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch05",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 08:28  ## Review 目标 - 章节：12.4 Android 网络安全与 TLS 性能优化 - 文件：src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md - 状态：ready-for-review → task6_pending...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.626225"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-29 05:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-29-05-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch03",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-29 05:20  ## Review 目标 - 章节：13.10 Perfetto SQL 性能分析实战手册 - 文件：src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md - 状态：ready-for-review → finalized（自动晋升）  - 章节：14.3 内存分析工具...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.741482"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 09:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-09-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch02",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 09:20  ## Review 目标 - 章节：13.15 BufferQueue 阻塞的 Perfetto 识别 - 文件：src/part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md - 状态：ready-for-review → finalized - 章节：13.1...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:38.913309"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 17:29",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-17-深度技术Review.md",
+      "score": 14,
+      "chapter": "ch07",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 17:29  ## Preflight - CANDIDATES: 8 - IDLE_AUDIT: 204 - TASK2B_BACKLOG: 96 - 本轮实际审计：1.9、13.10、13.14 - external-review 活跃文件：0  ## Review 目标 - 章节：1.9 Package Manager Service 与...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.135467"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 13:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-13-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch11",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 13:20  ## Preflight - CANDIDATES: 4 - IDLE_AUDIT: 204 - TASK2B_BACKLOG: 99 - 本轮选择：14.10、14.12 - 跳过：13.14、13.10 今天已被 Task 9 Review（last_task9_at 分别为 2026-05-28T06:28、2026-05-...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.250030"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 10:20",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-10-深度技术Review.md",
+      "score": 15,
+      "chapter": "ch03",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 10:20  ## Review 目标 - 章节：22.5 动画性能优化 - 文件：src/part5-app/ch22-rendering-practice/05-animation-performance.md - 状态：ready-for-review → finalized / ready-to-publish - 章节：20.6 稳定...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.422699"
+    },
+    {
+      "title": "深度技术 Review · 2026-05-28 07:24",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-28-07-深度技术Review.md",
+      "score": 14,
+      "chapter": "ch05",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# 深度技术 Review · 2026-05-28 07:24  ## Review 目标 - 章节：12.4 Android 网络安全与 TLS 性能优化 - 文件：src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md - 状态：ready-for-review  ## 审查结果  ### 维...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.537674"
+    },
+    {
+      "title": "2026-05-28-X草稿",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/X每日草稿/2026-05-28-X草稿.md",
+      "score": 14,
+      "chapter": "ch03",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "## X/Twitter 候选草稿 · 2026-05-28  ### Android 17分代GC：Jetpack Compose性能的关键转折点  Android 17正式启用分代GC后，对Composition性能产生显著影响。通过优先回收\"young generation\"中的临时对象（Snapshot、SlotTable、LayoutNode），减少了Full GC频率，Composit...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.703998"
+    },
+    {
+      "title": "Perfetto 每日提交监控",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交解读/2026-05-28-Perfetto提交解读.md",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-05-29 05:46",
+      "summary": "# Perfetto 每日提交监控  **日期**: 2026-05-28   **仓库**: google/perfetto   **状态**: degraded mode (GITHUB_TOKEN 未设置)  ---  ## 执行状态 - ✅ 脚本运行正常 - ❌ GitHub API 调用失败（需要 GITHUB_TOKEN） - 📝 使用示例数据生成报告  ## 今日总览 - 提交数：1...",
+      "tags": "#Android #系统开发",
+      "scored_at": "2026-05-29T05:46:39.980745"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-android-17-vrr-arr-refreshrate-selector.md",
+      "title": "Android 17 VRR vs ARR 分层机制与 RefreshRateSelector 算法解析",
+      "summary": "Android 17 RefreshRateSelector 核心机制，LayerVoteType 投票、calculateLayerScoreLocked 评分算法、VRR vs ARR 概念辨析、版本演进",
+      "chapter": "ch02",
+      "processed_at": "2026-05-29T06:17:31.837508+08:00",
+      "type": "deepresearch-inject",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-inputchannel-creation-failure.md",
+      "title": "InputChannel 创建失败处理机制与 Input-SurfaceFlinger 协作",
+      "summary": "InputChannel UNIX socket 创建、JNI 层失败处理、WindowToken 生命周期绑定、ANR 检测与 InputDispatcher 协作",
+      "chapter": "ch03",
+      "processed_at": "2026-05-29T06:17:31.837508+08:00",
+      "type": "deepresearch-inject",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-triple-buffer-bufferqueue-mechanism.md",
+      "title": "Android Triple Buffer 机制与 BufferQueue 缓冲区管理",
+      "summary": "Triple Buffer producer-consumer 流水线、MIN_UNDEQUEUED_BUFFERS、dequeueBuffer/acquireBuffer/releaseBuffer 源码分析",
+      "chapter": "ch02",
+      "processed_at": "2026-05-29T06:17:31.837508+08:00",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-dexopt-chain-installd-service-binder.md",
+      "title": "Android 16 installd ServiceManager Binder 化与 dexopt 链路",
+      "summary": "installd 从 Unix Domain Socket 迁移到 Binder、DexoptCommand fork+execve、ART Service 协作",
+      "chapter": "ch01",
+      "processed_at": "2026-05-29T06:17:31.837508+08:00",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md",
+      "title": "厂商安装优化路径实机验证：vivo Turbo vs 小米 HyperOS",
+      "summary": "vivo 强制 speed 过滤器、小米 .dm 云编译定制、AOSP 标准安装链路源码路径、控制面优化无执行面改动",
+      "chapter": "ch01",
+      "processed_at": "2026-05-29T06:17:31.837508+08:00",
+      "type": "deepresearch-inject",
+      "action": "queue"
     }
   ]
 }

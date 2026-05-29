@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 45,
+  "current_offset": 55,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -15,13 +15,13 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 45
+      "completed_files": 55
     }
   ],
-  "last_scan_date": "2026-05-27",
-  "total_knowledge_points": 297,
-  "total_suggestions": 106,
-  "total_gaps": 28,
+  "last_scan_date": "2026-05-29",
+  "total_knowledge_points": 329,
+  "total_suggestions": 121,
+  "total_gaps": 33,
   "skipped": [
     {
       "file": "ART 堆内存分布与黑科技扩量：拯救 OOM 的利器",
@@ -54,6 +54,14 @@
     {
       "file": "Android 性能优化 - 通过插件化来优化包体积（下）",
       "reason": "stub: only title, no content"
+    },
+    {
+      "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 54",
+      "reason": "non-technical: student experience sharing, no technical content"
+    },
+    {
+      "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 55",
+      "reason": "stub: only iframe tag, no content"
     }
   ]
 }

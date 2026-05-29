@@ -4184,3 +4184,155 @@
 - **问题**：`setUseBoundsForWidth()` / `setShiftDrawingOffsetForStartOverhang()` 的“开销在微秒量级，对帧预算几乎无影响”缺少设备、文本语种、字体和文本长度条件；官方文档只支撑 API 语义与 Added API 35。
 - **建议**：补一组 API 35+ 设备上的简单 benchmark，或把性能结论降级为“会增加少量测量计算，实际开销需按语种/字体/文本长度确认”。
 - **review 日志**：logs/deep-review/2026-05-28-00-deep-review.md
+
+## [Task14 参考书扫描] 26.3 性能指标采集与上报 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
+- **建议补充**：基于 /proc 伪文件系统的性能数据采集框架，ProcessCpuTracker 使用 /proc/stat、/proc/loadavg、/proc/[pid]/stat、/proc/[pid]/task 的具体字段和计算方式
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 26.4 ANR 监控体系 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
+- **建议补充**：ANR 日志中 CPU 信息字段的解读方法论：System TOTAL（user/kernel/iowait/idle比例）、Load Average（与CPU核数的比较判断饱和度）、Process级（user vs kernel比例、faults数）、Thread级（R/S状态、单线程faults归因）
+- **参考书覆盖深度**：深入（含完整实战案例数据）
+
+## [Task14 参考书扫描] 26.8 可观测性案例集 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
+- **建议补充**：iowait 高占比+kernel 高占比场景的排查实战案例，展示如何从 CPU 日志推断出密集文件写入操作，并通过 page faults 估算内存分配量（faults数×4KB）
+- **参考书覆盖深度**：深入（含可复现的代码示例）
+
+## [Task14 参考书扫描] 20.14 线程与 FD 资源监控治理 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md]
+- **建议补充**：PLT Hook pthread_create 监控线程创建，打印创建线程的 Java 调用栈。需注意托管线程(Attached) vs 非托管线程(Unattached)的区分——pthread_create 无法区分两者
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 1.14 锁竞争与同步性能分析 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 47.md]
+- **建议补充**：ART 虚拟机锁转换机制详解：ThinLocked（瘦锁）→FatLocked（胖锁）通过 Monitor::Inflate 实现；锁争用时 ART 先通过 sched_yield 让出执行权，循环50次尝试获取锁成功则保持 ThinLocked 状态。可监控 Inflate 调用来判断锁争用热点
+- **参考书覆盖深度**：深入（含源码级实现细节）
+
+## [Task14 参考书扫描] 24.1 文件 I/O 优化 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 48.md]
+- **建议补充**：Linux 预读(readahead)机制原理：文件读取时系统会预读更多内容到 Page Cache，后续读请求命中缓存则加速。文件顺序重排可利用预读机制提升 IO 性能。readahead.c 源码位于 Linux 2.6.x 内核（后续版本可能有修改）
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] 26.3 性能指标采集与上报 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 48.md]
+- **建议补充**：基于 ASM 字节码插桩 + systrace 的方法级 trace 采集方案，涉及 Gradle Transform、增量处理、ASM 框架使用。AOP 的另一实现路径：Dex 文件级别 Dalvik bytecode 注入（dexer/Redex）
+- **参考书覆盖深度**：深入（含完整 Sample 实现）
+
+## [Task14 参考书扫描] 26.3 性能指标采集与上报 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 49.md]
+- **建议补充**：ASM 插桩实战：AdviceAdapter 的 onMethodEnter/onMethodExit 实现方法耗时统计；new Thread 替换为 CustomThread 的字节码操作（处理 new+InvokeSpecial 成对出现）；LocalVariablesSorter.newLocal() 管理局部变量；栈顶遗留数据 POP 处理
+- **参考书覆盖深度**：深入（含完整 ASM 代码）
+
+## [Task14 参考书扫描] 20.14 线程与 FD 资源监控治理 — 2026-05-28
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 49.md]
+- **建议补充**：编译期通过 ASM 字节码替换所有 new Thread 为自定义 CustomThread 类，实现无侵入式线程监控。关键技术：处理 new+InvokeSpecial 指令的成对匹配，处理嵌套 new（如 new A(new B(2))）的字节码顺序
+- **参考书覆盖深度**：深入
+
+## [Task6 Review] 1.9 Package Manager Service 与应用安装性能 — 2026-05-28
+- **类型**：需重写
+- **位置**：参考资料之后的源码调研补遗（约 631 行以后）
+- **问题**：参考资料后继续堆叠 2026-05-13 至 2026-05-28 多段源码调研补遗，内容呈现为问题单和素材清单；Cloud Compilation / SDM 名称、文件格式、加载入口和厂商优化路径存在互相冲突的风险信号，Task 6 不裁决技术真伪。
+- **建议**：Task 2B 将补遗材料整合进正文或移入研究日志；涉及 SDM / Cloud Compilation 的技术口径交 Task 9 复核。
+- **review 日志**：logs/review/2026-05-28-16-review.md
+
+
+## [Task9 Deep Review] 14.5 三方性能库 — 2026-05-28
+- **类型**：交叉引用/源码准确性
+- **位置**：组合使用的注意事项 / Hook 冲突（约 L397）
+- **问题**：示例把“Matrix 和 KOOM 都 Hook libc 的 open/write”作为 Hook 冲突代表，但 KOOM native leak/thread leak 的公开 README 指向 malloc/free、pthread_create/pthread_exit/join/detach 等拦截面；Matrix IO Canary、btrace、xHook 才更贴近 open/read/write/fsync。现有例子会混淆工具拦截边界。
+- **建议**：把 Hook 冲突示例拆成 I/O Hook 与 allocator/thread Hook 两类：Matrix IO Canary/btrace 讨论 open/read/write/fsync，KOOM 讨论 malloc/free 与 pthread 族函数，避免把不同符号族混写。
+
+## [Task9 Deep Review] 14.5 三方性能库 — 2026-05-28
+- **类型**：版本差异/知识盲区
+- **位置**：启动优化框架典型框架对比（约 L264-L274）
+- **问题**：章节保留“[待验证: 各框架的最新维护状态]”。Anchors/AppInit/Alpha 是本节锚点，维护状态直接影响选型判断。
+- **建议**：用上游仓库最近 release/commit、AGP/Kotlin 支持边界重新核验；无法确认时把这些框架降级为设计模式案例，而非推荐接入方案。
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-28
+- **类型**：数据缺失
+- **位置**：分层采样（约 L372-L376）
+- **问题**：5%-10%、DAU 1 万采 50% 的采样比例以经验值呈现，缺少事件发生率、置信区间、最小样本数或后端成本约束。
+- **建议**：将比例改为示例，并补一条按事件率/目标分位数误差反推样本量的计算口径；异常会话全量采集需再加限流和隐私 artifact 大小上限。
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-05-28
+- **类型**：版本差异
+- **位置**：启动耗时监控 / 系统 API 自动采集（约 L274）
+- **问题**：正文写“从 API 24 开始，系统在 logcat 中输出 Displayed 日志”，但 Android 官方启动耗时文档仅把 Displayed 作为 TTID 检索方式；历史口径通常从 Android 4.4/API 19 即有 Displayed。API 24 不是该日志能力的准确起点。
+- **建议**：改成“可通过系统 ActivityManager 的 Displayed 日志检索 TTID；本章从 API 24+ 重点讨论 FrameMetrics/JankStats 等线上监控能力”，避免把 Displayed 误标为 API 24 引入。
+
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-29
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md]
+- **建议补充**：PLT Hook 获取 Atrace 日志的实现细节——通过 Profilo 的 PLT Hook hook libc.so 的 write/__write_chk 方法，解析 B|事件和 E|事件配对计算方法耗时。对应 AIW ch14.13 Hook 基础设施的可观测性应用实例
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-29
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md]
+- **建议补充**：Systrace + 函数插桩实战：使用 Gradle Plugin 在编译期自动注入 Trace.beginSection/endSection，用于观察方法级耗时（尤其 Application 启动优化）。含 TraceCompat 兼容方案
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-29
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md]
+- **建议补充**：PLT Hook 网络请求监控：通过 hook libc.so 的 send/recv/sendto/recvfrom/connect 函数，获取网络请求的目标 IP、端口、响应内容。可用于禁用网络访问、过滤广告 IP 等场景
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch11 功耗 — 2026-05-29
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md]
+- **建议补充**：Java 动态代理实现耗电监控：通过反射获取 PowerManager/AlarmManager/LocationManager 的 mService 字段，使用 Proxy.newProxyInstance 代理，实现 Alarm、WakeLock、GPS 调用的堆栈追踪。注意兼容性问题
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] ch12 包体积 — 2026-05-29
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 52.md]
+- **建议补充**：Facebook ReDex 优化实战：(1) strip debug info 可将 Debug 包从 14.21MB 降至 12.91MB；(2) interdex 重分包可将 3 个 Dex 优化为 2 个；(3) 4 个以上 Dex 的应用至少有 10% 体积优化。注意 ReDex 当前维护状态需确认
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-05-29
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 51.md]
+- **过时内容**：关闭虚拟机 class verify 提升性能——该优化主要在 Dalvik 下有效，ART 下效果不明显
+- **建议更新至**：Android 16/17，ART 已全面取代 Dalvik，class verify 优化已不适用。如需启动优化应关注 Baseline Profiles / ART 提前编译方案
+
+
+## [Task6 Review] 2.19 刷新率切换与帧率适配性能 — 2026-05-29
+- **类型**：需确认
+- **位置**：ARR API 选择表 / 底层 Surface 范围提示行
+- **问题**：`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 仍标注 FlaggedApi / SDK 可用性边界，需 Task2B 补准公开 SDK 与设备开关口径。
+- **建议**：用 Android 15-QPR1/16/17 官方 API reference 和 AOSP flag 口径重新核验；稳定三方路径与 flagged 路径分开写。
+- **review 日志**：logs/review/2026-05-29-08-review.md
+
+## [Task6 Review] 2.19 刷新率切换与帧率适配性能 — 2026-05-29
+- **类型**：需重写
+- **位置**：参考资料之后的 Android 17 VRR vs ARR DeepResearch 注入块
+- **问题**：章节末尾新增调研素材仍是素材卡片形态，未融入正文结构；其中 VRR/ARR、LayerVoteType 和 RefreshRateSelector 算法属于技术口径更新，Task6 不裁决真伪。
+- **建议**：Task2B 将素材拆入 SurfaceFlinger 仲裁、ARR/VRR 关系和版本演进三处；再交 Task9 复核源码/API 口径。
+- **review 日志**：logs/review/2026-05-29-08-review.md
+
+## [Task6 Review] 3.1 Input 事件分发全流程 — 2026-05-29
+- **类型**：需确认
+- **位置**：手势排除区域 / 版本演进 / Predictive Back 标注
+- **问题**：正文仍保留 AOSP android-16.0.0_r1 未检出符号、Predictive Back 对 InputDispatcher 主路径影响待验证等技术风险标注。
+- **建议**：Task2B 只整合可核验事实；实现路径和收益数据交 Task9 以 AOSP 12-16/17 源码复核。
+- **review 日志**：logs/review/2026-05-29-08-review.md
+
+## [Task6 Review] 3.1 Input 事件分发全流程 — 2026-05-29
+- **类型**：需重写
+- **位置**：参考资料之后的 InputChannel 创建失败 DeepResearch 注入块
+- **问题**：章节末尾新增调研素材仍以素材卡片形式附在正文之后，未融入 InputChannel 生命周期、失败处理和 ANR 诊断主线。
+- **建议**：Task2B 将素材拆入 InputChannel 创建、断开清理和 FD/ENOMEM 排障段落；删除素材卡片式尾巴。
+- **review 日志**：logs/review/2026-05-29-08-review.md

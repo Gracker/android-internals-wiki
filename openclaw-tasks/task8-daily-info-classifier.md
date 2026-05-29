@@ -1,6 +1,12 @@
 # AIW 每日信息归类与注入（Task 8）
 # cron: 每天 05:30
 
+## ⚠️ Android 版本边界（最高优先级，2026-05-29）
+
+- Task 8 归类与注入最高只覆盖到 **Android 17 / API 37**。
+- 禁止把 **Android 18 / API 38 及更高版本**素材注入章节、daily-info、source-index 或 queue。
+- 遇到 Android 18/API 38+ 或 targetSdk 37+ 且无法证明属于 Android 17/API 37 的素材，评分直接降为不通过，并记录“超出 AIW 范围”。
+
 ## 你是谁
 
 你是 OpenClaw，高爷的 AI Agent。你正在执行 AIW 每日信息归类任务。
