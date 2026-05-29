@@ -5,10 +5,12 @@ status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-05-21T04:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-21-04-review.md"
-task6_review_notes: "2026-05-21 Task6 04: L1 小修 1 处；参考资料之后仍有源码调研素材块/AIW 注释，已回炉 Task2B 主线融合。"
-pipeline_stage: "task6_pending"
+last_task6_at: "2026-05-29T08:16:26+08:00"
+last_task2b_lite_at: "2026-05-29"
+task2b_lite_notes: "手势排除区域 / Predictive Back 版本边界已局部小修；文末 InputChannel 素材融入仍保留给主 Task2B。"
+last_task6_review_log: "logs/review/2026-05-29-08-review.md"
+task6_review_notes: "2026-05-29 08: Task6 revisiting review: needs-rework；L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。"
+pipeline_stage: "task2b_pending"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -17,8 +19,8 @@ version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 Inpu
   13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及
   Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。
 confidence: high
-reviewed_date: "2026-05-21"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-29"
+reviewed_by: "openclaw-task6"
 rework2_date: '2026-04-15'
 rework2_by: openclaw-task2b
 rework2_reason: 'Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）'
@@ -51,13 +53,13 @@ related_chapters:
 - '2.5'
 - '9.1'
 - '9.2'
-task6_result: needs-rework
-task6_state: "revisiting"
-task6_reviewed_date: "2026-05-21"
+task6_result: "needs-rework"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-29"
 task9_state: "pending"
 task9_result: needs-rework
-task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_state: "pending"
+task2b_result: "pending"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T04:36:55+08:00"
@@ -69,6 +71,11 @@ task2b_fixed_by: openclaw-task2b
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
+task6_reviewed_by: "openclaw-task6"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 2
+task6_new_rework: true
+review_type: "task6-writing-quality-review"
 ---
 
 # Input 事件分发全流程
@@ -249,11 +256,11 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 为什么触摸事件不用焦点窗口？因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮，应该由悬浮窗接收事件（因为它在上面），而不是焦点窗口。而按键事件没有空间信息，只能用焦点窗口来决定接收者。
 
-### 手势排除区域（Android 16）
+### 手势排除区域（Android 16 口径）
 
-[待验证：AOSP android-16.0.0_r1 `InputDispatcher.cpp` 已无 `findTouchedWindowTargetsLocked()` 符号，`WindowInfo.h` 也未检索到 gesture exclusion/exclusion region 字段；"10ms" 收益没有源码锚点或 trace 数据支撑。以下保留概念说明，具体实现路径待后续版本源码确认。]
+截至 AOSP android-16.0.0_r1，本节不把手势排除区域写成已落地的输入分发优化：`InputDispatcher.cpp` 未再使用旧文常见的 `findTouchedWindowTargetsLocked()` 锚点，`WindowInfo.h` 也未检出 `gesture exclusion` / `exclusion region` 字段。没有源码或 trace 样本支撑时，不应把"10ms 收益"写成 Android 16 结论。
 
-Android 16 在触摸命中判定中对排除区域（exclusion region）的处理可能有变化，但具体实现路径和收益数据尚未在 AOSP android-16.0.0_r1 中得到确认。此前版本的 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认。如果后续源码确认 Android 16 将相关逻辑下沉到 Native 循环中，边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟可能会改善。在 Perfetto 中，相关效果需要通过 `InputDispatcher` 线程上触摸分发 slice 的对比来确认。
+排查边缘触控时，仍以命中窗口、系统手势占用区域和 `InputDispatcher` slice 对比为准；若后续版本确认相关逻辑下沉到 Native 循环，需要单独标注源码 tag 和 trace 证据。
 
 ### 三大队列：iq / oq / wq
 
@@ -348,7 +355,7 @@ mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper
 
 ### InputChannel 断开后的清理路径
 
-`InputChannel` 还承担失败感知。App 进程退出、窗口销毁或 socket 断开后，`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态，随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接，并让策略层刷新窗口状态。线上遇到“窗口已经消失但还在等输入反馈”的问题时，要把这条失败路径纳入排查。
+`InputChannel` 还负责失败感知。App 进程退出、窗口销毁或 socket 断开后，`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态，随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接，并让策略层刷新窗口状态。线上遇到“窗口已经消失但还在等输入反馈”的问题时，要把这条失败路径纳入排查。
 
 最小判断流程是：
 
@@ -703,7 +710,7 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 ## 版本演进
 
-这一节只保留已经补过源码的版本差异。没有补核到源码的推断，不再直接写进表里。
+版本演进表只保留已经补过源码的差异。没有补核到源码的推断，不再直接写进表里。
 
 | 版本 | 已核验变化 |
 |------|------------|
@@ -713,7 +720,7 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 | Android 15 (API 35) | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
 | Android 16 (API 36) | stale 判定路径延续 Android 15；AOSP 主线仍没有默认把 inputflinger 独立成单独进程 |
 
-[待验证：Predictive Back 对 InputDispatcher 主分发路径的具体影响、IME 交互优化的代码落点]
+[版本边界：Predictive Back 已在上文限定为 Framework 窗口层机制；AOSP android-16.0.0_r1 未见其进入 `InputDispatcher` 主分发路径。IME 交互优化仍需单独源码锚点，不写入本表。]
 
 ## 调试技巧
 
@@ -1169,3 +1176,11 @@ bool InputDispatcher::dispatchOnceLocked(nsecs_t* nextWakeupTime) {
 - 性能基准：单次焦点解析 < 100μs
 
 此深度解析为理解 InputDispatcher 的 ANR 诊断和性能优化提供了底层支撑，特别是在处理焦点竞争和窗口状态切换时的行为模式。
+
+
+### InputChannel 创建失败处理机制与 Input-SurfaceFlinger 协作
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-inputchannel-creation-failure.md
+- 类型：DeepResearch 调研结果
+- 摘要：InputChannel 通过 UNIX socket 创建双向通信通道，创建失败时 JNI 层抛出 RuntimeException。常见失败原因为 EMFILE（FD 耗尽）和 ENOMEM。InputChannel 生命周期与 WindowToken 绑定，窗口销毁时通过 setDisposeCallback 触发 InputDispatcher 取消注册。InputEventReceiver 初始化失败时 mReceiverPtr 为 0，finishInputEvent 安全返回。
+- 注入时间：2026-05-29
+- 价值：提供了 InputChannel 创建失败的完整 JNI 层调用链和 Window 销毁生命周期管理源码分析，对诊断输入系统 ANR 和 FD 泄漏具有实操价值
