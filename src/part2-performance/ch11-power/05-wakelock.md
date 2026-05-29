@@ -36,11 +36,15 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
+  - type: official
+    path: "https://developer.android.com/ndk/reference/group/a-performance-hint"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/GameManager"
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T16:30:00+08:00"
-last_task2b_at: "2026-05-06T14:51:22+08:00"
+last_task2b_at: "2026-05-29T14:56:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。"
@@ -49,13 +53,13 @@ last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 4
@@ -756,21 +760,21 @@ Foreground Service 提高的是进程存活优先级，不是 CPU 的唤醒状�
 
 ### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测
 
-Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可实现"提示系统→观察效果"的完整验证循环。
+Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程可优先选择能效调度。结合 `android.os.PowerMonitor` API，可以把线程调度偏好和功耗观测放在同一条验证路径里。
 
 #### PerformanceHintManager 与 Power Efficiency Mode
 
 **源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 31+，Android 15 扩展）
 
-`PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，影响 CPU 频率和核心类型决策。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程应优先节能，适用于长时后台工作负载。
+`PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，为关联线程提供目标耗时、实际耗时和工作负载偏好。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程可优先选择能效调度，适用于长时后台工作负载。
 
 核心 API：
 - `createHintSession(int[] tids, long initialTargetNanos)` — 创建 hint session，`tids` 为关联线程 ID 数组（`int[]`，非 `long[]`），目标时长单位为纳秒
 - `reportActualWorkDuration(long actualDurationNanos)` — 报告单次实际工作耗时（纳秒）
 - `updateTargetWorkDuration(long targetDurationNanos)` — 更新目标工作时长（纳秒）
-- `setPreferPowerEfficiency(boolean preferEfficiency)` — API 35 / `FLAG_ADPF_PREFER_POWER_EFFICIENCY`，声明会话线程应优先节能；系统可更积极地将线程调度到效率核、降低 CPU/GPU 频率。适用于后台长时工作负载（如同步、上传、压缩），不适合前台交互场景
+- `setPreferPowerEfficiency(boolean preferEfficiency)` — API 35 / `FLAG_ADPF_PREFER_POWER_EFFICIENCY`，声明会话关联线程可优先选择能效调度。AOSP 与官方 NDK 文档只承诺这些线程适合按能效优先级调度，不保证具体 CPU 核心、CPU 频率或 GPU 频率变化。适用于后台长时工作负载（如同步、上传、压缩），不适合前台交互场景
 
-Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能核心、降低 CPU/GPU 频率，而非追求最低延迟。这解决了"busy loop"场景下 CPU 空转的高功耗问题——传统方式是应用自行 Sleep，但会引入调度延迟；Power Efficiency Mode 让系统理解工作负载特征，在保证性能需求的前提下主动降频。
+Power Efficiency Mode 的语义是线程调度偏好：应用告诉系统，这组线程接受能效优先的调度选择，不要求最低延迟。后续是否迁移到效率核、是否调整频率，取决于设备的 scheduler、Power HAL、热状态和厂商策略，不能把它写成稳定降频接口。它适合替代手写 sleep / busy loop 这类粗糙节流方式，再通过 `PowerMonitor` 或 Perfetto power rails 观察设备侧结果。
 
 #### PowerMonitor API（API 35 新增）
 
@@ -818,7 +822,7 @@ android_power_config {
 ```text
 应用调用 Power Efficiency Hint
   ↓
-系统调整 CPU/GPU 频率策略
+系统按设备策略选择线程调度与功耗策略
   ↓
 IPowerStats HAL 累计能耗变化
   ↓
@@ -830,27 +834,32 @@ Perfetto android.power 数据源记录 rail 数据（SQL 表名 `android_power_r
 ```
 
 
-#### 非游戏场景的 ADPF 应用
+#### ADPF 在非游戏负载中的边界
 
-ADPF 不仅适用于游戏，视频剪辑、AI 推理、后台批处理等场景也能利用 hint session 优化能效：
-
-**非游戏内容类型声明**（API 33+）：非游戏应用可通过 `GameManager.setGameState(GameState)` 传递 `GameState.MODE_CONTENT`（值 4），向系统声明当前内容类型。系统据此决定是否应用 Game Mode 优化策略：
+ADPF 的 hint session 不只服务游戏。视频导出、端侧推理、批量压缩、后台同步等长时工作负载，也可以通过 `PerformanceHintManager` 上报目标耗时、实际耗时和能效偏好：
 
 ```java
-GameManager gameManager = context.getSystemService(GameManager.class);
-GameState gameState = new GameState(false, GameState.MODE_CONTENT, -1, -1);
-gameManager.setGameState(gameState);
+PerformanceHintManager hintManager =
+        context.getSystemService(PerformanceHintManager.class);
+PerformanceHintManager.Session session =
+        hintManager.createHintSession(new int[] { workerTid }, targetNanos);
+
+session.setPreferPowerEfficiency(true);
+session.reportActualWorkDuration(actualNanos);
 ```
+
+`GameManager.setGameState(GameState)` 不能作为非游戏应用的通用内容类型声明。Android API reference 对 `setGameState()` 的描述是由游戏调用，用于把当前 game state 传给平台；`GameState.MODE_CONTENT` 表示游戏内展示的非 gameplay 内容，例如菜单、广告或过场内容。非游戏的视频剪辑、AI 推理、后台批处理不应借 `MODE_CONTENT` 让系统应用 Game Mode 策略。
 
 **Hint session 的常量与策略适配**：
 
 | 场景 | Hint 组合 | 说明 |
 |------|-----------|------|
-| 视频导出 | `CPU_LOAD_UP` + `reportActualWorkDuration` + `MODE_CONTENT` | 需要 CPU 持续高频 |
-| 实时 AI 推理 | `CPU_LOAD_UP` + `GPU_LOAD_UP` + `MODE_CONTENT` | 需要 CPU + GPU 协同 |
-| 后台批处理 | `setPreferPowerEfficiency(true)` + `MODE_NONE` | 不追求延迟，优先节能 |
+| 视频导出 | `reportActualWorkDuration()` + `updateTargetWorkDuration()` | 用实际耗时校准目标时长，避免长期粗暴拉高频率 |
+| 端侧推理 | `reportActualWorkDuration()` + 热状态 / 功耗观测 | 让系统获得周期性负载信息，收益依赖设备实现 |
+| 后台批处理 | `setPreferPowerEfficiency(true)` + `PowerMonitor` / Perfetto power rails | 不追求最低延迟，验证能耗是否下降 |
+| 游戏菜单 / 广告 / 过场内容 | `GameManager.setGameState(new GameState(..., MODE_CONTENT, ...))` | 仅限游戏上报非 gameplay 状态，不能迁移到普通 App |
 
-`PerformanceHintManager` 专注于线程级精细频率控制；`GameManager` 影响进程级调度优先级和 OOM 策略。两者协同可形成更完整的调度决策。
+`PerformanceHintManager` 的作用范围是 hint session 关联线程；`GameManager` 的作用范围是游戏状态、游戏模式和平台侧游戏优化策略。两者可以在游戏中组合使用，但非游戏场景应保留 `PerformanceHintManager` + `PowerMonitor` / Perfetto 验证路径，不把 `GameState.MODE_CONTENT` 当作通用 ADPF 入口。
 
 > USB 充电场景下，电池计数器显示的是正向充电电流，不是设备真实功耗。官方建议使用专用 USB Hub 切断充电电路，以获得准确测量。
 
@@ -883,6 +892,8 @@ gameManager.setGameState(gameState);
 - [Perfetto Android Power Energy](https://perfetto.dev/docs/data-sources/android-power-energy)
 - [Battery Historian](https://developer.android.com/studio/profile/battery-historian)
 - [Android Vitals — Wake Locks](https://developer.android.com/topic/performance/vitals/wakelock)
+- [Performance Hint Manager](https://developer.android.com/ndk/reference/group/a-performance-hint)
+- [GameManager API Reference](https://developer.android.com/reference/android/app/GameManager)
 
 ### 研究素材
 - `intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md` — Android 17 功耗新特性 + Play Store 政策
