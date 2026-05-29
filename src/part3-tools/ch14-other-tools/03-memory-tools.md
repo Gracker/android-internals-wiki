@@ -8,8 +8,8 @@ reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-28'
-last_verified_against: AOSP android-17.0.0_r1
+last_verified: '2026-05-30'
+last_verified_against: AOSP android-16.0.0_r1 + Perfetto native-heap-profiler docs + Android Developers memory docs
 confidence: high
 sources:
 - type: blog
@@ -27,7 +27,7 @@ sources:
 - type: aosp
   path: system/memory/libmeminfo
 - type: aosp
-  path: system/extras/malloc_debug
+  path: bionic/libc/malloc_debug
 tags:
 - mat
 - leakcanary
@@ -42,29 +42,29 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: pending
+task9_result: auto-fixed
 task2b_result: fixed-lite
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
 task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
-task9_reviewed_date: "2026-05-29"
+task9_reviewed_date: "2026-05-30"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-29T05:20:00+08:00"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 LMKD 选杀口径，不再写成由 PSS 总量直接决定，回到 Task6 复审。"
+last_task9_at: "2026-05-30T00:28:17+08:00"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。修正 LeakCanary manualInstall 自动安装关闭方式、MTE ASYNC 崩溃语义和默认启用边界；回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 LMKD 选杀口径，不再写成由 PSS 总量直接决定，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正不存在的 android-17.0.0_r1 验证锚点、malloc_debug AOSP 路径和 libmeminfo main 链接，回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 last_task6_at: "2026-05-29T06:05:00+08:00"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。补 2 处示例代码块语言标记；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-05-29"
-last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
+last_task9_autofix_at: "2026-05-30"
+last_task9_review_log: logs/deep-review/2026-05-30-00-deep-review.md
 reviewed_at: "2026-05-29T06:05:00+08:00"
 task9_reviewed_at: "2026-05-29T05:20:00+08:00"
 updated_by: "openclaw-task9"
@@ -688,5 +688,5 @@ heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"
 - heapprofd 官方文档：https://perfetto.dev/docs/data-sources/native-heap-profiler
 - dumpsys meminfo 官方文档：https://developer.android.com/studio/command-line/dumpsys#meminfo
 - Android 内存调试工具总览：https://developer.android.com/ndk/guides/sanitizers
-- AOSP libmeminfo 源码：https://android.googlesource.com/platform/system/core/+/refs/heads/main/libmeminfo/
+- AOSP libmeminfo 源码：https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-16.0.0_r1/
 - Android 调查内存使用：https://developer.android.com/topic/performance/memory

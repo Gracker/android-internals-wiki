@@ -6,8 +6,8 @@ status: "ready-for-review"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-05-28'
-last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + bionic linker libdl.map.txt (android-9/10/11 tags) + Android Developers 16KB page size docs (2026-04-24) + ART TI + GitHub upstream READMEs
+last_verified: '2026-05-30'
+last_verified_against: AOSP android-16.0.0_r1 system/sepolicy private/app.te + bionic linker linker_phdr.cpp/linker.cpp/linker_soinfo*.h + libdl.map.txt + Android Developers 16KB page size docs + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
 - type: official
@@ -39,16 +39,16 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: '2026-05-28'
 last_task2b_at: "2026-05-22T07:21:00+08:00"
-task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。"
+task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 sepolicy/bionic 源码锚点版本，不再以 AOSP mainline 作为正文依据，回到 Task6 复审。"
 last_task6_at: "2026-05-28T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-16-review.md"
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 1，P1 1，P2 0；问题已写入 queue/suggestions，等待 Task2B 回炉。'
@@ -58,12 +58,12 @@ reviewed_date: "2026-05-28"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 task6_review_notes: "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。清理 frontmatter 重复字段；正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
-task9_result: "pending"
-task9_reviewed_date: "2026-05-28"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-05-30"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T14:20:00+08:00"
-last_task9_review_log: logs/deep-review/2026-05-28-14-deep-review.md
-last_task9_autofix_at: "2026-05-28"
+last_task9_at: "2026-05-30T00:28:17+08:00"
+last_task9_review_log: logs/deep-review/2026-05-30-00-deep-review.md
+last_task9_autofix_at: "2026-05-30"
 ---
 
 
@@ -580,10 +580,10 @@ ShadowHook 在 `.init_array` 段缓存 `dlopen` / `dlsym` 的函数地址（主�
 
 | 文件路径 | 关键内容 | 版本 |
 |----------|---------|------|
-| `bionic/linker/linker_soinfo.h` | soinfo 类定义，含 primary_namespace_/secondary_namespaces_ | AOSP mainline |
-| `bionic/linker/linker.cpp` | dlopen namespace 校验逻辑 | AOSP mainline |
-| `bionic/linker/linker_soinfo.cpp` | soinfo 成员函数实现 | AOSP mainline |
-| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode + ELF 解析 | AOSP mainline |
+| `bionic/linker/linker_soinfo.h` | soinfo 类定义，含 primary_namespace_/secondary_namespaces_ | AOSP android-16.0.0_r1 |
+| `bionic/linker/linker.cpp` | dlopen namespace 校验逻辑 | AOSP android-16.0.0_r1 |
+| `bionic/linker/linker_soinfo.cpp` | soinfo 成员函数实现 | AOSP android-16.0.0_r1 |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode + ELF 解析 | AOSP android-16.0.0_r1 |
 | `github.com/bytedance/bhook` | ByteHook PLT Hook 库（v1.1.1, 2025-01） | API 16-35 |
 | `github.com/bytedance/android-inline-hook` | ShadowHook Inline Hook 库 | API 16-36 |
 
