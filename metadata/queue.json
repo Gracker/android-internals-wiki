@@ -629,5 +629,101 @@
     "completed_by": "openclaw-task2b-main",
     "result": "fixed",
     "completion_reason": "Task2B 主修复：整合参考资料后源码调研补遗，统一 Secure Dex Metadata / .sdm 口径，修正 installd Binder 版本断点，回流 Task6。"
+  },
+  {
+    "section": "2.13",
+    "section_title": "BufferQueue 与图形缓冲区管理",
+    "priority": 82,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-triple-buffer-bufferqueue-mechanism.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android Triple Buffer 机制与 BufferQueue 缓冲区管理 — Triple Buffer 并非物理 3 缓冲区，而是 producer-consumer 流水线保持 3 状态缓冲周转。MIN_UNDEQUEUED_BUFFERS=2 确保 producer 侧至少 2 个可用 slot。dequeueBuffer 阻塞条件、acquireBuffer/releaseBuffer 流程、BufferQueue 与 HWC 交互的完整源码分析。",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-29T06:17:02.414991+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料（installd Binder 化 + 云编译 SDM），建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-dexopt-chain-installd-service-binder.md",
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-cloud-compilation-sdm-mechanism.md",
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 16 installd Binder 化与 dexopt 链路 — installd 从 Unix Domain Socket 切换到 Binder 服务，DexoptCommand 通过 fork+execve 执行 dex2oat。同时包含 SDM（Secure Dex Metadata）产物管理和云编译机制的源码验证。",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      },
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "厂商安装优化路径实机验证 — vivo Turbo 强制 speed 过滤器预装全量编译，小米 HyperOS 定制 .dm 云编译接入。均为控制面优化，执行面（dex2oat）无算法级改动。",
+        "suggestion": "判断是否适合补充为章节参考资料或 OEM 定制案例"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-29T06:17:02.414991+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.19",
+    "section_title": "刷新率切换与帧率适配性能",
+    "priority": 90,
+    "reason": "[review回炉] Task6 2026-05-29 发现 2 个需 Task2B/Task9 处理的问题",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "ARR API 选择表 / 底层 Surface 范围提示行",
+        "detail": "`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 仍标注 FlaggedApi / SDK 可用性边界，需 Task2B 补准公开 SDK 与设备开关口径。",
+        "suggestion": "用 Android 15-QPR1/16/17 官方 API reference 和 AOSP flag 口径重新核验；稳定三方路径与 flagged 路径分开写。"
+      },
+      {
+        "type": "需重写",
+        "location": "参考资料之后的 Android 17 VRR vs ARR DeepResearch 注入块",
+        "detail": "章节末尾新增调研素材仍是素材卡片形态，未融入正文结构；其中 VRR/ARR、LayerVoteType 和 RefreshRateSelector 算法属于技术口径更新，Task6 不裁决真伪。",
+        "suggestion": "Task2B 将素材拆入 SurfaceFlinger 仲裁、ARR/VRR 关系和版本演进三处；再交 Task9 复核源码/API 口径。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-29T08:16:26+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-29-08-review.md"
+  },
+  {
+    "section": "3.1",
+    "section_title": "Input 事件分发全流程",
+    "priority": 90,
+    "reason": "[review回炉] Task6 2026-05-29 发现 2 个需 Task2B/Task9 处理的问题；Task2B Lite 已修复手势排除区域 / Predictive Back 版本边界，剩余 1 个主 Task2B 素材融入问题",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "参考资料之后的 InputChannel 创建失败 DeepResearch 注入块",
+        "detail": "章节末尾新增调研素材仍以素材卡片形式附在正文之后，未融入 InputChannel 生命周期、失败处理和 ANR 诊断主线。",
+        "suggestion": "Task2B 将素材拆入 InputChannel 创建、断开清理和 FD/ENOMEM 排障段落；删除素材卡片式尾巴。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-29T08:16:26+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-29-08-review.md"
   }
 ]
