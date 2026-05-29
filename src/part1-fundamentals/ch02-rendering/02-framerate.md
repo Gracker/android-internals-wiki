@@ -67,6 +67,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
 task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；仅留下官方文档 URL、Perfetto SQL 可执行性与功耗数据口径建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-05-19"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 # 帧率与刷新率
@@ -369,7 +371,6 @@ Swappy 的工作原理:
 
 4. **自动选择最佳刷新率**:在支持多刷新率的设备上,Swappy 会根据游戏的实际渲染速度,通过 `setFrameRate()` 向 SurfaceFlinger 传递刷新率偏好,由 SurfaceFlinger 做出最终决策。比如,一个跑不到 60 FPS 的游戏,在 90Hz 设备上可能会被安排以 45 FPS(90Hz 的一半)运行,而不是在 60Hz 下挣扎。
 
-[已确认: Swappy 通过 setFrameRate() 向 SurfaceFlinger 传递刷新率偏好,最终决策权在 SurfaceFlinger。表述已修正为"通过 setFrameRate() 向 SurfaceFlinger 传递刷新率偏好,由 SurfaceFlinger 做出最终决策"。]
 
 ### API 33+ 的 Frame Timeline 选择
 
@@ -400,7 +401,6 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 
 `FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。但 `Choreographer.FrameTimeline` 的读取能力(API 33 `FrameData.getFrameTimelines()`)和向 SurfaceFlinger 设置目标呈现时间的能力版本门槛不同:API 33 起可读取候选 vsyncId 和预期呈现时间;`SurfaceControl.Transaction.setFrameTimeline(long)` 的公开入口则是 Android 16 通过 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 释放的,Android 13-15 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
 
-[已修正: 参考 AOSP Choreographer.java API 33+ 的 VsyncCallback/FrameData/FrameTimeline 实际定义重写]
 
 这个机制的目的是让 App 告诉 SurfaceFlinger:"我这帧在哪个 VSync 时刻显示最合适"。SurfaceFlinger 会据此在正确的时间提交帧,实现更精确的 Frame Pacing。
 
@@ -641,7 +641,6 @@ Android 目前没有提供直接的"帧率被覆盖"回调 API(如 `OnFrameRateO
 [已修正: 明确 FrameRateOverride 非公开 API,公开检测路径仍为间接推断]
 
 [已验证: 官方文档, developer.android.com/games/sdk/game-mode]
-[已修正: FrameRateOverride 为 DisplayEventReceiver 内部事件载荷,非公开 SDK;已移除无效公开文档链接]
 
 ## 扩展:LTPO 面板的工作原理与 Android 的适配
 
@@ -774,7 +773,6 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 2. **按内容层级声明帧率需求**:视频、Camera 预览、游戏 Surface 用 `Surface.setFrameRate()`;View 树里的局部高刷区域用 `View.setRequestedFrameRate()`;窗口允许续航优先时,再打开 `Window.setFrameRatePowerSavingsBalanced(true)`。
 3. **关注帧间隔一致性**:在 120Hz 设备上,即使 FPS 显示 120,如果帧间隔波动大(比如 6ms、8ms、10ms、5ms 交替),用户感知到的流畅度可能还不如稳定的 60Hz。
 
-[自动发现: 来源 web research on SurfaceFlinger refresh rate selection]
 [已验证: 官方文档, developer.android.com/reference/android/view/Surface#setFrameRate]
 
 ## 常见问题与误区
@@ -814,9 +812,8 @@ FPS 是一个统计指标,60 FPS 只说明"一秒钟内渲染了 60 帧",但不�
 除了华为的额外 VSync 注入，小米 HyperOS 2.0 采取了一种更激进的策略：据社区报道，通过在驱动层注入高频虚拟 VSync 信号，使 Choreographer 在一个物理刷新周期内可以处理多次输入事件，旨在将触控响应延迟压缩到接近物理极限。这种做法打破了“一个 VSync 处理一次输入”的传统假设——在高频注入模式下，Choreographer 的 `CALLBACK_INPUT` 回调在一个物理帧内可能被触发多次。[待验证: HyperOS 高频 VSync 注入机制缺乏官方文档、源码或 Perfetto trace 证据，目前仅有社区报道。如果读者有逆向分析或 Perfetto trace 截图，欢迎补充] 代价是 CPU 唤醒频率显著增加，功耗上升，因此 HyperOS 通常只在游戏、手写笔等对延迟极度敏感的场景下激活。
 
 [待验证: 华为 VSync 修改是否在最新系统版本(HarmonyOS 4+)中已修复]
-[交叉引用: OEM 对 VSync 的定制行为在第 17 章(OEM 定制与差异化)中详细讨论。规避方案详见来源素材]
+> OEM 对 VSync 的定制行为在第 17 章(OEM 定制与差异化)中详细讨论。
 
-[已补充: writing-guide.md Type A 模板要求的"常见问题与误区"独立小节]
 
 ## 总结
 

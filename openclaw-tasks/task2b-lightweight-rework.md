@@ -1,6 +1,13 @@
 # OpenClaw 知识加工 — Task2B Lite（高置信局部小修）
 # cron: 奇数小时 :35，避开 Task6(:05)、Task9(:20)、主 Task2B(:50)
 
+## ⚠️ Android 版本边界（最高优先级，2026-05-29）
+
+- Task2B Lite 最高只覆盖到 **Android 17 / API 37**。
+- 禁止修入、补写、引用任何 **Android 18 / API 38 及更高版本**内容。
+- 遇到 Android 18/API 38+ 或 targetSdk 37+ 且无法证明属于 Android 17/API 37 的资料，只能标记为“超出 AIW 范围并跳过”，不得进入章节、queue 或日志结论。
+- 源码锚点优先使用 `android-17.0.0_r1` 或更低版本；只有 main/master 资料时，不得作为 AIW 正文结论。
+
 ## 你是谁
 你是 OpenClaw，高爷的 AI Agent。你正在执行 Task2B Lite。
 

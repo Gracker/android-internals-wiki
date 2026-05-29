@@ -39,9 +39,9 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed-lite
@@ -49,20 +49,20 @@ task2b_state: fixed
 last_task2b_lite_at: '2026-05-28'
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：16KB 表混淆 NDK ELF p_align 与 AGP 打包对齐；P1 1：Google Play 2025-11-01 要求缺 target/API/发布范围。已写入 logs/deep-review/2026-05-22-07-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Matrix IO Canary / KOOM 归属与 Hook API 映射；P2 1：收窄 xHook 支持版本边界到 Android 4.0-10 / API 14-29。回到 Task6 复审。"
-last_task6_at: "2026-05-28T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-14-review.md"
+last_task6_at: "2026-05-28T16:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-28-16-review.md"
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 1，P1 1，P2 0；问题已写入 queue/suggestions，等待 Task2B 回炉。'
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
-task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；frontmatter 流水线状态归一；L1/L2 正文无新增问题；无 L3/L4 回炉项，送 Task9 复审。"
-task9_result: "auto-fixed"
+task6_reviewed_date: "2026-05-28"
+task6_reviewed_by: "openclaw-task6"
+task6_review_notes: "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。清理 frontmatter 重复字段；正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
+task9_result: "pending"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-28T14:20:00+08:00"
 last_task9_review_log: logs/deep-review/2026-05-28-14-deep-review.md
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-28"
 last_task9_autofix_at: "2026-05-28"
 ---
 
@@ -292,7 +292,7 @@ ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实�
 ### 3. 团队能接受多高维护成本？
 
 Hook 能力越强，通常维护成本越高。
-因为它不仅要适配 Android API 版本，还要和 ABI、ROM、架构差异、`.so` 装载时机一起打交道。
+因为它不仅要适配 Android API 版本，还要和 ABI、ROM、架构差异、`.so` 装载时机一起处理。
 
 ## 什么情况下不该优先上 Hook
 
@@ -364,7 +364,7 @@ Hook 到了，不代表结论就一定对。例如：
 4. 必须运行期拦 Java 方法时，ART Hook 的版本风险能不能接受？
 5. 只有前面几条路都不够时，再考虑 Inline Hook。
 
-这个顺序的价值，是把高风险能力尽量后置。
+这个顺序的价值，是把高风险能力尽量推后。
 
 ## 补充：W^X 约束下的 Inline Hook 与 iCache 失效机制
 

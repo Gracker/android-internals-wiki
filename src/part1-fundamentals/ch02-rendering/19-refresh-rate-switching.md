@@ -4,15 +4,15 @@ chapter: "2.19"
 section: "2.19"
 status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-05-29"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "fixed"
-task2b_result: "fixed"
-pipeline_stage: "task6_pending"
+task2b_state: "pending"
+task2b_result: "pending"
+pipeline_stage: "task2b_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -41,8 +41,15 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-13T21:57:00+08:00"
-last_task6_at: "2026-05-13T22:12:00+08:00"
-task6_review_notes: "2026-05-13 task6 review: 清理重复 frontmatter、补充技术存疑标注、修复代码块语言和少量文风问题；Task9 P0 问题仍在 queue.json 中待 Task2B 处理。"
+last_task6_at: "2026-05-29T08:16:26+08:00"
+task6_review_notes: "2026-05-29 08: Task6 revisiting review: needs-rework；L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。"
+last_task6_review_log: "logs/review/2026-05-29-08-review.md"
+task6_reviewed_date: "2026-05-29"
+task6_reviewed_by: "openclaw-task6"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 2
+task6_new_rework: true
+review_type: "task6-writing-quality-review"
 ---
 
 # 2.19 刷新率切换与帧率适配性能
@@ -414,7 +421,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 Camera App 是帧率切换卡顿的高发场景，因为它有独特的帧率需求：
 
 - **预览帧率固定**：Camera 传感器采集帧率通常是 30fps 或 60fps，App 通过 `setFrameRate()` 声明这个固定帧率，避免系统误判。
-- **拍照瞬间的帧率处理**：拍照时 Camera 可能短暂停止预览帧输出，这时系统可能误以为帧率需求下降而降低刷新率。拍照结束后又需要切回来，造成二次切换。
+- **拍照瞬间的帧率处理**：拍照时 Camera 可能短暂停止预览帧输出，这时系统可能把它判断为帧率需求下降并降低刷新率。拍照结束后又需要切回来，造成二次切换。
 - **Camera 与系统动画的冲突**：Camera 界面上划触发多任务时，Camera 的 60fps 需求和 Launcher 动画的 120Hz 需求同时存在。SurfaceFlinger 的仲裁结果取决于哪个 Layer 优先级更高。
 
 建议 Camera App 在非预览场景（比如相册浏览、设置页面）使用更高的帧率声明，避免频繁切换。在纯预览场景使用 `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 声明 60fps。
@@ -461,3 +468,11 @@ OEM 厂商在 Display HAL 和 SurfaceFlinger 层面有大量定制空间：
   - `ro.surface_flinger.use_content_detection_for_refresh_rate`
   - `ro.surface_flinger.set_touch_timer_ms`
   - `debug.sf.set_idle_timer_ms`
+
+
+### Android 17 VRR vs ARR 分层机制与 RefreshRateSelector 算法解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-android-17-vrr-arr-refreshrate-selector.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 以 RefreshRateSelector 为核心，通过 LayerVote 投票机制动态选择最优刷新率。VRR（Variable Refresh Rate）与 ARR（Adaptive Refresh Rate）是两个相关但不同的概念：ARR 基于内容检测启发式预测，VRR 通过 VrrConfig.aidl 配置 minFrameIntervalNs 等参数。刷新率选择流程为 chooseRefreshRateForContent() → calculateLayerScoreLocked() → setRefreshRateTo()。Android 17 强化了 VRR 支持，Kernel Idle Timer 与内容检测协同工作。
+- 注入时间：2026-05-29
+- 价值：提供了 LayerVoteType 枚举的源码级定义和 calculateLayerScoreLocked 评分算法的完整分析，对理解 RefreshRateSelector 从 Android 11 到 17 的版本演进有直接参考价值

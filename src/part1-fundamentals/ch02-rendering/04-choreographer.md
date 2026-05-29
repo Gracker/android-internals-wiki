@@ -65,6 +65,8 @@ last_task9_audit_at: "2026-05-21T16:25:11+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-16-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型“四种/五类”内部表述需统一，已写入 suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 # Choreographer 与渲染流水线
@@ -253,7 +255,7 @@ void doFrame(long frameTimeNanos, int frame,
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java（doFrame()、Trace 名称、FrameInfo 写入）]
 
-[自动发现: 个人知识库/source/Android-Choreographer.md] **MessageQueue 的同步屏障机制**
+**MessageQueue 的同步屏障机制**
 
 `Choreographer` 还利用了 Android 的 `MessageQueue` 同步屏障机制来提高优先级：
 
@@ -500,7 +502,6 @@ duration_ms: 15000
 
 抓取时先 `adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt`，再执行 `adb shell perfetto -c /data/misc/perfetto-configs/config.pbtxt --txt -o /data/misc/perfetto-traces/trace.perfetto-trace`。后文的 Frame Timeline SQL 默认建立在第二档配置之上。
 
-[图：Perfetto Frame Timeline Track 截图，标注 Expected/Actual 条形、颜色编码（绿/红/黄）和 JankType 指示器]
 
 ### 实际分析中的使用
 
@@ -640,11 +641,7 @@ Choreographer 的设计哲学——VSync 同步、回调优先级、同步屏障
 
 在下一节中，我们将沿着渲染管线继续向下走，看看 MainThread 和 RenderThread 是如何协作完成一帧的实际渲染的——Choreographer 发令之后，绘制工作才刚刚开始。
 
-**厂商级优化实践**
 
-主流芯片厂商（Qualcomm、MediaTek、Samsung）基于 Choreographer 机制做了大量平台级优化，常见的方向包括：将 input 事件与 Choreographer 帧调度合并以减少跟手延迟、限制后台 App 的 Choreographer 动画回调以节省 CPU、以及针对 90Hz/120Hz 屏幕的帧率自适应调度。这些优化通常在 vendor 层实现，不同厂商的策略差异较大，感兴趣的读者可以参考 AOSP 的 `vendor/` 目录下各厂商的 Choreographer 补丁。
-
-[待高爷补充：如有具体厂商优化案例，可在此处展开]
 
 
 ## 版本演进
@@ -732,12 +729,3 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
    - [第 2.6 节：SurfaceFlinger 与合成](06-surfaceflinger.md)
    - [第 3.1 节：Input 事件分发全流程](01-input-dispatch.md)
    - [第 8.2 节：App 启动全流程](02-app-launch.md)
-
-
-
-### 参考素材
-
-Buffer Stuffing Recovery 的源码级深度分析（`BufferStuffingState`、`RecoveryAction` 枚举、触发阈值、`FrameCallback` 队列优先级）已整合进版本时间线"Android 16（API 36）"段落和 §2.25 专门章节。本节不再重复展开。
-
-- 来源：[DeepResearch 2026-05-20 Choreographer Buffer Stuffing Recovery](obsidian://open?vault=Personal-Knowledge&file=DeepResearch%2F2026-05-20-android-choreographer-buffer-stuffing-recovery)
-- 交叉引用：[§2.25 Choreographer Buffer Stuffing Recovery 与帧节拍修正](25-choreographer-buffer-stuffing-recovery.md)

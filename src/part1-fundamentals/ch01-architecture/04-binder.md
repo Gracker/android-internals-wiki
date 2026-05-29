@@ -56,6 +56,8 @@ last_task6_at: "2026-05-13T19:10:00+08:00"
 last_task6_audit: "2026-05-19"
 task6_review_log: "logs/review/2026-05-13-19-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -125,7 +127,7 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。业�
 
 Binder 的数据路径属于"单次拷贝"（single copy）：发送方从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
 
-Android 8（Oreo）引入 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`），优化的是发送端的数据组织成本，不是减少 `copy_from_user` 的次数。Binder 的内核态 IPC 对两种事务类型都是一次 `copy_from_user` 到目标进程的 Binder buffer——数据总量相同，区别在于发送端如何把数据交给驱动。
+Android 8 引入 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`），优化的是发送端的数据组织成本，不是减少 `copy_from_user` 的次数。两种事务类型在内核态都是一次 `copy_from_user` 到目标进程的 Binder buffer——数据总量相同，区别在于发送端如何把数据交给驱动。
 
 传统 `BC_TRANSACTION` 使用 `binder_transaction_data` 结构。发送方需要先把所有 payload（包括分散在不同内存位置的对象）gather 到一块连续的 `Parcel` 缓冲区，驱动再做一次整块 `copy_from_user`。
 
@@ -226,19 +228,19 @@ oneway interface ICallback {
 
 Client 调用 `oneway` 方法后，`transact()` 会立即返回，不等待 Server 处理结果。Binder 驱动把请求放入队列，稍后唤醒 Server 端线程处理。
 
-oneway 很容易被当成“更快”的选择，但需要留意几个边界：
+oneway 不能被简单当成“更快”的选择，需要留意几个边界：
 
 **oneway 在同一对象上串行处理。** 同一个 `IBinder` 对象上的 oneway 调用，在 Server 端会排队依次执行。客户端连续发出 10 个 oneway 调用时，Server 端不会启动 10 个线程同时处理。
 
 **调用方仍需留意边界。** oneway 不等回复，但不等于完全无开销。四个边界需要留意：(1) 同一 Binder node 上的 async transaction 不并发，队列积压会影响接收端处理时延；(2) async buffer 空间有限，耗尽后 `binder_alloc_new_buf()` 返回 `-ENOSPC`，事务失败，Java/Native 层表现为 `FAILED_TRANSACTION` / `BR_FAILED_REPLY`；(3) Android 11 QPR3+ 的 binder freezer 机制下，frozen callee 的 async transaction 会被缓冲，buffer overflow 时可能导致接收端崩溃（`BR_TRANSACTION_PENDING_FROZEN`）；(4) Android 12+ 引入 oneway spam detection（`BINDER_ENABLE_ONEWAY_SPAM_DETECTION`），当同一 pid 占用过多 async buffer 时标记 `oneway_spam_suspect` 并发出 `BR_ONEWAY_SPAM_SUSPECT` 告警和 netlink report——这是诊断信号，不是限流机制。
 
-**适用场景。** 不需要确认处理结果的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
+**适用场景。** 不需要确认处理结果的场景（状态通知、日志上报、事件广播）适合用 oneway。需要返回值或确认对方已处理的场景不要用 oneway。
 
 [已验证: AOSP, frameworks/native/libs/binder/IPCThreadState.cpp] [已验证: 官方文档, developer.android.com/guide/components/aidl#oneway]
 
 ## Binder 调度优先级如何传播
 
-同步 Binder 调用会把请求交给另一进程，同时还会影响服务端 worker 的调度优先级。source.android 的 priority inheritance 文档把这套机制分成三层：transaction priority inheritance、node priority inheritance 和 real-time priority inheritance。
+同步 Binder 调用除了把请求交给另一进程，还会影响服务端 worker 的调度优先级。官方文档把这套 priority inheritance 机制分成三层：transaction、node 和 real-time。
 
 对性能分析最常见的是 transaction priority inheritance。高优先级线程发起同步 Binder 调用时，Binder 驱动会临时把服务端 worker 的优先级调到和调用方一致；事务结束后再恢复。这样做是为了减少优先级反转。异步 `oneway` 调用不阻塞调用方，所以默认不会继承调用方优先级。
 
@@ -382,9 +384,7 @@ Perfetto 的 `BinderTracker`（`src/trace_processor/importers/ftrace/binder_trac
 
 ## Binder 风暴与系统负载
 
-[自动发现: 来源 obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
-
-在 Perfetto 中，如果某个进程短时间内发起大量 Binder 事务，Transactions 轨道上密密麻麻全是短条，这通常就是 Binder 风暴。它不一定导致单次调用超时，但会形成累积效应：`system_server` 的 Binder 线程池被打满，锁竞争加剧，其他 App 的系统服务调用延迟也会上升。
+在 Perfetto 中，如果某个进程短时间内发起大量 Binder 事务，Transactions 轨道上密密麻麻全是短条，这通常就是 Binder 风暴。单次调用不一定会超时，但累积效应明显：`system_server` 的 Binder 线程池被打满，锁竞争加剧，其他 App 的系统服务调用延迟也跟着上升。
 
 Binder 风暴的典型来源：某个 App 在主线程的 `doFrame` 中反复调用系统服务（比如每帧都查询一次 DisplayInfo），或者某个后台进程在短时间内大量注册/注销回调。在 Perfetto 中定位 Binder 风暴，可以用 SQL 按 Client 进程统计事务频率：
 
@@ -445,9 +445,7 @@ Binder 在 Android 版本中持续优化，这里列出对性能分析有影响�
 
 ### AIDL 与 HIDL 的演进
 
-[自动发现: 来源 https://source.android.com/docs/core/architecture/aidl/aidl-hals]
-
-Android 8 引入 Project Treble 时，HIDL 是 Framework 与 HAL 之间的主力接口语言。它支持显式版本号，既能走 binderized 模式，也能走 passthrough 模式。
+Android 8 引入 Treble 时，HIDL 是 Framework 与 HAL 之间的主力接口语言。它支持显式版本号，既能走 binderized 模式，也能走 passthrough 模式。
 
 Android 11 开始，Google 官方提供了 HAL 使用 Stable AIDL 的路径。迁移原则是“where possible”转到 AIDL；如果上游 HAL 仍然使用 HIDL，系统还得继续用 HIDL 保持兼容。
 
@@ -463,7 +461,7 @@ Binder 的基础开销通常在微秒级，单次调用通常不会造成可感�
 
 ### 误区：oneway 一定比同步快
 
-oneway 调用避免了 Client 端的阻塞等待，但仍然有队列和处理成本。oneway 在同一 `IBinder` 上是串行排队的，大量 oneway 调用会撑大 Server 端的请求队列。如果 Server 端处理速度跟不上，队列积压会影响同一服务上其他调用者的响应延迟。同步还是 oneway，取决于业务是否需要结果和确认，而非“哪个更快”的标签。
+oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成本——oneway 在同一 `IBinder` 上是串行排队的，大量 oneway 调用会撑大 Server 端的请求队列。如果 Server 端处理速度跟不上，积压会影响同一服务上其他调用者的响应延迟。同步还是 oneway，取决于业务是否需要结果和确认，而非“哪个更快”的标签。
 
 ### 误区：线程池 15 个线程不够用就该加大
 

@@ -52,6 +52,8 @@ last_task6_audit: "2026-05-24"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-29
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
@@ -303,7 +305,7 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 **Perfetto 可观测性。** Perfetto 的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接。纯 Vulkan Timeline Semaphore 等待不会直接进入 `android.fence` 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。Vulkan 规范要求 `SYNC_FD` 这类 copy payload handle 导出使用 Binary Semaphore（`VUID-VkSemaphoreGetFdInfoKHR-handleType-03253`），所以 Android native fence 边界始终以 Binary Semaphore 为桥梁，不是 Timeline Semaphore 直接导出。
 
-> [说明: Vulkan Timeline Semaphores 是 Vulkan 1.2 核心特性之一，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。]
+Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。
 
 ### 16KB 页对 Fence 路径的潜在影响
 
@@ -340,7 +342,6 @@ fd 泄漏是 Android 图形栈长期存在的稳定性隐患：一个未关闭�
 VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 producer 和 consumer 之间什么时候可以安全换手”。Choreographer 在 VSync-app 到来时组织 MainThread / RenderThread 启动一帧，RenderThread 在 `queueBuffer()` 时把“我可能还没写完”的 fence 一起交出去，这个 fd 到了 SurfaceFlinger / HWC 一侧就叫 acquire fence。反过来，SurfaceFlinger / HWC 释放旧 buffer 后返回的 fence，会在 producer 下一次 `dequeueBuffer()` 时表现为 release fence。BufferQueue 是这两条方向相反的 fence 的邮局，DMA-BUF / Gralloc 则负责让同一个 GraphicBuffer 能在不同进程和硬件单元之间被共享。
 
 如果把这几章连起来看，逻辑会非常顺：VSync 管启动时机，MainThread / RenderThread 负责生产，BufferQueue 负责交接，Fence 负责同步，SurfaceFlinger / HWC 负责消费，present fence 则告诉我们“这帧到底什么时候实际显示出来了”。
-
 
 ## 参考资料
 

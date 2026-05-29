@@ -37,6 +37,8 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T01:28:30+08:00"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-21-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 # OEM 性能优化的通用思路
@@ -90,8 +92,6 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-21-audit.md"
 
 **温控**是性能的天花板。当 SoC 温度达到阈值，Thermal 机制会强制降频（我们在 §5.5 中分析过），这时候前面所有的性能优化都会打折扣。厂商的温控策略差异很大：有的激进，温度稍高就降频换取更低功耗；有的保守，宁可温度高一点也要维持性能。这种策略差异直接反映在游戏场景的长帧率稳定性上。
 
-[已验证: 官方文档, source.android.com/docs/core/perf 和 developer.android.com/topic/performance]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md]
 
 ## 技术手段的全栈分层
 
@@ -105,8 +105,6 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-21-audit.md"
 
 **App 层的优化更多是厂商与头部 App 的协同。** 厂商会提供专用 API 给合作的 App，让它们能根据运行场景动态调整 CPU 频率（CPU Boost）、使用更大的堆内存配额、或者在启动时获得更高的调度优先级。这就是为什么你在 Perfetto 中经常看到某些国民级 App（微信、支付宝）的调度行为跟普通 App 不一样——它们享受了厂商的白名单待遇。
 
-[待验证: 厂商具体的 cgroup 配置参数和 HWC 调优细节因平台而异]
-[来源: obsidian/Personal-Knowlodge/source/the-performance-design-of-os.md]
 
 ## 应用冻结技术
 
@@ -126,7 +124,6 @@ Android 厂商开始跟进类似的思路，但实现方式经历了几次迭代
 
 这个方案的风险在于，SIGSTOP 对应用是可观测的。虽然 App 无法捕获或忽略 SIGSTOP，但进程被挂起后，它持有的所有资源（锁、网络连接、Binder 引用）都会保持在挂起时的状态。这可能导致一些微妙的问题：比如一个 App 在持有 wake lock 的时候被 SIGSTOP，系统就无法进入休眠；或者在 Binder 调用中途被 SIGSTOP，调用方会一直阻塞。
 
-[已验证: Linux signal(7) man page, SIGSTOP 不能被捕获/忽略/阻塞]
 
 ### cgroup freezer：AOSP 的标准方案
 
@@ -146,7 +143,6 @@ adb shell dumpsys activity | grep "Apps frozen:"
 adb shell ls /sys/fs/cgroup/uid_*/cgroup.freeze
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 [已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
 
 ### 厂商在冻结策略上的差异
@@ -157,7 +153,6 @@ adb shell ls /sys/fs/cgroup/uid_*/cgroup.freeze
 
 冻结对象方面，AOSP 只冻结 cached 进程。但厂商可能会扩大范围——把某些 service 进程、甚至广播接收者进程也纳入冻结范围。这就是为什么同样的 App 在不同厂商设备上表现完全不同：在你的设备上后台音乐播放正常，在另一台设备上可能几秒就被冻结了。
 
-[待补充: 各厂商具体的冻结策略参数对比]
 
 ## 预加载与预测启动
 
@@ -175,12 +170,9 @@ AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App
 
 在 Perfetto 中验证 USAP Pool 是否生效的方法：观察启动 Trace 中的 `Zygote` 线程 slice，如果出现 `usapReceive` 而非 `forkAndSpecialize`，说明进程来自预热池。需要额外注意的是，USAP Pool 目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteServer.java, ZygoteConnection.java]
 
 第三，**预编译优化**。调整 dex2oat 的编译策略，让常用 App 在系统空闲时提前完成 AOT 编译，或者使用基于用户使用习惯的 Profile-Guided Optimization（PGO）策略，只编译用户经常用到的代码路径。三星的 App Booster 就是这个思路——它手动对已安装的 App 执行 profile-guided 编译，让代码针对实际使用模式优化。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
-[待验证: 具体厂商的预创建进程实现细节]
 
 ### AI 预测启动
 
@@ -190,8 +182,6 @@ ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI �
 
 当然，预测启动也有风险。如果预测不准，预加载的 App 白白消耗了内存和 CPU 资源。所以厂商通常采用保守策略——只对高频使用的 App 做预测，预测置信度低于阈值的不触发。数据显示，一个用户常用的 App 一般不超过 10 个，这为预测模型提供了天然的精简范围。
 
-[待验证: OPPO Trinity Engine 28% 启动提升数据的具体测试条件]
-[引用: oppo.com/cn/news/product/coloros-trinity-engine]
 
 ## 后台管理策略：保活与杀后台的博弈
 
@@ -221,8 +211,6 @@ OPPO/vivo（ColorOS/OriginOS）的策略相对平衡，近年来通过 AI 学习
 
 荣耀（MagicOS）的后台优化以省电为导向，有用户反馈其「激进电池优化器」会影响第三方 App 的通知接收和后台功能。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md]
-[待验证: 各厂商具体策略可能随系统版本更新而变化]
 
 ### 对开发者的影响
 
@@ -232,13 +220,14 @@ OPPO/vivo（ColorOS/OriginOS）的策略相对平衡，近年来通过 AI 学习
 
 后台任务方面，WorkManager 和 JobScheduler 的行为在不同厂商设备上可能不一致。一个在 Pixel 上正常执行的后台同步任务，在某厂商设备上可能被延迟数小时甚至完全跳过。开发者能做的最可靠的方案是使用 Foreground Service，但这会显示一个常驻通知栏——又是一个用户体验的权衡。
 
-[已验证: 官方文档, developer.android.com/guide/components/foreground-services]
 
 ## 与其他机制的关系
 
 OEM 的优化实践不是孤立存在的，它和我们前面讨论过的多个系统机制紧密关联：
 
-**与 CPU 调度的关系（§5.1～§5.4）**：厂商在 Kernel 层的调度器调优直接影响 EAS 的行为。如果你在 Perfetto 中看到 CPU 迁移策略跟 AOSP 默认行为不同，很可能是厂商修改了 sched_energy_cost 或者 CPU capacity 的配置。同样，DVFS 的 governor 选择和参数调优（§5.4）也因厂商而异。
+OEM 的性能优化不是一个独立模块，它嵌入在全书讨论过的各个系统机制中。理解这些关联，能帮我们在 Trace 中更快判断一个现象的来源。
+
+**与 CPU 调度的关系（§5.1～§5.4）**：厂商在 Kernel 层的调度器调优直接影响 EAS 的行为。如果你在 Perfetto 中看到 CPU 迁移策略跟 AOSP 默认行为不同，很可能是厂商修改了 sched_energy_cost 或者 CPU capacity 的配置。DVFS 的 governor 选择和参数调优（§5.4）同样因厂商而异。
 
 **与内存管理的关系（§4.1～§4.4）**：厂商调整 LMK 的阈值参数是最常见的内存优化手段。当你在 Perfetto 中观察到后台进程被杀的时机跟 §4.4 描述的 AOSP 默认行为不一致时，应该想到这是厂商策略干预的结果。
 
@@ -264,7 +253,6 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 
 **Android 14（2023）**：前台服务类型强制声明，每种类型有明确的使用场景限制。与 Samsung 合作改进了后台 App 管理 API，提升了跨设备一致性。
 
-[已验证: 官方文档, developer.android.com/about/versions]
 
 ## 常见问题与误区
 

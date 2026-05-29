@@ -173,6 +173,14 @@ AOSP 能验证的是接口和通用实现：`libdmabufheap` 怎么打开 `/dev/d
 
 ## 参考资料
 
+### Android 16/17 DMA-BUF/Gralloc 图形内存优化版本边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-17-dmabuf-gralloc-graphics-memory-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级验证三个关键论点：(1) AOSP libdmabufheap 无通用池化路径，池化属厂商私有实现；(2) IAllocator allocate2() additionalOptions 在 Android 15 已存在非 Android 16 新增；(3) GraphicBuffer flatten/unflatten 仍为传统 transport
+- 注入时间：2026-05-28
+- 价值：源码级验证材料，含 AOSP 路径、版本矩阵和未验证项标注，可直接作为章节补充参考
+
+
 - [已验证: 官方文档] Transition from ION to DMA-BUF heaps (5.4 kernel only), Android Open Source Project, `source.android.com/docs/core/architecture/kernel/dma-buf-heaps`
 - [已验证: 官方文档] 16 KB page size, Android Open Source Project, `source.android.com/docs/core/architecture/16kb-page-size/16kb`
 - [已验证: 官方文档] Support 16 KB page sizes, Android Developers, `developer.android.com/guide/practices/page-sizes`

@@ -463,3 +463,47 @@ AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提
 
 
 ---
+
+## 源码调研补充（2026-05-28）
+
+### LiteRT CompiledModel API 最新变化（GitHub releases 验证）
+
+通过 GitHub `google-ai-edge/LiteRT` releases 交叉验证，确认以下 API 演进：
+
+**CompiledModel::Create() 简化**：
+- 不再需要 `litert::Model` 对象
+- 可直接从文件名或模型缓冲区创建
+- 简化了模型加载流程
+
+**Annotation/Metrics API 移除**：
+- 从 CompiledModel 中移除了 Annotation 和 Metrics API
+- 降低了 API 表面积
+
+**Android min SDK 固定**：
+- LiteRT Android min SDK version 固定为 23（Android 6.0）
+
+**LiteRT-LM 支持模型**：
+- Gemma、Llama、Phi-4、Qwen 等主流开源模型
+- 支持 GPU/NPU 硬件加速
+- 通过 Chrome、Chromebook Plus、Pixel Watch 等设备落地
+
+**LiteRT Samples 示例**（GitHub `google-ai-edge/litert-samples`）：
+```bash
+./deploy_and_run_android.sh \
+  --tokenizer "path/to/tokenizer.model" \
+  --embedder "path/to/embedder.tflite" \
+  --accelerator "npu" \
+  --soc_man "Google"
+```
+
+### Android 17 NPU 管理结论补充
+
+| 结论 | 来源 | 验证状态 |
+|------|------|----------|
+| Android 17 目标应用必须声明 FEATURE_NEURAL_PROCESSING_UNIT | Android 17 Release Notes | 已验证 |
+| NNAPI NDK C API 在 Android 15 废弃 | developer.android.com/ndk/guides | 已验证 |
+| Neural Networks HAL 1.3 AIDL 仍活跃 | AOSP hardware/interfaces/neuralnetworks/1.3/ | 已验证 |
+| LiteRT NPU delegate 通过 Google Play services 分发 | developer.android.com/ai/custom | 已验证 |
+| LiteRT CompiledModel API 自动化加速器选择 | GitHub LiteRT releases | 已验证 |
+
+<!-- AIW-源码调研-2026-05-28 -->

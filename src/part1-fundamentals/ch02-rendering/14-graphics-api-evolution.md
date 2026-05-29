@@ -74,6 +74,8 @@ last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task6_at: '2026-05-28T01:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -86,7 +88,7 @@ last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 
 ## Android 图形 API 的三代演进
 
-Android 从诞生到现在，GPU 编程接口经历了三代更迭。这个演进跨越十余年，是渐进式的。
+Android 从诞生到现在，GPU 编程接口经历了三代更迭，前后跨越十余年。
 
 ### 第一代：OpenGL ES——移动 GPU 的起点
 
@@ -136,6 +138,8 @@ Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffe
 AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。到了 Android 16，新发设备的 Vulkan 平台基线已经抬到 1.4，这时像 `VK_EXT_host_image_copy` / Host Image Copy 这样的上传路径能力就值得单独核对：它允许 CPU 直接把数据拷到 image，减少 staging buffer 和额外 copy，纹理流式加载、首帧资源上传和后台资源预热都更容易压住卡顿。是否真的可用，仍要以目标设备暴露的 Vulkan version、feature 和 extension 为准。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
+
+理解了 AVP 的定位之后，再看 Android 16 对 Vulkan 的要求，就要拆成两层。
 
 ### VP_ANDROID_16 Profile 与 Vulkan 1.4 基线
 
@@ -517,9 +521,9 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 
 ---
 
-<!-- AIW-源码调研-2026-04-26: ANGLE Vulkan Sync + RenderThread CPU Affinity -->
+<!-- 源码调研: ANGLE Vulkan Sync + RenderThread CPU Affinity -->
 
-## 补充：ANGLE Vulkan 同步机制（源码级）
+## ANGLE Vulkan 同步机制（源码级）
 
 ### EGL_ANDROID_native_fence_sync 的实现路径
 
@@ -585,7 +589,7 @@ VkResult vkAcquireImageANDROID(
 
 ---
 
-## 补充：RenderThread CPU Affinity（SCHED_FIFO 调度机制）
+## RenderThread CPU Affinity（SCHED_FIFO 调度机制）
 
 ### 系统级调度策略控制
 

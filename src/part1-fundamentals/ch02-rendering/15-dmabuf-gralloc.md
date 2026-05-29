@@ -78,6 +78,8 @@ last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-05-27"
 task6_reviewed_date: "2026-05-27"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -190,7 +192,7 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 | board-specific CMA heap | `/dev/dma_heap/<board-specific-cma>` | 常用于物理连续内存 | 不是 AOSP 通用 contract，名字随板级实现变化 |
 | secure heap | `/dev/dma_heap/system-secure<vendor-suffix>` | 受保护内存 | 可选能力，命名和实现都由厂商决定 |
 
-这个过渡对应用层透明，Gralloc HAL 内部只是把 allocator 从 ION 迁到 DMA-BUF Heap，上层 `GraphicBuffer` / `BufferQueue` 的使用方式没有变。但做系统级开发或排查底层内存问题时，必须先分清哪些路径是 AOSP 通用，哪些只是设备私有实现。
+这个过渡对应用层透明——Gralloc HAL 内部只是把 allocator 从 ION 迁到了 DMA-BUF Heap，上层 `GraphicBuffer` / `BufferQueue` 的使用方式没有变。但做系统级开发或排查底层内存问题时，必须先分清哪些路径是 AOSP 通用，哪些只是设备私有实现。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/kernel/dma-buf-heaps]
 
@@ -493,12 +495,9 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
 
 ## 参考资料
 
-### DMA-BUF、Gralloc 与跨进程图形内存共享 Android 16/17 公开边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-dma-buf-gralloc-graphics-memory.md
-- 类型：DeepResearch 调研结果
+### 补充参考：DMA-BUF、Gralloc 与跨进程图形内存共享
+- 来源：DeepResearch 调研（2026-05-22）
 - 摘要：分析 Android 16/17 图形内存三层体系：AOSP libdmabufheap 用户端库（BufferAllocator/DmaBufHeap）、Gralloc4 IAllocator AIDL 接口、vendor 实现（mali_gralloc 等）。明确 AOSP vs Vendor 边界，16KB 页大小对 Gralloc 的影响，DMA-BUF fd 通过 Binder Parcel 传递的零拷贝路径，以及 Pool/carveout/system heap 分配策略差异。
-- 注入时间：2026-05-23
-- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
 
 - AOSP 源码：
   - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer 的 flatten/unflatten 实现
@@ -516,15 +515,6 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
 - Linux 内核文档：
   - [DMA-BUF documentation](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html)
 
-### Android 16/17 图形内存优化 DMA-BUF/Gralloc 16KB 页边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-dmabuf-gralloc-16kb-boundary.md
-- 类型：DeepResearch 调研结果
+### 补充参考：Android 16/17 图形内存优化
+- 来源：DeepResearch 调研（2026-05-19）
 - 摘要：验证 libdmabufheap pooling、Gralloc4 IMapper additionalOptions、Binder FDA 批量 fd 安装在 16KB 页大小下的版本实现边界。涵盖 ION→DMA-BUF heap 迁移路径、BufferQueue 分配链路，以及厂商 gralloc 实现对物理对齐的决定性作用。
-- 注入时间：2026-05-19
-- 价值：源码级验证 16KB 页下 DMA-BUF/Gralloc 版本边界与厂商差异，补充 BufferQueue 分配链路细节
-
-<!-- AIW-源码调研-2026-05-26 -->
-**源码调研结论更新（2026-05-26）**：
-1. **libdmabufheap 池化**：`system/memory/libdmabufheap` android16-qpr2-release 分支**未找到**通用释放后缓存复用路径。池化为厂商私有实现，建议将正文"Android 16/17 引入用户空间池化"修正为"池化机制存在于厂商 allocator 私有实现中，AOSP 层无通用池化路径"。
-2. **allocate2() additionalOptions**：在 **Android 15（API 35）已存在**，非 Android 16 新增。字段用于传递 EGL_EXT_surface_compression 等硬件约束，**非 16KB 页对齐用途**。NDK 公开入口仅为 `AHardwareBuffer_allocate()`，无 options 变体。
-3. **Binder FDA 批量传输**：android-16.0.0_r1 `GraphicBuffer.cpp` flatten/unflatten **仍为 transport fd 数组拷贝**，未接入 FDA 机制。20%-40% 收益缺少源码和 benchmark 条件支撑，应修正为待验证或删除具体数字。

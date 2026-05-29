@@ -65,6 +65,8 @@ task9_state: "reviewed"
 task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -169,11 +171,11 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 这个结构中有几个关键细节。
 
-第一，CPU 的功耗被拆成“基础项 + 各 cluster 频点项”两层。这是因为现代 SoC 的 CPU 功耗随频率呈非线性增长，1.5GHz 时的电流可能是 300MHz 时的数倍。对于异构 CPU，文件中常见 `cpu.speeds.cluster0`、`cpu.active.cluster0`、`cpu.speeds.cluster1` 这样的独立数组，分别对应不同 cluster。旧资料里也能看到不带后缀的 legacy 名称，但对照 Android 16 公共文件时，优先看带 `display` / `cluster` 后缀的写法。
+第一，CPU 功耗拆为“基础项 + 各 cluster 频点项”两层，因为现代 SoC 的 CPU 功耗随频率非线性增长—1.5GHz 时的电流可能是 300MHz 时的数倍。异构 CPU 的 profile 文件中常见 `cpu.speeds.cluster0`、`cpu.active.cluster0`、`cpu.speeds.cluster1` 这类独立数组，各自描述一个 cluster。旧资料中也有不带后缀的 legacy 名称，但对照 Android 16 公共文件时，优先看带 `display` / `cluster` 后缀的写法。
 
-第二，蜂窝网络 Radio 的功耗按信号强度区分了多个等级。信号弱时，Radio 需要更大的发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
+第二，蜂窝网络 Radio 的功耗按信号强度分档。信号弱时 Radio 需要更大发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
 
-第三，AOSP 中默认的 `power_profile.xml` 包含的都是占位值（通常是 0.1mA）。OEM 厂商必须在出货前用实际硬件测量填充真实数据。如果厂商没有按实测结果更新这些参数，或者直接沿用了默认值，后续的功耗归属结果就会出现系统性偏差。
+第三，AOSP 默认 `power_profile.xml` 中的值都是占位值（通常是 0.1mA）。OEM 必须在出货前用实测硬件数据替换这些占位。如果厂商跳过这一步，后续所有功耗归属结果都会产生系统性偏差。
 
 ## 功耗组成
 
@@ -189,7 +191,7 @@ CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经�
 
 这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
 
-组件是否走 measured energy path，取决于 HAL 和统计能力。CPU、Screen 这类组件在支持的设备上更容易拿到 hardware energy data；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先消费硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
+组件是否走 measured energy path，取决于 HAL 能力和统计支持。CPU、Screen 这类组件在支持的设备上更容易拿到硬件能量数据；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先使用硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
 
 把这套模型写成近似公式，会更接近源码：
 
@@ -201,7 +203,7 @@ CPU charge ≈ cpu.active × activeTime
 
 这里故意写成 charge，而不是 mWh。`power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个 `cpu.voltage` 表把 CPU 时间换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
 
-这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”，还来自跑在哪个 scaling policy / cluster、跑在哪些频点、有没有直接拿到硬件能量数据。
+这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”——还取决于跑在哪个 scaling policy / cluster、跑在哪些频点、是否拿到了硬件能量数据。
 
 ### Display：最直观的耗电源
 
@@ -334,7 +336,7 @@ Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层�
 
 ### 计算示例
 
-下面这个例子只适合解释 power-profile 回退路径，不代表所有设备的最终统计结果。
+以下示例按 power-profile 回退路径演示归属逻辑，不代表带硬件计量的设备最终结果。
 
 假设某台没有 CPU `EnergyConsumer` 数据的设备，在 5 分钟窗口内记录到：
 
@@ -342,7 +344,7 @@ Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层�
 - WiFi 活跃传输 60 秒
 - GPS 定位 120 秒
 
-Framework 会把 CPU 的 active 基础功耗、policy 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。本例只强调一个边界：现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
+Framework 会将 CPU 的 active 基础功耗、policy 附加功耗和 freq step 附加功耗分别累加，再与 WiFi、GPS 的组件结果合并。落到设置页时，数值还会受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据的影响。本例的核心结论是：现代 CPU 归属不是单独取一段“1.2GHz × 30 秒”就完成的。
 
 ### 归属的精度问题
 
@@ -482,11 +484,11 @@ Perfetto 的 Android power probe 注册的数据源名是 `android.power`；`and
 Android 功耗模型与本书多个章节讨论的机制紧密关联：
 
 - **CPU 调度（§5.1）**：调度器决定哪个进程在哪个核心上运行多久，直接影响 BatteryStats 中 CPU 时间的归属计算。EEVDF/CFS 的调度决策最终都会反映在功耗统计中。
-- **EAS / PAS（§5.2）**：早期 EAS 使用静态 Energy Model（EM）做开环预测——根据 EM 表估算任务迁移的能耗代价，选择最优核。PAS（Power-Aware Scheduling）理论上可以引入功耗动态反馈来修正调度决策，但截至目前公开的 AOSP 源码（android-16.0.0_r1）中，调度器路径（`find_energy_efficient_cpu` / `sched_energy_util`）仍走 EM 静态表计算，没有找到从 ODPM / PowerStats HAL 实时读取功耗并反馈到调度决策的确定调用链。ADPF / CPU-GPU headroom 走的是 `Power HAL` 的 `getCpuHeadroom` / `getGpuHeadroom` 接口和 `PerformanceHintManager` hint session 路径，PowerMonitor / PowerStats 是能量观测路径。两条路径目前在公开源码层面暂未看到对接。[待验证: 如后续 CDD / source.android.com 或新 AOSP tag 补充了 ODPM→EAS 反馈链，可重新修订]
+- **EAS / PAS（§5.2）**：EAS 使用静态 Energy Model（EM）做开环预测——根据 EM 表估算任务迁移的能耗代价，选择最优核。截至目前公开的 AOSP 源码（android-16.0.0_r1）中，调度器路径（`find_energy_efficient_cpu` / `sched_energy_util`）仍走 EM 静态表计算，尚未发现从 ODPM / PowerStats HAL 实时读取功耗并反馈到调度的确定调用链。ADPF / CPU-GPU headroom 走的是 `Power HAL` 的 `getCpuHeadroom` / `getGpuHeadroom` 接口和 `PerformanceHintManager` hint session 路径，而 PowerMonitor / PowerStats 是能量观测路径。两条路径目前在公开源码层面暂未对接。[待验证: 如后续 CDD / source.android.com 或新 AOSP tag 补充了 ODPM→EAS 反馈链，可重新修订]
 - **DVFS（§5.4）**：CPU 频率是 power_profile 中最详细的参数之一。DVFS 决定了 CPU 在哪个频率点运行，直接决定了该时刻的功耗估算值。
 - **大小核架构（§5.3）**：异构 CPU 的功耗建模比同构 CPU 复杂得多，power_profile 中需要为每个集群提供独立的频率-电流对照表。
 - **热管理（§5.5）**：热节流会强制降低 CPU 频率，间接降低功耗。但功耗估算系统本身不感知热状态——如果设备因过热而降频，power_profile 中对应高频的参数就不会被使用，导致估算的"总功耗"低于实际值。
-- **ADPF（§5.9）**：Android 16 的 ADPF 通过 `PerformanceHintManager` 向系统上报帧负载和 deadlines；系统侧根据 hint 调整 CPU/GPU 频率和核心迁移。公开 API 层面，ADPF 与 ODPM / PowerStats 是两条独立路径：ADPF 走 `PerformanceHint` session，ODPM 走 `SystemHealthManager` / `PowerMonitor` 快照读取。两者是否在内核或 vendor 层面存在联动，目前缺少公开 AOSP 源码或官方文档支撑。[待验证: ADPF hint session 是否间接利用 ODPM 数据做预防性降频，需后续 CDD / source.android.com 确认]
+- **ADPF（§5.9）**：Android 16 的 ADPF 通过 `PerformanceHintManager` 向系统上报帧负载和 deadlines，系统侧据此调整 CPU/GPU 频率和核心迁移。公开 API 层面，ADPF 与 ODPM / PowerStats 是两条独立路径：ADPF 走 `PerformanceHint` session，ODPM 走 `SystemHealthManager` / `PowerMonitor` 快照读取。两者是否在内核或 vendor 层面存在联动，目前缺少公开资料支撑。[待验证: ADPF hint session 是否间接利用 ODPM 数据做预防性降频，需后续 CDD / source.android.com 确认]
 - **Android 功耗管理机制（§5.6）**：Doze、App Standby 等机制通过限制后台活动来降低功耗。这些限制的效果最终都会体现在 BatteryStats 的统计数据中。
 - **Perfetto 工具链（§13.1）**：Perfetto 是功耗分析最重要的可视化工具之一，特别是配合 ODPM 数据源使用时。
 
@@ -511,7 +513,7 @@ Android 功耗模型与本书多个章节讨论的机制紧密关联：
 
 ### 误区一："电池设置里的 App 耗电百分比是精确的"
 
-这个数字不是固定等于 `power_profile.xml` 的估算值。设置页展示的是 `BatteryUsageStats` 归属结果，某个组件如果拿到了 hardware energy data，Framework 会优先使用实测能量；缺失时才回退到 power-profile 或 controller/activity 估算。CPU、Screen、WiFi、Radio 等组件能否走哪条路，取决于设备 HAL 和统计能力。所以这个百分比更适合做排序和定位，不适合当实验室级绝对值。
+这个数字不是固定等于 `power_profile.xml` 的估算值。设置页展示的是 `BatteryUsageStats` 归属结果，某个组件如果拿到了 hardware energy data，Framework 会优先使用实测能量；缺失时才回退到 power-profile 或 controller/activity 估算。CPU、Screen、WiFi、Radio 等组件能否走哪条路，取决于设备 HAL 和统计能力。所以这个百分比更适合排序和定位，不适合当作实验室级精度的绝对值。
 
 ### 误区二："Coulomb Counter 能精确测量每个 App 的耗电"
 

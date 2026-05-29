@@ -56,6 +56,8 @@ reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-05-27"
 last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
 last_task2b_at: "2026-05-27T04:50:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-28
 ---
 
 
@@ -93,7 +95,7 @@ last_task2b_at: "2026-05-27T04:50:00+08:00"
 
 分析渲染卡顿时，Trace 里可能出现这样的场景：主线程在 `doFrame()` 里卡了 30 ms，原因是某个 `measure()` 调用触发 Binder 通信，等待 SystemServer 返回就花掉 20 ms。如果不清楚主线程、SystemServer、Binder 分别属于哪一层、为什么需要跨层通信，就只能看到一堆彩色方块，却无法定位根因。
 
-理解分层架构，是性能分析的基础功。再打开 Perfetto Trace 时，就能快速判断异常耗时落在哪一层、为什么发生、该从哪一层入手优化。
+理解分层架构之后，再打开 Perfetto Trace 就能快速判断异常耗时落在哪一层、为什么发生、该从哪一层入手优化。这是性能分析的基础功。
 
 [已验证: 官方文档, https://developer.android.com/guide/platform]
 
@@ -103,7 +105,7 @@ Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Librarie
 
 ### 从硬件到应用：为什么需要五层
 
-如果没有分层，App 要直接跟硬件打交道。想画一帧画面，就得自己操作 GPU 寄存器；想拍张照片，就得自己写摄像头驱动协议。每个 App 都要适配每一款 SoC、每一个传感器型号。这在 PC 时代或许勉强可行（驱动安装是常规操作），但在手机上百个 App 共存的环境下完全不可行。
+如果没有分层，App 就得直接跟硬件打交道：想画一帧画面，要自己操作 GPU 寄存器；想拍张照片，要自己写摄像头驱动协议。每个 App 都要适配每一款 SoC、每一个传感器型号。这在 PC 时代或许勉强可行（驱动安装是常规操作），但在手机上百个 App 共存的环境下完全走不通。
 
 Android 的解法是逐层抽象：Kernel 层把硬件抽象成文件和系统调用，HAL 层把不同厂商的硬件差异藏到统一接口后面，Runtime 层让上层可以用 Java/Kotlin 而不是 C/C++ 写代码，Framework 层把系统功能封装成 Service API。最终，App 开发者只需要调用 `Activity.startActivity()` 就能启动一个新页面，完全不需要知道底层经历了 Binder 通信、Zygote fork、Surface 分配这一系列跨层操作。
 
@@ -152,7 +154,7 @@ Zygote 进程也在这一层扮演关键角色：所有 App 进程都由 Zygote 
 
 ## 每一层的职责边界与典型组件
 
-分层架构能长期稳定运行，靠的是清晰的职责边界。每一层都有自己的“管辖范围”，越界调用往往会带来性能问题。拆到单层看时，重点是三个问题：有哪些关键组件、为什么这样设计、性能分析时对应哪些观察点。
+分层架构能长期稳定运行，靠的是清晰的职责边界。每一层都有自己的职责边界，跨层调用往往会带来性能开销。拆到单层看时，重点关注三个问题：有哪些关键组件、为什么这样设计、性能分析时对应哪些观察点。
 
 ### SystemServer：系统服务启动与管理入口
 
@@ -187,7 +189,7 @@ private void run() {
 
 SurfaceFlinger 是一个独立的 Native 进程，它的职责很单一：把各个 App 产生的 Surface 合成为最终的画面，交给屏幕显示。它不属于 SystemServer，但与 SystemServer 中的 WMS 紧密协作——WMS 负责决定窗口的层级和位置，SurfaceFlinger 负责把这些窗口画出来。
 
-SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收集所有可见 Surface 的新帧，决定使用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后把合成后的帧提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。不同 Android 版本的主路径切片名不完全相同，排查前先按设备版本选搜索词。
+SurfaceFlinger 的工作由 VSync 信号驱动：每个 VSync 周期，它收集所有可见 Surface 的新帧，决定用硬件合成（HWC Overlay）还是 GPU 合成（GLES Composition），然后提交给屏幕。在 Perfetto 中，SurfaceFlinger 的活动可以在 `surfaceflinger` 进程的线程 track 上看到。不同 Android 版本的主路径切片名不同，排查前先按设备版本选搜索词。
 
 | Android 版本 | Perfetto / ATrace 中优先搜索的 SurfaceFlinger 切片 | 说明 |
 | --- | --- | --- |
@@ -270,24 +272,24 @@ Android 15 开始，AOSP 支持构建 16 KB page-size 的 Android；Android 16 �
 
 ### Binder 跨层调用：最常见的中转瓶颈
 
-Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与系统服务交互、部分 HAL 控制面请求都会通过它完成。它的性能特点是：单次调用延迟低（约 10-100 μs）[待验证: 具体范围需实测，受数据大小和设备影响]，但调用次数多了就会积少成多。
+Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与系统服务交互、部分 HAL 控制面请求都通过它完成。单次调用延迟通常在微秒级（约 10-100 μs，具体受数据大小和设备影响），但调用次数多了就会积少成多。[待验证: 具体范围需实测]
 
 以 Activity 启动为例，整个流程涉及 App 进程、SystemServer 进程、Zygote 进程之间的多次跨进程通信。App 向 AMS 发起启动请求（一次 Binder 调用，进入 system_server）；AMS 通过 `ZygoteProcess` 向 Zygote 发起 fork 请求（走 LocalSocket/USAP 池，不是 Binder）；fork 完成后新 App 进程通过 Binder 向 AMS 的 `attachApplication()` 报告就绪……一个完整的冷启动涉及多次 Binder 往返和一次 LocalSocket 通信，Binder 调用总量可能达到数十次 [来源: 社区测量与 Trace 分析经验]。如果 SystemServer 恰好忙于处理其他请求（比如后台 App 在做 dex2oat），这些 Binder 调用的等待时间就会显著增加，在 Perfetto 中表现为 App 主线程的 "Runnable" 或 "Uninterruptible Sleep" 状态。
 
 **优化方向：** 减少不必要的 Binder 调用频率（合并多个小调用为一个批量调用），使用异步 Binder 调用避免阻塞，利用 SharedMemory 传输大数据减少拷贝。
 
 
-> **SELinux 开销对 Binder 性能的影响**
+> **SELinux 对 Binder 性能的影响**
 > 
-> Binder 每次 transaction 均触发 SELinux LSM 钩子 `selinux_binder_transaction()`，执行 `avc_has_perm()` 权限检查。该检查在 `kernel/common/security/selinux/hooks.c` 中实现，判断调用方 SID 是否有 `BINDER__CALL` 或 `BINDER__IMPERSONATE` 权限。
+> 每次 Binder transaction 都会触发 SELinux LSM 钩子 `selinux_binder_transaction()`，执行 `avc_has_perm()` 检查调用方是否有 `BINDER__CALL` 或 `BINDER__IMPERSONATE` 权限。
 > 
-> 关键性能事实在于 **AVC（Access Vector Cache）**：首次未知请求需完整策略评估（~1-10 μs），后续命中仅 O(1) 缓存查找（~50-200 ns）。Binder 高频调用特征使 AVC 命中率极高，稳态下 SELinux 开销可忽略不计。
+> 对性能的影响取决于 **AVC（Access Vector Cache）** 命中率：首次未知请求需完整策略评估（~1-10 μs），后续命中仅 O(1) 缓存查找（~50-200 ns）。Binder 的高频调用特征使 AVC 命中率极高，稳态下 SELinux 开销可忽略不计。
 > 
-> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离，三路 binder 设备各自拥有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。SELinux AVC 本身是全局访问向量缓存（`security/selinux/avc.c` 中的 `static struct selinux_avc selinux_avc`），缓存键是 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。因此，三路隔离降低的是跨域误用风险，并不减少 SELinux 检查次数；每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
+> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离。三路 binder 设备各有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。但 SELinux AVC 本身是全局访问向量缓存，缓存键为 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。因此，三路隔离降低的是跨域误用风险，并不减少 SELinux 检查次数——每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
 > 
 > enforcing 与 permissive 的差异仅体现在拒绝路径：两者均执行完整检查，但 enforcing 额外执行拒绝操作。对于正常放行的请求，两种模式路径几乎相同。
 > 
-> **源码**：`kernel/common/security/selinux/hooks.c` — `selinux_binder_transaction()`；`security/selinux/avc.c` — `avc_has_perm()`；`security/selinux/include/classmap.h` — `BINDER__CALL`/`BINDER__IMPERSONATE` 权限定义。**[来源: AOSP kernel/common SELinux hooks.c, mainline Linux AVC]**
+> 源码：`kernel/common/security/selinux/hooks.c` — `selinux_binder_transaction()`；`security/selinux/avc.c` — `avc_has_perm()`。**[来源: AOSP kernel/common SELinux hooks.c, mainline Linux AVC]**
 
 
 
@@ -401,7 +403,7 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
 
-## Vendor VNDK 隔离对 native 库加载的影响（历史机制）
+## Vendor VNDK 隔离对 native 库加载的影响
 
 分层架构的接口隔离不只发生在 HAL 层。在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库同样需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
 
