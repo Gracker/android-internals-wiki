@@ -2,7 +2,7 @@
 title: APM / 可观测性平台与 SDK 选型
 chapter: '14.12'
 section: '14.12'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -41,22 +41,22 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: "pending"
-task9_reviewed_date: "2026-05-28"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T13:20:00+08:00"
+last_task9_at: "2026-05-29T08:20:00+08:00"
 task2b_state: "fixed"
 repaired_date: '2026-05-28'
 repaired_by: openclaw-task2b-main
 task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
-task9_review_notes: "2026-05-28 Task9 auto-fix: 补 Matrix Trace Canary 上游 README 标注的 AGP 3.5/4.0/4.1 兼容边界，提醒 AGP 7/8+ 先做最小样本验证或确认 fork 适配。"
+task9_review_notes: "2026-05-29 Task9 pass-tech-review: 复核 JankStats / FrameMetrics / ApplicationExitInfo / Matrix AGP 边界 / KOOM / btrace / Measure 选型口径，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T14:05:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task6_audit_result: l1-light-edit
@@ -64,14 +64,14 @@ last_task6_audit_log: "logs/review/2026-05-20-17-audit.md"
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-28-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-29-08-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-14-review.md"
 task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；L1/L2 小修 17 处（禁用句式 1、Markdown 硬换行 16）；无 L3/L4 回炉项，送 Task9 复审。"
 last_task9_autofix_at: "2026-05-28"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
 ---
 
