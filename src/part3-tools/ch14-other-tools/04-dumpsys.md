@@ -5,7 +5,7 @@ section: '14.4'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
-last_verified: '2026-04-15'
+last_verified: '2026-05-30'
 last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
@@ -30,21 +30,21 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: pending
+task9_result: auto-fixed
 last_task2b_at: "2026-05-28T14:50:00+08:00"
-task9_reviewed_date: "2026-05-29"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-29T05:20:00+08:00"
+task9_reviewed_date: "2026-05-30"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-30T00:28:17+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
 status: ready-for-review
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
@@ -52,9 +52,9 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-29T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-29-05-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。"
-last_task9_autofix_at: "2026-05-29"
+last_task9_review_log: logs/deep-review/2026-05-30-00-deep-review.md
+task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。"
+last_task9_autofix_at: "2026-05-30"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
 task9_reviewed_at: "2026-05-29T05:20:00+08:00"
@@ -418,7 +418,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 ### FrontEnd 架构补充（源码级）
 
-> 以下内容基于 AOSP 源码（android.googlesource.com mainline）深度调研，补充正文未覆盖的 FrontEnd 内部机制。
+> 以下内容基于 AOSP android-16.0.0_r1 源码深度调研，补充正文未覆盖的 FrontEnd 内部机制。
 
 **FrontEnd 组件清单：**
 
@@ -485,11 +485,11 @@ enum class Changes : uint32_t {
 };
 ```
 
-`kMustComposite` 标志定义了必须触发布局计算的变更类型子集，其他变更（如纯 Buffer 更新）可走快速路径。
+在 android-16.0.0_r1 中，`RequestedLayerState::kMustComposite` 仍包含 `Buffer`；真正决定纯 `Content` / `Buffer` 变更能否少走层级重建的是 `LayerSnapshotBuilder::tryFastUpdate()` 的全局变更掩码判断。
 
 **LayerSnapshotBuilder.tryFastUpdate() 快速路径：**
 
-当检测到 `RequestedLayerState` 只有 `Buffer` 变更时，跳过几何计算直接更新 snapshot：
+当全局变更只包含 `Content` / `Buffer` 且没有 force/display change 时，`tryFastUpdate()` 先 merge 已变化的 layer snapshot，并跳过完整 hierarchy traversal：
 
 ```cpp
 // LayerSnapshotBuilder.h
@@ -498,13 +498,13 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 
 这个设计让"只有画布刷新"的场景少走一部分几何重算路径；具体收益仍要在目标设备上用 trace 或 benchmark 复核。
 
-**源码索引（均来自 AOSP mainline）：**
+**源码索引（均来自 AOSP android-16.0.0_r1）：**
 
 - `RequestedLayerState.h` — Changes enum + 层状态结构体
 - `LayerLifecycleManager.h` — 生命周期管理接口
 - `TransactionHandler.h` — 无锁事务队列
 - `LayerSnapshotBuilder.h` — 快速路径 + Snapshot 生成
-- `SurfaceFlinger.cpp` — commit() 中 FrontEnd 协作代码，约行 2455-2533
+- `SurfaceFlinger.cpp` — `updateLayerSnapshots()` / `commit()` 中 FrontEnd 协作代码，约行 2493-2580 / 2691-2783
 
 ### 帧延迟信息
 
