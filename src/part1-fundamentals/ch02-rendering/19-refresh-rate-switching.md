@@ -7,12 +7,12 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-05-29"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
-pipeline_stage: "task2b_pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -50,6 +50,8 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 2
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
+last_task2b_at: "2026-05-30T00:50:00+08:00"
+task2b_notes: "修复 Task6 2026-05-29 回炉问题：补准 ARR API 公开/flagged 边界，拆入 VRR/ARR 与 RefreshRateSelector 口径，删除尾部素材卡片。"
 ---
 
 # 2.19 刷新率切换与帧率适配性能
@@ -150,6 +152,8 @@ surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 里，发起仲裁的是 `mScheduler->chooseRefreshRateForContent(...)`。Scheduler 会把可见 Layer 整理成 `LayerRequirement` 列表，再交给 `RefreshRateSelector::getRankedFrameRates()` 生成一个按分数排序的候选结果。
 
 每个 Layer 都带着自己的 `LayerVoteType` 进入打分流程。android-16.0.0_r1 里常见的票型有 `Min`、`Max`、`Heuristic`、`ExplicitDefault`、`ExplicitExactOrMultiple`、`ExplicitGte` 和 `ExplicitCategory`。`RefreshRateSelector::calculateLayerScoreLocked()` 会按票型、目标帧率、候选模式是否支持 seamless 切换来计算单层 score，再把所有 Layer 的 score 汇总后排序。注意，Android 15/16 中该函数的内部实现经历了多次重构：部分票型的评分逻辑已经拆分到独立的 helper 方法（如 `getScoreForLayer()` 系列），`calculateLayerScoreLocked()` 本身的职能已从"集中计算"转向"入口分发"。读者在源码中定位时，应该顺着这个函数的调用链往下追，而不是只看函数体本身。
+
+ARR 和 VRR 的边界也要放在这条仲裁路径里看。ARR 是 Android 15+ 对 App 公开的能力表达：系统在支持硬件上用离散 VSync 步进匹配内容帧率，减少完整 mode switch。VRR 更偏底层配置和显示能力，描述的是显示端允许呈现间隔随内容变化的范围。`LayerVoteType`、内容检测、触摸 boost、idle timer、Display policy 都会进入 `RefreshRateSelector` 的候选排序；App 侧不要把 ARR API 理解成直接控制 VRR 参数。
 
 24fps 视频和 60fps 前台动画同时存在时，120Hz 往往会排在前面，因为它同时满足 24fps 的整数倍关系和 60fps 的交互需求，还常常落在可 seamless 切换的候选集合里。但这不是写死的规则。只要 Battery Saver、GameManager、Display policy 或 App 请求范围收窄了候选集合，排序结果就可能变成 60Hz、90Hz 或别的模式。
 
@@ -283,7 +287,7 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 ## ARR 与帧率切换的关系
 
-我们在 2.18 节详细讨论了 Adaptive Refresh Rate 的工作原理。这里聚焦于 ARR 如何影响帧率切换的性能。
+2.18 节已经展开 Adaptive Refresh Rate 的工作原理。本节只看 ARR 对帧率切换性能的影响。
 
 ### ARR 减少了切换的"硬代价"
 
@@ -313,9 +317,7 @@ Binder 线程（提交 Transaction）和 VSync 线程共享这把锁。锁持有
 
 ### 精确 fps 请求、category 请求和 range 请求怎么选
 
-Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Android 15-QPR1+ 的 ARR 场景，App 侧更常见的做法是把“这是固定片源”“这是高刷动画”“这是随速度变化的滚动”分别交给不同 API，再让系统把它映射到当前设备可用的刷新率集合。
-
-[存疑: Task9 2026-05-13 已指出 `Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 存在 FlaggedApi / SDK 可用性边界，表格中的底层 Surface 范围提示行需 Task2B 补准。]
+Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。Android 16 的公开 SDK 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)`，同时让 `getSupportedRefreshRates()` 更适合 ARR 设备读取 render rate 集合。App 侧的稳定路径要优先使用公开 SDK；`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 这类范围提示路径仍按 flagged API 处理，不写成普通三方 App 可直接依赖的接口。
 
 | 场景 | 首选 API | 适合什么时候用 | 备注 |
 |------|----------|----------------|------|
@@ -323,7 +325,7 @@ Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Androi
 | 普通 View 动画 | `View.setRequestedFrameRate(120f)` 或 `View.REQUESTED_FRAME_RATE_CATEGORY_HIGH` | 只想表达“这里需要更高刷新率”，不想把值绑死到某个 mode | category 请求更适合 ARR 设备 |
 | Compose 动画 | `Modifier.preferredFrameRate(...)` | Compose 组件的局部动画、滚动和过渡 | 语义和 View 侧一致 |
 | 自定义滚动控件 | `View.setFrameContentVelocity(...)` | 刷新率应该跟着 fling / smooth scroll 速度变化 | 系统按速度决定是否升降刷新率 |
-| 底层 Surface 需要范围提示 | `Surface.setFrameRate(new Surface.FrameRateParams.Builder().setDesiredRateRange(min, max).setFixedSourceRate(fps).build())` | 渲染管线自己掌握 Surface，希望给出范围或固定片源的组合约束 | Flagged API（`FLAG_ARR_SETFRAMERATE_API`），Android 16 需设备与 SDK 开关启用；普通三方 App 的稳定路径仍以 `Surface.setFrameRate(float,int[,int])`、`View.setRequestedFrameRate()`、`Display.getSuggestedFrameRate()` 为主 |
+| 底层 Surface 需要范围提示 | `Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` | 系统组件或受控平台构建需要同时表达范围与固定片源约束 | flagged API 路径；普通三方 App 的稳定路径仍以 `Surface.setFrameRate(float,int[,int])`、`View.setRequestedFrameRate()`、`Display.getSuggestedFrameRate()` 为主 |
 
 Android 16（API 36）才公开 `Display.getSuggestedFrameRate(int category)`。调用时要传 `Display.FRAME_RATE_CATEGORY_NORMAL` 或 `Display.FRAME_RATE_CATEGORY_HIGH`，不要和 `View.REQUESTED_FRAME_RATE_CATEGORY_*` 混用，也不要在低版本直接调用。它返回的是系统给 normal / high 两类场景的建议刷新率，不负责回答“45fps 该映射到 60Hz 还是 90Hz”。45fps 这类具体映射仍然要交给 `RefreshRateSelector`、Display policy 和设备支持的刷新率集合去决定。
 
@@ -384,7 +386,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 | Android 15-QPR1+ | 支持对应 HAL API 的设备开始提供 ARR，刷新率可以在单一 mode 内跟随内容节奏变化 |
 | Android 16 公开接口 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 让 App 能直接读取设备能力和系统建议值 |
 | Android 16 | `VsyncModulator` 的 `setVsyncConfigSet()` 通过 `std::lock_guard<std::mutex>` 保护 config set 写入，锁持有时间短，极端压力场景下仍有微秒级抖动空间 |
-| Android 17 | 缩减 SurfaceFlinger `mGlobalLock` 范围并引入 DeliQueue，副屏刷新率切换不再干扰主屏渲染节奏，实现多屏"性能主权隔离" |
+| Android 17 | 本轮只保留 `RefreshRateSelector` / `LayerVoteType` / VRR 配置关系作为 Task9 复核线索；未用 main/master 资料写成正文结论 |
 | Android 16 | 16KB 页面大小推广，图形缓冲区分配需考虑页对齐影响 |
 | AndroidX / Compose | RecyclerView 1.4、AndroidX core 1.15、Compose `preferredFrameRate()` 把滚动和局部动画的 ARR 适配放到更高层 API 里 |
 
@@ -468,11 +470,3 @@ OEM 厂商在 Display HAL 和 SurfaceFlinger 层面有大量定制空间：
   - `ro.surface_flinger.use_content_detection_for_refresh_rate`
   - `ro.surface_flinger.set_touch_timer_ms`
   - `debug.sf.set_idle_timer_ms`
-
-
-### Android 17 VRR vs ARR 分层机制与 RefreshRateSelector 算法解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-android-17-vrr-arr-refreshrate-selector.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 以 RefreshRateSelector 为核心，通过 LayerVote 投票机制动态选择最优刷新率。VRR（Variable Refresh Rate）与 ARR（Adaptive Refresh Rate）是两个相关但不同的概念：ARR 基于内容检测启发式预测，VRR 通过 VrrConfig.aidl 配置 minFrameIntervalNs 等参数。刷新率选择流程为 chooseRefreshRateForContent() → calculateLayerScoreLocked() → setRefreshRateTo()。Android 17 强化了 VRR 支持，Kernel Idle Timer 与内容检测协同工作。
-- 注入时间：2026-05-29
-- 价值：提供了 LayerVoteType 枚举的源码级定义和 calculateLayerScoreLocked 评分算法的完整分析，对理解 RefreshRateSelector 从 Android 11 到 17 的版本演进有直接参考价值

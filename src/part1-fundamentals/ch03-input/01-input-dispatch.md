@@ -10,7 +10,7 @@ last_task2b_lite_at: "2026-05-29"
 task2b_lite_notes: "手势排除区域 / Predictive Back 版本边界已局部小修；文末 InputChannel 素材融入仍保留给主 Task2B。"
 last_task6_review_log: "logs/review/2026-05-29-08-review.md"
 task6_review_notes: "2026-05-29 08: Task6 revisiting review: needs-rework；L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -54,12 +54,12 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: "needs-rework"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-29"
 task9_state: "pending"
 task9_result: needs-rework
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T04:36:55+08:00"
@@ -76,6 +76,8 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 2
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
+last_task2b_at: "2026-05-30T00:50:00+08:00"
+task2b_notes: "修复 Task6 2026-05-29 回炉问题：将 InputChannel 创建失败素材拆入创建、清理和 FD/ENOMEM 排障段落，并删除尾部素材卡片。"
 ---
 
 # Input 事件分发全流程
@@ -344,6 +346,8 @@ ViewRootImpl.setView()
 
 `WindowState.openInputChannel()` 调用 `InputChannel.openInputChannelPair()`，内部通过 `socketpair()` 创建一对已连接的全双工 socket。`sockets[0]`（server 端）注册到 `InputDispatcher`，封装为 `Connection` 对象保存在 `mConnectionsByFd` 中；`sockets[1]`（client 端）通过 Binder 回传给 App 进程，保存在 `ViewRootImpl` 的 `mInputChannel` 中。
 
+创建失败时，问题通常停在 `InputChannel.openInputChannelPair()` 或 JNI 封装层。`socketpair()` 返回失败后，Framework 会向上抛出运行时异常，窗口无法完成输入通道建立。线上常见原因是进程或系统 fd 耗尽（`EMFILE` / `ENFILE`）以及内存不足（`ENOMEM`）。这类问题不会表现为普通的 `wq` 堆积，因为事件还没有进入目标窗口连接；更常见的现象是窗口添加失败、焦点窗口迟迟不可用，随后触发 No Focus Window ANR 或窗口初始化异常。
+
 App 端拿到 `InputChannel` 后，会用它创建 `WindowInputEventReceiver`：
 
 ```java
@@ -351,20 +355,22 @@ App 端拿到 `InputChannel` 后，会用它创建 `WindowInputEventReceiver`：
 mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper());
 ```
 
-在 native 层，`NativeInputEventReceiver` 的构造函数中，会把这个 socket fd 注册到 App 主线程的 native `Looper` 上监听。当 `InputDispatcher` 往 server 端写入事件数据时，App 主线程的 `Looper` 被 epoll 唤醒，回调到 `NativeInputEventReceiver::consumeEvents()`，完成事件接收。
+在 native 层，`NativeInputEventReceiver` 的构造函数中，会把这个 socket fd 注册到 App 主线程的 native `Looper` 上监听。当 `InputDispatcher` 往 server 端写入事件数据时，App 主线程的 `Looper` 被 epoll 唤醒，回调到 `NativeInputEventReceiver::consumeEvents()`，完成事件接收。如果接收器初始化失败，`ViewRootImpl` 侧不会得到可用的 `mReceiverPtr`；后续 `finishInputEvent()` 会走空指针保护路径，但这已经说明输入通道没有正常进入工作状态。
 
 ### InputChannel 断开后的清理路径
 
-`InputChannel` 还负责失败感知。App 进程退出、窗口销毁或 socket 断开后，`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态，随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接，并让策略层刷新窗口状态。线上遇到“窗口已经消失但还在等输入反馈”的问题时，要把这条失败路径纳入排查。
+`InputChannel` 还负责失败感知。App 进程退出、窗口销毁或 socket 断开后，`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态，随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接，并让策略层刷新窗口状态。窗口正常销毁时，`WindowToken` / `WindowState` 侧的 dispose 回调也会触发 InputDispatcher 注销通道，避免已经消失的窗口继续持有输入连接。线上遇到“窗口已经消失但还在等输入反馈”的问题时，要把这条失败路径纳入排查。
 
 最小判断流程是：
 
 - `dumpsys input` 中检查目标窗口 `Connection` 的 `status`，区分 `NORMAL`、`BROKEN`、`ZOMBIE` 或 `NOT_RESPONDING`。
 - 如果连接已经 broken，但 `wq:{windowName}` 仍长时间存在，继续看窗口移除和 WMS/SurfaceFlinger 窗口信息刷新是否滞后。
 - 如果 App 进程死亡，结合 `process_exit`、Activity/Window 销毁日志和 `InputDispatcher` warning 判断连接清理是否完成。
+- 如果窗口还没拿到 `InputChannel`，先查 fd 数量、`logcat` 中的 `EMFILE` / `ENFILE` / `ENOMEM`，再看 WMS 添加窗口失败和 No Focus Window ANR 是否同一时间出现。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/libs/input/InputTransport.cpp]
 > [已验证: DeepResearch/Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制.md]
+> [已验证: DeepResearch/2026-05-29-inputchannel-creation-failure.md]
 > [来源: obsidian/Cubox/Android图形系统（五）番外篇：触摸事件详解-2023-03-03.md]
 
 ## App 侧的事件分发：从 ViewRootImpl 到 View 树
@@ -726,9 +732,10 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 1. **`adb shell getevent`**：查看内核上报的原始 Input 事件数据，确认底层是否正常报点。输出格式为 `[device] type code value`，其中 type=3 (EV_ABS) 对应触摸坐标。如果这里看不到事件，问题在硬件或内核驱动层。
 2. **`adb shell dumpsys input`**：查看 Input 系统运行时信息。重点关注 `RecentQueue`（最近分发的事件）、`InboundQueue`（待处理事件）、`PendingEvent`（等待 App 反馈的事件）、以及每个窗口 `Connection` 的 `status`。如果 `status` 显示 `NOT_RESPONDING`，说明 App 已经触发 Input ANR。
-3. **`adb shell input keyevent / motionevent`**：模拟按键或触摸事件，直接注入到 `InputDispatcher`，绕过底层硬件。用于验证分发逻辑是否正常（排除硬件问题）。
-4. **Perfetto Trace**：分析复杂 Input 问题最强大的工具。关键 Track：`iq/oq/wq` 三个队列计数器、`deliverInputEvent`（App 处理耗时）、`InputReader` 和 `InputDispatcher` 线程活动。定位思路：`iq` 堆积 -> InputDispatcher 处理慢；`oq` 堆积 -> 连接繁忙；`wq` 堆积 -> App 处理不及时（ANR 前兆）。
-5. **`adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'`**：快速确认当前焦点窗口和焦点 App，排查焦点相关的按键事件丢失问题。
+3. **fd / 内存状态**：窗口添加失败但 `iq/oq/wq` 不明显时，检查进程 fd 数、`logcat` 里的 `EMFILE` / `ENFILE` / `ENOMEM`，判断是否卡在 `InputChannel` 创建阶段。
+4. **`adb shell input keyevent / motionevent`**：模拟按键或触摸事件，直接注入到 `InputDispatcher`，绕过底层硬件。用于验证分发逻辑是否正常（排除硬件问题）。
+5. **Perfetto Trace**：分析复杂 Input 问题最强大的工具。关键 Track：`iq/oq/wq` 三个队列计数器、`deliverInputEvent`（App 处理耗时）、`InputReader` 和 `InputDispatcher` 线程活动。定位思路：`iq` 堆积 -> InputDispatcher 处理慢；`oq` 堆积 -> 连接繁忙；`wq` 堆积 -> App 处理不及时（ANR 前兆）。
+6. **`adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'`**：快速确认当前焦点窗口和焦点 App，排查焦点相关的按键事件丢失问题。
 
 > [来源: obsidian/Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
 
@@ -1176,11 +1183,3 @@ bool InputDispatcher::dispatchOnceLocked(nsecs_t* nextWakeupTime) {
 - 性能基准：单次焦点解析 < 100μs
 
 此深度解析为理解 InputDispatcher 的 ANR 诊断和性能优化提供了底层支撑，特别是在处理焦点竞争和窗口状态切换时的行为模式。
-
-
-### InputChannel 创建失败处理机制与 Input-SurfaceFlinger 协作
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-inputchannel-creation-failure.md
-- 类型：DeepResearch 调研结果
-- 摘要：InputChannel 通过 UNIX socket 创建双向通信通道，创建失败时 JNI 层抛出 RuntimeException。常见失败原因为 EMFILE（FD 耗尽）和 ENOMEM。InputChannel 生命周期与 WindowToken 绑定，窗口销毁时通过 setDisposeCallback 触发 InputDispatcher 取消注册。InputEventReceiver 初始化失败时 mReceiverPtr 为 0，finishInputEvent 安全返回。
-- 注入时间：2026-05-29
-- 价值：提供了 InputChannel 创建失败的完整 JNI 层调用链和 Window 销毁生命周期管理源码分析，对诊断输入系统 ANR 和 FD 泄漏具有实操价值
