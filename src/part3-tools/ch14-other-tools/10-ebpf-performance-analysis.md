@@ -53,7 +53,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-19"
@@ -62,30 +62,30 @@ task2b_result: "fixed"
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 repaired_date: "2026-05-28"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-28 Task9 auto-fix: 收窄 netd/eBPF 能耗表述，明确 BPF 统计网络流量，上层再做 BatteryStats 归因。"
+task9_review_notes: "2026-05-29 Task9 auto-fix: AOSP 源码锚点从未定版 Code Search 链接改为 android-16.0.0_r1；收窄 signal_generate 异常退出监控为自定义排障路径，不再写成 AOSP 通用工具。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
-task9_state: "pending"
-task9_result: "pending"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T13:20:00+08:00"
+task9_reviewed_date: "2026-05-29"
+last_task9_at: "2026-05-29T08:20:00+08:00"
 task2b_state: "fixed"
 p0: 0
-p1: 0
-p2: 1
+p1: 1
+p2: 0
 updated_by: "openclaw-task2b-main"
 updated_date: "2026-05-28"
 review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 2 / P1 1 / P2 1。参考资料后的 sched_ext OEM 段落含伪源码路径、GKI 版本错误与无来源性能数据。"
 last_task9_audit: "2026-05-22"
-last_task9_review_log: "logs/deep-review/2026-05-28-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-29-08-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-28T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-14-review.md"
 task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；frontmatter 流水线状态归一；L1/L2 正文无新增问题；无 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-05-28"
+last_task9_autofix_at: "2026-05-29"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -458,7 +458,7 @@ simpleperf record -a -g -c 1 \
 
 ### 进程异常退出监控
 
-AOSP 中有使用 eBPF 监控 signal 发送和接收的示例，通过追踪 `signal_generate` 事件来监控系统中的信号传递，帮助诊断进程被杀的原因。
+进程异常退出监控要把系统归因和内核排障分开：线上主线优先看 `ApplicationExitInfo`、lmkd 日志和 statsd 事件；需要内核侧细节时，再用 eBPF / perf_event 追踪 `signal:signal_generate`、`raw_syscalls:sys_enter/exit` 或 `kill` / `tgkill` 相关路径。Android 16 的 UprobeStats 里有 `MalwareSignal.c` 这类 uprobe 模板，但它不是通用的 `signal_generate` 监控工具，正文只能把这类方案写成自定义排障路径。
 
 [来源: Cubox/aosp15进程异常退出监控工具-ebpf监控signal的发送和接收-2025-12-25.md]
 
@@ -529,9 +529,9 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 ## 参考资料
 
 - AOSP eBPF 文档：https://source.android.com/docs/core/architecture/kernel/bpf
-- AOSP UprobeStats BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/UprobeStats/src/bpf_progs/
-- AOSP Connectivity BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/Connectivity/bpf/progs/
-- AOSP GPU memory BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:frameworks/native/services/gpuservice/bpfprogs/gpuMem.c
+- AOSP UprobeStats BPF 程序（android-16.0.0_r1）：https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-16.0.0_r1/src/bpf_progs/
+- AOSP Connectivity BPF 程序（android-16.0.0_r1）：https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-16.0.0_r1/bpf/progs/
+- AOSP GPU memory BPF 程序（android-16.0.0_r1）：https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/gpuservice/bpfprogs/gpuMem.c
 - Linux kernel sched_ext 文档：https://kernel.org/doc/html/latest/scheduler/sched-ext.html
 - sched-ext 项目：https://github.com/sched-ext/scx
 - Cubox/在 Android 中使用 eBPF：开篇-2022-06-12.md

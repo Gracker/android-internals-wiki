@@ -20,36 +20,38 @@ created_by: rendering-pipelines-merge
 created_date: 2026-04-09
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-26"
+reviewed_date: "2026-05-29"
 task6_result: "pass-light-edit"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-26"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-26T03:20:00+08:00"
+last_task9_at: "2026-05-29T08:20:00+08:00"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 last_task2b_lite_at: "2026-05-29"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-26 Task9 deep-review: needs-rework。P0：NDK OnBufferRelease 签名错误、OnComplete 示例残留不可编译尾巴；P1：API 29-35 与 API 36+ buffer 回收方案未拆分。"
+task9_review_notes: "2026-05-29 Task9 auto-fix: 修正 API 29-35 ASurfaceTransaction OnComplete/previous release fence 语义；previous release fence 只能回收被本次 transaction 替换的上一块 buffer，不能回收当前刚提交的 buffer。"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-14-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
-last_task6_at: "2026-05-26T05:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-26-05-review.md"
-task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1 禁用词/高频词扫描通过，outline 锚点覆盖 5/5；无新增 L1/L2 小修，无新增 Task6 回炉。既有 Task9 P0/P1 NDK SurfaceControl 回调签名与示例问题仍在 queue pending，保持 task2b_pending。"
-task9_p0_issues: 2
-task9_p1_issues: 1
+last_task9_review_log: "logs/deep-review/2026-05-29-08-deep-review.md"
+last_task6_at: "2026-05-29T08:16:26+08:00"
+last_task6_review_log: "logs/review/2026-05-29-08-review.md"
+task6_review_notes: "2026-05-29 08: Task6 revisiting review: pass-light-edit；L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
+task9_p0_issues: 1
+task9_p1_issues: 0
 task9_p2_issues: 0
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-task6_reviewed_date: "2026-05-26"
+task6_reviewed_date: "2026-05-29"
+task6_reviewed_by: "openclaw-task6"
+last_task9_autofix_at: "2026-05-29"
 ---
 # Hardware Buffer Renderer
 
@@ -187,6 +189,9 @@ AHardwareBuffer_allocate(&desc, &buffer);
 // 把 buffer 导入 EGL / OpenGL ES 或 Vulkan 作为 render target
 // 渲染完成后导出 acquire fence fd，再交给 ASurfaceTransaction
 int acquireFenceFd = -1;  // 由图形 API 的同步对象导出
+// API 29-35 回收上一块 buffer 时，需要调用方从自己的 buffer 池取出已提交过的 buffer。
+// 这里省略 buffer 池查找逻辑；没有上一块 buffer 时传 nullptr。
+AHardwareBuffer* previousBuffer = nullptr;
 
 ASurfaceTransaction* tx = ASurfaceTransaction_create();
 
@@ -213,29 +218,30 @@ auto onBufferRelease = [](void* context, int releaseFenceFd) {
 ASurfaceTransaction_setBufferWithRelease(tx, surfaceControl, buffer,
                                          acquireFenceFd, ctx, onBufferRelease);
 #else
-// API 29-35 方案：使用 setBuffer() + OnComplete + ASurfaceTransactionStats_getPreviousReleaseFenceFd
-// 注意：API 29-35 只有 setBuffer()，没有带 release 回调的版本
-// 但可以通过 OnComplete 获取 previous release fence 来实现 buffer 回收
-ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
-// ASurfaceTransaction_OnComplete 签名：void (*)(void* context, ASurfaceTransactionStats* stats)
+// API 29-35 方案：使用 setBuffer() + OnComplete 回收被本次 transaction 替换掉的上一块 buffer。
+// 注意：previous release fence 不属于当前刚提交的 buffer，当前 buffer 要等后续 transaction 替换它时再回收。
 struct OnCompleteContext {
-    AHardwareBuffer* buffer;
+    AHardwareBuffer* previousBuffer;
     ASurfaceControl* surfaceControl;
 };
-OnCompleteContext* octx = new OnCompleteContext{buffer, surfaceControl};
+OnCompleteContext* octx = new OnCompleteContext{previousBuffer, surfaceControl};
 
+ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
+// ASurfaceTransaction_OnComplete 签名：void (*)(void* context, ASurfaceTransactionStats* stats)
 auto onComplete = [](void* context, ASurfaceTransactionStats* stats) {
     OnCompleteContext* ctx = static_cast<OnCompleteContext*>(context);
 
-    // 从 transaction stats 获取指定 SurfaceControl 的 previous release fence
+    // 从 transaction stats 获取指定 SurfaceControl 的 previous release fence。
     int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(
             stats, ctx->surfaceControl);
 
-    if (prevReleaseFenceFd >= 0) {
-        sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
-        close(prevReleaseFenceFd);
+    if (ctx->previousBuffer != nullptr) {
+        if (prevReleaseFenceFd >= 0) {
+            sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
+            close(prevReleaseFenceFd);
+        }
+        AHardwareBuffer_release(ctx->previousBuffer);
     }
-    AHardwareBuffer_release(ctx->buffer);
     delete ctx;
 };
 ASurfaceTransaction_setOnComplete(tx, octx, onComplete);
@@ -252,7 +258,7 @@ NDK 侧的最小版本要分开记：
 - `ASurfaceTransaction_setBuffer()` 从 API 29 开始。
 - `ASurfaceTransaction_setBufferWithRelease()` 与 `ASurfaceTransaction_OnBufferRelease` 从 API 36 开始。[已验证: `android/surface_control.h`]
 
-Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnComplete()` 设置回调，回调签名直接传入 `ASurfaceTransactionStats*`（不需要 create/delete），再调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)` 取回指定 SurfaceControl 的 previous release fence。等待 fence signal 后即可安全回收上一块被替换的 buffer。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransaction_setOnComplete()` 与 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
+Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnComplete()` 设置回调，回调签名直接传入 `ASurfaceTransactionStats*`（不需要 create/delete），再调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)` 取回指定 SurfaceControl 的 previous release fence。这个 fence 只对应“被本次 transaction 替换或移除的上一块 buffer”，不能拿来回收本次刚提交的 buffer；本次 buffer 要等后续 transaction 替换它时，再从那次 OnComplete 中取 previous release fence。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransaction_setOnComplete()` 与 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
 
 不要把 acquire fence 当 release fence 用——前者表示 producer 写完，后者表示 consumer 不再占用。
 
