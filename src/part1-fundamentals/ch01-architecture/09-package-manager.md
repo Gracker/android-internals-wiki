@@ -66,11 +66,15 @@ task9_result: "pass-tech-review"
 last_task9_at: "2026-05-28T17:29:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 task2b_state: fixed
-last_task2b_at: "2026-05-28T16:50:00+08:00"
-last_task2b_by: "task2b-content-processing-rework-main"
-last_task2b_summary: "整合 Android 16 Cloud Compilation / SDM 回炉问题，删除参考资料后的源码调研补遗，修正 installd 版本断点。"
+last_task2b_at: "2026-05-30T11:36:00+08:00"
+last_task2b_by: "openclaw-task2b-lite"
+last_task2b_summary: "Task2B Lite: Added DeepResearch reference materials to sources section"
+last_task2b_lite_at: "2026-05-30"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T17:18:00+08:00"
@@ -598,6 +602,9 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 ## 参考资料
 ### 延伸调研
 - OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md`。对比 AOSP 标准安装链路与 vivo Turbo / 小米 HyperOS 厂商定制安装优化路径，包含编译过滤器决策表、`installd` 改造机制、云编译 `.dm` 集成方式及厂商差异化策略分析。
+- Android 16 installd Binder 化与 dexopt 链路：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-dexopt-chain-installd-service-binder.md`。详细分析 installd 从 Unix Domain Socket 切换到 Binder 服务的源码实现，包含 ServiceManager 注册机制、DexoptCommand 处理链和 dex2oat 子进程执行细节。
+- Android 16 云编译与 SDM 机制：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-cloud-compilation-sdm-mechanism.md`。深入分析 Play 侧云编译与设备端 SDM (Secure Dex Metadata) 产物管理的源码实现，包含 ART Service 产物管理体系和云端编译产物签名验证机制。
+- 厂商安装优化路径实机验证（vivo vs 小米）：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md`。对比 vivo Turbo 和小米 HyperOS 在编译过滤器选择、installd 扩展命令和云编译集成方面的差异化实现，包含实机验证数据和源码对比。
 
 
 ### AOSP 源码路径
