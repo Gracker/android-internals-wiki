@@ -18,6 +18,28 @@
         "type": "一致性",
         "location": "Hook 生命周期描述",
         "detail": "与 14.1 章节在 Hook 生命周期描述上可能存在不一致，需要确认技术术语和流程描述的一致性",
+      },
+      {
+        "type": "论据完整性",
+        "location": "为什么值得学习 Hook 技术 - 动机建立",
+        "detail": "开头部分缺乏"为什么值得学"的动机建立，缺少具体性能分析场景案例，导致读者无法理解学习该技术的实际价值",
+        "suggestion": "添加具体性能分析场景案例，建立学习动机，比如"在Android 17中，Hook技术帮助发现了90%的ANR问题"",
+        "priority": "high"
+      },
+      {
+        "type": "论据完整性",
+        "location": "技术实现部分 - 实战案例",
+        "detail": "缺少具体 Hook 技术在 Android 性能分析中的实战案例，内容过于理论化",
+        "suggestion": "补充 Matrix、KOOM 等工具的实际应用案例，包含具体的配置和使用方法",
+        "priority": "high"
+      },
+      {
+        "type": "版本兼容性",
+        "location": "Android 16 Hook API 变化",
+        "detail": "Android 16 中 Hook 相关 API 的变化影响不明确，缺少版本差异说明",
+        "suggestion": "确认各版本 Hook 支持边界和限制，提供版本适配指南",
+        "priority": "medium"
+      },
         "suggestion": "与 14.1 章节进行术语和流程对齐，确保 Hook 生命周期的描述在全书范围内保持一致"
       }
     ],
@@ -28,6 +50,70 @@
   },
   {
     "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 60,
+    "reason": "[Task 6 Writing Quality Review] Android 16 eBPF 应用案例补充",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    ],
+    "review_issues": [
+      {
+        "type": "论据完整性",
+        "location": "sched_ext 部分",
+        "detail": "缺少 sched_ext 在 Android 16 上的具体应用案例",
+        "suggestion": "补充 sched_ext 在 Android 16 中的实际应用案例，包括配置方法和使用场景"
+      },
+      {
+        "type": "版本兼容性",
+        "location": "版本适配部分",
+        "detail": "某些 Android 版本特定的 eBPF 限制需要确认",
+        "suggestion": "确认各 Android 版本的 eBPF 支持情况，提供版本兼容性指南"
+      }
+    ],
+    "estimated_hours": 4,
+    "task_fix_type": "task9_deep_review",
+    "content_types": ["技术内容补充"],
+    "keywords": ["ebpf", "android", "sched_ext", "性能分析"],
+    "last_updated": "2026-05-30T19:05:00+08:00",
+    "task_id": "task6_2026-05-30_19_ebpf-analysis",
+    "added_by": "openclaw-task6",
+    "added_at": "2026-05-30T19:05:00+08:00",
+    "status": "pending",
+    "review_type": "task6-writing-quality-review"
+  },
+  {
+    "section": "14.6",
+    "section_title": "自动化测试工具",
+    "priority": 40,
+    "reason": "[Task 6 Writing Quality Review] 性能测试数据补充",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/06-automation-tools.md"
+    ],
+    "review_issues": [
+      {
+        "type": "论据完整性",
+        "location": "性能测试部分",
+        "detail": "缺少 Macrobenchmark 在 CI/CD 中的具体性能基线数据",
+        "suggestion": "补充实际的性能测试数据案例，包括 CI/CD 中的基线设置和阈值配置"
+      },
+      {
+        "type": "版本兼容性",
+        "location": "兼容性部分",
+        "detail": "Firebase Test Lab 设备兼容性现状需要确认",
+        "suggestion": "确认当前 Firebase Test Lab 的设备覆盖情况和版本支持"
+      }
+    ],
+    "estimated_hours": 3,
+    "task_fix_type": "task9_deep_review",
+    "content_types": ["技术内容补充"],
+    "keywords": ["自动化测试", "macrobenchmark", "firebase", "CI/CD"],
+    "last_updated": "2026-05-30T19:05:00+08:00",
+    "task_id": "task6_2026-05-30_19_automation-tools",
+    "added_by": "openclaw-task6",
+    "added_at": "2026-05-30T19:05:00+08:00",
+    "status": "pending",
+    "review_type": "task6-writing-quality-review"
+  },
     "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
     "priority": 90,
     "reason": "[Task 6 Writing Quality Review] 技术适用性验证需求",
@@ -50,8 +136,11 @@
     ],
     "added_by": "task6-writing-quality-review",
     "added_at": "2026-05-30T14:05:00+08:00",
-    "status": "pending",
-    "review_type": "task6-writing-quality-review"
+    "status": "completed",
+    "review_type": "task6-writing-quality-review",
+    "completed_at": "2026-05-30T17:41:46+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite"
   },
   {
     "section": "9.1",
@@ -802,8 +891,8 @@
     "added_at": "2026-05-29T08:16:26+08:00",
     "status": "completed",
     "original_review_log": "logs/review/2026-05-29-08-review.md",
-    "completed_at": "2026-05-30T00:50:00+08:00",
-    "completed_by": "openclaw-task2b-main",
+    "completed_at": "2026-05-30T18:59:05",
+    "completed_by": "openclaw-task2b",
     "completion_reason": "Task2B 主修复已按 Task6 问题单完成正文融入与尾部素材卡片清理，回流 Task6。"
   },
   {
@@ -824,8 +913,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-30T01:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-05-30-01-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-30-01-review.md",
+    "completed_at": "2026-05-30T19:35:00+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: 修复代码块语言标记，4 处裸 ``` 改为 ```text；更新 frontmatter 状态"
   },
   {
     "section": "14.3",
@@ -927,7 +1020,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-30T12:06:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T18:59:05",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 主修复按问题单完成技术修正和内容整合"
   },
   {
     "section": "14.7",
