@@ -350,7 +350,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-27T06:40:04.480543",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T09:39:51+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: Added DeepResearch reference materials to sources section"
   },
   {
     "section": "ch04",
@@ -370,7 +374,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-27T06:40:04.480543",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T09:39:51+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: Added DeepResearch reference materials to sources section"
   },
   {
     "section": "5.9",
@@ -581,7 +589,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-28T06:21:13.783499+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T09:39:51+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: Added DeepResearch reference materials to sources section"
   },
   {
     "section": "1.9",
@@ -648,7 +660,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-29T06:17:02.414991+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T09:39:51+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: Added DeepResearch reference materials to references section"
   },
   {
     "section": "1.9",

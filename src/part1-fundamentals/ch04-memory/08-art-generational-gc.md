@@ -2,11 +2,17 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP main (art/runtime/gc) + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
+last_task2b_lite_at: "2026-05-30"
 confidence: medium
 sources:
 - type: official
@@ -775,4 +781,6 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md`
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md`
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android16-17-generational-collector-cmc-memory-management.md`
 
