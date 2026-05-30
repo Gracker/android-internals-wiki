@@ -1,5 +1,59 @@
 [
   {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 90,
+    "reason": "[Task 6 Writing Quality Review] 技术论据补充需求",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+    ],
+    "review_issues": [
+      {
+        "type": "论据完整性",
+        "location": "Hook 在 Android 17 中的实际 Trace 表现描述",
+        "detail": "缺少对 Hook 在 Android 17 环境中的实际性能影响和 Trace 数据的具体描述，影响读者理解如何在实际场景中应用",
+        "suggestion": "补充 Android 17 环境下的 Hook Trace 实际表现数据，包括性能开销和常见问题的 Trace 分析实例"
+      },
+      {
+        "type": "一致性",
+        "location": "Hook 生命周期描述",
+        "detail": "与 14.1 章节在 Hook 生命周期描述上可能存在不一致，需要确认技术术语和流程描述的一致性",
+        "suggestion": "与 14.1 章节进行术语和流程对齐，确保 Hook 生命周期的描述在全书范围内保持一致"
+      }
+    ],
+    "added_by": "task6-writing-quality-review",
+    "added_at": "2026-05-30T14:05:00+08:00",
+    "status": "pending",
+    "review_type": "task6-writing-quality-review"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 90,
+    "reason": "[Task 6 Writing Quality Review] 技术适用性验证需求",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本适应性",
+        "location": "eBPF 性能数字验证",
+        "detail": "文中引用的性能数据需要确认在 Android 17 环境下的适用性，是否仍符合当前系统的实际情况",
+        "suggestion": "验证并更新 eBPF 在 Android 17 环境中的性能数字，必要时注明适用条件和边界"
+      },
+      {
+        "type": "内容一致性",
+        "location": "GC 监控",
+        "detail": "与 4.8 ART 分代垃圾回收章节在 GC 监控方面可能存在术语或方法上的不一致",
+        "suggestion": "确保与 4.8 章节在 GC 监控的术语和方法保持一致，避免给读者造成困惑"
+      }
+    ],
+    "added_by": "task6-writing-quality-review",
+    "added_at": "2026-05-30T14:05:00+08:00",
+    "status": "pending",
+    "review_type": "task6-writing-quality-review"
+  },
+  {
     "section": "9.1",
     "section_title": "ANR 设计思想",
     "priority": 85,
@@ -791,7 +845,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-30T09:26:16.986966",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "Android 17 源码引用边界已修正，适用版本确认支持 Android 17，libmeminfo/malloc_debug/malloc_hooks 在 Android 17 中保持稳定"
   },
   {
     "section": "14.7",
@@ -811,6 +866,107 @@
     ],
     "added_by": "task9-deep-tech-review-audit",
     "added_at": "2026-05-30T10:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 75,
+    "reason": "[Task6 Review] 源码锚点未明确标注未进入 Android 17",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本边界",
+        "location": "sched-ext OEM 调度器描述",
+        "detail": "文中提及\"具体 OEM 调度器名称、函数名和量化收益写成确定结论\"，但缺乏 AOSP 或官方资料支持，无法验证是否已进入 Android 17",
+        "suggestion": "补充源码引用或明确标注\"未进入 Android 17\"，避免使用确定结论表述"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-30T12:06:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 85,
+    "reason": "修复 CPU 利用率精准计算部分的数据支撑问题，补充具体性能提升数据来源，改为更保守的描述方式",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    ],
+    "review_issues": [
+      {
+        "type": "数据支撑",
+        "location": "CPU 利用率精准计算部分",
+        "detail": "文中提到\"Tick 级精度可能把 2-3 帧的 CPU 时间混在一起，而 eBPF 可以精确区分每一帧的 CPU 使用量\"，但具体性能提升数字未明确标注来源",
+        "suggestion": "补充基准测试数据来源，或改为相对保守的描述方式"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-30T12:06:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-05-30T12:50:00+08:00"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 80,
+    "reason": "[Task6 Review] 缺少作者实践痕迹",
+    "material_paths": [
+      "src/part3-tools/ch14-other-tools/04-dumpsys.md"
+    ],
+    "review_issues": [
+      {
+        "type": "活人感",
+        "location": "整体内容",
+        "detail": "章节结构完整但缺少真实调试经验痕迹，如\"在实际工作中我发现\"或\"排查某次 ANR 时我用这个命令发现\"等个人实践验证的表述",
+        "suggestion": "补充 1-2 个真实调试案例，展示 dumpsys 在实际问题排查中的使用过程和发现"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-30T12:06:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.7",
+    "section_title": "ProfilingManager",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FLUSH_FULL 枚举值错误提及",
+    "material_paths": [
+      "logs/deep-review/2026-05-30-16-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "BufferFillPolicy 枚举表说明",
+        "detail": "章节明确说明 FLUSH_FULL 不在公开 API 中，但文中仍提及 FLUSH_FULL 2 次，与章节自身说明矛盾",
+        "suggestion": "删除所有对 FLUSH_FULL 的提及，确保与实际 AndroidX API 一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-30T16:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.6",
+    "section_title": "自动化测试工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] am instrument 参数错误",
+    "material_paths": [
+      "logs/deep-review/2026-05-30-16-deep-review-2.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/API签名错误",
+        "location": "am instrument 参数示例",
+        "detail": "文中提到 `-e androidLogResults` 参数，但在 AndroidX Benchmark 中不存在此参数，正确的应该是 `-e androidx.benchmark.output.enable`",
+        "suggestion": "修正 am instrument 参数示例，使用正确的 AndroidX Benchmark 参数名称"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-30T16:25:00+08:00",
     "status": "pending"
   }
 ]
