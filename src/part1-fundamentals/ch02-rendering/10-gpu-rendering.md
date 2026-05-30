@@ -46,8 +46,13 @@ polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: needs-rework
+task6_state: revisiting
+task6_result: pass-light-edit
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: task6_pending
+last_task2b_lite_at: '2026-05-30'
 task9_state: reviewed
 task2b_state: pending
 task2b_result: pending
@@ -455,8 +460,9 @@ Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface
 理解这个层次结构有一个关键前提：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，所谓 "GPU 内存" 没有独立的物理存储；它来自系统内存，只是带有特定对齐和访问属性。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
-// frameworks/base/core/java/android/graphics/GraphicBuffer.java
-// @ AOSP android-16.0.0_r1
+// frameworks/native/libs/ui/include/ui/GraphicBuffer.h
+// @ AOSP android-16.0.0_r1  
+// C++ 头文件定义（GraphicBuffer 实为 C++ 类，Java 层仅为 JNI 包装器）
 // [简化示意] 实际类比这更复杂，这里只展示与内存排查相关的核心结构
 public class GraphicBuffer implements Parcelable {
     // Java 侧缓存的基本属性
