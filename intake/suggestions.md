@@ -23,3 +23,25 @@
 - **问题**：表述过于模板化，缺乏个人视角
 - **建议**：重写为更具个人经验的表述方式
 - **review 日志**：logs/review/2026-05-30-22-review.md
+
+## [Task9 Deep Review] 18.13 WebView 渲染管线 — 2026-05-31
+
+- **类型**：数据缺失
+- **位置**：SurfaceControl 子 Surface 性能特征部分
+- **问题**："网页重绘压力会更容易和App UI预算分开观察" 缺少性能对比数据
+- **建议**：补充独立 SurfaceControl vs Functor 路径的内存占用、帧率稳定性、GPU 负载对比数据
+
+- **类型**：数据缺失
+- **位置**：第三方 Texture-like 实现部分
+- **问题**："宿主侧会多一次纹理采样，开销是否可接受取决于实现" 缺少量化分析
+- **建议**：在典型设备上测试 TextureView 路径 vs Functor 路径的帧率影响
+
+- **类型**：数据缺失
+- **位置**：独立 SurfaceControl vs Functor 路径性能比较
+- **问题**：缺少独立 SurfaceControl vs Functor 路径的性能基准数据
+- **建议**：在主流设备上补充两种路径的典型性能数据对比
+
+- **类型**：交叉引用不完整
+- **位置**：引用 SurfaceControl API 深入章节
+- **问题**：引用"§18.10 SurfaceControl API 深入"但未说明具体要查看哪些 Transaction 和 fence 细节
+- **建议**：明确说明在 §18.10 中需要查看的关键技术点
