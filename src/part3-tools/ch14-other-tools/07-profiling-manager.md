@@ -3,7 +3,7 @@ title: "ProfilingManager"
 chapter: "14.7"
 section: "14.7"
 section_title: "ProfilingManager"
-status: ready-for-review
+status: finalized
 updated_by: "openclaw-task6"
 updated_date: "2026-05-30"
 task6_result: "pass-light-edit"
@@ -40,11 +40,13 @@ related_chapters:
 pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-30
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: "2026-05-30T15:35:00+08:00"
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-18T15:23:37+08:00"
@@ -61,7 +63,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 # 14.7 ProfilingManager
 
-ProfilingManager 解决的是量产设备上"问题发生时没有开工具"的空档。Android 15 起,应用可以主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 及后续 extension/API 版本再把系统事件触发补齐。把显式请求、trigger 版本边界、结果回传拆开看,线上取证流程才不会写乱。
+ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 及后续 extension/API 版本补齐系统事件触发。拆开显式请求、trigger 版本边界、结果回传三个环节,线上取证流程才不会写乱。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -90,7 +92,7 @@ ProfilingManager 解决的是量产设备上"问题发生时没有开工具"的�
 | `HeapProfileRequestBuilder` | 内存为什么一直涨、哪类分配最密 | heap profile trace | `durationMs`、`samplingIntervalBytes`、`bufferSizeKb` | 直接确认 GC root |
 | `StackSamplingRequestBuilder` | CPU 时间主要花在哪段调用栈 | stack samples trace | `durationMs`、`samplingFrequencyHz`、`bufferSizeKb` | 看完整系统时间线 |
 
-这张表最好配合排障问题来用。线程时序问题先去 `System Trace`,对象关系问题直接 `Java Heap Dump`,还没确认是哪类分配在涨时先上 `Heap Profile`,想用较低成本拉长 CPU 观察窗口时再选 `Stack Sampling`。
+这张表配合排障问题使用。线程时序问题先去 `System Trace`,对象关系问题直接 `Java Heap Dump`,分配源头不明时先用 `Heap Profile`,成本敏感场景选 `Stack Sampling`。
 
 ## 显式请求的公共骨架
 
@@ -111,7 +113,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这套接口把三件事拆开了。请求对象只描述采什么、采多久,平台负责执行、限流、落盘和脱敏,应用在 listener 里做归档。这样调用线程不会被一次长 trace 挂住,四种请求也能共用同一套结果处理。
+这套接口把三件事拆开。请求对象只描述采集内容、时长,平台负责执行、限流、脱敏和落盘,应用在 listener 里做归档。调用线程不会被长 trace 挂住,四种请求共用同一套结果处理。
 
 四个 builder 的共同字段主要来自 `ProfilingRequestBuilder`:
 
@@ -131,7 +133,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 ## 结果通道别按"显式请求"和"trigger"硬切开
 
-平台文档把 listener 分成 request-specific listener 和 global listener 两层,但 global listener 不是只给 trigger 用。`registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果。只要应用同时注册了 global listener,一次显式请求也会额外命中它。
+平台文档把 listener 分成 request-specific listener 和 global listener 两层,但 global listener 不只给 trigger 用。`registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果。应用同时注册 global listener 时,一次显式请求也会额外命中它。
 
 | 场景 | request-specific listener | global listener | `triggerType` | 归档建议 |
 |---|---|---|---|---|
@@ -139,7 +141,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | `Profiling.requestProfiling(...)`,已注册 global listener | 会收到 | 也会收到同一结果 | `TRIGGER_TYPE_NONE` | callback 只做 case 状态更新,global listener 负责真正落库 |
 | `addProfilingTriggers(...)` 注册的 system-triggered profiling | 收不到 | 会收到 | 具体 trigger 常量 | global listener 按 `triggerType` 分发到冷启动、ANR、OOM 各自流程 |
 
-同时注册两层 listener 时,去重主键优先用 `resultFilePath`。失败结果没有文件时,再用 `triggerType + tag + errorCode + caseId` 兜底。这样显式请求和 trigger 结果可以走同一条归档流程,不会出现双写同一份 artifact 的情况。
+同时注册两层 listener 时,去重主键优先用 `resultFilePath`。失败结果没有文件时,用 `triggerType + tag + errorCode + caseId` 兜底。这样显式请求和 trigger 结果走同一条归档流程,不会出现双写同一份 artifact。
 
 ## 结果文件的权限、隐私和合规
 

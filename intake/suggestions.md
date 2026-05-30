@@ -6,8 +6,22 @@
 - **问题**：未提及多用户设备上应用安装的用户维度隔离实现细节（Android 多用户机制下的应用数据目录管理和权限隔离）
 - **建议**：补充说明 Android 多用户环境下，应用数据目录如何按用户隔离、`IInstalld` 如何处理用户维度数据准备、以及多用户对安装性能的影响
 
+- **类型**：知识盲区
+- **位置**：ProfilingManager工具协作边界
+- **问题**：缺少ProfilingManager与Systrace、perfetto等底层工具的深度集成边界讨论
+- **建议**：补充ProfilingManager与系统级trace工具的协作边界、触发时机优先级、资源分配策略以及复用机制的深入讨论
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-05-30
 - **类型**：数据缺失
-- **位置**：dex2oat 编译性能分析章节
+- **位置**：生产环境基准数据章节
+- **问题**：缺少实际线上场景的Profiling性能数据、故障案例和参数优化基准
+- **建议**：补充实际生产环境中的Profiling性能开销数据、buffer size和采样频率的优化基准、以及典型故障场景的分析案例
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-05-30
+- **类型**：版本差异
+- **位置**：OEM兼容性讨论
+- **问题**：未涵盖不同厂商Android实现的Profiling行为差异和适配策略
+- **建议**：补充主流OEM（小米、华为、OPPO等）对Profiling模块的实现差异、配置参数差异以及兼容性适配策略
 - **问题**：缺少不同编译级别在不同设备配置下的基准数据（如 verify/speed-profile/speed 在不同核心数/内存配置下的编译时间对比）
 - **建议**：补充 concrete benchmark 数据，帮助读者理解编译选择的实际性能权衡
 
