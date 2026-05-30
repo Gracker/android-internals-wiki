@@ -54,10 +54,12 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
 related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-05-31"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
@@ -219,7 +221,7 @@ android {
 
 ## WakeLock 泄漏导致的电量投诉治理
 
-WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计后台或前台服务中持有的 wake lock，并且对音频、定位、JobScheduler 用户发起 API 等场景有豁免。 [已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock] [已验证: 官方文档, developer.android.com/topic/performance/vitals/stuck-wakelock]
+WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值，以及 24 小时内累计 ≥2h 的持续持锁；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。 [已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock] [已验证: 官方文档, developer.android.com/topic/performance/vitals/stuck-wakelock]
 
 治理从 Play Console 或本地复现都能开始，但两个入口的侧重点不同。
 
