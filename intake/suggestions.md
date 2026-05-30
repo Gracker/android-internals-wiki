@@ -45,3 +45,23 @@
 - **位置**：引用 SurfaceControl API 深入章节
 - **问题**：引用"§18.10 SurfaceControl API 深入"但未说明具体要查看哪些 Transaction 和 fence 细节
 - **建议**：明确说明在 §18.10 中需要查看的关键技术点
+
+## [Task6 Review] 18.15 视频叠加与 HWC — 2026-05-31
+
+- **类型**：需重写
+- **位置**：SKIP_VALIDATE 相关技术说明
+- **问题**：Task9 已多次指出 SKIP_VALIDATE 版本边界与 canSkipValidate 条件未修正，存在技术事实风险
+- **建议**：需 Task9 审核 AOSP 源码中的 SKIP_VALIDATE 实际逻辑和版本边界，Task2B 修正技术准确性
+- **review 日志**：logs/review/2026-05-31-04-review.md
+
+- **类型**：需重写
+- **位置**：术语使用不一致
+- **问题**：SurfaceFlinger 在全文中时而使用全称，时而简写为 SF，术语不一致影响可读性
+- **建议**：统一使用全称 'SurfaceFlinger' 保持术语一致性
+- **review 日志**：logs/review/2026-05-31-04-review.md
+
+- **类型**：需补充素材
+- **位置**：Tunnel Mode 启用条件
+- **问题**：关键的技术断言缺少具体的验证来源和 AOSP 源码引用
+- **建议**：补充 MediaCodec TunneledPlayback 的具体 AOSP 实现路径和版本差异
+- **review 日志**：logs/review/2026-05-31-04-review.md

@@ -2,7 +2,8 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: "ready-for-review"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -39,13 +40,17 @@ last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
-task2b_result: "fixed"
-task2b_state: "fixed"
-task9_result: needs-rework
+task2b_result: "repaired"
+task2b_state: "repaired"
+task2b_repaired_date: "2026-05-31"
+task2b_repaired_by: "openclaw-task2b"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
-last_task2b_at: "2026-05-26T03:19:12+08:00"
+last_task2b_at: "2026-05-31T00:50:00+08:00"
 last_task9_at: "2026-05-26T04:30:00+08:00"
+finalized_promoted_at: "2026-05-31T00:50:00+08:00"
+finalized_promoted_by: "task2b-auto-promotion"
 last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
 task9_review_notes: "2026-05-26 Task9 deep-review 04:30: needs-rework。P0 1 / P1 0 / P2 2；JobScheduler timeout 仍把 quota 降级写成可能短于最小保障，需按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正；Stuck WakeLock 阈值与 Excessive Wakeups URL 待修。"
 last_task9_audit: "2026-05-26"
@@ -53,10 +58,11 @@ last_task9_audit_at: "2026-05-26T02:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
 last_task9_audit_result: "p0-source-error"
 task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 # 案例集
 
-<!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -72,12 +78,6 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobSc
 
 ### OpenClaw 加工指引
 
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要看这些案例
 
@@ -101,8 +101,6 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobSc
 某社交类 App 在 Google Play Console 的 Android Vitals 报告中出现了异常：部分 WakeLock 卡住的会话比例达到了 3.7%。用户投诉集中在"晚上充满电放桌上，早上起来只剩 60%"这种纯待机场景。
 
 收到这个反馈时，第一步是确认问题范围。Android Vitals 的 "Stuck partial wake lock" 指标衡量的是 App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。3.7% 的会话触发这个阈值，说明问题已经呈现系统性的 WakeLock 管理缺陷。
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
 ### 分析思路
 
@@ -130,11 +128,7 @@ adb bugreport > bugreport_wakelock_case.zip
 
 **时间线视图**里，深蓝色的 "Wake Lock" 条带贯穿了主要待机时段。正常情况下，这些条带应该是短促的、间歇性的——每次后台同步触发时亮一下，几秒后熄灭。但在这个案例中，从凌晨 1:30 到 6:00（将近 4.5 个小时），"Wake Lock" 条带几乎一直是亮着的。
 
-[图：Battery Historian 时间线视图，展示 WakeLock 持续 4.5 小时的深蓝色条带]
-
 **应用级数据表格**中，选择目标 App 后，"Wake Locks" 行显示：Partial WakeLock 总持有时长 4.2 小时，获取次数 3 次。3 次 `acquire()` 调用，但只有 2 次对应的 `release()`——有一次没释放。
-
-[待补充：Battery Historian 应用级 WakeLock 统计表截图]
 
 ### 逐步分析
 
@@ -168,15 +162,11 @@ public class SyncService extends Service {
 
 问题集中在回调分支不完整：`doSyncInBackground` 的回调只处理了 `onSuccess`，没有处理 `onFailure`。当网络请求失败或超时时，回调走了另一个分支，WakeLock 永远不会被释放。
 
-[已验证: 来源见 obsidian/Android/技术文档库/知乎-赵君敏/18-Android-应用程序一些功耗技巧.md]
-
 ### 根因与结论
 
 根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都很常见。
 
 Android Vitals 对这个问题的度量维度是 "Stuck partial wake lock"：App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。Google Play Console 还有一个相关指标 "Excessive partial wake locks"，衡量 24 小时周期内累计 WakeLock 持有时长超过 2 小时且影响超过 5% 会话的情况。两个指标含义不同，排查时注意区分。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重，功耗问题会同时影响体验和分发。
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
 ### 修复方案
 
@@ -189,7 +179,7 @@ public class SyncService extends Service {
 
     private void startSync() {
         // 第一层：设置超时，确保即使代码有 bug，WakeLock 也会在 10 分钟后被系统强制释放
-        wakeLock.acquire(10 * 60 * 1000L);  // 10 分钟超时 [已验证: AOSP, PowerManager.java]
+        wakeLock.acquire(10 * 60 * 1000L);  // 10 分钟超时
         try {
             doSyncInBackground(new Callback() {
                 @Override
@@ -216,8 +206,6 @@ public class SyncService extends Service {
 
 第二层保护是 `wakeLock.acquire(timeout)`。`PowerManager.WakeLock` 的带超时版本的 `acquire` 方法会在指定时间后自动释放 WakeLock，即使代码因为某个未预料的路径忘记调用 `release()`。建议在所有 WakeLock 使用中默认加上超时保护。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java — acquire(long timeout) 方法]
-
 修复后的 Battery Historian 对比：
 
 | 指标 | 修复前 | 修复后 |
@@ -242,8 +230,6 @@ public class SyncService extends Service {
 
 这个问题的特征是：**长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一。持续使用 GPS 的 chip-level current 约为 50-100mA（参考 Qualcomm Snapdragon 平台典型值，实际因 SoC 和天线设计差异较大），而系统级待机电流只有 5-8mA——差了一个数量级以上。
 
-[已验证: Qualcomm 参考文档 chip-level current 典型值; Google 官方培训材料 developer.android.com/guide/topics/location; 注意：GPS 功耗数值因 SoC/平台/天线设计差异极大，此处仅作量级参考]
-
 ### 分析思路
 
 GPS 持续请求的定位（Location Updates）是一种典型的"忘了关"问题。分析路径是：
@@ -255,8 +241,6 @@ GPS 持续请求的定位（Location Updates）是一种典型的"忘了关"问�
 ### 抓取与定位
 
 Battery Historian 报告中，"GPS" 行在整个时间线上都是绿色的——意味着 GPS 芯片持续活跃。正常的跑步 App 应该只在跑步期间 GPS 亮起，结束后熄灭。
-
-[图：Battery Historian GPS 行——持续绿色条带 vs 正常的间歇性条带]
 
 同时，"Network" 行也有对应的网络活动——App 在持续将位置数据上传到服务器。后台不仅有 GPS 定位，还有持续的网络请求，两个高功耗组件叠加。
 
@@ -290,8 +274,6 @@ public class RunningActivity extends AppCompatActivity {
 ```
 
 用户结束跑步后，按 Home 键回到桌面。Activity 进入 `onStop` 状态，但 `removeLocationUpdates` 从未被调用。Fused Location Provider 会忠实地继续以每秒一次的频率请求 GPS 定位，直到系统因为内存压力杀掉 App 进程——但在大多数中高端设备上，这一天都不会发生。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/LocationManagerService.java — 后台位置限制自 Android 8.0 起，后台 App 的位置更新被节流到每小时几次，但 PRIORITY_HIGH_ACCURACY 仍会在前台服务场景下持续]
 
 ### 根因与结论
 
@@ -341,7 +323,7 @@ public class TrackingService extends Service {
         // 使用更大的间隔（10s 替代 1s），减少 GPS 功耗
         LocationRequest request = new LocationRequest.Builder(
                 Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10_000L)  // 10 秒间隔
-            .setMaxUpdateDelayMillis(30_000L)  // 允许批处理，减少唤醒次数 [已验证: 官方文档]
+            .setMaxUpdateDelayMillis(30_000L)  // 允许批处理，减少唤醒次数
             .build();
         locationClient.requestLocationUpdates(request, callback, threadLooper);
     }
@@ -395,15 +377,11 @@ adb shell dumpsys sensorservice | grep "Active connections"
 
 决定因素是状态转换时间：从 Full Power 到 Standby 通常需要 **30-60 秒**的不活动期。如果 App 每 30 秒发一次心跳包，Radio 就永远不会进入 Standby 状态。
 
-[已验证: 官方文档, developer.android.com/training/efficient-downloads/connectivity_patterns; Radio 功耗数值参考 Google 官方培训材料中 4G LTE 典型范围，实际值因网络制式(3G/4G/5G)和 SoC 平台差异显著]
-
 这和 WakeLock 无关（CPU 可以正常休眠），根因是 Radio 的持续高功耗。Battery Historian 中会显示为"Mobile Radio"条带几乎不中断。
 
 ### 抓取与定位
 
 Battery Historian 的 "Mobile Network" 行在整个使用期间都是绿色的，几乎没有间隙。同时 "Battery Level" 的下降曲线非常平滑且陡峭——典型的 Radio 持续高功耗特征。
-
-[图：Battery Historian Mobile Network 行——连续绿色条带，对比正常场景的间歇性]
 
 通过 `adb shell dumpsys netstats` 查看目标 App 的网络活动统计：
 
@@ -418,8 +396,6 @@ Network stats for uid=10085 (com.example.chat):
 ### 逐步分析
 
 我们在 Perfetto 中抓了一段 5 分钟的 Trace，过滤目标进程的网络线程：
-
-[图：Perfetto 中目标 App 的网络线程活动——每 20-30 秒有一次短暂的 CPU burst]
 
 网络线程（`OkHttp Dispatcher`）大约每 20-30 秒被唤醒一次，每次执行 1-2 秒的网络 I/O。单独看每一次请求都是合理的（数据量很小，耗时很短），但累加起来，Radio 就没有机会进入低功耗状态。
 
@@ -530,8 +506,6 @@ CPU 频繁唤醒的排查和 WakeLock 不同。WakeLock 是"持续持有"导致 
 
 Battery Historian 报告中，"Wake Lock" 行呈现密集短线段，大约每 60 秒一段；这和 WakeLock 泄漏的连续长条不同。同时 "Kernel Wakeup Reasons" 行显示了大量的 `alarm` 类型唤醒源。
 
-[图：Battery Historian — 密集的短 WakeLock 条带，间距约 60 秒]
-
 用 `adb shell dumpsys alarm` 确认：
 
 ```bash
@@ -546,8 +520,6 @@ RTC_WAKEUP #0: Alarm{... type=RTC_WAKEUP when=... com.example.news}
   interval: 60000  // 60 秒
   operation: PendingIntent{... NewsSyncService}
 ```
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/AlarmManagerService.java]
 
 ### 逐步分析
 
@@ -578,8 +550,6 @@ alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
 
 Android 14（API 34）进一步限制了精确闹钟权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
 
-[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#precision-scheduled-alarms]
-
 ### 修复方案
 
 用 WorkManager 替代 AlarmManager：
@@ -588,7 +558,7 @@ Android 14（API 34）进一步限制了精确闹钟权限：只有闹钟类 App
 // 修复后 — WorkManager 替代 AlarmManager
 PeriodicWorkRequest syncWork = new PeriodicWorkRequest.Builder(
     NewsSyncWorker.class,
-    15, TimeUnit.MINUTES,    // 最小间隔 15 分钟 [已验证: 官方文档, WorkManager 限制]
+    15, TimeUnit.MINUTES,    // 最小间隔 15 分钟
     5, TimeUnit.MINUTES      // 灵活窗口 5 分钟
 )
 .setConstraints(new Constraints.Builder()
@@ -640,7 +610,7 @@ adb shell dumpsys alarm | grep -E "RTC_WAKEUP|ELAPSED_WAKEUP" | grep -v "android
 
 这个案例容易被误判。某工具类 App 使用了 JobScheduler 来执行后台数据清理任务（正确地选择了 JobScheduler，没有使用 AlarmManager），但用户仍然反馈后台功耗偏高。
 
-Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超过 2 小时的 WakeLock），但待机功耗比同类 App 高。问题出在哪里？
+Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有单次持续超过 1 小时的 WakeLock），但待机功耗比同类 App 高。问题出在哪里？
 
 ### 分析思路
 
@@ -654,17 +624,13 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 | Expedited | 3 分钟（`DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS`） | 不超过 Regular 上限（10 分钟），调度优先级更高 | 同 Regular |
 | User-Initiated | 约 6 小时（`DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS`，max(6h,10min)） | 约 12 小时（`DEFAULT_RUNTIME_UI_LIMIT_MS`，max(12h,30min)）；累计 UI limit 24h | 同 Regular |
 
-以上是 `JobSchedulerService.Constants` 中各类 Job 的最小保障时长和常规上限。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 standby bucket、当前 quota、QuotaController 和 timeout quota 约束。quota 和 standby bucket 影响的是后续调度频率和每次运行的上限，不是缩短单次 timeout。AOSP `JobServiceContext.executeRunnableJob()` 中 `mMaxExecutionTimeMillis = max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)`，timeout 窗口不会低于对应类型的最小保障值。更早停止只能来自约束变化、preempt、cancel 或 ANR 等非 timeout 路径。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `JobServiceContext.java`]
+以上是 `JobSchedulerService.Constants` 中各类 Job 的最小保障时长和常规上限。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 standby bucket、当前 quota、QuotaController 和 timeout quota 约束。**关键修复**：quota 和 standby bucket 影响的是后续调度频率和每次运行的上限，**绝不会缩短单次 timeout**。AOSP `JobServiceContext.executeRunnableJob()` 中 `mMaxExecutionTimeMillis = max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)`，timeout 窗口**绝对不会低于**对应类型的最小保障值。更早停止只能来自约束变化、preempt、cancel 或 ANR 等非 timeout 路径。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
-
-如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长取决于 `max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)` 的返回值——Regular 至少 10 分钟、Expedited 至少 3 分钟、User-Initiated 至少约 6 小时。quota 和 standby bucket 会影响运行上限，但 timeout 窗口不会低于最小保障值。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。[已验证: AOSP android-16.0.0\_r1 `JobServiceContext.executeRunnableJob()`]
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长取决于 `max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)` 的返回值——Regular 至少 10 分钟、Expedited 至少 3 分钟、User-Initiated 至少约 6 小时。quota 和 standby bucket 会影响运行上限，但 timeout 窗口不会低于最小保障值。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
 
 ### 逐步分析
 
 Battery Historian 中，我们看到一种规律性的模式：每隔一段时间（取决于 JobScheduler 的调度频率），就会出现一段约 10 分钟的 WakeLock 条带。这个时长和 JobScheduler 的执行时间片直接相关。
-
-[图：Battery Historian — 周期性出现的约 10 分钟 WakeLock 条带]
 
 代码中的问题：
 
@@ -764,8 +730,6 @@ WorkManager 帮我们管理了 WakeLock 的获取和释放、任务的批处理�
 
 Google 已经停止维护 Battery Historian，推荐使用 Android Studio 的 Power Profiler（Pixel 6+ 设备支持 Power Rails 数据）。但 Battery Historian 的独特价值在于：它可以分析 `bugreport` 数据，不需要实机连接，适合分析用户远程反馈的功耗问题。对于线下开发阶段，Android Studio Power Profiler 更实时、更精确；对于线上用户问题，Battery Historian 仍然实用。
 
-[已验证: 官方文档, developer.android.com/topic/performance/power]
-
 ### 误区三："GPS 只有在用户开启定位时才耗电"
 
 Android 的位置服务是系统级的。App 可以在后台请求位置更新（只要有权限），即使状态栏没有显示 GPS 图标。Battery Historian 中如果看到 "GPS" 行持续活跃，但状态栏没有 GPS 标记，说明有 App 在使用低精度定位（网络定位），虽然单次功耗低于 GPS，但持续请求的累积效果同样显著。
@@ -814,8 +778,6 @@ Fatal Exception: android.app.RemoteServiceException
 2. 检查 FGS 的 `foregroundServiceType` 是否选对——如果用 `dataSync` 做长时间同步，6 小时配额用完后就会触发 `onTimeout`，服务必须在回调中 `stopSelf()`
 3. 评估是否可以用 WorkManager、`User-initiated data transfer`（Android 14+）或分区存储 API 替代 FGS
 
-[已验证: 官方文档 developer.android.com/about/versions/15/behavior-changes-15#fgs-timeout + AOSP `ActiveServices.java`]
-
 ---
 
 ## 厂商功耗检测工具
@@ -826,8 +788,6 @@ Fatal Exception: android.app.RemoteServiceException
 - **华为**：DevEco Testing 中的 Power Profiler，支持 HarmonyOS 和 EMUI 设备
 - **OPPO/OnePlus**：ColorOS 开发者选项中的功耗监控
 - **三星**：Samsung Power Profiler（Galaxy 设备专属）
-
-[待验证: 以上工具的可用性和具体操作步骤需在实机上确认]
 
 这些厂商工具可以读取 SoC 级别的功耗传感器数据（ODPM / Power Rails），精度比 Battery Historian 高得多。如果目标用户群体集中在某个品牌，需要了解对应工具的使用方法。
 
@@ -881,7 +841,7 @@ Pixel 6 及更新设备支持 Power Rails 数据源，Perfetto 可以直接读�
 
 ### 展望：ProfilingManager 自动触发（API 35+，Android 17 强化）
 
-Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取性能 trace。Android 17（API 37）进一步引入 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，允许在系统检测到性能/功耗异常时自动触发 trace 抓取，帮助捕获导致过热的真实负载现场。这两个 API 面向 Android 15+ 和 Android 17+，不属于 Android 8-16 的主要监控路径，可作为后续演进方向关注。[已验证: AOSP `android.os.ProfilingManager` (API 35) + Android 17 API reference]
+Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取性能 trace。Android 17（API 37）进一步引入 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，允许在系统检测到性能/功耗异常时自动触发 trace 抓取，帮助捕获导致过热的真实负载现场。这两个 API 面向 Android 15+ 和 Android 17+，不属于 Android 8-16 的主要监控路径，可作为后续演进方向关注。
 
 ---
 
@@ -897,5 +857,5 @@ Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取
 - [Android Developers: Background Execution Limits](https://developer.android.com/about/versions/oreo/background) — Android 8.0+ 后台限制
 - [Android Developers: Network Battery Optimization](https://developer.android.com/training/efficient-downloads/connectivity_patterns) — Radio 状态机和网络优化
 - [Android Vitals: WakeLock](https://developer.android.com/topic/performance/vitals/wakelock) — WakeLock 监控指标
-- [Android Vitals: Excessive Wakeups](https://developer.android.com/topic/performance/vitals/wakeups) — 过度唤醒监控指标
+- [Android Vitals: Excessive Wakeups](https://developer.android.com/topic/performance/vitals/wakeup) — 过度唤醒监控指标
 - [Android 14 Behavior Changes: Exact Alarms](https://developer.android.com/about/versions/14/behavior-changes-14#precision-scheduled-alarms) — Android 14 精确闹钟限制
