@@ -123,6 +123,30 @@
         "location": "Tunnel Mode 启用条件",
         "detail": "关键的技术断言缺少具体的验证来源和 AOSP 源码引用",
         "suggestion": "补充 MediaCodec TunneledPlayback 的具体 AOSP 实现路径和版本差异"
+      },
+      {
+        "type": "P1 原理断裂",
+        "location": "skip_validate 优化必要性说明",
+        "detail": "缺少 skip_validate 优化必要性的解释 - 验证开销在什么情况下变得显著到值得优化？",
+        "suggestion": "补充 skip_validate 在什么场景下带来明显性能提升的量化分析"
+      },
+      {
+        "type": "P1 版本差异",
+        "location": "Android 17 支持情况",
+        "detail": "章节声称覆盖到 Android 16，但未涵盖 Android 17 对 HWC 行为和 skip_validate 实现的潜在影响",
+        "suggestion": "明确说明章节内容适用范围，补充或标注 Android 17 相关变化"
+      },
+      {
+        "type": "P1 知识盲区",
+        "location": "厂商特定 HWC 实现",
+        "detail": "缺少厂商特定 HWC 实现及其对合成决策影响的讨论（常见现实问题）",
+        "suggestion": "增加常见厂商 HWC 实现差异及其对开发者的实际影响"
+      },
+      {
+        "type": "P1 知识盲区",
+        "location": "HDR 视频合成",
+        "detail": "缺少 HDR 视频合成及其如何影响 HWC 决策的讨论",
+        "suggestion": "补充 HDR 视频在 HWC 合成中的特殊考虑和限制"
       }
     ],
     "added_by": "task6-review",
