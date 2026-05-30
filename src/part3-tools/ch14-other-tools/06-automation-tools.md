@@ -1,65 +1,44 @@
 ---
-title: 自动化测试工具
-chapter: '14.6'
-repaired_by: openclaw-task2b
-repaired_date: "2026-04-26"
-last_task2b_at: "2026-05-22T07:21:00+08:00"
-task2b_result: fixed
-section: '14.6'
-status: ready-for-review
-drafted_date: '2026-04-04'
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: "2026-04-26"
-last_verified_against: "AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review"
+chapter: 14.6
 confidence: medium
-sources:
-- type: official
-  path: developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
-- type: official
-  path: developer.android.com/topic/performance/benchmarking/microbenchmark-overview
-- type: official
-  path: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
-- type: official
-  path: developer.android.com/studio/test/other-testing-tools/monkey
-- type: blog
-  path: github.com/alipay/SoloPi
-- type: official
-  path: appium.io/docs/en/latest/
-tags:
-- macrobenchmark
-- microbenchmark
-- espresso
-- uiautomator
-- ci/cd
-- baseline-profiles
-related_chapters:
-- '13.1'
-- '13.2'
-- '14.1'
-- '8.3'
-- '8.7'
-pipeline_stage: task6_pending
-task6_state: "reviewed"
-review_round: 4
-task9_state: reviewed
-task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-22"
-task6_result: "pass-light-edit"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-22"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T07:43:01+08:00"
-last_task6_audit: "2026-05-21"
-updated_by: openclaw-task2b
-updated_date: "2026-04-26"
-last_task9_audit: "2026-05-22"
+drafted_date: 2026-04-04
+last_task2b_at: 2026-05-22T07:21:00+08:00
+last_task6_at: 2026-05-22T08:20:00+08:00
+last_task6_audit: 2026-05-21
+last_task6_review_log: logs/review/2026-05-22-08-review.md
+last_task9_at: 2026-05-22T07:43:01+08:00
+last_task9_audit: 2026-05-22
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
-task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 1：AndroidX Benchmark am instrument 参数裸写 iterations 且包含未验证 androidLogResults，需按 androidx.benchmark.* 参数重写。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
-last_task6_at: "2026-05-22T08:20:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-08-review.md"
-task6_review_notes: "2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 6 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。"
+last_verified: 2026-04-26
+last_verified_against: AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review
+path: appium.io/docs/en/latest/
+pipeline_stage: task6_pending
+related_chapters: 
+repaired_by: openclaw-task2b
+repaired_date: 2026-04-26
+review_round: 4
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-22
+section: 14.6
+sources: 
+status: ready-for-review
+tags: 
+task2b_result: fixed
+task2b_state: fixed
+task6_result: pass-light-edit
+task6_review_notes: 2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 6 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。
+task6_state: reviewed
+task9_result: needs-rework
+task9_review_notes: 2026-05-22 Task9 07: needs-rework。P0 1：AndroidX Benchmark am instrument 参数裸写 iterations 且包含未验证 androidLogResults，需按 androidx.benchmark.* 参数重写。已写入 logs/deep-review/2026-05-22-07-deep-review.md。
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-22
+task9_state: reviewed
+title: 自动化测试工具
+updated_by: openclaw-task2b
+updated_date: 2026-04-26
 ---
+
 
 # 自动化测试工具
 
