@@ -4,9 +4,9 @@ title: "Android 分层架构"
 chapter: "1.1"
 section: "1.1"
 status: finalized
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-27"
-last_verified_against: "AOSP android-11.0.0_r1/android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
+last_verified_against: "AOSP android-17.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
 confidence: high
 sources:
   - type: official

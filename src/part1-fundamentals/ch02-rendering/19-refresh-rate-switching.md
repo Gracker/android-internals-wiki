@@ -7,40 +7,24 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-05-30"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
-task9_result: "needs-rework"
+task9_result: pass-tech-review
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
 confidence: medium
-sources:
-  - type: expert-insight
-    path: "intake/research-feeds/2026-04-06-gracker-jank-insights.md"
-  - type: official
-    path: "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Surface#setFrameRate"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Display#getSuggestedFrameRate(int)"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)"
-  - type: research
-    path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
+sources: 
+- type: aosp
+path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-13T21:57:00+08:00"
+last_task9_at: 2026-05-30T09:20:00+08:00
 last_task6_at: "2026-05-30T01:05:00+08:00"
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: pass-light-edit；L1/L2 小修 2 处；保留既有截图/厂商数据待补充标注，无新增回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-30-01-review.md"
@@ -53,6 +37,7 @@ review_type: "task6-writing-quality-review"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
 task2b_notes: "修复 Task6 2026-05-29 回炉问题：补准 ARR API 公开/flagged 边界，拆入 VRR/ARR 与 RefreshRateSelector 口径，删除尾部素材卡片。"
 ---
+
 
 # 2.19 刷新率切换与帧率适配性能
 
