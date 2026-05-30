@@ -2,7 +2,7 @@
 title: Hardware Buffer Renderer
 chapter: "18"
 section: "18.17"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: Android 14 (API 34) - Android 16 (API 36)
 tags:
   - HardwareBufferRenderer
@@ -18,14 +18,15 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
 task6_result: "pass-light-edit"
+last_task6_reviewed: "2026-05-30T12:06:00+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"

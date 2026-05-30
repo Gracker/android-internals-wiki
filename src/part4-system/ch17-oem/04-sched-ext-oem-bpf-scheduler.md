@@ -373,3 +373,61 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 - 摘要：系统检索 AOSP kernel/common、Google Pixel coral-kernel 及 GitHub sched-ext/scx 项目。该报告中的“kernel/common 尚未集成”结论已被 2026-05-22 复核修正：Android common `android16-6.12` 已包含 `kernel/sched/ext.c`、`include/linux/sched/ext.h` 与 `tools/sched_ext/` 示例；SCX_Oplus / SCX_Mtk / SCX_Litto 未发现公开源码，仍属厂商私有或未验证线索。
 - 注入时间：2026-05-20
 - 价值：为 §17.4 sched_ext OEM 调度器章节提供公开证据地图；其中已被后续复核否定的 AOSP 集成结论不再作为正文依据
+
+
+## 附录：AIW-源码调研-2026-05-30 版本边界勘误
+
+> 以下内容为 2026-05-30 每日源码调研补充，对正文中以下两处进行勘误或确认：
+
+### 1. SCX_DSQ_BYPASS / SCX_SLICE_BYPASS Android 16 不可用（勘误）
+
+**正文位置**：DSQ 决定任务从 BPF 调度器回到 CPU 的方式
+
+**原正文表述**：将 `SCX_DSQ_BYPASS` 和 `SCX_SLICE_BYPASS` 列为 android16-6.12 可用常量。
+
+**勘误结论**：`SCX_DSQ_BYPASS` 和 `SCX_SLICE_BYPASS` 属于 upstream mainline（torvalds/master）新增常量，在 Android common `android16-6.12` 分支的 `include/linux/sched/ext.h` 中**不存在**。Android 16 GKI 6.12 设备不能使用这两个常量。
+
+**源码锚点**：
+- upstream: github.com/torvalds/linux `include/linux/sched/ext.h`
+- Android: android.googlesource.com/kernel/common `android16-6.12` 分支对应文件（待合入确认）
+
+### 2. android16-6.12 tools/sched_ext 示例调度器确认
+
+**正文位置**：tools/sched_ext/scx_simple.bpf.c 参考实现
+
+**补充确认**：`kernel/common/android16-6.12/tools/sched_ext/` 目录包含以下示例调度器（AOSP android16-6.12-2025-06_r17 tag 确认）：
+- `scx_central.bpf.c` / `scx_central.c`：中心化全局 DSQ 调度器
+- `scx_flatcg.bpf.c` / `scx_flatcg.h`：扁平 cgroup 调度器
+- `scx_qmap.bpf.c`：多队列 FIFO 调度器
+- `scx_simple.bpf.c`：最小化全局 FIFO（与 upstream 同步）
+
+**源码锚点**：
+- android.googlesource.com/kernel/common `android16-6.12` 分支 `tools/sched_ext/` 目录
+- android.googlesource.com/kernel/common `refs/heads/android16-6.12` 
+
+### 3. sysfs 接口版本边界确认
+
+**正文位置**：可观测与验证方法
+
+**补充确认**：
+- `/sys/kernel/sched_ext/state`：运行时状态（disabled/on/off）
+- `/sys/kernel/sched_ext/*/ops`：各 SCX 调度器 ops 信息
+
+上述 sysfs 节点在 Linux 6.12+ 通用，Android common android16-6.12 继承此接口。
+
+### 4. struct sched_ext_ops 核心字段版本边界
+
+**补充确认**：以下字段在 android16-6.12 中为可选（仅 `name` 必填）：
+- `select_cpu()`：wakeup 时选择目标 CPU
+- `enqueue()`：将任务加入调度队列
+- `dispatch()`：从 DSQ 取出任务执行
+- `yield_fn()`：任务主动让出调度
+- `exit()`：任务退出清理
+
+**源码锚点**：
+- upstream: github.com/torvalds/linux `include/linux/sched/ext.h`
+- Android: android16-6.12 `include/linux/sched/ext.h`
+
+---
+
+<!-- AIW-源码调研-2026-05-30 -->

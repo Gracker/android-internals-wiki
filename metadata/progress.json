@@ -398,27 +398,29 @@
   ],
   "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-30T01:05:00+08:00",
+    "reviewed_at": "2026-05-30T22:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "2.19",
-      "3.1",
-      "14.3"
+      "3.1", 
+      "14.3",
+      "2.10"
     ],
     "files": [
       "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
       "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
     ],
-    "log": "logs/review/2026-05-30-01-review.md",
-    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
-    "l1_l2_fixes": 8,
-    "l3_l4_issues": 1,
-    "small_fixes": 8,
+    "log": "logs/review/2026-05-30-22-review.md",
+    "result": "mixed: 3 pass-light-edit, 1 needs-rework",
+    "l1_l2_fixes": 20,
+    "l3_l4_issues": 4,
+    "small_fixes": 20,
     "rework_items": 1,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "2.19/14.3 通过 Task6 复审并送 Task9；3.1 参考资料后仍有未融合源码调研素材块，已回炉 Task2B。"
+    "notes": "2.19/14.3 通过 Task6 复审并送 Task9；3.1 参考资料后仍有未融合源码调研素材块，已回炉 Task2B；2.10 L1/L2 已修复，L3/L4 写入 queue.json priority 90。"
   },
   "issues_by_section": {
     "1.6": {
