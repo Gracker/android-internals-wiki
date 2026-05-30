@@ -5,10 +5,10 @@ chapter: "2.19"
 section: "2.19"
 status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-05-30"
+reviewed_date: "2026-05-31"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed

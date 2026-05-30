@@ -1,5 +1,37 @@
 [
   {
+    "section": "11.4",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[task9 deep-review] P0 JobScheduler quota 错误，P2 WakeLock 定义与 URL 错误",
+    "review_issues": [
+      {
+        "type": "P0 源码错误/运行时边界",
+        "location": "L650-L662",
+        "detail": "正文把 JobScheduler quota / restricted 状态写成可能让 timeout 短于最小保障值",
+        "suggestion": "按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正"
+      },
+      {
+        "type": "P2 指标口径",
+        "location": "L644",
+        "detail": "\"Stuck WakeLock\" 被解释成\"没有超过 2 小时的 WakeLock\"",
+        "suggestion": "应为后台 partial wake lock 单次持续超过 1 小时"
+      },
+      {
+        "type": "P2 参考链接",
+        "location": "L901",
+        "detail": "Excessive Wakeups 官方链接仍写 `/vitals/wakeups`",
+        "suggestion": "正确路径是 `/vitals/wakeup`"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-31T00:50:00+08:00",
+    "status": "completed",
+    "review_type": "task9-deep-tech-review",
+    "completed_at": "2026-05-31T00:50:00+08:00",
+    "completed_by": "openclaw-task2b"
+  },
+  {
     "section": "2.10",
     "section_title": "GPU 渲染深入",
     "priority": 90,
@@ -39,53 +71,63 @@
     "review_type": "task6-light-edit"
   },
   {
-    "section": "11.4",
-    "section_title": "案例集",
-    "priority": 95,
-    "reason": "[task9 deep-review] P0 JobScheduler quota 错误，P2 WakeLock 定义与 URL 错误",
-    "review_issues": [
-      {
-        "type": "P0 源码错误/运行时边界",
-        "location": "L650-L662",
-        "detail": "正文把 JobScheduler quota / restricted 状态写成可能让 timeout 短于最小保障值",
-        "suggestion": "按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正"
-      },
-      {
-        "type": "P2 指标口径",
-        "location": "L644",
-        "detail": "\"Stuck WakeLock\" 被解释成\"没有超过 2 小时的 WakeLock\"",
-        "suggestion": "应为后台 partial wake lock 单次持续超过 1 小时"
-      },
-      {
-        "type": "P2 参考链接",
-        "location": "L901",
-        "detail": "Excessive Wakeups 官方链接仍写 `/vitals/wakeups`",
-        "suggestion": "正确路径是 `/vitals/wakeup`"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-05-31T00:50:00+08:00",
-    "status": "completed",
-    "review_type": "task9-deep-tech-review",
-    "completed_at": "2026-05-31T00:50:00+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
     "section": "18.13",
     "section_title": "WebView 渲染管线",
-    "priority": 85,
-    "reason": "[task9 deep-review] P1 Android 15-17 WebView provider 更新差异覆盖不足",
-    "material_paths": ["intake/research-gaps.md"],
+    "priority": 90,
+    "reason": "[task6 + task9 review回炉] 章节结构不符合outline要求 + Android版本差异覆盖不足",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "logs/review/2026-05-31-03-review.md"
+    ],
     "review_issues": [
       {
         "type": "版本差异",
         "location": "平台版本说明部分",
         "detail": "仅提到 Android 15+ 但未说明具体更新内容对渲染路径的影响",
         "suggestion": "补充 Android 15-17 中 WebView provider 的关键更新及其对 SurfaceControl/Functor 路径的影响"
+      },
+      {
+        "type": "需重写",
+        "location": "章节整体组织",
+        "detail": "锚点覆盖严重不足，仅1/9个必须锚点被覆盖。章节内容虽然技术质量高，但没有按照outline要求组织结构",
+        "suggestion": "重新按照outline组织章节内容，确保所有必须锚点都有对应内容，并修复格式问题"
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-05-31T02:20:00+08:00",
+    "added_at": "2026-05-31T03:11:41.189400",
     "status": "pending"
+  },
+  {
+    "section": "18.15",
+    "section_title": "视频叠加与 HWC",
+    "priority": 90,
+    "reason": "[review回炉] HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "SKIP_VALIDATE 相关技术说明",
+        "detail": "Task9 已多次指出 SKIP_VALIDATE 版本边界与 canSkipValidate 条件未修正，存在技术事实风险",
+        "suggestion": "需 Task9 审核 AOSP 源码中的 SKIP_VALIDATE 实际逻辑和版本边界，Task2B 修正技术准确性"
+      },
+      {
+        "type": "需重写",
+        "location": "术语使用不一致",
+        "detail": "SurfaceFlinger 在全文中时而使用全称，时而简写为 SF，术语不一致影响可读性",
+        "suggestion": "统一使用全称 'SurfaceFlinger' 保持术语一致性"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Tunnel Mode 启用条件",
+        "detail": "关键的技术断言缺少具体的验证来源和 AOSP 源码引用",
+        "suggestion": "补充 MediaCodec TunneledPlayback 的具体 AOSP 实现路径和版本差异"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-05-31T04:17:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-05-31-04-review.md"
   }
 ]

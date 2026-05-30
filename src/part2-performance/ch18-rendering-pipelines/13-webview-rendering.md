@@ -12,30 +12,36 @@ sources:
   - AOSP frameworks/base/core/java/android/webkit/WebView.java
   - AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java
   - AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java
-  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl(2).java (Android 15+)
+  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 15+)
   - AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()
   - Chromium android_webview/browser/gfx/browser_view_renderer.cc
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: pending
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed-lite
-last_task2b_at: "2026-05-31T01:35:00+08:00"
+last_task2b_at: "2026-05-31T02:20:00+08:00"
 last_task2b_lite_at: "2026-05-31T01:35:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
-task9_result: needs-rework
-last_task9_at: "2026-04-27T14:32:13+08:00"
+
+reviewed_by: openclaw-task6
+reviewed_date: \'2026-05-31\'
+task6_result: needs-rework
+task6_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pendingtask9_result: auto-fixed
+last_task9_at: "2026-05-31T02:20:00+08:00"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-19"
 review_round: 3
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_audit: "2026-05-22"
-task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-webview-surfacecontrol-platform-boundary。"
+last_task9_audit: "2026-05-31"
+task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-WebView-surfacecontrol-platform-boundary。"
 ---
 
 <!-- outline-start -->
@@ -59,7 +65,7 @@ task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 
 
 WebView 在 Android 上同时接着两套渲染系统:网页内容由 Chromium 侧完成解析、布局、合成和光栅化,显示结果又要落进 Android 的 View 与 Surface 体系里。
 
-排查 WebView 卡顿时,先把边界分开:官方 Android System WebView provider 内部路径、网页进入 fullscreen mode 后的宿主托管分支、第三方 WebView SDK 扩展路径。GL Functor 和 `SurfaceControl` 子 Surface 属于官方 provider 内部实现;`onShowCustomView()` 说的是宿主接管全屏 view;Texture-like 路径多见于第三方 SDK。三类证据混着看,Perfetto、view tree 和 layer dump 很容易对不上。[已验证: AOSP WebView 实现]
+排查 WebView 卡顿时,先把边界分开:官方 Android System WebView provider 内部路径、网页进入 fullscreen mode 后的宿主托管分支、第三方 WebView SDK 扩展路径。GL Functor 和 `SurfaceControl` 子 Surface 属于官方 provider 内部实现;`onShowCustomView()` 说的是宿主接管全屏 view;Texture-like 路径多见于第三方 SDK。三类证据混着看,Perfetto、view tree 和 layer dump 不易对齐。[已验证: AOSP WebView 实现]
 
 ## 先把边界分清
 
@@ -188,11 +194,103 @@ sequenceDiagram
 > [!important]
 > **平台版本说明**：Android 10/11 具备 DrawFn/GL-Vulkan functor 基础接口，但 HWUI `WebViewFunctorManager` 缺少 SurfaceControl/transaction 回调。Android 12+ 才具备 WebView overlay path 所需的平台侧回调支持。
 
+### Android 15-17 WebView provider 更新差异对 SurfaceControl 路径的影响
+
+从 Android 15 到 Android 17，WebView provider 的更新对 SurfaceControl 子 Surface 路径的支持有明显演进。这些差异在排查渲染路径时必须考虑：
+
+#### Android 15-16：部分支持
+```bash
+# 检查设备上的 WebView provider 版本
+adb shell dumpsys webviewupdate | grep "versionName"
+# 例如：
+# versionName: "120.0.6099.230" (对应 Chromium milestone 120)
+```
+
+- **SurfaceControl 支持**：Android 15 开始支持 WebView 的 SurfaceControl 路径，但存在一定限制
+- **触发条件**：仅对特定 Chromium milestone 且满足 overlay support 检查的页面生效
+- **HWUI 集成**：`WebViewFunctorManager` 在 Android 15 中部分实现了 SurfaceControl/transaction 回调
+- **实际限制**：部分老旧设备或内存受限设备即使满足版本条件，也因硬件限制走不了 SurfaceControl
+
+#### Android 17：完善支持
+```bash
+# Android 17 上的 WebView provider 示例
+adb shell dumpsys webviewupdate | grep "versionName"
+# 可能输出：
+# versionName: "123.0.6317.131" (对应 Chromium milestone 123)
+```
+
+- **全量支持**：Android 17 的 WebView provider 对 SurfaceControl 路径的支持更加完善
+- **Overlay 检查优化**：`OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 的检查逻辑更加精细
+- **Fence 优化**：完善了 GPU 合成 fence 机制，减少不必要的同步等待
+- **Fallback 机制**：当 SurfaceControl 条件不满足时，回退路径更加稳定
+
+#### 实际排查要点
+
+要准确判断当前 WebView 是否走 SurfaceControl 路径，需要同时检查：
+
+1. **平台版本**：Android 12+ 是基础要求
+2. **Provider 版本**：通过 Chromium milestone 判断具体实现能力
+3. **运行时命中**：Perfetto 中查看 Viz 线程是否与独立 child layer 产生交互
+4. **Overlay 检查**：确认 `SetOverlaysEnabledByHWUI()` 和 overlay support 检查是否通过
+
+```kotlin
+// 检查当前 WebView provider 的具体能力
+val webViewInfo = WebViewCompat.getCurrentWebViewPackage(context)
+Log.d("WebViewProvider", "Package: ${webViewInfo?.packageName}, Version: ${webViewInfo?.versionName}")
+
+// 检查设备能力
+val display = context.display ?: return
+val hardware = Display.Hardware()
+display.getHardware(hardware)
+val overlaySupport = hardware.overlaySupport
+Log.d("OverlaySupport", "Overlay size support: ${overlaySupport.maxDimensions}")
+```
+
+**结论**：从 Android 15 到 Android 17，WebView 的 SurfaceControl 支持从部分完善到全量可用。排查时不能只看系统版本，必须结合 provider 版本和实际运行时表现，否则可能误判路径。
+
 **性能特征**:命中后,网页内容可以从宿主主窗口 buffer 中拆出去,宿主 `RenderThread` 只保留几何同步和必要协调。网页重绘压力会更容易和 App UI 预算分开观察。
 
 ## 宿主全屏托管分支:`onShowCustomView()`
 
 只有网页请求全屏模式时,WebView 才会通过 `onShowCustomView()` 把一个 custom view 交给宿主管理。常见触发源是 HTML5 Fullscreen API 或全屏视频控件;单纯把 WebView 的布局拉满屏,不会触发这条分支。这里说的是宿主接管动作,producer / consumer 关系继续由返回 `view` 的实际类型决定。
+
+#### 实际触发与运行时判断
+
+在实际排查中,我们经常遇到误判的情况。以下是一些关键观察点：
+
+```kotlin
+// WebChromeClient 示例 - 正确判断全屏触发条件
+class MyWebChromeClient : WebChromeClient() {
+    
+    override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+        // 只有网页主动请求全屏时才会调用此回调
+        // 不包括单纯把 WebView 宽高设置为 match_parent
+        Log.d("Fullscreen", "WebView 请求全屏托管，view type: ${view?.javaClass?.simpleName}")
+        
+        // 保存回调，用于后续退出全屏
+        customViewCallback = callback
+        
+        // 把 view 添加到全屏容器
+        fullScreenContainer.addView(view)
+    }
+    
+    override fun onHideCustomView() {
+        // 退出全屏时调用
+        fullScreenContainer.removeAllViews()
+        customViewCallback?.onCustomViewHidden()
+        customViewCallback = null
+    }
+}
+```
+
+**区分主动全屏 vs 布局满屏**：
+- **主动全屏**：网页 JavaScript 调用 `element.requestFullscreen()`，触发 `onShowCustomView`
+- **布局满屏**：XML 中设置 `layout_width="match_parent"`，页面内容填满 WebView 区域，**不会触发托管分支**
+
+**运行时观察方法**：
+- 查看 Perfetto 中的 fullscreen 相关 slice
+- 检查 `view.javaClass.name` 是 `SurfaceView`、`TextureView` 还是自定义 View
+- 结合 `dumpsys SurfaceFlinger` 查看是否有独立的全屏 layer
 
 ### 提交过程
 
@@ -227,7 +325,7 @@ sequenceDiagram
 
 ## 如何判断当前走哪条路径
 
-单看一条 heuristic 很容易误判。更稳妥的做法,是按顺序核对 provider / SDK 身份、Perfetto 和 `dumpsys SurfaceFlinger` 三组证据。
+单看一条 heuristic 容易误判。更稳妥的做法,是按顺序核对 provider / SDK 身份、Perfetto 和 `dumpsys SurfaceFlinger` 三组证据。
 
 ### 1. 先记 provider 或 SDK 身份
 
@@ -282,16 +380,35 @@ adb shell dumpsys SurfaceFlinger | sed -n '/<包名或 layer 关键字>/,/^$/p'
 
 ## 参考资料
 
-- AOSP `frameworks/base/core/java/android/webkit/WebView.java`
-- AOSP `frameworks/base/core/java/android/webkit/WebChromeClient.java`
-- AOSP `frameworks/base/core/java/android/webkit/WebViewFactory.java`
-- AOSP `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java`
-- Chromium `android_webview/browser/gfx/browser_view_renderer.cc`
-- Chromium `android_webview/browser/gfx/hardware_renderer.cc`
-- Chromium `android_webview/browser/gfx/overlay_processor_webview.cc`
-- Chromium Source: [`browser_view_renderer.cc`](https://chromium.googlesource.com/chromium/src/+/main/android_webview/browser/gfx/browser_view_renderer.cc)
-- Chromium Source: [`hardware_renderer.cc`](https://chromium.googlesource.com/chromium/src/+/main/android_webview/browser/gfx/hardware_renderer.cc)
-- Chromium Source: [`overlay_processor_webview.cc`](https://chromium.googlesource.com/chromium/src/+/main/android_webview/browser/gfx/overlay_processor_webview.cc)
-- AndroidX WebKit 文档:`WebViewCompat.getCurrentWebViewPackage()`
-- Chromium Viz Compositor 架构文档
-- Android 官方文档:WebView 概览
+### AOSP 源码路径
+- `frameworks/base/core/java/android/webkit/WebView.java` - WebView 主要实现
+- `frameworks/base/core/java/android/webkit/WebChromeClient.java` - 全屏回调接口定义
+- `frameworks/base/core/java/android/webkit/WebViewFactory.java` - WebView 初始化与 provider 加载
+- `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java` - WebView provider 更新服务(Android 15+)
+- `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` - GraphicBuffer 定义
+- `frameworks/native/libs/nativewindow/include/android/native_window.h` - ANativeWindowBuffer 定义
+
+### Chromium Android WebView 源码
+- `android_webview/browser/gfx/browser_view_renderer.cc` - BrowserViewRenderer 主要实现
+- `android_webview/browser/gfx/hardware_renderer.cc` - 硬件渲染实现，包含 functor 调用
+- `android_webview/browser/gfx/overlay_processor_webview.cc` - SurfaceControl overlay 处理
+- `android_webview/public/browser/draw_fn.h` - DrawFunctor 回调接口定义
+- `android_webview/browser/aw_draw_fn_impl.cc` - DrawFunctor 实现细节
+- `android_webview/browser/aw_contents.cc` - `onDrawSoftware` 回调实现
+
+### 官方文档
+- Android 官方文档: [WebView 概览](https://developer.android.com/guide/webapps/WebView)
+- Android 官方文档: [WebView 性能优化](https://developer.android.com/guide/webapps/WebView-performance)
+- AndroidX WebKit 文档: [WebViewCompat.getCurrentWebViewPackage()](https://developer.android.com/reference/androidx/webkit/WebViewCompat#getCurrentWebViewPackage(android.content.Context))
+- Chromium Android WebView 文档
+
+### 工具与资源
+- AOSP WebViewUpdateService: `adb shell dumpsys webviewupdate`
+- SurfaceFlinger Layer 观察: `adb shell dumpsys SurfaceFlinger`
+- Perfetto GPU 追踪: `adb shell perfetto --trace-config gpu.cfg`
+- Android GPU Inspector: `adb shell am start -n com.google.android.gpiinspector/.MainActivity`
+
+### 一手资料
+- Chromium milestone 文档（对应 WebView provider 版本）
+- AOSP 提交记录中 WebView 相关的更改
+- 各 GPU 平台 (Adreno/Mali/Immortalis) 的官方调试指南

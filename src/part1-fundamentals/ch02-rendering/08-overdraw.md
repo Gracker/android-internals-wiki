@@ -67,11 +67,12 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T09:28:00+08:00"
 last_task9_audit: "2026-05-23"
 review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P3 1。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # 过度绘制
 
-<!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -89,20 +90,11 @@ review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task
 
 ### OpenClaw 加工指引
 
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
-
 ## 为什么需要关注过度绘制
 
 打开 Android 设备的开发者选项，启用“调试 GPU 过度绘制”后，屏幕上会覆盖一层彩色滤镜。蓝色、绿色、粉色、红色分别对应不同的重复绘制层级。这些颜色不是 UI 本身。系统用它们标记每个像素被绘制的次数。红色越多的区域，说明 GPU 在做更多无用功。如果一个像素被绘制了四次、五次，而用户最终只能看到最上面那一层的结果，那么前面几次绘制就是纯粹的浪费。
 
 过度绘制（Overdraw）指的是屏幕上同一像素在一帧内被绘制了多次。在一个典型的 Android 应用中，界面由多层 View 叠加组成，Window 背景层、Activity 布局层、Fragment 层、各种 ViewGroup 和 View 依次叠加。如果每一层都绘制了背景，那么最底层那个被完全遮挡的背景就是在做无用功。
-
-[已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw] [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]
 
 ## 过度绘制怎么影响性能
 
@@ -115,8 +107,6 @@ GPU 的 fill rate（像素填充率）是有上限的。当过度绘制严重时
 但 TBR 并不能消除过度绘制的全部开销。每一层被覆盖像素的 **fragment shading 计算**（纹理采样、着色器执行）仍然消耗 GPU 算力；**半透明层的 alpha 混合**需要读取底层像素，即使在 tile memory 中完成也会消耗 tile memory 带宽和混合计算；当 tile 内的绘制指令超过 tile memory 容量时，GPU 会发生 tile spill，把中间结果临时写回外部内存，带来额外的带宽消耗和延迟。如果 GPU 没有 Early-Z 能力（或深度测试被半透明/丢弃指令禁用），被遮挡的 fragment 仍然会执行完整的着色计算，只是最终不写入颜色缓冲。
 
 简单概括：TBR 架构让过度绘制的外部内存带宽成本低于直觉上的「层数 × 像素数」，但 fragment shading、纹理采样和 tile memory 内部操作的开销仍然存在，半透明混合场景下更不可忽略。过度绘制仍然是一个值得控制的性能指标，只是不能把「3x overdraw = 3 倍外存写入」当作准确的成本模型。
-
-[已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw] [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]
 
 ## 检测工具：从颜色到证据
 
@@ -132,13 +122,9 @@ GPU 的 fill rate（像素填充率）是有上限的。当过度绘制严重时
 | 粉色 | 3x | 像素被绘制了 4 次，需要优化 |
 | 红色 | 4x+ | 像素被绘制了 5 次以上，严重浪费 |
 
-[图：GPU 过度绘制调试颜色叠加示例，展示蓝/绿/粉/红各层次覆盖效果]
-
 更稳妥的工程判断是，优先处理任何连续的红色区域，以及会跟随滚动、动画一起移动的大片粉色区域。“粉色区域不超过屏幕 1/4”更适合作为团队经验阈值，不适合当作官方标准。
 
 这个工具从 Android 4.2（API 17）开始提供。早期版本中还能在状态栏显示一个数值型的过度绘制倍率，比如“2.35x”，但在 Android 5.0 之后这个数值显示被移除了，只保留了颜色叠加视图。
-
-[已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw] [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]
 
 ### 把颜色图、柱状图和 Trace 串起来
 
@@ -167,18 +153,11 @@ Overdraw 倍率估算 ≈ GPU pixel counter 值 / (screen_width × screen_height
 
 在设备不支持 GPU counter 的情况下，颜色叠加图（Debug GPU Overdraw）配合 FrameTimeline 仍然是最可靠的定位手段。
 
-[图：同一段滚动操作里，先用 Debug GPU Overdraw 标出列表区域的粉色块，再在 Perfetto 中对照该 Layer 的 Expected Timeline / Actual Timeline 与 App 进程 RenderThread slice]
-[待补充：真实 Perfetto FrameTimeline / AGI frame capture 截图]
-
-[已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw] [已验证: 官方文档, developer.android.com/topic/performance/vitals/render] [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline] [已验证: 官方站点, gpuinspector.dev]
-
 ### 当前主线工具与历史工具
 
 当前的主线工具链是 **Layout Inspector + Debug GPU Overdraw + Profile GPU Rendering + Perfetto / AGI**。Layout Inspector 用来确认 View 或 Composable 的叠层关系，颜色图用来确认像素是否被重复填充，Profile GPU Rendering 用来判断帧预算压力，Perfetto / AGI 负责继续深入到 FrameTimeline、RenderThread 和 draw call。
 
-如果我们在旧博客或旧分享里看到 **Hierarchy Viewer**、**Tracer for OpenGL ES**、**Android Device Monitor**，要先把它们当成历史名词。Android 官方文档已经写明，Android Device Monitor 在 Android Studio 3.1 废弃、3.2 移除。Hierarchy Viewer 的替代工具是 Layout Inspector，Tracer for OpenGL ES 也不该再作为当前 Android Studio 工具链来推荐。
-
-[已验证: 官方文档, developer.android.com/studio/profile/monitor] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector] [已验证: 官方站点, gpuinspector.dev]
+如果在旧博客或旧分享中看到 **Hierarchy Viewer**、**Tracer for OpenGL ES**、**Android Device Monitor**，要先把它们当成历史名词。Android 官方文档已经写明，Android Device Monitor 在 Android Studio 3.1 废弃、3.2 移除。Hierarchy Viewer 的替代工具是 Layout Inspector，Tracer for OpenGL ES 也不该再作为当前 Android Studio 工具链来推荐。
 
 ## 常见的过度绘制来源
 
@@ -207,8 +186,6 @@ getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
 去掉后，整屏的过度绘制层次可以立即下降一级。
 
-[来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md]
-
 ### 2. 多层重叠背景
 
 这是最常见的过度绘制来源。考虑一个典型的场景：一个 LinearLayout 设置了白色背景，里面包含一个 RelativeLayout 也设置了白色背景，再里面是 ListView 的 Item 布局又设置了白色背景。用户只能看到最上面那一层白色，但 GPU 需要画三层。
@@ -216,8 +193,6 @@ getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 这种层层叠加的背景在复杂布局中非常普遍。当前更实用的排查方法是打开 GPU 过度绘制调试工具，再用 Layout Inspector 对照每个 View 的区域和背景设置。旧资料里经常会提到 Hierarchy Viewer，它适合帮助理解历史案例，但不该再作为当前 Android Studio 的主线工具来使用。
 
 实战排查流程如下：通过 Layout Inspector 定位到 CustomViewBehind 这个 View 设置了不必要的背景色（`R.color.mz_slidingmenu_background_light`），而这个 View 的内容在运行时会被上层完全覆盖。去掉这行代码后，中间区域的过度绘制从绿色（2x）降到蓝色（1x）。
-
-[来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
 
 ### 3. Selector 背景的 normal 状态
 
@@ -262,8 +237,6 @@ ListView、RecyclerView 的 Item 经常使用 Selector 作为背景，用于显�
 - **Deep layouts**：嵌套过深的布局，考虑用 RelativeLayout、ConstraintLayout 或 GridLayout 来扁平化。
 - **Merge root frame**：如果根 FrameLayout 没有设置背景和 padding，可以用 `<merge>` 标签替代。
 
-[已验证: 官方文档, developer.android.com/training/improving-layouts/optimizing-layout] [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]
-
 ### 自定义 View 中的 clipRect 和 quickReject
 
 当我们在自定义 View 的 `onDraw()` 中绘制多个元素时，系统不知道哪些元素会被其他元素遮挡。如果不做任何处理，所有元素都会被完整绘制，即使部分元素最终被完全覆盖。
@@ -304,8 +277,6 @@ protected void onDraw(Canvas canvas) {
 
 需要额外注意的是，`clipRect(..., Region.Op)` 和 `clipPath(..., Region.Op)` 这类旧接口在 API 26 开始废弃，P 之后只应继续使用 `INTERSECT` / `DIFFERENCE` 或对应的 `clipOut*` API。复杂 shape clip 本身也可能带来额外开销，所以它更适合做功能性裁剪，不该被当成过度绘制优化的默认解法。
 
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Canvas#clipRect] [已验证: 官方文档, developer.android.com/reference/android/graphics/Canvas#quickReject] [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel]
-
 ### ViewStub 延迟加载
 
 对于不是立即需要的布局，比如错误提示页、高级设置面板，使用 `ViewStub` 可以在需要时才 inflate 和绘制，避免这些布局参与初始帧的渲染，同时也减少了它们在不可见时的过度绘制。
@@ -330,11 +301,7 @@ protected void onDraw(Canvas canvas) {
 - **Android Studio 3.1 / 3.2 之后**：Android Device Monitor 废弃并移除，Hierarchy Viewer / Tracer for OpenGL ES 退出主线，Layout Inspector 与 AGI 成为当前工具链。
 - **Android 16（API 36）**：Skia Graphite 是 Skia 的下一代 GPU 后端，其渲染管线支持 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，理论上可在不透明区域跳过被遮挡像素的填充。[待验证] 截至 android-16.0.0_r1，AOSP `frameworks/base/libs/hwui/pipeline/skia/` 目录下仍以 SkiaOpenGLPipeline / SkiaVulkanPipeline / SkiaGpuPipeline 为主，未发现 Graphite 后端的默认启用开关或设备白名单配置。Graphite 目前更适合定位为 Skia 方向上的能力储备，不能写成 Android 16 应用 UI 的通用优化行为。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 在部分设备上暴露 fragment/pixel 写入相关计数器，但这些计数器完全由设备驱动决定（基于 `GpuCounterDescriptor`），ID、名称和语义各不相同，尚未形成跨厂商的通用标准化方案。所谓「标准化 pixels_drawn 数据源」在当前 Perfetto 版本中并不存在。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel] [已验证: 官方文档, developer.android.com/studio/profile/monitor] [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline]
-
 ## Jetpack Compose 中的过度绘制
-
-[自动发现: 来源 developer.android.com/develop/ui/compose/graphics/draw/modifiers]
 
 前面讨论的检测手段对 Compose 一样适用。Debug GPU Overdraw 看的是像素重复填充，Layout Inspector 看的是组合树和 layer 结构，必要时再用 Perfetto / AGI 继续深入。
 
@@ -363,9 +330,6 @@ Compose 中会把 overdraw 颜色图压重的，通常还是下面几类场景�
 
 两个需要验证的边界条件：第一，半透明背景不参与合并（混合结果依赖底层内容）；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
 
-[待验证: Compose 背景合并优化，缺少 AndroidX release note / AOSP CL / issue 锚点]
-[已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers — 仅覆盖 graphics modifiers 通用行为] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector — 仅覆盖通用排查能力]
-
 ## 常见问题与误区
 
 ### 误区：过度绘制一定能被感知到
@@ -384,15 +348,15 @@ Recomposition 是 Compose 在组合阶段重新执行 Composable 函数的过程
 
 - AOSP 源码路径（早期实现）：`frameworks/base/libs/hwui/OpenGLRenderer.cpp`
 - AOSP 源码路径（android-16.0.0_r1，调试开关）：`frameworks/base/libs/hwui/Properties.h`、`frameworks/base/libs/hwui/Properties.cpp`（`debug.hwui.overdraw`）
-- [已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw]
-- [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-- [已验证: 官方文档, developer.android.com/reference/android/graphics/Canvas]
-- [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel]
-- [已验证: 官方文档, developer.android.com/studio/profile/monitor]
-- [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
-- [已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers]
-- [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline]
-- [已验证: 官方站点, gpuinspector.dev]
-- [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]（高爷原创：Android 性能优化之过度绘制 - 理论篇）
-- [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md]（高爷原创：Android 性能优化之过度绘制 - 实战篇）
-- [引用: https://www.youtube.com/watch?v=URyoiAt8098]（Romain Guy 的优化案例）
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-（高爷原创：Android 性能优化之过度绘制 - 理论篇）
+-（高爷原创：Android 性能优化之过度绘制 - 实战篇）
+-（Romain Guy 的优化案例）

@@ -211,3 +211,16 @@ LIMIT 20;
   - `frameworks/base/core/java/android/view/View.java`
   - `frameworks/base/core/java/android/view/Display.java`
   - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
+
+---
+
+
+<!-- AIW-源码调研-2026-05-31 -->
+**源码锚点补充（android-17.0.0_r1）：**
+- `Scheduler.cpp` 的 `chooseRefreshRateForContent()` 实际通过 `RefreshRateSelector::getRankedFrameRates()` 计算分数
+- `RefreshRateSelector.cpp` 的 `calculateLayerScore()` 中，`FrameRateCategory::NoPreference` 或 `isNoVote()` 的 Layer 直接跳过（关键剪枝逻辑）
+- LayerVote 优先级：ExplicitExact(1.0) > ExplicitGT(0.75f 阈值) > Heuristic(计算 divisor 距离) > Min(跳过)
+- VRR 启用时 `VSYNC-app/sf` 周期动态变化，但 missed deadline **仍表现为 jank**，ARR 只改变目标节拍不补救慢帧
+- IdlethreadTimer kernel timer 只在刷新率 ≤65Hz 时启用，用于降功耗
+
+<!-- AIW-源码调研-2026-05-31 -->
