@@ -1,25 +1,25 @@
 ---
 title: "TextureView 合成链路"
 chapter: "18.7"
-status: finalized
-applicable_versions: "Android 4.0 (API 14) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
 tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
-task2b_fixed_at: "2026-04-20"
+last_task2b_lite_at: "2026-05-31"
 last_task9_at: "2026-05-20T08:36:07+08:00"
 last_task6_audit: 2026-05-19
 last_task9_audit: 2026-05-20

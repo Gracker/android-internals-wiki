@@ -151,7 +151,97 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-31T04:17:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-05-31-04-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-05-31-04-review.md",
+    "completed_at": "2026-05-31T04:50:00+08:00",
+    "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "08.0",
+    "section_title": "ch08-responsiveness",
+    "priority": 76,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://developer.android.com/newsletter/play-monthly/2026/02"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 Beta 发布：增强相机和媒体功能 — Android 17测试版发布，重点增强相机和媒体处理能力，体现了移动平台在多媒体功能上的持续优化和用户需求的响应。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-05-31T05:35:42.079832",
+    "status": "pending"
+  },
+  {
+    "section": "18.19",
+    "section_title": "可变刷新率渲染管线",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] Android 17 VRR 自适应刷新率与 RefreshRateSelector 源码实现分析，含 LayerVote 投票机制、FrameRateRecord 历史帧追踪、DisplayModeDirector 联动",
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 VRR 自适应刷新率与 RefreshRateSelector 实现 — 源码级分析 Scheduler.cpp、RefreshRateSelector LayerVote 投票机制、FrameRateRecord 历史帧追踪、DisplayModeDirector DisplayMode 切换策略",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-30T22:12:26.099775+00:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.6",
+    "section_title": "SurfaceFlinger 与合成",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲状态模型、INVALIDATE/REFRESH 双消息机制、BufferQueue 状态机、DeliQueue 无锁重构",
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 SurfaceFlinger 事务与缓冲区生命周期 — 双缓冲 mCurrentState/mDrawingState 原子更新、INVALIDATE/REFRESH 分离、BufferQueue 状态机循环、Android 17 DeliQueue 无锁 MessageQueue",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-30T22:12:26.099775+00:00",
+    "status": "pending"
+  },
+  {
+    "section": "17.4",
+    "section_title": "sched_ext 与 OEM BPF 调度器",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] sched_ext 与 EEVDF 调度器版本边界源码锚点验证，含 sched_ext_ops 核心字段、GameManagerService→BPF map 联动、EEVDF 版本差异",
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "sched_ext 与 EEVDF 版本边界 — struct sched_ext_ops、GameManagerService BPF map 联动、android16-6.12 示例调度器、EEVDF vs CFS 版本差异",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-30T22:12:26.099775+00:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.2",
+    "section_title": "文件系统",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] F2FS Adaptive Logging 机制与 I/O 调度性能分析，含 6 持久化日志温度分类、segment 分配策略 LFS/SSR/AT_SSR",
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "F2FS Adaptive Logging — 6 持久化日志温度分类、active_logs 配置、f2fs_balance_fs 前台 GC、LFS/SSR/AT_SSR 分配模式",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料。注意基于 Linux main/master"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-05-30T22:12:26.099775+00:00",
+    "status": "pending"
   }
 ]
