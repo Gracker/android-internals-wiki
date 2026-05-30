@@ -1,41 +1,91 @@
 [
   {
     "section": "2.10",
-    "section_title": "GPU \u6e32\u67d3\u6df1\u5165",
+    "section_title": "GPU 渲染深入",
     "priority": 90,
-    "reason": "[review\u56de\u7089] \u5b9e\u6218\u6848\u4f8b\u8bc1\u636e\u4e0d\u8db3\uff0cAI \u5473\u8f83\u91cd",
+    "reason": "[review回炉] 实战案例证据不足，AI 味较重",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "\u9700\u8865\u5145\u7d20\u6750",
-        "location": "\u5b9e\u6218\u6848\u4f8b\u7ae0\u8282",
-        "detail": "\u7f3a\u4e4f\u771f\u5b9e\u7684 Perfetto Trace \u622a\u56fe\u3001AGI \u5206\u6790\u622a\u56fe\u6216\u53ef\u590d\u73b0\u7684\u6d4b\u8bd5\u6761\u4ef6",
-        "suggestion": "\u8865\u9f50\u4e00\u624b Trace/AGI \u8bc1\u636e\uff0c\u6216\u660e\u786e\u6807\u6ce8\u4e3a\u793a\u4f8b\u573a\u666f"
+        "type": "需补充素材",
+        "location": "实战案例章节",
+        "detail": "缺少真实的 Perfetto Trace 截图、AGI 分析截图或可复现的测试条件",
+        "suggestion": "补配一手 Trace/AGI 证据，或明确标注为示例场景"
       },
       {
-        "type": "\u9700\u8865\u5145\u7d20\u6750",
-        "location": "ASTC vs ETC2 \u5e26\u5bbd\u5bf9\u6bd4\u7ae0\u8282",
-        "detail": "\u4f9d\u8d56\u5382\u5546\u4f18\u5316\u6307\u5357\uff0c\u7f3a\u5c11\u5b9e\u9645\u6d4b\u8bd5\u6570\u636e\u9a8c\u8bc1",
-        "suggestion": "\u5728\u76ee\u6807\u8bbe\u5907\u4e0a\u7528 `adb shell cmd gpu vkjson` \u786e\u8ba4\u652f\u6301\u5e76\u6d4b\u8bd5\u5bf9\u6bd4"
+        "type": "需补充素材",
+        "location": "ASTC vs ETC2 带宽对比章节",
+        "detail": "依赖厂商优化指南，缺少实际测试数据验证",
+        "suggestion": "在目标设备上用 `adb shell cmd gpu vkjson` 确认支持并测试对比"
       },
       {
-        "type": "\u9700\u91cd\u5199",
-        "location": "\u591a\u4e2a\u6280\u672f\u5206\u6790\u7ae0\u8282",
-        "detail": "\u8bba\u8ff0\u504f\u7406\u8bba\u5316\uff0c\u7f3a\u4e4f\u4e2a\u4eba\u8c03\u8bd5\u7ecf\u9a8c\u5206\u4eab",
-        "suggestion": "\u589e\u52a0\u5b9e\u9645\u6392\u67e5\u6848\u4f8b\u4e2d\u7684\u89c2\u5bdf\u7ec6\u8282\u548c\u4e2a\u4eba\u5224\u65ad\u8fc7\u7a0b"
+        "type": "需重写",
+        "location": "多个技术分析章节",
+        "detail": "论述偏理论化，缺少个人调试经验分享",
+        "suggestion": "增加实际排查案例中的观察细节和个人判断过程"
       },
       {
-        "type": "\u9700\u91cd\u5199",
-        "location": "GPU Headroom API \u4f7f\u7528\u8bf4\u660e\u3001Vulkan \u4f18\u52bf\u89e3\u91ca\u7b49",
-        "detail": "\u8868\u8ff0\u8fc7\u4e8e\u6a21\u677f\u5316\uff0c\u7f3a\u4e4f\u4e2a\u4eba\u89c6\u89d2",
-        "suggestion": "\u91cd\u5199\u4e3a\u66f4\u5177\u4e2a\u4eba\u7ecf\u9a8c\u7684\u8868\u8ff0\u65b9\u5f0f"
+        "type": "需重写",
+        "location": "GPU Headroom API 使用说明、Vulkan 优势解释等",
+        "detail": "表达过于模板化，缺少个人视角",
+        "suggestion": "重写为更具个人经验的表达方式"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-30T22:05:00+08:00",
     "status": "pending",
     "review_type": "task6-light-edit"
+  },
+  {
+    "section": "11.4",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[task9 deep-review] P0 JobScheduler quota 错误，P2 WakeLock 定义与 URL 错误",
+    "review_issues": [
+      {
+        "type": "P0 源码错误/运行时边界",
+        "location": "L650-L662",
+        "detail": "正文把 JobScheduler quota / restricted 状态写成可能让 timeout 短于最小保障值",
+        "suggestion": "按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正"
+      },
+      {
+        "type": "P2 指标口径",
+        "location": "L644",
+        "detail": "\"Stuck WakeLock\" 被解释成\"没有超过 2 小时的 WakeLock\"",
+        "suggestion": "应为后台 partial wake lock 单次持续超过 1 小时"
+      },
+      {
+        "type": "P2 参考链接",
+        "location": "L901",
+        "detail": "Excessive Wakeups 官方链接仍写 `/vitals/wakeups`",
+        "suggestion": "正确路径是 `/vitals/wakeup`"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-31T00:50:00+08:00",
+    "status": "completed",
+    "review_type": "task9-deep-tech-review",
+    "completed_at": "2026-05-31T00:50:00+08:00",
+    "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "18.13",
+    "section_title": "WebView 渲染管线",
+    "priority": 85,
+    "reason": "[task9 deep-review] P1 Android 15-17 WebView provider 更新差异覆盖不足",
+    "material_paths": ["intake/research-gaps.md"],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "平台版本说明部分",
+        "detail": "仅提到 Android 15+ 但未说明具体更新内容对渲染路径的影响",
+        "suggestion": "补充 Android 15-17 中 WebView provider 的关键更新及其对 SurfaceControl/Functor 路径的影响"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-31T02:20:00+08:00",
+    "status": "pending"
   }
 ]
