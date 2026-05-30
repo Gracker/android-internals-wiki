@@ -30,7 +30,7 @@ task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-24'
-last_verified_against: AOSP android-16.0.0_r1, Android SDK android-Baklava stubs
+last_verified_against: AOSP android-17.0.0_r1, Android SDK android-Baklava stubs
 confidence: high
 sources:
 - type: blog

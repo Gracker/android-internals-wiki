@@ -25,9 +25,9 @@ review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序�
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: task2b-polish
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-17"
-last_verified_against: "AOSP android-16.0.0_r1, source.android.com 官方文档"
+last_verified_against: "AOSP android-17.0.0_r1, source.android.com 官方文档"
 confidence: high
 last_task9_review_log: "logs/deep-review/2026-05-27-06-deep-review.md"
 sources:
