@@ -28,12 +28,12 @@ task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
 task6_review_notes: 2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 6 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
 task9_review_notes: 2026-05-22 Task9 07: needs-rework。P0 1：AndroidX Benchmark am instrument 参数裸写 iterations 且包含未验证 androidLogResults，需按 androidx.benchmark.* 参数重写。已写入 logs/deep-review/2026-05-22-07-deep-review.md。
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-22
-task9_state: reviewed
+task9_state: pending
 title: 自动化测试工具
 updated_by: openclaw-task2b
 updated_date: 2026-04-26
