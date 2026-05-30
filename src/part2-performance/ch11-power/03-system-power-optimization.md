@@ -94,6 +94,8 @@ last_task9_at: '2026-05-13T15:31:00+08:00'
 last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-30
 ---
 
 
@@ -146,7 +148,6 @@ Android 7.0（API 24）将 Doze 拆分为两个层级：
 
 **Deep Doze** 则是原始的、更严格的 Doze。它需要设备满足三个条件：屏幕关闭、未在充电、且设备处于静止状态（通过加速度计判断）。一旦进入 Deep Doze，系统会实施大幅度的限制：网络访问被暂停、标准 AlarmManager 闹钟被推迟、WakeLock 大部分被忽略、JobScheduler 任务和 SyncAdapter 同步被延迟、后台 Wi-Fi 扫描停止。
 
-[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
 ### 维护窗口：递增长度的呼吸机制
 
@@ -179,7 +180,6 @@ Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把
 2. 非维护窗口阶段，后台线程几乎没有 runnable slice，网络与 Job 分发明显收缩，`suspend_resume` 和 `cpu_idle` 驻留时间上升。
 3. 进入维护窗口后，系统会出现一小段批量唤醒，被延后的 Job、Alarm 或网络 I/O 集中执行；窗口结束后，又回到低活跃状态。
 
-[图：Doze 进入后 CPU idle 驻留抬升，`IDLE_MAINTENANCE` 窗口内出现一段集中唤醒和网络恢复的 Perfetto 片段]
 
 ### Doze 的豁免与例外
 
@@ -191,7 +191,6 @@ Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把
 - **前台服务**：前台服务能提高进程优先级，降低因后台执行限制被回收的概率，但它不等于 Doze 豁免。设备进入 Doze 后，网络、JobScheduler、普通 Alarm 和同步限制仍按 device idle policy 生效。
 - **紧急闹钟**（`setAndAllowWhileIdle` / `setExactAndAllowWhileIdle`）：可以在 Doze 期间触发，但每个 App 有速率限制（大约每 9 分钟一次）
 
-[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
 ## App Standby：从二元状态到分桶调度
 
@@ -219,7 +218,6 @@ Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互�
 
 除了桶配额之外，Android 15 引入了独立的能效维度。当系统判断当前能量预算不足（例如设备未充电且电量持续下降），即使 App 还在 Active 桶，Job 也可能因能效原因被挂起。排查时用 `adb shell dumpsys jobscheduler <pkg>` 查看 pending reason，可关注 `PENDING_JOB_REASON_DEVICE_STATE`（设备状态不适宜执行）、`PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`（系统优化决策）和 `PENDING_JOB_REASON_QUOTA`（配额耗尽）三类标识。不要把这些 pending 直接等同于"桶配额用完"——它们对应的是不同层面的约束。
 
-[已验证: 官方文档, developer.android.com/topic/performance/appstandby; developer.android.com/topic/performance/power/power-details#app-stdby-bucket]
 
 ### 桶的动态分配：Adaptive Battery 的角色
 
@@ -236,11 +234,10 @@ Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户
 
 这解释了一个常见的开发困惑："我的 App 昨天后台任务还正常，今天就执行不了了。"原因可能是 Adaptive Battery 根据用户几天的使用模式，将 App 从 Working Set 降到了 Rare 桶。
 
-[已验证: 官方文档, source.android.com/docs/core/power]
 
-### 机制归属图：Bucket、Quota、Power Saver 分别由谁负责
+### Bucket、Quota、Power Saver 的归属关系
 
-Android 13 到 Android 16 这组策略已经分散到不同控制器里。把职责拆开，排查时才不会把 bucket、quota、device idle 和 global power save 混成一件事。
+Android 13 到 Android 16 的功耗策略分散在多个控制器中。排查后台任务问题时，需要先分清是 bucket 降级、quota 耗尽、device idle 触发还是全局 Battery Saver 打开——它们的证据入口各不相同。
 
 | 机制 | 控制器 | Android 16 入口 | 开发者验证入口 |
 |------|--------|-----------------|----------------|
@@ -290,7 +287,6 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为限制后台活动�
 
 前台服务通知本身不是通用豁免。它能提示用户 App 正在工作，但不能单独授予后台拉起 Activity 的能力。
 
-[已验证: 官方文档, developer.android.com/guide/components/activities/background-starts]
 
 ### 后台定位限制
 
@@ -306,7 +302,6 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为限制后台活动�
 
 对性能优化的影响是：轨迹记录、后台导航、地理围栏回传这类场景，要把权限流程、前后台状态和 FGS 生命周期一起设计。否则在新系统上，问题看起来像定位偶发失效，根因往往是权限条件没有配齐。
 
-[已验证: 官方文档, developer.android.com/training/location/background; developer.android.com/develop/background-work/services/fgs/restrictions-bg-start]
 
 ### 后台服务限制（Android 8.0+）
 
@@ -316,7 +311,6 @@ Android 8.0（API 26）对后台服务做了关键限制：**当 App 处于后�
 
 Android 14 对前台服务进一步增加了限制：某些类型的前台服务（如位置相关的）需要声明特定的前台服务类型（foreground service type），并在 Manifest 中声明对应权限。
 
-[已验证: 官方文档, developer.android.com/about/versions/oreo/background]
 
 ### App Archiving：物理清除而非冻结（Android 15+）
 
@@ -334,7 +328,6 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 
 开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"可能不是卸载而是归档。排查路径是按包名查询 `adb shell pm get-archived-package-metadata <package>`（Android 15+），或用 `adb shell pm list packages -u --show-versioncode` 查看已卸载但保留数据的应用。后者不等于 archived 列表，但能覆盖未安装/保留数据的包。
 
-[已验证: 官方文档, developer.android.com/topic/performance/app-hibernation; source.android.com/docs/core/storage/app-archiving]
 
 ## 省电模式下的系统行为变化
 
@@ -353,7 +346,6 @@ Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布�
 
 涉及 Pixel 或 OEM 机型的显示降频、传感器关闭、特殊安全功能收缩时，最好把机型、ROM 版本和来源写在同一段；拿不到来源，就保留 `[待验证]`。
 
-[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby; AOSP, PowerManager.java / PowerManagerService.java]
 
 ### 自适应省电（Adaptive Battery Saver）
 
@@ -376,7 +368,6 @@ Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布�
 
 一段能说明问题的证据，通常包含三部分：`low_power` 从 0 变 1 的时间点；CPU 频率上限和后台 runnable slice 密度同时下降；Job / Alarm 触发节奏变稀或被合批。
 
-[图：Battery Saver 打开前后，同一进程的 CPU 频率上限、后台 Job 密度和 `low_power` 状态放在同一时间线里的 Perfetto 片段]
 
 ### 对 App 性能分析的影响
 
@@ -441,9 +432,6 @@ OPPO 和 vivo 的策略类似：
 - 如果 Trace 中只剩 Binder / epoll wait，几乎没有 runnable slice，而同一时间窗口又看到了 pending job 或 delayed alarm，更像是厂商冻结或延迟分发，不要直接归因到 WorkManager。
 - `Process State` 只能当辅助信号，不要把它当成所有设备都存在的固定 Track。
 
-[图：后台冻结导致 WorkManager 延迟的示意 trace，前半段进程几乎没有 runnable slice，解除限制后出现一段集中执行]
-
-[已验证: 官方文档, dontkillmyapp.com; 厂商策略基于公开资料整理，具体行为可能因 ROM 版本而异]
 
 ## 与其他机制的关系
 
@@ -475,7 +463,6 @@ OPPO 和 vivo 的策略类似：
 | Android 15 (API 35) | App Archiving（自动归档）：存储紧张时物理清除长期未用 App 的 APK 和缓存，保留用户数据；能效维度纳入 Job 调度决策（`PENDING_JOB_REASON_DEVICE_STATE` / `JOB_SCHEDULER_OPTIMIZATION`），Job 因能量预算不足被挂起直至条件改善 |
 | Android 16 (API 36) | Active 桶开始引入 regular job 指导额度（约 20 min / 60 min），并补充 Job pending reason introspection |
 
-[已验证: 官方文档, developer.android.com/about/versions]
 
 ## 常见问题与误区
 

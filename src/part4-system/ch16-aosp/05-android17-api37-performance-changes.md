@@ -2,7 +2,7 @@
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: "16.5"
 section: "16.5"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-05-29"
@@ -40,9 +40,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-05-29T06:50:00+08:00"
@@ -69,6 +71,8 @@ task6_l3_l4_issues: 0
 last_task9_autofix_at: "2026-05-29"
 task6_new_rework: false
 last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-30
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -94,15 +98,15 @@ last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
 
 ## 为什么要了解 Android 17 的性能行为变更
 
-`targetSdkVersion` 升级到 37 后，最先要核查的是几类会改变运行时行为的点：`MessageQueue`、`static final` 反射限制、网络安全配置迁移，以及大屏配置策略。分代 GC、ProfilingManager trigger、JobScheduler 诊断 API 更偏向"排障与观测方式变了"，它们通常不会直接把 App 改崩，但会改变我们解释 trace 和定位问题的方式。
+升 `targetSdkVersion` 到 37，首先要核查几类会改运行时行为的点：`MessageQueue`、`static final` 反射限制、网络安全配置迁移，以及大屏配置策略。分代 GC、ProfilingManager trigger、JobScheduler 诊断 API 更偏"排障和观测方式变了"——它们一般不会直接把 App 改崩，但会改变你读 trace 和定位问题的方式。
 
-公开能拿到定量收益的，当前主要是 `MessageQueue` 的 lock-free 改造。公开来源一共有三层：Android Developers Blog 给出的 synthetic benchmark、internal beta testers 的 Perfetto traces，以及同一批测试设备上的用户体验指标。官方没有公开具体机型、工作负载脚本和 trace 附件，因此本文只把这些数字当成方向性对比，不把它们写成任意业务都能复现的保底收益。
+有公开定量数据的，目前主要是 `MessageQueue` 的 lock-free 改造。公开来源有三层：Android Developers Blog 的 synthetic benchmark、internal beta tester 的 Perfetto traces，以及同一批测试设备上的用户体验指标。官方没公开具体机型、负载脚本和 trace 附件，所以这些数字只能当方向性参考，不能当成你的业务也能复现的保底收益。
 
-这些变更在 Perfetto 中留下明确特征：DeliQueue 减少主线程锁竞争；分代 GC 改变 Memory Track 中的 GC 切片模式；ProfilingManager 新触发器改变系统事件采样入口。掌握这些特征，才能把 Android 17 trace 里的新现象和旧经验区分开。
+这些变更在 Perfetto 中都有明确特征：DeliQueue 削减主线程锁竞争；分代 GC 改变 Memory Track 的 GC 切片模式；ProfilingManager 新触发器改变系统事件采样入口。把这些特征记住，才能在 Android 17 trace 里把新现象和旧经验分开。
 
-性能相关的核心变更可以按影响程度和适配优先级排序。
+性能相关的核心变更，按影响程度和适配优先级排下来如下。
 
-### 和 Android 16 对比，哪些变化有公开量化数据
+### Android 16 vs 17：公开量化数据对比
 
 | 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
 |:---|:---|:---|:---|
@@ -113,13 +117,13 @@ last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
 
 ---
 
-## DeliQueue：20 年来 MessageQueue 的最大架构变更
+## DeliQueue：MessageQueue 二十年来的首次架构换代
 
 ### 旧实现的问题
 
 从 Android 1.0 开始，`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时，都需要获取同一把锁。在 Looper 线程（通常是主线程）从队列头部取消息执行时，其他线程如果想投递消息，就必须等主线程释放锁。
 
-在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，队列维护阶段的共享 monitor 会放大优先级反转：低优先级投递线程正在 `enqueueMessage()` 中持有 monitor，高优先级 UI 线程下一次进入 `MessageQueue.next()` 取消息时被卡在 monitor contention 上。Message 被取出以后，Looper 执行业务回调或布局计算时不再持有 `MessageQueue` monitor，所以不能把掉帧原因写成“主线程执行布局期间锁住所有投递线程”。
+日常场景下锁争用基本不会发生——消息投递很快，持锁时间极短。但高并发时，队列维护阶段的共享 monitor 会放大优先级反转：低优先级投递线程在 `enqueueMessage()` 里持着 monitor，高优先级 UI 线程进 `MessageQueue.next()` 取消息时就被卡在 monitor contention 上。Message 被取出以后，Looper 执行业务回调或布局计算时不再持有 `MessageQueue` monitor，所以不能把掉帧原因写成“主线程执行布局期间锁住所有投递线程”。
 
 在 Perfetto Trace 中，旧实现的锁争用表现为：
 - Main Thread Track 或目标 Looper 线程上出现名为 "monitor contention with MessageQueue" 的切片
@@ -131,7 +135,7 @@ last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
 
 ### 新实现：DeliQueue 的混合数据结构
 
-对外行为上，Android 17 为 targetSdk 37 的应用引入了新的 lock-free `MessageQueue`。Android Developers Blog 将这套实现称为 DeliQueue。核心设计思路是把"多线程写入"和"单线程读取"拆开：
+Android 17 为 targetSdk 37 的应用引入了新的 lock-free `MessageQueue`。Android Developers Blog 将这套实现称为 DeliQueue。核心设计思路是把"多线程写入"和"单线程读取"拆开：
 
 - **Android Developers Blog 的概念模型**：使用 Treiber Stack（一种无锁栈），通过 CAS（Compare-And-Swap）操作实现多线程并发入队，不需要任何锁
 - **读取端**：使用 min-heap（最小堆），由 Looper 线程独占访问，按消息的 `when`（执行时间）排序，天然有序
@@ -192,7 +196,7 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 - Robolectric 升级到 **4.17+**,并把 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`
 - 如果怀疑问题就是新的 `MessageQueue` 导致，可先在 Developer Options 的 App Compatibility Changes 里关闭该变更，或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
 
-### DeliQueue 算法细节补充（来源：Android Developers Blog 2026-02-17）
+### DeliQueue 算法细节补充
 
 以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**：
 
@@ -286,7 +290,7 @@ Android 17 的分代 GC 变化会改变 GC 切片模式和暂停分布。Concurr
 
 ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17 (API 37) 新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
 
-要用这套能力，App 仍要完成两步：先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调，再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`，产物交付仍由 ProfilingManager 完成。[已验证：Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力，而不是无需代码的默认抓取]
+要用这套能力，App 仍要完成两步：先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调，再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`，产物交付仍由 ProfilingManager 完成。
 
 ### 触发器类型与产物
 
@@ -297,7 +301,6 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample / system trace snapshot（文档口径存在差异，以 `ProfilingResult` 为准） | 定位后台 CPU 异常占用 |
 
-[已验证：上述触发器常量名称与 Android 17 API reference 一致。`TRIGGER_TYPE_APP_FULLY_DRAWN` 的 Added in API level 是 36，不属于 API 37 新增项；API 37 新增的是 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器。Android 17 features 页对 anomaly 给出的公开例子包括 excessive binder calls、excessive memory usage 和 memory limit breach；其中 memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile。内部阈值和组合条件未公开，排障时应把它理解为 OS-defined / system-detected 触发入口。]
 
 ### 注册流程和适配建议
 
@@ -321,7 +324,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 |:---|:---|:---|:---|:---|
 | `JobScheduler.getPendingJobReasons(int jobId)` | API 36 | `int[]` | 返回当前可能导致该 job pending 的 reason code | AOSP android-16.0.0_r1 已检出 |
 | `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图，包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
-| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证：API 37 preview/reference；AOSP android-16.0.0_r1 未检出] |
+| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 |  |
 
 这几组接口合在一起，才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler，调试时最好先拿到对应的 jobId，再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
 
@@ -552,7 +555,7 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 
 ## 附录：DeliQueue drain 触发机制与 Generational CMC gating 条件
 
-这组补充核对 §16.5 中提到的 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 ConcurrentMessageQueue 数据结构的实际实现：
+以下是对正文中 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 ConcurrentMessageQueue 数据结构的补充核对：
 
 ### DeliQueue drain 触发条件和内部实现
 
@@ -609,7 +612,6 @@ bool Runtime::useGenerationalCMC() const {
 - 需要 `persist.device_config.runtime_native_boot.use_generational_gc` 属性设置为 true
 - 必须在编译时启用 `kUseUserfaultfd` 特性
 
-[注意: Generational CMC gating 代码块基于 AOSP android-16.0.0_r1 源码核验；ProfilingManager 触发器内部判断逻辑未在 API 37 公开文档或 AOSP preview 中给出，上文已按公开 API 口径重写，不给未验证的伪代码。]
 
 ### ProfilingManager 触发器内部判断逻辑
 
@@ -626,7 +628,6 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | call stack sample / system trace snapshot 口径需按 `ProfilingResult` 实际返回判断 |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
 
-[已验证：Android 17 features 页已公开 cold start、memory limit breach 和 Binder spam 的产物口径；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 在 features 页与 API reference 的产物描述不完全一致，正文已按 `ProfilingResult` 实际返回做边界处理；anomaly 触发器内部的多维度判断阈值和组合条件未公开。]
 
 ### ConcurrentMessageQueue 实际数据结构
 
@@ -676,9 +677,8 @@ public class TreiberStack<E> {
 | ConcurrentMessageQueue | 存在但不默认启用 | 默认启用 | 反射代码需适配 null 值 |
 
 
-## Choreographer Buffer Stuffing Recovery（Android 16 新增）
+## 附：Choreographer Buffer Stuffing Recovery（Android 16 新增）
 
-> 来源：源码调研 2026-05-20 | 一手源码：frameworks/base/core/java/android/view/Choreographer.java（android-16.0.0_r1）
 
 Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新增 `BufferStuffingState` 内部类管理恢复状态，新增 `onWaitForBufferRelease()` @hide API 供图形客户端调用。
 

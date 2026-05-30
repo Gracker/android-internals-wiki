@@ -298,6 +298,52 @@ AndroidX 文档写得很清楚：如果事务启用了 reordering，`runOnCommit
 - 在 `runOnCommit()` 里继续做重活。这里仍在主线程事务执行尾部，继续 inflate、同步查询或大量 adapter diff，会把下一帧推得更晚。
 - 在 `runOnCommit()` 里递归提交新事务。`mExecutingActions` 会阻止当前执行过程递归进入，但新事务仍会进入下一轮主线程消息，容易形成页面切换期间的事务瀑布。
 
+
+
+<!-- AIW-源码调研-2026-05-30：executePendingTransactions 边界补充 -->
+### 🔹 executePendingTransactions() 不是「执行当前事务」的 API
+**来源：[未经一手验证——官方 API 参考 androidx.de/FragmentTransaction；cs.android.com androidx-main JS 渲染拦截未能抓取源码段]**
+
+官方 API 参考（androidx.de）明确指出：
+
+> "Calling `commitNow` is preferable to calling `FragmentTransaction.commit()` followed by `FragmentManager.executePendingTransactions()` as the latter will have the **side effect of attempting to commit all currently pending transactions** whether that is the desired behavior or not."
+
+这意味着 `executePendingTransactions()` 会清空整个 `mPendingActions` 队列并执行**所有**待处理事务，而不是只执行当前调用 `commit()` 的那一笔。如果此前已有 Navigation Component、child FragmentManager 或其他模块提交了事务，这些也会被一起执行。
+
+**单笔事务应使用 `commitNow()`**，它直接调用 `execSingleAction()` 且不进 back stack。`commitNow()` 的语义是「同步执行当前 BackStackRecord」，而 `executePendingTransactions()` 的语义是「清空并执行所有 pending」。
+
+工程场景中常见的误用是在一个 `commit()` 之后调用 `executePendingTransactions()` 期望「让当前页面快点出来」，实际效果是同时执行了所有 pending 事务，时序副作用远大于单笔 `commitNow()`。
+
+<!-- AIW-源码调研-2026-05-30：AndroidX 源码版本锚点修正 -->
+### 🔹 AndroidX 源码版本锚点：从 androidx-main 切到稳定 commit
+**来源：[待验证——cs.android.com androidx-main JS 渲染拦截；android.googlesource.com ?format=TEXT 可行性待确认]**
+
+章节当前引用的 AndroidX 源码 URL 使用 `androidx-main` 分支：
+- `androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java`
+- `androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java`
+
+存在问题：
+- `androidx-main` 是 AOSP 开发分支，符号和接口可能随时间漂移，不适合作为稳定引用锚点
+- GitHub `raw.githubusercontent.com` 对 tag 路径（如 `fragment-1.8.0`）返回 404，不能直接使用 release tag
+- cs.android.com 的 raw 页面受 JS 渲染拦截，无法直接获取源码文本
+
+**可行的稳定锚定方式**（优先级排序）：
+1. **commit hash**：在 cs.android.com 或 android.googlesource.com 使用特定 commit SHA（例：`b2c178909e70618442850097c9492b57bdf0676b`），超越分支名漂移
+2. **androidx-release 分支**：使用 `androidx-activity-release`、`androidx-fragment-release` 等 release 分支（比 `androidx-main` 更稳定）
+3. **?format=TEXT 参数**：cs.android.com 或 android.googlesource.com 添加 `?format=TEXT` 参数可能绕过 JS 渲染（需实机验证）
+
+引用示例：
+```
+# 推荐（commit hash）
+frameworks/support/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java
++ b2c178909e70618442850097c9492b57bdf0676b
+
+# 次选（release 分支）
+frameworks/support/+refs/heads/androidx-activity-release/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java
+```
+
+<!-- AIW-源码调研-2026-05-30 END -->
+
 更稳的做法是把 `runOnCommit()` 限定为轻量状态同步，例如注册结果监听、触发一次不阻塞主线程的异步加载，或发出 `postponeEnterTransition()` 的准备信号。首帧后的重任务放到 `viewLifecycleOwner.lifecycleScope`，并配合 `repeatOnLifecycle()` 与取消语义。
 
 ## `setReorderingAllowed(true)` 不是简单的加速开关

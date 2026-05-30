@@ -67,6 +67,8 @@ task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/
 last_task9_review_log: "logs/deep-review/2026-05-27-01-deep-review.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-30
 ---
 
 # ANR 设计思想
@@ -98,15 +100,13 @@ auto_promoted_date: "2026-05-27"
 
 ## 为什么要了解 ANR 的设计思想
 
-当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，甚至卸载你的 App。Android 的设计者很早就意识到，一个无响应的应用会把单个 App 的不满扩散成对整个系统稳定性的怀疑。
+当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，甚至卸载你的 App。Android 设计者很早就明白：一个无响应的 App，会让用户对整个系统产生怀疑。
 
 ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它的角色是运行时防线，而非事后诊断工具：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
 
 如果把全书的主线连起来看，ANR 属于广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想是一篇“体验保护机制”章节，异常处理只是其中一层。
 
-ANR 的设计思想是 Android 性能优化的核心课题之一，也会直接影响 ANR 问题的分析思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易只看堆栈下结论——ANR trace 的堆栈经常是"替罪羊"，导致超时的代码可能早已执行完毕。
-
-[来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
+理解 ANR 的设计思想，直接影响你分析 ANR 问题的思路。不了解系统"为什么这样设计"，拿到 traces.txt 就只看堆栈——而 ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早就跑完了。
 
 ## ANR 的设计初衷：站在用户和系统之间
 
@@ -114,15 +114,13 @@ Android 设计 ANR 机制的出发点可以用一句话概括：**用户不应�
 
 当应用的主线程被阻塞时，它无法处理任何用户输入——触摸事件、按键事件都被丢弃在消息队列中等待。如果系统不介入，用户面对的就是一块冻结的屏幕，只能强制重启手机来摆脱。
 
-ANR 机制在这个场景中介入的方式是：设置一个超时计时器，如果在规定时间内应用没有完成某个关键操作，系统就会认为它"失去了响应能力"，然后弹出对话框让用户决定下一步。这个设计哲学有几个关键特点：
+ANR 机制在这个场景中介入的方式是：设置一个超时计时器，如果在规定时间内应用没有完成某个关键操作，系统就会认为它"失去了响应能力"，然后弹出对话框让用户决定下一步。这套设计有三层：
 
-**第一，ANR 是系统对应用的强制约束，并非应用自愿配合的机制。** 超时检测在 system_server 中运行，与应用自身的代码完全隔离。即使应用的主线程已经死锁，system_server 仍然能检测到超时并介入。这种设计保证了即使应用开发者完全不考虑响应性，系统也有兜底方案。
+**第一层，ANR 是系统对应用的强制约束，不是应用自愿配合的机制。** 超时检测在 system_server 中运行，与应用自身的代码完全隔离。即使应用的主线程已经死锁，system_server 仍然能检测到超时并介入。这种设计保证了即使应用开发者完全不考虑响应性，系统也有兜底方案。
 
-**第二，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户通常看不到它在做什么）。
+**第二层，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户通常看不到它在做什么）。
 
-**第三，ANR 机制本身是一个"紧急刹车"，不应该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+**第三层，ANR 是"紧急刹车"，不该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
 
 ## ANR 机制的核心流程
 
@@ -206,8 +204,6 @@ private final class AnrRecord {
 }
 ```
 
-[已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, ProcessErrorStateRecord.java]
-
 注意 `startAnrConsumerIfNeeded()`——ANR 处理被放到了单独的 `AnrConsumerThread` 中执行，目标是避免 ANR 处理逻辑阻塞 AMS 主线程。系统处理一个应用无响应事件时，AMS 仍要继续服务其他进程，ANR dump 不能把调度线程拖住。
 
 **连续 ANR 抑制。** 当同一个 App 短时间内反复触发 ANR 时，系统不会对每一次都执行完整的 dump + 弹窗流程。`AnrHelper` 内部通过 `isContinuousAnr` 标记和 `firstPidDumpPromise` 机制，对连续 ANR 做合并处理：第一次 ANR 正常 dump 全量堆栈，后续连续 ANR 可能只 dump 自身进程（`onlyDumpSelf=true`）或跳过 dump 直接走杀进程逻辑。这个设计有两个目的：避免频繁 SIGQUIT 导致系统 I/O 飙升（dump 一个进程的堆栈可能耗时数百毫秒），以及防止 ANR 处理本身成为系统瓶颈。排查时要注意：如果 traces.txt 中只看到一个 ANR 记录但 event log 显示多次 `am_anr`，可能就是连续 ANR 被合并了。
@@ -220,11 +216,9 @@ ANR 触发后，系统的处理分为两种情况：
 
 **后台 ANR（用户看不到的应用）**：系统直接杀掉进程，不弹对话框。用户完全无感知，只是下次打开这个 App 时可能发现它已经被系统回收了。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-
 ## AMS 中 ANR 的核心代码路径
 
-从概念流程落到源码，ANR 的代码路径分散在多个文件中，但处理主线很清楚。
+概念说完，落到源码。ANR 的代码路径虽然散在多个文件里，但主线很清楚。
 
 ### 入口：不同组件的 ANR 触发点
 
@@ -238,16 +232,14 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 **ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒，常量是 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（`frameworks/base/core/java/android/content/ContentResolver.java`），值为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；AMS 侧通过 `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号触发超时回调。与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/content/ContentResolver.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS = 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER; frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG]
-
 
 **startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
 
-[已验证: AOSP android-8.0.0_r1 / android-9.0.0_r1 / android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, ActiveServices.java 与 ActivityManagerConstants.java]
+
 
 **InputConnection / IME 输入相关无响应**：不要把它写成 `InputMethodManagerService#onInputEvent` 的 5 秒 timeout。AOSP android-14.0.0_r1 的 `InputMethodManagerService` 中没有这个判定点。IME 和 `InputConnection` 是输入法交互路径的一部分；如果表现为输入事件长期没有完成，最终仍要回到 `InputDispatcher` 的 dispatching timeout、waitQueue 和 `AnrTracker` 机制，由 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 处理。排查这类问题时，把 IME Binder 调用、目标应用主线程和 InputDispatcher 超时放在同一条时间线上看。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp；InputMethodManagerService.java 未见 `onInputEvent` timeout 判定点]
+
 
 ### 核心：AnrHelper 与 ProcessErrorStateRecord
 
@@ -292,7 +284,6 @@ class AnrHelper {
 
 `mApp.mErrorState` 对应 `ProcessErrorStateRecord`。这条调用会进入 trace 收集、CPU 信息采样、event log、dropbox 和 UI 决策。文章里讨论“ANR 处理核心”时，应把 `AnrHelper` 理解成排队和线程隔离层，把 `ProcessErrorStateRecord` 理解成一次 ANR 的实际处理层。
 
-[已验证: AOSP android-14.0.0_r1, `AnrHelper.java`, `ProcessErrorStateRecord.java`]
 
 `AnrHelper` 这段路径暴露出几个排查时容易忽略的细节：
 
@@ -301,8 +292,6 @@ class AnrHelper {
 **traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。9.3 节（ANR 分析方法）会详细讨论如何应对这个挑战。
 
 **System Server 会向多个进程发送 SIGQUIT。** 系统不只会对发生 ANR 的进程发 SIGQUIT，还可能同时请求关联进程的堆栈信息。一个 App 收到 SIGQUIT 不代表自己发生了 ANR，也可能是另一个 App 触发的。
-
-[来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
 ## ANR 与 Watchdog 的区别
 
@@ -352,8 +341,6 @@ public class Watchdog {
 }
 ```
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/Watchdog.java]
-
 ### 后果不同
 
 ANR 触发后，用户看到的是一个对话框——可以选择"等待"或"关闭"。App 进程可能被杀，但 system_server 不受影响，其他应用正常运行。
@@ -371,7 +358,6 @@ Watchdog 触发时，在 Perfetto 中会表现为：
 - system_server 进程中的某个系统服务线程长时间处于 BLOCKED 或 WAITING 状态
 - 如果抓到了 Watchdog 超时事件，通常意味着设备即将重启
 
-[待补充：Trace 截图 — ANR 与 Watchdog 在 Perfetto 中的对比]
 
 ## ANR 信息的产出
 
@@ -418,8 +404,7 @@ adb shell dumpsys dropbox --print data_app_anr
 
 不同 ROM 可能有 rate limit 或 tag enable 差异。这在分析偶发性 ANR 时特别有用——用户可能无法实时提供 traces.txt，但 Dropbox 中可能保留了之前 ANR 的记录。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]
+
 
 ### 三种信息的互补关系
 
@@ -451,15 +436,11 @@ Android 17（API 37）把系统触发器扩到更多场景：`TRIGGER_TYPE_COLD_
 
 这项改进针对 traces.txt 的"刻舟求剑"问题：系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程行为，比单个堆栈快照更接近时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对不同启动路径优化。
 
-[已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, AnrHelper.java；AOSP android-14.0.0_r1, BroadcastQueueModernImpl.java, ActiveServices.java]
-[已验证: Android Developers ProfilingManager / ProfilingTrigger API reference, 2026-05-26；Android 17 features, 2026-05-26]
-[待验证: Android 8.0 后台 Service 200 秒超时的具体 commit]
 
 **Android 15**（[待验证]）：ANR 行为可能存在以下变更——更严格的 `startForeground()` 执行约束、前台 Service 类型声明的强制化。这些变更影响的是 ANR 的触发条件，而非 ANR 机制本身的架构。如有变更，将在后续 review 中更新。
 
 **Android 17**（API 37）：ProfilingManager 新增冷启动、OOM、过量 CPU 使用终止、异常资源行为等系统触发器。它们补的是性能诊断入口，ANR 机制的架构仍是超时检测 → SIGQUIT dump → 弹窗/杀进程。
 
-[待验证: Android 15/17 ANR 机制的具体变更，需在 AOSP 正式版发布后对照确认]
 
 ## ANR 在 Google Play Console 中的统计与影响 [扩展]
 
@@ -476,11 +457,7 @@ Play Console 提供的 ANR 信息包括：
 
 这些统计数据可以帮助开发者快速定位 ANR 在哪些设备或系统版本上高发，但根因分析仍然需要获取完整的 traces.txt 和 event log。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-
-## [自动发现] ANR trace 堆栈的"替罪羊"现象
-
-前文分析 `AnrHelper` 与 `ProcessErrorStateRecord` 时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定后续 ANR 分析的方法。
+## ANR trace 堆栈的"替罪羊"现象——为什么不能只看堆栈
 
 **ANR trace 中主线程的堆栈，往往不是导致 ANR 的直接原因。** 根源在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
 
@@ -494,8 +471,6 @@ Play Console 提供的 ANR 信息包括：
 
 这个认知直接决定 ANR 分析方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
 
-[来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
-[自动发现]
 
 ## 常见问题与误区
 
@@ -518,11 +493,9 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
 ## 参考资料
 
 ### Kotlin 协程 ANR 治理与 Dispatchers 性能开销
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-kotlin-coroutine-dispatchers-anr-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级分析 CoroutineScheduler 线程池架构：Dispatchers.IO 与 Default 共享同一 CoroutineScheduler 实例，withContext(Dispatchers.IO) 在 Default 线程上不发生线程切换只改变 TaskContext 标记；WorkQueue 半 FIFO 调度的饥饿风险；HandlerContext 关闭后任务降级到 Dispatchers.IO 的 ANR 传播链；协程 ANR 本质是 withContext(Dispatchers.Main) 仍在主线程执行。
-- 注入时间：2026-05-12
-- 价值：揭示了协程 ANR 的核心陷阱——Dispatchers.IO 不等于切换线程，以及 Handler 关闭后的降级传播链，对 ANR 治理实践有直接的避坑指导价值
+
+> 源码级分析 CoroutineScheduler 线程池架构：Dispatchers.IO 与 Default 共享同一 CoroutineScheduler 实例，withContext(Dispatchers.IO) 在 Default 线程上不发生线程切换只改变 TaskContext 标记；WorkQueue 半 FIFO 调度的饥饿风险；HandlerContext 关闭后任务降级到 Dispatchers.IO 的 ANR 传播链；协程 ANR 本质是 withContext(Dispatchers.Main) 仍在主线程执行。
+> 揭示了协程 ANR 的核心陷阱——Dispatchers.IO 不等于切换线程，以及 Handler 关闭后的降级传播链，对 ANR 治理实践有直接的避坑指导价值
 
 
 - AOSP 源码路径：

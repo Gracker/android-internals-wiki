@@ -3,8 +3,8 @@ title: "Jetpack Compose 性能优化"
 chapter: "22.3"
 section: "22.3"
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-12"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-05-30"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
 confidence: high
 drafted_date: "2026-05-12"
@@ -12,6 +12,8 @@ polish_count: 0
 sources:
   - type: aosp
     path: "androidx/compose/runtime/PausableComposition"
+  - type: aosp
+    path: "androidx.compose.foundation.lazy.layout.CacheWindowLogic (androidx-main)
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
 pipeline_stage: task2b_pending
@@ -697,7 +699,65 @@ Android 17 引入了 Generational Garbage Collection，该特性显著影响了 
 - 分代GC在不同硬件设备上的实际性能表现存在差异，需要针对性测试
 
 **参考资料**: Android 17 官方发布说明、source.android.com ART 调试文档、androidx.compose.runtime 源码分析
+
+## LazyLayoutCacheWindow 内部实现细节（2026-05-30 源码调研）
+
+### CacheWindowLogic.kt 核心逻辑
+
+**源码一手**：`compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/CacheWindowLogic.kt`（androidx-main, Copyright 2025）
+
+**关键机制**：
+
+1. **窗口边界变量**：
+   - `prefetchWindowStartLine = Int.MAX_VALUE`（初始值）
+   - `prefetchWindowEndLine = Int.MIN_VALUE`（初始值）
+   - 滚动时通过 `fillCacheWindowForward()` 和 `fillCacheWindowBackward()` 更新
+
+2. **滚动时窗口填充**（`onScroll(delta: Float)`）：
+   - `fillCacheWindowBackward(delta)` 填充反向窗口（已滑过区域）
+   - `fillCacheWindowForward(delta)` 填充正向窗口（即将进入可见区域）
+   - `shouldRefillWindow` flag 在首帧、数据集变化或 item 尺寸变化时触发重新填充
+
+3. **紧急预取判断**（`isUrgent`）：
+   ```kotlin
+   val isUrgent: Boolean =
+       if (prefetchWindowEndLine + 1 == visibleWindowEnd + 1 && scrollDelta != 0.0f) {
+           scrollDelta.absoluteValue >= mainAxisExtraSpaceEnd
+       } else { false }
+   ```
+   当下一帧 scroll delta 预期可覆盖 item 额外空间时，标记为紧急预取。
+
+4. **缓存窗口预取**与 Pausable Composition 联动：预取工作由 `PrefetchHandleProvider.schedulePrecomposition()` 调度，若帧 deadline 临近则可被 Pausable Composition 暂停。
+
+5. **常量**：`MaxItemsToRetainForReuse = 7`（对齐 RecyclerView 的 5+2=7 策略）。
+
+### LazyLayoutPrefetchState.kt 预取 API
+
+**源码一手**：`compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt`（androidx-main）
+
+核心方法：
+- `schedulePrecomposition(index: Int): PrefetchHandle` —— 纯预组合
+- `schedulePrecompositionAndPremeasure(index, constraints, onItemPremeasured): PrefetchHandle` —— 预组合 + 预测量
+- `PrefetchHandle.cancel()` —— 取消预取请求
+- `PrefetchHandle.markAsUrgent()` —— 标记为紧急（可越过低优先级队列）
+
+PrefetchHandle 由 `PrefetchHandleProvider` 管理，通过 `LazySaveableStateHolderProvider` 与 `SubcomposeLayoutState` 集成。
+
+### 版本边界确认
+
+| 特性 | 最低 Compose Foundation 版本 | 状态 |
+|------|----------------------------|------|
+| LazyLayoutCacheWindow API | 1.9.0（稳定化） | 1.9.0+ |
+| Pausable Composition + Lazy 预取 | 1.10.0+ | 需确认具体版本默认值 |
+| Strong Skipping 默认启用 | Kotlin 2.0.20（compiler 2.0+） | Kotlin 2.0.20+ |
+| Android 17 默认 Compose 工具链 | ~1.5.x（Kotlin 1.9.x） | 默认 Strong Skipping 关闭 |
+
+**关键结论**：Android 17（API 37）系统默认的 Compose 工具链约为 1.5.x，Strong Skipping 模式默认未开启。开发者如需完整性能优化收益，需显式升级 Compose 依赖至 1.9+/1.10+ 并确认目标版本的 Pausable Composition 默认状态。
+
+**来源**：DeepResearch 调研报告 `2026-05-30-android-17-pausable-composition-compose-toolchain.md`（一手源码分析）
+
 <!-- END AIW-源码调研-2026-05-27 -->
+
 
 ## 参考资料
 

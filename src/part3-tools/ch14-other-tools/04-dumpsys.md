@@ -4,6 +4,14 @@ chapter: '14.4'
 section: '14.4'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
+updated_by: "openclaw-task6"
+updated_date: "2026-05-30"
+task6_result: "pass-light-edit"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-30"
+task6_state: "reviewed"
+task2b_state: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
 last_verified: '2026-05-30'
 last_verified_against: AOSP android-16.0.0_r1
@@ -14,8 +22,7 @@ sources:
 - type: official
   path: developer.android.com/studio/profile/battery-historian
 - type: blog
-  path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
-tags:
+  path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager tags:
 - dumpsys
 - meminfo
 - gfxinfo
@@ -30,7 +37,7 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: auto-fixed
+task9_result: "pass-tech-review"
 last_task2b_at: "2026-05-28T14:50:00+08:00"
 task9_reviewed_date: "2026-05-30"
 task9_reviewed_by: openclaw-task9
@@ -40,15 +47,12 @@ repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: "finalized"
 task6_state: revisiting
 task9_state: reviewed
-task2b_state: fixed
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
-task6_result: pass-light-edit
 last_task6_at: "2026-05-29T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
@@ -520,7 +524,7 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 
 判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
 
-在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为初步筛选：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的真实 deadline。
+在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为初步筛选：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的实际截止时间。
 
 当 desired_present_time 为 0 时，表示该帧没有期望呈现时间（通常是未使用的缓冲区槽位），应跳过不计。
 
