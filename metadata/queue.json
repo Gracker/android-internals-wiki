@@ -692,7 +692,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-29T06:17:02.414991+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-30T11:36:00+08:00",
+    "completed_by": "openclaw-task2b-lite",
+    "result": "fixed-lite",
+    "completion_reason": "Task2B Lite: Added DeepResearch reference materials to sources section"
   },
   {
     "section": "2.19",
@@ -787,6 +791,26 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-30T09:26:16.986966",
+    "status": "pending"
+  },
+  {
+    "section": "14.7",
+    "section_title": "ProfilingManager",
+    "priority": 85,
+    "reason": "[Deep Tech Review Audit] FLUSH_FULL 枚举值错误提及",
+    "material_paths": [
+      "logs/deep-review/2026-05-30-10-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "BufferFillPolicy 枚举表说明",
+        "detail": "章节明确说明 FLUSH_FULL 不在公开 API 中，但文中仍提及 FLUSH_FULL 2 次，与章节自身说明矛盾",
+        "suggestion": "删除所有对 FLUSH_FULL 的提及，确保与实际 AndroidX API 一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review-audit",
+    "added_at": "2026-05-30T10:20:00+08:00",
     "status": "pending"
   }
 ]
