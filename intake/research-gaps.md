@@ -969,3 +969,24 @@ VSyncPredictor在不同SoC厂商的实现差异和硬件适配特性。当前章
 - 在 ch26 可观测性或 ch19 APM 工具链中增加插桩工具选型指南
 - 补充 ASM 与 AspectJ 的性能对比数据
 - 考虑 KSP/KAPT 时代的现代插桩方案演进（与 Gradle Transform API deprecation 的关系）
+
+
+## [2026-05-30] 3.1 & 14.3 — 技术Review发现盲区
+
+### 盲区描述
+1. **Android 17 DeliQueue 实现机制** - 缺乏 AOSP android-17.0.0_r1 一手源码验证，无锁消息队列的具体实现和性能收益未经验证
+2. **InputFlinger 独立进程化路径** - Android 17 中 inputflinger 从 libinputflinger 形态完全独立为单独进程的具体实现和触发条件未确认
+3. **Android 17 内存管理工具演进** - Android 17 中内存分析工具（heapprofd、meminfo等）的 API 变化和新增功能缺乏一手资料
+
+### 重要程度
+高 - 涉及核心系统组件架构变化，可能影响实际使用和问题诊断
+
+### 建议研究方向
+- 持续追踪 AOSP android-17.0.0_r1 源码公开进度
+- 关注 Android Developers 官方文档的更新
+- 收集厂商设备上 Android 17 的实际行为观察
+
+### 关联章节
+- 3.1 Input 事件分发全流程
+- 14.3 内存分析工具
+- 1.10 ContentProvider 与输入事件拦截
