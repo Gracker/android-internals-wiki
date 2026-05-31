@@ -279,7 +279,9 @@
     "14.5",
     "19.12",
     "19.12",
-    "19.16"
+    "19.16",
+    "19.09",
+    "19.11"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -400,29 +402,31 @@
     "src/part3-tools/ch14-other-tools/03-memory-tools.md",
     "src/part3-tools/ch19-apm/12-framemetrics.md",
     "src/part3-tools/ch19-apm/12-framemetrics.md",
-    "src/part3-tools/ch19-apm/16-profiling-manager.md"
+    "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "src/part3-tools/ch19-apm/09-measure.md",
+    "src/part3-tools/ch19-apm/11-jankstats.md"
   ],
-  "review_summary": "Task6 2026-05-31 20: review 22.3 Jetpack Compose、19.23 网络 APM；pass-light-edit；无回炉，送 Task9。",
+  "review_summary": "Task6 2026-05-31 21: review 19.09 Measure、19.11 JankStats；pass-light-edit；无回炉，送 Task9。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-31T20:10:00+08:00",
+    "reviewed_at": "2026-05-31T21:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "22.3",
-      "19.23"
+      "19.09",
+      "19.11"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+      "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part3-tools/ch19-apm/11-jankstats.md"
     ],
-    "log": "logs/review/2026-05-31-20-review.md",
+    "log": "logs/review/2026-05-31-21-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 13,
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "small_fixes": 13,
+    "small_fixes": 6,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "22.3 Compose、19.23 网络 APM 完成 Task6 复审；L1/L2 小修 13 处；无新增 Task2B 回炉项；两节均送 Task9 复核。"
+    "notes": "19.09 Measure、19.11 JankStats 完成 Task6 复审；L1/L2 小修 6 处；无新增 Task2B 回炉项；两个章节均送 Task9 复核。"
   },
   "issues_by_section": {
     "1.6": {
@@ -1866,15 +1870,15 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 0,
+      "task6_l1_l2_fixes": 3,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-21T12:11:00+08:00",
-      "task6_log": "logs/review/2026-05-21-12-review.md",
-      "summary": "能力范围字段级覆盖不足；Firebase/Sentry/Measure 平台对比表缺失。",
+      "task6_reviewed_at": "2026-05-31T21:05:00+08:00",
+      "task6_log": "logs/review/2026-05-31-21-review.md",
+      "summary": "能力范围、平台对比、隐私策略、试点评估与自定义 trace 示例均已覆盖；既有 Task9 技术风险不在 Task6 裁决。",
       "task6_technical_risk_markers": 2,
       "task6_new_rework": false,
-      "task6_note": "复审通过：能力范围字段级表和平台对比表已具备写作覆盖；官方 SDK 事件 schema 与 native crash/ANR 技术边界已有 Task9 pending queue，Task6 不重复投递。",
-      "task9_result": "needs-rework"
+      "task6_note": "Task2B 回流后复审通过；补齐自定义 trace 示例口径并清理口语化表达；无新增 L3/L4 回炉项，送 Task9 复核。",
+      "task9_result": "pending"
     },
     "19.11": {
       "p0": 0,
@@ -1882,15 +1886,15 @@
       "p2": 0,
       "p3": 0,
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 3,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-21T04:09:00+08:00",
-      "task6_log": "logs/review/2026-05-21-04-review.md",
+      "task6_reviewed_at": "2026-05-31T21:05:00+08:00",
+      "task6_log": "logs/review/2026-05-31-21-review.md",
       "task6_new_rework": false,
-      "auto_finalized": true,
-      "auto_promoted_at": "2026-05-21T04:09:00+08:00",
-      "task6_note": "L1 禁用词/黑话小修 6 处；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。",
-      "task9_result": "pass-tech-review"
+      "auto_finalized": false,
+      "task6_note": "Task2B 回流后复审通过；清理英文夹杂表达，Compose 示例补齐 state 清理；无新增 L3/L4 回炉项，送 Task9 复核。",
+      "task9_result": "pending",
+      "summary": "JankStats API 版本、阈值口径、UI context、Compose、批量聚合和工具分工均已覆盖。"
     },
     "3.1": {
       "task6_result": "needs-rework",
