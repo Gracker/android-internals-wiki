@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: finalized
+status: ready-for-review
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
@@ -36,13 +36,15 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-06-01T00:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。"
 ---
 
 # MainThread 与 RenderThread 协作
@@ -189,13 +191,13 @@ int DrawFrameTask::drawFrame() {
 
 同步完成后，UI Thread 就能继续处理输入、动画和下一轮 traversal，RenderThread 再独立进入 `draw()`。所以 `syncFrameState` 很长时，含义通常是"RenderThread 还在处理本帧同步，或者前面的 buffer / fence 反压已经把它拖慢"，范围比"上一帧 GPU 没结束"更宽。
 
-### [自动发现] DeliQueue 无锁同步（Android 17）
+### DeliQueue 与 RenderThread 队列边界（Android 17）
 
-Android 17 引入了 DeliQueue，替代了 RenderThread 内部原有的互斥锁保护消息队列。在旧架构下，UI Thread 通过 `postAndWait()` 投递任务时，需要获取 RenderThread 队列的互斥锁；如果 RenderThread 正在持有这把锁（比如正在处理上一帧的同步），UI Thread 就会被阻塞——这就是经典的优先级反转场景：低优先级的后台任务占了锁，高优先级的 UI Thread 被迫等待。
+Android 17 的 DeliQueue 作用在 `android.os.MessageQueue` 这条应用消息循环路径上，默认面向 targetSdk 37+ 的应用启用。它不能被写成 RenderThread 内部 WorkQueue 的替代实现。
 
-DeliQueue 采用无锁（lock-free）设计，UI Thread 投递任务和 RenderThread 消费任务可以并发进行，不再存在锁竞争点。实测数据显示，掉帧率因此下降了约 4%-7.7%，改善主要集中在"UI Thread 等待 RenderThread 释放锁"这一段。
+AOSP android-16.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时，讨论的是 HWUI RenderThread 的 WorkQueue；DeliQueue 官方性能数据不该直接拿来解释这条队列的锁竞争。
 
-在 Perfetto 中，如果 `syncFrameState` 的耗时在 Android 17 设备上有明显缩短，DeliQueue 是重要因素之一。
+Perfetto 分析时要把两类队列分开：主线程 `Looper` 消息入队 / 出队的锁竞争，可以参考 DeliQueue 的 Android 17 行为变化；`syncAndDrawFrame()` 到 RenderThread 的同步等待，仍要回到 `DrawFrameTask`、`WorkQueue`、`syncFrameState()` 和 `CanvasContext::draw()` 观察。
 
 数据传递层面,同步过去的是 RenderNode 树的最新状态、脏区和相关资源引用。这里更接近共享对象的状态同步,不是把整棵 DisplayList 的所有权直接交给 RenderThread。
 
@@ -229,11 +231,11 @@ void CanvasContext::draw() {
 
 GPU 命令的提交是**异步的**。CPU(RenderThread)把命令扔给 GPU 后,GPU 在后台执行渲染,两者可以并行。RenderThread 通过 **Fence** 机制来跟踪 GPU 的工作状态。
 
-### [自动发现] ADPF 性能反馈机制（Android 16+）
+### ADPF 性能反馈机制（Android 14+ / Android 16 headroom）
 
-RenderThread 在 Android 16 中接入了 ADPF（Adaptive Performance Framework）的反馈机制。RenderThread 通过 `PerformanceHintManager` 的 session 调用 `reportActualWorkDuration()`，向系统反馈每一帧渲染的实际耗时。系统结合 GPU Headroom 信息（`getGpuHeadroom()`），动态调整 CPU/GPU 频率和渲染负载——如果连续多帧负载偏低，可以降频省电；如果接近超时，则提前提频或触发渲染降级（如降低分辨率）。
+AOSP android-14.0.0_r1、android-15.0.0_r1 和 android-16.0.0_r1 的 `CanvasContext.cpp` 都已经包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。因此 RenderThread 向 ADPF hint session 上报帧工作时长，不能写成 Android 16 才接入。
 
-这条反馈环让 RenderThread 从单纯的"执行者"变成了具备负载感知能力的管道。在 Perfetto 中，`ADPF` 相关的 slice 和 CPU frequency counter 的联动可以观察到这条反馈路径的运作。
+Android 16 需要单独看的变化是 headroom 相关 API，例如 GPU headroom 查询能力。实战里可以把两件事拆开看：RenderThread 的 hint session 上报用于描述每帧实际工作时长；headroom API 用于判断设备当前还有多少性能余量，不能把二者合并成同一个 Android 16 新特性。
 
 ### 分片 GPU 并行提交（Adreno 830+）
 
@@ -332,7 +334,7 @@ VSync-app (0ms)
 │   ├── Animation (1-2ms)
 │   ├── measure/layout (2-5ms)
 │   ├── draw (构建 DisplayList) (5-8ms)
-│   └── syncFrameState (8-8.5ms)  ← 阻塞点:等 RenderThread 上一帧完成
+│   └── syncFrameState (8-8.5ms)  ← 阻塞点:等 RenderThread 同步阶段完成
 │
 ├── RenderThread
 │   ├── DrawFrame 开始 (8.5ms)
@@ -355,11 +357,11 @@ VSync-app (0ms)
 
 在 Perfetto 中的表现:`performTraversals` 占据了大部分帧时间,`DrawFrame` 被挤压到 VSync 周期末尾,甚至延伸到下一个周期。
 
-**模式二:GPU 过载,主线程在 syncFrameState 等待**
+**模式二:同步阶段被 RenderThread 侧工作拖长**
 
-如果上一帧的 GPU 工作还没完成(比如画面过于复杂、使用了大量 shader 特效),主线程在 `syncFrameState` 时必须等 RenderThread 完成上一帧。主线程此时是在等 GPU 把上一帧收尾。
+`syncFrameState` 变长只能说明 UI Thread 等 RenderThread 完成本帧同步阶段。原因可能是 `prepareTree()`、layer update、`makeCurrent()`、纹理准备，也可能是前一轮 `CanvasContext::draw()` 中的 `dequeueBuffer()`、release fence 或 GPU 提交节奏把 RenderThread 压到下一帧。它不能单独证明“上一帧 GPU 未完成”。
 
-在 Perfetto 中的表现:UI Thread 上的 `syncFrameState` 切片明显变长,RenderThread 上的 `DrawFrame` 延续到下一个 VSync 周期。
+在 Perfetto 中的表现:UI Thread 上的 `syncFrameState` 切片明显变长，同时 RenderThread 上的 `DrawFrame`、`dequeueBuffer`、`queueBuffer` 或 HWUI 资源准备切片贴近这一段时间。判断 GPU 过载还要看 GPU counter、fence 等待和 Frame Timeline 的 Actual Present 结果。
 
 **模式三:Buffer 耗尽,dequeueBuffer 阻塞**
 
@@ -408,7 +410,7 @@ LIMIT 20;
 
 **第二步:拆分主线程的耗时。** 展开 `doFrame`,看是 Input、Animation、measure、layout 还是 draw 占了大部分时间。这一步可以定位问题是"布局太复杂"还是"绘制指令太多"。
 
-**第三步:看 syncFrameState 的等待时间。** 如果 syncFrameState 占了较大比例,说明 GPU 上一帧还没完成。问题可能在 RenderThread 侧(GPU 负载高),而不是主线程本身。
+**第三步:看 syncFrameState 的等待时间。** 如果 `syncFrameState` 占了较大比例，先把它归为 RenderThread 同步阶段等待，再去 RenderThread Track 上找 `prepareTree()`、资源上传、`dequeueBuffer()`、fence 等待和 `CanvasContext::draw()` 的对应切片。只有这些证据能把问题进一步归到 GPU、buffer 反压或 HWUI 资源准备。
 
 **第四步:切到 RenderThread Track。** 检查 `DrawFrame` 的总耗时。展开它看 `dequeueBuffer` 和 GPU 渲染各占多少。如果 `dequeueBuffer` 很长,说明 Buffer 被耗尽;如果 GPU 渲染时间很长,说明画面复杂度过高。
 
@@ -525,8 +527,9 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 | **Android 11 (API 30)** | BLASTBufferQueue 进入 AOSP 主线 | 窗口状态与 buffer 提交更容易一起提交并保持同步,底层 BufferQueue 机制仍保留 |
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比,Jank 检测更直接 |
 | **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围继续扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
-| **Android 16 (API 36)** | ADPF 反馈机制、分片 GPU 并行提交 | RenderThread 接入 `PerformanceHintManager` 反馈机制，Adreno 830+ 驱动支持多分片并行命令提交 |
-| **Android 17 (API 37)** | DeliQueue 无锁消息队列 | UI Thread 与 RenderThread 之间的任务投递不再有锁竞争，掉帧率下降约 4%-7.7% |
+| **Android 14 (API 34)+** | RenderThread ADPF hint session 已存在于 AOSP HWUI | `CanvasContext.cpp` 中可见 `HintSessionWrapper`、`updateTargetWorkDuration()`、`reportActualWorkDuration()`；Android 16 headroom API 要单独说明 |
+| **Android 16 (API 36)** | GPU headroom API、分片 GPU 并行提交 | headroom 用于观察性能余量；Adreno 830+ 驱动支持多分片并行命令提交 |
+| **Android 17 (API 37)** | `android.os.MessageQueue` DeliQueue 行为变化 | 默认面向 targetSdk 37+ 应用启用；不要把它写成 HWUI RenderThread `WorkQueue` 的替代实现 |
 
 ## 常见误区
 
@@ -636,11 +639,11 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
 6. **版本差异**：
    - Android 13 (API 33)：Choreographer 新增 `postFrameCallbackWithFrameTime()`，RenderThread 引入 Vulkan 支持
    - Android 15 (API 35)：VSync 信号分发延迟优化，减少帧丢失
-   - Android 17 (API 37)：引入 DeliQueue 无锁消息队列，掉帧率下降约 4%-7.7%
+   - Android 17 (API 37)：`android.os.MessageQueue` 默认面向 targetSdk 37+ 应用启用 DeliQueue；该变化不等同于 HWUI RenderThread `WorkQueue` 替换
 
-7. **ADPF 性能反馈机制 (Android 16+)**：
-   - RenderThread 通过 `PerformanceHintManager` 的 session 调用 `reportActualWorkDuration()`
-   - 向系统反馈每一帧渲染的实际耗时，动态调整 CPU/GPU 频率和渲染负载
+7. **ADPF 性能反馈机制 (Android 14+ / Android 16 headroom)**：
+   - AOSP android-14.0.0_r1 起，RenderThread 相关 `CanvasContext.cpp` 已包含 `HintSessionWrapper` 与 `reportActualWorkDuration()`
+   - Android 16 的 headroom API 用于观察性能余量，不能和 RenderThread hint session 上报混成同一项新能力
 
 8. **GPU 分片并行提交 (Adreno 830+)**：
    - 硬件分片架构支持多 CPU 核心同时录制并向不同分片提交 Vulkan/GLES 命令
@@ -651,5 +654,3 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
 - frameworks/base/libs/hwui/renderthread/RenderThread.h
 - frameworks/native/libs/gui/BufferQueueProducer.cpp
 -->
-
-

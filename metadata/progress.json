@@ -2366,8 +2366,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T23:25:00+08:00",
-  "last_updated_by": "openclaw-task2b-verifier",
+  "last_updated": "2026-06-01T00:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-05-31T22:10:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2532,11 +2532,11 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-05-31T22:50:00+08:00",
+  "last_task2b_at": "2026-06-01T00:50:00+08:00",
   "last_task2b_sections": [
-    "2.1"
+    "2.5"
   ],
-  "last_task2b_action": "frontmatter backlog fallback; fixed Task9 P1 version-difference issue",
+  "last_task2b_action": "frontmatter backlog fallback; fixed Task9 P1 syncFrameState/DeliQueue/ADPF issues",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -6864,6 +6864,23 @@
       "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
       "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
+    },
+    "2.5": {
+      "section": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-01T00:50:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
+      "task2b_notes": "frontmatter backlog fallback：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。",
+      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
     }
   },
   "task2b_rounds": [
@@ -8916,6 +8933,23 @@
       "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
       "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
+    },
+    "2.5": {
+      "section": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-01T00:50:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
+      "task2b_notes": "frontmatter backlog fallback：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。",
+      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
     }
   },
   "task2a_last_processed": {
@@ -9254,6 +9288,24 @@
         "queue[26]:1.9-task6-review-sdm-cloud-compilation"
       ],
       "summary": "Fixed §1.9 SDM/Cloud Compilation source wording, installd version boundary, and removed post-reference research-log appendix."
+    },
+    {
+      "timestamp": "2026-06-01T00:50:00+08:00",
+      "sections_processed": [
+        "2.5"
+      ],
+      "sections_fixed": [
+        "2.5"
+      ],
+      "issues_addressed": 3,
+      "source_types": [
+        "frontmatter backlog fallback / task9-deep-tech-review"
+      ],
+      "details": [
+        "§2.5: syncFrameState 长耗时不再单独归因为上一帧 GPU 未完成，改为 RenderThread 同步阶段等待，并要求结合 DrawFrame/dequeueBuffer/fence/Frame Timeline 判断。",
+        "§2.5: DeliQueue 限定为 Android 17 android.os.MessageQueue 行为变化，不再写成 HWUI RenderThread WorkQueue 替代实现。",
+        "§2.5: ADPF hint session 口径改为 Android 14+ 已存在，Android 16 headroom API 单独拆开。"
+      ]
     }
   ],
   "task2a_result": "processed-draft",
@@ -10089,6 +10141,26 @@
         "源码口径"
       ],
       "source_log": "logs/deep-review/2026-05-25-16-deep-review.md"
+    },
+    {
+      "date": "2026-06-01T00:50:00+08:00",
+      "sections": [
+        {
+          "section": "2.5",
+          "title": "MainThread 与 RenderThread 协作",
+          "source": "frontmatter backlog fallback / logs/deep-review/2026-05-17-14-audit.md",
+          "priority": 95,
+          "fixes": [
+            "syncFrameState 归因修正",
+            "DeliQueue 与 HWUI WorkQueue 边界修正",
+            "ADPF hint session / Android 16 headroom 版本口径修正"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed": 0,
+        "reason": "queue.json 无对应 pending，按 frontmatter backlog fallback 修复"
+      }
     }
   ],
   "section_18_23": {
@@ -10816,7 +10888,7 @@
       "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-05-31T18:50:00+08:00",
+  "task2b_last_run": "2026-06-01T00:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -11263,7 +11335,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md"
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-05-31T18:50:00+08:00",
@@ -11282,15 +11354,18 @@
     "returned_to": "task6_pending"
   },
   "task2b_last_rework": {
-    "at": "2026-05-31T22:50:00+08:00",
+    "timestamp": "2026-06-01T00:50:00+08:00",
     "sections": [
-      "2.1"
+      "2.5"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md"
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
     ],
     "source": "frontmatter backlog fallback",
-    "result": "fixed"
+    "issues_fixed": 3,
+    "at": "2026-06-01T00:50:00+08:00",
+    "result": "fixed",
+    "log": "logs/rework/2026-06-01-00-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
     "16.5",
@@ -11611,5 +11686,6 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
+  "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+  "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
 }
