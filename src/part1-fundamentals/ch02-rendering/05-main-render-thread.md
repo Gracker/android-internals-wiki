@@ -17,12 +17,12 @@ reviewed_date: "2026-06-01"
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
-last_task9_at: "2026-05-17T14:20:00+08:00"
+last_task9_at: "2026-06-01T07:20:00+08:00"
 last_task9_audit: "2026-05-17"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-17"
-last_task9_review_log: logs/deep-review/2026-05-17-14-audit.md
-task9_review_notes: 2026-05-17 Task9 idle-audit 14:20:needs-rework。P0 0 / P1 3 / P2 0;syncFrameState、DeliQueue、ADPF 版本口径需 Task2B 回炉。
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-01"
+last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修复 BLAST 版本边界、DisplayList/RenderNode 关系、TreeInfo::prepareTextures 伪方法、Bitmap.prepareToDraw API 口径和 Android 8 Bitmap 行；P0 2 / P1 2 / P2 3，回到 Task6 复审。"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -36,12 +36,12 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_result: needs-rework
-task9_state: "pending"
-task2b_state: fixed
+task6_state: "revisiting"
+task9_result: "auto-fixed"
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
@@ -52,6 +52,10 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
+last_task9_autofix_at: "2026-06-01"
+p0: 2
+p1: 2
+p2: 3
 ---
 
 # MainThread 与 RenderThread 协作
@@ -92,7 +96,7 @@ Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"
 
 ## MainThread 的职责:Measure、Layout、构建 DisplayList
 
-当 VSync-app 信号到达时,Choreographer 的 `doFrame()` 被触发,主线程开始处理这一帧。我们在 [2.4 Choreographer 与渲染流水线](04-choreographer.md) 中了解了回调的执行顺序(INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL),其中 TRAVERSAL 阶段会执行 `performTraversals()`,这就是主线程渲染工作的起点。
+当 VSync-app 信号到达时,Choreographer 的 `doFrame()` 被触发,主线程开始处理这一帧。我们在 [2.4 Choreographer 与渲染流水线](04-choreographer.md) 中了解了回调的执行顺序(INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT),其中 TRAVERSAL 阶段会执行 `performTraversals()`,这就是主线程渲染工作的起点。
 
 `performTraversals()` 内部执行三个核心步骤:
 
@@ -100,7 +104,7 @@ Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"
 
 **Layout(布局)**--根据测量结果,父 View 为每个子 View 分配精确的位置和大小(left、top、right、bottom)。
 
-**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 收到的是 `RecordingCanvas`,这块画布不直接绘制像素,只把绘制调用(画圆、画文字、画图片)记录到 **DisplayList**(也叫 **RenderNode**)数据结构中。
+**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 收到的是 `RecordingCanvas`,这块画布不直接绘制像素,只把绘制调用(画圆、画文字、画图片)记录为 **DisplayList**,再挂到对应 View 的 **RenderNode** 上。
 
 我们可以把 DisplayList 类比成一份"施工图纸"--它精确记录了"在什么位置画什么形状、什么颜色",但还没有变成屏幕像素。这份图纸将在稍后交给 RenderThread,由它来指挥 GPU 生成最终画面。
 
@@ -132,7 +136,7 @@ RenderThread 是一个在 App 进程内运行的后台线程,它拥有独立的 
 
 **GPU 绘制(DrawFrame)**--遍历 DisplayList,将其中的绘制指令翻译为 GPU 命令(OpenGL/Vulkan),提交给 GPU 执行。
 
-**提交(QueueBuffer)**--将渲染完成的帧通过 BLAST 机制提交给 SurfaceFlinger。
+**提交(QueueBuffer)**--将渲染完成的帧提交给 SurfaceFlinger。Android 11+ 的窗口路径通常会进入 BLASTBufferQueue / SurfaceControl transaction 编排;Android 5-10 仍按传统 BufferQueue / Surface 交换路径理解。
 
 RenderThread 由 `RenderThread::getInstance()` 在进程内按单例启动。`threadLoop()` 先完成线程优先级、Looper 绑定和线程本地对象初始化,再进入 `waitForWork()` → `processQueue()` 的循环。android-16 的真实骨架如下:
 
@@ -271,19 +275,19 @@ SurfaceFlinger:                     ←── 收到 Buffer + acquire fence
 
 ### Bitmap 必须先成为 GPU Texture 才能被绘制
 
-Android 的硬件加速渲染管线中,所有通过 `Canvas.drawBitmap()` 绘制的 Bitmap 必须先以 OpenGL Texture 形式存在于 GPU 显存。Bitmap 的像素数据初始驻留在 CPU 堆内存(Java Heap 或 Native Heap),到 GPU 显存之间必须经过一次数据搬运--这就是纹理上传。
+Android 的硬件加速渲染管线中,通过 `Canvas.drawBitmap()` 绘制的 Bitmap 必须先以 GPU texture / image 形式存在于图形内存。Bitmap 的像素数据初始驻留在 CPU 堆内存(Java Heap 或 Native Heap),到 GPU 显存之间必须经过一次数据搬运--这就是纹理上传。
 
 ### syncFrameState 中的同步 upload
 
-**关键调用链**(AOSP android-14):
+**关键源码路径**(AOSP android-14/16):
 ```
 DrawFrameTask::run()
-  → RenderThread::threadLoop()
-    → syncFrameState()
-      → CanvasContext::sync()
-        → TreeInfo::prepareTextures() - 检查哪些 Bitmap 尚未上传
-          → uploadBitmap(textureId, bitmap) - 同步上传(耗时操作)
+  → syncFrameState(info)
+    → CanvasContext::prepareTree(...)
+      → RenderNode::prepareTree(...)
+        → prepareTreeImpl(...)  // 根据 TreeInfo::prepareTextures 控制纹理准备
 ```
+`TreeInfo::prepareTextures` 是同步阶段里的状态开关,不是一个可调用方法;具体 Bitmap GPU upload 由 HWUI / Skia 纹理缓存路径完成。
 
 当 Bitmap 尚未上传到 GPU 时,`syncFrameState` 期间会触发同步 upload,在 Perfetto 中表现为 **"Upload `<w>x<h>` Texture"** Slice 出现在 syncFrameState 调用栈内。此 Slice 的耗时(几毫秒到几十毫秒不等)会直接阻塞 RenderThread,造成掉帧。
 
@@ -297,9 +301,9 @@ Android O 引入 `Bitmap.Config.HARDWARE`,像素数据直接存储于图形内�
 
 约束:HardwareBitmap 始终 immutable、无法 getPixel()/copyPixelsToBuffer()、软件 Canvas 无法在其上绘制、消耗文件描述符。
 
-**机制二:Bitmap.prepareToDraw()(API 24+,Android N+ 增强)**
+**机制二:Bitmap.prepareToDraw()(API 4+,Android N 开始支持 RenderThread 异步 GPU upload)**
 
-Android N 增强 `prepareToDraw()` 行为:调用后系统向 RenderThread 消息队列 post 异步任务,在 RenderThread 空闲时(帧间)执行像素上传,使 upload 不出现在 critical rendering path 上。
+`prepareToDraw()` 方法本身从 API 4 就存在。Android N 开始,官方文档明确说明它会在 Bitmap 尚未上传时向 RenderThread 发起异步 GPU upload;提前在解码线程调用,可以减少首帧绘制时的同步 upload。
 
 ```java
 Bitmap bitmap = BitmapFactory.decodeResource(res, R.drawable.large_image);
@@ -524,7 +528,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 |:---|:---|:---|
 | **Android 5.0 (API 21)** | 引入 RenderThread、`RenderNodeAnimator`、`ViewPropertyAnimatorRT` 基础 | 主线程渲染工作被拆分,部分属性动画可以下放到 RenderThread |
 | **Android 7.0 (API 24)** | FrameMetrics API | 开发者可以获取更细的帧耗时分解 |
-| **Android 8.0 (API 26)** | Bitmap Native 分配 | Bitmap 像素直接在 Native 堆分配,减少 GPU 上传开销 |
+| **Android 8.0 (API 26)** | Bitmap 像素移到 Native 堆;新增 `Bitmap.Config.HARDWARE` | Native 堆迁移主要降低 Java heap / GC 压力;首帧 GPU upload 边界要结合 HARDWARE bitmap 与 `prepareToDraw()` 判断 |
 | **Android 11 (API 30)** | BLASTBufferQueue 进入 AOSP 主线 | 窗口状态与 buffer 提交更容易一起提交并保持同步,底层 BufferQueue 机制仍保留 |
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比,Jank 检测更直接 |
 | **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围继续扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
