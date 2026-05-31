@@ -15,6 +15,8 @@ sources:
   - type: official
     path: "https://android-developers.googleblog.com/2026/03/room-30-modernizing-room.html"
   - type: official
+    path: "https://developer.android.com/reference/androidx/room3/RoomDatabase.Builder"
+  - type: official
     path: "https://developer.android.com/reference/androidx/sqlite/SQLiteConnection"
   - type: official
     path: "https://developer.android.com/reference/androidx/sqlite/SQLiteStatement"
@@ -37,11 +39,13 @@ related_chapters: ["10.7", "14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-06-01"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-25-05-review.md"
@@ -183,6 +187,8 @@ room3 {
 
 `SQLiteDriver` 是 Room 3.0 打开数据库的入口。Android 端可选 `AndroidSQLiteDriver`（委托平台 `SQLiteDatabase`）或 `BundledSQLiteDriver`（内嵌 SQLite，KMP commonMain 共享）；构建时通过 `RoomDatabase.Builder.setDriver(...)` 指定。[已验证: developer.android.com/reference/androidx/sqlite/SQLiteDriver]
 
+alpha04 起，连接池不再只是内部实现细节。`RoomDatabase.Builder.setSingleConnectionPool()` 和 `setMultipleConnectionPool(readers, writers)` 可以显式控制连接池；只有 `SQLiteDriver.hasConnectionPool()` 返回 `false` 的 driver 才会使用 Room 侧连接池。默认策略跟 `JournalMode` 绑定：`TRUNCATE` 使用单连接，`WRITE_AHEAD_LOGGING` 使用 4 个 reader + 1 个 writer；配置多个 writer 时要把 `SQLITE_BUSY` 与 `busy_timeout` 纳入压测和线上错误验收。[已验证: Android Developers Room 3.0 alpha04 release notes + RoomDatabase.Builder API]
+
 schema 是迁移验证输入，不是构建产物垃圾。自动迁移、schema diff、CI 校验都依赖它；漏提交 schema 文件，后续版本的迁移测试会失去基线。多 flavor 项目要把各变体输出目录纳入 CI artifact 或仓库管理，避免只在 debug 变体验证通过。
 
 KSP 性能评估要记录两组数据：
@@ -287,7 +293,7 @@ Room 3.0 alpha 阶段的 API 变化节奏较快，几个关键版本的边界要
 | 版本 | 变化 | 迁移影响 |
 | --- | --- | --- |
 | 3.0.0-alpha02 | `@Fts5` 支持 | 搜索类业务可评估 FTS5，单独验证索引构建时间 |
-| 3.0.0-alpha04 | connection pool 改进 | 多连接读场景的并发行为可能变化 |
+| 3.0.0-alpha04 | `setSingleConnectionPool()` / `setMultipleConnectionPool(...)` | 按 `hasConnectionPool()`、WAL 默认 4 reader + 1 writer、`SQLITE_BUSY` / `busy_timeout` 验收连接池边界 |
 | 3.0.0-alpha05 | `@Relation`/`@Junction` 数组化 `parentColumns`/`entityColumns` | 支持复合关系键；旧写法是否仍兼容需单独验证 |
 
 alpha 阶段建议固定版本号，不要用动态版本；升级时逐版本跑 migration test 和 benchmark。
@@ -300,7 +306,7 @@ alpha 阶段建议固定版本号，不要用动态版本；升级时逐版本�
 - imports：批量替换 `androidx.room.*` 到 `androidx.room3.*`，保留可编译提交。
 - schema：配置 `room3 { schemaDirectory(...) }`，提交所有变体 schema，CI 增加 schema diff 检查。
 - DAO：把同步 DAO、Executor 依赖和旧 callback 改到协程 / Flow / driver 形态。
-- driver：在 builder 中设置 `SQLiteDriver`（Android 端用 `AndroidSQLiteDriver` 或 `BundledSQLiteDriver`），为直接 SQL 路径补 `SQLiteConnection` / `SQLiteStatement` 生命周期测试。
+- driver：在 builder 中设置 `SQLiteDriver`（Android 端用 `AndroidSQLiteDriver` 或 `BundledSQLiteDriver`），确认是否需要 `setSingleConnectionPool()` / `setMultipleConnectionPool(...)`，并为直接 SQL 路径补 `SQLiteConnection` / `SQLiteStatement` 生命周期测试。
 - wrapper：只为迁移期白名单调用点添加 `room3-sqlite-wrapper`，每个调用点登记删除计划。
 - 测试：跑 MigrationTestHelper、DAO 单测、Macrobenchmark、StrictMode 主线程 I/O 检查和大库回放。
 - 灰度：数据库 ready、Migration 耗时、查询 P90、事务 P90、crash-free、ANR rate 进入灰度看板。
