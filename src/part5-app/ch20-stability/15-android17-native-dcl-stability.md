@@ -16,12 +16,12 @@ last_verified_against: "Android Developers Android 14/17 behavior changes; Andro
 confidence: medium
 task2a_state: processed
 task2a_result: processed-draft
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
 task6_result: pass-light-edit
-task9_state: reviewed
-pipeline_stage: "task2b_pending"
+task9_state: pending
+pipeline_stage: task6_pending
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c"
@@ -40,7 +40,9 @@ source_refs:
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md]"
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md]"
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-06-01"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T10:20:00+08:00"
@@ -62,7 +64,7 @@ updated_date: "2026-05-25"
 从 Android 14 DEX/JAR 动态加载保护延伸到 Android 17 native library，说明 `System.load()`、下载后加载、插件化 SO、热修复 SO 和解压到私有目录后加载的区别。
 
 ### 🔹 只读文件状态如何进入加载检查
-梳理文件权限、落盘目录、解压/校验/rename 顺序和加载时机，说明为什么“下载完成后再 chmod 只读”要放在校验之后、加载之前。
+梳理文件权限、落盘目录、解压/校验/rename 顺序和加载时机，说明为什么写入 fd 打开后、内容写入前就要标记只读。
 
 ### 🔹 动态库更新流程的稳定性风险
 覆盖灰度更新、断点续传、覆盖写、清理旧版本、崩溃回滚和多进程并发加载，重点处理 `UnsatisfiedLinkError` 的止血策略。
@@ -109,26 +111,29 @@ Android 14 已要求动态加载的 DEX、JAR、APK 文件处于只读状态。A
 
 Android 17 文档给出的判断对象是被 `System.load()` 读取的 native 文件。工程侧要保证“加载入口看到的最终文件”不可写，而不是只在下载缓存、临时文件或校验中间态上做一次权限修改。
 
-推荐的发布顺序是：下载到临时文件，写入期间不暴露给加载入口；下载完成后执行长度、ABI、版本和哈希校验；校验通过后用原子 rename 发布到版本化目录；把发布后的 `.so` 设置为只读；再调用 `System.load(finalPath)`。如果目录里已经存在历史文件，Android 14 的动态加载文档也要求先验证完整性，再把既有文件重新标记为只读。[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading] [已验证: 官方文档, developer.android.com/privacy-and-security/risks/dynamic-code-loading]
+推荐的发布顺序是：在跨进程锁内创建未发布临时文件，打开写入 fd 后立即把该文件标记为只读，再通过已打开的 fd 写入、`fsync`、校验长度/ABI/版本/哈希；校验通过后用原子 rename 发布到版本化目录，再调用 `System.load(finalPath)`。如果目录里已经存在历史文件，Android 14 的动态加载文档也要求先验证完整性，再把既有文件重新标记为只读。[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading] [已验证: 官方文档, developer.android.com/privacy-and-security/risks/dynamic-code-loading]
 
 这段示意代码只表达顺序，真实工程还要补网络下载、签名校验和异常上报：
 
 ```kotlin
-fun publishNativeLibrary(tmp: File, finalFile: File, expectedSha256: String) {
-    require(tmp.isFile) { "native temp file missing: ${tmp.absolutePath}" }
-    require(sha256(tmp) == expectedSha256) { "native sha256 mismatch: ${tmp.name}" }
-
+fun publishNativeLibrary(bytes: ByteArray, tmp: File, finalFile: File, expectedSha256: String) {
     finalFile.parentFile?.mkdirs()
+    FileOutputStream(tmp).use { os ->
+        require(tmp.setReadOnly()) { "chmod read-only failed: ${tmp.absolutePath}" }
+        os.write(bytes)
+        os.fd.sync()
+    }
+    require(sha256(tmp) == expectedSha256) { "native sha256 mismatch: ${tmp.name}" }
     tmp.renameTo(finalFile).also { renamed ->
         require(renamed) { "rename native library failed: ${tmp.absolutePath}" }
     }
-    require(finalFile.setReadOnly()) { "chmod read-only failed: ${finalFile.absolutePath}" }
+    require(!finalFile.canWrite()) { "native library is writable: ${finalFile.absolutePath}" }
 
     System.load(finalFile.absolutePath)
 }
 ```
 
-代码里要看的只有三步：校验发生在发布前，`setReadOnly()` 发生在加载前，`System.load()` 不接触可写文件。线上实现建议用版本目录和文件锁替代覆盖写，避免另一个进程在权限修改前拿到旧路径。
+代码里要看的只有三步：`setReadOnly()` 发生在写入 fd 打开后、内容写入前，校验发生在发布前，`System.load()` 不接触可写文件。线上实现建议用版本目录和文件锁替代覆盖写，避免另一个进程在权限修改前拿到旧路径。
 
 权限检查也要落到可观测字段。异常上报至少记录 `targetSdkVersion`、Android 版本、ABI、最终路径、`File.canWrite()`、`stat` 权限位、文件长度、哈希、库版本、加载调用栈和当前进程名。只报 `UnsatisfiedLinkError` 文本，排查时很难区分权限、ABI、文件损坏和 namespace 限制。
 
