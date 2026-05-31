@@ -68,7 +68,6 @@
     "added_by": "task6-review",
     "added_at": "2026-05-30T22:05:00+08:00",
     "status": "completed",
-    "review_type": "task6-light-edit",
     "fixed_at": "2026-05-31T08:57:00+08:00"
   },
   {
@@ -308,8 +307,8 @@
       {
         "type": "需补充素材",
         "location": "开头功耗/带宽对比表、HDR 性能影响、常见性能问题、同步开销段落",
-        "detail": "章节使用多组“实测”或百分比数据（带宽 1200-1800MB/s、Overlay 功耗 -30%、HDR 合成时间增加 15-30%、Overlay 失效功耗增加 30-50%、同步开销 20-30%），但缺少设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径。",
-        "suggestion": "补齐测试记录并把数据表改成“设备/条件/采样工具/结果”格式；无法补齐的数字降级为定性描述或明确标注为示例量级。"
+        "detail": "章节使用多组'实测'或百分比数据（带宽 1200-1800MB/s、Overlay 功耗 -30%、HDR 合成时间增加 15-30%、Overlay 失效功耗增加 30-50%、同步开销 20-30%），但缺少设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径。",
+        "suggestion": "补齐测试记录并把数据表改成'设备/条件/采样工具/结果'格式；无法补齐的数字降级为定性描述或明确标注为示例量级。"
       }
     ],
     "added_by": "task6-review",
@@ -317,5 +316,63 @@
     "status": "pending",
     "review_type": "task6-light-edit",
     "original_review_log": "logs/review/2026-06-01-02-review.md"
+  },
+  {
+    "section": "2.1",
+    "section_title": "Android 渲染架构全景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 RenderNode 架构演进错误，P1 三缓冲机制原理不完整",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0 源码错误",
+        "location": "版本演进段落",
+        "detail": "将 Android 3.0 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 混合描述，需按两个独立架构演进拆开",
+        "suggestion": "按 AOSP android-4.4.4_r2 的 DisplayList/DisplayListRenderer 与 android-5.0.0_r1 的 RenderNode/renderthread 分工修正版本演进描述"
+      },
+      {
+        "type": "P0 源码错误",
+        "location": "BufferQueue 伪代码",
+        "detail": "文中示意性伪代码 `BufferItem item = consumer.acquireBuffer();` 不对应实际 AOSP 方法签名",
+        "suggestion": "移除或替换为真实 AOSP BufferQueue.cpp 中的实际方法引用"
+      },
+      {
+        "type": "P1 原理断裂",
+        "location": "三缓冲机制原理",
+        "detail": "从双缓冲问题到三缓冲解决方案的因果链基本完整，但缺少对'为什么三缓冲会增加显示延迟'这一关键副作用的分析",
+        "suggestion": "补充三缓冲增加一帧显示延迟的副作用说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-01T03:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.5",
+    "section_title": "MainThread 与 RenderThread 协作",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 ADPF 性能反馈机制版本错误，P1 同步栅栏解释不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0 源码错误",
+        "location": "ADPF 性能反馈机制",
+        "detail": "文中提到 Android 16 的 headroom API，但实际 ADPF hint session 上报机制在 Android 14 就已存在于 CanvasContext.cpp 中",
+        "suggestion": "Android 16 应单独说明 headroom API，与已存在的 hint session 机制区分"
+      },
+      {
+        "type": "P1 原理断裂",
+        "location": "同步栅栏解释",
+        "detail": "syncFrameState 的阻塞点解释不够准确，UI 线程等的是 RenderThread 完成本帧同步阶段，不一定等上一帧 GPU 完成",
+        "suggestion": "修正为 UI 线程等待 RenderThread 完成本帧同步阶段，包括 prepareTree、layer update、makeCurrent、纹理准备等"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-01T03:20:00+08:00",
+    "status": "pending"
   }
 ]
