@@ -313,9 +313,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-01T02:05:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "review_type": "task6-light-edit",
-    "original_review_log": "logs/review/2026-06-01-02-review.md"
+    "original_review_log": "logs/review/2026-06-01-02-review.md",
+    "completed_at": "2026-06-01T06:52:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "completion_reason": "缺少原始测试条件的功耗/带宽/性能数字已降级为定性趋势；补充同设备同条件测试记录模板，等待 Task6 复审。"
   },
   {
     "section": "2.1",
