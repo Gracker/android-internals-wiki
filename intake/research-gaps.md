@@ -1,53 +1,33 @@
-## [2026-05-31] 18.13 WebView 渲染管线 — 知识盲区
+## [2026-05-31] 18.7 TextureView 合成链路 — 知识盲区
 
 ### 盲区描述
-Android 12+ 中 WebView SurfaceControl 的具体性能对比数据缺失，无法量化独立子 Surface vs Functor 路径的性能差异
+GPU 驱动差异对 OES 纹理采样的性能影响在不同厂商设备上存在显著差异，当前章节未涵盖这一重要维度。
 
 ### 重要程度
 高
 
 ### 建议研究方向
-- 在不同设备上测试 WebView SurfaceControl 路径的内存占用、帧率稳定性、GPU 负载对比
-- 收集 Functor 路径在重负载页面下对主窗口渲染的影响数据
-- 分析 SurfaceControl 在低内存设备上的 fallback 机制
+- 分析 Adreno、Mali、PowerVR 等主流 GPU 驱动下 OES External Texture 的采样路径差异
+- 测量不同 GPU 架构下 updateTexImage() 的 CPU/GPU 开销
+- 研究各厂商 GPU 对 OES 纹理格式转换、内存布局优化的支持程度
+- 探索基于 GPU 类型的 TextureView 性能优化策略
 
 ### 关联章节
-18.13 WebView 渲染管线
-18.10 SurfaceControl API 深入
-7.11 WebView 渲染性能与优化
+18.7、18.8、2.13
 
-## [2026-05-31] 18.15 视频叠加与 HWC — 知识盲区
+## [2026-05-31] 25.9 功耗与包体积案例集 — 知识盲区
 
 ### 盲区描述
-缺少厂商特定 HWC 实现差异及其对视频合成决策影响的系统性研究
-
-### 重要程度
-高
-
-### 建议研究方向
-- 收集主流厂商（Qualcomm、MediaTek、Samsung）HWC 实现的差异
-- 分析不同厂商在 YUV/RGBA 视频层处理、HDR 支持等方面的能力差异
-- 研究厂商特定 bug 和优化建议
-
-### 关联章节
-18.15 视频叠加与 HWC
-2.6 SurfaceFlinger 与合成
-18.6 SurfaceView
-
-## [2026-05-31] 18.15 视频叠加与 HWC — 知识盲区
-
-### 盲区描述
-HDR 视频在 HWC 合成中的特殊处理机制和限制条件研究不足
+不同厂商设备的后台限制策略、功耗归因机制和 BatteryStats 实现存在差异，影响功耗治理的通用性。
 
 ### 重要程度
 中
 
 ### 建议研究方向
-- 分析 HDR 视频层在 HWC 中的特殊处理流程
-- 研究 HDR 色域转换对性能的影响
-- 收集不同平台 HDR 视频回退到 GPU 的典型案例
+- 研究小米 MIUI、华为 EMUI、OPPO ColorOS、vivo OriginOS 的后台限制策略
+- 分析不同厂商系统中 BatteryStats 的实现差异和功耗归因逻辑
+- 探索厂商定制的省电特性对 App 功耗的影响机制
+- 建立厂商适配的功耗治理最佳实践
 
 ### 关联章节
-18.15 视频叠加与 HWC
-2.10 GPU 渲染深入
-18.6 SurfaceView
+25.1、25.3、25.19
