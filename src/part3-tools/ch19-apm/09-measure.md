@@ -6,8 +6,8 @@ status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + docs/api/dashboard/README.md retention endpoint
+last_verified: '2026-05-31'
+last_verified_against: measure-sh docs/README.md + sdk-integration-guide + docs/api/sdk/README.md event/span schema + feature-anr-reporting + feature-crash-reporting + docs/api/dashboard/README.md retention endpoint
 confidence: medium
 tags:
 - apm
@@ -31,20 +31,22 @@ sources:
 - type: official
   path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
+  path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
+- type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: pass-light-edit
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
-last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_rework_at: "2026-05-31T20:52:00+08:00"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
-task2b_fixed_at: '2026-04-24T14:55:00+08:00'
-last_task2b_at: "2026-05-21T07:17:00+08:00"
-task9_result: needs-rework
+task2b_fixed_at: "2026-05-31T20:52:00+08:00"
+last_task2b_at: "2026-05-31T20:52:00+08:00"
+task9_result: pending
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T11:31:10+08:00"
@@ -56,6 +58,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
 task9_review_notes: "2026-05-21 Task9 deep review: P1 Measure SDK 事件/字段表仍与官方 SDK API 不一致，写入 queue 条目 task9-20260521-19.09-measure-sdk-schema-fields。"
 last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
 task6_review_notes: "2026-05-21 Task6 revisiting-review: L1/L2 通过，能力范围/平台对比写作覆盖已落盘；官方 SDK 事件 schema 与 native crash/ANR 技术边界沿用 Task9 pending queue。"
+last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
 ---
 # Measure
 
@@ -137,30 +140,28 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 
 | 能力 | Measure 事件 / 字段 | 端侧来源 | 适合判断 | 边界 / 不支持项 |
 |---|---|---|---|---|
-| Crash（Java） | `error` type=crash，含 thread trace / stack frames / exception class / message | `Thread.UncaughtExceptionHandler` | 崩溃大盘趋势、版本回归、Top-N 聚合 | 混淆堆栈需要 mapping 文件上传后才能还原 |
-| Crash（Native） | `error` type=crash，含 native stack frames / signal / fault address | signal handler（`sigaction`） | Native 崩溃捕获和符号还原 | 官方文档明确 Android native C/C++ crash reporting 尚未支持（截至 2026-05）；需要自行集成 Breakpad / Crashpad 或等待官方实现 |
-| ANR | `error` type=anr，含 thread dump / CPU usage / memory snapshot | `ApplicationExitInfo`（API 30+）或 Watchdog timer | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下无法用 `ApplicationExitInfo`，回退到 Watchdog 轮询；主线程堆栈深度受系统限制 |
+| Crash（Java / Kotlin） | `exception` 事件，含 severity、exception type/message、thread、stack frames | `Thread.UncaughtExceptionHandler` | 崩溃大盘趋势、版本回归、Top-N 聚合 | 混淆堆栈需要 mapping 文件上传后才能还原 |
+| Crash（Native） | 暂无官方 Android native crash reporting 事件 | 未实现 | 不作为 Measure 当前 Android 能力评估 | 官方文档明确 C/C++ native crash 尚未支持；API 31+ App Exit Info tombstone 只能作为后续方向，不能写成现有能力 |
+| ANR | `anr` 事件，含线程 dump、前后台状态、相关 app-exit 信息 | SDK 监听 `SIGQUIT`；API 30+ 可结合 `ApplicationExitInfo` app exit 记录 | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下没有 `ApplicationExitInfo`；Measure 的 ANR 捕获重点是 SIGQUIT / Signal Catcher 旁路，不是普通主线程 Watchdog 轮询 |
 | HTTP | `http` 事件，含 url / method / status_code / request_duration / response_body（opt-in） | OkHttp Interceptor 或 `URLConnection` 包装 | 慢接口定位、错误率趋势、请求与崩溃时序关联 | body 采集默认关闭，需白名单配置；URL pattern 归并粒度由 dashboard 配置 |
-| 启动时间 | `trace` name=startup，duration_ms；`session` 含 cold/warm/hot 标记 | SDK 初始化 → `Activity.onResume` / first frame drawn | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
-| App size | `resource` / session 属性，含 app_build_size / download_size | 构建产物分析（非运行时采集） | 包体积趋势、模块级拆分定位 | 非实时采集；需要 CI/CD 集成才能持续跟踪 |
-| CPU 使用率 | `resource` type=cpu，含 cpu_usage / cpu_cycles / thread_count | `/proc/stat` + `Process.cpuUsage()` | CPU 异常升高与崩溃/ANR 的时序关联 | 采样间隔受 SDK 配置约束；不区分 per-thread CPU 除非自定义 trace |
-| 内存使用 | `resource` type=memory，含 java_heap / native_heap / total_pss / rss | `Debug.getMemoryInfo()` + `/proc/self/statm` | 内存泄漏趋势、OOM 前后内存曲线 | 细粒度对象级泄漏需要 heap dump 分析，Measure 不直接提供 |
-| 用户点击 | `event` type=click，含 target / coordinates / timestamp | `View.OnClickListener` 自动追踪或手动 `track()` | 用户操作路径还原、崩溃前操作序列 | 自动追踪依赖 View 结构注入；自定义 View 需手动埋点 |
-| 页面导航 | `screen` 事件，含 screen_name / entry_type / duration | Activity / Fragment 生命周期回调 | 页面停留时长、导航路径、页面级崩溃率 | Fragment 追踪依赖手动配置 screen name；Jetpack Navigation 需适配 |
-| 自定义 Trace | `trace` 含 name/duration_ms/attributes | 手动 `Measure.startTrace()` / `stopTrace()` | 业务关键路径耗时观测 | trace 命名需规范；避免动态值；属性有限制 |
-| 用户标识 | `user` 含 id/name/email/phone | `Measure.setUser()` / `clearUser()` | 用户维度聚合、错误关联 | PII 数据需脱敏处理；支持匿名ID |
-| 设备属性 | `session` 含 os_version/device_model/manufacturer | SDK 自动采集 | 设备维度分析、机型趋势 | 包含 device_id 但不可用于用户识别 |
-| 会话属性 | `session` 含 app_version/network_type/carrier | SDK 自动采集 | 版本/网络/运营商维度分析 | 不包含 precise location |
-| 性能指标 | `resource` 含 frame_rate/frozen_frames_counter | Choreographer callback | 渲染性能监测、掉帧趋势 | frame_rate 为估算值，非精确统计 |
-| 网络类型 | `resource` 含 network_type/signal_strength | ConnectivityManager / TelephonyManager | 网络条件对性能影响分析 | 部分设备可能缺失网络信息 |
-| 电池状态 | `resource` 含 battery_level/power_source | BatteryManager | 低温/低电量对性能影响 | 电池温度数据暂未支持 |
-| 后台任务 | `event` type=background_task | WorkManager / JobScheduler | 后台任务调度分析 | 仅限 Android 8+ 后台限制场景 |
-| 内存警告 | `event` type=memory_warning | `onLowMemory()` 回调 | 内存压力预警 | 仅限系统触发内存警告时 |
-| 应用退出 | `event` type=app_exit | `Activity.onDestroy()` | 应用生命周期分析 | 不覆盖被系统杀死场景 |
-| 日志事件 | `event` type=log | `Log` 接口封装 | 日志聚合与错误关联 | 支持自定义 log level 和 tag |
-| 自定义属性 | `session` / `event` / `trace` 附加 key-value | `Measure.setCustomAttribute()` | 业务维度扩展 | 属性值长度有限制；需符合 schema |
+| 启动时间 | `cold_launch` / `warm_launch` / `hot_launch` 事件，含 duration_ms | SDK 启动探针 + Activity 生命周期 | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
+| App size | 构建版本和上传产物元数据 | Gradle 构建、mapping / symbol 上传流程 | 包体积趋势、版本回归辅助判断 | 该项来自构建侧元数据；需要 CI/CD 集成才能持续跟踪 |
+| CPU 使用率 | `cpu_usage` 事件，按配置间隔采样 | Linux /proc 与 SDK 采样逻辑 | CPU 异常升高与崩溃/ANR 的时序关联 | 采样间隔受 SDK 配置约束；线程级分析仍要回到 Perfetto 或业务 trace |
+| 内存使用 | `memory_usage` / `memory_usage_absolute` 事件 | JVM / Linux 进程内存采样 | 内存泄漏趋势、OOM 前后内存曲线 | 细粒度对象级泄漏需要 heap dump 分析，Measure 不直接提供 |
+| 用户点击 | `gesture_click` 事件，含 target、target_id、坐标、touch_down/up 时间 | View / Compose 手势采集 | 用户操作路径还原、崩溃前操作序列 | 自动追踪依赖 UI 结构；高敏页面要控制 snapshot 和 target 命名 |
+| 页面导航 | `screen_view` 事件，含页面名和时间信息 | Activity / Fragment / 跨端页面生命周期 | 页面停留时长、导航路径、页面级崩溃率 | Fragment、Compose route 和 Jetpack Navigation 需要统一 screen 命名 |
+| 自定义 Trace | span，含 trace_id、span_id、parent_id、name、start/end_time、duration、attributes、checkpoints | 手动创建 span 或 SDK 自动 span | 业务关键路径耗时观测 | span 名称需稳定；避免动态值；字段长度和数量受 SDK schema 限制 |
+| 用户标识 | 事件 attributes 中的 `user_id` | `Measure.setUserId()` / `clearUserId()` | 用户维度聚合、错误关联 | 官方建议不要放 email、手机号这类 PII；登出时清理后续会话标识 |
+| 设备属性 | 事件 attributes 中的 device / os / app 字段 | SDK 自动采集 | 设备维度分析、机型趋势 | 设备字段用于分析维度，不应替代用户标识 |
+| 会话属性 | `session_id`、app_version、network_type、installation_id 等公共 attributes | SDK 自动采集 | 版本/网络/安装维度分析 | 精确位置、业务身份和敏感字段应放在自定义属性审查之后 |
+| 性能 Trace | spans + launch / http / cpu / memory 事件 | SDK 自动采集与业务手动 span | 启动、网络和业务路径耗时趋势 | Measure 当前不是帧级渲染监控入口；流畅性仍应接 JankStats / FrameMetrics / Perfetto |
+| 网络变化 | `network_change` 事件，含 network_type / generation / provider 与 previous_* 字段 | ConnectivityManager / TelephonyManager | 网络条件对性能影响分析 | 部分设备可能缺失运营商或网络代际 |
+| 内存压力 | `low_memory` / `trim_memory` 事件 | `onLowMemory()` / `ComponentCallbacks2.onTrimMemory()` | 内存压力预警、OOM 前置线索 | 只能说明系统已发出压力信号，对象级定位仍靠 heap dump |
+| 应用退出 | `app_exit` 事件，含 reason、importance、pid、process_name、trace | `ApplicationExitInfo`（API 30+） | 系统杀进程、ANR、crash 后的退出归因 | 低于 API 30 没有同等系统来源；ANR trace 只在相关 session 中设置 |
+| 日志事件 | `string` 事件，含 severity_text 与 string 内容 | SDK log API 或业务封装 | 日志聚合与错误关联 | 结构化日志要先转成字符串；敏感字段不能直接写入 |
+| 自定义属性 / 事件 | user_defined_attribute、`custom` 事件、span attributes | SDK 自定义属性与业务事件 API | 业务维度扩展 | 属性值长度、数量和 schema 有限制；高基数字段会破坏聚合 |
 
-[已验证: Measure GitHub docs/README.md + sdk-integration-guide.md；native crash / ANR App Exit Info 边界基于 docs/features/feature-crash-reporting.md 与 feature-anr-reporting.md]
+[已验证: Measure GitHub docs/api/sdk/README.md 事件与 span schema；feature-crash-reporting.md；feature-anr-reporting.md；native crash / ANR App Exit Info 边界基于 2026-05-31 官方文档]
 
 这些能力组合起来后，Measure 更像移动端“可观测性平台”。它不只收一个指标，而是把会话中的多个事件放在同一条时间线上。
 
@@ -209,11 +210,11 @@ Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时�
 Measure 这类平台主要看数据模型，单个 SDK API 反而不是评估重点。一个移动会话通常可以拆成：
 
 - `session`：一次 App 前台使用周期，包含用户、设备、版本、启动时间。
-- `screen`：页面进入、退出和停留时间。
-- `event`：点击、导航、业务事件、生命周期事件。
-- `trace`：一段自定义耗时，例如启动、登录、首屏、支付。
-- `error`：Crash、ANR、非致命异常。
-- `resource`：HTTP、CPU、内存、App size 等资源或环境数据。
+- `screen_view`：页面进入、退出和停留时间。
+- `gesture_click` / lifecycle / custom event：点击、导航、业务事件、生命周期事件。
+- span：一段自定义耗时，例如启动、登录、首屏、支付。
+- `exception` / `anr`：Crash、非致命异常和 ANR。
+- `http` / `cpu_usage` / `memory_usage`：网络、CPU、内存等环境数据。
 
 平台的价值来自这些事件能放在同一条时间线上。只有 Crash，没有点击和页面；只有网络，没有页面和用户路径；只有 CPU，没有错误上下文，分析都会断。
 
