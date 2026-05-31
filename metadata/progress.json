@@ -2365,8 +2365,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T22:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-31T22:50:00+08:00",
+  "last_updated_by": "openclaw-task2b",
   "task6_last_review": {
     "reviewed_at": "2026-05-31T22:10:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2531,12 +2531,11 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-05-31T20:52:00+08:00",
+  "last_task2b_at": "2026-05-31T22:50:00+08:00",
   "last_task2b_sections": [
-    "19.09",
-    "19.11"
+    "2.1"
   ],
-  "last_task2b_action": "frontmatter-fallback-rework",
+  "last_task2b_action": "frontmatter backlog fallback; fixed Task9 P1 version-difference issue",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -6833,6 +6832,23 @@
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite"
+    },
+    "2.1": {
+      "section": "2.1",
+      "title": "Android 渲染架构全景",
+      "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-31T22:50:00+08:00",
+      "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
+      "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
+      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
     }
   },
   "task2b_rounds": [
@@ -8864,6 +8880,23 @@
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite"
+    },
+    "2.1": {
+      "section": "2.1",
+      "title": "Android 渲染架构全景",
+      "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-31T22:50:00+08:00",
+      "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
+      "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
+      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
     }
   },
   "task2a_last_processed": {
@@ -11211,8 +11244,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/11-jankstats.md"
+    "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-05-31T18:50:00+08:00",
@@ -11231,15 +11263,15 @@
     "returned_to": "task6_pending"
   },
   "task2b_last_rework": {
-    "time": "2026-05-29T07:47:00+08:00",
-    "lane": "lite",
-    "result": "fixed-lite",
+    "at": "2026-05-31T22:50:00+08:00",
     "sections": [
-      "18.17"
+      "2.1"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
-    ]
+      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md"
+    ],
+    "source": "frontmatter backlog fallback",
+    "result": "fixed"
   },
   "last_task9_reviewed_sections": [
     "16.5",
