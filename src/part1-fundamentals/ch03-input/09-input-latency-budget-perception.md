@@ -54,6 +54,8 @@ task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。Perfetto 
 p0: 0
 p1: 0
 p2: 2
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值
@@ -62,7 +64,7 @@ p2: 2
 
 本节把 HCI 感知阈值、Android 输入路径和 Perfetto 指标放在同一个口径下，给后续排查留一张预算表。3.2 节已经讲触摸响应路径，3.4 节已经讲重采样和预测输入；这里补齐“多少算慢、慢在哪一段、怎样和用户体感对上”这三个问题。
 
-[已验证: 官方文档, source.android.com/docs/core/interaction/input] [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features] [来源: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md]
+[已验证: source.android.com/docs/core/interaction/input; developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
 
 ## 端到端输入延迟的拆分口径
 
@@ -90,11 +92,11 @@ Android 官方输入文档给出的路径是：物理设备产生信号，Linux 
 | 渲染提交 | Choreographer、RenderThread、GPU 提交 | 1 个刷新周期内 | FrameTimeline app frame、RenderThread | 渲染在 deadline 内完成才有机会赶上本帧 |
 | SurfaceFlinger 合成与 present | BufferQueue、HWC/GPU composition、显示刷新 | 1-2 个刷新周期 | FrameTimeline SF frame、present time | late present 会让帧率看起来平稳，但输入反馈滞后一帧以上 |
 
-[来源: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md] [已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
+[已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
 
 ## HCI 阈值和 Android 工程指标的换算
 
-HCI 论文里的延迟阈值来自受控实验，Android 工程指标来自真实设备和真实负载。两者不能直接相互替代，但可以建立分层判断。
+HCI 研究中的延迟阈值来自受控实验，Android 工程指标来自真实设备和生产负载。两类数据不能直接互换，但可以放在同一张表里建立分层判断。
 
 | 体感区间 | HCI / 产品含义 | Android 侧工程解释 | 建议指标口径 |
 | --- | --- | --- | --- |
@@ -106,7 +108,7 @@ HCI 论文里的延迟阈值来自受控实验，Android 工程指标来自真�
 
 HCI 研究报告过 2 ms 级别的触摸延迟差异可被感知，也有研究把当前移动设备触摸延迟放在约 50-200 ms 的范围。这个结论适合提醒工程团队：ANR 的 5 秒阈值只说明系统容错边界，和“用户觉得跟手”不是一个指标。
 
-[引用: https://dl.acm.org/doi/10.1145/2935334.2935381] [引用: https://www.researchgate.net/publication/221100500_User_Perception_of_Touch_Screen_Latency] [来源: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md]
+[引用: ACM MobileHCI 2016 "Software-reduced touchscreen latency"; J. Pratt et al., "User Perception of Touch Screen Latency"]
 
 ## InputReader 到应用消费的预算
 
@@ -178,7 +180,7 @@ Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应�
 
 厂商私有 HAL 或 Framework 修改没有公开源码时，只能标成 `[待验证]`。营销名词不能写成 AOSP 机制。
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java; frameworks/base/services/core/java/com/android/server/wm/RefreshRatePolicy.java; frameworks/base/core/java/android/view/ViewGroup.java] [来源: DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md]
+[已验证: AOSP android-15.0.0_r1, GameManagerService.java / RefreshRatePolicy.java / ViewGroup.java]
 
 ## 游戏、手写和普通 UI 的阈值差异
 
@@ -232,5 +234,5 @@ ANR 是系统容错机制，处理的是秒级无响应。输入体验通常在�
 - [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/Resampler.cpp]
 - [引用: https://dl.acm.org/doi/10.1145/2935334.2935381]
 - [引用: https://www.researchgate.net/publication/221100500_User_Perception_of_Touch_Screen_Latency]
-- [来源: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md]
-- [来源: DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md]
+-
+-

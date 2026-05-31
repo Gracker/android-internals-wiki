@@ -9,6 +9,10 @@ last_verified_against: "Android Developers power / vitals / APK size docs + AOSP
 confidence: medium-high
 drafted_date: "2026-05-14"
 polish_count: 1
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
