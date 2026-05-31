@@ -2,7 +2,7 @@
 title: 视频叠加与 HWC
 chapter: '18.15'
 status: "ready-for-review"
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC
 - Hardware-Composer
@@ -18,12 +18,10 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task9_result: "auto-fixed"
-task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
-last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
+last_task2b_rework_at: "2026-06-01T06:52:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
-last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 last_task9_at: "2026-06-01T00:20:00+08:00"
@@ -33,6 +31,7 @@ review_notes: '2026-05-21 task9 idle audit: needs-rework。P1:HWC SKIP_VALIDATE 
 last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 SIDEBAND 拼写、HWC skip-validate 当前源码锚点、Composer3 Capability.aidl 路径；回到 Task6 复审。"
 task2b_result: "fixed"
+last_task2b_at: "2026-06-01T06:52:00+08:00"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 section: '18.15'
@@ -53,16 +52,16 @@ task9_state: "pending"
 <!-- outline-start -->
 
 **锚点(必须覆盖):**
-- HWC (Hardware Composer) 的核心职责：决定哪些 Layer 走硬件合成，哪些走 GPU
-- GPU Path vs Overlay Path 的链路对比
-- SurfaceFlinger 的合成决策流程
-- DRM / Secure Video Path 与 Overlay 的关系
-- 在 dumpsys SurfaceFlinger 和 Perfetto 中识别 Overlay 模式
+- 🔹 HWC (Hardware Composer) 的核心职责：决定哪些 Layer 走硬件合成，哪些走 GPU
+- 🔹 GPU Path vs Overlay Path 的链路对比
+- 🔹 SurfaceFlinger 的合成决策流程
+- 🔹 DRM / Secure Video Path 与 Overlay 的关系
+- 🔹 在 dumpsys SurfaceFlinger 和 Perfetto 中识别 Overlay 模式
 
 **扩展(可选深入):**
-- HWC 2.x / 3.x 的版本差异
-- Tunnel Mode(Android TV / 高端手机)
-- HWC 回退到 GPU 合成的常见触发条件
+- 🔸 HWC 2.x / 3.x 的版本差异
+- 🔸 Tunnel Mode(Android TV / 高端手机)
+- 🔸 HWC 回退到 GPU 合成的常见触发条件
 
 <!-- outline-end -->
 
@@ -70,20 +69,17 @@ task9_state: "pending"
 
 TextureView 播放视频时，每一帧都要经过 GPU 采样再画到 App 的 Framebuffer 上。即使 App 没有其他 UI 更新，GPU 也得每帧工作。而如果用 SurfaceView + HWC Overlay，视频帧能**绕过 GPU**，直接由显示硬件（DPU，Display Processing Unit）叠加到屏幕上。
 
-这个差异直接体现在功耗和性能上。下面这组数据来自章节现有测试记录，但还缺少设备、亮度、视频规格和采样工具条件，暂不能作为跨设备结论：
+这个差异直接体现在功耗和性能上。未记录完整测试条件的带宽、GPU 利用率和功耗百分比，不能作为正文结论。这里保留可复核的方向性判断：
 
-| 路径类型 | 内存带宽(MB/s) | GPU 利用率 | 功耗差异 | 场景适用性 |
-|----------|---------------|------------|----------|------------|
-| GPU Path | 1200-1800 | 15-25% | 基准值 | TextureView，复杂混合效果 |
-| DEVICE Overlay | 200-400 | <5% | -30% | SurfaceView，简单视频播放 |
-| SIDEBAND Tunnel | 80-150 | <2% | -45% | 支持的 Android TV，高端手机 |
+| 路径类型 | 带宽和 GPU 负载走势 | 功耗走势 | 场景适用性 |
+|----------|----------------------|----------|------------|
+| GPU Path | GPU 需要采样视频纹理并写入 App Framebuffer，带宽和 GPU 负载最高 | 作为同设备同条件下的对照组 | TextureView，复杂混合效果 |
+| DEVICE Overlay | 视频 Layer 被 HWC 判为 `DEVICE` 后，不再经过 GPU 采样，GPU 负载明显下降 | 长时间播放时通常低于 GPU Path | SurfaceView，简单视频播放 |
+| SIDEBAND Tunnel | 解码输出走 sideband stream，App 侧 per-frame buffer 交互更少 | 在支持设备上通常低于普通 DEVICE Overlay | 支持的 Android TV、机顶盒或特定高端 SoC |
 
-[需补充素材: 补齐功耗/带宽测试的设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径。]
+如果要把功耗或带宽数字写回正文，测试记录至少要包含：设备型号、SoC、系统版本、刷新率、视频分辨率和编码格式、HDR/SDR、屏幕亮度、采样工具、采样时长、样本次数、环境温度、原始 trace 或功耗日志路径。缺少这些条件时，只能写成定性趋势，不能写成跨设备百分比结论。
 
-在视频播放、导航地图等长时间运行的场景下，Overlay vs GPU 合成的功耗差异可能达到 10-20%。但在我们的测试中，这个差异的具体数值与 SoC 架构和显示方案密切相关：
-- 高端设备（Adreno 7xx, Mali-G78+）：功耗差异较小（8-15%）
-- 中端设备（Adreno 6xx, Mali-G57）：功耗差异明显（15-25%）
-- 入门设备（Adreno 5xx, Mali-G52）：功耗差异最大（20-35%）
+在视频播放、导航地图等长时间运行的场景下，Overlay vs GPU 合成的功耗差异与 SoC 架构、DPU plane 能力、屏幕亮度、刷新率和视频格式相关。平台越依赖 GPU 处理视频采样、色彩转换和混合，SurfaceView + DEVICE composition 的收益越容易被观察到；平台已经有更强的显示硬件通路时，两条路径的差距会收窄。
 
 ## HWC 的核心职责
 
@@ -183,13 +179,13 @@ Decoder / Video Pipeline → Sideband Stream / Tunnel → HWC / Display
 HDR 视频在 HWC 合成中带来额外的复杂性：
 
 **HDR vs SDR 的路径差异**：
-- **SDR 视频**：通常使用 standard RGB/ARGB 格式，HWC 处理流程相对简单
+- **SDR 视频**：通常不需要 PQ/HLG 转换和 HDR metadata 处理，HWC 处理流程相对简单
 - **HDR 视频**：需要处理 PQ/HLG 转换、色彩空间映射、动态范围调整，增加了 HWC 的处理负担
 
-**实际性能影响**：
+**运行影响**：
 - HDR 视频更容易触发 HWC client fallback，因为 HDR 处理逻辑复杂
-- 在支持 HDR 的设备上，HDR 视频的合成时间比 SDR 增加 15-30%
-- 一些老旧的 HWC 实现可能完全不支持 HDR，强制 fallback 到 GPU 合成
+- HDR 相比 SDR 往往需要更多色彩空间、动态范围和 metadata 处理；没有同设备 trace 与功耗记录时，不给出固定百分比
+- 一些老旧的 HWC 实现可能不支持完整 HDR 处理，直接 fallback 到 GPU 合成
 
 **HDR 合成优化建议**：
 1. 避免在 HDR 视频上叠加大量透明 UI 元素
@@ -248,14 +244,14 @@ SurfaceFlinger 收到本帧 Transaction 后，合成流程一般是：
 
 Mixed composition 的重点就在这里：`CLIENT` 和 `DEVICE` 能同时存在。GPU 不会接管整帧，只负责 HWC 接不住的那部分 Layer。
 
-### Overlay 回退的常见原因(能力依赖平台)
+### Overlay 回退的常见原因（能力依赖平台）
 
 HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际和厂商实现。下面这些条件经常触发回退，但它们都不是绝对规则。
 
 | 常见原因 | 为什么容易回退 |
 |:---|:---|
-| **硬件 Plane 用完** | 视频层、System UI、client target 可能同时抢同一批 plane,plane 数量不足时只能把一部分 Layer 改成 `CLIENT` |
-| **格式与颜色能力不匹配** | YUV 往往最容易走 `DEVICE`,RGBA、10-bit HDR、特定色域组合则更依赖平台能力 |
+| **硬件 Plane 用完** | 视频层、System UI、client target 可能同时抢同一批 plane，plane 数量不足时只能把一部分 Layer 改成 `CLIENT` |
+| **格式与颜色能力不匹配** | YUV 往往最容易走 `DEVICE`，RGBA、10-bit HDR、特定色域组合则更依赖平台能力 |
 | **Crop / scale / rotation 超出范围** | 大比例缩放、90°/270° 旋转、复杂裁剪都可能超出 DPU 的限制 |
 | **Alpha / 圆角 / 模糊 / 复杂混合** | 这类效果需要额外的 blending 或 post-process，很多平台会直接回退到 GPU |
 | **受保护内容与当前安全路径不匹配** | 设备如果没有可用的 secure plane 或 protected GPU path，就只能换到别的受支持路径 |
@@ -308,7 +304,7 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 
 关键查看项:
 - **Composition Type**：`DEVICE` = Overlay 成功，`CLIENT` = 回退到 GPU
-- **Type**:Layer 的 Buffer 格式
+- **Type**：Layer 的 Buffer 格式
 
 ### Perfetto
 
@@ -323,19 +319,19 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 ## 常见性能问题
 
 1. **Overlay 失效导致功耗飙升**：给 SurfaceView 设置了 `setAlpha(0.5)` 或圆角，触发 GPU 回退。
-   - **实际影响**：功耗增加 30-50%，帧率下降 10-20%
+   - **运行影响**：GPU 需要重新采样视频内容并写入 client target，带宽、温升和掉帧风险都会上升
    - **检测方法**：dumpsys SurfaceFlinger | grep -A5 "SurfaceView" 查看 Composition Type
 
 2. **Z-Order 冲突**：Overlay 图层需要特定的 Z 轴位置，复杂 UI 遮挡可能破坏 Overlay 策略。
-   - **实际影响**：多个 video layer 竞争相同 hardware plane，导致相互回退
+   - **运行影响**：多个 video layer 竞争相同 hardware plane，导致相互回退
    - **解决方案**：合理规划 Z 轴顺序，确保主要视频 layer 获得优先级
 
 3. **Tunnel Mode 不支持所有格式**：部分 HWC 的 Tunnel Mode 对 HDR、特定分辨率有限制。
-   - **实际影响**：tunnel 模式失败后回退到普通 device composition，功耗优势消失
+   - **运行影响**：tunnel 模式失败后回退到普通 device composition，功耗优势消失
    - **兼容性检查**：使用 `adb shell cmd media codecinfo -e video/avc` 查看支持的能力
 
 4. **Skip Validate 效果被高估**：由于 fence 和 buffer token 的变化，实际命中比例较低。
-   - **实际影响**：虽然理论上有 30-40% 优化，但在实际场景中效果有限
+   - **运行影响**：收益取决于本帧 Layer 状态、buffer 和 fence 是否稳定；动画、字幕和视频帧变化都会降低命中率
    - **验证方法**：Perfetto 中查看 validateDisplay() 调用频率和耗时
 
 ## 与其他章节的关系
@@ -358,7 +354,7 @@ HWC Overlay 与内存管理章节密切相关，需要注意以下同步问题�
 - **Present Timing**：避免过早提交导致画面撕裂，过晚提交导致帧率下降
 - **Skip Validate 的同步条件**：只有在所有同步条件满足时才能跳过 validate
 
-**实际性能影响**：在复杂的 mixed composition 场景中，同步开销可能占到总帧时间的 20-30%，优化同步策略比单纯优化 HWC 决策更重要。
+**运行影响**：在复杂的 mixed composition 场景中，同步等待可能成为主要耗时来源。排查时要同时看 acquire fence、present fence、`validateDisplay()` / `presentDisplay()` 耗时和 RenderEngine 合成时间，不能只看 HWC 最终把 Layer 判成 `DEVICE` 还是 `CLIENT`。
 
 ## 参考资料
 

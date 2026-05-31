@@ -2375,8 +2375,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T06:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-01T06:52:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2544,11 +2544,11 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-06-01T00:50:00+08:00",
+  "last_task2b_at": "2026-06-01T06:52:00+08:00",
   "last_task2b_sections": [
-    "2.5"
+    "18.15"
   ],
-  "last_task2b_action": "frontmatter backlog fallback; fixed Task9 P1 syncFrameState/DeliQueue/ADPF issues",
+  "last_task2b_action": "review rework: unsupported HWC power/bandwidth percentages downgraded to qualitative trends",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -9141,7 +9141,7 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task2b_run": "2026-05-31T18:50:00+08:00",
+  "last_task2b_run": "2026-06-01T06:52:00+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
@@ -10335,6 +10335,28 @@
         "completed": 0,
         "reason": "queue.json 无对应 pending，按 frontmatter backlog fallback 修复"
       }
+    },
+    {
+      "date": "2026-06-01T06:52:00+08:00",
+      "sections": [
+        {
+          "section": "18.15",
+          "title": "视频叠加与 HWC",
+          "source": "task6-review",
+          "priority": 90,
+          "fixes": [
+            "功耗/带宽/GPU 利用率表删除无条件数字，改为路径负载趋势与适用场景",
+            "HDR 性能影响、Overlay 失效影响、skip validate 收益、同步开销删除无原始记录百分比",
+            "补充功耗/带宽数字回写前必须具备的设备、SoC、刷新率、视频规格、采样工具、样本次数和原始记录路径要求"
+          ]
+        }
+      ],
+      "queue_status": {
+        "completed_this_round": 1,
+        "remaining_p95": 0,
+        "remaining_p90": 0,
+        "remaining_p85": 0
+      }
     }
   ],
   "section_18_23": {
@@ -11319,10 +11341,9 @@
     }
   ],
   "last_task2b_completed": [
-    "19.09",
-    "19.11"
+    "18.15"
   ],
-  "last_task2b_completed_at": "2026-05-31T20:52:00+08:00",
+  "last_task2b_completed_at": "2026-06-01T06:52:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -11531,37 +11552,38 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
   ],
   "last_task2b_completed_entry": {
-    "at": "2026-05-31T18:50:00+08:00",
+    "at": "2026-06-01T06:52:00+08:00",
     "lane": "main",
-    "source": "frontmatter backlog fallback",
-    "section": "19.16",
-    "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
-    "title": "ProfilingManager",
+    "source": "task6-review",
+    "section": "18.15",
+    "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+    "title": "视频叠加与 HWC",
     "result": "fixed",
     "issues_fixed": [
-      "profileable/shell 配置边界拆出线上 ProfilingManager 前提",
-      "TRIGGER_TYPE_OOM 补默认 UncaughtExceptionHandler 透传要求",
-      "rate limiter 补 app/system cost 与 hour/day/week 窗口模型",
-      "官方 ProfilingManager guide 404 URL 替换为拆分后的 tracing/profiling-manager 文档"
+      "功耗/带宽/GPU 利用率表删除无条件数字，改为路径负载趋势与适用场景",
+      "HDR 性能影响、Overlay 失效影响、skip validate 收益、同步开销删除无原始记录百分比",
+      "补充功耗/带宽数字回写前必须具备的设备、SoC、刷新率、视频规格、采样工具、样本次数和原始记录路径要求"
     ],
-    "returned_to": "task6_pending"
+    "queue_items_completed": 1,
+    "returned_to": "task6_pending",
+    "log": "logs/rework/2026-06-01-06-task2b-main.md"
   },
   "task2b_last_rework": {
-    "timestamp": "2026-06-01T00:50:00+08:00",
+    "timestamp": "2026-06-01T06:52:00+08:00",
     "sections": [
-      "2.5"
+      "18.15"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
     ],
-    "source": "frontmatter backlog fallback",
-    "issues_fixed": 3,
-    "at": "2026-06-01T00:50:00+08:00",
+    "source": "task6-review",
+    "issues_fixed": 1,
+    "at": "2026-06-01T06:52:00+08:00",
     "result": "fixed",
-    "log": "logs/rework/2026-06-01-00-task2b-main.md"
+    "log": "logs/rework/2026-06-01-06-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
     "16.5",
@@ -11909,11 +11931,11 @@
     "title": "视频叠加与 HWC",
     "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "task6_pending",
     "task6_result": "needs-rework",
-    "task6_state": "reviewed",
-    "task2b_state": "pending",
-    "task9_state": "reviewed",
+    "task6_state": "revisiting",
+    "task2b_state": "fixed",
+    "task9_state": "pending",
     "task9_result": "auto-fixed",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-06-01",
@@ -11923,6 +11945,11 @@
     "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
     "task6_review_summary": "2026-06-01 02:05 Task6：needs-rework。L1/L2 小修 40 处；功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json priority 90。",
     "task6_new_rework": true,
-    "queue_priority": 90
+    "queue_priority": 90,
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-06-01T06:52:00+08:00",
+    "last_task2b_rework_at": "2026-06-01T06:52:00+08:00",
+    "last_task2b_log": "logs/rework/2026-06-01-06-task2b-main.md",
+    "task2b_summary": "缺少测试条件的 HWC 功耗/带宽/性能百分比已降级为定性趋势，并补充数字回写所需记录模板。"
   }
 }
