@@ -35,16 +35,16 @@ last_task9_review_log: "logs/deep-review/2026-05-26-05-audit.md"
 
 status: "ready-for-review"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-06-01"
 task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: "pending"
-pipeline_stage: "task6_pending"
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 task2b_state: "fixed"
-last_task6_at: "2026-05-07T17:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-17-review.md"
+last_task6_at: "2026-06-01T01:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-01-review.md"
 task2b_result: "fixed"
-task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补齐 11 个示意代码围栏语言，清理禁用词/冗余强调 5 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T05:35:00+08:00"
@@ -339,7 +339,7 @@ BufferQueue 的核心职责是管理缓冲区池和协调生产者-消费者的�
 
 消费者的工作与生产者镜像对称:通过 acquireBuffer() 从 BufferQueue 中取出已填充的缓冲区,对其中的内容进行处理(比如 SurfaceFlinger 把多个缓冲区合成在一起),处理完毕后通过 releaseBuffer() 将缓冲区归还给缓冲区池。
 
-SurfaceFlinger 是 Android 中最重要的 BufferQueue 消费者——它通过 IGraphicBufferConsumer 接口同时消费来自多个 App 的缓冲区,把它们按 Z-Order 叠加成最终的屏幕画面。HWC(Composer HAL)不是 BufferQueue 的消费者,而是 SurfaceFlinger 完成缓冲区 acquire 之后的合成通道：SurfaceFlinger 把 Layer 信息和缓冲区传递给 HWC,由 HWC 完成最终的合成和输出。HWC 与 SurfaceFlinger 之间走的是 validateDisplay / acceptDisplayChanges / presentDisplay 这套 HAL 接口,与 BufferQueue 的 dequeue/acquire/queue/release 不是同一组操作。
+SurfaceFlinger 是 Android 中最重要的 BufferQueue 消费者——它通过 IGraphicBufferConsumer 接口同时消费来自多个 App 的缓冲区,把它们按 Z-Order 叠加成最终的屏幕画面。HWC (Composer HAL) 属于 SurfaceFlinger 完成缓冲区 acquire 之后的合成通道,不直接作为 BufferQueue 消费者参与 dequeue / acquire / queue / release 这组操作。SurfaceFlinger 把 Layer 信息和缓冲区传递给 HWC,由 HWC 通过 validateDisplay / acceptDisplayChanges / presentDisplay 这套 HAL 接口完成最终合成和输出。
 
 ### 生产-消费时序
 
@@ -375,7 +375,7 @@ return releaseFence;
 
 ## 软件渲染(Skia CPU)vs 硬件加速渲染(Skia OpenGL/Vulkan)
 
-上面我们看完了渲染管线的完整流程和 BufferQueue 的数据流转机制。接下来拆解 App 进程内把 DisplayList 指令转化为像素的这一步,到底是怎么执行的?答案取决于渲染模式--软件渲染由 CPU 逐像素计算,硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大,理解这些差异是做渲染优化的前提。
+前面已经走完渲染管线的完整流程和 BufferQueue 的数据流转机制。继续看 App 进程内把 DisplayList 指令转化为像素的这一步,它的执行方式取决于渲染模式--软件渲染由 CPU 逐像素计算,硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大,理解这些差异是做渲染优化的前提。
 
 ### 软件渲染(Software Rendering)
 
@@ -589,7 +589,7 @@ RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的�
 
 **App 渲染管线(RenderThread + HWUI Skia Pipeline)** 是上面"硬件加速渲染"一节描述的路径:主线程把 View 树录制为 DisplayList 指令,RenderThread 通过 HWUI 的 Skia Pipeline(SkiaOpenGLPipeline 或 SkiaVulkanPipeline)将这些指令转换为 OpenGL/Vulkan API 调用,交给 GPU 执行。这条管线的产出是填充好像素的 GraphicBuffer,通过 queueBuffer() 提交给 BufferQueue。整个过程中 RenderThread 运行在 App 进程内,与 SurfaceFlinger 没有直接交互。
 
-**SurfaceFlinger 合成管线(RenderEngine + GPU Composition)** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine(`frameworks/native/services/surfaceflinger/RenderEngine/`)运行在 SurfaceFlinger 进程中,它同样基于 Skia 构建,但职责不是"画单个 App 的 UI",而是"把多个 Layer 的缓冲区合成到一起"。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时,SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成--这就是 GPU Composition。
+**SurfaceFlinger 合成管线(RenderEngine + GPU Composition)** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine (`frameworks/native/services/surfaceflinger/RenderEngine/`) 运行在 SurfaceFlinger 进程中,同样基于 Skia 构建,职责是把多个 Layer 的缓冲区合成到一起,而不是绘制单个 App 的 UI。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时,SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成--这就是 GPU Composition。
 
 App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制一段文字"),SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"("把微信的界面叠在启动器上面,再加一层状态栏")。两者都用到 Skia 和 GPU,但前者服务于 App 进程内的 UI 渲染,后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
 
@@ -621,7 +621,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 - **VSync 机制**(2.3 节)是渲染管线的节拍器,决定了 Measure/Layout/Draw 何时开始。本节只把 VSYNC_APP 和 VSYNC_SF 当作 Trace 观察名;Android 10/11 及更早可结合 DispSync 理解,Android 14-16 要回到 Scheduler、VSyncPredictor、VSyncDispatchTimerQueue 和 VsyncSchedule 路径。
 - **Choreographer**(2.4 节)是 VSync 信号到实际渲染工作的桥梁--它接收 VSYNC_APP 信号,依次触发 Input 回调、Animation 回调和 Traversal 回调(即 performTraversals)。理解 Choreographer 的工作机制,是分析主线程调度问题的前提。
-- **MainThread 与 RenderThread 协作**(2.5 节)深入拆解了主线程录制 DisplayList 和 RenderThread 执行 GPU 渲染之间的同步机制,包括 syncFrameState、DrawOp 的传递、帧之间的依赖关系等。
+- **MainThread 与 RenderThread 协作**(2.5 节)展开了主线程录制 DisplayList 和 RenderThread 执行 GPU 渲染之间的同步机制,包括 syncFrameState、DrawOp 的传递、帧之间的依赖关系等。
 - **SurfaceFlinger 与合成**(2.6 节)详细讲解了 SurfaceFlinger 的内部工作流程,包括 Layer 管理、HWC 合成策略、GPU 合成回退条件、VSYNC_SF 触发的合成时机等。
 - **GPU 渲染深入**(2.10 节)从硬件层面分析 GPU 的渲染原理,包括 Vulkan 后端的性能优化、Shader 编译对渲染性能的影响等。
 

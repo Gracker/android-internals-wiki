@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: ready-for-review
+status: "ready-for-review"
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
@@ -13,7 +13,7 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
@@ -36,15 +36,18 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T00:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。"
+last_task6_at: "2026-06-01T01:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-01-review.md"
+task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # MainThread 与 RenderThread 协作
@@ -93,7 +96,7 @@ Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"
 
 **Layout(布局)**--根据测量结果,父 View 为每个子 View 分配精确的位置和大小(left、top、right、bottom)。
 
-**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 被调用时传入的 Canvas 并不是一块会直接绘制像素的画布,而是 `RecordingCanvas`。它不会产生任何像素,而是将绘制调用(画圆、画文字、画图片)记录到一个叫 **DisplayList**(也叫 **RenderNode**)的数据结构中。
+**Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 收到的是 `RecordingCanvas`,这块画布不直接绘制像素,只把绘制调用(画圆、画文字、画图片)记录到 **DisplayList**(也叫 **RenderNode**)数据结构中。
 
 我们可以把 DisplayList 类比成一份"施工图纸"--它精确记录了"在什么位置画什么形状、什么颜色",但还没有变成屏幕像素。这份图纸将在稍后交给 RenderThread,由它来指挥 GPU 生成最终画面。
 
@@ -146,7 +149,7 @@ bool RenderThread::threadLoop() {
 }
 ```
 
-这里有两个观察点。`mEglManager = new EglManager()` 不在 `threadLoop()` 里,而在 `initThreadLocals()`。RenderThread 处理的也不是某个固定的"显示更新函数",而是投递到内部 queue 的 draw、texture upload、layer update 等任务。
+这里有两个观察点。`mEglManager = new EglManager()` 位于 `initThreadLocals()`,不在 `threadLoop()` 里。RenderThread 处理的是投递到内部 queue 的 draw、texture upload、layer update 等任务,不是某个固定的"显示更新函数"。
 
 RenderThread 不主动轮询。它大部分时间都在等主线程或系统其它模块把工作投进 queue。收到任务后,它会和 UI Thread 形成一条流水线,UI Thread 继续准备下一帧,RenderThread 负责把当前帧推向 GPU。
 

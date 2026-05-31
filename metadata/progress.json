@@ -282,7 +282,9 @@
     "19.12",
     "19.16",
     "19.09",
-    "19.11"
+    "19.11",
+    "2.1",
+    "2.5"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -405,32 +407,38 @@
     "src/part3-tools/ch19-apm/12-framemetrics.md",
     "src/part3-tools/ch19-apm/16-profiling-manager.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/11-jankstats.md"
+    "src/part3-tools/ch19-apm/11-jankstats.md",
+    "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+    "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
   ],
-  "review_summary": "Task6 2026-05-31 21: review 19.09 Measure、19.11 JankStats；pass-light-edit；无回炉，送 Task9。",
+  "review_summary": "Task6 2026-06-01 01: review 2.1 Android 渲染架构全景、2.5 MainThread 与 RenderThread 协作、2.20 多窗口与桌面模式渲染性能；pass-light-edit；无回炉，送 Task9。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-31T22:10:00+08:00",
+    "reviewed_at": "2026-06-01T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-05-31-22-review.md",
-    "log": "logs/review/2026-05-31-22-review.md",
+    "review_log": "logs/review/2026-06-01-01-review.md",
+    "log": "logs/review/2026-06-01-01-review.md",
     "sections": [
-      "19.09",
-      "19.24"
+      "2.1",
+      "2.5",
+      "2.20"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
     ],
     "pass_light_edit": [
-      "19.09",
-      "19.24"
+      "2.1",
+      "2.5",
+      "2.20"
     ],
     "needs_rework": [],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 10,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 10,
     "rework_items": 0,
     "result": "pass-light-edit"
   },
@@ -2337,7 +2345,7 @@
       "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
     }
   },
-  "total_review_sections": 273,
+  "total_review_sections": 278,
   "next_review_candidates": [
     {
       "section": "14.4",
@@ -2366,31 +2374,34 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T00:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-01T01:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-31T22:10:00+08:00",
+    "reviewed_at": "2026-06-01T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-05-31-22-review.md",
-    "log": "logs/review/2026-05-31-22-review.md",
+    "review_log": "logs/review/2026-06-01-01-review.md",
+    "log": "logs/review/2026-06-01-01-review.md",
     "sections": [
-      "19.09",
-      "19.24"
+      "2.1",
+      "2.5",
+      "2.20"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
     ],
     "pass_light_edit": [
-      "19.09",
-      "19.24"
+      "2.1",
+      "2.5",
+      "2.20"
     ],
     "needs_rework": [],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 11,
+    "l1_l2_fixes": 10,
     "l3_l4_issues": 0,
-    "small_fixes": 11,
+    "small_fixes": 10,
     "rework_items": 0,
     "result": "pass-light-edit"
   },
@@ -6853,8 +6864,8 @@
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -6863,15 +6874,18 @@
       "last_task2b_at": "2026-05-31T22:50:00+08:00",
       "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
-      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
+      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md",
+      "last_task6_at": "2026-06-01T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
+      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "2.5": {
       "section": "2.5",
       "title": "MainThread 与 RenderThread 协作",
       "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -6880,7 +6894,10 @@
       "last_task2b_at": "2026-06-01T00:50:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
       "task2b_notes": "frontmatter backlog fallback：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。",
-      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
+      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
+      "last_task6_at": "2026-06-01T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
+      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
     }
   },
   "task2b_rounds": [
@@ -8922,8 +8939,8 @@
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -8932,15 +8949,18 @@
       "last_task2b_at": "2026-05-31T22:50:00+08:00",
       "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
-      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md"
+      "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md",
+      "last_task6_at": "2026-06-01T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
+      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "2.5": {
       "section": "2.5",
       "title": "MainThread 与 RenderThread 协作",
       "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -8949,7 +8969,10 @@
       "last_task2b_at": "2026-06-01T00:50:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
       "task2b_notes": "frontmatter backlog fallback：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。",
-      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
+      "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
+      "last_task6_at": "2026-06-01T01:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
+      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
     }
   },
   "task2a_last_processed": {
