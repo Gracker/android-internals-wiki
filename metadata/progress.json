@@ -2499,12 +2499,11 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-05-28T18:50:00+08:00",
+  "last_task2b_at": "2026-05-31T18:50:00+08:00",
   "last_task2b_sections": [
-    "14.5",
-    "15.5"
+    "19.16"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework: task9 issues fixed, returned to task6_pending",
+  "last_task2b_action": "frontmatter backlog fallback rework: ProfilingManager task9 issues fixed, returned to task6_pending",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -8751,7 +8750,7 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task2b_run": "2026-05-28T18:50:00+08:00",
+  "last_task2b_run": "2026-05-31T18:50:00+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
@@ -9829,6 +9828,19 @@
       "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "result": "fixed-lite",
       "source_log": "logs/deep-review/2026-05-26-03-deep-review.md"
+    },
+    {
+      "date": "2026-05-31T18:50:00+08:00",
+      "sections": [
+        {
+          "section": "19.16",
+          "title": "ProfilingManager",
+          "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+          "source": "frontmatter backlog fallback",
+          "review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
+          "status": "fixed"
+        }
+      ]
     }
   ],
   "section_18_23": {
@@ -10551,9 +10563,14 @@
     "2026-05-28": {
       "sections_processed": 2,
       "items_completed": 2
+    },
+    "2026-05-31": {
+      "sections_processed": 1,
+      "items_completed": 1,
+      "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-05-28T16:50:00+08:00",
+  "task2b_last_run": "2026-05-31T18:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -10790,13 +10807,18 @@
       "by": "task2b-lite",
       "status": "fixed-lite",
       "summary": "补充 GPU_DURATION / SWAP_BUFFERS_DURATION 在 API 24-30、31-32、33-37 的版本端点边界，避免线上聚合跨版本直接比较。"
+    },
+    {
+      "section": "19.16",
+      "date": "2026-05-31T18:50:00+08:00",
+      "by": "task2b-content-processing-rework",
+      "source": "frontmatter backlog fallback"
     }
   ],
   "last_task2b_completed": [
-    "14.5",
-    "15.5"
+    "19.16"
   ],
-  "last_task2b_completed_at": "2026-05-28T18:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-31T18:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -10994,18 +11016,23 @@
     }
   ],
   "last_task2b_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
   "last_task2b_completed_entry": {
-    "at": "2026-05-28T16:50:00+08:00",
+    "at": "2026-05-31T18:50:00+08:00",
     "lane": "main",
-    "source": "queue task6-review / task9-deep-tech-review",
-    "section": "1.9",
-    "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+    "source": "frontmatter backlog fallback",
+    "section": "19.16",
+    "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "title": "ProfilingManager",
     "result": "fixed",
-    "summary": "§1.9 Android 16 Cloud Compilation / SDM 回炉修复完成，回流 Task6。",
-    "source_log": "logs/review/2026-05-28-16-review.md; logs/deep-review/2026-05-28-16-deep-review.md"
+    "issues_fixed": [
+      "profileable/shell 配置边界拆出线上 ProfilingManager 前提",
+      "TRIGGER_TYPE_OOM 补默认 UncaughtExceptionHandler 透传要求",
+      "rate limiter 补 app/system cost 与 hour/day/week 窗口模型",
+      "官方 ProfilingManager guide 404 URL 替换为拆分后的 tracing/profiling-manager 文档"
+    ],
+    "returned_to": "task6_pending"
   },
   "task2b_last_rework": {
     "time": "2026-05-29T07:47:00+08:00",
