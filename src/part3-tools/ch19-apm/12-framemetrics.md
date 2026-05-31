@@ -16,12 +16,6 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task6_pending"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-05-31
-task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-31"
@@ -37,12 +31,19 @@ last_task9_review_log: "logs/deep-review/2026-05-31-18-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
 task9_review_notes: "2026-05-31 Task9 deep review: auto-fixed。补充硬件渲染前提、TOTAL_DURATION 非简单求和边界，并修正 android-17.0.0_r1 不可复现的源码验证锚点；P0 0 / P1 0 / P2 3。"
 last_task6_audit: '2026-05-20'
-last_task6_at: "2026-05-31T19:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-19-review.md"
-task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 3 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-31"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-01"
+task6_reviewed_date: "2026-06-01"
+last_task6_at: "2026-06-01T02:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-02-review.md"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
+task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 ---
 
 # FrameMetrics

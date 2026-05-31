@@ -34,12 +34,6 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task6_pending"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
-task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_rework_at: "2026-05-31T20:52:00+08:00"
@@ -51,17 +45,23 @@ task9_reviewed_date: "2026-05-31"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-31T21:20:00+08:00"
 last_task9_autofix_at: "2026-05-31"
-task6_reviewed_date: "2026-05-31"
-last_task6_at: "2026-05-31T22:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-22-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
 task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与自托管依赖口径，回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
-task6_review_notes: "2026-05-31 22:10 Task6 revisiting-review: L1/L2 小修 1 处（metric→指标）；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-01"
+task6_reviewed_date: "2026-06-01"
+last_task6_at: "2026-06-01T02:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-02-review.md"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
+task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 1 处（会话回放→会话回查）；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 ---
 # Measure
 
@@ -204,7 +204,7 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 
 ## 使用建议
 
-Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时不要一次接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回放、符号能否还原、告警能否进入团队处理流程。
+Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时不要一次接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回查、符号能否还原、告警能否进入团队处理流程。
 
 只有当这些环节都跑通，平台型 APM 才能给团队省时间。否则它只是多收了一批数据。
 

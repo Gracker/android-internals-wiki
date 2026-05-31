@@ -254,7 +254,7 @@
     "section": "22.3",
     "section_title": "Jetpack Compose 性能优化",
     "priority": 95,
-    "reason": "[Deep Tech Review] CacheWindowLogic 方法签名错误",
+    "reason": "fixed-lite",
     "material_paths": [
       "intake/suggestions.md"
     ],
@@ -293,8 +293,29 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-31T12:25:43.861951",
     "status": "completed",
-    "reason": "fixed-lite",
     "completed_at": "2026-05-31T15:35:00+08:00",
     "completed_by": "openclaw-task2b-lite"
+  },
+  {
+    "section": "18.15",
+    "section_title": "视频叠加与 HWC",
+    "priority": 90,
+    "reason": "[review回炉] HWC Overlay 功耗/带宽/性能比例缺少测试条件与原始记录",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "开头功耗/带宽对比表、HDR 性能影响、常见性能问题、同步开销段落",
+        "detail": "章节使用多组“实测”或百分比数据（带宽 1200-1800MB/s、Overlay 功耗 -30%、HDR 合成时间增加 15-30%、Overlay 失效功耗增加 30-50%、同步开销 20-30%），但缺少设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径。",
+        "suggestion": "补齐测试记录并把数据表改成“设备/条件/采样工具/结果”格式；无法补齐的数字降级为定性描述或明确标注为示例量级。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-01T02:05:00+08:00",
+    "status": "pending",
+    "review_type": "task6-light-edit",
+    "original_review_log": "logs/review/2026-06-01-02-review.md"
   }
 ]
