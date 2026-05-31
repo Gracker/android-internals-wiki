@@ -10,10 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-05-31"
 reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-31"
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -27,7 +28,7 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_result: "needs-rework"
 task9_state: "pending"
 task2b_state: "fixed"
@@ -38,12 +39,12 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T16:22:00+08:00"
 task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。 | 2026-05-25 16:22 Task9 deep-review：needs-rework。P0 2 / P1 0 / P2 1。P0：LMK 因果链仍残留 computeOomAdj/IBinder.FrozenStateChangeCallback 错误；ProfilingManager.requestProfiling 第三个参数应为 tag 不是 packageName。"
 last_task6_audit: "2026-05-23"
-last_task6_at: "2026-05-25T16:07:00+08:00"
+last_task6_at: "2026-05-31T22:10:00+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-05-25-16-review.md"
-task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 15 处（否定-纠正句式、真正/不是高频词、标题表达）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+last_task6_review_log: "logs/review/2026-05-31-22-review.md"
+task6_review_notes: "2026-05-31 22:10 Task6：Task2B-lite 修复后写作复审；L1/L2 小修 10 处（夸张词、英文填充词、否定句式、版本表头）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
 ---
 
@@ -54,7 +55,7 @@ last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 揭秘 APM 稳定性基建的最底层逻辑，解析 Java Crash、Native Crash 与 ANR 的捕获黑魔法。
+- 🔹 [定位] 说明 APM 稳定性基建的底层实现，解析 Java Crash、Native Crash 与 ANR 的捕获路径。
 - 🔹 [Java Crash 捕获] 展开 `Thread.setDefaultUncaughtExceptionHandler` 的原理，以及如何保证自身上报逻辑不被 Crash 截断。
 - 🔹 [Native Crash 捕获] 解析 Google Breakpad / Crashpad 在 Android 端的应用，说明 Linux 信号（Signal）拦截机制与 Tombstone 文件的生成与解析。
 - 🔹 [ANR 捕获演进史] 从早期读取 `/data/anr/traces.txt`，到监听 SIGQUIT 信号 (Signal Catcher Hook)，再到 Android 11+ 官方 `ApplicationExitInfo` 的终极方案。
@@ -82,7 +83,7 @@ last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
 
 稳定性 APM 要覆盖四类不同现场：Java 未捕获异常、Native 信号崩溃、ANR、以及没有抛异常却把进程拖死的资源耗尽。四类现场的采样入口、线程上下文、权限边界都不同，统一看板只是收尾阶段，前面必须先把捕获路径搭对。
 
-## 1. 稳定性采样面：先分清谁在什么时刻还有执行机会
+## 1. 稳定性采样面：不同现场的执行机会
 
 | 现场类型 | 典型入口 | 进程当时是否还可控 | 适合采什么 |
 | --- | --- | --- | --- |
@@ -168,7 +169,7 @@ Signal handler 的工作应当收缩到最小集合：
 - 不能调用不满足 async-signal-safe 的复杂库函数
 - 不能在 handler 内直接拼大 JSON 或访问 Java VM
 
-如果项目里既想保留系统 tombstone，又想拿自定义 minidump，顺序应收缩为：应用侧记录最小信息 → 交给 Crashpad / Breakpad → 按 `sigaction` 的旧配置链到前一个 handler；没有旧 handler 时恢复默认动作并重新抛出 signal。这里不能把旧 handler 一律当成单参数函数调用，`SA_SIGINFO` 会改变回调签名。
+如果项目里既想保留系统 tombstone，又想拿自定义 minidump，顺序应控制为：应用侧记录最小信息 → 交给 Crashpad / Breakpad → 按 `sigaction` 的旧配置链到前一个 handler；没有旧 handler 时恢复默认动作并重新抛出 signal。这里不能把旧 handler 一律当成单参数函数调用，`SA_SIGINFO` 会改变回调签名。
 
 这段伪代码只展示链式分发的分支。其中 `SA_SIGINFO`、`SIG_DFL`、`SIG_IGN` 三类处理决定后续调用方式，处理错会导致二次崩溃。
 
@@ -284,7 +285,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 }
 ```
 
-这套接口的意义不只是“替代 traces.txt”。它把 ANR、LMK、Java Crash、Native Crash 都拉回了同一份退出历史模型，适合和自研 breadcrumb、前后台状态、版本号一起拼成稳定性样本。
+这套接口把 ANR、LMK、Java Crash、Native Crash 都拉回了同一份退出历史模型，不只替代 `traces.txt`，也适合和自研 breadcrumb、前后台状态、版本号一起拼成稳定性样本。
 
 ## 5. OOM 不能只盯 Java Heap
 
@@ -312,7 +313,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 - 高风险模块打点分桶，例如图片解码、数据库、WebView、音视频、日志系统
 - 应用重启后拉 `ApplicationExitInfo`，补齐 LMK 历史
 
-这样，后台才能区分“Java Heap 已爆”“Native RSS 持续长高”“FD 泄漏导致 socket 创建失败”“线程数冲上去以后调度雪崩”这些完全不同的问题。
+这样，后台才能区分“Java Heap 已爆”“Native RSS 持续长高”“FD 泄漏导致 socket 创建失败”“线程数过高导致调度抖动加重”这些不同问题。
 
 ## 6. 现场快照：崩溃当下只收最小集合，其余留到下次启动补齐
 
@@ -339,7 +340,7 @@ Java Crash handler 的冲突模式通常有三种：
 - 多个 SDK 都在 `uncaughtException` 里做阻塞 I/O，互相拖慢
 - 某个 SDK 为了“吃掉崩溃”直接不再交给系统默认 handler
 
-处理方式是建立一个统一 hub：应用只安装一个默认 handler，内部把事件 fan-out 给多个 sink。第三方 SDK 如果无法改造，就把安装顺序和链式回调在接入层统一封装。
+处理方式是建立一个统一 hub：应用只安装一个默认 handler，内部把事件分发给多个 sink。第三方 SDK 如果无法改造，就把安装顺序和链式回调在接入层统一封装。
 
 ### 7.2 Native 层冲突
 
@@ -374,7 +375,7 @@ Native 层要额外做两件事：
 
 常规 Crash 报告能看到“已经崩了之后”的栈，但对 use-after-free、heap corruption 这类问题，单靠普通 minidump 有时还不够。GWP-ASan 的定位是低比例灰度抽样，提前把部分分配切到带保护页的路径，命中后给出更明确的内存破坏证据。
 
-它不适合全量开启，原因很简单：调试价值高，运行时开销也更高。对 C/C++ 模块占比较重的应用，推荐作为专项灰度开关，不推荐默认全量配置。
+它不适合全量开启：调试价值高，运行时开销也更高。对 C/C++ 模块占比较重的应用，推荐作为专项灰度开关，不推荐默认全量配置。
 
 ## 10. 参考资料与延伸阅读
 
@@ -521,7 +522,7 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，�
   → 子进程退出
 ```
 
-这个模式在 Android 5.0 (API 21) 起可用，不依赖 `ApplicationExitInfo`。是 Android 低版本 OOM 现场保留的最优解。
+这个模式在 Android 5.0 (API 21) 起可用，不依赖 `ApplicationExitInfo`，是 Android 低版本 OOM 现场保留的优先方案。
 
 ### 12.6 版本能力对比
 
@@ -622,9 +623,9 @@ profilingManager.registerForAllProfilingResults(executor) { result ->
 
 源码路径：`packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`、`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
 
-### 13.4 Android 10-16 线上诊断能力版本表
+### 13.4 Android 10-17 线上诊断能力版本表
 
-| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
+| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16-17 (API 36-37) |
 |------|---------------------------|---------------------|----------------------|
 | 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
 | ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
