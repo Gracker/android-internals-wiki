@@ -2346,8 +2346,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T19:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-31T19:28:00+08:00",
+  "last_updated_by": "openclaw-task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-05-31T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -3374,20 +3374,22 @@
       "title": "Jetpack Compose 性能优化",
       "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_priority": 95,
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
       "last_task9_at": "2026-05-21T19:35:29+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-22",
       "last_task6_at": "2026-05-22T05:08:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-22-05-review.md"
+      "last_task6_review_log": "logs/review/2026-05-22-05-review.md",
+      "last_task2b_lite_at": "2026-05-31T15:35:00+08:00",
+      "last_task2b_verifier_at": "2026-05-31T19:28:00+08:00",
+      "task2b_verifier_note": "queue 无 Task6/Task9/External pending；frontmatter/progress 回流到 Task6 复审。"
     },
     "1.3": {
       "status": "finalized",
@@ -11329,5 +11331,19 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。"
+  },
+  "last_task2b_verifier": {
+    "at": "2026-05-31T19:28:00+08:00",
+    "sections": [
+      "22.3",
+      "19.12",
+      "19.16",
+      "2.6",
+      "25.9",
+      "26.12"
+    ],
+    "status_fixes": 1,
+    "blocked": 3,
+    "result": "ready-for-task6"
   }
 }
