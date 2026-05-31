@@ -131,4 +131,45 @@
 - **问题**：缺乏具体数据来源和测试条件
 - **建议**：提供具体的 Google I/O 演讲链接、测试设备列表、数据集规模和测试方法
 
+## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-31
+- **类型**：源码准确性
+- **位置**：PausableComposition 源码引用
+- **问题**：章节引用 `androidx/compose/runtime/PausableComposition` 返回 HTTP 404
+- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
+
+- **类型**：源码准确性
+- **位置**：LazyLayoutPrefetchState 源码引用
+- **问题**：章节引用 `androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt` 返回 HTTP 404
+- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
+
+- **类型**：源码准确性
+- **位置**：Snapshot 源码引用
+- **问题**：章节引用 `androidx/compose/runtime/snapshots/Snapshot.kt` 返回 HTTP 404
+- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
+
+- **类型**：源码准确性
+- **位置**：DerivedState 源码引用
+- **问题**：章节引用 `androidx/compose/runtime/DerivedState.kt` 返回 HTTP 404
+- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
+
+- **类型**：版本差异
+- **位置**：LazyLayoutCacheWindow API 构造参数
+- **问题**：章节提到 API 参数类型在不同版本间存在不一致，但未详细说明
+- **建议**：补充不同版本间 constructor 参数类型的差异和使用建议
+
+- **类型**：数据支撑
+- **位置**："滚动性能与 View 系统性能对等"宣称
+- **问题**：缺少官方 benchmark 报告和测试条件
+- **建议**：提供具体的性能对比基准数据、测试设备、数据集规模和测试方法
+
+- **类型**：数据支撑
+- **位置**："对象分配开销降低 20%" 声明
+- **问题**：缺少具体的测试设备和模型信息
+- **建议**：提供测试环境说明、设备型号、Android 版本和具体的基准测试数据
+
+- **类型**：数据支撑
+- **位置**："ART 编译时间优化 18%" 声明
+- **问题**：缺少基准测试条件
+- **建议**：提供编译时间优化的测试环境、样本大小和优化效果的量化数据
+
 ---
