@@ -43,6 +43,8 @@ task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Deli
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T17:38:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-17-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
@@ -394,7 +396,7 @@ Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profi
 
 `VK_KHR_present_id` 本身是给 present 操作打递增 ID 的扩展，不等同于 display driver 返回完成时间戳。即使 Swappy 未来接入该扩展，帧上屏时刻的确认仍然需要 display timing 支持。当前 Swappy Vulkan 路径没有使用 `VK_KHR_present_id`，文档或文章不应把"Vulkan 1.4 可用"写成"Swappy 已接入"。
 
-> [待验证：Swappy 是否会在后续版本接入 VK_KHR_present_id，需要跟踪 gamesdk 仓库变更。如果设备支持 VK_KHR_present_id / VK_KHR_present_wait，理论上可以减少 present 确认延迟，但实际抖动改善幅度需要 benchmark 数据支撑——设备、Android build、GPU/driver、swapchain present mode、是否启用 VK_GOOGLE_display_timing，以及 trace 或日志样本缺一不可。]
+> **注意**：Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备、Android build、GPU/driver、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
 
 ### DeliQueue：Java MessageQueue 的无锁重构
 
@@ -404,7 +406,7 @@ Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue）�
 
 **对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 
-[待验证：DeliQueue 的无锁路径是否已扩展到 NDK AChoreographer / ALooper 的回调投递机制。如果已扩展，Swappy 的 `onPreSwap()` 里"离下一个 vsync 还有多久"的计算精度会受益，高刷设备上 refresh period 越短，改善越明显。]
+> **注意**：DeliQueue 改造的是 Java 层 `MessageQueue`，NDK `AChoreographer` / `ALooper` 的回调路径是否做了同样的无锁改造，目前没有公开文档确认。如果 NDK 路径已同步改造，Swappy `onPreSwap()` 中距下一个 VSync 的时间估算精度会受益，高刷设备上效果更明显。
 
 [已验证: AOSP frameworks/base/core/java/android/os/MessageQueue.java (DeliQueue Java 层实现), Swappy × Choreographer × Android 17 架构深研]
 
@@ -427,8 +429,4 @@ Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue）�
 - Perfetto SQL 参考：`external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql`
 
 ### Swappy × Choreographer × Android 17 架构深研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Swappy × Choreographer × Android 17 架构深研.md
-- 类型：DeepResearch 调研结果
-- 摘要：围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计循环做帧节奏控制。
-- 注入时间：2026-04-23
-- 价值：把 Android 17 的 DeliQueue 变化与现有 Swappy 架构连起来，适合解释高刷设备上帧节奏为何更稳。
+- 来源：DeepResearch 调研。围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计循环做帧节奏控制。

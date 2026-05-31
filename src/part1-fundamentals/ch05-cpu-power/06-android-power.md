@@ -354,6 +354,28 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 [图:Battery Historian 中 WakeLock 持有时长的可视化示例]
 
+
+### Tare 经济模型:Job 配额的底层管控
+
+Android 12（API 31）引入 Tare（Think Advanced Resource Economy）经济模型，作为 JobScheduler Apex 模块的配额管控层，运行在独立进程而非 system_server。
+
+**核心机制**：Tare 以 ARC（Android Resource Credits）为内部货币，每个应用周期性获得 ARC 配额，Job 执行时消耗 ARC。`TareEconomicManager`（`frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java`，android-17.0.0_r1）在 Job 调度前检查应用 ARC 余额，余额耗尽时拒绝新 Job。
+
+**关键组件**：
+- `AppBudgetManager`：管理每个 UID 的预算，`setAppBudget(uid, budgetMs)` 设置预算时长，`setAppToppingThreshold(uid, thresholdMs)` 设置消费上限阈值，`getRemainingBudget(uid)` 查询剩余配额
+- `InternalResourceService`：管理全局 ARC 供给，每天重新计算
+- `EconomyManager`（API 34+，位于 `frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java`）：应用层公开 API，`setAppBudgetoyant(packageName, budgetMs)` 允许应用自设置预算，`getRemainingBudget(packageName)` 查询本应用剩余预算
+
+**消费数据来源**：`TareEconomicManager` 依赖 `BatteryStatsService` 提供的历史耗电数据作为基准参照，通过 `BatteryUsageStats` API（API 31+）查询各 UID 的实际消费。
+
+**BatteryStatsService**（`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，android-17.0.0_r1）继承 `BatteryStats` HIDL/AIDL 服务端，数据写入每分钟批次合并。调用链：`BatteryManager.getBatteryUsageStats(List<BatteryUsageStatsQuery>)` → `IBatteryStats` → `BatteryStatsService.getBatteryUsageStats()`。`BatteryUsageStatsQuery` 支持按消费场景/时间范围/UID 聚合，比传统 `getStatistics()` 更精细。
+
+**版本差异**：Android 16 对 JobScheduler 配额做了优化，Active Bucket 的 App 配额更宽裕；Android 17（API 37）Power Check 机制与 Tare 联动增强，但 `TareEconomicManager.checkPowerConstraints()` 具体实现路径尚未在 android-17.0.0_r1 源码中确认。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java; frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/AppBudgetManager.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java; frameworks/base/core/java/android/os/BatteryUsageStats.java]
+
+<!-- AIW-源码调研-2026-05-31: Tare 经济模型源码闭环 -->
+
 ## JobScheduler / WorkManager 的省电调度策略
 
 ### 为什么要用调度框架而不是自己管 WakeLock

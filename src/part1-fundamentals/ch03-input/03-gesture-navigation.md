@@ -69,6 +69,8 @@ task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed
 task9_review_notes: "2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；queue 无 pending，已自动晋升 finalized / ready-to-publish。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # 3.3 手势导航与系统交互
@@ -110,9 +112,9 @@ Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档�
 
 ### SystemUI 中的 EdgeBackGestureHandler
 
-返回手势的入口仍然在 SystemUI 的 `EdgeBackGestureHandler`，但 android-16.0.0_r1 的实现细节和 Android 10 初版资料已经有几处差异。当前版本里，`updateIsEnabledInner()` 在手势导航模式启用后会完成三件事：向 WMS 注册 `ISystemGestureExclusionListener`、为当前 display 创建 `InputMonitorResource`、调用 `resetEdgeBackPlugin()` 挂起默认的边缘反馈插件。
+返回手势的入口仍然是 SystemUI 的 `EdgeBackGestureHandler`，但 android-16.0.0_r1 的实现与 Android 10 初版资料有几处关键差异。当前版本里，`updateIsEnabledInner()` 在手势导航模式启用后会完成三件事：向 WMS 注册 `ISystemGestureExclusionListener`、为当前 display 创建 `InputMonitorResource`、调用 `resetEdgeBackPlugin()` 挂起默认的边缘反馈插件。
 
-`InputMonitorResource` 内部并没有自己发明一套输入通道，它只是用 `InputMonitorCompat("edge-swipe", displayId)` 包装 `InputManagerGlobal.monitorGestureInput()`，让 SystemUI 在当前屏幕上收到名为 `edge-swipe` 的 gesture monitor 事件流。视觉反馈这一侧，旧资料经常提 `NavigationBarEdgePanel`，但 android-16.0.0_r1 当前默认插件已经换成 `BackPanelController` / `BackPanel.kt`，并通过 `TYPE_NAVIGATION_BAR_PANEL` overlay window 显示边缘箭头和面板动画。去 AOSP 对照时，文件名这一层不能再沿用旧类名。
+`InputMonitorResource` 内部并没有自己发明一套输入通道，它只是用 `InputMonitorCompat("edge-swipe", displayId)` 包装 `InputManagerGlobal.monitorGestureInput()`，让 SystemUI 在当前屏幕上收到名为 `edge-swipe` 的 gesture monitor 事件流。视觉反馈这一侧，旧资料经常提 `NavigationBarEdgePanel`，但 android-16.0.0_r1 当前默认插件已经换成 `BackPanelController` / `BackPanel.kt`，通过 `TYPE_NAVIGATION_BAR_PANEL` overlay window 显示边缘箭头和面板动画。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java]
 
