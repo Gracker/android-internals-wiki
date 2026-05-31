@@ -176,7 +176,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-05-31T05:35:42.079832",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-31T10:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "reason": "URL不可访问，跳过"
   },
   {
     "section": "18.19",
@@ -193,7 +196,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-30T22:12:26.099775+00:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-05-31T10:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "reason": "章节已包含完整 Android 17 VRR 源码分析，无需额外注入"
   },
   {
     "section": "2.6",
