@@ -14,7 +14,7 @@ last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-06-01"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
 last_task9_at: "2026-05-17T14:20:00+08:00"
@@ -36,18 +36,22 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
-task6_result: pass-light-edit
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
 task9_result: needs-rework
-task9_state: pending
+task9_state: "pending"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
-last_task6_at: "2026-06-01T01:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-01-review.md"
-task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-06-01T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-06-review.md"
+task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
+review_type: "task6-writing-quality-review"
 ---
 
 # MainThread 与 RenderThread 协作
@@ -579,69 +583,3 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
    - [第 2.4 节:Choreographer 与渲染流水线](04-choreographer.md)
    - [第 2.6 节:SurfaceFlinger 合成机制](06-surfaceflinger.md)
    - [第 3.1 节:Input 事件分发全流程](01-input-dispatch.md)
-
-
-
-<!-- AIW-源码调研-2026-05-15 -->
-**源码调研补注（2026-05-15）**：
-
-1. **PackageManager 无 FEATURE_AI**：AOSP 主线 `PackageManager.java` 中不存在 `FEATURE_AI` / `FEATURE_ML` 常量。NPU 能力通过 NNAPI HAL 的 `IDevice::getCapabilities()` 查询，不是传统 `hasSystemFeature()` 路径。
-
-2. **LiteRT CompiledModel API**：Android 14+ 推荐使用 `CompiledModel` C++ API，支持 AOT 编译，Qualcomm NPU 加速比达 2.1x。
-
-3. **AICore 非 AOSP 公开 API**：`android.hardware.ai` HAL 包在 AOSP 主线不存在，AICore 属于 GMS 闭源组件，通过 LiteRT NNAPI Delegate 调用。
-
-4. **支持的 NPU 厂商**：Qualcomm SNPE、MediaTek Neuron、Samsung S.LSI、Intel NPU、Google Tensor（内置 EdgeTPU）。
--->
-
-
-<!-- AIW-源码调研-2026-05-27 -->
-**源码调研补注（2026-05-27）**：
-
-基于 AOSP 源码深度分析，Android RenderThread 与 Choreographer 协同机制的新发现：
-
-1. **VSync 信号接收与分发的源码实现**：
-   - Choreographer 通过 DisplayEventReceiver 接收硬件 VSync 信号
-   - `postFrameCallback()` 通过 `scheduleFrame()` 设置 VSync 回调
-   - 调用链：`Choreographer.onVsync()` → `ViewRootImpl.doFrame()` → `syncAndDrawFrame()`
-
-2. **UI 线程与 RenderThread 同步机制**：
-   - 同步点位于 `DrawFrameTask::postAndWait()`，UI 线程会等待 RenderThread 完成本帧同步阶段
-   - 关键源码：`ThreadedRenderer.syncAndDrawFrame()` → `RenderProxy::syncAndDrawFrame()` → `DrawFrameTask::postAndWait()` → `syncFrameState()`
-   - 等待范围包括 `prepareTree()`、layer update、`makeCurrent()` 和纹理准备；后续 `CanvasContext::draw()`、`dequeueBuffer()`、GPU command submit 需要到 RenderThread track 继续确认
-
-3. **BufferQueue 缓冲区管理机制**：
-   - RenderThread 通过 `dequeueBuffer()` 获取可用缓冲区
-   - 渲染完成后通过 `queueBuffer()` 返回缓冲区
-   - 通知机制：`signalPendingWaiters()` 通知消费者有新缓冲区可用
-
-4. **线程同步关键代码**：
-   ```cpp
-   void DrawFrameTask::postAndWait() {
-       // 1. 提交任务到 RenderThread
-       mRenderThread.queue().post([this]() { run(); });
-
-       // 2. UI Thread 等待 syncFrameState() 完成本帧同步阶段
-       mSignal.wait(mLock);
-   }
-   ```
-
-5. **性能影响**：
-   - `syncFrameState` 耗时需要按设备和帧内容实测,不能脱离 Trace 给固定范围
-   - BufferQueue `dequeueBuffer()` / `queueBuffer()` 耗时受 buffer 数量、release fence、SurfaceFlinger 消费节奏影响,不能脱离 Trace 给固定范围
-   - VSync 同步负责把 App、SurfaceFlinger 和显示刷新节拍关联起来,撕裂避免还依赖 BufferQueue 与 fence 的读写边界
-
-6. **版本差异**：
-   - Android 13 (API 33)：Choreographer 新增 `postFrameCallbackWithFrameTime()`，RenderThread 引入 Vulkan 支持
-   - Android 15 (API 35)：VSync 信号分发延迟优化，减少帧丢失
-   - Android 17 (API 37)：`android.os.MessageQueue` 默认面向 targetSdk 37+ 应用启用 DeliQueue；该变化不等同于 HWUI RenderThread `WorkQueue` 替换
-
-7. **ADPF 性能反馈机制 (Android 14+ / Android 16 headroom)**：
-   - AOSP android-14.0.0_r1 起，RenderThread 相关 `CanvasContext.cpp` 已包含 `HintSessionWrapper` 与 `reportActualWorkDuration()`
-   - Android 16 的 headroom API 用于观察性能余量，不能和 RenderThread hint session 上报混成同一项新能力
-
-**源码位置验证**：
-- frameworks/base/core/java/android/view/Choreographer.java
-- frameworks/base/libs/hwui/renderthread/RenderThread.h
-- frameworks/native/libs/gui/BufferQueueProducer.cpp
--->

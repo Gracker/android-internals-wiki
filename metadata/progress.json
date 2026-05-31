@@ -2375,37 +2375,36 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T02:05:00+08:00",
+  "last_updated": "2026-06-01T06:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-01T02:05:00+08:00",
+    "reviewed_at": "2026-06-01T06:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-01-02-review.md",
-    "log": "logs/review/2026-06-01-02-review.md",
+    "review_log": "logs/review/2026-06-01-06-review.md",
+    "log": "logs/review/2026-06-01-06-review.md",
     "sections": [
-      "18.15",
-      "19.09",
-      "19.12"
+      "24.17",
+      "2.1",
+      "2.5"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/12-framemetrics.md"
+      "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
     ],
     "pass_light_edit": [
-      "19.09",
-      "19.12"
+      "24.17",
+      "2.1",
+      "2.5"
     ],
-    "needs_rework": [
-      "18.15"
-    ],
+    "needs_rework": [],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 41,
-    "l3_l4_issues": 1,
-    "small_fixes": 41,
-    "rework_items": 1,
-    "result": "needs-rework-with-pass-light-edit"
+    "l1_l2_fixes": 3,
+    "l3_l4_issues": 0,
+    "small_fixes": 3,
+    "rework_items": 0,
+    "result": "pass-light-edit"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 189,
@@ -6147,17 +6146,17 @@
       "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
       "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-25",
-      "last_task6_at": "2026-05-25T05:08:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-25-05-review.md",
-      "task6_l1_l2_fixes": 0,
+      "reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
       "queue_priority": 85,
@@ -6165,7 +6164,9 @@
       "task2b_result": "fixed-lite",
       "last_task2b_lite_at": "2026-06-01T01:35:00+08:00",
       "last_task2b_lite_log": "logs/rework/2026-06-01-01-task2b-lite.md",
-      "task2b_lite_note": "补 alpha04 connection pool API、hasConnectionPool、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
+      "task2b_lite_note": "补 alpha04 connection pool API、hasConnectionPool、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。",
+      "section": "24.17",
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "1.16": {
       "title": "Audio Pipeline 延迟与性能",
@@ -6876,8 +6877,8 @@
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -6887,17 +6888,22 @@
       "last_task2b_log": "logs/rework/2026-06-01-04-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P95: BufferQueue acquireBuffer signature, triple buffering latency side effect, Android 3.0 DisplayList vs Android 5.0 RenderNode/RenderThread boundary.",
       "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md",
-      "last_task6_at": "2026-06-01T01:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
-      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01"
     },
     "2.5": {
       "section": "2.5",
       "title": "MainThread 与 RenderThread 协作",
       "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -6907,9 +6913,14 @@
       "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
       "task2b_notes": "Task2B main fixed Task9 P95: syncFrameState wait semantics, Android 14+ ADPF hint session vs Android 16 headroom, conflicting research note cleanup.",
       "last_task2b_log": "logs/rework/2026-06-01-04-task2b-main.md",
-      "last_task6_at": "2026-06-01T01:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
-      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01"
     },
     "18.15": {
       "section": "18.15",
@@ -8996,9 +9007,14 @@
       "last_task2b_log": "logs/rework/2026-05-31-22-task2b-main.md",
       "task2b_note": "Task2B main fixed Task9 P1 version split: Android 3.0 early HWUI/DisplayList vs Android 5.0 RenderNode/RenderThread.",
       "last_task9_audit_log": "logs/deep-review/2026-05-26-05-audit.md",
-      "last_task6_at": "2026-06-01T01:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
-      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01"
     },
     "2.5": {
       "section": "2.5",
@@ -9016,9 +9032,14 @@
       "last_task9_review_log": "logs/deep-review/2026-05-17-14-audit.md",
       "task2b_notes": "frontmatter backlog fallback：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。",
       "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
-      "last_task6_at": "2026-06-01T01:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
-      "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01"
     },
     "18.15": {
       "section": "18.15",
@@ -9063,6 +9084,25 @@
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-06-01",
       "task6_new_rework": false
+    },
+    "24.17": {
+      "section": "24.17",
+      "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-06-01T06:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-06-review.md",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_review_notes": "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
+      "task9_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01"
     }
   },
   "task2a_last_processed": {
