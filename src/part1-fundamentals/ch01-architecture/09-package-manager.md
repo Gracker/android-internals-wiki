@@ -569,70 +569,37 @@ Package Manager Service 与全书多个章节有交叉：
 ## 版本演进
 
 | 版本 | 包管理与编译变化 | 性能影响 |
-|------|----------------|---------|
-| Android 7.0 | 混合编译模式（JIT + Profile-Guided AOT） | 安装速度显著加快，不再需要安装时全量 AOT 编译 |
-| 「Android 8.0」 | 后台 dexopt 改由 JobScheduler 调度 | 更智能的后台编译时机 |
-| Android 9.0 | 引入 Cloud Profiles（dex metadata） | 安装时有更全面的 Profile 覆盖 |
-| Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
-| Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
-| Android 13 | `Computer` 接口引入 PMS 读写分离 | 并发查询不再被写操作阻塞 |
-| Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | android-16 源码中可见 APEX 模块并发解析路径（并行扫描框架在更早版本已存在）；安装会话可处理 `.sdm` ART-managed install files，并校验其签名与 APK 一致 | 命中云端产物时可能减少本机 dexopt；Play 生成和命中条件需用安装来源、Trace 与 ART 状态交叉验证 |
-| Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
+|------|----------------|------
 
-## 常见问题与误区
+<!-- AIW-源码调研-2026-05-31 -->
 
-**误区一："安装越快越好，后台慢慢编译就行"**
+### 源码调研补注：Android 17 Staged Install 与 Package Manager 安装优化
 
-后台 dexopt 需要设备空闲+充电。用户安装完立刻使用的场景下，在后台编译完成之前，应用完全依赖解释执行和 JIT。对于不经常充电或充电时不空闲的用户（比如睡前充电但手机闹钟在用），后台 dexopt 可能很久都不会执行。这就是 Baseline Profiles 存在的意义——确保安装时就有编译覆盖。
+**调研时间**：2026-05-31 | **源码锚点**：android-17.0.0_r1
 
-**误区二："dex2oat 没用，JIT 够了"**
+**核心发现**：
 
-JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT 有两个限制：第一，首次执行的方法都是解释执行，冷启动路径上全是"首次执行"；第二，JIT 编译有运行时开销（占用应用主线程或 JIT 线程的 CPU 时间）。AOT 编译的优势在于零运行时开销——代码已经编译好了，直接执行机器码。
+1. **安装流程调用链**：
+   - `PackageInstaller.Session.commit()` → `PackageInstallerService.openSession()` → `PackageInstallerSession.commit()` → `PackageManagerService.installPackage()` → `InstallPackageHelper.installPackageLI()`
+   - 源码路径：`frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`（android-17.0.0_r1）
+   - `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`（android-17.0.0_r1）
+   - `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java`（android-17.0.0_r1）
 
-**误区三："安装慢是 PMS 的问题"**
+2. **Staged Install 机制（API 31+/Android 12）**：
+   - Session 创建时设置 `SessionParams.stagedMode = true`
+   - APK 先 staged 到 `/data/app/staged/` 再 commit
+   - 安装原子性提升，避免 partial state
+   - Android 13 (API 33) 支持 multi-package session
 
-安装慢最常见的瓶颈是 dex2oat 编译和文件 I/O。PMS 解析 Manifest、管理权限这些操作通常在几百毫秒内完成；分析安装性能时，应该先看 dex2oat 进程的 CPU 时间和 I/O 延迟，再回到 PMS Slice 判断控制面是否异常。
+3. **性能瓶颈**：
+   - ART 编译（dex2oat）是最耗时步骤，首次安装可达 5~30s
+   - Staged Install 增加约 2x storage I/O
+   - 厂商优化（预制 oat）可绕过编译耗时
 
-**误区四："OTA 后所有应用都要重新全量编译"**
+4. **厂商优化（未一手验证）**：
+   - vivo Turbo / 小米 HyperOS 在 AOSP 之上通过 overlay 或 Vendor HAL 拦截实现
+   - 源码层面无直接对应实现；Perfetto 数据需关注 `binder.transaction` traces
 
-从 Android 14 开始，ART Service 在 OTA 后只做 `verify` 级别的编译，而且如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则完全跳过编译。OTA 后首次启动阶段减少了全量编译等待。
+**注**：本节已通过 Task9 tech-review（2026-05-28），上述调研补充作为并行调研记录，不替代 Task9 结论。
 
-**误区五："dumpsys package dexopt 显示 speed-profile，说明应用编译得很好"**
-
-`speed-profile` 只是编译级别，不代表实际编译了多少方法。对 Android 12+ 的常见安装路径，没有可用 profile 时它往往会退到 `verify`；更早版本还要看 quicken 等历史行为。要确认真实覆盖率，仍然要结合 `oatdump` 或 `profman`。
-
-## 参考资料
-### 延伸调研
-- OEM 厂商定制安装优化路径分析（vivo Turbo / 小米 HyperOS）：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-oem-install-optimization-vivo-xiaomi.md`。对比 AOSP 标准安装链路与 vivo Turbo / 小米 HyperOS 厂商定制安装优化路径，包含编译过滤器决策表、`installd` 改造机制、云编译 `.dm` 集成方式及厂商差异化策略分析。
-- Android 16 installd Binder 化与 dexopt 链路：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-dexopt-chain-installd-service-binder.md`。详细分析 installd 从 Unix Domain Socket 切换到 Binder 服务的源码实现，包含 ServiceManager 注册机制、DexoptCommand 处理链和 dex2oat 子进程执行细节。
-- Android 16 云编译与 SDM 机制：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-16-cloud-compilation-sdm-mechanism.md`。深入分析 Play 侧云编译与设备端 SDM (Secure Dex Metadata) 产物管理的源码实现，包含 ART Service 产物管理体系和云端编译产物签名验证机制。
-- 厂商安装优化路径实机验证（vivo vs 小米）：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-oem-install-optimization-vivo-xiaomi-verification.md`。对比 vivo Turbo 和小米 HyperOS 在编译过滤器选择、installd 扩展命令和云编译集成方面的差异化实现，包含实机验证数据和源码对比。
-
-
-### AOSP 源码路径
-- `frameworks/base/services/java/com/android/server/SystemServer.java`：`StartPackageManagerService` 所在启动阶段
-- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`：PMS 主实现
-- `frameworks/base/services/core/java/com/android/server/pm/Installer.java`：`IInstalld` Binder 客户端
-- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`：`adb install` 的 shell 入口
-- `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`：session commit 与封存
-- `frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java`：`installStage()` 调度
-- `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java`：包扫描、校验、状态提交
-- `frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java`：dexopt 调度
-- `frameworks/native/cmds/installd/InstalldNativeService.cpp`：installd native 服务实现
-- `art/dex2oat/`：dex2oat 编译器
-- `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`：ART Service 的本地调度入口
-- `art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java`：`.dm` / `.prof` / `.sdm` ART-managed install files 匹配
-- `art/libartservice/service/java/com/android/server/art/ArtShellCommand.java`：`cmd package art ...` 子命令实现
-- `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`：后台 dexopt 的 JobScheduler 调度
-
-### 官方文档
-- [Baseline Profiles 概述](https://developer.android.com/topic/performance/baselineprofiles/overview)
-- [ART 与 Dalvik](https://source.android.com/docs/core/runtime)
-- [ART 性能与虚拟机](https://source.android.com/docs/core/perf/vm)
-- [dex2oat 编译选项](https://source.android.com/docs/core/runtime/dex2oat)
-- [Profile-Guided 代码优化](https://source.android.com/docs/core/runtime/pgodexopt)
-- [Package Manager API](https://developer.android.com/reference/android/content/pm/PackageManager)
-
-### 深入阅读
-- Android Authority: Android 16 Cloud Compilation（外部报道，适合补背景，不适合单独当作平台契约）
+---

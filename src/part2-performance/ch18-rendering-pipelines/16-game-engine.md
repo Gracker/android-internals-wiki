@@ -1,19 +1,19 @@
 ---
 title: "游戏引擎渲染链路"
 chapter: "18.16"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-05-31"
 task6_result: pass-light-edit
 task2b_result: fixed-lite
 task9_reviewed_date: '2026-04-22'
@@ -24,7 +24,8 @@ repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-05-19"
 last_task6_audit: "2026-05-20"
-last_task6_at: "2026-05-20T13:10:00+08:00"
+last_task6_at: "2026-05-31T08:08:00+08:00"
+last_task6_reviewed_by: openclaw-task6
 ---
 
 <!-- outline-start -->
@@ -34,7 +35,7 @@ last_task6_at: "2026-05-20T13:10:00+08:00"
 - 多线程架构：Logic Thread / Render Thread / Worker Threads
 - Unity 和 Unreal 的典型线程模型与 Trace 特征
 - Swappy Frame Pacing 的原理与作用
-- 游戏引擎几乎总是使用 SurfaceView + BLAST
+- 游戏引擎普遍使用 SurfaceView + BLAST
 - ADPF / Frame Rate / Game Mode 三组系统调优 API
 
 **扩展（可选深入）：**

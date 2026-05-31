@@ -784,3 +784,10 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md`
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android16-17-generational-collector-cmc-memory-management.md`
 
+### Android 17 Generational CMC 与 ART 虚拟机内存管理
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 正式将 Generational GC 引入 ART 的 CMC 收集器，新增年轻代收集路径（仅扫描最近分配对象），降低整体 GC CPU 开销和停顿时长。调试开关 persist.art.gc.type 可控制启用/禁用。ART 改进通过 Google Play System Updates 下发至 Android 12+ 设备。
+- 注入时间：2026-05-31
+- 价值：提供 Generational CMC 的官方博客一手来源、调试属性、版本差异矩阵和向后兼容下发机制，填补章节中源码级开关与版本边界细节
+

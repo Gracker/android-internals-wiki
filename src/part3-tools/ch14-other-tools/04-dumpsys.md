@@ -64,6 +64,8 @@ task6_reviewed_by: "openclaw-task6"
 task9_reviewed_at: "2026-05-29T05:20:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-29"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # dumpsys 系列命令
@@ -102,7 +104,7 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
-在设备上运行 `adb shell dumpsys -l` 就能列出完整子命令列表；这里聚焦性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
+`adb shell dumpsys -l` 可以列出所有子命令。下面聚焦性能分析中最常用的六个，分别讲它们的用途、输出结构、关键指标含义，以及在实际分析中怎么用。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 
@@ -125,7 +127,7 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 - `ActivityRecord` 中的 `state` 表示 Activity 当前状态（resumed、paused、stopped 等）
 - `dumpsys activity activities` 会打印 `topDisplayFocusedRootTask` 和各 TaskDisplayArea 的 `Resumed:` Activity；窗口焦点本身要回到 `dumpsys window displays` 的 `mCurrentFocus` / `mFocusedApp` 交叉确认
 
-在分析启动速度时，可以反复执行这个命令，观察目标 Activity 从 `INITIALIZING` / `STARTED` 到 `RESUMED` 的状态变化，来确认各阶段的耗时是否正常。
+分析启动速度时，可以多次执行这个命令，跟踪目标 Activity 从 `INITIALIZING` / `STARTED` 到 `RESUMED` 的状态变化，判断各阶段耗时是否正常。
 
 ### 进程优先级与 ANR
 
@@ -422,7 +424,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 ### FrontEnd 架构补充（源码级）
 
-> 以下内容基于 AOSP android-16.0.0_r1 源码深度调研，补充正文未覆盖的 FrontEnd 内部机制。
+上面讲的是怎么用 `dumpsys SurfaceFlinger` 看 Layer 列表和合成方式。如果你是做平台调试或性能分析的，可能还需要理解 FrontEnd 内部是怎么组织这些信息的。下面这部分基于 AOSP android-16.0.0_r1 源码，补充了正文没有展开的内部机制。
 
 **FrontEnd 组件清单：**
 

@@ -54,8 +54,8 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [case-study, power, wakelock, apk-size, optimization, release-gate]
 related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task6_complete
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -63,18 +63,22 @@ last_task2b_lite_at: "2026-05-31"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task6_reviewed_at: "2026-05-16T17:08:00+08:00"
+task6_reviewed_at: "2026-05-31T10:08:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-16T17:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-17-review.md"
+last_task6_at: "2026-05-31T10:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-10-review.md"
 task6_review_notes: "2026-05-16 17:08 Task6：复审小修 11 处；写作质量通过。保留既有 Task9 P1 队列（Vitals excessive wake lock 阈值口径），pipeline 保持 task2b_pending。"
 task2b_result: pending
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
+task9_reviewed_date: "2026-05-31"
+task9_result: pass-tech-review
+task9_state: reviewed
+status: ready-for-review
+last_task9_at: "2026-05-31T11:20:00+08:00"
 last_task9_at: "2026-05-14T22:31:06+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-14-22-deep-review.md"
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。"
+last_task9_review_log: "logs/deep-review/2026-05-31-11-deep-review.md"
+task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；原理链完整性需补系统证据到业务归因映射，知识盲区需补厂商差异和Android 17特性，数据支撑需真实案例。自动晋升 finalized条件不满足（有P1问题）。"
 
 ---
 

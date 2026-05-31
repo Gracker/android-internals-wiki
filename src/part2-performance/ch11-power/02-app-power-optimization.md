@@ -72,6 +72,8 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # App 耗电优化
@@ -113,7 +115,7 @@ review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1�
 
 ## WakeLock 最佳实践
 
-WakeLock 是 Android 提供的一种让 CPU 或屏幕保持唤醒的机制。它的本意是好的——音乐播放需要 CPU 保持工作，导航需要屏幕保持常亮——但如果使用不当，WakeLock 会成为头号耗电杀手。
+WakeLock 是 Android 提供的一种让 CPU 或屏幕保持唤醒的机制。设计初衷很合理——音乐播放需要 CPU 保持工作，导航需要屏幕常亮——但用不好的话，WakeLock 就是耗电的第一大来源。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
 
@@ -165,11 +167,11 @@ Android Vitals 会把 excessive partial wake locks 单独统计出来。局部�
 
 ## 后台任务省电策略：WorkManager 与 JobScheduler
 
-Android 的后台任务调度经历了多轮演进，从最初的 Service + AlarmManager，到 JobScheduler（API 21），再到 Jetpack 的 WorkManager。演进的核心驱动力始终是省电。
+Android 的后台任务调度经历了多轮演进，从最初的 Service + AlarmManager，到 JobScheduler（API 21），再到 Jetpack 的 WorkManager。演进始终围绕一个目标：省电。
 
 ### 为什么不推荐自己管理后台任务
 
-手动管理后台任务的短板，在于它看不到系统当前的省电策略。App 用 AlarmManager 设了一个 5 分钟的定时器，系统很难把它和其他 App 的定时任务统一安排，结果是设备隔几分钟就被唤醒一次。单看一个 App，代价不大；多个 App 叠加后，设备就很难稳定进入休眠。
+手动管理后台任务的问题在于，App 看不到系统当前的省电策略。App 用 AlarmManager 设了一个 5 分钟的定时器，系统很难把它和其他 App 的定时任务统一安排，结果是设备隔几分钟就被唤醒一次。单看一个 App，代价不大；多个 App 叠加后，设备就很难稳定进入休眠。
 
 Doze 模式就是拿来处理这种叠加效应的。设备静止、屏幕关闭一段时间后，系统会把非豁免的后台活动延后到维护窗口集中执行。App 自己设的闹钟、注册的 JobScheduler 任务和后台网络请求，都会一起受这个调度策略约束。
 
@@ -354,7 +356,7 @@ Android 的闹钟分为两种：精确闹钟(exact alarm)和不精确闹钟(inex
 
 Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多数新安装应用，`SCHEDULE_EXACT_ALARM` 不再预授予，备份恢复到 Android 14 设备时也按 denied 处理。系统升级前已经拿到这项 special app access 的存量应用，升级后通常会保留授权。闹钟和日历这类以精确提醒为主功能的应用，可以按官方分类声明 `USE_EXACT_ALARM`。
 
-这个变化的影响是：如果业务只是定时同步、重试、批量上报，优先用 WorkManager 或不精确闹钟；只有提醒、闹钟、倒计时结束这类用户明确期待准点触发的场景，才值得继续走 exact alarm。
+落实到业务上：如果只是定时同步、重试、批量上报，优先用 WorkManager 或不精确闹钟；只有提醒、闹钟、倒计时这类用户明确期待准点触发的场景，才值得继续用 exact alarm。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
 

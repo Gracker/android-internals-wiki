@@ -823,3 +823,45 @@ PrefetchHandle 由 `PrefetchHandleProvider` 管理,通过 `LazySaveableStateHold
 - 摘要:Android 17 正式启用分代 GC 为默认配置,优化 Snapshot、SlotTable、LayoutNode 等短期对象回收。年轻代收集频率高成本低,减少 Full GC 触发。Android 16 QPR2 已有 Generational CMC 初步实现,Android 17 完整启用并优化编译时间 18%。
 - 注入时间:2026-05-27
 - 价值:官方确认 ART 分代 GC 在 Android 17 正式启用,对 Compose Composition 重组性能有直接影响,含版本差异对比
+
+
+<!-- AIW-源码调研-2026-05-31 -->
+## 调研补遗（2026-05-31）
+
+### Baseline Profile 与 Compose 集成优化
+
+**ProfileInstaller 写入链路**：
+- `ProfileInstaller.writeProfile()` → 异步写入设备存储（`/data/data/<pkg>/files/*.prof`）
+- `ProfileInstaller.compileProfile()` → 触发 `ARTDexoptService` 执行 AOT 编译
+- `ProfileInstallReceiver` 接收 `androidx.profileinstaller.action.PROFILE_ADDED` 广播（API 33+ 无需 root）
+- 源码：`frameworks/support/profileinstaller/profileinstaller/src/main/java/androidx/profileinstaller/ProfileInstaller.java`（androidx-main 05ac7452）
+
+**Compose 库内置 Baseline Profile**：
+- 每个 Compose 模块的 `androidMain` source set 均包含 `baseline-prof.txt`，随 AAR 发布
+- 路径：`compose/ui/ui/src/androidMain/baseline-prof.txt`、`compose/runtime/runtime/src/androidMain/baseline-prof.txt` 等
+- 2025 年迁移至 `baselineProfiles/` 子目录（commit a675f9d）
+- 首次安装即自动获得 Compose 库核心路径的预编译收益
+
+**BaselineProfileRule 自动化采集**：
+- 源码：`benchmark/baseline-profile-gradle-plugin/.../BaselineProfileConsumerPlugin.kt`
+- 应用到 `nonMinifiedRelease` variant
+- 采集无需 root（API 33+，commit dde86c0）
+- Compose 专用示例：`compose/integration-tests/macrobenchmark/.../SmallListBaselineProfile.kt`
+
+**Baseline Profile 与 Strong Skipping 协同**：
+- Strong Skipping 优化运行时重组次数（Compose Compiler 1.5.4+）
+- Baseline Profile 优化冷启动 DEX interpret 时间（AOT 编译范围）
+- 两者正交，叠加效果：冷启动快 + 运行期帧率稳定 + jank 减少
+
+### Compose Multiplatform 跨平台性能差异
+
+| 维度 | Android (ART) | iOS (LLVM AOT) | Desktop (JVM HotSpot) |
+|------|-------------|----------------|----------------------|
+| 编译策略 | JIT + AOT (dexopt) | AOT (LLVM) | JIT-first, 可选 AOT (GraalVM) |
+| Profile 驱动 | Baseline Profile → AOT | Static LLVM IR，无法热更新 | JVMCI + JIT 反馈 |
+| Compose 渲染 | Runtime → Skia → HWUI | Runtime → CoreGraphics | Runtime → Skia/JVM Graphics |
+| 库 Profile | 随 AAR 分发 baseline-prof.txt | 需要单独编译 | 需要单独编译 |
+
+**关键结论**：Android Baseline Profile 对 iOS/Desktop 完全无效（ART format vs LLVM IR vs GraalVM）；iOS 冷启动全量 AOT 无需 profile；Desktop JVM 无稳定 Profile API。
+
+> 调研报告：`DeepResearch/2026-05-31-android-compose-baseline-profile-integration.md`

@@ -59,6 +59,8 @@ last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；无新增 P0/P1；既有 P2（Perfetto/ARR trace 样例）不重复入 suggestions；Task6 已 pass 且 queue 无 pending，自动晋升 finalized。"
 
 task2b_result: "fixed"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # VSync 机制
@@ -576,7 +578,7 @@ DispSync 的软件锁相环模型在这一时期逐渐稳定,成为 Android VSyn
 
 ### 9.4 Android 13 (T):vsync-appSf 分离
 
-引入 vsync-appSf 信号,将 sf EventThread 的双重职责彻底解耦(详见本文「VSync 信号的传递路径」一节)。这一变化在 Perfetto 中表现为 VSync Track 的重组--原本单一的 sf EventThread 拆分为独立的 sf 和 appSf 两条路径。同时,Android 13 提供了 NDK Choreographer API(API 33+),支持正确的帧节奏(Frame Pacing)和未来帧选择,这对于游戏和视频类应用的帧率控制尤其重要。
+引入 vsync-appSf 信号,将 sf EventThread 的双重职责彻底解耦(详见本文「VSync 信号的传递路径」一节)。在 Perfetto 中，这个变化对应 VSync Track 的拆分——原来单一的 sf EventThread 变成了 sf 和 appSf 两条独立的路径。同时,Android 13 提供了 NDK Choreographer API(API 33+),支持正确的帧节奏(Frame Pacing)和未来帧选择,这对于游戏和视频类应用的帧率控制尤其重要。
 
 ### 9.5 Android 15 ~ 16:自适应刷新率(ARR)
 
@@ -714,11 +716,13 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 <!-- AIW-源码调研-2026-04-24 -->
 ## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
 
+前面第三章讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果你需要深入到预测算法的具体实现——比如模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面这部分是对 android-16.0.0_r1 源码的逐段分析，可以作为第三章的源码级对照阅读。
+
 **[自动发现: 来源 AOSP mainline VSyncPredictor.cpp 源码分析]**
 
 AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Scheduler/VSyncPredictor.cpp`）实现了基于**简单线性回归**的软件 VSync 周期预测算法，替代了早期 DispSync 使用的简单平均方法。
 
-### 11.1 核心算法
+### 12.1 核心算法
 
 VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（`kHistorySize=20`），记录最近的硬件 VSync 时间戳。android-13.0.0_r1 至 android-16.0.0_r1 各版本 `VsyncSchedule::createTracker()` 均使用 `kHistorySize=20`、`kDiscardOutlierPercent=20`，未发现"早期版本为 32"或"tolerance 10%"的证据。计算周期时使用线性回归：
 
@@ -747,15 +751,15 @@ for (size_t i = 0; i < numSamples; i++) {
     const auto timestamp = mTimestamps[i] - oldest;
     vyncTS[i] = timestamp;
     // ordinal = round(vsync_timestamp / current_period × scaling_factor)
-    const auto ordinal = currentPeriod == 0 
-        ? 0 
+    const auto ordinal = currentPeriod == 0
+        ? 0
         : (vyncTS[i] + currentPeriod / 2) / currentPeriod * kScalingFactor;
     ordinals[i] = ordinal;
     meanOrdinal += ordinal;
 }
 ```
 
-### 11.2 异常值过滤
+### 12.2 异常值过滤
 
 新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `20% ~ 80%` 区间时（`kDiscardOutlierPercent=20`），表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本。放宽容差、缩短窗口的策略意图是：容忍小抖动以换取模型稳定性,避免因少数异常样本频繁触发重新学习。
 
@@ -772,7 +776,7 @@ if (percent >= kOutlierTolerancePercent &&
 
 `validate()` 还会检查重复时间戳：新时间戳如果离历史样本太近,会被当作 duplicate timestamp 拒绝。被拒绝的样本不会进入 `mTimestamps` 环形缓冲区；学习期样本不足时,预测器会清空时间戳并重新开始学习。样本已经足够时,预测器更新 `mKnownTimestamp`,保留现有时间线,避免单次硬件抖动直接改写后续 `nextAnticipatedVSyncTimeFrom()` 的预测结果。
 
-### 11.3 多帧采样（Android 15+）
+### 12.3 多帧采样（Android 15+）
 
 `mNumVsyncsPerFrame` 参数支持多帧采样预测，在 android-15.0.0_r1 和 android-16.0.0_r1 的 `VSyncPredictor.h/cpp` 中可见（`numVsyncsPerFrame(displayModePtr)` 路径）；android-14.0.0_r75 中未发现该字段。
 
@@ -797,7 +801,7 @@ nsecs_t minFramePeriodLocked() const;
 
 在 Perfetto 中，刷新率切换期间 VSync 周期变化和 phase config 切换可以通过 `VsyncTimeline` 轨道和 `SurfaceFlinger` 的 `setVsyncEnabled`/`resyncToHardwareVsync` slice 观察。
 
-### 11.4 VsyncModulator 的三相动态调整
+### 12.4 VsyncModulator 的三相动态调整
 
 `VsyncModulator`（路径 `services/surfaceflinger/Scheduler/VsyncModulator.h`）根据事务状态、GPU 合成负载和刷新率变化，动态切换 VSync 配置：
 
@@ -824,7 +828,7 @@ static constexpr int MIN_EARLY_GPU_FRAMES = 2;          // GPU 合成后保持 e
 
 换言之，`onTransactionCommit()` 不是“重置 Early 帧数”，而是“提交后退出显式 early schedule”。后续由 `onDisplayRefresh()` 消耗剩余的 early 帧数，逐步过渡回 Late。
 
-### 11.5 VSync 信号生成调用路径
+### 12.5 VSync 信号生成调用路径
 
 早期 DispSync 资料里的主路径常写成：
 

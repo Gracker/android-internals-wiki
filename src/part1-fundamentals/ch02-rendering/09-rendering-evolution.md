@@ -48,6 +48,8 @@ last_task6_review_log: "logs/review/2026-05-27-12-review.md"
 last_task6_at: "2026-05-27T12:06:00+08:00"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 # 渲染机制的版本演进
 
@@ -77,15 +79,11 @@ HWUI 带来了三个核心概念:
 
 不过 Android 3.0 主要是面向平板的过渡版本，硬件加速需要开发者手动开启。
 
-> [已验证: L2 - developer.android.com/guide/topics/graphics/hardware-accel]
-
 ### Android 4.0 ICS：默认开启
 
 Android 4.0 Ice Cream Sandwich（API 14，2011 年）将硬件加速设为 **所有 targetSdk ≥ 14 应用的默认行为**。开发者不再需要手动添加 `android:hardwareAccelerated="true"`，GPU 渲染成为 Android UI 的标准路径。
 
 Android 4.0 同时要求搭载该版本的设备在硬件层面支持 GPU 加速的 2D 绘制——这部分取决于 SoC 的 GPU 能力，而非单纯由 Android 版本决定。对 `targetSdk ≥ 14` 的应用，硬件加速是默认行为；对更低 targetSdk 的应用，仍需手动开启或依赖设备兼容策略。
-
-> [已验证: L2 - developer.android.com/about/versions/android-4.0-highlights]
 
 ## Project Butter 与 VSync/Choreographer（Android 4.1）
 
@@ -112,8 +110,6 @@ Android 12 开始逐步将 `DispSync` 替换为 `VsyncPredictor`。`VsyncPredict
 [图：VSync 信号分发时序图，展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
 
 [待高爷补充：Perfetto 中 VSYNC-app 和 VSYNC-sf 信号的 Track 截图，标注 offset 间距]
-
-> [已验证: L2 - source.android.com/devices/graphics]
 
 
 
@@ -143,8 +139,6 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 [待高爷补充：Android 5.0+ 设备的 Perfetto Trace 截图，清晰展示 UI Thread 与 RenderThread Track 分离]
 
 RenderThread 能独立推进的，是 `RenderNodeAnimator` 和基于 `CanvasProperty` 的 RT animation。`RippleDrawable`、circular reveal 一类效果走这条路时，启动后可以继续在 RenderThread 上推进。普通 `ObjectAnimator`、`ValueAnimator`、`ViewPropertyAnimator` 仍由 UI 线程的 `Choreographer` 驱动；它们只是把结果写回 `RenderNode`，再由 RenderThread 去绘制。主线程一旦卡住，这类动画也会一起掉帧。
-
-> [已验证: L2 - developer.android.com/about/versions/android-5.0-changes, AOSP frameworks/base/libs/hwui/renderthread]
 
 ## HWUI 后端演进：OpenGL ES → SkiaGL → SkiaVulkan
 
@@ -177,8 +171,6 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 - **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。内存生命周期与帧调度因此可以精确配合，减少显存浪费
 - **扩展图形特性集**：Vulkan 1.1+ 提供计算着色器(Compute Shader)、多通道渲染(Multi-pass Rendering)、异步计算队列等 OpenGL ES 3.x 不具备或受限的能力
 
-> [已验证: L2 - developer.android.com/ndk/guides/graphics, skia.org, XDA-developers.com]
-
 ### Vulkan 兼容性要求
 
 - Android 10（API 29）：64 位设备必须支持 Vulkan 1.1
@@ -203,8 +195,6 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 [图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
 [待高爷补充：可用文字流程图 + Perfetto 中 BufferQueue/BLASTBufferQueue 相关 slice 截图]
-
-> [已验证: L2 - source.android.com/devices/graphics, AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp]
 
 ## Android 16：图形 API 演进
 
@@ -263,8 +253,6 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 [待高爷补充：支持 ARR 的设备上 VSYNC-app 间隔动态变化的 Perfetto 截图]
 
-> [已验证: L2 - developer.android.com/about/versions/16/features, developer.android.com/about/versions/15/features]
-
 ## Choreographer 与 FrameMetrics API 的演进
 
 ### Choreographer 的版本变化
@@ -305,6 +293,8 @@ FrameMetrics 将一帧的渲染划分为以下阶段:
 FrameMetrics 只在 App 进程内可用（它是 per-window 的 API）。如果要分析系统级的帧率问题（如 SurfaceFlinger 合成延迟），需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
 
 ### FrameTimeline：系统级 Jank 检测框架(Android 12+)
+
+前面多次提到 FrameTimeline 能对比"预期帧时间 vs 实际帧时间"，这一节展开看它内部怎么做到的。下面涉及的数据结构和判定逻辑比较密集，但读完能解决一个根本问题：Perfetto 里的 Jank 标记到底是怎么算出来的。
 
 FrameTimeline 是 Android 12 引入的 SurfaceFlinger 内置系统级 Jank 检测框架，本章前文多次引用但未展开解释。它的核心价值是提供「预期帧时间 vs 实际帧时间」的精确对比，是 Perfetto 中渲染性能分析的基石。
 
@@ -412,6 +402,8 @@ Perfetto 中 SurfaceView 的 FrameTimeline 尚未完全支持。DisplayFrame 被
 
 > [源码: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h/cpp (android-14/android-16); perfetto.dev docs; AOSP Gerrit commits 757f24e3, 603a15d2] **[一手：AOSP 源码 + Perfetto 官方文档]**
 
+以上是 FrameTimeline 的完整框架。日常分析中不需要逐行背源码——记住它能给出 `JankType` 判定和预期/实际帧时间对比就够了。回到具体排查时，对着 Perfetto 里 Frame Timeline track 的每个箭头追即可。
+
 ### Frame Pacing Library（Swappy）
 
 Frame Pacing Library 是 Android Game Development Kit（AGDK）的一部分，专门为游戏场景设计。它通过精确控制 `swap` 时机来确保帧均匀分布:
@@ -421,8 +413,6 @@ Frame Pacing Library 是 Android Game Development Kit（AGDK）的一部分，�
 - 在 ARR 设备上自动适配动态刷新率
 
 Unreal Engine 已集成 Swappy。
-
-> [已验证: L2 - developer.android.com/reference/android/view/FrameMetrics, developer.android.com/games/sdk/frame-pacing]
 
 ## 版本演进时间线总览
 

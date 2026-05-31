@@ -2,8 +2,8 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -30,16 +30,16 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
-task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: "2026-05-19T11:32:33+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
-task6_reviewed_date: "2026-05-18"
-last_task6_at: "2026-05-18T16:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-18-16-review.md"
+task2b_state: "pending"
+task2b_result: "pending"
+last_task2b_at: "2026-05-31T14:50:00+08:00"
+review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。；2026-05-31 task6 revisiting review: pass-light-edit，L1/L2 问题修复完成，L3/L4 标注等待 Task2B。"
+task6_reviewed_date: "2026-05-31"
+last_task6_at: "2026-05-31T15:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-15-review.md"
 task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
@@ -142,7 +142,7 @@ Client 合成的优势在于灵活性——GPU 能处理任何复杂的变换、
 
 HWC（Hardware Composer）在 Android 里表示 SurfaceFlinger 与厂商显示栈之间的 HAL / vendor composer 实现，边界在系统合成器和厂商显示实现之间；显示控制器里的硬件单元通常是 DPU / display controller。SurfaceFlinger 把每个 Layer 的 buffer、fence、dataspace、transform、blend、crop、z-order、composition type 等状态提交给 HWC；HWC 根据 DPU / display controller 的 overlay plane 数量、缩放、旋转、格式、保护内容、HDR / color transform 等能力，返回哪些 Layer 可以走 DEVICE composition，哪些必须回到 CLIENT composition。
 
-真正执行 overlay、scanout 和显示时序控制的是 DPU / display controller 等硬件。HWC 的职责是把 Android 的 Layer 模型翻译成厂商显示硬件能接受的配置，并把 present fence / release fence 等同步结果返回给 SurfaceFlinger。Device composition 通常减少 GPU 负载和内存带宽，但 HWC HAL 调用也可能被 vendor composer、fence 等待或显示硬件状态拖长，不能把它理解成“零成本”。
+执行 overlay、scanout 和显示时序控制的是 DPU / display controller 等硬件。HWC 的职责是把 Android 的 Layer 模型翻译成厂商显示硬件能接受的配置，并把 present fence / release fence 等同步结果返回给 SurfaceFlinger。Device composition 通常减少 GPU 负载和内存带宽，但 HWC HAL 调用也可能被 vendor composer、fence 等待或显示硬件状态拖长，不能把它理解成“零成本”。
 
 不过 HWC 也有其限制。Overlay plane 数量、缩放能力、旋转支持和颜色格式约束都强依赖 SoC 的 DPU 实现，不能把某台设备的 4 个、8 个或 16 个 plane 当成通用基线。排查时以 `dumpsys SurfaceFlinger`、厂商显示文档和实际 Trace 为准；一旦超出设备能力，相关 Layer 就会退回 Client 合成。
 
@@ -509,4 +509,11 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 - 摘要：Android 15 引入 FrontEnd 模块，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleManager 生命周期管理和 LayerHierarchyBuilder 层级构建解耦，主合成线程只在需要合成计算时持有 mStateLock，大幅降低锁竞争。包含 Changes bitmask 枚举、TransactionHandler 事务批处理、以及 FrontEnd 目录结构。
 - 注入时间：2026-05-10
 - 价值：补充 Android 15 SurfaceFlinger FrontEnd 架构的源码级分析，对理解 SurfaceFlinger 锁优化和 Layer 状态管理机制极具价值
+
+### Android 17 SurfaceFlinger 事务与缓冲区生命周期（源码级调研）
+- 来源：DeepResearch 调研结果（2026-05-22）
+- 类型：AIW 每日源码调研
+- 摘要：Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲 mCurrentState/mDrawingState 原子更新机制、INVALIDATE/REFRESH 双消息分离、BufferQueue 状态机循环、Android 17 DeliQueue 无锁重构 MessageQueue 优化。详述事务批处理、Buffer 获取时机、Layer 状态同步等关键路径源码实现。
+- 注入时间：2026-05-22
+- 价值：补充 Android 17 SurfaceFlinger 事务处理机制和缓冲区生命周期的最新源码分析，对理解 SurfaceFlinger 高版本优化和核心算法演进极具价值
 

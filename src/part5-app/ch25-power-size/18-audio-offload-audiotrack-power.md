@@ -16,13 +16,18 @@ created_date: "2026-05-24"
 gap_source: "研究素材/官方文档/AOSP结构/Clippings结构参考"
 gap_score: 16
 material_count: 6
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task6_complete
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
 task9_autofix_at: "2026-05-31"
 task6_autofix_trigger: true
+task6_result: pass-light-edit
+task6_reviewed_at: "2026-05-31T10:08:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-31T10:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-10-review.md"
 sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]"
@@ -289,7 +294,7 @@ Offload 接入必须能远程回滚。播放器侧至少记录一条 session 级
 
 DSP offload 会让音频处理更靠近硬件，音量、安全和声压相关能力也更依赖 HAL 上报。Android 音频框架里还有 Sound Dose、音量安全、设备路由、空间音频等能力，它们和 offload 的组合需要设备侧验证。当前公开文档足以支撑“需要验证”这个判断，不足以支撑某一类 SoC 的固定结论。
 
-测试矩阵至少按 SoC、Android 版本、音频 HAL、输出路由、格式、DRM、蓝牙 codec、是否空间音频拆开。高通、联发科、Tensor 或 OEM 定制路径只能作为测试维度，不能写成未验证的性能结论。
+测试维度至少按 SoC、Android 版本、音频 HAL、输出路由、格式、DRM、蓝牙 codec、是否空间音频拆开。高通、联发科、Tensor 或 OEM 定制路径只能作为测试维度，不能写成未验证的性能结论。
 
 [待验证: 不同 SoC / OEM 音频 HAL 对 offload、Sound Dose、空间音频和蓝牙路由的组合支持]
 

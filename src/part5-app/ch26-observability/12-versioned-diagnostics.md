@@ -396,3 +396,37 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 - developer.android.com ApplicationExitInfo API reference（✅ REASON_FREEZER API 33、REASON_PACKAGE_STATE_CHANGE API 34）
 - developer.android.com ProfilingManager overview（✅）
 - Crashpad 模型、ProfilingTrigger 详细常量定义、ApplicationStartInfo START_TYPE_* 常量定义：均未经 AOSP 源码直接验证（❌）
+
+<!-- AIW-源码调研-2026-05-31 -->
+## 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码闭环确认
+
+**来源**：daily-topics.json #5 选题驱动
+
+**新增验证点（2026-05-31 一手验证）**：
+
+### ProfilingManager 源码路径与 Flag 约束
+- 源码位置：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（非 frameworks/base 路径）
+- API Level：35（Android 15+）
+- Flag 约束：`@FlaggedApi(Flags.FLAG_TELEMETRY_APIS)` — 需设备启用 Telemetry APIs 才可用
+- ProfilingType 常量：JAVA_HEAP_DUMP=1、HEAP_PROFILE=2、STACK_SAMPLING=3、SYSTEM_TRACE=4
+- 服务端通信：使用 `IProfilingService` Binder + `IProfilingResultCallback` 异步回调
+- 结果文件路径：`mContext.getFilesDir().getPath()` + tag
+
+### ProfilingResult Error Codes（9 个）
+| 常量 | 值 | 含义 |
+|------|-----|------|
+| ERROR_NONE | 0 | 成功 |
+| ERROR_FAILED_RATE_LIMIT_SYSTEM | 1 | 系统级限流 |
+| ERROR_FAILED_RATE_LIMIT_PROCESS | 2 | 进程级限流 |
+| ERROR_FAILED_PROFILING_IN_PROGRESS | 3 | 已有采集进行中 |
+| ERROR_FAILED_EXECUTING | 4 | 执行失败 |
+| ERROR_FAILED_POST_PROCESSING | 5 | 后处理失败 |
+| ERROR_FAILED_NO_DISK_SPACE | 6 | 磁盘空间不足 |
+| ERROR_FAILED_INVALID_REQUEST | 7 | 无效请求 |
+| ERROR_UNKNOWN | 8 | 未知错误 |
+
+### 未验证项（诚实标注）
+- ProfilingTrigger：源码检索未找到该类，可能位于 `packages/modules/Profiling/` 路径而非 `frameworks/base/`
+- FLAG_TELEMETRY_APIS 启用条件：源码中未找到该 Flag 的具体启用机制
+- ProfilingService 服务端实现：未找到 frameworks/base/services/core/java 中的 ProfilingService.java
+

@@ -73,6 +73,8 @@ last_task6_audit_log: "logs/review/2026-05-21-09-audit.md"
 review_round: 1
 last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
 task9_review_notes: "2026-05-19 Task9 00:20：pass-tech-review。无 P0/P1；P2 2 处已写入 suggestions；Task6 pass 且 queue 无 pending，保持 finalized 并自动标记 ready-to-publish。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
@@ -181,9 +183,9 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 只看 slot 状态,我们最多知道 buffer 的所有权大概在谁手里;只看 fence,我们才知道它是不是已经真的可以读写。这两件事必须放在一起看。
 
-先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 说明上一位使用者是不是已经结束使用。slot 已经回到了 producer 这边,不代表 producer 立刻就能覆盖旧内容,必须等这条 fence signal。
+先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 标记的是上一位使用者是否已经结束使用。slot 已经回到 producer 这边，不代表立刻就能覆盖旧内容——还必须等这条 fence signal。
 
-再看 consumer 这一侧。producer 调 `queueBuffer()` 时会把 `QueueBufferInput::fence` 一起交出去。这个 fence 说明"我把 slot 交给你了,但 GPU 可能还没把最后几笔写完,你要等到 fence signal 才能读"。所以,slot 进入 QUEUED 不代表 SurfaceFlinger 这一刻就能安全合成。
+再看 consumer 这一侧。producer 调 `queueBuffer()` 时会把 `QueueBufferInput::fence` 一起交出去。这个 fence 的意思是：slot 交给你了，但 GPU 可能还没把最后几笔写完，等到 fence signal 才能读。所以 slot 进入 QUEUED，不等于 SurfaceFlinger 这一刻就能安全合成。
 
 最后是回收。consumer 处理完成后会走 `releaseBuffer(..., releaseFence)`。这个 release fence 会在下一次 producer `dequeueBuffer()` 这块 slot 时回到 producer 手里,告诉它"现在这块内存真的空了,可以重写"。
 
@@ -195,7 +197,7 @@ AOSP 在 `BufferItem.h` 里把 `mFence` 注释为"buffer idle 时 signal 的 fen
 
 ## BLASTBufferQueue 解决的是 buffer 与 geometry transaction 落在同一帧
 
-如果把 BLAST 只概括成"少了一次 Binder hop",说轻了。它解决的是 buffer 提交和 geometry transaction 以前走两条线的问题:窗口尺寸、crop、transform、buffer 内容不一定能落在同一帧。
+如果BLAST 的核心价值不是"少了一次 Binder hop"。它解决的是 buffer 提交和 geometry transaction 走两条线的问题：窗口尺寸、crop、transform 和 buffer 内容以前不一定落在同一帧。
 
 AOSP tag 只能说明 BLAST 的代码进入时间,不能直接等同于所有窗口的默认路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
 
@@ -233,11 +235,8 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 ## Legacy vs BLASTBufferQueue:Consumer 端驻留位置的架构差异
 
-<!-- AIW-源码调研-2026-04-19 -->
-
 ### BufferQueue 内部锁架构:mCore->mMutex 是 producer-consumer 共享的唯一锁
 
-<!-- AIW-源码调研-2026-04-29 -->
 这一小节专门补齐 BufferQueue 内部的锁竞争架构,是 §7.2 "BufferQueue 内部的锁竞争机制"盲区的源码级答案。
 
 #### BufferQueueCore::mMutex 中心锁

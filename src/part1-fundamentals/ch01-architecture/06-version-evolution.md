@@ -73,7 +73,8 @@ review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
   Task9 02:30：needs-rework。P1 1：Perfetto 表格提示把 ART Mainline 写成 Android 11+，需改为 Android
   12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。'
 last_task9_review_log: 'logs/deep-review/2026-05-11-10-deep-review.md'
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-05-31
 ---
 
 
@@ -130,13 +131,13 @@ Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一�
 
 **64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不只是为了寻址更大的内存空间。ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器增加到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。
 
-Zygote 的双进程形态也从这里开始固定下来。在 init 脚本里，64 位主 Zygote 的 service 名称是 `zygote`，32 位辅 Zygote 是 `zygote_secondary`。`init.zygote64.rc` 启动 `/system/bin/app_process64 --socket-name=zygote`，`init.zygote64_32.rc` 再补一个 `/system/bin/app_process32 --socket-name=zygote_secondary`。因此，引用 init/service 语义时应写 `zygote` / `zygote_secondary`；在 `ps`、Trace 或 cmdline 中看到 `zygote64`，说的是 64 位主 zygote 的进程形态。[已验证: AOSP init.zygote64.rc, init.zygote64_32.rc, ARM Architecture Reference Manual]
+Zygote 的双进程形态也从这里固定下来：64 位设备上，init 脚本里有两个 service——`zygote`（主）和 `zygote_secondary`（辅）。`init.zygote64.rc` 启动 `/system/bin/app_process64 --socket-name=zygote`，`init.zygote64_32.rc` 补一个 `/system/bin/app_process32 --socket-name=zygote_secondary`。引用 init/service 语义时，写 `zygote` / `zygote_secondary`；在 `ps`、Trace 或 cmdline 中看到的 `zygote64`，是 64 位主 zygote 的进程形态。[已验证: AOSP init.zygote64.rc, init.zygote64_32.rc, ARM Architecture Reference Manual]
 
 ### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
 Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
 
-在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星 LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
+在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星 LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链条动辄半年以上，Android 设备系统更新慢的根因就在这里。
 
 Treble 的方案是在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
 
@@ -154,7 +155,7 @@ Treble 的方案是在 Android Framework 和厂商实现（HAL）之间插入一
   Treble 之前          Treble 之后
 ```
 
-[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统架构的角度看，Treble 的核心思想是**接口依赖倒置**——Google 定义接口，下层去实现，而不是下层定义接口，上层来适配。这让 Google 牢牢控制了 Android 的演进方向。
+从系统架构的角度看，Treble 的核心思想是**接口依赖倒置**——Google 定义接口，下层去实现，而不是下层定义接口，上层来适配。这让 Google 牢牢控制了 Android 的演进方向。
 
 对性能分析的影响：Treble 之后，Binder IPC 中出现了两类通信，传统的 `binder`（Framework 层）和新增的 `hwbinder`（HAL 层）。Perfetto 中会出现这两种 Binder 调用，它们的行为特征有所不同。hwbinder 调用通常涉及硬件操作（如相机、传感器），延迟更高。
 
@@ -166,8 +167,9 @@ Treble 让 Framework 可以独立于 Vendor 升级，Mainline 又把 Framework �
 
 为了做到这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK、但可以携带本地库和系统服务的打包格式。APEX 模块能在启动早期挂载，所以适合承载运行时和系统组件。Android 10 发布时已经有一批 Mainline 模块进入 APEX / APK 体系，不过 ART 还不在这批首发名单里。
 
-[自动发现：来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md]
-官方 Mainline 模块表把 `com.android.art` 的 Release introduced 标成 Android 12。也就是说，Android 10/11 已经有 Mainline 架构，但 ART 作为可独立更新的运行时模块要到 Android 12 才成立。把这两段时间线分开之后，我们在分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，就不会把 Android 10/11 的设备误判成“ART 已可通过 Play Store 单独更新”。Google 在 2024 年 Android Summit 公开分享的 ART Mainline 数据：ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个数字来自 Play Store 上 dex2oat 编译产物去重与 Profile-Guided 编译的叠加效果——当更多设备命中 speed-profile 而非 speed（全量编译），OAT 文件体积显著缩小。[来源: Google Android Developer Blog, ART Mainline Updates 2024]
+注意一个容易混淆的时间点：Android 10/11 已经有 Mainline 架构，但官方 Mainline 模块表把 `com.android.art` 的引入版本标为 Android 12。也就是说，ART 作为可独立更新的运行时模块要到 Android 12 才成立。分清了这两段时间线，分析编译器、Profile-Guided Compilation 或 dex2oat 行为时就不会把 Android 10/11 的设备误判成"ART 已可通过 Play Store 单独更新"。
+
+Google 在 2024 年 Android Summit 上分享过 ART Mainline 的实际数据：ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个数字来自 Play Store 上 dex2oat 编译产物去重与 Profile-Guided 编译的叠加效果——更多设备命中 speed-profile 而非 speed（全量编译）时，OAT 文件体积显著缩小。[来源: Google Android Developer Blog, ART Mainline Updates 2024]
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -231,13 +233,13 @@ VINTF（Vendor Interface）是 Treble 架构中定义 HAL 接口版本和兼容�
 
 ### VNDK 与 linker namespace：把 ABI 边界固定下来
 
-HIDL / AIDL 解决的是跨进程接口版本问题，native 共享库的依赖边界还要靠 VNDK（Vendor Native Development Kit）和 linker namespace。VNDK 提供一组允许 vendor 进程在运行时依赖的稳定库，Framework 内部库则继续留在 system 一侧。这样，vendor 模块不会因为 framework 私有库的符号变化被一起打断。
+VINTF 管的是 HAL 接口的版本匹配，但光有接口还不够——vendor 进程在运行时还会加载 native 共享库。如果 vendor 模块不小心依赖了 Framework 内部某个 `.so`，Framework 一升级就可能打破 ABI 兼容。为了解决这个层面的隔离，Treble 引入了 VNDK（Vendor Native Development Kit）和 linker namespace。VNDK 提供一组允许 vendor 进程在运行时依赖的稳定库，Framework 内部库则继续留在 system 一侧。这样，vendor 模块不会因为 framework 私有库的符号变化被一起打断。
 
 动态链接器会为 Framework 进程、vendor 进程、Same-Process HAL 准备不同的 namespace。比如 SP-HAL 只能看到 LL-NDK 和 VNDK-SP 指定的库，看不到 Framework 内部实现细节。Treble 建立了两层隔离：一层是 HAL 接口版本由 VINTF 约束，另一层是 native ABI 可见范围由 VNDK + namespace 约束。
 
 为支持不同 vendor image 的组合，Android 还引入过 VNDK snapshot / VNDK APEX，把某个版本的稳定库集合固定下来，供 vendor 构建和 GSI 运行时复用。Android 15 开始官方逐步淡出 VNDK 机制，但在 Treble 建立期，它承担的是"冻结 vendor 可见 ABI"这件事。
 
-**VNDK-less 与 Vendor APEX 自包含。** Android 15+ 进一步弃用 VNDK 机制，转向 Vendor APEX 自包含模式。每个 Vendor APEX 模块将自身依赖的共享库打包在一起，不再依赖系统分区的 VNDK 库集合。这是模块化链条的又一步推进——vendor 模块不仅在接口层面独立于 Framework（Treble 的贡献），在 native 依赖层面也实现了自包含。对性能分析的影响：当 Perfetto 中看到 vendor 进程加载的 `.so` 路径从 `/system/lib64/vndk-*` 迁移到 `/vendor/apex/*/lib64/` 时，说明设备已进入 VNDK-less 阶段，ABI 隔离从"冻结共享库"变成了"各自打包"。
+Treble 时代引入的 VNDK 解决的是"vendor 能看见哪些库"的问题。到了 Android 15+，这个思路被进一步推进——与其维护一份"允许看的库清单"，不如让每个 vendor 模块把自己需要的库打包带走。**VNDK-less 与 Vendor APEX 自包含**就是这个方向：Android 15+ 进一步弃用 VNDK 机制，转向 Vendor APEX 自包含模式。每个 Vendor APEX 模块将自身依赖的共享库打包在一起，不再依赖系统分区的 VNDK 库集合。这是模块化链条的又一步推进——vendor 模块不仅在接口层面独立于 Framework（Treble 的贡献），在 native 依赖层面也实现了自包含。对性能分析的影响：当 Perfetto 中看到 vendor 进程加载的 `.so` 路径从 `/system/lib64/vndk-*` 迁移到 `/vendor/apex/*/lib64/` 时，说明设备已进入 VNDK-less 阶段，ABI 隔离从"冻结共享库"变成了"各自打包"。
 
 ### GSI：Treble 的"试金石"
 
@@ -249,7 +251,7 @@ GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Tre
 
 GSI 能成为 Treble 合规性的试金石，有两个前提：HAL 版本匹配，以及 vendor 分区对 system 镜像的 native 依赖已经被压缩到 VNDK / LL-NDK / namespace 允许的范围内。设备能启动纯 AOSP GSI，再通过 CTS-on-GSI / VTS，说明这台设备同时满足了接口兼容和 ABI 隔离两项约束。
 
-[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统工程师的视角看，Android 架构设计离不开四个对象：接口定义（IDL）、接口约束（VINTF / CTS）、ABI 可见范围（VNDK / linker namespace），以及配套的测试套件。Treble 和 GKI 都沿着这条思路演进。
+从系统工程师的视角看，Android 架构设计离不开四个对象：接口定义（IDL）、接口约束（VINTF / CTS）、ABI 可见范围（VNDK / linker namespace），以及配套的测试套件。Treble 和 GKI 都沿着这条思路演进。
 
 ## 从 Dalvik 到 ART：编译策略的演进
 

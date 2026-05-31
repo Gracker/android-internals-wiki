@@ -2,7 +2,7 @@
 title: "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理"
 chapter: "25.20"
 section: "25.20"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -35,12 +35,17 @@ sources:
     path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/AlarmManagerService.java"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T20:04:00+08:00"
+task6_result: pass-light-edit
+task6_reviewed_at: "2026-05-31T10:08:00+08:00"
+task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-05-31T10:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-10-review.md"
 ---
 
 # 25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理

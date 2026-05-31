@@ -14,9 +14,9 @@ task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-05-31"
 task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
 last_task2b_lite_at: "2026-05-31"
