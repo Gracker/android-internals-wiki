@@ -2,12 +2,12 @@
 title: FrameMetrics
 chapter: '19'
 section: '19.12'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-04-25'
-last_verified_against: Android FrameMetrics API reference + API 31 GPU_DURATION / DEADLINE version boundary
+last_verified: '2026-05-31'
+last_verified_against: AOSP FrameMetrics.java android-7.0.0_r1 - android-17.0.0_r1 version boundary
 confidence: medium
 tags:
 - apm
@@ -16,19 +16,20 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-19T03:30:00+08:00"
-task2b_result: "pending"
-last_task2b_at: '2026-04-25T04:45:04+08:00'
+task2b_result: "fixed-lite"
+last_task2b_at: '2026-05-31T17:35:00+08:00'
+last_task2b_lite_at: '2026-05-31'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-05-19"
@@ -102,6 +103,8 @@ last_task6_audit: '2026-05-20'
 | `DEADLINE` | 系统给应用生成该帧的时间预算 | API 31+，可用于判断是否 missed deadline |
 
 Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用生成该帧的总时间，`GPU_DURATION` 表示 GPU 完成本帧命令的耗时。低于 API 31 的设备不要读取这两个字段，按 `TOTAL_DURATION` 和刷新率估算预算。
+
+按 Android 版本聚合时要拆 API bucket。`android.view.FrameMetrics` 在 Android 7-11（API 24-30）没有 `GPU_DURATION` / `DEADLINE`，`SWAP_BUFFERS_DURATION` 覆盖 `SWAP_BUFFERS -> FRAME_COMPLETED`；Android 12 / 12L（API 31-32）的 `GPU_DURATION` 是 `SWAP_BUFFERS -> GPU_COMPLETED`；Android 13+（API 33-37）改为 `COMMAND_SUBMISSION_COMPLETED -> GPU_COMPLETED`，`SWAP_BUFFERS_DURATION` 则从 Android 12 起收敛为 `SWAP_BUFFERS -> SWAP_BUFFERS_COMPLETED`。线上对比 GPU / swap 原始时长时，不要把这些版本直接合并。
 
 ## 接入方式
 

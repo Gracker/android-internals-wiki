@@ -2344,8 +2344,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-30T01:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-31T17:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-05-30T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -10790,6 +10790,14 @@
       "priority": 95,
       "result": "fixed-lite",
       "summary": "NDK SurfaceControl API 示例局部修复，回流 Task6。"
+    },
+    {
+      "section": "19.12",
+      "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "at": "2026-05-31T17:35:00+08:00",
+      "by": "task2b-lite",
+      "status": "fixed-lite",
+      "summary": "补充 GPU_DURATION / SWAP_BUFFERS_DURATION 在 API 24-30、31-32、33-37 的版本端点边界，避免线上聚合跨版本直接比较。"
     }
   ],
   "last_task2b_completed": [
@@ -10902,14 +10910,25 @@
         "source": "frontmatter-fallback/task9-deep-review",
         "fix_summary": "修正 NDK SurfaceControl API 36 OnBufferRelease 签名与 API 29-35/36+ buffer 回收分支。"
       }
+    ],
+    "2026-05-31": [
+      {
+        "section": "19.12",
+        "title": "FrameMetrics",
+        "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-05-31T17:35:00+08:00",
+        "source": "frontmatter-fallback/task9-audit",
+        "fix_summary": "补充 GPU_DURATION / SWAP_BUFFERS_DURATION 在 API 24-30、31-32、33-37 的版本端点边界，避免线上聚合跨版本直接比较。"
+      }
     ]
   },
-  "last_task2b_lite_at": "2026-05-29T07:47:00+08:00",
+  "last_task2b_lite_at": "2026-05-31T17:35:00+08:00",
   "last_task2b_lite_sections": [
-    "18.17"
+    "19.12"
   ],
   "last_task2b_lite_files": [
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
   "task2b_verifier_history": [
     {
