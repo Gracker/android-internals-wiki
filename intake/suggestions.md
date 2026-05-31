@@ -1,182 +1,77 @@
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
-- **类型**：交叉引用一致性
-- **位置**：章节末尾的交叉引用部分
-- **问题**：引用章节 18.6、18.8、2.13、2.6 不存在于 src/ 目录中，存在路径错误
-- **建议**：确认引用章节的实际路径并修正，或移除不存在的引用
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-01
+- **类型**：源码准确性/原理完整性/版本差异
+- **位置**：版本演进段落
+- **问题**：将 Android 3.0 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 混合描述，需按两个独立架构演进拆开
+- **建议**：按 AOSP android-4.4.4_r2 的 DisplayList/DisplayListRenderer 与 android-5.0.0_r1 的 RenderNode/renderthread 分工修正版本演进描述
 
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-01
+- **类型**：源码准确性
+- **位置**：BufferQueue 伪代码
+- **问题**：文中示意性伪代码 `BufferItem item = consumer.acquireBuffer();` 不对应实际 AOSP 方法签名
+- **建议**：移除或替换为真实 AOSP BufferQueue.cpp 中的实际方法引用
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-01
+- **类型**：原理完整性
+- **位置**：三缓冲机制原理
+- **问题**：从双缓冲问题到三缓冲解决方案的因果链基本完整，但缺少对"为什么三缓冲会增加显示延迟"这一关键副作用的分析
+- **建议**：补充三缓冲增加一帧显示延迟的副作用说明
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-01
+- **类型**：源码准确性
+- **位置**：ADPF 性能反馈机制
+- **问题**：文中提到 Android 16 的 headroom API，但实际 ADPF hint session 上报机制在 Android 14 就已存在于 CanvasContext.cpp 中
+- **建议**：Android 16 应单独说明 headroom API，与已存在的 hint session 机制区分
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-01
+- **类型**：原理准确性
+- **位置**：同步栅栏解释
+- **问题**：syncFrameState 的阻塞点解释不够准确，UI 线程等的是 RenderThread 完成本帧同步阶段，不一定等上一帧 GPU 完成
+- **建议**：修正为 UI 线程等待 RenderThread 完成本帧同步阶段，包括 prepareTree、layer update、makeCurrent、纹理准备等
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-01
 - **类型**：版本差异
-- **位置**：Android 14 View alpha 支持部分
-- **问题**：提到"Android 14（U）起，View alpha 也进入官方支持范围"，但未说明具体实现方式和局限性
-- **建议**：补充 View alpha 的具体实现机制、性能影响和适用场景
+- **位置**：GPU 分片并行提交
+- **问题**：Adreno 830+ 硬件分片架构及多 CPU 核心同时录制机制未覆盖
+- **建议**：补充 Adreno 830+ 多核并行录制技术及其对 GPU RenderThread 的性能影响
 
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-01
+- **类型**：数据支撑
+- **位置**：性能对比数据
+- **问题**：软件 vs 硬件渲染的性能对比缺乏具体 benchmark 数据支持
+- **建议**：补充实际测试数据，包括设备型号、测试方法、性能对比数值
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-01
+- **类型**：版本差异
+- **位置**：DeliQueue 版本边界
+- **问题**：Android 17 的 DeliQueue 作用在 MessageQueue 路径，不能写成 HWUI RenderThread WorkQueue 的替代实现
+- **建议**：修正 DeliQueue 的作用范围说明，区分 RenderThread WorkQueue 与 MessageQueue 两个不同机制
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-01
 - **类型**：知识盲区
-- **位置**：OES 纹理性能影响部分
-- **问题**：未说明不同 GPU 驱动下 OES 纹理采样的性能差异
-- **建议**：补充常见 GPU 驱动（Adreno、Mali、PowerVR）的 OES 纹理性能差异分析
+- **位置**：多窗口场景下的线程争抢
+- **问题**：同进程多窗口共用单例 RenderThread 的竞争机制未在原始大纲中包含
+- **建议**：补充同进程多窗口场景下的 RenderThread 争抢和性能影响分析
 
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-01
+- **类型**：数据支撑
+- **位置**：Fence 机制等待时间
+- **问题**：同步栅栏和 Fence 等待的具体耗时数据缺乏量化支撑
+- **建议**：补充实际测试数据，包括 Fence 等待时间的量级和影响因素
+
+## [Task9 Deep Review] 19.09 Measure — 2026-06-01
+- **类型**：原理完整性
+- **位置**：平台型 APM 数据模型
+- **问题**：从事件类型到会话时间线的因果链完整，但缺少数据聚合和查询的底层原理说明
+- **建议**：补充 Measure 后端数据聚合、索引和查询机制的技术原理解释
+
+## [Task9 Deep Review] 19.09 Measure — 2026-06-01
 - **类型**：知识盲区
-- **位置**：内存开销分析部分
-- **问题**：未讨论 SurfaceTexture Buffer 的内存回收和OOM风险
-- **建议**：补充 SurfaceTexture Buffer 的生命周期管理、内存峰值分析和OOM防护方案
+- **位置**：与现有监控平台集成
+- **问题**：Measure 与团队现有日志平台、埋点平台的分工协作模式未覆盖
+- **建议**：补充 Measure 与 ELK、Prometheus、Grafana 等现有监控集成的模式和最佳实践
 
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
-- **类型**：数据支撑
-- **位置**：内存占用对比部分
-- **问题**："内存占用大约是 SurfaceView 的 2 倍"无具体数据支撑
-- **建议**：提供不同分辨率下的实际内存占用对比数据
-
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
-- **类型**：数据支撑
-- **位置**：性能优化部分
-- **问题**：缺少实际帧率对比、GPU负载对比数据
-- **建议**：添加典型场景下的TextureView vs SurfaceView帧率和GPU负载对比数据
-
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
-- **类型**：案例支撑
-- **位置**：优化建议部分
-- **问题**：缺少实际项目迁移案例
-- **建议**：补充1-2个实际项目从TextureView迁移到SurfaceView的成功案例
-
-## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-05-31
-- **类型**：交叉引用一致性
-- **位置**：章节末尾的交叉引用部分
-- **问题**：混用章节号和文件名两种引用格式
-- **建议**：统一引用格式，建议统一使用文件名引用
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
+## [Task9 Deep Review] 19.09 Measure — 2026-06-01
 - **类型**：知识盲区
-- **位置**：厂商差异部分
-- **问题**：未讨论不同厂商设备的后台限制和功耗归因差异
-- **建议**：补充主流厂商（小米、华为、OPPO、vivo）设备的后台限制策略和功耗归因差异分析
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：数据支撑
-- **位置**：体积优化部分
-- **问题**："由项目填写"表格缺少实际数据参考
-- **建议**：提供1-2个实际项目的体积优化案例数据作为参考
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：数据支撑
-- **位置**：收益部分
-- **问题**：缺少优化后的实际功耗/体积下降数据
-- **建议**：补充实际优化项目后的功耗和体积下降百分比数据
-
-## [Task9 Deep Review] 25.20 Android 17 allow-while-idle Listener Alarm — 2026-05-31
-- **类型**：数据支撑
-- **位置**：验证流程部分
-- **问题**：缺少实际迁移后的功耗对比数据
-- **建议**：补充实际项目使用listener alarm前后的功耗对比数据
-
-## [Task9 Deep Review] 25.20 Android 17 allow-while-idle Listener Alarm — 2026-05-31
-- **类型**：案例支撑
-- **位置**：迁移建议部分
-- **问题**：缺少实际项目使用案例
-- **建议**：补充1-2个实际项目使用API 37 listener alarm的成功案例
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：原理链完整性
-- **位置**：功耗诊断步骤部分
-- **问题**：功耗诊断步骤与业务归因映射缺少系统级证据支撑
-- **建议**：补充 BatteryStatsService、PowerManagerService 与业务事件的对应关系
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：版本差异
-- **位置**：章节适用范围部分
-- **问题**：适用的 Android 10-16 范围未涵盖 Android 17 中 Vitals 指标的最新变化
-- **建议**：更新章节适用范围并补充 Android 17 中的 Vitals 指标变化
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：版本差异
-- **位置**：native 库优化部分
-- **问题**：未提及 Android 17 中 16KB page size 对 native 库的影响
-- **建议**：补充 16KB page size 设备上的 native 库优化策略
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：知识盲区
-- **位置**：厂商差异部分
-- **问题**：缺少 Android 17 中后台任务限制的新特性
-- **建议**：补充 Android 17 后台任务限制的新特性和优化建议
-
-## [Task9 Deep Review] 25.9 功耗与包体积案例集 — 2026-05-31
-- **类型**：数据支撑
-- **位置**：体积优化案例部分
-- **问题**："100 MB 到 50 MB"缺少真实项目的优化前后对比数据
-- **建议**：提供实际项目的体积优化前后对比数据## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-31
-
-- **类型**：源码准确性
-- **位置**：CacheWindowLogic.calculateAheadWindow() 和 calculateBehindWindow() 方法签名
-- **问题**：章节描述的方法签名与实际 AOSP 源码不符，缺少 abstract 修饰符和正确的返回值类型
-- **建议**：修正方法签名为 abstract fun calculateAheadWindow(viewport: Int): Int 和 abstract fun calculateBehindWindow(viewport: Int): Int
-
-- **类型**：源码准确性  
-- **位置**：PrefetchHandle.markAsUrgent() 方法描述
-- **问题**：方法无返回值描述不准确，优先级提升机制未具体说明
-- **建议**：明确方法签名为 markAsUrgent(): Unit，说明通过内部调度队列重新排序实现优先级提升
-
-- **类型**：源码准确性
-- **位置**：Snapshot 状态变化感知链描述
-- **问题**：registerWrite() 和 SnapshotStateObserver.invalidate() 的调用链描述不准确
-- **建议**：修正为 mutableStateOf.value = newValue → snapshot.registerWrite() → SnapshotStateObserver.onInvalidated()
-
-- **类型**：版本差异
-- **位置**：Android 17 默认 Compose 工具链描述
-- **问题**：版本信息不准确，缺乏官方文档支撑
-- **建议**：更新为准确版本信息，并添加官方文档链接作为依据
-
-- **类型**：数据支撑
-- **位置**："卡顿率降至 0.2%" 声明
-- **问题**：缺乏具体数据来源和测试条件
-- **建议**：提供具体的 Google I/O 演讲链接、测试设备列表、数据集规模和测试方法
-
-## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-31
-- **类型**：源码准确性
-- **位置**：PausableComposition 源码引用
-- **问题**：章节引用 `androidx/compose/runtime/PausableComposition` 返回 HTTP 404
-- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
-
-- **类型**：源码准确性
-- **位置**：LazyLayoutPrefetchState 源码引用
-- **问题**：章节引用 `androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt` 返回 HTTP 404
-- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
-
-- **类型**：源码准确性
-- **位置**：Snapshot 源码引用
-- **问题**：章节引用 `androidx/compose/runtime/snapshots/Snapshot.kt` 返回 HTTP 404
-- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
-
-- **类型**：源码准确性
-- **位置**：DerivedState 源码引用
-- **问题**：章节引用 `androidx/compose/runtime/DerivedState.kt` 返回 HTTP 404
-- **建议**：修正为正确的 AOSP 源码路径或说明该功能的实际实现位置
-
-- **类型**：版本差异
-- **位置**：LazyLayoutCacheWindow API 构造参数
-- **问题**：章节提到 API 参数类型在不同版本间存在不一致，但未详细说明
-- **建议**：补充不同版本间 constructor 参数类型的差异和使用建议
-
-- **类型**：数据支撑
-- **位置**："滚动性能与 View 系统性能对等"宣称
-- **问题**：缺少官方 benchmark 报告和测试条件
-- **建议**：提供具体的性能对比基准数据、测试设备、数据集规模和测试方法
-
-- **类型**：数据支撑
-- **位置**："对象分配开销降低 20%" 声明
-- **问题**：缺少具体的测试设备和模型信息
-- **建议**：提供测试环境说明、设备型号、Android 版本和具体的基准测试数据
-
-- **类型**：数据支撑
-- **位置**："ART 编译时间优化 18%" 声明
-- **问题**：缺少基准测试条件
-- **建议**：提供编译时间优化的测试环境、样本大小和优化效果的量化数据
-
----
-
-## [Task6 Review] 18.15 视频叠加与 HWC — 2026-06-01
-- **类型**：需补充素材
-- **位置**：开头功耗/带宽对比表、HDR 性能影响、常见性能问题、同步开销段落
-- **问题**：章节使用多组“实测”或百分比数据，但缺少设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径；这些数字暂不能作为跨设备结论。
-- **建议**：补齐测试记录并把数据表改成“设备/条件/采样工具/结果”格式；无法补齐的数字降级为定性描述或明确标注为示例量级。
-- **review 日志**：logs/review/2026-06-01-02-review.md
+- **位置**：自托管运维复杂性
+- **问题**：存储、索引、备份等运维成本的深度分析不够充分
+- **建议**：增加自托管环境下存储容量规划、索引优化、备份策略的实战经验分享
