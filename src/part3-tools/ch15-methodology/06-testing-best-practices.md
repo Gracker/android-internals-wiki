@@ -67,6 +67,8 @@ task9_audit_notes: "2026-05-26 idle audit: P1 1 / P2 1; Macrobenchmark CI GMD gu
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 
@@ -196,7 +198,7 @@ adb shell dumpsys display | grep -i "refresh"
 
 ## 消除测试干扰
 
-环境标准化是"宏观"层面的控制。在每次具体测试之前,还需要做一系列"微观"层面的清理工作,把设备恢复到一个干净的初始状态。
+环境标准化解决的是设备选择和温控这类全局条件。每轮测试之前，还需要把设备本身恢复到干净的初始状态——关后台、清缓存、暂停系统维护任务。
 
 ### 关闭不必要的后台进程
 
@@ -231,7 +233,7 @@ adb shell setprop pm.dexopt.disable_bg_dexopt true 2>/dev/null || true
 adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 ```
 
-`am kill-all` 只能杀掉后台 App 进程,拦不住系统维护任务。后台 dexopt 的控制面和执行面要按 Android 版本分开看。Android 14 中,`cmd package bg-dexopt-job` / `cancel-bg-dexopt-job` 的 shell 分发在 `PackageManagerShellCommand.java`,JobScheduler 调度在 `BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`。Android 16 中,`PackageManagerShellCommand.java` 仍保留 `bg-dexopt-job` / `cancel-bg-dexopt-job` 命令入口,ART Service 执行侧落在 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。设备空闲或充电时的 background dexopt 会带来 CPU 和 I/O 波动,启动、安装后首次运行、CI 基准测试都容易被影响。
+`am kill-all` 只能杀 App 进程，拦不住系统维护任务——尤其是后台 dexopt。设备空闲或充电时，系统会在后台执行 dexopt 优化，带来 CPU 和 I/O 波动，直接干扰启动、安装后首次运行和 CI 基准测试。Android 14 和 Android 16 的实现路径不同：Android 14 通过 JobScheduler 调度（`BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`），shell 命令入口在 `PackageManagerShellCommand.java`；Android 16 将执行侧迁移到 ART Service（`ArtManagerLocal.java`），shell 命令入口保持不变。
 
 `bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
@@ -476,7 +478,7 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据,可以通过 `./gradle
 
 ### CI 设备策略
 
-Android Developers 官方 CI 文档（Last updated 2026-05-19）明确建议 Macrobenchmark 使用 **physical Android devices**，emulator 虽可运行但 strongly discouraged，因为性能数据绑定 host OS 和硬件能力，Baseline Profiles 测量在模拟器上结果 likely incorrect。CI 设备策略按用途分层：
+Android Developers 官方 CI 文档明确建议 Macrobenchmark 使用物理设备。模拟器虽可运行，但因为性能数据受 host OS 和硬件能力影响，Baseline Profiles 测量结果可能不准确，官方不建议用于回归判定。CI 设备策略按用途分层：
 
 **性能回归闸门（推荐真机）：**
 - **自建设备池**：在 CI agent 上通过 USB 连接物理设备，用 `adb` 控制设备重置、温度和后台清理。适合团队有持续测试需求的场景
@@ -513,7 +515,7 @@ android {
 ./gradlew :benchmark:pixel8Api36BenchmarkAndroidTest
 ```
 
-[已验证: 官方文档 developer.android.com/topic/performance/benchmarking/benchmarking-in-ci（Last updated 2026-05-19）, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
+[已验证: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci + macrobenchmark-overview]
 
 ### 结果的自动分析
 

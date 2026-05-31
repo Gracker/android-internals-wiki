@@ -66,6 +66,8 @@ last_task6_review_log: "logs/review/2026-05-22-16-review.md"
 finalized_date: "2026-05-22"
 finalized_by: "openclaw-task9-auto-promote"
 auto_promoted: true
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 # 特殊场景的 ANR
 
@@ -113,13 +115,11 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 ### 进程冻结导致的 ANR：Android 16+ 的诊断简化
 
-[来源: External Review — Android 16+ Freezer 豁免逻辑]
-
 在 Android 15 及以下，进程被系统冻结（Cached Apps Freezer）后，如果在该进程被冻结期间收到了 input event 或 broadcast，系统会等待进程解冻后再处理。解冻本身需要时间（从冻结到可调度通常需要几百毫秒到数秒），如果这个等待叠加到 ANR 超时窗口内，就会出现"应用什么都没做但还是 ANR 了"的情况。
 
 在 Perfetto 中，这类问题的特征是主线程在 ANR 时间窗内有 `__refrigerator` 或 `D (frozen)` 状态段，说明进程当时被系统冻结了。
 
-**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播/回调调度对 freezer 更敏感——投递前先解冻，并可基于 CPU starvation 延长超时。排查广播 ANR 时仍要看 freezer/unfreeze 事件、binder callback 是否在冻结期积压、以及具体 ANR 类型。不要把这个结论扩展到 Input、Service、ContentProvider 等所有 ANR 场景——那些路径的 freezer 处理逻辑不同，需要分别确认。
+**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播/回调调度对 freezer 更敏感——投递前先解冻，并可基于 CPU starvation 延长超时。排查广播 ANR 时仍要看 freezer/unfreeze 事件、binder callback 是否在冻结期积压、以及具体 ANR 类型。这个结论只适用于广播 ANR 路径。Input、Service、ContentProvider 等场景的 freezer 处理逻辑各自独立，排查时需要分别确认对应路径的行为。
 
 ### 在 Perfetto 中怎么分析
 
@@ -153,8 +153,6 @@ AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后�
 
 
 ### 异步广播的优先级反转陷阱
-
-[来源: External Review — Modern Broadcast Queue 调度陷阱]
 
 Android 14+ 引入了 Modern Broadcast Queue（`BroadcastQueueModernImpl` + `BroadcastProcessQueue`，Android 16 侧为 `BroadcastQueueImpl`），将广播按目标进程组织成队列，解决了旧模型中串行分发导致的"队头阻塞"问题。这一改动发生在 system_server 侧——system_server 按进程维度排队与调度广播投递，不再让同一个进程的多个 receiver 互相阻塞。
 
@@ -264,7 +262,7 @@ public void apply() {
 
 核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
 
-[已验证: 来源见 AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
+[已验证: AOSP Binder 驱动机制, android-14.0.0_r1]
 
 ## 低内存触发频繁 GC 导致的 ANR
 
@@ -276,11 +274,9 @@ ART 的垃圾回收器从 Android 8.0 开始采用 Concurrent Copying（CC）GC�
 
 ART 的 GC 触发不能按固定 50% 线理解。`TargetHeapUtilization` 是 GC 后计算 heap growth target / target footprint 的输入，影响下一次 GC 的触发距离；触发还会看 `concurrent_start_bytes_`、`target_footprint_` / `growth_limit_`、本次分配是否触顶、native allocation 压力、显式 `System.gc()`、后台 trim 等 `GcCause`。在 trace 里判断 GC 风暴，要同时看 GC cause、heap size、allocated bytes、concurrent GC 间隔和 STW slice，不能只看 heap 利用率。[待验证: Android 17 CMC GC 是否调整了默认触发阈值]
 
-源码锚点放在三处：
+触发链路上的关键源码：
 
-- `art/runtime/gc/heap.cc`：`Heap::GrowForUtilization()` 更新 GC 后的目标占用、`target_footprint_` 和 `concurrent_start_bytes_`。
-- `art/runtime/gc/heap.cc`：分配慢路径会根据 footprint / growth limit 和 concurrent start 阈值请求 concurrent GC 或 for-alloc GC。
-- `art/runtime/gc/gc_cause.h`：`kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseNativeAlloc` 等原因会影响 pause 形态和排查方向。
+`art/runtime/gc/heap.cc` 中，`Heap::GrowForUtilization()` 在每次 GC 后更新 `target_footprint_` 和 `concurrent_start_bytes_`，决定了下一次 concurrent GC 的触发距离。分配慢路径会对比 footprint / growth limit 和 concurrent start 阈值，按需请求 concurrent GC 或 for-alloc GC。`art/runtime/gc/gc_cause.h` 定义了 `kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseNativeAlloc` 等触发原因，不同 cause 对应不同的暂停特征和排查方向。
 
 下面是概念伪代码，用来说明判断顺序，不是 AOSP 函数体摘录：
 
@@ -361,8 +357,6 @@ Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`
 
 
 ### 16KB Page Size 下的数据库 I/O 变化
-
-[来源: External Review — Android 16KB 物理分页对 SQLite 的影响]
 
 Android 15+ 设备开始使用 16KB kernel page size，Google Play 从 2025-11-01 起要求面向 Android 15+ 的新应用和更新兼容 16KB page sizes。kernel page size 的变化可能影响 SQLite 的物理 I/O 行为，但影响程度取决于多个因素的实际配置，不能简单断言为固定倍数的写放大。
 

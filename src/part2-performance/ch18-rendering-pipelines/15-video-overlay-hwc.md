@@ -42,11 +42,11 @@ task6_reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "needs-rework"
-task6_state: "reviewed"
-task2b_state: "pending"
-pipeline_stage: "task2b_pending"
+task6_state: "revisiting"
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 40 处；发现功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json 交 Task2B 补素材。"
-task9_state: "reviewed"
+task9_state: "pending"
 ---
 
 
