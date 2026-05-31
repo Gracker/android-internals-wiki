@@ -16,11 +16,11 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: 2026-05-31
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
@@ -37,6 +37,9 @@ last_task9_review_log: "logs/deep-review/2026-05-19-03-audit.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
 task9_review_notes: "2026-05-19 Task9 idle-audit 03:30：needs-rework。P0 0 / P1 1 / P2 0；GPU_DURATION 与 SWAP_BUFFERS_DURATION 的 API31/33 源码边界需 Task2B 回炉。"
 last_task6_audit: '2026-05-20'
+last_task6_at: "2026-05-31T18:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-18-review.md"
+task6_review_notes: "2026-05-31 18: Task6 revisiting review: pass-light-edit；L1 禁用词扫描通过；完成 12 处措辞、术语和格式小修；无新增 Task2B 回炉项，送 Task9 复核。"
 ---
 
 # FrameMetrics
@@ -84,7 +87,7 @@ last_task6_audit: '2026-05-20'
 
 `FrameMetrics` 是 Android 7.0（API 24）加入的平台 API，用来获取 Window 每一帧的耗时拆解。它比 JankStats 更接近渲染阶段：输入、动画、布局测量、绘制、同步、GPU 命令提交、buffer 交换、总耗时等。
 
-它适合在高版本设备上补“慢帧像发生在哪一段”。它仍然不是完整 trace。拿到 `DRAW_DURATION` 高，只能说明 draw 阶段耗时高；要确认是哪棵 View、哪个 Compose 节点或哪段业务代码，还要继续抓 Perfetto 或 Profiler。
+它适合在高版本设备上回答“慢帧发生在哪一段”。它仍然不是完整的 Trace。看到 `DRAW_DURATION` 高，只能说明 draw 阶段耗时高；要确认是哪棵 View、哪个 Compose 节点或哪段业务代码，还要继续抓 Perfetto 或 Profiler。
 
 ## 主要指标
 
@@ -104,7 +107,7 @@ last_task6_audit: '2026-05-20'
 
 Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用生成该帧的总时间，`GPU_DURATION` 表示 GPU 完成本帧命令的耗时。低于 API 31 的设备不要读取这两个字段，按 `TOTAL_DURATION` 和刷新率估算预算。
 
-按 Android 版本聚合时要拆 API bucket。`android.view.FrameMetrics` 在 Android 7-11（API 24-30）没有 `GPU_DURATION` / `DEADLINE`，`SWAP_BUFFERS_DURATION` 覆盖 `SWAP_BUFFERS -> FRAME_COMPLETED`；Android 12 / 12L（API 31-32）的 `GPU_DURATION` 是 `SWAP_BUFFERS -> GPU_COMPLETED`；Android 13+（API 33-37）改为 `COMMAND_SUBMISSION_COMPLETED -> GPU_COMPLETED`，`SWAP_BUFFERS_DURATION` 则从 Android 12 起收敛为 `SWAP_BUFFERS -> SWAP_BUFFERS_COMPLETED`。线上对比 GPU / swap 原始时长时，不要把这些版本直接合并。
+按 Android 版本聚合时要做 API 分桶。`android.view.FrameMetrics` 在 Android 7-11（API 24-30）没有 `GPU_DURATION` / `DEADLINE`，`SWAP_BUFFERS_DURATION` 覆盖 `SWAP_BUFFERS -> FRAME_COMPLETED`；Android 12 / 12L（API 31-32）的 `GPU_DURATION` 是 `SWAP_BUFFERS -> GPU_COMPLETED`；Android 13+（API 33-37）改为 `COMMAND_SUBMISSION_COMPLETED -> GPU_COMPLETED`，`SWAP_BUFFERS_DURATION` 则从 Android 12 起收敛为 `SWAP_BUFFERS -> SWAP_BUFFERS_COMPLETED`。线上对比 GPU / swap 原始时长时，不要把这些版本直接合并。
 
 ## 接入方式
 
@@ -150,7 +153,7 @@ class FrameMetricsTracker(private val activity: Activity) {
 }
 ```
 
-这段代码省略了采样和批量上报。`FrameMetrics` 回调参数会被复用，回调返回前只提取 primitive 值；如果要保留完整对象，用 `FrameMetrics(metrics)` 复制一份。`dropCount` 大于 0 时，说明回调侧处理过慢或线程拥塞，已经有帧报告被丢弃。
+这段代码省略了采样和批量上报。`FrameMetrics` 回调参数会被复用，回调返回前只提取基础类型值；如果要保留完整对象，用 `FrameMetrics(metrics)` 复制一份。`dropCount` 大于 0 时，说明回调侧处理过慢或线程拥塞，已经有帧报告被丢弃。
 
 ## 它的边界
 
@@ -166,7 +169,7 @@ FrameMetrics 更适合做 JankStats 的增强字段。比如线上慢帧率抬�
 
 | 维度 | JankStats | FrameMetrics |
 |---|---|---|
-| 事件口径 | 慢帧事件 + UI context | Window 每帧阶段耗时 |
+| 事件口径 | 慢帧事件 + UI 上下文 | Window 每帧阶段耗时 |
 | 版本覆盖 | API 16+ | API 24+ |
 | 适合线上用途 | 页面 / 交互慢帧率聚合 | 高版本设备阶段归因补充 |
 | 主要缺口 | 根因仍需 Trace | 业务状态要自己关联 |
@@ -235,16 +238,16 @@ total_p95_ms=27.8
 
 这个聚合能支持页面排名和阶段归因。原始帧只保留少量异常样本，例如 `total_p99` 附近的帧，或者连续 missed deadline 的窗口。
 
-## HandlerThread 不是可选项
+## 用独立 HandlerThread 接收回调
 
-`addOnFrameMetricsAvailableListener()` 传入的 `Handler` 决定回调在哪个线程执行。如果传主线程，监控回调本身会参与主线程负担；如果回调里再做聚合、对象创建或上报，就会污染指标。
+`addOnFrameMetricsAvailableListener()` 传入的 `Handler` 决定回调在哪个线程执行。传主线程时，监控回调本身会参与主线程负担；如果回调里再做聚合、对象创建或上报，就会污染指标。
 
 推荐做法：
 
 - 专用 `HandlerThread` 接收回调。
-- 回调内只读取需要的 metric，写入轻量 ring buffer。
+- 回调内只读取需要的指标，写入轻量环形缓冲区。
 - 后台任务定时聚合。
-- Activity destroy 时移除 listener，避免泄漏 Window。
+- Activity 销毁时移除 listener，避免泄漏 Window。
 
 FrameMetrics 采的是每帧数据，任何额外对象分配都会放大。
 
@@ -252,7 +255,7 @@ FrameMetrics 采的是每帧数据，任何额外对象分配都会放大。
 
 FrameMetrics 不直接告诉你 Compose 哪个 Composable 慢，也不告诉你 View 树哪个节点慢。它只告诉你阶段。比如 `LAYOUT_MEASURE_DURATION` 高：
 
-- View 场景可以用 Layout Inspector、`ViewDebug`、Perfetto 的 view 相关 trace 继续查。
-- Compose 场景要看 recomposition、布局层级、lazy list item 复杂度和 state 更新范围。
+- View 场景可以用 Layout Inspector、`ViewDebug`、Perfetto 的 view 相关 Trace 继续查。
+- Compose 场景要看 recomposition、布局层级、lazy list item 复杂度和状态更新范围。
 
-所以 FrameMetrics 适合线上分流：先判断慢在布局、绘制、sync 还是 GPU 提交，再选择对应线下工具。
+FrameMetrics 适合做线上分流：先判断慢在布局、绘制、sync 还是 GPU 提交，再选择对应线下工具。
