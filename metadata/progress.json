@@ -276,7 +276,8 @@
     "14.1",
     "14.10",
     "14.12",
-    "14.5"
+    "14.5",
+    "19.12"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -394,33 +395,28 @@
     "src/part3-tools/ch14-other-tools/12-apm-observability.md",
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-    "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
-  "review_summary": "Task9 2026-05-25 19: 审计 1.5；P0 2 / P1 0 / P2 0；1.5 回炉 Task2B。",
+  "review_summary": "Task6 2026-05-31 18: review 19.12 FrameMetrics；pass-light-edit；无回炉，送 Task9。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-30T22:05:00+08:00",
+    "reviewed_at": "2026-05-31T18:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.19",
-      "3.1", 
-      "14.3",
-      "2.10"
+      "19.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
-    "log": "logs/review/2026-05-30-22-review.md",
-    "result": "mixed: 3 pass-light-edit, 1 needs-rework",
-    "l1_l2_fixes": 20,
-    "l3_l4_issues": 4,
-    "small_fixes": 20,
-    "rework_items": 1,
+    "log": "logs/review/2026-05-31-18-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 12,
+    "l3_l4_issues": 0,
+    "small_fixes": 12,
+    "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "2.19/14.3 通过 Task6 复审并送 Task9；3.1 参考资料后仍有未融合源码调研素材块，已回炉 Task2B；2.10 L1/L2 已修复，L3/L4 写入 queue.json priority 90。"
+    "notes": "19.12 FrameMetrics 完成 Task6 复审；L1/L2 小修 12 处；无 Task2B 回炉项；因 task9_result 仍为 needs-rework，未自动晋升 finalized，送 Task9 复核。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2315,7 +2311,7 @@
       "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
     }
   },
-  "total_review_sections": 270,
+  "total_review_sections": 271,
   "next_review_candidates": [
     {
       "section": "14.4",
@@ -2344,30 +2340,26 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T17:35:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-05-31T18:07:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-30T01:05:00+08:00",
+    "reviewed_at": "2026-05-31T18:07:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.19",
-      "3.1",
-      "14.3"
+      "19.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
-    "log": "logs/review/2026-05-30-01-review.md",
-    "result": "mixed: 2 pass-light-edit, 1 needs-rework",
-    "l1_l2_fixes": 8,
-    "l3_l4_issues": 1,
-    "small_fixes": 8,
-    "rework_items": 1,
+    "log": "logs/review/2026-05-31-18-review.md",
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 12,
+    "l3_l4_issues": 0,
+    "small_fixes": 12,
+    "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "2.19/14.3 完成 Task6 复审并送 Task9；3.1 因参考资料后未融合素材块回炉 Task2B。"
+    "notes": "19.12 FrameMetrics 完成 Task6 复审；L1/L2 小修 12 处；无 Task2B 回炉项；因 task9_result 仍为 needs-rework，未自动晋升 finalized，送 Task9 复核。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 189,
