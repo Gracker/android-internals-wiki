@@ -19,13 +19,13 @@ sources:
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
 - type: official
   path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-21"
+reviewed_date: "2026-05-31"
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 last_task6_audit: "2026-05-20"
-last_task6_at: "2026-05-21T04:09:00+08:00"
+last_task6_at: "2026-05-31T21:05:00+08:00"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "pending"
@@ -36,9 +36,9 @@ task2b_result: "fixed"
 last_task2b_at: "2026-05-31T20:52:00+08:00"
 repaired_date: '2026-05-31'
 repaired_by: openclaw-task2b
-task6_reviewed_date: "2026-05-21"
-last_task6_review_log: "logs/review/2026-05-21-04-review.md"
-task6_review_notes: "2026-05-21 Task6 04: L1 小修 6 处；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+task6_reviewed_date: "2026-05-31"
+last_task6_review_log: "logs/review/2026-05-31-21-review.md"
+task6_review_notes: "2026-05-31 Task6 revisiting-review: L1/L2 小修 3 处；Compose 示例补齐 state 清理，送 Task9 复核。"
 last_task9_audit: 2026-05-21
 last_task9_audit_at: "2026-05-21T10:23:28+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-10-audit.md"
@@ -141,11 +141,11 @@ data class JankFrameSample(
 )
 ```
 
-这段代码先通过 `setContentView()` 建立 `DecorView`，再调用 `createAndTrack()`。AndroidX reference 对这个调用有明确约束：`window` 必须处于 active 状态，且 `DecorView` 不能为空；如果在 `setContentView()` 前初始化，`createAndTrack(window, ...)` 可能直接抛 `IllegalStateException`。
+这段代码先通过 `setContentView()` 建立 `DecorView`，再调用 `createAndTrack()`。AndroidX reference 对这个调用有明确约束：`window` 必须已经处于可用状态，且 `DecorView` 不能为空；如果在 `setContentView()` 前初始化，`createAndTrack(window, ...)` 可能直接抛 `IllegalStateException`。
 
 `OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
-状态关联依赖一条时间线。`PerformanceMetricsState.putState()` / `removeState()` 在 UI 线程用 `System.nanoTime()` 记录每个 `StateInfo` 的添加和移除时间；JankStats 在生成 `FrameData` 时，用帧的 `[frameStart, frameEnd]` 区间调用 `getIntervalStates()` 做 overlap 判定，交集命中的状态会进入这一帧的 `states`。这样 `screen=Home`、`interaction=scroll` 这类标签对应的是帧覆盖的状态区间，避免退化成“回调触发瞬间的当前页面状态”。
+状态关联依赖一条时间线。`PerformanceMetricsState.putState()` / `removeState()` 在 UI 线程用 `System.nanoTime()` 记录每个 `StateInfo` 的添加和移除时间；JankStats 在生成 `FrameData` 时，用帧的 `[frameStart, frameEnd]` 区间调用 `getIntervalStates()` 做区间交集判断，交集命中的状态会进入这一帧的 `states`。这样 `screen=Home`、`interaction=scroll` 这类标签对应的是帧覆盖的状态区间，避免退化成“回调触发瞬间的当前页面状态”。
 
 ## API 版本差异
 
@@ -243,6 +243,7 @@ fun HomeScreen(window: Window, isScrolling: Boolean) {
         state.putState("interaction", if (isScrolling) "scroll" else "idle")
 
         onDispose {
+            state.removeState("screen")
             state.removeState("interaction")
         }
     }
