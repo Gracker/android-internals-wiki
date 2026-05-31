@@ -36,15 +36,15 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-06-01T00:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B：修复 Task9 P1：syncFrameState 归因、DeliQueue Android 17 MessageQueue 边界、ADPF hint session 与 Android 16 headroom API 版本口径。"
+last_task2b_at: "2026-06-01T04:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
 last_task6_at: "2026-06-01T01:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-01-review.md"
 task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
@@ -240,12 +240,6 @@ AOSP android-14.0.0_r1、android-15.0.0_r1 和 android-16.0.0_r1 的 `CanvasCont
 
 Android 16 需要单独看的变化是 headroom 相关 API，例如 GPU headroom 查询能力。实战里可以把两件事拆开看：RenderThread 的 hint session 上报用于描述每帧实际工作时长；headroom API 用于判断设备当前还有多少性能余量，不能把二者合并成同一个 Android 16 新特性。
 
-### 分片 GPU 并行提交（Adreno 830+）
-
-Adreno 830 及更新 GPU 引入了硬件分片（Hardware Slicing）架构，GPU 被划分为多个独立的渲染分片，每个分片可以并行处理不同的命令流。在 Android 16 上，驱动层支持多 CPU 核心同时录制并向不同分片提交 Vulkan/GLES 命令，打破了传统单线程 submit 的瓶颈。
-
-对 RenderThread 的影响：在 120Hz+ 场景下，GPU command submit 的排队延迟曾是瓶颈之一——单条提交通道在帧内容复杂时容易堆积。分片并行提交让多个 DrawCall 可以分摊到不同硬件单元，显著缓解了这一压力。在 Perfetto 中，如果 GPU counter 显示多个分片的利用率同时拉高，说明并行提交已经生效。
-
 ### Fence 机制
 
 Fence 是 Android 图形系统里的核心同步原语,表现为一个文件描述符(file descriptor),可以跨进程、跨 CPU/GPU 传递。(关于 Fence 的底层实现与 DMA-BUF 的关系,我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。)这里最容易讲反的是方向,所以先把语义钉住。
@@ -411,7 +405,7 @@ LIMIT 20;
 
 **第一步:看主线程的 doFrame 是否超时。** 如果 `Choreographer#doFrame` 整体超过 16.6ms(60Hz)或 11.1ms(90Hz),说明这一帧有问题。
 
-**第二步:拆分主线程的耗时。** 展开 `doFrame`,看是 Input、Animation、measure、layout 还是 draw 占了大部分时间。这一步可以定位问题是"布局太复杂"还是"绘制指令太多"。
+**第二步:拆分主线程的耗时。** 展开 `doFrame`,看是 Input、Animation、measure、layout 还是 draw 占了大部分时间。这一步可以区分布局计算过重和绘制指令过多。
 
 **第三步:看 syncFrameState 的等待时间。** 如果 `syncFrameState` 占了较大比例，先把它归为 RenderThread 同步阶段等待，再去 RenderThread Track 上找 `prepareTree()`、资源上传、`dequeueBuffer()`、fence 等待和 `CanvasContext::draw()` 的对应切片。只有这些证据能把问题进一步归到 GPU、buffer 反压或 HWUI 资源准备。
 
@@ -531,7 +525,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比,Jank 检测更直接 |
 | **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围继续扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
 | **Android 14 (API 34)+** | RenderThread ADPF hint session 已存在于 AOSP HWUI | `CanvasContext.cpp` 中可见 `HintSessionWrapper`、`updateTargetWorkDuration()`、`reportActualWorkDuration()`；Android 16 headroom API 要单独说明 |
-| **Android 16 (API 36)** | GPU headroom API、分片 GPU 并行提交 | headroom 用于观察性能余量；Adreno 830+ 驱动支持多分片并行命令提交 |
+| **Android 16 (API 36)** | GPU headroom API | headroom 用于观察性能余量；不要和 RenderThread hint session 上报混成同一个新能力 |
 | **Android 17 (API 37)** | `android.os.MessageQueue` DeliQueue 行为变化 | 默认面向 targetSdk 37+ 应用启用；不要把它写成 HWUI RenderThread `WorkQueue` 的替代实现 |
 
 ## 常见误区
@@ -612,9 +606,9 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
    - 调用链：`Choreographer.onVsync()` → `ViewRootImpl.doFrame()` → `syncAndDrawFrame()`
 
 2. **UI 线程与 RenderThread 同步机制**：
-   - 同步点位于 `DrawFrameTask::postAndWait()`，UI 线程短暂等待但不阻塞整个渲染
-   - 关键源码：`RenderThread::syncAndDrawFrame()` → `DrawFrameTask::postAndWait()`
-   - 轻量级同步：只等待任务提交，不等待实际渲染完成
+   - 同步点位于 `DrawFrameTask::postAndWait()`，UI 线程会等待 RenderThread 完成本帧同步阶段
+   - 关键源码：`ThreadedRenderer.syncAndDrawFrame()` → `RenderProxy::syncAndDrawFrame()` → `DrawFrameTask::postAndWait()` → `syncFrameState()`
+   - 等待范围包括 `prepareTree()`、layer update、`makeCurrent()` 和纹理准备；后续 `CanvasContext::draw()`、`dequeueBuffer()`、GPU command submit 需要到 RenderThread track 继续确认
 
 3. **BufferQueue 缓冲区管理机制**：
    - RenderThread 通过 `dequeueBuffer()` 获取可用缓冲区
@@ -625,19 +619,17 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
    ```cpp
    void DrawFrameTask::postAndWait() {
        // 1. 提交任务到 RenderThread
-       mRenderThread.queue(this);
-       
-       // 2. 轻量级同步：只等待任务被处理，不等待渲染完成
-       waitForReady();
-       
-       // 3. UI 线程立即释放，不阻塞后续处理
+       mRenderThread.queue().post([this]() { run(); });
+
+       // 2. UI Thread 等待 syncFrameState() 完成本帧同步阶段
+       mSignal.wait(mLock);
    }
    ```
 
 5. **性能影响**：
-   - DrawFrameTask::postAndWait() 同步点约 0.1-0.5ms
-   - BufferQueue dequeue/queue 操作约 0.2-1ms
-   - VSync 同步确保避免撕裂和丢帧
+   - `syncFrameState` 耗时需要按设备和帧内容实测,不能脱离 Trace 给固定范围
+   - BufferQueue `dequeueBuffer()` / `queueBuffer()` 耗时受 buffer 数量、release fence、SurfaceFlinger 消费节奏影响,不能脱离 Trace 给固定范围
+   - VSync 同步负责把 App、SurfaceFlinger 和显示刷新节拍关联起来,撕裂避免还依赖 BufferQueue 与 fence 的读写边界
 
 6. **版本差异**：
    - Android 13 (API 33)：Choreographer 新增 `postFrameCallbackWithFrameTime()`，RenderThread 引入 Vulkan 支持
@@ -647,10 +639,6 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
 7. **ADPF 性能反馈机制 (Android 14+ / Android 16 headroom)**：
    - AOSP android-14.0.0_r1 起，RenderThread 相关 `CanvasContext.cpp` 已包含 `HintSessionWrapper` 与 `reportActualWorkDuration()`
    - Android 16 的 headroom API 用于观察性能余量，不能和 RenderThread hint session 上报混成同一项新能力
-
-8. **GPU 分片并行提交 (Adreno 830+)**：
-   - 硬件分片架构支持多 CPU 核心同时录制并向不同分片提交 Vulkan/GLES 命令
-   - 显著缓解 120Hz+ 场景下 GPU command submit 的排队瓶颈
 
 **源码位置验证**：
 - frameworks/base/core/java/android/view/Choreographer.java

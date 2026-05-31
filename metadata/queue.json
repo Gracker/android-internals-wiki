@@ -347,7 +347,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-01T03:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-01T04:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "completion_reason": "Task2B main fixed: RenderNode/RenderThread version split, BufferQueue acquireBuffer signature, triple buffering latency side effect."
   },
   {
     "section": "2.5",
@@ -373,6 +376,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-01T03:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-01T04:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "completion_reason": "Task2B main fixed: syncFrameState wait semantics and ADPF hint session vs Android 16 headroom boundary; conflicting research note cleaned."
   }
 ]

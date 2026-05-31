@@ -24,7 +24,6 @@ related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 6
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-26"
-last_task2b_at: "2026-05-31T22:50:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-26T05:35:00+08:00"
 task2b_fixed_by: openclaw-task2b
@@ -37,9 +36,9 @@ status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_state: "fixed"
 last_task6_at: "2026-06-01T01:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-01-review.md"
@@ -55,9 +54,11 @@ p0: 0
 p1: 1
 p2: 0
 updated_by: "openclaw-task2b"
-updated_date: "2026-05-31"
-task2b_fixed_at: "2026-05-31T22:50:00+08:00"
+updated_date: "2026-06-01"
+task2b_fixed_at: "2026-06-01T04:50:00+08:00"
 task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
+last_task2b_at: "2026-06-01T04:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B main: 修复 Task9 P95：BufferQueue acquireBuffer 伪代码改为真实签名引用，补充三缓冲显示延迟副作用，复核 Android 3.0 DisplayList 与 Android 5.0 RenderNode/RenderThread 版本边界。"
 ---
 
 # Android 渲染架构全景
@@ -268,23 +269,25 @@ T5: GPU 开始填充缓冲区 1(已经完成上一次填充)
 
 三缓冲的核心优势在于 GPU 始终有一个空闲缓冲区可用,不再需要等待显示端释放缓冲区。即使某一帧的渲染稍微超时,GPU 也能立即开始下一帧的工作,不需要空转等待。从帧率曲线来看,三缓冲让帧率的波动更加平滑,避免了双缓冲下帧率从 60fps 突然跌到 30fps 的阶梯式下降。
 
+代价是端到端显示延迟会增加。双缓冲下,生产者刚写完的下一帧只要赶上最近一次 latch / present,就可能在下一次刷新点显示;三缓冲允许生产者继续向第三个缓冲区写入,队列里可能已经排着一帧等待 SurfaceFlinger acquire。这样能减少 GPU 空转,但输入事件、动画状态和最终屏幕像素之间多了一段队列等待。触控绘图、低延迟游戏这类场景不能只看帧率曲线,还要看 FrameTimeline 中从 input 到 actual present 的间隔。
+
 ### 在 Android 中的实现
 
-下面的伪代码只表达 BufferQueue slot 与 fence 的协作,不对应某个 AOSP 方法签名:
+消费者 acquire 的真实入口带有输出参数和时间边界。AOSP 中可核对的签名如下:
 
 ```cpp
-// [示意性伪代码] BufferQueue / SurfaceFlinger 消费一帧
-BufferItem item = consumer.acquireBuffer();
-Fence acquireFence = item.mFence;
-acquireFence.wait();
+// frameworks/native/libs/gui/BufferQueueConsumer.cpp
+// @ AOSP android-16.0.0_r1
+status_t BufferQueueConsumer::acquireBuffer(BufferItem* outBuffer,
+        nsecs_t expectedPresent, uint64_t maxFrameNumber);
 
-layer.latchBuffer(item);
-CompositionResult result = compositionEngine.present();
-
-consumer.releaseBuffer(item.mSlot, result.releaseFence);
+// frameworks/native/libs/gui/BufferItemConsumer.cpp
+// @ android16-release
+status_t BufferItemConsumer::acquireBuffer(BufferItem* item,
+        nsecs_t presentWhen, bool waitForFence);
 ```
 
-在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 对 64 位新设备要求支持 Vulkan 1.4,Host Image Copy 影响的是纹理上传和 image memory 路径;它和 BufferQueue / BLAST 属于不同层,不能直接并到同一段"三缓冲增强"描述里。本文不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口,后续拿到 AOSP commit 再单列展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 对 64 位新设备要求支持 Vulkan 1.4,Host Image Copy 影响的是纹理上传和 image memory 路径;它和 BufferQueue / BLAST 属于不同层,不能直接并到同一段"三缓冲增强"描述里。本文不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口,后续拿到 AOSP commit 再单列展开。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 
@@ -406,24 +409,20 @@ canvas.drawRect(rect, paint);
 
 #### 1. Skia OpenGL 后端
 
-Skia OpenGL 后端的架构采用了"录制-回放"的分工模式:UI 线程负责将 View 树的 drawXXX 调用录制为 DisplayList 指令序列,RenderThread 则负责回放这些指令,通过 OpenGL API 将它们提交给 GPU 执行。两个线程并行工作,UI 线程录制完一帧的 DisplayList 后可以立即开始下一帧的录制,而 RenderThread 独立处理 GPU 渲染。
+这里要按版本拆开看。Android 3.0-4.4 的 HWUI 已经使用 DisplayList / DisplayListRenderer / OpenGLRenderer 这套录制-回放模型,但 AOSP android-4.4.4_r2 的 `frameworks/base/libs/hwui/` 里没有 `RenderNode` 和 `renderthread/` 目录,应用侧渲染仍主要在 UI 线程路径内完成。Android 5.0 之后才出现现代 `RenderNode` 与 RenderThread 分工:UI 线程录制 RenderNode 的 staging display list,RenderThread 在同步阶段接收状态后再通过 Skia / OpenGL 管线回放。
 
 ```cpp
-// frameworks/base/libs/hwui/renderthread/OpenGLRenderer.cpp
-void OpenGLRenderer::drawDisplayList(const DisplayList& displayList) {
-    // RenderThread 执行绘制指令
-    displayList.playback(this);
-}
+// AOSP android-4.4.4_r2: frameworks/base/libs/hwui/
+DisplayList.cpp
+DisplayListRenderer.cpp
+OpenGLRenderer.cpp
 
-// 指令执行示例
-void OpenGLRenderer::drawRect(float left, float top, float right, float bottom,
-                            const SkPaint& paint) {
-    // 将 SkPaint 转换为 OpenGL 状态
-    // 生成顶点数据
-    // 调用 OpenGL API 进行绘制
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
+// AOSP android-5.0.0_r1: frameworks/base/libs/hwui/
+RenderNode.cpp
+renderthread/RenderThread.cpp
 ```
+
+这段版本差异会影响 Trace 解读:分析 Android 4.x 设备时不要去找 RenderThread track;分析 Android 5.0 及之后的硬件加速 UI 时,主线程录制与 RenderThread 回放才是主干路径。
 
 #### 2. Skia Vulkan 后端(按设备配置启用)
 
