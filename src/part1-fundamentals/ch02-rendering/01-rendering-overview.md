@@ -33,17 +33,17 @@ task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 0 / P1 1 / P
 last_task9_review_log: "logs/deep-review/2026-05-26-05-audit.md"
 
 status: "ready-for-review"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
-task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 task2b_state: "fixed"
-last_task6_at: "2026-06-01T01:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-01-review.md"
+last_task6_at: "2026-06-01T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-06-review.md"
 task2b_result: "fixed"
-task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T05:35:00+08:00"
@@ -59,6 +59,10 @@ task2b_fixed_at: "2026-06-01T04:50:00+08:00"
 task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main: 修复 Task9 P95：BufferQueue acquireBuffer 伪代码改为真实签名引用，补充三缓冲显示延迟副作用，复核 Android 3.0 DisplayList 与 Android 5.0 RenderNode/RenderThread 版本边界。"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
+review_type: "task6-writing-quality-review"
 ---
 
 # Android 渲染架构全景
@@ -640,7 +644,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 **Android 10(Q,2019)** 引入了 Skia 渲染后端统一,HWUI 的渲染管线完全基于 Skia,同时支持 OpenGL 和 Vulkan 后端。
 
-**Android 11(R,2020)** 出现了 BLASTBufferQueue(AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`),把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里,减少了 App 进程与 SurfaceFlinger 之间的时序错位。**Android 12(S,2021)** 之后,BLASTBufferQueue 在窗口/SurfaceControl transaction 路径中更广泛承担 buffer 与 transaction 同步,多窗口和频繁 resize 的场景受益更明显;后续版本里,这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
+**Android 11(R,2020)** 出现了 BLASTBufferQueue(AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`),把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里,减少了 App 进程与 SurfaceFlinger 之间的时序错位。**Android 12(S,2021)** 之后,BLASTBufferQueue 在窗口/SurfaceControl transaction 路径中更广泛同步 buffer 与 transaction,多窗口和频繁 resize 的场景受益更明显;后续版本里,这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
 
 **Android 13(T,2022)** 优化了 Vulkan 后端的稳定性,但 HWUI 默认走 OpenGL 还是 Vulkan 仍然取决于设备 `use_vulkan` 属性和 OEM 配置,不是平台级统一切换。
 
