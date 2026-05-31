@@ -1,67 +1,20 @@
-## [2026-05-31] 18.7 TextureView 合成链路 — 知识盲区
+
+## [2026-05-31] 22.3 Jetpack Compose 性能优化 — 知识盲区
 
 ### 盲区描述
-GPU 驱动差异对 OES 纹理采样的性能影响在不同厂商设备上存在显著差异，当前章节未涵盖这一重要维度。
+缺少 Compose Multiplatform 跨平台性能考量、Baseline Profile 与 Compose 集成优化、Compose 性能测试方法论、Compose 动画性能特殊优化路径
 
 ### 重要程度
 高
 
 ### 建议研究方向
-- 分析 Adreno、Mali、PowerVR 等主流 GPU 驱动下 OES External Texture 的采样路径差异
-- 测量不同 GPU 架构下 updateTexImage() 的 CPU/GPU 开销
-- 研究各厂商 GPU 对 OES 纹理格式转换、内存布局优化的支持程度
-- 探索基于 GPU 类型的 TextureView 性能优化策略
+- Compose Multiplatform 在 iOS、Web、桌面端的性能差异和优化策略
+- Baseline Profile 如何与 Compose 编译时优化和运行时缓存协同工作
+- 建立完整的 Compose 性能测试体系，包括 Macrobenchmark 编写、基线建立、优化效果验证
+- Compose 动画性能瓶颈分析，包括 Animatable、Transition、SharedFlow 等组件的性能优化技巧
 
 ### 关联章节
-18.7、18.8、2.13
+7.7, 2.4, 22.1
 
-## [2026-05-31] 25.9 功耗与包体积案例集 — 知识盲区
+---
 
-### 盲区描述
-不同厂商设备的后台限制策略、功耗归因机制和 BatteryStats 实现存在差异，影响功耗治理的通用性。
-
-### 重要程度
-中
-
-### 建议研究方向
-- 研究小米 MIUI、华为 EMUI、OPPO ColorOS、vivo OriginOS 的后台限制策略
-- 分析不同厂商系统中 BatteryStats 的实现差异和功耗归因逻辑
-- 探索厂商定制的省电特性对 App 功耗的影响机制
-- 建立厂商适配的功耗治理最佳实践
-
-### 关联章节
-25.1、25.3、25.19
-
-## [2026-05-31] 25.9 功耗与包体积案例集 — 版本差异缺失
-
-### 盲区描述
-章节适用的 Android 10-16 范围未涵盖 Android 17 中 Vitals 指标的最新变化，可能影响功耗治理策略的时效性。
-
-### 重要程度
-高
-
-### 建议研究方向
-- 研究 Android 17 中 PowerStats HAL 的新增指标和归因机制
-- 分析 Android 17 中 Vitals 指标的采集阈值和计算方法变化
-- 更新 WakeLock、Alarm、后台任务在 Android 17 中的限制策略
-- 验证 Android 17 中新的省电特性对 App 开发的影响
-
-### 关联章节
-25.1、25.2、25.3
-
-## [2026-05-31] 25.9 功耗与包体积案例集 — 版本差异缺失
-
-### 盲区描述
-Android 17 引入的 16KB page size 对 native 库的加载和执行产生新的约束，当前案例集未包含这一重要维度。
-
-### 重要程度
-高
-
-### 建议研究方向
-- 研究 16KB page size 设备上 native 库的内存对齐要求
-- 分析 ELF segment alignment 对性能和兼容性的影响
-- 验证不同 Android 版本下 native 库的兼容性策略
-- 更新 APK 体积优化中关于 native 库的最佳实践
-
-### 关联章节
-25.7、25.8、11.2

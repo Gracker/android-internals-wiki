@@ -104,4 +104,31 @@
 - **类型**：数据支撑
 - **位置**：体积优化案例部分
 - **问题**："100 MB 到 50 MB"缺少真实项目的优化前后对比数据
-- **建议**：提供实际项目的体积优化前后对比数据
+- **建议**：提供实际项目的体积优化前后对比数据## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-31
+
+- **类型**：源码准确性
+- **位置**：CacheWindowLogic.calculateAheadWindow() 和 calculateBehindWindow() 方法签名
+- **问题**：章节描述的方法签名与实际 AOSP 源码不符，缺少 abstract 修饰符和正确的返回值类型
+- **建议**：修正方法签名为 abstract fun calculateAheadWindow(viewport: Int): Int 和 abstract fun calculateBehindWindow(viewport: Int): Int
+
+- **类型**：源码准确性  
+- **位置**：PrefetchHandle.markAsUrgent() 方法描述
+- **问题**：方法无返回值描述不准确，优先级提升机制未具体说明
+- **建议**：明确方法签名为 markAsUrgent(): Unit，说明通过内部调度队列重新排序实现优先级提升
+
+- **类型**：源码准确性
+- **位置**：Snapshot 状态变化感知链描述
+- **问题**：registerWrite() 和 SnapshotStateObserver.invalidate() 的调用链描述不准确
+- **建议**：修正为 mutableStateOf.value = newValue → snapshot.registerWrite() → SnapshotStateObserver.onInvalidated()
+
+- **类型**：版本差异
+- **位置**：Android 17 默认 Compose 工具链描述
+- **问题**：版本信息不准确，缺乏官方文档支撑
+- **建议**：更新为准确版本信息，并添加官方文档链接作为依据
+
+- **类型**：数据支撑
+- **位置**："卡顿率降至 0.2%" 声明
+- **问题**：缺乏具体数据来源和测试条件
+- **建议**：提供具体的 Google I/O 演讲链接、测试设备列表、数据集规模和测试方法
+
+---

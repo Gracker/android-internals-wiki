@@ -162,7 +162,7 @@
     "section": "08.0",
     "section_title": "ch08-responsiveness",
     "priority": 76,
-    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "reason": "URL不可访问，跳过",
     "material_paths": [
       "https://developer.android.com/newsletter/play-monthly/2026/02"
     ],
@@ -178,14 +178,13 @@
     "added_at": "2026-05-31T05:35:42.079832",
     "status": "completed",
     "completed_at": "2026-05-31T10:50:00+08:00",
-    "completed_by": "openclaw-task2b",
-    "reason": "URL不可访问，跳过"
+    "completed_by": "openclaw-task2b"
   },
   {
     "section": "18.19",
     "section_title": "可变刷新率渲染管线",
     "priority": 80,
-    "reason": "[DeepResearch 注入] Android 17 VRR 自适应刷新率与 RefreshRateSelector 源码实现分析，含 LayerVote 投票机制、FrameRateRecord 历史帧追踪、DisplayModeDirector 联动",
+    "reason": "章节已包含完整 Android 17 VRR 源码分析，无需额外注入",
     "review_issues": [
       {
         "type": "新增参考材料",
@@ -198,8 +197,7 @@
     "added_at": "2026-05-30T22:12:26.099775+00:00",
     "status": "completed",
     "completed_at": "2026-05-31T10:50:00+08:00",
-    "completed_by": "openclaw-task2b",
-    "reason": "章节已包含完整 Android 17 VRR 源码分析，无需额外注入"
+    "completed_by": "openclaw-task2b"
   },
   {
     "section": "2.6",
@@ -250,6 +248,26 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-05-30T22:12:26.099775+00:00",
+    "status": "pending"
+  },
+  {
+    "section": "22.3",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] CacheWindowLogic 方法签名错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "CacheWindowLogic.calculateAheadWindow() 和 calculateBehindWindow() 方法签名",
+        "detail": "章节描述的方法签名与实际 AOSP 源码不符：实际为 abstract fun calculateAheadWindow(viewport: Int): Int，非函数体内计算",
+        "suggestion": "修正方法签名描述，明确返回值类型和参数含义"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-05-31T12:25:43.861951",
     "status": "pending"
   }
 ]
