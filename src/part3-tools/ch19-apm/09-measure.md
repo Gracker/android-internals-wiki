@@ -34,29 +34,30 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 task6_result: pass-light-edit
-task6_state: "reviewed"
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_rework_at: "2026-05-31T20:52:00+08:00"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: "2026-05-31T20:52:00+08:00"
 last_task2b_at: "2026-05-31T20:52:00+08:00"
-task9_result: pending
-task9_reviewed_date: "2026-05-21"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-05-31"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T11:31:10+08:00"
+last_task9_at: "2026-05-31T21:20:00+08:00"
+last_task9_autofix_at: "2026-05-31"
 task6_reviewed_date: "2026-05-31"
 last_task6_at: "2026-05-31T21:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-21-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
-task9_review_notes: "2026-05-21 Task9 deep review: P1 Measure SDK 事件/字段表仍与官方 SDK API 不一致，写入 queue 条目 task9-20260521-19.09-measure-sdk-schema-fields。"
-last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
+task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与自托管依赖口径，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
 task6_review_notes: "2026-05-31 Task6 revisiting-review: L1/L2 通过，补齐自定义 trace 示例口径；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
 ---
@@ -181,11 +182,11 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 
 | 维度 | Firebase Performance | Sentry | Measure |
 |---|---|---|---|
-| 开源 / 托管 | Google 托管（Firebase console） | SaaS 托管 + 自托管选项（Sentry self-hosted） | 开源自托管（AGPL v3）+ 官方云托管 |
+| 开源 / 托管 | Google 托管（Firebase console） | SaaS 托管 + 自托管选项（Sentry self-hosted） | 开源自托管（Apache-2.0）+ 官方云托管 |
 | 错误监控 | Crashlytics 崩溃聚合；ANR 只有发生率和堆栈 | 崩溃聚合、异常追踪、session replay、面包屑 | 崩溃 + ANR 自动捕获；会话时间线关联点击、页面、HTTP |
 | 性能 Trace | HTTP、启动、屏幕渲染、自定义 trace | Transaction / span、UI Profiling、app start profiling | 自定义 trace + HTTP 耗时 + 启动时间；无自动屏幕渲染指标 |
 | 会话上下文 | Firebase Crashlytics 有面包屑和用户维度 | Session replay（SDK 7.x+）、面包屑、用户反馈 | 完整会话时间线（点击 / 页面 / HTTP / CPU / 内存） |
-| 部署成本 | 免费额度后按用量计费；无自托管 | SaaS 按量计费；自托管需 Docker + PostgreSQL + Kafka + Redis | 自托管需 Docker Compose（ClickHouse + PostgreSQL + Kafka + MinIO）；有存储和运维成本 |
+| 部署成本 | 免费额度后按用量计费；无自托管 | SaaS 按量计费；自托管需 Docker + PostgreSQL + Kafka + Redis | 自托管需 Docker Compose（ClickHouse + PostgreSQL + MinIO + Valkey/Redis + Apache Iggy + Symbolicator）；有存储和运维成本 |
 | 独特优势 | Google 生态集成（Analytics / Remote Config / A/B Testing） | 跨平台（Web / iOS / Android / 后端）；OpenTelemetry 原生 | 数据完全自控；移动会话时间线设计清晰 |
 | 适合场景 | Google 生态内快速搭建基础监控 | 跨端错误追踪 + APM + session replay | 移动为主的团队需要自托管和会话级回查 |
 
