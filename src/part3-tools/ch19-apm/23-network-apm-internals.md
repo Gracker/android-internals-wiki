@@ -6,13 +6,14 @@ chapter: '19'
 confidence: high
 drafted_by: gemini
 drafted_date: '2026-04-24'
-last_task2b_at: '2026-05-14T23:25:54+08:00'
+last_task2b_at: "2026-05-31T19:35:00+08:00"
+last_task2b_lite_at: "2026-05-31"
 last_task6_at: "2026-05-18T12:26:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-12-review.md"
 last_task9_at: "2026-05-18T11:42:46+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
 last_verified: '2026-04-24'
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 related_chapters:
 - '19.0'
 - '19.08'
@@ -38,16 +39,16 @@ tags:
 - okhttp
 - asm
 - cronet
-task2b_result: "pending"
-task2b_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 task6_result: "needs-rework"
 task6_reviewed_at: "2026-05-18T12:26:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-18"
-task9_state: "reviewed"
+task9_state: "pending"
 title: 网络 APM 底层捕获原理
 task9_review_notes: "2026-05-13 Task9：P0 2 / P1 0，代码示例存在可编译性/签名错误，转 Task2B 修复。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；OkHttp EventListener 示例 activeExchange 状态机仍会拆错 responseBodyEnd。 | 2026-05-18 Task9：needs-rework。P0 0 / P1 1 / P2 0；OkHttp responseBodyEnd 语义未说明应用消费/关闭边界，Response 接收指标口径会误归因。"
 task6_review_notes: "2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
@@ -147,6 +148,7 @@ private class NetworkMetricEventListener(
         var requestBodyEndNs: Long? = null,
         var responseHeadersStartNs: Long? = null,
         var responseHeadersEndNs: Long? = null,
+        var responseBodyStartNs: Long? = null,
         var responseBodyEndNs: Long? = null
     )
 
@@ -281,6 +283,10 @@ private class NetworkMetricEventListener(
 
     override fun responseHeadersStart(call: Call) {
         currentAttempt().activeExchange().responseHeadersStartNs = clock()
+    }
+
+    override fun responseBodyStart(call: Call) {
+        currentAttempt().activeExchange().responseBodyStartNs = clock()
     }
 
     override fun responseBodyEnd(call: Call, byteCount: Long) {
@@ -447,9 +453,9 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 | Request Body | `requestHeadersEnd` / `requestBodyStart` | `requestBodyEnd` | 无请求体时此段为空 |
 | Server Wait / TTFB | `requestHeadersEnd`（无 body）或 `requestBodyEnd`（有 body） | `responseHeadersStart` | 只看同一次 exchange；attempt 内如有 follow-up，每个 exchange 独立计算 TTFB |
 | Response Headers End | `responseHeadersStart` | `responseHeadersEnd` | header 接收完成时刻，TTFB 可精确到此处 |
-| Response 接收 | `responseHeadersStart` | `responseBodyEnd` | 下载大包、弱网抖动会放大 |
+| Response Body 消费 | `responseBodyStart` | `responseBodyEnd` | OkHttp 在应用读取到 EOF 或关闭 `ResponseBody` 时触发结束；流式响应、延迟读取、边读边解析或提前 close 会混入应用消费节奏，不能直接等同 socket 下载耗时 |
 
-[需确认: Task9 复审指出 OkHttp `responseBodyEnd` 代表应用消费完或关闭 `ResponseBody` 的边界仍未说明，可能把应用侧慢消费误归因到网络接收。Task6 暂不裁决指标口径，交由 Task2B/Task9 复核。]
+OkHttp 的 `responseBodyEnd` 代表应用把 `ResponseBody` 消费完或关闭完成。APM 可以用 `responseBodyStart → responseBodyEnd` 记录 body 消费窗口，但线上归因要把它标成“应用读取/关闭耗时”，不能把延迟读取造成的变长直接算作网络下载变慢。
 
 几个实现细节要统一：
 
