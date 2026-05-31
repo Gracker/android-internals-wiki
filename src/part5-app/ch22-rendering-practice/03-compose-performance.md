@@ -21,15 +21,11 @@ task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: revisiting
 last_task6_at: "2026-05-31T12:50:00+08:00"
-task9_state: revisiting
+task9_state: pending
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
-task6_state: reviewed
 task9_result: needs-rework
-task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-31"
 last_task9_at: "2026-05-31T13:20:00+08:00"
