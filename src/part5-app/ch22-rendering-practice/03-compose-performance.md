@@ -16,11 +16,11 @@ sources:
     path: "frameworks/support/compose/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-last_task6_at: "2026-05-31T12:50:00+08:00"
+task6_state: reviewed
+last_task6_at: "2026-05-31T20:10:00+08:00"
 task9_state: pending
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
@@ -31,10 +31,10 @@ task9_reviewed_date: "2026-05-31"
 last_task9_at: "2026-05-31T13:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-31-13-deep-review.md"
 task9_review_notes: "2026-05-31 task9 deep-review: 发现 P0 源码路径错误 4 处 / P1 原理断裂 2 处 / P1 版本差异 2 处 / 知识盲区 2 处，已写入 queue.json 和 research-gaps.md"
-last_task6_review_log: "logs/review/2026-05-31-13-review.md"
+last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
-review_notes: "L1/L2问题已修复:移除填充词、添加代码用途说明、修正中英文间距。L3/L4问题已标注,需要Task 9复核技术断言。"
+review_notes: "2026-05-31 20:10 Task6 复审：L1/L2 小修完成（移除用途标签、清理填充词与空格）；无新增 Task2B 回炉项；task9_result=needs-rework，送 Task9 复核。"
 ---
 # Jetpack Compose 性能优化实战
 
@@ -59,15 +59,13 @@ review_notes: "L1/L2问题已修复:移除填充词、添加代码用途说明�
 
 Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战:怎么写出不会卡顿的 Compose 代码,怎么用工具定位性能问题,以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
-本节使用 **Compose BOM 2025.12.00(对应 Compose 1.10)** 作为版本基线。Pausable Composition 的默认启用状态因 Foundation 版本而异（1.10.0-alpha05 默认启用，1.10.6 因稳定性问题默认禁用），使用前需确认目标版本的默认值。"滚动性能与 View 系统性能对等""卡顿率降至 0.2%" 的判断目前只有 Google I/O 演讲引用，缺官方 benchmark 报告、测试设备列表和 Foundation 版本边界。[存疑: 性能对等宣称缺少官方benchmark报告和测试条件][待验证: Google 官方 benchmark 报告、测试条件与 Foundation 版本]
+本节使用 **Compose BOM 2025.12.00(对应 Compose 1.10)** 作为版本基线。Pausable Composition 的默认启用状态因 Foundation 版本而异（1.10.0-alpha05 默认启用，1.10.6 因稳定性问题默认禁用），使用前需确认目标版本的默认值。"滚动性能与 View 系统性能对等""卡顿率降至 0.2%" 的判断目前只有 Google I/O 演讲引用，缺官方 benchmark 报告、测试设备列表和 Foundation 版本边界。[存疑: 性能对等宣称缺少官方 benchmark 报告和测试条件][待验证: Google 官方 benchmark 报告、测试条件与 Foundation 版本]
 
 ## 重组控制:从手动优化到编译器自动跳过
 
 ### Compose 重组的触发条件与成本
 
 Compose 的渲染管线包含三个阶段:Composition → Layout → Draw。重组(Recomposition)就是重新执行 Composition 阶段--重新调用 `@Composable` 函数,根据新的状态值生成新的 UI 树。
-
-**用途**:建立 Composition 阶段的核心概念
 
 重组的开销来自两个地方:
 
@@ -77,8 +75,6 @@ Compose 的渲染管线包含三个阶段:Composition → Layout → Draw。重�
 控制重组的核心思路:**让状态变化只触发最小范围的 Composable 重新执行**。
 
 Compose 运行时的跳过(skip)机制:如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"(通过 `equals()` 判断),运行时会跳过整个函数体的执行,直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
-
-**用途**:展示 Strong Skipping 如何改变 Composable 函数的跳过行为
 
 ### Strong Skipping Mode(Kotlin 2.0.20 起默认启用)
 
@@ -96,7 +92,6 @@ composeCompiler {
 
 **Strong Skipping 之后**:
 
-**用途**:对比 Strong Skipping 前后的跳过机制差异
 - 所有 **restartable** Composable 函数都会被标记为 skippable,不再要求参数类型必须是 Stable。非 restartable 的 Composable(如内联函数体内的 Composable 调用)仍然不可跳过。
 - 对于 unstable 参数,跳过比较使用实例相等(`===`);stable 参数使用 `equals()`。
 - **所有 lambda 参数都会被自动 memoize**。Compose compiler 为每个 lambda 生成一个包装类,在参数列表的捕获值没变时复用同一个对象。
@@ -118,6 +113,54 @@ fun MyScreen(viewModel: ViewModel) {
 **对已有代码的影响**:很多以前必须手写的 `remember { }` 包裹 lambda 的优化代码,现在可以删掉了。如果项目已经升级到 Kotlin 2.0+,手动 `remember` lambda 的代码不会出错,但属于冗余操作。
 
 [适用版本: Kotlin 2.0.20+ 默认启用;Kotlin 2.0.0-2.0.10 需显式开启]
+
+### 协程作用域与副作用管理:rememberCoroutineScope 和 produceState
+
+Strong Skipping 解决了"什么时候可以跳过重组"，但没有解决"副作用应该在哪个作用域执行"。这两个 API 是 Compose 副作用管理的核心。
+
+**`rememberCoroutineScope` 的重组安全性：**
+
+```kotlin
+@Composable
+fun MyScreen() {
+    val scope = rememberCoroutineScope()
+    Button(onClick = {
+        scope.launch { doSomething() }  // 在 Composition 外启动，不触发重组
+    }) { Text("Click") }
+}
+```
+
+`rememberCoroutineScope()` 返回的 `CoroutineScope` 通过 `remember` 机制缓存在 Composition 中。重组时返回同一实例，不会创建新协程体。协程作用域的生命周期与 Composition 实例绑定——Composable 离开重组树时，作用域被 cancel（由 Compose 的取消语义保证）。
+
+**`produceState` 的协程生命周期：**
+
+```kotlin
+@Composable
+fun UserProfile(userId: String): State<User> {
+    val result = remember { mutableStateOf(User()) }
+    LaunchedEffect(Unit) {
+        // producer 协程体
+        val user = fetchUser(userId)
+        result.value = user
+    }
+    return result
+}
+```
+
+`produceState` 内部等价于 `LaunchedEffect(Unit) { ... }`。因为 key 是 `Unit`（恒定值），只要 Composable 在同一位置重组，producer **不会被取消重启**。如果 Composable key 变化（如 `userId` 参数改变），旧协程被 cancel，新协程启动，这正是 `produceState` 期望的"取消-重启动"语义。
+
+**性能边界：**
+- `produceState` 每次 `value = newValue` 写入触发 Snapshot 事务，高频更新场景（如动画、传感器数据）可能造成性能压力。可考虑 `snapshotFlow` + `collectAsState` 代替直接写入。
+- `rememberCoroutineScope` 在高频重组 Composable 中调用 `launch {}` 启动协程时，需确保旧协程被正确 cancel，否则可能积累大量并发协程。
+
+**Strong Skipping 下的非 restartable Composable：**
+- Strong Skipping 只能跳过 restartable Composable（每次重组创建新 composer frame）
+- 非 restartable Composable（如 `@NonRestartableComposable` 注解或编译器判定）如果被 Strong Skipping 跳过，之前的副作用状态无法被重置
+- `rememberCoroutineScope` 依赖 remember 机制，应保持在 restartable Composable 中，不能标记为非 restartable
+- 正确做法：使用 `LaunchedEffect` / `produceState` 管理副作用，而不是直接在 Composable body 执行副作用
+
+【源码锚点: androidx.compose.runtime/produceState.kt（androidx-main）— `LaunchedEffect(Unit)` 启动模式；`SnapshotMutableStateImpl`（SnapshotState.kt）— value 写入的 Snapshot 事务机制；`rememberCoroutineScope`（androidx-main compose/runtime）— rememberable 协程作用域】
+
 
 ### Stability 标记:什么时候还需要手动标注
 
@@ -203,8 +246,6 @@ fun AnimatedBox() {
 ### derivedStateOf 的使用条件和滥用陷阱
 
 `derivedStateOf` 的作用是把高频变化的状态映射成低频变化的结果,从而减少重组次数。
-
-**用途**:展示如何通过 derivedStateOf 减少重组次数
 
 **使用条件**(三个条件缺一不可):
 1. 输入状态变化频率高(如 `scrollState.value` 在滚动期间每帧都在变)。
@@ -360,8 +401,6 @@ composeCompiler {
 // }
 ```
 
-**用途**:配置编译器报告生成
-
 编译后会在 `build/compose_metrics/` 下生成三个文件:
 
 | 文件 | 内容 |
@@ -370,9 +409,7 @@ composeCompiler {
 | `*_classes.txt` | 类级别的稳定性推断结果 |
 | `*_module.json` | 模块级别的组合指标(Kotlin 2.0+ 格式) |
 
-关注 `*_composables.txt` 中的关键字段:
-
-**用途**:解读编译器报告的关键信息
+关注 `*_composables.txt` 中的这两个字段:
 
 ```text
 restartable     - 函数可以被独立重启(不在内联 Composable 内部)
@@ -419,9 +456,9 @@ ORDER BY slice.dur DESC
 LIMIT 20;
 ```
 
-**用途**:定位主线程上 Compose 相关的性能瓶颈
+这个查询用于定位主线程上 Compose 相关的性能瓶颈，先看超过 8ms 的 `composition`、`layout` 和 `Choreographer` slice。
 
-[存疑: Perfetto追踪可能存在版本差异][待验证: Pausable Composition slice 在 Perfetto 中的实际 name 模式]
+[存疑: Perfetto 追踪可能存在版本差异][待验证: Pausable Composition slice 在 Perfetto 中的实际 name 模式]
 
 ## Compose 与 View 互操作的性能开销
 
@@ -429,17 +466,11 @@ LIMIT 20;
 
 在 RecyclerView 等 View 系统容器中嵌入 ComposeView 时,性能瓶颈不在 Compose 的组合阶段,而在 ComposeView 的生命周期管理。
 
-**用途**:指出 ComposeView 互操作的关键性能问题
-
 **Composition 与 Recomposer 的共享关系**:每个 ComposeView 拥有自己的 Composition,但通常共享父级或窗口级 `Recomposer`--而不是每个 ComposeView 持有独立渲染上下文和独立 WindowRecomposer。`AbstractComposeView.resolveParentCompositionContext()` 实际优化了 Recomposer 的查找逻辑,优先复用父级已存在的 CompositionContext。
 
 `ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。
 
-**用途**:说明 ViewCompositionStrategy 的核心作用
-
 **默认策略 `DisposeOnDetachedFromWindowOrReleasedFromPool`** 是为 RecyclerView 等 pooling container 设计的。当 ComposeView 从窗口 detach 或从缓存池中被丢弃时,Composition 被正确处理。注意"ReleasedFromPool"指的是缓存池满时丢弃最旧的 ViewHolder,而不是每次 item 滚出屏幕就销毁--item 被 RecyclerView 临时回收进缓存池时,Composition 保持存活。
-
-**用途**:解释默认策略的设计原理
 
 ```kotlin
 // RecyclerView ViewHolder 中使用--默认策略已适配 pooling container
@@ -452,8 +483,6 @@ val composeView = ComposeView(context).apply {
 ```
 
 **`DisposeOnViewTreeLifecycleDestroyed`** 适用于 Fragment View 场景:Composition 的生命周期绑定到 Activity/Fragment 的 LifecycleOwner,而不是 View 自身的 attach/detach。在 Fragment View 因配置变更被销毁但 Fragment 仍存活时,这个策略能确保 Composition 在正确的时机被清理。把这个策略用在 RecyclerView ViewHolder 上会把 Composition 生命周期绑定到 Activity/Fragment,导致 Composition 在整个 Activity 生命周期内不被释放,增加内存压力。
-
-**用途**:说明不同策略的适用场景
 
 ```kotlin
 // Fragment 中嵌入 ComposeView 时适用
@@ -792,4 +821,3 @@ PrefetchHandle 由 `PrefetchHandleProvider` 管理,通过 `LazySaveableStateHold
 - 摘要:Android 17 正式启用分代 GC 为默认配置,优化 Snapshot、SlotTable、LayoutNode 等短期对象回收。年轻代收集频率高成本低,减少 Full GC 触发。Android 16 QPR2 已有 Generational CMC 初步实现,Android 17 完整启用并优化编译时间 18%。
 - 注入时间:2026-05-27
 - 价值:官方确认 ART 分代 GC 在 Android 17 正式启用,对 Compose Composition 重组性能有直接影响,含版本差异对比
-

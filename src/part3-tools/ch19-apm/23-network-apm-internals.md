@@ -8,12 +8,12 @@ drafted_by: gemini
 drafted_date: '2026-04-24'
 last_task2b_at: "2026-05-31T19:35:00+08:00"
 last_task2b_lite_at: "2026-05-31"
-last_task6_at: "2026-05-18T12:26:00+08:00"
-last_task6_review_log: "logs/review/2026-05-18-12-review.md"
+last_task6_at: "2026-05-31T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 last_task9_at: "2026-05-18T11:42:46+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-18-11-deep-review.md"
 last_verified: '2026-04-24'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 related_chapters:
 - '19.0'
 - '19.08'
@@ -25,7 +25,7 @@ review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no 
   previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05
   task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-18"
+reviewed_date: "2026-05-31"
 section: '19.23'
 sources:
 - https://square.github.io/okhttp/features/events/
@@ -41,17 +41,17 @@ tags:
 - cronet
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task6_result: "needs-rework"
-task6_reviewed_at: "2026-05-18T12:26:00+08:00"
+task6_result: "pass-light-edit"
+task6_reviewed_at: "2026-05-31T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-18"
 task9_state: "pending"
 title: 网络 APM 底层捕获原理
 task9_review_notes: "2026-05-13 Task9：P0 2 / P1 0，代码示例存在可编译性/签名错误，转 Task2B 修复。 | 2026-05-15 Task9：needs-rework。P0 1 / P1 0 / P2 1；OkHttp EventListener 示例 activeExchange 状态机仍会拆错 responseBodyEnd。 | 2026-05-18 Task9：needs-rework。P0 0 / P1 1 / P2 0；OkHttp responseBodyEnd 语义未说明应用消费/关闭边界，Response 接收指标口径会误归因。"
-task6_review_notes: "2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。"
+task6_review_notes: "2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-31 20:10 Task6：Task2B fixed-lite 后复审，L1/L2 clean，无新增回炉项，送 Task9 复核。"
 ---
 
 
