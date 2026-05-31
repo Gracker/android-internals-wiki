@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
-last_verified: "2026-04-24"
-last_verified_against: "developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + AndroidX Profiling reference"
+last_verified: "2026-05-31"
+last_verified_against: "developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + tracing/profiling-manager overview/how-to-capture/trigger-based/retrieve/limitations + AndroidX Profiling reference"
 confidence: medium
 tags: [apm, profiling, perfetto]
 related_chapters: ["19.11", "19.12", "19.13", "15.5", "13.1", "9.1", "8.2"]
@@ -19,15 +19,23 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingResult"
   - type: official
-    path: "https://developer.android.com/topic/performance/profiling-manager"
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze"
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
@@ -37,8 +45,11 @@ task6_review_notes: "2026-05-20 task6 review 08:14：复审 ProfilingManager；L
 last_task9_at: "2026-05-20T07:37:11+08:00"
 last_task9_audit: "2026-05-20"
 task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 0 / P1 2 / P2 2 / P3 0。P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
-task2b_result: pending
-last_task2b_at: "2026-05-07T14:47:28+08:00"
+task2b_result: fixed
+last_task2b_at: "2026-05-31T18:50:00+08:00"
+task2b_fixed_at: "2026-05-31T18:50:00+08:00"
+task2b_rework_source: "frontmatter backlog fallback; logs/deep-review/2026-05-20-07-deep-review.md"
+task2b_rework_notes: "修复 Task9 19.16：拆开 profileable/shell 与线上 ProfilingManager 前提；补 OOM trigger 默认 uncaught handler 透传要求；补 rate limiter cost/hour/day/week 模型；替换 404 官方 guide URL。"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 task6_result: pass-light-edit
@@ -115,7 +126,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
-`ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。若希望 system trace 覆盖更完整的调度与系统视角，调试包、内测包或可分析版本要在 manifest 中配置 `<profileable android:shell="true" />`，并让发布渠道确认这项配置符合内部合规口径。没有这类配置时，系统仍可能返回结果，但可见范围会收窄。
+`ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。`<profileable android:shell="true" />` 属于本地 shell、Perfetto、simpleperf、Android Studio Profiler 这类调试工具的可分析配置，不是线上 `requestProfiling()` 成功的前提。发布包接入 `ProfilingManager` 时，重点检查 API 版本、调用频率、结果文件权限、隐私声明和后端接收策略；调试包或内测包若还要配合本地工具排查，再单独确认 `profileable` 与渠道合规要求。
 
 ## request listener 和 global listener 是两层结果通道
 
@@ -143,6 +154,8 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 因资源占用异常被系统终止 |
 | API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java 层 OOM 根因定位 |
 | API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依异常类型返回不同 artifact | 异常行为与兼容性问题采样 |
+
+`TRIGGER_TYPE_OOM` 还有一个接入前提：应用自定义 `Thread.UncaughtExceptionHandler` 时，handler 必须继续调用默认 handler。吞掉默认处理会让系统侧 OOM trigger 收不到应有的终止路径，Java heap dump 也就不会按这个 trigger 产出。做不到这一点时，只能把 OOM 后的补抓降级为应用主动请求 `JavaHeapDumpRequestBuilder`，并把成功率按采样项单独统计。
 
 36.1 这类 Minor SDK 版本不能只用 `SDK_INT == 36` 判断。运行时要先确认大版本，再读 `Build.VERSION.SDK_INT_FULL`：
 
@@ -187,6 +200,8 @@ fun supportsKillTriggeredProfiling(): Boolean {
 | `ERROR_UNKNOWN` | 未归类失败 | 只记日志与事件，避免自动重试放大成本 |
 
 应用侧至少要把 `tag`、`triggerType`、`errorCode`、`requestType`、`app version`、`device` 一起记下来。只有整型错误码，没有上下文，后续很难聚合。
+
+限流不是简单的“每小时几次”。官方文档把 app 与 system 两层 limiter 分开计算，并按 profile type 计 cost：system trace、heap dump、heap profile、stack sampling 的成本不同，任何一种样本都会消耗对应窗口内的预算。窗口也有三档，per hour、per day、per week 任一档用完，进程侧会收到 `ERROR_FAILED_RATE_LIMIT_PROCESS`；系统全局预算用完，则收到 `ERROR_FAILED_RATE_LIMIT_SYSTEM`。端侧策略应按 request type 设置本地冷却时间，并把服务端采样开关设计成“预算不足时少抓或停抓”，不要把 rate limit 结果当成偶发失败重试。
 
 ## 结果文件生命周期
 
@@ -242,7 +257,7 @@ Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果�
 - request callback 只做轻量关联，归档走后台流程
 - 结果文件要有大小上限、过期时间和清理策略
 - 堆文件、trace 文件的采集说明要和隐私条款、内部合规口径一致
-- manifest 中的 `profileable`、构建变体和设备策略要进入上线前检查——调试包、内测包确认 `<profileable android:shell="true" />` 配置到位，发布包确认构建类型（debuggable / profileable）符合预期，避免线上采集因配置不满足被系统拒绝
+- 线上 `ProfilingManager` 接入检查 API、限流、结果目录和隐私说明；`profileable` 只放在本地 shell / Perfetto / Android Studio 工具链检查项里
 - 线上预算默认保守，不要把 `ProfilingManager` 当高频指标 SDK
 
 ## 参考资料
@@ -253,7 +268,15 @@ Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果�
    https://developer.android.com/reference/android/os/ProfilingTrigger
 3. **Android SDK Reference, `android.os.ProfilingResult`**  
    https://developer.android.com/reference/android/os/ProfilingResult
-4. **Android Developers, ProfilingManager guide**  
-   https://developer.android.com/topic/performance/profiling-manager
-5. **AndroidX Reference, `androidx.core.os.Profiling` / `ProfilingRequest`**  
+4. **Android Developers, ProfilingManager overview**  
+   https://developer.android.com/topic/performance/tracing/profiling-manager/overview
+5. **Android Developers, App-driven profiling**  
+   https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture
+6. **Android Developers, Trigger-based profiling**  
+   https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
+7. **Android Developers, Retrieve and analyze profiling data**  
+   https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze
+8. **Android Developers, Profiling limitations**  
+   https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected
+9. **AndroidX Reference, `androidx.core.os.Profiling` / `ProfilingRequest`**  
    https://developer.android.com/reference/androidx/core/os/Profiling
