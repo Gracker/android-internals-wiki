@@ -2374,8 +2374,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T01:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-01T01:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T01:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -6141,12 +6141,12 @@
       "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
       "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-25",
       "last_task6_at": "2026-05-25T05:08:00+08:00",
@@ -6156,7 +6156,10 @@
       "task6_new_rework": false,
       "queue_priority": 85,
       "task6_note": "Task6 05:08 写作质量复审通过；无新增回炉，既有 Task9 问题由 Task2B 处理。",
-      "task2b_result": "pending"
+      "task2b_result": "fixed-lite",
+      "last_task2b_lite_at": "2026-06-01T01:35:00+08:00",
+      "last_task2b_lite_log": "logs/rework/2026-06-01-01-task2b-lite.md",
+      "task2b_lite_note": "补 alpha04 connection pool API、hasConnectionPool、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
     },
     "1.16": {
       "title": "Audio Pipeline 延迟与性能",
@@ -9651,6 +9654,14 @@
       "fixed_date": "2026-05-28T19:35:00+08:00",
       "source": "frontmatter-fallback/task9-deep-review+task6-audit",
       "fix_summary": "修正 SurfaceView BLAST Android 12+ 边界、Android 11 单独分档、Canvas.punchHole 挖洞口径、BUFFER_RELEASE_CHANNEL Android 16+ 边界与 Android 15 圆角归因"
+    },
+    {
+      "section": "24.17",
+      "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+      "status": "fixed-lite",
+      "fixed_date": "2026-06-01T01:35:00+08:00",
+      "queue_id": "frontmatter-backlog-fallback-20260601-lite",
+      "fix_summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
@@ -11154,6 +11165,15 @@
       "date": "2026-05-31T18:50:00+08:00",
       "by": "task2b-content-processing-rework",
       "source": "frontmatter backlog fallback"
+    },
+    {
+      "section": "24.17",
+      "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+      "at": "2026-06-01T01:35:00+08:00",
+      "by": "task2b-lite",
+      "source": "frontmatter backlog fallback",
+      "priority": 85,
+      "summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
     }
   ],
   "last_task2b_completed": [
@@ -11277,14 +11297,25 @@
         "source": "frontmatter-fallback/task9-audit",
         "fix_summary": "补充 GPU_DURATION / SWAP_BUFFERS_DURATION 在 API 24-30、31-32、33-37 的版本端点边界，避免线上聚合跨版本直接比较。"
       }
+    ],
+    "2026-06-01": [
+      {
+        "section": "24.17",
+        "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+        "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-06-01T01:35:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review",
+        "fix_summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
+      }
     ]
   },
-  "last_task2b_lite_at": "2026-05-31T21:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-01T01:35:00+08:00",
   "last_task2b_lite_sections": [
-    "19.24"
+    "24.17"
   ],
   "last_task2b_lite_files": [
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
   ],
   "task2b_verifier_history": [
     {
@@ -11691,7 +11722,7 @@
     "result": "ready-for-task6"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-05-31-21-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-01-01-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
@@ -11710,5 +11741,19 @@
     "task2b_result": "fixed-lite"
   },
   "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
-  "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md"
+  "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
+  "task2b_last_rework_lite": {
+    "at": "2026-06-01T01:35:00+08:00",
+    "lane": "lite",
+    "source": "frontmatter backlog fallback",
+    "section": "24.17",
+    "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
+    "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+    "result": "fixed-lite",
+    "issues_fixed": [
+      "Room 3.0 alpha04 connection pool API and validation boundary"
+    ],
+    "returned_to": "task6_pending",
+    "log": "logs/rework/2026-06-01-01-task2b-lite.md"
+  }
 }
