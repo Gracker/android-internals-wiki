@@ -24,7 +24,7 @@ related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 6
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-26"
-last_task2b_at: "2026-04-25T05:47:52+08:00"
+last_task2b_at: "2026-05-31T22:50:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-26T05:35:00+08:00"
 task2b_fixed_by: openclaw-task2b
@@ -37,13 +37,13 @@ status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "reviewed"
-pipeline_stage: "task2b_pending"
-task2b_state: "pending"
+task6_state: revisiting
+task9_state: "pending"
+pipeline_stage: "task6_pending"
+task2b_state: "fixed"
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
-task2b_result: "pending"
+task2b_result: "fixed"
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补齐 11 个示意代码围栏语言，清理禁用词/冗余强调 5 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-05-26"
@@ -54,8 +54,10 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 0 / P1 1 / P2 0；AOSP 4.4.4
 p0: 0
 p1: 1
 p2: 0
-updated_by: "openclaw-task9"
-updated_date: "2026-05-26"
+updated_by: "openclaw-task2b"
+updated_date: "2026-05-31"
+task2b_fixed_at: "2026-05-31T22:50:00+08:00"
+task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
 ---
 
 # Android 渲染架构全景
@@ -629,11 +631,11 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 上面的全景图是 Android 16 的渲染架构。但这个架构不是一天建成的--它经历了十多年的迭代,每一次重大变更都改变了性能优化的思路。以下是关键里程碑:
 
-**Android 3.0(Honeycomb,2011)** 引入了硬件加速渲染和 HWUI。在此之前,所有 UI 都通过 Skia CPU 渲染(即本节提到的软件渲染模式),RenderThread 不存在,所有绘制操作都在主线程上同步执行。硬件加速的引入带来了 DisplayList/RenderNode 架构--主线程只记录指令,实际渲染交给 GPU。
+**Android 3.0(Honeycomb,2011)** 引入了硬件加速渲染和 HWUI。在此之前,大多数 View UI 都通过 Skia CPU 路径绘制,应用侧绘制工作主要压在主线程上。Honeycomb 之后,HWUI 开始把 View 的绘制结果录制成 DisplayList,再交给 OpenGLRenderer 执行 GPU 渲染；AOSP android-4.4.4_r2 的 `frameworks/base/libs/hwui/` 仍以 `DisplayList`、`DisplayListRenderer`、`OpenGLRenderer` 这组类为主,还没有 Android 5.0 之后的 `RenderNode` 和 `renderthread` 目录。
 
 **Android 4.1(Jelly Bean,2012)** 通过 Project Butter 引入了 VSync 同步机制和三缓冲。在此之前,App 的渲染与屏幕刷新是不同步的,画面撕裂和卡顿频繁发生。VSync 和三缓冲的引入让帧率更加稳定,也催生了 Choreographer 组件来统一管理 VSync 回调。
 
-**Android 5.0(Lollipop,2014)** 引入了 RenderThread。在此之前,GPU 渲染操作也在主线程执行(虽然通过硬件加速,但同步调用 OpenGL 仍然会阻塞主线程)。RenderThread 将 GPU 渲染移到独立线程,主线程只负责录制 DisplayList,两者并行工作,主线程不再同步等待 GPU 渲染完成。
+**Android 5.0(Lollipop,2014)** 引入了现代 `RenderNode` 与 RenderThread 分工。AOSP android-5.0.0_r1 的 `frameworks/base/libs/hwui/` 中出现 `RenderNode.h`、`RenderNode.cpp` 和 `renderthread/` 目录,主线程把 View 树变化同步到 RenderNode 的 staging display list,RenderThread 再把 display list 回放给 Skia/OpenGL 管线。这个版本之后,主线程录制与渲染线程回放才成为 HWUI 的主干路径。
 
 **Android 8.0(Oreo,2017)** 引入了 SurfaceFlinger 的预合成(Composition)重构,优化了 HWC 的使用策略。
 
