@@ -16,12 +16,12 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-31
 task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: "reviewed"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-31"
@@ -37,9 +37,9 @@ last_task9_review_log: "logs/deep-review/2026-05-31-18-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
 task9_review_notes: "2026-05-31 Task9 deep review: auto-fixed。补充硬件渲染前提、TOTAL_DURATION 非简单求和边界，并修正 android-17.0.0_r1 不可复现的源码验证锚点；P0 0 / P1 0 / P2 3。"
 last_task6_audit: '2026-05-20'
-last_task6_at: "2026-05-31T18:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-18-review.md"
-task6_review_notes: "2026-05-31 18: Task6 revisiting review: pass-light-edit；L1 禁用词扫描通过；完成 12 处措辞、术语和格式小修；无新增 Task2B 回炉项，送 Task9 复核。"
+last_task6_at: "2026-05-31T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-19-review.md"
+task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 3 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-31"
 ---
 
@@ -84,9 +84,9 @@ last_task9_autofix_at: "2026-05-31"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## FrameMetrics 拆的是一帧内部耗时
+## FrameMetrics 提供一帧内部耗时分项
 
-`FrameMetrics` 是 Android 7.0（API 24）加入的平台 API，用来获取 Window 每一帧的耗时拆解。它比 JankStats 更接近渲染阶段：输入、动画、布局测量、绘制、同步、GPU 命令提交、buffer 交换、总耗时等。
+`FrameMetrics` 是 Android 7.0（API 24）加入的平台 API，用来获取 Window 每一帧的耗时分项。它比 JankStats 更接近渲染阶段：输入、动画、布局测量、绘制、同步、GPU 命令提交、buffer 交换、总耗时等。
 
 它适合在高版本设备上回答“慢帧发生在哪一段”。它仍然不是完整的 Trace。看到 `DRAW_DURATION` 高，只能说明 draw 阶段耗时高；要确认是哪棵 View、哪个 Compose 节点或哪段业务代码，还要继续抓 Perfetto 或 Profiler。
 
@@ -190,7 +190,7 @@ FrameMetrics 给的是阶段线索。修问题时，仍然要把异常页面用 
 
 ## 每个阶段对应的排查方向
 
-FrameMetrics 的价值在于把慢帧拆成阶段。读数时要把阶段和可能原因对应起来：
+FrameMetrics 的价值在于按阶段呈现慢帧。读数时要把阶段和可能原因对应起来：
 
 | 阶段异常 | 常见原因 | 下一步工具 |
 |---|---|---|
