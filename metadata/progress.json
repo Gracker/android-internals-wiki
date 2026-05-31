@@ -412,35 +412,36 @@
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
   ],
-  "review_summary": "Task6 2026-06-01 01: review 2.1 Android 渲染架构全景、2.5 MainThread 与 RenderThread 协作、2.20 多窗口与桌面模式渲染性能；pass-light-edit；无回炉，送 Task9。",
+  "review_summary": "Task6 2026-06-01 02: review 18.15 视频叠加与 HWC、19.09 Measure、19.12 FrameMetrics；18.15 回炉补测试素材，19.09/19.12 pass-light-edit；无自动晋升。",
   "task6_review_summary": {
-    "reviewed_at": "2026-06-01T01:05:00+08:00",
+    "reviewed_at": "2026-06-01T02:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-01-01-review.md",
-    "log": "logs/review/2026-06-01-01-review.md",
+    "review_log": "logs/review/2026-06-01-02-review.md",
+    "log": "logs/review/2026-06-01-02-review.md",
     "sections": [
-      "2.1",
-      "2.5",
-      "2.20"
+      "18.15",
+      "19.09",
+      "19.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
     "pass_light_edit": [
-      "2.1",
-      "2.5",
-      "2.20"
+      "19.09",
+      "19.12"
     ],
-    "needs_rework": [],
+    "needs_rework": [
+      "18.15"
+    ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 10,
-    "l3_l4_issues": 0,
-    "small_fixes": 10,
-    "rework_items": 0,
-    "result": "pass-light-edit"
+    "l1_l2_fixes": 41,
+    "l3_l4_issues": 1,
+    "small_fixes": 41,
+    "rework_items": 1,
+    "result": "needs-rework-with-pass-light-edit"
   },
   "issues_by_section": {
     "1.6": {
@@ -2374,36 +2375,37 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T01:35:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-06-01T02:05:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-01T01:05:00+08:00",
+    "reviewed_at": "2026-06-01T02:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-01-01-review.md",
-    "log": "logs/review/2026-06-01-01-review.md",
+    "review_log": "logs/review/2026-06-01-02-review.md",
+    "log": "logs/review/2026-06-01-02-review.md",
     "sections": [
-      "2.1",
-      "2.5",
-      "2.20"
+      "18.15",
+      "19.09",
+      "19.12"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "src/part3-tools/ch19-apm/09-measure.md",
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
     "pass_light_edit": [
-      "2.1",
-      "2.5",
-      "2.20"
+      "19.09",
+      "19.12"
     ],
-    "needs_rework": [],
+    "needs_rework": [
+      "18.15"
+    ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 10,
-    "l3_l4_issues": 0,
-    "small_fixes": 10,
-    "rework_items": 0,
-    "result": "pass-light-edit"
+    "l1_l2_fixes": 41,
+    "l3_l4_issues": 1,
+    "small_fixes": 41,
+    "rework_items": 1,
+    "result": "needs-rework-with-pass-light-edit"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 189,
@@ -5593,13 +5595,13 @@
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-31",
-      "last_task6_at": "2026-05-31T22:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-31-22-review.md",
+      "reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
@@ -5615,7 +5617,11 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_autofix_at": "2026-05-31",
       "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。小修 1 处；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
+      "task6_new_rework": false
     },
     "24.11": {
       "title": "卫星与低带宽网络适配",
@@ -6808,20 +6814,23 @@
       "title": "FrameMetrics",
       "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-31",
-      "last_task6_at": "2026-05-31T19:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+      "reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。",
+      "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。无新增正文修复；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
       "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "task6_new_rework": false
     },
     "19.11": {
       "section": "19.11",
@@ -6901,6 +6910,27 @@
       "last_task6_at": "2026-06-01T01:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
       "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+    },
+    "18.15": {
+      "section": "18.15",
+      "title": "视频叠加与 HWC",
+      "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
+      "task6_review_summary": "2026-06-01 02:05 Task6：needs-rework。L1/L2 小修 40 处；功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json priority 90。",
+      "task6_new_rework": true,
+      "queue_priority": 90
     }
   },
   "task2b_rounds": [
@@ -7003,41 +7033,47 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-05-31-22-review.md",
+  "last_task6_review": "logs/review/2026-06-01-02-review.md",
   "last_task6_sections": [
+    "18.15",
     "19.09",
-    "19.24"
+    "19.12"
   ],
   "last_task6_reviewed_files": [
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
-  "last_task6_at": "2026-05-31T22:10:00+08:00",
+  "last_task6_at": "2026-06-01T02:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-31T22:10:00+08:00",
+    "reviewed_at": "2026-06-01T02:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-05-31-22-review.md",
-    "log": "logs/review/2026-05-31-22-review.md",
+    "review_log": "logs/review/2026-06-01-02-review.md",
+    "log": "logs/review/2026-06-01-02-review.md",
     "sections": [
+      "18.15",
       "19.09",
-      "19.24"
+      "19.12"
     ],
     "files": [
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
     "pass_light_edit": [
       "19.09",
-      "19.24"
+      "19.12"
     ],
-    "needs_rework": [],
+    "needs_rework": [
+      "18.15"
+    ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 11,
-    "l3_l4_issues": 0,
-    "small_fixes": 11,
-    "rework_items": 0,
-    "result": "pass-light-edit"
+    "l1_l2_fixes": 41,
+    "l3_l4_issues": 1,
+    "small_fixes": 41,
+    "rework_items": 1,
+    "result": "needs-rework-with-pass-light-edit"
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -7047,11 +7083,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-31T22:10:00+08:00",
-  "task6_last_review_log": "logs/review/2026-05-31-22-review.md",
+  "task6_last_review_at": "2026-06-01T02:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-01-02-review.md",
   "task6_last_review_sections": [
+    "18.15",
     "19.09",
-    "19.24"
+    "19.12"
   ],
   "sections_status": {
     "22.11": {
@@ -8083,27 +8120,33 @@
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-31",
-      "last_task6_at": "2026-05-31T22:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-31-22-review.md",
+      "reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "queue_priority": 90,
       "queue_id": "task6-19.09-measure-outline-coverage",
+      "last_task2b_at": "2026-05-31T20:52:00+08:00",
+      "last_task2b_rework_log": "Task2B 2026-05-31: fixed Measure SDK schema, ANR/native boundary, and retention source from Task9 fallback issues.",
+      "task2b_source": "frontmatter backlog fallback; logs/deep-review/2026-05-20-15-audit.md; logs/deep-review/2026-05-21-11-deep-review.md",
       "last_task9_at": "2026-05-31T21:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-31-21-deep-review.md",
       "task9_reviewed_date": "2026-05-31",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task2b_at": "2026-05-31T20:52:00+08:00",
       "last_task9_autofix_at": "2026-05-31",
       "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。小修 1 处；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
+      "task6_new_rework": false
     },
     "24.11": {
       "title": "卫星与低带宽网络适配",
@@ -8976,6 +9019,50 @@
       "last_task6_at": "2026-06-01T01:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-01-01-review.md",
       "task6_review_notes": "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+    },
+    "18.15": {
+      "section": "18.15",
+      "title": "视频叠加与 HWC",
+      "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
+      "task6_review_summary": "2026-06-01 02:05 Task6：needs-rework。L1/L2 小修 40 处；功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json priority 90。",
+      "task6_new_rework": true,
+      "queue_priority": 90
+    },
+    "19.12": {
+      "section": "19.12",
+      "title": "FrameMetrics",
+      "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "last_task6_at": "2026-06-01T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。无新增正文修复；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-01",
+      "task6_new_rework": false
     }
   },
   "task2a_last_processed": {
@@ -9023,38 +9110,44 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-31T22:10:00+08:00",
+    "reviewed_at": "2026-06-01T02:05:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-05-31-22-review.md",
-    "log": "logs/review/2026-05-31-22-review.md",
+    "review_log": "logs/review/2026-06-01-02-review.md",
+    "log": "logs/review/2026-06-01-02-review.md",
     "sections": [
+      "18.15",
       "19.09",
-      "19.24"
+      "19.12"
     ],
     "files": [
+      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md"
     ],
     "pass_light_edit": [
       "19.09",
-      "19.24"
+      "19.12"
     ],
-    "needs_rework": [],
+    "needs_rework": [
+      "18.15"
+    ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 11,
-    "l3_l4_issues": 0,
-    "small_fixes": 11,
-    "rework_items": 0,
-    "result": "pass-light-edit"
+    "l1_l2_fixes": 41,
+    "l3_l4_issues": 1,
+    "small_fixes": 41,
+    "rework_items": 1,
+    "result": "needs-rework-with-pass-light-edit"
   },
   "task6_last_review_files": [
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
   "task6_last_reviewed_files": [
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -9546,8 +9639,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
+    "18.15",
     "19.09",
-    "19.24"
+    "19.12"
   ],
   "task2b_progress": [
     {
@@ -9665,7 +9759,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-31-22-review.md",
+  "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -9675,9 +9769,9 @@
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-31",
-    "last_task6_at": "2026-05-31T22:10:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-31-22-review.md",
+    "reviewed_date": "2026-06-01",
+    "last_task6_at": "2026-06-01T02:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
     "task9_state": "pending",
     "task9_result": "auto-fixed",
     "task2b_state": "fixed",
@@ -9691,7 +9785,13 @@
     "last_task9_review_log": "logs/deep-review/2026-05-31-21-deep-review.md",
     "task9_reviewed_date": "2026-05-31",
     "task9_reviewed_by": "openclaw-task9",
-    "last_task9_autofix_at": "2026-05-31"
+    "last_task9_autofix_at": "2026-05-31",
+    "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-06-01",
+    "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。小修 1 处；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
+    "task6_new_rework": false
   },
   "section_19_11": {
     "section": "19.11",
@@ -10613,8 +10713,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-31T22:10:00+08:00",
-  "last_task6_review_section": "19.09,19.24",
+  "last_task6_review_at": "2026-06-01T02:05:00+08:00",
+  "last_task6_review_section": "18.15,19.09,19.12",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -10714,10 +10814,11 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
+    "18.15",
     "19.09",
-    "19.24"
+    "19.12"
   ],
-  "last_task6_result": "pass-light-edit",
+  "last_task6_result": "needs-rework-with-pass-light-edit",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -10745,8 +10846,9 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -10935,7 +11037,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-31T22:10:00+08:00",
+  "last_task6_reviewed_at": "2026-06-01T02:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -11551,8 +11653,9 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
     "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -11679,14 +11782,19 @@
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-31",
-    "last_task6_at": "2026-05-31T19:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+    "reviewed_date": "2026-06-01",
+    "last_task6_at": "2026-06-01T02:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
     "task9_state": "pending",
     "task9_result": "auto-fixed",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
-    "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。"
+    "task6_review_summary": "2026-06-01 02:05 Task6：pass-light-edit。无新增正文修复；L1 禁用词与高频词扫描无命中；outline 10/10 覆盖；无 L3/L4 回炉项，送 Task9 复核。",
+    "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-06-01",
+    "task6_new_rework": false
   },
   "section_19_16": {
     "section": "19.16",
@@ -11755,5 +11863,26 @@
     ],
     "returned_to": "task6_pending",
     "log": "logs/rework/2026-06-01-01-task2b-lite.md"
+  },
+  "section_18_15": {
+    "section": "18.15",
+    "title": "视频叠加与 HWC",
+    "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_result": "needs-rework",
+    "task6_state": "reviewed",
+    "task2b_state": "pending",
+    "task9_state": "reviewed",
+    "task9_result": "auto-fixed",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-01",
+    "task6_reviewed_by": "openclaw-task6",
+    "task6_reviewed_date": "2026-06-01",
+    "last_task6_at": "2026-06-01T02:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
+    "task6_review_summary": "2026-06-01 02:05 Task6：needs-rework。L1/L2 小修 40 处；功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json priority 90。",
+    "task6_new_rework": true,
+    "queue_priority": 90
   }
 }
