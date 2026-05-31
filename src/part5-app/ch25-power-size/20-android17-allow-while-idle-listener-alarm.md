@@ -34,8 +34,11 @@ sources:
   - type: official
     path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+    path: "frameworks/base/services/core/java/com/android/server/AlarmManagerService.java"
 pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T20:04:00+08:00"
 ---
@@ -119,7 +122,7 @@ Android Developers Blog 把这个新能力定位为减少 idle alarm 场景下�
 | 临时后台任务收尾 | `onReceive()` 后手动持锁等待异步完成 | callback 中执行短收尾，超时后放弃或转 Job | JobScheduler / WorkManager 重试 |
 | FGS 内部 watchdog | FGS 持续运行时附带线程计时 | FGS 存活期间使用 listener 计时 | FGS 停止时取消 listener |
 
-这类 API 不会消除执行阶段的耗电。它减少的是等待阶段的连续持锁；真正执行时，如果要做网络、磁盘或 Binder 调用，仍然要控制任务长度、超时和取消路径。API 23 的 allow-while-idle 文档说明，alarm dispatch 后应用会进入约 10 秒的临时电源豁免窗口，可用于获取进一步 WakeLock 完成工作；AOSP main 中 `AlarmManagerService` 的默认 `allow_while_idle_whitelist_duration` 也是 10 秒。[已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager][已验证: AOSP main, frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java]
+这类 API 不会消除执行阶段的耗电。它减少的是等待阶段的连续持锁；真正执行时，如果要做网络、磁盘或 Binder 调用，仍然要控制任务长度、超时和取消路径。API 23 的 allow-while-idle 文档说明，alarm dispatch 后应用会进入约 10 秒的临时电源豁免窗口，可用于获取进一步 WakeLock 完成工作；AOSP main 中 `AlarmManagerService` 的默认 `allow_while_idle_whitelist_duration` 也是 10 秒。[已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager][已验证: AOSP main, frameworks/base/services/core/java/com/android/server/AlarmManagerService.java]
 
 ## 权限与生命周期边界
 
@@ -206,7 +209,7 @@ com.example.sync:short-retry
 com.example.call:ring-timeout
 ```
 
-AOSP `AlarmManagerService` 使用 `*alarm*` partial WakeLock 分发 alarm，并通过 WorkSource / creatorUid / statsTag 做归因；dispatch 时会记录 wakeup alarm 到包名和 UID，listener callback 也有超时管理。这个路径说明 alarm 侧能给出 UID、tag、唤醒次数和分发窗口，但拿不到业务 trace id、连接状态、重试原因和服务端游标，这些字段要由应用侧补采。[已验证: AOSP main, frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java]
+AOSP `AlarmManagerService` 使用 `*alarm*` partial WakeLock 分发 alarm，并通过 WorkSource / creatorUid / statsTag 做归因；dispatch 时会记录 wakeup alarm 到包名和 UID，listener callback 也有超时管理。这个路径说明 alarm 侧能给出 UID、tag、唤醒次数和分发窗口，但拿不到业务 trace id、连接状态、重试原因和服务端游标，这些字段要由应用侧补采。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/AlarmManagerService.java]
 
 建议记录的内部事件：
 

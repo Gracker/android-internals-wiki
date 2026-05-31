@@ -205,7 +205,7 @@ DRM 视频或其它受保护内容对应的 buffer 带 `GRALLOC_USAGE_PROTECTED`
 
 这是 TextureView 在视频播放场景下最常见的踩坑点之一——业务侧选择 TextureView 是为了 alpha / 圆角 / 旋转动画，但只要内容是 DRM 受保护的，路径选择就只能改回 SurfaceView。
 
-[已验证: AOSP `frameworks/native/libs/ui/Gralloc*.cpp` `USAGE_PROTECTED` flag + Android Developers `MediaDrm` 相关说明]
+[已验证: AOSP `frameworks/native/libs/gui/GraphicBuffer.cpp` 和 `frameworks/native/libs/ui/ConsumerBase.cpp` `USAGE_PROTECTED` flag + Android Developers `MediaDrm` 相关说明]
 
 ## onFrameAvailable 回调模型
 

@@ -17,6 +17,12 @@ gap_source: "研究素材/官方文档/AOSP结构/Clippings结构参考"
 gap_score: 16
 material_count: 6
 pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
+task9_result: auto-fixed
+task9_autofix_at: "2026-05-31"
+task6_autofix_trigger: true
 sources:
   - type: clippings-structure
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]"
@@ -47,7 +53,7 @@ sources:
 区分长音频播放、短音效、语音/助手、低延迟互动和后台播放场景，明确 Offload 适合压缩音频长时间播放，低延迟互动仍优先关注 AAudio/MMAP 与缓冲区策略。
 
 ### 🔹 AAudio compressed Offload 的能力探测
-围绕 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`、压缩格式、设备能力和 `AAudioStream_getPerformanceMode()` 建立探测流程，避免把请求 Offload 等同于实际走到 DSP 路径。
+围绕 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`、压缩格式、设备能力和 `AAudioStream_getPerformanceMode(stream)` 建立探测流程，避免把请求 Offload 等同于实际走到 DSP 路径。
 
 ### 🔹 AudioTrack Offload 的 API 37 新边界
 覆盖 `getCodecProvenance()`、`getFlushWrittenFramesFromPositionSupport()`、`flushWrittenFramesFromPosition(long, int)`、`FLUSH_FROM_ACCURACY_EXACT` / `BEST_EFFORT`，说明它们对音频定位、切歌、广告插入和有声书断点续播的影响。
@@ -110,7 +116,7 @@ Media3 文档给出的边界很清楚：短音频或亮屏播放时，音频通�
 
 AAudio 的 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 从 API 36 可用。官方 NDK 文档对它的描述是：省电优先，不支持输入流，输出会走 offloaded audio path；与普通 `POWER_SAVING` 相比，它允许应用在短时间内写入数秒数据，数据排入硬件 buffer 后，应用播放线程或进程可以暂停，框架数据管道也会自动暂停，CPU 因此可以睡眠。
 
-请求这个模式不等于系统一定给到这个模式。`AAudioStreamBuilder_setPerformanceMode()` 文档写明，应用可能拿不到请求的模式，打开流后要用 `AAudioStream_getPerformanceMode()` 查询最终结果。这个返回值才是线上日志里的“实际模式”。
+请求这个模式不等于系统一定给到这个模式。`AAudioStreamBuilder_setPerformanceMode()` 文档写明，应用可能拿不到请求的模式，打开流后要用 `AAudioStream_getPerformanceMode(stream)` 查询最终结果。这个返回值才是线上日志里的“实际模式"。
 
 这段代码只保留探测骨架。重点是请求后读取实际模式，不把请求参数当作事实。
 
@@ -289,7 +295,7 @@ DSP offload 会让音频处理更靠近硬件，音量、安全和声压相关�
 
 ## 小结
 
-音频 Offload 的目标是长时间播放省电，不是低延迟。接入时要把请求模式、实际模式、设备能力、播放器功能和用户体验放在同一套指标里：AAudio 用 `AAudioStream_getPerformanceMode()` 确认实际模式；AudioTrack API 37 用 support bitmask、实际 flush 位置和 codec provenance 辅助判断；Media3 用 `AudioOffloadPreferences` 表达偏好，再由平台决定是否满足。
+音频 Offload 的目标是长时间播放省电，不是低延迟。接入时要把请求模式、实际模式、设备能力、播放器功能和用户体验放在同一套指标里：AAudio 用 `AAudioStream_getPerformanceMode(stream)` 确认实际模式；AudioTrack API 37 用 support bitmask、实际 flush 位置和 codec provenance 辅助判断；Media3 用 `AudioOffloadPreferences` 表达偏好，再由平台决定是否满足。
 
 上线前做同机 A/B，线上保留远程回滚。只有 CPU 时间、线程唤醒、batterystats 和播放体验同时过线，Offload 才算进入可发布状态。
 
