@@ -277,7 +277,9 @@
     "14.10",
     "14.12",
     "14.5",
-    "19.12"
+    "19.12",
+    "19.12",
+    "19.16"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -396,27 +398,31 @@
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
     "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-    "src/part3-tools/ch19-apm/12-framemetrics.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
-  "review_summary": "Task6 2026-05-31 18: review 19.12 FrameMetrics；pass-light-edit；无回炉，送 Task9。",
+  "review_summary": "Task6 2026-05-31 19: review 19.12 FrameMetrics、19.16 ProfilingManager；pass-light-edit；无回炉，送 Task9。",
   "task6_review_summary": {
-    "reviewed_at": "2026-05-31T18:07:00+08:00",
+    "reviewed_at": "2026-05-31T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "19.12"
+      "19.12",
+      "19.16"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/12-framemetrics.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "src/part3-tools/ch19-apm/16-profiling-manager.md"
     ],
-    "log": "logs/review/2026-05-31-18-review.md",
+    "log": "logs/review/2026-05-31-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 12,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "small_fixes": 12,
+    "small_fixes": 7,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "19.12 FrameMetrics 完成 Task6 复审；L1/L2 小修 12 处；无 Task2B 回炉项；因 task9_result 仍为 needs-rework，未自动晋升 finalized，送 Task9 复核。"
+    "notes": "19.12 FrameMetrics、19.16 ProfilingManager 完成 Task6 复审；L1/L2 小修 7 处；无 Task2B 回炉项；两节均送 Task9 复核。"
   },
   "issues_by_section": {
     "1.6": {
@@ -2311,7 +2317,7 @@
       "task6_note": "L1 禁用词扫描通过；Task2B-lite 已修复 NDK 回调路径，送 Task9 复核；无新增 Task6 回炉。"
     }
   },
-  "total_review_sections": 271,
+  "total_review_sections": 273,
   "next_review_candidates": [
     {
       "section": "14.4",
@@ -2340,26 +2346,28 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T18:07:00+08:00",
+  "last_updated": "2026-05-31T19:05:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-05-31T18:07:00+08:00",
+    "reviewed_at": "2026-05-31T19:05:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "19.12"
+      "19.12",
+      "19.16"
     ],
     "files": [
-      "src/part3-tools/ch19-apm/12-framemetrics.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "src/part3-tools/ch19-apm/16-profiling-manager.md"
     ],
-    "log": "logs/review/2026-05-31-18-review.md",
+    "log": "logs/review/2026-05-31-19-review.md",
     "result": "pass-light-edit",
-    "l1_l2_fixes": 12,
+    "l1_l2_fixes": 7,
     "l3_l4_issues": 0,
-    "small_fixes": 12,
+    "small_fixes": 7,
     "rework_items": 0,
     "auto_promoted": [],
     "mode": "revisiting review",
-    "notes": "19.12 FrameMetrics 完成 Task6 复审；L1/L2 小修 12 处；无 Task2B 回炉项；因 task9_result 仍为 needs-rework，未自动晋升 finalized，送 Task9 复核。"
+    "notes": "19.12 FrameMetrics、19.16 ProfilingManager 完成 Task6 复审；L1/L2 小修 7 处；无 Task2B 回炉项；两节均送 Task9 复核。"
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 189,
@@ -5507,11 +5515,11 @@
       "title": "ProfilingManager",
       "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-20",
       "last_task9_at": "2026-05-20T07:37:11+08:00",
@@ -5520,11 +5528,12 @@
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-20",
-      "task6_reviewed_date": "2026-05-20",
-      "last_task6_at": "2026-05-20T08:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-20-08-review.md",
-      "task6_review_summary": "L1/L2 pass-light-edit；无新增写作回炉项；保留 Task9 needs-rework / task2b_pending。"
+      "reviewed_date": "2026-05-31",
+      "task6_reviewed_date": "2026-05-31",
+      "last_task6_at": "2026-05-31T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+      "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。",
+      "section": "19.16"
     },
     "19.09": {
       "section": "19.09",
@@ -6727,6 +6736,24 @@
       "task9_state": "pending",
       "last_task2b_at": "2026-05-30T00:50:00+08:00",
       "task2b_note": "Task2B 主修复完成，回流 Task6。"
+    },
+    "19.12": {
+      "section": "19.12",
+      "title": "FrameMetrics",
+      "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-05-31",
+      "last_task6_at": "2026-05-31T19:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。"
     }
   },
   "task2b_rounds": [
@@ -6825,50 +6852,39 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "total_review_files": 114,
+  "total_review_files": 119,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-05-29-08-review.md",
+  "last_task6_review": "logs/review/2026-05-31-19-review.md",
   "last_task6_sections": [
-    "16.5",
-    "2.19",
-    "3.1",
-    "18.17"
+    "19.12",
+    "19.16"
   ],
   "last_task6_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
-  "last_task6_at": "2026-05-29T08:16:26+08:00",
+  "last_task6_at": "2026-05-31T19:05:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-05-29T08:16:26+08:00",
-    "review_log": "logs/review/2026-05-29-08-review.md",
+    "reviewed_at": "2026-05-31T19:05:00+08:00",
+    "review_log": "logs/review/2026-05-31-19-review.md",
     "sections": [
-      "16.5",
-      "2.19",
-      "3.1",
-      "18.17"
+      "19.12",
+      "19.16"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "src/part3-tools/ch19-apm/16-profiling-manager.md"
     ],
     "pass_light_edit": [
-      "16.5",
-      "18.17"
+      "19.12",
+      "19.16"
     ],
-    "needs_rework": [
-      "2.19",
-      "3.1"
-    ],
+    "needs_rework": [],
     "auto_finalized": [],
-    "task6_l1_l2_fixes": 4,
-    "task6_l3_l4_issues": 4
+    "task6_l1_l2_fixes": 7,
+    "task6_l3_l4_issues": 0
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -6878,13 +6894,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-05-29T08:16:26+08:00",
-  "task6_last_review_log": "logs/review/2026-05-29-08-review.md",
+  "task6_last_review_at": "2026-05-31T19:05:00+08:00",
+  "task6_last_review_log": "logs/review/2026-05-31-19-review.md",
   "task6_last_review_sections": [
-    "16.5",
-    "2.19",
-    "3.1",
-    "18.17"
+    "19.12",
+    "19.16"
   ],
   "sections_status": {
     "22.11": {
@@ -8758,43 +8772,32 @@
     "18.6"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-05-29T08:16:26+08:00",
-    "review_log": "logs/review/2026-05-29-08-review.md",
+    "reviewed_at": "2026-05-31T19:05:00+08:00",
+    "review_log": "logs/review/2026-05-31-19-review.md",
     "sections": [
-      "16.5",
-      "2.19",
-      "3.1",
-      "18.17"
+      "19.12",
+      "19.16"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+      "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "src/part3-tools/ch19-apm/16-profiling-manager.md"
     ],
     "pass_light_edit": [
-      "16.5",
-      "18.17"
+      "19.12",
+      "19.16"
     ],
-    "needs_rework": [
-      "2.19",
-      "3.1"
-    ],
+    "needs_rework": [],
     "auto_finalized": [],
-    "task6_l1_l2_fixes": 4,
-    "task6_l3_l4_issues": 4
+    "task6_l1_l2_fixes": 7,
+    "task6_l3_l4_issues": 0
   },
   "task6_last_review_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -9260,10 +9263,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "16.5",
-    "2.19",
-    "3.1",
-    "18.17"
+    "19.12",
+    "19.16"
   ],
   "task2b_progress": [
     {
@@ -9373,7 +9374,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+  "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -10259,8 +10260,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-05-28T19:05:00+08:00",
-  "last_task6_review_section": "14.9, 15.2, 13.10",
+  "last_task6_review_at": "2026-05-31T19:05:00+08:00",
+  "last_task6_review_section": "19.12, 19.16",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -10360,12 +10361,10 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "16.5",
-    "2.19",
-    "3.1",
-    "18.17"
+    "19.12",
+    "19.16"
   ],
-  "last_task6_result": "mixed: pass-light-edit 2 / needs-rework 2",
+  "last_task6_result": "pass-light-edit 2 / needs-rework 0",
   "section_20_15": {
     "section": "20.15",
     "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
@@ -10393,8 +10392,8 @@
     "task9_state": "pending"
   },
   "last_task6_review_files": [
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -10583,7 +10582,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-05-28T18:20:12+08:00",
+  "last_task6_reviewed_at": "2026-05-31T19:05:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -11175,10 +11174,8 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md"
+    "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "src/part3-tools/ch19-apm/16-profiling-manager.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -11295,5 +11292,42 @@
     "task6_new_rework": true,
     "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
     "task2b_result": "pending"
+  },
+  "section_19_12": {
+    "section": "19.12",
+    "title": "FrameMetrics",
+    "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-31",
+    "last_task6_at": "2026-05-31T19:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。"
+  },
+  "section_19_16": {
+    "section": "19.16",
+    "title": "ProfilingManager",
+    "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-05-31",
+    "task6_reviewed_date": "2026-05-31",
+    "last_task6_at": "2026-05-31T19:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。"
   }
 }

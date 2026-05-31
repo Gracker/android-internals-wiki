@@ -32,16 +32,16 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
-last_task6_at: "2026-05-20T08:14:00+08:00"
-last_task6_review_log: "logs/review/2026-05-20-08-review.md"
-task6_review_notes: "2026-05-20 task6 review 08:14：复审 ProfilingManager；L1/L2 通过，仅同步 Task6 元数据；未新增写作回炉项；保留 Task9 needs-rework 与 task2b_pending。"
+last_task6_at: "2026-05-31T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-19-review.md"
+task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_at: "2026-05-20T07:37:11+08:00"
 last_task9_audit: "2026-05-20"
 task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 0 / P1 2 / P2 2 / P3 0。P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
@@ -54,9 +54,9 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-20"
+reviewed_date: "2026-05-31"
 last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
-task6_reviewed_date: "2026-05-20"
+task6_reviewed_date: "2026-05-31"
 ---
 
 # ProfilingManager
@@ -79,11 +79,11 @@ task6_reviewed_date: "2026-05-20"
 - 🔸 给 trigger 场景补版本对照表和 artifact 对照表
 <!-- outline-end -->
 
-## 适用范围按版本拆开
+## 适用范围按版本区分
 
 `android.os.ProfilingManager` 是 Android 15（API 35）加入的平台 API。它解决的是量产设备上“异常发生时没有提前开工具”的缺口：应用在受系统预算约束的前提下，请系统抓一份更重的样本，用来补充线上指标。
 
-这里有两个边界要先拆清：
+这里先分清两个边界：
 
 - **app-driven profiling**：API 35 起可用。应用主动发起请求，抓 system trace、Java heap dump、heap profile、stack sampling
 - **system-triggered profiling**：从 API 36、version 36.1、API 37 逐步补齐。结果由系统事件触发，接收方式和 request callback 不同
@@ -124,7 +124,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
+这段调用只说明一件事：**请求参数、执行过程、结果回传是异步分开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
 `ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。`<profileable android:shell="true" />` 属于本地 shell、Perfetto、simpleperf、Android Studio Profiler 这类调试工具的可分析配置，不是线上 `requestProfiling()` 成功的前提。发布包接入 `ProfilingManager` 时，重点检查 API 版本、调用频率、结果文件权限、隐私声明和后端接收策略；调试包或内测包若还要配合本地工具排查，再单独确认 `profileable` 与渠道合规要求。
 
@@ -186,7 +186,7 @@ fun supportsKillTriggeredProfiling(): Boolean {
 
 ## 错误码、限流和重试策略
 
-`ProfilingResult` 的错误分支要写进接入逻辑，不然线上只会留下“本次没拿到文件”的黑洞。
+`ProfilingResult` 的错误分支要写进接入逻辑，不然线上只会留下无法归因的失败记录。
 
 | 错误码 | 含义 | 建议处理 |
 |---|---|---|
