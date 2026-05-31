@@ -40,7 +40,7 @@ pipeline_stage: "task6_pending"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
@@ -56,6 +56,8 @@ last_task9_autofix_at: "2026-06-01"
 p0: 2
 p1: 2
 p2: 3
+last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 ---
 
 # MainThread 与 RenderThread 协作
