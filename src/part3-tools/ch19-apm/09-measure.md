@@ -34,11 +34,11 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -60,6 +60,8 @@ task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
 task6_review_notes: "2026-05-31 22:10 Task6 revisiting-review: L1/L2 小修 1 处（metric→指标）；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
+last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
 # Measure
 

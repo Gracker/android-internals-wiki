@@ -2,7 +2,7 @@
 title: FrameMetrics
 chapter: '19'
 section: '19.12'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -16,11 +16,11 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-31
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "auto-fixed"
@@ -41,6 +41,8 @@ last_task6_at: "2026-05-31T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-19-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 3 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_autofix_at: "2026-05-31"
+last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
 
 # FrameMetrics

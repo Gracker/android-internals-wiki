@@ -2365,8 +2365,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T22:50:00+08:00",
-  "last_updated_by": "openclaw-task2b",
+  "last_updated": "2026-05-31T23:25:00+08:00",
+  "last_updated_by": "openclaw-task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-05-31T22:10:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -3398,7 +3398,7 @@
       "title": "Jetpack Compose 性能优化",
       "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -3406,14 +3406,15 @@
       "task2b_result": "fixed-lite",
       "last_task9_at": "2026-05-21T19:35:29+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-21-19-deep-review.md",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
       "last_task6_at": "2026-05-31T20:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-31-20-review.md",
       "last_task2b_lite_at": "2026-05-31T15:35:00+08:00",
-      "last_task2b_verifier_at": "2026-05-31T19:28:00+08:00",
-      "task2b_verifier_note": "queue 无 Task6/Task9/External pending；frontmatter/progress 回流到 Task6 复审。"
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "task2b_verifier_note": "queue 无 Task6/Task9/External pending；frontmatter/progress 回流到 Task6 复审。",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "1.3": {
       "status": "finalized",
@@ -5548,7 +5549,7 @@
       "title": "ProfilingManager",
       "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -5559,22 +5560,24 @@
       "last_task9_review_log": "logs/deep-review/2026-05-20-07-deep-review.md",
       "queue_priority": 85,
       "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
       "task6_reviewed_date": "2026-05-31",
       "last_task6_at": "2026-05-31T19:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-31-19-review.md",
       "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。",
-      "section": "19.16"
+      "section": "19.16",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "19.09": {
       "section": "19.09",
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
@@ -5593,7 +5596,9 @@
       "last_task9_review_log": "logs/deep-review/2026-05-31-21-deep-review.md",
       "task9_reviewed_date": "2026-05-31",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_autofix_at": "2026-05-31"
+      "last_task9_autofix_at": "2026-05-31",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "24.11": {
       "title": "卫星与低带宽网络适配",
@@ -6783,8 +6788,8 @@
       "title": "FrameMetrics",
       "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
@@ -6794,7 +6799,9 @@
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。"
+      "task6_review_summary": "L1/L2 pass-light-edit；小修 3 处；无新增写作回炉项；送 Task9 复核。",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "19.11": {
       "section": "19.11",
@@ -6821,8 +6828,8 @@
       "title": "崩溃与 ANR 捕获机制",
       "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
@@ -6831,7 +6838,9 @@
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
-      "task2b_result": "fixed-lite"
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "2.1": {
       "section": "2.1",
@@ -8031,8 +8040,8 @@
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
@@ -8049,7 +8058,9 @@
       "task9_reviewed_date": "2026-05-31",
       "task9_reviewed_by": "openclaw-task9",
       "last_task2b_at": "2026-05-31T20:52:00+08:00",
-      "last_task9_autofix_at": "2026-05-31"
+      "last_task9_autofix_at": "2026-05-31",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "24.11": {
       "title": "卫星与低带宽网络适配",
@@ -8869,8 +8880,8 @@
       "title": "崩溃与 ANR 捕获机制",
       "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-31",
@@ -8879,7 +8890,9 @@
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
-      "task2b_result": "fixed-lite"
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "2.1": {
       "section": "2.1",
@@ -11065,14 +11078,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00",
+  "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
   "last_task2b_verifier_sections": [
-    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
-    "src/part3-tools/ch14-other-tools/04-dumpsys.md",
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-    "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
-    "src/part3-tools/ch14-other-tools/12-apm-observability.md",
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "19.24",
+    "19.09",
+    "22.3",
+    "19.16",
+    "19.12",
+    "18.15"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -11591,5 +11604,6 @@
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite"
-  }
+  },
+  "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
 }
