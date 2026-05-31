@@ -2,7 +2,7 @@
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
@@ -32,19 +32,19 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: needs-rework
+task9_result: "pass-tech-review"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-20"
 last_task6_at: "2026-05-31T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-19-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
-last_task9_at: "2026-05-20T07:37:11+08:00"
+last_task9_at: "2026-06-01T00:20:00+08:00"
 last_task9_audit: "2026-05-20"
-task9_review_notes: "2026-05-20 task9 deep review: needs-rework。P0 0 / P1 2 / P2 2 / P3 0。P1 2：OOM trigger 默认 handler 前提缺失、profileable/shell 配置边界混入线上 ProfilingManager；P2 2：限流 cost 模型缺失、官方 guide URL 404。"
+task9_review_notes: "2026-06-01 Task9 deep review: pass-tech-review。复核 ProfilingManager/requestProfiling、ProfilingTrigger API36/36.1/API37 边界、ProfilingResult 错误码、AndroidX wrapper 与 profileable 边界；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_result: fixed
 last_task2b_at: "2026-05-31T18:50:00+08:00"
 task2b_fixed_at: "2026-05-31T18:50:00+08:00"
@@ -55,11 +55,12 @@ repaired_by: "openclaw-task2b"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
-last_task9_review_log: "logs/deep-review/2026-05-20-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
 task6_reviewed_date: "2026-05-31"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
+
 
 # ProfilingManager
 

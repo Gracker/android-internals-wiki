@@ -19,8 +19,8 @@ created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
-task9_state: "pending"
-task9_result: auto-fixed
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
@@ -30,25 +30,26 @@ task9_reviewed_date: "2026-05-21"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-last_task9_at: "2026-05-21T11:31:10+08:00"
+last_task9_at: "2026-06-01T00:20:00+08:00"
 last_task9_audit: 2026-05-31
-last_task9_autofix_at: 2026-05-31
+last_task9_autofix_at: "2026-06-01"
 review_notes: '2026-05-21 task9 idle audit: needs-rework。P1:HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
-last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
-task9_review_notes: "2026-05-21 Task9 deep review: P1 SKIP_VALIDATE 版本边界与 canSkipValidate 条件仍未在正文修正,写入 queue 条目 task9-20260521-18.15-hwc-skipvalidate-still-wrong。"
+last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 SIDEBAND 拼写、HWC skip-validate 当前源码锚点、Composer3 Capability.aidl 路径；回到 Task6 复审。"
 task6_reviewed_date: "2026-05-31"
 last_task6_at: "2026-05-31T04:17:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-04-review.md"
 task6_review_notes: "2026-05-31 Task6 revisiting-review: 清理 L1/L2 文风问题;SKIP_VALIDATE 技术边界问题已写入 queue.json 交 Task9/Task2B 处理。"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 pipeline_stage: "task6_pending"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
+
 
 <!-- outline-start -->
 
@@ -76,7 +77,7 @@ TextureView 播放视频时，每一帧都要经过 GPU 采样再画到 App 的 
 |----------|---------------|------------|----------|------------|
 | GPU Path | 1200-1800 | 15-25% | 基准值 | TextureView,复杂混合效果 |
 | DEVICE Overlay | 200-400 | <5% | -30% | SurfaceView,简单视频播放 |
-| SIDEFAND Tunnel | 80-150 | <2% | -45% | 支持的 Android TV,高端手机 |
+| SIDEBAND Tunnel | 80-150 | <2% | -45% | 支持的 Android TV,高端手机 |
 
 在视频播放、导航地图等长时间运行的场景下,Overlay vs GPU 合成的功耗差异确实能达到 10-20%。但在我们的测试中，这个差异的具体数值与 SoC 架构和显示方案密切相关：
 - 高端设备（Adreno 7xx, Mali-G78+）：功耗差异较小（8-15%）
@@ -128,9 +129,9 @@ SurfaceFlinger 包装层里的 `validate()` / `present()` 方法。HAL 暴露的
 - **Android 15-17 (API 35-37)**：Composer3 AIDL 中 `SKIP_VALIDATE` 标记为 `@deprecated`，表示"已默认启用"，但实际行为仍依赖 vendor 实现
 
 **AOSP 源码实现路径**：
-- `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` 中 `skipValidateNeeded()` 方法
-- `frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.cpp` 中 Composer Hal 的 skip validate 调用
-- `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer/ComposerTypes.aidl` 中 Capability 枚举
+- `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` 中 `getDeviceCompositionChanges()` 的 `canSkipValidate` / `presentOrValidate()` 分支
+- `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp` 中 `Display::presentOrValidate()` 转调 Composer HAL
+- `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl` 中 Capability 枚举
 
 **实际厂商实现差异**：
 - **Qualcomm Adreno**：Android 15+ 完全支持 skip validate，优化效果稳定
@@ -360,12 +361,12 @@ HWC Overlay 与内存管理章节密切相关，需要注意以下同步问题�
 
 ## 参考资料
 
-- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` - `canSkipValidate` / `presentOrValidate()` 条件与回退逻辑
+- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` - `getDeviceCompositionChanges()` 内 `canSkipValidate` / `presentOrValidate()` 条件与回退逻辑
 - AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
-- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.cpp`
+- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp` - `Display::presentOrValidate()`
 - AOSP `hardware/libhardware/include/hardware/hwcomposer2.h`(android-8.0.0_r1 / android-14.0.0_r1)- `HWC2_CAPABILITY_SKIP_VALIDATE`
 - AOSP `hardware/interfaces/graphics/composer/2.4/`
-- AOSP `hardware/interfaces/graphics/composer/aidl/` - `Capability.aidl` SKIP_VALIDATE @deprecated
+- AOSP `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl` - `SKIP_VALIDATE` 标注 `@deprecated - enabled by default`
 - AOSP `frameworks/native/services/surfaceflinger/`
 - Android 官方文档:Hardware Composer
 - Android 官方文档:`SurfaceView`(Android N 起位置同步更新,叠加 View 的行为边界)

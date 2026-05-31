@@ -21,23 +21,23 @@ sources:
   - "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)"
   - "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md"
   - "https://developer.android.com/ndk/guides/gwp-asan"
-  - "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/signal_catcher.cc"
-  - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
-  - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
+  - "https://android.googlesource.com/platform/art/+/android16-release/runtime/signal_catcher.cc"
+  - "https://android.googlesource.com/platform/system/core/+/android16-release/debuggerd/proto/tombstone.proto"
+  - "https://android.googlesource.com/platform/bionic/+/android16-release/libc/include/signal.h"
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
 pipeline_stage: "task6_pending"
-task9_result: "needs-rework"
-task9_state: "pending"
+task9_result: "auto-fixed"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-25T16:22:00+08:00"
-task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 5（native signal handler 签名/转发、Android 14 OOM adj 常量、/data/anr 文件名、LMK/FrozenState API 边界、ProfilingTrigger 常量与注册 API）；详见 logs/deep-review/2026-05-25-13-audit.md。 | 2026-05-25 16:22 Task9 deep-review：needs-rework。P0 2 / P1 0 / P2 1。P0：LMK 因果链仍残留 computeOomAdj/IBinder.FrozenStateChangeCallback 错误；ProfilingManager.requestProfiling 第三个参数应为 tag 不是 packageName。"
+last_task9_at: "2026-06-01T00:20:00+08:00"
+task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 ProfilingManager 常量/结果 API、API30 退出历史版本表，并把 AOSP main 源码 URL 固定到 android16-release；回到 Task6 复审。"
 last_task6_audit: "2026-05-23"
 last_task6_at: "2026-05-31T22:10:00+08:00"
 last_task9_audit: 2026-05-25
@@ -45,10 +45,12 @@ last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 last_task6_review_log: "logs/review/2026-05-31-22-review.md"
 task6_review_notes: "2026-05-31 22:10 Task6：Task2B-lite 修复后写作复审；L1/L2 小修 10 处（夸张词、英文填充词、否定句式、版本表头）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
+last_task9_autofix_at: "2026-06-01"
 ---
+
 
 # 崩溃与 ANR 捕获机制
 
@@ -567,7 +569,7 @@ Android 15 引入 `ProfilingManager.requestProfiling()`，支持 App-driven prof
 **关键方法**：
 ```java
 public void requestProfiling(
-    int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | HEAP_DUMP | HEAP_PROFILE | STACK_TRACE
+    int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | PROFILING_TYPE_JAVA_HEAP_DUMP | PROFILING_TYPE_HEAP_PROFILE | PROFILING_TYPE_STACK_SAMPLING
     Bundle options,
     String tag,
     CancellationSignal signal,
@@ -579,7 +581,7 @@ public void requestProfiling(
 **结果获取**：
 ```java
 ProfilingResult#getResultFilePath()  // trace 文件路径
-ProfilingResult#getResultStatus()    // 状态码
+ProfilingResult#getErrorCode()       // ERROR_NONE 或失败错误码
 ```
 
 关键限制：
@@ -627,14 +629,14 @@ profilingManager.registerForAllProfilingResults(executor) { result ->
 
 ### 13.4 Android 10-17 线上诊断能力版本表
 
-| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16-17 (API 36-37) |
-|------|---------------------------|---------------------|----------------------|
-| 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
-| ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
-| Native Tombstone | ✅ (API 31+) | ✅ | ✅ |
-| App-driven Profiling | ❌ | `ProfilingManager` ✅ | ✅ |
-| Trigger-based Profiling | ❌ | ❌ | `ProfilingTrigger` ✅ |
-| 系统 trace 路径 | Perfetto / bugreport | ✅ | ✅ |
+| 能力 | Android 10 (API 29) | Android 11-14 (API 30-34) | Android 15 (API 35) | Android 16-17 (API 36-37) |
+|------|---------------------|----------------------------|---------------------|----------------------|
+| 退出原因查询 | ❌ | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
+| ANR Trace | App 内不可读 `/data/anr` | `ApplicationExitInfo#getTraceInputStream()` ✅ | ✅ | ✅ |
+| Native Tombstone | ❌ | API 31+ 通过 `REASON_CRASH_NATIVE` 返回 protobuf ✅ | ✅ | ✅ |
+| App-driven Profiling | ❌ | ❌ | `ProfilingManager` ✅ | ✅ |
+| Trigger-based Profiling | ❌ | ❌ | ❌ | `ProfilingTrigger` ✅ |
+| 系统 trace 路径 | Perfetto / bugreport | Perfetto / bugreport + `ApplicationExitInfo` | `ProfilingManager` + Perfetto | trigger-based profiling + Perfetto |
 
 ### 13.5 Native Crash Signal Handler 边界（未经一手验证）
 
