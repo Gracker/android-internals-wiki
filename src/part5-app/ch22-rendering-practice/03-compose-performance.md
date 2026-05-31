@@ -2,7 +2,7 @@
 title: "Jetpack Compose 性能优化"
 chapter: "22.3"
 section: "22.3"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-31"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
@@ -16,12 +16,12 @@ sources:
     path: "frameworks/support/compose/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task9_pending
+pipeline_stage: "task6_pending"
 task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: reviewed
+task2b_state: "fixed"
+task6_state: "revisiting"
 last_task6_at: "2026-05-31T20:10:00+08:00"
-task9_state: pending
+task9_state: "pending"
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
 task6_result: pass-light-edit
@@ -35,6 +35,8 @@ last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 review_notes: "2026-05-31 20:10 Task6 复审：L1/L2 小修完成（移除用途标签、清理填充词与空格）；无新增 Task2B 回炉项；task9_result=needs-rework，送 Task9 复核。"
+last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
 # Jetpack Compose 性能优化实战
 

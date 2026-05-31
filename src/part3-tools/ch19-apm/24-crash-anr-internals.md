@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-31"
 reviewed_by: "openclaw-task6"
@@ -28,7 +28,7 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 task9_result: "needs-rework"
 task9_state: "pending"
 task2b_state: "fixed"
@@ -46,6 +46,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
 last_task6_review_log: "logs/review/2026-05-31-22-review.md"
 task6_review_notes: "2026-05-31 22:10 Task6：Task2B-lite 修复后写作复审；L1/L2 小修 10 处（夸张词、英文填充词、否定句式、版本表头）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
+last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 ---
 
 # 崩溃与 ANR 捕获机制
