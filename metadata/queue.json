@@ -264,10 +264,65 @@
         "location": "CacheWindowLogic.calculateAheadWindow() 和 calculateBehindWindow() 方法签名",
         "detail": "章节描述的方法签名与实际 AOSP 源码不符：实际为 abstract fun calculateAheadWindow(viewport: Int): Int，非函数体内计算",
         "suggestion": "修正方法签名描述，明确返回值类型和参数含义"
+      },
+      {
+        "type": "P0 源码错误",
+        "location": "PausableComposition 源码引用",
+        "detail": "章节引用 `androidx/compose/runtime/PausableComposition` 返回 HTTP 404，该路径不存在",
+        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
+      },
+      {
+        "type": "P0 源码错误",
+        "location": "LazyLayoutPrefetchState 源码引用",
+        "detail": "章节引用 `androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt` 返回 HTTP 404",
+        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
+      },
+      {
+        "type": "P0 源码错误",
+        "location": "Snapshot 源码引用",
+        "detail": "章节引用 `androidx/compose/runtime/snapshots/Snapshot.kt` 返回 HTTP 404",
+        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
+      },
+      {
+        "type": "P0 源码错误",
+        "location": "DerivedState 源码引用",
+        "detail": "章节引用 `androidx/compose/runtime/DerivedState.kt` 返回 HTTP 404",
+        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
+      },
+      {
+        "type": "P1 原理断裂",
+        "location": "Pausable Composition 与 LazyLayoutCacheWindow 联动机制",
+        "detail": "缺少 `shouldPause` 回调与帧 deadline 的具体交互逻辑说明",
+        "suggestion": "补充 Pausable Composition 如何与预取系统协同工作的详细机制"
+      },
+      {
+        "type": "P1 原理断裂",
+        "location": "Android 17 生成式 GC 对 Composition 性能的影响",
+        "detail": "缺少具体的因果链分析，未说明分代 GC 如何直接影响对象分配模式",
+        "suggestion": "补充年轻代对象分配与 Composition 重组的因果关系分析"
+      },
+      {
+        "type": "P1 版本差异",
+        "location": "Android 17 默认 Compose 工具链版本",
+        "detail": "章节提到工具链约为 1.5.x，但未明确说明这个版本与 1.10+ 的功能差异",
+        "suggestion": "补充版本差异说明，明确哪些优化功能在 Android 17 默认版本不可用"
+      },
+      {
+        "type": "P1 版本差异",
+        "location": "Pausable Composition 默认启用状态",
+        "detail": "章节未明确说明 Android 17 默认 Compose 版本中的 Pausable Composition 启用状态",
+        "suggestion": "补充版本边界说明，明确哪些 Android 版本默认启用，哪些需要手动开启"
+      },
+      {
+        "type": "P1 知识盲区",
+        "location": "Strong Skipping 对非 restartable Composable 的影响",
+        "detail": "未讨论 Strong Skipping 对非 restartable Composable 的限制和替代方案",
+        "suggestion": "补充非 restartable Composable 的性能优化策略"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-31T12:25:43.861951",
-    "status": "pending"
+    "status": "pending",
+    "review_type": "task9-deep-tech-review"
   }
 ]
