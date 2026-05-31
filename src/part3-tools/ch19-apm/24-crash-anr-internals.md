@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-25"
 reviewed_by: "openclaw-task6"
@@ -27,11 +27,12 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task9_result: "needs-rework"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-05-31"
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T16:22:00+08:00"
@@ -463,7 +464,7 @@ sigaction(SIGABRT, &sa, &g_old_handlers[SIGABRT]);
 
 **源码位置**：`system/core/lmkd/`、`frameworks/base/services/core/java/com/android/server/am/ProcessList.java`
 
-LMK 的触发阈值由 `ProcessList.computeOomAdj()` 计算的 `oom_adj` 值决定：
+LMK 决策使用 `oom_score_adj` 表示进程 kill 优先级，lmkd 再结合内存压力、PSI 与 adj 档位选择目标；`ProcessList` 里的 adj 常量只是优先级输入，不是触发阈值：
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ProcessList.java
@@ -485,9 +486,8 @@ static final int FOREGROUND_APP_ADJ = 0;
 | 监听 LMKd socket | 需 root 或厂商合作 | 高 | 高 |
 | cgroup v2 `memory.high` (Android 12+) | 系统服务才可读 | 高 | 高 |
 | `ActivityManager.isLowMemoryKillReportSupported()` (API 30) | 普通 API，查 LMK 是否上报到退出原因 | 中 | 低 |
-| `IBinder.FrozenStateChangeCallback` (API 36) | Binder 远端冻结/解冻通知 | 中 | 低 |
 
-**核心约束**：普通 App 没有权限读取他进程的 `/proc/<pid>/oom_score_adj`，只能通过系统 API 间接判断。
+`IBinder.FrozenStateChangeCallback` 属于 Binder 冻结/解冻通知，不是 LMK kill 监听入口。普通 App 没有权限读取他进程的 `/proc/<pid>/oom_score_adj`，只能通过系统 API 间接判断。
 
 ### 12.4 /data/anr/ 目录不可读的处理
 
@@ -566,7 +566,7 @@ Android 15 引入 `ProfilingManager.requestProfiling()`，支持 App-driven prof
 public void requestProfiling(
     int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | HEAP_DUMP | HEAP_PROFILE | STACK_TRACE
     Bundle options,
-    String packageName,
+    String tag,
     CancellationSignal signal,
     Executor executor,
     Consumer<ProfilingResult> resultCallback
