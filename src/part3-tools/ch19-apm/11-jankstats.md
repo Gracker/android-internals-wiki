@@ -7,8 +7,8 @@ status: "ready-for-review"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-04-25'
-last_verified_against: AndroidX JankStats API reference + JankStatsApi24Impl / PerformanceMetricsState 状态关联逻辑
+last_verified: '2026-05-31'
+last_verified_against: AndroidX metrics-performance 1.0.0 JankStatsApi16/24/26/31 implementation + PerformanceMetricsState + AOSP FrameMetrics Android 11/12 DEADLINE boundary
 confidence: medium
 tags:
 - apm
@@ -17,22 +17,24 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: "task2b_pending"
+- type: official
+  path: https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-21"
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "revisiting"
 last_task6_audit: "2026-05-20"
 last_task6_at: "2026-05-21T04:09:00+08:00"
-task9_state: "reviewed"
-task2b_state: "pending"
-task9_result: "needs-rework"
+task9_state: "pending"
+task2b_state: "fixed"
+task9_result: "pending"
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:57:00+08:00"
-task2b_result: "pending"
-last_task2b_at: '2026-05-21T03:22:56+08:00'
-repaired_date: '2026-04-25'
+task2b_result: "fixed"
+last_task2b_at: "2026-05-31T20:52:00+08:00"
+repaired_date: '2026-05-31'
 repaired_by: openclaw-task2b
 task6_reviewed_date: "2026-05-21"
 last_task6_review_log: "logs/review/2026-05-21-04-review.md"
@@ -41,6 +43,7 @@ last_task9_audit: 2026-05-21
 last_task9_audit_at: "2026-05-21T10:23:28+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-10-audit.md"
 task9_review_notes: "2026-05-21 Task9 闲时抽检：发现 JankStatsApi24Impl 状态同步机制与 FrameMetrics DEADLINE 版本边界 P0/P1 问题，已写入 queue，转 Task2B 回炉。"
+last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-21 Task9 fallback 问题修正 JankStats API16/24/26/31 实现分层与 FrameMetrics.DEADLINE API31 版本边界。"
 
 ---
 
@@ -88,7 +91,7 @@ task9_review_notes: "2026-05-21 Task9 闲时抽检：发现 JankStatsApi24Impl �
 
 ## JankStats 是官方帧级卡顿入口
 
-JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。它会把每帧耗时、是否 jank、当时 UI 状态回调给应用，由应用自行聚合和上传。
+JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。AndroidX Maven metadata 当前稳定版本为 `1.0.0`。它会把每帧耗时、是否 jank、当时 UI 状态回调给应用，由应用自行聚合和上传。
 
 它适合作为线上流畅性监控的第一层信号源。它不负责 trace 文件、不负责堆栈、不负责平台看板，也不告诉你某一帧为什么慢。它回答的是：哪些页面、哪些交互、哪些版本出现了更多慢帧。
 
@@ -142,20 +145,23 @@ data class JankFrameSample(
 
 `OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
-状态关联依赖一条时间线。`PerformanceMetricsState` 在 UI 线程记录每个 `StateInfo` 的生效区间；`JankStatsApi24Impl` 用 `OnPreDrawListener` 作为同步锚点，给状态变化打上接近绘制前的时间戳。平台异步返回 `FrameMetrics` 后，JankStats 拿帧的 `[frameStart, frameEnd]` 区间和状态区间做 overlap 判定，交集命中的状态会进入这一帧的 `states`。这样 `screen=Home`、`interaction=scroll` 这类标签对应的是帧覆盖的状态区间，避免退化成“回调触发瞬间的当前页面状态”。
+状态关联依赖一条时间线。`PerformanceMetricsState.putState()` / `removeState()` 在 UI 线程用 `System.nanoTime()` 记录每个 `StateInfo` 的添加和移除时间；JankStats 在生成 `FrameData` 时，用帧的 `[frameStart, frameEnd]` 区间调用 `getIntervalStates()` 做 overlap 判定，交集命中的状态会进入这一帧的 `states`。这样 `screen=Home`、`interaction=scroll` 这类标签对应的是帧覆盖的状态区间，避免退化成“回调触发瞬间的当前页面状态”。
 
 ## API 版本差异
 
 JankStats 官方文档明确说明：不同 API 级别下，底层帧时间来源不同。
 
-| Android 版本 | 行为 |
-|---|---|
-| API 16 以下 | 不工作，因为缺少可靠帧时间数据 |
-| API 16-23 | 使用较粗的帧时间估算 |
-| API 24-30 | 基于平台帧 timing API，数据更可靠 |
-| API 31+ | 平台暴露更多 frame timing 信息，判定更准确 |
+| Android 版本 | AndroidX 实现路径 | 行为 |
+|---|---|---|
+| API 16 以下 | 不支持 | 不工作，因为缺少可靠帧时间数据 |
+| API 16-23 | `JankStatsApi16Impl` | 通过 `OnPreDrawListener` 估算帧时间，精度低于平台 `FrameMetrics` 路径 |
+| API 24-25 | `JankStatsApi24Impl` | 使用 `Window.addOnFrameMetricsAvailableListener` 接收 `FrameMetrics`，再和 `PerformanceMetricsState` 的状态区间匹配 |
+| API 26-30 | `JankStatsApi26Impl` | 沿用 `FrameMetrics` listener，并可读取更完整的帧 duration 指标 |
+| API 31+ | `JankStatsApi31Impl` | 读取 `FrameMetrics.DEADLINE`，计算 `frameOverrunNanos`，jank 判定和 deadline / expected duration 关系更直接 |
 
 JankStats 的最低系统要求是 API 16。本书主体覆盖 Android 8 及以上设备，这些设备会走平台帧 timing 能力更完整的路径；如果产品仍覆盖 API 16-23，低版本数据要单独标记来源和精度。
+
+`FrameMetrics.DEADLINE` 从 API 31 才可用。AOSP android-11.0.0_r1 的 `FrameMetrics` 没有这个字段；android-12.0.0_r1 加入 `DEADLINE = 13`。因此 API 24-30 上只能依赖 duration 类指标和 AndroidX 的 expected duration 估算，API 31+ 才能把 deadline overrun 写进同一套分析口径。
 
 ## jank 阈值不是固定 16ms
 
@@ -175,7 +181,7 @@ JankStats 通过 `jankHeuristicMultiplier` 控制 jank 判定，默认值是 2�
 JankStats 更适合线上统一口径，FrameMetrics 更适合高版本上拆帧阶段。二者可以同时存在：
 
 - JankStats 负责跨版本的慢帧事件和 UI context。
-- FrameMetrics 在 API 24+ 上补 `DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`DEADLINE` 等细分指标。
+- FrameMetrics 在 API 24+ 上补 `DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION` 等细分指标；`DEADLINE` 从 API 31 开始可用。
 
 如果只接 FrameMetrics，低版本和 UI 状态关联要自己补。如果只接 JankStats，慢帧原因仍然很粗。线上体系里，两者组合更容易从“哪里慢”走到“像是哪一段慢”。
 

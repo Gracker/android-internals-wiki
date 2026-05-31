@@ -2346,8 +2346,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-05-31T20:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-31T20:52:00+08:00",
+  "last_updated_by": "openclaw-task2b",
   "task6_last_review": {
     "reviewed_at": "2026-05-31T20:10:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2516,11 +2516,12 @@
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
     }
   ],
-  "last_task2b_at": "2026-05-31T18:50:00+08:00",
+  "last_task2b_at": "2026-05-31T20:52:00+08:00",
   "last_task2b_sections": [
-    "19.16"
+    "19.09",
+    "19.11"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework: ProfilingManager task9 issues fixed, returned to task6_pending",
+  "last_task2b_action": "frontmatter-fallback-rework",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5554,19 +5555,22 @@
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task6_result": "needs-rework",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-20",
       "last_task6_at": "2026-05-20T20:08:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
       "task9_state": "pending",
       "task9_result": "pending",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "queue_priority": 90,
-      "queue_id": "task6-19.09-measure-outline-coverage"
+      "queue_id": "task6-19.09-measure-outline-coverage",
+      "last_task2b_at": "2026-05-31T20:52:00+08:00",
+      "last_task2b_rework_log": "Task2B 2026-05-31: fixed Measure SDK schema, ANR/native boundary, and retention source from Task9 fallback issues.",
+      "task2b_source": "frontmatter backlog fallback; logs/deep-review/2026-05-20-15-audit.md; logs/deep-review/2026-05-21-11-deep-review.md"
     },
     "24.11": {
       "title": "卫星与低带宽网络适配",
@@ -9420,36 +9424,42 @@
     "title": "Measure",
     "file": "src/part3-tools/ch19-apm/09-measure.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-20",
     "last_task6_at": "2026-05-20T20:08:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-20-20-review.md",
     "task9_state": "pending",
     "task9_result": "pending",
-    "task2b_state": "pending",
-    "task2b_result": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
     "queue_priority": 90,
-    "queue_id": "task6-19.09-measure-outline-coverage"
+    "queue_id": "task6-19.09-measure-outline-coverage",
+    "last_task2b_at": "2026-05-31T20:52:00+08:00",
+    "last_task2b_rework_log": "Task2B 2026-05-31: fixed Measure SDK schema, ANR/native boundary, and retention source from Task9 fallback issues.",
+    "task2b_source": "frontmatter backlog fallback; logs/deep-review/2026-05-20-15-audit.md; logs/deep-review/2026-05-21-11-deep-review.md"
   },
   "section_19_11": {
     "section": "19.11",
     "title": "JankStats",
     "file": "src/part3-tools/ch19-apm/11-jankstats.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
     "last_task6_audit": "2026-05-20",
     "last_task6_at": "2026-05-20T23:28:00+08:00",
-    "task9_state": "reviewed",
-    "task9_result": "pass-tech-review",
-    "task2b_state": "pending",
-    "task2b_result": "pending",
+    "task9_state": "pending",
+    "task9_result": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
     "queue_id": "task6-audit-19.11-jankstats-tool-boundary-outline",
-    "log": "logs/review/2026-05-20-23-audit.md"
+    "log": "logs/review/2026-05-20-23-audit.md",
+    "last_task2b_at": "2026-05-31T20:52:00+08:00",
+    "last_task2b_rework_log": "Task2B 2026-05-31: fixed JankStats implementation layering and FrameMetrics.DEADLINE API31 boundary from Task9 fallback issue.",
+    "task2b_source": "frontmatter backlog fallback; logs/deep-review/2026-05-21-10-audit.md; logs/external-review/archive/2026-04-24-15-19.11-external-review.md"
   },
   "task2a_gap_mining_summary": {
     "last_run": "2026-05-26T01:04:00+08:00",
@@ -9882,6 +9892,20 @@
           "status": "fixed"
         }
       ]
+    },
+    {
+      "at": "2026-05-31T20:52:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback",
+      "sections": [
+        "19.09",
+        "19.11"
+      ],
+      "files": [
+        "src/part3-tools/ch19-apm/09-measure.md",
+        "src/part3-tools/ch19-apm/11-jankstats.md"
+      ],
+      "result": "fixed"
     }
   ],
   "section_18_23": {
@@ -10855,9 +10879,10 @@
     }
   ],
   "last_task2b_completed": [
-    "19.16"
+    "19.09",
+    "19.11"
   ],
-  "last_task2b_completed_at": "2026-05-31T18:50:00+08:00",
+  "last_task2b_completed_at": "2026-05-31T20:52:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -11055,7 +11080,8 @@
     }
   ],
   "last_task2b_files": [
-    "src/part3-tools/ch19-apm/16-profiling-manager.md"
+    "src/part3-tools/ch19-apm/09-measure.md",
+    "src/part3-tools/ch19-apm/11-jankstats.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-05-31T18:50:00+08:00",
