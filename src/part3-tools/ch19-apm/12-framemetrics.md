@@ -7,7 +7,7 @@ drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-05-31'
-last_verified_against: AOSP FrameMetrics.java android-7.0.0_r1 - android-17.0.0_r1 version boundary
+last_verified_against: "AOSP FrameMetrics.java android-7.0.0_r1 - android-16.0.0_r1 + Android FrameMetrics API reference through API 37; android-17.0.0_r1 Gitiles tag unavailable"
 confidence: medium
 tags:
 - apm
@@ -16,30 +16,31 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-31
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-19"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-05-31"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-19T03:30:00+08:00"
+last_task9_at: "2026-05-31T18:20:00+08:00"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-31T17:35:00+08:00'
 last_task2b_lite_at: '2026-05-31'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-19-03-audit.md"
+last_task9_review_log: "logs/deep-review/2026-05-31-18-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
-task9_review_notes: "2026-05-19 Task9 idle-audit 03:30：needs-rework。P0 0 / P1 1 / P2 0；GPU_DURATION 与 SWAP_BUFFERS_DURATION 的 API31/33 源码边界需 Task2B 回炉。"
+task9_review_notes: "2026-05-31 Task9 deep review: auto-fixed。补充硬件渲染前提、TOTAL_DURATION 非简单求和边界，并修正 android-17.0.0_r1 不可复现的源码验证锚点；P0 0 / P1 0 / P2 3。"
 last_task6_audit: '2026-05-20'
 last_task6_at: "2026-05-31T18:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-18-review.md"
 task6_review_notes: "2026-05-31 18: Task6 revisiting review: pass-light-edit；L1 禁用词扫描通过；完成 12 处措辞、术语和格式小修；无新增 Task2B 回炉项，送 Task9 复核。"
+last_task9_autofix_at: "2026-05-31"
 ---
 
 # FrameMetrics
@@ -107,11 +108,13 @@ task6_review_notes: "2026-05-31 18: Task6 revisiting review: pass-light-edit；L
 
 Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用生成该帧的总时间，`GPU_DURATION` 表示 GPU 完成本帧命令的耗时。低于 API 31 的设备不要读取这两个字段，按 `TOTAL_DURATION` 和刷新率估算预算。
 
+`TOTAL_DURATION` 不是各阶段 duration 的简单求和。AOSP `FrameMetrics.java` 通过每个指标自己的起止时间戳计算 duration，部分阶段可能并行或重叠。
+
 按 Android 版本聚合时要做 API 分桶。`android.view.FrameMetrics` 在 Android 7-11（API 24-30）没有 `GPU_DURATION` / `DEADLINE`，`SWAP_BUFFERS_DURATION` 覆盖 `SWAP_BUFFERS -> FRAME_COMPLETED`；Android 12 / 12L（API 31-32）的 `GPU_DURATION` 是 `SWAP_BUFFERS -> GPU_COMPLETED`；Android 13+（API 33-37）改为 `COMMAND_SUBMISSION_COMPLETED -> GPU_COMPLETED`，`SWAP_BUFFERS_DURATION` 则从 Android 12 起收敛为 `SWAP_BUFFERS -> SWAP_BUFFERS_COMPLETED`。线上对比 GPU / swap 原始时长时，不要把这些版本直接合并。
 
 ## 接入方式
 
-下面的代码展示 `FrameMetrics` 的基本监听方式，重点是给回调准备独立 `HandlerThread`，避免把每帧处理放回主线程。
+下面的代码展示 `FrameMetrics` 的基本监听方式，重点是给回调准备独立 `HandlerThread`，避免把每帧处理放回主线程。官方 API 还要求 Window 处于硬件渲染模式；禁用硬件加速的窗口不会产生可用的帧统计。
 
 ```kotlin
 class FrameMetricsTracker(private val activity: Activity) {
