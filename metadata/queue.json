@@ -35,7 +35,7 @@
     "section": "2.10",
     "section_title": "GPU 渲染深入",
     "priority": 90,
-    "reason": "[review回炉] 实战案例证据不足，AI 味较重",
+    "reason": "Fixed Task 6 / Task 9 review issues",
     "material_paths": [
       "intake/suggestions.md"
     ],
@@ -67,14 +67,15 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-05-30T22:05:00+08:00",
-    "status": "pending",
-    "review_type": "task6-light-edit"
+    "status": "completed",
+    "review_type": "task6-light-edit",
+    "fixed_at": "2026-05-31T08:57:00+08:00"
   },
   {
     "section": "18.13",
     "section_title": "WebView 渲染管线",
     "priority": 90,
-    "reason": "[task6 + task9 review回炉] 章节结构不符合outline要求 + Android版本差异覆盖不足",
+    "reason": "Fixed Task 6 / Task 9 review issues",
     "material_paths": [
       "intake/research-gaps.md",
       "logs/review/2026-05-31-03-review.md"
@@ -95,7 +96,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-31T03:11:41.189400",
-    "status": "pending"
+    "status": "completed",
+    "fixed_at": "2026-05-31T08:57:00+08:00"
   },
   {
     "section": "18.15",

@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 55,
+  "current_offset": 58,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -15,12 +15,12 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 55
+      "completed_files": 58
     }
   ],
-  "last_scan_date": "2026-05-29",
-  "total_knowledge_points": 329,
-  "total_suggestions": 121,
+  "last_scan_date": "2026-05-31",
+  "total_knowledge_points": 332,
+  "total_suggestions": 123,
   "total_gaps": 33,
   "skipped": [
     {
@@ -62,6 +62,16 @@
     {
       "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 55",
       "reason": "stub: only iframe tag, no content"
+    },
+    {
+      "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 57",
+      "reason": "non-technical: Android engineer interview/career guide (resume, interview prep, algorithm study)"
+    },
+    {
+      "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 58",
+      "reason": "stub: only iframe tag, no content"
     }
-  ]
+  ],
+  "scan_completed_date": "2026-05-31",
+  "completion_note": "All 3 books fully scanned"
 }
