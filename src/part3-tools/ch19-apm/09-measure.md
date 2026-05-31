@@ -34,12 +34,12 @@ sources:
   path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 task6_result: pass-light-edit
-task6_state: "revisiting"
-task9_state: "reviewed"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_rework_at: "2026-05-31T20:52:00+08:00"
@@ -52,13 +52,13 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-31T21:20:00+08:00"
 last_task9_autofix_at: "2026-05-31"
 task6_reviewed_date: "2026-05-31"
-last_task6_at: "2026-05-31T21:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-21-review.md"
+last_task6_at: "2026-05-31T22:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-31-22-review.md"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
 task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与自托管依赖口径，回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
-task6_review_notes: "2026-05-31 Task6 revisiting-review: L1/L2 通过，补齐自定义 trace 示例口径；无新增 Task2B 回炉项，送 Task9 复核。"
+task6_review_notes: "2026-05-31 22:10 Task6 revisiting-review: L1/L2 小修 1 处（metric→指标）；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
 ---
 # Measure
@@ -257,7 +257,7 @@ Measure 这类平台主要看数据模型，单个 SDK API 反而不是评估重
 - 每个函数都建 trace。
 - 同一业务在不同模块里用不同名字。
 
-自定义 trace 的 metric 也要定义单位。比如 `duration_ms`、`payload_kb`、`item_count`、`cache_hit`，不要让客户端随意上报字符串值。
+自定义 trace 的指标也要定义单位。比如 `duration_ms`、`payload_kb`、`item_count`、`cache_hit`，不要让客户端随意上报字符串值。
 
 ## 自托管平台的成本清单
 
