@@ -18,24 +18,18 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-pipeline_stage: task2b_pending
-task6_state: pending
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_at: "2026-05-31T02:20:00+08:00"
-last_task2b_lite_at: "2026-05-31T01:35:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-24'
-
-reviewed_by: openclaw-task6
-reviewed_date: \'2026-05-31\'
-task6_result: needs-rework
-task6_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pendingtask9_result: pass-tech-review
-last_task9_at: "2026-05-31T02:20:00+08:00"
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
+last_task2b_at: "2026-06-01T09:35:00+08:00"
+last_task2b_lite_at: "2026-06-01"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-31"
+task9_result: pending
+last_task9_at: "2026-05-31T02:20:00+08:00"
 last_task6_audit: "2026-05-19"
 review_round: 3
 task9_reviewed_date: "2026-04-27"
