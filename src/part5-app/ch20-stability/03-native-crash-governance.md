@@ -19,18 +19,26 @@ sources:
     path: "art/runtime/fault_handler.cc"
   - type: aosp
     path: "system/core/debuggerd/handler/debuggerd_handler.cpp"
+  - type: aosp
+    path: "system/core/debuggerd/libdebuggerd/tombstone.cpp"
+  - type: aosp
+    path: "external/google-breakpad/src/processor/simple_symbol_supplier.cc"
+  - type: aosp
+    path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-19T20:58:49+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: "fixed"
+last_task2b_at: "2026-06-01T12:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-19"
 last_task6_at: "2026-05-19T20:25:44+08:00"
@@ -181,7 +189,7 @@ stack:
 ### 线上获取 tombstone 的途径
 
 - **adb**：`adb bugreport` 包含最近的所有 tombstone
-- **API 30+**：`ActivityManager.getHistoricalProcessExitReasons()` 返回 `ApplicationExitInfo`；API 31+ 的 `REASON_CRASH_NATIVE` 类型可通过 `getTraceInputStream()` 获取 native tombstone 原文
+- **API 30+**：`ActivityManager.getHistoricalProcessExitReasons()` 返回 `ApplicationExitInfo`，可用于确认进程退出原因、时间、PSS/RSS 等元数据；API 31+ 的 `REASON_CRASH_NATIVE` 才能通过 `getTraceInputStream()` 读取 native tombstone 数据。该接口返回 tombstone protobuf 输入流，不提供 tombstone 文本原文；底层历史记录可能被系统循环缓冲覆盖，调用方要处理 `null`。
 - **dropbox**：系统将 tombstone 同时写入 `dropbox`（`adb shell dumpsys dropbox --print` 可查看）
 
 [已验证: AOSP android-16.0.0_r1 — tombstone 格式由 `system/core/debuggerd/libdebuggerd/tombstone.cpp` 生成，`crash_dump.cpp` 是调用方/调度入口]
@@ -196,11 +204,11 @@ Android 上 Native 堆栈获取有三种底层机制：
 
 | 方式 | 全称 | 特点 |
 |------|------|------|
-| CFI | Call Frame Information | 写在 `.eh_frame` 段中，支持 Java 层符号解析，速度较慢但覆盖最全 |
+| CFI | Call Frame Information | 写在 `.eh_frame` 段中，用于 native 栈帧解卷，速度较慢但覆盖面较好 |
 | EH | Exception Handling (GCC) | 编译器生成的异常处理信息，速度较快 |
 | FP | Frame Pointer | ARM64 上可用，依赖 `x29`（fp）寄存器，速度最快但编译优化可能省略 fp |
 
-`debuggerd/crash_dump` 优先使用 CFI 方式回溯，因为 CFI 的 `.eh_frame` 段能够同时解析 Java 方法的调用帧（通过 `libunwindstack` 的 Java 调用栈支持）。
+`debuggerd/crash_dump` 的 native 栈解卷依赖 `libunwindstack` 读取 CFI、EH 或 FP 信息；Java / Dex / JIT / interpreter 帧由 `libunwindstack` 结合 ART runtime、Dex/JIT 元数据和 maps 信息识别，不能归因给 `.eh_frame` 符号化。排查混合栈时，要把 native so 的行号还原和 Java 方法帧解析分开看。
 
 [结构参考: Clippings/《Android 应用稳定性剖析与优化》— Native Backtrace 篇]
 
@@ -307,12 +315,12 @@ Build ID 格式转换逻辑在 `external/cronet/stable/base/profiler/module_cach
 
 #### minidump 符号还原流程
 
-**源码位置**：`external/google-breakpad/src/processor/minidump_processor.cc` 中的 `FindSymbolFile()` 和 `SourceLineResolver::FindLine()`
+**源码位置**：`external/google-breakpad/src/processor/simple_symbol_supplier.cc` 中的 `SimpleSymbolSupplier::GetSymbolFileAtPathFromRoot()` 负责从 `<module>/<debug-id>/<module>.sym` 路径查找符号文件；`external/google-breakpad/src/processor/basic_source_line_resolver.cc` 中的 `BasicSourceLineResolver::Module::LookupAddress()` 负责把模块内偏移映射到函数和源码行。
 
 1. **读取 minidump**：解析 `.dmp` 文件中的 `MDRawModuleList`，获取每个模块的 base_addr 和 build_id
-2. **匹配符号文件**：用 build_id 在 `symbols/` 下查找 `<module>/<build-id>/<module>.sym`
+2. **匹配符号文件**：`SimpleSymbolSupplier::GetSymbolFileAtPathFromRoot()` 用 build_id 在 `symbols/` 下查找 `<module>/<build-id>/<module>.sym`
 3. **计算段内偏移**：崩溃地址（绝对地址）− 模块 base_addr = 段内偏移
-4. **查询 FUNC/PUBLIC**：二分查找包含该偏移的 FUNC 记录；如果无匹配查找 PUBLIC 记录
+4. **查询 FUNC/PUBLIC**：`BasicSourceLineResolver::Module::LookupAddress()` 查找包含该偏移的 FUNC 记录；如果无匹配，再查找 PUBLIC 记录
 5. **查询行号**：在 FUNC 后续行中查找匹配偏移，返回源码文件和行号
 
 这个流程是 `minidump_stackwalk` 工具在 server 端离线执行的。设备上 `crash_dump` 生成 tombstone 时只记录 pc 偏移，符号化在 host 端完成。
@@ -330,10 +338,7 @@ Google Breakpad 是跨平台的崩溃收集库，Android 上主要用于应用�
 4. **上报**：崩溃恢复后将 minidump 文件上传到服务端
 5. **服务端符号化**：用 `minidump_stackwalk` 工具配合符号文件解析出源码行号
 
-**Crashpad** 是 Breakpad 的继任者（Chrome 团队开发），改进点：
-- 使用 `catch_exception` Mach port（macOS/iOS）或 `ptrace`（Linux/Android）代替信号处理器，避免与 SignalChain 冲突
-- 支持进程间崩溃处理的稳定性更好
-- 但 Android 上的集成复杂度高于 Breakpad，大部分应用仍使用 Breakpad
+**Crashpad** 是 Breakpad 的继任者（Chrome 团队开发），Android / Linux 侧仍依赖崩溃进程内的 signal handler 做最小通知，handler 再通过 socket 唤醒独立的 handler 进程；后续寄存器、maps、内存读取和 minidump 写入由 handler 进程完成，必要时配合 `ptrace` 或 broker 机制采集。它降低了在崩溃进程内写复杂 dump 的风险，但没有绕开信号处理入口，也不能天然避开 SignalChain 顺序问题。Android 上的集成复杂度高于 Breakpad，大部分应用仍使用 Breakpad 或托管型稳定性 SDK。
 
 **集成注意事项**：
 
@@ -442,9 +447,9 @@ JNI 是 Java 层和 Native 层之间的桥梁，崩溃经常出现在边界上�
 
 **场景 1：native 函数签名不匹配**
 
-Java 侧声明了 `native void process(byte[] data)`，但 C/C++ 侧的函数签名写错（参数类型或数量不匹配）。运行时 `JNIEnv->FindSymbol()` 找不到对应的 JNI 函数，部分情况下会导致 `dlopen` 失败或调用到错误的地址。
+Java 侧声明了 `native void process(byte[] data)`，但 C/C++ 侧的导出符号或注册表写错（参数类型、包名、方法名或签名不匹配）。静态注册路径由 ART 按 JNI 命名规则解析 native method，动态注册路径由 `RegisterNatives()` 绑定函数指针；如果解析或注册失败，常见结果是 `UnsatisfiedLinkError`。少数工程在手写 `dlsym()` 或错误复用函数指针时，才会把问题扩散成错误地址调用。
 
-排查：检查 `javah` 或 `javac -h` 生成的头文件，确认 C/C++ 函数签名与 Java 声明完全一致。
+排查：检查 `javac -h` 生成的头文件、`JNIEXPORT` 导出名、`RegisterNatives()` 方法表和混淆后的类名，确认 Java 声明、JNI 签名和 native 注册逻辑一致。
 
 **场景 2：局部引用表溢出**
 
@@ -493,7 +498,7 @@ void siglongjmp(sigjmp_buf env, int val);
 
 **源码位置**：[TestPlanB/mooner - prevent_pthread_crash.c](https://github.com/TestPlanB/mooner/blob/master/mooner-core/src/main/cpp/prevent_pthread_crash.c)
 
-mooner 是一个开源的 Android Native Crash 兜底库，完整实现了线程级安全点机制。核心思路：**在 pthread_create 的 start_routine 执行前插入 sigsetjmp，如果 start_routine 执行期间发生 crash，通过 siglongjmp 跳回安全点**。
+mooner 是一个开源的 Android Native Crash 兜底库，完整实现了线程级安全点机制。它更适合作为隔离线程里的实验性容错方案，不能作为通用的线上 Native Crash 治理主路径。核心思路：**在 pthread_create 的 start_routine 执行前插入 sigsetjmp，如果 start_routine 执行期间发生 crash，通过 siglongjmp 跳回安全点**。
 
 #### 线程参数封装
 
@@ -558,6 +563,12 @@ sigaltstack(&ss, NULL);  // 为信号处理器分配独立栈
 ```
 
 崩溃线程的栈可能已经损坏（栈溢出）。sigaltstack 分配一个 128KB 的已知有效的栈空间给信号处理器，保证 siglongjmp 能够执行。
+
+#### 安全边界：只能用于隔离线程和受控故障
+
+`siglongjmp` 跳过了 C++ 栈展开、析构函数、锁释放和线程局部状态清理。如果崩溃点已经破坏堆、全局对象、JNI 状态或业务锁，线程继续运行可能扩大数据损坏范围。多线程场景下，mooner 示例中的全局 `sig_env` / `handleFlag` 还存在竞态风险：两个线程同时进入被 hook 的 start_routine 时，后进入的线程可能覆盖前一个线程的跳转上下文。
+
+因此这类方案只适合隔离 worker、可丢任务、故障后立即退出线程或进程的场景。线上 APM 仍应优先保留系统 tombstone、ApplicationExitInfo 和 minidump 上报；安全点只能作为灰度开关保护的补充能力，不能吞掉信号后继续让宿主进程无条件运行。
 
 #### GOT Hook 劫持 pthread_create
 
