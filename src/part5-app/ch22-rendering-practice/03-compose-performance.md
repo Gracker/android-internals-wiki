@@ -161,6 +161,50 @@ fun userProfile(userId: String): State<User?> {
 - `rememberCoroutineScope` 依赖 remember 机制，应放在可正常进入 Composition 的调用点，不要用它掩盖 Composable body 里的副作用
 - 正确做法：使用 `LaunchedEffect` / `produceState` 管理副作用，而不是直接在 Composable body 执行副作用
 
+
+
+**produceState 内部实现细节（源码级）：**
+
+`produceState` 本质是 `LaunchedEffect` 的语法糖，源码位于 `frameworks/support/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`：
+
+```kotlin
+@Composable public fun <T> produceState<T>(
+    initialValue: T,
+    key1: Any?,
+    producer: suspend ProduceStateScope<T>.() -> Unit,
+): State<T> {
+    val result = remember { mutableStateOf(initialValue) }
+    LaunchedEffect(key1) { ProduceStateScopeImpl(result, coroutineContext).producer() }
+    return result
+}
+```
+
+**内存分配时机表：**
+
+| 操作 | 分配对象 | 触发时机 |
+|------|----------|----------|
+| `remember { mutableStateOf }` | `SnapshotMutableStateImpl`（约 48-64B） | Composable 进入时 |
+| `LaunchedEffect(key)` | `Job + Continuation` | Composable 进入时 |
+| `ProduceStateScopeImpl(result, coroutineContext)` | 接口包装对象 | Composable 进入时 |
+| `value = newValue` | **无堆分配**（in-place 写） | producer 执行时 |
+
+`value` 写入触发 Snapshot 写事务链：`ProduceStateScope.value setter → Snapshot.registerMutableSnapshot → notifyReaders() → Recomposer.scheduleRevalidation() → 下帧重组评估`。producer 内每执行一次 `value = it` 就触发一次重组评估，因此 `produceState` **不适合驱动 UI 动画**（动画应使用 `animateFloatAsState` 等专用 API）。
+
+**PausableComposition（Compose 1.7+ / Android 17）：**
+
+`PausableComposition` 是 `LazyColumn` 跨帧预取的核心机制，源码位于 `frameworks/support/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt`：
+
+```kotlin
+public sealed interface PausedComposition {
+    public val isComplete: Boolean
+    public fun resume(shouldPause: ShouldPauseCallback): Boolean
+    public fun apply()  // 批量应用结果到组分树
+}
+```
+
+每帧调用 `resume(shouldPause)`，由 `ShouldPauseCallback` 判断是否该暂停，让组分准备分散到多帧完成，避免阻塞主线程。`isComplete == true` 后调用 `apply()` 批量入树。[需确认: 此处把 Pausable Composition 写成 Android 17 / Compose 1.7+ 新增能力，和后文“无 Android 平台版本门槛、取决于 Foundation 版本”的口径冲突，需由 Task 2B / Task 9 统一版本边界]
+
+
 【源码锚点: androidx.compose.runtime/ProduceState.kt（androidx-main）— `produceState(initialValue, key...)` 通过 `LaunchedEffect(key...)` 启动 producer；`SnapshotMutableStateImpl`（SnapshotState.kt）— value 写入的 Snapshot 事务机制；`rememberCoroutineScope`（androidx-main compose/runtime）— rememberable 协程作用域】
 
 
@@ -613,7 +657,7 @@ interface LazyLayoutCacheWindow {
 
 ### 核心结论
 
-Android 17 的 ART Concurrent Copying(CC)GC 与 Compose 重组性能之间的因果链已通过源码验证:
+Android 17 的 ART Concurrent Copying(CC) GC 与 Compose 重组性能之间的因果链已通过源码验证:
 
 1. **GC 停顿本身不是 Compose 滑动性能的主要矛盾**:CC GC 的 Young Generation pause 通常 <5ms,而一次不必要的全页重组可能 >50ms。
 2. **性能优化重点是减少重组次数**:Strong Skipping Mode(Kotlin 2.0+)通过减少不必要的重组,间接降低 Young Generation 的内存分配压力,形成良性循环。
@@ -622,6 +666,7 @@ Android 17 的 ART Concurrent Copying(CC)GC 与 Compose 重组性能之间的因
 ### ART GC 源码级验证
 
 **Concurrent Copying Collector 架构**(`art/runtime/gc/collector/concurrent_copying.h`,AOSP master):
+[需确认: 此处源码锚点使用 AOSP master，需要替换为 android-17.0.0_r1 或标注“未进入 Android 17”，否则不能作为 Android 17 正文结论]
 - `ConcurrentCopying` 继承自 `CollectorType::kConcurrentCopying`,是 Android 10+ 默认 GC
 - Young Generation 采用 Copying 机制:存活对象从 From Space 拷贝到 To Space,晋升对象进入 Old Generation
 - Old Generation 的大部分标记/拷贝工作在后台并发执行,主线程仅在 safepoint 短暂同步
@@ -704,7 +749,7 @@ mutableStateOf<T>.value = newValue
 <!-- AIW-源码调研-2026-05-27 -->
 ## Android 17 ART 分代 GC 对 Compose 性能的影响
 
-### 分代GC机制对Composition的优化
+### 分代 GC 机制对 Composition 的优化
 
 Android 17 引入了 Generational Garbage Collection,该特性显著影响了 Jetpack Compose 的性能表现。根据官方发布说明确认:
 
@@ -717,7 +762,7 @@ Android 17 引入了 Generational Garbage Collection,该特性显著影响了 Je
    - SlotTable 作为 Compose 核心数据结构,在重组过程中可能重新分配
    - LayoutNode 分为持久结构和临时结构,临时结构适合年轻代收集
 
-2. **分代GC的运行时优势**
+2. **分代 GC 的运行时优势**
    - Android 10+ 的 CC 收集器默认以分代模式运行
    - 默认启用 `ART_USE_READ_BARRIER=true`
    - 年轻代对象收集频率高,成本低,减少 Full GC 触发
@@ -725,11 +770,11 @@ Android 17 引入了 Generational Garbage Collection,该特性显著影响了 Je
 3. **版本差异影响**
    - **Android 16 QPR2**: 已有 Generational CMC 初步实现,年轻代占比 25%-40%
    - **Android 17**: 正式启用分代GC作为默认配置,ART 编译时间优化 18%
-   - **Android X Compose**: 1.11.0-alpha01 移除实验性并发重组 API
+   - **AndroidX Compose**: 1.11.0-alpha01 移除实验性并发重组 API
 
 #### 性能影响分析
 
-分代GC对Composition产生了显著的积极影响:
+分代 GC 对 Composition 产生了显著的积极影响:
 - **减少停顿时间**: 年轻代收集成本低,降低了 Composition 过程中的 GC 停顿
 - **提高响应性**: 临时对象快速回收,减少了内存碎片
 - **优化内存模式**: 频繁重组的 UI 组件(如 LazyColumn)受益于年轻代快速回收
@@ -745,14 +790,14 @@ Android 17 引入了 Generational Garbage Collection,该特性显著影响了 Je
    - 注意 Composition 中的对象生命周期管理
 
 3. **版本适配建议**
-   - 针对 Android 17 优化,充分利用分代GC优势
+   - 针对 Android 17 优化,充分利用分代 GC 优势
    - 对于 Android 16 QPR2,需要手动验证 Generational CMC 的兼容性
 
 #### 注意事项
 
 - [存疑: 性能数据缺少具体测试条件] "对象分配开销降低 20%" 的具体数字需要进一步验证,缺少具体的设备、模型和测试口径
 - Pausable Composition 的默认启用状态和版本边界需要进一步确认
-- 分代GC在不同硬件设备上的实际性能表现存在差异,需要针对性测试
+- 分代 GC 在不同硬件设备上的实际性能表现存在差异,需要针对性测试
 
 **参考资料**: Android 17 官方发布说明、source.android.com ART 调试文档、androidx.compose.runtime 源码分析
 

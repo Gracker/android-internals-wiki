@@ -45,7 +45,8 @@ last_task9_at: "2026-05-16T01:26:00+08:00"
 finalized_date: "2026-05-16"
 finalized_by: openclaw-task9
 last_task6_audit: "2026-05-24"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: "2026-06-01"
 ---
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
@@ -54,36 +55,28 @@ last_task6_audit: "2026-05-24"
 ## 要点
 
 ### 🔹 MTE 在稳定性治理中的适用场景
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ### 🔹 android:memtagMode 的 off、sync、async 选择
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ### 🔹 ASYMM 模式为何不暴露为应用 API
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ### 🔹 Zygote、bionic、Scudo 的生效路径
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ### 🔹 线上灰度开启 MTE 的崩溃归因策略
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ### 🔹 性能、兼容性与误报边界
-{待加工：围绕该锚点补充事实、验证路径与实战判断。}
 
 ## 扩展
 
 ### 🔸 与 Native Crash 信号处理器的配合方式
-{待补充：素材充分时展开。}
 
 ### 🔸 MTE 报告进入 APM 平台后的聚合字段
-{待补充：素材充分时展开。}
 
 <!-- outline-end -->
 
 MTE 解决的是 Native 堆内存破坏问题：指针携带 tag，分配器给内存块写入 tag，CPU 在 load/store 时比对二者是否一致。tag 不匹配时，进程收到 `SIGSEGV`，崩溃报告里会出现 MTE 相关 `si_code`。
 
-应用稳定性治理里，MTE 的价值不在于替代 tombstone、Breakpad 或 Crashpad，而是把 use-after-free、heap buffer overflow、部分 double-free 这类“偶发、堆栈漂移、复现困难”的 Native 问题更早暴露出来。Native Crash 收集、信号链和 tombstone 解读详见 20.3 节；Native 内存工具横向对比详见 23.3 节。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
+应用稳定性治理里，MTE 的价值不在于替代 tombstone、Breakpad 或 Crashpad，而是把 use-after-free、heap buffer overflow、部分 double-free 这类“偶发、堆栈漂移、复现困难”的 Native 问题更早暴露出来。Native Crash 收集、信号链和 tombstone 解读详见 20.3 节；Native 内存工具横向对比详见 23.3 节。
 
 ## MTE 适合放在哪些稳定性场景
 
@@ -173,7 +166,7 @@ MTE 也有漏检边界。tag 空间有限，某些释放后访问可能碰巧命
 
 MTE 报告仍然以 `SIGSEGV` 进入 Native Crash 体系。应用内已有 Breakpad、Crashpad、xCrash 或自研 signal handler 时，要复用现有信号链约束：handler 内只做 async-signal-safe 的最小记录，把复杂解析交给 handler 进程或下次启动补偿。
 
-20.3 节已经展开 Android SignalChain、debuggerd、tombstone 和 handler 传递顺序。放到 MTE 场景，处理原则是：signal handler 内不分配堆内存，不在崩溃现场做完整符号化，不吞掉信号导致 debuggerd 拿不到 tombstone。APM 侧记录 MTE `si_code` 后，继续传递给原 handler 或系统默认处理器。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
+20.3 节已经展开 Android SignalChain、debuggerd、tombstone 和 handler 传递顺序。放到 MTE 场景，处理原则是：signal handler 内不分配堆内存，不在崩溃现场做完整符号化，不吞掉信号导致 debuggerd 拿不到 tombstone。APM 侧记录 MTE `si_code` 后，继续传递给原 handler 或系统默认处理器。Native Crash 收集、信号链和 tombstone 解读详见 20.3 节；Native 内存工具横向对比详见 23.3 节。
 
 ## MTE 报告进入 APM 后的聚合字段
 
@@ -195,185 +188,6 @@ MTE 崩溃事件记录至少保留这些字段：
 - `BIONIC_MEMTAG_UPGRADE_SECS` 这类系统服务重启后升级诊断机制，本节只作为后续研究线索，不写成应用侧可用能力。[待验证: 需确认该机制在应用侧观测和归因中的适用边界]
 
 
-
-<!-- AIW-源码调研-2026-05-21 START -->
-## 补充：ASYMM 自动启用的源码级链路（2026-05-21 调研）
-
-本节补充 2026-05-21 源码调研的关键发现，进一步完善 §20.11 中"ASYMM 为什么不是应用 API"和"从 Zygote 到 bionic allocator 的生效路径"两个锚点的源码证据链。
-
-### 1. mte_tcf_preferred：CPU 级别的静默升级机制
-
-source.android.com MTE configuration 文档（2025-12-02）明确：
-
-> MTE modes can be set for each CPU core in the system by writing to /sys/devices/system/cpu/cpu*/mte_tcf_preferred. For example, writing sync (or asymm) would cause any userspace process that has requested Async mode to be silently auto-upgraded to Sync (or Asymm) while running on that core.
-
-这是纯硬件/内核侧的配置，不经过 manifest 或 Zygote。设备厂商可以在开机时统一配置。Linux kernel 文档（docs.kernel.org/arch/arm64/memory-tagging-extension.html）：
-
-> The preferred tag checking mode for each CPU is controlled by /sys/devices/system/cpu/cpu<N>/mte_tcf_preferred, to which a privileged user may write the value async, sync or asymm.
-
-**实战含义**：看到 `android:memtagMode="async"` 的崩溃率数据时，不能直接假设设备上运行的就是 async 模式。需要在支持 MTE 的设备上采集 `/sys/devices/system/cpu/cpu*/mte_tcf_preferred` 的值，才能确认实际模式。
-
-### 2. __libc_init_mte：prctl 调用序列
-
-bionic/docs/mte.md（android.googlesource.com）说明 `__libc_init_mte()` 的职责：
-
-> __libc_init_mte figures out the appropriate MTE level that is requested by the process, calls prctl to request this from the kernel, and stores data in __libc_shared_globals which gets picked up later to enable MTE in scudo.
-
-关键源码（android.googlesource.com platform/bionic，commit 30a1a29ba239，2024-11-18）：
-
-```cpp
-if (prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg | PR_MTE_TCF_SYNC, 0, 0, 0) == 0 ||
-    prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg, 0, 0, 0) == 0) {
-    __libc_shared_globals()->initial_heap_tagging_level = level;
-    __libc_shared_globals()->initial_memtag_stack = memtag_stack;
-    // ... set PROT_MTE on stack ...
-}
-```
-
-`__libc_init_mte()` 在进程启动初期即通过 prctl 向内核请求 MTE 模式。如果是动态链接可执行文件，由 linker 调用；如果是静态可执行文件，由 crtbegin.c 中的 `__libc_init` 调用。
-
-### 3. __libc_init_mte_late：延迟降级机制
-
-bionic/libc/bionic/libc_init_common.cpp 中的 `__libc_init_mte_late()` 实现了定时降级（aosp-mirror/platform_bionic）：
-
-```cpp
-__attribute__((no_sanitize("hwaddress", "memtag"))) void
-__libc_init_mte_late() {
-#if defined(__aarch64__)
-    if (!__libc_shared_globals()->heap_tagging_upgrade_timer_sec) {
-        return;
-    }
-    // ... 设置 timer，到期后降级为 ASYNC ...
-    async_safe_format_log(ANDROID_LOG_INFO, "libc", "Downgrading MTE to async.");
-    SetHeapTaggingLevel(M_HEAP_TAGGING_LEVEL_ASYNC);
-#endif
-}
-```
-
-触发条件：系统服务以 ASYNC 模式崩溃时，init 设置 `BIONIC_MEMTAG_UPGRADE_SECS`，libc 启动时据此启动定时器。**这是系统服务侧的机制，不直接适用于普通应用进程**。
-
-### 4. Arm 硬件能力检测：mte3 与 ASYMM 支持判断
-
-Arm MTE User Guide 说明如何判断设备是否支持 ASYMM：
-
-> For ASYMM mode, look for the presence of the string mte mte3 in /proc/cpuinfo.
-
-"mte3" 表示 Arm v8.7-A 引入的扩展能力，包括 ASYMM 模式。这是判断设备是否支持 ASYMM 的硬件级依据。
-
-### 5. Zygote 始终以 ASYNC MTE 运行的源码级原因
-
-bionic/docs/mte.md 明确：
-
-> Apps can request MTE be enabled for their process via the manifest attribute android:memtagMode. This gets interpreted by Zygote, which always runs with ASYNC MTE enabled, because MTE for a process can only be disabled after it has been initialized, not enabled.
-
-**原因**：MTE 只能在进程初始化后禁用，不能在初始化后启用。Zygote 作为所有普通 App 进程的父进程，如果以更严格模式运行，子进程无法降级。因此 Zygote 固定以 ASYNC 运行，子进程通过 `SpecializeCommon` 中的 `mallopt` 进行调整。
-
-### 6. 完整调用链总结
-
-综合今天的调研，完整调用链如下：
-
-```
-AndroidManifest.xml (android:memtagMode="async")
-  ↓
-Zygote.getRequestedMemtagLevel() / decideTaggingLevel()
-  → RuntimeFlags.MEMORY_TAG_LEVEL_ASYNC 编码到 runtimeFlags
-  ↓
-fork() 后子进程
-  ↓
-SpecializeCommon() (com_android_internal_os_Zygote.cpp)
-  → mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, M_HEAP_TAGGING_LEVEL_ASYNC)
-  ↓
-bionic libc 接收 mallopt，调用 SetHeapTaggingLevel()
-  ↓
-__libc_init_mte() (libc_init_mte.cpp)
-  → prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg, ...) 
-  ↓
-内核接受请求，检查 mte_tcf_preferred
-  → 如果设为 asymm/sync，静默升级
-  ↓
-Scudo allocator 对 malloc/free 写入 tag
-  ↓
-CPU load/store 时比对 pointer tag 和 memory tag
-```
-
-<!-- AIW-源码调研-2026-05-21 END -->
-
-
 ## 参考资料
 
-### MTE ASYMM 在 Android App memtagMode=async 下的自动启用机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-mte-asymm-memtag-mode-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：MTE ASYMM/SYNC 启用涉及 bionic libc、Arm 硬件探测、Zygote fork、Manifest memtagMode 属性联动。ASYMM 模式异步标签检查性能开销低，SYNC 同步检查安全性高。厂商芯片支持程度不同，高通/联发科旗舰支持双模式。
-- 注入时间：2026-05-17
 - 价值：补充 MTE ASYMM/SYNC 启用路径的源码证据链，覆盖 bionic、Zygote、Manifest 路径
-
-
-<!-- AIW-源码调研-2026-05-26 START -->
-## 补充：MTE ASYMM 自动启用的源码闭环（2026-05-26）
-
-本节补充 2026-05-26 源码调研的关键发现，完善 §20.11 中"ASYMM 为什么不是应用 API"和"从 Zygote 到 bionic allocator 的生效路径"两个锚点的三层源码闭环证据。
-
-### 三层源码路径
-
-#### 应用层：android:memtagMode 只暴露 off/default/sync/async
-
-AOSP 源码：`frameworks/base/core/java/android/content/pm/ApplicationInfo.java`
-
-```java
-public static final int MEMTAG_OFF = 0;
-public static final int MEMTAG_DEFAULT = 1;
-public static final int MEMTAG_ASYNC = 2;
-public static final int MEMTAG_SYNC = 3;
-// 注意：没有 MEMTAG_ASYMM
-```
-
-AOSP 源码：`frameworks/base/core/java/com/android/internal/os/Zygote.java`
-
-```java
-private static final int MEMORY_TAG_LEVEL_NONE = 0;
-private static final int MEMORY_TAG_LEVEL_TBI = 1;
-private static final int MEMORY_TAG_LEVEL_ASYNC = 2;
-private static final int MEMORY_TAG_LEVEL_SYNC = 3;
-// 注意：没有 MEMORY_TAG_LEVEL_ASYMM
-```
-
-Zygote 的 `memtagModeToZygoteMemtagLevel()` 只处理 MEMTAG_ASYNC → MEMORY_TAG_LEVEL_ASYNC 和 MEMTAG_SYNC → MEMORY_TAG_LEVEL_SYNC 的映射。**应用层 Zygote 没有任何 ASYMM 代码路径**。
-
-#### Bionic 层：__libc_init_mte 通过 prctl 设置 MTE
-
-AOSP 源码：`bionic/libc/bionic/libc_init_common.cpp`
-
-```cpp
-if (prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg | PR_MTE_TCF_SYNC, 0, 0, 0) == 0 ||
-    prctl(PR_SET_TAGGED_ADDR_CTRL, prctl_arg, 0, 0, 0) == 0) {
-    __libc_shared_globals()->initial_heap_tagging_level = level;
-    __libc_shared_globals()->initial_memtag_stack = memtag_stack;
-    // ... set PROT_MTE on stack ...
-}
-```
-
-调用路径：动态链接可执行文件由 linker 调用，静态链接可执行文件由 crtbegin.c 中的 `__libc_init` 调用。`bionic/libc/platform/bionic/mte.h` 定义 MemtagMode 枚举：
-
-```cpp
-enum MemtagMode {
-    MEMTAG_MODE_OFF = 0,
-    MEMTAG_MODE_ASYNC = 1,
-    MEMTAG_MODE_SYNC = 2,
-};
-// 同样没有 ASYMM 枚举值
-```
-
-#### 内核层：mte_tcf_preferred 实现 per-CPU 静默升级
-
-source.android.com MTE configuration 文档（2025-12-02）：
-
-> MTE modes can be set for each CPU core in the system by writing to /sys/devices/system/cpu/cpu*/mte_tcf_preferred. For example, writing sync (or asymm) would cause any userspace process that has requested Async mode to be silently auto-upgraded to Sync (or Asymm) while running on that core.
-
-**核心结论**：ASYMM 不是应用 API，不能通过 manifest 配置。manifest 中的 `async` 只是请求值，实际运行模式由设备侧 `mte_tcf_preferred` 决定。当设备写入 `asymm` 时，请求 ASYNC 的进程在该 CPU 上会被内核静默升级为 ASYMM，这个升级发生在硬件/内核层，不经过 Zygote 或 bionic 的应用级逻辑。
-
-### 实战排查提示
-
-当看到 `android:memtagMode="async"` 的崩溃率数据时，不能直接假设设备上运行的就是 async 模式。需要在支持 MTE 的设备上采集 `/sys/devices/system/cpu/cpu*/mte_tcf_preferred` 的值，才能确认实际模式。不同厂商设备对 ASYMM 的默认配置可能不同，Pixel 系列与第三方厂商设备的配置策略可能存在差异。
-<!-- AIW-源码调研-2026-05-26 END -->
-

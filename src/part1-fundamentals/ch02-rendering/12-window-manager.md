@@ -82,7 +82,8 @@ last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
 task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 # 2.12 Window Manager Service 与窗口管理
 
@@ -117,7 +118,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 
 
 ## WMS 的定位：窗口世界的调度员
 
-从图形架构看，WMS 位于 App、Input 系统、SurfaceFlinger 之间。它维护 WindowContainer / WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态；SurfaceFlinger 负责合成，App 负责提交绘制内容，InputDispatcher 依据 WMS 给出的可见区域和 Z-order 做命中测试。
+从图形架构看，WMS 夹在 App、Input 系统和 SurfaceFlinger 三者之间。它维护 WindowContainer / WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态。SurfaceFlinger 负责把 App 提交的绘制内容合成上屏，InputDispatcher 则依赖 WMS 给出的可见区域和 Z-order 做命中测试——谁在最上面、谁能响应触摸，全看 WMS。
 
 WMS 运行在 system_server 进程中，但性能问题不能简化成“AMS、IMS、WMS 共用一条主线程”。现代实现更接近“同进程、多线程、全局锁耦合”：`Binder:*` 线程接收 `IWindowSession` 和 `IWindow` 调用，`DisplayThread` 承载大量窗口管理逻辑，策略相关初始化和回调会经过 `UiThread` / `WindowManagerPolicyThread`，动画推进挂在 `AnimationThread`。Perfetto 里更常见的阻塞形态是这些线程围绕 `mGlobalLock` 和共享窗口状态互相等待，不是单个 `android.server` 线程把所有事务串行做完。
 
@@ -150,7 +151,7 @@ Activity 首次显示时，窗口创建过程更接近下面这个顺序：
 5. App 侧 `ViewRootImpl.updateBlastSurfaceIfNeeded()` 根据返回的 `SurfaceControl` 创建或更新 `BLASTBufferQueue`
 6. `mSurface` 通过 `transferFrom(...)` 绑定到新的 BLAST backing surface，后续绘制再通过 `dequeueBuffer` / `queueBuffer` 提交第一帧
 
-这一段的职责分界要分清。WMS 负责窗口容器和 `SurfaceControl`，SurfaceFlinger 负责 layer 创建与合成，App 侧负责把 relayout 返回的控制面 materialize 成可绘制 `Surface`。把它写成“WMS 包装 Surface 通过 Binder 返回给 App”会把客户端和服务端的职责混在一起。
+职责分界要记住：WMS 管窗口容器和 `SurfaceControl`，SurfaceFlinger 管 layer 创建与合成，App 侧负责把 relayout 返回的 `SurfaceControl` 转成可绘制的 `Surface`。不要写成“WMS 把 Surface 包好通过 Binder 返回给 App”——这句话把三层职责搅在一起了。
 
 [已验证: AOSP android-17-beta3, `ViewRootImpl.java` / `WindowManagerService.java` / `android_view_SurfaceControl.cpp`]
 
@@ -218,7 +219,7 @@ StartingWindow 的移除时机会影响启动体感：
 
 ## relayoutWindow：WMS 最频繁的操作
 
-`relayoutWindow()` 是 WMS 中被调用次数最多的方法之一，也是性能分析中最常见的 WMS 相关 Slice。理解它的工作方式，是在 Perfetto 中解读 system_server 行为的关键。
+`relayoutWindow()` 是 WMS 中调用最频繁的方法之一，Perfetto 里最常见到的 WMS Slice 也基本跟它有关。搞清楚它干了什么，是读懂 system_server 行为的前提。
 
 ### 什么触发 relayoutWindow
 
@@ -257,7 +258,6 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 | `requestLayout()` 但窗口尺寸未变 | 通常否 | App 主线程 measure / layout / draw |
 | 首帧、窗口 resize、Insets 变化 | 是 | App 主线程 Binder 等待，加 system_server Binder / DisplayThread 配套工作 |
 | 只改不会影响 frame 同步的窗口属性，且命中 `relayoutAsync()` 条件 | 异步 | App 当前 traversal 不等 `RelayoutResult`；后续 `W.resized()` / Insets 回调再刷新本地状态 |
-
 
 ### scheduleTraversals() 与 performTraversals() 的职责边界
 
@@ -300,8 +300,6 @@ if (relayoutRequested) {
 - WMS 发起 → App：`relayoutWindow` 先于 `doTraversal`（键盘弹出、屏幕旋转等系统事件）
 - App 发起 → WMS：`performTraversals` 内嵌套 `relayoutWindow`（App 的 LayoutParams 变化驱动）
 
-<!-- AIW-源码调研-2026-04-21 -->
-
 ### 在 Perfetto 中的表现
 
 看 WMS 相关 trace，先确认 capture 配置里是否打开了 `wm`、`view`、`am`、`input`、`gfx`、`surfaceflinger` 这些类别。没有这些类别时，system_server 侧只会留下零散 Binder slice，很难还原 relayout 路径。
@@ -336,7 +334,7 @@ ORDER BY s.name;
 
 ### 动画路径如何分工
 
-Activity、Task、Recents、桌面和 predictive back 这类过渡通常跨 ATMS/WMS、WM Shell、SurfaceFlinger 三层：
+Activity 切换、回到桌面、打开 Recents、predictive back——这些过渡几乎都跨 ATMS/WMS、WM Shell、SurfaceFlinger 三层协作：
 
 1. ATMS/WMS 更新 `ActivityRecord`、Task、DisplayContent 等 WindowContainer 状态，并由 `TransitionController` 收集 open / close / change。
 2. `Transition` 把参与过渡的窗口、leash、起止 bounds、可见性变化整理成一次 transition。
@@ -482,7 +480,7 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 
 ### 误区 1："WMS 在主线程上运行，所以很慢"
 
-WMS 在 system_server 内部横跨 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread 和 AnimationThread。慢的根源通常是 `mGlobalLock`、共享窗口状态、surface placement 或动画推进，而不是一句“主线程很忙”就能解释清楚。Perfetto 里需要同时看 Binder 入口、DisplayThread 的布局摆放、AnimationThread 的过渡推进，以及主线程上是否有策略或 AMS 相关工作与之交叉。
+WMS 横跨 system_server 内的 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread 和 AnimationThread。慢的根源通常是 `mGlobalLock` 竞争、共享窗口状态更新、surface placement 或动画推进——不是一句“主线程忙”能概括的。Perfetto 里要同时看 Binder 入口、DisplayThread 的布局摆放、AnimationThread 的过渡推进，以及主线程上是否有策略或 AMS 相关工作交叉干扰。
 
 ### 误区 2："Window 数量越多越卡"
 
@@ -540,5 +538,4 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 - [Android 官方文档，Android 16 Behavior Changes](https://developer.android.com/about/versions/16/behavior-changes-all) ，大屏自适应与 orientation / resizable 行为变化
 - [Android 官方文档，Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-all) ，`recreateOnConfigChanges` 的 API 37 Beta 口径
 - [Android 官方文档，WindowInsets](https://developer.android.com/develop/ui/views/layout/window-insets) ，Insets 分发与适配实践
-
 

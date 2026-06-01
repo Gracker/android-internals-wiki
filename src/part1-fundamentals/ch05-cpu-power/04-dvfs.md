@@ -546,3 +546,77 @@ schedutil 是一个通用方案，它对典型 Android 应用场景做了优化�
 - Perfetto CPU frequency 文档：perfetto.dev/docs/data-sources/cpu-frequency
 - RTG 聚合调频分析：OPPO 内核工匠《调度器分支之RTG》
 - GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
+
+<!-- AIW-源码调研-2026-06-01 -->
+## 补充：Android 17 游戏调度框架与CPU/GPU联合调频机制
+
+*来源：2026-06-01 每日源码调研 | 关联选题：荣耀MUSCHED移动设备调度优化方案*
+
+### GameManagerService 游戏模式感知层
+
+AOSP android-17.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
+
+- `setGameMode(int userId, String packageName, int mode)` — 切换游戏模式（标准/性能/省电）
+- `getGameMode()` — 查询当前游戏模式
+
+GameManagerService 通过 `GameManagerInternal` 与 PowerManagerService 联动，触发 `powerHint(PERFORMANCE_MODE)` 提示。
+
+### PowerManager.powerHint API（性能提示）
+
+路径：`frameworks/base/core/java/android/os/PowerManager.java`（android-17.0.0_r1）
+
+关键常量定义（line 711）：
+
+```java
+public static final int POWER_HINT_INTERACTIVE = 0;
+public static final int POWER_HINT_LOW_POWER = 1;
+public static final int POWER_HINT_PERFORMANCE = 2;
+public static final int POWER_HINT_VIDEO_ENCODE = 3;
+public static final int POWER_HINT_SUSTAINED_PERFORMANCE = 4;
+public static final int POWER_HINT_DYNAMIC_SHUTTLE = 5;
+```
+
+调用链（line 1777）：
+
+```java
+public void powerHint(int hintId, int data) {
+    mService.powerHint(hintId, data);  // → IPowerManager.aidl → native层
+}
+```
+
+### PowerManagerService（电源服务中枢）
+
+路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`
+
+`powerHint()` 处理函数最终调用 `nativeSendPowerHint(hintId, data)` 将提示下发到 kernel 层的 cpufreq governor 或 thermal 子系统。
+
+### device-specific powerhint.json
+
+路径：`device/google/coral/powerhint.json`（Pixel设备，android-17）
+
+定义了 powerHint 与系统实际参数（如 `/proc/cpufreq/sched_dcvs_perf`）的映射关系。厂商可通过修改此配置实现定制化的调频策略。
+
+### Linux cpufreq + cpuset + thermal 协同
+
+Android 的 CPU 调频栈最终落地于 Linux kernel：
+
+```
+/sys/devices/system/cpu/cpu0/cpufreq/
+├── scaling_governor      # schedutil（默认）/ ondemand / performance
+├── scaling_max_freq      # 软件上限（可写入）
+└── scaling_cur_freq      # 当前实际频率
+```
+
+cpuset cgroup 控制进程 CPU 亲和性：
+
+```
+/dev/cpuset/top-app/cpus   # 顶层应用（如游戏）
+/dev/cpuset/foreground/cpus # 前台进程
+```
+
+thermal 降频路径：`/sys/class/thermal/thermal_zone*/`，通常 40-45°C 开始降频，60°C 强制降频。
+
+### 荣耀 MUSCHED 说明
+
+荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-17.0.0_r1 主线范围内。
+

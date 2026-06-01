@@ -581,3 +581,158 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md
 - 类型:DeepResearch 调研结果
 - 摘要:基于 AOSP 16 逐层拆解 `getCpuHeadroom()/getGpuHeadroom()` 调用链,澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量,不走 PSI/lmkd,也不存在公开 memory headroom;适合做相机、游戏等重负载场景的前瞻降级信号。
+
+---
+
+## Linux 电源管理架构与 eBPF 微架构能效分析（补充）
+
+> 本节为 2026-06-01 每日源码调研补充，聚焦 Linux 内核层电源管理框架与 eBPF 微架构能效分析技术，与上文 Android 框架层功耗管理构成完整链路。
+
+### Linux 电源管理的分层架构
+
+Linux 电源管理并非单一机制，而是由多个层次协同工作：
+
+```
+用户空间 / Android Framework
+    ↓ (PowerManagerService)
+Power HAL (android.hardware.power@1.x)
+    ↓ (hwbinder / AIDL)
+内核电源管理
+    ├── Energy Model (EM) 框架
+    ├── EAS (Energy Aware Scheduling)
+    ├── cpufreq (DVFS)
+    ├── suspend / autosuspend
+    └── thermal Throttling
+```
+
+### Energy Model 框架：CPU 能效的数据基座
+
+Linux 内核的 Energy Model（EM）框架（`kernel/power/energy_model.c`，v6.6）为调度器提供了 CPU 各频点的功耗数据，是 EAS 调度决策的基础数据源。
+
+**核心数据结构**：
+
+```c
+// include/linux/energy_model.h
+struct em_perf_state {
+    unsigned long frequency;   // MHz
+    unsigned long power;        // mW，该频点功耗
+    unsigned long cost;         // 相对成本 = fmax * power / frequency
+    unsigned long flags;        // EM_PERF_STATE_INEFFICIENT 标记
+};
+
+struct em_perf_domain {
+    struct em_perf_state *table;
+    int nr_perf_states;         // 频点数量
+    unsigned long flags;
+    cpumask_t *cpus;            // 属于该性能域的 CPU 集合
+};
+```
+
+**性能域（Performance Domain）** 是 EM 框架的核心概念：一个性能域对应一组共享功耗边界的 CPU，通常是 SoC 上的一个簇（cluster）。在 big.LITTLE / DSU 架构中，big 核和 LITTLE 核各形成一个性能域。Android 设备上常见的配置是两个性能域（big + LITTLE），每个性能域包含多个频率档位。
+
+**成本计算公式**：
+
+```c
+cost = (fmax * power) / frequency
+```
+
+成本越高，说明该频点相对能效越差。当某个频点的成本不小于前一频点时（cost ≥ prev_cost），内核标记 `EM_PERF_STATE_INEFFICIENT`，表示该频点不值得使用。
+
+**数据来源**：EM 框架本身不测量功耗，而是通过回调函数 `em_data_callback.active_power()` 从各 SoC 的 cpufreq 驱动获取功耗数据。这意味着功耗数据由芯片厂商提供，与实际测量值可能有偏差。
+
+### Energy Aware Scheduling（EAS）：能效感知的任务放置
+
+EAS（`Documentation/scheduler/sched-energy.rst`，Linux 6.6）利用 EM 数据，在任务唤醒时选择"能效最优"的 CPU 核心。
+
+**设计目标**：最大化 `performance [inst/s] / power [W]`，即每焦耳完成的指令数。
+
+**前提条件**：
+- 仅适用于异构 CPU 拓扑（big.LITTLE / DSU），对称拓扑（SMP）不支持
+- 依赖 PELT（Per-Entity Load Tracking）提供的 utilization 信号
+- 需要 `arch_scale_cpu_capacity()` 提供 CPU 容量（1024 归一化范围）
+
+**调度决策流程**：
+
+```
+select_task_rq_fair()        // 任务唤醒时
+  → find_energy_efficient_cpu()
+    → em_cpu_energy()         // 计算迁移到候选 CPU 的功耗增量
+    → compute_energy()        // 评估迁移后的系统总能耗
+    → 比较各候选 CPU 的能耗，选择最优
+```
+
+EAS 在选择任务放置时，评估的是"把任务迁移到候选 CPU"带来的额外功耗，而非单纯选择功耗最低的 CPU。这是因为如果目标 CPU 当前利用率已经很高，迁入新任务可能导致降频，反而增加总功耗。
+
+**容量（Capacity）概念**：big 核容量为 1024，LITTLE 核容量通常为 384-512（视 SoC 而定）。EAS 通过比较任务 utilization 和 CPU 容量，判断任务是"轻量"还是"重量"——轻量任务更适合放在 LITTLE 核（省电），重量任务应放在 big 核（高性能）。
+
+### Power HAL：Android 与内核的桥梁
+
+Android 的 Power HAL（`hardware/libhardware/include/hardware/power.h`；`android.hardware.power@1.0-1.3`）是连接 Android 框架层和内核电源管理的关键接口。
+
+**Legacy HAL 接口**：
+
+```c
+// hardware/libhardware/include/hardware/power.h
+struct power_module {
+    // ...
+    int (*setInteractive)(struct power_module* module, int on);
+    int (*powerHint)(struct power_module* module, power_hint_t hint, void* data);
+};
+
+power_hint_t: POWER_HINT_CPU_BOOST, POWER_HINT_INTERACTION,
+              POWER_HINT_LAUNCH, POWER_HINT_SET_PROFILE, ...
+```
+
+**HIDL/AIDL HAL**（android.hardware.power@1.0-1.3）通过 hwbinder 提供标准化的 `IPower` 接口，版本从 1.0 演进到 1.3。关键方法：
+
+```cpp
+interface IPower {
+    powerHint(PowerHint type, int32_t data);
+    setModemResetCount(int32_t count);
+};
+```
+
+**调用路径**：
+
+```
+PowerManagerService.updatePowerStateLocked()
+  → nativeSetPowerMode()          // JNI: com_android_server_power_PowerManagerService.cpp
+    → PowerHAL.setMode(Mode::INTERACTIVE, ...)
+      → vendor implementation     // Qualcomm / MediaTek 私有实现
+```
+
+Android 17 中，Power HAL 仍然通过 `Mode::INTERACTIVE` 通知 SoC 当前是交互态还是低功耗态，各厂商基于此调整 DVFS 档位和调度策略。
+
+### eBPF 微架构能效分析
+
+eBPF 在 Linux 电源管理中主要用于**微架构级能效遥测**，即以低开销方式获取每个进程/任务的实际能耗数据。
+
+**Wattmeter 框架**（HotCarbon 2024）：基于 eBPF 的进程级能耗计量框架，毫秒级精度，使用 `perf_event_open()` 读取 PMU 事件。核心思路是将系统总功耗按进程归因——通过 cgroup 和 task_struct 关联进程与 CPU 时间片，再乘以该 CPU 频点的功耗得到进程能耗。
+
+**Android Perfetto 对接**：
+- `external/perfetto/protos/perfetto/trace/power/android_energy_estimation_breakdown.proto`
+- `external/perfetto/protos/perfetto/common/android_energy_consumer_descriptor.proto`
+
+Perfetto 通过 `android.power.provider` 服务读取 RAPL（Running Average Power Limit）接口或 EM 功耗数据，按进程/UID 分解能耗。Android 14+ 支持的 ODPM（On-Device Power Monitor）提供了更精确的按电源轨（Power Rails）功耗数据。
+
+**与 EAS 的关系**：当前 Linux 主线 EAS 调度器使用的是静态 EM 数据（由厂商提供），并未直接使用 eBPF 动态遥测数据。eBPF 更多用于功耗分析和 Profiling，而非实时调度决策。
+
+### Android 电源管理的完整链路
+
+从应用到底层，Android 电源管理形成完整链路：
+
+```
+App (PowerManager.newWakeLock())
+  → PowerManagerService.acquireWakeLock()
+    → updatePowerStateLocked()
+      → [DIRTY 标志批量更新]
+      → PowerHAL.setMode(Mode::INTERACTIVE)
+        → vendor HAL implementation
+          → DVFS 调频 / 核调度
+            → Linux EAS + EM framework
+              → CPU 进入对应功耗状态
+```
+
+这条链路中，PowerManagerService 是策略决策者（何时睡眠/唤醒），Power HAL 是执行接口，Linux 内核是具体执行者（EAS 调度、DVFS 调频、suspend/resume）。理解每一层的职责，是分析"为什么灭屏后系统没有睡下去"这类问题的关键。
+
+<!-- AIW-源码调研-2026-06-01 -->

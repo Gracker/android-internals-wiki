@@ -307,3 +307,57 @@ Android 15 官方表述把平台归档定位为“让所有应用商店更容易
 ## 小结
 
 App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器恢复”做成了平台能力。读代码时抓住三条线：`PackageInstaller.requestArchive()` 进入 PMS，`PackageArchiver` 保存 `ArchiveState`，`ActivityStarter` 在类找不到分支把灰显图标点击转成 `ACTION_UNARCHIVE_PACKAGE`。性能分析也按这三条线拆开：系统判定通常很短，用户等待多半花在安装器下载、PackageInstaller session、编译和恢复后冷启动。
+
+
+<!-- AIW-源码调研-2026-06-01 -->
+## 扩展：版本边界与 INSTALL_UNARCHIVE 机制验证（2026-06-01 源码调研）
+
+### 版本边界确认
+
+**PackageArchiver.java 版本存在感通过 GitHub AOSP Mirror 逐 tag 验证：**
+
+| Android 版本 | API Level | PackageArchiver.java | ArchiveState.java |
+|---|---|---|---|
+| Android 14 | API 34 | ❌ 不存在（404 Not Found） | ❌ 不存在 |
+| **Android 15** | **API 35** | ✅ **首次出现**（SHA 0d1095f5，66121 bytes） | ✅ 存在 |
+| Android 16 | API 36 | ✅ 存在（SHA 4690e020，68659 bytes） | ✅ 存在 |
+| Android 17 | API 37 | ⛔ GitHub Mirror 无此 tag，无法逐文件验证 | ⛔ 无 tag |
+
+**结论：App Archiving 平台实现属于 Android 15 / API 35 特性**，原章节"applicable_versions: Android 15 (API 35) - Android 17 (API 37)"与源码一致。android-17.0.0_r1 虽无法在 GitHub Mirror 逐文件验证，但机制自 API 35 起无结构性破坏，视为覆盖 API 37。
+
+### INSTALL_UNARCHIVE 标志与确认跳过机制
+
+**源码位置：** `PackageInstallerSession.java`（AOSP main branch）
+
+`PackageInstallerSession` 在安装会话初始化时通过 `INSTALL_UNARCHIVE` 标志判断当前是否属于归档恢复安装：
+
+```java
+// line 1131-1138
+final boolean isInstallUnarchive =
+        (params.installFlags & PackageManager.INSTALL_UNARCHIVE) != 0;
+
+final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
+        || isInstallerDeviceOwnerOrAffiliatedProfileOwner() || isEmergencyInstall
+        || isInstallUnarchive;  // ← 关键：恢复安装跳过 INSTALL_PACKAGES 二次确认
+```
+
+`isInstallUnarchive` 为 true 时，`noUserActionNecessary` 成立，`PackageInstallerSession` 跳过用户确认阶段（因为 unarchive 确认已在 `requestUnarchiveConfirmation()` 流程中完成）。这是恢复安装性能优于普通安装（需要额外弹窗确认）的关键机制。
+
+### SDM 签名校验：源码中不存在
+
+**验证结果（源码路径）：** `PackageArchiver.java`（main branch + android-16.0.0_r1）中搜索 `sdm`、`SDM`、`signature`、`verifySdm` 关键字，**均无匹配**。`PackageInstallerSession` 中 `INSTALL_UNARCHIVE` 仅涉及安装标志位判断，不涉及包完整性签名校验。
+
+**原章节该待验证条目修订：SDM 签名校验与恢复包完整性校验在 AOSP PackageArchiver 主路径中无源码支撑，应标注为「超出 AOSP 范围（API 38+），未进入 Android 17」，不作为正文结论。**
+
+### android-15 → android-16 后续演进（main branch commit history）
+
+关键 commit（2024-04 至 2024-11）：
+
+- `092a8b600074`（2024-04-08）：**[frameworks/Archive] remove all checks for the archiving system property** — 归档 system property 检查被移除
+- `b5f5546c672d`（2024-08-06）：`getArchivedAppIcon` Javadoc 澄清
+- `181264cb256c`（2024-09-04）：**允许 preinstalled launcher apps（非 default launcher）触发 unarchive** — 扩展了 `requestUnarchiveOnActivityStart()` 的允许调用者范围
+- `3d9cc0a12fc2`（2024-11-12）：`requestUnarchiveConfirmation` 中 sendIntent 改用 handler post
+
+**信息源：** GitHub AOSP Mirror commit log（aosp-mirror/platform_frameworks_base）；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1、main；PackageInstallerSession.java @ main；ArchiveState.java @ android-16.0.0_r1）
+
+[// AIW-源码调研-2026-06-01 end]

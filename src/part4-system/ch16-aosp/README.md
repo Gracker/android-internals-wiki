@@ -33,3 +33,9 @@
 - 注入时间：2026-04-25
 - 价值：能补齐 AI × 手机/GUI Agent 在 Android 系统侧评测环境、动作空间与任务闭环的参考背景。
 
+### Android 17 ResourcesManager 与 Configuration 变更分发机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-17-resourcesmanager-configuration-system.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码分析 Configuration 变更分发路径：ConfigurationChangeToker->ATMS->ActivityThread->ResourcesManager->ResourcesImpl。确认 AOSP 无独立场景感知框架（ATOMSCENE 为 OEM 定制），Configuration 体系是 AOSP 的场景感知体现。
+- 注入时间：2026-06-01
+- 价值：明确了 Android 17 Configuration 分发源码锚点，澄清 OEM 场景感知框架与 AOSP 的边界

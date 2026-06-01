@@ -68,6 +68,8 @@ task6_l1_l2_fixes: 54
 task6_l3_l4_issues: 0
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 <!-- outline-start -->
@@ -107,18 +109,18 @@ ContentProvider 是 Android 四大组件中最「安静」的一个。日常开�
 
 ## ContentProvider 在 Android 架构中的角色
 
-ContentProvider 的设计初衷是解决一个核心问题：**不同进程之间的结构化数据共享**。Android 系统中进程隔离是基本安全边界，App A 想读取 App B 的联系人数据，不能直接访问 App B 的数据库文件——这需要一种跨进程的、有权限控制的、标准化的数据访问机制。
+ContentProvider 的设计初衷很简单：**让不同进程之间能安全地共享结构化数据**。Android 的进程隔离意味着 App A 不能直接碰 App B 的数据库文件——要读联系人数据，必须走一条跨进程通道，这条通道得同时解决三个问题：怎么找到数据、谁能访问、用什么格式传输。ContentProvider 就是这条通道。
 
 [已验证: 来源见 developer.android.com/guide/topics/providers/content-provider-basics]
 
-那为什么不直接用 Binder 传数据？Binder 是 Android IPC 的基础，但它的设计面向的是「小数据量的命令式调用」——每个 Binder 事务的缓冲区只有 1MB，而且是所有并发事务共享的。如果要跨进程传输一个几万行的查询结果，直接用 Binder 序列化会把事务缓冲区撑爆。ContentProvider 在 Binder 之上构建了一层更高级的抽象：
+那为什么不直接用 Binder 传数据？Binder 是 Android IPC 的基础，但它面向的是「小数据量的命令式调用」——每个进程的 Binder 事务缓冲区只有约 1MB，所有并发事务共享。几万行的查询结果直接用 Binder 序列化，缓冲区直接就爆了。ContentProvider 在 Binder 之上构建了更合适的抽象层：
 
 - **URI 寻址**：每份数据用一个 `content://authority/path` 格式的 URI 标识，调用方不需要知道数据来自哪个数据库、哪张表
 - **标准化 CRUD 接口**：`query()`、`insert()`、`update()`、`delete()` 四个方法，语义清晰，跨语言可用
 - **权限控制**：通过 manifest 指定 `readPermission` / `writePermission`，系统在 Binder 层校验调用方的权限
 - **观察者模式**：`ContentResolver.notifyChange()` + `ContentObserver`，数据变化时主动通知，避免了轮询
 
-从架构定位看，ContentProvider 与 Activity、Service、BroadcastReceiver 的本质区别在于：其他三个组件处理的是「控制流」（用户交互、生命周期、事件），而 ContentProvider 处理的是「数据流」。它是一个跨进程的数据管道，底层用 Binder 做控制信令，用共享内存做数据传输，两者配合实现了既安全又高效的数据共享。
+和其他三个组件相比，Activity、Service、BroadcastReceiver 处理的是「控制流」——用户交互、生命周期、事件；ContentProvider 处理的是「数据流」。底层用 Binder 做控制信令、共享内存传数据，两者配合，就是一条既安全又高效的跨进程数据管道。
 
 ## ContentProvider 的初始化与启动流程
 
@@ -185,7 +187,7 @@ App B: ContentProvider$Transport.query()
 
 ### CursorWindow：共享内存的数据窗口
 
-`query()` 的返回值是一个 `Cursor`，跨进程返回时不会把所有行序列化进 Binder 事务。Provider 进程先把一批行写入 `CursorWindow`，CursorWindow 底层通过共享内存映射传递文件描述符；Binder 只负责传递描述符和少量元数据。默认窗口大小来自 `config_cursorWindowSize`，AOSP 默认值为 2MB，厂商可以通过资源值调整。
+`query()` 返回的是 `Cursor`，跨进程返回时不会把所有行塞进 Binder 事务。Provider 进程先把一批行写入 `CursorWindow`——这是一个共享内存窗口，底层通过文件描述符映射；Binder 只传描述符和少量元数据，不拷贝行数据。窗口默认大小来自 `config_cursorWindowSize`，AOSP 默认 2MB，厂商可调。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/database/CursorWindow.java, CursorWindow(String) + getCursorWindowSize()]
 
@@ -343,7 +345,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 - CursorWindow 的 2MB 限制和翻页机制同样适用
 - 调用方通过 CursorWrapperInner 间接访问共享内存中的数据
 
-一个容易被忽略的细节：**多进程 ContentProvider 的每次 Cursor 操作（moveToNext、getString 等）本身不涉及 Binder 调用**——数据已经在共享内存中。只有当窗口需要翻页（fillWindow）时，才会触发一次 Binder 调用回到 Provider 进程重新查询。
+一个容易被忽略的细节：**多进程 ContentProvider 的 `moveToNext()`、`getString()` 等操作本身不走 Binder**——数据已经在共享内存里了。只有窗口需要翻页（`fillWindow()`）时，才会触发一次 Binder 调用回到 Provider 进程重新查询。
 
 ### 多进程 ContentProvider 的适用场景与注意事项
 
@@ -621,7 +623,7 @@ ContentProvider 不仅是系统的数据共享接口，更是一种通用的 IPC
 
 ### 误区三：「App Startup 能完全消除 ContentProvider 的启动开销」
 
-App Startup 减少的是 ContentProvider 的**数量**(从 N 个变为 1 个)，但初始化逻辑本身的执行时间并没有减少。如果合并后的 `InitializationProvider` 中有某个 `Initializer` 的 `create()` 方法耗时 100ms，这 100ms 仍然在启动路径上。优化重点应该是**将非必要的初始化延迟到使用时再执行**(懒初始化)，不能只停留在合并。
+App Startup 减少的是 ContentProvider 的**数量**（从 N 个合并为 1 个），初始化逻辑本身的执行时间并没有减少。合并后如果某个 `Initializer.create()` 仍然耗时 100ms，这 100ms 照样在启动路径上。优化的重点不是合并，是**把非必要的初始化推迟到真正需要的时候**（懒初始化）。
 
 ### 误区四：「CursorWindow 的翻页是高效的」
 
@@ -640,8 +642,4 @@ App Startup 减少的是 ContentProvider 的**数量**(从 N 个变为 1 个)，
   - [Content Provider Basics](https://developer.android.com/guide/topics/providers/content-provider-basics)
   - [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
   - [CursorWindow API Reference](https://developer.android.com/reference/android/database/CursorWindow)
-- 研究素材：
-  - `intake/research-feeds/2026-04-05-07-cp-startup-sequence-aosp.md`
-  - `intake/research-feeds/2026-04-05-07-jetpack-app-startup-cp-consolidation.md`
-  - `intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md`
-  - `intake/research-feeds/2026-04-05-07-multiprocess-cp-deadlock-anr.md`
+- 研究素材：`intake/research-feeds/2026-04-05-07-cp-*.md`（冷启动序列、App Startup 合并、CursorWindow 性能、多进程死锁 ANR）

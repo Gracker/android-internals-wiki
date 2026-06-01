@@ -55,6 +55,8 @@ task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1�
 finalized_date: "2026-05-08"
 finalized_by: openclaw-task6-auto-promote
 task6_review_notes: "2026-05-08 Task6 15:05：未做重复正文 review；自动晋升检查通过（task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending）。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 # 触摸响应的性能分析
@@ -103,8 +105,6 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 
 这些研究为触摸优化提供了方向性参考，但 Android 端到端 touch-to-display 延迟（本节后文表格给出 15-75ms）与 HCI 实验室条件下的端到端延迟是不同口径。两者分开看，不要把实验室阈值直接写成产品 SLA。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md] [待验证: 原始 HCI 论文与实验条件需后续补齐]
-
 ## 触摸响应延迟的组成
 
 一个触摸事件从手指触碰屏幕到画面更新显示，要经过一条相当长的路径。按时间顺序分解后，每一阶段发生了什么、耗时在哪里会更清楚。
@@ -118,8 +118,6 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 - **480Hz 采样率**：每 2.08ms 扫描一次，一些游戏手机甚至达到 720Hz 或 960Hz
 
 采样率越高，第一个触摸事件被捕获的延迟越低，后续的 MOVE 事件也越密集。但采样率不是越高越好。如果系统的渲染帧率只有 60fps（16.6ms 一帧），那么在一个 VSync 周期内产生过多的 MOVE 事件反而会造成浪费，因为中间的事件最终会被 Batch 合并。高爷在实战分析中明确指出：在 60fps 渲染下，120Hz 的触摸采样率已经足够；只有当渲染帧率提升到 90fps 或 120fps 时，240Hz 甚至更高的触摸采样率才有实际意义。
-
-[已验证: 官方文档, source.android.com/docs/core/interaction/input] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
 ### 2. 内核处理（驱动 → EventHub）
 
@@ -162,8 +160,6 @@ void InputReader::loopOnce() {
 
 android-16.0.0_r1 的 `loopOnce()` 已经不再使用旧版 `QueuedListener.flush()` 路径，改为 `processEventsLocked()` 返回 `NotifyArgs` 列表并累积到 `mPendingArgs`，锁外通过 `std::swap` 取出后逐个调用 `mNextListener.notify(args)` 交给 InputDispatcher。`getEvents()` 也改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/reader/InputReader.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
-
 ### 4. InputDispatcher 派发
 
 InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader 唤醒后开始工作。它的核心职责是找到目标窗口（哪个 App 的哪个 Activity 应该接收这个事件），然后把事件派发过去。
@@ -180,8 +176,6 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 对手写笔、掌压误触和边缘触控更激进的设备，还要把 classification 一起纳入判断。系统在 dispatch 前后都可能附带分类结果；落到应用观察面时，常见信号是 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`、被放大的 touch slop / long-press timeout，以及 Android 13+ 上用 `ACTION_CANCEL` / `FLAG_CANCELED` 撤回误触输入。遇到“第一笔慢半拍”或“首个 MOVE 没生效”的问题时，别只盯 WaitQueue，也要把 classification 和 cancel 路径一起看。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
-
 ### 5. 跨进程传输（socketpair）
 
 InputDispatcher 通过 `InputChannel`（底层是 Unix socketpair）将事件发送给目标 App 进程。`InputChannel.sendMessage()` 将序列化后的 MotionEvent 写入 socket，App 端的 `Looper` 在 poll 到 socket 可读事件后，唤醒主线程处理。
@@ -193,8 +187,6 @@ InputDispatcher 通过 `InputChannel`（底层是 Unix socketpair）将事件发
 App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent()`。事件按照责任链模式经过多个 `InputStage` 处理（包括 ImeInputStage 处理输入法、ViewPostImeInputStage 处理 View 树分发等），最终到达 `DecorView`，开始从 View 树的根节点逐层分发。
 
 如果这个事件导致了 UI 变化（比如点击按钮改变了 View 状态、MOVE 事件触发列表滑动），App 会调用 `View.invalidate()` 或 `ViewRootImpl.requestLayout()`，这会触发 Choreographer 申请下一个 VSync 信号，在 VSync 到来时执行 `doFrame()` 开始绘制。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
 ### 7. 渲染上屏
 
@@ -216,8 +208,6 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 | **总计** | **~15-75ms** | 诸多因素 |
 
 这也解释了为什么用户对拖动跟手性比点击更敏感。当前素材能确认的结论是，直接操作场景对时延的容忍度明显低于离散点击，拖动时延一旦跨过一两个刷新周期，手指位置和画面位置就更容易出现可感知的脱节。PAMTD 11ms、点击 263ms 这组数字目前还缺少可回溯的原始论文与实验条件，这里先不把它写成定值结论，后续补齐原始研究后再回填。
-
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md] [待验证: 直接触摸拖动与点击时延阈值的原始论文与实验条件]
 
 搞清楚了延迟的组成，一个自然的问题就是：在硬件层面，采样率对这 15-75ms 的总延迟有多大影响？是不是采样率越高就越好？
 
@@ -242,8 +232,6 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 - **高采样率 + unbuffered dispatch / front-buffer**：如果 App 主动关闭 batching，或者采用 front-buffer 这类低延迟路径，高采样率才更容易转化为更密的可见反馈。
 
 所以，触摸采样率不是单独看的指标。普通手指滑动场景下，采样率高于渲染帧率后收益会迅速下降；手写笔、绘图和预测渲染场景，则更容易吃到更高采样率的红利。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 
 ## 输入事件 Batching 与 Choreographer 的配合
 
@@ -288,8 +276,6 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 
 这条分叉决定了 MOVE 事件是立即送达还是贴着下一帧消费。普通滚动场景通常愿意用 batching 换吞吐；手写笔、绘图、签名这类低延迟场景，则经常在 `ACTION_DOWN` 后调用 `View.requestUnbufferedDispatch()`，把后续 MOVE 事件尽快送到应用，而不是统一等下一个 VSync。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; frameworks/base/core/java/android/view/ViewRootImpl.java] [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
-
 ### Batching 与 WaitQueue 在 Perfetto 中的表现
 
 观察 Batching 和 App 处理能力是两个不同的视角，在 Perfetto 中对应不同的 Track 和 Slice。
@@ -309,8 +295,6 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 4. 再看 `doFrame` 的执行：它发生在 Batch 消费之后，使用最新的事件位置来计算布局和绘制
 
 两条证据链不要混在一起：InputDispatcher 的 wq 计数器判断的是派发/ACK 背压；App 侧的 `deliverInputEvent` 连续调用和 MotionEvent history 才是 batching 的直接证据。
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
 ## 触摸场景的性能分析方法
 
@@ -332,8 +316,6 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 **问题二：App 主线程被其他线程抢占。** 某个硬件服务的 POSIX timer 线程被唤醒后抢占了 App 主线程所在的大核 CPU，因为当时只有这个核心是空闲的。App 主线程被调度出去后，Input 事件处理被迫暂停，等它重新被调度回来才能继续。
 
 这个案例的启示是：**触摸响应慢的根因不一定在 Input 系统本身，可能是 CPU 调度策略和频率管理的问题。** 分析时要同步看 CPU 频率 Track 和线程调度状态，而不能只看 Input 相关的 Slice。
-
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
 
 ### 在 Perfetto 中的关键 Track 和 Slice
 
@@ -379,8 +361,6 @@ Input Dispatcher State:
 
 `waitQueue=3` 且 age 在 35-42ms 之间，说明 App 正在消费事件但速度稍慢（正常情况下 age 应该 < 16ms）。如果 age 持续增长超过几百毫秒，就要警惕主线程阻塞。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
-
 ## 常见触摸卡顿原因
 
 ### 1. 主线程阻塞
@@ -409,8 +389,6 @@ Input 事件在 App 端的分发过程是从 DecorView 开始，逐层遍历 Vie
 - 使用 ConstraintLayout 减少层级
 - 对于复杂列表，在 `onInterceptTouchEvent()` 中尽早拦截，避免事件在子 View 中无效遍历
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Android_针对app的view_input优化.md]
-
 ### 3. 事件分发冲突
 
 当多个 View 同时对同一个触摸事件感兴趣时（比如外层 ScrollView 和内层 RecyclerView 的滑动冲突），事件分发可能需要多轮协商才能确定最终消费者。每一轮协商都增加了延迟。
@@ -427,8 +405,6 @@ Input 事件在 App 端的分发过程是从 DecorView 开始，逐层遍历 Vie
 Android 系统有 **Input Boost** 这类输入提频机制：在检测到 Input 事件时，短时间提高 CPU 频率，以加速事件处理和后续的帧渲染。持续时长、是否同时拉高 GPU，或者是否调整线程放置，都要看具体 SoC 和厂商策略。如果这类提频没有正确触发，触摸响应就会明显变慢。
 
 在 Perfetto 中可以通过 CPU Frequency Track 来验证：正常情况下，Input 事件到来后 CPU 频率应该在几毫秒内拉到高频；如果没有，说明 Boost 机制可能有问题。
-
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
 
 ### Android 16 MotionPredictor Native 实现
 
@@ -465,8 +441,6 @@ android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 
 - HeapTaskDaemon（GC 线程）频繁活跃
 - 主线程出现 Uninterruptible Sleep - IO 状态
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]
-
 ## Motion Prediction：面向笔迹/绘图的感知降延迟
 
 这里要把三个概念拆开：
@@ -482,8 +456,6 @@ android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 
 AndroidX `input-motionprediction` 更像兼容层和封装层。AndroidX release notes 显示，`1.0.0-beta06` 开始"系统 prediction API 可用时优先使用系统 API"，`1.0.0-rc01` 又把默认 `minSdk` 从 API 21 调整到 API 23。旧版 stylus 文档把 motion prediction 作为 API 19+ 的低延迟书写方案来介绍，但落到具体项目时，仍要以选用的 AndroidX 版本和当前构建配置为准，不能把这类文档表述直接写成 framework API 的起始版本。
 
 因此，本章把 Motion Prediction 限定在手写笔、绘图、签名这类连续轨迹场景。普通按钮点击和列表滑动通常不靠它解决延迟问题。对这类场景，更常见的主线仍是减少主线程阻塞、控制 batching 行为，以及缩短渲染上屏时间。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor] [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features] [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
 
 ## 厂商触控优化方案
 
@@ -582,78 +554,17 @@ Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`
   - `frameworks/base/core/java/android/view/Choreographer.java`
+- 官方文档：[Input 系统概述](https://source.android.com/docs/core/interaction/input)、[MotionEvent](https://developer.android.com/reference/android/view/MotionEvent)、[MotionPredictor](https://developer.android.com/reference/android/view/MotionPredictor)、[Advanced Stylus](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)、[AndroidX Input](https://developer.android.com/jetpack/androidx/releases/input)
+- [高爷 - Systrace 基础知识：Input 解读](https://www.androidperformance.com/2019/10/27/Android-Systrace-Input/)
+- [高爷 - Systrace 响应速度实战 1](https://www.androidperformance.com/2022/03/20/android-systrace-Responsiveness-in-action-1/)
+- 高爷 - 从 Input 响应性能差的 issue 演示 Perfetto Trace 用法（见 Obsidian 素材）
+- 响应时延的科学研究（见 Obsidian 素材，原始论文待补充）
 - [已验证: 官方文档, source.android.com/docs/core/interaction/input]
 - [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 - [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor]
 - [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
 - [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
-- [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]（高爷原创：Systrace 基础知识 - Input 解读）
-- [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]（高爷原创：Systrace 响应速度实战 1）
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md]
-- [引用: http://gityuan.com/2016/12/11/input-reader/]
-- [引用: http://gityuan.com/2016/12/17/input-dispatcher/]
-<!-- AIW-源码调研-2026-05-11 -->
-## 源码级发现：HCI 感知阈值与 Android 端到端延迟映射
-
-本节之前提到 HCI 领域对触摸延迟的感知阈值为 10-25ms，但缺乏具体源码支撑。基于最新的源码调研，我们发现 Android 系统与 HCI 感知阈值之间存在重要映射断层：
-
-### 延迟映射断层
-
-**HCI 实验室研究**（Characterizing Latency in Touch and Button-Equipped Devices）：
-- 直接触摸的 Just Noticeable Difference (JND) 为 **2ms**
-- 明显感知阈值为 **50-100ms** 
-- 主流设备实测延迟范围：50-200ms
-
-**Android 系统实现**：
-- 输入系统通过 **5秒 ANR 机制** 提供容错保障
-- 实际设备延迟：高端设备 50-78ms，中端设备 78-120ms，入门设备 120-200ms+
-- 延迟断层：HCI JND (2ms) vs ANR 机制 (5000ms)，相差 2500 倍
-
-### InputDispatcher 端到端延迟机制
-
-**源码位置**：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-
-**核心调用链**：
-1. `InputManagerService` → 
-2. `InputDispatcher::waitForEvents()` → 
-3. `InputDispatcher::dispatchMotion()` → 
-4. `InputChannel` → 
-5. `ViewRootImpl` → 
-6. `Activity.handleTouchEvent()`
-
-**延迟预算分配**：
-- **硬件层**：5-15ms (120Hz-240Hz 扫描率)
-- **驱动层**：10-20ms (中断处理 + 坐标转换)  
-- **系统服务层**：15-30ms (InputFlinger + SurfaceFlinger)
-- **应用层**：20-50ms (事件分发 + UI 线程处理)
-- **渲染层**：30-50ms (绘制 + 垂直同步)
-
-### 版本演进影响
-
-**Android 15-16 架构改进**：
-- **InputFlinger Rust 组件引入**：提升事件处理效率
-- **ARR (Adaptive Refresh Rate) 协同**：减少渲染等待时间
-- **预测性返回性能优化**：降低交互延迟
-
-**厂商实现差异**：
-- Google Pixel：目标延迟 < 50ms，实际 45-55ms
-- Samsung AMOLED：目标延迟 < 60ms，实测 48ms (高端)
-- 入门机型：目标 < 100ms，实际 80-150ms
-
-### 性能影响层级
-
-基于源码分析，用户体验影响分为四个层级：
-1. **不可感知延迟** (<20ms)：最佳体验
-2. **微延迟感知** (20-50ms)：功能正常，性能略有下降  
-3. **明显感知延迟** (50-100ms)：交互不流畅，影响精度
-4. **严重影响延迟** (>100ms)：操作迟钝，用户满意度显著下降
-
-### 源码级结论
-
-Android 输入系统在 HCI 感知阈值与产品实现之间存在显著映射断层。需要建立基于 JND 的性能目标体系，并优化 InputDispatcher 的事件处理机制以实现更好的用户体验。当前系统主要通过 5 秒 ANR 机制提供容错，但缺乏与 HCI 感知阈值的精确对应关系。
-
-**建议**：在产品规划中建立分层的性能目标体系：
-- 基础层：<100ms (入门设备，避免严重影响)
-- 标准层：<80ms (中端设备，确保明显感知阈值内)  
-- 优秀层：<60ms (高端设备，接近微延迟感知边界)
+-
+-
+-
+-
