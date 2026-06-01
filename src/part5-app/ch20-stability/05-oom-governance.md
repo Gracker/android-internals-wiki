@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
 created_by: "task2a"
 reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
@@ -35,8 +35,9 @@ last_task6_at: "2026-05-13T21:32:00+08:00"
 last_task6_review_log: logs/review/2026-05-13-21-review.md
 task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
 task9_result: "needs-rework"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
+last_task2b_lite_at: "2026-06-01"
 last_task9_at: "2026-05-19T00:30:02+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-19
@@ -224,14 +225,14 @@ Threads:	387
 
 **线程回溯兜底**（防护）
 
-针对子线程的 Native Crash，可以通过 `sigsetjmp` / `siglongjmp` 机制在 `pthread_create` 的执行函数入口设置安全点。当子线程发生 SIGSEGV 等信号时，信号处理函数调用 `siglongjmp` 跳回安全点，避免进程崩溃。具体实现通过 PLT Hook 拦截 `pthread_create`，替换执行函数实现。详见扩展小节"OOM 兜底与安全降级"。
+针对子线程的 Native Crash，`sigsetjmp` / `siglongjmp` 只能作为强约束下的线程级隔离实验：信号处理函数只能执行 async-signal-safe 的最小跳转逻辑，跳回后也不能假定锁、堆、JNI 和业务状态仍然一致。具体实现通过 PLT Hook 拦截 `pthread_create`，替换执行函数实现；命中后应记录最小状态并尽快结束进程，详见扩展小节"OOM 兜底与安全降级"。
 
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md]
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
-## FD 泄漏导致的 OOM
+## FD 泄漏导致的资源型崩溃
 
-Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也让后续需要 epoll、pipe 或 socket 的初始化步骤失败——每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`），FD 泄漏到后期会直接阻塞新 Looper 的创建。FD 泄漏与线程数 OOM 是两个独立的治理维度：前者是文件描述符资源耗尽，后者是虚拟地址空间或 pthread 资源耗尽。
+Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也让后续需要 epoll、pipe 或 socket 的初始化步骤失败——每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`）。这类问题通常表现为 FD 创建失败、Looper/InputChannel 初始化失败或 FORTIFY abort，不等价于 ART 投递的 `OutOfMemoryError`；放在 OOM 治理章，是因为线上内存告警常把 FD、线程、虚拟地址空间一起作为进程资源水位管理。
 
 ### 典型崩溃堆栈
 
@@ -247,7 +248,7 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 | 类型 | 示例 | 说明 |
 |------|------|------|
 | 文件 | `open()` / `FileInputStream` | 日志库 mmap、数据库 WAL 文件 |
-| Socket | 网络请求、IPC | Binder 连接、WebSocket 长连接 |
+| Socket | 网络请求、网络长连接 | HTTP、WebSocket 长连接 |
 | Pipe | `pipe()` / `eventfd` | Looper 的 `mWakeEventFd`、线程间通信 |
 | epoll | `epoll_create()` | 每个 Looper 线程创建一个 epoll 实例 |
 | anon_inode | `memfd_create()` | 共享内存、Ashmem |
@@ -325,7 +326,7 @@ int proxy_open(char* path, int flags, int mode) {
 - 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并或按需加载。
 - 减少线程栈和 mmap/so 映射占用：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。每个 so 的代码段 + 数据段都要占用虚拟地址空间，动态合并或按需加载。
 - 拆分进程：将功能模块拆到独立进程，分摊虚拟地址空间压力。
-- `mallopt(M_PURGE, 1)` 归还空闲 arena 的物理页：这招降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
+- `mallopt(M_PURGE, 0)` 归还空闲 arena 的物理页：这招降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
 
 虚拟内存优化详见 23.6 节（大型 App 的多进程内存策略）。
 
@@ -357,9 +358,9 @@ Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
 
 注意：OOM 场景下创建新对象可能再次触发 OOM。降级逻辑中避免分配大对象，使用预分配的字符串和日志缓冲区。
 
-**Native 层：`sigsetjmp` / `siglongjmp` 线程级兜底**
+**Native 层：`sigsetjmp` / `siglongjmp` 线程级隔离**
 
-对子线程的 Native Crash（包括 SIGSEGV、SIGABRT），可以通过 PLT Hook 拦截 `pthread_create`，在执行函数入口调用 `sigsetjmp` 设置安全点。当信号处理函数收到 crash 信号时，调用 `siglongjmp` 跳回安全点：
+对子线程的 Native Crash（包括 SIGSEGV、SIGABRT），可以通过 PLT Hook 拦截 `pthread_create`，在执行函数入口调用 `sigsetjmp` 设置安全点。信号处理函数收到 crash 信号时，只能执行 async-signal-safe 的最小逻辑并调用 `siglongjmp` 跳回安全点：
 
 ```cpp
 static void* pthread_wrapper(void* arg) {
@@ -375,7 +376,7 @@ static void* pthread_wrapper(void* arg) {
 }
 ```
 
-适用场景：后台线程的非关键 crash（如日志写入、数据上报）。主线程 crash 不建议拦截——用户可见的操作中断后继续运行，状态难以保证一致性。
+适用场景只限后台线程的非关键 crash（如日志写入、数据上报）。跳回后进程可能已经持有不一致的锁、堆或 JNI 状态，只能做最小上报和安全退出；主线程 crash 不建议拦截，用户可见操作中断后继续运行，状态难以保证一致性。
 
 ### 大型 App 的内存预算管理
 

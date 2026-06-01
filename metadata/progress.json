@@ -2375,8 +2375,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T12:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-01T13:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T11:06:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2567,13 +2567,39 @@
       ],
       "verification": "禁用词扫描未新增命中；Android 版本边界未超过 Android 17 / API 37",
       "status": "done"
+    },
+    {
+      "date": "2026-06-01T13:35:00+08:00",
+      "task": "task2b-lite",
+      "lane": "lite",
+      "source": [
+        "frontmatter backlog fallback",
+        "task9-deep-tech-review"
+      ],
+      "sections": [
+        "20.5"
+      ],
+      "sections_title": [
+        "OOM 治理"
+      ],
+      "files": [
+        "src/part5-app/ch20-stability/05-oom-governance.md"
+      ],
+      "issues_fixed": [
+        "FD 耗尽改为资源型崩溃/初始化失败，说明与 ART OutOfMemoryError 的边界",
+        "Socket FD 示例移除 Binder 连接",
+        "mallopt(M_PURGE, 1) 改为 mallopt(M_PURGE, 0)",
+        "sigsetjmp/siglongjmp 补充 async-signal-safe、锁/堆/JNI 状态和安全退出边界"
+      ],
+      "verification": "Review log 2026-05-19-00-deep-review.md；本地代码示例 /Users/gracker/Github/matrix/.../MallCtl.cpp 与 Perfetto utils 使用 mallopt(M_PURGE, 0)；版本边界合规",
+      "status": "done"
     }
   ],
-  "last_task2b_at": "2026-06-01T12:50:00+08:00",
+  "last_task2b_at": "2026-06-01T13:35:00+08:00",
   "last_task2b_sections": [
-    "20.3"
+    "20.5"
   ],
-  "last_task2b_action": "frontmatter fallback rework: native crash ApplicationExitInfo/Breakpad/JNI/Crashpad/mooner fixes",
+  "last_task2b_action": "frontmatter fallback fixed-lite: FD resource classification, mallopt M_PURGE argument, Socket FD example, sigsetjmp/siglongjmp safety boundary",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2743,12 +2769,18 @@
     },
     "20.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "file": "src/part5-app/ch20-stability/05-oom-governance.md",
+      "last_task2b_lite_at": "2026-06-01T13:35:00+08:00",
+      "last_task2b_log": "logs/rework/2026-06-01-13-task2b-lite.md"
     },
     "20.6": {
       "status": "ready-for-review",
@@ -7022,6 +7054,16 @@
       "result": "fixed",
       "source": "frontmatter backlog fallback",
       "log": "logs/rework/2026-06-01-12-task2b-main.md"
+    },
+    {
+      "at": "2026-06-01T13:35:00+08:00",
+      "lane": "lite",
+      "sections": [
+        "20.5"
+      ],
+      "result": "fixed-lite",
+      "source": "frontmatter backlog fallback",
+      "log": "logs/rework/2026-06-01-13-task2b-lite.md"
     }
   ],
   "last_task2a_processed": "22.17",
@@ -11545,7 +11587,7 @@
       }
     ]
   },
-  "last_task2b_lite_at": "2026-06-01T01:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-01T13:35:00+08:00",
   "last_task2b_lite_sections": [
     "24.17"
   ],
