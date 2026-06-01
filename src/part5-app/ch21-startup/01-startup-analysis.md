@@ -15,7 +15,7 @@ tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 reviewed_by: openclaw-task6
@@ -33,6 +33,8 @@ last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
 task9_review_notes: "2026-06-02 Task9 auto-fix：将 ART 启动期 GC 口径从 Android 8+ 抑制 GC 修正为 Android 10+ fork 后临时放宽堆目标、2 秒后收缩；回到 Task6 复审。"
 last_task2b_lite_at: "2026-06-01"
 last_task9_autofix_at: "2026-06-02"
+last_task2b_verifier_at: "2026-06-02T03:33:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-02-03-task2b-verifier.md"
 ---
 
 # 启动完整路径分析（App 视角）

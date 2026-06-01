@@ -4064,19 +4064,22 @@
     },
     "21.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "queue_priority": 95,
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
       "file": "src/part5-app/ch21-startup/01-startup-analysis.md",
       "title": "启动完整路径分析（App 视角）",
       "last_task9_at": "2026-05-14T15:33:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-15-deep-review.md",
       "last_task6_at": "2026-05-14T16:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
+      "last_task6_review_log": "logs/review/2026-05-14-16-review.md",
+      "task2b_result": "fixed-lite",
+      "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-06-02-03-task2b-verifier.md",
+      "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。"
     },
     "25.4": {
       "status": "ready-for-review",
@@ -11771,13 +11774,12 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+  "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
   "last_task2b_verifier_sections": [
-    "22.3",
-    "25.9",
-    "19.24",
+    "21.1",
     "5.6",
-    "18.7"
+    "22.3",
+    "25.9"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -12008,6 +12010,28 @@
         "18.7: progress.section_18_7 aligned"
       ],
       "blocked": []
+    },
+    {
+      "at": "2026-06-02T03:33:00+08:00",
+      "by": "task2b-verifier",
+      "reviewed": [
+        "src/part5-app/ch21-startup/01-startup-analysis.md",
+        "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+        "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      ],
+      "status_corrections": [
+        "21.1: task9_state reviewed -> pending; progress aligned"
+      ],
+      "blocked": [
+        "5.6: queue still has pending task9-deep-tech-review P95 item"
+      ],
+      "skipped_locked": [
+        "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+        "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
+      ],
+      "result": "blocked",
+      "log": "logs/rework/2026-06-02-03-task2b-verifier.md"
     }
   ],
   "last_task2b_files": [
@@ -12635,5 +12659,21 @@
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
     "review_type": "task6-writing-quality-review"
+  },
+  "section_21_1": {
+    "section": "21.1",
+    "title": "启动完整路径分析（App 视角）",
+    "file": "src/part5-app/ch21-startup/01-startup-analysis.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-02-03-task2b-verifier.md",
+    "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。"
   }
 }
