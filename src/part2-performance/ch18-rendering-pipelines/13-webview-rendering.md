@@ -19,7 +19,7 @@ sources:
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: task6_pending
@@ -46,6 +46,8 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
 last_task9_autofix_at: "2026-06-02"
+last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
 ---
 
 <!-- outline-start -->

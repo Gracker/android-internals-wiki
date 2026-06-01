@@ -11774,12 +11774,11 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
+  "last_task2b_verifier_at": "2026-06-02T07:25:00+08:00",
   "last_task2b_verifier_sections": [
-    "21.1",
-    "5.6",
+    "18.13",
     "22.3",
-    "25.9"
+    "14.10"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -12032,6 +12031,18 @@
       ],
       "result": "blocked",
       "log": "logs/rework/2026-06-02-03-task2b-verifier.md"
+    },
+    {
+      "at": "2026-06-02T07:25:00+08:00",
+      "sections": [
+        "18.13",
+        "22.3",
+        "14.10"
+      ],
+      "status_corrections": 1,
+      "blocked": 1,
+      "result": "blocked",
+      "log": "logs/rework/2026-06-02-07-task2b-verifier.md"
     }
   ],
   "last_task2b_files": [
@@ -12400,7 +12411,7 @@
     "task6_new_rework": false,
     "review_type": "task6-writing-quality-review"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-02-07-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-01T21:35:00+08:00",
@@ -12468,8 +12479,8 @@
     "title": "WebView 渲染管线",
     "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
     "last_task6_at": "2026-06-01T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-06-01-23-review.md",
@@ -12479,7 +12490,7 @@
     "task2b_state": "fixed",
     "task6_review_summary": "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 4 处；Task2B 已收敛无证据实测表、版本边界和非公开 API 示例，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。",
     "task2b_result": "fixed",
-    "task9_result": "pending",
+    "task9_result": "auto-fixed",
     "last_task2b_at": "2026-06-01T22:58:00+08:00",
     "last_task2b_queue_source": "task9-deep-tech-review/task6-review",
     "last_task2b_priority": 90,
@@ -12489,7 +12500,13 @@
     "task6_l1_l2_fixes": 4,
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
-    "review_type": "task6-writing-quality-review"
+    "review_type": "task6-writing-quality-review",
+    "last_task9_at": "2026-06-02T04:21:00+08:00",
+    "last_task9_autofix_at": "2026-06-02",
+    "last_task9_review_log": "logs/deep-review/2026-06-02-04-deep-review.md",
+    "last_task2b_verifier_at": "2026-06-02T07:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-02-07-task2b-verifier.md",
+    "task2b_verifier_note": "2026-06-02 07:25 Verifier：Task9 auto-fix 晚于 Task6，queue 无 pending；修正 task9_state reviewed -> pending，回流 Task6。"
   },
   "section_20_5": {
     "section": "20.5",
