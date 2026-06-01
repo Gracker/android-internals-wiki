@@ -2375,8 +2375,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T11:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-01T12:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T11:06:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2539,13 +2539,41 @@
       "result": "fixed",
       "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "date": "2026-06-01T12:50:00+08:00",
+      "task": "task2b-rework",
+      "lane": "main",
+      "source": [
+        "frontmatter backlog fallback",
+        "task9-deep-tech-review"
+      ],
+      "sections": [
+        "20.3"
+      ],
+      "sections_title": [
+        "Native Crash 分析与治理"
+      ],
+      "files": [
+        "src/part5-app/ch20-stability/03-native-crash-governance.md"
+      ],
+      "issues_fixed": [
+        "ApplicationExitInfo: API 30/31 native tombstone protobuf 与 null 边界",
+        "Breakpad: 符号文件查找与地址映射源码锚点修正",
+        "JNI: 移除不存在的 JNIEnv->FindSymbol 口径，改为 ART resolve/dlsym/RegisterNatives",
+        "CFI/Java frame: 区分 native unwind 与 Dex/JIT/interpreter frame 识别",
+        "Crashpad: 修正 signal handler、handler process 与 ptrace/broker 职责",
+        "mooner: 补充隔离线程、竞态、跳过栈展开与 tombstone 保留边界"
+      ],
+      "verification": "禁用词扫描未新增命中；Android 版本边界未超过 Android 17 / API 37",
+      "status": "done"
     }
   ],
-  "last_task2b_at": "2026-06-01T08:50:00+08:00",
+  "last_task2b_at": "2026-06-01T12:50:00+08:00",
   "last_task2b_sections": [
-    "20.1"
+    "20.3"
   ],
-  "last_task2b_action": "review rework: unsupported HWC power/bandwidth percentages downgraded to qualitative trends",
+  "last_task2b_action": "frontmatter fallback rework: native crash ApplicationExitInfo/Breakpad/JNI/Crashpad/mooner fixes",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5509,15 +5537,17 @@
       "title": "Native Crash 分析与治理",
       "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-19T20:25:44+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-01T12:50:00+08:00",
+      "last_task2b_source": "frontmatter backlog fallback"
     },
     "21.10": {
       "status": "ready-for-review",
@@ -6982,6 +7012,16 @@
       ],
       "result": "fixed-lite",
       "log": "logs/rework/2026-05-28-09-task2b-lite.md"
+    },
+    {
+      "at": "2026-06-01T12:50:00+08:00",
+      "lane": "main",
+      "sections": [
+        "20.3"
+      ],
+      "result": "fixed",
+      "source": "frontmatter backlog fallback",
+      "log": "logs/rework/2026-06-01-12-task2b-main.md"
     }
   ],
   "last_task2a_processed": "22.17",
