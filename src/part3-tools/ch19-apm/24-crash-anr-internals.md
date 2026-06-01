@@ -1,7 +1,7 @@
 ---
 
 title: "崩溃与 ANR 捕获机制"
-chapter: "19"
+chapter: "19.24"
 section: "19.24"
 drafted_date: "2026-04-24"
 drafted_by: "gemini"
@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: "revisiting"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-31"
 reviewed_by: "openclaw-task6"
@@ -27,11 +27,11 @@ sources:
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: ready-for-review
+pipeline_stage: task6_pending
 task9_result: "auto-fixed"
-task9_state: "reviewed"
-task2b_state: "fixed"
+task9_state: pending
+task2b_state: fixed
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
 task9_reviewed_date: "2026-05-25"
@@ -59,10 +59,10 @@ last_task9_autofix_at: "2026-06-01"
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 说明 APM 稳定性基建的底层实现，解析 Java Crash、Native Crash 与 ANR 的捕获路径。
+- 🔹 [定位] 说明 APM 稳定性基础设施的底层实现，解析 Java Crash、Native Crash 与 ANR 的捕获路径。
 - 🔹 [Java Crash 捕获] 展开 `Thread.setDefaultUncaughtExceptionHandler` 的原理，以及如何保证自身上报逻辑不被 Crash 截断。
 - 🔹 [Native Crash 捕获] 解析 Google Breakpad / Crashpad 在 Android 端的应用，说明 Linux 信号（Signal）拦截机制与 Tombstone 文件的生成与解析。
-- 🔹 [ANR 捕获演进史] 从早期读取 `/data/anr/traces.txt`，到监听 SIGQUIT 信号 (Signal Catcher Hook)，再到 Android 11+ 官方 `ApplicationExitInfo` 的终极方案。
+- 🔹 [ANR 捕获演进史] 从早期读取 `/data/anr/traces.txt`，到监听 SIGQUIT 信号 (Signal Catcher Hook)，再到 Android 11+ 官方 `ApplicationExitInfo` 方案。
 - 🔹 [OOM 细分与防范] 拆解非 Java Heap OOM 的监控：文件描述符 (FD) 溢出、线程池暴增 (Thread Exhaustion)、虚拟内存地址空间 (VMA) 耗尽的监控与预警。
 - 🔹 [现场快照留存] 说明崩溃瞬间如何收集寄存器状态、内存使用率、Logcat 尾部日志、以及用户 Session 操作轨迹。
 - 🔹 [多 SDK 冲突] 解释当项目中同时存在多个 APM (如 Bugly + Firebase + 自研) 时，Crash Handler 被覆盖或死锁的风险及链接链处理方案。
@@ -146,7 +146,7 @@ class CrashHandlerInstaller {
 - 主线程崩溃时，系统马上会结束进程，本次网络请求大概率发不完。
 - 现场收集和后续上报解耦，便于后面统一做限流、重试和隐私裁剪。
 
-## 3. Native Crash：信号处理器只负责“保命级”快照
+## 3. Native Crash：信号处理器只负责最小现场快照
 
 Native Crash 在 Linux / Android 上通常表现为 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE`、`SIGTRAP` 等信号。`SIGTRAP` 常见于断点、调试陷阱，以及 GWP-ASan 等内存破坏检测路径。AOSP 系统侧会通过 `debuggerd` / `tombstoned` 生成 tombstone。应用侧 APM 如果也要采样，常见做法是安装 `sigaction` handler，再把最小现场交给 Breakpad 或 Crashpad。
 
@@ -289,7 +289,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 }
 ```
 
-这套接口把 ANR、LMK、Java Crash、Native Crash 都拉回了同一份退出历史模型，不只替代 `traces.txt`，也适合和自研 breadcrumb、前后台状态、版本号一起拼成稳定性样本。
+这套接口把 ANR、LMK、Java Crash、Native Crash 都纳入同一份退出历史模型，不只替代 `traces.txt`，也适合和自研 breadcrumb、前后台状态、版本号一起拼成稳定性样本。
 
 ## 5. OOM 不能只盯 Java Heap
 
@@ -317,11 +317,11 @@ fun readRecentExitRecords(context: Context): List<String> {
 - 高风险模块打点分桶，例如图片解码、数据库、WebView、音视频、日志系统
 - 应用重启后拉 `ApplicationExitInfo`，补齐 LMK 历史
 
-这样，后台才能区分“Java Heap 已爆”“Native RSS 持续长高”“FD 泄漏导致 socket 创建失败”“线程数过高导致调度抖动加重”这些不同问题。
+这样，后台才能区分“Java Heap 已耗尽”“Native RSS 持续增长”“FD 泄漏导致 socket 创建失败”“线程数过高导致调度抖动加重”这些不同问题。
 
 ## 6. 现场快照：崩溃当下只收最小集合，其余留到下次启动补齐
 
-现场快照的目标是帮后端聚类和复盘，不需要把整台设备所有信息都塞进一条记录。一个可执行的最小集合可以是：
+现场快照的目标是帮后端聚类和复盘，不需要把整台设备所有信息都写进一条记录。一个可执行的最小集合可以是：
 
 - 线程或 signal 基本信息：线程名、tid、signal、异常类型
 - 关键栈：Java 主线程栈、crashing thread native backtrace
@@ -334,7 +334,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 7. 多 SDK 冲突：默认假设 handler 会被覆盖
 
-项目同时接 Bugly、Firebase、自研 SDK 时，最常见的麻烦在于谁在收尾安装 handler，谁把前面的回调关系断了，重点不在“谁采得更多”。
+项目同时接 Bugly、Firebase、自研 SDK 时，最常见的风险在于谁在收尾安装 handler，谁把前面的回调关系断了，重点不在“谁采得更多”。
 
 ### 7.1 Java 层冲突
 
@@ -512,7 +512,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 ### 12.5 KOOM fork-dump 对低版本 OOM 的补偿
 
-KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，不依赖 `ApplicationExitInfo`：
+KOOM 的核心贡献是解决"Java heap OOM 时进程状态已经不稳定"的问题，不依赖 `ApplicationExitInfo`：
 
 ```
 主进程 Java heap 接近阈值（连续 N 次超过 heapThreshold）

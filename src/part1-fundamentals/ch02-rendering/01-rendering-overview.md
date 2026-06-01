@@ -32,14 +32,14 @@ review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁�
 task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。补齐 Choreographer#doFrame 的 CALLBACK_COMMIT 源码口径；P0 0 / P1 0 / P2 1，回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
 
-status: "ready-for-review"
+status: ready-for-review
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
-task2b_state: "fixed"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+task2b_state: fixed
 last_task6_at: "2026-06-01T11:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-11-review.md"
 task2b_result: "fixed"

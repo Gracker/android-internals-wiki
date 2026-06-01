@@ -11654,14 +11654,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+  "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
   "last_task2b_verifier_sections": [
+    "21.2",
     "19.24",
-    "19.09",
-    "22.3",
-    "19.16",
-    "19.12",
-    "18.15"
+    "18.15",
+    "2.1",
+    "2.5",
+    "22.3"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -11841,6 +11841,27 @@
       "result": "ready-for-task6",
       "log": "logs/rework/2026-05-28-15-task2b-verifier.md",
       "summary": "复查最近 6 个 fixed/fixed-lite/auto-fixed/task6_pending 章节；修正 14.3 task2b_state 与 1.9 Task6 回流状态；queue 无 pending，正文充分，无阻塞。"
+    },
+    {
+      "at": "2026-06-01T19:29:07+08:00",
+      "sections": [
+        "21.2",
+        "19.24",
+        "18.15",
+        "2.1",
+        "2.5",
+        "22.3"
+      ],
+      "files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md",
+        "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+        "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+        "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+        "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "state_corrections": 6,
+      "blocked": []
     }
   ],
   "last_task2b_files": [
@@ -12190,19 +12211,22 @@
     "title": "崩溃与 ANR 捕获机制",
     "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-31",
     "last_task6_at": "2026-05-31T22:10:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-31-22-review.md",
     "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_result": "auto-fixed",
     "task2b_state": "fixed",
-    "task2b_result": "fixed-lite"
+    "task2b_result": "fixed-lite",
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "last_task9_autofix_at": "2026-06-01"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-01T01:35:00+08:00",
@@ -12243,8 +12267,9 @@
     "last_task2b_rework_at": "2026-06-01T06:52:00+08:00",
     "last_task2b_log": "logs/rework/2026-06-01-06-task2b-main.md",
     "task2b_summary": "缺少测试条件的 HWC 功耗/带宽/性能百分比已降级为定性趋势，并补充数字回写所需记录模板。",
-    "last_task2b_verifier_at": "2026-06-01T07:30:00+08:00",
-    "last_task2b_verifier_log": "logs/rework/2026-06-01-07-task2b-verifier.md"
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "last_task9_autofix_at": "2026-06-01"
   },
   "section_5_14": {
     "section": "5.14",
@@ -12293,5 +12318,64 @@
     "task9_state": "pending",
     "task2b_state": "fixed",
     "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
+  },
+  "section_21_2": {
+    "section": "21.2",
+    "title": "启动框架设计与任务编排",
+    "file": "src/part5-app/ch21-startup/02-startup-framework.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "task9_result": "needs-rework",
+    "task2b_result": "fixed"
+  },
+  "section_2_1": {
+    "section": "2.1",
+    "title": "Android 渲染架构全景",
+    "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "task9_result": "auto-fixed",
+    "task2b_result": "fixed",
+    "last_task9_autofix_at": "2026-06-01"
+  },
+  "section_2_5": {
+    "section": "2.5",
+    "title": "MainThread 与 RenderThread 协作",
+    "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "task9_result": "auto-fixed",
+    "task2b_result": "fixed",
+    "last_task9_autofix_at": "2026-06-01"
+  },
+  "section_22_3": {
+    "section": "22.3",
+    "title": "Jetpack Compose 性能优化",
+    "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "task9_result": "auto-fixed",
+    "task2b_result": "fixed-lite",
+    "last_task9_autofix_at": "2026-06-01"
   }
 }

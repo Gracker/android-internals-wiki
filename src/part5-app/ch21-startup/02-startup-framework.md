@@ -2,7 +2,7 @@
 title: "启动框架设计与任务编排"
 chapter: "21.2"
 section: "21.2"
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, Jetpack App Startup 1.2.0, Alpha 1.2.0"
@@ -83,7 +83,7 @@ task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-de
 Application.onCreate 到首帧绘制之间的初始化工作，少则十几个，多则上百个。这些任务之间存在两类关系：
 
 1. **依赖关系**：SDK B 的初始化依赖 SDK A 的初始化结果（比如 Analytics SDK 需要先拿到 CrashReport SDK 的 deviceId）。
-2. **互斥关系**：某些任务必须在主线程执行（如 Looper 相关组件），某些只能在后台线程（如磁盘 IO）。
+2. **线程约束**：某些任务必须在主线程执行（如 Looper 相关组件），某些只能在后台线程（如磁盘 IO）。
 
 如果按线性顺序逐个执行，启动时间等于所有任务耗时之和。如果能把无依赖关系的任务并行化，启动时间趋近于关键路径上任务耗时之和。DAG 是表达这种并行机会的数据结构。
 
@@ -292,7 +292,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 - 默认 ExecutorService 只有一个通用线程池，不能天然区分 IO 密集型与 CPU 密集型任务；大型项目通常需要替换 `AlphaConfig` 的 executor 或在任务内部再做资源隔离
 - 项目社区活跃度一般，最近一次发布距今较久
 
-### 自研方案：什么时候需要造轮子
+### 自研方案：什么时候需要自己做启动框架
 
 [已验证: 基于多家大厂公开技术分享的综合分析]
 
