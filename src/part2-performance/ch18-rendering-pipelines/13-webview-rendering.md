@@ -12,17 +12,17 @@ sources:
   - AOSP frameworks/base/core/java/android/webkit/WebView.java
   - AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java
   - AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java
-  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 15+)
+  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 14-15) / WebViewUpdateServiceImpl2.java (Android 15-16; android-17.0.0_r1 tag unavailable)
   - AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()
   - Chromium android_webview/browser/gfx/browser_view_renderer.cc
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
 last_task2b_at: "2026-06-01T22:58:00+08:00"
 last_task2b_main_at: "2026-06-01T22:58:00+08:00"
@@ -30,20 +30,22 @@ last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
-task9_result: pending
-last_task9_at: "2026-05-31T02:20:00+08:00"
+task9_result: "auto-fixed"
+last_task9_at: "2026-06-02T04:21:00+08:00"
 last_task6_audit: "2026-05-19"
 review_round: 3
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-02"
+task9_reviewed_by: "openclaw-task9"
 last_task9_audit: "2026-05-31"
-task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-WebView-surfacecontrol-platform-boundary。"
+task9_review_notes: "2026-06-02 Task9 deep review: auto-fixed。修正 WebViewUpdateServiceImpl/WebViewUpdateServiceImpl2 在 Android 14-16 的源码路径与版本边界；回到 Task6 复审。"
 last_task6_at: "2026-06-01T23:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-23-review.md"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 4 处；Task2B 已收敛无证据实测表、版本边界和非公开 API 示例，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 task6_l1_l2_fixes: 4
 task6_l3_l4_issues: 0
 task6_new_rework: false
+last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
+last_task9_autofix_at: "2026-06-02"
 ---
 
 <!-- outline-start -->
@@ -412,7 +414,7 @@ adb shell dumpsys SurfaceFlinger | sed -n '/<包名或 layer 关键字>/,/^$/p'
 - `frameworks/base/core/java/android/webkit/WebView.java` - WebView 主要实现
 - `frameworks/base/core/java/android/webkit/WebChromeClient.java` - 全屏回调接口定义
 - `frameworks/base/core/java/android/webkit/WebViewFactory.java` - WebView 初始化与 provider 加载
-- `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java` - WebView provider 更新服务(Android 15+)
+- `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java`（Android 14-15）/ `WebViewUpdateServiceImpl2.java`（Android 15-16）- WebView provider 更新服务；android-17.0.0_r1 tag 暂不可用
 - `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` - GraphicBuffer 定义
 - `frameworks/native/libs/nativewindow/include/android/native_window.h` - ANativeWindowBuffer 定义
 

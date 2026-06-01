@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC
@@ -17,19 +17,19 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 last_task2b_lite_at: "2026-05-31"
 last_task2b_rework_at: "2026-06-01T06:52:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-21"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-02"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-last_task9_at: "2026-06-01T00:20:00+08:00"
+last_task9_at: "2026-06-02T04:21:00+08:00"
 last_task9_audit: 2026-05-31
 last_task9_autofix_at: "2026-06-01"
 review_notes: '2026-05-21 task9 idle audit: needs-rework。P1:HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
-last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 SIDEBAND 拼写、HWC skip-validate 当前源码锚点、Composer3 Capability.aidl 路径；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 HWC DEVICE/CLIENT/SIDEBAND、skip validate、tunneled playback 与 Perfetto/dumpsys 观察口径；无 P0/P1，自动晋升 finalized。"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-01T06:52:00+08:00"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
@@ -43,13 +43,13 @@ last_task6_review_log: "logs/review/2026-06-01-21-review.md"
 task6_result: "pass-light-edit"
 task6_state: reviewed
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-task9_state: pending
+task9_state: reviewed
 ---
 
 # 视频叠加与 HWC
