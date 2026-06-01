@@ -2,7 +2,7 @@
 title: "OOM 治理"
 chapter: "20.5"
 section: "20.5"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, art/runtime/gc/heap.cc"
@@ -23,9 +23,9 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: "fixed"
 created_by: "task2a"
 reviewed_date: "2026-06-01"
@@ -34,15 +34,15 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-01T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。删除虚拟内存治理重复 bullet，收敛口语化“这招”；L1/L2 通过，无新增回炉项，送 Task9 复核。"
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-06-01T14:37:15+08:00"
+last_task9_at: "2026-06-01T18:21:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-01"
-last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P0 2：ART Heap 路径修为 art/runtime/gc/heap.cc，JNI NewStringUTF 路径修为 art/runtime/jni/jni_internal.cc；P2 1：heapprofd 版本边界修为 Android 10+ 并补 user build 条件。回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的 OOM 治理；ART OOME 投递、Heap::ThrowOutOfMemoryError、JNI/native alloc、Bitmap native heap、pthread_create 与 heapprofd 边界经 AOSP android-16.0.0_r1 复核，无新增 P0/P1，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-01"
 ---
 
