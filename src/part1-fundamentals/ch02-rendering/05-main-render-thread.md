@@ -36,19 +36,21 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
+task6_reviewed_date: "2026-06-02"
+reviewed_date: "2026-06-02"
 task9_result: "auto-fixed"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
-last_task6_at: "2026-06-01T21:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-21-review.md"
-task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-task6_l1_l2_fixes: 0
+last_task6_at: "2026-06-02T02:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-02-review.md"
+task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（禁用词形态、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
+task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
@@ -58,6 +60,8 @@ p1: 0
 p2: 1
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # MainThread 与 RenderThread 协作
@@ -126,7 +130,7 @@ void draw(Canvas canvas) {
 }
 ```
 
-每个 View 内部持有一个 `RenderNode` 对象。当 View 的内容发生变化(调用了 `invalidate()`),RenderNode 会被标记为 dirty,其内部的 DisplayList 会在下一次 draw 阶段被重新构建。如果 View 只是位置变了而没有内容变化(调用了 `requestLayout()`),RenderNode 只需要更新变换矩阵,不需要重新构建 DisplayList--这是一个常见的优化点。
+每个 View 内部持有一个 `RenderNode` 对象。当 View 的内容发生变化(调用了 `invalidate()`),RenderNode 会被标记为 dirty,其内部的 DisplayList 会在下一次 draw 阶段被重新构建。如果 View 只是位置变了而没有内容变化(调用了 `requestLayout()`),RenderNode 只需要更新位置或变换相关状态,不需要重新构建 DisplayList--这是一个常见的优化点。
 
 measure、layout、draw 三步走完,主线程的产出是一棵最新的 DisplayList 树(对应 View 树的渲染指令)。接下来要把这些数据安全地移交给 RenderThread。
 
@@ -216,7 +220,7 @@ Perfetto 分析时要把两类队列分开：主线程 `Looper` 消息入队 / �
 
 ## RenderThread 的 GPU 渲染与 Fence 等待
 
-[图:MainThread 与 RenderThread 协作的整体架构图,展示 DisplayList 构建→SyncFrameState→GPU 渲染→QueueBuffer 的数据流]
+下图展示了 DisplayList 构建 → SyncFrameState → GPU 渲染 → QueueBuffer 的完整数据流：
 
 同步完成后,RenderThread 开始独立的渲染工作。这个阶段在 Perfetto 中表现为 RenderThread Track 上的 `DrawFrame` 切片。
 
@@ -271,7 +275,7 @@ SurfaceFlinger:                     ←── 收到 Buffer + acquire fence
 
 
 
-## [自动发现] RenderThread Bitmap 纹理上传--容易被忽视的帧时间陷阱
+## RenderThread Bitmap 纹理上传--容易被忽视的帧时间陷阱
 
 当 RecyclerView 快速滑动、ImageView 加载大图、或任何包含 Bitmap 绘制的场景出现掉帧时,除了 measure/layout 耗时的经典分析方向,还有一个高频根因容易被忽略:**Bitmap 纹理上传(texture upload)**。
 
@@ -423,7 +427,7 @@ LIMIT 20;
 
 **第五步:结合 Frame Timeline Track。** Android 12+ 提供了 Frame Timeline Track,它同时显示 Expected(预期时间线)和 Actual(实际时间线),一目了然地告诉我们哪帧是 Jank、哪帧正常。Frame Timeline 是最直观的"帧健康度"指标。
 
-[图:Perfetto 中主线程与 RenderThread 的典型协作时序,标注 syncFrameState 阻塞点]
+下图是 Perfetto 中主线程与 RenderThread 的典型协作时序，标注了 syncFrameState 阻塞点：
 
 ## 常见性能问题与排查
 
@@ -453,7 +457,7 @@ LIMIT 20;
 
 GPU 过载的优化方向是"减少 GPU 的工作量":降低过度绘制(在开发者选项中打开"显示 GPU 过度绘制"可以直观看到每个区域的叠加层数),简化 Shader(避免在 Fragment Shader 中做复杂计算),对不常变化的 View 使用 Hardware Layer 缓存渲染结果,以及适当降低图片分辨率。
 
-## [自动发现] 多窗口场景下的线程争抢
+## 多窗口场景下的线程争抢
 
 当同一进程里同时有多个可见 Surface,排队关系会多一层。`RenderThread::getInstance()` 是进程内单例,同一进程的多个窗口共用一条 RenderThread。因此同进程的 Dialog、PopupWindow、同应用 PiP 宿主窗口这类场景里,`performTraversals` 仍在一条 UI Thread 上串行,`DrawFrame` 也会在同一条 RenderThread 上串行。一个窗口在 `syncFrameState`、纹理上传或 `dequeueBuffer` 上拖长,后面的窗口就会一起晚。
 
@@ -468,7 +472,7 @@ GPU 过载的优化方向是"减少 GPU 的工作量":降低过度绘制(在开�
 
 **优化建议**:同进程弹层优先用 Fragment / View 复用同一棵 View 树,减少独立 Window;分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU,不要把瓶颈全部归到主线程。
 
-[图:同进程双窗口与跨进程分屏的 RenderThread 时序对比。上半部分显示同进程两个窗口共用一条 UI Thread 和一条 RenderThread;下半部分显示双进程各自渲染,竞争汇合到 SurfaceFlinger、GPU 和 fence。]
+同进程双窗口与跨进程分屏的 RenderThread 时序对比如下：上半部分为同进程两个窗口共用一条 UI Thread 和一条 RenderThread；下半部分为双进程各自渲染，竞争汇合到 SurfaceFlinger、GPU 和 fence。
 
 [已验证: AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 单例 `getInstance()`;Obsidian 素材 `Android/rendering_pipelines/presentation.md`]
 
@@ -505,9 +509,9 @@ view.animate()
 
 [已验证: AOSP android-5.0.2_r1 `core/java/android/view/ViewPropertyAnimatorRT.java`、`core/java/android/view/RenderNodeAnimator.java`; 官方文档 `developer.android.com/reference/android/view/ViewPropertyAnimator`]
 
-## [自动发现] BLAST 模式下的提交流程
+## BLAST 模式下的提交流程
 
-BLAST 不是 Android 10 就已经进入主线的新提交流程。就 AOSP 代码树看,`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 出现在 `android-11.0.0_r1`,`android-10.0.0_r1` 里还没有这个文件。更准确的说法是:Android 11 开始,窗口状态更新和 buffer 提交通常会收敛到 `SurfaceControl.Transaction` / BLASTBufferQueue 这条路径里,resize、裁剪和 buffer latch 更容易一起提交并保持同步;底层的 BufferQueue、GraphicBufferProducer / Consumer 机制仍然在。
+就 AOSP 代码树看,`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 出现在 `android-11.0.0_r1`,`android-10.0.0_r1` 里还没有这个文件。Android 11 开始,窗口状态更新和 buffer 提交通常会收敛到 `SurfaceControl.Transaction` / BLASTBufferQueue 这条路径里,resize、裁剪和 buffer latch 更容易一起提交并保持同步;底层的 BufferQueue、GraphicBufferProducer / Consumer 机制仍然在。
 
 放到 RenderThread 视角,`queueBuffer()` 交出去的仍然是 GraphicBuffer 及其同步信息。变化点在于窗口几何信息、buffer 更新和 transaction 合并得更紧,启动窗口切换、窗口 resize、多窗口动画这类场景里,buffer 和窗口状态错位的概率更低。
 
