@@ -36,19 +36,19 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_result: "auto-fixed"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
-last_task6_at: "2026-06-01T11:06:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-11-review.md"
-task6_review_notes: "2026-06-01 Task6 11:06：回炉后写作复审；完成 L1/L2 小修 3 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-task6_l1_l2_fixes: 3
+last_task6_at: "2026-06-01T21:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-21-review.md"
+task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
@@ -159,7 +159,7 @@ bool RenderThread::threadLoop() {
 }
 ```
 
-这里有两个观察点。`mEglManager = new EglManager()` 位于 `initThreadLocals()`,不在 `threadLoop()` 里。RenderThread 处理的是投递到内部 queue 的 draw、texture upload、layer update 等任务,不是某个固定的"显示更新函数"。
+两个细节需要分开看。`mEglManager = new EglManager()` 位于 `initThreadLocals()`,不在 `threadLoop()` 里。RenderThread 处理的是投递到内部 queue 的 draw、texture upload、layer update 等任务,不是某个固定的"显示更新函数"。
 
 RenderThread 不主动轮询。它大部分时间都在等主线程或系统其它模块把工作投进 queue。收到任务后,它会和 UI Thread 形成一条流水线,UI Thread 继续准备下一帧,RenderThread 负责把当前帧推向 GPU。
 
@@ -252,7 +252,7 @@ Android 16 需要单独看的变化是 headroom 相关 API，例如 GPU headroom
 
 ### Fence 机制
 
-Fence 是 Android 图形系统里的核心同步原语,表现为一个文件描述符(file descriptor),可以跨进程、跨 CPU/GPU 传递。(关于 Fence 的底层实现与 DMA-BUF 的关系,我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。)这里最容易讲反的是方向,所以先把语义钉住。
+Fence 是 Android 图形系统里的核心同步原语,表现为一个文件描述符(file descriptor),可以跨进程、跨 CPU/GPU 传递。(关于 Fence 的底层实现与 DMA-BUF 的关系,我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。)这里最容易讲反的是方向,所以先明确语义边界。
 
 **`queueBuffer()` 输入的 fence(到 consumer 一侧叫 acquire fence)**:RenderThread 提交一帧时,会把"GPU 可能还没完全写完这个 buffer"的 fence 一起交给 BufferQueue。这个 fd 到了 SurfaceFlinger / HWC 一侧,就表示"读之前先等 producer 写完",所以 consumer 会把它当 acquire fence。
 
@@ -411,7 +411,7 @@ LIMIT 20;
 
 ## 分析实操:从 Trace 定位瓶颈
 
-上面讨论了正常帧的时序和三种常见异常模式。面对一个具体的卡顿问题时,下面这套 Perfetto 分析流程可以将定位过程系统化:
+面对具体卡顿问题时,这套 Perfetto 分析流程可以将定位过程系统化:
 
 **第一步:看主线程的 doFrame 是否超时。** 如果 `Choreographer#doFrame` 整体超过 16.6ms(60Hz)或 11.1ms(90Hz),说明这一帧有问题。
 
@@ -427,7 +427,7 @@ LIMIT 20;
 
 ## 常见性能问题与排查
 
-当主线程和 RenderThread 的协作出现问题时,在 Perfetto 中的表现往往很有规律。下面我们看三个最常见的场景,以及各自的排查思路。
+主线程和 RenderThread 的协作出现问题时,Perfetto 中的表现往往很有规律。三个高频场景和排查思路如下。
 
 ### 布局嵌套过深,主线程耗时超标
 
@@ -466,7 +466,7 @@ GPU 过载的优化方向是"减少 GPU 的工作量":降低过度绘制(在开�
 - GPU counter 或 GPU busy track
 - 是否伴随 `trimMemory`、buffer 重新分配、纹理上传突增
 
-**优化建议**:同进程弹层优先用 Fragment / View 复用同一棵 View 树,减少独立 Window;分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU,别把所有锅都甩给主线程。
+**优化建议**:同进程弹层优先用 Fragment / View 复用同一棵 View 树,减少独立 Window;分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU,不要把瓶颈全部归到主线程。
 
 [图:同进程双窗口与跨进程分屏的 RenderThread 时序对比。上半部分显示同进程两个窗口共用一条 UI Thread 和一条 RenderThread;下半部分显示双进程各自渲染,竞争汇合到 SurfaceFlinger、GPU 和 fence。]
 
@@ -550,7 +550,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 
 **误区三:"多一个 View 就多一份 GPU 开销"**
 
-不准确。GPU 开销取决于 DisplayList 的复杂度和最终产生的像素数,而不是 View 的数量。一个包含复杂自定义绘制的单个 View,可能比 10 个简单 TextView 的 GPU 开销更大。关键看 DisplayList 的命令数量和过度绘制(Overdraw)情况。
+不准确。GPU 开销取决于 DisplayList 的复杂度和最终产生的像素数,而不是 View 的数量。一个包含复杂自定义绘制的单个 View,可能比 10 个简单 TextView 的 GPU 开销更大。判断依据是 DisplayList 的命令数量和过度绘制(Overdraw)情况。
 
 **误区四:"queueBuffer 耗时等于 GPU 渲染耗时"**
 
@@ -558,7 +558,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 
 ## 总结
 
-MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核心流水线。主线程负责构建"图纸"(DisplayList),RenderThread 负责把图纸变成"实物"(GPU 渲染),两者通过 SyncFrameState 这个同步点衔接。
+MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核心流水线。主线程负责构建 DisplayList 指令,RenderThread 负责提交 GPU 绘制并产出帧缓冲,两者通过 SyncFrameState 这个同步点衔接。
 
 理解这个协作机制后,我们在 Perfetto 中分析渲染性能问题就有了一条更清晰的路径:先看 doFrame 是否超时,再拆分主线程各阶段耗时,然后检查 syncFrameState 等待时间,再看 RenderThread 的 GPU 渲染和 Buffer 等待情况。这套分析方法适用于从滑动卡顿到动画掉帧的各种渲染类性能问题。
 
