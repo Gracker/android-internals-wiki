@@ -11,17 +11,17 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-24T19:30:00+08:00
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 5
 related_chapters:

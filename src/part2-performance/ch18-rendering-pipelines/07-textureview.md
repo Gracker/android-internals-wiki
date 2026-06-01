@@ -8,13 +8,12 @@ related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 task6_result: pass-light-edit
-task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-31"
 task2b_result: fixed-lite
