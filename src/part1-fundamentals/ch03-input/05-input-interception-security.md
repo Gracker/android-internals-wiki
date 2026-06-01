@@ -8,11 +8,11 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部
 confidence: medium
 reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -40,16 +40,17 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-05-09'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-09T06:20:00+08:00'
-last_task6_at: "2026-06-01T16:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-16-review.md"
-task6_review_notes: "2026-06-01 Task6 16: L1 小修 1 处；厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue 交 Task2B。2026-06-01 Task2B Lite 已将厂商游戏模式段落改为非 AOSP 边界说明，等待 Task6 复查。"
+last_task6_at: "2026-06-01T23:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-23-review.md"
+task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 1 处；保留既有待补充/待验证边界标注，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
 task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0：Android 17/InputDispatcher 密码场景 InputMonitor 切断缺少可复核 AOSP tag/source anchor；P1：通话中敏感权限封锁版本归属需重核。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-14-audit.md"
 last_task2b_lite_at: '2026-06-01'
 task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
 ---
 
 # 输入事件拦截与安全机制
@@ -353,7 +354,7 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 
 ### Android 16/17：从权限控制到物理隔离
 
-上面表格里最后三行值得展开说明。
+表格末尾几项需要单独说明。
 
 **Android 16：敏感视图隔离加强执行力度。** `accessibilityDataSensitive` 在 API 34 引入，Android 16 提升了执行力度。标记后的 View 对非 `isAccessibilityTool` 无障碍服务完全不可见——`AccessibilityInteractionClient` 查询返回空，服务拿不到 View 的坐标和尺寸。没有位置信息，`dispatchGesture()` 就无法构造精准的触摸注入。这层防御做在无障碍查询通道上，不经过 InputDispatcher 的事件拦截链。
 
