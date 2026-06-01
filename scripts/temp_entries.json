@@ -1,0 +1,80 @@
+[
+  {
+    "source": "Obsidian",
+    "relative_path": "Cubox/Android 高级工程师面试参考答案：性能优化-2026-05-31.md",
+    "title": "Android 高级工程师面试参考答案：性能优化",
+    "content_snippet": "性能优化是高级岗位里最容易拉开差距的部分。因为这类问题很难靠背诵过关，面试官更想确认你是否真的做过发现问题、定位根因、权衡方案、验证收益这一整套闭环。",
+    "quality_score": 19,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 4,
+    "verifiability": 5,
+    "mapping": "ch07",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  },
+  {
+    "source": "Obsidian",
+    "relative_path": "DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md",
+    "title": "Android 17 电池统计与 Tare 经济模型源码闭环",
+    "content_snippet": "Android 17 的电池统计系统以 BatteryStatsService 为核心服务，运行在 system_server 进程，通过 BatteryStats HIDL AIDL 接口对外暴露统计数据。",
+    "quality_score": 20,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 5,
+    "verifiability": 5,
+    "mapping": "ch11",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  },
+  {
+    "source": "Obsidian",
+    "relative_path": "Cubox/ltrace 工作原理分析-2026-05-31.md",
+    "title": "ltrace 工作原理分析",
+    "content_snippet": "ltrace 利用 Linux ptrace 系统调用附加到目标进程，在 PLT（Procedure Link Table）表项中插入 INT3 断点，当目标进程调用共享库函数时触发断点",
+    "quality_score": 19,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 4,
+    "verifiability": 5,
+    "mapping": "ch05",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  },
+  {
+    "source": "Obsidian",
+    "relative_path": "DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md",
+    "title": "荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研",
+    "content_snippet": "Android 官方对渲染链路的描述看，交互帧的关键路径本来就横跨应用线程、系统渲染线程和 Binder IPC：SurfaceFlinger 的 EventThread 唤醒应用 UI thread",
+    "quality_score": 20,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 5,
+    "verifiability": 5,
+    "mapping": "ch02",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  },
+  {
+    "source": "Obsidian",
+    "relative_path": "DeepResearch/2026-05-31-android-pm-install-staged-mechanism.md",
+    "title": "Android Package Manager 安装优化与 Staged Install 机制",
+    "content_snippet": "Android Package Manager 安装流程在 AOSP 中的关键路径为：PackageInstaller.Session.commit() → PackageInstallerSession.commit() → PackageManagerService.installPackage()",
+    "quality_score": 20,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 5,
+    "verifiability": 5,
+    "mapping": "ch06",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  },
+  {
+    "source": "Obsidian",
+    "relative_path": "DeepResearch/2026-05-31-android-compose-perf-remember-scopeproducestate.md",
+    "title": "Jetpack Compose 性能优化盲区 — rememberCoroutineScope / produceState / Strong Skipping",
+    "content_snippet": "produceState 底层依赖 LaunchedEffect，每次重组触发新的协程体。其源码路径为 androidx.compose.runtime/produceState.kt，通过 remember { mutableStateOf(initialValue) } 创建状态持有者",
+    "quality_score": 20,
+    "relevance": 5,
+    "technical_depth": 5,
+    "timeliness": 5,
+    "verifiability": 5,
+    "mapping": "ch07",
+    "indexed_at": "2026-06-01T05:45:00Z"
+  }
+]

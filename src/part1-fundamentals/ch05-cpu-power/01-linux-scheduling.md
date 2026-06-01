@@ -70,6 +70,8 @@ review_type: post-polish-quality-gate
 task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 已修复，剩余 P2（SoC 迁移数据、SQL 聚合、sched_base_slice 默认值边界）沿用既有 suggestions，不重复入队；等待 Task6 回炉。"
 last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 <!-- outline-start -->
@@ -107,8 +109,6 @@ last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 
 CFS（Completely Fair Scheduler）从 Linux 2.6.23（2007 年）开始成为默认调度器，它抛弃了固定时间片的概念，转而追求一个更优雅的目标：**让所有可运行进程的虚拟运行时间（vruntime）趋于一致**。
 
-[已验证: Linux kernel documentation, https://docs.kernel.org/scheduler/sched-design-CFS.html]
-
 CFS 的核心思想可以类比成一个记账系统：每个进程都有一个“账户”，记录了它已经消耗了多少 CPU 时间。调度器每次选择“账户余额最少”（vruntime 最小）的进程来运行，确保长期来看每个进程获得的 CPU 时间是公平的。
 
 ### vruntime：调度的核心标尺
@@ -125,8 +125,6 @@ delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 
 - **权重越高的进程**（nice 值越低），vruntime 增长越慢，越容易被再次选中运行——它获得了更多的 CPU 份额
 - **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被调度器换下 CPU
-
-[已验证: Linux v6.6 kernel/sched/fair.c, update_curr() / calc_delta_fair();注：AOSP platform tag 不包含内核源码，内核路径应以 Linux 或 Android common kernel 分支为准]
 
 ### CFS 调度循环的源码路径
 
@@ -150,8 +148,6 @@ schedule()
             └→ calc_delta_fair()       ← 按权重换算 vruntime
 ```
 
-[已验证: Linux kernel 5.10/6.1, kernel/sched/fair.c: update_curr() / calc_delta_fair() / enqueue_entity() / dequeue_entity() / pick_next_task_fair() / pick_next_entity() / check_preempt_wakeup()]
-
 ### 红黑树：O(log N) 的调度队列
 
 CFS 使用一棵红黑树（Red-Black Tree）来管理所有可运行进程。这是一棵自平衡二叉搜索树，以 vruntime 为 key 排序。
@@ -163,8 +159,6 @@ CFS 使用一棵红黑树（Red-Black Tree）来管理所有可运行进程。�
 进程的入队和出队操作（插入和删除）的时间复杂度都是 O(log N)，其中 N 是可运行进程的数量。即使系统中有几百个进程，log2(500) ≈ 9，调度开销依然很小。
 
 在 Perfetto 中，当一个进程从 Runnable 变为 Running，或者从 Running 被抢占回到 Runnable，对应的就是一次红黑树的出队和入队操作。如果看到大量短暂的 Running → Runnable 切换，往往意味着有更高优先级的进程频繁抢占。
-
-[已验证: 官方文档, https://docs.kernel.org/scheduler/sched-design-CFS.html]
 
 ### Linux 6.6 基线下怎么看“时间片”
 
@@ -184,8 +178,6 @@ static void update_deadline(struct cfs_rq *cfs_rq, struct sched_entity *se)
 沿着 6.6 源码看，任务先按 vruntime 记账，再用 `base_slice` 和权重换算出 virtual deadline；调度器只在 eligible task 里，通过 `pick_eevdf()` 选择 virtual deadline 最早的实体。拿 6.6 Trace 或源码做核对时，应该沿着这条路径看，不要再把 `sched_period()` 当成现行实现。
 
 如果这里是为了说明经典 CFS 的直觉，保留"权重决定 CPU 份额"这层解释就够了，但要明确它服务于原理理解，不是 Linux 6.6 fair.c 的现状描述。
-
-[已验证: Linux kernel docs `sched-design-CFS.html` / `sched-eevdf.html`;Linux v6.6 `kernel/sched/fair.c` `update_deadline()` / `entity_eligible()` / `pick_eevdf()`]
 
 ## 调度策略与优先级体系
 
@@ -215,8 +207,6 @@ Linux 内核不是只靠一种策略调度所有线程。对用户空间可见�
 
 `SCHED_FIFO` 和 `SCHED_RR` 也不是“谁永远压谁”的关系。它们都属于 RT 类，先比较 `sched_priority`。只有两个线程的 RT 优先级相同，策略差异才开始生效：`SCHED_FIFO` 不做同级轮转，`SCHED_RR` 会按 quantum 在同优先级队列里轮转。
 
-[已验证: man7 `sched(7)`;Linux v6.6 `include/linux/sched/prio.h`、`kernel/sched/core.c::__normal_prio()`、`include/linux/sched/deadline.h`]
-
 ### SCHED_DEADLINE：按截止时间调度
 
 `SCHED_DEADLINE` 通过 `sched_runtime`、`sched_deadline`、`sched_period` 描述任务预算和周期，内核实现采用 GEDF + CBS。它的层级高于 RT 类，通常需要 `CAP_SYS_NICE`。普通 Android App 几乎不会直接碰到它，但在讲"Linux 调度策略总表"时不能把它漏掉。
@@ -228,9 +218,6 @@ Linux 内核不是只靠一种策略调度所有线程。对用户空间可见�
 **`SCHED_RR`**:和 `SCHED_FIFO` 同属 RT 类，但同优先级线程之间会按 round-robin quantum 轮转。
 
 在 Android 中，实时调度主要出现在对时序非常敏感的线程里。最典型的是 AudioFlinger 的 FastMixer。音频周期通常只有几毫秒，一次调度抖动就可能变成 audible glitch。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-[已验证: 官方文档, developer.android.com/ndk/guides/audio]
 
 ### SCHED_OTHER / SCHED_BATCH：绝大多数线程的归宿
 
@@ -261,7 +248,7 @@ CFS 不直接使用 nice 值，而是通过一个查表将 nice 值映射为权�
 | 15 | 36 | × 0.035 |
 | 19 | 15 | × 0.015 |
 
-[已验证: Linux kernel 6.6, kernel/sched/core.c, prio_to_weight[](注：prio_to_weight[] 定义在 Linux 内核源码中，不在 AOSP platform tag 里)]
+(注：prio_to_weight[] 定义在 Linux 内核源码中，不在 AOSP platform tag 里)]
 
 从这个表中我们可以看出几个关键信息：
 
@@ -280,8 +267,6 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)    // nice 10
 Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY)       // nice -4
 Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY)// nice -8
 ```
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Process.java]
 
 当应用切换到后台时，系统会将其线程的 nice 值提升（优先级降低），减少对前台应用的影响。这是 oom_adj 调整机制的一部分——第 1.3 节（进程模型与生命周期管理）中有详细讨论。
 
@@ -306,9 +291,6 @@ CPU_SET(6, &mask);
 CPU_SET(7, &mask);
 sched_setaffinity(tid, sizeof(mask), &mask);
 ```
-
-[已验证: AOSP android-16.0.0_r1, bionic/libc/bionic/sched.cpp]
-[来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 
 ### 为什么需要绑核：大小核架构的调度陷阱
 
@@ -345,8 +327,6 @@ Android 更常见的控制入口是 task profiles。Framework 通过 `libprocess
 
 当应用从后台切到前台时，Perfetto 里看到线程从小核迁到大核，很多时候不是某个线程手工调用了 `sched_setaffinity()`，而是它所在进程组的 cpuset / cpu profile 变了。分析这类问题时，要同时看 thread affinity、cpuset 和调频策略。
 
-[已验证: bionic mainline `libc/include/pthread.h`;AOSP mainline `system/core/libprocessgroup/include/processgroup/processgroup.h`、`profiles/task_profiles.json`]
-
 ### 绑核的注意事项
 
 ### 硬件迁移效率对绑核必要性的影响
@@ -382,8 +362,6 @@ Runnable 状态有三种典型的进入方式，理解它们有助于判断调�
 **2. 用户抢占(User Preemption)**:线程的时间片用完，或者更高优先级的任务到来，调度器在从内核态返回用户态时换下当前线程。在 `sched_switch` trace 中标记为 `prev_state=R`。
 
 **3. 内核抢占(Kernel Preemption)**:更高优先级的任务在当前线程执行内核代码期间就强行将其打断。在 trace 中标记为 `prev_state=R+`。大量 R+ 通常意味着 CPU 满载，低优先级线程频繁被抢占。
-
-[已验证: 高爷博客素材, Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ### Perfetto SQL：量化调度延迟
 
@@ -439,8 +417,6 @@ ORDER BY cpu;
 - `Wall ≈ CPU`:计算过重，需要用火焰图定位热点函数
 - `Wall >> CPU`:大量时间花在 Runnable 或 Sleep 状态，需要检查调度延迟和线程依赖
 
-[已验证: 高爷博客素材, Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-
 ### 唤醒关系分析
 
 Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线程切片，UI 会显示一条箭头，指向唤醒它的源线程。这个功能基于内核的 `sched_wakeup` ftrace 事件。
@@ -455,8 +431,6 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 需要注意 `wakeup from` 信息有时不够准确，需要结合代码和上下文综合判断。
 
 在实际分析中，调度延迟是否值得关注，先看**关键路径上的 Runnable 时间是否超过了帧周期的 10%**。以 120Hz 屏幕为例，一帧周期为 8.33ms,如果主线程在 `doFrame` 期间有超过 0.8ms 的 Runnable 等待，就需要继续往下看。60Hz 屏幕下，这个阈值约为 1.6ms。
-
-[已验证: 高爷博客素材, Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md]
 
 ## EEVDF:CFS 的下一代演进(Linux 6.6+)
 
@@ -554,8 +528,6 @@ Real-time 线程（SCHED_FIFO/SCHED_RR）在 Android 中的使用策略随版本
 | Android 14+ | 后台执行限制继续加严，`cpuset/background` 收窄到小核子集，RT 线程几乎只存在于系统服务 |
 | Android 16 (GKI 6.1) | 默认 fair class 调度仍为 CFS 逻辑；sched_ext 基础设施在 common kernel 6.12 中可用但未默认启用 |
 
-[来源: AOSP Process.java 各版本注释、task_profiles.json 版本对比、Android 版本发布说明]
-
 ### 对 Android 性能分析的预期影响
 
 目前（截至 Android 16），主流 Android 设备的内核版本尚未大规模采用 EEVDF。但考虑到：
@@ -600,10 +572,6 @@ ORDER BY latency_bucket;
 
 如果未来在 EEVDF 内核上观察到调度延迟分布明显向左移（更多 < 1ms），说明 EEVDF 的延迟优化正在生效。
 
-[已验证: Linux kernel 6.6, kernel/sched/fair.c（EEVDF 实现已合入 fair.c 替代原 CFS 独立逻辑）]
-[来源: docs.kernel.org/scheduler/sched-eevdf.html; LWN "EEVDF scheduling" 系列]
-[待验证: Android 17 (2026 Q3) 是否默认启用 EEVDF —— 需关注 AOSP GKI 内核版本公告]
-
 ## Real-time 线程在 Android 中的使用
 
 [图：Perfetto 中 SCHED_FIFO 线程的 CPU 调度切片示意，标注 AudioFlinger/FastMixer 线程与普通 SCHED_NORMAL 线程的优先级差异]
@@ -615,9 +583,6 @@ Android 中使用 SCHED_FIFO 实时调度的场景主要集中在两个系统服
 **SurfaceFlinger 的部分关键路径**:虽然 SurfaceFlinger 的主循环使用 SCHED_NORMAL(CFS)，但在某些厂商的实现中，与显示硬件直接交互的线程可能被设置为实时优先级。
 
 实时线程如果失控（比如进入死循环），会导致整个系统无响应——实时优先级高于所有普通进程，连 watchdog 都抢不到 CPU。因此 Android 对 SCHED_FIFO 的使用非常谨慎，只在需要硬实时保证的场景使用。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/av/services/audioflinger/Threads.cpp]
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## SchedTune 与 UClamp:Android 的调度增强
 
@@ -716,8 +681,6 @@ Android 产品机上更常见的入口是 task profiles,而不是手写 `/proc`�
 
 厂商内核是否还保留 `stune`，要以目标设备实际 cgroup 布局为准——在 shell 里 `ls /dev/stune/` 存在就说明还在用旧路径。
 
-[已验证: AOSP `android11-release` / `android12-release` / `main` `system/core/libprocessgroup/profiles/task_profiles.json`;AOSP mainline `system/core/libprocessgroup/include/processgroup/processgroup.h`]
-
 ### 在 Perfetto 中的观察方法
 
 UClamp/SchedTune 在 Perfetto 中没有独立 Track,它们的效果只能通过调度行为的间接影响来观察。具体来说，关注两个 Track:
@@ -751,9 +714,6 @@ ORDER BY core_type;
 
 如果发现一个被标记为重要的线程大量时间在小核上运行，就需要检查 boost/UClamp 的设置是否生效，或者 cpuset 是否限制了该线程的可用核心。
 
-[已验证: Linux kernel, kernel/sched/ufreq.h 及 uclamp 相关定义]
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-
 ## 常见问题与误区
 
 ### "线程优先级越高，执行越快"
@@ -772,13 +732,11 @@ ORDER BY core_type;
 
 不一定。Runnable 状态本身是正常的——线程不可能永远在 Running。只有当 Runnable 时间在关键路径（如主线程的 doFrame 期间）中占比过高时，才需要关注。
 
-
 ### 进程优先级与内存回收的衔接
 
 调度优先级（nice 值、RT priority）与进程内存回收优先级（oom_score_adj）是两套独立但联动的体系。前台进程同时拥有更低的 nice 值和更低的 oom_score_adj，后台进程则两方面都被降级。两者通过 Android Framework 的 `ActivityManagerService.updateOomAdjLocked()` 协调：进程状态变化时，AMS 同时更新 cgroup cpuset/cpu profile（影响调度）和 oom_score_adj（影响 lmkd 杀进程决策）。
 
 Android OOM Adj 分数体系、lmkd PSI 监控机制和 TrimMemory 回调的完整源码分析见 §7.3「内存回收」。本节只覆盖与调度直接相关的交叉点：进程从 `top-app` 降到 `background` 时，cpuset 可用 CPU 集合收窄、cpu.uclamp.min 归零、nice 值提升，三者叠加让后台进程对前台调度的干扰降到最低。
-
 
 ## 调度问题的诊断决策框架
 
@@ -820,14 +778,6 @@ ORDER BY cpu;
 > ⚠️ 本框架覆盖的是基于 Perfetto 可观测信号的诊断路径。针对特定应用场景的调度优化经验（如大型社交应用的消息队列线程调度策略、游戏引擎的渲染线程调度配置等）需要结合具体应用架构和实测数据，不在本节讨论范围内。
 
 ## 参考资料
-
-### 联发科 SoC 平台差异——调度器与 cpufreq 行为
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-soc-platform-diff-dimensity-scheduling.md
-- 类型：DeepResearch 调研结果
-- 摘要：联发科 Dimensity 系列调度行为的源码级分析：schedutil governor 的 get_next_freq() 计算逻辑（含 25% tipping point）、uclamp 通过 uclamp_rq_is_capped() 影响频率上限的机制、EAS 在 1+3+4 big.LITTLE 拓扑上的能效决策、IOWait Boost 的指数增长策略，以及 MTK vendor kernel 闭源定制对 AOSP 开源部分的差异。
-- 注入时间：2026-05-12
-- 价值：schedutil/uclamp/EAS 的源码级调用链分析是稀缺的一手资料，联发科 1+3+4 拓扑的 EAS 迁移成本分析对 OEM 性能优化有直接参考价值
-
 
 - AOSP 源码：`kernel/sched/fair.c`、`kernel/sched/core.c`、`system/core/libprocessgroup/profiles/task_profiles.json`、`bionic/libc/include/pthread.h`
 - [Linux CFS 设计文档](https://docs.kernel.org/scheduler/sched-design-CFS.html)

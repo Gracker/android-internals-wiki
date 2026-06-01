@@ -87,3 +87,12 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 - 如果你在查"点了没反应""滑动不跟手",先读 `3.1`、`3.2`、`3.4`,把输入进入系统、进入应用、变成视觉反馈的时间顺序串起来。
 - 如果你在查系统手势冲突、返回手势掉帧或动画接不上的问题,继续读 `3.3` 和 `3.5`。Android 14/15 的 Predictive Back 已经把输入分发和返回动画预览绑得更紧。
 - 如果你在查高刷设备上的触控延迟、采样节奏或功耗波动,重点看 `3.4`,再和 `2.18` 的 ARR 机制对照。输入采样和刷新周期是否同步,会直接影响"跟手感"。
+
+## 延伸阅读
+
+### Android Input/Touch/Scroll 性能与延迟深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 输入链路跨进程流水线完整解析，含 InputReader/InputDispatcher/socketpair 传输、Choreographer CALLBACK_INPUT 批量消费、触摸 Resampling 精确常量（AOSP Resampler.cpp）、MotionPredictor TFLite 模型架构、FrameTimeline jank_type 归因，附 Perfetto stdlib android.input SQL 范式。
+- 注入时间：2026-06-01
+- 价值：输入链路最完整的源码级分析，Resampling 常量和 MotionPredictor TFLite 架构细节在公开资料中罕见

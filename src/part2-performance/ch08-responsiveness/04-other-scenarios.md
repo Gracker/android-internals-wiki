@@ -49,6 +49,8 @@ last_task6_at: "2026-05-08T09:08:46+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 # 其他响应速度场景
 
@@ -78,9 +80,9 @@ last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
 
 ## 为什么要关注「其他」响应速度场景
 
-§8.1 已经建立响应速度的基本框架——从用户感知出发，将响应定义为 TTID（Time To Initial Display）和 TTFD（Time To Fully Drawn）。§8.2 和 §8.3 分别从 App 启动全流程和启动优化策略角度做了深入分析。
+§8.1 建立了响应速度的基本框架——从用户感知出发，用 TTID 和 TTFD 两个指标衡量响应。§8.2 和 §8.3 分别拆解了 App 启动全流程和启动优化策略。
 
-但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果只优化冷启动，却忽略页面切换时几百毫秒的白屏、搜索时每次按键触发的卡顿，用户的体验感知仍然很差。
+但启动只是第一步。日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**。这四个高频场景各有各的性能瓶颈，分析方法也各不相同。冷启动优化得再好，页面切换白屏几百毫秒、搜索每次按键都卡一下——用户的感受还是差。
 
 本节要做的，是把启动之外最常见的四个响应速度场景逐一说明：它为什么慢、在 Trace 中怎么看、怎么优化。
 
@@ -94,14 +96,16 @@ last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
 
 调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这是一条跨进程的 Binder IPC 通信路径：
 
-**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送启动事务。Android 9（API 28）起，入口从旧版 `IApplicationThread.scheduleLaunchActivity()` 改为 `ClientTransaction` 模型：`ApplicationThread.scheduleTransaction(ClientTransaction)`，事务内携带 `LaunchActivityItem` 等生命周期回调项。目标进程的 `TransactionExecutor.execute()` 拆解事务后，经 `ActivityThread.handleLaunchActivity()` → `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。Android 8.x（API 26-27）仍使用 `scheduleLaunchActivity()` 直接传递启动参数。
+**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` 向 **system_server** 发起 Binder 请求。system_server 中的 `ActivityStarter` 做完权限检查、Intent 解析、Task 栈计算后，通过 Binder 向**目标进程**发送启动事务，目标进程依次完成：创建 Activity 实例 → `attach()` → `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
 
-整个流程涉及的耗时环节包括：
+版本差异要留意：Android 10（API 29）起，调用入口从 `ActivityManager.getService()` 切到了 `ActivityTaskManager.getService()`；Android 9（API 28）起，跨进程传输从旧版 `scheduleLaunchActivity()` 改成了 `ClientTransaction` 模型（事务内携带 `LaunchActivityItem`）；Android 8.x 仍走 `scheduleLaunchActivity()` 直接传参。
 
-- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。Android 16 的 `ProcessState.cpp` 默认线程池上限为 15（`DEFAULT_MAX_BINDER_THREADS`），与历史版本一致；Binder mmap buffer 也维持约 1MB（`BINDER_VM_SIZE`，减 2 个 page 的 guard）。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
-- **Activity 对象创建**：涉及类加载、构造函数、`attach()` 中创建 Window/PhoneWindow 等，通常 5-15ms。
-- **布局膨胀（Layout Inflate）**：这是最大的变量。一个复杂的布局可能需要 30-100ms 甚至更多。[已验证: 官方文档, developer.android.com/topic/performance]
-- **首帧渲染**：从 `onResume()` 完成到 VSync 信号触发 `doFrame()`，再到 RenderThread 完成绘制，通常需要 1-2 个 VSync 周期（16-33ms @60Hz）。
+这条路径上的耗时主要分布在四个环节：
+
+- **Binder IPC 往返**：两次跨进程（调用方→system_server→目标进程），每次约 1-5ms，system_server 负载高时明显增加。[已验证: AOSP android-16.0.0_r1, ProcessState.cpp]
+- **Activity 对象创建**：类加载、构造函数、`attach()` 中创建 Window/PhoneWindow，通常 5-15ms。
+- **布局膨胀**：最大的变量。复杂布局 30-100ms 甚至更多。[已验证: developer.android.com/topic/performance]
+- **首帧渲染**：从 `onResume()` 到 VSync 触发 `doFrame()`，再到 RenderThread 完成绘制，1-2 个 VSync 周期（16-33ms @60Hz）。
 
 在 Perfetto 中，可通过以下方式定位 Activity 跳转的耗时：
 
@@ -267,19 +271,19 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 ### 点击响应的完整时间线
 
-一个完整的点击响应涉及多个阶段：
+一次完整的点击响应，从手指触屏到看到反馈，要经过下面这些阶段：
 
-**1. 硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸事件 → 触摸 IC 通过 I2C/SPI 上报给驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟取决于硬件和驱动，App 开发者无法控制。
+**硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸 → IC 通过 I2C/SPI 上报驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟看硬件和驱动，App 开发者碰不到。
 
-**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件后，`InputDispatcher` 选择目标窗口，并通过 `InputChannel` 把事件发给应用进程。`InputChannel` 的 native 实现由 `InputTransport.cpp` 创建 Unix domain `socketpair(AF_UNIX, SOCK_SEQPACKET, 0, ...)`，事件通过 socket 传输；应用侧端点通常绑定到主线程 Looper，由 `ViewRootImpl.WindowInputEventReceiver` / native `InputEventReceiver` 接收后进入 ViewRootImpl 分发。如果主线程正在执行上一帧 `doFrame()`、同步 Binder 或 GC，事件会在主 Looper 上排队。Input 事件分发全流程见 §3.1。
+**InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读到事件后，`InputDispatcher` 选定目标窗口，通过 `InputChannel`（底层是 Unix domain socket pair）发给 App 进程。App 侧由 `ViewRootImpl.WindowInputEventReceiver` 接收，进入 ViewRootImpl 分发。如果此时主线程正在跑上一帧的 `doFrame()`、同步 Binder 或 GC，事件就会在主 Looper 排队。完整分发流程见 §3.1。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputTransport.cpp; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/view/ViewRootImpl.java]
 
-**3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最主要的环节。
+**主线程事件处理（变化最大）**：事件到 App 进程后进入主线程 Looper 的消息队列。主线程如果在跑 `doFrame()`、等同步 Binder 回复、或做 GC，事件就得排队。这是点击响应优化最关键的环节。
 
 **4. View 层级的事件分发（~1-5ms）**：从 DecorView 开始，经过 `dispatchTouchEvent()` → `onInterceptTouchEvent()` → `onTouchEvent()` 的分发路径，最终到达目标 View 的 `onClickListener`。View 层级越深，分发路径越长。
 
-**5. 视觉反馈（1-2 个 VSync 周期）**：onClick 回调中通常会修改 UI 状态（文字、颜色、位置），这需要等下一个 VSync 信号触发 `doFrame()` 才能渲染。如果 onClick 回调末尾调用了 `invalidate()`，从回调返回到实际像素出现在屏幕上，通常需要 16-33ms（1-2 帧 @60Hz）。
+**视觉反馈（1-2 个 VSync 周期）**：onClick 回调里改了 UI 状态（文字、颜色、位置），要等下一个 VSync 触发 `doFrame()` 才能渲染。从回调结束到像素上屏，通常 16-33ms（1-2 帧 @60Hz）。
 
 把这些阶段加起来，一个理想情况下的点击响应延迟大约是 30-60ms。Google 的 RAIL 模型建议点击响应在 100ms 以内，用户就会觉得「即时」。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
@@ -331,7 +335,7 @@ Trace.endSection();
 
 ## 搜索响应速度：实时搜索的防抖与预加载
 
-「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量，重则给服务端带来过高压力，更不要说在弱网环境下大量请求排队导致的卡顿。
+「边输入边搜索」是现代 App 的标配，也是最容易做错的响应速度场景。每次按键都发一次搜索请求——浪费流量、打爆服务端、弱网下请求排队卡死——这三个后果随便哪个都够受的。
 
 ### 防抖（Debounce）：搜索响应的基础策略
 
@@ -368,7 +372,7 @@ viewModelScope.launch {
 
 ### 节流（Throttle）与防抖的区别
 
-节流是另一个容易混淆的概念。防抖等用户「停下来」才触发，而节流是「每隔固定时间触发一次」。
+节流（Throttle）容易和防抖搞混。防抖是等用户「停下来」再触发，节流是「每隔固定时间触发一次」。
 
 在搜索场景中，防抖几乎总是比节流更好的选择。但在其他场景中（比如滚动事件的监听、连续点击的防重复），节流更合适。对于防止按钮连续点击，`throttleFirst(500ms)` 是标准做法——第一次点击立即生效，后续 500ms 内的点击全部忽略。
 

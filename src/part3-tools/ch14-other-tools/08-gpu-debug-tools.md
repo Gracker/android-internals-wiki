@@ -57,8 +57,8 @@ last_task6_review_log: "logs/review/2026-05-19-17-review.md"
 task6_review_notes: "2026-05-19 17:09 Task6 revisiting-review: pass-light-edit；L1/L2 小修：删除结构性元叙述，保持工具选型主线。AGI/Sokatoa 技术项已由 Task2B 修复，等待 Task9 复审。"
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-24"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: "2026-06-01"
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -87,11 +87,6 @@ last_deepseek_polish_at: "2026-05-24"
 
 - 🔸 **厂商专用工具的适用边界**：Mali / Adreno / Xclipse 各自能看到哪些专有计数器
 - 🔸 **Release 包与调试包的工具权限差异**：`profileable`、`debuggable` 与帧捕获能力的关系
-
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，后续加工与复审都应按锚点检查覆盖率。
-> 如果补入新的工具或版本变化，优先挂到最接近的锚点下，再决定是否新增扩展锚点。
 <!-- outline-end -->
 
 ## 为什么要用专门的 GPU 分析工具
@@ -100,7 +95,6 @@ last_deepseek_polish_at: "2026-05-24"
 
 Perfetto 能告诉我们“GPU 在忙”，但它看不到 GPU 内部发生了什么。GPU 是不是在等显存带宽？Shader 太复杂了导致 ALU 打满？还是 Draw Call 数量太多，驱动开销成了瓶颈？这些问题的答案，CPU profiling 工具给不了。
 
-[待补充：Perfetto GPU track 显示 GPU busy 但无法定位瓶颈的 Trace 截图]
 
 这就是 GPU 专用分析工具存在的意义。它们能深入 GPU 内部，告诉我们每一帧的 GPU 时间花在了哪里：哪个 Draw Call 最耗时，哪个 Shader 吃掉了最多的 ALU 周期，显存带宽是不是被 Overdraw 吃光了。
 
@@ -112,7 +106,6 @@ GPU 分析工具和 CPU 分析工具不是替代关系，是互补关系。先�
 
 Android 平台上的 GPU 分析工具大致分三层，对应的定位也不同：
 
-[图：Android GPU 分析工具全景图，按“系统级/帧级”和“开源/厂商专用”两个维度分类]
 
 **系统级追踪工具**：不分析单帧的 Draw Call 细节，而是看 GPU 在时间轴上的整体行为。适合回答"GPU 是不是瓶颈""GPU 利用率如何""显存带宽够不够"这类问题。
 
@@ -174,7 +167,6 @@ AGI 支持的 GPU 计数器因 GPU 厂商而异：
 - **ARM Mali**：Fragment 线程活跃数、Vertex 线程活跃数、内存带宽
 - **PowerVR**：Tiler 利用率、Renderer 利用率、Shader 处理量
 
-[待补充：AGI System Profiler 界面截图，展示 GPU 利用率和计数器曲线]
 
 ### Frame Profiler 的使用
 
@@ -281,7 +273,6 @@ Perfetto 中还有 `gpu.renderstages` 数据源，可以显示 Vulkan 或 GLES �
 - CPU 提交很快完成，GPU 执行时间长 → GPU bound
 - CPU 提交耗时长（比如在等 dequeueBuffer），GPU 执行很快 → CPU/buffer bound
 
-[待补充：Perfetto 中 CPU 提交 vs GPU 执行的时间对比 Trace 截图]
 
 ### Perfetto GPU 分析的局限
 
@@ -327,7 +318,6 @@ RenderDoc 最初是调试工具，不是性能分析工具。但它的一些功�
 2. **Overdraw 可视化**：RenderDoc 可以用热力图显示屏幕上每个像素被绘制了几次。红色区域（Overdraw > 4 次）通常是性能热点
 3. **资源统计**：统计一帧使用的纹理总内存、Buffer 总量、Draw Call 数量等
 
-[待补充：RenderDoc Overdraw 热力图示例]
 
 ### 与 AGI 的对比
 
@@ -563,7 +553,6 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 | Adreno 深度分析 | Snapdragon Profiler + AGI | - |
 | Mali 深度分析 | ARM Streamline + AGI | - |
 
-[图：工具选型对比表，按分析场景和工具能力两个维度对照]
 
 ## GPU 分析的注意事项
 
@@ -646,11 +635,5 @@ Android 15 开始，ANGLE 已经从“可选实验路径”走到“系统内可
 
 ### 进阶阅读
 - 移动平台 GPU 性能分析（知乎）：https://zhuanlan.zhihu.com/p/560738175
-- 基于 GPU Counters 数据的性能优化（Cubox 收藏）
-### Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）.md
-- 类型：DeepResearch 调研结果
-- 摘要：系统梳理 AGI、Perfetto、RenderDoc、Sokatoa 与 Arm/Qualcomm 厂商工具的分层关系，明确 System Profiler 本质是 Perfetto 封装、Frame Profiler 与帧级调试边界，并给出 2025-2026 年 GPU 分析工作流与兼容性判断。
-- 注入时间：2026-04-21
-- 价值：能把“先 Perfetto 定位，再用帧级或厂商工具定位细节”的工具链方法论讲清。
+- 基于 GPU Counters 数据的性能优化（Cubox 收藏）- 价值：能把“先 Perfetto 定位，再用帧级或厂商工具定位细节”的工具链方法论讲清。
 

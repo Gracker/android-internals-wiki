@@ -18,3 +18,12 @@
 
 - 如果你是 App 开发者，先看功耗模型和 App 侧优化。
 - 如果你更靠近系统或整机分析，系统级功耗优化和案例会更有价值。
+
+## 延伸阅读
+
+### 面向 SmartPerfetto 的 Android 功耗全链路分析研究报告
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ 面向 SmartPerfetto 的 Android 功耗（Power:Battery:Energy）全链路分析研究报告.md
+- 类型：DeepResearch 调研结果
+- 摘要：面向 SmartPerfetto 功耗分析能力建设全链路参考，梳理 6 类 Perfetto 功耗信号（power rails/ODPM、battery counters、CPU freq/idle、suspend/wakelock、sched+Wattson、network_packets），提出 power_analysis strategy+8-10 个技能设计，含 Android vitals 官方阈值。
+- 注入时间：2026-06-01
+- 价值：首次系统化将 Perfetto 功耗观测信号映射为可执行 SQL 规则集，对功耗自动化分析有方法论级贡献

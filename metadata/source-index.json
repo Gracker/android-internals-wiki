@@ -1,42 +1,724 @@
-[
-  {
-    "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-vrr-arr-refreshrateselector.md",
-    "title": "Android 17 VRR 自适应刷新率与 RefreshRateSelector 实现",
-    "summary": "Android 17 VRR/ARR 刷新率决策由 SF Scheduler 主导，RefreshRateSelector 通过 LayerVote 投票（NoVote/Min/Max/ExplicitDefault/Heuristic）计算最优刷新率，含完整调用链和源码锚点",
-    "chapter_mapping": "ch18/18.19",
-    "processed_at": "2026-05-30T22:13:06.499747+00:00",
-    "action": "queued"
-  },
-  {
-    "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md",
-    "title": "Android 17 Generational CMC 与 ART 虚拟机内存管理",
-    "summary": "Android 17 Generational GC 引入 ART CMC，新增年轻代收集路径降低 GC 开销，persist.art.gc.type 调试开关，Play System Updates 向下兼容至 Android 12+",
-    "chapter_mapping": "ch04/4.8",
-    "processed_at": "2026-05-30T22:13:06.499747+00:00",
-    "action": "injected"
-  },
-  {
-    "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-android-17-surfaceflinger-transaction-buffer-lifecycle.md",
-    "title": "Android 17 SurfaceFlinger 事务与缓冲区生命周期",
-    "summary": "SF 双缓冲状态模型、INVALIDATE/REFRESH 双消息、BufferQueue 完整状态机、Android 13 mScheduler 和 Android 17 DeliQueue 无锁重构",
-    "chapter_mapping": "ch02/2.6+2.13",
-    "processed_at": "2026-05-30T22:13:06.499747+00:00",
-    "action": "queued"
-  },
-  {
-    "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-sched-ext-eevdf-version-boundary-source-anchor.md",
-    "title": "sched_ext 与 EEVDF 调度器版本边界源码锚点",
-    "summary": "sched_ext 最高优先级调度类 Linux 6.12+，struct sched_ext_ops 核心字段、GameManagerService BPF map 联动、EEVDF 版本差异",
-    "chapter_mapping": "ch17/17.4",
-    "processed_at": "2026-05-30T22:13:06.499747+00:00",
-    "action": "queued"
-  },
-  {
-    "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-f2fs-adaptive-logging.md",
-    "title": "F2FS Adaptive Logging 机制与 I/O 调度性能分析",
-    "summary": "F2FS adaptive logging 从 copy-and-compaction 切换 threaded logging，6 持久化日志温度分类，LFS/SSR/AT_SSR 分配策略",
-    "chapter_mapping": "ch06/6.2",
-    "processed_at": "2026-05-30T22:13:06.499747+00:00",
-    "action": "queued"
-  }
-]
+{
+  "files": [
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-vrr-arr-refreshrateselector.md",
+      "title": "Android 17 VRR 自适应刷新率与 RefreshRateSelector 实现",
+      "summary": "Android 17 VRR/ARR 刷新率决策由 SF Scheduler 主导，RefreshRateSelector 通过 LayerVote 投票（NoVote/Min/Max/ExplicitDefault/Heuristic）计算最优刷新率，含完整调用链和源码锚点",
+      "chapter_mapping": "ch18/18.19",
+      "processed_at": "2026-05-30T22:13:06.499747+00:00",
+      "action": "queued"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md",
+      "title": "Android 17 Generational CMC 与 ART 虚拟机内存管理",
+      "summary": "Android 17 Generational GC 引入 ART CMC，新增年轻代收集路径降低 GC 开销，persist.art.gc.type 调试开关，Play System Updates 向下兼容至 Android 12+",
+      "chapter_mapping": "ch04/4.8",
+      "processed_at": "2026-05-30T22:13:06.499747+00:00",
+      "action": "injected"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-android-17-surfaceflinger-transaction-buffer-lifecycle.md",
+      "title": "Android 17 SurfaceFlinger 事务与缓冲区生命周期",
+      "summary": "SF 双缓冲状态模型、INVALIDATE/REFRESH 双消息、BufferQueue 完整状态机、Android 13 mScheduler 和 Android 17 DeliQueue 无锁重构",
+      "chapter_mapping": "ch02/2.6+2.13",
+      "processed_at": "2026-05-30T22:13:06.499747+00:00",
+      "action": "queued"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-sched-ext-eevdf-version-boundary-source-anchor.md",
+      "title": "sched_ext 与 EEVDF 调度器版本边界源码锚点",
+      "summary": "sched_ext 最高优先级调度类 Linux 6.12+，struct sched_ext_ops 核心字段、GameManagerService BPF map 联动、EEVDF 版本差异",
+      "chapter_mapping": "ch17/17.4",
+      "processed_at": "2026-05-30T22:13:06.499747+00:00",
+      "action": "queued"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-29-f2fs-adaptive-logging.md",
+      "title": "F2FS Adaptive Logging 机制与 I/O 调度性能分析",
+      "summary": "F2FS adaptive logging 从 copy-and-compaction 切换 threaded logging，6 持久化日志温度分类，LFS/SSR/AT_SSR 分配策略",
+      "chapter_mapping": "ch06/6.2",
+      "processed_at": "2026-05-30T22:13:06.499747+00:00",
+      "action": "queued"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "Cubox/Android 高级工程师面试参考答案：性能优化-2026-05-31.md",
+      "title": "Android 高级工程师面试参考答案：性能优化",
+      "content_snippet": "性能优化是高级岗位里最容易拉开差距的部分。因为这类问题很难靠背诵过关，面试官更想确认你是否真的做过发现问题、定位根因、权衡方案、验证收益这一整套闭环。",
+      "quality_score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "mapping": "ch07",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225207"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md",
+      "title": "Android 17 电池统计与 Tare 经济模型源码闭环",
+      "content_snippet": "Android 17 的电池统计系统以 BatteryStatsService 为核心服务，运行在 system_server 进程，通过 BatteryStats HIDL AIDL 接口对外暴露统计数据。",
+      "quality_score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapping": "ch11",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225214"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "Cubox/ltrace 工作原理分析-2026-05-31.md",
+      "title": "ltrace 工作原理分析",
+      "content_snippet": "ltrace 利用 Linux ptrace 系统调用附加到目标进程，在 PLT（Procedure Link Table）表项中插入 INT3 断点，当目标进程调用共享库函数时触发断点",
+      "quality_score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "mapping": "ch05",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225217"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md",
+      "title": "荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研",
+      "content_snippet": "Android 官方对渲染链路的描述看，交互帧的关键路径本来就横跨应用线程、系统渲染线程和 Binder IPC：SurfaceFlinger 的 EventThread 唤醒应用 UI thread",
+      "quality_score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapping": "ch02",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225218"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "DeepResearch/2026-05-31-android-pm-install-staged-mechanism.md",
+      "title": "Android Package Manager 安装优化与 Staged Install 机制",
+      "content_snippet": "Android Package Manager 安装流程在 AOSP 中的关键路径为：PackageInstaller.Session.commit() → PackageInstallerSession.commit() → PackageManagerService.installPackage()",
+      "quality_score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapping": "ch06",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225219"
+    },
+    {
+      "source": "Obsidian",
+      "relative_path": "DeepResearch/2026-05-31-android-compose-perf-remember-scopeproducestate.md",
+      "title": "Jetpack Compose 性能优化盲区 — rememberCoroutineScope / produceState / Strong Skipping",
+      "content_snippet": "produceState 底层依赖 LaunchedEffect，每次重组触发新的协程体。其源码路径为 androidx.compose.runtime/produceState.kt，通过 remember { mutableStateOf(initialValue) } 创建状态持有者",
+      "quality_score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapping": "ch07",
+      "indexed_at": "2026-06-01T05:45:00Z",
+      "scored_at": "2026-06-01T05:48:30.225221"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md",
+      "title": "荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研",
+      "summary": "基于公开 sched_ext/Binder 源码反推荣耀 MUSCHED VIP 调度层实现路径：sched_ext full-switch 模式下内部建 VIP/普通双层 DSQ，BPF_MAP_TYPE_TASK_STORAGE 管理动态 VIP 标记，Binder 优先级继承需 vendor 钩子扩展，含完整 DSQ 调度管线和 vendor hook 实现分析。",
+      "chapter_mapping": "ch17",
+      "processed_at": "2026-06-01T06:16:50.241657+08:00",
+      "action": "injected"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md",
+      "title": "字节跳动 Android 移动端性能·功耗·稳定性全栈技术方案",
+      "summary": "字节跳动移动端性能工具链全景梳理，涵盖 btrace 3.0 同步抓栈（ShadowHook 动态插桩+ART StackVisitor vptr swap）、ByteHook/ShadowHook/bytesig 三件套、Raphael/Liko/Kenzo 多层内存监控、ANR SIGQUIT 信号归因、功耗模型，以及豆包手机助手端云协同架构。",
+      "chapter_mapping": "ch17",
+      "processed_at": "2026-06-01T06:16:50.241657+08:00",
+      "action": "injected"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md",
+      "title": "Android Input/Touch/Scroll 性能与延迟深度调研",
+      "summary": "Android 输入链路跨进程流水线完整解析，含 InputReader/InputDispatcher/socketpair 传输、Choreographer CALLBACK_INPUT 批量消费、触摸 Resampling 精确常量（AOSP Resampler.cpp）、MotionPredictor TFLite 模型架构、FrameTimeline jank_type 归因，附 Perfetto stdlib android.input SQL 范式。",
+      "chapter_mapping": "ch03",
+      "processed_at": "2026-06-01T06:16:50.241657+08:00",
+      "action": "injected"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ 面向 SmartPerfetto 的 Android 功耗（Power:Battery:Energy）全链路分析研究报告.md",
+      "title": "面向 SmartPerfetto 的 Android 功耗全链路分析研究报告",
+      "summary": "面向 SmartPerfetto 功耗分析能力建设全链路参考，梳理 6 类 Perfetto 功耗信号（power rails/ODPM、battery counters、CPU freq/idle、suspend/wakelock、sched+Wattson、network_packets），提出 power_analysis strategy+8-10 个技能设计，含 Android vitals 官方阈值。",
+      "chapter_mapping": "ch11",
+      "processed_at": "2026-06-01T06:16:50.241657+08:00",
+      "action": "injected"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-17-resourcesmanager-configuration-system.md",
+      "title": "Android 17 ResourcesManager 与 Configuration 变更分发机制",
+      "summary": "基于 android-17.0.0_r1 源码分析 Configuration 变更分发路径：ConfigurationChangeToker->ATMS->ActivityThread->ResourcesManager->ResourcesImpl。确认 AOSP 无独立场景感知框架（ATOMSCENE 为 OEM 定制），Configuration 体系是 AOSP 的场景感知体现。",
+      "chapter_mapping": "ch16",
+      "processed_at": "2026-06-01T06:16:50.241657+08:00",
+      "action": "injected"
+    },
+    {
+      "title": "探索 Android 多线程优化方法",
+      "path": "AndroidWeekly/#11/探索 Android 多线程优化方法",
+      "source_url": "https://juejin.cn/post/6844903909178212359",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch13-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 多线程优化方法...技术分析",
+      "scored_at": "2026-06-01T09:10:11.360293"
+    },
+    {
+      "title": "Android耗电量一体化监控: Battery Historian + APM",
+      "path": "AndroidWeekly/#11/Android耗电量一体化监控: Battery Historian + APM",
+      "source_url": "https://juejin.cn/post/6899309167450783752",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android耗电量一体化监控: Battery Historian + APM...技术分析",
+      "scored_at": "2026-06-01T09:10:11.360301"
+    },
+    {
+      "title": "Artfactory、Jetpack和MVVM该如何完美结合？",
+      "path": "AndroidWeekly/#11/Artfactory、Jetpack和MVVM该如何完美结合？",
+      "source_url": "https://mp.weixin.qq.com/s/6P1wkQCwX_8QGlEA2koO7Q",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch14-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Artfactory、Jetpack和MVVM该如何完美结合...技术分析",
+      "scored_at": "2026-06-01T09:11:46.139487"
+    },
+    {
+      "title": "移动端UI一致性解决方案",
+      "path": "AndroidWeekly/#11/移动端UI一致性解决方案",
+      "source_url": "https://mp.weixin.qq.com/s/oq7ylltdRIdJuSlL7EIiNA",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-UI",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "移动端UI一致性解决方案...技术分析",
+      "scored_at": "2026-06-01T09:11:46.139498"
+    },
+    {
+      "title": "Linux Swap 介绍",
+      "path": "AndroidWeekly/#11/Linux Swap 介绍",
+      "source_url": "https://mp.weixin.qq.com/s/Sr1wbw-0E61RpqspAG9PgA",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux Swap 介绍...技术分析",
+      "scored_at": "2026-06-01T09:11:46.139500"
+    },
+    {
+      "title": "Linux Kernel调度器的过去，现在和未来",
+      "path": "AndroidWeekly/#11/Linux Kernel调度器的过去，现在和未来",
+      "source_url": "https://mp.weixin.qq.com/s/NLhI5mGsvjkU2464SYeiww",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch13-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux Kernel调度器的过去，现在和未来...技术分析",
+      "scored_at": "2026-06-01T09:12:17.835297"
+    },
+    {
+      "title": "史上最全Android渲染机制讲解（长文源码深度剖析）",
+      "path": "AndroidWeekly/#11/史上最全Android渲染机制讲解（长文源码深度剖析）",
+      "source_url": "https://mp.weixin.qq.com/s/0OOSmrzSkjG3cSOFxWYWuQ",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "史上最全Android渲染机制讲解（长文源码深度剖析）...技术分析",
+      "scored_at": "2026-06-01T09:12:17.835307"
+    },
+    {
+      "title": "先学Dart，再战 Flutter | 给 Android 开发者的 Dart 教程",
+      "path": "AndroidWeekly/#11/先学Dart，再战 Flutter | 给 Android 开发者的 Dart 教程",
+      "source_url": "https://mp.weixin.qq.com/s/_I3ouVOtV70rxWMroqnIFw",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "先学Dart，再战 Flutter | 给 Android 开发者的 Dart 教程...技术分析",
+      "scored_at": "2026-06-01T09:12:17.835309"
+    },
+    {
+      "title": "基于用户体验的性能优化思考 - 手势和多任务",
+      "path": "AndroidWeekly/#11/基于用户体验的性能优化思考 - 手势和多任务",
+      "source_url": "https://mp.weixin.qq.com/s/PGV4QbwoixHsE69E7OulTg",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于用户体验的性能优化思考 - 手势和多任务...技术分析",
+      "scored_at": "2026-06-01T09:12:17.835310"
+    },
+    {
+      "title": "再见 SharedPreferences，拥抱 Jetpack DataStore",
+      "path": "AndroidWeekly/#11/再见 SharedPreferences，拥抱 Jetpack DataStore",
+      "source_url": "https://mp.weixin.qq.com/s/VYLOAYcnfUqPcfMjQPp3ow",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch14-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "再见 SharedPreferences，拥抱 Jetpack DataStore...技术分析",
+      "scored_at": "2026-06-01T09:12:17.835312"
+    },
+    {
+      "title": "图解多平台 AndroidStudio 技巧(一)",
+      "path": "AndroidWeekly/#11/图解多平台 AndroidStudio 技巧(一)",
+      "source_url": "https://mp.weixin.qq.com/s/zDTx4I6CaIByL2VqX5UzjA",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch15-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "图解多平台 AndroidStudio 技巧(一)...技术分析",
+      "scored_at": "2026-06-01T09:12:42.156977"
+    },
+    {
+      "title": "图解多平台 AndroidStudio 技巧(二)",
+      "path": "AndroidWeekly/#11/图解多平台 AndroidStudio 技巧(二)",
+      "source_url": "https://mp.weixin.qq.com/s/NZPHH7xTQVDb8LInTJ6qXg",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch15-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "图解多平台 AndroidStudio 技巧(二)...技术分析",
+      "scored_at": "2026-06-01T09:12:42.156985"
+    },
+    {
+      "title": "Google 推荐在 MVVM 架构中使用 Kotlin Flow",
+      "path": "AndroidWeekly/#11/Google 推荐在 MVVM 架构中使用 Kotlin Flow",
+      "source_url": "https://mp.weixin.qq.com/s/63bZ_IKWdegDizlWZINjNw",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch14-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google 推荐在 MVVM 架构中使用 Kotlin Flow...技术分析",
+      "scored_at": "2026-06-01T09:12:42.156987"
+    },
+    {
+      "title": "Android D8编译器\"bug\"导致Crash的问题排查",
+      "path": "AndroidWeekly/#11/Android D8编译器\"bug\"导致Crash的问题排查",
+      "source_url": "https://mp.weixin.qq.com/s/483_hesZalaGRPebzz5tPA",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android D8编译器\"bug\"导致Crash的问题排查...技术分析",
+      "scored_at": "2026-06-01T09:12:42.156988"
+    },
+    {
+      "title": "Android Camera内存问题剖析",
+      "path": "AndroidWeekly/#11/Android Camera内存问题剖析",
+      "source_url": "https://mp.weixin.qq.com/s/BDv8-Dx_W_EWfBwK_wYr5g",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Camera内存问题剖析...技术分析",
+      "scored_at": "2026-06-01T09:12:42.156990"
+    },
+    {
+      "title": "贝壳APP Top Experience系列 | Android方法耗时统计工具",
+      "path": "AndroidWeekly/#11/贝壳APP Top Experience系列 | Android方法耗时统计工具",
+      "source_url": "https://mp.weixin.qq.com/s/J9xaUKKfdqhpT0zxOogzhw",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "贝壳APP Top Experience系列 | Android方法耗时统计工具...技术分析",
+      "scored_at": "2026-06-01T09:13:04.902620"
+    },
+    {
+      "title": "Android IO监控 | 性能监控系列",
+      "path": "AndroidWeekly/#11/Android IO监控 | 性能监控系列",
+      "source_url": "https://juejin.cn/post/6900810600188739592",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android IO监控 | 性能监控系列...技术分析",
+      "scored_at": "2026-06-01T09:13:04.902627"
+    },
+    {
+      "title": "Android图形系统之SurfaceTexture",
+      "path": "AndroidWeekly/#11/Android图形系统之SurfaceTexture",
+      "source_url": "https://juejin.cn/post/6844904161645953038",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android图形系统之SurfaceTexture...技术分析",
+      "scored_at": "2026-06-01T09:13:04.902629"
+    },
+    {
+      "title": "企鹅电竞高性能弹幕组件-实现以及优化 | KuTear",
+      "path": "AndroidWeekly/#11/企鹅电竞高性能弹幕组件-实现以及优化 | KuTear",
+      "source_url": "https://www.kutear.com/post/2020-03-20-egame-danmaku-opt/",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-UI",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "企鹅电竞高性能弹幕组件-实现以及优化 | KuTear...技术分析",
+      "scored_at": "2026-06-01T09:13:04.902631"
+    },
+    {
+      "title": "https://medium.com/livefront/kotlin-60fps-9c7b8b2122bb",
+      "path": "AndroidWeekly/#11/https://medium.com/livefront/kotlin-60fps-9c7b8b2122bb",
+      "source_url": "https://medium.com/livefront/kotlin-60fps-9c7b8b2122bb",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch13-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/livefront/kotlin-60fps-9c7b8b2122bb...技术分析",
+      "scored_at": "2026-06-01T09:13:04.902634"
+    },
+    {
+      "title": "https://medium.com/@mbayryamali/how-to-use-lottie-animations-effectively-848fa59551a7",
+      "path": "AndroidWeekly/#11/https://medium.com/@mbayryamali/how-to-use-lottie-animations-effectively-848fa59551a7",
+      "source_url": "https://medium.com/@mbayryamali/how-to-use-lottie-animations-effectively-848fa59551a7",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-UI",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/@mbayryamali/how-to-use-lottie-animations-effectively-848fa59551a7...技术分析",
+      "scored_at": "2026-06-01T09:14:10.824148"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/understanding-jetpack-compose-part-1-of-2-ca316fe39050",
+      "path": "AndroidWeekly/#11/https://medium.com/androiddevelopers/understanding-jetpack-compose-part-1-of-2-ca316fe39050",
+      "source_url": "https://medium.com/androiddevelopers/understanding-jetpack-compose-part-1-of-2-ca316fe39050",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch14-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/understanding-jetpack-compose-part-1-of-2-ca316fe39050...技术分析",
+      "scored_at": "2026-06-01T09:14:10.824159"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/under-the-hood-of-jetpack-compose-part-2-of-2-37b2c20c6cdd",
+      "path": "AndroidWeekly/#11/https://medium.com/androiddevelopers/under-the-hood-of-jetpack-compose-part-2-of-2-37b2c20c6cdd",
+      "source_url": "https://medium.com/androiddevelopers/under-the-hood-of-jetpack-compose-part-2-of-2-37b2c20c6cdd",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch14-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/under-the-hood-of-jetpack-compose-part-2-of-2-37b2c20c6cdd...技术分析",
+      "scored_at": "2026-06-01T09:14:10.824161"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/testing-app-startup-performance-36169c27ee55",
+      "path": "AndroidWeekly/#11/https://medium.com/androiddevelopers/testing-app-startup-performance-36169c27ee55",
+      "source_url": "https://medium.com/androiddevelopers/testing-app-startup-performance-36169c27ee55",
+      "weekly_issue": "#11",
+      "weekly_date": "2020-11-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/testing-app-startup-performance-36169c27ee55...技术分析",
+      "scored_at": "2026-06-01T09:14:10.824163"
+    }
+  ]
+}

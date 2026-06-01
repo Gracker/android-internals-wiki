@@ -63,6 +63,8 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
 review_round: 6
 last_task9_autofix_at: "2026-05-28"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: "2026-06-01"
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -91,14 +93,6 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 - 🔸 Android 16+ 后台执行配额与 wakelock 的交互
 - 🔸 Android 14+ `OnAlarmListener` 进程内精确回调的适用场景
 - 🔸 内核 `wakeup_source` 观测与 `wakeup_sources` 文件解读
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 AOSP 或研究素材里发现与本节强相关、但大纲未列出的点，
-> 可插入到最相关的锚点之后，并用 `[自动发现]` 标注来源。
-> 涉及版本差异、内核接口、功耗策略阈值的表述，优先保守表述，拿不准就标 `[待验证]`。
 <!-- outline-end -->
 
 ## Wakelock 为什么存在：Android 需要“阻止睡眠”的场景
@@ -490,7 +484,6 @@ adb bugreport bugreport.zip
 
 在 Battery Historian 的时间线上，wakelock 显示在 top bar 区域。如果某个 App 的 wakelock 条目在屏幕关闭后长时间存在（特别是整段时间都是连续的），几乎可以确定存在问题。
 
-[图：Battery Historian wakelock 时间线截图，标注屏幕关闭后的连续持有区间]
 
 ### dumpsys batterystats 解读
 
@@ -662,7 +655,9 @@ Android 12+ 对 Foreground Service 引入了严格的限制：
 
 > If your app is running a foreground service and needs to keep the device awake, use a `PARTIAL_WAKE_LOCK` in conjunction with the foreground service.
 
-即：如果 Foreground Service 需要在屏幕关闭后继续保持 CPU 运行，仍然需要显式获取 `PARTIAL_WAKE_LOCK`。两者解决的是不同问题——Foreground Service 解决的是进程被杀死的问题，wakelock 解决的是 CPU suspend 的问题。
+即：如果 Foreground Service 需要在屏幕关闭后继续保持 CPU 运行，仍然需要显式获取 `PARTIAL_WAKE_LOCK`。
+
+除了 wakelock 本身的生命周期管理，Android 15 还引入了更细粒度的功耗控制 API，让应用可以主动向系统声明能效偏好。两者解决的是不同问题——Foreground Service 解决的是进程被杀死的问题，wakelock 解决的是 CPU suspend 的问题。
 
 因此，"Foreground Service 本身会持有 wakelock" 这个说法是不准确的。常见的使用方式是：Foreground Service + 通知 + 必要时显式获取 `PARTIAL_WAKE_LOCK`。
 

@@ -181,3 +181,17 @@
 - 摘要：智先森zhi分享了如何使用 Now in Android 架构从零开始构建一款 NBA 应用，详细介绍了模块化设计和 Convention Plugins 构建配置，帮助开发者摆脱重复配置工作，专注于核心业务逻辑实现。
 - 入库时间：2026-05-28
 - 评分：12/20
+
+### 荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md
+- 类型：DeepResearch 调研结果
+- 摘要：基于公开 sched_ext/Binder 源码反推荣耀 MUSCHED VIP 调度层实现路径：sched_ext full-switch 模式下内部建 VIP/普通双层 DSQ，BPF_MAP_TYPE_TASK_STORAGE 管理动态 VIP 标记，Binder 优先级继承需 vendor 钩子扩展，含完整 DSQ 调度管线和 vendor hook 实现分析。
+- 注入时间：2026-06-01
+- 价值：首个基于 sched_ext 的手机厂商调度产品级实现公开反推，对理解 sched_ext 在 Android OEM 中的落地路径有独特价值
+
+### 字节跳动 Android 移动端性能·功耗·稳定性全栈技术方案
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：字节跳动移动端性能工具链全景梳理，涵盖 btrace 3.0 同步抓栈（ShadowHook 动态插桩+ART StackVisitor vptr swap）、ByteHook/ShadowHook/bytesig 三件套、Raphael/Liko/Kenzo 多层内存监控、ANR SIGQUIT 信号归因、功耗模型，以及豆包手机助手端云协同架构。
+- 注入时间：2026-06-01
+- 价值：国内头部 Android 厂商最完整的公开性能工具链文档，btrace 3.0 同步抓栈原理对理解 ART 内部机制有直接参考价值

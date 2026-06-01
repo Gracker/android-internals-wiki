@@ -74,7 +74,8 @@ task9_reviewed_date: "2026-05-31"
 last_task9_at: "2026-05-31T11:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-31-11-deep-review.md"
 task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；原理链完整性需补系统证据到业务归因映射，知识盲区需补厂商差异和Android 17特性，数据支撑需真实案例。自动晋升 finalized条件不满足（有P1问题）。"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-01
 ---
 
 # 功耗与包体积案例集
@@ -107,16 +108,15 @@ task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；
 
 案例写法保持一个边界：不编造某个项目的真实收益，不把参考书里的例子改头换面放进正文。这里给的是可复现的排查账本和判断模板，项目里的实际数字要用自己的 release 包、bugreport、Perfetto、Play Console Vitals 和灰度数据填进去。
 
-《Android 性能优化》把包体积拆成 dex、资源、`.so` 三类产物，再按精简、压缩、动态化处理；这个结构适合迁移到案例复盘里。功耗部分参考它的系统化组织方式，但事实验证以 Android Developers、AOSP 和前面 §25.1-§25.8 已验证内容为准。 [结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md] [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] [结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+《Android 性能优化》把包体积拆成 dex、资源、`.so` 三类产物，再按精简、压缩、动态化处理；这个结构适合迁移到案例复盘里。功耗部分参考它的系统化组织方式，但事实验证以 Android Developers、AOSP 和前面 §25.1-§25.8 已验证内容为准。
+
+
 
 ## 后台功耗异常排查实战
 
 后台功耗投诉通常从一句“升级后更耗电”开始，工程上要先把它改写成可验证问题：哪个版本、哪类设备、哪个时间窗口、App 在前台还是后台、屏幕是否关闭、网络和定位是否活跃、是否伴随 WakeLock 或 Alarm。没有这个转换，后面只会在日志、线程和业务代码之间来回猜。
 
 本案例采用一个常见场景：用户升级后反馈夜间待机掉电变快，App 本身没有长时间前台任务。排查从 §25.1 的功耗诊断流程开始，不重复 BatteryStats 和 Perfetto 的基础用法。
-
-[已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
-[已验证: 官方文档, developer.android.com/studio/profile/power-profiler]
 
 | 步骤 | 产物 | 要回答的问题 | 进入下一步的条件 |
 |------|------|--------------|------------------|
@@ -137,7 +137,8 @@ adb shell dumpsys batterystats --charged > batterystats-charged.txt
 adb shell dumpsys batterystats --history > batterystats-history.txt
 ```
 
-`--enable full-wake-history` 适合短时复现；长时间压测会增加历史记录量，脚本要控制采样窗口。导出后先按目标 UID 查 CPU time、WakeLock、network、GPS、Job / Sync / Alarm 记录，再回到 Perfetto 里看同一时间段的线程、网络包和 power rail。Power Profiler 读取 ODPM 设备的 power rail 数据，Pixel 6 及之后机型和部分支持 ODPM 的设备更容易拿到完整轨道。 [已验证: 官方文档, developer.android.com/studio/profile/power-profiler] [已验证: 官方文档, source.android.com/docs/core/power/power-stats-hal]
+`--enable full-wake-history` 适合短时复现；长时间压测会增加历史记录量，脚本要控制采样窗口。导出后先按目标 UID 查 CPU time、WakeLock、network、GPS、Job / Sync / Alarm 记录，再回到 Perfetto 里看同一时间段的线程、网络包和 power rail。Power Profiler 读取 ODPM 设备的 power rail 数据，Pixel 6 及之后机型和部分支持 ODPM 的设备更容易拿到完整轨道。
+
 
 判断时不要盯一个总耗电百分比。总耗电会受屏幕、信号、温度、系统后台任务影响。更稳的判断是“候选版本相比基线新增了什么行为”：例如息屏后新增周期网络请求、某个 Worker 重试未退避、定位请求没有在页面退出后释放、Alarm 唤醒后又启动一段异步任务。
 
@@ -149,16 +150,13 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 | WakeLock 跨过场景结束点 | 异常路径未释放、异步回调丢失、系统 API 归因到 App | 统一封装；固定 tag；超时；释放路径审计 | WakeLock 持有时长、held 状态、Vitals 趋势 |
 | Alarm 密集唤醒 | 固定周期精确 Alarm、任务拆得过碎、取消失败 | 非精确窗口；合并提醒；取消等价 PendingIntent | wakeup alarm 次数、Alarm tag、触发间隔 |
 
-[自动发现] 背景功耗案例的复盘报告应该同时记录“没有发现什么”。例如 CPU 没上升、GPS 没活跃、WakeLock 未命中，但 network radio active 增多。排除项能减少下一轮排查分歧，也能防止把所有耗电投诉都归到 WakeLock。
-
 ## APK 体积从 100 MB 到 50 MB 的优化路径
 
-“100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。 [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] [结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+“100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。
 
-[已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer]
-[已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
 
-体积账本要同时记录 raw file size、download size、安装后占用和功能覆盖范围。APK Analyzer 文档说明它会展示 zipped / raw file size 与 download file size；命令行可以用 `apkanalyzer` 和 `bundletool` 生成 CI 可读结果。 [已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer] [已验证: 官方文档, developer.android.com/tools/apkanalyzer]
+体积账本要同时记录 raw file size、download size、安装后占用和功能覆盖范围。APK Analyzer 文档说明它会展示 zipped / raw file size 与 download file size；命令行可以用 `apkanalyzer` 和 `bundletool` 生成 CI 可读结果。
+
 
 ```bash
 apkanalyzer -h apk file-size app-release.apk
@@ -180,12 +178,12 @@ bundletool get-size total --apks=app-release.apks --device-spec=pixel-8.json
 
 实际执行按风险从低到高排列。
 
-1. **打开官方 shrink 路径**：release 包启用 R8 和资源缩减。Android Developers 明确说明构建过程中先由 R8 移除无用代码，再由 Android Gradle Plugin 移除无用资源；资源缩减要和代码缩减一起使用。 [已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
-2. **处理明显重复产物**：删除无用资源、重复图片、多余语言 / 密度资源，排查 `assets/` 里的旧离线包和未使用字体。动态资源名通过 `res/raw/*.keep.xml` 明确保留，避免 shrink 后线上缺资源。 [已验证: 官方文档, developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep]
+1. **打开官方 shrink 路径**：release 包启用 R8 和资源缩减。Android Developers 明确说明构建过程中先由 R8 移除无用代码，再由 Android Gradle Plugin 移除无用资源；资源缩减要和代码缩减一起使用。
+2. **处理明显重复产物**：删除无用资源、重复图片、多余语言 / 密度资源，排查 `assets/` 里的旧离线包和未使用字体。动态资源名通过 `res/raw/*.keep.xml` 明确保留，避免 shrink 后线上缺资源。
 3. **收窄 dex 与依赖**：从 APK Analyzer 的 dex 包名增长项开始，检查三方 SDK 是否只用少量能力却带入整套库；再查 consumer rules 是否把大包固定住。R8 规则细节见 §25.7。
-4. **治理 native 库**：NDK 文档说明 fat APK 会比单 ABI APK 大很多，建议使用 App Bundle 或 APK Splits，在保持兼容的同时减少下载体积。release 包还要移除不必要 debug symbol，并归档 symbol 给 native crash 还原。 [已验证: 官方文档, developer.android.com/ndk/guides/abis]
-5. **拆分低频能力**：OCR、地图、视频编辑、模型推理、小游戏资源这类低频大模块，优先评估 dynamic feature、Play Asset Delivery 或国内渠道的自研按需下载。AAB 支持按条件或运行时下载 feature module，大型资源可用 asset pack 的 install-time、fast-follow、on-demand 模式。 [已验证: 官方文档, developer.android.com/guide/app-bundle]
-6. **补兼容门禁**：Android 15 起 16 KB page size 设备成为 native 库兼容风险点；如果 APK 包含 `.so`，要检查 ELF segment alignment，`zipalign -P 16` 可用于让 `.so` 适配 16 KiB 与 4 KiB page 设备。 [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+4. **治理 native 库**：NDK 文档说明 fat APK 会比单 ABI APK 大很多，建议使用 App Bundle 或 APK Splits，在保持兼容的同时减少下载体积。release 包还要移除不必要 debug symbol，并归档 symbol 给 native crash 还原。
+5. **拆分低频能力**：OCR、地图、视频编辑、模型推理、小游戏资源这类低频大模块，优先评估 dynamic feature、Play Asset Delivery 或国内渠道的自研按需下载。AAB 支持按条件或运行时下载 feature module，大型资源可用 asset pack 的 install-time、fast-follow、on-demand 模式。
+6. **补兼容门禁**：Android 15 起 16 KB page size 设备成为 native 库兼容风险点；如果 APK 包含 `.so`，要检查 ELF segment alignment，`zipalign -P 16` 可用于让 `.so` 适配 16 KiB 与 4 KiB page 设备。
 
 下面这段 Gradle 配置只是 release 基线，不代表所有项目都能直接把体积减半。读者重点看代码缩减和资源缩减必须配套开启。
 
@@ -220,7 +218,8 @@ android {
 
 ## WakeLock 泄漏导致的电量投诉治理
 
-WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值，以及 24 小时内累计 ≥2h 的持续持锁；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。 [已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock] [已验证: 官方文档, developer.android.com/topic/performance/vitals/stuck-wakelock]
+WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值，以及 24 小时内累计 ≥2h 的持续持锁；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。
+
 
 治理从 Play Console 或本地复现都能开始，但两个入口的侧重点不同。
 
@@ -232,7 +231,8 @@ WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法�
 | Perfetto / Power Profiler | WakeLock 附近 CPU、网络、Alarm 是否同步活跃 | 时间线、线程、power rail | 需要设备支持和 trace 配置 |
 | Background Task Inspector | WorkManager 等库持锁情况 | 后台任务和 wake lock 视角 | 依赖调试环境，不替代线上趋势 |
 
-Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `PowerManager.newWakeLock()`，也可能因为 WorkManager、JobScheduler、DownloadManager、AlarmManager、定位、FCM、媒体播放等 API 产生归因到 App 的 WakeLock。WorkManager worker 在后台执行时获取的 WakeLock 会归因到创建 worker 的 App；AlarmManager 的 wakeup alarm 触发时，系统会让设备离开低功耗状态并持有 Partial WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls] [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakeup]
+Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `PowerManager.newWakeLock()`，也可能因为 WorkManager、JobScheduler、DownloadManager、AlarmManager、定位、FCM、媒体播放等 API 产生归因到 App 的 WakeLock。WorkManager worker 在后台执行时获取的 WakeLock 会归因到创建 worker 的 App；AlarmManager 的 wakeup alarm 触发时，系统会让设备离开低功耗状态并持有 Partial WakeLock。
+
 
 排查顺序可以压成五步：
 
@@ -242,7 +242,9 @@ Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `Power
 4. **修持锁模型**：能交给 WorkManager 的任务不要手写 WakeLock；必须手写时固定 tag、带超时、`try/finally` 释放、封装在单一负责人里。
 5. **接发布守门**：新增 WakeLock、Exact Alarm、长时间后台 worker 都要进入 review；灰度看 Vitals 和自建 APM 的趋势。
 
-AOSP 侧可以用 §25.3 已验证的入口理解责任边界：`PowerManagerService` 负责系统 WakeLock 状态管理，`BatteryStatsService` / BatteryStats 体系记录归因统计，`AlarmManagerService` 负责 Alarm 触发与唤醒相关行为。正文只引用路径，不在本节展开实现。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java]
+AOSP 侧可以用 §25.3 已验证的入口理解责任边界：`PowerManagerService` 负责系统 WakeLock 状态管理，`BatteryStatsService` / BatteryStats 体系记录归因统计，`AlarmManagerService` 负责 Alarm 触发与唤醒相关行为。正文只引用路径，不在本节展开实现。
+
+
 
 WakeLock 治理的代码审查清单要比“有没有 release”更细：
 
@@ -254,8 +256,6 @@ WakeLock 治理的代码审查清单要比“有没有 release”更细：
 | 异常路径 | `finally`、取消回调、超时回调都释放 | 网络回调、协程取消、线程池拒绝后锁仍 held |
 | 替代 API | WorkManager / JobScheduler / DownloadManager / FGS 能覆盖时优先使用 | 后台同步、周期任务、下载都手写锁 |
 | 观测字段 | tag、owner、trigger、acquire / release uptime、timeout、visible_to_user | 线上只看到耗电，无法映射业务 |
-
-[自动发现] WakeLock 案例不要只修一处泄漏。更有价值的改动是把 WakeLock 变成平台能力：统一封装、统一 tag 规范、统一上报字段、统一发布门禁。这样 Play Console 下次出现某个 tag，就能直接找到模块负责人、触发源和最近版本改动。
 
 ## 本节小结
 
