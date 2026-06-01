@@ -2,7 +2,7 @@
 title: "ANR 治理策略"
 chapter: "20.4"
 section: "20.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-02"
 last_verified_against: "AOSP android-16.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
@@ -28,23 +28,23 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
-task6_state: revisiting
-task9_state: pending
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-23T08:18:48+08:00"
 task6_reviewed_date: "2026-05-23"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-23"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-23T07:24:00+08:00"
+last_task9_at: "2026-06-02T03:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-23-08-review.md"
-task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 2 / P2 2；Dispatchers.IO 继承关系错误；FGS 晋升超时版本表缺失；SIGQUIT 自进程权限边界混淆；WorkManager/nativePollOnce P2 沿用既有 suggestions。"
-last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 03: pass-tech-review。复核 ANR 阈值、Broadcast/Provider/Service 超时、FGS 晋升计时、Binder timeout、goAsync 与 SIGQUIT 权限边界；无 P0/P1，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-02-03-deep-review.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 ---

@@ -36,3 +36,20 @@ Compose 1.10+ 中 rememberCoroutineScope 和 produceState 对组合性能的影�
 
 ---
 
+## [2026-06-02] 5.6 Android 功耗管理 — 知识盲区
+
+### 盲区描述
+Android 17 / API 37 范围内是否存在可公开引用的 Energy Limiter / Power Check 机制，尤其是“按 App 后台 μJ 能量计量、超配额强杀后台进程、与 Standby Bucket 绑定”的调用链，目前缺少 Android 17 CDD、AOSP PowerStats/ODPM、CTS 或官方特性页证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 只检索 Android 17 / API 37 及以下资料，跳过 Android 18 / API 38+ 内容
+- 复核 Android 17 release notes、CDD、source.android.com power / PowerStats / ODPM 文档是否出现 Energy Limiter / Power Check 约束
+- 若仅能找到 main/master 或厂商私有资料，标注“未进入 Android 17”，不得作为正文结论
+
+### 关联章节
+5.6, 5.10, 11.1, 11.5
+
+---
