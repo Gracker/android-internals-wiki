@@ -1,6 +1,9 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
 chapter: "5.14"
+task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。小修 section metadata / runtime 译法 / 落地措辞；小结后源码调研补充未整合，且 NNAPI HAL 版本口径混用，已写入 queue。"
+section_title: "Android 17 ML Runtime 与 NPU 访问边界"
+section: "5.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -38,20 +41,20 @@ gap_source: "素材驱动/官方文档/AOSP结构"
 gap_score: 18
 material_count: 5
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-task6_state: revisiting
-task6_result: pass-light-edit
-last_task6_at: "2026-05-16T23:15:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-23-review.md"
+reviewed_date: "2026-06-01"
+task6_state: reviewed
+task6_result: needs-rework
+last_task6_at: "2026-06-01T18:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-18-review.md"
 task9_state: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 last_task2b_lite_at: "2026-06-01"
 p0: 0
 p1: 2
@@ -271,6 +274,8 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 
 写这类内容时，最安全的分法是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
 
+[需重写: 小结之后仍保留多段源码调研补充，包含“推测位置”“需进一步确认”“待验证”等编辑态内容；发布稿需要把可用事实整合回正文或参考资料，未确认项交 Task9 复核。]
+
 ## 源码调研补充（2026-05-17）
 
 ### AICore 版本归属纠错
@@ -288,7 +293,7 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 | | AICore | LiteRT (TFLite in Play Services) |
 |---|---|---|
 | 用途 | GenAI 基础模型（Gemma/Gemini Nano） | 自定义 ML 模型推理 |
-| 更新方式 | 系统级 OTA（Gemini Nano 下载） | Play Services runtime OTA |
+| 更新方式 | 系统级 OTA（Gemini Nano 下载） | Play services 运行时 OTA |
 | 适用场景 | 文本/图像/音频生成 AI | 物体检测、NLP、ASR 等传统 ML |
 
 
@@ -331,6 +336,8 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 
 
 ## 源码调研补充（2026-05-20）
+
+[需确认: NNAPI HAL 的 HIDL 1.3、Android 12+ AIDL、API 35/37 版本口径在正文和补充材料中混用，需 Task9 复核后再统一写法。]
 
 ### NNAPI 废弃边界与 HAL 延续澄清
 
@@ -488,7 +495,7 @@ AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提
 **LiteRT-LM 支持模型**：
 - Gemma、Llama、Phi-4、Qwen 等主流开源模型
 - 支持 GPU/NPU 硬件加速
-- 通过 Chrome、Chromebook Plus、Pixel Watch 等设备落地
+- 通过 Chrome、Chromebook Plus、Pixel Watch 等设备提供能力
 
 **LiteRT Samples 示例**（GitHub `google-ai-edge/litert-samples`）：
 ```bash

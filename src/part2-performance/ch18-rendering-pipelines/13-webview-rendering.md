@@ -18,16 +18,16 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
-task6_result: pass-light-edit
+pipeline_stage: task2b_pending
+task6_result: needs-rework
 last_task2b_at: "2026-06-01T09:35:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
+reviewed_date: "2026-06-01"
 task9_result: pending
 last_task9_at: "2026-05-31T02:20:00+08:00"
 last_task6_audit: "2026-05-19"
@@ -36,6 +36,9 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_audit: "2026-05-31"
 task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-WebView-surfacecontrol-platform-boundary。"
+last_task6_at: "2026-06-01T18:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-18-review.md"
+task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。修正第一人称三处；实测数据、Android 15-17 provider 差异和 Kotlin API 示例缺少可复查证据，已写入 queue。"
 ---
 
 <!-- outline-start -->
@@ -186,9 +189,11 @@ sequenceDiagram
 
 **性能特征**:网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调,同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙,网页内容仍并入宿主窗口这一帧。
 
+[需补充素材: 下表写入了 Pixel 8 Pro + Android 17 + provider milestone 123 的实测数据，但正文未给出 trace、样本记录或验证日志路径；发布前需要补齐可复查来源，或改为待验证案例。]
+
 #### 实际性能数据对比
 
-在我负责的社交应用优化中，我们对比了不同渲染路径的实际性能表现：
+在一次社交应用优化记录中，团队对比了不同渲染路径的性能表现：
 
 | 渲染路径 | 平均帧时间 (ms) | GPU利用率 | 内存占用 (MB) | 动画卡顿率 |
 |---------|--------------|-----------|-------------|------------|
@@ -222,9 +227,9 @@ sequenceDiagram
 
 #### 实际排查经验
 
-在实际项目中排查 WebView 渲染路径时，我发现一个关键问题：设备能力和 provider 版本不匹配时，即使 Android 12+ 系统可能也不会走 SurfaceControl 路径。
+排查 WebView 渲染路径时，设备能力和 provider 版本不匹配是最容易误判的一类问题：即使系统是 Android 12+，当前页面也可能不会走 SurfaceControl 路径。
 
-有一次我在一个 Pixel 6 上发现 WebView 性能异常，Perfetto 显示 Viz 线程和宿主 RenderThread 存在竞争，但 `dumpsys SurfaceFlinger` 显示没有独立子 Surface。经过排查发现该设备使用的是旧版 WebView provider（Chromium milestone 115），虽然系统是 Android 14，但 provider 不支持 SurfaceControl，导致性能问题。升级到 provider milestone 120 后，SurfaceControl 路径命中，性能提升了约 35%。
+一次 Pixel 6 现场里，Perfetto 显示 Viz 线程和宿主 RenderThread 存在竞争，但 `dumpsys SurfaceFlinger` 显示没有独立子 Surface。排查记录显示该设备使用的是旧版 WebView provider（Chromium milestone 115），虽然系统是 Android 14，但 provider 不支持 SurfaceControl，导致性能问题。升级到 provider milestone 120 后，SurfaceControl 路径命中，性能提升了约 35%。
 
 **实际调试脚本**：
 
@@ -267,6 +272,8 @@ adb shell dumpsys gfxinfo com.your.package | head -5
 > [!important]
 > **平台版本说明**：Android 10/11 具备 DrawFn/GL-Vulkan functor 基础接口，但 HWUI `WebViewFunctorManager` 缺少 SurfaceControl/transaction 回调。Android 12+ 才具备 WebView overlay path 所需的平台侧回调支持。
 
+[需确认: Android 15-17 WebView provider 对 SurfaceControl 路径的“部分支持/全量支持”属于版本差异判断，当前段落缺少 Chromium milestone、AOSP/Chromium commit 或 external-review 证据，需要 Task9 复核。]
+
 ### Android 15-17 WebView provider 更新差异对 SurfaceControl 路径的影响
 
 从 Android 15 到 Android 17，WebView provider 的更新对 SurfaceControl 子 Surface 路径的支持有明显演进。这些差异在排查渲染路径时必须考虑：
@@ -305,6 +312,8 @@ adb shell dumpsys webviewupdate | grep "versionName"
 2. **Provider 版本**：通过 Chromium milestone 判断具体实现能力
 3. **运行时命中**：Perfetto 中查看 Viz 线程是否与独立 child layer 产生交互
 4. **Overlay 检查**：确认 `SetOverlaysEnabledByHWUI()` 和 overlay support 检查是否通过
+
+[需确认: 下面的 Kotlin 示例涉及 `Display.Hardware` / `overlaySupport` 调用，Task6 不做 API 真伪裁决；需 Task9 核对是否为 Android 17 公开 API，或改成可验证命令/伪代码。]
 
 ```kotlin
 // 检查当前 WebView provider 的具体能力

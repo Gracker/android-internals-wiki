@@ -2403,7 +2403,7 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T16:05:00+08:00",
+  "last_updated": "2026-06-01T18:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T16:05:00+08:00",
@@ -2834,7 +2834,7 @@
     },
     "20.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "auto-fixed",
       "task9_state": "pending",
@@ -2842,11 +2842,18 @@
       "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "file": "src/part5-app/ch20-stability/05-oom-governance.md",
       "last_task2b_lite_at": "2026-06-01T13:35:00+08:00",
       "last_task2b_log": "logs/rework/2026-06-01-13-task2b-lite.md",
-      "title": "OOM 治理"
+      "title": "OOM 治理",
+      "section": "20.5",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
     },
     "20.6": {
       "status": "ready-for-review",
@@ -5097,19 +5104,23 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "pending",
       "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
       "title": "Android 17 ML Runtime 与 NPU 访问边界",
-      "last_task6_at": "2026-05-16T23:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-23-review.md",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_priority": 85,
-      "queue_entry": "task9-2026-05-17-5-14-tech-review"
+      "queue_entry": "task9-2026-05-17-5-14-tech-review",
+      "section": "5.14",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_review_summary": "L1/L2 小修 3 处；小结后仍保留源码调研补充和待验证口径，已回炉 Task2B。"
     },
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
@@ -5641,17 +5652,21 @@
       "title": "Native Crash 分析与治理",
       "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-19T20:25:44+08:00",
-      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-06-01T12:50:00+08:00",
-      "last_task2b_source": "frontmatter backlog fallback"
+      "last_task2b_source": "frontmatter backlog fallback",
+      "section": "20.3",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
     },
     "21.10": {
       "status": "ready-for-review",
@@ -7092,6 +7107,22 @@
       "task2b_result": "fixed",
       "last_task2b_verifier_at": "2026-06-01T07:30:00+08:00",
       "last_task2b_verifier_log": "logs/rework/2026-06-01-07-task2b-verifier.md"
+    },
+    "18.13": {
+      "section": "18.13",
+      "title": "WebView 渲染管线",
+      "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。"
     }
   },
   "task2b_rounds": [
@@ -7234,46 +7265,51 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-01-02-review.md",
+  "last_task6_review": "logs/review/2026-06-01-18-review.md",
   "last_task6_sections": [
-    "18.15",
-    "19.09",
-    "19.12"
+    "5.14",
+    "18.13",
+    "20.3",
+    "20.5"
   ],
   "last_task6_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/12-framemetrics.md"
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "src/part5-app/ch20-stability/05-oom-governance.md"
   ],
-  "last_task6_at": "2026-06-01T02:05:00+08:00",
+  "last_task6_at": "2026-06-01T18:10:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-06-01T02:05:00+08:00",
+    "reviewed_at": "2026-06-01T18:10:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-01-02-review.md",
-    "log": "logs/review/2026-06-01-02-review.md",
+    "review_log": "logs/review/2026-06-01-18-review.md",
+    "log": "logs/review/2026-06-01-18-review.md",
     "sections": [
-      "18.15",
-      "19.09",
-      "19.12"
+      "5.14",
+      "18.13",
+      "20.3",
+      "20.5"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/12-framemetrics.md"
+      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md",
+      "src/part5-app/ch20-stability/05-oom-governance.md"
     ],
     "pass_light_edit": [
-      "19.09",
-      "19.12"
+      "20.3",
+      "20.5"
     ],
     "needs_rework": [
-      "18.15"
+      "5.14",
+      "18.13"
     ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 41,
-    "l3_l4_issues": 1,
-    "small_fixes": 41,
-    "rework_items": 1,
+    "l1_l2_fixes": 14,
+    "l3_l4_issues": 5,
+    "small_fixes": 14,
+    "rework_items": 2,
     "result": "needs-rework-with-pass-light-edit"
   },
   "last_task9_reviewed_files": [
@@ -7284,12 +7320,13 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-06-01T02:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-06-01-02-review.md",
+  "task6_last_review_at": "2026-06-01T18:10:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-01-18-review.md",
   "task6_last_review_sections": [
-    "18.15",
-    "19.09",
-    "19.12"
+    "5.14",
+    "18.13",
+    "20.3",
+    "20.5"
   ],
   "sections_status": {
     "22.11": {
@@ -7787,19 +7824,23 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "pending",
       "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
       "title": "Android 17 ML Runtime 与 NPU 访问边界",
-      "last_task6_at": "2026-05-16T23:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-23-review.md",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
       "task2b_state": "pending",
       "task2b_result": "pending",
       "queue_priority": 85,
-      "queue_entry": "task9-2026-05-17-5-14-tech-review"
+      "queue_entry": "task9-2026-05-17-5-14-tech-review",
+      "section": "5.14",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_review_summary": "L1/L2 小修 3 处；小结后仍保留源码调研补充和待验证口径，已回炉 Task2B。"
     },
     "5.9": {
       "status": "ready-for-review",
@@ -8269,15 +8310,19 @@
       "title": "Native Crash 分析与治理",
       "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-19T20:25:44+08:00",
-      "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "section": "20.3",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
     },
     "21.10": {
       "status": "ready-for-review",
@@ -9306,6 +9351,38 @@
       "task9_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-01"
+    },
+    "18.13": {
+      "section": "18.13",
+      "title": "WebView 渲染管线",
+      "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。"
+    },
+    "20.5": {
+      "section": "20.5",
+      "title": "OOM 治理",
+      "file": "src/part5-app/ch20-stability/05-oom-governance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-06-01T18:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-01",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
     }
   },
   "task2a_last_processed": {
@@ -9353,44 +9430,49 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-01T02:05:00+08:00",
+    "reviewed_at": "2026-06-01T18:10:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-01-02-review.md",
-    "log": "logs/review/2026-06-01-02-review.md",
+    "review_log": "logs/review/2026-06-01-18-review.md",
+    "log": "logs/review/2026-06-01-18-review.md",
     "sections": [
-      "18.15",
-      "19.09",
-      "19.12"
+      "5.14",
+      "18.13",
+      "20.3",
+      "20.5"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "src/part3-tools/ch19-apm/09-measure.md",
-      "src/part3-tools/ch19-apm/12-framemetrics.md"
+      "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+      "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "src/part5-app/ch20-stability/03-native-crash-governance.md",
+      "src/part5-app/ch20-stability/05-oom-governance.md"
     ],
     "pass_light_edit": [
-      "19.09",
-      "19.12"
+      "20.3",
+      "20.5"
     ],
     "needs_rework": [
-      "18.15"
+      "5.14",
+      "18.13"
     ],
     "auto_finalized": [],
     "auto_promoted": [],
-    "l1_l2_fixes": 41,
-    "l3_l4_issues": 1,
-    "small_fixes": 41,
-    "rework_items": 1,
+    "l1_l2_fixes": 14,
+    "l3_l4_issues": 5,
+    "small_fixes": 14,
+    "rework_items": 2,
     "result": "needs-rework-with-pass-light-edit"
   },
   "task6_last_review_files": [
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/12-framemetrics.md"
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "src/part5-app/ch20-stability/05-oom-governance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "src/part3-tools/ch19-apm/09-measure.md",
-    "src/part3-tools/ch19-apm/12-framemetrics.md"
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+    "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "src/part5-app/ch20-stability/05-oom-governance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -9786,13 +9868,17 @@
     "status": "ready-for-review",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-19T20:25:44+08:00",
-    "last_task6_review_log": "logs/review/2026-05-19-20-review.md",
+    "last_task6_at": "2026-06-01T18:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
     "pipeline_stage": "task9_pending",
     "task9_state": "pending",
     "task9_result": "needs-rework",
     "task2b_state": "fixed",
-    "task2b_result": "fixed"
+    "task2b_result": "fixed",
+    "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-01",
+    "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
   },
   "last_task9_review_summary": "P0 1 / P1 2 / P2 1；16.5 已 auto-fix 回 Task6，17.4 pass-tech-review 并自动晋升 finalized。",
   "last_task2a_gap_mining": {
@@ -10002,7 +10088,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-01-02-review.md",
+  "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -12159,5 +12245,53 @@
     "task2b_summary": "缺少测试条件的 HWC 功耗/带宽/性能百分比已降级为定性趋势，并补充数字回写所需记录模板。",
     "last_task2b_verifier_at": "2026-06-01T07:30:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-01-07-task2b-verifier.md"
+  },
+  "section_5_14": {
+    "section": "5.14",
+    "title": "Android 17 ML Runtime 与 NPU 访问边界",
+    "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-06-01T18:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-01",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "task6_review_summary": "L1/L2 小修 3 处；小结后仍保留源码调研补充和待验证口径，已回炉 Task2B。"
+  },
+  "section_18_13": {
+    "section": "18.13",
+    "title": "WebView 渲染管线",
+    "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-06-01T18:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-01",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。"
+  },
+  "section_20_5": {
+    "section": "20.5",
+    "title": "OOM 治理",
+    "file": "src/part5-app/ch20-stability/05-oom-governance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-06-01T18:10:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-01",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
   }
 }

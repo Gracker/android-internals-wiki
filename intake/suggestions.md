@@ -89,3 +89,35 @@
 - **问题**：正文先列出“事件优先队列”“提升触摸事件分发优先级”等厂商实现，后文源码验证又说明 AOSP 标准 GameMode 不包含独立输入优先级提升机制，AOSP 结论、厂商推测和已验证事实边界不够清楚。
 - **建议**：Task2B 将厂商定制内容改成明确的非 AOSP 边界说明；无公开材料的实现项删除或标为待证；把源码验证附录整合回正文相应位置。
 - **review 日志**：logs/review/2026-06-01-16-review.md
+
+## [Task6 Review] 5.14 Android 17 ML Runtime 与 NPU 访问边界 — 2026-06-01
+- **类型**：需重写
+- **位置**：小结之后的“源码调研补充”块
+- **问题**：发布稿在小结后保留多段原始调研补充，包含推测位置、需进一步确认、未一手验证等编辑态内容，破坏正文收束和可发布性。
+- **建议**：将已验证事实整合回对应正文小节；未验证项移入参考/待验证清单或交 Task9 复核。
+- **review 日志**：logs/review/2026-06-01-18-review.md
+
+- **类型**：需确认
+- **位置**：NNAPI HAL 版本演进口径
+- **问题**：正文与补充材料同时出现 HIDL 1.3、Android 12+ AIDL、API 35/37 等口径，读者难以判断 Android 17 范围内的准确结论。
+- **建议**：由 Task9 复核 Android 17 / API 37 内可发布口径，再由 Task2B 统一正文和表格。
+- **review 日志**：logs/review/2026-06-01-18-review.md
+
+
+## [Task6 Review] 18.13 WebView 渲染管线 — 2026-06-01
+- **类型**：需补充素材
+- **位置**：“实际性能数据对比”表格
+- **问题**：表格声称 Pixel 8 Pro、Android 17、WebView provider milestone 123 的实测数据，但缺少 trace、样本、日志或验证记录路径。
+- **建议**：补齐可复查数据来源；无法补齐时改为待验证案例或删除具体数值。
+- **review 日志**：logs/review/2026-06-01-18-review.md
+
+- **类型**：需确认
+- **位置**：“Android 15-17 WebView provider 更新差异”
+- **问题**：“Android 17 全量支持”“Overlay/Fence 优化”等属于版本差异判断，当前没有 Chromium milestone、AOSP/Chromium commit 或 external-review 证据。
+- **建议**：交 Task9 复核版本边界；Task2B 按可验证证据改写为保守判断。
+- **review 日志**：logs/review/2026-06-01-18-review.md
+- **类型**：需确认
+- **位置**：“实际排查要点”Kotlin 示例
+- **问题**：示例使用 `Display.Hardware()`、`display.getHardware()`、`hardware.overlaySupport` 判断 overlay 能力，需确认这些是否为 Android 17 公开 API 或内部/伪代码。
+- **建议**：Task9 核对 API 真实性；若不是公开 API，Task2B 改为 `dumpsys SurfaceFlinger`、Perfetto 或明确标注伪代码。
+- **review 日志**：logs/review/2026-06-01-18-review.md
