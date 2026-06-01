@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC
@@ -41,11 +41,11 @@ task6_reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "needs-rework"
-task6_state: "revisiting"
-task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+task6_state: revisiting
+task2b_state: fixed
+pipeline_stage: task6_pending
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 40 处；发现功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json 交 Task2B 补素材。"
-task9_state: "pending"
+task9_state: pending
 ---
 
 
@@ -110,7 +110,7 @@ graph LR
     P --> Display
 ```
 
-一帧的常见协商顺序是:
+一帧的常见协商顺序是：
 
 1. SurfaceFlinger 先完成 layer latch，得到本帧参与合成的 Layer 集合。
 2. 通过 Composer HAL 调用 `validateDisplay()`，让 HWC 判断每个 Layer 是 `DEVICE`、`CLIENT` 还是 `SIDEBAND`。
@@ -131,10 +131,10 @@ graph LR
 - `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl` 中 Capability 枚举
 
 **实际厂商实现差异**：
-- **Qualcomm Adreno**：Android 15+ 完全支持 skip validate，优化效果稳定
-- **ARM Mali**：部分老款 Mali-G 系列对 skip validate 实现不完整，可能回归到完整 validate
-- **MediaTek**：通常支持但实现策略保守，变化检测较为严格
-- **Samsung Exynos**：在 OneUI 中对 skip validate 有额外的优化层
+- **Qualcomm Adreno**：较新平台上通常能看到 skip validate 命中，但仍要以具体设备的 Composer HAL 行为为准
+- **ARM Mali**：部分老款 Mali-G 系列对 skip validate 支持不完整，可能回到完整 validate
+- **MediaTek**：常见策略偏保守，对 Layer 变化的判断更严格
+- **Samsung Exynos**：One UI 设备可能在系统层增加额外优化，具体收益仍依赖机型实现
 
 - **HWC2::Composition::DEVICE**：该 Layer 由显示硬件直接处理，常见于视频 YUV Layer。
 - **HWC2::Composition::CLIENT**：该 Layer 先由 SurfaceFlinger / GPU 合成，再作为 client target 交回 HWC。
@@ -148,10 +148,10 @@ graph LR
 Decoder → SurfaceTexture → GPU Shader (Sample) → FrameBuffer → SurfaceFlinger → HWC → Display
 ```
 
-- GPU 需要逐像素采样视频纹理，写入 App Framebuffer
-- 占用 GPU 带宽和计算资源
-- 每帧都消耗内存带宽(即使是静态画面)
-- **功耗高**
+- GPU 需要逐像素采样视频纹理，再写入 App Framebuffer。
+- 视频帧每次更新都会占用 GPU 带宽和计算资源。
+- 即使 UI 本身不变，视频帧也会持续消耗内存带宽。
+- 长时间播放时，功耗通常高于可走 `DEVICE` composition 的路径。
 
 ### Overlay Path（SurfaceView + DEVICE composition）
 
@@ -159,10 +159,10 @@ Decoder → SurfaceTexture → GPU Shader (Sample) → FrameBuffer → SurfaceFl
 Decoder → BufferQueue / BLASTBufferQueue → SurfaceFlinger layer latch → HWC DEVICE composition → Display
 ```
 
-- Decoder 仍然把帧写入 Surface 对应的队列，常见实现是 BufferQueue 或 BLASTBufferQueue
-- SurfaceFlinger 仍然要 latch 这层 buffer，并把它带进本帧的合成规划
-- 如果 HWC 把该 Layer 判成 `DEVICE`，视频像素不会再经过 GPU 采样，但 SurfaceFlinger 和 HWC 仍然要一起完成时序、fence 和送显协调
-- **功耗低**
+- Decoder 仍然把帧写入 Surface 对应的队列，常见实现是 BufferQueue 或 BLASTBufferQueue。
+- SurfaceFlinger 仍然要 latch 这层 buffer，并把它带进本帧的合成规划。
+- 如果 HWC 把该 Layer 判成 `DEVICE`，视频像素不会再经过 GPU 采样，但 SurfaceFlinger 和 HWC 仍然要完成时序、fence 和送显协调。
+- 长时间播放时，功耗通常低于 GPU 采样路径。
 
 ### Sideband / tunneled playback（可选能力）
 
@@ -170,13 +170,13 @@ Decoder → BufferQueue / BLASTBufferQueue → SurfaceFlinger layer latch → HW
 Decoder / Video Pipeline → Sideband Stream / Tunnel → HWC / Display
 ```
 
-- 这不是普通 SurfaceView 视频播放的默认数据路径
-- SurfaceFlinger 仍然参与 Layer 管理和时序协调，但不经手普通 BufferQueue 中的像素 buffer
-- 更常见于 Android TV 或特定 SoC 的低功耗视频播放场景
+- 这不是普通 SurfaceView 视频播放的默认数据路径。
+- SurfaceFlinger 仍然参与 Layer 管理和时序协调，但不经手普通 BufferQueue 中的像素 buffer。
+- 它更常见于 Android TV 或特定 SoC 的低功耗视频播放场景。
 
 ### HDR 视频合成的特殊考虑
 
-HDR 视频在 HWC 合成中带来额外的复杂性：
+HDR 视频会增加 HWC 合成需要处理的维度：
 
 **HDR vs SDR 的路径差异**：
 - **SDR 视频**：通常不需要 PQ/HLG 转换和 HDR metadata 处理，HWC 处理流程相对简单
@@ -261,10 +261,10 @@ HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际
 
 不同厂商的 HWC 实现对 overlay 回退的处理策略有明显差异：
 
-- **Qualcomm Adreno**：对 YUV 视频的 overlay 支持最稳定，但 RGBA 和 HDR 处理能力参差不齐
-- **ARM Mali**：新一代 Mali-G 系列显著提升了 overlay 能力，但老款设备更容易触发回退
-- **MediaTek**：通常支持基础的 YUV overlay，但对复杂变换的支持较弱
-- **Samsung Exynos**：在 OneUI 中对 video overlay 有额外的优化层，但可能对某些格式有额外限制
+- **Qualcomm Adreno**：YUV 视频 overlay 通常较容易命中，但 RGBA 和 HDR 处理能力仍要看具体平台
+- **ARM Mali**：新一代 Mali-G 系列的 overlay 能力更强，老款设备更容易触发回退
+- **MediaTek**：通常支持基础 YUV overlay，对复杂变换的支持更依赖机型实现
+- **Samsung Exynos**：One UI 设备可能对 video overlay 增加额外优化，也可能对特定格式保留限制
 
 **性能影响**：一个视频 Layer 从 `DEVICE` 回退到 `CLIENT` 后，GPU 带宽和 client target 开销会上来，还可能挤掉别的 plane，让更多 Layer 一起回退。
 
@@ -276,7 +276,7 @@ HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际
 | **RGBA / UI Layer** | 简单不透明场景有时能上 plane，复杂 blending 经常回退 | 部分平台支持更多 RGBA plane，但接口升级不保证能力升级 | 不能把"RGBA 一定 GPU"写成通用规则 |
 | **Plane alpha / rounded corner** | per-layer alpha、圆角、阴影常受限 | 一些新平台支持更强，但仍经常回退 | 半透明和圆角是高频触发点 |
 | **Crop / scale / rotation** | 支持范围因 DPU 而异，90°/270° 更敏感 | 约束仍在，只是范围通常更宽 | 大变换先怀疑 plane 能力不足 |
-| **HDR / protected content** | 依赖 secure plane、vendor 扩展或受保护 GPU 路径 | 新平台更常见 protected texture / secure GPU path | protected 不等于 tunneled,Overlay 也不是唯一答案 |
+| **HDR / protected content** | 依赖 secure plane、vendor 扩展或受保护 GPU 路径 | 新平台更常见 protected texture / secure GPU path | protected 不等于 tunneled，Overlay 也不是唯一答案 |
 
 ## 受保护内容、Overlay 与 Tunnel 的关系
 
@@ -302,7 +302,7 @@ Tunnel / sideband 是更窄的可选能力，常见于 Android TV 或特定高�
 adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 ```
 
-关键查看项:
+关键查看项：
 - **Composition Type**：`DEVICE` = Overlay 成功，`CLIENT` = 回退到 GPU
 - **Type**：Layer 的 Buffer 格式
 

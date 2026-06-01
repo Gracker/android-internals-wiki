@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: "ready-for-review"
+status: ready-for-review
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
@@ -36,12 +36,12 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: revisiting
 task9_result: "auto-fixed"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"

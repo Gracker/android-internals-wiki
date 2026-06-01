@@ -2,7 +2,7 @@
 title: "Jetpack Compose 性能优化"
 chapter: "22.3"
 section: "22.3"
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-31"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
@@ -16,12 +16,12 @@ sources:
     path: "frameworks/support/compose/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: "task6_pending"
+pipeline_stage: task6_pending
 task2b_result: fixed-lite
-task2b_state: "fixed"
-task6_state: "revisiting"
+task2b_state: fixed
+task6_state: revisiting
 last_task6_at: "2026-05-31T20:10:00+08:00"
-task9_state: "reviewed"
+task9_state: pending
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
 task6_result: pass-light-edit
