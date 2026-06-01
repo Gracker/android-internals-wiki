@@ -115,11 +115,14 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-05-31T03:11:41.189400",
-    "status": "pending",
+    "status": "completed",
     "fixed_at": "2026-05-31T08:57:00+08:00",
     "updated_by": "task6-review",
     "updated_at": "2026-06-01T18:10:00+08:00",
-    "original_review_log": "logs/review/2026-06-01-18-review.md"
+    "original_review_log": "logs/review/2026-06-01-18-review.md",
+    "completed_at": "2026-06-01T22:58:00+08:00",
+    "completed_by": "task2b-main",
+    "fix_summary": "删除无可复查来源的 Pixel 8 Pro / Android 17 / milestone 123 实测表；将 Android 15-17 provider 差异改为 Android 12-17 平台/provider 双版本边界；移除非公开 overlay API 示例，改为 provider、Perfetto、SurfaceFlinger 证据链。"
   },
   {
     "section": "18.15",

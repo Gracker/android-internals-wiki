@@ -2403,8 +2403,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T21:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-01T22:58:00+08:00",
+  "last_updated_by": "task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T21:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2650,13 +2650,22 @@
       ],
       "verification": "logs/deep-review/2026-05-22-03-deep-review.md；alibaba/alpha Task.java/Project.java/AlphaManager.java/AlphaConfig.java；禁用词扫描未新增命中；Android 版本边界未超过 Android 17 / API 37",
       "status": "done"
+    },
+    {
+      "at": "2026-06-01T22:58:00+08:00",
+      "by": "task2b-main",
+      "section": "18.13",
+      "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "source": "task9-deep-tech-review/task6-review",
+      "result": "fixed",
+      "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-01T21:35:00+08:00",
+  "last_task2b_at": "2026-06-01T22:58:00+08:00",
   "last_task2b_sections": [
-    "3.5"
+    "18.13"
   ],
-  "last_task2b_action": "lite fixed: vendor game-mode input priority bounded as non-AOSP implementation",
+  "last_task2b_action": "review-rework-fixed",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -7119,16 +7128,23 @@
       "title": "WebView 渲染管线",
       "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "last_task6_at": "2026-06-01T18:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-01",
       "task9_state": "pending",
-      "task2b_state": "pending",
-      "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。"
+      "task2b_state": "fixed",
+      "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。",
+      "task2b_result": "fixed",
+      "task9_result": "pending",
+      "last_task2b_at": "2026-06-01T22:58:00+08:00",
+      "last_task2b_queue_source": "task9-deep-tech-review/task6-review",
+      "last_task2b_priority": 90,
+      "last_task2b_log": "logs/rework/2026-06-01-22-task2b-main.md",
+      "task2b_note": "Task2B main: 收敛无证据实测表、Android 15-17 provider 版本断言与 非公开 overlay API 示例，回流 Task6。"
     }
   },
   "task2b_rounds": [
@@ -12294,16 +12310,23 @@
     "title": "WebView 渲染管线",
     "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "needs-rework",
     "last_task6_at": "2026-06-01T18:10:00+08:00",
     "last_task6_review_log": "logs/review/2026-06-01-18-review.md",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-06-01",
     "task9_state": "pending",
-    "task2b_state": "pending",
-    "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。"
+    "task2b_state": "fixed",
+    "task6_review_summary": "L1/L2 小修 3 处；实测数据、Android 15-17 provider 差异与 Kotlin API 示例缺少可复查来源，已回炉 Task2B。",
+    "task2b_result": "fixed",
+    "task9_result": "pending",
+    "last_task2b_at": "2026-06-01T22:58:00+08:00",
+    "last_task2b_queue_source": "task9-deep-tech-review/task6-review",
+    "last_task2b_priority": 90,
+    "last_task2b_log": "logs/rework/2026-06-01-22-task2b-main.md",
+    "task2b_note": "Task2B main: 收敛无证据实测表、Android 15-17 provider 版本断言与 非公开 overlay API 示例，回流 Task6。"
   },
   "section_20_5": {
     "section": "20.5",

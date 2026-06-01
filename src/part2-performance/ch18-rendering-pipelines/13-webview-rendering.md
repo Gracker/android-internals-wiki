@@ -18,13 +18,15 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
-task2b_result: fixed-lite
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 task6_result: needs-rework
-last_task2b_at: "2026-06-01T09:35:00+08:00"
+last_task2b_at: "2026-06-01T22:58:00+08:00"
+last_task2b_main_at: "2026-06-01T22:58:00+08:00"
+last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
@@ -38,7 +40,7 @@ last_task9_audit: "2026-05-31"
 task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-WebView-surfacecontrol-platform-boundary。"
 last_task6_at: "2026-06-01T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
-task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。修正第一人称三处；实测数据、Android 15-17 provider 差异和 Kotlin API 示例缺少可复查证据，已写入 queue。"
+task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。修正第一人称三处；实测数据、Android 15-17 provider 差异和 Kotlin overlay 示例缺少可复查证据，已写入 queue。2026-06-01 22 Task2B main: 已删除不可复查实测数据，改写平台/provider 版本边界，并以 provider/Perfetto/SurfaceFlinger 证据替代非公开 API 示例。"
 ---
 
 <!-- outline-start -->
@@ -121,31 +123,25 @@ adb shell dumpsys webviewupdate
 | 宿主对接 API 名称 | Android 5-9 / Android 10+ | provider 版本仍要单独记录 | Android 10+ 常见 `Hardware Draw Functor` / `DrawFn` 口径,Android 5-9 常见 `DrawGL` / GL functor 口径 |
 | `SurfaceControl` 子 Surface 候选 | Android 12+ 平台具备 `SurfaceControl` / DrawFn 基础及平台回调 | 记录 `versionName` 对应的 Chromium milestone,并结合 trace / layer dump 看运行时是否命中 | 能否走独立子 Surface 不能只按 Android major version 判断 |
 
-### WebViewChromiumFactory 初始化时序修正
-
-**错误时序**:原代码误认为 `WebViewChromiumFactory` 初始化发生在 WebView 创建之初
-**正确时序**:WebViewChromiumFactory 初始化按以下顺序发生:
+### WebViewChromiumFactory 初始化分层
 
 1. **Factory 加载**:WebViewFactory 通过 `getFactory()` 检查当前 provider 是否可用
-2. **内核选择**:基于 provider 版本和当前设备能力选择适当的 Chromium 内核版本
+2. **Provider 选择**:WebViewUpdateService 选择当前可用的 Android System WebView / Trichrome provider
 3. **Native 库加载**:加载 `libwebviewchromium.so` 及相关 native 库
 4. **Browser Context 初始化**:创建 `content::BrowserContext` 实例
 5. **Renderer 初始化**:根据 multiprocess 配置决定是否创建独立渲染进程
 6. **GL/Vulkan 后端选择**:基于宿主 HWUI 配置选择对应渲染后端
 
-**验证方法**:
+**验证入口**:
 ```bash
-# 检查 factory 初始化过程
-adb logcat | grep -i "webview.*factory"
-# 查看 GPU 后端选择
-adb logcat | grep -i "webview.*backend"
-# 检查内核加载
+adb shell dumpsys webviewupdate
+adb logcat | grep -i "webview.*factory\\|webview.*chromium"
 adb shell ls /data/app/*/lib/arm64/libwebviewchromium.so
 ```
 
-**时序调试关键**:
-- WebView 创建时只做基础 factory 检查
-- 实际渲染路径选择在第一次绘制时确定
+**排查口径**:
+- WebView 创建时先完成 provider / factory 可用性检查
+- 渲染路径选择要等第一次硬件绘制和 provider 运行时条件一起判断
 - GL/Vulkan 后端必须与宿主 HWUI 保持一致
 
 `SurfaceControl` 子 Surface 的判断从这里起步:先记 provider 版本,再看 Perfetto 与 `dumpsys SurfaceFlinger`。只看系统版本,结论经常会偏。
@@ -189,25 +185,20 @@ sequenceDiagram
 
 **性能特征**:网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调,同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙,网页内容仍并入宿主窗口这一帧。
 
-[需补充素材: 下表写入了 Pixel 8 Pro + Android 17 + provider milestone 123 的实测数据，但正文未给出 trace、样本记录或验证日志路径；发布前需要补齐可复查来源，或改为待验证案例。]
+#### 现场记录模板
 
-#### 实际性能数据对比
+没有 trace artifact、测试页面、采样条件和 provider 版本时,不要写固定帧耗或百分比。WebView 渲染路径的可复查记录至少保留下面几项:
 
-在一次社交应用优化记录中，团队对比了不同渲染路径的性能表现：
+| 字段 | 记录内容 | 用途 |
+|:---|:---|:---|
+| 设备与系统 | 机型、Android 版本、GPU、刷新率 | 排除设备能力差异 |
+| Provider | `packageName`、`versionName`、是否第三方 SDK | 把平台版本和 provider 版本分开 |
+| 页面负载 | URL / 本地复现页、视频/Canvas/WebGL/长列表类型 | 解释 renderer 与 GPU 线程负载 |
+| Trace 证据 | Perfetto 文件路径、关键线程、关键 slice 名称 | 判断 functor、Viz、SurfaceFlinger 的时间关系 |
+| Layer 证据 | `dumpsys SurfaceFlinger --list` 与目标 layer 片段 | 判断是否存在独立 child layer |
+| 结论边界 | 命中的路径、未命中的证据、仍待确认项 | 防止把单次设备表现写成通用规律 |
 
-| 渲染路径 | 平均帧时间 (ms) | GPU利用率 | 内存占用 (MB) | 动画卡顿率 |
-|---------|--------------|-----------|-------------|------------|
-| GL Functor | 18.5-22.3 | 65-78% | 125-180 | 8.2% |
-| SurfaceControl | 12.8-15.6 | 48-62% | 95-135 | 3.1% |
-| 全屏 TextureView | 14.2-16.9 | 52-68% | 110-150 | 4.5% |
-| 软件回退 | 28.5-35.2 | 25-40% | 80-120 | 15.7% |
-
-**数据来源**：基于 Pixel 8 Pro (Android 17) + WebView provider milestone 123 的实测数据，样本包含 50 页不同复杂度的网页内容。
-
-**关键发现**：
-- SurfaceControl 路径在性能和资源效率上优势最明显，平均帧时间降低约 30%
-- 全屏视频场景中，TextureView 的内存管理和帧同步比 SurfaceView 更稳定
-- 软件 fallback 路径虽然 GPU 占用低，但 CPU 压力导致整体性能最差
+对比 GL Functor、`SurfaceControl` 子 Surface、fullscreen custom view 和第三方 Texture-like 路径时,先用同一页面和同一 WebView provider 复现。若 provider 或页面负载变了,帧耗差异只能作为新样本,不能直接归因到路径切换。
 
 #### Functor 路径里几个容易踩的点
 
@@ -225,15 +216,9 @@ sequenceDiagram
 
 这条路径仍发生在官方 provider 内部。`HardwareRenderer::DrawAndSwap()` 会先和 `OverlayProcessorWebView` 协商 `SurfaceControl` 可用性;`OverlayProcessorWebView::Manager` 负责创建和维护 `ASurfaceControl`,并在 RenderThread / GPU Main 上更新几何信息和 buffer。源码里至少有四层门槛:HWUI 通过 `SetOverlaysEnabledByHWUI()` 放行,Viz 侧 `GpuServiceImpl` 已就绪,candidate 通过 `OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 检查,对应 frame sink 也没有进入 `blocked_frame_sink_ids_`。运行时是否真的命中,仍取决于这些门槛是否同时满足。[更多 Transaction / fence 细节见 §18.10 SurfaceControl API 深入]
 
-#### 实际排查经验
+#### 现场排查脚本
 
-排查 WebView 渲染路径时，设备能力和 provider 版本不匹配是最容易误判的一类问题：即使系统是 Android 12+，当前页面也可能不会走 SurfaceControl 路径。
-
-一次 Pixel 6 现场里，Perfetto 显示 Viz 线程和宿主 RenderThread 存在竞争，但 `dumpsys SurfaceFlinger` 显示没有独立子 Surface。排查记录显示该设备使用的是旧版 WebView provider（Chromium milestone 115），虽然系统是 Android 14，但 provider 不支持 SurfaceControl，导致性能问题。升级到 provider milestone 120 后，SurfaceControl 路径命中，性能提升了约 35%。
-
-**实际调试脚本**：
-
-以下是一个用于快速判断当前 WebView 渲染路径的调试工具：
+排查 WebView 渲染路径时,设备能力和 provider 版本不匹配很容易造成误判:即使系统是 Android 12+,当前页面也可能不会走 `SurfaceControl` 路径。下面的脚本只负责收集证据,不直接给出路径结论。
 
 ```bash
 #!/bin/bash
@@ -249,10 +234,6 @@ adb shell getprop ro.build.version.release
 # 检查 SurfaceFlinger 层级关系
 echo -e "\n=== SurfaceFlinger Layers ==="
 adb shell dumpsys SurfaceFlinger | grep -E "(WebView|webview)" | head -10
-
-# 检查 GPU 跟踪信息
-echo -e "\n=== GPU Trace Status ==="
-adb shell perfetto --trace-config gpu.cfg -b 10000 -c "name: 'gpu'" | grep -E "(DrawGL|DrawVk|WebView|CrRendererMain)"
 
 # 检查硬件加速状态
 echo -e "\n=== Hardware Acceleration ==="
@@ -272,63 +253,25 @@ adb shell dumpsys gfxinfo com.your.package | head -5
 > [!important]
 > **平台版本说明**：Android 10/11 具备 DrawFn/GL-Vulkan functor 基础接口，但 HWUI `WebViewFunctorManager` 缺少 SurfaceControl/transaction 回调。Android 12+ 才具备 WebView overlay path 所需的平台侧回调支持。
 
-[需确认: Android 15-17 WebView provider 对 SurfaceControl 路径的“部分支持/全量支持”属于版本差异判断，当前段落缺少 Chromium milestone、AOSP/Chromium commit 或 external-review 证据，需要 Task9 复核。]
+### Android 12-17 平台与 provider 版本边界
 
-### Android 15-17 WebView provider 更新差异对 SurfaceControl 路径的影响
+`SurfaceControl` 子 Surface 不能按 Android 15、16、17 直接切成固定等级。Android 平台提供 `SurfaceControl`、DrawFn 和 HWUI 侧回调基础;WebView provider 又作为可独立更新组件交付 Chromium 侧实现。两者同时满足,运行时还要通过 overlay support 检查和页面状态检查。
 
-从 Android 15 到 Android 17，WebView provider 的更新对 SurfaceControl 子 Surface 路径的支持有明显演进。这些差异在排查渲染路径时必须考虑：
-
-#### Android 15-16：部分支持
 ```bash
-# 检查设备上的 WebView provider 版本
-adb shell dumpsys webviewupdate | grep "versionName"
-# 例如：
-# versionName: "120.0.6099.230" (对应 Chromium milestone 120)
+adb shell getprop ro.build.version.release
+adb shell getprop ro.build.version.sdk
+adb shell dumpsys webviewupdate | grep -E "Current WebView package|packageName|versionName|versionCode"
+adb shell dumpsys SurfaceFlinger --list | grep -i "webview\\|surfaceview\\|<包名>"
 ```
 
-- **SurfaceControl 支持**：Android 15 开始支持 WebView 的 SurfaceControl 路径，但存在一定限制
-- **触发条件**：仅对特定 Chromium milestone 且满足 overlay support 检查的页面生效
-- **HWUI 集成**：`WebViewFunctorManager` 在 Android 15 中部分实现了 SurfaceControl/transaction 回调
-- **实际限制**：部分老旧设备或内存受限设备即使满足版本条件，也因硬件限制走不了 SurfaceControl
-
-#### Android 17：完善支持
-```bash
-# Android 17 上的 WebView provider 示例
-adb shell dumpsys webviewupdate | grep "versionName"
-# 可能输出：
-# versionName: "123.0.6317.131" (对应 Chromium milestone 123)
-```
-
-- **全量支持**：Android 17 的 WebView provider 对 SurfaceControl 路径的支持更加完善
-- **Overlay 检查优化**：`OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 的检查逻辑更加精细
-- **Fence 优化**：完善了 GPU 合成 fence 机制，减少不必要的同步等待
-- **Fallback 机制**：当 SurfaceControl 条件不满足时，回退路径更加稳定
-
-#### 实际排查要点
-
-要准确判断当前 WebView 是否走 SurfaceControl 路径，需要同时检查：
+判断当前 WebView 是否走 `SurfaceControl` 路径,同时检查:
 
 1. **平台版本**：Android 12+ 是基础要求
 2. **Provider 版本**：通过 Chromium milestone 判断具体实现能力
 3. **运行时命中**：Perfetto 中查看 Viz 线程是否与独立 child layer 产生交互
 4. **Overlay 检查**：确认 `SetOverlaysEnabledByHWUI()` 和 overlay support 检查是否通过
 
-[需确认: 下面的 Kotlin 示例涉及 `Display.Hardware` / `overlaySupport` 调用，Task6 不做 API 真伪裁决；需 Task9 核对是否为 Android 17 公开 API，或改成可验证命令/伪代码。]
-
-```kotlin
-// 检查当前 WebView provider 的具体能力
-val webViewInfo = WebViewCompat.getCurrentWebViewPackage(context)
-Log.d("WebViewProvider", "Package: ${webViewInfo?.packageName}, Version: ${webViewInfo?.versionName}")
-
-// 检查设备能力
-val display = context.display ?: return
-val hardware = Display.Hardware()
-display.getHardware(hardware)
-val overlaySupport = hardware.overlaySupport
-Log.d("OverlaySupport", "Overlay size support: ${overlaySupport.maxDimensions}")
-```
-
-**结论**：从 Android 15 到 Android 17，WebView 的 SurfaceControl 支持从部分完善到全量可用。排查时不能只看系统版本，必须结合 provider 版本和实际运行时表现，否则可能误判路径。
+章节不使用应用侧 Display 硬件能力探测伪代码作为公开 API 证据。应用侧能稳定拿到的是 provider 信息、fullscreen 回调、运行时 view class、Perfetto trace 与 SurfaceFlinger layer dump;overlay 检查细节属于 Chromium / HWUI 内部决策,通过源码和 trace 间接验证。
 
 **性能特征**:命中后,网页内容可以从宿主主窗口 buffer 中拆出去,宿主 `RenderThread` 只保留几何同步和必要协调。网页重绘压力会更容易和 App UI 预算分开观察。
 
