@@ -509,7 +509,10 @@
       "reviewed_at": "2026-05-23T07:24:00+08:00",
       "log": "logs/deep-review/2026-05-23-07-deep-review.md",
       "summary": "P0 1：DefaultIoScheduler 继承关系错误；P1 2：FGS 晋升超时版本矩阵缺失、SIGQUIT 权限边界混淆；P2 2 沿用既有 suggestions。",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_fixed_at": "2026-06-02T02:50:00+08:00",
+      "task2b_note": "Task2B fallback 已修复 2026-05-23 Task9 P0/P1 主项，送回 Task6/Task9 复审。"
     },
     "22.3": {
       "p0": 1,
@@ -2404,8 +2407,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T02:05:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-02T02:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-02T02:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2662,11 +2665,11 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-01T22:58:00+08:00",
+  "last_task2b_at": "2026-06-02T02:50:00+08:00",
   "last_task2b_sections": [
-    "18.13"
+    "20.4"
   ],
-  "last_task2b_action": "review-rework-fixed",
+  "last_task2b_action": "frontmatter fallback rework: 20.4 ANR 治理策略",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2972,18 +2975,22 @@
     },
     "20.4": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-23T08:18:48+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
-      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task6_state": "revisiting",
       "task9_result": "needs-rework",
       "last_task6_review_log": "logs/review/2026-05-23-08-review.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-23",
       "file": "src/part5-app/ch20-stability/04-anr-governance.md",
       "title": "ANR 治理策略",
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-02T02:50:00+08:00",
+      "last_task2b_log": "frontmatter fallback: logs/deep-review/2026-05-23-07-deep-review.md",
+      "task2b_note": "修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
     },
     "21.4": {
       "status": "finalized",
@@ -9821,6 +9828,24 @@
         "§2.5: DeliQueue 限定为 Android 17 android.os.MessageQueue 行为变化，不再写成 HWUI RenderThread WorkQueue 替代实现。",
         "§2.5: ADPF hint session 口径改为 Android 14+ 已存在，Android 16 headroom API 单独拆开。"
       ]
+    },
+    {
+      "at": "2026-06-02T02:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback",
+      "sections": [
+        "20.4"
+      ],
+      "files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "issues": [
+        "task9 P0 DefaultIoScheduler 继承关系错误",
+        "task9 P1 FGS 晋升超时版本表缺失",
+        "task9 P1 SIGQUIT 自进程权限边界混淆",
+        "task9 P2 系统负载过滤判据过强"
+      ],
+      "result": "fixed"
     }
   ],
   "task2a_result": "processed-draft",
@@ -10717,6 +10742,24 @@
         "remaining_p90": 0,
         "remaining_p85": 0
       }
+    },
+    {
+      "at": "2026-06-02T02:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback",
+      "sections": [
+        "20.4"
+      ],
+      "files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "issues": [
+        "task9 P0 DefaultIoScheduler 继承关系错误",
+        "task9 P1 FGS 晋升超时版本表缺失",
+        "task9 P1 SIGQUIT 自进程权限边界混淆",
+        "task9 P2 系统负载过滤判据过强"
+      ],
+      "result": "fixed"
     }
   ],
   "section_18_23": {
@@ -11707,9 +11750,9 @@
     }
   ],
   "last_task2b_completed": [
-    "18.15"
+    "20.4"
   ],
-  "last_task2b_completed_at": "2026-06-01T06:52:00+08:00",
+  "last_task2b_completed_at": "2026-06-02T02:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -11968,7 +12011,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
+    "src/part5-app/ch20-stability/04-anr-governance.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-06-01T06:52:00+08:00",

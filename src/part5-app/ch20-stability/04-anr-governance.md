@@ -4,8 +4,8 @@ chapter: "20.4"
 section: "20.4"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-11"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+last_verified: "2026-06-02"
+last_verified_against: "AOSP android-16.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -28,11 +28,11 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
@@ -46,6 +46,7 @@ last_task6_review_log: "logs/review/2026-05-23-08-review.md"
 task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 2 / P2 2；Dispatchers.IO 继承关系错误；FGS 晋升超时版本表缺失；SIGQUIT 自进程权限边界混淆；WorkManager/nativePollOnce P2 沿用既有 suggestions。"
 last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。"
+task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 ---
 
 # ANR 治理策略
@@ -170,7 +171,7 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 
 #### Dispatchers.IO 与 Default 共享线程池
 
-Dispatchers.IO 的内部实现是 `DefaultIoScheduler`，而 Dispatchers.Default 的内部实现是 `DefaultScheduler`。两者都继承自 `SchedulerCoroutineDispatcher`，**共享同一个 CoroutineScheduler 实例**。
+Dispatchers.Default 的内部实现是 `DefaultScheduler`，它继承自 `SchedulerCoroutineDispatcher`。Dispatchers.IO 的内部实现是 `DefaultIoScheduler`，它实现 `ExecutorCoroutineDispatcher` / `Executor`，再通过 `UnlimitedIoScheduler.limitedParallelism()` 把 blocking 任务委托给 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)`。两者共享底层 worker 资源，但继承关系不同。
 
 ```kotlin
 // kotlinx-coroutines-core/jvm/src/scheduling/Dispatcher.kt
@@ -182,7 +183,7 @@ private object UnlimitedIoScheduler : CoroutineDispatcher() {
     // 内部调用 DefaultScheduler.dispatchWithContext(block, BlockingContext, ...)
 }
 
-internal object DefaultIoScheduler : ExecutorCoroutineDispatcher() {
+internal object DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor {
     private val default = UnlimitedIoScheduler.limitedParallelism(
         systemProp(IO_PARALLELISM_PROPERTY_NAME, 64.coerceAtLeast(AVAILABLE_PROCESSORS))
     )
@@ -422,7 +423,7 @@ override fun onReceive(context: Context, intent: Intent) {
 Service 的前台生命周期超时是 `SERVICE_TIMEOUT` 默认 20 秒，后台 `SERVICE_BACKGROUND_TIMEOUT` 默认 200 秒。FGS 晋升超时是独立的计时器（见下方）。治理要点：
 
 - `onCreate()` 和 `onStartCommand()` 都在主线程执行。如果 `onStartCommand()` 需要做耗时操作，启动一个后台线程来处理，然后立即返回 `START_STICKY` 或 `START_NOT_STICKY`。
-- FGS 晋升超时（`startForegroundService()` → `startForeground()`）：Android 8 引入此约束。`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS` 默认 30s（android-16），超时后系统再等待 `DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS`（10s）后触发 ANR。Android 12-13、Android 14+ 的宽限值有差异，排查时应以目标版本 `ActivityManagerConstants` 中的配置为准，不要统一写 5s。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
+- FGS 晋升超时（`startForegroundService()` → `startForeground()`）：Android 8 引入此约束，排查时按目标系统源码中的配置确认，不要统一写 5s。Android 10-12 的核心窗口来自 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT`，默认 10s；Android 13+ 改为 `ActivityManagerConstants.mServiceStartForegroundTimeoutMs` 默认 30s，超时后再等待 `mServiceStartForegroundAnrDelayMs` 默认 10s 触发 ANR。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
 - 普通前台 Service 生命周期执行超时（`onCreate()`/`onStartCommand()`）：`ActivityManagerConstants.SERVICE_TIMEOUT` 默认 20s（前台），`SERVICE_BACKGROUND_TIMEOUT` 默认 200s（后台）。两者与 FGS 晋升超时是独立的计时器。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
@@ -495,9 +496,9 @@ public class ANRWatchdog {
 当 Watchdog 检测到主线程阻塞时，需要 dump 主线程的调用栈来做分析。方法有两种：
 
 1. **Thread.getStackTrace()**：从监测线程调用 `mainThread.getStackTrace()`。这是最简单的方式，但有一个限制——如果主线程正处于 `BLOCKED` 状态（等锁），`getStackTrace()` 可能拿不到有意义的堆栈。
-2. **SIGQUIT 信号**：向进程发送 `SIGQUIT` 信号，触发 ART 虚拟机 dump 所有线程堆栈。这和系统 ANR 时的行为一致，信息最完整。缺点是需要 root 权限或者 `android.permission.DUMP`（应用通常没有）。
+2. **SIGQUIT 信号**：向自进程发送 `SIGQUIT` 信号可以触发 ART 虚拟机 dump 本进程线程堆栈，这个动作本身不需要 root 或 `android.permission.DUMP`。受权限限制的是读取系统写入的 `/data/anr` 产物，或对其他进程抓完整 dump；普通应用在线上环境通常拿不到这些文件。
 
-生产环境通常用方法一，因为不需要额外权限。如果主线程堆栈信息不够丰富，可以同时采样其他关键线程（如 Binder 线程、RenderThread）的堆栈作为补充。
+生产环境通常用方法一，因为它不依赖系统 traces 文件。如果主线程堆栈信息不够丰富，可以同时采样其他关键线程（如 Binder 线程、RenderThread）的堆栈作为补充；SIGQUIT 路径更适合内部调试包或具备日志回收能力的灰度环境。
 
 ### 上报与告警
 
@@ -587,16 +588,16 @@ ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以�
 
 在 traces.txt 和 event log 中，以下特征暗示系统负载是主因：
 
-- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在做任何工作。此时更可能是系统侧操作（如 Binder 调用到 system_server）阻塞，导致系统认为应用无响应。
+- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在执行应用回调。它只能说明应用主线程当时处于空闲等待状态，还要结合 system_server、Binder 线程和 input dispatch 相关堆栈确认是否为系统侧阻塞。
 - **event log 中 `am_anr` 前后有大量 `am_proc_died` / `am_kill`**：系统在密集杀进程，内存压力极大。
-- **CPU iowait > 30%**：设备存储 I/O 瓶颈严重，所有进程都在等磁盘。
-- **ANR 发生在设备启动后的前 2 分钟**：系统启动阶段各服务初始化集中，响应速度普遍偏慢。
+- **CPU iowait 异常升高**：设备存储 I/O 瓶颈严重，多个进程都在等磁盘。具体阈值要来自同设备、同版本、同采样窗口的线上基线，不能把固定百分比当成通用判据。
+- **ANR 发生在设备启动后的短时间内**：系统启动阶段各服务初始化集中，响应速度普遍偏慢。时间窗口要按设备和 ROM 基线确认，不能单靠“启动后 N 分钟”直接过滤。
 
 ### 过滤策略
 
 在线上监控中，对疑似系统负载导致的 ANR 做以下处理：
 
-1. **标记但不上报**：在 ANR 上报中增加 `likely_system_caused` 标记，和代码问题导致的 ANR 分开统计。
+1. **标记并降权**：在 ANR 上报中增加 `likely_system_caused` 标记，和代码问题导致的 ANR 分开统计。单个信号只能用于降权或分桶；只有多项系统负载信号同时出现，并且主线程堆栈没有应用耗时回调时，才考虑从代码问题看板中剔除。
 2. **按设备分桶**：统计 ANR 率时，排除低端设备（RAM < 2GB 或 Android 10 以下）的数据，或者单独建桶。不同设备的 ANR 基线差异很大，混在一起会掩盖真实的代码问题。
 3. **关注趋势而非绝对值**：系统负载 ANR 的波动和系统版本更新、厂商 ROM 调优相关。单次突增不需要立即响应，但如果某个版本后持续上升，说明需要跟进。
 
