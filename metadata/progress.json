@@ -2577,11 +2577,17 @@
       "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
     },
     "3.5": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-12T16:15:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review"
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_lite_at": "2026-06-01",
+      "task2b_lite_log": "logs/rework/2026-06-01-11-task2b-lite.md"
     },
     "4.3": {
       "status": "ready-for-review",
