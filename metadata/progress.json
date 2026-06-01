@@ -2375,8 +2375,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T14:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-01T15:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T11:06:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2621,11 +2621,11 @@
       "status": "done"
     }
   ],
-  "last_task2b_at": "2026-06-01T14:50:00+08:00",
+  "last_task2b_at": "2026-06-01T15:35:00+08:00",
   "last_task2b_sections": [
-    "21.2"
+    "5.14"
   ],
-  "last_task2b_action": "frontmatter fallback fixed: Alpha API/default executor/execution model and thread priority boundary",
+  "last_task2b_action": "lite fixed: API 37 NPU feature constant/value and NN HAL HIDL/AIDL version boundary",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -7106,6 +7106,16 @@
       "result": "fixed",
       "source": "frontmatter backlog fallback",
       "log": "logs/rework/2026-06-01-14-task2b-main.md"
+    },
+    {
+      "at": "2026-06-01T15:35:00+08:00",
+      "lane": "lite",
+      "sections": [
+        "5.14"
+      ],
+      "result": "fixed-lite",
+      "source": "frontmatter backlog fallback",
+      "log": "logs/rework/2026-06-01-15-task2b-lite.md"
     }
   ],
   "last_task2a_processed": "22.17",

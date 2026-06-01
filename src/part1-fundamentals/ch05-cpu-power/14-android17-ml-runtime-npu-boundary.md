@@ -4,8 +4,8 @@ chapter: "5.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "Android 17 preview docs + AOSP main + LiteRT Next docs"
+last_verified: "2026-06-01"
+last_verified_against: "Android 17 / API 37 PackageManager reference, Android 17 release notes, source.android.com NNAPI Runtime docs, LiteRT Next docs"
 confidence: medium
 sources:
   - type: official
@@ -23,6 +23,8 @@ sources:
   - type: aosp
     path: "hardware/interfaces/neuralnetworks/1.3/"
   - type: aosp
+    path: "hardware/interfaces/neuralnetworks/aidl/"
+  - type: aosp
     path: "frameworks/base/core/java/android/content/pm/PackageManager.java"
   - type: research
     path: "DeepResearch/2026-05-15-android-17-npu-litert-aicore.md"
@@ -37,19 +39,20 @@ gap_score: 18
 material_count: 5
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-16T23:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-23-review.md"
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: task6_pending
+last_task2b_lite_at: "2026-06-01"
 p0: 0
 p1: 2
 p2: 1
@@ -62,7 +65,7 @@ task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU f
 ## 要点
 
 ### 🔹 NPU 能力声明与 Android 17 访问限制
-区分 `android.hardware.neural_processing_unit` 声明、PackageManager feature 检测、目标 API 约束，以及未声明时的直接 NPU 访问边界。
+区分 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 声明、PackageManager feature 检测、目标 API 约束，以及未声明时的直接 NPU 访问边界。
 
 ### 🔹 LiteRT CompiledModel 的执行模型
 梳理 `CompiledModel`、`Accelerator.NPU/GPU/CPU` fallback、模型加载、输入输出 buffer 与运行时调度路径。
@@ -71,7 +74,7 @@ task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU f
 说明主机侧编译、设备 SoC 匹配、Google Play AI Pack 下发、首次推理延迟和包体积之间的取舍。
 
 ### 🔹 NNAPI HAL 与厂商 NPU delegate
-连接 `hardware/interfaces/neuralnetworks/1.3/`、QNN/Neuron 等厂商 delegate、支持 op 查询和 partial delegation。
+区分 HIDL 1.3 历史接口、Android 12+ AIDL HAL、QNN/NeuroPilot 等厂商 delegate、支持 op 查询和 partial delegation。
 
 ### 🔹 端侧推理的性能与功耗边界
 围绕 TTFT、单次推理延迟、峰值内存、热降频、后台限制建立可观测指标。
@@ -95,29 +98,29 @@ Android 17 把端侧 AI 推理从“能不能调用加速器”推进到“调�
 
 ## NPU feature 声明：Android 17 开始的访问门槛
 
-Android 17 release notes 对 NPU 管理给出了新的平台约束：面向 Android 17 的应用，如果要直接访问 NPU，必须在清单中声明 NPU 硬件特性。公开文档中的 feature 名为 `android.hardware.neural_processing_unit`。[已验证: 官方文档, developer.android.com/about/versions/17/release-notes]
+Android 17 release notes 对 NPU 管理给出了新的平台约束：面向 Android 17 的应用，如果要直接访问 NPU，必须在清单中声明 NPU 硬件特性。API 37 公开引用中对应常量为 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`，值为 `android.hardware.npu`。[已验证: 官方文档, developer.android.com/about/versions/17/release-notes; developer.android.com/reference/android/content/pm/PackageManager]
 
 声明方式放在 `AndroidManifest.xml` 中。是否设置 `required`，取决于产品是否允许 CPU / GPU 回退：
 
 ```xml
 <uses-feature
-    android:name="android.hardware.neural_processing_unit"
+    android:name="android.hardware.npu"
     android:required="false" />
 ```
 
 `required="true"` 会把没有 NPU feature 的设备排除在安装范围外，适合功能完全依赖 NPU 的独立应用；大多数业务功能更适合设为 `false`，在运行时检测能力后选择 NPU、GPU 或 CPU 路径。
 
-运行时检测可以直接使用 feature 字符串。Android 17 预览 SDK 中是否提供 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 常量，需要以最终 SDK 为准；在常量不可用或编译 SDK 未更新时，字符串检测仍然可用。[待验证: Android 17 final SDK 中的常量名称]
+运行时检测优先使用 API 37 常量；如果 compileSdk 还没升到 37，只能临时使用 `android.hardware.npu` 字符串，并在升级 SDK 后替换回常量。
 
 ```kotlin
 val hasNpu = appContext.packageManager.hasSystemFeature(
-    "android.hardware.neural_processing_unit"
+    PackageManager.FEATURE_NEURAL_PROCESSING_UNIT
 )
 ```
 
 这条检测只回答“系统声明这台设备提供 NPU feature”。它不保证当前模型可以完整跑在 NPU 上，也不保证厂商 delegate 支持模型里的每个算子。工程判断要拆成三层：
 
-- **安装与声明层**：清单是否声明 `android.hardware.neural_processing_unit`，目标 SDK 是否触发 Android 17 的访问约束。
+- **安装与声明层**：清单是否声明 `android.hardware.npu`，目标 SDK 是否触发 Android 17 的访问约束。
 - **设备能力层**：`PackageManager.hasSystemFeature()` 是否返回 true，设备是否提供对应 NPU 运行时或 Play services 分发的 delegate。
 - **模型覆盖层**：当前模型的算子、量化格式、输入尺寸和内存布局是否被目标 NPU 后端支持。
 
@@ -173,7 +176,7 @@ AI Pack 的价值在于把设备匹配和产物下发交给 Google Play 流程�
 
 NNAPI 的 NDK API 从 Android 15 起被官方标记为 deprecated，迁移指南建议转向 TensorFlow Lite in Play services、AICore 等替代方案。[已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide]
 
-这不等于底层 NPU 驱动消失。AOSP 仍然保留 Neural Networks HAL，source.android.com 对 NN HAL 1.3 的说明是：它抽象设备中的 GPU、DSP 等加速设备，驱动需要符合 HAL 定义文件。对应源码位于 `hardware/interfaces/neuralnetworks/1.3/`。[已验证: AOSP, hardware/interfaces/neuralnetworks/1.3/]
+这不等于底层 NPU 驱动消失。AOSP 仍然保留 Neural Networks HAL；Android 11 及以下可按 HIDL 1.3 历史口径理解，Android 12+ 的 NNAPI HAL revision 使用 AIDL 而不是 HIDL。源码锚点要同时区分 `hardware/interfaces/neuralnetworks/1.3/` 与 `hardware/interfaces/neuralnetworks/aidl/`。[已验证: source.android.com/docs/core/ota/modular-system/nnapi; AOSP hardware/interfaces/neuralnetworks/]
 
 更准确的工程图景是：
 
@@ -221,9 +224,9 @@ ADPF 与 NPU 的关系也要谨慎。ADPF 更适合表达应用线程的工作�
 
 | 能力 | 可验证来源 | 能写成平台能力吗 | 写作边界 |
 |------|------------|------------------|----------|
-| `android.hardware.neural_processing_unit` 声明 | Android 17 release notes | 可以，但限 Android 17 目标应用访问约束 | API 常量名和最终 SDK 行为需复核 |
+| `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 声明 | Android 17 release notes / API 37 reference | 可以，但限 Android 17 目标应用访问约束 | 常量值为 `android.hardware.npu` |
 | NNAPI NDK API | Android NDK 文档 | 可以，但需标注 Android 15 起 deprecated | 不建议新性能敏感项目依赖它做主路径 |
-| NN HAL 1.3 | AOSP `hardware/interfaces/neuralnetworks/1.3/`、source.android.com | 可以，属于系统与驱动抽象 | 不等于任意 App 都能稳定拿到 NPU |
+| NN HAL | AOSP `hardware/interfaces/neuralnetworks/1.3/`、`hardware/interfaces/neuralnetworks/aidl/`、source.android.com | 可以，属于系统与驱动抽象 | Android 11 及以下看 HIDL，Android 12+ 看 AIDL |
 | LiteRT CompiledModel / NPU | ai.google.dev LiteRT Next 文档 | 不能写成 AOSP 公共 API | 属于 LiteRT 运行时能力，版本和分发渠道要标清 |
 | Qualcomm QNN / MediaTek NeuroPilot | ai.google.dev 厂商后端页、厂商 SDK | 不能写成全 Android 通用能力 | 只对对应 SoC、运行时、delegate 版本成立 |
 | AICore / Gemini Nano | developer.android.com/ai/aicore | 不能写成 AOSP 开放服务 | 属于 Google 生态能力，受设备、地区、GMS 版本影响 |
@@ -239,7 +242,7 @@ Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能�
 
 验证 Tensor 设备时建议保留四类证据：
 
-- 设备侧 feature：`android.hardware.neural_processing_unit` 是否存在。
+- 设备侧 feature：`android.hardware.npu` 是否存在。
 - LiteRT 运行时日志：命中的 accelerator、delegate 名称、fallback 信息。
 - 模型侧数据：算子覆盖率、量化格式、输入尺寸、编译产物版本。
 - 系统侧信号：CPU / GPU 频率、thermal、内存，以及厂商或 Google 暴露的额外 tracepoint。
@@ -390,7 +393,7 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 ### Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md
 - 类型：DeepResearch 调研结果
-- 摘要：交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 AOSP；android.hardware.ai.npu 不存在，正确 feature 常量为 android.hardware.neural_processing_unit；NNAPI NDK C API 在 Android 15 废弃但 HAL 1.3 AIDL 仍活跃；LiteRT 是 Play Services SDK 不在 AOSP；AICore 仍为 Developer Preview。建立公开可发布事实 vs preview/vendor/待验证的边界。
+- 摘要：交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 AOSP；android.hardware.ai.npu 不存在，正确 feature 常量为 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`，值为 `android.hardware.npu`；NNAPI NDK C API 在 Android 15 废弃但 HAL 仍活跃；LiteRT 是 Play Services SDK 不在 AOSP；AICore 仍为 Developer Preview。建立公开可发布事实 vs preview/vendor/待验证的边界。
 - 注入时间：2026-05-23
 - 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
 
@@ -407,7 +410,7 @@ Android 17 Release Notes（2026-02-26）明确：
 这意味着面向 Android 17 的应用，如果要直接访问 NPU，必须在 AndroidManifest.xml 中声明：
 
 ```xml
-<uses-feature android:name="android.hardware.neural_processing_unit" android:required="false" />
+<uses-feature android:name="android.hardware.npu" android:required="false" />
 ```
 
 未声明的应用在 Android 17 目标 SDK 下无法直接访问 NPU。间接访问路径（LiteRT Delegate）不在此约束范围内。
@@ -421,7 +424,7 @@ Android 17 Release Notes（2026-02-26）明确：
 
 - **Android 14 (API 34)**：NNAPI 稳定使用，ANeuralNetworks* C API 正常
 - **Android 15 (API 35)**：NNAPI NDK C API 标记 deprecated，官方迁移文档指引转向 LiteRT in Play Services + GPU Delegate
-- **Android 17 (API 36)**：NNAPI 废弃+强制 NPU feature 声明
+- **Android 17 (API 37)**：NNAPI 废弃+强制 NPU feature 声明
 
 **迁移路径确认**：
 ```text
@@ -453,10 +456,10 @@ AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提
 | GPU Delegate | Google Play services 分发 | 否 |
 | NPU Delegate（QNN/NeuroPilot）| 厂商 SDK | 否 |
 | XNNPACK | AOSP `external/XNNPACK/` | 可引用源码 |
-| NN HAL 1.3 | AOSP `hardware/interfaces/neuralnetworks/1.3/` | 可引用源码 |
+| NN HAL | AOSP `hardware/interfaces/neuralnetworks/1.3/` / `hardware/interfaces/neuralnetworks/aidl/` | 可引用源码 |
 
 **注**：本调研结论与章节现有内容一致，对以下待验证项仍保持开放：
-- `FEATURE_NEURAL_PROCESSING_UNIT` 在 Android 17 final SDK 中的常量名
+- Android 17 / API 37 设备侧 `android.hardware.npu` feature 的厂商声明覆盖率
 - AICore 私有接口调用 NPU 的具体路径（AOSP 外）
 - Qualcomm QNN / MediaTek NeuroPilot 的具体算子覆盖范围
 
@@ -502,7 +505,7 @@ AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提
 |------|------|----------|
 | Android 17 目标应用必须声明 FEATURE_NEURAL_PROCESSING_UNIT | Android 17 Release Notes | 已验证 |
 | NNAPI NDK C API 在 Android 15 废弃 | developer.android.com/ndk/guides | 已验证 |
-| Neural Networks HAL 1.3 AIDL 仍活跃 | AOSP hardware/interfaces/neuralnetworks/1.3/ | 已验证 |
+| Neural Networks HAL 仍活跃，Android 12+ 使用 AIDL | AOSP hardware/interfaces/neuralnetworks/ + source.android.com NNAPI Runtime | 已验证 |
 | LiteRT NPU delegate 通过 Google Play services 分发 | developer.android.com/ai/custom | 已验证 |
 | LiteRT CompiledModel API 自动化加速器选择 | GitHub LiteRT releases | 已验证 |
 
