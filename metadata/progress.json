@@ -2652,11 +2652,11 @@
       "status": "done"
     }
   ],
-  "last_task2b_at": "2026-06-01T15:35:00+08:00",
+  "last_task2b_at": "2026-06-01T21:35:00+08:00",
   "last_task2b_sections": [
-    "5.14"
+    "3.5"
   ],
-  "last_task2b_action": "lite fixed: API 37 NPU feature constant/value and NN HAL HIDL/AIDL version boundary",
+  "last_task2b_action": "lite fixed: vendor game-mode input priority bounded as non-AOSP implementation",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -11765,12 +11765,12 @@
       }
     ]
   },
-  "last_task2b_lite_at": "2026-06-01T13:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-01T21:35:00+08:00",
   "last_task2b_lite_sections": [
-    "24.17"
+    "3.5"
   ],
   "last_task2b_lite_files": [
-    "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md"
+    "src/part1-fundamentals/ch03-input/05-input-interception-security.md"
   ],
   "task2b_verifier_history": [
     {
@@ -12205,7 +12205,7 @@
     "result": "ready-for-task6"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-06-01-01-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-01-21-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
@@ -12229,18 +12229,17 @@
   "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
   "task2b_last_rework_lite": {
-    "at": "2026-06-01T01:35:00+08:00",
+    "at": "2026-06-01T21:35:00+08:00",
     "lane": "lite",
-    "source": "frontmatter backlog fallback",
-    "section": "24.17",
-    "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-    "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
+    "source": "task6-review",
+    "section": "3.5",
+    "file": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
+    "title": "输入事件拦截与安全机制",
     "result": "fixed-lite",
     "issues_fixed": [
-      "Room 3.0 alpha04 connection pool API and validation boundary"
+      "厂商游戏模式输入优先级段落改为非 AOSP 边界说明，避免与源码验证结论冲突"
     ],
-    "returned_to": "task6_pending",
-    "log": "logs/rework/2026-06-01-01-task2b-lite.md"
+    "log": "logs/rework/2026-06-01-21-task2b-lite.md"
   },
   "section_18_15": {
     "section": "18.15",
