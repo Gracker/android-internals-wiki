@@ -18,12 +18,12 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_result: pass-light-edit
 last_task2b_at: "2026-06-01T22:58:00+08:00"
 last_task2b_main_at: "2026-06-01T22:58:00+08:00"
 last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
@@ -38,9 +38,12 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_audit: "2026-05-31"
 task9_review_notes: "2026-05-22 task9 idle-audit: needs-rework,P0 0 / P1 1 / P2 1,写入 queue task9-audit-20260522-18.13-WebView-surfacecontrol-platform-boundary。"
-last_task6_at: "2026-06-01T18:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-18-review.md"
-task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。修正第一人称三处；实测数据、Android 15-17 provider 差异和 Kotlin overlay 示例缺少可复查证据，已写入 queue。2026-06-01 22 Task2B main: 已删除不可复查实测数据，改写平台/provider 版本边界，并以 provider/Perfetto/SurfaceFlinger 证据替代非公开 API 示例。"
+last_task6_at: "2026-06-01T23:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-23-review.md"
+task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 4 处；Task2B 已收敛无证据实测表、版本边界和非公开 API 示例，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_l1_l2_fixes: 4
+task6_l3_l4_issues: 0
+task6_new_rework: false
 ---
 
 <!-- outline-start -->
@@ -144,7 +147,7 @@ adb shell ls /data/app/*/lib/arm64/libwebviewchromium.so
 - 渲染路径选择要等第一次硬件绘制和 provider 运行时条件一起判断
 - GL/Vulkan 后端必须与宿主 HWUI 保持一致
 
-`SurfaceControl` 子 Surface 的判断从这里起步:先记 provider 版本,再看 Perfetto 与 `dumpsys SurfaceFlinger`。只看系统版本,结论经常会偏。
+`SurfaceControl` 子 Surface 的判断从 provider 版本开始，再看 Perfetto 与 `dumpsys SurfaceFlinger`。只看系统版本，结论容易偏。
 
 ## 官方 Android System WebView provider 内部路径
 
@@ -281,7 +284,7 @@ adb shell dumpsys SurfaceFlinger --list | grep -i "webview\\|surfaceview\\|<包�
 
 #### 实际触发与运行时判断
 
-在实际排查中,我们经常遇到误判的情况。以下是一些关键观察点：
+实际排查中常见的误判，是把布局满屏当成 fullscreen custom view。关键观察点如下：
 
 ```kotlin
 // WebChromeClient 示例 - 正确判断全屏触发条件
@@ -352,9 +355,9 @@ class MyWebChromeClient : WebChromeClient() {
 
 单看一条 heuristic 容易误判。更稳妥的做法,是按顺序核对 provider / SDK 身份、Perfetto 和 `dumpsys SurfaceFlinger` 三组证据。
 
-### 1. 先记 provider 或 SDK 身份
+### 1. 记录 provider 或 SDK 身份
 
-- 官方 provider 场景,先记录 `WebViewCompat.getCurrentWebViewPackage()` 与 `adb shell dumpsys webviewupdate` 的结果。
+- 官方 provider 场景，记录 `WebViewCompat.getCurrentWebViewPackage()` 与 `adb shell dumpsys webviewupdate` 的结果。
 - `versionName` 要原样记到问题单里,后续查 Chromium milestone 和 feature 差异都靠它。
 - 第三方 SDK 场景,再补 SDK 版本、初始化日志和运行时 view class。
 

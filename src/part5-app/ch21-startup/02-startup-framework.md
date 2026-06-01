@@ -22,14 +22,14 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-22"
-task6_result: needs-rework
+reviewed_date: "2026-06-01"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
@@ -37,11 +37,14 @@ last_task9_at: "2026-05-22T03:46:50+08:00"
 task6_reviewed_date: "2026-05-22"
 task9_review_notes: "2026-05-22 task9 deep-review: P0 1 / P1 2（Alpha API/默认线程池、执行模型、线程优先级边界），已写入 queue。"
 last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
-last_task6_at: "2026-05-22T04:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-04-review.md"
-task6_review_notes: "2026-05-22 task6 复审：needs-rework。L1/L2 无新增写作硬伤；已按 Task9 2026-05-22 P0/P1 风险在 Alpha 与线程优先级段落加存疑标注，并合并到既有 queue 条目。"
+last_task6_at: "2026-06-01T23:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-23-review.md"
+task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-06-01T14:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_new_rework: false
 ---
 
 # 启动框架设计与任务编排
@@ -78,6 +81,7 @@ task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-de
 ## 启动任务有向无环图（DAG）设计
 
 [已验证: AOSP android-16.0.0_r1, Jetpack AppStartup 依赖图构建逻辑]
+
 ### 为什么用 DAG
 
 Application.onCreate 到首帧绘制之间的初始化工作，少则十几个，多则上百个。这些任务之间存在两类关系：
@@ -91,7 +95,7 @@ Application.onCreate 到首帧绘制之间的初始化工作，少则十几个�
 
 把每个初始化任务建模为一个节点，任务间的依赖关系建模为有向边：
 
-```
+```text
 节点属性：
   - taskId: 唯一标识
   - dependencies: 依赖的任务 ID 列表
@@ -105,7 +109,7 @@ Application.onCreate 到首帧绘制之间的初始化工作，少则十几个�
 
 构建 DAG 后，用拓扑排序确定执行层级。同一层级内无相互依赖的任务可以并行执行：
 
-```
+```text
 Level 0（无依赖，可立即并行）:
   [Logger, DeviceId, ProcessInit]
 
@@ -123,7 +127,7 @@ Level 3:
 
 DAG 建好后，可以用关键路径算法（CPM）计算从入口到最远节点的最长路径——这条路径决定了启动耗时的理论下限。关键路径上的任务就是优化重点：缩短它们才能缩短总启动时间。
 
-```
+```text
 关键路径 = max(各路径上任务耗时之和)
 
 示例：
@@ -267,7 +271,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 **执行流程**（基于 `AlphaManager.start()` 源码）：
 
-```
+```text
 1. 通过 AlphaManager.getInstance(context).addProject(project) 注册所有 Project/Task
    （Task 依赖通过 Project.Builder.add(...).after(...) 声明）
 2. AlphaManager.start() 按当前进程选择匹配的 Project，然后调用 project.start()
@@ -306,7 +310,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 自研方案的核心模块：
 
-```
+```text
 ┌─────────────────────────────────────┐
 │         StartupManager              │
 │  (入口：start / await / callback)   │
@@ -343,6 +347,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 ## 异步初始化与线程池策略
 
 [已验证: AOSP android-16.0.0_r1, ThreadPoolExecutor 配置参数]
+
 ### 主线程是瓶颈
 
 21.1 节的耗时分段已经说明：从 `Application.onCreate` 到首帧绘制，主线程的执行时间直接决定 TTID（Time To Initial Display）。每在主线程增加 50ms 的同步初始化，TTID 就增加 50ms。
@@ -470,7 +475,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 
 ### 动态配置的接入方式
 
-```
+```text
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │  远程配置中心  │────→│   配置解析器   │────→│   DAG 重建    │
 │  (JSON 配置)  │     │ (版本/进程/渠道)│     │ (拓扑排序+验证)│
