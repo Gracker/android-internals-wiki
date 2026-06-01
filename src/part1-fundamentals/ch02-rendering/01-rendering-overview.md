@@ -21,7 +21,7 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-review_round: 6
+review_round: 7
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-01"
 task9_reviewed_by: "openclaw-task9"
@@ -36,14 +36,14 @@ status: "ready-for-review"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2b_state: "fixed"
-last_task6_at: "2026-06-01T06:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-06-review.md"
+last_task6_at: "2026-06-01T11:06:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-11-review.md"
 task2b_result: "fixed"
-task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-01 Task6 11:06：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T05:35:00+08:00"
@@ -100,7 +100,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 
 打开一份 Perfetto Trace,会看到屏幕上密密麻麻的 Track 和色块:主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里的 commit / composite / present、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的呈现--理解它们之间的协作关系之后,Trace 才能帮助我们定位问题。
 
-我们遇到的大多数 UI 性能问题,都可以归结为渲染管线的某一个环节出了状况:卡顿可能是因为主线程 Measure/Layout 耗时过长,也可能是 GPU 渲染跟不上 VSync 节拍;掉帧可能是因为 BufferQueue 没有可用的缓冲区,也可能是 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景,就是给自己建一张"问题定位地图"--看到现象,就能沿着管线找到具体的瓶颈环节。
+我们遇到的大多数 UI 性能问题,都可以归结为渲染管线的某一个环节出了状况:卡顿可能是因为主线程 Measure/Layout 耗时过长,也可能是 GPU 渲染跟不上 VSync 节拍;掉帧可能是因为 BufferQueue 没有可用的缓冲区,也可能是 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景,就是建立一套问题定位路径--看到现象,就能沿着管线找到具体的瓶颈环节。
 
 ## 渲染管线全景:Measure → Layout → Draw → Sync → GPU Render → Composite → Display
 

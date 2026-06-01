@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-review_round: 3
+review_round: 4
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -36,19 +36,19 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_result: "auto-fixed"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
-last_task6_at: "2026-06-01T06:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-06-review.md"
-task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-task6_l1_l2_fixes: 1
+last_task6_at: "2026-06-01T11:06:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-11-review.md"
+task6_review_notes: "2026-06-01 Task6 11:06：回炉后写作复审；完成 L1/L2 小修 3 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
@@ -90,11 +90,11 @@ last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 
 ## 开头:为什么要了解这两个线程的协作
 
-在 Perfetto 里打开一个滑动场景的 Trace,我们会看到主线程(UI Thread)和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常,它们像齿轮一样精密咬合--主线程画完蓝图,RenderThread 拿去执行,一帧接一帧流畅运转。如果出了问题,我们会看到一条 Track 延迟、另一条 Track 饥饿等待,最终帧超时掉帧。
+在 Perfetto 里打开一个滑动场景的 Trace,我们会看到主线程(UI Thread)和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常,主线程完成 DisplayList 构建后,RenderThread 接着同步状态并提交 GPU 命令,一帧接一帧推进。如果出了问题,我们会看到一条 Track 延迟、另一条 Track 饥饿等待,最终帧超时掉帧。
 
 Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"执行 GPU 命令"拆分到两个线程上并行执行。在此之前,measure、layout、draw 和 GPU 渲染全部在主线程完成,意味着 App 的 UI 逻辑和 GPU 的渲染工作互相阻塞。引入 RenderThread 后,主线程只负责构建 DisplayList(一份绘制指令清单),GPU 渲染工作交给了 RenderThread,从而让 CPU 和 GPU 实现流水线式并行。
 
-理解这两个线程如何协作--尤其是它们之间的同步点在哪里、耗时如何分布、什么情况下会互相阻塞--是分析渲染类性能问题的基本功。无论是滑动卡顿、动画掉帧还是 GPU 过载,答案都藏在主线程和 RenderThread 的交互过程里。
+理解这两个线程如何协作--尤其是它们之间的同步点在哪里、耗时如何分布、什么情况下会互相阻塞--是分析渲染类性能问题的基本功。无论是滑动卡顿、动画掉帧还是 GPU 过载,分析入口都在主线程和 RenderThread 的交互过程里。
 
 ## MainThread 的职责:Measure、Layout、构建 DisplayList
 
@@ -108,7 +108,7 @@ Android 5.0(Lollipop)引入 RenderThread 的目的是把"构建绘制指令"和"
 
 **Draw(绘制)**--这一步容易产生误解。开启硬件加速后,`View.onDraw(Canvas)` 收到的是 `RecordingCanvas`,这块画布不直接绘制像素,只把绘制调用(画圆、画文字、画图片)记录为 **DisplayList**,再挂到对应 View 的 **RenderNode** 上。
 
-我们可以把 DisplayList 类比成一份"施工图纸"--它精确记录了"在什么位置画什么形状、什么颜色",但还没有变成屏幕像素。这份图纸将在稍后交给 RenderThread,由它来指挥 GPU 生成最终画面。
+DisplayList 是一份绘制指令清单,记录了"在什么位置画什么形状、什么颜色",但还没有变成屏幕像素。这份指令清单随后交给 RenderThread,由它提交 GPU 命令生成最终画面。
 
 ```java
 // frameworks/base/core/java/android/view/View.java
