@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
@@ -10,9 +10,9 @@ reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -36,21 +36,24 @@ related_chapters:
 - '9.2'
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
 task2b_result: fixed-lite
-task9_result: needs-rework
-task9_reviewed_date: '2026-05-09'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-09T06:20:00+08:00'
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-02"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-02T00:25:54+08:00"
 last_task6_at: "2026-06-01T23:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-23-review.md"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 1 处；保留既有待补充/待验证边界标注，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
-task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0：Android 17/InputDispatcher 密码场景 InputMonitor 切断缺少可复核 AOSP tag/source anchor；P1：通话中敏感权限封锁版本归属需重核。"
+last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-14-audit.md"
 last_task2b_lite_at: '2026-06-01'
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 输入事件拦截与安全机制

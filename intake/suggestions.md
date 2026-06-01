@@ -121,3 +121,16 @@
 - **问题**：示例使用 `Display.Hardware()`、`display.getHardware()`、`hardware.overlaySupport` 判断 overlay 能力，需确认这些是否为 Android 17 公开 API 或内部/伪代码。
 - **建议**：Task9 核对 API 真实性；若不是公开 API，Task2B 改为 `dumpsys SurfaceFlinger`、Perfetto 或明确标注伪代码。
 - **review 日志**：logs/review/2026-06-01-18-review.md
+
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-06-02
+- **类型**：数据缺失
+- **位置**：三缓冲机制与 FrameTimeline 验证段
+- **问题**：三缓冲的帧率平滑和端到端延迟代价已经有正确边界，但缺少一份真实 FrameTimeline / BufferQueue trace 样例来支撑判断。
+- **建议**：补一个 60Hz/120Hz 场景的 Perfetto 示例，对比 expected_present_time、actual_present_time、dequeueBuffer 等待和 release fence 返回时机。
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-06-02
+- **类型**：数据缺失
+- **位置**：Bitmap 纹理上传量化描述
+- **问题**：1080p RGBA upload 约 4-8ms、4K 可达 20ms+ 这组数字缺少设备、GPU、内存带宽、解码格式和测试方法限定。
+- **建议**：补充同设备 microbenchmark 或 Perfetto trace，标注 bitmap 尺寸、Config、是否 hardware bitmap、是否调用 prepareToDraw() 以及 Upload Texture slice 的实际耗时。

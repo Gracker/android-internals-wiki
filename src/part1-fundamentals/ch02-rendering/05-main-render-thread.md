@@ -17,12 +17,12 @@ reviewed_date: "2026-06-01"
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
-last_task9_at: "2026-06-01T07:20:00+08:00"
+last_task9_at: "2026-06-02T00:25:54+08:00"
 last_task9_audit: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-01"
-last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修复 BLAST 版本边界、DisplayList/RenderNode 关系、TreeInfo::prepareTextures 伪方法、Bitmap.prepareToDraw API 口径和 Android 8 Bitmap 行；P0 2 / P1 2 / P2 3，回到 Task6 复审。"
+task9_reviewed_date: "2026-06-02"
+last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 deep review: auto-fixed。AUTO-FIX: 修正 dumpsys gfxinfo 逐 View DisplayList command count 误述；P0 1 / P1 0 / P2 1，回到 Task6 复审。"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -36,11 +36,11 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 task9_result: "auto-fixed"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
@@ -52,10 +52,10 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-06-01"
-p0: 2
-p1: 2
-p2: 3
+last_task9_autofix_at: "2026-06-02"
+p0: 1
+p1: 0
+p2: 1
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 ---
@@ -441,7 +441,7 @@ LIMIT 20;
 
 有时候主线程的 draw 阶段本身不慢,但 `syncFrameState` 却耗时异常--这就需要怀疑 DisplayList 的体积是否过大。如果某个 View 的 `onDraw` 中存在循环调用(比如绘制大量重复图形),DisplayList 会记录大量绘制命令;又或者有大量 Bitmap 需要上传到 GPU,同步阶段的数据传输量就会膨胀。
 
-排查的第一步是 `adb shell dumpsys gfxinfo <package>`,其中会列出每个 View 的 DisplayList 大小和命令数量(command count)。如果某个 View 的 command count 远超其他 View,它就是优化目标。
+排查时先用 Perfetto 定位 `syncFrameState`、`prepareTree()`、纹理上传或 `DrawFrame` 的耗时,再结合 Layout Inspector、`ViewDebug`/自建埋点收窄到具体 View。`adb shell dumpsys gfxinfo <package>` 在 Android 16 主要输出 profile / framestats / cache 摘要,不能作为逐 View DisplayList command count 的来源。
 
 优化的核心思路是减少 DisplayList 的命令数:简化 `onDraw` 中的绘制逻辑,善用 `Canvas.save()`/`restore()` 避免重复绘制,对于不常变化的复杂背景使用 9-patch 或 Hardware Layer 缓存(关于 Hardware Layer 的详细用法,我们在 [2.7 Hardware Layer](07-hardware-layer.md) 中有专门讨论)。
 

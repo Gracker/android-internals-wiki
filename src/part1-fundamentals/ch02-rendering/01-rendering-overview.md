@@ -22,23 +22,23 @@ sources:
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 7
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-01"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-01T07:20:00+08:00"
+last_task9_at: "2026-06-02T00:25:54+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。补齐 Choreographer#doFrame 的 CALLBACK_COMMIT 源码口径；P0 0 / P1 0 / P2 1，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 1；源码锚点与版本边界通过，queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
 
-status: ready-for-review
+status: finalized
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 task6_result: "pass-light-edit"
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 task2b_state: fixed
 last_task6_at: "2026-06-01T21:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-21-review.md"
