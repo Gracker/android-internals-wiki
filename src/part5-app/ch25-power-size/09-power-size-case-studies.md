@@ -2,7 +2,7 @@
 title: "功耗与包体积案例集"
 chapter: "25.9"
 section: "25.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-16.0.0_r1 + Clippings structure references"
@@ -10,9 +10,9 @@ confidence: medium-high
 drafted_date: "2026-05-14"
 polish_count: 1
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
@@ -61,13 +61,13 @@ related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-31"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-06-02"
 task6_result: pass-light-edit
-task6_reviewed_at: "2026-05-31T10:08:00+08:00"
+task6_reviewed_at: "2026-06-02T07:07:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-31T10:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-10-review.md"
-task6_review_notes: "2026-05-16 17:08 Task6：复审小修 11 处；写作质量通过。保留既有 Task9 P1 队列（Vitals excessive wake lock 阈值口径），pipeline 保持 task2b_pending。"
+last_task6_at: "2026-06-02T07:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-07-review.md"
+task6_review_notes: "2026-06-02 07:07 Task6：L1/L2 复审通过，未发现新增回炉项；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-31"
@@ -110,8 +110,6 @@ last_deepseek_cn_review_at: 2026-06-01
 
 《Android 性能优化》把包体积拆成 dex、资源、`.so` 三类产物，再按精简、压缩、动态化处理；这个结构适合迁移到案例复盘里。功耗部分参考它的系统化组织方式，但事实验证以 Android Developers、AOSP 和前面 §25.1-§25.8 已验证内容为准。
 
-
-
 ## 后台功耗异常排查实战
 
 后台功耗投诉通常从一句“升级后更耗电”开始，工程上要先把它改写成可验证问题：哪个版本、哪类设备、哪个时间窗口、App 在前台还是后台、屏幕是否关闭、网络和定位是否活跃、是否伴随 WakeLock 或 Alarm。没有这个转换，后面只会在日志、线程和业务代码之间来回猜。
@@ -139,7 +137,6 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 
 `--enable full-wake-history` 适合短时复现；长时间压测会增加历史记录量，脚本要控制采样窗口。导出后先按目标 UID 查 CPU time、WakeLock、network、GPS、Job / Sync / Alarm 记录，再回到 Perfetto 里看同一时间段的线程、网络包和 power rail。Power Profiler 读取 ODPM 设备的 power rail 数据，Pixel 6 及之后机型和部分支持 ODPM 的设备更容易拿到完整轨道。
 
-
 判断时不要盯一个总耗电百分比。总耗电会受屏幕、信号、温度、系统后台任务影响。更稳的判断是“候选版本相比基线新增了什么行为”：例如息屏后新增周期网络请求、某个 Worker 重试未退避、定位请求没有在页面退出后释放、Alarm 唤醒后又启动一段异步任务。
 
 | 观察结果 | 常见根因 | 修复方向 | 回归指标 |
@@ -154,9 +151,7 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 
 “100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。
 
-
 体积账本要同时记录 raw file size、download size、安装后占用和功能覆盖范围。APK Analyzer 文档说明它会展示 zipped / raw file size 与 download file size；命令行可以用 `apkanalyzer` 和 `bundletool` 生成 CI 可读结果。
-
 
 ```bash
 apkanalyzer -h apk file-size app-release.apk
@@ -220,7 +215,6 @@ android {
 
 WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值，以及 24 小时内累计 ≥2h 的持续持锁；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。
 
-
 治理从 Play Console 或本地复现都能开始，但两个入口的侧重点不同。
 
 | 入口 | 适合回答的问题 | 证据 | 局限 |
@@ -233,7 +227,6 @@ WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法�
 
 Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `PowerManager.newWakeLock()`，也可能因为 WorkManager、JobScheduler、DownloadManager、AlarmManager、定位、FCM、媒体播放等 API 产生归因到 App 的 WakeLock。WorkManager worker 在后台执行时获取的 WakeLock 会归因到创建 worker 的 App；AlarmManager 的 wakeup alarm 触发时，系统会让设备离开低功耗状态并持有 Partial WakeLock。
 
-
 排查顺序可以压成五步：
 
 1. **先确认 tag**：Vitals 或 `dumpsys power` 中的 tag 是否能映射到业务模块。无意义 tag 先改命名规范，否则下一轮仍难归因。
@@ -243,8 +236,6 @@ Android Developers 的 wake lock 归因文档提醒：App 不直接调用 `Power
 5. **接发布守门**：新增 WakeLock、Exact Alarm、长时间后台 worker 都要进入 review；灰度看 Vitals 和自建 APM 的趋势。
 
 AOSP 侧可以用 §25.3 已验证的入口理解责任边界：`PowerManagerService` 负责系统 WakeLock 状态管理，`BatteryStatsService` / BatteryStats 体系记录归因统计，`AlarmManagerService` 负责 Alarm 触发与唤醒相关行为。正文只引用路径，不在本节展开实现。
-
-
 
 WakeLock 治理的代码审查清单要比“有没有 release”更细：
 

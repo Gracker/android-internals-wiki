@@ -9,12 +9,18 @@ last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time d
 confidence: medium
 drafted_date: "2026-05-12"
 sources:
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/launch-time"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -22,9 +28,9 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-02T01:05:00+08:00"
-last_task6_review_log: logs/review/2026-06-02-01-review.md
-task6_review_notes: "2026-06-02 task6 revisiting review: L1 小修 3 处；无新增回炉项；task9_result 仍为 needs-rework，送 Task9 复核。"
+last_task6_at: "2026-06-02T07:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-07-review.md"
+task6_review_notes: "2026-06-02 07:07 Task6：L1/L2 小修 3 处，补齐启动度量 source，未新增回炉项；Task9 auto-fixed 后继续送 Task9 复核。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-02"
@@ -35,6 +41,8 @@ last_task2b_lite_at: "2026-06-01"
 last_task9_autofix_at: "2026-06-02"
 last_task2b_verifier_at: "2026-06-02T03:33:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-03-task2b-verifier.md"
+task6_reviewed_at: "2026-06-02T07:07:00+08:00"
+task6_reviewed_by: openclaw-task6
 ---
 
 # 启动完整路径分析（App 视角）
@@ -72,7 +80,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-02-03-task2b-verifier.md"
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
-三种启动状态的定义和系统级行为在 8.2 节已经讲过。这里只从 App 侧能看到的时间段来划分。
+三种启动状态的定义和系统级行为在 8.2 节已经讲过。本节从 App 侧能看到的时间段来划分。
 
 ### 冷启动：App 侧的四个耗时阶段
 
@@ -143,7 +151,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 
 ## Application.onCreate、Activity.onCreate、首帧渲染：逐阶段深入
 
-### Application.onCreate：最常被低估的耗时黑洞
+### Application.onCreate：常见启动耗时集中点
 
 Application.onCreate 在主线程同步执行。很多开发者习惯在这里初始化所有 SDK，因为它"只会执行一次"。但这"一次"发生在冷启动的关键路径上。
 
@@ -220,7 +228,7 @@ ActivityTaskManager: Displayed com.example/.MainActivity: +1s234ms
 
 这个 `+1s234ms` 就是 TTID。系统通过 `ActivityMetricsLogger` 在 `startActivity` 时记录起点，在 `reportDrawFinished` 时记录终点。
 
-TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示了一个纯色背景，TTID 会很漂亮，但用户还在等有效内容。
+TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示的是纯色背景，TTID 会偏短，但用户仍在等待有效内容。
 
 ### TTFD（Time To Fully Drawn）
 
