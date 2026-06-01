@@ -383,5 +383,47 @@
     "completed_at": "2026-06-01T04:50:00+08:00",
     "completed_by": "openclaw-task2b-main",
     "completion_reason": "Task2B main fixed: syncFrameState wait semantics and ADPF hint session vs Android 16 headroom boundary; conflicting research note cleaned."
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入",
+    "priority": 90,
+    "reason": "[review回炉] 实战案例缺少可复核 Trace/AGI 证据且局部重复，需补证据或改成示例边界",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "实战案例：一手 AGI 与 Perfetto Trace 证据 / 一手 Trace 证据 / 效果验证",
+        "detail": "章节仍以占位图、示例命令和自称保存 Trace 来支撑 22-28ms→8-12ms、ASTC 带宽降低等数据，缺少可复核的 trace 文件、截图、测试条件或样本说明；同一社交应用案例在多个小节重复叙述。",
+        "suggestion": "补配真实 Perfetto/AGI 截图或 trace artifact，并写清设备、场景、采样方式；若没有一手证据，应改为示例场景并合并重复段落。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-01T16:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-01-16-review.md"
+  },
+  {
+    "section": "3.5",
+    "section_title": "输入事件拦截与安全机制",
+    "priority": 90,
+    "reason": "[review回炉] 厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "厂商定制的拦截增强方案 / 扩展：厂商游戏模式输入优先级机制（源码级验证）",
+        "detail": "正文先列出“事件优先队列”“提升触摸事件分发优先级”等厂商实现，后文源码验证又说明 AOSP 标准 GameMode 不包含独立输入优先级提升机制，读者会难以区分 AOSP 结论、厂商推测和已验证事实。",
+        "suggestion": "Task2B 将厂商定制内容改成明确的非 AOSP 边界说明；无公开材料的实现项删除或标为待证；把源码验证附录整合回正文相应位置，避免参考资料后再出现正文级结论。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-01T16:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-01-16-review.md"
   }
 ]

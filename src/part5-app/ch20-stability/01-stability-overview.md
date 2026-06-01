@@ -29,21 +29,21 @@ task6_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-task6_state: "revisiting"
-task6_result: needs-rework
+reviewed_date: "2026-06-01"
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-01T08:50:00+08:00"
 task2b_fixed_at: "2026-06-01T08:50:00+08:00"
-last_task6_at: "2026-05-16T16:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-16-review.md"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 1
-task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。2026-06-01 Task2B：已补齐 Android 14+ BroadcastReceiver timeout、前台可见 ANR、后台/silent ANR、用户选择等待/关闭与 ApplicationExitInfo 记录边界，回流 Task6。"
+last_task6_at: "2026-06-01T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-16-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-06-01 Task6 16: Task2B 回流后 L1/L2 复扫通过，outline 5/5 覆盖；无新增回炉项。Task9 result 为 auto-fixed，未满足自动 finalized 条件。"
 last_task9_autofix_at: "2026-06-01"
 ---
 
