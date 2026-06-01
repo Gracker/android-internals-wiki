@@ -38,16 +38,21 @@ section: '18.15'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_reviewed_date: "2026-06-01"
-last_task6_at: "2026-06-01T02:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-02-review.md"
-task6_result: "needs-rework"
-task6_state: revisiting
+last_task6_at: "2026-06-01T21:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-21-review.md"
+task6_result: "pass-light-edit"
+task6_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
-task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 40 处；发现功耗/带宽/性能比例缺少测试条件与原始记录，已写入 queue.json 交 Task2B 补素材。"
+pipeline_stage: task9_pending
+task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
+review_type: "task6-writing-quality-review"
 task9_state: pending
 ---
 
+# 视频叠加与 HWC
 
 <!-- outline-start -->
 
@@ -302,7 +307,7 @@ Tunnel / sideband 是更窄的可选能力，常见于 Android TV 或特定高�
 adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 ```
 
-关键查看项：
+查看项：
 - **Composition Type**：`DEVICE` = Overlay 成功，`CLIENT` = 回退到 GPU
 - **Type**：Layer 的 Buffer 格式
 
@@ -342,7 +347,7 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 
 ## 内存管理与同步注意事项
 
-HWC Overlay 与内存管理章节密切相关，需要注意以下同步问题：
+HWC Overlay 与内存管理章节相关，排查时关注以下同步问题：
 
 ### Buffer 管理
 - **BufferQueue vs BLASTBufferQueue**：BLAST 版本减少了 fence 等待，提升了同步效率

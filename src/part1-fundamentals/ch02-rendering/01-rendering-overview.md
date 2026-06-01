@@ -36,14 +36,14 @@ status: ready-for-review
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
-last_task6_at: "2026-06-01T11:06:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-11-review.md"
+last_task6_at: "2026-06-01T21:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-21-review.md"
 task2b_result: "fixed"
-task6_review_notes: "2026-06-01 Task6 11:06：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T05:35:00+08:00"
@@ -59,7 +59,7 @@ task2b_fixed_at: "2026-06-01T04:50:00+08:00"
 task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main: 修复 Task9 P95：BufferQueue acquireBuffer 伪代码改为真实签名引用，补充三缓冲显示延迟副作用，复核 Android 3.0 DisplayList 与 Android 5.0 RenderNode/RenderThread 版本边界。"
-task6_l1_l2_fixes: 1
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
@@ -166,7 +166,7 @@ Layout 过程还会进行边界检查,确保子 View 不会意外地渲染到父
 
 #### 3. Draw 过程:生成绘制指令
 
-这是渲染管线中最关键的一步,将 View 的视觉外观转换为绘图命令。
+Draw 阶段会将 View 的视觉外观转换为绘图命令。
 
 ```text
 ViewRootImpl.performTraversals()
@@ -178,7 +178,7 @@ ViewRootImpl.performTraversals()
 │       └── View.drawForeground()
 ```
 
-这里有两个关键的触发机制值得区分。当我们调用 `invalidate()` 时,只是标记 View 的视觉外观需要更新,下一帧会重新执行 Draw 过程,但不会触发 Measure 和 Layout--这适用于 View 的大小和位置没变、只是颜色或内容变了的情况。而 `requestLayout()` 则标记 View 的尺寸或位置可能发生变化,下一帧会从头开始执行 Measure → Layout → Draw 的完整流程。在实际优化中,优先使用 `invalidate()` 而非 `requestLayout()`,因为后者会触发整棵 View 树的重新测量,代价大得多。
+`invalidate()` 与 `requestLayout()` 的触发范围不同。当我们调用 `invalidate()` 时,只是标记 View 的视觉外观需要更新,下一帧会重新执行 Draw 过程,但不会触发 Measure 和 Layout--这适用于 View 的大小和位置没变、只是颜色或内容变了的情况。而 `requestLayout()` 则标记 View 的尺寸或位置可能发生变化,下一帧会从头开始执行 Measure → Layout → Draw 的完整流程。在实际优化中,优先使用 `invalidate()` 而非 `requestLayout()`,因为后者会触发整棵 View 树的重新测量,代价大得多。
 
 ### 第二阶段:同步与 GPU 渲染阶段
 
@@ -234,7 +234,7 @@ HWC / display HAL 发出硬件 VSync
             └── mCompositionEngine->present() // 进入 HWComposer / present
 ```
 
-SurfaceFlinger 合成的核心逻辑是按 Z-Order(Z 轴顺序)从后到前逐层叠加各个 Layer 的内容。想象一摞透明玻璃板,每一块玻璃上画着不同 App 的界面:状态栏是一层、导航栏是一层、当前 App 是一层、如果有个悬浮窗又是一层。SurfaceFlinger 就像是在上方俯瞰这摞玻璃板,把它们叠在一起形成最终的画面。
+SurfaceFlinger 合成的核心逻辑是按 Z-Order(Z 轴顺序)从后到前逐层叠加各个 Layer 的内容。状态栏、导航栏、当前 App、悬浮窗都会以独立 Layer 进入本轮合成;SurfaceFlinger 根据可见区域、透明度和裁剪信息计算叠加结果,形成最终画面。
 
 合成过程中需要处理层与层之间的混合模式--完全覆盖的区域直接替换,半透明的区域需要 Alpha 混合,部分重叠的区域需要裁剪计算。这些操作如果交给 CPU 来做会很慢,所以 Android 优先使用 HWC(Hardware Composer)进行硬件合成。HWC 是 Composer HAL 对底层合成能力的抽象,底层实现通常是 SoC 上的 display controller / DPU,可以高效地完成多 Layer 叠加、缩放、旋转等操作。但 HWC 本身有容量限制,且 SurfaceFlinger 与 HWC 的交互(调用 validateDisplay / presentDisplay)仍涉及 CPU 调度、内存带宽和 fence 等待——不是零开销。只有在 Layer 数量超过 HWC 的处理能力或使用了 HWC 不支持的混合模式时,SurfaceFlinger 才会回退到 GPU 合成(通过 RenderEngine)。
 
