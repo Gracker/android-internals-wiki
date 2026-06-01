@@ -6,13 +6,13 @@ section: '3.5'
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于 android-16.0.0_r1 核验, 密码输入场景的 InputMonitor 切断暂不作为 AOSP 源码结论
 confidence: medium
-reviewed_date: '2026-05-12'
+reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task6_state: revisiting
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+pipeline_stage: task2b_pending
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -40,14 +40,16 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-05-09'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-09T06:20:00+08:00'
-last_task6_at: '2026-05-12T16:15:00+08:00'
-last_task6_review_log: logs/review/2026-05-12-16-review.md
-task6_review_notes: 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；L1/L2 通过；Task9 已通过且 queue 无 pending，自动晋升 finalized。
+last_task6_at: "2026-06-01T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-16-review.md"
+task6_review_notes: "2026-06-01 Task6 16: L1 小修 1 处；厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue 交 Task2B。"
 last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
 task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0：Android 17/InputDispatcher 密码场景 InputMonitor 切断缺少可复核 AOSP tag/source anchor；P1：通话中敏感权限封锁版本归属需重核。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-14-audit.md"
 last_task2b_lite_at: '2026-06-01'
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 1
 ---
 
 # 输入事件拦截与安全机制
@@ -596,7 +598,7 @@ boolean focusChanged = updateFocusedWindowLocked(UPDATE_FOCUS_WILL_ASSIGN_LAYERS
 
 §3.5 中关于"厂商游戏模式输入优先级"的描述：
 - "游戏模式中输入优先级提升机制"如果指的是独立于焦点之外的机制，属于**厂商定制范畴**，AOSP 无公开源码支撑
-- 游戏窗口的"输入优先级"实际上就是**焦点窗口机制**
+- 游戏窗口的"输入优先级"对应的是**焦点窗口机制**
 - 游戏模式下触摸响应优化依赖：**帧率优先级** + **HAL Game 档位** + **DISALLOW_INTERCEPT**
 
 **调研结论**：AOSP 标准 GameMode 框架中不存在独立的"游戏输入优先级提升"机制。厂商实现此功能依赖非公开修改或专有 Framework 扩展。

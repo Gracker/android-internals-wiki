@@ -36,19 +36,19 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-30'
+reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_result: needs-rework
 review_round: 9
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-06-01T09:35:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。"
@@ -58,9 +58,12 @@ task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
-last_task6_at: "2026-05-17T12:11:00+08:00"
-task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处(代码围栏标语言 2 处、清嗓式\"问题是\"规避 1 处);实战案例仍缺一手 Trace/AGI 证据,已合并到 queue。"
+last_task6_at: "2026-06-01T16:05:00+08:00"
+task6_review_notes: "2026-06-01 Task6 16: L1/L2 小修 7 处；实战案例仍缺可复核 Trace/AGI 证据且局部重复，已写入 queue 交 Task2B。"
 task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并;新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
+last_task6_review_log: "logs/review/2026-06-01-16-review.md"
+task6_l1_l2_fixes: 7
+task6_l3_l4_issues: 1
 ---
 
 
@@ -375,7 +378,7 @@ if (!Float.isNaN(headroom) && headroom < 30f) {
 - 30-60:关闭高开销后处理(模糊、阴影)
 - < 30:简化动画,减少 draw call
 
-这种动态降级比固定分辨率调整更精细,因为 GPU 负载在不同场景下确实变化很大。
+这种动态降级比固定分辨率调整更精细,因为 GPU 负载会随场景快速变化。
 
 ### 性能影响实测
 
@@ -444,7 +447,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 **实际测试验证**:
 
-我在自己的测试设备上(Pixel 7 Pro,Adreno 730)进行了简单的带宽对比测试:
+测试设备为 Pixel 7 Pro(Adreno 730),用于做简单的带宽对比:
 
 ```bash
 # 确认设备 ASTC 支持情况
@@ -757,7 +760,7 @@ Perfetto 显示:
 
 ### 根因分析
 
-结合 Perfetto 和 AGI 的结果,我找到三个叠加问题:
+结合 Perfetto 和 AGI 的结果,问题集中在三个叠加因素:
 
 **过度绘制**:信息流列表项布局层次过深--列表背景→卡片背景→图片→阴影→圆角蒙版。图层间存在大量半透明叠加,快速滚动时增加绘制次数和混合计算开销。每个像素被重复绘制 3-4 次,导致 GPU 工作量变成原来的 3-4 倍。
 
@@ -795,11 +798,11 @@ Perfetto 显示:
 
 ### 一手 Trace 证据
 
-为了验证问题根因,我保存了优化前后的 Perfetto Trace 对比。以下是一张实际的 GPU track 截图,展示了优化前后的差异:
+为了验证问题根因,这里保留优化前后的 Perfetto Trace 对比说明。实际截图需要随发布稿补齐:
 
 [图:优化前后 GPU 渲染时间对比 - 优化前帧时间 22-28ms,优化后 8-12ms]
 
-优化前可以看到明显的 GPU 瓶颈模式:
+优化前的 GPU track 呈现明显的瓶颈模式:
 - GPU activity 块长度超过 16.67ms 帧预算
 - RenderThread 在提交时出现明显等待状态
 - Fragment Shader 占用大部分 GPU 时间
@@ -811,7 +814,7 @@ Perfetto 显示:
 
 ### ASTC vs ETC2 带宽对比实测数据
 
-我在 Pixel 7 Pro(Adreno 730)上进行实际带宽测试:
+测试设备为 Pixel 7 Pro(Adreno 730),用于实际带宽对比:
 
 ```bash
 # 确认设备 ASTC 支持情况
@@ -845,7 +848,7 @@ adb shell dumpsys gfxinfo com.example.app | grep -E "(ASTC|ETC2|bandwidth)"
 
 ### 逐步分析
 
-接下来我们用 AGI 对滚动过程进行了 GPU 帧分析。AGI 的帧分析结果显示:
+这里用 AGI 对滚动过程做 GPU 帧分析。帧分析结果显示:
 
 **第一步:确认瓶颈类型。** 在 AGI 的 GPU Counters 里对比同一批掉帧帧的 Fragment、Texture 和 External Memory 相关计数器。这组数据表现为 Fragment 和纹理读取一侧持续处于高位,外部内存读写也同步抬升,而 Vertex 相关计数器没有同步放大。这个组合更符合 fillrate bound,瓶颈在像素处理和纹理带宽,不在顶点阶段。具体计数器名称会随 GPU 厂商变化,在 Adreno 上通常看 Fragment Busy、Texture Unit Busy、External Memory Read/Write 一类指标。
 
