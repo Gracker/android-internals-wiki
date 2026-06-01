@@ -23,20 +23,20 @@ tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-01"
-last_task9_at: "2026-06-01T14:37:15+08:00"
-task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P1 1：ContentProvider 查询型 ANR timeout 由 ContentProviderClient.setDetectNotResponding() 配置，不是固定 10 秒；已修正表格和机制段落，回到 Task6 复审。"
+last_task9_at: "2026-06-01T18:21:00+08:00"
+task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的稳定性全景；ANR 阈值、ContentProvider ANR、ApplicationExitInfo 与 Play Vitals 口径经 AOSP android-16.0.0_r1 / 官方文档复核，无新增 P0/P1，自动晋升 finalized。"
 task6_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
-status: ready-for-review
+last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
+status: "finalized"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "auto-fixed"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 last_task2b_at: "2026-06-01T08:50:00+08:00"
 task2b_fixed_at: "2026-06-01T08:50:00+08:00"
 last_task6_at: "2026-06-01T16:05:00+08:00"
