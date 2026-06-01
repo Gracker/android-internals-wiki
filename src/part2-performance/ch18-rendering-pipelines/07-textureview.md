@@ -6,11 +6,18 @@ status: ready-for-review
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
 tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
+sources:
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/view/TextureView.java"
+  - type: aosp
+    path: "platform/frameworks/base/graphics/java/android/graphics/SurfaceTexture.java"
+  - type: android-docs
+    path: "TextureView reference"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-02
@@ -24,9 +31,12 @@ last_task2b_lite_at: "2026-05-31"
 last_task9_at: "2026-06-02T01:20:00+08:00"
 last_task6_audit: 2026-05-19
 last_task9_audit: 2026-05-20
-last_task6_at: "2026-06-02T01:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-01-review.md"
-task6_review_notes: "2026-06-02 task6 revisiting review: L1/L2 小修 4 处；补 section frontmatter；无新增回炉项，送 Task9 复核。"
+last_task6_at: "2026-06-02T02:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-02-review.md"
+task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（补 sources、压缩否定句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_new_rework: false
 task9_result: auto-fixed
 last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
 last_task9_autofix_at: "2026-06-02"
@@ -157,7 +167,7 @@ SurfaceTexture 内部维护了两个关键队列：
 
 ## 额外纹理采样的性能代价
 
-TextureView 的性能代价不仅仅是"多一步"那么简单。从链路视角分析，它引入了三重开销：
+从链路视角分析，TextureView 引入三重开销：
 
 ### 1. 额外的 GPU 合成
 

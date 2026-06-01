@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
-reviewed_date: "2026-05-31"
+reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-31"
+task6_reviewed_date: "2026-06-02"
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -28,7 +28,7 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: "auto-fixed"
 task9_state: pending
 task2b_state: fixed
@@ -39,12 +39,15 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-01T00:20:00+08:00"
 task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 ProfilingManager 常量/结果 API、API30 退出历史版本表，并把 AOSP main 源码 URL 固定到 android16-release；回到 Task6 复审。"
 last_task6_audit: "2026-05-23"
-last_task6_at: "2026-05-31T22:10:00+08:00"
+last_task6_at: "2026-06-02T02:05:00+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-05-31-22-review.md"
-task6_review_notes: "2026-05-31 22:10 Task6：Task2B-lite 修复后写作复审；L1/L2 小修 10 处（夸张词、英文填充词、否定句式、版本表头）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+last_task6_review_log: "logs/review/2026-06-02-02-review.md"
+task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_new_rework: false
 last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
@@ -213,7 +216,7 @@ static void DispatchToPreviousOrSystem(
 
 ## 4. ANR 捕获演进：从读文件到官方退出历史
 
-ANR 的捕获链变化最大，原因是权限边界一直在收紧。
+ANR 的捕获链变化最大，原因是系统对相关文件和进程信号的访问权限持续变严格。
 
 ### 4.1 早期：读 `/data/anr/traces.txt`
 
@@ -229,7 +232,7 @@ ANR 的捕获链变化最大，原因是权限边界一直在收紧。
 
 ### 4.2 中期：SIGQUIT / Signal Catcher Hook
 
-系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 SignalCatcher 线程负责生成 Java 线程 dump。SignalCatcher 并非普通的 `sigaction` handler；AOSP `art/runtime/signal_catcher.cc` 中的等待逻辑使用 `sigwait()` 同步消费 `SIGQUIT`。
+系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 SignalCatcher 线程负责生成 Java 线程 dump。SignalCatcher 走独立等待线程路径；AOSP `art/runtime/signal_catcher.cc` 中的等待逻辑使用 `sigwait()` 同步消费 `SIGQUIT`。
 
 `sigwait()` 的前提是目标信号在相关线程中被屏蔽。信号到达后，等待线程被唤醒，内核不会再把同一个信号分发给普通 `sigaction` handler。这也是很多端侧方案“注册了 SIGQUIT handler，却抓不到稳定 ANR 信号”的原因。
 
