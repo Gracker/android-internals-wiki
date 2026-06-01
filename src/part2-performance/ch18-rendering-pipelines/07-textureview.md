@@ -1,6 +1,7 @@
 ---
 title: "TextureView 合成链路"
 chapter: "18.7"
+section: "18.7"
 status: ready-for-review
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
 tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
@@ -9,28 +10,36 @@ created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-23
+reviewed_date: 2026-06-02
+task6_reviewed_date: "2026-06-02"
 task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-31"
+task9_reviewed_date: "2026-06-02"
 task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
 last_task2b_lite_at: "2026-05-31"
-last_task9_at: "2026-05-20T08:36:07+08:00"
+last_task9_at: "2026-06-02T01:20:00+08:00"
 last_task6_audit: 2026-05-19
 last_task9_audit: 2026-05-20
+last_task6_at: "2026-06-02T01:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-01-review.md"
+task6_review_notes: "2026-06-02 task6 revisiting review: L1/L2 小修 4 处；补 section frontmatter；无新增回炉项，送 Task9 复核。"
+task9_result: auto-fixed
+last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
+last_task9_autofix_at: "2026-06-02"
+task9_review_notes: "2026-06-02 Task9 auto-fix：将 TextureView 成本口径从额外拷贝/固定 2 倍内存修正为额外纹理采样、宿主窗口再承载合成结果；回到 Task6 复审。"
 ---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.7.1 为什么理解 TextureView 的链路](#为什么理解-textureview-的链路) — "伪装者"的本质
+- [18.7.1 为什么要理解 TextureView 的链路](#为什么要理解-textureview-的链路) — View 表象与 App 侧合成路径
 - [18.7.2 三阶段链路详解](#三阶段链路详解) — Producer → SurfaceTexture → RenderThread → SF
 - [18.7.3 SurfaceTexture 机制深入](#surfacetexture-机制深入) — 双角色组件的核心
-- [18.7.4 额外拷贝的性能代价](#额外拷贝的性能代价) — updateTexImage 的开销分析
+- [18.7.4 额外纹理采样的性能代价](#额外纹理采样的性能代价) — updateTexImage 的开销分析
 - [18.7.5 链路级对比](#链路级对比surfaceview-vs-textureview) — 与 SurfaceView 的架构差异
 - [18.7.6 onFrameAvailable 回调模型](#onframeavailable-回调模型) — 线程绑定与延迟
 - [18.7.7 Trace 视角](#trace-视角) — Perfetto 中的识别方法
@@ -43,11 +52,11 @@ last_task9_audit: 2026-05-20
 
 <!-- outline-end -->
 
-## 为什么理解 TextureView 的链路
+## 为什么要理解 TextureView 的链路
 
-TextureView 是一个"伪装者"——它表面上是普通的 View，可以设置透明度、做动画、裁剪圆角，和其他 View 一样参与 View 树的绘制流程。但在渲染层面，它背后走了一套复杂的"转手"流程：帧数据先到 SurfaceTexture，再由 App 的 RenderThread 采样合成，最后才提交给 SurfaceFlinger。
+TextureView 表面上像普通 View：可以设置透明度、做动画、裁剪圆角，并且和其他 View 一样参与 View 树的绘制流程。但在渲染层面，它背后走的是一条多段转交路径：帧数据先到 SurfaceTexture，再由 App 的 RenderThread 采样合成，随后提交给 SurfaceFlinger。
 
-这个"转手"过程就是 TextureView 性能不如 SurfaceView 的根本原因。理解这套流程，你就能在 Perfetto 中区分卡在 SurfaceTexture 的 fence 同步点，还是卡在 App 侧 GPU 绘制。[已验证: AOSP TextureView 实现]
+这个转交过程是 TextureView 性能不如 SurfaceView 的主要原因。理解这套流程，分析时就能在 Perfetto 中区分卡在 SurfaceTexture 的 fence 同步点，还是卡在 App 侧 GPU 绘制。[已验证: AOSP TextureView 实现]
 
 TextureView 是 Android 4.0（API 14）引入的，初衷是补足 SurfaceView 在 View 体系里的灵活性。早期 SurfaceView 的确不擅长和普通 View 一起做位置变换与透明度控制，但这个结论要按版本看：Android 7.0 起，SurfaceView 的窗口位置更新已经能和 View 渲染同步，平移和缩放不再像早期版本那样容易出错；Android 14（U）起，View alpha 也进入官方支持范围。TextureView 仍然保留旋转、复杂裁剪、圆角和与普通 View 深度融合的优势，所以在视频滤镜、直播美颜、需要和 UI 一起做复杂动画的场景里仍然常见。
 
@@ -61,7 +70,7 @@ TextureView 的渲染链路比 SurfaceView 多了一个关键环节——App 侧
 
 ### 第一阶段：Producer（生产者）
 
-和 SurfaceView 一样，这里有一个独立的线程在画图（视频解码、Camera、游戏等）：
+和 SurfaceView 一样，这一阶段由独立线程绘制内容（视频解码、Camera、游戏等）：
 
 1. **Produce**：解码器或 Camera 生成一帧图像
 2. **queueBuffer**：提交给 `SurfaceTexture`（TextureView 的私有 BufferQueue）
@@ -146,7 +155,7 @@ SurfaceTexture 内部维护了两个关键队列：
 
 但"直接采样"不等于"零开销"。OES 纹理的采样路径取决于 GPU 驱动实现——在某些 GPU 上，它可能需要做一次格式转换或布局调整。无论如何，这都比 SurfaceView 的"零采样"路径多了一步。[已验证: AOSP SurfaceTexture]
 
-## 额外拷贝的性能代价
+## 额外纹理采样的性能代价
 
 TextureView 的性能代价不仅仅是"多一步"那么简单。从链路视角分析，它引入了三重开销：
 
@@ -167,13 +176,14 @@ SurfaceView 的帧率独立于 App UI。TextureView 的帧率被绑定到 App �
 
 低端设备上 TextureView 播放视频比 SurfaceView 更容易卡——瓶颈在 App 主线程拖了后腿。
 
-### 3. 内存翻倍
+### 3. 额外图形内存压力
 
-SurfaceView 只需要 Producer 的 Buffer（1x）。TextureView 需要：
-- Producer Buffer（SurfaceTexture 内部的 BufferQueue）
-- App 主窗口 Buffer（包含 TextureView 内容的合成结果）
+SurfaceView 和 TextureView 所在页面都会有宿主 App 窗口 Buffer，差异在于视频或 Camera 内容是否再次写入宿主窗口：
 
-内存占用大约是 SurfaceView 的 2 倍。在 4K 视频播放场景下，这个差异尤其明显。
+- SurfaceView：Producer BufferQueue 保留独立内容层，宿主窗口主要承载普通 UI
+- TextureView：SurfaceTexture 持有 Producer Buffer，宿主窗口 Buffer 还会包含采样后的 TextureView 内容
+
+因此 TextureView 的图形内存和带宽压力通常高于 SurfaceView，但不能按固定 2 倍估算。实际差异取决于分辨率、像素格式、buffer count、TextureView 面积以及宿主 UI 是否本来就需要全屏重绘。4K 视频播放场景下，这部分额外压力尤其明显。
 
 ## 链路级对比：SurfaceView vs TextureView
 
@@ -222,7 +232,7 @@ TextureView 章节里要分清两层 listener：
 ### 回调延迟的来源
 
 1. **主线程拥塞**：TextureView 内部 listener 常挂在 View 所在线程，收到回调后还要请求一次 `invalidate()` / `postInvalidateOnAnimation()`
-2. **VSync 同步**：`invalidate()` 只是请求重绘，真正的 `updateTexImage()` 要等到下一个 VSync-App 唤醒 RenderThread
+2. **VSync 同步**：`invalidate()` 只是请求重绘，`updateTexImage()` 要等到下一个 VSync-App 唤醒 RenderThread 才会执行
 3. **Producer → SurfaceTexture → App → RenderThread → SF**：中间多了一次 App 侧纹理采样和主窗口提交
 
 ### 帧丢弃行为
@@ -295,7 +305,7 @@ TextureView 实际有两套 fence，用途不同不能混淆：
 
 **现象**：低端设备上 OOM 或 GC 频繁触发。
 
-**原因**：TextureView 需要同时持有 Producer Buffer 和 App 主窗口 Buffer。以 1080p RGBA_8888 为例，一个 Buffer 约 8MB；按三缓冲估算，Producer 一侧接近 24MB，再叠加主窗口三缓冲，图形内存很容易比 SurfaceView 多出几十 MB。
+**原因**：TextureView 需要同时持有 Producer Buffer 和 App 主窗口 Buffer。以 1080p RGBA_8888 为例，一个 Buffer 约 8MB；按三缓冲估算，SurfaceTexture Producer 一侧接近 24MB，宿主窗口还要承载采样后的画面区域，图形内存和带宽很容易比 SurfaceView 路线多出几十 MB。
 
 **优化方向**：
 - 在低端设备上降级到 SurfaceView

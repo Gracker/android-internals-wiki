@@ -15,20 +15,24 @@ tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-06-02"
+task6_reviewed_date: "2026-06-02"
 task6_result: pass-light-edit
-last_task6_review_log: logs/review/2026-05-14-16-review.md
-task9_result: needs-rework
+last_task6_at: "2026-06-02T01:05:00+08:00"
+last_task6_review_log: logs/review/2026-06-02-01-review.md
+task6_review_notes: "2026-06-02 task6 revisiting review: L1 小修 3 处；无新增回炉项；task9_result 仍为 needs-rework，送 Task9 复核。"
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T15:33:00+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-15-deep-review.md
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首帧回调 API 名、TTID 终点近似、SharedPreferences 版本口径仍需回炉。"
+task9_reviewed_date: "2026-06-02"
+last_task9_at: "2026-06-02T01:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
+task9_review_notes: "2026-06-02 Task9 auto-fix：将 ART 启动期 GC 口径从 Android 8+ 抑制 GC 修正为 Android 10+ fork 后临时放宽堆目标、2 秒后收缩；回到 Task6 复审。"
 last_task2b_lite_at: "2026-06-01"
+last_task9_autofix_at: "2026-06-02"
 ---
 
 # 启动完整路径分析（App 视角）
@@ -278,7 +282,7 @@ object StartupTracer {
 |----------|------|----------|
 | `app_attach` | `Application.attachBaseContext` | 方法第一行 |
 | `app_create_start` | `Application.onCreate` | `super.onCreate()` 之前 |
-| `app_create_end` | `Application.onCreate` | 方法最后一行 |
+| `app_create_end` | `Application.onCreate` | 方法结束前 |
 | `activity_create_start` | `Activity.onCreate` | `super.onCreate()` 之前 |
 | `view_created` | `Activity.onCreate` | `setContentView()` 之后 |
 | `activity_resume` | `Activity.onResume` | 方法第一行 |
@@ -419,7 +423,7 @@ RenderThread:
 
 在 Perfetto 中表现为 `bindApplication` slice 持续时间超过 500ms。展开 slice 看内部是否有明显的 `GC` 事件（`dalvik` category 下的 `ConcurrentGC` slice）或 `class loading` 事件。
 
-GC 在启动阶段抢占 CPU 是常见问题。ART 的 `HeapTaskDaemon` 线程在 Java 堆达到阈值时触发并发 GC，虽然不 STW，但会抢占 CPU 时间片，导致主线程被调度出去。Android 8+ 系统在启动时自动抑制 GC 2 秒，但 App 侧如果快速分配大量对象（如 SDK 初始化时创建大量配置对象），仍可能提前触发 GC。
+GC 在启动阶段抢占 CPU 是常见问题。ART 的 `HeapTaskDaemon` 线程在 Java 堆达到阈值时触发并发 GC，虽然不 STW，但会抢占 CPU 时间片，导致主线程被调度出去。Android 10+ ART 在 fork 后会临时提高 `target_footprint` 和 `concurrent_start_bytes`，用来减少启动早期 GC；2 秒后开始收缩堆目标。这不是硬性禁止 GC，App 如果快速分配大量对象（如 SDK 初始化时创建大量配置对象），仍可能在启动期触发 GC。
 
 [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
@@ -489,7 +493,7 @@ GROUP BY state;
 
 ## 扩展：启动过程中的 ClassLoader 与 dex 加载开销
 
-[已验证: AOSP, ART runtime class linking]
+[已验证: AOSP, ART 运行时 class linking]
 
 ### Class 加载在启动中的位置
 
@@ -506,9 +510,9 @@ Android 的类加载在首次使用时触发（lazy loading）。`Application.on
 
 [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
-ART 在加载 dex 中的类时，如果类的定义在 dex 文件中分布过于分散，会导致 CPU cache 命中率降低。通过将启动阶段需要加载的类集中排列在 dex 文件的前部，可以提升 L1/L2 cache 的命中率。
+ART 在加载 dex 中的类时，如果类的定义在 dex 文件中分布过于分散，会导致 CPU 缓存命中率降低。通过将启动阶段需要加载的类集中排列在 dex 文件的前部，可以提升 L1/L2 缓存命中率。
 
-这是局部性原理的直接应用：相邻的类定义在加载时会被一起读入 cache line。Android 的 Dex Layout 优化工具（`profman` + dex layout 优化）和 Baseline Profile 机制都在做这件事。
+这是局部性原理的直接应用：相邻的类定义在加载时会被一起读入缓存行。Android 的 Dex Layout 优化工具（`profman` + dex layout 优化）和 Baseline Profile 机制都在做这件事。
 
 Baseline Profile 通过在安装时指定 AOT 编译的类和方法列表，让这些类在启动前已经被编译成机器码，跳过了运行时的 dex 解释和 JIT 编译。这比 dex 重排更进一步——不仅减少了类查找开销，还消除了首次执行时的解释开销。
 

@@ -2,7 +2,7 @@
 title: "启动框架设计与任务编排"
 chapter: "21.2"
 section: "21.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, Jetpack App Startup 1.2.0, Alpha 1.2.0"
@@ -22,21 +22,21 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T03:46:50+08:00"
+task9_reviewed_date: "2026-06-02"
+last_task9_at: "2026-06-02T01:20:00+08:00"
 task6_reviewed_date: "2026-05-22"
-task9_review_notes: "2026-05-22 task9 deep-review: P0 1 / P1 2（Alpha API/默认线程池、执行模型、线程优先级边界），已写入 queue。"
-last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
+task9_review_notes: "2026-06-02 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；Alpha API/执行模型/线程优先级边界复核通过，queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
 last_task6_at: "2026-06-01T23:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-23-review.md"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
