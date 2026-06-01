@@ -11104,17 +11104,20 @@
     "title": "Android 功耗管理",
     "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-24",
     "last_task6_at": "2026-05-24T20:14:35+08:00",
     "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
-    "queue_priority": 85
+    "task2b_state": "fixed",
+    "queue_priority": 85,
+    "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
+    "task2b_result": "fixed"
   },
   "section_5_11": {
     "status": "ready-for-review",
@@ -11670,14 +11673,13 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
+  "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
   "last_task2b_verifier_sections": [
-    "21.2",
+    "22.3",
+    "25.9",
     "19.24",
-    "18.15",
-    "2.1",
-    "2.5",
-    "22.3"
+    "5.6",
+    "18.7"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -11877,6 +11879,36 @@
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
       "state_corrections": 6,
+      "blocked": []
+    },
+    {
+      "at": "2026-06-01T23:25:00+08:00",
+      "by": "task2b-verifier",
+      "reviewed": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+        "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+        "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+        "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+        "src/part2-performance/ch18-rendering-pipelines/07-textureview.md"
+      ],
+      "status_corrections": [
+        "25.9: task2b_state: \"fixed\" -> task2b_state: fixed",
+        "25.9: task6_state: \"revisiting\" -> task6_state: revisiting",
+        "25.9: task9_state: \"pending\" -> task9_state: pending",
+        "25.9: pipeline_stage: \"task6_pending\" -> pipeline_stage: task6_pending",
+        "5.6: task2b_state: pending -> task2b_state: fixed",
+        "5.6: task6_state: reviewed -> task6_state: revisiting",
+        "5.6: task9_state: reviewed -> task9_state: pending",
+        "5.6: pipeline_stage: task2b_pending -> pipeline_stage: task6_pending",
+        "18.7: task6_state: reviewed -> task6_state: revisiting",
+        "18.7: task9_state: reviewed -> task9_state: pending",
+        "22.3: progress.section_22_3 aligned",
+        "18.7: duplicate task9_state reviewed removed; effective task9_state -> pending",
+        "25.9: progress.section_25_9 aligned",
+        "19.24: progress.section_19_24 aligned",
+        "5.6: progress.section_5_6 aligned",
+        "18.7: progress.section_18_7 aligned"
+      ],
       "blocked": []
     }
   ],
@@ -12207,17 +12239,16 @@
     "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。"
   },
   "last_task2b_verifier": {
-    "at": "2026-05-31T19:28:00+08:00",
+    "at": "2026-06-01T23:25:00+08:00",
     "sections": [
-      "22.3",
-      "19.12",
-      "19.16",
-      "2.6",
-      "25.9",
-      "26.12"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md"
     ],
-    "status_fixes": 1,
-    "blocked": 3,
+    "status_fixes": 16,
+    "blocked": [],
     "result": "ready-for-task6"
   },
   "last_task2b_lite_result": "fixed-lite",
@@ -12238,11 +12269,11 @@
     "task9_result": "auto-fixed",
     "task2b_state": "fixed",
     "task2b_result": "fixed-lite",
-    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
-    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
     "last_task9_autofix_at": "2026-06-01"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-01T21:35:00+08:00",
@@ -12435,8 +12466,8 @@
     "task6_state": "revisiting",
     "task9_state": "pending",
     "task2b_state": "fixed",
-    "last_task2b_verifier_at": "2026-06-01T19:29:07+08:00",
-    "last_task2b_verifier_log": "logs/rework/2026-06-01-19-task2b-verifier.md",
+    "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
     "task9_result": "auto-fixed",
     "task2b_result": "fixed-lite",
     "last_task9_autofix_at": "2026-06-01"
@@ -12461,5 +12492,32 @@
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
     "review_type": "task6-writing-quality-review"
+  },
+  "section_25_9": {
+    "section": "25.9",
+    "title": "功耗与包体积案例集",
+    "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
+    "task2b_result": "fixed-lite",
+    "task9_result": "pass-tech-review"
+  },
+  "section_18_7": {
+    "section": "18.7",
+    "title": "TextureView 合成链路",
+    "file": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
+    "task2b_result": "fixed-lite"
   }
 }
