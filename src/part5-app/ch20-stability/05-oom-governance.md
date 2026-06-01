@@ -23,17 +23,17 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: "fixed"
 created_by: "task2a"
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: "2026-05-13T21:32:00+08:00"
-last_task6_review_log: logs/review/2026-05-13-21-review.md
-task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
+last_task6_at: "2026-06-01T18:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-01-18-review.md"
+task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。删除虚拟内存治理重复 bullet，收敛口语化“这招”；L1/L2 通过，无新增回炉项，送 Task9 复核。"
 task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
@@ -325,9 +325,8 @@ int proxy_open(char* path, int flags, int mode) {
 - 迁移到 64 位：从地址空间上解决 32 位进程的虚拟地址上限。
 - 减少线程数：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。
 - 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并或按需加载。
-- 减少线程栈和 mmap/so 映射占用：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。每个 so 的代码段 + 数据段都要占用虚拟地址空间，动态合并或按需加载。
 - 拆分进程：将功能模块拆到独立进程，分摊虚拟地址空间压力。
-- `mallopt(M_PURGE, 0)` 归还空闲 arena 的物理页：这招降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
+- `mallopt(M_PURGE, 0)` 归还空闲 arena 的物理页：它降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
 
 虚拟内存优化详见 23.6 节（大型 App 的多进程内存策略）。
 

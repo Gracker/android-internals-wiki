@@ -27,8 +27,8 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: pending
 task9_result: "auto-fixed"
@@ -40,13 +40,13 @@ task2b_result: "fixed"
 last_task2b_at: "2026-06-01T12:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-19"
-last_task6_at: "2026-05-19T20:25:44+08:00"
+reviewed_date: "2026-06-01"
+last_task6_at: "2026-06-01T18:10:00+08:00"
 last_task6_audit: "2026-05-18"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
-last_task6_review_log: "logs/review/2026-05-19-20-review.md"
-task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1/L2 无新增正文问题。Task2B 已修复后仍待 Task9 复核；DeepResearch queue 条目待下游处理，未自动晋升。"
+last_task6_review_log: "logs/review/2026-06-01-18-review.md"
+task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P0 1：sigaction 示例从 libc handle 取 sigaction，避免 sigaction64 与 struct sigaction 签名不匹配；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-01"
@@ -466,7 +466,7 @@ JNI ERROR (app bug): local reference table overflow (max=512)
 
 **场景 3：C++ 异常穿越 JNI 边界**
 
-C++ 代码 `throw` 了异常，但没有在 native 函数内部 `catch`，异常试图穿越 JNI 边界回到 Java 层。ART 不支持 C++ 异例穿越 JNI 边界，行为是未定义的——可能直接 abort，也可能导致内存损坏后延迟崩溃。
+C++ 代码 `throw` 了异常，但没有在 native 函数内部 `catch`，异常试图穿越 JNI 边界回到 Java 层。ART 不支持 C++ 异常穿越 JNI 边界，行为是未定义的——可能直接 abort，也可能导致内存损坏后延迟崩溃。
 
 排查：所有 JNI 函数的 C++ 实现必须用 `try/catch` 包裹顶层，确保异常不会逃逸。这是 1.15 节强调的 JNI 异常安全原则。
 
@@ -626,7 +626,7 @@ bytehook_stub_t bytehook_hook_single(
 
 **源码位置**：[bytedance/android-inline-hook](https://github.com/bytedance/android-inline-hook)
 
-shadowhook 是 ByteHook 的配套 inline Hook 库（MIT）。与 PLT Hook 不同，inline Hook 直接修改函数开头指令，可 hook 任意地址的函数。mooner's memory sponge（ART OOM 拦截）使用 shadowhook：
+shadowhook 是 ByteHook 的配套 inline Hook 库（MIT）。与 PLT Hook 不同，inline Hook 直接修改函数开头指令，可 hook 任意地址的函数。mooner 的 memory sponge（ART OOM 拦截）使用 shadowhook：
 
 ```c
 // msponge.c，行 65-71
