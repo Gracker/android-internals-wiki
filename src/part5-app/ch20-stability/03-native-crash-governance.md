@@ -27,15 +27,15 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task6_pending
+pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-19"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-01"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-19T20:58:49+08:00"
-task2b_state: fixed
+last_task9_at: "2026-06-01T14:37:15+08:00"
+task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-01T12:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
@@ -47,8 +47,9 @@ task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-05-19-20-review.md"
 task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1/L2 无新增正文问题。Task2B 已修复后仍待 Task9 复核；DeepResearch queue 条目待下游处理，未自动晋升。"
-last_task9_review_log: "logs/deep-review/2026-05-19-20-deep-review.md"
-task9_review_notes: "2026-05-19 20 Task9 复核: needs-rework。P0 3: ApplicationExitInfo tombstone 格式、Breakpad 源码函数锚点、JNIEnv->FindSymbol API 错误；P1 3: CFI/Java frame、Crashpad signal/ptrace、mooner 安全边界仍需修正。"
+last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P0 1：sigaction 示例从 libc handle 取 sigaction，避免 sigaction64 与 struct sigaction 签名不匹配；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-01"
 ---
 
 # Native Crash 分析与治理
@@ -421,10 +422,10 @@ ARM64 上较少见，但以下场景可能触发：
 // 通过 dlsym 找到 libc.so 中的真实 sigaction
 void* libc = dlopen("libc.so", RTLD_LOCAL);
 typedef int (*libc_sigaction_t)(int, const struct sigaction*, struct sigaction*);
-libc_sigaction_t real_sigaction = (libc_sigaction_t)dlsym(libc, "sigaction64");
+libc_sigaction_t real_sigaction = (libc_sigaction_t)dlsym(libc, "sigaction");
 dlclose(libc);
 
-// 用 libc 的 sigaction 注册，绕过 SignalChain
+// 用 libc 的 sigaction 注册，绕过 ART sigchain 的 interposed sigaction
 struct sigaction sa;
 sa.sa_sigaction = my_crash_handler;
 sigfillset(&sa.sa_mask);

@@ -21,22 +21,22 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-05-15T02:35:06+08:00"
-task9_review_notes: "2026-05-15 Task9：needs-rework。新增 P0：Android 线程默认栈大小写成 Linux 8MB；既有 ANR timeout/弹窗边界仍待补齐。"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-01"
+last_task9_at: "2026-06-01T14:37:15+08:00"
+task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P1 1：ContentProvider 查询型 ANR timeout 由 ContentProviderClient.setDetectNotResponding() 配置，不是固定 10 秒；已修正表格和机制段落，回到 Task6 复审。"
 task6_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: revisiting
+task6_state: "revisiting"
 task6_result: needs-rework
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-06-01T08:50:00+08:00"
 task2b_fixed_at: "2026-06-01T08:50:00+08:00"
 last_task6_at: "2026-05-16T16:10:00+08:00"
@@ -44,6 +44,7 @@ last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 1
 task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。2026-06-01 Task2B：已补齐 Android 14+ BroadcastReceiver timeout、前台可见 ANR、后台/silent ANR、用户选择等待/关闭与 ApplicationExitInfo 记录边界，回流 Task6。"
+last_task9_autofix_at: "2026-06-01"
 ---
 
 # 应用稳定性全景
@@ -109,9 +110,9 @@ ANR 不是崩溃，是系统对"主线程阻塞"的强制干预。触发条件�
 | Input dispatching timed out | 5 秒 | InputDispatcher |
 | Service timeout | 前台 Service 20 秒 / 后台 Service 200 秒 | ActiveServices |
 | BroadcastReceiver timeout | Android 13 及更低版本：前台 10 秒 / 后台 60 秒；Android 14+：CPU-starved 场景可放宽到前台 10-20 秒 / 后台 60-120 秒 | ActivityManagerService / BroadcastQueue |
-| ContentProvider timeout | 10 秒 | ActivityManagerService |
+| ContentProvider not responding | 由调用方通过 `ContentProviderClient.setDetectNotResponding()` 配置；provider 发布/启动路径另有系统超时 | ContentResolver / ActivityManagerService |
 
-各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），handler 收到后调用 `ActiveServices.serviceTimeout(proc)`，经由 `mAm.mAnrHelper.appNotResponding(proc, timeoutRecord)` 进入 ANR 流程。BroadcastReceiver 和 ContentProvider 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。
+各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），handler 收到后调用 `ActiveServices.serviceTimeout(proc)`，经由 `mAm.mAnrHelper.appNotResponding(proc, timeoutRecord)` 进入 ANR 流程。BroadcastReceiver 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。ContentProvider 查询 ANR 的公开入口是 `ContentProviderClient.setDetectNotResponding()`，超时包含远端进程冷启动和查询执行时间；provider 发布/启动路径另有 AMS 侧系统超时。
 
 ANR 进入 `AnrHelper.appNotResponding()` 之后，系统先采集线程堆栈和进程状态，再由 `AppErrors` 结合进程可见性、后台限制、系统策略和用户交互决定后续动作。前台可见 ANR 通常会展示“应用无响应”对话框，用户可以选择等待或关闭；后台 ANR 与 silent ANR 不一定弹窗，常见结果是记录事件、写入 trace，并按策略终止或保留进程。
 

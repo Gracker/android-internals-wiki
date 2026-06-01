@@ -5,13 +5,13 @@ section: "20.5"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-12"
-last_verified_against: "AOSP android-16.0.0_r1, art/runtime/heap.cc"
+last_verified_against: "AOSP android-16.0.0_r1, art/runtime/gc/heap.cc"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
 sources:
   - type: aosp
-    path: "art/runtime/heap.cc"
+    path: "art/runtime/gc/heap.cc"
   - type: aosp
     path: "art/runtime/thread.cc"
   - type: blog
@@ -24,8 +24,8 @@ tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
 pipeline_stage: "task6_pending"
-task6_state: revisiting
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_state: "fixed"
 created_by: "task2a"
 reviewed_date: "2026-05-13"
@@ -34,15 +34,16 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-13T21:32:00+08:00"
 last_task6_review_log: logs/review/2026-05-13-21-review.md
 task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-05-19T00:30:02+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-19
-last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
-task9_review_notes: "2026-05-19 Task9 00:20：needs-rework。P1 2：FD 耗尽不应直接归入 ART OOME；sigsetjmp/siglongjmp Native Crash 兜底缺 signal-safety 与进程状态边界。"
+last_task9_at: "2026-06-01T14:37:15+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-01"
+last_task9_review_log: "logs/deep-review/2026-06-01-14-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 14:37：auto-fixed。P0 2：ART Heap 路径修为 art/runtime/gc/heap.cc，JNI NewStringUTF 路径修为 art/runtime/jni/jni_internal.cc；P2 1：heapprofd 版本边界修为 Android 10+ 并补 user build 条件。回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-01"
 ---
 
 # OOM 治理
@@ -98,10 +99,10 @@ giving up on allocation because <1% of heap free after GC.
 
 ### 产生路径
 
-Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（`art/runtime/heap.cc`）。分配失败时，ART 发起一次强力 GC（`AllocateInternalWithGc`），如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
+Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（`art/runtime/gc/heap.cc`）。分配失败时，ART 发起一次强力 GC（`AllocateInternalWithGc`），如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
 
 ```cpp
-// art/runtime/heap.cc 简化逻辑
+// art/runtime/gc/heap.cc 简化逻辑
 void Heap::ThrowOutOfMemoryError(Thread* self, size_t byte_count,
                                   AllocatorType allocator_type) {
   std::ostringstream oss;
@@ -146,7 +147,7 @@ Native 层的 OOM 发生在 `malloc`、`mmap` 等 Linux 内存分配 API 返回�
 `NewStringUTF` 在构造字符串时，如果长度超过 `INT_MAX`，即使内存空间充足也会抛出 OOM：
 
 ```cpp
-// art/runtime/jni_internal.cc 简化
+// art/runtime/jni/jni_internal.cc 简化
 if (utf16_length > std::numeric_limits<int32_t>::max()) {
   soa.Self()->ThrowOutOfMemoryError(
       StringPrintf("NewStringUTF input has 2^31 or more characters: %zu", utf16_length).c_str());
@@ -178,7 +179,7 @@ Android 8.0 起，普通 Bitmap 的像素数据通过 `calloc` 分配在 Native 
 
 1. **`/proc/pid/status` 查看 VmSize / VmRSS**：VmSize 持续增长说明存在 Native 内存泄漏。
 2. **`/proc/pid/smaps` 按内存类型统计**：关注 `[anon:dalvik-...]`、`[anon:libc_malloc]` 段的增长趋势。
-3. **Perfetto Native Heap Profile**（Android 12+）：`heapprofd` 可以抓取 Native 分配调用栈，定位泄漏点。
+3. **Perfetto Native Heap Profile**（Android 10+）：`heapprofd` 可以抓取 Native 分配调用栈，定位泄漏点；user build 上通常要求应用设置 `debuggable` 或 `profileable`。
 4. **`android.os.Debug.getNativeHeapAllocatedSize()`**：在代码中周期性采样，绘制趋势图。
 
 Native 内存管理的详细优化策略详见 23.3 节。
