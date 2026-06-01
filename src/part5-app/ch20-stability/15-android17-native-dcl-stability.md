@@ -2,7 +2,7 @@
 title: "Android 17 Native DCL 只读约束与动态库加载稳定性"
 chapter: "20.15"
 section: "20.15"
-status: ready-for-review
+status: "finalized"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-05-25"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -16,12 +16,12 @@ last_verified_against: "Android Developers Android 14/17 behavior changes; Andro
 confidence: medium
 task2a_state: processed
 task2a_result: processed-draft
-task6_state: revisiting
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task6_pending
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c"
@@ -39,20 +39,23 @@ source_refs:
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md]"
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md]"
   - "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md]"
-task9_result: "needs-rework"
+task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-01"
-task9_reviewed_date: "2026-05-25"
+task9_reviewed_date: "2026-06-01"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-25T10:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-10-deep-review.md"
-task9_review_notes: "2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Native DCL 发布顺序与 Android 14 DCL 写入期只读建议不一致，存在 rename 后 chmod 前的并发加载窗口。"
+last_task9_at: "2026-06-01T08:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 deep-review: pass-tech-review。复核 Android 17 Native DCL System.load 只读约束、Android 14 DEX/JAR DCL 顺序、发布状态机与崩溃归因边界；无 P0/P1/P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
 updated_by: "openclaw-task9"
-updated_date: "2026-05-25"
+updated_date: "2026-06-01"
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 
 # 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性

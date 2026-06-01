@@ -21,22 +21,26 @@ task2b_result: fixed-lite
 task2b_state: "fixed"
 task6_state: "revisiting"
 last_task6_at: "2026-05-31T20:10:00+08:00"
-task9_state: "pending"
+task9_state: "reviewed"
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-31"
-last_task9_at: "2026-05-31T13:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-31-13-deep-review.md"
-task9_review_notes: "2026-05-31 task9 deep-review: 发现 P0 源码路径错误 4 处 / P1 原理断裂 2 处 / P1 版本差异 2 处 / 知识盲区 2 处，已写入 queue.json 和 research-gaps.md"
+task9_result: "auto-fixed"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-01"
+last_task9_at: "2026-06-01T08:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
+task9_review_notes: "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 review_notes: "2026-05-31 20:10 Task6 复审：L1/L2 小修完成（移除用途标签、清理填充词与空格）；无新增 Task2B 回炉项；task9_result=needs-rework，送 Task9 复核。"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
+last_task9_autofix_at: "2026-06-01"
+task9_p0_issues: 2
+task9_p1_issues: 1
+task9_p2_issues: 2
 ---
 # Jetpack Compose 性能优化实战
 
@@ -138,18 +142,14 @@ fun MyScreen() {
 
 ```kotlin
 @Composable
-fun UserProfile(userId: String): State<User> {
-    val result = remember { mutableStateOf(User()) }
-    LaunchedEffect(Unit) {
-        // producer 协程体
-        val user = fetchUser(userId)
-        result.value = user
+fun userProfile(userId: String): State<User?> {
+    return produceState<User?>(initialValue = null, userId) {
+        value = fetchUser(userId)
     }
-    return result
 }
 ```
 
-`produceState` 内部等价于 `LaunchedEffect(Unit) { ... }`。因为 key 是 `Unit`（恒定值），只要 Composable 在同一位置重组，producer **不会被取消重启**。如果 Composable key 变化（如 `userId` 参数改变），旧协程被 cancel，新协程启动，这正是 `produceState` 期望的"取消-重启动"语义。
+`produceState` 内部持有 `remember { mutableStateOf(initialValue) }`，并在 `LaunchedEffect` 中启动 producer。`userId` 这类被 producer 使用、且变化后必须重新拉取的数据要作为 key 传入；key 变化时旧协程被 cancel，新 producer 启动。只有确实要跟随调用点生命周期、输入变化不重启的场景，才使用 `Unit` 或 `true` 这类常量 key。
 
 **性能边界：**
 - `produceState` 每次 `value = newValue` 写入触发 Snapshot 事务，高频更新场景（如动画、传感器数据）可能造成性能压力。可考虑 `snapshotFlow` + `collectAsState` 代替直接写入。
@@ -157,11 +157,11 @@ fun UserProfile(userId: String): State<User> {
 
 **Strong Skipping 下的非 restartable Composable：**
 - Strong Skipping 只能跳过 restartable Composable（每次重组创建新 composer frame）
-- 非 restartable Composable（如 `@NonRestartableComposable` 注解或编译器判定）如果被 Strong Skipping 跳过，之前的副作用状态无法被重置
-- `rememberCoroutineScope` 依赖 remember 机制，应保持在 restartable Composable 中，不能标记为非 restartable
+- Strong Skipping 让 restartable Composable 在不稳定参数场景下也可跳过；非 restartable Composable 不会获得独立的重启/跳过边界
+- `rememberCoroutineScope` 依赖 remember 机制，应放在可正常进入 Composition 的调用点，不要用它掩盖 Composable body 里的副作用
 - 正确做法：使用 `LaunchedEffect` / `produceState` 管理副作用，而不是直接在 Composable body 执行副作用
 
-【源码锚点: androidx.compose.runtime/produceState.kt（androidx-main）— `LaunchedEffect(Unit)` 启动模式；`SnapshotMutableStateImpl`（SnapshotState.kt）— value 写入的 Snapshot 事务机制；`rememberCoroutineScope`（androidx-main compose/runtime）— rememberable 协程作用域】
+【源码锚点: androidx.compose.runtime/ProduceState.kt（androidx-main）— `produceState(initialValue, key...)` 通过 `LaunchedEffect(key...)` 启动 producer；`SnapshotMutableStateImpl`（SnapshotState.kt）— value 写入的 Snapshot 事务机制；`rememberCoroutineScope`（androidx-main compose/runtime）— rememberable 协程作用域】
 
 
 ### Stability 标记:什么时候还需要手动标注
@@ -252,7 +252,7 @@ fun AnimatedBox() {
 **使用条件**(三个条件缺一不可):
 1. 输入状态变化频率高(如 `scrollState.value` 在滚动期间每帧都在变)。
 2. 派生结果变化频率低(如 `scrollState.value > 100` 只在阈值处变化一次)。
-3. 派生计算是纯函数--无副作用(不修改外部状态)、无内存分配(不在 lambda 内创建新对象)。`derivedStateOf` 的失效监听机制(`SnapshotStateObserver`)依赖计算的确定性,副作用或对象分配会导致监听判断失准,反而增加无效重组。
+3. 派生计算是纯函数--无副作用(不修改外部状态)，并尽量避免在 lambda 内创建新对象。`derivedStateOf` 只在结果变化频率低于输入变化频率时有收益；对象分配不会让依赖监听失准，但会增加派生计算本身的成本。
 
 ```kotlin
 // 正确用法:滚动偏移量(高频变化)→ 是否超过阈值(低频变化)
@@ -806,9 +806,9 @@ PrefetchHandle 由 `PrefetchHandleProvider` 管理,通过 `LazySaveableStateHold
 | LazyLayoutCacheWindow API | 1.9.0(稳定化) | 1.9.0+ |
 | Pausable Composition + Lazy 预取 | 1.10.0+ | 需确认具体版本默认值 |
 | Strong Skipping 默认启用 | Kotlin 2.0.20(compiler 2.0+) | Kotlin 2.0.20+ |
-| Android 17 默认 Compose 工具链 | ~1.5.x(Kotlin 1.9.x) | 默认 Strong Skipping 关闭 |
+| Android 17 平台与 Compose 工具链 | 平台不内置 Compose 工具链 | 由项目的 Compose / Kotlin 依赖决定 |
 
-**关键结论**:Android 17(API 37)系统默认的 Compose 工具链约为 1.5.x,Strong Skipping 模式默认未开启。开发者如需完整性能优化收益,需显式升级 Compose 依赖至 1.9+/1.10+ 并确认目标版本的 Pausable Composition 默认状态。
+**关键结论**:Android 17(API 37)平台本身不决定应用使用的 Compose 工具链；Strong Skipping 是否默认启用取决于项目的 Kotlin / Compose Compiler 版本。开发者如需完整性能优化收益,需显式升级 Compose 依赖至 1.9+/1.10+、Kotlin 2.0.20+，并确认目标 Foundation 版本的 Pausable Composition 默认状态。
 
 **来源**:DeepResearch 调研报告 `2026-05-30-android-17-pausable-composition-compose-toolchain.md`(一手源码分析)
 
@@ -831,10 +831,10 @@ PrefetchHandle 由 `PrefetchHandleProvider` 管理,通过 `LazySaveableStateHold
 ### Baseline Profile 与 Compose 集成优化
 
 **ProfileInstaller 写入链路**：
-- `ProfileInstaller.writeProfile()` → 异步写入设备存储（`/data/data/<pkg>/files/*.prof`）
-- `ProfileInstaller.compileProfile()` → 触发 `ARTDexoptService` 执行 AOT 编译
-- `ProfileInstallReceiver` 接收 `androidx.profileinstaller.action.PROFILE_ADDED` 广播（API 33+ 无需 root）
-- 源码：`frameworks/support/profileinstaller/profileinstaller/src/main/java/androidx/profileinstaller/ProfileInstaller.java`（androidx-main 05ac7452）
+- `ProfileInstaller.writeProfile()` → 读取 APK 内 `assets/dexopt/baseline.prof` / `baseline.profm`，写入 ART current profile（`/data/misc/profiles/cur/<user>/<pkg>/primary.prof`）
+- app 私有 `filesDir` 只保存 `profileinstaller_profileWrittenFor_lastUpdateTime.dat` 这类跳过标记，不是 `.prof` 主文件位置
+- `ProfileInstallReceiver.ACTION_INSTALL_PROFILE` 用于工具触发同步安装；`ACTION_SAVE_PROFILE` 用于把当前 in-memory hot method 数据保存到磁盘后配合 `cmd package compile -m speed-profile`
+- 源码：`frameworks/support/profileinstaller/profileinstaller/src/main/java/androidx/profileinstaller/ProfileInstaller.java`（androidx-main）
 
 **Compose 库内置 Baseline Profile**：
 - 每个 Compose 模块的 `androidMain` source set 均包含 `baseline-prof.txt`，随 AAR 发布
