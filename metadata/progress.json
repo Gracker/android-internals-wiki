@@ -2375,8 +2375,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-01T13:35:00+08:00",
-  "last_updated_by": "openclaw-task2b-lite",
+  "last_updated": "2026-06-01T14:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-01T11:06:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2593,13 +2593,39 @@
       ],
       "verification": "Review log 2026-05-19-00-deep-review.md；本地代码示例 /Users/gracker/Github/matrix/.../MallCtl.cpp 与 Perfetto utils 使用 mallopt(M_PURGE, 0)；版本边界合规",
       "status": "done"
+    },
+    {
+      "date": "2026-06-01T14:50:00+08:00",
+      "task": "task2b-rework",
+      "lane": "main",
+      "source": [
+        "frontmatter backlog fallback",
+        "task9-deep-tech-review"
+      ],
+      "sections": [
+        "21.2"
+      ],
+      "sections_title": [
+        "启动框架设计与任务编排"
+      ],
+      "files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "issues_fixed": [
+        "Alpha Project.Builder/getInstance 示例按源码修正",
+        "Alpha 默认 ExecutorService 改为 CPU 核数固定线程池 + 无界队列",
+        "Alpha 执行模型改为 Project.start + Task.notifyFinished/onPredecessorFinished 触发",
+        "线程优先级策略收窄到短任务实验，并保留 THREAD_PRIORITY_DISPLAY 应用侧限制"
+      ],
+      "verification": "logs/deep-review/2026-05-22-03-deep-review.md；alibaba/alpha Task.java/Project.java/AlphaManager.java/AlphaConfig.java；禁用词扫描未新增命中；Android 版本边界未超过 Android 17 / API 37",
+      "status": "done"
     }
   ],
-  "last_task2b_at": "2026-06-01T13:35:00+08:00",
+  "last_task2b_at": "2026-06-01T14:50:00+08:00",
   "last_task2b_sections": [
-    "20.5"
+    "21.2"
   ],
-  "last_task2b_action": "frontmatter fallback fixed-lite: FD resource classification, mallopt M_PURGE argument, Socket FD example, sigsetjmp/siglongjmp safety boundary",
+  "last_task2b_action": "frontmatter fallback fixed: Alpha API/default executor/execution model and thread priority boundary",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2808,20 +2834,23 @@
     },
     "21.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-22T04:07:00+08:00",
       "task6_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "last_task6_review_log": "logs/review/2026-05-22-04-review.md",
       "title": "启动框架设计与任务编排",
       "file": "src/part5-app/ch21-startup/02-startup-framework.md",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-22",
       "last_task9_at": "2026-05-22T03:46:50+08:00",
-      "task2b_state": "pending",
-      "task6_state": "reviewed",
+      "task2b_state": "fixed",
+      "task6_state": "revisiting",
       "reviewed_date": "2026-05-22",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-01T14:50:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-22-03-deep-review.md"
     },
     "21.3": {
       "status": "ready-for-review",
@@ -7064,6 +7093,16 @@
       "result": "fixed-lite",
       "source": "frontmatter backlog fallback",
       "log": "logs/rework/2026-06-01-13-task2b-lite.md"
+    },
+    {
+      "at": "2026-06-01T14:50:00+08:00",
+      "lane": "main",
+      "sections": [
+        "21.2"
+      ],
+      "result": "fixed",
+      "source": "frontmatter backlog fallback",
+      "log": "logs/rework/2026-06-01-14-task2b-main.md"
     }
   ],
   "last_task2a_processed": "22.17",

@@ -22,11 +22,11 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed  # 2026-05-22 rework: Alpha API correction, thread priority warning
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 task6_result: needs-rework
@@ -34,13 +34,14 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T03:46:50+08:00"
-last_task2b_at: 2026-05-15T23:30:32+08:00
 task6_reviewed_date: "2026-05-22"
 task9_review_notes: "2026-05-22 task9 deep-review: P0 1 / P1 2（Alpha API/默认线程池、执行模型、线程优先级边界），已写入 queue。"
 last_task9_review_log: "logs/deep-review/2026-05-22-03-deep-review.md"
 last_task6_at: "2026-05-22T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-04-review.md"
 task6_review_notes: "2026-05-22 task6 复审：needs-rework。L1/L2 无新增写作硬伤；已按 Task9 2026-05-22 P0/P1 风险在 Alpha 与线程优先级段落加存疑标注，并合并到既有 queue 条目。"
+last_task2b_at: "2026-06-01T14:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。"
 ---
 
 # 启动框架设计与任务编排
@@ -192,18 +193,23 @@ Jetpack App Startup 采用这种方式。优点是编译期就能检查依赖是
 
 ```java
 // Alpha 框架的配置方式（基于 alibaba/alpha v1.2.0）
-Project project = new Project.Builder("app_init")
-    .add(new AnalyticsTask())       // Task 可设置 isMainThread / threadPriority
-    .add(new CrashReportTask())
-    .add(new NetworkConfigTask())
+Task crashReport = new CrashReportTask();
+Task networkConfig = new NetworkConfigTask();
+Task analytics = new AnalyticsTask();
+
+Project project = new Project.Builder()
+    .setProjectName("app_init")
+    .add(crashReport)
+    .add(networkConfig)
+    .add(analytics).after(crashReport, networkConfig)
     .create();
 
-AlphaManager.getInstance()
+AlphaManager.getInstance(context)
     .addProject(project)
     .start();
 ```
 
-Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务；`Project.Builder` 使用 `add(...)` + `after(...)` 组织依赖，而非 `dependsOn`。入口调用为 `AlphaManager.getInstance(context).addProject(project).start()`。默认线程池为单线程 `ExecutorService`，可通过 `AlphaConfig` 替换为自定义线程池。
+Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务，也可以通过 `Task(String taskName, int threadPriority)` 指定线程 nice 值；`Project.Builder` 使用无参构造，依赖关系通过 `add(task).after(taskA, taskB)` 声明，入口调用为 `AlphaManager.getInstance(context).addProject(project).start()`。默认 `ExecutorService` 来自 `AlphaConfig`，核心线程数默认为 `Runtime.getRuntime().availableProcessors()`，队列是无界 `LinkedBlockingQueue`。
 
 ### 依赖的边界情况
 
@@ -251,8 +257,6 @@ App Startup 解决的核心问题：**消除启动阶段多个 SDK 各自注册 
 
 [已验证: GitHub alibaba/alpha v1.2.0 README + Task.java / Project.java / AlphaConfig.java]
 
-[存疑: Task9 2026-05-22 已标记 Alpha Builder API、默认 ExecutorService 与执行模型存在 P0/P1 技术风险；Task6 不裁决源码真伪，交 Task2B 按 logs/deep-review/2026-05-22-03-deep-review.md 修正。]
-
 Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个基于 DAG 的异步任务调度器。
 
 **核心概念**（基于 alibaba/alpha v1.2.0 源码）：
@@ -266,12 +270,12 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 ```
 1. 通过 AlphaManager.getInstance(context).addProject(project) 注册所有 Project/Task
    （Task 依赖通过 Project.Builder.add(...).after(...) 声明）
-2. AlphaManager.start() 内部构建 DAG 并做拓扑排序 + 环检测
-3. 按拓扑排序结果分发任务到对应线程池
+2. AlphaManager.start() 按当前进程选择匹配的 Project，然后调用 project.start()
+3. Project.start() 从内部 start anchor task 启动任务图
    - isInUiThread=true 的 Task 通过主线程 Handler 执行
    - isInUiThread=false 的 Task 通过配置的 ExecutorService 执行
-   - 默认 ExecutorService 为单线程池，可通过 AlphaConfig 替换
-4. 任务完成后检查下游任务的依赖是否全部满足，满足则调度执行
+   - 默认 ExecutorService 为 CPU 核数固定线程池 + 无界 LinkedBlockingQueue，可通过 AlphaConfig 替换
+4. Task.notifyFinished() 通知 successor，successor 在 onPredecessorFinished() 中移除已完成前驱；前驱集合清空后调用 start()
 5. 所有任务完成后回调 onProjectFinish
 ```
 
@@ -285,7 +289,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 - 框架层面无超时控制（需要业务自行实现）
 - Java Builder 配置在编译期确定，运行时无法远程下发
-- 默认 ExecutorService 为单线程池，需要手动配置才能充分利用多核
+- 默认 ExecutorService 只有一个通用线程池，不能天然区分 IO 密集型与 CPU 密集型任务；大型项目通常需要替换 `AlphaConfig` 的 executor 或在任务内部再做资源隔离
 - 项目社区活跃度一般，最近一次发布距今较久
 
 ### 自研方案：什么时候需要造轮子
@@ -416,8 +420,6 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 
 ### 线程优先级策略
 
-[存疑: Task9 2026-05-22 已标记 `THREAD_PRIORITY_FOREGROUND`（-2）的应用侧权限边界与默认建议存在 P1 技术风险；Task6 不裁决 API 语义，交 Task2B 修正后再复审。]
-
 启动阶段主线程和渲染线程的 Nice 值分别是 0 和 -4。后台线程默认 Nice 值为 0，如果不做区分，后台线程会和主线程争抢 CPU 时间片。
 
 优先级策略：
@@ -426,19 +428,23 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 |----------|---------|------|
 | 主线程 | 0 | 系统默认 |
 | 渲染线程 | -4 | 系统默认，应用不可配置（THREAD_PRIORITY_DISPLAY） |
-| 关键启动线程 | -2 | 首帧关键路径上的异步任务（THREAD_PRIORITY_FOREGROUND） |
+| 关键启动线程 | 0 或 -2 | 默认保持 0；只有首帧关键路径上的短任务才考虑 `THREAD_PRIORITY_FOREGROUND` |
 | 普通启动线程 | 0 | 非关键路径的异步任务（THREAD_PRIORITY_DEFAULT） |
 | 低优先级线程 | 10 | IO 线程和后台任务（THREAD_PRIORITY_BACKGROUND） |
 
 ```java
-// 设置关键启动线程优先级
-Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
+// 关键启动线程默认保持 THREAD_PRIORITY_DEFAULT；确需提升时只对当前短任务线程设置
+try {
+    Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
+} catch (SecurityException ignored) {
+    Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);     // 0
+}
 
 // 设置 IO 线程优先级
 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 ```
 
-关键路径上的异步线程优先级设置为 `THREAD_PRIORITY_FOREGROUND`（-2），非关键路径的 IO 线程设置为 `THREAD_PRIORITY_BACKGROUND`（10）。**注意**：`THREAD_PRIORITY_FOREGROUND`（-2）在 AOSP `Process.java` 中的注释为"Standard priority for foreground app threads"，应用侧设置 -2 通常可以成功，但严格来说内核允许调度策略对此做限制——建议在实战中用 Perfetto `sched` 轨道 + TTID 实测验证优先级调整的实际收益，代码层面增加 `try/catch SecurityException` 防护。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
+线程优先级不要作为启动优化的默认开关。关键路径上的异步线程可以在小范围实验中提升到 `THREAD_PRIORITY_FOREGROUND`（-2），但要同时满足三个条件：任务耗时短、不会阻塞主线程、Perfetto `sched` 轨道能观察到 TTID 收益。非关键路径的 IO 线程更适合设置为 `THREAD_PRIORITY_BACKGROUND`（10），避免和主线程抢占 CPU。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
 
 ### 线程池的监控指标
 
