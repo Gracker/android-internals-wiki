@@ -1,8 +1,8 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 198,
-  "finalized": 179,
+  "ready-for-review": 197,
+  "finalized": 180,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
   "task9_reviewed_by": "openclaw-task9",
@@ -2407,39 +2407,40 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T02:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-02T07:07:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-02T02:05:00+08:00",
+    "reviewed_at": "2026-06-02T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-02-review.md",
-    "log": "logs/review/2026-06-02-02-review.md",
+    "review_log": "logs/review/2026-06-02-07-review.md",
+    "log": "logs/review/2026-06-02-07-review.md",
     "sections": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+      "src/part5-app/ch21-startup/01-startup-analysis.md"
     ],
     "pass_light_edit": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": [],
-    "l1_l2_fixes": 6,
+    "auto_finalized": [
+      "25.9"
+    ],
+    "auto_promoted": [
+      "25.9"
+    ],
+    "l1_l2_fixes": 3,
     "l3_l4_issues": 0,
-    "small_fixes": 6,
+    "small_fixes": 3,
     "rework_items": 0,
     "result": "pass-light-edit"
   },
   "task9_last_review": "2026-05-28 05:30",
-  "ready_to_publish": 189,
+  "ready_to_publish": 190,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -4064,8 +4065,8 @@
     },
     "21.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
@@ -4074,12 +4075,14 @@
       "title": "启动完整路径分析（App 视角）",
       "last_task9_at": "2026-05-14T15:33:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-15-deep-review.md",
-      "last_task6_at": "2026-05-14T16:14:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-16-review.md",
+      "last_task6_at": "2026-06-02T07:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-07-review.md",
       "task2b_result": "fixed-lite",
       "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
       "last_task2b_verifier_log": "logs/rework/2026-06-02-03-task2b-verifier.md",
-      "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。"
+      "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。",
+      "section": "21.1",
+      "task6_review_notes": "2026-06-02 07:07 Task6：L1/L2 小修 3 处，补齐启动度量 source，未新增回炉项；Task9 auto-fixed 后继续送 Task9 复核。"
     },
     "25.4": {
       "status": "ready-for-review",
@@ -4221,24 +4224,27 @@
       "last_task6_review_log": "logs/review/2026-05-14-22-review.md"
     },
     "25.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
       "title": "功耗与包体积案例集",
       "last_task2a_at": "2026-05-14T22:04:00+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-05-16T17:08:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-17-review.md",
-      "task9_result": "needs-rework",
-      "task2b_result": "pending",
-      "queue_priority": 85,
+      "last_task6_at": "2026-06-02T07:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-07-review.md",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed-lite",
       "last_task9_at": "2026-05-14T22:31:06+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-22-deep-review.md",
       "task9_review_notes": "2026-05-14 Task9：needs-rework。P0 1 / P1 1 / P2 1；apkanalyzer 命令参数顺序错误，Android Vitals excessive wake lock 阈值缺少 2h/24h 条件。",
-      "task6_note": "2026-05-16 Task6：复审小修 11 处，写作质量通过；既有 Task9 P1（Vitals excessive wake lock 阈值口径）仍在 queue，保持 task2b_pending。"
+      "task6_note": "2026-05-16 Task6：复审小修 11 处，写作质量通过；既有 Task9 P1（Vitals excessive wake lock 阈值口径）仍在 queue，保持 task2b_pending。",
+      "section": "25.9",
+      "task6_review_notes": "2026-06-02 07:07 Task6：L1/L2 复审通过，未发现新增回炉项；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。",
+      "auto_finalized_by": "openclaw-task6",
+      "auto_finalized_at": "2026-06-02T07:07:00+08:00"
     },
     "26.1": {
       "status": "ready-for-review",
@@ -7325,44 +7331,43 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-02-02-review.md",
+  "last_task6_review": "logs/review/2026-06-02-07-review.md",
   "last_task6_sections": [
-    "2.5",
-    "18.7",
-    "19.24"
+    "25.9",
+    "21.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md"
   ],
-  "last_task6_at": "2026-06-02T02:05:00+08:00",
+  "last_task6_at": "2026-06-02T07:07:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-06-02T02:05:00+08:00",
+    "reviewed_at": "2026-06-02T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-02-review.md",
-    "log": "logs/review/2026-06-02-02-review.md",
+    "review_log": "logs/review/2026-06-02-07-review.md",
+    "log": "logs/review/2026-06-02-07-review.md",
     "sections": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+      "src/part5-app/ch21-startup/01-startup-analysis.md"
     ],
     "pass_light_edit": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": [],
-    "l1_l2_fixes": 6,
+    "auto_finalized": [
+      "25.9"
+    ],
+    "auto_promoted": [
+      "25.9"
+    ],
+    "l1_l2_fixes": 3,
     "l3_l4_issues": 0,
-    "small_fixes": 6,
+    "small_fixes": 3,
     "rework_items": 0,
     "result": "pass-light-edit"
   },
@@ -7374,12 +7379,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-06-02T02:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-06-02-02-review.md",
+  "task6_last_review_at": "2026-06-02T07:07:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-02-07-review.md",
   "task6_last_review_sections": [
-    "2.5",
-    "18.7",
-    "19.24"
+    "25.9",
+    "21.1"
   ],
   "sections_status": {
     "22.11": {
@@ -9517,43 +9521,42 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-02T02:05:00+08:00",
+    "reviewed_at": "2026-06-02T07:07:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-02-review.md",
-    "log": "logs/review/2026-06-02-02-review.md",
+    "review_log": "logs/review/2026-06-02-07-review.md",
+    "log": "logs/review/2026-06-02-07-review.md",
     "sections": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+      "src/part5-app/ch21-startup/01-startup-analysis.md"
     ],
     "pass_light_edit": [
-      "2.5",
-      "18.7",
-      "19.24"
+      "25.9",
+      "21.1"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": [],
-    "l1_l2_fixes": 6,
+    "auto_finalized": [
+      "25.9"
+    ],
+    "auto_promoted": [
+      "25.9"
+    ],
+    "l1_l2_fixes": 3,
     "l3_l4_issues": 0,
-    "small_fixes": 6,
+    "small_fixes": 3,
     "rework_items": 0,
     "result": "pass-light-edit"
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -10067,9 +10070,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "2.5",
-    "18.7",
-    "19.24"
+    "25.9",
+    "21.1"
   ],
   "task2b_progress": [
     {
@@ -10187,7 +10189,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-02-02-review.md",
+  "last_task6_review_log": "logs/review/2026-06-02-07-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -11181,8 +11183,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-06-02T02:05:00+08:00",
-  "last_task6_review_section": "2.5,18.7,19.24",
+  "last_task6_review_at": "2026-06-02T07:07:00+08:00",
+  "last_task6_review_section": "25.9,21.1",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -11285,9 +11287,8 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "2.5",
-    "18.7",
-    "19.24"
+    "25.9",
+    "21.1"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -11320,9 +11321,8 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -12198,9 +12198,8 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -12625,15 +12624,21 @@
     "section": "25.9",
     "title": "功耗与包体积案例集",
     "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task9_state": "pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
     "task2b_result": "fixed-lite",
-    "task9_result": "pass-tech-review"
+    "task9_result": "pass-tech-review",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-06-02T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-02-07-review.md",
+    "task6_review_notes": "2026-06-02 07:07 Task6：L1/L2 复审通过，未发现新增回炉项；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。",
+    "auto_finalized_by": "openclaw-task6",
+    "auto_finalized_at": "2026-06-02T07:07:00+08:00"
   },
   "section_18_7": {
     "section": "18.7",
@@ -12665,8 +12670,8 @@
     "title": "启动完整路径分析（App 视角）",
     "file": "src/part5-app/ch21-startup/01-startup-analysis.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "auto-fixed",
@@ -12674,6 +12679,13 @@
     "task2b_result": "fixed-lite",
     "last_task2b_verifier_at": "2026-06-02T03:33:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-02-03-task2b-verifier.md",
-    "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。"
-  }
+    "verifier_note": "queue 无 pending；Task9 auto-fix 后回流 Task6，修正 task9_state 为 pending。",
+    "last_task6_at": "2026-06-02T07:07:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-02-07-review.md",
+    "task6_review_notes": "2026-06-02 07:07 Task6：L1/L2 小修 3 处，补齐启动度量 source，未新增回炉项；Task9 auto-fixed 后继续送 Task9 复核。"
+  },
+  "last_task6_review_sections": [
+    "25.9",
+    "21.1"
+  ]
 }
