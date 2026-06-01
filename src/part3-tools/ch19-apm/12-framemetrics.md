@@ -2,7 +2,7 @@
 title: FrameMetrics
 chapter: '19'
 section: '19.12'
-status: "ready-for-review"
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -17,19 +17,19 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
 task2b_state: "fixed"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-05-31"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-31T18:20:00+08:00"
+last_task9_at: "2026-06-02T04:21:00+08:00"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-31T17:35:00+08:00'
 last_task2b_lite_at: '2026-05-31'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-31-18-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
-task9_review_notes: "2026-05-31 Task9 deep review: auto-fixed。补充硬件渲染前提、TOTAL_DURATION 非简单求和边界，并修正 android-17.0.0_r1 不可复现的源码验证锚点；P0 0 / P1 0 / P2 3。"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。"
 last_task6_audit: '2026-05-20'
 last_task9_autofix_at: "2026-05-31"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
@@ -41,8 +41,8 @@ last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 ---
 
