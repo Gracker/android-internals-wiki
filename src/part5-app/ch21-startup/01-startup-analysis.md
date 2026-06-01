@@ -13,11 +13,11 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -28,6 +28,7 @@ task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T15:33:00+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-15-deep-review.md
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 1 / P1 2 / P2 0；首帧回调 API 名、TTID 终点近似、SharedPreferences 版本口径仍需回炉。"
+last_task2b_lite_at: "2026-06-01"
 ---
 
 # 启动完整路径分析（App 视角）
