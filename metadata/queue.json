@@ -482,5 +482,38 @@
     "added_at": "2026-06-01T18:10:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-06-01-18-review.md"
+  },
+  {
+    "section": "5.6",
+    "section_title": "Android 功耗管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Tare 经济模型引用不存在的源码/API，且 Android 17 Energy Limiter 仍为未证实机制",
+    "material_paths": [
+      "logs/deep-review/2026-06-02-03-deep-review.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0 源码错误",
+        "location": "Tare 经济模型:Job 配额的底层管控（L358-L375）",
+        "detail": "正文标注 AOSP android-17.0.0_r1 中存在 frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java 与 AppBudgetManager.java，并写入 EconomyManager.setAppBudgetoyant()/getRemainingBudget() 等公开 API；本轮复核发现 android.googlesource 未发布 android-17.0.0_r1 tag，android-16.0.0_r1 / android-15.0.0_r1 的 frameworks/base/apex/jobscheduler/service/java/com/android/server/ 下已无 tare 目录，android-14.0.0_r1 的 tare 目录仅有 InternalResourceService、EconomicPolicy、JobSchedulerEconomicPolicy、EconomyManager 等历史实现，未命中 TareEconomicManager/AppBudgetManager/setAppBudgetoyant。",
+        "suggestion": "删除或重写该小节：若保留 TARE，只能按 Android 14 及更低历史实现说明 InternalResourceService/EconomyManager 边界；不得标注 android-17.0.0_r1 已验证，也不得把不存在的应用自设预算 API 写成公开能力。"
+      },
+      {
+        "type": "P1 版本差异",
+        "location": "Android 17 能量限额制（Energy Limiter）[待验证]（L476-L487）",
+        "detail": "该段明确写成研究假设，缺少 Android 17 CDD、AOSP PowerStats/ODPM 调用链、CTS 或官方特性页支撑；ready-for-review 章节中不能保留“按 App μJ 能量超额强杀后台进程”这类未验证平台机制。",
+        "suggestion": "发布稿删除该段或移入 research-gaps；若后续补到一手证据，再按 Android 17 / API 37 范围重新注入。"
+      },
+      {
+        "type": "P2 版本差异",
+        "location": "Linux 电源管理架构与 eBPF 微架构能效分析（补充）/ Power HAL（L598-L704）",
+        "detail": "补充区把 Power HAL 主体写成 android.hardware.power@1.0-1.3 / hwbinder，同时下文又使用 PowerHAL.setMode(Mode::INTERACTIVE)。Android 16 可复核源码已存在 hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl，正文前部也采用 AIDL IPower 口径，补充区会造成当前版本仍以 HIDL @1.x 为主的误读。",
+        "suggestion": "统一成“Legacy HIDL 1.0-1.3 是历史接口；Android 16/17 口径优先看 AIDL IPower.setMode()/setBoost()，厂商实现可存在兼容层”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-02T03:20:00+08:00",
+    "status": "pending"
   }
 ]

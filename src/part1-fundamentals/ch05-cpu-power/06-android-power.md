@@ -9,31 +9,34 @@ last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-24"
-task6_reviewed_date: "2026-05-24"
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
+reviewed_date: "2026-06-02"
+task6_reviewed_date: "2026-06-02"
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-24"
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-24T19:30:00+08:00
-task2b_state: fixed
-task2b_result: fixed
+task9_reviewed_date: "2026-06-02"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-02T03:20:00+08:00"
+task2b_state: pending
+task2b_result: pending-review-rework
 last_task2b_at: 2026-05-24T19:29:26+08:00
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
-review_round: 5
+review_round: 6
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
-task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 JobScheduler 配额口径需按官方行为变更修正。"
-reviewed_at: "2026-05-24T20:14:35+08:00"
-last_task6_at: "2026-05-24T20:14:35+08:00"
-last_task6_review_log: "logs/review/2026-05-24-20-review.md"
-task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 6 处；无新增 Task6 回炉项；既有 Task9 JobScheduler 配额问题仍在 queue.json pending。"
+last_task9_review_log: "logs/deep-review/2026-06-02-03-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 03: needs-rework。P0 1 / P1 1 / P2 1；Tare 经济模型引用不存在的源码/API，Android 17 Energy Limiter 仍为研究假设，补充区 Power HAL 需统一为 AIDL 优先口径。"
+reviewed_at: "2026-06-02T01:05:00+08:00"
+last_task6_at: "2026-06-02T01:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-01-review.md"
+task6_review_notes: "2026-06-02 task6 revisiting review: L1 小修 5 处；Tare/Energy Limiter 段落存在 API 与证据边界风险，已写入 queue.json（priority 90）交 Task2B/Task9 复核。"
+p0: 1
+p1: 1
+p2: 1
 ---
 
 # Android 功耗管理
@@ -104,7 +107,7 @@ public static final int SCREEN_BRIGHT_WAKE_LOCK   = 0x0000000a; // [已废弃] �
 public static final int FULL_WAKE_LOCK            = 0x0000001a; // [已废弃] 屏幕+键盘全亮
 ```
 
-从 Android 8.0(API 26)开始,后台服务持有 PARTIAL_WAKE_LOCK 的行为受到了限制--如果 App 进入了缓存状态(cached),其持有的 WakeLock 可能会被系统回收。这是 Android 逐步收紧后台功耗控制的一部分。
+从 Android 8.0(API 26)开始,后台服务持有 PARTIAL_WAKE_LOCK 的行为受到了限制--如果 App 进入了缓存状态(cached),其持有的 WakeLock 可能会被系统回收。这是 Android 逐步加强后台功耗控制的一部分。
 
 ### 从 WakeLock 到 Suspend:要分清四层边界
 
@@ -277,7 +280,7 @@ Battery Historian 中的常见场景案例也很有参考价值:充电慢可能�
 
 5. **验证**:修复后重新跑 Battery Historian,灭屏时段 GPS active 消失,WakeLock 覆盖率降到 5% 以下,灭屏一晚掉电回到 2%-3%。
 
-这个案例体现了 Battery Historian 排查的核心思路:**先锁定异常时段,再按维度（WakeLock、网络、GPS、CPU）逐一排查,找到维度之间的关联,最后回到代码定位根因。**
+这个案例体现了 Battery Historian 排查的核心思路:**先锁定异常时段,再按维度（WakeLock、网络、GPS、CPU）逐一排查,找到维度之间的关联,再回到代码定位根因。**
 
 ### 其他功耗分析工具
 
@@ -357,14 +360,14 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 ### Tare 经济模型:Job 配额的底层管控
 
-Android 12（API 31）引入 Tare（Think Advanced Resource Economy）经济模型，作为 JobScheduler Apex 模块的配额管控层，运行在独立进程而非 system_server。
+Android 12（API 31）引入 Tare（Think Advanced Resource Economy）经济模型，作为 JobScheduler Apex 模块的配额管控层，运行在独立进程而非 system_server。[存疑: 本段涉及 Tare 运行位置与公开 API，需 Task9 按 android-17.0.0_r1 复核。]
 
 **核心机制**：Tare 以 ARC（Android Resource Credits）为内部货币，每个应用周期性获得 ARC 配额，Job 执行时消耗 ARC。`TareEconomicManager`（`frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java`，android-17.0.0_r1）在 Job 调度前检查应用 ARC 余额，余额耗尽时拒绝新 Job。
 
 **关键组件**：
 - `AppBudgetManager`：管理每个 UID 的预算，`setAppBudget(uid, budgetMs)` 设置预算时长，`setAppToppingThreshold(uid, thresholdMs)` 设置消费上限阈值，`getRemainingBudget(uid)` 查询剩余配额
 - `InternalResourceService`：管理全局 ARC 供给，每天重新计算
-- `EconomyManager`（API 34+，位于 `frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java`）：应用层公开 API，`setAppBudgetoyant(packageName, budgetMs)` 允许应用自设置预算，`getRemainingBudget(packageName)` 查询本应用剩余预算
+- `EconomyManager`（API 34+，位于 `frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java`）：应用层公开 API，`setAppBudgetoyant(packageName, budgetMs)` 允许应用自设置预算，`getRemainingBudget(packageName)` 查询本应用剩余预算。[存疑: `setAppBudgetoyant()` 疑似不存在，且 Tare 是否提供应用层自设预算 API 需要源码确认。]
 
 **消费数据来源**：`TareEconomicManager` 依赖 `BatteryStatsService` 提供的历史耗电数据作为基准参照，通过 `BatteryUsageStats` API（API 31+）查询各 UID 的实际消费。
 
@@ -374,7 +377,7 @@ Android 12（API 31）引入 Tare（Think Advanced Resource Economy）经济模�
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java; frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/AppBudgetManager.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java; frameworks/base/core/java/android/os/BatteryUsageStats.java]
 
-<!-- AIW-源码调研-2026-05-31: Tare 经济模型源码闭环 -->
+<!-- AIW-源码调研-2026-05-31: Tare 经济模型源码记录 -->
 
 ## JobScheduler / WorkManager 的省电调度策略
 
@@ -519,7 +522,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 5.0 (API 21) | JobScheduler 引入 | 首次提供系统级后台任务调度 |
 | 6.0 (API 23) | Doze 模式 + App Standby | 灭屏后台活动首次被系统性限制 |
 | 7.0 (API 24) | Light Doze | 不要求静止,灭屏即可触发轻度限制 |
-| 8.0 (API 26) | 后台服务限制 + 后台执行收紧 | 后台组件更难长期维持活跃状态 |
+| 8.0 (API 26) | 后台服务限制 + 后台执行限制加强 | 后台组件更难长期维持活跃状态 |
 | 9.0 (API 28) | App Standby Buckets + Adaptive Battery | 五级分桶 + ML 预测资源分配 |
 | 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
 | 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
@@ -580,7 +583,7 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 ### Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU/GPU 前瞻信号通道
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md
 - 类型:DeepResearch 调研结果
-- 摘要:基于 AOSP 16 逐层拆解 `getCpuHeadroom()/getGpuHeadroom()` 调用链,澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量,不走 PSI/lmkd,也不存在公开 memory headroom;适合做相机、游戏等重负载场景的前瞻降级信号。
+- 摘要:基于 AOSP 16 梳理 `getCpuHeadroom()/getGpuHeadroom()` 调用链,澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量,不走 PSI/lmkd,也不存在公开 memory headroom;适合做相机、游戏等重负载场景的前瞻降级信号。
 
 ---
 
