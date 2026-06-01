@@ -9,10 +9,10 @@ confidence: medium
 reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -42,7 +42,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-09T06:20:00+08:00'
 last_task6_at: "2026-06-01T16:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-16-review.md"
-task6_review_notes: "2026-06-01 Task6 16: L1 小修 1 处；厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue 交 Task2B。"
+task6_review_notes: "2026-06-01 Task6 16: L1 小修 1 处；厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue 交 Task2B。2026-06-01 Task2B Lite 已将厂商游戏模式段落改为非 AOSP 边界说明，等待 Task6 复查。"
 last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
 task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0：Android 17/InputDispatcher 密码场景 InputMonitor 切断缺少可复核 AOSP tag/source anchor；P1：通话中敏感权限封锁版本归属需重核。"
 last_task9_audit: "2026-05-24"
@@ -401,15 +401,9 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 
 ### 游戏模式中的输入优先级
 
-主流手机厂商在游戏场景中做了大量输入拦截和优先级定制。常见做法是：当检测到游戏 App 在前台运行时，提升触摸事件的分发优先级，降低事件在 InputDispatcher 中的等待时间。
+AOSP 标准 GameMode 没有公开的“游戏输入优先级提升”路径。可从 AOSP 核对到的能力是功耗 HAL 档位、刷新率策略和焦点窗口分发；把游戏窗口放进独立 InputDispatcher 优先队列、为 InputChannel 加权、或提高触控 IC 采样率，都属于厂商私有实现或硬件/内核层策略，不能写成 Android 通用结论。
 
-具体实现通常包括：
-
-1. **Input Boost 增强**：在触摸事件到来时，不仅提升 CPU 频率，还将 InputDispatcher 线程和 App 主线程绑定到大核，减少调度延迟
-2. **事件优先队列**：为游戏窗口的 InputChannel 设置更高的优先级，InputDispatcher 优先处理游戏窗口的事件
-3. **降低采样延迟**：在游戏模式下提高触控 IC 的采样率，减少硬件层面的延迟
-
-这些定制发生在 InputDispatcher 的 Native 层和内核调度策略层，在 Perfetto 中很难直接观察到，但可以通过 CPU 调度和事件到达时间差来间接验证。
+分析厂商游戏模式时，优先把结论限定为“非 AOSP 扩展”：如果 trace 中看到触摸延迟下降，只能结合 CPU 调度、触控驱动日志、焦点窗口变化和厂商开关状态交叉判断，不能单凭 GameMode 开启推导出 InputDispatcher 存在额外优先级。
 
 ### 防误触机制
 
