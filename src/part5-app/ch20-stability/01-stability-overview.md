@@ -3,8 +3,8 @@ title: "应用稳定性全景"
 chapter: "20.1"
 section: "20.1"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+last_verified: "2026-06-01"
+last_verified_against: "AOSP android-16.0.0_r1, Android Developers ANR documentation, ApplicationExitInfo API reference"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 1
@@ -13,6 +13,8 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
   - type: official
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityManager.java"
   - type: clippings-structure-ref
@@ -28,18 +30,20 @@ last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-01T08:50:00+08:00"
+task2b_fixed_at: "2026-06-01T08:50:00+08:00"
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 1
-task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。"
+task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格式轻修 1 处；ANR timeout/弹窗边界仍属技术与版本差异问题，沿用既有 queue 回炉项交 Task2B。2026-06-01 Task2B：已补齐 Android 14+ BroadcastReceiver timeout、前台可见 ANR、后台/silent ANR、用户选择等待/关闭与 ApplicationExitInfo 记录边界，回流 Task6。"
 ---
 
 # 应用稳定性全景
@@ -65,7 +69,7 @@ task6_review_notes: "2026-05-16 Task6：写作层复审通过，frontmatter 格�
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
-从进程视角看，Android 应用的不稳定只有一种终态——进程被杀。但触发杀进程的路径不同，治理方法也不同。
+从观测口径看，Crash、ANR 和 OOM 不应混成同一种“进程被杀”。Java / Native Crash 通常以异常或信号终止进程；LMK / OOM 以资源不足触发回收或抛出 `OutOfMemoryError`；ANR 是系统发现主线程或组件回调超时后的干预流程，可能弹窗、记录 trace、等待用户选择，也可能在后台以 silent ANR 形式被记录。
 
 ### Java Crash
 
@@ -104,18 +108,16 @@ ANR 不是崩溃，是系统对"主线程阻塞"的强制干预。触发条件�
 |------|----------|--------|
 | Input dispatching timed out | 5 秒 | InputDispatcher |
 | Service timeout | 前台 Service 20 秒 / 后台 Service 200 秒 | ActiveServices |
-| BroadcastReceiver timeout | 前台 10 秒 / 后台 60 秒 | ActivityManagerService |
+| BroadcastReceiver timeout | Android 13 及更低版本：前台 10 秒 / 后台 60 秒；Android 14+：CPU-starved 场景可放宽到前台 10-20 秒 / 后台 60-120 秒 | ActivityManagerService / BroadcastQueue |
 | ContentProvider timeout | 10 秒 | ActivityManagerService |
 
 各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），handler 收到后调用 `ActiveServices.serviceTimeout(proc)`，经由 `mAm.mAnrHelper.appNotResponding(proc, timeoutRecord)` 进入 ANR 流程。BroadcastReceiver 和 ContentProvider 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。
 
-ANR 发生后，系统会：
+ANR 进入 `AnrHelper.appNotResponding()` 之后，系统先采集线程堆栈和进程状态，再由 `AppErrors` 结合进程可见性、后台限制、系统策略和用户交互决定后续动作。前台可见 ANR 通常会展示“应用无响应”对话框，用户可以选择等待或关闭；后台 ANR 与 silent ANR 不一定弹窗，常见结果是记录事件、写入 trace，并按策略终止或保留进程。
 
-1. 向用户弹出"应用无响应"对话框
-2. 将进程的线程堆栈 dump 到 `/data/anr/` 目录（android-16 使用 `ANR_TRACE_DIR`，文件名前缀 `anr_`；旧版设备可能是 `traces.txt`）
-3. 记录到 `ApplicationExitInfo`（`REASON_ANR`）
+trace 文件通常落在 `/data/anr/` 目录（android-16 使用 `ANR_TRACE_DIR`，文件名前缀 `anr_`；旧版设备可能是 `traces.txt`）。`ApplicationExitInfo` 在 API 30+ 提供历史退出查询：当进程因 ANR 退出时，`getReason()` 可返回 `REASON_ANR`；`getTraceInputStream()` 通常可读取 ANR trace。如果进程曾发生 ANR 但后来恢复，并在之后因其他原因退出，系统也可能把之前采集的 trace 附在对应的 `ApplicationExitInfo` 记录中。
 
-[需确认: Android 14+ CPU-starved 场景下 BroadcastReceiver timeout 可能是 10-20 秒 / 60-120 秒区间；前台可见 ANR、后台 ANR 和 silent ANR 也不一定都会弹出用户对话框。需 Task 9 / Task 2B 按官方文档与 AOSP 链路补齐版本和可见性边界。]
+[已验证: Android Developers ANR documentation; AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, AppErrors.java, BroadcastQueue.java]
 
 ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修复"；ANR 是"主线程执行耗时操作，需要拆分或异步化"。20.4 节展开 ANR 的治理策略。
 
@@ -162,7 +164,7 @@ OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的�
                      └─────────────┘
 ```
 
-三者的共同点：都会导致用户看到"应用异常退出或卡死"。区分退出原因的第一步是读取 `android.app.ApplicationExitInfo`（API 30+）——这个类封装了进程退出时的上下文：退出原因（`getReason()` 返回 `REASON_CRASH`、`REASON_ANR`、`REASON_LOW_MEMORY` 等常量）、进程 PID（`getPid()`）、退出时间戳（`getTimestamp()`）、异常堆栈（`getTraceInputStream()`：`REASON_ANR` 时返回 ANR trace；`REASON_CRASH_NATIVE` 在 API 31+ 可返回 tombstone protobuf；也可能因环形缓冲被覆盖而返回 `null`）。通过 `ActivityManager.getHistoricalProcessExitReasons()` 批量查询，可以统计各类型退出的占比和趋势。15.3 节详细介绍了采集方式。
+三者的共同点：都会导致用户看到"应用异常退出或卡死"。区分退出原因的第一步是读取 `android.app.ApplicationExitInfo`（API 30+）——这个类封装了进程退出时的上下文：退出原因（`getReason()` 返回 `REASON_CRASH`、`REASON_ANR`、`REASON_LOW_MEMORY` 等常量）、进程 PID（`getPid()`）、退出时间戳（`getTimestamp()`）、异常堆栈（`getTraceInputStream()`：ANR 记录通常可返回 ANR trace；`REASON_CRASH_NATIVE` 在 API 31+ 可返回 tombstone protobuf；也可能因记录过期、缓冲覆盖或权限边界返回 `null`）。通过 `ActivityManager.getHistoricalProcessExitReasons()` 批量查询，可以统计各类型退出的占比和趋势。15.3 节详细介绍了采集方式。
 
 ## 稳定性的行业标准与度量维度
 
