@@ -38,10 +38,8 @@ drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: '2026-05-30'
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task2b_state: pending
-pipeline_stage: task2b_pending
 review_round: 9
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
@@ -51,19 +49,15 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 pipeline_stage: task6_pending
-last_task2b_lite_at: '2026-05-30'
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-05-11T23:28:02+08:00"
+last_task2b_at: "2026-06-01T09:35:00+08:00"
+last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。"
 review_type: task6-writing-quality-review
-task9_result: pass-tech-review
+task9_result: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
-last_task2b_at: "2026-05-17T11:26:41"
 last_task6_at: "2026-05-17T12:11:00+08:00"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处(代码围栏标语言 2 处、清嗓式\"问题是\"规避 1 处);实战案例仍缺一手 Trace/AGI 证据,已合并到 queue。"
 task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并;新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
