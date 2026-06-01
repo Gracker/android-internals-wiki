@@ -32,7 +32,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_state: "revisiting"
 task6_result: needs-rework
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed

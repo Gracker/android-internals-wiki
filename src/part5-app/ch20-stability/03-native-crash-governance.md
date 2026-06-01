@@ -30,7 +30,7 @@ related_chapters: ["20.1", "20.2", "1.15"]
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-01"
 task9_reviewed_by: "openclaw-task9"
