@@ -36,11 +36,11 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-06-01"
+reviewed_date: "2026-06-02"
 reviewed_by: openclaw-task6
-task6_state: revisiting
-task6_result: needs-rework
-review_round: 9
+task6_state: reviewed
+task6_result: pass-light-edit
+review_round: 10
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
 polish_date: '2026-04-10'
@@ -48,22 +48,22 @@ polish_by: task2b-polish
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
-review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。"
+review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。 | 2026-06-02 task6 review: pass-light-edit。L1/L2 小修 2 处;AOSP mainline 锚点改为 Android 17 待验证边界,删除填充副词。"
 review_type: task6-writing-quality-review
 task9_result: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
-last_task6_at: "2026-06-01T16:05:00+08:00"
-task6_review_notes: "2026-06-01 Task6 16: L1/L2 小修 7 处；实战案例缺可复核 Trace/AGI 证据且局部重复。2026-06-02 Task2B 已改为示例场景，删除实测口径和重复效果验证，回流 Task6。"
+last_task6_at: "2026-06-02T23:05:00+08:00"
+task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。L1/L2 小修 2 处；实战案例已改为示例场景，未新增回炉项，进入 Task9 待审。"
 task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并;新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
-last_task6_review_log: "logs/review/2026-06-01-16-review.md"
-task6_l1_l2_fixes: 7
-task6_l3_l4_issues: 1
+last_task6_review_log: "logs/review/2026-06-02-23-review.md"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
 ---
 
 
@@ -609,7 +609,7 @@ Physical Memory(ION heap / CMA / GPU VRAM)
 
 **Hardware Bitmap 特殊行为**:Bitmap.Config.HARDWARE(API 26+)创建的 Bitmap,像素数据完全不存在于 Java heap,全部存储在 GPU 显存中的 AHardwareBuffer。`/proc/<pid>/smaps` 中不反映其占用,必须通过 `dumpsys meminfo gfxinfo` 或厂商特定工具观测。
 
-> [已验证: AOSP mainline, frameworks/native/libs/gui/Surface.cpp, BufferQueue Core.h, BufferQueue Producer.cpp, GraphicBuffer Mapper.cpp]
+> [待验证: 该锚点来自 AOSP mainline,未证明已进入 Android 17;仅作后续源码核对线索,不作为 Android 17 结论。路径:frameworks/native/libs/gui/Surface.cpp, BufferQueue Core.h, BufferQueue Producer.cpp, GraphicBuffer Mapper.cpp]
 
 > [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
 
@@ -772,7 +772,7 @@ GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的�
 
 ### "GPU 占用高 = 需要优化 GPU"?
 
-不一定。GPU 占用高可能是正常的--比如一个全屏的游戏或视频应用,GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题(卡顿、发热、耗电过快)时,才需要优化。很多时候,"GPU 占用高"恰恰说明 GPU 在努力工作、没有被闲置浪费--这反而是效率高的表现。需要关注的是 "GPU 做了大量无用功" 的场景,比如严重的过度绘制。
+不一定。GPU 占用高可能是正常的--比如一个全屏的游戏或视频应用,GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题(卡顿、发热、耗电过快)时,才需要优化。有时 "GPU 占用高" 只说明 GPU 没有被闲置;需要关注的是 "GPU 做了大量无用功" 的场景,比如严重的过度绘制。
 
 ### "过度绘制一定是问题"?
 
