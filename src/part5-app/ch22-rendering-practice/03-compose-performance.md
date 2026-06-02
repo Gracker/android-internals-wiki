@@ -16,25 +16,25 @@ sources:
     path: "frameworks/support/compose/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: revisiting
-last_task6_at: "2026-05-31T20:10:00+08:00"
+task2b_state: pending
+task6_state: reviewed
+last_task6_at: "2026-06-02T11:05:00+08:00"
 task9_state: pending
 last_task2b_at: "2026-05-31T15:35:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
-task6_result: pass-light-edit
+task6_result: needs-rework
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-01"
 last_task9_at: "2026-06-01T08:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-05-31-20-review.md"
+last_task6_review_log: "logs/review/2026-06-02-11-review.md"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
-review_notes: "2026-05-31 20:10 Task6 复审：L1/L2 小修完成（移除用途标签、清理填充词与空格）；无新增 Task2B 回炉项；task9_result=needs-rework，送 Task9 复核。"
+reviewed_date: "2026-06-02"
+review_notes: "2026-06-02 11:05 Task6 复审：L1 小修 2 处；发现源码调研补遗仍以编辑态进入正文，且 Pausable Composition / AOSP master 版本边界存在未闭合标注，已写入 queue.json 回炉。"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-01"
@@ -62,6 +62,80 @@ task9_p2_issues: 2
 - 🔸 ART GC 与 Compose 重组性能因果链
 
 <!-- outline-end -->
+
+<!-- AIW-源码调研-2026-06-02 -->
+### Strong Skipping 与非 restartable Composable 源码级补充
+
+**来源**：daily-topics.json 选题 #2（2026-06-02 pending），源码验证
+
+**Composer.skipping 属性与 Strong Skipping 触发条件**
+
+Composer.kt（androidx-main，line 78-82）定义了 `skipping` 属性：
+
+```kotlin
+@ComposeCompilerApi public val skipping: Boolean
+```
+
+文档注释明确：`skipping=true` 时表示编译器可以生成跳过逻辑。即使 Composable 参数相等，如果读取了 non-static CompositionLocal，`skipping` 仍为 false，函数体必须执行。Strong Skipping 的生效前提是 `Composer.skipping == true`。
+
+**skipToGroupEnd 的实现机制**
+
+Composer.kt（line 193-199）：
+
+```kotlin
+@ComposeCompilerApi public fun skipToGroupEnd()
+```
+
+编译器在参数相等且 `skipping=true` 时生成此调用。执行后 Composer 内部游标从当前位置直接跳到当前 group 末尾，中间所有 slot 条目保持不变，非 restartable Composable 产生的所有中间 slot 也被跳过处理。
+
+**deactivateToEndGroup 的停用机制**
+
+Composer.kt（line 201-207）：
+
+```kotlin
+@ComposeCompilerApi public fun deactivateToEndGroup(changed: Boolean)
+```
+
+当 `changed=true` 时，Composer 将该 group 末尾前所有 slot table 条目强制置为 Empty。`remember` 和 `cache` 在 slot 为 Empty 时不执行实际计算，直接返回初始值。这使得强跳过目标 composable 在参数未变时完全不进入执行期。
+
+**非 restartable Composable 与 Strong Skipping 的 group 差异**
+
+| Group 类型 | 源码方法 | restartable? | Strong Skipping 行为 |
+|---|---|---|---|
+| restart group | `startRestartGroup`/`endRestartGroup` | ✅ | 参数相等时 skipToGroupEnd |
+| replace group | `startReplaceGroup`/`endReplaceGroup` | ❌ | 参数相等时 skipToGroupEnd，slot table 条目不变 |
+| movable group | `startMovableGroup`/`endMovableGroup` | ❌ | key 相等时跳过，key 不等则重排 |
+
+非 restartable Composable 的 Strong Skipping 依赖 `startReplaceGroup`/`endReplaceGroup`（replaceable group）而非 restart group。参数比较相等时，Composer 调用 `skipToGroupEnd()` 推进游标，该 group 产生的 slot table 条目在 `changed=false` 时不被清空（只有 `changed=true` 时才置 Empty）。
+
+**rememberCoroutineScope 与 Strong Skipping 交互**
+
+RememberManager.kt（androidx-main）定义了协程管理的生命周期钩子：
+
+```kotlin
+internal interface RememberManager {
+    fun rememberPausingScope(scope: RecomposeScopeImpl)
+    fun startResumingScope(scope: RecomposeScopeImpl)
+    fun endResumingScope(scope: RecomposeScopeImpl)
+}
+```
+
+Strong Skipping 触发且 `deactivateToEndGroup(changed=true)` 被调用时，该 group 内的 RememberObserverHolder 被标记为停用，对应 scope 的协程被 `rememberPausingScope` 暂停。`rememberCoroutineScope` 返回的 CoroutineScope 在参数再次相等导致 skip 期间保持 paused 状态，不会继续运行。
+
+**produceState 与 Strong Skipping 交互的关键结论**
+
+produceState 内部使用 `remember { mutableStateOf(initialValue) }` + `LaunchedEffect(key1)`。Strong Skipping 触发时：
+- `deactivateToEndGroup(true)` 停用该 group 内所有 RememberObserver
+- produceState 返回的 State 在 slot table 中被标记为 Empty（如果 changed=true）
+- 协程被 `rememberPausingScope` 暂停
+- slot table 条目在 `changed=false` 时不会被清空；Strong Skipping 下 skip 期间 produceState 的状态**保持最后一次组合时的值**，不会重置为初始值
+
+**源码锚点**：
+- Composer.kt（skipping 属性，line 78；skipToGroupEnd，line 193；deactivateToEndGroup，line 201）
+- RememberManager.kt（rememberPausingScope/startResumingScope）
+- androidx/androidx 仓库 androidx-main 分支
+
+
 
 Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战:怎么写出不会卡顿的 Compose 代码,怎么用工具定位性能问题,以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
@@ -149,7 +223,7 @@ fun userProfile(userId: String): State<User?> {
 }
 ```
 
-`produceState` 内部持有 `remember { mutableStateOf(initialValue) }`，并在 `LaunchedEffect` 中启动 producer。`userId` 这类被 producer 使用、且变化后必须重新拉取的数据要作为 key 传入；key 变化时旧协程被 cancel，新 producer 启动。只有确实要跟随调用点生命周期、输入变化不重启的场景，才使用 `Unit` 或 `true` 这类常量 key。
+`produceState` 内部持有 `remember { mutableStateOf(initialValue) }`，并在 `LaunchedEffect` 中启动 producer。`userId` 这类被 producer 使用、且变化后必须重新拉取的数据要作为 key 传入；key 变化时旧协程被 cancel，新 producer 启动。只有要跟随调用点生命周期、输入变化不重启的场景，才使用 `Unit` 或 `true` 这类常量 key。
 
 **性能边界：**
 - `produceState` 每次 `value = newValue` 写入触发 Snapshot 事务，高频更新场景（如动画、传感器数据）可能造成性能压力。可考虑 `snapshotFlow` + `collectAsState` 代替直接写入。
@@ -910,3 +984,41 @@ PrefetchHandle 由 `PrefetchHandleProvider` 管理,通过 `LazySaveableStateHold
 **关键结论**：Android Baseline Profile 对 iOS/Desktop 完全无效（ART format vs LLVM IR vs GraalVM）；iOS 冷启动全量 AOT 无需 profile；Desktop JVM 无稳定 Profile API。
 
 > 调研报告：`DeepResearch/2026-05-31-android-compose-baseline-profile-integration.md`
+
+<!-- AIW-源码调研-2026-06-02 -->
+## 调研补遗（2026-06-02）— Strong Skipping 深度盲区
+
+### @NonRestartableComposable vs @NonSkippableComposable 区别
+
+Strong Skipping 下必须区分两类注解：
+
+| 注解 | 可跳过 | 可重启 | 典型用途 |
+|------|--------|--------|---------|
+| `@NonRestartableComposable` | ❌ | ❌ | `SideEffect`、`LaunchedEffect` 内部 |
+| `@NonSkippableComposable` | ❌ | ✅ | 必须每次重组都执行的场景 |
+
+副作用 API（`SideEffect`、`DisposableEffect`、`LaunchedEffect`）必须使用 `@NonRestartableComposable`，因为副作用的执行时机由 Compose 运行时在组合边界处管理，不允许 Composable 重启打乱副作用顺序。`@NonSkippableComposable` 适用于 restartable 但强制不可跳过的 Composable——每次父组分重组时函数体会执行，但不会重启整个调用树。
+
+### produceState key 陷阱（单 key 版本）
+
+双 key `produceState(initialValue, key1)` 中 `key1` 控制协程生命周期——key 变化时旧协程 cancel，新协程启动。但**单 key 版本**（无外部 key 参数）内部使用 `LaunchedEffect(Unit)`，其中 `Unit` 是单例对象，永远相等。这导致同位置重组不会 cancel 旧协程，旧 producer 继续运行直到组分退出。
+
+**陷阱场景**：配置变更导致 Composable 重建（但仍在同一调用位置），旧网络请求不会取消，可能产生 race condition。**推荐**：数据拉取场景统一使用 `produceState(initialValue, userId) { }` 双 key 版本。
+
+### rememberCoroutineScope 强禁忌
+
+`rememberCoroutineScope` 通过 remember 缓存 CoroutineScope 实例，本身是 restartable Composable。**强禁忌**：在 Composable body 顶层直接 `scope.launch { }`，这会在每次重组时创建新协程而不取消旧协程。正确做法是使用 `LaunchedEffect` 或在已缓存的 scope 上 launch（配合 rememberCoroutineScope 返回的 scope）。
+
+### Compose Multiplatform 性能差异
+
+| 维度 | Android (ART) | iOS (LLVM AOT) | Desktop (JVM) |
+|------|--------------|---------------|--------------|
+| 编译策略 | JIT + AOT (Baseline Profile) | AOT 全量 | JIT-first |
+| Baseline Profile | 有效 | **无效**（无 JIT） | **无效**（无稳定 API） |
+| 冷启动特征 | interpret → JIT warmup | 全量 AOT | JIT warmup |
+
+Android Baseline Profile 只对 ART 格式的 DEX 文件有效，对 LLVM IR（AOT iOS binary）和 JVM bytecode（Desktop）完全无效。iOS 不需要 profile（全量 AOT），Desktop 无稳定 Baseline Profile API。
+
+### 动画性能特殊路径
+
+`animateFloatAsState` 等动画 API **不走 Snapshot 系统**，而是使用 `AnimationFrameClock` 直接调度到 Choreographer 帧回调。`produceState` 每写一次 `value` 触发一次 Snapshot 写事务 + 重组评估，**动画场景绝对不应该用 produceState**。
