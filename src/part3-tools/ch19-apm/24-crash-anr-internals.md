@@ -1,5 +1,4 @@
 ---
-
 title: "崩溃与 ANR 捕获机制"
 chapter: "19.24"
 section: "19.24"
@@ -10,7 +9,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
@@ -28,9 +27,9 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: "auto-fixed"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
@@ -39,13 +38,13 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-02T17:23:00+08:00"
 task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
 last_task6_audit: "2026-05-23"
-last_task6_at: "2026-06-02T02:05:00+08:00"
+last_task6_at: "2026-06-02T18:08:00+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-06-02-02-review.md"
-task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
-task6_l1_l2_fixes: 2
+last_task6_review_log: "logs/review/2026-06-02-18-review.md"
+task6_review_notes: "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
@@ -366,7 +365,7 @@ Native 层要额外做两件事：
 
 ## 8. Android 11+ 之后的一套推荐组合
 
-面向 Android 11 及以上设备，稳定性 APM 的默认组合可以压成下面这张表：
+面向 Android 11 及以上设备，稳定性 APM 的默认组合可以整理成这张表：
 
 | 现场 | 默认方案 | 备注 |
 | --- | --- | --- |
@@ -517,7 +516,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 KOOM 的核心贡献是解决"Java heap OOM 时进程状态已经不稳定"的问题，不依赖 `ApplicationExitInfo`：
 
-```
+```text
 主进程 Java heap 接近阈值（连续 N 次超过 heapThreshold）
   → KOOM HeapOOMTracker 连续检测
   → SuspendVM（暂停 ART 虚拟机）
