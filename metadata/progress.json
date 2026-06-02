@@ -11969,11 +11969,14 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-02T15:25:00+08:00",
+  "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
   "last_task2b_verifier_sections": [
-    "2.19",
-    "18.12",
-    "6.4"
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -12238,6 +12241,21 @@
       "blocked": 1,
       "result": "blocked",
       "log": "logs/rework/2026-06-02-07-task2b-verifier.md"
+    },
+    {
+      "at": "2026-06-03T03:25:00+08:00",
+      "sections": [
+        "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+        "src/part5-app/ch21-startup/08-startup-monitoring.md",
+        "src/part5-app/ch20-stability/08-crash-aggregation.md",
+        "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+        "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
+        "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md"
+      ],
+      "status_corrections": 4,
+      "blocked": 2,
+      "result": "blocked",
+      "log": "logs/rework/2026-06-03-03-task2b-verifier.md"
     }
   ],
   "last_task2b_files": [
@@ -12619,7 +12637,7 @@
     "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-06-02-15-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-03T01:38:00+08:00",
@@ -13004,6 +13022,83 @@
     "last_task2b_at": "2026-06-03T02:50:00+08:00",
     "source": "frontmatter backlog fallback / task9-deep-review",
     "source_log": "logs/deep-review/2026-05-16-07-deep-review.md",
-    "summary": "固定 AndroidX Fragment 源码锚点到 fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit、executePendingTransactions 与 predictive back 版本边界，回流 Task6。"
+    "summary": "固定 AndroidX Fragment 源码锚点到 fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit、executePendingTransactions 与 predictive back 版本边界，回流 Task6。",
+    "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
+    "last_task6_at": "2026-05-16T08:16:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
+    "reviewed_date": "2026-05-16",
+    "reviewed_by": "openclaw-task6",
+    "task6_review_notes": "2026-05-16 task6 review: pass-light-edit。修复结构性元叙述、runOnCommit 标题过强和 2 处否定-纠正式表达；Task9 既有版本锚点/runOnCommit/executePendingTransactions 技术项仍由 Task2B 处理。",
+    "last_task9_at": "2026-05-16T07:30:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
+  },
+  "section_22_10": {
+    "section": "22.10",
+    "title": "RenderEffect 与 RuntimeShader 性能实践",
+    "file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
+    "last_task6_at": "2026-06-03T03:06:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+    "reviewed_date": "2026-06-03",
+    "reviewed_by": "openclaw-task6",
+    "task6_review_notes": "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。",
+    "last_task9_at": "2026-05-20T11:41:31+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-20-11-deep-review.md",
+    "last_task2b_at": "2026-06-03T00:50:00+08:00"
+  },
+  "section_21_8": {
+    "section": "21.8",
+    "title": "启动监控与度量",
+    "file": "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
+    "last_task6_at": "2026-06-03T03:06:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+    "reviewed_date": "2026-06-03",
+    "reviewed_by": "openclaw-task6",
+    "task6_review_notes": "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。",
+    "last_task9_at": "2026-05-17T20:29:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-17-20-audit.md",
+    "last_task2b_lite_at": "2026-06-02"
+  },
+  "section_20_8": {
+    "section": "20.8",
+    "title": "崩溃聚合与归因分析",
+    "file": "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
+    "last_task6_at": "2026-06-03T03:06:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+    "reviewed_date": "2026-06-03",
+    "reviewed_by": "openclaw-task6",
+    "task6_review_notes": "2026-06-03 Task6 复审：pass-light-edit。L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。",
+    "last_task9_at": "2026-05-14T13:30:11+08:00",
+    "last_task2b_at": "2026-06-03T00:50:00+08:00"
   }
 }
