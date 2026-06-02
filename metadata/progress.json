@@ -11782,11 +11782,11 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-02T11:25:00+08:00",
+  "last_task2b_verifier_at": "2026-06-02T15:25:00+08:00",
   "last_task2b_verifier_sections": [
-    "18.13",
-    "22.3",
-    "14.10"
+    "2.19",
+    "18.12",
+    "6.4"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -12321,19 +12321,23 @@
     "title": "刷新率切换与帧率适配性能",
     "file": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
-    "task6_result": "needs-rework",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-05-29",
     "last_task6_at": "2026-05-29T08:16:26+08:00",
     "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
-    "task2b_state": "pending",
-    "task6_l1_l2_fixes": 1,
-    "task6_l3_l4_issues": 2,
-    "task6_new_rework": true,
-    "task6_note": "L1 禁用词修复 1 处；保留技术存疑，新增 queue 回炉。",
-    "task2b_result": "pending"
+    "task2b_state": "fixed",
+    "task6_l1_l2_fixes": 2,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_note": "Task2B/Task9 auto-fix 后 queue 已无 pending；Verifier 对齐回流状态，等待 Task6 复审。",
+    "task2b_result": "fixed",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "last_task2b_verifier_at": "2026-06-02T15:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-06-02-15-task2b-verifier.md"
   },
   "section_19_12": {
     "section": "19.12",
@@ -12378,17 +12382,18 @@
     "task6_review_summary": "L1/L2 pass-light-edit；小修 4 处；无新增写作回炉项；送 Task9 复核。"
   },
   "last_task2b_verifier": {
-    "at": "2026-06-01T23:25:00+08:00",
+    "at": "2026-06-02T15:25:00+08:00",
     "sections": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
-      "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md"
+      "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/04-storage-evolution.md"
     ],
-    "status_fixes": 16,
-    "blocked": [],
-    "result": "ready-for-task6"
+    "status_fixes": 1,
+    "blocked": [
+      "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "src/part1-fundamentals/ch06-storage/04-storage-evolution.md"
+    ],
+    "result": "blocked"
   },
   "last_task2b_lite_result": "fixed-lite",
   "last_task2b_lite_log": "logs/rework/2026-06-01-21-task2b-lite.md",
@@ -12423,7 +12428,7 @@
     "last_task2b_at": "2026-05-25T15:18:38+08:00",
     "last_task2b_lite_at": "2026-05-31"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-06-02-11-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-02-15-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-01T21:35:00+08:00",
