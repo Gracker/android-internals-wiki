@@ -2378,8 +2378,8 @@
   "total_review_sections": 283,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T18:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-02T22:50:00+08:00",
+  "last_updated_by": "task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2628,11 +2628,12 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-02T12:54:00+08:00",
+  "last_task2b_at": "2026-06-02T22:50:00+08:00",
   "last_task2b_sections": [
-    "22.3"
+    "2.10",
+    "5.14"
   ],
-  "last_task2b_action": "queue task6-review rework: 22.3 Jetpack Compose 性能优化",
+  "last_task2b_action": "review-rework-main",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -2991,7 +2992,7 @@
     },
     "2.10": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-06-01T16:05:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
@@ -3000,13 +3001,14 @@
       "last_task9_at": "2026-05-14T03:44:00+08:00",
       "title": "GPU 渲染深入",
       "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "task6_state": "reviewed",
-      "task2b_state": "pending",
-      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "last_task6_review_log": "logs/review/2026-06-01-16-review.md",
       "task6_l1_l2_fixes": 7,
       "task6_l3_l4_issues": 1,
-      "task6_review_notes": "实战案例仍缺可复核 Trace/AGI 证据且局部重复，已写入 queue。"
+      "task6_review_notes": "Task2B 已将实战案例改为示例场景，删除无 artifact 支撑的实测数字和重复效果验证。",
+      "last_task2b_at": "2026-06-02T22:50:00+08:00"
     },
     "2.14": {
       "status": "finalized",
@@ -5099,8 +5101,8 @@
     },
     "5.14": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "task9_state": "pending",
       "file": "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
@@ -5110,14 +5112,15 @@
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "queue_priority": 85,
       "queue_entry": "task9-2026-05-17-5-14-tech-review",
       "section": "5.14",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-01",
-      "task6_review_summary": "L1/L2 小修 3 处；小结后仍保留源码调研补充和待验证口径，已回炉 Task2B。"
+      "task6_review_summary": "Task2B 已删除小结后的编辑态补充块，统一 NN HAL 可发布口径。",
+      "last_task2b_at": "2026-06-02T22:50:00+08:00"
     },
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
@@ -12143,7 +12146,8 @@
     }
   ],
   "last_task2b_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-06-02T12:54:00+08:00",

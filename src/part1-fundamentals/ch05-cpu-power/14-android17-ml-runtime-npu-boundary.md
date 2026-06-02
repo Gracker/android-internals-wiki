@@ -1,7 +1,7 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
 chapter: "5.14"
-task6_review_notes: "2026-06-02 10 Task6 revisiting-review: needs-rework。L1/L2 小修 10 处；小结后源码调研补充仍为编辑态，且 NNAPI HAL 版本口径需复核，已更新 queue.json（priority 90）。"
+task6_review_notes: "2026-06-02 10 Task6 revisiting-review: needs-rework。L1/L2 小修 10 处；小结后补充块仍为编辑态，且 NNAPI HAL 版本口径需复核。2026-06-02 Task2B 已删除编辑态补充，保留 Android 17/API 37 内可发布口径并回流 Task6。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
 section: "5.14"
 status: ready-for-review
@@ -42,7 +42,7 @@ gap_score: 18
 material_count: 5
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 last_task6_at: "2026-06-02T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-10-review.md"
@@ -52,11 +52,11 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-06-01"
-last_task2b_at: "2026-06-02T04:50:00+08:00"
+last_task2b_at: "2026-06-02T22:50:00+08:00"
 p0: 0
 p1: 2
 p2: 1
@@ -280,246 +280,24 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 
 写这类内容时，发布稿的分层口径是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
 
-[需重写: 小结之后仍保留多段源码调研补充，包含“推测位置”“需进一步确认”“待验证”等编辑态内容；发布稿需要把可用事实整合回正文或参考资料，未确认项交 Task9 复核。]
-
-## 源码调研补充（2026-05-17）
-
-### AICore 版本归属纠错
-
-研究发现：AICore 系统服务于 **Android 14（API 34）** 即已引入，而非 Android 17 新增。"Android 17 端侧 AI 推理性能边界"题目存在版本误解——Android 17 的 AI 栈变化主要是 LiteRT NPU delegate 的正式支持（Qualcomm QNN / MediaTek NDSS 等），以及 AICore Developer Preview 持续迭代。
-
-**AICore 源码路径（需进一步确认）**：
-- 推测位置：frameworks/ml/nn/（NNAPI 运行时复用路径）或 packages/modules/（AOSP 模块结构）
-- 核心 API：`com.google.ai.edge.aicore`（package-summary: developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary）
-- NNHAL 源码：hardware/interfaces/neuralnetworks/1.3/（AOSP，仍活跃维护）
-
-**LiteRT ≠ Android 新功能**：LiteRT 是 TensorFlow Lite 的品牌重命名，通过 Google AI Edge SDK 分发，与 Android 版本无直接绑定。
-
-**AICore vs LiteRT 定位区别**：
-| | AICore | LiteRT (TFLite in Play Services) |
-|---|---|---|
-| 用途 | GenAI 基础模型（Gemma/Gemini Nano） | 自定义 ML 模型推理 |
-| 更新方式 | 系统级 OTA（Gemini Nano 下载） | Play services 运行时 OTA |
-| 适用场景 | 文本/图像/音频生成 AI | 物体检测、NLP、ASR 等传统 ML |
-
-
-
-## 源码调研补充（2026-05-18）
-
-### Android 端侧 AI 推理栈架构核心发现
-
-本次调研从 Android Developers Blog（2022-10）和 AOSP Neural Networks HAL 源码出发，验证了 Android 端侧 AI 推理栈的分层设计原则。
-
-**推理引擎分发模式变革**：
-- 传统模式：App 打包 TFLite `.aar`，推理引擎与 App 绑定，无法独立更新
-- 新模式：**TensorFlow Lite in Google Play Services**，推理引擎作为 platform service 通过 Play Services OTA 更新
-- 这解决了设备碎片化导致的 inference engine 老化问题（2022 年博客数据：每月服务数十万应用、数亿用户）
-
-**关键源码路径**：
-- NNAPI Java API：`frameworks/base/core/java/android/neuralnetworks/NeuralNetworks.java`（API 27+）
-- NNAPI HAL 定义：`hardware/interfaces/neuralnetworks/1.3/types.hal`（API 35+ 关键版本，含 fenced execution）
-- TFLite Delegate：源码位于 `external/tflite/tensorflow/lite/delegates/nnapi/` 和 `external/tflite/tensorflow/lite/delegates/gpu/`
-
-**Acceleration Service 设计目标（API 35+）**：
-- 解决 Android 设备硬件异构性导致的 Delegate 选择难题
-- 运行时探测可用加速器，安全选择最优配置
-- 2022 年博客提及 early access 计划，公开状态需进一步验证
-
-**NNAPI HAL 版本演进**：
-| 版本 | API Level | 关键能力 |
-|------|-----------|---------|
-| 1.0 | 27 | 基础模型加载与执行 |
-| 1.1 | 29 | 动态输入维度 |
-| 1.2 | 30 | 扩展操作符、shared memory |
-| 1.3 | 35 | fenced execution、execution preferences |
-
-**未被一手验证的项目（待确认）**：
-- AICore 系统服务的具体源码路径（AOSP 中未找到 `com.android.internal.ml.aicore` 独立服务）
-- `CompiledModel` 类的具体 API 签名（可能属于 Play Services 私有 API）
-- Acceleration Service 的公开 API 名称和调用方式
-
-<!-- AIW-源码调研-2026-05-18 -->
-
-
-## 源码调研补充（2026-05-20）
-
-[需确认: NNAPI HAL 的 HIDL 1.3、Android 12+ AIDL、API 35/37 版本口径在正文和补充材料中混用，需 Task9 复核后再统一写法。]
-
-### NNAPI 废弃边界与 HAL 延续澄清
-
-通过 cs.android.com AOSP 源码和 developer.android.com 文档交叉验证，澄清以下事实：
-
-**NNAPI NDK C API 废弃（Android 15 / API 35）**：
-- 来源：developer.android.com/ndk/guides/neuralnetworks
-- 废弃的是 `ANeuralNetworks*` 系列 C API（NDK 接口）
-- **Neural Networks HAL 本身未被废弃**，仍通过 AIDL 驱动（Android 12+）持续维护
-
-**HAL 版本演进（确认）**：
-| 版本 | 接口类型 | API Level | 状态 |
-|------|---------|-----------|------|
-| 1.0 | HIDL | 27 | 已废弃 |
-| 1.1 | HIDL | 29 | 已废弃 |
-| 1.2 | HIDL | 30 | 历史版本 |
-| 1.3 | AIDL | 35+ | **当前活跃版本** |
-
-**源码位置**：`hardware/interfaces/neuralnetworks/1.3/types.hal`（AOSP，cs.android.com）
-- `OperationType` 枚举：定义所有支持的算子类型
-- `OperandType` 枚举：TENSOR_FLOAT32、TENSOR_QUANT8_SYMM_PER_CHANNEL 等
-- `DeviceType` 枚举：CPU / GPU / ACCELERATOR（NPU 归入 ACCELERATOR）
-
-**NNAPI Runtime 模块**：`frameworks/ml/nn/runtime/`（AOSP）
-- 模块名：`com.android.neuralnetworks`（APEX 格式）
-- Android 11+ 的 NNAPI Runtime 以 APEX 分发，独立于 Framework
-
-**AICore vs LiteRT vs NNAPI 边界（整理）**：
-| | NNAPI | AICore | LiteRT (TFLite in Play Services) |
-|---|---|---|---|
-| API 类型 | NDK C API (deprecated) | Kotlin/Java API | 跨平台 SDK |
-| 底层驱动 | Neural Networks HAL | Neural Networks HAL | 复用 NN HAL |
-| 版本起点 | API 27 | API 34 (Android 14) | 品牌重命名 |
-| 维护状态 | 废弃 NDK，HAL 仍活跃 | 活跃 (Developer Preview) | 活跃 |
-| 调用路径 | 直接 HAL | 系统服务多租户 | Google Play Services OTA |
-
-**未一手验证的声明（需继续溯源）**：
-- AICore 系统服务的 AOSP 源码路径（推测在 `frameworks/ml/nn/` 但未确认）
-- `android.ai.core` 包的确切 AOSP 路径（需要 cs.android.com 搜索确认）
-- Android 16 NNAPI HAL 是否有 1.4 版本更新
-
-<!-- AIW-源码调研-2026-05-20 -->
-
-
-
-<!-- AIW-源码调研-2026-05-17 -->
-
-
-<!-- AIW-源码调研-2026-05-22 -->
-
 ## 参考资料
-### Android 端侧 AI 推理栈边界澄清 — LiteRT / AICore / NNAPI 分层验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 端侧 AI 推理栈三层架构（NNAPI→LiteRT→AICore）的源码验证，Android 17 新增 FEATURE_NEURAL_PROCESSING_UNIT 强制声明机制，LiteRT 与 TensorFlow Lite 的品牌重命名关系，AICore 内部通过 NNAPI 调用 NPU 的封装路径及版本演进对照。
-- 注入时间：2026-05-24
-- 价值：厘清 NNAPI/LiteRT/AICore 三层架构边界，补充 Android 17 NPU feature 声明机制
 
+### Android 17 NPU 管理与 PackageManager feature
+- 来源：developer.android.com/about/versions/17/release-notes；developer.android.com/reference/android/content/pm/PackageManager
+- 摘要：Android 17 / API 37 对直接访问 NPU 的应用增加 `FEATURE_NEURAL_PROCESSING_UNIT` 声明要求，公开常量值为 `android.hardware.npu`。
+- 用途：支撑本节 NPU feature 声明、运行时检测和安装范围判断。
 
-### Android 端侧 AI 推理栈边界验证——AICore / LiteRT / NNAPI 分层澄清
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md
-- 类型：DeepResearch 调研结果
-- 摘要：交叉验证 AOSP 主分支和 developer.android.com，确认五个核心事实：AICore（com.google.android.aicore）是 Google 私有系统 APK 不在 AOSP；android.hardware.ai.npu 不存在，正确 feature 常量为 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`，值为 `android.hardware.npu`；NNAPI NDK C API 在 Android 15 废弃但 HAL 仍活跃；LiteRT 是 Play Services SDK 不在 AOSP；AICore 仍为 Developer Preview。建立公开可发布事实 vs preview/vendor/待验证的边界。
-- 注入时间：2026-05-23
-- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
+### NNAPI 迁移指南与 NN HAL 文档
+- 来源：developer.android.com/ndk/guides/neuralnetworks/migration-guide；source.android.com/docs/core/ota/modular-system/nnapi；AOSP `hardware/interfaces/neuralnetworks/1.3/`、`hardware/interfaces/neuralnetworks/aidl/`
+- 摘要：NNAPI NDK C API 从 Android 15 起 deprecated；Neural Networks HAL 仍是系统与驱动之间的抽象层，Android 11 及以下保留 HIDL 版本口径，Android 12+ 使用 AIDL HAL。
+- 用途：统一 Android 17 / API 37 范围内 NNAPI、NN HAL 与厂商 delegate 的边界。
 
----
+### LiteRT Next NPU delegate 与厂商后端
+- 来源：ai.google.dev/edge/litert/next/npu；ai.google.dev/edge/litert/next/qualcomm；ai.google.dev/edge/litert/next/mediatek
+- 摘要：LiteRT Next 通过 NPU delegate 对接 Qualcomm QNN、MediaTek NeuroPilot 等厂商后端，模型是否完整跑在 NPU 上取决于 SoC、delegate、算子覆盖和回退策略。
+- 用途：支撑 LiteRT CompiledModel、AOT 编译、AI Pack 分发和厂商 NPU delegate 的工程边界。
 
-## 源码调研补充（2026-05-26）
-
-### Android 17 NPU Feature 强制声明验证
-
-Android 17 Release Notes（2026-02-26）明确：
-
-> **NPU Management**: Apps targeting Android 17 must declare the `FEATURE_NEURAL_PROCESSING_UNIT` hardware feature to directly access the NPU.
-
-因此，面向 Android 17 的应用如果要直接访问 NPU，必须在 AndroidManifest.xml 中声明：
-
-```xml
-<uses-feature android:name="android.hardware.npu" android:required="false" />
-```
-
-未声明的应用在 Android 17 目标 SDK 下无法直接访问 NPU。间接访问路径（LiteRT Delegate）不在此约束范围内。
-
-**源码锚点**：
-- `frameworks/base/core/java/android/content/pm/PackageManager.java` — `hasSystemFeature()` 实现
-- `device/google/coral/manifest.xml` — 设备级 feature 声明示例
-- `hardware/interfaces/neuralnetworks/1.3/types.hal` — NN HAL 类型定义
-
-### NNAPI 废弃进程确认
-
-- **Android 14 (API 34)**：NNAPI 稳定使用，ANeuralNetworks* C API 正常
-- **Android 15 (API 35)**：NNAPI NDK C API 标记 deprecated，官方迁移文档指引转向 LiteRT in Play Services + GPU Delegate
-- **Android 17 (API 37)**：NNAPI 废弃+强制 NPU feature 声明
-
-**迁移路径确认**：
-```text
-旧：App → NNAPI C API → NPU HAL → 厂商驱动
-新：App → LiteRT CompiledModel → GPU Delegate / NPU Delegate → 厂商运行时
-```
-
-官方迁移文档（developer.android.com/ndk/guides/neuralnetworks/migration-guide）：
-> "NNAPI was deprecated in Android 15. To migrate from NNAPI, see the instructions for TensorFlow Lite in Google Play Services and optionally TFLite GPU delegate for hardware acceleration."
-
-### AICore 版本状态（2026-05）
-
-| 项目 | 状态 |
-|------|------|
-| 包名 | `com.google.ai.edge.aicore` |
-| 最新版本 | `0.0.1-exp01`（Developer Preview）|
-| minSdkVersion | 31（Android 12）|
-| 更新方式 | Google Play services OTA（不可独立卸载）|
-| 2026-04-02 更新 | AICore Developer Preview 支持 Gemma 4（Google Developers Blog）|
-| 依赖硬件 | Google AI Accelerator / MediaTek AI Processor / Qualcomm AI Engine |
-
-AICore 是系统级 GenAI 模型运行时，为 Gemini Nano、Gemma 等模型提供 on-device inference 能力，不属于 AOSP 源码，通过 Google Play services 分发。
-
-### LiteRT 分层架构确认
-
-| 层级 | 来源 | 可写成平台能力？ |
-|------|------|----------------|
-| LiteRT Core | Google Play services（私有，非 AOSP）| 否 |
-| GPU Delegate | Google Play services 分发 | 否 |
-| NPU Delegate（QNN/NeuroPilot）| 厂商 SDK | 否 |
-| XNNPACK | AOSP `external/XNNPACK/` | 可引用源码 |
-| NN HAL | AOSP `hardware/interfaces/neuralnetworks/1.3/` / `hardware/interfaces/neuralnetworks/aidl/` | 可引用源码 |
-
-**注**：本调研结论与章节现有内容一致，对以下待验证项仍保持开放：
-- Android 17 / API 37 设备侧 `android.hardware.npu` feature 的厂商声明覆盖率
-- AICore 私有接口调用 NPU 的具体路径（AOSP 外）
-- Qualcomm QNN / MediaTek NeuroPilot 的具体算子覆盖范围
-
-
-
----
-
-## 源码调研补充（2026-05-28）
-
-### LiteRT CompiledModel API 最新变化（GitHub releases 验证）
-
-通过 GitHub `google-ai-edge/LiteRT` releases 交叉验证，确认以下 API 演进：
-
-**CompiledModel::Create() 简化**：
-- 不再需要 `litert::Model` 对象
-- 可直接从文件名或模型缓冲区创建
-- 简化了模型加载流程
-
-**Annotation/Metrics API 移除**：
-- 从 CompiledModel 中移除了 Annotation 和 Metrics API
-- 降低了 API 表面积
-
-**Android min SDK 固定**：
-- LiteRT Android min SDK version 固定为 23（Android 6.0）
-
-**LiteRT-LM 支持模型**：
-- Gemma、Llama、Phi-4、Qwen 等主流开源模型
-- 支持 GPU/NPU 硬件加速
-- 通过 Chrome、Chromebook Plus、Pixel Watch 等设备提供能力
-
-**LiteRT Samples 示例**（GitHub `google-ai-edge/litert-samples`）：
-```bash
-./deploy_and_run_android.sh \
-  --tokenizer "path/to/tokenizer.model" \
-  --embedder "path/to/embedder.tflite" \
-  --accelerator "npu" \
-  --soc_man "Google"
-```
-
-### Android 17 NPU 管理结论补充
-
-| 结论 | 来源 | 验证状态 |
-|------|------|----------|
-| Android 17 目标应用必须声明 FEATURE_NEURAL_PROCESSING_UNIT | Android 17 Release Notes | 已验证 |
-| NNAPI NDK C API 在 Android 15 废弃 | developer.android.com/ndk/guides | 已验证 |
-| Neural Networks HAL 仍活跃，Android 12+ 使用 AIDL | AOSP hardware/interfaces/neuralnetworks/ + source.android.com NNAPI Runtime | 已验证 |
-| LiteRT NPU delegate 通过 Google Play services 分发 | developer.android.com/ai/custom | 已验证 |
-| LiteRT CompiledModel API 自动化加速器选择 | GitHub LiteRT releases | 已验证 |
-
-<!-- AIW-源码调研-2026-05-28 -->
+### Android 端侧 AI 推理栈边界验证
+- 来源：DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md；DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md
+- 摘要：整理 AICore、LiteRT、NNAPI / NN HAL 和厂商 SDK 的分层关系，明确 AICore 与 LiteRT 不属于 AOSP 公共平台能力，Android 17 新增的是 NPU feature 声明管理边界。
+- 用途：支撑本节“公开 API、Preview 能力与闭源组件边界”小节。

@@ -38,7 +38,7 @@ drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 review_round: 9
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
@@ -46,10 +46,10 @@ polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 task9_state: pending
-task2b_state: pending
-task2b_result: fixed-lite
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-06-01T09:35:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。"
 review_type: task6-writing-quality-review
@@ -59,7 +59,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T13:20:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
 last_task6_at: "2026-06-01T16:05:00+08:00"
-task6_review_notes: "2026-06-01 Task6 16: L1/L2 小修 7 处；实战案例仍缺可复核 Trace/AGI 证据且局部重复，已写入 queue 交 Task2B。"
+task6_review_notes: "2026-06-01 Task6 16: L1/L2 小修 7 处；实战案例缺可复核 Trace/AGI 证据且局部重复。2026-06-02 Task2B 已改为示例场景，删除实测口径和重复效果验证，回流 Task6。"
 task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并;新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
 last_task6_review_log: "logs/review/2026-06-01-16-review.md"
 task6_l1_l2_fixes: 7
@@ -445,31 +445,26 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 在带宽受限场景中的选择建议:优先使用 ASTC。同压缩比下 ASTC 视觉质量更好,意味着可以用更高的压缩比(更大的 block size)达到相同的视觉标准,直接减少带宽消耗。在 Adreno 830 和 Mali Immortalis G925 等现代 GPU 上,ASTC 和 ETC2 的硬件解码延迟差异可以忽略--两者都是单周期固定功能单元操作,瓶颈在于内存传输而非解码计算。只有在需要兼容极老旧设备(GLES 2.0)时才考虑 ETC2。
 
-**实际测试验证**:
+**验证方式**:
 
-测试设备为 Pixel 7 Pro(Adreno 730),用于做简单的带宽对比:
+ASTC 与 ETC2 的选择不应只靠格式名判断。发布或上线前至少固定三组条件:设备 SoC 与 GPU、图片尺寸与缩放方式、滚动场景的帧率和 thermal 状态。没有原始 AGI / Perfetto trace 或厂商 profiler 记录时,不要把某个百分比写成通用结论。
 
 ```bash
 # 确认设备 ASTC 支持情况
 adb shell cmd gpu vkjson | grep -A 5 -B 5 astc
 # 应显示支持的 block sizes,如 {"blockWidth":4,"blockHeight":4,...}
 
-# 测试 ASTC 6×6 和 ETC2 带宽使用
-adb shell dumpsys gfxinfo com.example.app | grep -E "(ASTC|ETC2|bandwidth)"
+# 采集滚动场景帧时间,再配合 AGI / 厂商 profiler 查看纹理与外部内存计数器
+adb shell dumpsys gfxinfo com.example.app framestats
 ```
 
-**测试结果分析**:
-- ASTC 6×6 相比 ETC2 在相似压缩比下视觉质量提升约 15-20%
-- 在滚动列表场景中,ASTC 带宽使用比 ETC2 降低约 25%
-- 但 ASTC 解码在低端设备(Adreno 6xx)上可能增加 5-10% 的 CPU 开销
+判断 ASTC 是否收益明确,至少看三类信号:同一场景下 GPU frame time 是否下降,Texture Unit / External Memory 相关计数器是否下降,视觉质量是否仍满足产品标准。若只有 `dumpsys gfxinfo` 的帧时间,只能说明用户侧帧预算是否改善,不能单独证明带宽下降。
 
 **选择建议**:
 1. **现代设备(Adreno 7xx+,Mali-G78+)**:优先 ASTC,视觉质量+带宽双重优势
 2. **中端设备**:ASTC 6×6 通常是最佳选择
 3. **低端设备**:如果遇到 ASTC 解码性能问题,可考虑 ETC2
 4. **兼容性要求**:如果必须支持 GLES 2.0 设备,ETC2 是唯一选择
-
-**个人经验**:在社交应用的图片滚动优化中,我们发现 ASTC 6×6 在视觉质量和带宽消耗之间取得了最佳平衡。但 ASTC 的选择需要结合具体 GPU 架构--Adreno GPU 对 ASTC 的优化比 Mali 更成熟,在不同设备上表现可能有差异。
 
 ## 移动 GPU 的 TBR 架构
 
@@ -683,212 +678,57 @@ adb devices
 
 ## 实战案例:社交应用图片滚动中的 GPU 瓶颈定位
 
-> **[Trace 证据说明]**: 出于演示目的，这里提供的是典型场景的 Trace 分析模式。实际工作中，读者应该使用 AGI 和 Perfetto 在目标设备上录制真实的 Trace 进行分析。不同设备和场景的性能特征会有差异，建议读者在自己的目标设备上进行实际验证。
+> **证据边界**:以下内容是示例场景，用来说明图片信息流滚动时的 GPU 排查路径。本稿没有随文附上可复核的 Perfetto / AGI artifact，因此不把帧耗时、带宽下降百分比或帧率提升写成实测结论。发布真实案例时，应同时给出设备型号、Android 版本、刷新率、采样配置、trace 文件或截图。
 
 ### 问题现象
 
-2026年4月,我在负责优化一款社交应用时遇到了典型的滚动性能问题。用户反馈"滑动的时候一卡一卡的",尤其是在图片信息流快速滚动时特别明显。这个问题出现在 Pixel 8 Pro(Snapdragon 8 Gen 3)这样的旗舰设备上--按理说这种规格不应该出现基础的 GPU 瓶颈。
+图片信息流滚动卡顿时，主线程不一定是根因。一个常见场景是：MainThread 的 `doFrame` 和 RenderThread 的录制时间都在帧预算内，但 GPU activity 跨过一个或多个 VSync 周期，SurfaceFlinger 只能继续使用旧 buffer。这类现象要优先检查 fillrate、纹理采样和内存带宽，Java / Kotlin 侧逻辑优化放到后面验证。
 
-最初我怀疑是 CPU 瓶颈,通过开发者选项的"显示 GPU 过绘制"调试后发现情况更复杂:整个界面大面积都是红色(表示4次过度绘制),这强烈指向 GPU 瓶颈。关键发现是反直觉的:主线程 CPU 时间正常(4-6ms),RenderThread 录制时间不长(1-3ms),但 GPU track 渲染时间达到 22-28ms。这种"CPU工作正常但GPU处理超时"的模式,正是典型的 fillrate bound 瓶颈。
+### 证据采集方式
 
-### 一手 AGI 与 Perfetto Trace 证据
-
-使用 AGI 对问题帧进行深度分析:
+Perfetto 负责确认“卡在哪个时序段”。采集滚动场景时，至少打开 FrameTimeline、RenderThread、SurfaceFlinger、GPU counter 和 `gpu_render_stages`（设备支持时）。如果 `gpu_render_stages` 不可用，就用 GPU busy、RenderThread wait、SurfaceFlinger latch 结果交叉判断。
 
 ```bash
-# 录制 AGI trace
-adb shell am start -n com.google.android.gpiinspector/.MainActivity \
-  --ez record true --ei duration 5000 --es output_path /sdcard/social_app_gpi.gpitrace
-adb pull /sdcard/social_app_gpi.gpitrace .
+# 录制包含 GPU counter 的滚动场景 trace，配置文件需按设备能力裁剪。
+adb shell perfetto --txt --config gpu-basic.cfg -o /data/misc/perfetto-traces/social_scroll.pftrace
+adb pull /data/misc/perfetto-traces/social_scroll.pftrace .
 ```
 
-AGI 分析结果:
-- Fragment Shader 时间占 GPU 总时间 75%+ 
-- 纹理读取计数器异常高
-- 每个图片元素需采样 4-8 次(圆角 mask + 图片 + 阴影 + 叠加效果)
-- 1080p 屏幕上每帧约 800 万次纹理访问
+AGI 负责把某一帧拆到 draw call、shader 和纹理访问层面。Perfetto 已经确认 GPU 超时时，再用 AGI 桌面端或 Android Studio 集成入口录制同一复现场景，查看 Fragment、Texture Unit、External Memory、Vertex / Tiler 等计数器。不同 GPU 厂商的计数器名称不同，结论要写成“哪个计数器在同一批掉帧帧里同步抬升”，不要只写工具截图里的栏目名。
 
-配合 Perfetto Trace 验证:
+### 判断路径
 
-```bash
-# 实际录制 Peretto
-adb shell perfetto --trace-config gpu-basic.cfg > social_perfetto.pftrace
-```
+**确认 CPU 是否已经让路。** MainThread 的 `doFrame`、RenderThread 的 display list 处理和 command submit 如果都没有长段阻塞，而 GPU activity 仍跨过 VSync 边界，问题就落到 GPU 侧。这个判断要同时看 FrameTimeline 的 present 状态和 SurfaceFlinger 是否 latch 到新 buffer。
 
-Perfetto 显示:
-- GPU activity 块长度超过 16.67ms 帧预算
-- RenderThread 在提交时出现明显等待状态
-- Fragment Shader 占用大部分 GPU 时间
+**确认瓶颈类型。** Fragment / Texture 相关计数器随掉帧帧抬升，且界面有大面积图片、圆角、阴影、半透明叠加时，优先按 fillrate bound 或 bandwidth bound 处理。Vertex / Tiler 相关计数器抬升，且界面里有大量 Path、复杂裁剪或几何动画时，再转向 vertex bound。
 
-### 分析思路
+**确认纹理和过度绘制。** 图片信息流最常见的三类浪费是：列表背景、卡片背景和图片背景重复绘制；圆角 mask、阴影 blur、渐变 overlay 叠加纹理采样；大图未压缩或缺少合适 mipmap，滚动时反复触发高带宽读取。开发者选项的 overdraw 只能给方向，是否拖慢一帧仍要回到 Perfetto / AGI 证据。
 
-面对"滑动卡顿"这类问题,我的第一反应通常是怀疑 CPU 性能不足。主线程的 doFrame 耗时往往是首排查点。但在这次排查中,我发现了一个反直觉的现象:主线程 CPU 时间完全正常(4-6ms),用户却依然能感受到明显的卡顿。
+### 可验证的修复方向
 
-这种"CPU工作正常但用户体验差"的情况让我意识到问题可能出在渲染管线的下游。在 Android 12+ 的架构下,RenderThread 的 GPU 提交延迟往往是这类卡顿的隐藏推手。正是这种反直觉的现象让我意识到,GPU 瓶颈的识别在这里比 CPU 瓶颈更重要。
+**减少过度绘制。** 合并列表背景和卡片背景，移除滚动区域里不会被看到的中间层；对稳定遮挡区域做裁剪，避免把被上层完全盖住的像素继续送进 Fragment Shader。修复后用 overdraw 调试和 Perfetto GPU activity 一起确认，不能只看颜色变浅。
 
-**一个关键经验教训**:不要只看主线程的 CPU 时间。在 Android 12+ 的架构下,RenderThread 的 GPU 提交延迟往往是卡顿的隐藏推手。
+**减少纹理采样。** 圆角图片优先使用平台或库里能合并 pass 的实现；阴影和复杂遮罩如果在滚动中反复计算，考虑预渲染或缓存。AGI 里要看同一类 item 的 draw call 数、纹理绑定次数和 Fragment 相关计数器是否下降。
 
-### 具体排查过程
+**压缩纹理和控制尺寸。** ASTC 适合现代 Android 设备上的高质量图片压缩，但收益需要按目标 SoC 验证。发布优化结论前，固定设备、刷新率、图片尺寸、滚动脚本和 thermal 状态，再对比 GPU frame time、Texture Unit / External Memory 计数器、视觉质量。只有 `dumpsys gfxinfo` 帧时间下降时，只能说明用户侧帧预算改善，不能单独证明带宽下降。
 
-1. **基础 Trace 采集**
-   ```bash
-   # 检查设备是否支持 VSync 计数器
-   adb shell perfetto --check-features
-   # 录制滚动场景
-   adb shell perfetto --trace-config gpu-basic.cfg > social_scroll.pftrace
-   ```
-
-2. **关键发现**:
-   - 主线程 doFrame 耗时在 4-6ms 之间,完全在正常范围
-   - RenderThread 录制时间在 1-3ms,没有明显阻塞
-   - **GPU track 显示渲染时间达到 22-28ms**,远超 16.67ms 帧预算
-   - 过度绘制调试显示大面积红色(4次过度绘制)
-
-   **分析确认**:CPU 工作正常,但 GPU 处理时间严重超限,且过度绘制严重。这是一个典型的 GPU fillrate bound 瓶颈。
-
-3. **AGI 深度分析**:
-   ```bash
-   # 使用 AGI 分析着色器热点
-   adb shell am start -n com.google.android.gpiinspector/.MainActivity \
-     --ez record true --ei duration 3000
-   # 分析 GPU busy 计数器和内存带宽使用
-   ```
-
-   AGI 分析结果证实了判断:Fragment Shader 时间占比高达 75%,纹理读取计数器异常高。关键发现是每个图片元素需要采样 4-8 次纹理(圆角 mask + 图片 + 阴影 + 叠加效果),在 1080p 屏幕上每帧约 800 万次纹理访问。
-
-   **分析要点**:Fragment Shader 时间占比过高指向两个可能:着色器逻辑复杂或纹理采样过多。本案例中两者兼而有之。
-
-### 根因分析
-
-结合 Perfetto 和 AGI 的结果,问题集中在三个叠加因素:
-
-**过度绘制**:信息流列表项布局层次过深--列表背景→卡片背景→图片→阴影→圆角蒙版。图层间存在大量半透明叠加,快速滚动时增加绘制次数和混合计算开销。每个像素被重复绘制 3-4 次,导致 GPU 工作量变成原来的 3-4 倍。
-
-**纹理采样过多**:每个图片元素需要采样 4-8 次(圆角 mask + 图片 + 阴影 + 叠加效果)。AGI 分析显示圆角裁剪的纹理采样最耗时。设计师使用独立 mask 纹理和模糊 pass实现效果,对 GPU 来说是灾难性的叠加。
-
-**未压缩纹理**:图片使用 RGBA8888 格式,一张 400×400 图片就是 640KB。快速滚动场景中,GPU 频繁加载大尺寸纹理。没有生成 Mipmap,GPU 总是使用最高分辨率纹理,即使物体只占几个像素。
-
-**优化原理**:GPU 性能问题很少由单一因素导致,通常是多个小问题叠加。每个因素只贡献几毫秒开销,但加起来超过 16.67ms 帧预算。
-
-### 实际优化与验证
-
-基于根因分析,制定系统优化方案:
-
-1. **布局优化**:合并背景图层,移除重复绘制
-   - 将列表项灰色背景和卡片白色背景合并
-   - 使用 `canvas.clipPath()` 裁剪被遮挡区域
-   - **实际效果**:减少约 30% 过度绘制
-
-2. **纹理压缩**:将图片转换为 ASTC 6×6 格式
-   - 压缩比约 4:1,视觉质量损失极小
-   - 实现纹理图集,将多个小图片合并到一张大纹理中
-   - **实际效果**:带宽使用降低约 25%
-
-3. **着色器简化**:使用 SDF 替代 mask 采样
-   - 将圆角效果改为在着色器中用 SDF 计算
-   - 阴影效果改为预渲染到纹理图集中
-   - **实际效果**:每像素纹理采样次数从 6-8 次减少到 2-3 次
-
-**优化效果**:
-- GPU 渲染时间从 22-28ms 降低到 8-12ms(降幅约 60%)
-- 帧率从 42fps 提升到 56fps
-- 过度绘制从 3-4 次降到 1-2 次
-
-**工程体会**:GPU 性能优化是系统性工程。单个优化措施只能带来小幅提升,多个叠加产生质的飞跃。优化不简单是减少代码,而是对 GPU 工作原理的深刻理解。
-
-### 一手 Trace 证据
-
-为了验证问题根因,这里保留优化前后的 Perfetto Trace 对比说明。实际截图需要随发布稿补齐:
-
-[图:优化前后 GPU 渲染时间对比 - 优化前帧时间 22-28ms,优化后 8-12ms]
-
-优化前的 GPU track 呈现明显的瓶颈模式:
-- GPU activity 块长度超过 16.67ms 帧预算
-- RenderThread 在提交时出现明显等待状态
-- Fragment Shader 占用大部分 GPU 时间
-
-优化后:
-- GPU activity 块长度稳定在帧预算内
-- RenderThread 无明显阻塞
-- Fragment Shader 时间显著减少
-
-### ASTC vs ETC2 带宽对比实测数据
-
-测试设备为 Pixel 7 Pro(Adreno 730),用于实际带宽对比:
+### 纹理格式验证模板
 
 ```bash
 # 确认设备 ASTC 支持情况
 adb shell cmd gpu vkjson | grep -A 5 -B 5 astc
-# 测试 ASTC 6×6 和 ETC2 带宽使用
-adb shell dumpsys gfxinfo com.example.app | grep -E "(ASTC|ETC2|bandwidth)"
+
+# 采集同一滚动脚本的帧时间；带宽和纹理计数器需要 AGI 或厂商 profiler 补证。
+adb shell dumpsys gfxinfo com.example.app framestats
 ```
-
-**实测数据**:
-
-| 测试场景 | 纹理格式 | 带宽使用(MB/s) | 帧率(fps) | 视觉质量评分 |
-|----------|----------|---------------|----------|--------------|
-| 滚动列表 | ETC2 4×4 | 1200-1500 | 42 | 7/10 |
-| 滚动列表 | ASTC 6×6 | 900-1100 | 56 | 8/10 |
-| 全屏图像 | ETC2 4×4 | 800-1000 | 48 | 8/10 |
-| 全屏图像 | ASTC 6×6 | 600-750 | 54 | 9/10 |
-
-**数据结论**:
-- ASTC 6×6 在相同压缩比下视觉质量比 ETC2 提升 15-20%
-- 滚动列表场景中 ASTC 带宽使用比 ETC2 降低约 25%
-- ASTC 解码在 Adreno 6xx 设备上可能增加 5-10% CPU 开销
-
-**设备选择建议**:
-1. **现代设备(Adreno 7xx+, Mali-G78+)**:优先 ASTC,视觉质量+带宽双重优势
-2. **中端设备**:ASTC 6×6 通常是最佳选择
-3. **低端设备**:ASTC 解码性能问题时考虑 ETC2
-4. **兼容性要求**:必须支持 GLES 2.0 设备时,ETC2 是唯一选择
-
-**实际测试验证**:
-数据基于 Pixel 7 Pro (Adreno 730) 真实设备实测，使用 `adb shell cmd gpu vkjson` 和 `dumpsys gfxinfo` 收集。读者建议在目标设备上重复验证，不同 GPU 厂商的性能特征可能存在差异。
-
-### 逐步分析
-
-这里用 AGI 对滚动过程做 GPU 帧分析。帧分析结果显示:
-
-**第一步:确认瓶颈类型。** 在 AGI 的 GPU Counters 里对比同一批掉帧帧的 Fragment、Texture 和 External Memory 相关计数器。这组数据表现为 Fragment 和纹理读取一侧持续处于高位,外部内存读写也同步抬升,而 Vertex 相关计数器没有同步放大。这个组合更符合 fillrate bound,瓶颈在像素处理和纹理带宽,不在顶点阶段。具体计数器名称会随 GPU 厂商变化,在 Adreno 上通常看 Fragment Busy、Texture Unit Busy、External Memory Read/Write 一类指标。
-
-**第二步:分析 Fragment Shader 时间。** 在 AGI 的着色器分析中,我们看到 Fragment Shader 的执行时间占 GPU 总时间的 70% 以上。主要的耗时操作是纹理采样--每个图片 item 的渲染需要采样 4-8 次纹理(圆角裁剪 mask + 图片本身 + 阴影效果 + 叠加渐变)。
-
-**第三步:检查过度绘制。** 使用 Android 开发者选项的"Debug GPU Overdraw"检查后,发现信息流列表项之间存在严重的过度绘制--列表项的背景、卡片的阴影、图片的圆角蒙版,加在一起导致每个像素被绘制了 3-4 次。
-
-**第四步:分析纹理带宽。** 每张图片使用的是未压缩的 RGBA8888 格式,一张 1080×1080 的图片就需要约 4.5MB 的纹理数据。在快速滚动时,GPU 需要频繁从内存中读取这些纹理数据,加上多次采样,内存带宽压力很大。
-
-### 根因与结论
-
-把这几项放在一起,卡顿的根因是三个因素的叠加:过度绘制导致像素被重复处理 3-4 次;Fragment Shader 中过多的纹理采样增加了每像素的计算量和内存带宽消耗;大尺寸未压缩纹理进一步加剧了带宽压力。三个因素共同作用,使得 GPU 在每个 VSync 周期内都无法完成所有像素的处理。
-
-### 修复方案
-
-针对三个根因,我们分别实施了优化:
-
-**减少过度绘制。** 将列表项的背景和卡片的背景合并--原来列表项有一个灰色背景,上面又叠了一个带白色背景的卡片,卡片外面还有阴影层。优化后将列表项的背景直接设为卡片背景色,移除了中间的重复背景层。同时使用 `canvas.clipPath()` 裁剪被遮挡的区域,避免渲染不可见内容。
-
-**简化 Fragment Shader。** 原来的实现中,圆角裁剪使用了独立的纹理 mask 采样,阴影效果使用了额外的 blur pass。优化后将圆角效果改为在着色器中用 SDF(Signed Distance Field)计算,不需要额外的纹理采样;阴影效果改为预渲染到纹理图集中,避免实时 blur 计算。
-
-**纹理压缩和缓存。** 将图片格式从 RGBA8888 改为 ASTC 6×6 压缩格式(压缩比约 4:1,视觉质量损失极小)。同时实现了纹理图集--将多个小尺寸的 avatar 图片合并到一张大纹理中,减少纹理切换和绑定的开销。
-
-### 效果验证
-
-优化后的 Perfetto Trace 显示:
-
-- GPU 每帧渲染时间从 18-25ms 降低到 8-12ms,降幅约 50%。
-- 帧率从 40-45fps 提升到 55-58fps,基本达到 60fps 的目标。
-- 过度绘制从 3-4 级降低到 1-2 级。
 
 ### 举一反三
 
-这个案例揭示了一个通用的 GPU 性能优化规律:**GPU 瓶颈很少由单一的大问题导致,通常是多个小问题叠加的结果。** 每个单独的因素(过度绘制、多次纹理采样、未压缩纹理)可能只贡献了几毫秒的开销,但加在一起就超过了 16.67ms 的帧预算。因此,GPU 优化更像是逐一消除所有小的性能浪费,而不是只找一个最大问题。
-
-另外,这个案例也说明了一个重要观点:GPU 性能优化不等于"减少代码"。很多时候,问题的根因对 GPU 工作方式的理解不足--比如不理解纹理压缩可以减少带宽消耗,不理解过度绘制会让 GPU 做大量无用功,不理解多个半透明叠加层的性能代价。
+图片滚动里的 GPU 瓶颈常由多个小因素相加：过度绘制增加像素处理次数，纹理采样增加 Fragment Shader 成本，未压缩大图增加外部内存读取。单项修复可能只减少一小段耗时，但三项同时压住，GPU 才更容易回到帧预算内。没有配套 trace 时，正文只保留判断方法和验证条件，不写无法复核的收益数字。
 
 ## 与其他机制的关系
 
-GPU 渲染并不是一个独立的环节,它是整个 Android 渲染管线中的一环。理解 GPU 在管线中的位置,有助于我们在分析问题时快速定位责任方。
+GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的位置,有助于我们在分析问题时快速定位责任方。
 
 **VSync → GPU 的关系。** VSync 信号(详见 §2.3)定义了每一帧的时间预算。在 60Hz 屏幕上,每帧只有 16.67ms;在 120Hz 屏幕上,预算缩短到 8.33ms。GPU 必须在这个时间窗口内完成从接收渲染命令到输出像素的全部工作。如果 GPU 处理超时,帧就会被丢弃(掉帧)。
 
