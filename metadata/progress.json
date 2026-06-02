@@ -2631,12 +2631,11 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-02T22:50:00+08:00",
+  "last_task2b_at": "2026-06-03T02:50:00+08:00",
   "last_task2b_sections": [
-    "2.10",
-    "5.14"
+    "22.12"
   ],
-  "last_task2b_action": "review-rework-main",
+  "last_task2b_action": "frontmatter backlog fallback rework",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -9623,7 +9622,7 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task2b_run": "2026-06-01T06:52:00+08:00",
+  "last_task2b_run": "2026-06-03T02:50:00+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
@@ -10884,6 +10883,25 @@
       "queue_items_completed": 1,
       "returned_to": "task6_pending",
       "log": "logs/rework/2026-06-02-12-task2b-main.md"
+    },
+    {
+      "at": "2026-06-03T02:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "sections": [
+        "22.12"
+      ],
+      "files": [
+        "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      ],
+      "result": "fixed-returned-to-task6",
+      "source_log": "logs/deep-review/2026-05-16-07-deep-review.md",
+      "fixes": [
+        "AndroidX 源码锚点从 androidx-main 改为 fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d",
+        "补 executePendingTransactions = execPendingActions(true) + forcePostponedTransactions 边界",
+        "收窄 runOnCommit 为事务执行完成回调，补 reordering 后置风险",
+        "补 predictive back mTransitioningOp 版本差异，避免把 release 分支行为反推到 Fragment 1.4/1.6"
+      ]
     }
   ],
   "section_18_23": {
@@ -11619,13 +11637,13 @@
       "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-06-01T08:50:00+08:00",
+  "task2b_last_run": "2026-06-03T02:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
-    "p90": 2,
+    "p90": 0,
     "p85": 0,
-    "total": 2,
-    "source": "queue allowed review sources after 2026-06-02T12:54 task2b main"
+    "total": 0,
+    "source": "queue allowed review sources after 2026-06-03T02:50 task2b main; frontmatter backlog remaining 57"
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -12184,8 +12202,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-    "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md"
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-06-02T12:54:00+08:00",
@@ -12205,18 +12222,17 @@
     "log": "logs/rework/2026-06-02-12-task2b-main.md"
   },
   "task2b_last_rework": {
-    "timestamp": "2026-06-02T12:54:00+08:00",
+    "at": "2026-06-03T02:50:00+08:00",
+    "lane": "main",
+    "source": "frontmatter backlog fallback",
     "sections": [
-      "22.3"
+      "22.12"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
     ],
-    "source": "task6-review",
-    "issues_fixed": 2,
-    "at": "2026-06-02T12:54:00+08:00",
-    "result": "fixed",
-    "log": "logs/rework/2026-06-02-12-task2b-main.md"
+    "result": "fixed-returned-to-task6",
+    "log": "logs/rework/2026-06-03-02-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
     "16.5",
@@ -12876,8 +12892,8 @@
     "6.1",
     "19.24"
   ],
-  "last_task2b_section": "22.3",
-  "last_task2b_file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+  "last_task2b_section": "22.12",
+  "last_task2b_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
   "last_task2b_result": "fixed",
   "section_6_1": {
     "section": "6.1",
@@ -12931,5 +12947,22 @@
     "last_task2b_lite_at": "2026-06-03",
     "last_task2b_lite_log": "logs/rework/2026-06-03-01-task2b-lite.md",
     "task2b_notes": "2026-06-03 Task2B Lite：按 2026-06-02 Task9 AUTO-FIX 记录修正 frontmatter/progress 回流状态；正文已包含 ProfilingTrigger 36.1/API37 分层。"
+  },
+  "section_22_12": {
+    "section": "22.12",
+    "title": "FragmentTransaction 提交链路与页面切换性能",
+    "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-06-03T02:50:00+08:00",
+    "source": "frontmatter backlog fallback / task9-deep-review",
+    "source_log": "logs/deep-review/2026-05-16-07-deep-review.md",
+    "summary": "固定 AndroidX Fragment 源码锚点到 fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit、executePendingTransactions 与 predictive back 版本边界，回流 Task6。"
   }
 }

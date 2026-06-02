@@ -5,16 +5,16 @@ section: "22.12"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
-last_verified: "2026-05-16"
-last_verified_against: "AndroidX androidx-main FragmentManager/BackStackRecord/FragmentTransaction + Android Developers Fragment docs + Perfetto FrameTimeline docs"
+last_verified: "2026-06-03"
+last_verified_against: "AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + Android Developers Fragment docs + Perfetto FrameTimeline docs"
 confidence: medium
 sources:
   - type: source
-    path: "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
   - type: source
-    path: "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java"
   - type: source
-    path: "https://raw.githubusercontent.com/androidx/androidx/androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java"
   - type: official
     path: "https://developer.android.com/guide/fragments/transactions"
   - type: official
@@ -34,23 +34,25 @@ related_chapters: ["7.4", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T07:30:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-07-deep-review.md"
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
-task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。"
-task6_state: reviewed
+task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。2026-06-03 task2b: 已改用 AndroidX fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit / executePendingTransactions / predictive back 边界，回到 Task6 复审。"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
 task6_review_notes: "2026-05-16 task6 review: pass-light-edit。修复结构性元叙述、runOnCommit 标题过强和 2 处否定-纠正式表达；Task9 既有版本锚点/runOnCommit/executePendingTransactions 技术项仍由 Task2B 处理。"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-03T02:50:00+08:00"
+task2b_fixed_by: openclaw-task2b
+pipeline_stage: task6_pending
 
 ---
 
@@ -188,11 +190,15 @@ void scheduleCommit() {
 | `commit()` | 异步排队，后续主线程消息执行 | 支持 | `isStateSaved()` 后提交会抛异常 | 调用点轻，但后续可能集中执行多笔事务 |
 | `commitAllowingStateLoss()` | 异步排队 | 支持 | 允许状态丢失；宿主不可用时可能丢弃事务 | UI 状态可能与恢复状态不一致，不应用来规避性能问题 |
 | `commitNow()` | 当前主线程同步执行当前事务 | 不支持；源码会 `disallowAddToBackStack()` | 状态保存后提交会抛异常 | 生命周期、inflate、layout 请求都压在当前调用栈里 |
-| `executePendingTransactions()` | 立即执行所有 pending transaction | 支持 | 会强制开始 postponed transaction | 容易把别处排队的事务一起执行，时序副作用比 `commitNow()` 大 |
+| `executePendingTransactions()` | 调用 `execPendingActions(true)`，随后 `forcePostponedTransactions()` | 支持 | 允许 state loss 路径；会强制启动 postponed transaction | 容易把别处排队的事务一起执行，时序副作用比 `commitNow()` 大 |
 
-官方文档对 `commitNow()` 的描述很直接：如果只想同步提交一个不修改 back stack 的事务，优先用 `commitNow()`，不要用 `commit()` 加 `executePendingTransactions()`，后者会执行当前所有 pending transaction。[已验证: 官方文档, `developer.android.com/guide/fragments/transactions` + AndroidX `FragmentTransaction.java`]
+官方文档对 `commitNow()` 的描述很直接：如果只想同步提交一个不修改 back stack 的事务，优先用 `commitNow()`，不要用 `commit()` 加 `executePendingTransactions()`，后者会尝试提交当前所有 pending transaction。[已验证: 官方文档, `developer.android.com/guide/fragments/transactions` + AndroidX `FragmentTransaction.java`]
 
-工程上可以按这条规则选：需要进入返回栈的页面切换走 `commit()`；必须同步拿到 Fragment View 的局部组件初始化，可以考虑 `commitNow()`；不要为了“让页面快点出来”在通用导航路径上调用 `executePendingTransactions()`。
+工程上可以按这条规则选：需要进入返回栈的页面切换走 `commit()`；必须同步拿到 Fragment View 的局部组件初始化，可以考虑 `commitNow()`；通用导航路径不要调用 `executePendingTransactions()` 来追求同步完成。
+
+`executePendingTransactions()` 还有两个容易漏掉的边界。第一，它传入 `allowStateLoss = true` 执行 `execPendingActions(true)`，语义覆盖当前所有 pending transaction。第二，它会在 pending action 执行后调用 `forcePostponedTransactions()`，把 postponed transaction 推进到开始状态。页面切换期间如果已有 Navigation Component、child FragmentManager 或其他模块排队事务，这个调用会把它们一起带进当前主线程窗口。
+
+[已验证: AndroidX fragment release commit `f39ca3510efb2347ebfef231e25a3e804922450d`，`FragmentManager.executePendingTransactions()` / `execPendingActions()` / `forcePostponedTransactions()`]
 
 ## `execPendingActions()`：一次清空 pending action 的主线程批处理
 
@@ -298,55 +304,9 @@ AndroidX 文档写得很清楚：如果事务启用了 reordering，`runOnCommit
 - 在 `runOnCommit()` 里继续做重活。这里仍在主线程事务执行尾部，继续 inflate、同步查询或大量 adapter diff，会把下一帧推得更晚。
 - 在 `runOnCommit()` 里递归提交新事务。`mExecutingActions` 会阻止当前执行过程递归进入，但新事务仍会进入下一轮主线程消息，容易形成页面切换期间的事务瀑布。
 
-
-
-<!-- AIW-源码调研-2026-05-30：executePendingTransactions 边界补充 -->
-### 🔹 executePendingTransactions() 不是「执行当前事务」的 API
-**来源：[未经一手验证——官方 API 参考 androidx.de/FragmentTransaction；cs.android.com androidx-main JS 渲染拦截未能抓取源码段]**
-
-官方 API 参考（androidx.de）明确指出：
-
-> "Calling `commitNow` is preferable to calling `FragmentTransaction.commit()` followed by `FragmentManager.executePendingTransactions()` as the latter will have the **side effect of attempting to commit all currently pending transactions** whether that is the desired behavior or not."
-
-这意味着 `executePendingTransactions()` 会清空整个 `mPendingActions` 队列并执行**所有**待处理事务，而不是只执行当前调用 `commit()` 的那一笔。如果此前已有 Navigation Component、child FragmentManager 或其他模块提交了事务，这些也会被一起执行。
-
-**单笔事务应使用 `commitNow()`**，它直接调用 `execSingleAction()` 且不进 back stack。`commitNow()` 的语义是「同步执行当前 BackStackRecord」，而 `executePendingTransactions()` 的语义是「清空并执行所有 pending」。
-
-工程场景中常见的误用是在一个 `commit()` 之后调用 `executePendingTransactions()` 期望「让当前页面快点出来」，实际效果是同时执行了所有 pending 事务，时序副作用远大于单笔 `commitNow()`。
-
-<!-- AIW-源码调研-2026-05-30：AndroidX 源码版本锚点修正 -->
-### 🔹 AndroidX 源码版本锚点：从 androidx-main 切到稳定 commit
-**来源：[待验证——cs.android.com androidx-main JS 渲染拦截；android.googlesource.com ?format=TEXT 可行性待确认]**
-
-章节当前引用的 AndroidX 源码 URL 使用 `androidx-main` 分支：
-- `androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java`
-- `androidx-main/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java`
-
-存在问题：
-- `androidx-main` 是 AOSP 开发分支，符号和接口可能随时间漂移，不适合作为稳定引用锚点
-- GitHub `raw.githubusercontent.com` 对 tag 路径（如 `fragment-1.8.0`）返回 404，不能直接使用 release tag
-- cs.android.com 的 raw 页面受 JS 渲染拦截，无法直接获取源码文本
-
-**可行的稳定锚定方式**（优先级排序）：
-1. **commit hash**：在 cs.android.com 或 android.googlesource.com 使用特定 commit SHA（例：`b2c178909e70618442850097c9492b57bdf0676b`），超越分支名漂移
-2. **androidx-release 分支**：使用 `androidx-activity-release`、`androidx-fragment-release` 等 release 分支（比 `androidx-main` 更稳定）
-3. **?format=TEXT 参数**：cs.android.com 或 android.googlesource.com 添加 `?format=TEXT` 参数可能绕过 JS 渲染（需实机验证）
-
-引用示例：
-```
-# 推荐（commit hash）
-frameworks/support/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java
-+ b2c178909e70618442850097c9492b57bdf0676b
-
-# 次选（release 分支）
-frameworks/support/+refs/heads/androidx-activity-release/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java
-```
-
-<!-- AIW-源码调研-2026-05-30 END -->
-
 更稳的做法是把 `runOnCommit()` 限定为轻量状态同步，例如注册结果监听、触发一次不阻塞主线程的异步加载，或发出 `postponeEnterTransition()` 的准备信号。首帧后的重任务放到 `viewLifecycleOwner.lifecycleScope`，并配合 `repeatOnLifecycle()` 与取消语义。
 
-## `setReorderingAllowed(true)` 不是简单的加速开关
+## `setReorderingAllowed(true)` 的性能边界
 
 官方 Fragment transaction 文档建议每个事务使用 `setReorderingAllowed(true)`。它不会让某个生命周期回调直接变快；价值在于允许 `FragmentManager` 在一批事务中消除冗余操作，并调整 Fragment 状态变化顺序，让动画和 transition 更一致。[已验证: 官方文档, `developer.android.com/guide/fragments/transactions`]
 
@@ -401,7 +361,13 @@ private void removeRedundantOperationsAndExecute(
 - **首帧前后任务切分**：首帧前只做构建最小可见 UI 必需的工作；网络请求、数据库预读、图片预热、埋点批量写入放到首帧后，并用生命周期取消。
 - **结果通信**：Fragment Result API 适合轻量结果传递；不要为了传结果把页面保活在内存里。共享 ViewModel 只放同一导航图或同一 Activity 范围内的状态，避免无意延长对象生命周期。
 
-线程和 CPU 优先级不是常规页面切换优化的第一手段。《Android 性能优化》的任务调度章节会讨论主线程、RenderThread 优先级和大核绑定，但这些方案依赖设备、权限和厂商策略，风险比布局拆分、任务延后和事务合并更高。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+线程和 CPU 优先级排在常规页面切换优化后面。《Android 性能优化》的任务调度章节会讨论主线程、RenderThread 优先级和大核绑定，但这些方案依赖设备、权限和厂商策略，风险比布局拆分、任务延后和事务合并更高。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+
+## AndroidX 源码锚点怎么读
+
+本节源码锚点固定到 AndroidX `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支漂移影响正文结论。
+
+固定 commit 不代表 Fragment 1.4 到 1.8 的每条路径完全相同。`commitInternal()`、`enqueueAction()`、`scheduleCommit()`、`execPendingActions()` 这些主链路可以作为稳定骨架；predictive back 相关的 `mTransitioningOp` 取消和重提交路径属于较新的 Fragment release 行为，不能反推到 Fragment 1.4 / 1.6。排查线上问题时，要同时记录应用依赖的 `androidx.fragment:fragment` 版本和设备 Android 版本。
 
 ## AndroidX Fragment 版本差异
 
@@ -409,14 +375,14 @@ private void removeRedundantOperationsAndExecute(
 |---|---|---|
 | Fragment 1.4 | FragmentStrictMode、SavedState / Result API 路径逐步稳定 | 可用 StrictMode 抓错误用法；结果传递不必依赖页面实例引用 |
 | Fragment 1.6 | `OnBackStackChangedListener` 增加 started / committed 等回调，回调时机有调整 | 做导航监控时要标明 Fragment 版本，否则 back stack 回调时序可能不一致 |
-| Fragment 1.7 | 支持基于 AndroidX Transition 的 predictive back | 返回手势可能进入可取消的 transition 流程，trace 里会多出 gesture 期间的过渡状态 |
+| Fragment 1.7 | 支持基于 AndroidX Transition 的 predictive back | 返回手势可能进入可取消的 transition 流程；源码里会出现 `mTransitioningOp` 这类过渡事务路径 |
 | Fragment 1.8 | `fragment-compose` 增加 `AndroidFragment` Composable；back stack cancel 回调时机修复 | Fragment 与 Compose 混用有官方组件入口，但仍要关注生命周期和状态保存成本 |
 
 [已验证: AndroidX Fragment release notes, `developer.android.com/jetpack/androidx/releases/fragment`]
 
 现代 AndroidX Fragment 的状态推进主要落在 `FragmentStateManager.moveToExpectedState()` 这一类路径上，旧资料里常见的 `moveToState(Fragment, ...)` 叙述只能作为历史背景。阅读源码或对照 trace 时，应以项目实际依赖的 Fragment 版本为准。
 
-平台 `android.app.Fragment` 与 AndroidX Fragment 的源码路径、生命周期实现和 bug 修复节奏都不同。新代码不要再围绕平台 Fragment 做优化；历史代码迁移时，应把行为差异作为兼容性问题处理，而不是只替换 import。
+平台 `android.app.Fragment` 与 AndroidX Fragment 的源码路径、生命周期实现和 bug 修复节奏都不同。新代码不要再围绕平台 Fragment 做优化；历史代码迁移时，应把行为差异作为兼容性问题处理，单纯替换 import 不够。
 
 ## Navigation Component 的额外成本
 
