@@ -22,26 +22,52 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-task6_review_notes: 2026-05-12 task6 review: 完成表格格式统一、术语一致性修复、标点标准化；L1/L2 通过，无新增 L3/L4 回炉项。
+task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T13:30:11+08:00"
+last_task6_at: "2026-06-03T03:06:00+08:00"
+last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 ---
 
 # 崩溃聚合与归因分析
 
-20.6 节定义了崩溃率的计算口径（UV 崩溃率、PV 崩溃率、启动崩溃率、重复崩溃率）。有了指标，下一个问题是：**每天几百到几千条崩溃报告，怎么把它们归成几十个有意义的簇，找到该先修哪个**。本节讲崩溃聚合的算法、归因维度、分派机制和告警体系。
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 堆栈聚合算法与去重策略
+- 🔹 崩溃归因维度：版本、机型、OS、场景
+- 🔹 自动分派与责任人匹配
+- 🔹 崩溃趋势分析与异常告警
+- 🔹 基于 AI 的崩溃智能归类
+
+### 扩展（可选深入）
+
+- 🔸 （待扩展）
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
+
+20.6 节定义了崩溃率的计算口径（UV 崩溃率、PV 崩溃率、启动崩溃率、重复崩溃率）。有了指标，下一步要回答的是：**每天几百到几千条崩溃报告，怎么把它们归成几十个有意义的簇，找到该先修哪个**。本节讲崩溃聚合的算法、归因维度、分派机制和告警体系。
 
 ## 堆栈聚合算法与去重策略
 
@@ -60,7 +86,7 @@ last_task9_at: "2026-05-14T13:30:11+08:00"
 
 Java 崩溃的原始堆栈格式（来自 Logcat / UncaughtExceptionHandler）：
 
-```
+```text
 FATAL EXCEPTION: main
 Process: com.example.app, PID: 12345
 java.lang.NullPointerException
@@ -75,7 +101,7 @@ java.lang.NullPointerException
 
 Native 崩溃的堆栈来自 tombstone（由 debuggerd 生成），格式不同但处理逻辑类似：
 
-```
+```text
 Build fingerprint: 'google/oriole/oriole:16/...',
 Revision: 'MP1.0'
 pid: 12345, tid: 12345, name: example.app  >>> com.example.app <<<
@@ -109,7 +135,7 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 把规范化后的文本做哈希（一般用 SHA-256 或 MurmurHash），得到指纹值。
 
-```
+```text
 指纹 = Hash(
     "NullPointerException" +
     "com.example.app.user.ProfileActivity.onCreate(ProfileActivity.java)" +
@@ -135,7 +161,7 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 **混淆后的堆栈。** R8 / ProGuard 混淆后，方法名变成 a.b.c，类名变成 a.b。如果每次构建的混淆映射不同，同一个崩溃在不同构建中会产生不同的指纹。解决方案：
 
-1. **使用 Retrace / ReTrace 还原后再算指纹**——需要对应版本的 mapping.txt
+1. **使用 Retrace 还原后再算指纹**——需要对应版本的 mapping.txt
 2. **在原始混淆堆栈上算指纹，但去掉混淆名中的顺序编号**——不推荐，混淆名每次构建都可能变
 
 正确做法是在服务端存储 mapping.txt，收到崩溃报告后先还原再聚合。
@@ -157,7 +183,7 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 ## 崩溃归因维度：版本、机型、OS、场景
 
-聚合解决的是"哪些崩溃是同一个"，归因解决的是"这个崩溃在什么条件下出现"。一个崩溃簇只有堆栈指纹是不够的——还需要多维度切分，才能定位根因。
+聚合解决的是"哪些崩溃是同一个"，归因解决的是"这个崩溃在什么条件下出现"。一个崩溃簇不能只靠堆栈指纹判断，必须继续按多维度切分，才能定位根因。
 
 ### 核心归因维度
 
@@ -175,7 +201,7 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 版本归因是最直接的维度。看一个崩溃簇在各版本的用户数分布：
 
-```
+```text
 版本 3.2.1: 0 users affected
 版本 3.2.2: 0 users affected
 版本 3.3.0: 347 users affected  ← 首现版本
@@ -220,7 +246,7 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 **基于代码路径的分派。** 堆栈中的应用帧包含了类名和方法名。通过类名可以映射到代码仓库中的目录 / 模块：
 
-```
+```text
 com.example.app.user.ProfileActivity → app/src/main/java/com/example/app/user/ → 用户中心团队
 com.example.app.network.ApiClient   → app/src/main/java/com/example/app/network/ → 网络库团队
 ```
@@ -243,15 +269,15 @@ com.example.app.network.ApiClient   → app/src/main/java/com/example/app/networ
 | **已知问题关联** | 同一指纹的崩溃如果已有 Jira / IssueTracker 工单，自动关联回复，不创建新工单 |
 | **灰度期间特殊处理** | 灰度版本的崩溃优先派给提交者本人，缩短反馈环 |
 
-### 分派到修复的闭环
+### 从分派到修复
 
-```
+```text
 崩溃发生 → SDK 采集上报 → 服务端聚合分簇 → 自动分派 → 工单创建/关联
     → 开发者收到通知 → 本地复现 / 线上分析 → 提交修复 → 新版本验证
     → 崩溃簇状态标记为"已修复" → 持续监控回归
 ```
 
-闭环的关键指标：
+这条流程的关键指标：
 
 - **MTTD（Mean Time To Detect）**：崩溃发生到团队收到告警的时间。行业目标 < 5 分钟
 - **MTTA（Mean Time To Acknowledge）**：收到告警到开发者确认的时间。目标 < 30 分钟（工作时间）
@@ -354,7 +380,7 @@ com.example.app.network.ApiClient   → app/src/main/java/com/example/app/networ
 
 - **归类准确率**：只能在本团队标注数据集上比较。指标要同时给出数据集规模、时间窗口、基线算法、人工标注规则和 F1-score；没有这些条件时，不写“提升 10～20 个百分点”这类跨团队结论
 - **冷启动问题**：新类型的崩溃没有历史数据，仍然需要人工确认
-- **维护成本**：模型需要定期用人工标注的数据 retrain，否则随着代码演进会 drift
+- **维护成本**：模型需要定期用人工标注数据重新训练，否则会随代码演进发生漂移
 - **适用场景**：崩溃量大（日活 > 1000 万）、崩溃类型多（> 500 个活跃簇）的团队收益最高。小型团队纯指纹聚合够用
 
 > 详见 26.2 节（Crash 上报体系搭建）关于 SDK 采集上报的实现，和 19.18 节（商业 APM 平台）中 Sentry / Bugly / APMPlus 各自的聚合与告警能力对比。
