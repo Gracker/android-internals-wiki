@@ -18,37 +18,40 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: pass-light-edit
 last_task2b_at: "2026-06-01T22:58:00+08:00"
 last_task2b_main_at: "2026-06-01T22:58:00+08:00"
 last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
+reviewed_date: "2026-06-02"
 task9_result: "auto-fixed"
 last_task9_at: "2026-06-02T04:21:00+08:00"
 last_task6_audit: "2026-05-19"
-review_round: 3
+review_round: 4
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_audit: "2026-05-31"
 task9_review_notes: "2026-06-02 Task9 deep review: auto-fixed。修正 WebViewUpdateServiceImpl/WebViewUpdateServiceImpl2 在 Android 14-16 的源码路径与版本边界；回到 Task6 复审。"
-last_task6_at: "2026-06-01T23:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-23-review.md"
-task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 4 处；Task2B 已收敛无证据实测表、版本边界和非公开 API 示例，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-task6_l1_l2_fixes: 4
+last_task6_at: "2026-06-02T10:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-10-review.md"
+task6_review_notes: "2026-06-02 10 Task6 revisiting-review: pass-light-edit。Task2B/Task9 已收敛版本边界和伪 API 问题；锚点覆盖完整，未新增回炉项。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
 last_task9_autofix_at: "2026-06-02"
 last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
+task6_reviewed_date: "2026-06-02"
 ---
+
+# WebView 渲染管线
 
 <!-- outline-start -->
 
@@ -209,7 +212,7 @@ sequenceDiagram
 
 #### Functor 路径里几个容易踩的点
 
-排查这条路时还要把下面几条架构事实记牢:
+排查这条路时还要确认几条架构事实:
 
 1. **HWUI 后端 = WebView 后端,必须一致**:宿主 HWUI 走 Vulkan,WebView 必须走 Vulkan;走 GL 同理。它们共享 GPU context,不可能一边 GL 一边 Vulkan。判断 WebView 走哪条后端时不要单独看 WebView 侧开关,先看宿主 HWUI 配置。
 2. **`AwDrawFnImpl::DrawGL` / `DrawVk` 双回调**:Android P 之后 HWUI 通过 `AwDrawFnFunctorCallbacks` 结构体(含 `draw_gl` / `draw_vk` 两个字段)回调 Chromium 侧;HWUI 根据当前 pipeline 调用对应一个,最终落到 `AwDrawFnImpl::DrawGL` 或 `AwDrawFnImpl::DrawVk`。Trace 上看到 `DrawGL` slice 还是 `DrawVk` slice,对应当前后端。
@@ -225,7 +228,7 @@ sequenceDiagram
 
 #### 现场排查脚本
 
-排查 WebView 渲染路径时,设备能力和 provider 版本不匹配很容易造成误判:即使系统是 Android 12+,当前页面也可能不会走 `SurfaceControl` 路径。下面的脚本只负责收集证据,不直接给出路径结论。
+排查 WebView 渲染路径时,设备能力和 provider 版本不匹配很容易造成误判:即使系统是 Android 12+,当前页面也可能不会走 `SurfaceControl` 路径。这个脚本只负责收集证据,不直接给出路径结论。
 
 ```bash
 #!/bin/bash

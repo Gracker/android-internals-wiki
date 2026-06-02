@@ -459,29 +459,32 @@
     "section": "5.14",
     "section_title": "Android 17 ML Runtime 与 NPU 访问边界",
     "priority": 90,
-    "reason": "[review回炉] Task6 发现发布稿仍有写作/证据闭环问题",
+    "reason": "[review回炉] Task6 发现发布稿仍有写作/证据链问题",
     "material_paths": [
       "intake/suggestions.md（含 review 意见）",
-      "logs/review/2026-06-01-18-review.md"
+      "logs/review/2026-06-01-18-review.md",
+      "logs/review/2026-06-02-10-review.md"
     ],
     "review_issues": [
       {
         "type": "需重写",
         "location": "小结之后的“源码调研补充”块",
         "detail": "发布稿在小结后保留多段原始调研补充，包含推测位置、需进一步确认、未一手验证等编辑态内容，破坏正文收束和可发布性。",
-        "suggestion": "将已验证事实整合回对应正文小节；未验证项移入参考/待验证清单或交 Task9 复核。"
+        "suggestion": "Task2B 将已验证事实整合回正文或参考资料；无法确认的项目保留为 Task9 待复核问题，不放在发布正文中。"
       },
       {
         "type": "需确认",
         "location": "NNAPI HAL 版本演进口径",
         "detail": "正文与补充材料同时出现 HIDL 1.3、Android 12+ AIDL、API 35/37 等口径，读者难以判断 Android 17 范围内的准确结论。",
-        "suggestion": "由 Task9 复核 Android 17 / API 37 内可发布口径，再由 Task2B 统一正文和表格。"
+        "suggestion": "Task9 复核 Android 17/API 37 范围内 NN HAL 的可发布口径，Task2B 按复核结果统一正文和参考资料。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-01T18:10:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-06-01-18-review.md"
+    "original_review_log": "logs/review/2026-06-02-10-review.md",
+    "updated_by": "task6-review",
+    "updated_at": "2026-06-02T10:05:00+08:00"
   },
   {
     "section": "5.6",
@@ -518,5 +521,45 @@
     "completed_at": "2026-06-02T08:50:00+08:00",
     "completed_by": "openclaw-task2b-main",
     "completion_reason": "Task9 P0/P1/P2 回炉完成：TARE 改为 Android 14 历史实现边界，删除 Android 17 Energy Limiter 未验证段，Power HAL 统一为 AIDL IPower 优先口径。"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "章节ch17-oem",
+    "priority": 13,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7604694326518104115"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了 — Android 17 首次引入原生应用锁功能，解决用户隐私保护痛点，与厂商差异化功能形成鲜明对比，为原生 Android 用户体验提升提供新方案。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-02T05:31:52.010011",
+    "status": "pending"
+  },
+  {
+    "section": "17.4",
+    "section_title": "sched_ext 与 OEM BPF 调度器",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增 OSDI '26 论文级 OEM 调度器深度调研材料，涵盖 sched_ext VIP 分层机制与 Binder 优先级传播路径，建议补充到章节参考资料",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "荣耀 MUSCHED VIP 与 Binder 优先级传递深度调研 — 基于 USENIX OSDI '26 论文，分析 sched_ext full-switch 模式下 VIP 内部分层实现，Binder 优先级继承只传播 sched_policy+prio 的限制，以及 eBPF/rtmutex vendor hooks 两条实现路径",
+        "suggestion": "判断是否适合补充为 ch17.4 章节参考资料，特别是 sched_ext VIP 分层与厂商 Binder 优先级传播部分"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-02T06:15:23.038257",
+    "status": "pending"
   }
 ]

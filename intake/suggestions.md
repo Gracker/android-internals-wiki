@@ -134,3 +134,17 @@
 - **位置**：Bitmap 纹理上传量化描述
 - **问题**：1080p RGBA upload 约 4-8ms、4K 可达 20ms+ 这组数字缺少设备、GPU、内存带宽、解码格式和测试方法限定。
 - **建议**：补充同设备 microbenchmark 或 Perfetto trace，标注 bitmap 尺寸、Config、是否 hardware bitmap、是否调用 prepareToDraw() 以及 Upload Texture slice 的实际耗时。
+
+## [Task6 Review] 5.14 Android 17 ML Runtime 与 NPU 访问边界 — 2026-06-02
+- **类型**：需重写
+- **位置**：小结之后的“源码调研补充”块
+- **问题**：发布稿在小结后保留多段原始调研补充，包含推测位置、需进一步确认、未一手验证等编辑态内容，破坏正文收束和可发布性。
+- **建议**：Task2B 将已验证事实整合回正文或参考资料；无法确认的项目保留为 Task9 待复核问题，不放在发布正文中。
+- **review 日志**：logs/review/2026-06-02-10-review.md
+
+## [Task6 Review] 5.14 Android 17 ML Runtime 与 NPU 访问边界 — 2026-06-02
+- **类型**：需确认
+- **位置**：NNAPI HAL 版本演进口径
+- **问题**：正文与补充材料同时出现 HIDL 1.3、Android 12+ AIDL、API 35/37 等口径，读者难以判断 Android 17 范围内的准确结论。
+- **建议**：Task9 复核 Android 17/API 37 范围内 NN HAL 的可发布口径，Task2B 按复核结果统一正文和参考资料。
+- **review 日志**：logs/review/2026-06-02-10-review.md
