@@ -42,13 +42,13 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-14
-last_task6_at: "2026-05-14T14:09:00+08:00"
-task6_review_notes: "L1/L2 轻量修复 11 处；写作质量通过。Task9 已有 P1 代码竞态回炉，保持 task2b_pending。"
+reviewed_date: "2026-06-03"
+last_task6_at: "2026-06-03T07:08:52+08:00"
+task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
 task9_state: pending
 task2b_state: fixed
 last_task2a_at: "2026-05-14T13:14:00+08:00"
@@ -60,6 +60,8 @@ last_task9_review_log: "logs/deep-review/2026-05-14-13-deep-review.md"
 task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
+task6_reviewed_date: "2026-06-03"
+last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 ---
 
 # I/O 与网络优化案例集
@@ -90,9 +92,9 @@ last_task2b_notes: "frontmatter fallback：修复 PreferenceWriteBuffer flush �
 
 I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生命周期收尾时可能卡在 `QueuedWork.waitToFinish()`；接口耗时看起来是服务端慢，细拆后可能是 DNS、建连、Dispatcher 排队或缓存命中率低；大文件上传下载看起来只是“放后台”，上线后却占满 API 并发、耗电、失败重传、进度丢失。
 
-24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。本节保留三个综合案例：SP ANR、页面网络慢、大文件传输。每个案例都沿着“现象 → 观测 → 根因 → 改法 → 验收”展开，方便在项目里复用排查路径。
+24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。落到项目里，问题通常会混在一起：SP ANR、页面网络慢、大文件传输。三个案例都沿着“现象 → 观测 → 根因 → 改法 → 验收”展开，方便在项目里复用排查路径。
 
-参考资料只用来校准案例顺序：速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。正文不使用参考书原文，也不复用参考书代码。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 ## SharedPreferences ANR 治理实战
 
@@ -112,7 +114,7 @@ SP 的风险分两段。读取时，首次访问可能等待 XML 加载；写入
 | 调用来源 | SP 写入封装埋点、线程名、key 维度统计 | 哪些 key 写入频率高、单次 value 多大、是否在页面生命周期内连写 |
 | I/O 等待 | Perfetto 线程状态、StrictMode、磁盘事件 | 主线程是否等待后台 I/O，后台写入是否发生在切后台窗口 |
 
-StrictMode 可以在 Debug 包暴露主线程读写风险。它不能直接判断“这次 `apply()` 会不会在稍后引发 ANR”，但能把启动和点击路径上的同步 I/O 先清出来。24.1 已经展开 StrictMode、SP、DataStore 和 MMKV 的边界，这里只引用治理动作。[已验证: AOSP android-35 SDK sources, android/os/StrictMode.java；详见 24.1 节]
+StrictMode 可以在 Debug 包暴露主线程读写风险。它不能直接判断“这次 `apply()` 会不会在稍后引发 ANR”，但能把启动和点击路径上的同步 I/O 先清出来。StrictMode、SP、DataStore 和 MMKV 的完整边界见 24.1；这个案例关注启动和点击路径上的同步 I/O 清理。[已验证: AOSP android-35 SDK sources, android/os/StrictMode.java；详见 24.1 节]
 
 ### 根因
 
@@ -203,7 +205,7 @@ OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；�
 
 这个案例的问题在于网络层没有隔离请求等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。参考资料把速度问题拆成 CPU、缓存和任务调度；放到网络层，对应的治理动作是限制低优先级请求，不让它抢占首屏等待窗口。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
 
-HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。24.4 负责展开 HTTPDNS 的完整设计边界，这里保留案例处置动作。
+HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。HTTPDNS 的完整设计边界见 24.4；这个案例只取异步预取、缓存读取和兜底这三个处置动作。
 
 ### 改法
 
@@ -252,7 +254,7 @@ object HttpClients {
 
 大文件问题通常有两类：下载任务跑在普通 API client 上，导致接口排队；上传任务一次性把文件读进内存，低端机出现 OOM 或长时间 GC。断点续传、网络切换、后台限制、进度恢复没有设计时，用户看到的是进度卡住、重新上传、耗电明显增加。
 
-大文件不是普通请求的放大版。它占用更久的连接、更大的带宽窗口、更长的持久化状态和更复杂的失败恢复。24.6 处理缓存与压缩，24.7 处理离线队列，25.4 处理 WorkManager；这里把这些能力合成上传下载方案。
+大文件不是普通请求的放大版。它占用更久的连接、更大的带宽窗口、更长的持久化状态和更复杂的失败恢复。24.6 处理缓存与压缩，24.7 处理离线队列，25.4 处理 WorkManager；上传下载方案要把这些能力组合起来。
 
 ### 下载治理
 

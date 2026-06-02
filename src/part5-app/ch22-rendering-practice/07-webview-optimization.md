@@ -8,7 +8,7 @@ last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
 confidence: medium
 drafted_date: "2026-05-13"
-polish_count: 0
+polish_count: 1
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
@@ -46,17 +46,17 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task9_state: "pending"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_reviewed_date: "2026-05-13"
+reviewed_date: "2026-06-03"
+task6_reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-13T09:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-13-09-review.md"
-task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（Native/兜底术语、表达收束）；四层质检通过，无新增回炉项，转入 Task9。"
+last_task6_at: "2026-06-03T07:08:52+08:00"
+last_task6_review_log: "logs/review/2026-06-03-07-review.md"
+task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
@@ -97,7 +97,7 @@ last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束�
 
 WebView 页面慢，用户通常感知到的是白屏、点不动、滑不顺、偶发重载。对客户端来说，这类问题不能只交给前端，也不能只看 Android 的 View 渲染。WebView 打开一个页面时，会同时消耗宿主 Activity 创建、WebView provider 初始化、网络请求、HTML/CSS/JS 解析、Chromium 合成、Android 显示提交几段时间。
 
-本节只讨论工程侧怎么治理。WebView 的 Chromium 线程模型、GL Functor、`SurfaceControl` 子 Surface 和 Perfetto 识别方式，详见 7.11 与 18.13 节；这里把重点放在预热、复用、离线包、资源拦截、JS Bridge 和内存回收这些能落到代码里的动作。
+工程侧治理集中在预热、复用、离线包、资源拦截、JS Bridge 和内存回收这些能落到代码里的动作。WebView 的 Chromium 线程模型、GL Functor、`SurfaceControl` 子 Surface 和 Perfetto 识别方式，详见 7.11 与 18.13 节。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
@@ -257,7 +257,7 @@ WebView 运行在多进程或多账号隔离场景时，还要处理 data direct
 
 ### 缓存分层怎么选
 
-WebView 首屏慢，很多时候不是 Native 容器慢，而是主文档、CSS、JS 和首屏数据还在等网络。参考 Clippings 里的拆法，可以把 H5 缓存分为四层：
+WebView 首屏慢，很多时候来自主文档、CSS、JS 和首屏数据的网络等待。参考 Clippings 里的拆法，可以把 H5 缓存分为四层：
 
 | 层级 | 适合缓存什么 | 收益 | 主要风险 |
 |------|--------------|------|----------|
