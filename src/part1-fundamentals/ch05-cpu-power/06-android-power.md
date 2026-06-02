@@ -2,7 +2,7 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "AOSP android-16.0.0_r1; android-14.0.0_r1 historical TARE check; Android 17 / API 37 official docs"
@@ -13,30 +13,30 @@ reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-06-02"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T03:20:00+08:00"
+last_task9_at: "2026-06-03T02:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-02T08:50:00+08:00"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 review_round: 7
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-last_task9_review_log: "logs/deep-review/2026-06-02-03-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 03: needs-rework。P0 1 / P1 1 / P2 1；Tare 经济模型引用不存在的源码/API，Android 17 Energy Limiter 仍为研究假设，补充区 Power HAL 需统一为 AIDL 优先口径。"
+last_task9_review_log: "logs/deep-review/2026-06-03-02-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 02 复审：pass-tech-review。旧 P0/P1（TARE 伪 API、Android 17 Energy Limiter 研究假设）已移出正文结论；Power HAL AIDL、Doze/App Standby、JobDebugInfo 与 onVsyncIdle 口径复核通过；queue 无 pending，自动晋升 finalized。"
 reviewed_at: "2026-06-02T01:05:00+08:00"
 last_task6_at: "2026-06-02T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-10-review.md"
 task6_review_notes: "2026-06-02 10 Task6 revisiting-review: pass-light-edit。L1/L2 小修 15 处；无新增回炉项，送 Task9 复审。"
-p0: 1
-p1: 1
-p2: 1
+p0: 0
+p1: 0
+p2: 0
 task6_l1_l2_fixes: 15
 task6_l3_l4_issues: 0
 task6_new_rework: false
