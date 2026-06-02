@@ -1197,7 +1197,14 @@
       "p3": 1,
       "reviewed_at": "2026-05-14T13:30:11+08:00",
       "log": "logs/deep-review/2026-05-14-13-deep-review.md",
-      "summary": "P1 2：堆栈尾部匹配/根异常单独指纹会导致错误聚合；P3 1：ML 阈值和效果数据已有 suggestions 覆盖。"
+      "summary": "P1 2：堆栈尾部匹配/根异常单独指纹会导致错误聚合；P3 1：ML 阈值和效果数据已有 suggestions 覆盖。",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 8,
+      "task6_l3_l4_issues": 0,
+      "task6_reviewed_at": "2026-06-03T03:06:00+08:00",
+      "task6_log": "logs/review/2026-06-03-03-review.md",
+      "task6_new_rework": false,
+      "task6_note": "L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
     },
     "20.9": {
       "task9_result": "needs-rework",
@@ -1409,10 +1416,10 @@
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-19T12:07:00+08:00",
-      "task6_log": "logs/review/2026-05-19-12-review.md",
+      "task6_reviewed_at": "2026-06-03T03:06:00+08:00",
+      "task6_log": "logs/review/2026-06-03-03-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；正文无需修改，锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
+      "task6_note": "L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
     },
     "24.9": {
       "p0": 0,
@@ -1437,19 +1444,19 @@
       "p1": 0,
       "p2": 0,
       "p3": 0,
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task6_result": "pass-light-edit",
-      "task6_l1_l2_fixes": 1,
+      "task6_l1_l2_fixes": 0,
       "task6_l3_l4_issues": 0,
-      "task6_reviewed_at": "2026-05-15T20:08:00+08:00",
-      "task6_log": "logs/review/2026-05-15-20-review.md",
+      "task6_reviewed_at": "2026-06-03T03:06:00+08:00",
+      "task6_log": "logs/review/2026-06-03-03-review.md",
       "task6_new_rework": false,
-      "auto_finalized": true,
-      "auto_promoted_at": "2026-05-15T20:08:00+08:00",
+      "auto_finalized": false,
       "summary": "Task2B Lite 修复 ApplicationStartInfo completion listener / FULLY_DRAWN 语义，并替换失效 appstartup 官方文档链接；回流 Task6。",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "last_task2b_lite_at": "2026-06-02"
+      "last_task2b_lite_at": "2026-06-02",
+      "task6_note": "L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
     },
     "1.18": {
       "p0": 0,
@@ -2381,24 +2388,27 @@
   "total_review_sections": 283,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T00:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-03T03:06:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-02T18:08:00+08:00",
+    "reviewed_at": "2026-06-03T03:06:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch20-stability/08-crash-aggregation.md",
+      "src/part5-app/ch21-startup/08-startup-monitoring.md",
+      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
     ],
-    "log": "logs/review/2026-06-02-18-review.md",
-    "review_log": "logs/review/2026-06-02-18-review.md",
+    "log": "logs/review/2026-06-03-03-review.md",
+    "review_log": "logs/review/2026-06-03-03-review.md",
     "pass_light_edit": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "needs_rework": [],
     "auto_promoted": [],
@@ -3248,24 +3258,23 @@
     },
     "21.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-15T20:08:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-06-03T03:06:00+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_review_log": "logs/review/2026-05-15-20-review.md",
+      "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/08-startup-monitoring.md",
       "title": "启动监控与度量",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "auto_promoted": true,
-      "auto_promoted_at": "2026-05-15T20:08:00+08:00",
+      "reviewed_date": "2026-06-03",
       "task2b_result": "fixed-lite",
       "task2b_state": "fixed",
-      "last_task2b_lite_at": "2026-06-02"
+      "last_task2b_lite_at": "2026-06-02",
+      "task6_review_notes": "L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
     },
     "21.9": {
       "status": "finalized",
@@ -3938,17 +3947,25 @@
     },
     "20.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T13:30:11+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "queue_priority": 85,
       "task2b_state": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-06-03T00:50:00+08:00",
-      "task2b_review_notes": "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。"
+      "task2b_review_notes": "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。",
+      "title": "崩溃聚合与归因分析",
+      "file": "src/part5-app/ch20-stability/08-crash-aggregation.md",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T03:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+      "task6_review_notes": "L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
     },
     "20.9": {
       "status": "ready-for-review",
@@ -4435,20 +4452,20 @@
       "title": "RenderEffect 与 RuntimeShader 性能实践",
       "file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
       "gap_score": 17,
       "gap_source": "素材驱动/AOSP结构",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "last_task6_at": "2026-05-15T15:11:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-15-review.md",
-      "task6_review_notes": "2026-05-15 Task6：pass-light-edit。L1/L2 小修 10 处；无新增 L3/L4 回炉项；进入 Task9 技术复审。",
+      "reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T03:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+      "task6_review_notes": "L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task9_reviewed_date": "2026-05-15",
@@ -7388,36 +7405,45 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-02-18-review.md",
+  "last_task6_review": "logs/review/2026-06-03-03-review.md",
   "last_task6_sections": [
-    "6.1",
-    "19.24"
+    "20.8",
+    "21.8",
+    "22.10"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
-  "last_task6_at": "2026-06-02T18:08:00+08:00",
+  "last_task6_at": "2026-06-03T03:06:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-06-02T18:08:00+08:00",
+    "reviewed_at": "2026-06-03T03:06:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch20-stability/08-crash-aggregation.md",
+      "src/part5-app/ch21-startup/08-startup-monitoring.md",
+      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
     ],
-    "log": "logs/review/2026-06-02-18-review.md",
-    "review_log": "logs/review/2026-06-02-18-review.md",
+    "log": "logs/review/2026-06-03-03-review.md",
+    "review_log": "logs/review/2026-06-03-03-review.md",
     "pass_light_edit": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "needs_rework": [],
     "auto_promoted": [],
-    "auto_finalized": []
+    "auto_finalized": [],
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 0,
+    "new_rework": false
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -7427,11 +7453,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-06-02T18:08:00+08:00",
-  "task6_last_review_log": "logs/review/2026-06-02-18-review.md",
+  "task6_last_review_at": "2026-06-03T03:06:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-03-03-review.md",
   "task6_last_review_sections": [
-    "6.1",
-    "19.24"
+    "20.8",
+    "21.8",
+    "22.10"
   ],
   "sections_status": {
     "22.11": {
@@ -9631,33 +9658,42 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-02T18:08:00+08:00",
+    "reviewed_at": "2026-06-03T03:06:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "files": [
-      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part5-app/ch20-stability/08-crash-aggregation.md",
+      "src/part5-app/ch21-startup/08-startup-monitoring.md",
+      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
     ],
-    "log": "logs/review/2026-06-02-18-review.md",
-    "review_log": "logs/review/2026-06-02-18-review.md",
+    "log": "logs/review/2026-06-03-03-review.md",
+    "review_log": "logs/review/2026-06-03-03-review.md",
     "pass_light_edit": [
-      "6.1",
-      "19.24"
+      "20.8",
+      "21.8",
+      "22.10"
     ],
     "needs_rework": [],
     "auto_promoted": [],
-    "auto_finalized": []
+    "auto_finalized": [],
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 0,
+    "new_rework": false
   },
   "task6_last_review_files": [
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -10171,8 +10207,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "6.1",
-    "19.24"
+    "20.8",
+    "21.8",
+    "22.10"
   ],
   "task2b_progress": [
     {
@@ -10290,7 +10327,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+  "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -11320,7 +11357,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-06-02T18:08:00+08:00",
+  "last_task6_review_at": "2026-06-03T03:06:00+08:00",
   "last_task6_review_section": "6.1, 19.24",
   "section_1_22": {
     "section": "1.22",
@@ -11426,8 +11463,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "6.1",
-    "19.24"
+    "20.8",
+    "21.8",
+    "22.10"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -11460,8 +11498,9 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_files": [
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -11650,7 +11689,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-06-02T13:05:00+08:00",
+  "last_task6_reviewed_at": "2026-06-03T03:06:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -12364,8 +12403,9 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part5-app/ch21-startup/08-startup-monitoring.md",
+    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -12889,8 +12929,9 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_sections": [
-    "6.1",
-    "19.24"
+    "20.8",
+    "21.8",
+    "22.10"
   ],
   "last_task2b_section": "22.12",
   "last_task2b_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",

@@ -26,8 +26,8 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -39,14 +39,12 @@ task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-02"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_reviewed_date: "2026-05-15"
+reviewed_date: "2026-06-03"
+task6_reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-15T20:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-15-20-review.md"
-auto_promoted_by: openclaw-task6
-auto_promoted_at: "2026-05-15T20:08:00+08:00"
-
+last_task6_at: "2026-06-03T03:06:00+08:00"
+last_task6_review_log: "logs/review/2026-06-03-03-review.md"
+task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 ---
 
 # 启动监控与度量
@@ -227,7 +225,7 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。[已验证: Android Developers reference, API 35; Task9 确认 2026-05-17]
 
-`addApplicationStartInfoCompletionListener()` 的完成回调以 first frame drawn 为边界，不等待业务调用 `Activity.reportFullyDrawn()`。如果要用平台时间戳校准 TTFD / FULLY_DRAWN，必须先在业务内容真正可用后调用 `reportFullyDrawn()`，再通过 `getHistoricalProcessStartReasons()` 或后续拿到的 `ApplicationStartInfo` 副本读取 `START_TIMESTAMP_FULLY_DRAWN`；否则这个时间戳可能不存在。[已验证: Android Developers ActivityManager/ApplicationStartInfo reference, API 35]
+`addApplicationStartInfoCompletionListener()` 的完成回调以 first frame drawn 为边界，不等待业务调用 `Activity.reportFullyDrawn()`。如果要用平台时间戳校准 TTFD / FULLY_DRAWN，必须先在业务内容可用后调用 `reportFullyDrawn()`，再通过 `getHistoricalProcessStartReasons()` 或后续拿到的 `ApplicationStartInfo` 副本读取 `START_TIMESTAMP_FULLY_DRAWN`；否则这个时间戳可能不存在。[已验证: Android Developers ActivityManager/ApplicationStartInfo reference, API 35]
 
 它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖 Android 15+ 设备，线上监控仍需要保留 Android 10-14 的兼容采集路径。
 
