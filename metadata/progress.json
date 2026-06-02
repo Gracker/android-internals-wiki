@@ -2404,8 +2404,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T04:08:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-03T04:50:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2661,9 +2661,10 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-03T02:50:00+08:00",
+  "last_task2b_at": "2026-06-03T04:50:00+08:00",
   "last_task2b_sections": [
-    "22.12"
+    "22.7",
+    "24.8"
   ],
   "last_task2b_action": "frontmatter backlog fallback rework",
   "sections": {
@@ -9708,7 +9709,7 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "last_task2b_run": "2026-06-03T02:50:00+08:00",
+  "last_task2b_run": "2026-06-03T04:50:00+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
@@ -10048,6 +10049,27 @@
         "task9 P2 系统负载过滤判据过强"
       ],
       "result": "fixed"
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "sections": [
+        "22.7",
+        "24.8"
+      ],
+      "files": [
+        "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+        "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
+      ],
+      "issues": [
+        "WebView.destroy() 示例补创建线程约束，归还池和释放路径补 about:blank 异步清理边界",
+        "WebSettings.getDefaultUserAgent() 预热边界收窄为 provider/native library，不写成 renderer/AwContents/compositor 预创建",
+        "shouldInterceptRequest() 增加 main frame 与子资源 manifest 白名单边界",
+        "onRenderProcessGone() 重建示例增加 Activity/容器生命周期 guard 与 renderer OOM 重试预算",
+        "PreferenceWriteBuffer flush 后不再无条件清空 pending，只移除本轮 snapshot 已落盘且当前值未变化的 key，避免并发新增写入丢失"
+      ],
+      "result": "fixed-returned-to-task6"
     }
   ],
   "task2a_result": "processed-draft",
@@ -10393,6 +10415,26 @@
       "priority": 95,
       "result": "fixed-lite",
       "summary": "修正 OkHttp 连接复用 Address 绝对化口径，补 HTTP/2 coalescing 条件；HTTPDNS Dns.lookup 改为缓存读取模型，补异步预取、TTL、失败隔离与 bootstrap client 边界。"
+    },
+    {
+      "section": "22.7",
+      "file": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "at": "2026-06-03T04:50:00+08:00",
+      "by": "task2b-main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "priority": 95,
+      "result": "fixed-returned-to-task6",
+      "summary": "修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
+    },
+    {
+      "section": "24.8",
+      "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "at": "2026-06-03T04:50:00+08:00",
+      "by": "task2b-main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "priority": 95,
+      "result": "fixed-returned-to-task6",
+      "summary": "修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
@@ -11008,6 +11050,41 @@
         "收窄 runOnCommit 为事务执行完成回调，补 reordering 后置风险",
         "补 predictive back mTransitioningOp 版本差异，避免把 release 分支行为反推到 Fragment 1.4/1.6"
       ]
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "22.7",
+      "file": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "title": "WebView 性能优化实战",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "WebView.destroy() 示例补创建线程约束，归还池和释放路径补 about:blank 异步清理边界",
+        "WebSettings.getDefaultUserAgent() 预热边界收窄为 provider/native library，不写成 renderer/AwContents/compositor 预创建",
+        "shouldInterceptRequest() 增加 main frame 与子资源 manifest 白名单边界",
+        "onRenderProcessGone() 重建示例增加 Activity/容器生命周期 guard 与 renderer OOM 重试预算"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-13-09-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "24.8",
+      "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "title": "I/O 与网络优化案例集",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "PreferenceWriteBuffer flush 后不再无条件清空 pending，只移除本轮 snapshot 已落盘且当前值未变化的 key，避免并发新增写入丢失"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
     }
   ],
   "section_18_23": {
@@ -11127,7 +11204,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 15,
+  "task2b_total_fixed": 17,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -11745,13 +11822,13 @@
       "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-06-03T02:50:00+08:00",
+  "task2b_last_run": "2026-06-03T04:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
     "p85": 0,
     "total": 0,
-    "source": "queue allowed review sources after 2026-06-03T02:50 task2b main; frontmatter backlog remaining 57"
+    "source": "queue allowed review sources after 2026-06-03T04:50 task2b main; frontmatter backlog remaining 54"
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -12014,12 +12091,81 @@
       "queue_items_completed": 1,
       "returned_to": "task6_pending",
       "log": "logs/rework/2026-06-02-12-task2b-main.md"
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "22.7",
+      "file": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "title": "WebView 性能优化实战",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "WebView.destroy() 示例补创建线程约束，归还池和释放路径补 about:blank 异步清理边界",
+        "WebSettings.getDefaultUserAgent() 预热边界收窄为 provider/native library，不写成 renderer/AwContents/compositor 预创建",
+        "shouldInterceptRequest() 增加 main frame 与子资源 manifest 白名单边界",
+        "onRenderProcessGone() 重建示例增加 Activity/容器生命周期 guard 与 renderer OOM 重试预算"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-13-09-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "24.8",
+      "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "title": "I/O 与网络优化案例集",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "PreferenceWriteBuffer flush 后不再无条件清空 pending，只移除本轮 snapshot 已落盘且当前值未变化的 key，避免并发新增写入丢失"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
     }
   ],
   "last_task2b_completed": [
-    "22.3"
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "22.7",
+      "file": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "title": "WebView 性能优化实战",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "WebView.destroy() 示例补创建线程约束，归还池和释放路径补 about:blank 异步清理边界",
+        "WebSettings.getDefaultUserAgent() 预热边界收窄为 provider/native library，不写成 renderer/AwContents/compositor 预创建",
+        "shouldInterceptRequest() 增加 main frame 与子资源 manifest 白名单边界",
+        "onRenderProcessGone() 重建示例增加 Activity/容器生命周期 guard 与 renderer OOM 重试预算"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-13-09-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    },
+    {
+      "at": "2026-06-03T04:50:00+08:00",
+      "lane": "main",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "section": "24.8",
+      "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "title": "I/O 与网络优化案例集",
+      "result": "fixed-returned-to-task6",
+      "issues_fixed": [
+        "PreferenceWriteBuffer flush 后不再无条件清空 pending，只移除本轮 snapshot 已落盘且当前值未变化的 key，避免并发新增写入丢失"
+      ],
+      "queue_items_completed": 0,
+      "returned_to": "task6_pending",
+      "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    }
   ],
-  "last_task2b_completed_at": "2026-06-02T12:54:00+08:00",
+  "last_task2b_completed_at": "2026-06-03T04:50:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -12339,37 +12485,39 @@
     }
   ],
   "last_task2b_files": [
-    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+    "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+    "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
   ],
   "last_task2b_completed_entry": {
-    "at": "2026-06-02T12:54:00+08:00",
+    "at": "2026-06-03T04:50:00+08:00",
     "lane": "main",
-    "source": "task6-review",
-    "section": "22.3",
-    "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "title": "Jetpack Compose 性能优化",
-    "result": "fixed",
+    "source": "frontmatter backlog fallback / task9-deep-review",
+    "section": "24.8",
+    "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+    "title": "I/O 与网络优化案例集",
+    "result": "fixed-returned-to-task6",
     "issues_fixed": [
-      "删除 outline 后与参考资料前后的 AIW 源码调研/调研补遗块，发布正文不再出现编辑态材料",
-      "统一 Pausable Composition 为 Compose Foundation 版本能力，不写成 Android 17 平台能力",
-      "AOSP master/androidx-main 未闭合源码锚点不作为 Android 17/API 37 正文结论"
+      "PreferenceWriteBuffer flush 后不再无条件清空 pending，只移除本轮 snapshot 已落盘且当前值未变化的 key，避免并发新增写入丢失"
     ],
-    "queue_items_completed": 1,
+    "queue_items_completed": 0,
     "returned_to": "task6_pending",
-    "log": "logs/rework/2026-06-02-12-task2b-main.md"
+    "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+    "log": "logs/rework/2026-06-03-04-task2b-main.md"
   },
   "task2b_last_rework": {
-    "at": "2026-06-03T02:50:00+08:00",
+    "at": "2026-06-03T04:50:00+08:00",
     "lane": "main",
     "source": "frontmatter backlog fallback",
     "sections": [
-      "22.12"
+      "22.7",
+      "24.8"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md"
+      "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
     ],
     "result": "fixed-returned-to-task6",
-    "log": "logs/rework/2026-06-03-02-task2b-main.md"
+    "log": "logs/rework/2026-06-03-04-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
     "16.5",
@@ -12718,7 +12866,7 @@
     "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
   },
   "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
-  "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
+  "last_task2b_log": "logs/rework/2026-06-03-04-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-03T03:35:00+08:00",
     "sections": [
@@ -13031,9 +13179,9 @@
     "22.12",
     "24.4"
   ],
-  "last_task2b_section": "22.12",
-  "last_task2b_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-  "last_task2b_result": "fixed",
+  "last_task2b_section": "24.8",
+  "last_task2b_file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+  "last_task2b_result": "fixed-returned-to-task6",
   "section_6_1": {
     "section": "6.1",
     "title": "Android 存储架构",
