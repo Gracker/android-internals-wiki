@@ -514,6 +514,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-02T03:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-02T08:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "completion_reason": "Task9 P0/P1/P2 回炉完成：TARE 改为 Android 14 历史实现边界，删除 Android 17 Energy Limiter 未验证段，Power HAL 统一为 AIDL IPower 优先口径。"
   }
 ]

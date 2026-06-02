@@ -2376,6 +2376,13 @@
       "task6_log": "logs/review/2026-06-01-16-review.md",
       "task6_new_rework": true,
       "task6_note": "厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue。"
+    },
+    "5.6": {
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task2b_fixed_at": "2026-06-02T08:50:00+08:00",
+      "task2b_note": "Task9 deep-review P0/P1/P2 已修复：TARE 历史边界、Energy Limiter 删除、Power HAL AIDL 口径。",
+      "pipeline_stage": "task6_pending"
     }
   },
   "total_review_sections": 281,
@@ -2666,7 +2673,7 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-02T02:50:00+08:00",
+  "last_task2b_at": "2026-06-02T08:50:00+08:00",
   "last_task2b_sections": [
     "20.4"
   ],
@@ -6294,17 +6301,21 @@
       "title": "Android 功耗管理",
       "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-24",
       "last_task6_at": "2026-05-24T20:14:35+08:00",
       "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "queue_priority": 85
+      "task2b_state": "fixed",
+      "queue_priority": 85,
+      "task2b_result": "fixed",
+      "task2b_fixed_at": "2026-06-02T08:50:00+08:00",
+      "last_task2b_at": "2026-06-02T08:50:00+08:00",
+      "last_task2b_note": "Task9 deep-review P0/P1/P2 已定向修复，送回 Task6/Task9 复审。"
     },
     "7.2": {
       "section": "7.2",
@@ -12704,5 +12715,8 @@
   "last_task6_review_sections": [
     "25.9",
     "21.1"
-  ]
+  ],
+  "last_task2b_section": "5.6",
+  "last_task2b_file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+  "last_task2b_result": "fixed"
 }
