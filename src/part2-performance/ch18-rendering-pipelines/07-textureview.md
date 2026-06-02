@@ -15,9 +15,9 @@ sources:
     path: "TextureView reference"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: "pending"
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-02
@@ -28,7 +28,7 @@ task9_reviewed_date: "2026-06-02"
 task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
 last_task2b_lite_at: "2026-05-31"
-last_task9_at: "2026-06-02T01:20:00+08:00"
+last_task9_at: "2026-06-03T07:20:00+08:00"
 last_task6_audit: 2026-05-19
 last_task9_audit: 2026-05-20
 last_task6_at: "2026-06-02T02:05:00+08:00"
@@ -38,9 +38,11 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 task9_result: auto-fixed
-last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
 last_task9_autofix_at: "2026-06-02"
 task9_review_notes: "2026-06-02 Task9 auto-fix：将 TextureView 成本口径从额外拷贝/固定 2 倍内存修正为额外纹理采样、宿主窗口再承载合成结果；回到 Task6 复审。"
+last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 ---
 
 <!-- outline-start -->
