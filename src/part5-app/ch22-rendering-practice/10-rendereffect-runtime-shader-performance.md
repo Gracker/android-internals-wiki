@@ -5,32 +5,32 @@ section: "22.10"
 status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP master + Android Developers docs"
+last_verified: "2026-06-03"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs"
 confidence: high
 tags: ["rendereffect", "runtimeshader", "agsl", "hwui", "gpu"]
 related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 last_task6_at: "2026-05-19T12:07:00+08:00"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-19"
 reviewed_by: "openclaw-task6"
-task9_state: reviewed
+task9_state: pending
 last_task6_review_log: "logs/review/2026-05-19-12-review.md"
 task6_review_notes: "2026-05-19 12:07 Task6 复审：pass-light-edit。L1/L2 无需正文修改；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java"
+    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderEffect.java"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RuntimeShader.java"
+    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RuntimeShader.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java"
+    path: "AOSP android-16.0.0_r1 frameworks/base/core/java/android/view/View.java"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java"
+    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderNode.java"
   - type: official
     path: "https://developer.android.com/reference/android/graphics/RenderEffect"
   - type: official
@@ -54,16 +54,15 @@ sources:
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-last_task2b_at: '2026-05-20T11:12:00+08:00'
+task2b_state: fixed
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T11:41:31+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 0 / P1 1 / P2 2；P1 为 RuntimeShader 示例中 setRenderEffect 失效行为注释与 AOSP View.setRenderEffect 源码不一致。"
 task2b_result: "fixed"
-last_task2b_at: "2026-05-19T11:32:33+08:00"
+last_task2b_at: "2026-06-03T00:50:00+08:00"
+task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
@@ -122,9 +121,9 @@ RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处�
 
 `RenderEffect` 从 Android 12（API 31）开始提供。AOSP 中 `RenderEffect` 的类注释把它定义为一个中间渲染步骤：效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode。`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()` 后触发属性失效，下一帧重新参与绘制。`RenderNode.setRenderEffect()` 的注释还明确说明：以 blur 为例，内容会先绘制到独立 layer，再对这块 layer 做模糊处理。
 
-[已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-[已验证: AOSP master, frameworks/base/core/java/android/view/View.java]
-[已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderNode.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
 适合用 `RenderEffect` 的场景有三个共同点：效果区域可控、内容变化频率不高、视觉收益足以覆盖 GPU 成本。
 
@@ -183,8 +182,8 @@ fun View.applyBlurEffectIfSupported(
 
 `RuntimeShader` 从 Android 13（API 33）开始提供。AOSP `RuntimeShader` 注释说明，AGSL 用于在 Canvas 或 RenderNode 绘制管线的某个阶段计算每个像素颜色，并不定义完整 GPU 管线阶段。官方文档也说明，shader uniform 可以通过 `eval()` 按坐标读取输入 shader；`RenderEffect.createRuntimeShaderEffect(shader, uniformShaderName)` 会把安装该效果的 RenderNode 内容绑定到指定 uniform 上。
 
-[已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
-[已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
 [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/agsl/using-agsl]
 
 AGSL 适合做系统 blur API 覆盖不到的小范围像素处理，例如水波、局部遮罩、扫描线、渐变扰动。它不适合把复杂图像算法直接搬进每帧 UI 渲染里。每一次 `input.eval(coord)` 都是一次输入采样；多点采样、循环采样、多个输入 shader 叠加，会把每像素工作量推高。
@@ -217,12 +216,12 @@ class HighlightEffect {
     fun applyTo(view: View, progress: Float) {
         shader.setFloatUniform("size", view.width.toFloat(), view.height.toFloat())
         shader.setFloatUniform("progress", progress.coerceIn(0f, 1f))
-        // setRenderEffect() 不会自动触发重绘，需要显式 invalidate()
+        // 同一个 RenderEffect 已安装后，更新 uniform 不会请求下一帧
         if (!effectApplied) {
             view.setRenderEffect(effect)
             effectApplied = true
         } else {
-            view.invalidate()
+            view.postInvalidateOnAnimation()
         }
     }
 
@@ -233,7 +232,7 @@ class HighlightEffect {
 }
 ```
 
-这段示例只做一次输入采样，并把动态参数限制在 `size` 和 `progress` 两个 uniform 上。进入真实工程后，还要补三个保护：API 33 以下走静态效果或无效果；页面不可见时清空效果；低端机或省电模式下关闭动态 shader。
+这段示例只做一次输入采样，并把动态参数限制在 `size` 和 `progress` 两个 uniform 上。`View.setRenderEffect()` 在 RenderNode 属性变化时会触发属性失效；同一个 `RenderEffect` 已经安装后，后续只改 `RuntimeShader` uniform 不会自动请求下一帧，所以动画场景要显式调用 `postInvalidateOnAnimation()`，或交给动画框架驱动重绘。进入工程后，还要补三个保护：API 33 以下走静态效果或无效果；页面不可见时清空效果；低端机或省电模式下关闭动态 shader。
 
 Shader 编译和缓存策略不要写成“加载页面时立刻创建所有 shader”。更稳的做法是按场景懒创建、对象级缓存、页面销毁时释放引用。需要预热时，只预热会在首屏短时间内出现的效果，避免把启动阶段变成 GPU shader 初始化阶段。
 
@@ -261,7 +260,7 @@ RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderTh
 
 1. **先看 FrameTimeline**：找开启效果前后同一交互的 jank 数、actual duration、present 延迟。不要只看平均帧耗时，P90 / P99 更能暴露 blur 和 shader 尖峰。
 2. **再看 UI Thread 与 RenderThread**：UI Thread 短而 RenderThread `DrawFrame` 拉长，通常指向绘制、纹理上传或 GPU 提交；UI Thread 自身很长，则先回到布局、绘制命令和主线程任务排查。
-3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 要求声明支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但具体 counter 名称和精度因厂商实现而异，不能假设所有设备都有统一的 `gpu_busy` counter。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
+3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 约束声明支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但不标准化 `gpu_busy` 这个名称，也不保证所有设备都有同精度的 GPU 利用率。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
 4. **做开关对照**：同一设备、同一页面、同一脚本分别跑“无效果 / 小半径 / 大半径 / 静态预渲染”，确认变化来自效果本身，而不是网络、数据加载或动画时序。
 
 AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把它定位为 Android 图形性能分析工具，支持 OpenGL ES 和 Vulkan，能查看帧分析、GPU 使用和 draw call。线上问题仍应先靠 Perfetto、`dumpsys gfxinfo`、应用埋点和灰度开关定位，复现后再用 AGI 深查。
@@ -279,7 +278,7 @@ AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把
 - **减少输入变化**：内容每帧变化时，优先拆成两层：静态背景层做效果，动态内容层直接绘制。
 - **避免链式叠加**：blur、color filter、RuntimeShader、alpha、clip 同时叠加时，每加一层都要重新跑一轮 Trace 对照。
 - **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；资源策略也要按图片压缩、格式选择和使用频率拆开考虑。
-- **建立降级开关**：Android 16+ 可结合 2.10 节的 GPU Headroom 做运行时质量降级 [待验证: 需 Task 9 核对 GPU Headroom 的版本边界、采样口径和稳定性]；旧版本用设备档位、温控状态、帧耗时和灰度开关兜底。
+- **建立降级开关**：Android 16+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可把 GPU Headroom 作为运行时质量降级信号之一；调用侧要处理 `UnsupportedOperationException`，并遵守平台定义的最小采样间隔。旧版本或不支持该能力的设备，继续用设备档位、温控状态、帧耗时和灰度开关兜底。
 - **写清版本边界**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。API guard 要包住所有调用点，包括清空效果。
 
 ## 扩展
@@ -308,10 +307,10 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。�
 
 ## 参考资料
 
-- [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-- [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
-- [已验证: AOSP master, frameworks/base/core/java/android/view/View.java]
-- [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/RenderNode.java]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
 - [已验证: 官方文档, developer.android.com/reference/android/graphics/RenderEffect]
 - [已验证: 官方文档, developer.android.com/reference/android/graphics/RuntimeShader]
 - [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/agsl/using-agsl]
