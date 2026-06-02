@@ -30,18 +30,18 @@ sources:
   - type: book-structure
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [fragment, rendering, jank, startup, androidx]
-related_chapters: ["7.4", "8.4", "13.3", "18.2", "22.1", "22.3"]
+related_chapters: ["7.17", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T07:30:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-16-07-deep-review.md"
-task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。2026-06-03 task2b: 已改用 AndroidX fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit / executePendingTransactions / predictive back 边界，回到 Task6 复审。"
-task6_state: reviewed
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T05:27:37+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -52,8 +52,8 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: task9_pending
-
+pipeline_stage: task6_pending
+last_task9_autofix_at: "2026-06-03"
 ---
 
 # 22.12 FragmentTransaction 提交链路与页面切换性能
