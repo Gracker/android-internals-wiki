@@ -35,20 +35,22 @@ task6_result: pass-light-edit
 reviewers: []
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: "auto-fixed"
 task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-05-22"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T06:24:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-06-audit.md"
+task9_reviewed_date: "2026-06-02"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-02T17:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T06:24:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-06-audit.md"
-task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P0 1：FBE System/User DE/CE 目录与伪源码片段不符合 AOSP vold FsCrypt/Utils；P1 1：I/O 优先级段落把 AOSP blkio/task profiles 误写成 cgroup v2 IO controller。"
+task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修复 frontmatter closing delimiter；复核 FBE、blkio/task_profiles、FUSE passthrough 口径未发现新增 P0/P1；回到 Task6 复审。"
 
-last_task2b_at: "2026-05-22T07:21:00+08:00"---
+last_task2b_at: "2026-05-22T07:21:00+08:00"
+last_task9_autofix_at: "2026-06-02"
+---
 
 <!-- outline-start -->
 - 🔹 Android 存储架构：UFS/eMMC → Block Layer → 文件系统 → Scoped Storage / MediaStore

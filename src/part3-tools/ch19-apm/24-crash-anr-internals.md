@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
@@ -28,16 +28,16 @@ last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task9_result: "auto-fixed"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-31"
-task9_reviewed_date: "2026-05-25"
+task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-01T00:20:00+08:00"
-task9_review_notes: "2026-06-01 Task9 deep review: auto-fixed。修正 ProfilingManager 常量/结果 API、API30 退出历史版本表，并把 AOSP main 源码 URL 固定到 android16-release；回到 Task6 复审。"
+last_task9_at: "2026-06-02T17:23:00+08:00"
+task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
 last_task6_audit: "2026-05-23"
 last_task6_at: "2026-06-02T02:05:00+08:00"
 last_task9_audit: 2026-05-25
@@ -48,10 +48,10 @@ task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 �
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
-last_task9_review_log: "logs/deep-review/2026-06-01-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
-last_task9_autofix_at: "2026-06-01"
+last_task9_autofix_at: "2026-06-02"
 ---
 
 
@@ -501,7 +501,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 **路径**：`/data/anr/`（现代版本按 `anr_<yyyy-MM-dd-HH-mm-ss-SSS>` 生成单次 ANR trace 文件，权限 0600；早期版本存在 `traces.txt` 路径，文件名和保留策略跨版本不同）
 
-**权限约束**：所有应用可写但不可读（安全加固）。
+**权限约束**：普通 App 不能直接读写。AOSP android16-release `init.rc` 以 `0775 system system` 创建 `/data/anr`，ANR trace 由系统侧写入；量产 App 只能通过 `ApplicationExitInfo`、bugreport、root/厂商合作等路径获取。
 
 **APM 获取方式**：
 | 方式 | 权限要求 | 可靠性 | 备注 |
@@ -606,11 +606,12 @@ API 36：
 
 API 36.1：
 - `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`：app 请求运行时 trace
+- `TRIGGER_TYPE_KILL_FORCE_STOP` / `TRIGGER_TYPE_KILL_RECENTS` / `TRIGGER_TYPE_KILL_TASK_MANAGER`：用户主动停止、移出最近任务或任务管理器停止触发
 
 API 37 (Android 17)：
 - `TRIGGER_TYPE_OOM`：OOM 发生时
 - `TRIGGER_TYPE_COLD_START`：冷启动时
-- `TRIGGER_TYPE_KILL_*` / `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT`：各类 kill 和异常场景
+- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT`：CPU 过量、系统异常检测和兼容性异常场景
 
 **使用模式**：
 ```java
@@ -641,14 +642,14 @@ profilingManager.registerForAllProfilingResults(executor) { result ->
 | Trigger-based Profiling | ❌ | ❌ | ❌ | `ProfilingTrigger` ✅ |
 | 系统 trace 路径 | Perfetto / bugreport | Perfetto / bugreport + `ApplicationExitInfo` | `ProfilingManager` + Perfetto | trigger-based profiling + Perfetto |
 
-### 13.5 Native Crash Signal Handler 边界（未经一手验证）
+### 13.5 Native Crash Signal Handler 边界
 
 - Signal handler 必须是 async-signal-safe：不能调用 `malloc`/`free`、不能使用锁、不能分配内存
-- Crashpad Android client 使用 out-of-process handler 模型：crash 时 fork handler 进程，写入 minidump
+- Crashpad Linux/Android client 使用 out-of-process handler 模型：客户端和 handler 通过 socket 注册；崩溃时 signal handler 把异常信息位置发给 handler，由 handler 抓取进程状态并写 minidump。
 - `sigaction()` 设置 `SA_SIGINFO` 获取 signal number 和 siginfo_t 地址
 
-源码路径（未经一手验证）：
-- `external/crashpad/client/crashpad_client.cc`
+源码/文档锚点：
+- Crashpad Overview Design：Linux/Android registration 与 crash capture 流程
 - `bionic/libc/include/signal.h`
 
 <!-- AIW-源码调研-2026-05-15 -->
