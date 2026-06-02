@@ -1,13 +1,13 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
 chapter: "5.14"
-task6_review_notes: "2026-06-01 18 Task6 revisiting-review: needs-rework。小修 section metadata / runtime 译法 / 落地措辞；小结后源码调研补充未整合，且 NNAPI HAL 版本口径混用，已写入 queue。"
+task6_review_notes: "2026-06-02 10 Task6 revisiting-review: needs-rework。L1/L2 小修 10 处；小结后源码调研补充仍为编辑态，且 NNAPI HAL 版本口径需复核，已更新 queue.json（priority 90）。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
 section: "5.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-06-01"
+last_verified: "2026-06-02"
 last_verified_against: "Android 17 / API 37 PackageManager reference, Android 17 release notes, source.android.com NNAPI Runtime docs, LiteRT Next docs"
 confidence: medium
 sources:
@@ -41,11 +41,11 @@ gap_source: "素材驱动/官方文档/AOSP结构"
 gap_score: 18
 material_count: 5
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
+reviewed_date: "2026-06-02"
 task6_state: reviewed
 task6_result: needs-rework
-last_task6_at: "2026-06-01T18:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-18-review.md"
+last_task6_at: "2026-06-02T10:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-10-review.md"
 task9_state: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
@@ -53,13 +53,19 @@ last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
 task2b_state: pending
-task2b_result: fixed-lite
+task2b_result: fixed
 pipeline_stage: task2b_pending
 last_task2b_lite_at: "2026-06-01"
+last_task2b_at: "2026-06-02T04:50:00+08:00"
 p0: 0
 p1: 2
 p2: 1
-task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU feature 字符串/SDK 常量未闭环；Android 14-17 NN HAL 只写 HIDL 1.3，遗漏 AIDL HAL。P2 1：Google Tensor/EdgeTPU 与厂商后端命名需拆清。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
+task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU feature 字符串/SDK 常量未完成验证；Android 14-17 NN HAL 只写 HIDL 1.3，遗漏 AIDL HAL。P2 1：Google Tensor/EdgeTPU 与厂商后端命名需拆清。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
+task6_reviewed_date: "2026-06-02"
+task6_l1_l2_fixes: 10
+task6_l3_l4_issues: 2
+task6_new_rework: true
+review_round: 3
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
@@ -145,7 +151,7 @@ LiteRT Next 文档把 NPU 路径收敛到 `CompiledModel` 和 accelerator 选择
 
 这条路径的价值不在于“强制使用 NPU”，而在于把硬件选择和编译结果显式化。模型对 NPU 友好时，编译阶段会生成适配目标 SoC 的执行产物；模型不适配时，开发者应该尽早得到 capability 不满足、子图拆分或 fallback 的信号。
 
-对业务代码而言，推荐把 accelerator 写成优先级链，而不是单点假设：
+业务代码里的 accelerator 更适合写成优先级链，避免单点假设：
 
 - `NPU -> GPU -> CPU`：适合图像理解、OCR、语音特征提取、固定输入尺寸的小模型。
 - `GPU -> CPU`：适合没有稳定 NPU 覆盖、但 GPU delegate 已验证的模型。
@@ -179,9 +185,9 @@ AI Pack 的价值在于把设备匹配和产物下发交给 Google Play 流程�
 
 NNAPI 的 NDK API 从 Android 15 起被官方标记为 deprecated，迁移指南建议转向 TensorFlow Lite in Play services、AICore 等替代方案。[已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide]
 
-这不等于底层 NPU 驱动消失。AOSP 仍然保留 Neural Networks HAL；Android 11 及以下可按 HIDL 1.3 历史口径理解，Android 12+ 的 NNAPI HAL revision 使用 AIDL 而不是 HIDL。源码锚点要同时区分 `hardware/interfaces/neuralnetworks/1.3/` 与 `hardware/interfaces/neuralnetworks/aidl/`。[已验证: source.android.com/docs/core/ota/modular-system/nnapi; AOSP hardware/interfaces/neuralnetworks/]
+底层 NPU 驱动没有因此消失。AOSP 仍然保留 Neural Networks HAL；Android 11 及以下可按 HIDL 1.3 历史口径理解，Android 12+ 的 NNAPI HAL revision 使用 AIDL，不走 HIDL。源码锚点要同时区分 `hardware/interfaces/neuralnetworks/1.3/` 与 `hardware/interfaces/neuralnetworks/aidl/`。[已验证: source.android.com/docs/core/ota/modular-system/nnapi; AOSP hardware/interfaces/neuralnetworks/]
 
-更准确的工程图景是：
+工程图景可以拆成：
 
 ```text
 应用 / SDK
@@ -193,7 +199,7 @@ NNAPI 的 NDK API 从 Android 15 起被官方标记为 deprecated，迁移指南
           └─ 底层驱动、NN HAL 或厂商运行时
 ```
 
-厂商 delegate 解决的是“如何让 LiteRT 模型跑到特定 SoC 的 NPU 上”。NNAPI HAL 解决的是“系统和驱动之间如何抽象神经网络加速设备”。两者不是同一层，不能把 LiteRT 文档里的 QNN 能力直接写成 Android 平台通用能力。
+厂商 delegate 解决的是“如何让 LiteRT 模型跑到特定 SoC 的 NPU 上”。NNAPI HAL 解决的是“系统和驱动之间如何抽象神经网络加速设备”。两者分属不同层，不能把 LiteRT 文档里的 QNN 能力直接写成 Android 平台通用能力。
 
 partial delegation 是这条路径最容易踩坑的地方。模型里一部分算子命中 NPU，另一部分回到 CPU，平均耗时可能比纯 CPU 更差：跨设备调度、buffer 复制和同步成本会抵消 NPU 对单个子图的收益。验证时至少记录三类信号：
 
@@ -223,7 +229,7 @@ ADPF 与 NPU 的关系也要谨慎。ADPF 更适合表达应用线程的工作�
 
 ## 公开 API、预览能力与闭源组件边界
 
-端侧 AI 最容易写错的地方，是把不同来源的能力混成一个“Android 支持”。更稳的写法是给每个能力标清归属层。
+端侧 AI 最容易写错的地方，是把不同来源的能力混成一个“Android 支持”。发布稿应给每个能力标清归属层。
 
 | 能力 | 可验证来源 | 能写成平台能力吗 | 写作边界 |
 |------|------------|------------------|----------|
@@ -241,7 +247,7 @@ ADPF 与 NPU 的关系也要谨慎。ADPF 更适合表达应用线程的工作�
 
 Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能力”，但对第三方 App 来说，能不能调用、通过哪条 API 调用、是否可观测，是三件不同的事。
 
-当前更稳妥的写法是：Google Tensor 平台提供端侧 AI 加速能力，AICore / Gemini Nano 属于 Google 生态公开文档覆盖的路径；LiteRT NPU 对 Google Tensor 的具体后端能力、算子覆盖和 AI Pack 交付方式，需要以 LiteRT Next 文档和设备兼容列表为准。[待验证: Google Tensor 设备上 LiteRT NPU 后端的公开兼容表]
+当前可发布的表述是：Google Tensor 平台提供端侧 AI 加速能力，AICore / Gemini Nano 属于 Google 生态公开文档覆盖的路径；LiteRT NPU 对 Google Tensor 的具体后端能力、算子覆盖和 AI Pack 交付方式，需要以 LiteRT Next 文档和设备兼容列表为准。[待验证: Google Tensor 设备上 LiteRT NPU 后端的公开兼容表]
 
 验证 Tensor 设备时建议保留四类证据：
 
@@ -272,7 +278,7 @@ Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能�
 
 Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；LiteRT CompiledModel 和 AOT 则把硬件选择、编译产物和分发策略推到工程流程前面。NPU 加速是否成立，要同时满足清单声明、设备 feature、运行时可用、模型算子覆盖和功耗预算五个条件。
 
-写这类内容时，最安全的分法是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
+写这类内容时，发布稿的分层口径是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
 
 [需重写: 小结之后仍保留多段源码调研补充，包含“推测位置”“需进一步确认”“待验证”等编辑态内容；发布稿需要把可用事实整合回正文或参考资料，未确认项交 Task9 复核。]
 
@@ -414,7 +420,7 @@ Android 17 Release Notes（2026-02-26）明确：
 
 > **NPU Management**: Apps targeting Android 17 must declare the `FEATURE_NEURAL_PROCESSING_UNIT` hardware feature to directly access the NPU.
 
-这意味着面向 Android 17 的应用，如果要直接访问 NPU，必须在 AndroidManifest.xml 中声明：
+因此，面向 Android 17 的应用如果要直接访问 NPU，必须在 AndroidManifest.xml 中声明：
 
 ```xml
 <uses-feature android:name="android.hardware.npu" android:required="false" />
