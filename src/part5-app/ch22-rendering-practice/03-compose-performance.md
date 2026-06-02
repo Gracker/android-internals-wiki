@@ -10,31 +10,31 @@ confidence: high
 drafted_date: "2026-05-12"
 polish_count: 0
 sources:
-  - type: aosp
-    path: "frameworks/support/compose/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
-  - type: aosp
-    path: "frameworks/support/compose/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-last_task6_at: "2026-06-02T11:05:00+08:00"
+task6_state: reviewed
+last_task6_at: "2026-06-02T13:05:00+08:00"
 task9_state: pending
 last_task2b_at: "2026-06-02T12:54:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-01"
 last_task9_at: "2026-06-01T08:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-06-02-11-review.md"
+last_task6_review_log: "logs/review/2026-06-02-13-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
-review_notes: "2026-06-02 11:05 Task6 复审：L1 小修 2 处；发现源码调研补遗仍以编辑态进入正文，且 Pausable Composition / AOSP master 版本边界存在未闭合标注，已写入 queue.json 回炉。"
+review_notes: "2026-06-02 13:05 Task6 复审：L1 小修 10 处；修正 AndroidX 源码锚点格式与中英文混排，未发现新增回炉项。"
 task2b_notes: "2026-06-02 Task2B：删除发布正文中的调研补遗块，统一 Pausable Composition 为 Compose/Foundation 工具链能力，移出未闭合的 AOSP master/androidx-main 正文结论。"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
@@ -45,15 +45,15 @@ task9_p2_issues: 2
 ---
 # Jetpack Compose 性能优化实战
 
-Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战:怎么写出不会卡顿的 Compose 代码,怎么用工具定位性能问题,以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
+Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
-本节使用 **Compose BOM 2025.12.00(对应 Compose 1.10)** 作为版本基线。Pausable Composition、Strong Skipping 和 LazyLayoutCacheWindow 都取决于项目引入的 Compose / Kotlin 版本，不由 Android 17(API 37)平台本身决定。没有公开测试条件的滚动性能数据不作为本文结论，只作为阅读官方演讲资料时的背景。
+本节使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。Pausable Composition、Strong Skipping 和 LazyLayoutCacheWindow 都取决于项目引入的 Compose / Kotlin 版本，不由 Android 17（API 37）平台本身决定。没有公开测试条件的滚动性能数据不作为本文结论，只作为阅读官方演讲资料时的背景。
 
-## 重组控制:从手动优化到编译器自动跳过
+## 重组控制：从手动优化到编译器自动跳过
 
 ### Compose 重组的触发条件与成本
 
-Compose 的渲染管线包含三个阶段:Composition → Layout → Draw。重组(Recomposition)就是重新执行 Composition 阶段--重新调用 `@Composable` 函数,根据新的状态值生成新的 UI 树。
+Compose 的渲染管线包含三个阶段：Composition → Layout → Draw。重组（Recomposition）就是重新执行 Composition 阶段：重新调用 `@Composable` 函数，根据新的状态值生成新的 UI 树。
 
 重组的开销来自两个地方:
 
@@ -149,7 +149,7 @@ fun userProfile(userId: String): State<User?> {
 
 **produceState 内部实现细节（源码级）：**
 
-`produceState` 本质是 `LaunchedEffect` 的语法糖，源码位于 `frameworks/support/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`：
+`produceState` 本质是 `LaunchedEffect` 的语法糖，源码位于 `platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`：
 
 ```kotlin
 @Composable public fun <T> produceState<T>(
@@ -290,7 +290,7 @@ fun BadUsage(scrollState: LazyListState) {
 
 `derivedStateOf` 内部维护了一套依赖监听机制,有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式:把所有状态操作都包一层 `derivedStateOf`,以为能"自动优化"。实际效果是增加 `SnapshotStateObserver` 的订阅数量,却没有减少重组。
 
-[已验证: AOSP Compose Runtime, frameworks/support/compose/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt]
+[已验证: AndroidX androidx-compose-release, platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt]
 
 ### remember 和 key 的使用场景
 
@@ -528,7 +528,7 @@ AndroidView(
 
 ## 版本迁移与优化策略变化
 
-从旧版本 Compose 升级到 Compose 1.10+(Kotlin 2.0+)时,性能优化策略的优先级发生了变化。以下是迁移检查要点:
+从旧版本 Compose 升级到 Compose 1.10+（Kotlin 2.0+）时，性能优化策略的优先级发生了变化。以下是迁移检查要点：
 
 | 变化项 | 旧版本做法 | Kotlin 2.0+ 做法 |
 |--------|-----------|-----------------|
@@ -557,12 +557,12 @@ AndroidView(
 | Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda;2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 | 冷启动偏慢 | Baseline Profile 是否覆盖 Compose 首屏路径 | Macrobenchmark + ProfileInstaller 状态 |
 
-Android 17(API 37)上的 ART 分代 GC 会改善短生命周期对象回收成本，但 Compose 性能优化的优先级仍然是减少不必要重组、延迟状态读取和控制列表预取成本。GC 调参不能替代 Composition 层面的代码优化。
+Android 17（API 37）上的 ART 分代 GC 会改善短生命周期对象回收成本，但 Compose 性能优化的优先级仍然是减少不必要重组、延迟状态读取和控制列表预取成本。GC 调参不能替代 Composition 层面的代码优化。
 
 
 ## 版本边界
 
-Android 17(API 37)平台不内置 Compose 工具链，也不决定 Strong Skipping、Pausable Composition 或 LazyLayoutCacheWindow 的启用状态。应用侧是否获得这些优化，取决于项目锁定的 Kotlin、Compose Compiler、Compose Runtime 和 Compose Foundation 版本。
+Android 17（API 37）平台不内置 Compose 工具链，也不决定 Strong Skipping、Pausable Composition 或 LazyLayoutCacheWindow 的启用状态。应用侧是否获得这些优化，取决于项目锁定的 Kotlin、Compose Compiler、Compose Runtime 和 Compose Foundation 版本。
 
 本文没有把仅来自 AOSP master 或 AndroidX androidx-main、且未进入 Android 17 的源码锚点作为 Android 17 正文结论。只能证明属于 Android 17/API 37 或项目依赖版本的资料，才用于正文判断；其余资料保留为后续复核线索。
 
