@@ -1,11 +1,12 @@
 ---
 title: "Android 17 ML Runtime 与 NPU 访问边界"
 chapter: "5.14"
-task6_review_notes: "2026-06-02 10 Task6 revisiting-review: needs-rework。L1/L2 小修 10 处；小结后补充块仍为编辑态，且 NNAPI HAL 版本口径需复核。2026-06-02 Task2B 已删除编辑态补充，保留 Android 17/API 37 内可发布口径并回流 Task6。"
+task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。Task2B 已删除编辑态补充块，Android 17/API 37 边界、NN HAL 分层口径和闭源组件边界均可进入 Task9 待审。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
 section: "5.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
+drafted_by: task2a-knowledge-gap
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "Android 17 / API 37 PackageManager reference, Android 17 release notes, source.android.com NNAPI Runtime docs, LiteRT Next docs"
@@ -42,10 +43,10 @@ gap_score: 18
 material_count: 5
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
-task6_state: revisiting
-task6_result: needs-rework
-last_task6_at: "2026-06-02T10:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-10-review.md"
+task6_state: reviewed
+task6_result: pass-light-edit
+last_task6_at: "2026-06-02T23:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-23-review.md"
 task9_state: pending
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
@@ -54,7 +55,7 @@ last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-06-01"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 p0: 0
@@ -62,10 +63,10 @@ p1: 2
 p2: 1
 task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU feature 字符串/SDK 常量未完成验证；Android 14-17 NN HAL 只写 HIDL 1.3，遗漏 AIDL HAL。P2 1：Google Tensor/EdgeTPU 与厂商后端命名需拆清。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
 task6_reviewed_date: "2026-06-02"
-task6_l1_l2_fixes: 10
-task6_l3_l4_issues: 2
-task6_new_rework: true
-review_round: 3
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
+review_round: 4
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
