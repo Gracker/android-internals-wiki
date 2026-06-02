@@ -5112,7 +5112,7 @@
       "title": "Android 17 ML Runtime 与 NPU 访问边界",
       "last_task6_at": "2026-06-02T23:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-02-23-review.md",
-      "task9_result": "needs-rework",
+      "task9_result": "pending",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
       "task2b_state": "fixed",
@@ -5126,7 +5126,10 @@
       "last_task2b_at": "2026-06-02T22:50:00+08:00",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_new_rework": false
+      "task6_new_rework": false,
+      "last_task2b_verifier_at": "2026-06-02T23:25:00+08:00",
+      "task2b_verifier_note": "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。",
+      "last_task2b_verifier_log": "logs/rework/2026-06-02-23-task2b-verifier.md"
     },
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
@@ -6013,16 +6016,21 @@
       "source_file": "src/part2-performance/ch09-anr/04-special-anr.md"
     },
     "6.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-22T16:06:00+08:00",
       "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
       "last_task6_review_log": "logs/review/2026-05-22-16-review.md",
-      "source_file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      "source_file": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-22T19:18:14+08:00",
+      "last_task9_at": "2026-05-22T19:26:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-22-19-deep-review.md",
+      "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     },
     "7.18": {
       "title": "HWC Overlay Plane 与合成降级排查",
@@ -7915,7 +7923,7 @@
       "title": "Android 17 ML Runtime 与 NPU 访问边界",
       "last_task6_at": "2026-06-02T23:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-02-23-review.md",
-      "task9_result": "needs-rework",
+      "task9_result": "pending",
       "last_task9_at": "2026-05-17T00:32:12+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-17-00-deep-review.md",
       "task2b_state": "fixed",
@@ -7928,7 +7936,10 @@
       "task6_review_summary": "Task6 pass-light-edit；Task2B 已删除编辑态补充块并保留 Android 17/API 37 内边界，未新增回炉项。",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "task6_new_rework": false
+      "task6_new_rework": false,
+      "last_task2b_verifier_at": "2026-06-02T23:25:00+08:00",
+      "task2b_verifier_note": "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。",
+      "last_task2b_verifier_log": "logs/rework/2026-06-02-23-task2b-verifier.md"
     },
     "5.9": {
       "status": "ready-for-review",
@@ -12604,7 +12615,11 @@
     "task6_l1_l2_fixes": 1,
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
-    "task6_review_summary": "Task6 pass-light-edit；Task2B 已删除编辑态补充块并保留 Android 17/API 37 内边界，未新增回炉项。"
+    "task6_review_summary": "Task6 pass-light-edit；Task2B 已删除编辑态补充块并保留 Android 17/API 37 内边界，未新增回炉项。",
+    "task9_result": "pending",
+    "last_task2b_verifier_at": "2026-06-02T23:25:00+08:00",
+    "task2b_verifier_note": "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。",
+    "last_task2b_verifier_log": "logs/rework/2026-06-02-23-task2b-verifier.md"
   },
   "section_18_13": {
     "section": "18.13",
@@ -12729,14 +12744,14 @@
     "section": "22.3",
     "title": "Jetpack Compose 性能优化",
     "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
-    "task9_result": "auto-fixed",
+    "task9_result": "pass-tech-review",
     "task2b_result": "fixed",
     "last_task9_autofix_at": "2026-06-01",
     "task6_result": "pass-light-edit",
@@ -12747,8 +12762,8 @@
     "task6_review_notes": "2026-06-02 13:05 Task6 复审：L1 小修 10 处；修正 AndroidX 源码锚点格式与中英文混排，未发现新增回炉项。",
     "task9_reviewed_by": "openclaw-task9",
     "task9_reviewed_date": "2026-06-01",
-    "last_task9_at": "2026-06-01T08:20:00+08:00",
-    "last_task9_review_log": "logs/deep-review/2026-06-01-08-deep-review.md",
+    "last_task9_at": "2026-06-02T17:23:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
     "task9_review_notes": "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。",
     "last_task2b_at": "2026-06-02T12:54:00+08:00",
     "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
