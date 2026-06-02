@@ -2408,8 +2408,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T11:25:00+08:00",
-  "last_updated_by": "openclaw-task2b-verifier",
+  "last_updated": "2026-06-02T12:54:00+08:00",
+  "last_updated_by": "openclaw-task2b-main",
   "task6_last_review": {
     "reviewed_at": "2026-06-02T10:05:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2662,11 +2662,11 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-02T08:50:00+08:00",
+  "last_task2b_at": "2026-06-02T12:54:00+08:00",
   "last_task2b_sections": [
-    "20.4"
+    "22.3"
   ],
-  "last_task2b_action": "frontmatter fallback rework: 20.4 ANR 治理策略",
+  "last_task2b_action": "queue task6-review rework: 22.3 Jetpack Compose 性能优化",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -10805,6 +10805,23 @@
         "task9 P2 系统负载过滤判据过强"
       ],
       "result": "fixed"
+    },
+    {
+      "at": "2026-06-02T12:54:00+08:00",
+      "lane": "main",
+      "source": "task6-review",
+      "section": "22.3",
+      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "title": "Jetpack Compose 性能优化",
+      "result": "fixed",
+      "issues_fixed": [
+        "删除 outline 后与参考资料前后的 AIW 源码调研/调研补遗块，发布正文不再出现编辑态材料",
+        "统一 Pausable Composition 为 Compose Foundation 版本能力，不写成 Android 17 平台能力",
+        "AOSP master/androidx-main 未闭合源码锚点不作为 Android 17/API 37 正文结论"
+      ],
+      "queue_items_completed": 1,
+      "returned_to": "task6_pending",
+      "log": "logs/rework/2026-06-02-12-task2b-main.md"
     }
   ],
   "section_18_23": {
@@ -10924,7 +10941,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 14,
+  "task2b_total_fixed": 15,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -11545,10 +11562,10 @@
   "task2b_last_run": "2026-06-01T08:50:00+08:00",
   "task2b_pending_counts": {
     "p95": 0,
-    "p90": 0,
+    "p90": 2,
     "p85": 0,
-    "total": 0,
-    "source": "queue allowed review sources after 2026-05-28T16:50 task2b main"
+    "total": 2,
+    "source": "queue allowed review sources after 2026-06-02T12:54 task2b main"
   },
   "last_task2a_action": "gap-mining-new-section",
   "last_task2a_created": "22.17",
@@ -11794,12 +11811,29 @@
       "source": "frontmatter backlog fallback",
       "priority": 85,
       "summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
+    },
+    {
+      "at": "2026-06-02T12:54:00+08:00",
+      "lane": "main",
+      "source": "task6-review",
+      "section": "22.3",
+      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "title": "Jetpack Compose 性能优化",
+      "result": "fixed",
+      "issues_fixed": [
+        "删除 outline 后与参考资料前后的 AIW 源码调研/调研补遗块，发布正文不再出现编辑态材料",
+        "统一 Pausable Composition 为 Compose Foundation 版本能力，不写成 Android 17 平台能力",
+        "AOSP master/androidx-main 未闭合源码锚点不作为 Android 17/API 37 正文结论"
+      ],
+      "queue_items_completed": 1,
+      "returned_to": "task6_pending",
+      "log": "logs/rework/2026-06-02-12-task2b-main.md"
     }
   ],
   "last_task2b_completed": [
-    "20.4"
+    "22.3"
   ],
-  "last_task2b_completed_at": "2026-06-02T02:50:00+08:00",
+  "last_task2b_completed_at": "2026-06-02T12:54:00+08:00",
   "section_9_1": {
     "section": "9.1",
     "title": "ANR 设计思想",
@@ -12090,38 +12124,38 @@
     }
   ],
   "last_task2b_files": [
-    "src/part5-app/ch20-stability/04-anr-governance.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "last_task2b_completed_entry": {
-    "at": "2026-06-01T06:52:00+08:00",
+    "at": "2026-06-02T12:54:00+08:00",
     "lane": "main",
     "source": "task6-review",
-    "section": "18.15",
-    "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-    "title": "视频叠加与 HWC",
+    "section": "22.3",
+    "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "title": "Jetpack Compose 性能优化",
     "result": "fixed",
     "issues_fixed": [
-      "功耗/带宽/GPU 利用率表删除无条件数字，改为路径负载趋势与适用场景",
-      "HDR 性能影响、Overlay 失效影响、skip validate 收益、同步开销删除无原始记录百分比",
-      "补充功耗/带宽数字回写前必须具备的设备、SoC、刷新率、视频规格、采样工具、样本次数和原始记录路径要求"
+      "删除 outline 后与参考资料前后的 AIW 源码调研/调研补遗块，发布正文不再出现编辑态材料",
+      "统一 Pausable Composition 为 Compose Foundation 版本能力，不写成 Android 17 平台能力",
+      "AOSP master/androidx-main 未闭合源码锚点不作为 Android 17/API 37 正文结论"
     ],
     "queue_items_completed": 1,
     "returned_to": "task6_pending",
-    "log": "logs/rework/2026-06-01-06-task2b-main.md"
+    "log": "logs/rework/2026-06-02-12-task2b-main.md"
   },
   "task2b_last_rework": {
-    "timestamp": "2026-06-01T06:52:00+08:00",
+    "timestamp": "2026-06-02T12:54:00+08:00",
     "sections": [
-      "18.15"
+      "22.3"
     ],
     "files": [
-      "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md"
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
     ],
     "source": "task6-review",
-    "issues_fixed": 1,
-    "at": "2026-06-01T06:52:00+08:00",
+    "issues_fixed": 2,
+    "at": "2026-06-02T12:54:00+08:00",
     "result": "fixed",
-    "log": "logs/rework/2026-06-01-06-task2b-main.md"
+    "log": "logs/rework/2026-06-02-12-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
     "16.5",
@@ -12462,7 +12496,7 @@
     "last_task2b_lite_at": "2026-05-31"
   },
   "last_task2b_verifier_log": "logs/rework/2026-06-02-11-task2b-verifier.md",
-  "last_task2b_log": "logs/rework/2026-06-01-00-task2b-main.md",
+  "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-01T21:35:00+08:00",
     "lane": "lite",
@@ -12647,14 +12681,14 @@
     "title": "Jetpack Compose 性能优化",
     "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task9_state": "pending",
-    "task2b_state": "pending",
+    "task2b_state": "fixed",
     "last_task2b_verifier_at": "2026-06-01T23:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-01-23-task2b-verifier.md",
     "task9_result": "auto-fixed",
-    "task2b_result": "fixed-lite",
+    "task2b_result": "fixed",
     "last_task9_autofix_at": "2026-06-01",
     "task6_result": "needs-rework",
     "reviewed_by": "openclaw-task6",
@@ -12666,7 +12700,10 @@
     "task9_reviewed_date": "2026-06-01",
     "last_task9_at": "2026-06-01T08:20:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-06-01-08-deep-review.md",
-    "task9_review_notes": "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。"
+    "task9_review_notes": "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。",
+    "last_task2b_at": "2026-06-02T12:54:00+08:00",
+    "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
+    "task2b_notes": "2026-06-02 Task2B：删除发布正文中的调研补遗块，统一 Pausable Composition 为 Compose/Foundation 工具链能力，移出未闭合的 AOSP master/androidx-main 正文结论。"
   },
   "section_3_5": {
     "section": "3.5",
@@ -12765,7 +12802,7 @@
     "5.14",
     "18.13"
   ],
-  "last_task2b_section": "5.6",
-  "last_task2b_file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+  "last_task2b_section": "22.3",
+  "last_task2b_file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
   "last_task2b_result": "fixed"
 }

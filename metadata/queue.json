@@ -587,7 +587,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-02T11:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-02-11-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-02-11-review.md",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-02T12:54:00+08:00",
+    "completion_reason": "删除编辑态调研补遗；统一 Pausable Composition 版本口径；移出未闭合的 AOSP master/androidx-main 正文结论；章节回流 Task6。"
   }
 ]
