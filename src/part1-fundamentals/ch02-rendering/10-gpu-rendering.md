@@ -9,7 +9,7 @@ last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium-high
 sources:
 - type: aosp
-  path: frameworks/base/core/java/android/graphics/
+  path: frameworks/base/graphics/java/android/graphics/
 - type: official
   path: https://developer.android.com/guide/topics/graphics/
 - type: blog
@@ -38,34 +38,38 @@ drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-02"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review_round: 10
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。 | 2026-06-02 task6 review: pass-light-edit。L1/L2 小修 2 处;AOSP mainline 锚点改为 Android 17 待验证边界,删除填充副词。"
 review_type: task6-writing-quality-review
-task9_result: pending
-task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T13:20:00+08:00"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-03"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-03T01:26:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
 last_task6_at: "2026-06-02T23:05:00+08:00"
 task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。L1/L2 小修 2 处；实战案例已改为示例场景，未新增回炉项，进入 Task9 待审。"
-task9_review_notes: "2026-05-17 13:20 Task9 deep-review: needs-rework。P0/P1 队列已合并;新增 BufferQueue timeout/BUFFER_RELEASE_CHANNEL、SurfaceFlinger latency 观测口径与 Vulkan/ANGLE 默认路径问题。"
+task9_review_notes: "2026-06-03 Task9 deep review: auto-fixed。AUTO-FIX: 修正 graphics Java 源码目录、BufferQueue/GraphicBuffer/HWC2 路径与 BUFFER_RELEASE_CHANNEL 版本边界；P0 1 / P1 0 / P2 0，回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-06-02-23-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
+last_task9_autofix_at: "2026-06-03"
+last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
+p0: "1"
+p1: "0"
+p2: "0"
 ---
-
 
 
 # GPU 渲染深入
@@ -122,7 +126,7 @@ Vertex Shader 是 GPU 渲染管线的第一个可编程阶段,它负责处理图
 当我们调用 `Canvas.drawRect()` 时,这个调用最终会触发 GPU 执行 Vertex Shader。Vertex Shader 做三件事:将模型顶点从本地坐标转换到屏幕坐标(涉及模型矩阵、视图矩阵、投影矩阵的组合变换);计算每个顶点的颜色、纹理坐标等插值属性,供 Fragment Shader 阶段插值使用;判断顶点是否在视口范围内,剔除不可见图元,避免后续阶段做无用功。
 
 ```java
-// frameworks/base/core/java/android/graphics/Canvas.java → BaseCanvas.java
+// frameworks/base/graphics/java/android/graphics/Canvas.java → BaseCanvas.java
 // @ AOSP android-16.0.0_r1
 // Canvas.drawRect(float...) 委托给 super.drawRect → BaseCanvas.drawRect
 public void drawRect(float left, float top, float right, float bottom,
@@ -130,7 +134,7 @@ public void drawRect(float left, float top, float right, float bottom,
     super.drawRect(left, top, right, bottom, paint);
 }
 
-// frameworks/base/core/java/android/graphics/BaseCanvas.java
+// frameworks/base/graphics/java/android/graphics/BaseCanvas.java
 void drawRect(float left, float top, float right, float bottom, Paint paint) {
     throwIfHasHwFeaturesInSwMode(paint);
     nDrawRect(mNativeCanvasWrapper, left, top, right, bottom,
@@ -163,7 +167,7 @@ void main() {
 
 这个着色器展示了 Fragment Shader 的基本工作模式:从纹理中采样颜色,然后应用统一的颜色调制,最终输出像素颜色。在真实的 Android UI 渲染中,Fragment Shader 还需要处理透明度混合、渐变效果、阴影计算、模糊效果等--每增加一个效果,就意味着每像素的计算量又增加了一层。而纹理采样是一个特别需要注意的操作,因为每次采样都需要从显存中读取数据,在移动 GPU 的统一内存架构下,这些读取会与其他组件(如 CPU、显示控制器)竞争内存带宽。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/Shader.java]
+> [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Shader.java]
 
 在分析 Fragment Shader 性能时,纹理采样次数是最关键的关注点。一个常见的性能陷阱是在 Fragment Shader 中使用多个纹理采样(例如实现圆角+阴影+渐变背景),每增加一次采样,每像素的内存访问量就增加一个数量级。在 1080p 屏幕上,一次全屏渲染就需要处理约 200 万个像素--如果每个像素采样 4 次纹理,那就是 800 万次显存访问。
 
@@ -553,23 +557,23 @@ App (Java/Kotlin)
     │    mNativeBitmap = AHardwareBuffer*(无 Java heap,像素全在 GPU 显存)
     │
     └── android.graphics.SurfaceTexture
-         mProducer: I GraphicBuffer Producer(跨进程 Binder 端点)
+         mProducer: IGraphicBufferProducer(跨进程 Binder 端点)
               │
 ANativeWindow (C/C++ Layer)
     └── Surface.cpp(frameworks/native/libs/gui/Surface.cpp)
-         m GraphicBuffer Producer: IGBP
+         mGraphicBufferProducer: IGBP
               │
 BufferQueue(跨进程)
-    ├── BufferQueue Producer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
+    ├── BufferQueueProducer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
     │    (阻塞条件:dequeuedCount >= mMaxDequeuedBufferCount = 1)
-    ├── BufferQueue Core.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
-    └── BufferQueue Consumer.cpp → acquireBuffer()
+    ├── BufferQueueCore.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
+    └── BufferQueueConsumer.cpp → acquireBuffer()
               │
-GraphicBuffer(frameworks/native/libs/gui/)
+GraphicBuffer(frameworks/native/libs/ui/include/ui/GraphicBuffer.h)
     ├── mBufferHandle: buffer_handle_t(ashmem fd / dmabuf fd)
     └── flatten/unflatten 跨进程传递句柄
               │
-GraphicBuffer Mapper(frameworks/native/libs/gui/GraphicBuffer Mapper.cpp)
+GraphicBufferMapper(frameworks/native/libs/ui/GraphicBufferMapper.cpp)
     ├── importBuffer() → ION/DMABuf map → 进程地址空间
     └── freeBuffer() → ION/DMABuf unmap
               │
@@ -584,19 +588,19 @@ Physical Memory(ION heap / CMA / GPU VRAM)
 
 | 层次 | 关键对象/函数 | 源码路径 |
 |------|--------------|----------|
-| App | Bitmap.Config.HARDWARE | `frameworks/base/core/java/android/graphics/Bitmap.java` |
-| App | SurfaceTexture.mProducer | `frameworks/base/core/java/android/graphics/SurfaceTexture.java` |
+| App | Bitmap.Config.HARDWARE | `frameworks/base/graphics/java/android/graphics/Bitmap.java` |
+| App | SurfaceTexture.mProducer | `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java` |
 | ANativeWindow | Surface::dequeueBuffer() | `frameworks/native/libs/gui/Surface.cpp`(ANativeWindow hook 路由) |
-| BufferQueue | BufferQueue Core.mSlots/mQueue | `frameworks/native/libs/gui/BufferQueue Core.h`(NUM_BUFFER_SLOTS=64) |
-| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueue Producer.cpp`(mDequeueCondition 条件变量) |
-| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueue Producer.cpp` |
-| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueue Consumer.cpp` |
-| GraphicBuffer | mBufferHandle 类型 | `frameworks/native/libs/gui/GraphicBuffer.h`(buffer_handle_t = native_handle_t*) |
-| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/gui/GraphicBuffer Mapper.cpp`(ION/DMABuf map) |
+| BufferQueue | BufferQueueCore.mSlots/mQueue | `frameworks/native/libs/gui/include/gui/BufferQueueCore.h`(NUM_BUFFER_SLOTS=64) |
+| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueueProducer.cpp`(mDequeueCondition 条件变量) |
+| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
+| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
+| GraphicBuffer | mBufferHandle 类型 | `frameworks/native/libs/ui/include/ui/GraphicBuffer.h`(buffer_handle_t = native_handle_t*) |
+| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/ui/GraphicBufferMapper.cpp`(ION/DMABuf map) |
 | Gralloc | gralloc_module_t | `hardware/libhardware/include/hardware/gralloc.h`(alloc/free 接口) |
-| HWC | HWC 2::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC 2.cpp`(DEVICE/CLIENT 决策) |
+| HWC | HWC2::Display::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp`(DEVICE/CLIENT 决策) |
 
-**Buffer Stuffing 源码机制**:当 SurfaceFlinger/HWC release 延迟时,`mFreeBuffers` 为空,`mQueue.size()` 积压超过 `maxBufferCount`,`waitForFreeSlotThenRelock()` 进入无限期等待(无超时)。`mDequeueCondition.notify_all()` 在 `releaseBuffer()` 中被调用,Android 14 引入 `BUFFER_RELEASE_CHANNEL` 精确通知替代全局 `notify_all()`。
+**Buffer Stuffing 源码机制**:当 SurfaceFlinger/HWC release 延迟时,`mFreeBuffers` 为空,`mQueue.size()` 积压超过 `maxBufferCount`,`waitForFreeSlotThenRelock()` 会等待可用 slot。AOSP android-16.0.0_r1 中负 `mDequeueTimeout` 走条件变量等待,非负超时会返回 `TIMED_OUT`;`BUFFER_RELEASE_CHANNEL` 是 android-16 可见的 flag-gated 路径,不能写成 Android 14 已引入。
 
 **可观测性边界**:
 
@@ -609,7 +613,7 @@ Physical Memory(ION heap / CMA / GPU VRAM)
 
 **Hardware Bitmap 特殊行为**:Bitmap.Config.HARDWARE(API 26+)创建的 Bitmap,像素数据完全不存在于 Java heap,全部存储在 GPU 显存中的 AHardwareBuffer。`/proc/<pid>/smaps` 中不反映其占用,必须通过 `dumpsys meminfo gfxinfo` 或厂商特定工具观测。
 
-> [待验证: 该锚点来自 AOSP mainline,未证明已进入 Android 17;仅作后续源码核对线索,不作为 Android 17 结论。路径:frameworks/native/libs/gui/Surface.cpp, BufferQueue Core.h, BufferQueue Producer.cpp, GraphicBuffer Mapper.cpp]
+> [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/Surface.cpp; frameworks/native/libs/gui/include/gui/BufferQueueCore.h; frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/ui/GraphicBufferMapper.cpp]
 
 > [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
 
@@ -632,11 +636,11 @@ Android 12 引入了改进的 GPU 内存追踪机制,使得开发者和性能分
 
 ## ANGLE(OpenGL ES on Vulkan)的性能影响
 
-前面我们讨论了 GPU 内存管理的完整链条,从应用层的 GraphicBuffer 到 HAL 层的 Gralloc。而在 Android 16 的渲染架构中,还有一个关键层位于 GPU 内存管理和应用之间--ANGLE 兼容层。既然 Vulkan 已经成为 Android 16 的默认图形 API,大量仍然使用 OpenGL ES 的应用会如何运行?答案是 ANGLE--Google 的 OpenGL ES 兼容层,它将所有 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说,理解 ANGLE 的性能特征,是评估现有应用在新系统上渲染表现的关键。
+前面我们讨论了 GPU 内存管理的完整链条,从应用层的 GraphicBuffer 到 HAL 层的 Gralloc。而在 Android 16 的渲染架构中,ANGLE 兼容层需要单独拆出来看。在启用 ANGLE 的设备/应用组合中,仍然使用 OpenGL ES 的应用会通过 Google 的 OpenGL ES 兼容层把 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说,理解 ANGLE 的性能特征,是评估现有应用在新系统上渲染表现的关键。
 
 ### ANGLE 的设计目标
 
-ANGLE(Almost Native Graphics Layer Engine)是 Google 开发的兼容层,它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"--主要目标是"统一"。在 Android 16 之前,不同 GPU 厂商各自实现 OpenGL ES 驱动,质量参差不齐,bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码(翻译到 Vulkan),Google 只需要维护这一套实现的质量,而不需要分别与三个厂商协调驱动修复。
+ANGLE(Almost Native Graphics Layer Engine)是 Google 开发的兼容层,它在启用时将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"--主要目标是"统一"。在 Android 16 之前,不同 GPU 厂商各自实现 OpenGL ES 驱动,质量参差不齐,bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码(翻译到 Vulkan),Google 只需要维护这一套实现的质量,而不需要分别与三个厂商协调驱动修复。
 
 ANGLE 的架构可以理解为一个翻译层:上层应用仍然使用熟悉的 OpenGL ES API(glDrawArrays、glTexImage2D 等),ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作(vkCmdDraw、vkCreateImage 等)。对于应用开发者来说,在 ANGLE 被启用的设备上,这个过程通常是透明的--应用不需要修改代码,就可以通过 ANGLE 运行在 Vulkan 后端上。
 
@@ -868,7 +872,7 @@ struct BufferState {
 - **Android 12+ (DMA-BUF Heaps)**:使用 Linux 上游 DMA-BUF Heaps,支持细粒度访问控制
 
 ```cpp
-// frameworks/native/libs/gui/BufferQueue Producer.cpp
+// frameworks/native/libs/gui/BufferQueueProducer.cpp
 // @ AOSP android-16.0.0_r1
 // [简化骨架] 实际函数签名:
 //   status_t waitForFreeSlotThenRelock(
@@ -876,7 +880,7 @@ struct BufferState {
 //       std::unique_lock<std::mutex>& lock,
 //       int* found) const
 // 返回 NO_ERROR / WOULD_BLOCK / TIMED_OUT;slot 通过 *found 输出
-status_t BufferQueue Producer::waitForFreeSlotThenRelock(
+status_t BufferQueueProducer::waitForFreeSlotThenRelock(
         FreeSlotCaller caller, std::unique_lock<std::mutex>& lock,
         int* found) const {
     // 1. 统计当前 dequeued / acquired 数量

@@ -4,7 +4,7 @@ chapter: "5.14"
 task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。Task2B 已删除编辑态补充块，Android 17/API 37 边界、NN HAL 分层口径和闭源组件边界均可进入 Task9 待审。"
 section_title: "Android 17 ML Runtime 与 NPU 访问边界"
 section: "5.14"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-16"
 drafted_by: task2a-knowledge-gap
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
@@ -47,21 +47,21 @@ task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-06-02T23:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-23-review.md"
-task9_state: pending
-task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T00:32:12+08:00"
-last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
-task9_result: pending
+task9_state: "reviewed"
+task9_reviewed_date: "2026-06-03"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-03T01:26:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
+task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 last_task2b_lite_at: "2026-06-01"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
-p0: 0
-p1: 2
-p2: 1
-task9_review_notes: "2026-05-17 Task9 00: needs-rework。P1 2：Android 17 NPU feature 字符串/SDK 常量未完成验证；Android 14-17 NN HAL 只写 HIDL 1.3，遗漏 AIDL HAL。P2 1：Google Tensor/EdgeTPU 与厂商后端命名需拆清。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
+p0: "0"
+p1: "0"
+p2: "0"
+task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task6_reviewed_date: "2026-06-02"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
