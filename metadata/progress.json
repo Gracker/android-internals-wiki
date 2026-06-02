@@ -423,24 +423,27 @@
     "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
   ],
-  "review_summary": "Task6 2026-06-02 13: review 22.3 Jetpack Compose 性能优化；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
+  "review_summary": "Task6 2026-06-02 18: review 6.1 Android 存储架构、19.24 崩溃与 ANR 捕获机制；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
   "task6_review_summary": {
-    "reviewed_at": "2026-06-02T13:05:00+08:00",
+    "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-13-review.md",
-    "log": "logs/review/2026-06-02-13-review.md",
     "sections": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
+    "log": "logs/review/2026-06-02-18-review.md",
+    "review_log": "logs/review/2026-06-02-18-review.md",
     "pass_light_edit": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "auto_finalized": []
   },
   "issues_by_section": {
     "1.6": {
@@ -2375,25 +2378,28 @@
   "total_review_sections": 283,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T13:05:00+08:00",
+  "last_updated": "2026-06-02T18:08:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-02T13:05:00+08:00",
+    "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-13-review.md",
-    "log": "logs/review/2026-06-02-13-review.md",
     "sections": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
+    "log": "logs/review/2026-06-02-18-review.md",
+    "review_log": "logs/review/2026-06-02-18-review.md",
     "pass_light_edit": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "auto_finalized": []
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 190,
@@ -7013,32 +7019,35 @@
       "section": "19.24",
       "title": "崩溃与 ANR 捕获机制",
       "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+      "source_file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
+      "review_type": "task6-writing-quality-review",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-02",
-      "last_task6_at": "2026-06-02T02:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-02-02-review.md",
-      "task9_state": "pending",
-      "task9_result": "auto-fixed",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed-lite",
-      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
-      "task6_review_notes": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-      "task6_review_summary": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-      "task6_l1_l2_fixes": 2,
+      "task6_reviewed_date": "2026-06-02",
+      "last_task6_at": "2026-06-02T18:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
-      "review_type": "task6-writing-quality-review",
-      "task6_reviewed_date": "2026-06-02",
-      "last_task9_at": "2026-06-01T00:20:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-06-01-00-deep-review.md",
-      "last_task9_autofix_at": "2026-06-01",
+      "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_date": "2026-06-02",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-06-02T17:23:00+08:00",
+      "last_task9_autofix_at": "2026-06-02",
+      "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
       "last_task2b_at": "2026-05-25T15:18:38+08:00",
-      "last_task2b_lite_at": "2026-05-31"
+      "last_task2b_lite_at": "2026-05-31",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "2.1": {
       "section": "2.1",
@@ -7176,6 +7185,37 @@
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
       "review_type": "task6-writing-quality-review"
+    },
+    "6.1": {
+      "section": "6.1",
+      "title": "Android 存储架构",
+      "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "source_file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "review_type": "task6-writing-quality-review",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-02",
+      "task6_reviewed_date": "2026-06-02",
+      "last_task6_at": "2026-06-02T18:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_date": "2026-06-02",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-06-02T17:23:00+08:00",
+      "last_task9_autofix_at": "2026-06-02",
+      "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-22T07:21:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -7318,31 +7358,36 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-02-13-review.md",
+  "last_task6_review": "logs/review/2026-06-02-18-review.md",
   "last_task6_sections": [
-    "22.3"
+    "6.1",
+    "19.24"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
-  "last_task6_at": "2026-06-02T13:05:00+08:00",
+  "last_task6_at": "2026-06-02T18:08:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-06-02T13:05:00+08:00",
+    "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-13-review.md",
-    "log": "logs/review/2026-06-02-13-review.md",
     "sections": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
+    "log": "logs/review/2026-06-02-18-review.md",
+    "review_log": "logs/review/2026-06-02-18-review.md",
     "pass_light_edit": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "auto_finalized": []
   },
   "last_task9_reviewed_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -7352,10 +7397,11 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-06-02T13:05:00+08:00",
-  "task6_last_review_log": "logs/review/2026-06-02-13-review.md",
+  "task6_last_review_at": "2026-06-02T18:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-02-18-review.md",
   "task6_last_review_sections": [
-    "22.3"
+    "6.1",
+    "19.24"
   ],
   "sections_status": {
     "22.11": {
@@ -9246,32 +9292,35 @@
       "section": "19.24",
       "title": "崩溃与 ANR 捕获机制",
       "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+      "source_file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
+      "review_type": "task6-writing-quality-review",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-02",
-      "last_task6_at": "2026-06-02T02:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-02-02-review.md",
-      "task9_state": "pending",
-      "task9_result": "auto-fixed",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed-lite",
-      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
-      "task6_review_notes": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-      "task6_review_summary": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-      "task6_l1_l2_fixes": 2,
+      "task6_reviewed_date": "2026-06-02",
+      "last_task6_at": "2026-06-02T18:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 3,
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
-      "review_type": "task6-writing-quality-review",
-      "task6_reviewed_date": "2026-06-02",
-      "last_task9_at": "2026-06-01T00:20:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-06-01-00-deep-review.md",
-      "last_task9_autofix_at": "2026-06-01",
+      "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_date": "2026-06-02",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-06-02T17:23:00+08:00",
+      "last_task9_autofix_at": "2026-06-02",
+      "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
       "last_task2b_at": "2026-05-25T15:18:38+08:00",
-      "last_task2b_lite_at": "2026-05-31"
+      "last_task2b_lite_at": "2026-05-31",
+      "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+      "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
     },
     "2.1": {
       "section": "2.1",
@@ -9463,6 +9512,37 @@
       "task6_l3_l4_issues": 0,
       "task6_new_rework": false,
       "review_type": "task6-writing-quality-review"
+    },
+    "6.1": {
+      "section": "6.1",
+      "title": "Android 存储架构",
+      "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "source_file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "review_type": "task6-writing-quality-review",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-02",
+      "task6_reviewed_date": "2026-06-02",
+      "last_task6_at": "2026-06-02T18:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_l1_l2_fixes": 11,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_date": "2026-06-02",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-06-02T17:23:00+08:00",
+      "last_task9_autofix_at": "2026-06-02",
+      "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-05-22T07:21:00+08:00"
     }
   },
   "task2a_last_processed": {
@@ -9510,28 +9590,33 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-02T13:05:00+08:00",
+    "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
-    "review_log": "logs/review/2026-06-02-13-review.md",
-    "log": "logs/review/2026-06-02-13-review.md",
     "sections": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
+    "log": "logs/review/2026-06-02-18-review.md",
+    "review_log": "logs/review/2026-06-02-18-review.md",
     "pass_light_edit": [
-      "22.3"
+      "6.1",
+      "19.24"
     ],
     "needs_rework": [],
-    "auto_finalized": [],
-    "auto_promoted": []
+    "auto_promoted": [],
+    "auto_finalized": []
   },
   "task6_last_review_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -10045,7 +10130,8 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "22.3"
+    "6.1",
+    "19.24"
   ],
   "task2b_progress": [
     {
@@ -10163,7 +10249,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-02-13-review.md",
+  "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -11174,8 +11260,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-06-02T13:05:00+08:00",
-  "last_task6_review_section": "22.3",
+  "last_task6_review_at": "2026-06-02T18:08:00+08:00",
+  "last_task6_review_section": "6.1, 19.24",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -11280,7 +11366,8 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "22.3"
+    "6.1",
+    "19.24"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -11313,7 +11400,8 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -12217,7 +12305,8 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -12401,32 +12490,35 @@
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
     "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+    "source_file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
     "status": "ready-for-review",
     "pipeline_stage": "task9_pending",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
+    "review_type": "task6-writing-quality-review",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-06-02",
-    "last_task6_at": "2026-06-02T02:05:00+08:00",
-    "last_task6_review_log": "logs/review/2026-06-02-02-review.md",
-    "task9_state": "pending",
-    "task9_result": "auto-fixed",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed-lite",
-    "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
-    "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md",
-    "last_task9_autofix_at": "2026-06-01",
-    "task6_review_notes": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-    "task6_review_summary": "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（翻译腔动词、否定纠正式句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。",
-    "task6_l1_l2_fixes": 2,
+    "task6_reviewed_date": "2026-06-02",
+    "last_task6_at": "2026-06-02T18:08:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task6_l1_l2_fixes": 3,
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
-    "review_type": "task6-writing-quality-review",
-    "task6_reviewed_date": "2026-06-02",
-    "last_task9_at": "2026-06-01T00:20:00+08:00",
-    "last_task9_review_log": "logs/deep-review/2026-06-01-00-deep-review.md",
+    "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+    "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "task9_reviewed_date": "2026-06-02",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_at": "2026-06-02T17:23:00+08:00",
+    "last_task9_autofix_at": "2026-06-02",
+    "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
     "last_task2b_at": "2026-05-25T15:18:38+08:00",
-    "last_task2b_lite_at": "2026-05-31"
+    "last_task2b_lite_at": "2026-05-31",
+    "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
+    "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
   },
   "last_task2b_verifier_log": "logs/rework/2026-06-02-15-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
@@ -12731,9 +12823,41 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_sections": [
-    "22.3"
+    "6.1",
+    "19.24"
   ],
   "last_task2b_section": "22.3",
   "last_task2b_file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-  "last_task2b_result": "fixed"
+  "last_task2b_result": "fixed",
+  "section_6_1": {
+    "section": "6.1",
+    "title": "Android 存储架构",
+    "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "source_file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "review_type": "task6-writing-quality-review",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-02",
+    "task6_reviewed_date": "2026-06-02",
+    "last_task6_at": "2026-06-02T18:08:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-02-18-review.md",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task6_l1_l2_fixes": 11,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_review_notes": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+    "task6_review_summary": "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "task9_reviewed_date": "2026-06-02",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_at": "2026-06-02T17:23:00+08:00",
+    "last_task9_autofix_at": "2026-06-02",
+    "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-22T07:21:00+08:00"
+  }
 }

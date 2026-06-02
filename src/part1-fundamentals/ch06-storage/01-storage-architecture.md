@@ -3,9 +3,9 @@ title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
 status: ready-for-review
-applicable_versions: "Android 9 - Android 15"
+applicable_versions: "Android 9 - Android 16"
 last_verified: "2026-04-14"
-last_verified_against: "Android 15, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
+last_verified_against: "Android 16, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -28,14 +28,15 @@ related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-21
+reviewed_date: 2026-06-02
+task6_reviewed_date: "2026-06-02"
 last_task6_audit: 2026-05-18
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: "auto-fixed"
 task2b_result: fixed
 task2b_state: fixed
@@ -50,6 +51,12 @@ task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修复 frontmatt
 
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 last_task9_autofix_at: "2026-06-02"
+last_task6_at: "2026-06-02T18:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-02-18-review.md"
+task6_review_notes: "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+task6_l1_l2_fixes: 11
+task6_l3_l4_issues: 0
+task6_new_rework: false
 ---
 
 <!-- outline-start -->
@@ -68,7 +75,7 @@ last_task9_autofix_at: "2026-06-02"
 
 这些问题的根源并不在 CPU，而在存储子系统。Android 设备的 I/O 路径从底层存储芯片一直到应用层的文件 API，中间经过了物理层协议、块设备层、I/O 调度器、文件系统、加密层、权限隔离层等多个环节。任何一个环节的瓶颈，最终都会以卡顿的形式暴露到用户体验上。理解这条完整的路径，是做 Android 性能优化的基础——尤其是存储相关的性能问题，往往不会直接在 CPU 火焰图上体现，需要我们具备从 Trace 中识别 I/O 等待的能力。
 
-本章我们就沿着数据从闪存芯片到应用程序的完整路径，自底向上拆解 Android 的存储架构。
+本章沿着数据从闪存芯片到应用程序的完整路径，自底向上梳理 Android 的存储架构。
 
 ## 存储栈全景：从闪存芯片到应用 API
 
@@ -76,7 +83,7 @@ Android 的存储栈可以大致分成四层。最底层是物理存储器件，
 
 用一张简化的数据流图来表示：
 
-```
+```text
 Application (Java/Kotlin)
     ↓  Scoped Storage / MediaStore API
 Android Framework (StorageManager, ContentProvider)
@@ -90,7 +97,7 @@ Storage Device (UFS / eMMC)
 
 为什么需要这么多层？因为每一层都在解决一个不同的工程问题。物理层解决的是"怎么在硅片上可靠地存储和读取数据"；块设备层解决的是"怎么高效调度并发 I/O 请求"；文件系统解决的是"怎么把数据组织成文件和目录的语义"；而 Android 框架层解决的是"怎么在多应用环境下安全地隔离和管理存储访问"。理解每一层的职责，我们才能在遇到性能问题时精准定位瓶颈所在的层级。
 
-下面从最底层开始，逐层拆解。
+先看最底层的物理存储器件。
 
 ## 物理存储器件：UFS 与 eMMC 的根本差异
 
@@ -104,7 +111,7 @@ UFS 则完全不同。它采用差分串行传输，物理层基于 MIPI M-PHY �
 
 从协议栈的角度看，UFS 的层次结构可以表示为：
 
-```
+```text
 ┌─────────────────────────┐
 │     Application Layer    │  ← SCSI Command Set (UCS)
 ├─────────────────────────┤
@@ -147,7 +154,7 @@ I/O 调度器负责把文件系统提交的 bio 请求按照一定策略排序�
 
 手机场景下，I/O 调度的挑战在于：前台 App（比如用户正在滑动的列表）需要低延迟的随机读，而后台任务（比如系统更新、媒体扫描）在进行大量顺序写。如果调度器不给力，后台的顺序写就会把前台的随机读挤到队列后面，造成卡顿。这也是为什么 Android 通过 task profiles 抽象调度组来实现前后台 I/O 隔离。AOSP android-15/16 的 `cgroups.json` 默认仍挂载 `blkio` 控制器在 `/dev/blkio`；`task_profiles.json` 中 `LowIoPriority` 加入 `blkio/background`，`SCHED_SP_FOREGROUND` / `SCHED_SP_TOP_APP` 聚合 `HighIoPriority` / `MaxIoPriority`。前后台 I/O 隔离效果取决于 kernel、active scheduler、blkio/BFQ 支持和 OEM 配置。cgroup v2 io controller 目前只能作为厂商/内核可选实现，可用 `/proc/cgroups`、`/sys/fs/cgroup`、`/dev/blkio` 确认设备实际配置。[已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/profiles/cgroups.json / task_profiles.json; 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
-### device-mapper：虚拟块设备的瑞士军刀
+### device-mapper：虚拟块设备映射层
 
 device-mapper（dm）是 Linux 内核提供的一个通用框架，它可以把一个或多个物理块设备"映射"成一个新的虚拟块设备。Android 大量使用了 device-mapper 来实现分区管理、完整性校验和加密等功能。
 
@@ -166,7 +173,7 @@ device-mapper 的工作基于三个概念：
 - **dm-snapshot**：快照设备，用于 Virtual A/B 升级，在升级过程中通过 Copy-on-Write（COW）设备记录变更。
 - **dm-default-key**：元数据加密，对 `data` 分区进行块级加密。
 
-这些 dm 目标层层叠加，最终形成了 Android 的分区布局。下面要拆解的，就是这些分区各自承担什么职责、怎么挂载、对性能有什么影响。
+这些 dm 目标层层叠加，最终形成了 Android 的分区布局。后面要说明的，就是这些分区各自负责什么、怎么挂载、对性能有什么影响。
 
 ## 分区布局：system、vendor、data 与 metadata
 
@@ -176,7 +183,7 @@ device-mapper 的工作基于三个概念：
 
 从 Android 10 开始，Google 引入了 **Dynamic Partition（动态分区）**。所有只读的 A/B 分区（`system`、`vendor`、`product`、`odm` 等）被合并到一个名为 `super` 的大物理分区中，然后通过 dm-linear 在运行时动态划分出逻辑分区。[已验证: 官方文档, source.android.com/docs/core/storage]
 
-```
+```text
 Physical Partition: super
 ┌──────────┬──────────┬──────────┬──────────┐
 │  system  │  vendor  │ product  │   odm    │
@@ -195,7 +202,7 @@ Physical Partition: super
 
 **data 分区**：这是唯一的大容量可写分区，承载了几乎所有用户数据——安装的 App（`/data/app/`）、App 私有数据（`/data/data/`）、媒体文件（`/data/media/`）、系统数据库（如 `settings.db`）等。data 分区使用文件级加密（FBE），是性能优化的重点关注对象，因为几乎所有涉及持久化的 I/O 操作都发生在这里。
 
-**metadata 分区**：一个独立的小分区，AOSP 建议大小为 16MB，通常挂载到 `/metadata`。它保存保护 metadata encryption key 的 KeyMint blobs，以及 `vold` 需要的少量状态。这里要分清顺序，系统在启动早期先挂载 `/metadata`，目的是拿到 key material；后面真正要解锁的是 `/data` 这侧的 metadata encryption key，不是“先把 metadata 分区解密”。[已验证: 官方文档, source.android.com/docs/security/features/encryption/metadata]
+**metadata 分区**：一个独立的小分区，AOSP 建议大小为 16MB，通常挂载到 `/metadata`。它保存保护 metadata encryption key 的 KeyMint blobs，以及 `vold` 需要的少量状态。这里要分清顺序，系统在启动早期先挂载 `/metadata`，目的是拿到 key material；后面要解锁的是 `/data` 这侧的 metadata encryption key，不是“先把 metadata 分区解密”。[已验证: 官方文档, source.android.com/docs/security/features/encryption/metadata]
 
 ### 挂载流程：从 bootloader 到用户空间
 
@@ -221,7 +228,7 @@ f2fs 的关键优化包括：
 
 **冷热数据分离**：f2fs 会根据数据的更新频率把它们分成"热"、"温"、"冷"三类。频繁更新的数据（如 SQLite 日志）放在一起，很少修改的数据（如照片）放在另一块区域。这样热数据的频繁更新不会影响冷数据所在的 block，减少了垃圾回收（GC）的开销和写入放大。
 
-**SQLite 原子写优化**：这是一个针对 SQLite 提交路径的文件系统级优化，但适用范围比“所有 journal 模式都受益”窄得多。SQLite 官方的 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 文档写明，这个能力会在底层文件系统支持 batch atomic write 时启用；截至 SQLite 3.21.0，公开支持的文件系统只有 F2FS。启用后，SQLite 避免写入的是 rollback journal。WAL 是另一条提交路径，事务先追加到 WAL 文件，再由 checkpoint 回写主库，因此这里不能把 f2fs atomic write 写成对 WAL 和 rollback journal 都等价生效。Android 设备是否真的走到这条优化路径，还要继续核对 `external/sqlite` 的编译选项和机型配置。[已验证: 官方文档, sqlite.org/compile.html; sqlite.org/wal.html]
+**SQLite 原子写优化**：这是一个针对 SQLite 提交路径的文件系统级优化，但适用范围比“所有 journal 模式都受益”窄得多。SQLite 官方的 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 文档写明，这个能力会在底层文件系统支持 batch atomic write 时启用；截至 SQLite 3.21.0，公开支持的文件系统只有 F2FS。启用后，SQLite 避免写入的是 rollback journal。WAL 是另一条提交路径，事务先追加到 WAL 文件，再由 checkpoint 回写主库，因此这里不能把 f2fs atomic write 写成对 WAL 和 rollback journal 都等价生效。Android 设备是否走到这条优化路径，还要继续核对 `external/sqlite` 的编译选项和机型配置。[已验证: 官方文档, sqlite.org/compile.html; sqlite.org/wal.html]
 
 在 Perfetto 中，如果我们在 `data` 分区上观察到大量的 `fsync` 延迟，可以先确认文件系统类型。如果是 ext4，关注 `jbd2` 和 `ext4_sync_file_*` 这类同步写路径；如果已经是 f2fs，再看是否有回写、checkpoint 或 GC 在和前台 I/O 抢设备队列。f2fs 的 GC 多数时间在后台完成，但存储空间紧张时，前台读写也会被它拖慢。[图：f2fs GC 与前台 I/O 竞争的 Trace。主线程 slice 停在 `fsync` 或 `read`，后台出现 f2fs 回写或 GC 相关 worker，`block_rq_issue` 到 `block_rq_complete` 的间隔被拉长。]
 
@@ -267,7 +274,7 @@ Scoped Storage 对 App 开发和性能优化有几个直接影响。
 | Android 9 | `system-as-root` 成为 launching device 基线，rootfs 合入 `system.img` | 传统 external storage 模型 | FUSE 仍用于 emulated storage，Scoped Storage 还没强制上线 | 旧项目以路径访问为主，但开始留意后续权限收紧 |
 | Android 10 | dynamic partitions + `first-stage init` 成为新设备主路径 | Scoped Storage 引入，允许一部分兼容开关 | 共享存储访问普遍经过 FUSE | 新代码优先 MediaStore / SAF，少依赖裸路径 |
 | Android 11 | `/data` 挂载流程继续沿用 Android 10 | shared media 支持 direct file paths、`File` API、`fopen()` | 仍有 FUSE，但 API 入口多了一条兼容路径 | 媒体库兼容可以用 direct file paths，随机读写仍优先 MediaStore |
-| Android 12 | 挂载模型基本稳定 | API 入口与 Android 11 接近 | launching device + official kernel 可启用 FUSE passthrough | 先确认设备是否真的支持 passthrough，再判断瓶颈位置 |
+| Android 12 | 挂载模型基本稳定 | API 入口与 Android 11 接近 | launching device + official kernel 可启用 FUSE passthrough | 先确认设备是否支持 passthrough，再判断瓶颈位置 |
 | Android 15 | 挂载与共享存储主模型延续 Android 12+ | MediaStore / direct file path 共存 | FUSE passthrough 仍取决于内核与模块版本 | 大量枚举和跨媒体库访问仍优先 MediaStore，模块侧优化按设备实测确认 |
 
 ## FBE：文件级加密的存储影响
@@ -320,7 +327,7 @@ AOSP 中的关键实现路径：
 
 传统的 A/B 分区方案为每个分区维护两套完整的副本（slot A 和 slot B），占用双倍的存储空间。Virtual A/B 在此基础上做了优化：它不再为每个只读分区维护完整副本，而是利用 dm-snapshot（COW 设备）只记录升级过程中的变更。具体来说，升级时系统会创建一个 COW 设备，在 `super` 分区中分配空间。新版本的分区数据写入 COW 区域，旧版本的数据保持不变。如果升级成功，COW 中的数据被合并为正式数据；如果升级失败，系统可以回退到旧版本——只需要丢弃 COW 设备即可。
 
-```
+```text
 Virtual A/B 升级流程：
 
 super 分区布局（升级中）：
@@ -357,7 +364,7 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 **「手机变慢是因为闪存老化了吗？」**
 
-不完全是。闪存确实有擦写寿命，但正常使用条件下（每天写入 10-20GB），TLC 闪存的寿命在 3-5 年内不太可能耗尽。手机长期使用后变慢，更主要的原因是存储碎片化导致的 GC 频率上升、App 数据量增长导致的 I/O 增多、以及系统更新后新版本对存储性能的更高要求。存储器件本身的性能退化只贡献了一小部分。
+不完全是。闪存有擦写寿命，但正常使用条件下（每天写入 10-20GB），TLC 闪存的寿命在 3-5 年内不太可能耗尽。手机长期使用后变慢，更主要的原因是存储碎片化导致的 GC 频率上升、App 数据量增长导致的 I/O 增多、以及系统更新后新版本对存储性能的更高要求。存储器件本身的性能退化只贡献了一小部分。
 
 **「f2fs 一定比 ext4 快吗？」**
 
@@ -365,7 +372,7 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 **「FBE 加密会拖慢存储性能吗？」**
 
-在支持 inline encryption 的设备上，FBE 额外带来的 CPU 成本通常不大；如果设备缺少这类硬件能力，软件加密会把一部分开销重新搬回 CPU。排查时别只盯着“FBE 会不会慢”，还要一起看 `dm-default-key` 是否启用、`vold` / kernel 日志里有没有解锁重试，以及 block 层等待是否真的和加密阶段重合。
+在支持 inline encryption 的设备上，FBE 额外带来的 CPU 成本通常不大；如果设备缺少这类硬件能力，软件加密会把一部分开销重新搬回 CPU。排查时别只盯着“FBE 会不会慢”，还要一起看 `dm-default-key` 是否启用、`vold` / kernel 日志里有没有解锁重试，以及 block 层等待是否与加密阶段重合。
 
 ## 存储问题观测地图
 
@@ -405,4 +412,3 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 - **Android Storage | Android Open Source Project** — source.android.com/docs/core/storage，官方分区与加密文档
 - **Scoped Storage | Android Developers** — developer.android.com/about/versions/11/privacy/storage，分区存储 API 与权限模型
 - **JEDEC UFS 4.0 Standard (JESD220E)** — UFS 4.0 规范，MCQ 多命令队列定义
-
