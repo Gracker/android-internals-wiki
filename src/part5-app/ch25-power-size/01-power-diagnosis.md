@@ -2,7 +2,7 @@
 title: "功耗诊断与分析方法"
 chapter: "25.1"
 section: "25.1"
-status: "ready-for-review"
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers power docs + Clippings structure references"
@@ -34,15 +34,15 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 last_task2b_lite_at: "2026-06-03"
-last_task6_review_log: logs/review/2026-05-15-08-review.md
-task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。 | 2026-05-15 Task6：pass-light-edit。写作质量复审通过；无新增 L3/L4 回炉问题。Task9 已有 WakeLock 口径 P1 pending，保持 task2b_pending。"
+last_task6_review_log: "logs/review/2026-06-03-07-review.md"
+task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
@@ -51,9 +51,10 @@ last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 0；Android Vitals WakeLock 阈值仍缺 non-exempt、screen-off/background、5% sessions/28 天与豁免口径。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-last_task6_at: "2026-05-15T08:10:00+08:00"
+reviewed_date: "2026-06-03"
+last_task6_at: "2026-06-03T07:08:52+08:00"
 review_type: task6-writing-quality-review
+task6_reviewed_date: "2026-06-03"
 ---
 
 # 功耗诊断与分析方法
@@ -83,11 +84,11 @@ review_type: task6-writing-quality-review
 
 ## 为什么要了解功耗诊断与分析方法
 
-本节讲 App 侧的功耗诊断，不再重复 Android 功耗模型的计算细节。模型、硬件电流表和 BatteryStats 归属算法见 §11.1；后台任务、定位、网络、Alarm 的省电策略见 §11.2；Battery Historian 的部署细节见 §14.11。
+App 侧功耗诊断不用重复 Android 功耗模型的计算细节。模型、硬件电流表和 BatteryStats 归属算法见 §11.1；后台任务、定位、网络、Alarm 的省电策略见 §11.2；Battery Historian 的部署细节见 §14.11。
 
 App 实战里要解决的是另一件事：用户说耗电之后，怎么把“掉电快”拆成可复现的场景、可对比的数据和可修改的代码入口。功耗诊断的目标是把 CPU、网络、GNSS、WakeLock 这些信号放到同一个时间窗口里判断，而不是追一个万能指标。
 
-这也是 Part 5 和前面机制篇的区别。这里关注怎么抓数据、怎么读数据、怎么把异常归到业务动作上，而不是重新解释系统为什么这样计电。
+Part 5 更关注怎么抓数据、怎么读数据、怎么把异常归到业务动作上，不重新解释系统为什么这样计电。
 
 [结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
 
@@ -169,19 +170,19 @@ rg "com.example.app|u0a123|Wake lock|Uid u0a123|Network|Sensor" batterystats.txt
 
 CPU 异常通常表现为目标 UID CPU time 上升、Perfetto 里目标进程线程密集运行、CPU frequency counter 长时间停在高频。诊断顺序是：用 `batterystats` 确认 UID CPU 时间，再用 Perfetto 找线程，再回到代码看这段线程在做计算、轮询、锁等待还是 IO 等待。
 
-CPU 功耗不能只看线程是否 busy。大核高频、持续唤醒、频繁跨核迁移都会改变成本。调度和 DVFS 的机制见 §5.1、§5.4，本节只保留实战判断：同样 30 秒 CPU time，如果一个版本让大核长时间拉高频，另一个版本把任务压到短时批处理，两者的电量结果可能不同。
+CPU 功耗不能只看线程是否 busy。大核高频、持续唤醒、频繁跨核迁移都会改变成本。调度和 DVFS 的机制见 §5.1、§5.4；实战判断看这个差异：同样 30 秒 CPU time，如果一个版本让大核长时间拉高频，另一个版本把任务压到短时批处理，两者的电量结果可能不同。
 
 ### 网络：看传输量，也看唤醒形态
 
 网络功耗常见异常常来自碎片流量。十几 KB 的请求如果每分钟唤醒一次，modem 和 Wi-Fi 都要反复从低功耗状态切到活跃状态。`batterystats` 里看 UID 收发字节数和 radio active；Battery Historian 里看 `network` 行是否出现密集短脉冲；Perfetto 里进一步查 socket tag、线程和请求发起点。
 
-网络优化策略不要在本节展开，详见 §24.4、§24.5。这里给出的诊断结论只到“是哪类请求在唤醒网络、频率是多少、是否能批量化”。
+网络优化策略详见 §24.4、§24.5。诊断结论要落到“是哪类请求在唤醒网络、频率是多少、是否能批量化”。
 
 ### GPS 与传感器：看后台持续时间
 
 GNSS、相机、麦克风、运动传感器都属于高风险功耗入口。GPS 异常在 Battery Historian 的 `gps` 行通常很直观：屏幕灭掉后仍有连续活跃区间，或者定位请求间隔远小于业务需要。`batterystats` 的 sensor / gps 项能把使用时间归到 UID。
 
-定位治理见 §25.5。本节诊断阶段只做三件事：确认是否后台使用、确认请求间隔和精度等级、确认是否能用 geofence / passive location / batched location 代替持续高精度定位。
+定位治理见 §25.5。诊断阶段只做三件事：确认是否后台使用、确认请求间隔和精度等级、确认是否能用 geofence / passive location / batched location 代替持续高精度定位。
 
 ### WakeLock：把“让 CPU 不睡”的责任找出来
 
@@ -216,4 +217,4 @@ Partial WakeLock 是功耗异常里最容易直接归责的一类。Android Vita
 
 功耗诊断的工作顺序很固定：先把场景做成可复现测试，再用 `batterystats` 找 UID 级异常，接着用 Battery Historian / Power Profiler / Perfetto 把异常放回时间线，并按 CPU、网络、GPS、WakeLock 四类入口归责。
 
-本节的输出不应该是一句“App 很耗电”，而应该是“在息屏后台 30 分钟场景中，目标 UID 持有 `upload_worker` Partial WakeLock 24 分钟，同时每 60 秒触发一次 mobile radio active；疑似日志上传重试未退避”。只有到这个粒度，后面的 §25.2、§25.3、§25.5 才能进入具体治理。
+功耗诊断的输出不应该是一句“App 很耗电”，而应该是“在息屏后台 30 分钟场景中，目标 UID 持有 `upload_worker` Partial WakeLock 24 分钟，同时每 60 秒触发一次 mobile radio active；疑似日志上传重试未退避”。只有到这个粒度，后面的 §25.2、§25.3、§25.5 才能进入具体治理。

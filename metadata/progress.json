@@ -289,7 +289,10 @@
     "3.5",
     "20.1",
     "18.7",
-    "18.13"
+    "18.13",
+    "22.7",
+    "24.8",
+    "25.1"
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -423,34 +426,37 @@
     "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-    "src/part5-app/ch24-io-network/04-network-architecture.md"
+    "src/part5-app/ch24-io-network/04-network-architecture.md",
+    "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+    "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
-  "review_summary": "Task6 2026-06-03 04: review 2.10 GPU 渲染深入、22.12 FragmentTransaction 提交链路与页面切换性能、24.4 网络架构与连接管理；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
+  "review_summary": "Task6 2026-06-03 07: review 22.7 WebView 性能优化实战、24.8 I/O 与网络优化案例集、25.1 功耗诊断与分析方法；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
   "task6_review_summary": {
-    "reviewed_at": "2026-06-03T04:08:00+08:00",
+    "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.10",
-      "22.12",
-      "24.4"
+      "22.7",
+      "24.8",
+      "25.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-      "src/part5-app/ch24-io-network/04-network-architecture.md"
+      "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
-    "log": "logs/review/2026-06-03-04-review.md",
-    "review_log": "logs/review/2026-06-03-04-review.md",
+    "log": "logs/review/2026-06-03-07-review.md",
+    "review_log": "logs/review/2026-06-03-07-review.md",
     "pass_light_edit": [
-      "2.10",
-      "22.12",
-      "24.4"
+      "22.7",
+      "24.8",
+      "25.1"
     ],
     "needs_rework": [],
     "auto_promoted": [],
     "auto_finalized": [],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
     "new_rework": false
   },
@@ -2394,43 +2400,49 @@
       "pipeline_stage": "task6_pending"
     }
   },
-  "total_review_sections": 283,
+  "total_review_sections": 286,
   "next_review_candidates": [
     {
       "section": "26.12",
       "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
       "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
       "reason": "仍为 ready-for-review / task6_state revisiting"
+    },
+    {
+      "section": "22.12",
+      "title": "FragmentTransaction 提交链路与页面切换性能",
+      "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "reason": "仍为 ready-for-review / task6_state revisiting，但本日已 review 过一次，优先级低于 26.12"
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T05:37:00+08:00",
-  "last_updated_by": "task2b-lite",
+  "last_updated": "2026-06-03T07:08:52+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-03T04:08:00+08:00",
+    "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.10",
-      "22.12",
-      "24.4"
+      "22.7",
+      "24.8",
+      "25.1"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-      "src/part5-app/ch24-io-network/04-network-architecture.md"
+      "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
-    "log": "logs/review/2026-06-03-04-review.md",
-    "review_log": "logs/review/2026-06-03-04-review.md",
+    "log": "logs/review/2026-06-03-07-review.md",
+    "review_log": "logs/review/2026-06-03-07-review.md",
     "pass_light_edit": [
-      "2.10",
-      "22.12",
-      "24.4"
+      "22.7",
+      "24.8",
+      "25.1"
     ],
     "needs_rework": [],
     "auto_promoted": [],
     "auto_finalized": [],
     "result": "pass-light-edit",
-    "l1_l2_fixes": 8,
+    "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
     "new_rework": false
   },
@@ -3490,10 +3502,18 @@
     "22.7": {
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-13T09:12:00+08:00",
+      "last_task6_at": "2026-06-03T07:08:52+08:00",
       "task6_result": "pass-light-edit",
-      "last_task6_review_log": "logs/review/2026-05-13-09-review.md",
-      "task9_state": "pending"
+      "last_task6_review_log": "logs/review/2026-06-03-07-review.md",
+      "task9_state": "pending",
+      "title": "WebView 性能优化实战",
+      "file": "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-03",
+      "task6_reviewed_date": "2026-06-03",
+      "task6_review_notes": "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。",
+      "task2b_state": "fixed"
     },
     "22.8": {
       "status": "ready-for-review",
@@ -4036,39 +4056,44 @@
     },
     "24.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T13:30:11+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "queue_priority": 85,
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-05-14",
-      "last_task6_at": "2026-05-14T14:09:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-14-review.md",
+      "task6_reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T07:08:52+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-07-review.md",
       "file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
-      "title": "I/O 与网络优化案例集"
+      "title": "I/O 与网络优化案例集",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-03",
+      "task6_review_notes": "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
     },
     "25.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-15T07:35:58+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md",
       "queue_priority": 85,
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_state": "reviewed",
       "file": "src/part5-app/ch25-power-size/01-power-diagnosis.md",
       "title": "功耗诊断与分析方法",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-15",
-      "last_task6_at": "2026-05-15T08:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
+      "reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T07:08:52+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-07-review.md",
+      "task6_reviewed_date": "2026-06-03",
+      "task6_review_notes": "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
     },
     "25.2": {
       "status": "finalized",
