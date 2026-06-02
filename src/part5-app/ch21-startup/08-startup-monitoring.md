@@ -2,7 +2,7 @@
 title: "启动监控与度量"
 chapter: "21.8"
 section: "21.8"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "Android Developers docs, Google Play Android Vitals, Clippings structure refs"
@@ -13,7 +13,7 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/launch-time"
   - type: official
-    path: "https://developer.android.com/topic/performance/appstartup"
+    path: "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
   - type: official
     path: "https://developer.android.com/reference/android/app/Activity#reportFullyDrawn()"
   - type: clippings-structure-ref
@@ -26,16 +26,18 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-17"
 last_task9_at: "2026-05-17T20:29:00+08:00"
 last_task9_audit: "2026-05-17"
 last_task9_review_log: "logs/deep-review/2026-05-17-20-audit.md"
-task2b_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: "2026-06-02"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_reviewed_date: "2026-05-15"
@@ -223,7 +225,9 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 ### Android 15+ 的平台启动信息
 
-Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。[已验证: Android Developers reference, API 35; Task9 确认 2026-05-14]
+Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。[已验证: Android Developers reference, API 35; Task9 确认 2026-05-17]
+
+`addApplicationStartInfoCompletionListener()` 的完成回调以 first frame drawn 为边界，不等待业务调用 `Activity.reportFullyDrawn()`。如果要用平台时间戳校准 TTFD / FULLY_DRAWN，必须先在业务内容真正可用后调用 `reportFullyDrawn()`，再通过 `getHistoricalProcessStartReasons()` 或后续拿到的 `ApplicationStartInfo` 副本读取 `START_TIMESTAMP_FULLY_DRAWN`；否则这个时间戳可能不存在。[已验证: Android Developers ActivityManager/ApplicationStartInfo reference, API 35]
 
 它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖 Android 15+ 设备，线上监控仍需要保留 Android 10-14 的兼容采集路径。
 
@@ -273,4 +277,3 @@ Android Vitals 和自建启动监控的差异主要在四个方面。
 ## 小结
 
 启动监控的工作顺序是：先定义 TTID / TTFD 和启动类型，再采集端侧时间线与归因字段，随后用 P50/P90/P99 建看板和告警，并把 Android Vitals 作为外部校准。优化是否有效，不由单次 Trace 决定，而由线上分位值、慢样本归因和版本趋势共同决定。
-

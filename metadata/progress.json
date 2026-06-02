@@ -1446,7 +1446,10 @@
       "task6_new_rework": false,
       "auto_finalized": true,
       "auto_promoted_at": "2026-05-15T20:08:00+08:00",
-      "summary": "Task6 复审通过，Task9 已 pass-tech-review 且 queue.json 无 pending 条目，自动晋升 finalized。"
+      "summary": "Task2B Lite 修复 ApplicationStartInfo completion listener / FULLY_DRAWN 语义，并替换失效 appstartup 官方文档链接；回流 Task6。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_lite_at": "2026-06-02"
     },
     "1.18": {
       "p0": 0,
@@ -2378,8 +2381,8 @@
   "total_review_sections": 283,
   "next_review_candidates": [],
   "ready_for_review": 156,
-  "last_updated": "2026-06-02T22:50:00+08:00",
-  "last_updated_by": "task2b-main",
+  "last_updated": "2026-06-02T23:35:00+08:00",
+  "last_updated_by": "openclaw-task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-06-02T18:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -3245,22 +3248,25 @@
       "source_file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
     },
     "21.8": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "last_task6_at": "2026-05-15T20:08:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-05-15-20-review.md",
-      "task9_state": "reviewed",
-      "task9_result": "pass-tech-review",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/08-startup-monitoring.md",
       "title": "启动监控与度量",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-15",
       "auto_promoted": true,
-      "auto_promoted_at": "2026-05-15T20:08:00+08:00"
+      "auto_promoted_at": "2026-05-15T20:08:00+08:00",
+      "task2b_result": "fixed-lite",
+      "task2b_state": "fixed",
+      "last_task2b_lite_at": "2026-06-02"
     },
     "21.9": {
       "status": "finalized",
@@ -12007,12 +12013,12 @@
       }
     ]
   },
-  "last_task2b_lite_at": "2026-06-01T21:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-02T23:35:00+08:00",
   "last_task2b_lite_sections": [
-    "3.5"
+    "21.8"
   ],
   "last_task2b_lite_files": [
-    "src/part1-fundamentals/ch03-input/05-input-interception-security.md"
+    "src/part5-app/ch21-startup/08-startup-monitoring.md"
   ],
   "task2b_verifier_history": [
     {
@@ -12515,7 +12521,7 @@
     "result": "blocked"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-06-01-21-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-02-23-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
