@@ -2404,8 +2404,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T04:50:00+08:00",
-  "last_updated_by": "openclaw-task2b-main",
+  "last_updated": "2026-06-03T05:37:00+08:00",
+  "last_updated_by": "task2b-lite",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -12303,15 +12303,24 @@
         "fixed_date": "2026-06-03T03:35:00+08:00",
         "source": "frontmatter-fallback/task9-deep-review",
         "fix_summary": "补 OkHttp HTTP/2 connection coalescing 条件；HTTPDNS lookup 收敛为缓存读取，避免同步建连路径实时网络请求。"
+      },
+      {
+        "section": "25.1",
+        "title": "功耗诊断与分析方法",
+        "file": "src/part5-app/ch25-power-size/01-power-diagnosis.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-06-03T05:37:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review",
+        "fix_summary": "补 Android Vitals Partial WakeLock non-exempt、后台/FGS、豁免类别、5% sessions/28 天与本地诊断边界。"
       }
     ]
   },
-  "last_task2b_lite_at": "2026-06-03T03:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-03T05:37:00+08:00",
   "last_task2b_lite_sections": [
-    "24.4"
+    "25.1"
   ],
   "last_task2b_lite_files": [
-    "src/part5-app/ch24-io-network/04-network-architecture.md"
+    "src/part5-app/ch25-power-size/01-power-diagnosis.md"
   ],
   "task2b_verifier_history": [
     {
@@ -12830,7 +12839,7 @@
     "result": "blocked"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-06-03-03-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-03-05-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
@@ -12868,15 +12877,15 @@
   "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-03-04-task2b-main.md",
   "task2b_last_rework_lite": {
-    "at": "2026-06-03T03:35:00+08:00",
+    "at": "2026-06-03T05:37:00+08:00",
     "sections": [
-      "24.4"
+      "25.1"
     ],
     "files": [
-      "src/part5-app/ch24-io-network/04-network-architecture.md"
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
     ],
     "result": "fixed-lite",
-    "type": "frontmatter"
+    "type": "版本限定"
   },
   "section_18_15": {
     "section": "18.15",

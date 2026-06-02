@@ -34,12 +34,13 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
 last_task2b_at: "2026-05-15T07:22:00+08:00"
+last_task2b_lite_at: "2026-06-03"
 last_task6_review_log: logs/review/2026-05-15-08-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。 | 2026-05-15 Task6：pass-light-edit。写作质量复审通过；无新增 L3/L4 回炉问题。Task9 已有 WakeLock 口径 P1 pending，保持 task2b_pending。"
 task9_result: needs-rework
@@ -184,7 +185,7 @@ GNSS、相机、麦克风、运动传感器都属于高风险功耗入口。GPS 
 
 ### WakeLock：把“让 CPU 不睡”的责任找出来
 
-Partial WakeLock 是功耗异常里最容易直接归责的一类。Android Vitals 把 24 小时内后台 Partial WakeLock 累计 2 小时及以上定义为 excessive wake lock；如果某次后台 Partial WakeLock 持续 1 小时及以上，会进入 stuck wake lock 视角。 [已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock] [已验证: 官方文档, developer.android.com/topic/performance/vitals/stuck-wakelock]
+Partial WakeLock 是功耗异常里最容易直接归责的一类。Android Vitals 把 24 小时内后台或前台服务中的非豁免 Partial WakeLock 累计 2 小时及以上定义为 excessive wake lock；如果 24 小时内至少出现一次后台持有 1 小时及以上，会进入 stuck wake lock 视角。Vitals 口径会排除 audio、location、JobScheduler user-initiated 等明确用户收益场景；超过 5% app sessions / 28 天的 excessive wake lock 才进入 Play 质量门槛，本地诊断仍要排查所有 tag 和时间窗口。 [已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock] [已验证: 官方文档, developer.android.com/topic/performance/vitals/stuck-wakelock]
 
 实战里要同时看三件事：tag 是否能指到业务模块、持有时间是否跨过场景结束点、bugreport 生成时是否仍处于 held 状态。如果 tag 写成 `wakelock`、`service` 这类无信息名称，定位会被迫转向线程栈、日志和埋点；这类命名问题应在代码规范里修掉。
 
