@@ -2,7 +2,7 @@
 title: "RenderEffect 与 RuntimeShader 性能实践"
 chapter: "22.10"
 section: "22.10"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-03"
@@ -13,13 +13,13 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_task6_at: "2026-06-03T03:06:00+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-06-03"
 reviewed_by: openclaw-task6
-task9_state: pending
+task9_state: reviewed
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
@@ -53,13 +53,13 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_state: fixed
-task9_reviewed_date: "2026-05-20"
+task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-20T11:41:31+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
-task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 0 / P1 1 / P2 2；P1 为 RuntimeShader 示例中 setRenderEffect 失效行为注释与 AOSP View.setRenderEffect 源码不一致。"
+last_task9_at: "2026-06-03T05:27:37+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；RenderEffect、RuntimeShader、View.setRenderEffect 与 GPU Headroom 版本边界复核通过，自动晋升 finalized。"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
