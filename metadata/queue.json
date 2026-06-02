@@ -428,8 +428,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-01T16:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-01-16-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-01-16-review.md",
+    "completed_at": "2026-06-02T22:50:00+08:00",
+    "completed_by": "task2b-main",
+    "completion_reason": "已改为示例场景，删除无 artifact 支撑的实测数字和重复效果验证。"
   },
   {
     "section": "3.5",
@@ -481,10 +484,13 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-01T18:10:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-06-02-10-review.md",
     "updated_by": "task6-review",
-    "updated_at": "2026-06-02T10:05:00+08:00"
+    "updated_at": "2026-06-02T10:05:00+08:00",
+    "completed_at": "2026-06-02T22:50:00+08:00",
+    "completed_by": "task2b-main",
+    "completion_reason": "已删除发布稿中的编辑态源码调研补充，统一 NN HAL 可发布口径。"
   },
   {
     "section": "5.6",
