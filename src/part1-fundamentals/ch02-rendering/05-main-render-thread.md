@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: ready-for-review
+status: "finalized"
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
@@ -17,12 +17,12 @@ reviewed_date: "2026-06-01"
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-05-18"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
-last_task9_at: "2026-06-02T00:25:54+08:00"
+last_task9_at: "2026-06-03T01:26:00+08:00"
 last_task9_audit: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-02"
-last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 deep review: auto-fixed。AUTO-FIX: 修正 dumpsys gfxinfo 逐 View DisplayList command count 误述；P0 1 / P1 0 / P2 1，回到 Task6 复审。"
+task9_reviewed_date: "2026-06-03"
+last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -36,13 +36,13 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_result: "pass-light-edit"
 task6_state: reviewed
 task6_reviewed_date: "2026-06-02"
 reviewed_date: "2026-06-02"
-task9_result: "auto-fixed"
-task9_state: pending
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
@@ -55,9 +55,9 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 last_task9_autofix_at: "2026-06-02"
-p0: 1
-p1: 0
-p2: 1
+p0: "0"
+p1: "0"
+p2: "0"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
