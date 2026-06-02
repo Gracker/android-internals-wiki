@@ -5,39 +5,38 @@ chapter: "2.19"
 section: "2.19"
 status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-05-31"
+reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_result: "needs-rework"
+task6_state: "reviewed"
 task9_state: pending
 task9_result: auto-fixed
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: "task6_pending"
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-05-30T20:50:00+08:00"
 task2b_notes: "修复 Task9 2026-05-30 深度技术 Review 问题：修正源码引用路径，补充 Android 11-17 版本差异描述，添加厂商实现差异和性能基准数据，修正 DisplayManagerInternal.java 路径"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
 confidence: medium
-sources: 
-- type: aosp
-path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
+sources:
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: 2026-05-30T20:30:32.504625
-last_task6_at: "2026-05-30T01:05:00+08:00"
-task6_review_notes: "2026-05-30 01: Task6 revisiting review: pass-light-edit；L1/L2 小修 2 处；保留既有截图/厂商数据待补充标注，无新增回炉项，送 Task9 复审。"
-last_task6_review_log: "logs/review/2026-05-30-01-review.md"
-task6_reviewed_date: "2026-05-30"
+last_task6_at: "2026-06-02T16:05:00+08:00"
+task6_review_notes: "2026-06-02 16: Task6 revisiting review: needs-rework；L1/L2 小修 6 处；新增 3 个 L3/L4 回炉项：ARR 版本口径、示意代码边界、SoC/续航量化数据来源。"
+last_task6_review_log: "logs/review/2026-06-02-16-review.md"
+task6_reviewed_date: "2026-06-02"
 task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 2
-task6_l3_l4_issues: 0
-task6_new_rework: false
+task6_l1_l2_fixes: 6
+task6_l3_l4_issues: 3
+task6_new_rework: true
 review_type: "task6-writing-quality-review"
-last_task2b_at: "2026-05-30T00:50:00+08:00"
 last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
 ---
@@ -438,7 +437,7 @@ W/SurfaceFlinger: Frame missed during refresh rate switch
 
 ### ARR 的版本演进（Android 11-17）
 
-ARR 在不同 Android 版本中有显著实现差异：
+ARR 在不同 Android 版本中的实现方式不同：
 
 | Android 版本 | ARR 实现方式 | 关键特性 | 硬件要求 |
 |--------------|-------------|----------|----------|
@@ -446,8 +445,10 @@ ARR 在不同 Android 版本中有显著实现差异：
 | **Android 12** | 增强模式切换 | 支持无缝切换，优化 PLL 切换 | Composer HAL 1.2+ |
 | **Android 13** | 智能场景识别 | 引入内容检测和场景识别 | Composer HAL 1.4+ |
 | **Android 14** | 预切换优化 | 支持并行准备和快速切换 | Composer HAL 1.6+ |
-| **Android 15** | 真正 ARR | 动态调整刷新率，支持范围设置 | Composer HAL 2.4+ |
+| **Android 15** | 动态 ARR | 动态调整刷新率，支持范围设置 | Composer HAL 2.4+ |
 | **Android 16-17** | ARR 增强 | 支持机器学习驱动的智能调整 | Composer HAL 2.6+ |
+
+[需确认：Android 15-17 的 ARR HAL 版本、机器学习驱动识别和连续范围控制等版本口径需要 Task9 对照 Android 17 / API 37 范围复核；未闭合前不作为正文结论发布。]
 
 ### 不同 Android 版本的 ARR 实现差异
 
@@ -463,7 +464,7 @@ ARR 在不同 Android 版本中有显著实现差异：
 
 **Android 14-15**: 高级 ARR
 - 支持预切换模式，准备工作和实际切换并行
-- Android 15 支持真正的动态刷新率调整
+- Android 15 支持动态刷新率调整
 - 新增 ARR 专用 HAL 接口
 
 **Android 16-17**: 智能 ARR
@@ -617,6 +618,8 @@ public class BatteryMonitor {
 ```
 
 ## App 与系统优化策略
+
+[需重写：以下优化示例包含多个示意函数，应明确标注为伪代码并补对应真实 API / Trace 观察路径，或改成概念性建议。]
 
 ### App 侧优化
 
@@ -861,6 +864,8 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 
 ### 性能基准与量化数据
 
+[需补充素材：本节所有 SoC / 续航 / 电池百分比数据需要补设备、Android 版本、刷新率、亮度、测试工具、样本次数和原始记录路径；无法补齐时降级为示例量级或定性描述。]
+
 #### 关键指标基准
 
 | 指标 | 优秀 | 良好 | 需要优化 |
@@ -901,11 +906,11 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 
 ## 总结
 
-刷新率切换是 Android 性能优化中的一个重要话题。通过理解刷新率切换的机制、掌握 Perfetto 中的分析方法、应用 App 和系统两侧的优化策略，我们可以：
+刷新率切换分析的关键，是把 App 渲染、SurfaceFlinger 决策和 Display HAL 切换放在同一条时间线上看。理解刷新率切换的机制、掌握 Perfetto 中的分析方法、应用 App 和系统两侧的优化策略，我们可以：
 
-1. **准确识别问题**：从 App 正常但用户卡顿的现象中找到真正的原因
+1. **准确识别问题**：从 App 正常但用户卡顿的现象中定位刷新率切换路径
 2. **精确优化**：针对刷新率切换的不同代价采用相应优化策略
 3. **提升用户体验**：减少切换卡顿，提供更流畅的界面体验
 4. **平衡性能与功耗**：根据场景智能选择刷新率，避免不必要的功耗浪费
 
-随着 Android 系统的不断发展，刷新率技术也在不断演进。从 Android 11 的多刷新率支持，到 Android 13 的 ARR 智能切换，未来的刷新率技术将更加智能化和高效。开发者需要持续关注这些技术发展，以便更好地应用到实际开发中。
+实际排查时，先确认 VSync 周期和 SurfaceFlinger 日志，再回到 App 侧看 FrameTimeline，能减少在错误 Track 上反复排查的时间。

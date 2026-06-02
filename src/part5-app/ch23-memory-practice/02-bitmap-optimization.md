@@ -51,6 +51,8 @@ last_task9_at: "2026-05-14T01:41:44+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-01-deep-review.md
 task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。"
 task2b_result: fixed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # Bitmap 与图片内存优化
@@ -80,12 +82,10 @@ task2b_result: fixed
 
 ## 为什么要了解 Bitmap 与图片内存优化
 
-图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算一起放大。一个 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB；如果它只显示成 200×150 的缩略图，绝大部分像素都没有参与最终显示，却已经占用了 Native Heap 或 Java Heap。
+图片内存问题很少是单一原因——解码尺寸、缓存复用、页面生命周期、设备内存预算，这几个因素叠加在一起才会把问题放大。举个例子：一张 4000×3000 的 `ARGB_8888` 图片解码后大约 45.8 MB，但如果在列表里只显示成 200×150 的缩略图，99% 的像素根本没参与显示，却已经把 Native Heap 或 Java Heap 占满了。
 
-这一节聚焦四个应用侧入口：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进入 Native Heap 后对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
+这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进入 Native Heap，对监控口径意味着什么；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
 
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
 
 ## Bitmap 内存计算与 inSampleSize
 
@@ -153,14 +153,13 @@ fun calculateInSampleSize(
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 Android Developers 的 Bitmap 内存文档列出版本边界：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 16，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
 
 AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `getAllocationByteCount()`，再通过 `NativeAllocationRegistry.registerNativeAllocation(this, mNativePtr)` 注册 Native 释放器。这个设计带来两个工程结论：
 
 - **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，Native 像素内存也会被保留。Bitmap 泄漏的根不一定在 Native 层，常常是 Java 引用链没有断开。
-- **Native Heap 变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接反映到 Native Heap。`dumpsys meminfo` 或线上内存指标看到 Native Heap 上升时，要把 Bitmap 分配和 JNI / so 库分配分开归因。
+- **Native Heap 变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高 Native Heap。用 `dumpsys meminfo` 或线上内存指标看到 Native Heap 上升时，先区分是 Bitmap 分配还是 JNI/so 库分配，不要直接归因到 JNI 泄漏。
 
 `recycle()` 只能作为明确失效后的提前释放手段，不适合替代生命周期管理。官方文档对旧版本建议过引用计数式 `recycle()`，但也提醒：Bitmap 被回收后再绘制会触发 “Canvas: trying to use a recycled bitmap”。在 Android 10+ 项目里，更稳的策略是让图片请求跟随页面生命周期取消，让缓存有上限，让不可见页面及时释放强引用；只有超大图编辑、一次性解码、离屏处理这类边界清楚的场景，才考虑显式 `recycle()`。
 
@@ -168,7 +167,6 @@ AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `ge
 
 [已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap]
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 图片监控不要等到 OOM 再看堆。统一图片入口应记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
 
@@ -298,7 +296,7 @@ fun decodeWithReuse(
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BaseCanvas.java]
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/ImageDecoder.java]
 
-`Bitmap.Config.HARDWARE` 表示像素只存储在图形内存中。`ImageDecoder` 的 AOSP 注释说明，它默认创建的 Bitmap 通常是 immutable，并且常见配置是 `Config.HARDWARE`；这适合只展示、不修改、由硬件加速管线绘制的图片，例如详情页大图、列表中不需要像素读取的封面图。
+`Bitmap.Config.HARDWARE` 的含义很明确：像素只放在图形内存里，不走 Java/Native Heap。`ImageDecoder` 的 AOSP 注释说明，它默认创建的 Bitmap 通常是 immutable，并且常见配置是 `Config.HARDWARE`；这适合只展示、不修改、由硬件加速管线绘制的图片，例如详情页大图、列表中不需要像素读取的封面图。
 
 硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 在软件渲染模式下遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
 

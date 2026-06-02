@@ -719,6 +719,1097 @@
       ],
       "summary": "https://medium.com/androiddevelopers/testing-app-startup-performance-36169c27ee55...技术分析",
       "scored_at": "2026-06-01T09:14:10.824163"
+    },
+    {
+      "path": "test.md",
+      "title": "test",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-02T05:46:00Z",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-02T05:46:00Z"
+    },
+    {
+      "path": "X 文章/2026-06-01-1234-XudongHan-Codex网络优化技巧.md",
+      "title": "2026-06-01-1234-XudongHan-Codex网络优化技巧",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:42.826135+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:42.826140+00:00"
+    },
+    {
+      "path": "X 文章/2026-06-01-1234-BetterCallMedhi-Huawei-tau-scaling-law.md",
+      "title": "2026-06-01-1234-BetterCallMedhi-Huawei-tau-scaling-law",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:42.915599+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:42.915603+00:00"
+    },
+    {
+      "path": "Cubox/更好的处理major page faults-2026-06-01.md",
+      "title": "更好的处理major page faults-2026-06-01",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.046368+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.046374+00:00"
+    },
+    {
+      "path": "Cubox/深入解析Chromium的 AI Coding 开发体系-2026-06-01.md",
+      "title": "深入解析Chromium的 AI Coding 开发体系-2026-06-01",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.135538+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.135541+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_468a0dbf76.md",
+      "title": "2026-06-02_RSS_468a0dbf76",
+      "score": 19,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.613895+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.613900+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_00b4a89c35.md",
+      "title": "2026-06-02_RSS_00b4a89c35",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.748675+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.748678+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_4ea0c70a27.md",
+      "title": "2026-06-02_RSS_4ea0c70a27",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.837346+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.837351+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_c2626134ae.md",
+      "title": "2026-06-02_RSS_c2626134ae",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:43.925807+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:43.925811+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_19bba3414f.md",
+      "title": "2026-06-02_RSS_19bba3414f",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.014340+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.014344+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_9480ff487b.md",
+      "title": "2026-06-02_RSS_9480ff487b",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.108389+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.108396+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_44d2284b13.md",
+      "title": "2026-06-02_RSS_44d2284b13",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.196365+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.196369+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_e66b9de4e1.md",
+      "title": "2026-06-02_RSS_e66b9de4e1",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.332087+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.332093+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_ae888b3459.md",
+      "title": "2026-06-02_RSS_ae888b3459",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.421679+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.421683+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_e0543e348e.md",
+      "title": "2026-06-02_RSS_e0543e348e",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.512514+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.512517+00:00"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-02_RSS_05287283bc.md",
+      "title": "2026-06-02_RSS_05287283bc",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.694577+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.694581+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-android-app-archiving-version-boundary-verification.md",
+      "title": "2026-06-01-android-app-archiving-version-boundary-verification",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.790903+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.790907+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md",
+      "title": "2026-06-01-android-binder-ipc-mechanism-source-analysis",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.881401+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.881404+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-android-17-game-scheduling-cpufreq-mechanism.md",
+      "title": "2026-06-01-android-17-game-scheduling-cpufreq-mechanism",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:44.974387+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:44.974390+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-compose-remembercoroutinescope-producestate-memory-mechanism.md",
+      "title": "2026-06-01-compose-remembercoroutinescope-producestate-memory-mechanism",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.066749+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.066753+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-android-17-resourcesmanager-configuration-system.md",
+      "title": "2026-06-01-android-17-resourcesmanager-configuration-system",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.160407+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.160410+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-android-compose-animation-performance-bottlenecks.md",
+      "title": "2026-06-01-android-compose-animation-performance-bottlenecks",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.255862+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.255867+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-02-android-compose-110-strong-skipping-optimization-gaps.md",
+      "title": "2026-06-02-android-compose-110-strong-skipping-optimization-gaps",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.354346+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.354350+00:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-01-linux-power-management-ebpf-energy-analysis.md",
+      "title": "2026-06-01-linux-power-management-ebpf-energy-analysis",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.444678+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.444683+00:00"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/b006223c.md",
+      "title": "b006223c",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.576880+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.576883+00:00"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/24122cca.md",
+      "title": "24122cca",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.666956+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.666960+00:00"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/88fb385b.md",
+      "title": "88fb385b",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:45.760173+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:45.760176+00:00"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/698e1058.md",
+      "title": "698e1058",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.029140+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.029144+00:00"
+    },
+    {
+      "path": "awesome-ai-field-notes/README.md",
+      "title": "README",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.116957+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.116961+00:00"
+    },
+    {
+      "path": "面试/简历/高建武 - 资深性能优化工程师.md",
+      "title": "高建武 - 资深性能优化工程师",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.205726+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.205730+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每周选题池/2026-06-01-选题池.md",
+      "title": "2026-06-01-选题池",
+      "score": 17,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.296457+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.296461+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-06-02-Gracker的Rss订阅.md",
+      "title": "2026-06-02-Gracker的Rss订阅",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.387976+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.387980+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-06-01-今天干了啥日报（OpenClaw）.md",
+      "title": "2026-06-01-今天干了啥日报（OpenClaw）",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.522640+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.522644+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日冥想流程/2026-06-01-每日冥想流程.md",
+      "title": "2026-06-01-每日冥想流程",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.657112+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.657116+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-06-01-Perfetto每日提交监控.md",
+      "title": "2026-06-01-Perfetto每日提交监控",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.747798+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.747802+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-06-01-GitHub自仓库IssuePR监控.md",
+      "title": "2026-06-01-GitHub自仓库IssuePR监控",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:46.878881+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:46.878886+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-06-02-每日深度研究选题.md",
+      "title": "2026-06-02-每日深度研究选题",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.010835+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.010839+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文速报/2026-06-01-论文.md",
+      "title": "2026-06-01-论文",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.102202+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.102206+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每周星球精选/2026-06-01-星球精选.md",
+      "title": "2026-06-01-星球精选",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.192605+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.192608+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-03-22-AK-RSS-Digest（89源精选）.md",
+      "title": "2026-03-22-AK-RSS-Digest（89源精选）",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.284033+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.284037+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-06-02-ClawFeed24小时高价值一览.md",
+      "title": "2026-06-02-ClawFeed24小时高价值一览",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.376135+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.376138+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/夜航之一致性周检/2026-06-02-夜航之一致性周检.md",
+      "title": "2026-06-02-夜航之一致性周检",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.465284+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.465288+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/Evolver周检只读/2026-06-02-Evolver周检只读.md",
+      "title": "2026-06-02-Evolver周检只读",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.554852+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.554855+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-01/smartperfetto-test.md",
+      "title": "smartperfetto-test",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.643418+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.643422+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-01/perfetto-pr-check.md",
+      "title": "perfetto-pr-check",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.732926+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.732931+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-02/github-snapshot.md",
+      "title": "github-snapshot",
+      "score": 18,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.820831+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.820835+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-05-31/daily-report.md",
+      "title": "daily-report",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.909449+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.909452+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/2026-05-31-SmartPerfetto日报.md",
+      "title": "2026-05-31-SmartPerfetto日报",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:47.997859+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:47.997864+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/资讯简报（综合）/2026-06-01-资讯简报（综合）.md",
+      "title": "2026-06-01-资讯简报（综合）",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.085571+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.085575+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-14-深度技术Review.md",
+      "title": "2026-06-01-14-深度技术Review",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.273102+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.273106+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-02-01-深度技术Review.md",
+      "title": "2026-06-02-01-深度技术Review",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.368417+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.368427+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-07-深度技术Review.md",
+      "title": "2026-06-01-07-深度技术Review",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.466565+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.466570+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-22-知识加工(回炉).md",
+      "title": "2026-06-01-22-知识加工(回炉)",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.557526+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.557530+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-06-知识加工(回炉).md",
+      "title": "2026-06-01-06-知识加工(回炉)",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.734840+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.734844+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-20-知识加工(新).md",
+      "title": "2026-06-01-20-知识加工(新)",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:48.825828+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:48.825832+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-18-深度技术Review.md",
+      "title": "2026-06-01-18-深度技术Review",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.008716+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.008721+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-02-02-知识加工(回炉).md",
+      "title": "2026-06-02-02-知识加工(回炉)",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.107732+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.107736+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-08-深度技术Review.md",
+      "title": "2026-06-01-08-深度技术Review",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.206422+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.206426+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-08-知识加工(回炉).md",
+      "title": "2026-06-01-08-知识加工(回炉)",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.349993+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.349997+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-23-知识加工(新).md",
+      "title": "2026-06-01-23-知识加工(新)",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.443513+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.443517+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-02-04-深度技术Review.md",
+      "title": "2026-06-02-04-深度技术Review",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.538462+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.538466+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-02-02-知识加工(新).md",
+      "title": "2026-06-02-02-知识加工(新)",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.689590+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.689594+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-01-12-知识加工(回炉).md",
+      "title": "2026-06-01-12-知识加工(回炉)",
+      "score": 15,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.794427+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.794431+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-02-03-深度技术Review.md",
+      "title": "2026-06-02-03-深度技术Review",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.888506+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.888510+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/X每日草稿/2026-06-01-X草稿.md",
+      "title": "2026-06-01-X草稿",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:49.981317+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:49.981321+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-06-01-Obsidian定时任务目录卫生巡检.md",
+      "title": "2026-06-01-Obsidian定时任务目录卫生巡检",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.073022+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.073026+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-06-02-掘金Android技术文章抓取.md",
+      "title": "2026-06-02-掘金Android技术文章抓取",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.163724+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.163728+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/工具链守门-SkillVetter/2026-06-01-工具链守门-SkillVetter.md",
+      "title": "2026-06-01-工具链守门-SkillVetter",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.300323+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.300327+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-06-01-每日Task巡检与自修复.md",
+      "title": "2026-06-01-每日Task巡检与自修复",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.392215+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.392219+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-06-02-每日Task巡检与自修复.md",
+      "title": "2026-06-02-每日Task巡检与自修复",
+      "score": 12,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.482160+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.482165+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/AndroidLinux性能优化周报/2026-06-01-AndroidLinux性能优化周报.md",
+      "title": "2026-06-01-AndroidLinux性能优化周报",
+      "score": 19,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.572253+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.572257+00:00"
+    },
+    {
+      "path": "OpenClaw定时任务/每日内容流水线选题提案/2026-06-02-每日内容流水线选题提案.md",
+      "title": "2026-06-02-每日内容流水线选题提案",
+      "score": 16,
+      "chapter": "ch16",
+      "timestamp": "2026-06-01T21:49:50.660988+00:00",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-01T21:49:50.660992+00:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md",
+      "title": "字节跳动 Android/移动端 性能·功耗·稳定性 全栈技术方案深度调研",
+      "summary": "字节开源性能工具链（btrace 3.0/ByteHook/ShadowHook/Raphael）与闭源 APM 平台架构，流畅度防劣化体系、ANR 归因、功耗模型、端侧 AI 端云协同",
+      "chapter": "ch19",
+      "processed_at": "2026-06-02T06:15:23.038257"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ 面向 SmartPerfetto 的 Android 功耗（Power:Battery:Energy）全链路分析研究报告.md",
+      "title": "面向 SmartPerfetto 的 Android 功耗全链路分析研究报告",
+      "summary": "Android 功耗 Perfetto 六类数据地基、power_analysis strategy + 技能方案、Android vitals 阈值体系",
+      "chapter": "ch11",
+      "processed_at": "2026-06-02T06:15:23.038257"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md",
+      "title": "荣耀 MUSCHED VIP 与 Binder 优先级传递深度调研",
+      "summary": "OSDI '26 MUSCHED sched_ext VIP 分层、Binder 优先级继承限制、eBPF/rtmutex vendor hooks 实现",
+      "chapter": "ch17",
+      "processed_at": "2026-06-02T06:15:23.038257"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md",
+      "title": "Android Input/Touch/Scroll 性能与延迟深度调研",
+      "summary": "Input 跨进程流水线、socketpair 传输、resampling 常量、MotionPredictor TFLite、FrameTimeline jank 归因",
+      "chapter": "ch03",
+      "processed_at": "2026-06-02T06:15:23.038257"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md",
+      "title": "Android Binder IPC 机制源码调研（android-17.0.0_r1）",
+      "summary": "Binder Java→JNI→Native→Kernel 全链路源码分析，BC_/BR_ 协议、flat_binder_object、线程池管理",
+      "chapter": "ch01",
+      "processed_at": "2026-06-02T06:15:23.038257"
+    },
+    {
+      "index": 3,
+      "title": "Linux内核File cache机制（上篇）",
+      "path": "AndroidWeekly/#13/Linux内核File cache机制（上篇）",
+      "source_url": "https://mp.weixin.qq.com/s/fW8NS4wQgjumq5fPDMzkag",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核File cache机制（上篇）...",
+      "scored_at": "2026-06-02T09:08:12.552824"
+    },
+    {
+      "index": 4,
+      "title": "您离成功还差一本免费的《Android 11 开发者手册》",
+      "path": "AndroidWeekly/#13/您离成功还差一本免费的《Android 11 开发者手册》",
+      "source_url": "https://mp.weixin.qq.com/s/VWnFyvqXlxjJzH6zsZYcyA",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "您离成功还差一本免费的《Android 11 开发者手册》",
+      "scored_at": "2026-06-02T09:08:12.552839"
+    },
+    {
+      "index": 5,
+      "title": "https://medium.com/androiddevelopers/using-ktx-libraries-da1dc81c6ecf",
+      "path": "AndroidWeekly/#13/https://medium.com/androiddevelopers/using-ktx-libraries-da1dc81c6ecf",
+      "source_url": "https://medium.com/androiddevelopers/using-ktx-libraries-da1dc81c6ecf",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/using-ktx-libraries-da1dc81c6ecf",
+      "scored_at": "2026-06-02T09:08:12.552841"
+    },
+    {
+      "index": 6,
+      "title": "又攒了一个月的Android面试题",
+      "path": "AndroidWeekly/#13/又攒了一个月的Android面试题",
+      "source_url": "https://mp.weixin.qq.com/s/Xcu3yaEDcZnmjDo_eQV-HQ",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "又攒了一个月的Android面试题",
+      "scored_at": "2026-06-02T09:08:12.552842"
+    },
+    {
+      "index": 7,
+      "title": "Android 主线程崩溃与子线程崩溃有什么本质区别？你是怎么处理的？",
+      "path": "AndroidWeekly/#13/Android 主线程崩溃与子线程崩溃有什么本质区别？你是怎么处理的？",
+      "source_url": "https://mp.weixin.qq.com/s/K8ScqrB9sF9gzxwSAoueCQ",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-多线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 主线程崩溃与子线程崩溃有什么本质区别？你是怎么处理的？",
+      "scored_at": "2026-06-02T09:08:12.552844"
+    },
+    {
+      "index": 8,
+      "title": "抖音 Android 性能优化系列：Java 内存优化篇",
+      "path": "AndroidWeekly/#13/抖音 Android 性能优化系列：Java 内存优化篇",
+      "source_url": "https://mp.weixin.qq.com/s/AQI2S2oK7HFDs9lH-nsx5g",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "抖音 Android 性能优化系列：Java 内存优化篇",
+      "scored_at": "2026-06-02T09:08:12.552845"
+    },
+    {
+      "index": 9,
+      "title": "【DevFest 2020】嘉宾实录总结：《Flutter 开发日常》by 崔振平 & 孔想容 ｜ 主会场",
+      "path": "AndroidWeekly/#13/【DevFest 2020】嘉宾实录总结：《Flutter 开发日常》by 崔振平 & 孔想容 ｜ 主会场",
+      "source_url": "https://mp.weixin.qq.com/s/l-lol66o8Y5OW2Ut7OqWlg",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【DevFest 2020】嘉宾实录总结：《Flutter 开发日常》by 崔振平 & 孔想容 ｜ 主会场",
+      "scored_at": "2026-06-02T09:08:12.552846"
+    },
+    {
+      "index": 10,
+      "title": "2020 腾讯Techo Park - Flutter与大前端的革命",
+      "path": "AndroidWeekly/#13/2020 腾讯Techo Park - Flutter与大前端的革命",
+      "source_url": "https://mp.weixin.qq.com/s/oflhVGs6lZBb--sOllMi8g",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2020 腾讯Techo Park - Flutter与大前端的革命",
+      "scored_at": "2026-06-02T09:08:12.552847"
+    },
+    {
+      "index": 12,
+      "title": "深入理解Linux内核进程上下文切换",
+      "path": "AndroidWeekly/#13/深入理解Linux内核进程上下文切换",
+      "source_url": "https://mp.weixin.qq.com/s/aCe1qrERvceyP_Nryw_nwQ",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入理解Linux内核进程上下文切换",
+      "scored_at": "2026-06-02T09:08:12.552849"
+    },
+    {
+      "index": 14,
+      "title": "终结 Android 性能流言",
+      "path": "AndroidWeekly/#13/终结 Android 性能流言",
+      "source_url": "https://mp.weixin.qq.com/s/KsLgxLXc9Vtav9t1GMFAXA",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "终结 Android 性能流言",
+      "scored_at": "2026-06-02T09:08:12.552850"
+    },
+    {
+      "index": 15,
+      "title": "功耗与性能系列之DVFS功能特性介绍",
+      "path": "AndroidWeekly/#13/功耗与性能系列之DVFS功能特性介绍",
+      "source_url": "https://mp.weixin.qq.com/s/A5UBswOOzRxtraXm5jPEIg",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "功耗与性能系列之DVFS功能特性介绍",
+      "scored_at": "2026-06-02T09:08:12.552851"
+    },
+    {
+      "index": 17,
+      "title": "Android 卡顿调研",
+      "path": "AndroidWeekly/#13/Android 卡顿调研",
+      "source_url": "https://mp.weixin.qq.com/s/Ol6GZbc3GuMJVFaaZRe-cA",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 卡顿调研",
+      "scored_at": "2026-06-02T09:08:12.552852"
+    },
+    {
+      "index": 18,
+      "title": "Kotlin 插件的落幕，ViewBinding 的崛起 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#13/Kotlin 插件的落幕，ViewBinding 的崛起 | 开发者说·DTalk",
+      "source_url": "https://mp.weixin.qq.com/s/lQUQNJvlOP9GawjlAAJ0VQ",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin 插件的落幕，ViewBinding 的崛起 | 开发者说·DTalk",
+      "scored_at": "2026-06-02T09:08:12.552854"
+    },
+    {
+      "index": 19,
+      "title": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-1-3-c0e1530a5343",
+      "path": "AndroidWeekly/#13/https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-1-3-c0e1530a5343",
+      "source_url": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-1-3-c0e1530a5343",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-1-3-c0e1530a5343",
+      "scored_at": "2026-06-02T09:08:12.552855"
+    },
+    {
+      "index": 20,
+      "title": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-2-3-1bbadaf19aef",
+      "path": "AndroidWeekly/#13/https://danielebaroncelli.medium.com/the-future-of-apps-delastic-platform-d-kmp-part-2-3-1bbadaf19aef",
+      "source_url": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-2-3-1bbadaf19aef",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-2-3-1bbadaf19aef",
+      "scored_at": "2026-06-02T09:08:12.552856"
+    },
+    {
+      "index": 21,
+      "title": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-3-3-959a2628526d",
+      "path": "AndroidWeekly/#13/https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-3-3-959a2628526d",
+      "source_url": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-3-3-959a2628526d",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "https://danielebaroncelli.medium.com/the-future-of-apps-declarative-uis-with-kotlin-multiplatform-d-kmp-part-3-3-959a2628526d",
+      "scored_at": "2026-06-02T09:08:12.552857"
+    },
+    {
+      "index": 22,
+      "title": "Android | 他山之石，可以攻玉！一篇文章看懂 v1/v2/v3 签名机制",
+      "path": "AndroidWeekly/#13/Android | 他山之石，可以攻玉！一篇文章看懂 v1/v2/v3 签名机制",
+      "source_url": "https://juejin.cn/post/6906882748909092871",
+      "weekly_issue": "#13",
+      "weekly_date": "2020-12-28",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-安全",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android | 他山之石，可以攻玉！一篇文章看懂 v1/v2/v3 等名机制",
+      "scored_at": "2026-06-02T09:08:12.552858"
     }
   ]
 }

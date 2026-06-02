@@ -545,3 +545,10 @@ ODPM 提供的是 meter / rail / energy consumer 读数，不是自动给 `power
 - Battery Historian 工具: https://github.com/google/battery-historian
 - Android Studio Power Profiler: https://developer.android.com/topic/performance/power
 - Perfetto 功耗数据源: https://perfetto.dev/docs/data-sources/power
+
+### 面向 SmartPerfetto 的 Android 功耗全链路分析研究报告
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ 面向 SmartPerfetto 的 Android 功耗（Power:Battery:Energy）全链路分析研究报告.md
+- 类型：DeepResearch 调研结果
+- 摘要：以 SmartPerfetto 平台为视角，系统分析 Android 功耗分析的六类 Perfetto 数据地基（power rails/ODPM、battery counters、CPU freq/idle、suspend/wakelock、sched 线程归因+Wattson、network_packets modem 归因）。提出 power_analysis strategy + 8~10 个 atomic/composite 技能的完整方案，包含 Android vitals 官方阈值、partial wakelock 24h 累计判定逻辑。
+- 注入时间：2026-06-02
+- 价值：功耗 Perfetto 分析的完整技能方案与阈值体系，直接填补 AIW 功耗章节的 Perfetto SQL 分析空白

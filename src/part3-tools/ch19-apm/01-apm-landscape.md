@@ -320,3 +320,12 @@ APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适�
 - `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
 
 <!-- AIW-源码调研-2026-04-25 -->
+
+## 延伸阅读
+
+### 字节跳动 Android/移动端 性能·功耗·稳定性 全栈技术方案深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统梳理字节跳动开源性能工具链（btrace 3.0 同步抓栈、ByteHook/ShadowHook hook 三件套、Raphael Native 泄漏检测）与闭源 APM 平台（Slardar/MDAP/APMPlus）的架构原理。覆盖流畅度三级防劣化体系、ANR 信号捕获与消息调度图还原、功耗模块化归因模型、端侧 AI（豆包手机助手 GUI Agent 端云协同架构）等核心方案，包含大量源码级实现细节。
+- 注入时间：2026-06-02
+- 价值：字节系 APM 工具链的完整技术栈剖析，btrace 3.0 同步抓栈原理与稳定性的信号归因方法论对 AIW APM 章节有直接补充价值

@@ -613,3 +613,9 @@ fun WebViewScreen(url: String) {
 - [Compose 渲染性能到底怎么样 | 程序员江同学](https://mp.weixin.qq.com/s?__biz=MzkzNjMxNzY5NQ==&mid=2247484027) [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
 - [用 derivedStateOf 提升性能 | 郭霖](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650284101) [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md]
 - [掌握 Android Compose:从基础到性能优化全面指南](https://mp.weixin.qq.com/s?__biz=MzkyNTUyNDA5Nw==&mid=2247485870) [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md]
+
+<!-- AIW-源码调研-2026-06-02 -->
+**[源码调研补遗 2026-06-02]**：`derivedStateOf` 底层源码已验证。一手来源：
+- `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt`（`DerivedSnapshotState` 实现、`readableHash` 机制、`policy` 参数）
+- `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt`（三阶段失效、`withoutReadObservation`）
+详见：`DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md`

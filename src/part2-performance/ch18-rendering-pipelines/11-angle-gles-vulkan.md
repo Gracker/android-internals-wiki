@@ -50,6 +50,8 @@ finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 2 写入 suggestions。满足 task6_result pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 <!-- outline-start -->
@@ -72,7 +74,7 @@ task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1�
 
 Android 的 GLES 兼容性长期受厂商驱动差异影响。同一个 `glDrawArrays` 调用或同一份 GLSL，在不同设备上可能遇到结果偏差、shader 编译差异，或者直接踩到驱动 Bug。
 
-**ANGLE**（Almost Native Graphics Layer Engine）是 Google 维护的开源图形翻译层。App 侧仍然调用 GLES API，ANGLE 负责把 GLES 状态和命令翻译成 Vulkan 指令，再交给厂商 Vulkan driver 执行。统一的是 GLES frontend、状态管理和 shader 翻译流程，底层执行仍然落在厂商 Vulkan driver 和 GPU 上。
+**ANGLE**（Almost Native Graphics Layer Engine）是 Google 维护的开源图形翻译层：App 侧继续调用 GLES API，ANGLE 在中间把 GLES 的状态和命令翻译成 Vulkan 指令，交给厂商 Vulkan driver 执行。ANGLE 统一的是 GLES frontend、状态管理和 shader 翻译流程，底层最终仍然跑在厂商的 Vulkan driver 和 GPU 上。
 
 Android 10 起支持把 ANGLE 作为 GLES driver 选项。Android 15 之后，Google 继续扩大 ANGLE 的覆盖范围，官方口径是兼容性更好，部分场景性能更好。默认是否启用仍取决于设备配置、allowlist 和调试开关。
 
@@ -217,7 +219,7 @@ adb shell settings put global angle_gl_driver_selection_pkgs com.example.demo
 adb shell settings put global angle_gl_driver_selection_values angle
 ```
 
-`angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values` 在 AOSP 中按逗号一一对应。查多包配置时，要确认两个列表长度一致。
+`angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values` 按逗号拆分后一一对应，查多包配置时确认两个列表长度一致即可。
 
 ### 2. 再看运行时标识
 
@@ -247,7 +249,7 @@ LIMIT 50;
 
 1. **测试覆盖**：确保 App 在 ANGLE 和原生 GLES 下都测试过，特别是依赖厂商扩展（`GL_QCOM_*` 等）的代码
 2. **Shader 规范**：ANGLE 对 GLSL 语法要求更严格，不合规的 GLSL 会直接报错
-3. **新项目优先 Vulkan**：如果不需要兼容旧设备，直接用 Vulkan 比 ANGLE 更高效
+3. **新项目优先 Vulkan**：如果不需要兼容旧设备，直接用 Vulkan 比经过 ANGLE 翻译层更直接
 
 ## 与其他章节的关系
 
@@ -257,7 +259,6 @@ LIMIT 50;
 
 
 
-<!-- AIW-源码调研-2026-04-18 -->
 ## Driver Selection 机制：按版本看入口
 
 ANGLE driver selection 集中在 `android.os.GraphicsEnvironment`（`frameworks/base/core/java/android/os/GraphicsEnvironment.java`），但 Android 14、15、16 的方法名和 allowlist 入口不同。源码阅读时先确认平台 tag，不能把 android-14.0.0_r1 的方法名直接套到 Android 15/16。
@@ -274,7 +275,7 @@ Android 16 的常用排查顺序如下：
 2. `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`。两个设置按逗号分组，按包名给出 `angle`、`native` 或 `default`。
 3. `config_angleAllowList`。这是 Android 16 平台 allowlist 入口，适合核对系统为什么默认允许某个包走 ANGLE。
 
-如果 trace 或源码阅读对象是 Android 15/16，不要沿用 Android 14 的 `shouldUseAngleInternal()` 伪代码。先按平台 tag 确认方法名，再看 Settings 和 allowlist 命中情况。
+分析 Android 15/16 时不要沿用 Android 14 的 `shouldUseAngleInternal()`，先按平台 tag 确认当前版本的方法名，再看 Settings 和 allowlist 命中情况。
 
 ### ANGLE 包发现：Debug Package 与 System ANGLE
 
@@ -401,6 +402,3 @@ VkResult SyncWaitFd(int fd, uint64_t timeoutNs, VkResult timeoutResult = VK_TIME
 ```
 
 `poll()` 比 `sync_wait()` ioctl 更轻量，timeout 精度为毫秒级。
-
-[AIW-源码调研-2026-05-06]
-

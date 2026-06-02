@@ -67,7 +67,8 @@ p0: 0
 p1: 0
 p2: 0
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。"
----
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
 
@@ -104,15 +105,14 @@ task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSch
 
 ## 为什么这一节要单独拆出来
 
-2.3 节已经解释 VSync 的基本模型：硬件给出节拍，App 和 SurfaceFlinger 分别按 VSYNC-app、VSYNC-sf 工作。本节补上工程排障时更常用的一层：SurfaceFlinger 里的 Scheduler 怎么把硬件时间戳变成回调，怎么把刷新率请求折成一个显示模式，Perfetto 里又该按哪条时间线判断异常。
+2.3 节已经解释 VSync 的基本模型：硬件给出节拍，App 和 SurfaceFlinger 分别按 VSYNC-app、VSYNC-sf 工作。本节补上工程排障更常用的一层：SurfaceFlinger 里的 Scheduler 怎么把硬件时间戳变成回调，怎么把刷新率请求折成一个显示模式，Perfetto 里又该按哪条时间线判断异常。
 
 这部分容易混在一起的概念有三个：内容帧率、渲染目标帧率、显示刷新率。视频源可能是 24fps，游戏可能把目标帧率限制在 60fps，屏幕可能运行在 120Hz 或 ARR 的离散步进上。三者相等只是少数场景，系统调度的工作正是让它们在功耗、延迟和稳定性之间取得可接受的结果。
 
-[来源: DeepResearch/2026-05-17-surfaceflinger-vsync-scheduler-frame-rate.md]
 
 ## 一、硬件 VSync 进来后，Scheduler 做了什么
 
-SurfaceFlinger 不会把每一次硬件 VSync 原样广播给所有消费者。AOSP android-16.0.0_r1 的实现把职责拆成三层：`VsyncSchedule` 持有预测器、控制器和分发队列；`Scheduler` 管显示级策略和工作时长；`VSyncDispatchTimerQueue` 负责按预测时间唤醒注册的 callback。
+SurfaceFlinger 不会把每一次硬件 VSync 直接转发给所有回调方。AOSP android-16.0.0_r1 的实现把职责拆成三层：`VsyncSchedule` 持有预测器、控制器和分发队列；`Scheduler` 管显示级策略和工作时长；`VSyncDispatchTimerQueue` 负责按预测时间唤醒注册的 callback。
 
 ```mermaid
 sequenceDiagram
@@ -153,11 +153,11 @@ wakeupTime    = readyTime - workDuration
 
 ## 三、VSyncPredictor：从样本到下一次 deadline
 
-老资料里常把 SurfaceFlinger 的软件节拍器叫 DispSync。到了 android-16.0.0_r1，公开源码中的主入口已经是 `Scheduler/` 目录下的 `VSyncPredictor`、`VSyncReactor`、`VsyncSchedule` 和 `VSyncDispatchTimerQueue`。阅读时应按职责找文件，不要只搜 `DispSync.cpp`。
+阅读 android-16.0.0_r1 源码时，应直接按职能找 `Scheduler/` 目录下的 `VSyncPredictor`、`VSyncReactor`、`VsyncSchedule` 和 `VSyncDispatchTimerQueue`，不要只搜 `DispSync.cpp`。早期资料里常用的 DispSync 只是更早版本的软件节拍器名称。
 
 `VSyncPredictor::addVsyncTimestamp()` 会先调用 `validate()`。校验做两件事：新时间戳要和当前模型对得上，且不能和已有样本过近。样本在学习期内不合格时，预测器会清掉样本重新学习；学习期之后遇到异常样本，则更新 `mKnownTimestamp` 并拒绝把它写入 ring buffer。这一步防止偶发抖动污染 period / phase 模型。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp]
 
-预测路径集中在 `nextAnticipatedVSyncTimeFrom()`：它先根据当前模型把请求时间吸附到最近的 VSync 序列上，再交给 `VsyncTimeline` 处理 render rate、missed VSync 和最小帧间隔。ARR / VRR 打开时，`minFramePeriod()` 不一定等于硬件 TE 周期；预测器要保证相邻帧不会违反面板允许的最小间隔。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp]
+预测路径集中在 `nextAnticipatedVSyncTimeFrom()`：它先根据当前模型把请求时间对齐到最近的 VSync 序列上，再交给 `VsyncTimeline` 处理 render rate、missed VSync 和最小帧间隔。ARR / VRR 打开时，`minFramePeriod()` 不一定等于硬件 TE 周期；预测器要保证相邻帧不会违反面板允许的最小间隔。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp]
 
 `setRenderRate()` 是可变刷新率路径里的重要入口。刷新率升高时，旧 timeline 可能被清掉并重新开始；非立即生效的切换会把旧 timeline freeze 在已提交的 VSync 上，再插入新 timeline。Perfetto 里看到切换前后 VSYNC 间隔短暂不均匀，常见原因是 timeline 过渡，不要直接判成掉帧。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp]
 
@@ -203,7 +203,7 @@ Android 15 引入 ARR，官方定义是：显示刷新率可用离散 VSync step
 - 渲染目标帧率：App / View / Surface 给系统的偏好或限制，可能来自 `setFrameRate()`、`setRequestedFrameRate()`、Game Mode。
 - 显示刷新率：面板实际刷新或展示新帧的频率，可能是 60Hz / 90Hz / 120Hz，也可能是 ARR 的离散 step。
 
-DeepResearch 素材里提到 `FrameRateEligibility`。本轮按 android-16.0.0_r1 公开源码核对，只确认到 `RefreshRateSelector`、`LayerRequirement`、`LayerVoteType`、GameManager FPS intervention 和 ARR 文档中的 eligibility 语义，没有确认一个稳定可引用的同名 SurfaceFlinger 类或 API。正文把它作为“某个请求是否有资格影响刷新率选择”的策略概念处理，不把它写成固定源码入口。[待验证: FrameRateEligibility 同名实现路径]
+按 android-16.0.0_r1 公开源码核对，`FrameRateEligibility` 没有对应的稳定可引用类或 API；源码里能确认的是 `RefreshRateSelector`、`LayerRequirement`、`LayerVoteType`、GameManager FPS intervention 和 ARR 文档中的 eligibility 语义。正文把它作为“某个请求是否有资格影响刷新率选择”的策略概念处理，不把它写成固定源码入口。[已验证(2026-06-02): android-16.0.0_r1 无 FrameRateEligibility 同名类；实现路径为 FrameRateCompatibility + LayerVoteType::NoVote — 见 DeepResearch/2026-06-02-android-frame-rate-eligibility-verify.md]
 
 GameManager 的帧率干预又是另一条线。官方 frame pacing 文档说明，`GameManagerService` 按用户和游戏维护 FPS、分辨率降档等 intervention 信息，SurfaceFlinger 维护 UID 到 frame rate 的映射，并在 VSync 到来时检查节流后的应用帧率是否与 VSync timestamp 同相位；不同相位时会 hold frame，直到帧率和 VSync 对上。[已验证: 官方文档, source.android.com/docs/core/graphics/frame-pacing]
 

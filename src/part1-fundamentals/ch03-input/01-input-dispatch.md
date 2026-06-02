@@ -670,5 +670,11 @@ if (nextTimeout <= currentTime) {
 > [已验证: AOSP android-14.0.0_r1, android-16.0.0_r1, 同文件 - 接口保持稳定]
 > [未验证: InputFlinger priority setpriority 移除的具体 commit 版本]
 
+## 延伸阅读
 
-
+### Android Input/Touch/Scroll 性能与延迟深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md
+- 类型：DeepResearch 调研结果
+- 摘要：完整剖析 Android input 链路跨进程流水线：硬件中断→内核 evdev→InputReader/InputDispatcher(socketpair)→App InputChannel→ViewRootImpl InputStage 责任链→Choreographer CALLBACK_INPUT。量化 input latency 三种口径，给出触摸 resampling 精确常量（RESAMPLE_LATENCY=5ms 等）、MotionPredictor TFLite 模型细节、FrameTimeline jank_type 归因 SQL。面向 SmartPerfetto 技能开发提出 framework input 链路 slice 识别与 jank 归因 SQL 方案。
+- 注入时间：2026-06-02
+- 价值：Input 链路全栈剖析含 socketpair 机制、resampling 常量、MotionPredictor TFLite 细节，对 AIW 输入章节有直接技术补充
