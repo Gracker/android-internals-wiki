@@ -7327,6 +7327,19 @@
       "result": "fixed-lite",
       "source": "frontmatter backlog fallback",
       "log": "logs/rework/2026-06-01-15-task2b-lite.md"
+    },
+    {
+      "at": "2026-06-03T03:35:00+08:00",
+      "lane": "lite",
+      "source": "frontmatter backlog fallback",
+      "sections": [
+        "24.4"
+      ],
+      "files": [
+        "src/part5-app/ch24-io-network/04-network-architecture.md"
+      ],
+      "result": "fixed-lite",
+      "log": "logs/rework/2026-06-03-03-task2b-lite.md"
     }
   ],
   "last_task2a_processed": "22.17",
@@ -10324,6 +10337,16 @@
       "fixed_date": "2026-06-01T01:35:00+08:00",
       "queue_id": "frontmatter-backlog-fallback-20260601-lite",
       "fix_summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
+    },
+    {
+      "section": "24.4",
+      "file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+      "at": "2026-06-03T03:35:00+08:00",
+      "by": "task2b-lite",
+      "source": "frontmatter backlog fallback / task9-deep-review",
+      "priority": 95,
+      "result": "fixed-lite",
+      "summary": "修正 OkHttp 连接复用 Address 绝对化口径，补 HTTP/2 coalescing 条件；HTTPDNS Dns.lookup 改为缓存读取模型，补异步预取、TTL、失败隔离与 bootstrap client 边界。"
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
@@ -12078,14 +12101,25 @@
         "source": "frontmatter-fallback/task9-deep-review",
         "fix_summary": "补 Room 3.0 alpha04 connection pool API、hasConnectionPool 适用条件、WAL 默认 4 reader + 1 writer 与 SQLITE_BUSY/busy_timeout 验收边界。"
       }
+    ],
+    "2026-06-03": [
+      {
+        "section": "24.4",
+        "title": "网络架构与连接管理",
+        "file": "src/part5-app/ch24-io-network/04-network-architecture.md",
+        "status": "fixed-lite",
+        "fixed_date": "2026-06-03T03:35:00+08:00",
+        "source": "frontmatter-fallback/task9-deep-review",
+        "fix_summary": "补 OkHttp HTTP/2 connection coalescing 条件；HTTPDNS lookup 收敛为缓存读取，避免同步建连路径实时网络请求。"
+      }
     ]
   },
-  "last_task2b_lite_at": "2026-06-03T01:38:00+08:00",
+  "last_task2b_lite_at": "2026-06-03T03:35:00+08:00",
   "last_task2b_lite_sections": [
-    "26.12"
+    "24.4"
   ],
   "last_task2b_lite_files": [
-    "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "task2b_verifier_history": [
     {
@@ -12602,7 +12636,7 @@
     "result": "blocked"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-06-03-01-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-03-03-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
@@ -12640,12 +12674,12 @@
   "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
   "task2b_last_rework_lite": {
-    "at": "2026-06-03T01:38:00+08:00",
+    "at": "2026-06-03T03:35:00+08:00",
     "sections": [
-      "26.12"
+      "24.4"
     ],
     "files": [
-      "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+      "src/part5-app/ch24-io-network/04-network-architecture.md"
     ],
     "result": "fixed-lite",
     "type": "frontmatter"

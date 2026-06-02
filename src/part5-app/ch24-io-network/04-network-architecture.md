@@ -53,10 +53,12 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+pipeline_stage: task6_pending
+last_task2b_lite_at: "2026-06-03"
 last_task2a_at: "2026-05-14T09:21:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -115,7 +117,7 @@ App 网络层至少要分成四个控制面：连接、解析、调度、容错�
 
 ## OkHttp 连接池与复用策略
 
-OkHttp 的连接复用边界是 `Address`。官方文档把请求拆成 URL、Address、Route 三层：URL 描述资源；Address 描述 scheme、host、port、TLS、代理、协议等静态连接配置；Route 描述 DNS 返回的具体 IP、代理和 TLS 版本等动态选择。多个 URL 只要共享同一个 Address，就有机会共享底层连接。HTTP/1.x 复用空闲连接，HTTP/2 在同一连接上做多路复用。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+OkHttp 的连接复用首先看 `Address`，但不能把它理解成唯一边界。官方文档把请求拆成 URL、Address、Route 三层：URL 描述资源；Address 描述 scheme、host、port、TLS、代理、协议等静态连接配置；Route 描述 DNS 返回的具体 IP、代理和 TLS 版本等动态选择。相同 Address 更容易复用底层连接；HTTP/2 场景下，OkHttp 还可能在证书、HostnameVerifier、CertificatePinner、Route IP 等条件满足时做 connection coalescing，让不同 hostname 共享同一条连接。HTTP/1.x 复用空闲连接，HTTP/2 在同一连接上做多路复用。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
 
 工程上最稳的做法是按网络策略复用 `OkHttpClient`，而不是每个业务模块都 new 一个 client。`OkHttpClient` 持有自己的 `ConnectionPool`、`Dispatcher`、DNS、TLS 配置和拦截器。随手创建 client 会带来三个问题：连接池被切碎、Dispatcher 并发不可控、Cookie/Auth/证书策略容易分叉。
 
@@ -177,6 +179,8 @@ HTTPDNS 的价值在于绕开本地 DNS 污染、缩短解析耗时、按运营�
 2. **保留系统 DNS 兜底。** HTTPDNS 服务不可用、返回空列表、返回不可达 IP 时，必须回退到 `Dns.SYSTEM` 或平台解析结果。
 3. **遵守 TTL 与失败隔离。** DNS 缓存不是越久越好。移动网络切换、CDN 调度、灰度发布都会改变最优 IP；单个 IP 连接失败后要短时间隔离，不能在每次请求里反复尝试同一个坏地址。
 
+`Dns.lookup()` 位于 OkHttp 的同步建连路径，不能在这里实时发 HTTPDNS 网络请求。更稳的模型是后台异步预取、按 TTL 写入本地缓存，`lookup()` 只读取已缓存且未隔离的结果；缓存缺失或不可用时回退系统 DNS，HTTPDNS 服务自身也要使用独立 bootstrap client，避免递归依赖同一个业务 client。
+
 一个安全的自定义 DNS 骨架如下：
 
 ```kotlin
@@ -185,7 +189,7 @@ class HttpDns(
     private val fallback: Dns = Dns.SYSTEM,
 ) : Dns {
     override fun lookup(hostname: String): List<InetAddress> {
-        val records = httpDns.query(hostname)
+        val records = httpDns.cachedRecords(hostname)
             .filter { it.isNotExpired && !it.isQuarantined }
             .mapNotNull { it.toInetAddressOrNull() }
 
