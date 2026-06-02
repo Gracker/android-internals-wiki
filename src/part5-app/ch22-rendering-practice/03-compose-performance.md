@@ -2,7 +2,7 @@
 title: "Jetpack Compose 性能优化"
 chapter: "22.3"
 section: "22.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
@@ -16,21 +16,21 @@ sources:
     path: "platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
 last_task6_at: "2026-06-02T13:05:00+08:00"
-task9_state: pending
+task9_state: reviewed
 last_task2b_at: "2026-06-02T12:54:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
 task6_result: pass-light-edit
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-01"
-last_task9_at: "2026-06-01T08:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 deep-review: auto-fixed。修正 produceState key 语义、derivedStateOf 代价口径、Strong Skipping 非 restartable 边界、Android 17/Compose 工具链边界和 ProfileInstaller 写入链路。回到 Task6 复审。"
+task9_reviewed_date: "2026-06-02"
+last_task9_at: "2026-06-02T17:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
+task9_review_notes: "2026-06-02 Task9 deep-review: pass-tech-review。复核 Strong Skipping、Pausable Composition、LazyLayoutCacheWindow 与 Android 17/Compose 工具链边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-06-02-13-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
