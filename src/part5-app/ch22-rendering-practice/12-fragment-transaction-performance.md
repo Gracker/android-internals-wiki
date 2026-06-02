@@ -41,18 +41,18 @@ task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T07:30:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-07-deep-review.md"
 task9_review_notes: "2026-05-16 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。AndroidX 源码版本锚点需从 androidx-main 切到稳定 tag/版本矩阵；runOnCommit 不能写成稳定“绘制之前”钩子；executePendingTransactions 边界需补。2026-06-03 task2b: 已改用 AndroidX fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit / executePendingTransactions / predictive back 边界，回到 Task6 复审。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-last_task6_at: "2026-05-16T08:16:00+08:00"
-last_task6_review_log: logs/review/2026-05-16-08-review.md
-task6_review_notes: "2026-05-16 task6 review: pass-light-edit。修复结构性元叙述、runOnCommit 标题过强和 2 处否定-纠正式表达；Task9 既有版本锚点/runOnCommit/executePendingTransactions 技术项仍由 Task2B 处理。"
+reviewed_date: "2026-06-03"
+last_task6_at: "2026-06-03T04:08:00+08:00"
+last_task6_review_log: logs/review/2026-06-03-04-review.md
+task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 
 ---
 
@@ -365,7 +365,7 @@ private void removeRedundantOperationsAndExecute(
 
 ## AndroidX 源码锚点怎么读
 
-本节源码锚点固定到 AndroidX `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支漂移影响正文结论。
+正文源码锚点固定到 AndroidX `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支漂移影响正文结论。
 
 固定 commit 不代表 Fragment 1.4 到 1.8 的每条路径完全相同。`commitInternal()`、`enqueueAction()`、`scheduleCommit()`、`execPendingActions()` 这些主链路可以作为稳定骨架；predictive back 相关的 `mTransitioningOp` 取消和重提交路径属于较新的 Fragment release 行为，不能反推到 Fragment 1.4 / 1.6。排查线上问题时，要同时记录应用依赖的 `androidx.fragment:fragment` 版本和设备 Android 版本。
 

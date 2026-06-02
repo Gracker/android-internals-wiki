@@ -36,19 +36,19 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-06-02"
+reviewed_date: "2026-06-03"
 reviewed_by: openclaw-task6
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-review_round: 10
+review_round: 11
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。 | 2026-06-02 task6 review: pass-light-edit。L1/L2 小修 2 处;AOSP mainline 锚点改为 Android 17 待验证边界,删除填充副词。"
@@ -58,17 +58,19 @@ task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T01:26:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
-last_task6_at: "2026-06-02T23:05:00+08:00"
-task6_review_notes: "2026-06-02 Task6 23: pass-light-edit。L1/L2 小修 2 处；实战案例已改为示例场景，未新增回炉项，进入 Task9 待审。"
+last_task6_at: "2026-06-03T04:08:00+08:00"
+task6_review_notes: "2026-06-03 Task6 04: pass-light-edit。L1/L2 小修 4 处；未发现新增回炉项，进入 Task9 待审。"
 task9_review_notes: "2026-06-03 Task9 deep review: auto-fixed。AUTO-FIX: 修正 graphics Java 源码目录、BufferQueue/GraphicBuffer/HWC2 路径与 BUFFER_RELEASE_CHANNEL 版本边界；P0 1 / P1 0 / P2 0，回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-06-02-23-review.md"
-task6_l1_l2_fixes: 2
+last_task6_review_log: "logs/review/2026-06-03-04-review.md"
+task6_l1_l2_fixes: 4
 task6_l3_l4_issues: 0
 last_task9_autofix_at: "2026-06-03"
 last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
 p0: "1"
 p1: "0"
 p2: "0"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 
 
@@ -76,11 +78,11 @@ p2: "0"
 
 ## 为什么需要深入理解 GPU 渲染
 
-在 Perfetto Trace 中,我们经常看到这样的场景:主线程(MainThread)在很短时间内完成了 measure、layout、draw 操作,RenderThread 也快速完成了 draw command 的录制,但 UI 更新却明显滞后--下一帧的 VSync 到来了,上一帧还在 GPU 中处理。这种情况下,问题往往出在 GPU 渲染阶段:应用发送的绘制指令虽然不多,但 GPU 处理这些指令花费了大量时间,或者 GPU 本身遇到了内存带宽瓶颈。
+先看一个常见的 Perfetto Trace 现象:主线程的 measure、layout、draw 在很短时间内做完,RenderThread 也很快录完了 draw command,但 UI 更新仍然滞后--下一帧的 VSync 来了,上一帧还卡在 GPU 里。这时候问题不在 CPU,在 GPU:要么 GPU 处理这些指令本身就很慢,要么内存带宽撑不住了。
 
-如果我们缺乏对 GPU 渲染管线的理解,遇到这类掉帧就只能停留在"主线程没问题,不知道什么原因"的阶段。理解了 GPU 渲染机制之后,我们就能做到三件事:把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条;精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈,避免把力气花在错误的方向上;理解 Android 16 中 Vulkan 成为默认 API 这件事背后的工程影响,知道后续系统版本需要提前准备什么。
+对 GPU 渲染管线没有概念的话,这种掉帧就只能停在"主线程没问题,不知道为什么卡"的层面。反过来,把 GPU 渲染机制搞清楚之后,三件事就有了分析入口:第一,GPU 渲染过程不再是一个黑盒,可以从 Trace 里定位到具体阶段;第二,能区分 CPU 瓶颈、GPU 瓶颈和带宽瓶颈,不会把优化力气花错方向;第三,理解 Android 16 把 Vulkan 推到默认位置背后的工程含义,知道后续版本需要提前准备什么。
 
-本节从 GPU 渲染管线的基本原理切入,延伸到性能瓶颈分析、GPU 内存管理和实战案例,把这些知识点放回完整的渲染问题排查流程中。
+GPU 渲染管线、瓶颈分析、GPU 内存管理和实战案例会汇到同一条排查流程里。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -150,7 +152,7 @@ void drawRect(float left, float top, float right, float bottom, Paint paint) {
 
 ### Fragment Shader:像素颜色的决定者
 
-Fragment Shader(也称为 Pixel Shader)是渲染管线的核心阶段,它决定了屏幕上每个像素的最终颜色。对于 Android UI 渲染来说,Fragment Shader 的重要性甚至超过 Vertex Shader--UI 界面的像素数量通常远多于顶点数量,Fragment Shader 的计算量与像素数成正比。一个全屏的 `drawRect()` 只有四个顶点,但需要处理的像素可能多达数百万个。
+Fragment Shader(也叫 Pixel Shader)决定了屏幕上每个像素的最终颜色,是渲染管线的核心。Android UI 渲染里,Fragment Shader 的重要性往往超过 Vertex Shader--很简单,界面的像素数量通常比顶点数量大几个数量级,Fragment Shader 的计算量与像素数成正比。一个全屏的 `drawRect()` 只有四个顶点,像素却可能多达数百万。
 
 ```glsl
 // 简化的 Android UI Fragment Shader 示例(示意性伪代码)
@@ -175,9 +177,9 @@ void main() {
 
 ### Framebuffer:渲染结果的存储位置
 
-Framebuffer 是 GPU 渲染管线的最终输出目标,它是一块用于存储渲染完成像素数据的显存区域。理解 Framebuffer 的管理机制,对分析 GPU 内存占用和显示延迟都有直接帮助。
+Framebuffer 是 GPU 渲染管线的最终输出--一块显存区域,用来存放渲染完成的像素数据。搞清楚 Framebuffer 怎么管理,对分析 GPU 内存占用和显示延迟都有直接帮助。
 
-Android 中的 Framebuffer 管理涉及多个层面。最底层是 Gralloc 模块,它负责实际分配和管理图形缓冲区的内存。Gralloc 分配的缓冲区就是 GraphicBuffer,应用通过 Canvas 绘制的内容最终写入到 GraphicBuffer 中,然后由 SurfaceFlinger 在合成时读取。
+Android 的 Framebuffer 管理分多个层面。最底层是 Gralloc,它负责实际分配和管理图形缓冲区内存。Gralloc 分配的缓冲区是 GraphicBuffer:应用通过 Canvas 绘制的内容最终写入 GraphicBuffer,再由 SurfaceFlinger 在合成时读出。
 
 ```cpp
 // AOSP android-16.0.0_r1
@@ -247,7 +249,7 @@ createInfo.pCode = spirvCode.data();
 // vkCreateShaderModule() 将 SPIR-V 编译为 GPU 本机指令
 ```
 
-> [自动发现: 来源 2026-03-30-ch02-vulkan-android16.md]
+> [来源: Vulkan Android 16 调研素材]
 
 Android 16 将 Vulkan 定为默认图形 API 的一个重要动机,就是利用 SPIR-V 的预编译优势来减少 Shader Compilation Jank。对于仍然使用 OpenGL ES 的应用,ANGLE 转换层会将 GLSL 着色器翻译为 SPIR-V 后再交给 Vulkan 后端处理,虽然多了一层翻译,但依然比传统 OpenGL ES 驱动的纯运行时编译更可控。
 
@@ -312,7 +314,6 @@ allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements);
 vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 ```
 
-> [自动发现: 来源 2026-03-30-ch02-gpu-optimization.md]
 > 移动 GPU 架构中,开始和结束渲染通道的代价较高,应将渲染操作合并到尽可能少的渲染通道中。使用 `VK_ATTACHMENT_LOAD_OP_DONT_CARE` 可以避免不必要的附件保留,减少带宽消耗。
 
 ### ANGLE 层的性能影响
@@ -544,10 +545,9 @@ unlock(BufferHandle) -> release_fence
 ```
 
 
-<!-- AIW-源码调研-2026-05-06 -->
 ### 源码级对象链:六层抽象的完整调用路径
 
-本节概述了各层对象的作用,以下从源码角度梳理跨越 App 层到硬件层的完整对象链,建立可验证的追溯链:
+前面已经把各层对象的作用铺开。源码视角下,App 层到硬件层的追溯链可以整理成六层:
 
 **完整对象链**:
 
@@ -654,7 +654,7 @@ Android 16 推进了 ANGLE 的覆盖范围,但"ANGLE 是否成为默认 GL 后�
 
 ## GPU Profiling 工具:Snapdragon Profiler、ARM Streamline、AGI
 
-前面我们从理论和机制层面分析了 GPU 渲染的各个环节,也讨论了如何从 Trace 中识别 GPU 瓶颈的类型。但要进一步精确定位--比如区分 fillrate bound 和 bandwidth bound 的具体占比,或者找到某个 Fragment Shader 的耗时热点--还需要专门的 GPU 分析工具。这一节介绍三种最常用的 GPU 性能分析工具及其适用场景。
+Trace 可以定位 GPU 瓶颈类型;要进一步区分 fillrate bound 和 bandwidth bound 的具体占比,或者找到某个 Fragment Shader 的耗时热点,还需要专门的 GPU 分析工具。AGI、Snapdragon Profiler 和 ARM Streamline 覆盖了常见排查场景。
 
 ### Android GPU Inspector (AGI)
 
@@ -770,7 +770,7 @@ GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的�
 
 **Shader Compilation Jank 模式:** 在正常的 GPU 渲染序列中,突然出现一个特别长的 GPU 活动块(可能达到几十毫秒),之后恢复正常。这种"孤立的长帧"通常就是着色器编译导致的。在 Android 16+ 上,由于 SPIR-V 预编译的引入,这种模式会越来越少。
 
-[待高爷补充:Perfetto Trace 截图--分别展示正常模式、GPU 瓶颈模式和 Shader Compilation Jank 模式的 GPU track 表现]
+[待补充:Perfetto Trace 截图,展示正常模式、GPU 瓶颈模式和 Shader Compilation Jank 模式]
 
 ## 常见问题与误区
 
@@ -838,7 +838,6 @@ GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的�
 
 以下内容基于 AOSP 源码和 DeepResearch 调研补充,为正文「GPU 内存管理」和「GPU 性能问题系统性排查流程」提供源码级佐证。读者可按需参考。
 
-<!-- AIW-源码调研-2026-05-04 -->
 ### A.1 GPU 内存管理与对象边界
 
 ### App 可见对象与系统内部图形缓冲对象的边界
@@ -907,7 +906,7 @@ status_t BufferQueueProducer::waitForFreeSlotThenRelock(
 
 ### 方法论缺口与补全
 
-§2.10 已覆盖 GPU 渲染管线原理、瓶颈分类(fillrate/vertex/bandwidth bound)、GPU Headroom API(Android 16)、AGI/Snapdragon Profiler/ARM Streamline 工具介绍。但缺少一条**从问题现象到根因定位的完整方法链**。本节补全三个能力缺口:Perfetto GPU 计数器解读标准、AGI 生产环境可用性评估、以及厂商调试工具链差异下的方法论统一。
+§2.10 已覆盖 GPU 渲染管线原理、瓶颈分类(fillrate/vertex/bandwidth bound)、GPU Headroom API(Android 16)、AGI/Snapdragon Profiler/ARM Streamline 工具介绍。从问题现象走到根因定位,还需要一条完整方法链。补齐的三个能力缺口是:Perfetto GPU 计数器解读标准、AGI 生产环境可用性评估、以及厂商调试工具链差异下的方法论统一。
 
 ### Perfetto GPU 计数器:Android 16 标准化 vs 旧版厂商自定义
 
@@ -1103,5 +1102,3 @@ Shader Compilation Jank 的特征:偶发长帧(可能达到几十毫秒),之后�
 - Android 16+ 通过 SPIR-V 预编译减少了这个问题,但 OpenGL ES 应用仍可能通过 ANGLE 遇到
 
 > [源码: perfetto/dev/docs/data-sources/gpu; gpuinspector.dev; ARM Mali GPU Best Practices; Qualcomm Adreno GPU Profiler Guide] **[一手:Perfetto 官方文档 + AGI 官方文档 + 厂商官方文档]**
-
-<!-- /AIW-源码调研-2026-05-11 -->
