@@ -8,8 +8,8 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-05-31"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -38,6 +38,8 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
+last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
 ---
 
 
