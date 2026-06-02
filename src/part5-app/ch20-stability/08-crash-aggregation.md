@@ -22,10 +22,13 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-03T00:50:00+08:00"
+task2b_review_notes: "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -116,6 +119,18 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 同一个指纹 = 同一个崩溃簇。
 
+### 相似度聚类的实现口径
+
+固定指纹适合处理“同一异常、同一应用帧”的崩溃。线上数据还会出现堆栈漂移：同一个空对象从不同入口触发、同一个 Native bug 在不同符号化质量下上报、同一段异步任务通过不同回调进入。此时不能只看哈希 key，需要在指纹之外做相似度合并。
+
+一个可执行的聚类流程如下：
+
+1. **先用强 key 分桶**：异常类型、崩溃线程、首个应用帧、App 版本区间、ABI 先进入粗分桶，避免把完全无关的报告放进同一次相似度比较。
+2. **再算帧级相似度**：每条堆栈保留前 8-12 个有效帧，应用帧权重大于系统帧；系统入口帧如 `Looper.loop()`、`ActivityThread.main()`、`ZygoteInit.main()`、`pthread_create` 只作为上下文，不参与主权重。
+3. **簇内确认**：候选报告与簇代表堆栈比较，应用帧 Jaccard 相似度、编辑距离、异常消息模板同时满足阈值才合并；只满足其中一项时进入待确认队列。
+
+复杂度上，不能对当天所有崩溃报告两两比较。若有 N 条报告，直接比较是 O(N²)，量级上来后不可用。工程实现通常先按强 key 分桶，单桶内再做相似度比较；每个簇保留 1-3 条代表堆栈，新增报告只和代表堆栈比。这样成本接近 O(N × K)，K 是单桶内候选代表数。
+
 ### 去重的边界情况
 
 **混淆后的堆栈。** R8 / ProGuard 混淆后，方法名变成 a.b.c，类名变成 a.b。如果每次构建的混淆映射不同，同一个崩溃在不同构建中会产生不同的指纹。解决方案：
@@ -132,9 +147,9 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 常见处理方式：
 
 - **加权帧策略**：靠近崩溃点的帧权重更高，但不要求完全一致。用 Jaccard 相似度或编辑距离比较两个堆栈，相似度超过阈值就归为同一簇
-- **尾部匹配**：从堆栈底部往上匹配，找到公共的调用路径。底部帧更稳定，因为它们是框架代码
+- **稳定段匹配**：只匹配业务代码和库代码中的稳定段。`Looper`、`ActivityThread`、`ZygoteInit`、`pthread` 这类通用入口不能作为合并依据，否则不同页面、不同模块的崩溃会被过度聚合
 
-**Caused by 链。** Java 异常有 cause chain。指纹应该取**根异常（root cause）** 的堆栈，而不是包装异常的堆栈。
+**Caused by 链。** Java 异常有 cause chain。指纹不能机械地只取 root cause。外层异常常带有 API 语义和业务入口，例如 `IllegalStateException` 包住底层 `IOException`，外层帧能说明是页面恢复、数据库迁移还是网络回调触发。更稳的做法是同时保留 outer exception、root cause 和两者的首个应用帧：强 key 用 root cause 防止重复，归因和分派保留外层语义。
 
 **OOM / StackOverflow 的堆栈截断。** StackOverflowError 的堆栈可能有上千帧，ART 有最大帧数限制（kMaxSavedFrames = 256）。OOM 发生时堆栈抓取本身可能失败，只剩一行 OutOfMemoryError 没有堆栈。这种情况下指纹退化为只有异常类型，需要结合触发场景的上下文（Activity 名、最近操作）做二次聚合。
 
@@ -333,11 +348,11 @@ com.example.app.network.ApiClient   → app/src/main/java/com/example/app/networ
 
 **DBSCAN（Density-Based Spatial Clustering）。** 把堆栈的编辑距离作为距离度量，密度达到阈值的样本归为一簇。优点：不需要预设簇数，能自动发现新簇。
 
-**Sentence Embedding + 余弦相似度** 把堆栈文本转成向量（用预训练模型或 TF-IDF），计算向量间的余弦相似度。相似度 > 0.85 的归为一簇。优点：对堆栈长度和帧顺序的变化有一定容忍度。
+**Sentence Embedding + 余弦相似度** 把堆栈文本转成向量（用预训练模型或 TF-IDF），计算向量间的余弦相似度。阈值不能照搬固定数值：`0.85` 这类阈值只适合作为某个团队标注集上的起点，最终要按误合并率、漏合并率和人工确认成本调参。优点：对堆栈长度和帧顺序的变化有一定容忍度。
 
 ### 实际效果与局限
 
-- **归类准确率**：在标注数据集上，ML 方法的 F1-score 通常比纯指纹方法高 10～20 个百分点
+- **归类准确率**：只能在本团队标注数据集上比较。指标要同时给出数据集规模、时间窗口、基线算法、人工标注规则和 F1-score；没有这些条件时，不写“提升 10～20 个百分点”这类跨团队结论
 - **冷启动问题**：新类型的崩溃没有历史数据，仍然需要人工确认
 - **维护成本**：模型需要定期用人工标注的数据 retrain，否则随着代码演进会 drift
 - **适用场景**：崩溃量大（日活 > 1000 万）、崩溃类型多（> 500 个活跃簇）的团队收益最高。小型团队纯指纹聚合够用
