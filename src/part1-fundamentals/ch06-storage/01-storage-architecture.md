@@ -2,7 +2,7 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 - Android 16"
 last_verified: "2026-04-14"
 last_verified_against: "Android 16, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
@@ -34,20 +34,20 @@ last_task6_audit: 2026-05-18
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: "auto-fixed"
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-06-02"
+task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T17:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
+last_task9_at: "2026-06-03T02:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-02-deep-review.md"
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T06:24:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-06-audit.md"
-task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修复 frontmatter closing delimiter；复核 FBE、blkio/task_profiles、FUSE passthrough 口径未发现新增 P0/P1；回到 Task6 复审。"
+task9_review_notes: "2026-06-03 Task9 02 复审：pass-tech-review。FBE / metadata encryption、blkio task_profiles、FUSE passthrough、system-as-root 与 dynamic partitions 版本边界复核通过；queue 无 pending，自动晋升 finalized。"
 
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 last_task9_autofix_at: "2026-06-02"
