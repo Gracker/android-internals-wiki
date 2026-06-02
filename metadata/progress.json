@@ -12020,12 +12020,12 @@
       }
     ]
   },
-  "last_task2b_lite_at": "2026-06-02T23:35:00+08:00",
+  "last_task2b_lite_at": "2026-06-03T01:38:00+08:00",
   "last_task2b_lite_sections": [
-    "21.8"
+    "26.12"
   ],
   "last_task2b_lite_files": [
-    "src/part5-app/ch21-startup/08-startup-monitoring.md"
+    "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
   ],
   "task2b_verifier_history": [
     {
@@ -12528,7 +12528,7 @@
     "result": "blocked"
   },
   "last_task2b_lite_result": "fixed-lite",
-  "last_task2b_lite_log": "logs/rework/2026-06-02-23-task2b-lite.md",
+  "last_task2b_lite_log": "logs/rework/2026-06-03-01-task2b-lite.md",
   "section_19_24": {
     "section": "19.24",
     "title": "崩溃与 ANR 捕获机制",
@@ -12566,17 +12566,15 @@
   "last_task2b_verifier_log": "logs/rework/2026-06-02-15-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-02-12-task2b-main.md",
   "task2b_last_rework_lite": {
-    "at": "2026-06-01T21:35:00+08:00",
-    "lane": "lite",
-    "source": "task6-review",
-    "section": "3.5",
-    "file": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
-    "title": "输入事件拦截与安全机制",
-    "result": "fixed-lite",
-    "issues_fixed": [
-      "厂商游戏模式输入优先级段落改为非 AOSP 边界说明，避免与源码验证结论冲突"
+    "at": "2026-06-03T01:38:00+08:00",
+    "sections": [
+      "26.12"
     ],
-    "log": "logs/rework/2026-06-01-21-task2b-lite.md"
+    "files": [
+      "src/part5-app/ch26-observability/12-versioned-diagnostics.md"
+    ],
+    "result": "fixed-lite",
+    "type": "frontmatter"
   },
   "section_18_15": {
     "section": "18.15",
@@ -12911,5 +12909,27 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-05-22T07:21:00+08:00"
+  },
+  "section_26_12": {
+    "section": "26.12",
+    "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+    "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+    "source_file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "auto-fixed",
+    "task9_reviewed_date": "2026-05-17",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_at": "2026-05-17T06:36:36+08:00",
+    "last_task9_autofix_at": "2026-06-02",
+    "last_task9_review_log": "logs/deep-review/2026-06-02-17-deep-review.md",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed-lite",
+    "last_task2b_lite_at": "2026-06-03",
+    "last_task2b_lite_log": "logs/rework/2026-06-03-01-task2b-lite.md",
+    "task2b_notes": "2026-06-03 Task2B Lite：按 2026-06-02 Task9 AUTO-FIX 记录修正 frontmatter/progress 回流状态；正文已包含 ProfilingTrigger 36.1/API37 分层。"
   }
 }
