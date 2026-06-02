@@ -46,10 +46,10 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -63,6 +63,9 @@ task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T09:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
 task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=0, P1=1），转入 Task2B 回炉。"
+task2b_result: fixed
+last_task2b_at: "2026-06-03T04:50:00+08:00"
+last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
 ---
 
 # WebView 性能优化实战
@@ -167,9 +170,11 @@ class WebViewWarmup(private val appContext: Context) {
     }
 
     fun release() {
-        warmupView?.destroy()
-        warmupView = null
-        warmed = false
+        Handler(Looper.getMainLooper()).post {
+            warmupView?.destroy()
+            warmupView = null
+            warmed = false
+        }
     }
 }
 ```
@@ -181,7 +186,7 @@ class WebViewWarmup(private val appContext: Context) {
 
 ### 用轻量 API 做 provider 预装载
 
-如果目标只是提前装载 provider，而不是预创建完整页面，可以调用 `WebSettings.getDefaultUserAgent(context)`。它比创建 WebView 实例轻，但覆盖范围也更窄：通常只能提前触发一部分 provider 初始化，不能替代 renderer 拉起、页面加载和资源缓存。
+如果目标只是提前装载 provider，而不是预创建完整页面，可以调用 `WebSettings.getDefaultUserAgent(context)`。它比创建 WebView 实例轻，但覆盖范围也更窄：可以提前触发 provider 选择、部分 native library 装载和默认 UA 读取，不会创建 `WebView` 实例、`AwContents`、renderer 进程或 compositor，也不能替代页面加载和资源缓存。
 
 ```kotlin
 fun warmupUserAgent(context: Context) {
@@ -224,12 +229,13 @@ class WebViewPool(private val appContext: Context) {
         webView.webViewClient = null
         webView.removeJavascriptInterface("NativeBridge")
         webView.loadUrl("about:blank")
-        webView.clearHistory()
-
-        if (pool.size < 1) {
-            pool.addLast(webView)
-        } else {
-            webView.destroy()
+        webView.post {
+            webView.clearHistory()
+            if (pool.size < 1) {
+                pool.addLast(webView)
+            } else {
+                webView.destroy()
+            }
         }
     }
 
@@ -241,7 +247,7 @@ class WebViewPool(private val appContext: Context) {
 }
 ```
 
-这段代码省略了业务态重置，例如 Cookie 策略、UA、混合协议白名单、调试开关和页面 JS 注入。线上实现要把这些配置放进统一的 `configure(webView, scene)`，每次 `acquire()` 后重新设置，不能假设池里的实例仍然干净。
+这段代码省略了业务态重置，例如 Cookie 策略、UA、混合协议白名单、调试开关和页面 JS 注入。`about:blank` 是异步加载，上例只用 `post` 避免同一调用栈内立刻清历史；生产实现更适合在空白页 `onPageFinished()` 后归还池，或者使用独立空闲实例，不要把仍在导航中的 WebView 交给下一次 `acquire()`。线上实现要把这些配置放进统一的 `configure(webView, scene)`，每次 `acquire()` 后重新设置，不能假设池里的实例仍然干净。
 
 WebView 运行在多进程或多账号隔离场景时，还要处理 data directory。Android P 起提供 `WebView.setDataDirectorySuffix()`，必须在该进程创建任何 WebView 之前调用。多进程 App 如果没有设置不同 suffix，可能遇到数据目录锁冲突；设置之后 Cookie、LocalStorage 和缓存也会按 suffix 隔离，业务要接受这个边界。
 
@@ -271,6 +277,7 @@ WebView 首屏慢，很多时候不是 Native 容器慢，而是主文档、CSS�
 ```kotlin
 class OfflinePackageClient(
     private val offlineStore: OfflineStore,
+    private val manifest: OfflineManifest,
     private val fallback: WebViewClient = WebViewClient()
 ) : WebViewClient() {
     override fun shouldInterceptRequest(
@@ -278,7 +285,8 @@ class OfflinePackageClient(
         request: WebResourceRequest
     ): WebResourceResponse? {
         val uri = request.url ?: return null
-        if (!request.isForMainFrame && !offlineStore.isAllowed(uri)) return null
+        if (request.isForMainFrame && !manifest.isAllowedMainFrame(uri)) return null
+        if (!request.isForMainFrame && !manifest.isAllowedSubresource(uri)) return null
 
         val hit = offlineStore.open(uri) ?: return null
         return WebResourceResponse(
@@ -295,6 +303,8 @@ class OfflinePackageClient(
     }
 }
 ```
+
+`OfflineManifest` 是业务侧的只读 manifest 查询接口，负责判断主文档 URL 模板、子资源 hash、MIME 和包版本。主文档和子资源要分开校验：主文档只能命中 manifest 里明确声明的 URL 模板，子资源只能命中同一包内列出的 hash、MIME 和版本；不要把任意 main frame 请求交给本地 `offlineStore` 兜底，否则外部页面、登录页或支付页可能被错误拦截。
 
 离线包上线前要有四个检查：
 
@@ -437,6 +447,11 @@ WebView 内存问题分两类：宿主 App 使用方式造成的泄漏，以及 
 ```kotlin
 fun destroyWebView(webView: WebView?) {
     webView ?: return
+    if (Looper.myLooper() != Looper.getMainLooper()) {
+        webView.post { destroyWebView(webView) }
+        return
+    }
+
     val parent = webView.parent as? ViewGroup
     parent?.removeView(webView)
 
@@ -445,12 +460,14 @@ fun destroyWebView(webView: WebView?) {
     webView.webViewClient = null
     webView.removeJavascriptInterface("NativeBridge")
     webView.loadUrl("about:blank")
-    webView.clearHistory()
-    webView.destroy()
+    webView.post {
+        webView.clearHistory()
+        webView.destroy()
+    }
 }
 ```
 
-`destroy()` 必须在创建该 WebView 的线程调用；展示态 WebView 通常就是 MainThread。只调用 `destroy()` 但没有从父容器移除，或者 Bridge / callback 仍然持有 Activity，都可能让 Activity 无法释放。内存泄漏排查时可以组合使用 LeakCanary、`dumpsys meminfo`、Perfetto 内存计数器和 Chrome DevTools Memory 面板。
+`destroy()` 必须在创建该 WebView 的线程调用；展示态 WebView 通常就是 MainThread。`about:blank` 导航和历史清理也有异步边界，严格清理要等空白页加载完成，或者至少把 `clearHistory()` 放到下一轮消息后执行。只调用 `destroy()` 但没有从父容器移除，或者 Bridge / callback 仍然持有 Activity，都可能让 Activity 无法释放。内存泄漏排查时可以组合使用 LeakCanary、`dumpsys meminfo`、Perfetto 内存计数器和 Chrome DevTools Memory 面板。
 
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebView.java]
 
@@ -459,9 +476,15 @@ fun destroyWebView(webView: WebView?) {
 Android 8.0 之后，WebView renderer 进程异常退出时，应用可以在 `WebViewClient.onRenderProcessGone()` 里处理。默认实现返回 `false`，可能导致宿主 App 崩溃或被系统杀死；业务应该返回 `true`，移除旧实例，清理引用，再按需重建。
 
 ```kotlin
+interface RendererRetryBudget {
+    fun tryAcquire(url: String?, didCrash: Boolean): Boolean
+}
+
 class RecoverableWebViewClient(
+    private val activity: Activity,
     private val container: ViewGroup,
-    private val factory: () -> WebView
+    private val factory: () -> WebView,
+    private val retryBudget: RendererRetryBudget
 ) : WebViewClient() {
     override fun onRenderProcessGone(
         view: WebView,
@@ -470,6 +493,15 @@ class RecoverableWebViewClient(
         val lastUrl = view.url
         (view.parent as? ViewGroup)?.removeView(view)
         view.destroy()
+
+        if (activity.isDestroyed || !container.isAttachedToWindow) {
+            H5Metrics.reportRendererGoneAborted("lifecycle_finished")
+            return true
+        }
+        if (!retryBudget.tryAcquire(lastUrl, detail.didCrash())) {
+            H5Metrics.reportRendererGoneAborted("retry_budget_exhausted")
+            return true
+        }
 
         val next = factory()
         container.addView(next)
@@ -485,7 +517,7 @@ class RecoverableWebViewClient(
 }
 ```
 
-多个 WebView 可能关联同一个 renderer。回调到达时，只清理参数里的 `view`，不要假设其他实例也一定失效。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位和重建结果，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
+多个 WebView 可能关联同一个 renderer。回调到达时，只清理参数里的 `view`，不要假设其他实例也一定失效。重建必须受 Activity/容器生命周期和重试预算约束；如果同一个 URL 模板连续触发 renderer OOM，继续自动重建会形成循环，应该停在错误页或降级页。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位、重建结果和预算耗尽原因，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
 
 [来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md]
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebViewClient.java]

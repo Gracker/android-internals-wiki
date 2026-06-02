@@ -42,20 +42,24 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-14
 last_task6_at: "2026-05-14T14:09:00+08:00"
 task6_review_notes: "L1/L2 轻量修复 11 处；写作质量通过。Task9 已有 P1 代码竞态回炉，保持 task2b_pending。"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-14T13:14:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T13:30:11+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-14-13-deep-review.md"
+task2b_result: fixed
+last_task2b_at: "2026-06-03T04:50:00+08:00"
+last_task2b_notes: "frontmatter fallback：修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
 ---
 
 # I/O 与网络优化案例集
@@ -155,14 +159,18 @@ class PreferenceWriteBuffer(
                             if (value is Boolean) putBoolean(key, value)
                         }
                     }.apply()
-                    pending.value = emptyMap()
+                    pending.update { current ->
+                        current.filterNot { (key, value) ->
+                            snapshot[key] == value
+                        }
+                    }
                 }
         }
     }
 }
 ```
 
-这段代码仍然使用 SP，只适合低风险开关类数据。高频结构化数据要迁到 DataStore 或 Room；跨进程共享、小型热数据可以评估 MMKV，边界见 24.1 节。
+刷盘后不能无条件把 `pending` 清空。`flush` 期间可能又有新的 `putBoolean()` 写入，清空会直接丢掉这些更新；上面的写法只移除本轮 snapshot 已经落盘且当前值没有变化的 key，新写入或值已变化的 key 会留到下一轮刷盘。这段代码仍然使用 SP，只适合低风险开关类数据。高频结构化数据要迁到 DataStore 或 Room；跨进程共享、小型热数据可以评估 MMKV，边界见 24.1 节。
 
 ### 验收
 
