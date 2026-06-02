@@ -4,24 +4,24 @@ chapter: "5.6"
 section: "5.6"
 status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
-last_verified: "2026-04-29"
-last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
+last_verified: "2026-06-02"
+last_verified_against: "AOSP android-16.0.0_r1; android-14.0.0_r1 historical TARE check; Android 17 / API 37 official docs"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-02T03:20:00+08:00"
-task2b_state: pending
-task2b_result: pending-review-rework
-last_task2b_at: 2026-05-24T19:29:26+08:00
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-02T08:50:00+08:00"
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 6
 related_chapters:
@@ -62,11 +62,11 @@ p2: 1
 
 ## 为什么要了解 Android 功耗管理
 
-当我们打开 Perfetto,选中一段时间范围,看到某个进程在灭屏状态下仍然持续占用 CPU,或者在 Battery Historian 中发现一个 App 后台持锁时间远超预期--这些现象背后,都是 Android 功耗管理框架在工作(或者该工作的时候没有工作)。
+打开 Perfetto,选中一段时间范围,看到某个进程在灭屏状态下仍然持续占用 CPU,或者在 Battery Historian 中发现一个 App 后台持锁时间远超预期--这些现象背后,都是 Android 功耗管理框架在工作(或者该工作的时候没有工作)。
 
 功耗管理覆盖的范围远不止省电。它是一套从硬件到软件的分层机制：从 Linux 内核的 Suspend/Resume（5.4 节讨论过 DVFS，5.5 节讨论过 Thermal），到 Android 框架层的 PowerManagerService，再到 Google 引入的 Doze 模式和 App Standby 分桶策略。理解这套机制后，分析功耗问题时才能定位：到底是 App 持了不该持的 WakeLock，还是后台任务调度不合理导致系统无法休眠，又或者是某个硬件器件被异常唤醒。
 
-功耗和性能是一枚硬币的两面。我们在前面章节讨论的 CPU 调度(5.1)、大小核(5.3)、DVFS(5.4)、Thermal(5.5)都是从"怎么让系统跑得更快"的角度出发的。而这一节,我们从"怎么让系统在不该跑的时候停下来"的角度来看同一套硬件。
+功耗和性能是一枚硬币的两面。前面章节讨论的 CPU 调度(5.1)、大小核(5.3)、DVFS(5.4)、Thermal(5.5)都是从"怎么让系统跑得更快"的角度出发的。本节从"怎么让系统在不该跑的时候停下来"的角度来看同一套硬件。
 
 ## Android 功耗管理框架:PowerManagerService → WakeLock → Suspend
 
@@ -136,13 +136,13 @@ HWC（Hardware Composer）在显示内容持续不变时，可以通过 ICompose
 
 ### 在 Perfetto 中的表现
 
-如果我们在 Perfetto 中抓取了包含电源事件的 Trace,可以观察到以下信息:
+Perfetto 抓取到包含电源事件的 Trace 后，可以观察到以下信息:
 
 - **Power 标签页**:在 system_server 进程下 WakeLock 的 acquire/release 事件,以及屏幕 on/off 的状态变化
 - **CPU 状态**:当系统进入 Suspend 后,所有 CPU 的 idle 比例会接近 100%;如果某个 CPU 在灭屏期间仍然有活跃的执行段,说明有东西阻止了系统进入深度休眠
 - **Wake reasons**:内核唤醒原因通常会记录在 `pm_wakeup` 事件中
 
-如果我们发现灭屏后系统没有进入 Suspend(CPU 仍有活动),常见原因就是某个 App 持有了 PARTIAL_WAKE_LOCK 没有释放。通过 `adb shell dumpsys power` 可以查看当前所有活跃的 WakeLock:
+如果灭屏后系统没有进入 Suspend(CPU 仍有活动),常见原因就是某个 App 持有了 PARTIAL_WAKE_LOCK 没有释放。通过 `adb shell dumpsys power` 可以查看当前所有活跃的 WakeLock:
 
 ```text
 Wake Locks: size=2
@@ -207,9 +207,9 @@ Doze 关注的是"设备层面的状态"--灭屏、静止、未充电。App Stan
 
 ### Battery Historian 解决什么问题
 
-当收到一条用户反馈说"App 耗电太厉害了"时,我们需要一个能看到"过去几个小时系统到底发生了什么"的工具。Battery Historian 就是这个工具。
+当收到一条用户反馈说"App 耗电太厉害了"时，需要一个能看到"过去几个小时系统到底发生了什么"的工具。Battery Historian 就是这个工具。
 
-Battery Historian 是 Google 推出的开源工具,用于分析 Android 设备的电池使用历史。它不是一个实时监控工具,而是一个"事后分析"工具--我们先让设备正常运行一段时间,然后导出 bugreport,再用 Battery Historian 可视化分析。排查功耗问题的第一步几乎都是"先抓一份 bugreport 扔进 Battery Historian",比直接猜问题出在哪里要高效得多。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
+Battery Historian 是 Google 推出的开源工具,用于分析 Android 设备的电池使用历史。它不是一个实时监控工具,而是一个"事后分析"工具--先让设备正常运行一段时间,然后导出 bugreport,再用 Battery Historian 可视化分析。排查功耗问题的第一步几乎都是"先抓一份 bugreport 扔进 Battery Historian",比直接猜问题出在哪里要高效得多。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
 
 ### 使用流程
 
@@ -223,7 +223,7 @@ adb shell dumpsys batterystats --reset
 
 这会清除旧的电池采集数据,确保接下来的分析基于一个干净的起点。
 
-**第二步:复现问题场景。** 让用户(或我们自己)正常使用手机,复现耗电问题。这段时间内,系统在后台持续记录各种电源相关事件:WakeLock 持有/释放、网络访问、GPS 使用、Alarm 触发、屏幕亮度变化等。
+**第二步:复现问题场景。** 让用户或测试人员正常使用手机,复现耗电问题。这段时间内,系统在后台持续记录各种电源相关事件:WakeLock 持有/释放、网络访问、GPS 使用、Alarm 触发、屏幕亮度变化等。
 
 **第三步:导出 bugreport。**
 
@@ -233,7 +233,7 @@ adb bugreport > bugreport.txt
 
 这一步可能需要 2-5 分钟,期间不要断开 USB 连接。
 
-**第四步:在 Battery Historian 中打开。** 我们可以使用本地 Docker 部署,也可以使用在线版本。打开后我们会看到一个时间轴视图,上面展示了各种电源相关事件的状态变化。
+**第四步:在 Battery Historian 中打开。** 可以使用本地 Docker 部署,也可以使用在线版本。打开后界面会展示一个时间轴视图,上面列出各种电源相关事件的状态变化。
 
 ### Battery Historian 的分析维度
 
@@ -303,7 +303,7 @@ Battery Historian 中的常见场景案例也很有参考价值:充电慢可能�
 
 ### WakeLock 的正确使用方式
 
-前面我们介绍了 WakeLock 的类型和 PMS 的管理机制。这里我们聚焦到实际开发中最常见的使用场景和问题。
+前文已经介绍 WakeLock 的类型和 PMS 的管理机制。这里聚焦实际开发中最常见的使用场景和问题。
 
 最常见的合理使用场景:
 
@@ -358,26 +358,15 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 [图:Battery Historian 中 WakeLock 持有时长的可视化示例]
 
 
-### Tare 经济模型:Job 配额的底层管控
+### TARE 经济模型:历史实现与发布边界
 
-Android 12（API 31）引入 Tare（Think Advanced Resource Economy）经济模型，作为 JobScheduler Apex 模块的配额管控层，运行在独立进程而非 system_server。[存疑: 本段涉及 Tare 运行位置与公开 API，需 Task9 按 android-17.0.0_r1 复核。]
+TARE（Think Advanced Resource Economy）曾作为 JobScheduler 资源配额实验出现在 Android 12-14 附近的系统实现中。它把后台资源抽象成 ARC（Android Resource Credits），由系统服务根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
 
-**核心机制**：Tare 以 ARC（Android Resource Credits）为内部货币，每个应用周期性获得 ARC 配额，Job 执行时消耗 ARC。`TareEconomicManager`（`frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java`，android-17.0.0_r1）在 Job 调度前检查应用 ARC 余额，余额耗尽时拒绝新 Job。
+TARE 在本节只能写成历史实现和源码边界，不能写成 Android 17 已验证能力。Task9 复核结果显示：android.googlesource 当前未发布 `android-17.0.0_r1` tag；`android-16.0.0_r1` / `android-15.0.0_r1` 的 `frameworks/base/apex/jobscheduler/service/java/com/android/server/` 下未命中 `tare/` 目录；`android-14.0.0_r1` 的历史 `tare/` 目录包含 `InternalResourceService`、`EconomicPolicy`、`JobSchedulerEconomicPolicy`、`EconomyManagerInternal` 等实现，但没有 `TareEconomicManager.java`、`AppBudgetManager.java`，也没有 `setAppBudgetoyant()` / `getRemainingBudget()` 这类应用自设预算公开 API。
 
-**关键组件**：
-- `AppBudgetManager`：管理每个 UID 的预算，`setAppBudget(uid, budgetMs)` 设置预算时长，`setAppToppingThreshold(uid, thresholdMs)` 设置消费上限阈值，`getRemainingBudget(uid)` 查询剩余配额
-- `InternalResourceService`：管理全局 ARC 供给，每天重新计算
-- `EconomyManager`（API 34+，位于 `frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java`）：应用层公开 API，`setAppBudgetoyant(packageName, budgetMs)` 允许应用自设置预算，`getRemainingBudget(packageName)` 查询本应用剩余预算。[存疑: `setAppBudgetoyant()` 疑似不存在，且 Tare 是否提供应用层自设预算 API 需要源码确认。]
+因此，在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口、JobScheduler quota 和 Android 16 行为变更这些公开资料。TARE 只作为历史源码线索保留：它说明 Android 曾尝试把后台任务约束抽象成经济模型，但不能用它解释 Android 17 的 Job 调度决策。
 
-**消费数据来源**：`TareEconomicManager` 依赖 `BatteryStatsService` 提供的历史耗电数据作为基准参照，通过 `BatteryUsageStats` API（API 31+）查询各 UID 的实际消费。
-
-**BatteryStatsService**（`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，android-17.0.0_r1）继承 `BatteryStats` HIDL/AIDL 服务端，数据写入每分钟批次合并。调用链：`BatteryManager.getBatteryUsageStats(List<BatteryUsageStatsQuery>)` → `IBatteryStats` → `BatteryStatsService.getBatteryUsageStats()`。`BatteryUsageStatsQuery` 支持按消费场景/时间范围/UID 聚合，比传统 `getStatistics()` 更精细。
-
-**版本差异**：Android 16 对 JobScheduler 配额做了优化，Active Bucket 的 App 配额更宽裕；Android 17（API 37）Power Check 机制与 Tare 联动增强，但 `TareEconomicManager.checkPowerConstraints()` 具体实现路径尚未在 android-17.0.0_r1 源码中确认。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java; frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/AppBudgetManager.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java; frameworks/base/core/java/android/os/BatteryUsageStats.java]
-
-<!-- AIW-源码调研-2026-05-31: Tare 经济模型源码记录 -->
+[已验证: AOSP android-14.0.0_r1 historical TARE directory; AOSP android-15.0.0_r1 / android-16.0.0_r1 no matching `com/android/server/tare/` directory; logs/deep-review/2026-06-02-03-deep-review.md]
 
 ## JobScheduler / WorkManager 的省电调度策略
 
@@ -476,19 +465,6 @@ Adaptive Battery 从系统侧智能调整资源分配,而 Android 也为用户�
 
 **自动限制**:从 Android 12 开始,如果系统检测到某个 App 在后台消耗了过多资源(如频繁唤醒、长时间持锁),会自动弹出通知提醒用户。如果用户确认,该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的"共治"模式。
 
-### Android 17 能量限额制（Energy Limiter）[待验证]
-
-Android 17 (API 37) 公开资料提及 JobDebugInfo 等后台任务调试能力。当前可检索的官方文档未能支撑"按 App 统计后台 μJ 能量、超配额强杀进程"的完整调用链和 CDD/CTS 要求。以下内容为基于公开线索的研究假设，**发布前需要补齐 Android 17 CDD、AOSP PowerStats/ODPM 调用链或官方特性页证据**。
-
-假设性机制：系统通过 ODPM(On-Device Power Monitor)或等效硬件计数器，按 App 统计后台运行期间消耗的微焦耳 (μJ) 能量。当累计值超过配额时，系统终止该 App 的后台进程。配额大小与 App 的 Standby Bucket 挂钩。
-
-对开发者的潜在影响（待验证）：
-- 长时间高 CPU 占用的后台同步可能需要拆分为短时间片
-- 单位时间内的功耗密度可能成为新的管控维度
-- 低电量模式下能量配额可能被动态压缩
-
-[待验证: 需 Android 17 CDD、AOSP service/PowerStats/ODPM 调用链、CTS 证据补充]
-
 ## RESTRICTED Bucket 与 Exemption 机制
 
 上面提到的自动限制机制,最终会把 App 推入一个最严格的 Standby 等级--Restricted Bucket(Android 12 引入)。它和普通的 Rare Bucket 不同,后者只是"少给资源",而 Restricted Bucket 是"几乎不给资源"。进入这个 Bucket 的 App 面临的限制包括:
@@ -535,7 +511,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 
 ### 误区 1:"我的 App 没有申请 WakeLock,所以不会导致灭屏耗电"
 
-不一定。WakeLock 只是阻止系统休眠的一种方式。其他方式包括:频繁的 Alarm 唤醒、JobScheduler 的频繁执行、持续的网络访问、音频播放等。在 Battery Historian 中,我们需要综合看所有维度,而不只是 Wakelock。
+不一定。WakeLock 只是阻止系统休眠的一种方式。其他方式包括:频繁的 Alarm 唤醒、JobScheduler 的频繁执行、持续的网络访问、音频播放等。在 Battery Historian 中，需要综合看所有维度，而不只是 Wakelock。
 
 ### 误区 2:"WorkManager 会保证我的任务在指定时间执行"
 
@@ -598,8 +574,8 @@ Linux 电源管理并非单一机制，而是由多个层次协同工作：
 ```
 用户空间 / Android Framework
     ↓ (PowerManagerService)
-Power HAL (android.hardware.power@1.x)
-    ↓ (hwbinder / AIDL)
+Power HAL (AIDL IPower; legacy HIDL 1.0-1.3 作为历史接口)
+    ↓ (binder / vendor implementation)
 内核电源管理
     ├── Energy Model (EM) 框架
     ├── EAS (Energy Aware Scheduling)
@@ -641,7 +617,7 @@ cost = (fmax * power) / frequency
 
 成本越高，说明该频点相对能效越差。当某个频点的成本不小于前一频点时（cost ≥ prev_cost），内核标记 `EM_PERF_STATE_INEFFICIENT`，表示该频点不值得使用。
 
-**数据来源**：EM 框架本身不测量功耗，而是通过回调函数 `em_data_callback.active_power()` 从各 SoC 的 cpufreq 驱动获取功耗数据。这意味着功耗数据由芯片厂商提供，与实际测量值可能有偏差。
+**数据来源**：EM 框架本身不测量功耗，而是通过回调函数 `em_data_callback.active_power()` 从各 SoC 的 cpufreq 驱动获取功耗数据。功耗数据由芯片厂商提供，与实际测量值可能有偏差。
 
 ### Energy Aware Scheduling（EAS）：能效感知的任务放置
 
@@ -670,7 +646,7 @@ EAS 在选择任务放置时，评估的是"把任务迁移到候选 CPU"带来�
 
 ### Power HAL：Android 与内核的桥梁
 
-Android 的 Power HAL（`hardware/libhardware/include/hardware/power.h`；`android.hardware.power@1.0-1.3`）是连接 Android 框架层和内核电源管理的关键接口。
+Android 的 Power HAL 是连接 Android 框架层和内核电源管理的关键接口。旧设备和历史代码里会看到 `hardware/libhardware/include/hardware/power.h` 与 `android.hardware.power@1.0-1.3` HIDL 接口；Android 16/17 口径优先看 AIDL `IPower`，源码锚点是 `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
 
 **Legacy HAL 接口**：
 
@@ -686,13 +662,13 @@ power_hint_t: POWER_HINT_CPU_BOOST, POWER_HINT_INTERACTION,
               POWER_HINT_LAUNCH, POWER_HINT_SET_PROFILE, ...
 ```
 
-**HIDL/AIDL HAL**（android.hardware.power@1.0-1.3）通过 hwbinder 提供标准化的 `IPower` 接口，版本从 1.0 演进到 1.3。关键方法：
+**当前 AIDL HAL** 通过 `IPower` 暴露 `setMode()`、`setBoost()` 等接口，框架层把交互态、低功耗态和短时 boost 请求传给厂商实现。关键方法：
 
-```cpp
+```aidl
 interface IPower {
-    powerHint(PowerHint type, int32_t data);
-    setModemResetCount(int32_t count);
-};
+    void setMode(in Mode type, in boolean enabled);
+    void setBoost(in Boost type, in int durationMs);
+}
 ```
 
 **调用路径**：
