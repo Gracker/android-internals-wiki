@@ -57,6 +57,8 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-27T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # 1.20 App Archiving 机制与恢复性能
@@ -309,7 +311,6 @@ Android 15 官方表述把平台归档定位为“让所有应用商店更容易
 App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器恢复”做成了平台能力。读代码时抓住三条线：`PackageInstaller.requestArchive()` 进入 PMS，`PackageArchiver` 保存 `ArchiveState`，`ActivityStarter` 在类找不到分支把灰显图标点击转成 `ACTION_UNARCHIVE_PACKAGE`。性能分析也按这三条线拆开：系统判定通常很短，用户等待多半花在安装器下载、PackageInstaller session、编译和恢复后冷启动。
 
 
-<!-- AIW-源码调研-2026-06-01 -->
 ## 扩展：版本边界与 INSTALL_UNARCHIVE 机制验证（2026-06-01 源码调研）
 
 ### 版本边界确认
@@ -347,7 +348,7 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 
 **验证结果（源码路径）：** `PackageArchiver.java`（main branch + android-16.0.0_r1）中搜索 `sdm`、`SDM`、`signature`、`verifySdm` 关键字，**均无匹配**。`PackageInstallerSession` 中 `INSTALL_UNARCHIVE` 仅涉及安装标志位判断，不涉及包完整性签名校验。
 
-**原章节该待验证条目修订：SDM 签名校验与恢复包完整性校验在 AOSP PackageArchiver 主路径中无源码支撑，应标注为「超出 AOSP 范围（API 38+），未进入 Android 17」，不作为正文结论。**
+**原章节该待验证条目修订：SDM 签名校验与恢复包完整性校验在 AOSP PackageArchiver 主路径中无源码支撑，应标注为「超出 AIW 范围」，不作为正文结论。**
 
 ### android-15 → android-16 后续演进（main branch commit history）
 
@@ -359,5 +360,3 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 - `3d9cc0a12fc2`（2024-11-12）：`requestUnarchiveConfirmation` 中 sendIntent 改用 handler post
 
 **信息源：** GitHub AOSP Mirror commit log（aosp-mirror/platform_frameworks_base）；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1、main；PackageInstallerSession.java @ main；ArchiveState.java @ android-16.0.0_r1）
-
-[// AIW-源码调研-2026-06-01 end]

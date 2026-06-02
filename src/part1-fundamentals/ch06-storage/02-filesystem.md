@@ -59,6 +59,8 @@ finalized_date: "2026-05-22"
 finalized_by: "openclaw-task9-auto-promote"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-22"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 <!-- outline-start -->
 
@@ -83,7 +85,7 @@ auto_promoted_date: "2026-05-22"
 
 在 Perfetto 中分析 App 卡顿时，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。Trace 中主线程时间条上出现一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大后 syscall 是 `fsync`，对应的是一个 SQLite 数据库或 SharedPreferences 的 XML 文件。
 
-这个现象在 Android 上比在其他 Linux 系统上更为突出，原因是 Android 系统中 SQLite 的使用密度远高于服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 SQLite 数据库里，而 SQLite 每次事务提交都需要调用 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
+这个现象之所以在 Android 上特别常见，是因为 Android 对 SQLite 的依赖远超服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 SQLite 数据库里，而 SQLite 每次事务提交都要 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
 
 这个问题的根因，往往不在 App 代码本身，而在 App 之下那一层——文件系统。不同的文件系统对 `fsync` 的实现策略差异巨大，直接影响着 App 的 I/O 延迟。Android 设备上的文件系统选择，经历了从 ext4 到 f2fs、再到 EROFS 的演进，每一次切换都是为了解决前一代在手机场景下暴露出的特定问题。
 
@@ -135,7 +137,7 @@ ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是�
 
 **问题二：原地更新与写放大**
 
-ext4 采用就地更新（in-place update）策略——修改文件时，直接覆盖原有的磁盘块。对于 HDD 来说，这不是问题，因为 HDD 的扇区可以无限次覆盖写入。但 NAND 闪存完全不同——它不能就地覆盖写，必须先擦除整个 block（通常 128KB-256KB），然后再写入。修改一个 4KB 的页面，实际需要：读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。4KB 的写入被放大成了 128KB+，这就是写放大（Write Amplification）。
+ext4 采用就地更新（in-place update）策略——修改文件时，直接覆盖原有的磁盘块。HDD 的扇区可以无限次覆盖写入，所以这不是问题；但 NAND 闪存做不到就地覆盖写，它必须先擦除整个 block（通常 128KB-256KB），再写入新数据。修改一个 4KB 的页面，实际需要：读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。4KB 的写入被放大成了 128KB+，这就是写放大（Write Amplification）。
 
 就地更新策略使得 ext4 无法有效利用闪存内部的并发能力，加速了存储芯片的磨损，也增加了垃圾回收（GC）的压力。
 
@@ -295,9 +297,9 @@ Perfetto 通常不会给出一个名为“SSR”的直接 slice。排查时更�
 
 3. **主线程的 D 状态等待**：配合 syscall 信息，确认是否是 `fsync` / `fdatasync` / `pwrite` 之类的同步写导致阻塞。
 
-## 现代 Android /data 分区还依赖三类文件系统能力
+## 三类文件系统能力
 
-只讲 ext4 / f2fs / EROFS 还不够。日常性能分析里，经常直接撞到的还有配额、目录匹配和加密三组能力。
+讲完 ext4 和 f2fs 之后，在进入 EROFS 之前，有三组 `/data` 分区级别的文件系统能力需要单独提一下——日常性能分析里经常直接撞到它们：配额、目录匹配和加密。
 
 ### Project Quota：把“存储统计”从全盘遍历变成计数读取
 
@@ -323,6 +325,8 @@ Android 的文件级加密建立在 fscrypt 上，进入 ext4 / f2fs 的读写�
 > [源码锚点: frameworks/base/core/java/android/app/usage/StorageStatsManager.java]
 > [源码锚点: kernel/common/fs/f2fs/dir.c — `f2fs_match_name`]
 > [源码锚点: kernel/common/fs/crypto/inline_crypt.c]
+
+这三组能力都和具体的文件系统实现绑在一起，不属于单独的分区选型决策。下面我们转向另一个方向——只读分区。
 
 ## EROFS：为只读分区设计的极致压缩
 
@@ -373,7 +377,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 4. 每读一块数据 → 计算 SHA256(data + salt) → 查 hash tree → 验证到 root
 5. 验证通过 → 数据返回给 EROFS 文件系统层；验证失败 → I/O error
 
-**dm-verity 保护下的 EROFS 挂载栈**（Dynamic Partition 场景）：
+**dm-verity 保护下的 EROFS 挂载栈**（以 Dynamic Partition 为例）：
 ```
 物理 super partition
   → dm-linear（映射 dynamic partition 边界）
@@ -396,8 +400,6 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 
 **Perfetto 中的可观测性**：
 dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，它通常只会折叠进底层 storage I/O 延迟里。更可操作的观察路径，是先看 block layer 的 `block_rq_issue` / `block_rq_complete`，再按设备内核是否开放对应事件，补看 mmc / UFS host controller tracepoint；如果内核还打开了 dm 或 dm-verity 相关 ftrace 事件，再把映射层时延一起对照。公开默认配置里通常看不到一个单独名为 dm-verity 的轨道，因此很难把“读数据”和“验 hash”完全拆开。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）会进一步把一部分验证开销藏在预取里。
-
-<!-- AIW-源码调研-2026-04-20 -->
 
 ### EROFS 与 OTA 升级
 

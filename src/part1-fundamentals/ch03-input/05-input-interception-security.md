@@ -54,6 +54,8 @@ task6_new_rework: false
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # 输入事件拦截与安全机制
@@ -138,7 +140,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 }
 ```
 
-按键事件也是同一套做法，只是入口换成 `shouldSendKeyToInputFilterLocked()`。把这几层放在一起看，比较准确的流程是：
+按键事件也是同一套做法，只是入口换成 `shouldSendKeyToInputFilterLocked()`。完整的调用链是：
 
 `WindowManagerService.setInputFilter()` → `InputManagerService.setInputFilter()` → `filter.install(...)` → `mNative.setInputFilterEnabled(true)` → `InputDispatcher` 在分发前调用 `mPolicy.filterInputEvent(...)`。
 
@@ -146,7 +148,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 `InputFilter` 的 Java 合同很直接，`onInputEvent(InputEvent event, int policyFlags)` 默认马上调用 `sendInputEvent(event, policyFlags)` 放行。自定义 filter 可以消费事件，也可以构造替代事件再调用 `sendInputEvent()` 重新发布。
 
-这件事更像“拦下原事件，再决定要不要发出另一个事件”，不是在原地改一块共享状态。`InputFilter` 文档也强调了事件一致性，如果 filter 自己重组了一串 `MotionEvent`，它要保证 down/move/up 序列仍然合法，不然下游窗口会收到不成对的事件。
+更准确的理解是“拦下原事件，再决定要不要发出另一个事件”，不是在原地改一块共享状态。`InputFilter` 文档也强调了事件一致性，如果 filter 自己重组了一串 `MotionEvent`，它要保证 down/move/up 序列仍然合法，不然下游窗口会收到不成对的事件。
 
 `InputFilter` 运行在 system_server 这一侧。普通 App 只能接收过滤后的结果，不能自己挂一个全局 filter。
 
@@ -353,7 +355,7 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 - Android 14 需要 `R.string.accessibility_filter_key_events` 资源声明
 - Android 10 只有系统无障碍服务能使用 `FLAG_REQUEST_FILTER_KEY_EVENTS`
 
-等补到 tag + 文件或官方文档之后，再恢复版本表。
+以上条目待一手证据补全后再纳入版本演进表。
 
 ### Android 16/17：从权限控制到物理隔离
 
@@ -602,5 +604,3 @@ boolean focusChanged = updateFocusedWindowLocked(UPDATE_FOCUS_WILL_ASSIGN_LAYERS
 **调研结论**：AOSP 标准 GameMode 框架中不存在独立的"游戏输入优先级提升"机制。厂商实现此功能依赖非公开修改或专有 Framework 扩展。
 
 ---
-
-<!-- AIW-源码调研-2026-05-12 -->

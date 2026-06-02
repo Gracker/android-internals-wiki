@@ -50,6 +50,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T02:37:00+08:00"
 task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞技术问题。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # 内存抖动与 GC 治理
@@ -79,14 +81,12 @@ task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。无 P0/P1�
 
 ## 为什么要了解内存抖动与 GC 治理
 
-内存抖动处理的是短时间大量分配、很快失效、又反复触发回收的问题。23.4 节已经讲了 Java Heap 预算、缓存和大对象控制；10.6 节和 4.8 节已经展开 ART GC 机制、暂停和 Perfetto 识别方法。这里换成应用实战视角：把分配峰值从启动、首帧、滑动、动画这些敏感窗口里移走。
+内存抖动说的是短时间大量分配、很快失效、又反复触发回收的问题。前面 23.4 节讲了 Java Heap 预算和缓存控制，10.6 节和 4.8 节展开了 ART GC 的机制和 Perfetto 识别方法。这一节换到应用实战视角：把分配峰值从启动、首帧、滑动、动画这些敏感窗口里移走。
 
-Android Developers 的慢渲染文档把对象分配和 GC 放在卡顿原因里，口径很直接：ART 之后 GC 的影响小了很多，但高频路径里的分配仍然会消耗 CPU，并让 GC 变频繁。Memory Profiler 文档也说明，Android 的 GC 会在某些时刻短暂停应用代码；如果应用分配速度快于回收速度，线程会等回收器释放出足够内存再继续分配。
+Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，结论很明确：ART 之后 GC 的影响小了很多，但高频路径里的分配仍然会吃掉 CPU，也会让 GC 更频繁。Memory Profiler 文档也说明，Android 的 GC 会在某些时刻短暂停应用代码；如果应用分配速度快于回收速度，线程会等回收器释放出足够内存再继续分配。
 
-这一节不建议把治理方向放在 Hook `libart.so` 或人为阻塞 `HeapTaskDaemon` 上。参考书里提到过 GC 抑制方案，这类方案适合理解 ART 内部任务调度，不适合作为通用应用优化手段。工程侧更稳的做法是把分配热点找出来，减少临时对象，控制批处理规模，并把重分配从用户能感知的帧窗口里挪开。
+这一节不推荐把治理方向放在 Hook `libart.so` 或人为阻塞 `HeapTaskDaemon` 上。参考书里提到过 GC 抑制方案，这类方案适合理解 ART 内部任务调度，不适合作为通用应用优化手段。工程侧更稳的做法是把分配热点找出来，减少临时对象，控制批处理规模，并把重分配从用户能感知的帧窗口里挪开。
 
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
@@ -98,7 +98,7 @@ Android Developers 的慢渲染文档把对象分配和 GC 放在卡顿原因里
 
 内存抖动由“分配密度”触发，而不只由“对象大小”触发。一个页面每秒创建几万个小对象，即使单个对象只有几十字节，也会快速推高 `bytes_allocated`，让 ART 更早发起并发 GC。AOSP `Heap::AllocObjectWithAllocator()` 在分配后会检查 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`；该函数把 Java 已分配字节数和 `concurrent_start_bytes_` 阈值比较，达到阈值后进入 `RequestConcurrentGCAndSaveObject()` 路径。
 
-从应用层看，内存抖动通常有四种表现：
+从应用层来看，内存抖动通常表现为四种现象：
 
 - **堆曲线呈锯齿状**：内存快速上升，又被 GC 拉回，周期很短。单次峰值可能不高，但回收频率高。
 - **Logcat 或 trace 里 GC 密集**：`HeapTaskDaemon` 活跃，Perfetto / Systrace 能看到多个 GC 片段紧贴在交互窗口附近。
@@ -113,11 +113,10 @@ ART 从 Android 8 起默认使用 Concurrent Copying，Android 10 之后默认�
 [已验证: AOSP android-16.0.0_r1, art/runtime/gc/task_processor.cc]
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
-GC 对帧率的影响来自两部分：短暂停应用线程，以及后台 GC 线程抢占 CPU。AOSP `Daemons.java` 中 `HeapTaskDaemon` 会调用 `VMRuntime.getRuntime().runHeapTasks()`；`TaskProcessor::RunAllTasks()` 从队列取 `HeapTask` 并执行。Android Developers 的慢渲染文档也提到，新版本 Android 上 GC 通常运行在名为 `HeapTaskDaemon` 的后台线程上，大量分配会让更多 CPU 资源花在 GC 上。
+GC 对帧率的影响来自两块：短暂停应用线程，以及后台 GC 线程和渲染线程抢 CPU。AOSP `Daemons.java` 中 `HeapTaskDaemon` 会调用 `VMRuntime.getRuntime().runHeapTasks()`；`TaskProcessor::RunAllTasks()` 从队列取 `HeapTask` 并执行。Android Developers 的慢渲染文档也提到，新版本 Android 上 GC 通常运行在名为 `HeapTaskDaemon` 的后台线程上，大量分配会让更多 CPU 资源花在 GC 上。
 
-帧窗口只有十几毫秒，GC 不必长时间停止主线程才会造成体感问题。滑动时主线程、RenderThread、图片解码线程、后台数据线程本来就在争 CPU；如果 `HeapTaskDaemon` 在同一个窗口里密集运行，主线程拿到 CPU 的时机可能后移，RenderThread 提交也可能变晚。7.2 节讲的是卡顿归因树，这里只看应用动作：不要让可避免的分配跟帧生产抢同一个时间段。
+一帧只有十几毫秒，GC 不需要长时间停主线程也能影响体感。滑动时主线程、RenderThread、图片解码线程、后台数据线程本来就在争 CPU；如果 `HeapTaskDaemon` 在同一帧里密集运行，主线程拿到 CPU 的时机就可能被挤到后面，RenderThread 提交也会变晚。7.2 节讲的是卡顿归因树，这里只看应用动作：不要让可避免的分配跟帧生产抢同一个时间段。
 
 排查时不要只盯单次 GC 耗时。一次 2 ms 的 GC 落在空闲期可能没有感知；连续多次 GC 落在 fling、动画或首帧窗口里，帧耗时会被抬高。更可靠的判断方式是把三类轨道放到同一张 trace 里对齐：
 
@@ -131,7 +130,6 @@ GC 对帧率的影响来自两部分：短暂停应用线程，以及后台 GC �
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 
 内存抖动最常出现的位置不是“看起来最复杂”的业务代码，而是调用频率最高的回调。一次分配在点击按钮时没有问题，放到 `onDraw()`、`onBindViewHolder()`、`onTouchEvent()`、Compose recomposition 或动画回调里，就会被帧率放大。
 
@@ -254,7 +252,7 @@ Android Studio Memory Profiler 可以查看 heap dump、对象数量、GC 事件
 
 ### 代码修复：减少热路径分配，不追求零分配
 
-零分配不是通用目标。现代 ART 对短命小对象已经做了优化，强行对象池化可能把短命对象变成长命对象，增加老年代压力，也可能因为忘记重置字段引入脏数据。对象池只适合创建频繁、初始化成本高、状态可完整清理的对象；普通数据对象和持有 View / Context / callback 的对象不要池化。
+零分配不应该是通用目标。现代 ART 对短命小对象已经做了优化，强行对象池化反而可能把短命对象变成长命对象，给老年代增加压力，还容易因为忘记重置字段引入脏数据。对象池只适合创建频繁、初始化成本高、状态可完整清理的对象；普通数据对象和持有 View / Context / callback 的对象不要池化。
 
 下面这段代码用于批处理场景，目标是把一次性分配峰值切成小批次。重点看每批结束后只保留必要结果，中间列表不会跨批次长期持有。
 

@@ -66,6 +66,8 @@ review_type: "task6-writing-quality-review"
 last_task9_autofix_at: "2026-06-01"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 # Android 渲染架构全景
@@ -214,7 +216,7 @@ RenderThread.drawFrame()
 │   └── RenderNode.draw()
 ```
 
-GPU 渲染管线是一条高度并行的流水线。管线的起点是顶点着色器,它处理顶点位置,把 View 的二维坐标转换为 GPU 可理解的归一化坐标;接着图元装配把顶点组装成三角形--因为 GPU 最擅长处理的基本图元就是三角形,一个矩形会被拆成两个三角形来渲染;光栅化阶段把这些几何图元转换为实际的像素片段(fragment),每个片段对应屏幕上的一个或多个像素;片段着色器为每个片段计算最终的颜色值,这里会应用纹理、混合模式、抗锯齿等效果;经过深度测试、模板测试和颜色混合后,像素被写入帧缓冲区。
+GPU 渲染过程可以理解为一条分阶段处理的流水线。View 的二维坐标先由顶点着色器转换为 GPU 可理解的归一化坐标,然后 GPU 把顶点组装成三角形(一个矩形会拆成两个三角形,因为三角形是 GPU 最擅长处理的基本图元)。接下来光栅化阶段把这些三角形覆盖的屏幕区域拆成一个个像素片段(fragment),每个片段再由片段着色器计算最终颜色——纹理采样、颜色混合、抗锯齿都在这个阶段完成。经过深度测试和颜色混合后,像素写入帧缓冲区。
 
 在 Perfetto 中,我们可以通过 GPU Track 观察这条管线的执行时间。如果 GPU Track 上的忙碌区间持续超过了 VSync 周期(比如在 60Hz 设备上超过了 16.67ms),GPU 就是瓶颈--下一帧的渲染会被延迟,用户感知到的就是掉帧。
 
@@ -295,7 +297,7 @@ status_t BufferItemConsumer::acquireBuffer(BufferItem* item,
         nsecs_t presentWhen, bool waitForFence);
 ```
 
-`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 对 64 位新设备要求支持 Vulkan 1.4,Host Image Copy 影响的是纹理上传和 image memory 路径;它和 BufferQueue / BLAST 属于不同层,不能直接并到同一段"三缓冲增强"描述里。本文不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口,后续拿到 AOSP commit 再单列展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 要求 64 位新设备支持 Vulkan 1.4,其中 Host Image Copy 优化的是纹理上传和 image memory 路径,与 BufferQueue / BLAST 不在同一层,不要混到三缓冲的描述里。同样,`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit,本文暂不展开。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 
@@ -386,7 +388,7 @@ return releaseFence;
 
 ## 软件渲染(Skia CPU)vs 硬件加速渲染(Skia OpenGL/Vulkan)
 
-前面已经走完渲染管线的完整流程和 BufferQueue 的数据流转机制。继续看 App 进程内把 DisplayList 指令转化为像素的这一步,它的执行方式取决于渲染模式--软件渲染由 CPU 逐像素计算,硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大,理解这些差异是做渲染优化的前提。
+渲染管线和 BufferQueue 走完之后,回到 App 进程内部:DisplayList 指令是怎么变成像素的?这一步的执行方式取决于渲染模式——软件渲染由 CPU 逐像素计算,硬件加速渲染则把指令交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大,是做渲染优化的前提知识。
 
 ### 软件渲染(Software Rendering)
 
@@ -434,7 +436,7 @@ renderthread/RenderThread.cpp
 
 #### 2. Skia Vulkan 后端(按设备配置启用)
 
-Vulkan 是比 OpenGL ES 更现代的图形 API,它的核心优势在于提供了更好的 CPU/GPU 并行性和对复杂图形特性的原生支持。与 OpenGL ES 的隐式状态管理不同,Vulkan 要求开发者显式管理 GPU 资源和同步,这虽然增加了使用复杂度,但换来了更高的 CPU 提交效率和更精细的 GPU 控制。
+Vulkan 是比 OpenGL ES 更底层的图形 API。与 OpenGL ES 的隐式状态管理不同,Vulkan 要求开发者显式管理 GPU 资源和同步——这增加了使用复杂度,但换来了更高的 CPU 提交效率和更精细的 GPU 控制,对多线程渲染也更友好。
 
 Android 16 中 HWUI 的 Vulkan 渲染路径位于 Skia Pipeline 架构下,不再有独立的 `VulkanRenderer` 类。可核对的文件是 `frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp` 和 `SkiaPipeline.cpp`:OpenGL / Vulkan pipeline 的 `draw` 方法准备目标 surface,再进入共享的 `SkiaPipeline::renderFrame()` / `renderFrameImpl()`,由 Skia 在后端 surface 上执行 RenderNode 绘制。上层 View 代码只接触 Canvas / RenderNode,不直接调用 Vulkan API。
 
@@ -455,14 +457,14 @@ Android 16 中 HWUI 的 Vulkan 渲染路径位于 Skia Pipeline 架构下,不再
 ### 检测当前渲染模式
 
 ```java
-// 检查是否启用硬件加速(直接调用 View 实例方法)
+// 检查当前 View 是否启用硬件加速
 boolean hw = mView.isHardwareAccelerated();
 
-// 强制软件渲染(仅在调试或特殊场景使用)
+// 仅在调试或特殊场景使用
 setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 ```
 
-[已验证: 官方文档, Android硬件加速渲染指南]
+[已验证: 官方文档, Android 硬件加速渲染指南]
 
 ## HWUI(Hardware Accelerated UI)的架构与 DisplayList/RenderNode
 

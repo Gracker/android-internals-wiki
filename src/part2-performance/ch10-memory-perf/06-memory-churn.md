@@ -45,7 +45,8 @@ task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
----
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 
 # 内存抖动与频繁 GC
 
@@ -92,13 +93,9 @@ last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 
 当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。`android-14.0.0_r1` 的 `art/runtime/gc/heap.cc` 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径，所以 Android 8 到 14 更适合按 Concurrent Copying（CC）和后续的分代 CC 理解；到了 Android 15，`heap.cc` 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 这条 CMC 主线；Android 16 再继续把分代能力放到 CMC 路径上。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
-<!-- AIW-源码调研-2026-05-09 -->
-
 ### CMC GC 中的 userfaultfd 机制
 
-[已验证: AOSP android14-release, `art/runtime/gc/collector/mark_compact.cc`]
-
-Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在移动端最成熟的工业级应用。与传统 STW mark-compact 相比，CMC 通过 userfaultfd 将 compaction 期间的页面访问异常分流入 SIGBUS 信号处理器，使应用线程（mutator）在 GC 线程搬移对象时仍能继续运行。
+Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在移动端最成熟的工业级应用。[已验证: AOSP android14-release, `art/runtime/gc/collector/mark_compact.cc`] 与传统 STW mark-compact 相比，CMC 通过 userfaultfd 将 compaction 期间的页面访问异常分流入 SIGBUS 信号处理器，使应用线程（mutator）在 GC 线程搬移对象时仍能继续运行。
 
 #### 核心机制
 
@@ -150,13 +147,11 @@ CMC 的核心优势在于：将原本阻塞式的页面搬移改造为"请求-�
 
 ---
 
-
-
 GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC（Concurrent Mark-Compact），Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化），Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1，AOSP 公开 tag 未见 android-17 对应分支，该结论仍需正式 release notes 或 ART runtime flag 确认。[待验证：Android 17 分代 CMC 默认状态] 判断 GC 影响更稳的方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
-更适合把它看成一笔延迟结算的成本：分配发生在前面，GC 代价在后面的某个时刻集中出现。分配速率越高，越容易把这笔成本推到帧渲染路径上。
+更准确的类比是"先消费、后买单"：对象在业务代码里快速分配，GC 代价在同一帧或之后几帧集中结算。分配速率越高，越容易把这笔成本推到帧渲染路径上。
 
 ## 内存抖动对性能的影响
 

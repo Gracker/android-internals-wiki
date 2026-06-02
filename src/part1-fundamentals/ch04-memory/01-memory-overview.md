@@ -71,6 +71,8 @@ last_task9_at: '2026-05-12T22:15:00+08:00'
 last_task9_audit: '2026-05-19'
 last_task6_audit: '2026-05-21'
 task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 ---
 
 
@@ -119,7 +121,7 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 手机上的 RAM 就是物理内存。一台 8GB 内存的设备，实际可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
-开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，再加上粒度开销，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
+需要留意的是，开启了 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上粒度开销，全系统 PSS 大约会上涨 5%。这是安全硬件的固定开销，在做内存基线对比时先把这部分扣除，避免误判为泄漏。
 
 和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
 
@@ -137,7 +139,7 @@ Android 在 Linux 内核的基础上做了几件特别的事情：
 
 Android 17（API 37）引入了 app memory limits 硬限额机制。当应用的匿名交换页（AnonSwap）用量超过系统分配的配额时，进程会被终止。`ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`，`getDescription()` 返回的字符串包含 `"MemoryLimiter:AnonSwap"`——不是独立的 `MemoryLimiter` reason code。开发者还可以通过 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` 在命中限额时触发 heap dump，用于事后分析。配额审计口径以 AOSP `ActivityManagerService` 和官方行为变更文档为准，PSS、RSS、AnonSwap 在 lmkd / kernel / framework 各层含义不同，不要混用。
 
-**cgroup 约束。** Android 10 起把 cgroup 配置统一归到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
+**cgroup 约束。** Android 10 起把 cgroup 配置统一到 `cgroups.json` / `task_profiles.json` 这层抽象。memory controller 字段要按 v1 / v2 分开看：`MemLimit` 对应 v1 `memory.limit_in_bytes` 或 v2 `memory.max`；`MemSoftLimit` 对应 v1 `memory.soft_limit_in_bytes` 或 v2 `memory.low`。注意 `memory.pressure_level` 是 v1 接口，不能和 v2 的 `memory.max` / `memory.low` 混为一谈。
 
 [已验证: source.android.com/docs/core/perf/lmkd；frameworks/base/services/core/java/com/android/server/am/ProcessList.java；frameworks/base/core/java/android/content/ComponentCallbacks2.java；system/core/libprocessgroup/profiles/task_profiles.json]
 
@@ -504,7 +506,7 @@ Android 不使用传统磁盘 Swap，主要原因是闪存写入寿命有限，�
 
 当系统内存紧张时，后台回收路径会把匿名页面换出到 swap 设备；如果设备启用了 ZRAM，这些页会先被压缩后写进 ZRAM。`kswapd` 负责后台回收和换出，但页被再次访问时，解压和换入发生在 page fault 触发的 swapin 路径，不是 `kswapd` 主动把页搬回内存。
 
-ZRAM 大小、压缩算法和 swappiness 都是 OEM case-by-case 配置，没有可以直接套用的统一比例。不同设备常见 `lz4` 或 `lz4hc` 等算法，实际压缩收益取决于页面可压缩性、前后台负载和匿名页类型。读 `dumpsys meminfo` 或 `/sys/block/zram0/` 指标时，以本机的 `physical used`、原始换出量和当前压缩占用为准，不要把单一机型经验写成通用调参公式。
+ZRAM 的大小、压缩算法和 swappiness 都是 OEM 按机型配置的，没有通用的统一比例。常见算法是 `lz4` 或 `lz4hc`，实际压缩率取决于页面可压缩性、前后台负载和匿名页类型。读 `dumpsys meminfo` 或 `/sys/block/zram0/` 时，以当前设备的 `physical used`、原始换出量和压缩占用为准，不要拿一台机器的经验当成通用公式。
 
 ### 在 dumpsys meminfo 中看 ZRAM
 

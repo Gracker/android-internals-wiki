@@ -489,3 +489,10 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 - [来源: obsidian/Cubox/Binder驱动中的流程详解-2024-07-12.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
+
+### Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Java 层 BinderProxy.transact() 到 JNI 层 android_util_Binder.cpp、Native 层 BpBinder/BBinder、IPCThreadState.talkWithDriver() ioctl 全链路源码级分析。涵盖 BC_/BR_ 命令码协议、flat_binder_object 跨进程编码、Parcel 序列化、handle=0 Context Manager 保留、线程池管理（spawn_thread_on_demand）、oneway 异步与同步事务差异，所有源码锚点均基于 android-17.0.0_r1。
+- 注入时间：2026-06-02
+- 价值：Binder Java→JNI→Native→Kernel 全链路源码锚定于 android-17.0.0_r1，对 AIW Binder 章节的源码引用有直接补充价值

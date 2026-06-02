@@ -67,7 +67,8 @@ task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T07:35:58+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；WorkManager setBackoffCriteria 签名复核通过，FGS/后台定位/Job 配额口径与官方文档一致；满足 Task6 pass + queue 无 pending，自动晋升 finalized。"
----
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-02
 
 # 后台功耗治理
 
@@ -100,11 +101,7 @@ task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；
 
 后台功耗治理的任务很具体：把后台工作改成可延后、可合并、可取消、可观测。系统限制会延后 CPU、网络、Job、Alarm 和定位访问，但系统不会替业务判断“这次同步是否还需要做”“这段定位是否还能降频”“这个前台服务是否应该停掉”。这些判断仍要放回 App 架构里处理。
 
-Clippings 的《Android 性能优化》没有单独展开 Doze 或 App Standby，但它反复强调三类工程动作：按任务类型分线程池、把预加载放到闲时、避免核心线程被 IO 和锁拖住。迁移到功耗治理里，对应的写法是：按用户可见度分后台任务、把可延后工作交给系统调度、把后台 CPU / 网络 / 定位采样压到最小集合。
-
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+从工程习惯的角度看，功耗治理和 CPU / 任务调度的思路是通的：按用户可见度分后台任务、把可延后工作交给系统调度、把后台 CPU / 网络 / 定位采样降到最低。这和"按任务类型分线程池、把预加载放到闲时、避免核心线程被 IO 和锁拖住"是同一套工程原则在不同方向上的投影。
 
 ## Android 后台执行限制演进（Doze / App Standby / Bucket）
 
@@ -184,7 +181,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 | `stop_reason` | 区分超时、约束变化、取消、失败重试 |
 | `network_bytes` / `cpu_time_ms` | 和 §25.1 的 BatteryStats / Perfetto 数据对齐 |
 
-[自动发现] 后台功耗治理最好和任务平台绑定，而不是靠各业务自觉。任务平台统一封装 WorkManager、前台服务、Alarm 和网络重试，才能统计“谁在后台唤醒设备”“谁在 restricted bucket 下仍然排队”“谁的重试把网络拉满”。这类治理属于应用架构问题，单点修一个 Worker 很难稳定。
+后台功耗治理最好和任务平台绑定，而不是靠各业务自觉。任务平台统一封装 WorkManager、前台服务、Alarm 和网络重试，才能统计“谁在后台唤醒设备”“谁在 restricted bucket 下仍然排队”“谁的重试把网络拉满”。这类治理属于应用架构问题，单点修一个 Worker 很难稳定。
 
 ## 前台服务的正确使用与 Android 14+ 限制
 
