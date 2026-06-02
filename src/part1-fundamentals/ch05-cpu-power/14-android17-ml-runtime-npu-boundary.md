@@ -52,7 +52,7 @@ task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-17T00:32:12+08:00"
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
-task9_result: needs-rework
+task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: task9_pending
@@ -67,6 +67,9 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_round: 4
+last_task2b_verifier_at: "2026-06-02T23:25:00+08:00"
+task2b_verifier_note: "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。"
+last_task2b_verifier_log: logs/rework/2026-06-02-23-task2b-verifier.md
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
