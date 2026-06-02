@@ -148,3 +148,16 @@
 - **问题**：正文与补充材料同时出现 HIDL 1.3、Android 12+ AIDL、API 35/37 等口径，读者难以判断 Android 17 范围内的准确结论。
 - **建议**：Task9 复核 Android 17/API 37 范围内 NN HAL 的可发布口径，Task2B 按复核结果统一正文和参考资料。
 - **review 日志**：logs/review/2026-06-02-10-review.md
+
+## [Task6 Review] 22.3 Jetpack Compose 性能优化 — 2026-06-02
+- **类型**：需重写
+- **位置**：outline-end 后的 AIW-源码调研块、参考资料后的 2026-06-02 调研补遗、GC-Composition/Android 17 ART 分代 GC 补充块
+- **问题**：章节正文仍保留多段编辑态调研补遗和 AIW 源码调研标记，且 2026-06-02 Strong Skipping 材料出现在正式开头之前，破坏文章主线；后半部分还有 Baseline Profile、Compose Multiplatform、ART GC 等补充块堆在参考资料前后，读者难以区分正文结论、附录素材和待验证材料。
+- **建议**：Task2B 将已验证结论合并回 Strong Skipping、Pausable Composition、工具链和检查清单等对应小节；未闭合的调研素材移入 research-gaps 或保留为问题单，不放在发布正文中。
+- **review 日志**：logs/review/2026-06-02-11-review.md
+
+- **类型**：需确认
+- **位置**：PausableComposition 版本口径与 AOSP/androidx-main 源码锚点（约 L267-L282、L730-L767、L882-L919）
+- **问题**：正文同时出现“PausableComposition（Compose 1.7+ / Android 17）”和“无 Android 平台版本门槛、取决于 Foundation 版本”的说法；ART GC 与 Compose Snapshot 部分仍引用 AOSP master / androidx-main，并已标注需要替换为 android-17.0.0_r1 或标注未进入 Android 17。Task6 不裁决技术真伪，但这些未闭合标注会阻断发布态。
+- **建议**：Task9 复核 Android 17/API 37 范围内可发布口径；Task2B 按复核结果统一版本边界，无法证明进入 Android 17 的 main/master 资料只作为“未进入 Android 17”背景或移出正文结论。
+- **review 日志**：logs/review/2026-06-02-11-review.md
