@@ -9,7 +9,7 @@ last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + A
 confidence: medium
 drafted_date: "2026-05-14"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 polish_count: 1
 sources:
@@ -53,11 +53,14 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
-task6_state: revisiting
+task6_state: reviewed
+last_task6_at: "2026-06-03T04:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-03-04-review.md"
+task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 处；未发现新增回炉项，进入 Task9 待审。"
 task9_state: pending
 task2b_result: fixed-lite
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-06-03"
 last_task2a_at: "2026-05-14T09:21:00+08:00"
 task9_result: needs-rework
@@ -96,9 +99,9 @@ task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 1；HTTP
 
 ## 为什么要了解网络架构与连接管理
 
-网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量，都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节，本节站在 App 架构侧，重点回答四个工程问题：客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
+网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量，都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节；App 架构侧还要回答四个工程问题：客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
 
-这一节的判断依据来自三类材料：OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 相关官方文档，以及本地 Android 35 SDK sources 中的 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver`。参考书只用于组织知识点顺序：先拆速度来源，再看线程/调度，再看缓存和命中率，不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+判断依据来自三类材料：OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 相关官方文档，以及本地 Android 35 SDK sources 中的 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver`。参考书只用于组织知识点顺序：先拆速度来源，再看线程/调度，再看缓存和命中率，不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 ## 网络架构的四个控制面
 
@@ -117,7 +120,7 @@ App 网络层至少要分成四个控制面：连接、解析、调度、容错�
 
 ## OkHttp 连接池与复用策略
 
-OkHttp 的连接复用首先看 `Address`，但不能把它理解成唯一边界。官方文档把请求拆成 URL、Address、Route 三层：URL 描述资源；Address 描述 scheme、host、port、TLS、代理、协议等静态连接配置；Route 描述 DNS 返回的具体 IP、代理和 TLS 版本等动态选择。相同 Address 更容易复用底层连接；HTTP/2 场景下，OkHttp 还可能在证书、HostnameVerifier、CertificatePinner、Route IP 等条件满足时做 connection coalescing，让不同 hostname 共享同一条连接。HTTP/1.x 复用空闲连接，HTTP/2 在同一连接上做多路复用。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+OkHttp 判断连接复用时先看 `Address`，但不能把它理解成唯一边界。官方文档把请求拆成 URL、Address、Route 三层：URL 描述资源；Address 描述 scheme、host、port、TLS、代理、协议等静态连接配置；Route 描述 DNS 返回的具体 IP、代理和 TLS 版本等动态选择。相同 Address 更容易复用底层连接；HTTP/2 场景下，OkHttp 还可能在证书、HostnameVerifier、CertificatePinner、Route IP 等条件满足时做 connection coalescing，让不同 hostname 共享同一条连接。HTTP/1.x 复用空闲连接，HTTP/2 在同一连接上做多路复用。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
 
 工程上最稳的做法是按网络策略复用 `OkHttpClient`，而不是每个业务模块都 new 一个 client。`OkHttpClient` 持有自己的 `ConnectionPool`、`Dispatcher`、DNS、TLS 配置和拦截器。随手创建 client 会带来三个问题：连接池被切碎、Dispatcher 并发不可控、Cookie/Auth/证书策略容易分叉。
 

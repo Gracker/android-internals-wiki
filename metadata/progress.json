@@ -421,29 +421,38 @@
     "src/part5-app/ch20-stability/01-stability-overview.md",
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
     "src/part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md",
-    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
+    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
-  "review_summary": "Task6 2026-06-02 18: review 6.1 Android 存储架构、19.24 崩溃与 ANR 捕获机制；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
+  "review_summary": "Task6 2026-06-03 04: review 2.10 GPU 渲染深入、22.12 FragmentTransaction 提交链路与页面切换性能、24.4 网络架构与连接管理；pass-light-edit；无回炉；无自动晋升，转 Task9 pending。",
   "task6_review_summary": {
-    "reviewed_at": "2026-06-02T18:08:00+08:00",
+    "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "6.1",
-      "19.24"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "files": [
-      "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md"
     ],
-    "log": "logs/review/2026-06-02-18-review.md",
-    "review_log": "logs/review/2026-06-02-18-review.md",
+    "log": "logs/review/2026-06-03-04-review.md",
+    "review_log": "logs/review/2026-06-03-04-review.md",
     "pass_light_edit": [
-      "6.1",
-      "19.24"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "needs_rework": [],
     "auto_promoted": [],
-    "auto_finalized": []
+    "auto_finalized": [],
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 0,
+    "new_rework": false
   },
   "issues_by_section": {
     "1.6": {
@@ -2386,33 +2395,44 @@
     }
   },
   "total_review_sections": 283,
-  "next_review_candidates": [],
+  "next_review_candidates": [
+    {
+      "section": "26.12",
+      "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+      "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
+      "reason": "仍为 ready-for-review / task6_state revisiting"
+    }
+  ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T03:06:00+08:00",
+  "last_updated": "2026-06-03T04:08:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "reviewed_at": "2026-06-03T03:06:00+08:00",
+    "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "files": [
-      "src/part5-app/ch20-stability/08-crash-aggregation.md",
-      "src/part5-app/ch21-startup/08-startup-monitoring.md",
-      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md"
     ],
-    "log": "logs/review/2026-06-03-03-review.md",
-    "review_log": "logs/review/2026-06-03-03-review.md",
+    "log": "logs/review/2026-06-03-04-review.md",
+    "review_log": "logs/review/2026-06-03-04-review.md",
     "pass_light_edit": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "needs_rework": [],
     "auto_promoted": [],
-    "auto_finalized": []
+    "auto_finalized": [],
+    "result": "pass-light-edit",
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 0,
+    "new_rework": false
   },
   "task9_last_review": "2026-05-28 05:30",
   "ready_to_publish": 190,
@@ -3005,25 +3025,29 @@
     "2.10": {
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-06-02T23:05:00+08:00",
+      "last_task6_at": "2026-06-03T04:08:00+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 90,
       "task9_state": "pending",
-      "task9_result": "pending",
+      "task9_result": "auto-fixed",
       "last_task9_at": "2026-05-14T03:44:00+08:00",
       "title": "GPU 渲染深入",
       "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
       "task6_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task6_review_log": "logs/review/2026-06-02-23-review.md",
-      "task6_l1_l2_fixes": 2,
+      "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
+      "task6_l1_l2_fixes": 4,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "Task2B 已将实战案例改为示例场景，删除无 artifact 支撑的实测数字和重复效果验证。",
+      "task6_review_notes": "2026-06-03 Task6 04: pass-light-edit。L1/L2 小修 4 处；未发现新增回炉项，进入 Task9 待审。",
       "last_task2b_at": "2026-06-02T22:50:00+08:00",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-06-02",
-      "task6_review_summary": "Task6 pass-light-edit；小修 AOSP mainline 锚点验证边界与填充副词，未新增回炉项，进入 Task9 待审。"
+      "reviewed_date": "2026-06-03",
+      "task6_review_summary": "Task6 pass-light-edit；清理结构性元叙述 4 处，outline 5/5 覆盖，未新增回炉项，进入 Task9 待审。",
+      "section": "2.10",
+      "review_type": "task6-writing-quality-review",
+      "task6_reviewed_date": "2026-06-03",
+      "task6_new_rework": false
     },
     "2.14": {
       "status": "finalized",
@@ -3905,7 +3929,21 @@
       "last_task2a_at": "2026-05-14T09:21:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-14T10:11:00+08:00",
-      "task6_review_log": "logs/review/2026-05-14-10-review.md"
+      "task6_review_log": "logs/review/2026-05-14-10-review.md",
+      "section": "24.4",
+      "review_type": "task6-writing-quality-review",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-06-03",
+      "task6_reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T04:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
+      "task6_l1_l2_fixes": 3,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_review_notes": "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 处；未发现新增回炉项，进入 Task9 待审。",
+      "task6_review_summary": "Task6 pass-light-edit；清理开头结构性元叙述与“首先”用法，outline 4/4 覆盖，未新增回炉项，进入 Task9 待审。",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "24.5": {
       "status": "ready-for-review",
@@ -4872,22 +4910,30 @@
     },
     "22.12": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
       "title": "FragmentTransaction 提交链路与页面切换性能",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-05-16",
-      "last_task6_at": "2026-05-16T08:16:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
-      "task9_state": "reviewed",
+      "reviewed_date": "2026-06-03",
+      "last_task6_at": "2026-06-03T04:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "pending",
       "queue_priority": 85,
       "last_task9_at": "2026-05-16T07:30:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md",
+      "section": "22.12",
+      "review_type": "task6-writing-quality-review",
+      "task6_reviewed_date": "2026-06-03",
+      "task6_l1_l2_fixes": 1,
+      "task6_l3_l4_issues": 0,
+      "task6_new_rework": false,
+      "task6_review_notes": "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。",
+      "task6_review_summary": "Task6 pass-light-edit；源码锚点段清理结构性元叙述，outline 6/6 覆盖，未新增回炉项，进入 Task9 待审。"
     },
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
@@ -7414,41 +7460,41 @@
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
   ],
-  "total_review_files": 130,
+  "total_review_files": 132,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-03-03-review.md",
+  "last_task6_review": "logs/review/2026-06-03-04-review.md",
   "last_task6_sections": [
-    "20.8",
-    "21.8",
-    "22.10"
+    "2.10",
+    "22.12",
+    "24.4"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
-  "last_task6_at": "2026-06-03T03:06:00+08:00",
+  "last_task6_at": "2026-06-03T04:08:00+08:00",
   "last_task6_review_detail": {
-    "reviewed_at": "2026-06-03T03:06:00+08:00",
+    "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "files": [
-      "src/part5-app/ch20-stability/08-crash-aggregation.md",
-      "src/part5-app/ch21-startup/08-startup-monitoring.md",
-      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md"
     ],
-    "log": "logs/review/2026-06-03-03-review.md",
-    "review_log": "logs/review/2026-06-03-03-review.md",
+    "log": "logs/review/2026-06-03-04-review.md",
+    "review_log": "logs/review/2026-06-03-04-review.md",
     "pass_light_edit": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "needs_rework": [],
     "auto_promoted": [],
@@ -7466,12 +7512,12 @@
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
-  "task6_last_review_at": "2026-06-03T03:06:00+08:00",
-  "task6_last_review_log": "logs/review/2026-06-03-03-review.md",
+  "task6_last_review_at": "2026-06-03T04:08:00+08:00",
+  "task6_last_review_log": "logs/review/2026-06-03-04-review.md",
   "task6_last_review_sections": [
-    "20.8",
-    "21.8",
-    "22.10"
+    "2.10",
+    "22.12",
+    "24.4"
   ],
   "sections_status": {
     "22.11": {
@@ -9671,24 +9717,24 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-03T03:06:00+08:00",
+    "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "files": [
-      "src/part5-app/ch20-stability/08-crash-aggregation.md",
-      "src/part5-app/ch21-startup/08-startup-monitoring.md",
-      "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+      "src/part5-app/ch24-io-network/04-network-architecture.md"
     ],
-    "log": "logs/review/2026-06-03-03-review.md",
-    "review_log": "logs/review/2026-06-03-03-review.md",
+    "log": "logs/review/2026-06-03-04-review.md",
+    "review_log": "logs/review/2026-06-03-04-review.md",
     "pass_light_edit": [
-      "20.8",
-      "21.8",
-      "22.10"
+      "2.10",
+      "22.12",
+      "24.4"
     ],
     "needs_rework": [],
     "auto_promoted": [],
@@ -9699,14 +9745,14 @@
     "new_rework": false
   },
   "task6_last_review_files": [
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "task6_last_reviewed_files": [
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "last_task2a_date": "2026-05-19",
   "task9_last_review_summary": {
@@ -10220,9 +10266,9 @@
     "task2b_result": "fixed"
   },
   "task6_last_reviewed_sections": [
-    "20.8",
-    "21.8",
-    "22.10"
+    "2.10",
+    "22.12",
+    "24.4"
   ],
   "task2b_progress": [
     {
@@ -10350,7 +10396,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
+  "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -11380,8 +11426,8 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-06-03T03:06:00+08:00",
-  "last_task6_review_section": "6.1, 19.24",
+  "last_task6_review_at": "2026-06-03T04:08:00+08:00",
+  "last_task6_review_section": "2.10, 22.12, 24.4",
   "section_1_22": {
     "section": "1.22",
     "title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
@@ -11486,9 +11532,9 @@
     "task9_p2_issues": 1
   },
   "last_task6_reviewed_sections": [
-    "20.8",
-    "21.8",
-    "22.10"
+    "2.10",
+    "22.12",
+    "24.4"
   ],
   "last_task6_result": "pass-light-edit",
   "section_20_15": {
@@ -11521,9 +11567,9 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_files": [
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "section_24_19": {
     "section": "24.19",
@@ -11712,7 +11758,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-06-03T03:06:00+08:00",
+  "last_task6_reviewed_at": "2026-06-03T04:08:00+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -12455,9 +12501,9 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
+    "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -12981,9 +13027,9 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_sections": [
-    "20.8",
-    "21.8",
-    "22.10"
+    "2.10",
+    "22.12",
+    "24.4"
   ],
   "last_task2b_section": "22.12",
   "last_task2b_file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
@@ -13046,8 +13092,8 @@
     "title": "FragmentTransaction 提交链路与页面切换性能",
     "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "pending",
     "task9_result": "needs-rework",
@@ -13059,13 +13105,19 @@
     "summary": "固定 AndroidX Fragment 源码锚点到 fragment release commit f39ca3510efb2347ebfef231e25a3e804922450d，补 runOnCommit、executePendingTransactions 与 predictive back 版本边界，回流 Task6。",
     "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
-    "last_task6_at": "2026-05-16T08:16:00+08:00",
-    "last_task6_review_log": "logs/review/2026-05-16-08-review.md",
-    "reviewed_date": "2026-05-16",
+    "last_task6_at": "2026-06-03T04:08:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
+    "reviewed_date": "2026-06-03",
     "reviewed_by": "openclaw-task6",
-    "task6_review_notes": "2026-05-16 task6 review: pass-light-edit。修复结构性元叙述、runOnCommit 标题过强和 2 处否定-纠正式表达；Task9 既有版本锚点/runOnCommit/executePendingTransactions 技术项仍由 Task2B 处理。",
+    "task6_review_notes": "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。",
     "last_task9_at": "2026-05-16T07:30:00+08:00",
-    "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md"
+    "last_task9_review_log": "logs/deep-review/2026-05-16-07-deep-review.md",
+    "review_type": "task6-writing-quality-review",
+    "task6_reviewed_date": "2026-06-03",
+    "task6_l1_l2_fixes": 1,
+    "task6_l3_l4_issues": 0,
+    "task6_new_rework": false,
+    "task6_review_summary": "Task6 pass-light-edit；源码锚点段清理结构性元叙述，outline 6/6 覆盖，未新增回炉项，进入 Task9 待审。"
   },
   "section_22_10": {
     "section": "22.10",
