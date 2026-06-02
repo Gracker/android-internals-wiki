@@ -36,8 +36,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
 review_notes: "2026-06-02 13:05 Task6 复审：L1 小修 10 处；修正 AndroidX 源码锚点格式与中英文混排，未发现新增回炉项。"
 task2b_notes: "2026-06-02 Task2B：删除发布正文中的调研补遗块，统一 Pausable Composition 为 Compose/Foundation 工具链能力，移出未闭合的 AOSP master/androidx-main 正文结论。"
-last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
+last_task2b_verifier_at: "2026-06-02T19:27:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-02-19-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-01"
 task9_p0_issues: 2
 task9_p1_issues: 1
