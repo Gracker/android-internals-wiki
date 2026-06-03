@@ -3,15 +3,15 @@ title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
 pipeline_stage: 'task6_pending'
-task6_state: 'revisiting'
+task6_state: 'reviewed'
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
+reviewed_date: '2026-06-04'
 task9_state: 'reviewed'
-last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
-last_task6_at: "2026-06-03T09:15:06+08:00"
+last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
+last_task6_at: '2026-06-04T01:08:00+08:00'
 task9_result: 'auto-fixed'
-task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注内容。送 Task9 重检。"
+task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; replaced forbidden word 矩阵 in section title. No new rework items.'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-06-04'
 last_task9_at: '2026-06-04T00:20:00+08:00'
@@ -131,7 +131,7 @@ class AdpfWorker(
 
 上报频率按工作周期走，不按函数调用次数走。UI 或渲染类任务可以按帧上报；音视频、传感器、推理任务按自己的 batch 或采样周期上报。普通列表分页、一次性 JSON 解析、后台同步任务不适合为每个小任务创建 session。它们更应该先解决线程池大小、任务合并、I/O 约束和后台执行策略，详见 25.1、25.2 节。
 
-## ADPF API 版本边界矩阵
+## ADPF API 版本边界
 
 `PerformanceHintManager.Session` 的公开 API 随 Android 版本逐步放出，不能按最新的源码直接认为所有设备都能用。
 

@@ -37,18 +37,18 @@ sources:
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: 'reviewed'
 task9_state: reviewed
 last_task9_autofix_at: "2026-06-03"
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: '2026-06-04'
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-14T20:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes: "2026-05-14 20:10 Task6：写作层通过；未发现需直接修复的 L1/L2 正文问题；无新增回炉项，转 Task9 技术复核。"
+last_task6_at: '2026-06-04T01:08:00+08:00'
+last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
+task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix + Task2B fix writing quality OK; 确实 1 occurrence (functional, below threshold). No new rework items.'
 
 task2b_result: fixed
 last_task2b_at: "2026-06-03T14:54:49+08:00"
