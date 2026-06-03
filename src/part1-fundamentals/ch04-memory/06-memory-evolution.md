@@ -59,13 +59,13 @@ related_chapters:
 - '2.9'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
-review_count: 8
-pipeline_stage: 'task6_pending'
-task6_state: revisiting
+review_count: 9
+pipeline_stage: 'task9_pending'
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: '2026-06-03T12:15:21+08:00'
-last_task6_review_log: logs/review/2026-06-03-12-review.md
-task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 小修 2 处：修正 section title Java Heap→Java 堆 术语一致性、删除「本节重点关注」元叙述。无新增回炉项。'
+last_task6_at: '2026-06-03T13:05:00+08:00'
+last_task6_review_log: logs/review/2026-06-03-13-review.md
+task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
 task9_state: pending
 task9_result: 'needs-rework'
 last_task9_at: '2026-05-13T20:35:00+08:00'
