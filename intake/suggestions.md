@@ -132,3 +132,15 @@
 - **问题**：三处源码引用标注为 "AOSP master"，按 AIW Android 版本边界规则（AIW_ANDROID_VERSION_CAP_2026_05_29），应替换为 android-17.0.0_r1 或更低版本标签，或标注"未进入 Android 17"并跳过正文结论。
 - **建议**：Task9 验证三处源码锚点的版本归属，替换为已验证版本标签或改为"未进入 Android 17"背景说明。
 - **review 日志**：logs/review/2026-06-03-14-review.md
+
+## [Task9 Deep Review] 25.5 定位与传感器功耗优化 — 2026-06-03
+- **类型**：版本差异/数据支撑
+- **位置**：L197 传感器后台速率表格；L263 高频词说明段
+- **问题**：`200 Hz` 在官方文档中是系统级软上限，设备 sensor hub 硬件可能支持更高采样率，但系统不会给 App 返回超过此值的事件。原文未标注"软上限"属性，读者可能误以为 200 Hz 是硬件能力而非系统上限。
+- **建议**：在表格说明列和 L263 末尾各补充一句：`"200 Hz 是系统允许的软上限，设备传感器硬件本身可能支持更高采样率，但系统不会给 App 返回超过此值的事件"`。
+
+## [Task9 Deep Review] 25.7 R8 与资源优化 — 2026-06-03
+- **类型**：源码准确性/版本差异
+- **位置**：L150 AVIF 格式适用版本
+- **问题**：正文语境为 APK 体积优化（BitmapFactory/ImageDecoder 平台级 API），声称"Android 12（API 31）及以上设备"；若指平台级 AVIF decode，Android 10（API 29）起 `ImageDecoder` 即支持 AVIF（需设备内置 AVIF 解码器）；若指 WebView Chromium AVIF，则与 WebView 版本绑定，Pixel 6+ Android 12 起 Chromium 99+ 支持。原文按平台级 claim 更准确，Android 12+ 是保守下限。建议核实后确认。
+- **建议**：结合实际目标读者场景，明确是"平台级 ImageDecoder AVIF decode（API 29+，但取决于设备厂商是否内置解码器）"还是"WebView Chromium AVIF 支持（Android 12+ Pixel 6 起）"，二者的版本边界和使用条件不同。
