@@ -5,8 +5,8 @@ chapter: "26.7"
 section: "26.7"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-15"
-last_verified_against: "Android Developers docs + Google Play docs + Clippings structure references"
+last_verified: "2026-06-04"
+last_verified_against: "Android Developers Macrobenchmark docs 2026-05-19 + Google Play rollout docs 2025-12/2026 Help + Clippings structure references"
 confidence: medium
 drafted_date: "2026-05-15"
 polish_count: 1
@@ -33,26 +33,27 @@ sources:
     path: "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
 tags: [quality-gate, release, canary, rollback]
 related_chapters: ["26.6", "26.3", "15.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
 last_task6_at: 2026-06-04T02:12:55+08:00
 last_task6_review_log: "logs/review/2026-05-15-07-review.md"
 task6_review_notes: "2026-05-15 Task6 07: needs-rework。完成 L1/L2 小修 2 处；沿用 Task9 风险信号标注 3 处并合并 queue，交 Task2B。"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_reviewed_date: '2026-05-15'
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-15T06:28:00+08:00'
-last_task9_review_log: logs/deep-review/2026-05-15-06-deep-review.md
-task9_result: needs-rework
-task9_review_notes: "2026-05-15 Task9 06: needs-rework。P1 1：Macrobenchmark TTFD / FrameTimingMetric overrun 版本边界未写清；P2 2：Vitals 慢信号口径、全量 halt 资料与限制。已写入 logs/deep-review/2026-05-15-06-deep-review.md。"
+last_task9_at: "2026-06-04T03:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
+task9_result: auto-fixed
+task9_review_notes: "2026-06-04 Task9 auto-fix：补齐 Macrobenchmark TTFD/API 边界，并修正 Google Play 100% 全量 release 可 halt 的当前能力与限制；回到 Task6 复审。"
 task2b_result: fixed
 last_task2b_at: 2026-06-04T00:55:43+08:00
 task2b_fixed_by: openclaw-task2b-main
 task2b_fix_round: 2026-06-04-00
+last_task9_autofix_at: "2026-06-04"
 ---
 
 # 发版质量门禁
@@ -109,9 +110,7 @@ checklist 的阈值要按版本阶段分层。release candidate 阶段可以用�
 
 官方 benchmark CI 文档说明，benchmark 库会输出测量 JSON，并在设备目录里生成 profiling trace；Macrobenchmark 会按测量迭代输出 Perfetto trace。CI 要把这些产物按 commit、build id、设备、场景和测试名归档，后端才有条件做趋势对比。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
 
-Macrobenchmark 指标适合做候选包卡点：`StartupTimingMetric` 观察 TTID / TTFD，`FrameTimingMetric` 观察帧耗时和 overrun，`TraceSectionMetric` 观察业务自定义阶段，`PowerMetric` 在支持设备上观察能耗。26.6 节已经展开回归检测，这里关注这些指标进入发版流程后的门禁位置。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
-
-[需确认: `StartupTimingMetric` 的 TTFD 采集前提、Android 10 / API 29 可用性，以及 `FrameTimingMetric.frameOverrunMs` 的 API 31+ 边界需按 Task9 问题单补齐；Task6 不裁决指标可用性。]
+Macrobenchmark 指标适合做候选包卡点：`StartupTimingMetric` 观察 TTID / TTFD，`FrameTimingMetric` 观察帧耗时和 overrun，`TraceSectionMetric` 观察业务自定义阶段，`PowerMetric` 在支持设备上观察能耗。TTFD 依赖 `reportFullyDrawn()`，在 Android 10（API 29）及以下可能不可用；`frameOverrunMs` 仅 Android 12（API 31）+ 可用，Android 10/11 门禁要为启动和帧指标准备替代口径。26.6 节已经展开回归检测，这里关注这些指标进入发版流程后的门禁位置。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
 这段配置只演示发布门禁的表达方式：每条规则都绑定场景、设备组、基线和动作。
 
@@ -182,10 +181,10 @@ Google Play Developer API 的 track release 模型包含 `draft`、`inProgress`�
 | 配置导致启动拉接口、日志暴涨、图片预加载扩大 | 可通过服务端配置恢复 | 立即回退配置，保留版本灰度 |
 | 1% 灰度出现 crash / ANR 分群异常 | 影响面小，包体风险高 | halt / pause rollout，拉取样本和 trace |
 | 低端机启动或慢帧明显退化 | 可通过设备 / 渠道限制降低影响 | 暂停升档，只对安全分群继续观察 |
-| 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户仍会拿到问题版本 | 已 100% 完成的 release 无法通过 Play API halt——`halted` 状态仅适用于 `inProgress` 的 staged rollout。恢复手段以修复包、服务端降级和功能开关为主，配合应用内强制更新 |
+| 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户会继续拿到问题版本，已安装用户不会自动降级 | 可以 halt 已 100% rolled-out release，但前提是该 track 上存在可 serving 的上一个 completed release，且 fallback release 没有阻塞性政策问题；同时准备修复包、服务端降级和功能开关 |
 | 监控数据异常但客服和 Vitals 未同步异常 | 可能是采样或上报故障 | 先修数据管道，不用问题指标触发回滚 |
 
-Play Developer API 的 `edits.tracks` 文档明确 `halted` 是 staged rollout `inProgress` 状态下的转换目标；已 100% 发布完成的 release 不存在 halt 概念，只能提交新 release 替换。halt 不会让已安装用户自动降级到旧版——每个拿到新包的用户只能通过应用内强制更新或等待下一次 store 更新来获得修复。
+Play Developer API 的 Tracks 文档同时覆盖两类 halt：`inProgress` staged rollout 可设置为 `halted`；已 `completed` 的 release 也可以设置为 `halted`，随后由同一 track 上之前已发布且未被 halt 的 completed release 作为 serving fallback。Play Console 帮助文档也说明 100% rolled-out release 可以 halt，但不能 halt track 的首个 release，也不能 fallback 到存在阻塞性政策问题的旧版本。halt 不会让已经安装问题版本的用户自动降级；这些用户仍要通过修复包、服务端降级、功能开关或应用内更新策略恢复。
 
 版本回滚要有证据包。证据包至少包含：版本、build id、rollout fraction、异常指标、基线值、当前值、样本量、影响用户数、Top 分群、Top crash / ANR 组、trace / 日志样本、配置快照、已执行动作和下一步 owner。
 
