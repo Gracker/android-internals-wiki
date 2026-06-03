@@ -3,8 +3,14 @@ title: 手势识别算法与性能优化
 chapter: '3.6'
 section: '3.6'
 status: ready-for-review
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+  note: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
 confidence: medium
 sources:
 - type: aosp
@@ -149,7 +155,7 @@ private static final Pools.SynchronizedPool<VelocityTracker> sPool =
 
 池容量只有 2，因为同一时间通常只有一个活跃的 VelocityTracker 实例（一个手指触摸）。这个设计在多指触摸场景下可能不够用，但考虑到多指同时计算速度的场景很少，这是一个合理的取舍。
 
-### 速度计算算法：Java wrapper + JNI + native strategy matrix
+### 速度计算算法：Java wrapper + JNI + native strategy matrix (Android 14+)
 
 前面那几个 Java API 只是入口。公开 AOSP 里的真实调用链是 `android.view.VelocityTracker` 把事件交给 JNI，再由 `frameworks/native/libs/input/VelocityTracker.cpp` 按 axis 选择策略并完成拟合。Java 层负责对象池、策略 ID 和 `MotionEvent` 封装，不负责真正的速度拟合。
 
