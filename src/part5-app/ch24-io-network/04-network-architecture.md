@@ -53,23 +53,23 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 related_chapters: ["24.5", "12.2", "12.3"]
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-03T04:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-04-review.md"
 task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 处；未发现新增回炉项，进入 Task9 待审。"
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-06-03"
 last_task2a_at: "2026-05-14T09:21:00+08:00"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T10:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 1；HTTPDNS 自定义 Dns 同步查询边界缺失，OkHttp HTTP/2 connection coalescing 条件需补。"
-
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 auto-fix：移除未一手验证的 Wi-Fi 固定评分阈值，改为系统选网边界与 24.9 交叉引用，回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-03"
 ---
 
 # 网络架构与连接管理
@@ -300,32 +300,15 @@ fun nextDelayMs(attempt: Int): Long {
 
 
 
-## [自动发现] Wi-Fi Scoring 与 ConnectivityService 集成机制
+## [自动发现] Wi-Fi 评分与系统选网只保留观测边界
 
-Android 的 Wi-Fi 评分系统控制网络切换决策，评分范围 0-60（0-20 Poor 触发切换）。
+Wi-Fi 评分和默认网络选择属于系统侧策略，展开见 24.9。本节只保留 App 网络架构需要接住的边界：Android 12 及以上 Connectivity 侧使用 `NetworkScore` flags 和 `NetworkRanker` 选择网络；Wi-Fi 侧候选评分会受 RSSI、吞吐估计、用户近期选择、metered / validated 状态和 OEM overlay 影响。不要把旧资料里的“0-20/40/60 固定阈值”或某个 scorer 权重写成通用结论。
 
-**关键组件调用链**：
-```
-WifiNetworkSelector.evaluateNetworks()
-  → calculateNetworkScore()
-    → ScoringStrategy.calculateScore()
-      → mScoringStrategy.calculateCandidateScore()
-        → RSSI(0-50) + 链路速度(0-30) + 信道干扰(-10~0)
-```
+App 侧要记录 default network、transport、`NET_CAPABILITY_VALIDATED`、`NET_CAPABILITY_NOT_METERED`、DNS / TCP / TLS / TTFB 分段耗时和切网事件序号。系统侧排查再通过 bugreport、`dumpsys wifi`、`dumpsys connectivity` 与 Perfetto / logcat 还原决策过程。
 
-**评分与网络切换**：
-- `ConnectivityService.registerNetworkAgent()` 注册 WifiNetworkAgent
-- `ConnectivityService.updateNetworkScore()` 驱动网络切换决策
-- 当 Wi-Fi 评分 < 20 时，自动切换到 Cellular
-- `NetworkMonitor` 并行探测（TCP/HTTP/DNS）生成 NetworkQualityUpdate
-
-**源码位置**：
-- `WifiNetworkSelector.java`：`packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java`
-- `ConnectivityService.java`：`frameworks/base/services/core/java/com/android/server/ConnectivityService.java`（约 line 4364）
-- `NetworkMonitor.java`：`packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java`
-- `NetworkAgent.java`：`frameworks/base/core/java/android/net/NetworkAgent.java`
-
-[AIW-源码调研-2026-05-14: Wi-Fi Scoring 与 ConnectivityService 集成机制深度验证]
+[已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
+[已验证: 官方文档, https://source.android.com/docs/core/connect/wifi-network-selection]
+[交叉引用: 24.9 Wi-Fi 评分、网络选择与连接切换性能]
 
 
 

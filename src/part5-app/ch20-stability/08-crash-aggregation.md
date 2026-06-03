@@ -22,9 +22,9 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T00:50:00+08:00"
@@ -33,12 +33,15 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
-task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-14
-last_task9_at: "2026-05-14T13:30:11+08:00"
+task9_result: auto-fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T09:20:00+08:00"
 last_task6_at: "2026-06-03T03:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
+last_task9_autofix_at: "2026-06-03"
+last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 auto-fix：修正 kMaxSavedFrames=256 为 ART 首轮栈帧缓存阈值而非 Java 堆栈硬上限，回到 Task6 复审。"
 ---
 
 # 崩溃聚合与归因分析
@@ -177,9 +180,9 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 **Caused by 链。** Java 异常有 cause chain。指纹不能机械地只取 root cause。外层异常常带有 API 语义和业务入口，例如 `IllegalStateException` 包住底层 `IOException`，外层帧能说明是页面恢复、数据库迁移还是网络回调触发。更稳的做法是同时保留 outer exception、root cause 和两者的首个应用帧：强 key 用 root cause 防止重复，归因和分派保留外层语义。
 
-**OOM / StackOverflow 的堆栈截断。** StackOverflowError 的堆栈可能有上千帧，ART 有最大帧数限制（kMaxSavedFrames = 256）。OOM 发生时堆栈抓取本身可能失败，只剩一行 OutOfMemoryError 没有堆栈。这种情况下指纹退化为只有异常类型，需要结合触发场景的上下文（Activity 名、最近操作）做二次聚合。
+**OOM / StackOverflow 的低信息量堆栈。** StackOverflowError 可能产生上千帧；ART 的 `kMaxSavedFrames = 256` 是首轮栈帧缓存阈值，不是 Java 异常堆栈硬上限，超过该阈值时会重新 WalkStack 构建完整 trace。OOM 发生时堆栈抓取本身可能失败，只剩一行 OutOfMemoryError 没有堆栈。这种情况下指纹退化为只有异常类型，需要结合触发场景的上下文（Activity 名、最近操作）做二次聚合。
 
-[已验证: AOSP art/runtime/thread.cc, Thread::CreateInternalStackTrace(), kMaxSavedFrames = 256]
+[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc, Thread::CreateInternalStackTrace(), kMaxSavedFrames 是 saved_frames 快速路径阈值]
 
 ## 崩溃归因维度：版本、机型、OS、场景
 

@@ -46,10 +46,10 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_reviewed_date: "2026-06-03"
@@ -57,15 +57,16 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T07:08:52+08:00"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。"
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
-task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=0, P1=1），转入 Task2B 回炉。"
+task9_result: auto-fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 auto-fix：修正 onRenderProcessGone 多 WebView / 共享 renderer 处理边界，回到 Task6 复审。"
 task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
+last_task9_autofix_at: "2026-06-03"
 ---
 
 # WebView 性能优化实战
@@ -517,11 +518,12 @@ class RecoverableWebViewClient(
 }
 ```
 
-多个 WebView 可能关联同一个 renderer。回调到达时，只清理参数里的 `view`，不要假设其他实例也一定失效。重建必须受 Activity/容器生命周期和重试预算约束；如果同一个 URL 模板连续触发 renderer OOM，继续自动重建会形成循环，应该停在错误页或降级页。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位、重建结果和预算耗尽原因，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
+多个 WebView 可能关联同一个 renderer；renderer 退出时，系统会对每个受影响的 WebView 分别回调 `onRenderProcessGone()`。每次回调都要移除并销毁参数里的 `view`，不要复用已受影响的实例，也不要把第一轮回调理解成只有这一个实例受影响。重建必须受 Activity/容器生命周期和重试预算约束；如果同一个 URL 模板连续触发 renderer OOM，继续自动重建会形成循环，应该停在错误页或降级页。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位、重建结果和预算耗尽原因，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
 
 [来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md]
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebViewClient.java]
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
+[已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone]
 
 ### 32 位进程的 WebView 预留地址空间
 
