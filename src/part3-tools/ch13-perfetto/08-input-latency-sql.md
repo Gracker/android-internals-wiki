@@ -1,5 +1,6 @@
 ---
 
+
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
@@ -12,23 +13,20 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs"
 confidence: high
-sources:
+sources: 
   - type: official
-    path: "perfetto.dev/docs/analysis/sql-tables/android-input"
   - type: official
-    path: "source.android.com/docs/core/interaction/input"
   - type: research
-    path: "intake/research-feeds/2026-04-05-15-perfetto-input-latency-sql.md"
   - type: research
-    path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
+path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: "pending"
 task9_result: pending
 
 last_task2b_at: "2026-04-26T08:55:00+08:00"

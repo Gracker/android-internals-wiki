@@ -1,53 +1,34 @@
 ---
+
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP main (art/runtime/gc) + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
 last_task2b_lite_at: "2026-05-30"
 confidence: medium
-sources:
+sources: 
 - type: official
-  path: https://developer.android.com/about/versions/17
 - type: official
-  path: https://source.android.com/docs/core/runtime/configure
 - type: official
-  path: https://developer.android.com/topic/performance/graphics/manage-memory
 - type: official
-  path: https://perfetto.dev/docs/analysis/stdlib-docs
 - type: official
-  path: https://perfetto.dev/docs/reference/heap_profile-cli
 - type: official
-  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
 - type: aosp
-  path: art/runtime/write_barrier-inl.h
 - type: aosp
-  path: art/runtime/gc/accounting/card_table.cc
 - type: aosp
-  path: art/runtime/gc/collector/concurrent_copying.cc
 - type: aosp
-  path: art/runtime/gc/collector/mark_compact.h
 - type: aosp
-  path: art/runtime/gc/collector/mark_compact.cc
 - type: aosp
-  path: art/runtime/gc/heap.cc
 - type: research
-  path: intake/research-feeds/2026-04-03-19-ch04-android17-generational-gc.md
 - type: research
-  path: intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md
 - type: research
-  path: intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md
 - type: research
-  path: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
-tags:
+path: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
+tags: 
 - android
 - memory
 - research
