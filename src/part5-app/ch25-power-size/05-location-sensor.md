@@ -34,16 +34,19 @@ sources:
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
 tags: [location, fused-location, geofencing, sensor-batching, power]
 related_chapters: ["25.1", "25.2", "11.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-14T18:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-03T14:54:49+08:00"
+task2b_fixed_by: "openclaw-task2b"
+task2b_fixed_date: "2026-06-03"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -137,7 +140,17 @@ fun stopForegroundTracking() {
 
 [已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery/optimize]
 
-后台或弱可见场景要优先批量交付。这段请求以 10 分钟作为期望计算间隔，并允许系统在 1 小时窗口内批量交付；实际回调合并效果受设备、权限、系统策略和其他客户端请求影响。业务拿到的是一组带时间戳的位置点，适合低频轨迹补点、门店推荐候选刷新、地理内容预热。
+后台或弱可见场景要优先批量交付，但先要过三道版本权限门槛：
+
+| 版本 | 要求 | 影响 |
+|------|------|------|
+| Android 10 (API 29)+ | `ACCESS_BACKGROUND_LOCATION` | 没有该权限，后台定位请求不会返回有效位置；用户必须在设置中授予"始终允许" |
+| Android 12 (API 31)+ | 用户可选择 approximate location | app 声明 `ACCESS_FINE_LOCATION` 后，系统仍可能只返回粗略位置；需要调用 `LocationRequest.Builder.setMinUpdateDistanceMeters()` 或检测 `Location.getLatitude()` 精度判断 |
+| Android 14 (API 34)+ | location FGS type + while-in-use 启动限制 | 后台启动 Activity/BroadcastReceiver 受限；定位类 FGS 必须声明 `foregroundServiceType="location"`（或 `health`/`remoteMessaging` 等）；`ACCESS_BACKGROUND_LOCATION` 下从后台启动 activity 需走 `PendingIntent` 或通知入口 |
+
+这些限制对 App 定位策略的影响是递进的：Android 10 先收后台定位权限；Android 12 再加用户可控精度；Android 14 再对前台服务类型和后台启动路径施加额外约束。批量交付请求要在所有三道门槛都满足的前提下才成立。
+
+下面这段请求以 10 分钟作为期望计算间隔，并允许系统在 1 小时窗口内批量交付；实际回调合并效果受设备、权限、系统策略和其他客户端请求影响。业务拿到的是一组带时间戳的位置点，适合低频轨迹补点、门店推荐候选刷新、地理内容预热。
 
 ```kotlin
 private val batchedBackgroundRequest = LocationRequest.Builder(
@@ -231,9 +244,23 @@ private fun unregisterBatchedSensors() {
 
 传感器还有三个容易踩坑的边界：
 
-- 前后台边界：Android 9 及以上设备上，后台 App 不能继续接收 accelerometer、gyroscope 这类 continuous 传感器事件；需要持续采样时要使用前台服务，并把通知、权限和退出条件写清楚。
+- 前后台边界：
+- Android 9（API 28）+：后台 App 不能接收 continuous 传感器（accelerometer、gyroscope 等）事件，必须使用前台服务并把通知、权限和退出条件写清楚。
+- Android 12（API 31）+：运动/位置传感器的后台采样速率被硬限制在 200 Hz 以下；`HIGH_SAMPLING_RATE_SENSORS` 权限只提升前台采样上限，不绕过后台限制。
+- Android 14（API 34）+：健康/运动类传感器长时使用需配合 `foregroundServiceType="health"` 或对应的 FGS type，且 `while-in-use` 权限下后台启动 Activity 需走 `PendingIntent` 或通知入口。
 - wake-up 与 non-wake-up：wake-up sensor 可以在 FIFO 满或最大延迟到期时唤醒应用处理器；non-wake-up sensor 在 suspend 中不会主动唤醒应用处理器，旧事件可能被循环缓冲覆盖。
 - 采样率上限：`getMinDelay()` 只告诉传感器可支持的最快采样间隔，不代表业务应该使用这个频率。界面姿态、摇一摇、运动趋势通常不需要最快档。
+
+Android 12（API 31）对后台传感器访问追加了速率硬限制：
+
+| 传感器类别 | 后台速率上限 | 所需权限 | 说明 |
+|------------|-------------|----------|------|
+| 运动传感器（加速度计、陀螺仪、旋转矢量等 continuous sensor） | 200 Hz | 受限：后台不能接收连续事件（Android 9+） | 即使声明 `HIGH_SAMPLING_RATE_SENSORS`，后台也无法绕过此项 |
+| 位置传感器（磁力计、orientation 等） | 200 Hz | 后台需 `ACCESS_BACKGROUND_LOCATION`（Android 10+） | Android 12+ `HIGH_SAMPLING_RATE_SENSORS` 仍不能提升后台速率 |
+| 环境/健康传感器（心率、血氧等） | 受限速率 | `BODY_SENSORS` + health FGS type（Android 14+） | 长时后台采样必须使用前台服务，不能静默常驻 |
+| 姿态传感器（significant motion、step detector 等 one-shot/on-change） | 不适用 | 不需要 FGS | 优先选择这些语义传感器替代高频轮询 |
+
+`HIGH_SAMPLING_RATE_SENSORS` 权限（Android 12+）只提升前台采样速率上限，不能绕过前台服务或后台采样限制。文档中"200 Hz"是系统允许的软上限，设备传感器硬件本身可能支持更高采样率，但系统不会给 App 返回超过上限的事件。产品需求提到"实时运动姿态"时，先确认 200 Hz 是否满足精度，再决定是否上 FGS。
 
 [已验证: 官方文档, developer.android.com/develop/sensors-and-location/sensors/sensors_overview]
 

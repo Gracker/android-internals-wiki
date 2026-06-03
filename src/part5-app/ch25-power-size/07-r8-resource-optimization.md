@@ -36,10 +36,10 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
@@ -49,7 +49,10 @@ last_task6_at: "2026-05-14T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：写作层通过；未发现需直接修复的 L1/L2 正文问题；无新增回炉项，转 Task9 技术复核。"
 
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: "2026-06-03T14:54:49+08:00"
+task2b_fixed_by: "openclaw-task2b"
+task2b_fixed_date: "2026-06-03"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
@@ -132,6 +135,15 @@ R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Pr
 
 下面这组规则展示“保留运行时契约，但把优化权还给 R8”的写法。重点看 `allowshrinking`、`allowobfuscation`、`allowoptimization` 这几个修饰符。
 
+**`allowshrinking` 的安全前提**：`allowshrinking` 允许 R8 删除“静态不可达”的成员或类。它只能在以下条件之一成立时使用：
+
+1. 目标仍有**静态可达路径**——被其它 `-keep` 规则、`@Keep`、manifest 入口或 library consumer rules 保护。
+2. 目标确实**允许被删除**——删除后不会产生运行时错误（例如已废弃的 debug 工具类）。
+
+对反射入口（JSON 字段、JNI 方法、`ServiceLoader`、注解处理器注册表），`allowshrinking` 是危险的——R8 看不到反射路径，会把它们判定为“不可达”并删除。这类入口不应加 `allowshrinking`。
+
+下面的规则按这个前提分化：JSON 字段不加 `allowshrinking`（反射入口）；JNI 方法不加 `allowshrinking`（native 入口）；Gson TypeToken 可以加 `allowshrinking`（有其它 keep 规则保护且静态可达）。
+
 ```proguard
 # Gson TypeToken 场景：保留泛型签名，但允许类名继续缩短和优化。
 -keepattributes Signature
@@ -139,17 +151,21 @@ R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Pr
 -keep,allowobfuscation,allowshrinking,allowoptimization class * extends com.google.gson.reflect.TypeToken
 
 # JNI 场景：native 方法签名由 native 层查找，类本身仍可按调用关系裁剪。
--keepclasseswithmembernames,allowoptimization class * {
+# includedescriptorclasses 防止 native 方法参数/返回值类型的 descriptor class 被改名
+# ——当 native 签名包含应用自定义类型或回调接口时，descriptor class 改名会破坏 JNI 查找。
+-keepclasseswithmembernames,includedescriptorclasses,allowoptimization class * {
     native <methods>;
 }
 
-# 反射构造的模型类：如果字段名参与 JSON 协议，字段名不能混淆；不用的模型仍可删除。
--keepclassmembers,allowshrinking class com.example.api.** {
+# 反射/序列化模型类：字段名参与 JSON/Gson/Jackson/Moshi 协议不可混淆。
+# ⚠️ 绝不能加 allowshrinking：序列化字段从 R8 静态分析视角不可达，
+# allowshrinking 会把这些字段直接删除，release 包反序列化缺字段。
+-keepclassmembers,allowobfuscation class com.example.api.** {
     <fields>;
 }
 ```
 
-第一组规则解决泛型签名读取问题；第二组规则保留 JNI 方法名，避免 native 注册失败；第三组规则只保留字段，不把整个包都固定住。上线前要用混淆后的 release 包跑序列化、登录、支付、推送、深链、插件加载和 JNI smoke test。debug 包不经过同一套 R8 路径，不能替代 release 验证。
+第一组规则解决泛型签名读取问题；第二组规则用 `includedescriptorclasses` 保留 JNI 方法名和 descriptor class，避免 native 注册失败；第三组规则保留字段但允许改名（`allowobfuscation`），字段名保持可读的前提下不把整个包固定。上线前要用混淆后的 release 包跑序列化、登录、支付、推送、深链、插件加载和 JNI smoke test。debug 包不经过同一套 R8 路径，不能替代 release 验证。
 
 consumer rules 也要纳入体积排查。AAR 里的 `consumer-proguard-rules.pro` 会传递到 App，三方 SDK 为了降低接入失败率，常把规则写得很保守。遇到 dex 增长异常时，先从 `build/outputs/mapping/release/configuration.txt` 查看最终合并后的规则，再决定是升级 SDK、覆盖规则，还是向 SDK 方反馈更细的 consumer rules。
 
