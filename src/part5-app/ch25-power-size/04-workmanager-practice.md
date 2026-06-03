@@ -36,22 +36,24 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [workmanager, jobscheduler, expedited-work, background-task, power]
 related_chapters: ["25.2", "25.3", "5.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-14T18:15:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-18-review.md
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T17:20:00+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-17-deep-review.md
 task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 3；UIDT 选型缺少 Android 14+、权限、通知和低版本 fallback 边界。"
+last_task2b_at: "2026-06-03T12:50:00+08:00"
+task2b_fix_summary: "Fixed P1: UIDT 版本边界 (API 34+/29-33 fallback) + §5.10 交叉引用；P2: GreedyScheduler WorkConstraintsTracker 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界 (WorkManager 2.9.0+/API 31+)"
 
 ---
 
@@ -94,9 +96,11 @@ WorkManager 的入口是 `WorkRequest`。一个 `WorkRequest` 至少包含 Worke
 
 AndroidX 源码里，Android 10-16 设备上的主要调度器是 `SystemJobScheduler`。`Schedulers.createBestAvailableBackgroundScheduler()` 创建 `SystemJobScheduler` 并启用 `SystemJobService`；`SystemJobScheduler.scheduleInternal()` 把 `WorkSpec` 交给 `SystemJobInfoConverter` 转成 `JobInfo`，再调用平台 `JobScheduler.schedule()`。这解释了一个常见现象：WorkManager 看起来是 Jetpack API，最终仍会受 JobScheduler 的配额、约束和系统功耗策略影响。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/Schedulers.java] [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java]
 
-`GreedyScheduler` 是另一条 App 进程内的快速路径。源码注释写明它处理 unconstrained、non-timed work，并且不会主动持有 WakeLock；当任务无约束、已到运行时间且处于 `ENQUEUED` 状态时，它会直接启动 Work。这个路径只能作为进程还活着时的机会执行，不能拿它当可靠后台执行保证。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/greedy/GreedyScheduler.java]
+`GreedyScheduler` 是另一条 App 进程内的快速路径。源码注释写明它处理 unconstrained、non-timed work，并且不会主动持有 WakeLock；当任务无约束、已到运行时间且处于 `ENQUEUED` 状态时，它会直接启动 Work。同时，非 idle、非 content-uri trigger 的 constrained work 会经过 `WorkConstraintsTracker` 追踪：约束满足时进程内 `startWork()`，约束失效时 `stopWorkWithReason()`。这个路径只能作为进程存活时的机会执行，不能作为可靠后台执行保证；约束恢复路径的可靠性远低于 JobScheduler 的系统级持久化追踪。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/greedy/GreedyScheduler.java]
 
 约束要按功耗成本设置。WorkManager 支持 `NetworkType`、`BatteryNotLow`、`RequiresCharging`、`DeviceIdle`、`StorageNotLow`。多个约束同时设置时，全部满足后才运行；运行中约束失效，Worker 会被停止，后续等约束恢复后重试。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
+
+注意 `.setRequiresDeviceIdle(true)` 不能与 `.setBackoffCriteria()` 同时使用——AndroidX `OneTimeWorkRequest.Builder` 与 `PeriodicWorkRequest.Builder` 在 `build()` 时会抛出 `IllegalArgumentException`。如果业务需要 idle 条件，退避策略应依赖系统对周期任务的调度合并，而不是 WorkManager 层面的重试退避。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/WorkRequest.java]
 
 这段代码展示一个适合“低优先级指标上传”的请求。重点看三处：只在未计费网络和充电时运行、使用唯一周期任务去重、用退避策略避免失败后密集重试。
 
@@ -187,7 +191,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 )
 ```
 
-Expedited Work 和 Foreground Service 的边界要按用户可见度判断。Android 12 之前，为兼容 expedited job，WorkManager 可能通过 foreground service 执行，并要求 Worker 提供 `getForegroundInfo()` / `getForegroundInfoAsync()`，否则旧平台可能运行时崩溃；Android 12 及以上仍可用 `setForeground()`，但受前台服务启动限制影响。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
+Expedited Work 和 Foreground Service 的边界要按用户可见度判断。Android 12 之前，为兼容 expedited job，WorkManager 可能通过 foreground service 执行，并要求 Worker 提供 `getForegroundInfo()` / `getForegroundInfoAsync()`，否则旧平台可能运行时崩溃。Android 12（API 31）+ 起仍可用 `setForeground()`，但受前台服务启动限制影响；而 UIDT（`JobInfo.Builder.setUserInitiated(true)`）需要 Android 14（API 34）+，低版本无对等平台 API，只能走 foreground service 降级路径。各版本的 UIDT 详细边界见 §5.10。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
 
 长时间用户可见任务不应默认放进 WorkManager。官方长任务文档说明，long-running worker 可超过 10 分钟，WorkManager 会代管 foreground service；但从 Android 16 开始，这类 long-running worker 仍依赖 JobScheduler 调度，可能耗尽 App 的 job quota。用户触发的数据下载可以优先评估 user-initiated data transfer job；需要持续前台语义时，直接启动 Foreground Service 语义更清楚。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running]
 
@@ -203,13 +207,13 @@ WorkManager 和 JobScheduler 的选择取决于任务契约，而不是“哪个
 | 多步骤离线处理 | WorkManager chain | 步骤之间有输入输出依赖，失败和取消要有明确传播规则 |
 | 精确时间提醒 | AlarmManager | 需要接近指定时间触发，WorkManager 不保证准点 |
 | 系统层调度实验或平台服务 | JobScheduler | 需要直接配置 `JobInfo`、观察系统 Controller 或验证 quota 行为 |
-| 超过 10 分钟的用户可见传输 | UIDT / Foreground Service，谨慎使用 long-running Worker | Android 16 起 long-running Worker 可能消耗 job quota |
+| 超过 10 分钟的用户可见传输 | Android 14+：UIDT；Android 10-13：Foreground Service；谨慎使用 long-running Worker | UIDT `JobInfo.Builder.setUserInitiated(true)` 仅 API 34+ 可用，低版本回退 Foreground Service。Android 16 起 long-running Worker 可能消耗 job quota。UIDT 完整版本边界与权限要求见 §5.10 |
 
 一个实战判断法：能等待系统选择窗口，就用 WorkManager；必须用户立刻看见持续运行状态，就用 Foreground Service 或 UIDT；必须到点提醒，就用 AlarmManager；只在当前页面有效，就别进后台调度系统。
 
 ## 自动发现：停止原因与回归守门
 
-[自动发现] Android 官方电量优化文档建议记录 `WorkInfo.getStopReason()`，JobScheduler 对应 `JobParameters.getStopReason()`。停止原因不只是排错字段，也是后台任务质量门禁：如果任务频繁因 timeout、quota、constraints 变化或系统资源压力停止，说明任务粒度、约束或重试策略有问题。Android 14 及以上，如果任务频繁超时，系统可能把 App 放入 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
+[自动发现] Android 官方电量优化文档建议记录 `WorkInfo.getStopReason()`（WorkManager 2.9.0+），JobScheduler 对应 `JobParameters.getStopReason()`（Android 12 / API 31 起公开）。Android 10-11 设备或旧版 WorkManager 中，需退化使用 `WorkInfo.getState()` 与运行时长联合判断停止原因。停止原因不只是排错字段，也是后台任务质量门禁：如果任务频繁因 timeout、quota、constraints 变化或系统资源压力停止，说明任务粒度、约束或重试策略有问题。Android 14 及以上，如果任务频繁超时，系统可能把 App 放入 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
 
 工程上可以把 WorkManager 守门整理成三组指标：每类任务的入队次数和去重命中率、每个 tag 的成功 / 失败 / 取消 / retry 分布、停止原因和运行时长分位数。上线前用这三组指标回答两个问题：有没有重复入队，是否存在长期运行到被系统停止的后台任务。
 

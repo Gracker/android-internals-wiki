@@ -2416,7 +2416,7 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T07:31:00+08:00",
+  "last_updated": "2026-06-03T12:55:00",
   "last_updated_by": "openclaw-task2b-verifier",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
@@ -13384,5 +13384,16 @@
     "last_fixed": "2026-06-03",
     "completed_count": 2,
     "fixed_count": 2
+  },
+  "chapters": {
+    "25.4": {
+      "last_task2b_at": "2026-06-03T12:55:00",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "fix_summary": "P1: UIDT 版本边界 + §5.10 交叉引用; P2: GreedyScheduler WorkConstraintsTracker, requiresDeviceIdle+backoff 不兼容, getStopReason 版本边界"
+    }
   }
 }
