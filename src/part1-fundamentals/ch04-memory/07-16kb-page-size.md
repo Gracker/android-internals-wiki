@@ -9,7 +9,7 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
+applicable_versions: "Android 15 (API 35) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "developer.android.com, source.android.com, AOSP bionic main, AOSP android-16.0.0_r1, ARM Architecture Reference Manual"
 confidence: medium
@@ -37,18 +37,18 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-08"
-task9_state: reviewed
-task2b_result: pending
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-24T18:20:00+08:00"
-last_task2b_at: "2026-04-27T05:45:00+08:00"
+last_task2b_lite_at: 2026-06-03
 task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
@@ -328,9 +328,7 @@ Play Console 的 App Bundle Explorer 也提供了自动化的边界检查。上�
 
 ### 常见迁移问题
 
-**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新处理 ELF/ZIP 边界（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
-
-**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新处理 ELF/ZIP 边界（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
+**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。对没有源码的 SDK，`llvm-objcopy` 不能可靠修复 PT_LOAD `p_align`、权限边界和代码中的硬编码 `PAGE_SIZE`；可用的检查工具是 `llvm-objdump`、`zipalign -c -P 16`、`bundletool dump config` 和 `check_elf_alignment.sh`（参见上方「迁移检查」小节）。
 
 ### 三方库破坏性影响清单（源码级核实）
 
@@ -471,6 +469,10 @@ contpte 与 THP 的区别：THP（PMD 级）需要物理连续的 32MB 大块内
 
 - **Android 15（API 35，2024）**：AOSP 开始支持 16KB page size 设备；模拟器与部分 Pixel 设备提供测试入口
 - **Google Play（2025-11-01）**：target Android 15+ 的新 App 与现有 App 更新，需要在 64 位设备上支持 16KB
+
+### Android 16 源码侧验证入口
+
+Starting in Android 16，构建系统支持对 prebuilt `.so` 做 16KB 对齐检查：在 `BoardConfig.mk` 中设置 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true`。如果某个 prebuilt 暂时不满足 16KB 对齐，可以用 `ignore_max_page_size`（模块级）或 `LOCAL_IGNORE_MAX_PAGE_SIZE`（旧式 Android.mk）临时豁免。对应的自动化测试入口是 `atest elf_alignment_test`。
 
 ### Android 16 / 17 的设备策略
 
