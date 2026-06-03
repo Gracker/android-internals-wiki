@@ -36,13 +36,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "参考书素材/知识盲区/官方文档/AOSP结构"
 last_task2a_at: "2026-05-22T15:04:00+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-22"
-last_task6_at: "2026-05-22T15:14:00+08:00"
+reviewed_date: "2026-06-04"
+last_task6_at: "2026-06-04T03:10:02+08:00"
 last_task6_review_log: "logs/review/2026-05-22-15-review.md"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
