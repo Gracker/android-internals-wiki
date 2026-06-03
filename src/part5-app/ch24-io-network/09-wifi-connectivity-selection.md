@@ -5,14 +5,16 @@ chapter: "24.9"
 status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP main (packages/modules/Wifi, packages/modules/Connectivity, packages/modules/NetworkStack) + Android Developers / source.android.com docs"
+last_verified: '2026-06-04'
+last_verified_against: 'AOSP android-16.0.0_r1 (packages/modules/Wifi, packages/modules/Connectivity, packages/modules/NetworkStack) + Android Developers / source.android.com docs'
 confidence: medium
 sources:
   - type: aosp
     path: "packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java"
   - type: aosp
     path: "packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java"
+  - type: aosp
+    path: "packages/modules/Wifi/framework/java/android/net/wifi/WifiManager.java"
   - type: aosp
     path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java"
   - type: aosp
@@ -49,21 +51,23 @@ gap_source: "AOSP结构/研究素材"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task6_state: 'reviewed'
+task6_state: 'revisiting'
 last_task6_at: '2026-06-03T12:15:21+08:00'
 task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 扫描无新增问题；禁用词/高频词/AI 填充词零命中。无新增回炉项。'
-task9_state: 'pending'
+task9_state: 'reviewed'
 pipeline_stage: 'task6_pending'
-task9_result: needs-rework
+task9_result: 'auto-fixed'
 task2b_state: 'fixed'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-15
-last_task9_at: 2026-05-15T16:20:00+08:00
-last_task9_review_log: logs/deep-review/2026-05-15-16-deep-review.md
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-06-04'
+last_task9_at: '2026-06-04T00:20:00+08:00'
+last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
 task2b_result: 'fixed'
 task2b_fixed_date: '2026-06-03'
 task2b_fixed_at: '2026-06-03T10:53:52'
 last_task2b_at: '2026-06-03T10:53:52'
+last_task9_autofix_at: '2026-06-04'
+task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。将 Wi-Fi / Connectivity 源码锚点收敛到 android-16.0.0_r1，并修正 WifiConnectedNetworkScorer 的真实源码位置为 WifiManager 嵌套 SystemApi；回到 Task6 复审。'
 ---
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能
@@ -90,7 +94,7 @@ Wi-Fi 扫描结果
 
 Wi-Fi 模块回答"连哪个 AP"。Connectivity 模块回答"当前请求走哪个 Network"。这两个问题相关,但不能混成一个评分。
 
-AOSP `WifiNetworkSelector` 的 `filterScanResults()` 会过滤 RSSI 低于 entry threshold 的 BSSID、被 blocklist 命中的 BSSID、被管理策略限制的 SSID,以及部分 deprecated security type。之后 `selectNetwork()` 使用 `WifiCandidates.CandidateScorer` 对分组候选评分,并把选中的 scan result 写回 `WifiConfigManager.setNetworkCandidateScanResult()`。[已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
+AOSP `WifiNetworkSelector` 的 `filterScanResults()` 会过滤 RSSI 低于 entry threshold 的 BSSID、被 blocklist 命中的 BSSID、被管理策略限制的 SSID,以及部分 deprecated security type。之后 `selectNetwork()` 使用 `WifiCandidates.CandidateScorer` 对分组候选评分,并把选中的 scan result 写回 `WifiConfigManager.setNetworkCandidateScanResult()`。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
 
 Connectivity 侧已经从传统整数分数演进到策略规则。source.android.com 的 network selection 文档说明,现代 Android 的网络选择策略位于 Connectivity 模块的 `NetworkRanker` 及其辅助类;设备厂商不能直接替换选择代码,只能通过 `NetworkScore` 的 flags 表达网络属性。[已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
 
@@ -103,7 +107,7 @@ Connectivity 侧已经从传统整数分数演进到策略规则。source.androi
 
 App 不能假设所有用户设备都运行 Android 12+。线上仍有 Android 10/11 设备时,网络选择可能基于旧版 integer score,同分 BSSID 之间的行为无保证。建议在 APM 中记录 `Build.VERSION.SDK_INT` 和默认网络来源,后续排查才能对齐系统行为。
 
-`NetworkRanker.getBestNetworkByPolicy()` 的排序不是简单"分数越大越好"。代码先处理 invincible network、VPN、用户显式选择并接受未验证网络、validated / accept-unvalidated,再处理 exiting、primary transport、transport preference 和 current satisfier。当前已满足请求的网络在策略等价时会被保留,避免默认网络在边界条件下频繁跳变。[已验证: AOSP main, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
+`NetworkRanker.getBestNetworkByPolicy()` 的排序不是简单"分数越大越好"。代码先处理 invincible network、VPN、用户显式选择并接受未验证网络、validated / accept-unvalidated,再处理 exiting、primary transport、transport preference 和 current satisfier。当前已满足请求的网络在策略等价时会被保留,避免默认网络在边界条件下频繁跳变。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
 
 这解释了一个常见线上现象:Wi-Fi RSSI 变差后,App 不一定马上看到默认网络切走。系统会同时考虑验证状态、用户选择、是否计费、VPN、当前网络是否仍能满足 request,以及切换带来的稳定性代价。
 
@@ -123,7 +127,7 @@ Wi-Fi 选择不是只看信号格数。AOSP 和官方文档里能确认的输入
 
 source.android.com 的 Wi-Fi network selection 文档给出"当前网络够用即可跳过选择"的判定:RSSI 高于阈值或有足够流量,网络已验证或用户允许无互联网使用,并且网络未计费。若当前 Wi-Fi 不够用或设备未连接,框架才会调用 nominators 生成候选网络,再过滤弱 RSSI、被阻止的 BSSID 等候选。[已验证: 官方文档, https://source.android.com/docs/core/connect/wifi-network-selection]
 
-AOSP `WifiCandidates.CandidateImpl` 暴露了 `getScanRssi()`、`getFrequency()`、`getPredictedThroughputMbps()`、`isMetered()`、`hasNoInternetAccess()`、`isUserSelected()`、`isCurrentNetwork()` 等字段。工程上可以把这些字段理解成"选择输入",不要把旧资料里 0-60、20/40/60 这类固定阈值直接写进发布判断;不同 Android 版本和厂商 overlay 都可能改变边界。[已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
+AOSP `WifiCandidates.CandidateImpl` 暴露了 `getScanRssi()`、`getFrequency()`、`getPredictedThroughputMbps()`、`isMetered()`、`hasNoInternetAccess()`、`isUserSelected()`、`isCurrentNetwork()` 等字段。工程上可以把这些字段理解成"选择输入",不要把旧资料里 0-60、20/40/60 这类固定阈值直接写进发布判断;不同 Android 版本和厂商 overlay 都可能改变边界。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 18.md] 网络问题分析要先把基础网络状态、I/O 等待和业务请求阶段拆开。这里借鉴它的拆分方式,但系统选网事实以 AOSP 和官方文档为准。
 
@@ -240,7 +244,7 @@ App 侧判断建议按下面的顺序做:
 4. 有 `VALIDATED` 但请求慢: 再看 DNS、TCP、TLS、TTFB、body download 的分段耗时。
 5. 有 VPN: 同时记录 underlying transport。VPN 可能改变 DNS、路由和证书策略。
 
-`NetworkMonitor` 负责网络验证和 Captive Portal 探测。AOSP `sendDnsProbe()` 使用 DNS resolver 做域名解析,`sendHttpProbe()` 对已知探测 URL 发起 HTTP 请求并根据响应判断。探测结果会通过 `NETWORK_VALIDATION_RESULT_VALID`、partial connectivity、skipped 等结果通知 ConnectivityService。[已验证: AOSP main, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
+`NetworkMonitor` 负责网络验证和 Captive Portal 探测。AOSP `sendDnsProbe()` 使用 DNS resolver 做域名解析,`sendHttpProbe()` 对已知探测 URL 发起 HTTP 请求并根据响应判断。探测结果会通过 `NETWORK_VALIDATION_RESULT_VALID`、partial connectivity、skipped 等结果通知 ConnectivityService。[已验证: AOSP android-16.0.0_r1, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
 
 多网络并存时,App 常见误判有三类:
 
@@ -400,7 +404,7 @@ Perfetto 侧可重点打开这些数据:
 
 ### 🔸 OEM Wi-Fi 评分差异
 
-AOSP 的 Connectivity 网络选择策略被 Mainline 模块约束，但 OEM 仍然可以通过 overlay、Wi-Fi HAL / firmware、漫游阈值、双 Wi-Fi、链路聚合、厂商加速 SDK 改变体验。另外，Android 框架也预留了评分扩展点：`WifiConnectedNetworkScorer` 作为 AOSP 内置的 external scorer 实现，接收已连接 Wi-Fi 的属性（RSSI、link speed、频段、是否 validated、是否 metered）并计算出外部分数，供 ConnectivityService 在选择默认网络时参考。[已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiConnectedNetworkScorer.java]
+AOSP 的 Connectivity 网络选择策略被 Mainline 模块约束，但 OEM 仍然可以通过 overlay、Wi-Fi HAL / firmware、漫游阈值、双 Wi-Fi、链路聚合、厂商加速 SDK 改变体验。另外，Android 框架也预留了评分扩展点：`WifiManager.WifiConnectedNetworkScorer` 是 `WifiManager` 中的 SystemApi 嵌套接口，外部 scorer 通过 `ScoreUpdateObserver` 回传状态、NUD 请求或 BSSID blocklist 建议；Android 12 及以上，`notifyScoreUpdate()` 的数值主要用于 Wi-Fi metrics，网络选择更依赖 status / NUD / blocklist 这类信号。已连接网络的原始材料来自 `WifiUsabilityStatsEntry`，包含 RSSI、link speed、频段、Tx/Rx packet 统计等信息。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/framework/java/android/net/wifi/WifiManager.java（`WifiConnectedNetworkScorer` 与 `ScoreUpdateObserver` 嵌套接口）]
 
 工程判断要分三层：
 
@@ -410,7 +414,7 @@ AOSP 的 Connectivity 网络选择策略被 Mainline 模块约束，但 OEM 仍�
 | OEM 配置 | `dumpsys wifi`、overlay、vendor log、机型实验 | 只能覆盖该厂商 / 该版本 |
 | firmware / driver | 厂商 bugreport、内核日志、芯片文档 | 没有材料时只能标 `[待验证]` |
 
-不要把"评分多少会切蜂窝"写成固定结论。AOSP main 已经能确认筛选维度和 Connectivity 排序策略,但具体机型上的漫游、MLO、双 Wi-Fi、链路聚合阈值,需要实机 trace 或厂商材料。[待验证: OEM scoring、roaming threshold、dual Wi-Fi / link aggregation 策略]
+不要把"评分多少会切蜂窝"写成固定结论。AOSP android-16.0.0_r1 已经能确认筛选维度和 Connectivity 排序策略,但具体机型上的漫游、MLO、双 Wi-Fi、链路聚合阈值,需要实机 trace 或厂商材料。[待验证: OEM scoring、roaming threshold、dual Wi-Fi / link aggregation 策略]
 
 如果要排查厂商差异,可以做一组最小实验:同一地点、同一 SSID、同一业务请求,分别记录 Pixel / 目标厂商机型在 RSSI 从 -55dBm 降到 -80dBm 时的 default network、validated 状态、DNS/TTFB 分位数、切换次数和电量曲线。没有这组数据,不要把单机观察写成平台规律。
 
@@ -445,11 +449,12 @@ App 侧可以把 HTTP/3 作为灰度能力处理:
 - [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state]
 - [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities]
 - [已验证: 官方文档, https://square.github.io/okhttp/features/events/]
-- [已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
-- [已验证: AOSP main, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
-- [已验证: AOSP main, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
-- [已验证: AOSP main, packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java]
-- [已验证: AOSP main, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/framework/java/android/net/wifi/WifiManager.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java]
+- [已验证: AOSP android-16.0.0_r1, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
 - [结构参考: Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md]
 - [结构参考: Clippings/Android 性能优化 - CPU 优化(下):减少 CPU 闲置时刻和等待,提升利用率.md]
 - [结构参考: Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md]

@@ -7,8 +7,8 @@ section: '19.27'
 drafted_date: '2026-05-13'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-13'
-last_verified_against: Android SDK docs + open-source APM/logging projects
+last_verified: '2026-06-04'
+last_verified_against: 'Android SDK docs + Kotlin kotlinx.coroutines Channel docs + open-source APM/logging projects'
 confidence: medium
 tags:
 - apm
@@ -44,25 +44,26 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 pipeline_stage: 'task6_pending'
-task6_state: 'reviewed'
-task9_state: 'pending'
+task6_state: 'revisiting'
+task9_state: 'reviewed'
 reviewed_date: '2026-06-03'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_task6_at: '2026-06-03T12:15:21+08:00'
 last_task6_review_log: logs/review/2026-06-03-12-review.md
 task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 扫描无新增问题；禁用词/高频词/AI 填充词零命中。无新增回炉项。'
-task9_result: 'needs-rework'
-last_task9_at: '2026-05-13T20:35:00+08:00'
+task9_result: 'auto-fixed'
+last_task9_at: '2026-06-04T00:20:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-13'
-last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
-task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 2；远程诊断能力缺普通三方 App 与系统/adb/internal build 的 Perfetto/Logcat/Hprof 权限边界；另有队列示例与协议 benchmark 建议。'
+task9_reviewed_date: '2026-06-04'
+last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
+task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。修正 Kotlin Channel 溢出语义：DROP_OLDEST 下 trySend 不会暴露满队列失败，示例改为有界 Channel + trySend 失败计数；回到 Task6 复审。'
 task2b_state: 'fixed'
 task2b_result: 'fixed'
 task2b_fixed_date: '2026-06-03'
 task2b_fixed_at: '2026-06-03T10:53:52'
 last_task2b_at: '2026-06-03T10:53:52'
+last_task9_autofix_at: '2026-06-04'
 ---
 
 # 千万级 DAU 的 APM 端侧架构
@@ -142,13 +143,9 @@ graph TD
 
 ```kotlin
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.BufferOverflow
 
 class ApmRecorder(
-    private val queue: Channel<ApmEvent> = Channel(
-        capacity = APM_QUEUE_CAPACITY,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    ),
+    private val queue: Channel<ApmEvent> = Channel(capacity = APM_QUEUE_CAPACITY),
     private val clock: () -> Long = { System.nanoTime() },
     private val selfMetrics: ApmSelfMetrics
 ) {
@@ -172,7 +169,7 @@ class ApmRecorder(
 }
 ```
 
-队列的关键约束：`Channel(capacity = 4096, onBufferOverflow = DROP_OLDEST)` 把内存上限锁在 4096 条事件上，满时丢弃旧事件而不是阻塞写入者，避免背压传导到业务线程。容量值按目标机型实测内存占用设定——低端机可以进一步下调。不推荐使用默认 rendezvous channel（无缓冲），也不推荐 `UNLIMITED`（内存失控）。
+队列的关键约束：`Channel(capacity = 4096)` 把内存上限锁在 4096 条事件上；入口只使用 `trySend()`，满时返回失败并丢弃本次事件，失败分支负责记录 `dropped` 计数，避免背压传导到业务线程。容量值按目标机型实测内存占用设定——低端机可以进一步下调。不推荐使用默认 rendezvous channel（无缓冲），也不推荐 `UNLIMITED`（内存失控）。
 
 这段代码只表达入口约束，不代表完整 SDK：禁止在记录函数里序列化、压缩、加密、写文件、发网络请求。业务线程的失败分支也不能打印大量日志，否则队列满会变成日志风暴。
 
