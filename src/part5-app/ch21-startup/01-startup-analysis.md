@@ -1,4 +1,5 @@
 ---
+
 title: "启动完整路径分析（App 视角）"
 chapter: "21.1"
 section: "21.1"
@@ -8,20 +9,17 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium
 drafted_date: "2026-05-12"
-sources:
+sources: 
   - type: official
-    path: "https://developer.android.com/topic/performance/vitals/launch-time"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed-lite
 reviewed_by: openclaw-task6

@@ -1,4 +1,5 @@
 ---
+
 title: Measure
 chapter: '19'
 section: '19.09'
@@ -9,40 +10,28 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-05-31'
 last_verified_against: measure-sh docs/README.md + sdk-integration-guide + docs/api/sdk/README.md event/span schema + feature-anr-reporting + feature-crash-reporting + docs/api/dashboard/README.md retention endpoint
 confidence: medium
-tags:
+tags: 
 - apm
-related_chapters:
+related_chapters: 
 - '19.0'
-sources:
+sources: 
 - type: official
-  path: https://github.com/measure-sh/measure
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/README.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/sdk-integration-guide.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-network-monitoring.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-identify-users.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-bug-report-android.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md
 - type: official
-  path: https://github.com/measure-sh/measure/blob/main/docs/api/dashboard/README.md
 - type: official
-  path: https://github.com/measure-sh/measure/blob/main/docs/api/sdk/README.md
 - type: official
-  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
+path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: "2026-05-31T20:52:00+08:00"
 last_task2b_at: "2026-05-31T20:52:00+08:00"
 last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
-task6_state: "revisiting"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-05-31"
 task9_reviewed_by: openclaw-task9
@@ -61,9 +50,9 @@ task6_reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "reviewed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 1 处（会话回放→会话回查）；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 ---
 # Measure

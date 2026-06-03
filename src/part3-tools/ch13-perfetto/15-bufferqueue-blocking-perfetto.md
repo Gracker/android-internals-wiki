@@ -1,18 +1,14 @@
 ---
+
 title: "BufferQueue 阻塞的 Perfetto 识别"
 chapter: "13.15"
 section: "13.15"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-05-17"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
 last_task2b_lite_at: "2026-05-30"
 confidence: medium
 pipeline_stage: ready-to-publish
@@ -21,25 +17,17 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task9_state: reviewed
-sources:
+sources: 
   - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: official
-    path: "https://source.android.com/docs/core/graphics/arch-bq-gralloc"
   - type: aosp
-    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp"
   - type: aosp
-    path: "frameworks/native/libs/gui/BufferQueueConsumer.cpp"
   - type: aosp
-    path: "frameworks/native/libs/gui/include/gui/BufferQueueCore.h"
   - type: aosp
-    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
   - type: aosp
-    path: "frameworks/native/libs/gui/include/gui/JankInfo.h"
   - type: material
-    path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md"
   - type: material
-    path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md"
+path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md"
 tags: [perfetto, bufferqueue, frametimeline, jank, surfaceflinger, rendering]
 related_chapters: ["2.13", "2.16", "7.15", "18.20"]
 created_by: "task2a-knowledge-gap"
@@ -47,7 +35,7 @@ created_date: "2026-05-16"
 gap_source: "素材驱动/章节深挖"
 gap_score: 19
 material_count: 4
-source_refs:
+source_refs: 
   - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md
   - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
   - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
