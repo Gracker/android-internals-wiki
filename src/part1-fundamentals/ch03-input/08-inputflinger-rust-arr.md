@@ -1,15 +1,17 @@
 ---
+
+
 title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_state: fixed
 last_task9_at: "2026-05-16T12:31:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
 applicable_versions: "Android 15-QPR1 (API 35) - Android 17 (API 37)"
@@ -56,11 +58,15 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
+last_task2b_lite_at: '2026-06-04'
+task2b_result: fixed-lite
 ---
+
+
 
 # 3.8 InputFlinger Rust 组件与自适应刷新率协同
 
@@ -212,7 +218,7 @@ Bounce Keys 和 Sticky Keys 对延迟的影响较小：前者按阈值丢弃重�
 
 ## 桌面模式和外接输入设备的刷新率策略
 
-外接键盘、鼠标、触控板会让输入类型更复杂。当前这一段的生效范围需要拆开描述：Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制，Sticky Keys 的 modifier KeyEvent 行为还需要按源码单独确认。[存疑: Task9 已指出 Sticky Keys 作用范围不能和 Bounce / Slow Keys 一起写成 supported keyboard devices 限制，待 Task2B 按源码修正。] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力，而不是某个输入设备是否经过 Rust filter。[已验证: AOSP main, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp]
+外接键盘、鼠标、触控板会让输入类型更复杂。生效范围需要拆开描述：Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制；Sticky Keys 的实现不同——`StickyKeysFilter.notify_key()` 不检查 `supported_devices` 或 `Source`，而是按 `KeyEvent` 的 modifier keycode 维护 `down_key_map`、`modifier_state`、`locked_modifier_state`，因此作用范围比前两者更广。[已验证: AOSP main, frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力，而不是某个输入设备是否经过 Rust filter。[已验证: AOSP main, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP main, frameworks/native/services/inputflinger/InputFilter.cpp]
 
 桌面模式或多显示器下还要看 pacesetter display、display group、WindowManager 对不同显示的策略。当前章节只覆盖默认显示和主输入路径；外接显示刷新率仲裁建议放到 2.18 / 2.19 的多显示扩展里继续核源码。[待补充]
 
