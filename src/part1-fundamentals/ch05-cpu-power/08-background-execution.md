@@ -1,5 +1,6 @@
 ---
 
+
 status: "ready-for-review"
 title: 后台执行限制与优化
 chapter: '5.8'
@@ -7,8 +8,8 @@ section: '5.8'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-last_verified: '2026-04-12'
-last_verified_against: AOSP android-16.0.0_r1 + Android Developers docs
+last_verified: '2026-06-04'
+last_verified_against: AOSP android-16.0.0_r1 + Android Developers Android 17 docs + JobScheduler API reference
 confidence: high
 sources:
 - type: official
@@ -69,26 +70,27 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
-task9_reviewed_date: "2026-05-18"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T00:25:00+08:00"
+task9_reviewed_date: "2026-06-04"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-04T06:48:42+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
-task9_state: pending
-task9_result: "needs-rework"
-last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
-task9_review_notes: "2026-05-18 Task9 00:25 → needs-rework；P1：16KB/GC 联动压缩被写成 Android 16/17 引入且绑定 16KB，官方 cached-apps-freezer 口径是 Android 14 起 cached/freeze 前 GC 与冻结后 compaction，需回炉修正。"
+task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 last_task6_at: "2026-06-04T04:12:07+08:00"
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
+last_task9_autofix_at: "2026-06-04"
 ---
 
 
@@ -327,11 +329,13 @@ JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你�
 
 - `getPendingJobReason(int jobId)`，返回当前主因
 - `getPendingJobReasons(int jobId)`，返回可能的原因集合 `int[]`
-- `getPendingJobReasonsHistory(int jobId)`，返回 `List<PendingJobReasonsInfo>`，也就是“有限历史视图”，不是 `List<String>`，更不是不存在的 `JobDebugInfo`
+- `getPendingJobReasonsHistory(int jobId)`，返回 `List<PendingJobReasonsInfo>`，也就是“有限历史视图”，不是 `List<String>`
 
-按当前 public API 和 AOSP framework 代码能稳定核验到的就是上面这三项，对应路径是 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`。未在当前 API 面里核验到的接口名称，这一节不继续保留。
+Android 17 又补了 `getPendingJobReasonStats()`，返回 `Map<Integer, Duration>`，按 reason 汇总 pending job 统计。这里要把两类数据分开：Android 16 的 history 看最近一段时间的原因变化，Android 17 的 stats 看按原因聚合后的累计时长。
 
-对性能排查，`getPendingJobReasonsHistory()` 的价值在于：它把“最近一段时间为什么一直没跑”这件事变成可读数据，不必只靠 `dumpsys jobscheduler` 和零散日志猜。
+Android 16 三个 pending reason API 可在 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` 复核；Android 17 的 `getPendingJobReasonStats()` 以官方 API reference 和 features 文档为准。
+
+对性能排查，`getPendingJobReasonsHistory()` 的价值在于把“最近一段时间为什么一直没跑”变成可读数据；`getPendingJobReasonStats()` 则适合看一段时间内是哪类约束反复压住 Job。
 
 ### AlarmManager：只留给需要精确时刻的事情
 
@@ -408,8 +412,8 @@ struct binder_frozen_status_info {
 **FrozenStateChangeCallback 注册路径（API 36+）**：
 ```
 IBinder.addFrozenStateChangeCallback(executor, callback)
-  → BpBinder::addFrozenStateChangeCallback()  // libs/binder/BpBinder.cpp:962
-    → IPCThreadState::addFrozenStateChangeCallback(handle, proxy)  // IPCThreadState.cpp:1714
+  → BpBinder::addFrozenStateChangeCallback()  // libs/binder/BpBinder.cpp:566
+    → IPCThreadState::addFrozenStateChangeCallback(handle, proxy)  // IPCThreadState.cpp:1015
       → mOut.writeInt32(BC_REQUEST_FREEZE_NOTIFICATION)  // 写入 kernel driver
         → 内核维护 frozen 状态，变更时通过 BR_FROZEN_NOTIFICATION 推送
 ```
@@ -417,9 +421,10 @@ IBinder.addFrozenStateChangeCallback(executor, callback)
 **BR_TRANSACTION_PENDING_FROZEN**（Android 14+）：内核告知用户空间 oneway 事务正在等待目标解冻，用于避免 buffer 溢出导致的进程崩溃。
 
 **关键源码索引**：
-- `libs/binder/BpBinder.cpp` L962-1010 — addFrozenStateChangeCallback 转发
-- `libs/binder/IPCThreadState.cpp` L1714-1730 — BC_REQUEST_FREEZE_NOTIFICATION 发送
-- `services/core/java/com/android/server/am/CachedAppOptimizer.java` L4230-4270 — 冻结编排完整流程
+- `libs/binder/BpBinder.cpp` L566-L605 — addFrozenStateChangeCallback 转发
+- `libs/binder/IPCThreadState.cpp` L1015-L1026 — BC_REQUEST_FREEZE_NOTIFICATION 发送
+- `services/core/java/com/android/server/am/CachedAppOptimizer.java` L2037-L2055 — 冻结编排里先冻结 Binder 接口
+- `services/core/java/com/android/server/am/Freezer.java` L44-L61 — freezeBinder() 抽象入口
 ### CachedAppOptimizer 的 GC 联动与内存压缩
 
 从 Android 14 开始，CachedAppOptimizer 在冻结 cached 进程前可能请求应用运行时执行一次 GC，为后续的内存回收做准备。冻结后，系统还可能对进程执行额外的内存压缩（compaction）：包括将脏页回写到 backing storage、将匿名页压缩到 ZRAM。
@@ -546,7 +551,7 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；CachedAppOptimizer 引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
 | Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
-| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点 | 后台保活路径进一步收窄 |
+| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力；`getPendingJobReasonStats()` 增加 Job pending reason 统计 | 后台保活路径进一步收窄，Job 未执行原因更容易聚合分析 |
 
 ## 常见问题与误区
 
@@ -598,6 +603,8 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [Restrictions on starting a foreground service from the background](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
 - [Service API reference](https://developer.android.com/reference/android/app/Service)
 - [JobScheduler API reference](https://developer.android.com/reference/android/app/job/JobScheduler)
+- [Android 17 Features](https://developer.android.com/about/versions/17/features)
+- [Android 17 Background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
 
 ### 深入阅读
 - [Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
