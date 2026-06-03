@@ -1,4 +1,5 @@
 ---
+
 title: CPU 相关的版本演进
 chapter: '5.7'
 section: '5.7'
@@ -8,8 +9,8 @@ last_task6_at: "2026-06-04T04:12:07+08:00"
 review_round: 2
 task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 版本边界风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
 applicable_versions: Android 5.0 - Android 17
-last_verified: '2026-04-29'
-last_verified_against: developer.android.com + source.android.com + AOSP android-16.0.0_r1
+last_verified: '2026-06-04'
+last_verified_against: developer.android.com Android 17 behavior/features + source.android.com + AOSP android-16.0.0_r1
   + android15-6.6.98_r00 + Arm MTE docs
 confidence: medium
 sources:
@@ -68,19 +69,21 @@ reviewed_date: "2026-06-04"
 reviewed_by: openclaw-task6
 task6_reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
-task9_result: needs-rework
-task9_state: pending
+task9_result: auto-fixed
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: task9_pending
-task9_reviewed_date: 2026-05-16
+pipeline_stage: task6_pending
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-16T11:31:00+08:00'
-task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/deep-review/2026-05-16-11-deep-review.md。'
+last_task9_at: "2026-06-04T06:48:42+08:00"
+task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。补 Android 17 JobScheduler reason stats（Map<Integer, Duration>），修正 Android 17 证据来源边界。"
 last_task2b_lite_at: "2026-06-04"
+last_task9_autofix_at: "2026-06-04"
+last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 ---
 
 
@@ -332,17 +335,18 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 ### [自动发现] Android 17：已确认的功耗行为变更
 
-Android 17 (API 37) 在功耗管理方面的已确认变化(截至官方 behavior changes all-apps / target-37 页面):
+Android 17 (API 37) 在功耗管理方面的已确认变化(本轮按官方 behavior changes、features 与 API reference 复核):
 
 - **App memory limits**:系统可按进程设置内存上限,超出即终止。这和之前的 `android:largeHeap` 不同,是一个强制硬限制。
 - **Reduced Wakelocks for Idle Alarms**：新增 `OnAlarmListener` 版 `setExactAndAllowWhileIdle()`，允许 App 在 idle 状态下用 listener 回调替代持续 partial WakeLock，减少闹钟唤醒后的 CPU 活动窗口。
 - **ProfilingManager KILL_EXCESSIVE_CPU_USAGE**：`ProfilingManager` 新增 `KILL_EXCESSIVE_CPU_USAGE` trigger，系统可在检测到 App 长时间高 CPU 占用时主动终止进程。这是一个可观测性入口，也给了系统更强的干预手段。
+- **JobScheduler reason stats**：`JobScheduler.getPendingJobReasonStats()` 返回 `Map<Integer, Duration>`，把 `PENDING_JOB_REASON_*` 映射到累计 pending 时长，适合和 Android 16 的 pending reason / history API 一起看配额、约束和停止原因。
 
-这三项变化延续了前面版本的演进方向：逐步减少 App 对 CPU 的自主使用权，同时提供更好的可观测性。
+这些变化延续了前面版本的演进方向：逐步减少 App 对 CPU 的自主使用权，同时提供更好的可观测性。
 
 > ⚠️ **未核实研究线索**:有 external review 提到 Android 17 可能引入基于 ODPM/μJ 计量的"Energy Limiter"机制(按 App 统计后台能量消耗,超配额强杀)。该机制未在官方 behavior changes 页面中找到对应条目,目前不能作为确定平台特性。如果后续被官方确认,可在此处补充。
 
-[已验证: Android 17 behavior changes (all apps / target 37); source.android.com/docs/core/power]
+[已验证: Android 17 behavior changes / features / JobScheduler API reference; source.android.com/docs/core/power]
 
 ## GKI 对内核调度模块定制化的影响
 
@@ -389,7 +393,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 | 14 | 精确闹钟默认拒绝 + FGS 类型化 + 后台 Activity opt-in | 应用层（权限加严 + 类型化） |
 | 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 进入更快 | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
-| 17 | App memory limits + idle alarm wakelock 降低 + ProfilingManager KILL_EXCESSIVE_CPU_USAGE + sched_ext 实验方向 | 应用层（资源硬限制） + 内核层（可插拔） |
+| 17 | App memory limits + idle alarm wakelock 降低 + ProfilingManager KILL_EXCESSIVE_CPU_USAGE + JobScheduler reason stats + sched_ext 实验方向 | 应用层（资源硬限制） + 系统策略层（可观测性） + 内核层（可插拔） |
 
 这条演进线背后有三个趋势:
 
@@ -440,6 +444,8 @@ FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推
 - [GKI 官方文档](https://source.android.com/) [已验证: source.android.com 站点内容]
 - [sched_ext - LWN.net](https://lwn.net/Articles/922405/) [已验证: LWN]
 - [Android 15 Behavior Changes](https://developer.android.com/about/versions/15/behavior-changes-15) [已验证: 官方文档]
+- [Android 17 Features](https://developer.android.com/about/versions/17/features) [已验证: 官方文档]
+- [Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-17) [已验证: 官方文档]
 - [JobScheduler Reference](https://developer.android.com/reference/android/app/job/JobScheduler) [已验证: 官方文档]
 - [PerformanceHintManager API Reference](https://developer.android.com/reference/android/os/PerformanceHintManager) [已验证: 官方文档]
 - [Android cgroups and task profiles](https://source.android.com/docs/core/perf/cgroups) [已验证: source.android.com]

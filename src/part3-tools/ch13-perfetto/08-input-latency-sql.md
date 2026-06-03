@@ -1,6 +1,7 @@
 ---
 
 
+
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
@@ -10,8 +11,8 @@ drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs"
+last_verified: "2026-06-04"
+last_verified_against: "Perfetto stdlib docs android.input + android/input.sql + FrameTimeline trace config docs"
 confidence: high
 sources: 
   - type: official
@@ -21,25 +22,27 @@ sources:
 path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: pending
+task9_state: reviewed
+task9_result: auto-fixed
 
 last_task2b_at: "2026-04-26T08:55:00+08:00"
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T20:35:19+08:00"
+last_task9_at: "2026-06-04T06:48:42+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 finalized_date: "2026-04-27"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-18-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 1 / P1 0 / P2 0 / P3 0. P0: InputDispatcher oq/wq 队列语义与 AOSP 源码相反；wq 才是已发送后等待 App finish/ACK 的 waitQueue，oq 是待 publish outboundQueue。"
+task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 outline 中旧 Perfetto android.input 表名与指标名。"
+last_task9_autofix_at: "2026-06-04"
+last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -48,13 +51,13 @@ task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 1 / P1 0 / P2
 ## 要点
 
 ### 🔹 android.input 模块的 SQL 表结构
-input_events、input_connections 等核心表的 schema；字段含义与版本差异
+android_input_events、android_motion_events、android_key_events、android_input_event_dispatch 等核心表的 schema；字段含义与版本差异
 
 ### 🔹 端到端输入延迟的量化查询
 从 kernel touch event → InputDispatcher → App doFrame 的端到端时间计算 SQL
 
 ### 🔹 InputDispatcher 延迟分解
-dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前的输入队列堆积分析
+dispatch_latency_dur、handling_latency_dur、ack_latency_dur、total_latency_dur 等指标的 SQL 提取；ANR 前的 iq / oq / wq 队列堆积分析
 
 ### 🔹 Choreographer 与 Input 的时序关联
 将 input_event 时间戳与 doFrame callback 匹配；input → vsync → render 的流水线延迟 SQL
