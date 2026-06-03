@@ -68,18 +68,19 @@ reviewed_date: '2026-05-16'
 reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-05-16'
 task6_result: needs-rework
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: task6_pending
 task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-16T11:31:00+08:00'
 task9_review_notes: '2026-05-16 task9 deep-review: needs-rework。详见 logs/deep-review/2026-05-16-11-deep-review.md。'
+last_task2b_lite_at: "2026-06-04"
 ---
 
 
@@ -202,9 +203,9 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 | Working Set | 最近用过,未来几小时仍可能被用到 | Job 和 Alarm 会有轻度延后 |
 | Frequent | 最近几天用过,但不是高频 App | Job、Alarm 延后更明显,部分后台网络会受限 |
 | Rare | 多天未使用 | 只在较少的维护窗口中运行后台任务 |
-| Restricted | 长时间不活跃，或者资源消耗异常、行为异常 | 约束最重，Job、Alarm、网络访问都会进一步加严 |
+| Restricted* | 长时间不活跃，或者资源消耗异常、行为异常 | 约束最重，Job、Alarm、网络访问都会进一步加严 |
 
-[存疑: Task9 2026-05-16 已指出 Android 9 公共 bucket 不包含 `Restricted`，当前表格混入了后续版本常量，交 Task2B 按版本边界拆分。]
+\* `STANDBY_BUCKET_RESTRICTED = 45` 在 Android 9（API 28）中不存在，AOSP `android-9.0.0_r61` 的 `UsageStatsManager` 只定义到 `STANDBY_BUCKET_RARE = 40`。Restricted bucket 从 Android 12（API 31）起加入。表格按最新常量列出以展示完整演进，但 Android 9 设备上只有 Active / Working Set / Frequent / Rare 四个桶。
 
 这里最容易写错的地方有两个。第一,Restricted 不是"从未运行",这个语义属于 Never bucket。第二,Restricted 的触发条件在不同 Android 版本里有调整,既看最近是否被使用,也看系统是否认定它存在异常耗电或异常行为,所以文档里更适合把它写成"更严格的后台限制状态",不要写成单一原因。
 
@@ -213,8 +214,8 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 ```java
 UsageStatsManager usm = getSystemService(UsageStatsManager.class);
 int bucket = usm.getAppStandbyBucket();
-// ACTIVE = 10, WORKING_SET = 20, FREQUENT = 30, RARE = 40, RESTRICTED = 45
-// AOSP 还定义了 @SystemApi 的 STANDBY_BUCKET_NEVER = 50,表示 installed but never launched
+// ACTIVE = 10, WORKING_SET = 20, FREQUENT = 30, RARE = 40
+// Android 12+ 新增 RESTRICTED = 45; @SystemApi STANDBY_BUCKET_NEVER = 50
 ```
 
 如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行,先检查它的 Standby Bucket。Rare、Restricted,或者从未启动过的 Never,都可能解释为什么后台任务几乎没有运行机会。
@@ -334,10 +335,8 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 Android 17 (API 37) 在功耗管理方面的已确认变化(截至官方 behavior changes all-apps / target-37 页面):
 
 - **App memory limits**:系统可按进程设置内存上限,超出即终止。这和之前的 `android:largeHeap` 不同,是一个强制硬限制。
-- **Reduced Wakelocks for Idle Alarms**：idle alarm 触发的 WakeLock 持有时间被进一步压缩，减少闹钟唤醒后的 CPU 活动窗口。
+- **Reduced Wakelocks for Idle Alarms**：新增 `OnAlarmListener` 版 `setExactAndAllowWhileIdle()`，允许 App 在 idle 状态下用 listener 回调替代持续 partial WakeLock，减少闹钟唤醒后的 CPU 活动窗口。
 - **ProfilingManager KILL_EXCESSIVE_CPU_USAGE**：`ProfilingManager` 新增 `KILL_EXCESSIVE_CPU_USAGE` trigger，系统可在检测到 App 长时间高 CPU 占用时主动终止进程。这是一个可观测性入口，也给了系统更强的干预手段。
-
-[存疑: Task9 2026-05-16 已指出 `Reduced Wakelocks for Idle Alarms` 的官方语义不是压缩既有 idle alarm WakeLock 持有时长，而是新增 `OnAlarmListener` 版 allow-while-idle exact alarm，交 Task2B 修正。]
 
 这三项变化延续了前面版本的演进方向：逐步减少 App 对 CPU 的自主使用权，同时提供更好的可观测性。
 

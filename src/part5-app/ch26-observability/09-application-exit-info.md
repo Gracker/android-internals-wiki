@@ -6,23 +6,23 @@ status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-05-15"
-last_verified_against: "AOSP main + Android Developers docs + Clippings structure references"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs + Clippings structure references"
 confidence: medium
 polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-15T17:28:33+08:00"
-task2b_state: pending
+task2b_state: fixed
 sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md"
@@ -54,6 +54,8 @@ sources:
     path: "system/core/debuggerd/proto/tombstone.proto"
 tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
 related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-06-04"
 ---
 
 # 26.9 ApplicationExitInfo 与进程退出归因
@@ -124,7 +126,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 | 是否有系统现场附件 | `traceInputStream`、tombstone protobuf、ANR traces | 作为 Crash / ANR 样本的补偿证据 |
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
-[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 退出归因和稳定性指标的关系可以按“用户是否感知”和“是否可行动”拆开。`REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR` 通常属于强可行动事件；`REASON_LOW_MEMORY` 要结合 `importance` 判断，前台 LMK 和后台缓存回收不是同一个等级；`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED`、`REASON_PERMISSION_CHANGE` 多数不进入故障告警，只作为时间线背景。
 
@@ -133,7 +135,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`。官方文档说明，返回值按“最近到最旧”排序；`packageName = null` 表示查询调用方 UID 下的所有包；`pid = 0` 不按进程 ID 过滤；`maxNum = 0` 表示返回所有匹配记录。系统内部以环形缓冲保存历史记录，因此查询结果不是长期审计日志。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)]
-[已验证: AOSP main, frameworks/base/core/java/android/app/ActivityManager.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
 
 这段示例代码展示下次启动时怎样拉取退出记录，并把 trace 附件落到 App 私有目录。重点看三处：只在 API 30+ 调用；`traceInputStream` 可能为 `null`；附件写入后再交给异步上传任务处理。
 
@@ -182,7 +184,7 @@ private fun copyTraceIfPresent(
 
 `reason` 是归因的主字段。AOSP 中 `REASON_CRASH = 4`、`REASON_CRASH_NATIVE = 5`、`REASON_ANR = 6`、`REASON_LOW_MEMORY = 3`；`REASON_SIGNALED = 2` 表示进程因 OS signal 退出，例如 `SIGKILL`。官方文档也说明，并非所有设备都支持低内存 kill 上报；不支持时，内存压力导致的 kill 可能只表现为 `REASON_SIGNALED`。
 
-[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java — REASON_* 常量]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java — REASON_* 常量]
 
 `importance` 记录退出前的进程重要性。它不等价于页面状态，但能帮助区分“前台用户正在操作时退出”和“后台缓存进程被系统回收”。端侧还应保存自己的生命周期标记，例如最近 Activity resume 时间、是否存在前台服务、是否完成首帧、是否处于升级迁移窗口。
 
@@ -194,7 +196,7 @@ private fun copyTraceIfPresent(
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo#getTraceInputStream]
 [已验证: 官方文档, developer.android.com/ndk/guides/debug]
-[已验证: AOSP main, system/core/debuggerd/proto/tombstone.proto]
+[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/proto/tombstone.proto]
 
 ANR 样本的拼接方式：
 
