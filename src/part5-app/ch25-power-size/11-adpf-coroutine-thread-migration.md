@@ -2,27 +2,27 @@
 title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
-pipeline_stage: task6_pending
-task6_state: reviewed
+pipeline_stage: 'task6_pending'
+task6_state: 'revisiting'
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
-task9_state: pending
+task9_state: 'reviewed'
 last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
 last_task6_at: "2026-06-03T09:15:06+08:00"
-task9_result: needs-rework
+task9_result: 'auto-fixed'
 task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注内容。送 Task9 重检。"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-05-16T02:30:40+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-16-02-deep-review.md"
-task2b_state: fixed
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-06-04'
+last_task9_at: '2026-06-04T00:20:00+08:00'
+last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
+task2b_state: 'fixed'
 task2b_result: fixed
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: '2026-06-04'
+last_verified_against: 'AOSP android-15.0.0_r1/android-16.0.0_r1 + Android API docs'
 confidence: medium
 tags: ["adpf", "performancehintmanager", "coroutine", "power", "threading"]
 related_chapters: ["5.9", "8.6", "11.2", "25.1", "25.2"]
@@ -43,6 +43,8 @@ sources:
   - type: structure
     path: "Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md"
 task2b_fixed_at: "2026-06-03T08:56:35+08:00"
+last_task9_autofix_at: '2026-06-04'
+task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。修正线程优先级权限说明，并把参考摘要里的 WorkDuration API 边界校正为 API 35 flagged；回到 Task6 复审。'
 ---
 
 # 25.11 ADPF Hint Session 与协程线程迁移
@@ -88,8 +90,8 @@ class AdpfWorker(
 ) : Closeable {
     private val executor = Executors.newSingleThreadExecutor { task ->
         Thread {
-            // 线程优先级按场景设定；THREAD_PRIORITY_DISPLAY 可能因缺少 SCHED_FIFO 权限抛 SecurityException
-            // 建议在验证权限后选定优先级，或在 catch 后降级到 THREAD_PRIORITY_DEFAULT
+            // 线程优先级按场景设定；如果调用 Process.setThreadPriority() 提升到负 nice 值，
+            // 生产代码需要捕获 SecurityException 并降级到 THREAD_PRIORITY_DEFAULT
             task.run()
         }.apply { name = "adpf-worker" }
     }
@@ -117,7 +119,7 @@ class AdpfWorker(
 }
 ```
 
-这段示意代码把 ADPF 的线程集合限制在一个固定 worker 上。线程优先级按业务场景设定，`THREAD_PRIORITY_DISPLAY` 等高优先级可能因缺少 `SCHED_FIFO` 权限抛 `SecurityException`；生产代码应在 catch 后降级到 `THREAD_PRIORITY_DEFAULT` 或其他可用优先级。牺牲调度弹性换 tid 可解释性是工程上合理的取舍。如果任务本身需要在多个线程并行，应显式维护一个小规模固定 executor，在线程全部启动后一次性 `setThreads(intArrayOf(...))`。
+这段示意代码把 ADPF 的线程集合限制在一个固定 worker 上。线程优先级按业务场景设定，`THREAD_PRIORITY_DISPLAY` 等负 nice 值可能因权限限制抛 `SecurityException`；生产代码应在 catch 后降级到 `THREAD_PRIORITY_DEFAULT` 或其他可用优先级。牺牲调度弹性换 tid 可解释性是工程上合理的取舍。如果任务本身需要在多个线程并行，应显式维护一个小规模固定 executor，在线程全部启动后一次性 `setThreads(intArrayOf(...))`。
 
 ## `setThreads`、`close`、`reportActualWorkDuration` 的边界
 
@@ -212,7 +214,7 @@ ADPF 与 Coroutine 可以组合，但前提是把“协程代码”落到稳定�
 ### ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md
 - 类型：DeepResearch 调研结果
-- 摘要：PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；WorkDuration 为 API 36 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。
+- 摘要：PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；reportActualWorkDuration(WorkDuration) 为 API 35 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。
 - 注入时间：2026-05-27
 - 价值：源码级验证 ADPF hint session 版本边界，纠正 AIW 章节中的版本标注错误，含 AOSP android-16.0.0_r1 锚点
 
