@@ -36,10 +36,10 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 4 处（outline 扩展占位 1、措辞精修 3）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-15T03:11:00+08:00"
@@ -53,6 +53,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-05-15T03:25:00+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-03-deep-review.md
+task2b_result: fixed
 ---
 
 # 线上问题排查方法论
@@ -132,7 +133,25 @@ Trace 适合回答“时间花在哪里”和“线程为什么没跑”。线�
 [已验证: 官方文档, developer.android.com/tools/perfetto]
 [详见 13.2 节]
 
-发布版 App 不能假设自己可以在用户设备上随意抓系统级 Trace。Perfetto 是 Android 10 之后的系统追踪工具，官方文档推荐用 Perfetto viewer 分析慢启动、慢转场、UI jank 等性能问题；但完整系统 Trace 通常依赖 adb、系统工具、用户操作或特定权限。线上方案要把能力分成三个等级：
+发布版 App 不能假设自己可以在用户设备上随意抓系统级 Trace。Perfetto 是 Android 10 之后的系统追踪工具，官方文档推荐用 Perfetto viewer 分析慢启动、慢转场、UI jank 等性能问题；不同 Android 版本下获取完整系统 Trace 的手段不一样，需要按版本分层处理。
+
+**Android 线上诊断能力按版本分层**：
+
+| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
+|------|---------------------------|---------------------|----------------------|
+| 系统 Trace 获取 | 需 adb/用户协助/系统权限 | `ProfilingManager.requestProfiling()` App 程序化请求 | `ProfilingManager` + `ProfilingTrigger` 事件触发 |
+| 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
+| ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
+| Native Tombstone | ✅ (API 31+) | ✅ | ✅ |
+| 事件触发 Profiling | ❌ | ❌ | `ProfilingTrigger`（ANR/fully drawn/主动请求） |
+
+**Android 10-14**：完整系统 Trace 依赖 adb、bugreport 或用户协助。只能在问题影响面大、复现路径清楚且用户或测试设备可配合时抓取。线上方案更多依赖 App 内埋点（`Trace.beginSection()`、自有耗时埋点）和服务端聚合。
+
+**Android 15+**：`ProfilingManager.requestProfiling()` 可由 App 程序化请求 system trace、heap dump 或 stack profiling，结果写入 App 数据目录。有 rate limiter 保护（结果去重、频率控制），不影响用户数据。推荐在连续 profiling 场景提前开始、及时取消。详细 API 签名见 §26.2 附录 A.2。
+
+**Android 16+**：`ProfilingTrigger` 可注册 ANR、`APP_FULLY_DRAWN`、App 主动请求等事件触发追踪，自动在事件发生时采集 system trace，配合 rate limiter 控制频次。详细触发类型和注册方法见 §26.2 附录 A.3。
+
+线上方案仍然要把能力分成三个等级：
 
 - **常驻轻量标记**：在启动、页面切换、列表刷新、图片加载、数据库迁移、网络请求等位置写入 `Trace.beginSection()` / `Trace.endSection()` 或自有耗时埋点。它不负责长时间保存系统 Trace，只负责让本地 Trace 和线上指标能对上阶段名。
 - **触发式 App 内证据**：对少量目标用户打开函数耗时、主线程卡顿、请求耗时、I/O 摘要、锁等待摘要。只保留聚合结果和短窗口明细，避免把每次方法调用都上报。
@@ -178,7 +197,7 @@ Google Play 的 staged rollout 支持暂停发布；Firebase Remote Config rollo
 - **现象**：用户看到的结果、错误文案、截图或录屏。
 - **范围**：影响用户数、版本、设备、系统、渠道、地区、网络。
 - **时间线**：首报时间、指标开始异常时间、最近一次发版或配置变更时间。
-- **证据**：日志文件、Crash / ANR report、bug report、Trace、服务端日志索引、用户反馈单。
+- **证据**：日志文件、Crash / ANR report、bug report、Trace、服务端日志索引、用户反馈单。Android 11+ 补充 `ApplicationExitInfo` 快照（`getHistoricalProcessExitReasons()` 返回的退出原因、时间戳、importance 和 PSS/RSS）。与 SDK 上报的 event/sessionId 按 pid + 时间戳窗口去重，避免同一崩溃重复计数。
 - **变更**：App 发版、热修复、远程配置、服务端发布、运营活动、第三方 SDK 版本。
 - **处置**：已打开的日志开关、灰度策略、回滚动作、下一次观察窗口。
 - **结论**：定位到的模块、修复方式、验证方式、后续防复发项。
