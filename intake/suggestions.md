@@ -1,5 +1,21 @@
 # Task 9 Suggestions - 2026-06-03 07:20
 
+## Blocked by Task2B Verifier (2026-06-03)
+
+### Task2B 阻塞章节
+
+**09-finalizer-referencequeue.md**
+- **Issue**: Task9 标记 needs-rework 但 queue 中无对应条目
+- **Current**: pipeline_stage=task6_pending, task9_result=needs-rework
+- **Status**: blocked-need-rework-evidence
+- **Action**: 待 Task2B 处理返工需求
+
+**27-apm-client-architecture.md**
+- **Issue**: Task9 标记 needs-rework 但 queue 中无对应条目
+- **Current**: pipeline_stage=task6_pending, task9_result=needs-rework
+- **Status**: blocked-need-rework-evidence
+- **Action**: 待 Task2B 处理返工需求
+
 ## P0 Priority Suggestions
 
 ### Measure (19.09)

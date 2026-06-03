@@ -38,7 +38,7 @@ task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 section: "10.1"
 status: finalized
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 task9_result: fixed
 task2b_state: fixed
