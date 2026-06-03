@@ -13,7 +13,7 @@ task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-06-02"
+task6_reviewed_date: "2026-06-03"
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -26,28 +26,32 @@ sources:
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_result: "auto-fixed"
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-05-31"
+last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
+task6_state: "reviewed"
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T17:23:00+08:00"
+last_task9_at: "2026-06-03T07:20:00+08:00"
 task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
-last_task6_audit: "2026-05-23"
-last_task6_at: "2026-06-02T18:08:00+08:00"
+last_task6_audit: "2026-06-03"
+last_task6_at: "2026-06-03T09:15:06+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-06-02-18-review.md"
-task6_review_notes: "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 3 处（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
-task6_l1_l2_fixes: 3
+last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
+task6_review_notes: "2026-06-03 09:11 Task6 revisiting-review：无新增 L1/L2 问题。Task9 auto-fix 已确认无写作质量问题。满足 auto-promotion 条件，晋升 finalized。（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
-last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
+task6_auto_promoted: true
+last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-02"
@@ -610,7 +614,12 @@ API 36.1：
 API 37 (Android 17)：
 - `TRIGGER_TYPE_OOM`：OOM 发生时
 - `TRIGGER_TYPE_COLD_START`：冷启动时
-- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT`：CPU 过量、系统异常检测和兼容性异常场景
+- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：CPU 过量使用时
+- `TRIGGER_TYPE_ANOMALY`：系统异常检测触发时
+- `TRIGGER_TYPE_APP_COMPAT`：应用兼容性异常场景触发时
+- `TRIGGER_TYPE_APP_FULLY_DRAWN`：应用绘制完成时可交互
+- `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`：应用请求运行时 trace
+- `TRIGGER_TYPE_KILL_FORCE_STOP` / `TRIGGER_TYPE_KILL_RECENTS` / `TRIGGER_TYPE_KILL_TASK_MANAGER`：用户主动停止、移出最近任务或任务管理器停止触发
 
 **使用模式**：
 ```java

@@ -70,6 +70,8 @@ review_round: 4
 last_task2b_verifier_at: "2026-06-02T23:25:00+08:00"
 task2b_verifier_note: "2026-06-02 23:25 Verifier：queue 无 pending；Task6 已复审通过，清理旧 task9_result=needs-rework，保持 Task9 pending。"
 last_task2b_verifier_log: logs/rework/2026-06-02-23-task2b-verifier.md
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 
 # 5.14 Android 17 ML Runtime 与 NPU 访问边界
@@ -229,7 +231,7 @@ Perfetto 默认能稳定看到线程调度、CPU / GPU 频率、内存水位和 
 
 ADPF 与 NPU 的关系也要谨慎。ADPF 更适合表达应用线程的工作时长和性能目标，不等于应用能直接控制 NPU 调度。涉及协程线程迁移和 hint session 绑定时，见 25.11 节；涉及持续推理的频率组合和热衰减时，见 5.13 节。
 
-后台推理还有一层约束：JobScheduler、WorkManager、前台服务限制和电池策略会决定任务什么时候能跑，NPU feature 只说明设备能力，不替代后台执行资格。把模型任务放进后台前，先确认它是用户可见工作、延迟容忍工作，还是必须等充电 / 空闲窗口再执行的工作。
+后台推理还有一层约束：JobScheduler、WorkManager、前台服务限制和电池策略会决定任务什么时候能跑，NPU feature 只说明设备能力，不替代后台执行资格。把模型任务放进后台前，先确认它的属性：是用户可见的即时工作，能接受一定延迟的批量任务，还是只能在充电或空闲窗口执行的后台工作。
 
 ## 公开 API、预览能力与闭源组件边界
 

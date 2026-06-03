@@ -96,3 +96,10 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 - 摘要：Android 输入链路跨进程流水线完整解析，含 InputReader/InputDispatcher/socketpair 传输、Choreographer CALLBACK_INPUT 批量消费、触摸 Resampling 精确常量（AOSP Resampler.cpp）、MotionPredictor TFLite 模型架构、FrameTimeline jank_type 归因，附 Perfetto stdlib android.input SQL 范式。
 - 注入时间：2026-06-01
 - 价值：输入链路最完整的源码级分析，Resampling 常量和 MotionPredictor TFLite 架构细节在公开资料中罕见
+
+### Android Input/Touch/Scroll 性能与延迟深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统梳理 Android input 全链路：从硬件中断→内核 evdev→InputReader/InputDispatcher(socketpair 非 Binder)→App InputChannel→ViewRootImpl InputStage 责任链→Choreographer CALLBACK_INPUT 批量消费。量化三种延迟口径(end-to-end/InputDispatcher 分段/jank 归因)，给出 MotionPredictor(TFLite 模型)、触摸 resampling 精确常量、FrameTimeline jank_type 归因方案。是 SmartPerfetto 输入分析的高价值参考。
+- 注入时间：2026-06-03
+- 价值：为输入系统章节提供端到端链路梳理和 Perfetto 可观测性方案参考

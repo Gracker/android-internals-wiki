@@ -3,15 +3,17 @@ title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-06-03"
 task9_state: pending
-last_task6_at: "2026-05-16T02:11:00+08:00"
+last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
+last_task6_at: "2026-06-03T09:15:06+08:00"
 task9_result: needs-rework
+task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注内容。送 Task9 重检。"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-16"
+task9_reviewed_date: "2026-06-03"
 last_task9_at: "2026-05-16T02:30:40+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-02-deep-review.md"
 task2b_state: fixed

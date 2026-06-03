@@ -712,3 +712,73 @@ ORDER BY slice.dur DESC;
 - Layout Inspector（Android Studio 内置）
 - Systrace / Perfetto — 布局 pass 的 trace 标签
 - Lint — 检测过度嵌套、无用 View、可用 ViewStub 替换的布局
+
+
+---
+
+<!-- AIW-源码调研-2026-06-03 -->
+### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 17 API 37）
+
+**来源**：每日源码调研（cron:d78cfef0，id=6，关联 §6.1 View系统优化）
+**时间**：2026-06-03 | 源码级一手验证（AOSP android-17.0.0_r1）
+
+#### ViewTreeObserver 核心机制
+
+ViewTreeObserver（VTO）是 View 框架中连接 View 树生命周期与外部监听者的核心机制。核心源码：
+
+- `frameworks/base/core/java/android/view/ViewTreeObserver.java`
+- `frameworks/base/core/java/android/view/ViewRootImpl.java` — performTraversals() 入口
+
+**关键成员**：
+
+```java
+private OnGlobalLayoutListener mOnGlobalLayoutListener;
+private OnScrollChangedListener mOnScrollChangedListener;
+private boolean mAlive = true;  // View 从窗口剥离后设为 false，丢弃所有待处理回调
+```
+
+**全局布局回调触发链**：
+
+```
+View.requestLayout()
+  -> ViewRootImpl.requestLayout()
+    -> ViewRootImpl.scheduleTraversals()
+      -> Choreographer.postCallback(Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, null)
+        -> ViewRootImpl.doTraversal()
+          -> ViewRootImpl.performTraversals()
+            -> View.layout() -> View.onLayout()
+              -> onGlobalLayoutChanged()
+```
+
+#### Android 17 性能优化
+
+**PFLAG_FORCE_LAYOUT 精确传播**（View.java）：
+
+```java
+if ((mPrivateFlags & PFLAG_FORCE_LAYOUT) == 0 && !layoutRequested) {
+    return;  // 跳过不必要的 measure/layout pass
+}
+```
+
+只有真正调用了 requestLayout() 的 View 分支才会执行完整 measure/layout，而非整棵 View 树。
+
+**ViewGroup layoutMode 快速路径**（ViewGroup.java）：
+
+```java
+if (mLayoutMode != LAYOUT_MODE_UNDEFINED) {
+    // 跳过 measure，直接 layout 定位
+}
+```
+
+#### 常见性能陷阱
+
+1. **OnGlobalLayoutListener 中 requestLayout**：每次布局变化都触发重新布局，O(n²) 复杂度。改用 addOnPreDrawListener。
+2. **未移除监听者导致内存泄漏**：View 从窗口剥离时 VTO 的 mAlive=false 会丢弃回调，但监听者本身仍持有 View 引用。必须在 Lifecycle onDestroy 中显式 removeOnGlobalLayoutListener。
+
+#### 参考源码文件
+
+- `frameworks/base/core/java/android/view/ViewTreeObserver.java`（AOSP android-17.0.0_r1）
+- `frameworks/base/core/java/android/view/ViewRootImpl.java`（AOSP android-17.0.0_r1）
+- `frameworks/base/core/java/android/view/View.java`（AOSP android-17.0.0_r1）
+- `frameworks/base/core/java/android/view/ViewGroup.java`（AOSP android-17.0.0_r1）
+<!-- AIW-源码调研-2026-06-03 -->

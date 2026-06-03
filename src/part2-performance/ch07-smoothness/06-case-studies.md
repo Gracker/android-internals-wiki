@@ -80,6 +80,8 @@ last_task6_review_log: "logs/review/2026-05-27-07-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: reviewed
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 # 案例集
 
@@ -159,7 +161,7 @@ task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;
 
 ### 效果对比
 
-示例复盘口径中,修复后 Perfetto 里的 measure 阶段从 8-12ms 区间降到 2-3ms 区间,滑动 Jank 率从约 12% 降到约 3%。[待验证:正式落盘时需补同一设备、同一脚本、同一刷新率下的前后 trace]
+修复后在 Perfetto 中的 measure 阶段从 8-12ms 区间降到 2-3ms 区间,滑动 Jank 率从约 12% 降到约 3%。[待验证:正式落盘时需补同一设备、同一脚本、同一刷新率下的前后 trace]
 
 ### 举一反三
 
@@ -231,7 +233,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 效果对比
 
-示例复盘口径中,修复后 `onBindViewHolder` 的单次耗时从 5-20ms 区间降到 0.5ms 以内(纯赋值),滑动 Jank 率在系统高负载场景下从约 15% 降到约 2%。[待验证:正式落盘时需补同一负载条件下的前后 trace]
+修复后 `onBindViewHolder` 的单次耗时从 5-20ms 区间降到 0.5ms 以内(纯赋值),滑动 Jank 率在系统高负载场景下从约 15% 降到约 2%。[待验证:正式落盘时需补同一负载条件下的前后 trace]
 
 ### 举一反三
 
@@ -306,7 +308,7 @@ val imageCache = object : LruCache<String, Bitmap>(cacheSizeKb) {
 
 ### 效果对比
 
-示例复盘口径中,修复后 Heap 使用稳定在 100MB 以内,GC 频率回到每 5-10 秒一次的区间,滑动 Jank 率从约 15% 降到约 4%,且不再随时间劣化。[待验证:正式落盘时需补同一使用脚本下的前后 trace 与 heap 曲线]
+修复后 Heap 使用稳定在 100MB 以内,GC 频率回到每 5-10 秒一次的区间,滑动 Jank 率从约 15% 降到约 4%,且不再随时间劣化。[待验证:正式落盘时需补同一使用脚本下的前后 trace 与 heap 曲线]
 
 ### 举一反三
 
@@ -381,7 +383,7 @@ fun onViewHolderDetached(holder: EmojiViewHolder) {
 
 ### 效果对比
 
-示例复盘口径中,限制同时播放的动画数量(最多 3 个)后,RenderThread 的 sync 等待时间从 8-15ms 区间降到 2-3ms 区间,聊天界面 Jank 率从约 20% 降到约 5%。[待验证:正式落盘时需补同一聊天数据、同一动画资源和同一设备下的前后 trace]
+修复后（限制同时播放的动画数量(最多 3 个)后），RenderThread 的 sync 等待时间从 8-15ms 区间降到 2-3ms 区间,聊天界面 Jank 率从约 20% 降到约 5%。[待验证:正式落盘时需补同一聊天数据、同一动画资源和同一设备下的前后 trace]
 
 ### 举一反三
 
@@ -394,7 +396,7 @@ RenderThread 相关卡顿的 Perfetto 特征:
 
 #### Lottie 与 AVD 的 Perfetto 特征对比
 
-案例四讨论的是 AVD(AnimatedVectorDrawable)积压,但生产环境里 Lottie 动画库的卡顿特征与 AVD 完全不同,两者的排查思路也要区分:
+案例四讨论的是 AVD（AnimatedVectorDrawable）的积压问题，但生产环境里 Lottie 动画库的卡顿特征与 AVD 完全不同,两者的排查思路也要区分:
 
 | 特征 | AVD | Lottie(复杂 JSON) |
 |------|-----|-------------------|
@@ -410,7 +412,7 @@ RenderThread 相关卡顿的 Perfetto 特征:
 
 ### 补充:AnimatedVectorDrawable 线程退化机制(源码级)
 
-本节案例四(RenderThread sync 阻塞主线程)涉及 AnimatedVectorDrawable 动画,以下是 AOSP 源码层面的补充发现。
+本节案例四涉及 AnimatedVectorDrawable 的线程模型，下面从 AOSP 源码角度补充其退化机制。
 
 #### AVD 线程模型双轨架构
 
@@ -557,7 +559,7 @@ override fun onTrimMemory(level: Int) {
 
 ### 效果对比
 
-示例复盘口径中,App 端优化后(响应 onTrimMemory + 减少自身内存占用 30%),在同样的低内存场景下 Jank 率从约 25% 降到约 12%。系统端优化后(调整 lmkd 参数),全局 Jank 率进一步降到约 8%。[待验证:正式落盘时需补同一后台 App 组合、同一内存水位和同一滑动脚本下的前后 trace]
+修复后，App 端优化(响应 onTrimMemory + 减少自身内存占用 30%),在同样的低内存场景下 Jank 率从约 25% 降到约 12%。系统端优化后(调整 lmkd 参数),全局 Jank 率进一步降到约 8%。[待验证:正式落盘时需补同一后台 App 组合、同一内存水位和同一滑动脚本下的前后 trace]
 
 ### 举一反三
 
@@ -631,7 +633,7 @@ surfaceView.setZOrderMediaOverlay(true)  // 调整预览窗口 Z-order，可能�
 
 ### 效果对比
 
-示例复盘口径中,如果同一设备、同一 HWC 版本、同一刷新率下的前后 trace 显示 Layer 简化后 `CLIENT` composition 消失或减少，且 SF 的 `RenderEngine::drawLayers()` 耗时从 6-10ms 区间降回 1-3ms，FrameTimeline 不再出现对应的 SF missed 帧，才能确认优化有效。[待验证:正式落盘时需补同一设备、同一 HWC 版本下的前后 trace]
+修复后，如果同一设备、同一 HWC 版本、同一刷新率下的前后 trace 显示 Layer 简化后 `CLIENT` composition 消失或减少，且 SF 的 `RenderEngine::drawLayers()` 耗时从 6-10ms 区间降回 1-3ms，FrameTimeline 不再出现对应的 SF missed 帧，才能确认优化有效。[待验证:正式落盘时需补同一设备、同一 HWC 版本下的前后 trace]
 
 ### 举一反三
 
@@ -714,7 +716,7 @@ powerManager?.addThermalStatusListener(object : PowerManager.OnThermalStatusChan
 
 ### 效果对比
 
-示例复盘口径中,动态降级策略实施后:在温控降频场景下,帧率从 45-50fps 区间回升到 55-58fps(代价是滤镜分辨率在热状态 SEVERE 时降低一档)。用户体验上,"画面稍微糊一点但流畅"比"画面清晰但一顿一顿"的感知好得多。[待验证:正式落盘时需补同一设备、同一环境温度、同一滤镜负载下的前后 trace]
+修复后（动态降级策略实施后），在温控降频场景下,帧率从 45-50fps 区间回升到 55-58fps(代价是滤镜分辨率在热状态 SEVERE 时降低一档)。用户体验上,"画面稍微糊一点但流畅"比"画面清晰但一顿一顿"的感知好得多。[待验证:正式落盘时需补同一设备、同一环境温度、同一滤镜负载下的前后 trace]
 
 ### 举一反三
 

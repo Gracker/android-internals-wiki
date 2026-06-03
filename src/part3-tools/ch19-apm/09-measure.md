@@ -35,20 +35,23 @@ sources:
 - type: official
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_rework_at: "2026-05-31T20:52:00+08:00"
+task2b_result: "fixed-lite"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
 task2b_fixed_at: "2026-05-31T20:52:00+08:00"
 last_task2b_at: "2026-05-31T20:52:00+08:00"
+last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-05-31"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-31T21:20:00+08:00"
+last_task9_at: "2026-06-03T07:20:00+08:00"
 last_task9_autofix_at: "2026-05-31"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-15-audit.md"
 task9_review_notes: "2026-05-31 Task9 deep review: AUTO-FIX Measure 许可证与自托管依赖口径，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问题修正 Measure SDK schema、ANR/native 边界与 retention 来源。"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
@@ -59,7 +62,7 @@ last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: "reviewed"
 pipeline_stage: "task9_pending"
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 1 处（会话回放→会话回查）；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 ---
@@ -144,8 +147,8 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 | 能力 | Measure 事件 / 字段 | 端侧来源 | 适合判断 | 边界 / 不支持项 |
 |---|---|---|---|---|
 | Crash（Java / Kotlin） | `exception` 事件，含 severity、exception type/message、thread、stack frames | `Thread.UncaughtExceptionHandler` | 崩溃大盘趋势、版本回归、Top-N 聚合 | 混淆堆栈需要 mapping 文件上传后才能还原 |
-| Crash（Native） | 暂无官方 Android native crash reporting 事件 | 未实现 | 不作为 Measure 当前 Android 能力评估 | 官方文档明确 C/C++ native crash 尚未支持；API 31+ App Exit Info tombstone 只能作为后续方向，不能写成现有能力 |
-| ANR | `anr` 事件，含线程 dump、前后台状态、相关 app-exit 信息 | SDK 监听 `SIGQUIT`；API 30+ 可结合 `ApplicationExitInfo` app exit 记录 | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下没有 `ApplicationExitInfo`；Measure 的 ANR 捕获重点是 SIGQUIT / Signal Catcher 旁路，不是普通主线程 Watchdog 轮询 |
+| Crash（Native） | 暂无官方 Android native crash reporting 事件 | 未实现 | 不作为 Measure 当前 Android 能力评估 | 官方文档明确 C/C++ native crash 尚未支持，仅支持 Java/Kotlin crash；API 31+ App Exit Info tombstone 只能作为后续方向，不能写成现有能力 |
+| ANR | `anr` 事件，含线程 dump、前后台状态、相关 app-exit 信息 | SDK 监听 `SIGQUIT`；API 30+ 可结合 `ApplicationExitInfo` app exit 记录 | ANR 趋势、页面关联、会话上下文回查 | Android 10 以下没有 `ApplicationExitInfo`；Android 10-11 也仅有 ApplicationExitInfo 但无完整 ANR 支持直到 API 31+；Measure 的 ANR 捕获重点是 SIGQUIT / Signal Catcher 旁路，不是普通主线程 Watchdog 轮询 |
 | HTTP | `http` 事件，含 url / method / status_code / request_duration / response_body（opt-in） | OkHttp Interceptor 或 `URLConnection` 包装 | 慢接口定位、错误率趋势、请求与崩溃时序关联 | body 采集默认关闭，需白名单配置；URL pattern 归并粒度由 dashboard 配置 |
 | 启动时间 | `cold_launch` / `warm_launch` / `hot_launch` 事件，含 duration_ms | SDK 启动探针 + Activity 生命周期 | 启动耗时趋势、版本对比、P90/P95 监控 | 冷启动起点依赖 SDK 初始化时机，pre-SDK 耗时不纳入 |
 | App size | 构建版本和上传产物元数据 | Gradle 构建、mapping / symbol 上传流程 | 包体积趋势、版本回归辅助判断 | 该项来自构建侧元数据；需要 CI/CD 集成才能持续跟踪 |

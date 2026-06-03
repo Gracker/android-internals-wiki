@@ -39,3 +39,10 @@
 - 摘要：基于 android-17.0.0_r1 源码分析 Configuration 变更分发路径：ConfigurationChangeToker->ATMS->ActivityThread->ResourcesManager->ResourcesImpl。确认 AOSP 无独立场景感知框架（ATOMSCENE 为 OEM 定制），Configuration 体系是 AOSP 的场景感知体现。
 - 注入时间：2026-06-01
 - 价值：明确了 Android 17 Configuration 分发源码锚点，澄清 OEM 场景感知框架与 AOSP 的边界
+
+### Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：完整梳理 Binder IPC 三层架构：Java 层 Binder/BinderProxy → JNI(android_util_Binder.cpp) → Native BpBinder/BBinder → IPCThreadState.talkWithDriver() → ioctl(BINDER_WRITE_READ)。详解 BC_/BR_ 命令协议、flat_binder_object 类型编码、Parcel 序列化、死亡通知机制、线程池管理。源码锚点 android-17.0.0_r1，可作为 Binder 全链路阅读导航。
+- 注入时间：2026-06-03
+- 价值：为AOSP 性能优化章节提供端到端链路梳理和 Perfetto 可观测性方案参考
