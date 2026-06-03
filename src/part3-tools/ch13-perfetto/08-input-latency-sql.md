@@ -5,7 +5,7 @@
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
