@@ -30,11 +30,11 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
-last_task2b_at: "2026-05-18T15:23:37+08:00"
-task2b_state: pending
+last_task2b_at: "2026-06-03T21:33:00+08:00"
+task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
@@ -153,7 +153,9 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 **2+6（两个大核 + 六个性能核）**
 
-高通骁龙 8 Elite（2024 年底发布）采用了一种更激进的配置：2 个 Oryon Prime 核心（4.32GHz）+ 6 个 Oryon Performance 核心（3.53GHz）。它完全去掉了传统意义上的"小核"，所有核心都有较强的性能输出，但 Prime 核心在频率和微架构上仍然更激进。从 capacity 归一化标定看，Performance 核的算力约为 837（以 Prime 核 1024 为基准），级差只有约 18%。这使得 EAS 的迁核逻辑更倾向于负载均衡而非节能压制——核心之间的能效差异本身就小了，“跑错了核”的惩罚远低于传统大小核架构。这种设计反映了厂商对"全大核"趋势的探索——随着工艺进步和功耗控制的改善，低性能小核的价值在下降。
+高通骁龙 8 Elite（2024 年底发布）采用了一种更激进的配置：2 个 Oryon Prime 核心（4.32GHz）+ 6 个 Oryon Performance 核心（3.53GHz）。它完全去掉了传统意义上的"小核"，所有核心都有较强的性能输出，但 Prime 核心在频率和微架构上仍然更激进。从 capacity 标定看，Performance 核与 Prime 核之间的级差仅为约 18%（Prime 核 capacity≈1024，Performance 核 capacity≈837），“跑错了核”的惩罚远低于传统大小核架构。这使得 EAS 的迁核逻辑更倾向于负载均衡而非节能压制。
+
+> ⚠️ **容量数值标注**：capacity 值约 837/1024 是基于骁龙 8 Elite 公开技术规格的外推估算，并非直接从设备的 `/sys/devices/system/cpu/cpu*/cpu_capacity` 或内核 EM/DT 中读取的实测值。不同设备、不同固件版本的 capacity 标定可能不同。如需对特定设备做精确分析，应从该设备的 cpu_capacity sysfs 节点或 Energy Model 中获取一手数据。这种设计反映了厂商对"全大核"趋势的探索——随着工艺进步和功耗控制的改善，低性能小核的价值在下降。
 
 **全大核设计**
 
@@ -273,23 +275,37 @@ schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CP
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 {
     unsigned long min, max;
-    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu) + boost;
+    // ① 以 sched_ext CPU perf target 为初值
+    unsigned long util = scx_cpuperf_target(sg_cpu->cpu);
+
+    // ② 如果当前 CPU 未全部被 sched_ext 接管，叠加 CFS util
+    if (!scx_switched_all())
+        util += cpu_util_cfs_boost(sg_cpu->cpu);
 
     max = arch_scale_cpu_capacity(sg_cpu->cpu);
-    // effective_cpu_util 合并 CFS + RT + DL 利用率，
-    // 并根据 FREQUENCY_UTIL 类型应用 uclamp 约束
-    // 返回值即为用于频率选择的最终 util
+    // ③ effective_cpu_util 合并 CFS + RT + DL 利用率，
+    //    并根据 FREQUENCY_UTIL 类型应用 uclamp 约束
     util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
+
+    // ④ boost 在 effective_cpu_util 之后叠加，作为最低性能保障
+    util = max(util, boost);
 
     // bw_min: deadline 带宽的最低频率保障
     sg_cpu->bw_min = min;
-    // sugov_effective_cpu_perf: 综合 util、max、boost，
-    // 计算最终的目标性能值
+    // ⑤ sugov_effective_cpu_perf: 综合 util、max，计算最终目标性能值
     sg_cpu->util = sugov_effective_cpu_perf(sg_cpu->cpu, util, min, max);
 }
 ```
 
-这段代码的要点：`effective_cpu_util()` 是核心汇总函数，把 CFS、RT、deadline 三类调度实体的利用率合并，并根据 uclamp 约束裁剪出最终的 `util` 和 `min/max` 范围。android16-6.12 与 Linux v6.6 mainline 的差异在于：mainline 的 `sugov_get_util` 接受单个 `struct sugov_cpu *` 参数，内部使用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 枚举区分调频与选核；android16-6.12 增加了 `unsigned long boost` 参数，改为直接通过 `effective_cpu_util` + `sugov_effective_cpu_perf` 两步完成，引入 `bw_min` 作为 deadline 带宽的下限保障，并预留了 `scx_cpuperf_target()` 接口用于 sched_ext 可编程调度。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：`bw_min > 0` 时频率下限被锁定到带宽约束对应的最低频率，如果带宽需求接近 CPU 满载，最终频率自然会接近最高值。
+这段代码的要点：
+
+1. **sched_ext 优先**（①）：`scx_cpuperf_target()` 返回 sched_ext 调度器对当前 CPU 的 perf target。如果 CPU 已全部切到 sched_ext（`scx_switched_all()` 为 true），则跳过 CFS util，完全按 sched_ext 的目标来。
+2. **CFS util 叠加**（②）：仅在 CPU 未被 sched_ext 完全接管时才叠加 `cpu_util_cfs_boost()`。
+3. **三类调度实体汇总**（③）：`effective_cpu_util()` 把 CFS、RT、deadline 三类实体的利用率合并，并应用 uclamp 约束裁剪出 `util` 和 `min/max` 范围。
+4. **boost 后置**（④）：`boost` 参数在 `effective_cpu_util()` 汇总后通过 `max(util, boost)` 确保不低于 boost 要求，与 mainline 把 boost 内置在 `map_util_perf()` 计算中的做法不同。
+5. **最终映射**（⑤）：`sugov_effective_cpu_perf()` 综合 util、max 等约束计算最终目标性能值。
+
+android16-6.12 与 Linux v6.6 mainline 的关键差异：mainline 的 `sugov_get_util` 接受单个 `struct sugov_cpu *` 参数，内部用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 枚举区分调频与选核；android16-6.12 增加了 `unsigned long boost` 参数，显式拆分 util 汇总和 perf 映射两步，并前置了 `scx_cpuperf_target()` 对 sched_ext 的支持。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：`bw_min > 0` 时频率下限被锁定到带宽约束对应的最低频率，如果带宽需求接近 CPU 满载，最终频率自然会接近最高值。
 
 [已验证: android16-6.12 kernel/sched/cpufreq_schedutil.c; Linux v6.6 mainline 同文件对比]
 
