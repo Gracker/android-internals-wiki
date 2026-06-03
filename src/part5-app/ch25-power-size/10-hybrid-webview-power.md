@@ -16,9 +16,9 @@ gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: 'reviewed'
-pipeline_stage: 'task2b_pending'
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2308.16734"
@@ -49,12 +49,14 @@ sources:
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 task9_result: 'needs-rework'
-task2b_state: 'pending'
+task2b_state: fixed
 task9_reviewed_date: '2026-05-15'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-15T19:35:08+08:00'
 last_task9_review_log: 'logs/deep-review/2026-05-15-19-deep-review.md'
 task9_review_notes: '2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 1；需补 xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界，以及 Macrobenchmark PowerMetric system-wide/设备限制。'
+task2b_result: fixed
+task2b_fixed_at: "2026-06-03T08:55:47+08:00"
 ---
 
 # 25.10 Hybrid/WebView 功耗与原生化取舍
@@ -140,7 +142,7 @@ WebView 的成本通常分成四类看。
 - 网络：Web 页面常带更多碎片化资源、重定向、第三方脚本和图片变体。HTTP 缓存、Service Worker、预加载策略做错，会把首屏速度换成后台网络和磁盘写入成本。
 - 生命周期：WebView 离屏后仍可能保留页面、定时器、音视频、Renderer 或缓存。容器没有明确的 `pause/resume/destroy` 协议时，功耗账会和内存账一起失真。
 
-7.11 节已经解释 WebView 渲染性能，10.3 节覆盖 WebView 内存增长，20.10 节覆盖 Renderer OOM 和白屏恢复。功耗视角的观察字段集中在：页面 URL 类型、WebView provider 版本、Renderer PID、页面驻留时长、CPU time、PSS/RSS、网络字节数、桥调用次数、前后台切换和 Renderer 退出原因。
+7.11 节已经解释 WebView 渲染性能，10.3 节覆盖 WebView 内存增长，19.26 节覆盖 Hybrid APM，20.10 节覆盖 Renderer OOM 和白屏恢复。这些章节对 WebView Renderer 崩溃/无响应的版本边界做了统一拆分：API 26+ `onRenderProcessGone()`，API 29+ `WebViewRenderProcessClient`。功耗视角的观察字段集中在：页面 URL 类型、WebView provider 版本、Renderer PID、页面驻留时长、CPU time、PSS/RSS、网络字节数、桥调用次数、前后台切换和 Renderer 退出原因。
 
 ## 功耗基准测试方案
 
@@ -156,20 +158,23 @@ adb shell am force-stop com.example.app
 adb shell am start -n com.example.app/.MainActivity
 # 执行固定脚本：打开页面、滚动、停留、退出。每轮脚本时长保持一致。
 adb shell dumpsys meminfo com.example.app > meminfo-after.txt
-adb shell cat /proc/net/xt_qtaguid/stats > net-after.txt
+# 网络采样：Android 8-9 的 legacy 路径是 xt_qtaguid，Android 9+ 新设备主线转向 eBPF（NetworkStatsService）
+# 优先用 dumpsys netstats；xt_qtaguid 仅在旧设备或确认 kernel 不支持 eBPF 时作为 fallback
+adb shell dumpsys netstats > netstats-after.txt
+# legacy fallback: adb shell cat /proc/net/xt_qtaguid/stats > net-qtaguid-after.txt
 adb bugreport bugreport-hybrid-power.zip
 ```
 
-这组数据需要和 Power Profiler、Perfetto、Macrobenchmark power metric 或 Battery Historian 交叉使用。Android Developers 已说明 Battery Historian 不再活跃维护；能用系统 tracing、Macrobenchmark power metric 或 Power Profiler 时，优先用新工具。[已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
+这组数据需要和 Power Profiler、Perfetto、Macrobenchmark `PowerMetric` 或 Battery Historian 交叉使用。`PowerMetric` 返回的是 system-wide 功耗，不是 per-app attribution，且限定 Pixel 6 / Pixel 6 Pro 及后续设备。Hybrid/WebView 对照实验需要额外控制其他进程、WebView provider 版本与温控干扰。Android Developers 已说明 Battery Historian 不再活跃维护；能用系统 tracing、Macrobenchmark power metric 或 Power Profiler 时，优先用新工具。[已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
 
 指标表按下面口径收敛：
 
 | 指标 | 采集方式 | 用途 | 判读边界 |
 | --- | --- | --- | --- |
-| 能耗估算 | Power Profiler / BatteryStats / Macrobenchmark power metric | 对比同机同脚本的相对变化 | 不跨设备横比绝对值 |
+| 能耗估算 | Power Profiler / BatteryStats / Macrobenchmark `PowerMetric` | 对比同机同脚本的相对变化 | 结果 system-wide，非 per-app；限定 Pixel 6+ 设备；需控其他进程与温控 |
 | CPU time | Perfetto、simpleperf、`top -H`、`/proc/<pid>/stat` | 判断 JS、布局、解码和桥调用成本 | 需要按线程和进程拆开 |
 | 内存 | `dumpsys meminfo`、Perfetto memory counters | 观察 App、Renderer、Graphics、Native 增长 | PSS/RSS 不替代泄漏判断 |
-| 网络 | qtaguid/eBPF 统计、APM 网络插件 | 比较流量、请求数、重试和弱网放大 | CDN、广告和 AB 实验会污染样本 |
+| 网络 | `dumpsys netstats`（eBPF/NetworkStatsService）、`xt_qtaguid`（legacy）、APM 网络插件 | 比较流量、请求数、重试和弱网放大 | CDN、广告和 AB 实验会污染样本；Android 9+ 新设备主线为 eBPF |
 | 帧耗时 | FrameTimeline、JankStats、APM FPS | 判断体验是否被功耗优化伤到 | 论文未能证明 Web 与原生帧时间差异 |
 | 温度 | BatteryManager、Perfetto thermal、厂商接口 | 排除热降频对结果的干扰 | 温度不同，CPU 频点和耗电不可比 |
 
@@ -199,7 +204,12 @@ Hybrid 功耗治理要有页面级账本。只按 App 维度看耗电，无法�
 - 成本指标：页面驻留时长、前后台状态、CPU time、PSS/RSS、网络请求数、上下行字节数、桥调用次数、帧耗时、温度区间。
 - 退出信息：用户返回、容器销毁、Renderer crash、Renderer 被系统回收、App 被 LMK、ANR、进程退出 reason。
 
-Android Vitals 能提供过量唤醒、后台网络、wake lock、启动时间、慢渲染、LMK 等 Play 侧指标，适合做发布后的护栏。[已验证: 官方文档, developer.android.com/topic/performance/vitals] WebView Renderer 的异常还要接入 `WebViewClient.onRenderProcessGone()`；Renderer 长时间阻塞可以用 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 观察，处理时必须覆盖同一 Renderer 关联的所有 WebView。[已验证: 官方文档, developer.android.com/develop/ui/views/layout/webapps/managing-webview][已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewRenderProcessClient]
+Android Vitals 能提供过量唤醒、后台网络、wake lock、启动时间、慢渲染、LMK 等 Play 侧指标，适合做发布后的护栏。[已验证: 官方文档, developer.android.com/topic/performance/vitals] WebView Renderer 的异常要按版本边界分两档处理：
+
+- **API 26+**：接入 `WebViewClient.onRenderProcessGone()`，覆盖 Renderer crash 和被系统回收的场景。
+- **API 29+**：额外接入 `WebViewRenderProcessClient.onRenderProcessUnresponsive()`，观察 Renderer 长时间阻塞。
+
+对于 Android 8/9（API 26-28）只能使用第一档，需要依赖 ready 超时、JSBridge 心跳、PixelCopy 或 DOM 采样作为 Renderer 健康探测的降级信号。处理时必须覆盖同一 Renderer 关联的所有 WebView。[已验证: 官方文档, developer.android.com/develop/ui/views/layout/webapps/managing-webview][已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewRenderProcessClient]
 
 发布守门可以用三档规则：
 

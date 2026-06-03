@@ -2,20 +2,20 @@
 title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task9_state: reviewed
+task9_state: pending
 last_task6_at: "2026-05-16T02:11:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T02:30:40+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-16-02-deep-review.md"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
@@ -39,14 +39,15 @@ sources:
   - type: material
     path: "DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md"
   - type: structure
-    path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
+    path: "Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md"
+task2b_fixed_at: "2026-06-03T08:56:35+08:00"
 ---
 
 # 25.11 ADPF Hint Session 与协程线程迁移
 
 Kotlin Coroutine 会让业务代码在挂起、恢复之间跨线程执行，ADPF 的 `PerformanceHintManager.Session` 又要求同一组 Linux tid 持续表达周期性负载。两者放在一起时，工程约束落在三项条件上：ADPF 适合周期固定、线程稳定、能持续上报耗时的工作；协程默认调度器的线程迁移会削弱这个前提。读完本节，应该能判断哪些协程任务适合接入 ADPF，哪些场景继续用线程池、优先级和常规功耗治理更稳。
 
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] 参考书把任务调度优化放在线程优先级、CPU 利用率和大核绑定这一组问题下讨论。这里不沿用绑核方案，原因是 Android 公开 API 不允许应用直接指定 CPU 频点或稳定绑核；现代做法是把工作周期、目标耗时和线程集合交给系统，由系统结合 DVFS、调度器和温控状态决定资源分配。详见 5.9 节。
+[结构参考: Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md] 参考书把任务调度优化放在线程优先级、CPU 利用率和大核绑定这一组问题下讨论。这里不沿用绑核方案，原因是 Android 公开 API 不允许应用直接指定 CPU 频点或稳定绑核；现代做法是把工作周期、目标耗时和线程集合交给系统，由系统结合 DVFS、调度器和温控状态决定资源分配。详见 5.9 节。
 
 ## PerformanceHintManager Session 的线程绑定模型
 
@@ -56,12 +57,12 @@ Session 的设计目标是同一组线程共同完成一个周期性工作。例
 
 这几个约束决定了 App 侧不能把 ADPF 当成“临时加速开关”：
 
-- 线程集合要稳定：AOSP 注释写明 session 里的线程应当是 long-lived，不适合动态频繁创建或销毁。
+- 线程集合要稳定：AOSP 注释写明 session 里的线程应当是 long-lived，不适合动态频繁创建或销毁。API 31-33 不支持 `setThreads()`，线程列表只能在 `createHintSession()` 时一次性传入；线程池重建时需要关闭旧 session 并重新创建。
 - 目标周期要稳定：`updateTargetWorkDuration()` 只在目标帧率、采样率或业务周期变化时调用，不适合每个任务都改一次。
 - 耗时上报要成对：使用 work duration API 时，每个周期完成后调用 `reportActualWorkDuration()`，系统才有反馈样本去调整核心选择和频率。
 - 调用方自己保证线程安全：`Session` 文档说明方法调用会改变内部状态，跨线程并发调用需要 App 侧串行化。
 
-`setThreads(int[] tids)` 会替换当前线程列表，并不会在原列表上追加。AOSP android-16.0.0_r1 还写了两条边界：session 已关闭时 `mNativeSessionPtr == 0`，`setThreads()` 直接返回；传空数组会抛 `IllegalArgumentException`。因此，线程列表更新应该是低频的生命周期动作，例如 worker 线程创建完成后登记，或固定线程池重建后替换，不应该放在每个协程任务开始前。
+`setThreads(int[] tids)`（API 34+）会替换当前线程列表，并不会在原列表上追加。AOSP android-16.0.0_r1 还写了两条边界：session 已关闭时 `mNativeSessionPtr == 0`，`setThreads()`（API 34+）直接返回；传空数组会抛 `IllegalArgumentException`。因此，线程列表更新应该是低频的生命周期动作，例如 worker 线程创建完成后登记，或固定线程池重建后替换，不应该放在每个协程任务开始前。
 
 ## 协程调度导致 tid 变化时的失效场景
 
@@ -85,7 +86,8 @@ class AdpfWorker(
 ) : Closeable {
     private val executor = Executors.newSingleThreadExecutor { task ->
         Thread {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY)
+            // 线程优先级按场景设定；THREAD_PRIORITY_DISPLAY 可能因缺少 SCHED_FIFO 权限抛 SecurityException
+            // 建议在验证权限后选定优先级，或在 catch 后降级到 THREAD_PRIORITY_DEFAULT
             task.run()
         }.apply { name = "adpf-worker" }
     }
@@ -113,17 +115,30 @@ class AdpfWorker(
 }
 ```
 
-这段示意代码把 ADPF 的线程集合限制在一个固定 worker 上，牺牲了一部分调度弹性，换来 tid 的可解释性。如果任务本身需要在多个线程并行，应显式维护一个小规模固定 executor，在线程全部启动后一次性 `setThreads(intArrayOf(...))`。
+这段示意代码把 ADPF 的线程集合限制在一个固定 worker 上。线程优先级按业务场景设定，`THREAD_PRIORITY_DISPLAY` 等高优先级可能因缺少 `SCHED_FIFO` 权限抛 `SecurityException`；生产代码应在 catch 后降级到 `THREAD_PRIORITY_DEFAULT` 或其他可用优先级。牺牲调度弹性换 tid 可解释性是工程上合理的取舍。如果任务本身需要在多个线程并行，应显式维护一个小规模固定 executor，在线程全部启动后一次性 `setThreads(intArrayOf(...))`。
 
 ## `setThreads`、`close`、`reportActualWorkDuration` 的边界
 
-`setThreads()` 的更新成本和语义都不适合高频调用。它会替换 session 的线程列表，AOSP 注释还标明它是同步调用（非 oneway）；线程列表为空、线程不属于本应用、session 不在前台等情况会走异常路径。工程上按生命周期分开处理：线程生命周期变化时更新，工作周期变化时上报，不把两件事混在一个热路径里。
+`setThreads()`（API 34+）的更新成本和语义都不适合高频调用。它会替换 session 的线程列表，AOSP 注释还标明它是同步调用（非 oneway）；线程列表为空、线程不属于本应用、session 不在前台等情况会走异常路径。工程上按生命周期分开处理：线程生命周期变化时更新，工作周期变化时上报，不把两件事混在一个热路径里。
 
 `close()` 表示释放资源，不能当暂停使用。session 关闭后再调用 `setThreads()` 会直接返回，后续上报也失去意义。比较稳的封装是把 session 绑定到 worker 组件生命周期：页面或渲染模块创建时启动，模块销毁时关闭；如果后台任务被取消，就直接关闭 session，下一次前台工作重新创建。
 
 `reportActualWorkDuration(long)` 适用于 Android 12 起的基础路径，参数是上一周期总耗时。Android 16 源码中还存在 `reportActualWorkDuration(WorkDuration)` 重载，可以把总时长、CPU 时长、GPU 时长和工作周期开始时间分开上报；同一份源码对这些字段做了严格校验：周期开始时间和总时长必须大于 0，CPU / GPU 时长不能为负，二者不能同时为 0。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java]
 
 上报频率按工作周期走，不按函数调用次数走。UI 或渲染类任务可以按帧上报；音视频、传感器、推理任务按自己的 batch 或采样周期上报。普通列表分页、一次性 JSON 解析、后台同步任务不适合为每个小任务创建 session。它们更应该先解决线程池大小、任务合并、I/O 约束和后台执行策略，详见 25.1、25.2 节。
+
+## ADPF API 版本边界矩阵
+
+`PerformanceHintManager.Session` 的公开 API 随 Android 版本逐步放出，不能按最新的源码直接认为所有设备都能用。
+
+| API 级别 | Android 版本 | 可用能力 | 说明 |
+|----------|-------------|---------|------|
+| 31 | Android 12 | `createHintSession(int[], long)` + `reportActualWorkDuration(long)` + `close()` | 基础能力：创建 session、上报单值耗时、关闭。线程列表在创建时一次性传入，不可事后替换 |
+| 34 | Android 14 | 增加 `setThreads(int[])` | 允许在 session 存活期间替换线程列表。API 31-33 只能通过重建 session 来更换线程 |
+| 35 | Android 15 | 增加 `setPreferPowerEfficiency(boolean)`（flagged）、`reportActualWorkDuration(WorkDuration)`（flagged） | `WorkDuration` 可拆分上报总时长、CPU 时长、GPU 时长和周期开始时间。均为 flagged API，需运行时 flag 判断 |
+| 36 | Android 16 | `WorkDuration` / `setPreferPowerEfficiency` 继续 flagged | `GPU_LOAD_UP/DOWN/RESET` 常量与 GPU hint 相关 flag 在 android-16.0.0_r1 源码中存在，受 `FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION` 控制 |
+
+发布侧按三层判断：编译期看 SDK 是否暴露 API，运行期看 manager/session 是否非 null 且 API 可用，灰度期看 Perfetto/帧耗时/功耗是否真的改善。
 
 ## Android 15/16 flagged API 与 GPU hint 差异
 
