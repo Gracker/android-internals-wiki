@@ -27,7 +27,7 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/ui/views/text-and-emoji/downloadable-fonts"
   - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/master/libs/androidfw/include/androidfw/ResourceTypes.h"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
   - type: book-structure
     path: "Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md"
   - type: book-structure
@@ -38,7 +38,8 @@ tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
+last_task9_autofix_at: "2026-06-03"
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -53,7 +54,7 @@ task2b_result: fixed
 last_task2b_at: "2026-06-03T14:54:49+08:00"
 task2b_fixed_by: "openclaw-task2b"
 task2b_fixed_date: "2026-06-03"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: '2026-05-14T20:31:00+08:00'
@@ -216,7 +217,7 @@ android {
 
 VectorDrawable 的收益来自去掉多套密度位图，而不是来自压缩算法。它适合图标和简单插画；如果把复杂 SVG 全量转成 VectorDrawable，XML 路径数据可能比原 WebP 更大，还会把解析成本挪到运行时。WebP 适合替换多数 PNG / JPG，但转换要按资源类型分批做：启动页、登录页、品牌图和支付图标先人工验收，再进入批处理。AVIF 在 Android 12 及以上有系统支持，适合新系统占比高、图片体积压力大的渠道；低版本要保留 WebP 或 PNG 兜底。[已更新至 Android 16]
 
-resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压缩和字符串池处理放在同一类问题里，这个结构是合理的：AOSP `ResourceTypes.h` 也能印证资源表由字符串池、package、type spec、type item 等二进制块组成，不是普通文本文件。工程上更稳的顺序是：先开官方资源缩减，再做图片格式转换，再评估资源名压缩或重复图片去重。直接改 `resources.arsc` 的工具必须覆盖换肤、多语言、动态资源名和热修资源路径。[已验证: AOSP master, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
+resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压缩和字符串池处理放在同一类问题里，这个结构是合理的：AOSP `ResourceTypes.h` 也能印证资源表由字符串池、package、type spec、type item 等二进制块组成，不是普通文本文件。工程上更稳的顺序是：先开官方资源缩减，再做图片格式转换，再评估资源名压缩或重复图片去重。直接改 `resources.arsc` 的工具必须覆盖换肤、多语言、动态资源名和热修资源路径。[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
 
 [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
 

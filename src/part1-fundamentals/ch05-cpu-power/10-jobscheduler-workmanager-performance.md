@@ -653,6 +653,23 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 
 
 <!-- AIW-源码调研-2026-05-26 -->
+<!-- AIW-源码调研-2026-06-03 -->
+
+**来源**：DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md
+
+**补充验证结论（2026-06-03）**：
+
+1. **SUBREASON_EXCESSIVE_CPU（值 7）和 REASON_EXCESSIVE_RESOURCE_USAGE（值 9）在 android-16.0.0_r3 源码已验证存在**，确认 AMS kill excessive CPU 进程机制从 API 30 即存在
+
+2. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 在 android-17.0.0_r1 的 ProfilingTrigger.java 无法验证**（AOSP Mirror 该 tag 返回 404），结论基于 Android 17 release notes 推断，**仍应标注待验证**
+
+3. **SUBREASON_EXCESSIVE_CPU（AMS kill 路径）与 JobScheduler quota（调度阻止路径）是两条独立的控制机制**：quota 阻止新 job 调度，kill 强制终止已运行进程；两者作用于同一后台任务但互不依赖
+
+4. **章节 §5.10 现有标注正确**：Power Check 具体阈值仍为"待验证"，ProfilingTrigger 触发后的 trace 文件路径获取方式有 Android Developers 文档支撑
+
+**关键源码**：github.com/aosp-mirror/platform_frameworks_base @ android-16.0.0_r3:core/java/android/app/ApplicationExitInfo.java（已验证 SUBREASON_EXCESSIVE_CPU）
+
+
 ## 源码调研补充（2026-05-26）
 
 **来源**：DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
