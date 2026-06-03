@@ -40,6 +40,8 @@ p2: 0
 task6_l1_l2_fixes: 15
 task6_l3_l4_issues: 0
 task6_new_rework: false
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 
 # Android 功耗管理
@@ -360,8 +362,7 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 [图:Battery Historian 中 WakeLock 持有时长的可视化示例]
 
-
-### TARE 经济模型:历史实现与发布边界
+### TARE 经济模型（历史实现，非 Android 17 能力）
 
 TARE（Think Advanced Resource Economy）曾作为 JobScheduler 资源配额实验出现在 Android 12-14 附近的系统实现中。它把后台资源抽象成 ARC（Android Resource Credits），由系统服务根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
 
@@ -716,5 +717,3 @@ App (PowerManager.newWakeLock())
 ```
 
 这条链路中，PowerManagerService 是策略决策者（何时睡眠/唤醒），Power HAL 是执行接口，Linux 内核是具体执行者（EAS 调度、DVFS 调频、suspend/resume）。理解每一层的职责，是分析"为什么灭屏后系统没有睡下去"这类问题的关键。
-
-<!-- AIW-源码调研-2026-06-01 -->

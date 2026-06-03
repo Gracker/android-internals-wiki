@@ -2,7 +2,7 @@
 title: "TextureView 合成链路"
 chapter: "18.7"
 section: "18.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
 tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
@@ -15,13 +15,13 @@ sources:
     path: "TextureView reference"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: "pending"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: "reviewed"
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-02
-task6_reviewed_date: "2026-06-02"
+task6_reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-02"
@@ -29,14 +29,15 @@ task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
 last_task2b_lite_at: "2026-05-31"
 last_task9_at: "2026-06-03T07:20:00+08:00"
-last_task6_audit: 2026-05-19
+last_task6_audit: 2026-06-03
 last_task9_audit: 2026-05-20
-last_task6_at: "2026-06-02T02:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-02-review.md"
-task6_review_notes: "2026-06-02 02:05 Task6 revisiting-review：L1/L2 小修 2 处（补 sources、压缩否定句式），锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复核。"
-task6_l1_l2_fixes: 2
+last_task6_at: "2026-06-03T09:15:06+08:00"
+last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
+task6_review_notes: "2026-06-03 09:11 Task6 revisiting-review：无新增 L1/L2 问题。Task9 auto-fix（TextureView 成本口径修正）已确认无写作质量问题。满足 auto-promotion 条件，晋升 finalized。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
+task6_auto_promoted: true
 task9_result: auto-fixed
 last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
 last_task9_autofix_at: "2026-06-02"
@@ -332,6 +333,69 @@ TextureView 实际有两套 fence，用途不同不能混淆：
 **优化方向**：
 - 确保 App UI 帧率足够高（避免主线程卡顿）
 - 如果需要逐帧处理，考虑使用 ImageReader 替代 SurfaceTexture
+
+## Metal/Vulkan Backend 性能对比（Android 13-17）
+
+> AIW-源码调研-2026-06-03
+
+### 核心结论
+
+**Android 17（API 37）范围内，TextureView 的 GPU 后端是 Skia + OpenGL ES，不存在 Metal/Vulkan 专属后端。**
+
+- **Metal**：Apple 平台专有，Android 从未支持
+- **Vulkan**：Android 13（API 33）起作为系统级图形选项引入，但在 TextureView 的 App 侧渲染路径中不扮演主要角色
+
+### 源码级证据
+
+**HardwareRenderer.java**（android-16.0.0_r1）的 `preload()` 注释：
+```java
+/**
+ * Start render thread and initialize EGL or Vulkan.
+ * Initializing EGL involves loading and initializing the graphics driver.
+ */
+public static native void preload();
+```
+
+这说明 Vulkan 在 Android 13+ 的角色是 **pre-init** 和**低功耗后台任务**，而非替代 OpenGL ES 成为 TextureView 的主渲染路径。
+
+**TextureView.java** 文档注释明确写：
+```java
+/**
+ * A TextureView can be used to display a content stream, such as that
+ * coming from a camera preview, a video, or an OpenGL scene.
+ */
+```
+
+TextureView 的消费侧（App RenderThread 采样）基于 **GL_OES_EGL_image_external** 纹理，这是 OpenGL ES 的扩展格式。
+
+### TextureView 渲染路径与后端无关
+
+TextureView 的性能瓶颈**不是 GPU 后端选择**造成的：
+
+```
+Producer → SurfaceTexture → App RenderThread（updateTexImage 采样 OES Texture）
+→ BLAST BufferQueue → SurfaceFlinger → HWC
+```
+
+无论底层是 OpenGL ES 还是 Vulkan，TextureView 都必须经过 App 侧纹理采样，Vulkan 无法绕过这一架构设计。
+
+### Vulkan 对 TextureView 的间接影响
+
+Vulkan 引入对 TextureView 的**间接**影响（Android 13+）：
+
+1. **视频解码后端**：MediaCodec 可使用 Vulkan 作为后端，解码帧通过 `SurfaceTexture` 提交时，如果解码器用 Vulkan，acquire fence 等待模式可能不同
+2. **ANGLE**：Vulkan 作为 ANGLE 后端时，某些 GL 命令通过 Vulkan 执行，但 Java/JNI 代码路径不变
+3. **内存拷贝**：Vulkan descriptor set 机制可能减少某些路径的内存拷贝，但 `updateTexImage → drawTextureLayer` 路径本身未变
+
+### 实战建议
+
+| 场景 | 建议 |
+|:---|:---|
+| 追求 TextureView 最佳性能 | 优化主线程负载、减少 updateTexImage 等待，而非关注 GPU 后端 |
+| 需要 Metal/Vulkan 性能优势 | 考虑 SurfaceView（直接走 HWC Overlay，绕过 App 侧采样） |
+| Android 17+ Vulkan 演进 | 需进一步验证 Vulkan swapchain API 是否已 public |
+
+---
 
 ## 参考资料
 

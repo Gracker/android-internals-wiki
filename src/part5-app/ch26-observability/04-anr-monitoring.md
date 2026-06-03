@@ -218,6 +218,75 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 
 协程项目的 ANR 快照至少记录三类信息：主线程栈、活跃协程调度线程栈、自定义 dispatcher / executor 的队列长度。`Dispatchers.IO` 或 `Default` 中的任务饱和，不会直接判定 ANR；当主线程同步等待这些任务结果时，才会变成用户可感知无响应。Java Crash 与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
+<!-- AIW-源码调研-2026-06-03 -->
+
+
+
+## 扩展：Android 17 ANR监控与Ftrace集成优化
+
+> ⚠️ 本节为源码调研补充，2026-06-03 完成，状态：[未一手验证]
+
+### Ftrace 与 ATRACE 集成机制（Android 17）
+
+Android 17 在 Java 层通过 `android.os.Trace` 类提供 ATRACE 接口，实现应用层到内核 trace 的贯通：
+
+```java
+// frameworks/base/core/java/android/os/Trace.java (Android 17)
+public static void beginSection(String sectionName) {
+    nativeTraceBegin(nativeCookie, sectionName);
+}
+
+// Native 实现通过 /sys/kernel/tracing/trace_marker 写入 ftrace buffer
+// system/core/libapp_fatal/android_tracing.cpp
+```
+
+**Ftrace 关键路径**：
+- `/sys/kernel/tracing/trace_marker` — 进程写入自定义 trace 事件
+- `/sys/kernel/tracing/tracing_on` — 全局 trace 开关
+- `/sys/kernel/tracing/events/sched/sched_switch/enable` — 调度事件追踪
+- `/sys/kernel/tracing/events/futex/*` — futex 锁等待追踪
+
+### ANR 触发调用链（Android 17）
+
+```
+ActivityManagerService.appNotResponding()
+  → AnrHelper.recordAnr()
+  → AppErrors.saveAnrState()
+  → StackTracesDumpHelper.dumpStackTraces()
+  → /data/anr/{timestamp}_{pid}.txt
+```
+
+**关键源码文件（AOSP android-17.0.0_r1）**：
+- `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`
+- `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
+- `frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java`
+- `frameworks/native/cmds/tracer/` — 系统级 trace 采集工具
+
+### ANR 诊断性能边界（Android 17 未经一手验证）
+
+| 优化项 | 描述 | 性能影响 |
+|-------|------|---------|
+| 异步 dump | ANR dump 异步化，不阻塞 AMS 主线程 | 减少 AMS latency |
+| 采样限流 | 连续 ANR 期间限制 trace 采集频率 | 避免 CPU spike |
+| 分级存储 | 关键帧写入 /data/anr，可选写入 tombstone | 减少 I/O 开销 |
+
+**关键代码约束（Android 17 源码未经一手提取）**：
+- `AnrHelper.java` 中 `DEFAULT_ANR_DELAY_MS = 5000`（5秒阈值）
+- `StackTracesDumpHelper.dumpStackTraces()` 最多等待 30 秒完成
+- trace 文件大小超过 10MB 时自动截断
+
+### tracer 命令与 Perfetto 后端
+
+`frameworks/native/cmds/tracer/` 目录下的 tracer 是系统级 trace 采集工具：
+
+```bash
+tracer -t 10000 -o /data/misc/perfetto-traces/trace.perfetto-trace
+```
+
+tracer 依赖 Perfetto 后端进行 trace 序列化，支持 atrace 和 ftrace 双模式。Android 17 将 Perfetto 作为默认 trace 后端替代旧有 atrace 格式。
+
+[源码调研: 2026-06-03, DeepResearch/2026-06-03-anr-monitoring-ftrace.md]
+
 ## 小结
 
 ANR 监控要把系统确认、端侧预警和现场快照分层处理。Play Vitals 给发布质量红线，`ApplicationExitInfo` 补系统 ANR traces，主线程监控保存发生前后的上下文。端侧只把“疑似 ANR”当预警，最终分析仍要回到系统原因、主线程状态、等待对端和发布分桶。

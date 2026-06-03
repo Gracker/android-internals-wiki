@@ -61,7 +61,7 @@ p2: "0"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-03
 ---
 
 # MainThread 与 RenderThread 协作
@@ -206,11 +206,11 @@ int DrawFrameTask::drawFrame() {
 2. **RenderThread 同步阶段**:`syncFrameState()` 会刷新 VSync 信息、`makeCurrent()`、应用 layer update、执行 `prepareTree()`,把本帧需要的 RenderNode 状态、脏区和纹理准备好。
 3. **GPU / buffer 反压**:会把 RenderThread 后续 `draw()` 拖慢的,常见是 `dequeueBuffer()`、release fence 和 GPU command submit 之后的消费节奏。这部分主要发生在 `CanvasContext::draw()`,不该和主线程上的 `syncFrameState` 画等号。
 
-同步完成后，UI Thread 就能继续处理输入、动画和下一轮 traversal，RenderThread 再独立进入 `draw()`。所以 `syncFrameState` 很长时，含义通常是"RenderThread 还在处理本帧同步，或者前面的 buffer / fence 反压已经把它拖慢"，范围比"上一帧 GPU 没结束"更宽。
+同步一结束，UI Thread 就继续往下处理输入、动画和下一轮 traversal，RenderThread 独立进入 `draw()`。所以当 `syncFrameState` 很长时，原因可能是 RenderThread 还在处理本帧同步，也可能是前面的 buffer / fence 反压已经拖慢了 RenderThread--范围比单纯的"上一帧 GPU 没结束"更宽。
 
 ### DeliQueue 与 RenderThread 队列边界（Android 17）
 
-Android 17 的 DeliQueue 作用在 `android.os.MessageQueue` 这条应用消息循环路径上，默认面向 targetSdk 37+ 的应用启用。它不能被写成 RenderThread 内部 WorkQueue 的替代实现。
+Android 17 的 DeliQueue 作用在 `android.os.MessageQueue` 这条应用消息循环路径上，默认面向 targetSdk 37+ 的应用启用。这里容易混淆的是：DeliQueue 优化的是主线程 Looper 的消息入队/出队锁竞争，和 HWUI RenderThread 内部的 WorkQueue 是两条独立的队列，不能混为一谈。
 
 AOSP android-16.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时，讨论的是 HWUI RenderThread 的 WorkQueue；DeliQueue 官方性能数据不该直接拿来解释这条队列的锁竞争。
 
@@ -250,9 +250,9 @@ GPU 命令的提交是**异步的**。CPU(RenderThread)把命令扔给 GPU 后,G
 
 ### ADPF 性能反馈机制（Android 14+ / Android 16 headroom）
 
-AOSP android-14.0.0_r1、android-15.0.0_r1 和 android-16.0.0_r1 的 `CanvasContext.cpp` 都已经包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。因此 RenderThread 向 ADPF hint session 上报帧工作时长，不能写成 Android 16 才接入。
+先澄清一个常见口径问题：AOSP android-14.0.0_r1、android-15.0.0_r1 和 android-16.0.0_r1 的 `CanvasContext.cpp` 都已包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。也就是说，RenderThread 向 ADPF hint session 上报帧工作时长从 Android 14 就开始了，不是 Android 16 才接入的。
 
-Android 16 需要单独看的变化是 headroom 相关 API，例如 GPU headroom 查询能力。实战里可以把两件事拆开看：RenderThread 的 hint session 上报用于描述每帧实际工作时长；headroom API 用于判断设备当前还有多少性能余量，不能把二者合并成同一个 Android 16 新特性。
+Android 16 要单独看的是 headroom 相关 API，比如 GPU headroom 查询。工程上把两件事拆开：RenderThread 的 hint session 上报描述每帧实际工作时长；headroom API 判断设备还剩多少性能余量。不能把两者合并成一个 "Android 16 新特性"。
 
 ### Fence 机制
 

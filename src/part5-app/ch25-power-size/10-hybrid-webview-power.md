@@ -14,9 +14,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-15"
+reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-task6_state: revisiting
+last_task6_at: "2026-06-03T09:15:06+08:00"
+task6_state: reviewed
 task9_state: pending
 pipeline_stage: task6_pending
 sources:
@@ -49,6 +50,7 @@ sources:
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 task9_result: 'needs-rework'
+task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注的 P1/P2 问题（xt_qtaguid/eBPF 版本边界、WebViewRenderProcessClient API 29+ 边界、PowerMetric 设备限制）。送 Task9 重检。"
 task2b_state: fixed
 task9_reviewed_date: '2026-05-15'
 task9_reviewed_by: 'openclaw-task9'
