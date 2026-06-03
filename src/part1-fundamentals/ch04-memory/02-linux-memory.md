@@ -1,4 +1,5 @@
 ---
+
 status: "ready-for-review"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
@@ -52,13 +53,13 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-21"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: needs-rework
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: fixed
+task2b_result: reworked
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
@@ -66,6 +67,7 @@ last_task6_at: "2026-05-21T12:11:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
 task6_review_notes: "2026-05-21 Task6 revisiting-review: L1/L2 通过，清理 frontmatter 禁用词；MADV_COLD 实现链确定语气沿用 Task9 pending queue。"
 task9_review_notes: "2026-05-21 Task9 deep review: P1 Android 17 ART→MADV_COLD 仍以确定语气描述，源码锚点与内核语义未完成校验，写入 queue 条目 task9-20260521-4.2-art-madv-cold-still-assertive。"
+last_task2b_at: "2026-06-04T04:55:01"
 ---
 
 
@@ -363,19 +365,20 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)]
 
-#### Android 17 实现：madvise(MADV_COLD) 信号通路
+#### 待验证方向：madvise(MADV_COLD) 作为 GC-内核协同路径
 
-[存疑: Task9 已记录 Android 17 ART → `MADV_COLD` 实现链缺少 AOSP commit、release note 或 runtime 源码锚点；本节发布前需要改成待验证方向，或补齐 ART 调用点与内核 `madvise.c` 语义。]
+[状态: 截至 Android 17（API 37）公开 AOSP 源码，ART runtime/gc 中未找到对 `MADV_COLD` 的直接调用；以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的 Android 17 实现。]
 
-Silk 论文提出的“让 GC 告诉内核哪些页面是冷的”思路，在 Android 17 有了具体实现。ART 虚拟机在 GC 标记阶段识别出老年代中未被引用的对象后，对它们所在的内存页调用 `madvise(MADV_COLD)`，主动向内核标记这些页面为冷页。
+Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在 GC 标记阶段识别出对象冷热信息后，由 GC 向内核传达哪些页面近期不会再被访问，从而帮助内核更准确地回收冷页。
 
-内核收到 `MADV_COLD` 提示后，在 MGLRU 的代际模型中将这些页面降级到更老的 generation，使它们优先被回收。内核不再需要等到扫描 LRU 链表才发现这些页面没人用，GC 直接给了信号，回收命中率提升。
+这条路径的具体工作方式是：GC 对识别为冷对象所在的匿名页调用 `madvise(MADV_COLD)`。内核处理 `MADV_COLD` 的实际路径取决于内核版本和 LRU 实现：
 
-[待验证: "系统掉帧减少约 10%" 缺少 AOSP commit、官方 release note 或独立 benchmark；当前来源为 archived external-review，未找到 ART / libcore / runtime 中的具体 commit 或 jank 指标口径]
+- **`mm/madvise.c` 中的 MADV_COLD 处理**：对目标 `vma` 范围内的页面调用 `folio_deactivate()`，清掉 `referenced` flag 并将 folio 移到 inactive LRU 链表的尾部。在 MGLRU（Multi-Gen LRU，Linux 5.18+）中，等效操作是清除 generation 计数的 `PG_referenced` 标记，使页面在下一次老化（aging）扫描时更容易被降代。
+- **实际效果**：这些页面不再因为 GC 扫描时的访问而被错误标记为"活跃"（前面提到的 pseudo-hot 问题），从而在内存压力下优先被回收，减少不必要的 swap-in。
 
-这个机制直接解决了 MGLRU 在 Android 上的核心问题——GC 遍历对象时访问的页面被内核误判为“热的”（前面提到的 pseudo-hot 问题）。GC 访问完就调 `madvise(MADV_COLD)` 打个招呼，内核下次回收就不用猜了。
+**版本边界**：AOSP `platform/art`（截至 android-16.0.0_r1）与主线（main）均未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
 
-[来源: external-review 2026-04-28-ch04-02-linux-memory, madvise(MADV_COLD) 内核-GC 协同]
+[来源: external-review 2026-04-28-ch04-02-linux-memory 与 Silk 论文（TACO '25）概念参考]
 
 ## 内存压缩（Memory Compaction）与碎片化
 
