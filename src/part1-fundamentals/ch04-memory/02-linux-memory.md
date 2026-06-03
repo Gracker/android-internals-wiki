@@ -1,6 +1,7 @@
 ---
 
-status: "ready-for-review"
+
+status: ready-for-review
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-21T11:31:10+08:00"
@@ -13,7 +14,7 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-03-31'
-reviewed_date: "2026-05-21"
+reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
@@ -53,8 +54,8 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_reviewed_date: "2026-05-21"
 task9_state: pending
 task9_result: needs-rework
@@ -63,9 +64,9 @@ task2b_result: reworked
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
-last_task6_at: "2026-05-21T12:11:00+08:00"
+last_task6_at: '2026-06-04T07:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
-task6_review_notes: "2026-05-21 Task6 revisiting-review: L1/L2 通过，清理 frontmatter 禁用词；MADV_COLD 实现链确定语气沿用 Task9 pending queue。"
+task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
 task9_review_notes: "2026-05-21 Task9 deep review: P1 Android 17 ART→MADV_COLD 仍以确定语气描述，源码锚点与内核语义未完成校验，写入 queue 条目 task9-20260521-4.2-art-madv-cold-still-assertive。"
 last_task2b_at: "2026-06-04T04:55:01"
 ---
