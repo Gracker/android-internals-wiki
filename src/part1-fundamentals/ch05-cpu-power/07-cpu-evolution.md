@@ -4,7 +4,7 @@ chapter: '5.7'
 section: '5.7'
 status: ready-for-review
 reviewed_at: '2026-05-16T12:20:36+08:00'
-last_task6_at: '2026-05-16T12:20:36+08:00'
+last_task6_at: "2026-06-04T04:12:07+08:00"
 review_round: 2
 task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 版本边界风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
 applicable_versions: Android 5.0 - Android 17
@@ -64,18 +64,18 @@ related_chapters:
 repaired_date: '2026-04-30'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复(Task9/External 问题单)
-reviewed_date: '2026-05-16'
+reviewed_date: "2026-06-04"
 reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-05-16'
-task6_result: needs-rework
-task6_state: revisiting
+task6_reviewed_date: "2026-06-04"
+task6_result: pass-light-edit
+task6_state: reviewed
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-16T11:31:00+08:00'

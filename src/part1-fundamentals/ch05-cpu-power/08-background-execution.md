@@ -69,9 +69,9 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: "2026-05-18"
@@ -86,8 +86,8 @@ last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
 task9_review_notes: "2026-05-18 Task9 00:25 → needs-rework；P1：16KB/GC 联动压缩被写成 Android 16/17 引入且绑定 16KB，官方 cached-apps-freezer 口径是 Android 14 起 cached/freeze 前 GC 与冻结后 compaction，需回炉修正。"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-18"
-last_task6_at: "2026-05-18T02:15:00+08:00"
+reviewed_date: "2026-06-04"
+last_task6_at: "2026-06-04T04:12:07+08:00"
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
 ---
 

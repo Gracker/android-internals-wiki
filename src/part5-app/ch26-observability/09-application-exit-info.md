@@ -12,10 +12,10 @@ polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-15"
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -56,6 +56,7 @@ tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
 related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
+last_task6_at: "2026-06-04T04:12:07+08:00"
 ---
 
 # 26.9 ApplicationExitInfo 与进程退出归因
