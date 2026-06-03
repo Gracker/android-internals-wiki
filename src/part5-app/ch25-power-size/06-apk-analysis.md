@@ -1,5 +1,6 @@
 ---
 
+
 title: "APK 体积分析与瘦身"
 chapter: "25.6"
 section: "25.6"
@@ -41,24 +42,26 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-18T16:05:00+08:00"
 last_task6_review_log: logs/review/2026-05-18-16-review.md
 task6_review_notes: "2026-05-18 Task6：复审写作层；修正 3 处否定纠正式表达和口语化措辞，四个 outline 锚点覆盖；保留 Task9 已登记的 native 分发边界回炉项，等待 Task2B。"
-task2b_result: fixed
+task2b_result: fixed-lite
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-18"
 last_task9_at: "2026-05-18T15:25:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 task9_review_notes: "2026-05-18 12:44 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；已写入 queue.json，等待 Task2B 回炉。；2026-05-18 15:25 Task9 deep-review: P0 raw/download size 口径已修；P1 低频 native 库误列 Play Asset Delivery 仍未闭环，保留 task2b_pending。"
+last_task2b_lite_at: 2026-06-03
 ---
+
 
 # APK 体积分析与瘦身
 
@@ -187,7 +190,7 @@ AGP 8.12 / 8.13 支持手动开启优化版资源缩减；AGP 9.0 起，在 `isS
 
 - **ABI 是否全量打入**：`lib/arm64-v8a/`、`lib/armeabi-v7a/`、`lib/x86/`、`lib/x86_64/` 同时存在时，先确认线上是否还需要 x86 或 32 位 ARM。模拟器专用 ABI 不应出现在正式渠道包里。
 - **debug symbol 是否被剥离**：NDK 文档建议使用 strip 工具移除 native 库中的非必要调试符号。正式包里保留完整符号会显著放大 `lib/` 目录，符号文件应单独归档给崩溃还原系统。
-- **native 库是否属于低频功能**：OCR、地图、音视频编辑、游戏引擎、模型推理等库经常只服务少数路径，适合放到动态特性模块、Play Asset Delivery，或国内渠道的自研按需下载方案。
+- **native 库是否属于低频功能**：OCR、地图、音视频编辑、游戏引擎、模型推理等库经常只服务少数路径，适合放到 Dynamic Feature Module / Play Feature Delivery 按需下载（注意 Play Asset Delivery 只分发 textures、sounds 等 assets，不支持可执行代码），或国内渠道的自研按需下载方案。
 
 使用普通 APK 分发时，可以用 `abiFilters` 限定打包 ABI。下面的配置只表达打包策略，是否只保留 64 位要结合设备占比、性能要求和渠道政策决定。
 
