@@ -49,7 +49,9 @@ gap_source: "AOSP结构/研究素材"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task6_state: 'revisiting'
+task6_state: 'reviewed'
+last_task6_at: '2026-06-03T12:15:21+08:00'
+task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 扫描无新增问题；禁用词/高频词/AI 填充词零命中。无新增回炉项。'
 task9_state: 'pending'
 pipeline_stage: 'task6_pending'
 task9_result: needs-rework

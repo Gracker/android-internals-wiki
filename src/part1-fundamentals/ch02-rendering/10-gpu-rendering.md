@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 section: '2.10'
 title: GPU 渲染深入
 chapter: '2.10'
@@ -45,10 +45,10 @@ last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGL
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。 | 2026-06-02 task6 review: pass-light-edit。L1/L2 小修 2 处;AOSP mainline 锚点改为 Android 17 待验证边界,删除填充副词。"
