@@ -41,18 +41,18 @@ task9_reviewed_date: "2026-06-03"
 last_task9_at: "2026-06-03T05:27:37+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
 task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
-last_task6_at: "2026-06-03T04:08:00+08:00"
+last_task6_at: "2026-06-03T10:05:00+08:00"
 last_task6_review_log: logs/review/2026-06-03-04-review.md
-task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。"
+task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_autofix_at: "2026-06-03"
 last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
