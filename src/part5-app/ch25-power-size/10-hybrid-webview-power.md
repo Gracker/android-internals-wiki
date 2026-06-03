@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-15"
-last_verified_against: "AOSP main WebView loader + Android Developers docs 2026-03"
+last_verified_against: "AOSP android-16.0.0_r1 WebView loader + Android Developers docs 2026-03"
 confidence: medium
 tags: [webview, hybrid, power, energy, battery, benchmark]
 related_chapters: ["7.11", "10.3", "11.1", "19.26", "20.10", "25.1", "25.2"]
@@ -17,8 +17,8 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T09:15:06+08:00"
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 pipeline_stage: task6_pending
 sources:
   - type: paper
@@ -49,16 +49,17 @@ sources:
     path: "Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md"
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
-task9_result: 'needs-rework'
+task9_result: auto-fixed
 task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注的 P1/P2 问题（xt_qtaguid/eBPF 版本边界、WebViewRenderProcessClient API 29+ 边界、PowerMetric 设备限制）。送 Task9 重检。"
 task2b_state: fixed
-task9_reviewed_date: '2026-05-15'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-15T19:35:08+08:00'
-last_task9_review_log: 'logs/deep-review/2026-05-15-19-deep-review.md'
-task9_review_notes: '2026-05-15 Task9：needs-rework。P0 0 / P1 2 / P2 1；需补 xt_qtaguid/eBPF 网络采样版本边界、WebViewRenderProcessClient API 29+ 边界，以及 Macrobenchmark PowerMetric system-wide/设备限制。'
+task9_reviewed_date: "2026-06-03"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-03T13:24:44+08:00"
+last_task9_review_log: logs/deep-review/2026-06-03-13-deep-review.md
+task9_review_notes: "2026-06-03 Task9：auto-fixed。P0 0 / P1 0 / P2 0；将 WebView loader.cpp 的 AOSP main/master 锚点替换为已验证的 android-16.0.0_r1 锚点，避免把未落入 Android 17 的 main 资料作为正文证据。回到 Task6 复审。"
 task2b_result: fixed
 task2b_fixed_at: "2026-06-03T08:55:47+08:00"
+last_task9_autofix_at: "2026-06-03"
 ---
 
 # 25.10 Hybrid/WebView 功耗与原生化取舍
@@ -140,7 +141,7 @@ arXiv 2308.16734 对比了 10 个互联网内容平台的 Android 原生应用�
 WebView 的成本通常分成四类看。
 
 - CPU：JavaScript 执行、DOM/CSS 计算、图片解码、滚动合成、JSBridge 序列化都会消耗 CPU。频繁桥调用还会把前端事件变成 App 侧主线程或业务线程的等待。
-- 内存：WebView 依赖 Chromium Renderer，多页面、多 Tab、长列表和大图会形成独立的 Renderer 内存压力。当前 AOSP `loader.cpp` 会用 `mmap(PROT_NONE)` 预留 `libwebview reservation` 地址空间并通过 `prctl(PR_SET_VMA_ANON_NAME, ..., "libwebview reservation")` 标记，低地址空间设备还要关注虚拟内存预算。[已验证: AOSP main, frameworks/base/native/webview/loader/loader.cpp][结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
+- 内存：WebView 依赖 Chromium Renderer，多页面、多 Tab、长列表和大图会形成独立的 Renderer 内存压力。AOSP android-16.0.0_r1 的 `loader.cpp` 会用 `mmap(PROT_NONE)` 预留 `libwebview reservation` 地址空间并通过 `prctl(PR_SET_VMA_ANON_NAME, ..., "libwebview reservation")` 标记，低地址空间设备还要关注虚拟内存预算。[已验证: AOSP android-16.0.0_r1, frameworks/base/native/webview/loader/loader.cpp][结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
 - 网络：Web 页面常带更多碎片化资源、重定向、第三方脚本和图片变体。HTTP 缓存、Service Worker、预加载策略做错，会把首屏速度换成后台网络和磁盘写入成本。
 - 生命周期：WebView 离屏后仍可能保留页面、定时器、音视频、Renderer 或缓存。容器没有明确的 `pause/resume/destroy` 协议时，功耗账会和内存账一起失真。
 
@@ -251,7 +252,7 @@ Hybrid/WebView 的功耗治理从页面级账本开始：同内容对照、同�
 - [Android Developers: WebViewRenderProcessClient](https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient)
 - [AOSP: Power profiles for Android](https://source.android.com/docs/core/power)
 - [AOSP: Measure power values](https://source.android.com/docs/core/power/values)
-- [AOSP: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/master/native/webview/loader/loader.cpp)
+- [AOSP: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/native/webview/loader/loader.cpp)
 - [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 - [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
 - [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
