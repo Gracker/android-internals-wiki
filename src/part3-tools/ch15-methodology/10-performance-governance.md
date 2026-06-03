@@ -20,7 +20,7 @@ sources:
     path: "https://developer.android.com/topic/libraries/app-startup"
 tags: [governance, benchmark, ci, budget, release]
 related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-21"
@@ -33,6 +33,7 @@ task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-19T21:04:13+08:00"
 last_task6_audit: "2026-05-19"
+task2b_result: fixed
 task2b_state: fixed
 last_task9_audit: "2026-05-19"
 last_task9_review_log: "logs/deep-review/2026-05-19-20-audit.md"
