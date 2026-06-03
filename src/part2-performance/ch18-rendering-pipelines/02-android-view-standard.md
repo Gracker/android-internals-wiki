@@ -3,7 +3,7 @@
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-05-05'
 last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
@@ -37,34 +37,33 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-26"
-task6_result: "needs-rework"
+reviewed_date: "2026-06-04"
+task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-26"
-last_task6_at: "2026-05-26T05:09:00+08:00"
+last_task6_at: "2026-06-04T03:10:02+08:00"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-26T03:20:00+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。无 P0/P1；P2：Trace 表的 Choreographer#doFrame 判定仍需改成 FrameTimeline/app deadline 口径。"
-task6_review_notes: "2026-05-26 Task6 revisiting review: needs-rework。主体锚点覆盖 5/5；L1 禁用词/高频词未发现新增问题；L3/L4 1 项：正文末尾仍保留源码调研补充、AIW 注入时间、调研目标、价值等素材归档和编辑痕迹，已标注并写入 queue.json P90 交 Task2B 整合或移出发布稿。"
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1/L2 禁用词/高频词/AI填充词零命中。清除 1 处 [已修正] 编辑痕迹。无 B 类问题。自动晋升 finalized（task9 pass-tech-review + queue 无 pending + 无 B 类问题）。"
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 1
-task6_new_rework: true
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 0
+task6_new_rework: false
 review_type: "task6-writing-quality-review"
 ---
-
 
 # Android View 标准管线（BLAST 深入）
 
@@ -243,8 +242,6 @@ sequenceDiagram
 ## Trace 视角
 
 在 Perfetto 中分析标准管线时，以下 Slice 和信号是关键锚点。注意：具体名称可能因 Android 版本和 OEM 而异，但功能语义是稳定的。
-
-[已修正: Task9 2026-05-24 指出固定 16ms/8ms 阈值不适配高刷，表中正常耗时改为相对参考值。判断掉帧应基于当前 display frame interval 和 FrameTimeline expected present deadline，而非固定 16ms。]
 
 ### UI Thread 关键 Slice
 

@@ -13424,5 +13424,24 @@
       "result": "25.10 pass-light-edit auto-promoted finalized; 25.6 pass-light-edit pending task9",
       "reviewer": "openclaw-task6"
     }
-  ]
+  ],
+  "18.2": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "last_task6_at": "2026-06-04T03:05:00+08:00",
+    "task6_result": "pass-light-edit",
+    "auto_promoted": true
+  },
+  "24.9": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "last_task6_at": "2026-06-04T03:05:00+08:00",
+    "task6_result": "pass-light-edit"
+  },
+  "26.17": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "last_task6_at": "2026-06-04T03:05:00+08:00",
+    "task6_result": "pass-light-edit"
+  }
 }
