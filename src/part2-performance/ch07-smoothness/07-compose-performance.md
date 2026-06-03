@@ -1,7 +1,7 @@
 ---
 title: Jetpack Compose 性能优化
 chapter: '7.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
@@ -11,7 +11,7 @@ last_task6_at: '2026-05-22T19:07:00+08:00'
 last_task6_audit: '2026-05-22'
 last_task6_audit_result: pass-light-edit
 last_task6_audit_log: logs/review/2026-05-22-19-audit.md
-last_task2b_at: '2026-04-25T13:47:46+08:00'
+last_task2b_at: '2026-06-04T05:36:00+08:00'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -59,7 +59,7 @@ pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
-task2b_result: fixed
+task2b_result: fixed-lite
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-20'
 last_task9_at: "2026-05-20T02:20:00+08:00"
