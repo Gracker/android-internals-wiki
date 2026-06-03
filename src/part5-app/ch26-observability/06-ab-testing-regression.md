@@ -1,4 +1,5 @@
 ---
+
 title: "A/B Test 与性能回归防护"
 chapter: "26.6"
 section: "26.6"
@@ -32,12 +33,12 @@ sources:
     path: "https://firebase.google.com/docs/ab-testing/abtest-config"
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_result: needs-rework
-last_task6_at: "2026-05-15T05:15:00+08:00"
+reviewed_date: 2026-06-04
+task6_result: pass-light-edit
+last_task6_at: 2026-06-04T02:12:55+08:00
 task6_review_notes: "2026-05-15 Task6 05:15：needs-rework。完成 L1/L2 小修 4 处；L3 技术/证据边界已标注并合并 queue，交 Task2B。"
 task9_state: pending
 task2b_state: fixed
