@@ -1,7 +1,7 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 197,
+  "ready-for-review": 168,
   "finalized": 180,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
@@ -2817,10 +2817,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
-      "last_task6_at": "2026-05-13T20:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-20-review.md",
+      "last_task6_at": "2026-06-03T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-13-review.md",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-03"
     },
     "7.6": {
       "status": "ready-for-review",
@@ -4153,13 +4155,13 @@
     },
     "25.4": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-14",
-      "last_task6_at": "2026-05-14T18:15:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-18-review.md",
+      "last_task6_at": "2026-06-03T13:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-03-13-review.md",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T17:20:00+08:00",
@@ -4168,7 +4170,9 @@
       "task2b_result": "pending",
       "queue_priority": 85,
       "file": "src/part5-app/ch25-power-size/04-workmanager-practice.md",
-      "title": "WorkManager 实战与后台任务调度"
+      "title": "WorkManager 实战与后台任务调度",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-03"
     },
     "1.0": {
       "status": "finalized",
