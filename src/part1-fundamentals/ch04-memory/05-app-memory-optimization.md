@@ -1,5 +1,6 @@
 ---
 
+
 status: ready-for-review
 title: App 内存优化
 section: '4.5'
@@ -46,31 +47,30 @@ related_chapters:
 - '7.3'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-reviewed_date: "2026-05-22"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-06-04
+reviewed_by: openclaw-task6
 review_type: draft-review
 review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: reworked
-last_task2b_at: "2026-05-22T07:21:00+08:00"
+last_task2b_at: "2026-06-04T04:55:01"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T07:43:01+08:00"
 task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 3：Coil BitmapPool 版本错误、static Worker 示例不可编译、onTrimMemory API34+ BACKGROUND/UI_HIDDEN 口径错误；P1 1：16KB Play/Bitmap 断言缺边界和证据。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-05-22T08:20:00+08:00"
+task6_result: pass-light-edit
+last_task6_at: '2026-06-04T07:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-22-08-review.md"
-task6_review_notes: "2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 3 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。"
+task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
-last_task2b_at: "2026-06-04T04:55:01"
 ---
 
 

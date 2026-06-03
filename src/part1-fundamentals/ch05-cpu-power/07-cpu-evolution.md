@@ -1,13 +1,14 @@
 ---
 
+
 title: CPU 相关的版本演进
 chapter: '5.7'
 section: '5.7'
-status: ready-for-review
+status: finalized
 reviewed_at: '2026-05-16T12:20:36+08:00'
-last_task6_at: "2026-06-04T04:12:07+08:00"
+last_task6_at: '2026-06-04T07:05:00+08:00'
 review_round: 2
-task6_review_notes: '2026-05-16 task6 review: 完成 L1/L2 轻修，并按 Task9 版本边界风险在正文加 [存疑] 标注；回炉项已确认写入 queue.json。'
+task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。自动晋升 finalized(task9 auto-fixed + queue 无 pending + 本次无B类大问题)。'
 applicable_versions: Android 5.0 - Android 17
 last_verified: '2026-06-04'
 last_verified_against: developer.android.com Android 17 behavior/features + source.android.com + AOSP android-16.0.0_r1
@@ -65,18 +66,18 @@ related_chapters:
 repaired_date: '2026-04-30'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复(Task9/External 问题单)
-reviewed_date: "2026-06-04"
+reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T06:48:42+08:00"
