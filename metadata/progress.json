@@ -13378,5 +13378,13 @@
     "task6_review_notes": "2026-06-03 Task6 复审：pass-light-edit。L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。",
     "last_task9_at": "2026-05-14T13:30:11+08:00",
     "last_task2b_at": "2026-06-03T00:50:00+08:00"
+  },
+  "task2b": {
+    "last_run": "2026-06-03T08:53:49+08:00",
+    "last_fixed": [
+      "25.10",
+      "25.11"
+    ],
+    "completed_count": 2
   }
 }
