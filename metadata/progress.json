@@ -4379,10 +4379,10 @@
     },
     "26.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "last_task6_at": "2026-05-15T02:12:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-02-review.md",
       "task9_result": "needs-rework",
@@ -4390,18 +4390,24 @@
       "last_task9_review_log": "logs/deep-review/2026-05-15-02-deep-review.md",
       "task9_reviewed_date": "2026-05-15",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "pending",
-      "queue_priority": 85
+      "task2b_state": "fixed",
+      "queue_priority": 85,
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-03T20:59:49",
+      "last_task2b_by": "openclaw-task2b"
     },
     "26.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "last_task6_at": "2026-05-15T03:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-03-review.md",
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-06-03T20:59:49",
+      "last_task2b_by": "openclaw-task2b"
     },
     "26.6": {
       "title": "A/B Test 与性能回归防护",
