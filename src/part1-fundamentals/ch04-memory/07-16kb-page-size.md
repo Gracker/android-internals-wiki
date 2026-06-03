@@ -9,9 +9,9 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-applicable_versions: "Android 15 (API 35) - Android 16 (API 36)"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-04-27"
-last_verified_against: "developer.android.com, source.android.com, AOSP bionic main, AOSP android-16.0.0_r1, ARM Architecture Reference Manual"
+last_verified_against: "developer.android.com, source.android.com, AOSP android-16.0.0_r1, ARM Architecture Reference Manual"
 confidence: medium
 sources:
   - type: official
@@ -21,13 +21,13 @@ sources:
   - type: official
     path: "android-developers.googleblog.com/16kb-page-size"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_phdr.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr.cpp"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_phdr_16kib_compat.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr_16kib_compat.cpp"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker.cpp"
   - type: aosp
-    path: "platform/bionic/+/main/libc/platform/bionic/page.h"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/libc/platform/bionic/page.h"
   - type: research
     path: "ARM Architecture Reference Manual — TLB 结构与页大小"
 tags:
@@ -37,19 +37,19 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-08"
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: "pass-light-edit"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-24"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T18:20:00+08:00"
+last_task9_at: "2026-06-03T14:26:33+08:00"
 last_task2b_lite_at: 2026-06-03
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
+task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：将 Bionic 16KB compat 源码锚点从 AOSP main 改为已核验的 android-16.0.0_r1；补 Android 17 backcompat fatal 验证开关；补 Pixel 9a 测试入口并扩展 applicable_versions 到 Android 17/API 37。P0 0 / P1 0 / AUTO-FIX 3；回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
@@ -60,6 +60,9 @@ review_log: "logs/review/2026-05-08-04-review.md"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-18-audit.md"
+last_task9_autofix_at: "2026-06-03"
+last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
+
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -176,7 +179,7 @@ Bionic 的页大小查询由 `libc/platform/bionic/page.h` 里的 `page_size()` 
 Bionic Linker 加载 ELF 时，`linker_phdr.cpp` 先在 `ElfReader::Read()` 中读取 program header，并通过 `CheckProgramHeaderAlignment()` 得到 `min_align_`。下面保留关键分支，省略无关检查；它用于说明条件判断，不作为可编译片段。
 
 ```cpp
-// bionic/linker/linker_phdr.cpp (AOSP main)
+// bionic/linker/linker_phdr.cpp (AOSP android-16.0.0_r1)
 bool ElfReader::Read(...) {
     // Several unrelated ELF header, section and dynamic checks are omitted.
     CheckProgramHeaderAlignment();
@@ -230,6 +233,7 @@ compat 只用于临时兼容验证，不应作为发布态性能方案。对于�
 | 应用级 | `AndroidManifest.xml android:pageSizeCompat` | 单个 App |
 | 用户级 | 设置 → App Info → Advanced → "Run app with page size compat mode" | 单个 App |
 | 包管理器 | `pm.16kb.app_compat.disabled` | 安装时预检 |
+| Android 17 回退开关 | `bionic.linker.16kb.app_compat.enabled=fatal` | 禁止 4KB ELF 进入 16KB backcompat，直接暴露不兼容问题 |
 
 ### 对开发者的实际含义
 
@@ -309,7 +313,7 @@ adb shell getconf PAGE_SIZE
 
 ### 物理设备测试
 
-Pixel 8/8 Pro/8a 和 Pixel 9 系列在 Android 15 QPR1+ 上支持开发者选项中的 "Boot with 16KB page size"。启用后重启设备即可。
+Pixel 8/8 Pro/8a、Pixel 9 系列以及 Android 16+ 的 Pixel 9a 支持开发者选项中的 "Boot with 16KB page size"。启用后重启设备即可。
 
 ### 验证 APK alignment
 
@@ -476,7 +480,7 @@ Starting in Android 16，构建系统支持对 prebuilt `.so` 做 16KB 对齐检
 
 ### Android 16 / 17 的设备策略
 
-Android 16、Android 17 会不会把 16KB 写成更强的设备侧要求，要看对应版本的 CDD、兼容性公告或 OEM 发布说明。当前没有查到可直接引用的公开条文时，更适合把它当成待确认信息，而不是既定政策。
+Android 16、Android 17 会不会把 16KB 写成更强的设备侧要求，要看对应版本的 CDD、兼容性公告或 OEM 发布说明。Android 官方迁移文档已经给出 Android 17 的 backcompat 验证选项：把 `bionic.linker.16kb.app_compat.enabled` 设为 `fatal` 后，4KB 对齐 ELF 会直接失败，用来提前暴露仍依赖兼容模式的产物；这不等价于所有设备默认启用 16KB。
 
 ### OEM 适配进展
 

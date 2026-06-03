@@ -60,23 +60,25 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 9
-pipeline_stage: 'task9_pending'
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: '2026-06-03T13:05:00+08:00'
 last_task6_review_log: logs/review/2026-06-03-13-review.md
 task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
-task9_state: pending
-task9_result: 'needs-rework'
-last_task9_at: '2026-05-13T20:35:00+08:00'
-task2b_state: 'fixed'
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_at: "2026-06-03T14:26:33+08:00"
+task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: '2026-06-03'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-13'
-task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 0；CMC/Mark Compact 版本边界写成 Android 15 首次进入 AOSP，实际 android-14.0.0_r1 已有源码路径与 kCollectorTypeCMC/userfaultfd 探测。'
-last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-03"
+task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：修正 16KB Page Size 段落中的 Pixel 10/Tensor G5 未证实设备结论，改为 Android 官方已列出的 Pixel 8/9/9a 测试入口；将 Bionic 16KB compat 源码索引从 android-mainline 收敛到已核验的 android-16.0.0_r1。P0 0 / P1 0 / AUTO-FIX 2；回到 Task6 复审。 | 2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 0；CMC/Mark Compact 版本边界写成 Android 15 首次进入 AOSP，实际 android-14.0.0_r1 已有源码路径与 kCollectorTypeCMC/userfaultfd 探测。"
+last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
+last_task9_autofix_at: "2026-06-03"
+
 ---
 
 
@@ -510,7 +512,7 @@ Google 官方测试给出的量化结果包括：
 - **相机冷启动**快 6.6%，热启动快 4.48%
 - **系统启动**快约 8%（约节省 950ms）
 
-截至 2026 年，16KB page size 仍处于开发者引领阶段。以 Pixel 10（Tensor G5）为例，虽然硬件已针对 16KB 做了优化，但出厂默认仍以 4KB 模式运行，主要原因是大量旧版 NDK 应用在 16KB 环境下会出现兼容性问题。Google Play 要求 2025 年 11 月起上架应用必须 16KB 兼容，但设备侧的全面切换仍需要更长的过渡期。开发者应确保 NDK 代码兼容 16KB，但不必期待短期内所有旗舰机都默认启用。
+截至 2026 年，16KB page size 仍处于开发者引领阶段。Android 官方文档公开列出的真机测试入口集中在 Pixel 8 / 8a、Pixel 9 / 9 Pro / 9 Pro XL，以及 Android 16+ 的 Pixel 9a；是否出厂默认启用 16KB，要以具体设备配置和厂商发布信息为准。Google Play 要求 2025 年 11 月起上架应用必须 16KB 兼容，但设备侧的全面切换仍需要更长的过渡期。开发者应确保 NDK 代码兼容 16KB，但不必期待短期内所有旗舰机都默认启用。
 
 这些性能提升的代价是**内部碎片**：原本只需要 4KB 的小内存分配（如 `mmap` 映射），现在实际占用 16KB。对于内存分配密集的应用，实际内存占用会更高。不过在 8GB+ 的大内存设备上，这个代价相对 TLB 收益来说是可以接受的。
 
@@ -596,8 +598,8 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
 | 文件路径 | 关键内容 | 版本 |
 |---------|---------|------|
 | `frameworks/base/core/jni/android_os_Debug.cpp` | PSS JNI 读取，read_mapinfo() 解析 smaps | android-14+ |
-| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-mainline |
-| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-mainline |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-16.0.0_r1 |
+| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-16.0.0_r1 |
 | `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
