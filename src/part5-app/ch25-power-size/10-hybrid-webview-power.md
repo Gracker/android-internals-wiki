@@ -2,7 +2,7 @@
 title: "Hybrid/WebView 功耗与原生化取舍"
 chapter: "25.10"
 section: "25.10"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-15"
@@ -13,13 +13,13 @@ related_chapters: ["7.11", "10.3", "11.1", "19.26", "20.10", "25.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "论文素材 + 官方文档 + 章节覆盖缺口"
-reviewed_by: "openclaw-task6"
+reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-03T09:15:06+08:00"
-task6_state: revisiting
+last_task6_at: "2026-06-03T14:05:00+08:00"
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2308.16734"
@@ -50,7 +50,7 @@ sources:
   - type: clipping-structure
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 task9_result: auto-fixed
-task6_review_notes: "2026-06-03 Task6 revisiting-review：L1/L2 无新增问题。Task2B 已修复 Task9 标注的 P1/P2 问题（xt_qtaguid/eBPF 版本边界、WebViewRenderProcessClient API 29+ 边界、PowerMetric 设备限制）。送 Task9 重检。"
+task6_review_notes: "2026-06-03 Task6 revisiting-review #2：L1/L2 无新增问题。Task9 auto-fixed（P0/P1/P2=0）后写作质量无退化。满足自动晋升三条件（task6 pass + task9 pass + queue 无 pending），晋升 finalized。"
 task2b_state: fixed
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: openclaw-task9

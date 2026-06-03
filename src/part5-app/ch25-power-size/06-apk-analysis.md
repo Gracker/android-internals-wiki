@@ -42,16 +42,16 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-18"
+reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-18T16:05:00+08:00"
+last_task6_at: "2026-06-03T14:05:00+08:00"
 last_task6_review_log: logs/review/2026-05-18-16-review.md
-task6_review_notes: "2026-05-18 Task6：复审写作层；修正 3 处否定纠正式表达和口语化措辞，四个 outline 锚点覆盖；保留 Task9 已登记的 native 分发边界回炉项，等待 Task2B。"
+task6_review_notes: "2026-06-03 Task6 revisiting-review #2：L1/L2 无新增写作问题。B类待Task9：①三处 AOSP master 锚点需替换为版本验证标签或标注"未进入 Android 17"；②P1 Play Asset Delivery 闭环仍待 Task9 复核。送 Task9 重检。"
 task2b_result: fixed-lite
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
