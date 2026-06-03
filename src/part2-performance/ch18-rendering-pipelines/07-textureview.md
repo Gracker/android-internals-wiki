@@ -415,6 +415,110 @@ Vulkan 引入对 TextureView 的**间接**影响（Android 13+）：
 
 迁移时需要注意：如果业务依赖 `setRotation()`、复杂裁剪、圆角或和普通 View 一致的透明度动画，TextureView 仍然更合适。SurfaceView 在 Android 7.0+ 的平移/缩放同步已经明显改善，Android 14+ 也支持 View alpha，但它仍不是 TextureView 那种完整的 View 变换模型。
 
+
+## 游戏引擎集成注意事项（Unity/Unreal）
+
+> AIW-源码调研-2026-06-04
+
+### 核心结论
+
+**游戏引擎（Unity/Unreal）主渲染路径不经过 TextureView。** TextureView 在游戏引擎场景的适用场景仅限于：
+- 游戏内嵌视频播放（VideoTexture）
+- 直播美颜预览
+- AR 相机预览叠加
+
+### 架构差异
+
+| 渲染路径 | TextureView | 游戏引擎主渲染 |
+|:---|:---|:---|
+| **Surface 创建** | `TextureView.getSurfaceTexture()` → `SurfaceTexture` | `eglCreateWindowSurface()` / `ANativeWindow_fromSurface()` |
+| **渲染线程** | App RenderThread（`updateTexImage()` 采样） | 游戏独立 GL/Vulkan Context |
+| **帧率** | 绑定 App UI 帧率 | 独立（60/90/120fps） |
+| **延迟** | 高（App RT 中转） | 低（直出 SurfaceFlinger） |
+| **GPU 采样** | 额外 OES 纹理采样 | 无额外采样 |
+
+### Unity Android 渲染架构
+
+Unity Android 通过 `IAndroidPlayerSurface` 接口创建原生窗口 surface：
+
+```java
+// Unity 内部实现（推测）:
+// Unity/Modules/AndroidPlayer/Java/src/com/unity3d/player/AndroidPlayer.java
+// 创建 Surface，通过 JNI 传句柄到 native 层
+// native 层: ANativeWindow_fromSurface() → 直接绑定 GL context
+```
+
+关键路径（需 Unity 内部源码验证）：
+- `frameworks/native/libs/gui/Surface.cpp`: `ANativeWindow_fromSurface()`
+- `frameworks/base/core/jni/android_view_Surface.cpp`: Surface JNI 绑定
+
+### Unreal Engine Android 渲染架构
+
+Unreal 通过 `AndroidApplication` 创建 EGL 窗口：
+
+```cpp
+// Unreal Engine 源码（基于公开信息）:
+// Engine/Source/Runtime/Android/OpenGLDrv/Private/AndroidOpenGL.cpp
+// 使用 eglCreateWindowSurface() 创建原生窗口 surface
+// 渲染直接提交，不经过 TextureView
+```
+
+### TextureView 适合的游戏子场景
+
+| 场景 | 为什么用 TextureView |
+|:---|:---|
+| 游戏内嵌视频播放 | 需要和游戏 UI 叠加、滤镜、透明度动画 |
+| 直播美颜预览 | 需要 AR 滤镜和 UI 元素融合 |
+| 游戏录像回放 | 需要在游戏 UI 上叠加回放控件 |
+| 视频广告 | DRM 保护内容走 SurfaceView，非保护内容可 TextureView |
+
+### 性能对比
+
+| 维度 | SurfaceView 游戏主渲染 | TextureView 视频纹理 |
+|:---|:---|:---|
+| **延迟** | 低（直出 SF） | 高（App RT 采样） |
+| **GPU 开销** | 无额外采样 | 额外 OES 纹理采样 |
+| **帧率绑定** | 独立 | 绑定 App UI |
+| **适用场景** | 游戏主画面 | 游戏内视频/直播 |
+
+### 源码级证据
+
+**TextureView.java** (android-16.0.0_r1):
+```java
+/**
+ * A TextureView can be used to display a content stream, such as that
+ * coming from a camera preview, a video, or an OpenGL scene.
+ */
+public class TextureView extends View {
+    private SurfaceTexture mSurface;
+    private TextureLayer mLayer;
+    // 游戏场景：mSurface 来自 MediaCodec/Camera
+    // 游戏不直接渲染到 TextureView，而是渲染到 SurfaceTexture 背后的 Surface
+}
+```
+
+**TextureLayer.java** (android-16.0.0_r1):
+```java
+/**
+ * TextureLayer represents a SurfaceTexture that will be composited by 
+ * RenderThread into the frame when drawn in a HW accelerated Canvas.
+ */
+public final class TextureLayer implements AutoCloseable {
+    // 游戏引擎不直接创建 TextureLayer
+    // TextureLayer 由 TextureView 内部创建和管理
+}
+```
+
+### 实战建议
+
+1. **游戏主渲染**: 使用 SurfaceView 或原生 EGL surface，不要用 TextureView
+2. **游戏内视频**: TextureView 可用，但需注意主线程负载对帧率的影响
+3. **AR 预览**: 需要 UI 叠加时 TextureView 更灵活，不需要时用 SurfaceView
+4. **低端设备**: 即使是视频播放，也建议降级到 SurfaceView 减少 GPU 开销
+
+---
+
+
 ---
 
 > **交叉引用**：

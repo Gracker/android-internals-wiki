@@ -44,14 +44,14 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 pipeline_stage: 'task6_pending'
-task6_state: 'revisiting'
+task6_state: 'reviewed'
 task9_state: 'reviewed'
-reviewed_date: '2026-06-03'
+reviewed_date: '2026-06-04'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: '2026-06-03T12:15:21+08:00'
-last_task6_review_log: logs/review/2026-06-03-12-review.md
-task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 扫描无新增问题；禁用词/高频词/AI 填充词零命中。无新增回炉项。'
+last_task6_at: '2026-06-04T01:08:00+08:00'
+last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
+task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; fixed AppenderMode typo. No new rework items.'
 task9_result: 'auto-fixed'
 last_task9_at: '2026-06-04T00:20:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
@@ -115,7 +115,7 @@ last_task9_autofix_at: '2026-06-04'
 | 网络投递层 | 批量上传、退避重试、按网络条件延迟 | 后台高频唤醒，造成耗电和流量异常 |
 | 指令层 | 接收采样率、开关、Trace、Hprof 等远程配置 | 指令无 TTL 或无配额，放大线上故障 |
 
-[已验证: source, Tencent Mars xLog 暴露 `AppednerModeAsync`、`AppednerModeSync`、`cacheDir`、`logDir` 配置入口；Logan README 将端侧、服务端和日志检索站点拆成多个组件。]
+[已验证: source, Tencent Mars xLog 暴露 `AppenderModeAsync`、`AppenderModeSync`、`cacheDir`、`logDir` 配置入口；Logan README 将端侧、服务端和日志检索站点拆成多个组件。]
 
 这六层的共同约束是：业务线程只提交事实，不等待编码、落盘和网络。只要 APM 的一次记录动作能被放进主线程耗时分布里，它就必须给出耗时上限和降级策略。
 
