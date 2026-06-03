@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: 千万级 DAU 的 APM 端侧架构
 chapter: '19'
@@ -42,9 +43,9 @@ sources:
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
-task9_state: 'reviewed'
+pipeline_stage: 'task6_pending'
+task6_state: 'revisiting'
+task9_state: 'pending'
 reviewed_date: '2026-05-13'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -57,7 +58,11 @@ task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-13'
 last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
 task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 2；远程诊断能力缺普通三方 App 与系统/adb/internal build 的 Perfetto/Logcat/Hprof 权限边界；另有队列示例与协议 benchmark 建议。'
-task2b_state: 'pending'
+task2b_state: 'fixed'
+task2b_result: 'fixed'
+task2b_fixed_date: '2026-06-03'
+task2b_fixed_at: '2026-06-03T10:53:52'
+last_task2b_at: '2026-06-03T10:53:52'
 ---
 
 # 千万级 DAU 的 APM 端侧架构
@@ -133,11 +138,17 @@ graph TD
 
 入口侧只做三步：取时间戳、填最小字段、`tryOffer()`。队列满时不阻塞，按事件等级丢弃。后台 Worker 顺序处理编码、落盘、分片和上传状态变更。这样做的代价是局部样本会丢，但宿主 App 不会被 APM 拖慢。
 
-这段代码用于说明入口侧的耗时边界。重点看 `trySend()` 的失败分支：队列满时记录丢弃数，不在业务线程等待 Worker 消费。
+这段代码用于说明入口侧的耗时边界。重点看队列构造方式和 `trySend()` 的失败分支：队列必须有界，满时不阻塞业务线程，只记丢弃计数。
 
 ```kotlin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.BufferOverflow
+
 class ApmRecorder(
-    private val queue: Channel<ApmEvent>,
+    private val queue: Channel<ApmEvent> = Channel(
+        capacity = APM_QUEUE_CAPACITY,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    ),
     private val clock: () -> Long = { System.nanoTime() },
     private val selfMetrics: ApmSelfMetrics
 ) {
@@ -156,9 +167,12 @@ class ApmRecorder(
 
     companion object {
         private const val MAX_SCENE_LENGTH = 80
+        private const val APM_QUEUE_CAPACITY = 4096
     }
 }
 ```
+
+队列的关键约束：`Channel(capacity = 4096, onBufferOverflow = DROP_OLDEST)` 把内存上限锁在 4096 条事件上，满时丢弃旧事件而不是阻塞写入者，避免背压传导到业务线程。容量值按目标机型实测内存占用设定——低端机可以进一步下调。不推荐使用默认 rendezvous channel（无缓冲），也不推荐 `UNLIMITED`（内存失控）。
 
 这段代码只表达入口约束，不代表完整 SDK：禁止在记录函数里序列化、压缩、加密、写文件、发网络请求。业务线程的失败分支也不能打印大量日志，否则队列满会变成日志风暴。
 
@@ -190,6 +204,8 @@ FlatBuffers 的优势不同：它允许直接访问序列化后的 buffer，不�
 
 端侧推荐默认使用 Protobuf Lite 作为网络报文，存储层可使用自定义 block 包住多个 Protobuf event。这样能兼顾 schema 演进和文件恢复：单条 event 仍由 Protobuf 描述，外层 block 负责压缩、加密、长度和校验。
 
+以上对比基于协议设计特性和业界通用经验，未包含特定字段规模、事件频率、设备型号、payload 大小和序列化耗时的一手 benchmark。实际选型前，至少在目标设备上用本 App 的真实埋点 payload 跑一次最小对比：同一批 1k/10k 事件分别用 JSON、Protobuf Lite、FlatBuffers 编码，记录 payload bytes、encode/decode time、alloc bytes 和 GC 次数。缺少这组数据时，结论应理解为"二进制协议通常更适合高频上报"而非"一定更优"。
+
 ## 5. 动态指令：远程能力必须带 TTL、配额和签名
 
 千万级 DAU 的 APM 不能只做被动采集。线上问题常见的排查路径是：服务端发现某版本、某机型、某用户群异常，再给端侧下发短期指令，让目标设备在下次启动或下一次场景进入时记录更详细的材料。
@@ -204,12 +220,28 @@ FlatBuffers 的优势不同：它允许直接访问序列化后的 buffer，不�
 
 Perfetto 文档给出的建议是：Android 侧已有 `android.os.Trace` / ATrace 能满足时继续使用这些接口；更复杂的应用内事件可以使用 Perfetto SDK 定义自有数据源。[已验证: official, Perfetto Tracing SDK 文档。] Hprof 方面，Android Studio 文档说明可通过 `dumpHprofData()` 在代码的指定位置生成堆转储，但生成过程会增加内存压力，生产使用必须受控。[已验证: official, Android Studio Capture a heap dump 文档。]
 
+这三种诊断能力在 Android 上受 App 进程权限边界严格约束。普通三方 App 不是 adsb/internal build，能采集的范围和能开通的通道完全不同。下表按 App 类型区分可用能力和限制：
+
+| 诊断能力 | 普通三方 App | debuggable / profileable App | 系统签名 / 特权 App | adb / internal build |
+| --- | --- | --- | --- | --- |
+| Perfetto SDK in-process tracing | 可用，无需特殊权限 | 可用，同普通 App | 可用 | 可用 |
+| 系统级 Perfetto ftrace / atrace 全量采集 | 不可用；需要 privileged consumer（如 adb shell / system） | 不可用；同普通 App | 可用（预声明 trace config 且进程有合适权限） | 可用 |
+| Hprof `dumpHprofData()` 自身进程 | 可用（需受控配额） | 可用 | 可用 | 可用 |
+| Hprof 跨进程 / 系统级 | 不可用 | 不可用 | 可能可用（依 SELinux 和 signing 权限） | 可用 |
+| 本进程 / 本 SDK 可控日志（自写 tag） | 可用 | 可用 | 可用 | 可用 |
+| 全设备 logcat 回捞（含其他进程/system server） | 不可用；Android 4.1+ `READ_LOGS` 只授予 privileged/system app | 不可用；同普通 App | 可用（manifest 声明 `READ_LOGS` 且系统签名） | 可用 |
+
+[已验证: 官方文档, Android 4.1+ `READ_LOGS` 仅授予 privileged system apps；Perfetto docs 说明 in-process tracing 不需要特殊 OS 权限，系统级 tracing 需要 privileged consumer。]
+
+设计远程指令协议时，必须把 App 的实际权限边界编进指令的 capability check。普通三方 App 只能开通自身进程内的 Perfetto SDK in-process trace、自身 Hprof 和自有 SDK 日志回捞；系统级 Perfetto、全设备 logcat 和跨进程 Hprof 只能在内部测试 build 或系统签名 App 上执行。指令协议中增加 `required_capability` 字段（`app_sdk` / `system_privileged` / `adb_internal`），端侧收到超出自身能力的指令时返回失败回执，不静默忽略。
+
 指令协议至少包含这些字段：
 
 - `command_id`: 服务端指令唯一标识，用于去重和回执。
 - `target`: 版本、渠道、机型、系统版本、用户分桶，不在端侧做复杂表达式解释。
 - `ttl`: 过期时间，避免旧指令在用户数天后启动时继续生效。
 - `quota`: 单设备最大触发次数、最大文件大小、最大上传字节数。
+- `required_capability`: 执行该指令需要的最低 App 权限级别（`app_sdk` / `system_privileged` / `adb_internal`），端侧收到超出自身能力的指令时返回失败回执。
 - `signature`: 防止配置通道被篡改后开启敏感采集。
 - `kill_switch`: 服务端可立即关闭某类指令。
 
