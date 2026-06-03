@@ -31,7 +31,7 @@ reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 last_task6_at: "2026-05-07T06:10:00+08:00"
 last_task6_audit: "2026-05-25"

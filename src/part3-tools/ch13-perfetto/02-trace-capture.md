@@ -47,7 +47,7 @@ related_chapters:
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
 pipeline_stage: "task6_pending"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -921,6 +921,13 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 
 ## 参考资料
 
+
+### Measure + Perfetto/FrameMetrics 系统级渲染分析集成点
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md
+- 类型：DeepResearch 调研结果
+- 摘要：FrameMetrics API 底层通过 FrameInfo 结构体（24个索引）收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 present time（公共 API）和等待 present time（Perfetto 系统级分析）。集成关键在于 FrameMetrics 是 Perfetto 数据的上层包装。
+- 注入时间：2026-06-04
+- 价值：揭示了 FrameMetrics 与 Perfetto 共享 FrameInfo 数据源的本质关系，包含 HWUI 层 FrameMetricsReporter 和双模式 Observer 的源码级分析
 1. Perfetto 官方文档 - Quickstart: Android Tracing: https://perfetto.dev/docs/quickstart/android-tracing
 2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
 3. Perfetto 官方文档 - Native Heap Profiler: https://perfetto.dev/docs/data-sources/native-heap-profiler
