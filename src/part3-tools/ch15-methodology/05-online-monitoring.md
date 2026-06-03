@@ -59,6 +59,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
 review_notes: "2026-05-21 Task9 deep review: needs-rework。P0：FrameMetrics 指标表使用不存在的公开常量名；P1：GPU_DURATION/API31 版本边界与 ANR 触发口径需补。"
 task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized."
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 # 线上性能监控
 
@@ -194,7 +196,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/FrameMetrics.java]
 
-FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获取。这个回调运行在 `addOnFrameMetricsAvailableListener()` 传入的 `Handler` 所属 Looper 线程上。接入时通常会准备专用 `HandlerThread`，在回调里复制或聚合数据后再异步上报；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。
+FrameMetrics 通过 `Window.OnFrameMetricsAvailableListener` 回调获取数据，回调运行在注册时传入的 `Handler` 所在线程上。接入时通常会准备专用 `HandlerThread`，在回调里复制或聚合数据后再异步上报；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。
 
 ### JankStats：Google 官方的帧率监控库
 
@@ -363,7 +365,7 @@ for (ApplicationExitInfo info : exitInfos) {
 
 ## 监控数据的采样、聚合与报警策略
 
-把数据从用户设备上采集回来只是第一步。如果每帧、每次启动、每个 ANR 都全量上报，后端的存储和计算成本会很快失控，用户的流量和电量消耗也会成为问题。所以线上监控必须有一套合理的采样和聚合策略。
+把数据从用户设备上采集回来只是第一步。如果每帧、每次启动、每个 ANR 都全量上报，后端存储和计算成本很快会失控，用户的流量和电量也会扛不住——线上监控必须有一套合理的采样和聚合策略。
 
 ### 分层采样
 
@@ -466,7 +468,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 ## 平台与客户端的边界
 
-客户端最擅长的是感知和取证，平台最擅长的是聚合和回查。成熟方案通常会明确这个边界：
+前面几节已经把信号层、客户端增强层、平台层的职责拆开了，这里再收束一下：客户端最擅长的是感知和取证，平台最擅长的是聚合和回查。成熟方案通常会明确这个边界：
 
 - **客户端**：采集信号、记录上下文、在异常时补现场
 - **平台**：聚合趋势、机型对比、版本回归、报警、问题榜单
@@ -517,15 +519,15 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 ## 接入口径 FAQ
 
-**"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。拖慢 App 的通常是回调中的 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
+**"线上帧率监控会拖慢 App"**？只要实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。拖慢 App 的通常是回调中的 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
 
-**"ANR Watchdog 能替代 ApplicationExitInfo"**——不能完全替代。Watchdog 是基于启发式的（"主线程 N 秒没响应就认为 ANR"），而 ApplicationExitInfo 提供的是系统认定的 ANR 事件。两者的数据口径不同，Watchdog 的误报率更高。在 API 30+ 设备上应该优先使用 ApplicationExitInfo。
+**"ANR Watchdog 能替代 ApplicationExitInfo"**？不能完全替代。Watchdog 依赖启发式判断（"主线程 N 秒没响应就认为 ANR"），而 ApplicationExitInfo 提供的是系统认定的 ANR 事件。两者的数据口径不同，Watchdog 的误报率更高。在 API 30+ 设备上应该优先使用 ApplicationExitInfo。
 
-**"采样率越高质量越好"**——不是。5% 的随机采样对于日活百万级的 App 已经能提供统计意义上足够精确的 P95 估计。盲目提高采样率只会增加成本，不增加决策价值。需要全量采集的是异常会话（ANR/崩溃/严重卡顿），而不是正常用户的行为。
+**"采样率越高质量越好"**？不是这样。5% 的随机采样对于日活百万级的 App，已经能提供统计意义上足够精确的 P95 估计。盲目提高采样率只会增加成本，不增加决策价值。需要全量采集的是异常会话（ANR/崩溃/严重卡顿），而不是正常用户的行为。
 
-**"启动耗时只需要监控冷启动"**——不够。虽然冷启动是优化重点，但温启动和热启动的用户体验同样重要。很多 App 的温启动因为 Activity 重建时的数据加载而变慢，这个问题只有监控温启动才能发现。
+**"启动耗时只需要监控冷启动"**？不够。冷启动是优化重点，但温启动和热启动的用户体验同样重要。很多 App 的温启动因为 Activity 重建时的数据加载而变慢，这个问题只有监控温启动才能发现。
 
-**"有了 Firebase/第三方 APM 就不需要自己做了"**——第三方 APM 提供通用能力，但无法覆盖业务特有的监控需求。比如"商品详情页图片加载到可交互的耗时"这样的业务指标，只能自己埋点。最佳实践是第三方 APM 做基础监控 + 自定义埋点做业务监控，两者互补。
+**"有了 Firebase/第三方 APM 就不需要自己做了"**？第三方 APM 提供通用能力，但覆盖不了业务特有的监控需求。比如"商品详情页图片加载到可交互的耗时"这样的业务指标，只能自己埋点。最佳实践是第三方 APM 做基础监控 + 自定义埋点做业务监控，两者互补。
 
 ## 参考资料
 

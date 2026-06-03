@@ -1,8 +1,8 @@
 {
   "total": 377,
   "draft": 0,
-  "ready-for-review": 168,
-  "finalized": 180,
+  "ready-for-review": 167,
+  "finalized": 181,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
   "task9_reviewed_by": "openclaw-task9",
@@ -13399,5 +13399,16 @@
       "task9_state": "pending",
       "fix_summary": "P1: UIDT 版本边界 + §5.10 交叉引用; P2: GreedyScheduler WorkConstraintsTracker, requiresDeviceIdle+backoff 不兼容, getStopReason 版本边界"
     }
-  }
+  },
+  "review_log": [
+    {
+      "date": "2026-06-03",
+      "sections": [
+        "25.10",
+        "25.6"
+      ],
+      "result": "25.10 pass-light-edit auto-promoted finalized; 25.6 pass-light-edit pending task9",
+      "reviewer": "openclaw-task6"
+    }
+  ]
 }

@@ -65,6 +65,8 @@ task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T19:47:40+08:00"
 task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 
 # 3.4 输入延迟与预测输入技术
@@ -319,7 +321,7 @@ LIMIT 100;
 
 ### Input Boost 的观察方法
 
-常见设备会在触摸到来后短时间提高 CPU 或 GPU 频率，或者把 UI 相关线程迁移到更合适的核心。策略名称因平台而异，常见叫法包括 Input Boost、Touch Boost。正文不能把某个 SoC 的持续时间或目标频率写成 Android 通用事实。
+常见设备会在触摸到来后短时间提高 CPU 或 GPU 频率，或者把 UI 相关线程迁移到更合适的核心。策略名称因平台而异，常见叫法包括 Input Boost、Touch Boost。不要把某个 SoC 的具体持续时间或目标频率写成 Android 通用行为。
 
 排查顺序：
 
@@ -328,7 +330,7 @@ LIMIT 100;
 3. 看 App 主线程是否从 Runnable 及时变成 Running。
 4. 看 RenderThread 和 SurfaceFlinger 是否也拿到了足够 CPU 时间。
 
-如果输入到来后主线程长时间 Runnable，而 CPU 仍在低频，问题更可能在调度/提频策略，而不是 View 分发本身。
+如果输入到来后主线程长时间处于 Runnable 状态，而 CPU 仍在低频，问题更可能出在调度/提频策略，而不是 View 分发本身。
 
 [来源: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md] [交叉引用: §5.1 Linux 调度器与线程优先级]
 
@@ -340,7 +342,7 @@ LIMIT 100;
 
 ## Android 16/17 的待验证方向
 
-这部分来自外部 review 和近期素材，只作为后续研究方向，不把尚未公开核验的内容写成确定事实。
+本节内容来源于外部 review 和近期素材，目前只作为后续研究方向的记录，尚未公开核验的内容不写成确定事实。
 
 - `[待验证] ADPF 输入反馈回路`：外部 review 提到 Android 16 可能把输入线程处理时长纳入性能提示回路，接近截止线时触发更积极的线程迁移或提频。当前缺少可公开引用的 AOSP 调用链，后续应查 `PerformanceHintManager`、inputflinger 与 power HAL 交互。
 - `[待验证] HWC actual present 时间线`：外部 review 提到 HWC 4.0 标准化 actual present time，用于软件级量化指尖到像素延迟。当前正文只保留方向，后续应对照 HWC HAL 文档、FrameTimeline 与 present fence 字段。

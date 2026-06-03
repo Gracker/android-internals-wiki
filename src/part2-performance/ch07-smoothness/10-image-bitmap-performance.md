@@ -57,6 +57,8 @@ last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-06-10-review.md"
 task9_result: pass-tech-review
 auto_promoted: true
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-03
 ---
 # 7.10 图片加载与 Bitmap 性能优化
 
@@ -173,7 +175,7 @@ Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Andr
 
 **Android 8.0（API 26）及之后**：像素数据再次回到 Native heap。Java 堆压力会下降，但这些像素页仍然计入进程 PSS，所以图片解码过多，进程一样会因为总体内存压力被 `lmkd` 回收。[已验证：官方文档 `Managing Bitmap Memory` + AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp`]
 
-这套模型能成立，靠的不是“GC 直接扫描 Native heap”，而是 `Bitmap.java` 通过 `NativeAllocationRegistry` 把底层像素内存登记给 ART。Bitmap 的 Java 壳对象仍留在 Java 堆；当这个 Java 对象不可达时，registry 会调用注册好的 native free 函数释放底层像素内存。同时，ART 会把这部分 registered native size 纳入内存压力判断，所以大批量图片解码仍然可能把并发 GC 提前拉起来。也因为这层绑定已经存在，绝大多数常规场景不需要手动追着 `recycle()`。
+这套模型能成立，靠的不是“GC 直接扫描 Native heap”，而是 `Bitmap.java` 通过 `NativeAllocationRegistry` 把底层像素内存登记给 ART。Bitmap 的 Java 壳对象仍留在 Java 堆；当这个 Java 对象不可达时，registry 会调用注册好的 native free 函数释放底层像素内存。同时，ART 会把这部分 registered native size 纳入内存压力判断，所以大批量图片解码仍然可能把并发 GC 提前拉起来。也正因为这层绑定，绝大多数常规场景不需要手动调用 `recycle()`。
 
 ### 各 Bitmap.Config 的内存开销对比
 
@@ -345,7 +347,7 @@ Glide 的内存缓存体系分成三层：
 
 Android 12（API 31）引入了对 AVIF 的基础支持。Android 14 对部分新设备要求支持 AV1 硬件解码，但 AVIF 的硬件加速取决于 SoC 的 AV1 解码器是否支持 still image 子集（SUBPEL 精度和 single tile 限制）；不满足条件的设备退回软件解码（libdav1d）。
 
-AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下通常能用更小文件换取相近画质；具体比例取决于图片内容、编码参数和解码器。对于带宽敏感的场景（图片 CDN、社交信息流），它能减少网络流量和 CDN 成本。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
+AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下通常能用更小文件换取相近画质；具体比例取决于图片内容、编码参数和解码器。对于带宽敏感的场景（图片 CDN、社交信息流），它能减少网络流量和 CDN 成本。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。
 
 但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。常见工程做法是把 `libavif` 一类 JNI 解码库随 App 打包，在 Android 12 以下走软件解码，再按系统版本和 ABI 做能力分流。代价是包体、CPU 开销和 Native 维护成本都会上升。
 
@@ -445,7 +447,7 @@ imageView.load("https://example.com/photo.jpg") {
 
 Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 放回池里，再用 `inBitmap` 复用”的路线。主要原因有两个：一是支持 Immutable Bitmap——`inBitmap` 复用会修改 Bitmap 的内部状态，Coil 3.x 的跨平台架构（Kotlin Multiplatform）要求 Bitmap 在解码后保持不可变；二是简化内存模型，把优化重心放在尺寸控制和缓存命中上，而非运行时 Bitmap 池管理。Coil 3.x 延续了这个策略，没有把 BitmapPool 加回来。[已验证：Coil `upgrading_to_coil2.md`]
 
-磁盘缓存也有明确版本边界：
+除了 BitmapPool，Coil 的磁盘缓存策略在不同版本间也有变化：
 
 1. **Coil 1.x**：主要依赖 OkHttp `Cache`
 2. **Coil 2.x**：切到自带 `DiskCache`，官方明确不建议再把 OkHttp `Cache` 当成图片磁盘缓存
@@ -466,7 +468,7 @@ Hardware Bitmap 也不能只写成“默认开启”。Coil Android 侧的 `allo
 
 如果项目是纯 Kotlin、使用 Compose，Coil 的接入成本更低。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
 
-抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
+抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。
 
 ## 在 Perfetto 中定位图片解码卡顿
 
@@ -507,7 +509,7 @@ Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存�
 
 `Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为未在 Android 15 发生变更。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP `Bitmap.java` prepareToDraw() 注释在 android-15.0.0_r1 和 android-16.0.0_r1 未变；Choreographer 回调类型见 AOSP `Choreographer.java`]
 
-源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
+源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[已验证：AOSP android-14 `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp`]
 
 [图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
 
@@ -546,7 +548,7 @@ LIMIT 50;
 
 ### 内存管理
 
-5. **利用内存复用**：减少内存分配/释放频率，降低 GC 压力。Glide 4.x 已封装 `BitmapPool` / `inBitmap`；Coil 2.x / 3.x 不再提供 BitmapPool，要把重点放在尺寸控制、缓存命中和请求配置上。
+5. **利用内存复用**：减少内存分配/释放频率，降低 GC 压力。Glide 4.x 已封装 `BitmapPool` / `inBitmap`；Coil 2.x / 3.x 不再提供 BitmapPool，优化重心应放在尺寸控制、缓存命中和请求配置上。
 6. **监控 fd 数量**：Hardware Bitmap 消耗 fd，大量图片场景需要关注 `/proc/<pid>/fd` 的数量。
 7. **响应 onTrimMemory**：在系统内存紧张时释放图片缓存。Glide 自动做了。
 
