@@ -42,26 +42,29 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 last_task6_at: "2026-06-03T07:08:52+08:00"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-14T13:14:00+08:00"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-14
-last_task9_at: "2026-05-14T13:30:11+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-14-13-deep-review.md"
+task9_reviewed_date: "2026-06-03"
+last_task9_at: "2026-06-03T14:26:33+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
 task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
 task6_reviewed_date: "2026-06-03"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
+last_task9_autofix_at: "2026-06-03"
+task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：修正 OkHttp Dispatcher 排队时间观测口径，使用 OkHttp 5.x dispatcherQueueStart/dispatcherQueueEnd；旧版 OkHttp 需自定义队列埋点，不能用 callStart 代表出队。P0 0 / P1 0 / AUTO-FIX 1；回到 Task6 复审。"
+
 ---
 
 # I/O 与网络优化案例集
@@ -184,7 +187,7 @@ class PreferenceWriteBuffer(
 
 页面接口 P95 从 800 ms 涨到 2 s，服务端日志只显示处理耗时 200 ms。客户端抓包和 OkHttp EventListener 拆分后，慢在三个位置：DNS 偶发 300 ms 以上，部分请求没有复用连接，首屏接口被图片预取和日志上报挤在 Dispatcher 队列后面。
 
-OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；异步请求由 Dispatcher 控制总并发和单 host 并发。EventListener 可以记录 `dnsStart/dnsEnd`、`connectStart`、`secureConnectStart`、`connectionAcquired`、`responseHeadersStart` 等事件，用来区分解析、建连、TLS、连接复用和服务端等待。[已验证: OkHttp Calls docs, square.github.io/okhttp/features/calls/][已验证: OkHttp Events docs, square.github.io/okhttp/features/events/][已验证: OkHttp Dispatcher docs, square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/]
+OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；异步请求由 Dispatcher 控制总并发和单 host 并发。EventListener 可以记录 `dispatcherQueueStart/dispatcherQueueEnd`、`dnsStart/dnsEnd`、`connectStart`、`secureConnectStart`、`connectionAcquired`、`responseHeadersStart` 等事件，用来区分 Dispatcher 排队、解析、建连、TLS、连接复用和服务端等待。[已验证: OkHttp Calls docs, square.github.io/okhttp/features/calls/][已验证: OkHttp Events docs, square.github.io/okhttp/features/events/][已验证: OkHttp Dispatcher docs, square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/]
 
 ### 观测路径
 
@@ -192,7 +195,7 @@ OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；�
 
 | 时间段 | OkHttp 事件或业务埋点 | 常见根因 |
 | --- | --- | --- |
-| 排队 | enqueue 到 `callStart` / 自定义 Dispatcher 队列时间 | 并发上限过低，图片、下载、API 共用队列 |
+| 排队 | OkHttp 5.x 的 `dispatcherQueueStart` → `dispatcherQueueEnd`；旧版 OkHttp 需要自定义 Dispatcher 队列埋点 | 并发上限过低，图片、下载、API 共用队列 |
 | DNS | `dnsStart` → `dnsEnd` | 本地 DNS 慢，HTTPDNS 缓存失效，网络切换 |
 | 建连/TLS | `connectStart` → `secureConnectEnd` | 连接池被切碎，短连接过多，证书链或代理慢 |
 | TTFB | request body 结束 → `responseHeadersStart` | 服务端处理慢，网关排队，弱网重传 |
