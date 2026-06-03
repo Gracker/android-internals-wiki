@@ -2,7 +2,7 @@
 title: "Crash 上报体系搭建"
 chapter: "26.2"
 section: "26.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Firebase Crashlytics docs, Clippings structure references"
@@ -44,9 +44,9 @@ sources:
     path: "system/core/debuggerd/crash_dump.cpp"
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
 related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -61,8 +61,10 @@ last_task9_at: "2026-06-03T21:54:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
 task9_result: auto-fixed
 task9_review_notes: "2026-05-15 Task9:needs-rework。Native signal-safe 持久化边界与 ApplicationExitInfo 补偿链路缺失,需 Task2B 回炉。"
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-06-04
 ---
+
 last_task9_autofix_at: "2026-06-03"
 ---
 
@@ -155,9 +157,9 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 
 ### 退出原因常量(API 30+)
 
-- `REASON_SIGNAL` (5):Native 信号退出
-- `REASON_CRASH_NATIVE` (8):Native 代码崩溃--补偿链路核心
-- `REASON_CRASH` (7):Java 未捕获异常
+- `REASON_SIGNALED` (2):进程被信号终止
+- `REASON_CRASH` (4):Java 未捕获异常
+- `REASON_CRASH_NATIVE` (5):Native 代码崩溃--补偿链路核心
 
 ### Native Crash 信号捕获链路
 
@@ -171,7 +173,7 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 
 | 版本 | API Level | 变化 |
 |------|-----------|------|
-| Android 11 | 30 | 引入 `ApplicationExitInfo`,`REASON_CRASH_NATIVE`=8 |
+| Android 11 | 30 | 引入 `ApplicationExitInfo`,`REASON_CRASH_NATIVE`=5 |
 | Android 12 | 31 | `REASON_CRASH_NATIVE` 可通过 `traceInputStream` 读取 tombstone protobuf |
 
 ### 已知未验证项
@@ -202,7 +204,7 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 - `system/core/debuggerd/proto/tombstone.proto` - proto 格式定义
 
 **ApplicationExitInfo 补偿入口**(API 30+):
-- `REASON_CRASH_NATIVE` = 6,对应 tombstone 文件
+- `REASON_CRASH_NATIVE` = 5,对应 tombstone 文件
 - `getTraceFile()` 返回 `/data/tombstones/tombstone_XX` 的 FileInputStream
 - 服务端追踪:`ActivityManagerService.java l.5213`
 - 系统记录:`AppExitInfoTracker.java`
