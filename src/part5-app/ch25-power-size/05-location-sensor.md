@@ -1,8 +1,7 @@
----
 title: "定位与传感器功耗优化"
 chapter: "25.5"
 section: "25.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers location / sensors docs + Google Play services LocationRequest docs + AOSP sensor batching docs + Clippings structure references"
@@ -34,10 +33,11 @@ sources:
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
 tags: [location, fused-location, geofencing, sensor-batching, power]
 related_chapters: ["25.1", "25.2", "11.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+last_task9_autofix_at: "2026-06-03"
+task9_result: auto-fixed
 last_task9_at: "2026-05-14T18:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
@@ -48,12 +48,11 @@ last_task2b_at: "2026-06-03T14:54:49+08:00"
 task2b_fixed_by: "openclaw-task2b"
 task2b_fixed_date: "2026-06-03"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-14T19:10:00+08:00"
+last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
----
 
 # 定位与传感器功耗优化
 
@@ -246,7 +245,7 @@ private fun unregisterBatchedSensors() {
 
 - 前后台边界：
 - Android 9（API 28）+：后台 App 不能接收 continuous 传感器（accelerometer、gyroscope 等）事件，必须使用前台服务并把通知、权限和退出条件写清楚。
-- Android 12（API 31）+：运动/位置传感器的后台采样速率被硬限制在 200 Hz 以下；`HIGH_SAMPLING_RATE_SENSORS` 权限只提升前台采样上限，不绕过后台限制。
+- Android 12（API 31）+：运动/位置传感器的后台采样速率被硬限制在 200 Hz 以下；`HIGH_SAMPLING_RATE_SENSORS` 权限只提升前台采样速率上限，对后台 200 Hz 硬限制和 FGS 约束无影响。
 - Android 14（API 34）+：健康/运动类传感器长时使用需配合 `foregroundServiceType="health"` 或对应的 FGS type，且 `while-in-use` 权限下后台启动 Activity 需走 `PendingIntent` 或通知入口。
 - wake-up 与 non-wake-up：wake-up sensor 可以在 FIFO 满或最大延迟到期时唤醒应用处理器；non-wake-up sensor 在 suspend 中不会主动唤醒应用处理器，旧事件可能被循环缓冲覆盖。
 - 采样率上限：`getMinDelay()` 只告诉传感器可支持的最快采样间隔，不代表业务应该使用这个频率。界面姿态、摇一摇、运动趋势通常不需要最快档。

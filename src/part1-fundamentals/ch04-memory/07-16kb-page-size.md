@@ -1,4 +1,3 @@
----
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
@@ -37,8 +36,8 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_reviewed_date: "2026-05-08"
 task9_state: reviewed
 task2b_result: fixed-lite
@@ -55,7 +54,7 @@ repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
 review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mTHP/contpte 与 compat RELRO 边界仍需回炉。"
 
-last_task6_at: "2026-06-03T10:05:00+08:00"
+last_task6_at: "2026-06-03T21:36:06+08:00"
 review_log: "logs/review/2026-05-08-04-review.md"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
 last_task9_audit: "2026-05-24"
@@ -63,7 +62,6 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-18-audit.md"
 last_task9_autofix_at: "2026-06-03"
 last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
 
----
 # 4.7 16KB Page Size 与 Android 性能
 
 ## 为什么要了解 16KB Page Size
