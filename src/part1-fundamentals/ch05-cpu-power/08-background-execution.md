@@ -1,4 +1,5 @@
 ---
+
 status: "ready-for-review"
 title: 后台执行限制与优化
 chapter: '5.8'
@@ -68,18 +69,18 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T00:25:00+08:00"
-task2b_state: "pending"
-task2b_result: "fixed"
-last_task2b_at: '2026-05-09T18:44:33+08:00'
-task9_state: "reviewed"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: 2026-06-04T02:57:11+08:00
+task9_state: pending
 task9_result: "needs-rework"
 last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
@@ -419,13 +420,16 @@ IBinder.addFrozenStateChangeCallback(executor, callback)
 - `libs/binder/BpBinder.cpp` L962-1010 — addFrozenStateChangeCallback 转发
 - `libs/binder/IPCThreadState.cpp` L1714-1730 — BC_REQUEST_FREEZE_NOTIFICATION 发送
 - `services/core/java/com/android/server/am/CachedAppOptimizer.java` L4230-4270 — 冻结编排完整流程
-### 16KB 页环境下的 GC 联动压缩
+### CachedAppOptimizer 的 GC 联动与内存压缩
 
-[存疑: Task9 2026-05-18 已指出该段的 Android 16/17 版本边界与 16KB 专属收益缺少官方或源码锚点，需回炉改成 Android 14+ cached app freezer 的 GC / compaction 口径。]
+从 Android 14 开始，CachedAppOptimizer 在冻结 cached 进程前可能请求应用运行时执行一次 GC，为后续的内存回收做准备。冻结后，系统还可能对进程执行额外的内存压缩（compaction）：包括将脏页回写到 backing storage、将匿名页压缩到 ZRAM。
 
-Android 16 引入了系统压缩期间联动触发应用 GC 的机制。当系统判定需要回收物理内存时（CachedAppOptimizer 执行压缩前或 lmkd 压力增大），会先向目标进程发送 GC 请求，让应用侧主动释放可回收的 Java 堆对象，再由系统层利用 16KB 大页做更高效的物理内存释放。
+这套机制不依赖 16KB 页——它在 4KB 页设备上同样生效。但 16KB 页设备的单次页面释放粒度更大（16KB vs 4KB），压缩后的内存回收效率会更高。排查时可以在 Perfetto 中观察系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 下降是否同步出现。
 
-16KB 页环境下，单次页面释放的内存量是 4KB 模式的 4 倍，GC 联动压缩的收益因此更明显。排查时可以在 Perfetto 中观察系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 下降是否同步出现。
+**关键源码路径**：
+- `services/core/java/com/android/server/am/CachedAppOptimizer.java` — freeze 流程与 GC 请求
+- `system/core/lmkd/lmkd.cpp` — lmkd 压力触发的回收路径
+- source.android.com — cached-apps-freezer 官方文档
 
 ## Binder Freezer Driver 协同机制：源码级补充
 
@@ -539,10 +543,10 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 | Android 10 (API 29) | BAL 收紧 | 后台弹 Activity 的路径明显变少 |
 | Android 12 (API 31) | Restricted bucket、后台启动 FGS 限制、exact alarm special access | 后台任务调度和 FGS 启动都要先过门禁 |
 | Android 13 (API 33) | Restricted bucket 的长期未交互阈值从 45 天降到 8 天 | 很久不用的 App 更快进入重限流状态 |
-| Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
+| Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；CachedAppOptimizer 引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
 | Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
-| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；[存疑: 系统压缩期间联动触发应用 GC 的版本边界待 Task2B 回炉] | 后台保活路径进一步收窄；[存疑: 16KB 页收益口径待补官方或源码锚点] |
+| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点 | 后台保活路径进一步收窄 |
 
 ## 常见问题与误区
 
