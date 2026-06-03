@@ -144,3 +144,18 @@
 - **位置**：L150 AVIF 格式适用版本
 - **问题**：正文语境为 APK 体积优化（BitmapFactory/ImageDecoder 平台级 API），声称"Android 12（API 31）及以上设备"；若指平台级 AVIF decode，Android 10（API 29）起 `ImageDecoder` 即支持 AVIF（需设备内置 AVIF 解码器）；若指 WebView Chromium AVIF，则与 WebView 版本绑定，Pixel 6+ Android 12 起 Chromium 99+ 支持。原文按平台级 claim 更准确，Android 12+ 是保守下限。建议核实后确认。
 - **建议**：结合实际目标读者场景，明确是"平台级 ImageDecoder AVIF decode（API 29+，但取决于设备厂商是否内置解码器）"还是"WebView Chromium AVIF 支持（Android 12+ Pixel 6 起）"，二者的版本边界和使用条件不同。
+
+
+## Task2B 回炉修复 (frontmatter fallback) — 2026-06-03 21:40
+
+### 3.6 手势识别算法与性能优化
+- 来源：2026-05-18 deep-review audit (last_task9_audit)
+- P1: VelocityTracker DEFAULT_STRATEGY_BY_AXIS 版本限定 — 补充 Android 10-13 全局 LSQ2 路径说明，明确轴级策略矩阵为 Android 14+ 特性
+- P2: VelocityThreshold 资源层次 — 补充 config_viewMinFlingVelocity/config_viewMaxFlingVelocity overlay 机制和 Android 14+ axis/source 级重载
+- 状态：fixed → task6_pending
+
+### 5.3 大小核架构
+- 来源：2026-05-18 task9 deep-review
+- P0: sugov_get_util() 代码块修正 — 重写为与实际 android16-6.12 源码一致的实现（scx_cpuperf_target 初值 → CFS util 条件叠加 → effective_cpu_util → boost 后置 → sugov_effective_cpu_perf 映射）
+- P2: 骁龙 8 Elite capacity 数据锚点 — 添加容量数值外推估算标注和设备级验证路径说明
+- 状态：fixed → task6_pending

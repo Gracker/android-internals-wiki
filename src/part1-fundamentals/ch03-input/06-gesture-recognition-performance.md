@@ -3,7 +3,7 @@ title: 手势识别算法与性能优化
 chapter: '3.6'
 section: '3.6'
 status: ready-for-review
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_state: fixed
 task6_state: revisiting
 task9_state: pending
@@ -41,15 +41,15 @@ related_chapters:
 - '3.3'
 - '3.4'
 - '2.4'
-pipeline_stage: task2b_pending
+
 task6_state: "reviewed"
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-20
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T10:22:00+08:00"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
@@ -57,6 +57,7 @@ review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatte
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
   3/5·元数据 4/5。'
 last_task9_audit: "2026-05-18"
+last_task2b_at: "2026-06-03T21:33:00+08:00"
 ---
 
 # 手势识别算法与性能优化
@@ -178,7 +179,7 @@ void VelocityTracker::configureStrategy(int32_t axis) {
 }
 ```
 
-这张表比“Android 14 之后统一改成 Impulse”更接近源码现状。触摸平面的 X/Y 轴默认还是 `LSQ2`，滚轮或 scroll 这种差分轴默认是 `IMPULSE`。如果调用 `obtain(String/int)` 指定了策略，native 才会绕过这张默认表。
+这张轴级策略表最早出现在 Android 14（API 34）。Android 10/11 只有全局 `DEFAULT_STRATEGY = "lsq2"`，所有轴统一用最小二乘法。Android 12/13 中 `Strategy::DEFAULT` 仍然通过 `configureStrategy()` 映射到同一个全局 LSQ2 策略，没有按轴区分。直到 Android 14 引入 `DEFAULT_STRATEGY_BY_AXIS`，才为 X/Y 保留 LSQ2 的同时给 scroll 轴单独换上 IMPULSE——在排查线上问题时，滚动轴的速度计算行为在不同 Android 版本上可能不同，排查时不能把 IMPULSE 当作全版本通用结论。
 
 从排查角度看，这里要先分清两件事：一是当前取的是哪个 axis，二是代码是否显式覆盖了默认 strategy。把问题一概写成“Android 13 引入 FallbackStrategy，Android 14 默认 Impulse”会把分析入口带偏。
 
@@ -425,6 +426,8 @@ private static final int MAXIMUM_FLING_VELOCITY = 8000;  // 最大 Fling 速度�
 ```
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewConfiguration.java]
+
+`MINIMUM_FLING_VELOCITY` / `MAXIMUM_FLING_VELOCITY` 是 Java 层的 fallback 常量值。运行时真实阈值来自 `frameworks/base/core/res/res/values/config.xml` 中的 `config_viewMinFlingVelocity`（默认 50dp）和 `config_viewMaxFlingVelocity`（默认 8000dp），设备厂商可通过 overlay 覆盖这些资源值。Android 14+ 还引入了 `getScaledMinimumFlingVelocity(int inputDeviceId, int axis, int source)` / `getScaledMaximumFlingVelocity(...)` 重载，支持按输入设备、轴、输入源分别设置阈值（例如旋钮编码器 rotary encoder 有专用的 fling 阈值资源）。排查 Fling 行为异常时，不能只看 Java 常量，需要同时检查设备 overlay 和 axis/source 级重载是否改了门槛。
 
 **关键设计**：`MAXIMUM_FLING_VELOCITY` 的存在是为了防止极端速度值导致的"飞出屏幕"效果。VelocityTracker 在 `computeCurrentVelocity()` 时会 clamp 速度值到这个范围内。这个参数的值直接影响 Fling 动画的最大速度，间接影响了用户对"滑动流畅度"的感知。
 
