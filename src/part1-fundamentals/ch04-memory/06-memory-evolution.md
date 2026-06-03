@@ -3,7 +3,7 @@ status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
-reviewed_date: '2026-05-13'
+reviewed_date: '2026-06-03'
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-07'
@@ -63,9 +63,9 @@ review_count: 8
 pipeline_stage: 'task6_pending'
 task6_state: revisiting
 task6_result: pass-light-edit
-last_task6_at: '2026-05-13T20:10:00+08:00'
-last_task6_review_log: logs/review/2026-05-13-20-review.md
-task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 2 处：修正 last_task2b_at 日期占位符、删除 largeHeap 否定纠正式表述；Task9 仍待复核，未自动晋升。'
+last_task6_at: '2026-06-03T12:15:21+08:00'
+last_task6_review_log: logs/review/2026-06-03-12-review.md
+task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 小修 2 处：修正 section title Java Heap→Java 堆 术语一致性、删除「本节重点关注」元叙述。无新增回炉项。'
 task9_state: pending
 task9_result: 'needs-rework'
 last_task9_at: '2026-05-13T20:35:00+08:00'
@@ -142,7 +142,7 @@ ART 的 GC 设计从一开始就瞄准了 Dalvik 的两个核心问题：暂停�
 
 不过 CMS 仍然有一个关键缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。Android 8.0 引入 Concurrent Copying GC 后，这个问题才有了系统级解决路径。
 
-关于 ART 内存管理的完整细节（堆结构、GC 策略、对象分配路径），4.3 节「ART 虚拟机内存管理」已经展开，这里不再重复。本节重点关注"版本之间的变化"本身。
+ART 内存管理的完整细节（堆结构、GC 策略、对象分配路径）详见 4.3 节「ART 虚拟机内存管理」。
 
 AOSP 源码路径：
 - ART CMS GC：`art/runtime/gc/collector/concurrent_mark_sweep.cc`
@@ -150,7 +150,7 @@ AOSP 源码路径：
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/allocator/rosalloc.cc]
 
-## Android 8.0：Bitmap 像素数据从 Java Heap 迁移到 Native Heap
+## Android 8.0：Bitmap 像素数据从 Java 堆迁移到 Native 堆
 
 如果说 ART 替代 Dalvik 改变的是 GC 的"速度"，那么 Bitmap 像素数据的搬迁改变的就是 GC 的"工作范围"。这个变化看似只是一个存储位置的调整，但它深刻影响了 App 的内存统计方式和 OOM 的触发逻辑。
 

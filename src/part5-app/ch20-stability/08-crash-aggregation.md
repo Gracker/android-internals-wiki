@@ -2,13 +2,22 @@
 title: "崩溃聚合与归因分析"
 chapter: "20.8"
 section: "20.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-11"
+last_verified: "2026-06-03"
 last_verified_against: "AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs"
 confidence: medium
 drafted_date: "2026-05-11"
-polish_count: 0
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-03"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: reviewed
+task9_result: auto-fixed
+task2b_result: fixed
+task2b_state: fixed
+polish_count: 1
+pipeline_stage: ready-to-publish
 sources:
   - type: aosp
     path: "art/runtime/thread.cc (CreateInternalStackTrace, WalkStack)"

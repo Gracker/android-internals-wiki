@@ -44,14 +44,14 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 pipeline_stage: 'task6_pending'
-task6_state: 'revisiting'
+task6_state: 'reviewed'
 task9_state: 'pending'
-reviewed_date: '2026-05-13'
+reviewed_date: '2026-06-03'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: '2026-05-13T20:10:00+08:00'
-last_task6_review_log: logs/review/2026-05-13-20-review.md
-task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 6 处：去否定-纠正式开头、修正 mmap 空格、压缩口头约定/完整 SDK 等表达；无新增回炉项，转入 Task9 技术复审。'
+last_task6_at: '2026-06-03T12:15:21+08:00'
+last_task6_review_log: logs/review/2026-06-03-12-review.md
+task6_review_notes: '2026-06-03 Task6 12:15：pass-light-edit（revisit）。L1/L2 扫描无新增问题；禁用词/高频词/AI 填充词零命中。无新增回炉项。'
 task9_result: 'needs-rework'
 last_task9_at: '2026-05-13T20:35:00+08:00'
 task9_reviewed_by: 'openclaw-task9'

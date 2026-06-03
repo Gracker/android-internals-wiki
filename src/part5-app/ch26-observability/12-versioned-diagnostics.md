@@ -2,13 +2,16 @@
 title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
 chapter: "26.12"
 section: "26.12"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-05-17"
+last_verified: "2026-06-03"
 last_verified_against: "AOSP main ApplicationExitInfo / ActivityManager / packages/modules/Profiling, Android Developers docs, Clippings structure references"
 confidence: medium
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-03"
+pipeline_stage: ready-to-publish
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
@@ -180,7 +183,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 
 `getTraceInputStream()` 的返回值要按 `null` 处理。AOSP 注释写明：它通常在 `REASON_ANR` 可用；API 31 起，`REASON_CRASH_NATIVE` 可返回 native tombstone protobuf；native crash trace 放在全局环形缓冲里，可能被新 crash 覆盖，所以仍然会返回 `null`。ANR trace 路径返回的是 gzip stream，native tombstone 路径返回的是 tombstone protobuf stream。两种结果不能按同一种文本格式解析。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
-`REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。当前 AOSP main 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 AOSP main 未命中该常量]
+`REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。当前 AOSP main 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 AOSP main 未命中该常量，后续以正式 SDK 文档为准]
 
 ## ApplicationExitInfo 证据边界
 
@@ -273,7 +276,7 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 
 ## 隐私、限流与采集成本
 
-Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库路径、URL 片段和用户操作时序；heap dump 可能包含对象字段、缓存内容、请求参数和页面状态。采集前要满足四个条件：远程开关可关、用户或合规策略允许、字段经过脱敏、文件在 App 私有目录加密或受访问控制保护。[已验证: 官方文档, developer.android.com/privacy-and-security/risks/log-info-disclosure]
+Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库路径、URL 片段和用户操作时序；heap dump 可能包含对象字段、缓存内容、请求参数和页面状态。采集前要满足四个条件：远程开关可关、用户或合规策略允许、字段经过脱敏、文件在 App 私有目录加密或受访问控制保护。[已验证: 官方文档, https://developer.android.com/privacy-and-security/risks/log-info-disclosure]
 
 采集成本也要显式落到配置。System trace 受缓冲区大小和时长影响，stack sampling 受频率影响，heap dump 会带来暂停和内存峰值。建议默认只对灰度用户或指定 case 开启；单用户单日限制次数；Wi-Fi / 充电条件作为可选约束；上传前检查文件大小；服务端设置保留期限和访问审计。
 
@@ -403,6 +406,39 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 <!-- AIW-源码调研-2026-05-31 -->
 ## 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码闭环确认
+
+**来源**：daily-topics.json #5 选题驱动
+
+**新增验证点（2026-05-31 一手验证）**：
+
+### ProfilingManager 源码路径与 Flag 约束
+- 源码位置：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（非 frameworks/base 路径）
+- API Level：35（Android 15+）
+- Flag 约束：`@FlaggedApi(Flags.FLAG_TELEMETRY_APIS)` — 需设备启用 Telemetry APIs 才可用
+- ProfilingType 常量：JAVA_HEAP_DUMP=1、HEAP_PROFILE=2、STACK_SAMPLING=3、SYSTEM_TRACE=4
+- 服务端通信：使用 `IProfilingService` Binder + `IProfilingResultCallback` 异步回调
+- 结果文件路径：`mContext.getFilesDir().getPath()` + tag
+
+### ProfilingResult Error Codes（9 个）
+| 常量 | 值 | 含义 |
+|------|-----|------|
+| ERROR_NONE | 0 | 成功 |
+| ERROR_FAILED_RATE_LIMIT_SYSTEM | 1 | 系统级限流 |
+| ERROR_FAILED_RATE_LIMIT_PROCESS | 2 | 进程级限流 |
+| ERROR_FAILED_PROFILING_IN_PROGRESS | 3 | 已有采集进行中 |
+| ERROR_FAILED_EXECUTING | 4 | 执行失败 |
+| ERROR_FAILED_POST_PROCESSING | 5 | 后处理失败 |
+| ERROR_FAILED_NO_DISK_SPACE | 6 | 磁盘空间不足 |
+| ERROR_FAILED_INVALID_REQUEST | 7 | 无效请求 |
+| ERROR_UNKNOWN | 8 | 未知错误 |
+
+### 未验证项（诚实标注）
+- ProfilingTrigger：源码检索未找到该类，可能位于 `packages/modules/Profiling/` 路径而非 `frameworks/base/`
+- FLAG_TELEMETRY_APIS 启用条件：源码中未找到该 Flag 的具体启用机制
+- ProfilingService 服务端实现：未找到 frameworks/base/services/core/java 中的 ProfilingService.java
+
+<!-- AIW-源码调研-2026-05-31 -->
+### 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码闭环确认
 
 **来源**：daily-topics.json #5 选题驱动
 

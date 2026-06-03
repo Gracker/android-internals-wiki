@@ -325,3 +325,77 @@ Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图
 | 平台是否可运营 | 有告警、权限、采样和数据保留策略 |
 
 通过这些验证后，再决定是否扩大到更多业务线。
+
+<!-- AIW-源码调研-2026-06-03 -->
+## FrameMetrics 与 Perfetto 系统级渲染分析集成点
+
+**源码调研：2026-06-03 | Gap: RG-MEASURE-001**
+
+### 核心结论
+
+Android FrameMetrics API 与 Perfetto trace 共用同一数据源——HWUI 层的 `FrameInfo` 结构体（`libs/hwui/FrameInfo.h`）。FrameMetrics 是 Perfetto 数据的上层包装：应用通过 `Window.addOnFrameMetricsAvailableListener()` 获取帧级数据，Perfetto 通过 systrace 收集相同时间戳序列实现系统级分析。
+
+### FrameInfo 时间戳体系
+
+C++ 层 `FrameInfoIndex` enum 定义 24 个时间戳索引，比 Java 层 FrameMetrics 的 8 个 metric 细得多：
+
+| 层级 | FrameInfoIndex | 含义 | 对应 FrameMetrics |
+|------|----------------|------|-------------------|
+| UI Thread | HandleInputStart - Vsync | 输入处理延迟 | INPUT_HANDLING_DURATION |
+| UI Thread | AnimationStart - HandleInputStart | 动画回调 | ANIMATION_DURATION |
+| UI Thread | PerformTraversalsStart - AnimationStart | 布局测量 | LAYOUT_MEASURE_DURATION |
+| UI Thread | DrawStart - PerformTraversalsStart | DisplayList 计算 | DRAW_DURATION |
+| RenderThread | SyncStart - DrawStart | 与 RT 同步 | SYNC_DURATION |
+| RenderThread | SwapBuffers - SyncStart | GPU 命令下发 | COMMAND_ISSUE_DURATION |
+| GPU | GpuCompleted - SwapBuffers | GPU 执行 | — |
+| Display | DisplayPresentTime - GpuCompleted | 显示延迟 | — |
+
+**关键文件**：
+- `platform_frameworks_base @ android-16.0.0_r1:libs/hwui/FrameInfo.h` — 24 个索引定义
+- `platform_frameworks_base @ android-16.0.0_r1:libs/hwui/FrameMetricsReporter.cpp` — 帧完成时事件分发
+- `platform_frameworks_base @ android-16.0.0_r1:libs/hwui/FrameMetricsObserver.h` — 两种通知模式（等待/不等待 present time）
+
+### 调用链
+
+```
+Window.addOnFrameMetricsAvailableListener()
+  → View.addFrameMetricsListener()
+    → ViewRootImpl$FrameMetricsObserver (native bridge)
+      → HWUI: FrameMetricsReporter.reportFrameMetrics()
+        → FrameMetricsObserver.notify(FrameInfoBuffer)
+          → App: OnFrameMetricsAvailableListener.onFrameMetricsAvailable()
+```
+
+### Perfetto 集成关键点
+
+1. **时间戳同步**：两者都以 `systemTime(SYSTEM_TIME_MONOTONIC)` 为基准，可直接对齐
+2. **DisplayPresentTime**（API 33+）：关联端到端延迟分析的关键字段，之前只能通过 SwapBuffers 近似
+3. **跳帧原因**：`SkippedFrameReason` 通过 `ATRACE_FORMAT_INSTANT` 记录到 trace
+4. **observer 过滤**：FrameMetricsReporter 根据 surfaceControlId 和 frameNumber 过滤，只通知附着后的帧
+
+### 应用层代码示例
+
+```java
+window.addOnFrameMetricsAvailableListener(new Window.OnFrameMetricsAvailableListener() {
+    @Override
+    public void onFrameMetricsAvailable(Window window, FrameMetrics frameMetrics,
+                                        int dropCountSinceLastInvocation) {
+        FrameMetrics copy = new FrameMetrics(frameMetrics);
+        long layoutDuration = copy.getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION);
+        long drawDuration = copy.getMetric(FrameMetrics.DRAW_DURATION);
+        // 与 Perfetto trace 时间戳对照分析
+    }
+}, mainHandler);
+```
+
+### 版本差异
+
+| 版本 | FrameInfoIndex 数量 | 关键变化 |
+|------|---------------------|----------|
+| API 24-28 | 约 16 个 | 初始版本 |
+| API 29-32 | 约 20 个 | 增加 WorkloadTarget、SyncQueued |
+| API 33-36 | 24 个 | 增加 DisplayPresentTime、CommandSubmissionCompleted |
+| API 37 (Android 17) | 24 个 | 无变化 |
+
+**源码验证**：
+- `platform_frameworks_base @ android-16.0.0_r1:libs/hwui/FrameInfo.cpp` — `static_assert(static_cast<int>(FrameInfoIndex::NumIndexes) == 24)`
