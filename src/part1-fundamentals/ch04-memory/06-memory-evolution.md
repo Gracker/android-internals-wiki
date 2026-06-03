@@ -60,18 +60,19 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 8
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
+pipeline_stage: 'task6_pending'
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: '2026-05-13T20:10:00+08:00'
 last_task6_review_log: logs/review/2026-05-13-20-review.md
 task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 2 处：修正 last_task2b_at 日期占位符、删除 largeHeap 否定纠正式表述；Task9 仍待复核，未自动晋升。'
-task9_state: 'reviewed'
+task9_state: pending
 task9_result: 'needs-rework'
 last_task9_at: '2026-05-13T20:35:00+08:00'
-task2b_state: 'pending'
-task2b_result: fixed
+task2b_state: 'fixed'
+task2b_result: fixed-lite
 last_task2b_at: '2026-05-13T19:33:05+08:00'
+last_task2b_lite_at: '2026-06-03'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-13'
 task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 0；CMC/Mark Compact 版本边界写成 Android 15 首次进入 AOSP，实际 android-14.0.0_r1 已有源码路径与 kCollectorTypeCMC/userfaultfd 探测。'
@@ -200,7 +201,7 @@ AOSP 源码路径：
 
 [已验证: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md — 表格总结]
 
-## Android 8.0–15：GC 从 Concurrent Copying 演进到 Concurrent Mark-Compact
+## Android 8.0–14：GC 从 Concurrent Copying 演进到 Concurrent Mark-Compact
 
 4.3 节已经详细解析 ART 的 CC GC 机制，这里聚焦"版本差异"——从 CMS 到 CC 的跨越，以及 Android 10 上的进一步优化。
 
@@ -235,15 +236,15 @@ Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 [来源: research-feed 2026-03-31-11-ch04-art-generational-gc.md]
 
-### Android 15：UFFD 驱动的 Mark Compact 路径进入 AOSP
+### Android 14：UFFD 驱动的 Mark Compact 路径进入 AOSP
 
-到了 Android 15，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact / CMC 路径。这说明 AOSP 已具备 UFFD 驱动的 Mark Compact 实现路径，但不等于所有设备已经完全切换到这个 collector；讨论版本边界时，也要把 Android 16 QPR2+ 之后官方明确对外说明的 Generational CMC 分开。
+到了 Android 14，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact / CMC 路径。这说明 AOSP 已具备 UFFD 驱动的 Mark Compact 实现路径，但不等于所有设备已经完全切换到这个 collector；讨论版本边界时，也要把 Android 16 QPR2+ 之后官方明确对外说明的 Generational CMC 分开。
 
 这条路径把对象迁移和应用线程继续运行拆到页级别协调。GC 线程压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先整理目标页，再把控制权交还给应用线程。这里讨论的是 collector 实现变化，分代回收思路本身没有消失。
 
 版本边界可以按下面三段记：
-- **Android 8.0-14**：主线仍是 CC / generational CC
-- **Android 15**：AOSP 已有 UFFD 驱动的 Mark Compact / CMC 路径
+- **Android 8.0-13**：主线仍是 CC / generational CC
+- **Android 14**：AOSP 已有 UFFD 驱动的 Mark Compact / CMC 路径
 - **Android 16 QPR2+**：官方开始把 Generational CMC 作为对外能力明确说明
 
 关于 CMC GC 的详细机制和 Perfetto 观察方法，详见 4.3 节「ART 虚拟机内存管理」。
@@ -252,8 +253,8 @@ AOSP 源码路径：
 - CC GC：`art/runtime/gc/collector/concurrent_copying.cc`
 - CMC GC：`art/runtime/gc/collector/mark_compact.cc`
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-14.0.0_r1, art/runtime/gc/heap.cc]
 [来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
@@ -626,9 +627,9 @@ MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。�
 | Android 10 | 分代 CC GC 成熟 | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
 | Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
 | Android 13 | 部分设备开始支持 MTE；App 可配置 `memtagMode=sync/async` | Native 内存错误可借助硬件检测 |
-| Android 15 | UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP | GC 路线开始从 CC 扩展到 Mark Compact |
+| Android 14 | UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP | GC 路线开始从 CC 扩展到 Mark Compact |
 | Android 15 | 16KB Page Size 支持 | 64 位 App 需确认 NDK / 预编译 so 的页大小兼容 |
-| Android 16 QPR2+ | 官方对外明确 Generational CMC | 版本讨论时要与 Android 15 的 Mark Compact 路径分开写 |
+| Android 16 QPR2+ | 官方对外明确 Generational CMC | 版本讨论时要与 Android 14 的 Mark Compact 路径分开写 |
 
 [来源: 综合本节各锚点的验证结果汇总]
 
