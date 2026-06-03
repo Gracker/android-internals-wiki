@@ -5,8 +5,8 @@ chapter: "26.6"
 section: "26.6"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-15"
-last_verified_against: "Android Developers docs + Firebase docs + Clippings structure references"
+last_verified: "2026-06-04"
+last_verified_against: "Android Developers Macrobenchmark docs 2026-05-19 + Firebase docs + Clippings structure references"
 confidence: medium
 drafted_date: "2026-05-15"
 polish_count: 0
@@ -33,24 +33,26 @@ sources:
     path: "https://firebase.google.com/docs/ab-testing/abtest-config"
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
 last_task6_at: 2026-06-04T02:12:55+08:00
 task6_review_notes: "2026-05-15 Task6 05:15：needs-rework。完成 L1/L2 小修 4 处；L3 技术/证据边界已标注并合并 queue，交 Task2B。"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-15"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-15T04:28:44+08:00"
-task9_review_notes: "2026-05-15 Task9 04:28：needs-rework。P0 0 / P1 3 / P2 1；样本量统计模型、FrameTimingMetric API 31+ 边界、P90 归因公式需 Task2B 回炉。"
+last_task9_at: "2026-06-04T03:20:00+08:00"
+task9_review_notes: "2026-06-04 Task9 auto-fix：补充 StartupTimingMetric.timeToFullDisplayMs 在 Android 10/API 29 及以下可能不可用的版本边界；回到 Task6 复审。"
 task2b_result: fixed
 last_task2b_at: 2026-06-04T00:55:43+08:00
 task2b_fixed_by: openclaw-task2b-main
 task2b_fix_round: 2026-06-04-00
+last_task9_autofix_at: "2026-06-04"
+last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
 ---
 
 # A/B Test 与性能回归防护
@@ -144,7 +146,7 @@ Android 官方性能测试文档把 runtime performance 分成 local testing 和
 | 绝对阈值 | 冷启动 P90 超过 5 s，冻帧率超过 0.1% | 已经接近用户可感知的问题 | 进入 P0/P1 风险评估 |
 | 分群异常 | Android 13 + 4 GB 内存设备慢帧率翻倍 | 全量指标被平均值盖住的设备问题 | 限制放量范围，派发给相关模块 |
 
-Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`。`FrameTimingMetric` 的基础输出 `frameDurationCpuMs` 在所有受支持版本上可用；`frameOverrunMs` 仅在 Android 12（API 31）+ 上可用，它反映帧实际耗时超出预期帧间隔的部分。Android 10/11（API 29/30）设备上的 CI 门禁不能依赖 overrun，应改用 `frameDurationCpuMs`、慢帧率（slow frame rate）或冻结帧率（frozen frame rate）作为替代口径。`TraceSectionMetric` 按自定义 trace section 统计次数和耗时；`PowerMetric` 在支持的 Pixel 设备上记录测试期间的能耗变化。门禁配置中需补 `metric_available_api` 字段，避免跨版本混算同一阈值。官方文档要求 benchmark 输出 JSON 和 Perfetto trace，产物应进入 CI 存档，不留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
+Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`；其中 `timeToFullDisplayMs` 依赖应用通过 `reportFullyDrawn()` 报告完全绘制，官方文档说明该测量在 Android 10（API 29）及以下可能不可用。`FrameTimingMetric` 的基础输出 `frameDurationCpuMs` 在所有受支持版本上可用；`frameOverrunMs` 仅在 Android 12（API 31）+ 上可用，它反映帧实际耗时超出预期帧间隔的部分。Android 10/11（API 29/30）设备上的 CI 门禁不能依赖 TTFD 或 overrun 作为唯一口径，应改用 `timeToInitialDisplayMs`、`frameDurationCpuMs`、慢帧率（slow frame rate）或冻结帧率（frozen frame rate）作为替代口径。`TraceSectionMetric` 按自定义 trace section 统计次数和耗时；`PowerMetric` 在支持的 Pixel 设备上记录测试期间的能耗变化。门禁配置中需补 `metric_available_api` 字段，避免跨版本混算同一阈值。官方文档要求 benchmark 输出 JSON 和 Perfetto trace，产物应进入 CI 存档，不留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
 
 线上回归检测要沿用 26.3 节的分位值和采样字段。检测任务至少按 `metric_name`、`scene_id`、`app_version`、`experiment_id`、`variant_id`、`device_tier`、`android_version` 分桶。没有分桶的 P90 只代表混合分布，不能支持版本决策。
 
