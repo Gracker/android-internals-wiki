@@ -3,7 +3,7 @@
 title: "启动完整路径分析（App 视角）"
 chapter: "21.1"
 section: "21.1"
-status: ready-for-review
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
@@ -17,18 +17,18 @@ sources:
 path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed-lite
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-02"
+reviewed_date: "2026-06-04"
 task6_reviewed_date: "2026-06-02"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-02T07:07:00+08:00"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-06-04T05:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-07-review.md"
-task6_review_notes: "2026-06-02 07:07 Task6：L1/L2 小修 3 处，补齐启动度量 source，未新增回炉项；Task9 auto-fixed 后继续送 Task9 复核。"
+task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-02"
