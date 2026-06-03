@@ -32,22 +32,26 @@ sources:
     path: "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
 tags: [quality-gate, release, canary, rollback]
 related_chapters: ["26.6", "26.3", "15.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: needs-rework
 last_task6_at: "2026-05-15T07:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-15-07-review.md"
 task6_review_notes: "2026-05-15 Task6 07: needs-rework。完成 L1/L2 小修 2 处；沿用 Task9 风险信号标注 3 处并合并 queue，交 Task2B。"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: '2026-05-15'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-15T06:28:00+08:00'
 last_task9_review_log: logs/deep-review/2026-05-15-06-deep-review.md
 task9_result: needs-rework
 task9_review_notes: "2026-05-15 Task9 06: needs-rework。P1 1：Macrobenchmark TTFD / FrameTimingMetric overrun 版本边界未写清；P2 2：Vitals 慢信号口径、全量 halt 资料与限制。已写入 logs/deep-review/2026-05-15-06-deep-review.md。"
+task2b_result: fixed
+last_task2b_at: 2026-06-04T00:55:43+08:00
+task2b_fixed_by: openclaw-task2b-main
+task2b_fix_round: 2026-06-04-00
 ---
 
 # 发版质量门禁
@@ -158,7 +162,7 @@ Google Play staged rollout 支持把更新先发布给一部分用户，然后�
 | 5%-20% | 1-2 个核心流量周期 | 低端机、老系统、弱网分群通过 | 限制渠道或设备范围 |
 | 50%-100% | 至少覆盖高峰时段 | Vitals / APM / 客服反馈没有同源异常 | halt rollout 或发修复包 |
 
-[需补充素材: Vitals 使用 28 天窗口，属于慢信号；灰度升档 / 暂停应优先用 APM、Crash / ANR 上报、启动和帧率分群等快信号。Task2B 需按 Task9 问题单补 fast signals / slow signals 边界。]
+[自动发现] 灰度决策要区分 fast signals 和 slow signals。APM 上报、Crash/ANR 实时统计、启动/帧率分群是 fast signals——分钟到小时级可用，适合 1%-5% 灰度阶段判断。Android Vitals 使用 28 天滚动窗口计算 quality warning，属于 slow signals——它在 50%-100% 放量及全量后提供长期质量校验，但不适合在 1% 灰度 30 分钟内做决策。灰度门禁的策略：fast signals 决定能否升档（暂停/继续灰度），slow signals 用来检验"持续好几个月"的质量趋势、触发 Play warning 排查和商店可见性评估。门禁报告里把两类信号分开列出，不混在一个判断条件里。
 
 APM 数据要和发布平台双向对账。发布平台告诉 APM 当前 version、rollout fraction、渠道和实验参数；APM 把核心指标、异常分群和上报质量回写到发布单。缺少这一步，release owner 会在几个看板之间人工对数，决策会变慢。
 
@@ -177,10 +181,10 @@ Google Play Developer API 的 track release 模型包含 `draft`、`inProgress`�
 | 配置导致启动拉接口、日志暴涨、图片预加载扩大 | 可通过服务端配置恢复 | 立即回退配置，保留版本灰度 |
 | 1% 灰度出现 crash / ANR 分群异常 | 影响面小，包体风险高 | halt / pause rollout，拉取样本和 trace |
 | 低端机启动或慢帧明显退化 | 可通过设备 / 渠道限制降低影响 | 暂停升档，只对安全分群继续观察 |
-| 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户仍会拿到问题版本 | 使用商店 halt 能力或尽快发修复包，配合服务端降级 |
+| 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户仍会拿到问题版本 | 已 100% 完成的 release 无法通过 Play API halt——`halted` 状态仅适用于 `inProgress` 的 staged rollout。恢复手段以修复包、服务端降级和功能开关为主，配合应用内强制更新 |
 | 监控数据异常但客服和 Vitals 未同步异常 | 可能是采样或上报故障 | 先修数据管道，不用问题指标触发回滚 |
 
-[需确认: 已 100% 发布后的商店 halt 能力、限制和既有安装用户不会自动降级的边界，需要 Task2B 补官方资料；否则应改为“修复包 + 服务端降级”为主。]
+Play Developer API 的 `edits.tracks` 文档明确 `halted` 是 staged rollout `inProgress` 状态下的转换目标；已 100% 发布完成的 release 不存在 halt 概念，只能提交新 release 替换。halt 不会让已安装用户自动降级到旧版——每个拿到新包的用户只能通过应用内强制更新或等待下一次 store 更新来获得修复。
 
 版本回滚要有证据包。证据包至少包含：版本、build id、rollout fraction、异常指标、基线值、当前值、样本量、影响用户数、Top 分群、Top crash / ANR 组、trace / 日志样本、配置快照、已执行动作和下一步 owner。
 
