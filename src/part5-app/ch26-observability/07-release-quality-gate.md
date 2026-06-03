@@ -1,4 +1,5 @@
 ---
+
 title: "发版质量门禁"
 chapter: "26.7"
 section: "26.7"
@@ -32,12 +33,12 @@ sources:
     path: "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
 tags: [quality-gate, release, canary, rollback]
 related_chapters: ["26.6", "26.3", "15.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_result: needs-rework
-last_task6_at: "2026-05-15T07:15:00+08:00"
+reviewed_date: 2026-06-04
+task6_result: pass-light-edit
+last_task6_at: 2026-06-04T02:12:55+08:00
 last_task6_review_log: "logs/review/2026-05-15-07-review.md"
 task6_review_notes: "2026-05-15 Task6 07: needs-rework。完成 L1/L2 小修 2 处；沿用 Task9 风险信号标注 3 处并合并 queue，交 Task2B。"
 task9_state: pending

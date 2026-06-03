@@ -2416,8 +2416,8 @@
     }
   ],
   "ready_for_review": 156,
-  "last_updated": "2026-06-03T12:55:00",
-  "last_updated_by": "openclaw-task2b-verifier",
+  "last_updated": "2026-06-04",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
@@ -4398,11 +4398,11 @@
     },
     "26.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "last_task6_at": "2026-05-15T03:11:00+08:00",
+      "last_task6_at": "2026-06-04T02:13:44+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-03-review.md",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -4413,9 +4413,9 @@
       "title": "A/B Test 与性能回归防护",
       "file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-05-15",
       "task9_reviewed_by": "openclaw-task9",
@@ -4425,9 +4425,9 @@
       "p1": 3,
       "p2": 1,
       "deep_review_log": "logs/deep-review/2026-05-15-04-deep-review.md",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "queue_priority": 90,
-      "last_task6_at": "2026-05-15T05:15:00+08:00",
+      "last_task6_at": "2026-06-04T02:13:44+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-05-review.md",
       "task6_l1_l2_fixes": 4,
       "task6_l3_issues": 3
@@ -7350,6 +7350,14 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-22T07:21:00+08:00"
+    },
+    "26.7": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-06-04T02:13:44+08:00",
+      "task9_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -7505,18 +7513,18 @@
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "logs/review/2026-06-03-04-review.md",
+  "last_task6_review": "2026-06-04",
   "last_task6_sections": [
-    "2.10",
-    "22.12",
-    "24.4"
+    "26.5",
+    "26.6",
+    "26.7"
   ],
   "last_task6_reviewed_files": [
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-    "src/part5-app/ch24-io-network/04-network-architecture.md"
+    "src/part5-app/ch26-observability/05-online-troubleshooting.md",
+    "src/part5-app/ch26-observability/06-ab-testing-regression.md",
+    "src/part5-app/ch26-observability/07-release-quality-gate.md"
   ],
-  "last_task6_at": "2026-06-03T04:08:00+08:00",
+  "last_task6_at": "2026-06-04T02:13:44+08:00",
   "last_task6_review_detail": {
     "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -10483,7 +10491,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-03-04-review.md",
+  "last_task6_review_log": "logs/review/2026-06-04-02-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -11548,7 +11556,7 @@
     "task9_state": "pending",
     "task9_result": "pending"
   },
-  "last_task6_review_at": "2026-06-03T04:08:00+08:00",
+  "last_task6_review_at": "2026-06-04T02:13:44+08:00",
   "last_task6_review_section": "2.10, 22.12, 24.4",
   "section_1_22": {
     "section": "1.22",
