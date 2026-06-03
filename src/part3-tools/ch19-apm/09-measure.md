@@ -3,7 +3,7 @@
 title: Measure
 chapter: '19'
 section: '19.09'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -45,15 +45,15 @@ last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-20/21 Task9 fallback 问
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
+reviewed_date: "2026-06-04"
 task6_reviewed_date: "2026-06-01"
-last_task6_at: "2026-06-01T02:05:00+08:00"
+last_task6_at: "2026-06-04T05:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
-pipeline_stage: "task6_pending"
-task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 小修 1 处（会话回放→会话回查）；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
+pipeline_stage: "ready-to-publish"
+task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
 ---
 # Measure
 

@@ -7,7 +7,7 @@ chapter: 14.6
 confidence: medium
 drafted_date: 2026-04-04
 last_task2b_at: 2026-05-22T07:21:00+08:00
-last_task6_at: 2026-05-22T08:20:00+08:00
+last_task6_at: "2026-06-04T05:07:00+08:00"
 last_task6_audit: 2026-05-21
 last_task6_review_log: logs/review/2026-05-22-08-review.md
 last_task9_at: 2026-05-22T07:43:01+08:00
@@ -21,23 +21,23 @@ repaired_by: openclaw-task2b
 repaired_date: 2026-04-26
 review_round: 4
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-22
+reviewed_date: "2026-06-04"
 section: 14.6
 sources: 
-status: ready-for-review
+status: "finalized"
 tags: 
 task2b_result: fixed
 task2b_state: fixed
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "revisiting"
-task6_review_notes: "2026-05-30 Task6 review: pass-light-edit with minor fixes completed"
+task6_reviewed_date: "2026-06-04"
+task6_state: "reviewed"
+task6_review_notes: "2026-06-04 Task6 revisiting-review: L1 小修 3 处（元叙述路线图、形容词+冒号起手式、减少不是...而是）；无 B 类问题。自动晋升 finalized。"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-30
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 title: 自动化测试工具
 updated_by: openclaw-task2b
 updated_date: 2026-04-26
@@ -77,13 +77,13 @@ updated_date: 2026-04-26
 
 自动化性能测试解决的就是这个问题。它让性能指标变成一个**可量化、可追踪、可回归**的工程信号，而不是依赖主观感受。Google 从 2020 年开始陆续推出 Jetpack Benchmark 库（Macrobenchmark 和 Microbenchmark），就是要把性能测试从"高级工程师的直觉"变成"CI 管线里的一行命令"。
 
-这一章按层次展开自动化性能测试工具：从 Google 官方的基准测试库入手，理解 Macrobenchmark 和 Microbenchmark 各自的定位和用法；再看 UI Automator 和 Espresso 在性能测试中的角色，并说明这些能力如何接入 CI/CD 管线。
+下面的内容围绕 Macrobenchmark、Microbenchmark、UI Automator、Espresso 逐层展开，最后给出 CI/CD 集成方案。
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## Macrobenchmark 与 Microbenchmark：两种层次，两种用途
 
-Google 为 Android 提供了两个互补的基准测试库。它们不是互相替代的关系，而是分别针对不同粒度的性能问题。
+Google 为 Android 提供了两个互补的基准测试库，分别针对不同粒度的性能问题。
 
 ### Macrobenchmark：端到端的用户体验测量
 
@@ -167,7 +167,7 @@ class StartupBenchmark {
 }
 ```
 
-这段代码的逻辑很直白：先按 Home 键回到桌面（确保每次测试的起始状态一致），然后启动应用的默认 Activity，等待它完成首帧渲染。`measureRepeated` 会把这一过程重复 10 次，每次都杀掉进程重新冷启动，最终输出平均的 TTID 和 TTFD。
+每次迭代先按 Home 键回到桌面（确保起始状态一致），然后启动应用的默认 Activity，等待首帧渲染完成。`measureRepeated` 会把这一过程重复 10 次，每次都杀掉进程重新冷启动，最终输出平均的 TTID 和 TTFD。
 
 TTFD 不会自动等到所有异步内容完成。应用必须在首屏主要内容加载完后调用 `Activity.reportFullyDrawn()`；否则结果里只能稳定拿到 TTID，TTFD 会缺失，或只代表首帧之后很短的一段等待。Android 11（API 30）及以上对 fully-drawn 信号的统计更稳定，也会把该信号反馈给系统启动优化和后续 profile 处理。测试脚本要让 `reportFullyDrawn()` 的调用点对应“首页主要内容出现”这一时刻。
 
