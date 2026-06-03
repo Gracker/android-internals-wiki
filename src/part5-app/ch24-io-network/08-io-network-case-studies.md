@@ -2,7 +2,7 @@
 title: "I/O 与网络优化案例集"
 chapter: "24.8"
 section: "24.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-35 SDK sources + Android Developers docs + OkHttp 5.x docs + Clippings 结构参考"
@@ -42,12 +42,12 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
-last_task6_at: "2026-06-03T07:08:52+08:00"
+last_task6_at: "2026-06-04T06:08:46+08:00"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
 task9_state: reviewed
 task2b_state: fixed
