@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: App 内存优化
 section: '4.5'
@@ -52,11 +53,11 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: reworked
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -69,6 +70,7 @@ last_task6_review_log: "logs/review/2026-05-22-08-review.md"
 task6_review_notes: "2026-05-22 Task6 08:20：revisiting 写作复审；L1/L2 小修 3 处（第一人称/读者代称、结构元叙述、填充强调或编辑痕迹清理）；无新增 L3/L4 回炉项。Task9 07:43 已有 P0/P1 pending queue，pipeline 保持 task2b_pending。"
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
+last_task2b_at: "2026-06-04T04:55:01"
 ---
 
 
@@ -343,13 +345,13 @@ Android 8.0（API 26）引入了一种特殊的 Bitmap 配置：`Bitmap.Config.H
 
 **Glide** 使用 `LruBitmapPool` 管理 Bitmap 复用池。池的默认大小是 `maxMemory / 8`。当 Bitmap 不再使用时，Glide 不调用 `recycle()`，而是将 Bitmap 放入池中等待复用。下次解码新图片时，优先从池中取一个大小匹配的 Bitmap，通过 `inBitmap` 复用它的内存。
 
-**Coil** 是 Kotlin-first 的图片加载库，底层使用 Coroutine 管理 Bitmap 的生命周期。它同样实现了 Bitmap Pool，但因为基于协程，可以更精确地在生命周期结束时释放 Bitmap。
+**Coil** 是 Kotlin-first 的图片加载库。Coil 1.x 曾有 BitmapPool，但 Coil 2.x/3.x 已移除了 BitmapPool 与 PoolableViewTarget，改为依赖 memory cache、hardware/immutable bitmap 和 Android 平台内置的 ImageDecoder 来管理 Bitmap 生命周期。
 
 **Fresco** 采用了完全不同的方案——它使用 Native 层的 `CloseableReference` 和三层缓存（Bitmap 缓存 + 内存缓存 + 磁盘缓存）管理图片。Fresco 在 Android 5.0 之前就已经将 Bitmap 放在 Native 堆上了（Ashmem 区），比 Android 8.0 的官方迁移更早。
 
 | 特性 | Glide | Coil | Fresco |
 |------|-------|------|--------|
-| Bitmap Pool | ✅ LruBitmapPool | ✅ 基于 Coroutine | ✅ CloseableReference |
+| Bitmap Pool | ✅ LruBitmapPool | ❌（Coil 2.x+ 已移除） | ✅ CloseableReference |
 | 内存缓存 | LRU + WeakRef | LRU | 三层缓存 |
 | 硬件 Bitmap | API 26+ 默认 | API 26+ 默认 | 可配置 |
 | Kotlin 支持 | Java 优先 | Kotlin-first | Java 优先 |
@@ -398,9 +400,13 @@ public class MyActivity extends Activity {
 
         @Override
         public void run() {
+            // 耗时逻辑在 run() 中执行，不依赖 Activity 实例
+            doSlowBackgroundWork();
+
+            // 需要更新 UI 时，通过 WeakReference 判空后再回调 Activity
             MyActivity activity = activityRef.get();
             if (activity != null && !activity.isFinishing()) {
-                doSomethingSlow();
+                activity.onWorkCompleted();
             }
         }
     }
@@ -692,13 +698,24 @@ data_sources {
 
 **API 34+——回调范围收窄：**
 
-从 API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`（5）、`TRIM_MEMORY_RUNNING_LOW`（10）、`TRIM_MEMORY_RUNNING_CRITICAL`（15）不再投递给 App。`TRIM_MEMORY_MODERATE`（60）、`TRIM_MEMORY_COMPLETE`（80）、`TRIM_MEMORY_BACKGROUND`（40）等后台级别在 API 35 中标记为 `@Deprecated`。API 34+ 仍会实际投递的是：
+从 API 34 起，以下回调级别不再投递给 App（AOSP `ComponentCallbacks2.java` 中带 `@Deprecated` 且明确标注"Apps are not notified of this level since API level 34"）：
+
+| 废弃级别 | 值 | 说明 |
+|----------|---|------|
+| `TRIM_MEMORY_RUNNING_MODERATE` | 5 | 前台回调，已停止投递 |
+| `TRIM_MEMORY_RUNNING_LOW` | 10 | 前台回调，已停止投递 |
+| `TRIM_MEMORY_RUNNING_CRITICAL` | 15 | 前台回调，已停止投递 |
+| `TRIM_MEMORY_MODERATE` | 60 | 后台 LRU 回调，已停止投递 |
+| `TRIM_MEMORY_COMPLETE` | 80 | 后台"即将被杀"回调，已停止投递 |
+
+API 34+ 仍会实际投递的回调为：
 
 | 级别 | 值 | 含义 | 建议操作 |
 |------|---|------|----------|
 | `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见 | 释放 UI 相关资源（Bitmap 缓存等） |
+| `TRIM_MEMORY_BACKGROUND` | 40 | 进程进入 LRU 列表 | 释放所有可以重新创建的资源 |
 
-在 API 34+ 设备上，内存压力判断应回到 PSI（`/proc/pressure/memory`）、`lmkd` 指标、`dumpsys meminfo` 等系统级信号。`TRIM_MEMORY_BACKGROUND` / `MODERATE` / `COMPLETE` 不应再作为"即将被杀"或"释放缓存"的触发信号。
+说明：`TRIM_MEMORY_BACKGROUND`（40）和 `TRIM_MEMORY_UI_HIDDEN`（20）在 AOSP `ComponentCallbacks2.java` 中**没有** `@Deprecated` 标注，不应写成"已废弃/不投递"。在 API 34+ 设备上，内存压力判断应回到 PSI（`/proc/pressure/memory`）、`lmkd` 指标、`dumpsys meminfo` 等系统级信号，不要只依赖 `onTrimMemory` 作为全部内存压力来源。
 
 在 API 34+ 设备上，系统内存压力判断应回到 PSI（`/proc/pressure/memory`）、`mm_vmscan` tracepoint、`lmkd` 指标等系统级信号，不要依赖不再投递的 `TRIM_MEMORY_COMPLETE` 作为"即将被杀"的信号。
 
@@ -795,7 +812,7 @@ override fun onCreate() {
 
 [已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
 
-2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。Google Play 已将 16KB 页对齐作为对所有应用的强制要求。
+2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。Google Play 要求：自 2025-11-01 起，提交到 Google Play、面向 Android 15/API 35+ 设备的新应用和更新必须支持 16KB page size。此要求不作用于所有已发布应用的存量版本，也不作用于仅面向 Android 14 及以下设备的提交。
 
 ### 为什么 16KB Page Size 能提升性能
 
@@ -844,7 +861,7 @@ long page_size = sysconf(_SC_PAGESIZE);
 
 ### 对 Bitmap 的影响
 
-Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 的内存页浪费可能增加（如果一个 Bitmap 的像素数据不是 16KB 的整数倍，最后一页会有更多浪费）。Google 建议使用标准图片加载库（Glide/Coil），它们已经内部处理了对齐问题。
+Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 的内存页浪费可能增加（如果一个 Bitmap 的像素数据不是 16KB 的整数倍，最后一页会有更多浪费）。Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，分配对齐从 4KB 提升到 16KB，可能影响 native allocation、GraphicBuffer/allocator 分配路径。具体影响需用 heapprofd、dumpsys meminfo 和特定图像库版本实测确认。Glide/Coil 等图片加载库在构造 Bitmap 时依赖平台 API，其对齐行为由平台 allocator 和 GraphicBuffer 决定，未必在库层面做了显式 16KB 对齐优化。
 
 ## 扩展：大型 App 的内存预算管理
 
