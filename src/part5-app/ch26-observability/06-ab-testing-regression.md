@@ -32,20 +32,24 @@ sources:
     path: "https://firebase.google.com/docs/ab-testing/abtest-config"
 tags: [ab-testing, regression, ci-cd, performance-gate]
 related_chapters: ["26.7", "26.3", "15.6"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_result: needs-rework
 last_task6_at: "2026-05-15T05:15:00+08:00"
 task6_review_notes: "2026-05-15 Task6 05:15：needs-rework。完成 L1/L2 小修 4 处；L3 技术/证据边界已标注并合并 queue，交 Task2B。"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-15T04:28:44+08:00"
 task9_review_notes: "2026-05-15 Task9 04:28：needs-rework。P0 0 / P1 3 / P2 1；样本量统计模型、FrameTimingMetric API 31+ 边界、P90 归因公式需 Task2B 回炉。"
+task2b_result: fixed
+last_task2b_at: 2026-06-04T00:55:43+08:00
+task2b_fixed_by: openclaw-task2b-main
+task2b_fix_round: 2026-06-04-00
 ---
 
 # A/B Test 与性能回归防护
@@ -98,18 +102,32 @@ Clippings 的发布章节把 A/B Test 的难点放在人群和时间窗上：实
 
 Firebase A/B Testing 的 Remote Config 实验提供了一个可参照的产品形态：配置目标用户、目标用户百分比、基线版本和实验版本，并选择主指标与附加指标；目标用户可以按版本、语言、国家 / 地区、Analytics audience、user property 等条件筛选。官方文档也要求 activation event 发生在配置值生效之后，否则实验数据会把未使用新配置的用户算进去。[已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
 
-性能实验的统计口径建议采用四个字段描述：
+性能实验的统计口径需要区分指标类型，不同指标对应的检验对象和样本量估计方式不一样：
 
-[需补充素材: 样本量计算还缺历史方差或完整分布、统计检验对象、allocation ratio 与关键分群最小样本量，需 Task2B 结合 Task9 意见补齐边界。]
+**均值/比例类指标**（TTFD 均值、慢帧率、crash rate）：
+- `baseline_value`：对照组当前值，例如首页冷启动 TTFD 均值 1200 ms，或慢帧率 3.2%。
+- `minimum_detectable_effect`：业务上值得采用的最小变化，例如 TTFD 均值降低 80 ms 或慢帧率降低 0.5 个百分点。
+- `baseline_variance` / `baseline_rate`：均值类需要历史标准差（SD）或方差；比例类需要 baseline rate，用来确定所需样本量。没有方差估计的样本量计算只是把四个数字放进公式，结论不可靠。
+- `alpha`：显著性水平，常见取值 0.05，限制误判"有差异"的概率。
+- `power`：统计功效，常见取值 0.8 或 0.9，限制漏判"有差异"的概率。
+- `allocation_ratio`：实验组与对照组的流量分配比例，影响所需总样本量。
 
-- `baseline_value`: 对照组当前值，例如首页冷启动 TTFD P90 为 1800 ms。
-- `minimum_detectable_effect`: 业务上值得采用的最小变化，例如 P90 降低 5% 才算有效收益。
-- `alpha`: 显著性水平，常见取值 0.05，用来限制误判“有差异”的概率。
-- `power`: 统计功效，常见取值 0.8 或 0.9，用来限制漏判“有差异”的概率。
+**P90/P99 分位值指标**（TTFD P90、帧耗时 P99）：
+- 分位值是秩统计量，不能套用均值类样本量公式。需要根据 baseline 分布、检测目标和对 tail 的敏感度来估计。
+- 工程上可以用两种方式替代精确的 quantile CI：
+  - **阈值违约率**：设定"TTFD P90 超过 2500 ms"的样本比例作为检验对象，用比例类公式计算样本量。
+  - **bootstrap 估计**：对已有数据做 bootstrap 重采样，检查在给定样本量下 95% CI 宽度是否小于 MDE。
+- 分设备档位/Android 版本后，每个关键分群都要重新计算最小样本量。低端机分群本身就小，分位值 CI 会更宽；此时应优先参考阈值违约率。
 
-这几个字段决定了样本量。样本量不足时，实验报告只应该给出“数据不足”的结论，不能把短时间波动写成性能收益。灰度用户少、指标发生率低、分群过细都会让实验周期变长；这时适合先用实验室 benchmark 或内部体验包排除大风险，再把线上实验用来验证真实用户分布。
+样本量不足时，实验报告只输出"数据不足"结论，不把短时间波动写成性能收益。灰度用户少、指标发生率低、分群过细都会让实验周期变长；这时适合先用实验室 benchmark 或内部体验包排除大风险，再用线上实验验证真实用户分布。
 
-A/A Test 是性能实验平台的验收手段。两个组拿到同一份配置时，主指标应该没有系统性差异；如果 A/A 就出现明显差异，分桶、采样、上报、数据计算至少有一处存在偏差。正式性能实验前保留一段 A/A 或 A/A/B 空转，能提前暴露埋点缺失、分流不均和统计任务延迟。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+A/A Test 是性能实验平台的验收手段。两个组拿到同一份配置时，主指标应该没有系统性差异；如果 A/A 就出现明显差异，分桶、采样、上报、数据计算至少有一处存在偏差。正式性能实验前保留一段 A/A 或 A/A/B 空转，能提前暴露埋点缺失、分流不均和统计任务延迟。
+
+A/A Test 还要检查多重比较风险。日常看板频繁窥探、多分群（设备档位 × 系统版本）和多护栏指标（Crash + ANR + 内存 + 功耗）同时检查时，假阳性会被放大。建议在 A/A 阶段验证以下控制手段：
+- **SRM（Sample Ratio Mismatch）**：每个关键分群内检查配置比例与实际样本比例是否一致。
+- **假阳性率验证**：按实际看板频率模拟检查，确认 α=0.05 设定下实际误判率不超预期。
+- **多重比较校正**：多护栏指标或多分群同时检查时，使用 Bonferroni 校正或 FDR（Benjamini-Hochberg）控制整体错误率。
+- **sequential testing / alpha spending**：针对中途看数需求，预注册检查窗口并使用 alpha spending function（如 Lan-DeMets O'Brien-Fleming），避免每次按 α=0.05 直接判断、等效于多轮重复测试。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
 
 ## 性能回归自动检测
 
@@ -125,9 +143,7 @@ Android 官方性能测试文档把 runtime performance 分成 local testing 和
 | 绝对阈值 | 冷启动 P90 超过 5 s，冻帧率超过 0.1% | 已经接近用户可感知的问题 | 进入 P0/P1 风险评估 |
 | 分群异常 | Android 13 + 4 GB 内存设备慢帧率翻倍 | 全量指标被平均值盖住的设备问题 | 限制放量范围，派发给相关模块 |
 
-Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 会输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`；`FrameTimingMetric` 会输出 `frameOverrunMs` 和 `frameDurationCpuMs`；`TraceSectionMetric` 可以按自定义 trace section 统计次数和耗时；`PowerMetric` 可以在支持的 Pixel 设备上记录测试期间的能耗变化。官方文档明确 benchmark 会输出 JSON 和 Perfetto trace 文件，这些产物应该进入 CI 存档，而不是只留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
-
-[需确认: `FrameTimingMetric` 的 `frameOverrunMs` 需标注 Android 12/API 31+ 边界；Android 10/11 的门禁口径需 Task2B/Task9 补充替代指标。]
+Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`。`FrameTimingMetric` 的基础输出 `frameDurationCpuMs` 在所有受支持版本上可用；`frameOverrunMs` 仅在 Android 12（API 31）+ 上可用，它反映帧实际耗时超出预期帧间隔的部分。Android 10/11（API 29/30）设备上的 CI 门禁不能依赖 overrun，应改用 `frameDurationCpuMs`、慢帧率（slow frame rate）或冻结帧率（frozen frame rate）作为替代口径。`TraceSectionMetric` 按自定义 trace section 统计次数和耗时；`PowerMetric` 在支持的 Pixel 设备上记录测试期间的能耗变化。门禁配置中需补 `metric_available_api` 字段，避免跨版本混算同一阈值。官方文档要求 benchmark 输出 JSON 和 Perfetto trace，产物应进入 CI 存档，不留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
 
 线上回归检测要沿用 26.3 节的分位值和采样字段。检测任务至少按 `metric_name`、`scene_id`、`app_version`、`experiment_id`、`variant_id`、`device_tier`、`android_version` 分桶。没有分桶的 P90 只代表混合分布，不能支持版本决策。
 
@@ -188,9 +204,16 @@ performance_gates:
 | 设备字段 | 机型、SoC、内存档位、Android 版本、刷新率、国家 / 地区 | 判断是否是兼容性或性能档位问题 |
 | 证据字段 | trace section、慢帧样本、日志摘要、网络错误码、Crash / ANR 组 | 支持工程团队复现和定位 |
 
-自动归因可以按贡献度排序：某个分群的样本量乘以指标变化幅度，得到它对全量退化的贡献。一个 2% 用户分群的 P90 上升 2000 ms，可能比 40% 用户分群的 P90 上升 40 ms 更值得处理；贡献度能把这种差异排出来。
+自动归因可以按贡献度排序，但算法必须和指标类型匹配：
 
-[需确认: P90/P99 是非线性分位值，不能直接用“样本量 × P90 delta”归因；需 Task2B/Task9 补充可复核的尾部贡献算法。]
+**均值/比例类指标**使用线性贡献：分群样本量 × 分群均值变化量 ≈ 对全量均值变化的贡献。一个 2% 用户分群的 TTFD 均值上升 200 ms，和 40% 分群上升 10 ms，贡献度能帮团队决定先排查哪个分群。
+
+**P90/P99 分位值**不能直接用"样本量 × P90 delta"归因。P90 是非线性秩统计量，各分群 P90 的加权变化之和不等于全量 P90 的变化。尾部退化要用以下方式定位：
+- **tail violation count**：统计每个分群中超过告警阈值（例如 TTFD > 2500 ms）的样本数，按分群排序，找对尾部长尾贡献最大的分群。
+- **counterfactual 重算**：把某个分群的样本从全量中移除后重算 P90，对比前后差异，得到该分群对全量 P90 的边际影响。
+- **mean excess over threshold**：对超过阈值的样本计算超出量的均值，按分群比较超出幅度。
+
+如果一个 2% 的低端机分群 P90 上升 2000 ms，排查优先级确实高于 40% 分群的 P90 上升 40 ms——但这个判断要用 violation count 或 counterfactual 重算来验证，而不是用线性公式。
 
 TraceSectionMetric 和业务 trace 名称要提前统一。线下 benchmark 里 `home.bind_data` 变慢，线上同名摘要也变慢，归因系统就能把告警指到首页数据绑定阶段；如果线下叫 `HomeBind`，线上叫 `feed_first_render`，后端只能靠人工猜。26.3 节已经建议自定义 Trace 和线上摘要使用同名阶段，这里直接复用该规则。
 
