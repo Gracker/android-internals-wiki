@@ -41,6 +41,7 @@ tags:
   - [1.20 App Archiving 机制与恢复性能](part1-fundamentals/ch01-architecture/20-app-archiving-performance.md)
   - [1.21 Android Developer Verification 与安装链路边界](part1-fundamentals/ch01-architecture/21-developer-verification-install-boundary.md)
   - [1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界](part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md)
+  - [1.23 Android Staged Install 与安装原子性性能](part1-fundamentals/ch01-architecture/23-staged-install-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -187,6 +188,7 @@ tags:
   - [11.5 Wakelock 机制与功耗分析](part2-performance/ch11-power/05-wakelock.md)
   - [11.6 Bluetooth 扫描与连接功耗分析](part2-performance/ch11-power/06-bluetooth-scan-connection-power.md)
   - [11.7 用户设置对能耗的影响：亮度、刷新率与深色模式](part2-performance/ch11-power/07-user-settings-energy-impact.md)
+  - [11.8 Android 17 Tare 经济模型与电池统计源码闭环](part2-performance/ch11-power/08-tare-economic-model.md)
 
 - [第 18 章：渲染链路全景](part2-performance/ch18-rendering-pipelines/README.md)
   - [18.1 渲染链路分类与选择矩阵](part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)
@@ -388,6 +390,7 @@ tags:
   - [22.17 Hardware Bitmap 与 RenderNode 缓存策略](part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md)
   - [22.18 Adaptive Refresh Rate 与帧率策略实战](part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md)
   - [22.19 RuntimeColorFilter 与 RuntimeXfermode 性能实践](part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md)
+  - [22.20 Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping](part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)

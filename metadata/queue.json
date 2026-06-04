@@ -949,6 +949,27 @@
       "original_review_log": "logs/review/2026-06-04-10-review.md",
       "completed_at": "2026-06-04T12:55:28+08:00",
       "completed_by": "openclaw-task2b"
+    },
+    {
+      "section": "22.20",
+      "section_title": "Jetpack Compose 性能优化盲区",
+      "priority": 80,
+      "reason": "task2a gap-mining: Score 20/20, Q:20 素材 + 18 篇 DeepResearch",
+      "created_date": "2026-06-04"
+    },
+    {
+      "section": "11.8",
+      "section_title": "Tare 经济模型与电池统计",
+      "priority": 80,
+      "reason": "task2a gap-mining: Score 18/20, Q:20 素材 + DeepResearch",
+      "created_date": "2026-06-04"
+    },
+    {
+      "section": "1.23",
+      "section_title": "Staged Install 与安装原子性",
+      "priority": 80,
+      "reason": "task2a gap-mining: Score 15/20, Q:20 素材 + DeepResearch",
+      "created_date": "2026-06-04"
     }
   ]
 }
