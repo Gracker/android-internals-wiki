@@ -10,9 +10,9 @@ last_verified: '2026-04-25'
 last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto,
   Android Trace API
 confidence: high
-reviewed_date: '2026-05-09'
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+reviewed_date: "2026-06-04"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
@@ -47,7 +47,7 @@ related_chapters:
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
 pipeline_stage: "task6_pending"
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -60,7 +60,7 @@ repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
 last_task2b_at: '2026-05-09T06:51:32+08:00'
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 0，P1 2，P2 1；问题已写入 queue/suggestions，等待 Task2B 回炉。'
-last_task6_at: '2026-05-09T07:12:00+08:00'
+last_task6_at: "2026-06-04T08:10:00+08:00"
 last_task6_review_log: logs/review/2026-05-09-07-review.md
 task6_review_notes: 2026-05-09 Task6 07:12：Task2B 修复后写作复审；轻修 27 处（补齐 TraceConfig 代码块语言、删除结构性元叙述/填充词），L1/L2
   通过；无新增 L3/L4 回炉项，送 Task9 复审。
