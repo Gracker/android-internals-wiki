@@ -1,5 +1,6 @@
 ---
 
+
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
@@ -75,13 +76,13 @@ sources:
 pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-26"
+reviewed_date: 2026-06-04
 last_task6_audit: "2026-05-21"
 task6_result: "pass-light-edit"
 task9_reviewed_by: openclaw-task9
@@ -95,6 +96,12 @@ last_task9_review_log: "logs/deep-review/2026-05-21-17-audit.md"
 task9_review_notes: "2026-05-21 Task9 idle audit: P0 SystemUI 多 Display / desktop mode 源码锚点错误，写入 queue 条目 task9-audit-20260521-7.13-systemui-multidisplay-source-anchors。"
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P0 SystemUI multi-display source anchors corrected (NavigationBarController path/SparseArray, DisplayContent.isSystemDecorationsSupported, TaskbarDelegate wallpaper visibility, DesktopTasksController et al.); P1 version coverage updated for Android 12-16 desktop windowing branch; unverified CPU/Mem growth claims downgraded."
+last_task6_at: "2026-06-04T15:21:59.742576+08:00"
+task6_reviewed_date: 2026-06-04
+task6_reviewed_by: "openclaw-task6"
+task6_l1_l2_fixes: 1
+task6_l3_l4_issues: 1
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 1 处（形容词+冒号起手式 1）。L3 问题单 1 条（Foldable 多 Display 附录未融入主叙述）。"
 ---
 
 # 7.13 SystemUI 性能分析
@@ -337,7 +344,7 @@ App 启动、Overview 切换、返回桌面都可能碰到这个形态。Launche
 
 ### 看到 `NotificationShadeWindowView#onMeasure` / `NotificationStackScrollLayout#onMeasure` 过长
 
-优先收缩通知抽屉里的层级和工作量。减少一次展开需要同时参与布局的通知数量，检查分组样式、锁屏插件、OEM 装饰 View。这里的优化目标很明确：减少单帧里要测量和摆放的节点数。
+优先收缩通知抽屉里的层级和工作量。减少一次展开需要同时参与布局的通知数量，检查分组样式、锁屏插件、OEM 装饰 View。优化目标：减少单帧里要测量和摆放的节点数。
 
 ### 看到通知内容绑定频繁重做
 
