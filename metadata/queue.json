@@ -1112,6 +1112,140 @@
       "material_paths": [],
       "created_date": "2026-06-04",
       "source": "task2a-gap-mining"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "聊聊2026年Android开发会是什么样",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:39:29.699206",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:39:29.705480",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "OpenClaw移动端要来了？Android官宣AI原生支持App Functions",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7614428309292531731"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "OpenClaw移动端要来了？Android官宣AI原生支持App Functions — 今日，谷歌Google官方正式宣布：Android平台的AppFunctions API，为AI应用提供系统级的【本地MCP】支持，真正的【移动端智能体】的时代即将来临！ 本文主要讲解： Appfun",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:39:29.711123",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "聊聊2026年Android开发会是什么样",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:40:36.673109",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:40:36.678946",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem.X",
+      "section_title": "OpenClaw移动端要来了？Android官宣AI原生支持App Functions",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7614428309292531731"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "OpenClaw移动端要来了？Android官宣AI原生支持App Functions — 今日，谷歌Google官方正式宣布：Android平台的AppFunctions API，为AI应用提供系统级的【本地MCP】支持，真正的【移动端智能体】的时代即将来临！ 本文主要讲解： Appfun",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-05T05:40:36.684538",
+      "status": "pending"
+    },
+    {
+      "section": "3.11",
+      "section_title": "InputMethodManager 与软键盘性能",
+      "priority": 80,
+      "reason": "[task2a gap-mining] 知识缺口挖掘，评分 14/20",
+      "created_date": "2026-06-05"
+    },
+    {
+      "section": "7.19",
+      "section_title": "AccessibilityManagerService 与无障碍服务性能影响",
+      "priority": 80,
+      "reason": "[task2a gap-mining] 知识缺口挖掘，评分 14/20",
+      "created_date": "2026-06-05"
     }
   ],
   "items": [
@@ -1364,21 +1498,5 @@
       "created": "2026-06-05",
       "source": "task2a-gap-mining"
     }
-  ],
-  "2.26": {
-    "title": "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能",
-    "file": "src/part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task2a_state": "processed",
-    "task2a_result": "ready-for-review",
-    "drafted_by": "openclaw-task2a",
-    "drafted_date": "2026-06-05",
-    "last_verified": "2026-06-05",
-    "confidence": "medium",
-    "last_task2a_at": "2026-06-05T02:14:28.415043",
-    "queue_priority": 80,
-    "created_by": "task2a-knowledge-gap",
-    "created_date": "2026-06-04"
-  }
+  ]
 }

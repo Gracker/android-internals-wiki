@@ -2072,6 +2072,126 @@
       "section_title": "Trace 抓取",
       "processed_at": "2026-06-04T06:14:49.229183+08:00",
       "processor": "task-deepresearch-injector"
+    },
+    {
+      "title": "一个 Linux 调度器优化，让 Android 多耗 20% 的电，传音工程师如何发现问题？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/一个 Linux 调度器优化，让 Android 多耗 20% 的电，传音工程师如何发现问题？-2026-06-04.md",
+      "category": "Linux调度器",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total_score": 19,
+      "mapping_chapter": "ch05",
+      "tags": [
+        "#Android",
+        "#Linux",
+        "#调度器",
+        "#功耗优化",
+        "#PELT",
+        "#schedutil"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433969"
+    },
+    {
+      "title": "安卓冻结相关Cached Apps Freezer官方文档转载",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/安卓冻结相关Cached Apps Freezer官方文档转载-2026-06-04.md",
+      "category": "Android系统优化",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping_chapter": "ch04",
+      "tags": [
+        "#Android",
+        "#冻结",
+        "#内存管理",
+        "#CachedAppsFreezer",
+        "#cgroup",
+        "#ActivityManagerService"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433977"
+    },
+    {
+      "title": "源码调研：Agent 长期记忆系统（Mem0 / M3-Agent）在 Android 端侧 AI 应用的适配方案",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-agent-longterm-memory-on-android.md",
+      "category": "AI/端侧AI",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping_chapter": "ch16",
+      "tags": [
+        "#Android",
+        "#AI",
+        "#端侧AI",
+        "#Mem0",
+        "#M3-Agent",
+        "#长期记忆"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433979"
+    },
+    {
+      "title": "源码调研：Android 17 Measure 与 Android Vitals 崩溃聚合集成机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-android-measure-vitals-integration.md",
+      "category": "Android系统分析",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total_score": 19,
+      "mapping_chapter": "ch09",
+      "tags": [
+        "#Android",
+        "#Vitals",
+        "#Measure",
+        "#崩溃分析",
+        "#DropBoxManager",
+        "#statsd"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433981"
+    },
+    {
+      "title": "源码调研：Linux ANON_VMA_LAZY 优化机制及其对 Android 内存管理的影响",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-anon_vma_lazy_memory_optimization.md",
+      "category": "Linux内存管理",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping_chapter": "ch04",
+      "tags": [
+        "#Linux",
+        "#内存管理",
+        "#ANON_VMA_LAZY",
+        "#Android",
+        "#内存优化",
+        "#内核"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433982"
+    },
+    {
+      "title": "源码调研：Android 17 TextureView 折叠屏/异形屏行为适配优化",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-textureview-foldable-irregular-screen-adaptation.md",
+      "category": "Android渲染",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total_score": 19,
+      "mapping_chapter": "ch02",
+      "tags": [
+        "#Android",
+        "#TextureView",
+        "#折叠屏",
+        "#异形屏",
+        "#渲染",
+        "#DisplayCutout"
+      ],
+      "scored_at": "2026-06-05T05:47:35.433984"
     }
   ]
 }
