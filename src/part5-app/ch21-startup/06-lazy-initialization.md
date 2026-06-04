@@ -29,7 +29,7 @@ related_chapters: ["21.2", "21.3", "1.13"]
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: skipped
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -39,6 +39,7 @@ task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T01:43:00+08:00"
+task2b_result: skipped-no-rework-needed
 ---
 
 # 延迟初始化与按需加载
