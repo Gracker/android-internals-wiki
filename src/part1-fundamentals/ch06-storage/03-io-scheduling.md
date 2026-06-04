@@ -16,12 +16,13 @@ tags:
 - linux
 - android
 - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-06-04"
 last_task9_at: '2026-06-04T20:24:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-06-04'
@@ -378,7 +379,7 @@ Android 16 的存储 APEX 开始集成基于 io_uring 的异步 FUSE 实现。�
 
 对性能分析来说，io_uring 的引入意味着在 Perfetto 中看到的 FUSE 相关延迟模式会发生变化。异步模型下，单次 FUSE 请求的阻塞时间更短，但总的吞吐量更高。排查外部存储性能问题时，要区分"FUSE 同步阻塞"和"io_uring 提交队列积压"两种不同的延迟来源。
 
-[待验证: AOSP android-16.0.0_r1 存储 APEX 中 io_uring 的具体集成路径和默认启用状态]
+> ⚠️ io_uring FUSE 集成的 AOSP 路径和默认启用状态尚未在 android-16.0.0_r1 标签中确认；上述百分比基于公开资料的趋势性分析，实际行为以设备 GKI 内核配置为准。
 
 ### dm-verity 多缓冲区并行哈希
 
@@ -395,7 +396,7 @@ Android 17（Baklava）继续推进 cgroup v2 迁移，彻底移除了 cgroup v1
 
 cgroup v2 io 控制器的完善意味着 Android 的前后台 I/O 隔离不再只依赖调度器选择（BFQ vs mq-deadline），cgroup 层面就有了更强的保障。排查 I/O 问题时，检查线程所在的 cgroup 和 `io.stat`/`io.pressure` 变得更重要。
 
-[待验证: AOSP android-17 Baklava cgroup v2 io 控制器的具体配置和 1000:10 权重来源]
+> ⚠️ cgroup v2 io 控制器的 1000:10 权重比例尚未在 AOSP android-17.0.0_r1 中确认；上述为基于公开资料的趋势性分析，实际权重以设备内核 `io.bfq.weight` / `io.weight` 配置为准。
 
 ## 本章小结
 
