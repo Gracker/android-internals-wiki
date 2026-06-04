@@ -21,9 +21,9 @@ sources:
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
 pipeline_stage: "task6_pending"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: "fixed"
 task9_result: needs-rework
 last_task9_audit: "2026-05-20"

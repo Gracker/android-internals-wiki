@@ -16,11 +16,11 @@ sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
 pipeline_stage: "task6_pending"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
