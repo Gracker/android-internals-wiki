@@ -2,13 +2,13 @@
 
 
 
-last_task9_at: "2026-05-22T05:34:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-22"
+last_task9_at: "2026-06-05T07:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-05"
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
 section: "5.12"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
@@ -46,21 +46,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_date: 2026-06-04
 last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: pending
+task9_result: pass-tech-review
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
-task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P1：Thermal HAL AIDL/headroom API 版本边界与 Linux thermal kernel 源码分支混用，写入 queue 条目 task9-audit-20260522-5.12-thermal-hal-kernel-version-boundary。"
+last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
+task9_review_notes: "2026-06-05 Task9 deep review: pass-tech-review。AOSP android-16.0.0_r1 Thermal HAL / ThermalManagerService / PowerManager / SystemHealthManager 复核通过；仅有 P2 数据口径建议写入 suggestions。自动晋升 finalized。"
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P1 Linux thermal kernel source branch disambiguated from generic 6.1 to android16-6.12; critical trip handler symbols corrected for branch consistency; step_wise get_target_state() added bool throttle parameter; Thermal HAL version table split into AIDL basics (14), cooling callback (15), forecastSkinTemperature + Framework fallback (16)."
 last_task2b_at: "2026-06-04T14:54:52+08:00"

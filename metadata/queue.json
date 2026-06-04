@@ -1497,6 +1497,44 @@
       "status": "pending",
       "created": "2026-06-05",
       "source": "task2a-gap-mining"
+    },
+    {
+      "section": "2.19",
+      "section_title": "刷新率切换与帧率适配性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 刷新率切换章节存在 Surface/GameManager API、SurfaceFlinger/Display HAL 伪源码与 ARR 版本边界错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-05-07-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码/API 错误",
+          "location": "Surface.setFrameRate() API 参数说明 / App 侧优化 / 游戏应用优化 / 预测性提频",
+          "detail": "正文把 Surface.setFrameRate(float, int) 写成返回 boolean，并使用不存在的 FRAME_RATE_COMPATIBILITY_SUFFICIENT；Android 16 Surface.java 实际是 void setFrameRate(...)，公开兼容性常量包括 DEFAULT、FIXED_SOURCE、AT_LEAST、EXACT、MIN 等。正文还写普通游戏调用 GameManager.setGameMode() 和 Activity.setFrameRate()；Android 16 GameManager#setGameMode(String,int) 需要 MANAGE_GAME_MODE 权限，Activity.java 未提供 setFrameRate 公开 API。",
+          "suggestion": "按 Android 16 Surface.java / GameManager.java / Activity.java 重写 API 段：使用 FRAME_RATE_COMPATIBILITY_DEFAULT / FIXED_SOURCE / AT_LEAST；普通游戏只读取 getGameMode()；移除 Activity.setFrameRate() 和 boolean 返回值。"
+        },
+        {
+          "type": "P0 源码路径/伪源码错误",
+          "location": "Content Detection、RefreshRateSelector、Display HAL 状态机、VsyncController、ARR 工作原理代码块",
+          "detail": "多段代码块以 AOSP 路径开头，但 android-16.0.0_r1 中未找到对应方法或路径：VsyncConfiguration::updateContent/isGameContent、Scheduler::updateRefreshRate/collectVotes/calculateOptimalRate、hardware/interfaces/graphics/1.2/display/Display.h、VsyncController::setRefreshRate、DisplayManagerInternal.handleAdaptiveRefreshRate 等均不能作为源码节选。",
+          "suggestion": "删除伪源码；改为基于 android-16.0.0_r1 RefreshRateSelector.h/cpp、Scheduler.cpp、Surface.java、graphics composer AIDL/HAL 的真实调用链说明。"
+        },
+        {
+          "type": "P1 版本差异/数据边界",
+          "location": "ARR 版本演进表、Android 16-17 智能 ARR、厂商 PLL/功耗/切换次数表",
+          "detail": "正文把 Android 13-17 的“内容检测、预切换、动态 ARR、机器学习驱动识别、Composer HAL 2.6+、48-120Hz 连续控制”等写成版本事实，并给出多组 SoC/功耗百分比，但本轮只能验证 android-16.0.0_r1；android-17.0.0_r1 tag 对 frameworks/base/native 均无返回，相关数字缺少设备、系统版本、亮度、样本与 benchmark。",
+          "suggestion": "将 Android 17/ARR main 分支内容降级为待验证或移除；保留可由 Android 11+ setFrameRate、RefreshRateSelector、touch/idle/global signals、FrameRateCategory 等一手源码闭环的版本差异；所有 SoC/功耗数字必须补测试条件或改为定性。"
+        },
+        {
+          "type": "P1 工具配置错误",
+          "location": "Perfetto 配置：监控 VSync 周期",
+          "detail": "正文给出 XML 形态的 Perfetto 配置和 vsync_period/refresh_rate_change/display_mode_switch 事件名，既不是标准 Perfetto textproto 配置，也未证明这些是通用 ftrace/sys event。读者照抄无法稳定抓到对应轨道。",
+          "suggestion": "改为可运行的 Perfetto textproto；说明 VSync period/FrameTimeline/SurfaceFlinger slice 的实际采集方式和设备权限边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-05T07:20:00+08:00",
+      "status": "pending"
     }
   ]
 }

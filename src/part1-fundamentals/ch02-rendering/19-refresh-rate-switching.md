@@ -3,17 +3,17 @@
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-task9_result: auto-fixed
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 last_task2b_at: 2026-06-04T12:54:39
 task2b_notes: 2026-06-04 Task2B main 回炉：案例 1-3 伪代码替换为真实排查路径+API/Trace 观察点；wasRefreshRateSwitch() 编造方法替换为帧间隔监控；误区 1-4 从单句扩充为机制级解释；ARR 版本边界仍待 Task9 确认
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -25,9 +25,9 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-task9_reviewed_date: "2026-05-13"
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: 2026-05-30T20:30:32.504625
+last_task9_at: "2026-06-05T07:20:00+08:00"
 last_task6_at: "2026-06-04T16:15:15+08:00"
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit；L1/L2 全部通过(禁用词0/AI套话0/高频词OK/元叙述0)；不是X而是Y恰好2次在限内；无B类大问题。自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-06-02-16-review.md"
@@ -39,6 +39,8 @@ task6_new_rework: true
 review_type: "task6-writing-quality-review"
 last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
+last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
+task9_review_notes: "2026-06-05 Task9 deep review: needs-rework。P0：Surface.setFrameRate API/常量、GameManager.setGameMode、Activity.setFrameRate、SurfaceFlinger/Display HAL/ARR 伪源码与 Android 16 tag 不符；P1：ARR 版本表与厂商量化数据缺少 Android 17/API37 以内一手证据。"
 ---
 
 

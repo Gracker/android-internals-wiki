@@ -46,23 +46,26 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-14
-last_task9_at: "2026-05-14T12:37:27+08:00"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T07:20:00+08:00"
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
 last_task6_at: "2026-06-05T02:06:00+08:00"
 last_task2b_lite_at: 2026-06-05
 task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1 修正 1 处（删除否定-纠正冗余句）；无新增 B 类问题。task9_result 仍为 needs-rework，等待 Task9 复检。"
+last_task9_autofix_at: "2026-06-05"
+last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
+task9_review_notes: "2026-06-05 Task9 deep review: auto-fixed。修复 GameManagerService AOSP tag、ADPF codelab/AOSP 源码路径混写；回到 Task6 复审。"
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
@@ -207,7 +210,7 @@ Game Mode 给游戏的第一手信息是用户偏好，不是一个直接控制 
 
 OEM 还可以在这三层之外叠加自己的实现，例如 downscale、FPS override、ANGLE 驱动替换，或者更激进的频率策略。但这些都属于设备配置，不是 `GameMode` / `GameState` 默认保证的行为。
 
-[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java]
 
 ## Game State API：细粒度的状态通信
 
@@ -251,7 +254,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 把这几套机制拆开看，职责会清楚很多。
 
 1. `GameManager#getGameMode()` 读取用户偏好，决定游戏自己的画质、刷新率和功耗档位。
-2. `GameManager#setGameState()` 上报当前场景。AOSP main 中能直接看到的系统动作主要是 statsd 记录，以及 PERFORMANCE 模式下 `isLoading=true` 时的 `Mode.GAME_LOADING` boost。
+2. `GameManager#setGameState()` 上报当前场景。AOSP android-16.0.0_r1 中能直接看到的系统动作主要是 statsd 记录，以及 PERFORMANCE 模式下 `isLoading=true` 时的 `Mode.GAME_LOADING` boost。
 3. ADPF `PerformanceHintManager` / Thermal API 负责逐帧预算和热反馈，它解决的是“这一帧要多少 CPU / GPU 时间”。
 4. OEM interventions、ANGLE、downscale、FPS override 是另一套设备配置。游戏声明自己支持 Game Mode 后，平台会优先尊重游戏自己的优化；如果还需要细粒度干预，再单独看 interventions 配置。
 
@@ -548,15 +551,14 @@ OEM 的游戏面板通常会把多种动作绑在一起，例如画质降档、F
 <!-- AIW-源码调研-2026-05-17: Kotlin Coroutine 与 ADPF Hint 工程化边界 -->
 ## ADPF Hint Session 与 Kotlin Coroutine 线程迁移（2026-05-17 补充）
 
-> 本节基于 AOSP 源码和 Google 官方 ADPF codelab 源码调研，补充 §5.9 ADPF 在 Kotlin 协程场景下的工程化约束。
+> 本节基于 Android Developers adaptability codelab、NDK Performance Hint API 文档和 AOSP android-16.0.0_r1 `PerformanceHintManager` 复核，补充 §5.9 ADPF 在 Kotlin 协程场景下的工程化约束。
 
 ### 核心约束：Hint Session 基于线程 TID，而非协程
 
 ADPF 的 `APerformanceHint_createSession()` API 设计基于**实际线程 ID（TID）**绑定：
 
 ```cpp
-// adpf_manager.cpp (Google 官方 codelab)
-// external/kotlinx.coroutines/.../adpf_manager.cpp
+// adpf_manager.cpp (Android Developers adaptability codelab)
 bool ADPFManager::InitializePerformanceHintManager() {
 #if __ANDROID_API__ >= 33
     hint_manager_ = APerformanceHint_getManager();
@@ -630,9 +632,9 @@ GitHub `Kotlin/kotlinx.coroutines` Issue #1617 讨论了协程优先级 hint：
 
 ### 源码位置
 
-- AOSP ADPF codelab: `external/kotlinx.coroutines/kotlinx-coroutines-core/`
-- ADPF Manager 源码: `external/kotlinx.coroutines/.../adpf_manager.h`
-- CoroutineDispatcher: `external/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt`
+- Android Developers adaptability codelab: `adpf_manager.cpp` / `adpf_manager.h` 示例代码
+- AOSP ADPF API: `frameworks/base/core/java/android/os/PerformanceHintManager.java` 与 NDK `performance_hint` 接口
+- Kotlin coroutine 线程迁移需结合项目实际调度器验证，不把 `external/kotlinx.coroutines` 写成 ADPF 示例源码路径
 
 <!-- AIW-源码调研-2026-05-17 END -->
 
