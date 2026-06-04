@@ -2,7 +2,7 @@
 title: "GAPS：Android 动态分析目标可达性路径重建"
 chapter: "7.14"
 section: "7.14"
-status: ready-for-review
+status: finalized
 applicable_versions: "论文实验环境：Android 13 x86-64 emulator；ARM 场景：Pixel 2 Android 11"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]
@@ -22,6 +22,9 @@ task6_result: "pass-light-edit"
 reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-06-05T03:05:00+08:00"
+auto_promoted_date: "2026-06-05"
+auto_promoted_by: "openclaw-task6"
 last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
@@ -31,8 +34,8 @@ task9_result: pass-tech-review
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T10:22:45+08:00"

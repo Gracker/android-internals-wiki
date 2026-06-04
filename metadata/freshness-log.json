@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-05-27T02:00:00+08:00",
+  "last_check": "2026-06-05T02:28:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -657,6 +657,167 @@
       ],
       "appendix_updates_needed": true,
       "next_scheduled_check": "2026-05-29"
+    },
+    {
+      "date": "2026-06-05",
+      "timestamp": "2026-06-05T02:15:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "Stable release expected June-July 2026 (no new Beta per past 7 days)",
+        "android_16_status": "Most widely used version (released June 2025); QPR2 Generational CMC official since 2026-05-07",
+        "version_boundary_check": "No Android 18 / API 38 references found in src/ - boundary respected",
+        "recent_updates": [
+          "Android 17 API 37 still in pre-stable phase; no new Beta/DP within 7-day window",
+          "Android 16 QPR2 (2026-05-07): Generational CMC now official capability",
+          "AutoFDO expanded to android17-6.18 kernel branch - 26.4% benchmark improvement (carried over)",
+          "MessageQueue lock-free implementation stable in API 37 (carried over)",
+          "App Memory Limiter introduced for per-app memory limits in API 37 (carried over)",
+          "ProfilingManager TRIGGER_TYPE_ANOMALY now available (carried over)"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 per-app memory limits based on device RAM (API 37)",
+          "generational_cmc_official": "Android 16 QPR2+ Generational CMC as official capability",
+          "lock_free_messagequeue": "API 37 lock-free MessageQueue stable, improves performance",
+          "profiling_anomaly_trigger": "ProfilingManager TRIGGER_TYPE_ANOMALY now available",
+          "autofdo_kernel_618": "AutoFDO expanded to android17-6.18 with 26.4% benchmark gains"
+        },
+        "scope_note": "巡检范围上限 Android 17 / API 37；Android 18/API 38+ 内容已判定为超出范围"
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 433,
+        "files_with_metadata": 369,
+        "files_verified_under_14_days": 102,
+        "files_verified_under_30_days": 222,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 167,
+        "high_risk_files": 1,
+        "medium_risk_files": 16,
+        "low_risk_files": 150,
+        "files_ending_at_api36": 152,
+        "files_with_api37": 217,
+        "android_18_api38_references": 0
+      },
+      "key_findings": [
+        "1 high-risk version evolution chapter: 4.6 内存相关的版本演进 (66 days overdue, NO API 37 coverage)",
+        "1.6 version evolution chapter recently refreshed (6 days overdue, has API 37) - no action needed",
+        "6.4 version evolution chapter (52 days overdue, has API 37) already in queue as priority-95",
+        "0 files verified over 90 days ago - 90-day ceiling respected",
+        "152 files do not include API 37 in applicable_versions - mostly system_mechanisms (180-day threshold)",
+        "No Android 18 / API 38 references found in content (boundary compliance maintained)",
+        "Most 'overdue' files (150/167) are low-risk: system_mechanisms within 180-day threshold"
+      ],
+      "action_items": [
+        "Add 4.6 内存相关的版本演进 to queue (priority 90) - 66 days overdue, missing API 37",
+        "Track 6.4 in queue (already priority-95, in-flight)",
+        "Continue API 37 coverage expansion for system_mechanisms files (152 files remaining, batch by chapter)"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "section": "4.6",
+          "last_verified": "2026-03-31",
+          "days_overdue": 66,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": false,
+          "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
+          "missing_content": "Android 17 API 37: ART Generational GC stable, App Memory Limiter, CMC version boundary (android-14.0.0_r1)",
+          "suggested_action": "Add to queue.json with priority 90",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "section": "6.4",
+          "last_verified": "2026-04-14",
+          "days_overdue": 52,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.4 (API 19) - Android 17 (API 37)",
+          "missing_content": "Android 17 storage architecture updates",
+          "suggested_action": "Already in queue as priority-95 (added 2026-06-04 by task2a gap-mining)",
+          "already_in_queue": true
+        }
+      ],
+      "queue_updates": [
+        "NEW priority-90: 4.6 内存相关的版本演进 Android 17 补充",
+        "EXISTING priority-95: 6.4 存储相关的版本演进 (in-flight, task2a)"
+      ],
+      "appendix_updates_needed": false,
+      "appendix_note": "No new official Android 17 changes within 7-day window; appendix/version-changelog.md remains current as of 2026-05-27",
+      "next_scheduled_check": "2026-06-07"
+    },
+    {
+      "date": "2026-06-05",
+      "timestamp": "2026-06-05T02:28:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "仍处于预稳定阶段，预计 2026 年 6-7 月正式发布",
+        "android_16_status": "QPR2 已发布，Generational CMC 作为官方功能正式可用",
+        "recent_updates": [
+          "AutoFDO 扩展至 android17-6.18 kernel 分支，26.4% 基准性能提升",
+          "MessageQueue 无锁实现在 API 37 中已稳定",
+          "应用内存限制器（App Memory Limiter）在 API 37 中引入",
+          "ProfilingManager 新增 TRIGGER_TYPE_ANOMALY 触发类型"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 基于设备 RAM 的应用内存限制",
+          "lock_free_messagequeue": "API 37 无锁 MessageQueue 稳定",
+          "profiling_anomaly_trigger": "ProfilingManager 异常检测触发器",
+          "autofdo_kernel_618": "AutoFDO android17-6.18 性能提升"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 433,
+        "files_with_metadata": 369,
+        "files_verified_under_14_days": 102,
+        "files_verified_under_30_days": 222,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 167,
+        "high_risk_files": 1,
+        "medium_risk_files": 16,
+        "low_risk_files": 150,
+        "files_ending_at_api36": 152,
+        "files_with_api37": 217,
+        "android_18_api38_references": 0
+      },
+      "key_findings": [
+        "1 高风险版本演进章节：4.6 内存相关的版本演进（66 天逾期，缺少 API 37 覆盖）",
+        "Android 17 / API 37 边界严格遵守，无 Android 18/API 38+ 内容",
+        "217 个文件已有 API 37 覆盖，152 个文件仍需添加",
+        "所有版本结论均有源码或官方文档支撑"
+      ],
+      "action_items": [
+        "将 4.6 内存相关的版本演进加入队列（priority 90）",
+        "继续为系统机制章节分批添加 API 37 覆盖",
+        "跟踪 Android 17 正式发布日期，准备版本演进章节更新"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "section": "4.6",
+          "last_verified": "2026-03-31",
+          "days_overdue": 66,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": false,
+          "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
+          "missing_content": "Android 17 API 37：ART Generational GC 稳定版、App Memory Limiter、CMC 版本边界（android-14.0.0_r1）",
+          "suggested_action": "加入 queue.json，priority 90",
+          "already_in_queue": false
+        }
+      ],
+      "queue_updates": [
+        "NEW priority-90: 4.6 内存相关的版本演进 Android 17 补充"
+      ],
+      "appendix_updates_needed": false,
+      "next_scheduled_check": "2026-06-07"
     }
   ]
 }

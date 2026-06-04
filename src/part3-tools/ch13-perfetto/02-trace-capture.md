@@ -946,3 +946,65 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 7. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
 8. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
 9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
+
+<!-- AIW-源码调研-2026-06-05: linux.perf 和 FrameTimeline 数据源实际状态 -->
+### 数据源实际状态深度验证 [新增]
+
+基于 AOSP android-16.0.0_r4 源码验证，两个核心数据源的状态与常见描述存在显著差异：
+
+#### linux.perf 数据源状态
+
+**常认为可用：** 从 Android 13 (API 33) 起，官方文档将 `linux.perf` 列为可用数据源。
+
+**实际验证结果：** 在 AOSP android-16.0.0_r4 中，`linux.perf` 数据源的 **Proto 配置存在但未实现**。
+
+**源码证据：**
+- Proto 定义存在：`platform/external/perfetto/+/android-16.0.0_r4/protos/perfetto/config/data_source_config.proto` 第 111 行
+  ```proto
+  // Data source name: linux.perf
+  optional PerfEventConfig perf_event_config = 111 [lazy = true];
+  ```
+- **未注册实现**：`src/traced/probes/probes_producer.cc:348-378` 的 `kAllDataSources[]` 数组只注册 17 个数据源，无 `linux.perf`：
+  ```cpp
+  // AOSP android-16.0.0_r4 registered data sources:
+  Ds<AndroidGameInterventionListDataSource>(),
+  Ds<AndroidCpuPerUidDataSource>(),
+  Ds<AndroidKernelWakelocksDataSource>(),
+  // ... 14 个其他数据源，但无 linux.perf
+  Ds<SysStatsDataSource>(),
+  Ds<SystemInfoDataSource>(),
+  ```
+
+**问题影响：** 在 AOSP 设备上使用 `linux.perf` 配置时，Perfetto 会出现 "data source not found" 错误。企业级 APM 平台依赖的 `traced_perf` 守护进程不存在于 AOSP 中。
+
+**上游状态：** `linux.perf` 实现（`traced_perf` 守护进程）仅存在于 upstream Perfetto，未集成到 AOSP android-16.0.0_r4。
+
+#### android.surfaceflinger.frametimeline 数据源状态
+
+**常认为可用：** 从 Android 12 (API 31) 起，官方文档将 `android.surfaceflinger.frametimeline` 列为可用。
+
+**实际验证结果：** 在 AOSP android-16.0.0_r4 中，**无 `frametimeline` 数据源注册**，但有 `frame` 数据源。
+
+**源码证据：**
+- **实际数据源名**：`platform/frameworks/native/+/android-16.0.0_r4/services/surfaceflinger/FrameTracer/FrameTracer.h:68`
+  ```cpp
+  // 实际可用的数据源名称
+  static constexpr char kFrameTracerDataSource[] = "android.surfaceflinger.frame";
+  // NOT: "android.surfaceflinger.frametimeline"
+  ```
+- Proto 支持存在：`platform/external/perfetto/+/android-16.0.0_r4/protos/perfetto/trace/android/frame_timeline_event.proto` 定义 `FrameTimelineEvent`，但数据源注册不匹配。
+
+**问题影响：** 配置 `android.surfaceflinger.frametimeline` 时，Perfetto 可能响应默认的 `android.surfaceflinger.frame`，或出现配置不匹配警告，无法获取完整的帧时间线数据。
+
+#### 临时解决方案建议
+
+针对 `linux.perf` 不可用：
+- 使用 simpleperf 替代（`platform/system/extras/simpleperf/`）
+- 使用 `linux.ftrace` + 用户空间注解重建部分信息
+
+针对 `frametimeline` 不可用：
+- 使用 `android.surfaceflinger.frame` 获取基础帧追踪信息
+- 使用 `android.log` + VSync 时间戳构建自定义帧时间线
+
+**版本边界说明**：android-17.0.0_r1 源码未公开，基于 android-16.0.0_r4（当前最高可用版本）的验证结果表明关键数据源存在缺失。
+<!-- /AIW-源码调研-2026-06-05 -->
