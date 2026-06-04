@@ -173,6 +173,7 @@ tags:
   - [9.5 案例集](part2-performance/ch09-anr/05-case-studies.md)
   - [9.6 Notification 性能与 ANR](part2-performance/ch09-anr/06-notification-performance-anr.md)
   - [9.7 ANR 非技术故障诊断](part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md)
+  - [9.8 ANR Kernel Trace 联合诊断与系统事件关联](part2-performance/ch09-anr/08-anr-kernel-trace-joint-diagnosis.md)
 
 - [第 10 章：内存性能](part2-performance/ch10-memory-perf/README.md)
   - [10.1 App 内存分析](part2-performance/ch10-memory-perf/01-app-memory-analysis.md)
