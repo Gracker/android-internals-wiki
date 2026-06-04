@@ -13475,5 +13475,20 @@
     "task9_state": "reviewed",
     "task9_result": "auto-fixed",
     "task6_note": "2026-06-04 Task6: auto-promoted to finalized (task9 auto-fixed + queue clean + no B-class issues)."
-  }
+  },
+  "events": [
+    {
+      "timestamp": "2026-06-04T12:55:34+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "2.19",
+        "18.12"
+      ],
+      "action": "rework-completed",
+      "details": {
+        "2.19": "案例伪代码替换、wasRefreshRateSwitch编造方法修复、误区条目扩充",
+        "18.12": "VSync协调扩展锚点补充、P0/P1确认已修复"
+      }
+    }
+  ]
 }

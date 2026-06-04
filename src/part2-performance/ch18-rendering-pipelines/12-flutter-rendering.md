@@ -27,15 +27,15 @@ sources:
   - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
-task6_state: reviewed
-pipeline_stage: "task6_pending"
-task9_state: reviewed
-task2b_state: "fixed"
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
-task2b_result: "fixed"
-last_task2b_at: "2026-04-26T10:41:09+08:00"
+task2b_result: fixed
+last_task2b_at: 2026-06-04T12:54:39
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
@@ -45,6 +45,7 @@ repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T06:36:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit-18.12.md"
+task2b_notes: 2026-06-04 Task2B main 回炉：新增 VSync 协调扩展锚点（VsyncWaiter → Choreographer 链路、Merged Model 差异、TextureView 额外延迟、Perfetto 观察点）；P0 RenderMode.image 和 P1 HCPP 已在前序修复中修正，确认本轮文本已覆盖
 last_task6_at: 2026-06-04T10:06:00+08:00
 ---
 <!-- outline-start -->
@@ -219,6 +220,43 @@ sequenceDiagram
 嵌入到其他 View 层级（`FlutterFragment` 或 `FlutterView` 直接使用）时，`RenderMode` 由调用方显式配置，不走这套默认推断。SurfaceView 模式下还存在 z-ordering 约束——`FlutterSurfaceView` 背后的 Surface 默认在 Window 下方，可通过 `setZOrderOnTop` / `setZOrderMediaOverlay` 调整，这会影响 SurfaceFlinger 侧的 layer 叠加关系（参见 [18.6 SurfaceView 直出路径](06-surfaceview.md#z-order-与图层结构)）。
 
 [已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterActivity.java` `getRenderMode()` + `FlutterSurfaceView.java` 默认 z-order 行为]
+
+### Flutter 与宿主 App 的 VSync 协调
+
+Flutter engine 在 Android 上通过 `VsyncWaiter` 接上宿主 `Choreographer` 的 VSync-App 节拍。这不是"Flutter 自己生成一个 VSync"，而是复用 Android 已有的帧率驱动信号。理解这一层，才能在 Perfetto 中区分"Flutter 自己慢了"和"宿主 VSync 安排出问题了"。
+
+**核心链路**：
+
+```
+Android Choreographer → VsyncWaiter.asyncWaitForVsync()
+    → Flutter Engine (Shell) 收到 VSync 回调
+    → Animator::BeginFrame → Dart Build/Layout/Paint
+    → Rasterizer::DrawToSurfaces
+```
+
+`VsyncWaiter` 在 Android embedding 层以 `Choreographer.FrameCallback` 注册回调，每次 `doFrame` 到达时通过 JNI 通知 engine 的 `Shell::OnVsync`。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
+
+**Merged Model 下的区别（Flutter 3.29+）**：
+
+在旧版 engine（UI Thread 独立）中，`VsyncWaiter` 收到回调后还需要跨线程唤醒 UI Thread，增加一次线程同步延迟。Merged Model 下，`VsyncWaiter`、Dart UI task、平台回调都在同一条 Main Thread 上，VSync 回调到达后可以立即进入 Build/Layout/Paint——没有跨线程唤醒开销。
+
+**TextureView Mode 下的额外延迟**：
+
+`SurfaceTexture.setOnFrameAvailableListener()` 的回调也落在 Main Thread。如果这个回调的执行时间与 VSync-App 到达时间产生竞争，宿主 `RenderThread` 的 `updateTexImage()` 可能延迟到下一个 VSync 周期才能执行，Flutter Raster Thread 产出的帧要多等 1 帧才能上屏。
+
+**Perfetto 观察点**：
+
+| 观察目标 | 轨道/关键词 | 怎么看 |
+|:---|:---|:---|
+| VSync 信号是否准时到达引擎 | `Choreographer#doFrame` → `VsyncWaiter.asyncWaitForVsync` | 两个 slice 之间的间隔应在 1ms 以内；超过 2ms 说明宿主主线程有阻塞 |
+| Merged Model 是否生效 | 查看 Main Thread 上是否同时有 `Engine::BeginFrame` 和 `Choreographer#doFrame` | 二者在同一线程轨上相邻出现 = merged model 生效 |
+| TextureView 模式下的帧延迟 | `SurfaceTexture.onFrameAvailable` → `updateTexImage` → `DrawFrame` | 如果 `updateTexImage` 的 slice 比 `SurfaceTexture.onFrameAvailable` 晚超过 1 个 VSync 周期，宿主 RenderThread 在背锅 |
+
+**常见问题**：
+
+- **宿主主线程阻塞拖慢 Flutter VSync**：如果在 VSync-App 到达时宿主主线程正在执行长时间操作（如复杂的 MethodChannel 回复、大量平台 View 的 measure/layout），`VsyncWaiter` 的回调会被推迟，Flutter 的 BeginFrame 也会相应延迟。
+- **RenderThread 过载导致 TextureView 帧堆积**：宿主 RenderThread 忙不过来时，`updateTexImage()` 会积压，Flutter 已经产出的帧迟迟不能上屏。
+- **SurfaceView mode 不受宿主 RenderThread 影响**：这是 SurfaceView 在性能上的核心优势——Flutter 的 VSync 节奏只受宿主主线程影响（共用一条线程），`Raster Thread` 产出后直接通过 BLAST 提交，不需要宿主 RenderThread 采样。
 
 ### `FlutterImageView` 与 `RenderMode.image`
 
