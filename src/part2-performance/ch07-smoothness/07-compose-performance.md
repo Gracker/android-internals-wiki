@@ -1,4 +1,5 @@
 ---
+
 title: Jetpack Compose 性能优化
 chapter: '7.7'
 status: ready-for-review
@@ -49,8 +50,8 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -63,8 +64,8 @@ auto_promoted_date: "2026-05-04"
 last_task9_audit: '2026-05-20'
 last_task9_audit_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-05-20-02-audit.md
-task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 PausableComposition Android API level 绑定、延迟状态读取示例、RecyclerView ComposeView Recomposer/Dispose 策略；P2 数据缺口写入 suggestions。"
----
+task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 PausableComposition Android API level 绑定、延迟状态读取示例、RecyclerView ComposeView Recomposer/Dispose 策略；P2 数据缺口写入 suggestions。"---
+
 # Jetpack Compose 性能优化
 
 <!-- outline-start -->
