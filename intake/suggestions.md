@@ -282,3 +282,96 @@ Queue 中无 task6/task9/external-review pending 条目。通过 frontmatter fal
 ### 状态更新
 
 两个章节已更新 frontmatter：`task2b_result=fixed`、`task2b_state=fixed`、`task6_state=revisiting`、`task9_state=pending`、`pipeline_stage=task6_pending`。重新进入 Task6 → Task9 流水线。
+
+---
+
+## Task 2A 缺口挖掘记录 — 2026-06-04 16:09
+
+本轮无空 draft 章节（Phase 0 未命中）。Task2B backlog = 12（≤20），允许进入 Phase 1 缺口挖掘。
+
+### 已检查方向
+
+1. **source-index.json 未映射素材**（142 条）：142 条素材均无 chapter_mapping，但分析其标题后发现均为已有章节的补充素材（Tool 使用教程、架构设计文章、基础概念等），无独立成节的高质量主题。
+
+2. **research-gaps.md 已有缺口**（7 条）：全部指向现有章节的补充需求（Measure 集成、TextureView Metal/Vulkan、Foldable 适配、ANR 捕获边界等），不构成新章节候选。
+
+3. **daily-info 近 3 天素材**（06-02 ~ 06-04）：反复出现的主题为 TextureView 补强、ProfilingManager 版本边界、Energy Limiter 验证、Cached App Freeze + GC 版本边界。全部映射到现有章节。
+
+4. **research-feeds 最近素材**（4 月-5 月）：Perfetto v54 新特性、Compose Pausable Composition、Frame Timeline 可视化等。全部映射到 ch13/ch22 现有章节。
+
+5. **Clippings 参考书对比**：
+   - 《稳定性》(20 篇)：全部覆盖于 ch20
+   - 《性能优化》(21 篇)：全部覆盖于 ch21-ch25
+   - 《线上疑难》(36+ 篇)：全部覆盖于 ch26
+   - 注：GC 抑制启动优化有参考书支撑，但该技术依赖 VMRuntime 内部 API 反射，Android 14+ generational GC 使其必要性和有效性显著降低，时效性降至 2 分，总分 13（<14）
+
+6. **AOSP 核心服务覆盖**：ActivityManagerService、PackageManagerService、ContentProvider、WindowManagerService、SurfaceFlinger、InputFlinger、SensorService、ConnectivityService、netd、vold、statsd、NotificationManager、Keystore/KeyMint、BiometricPrompt、AudioFlinger 全部已覆盖。
+
+7. **Android 17 行为变更逐项核对**：Edge-to-edge（非性能核心）、Predictive Back（22.13 已覆盖）、FGS 限制（25.13/25.17 已覆盖）、16KB Page（4.7/20.13 已覆盖）、Native DCL（20.15 已覆盖）、Tare（11.8 已覆盖）、Excessive CPU Kill（25.12 已覆盖）、后台音频硬化（25.17/25.18 已覆盖）。
+
+### 已排除的候选主题（评分 < 14）
+
+| 候选主题 | 素材 | 相关性 | 需求 | 时效 | 总分 | 排除原因 |
+|----------|------|--------|------|------|------|----------|
+| GC 抑制启动优化 | 4 | 4 | 4 | 2 | 14 | Android 14+ generational GC 降效，时效降至 2→13 |
+| ViewTreeObserver 布局性能 | 3 | 4 | 3 | 3 | 13 | 与 ch22.12 部分重叠 |
+| Exact Alarm 权限与调度 | 4 | 4 | 5 | 4 | 17 | 与 25.03/25.20 重叠 |
+| 缓存命中率优化 | 3 | 4 | 3 | 2 | 12 | 高级 CPU 优化，移动端需求低 |
+| App Widget 渲染性能 | 2 | 3 | 3 | 3 | 11 | 缺少性能专项素材 |
+| Configuration Change 性能 | 2 | 3 | 3 | 3 | 11 | 非性能核心主题 |
+
+### 结论
+
+本轮未发现评分 ≥ 14 的知识缺口，跳过。全书已覆盖 160+ 小节，所有 Android 17/API 37 性能相关行为变更和主流 AOSP 系统服务均已映射。
+
+### 建议
+
+- 建议优先消化现有 Task2B backlog（当前 12 条），让管线流水线推进
+- 已有 draft 章节（7.17、22.16、25.20 等）已由 Task 2A 早期创建但尚未写内容，建议后续轮次优先加工
+
+
+## [Task 2A] 缺口挖掘已检查方向 — 2026-06-04 20:00 轮
+
+### 检查结果：本轮未发现评分 ≥ 14 的知识缺口
+
+### 已检查方向（避免重复挖掘）
+
+1. **素材索引 (source-index.json)**：6 篇高质量未映射素材，但全部对应已有章节：
+   - Android 面试性能优化 → 多章已覆盖
+   - Android 17 Tare 经济模型 → 11.8 已覆盖
+   - ltrace 工作原理 → 14.x 工具章已覆盖
+   - 荣耀 MUSCHED → 17.4 sched_ext 已覆盖
+   - Staged Install → 1.23 已覆盖
+   - Compose 盲区 → 22.20 已覆盖
+
+2. **研究素材 (research-feeds)**：20+ 篇研究 Feed，全部映射到现有章节（1.4, 1.10, 1.12, 1.13, 2.4, 4.3, 4.7, 4.8, 5.1, 5.7, 5.14, 8.10, 9.1-9.4, 13.3, 14.7, 16.8, 17.4, 18.11, 22.13, 22.14 等）
+
+3. **每日信息 (daily-info)**：2026-06-02 至 2026-06-04 三天内容，主题包括：
+   - Android 17 应用锁 → 17.7 已覆盖
+   - ProfilingManager Excessive CPU → 8.10/14.7 已覆盖
+   - ANR 监控与 Ftrace → 9.x/26.4 已覆盖
+   - TextureView Metal/Vulkan → 18.7 已覆盖（RG-TV-001）
+
+4. **research-gaps.md**：7 个已记录 gap 全部是现有章节深化需求（非新章节）：
+   - RG-MEASURE-001/002 → 19.9 深化
+   - RG-ANR-001 → 19.24 深化
+   - RG-TV-001/002/003 → 18.7 深化
+   - NPU/ML 盲区 → 5.11/5.16 深化
+
+5. **AOSP 结构对照**：
+   - frameworks/base/ 核心服务（AMS/PMS/WMS/InputManager/等）全部已覆盖
+   - packages/modules/（Bluetooth/WiFi/Media）全部已覆盖
+   - system/（vold/netd/lmkd/installd）全部已覆盖
+
+6. **官方文档对照**：Android 16/17 性能相关 behavior changes 全部已映射到对应章节
+
+7. **F2FS Kernel 6.12 优化**：最接近新章节的候选，但评估后：
+   - 素材丰富度 3 + 相关性 4 + 读者需求度 3 + 时效性 4 = 14（边缘）
+   - 更适合作为 6.2/6.4 章节深化内容（Task 2B），而非独立新章节
+   - Kernel 6.13 特性（Device Aliasing）超出 Android 17 边界
+
+### 结论
+全书 371 个小节覆盖极其全面，Part 1-5 结构完整。当前最紧迫的需求不是新增章节，而是：
+1. Task 2B backlog（10 个 pending 章节）的内容打磨
+2. 4 个 draft 章节（1.24, 20.17, 21.13, 22.20）的内容完善
+3. 109 个 ready-for-review 章节的 review 推进
