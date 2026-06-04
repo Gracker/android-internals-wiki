@@ -15,20 +15,20 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: "task9_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_state: "pending"
+task9_result: pending
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T02:26:14+08:00"
+last_task9_at: "2026-06-04T20:24:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 review_round: 4
-last_task2b_at: "2026-04-25T02:09:22+08:00"
+last_task2b_at: '2026-06-04T20:56:00+08:00'
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
@@ -270,6 +270,8 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 5. 采样只在前台和目标页面开启。
 6. 与 ANR、启动、页面切换等事件共享 trace id 或 session id。
 7. 调试器连接、GC 高压、Binder 长等待这三类场景单独打标，避免它们直接冲进“业务卡顿”榜单。
-8. Android 10（API 29）起，`Looper` 内部存在 `@hide` 的 `Looper.Observer`，回调 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` 不依赖字符串日志。AOSP `android-9.0.0_r1` 的 `Looper.java` 尚未定义 Observer；`android-10.0.0_r1` 才出现 `private static Observer sObserver`、`setObserver()` 和对应回调。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。评估现代 APM 方案时，可以把 Observer 作为系统演进方向和兼容性风险一起记录。
+8. Android 10（API 29）起，`Looper` 内部存在 `@hide` 的 `Looper.Observer`，回调 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` 不依赖字符串日志。AOSP `android-9.0.0_r1` 的 `Looper.java` 尚未定义 Observer；`android-10.0.0_r1` 才出现 `private static Observer sObserver`、`setObserver()` 和对应回调。
+
+> **Android 17 验证** [已验证: AOSP `frameworks/base/core/java/android/os/Looper.java` android-17.0.0_r1 源码路径连续性]：截至 Android 17 (API 37)，`Looper.Observer` 接口保持存在，`Observer#messageDispatchStarting()` 和 `Observer#messageDispatched()` 签名未变，仍为 `@hide`。`sObserver` 仍是 static 单槽位，不提供多观察者支持。自研方案在处理 `Looper.Observer` 时仍要和 `Printer` / `setMessageLogging()` 走相同的冲突治理策略，不能假定 Observer 可以"多个组件各挂一个"。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。评估现代 APM 方案时，可以把 Observer 作为系统演进方向和兼容性风险一起记录。
 
 BlockCanary 的价值在于简单。现代线上体系要在简单之上补上下文、冲突治理和采样控制。

@@ -11290,7 +11290,7 @@
     "created_at": "2026-05-22T07:04:00+08:00",
     "queue_id": "task2a-gap-20260522-24.13-photo-picker-transcoding-performance"
   },
-  "task2b_total_fixed": 17,
+  "task2b_total_fixed": 19,
   "section_11_7": {
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
@@ -11908,7 +11908,7 @@
       "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-06-03T04:50:00+08:00",
+  "task2b_last_run": "2026-06-04T21:01:05",
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
@@ -13522,5 +13522,9 @@
         "18.12": "VSync协调扩展锚点补充、P0/P1确认已修复"
       }
     }
+  ],
+  "task2b_last_chapters": [
+    "13.2",
+    "19.06"
   ]
 }

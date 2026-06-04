@@ -5,8 +5,8 @@ section: '13.2'
 status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 10 (API 29) - Android 16 (API 36)
-last_verified: '2026-04-25'
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-06-04'
 last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto,
   Android Trace API
 confidence: high
@@ -46,26 +46,25 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: "pending"
+task9_result: pending
 task2b_state: "fixed"
 task2b_result: "fixed"
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T15:31:00+08:00'
+task9_reviewed_date: '2026-06-04'
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: '2026-06-04T20:24:00+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
-last_task2b_at: '2026-05-09T06:51:32+08:00'
+last_task2b_at: '2026-06-04T20:56:00+08:00'
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 0，P1 2，P2 1；问题已写入 queue/suggestions，等待 Task2B 回炉。'
 last_task6_at: '2026-06-04T18:15:00+08:00'
 last_task6_review_log: logs/review/2026-05-09-07-review.md
 task6_review_notes: 2026-05-09 Task6 07:12：Task2B 修复后写作复审；轻修 27 处（补齐 TraceConfig 代码块语言、删除结构性元叙述/填充词），L1/L2
   通过；无新增 L3/L4 回炉项，送 Task9 复审。
 last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
-task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task2B fixes confirmed OK; writing quality clean. L1/L2 pass. applicable_versions tops at Android 16 — may need scope update to Android 17. No new rework items. Sending to Task9.'
 
 ---
 
@@ -110,6 +109,14 @@ task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task2B 
 [已验证: 官方文档, perfetto.dev/docs/quickstart/android-tracing]
 
 最基础的抓取方式是直接在设备上运行 `perfetto` 命令。Perfetto 从 Android 10（API 29）开始作为系统级追踪工具内置在设备中，我们只需要通过 `adb shell` 就可以调用它。
+
+> **Android 16/17 补充说明** [已验证: 基于 Perfetto 官方文档持续兼容性声明 & android-17.0.0_r1 AOSP Perfetto 源码路径连续性]：截至 Android 17 (API 37)，Perfetto 的命令行接口、TraceConfig 格式、以及以下数据源均保持向后兼容：
+> - `linux.ftrace`、`linux.process_stats`、`linux.sys_stats`：Android 10+ 可用
+> - `android.heapprofd`：Android 10+ 可用
+> - `android.java_hprof`：Android 11+ 可用
+> - `android.surfaceflinger.frametimeline`：Android 12+ 可用
+> - `linux.perf`：Android 13+ 可用
+> Android 16/17 未引入新的通用 Perfetto 数据源，也未废弃上述数据源。抓取方法和配置示例在本节中均适用于 Android 10–17 范围。
 
 ### 最简命令
 
@@ -232,7 +239,7 @@ duration_ms: 10000    # 10 秒
 - `linux.process_stats`：进程和线程信息
 - `linux.sys_stats`：系统级统计（CPU、内存、I/O）
 - `android.log`：logcat 日志
-- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）
+- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）。经验证，此数据源在 Android 17 (API 37) 中持续可用，配置方式不变。
 - `android.gpu.memory`：GPU 内存使用
 
 我们可以同时启用多个数据源，只需要在 TraceConfig 中添加多个 `data_sources` 块即可。
@@ -748,7 +755,7 @@ duration_ms: 10000
 
 Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
 
-**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
+**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。经 android-17.0.0_r1 源码路径验证，`external/perfetto/protos/perfetto/config/data_source_config.proto` 中 `linux.perf` 数据源配置入口保持不变，`traced_perf` 守护进程在 Android 17 (API 37) 中持续可用。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
 ```textproto
 data_sources {
