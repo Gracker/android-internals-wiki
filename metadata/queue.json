@@ -1137,8 +1137,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-04T20:15:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-04-20-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-04-20-review.md",
+      "completed_at": "2026-06-05T00:59:37.730496",
+      "completed_by": "openclaw-task2b-main"
     },
     {
       "section": "19.18",
@@ -1339,7 +1341,26 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-05T00:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T00:53:40.101273",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "P0: setEnableRecordAnrMainStack→enableAllThreadStackAnr; P1: removed unverifiable Page Replay/4.4.7.3+ claims, replaced with public-doc-verifiable capabilities"
     }
-  ]
+  ],
+  "2.26": {
+    "title": "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能",
+    "file": "src/part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task2a_state": "processed",
+    "task2a_result": "ready-for-review",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-06-05",
+    "last_verified": "2026-06-05",
+    "confidence": "medium",
+    "last_task2a_at": "2026-06-05T02:14:28.415043",
+    "queue_priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-04"
+  }
 }
