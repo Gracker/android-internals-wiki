@@ -862,6 +862,54 @@
       "added_at": "2026-06-04T08:10:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-06-04-08-review.md"
+    },
+    {
+      "section": "18.3",
+      "section_title": "Android View 软件渲染路径",
+      "priority": 90,
+      "reason": "[task6-review] Task 9 P0 仍未修正：LAYER_TYPE_SOFTWARE 与 buildDrawingCache / RenderNode 口径需按 AOSP android-16.0.0_r1 修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-26-08-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "LAYER_TYPE_SOFTWARE 内部实现说明",
+          "detail": "Task 9 audit (2026-05-26) 指出 AOSP android-16.0.0_r1 中 LAYER_TYPE_SOFTWARE 仍由 Java drawing cache / Bitmap 路径处理，RenderProperties 明确 Software layer 不能直接构建 RenderLayer。当前正文描述需复核。",
+          "suggestion": "Task 2B 按 AOSP android-16.0.0_r1 修正 LAYER_TYPE_SOFTWARE 的内部链路描述"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-04T10:06:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-04-10-review.md"
+    },
+    {
+      "section": "18.12",
+      "section_title": "Flutter 渲染管线",
+      "priority": 90,
+      "reason": "[task6-review] Task 9 needs-rework 仍未修正，需 Task 2B 修复后重新提交",
+      "material_paths": [
+        "logs/deep-review/2026-05-21-06-audit-18.12.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "Task 9 audit 2026-05-21 指出的问题",
+          "detail": "Task 9 idle audit 发现 needs-rework 问题，详见 logs/deep-review/2026-05-21-06-audit-18.12.md",
+          "suggestion": "Task 2B 按 Task 9 audit 修正技术问题后重新提交"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Flutter 与宿主 App 的 VSync 协调",
+          "detail": "Outline 扩展锚点 'VSync 协调' 未显式展开，VsyncWaiter 机制仅在一行引用中出现",
+          "suggestion": "补充 VSync 协调机制的说明，或从 outline 中移除该扩展锚点"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-04T10:06:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-04-10-review.md"
     }
   ]
 }

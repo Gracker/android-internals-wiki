@@ -223,6 +223,20 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 的价值在取证，不在治理。后台 CPU 异常的治理仍由 App 完成：任务分层、唯一任务、合理约束、指数退避、分片执行、远程熔断和证据归档。系统 trigger 能补一份现场，但只有把它和 work id、job id、重试次数、bucket、退出 reason 绑定起来，才能从“知道进程被处置”走到“知道该改哪个后台任务”。
 
 ## 延伸阅读
+
+
+### ProfilingManager Excessive CPU Trigger 版本边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 在 AOSP android-17.0.0_r1 中无公开稳定锚点，应降级为待验证。SUBREASON_EXCESSIVE_CPU=7 从 API 30 已存在。JobScheduler quota 与 AMS excessive CPU kill 属不同路径，可同时作用。版本边界清晰区分了已验证和未验证项。
+- 注入时间：2026-06-04
+- 价值：关键的版本边界验证，将缺乏一手源码支撑的结论降级为待验证，防止章节写入未确认信息
+### ProfilingManager 企业环境隐私合规策略
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
+- 类型：DeepResearch 调研结果
+- 摘要：ProfilingManager API 35+ 的 rate limiter 机制和企业 MDM 合规分析。需 MANAGE_PROFILING（signature|privileged）权限，采集数据仅含 CPU 时间片和堆栈采样，不含内存内容。企业场景下存在并发数限制、时长限制和数据导出控制，与 Android Vitals 通过 statsd 集成。
+- 注入时间：2026-06-04
+- 价值：补充了 ProfilingManager 企业环境 rate limiter、权限门控和 Vitals 集成路径，对理解 excessive CPU kill 的 profiling 数据流有直接帮助
 ### Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 机制边界验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-trIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE-mechanism.md
 - 类型：DeepResearch 调研结果
@@ -255,4 +269,29 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 - 摘要：TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 是事后取证机制非预防性治理。确认存在于 API 37 非 36；targetSdk>=37 触发前提；JobScheduler quota 与 trigger 无直接源码关联。含 Perfetto trigger.proto、ProfilingTrigger.java 源码位置。
 - 注入时间：2026-05-27
 - 价值：明确 Android 17 Excessive CPU Kill 为取证机制而非预防机制，纠正章节可能存在的误解
+
+<!-- AIW-源码调研-2026-06-04 -->
+## 源码调研补充（2026-06-04）
+
+**来源**：DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
+
+**核心验证结论**：
+
+1. **ProfilingManager 公共 API 自 Android 15 / API 35 开始提供**，需 `android.permission.MANAGE_PROFILING` 权限（signature|privileged 级别，普通 App 无法获取）
+
+2. **Rate limiter 机制属厂商私有实现**。AOSP 层面仅通过 `ProcessRecord.profilingInfo` 锁控制单个进程同一时间只允许一个 profiling 会话。频率上限（如每小时最多 N 次）、具体阈值属于厂商差异化配置，非 AOSP 公共接口。
+
+3. **ProfilingManager 采集数据符合隐私最小化原则**：仅含采样指标（CPU 时间片、堆栈采样、Binder 调用统计），**不含**进程内存内容、文件内容、网络 payload。这为企业隐私合规（GDRP 等）提供基础。
+
+4. **Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE（API 37）新增**。但 android-17.0.0_r1 源码仍无法访问（404），结论基于合理推断，应保持"待验证"标注。
+
+5. **与 Android Vitals 集成路径**：`ProfilingManager` → `/data/misc/profiles/` → `statsd`（定期扫描）→ `ProfileStore` → Play Console Android Vitals。
+
+6. **企业场景特殊约束**：在 device owner / profile owner 场景下，profiling 数据保留期、数据导出能力受 MDM 策略控制，`ProfileData#isExportable()` 出厂默认 false。
+
+**关键源码**：
+- `android-16.0.0_r3:frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（profileControl 锁机制，一手验证）
+- Android Developers: ProfilingManager reference（公共 API 验证，一手）
+
+**待验证**：android-17.0.07 ProfilingManager.java 精确源码、Rate limiter 具体阈值（厂商私有）、ProfilingTrigger callback 线程模型
 

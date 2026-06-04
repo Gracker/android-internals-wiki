@@ -687,3 +687,29 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 5. **待验证项（缺 AOSP 源码闭环）**：触发阈值（CPU 百分比、持续时间、cached/background/foreground service 状态区分）、处置信号（SIGKILL/SIGTERM/ActivityManager 路径）、检测服务实现（PowerManagerService/ActivityManagerService/kernel CPU acct）、厂商差异、trace buffer 时长。
 
 **建议**：章节中"Power Check"相关描述保持"待验证"标注，待 AOSP android-17.0.0_r1 源码闭环后再更新具体阈值。
+
+<!-- AIW-源码调研-2026-06-04 -->
+## 源码调研补充（2026-06-04）
+
+**来源**：DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
+
+**核心验证结论**：
+
+1. **ProfilingManager 公共 API 自 Android 15 / API 35 开始提供**，需 `android.permission.MANAGE_PROFILING` 权限（signature|privileged 级别，普通 App 无法获取）
+
+2. **Rate limiter 机制属厂商私有实现**。AOSP 层面仅通过 `ProcessRecord.profilingInfo` 锁控制单个进程同一时间只允许一个 profiling 会话。频率上限（如每小时最多 N 次）、具体阈值属于厂商差异化配置，非 AOSP 公共接口。
+
+3. **ProfilingManager 采集数据符合隐私最小化原则**：仅含采样指标（CPU 时间片、堆栈采样、Binder 调用统计），**不含**进程内存内容、文件内容、网络 payload。这为企业隐私合规（GDRP 等）提供基础。
+
+4. **Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE（API 37）新增**。但 android-17.0.0_r1 源码仍无法访问（404），结论基于合理推断，应保持"待验证"标注。
+
+5. **与 Android Vitals 集成路径**：`ProfilingManager` → `/data/misc/profiles/` → `statsd`（定期扫描）→ `ProfileStore` → Play Console Android Vitals。
+
+6. **企业场景特殊约束**：在 device owner / profile owner 场景下，profiling 数据保留期、数据导出能力受 MDM 策略控制，`ProfileData#isExportable()` 出厂默认 false。
+
+**关键源码**：
+- `android-16.0.0_r3:frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（profileControl 锁机制，一手验证）
+- Android Developers: ProfilingManager reference（公共 API 验证，一手）
+
+**待验证**：android-17.0.07 ProfilingManager.java 精确源码、Rate limiter 具体阈值（厂商私有）、ProfilingTrigger callback 线程模型
+

@@ -27,13 +27,13 @@ task2b_state: fixed
 task2b_result: "fixed"
 last_task9_at: "2026-05-26T08:23:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-26-08-audit.md"
-reviewed_date: "2026-05-07"
+reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-last_task6_at: "2026-05-07T06:10:00+08:00"
+last_task6_at: 2026-06-04T10:06:00+08:00
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-06-review.md"
 review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。 | 2026-05-07 task6 review 05:05：压缩流程段落的结构性元叙述，清理主观强化句；L1/L2 通过，无新增回炉项，转 Task9 复审。 | 2026-05-07 task6 review 06:10：复核 Task2B 回炉后文稿，未发现新增 L1/L2 问题；保持技术边界标注，转 Task9 复审。"
@@ -62,7 +62,7 @@ task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 0 / P2 0；AOSP andro
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：持续 CPU 栅格化的能效远低于 GPU 路径，长时间高负载运行会加速温控触发，导致 CPU 频率压制，拖累整机响应。除非有明确的兼容性需求，否则不应主动选择软件渲染。
+软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。持续 CPU 栅格化的能效远低于 GPU 路径，长时间高负载运行会加速温控触发，导致 CPU 频率压制，拖累整机响应。除非有明确的兼容性需求，否则不应主动选择软件渲染。
 
 ## 软件渲染的触发条件
 

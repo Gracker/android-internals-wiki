@@ -55,6 +55,8 @@ last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-20-review.md"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
 last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # ANR 分析方法
@@ -86,7 +88,6 @@ last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
 
 ## 为什么要掌握 ANR 分析方法
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同，卡顿只是“不够流畅”；ANR 代表系统已经判定应用长时间没有响应，用户看到的是无响应对话框，部分厂商 ROM 还可能直接把应用退回桌面。更麻烦的是，很多 ANR 并不只来自应用代码：系统负载过高、内存紧张、Binder 通信阻塞，甚至内核级 Bug，都可能触发一次 ANR。只看 traces.txt 里主线程停在 `nativePollOnce`，很难判断下一步该查哪里。
 
@@ -121,7 +122,6 @@ ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同�
   at android.app.ActivityThread.main(ActivityThread.java:8142)
 ```
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 这段 trace 表明：主线程停在 `nativePollOnce`，也就是在 `Looper` 中等待下一条 Message。这是正常状态——如果 ANR 时主线程显示的是这个堆栈，说明 ANR 发生的时刻主线程并没有在执行耗时操作，问题很可能出在别的地方。
 
@@ -142,7 +142,6 @@ trace 头部包含大量诊断信息，以下是关键字段的含义：
 
 ### SIGQUIT 响应延迟与诊断可信度
 
-[来源：AOSP android-14.0.0_r1+ com.android.internal.os.anr.AnrLatencyTracker]
 
 traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定准确反映 ANR 发生的"第一案发现场"。诊断可信度需要按版本区分：
 
@@ -154,7 +153,6 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 ### 锁信息与等待关系
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 当主线程处于 Blocked 状态时，trace 中会显示锁的等待关系，这是排查死锁的关键线索：
 
@@ -184,7 +182,6 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 ## 从 Perfetto/Systrace 分析 ANR
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Android-ANR-03-ANR-Case-Share.md]
 
 traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个时间点的快照。Perfetto 补上的是 ANR 前后一段时间内的过程视角：主线程什么时候开始忙、什么时候被调度、什么时候恢复空闲，都需要回到时间线里看。
 
@@ -192,7 +189,6 @@ traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个�
 
 在分析 ANR 时，Perfetto 的抓取需要覆盖 ANR 发生的完整时间窗口。建议包含 sched、binder、input、am、view、wm 等关键 track，抓取时长 60 秒左右。
 
-[待验证：Perfetto atrace_categories 在 Android 16 中是否完整支持]
 
 ### 在 Perfetto 中定位 ANR 时间窗口
 
@@ -202,7 +198,6 @@ traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个�
 
 ### 主线程活动分析
 
-[来源：Personal-Knowlodge/source/Android-ANR-03-ANR-Case-Share.md]
 
 定位到时间窗口后，重点观察主线程的 CPU 调度状态变化——Perfetto 中主线程的每个 slice 对应一段执行或等待，连续阅读这些 slice 就能还原 ANR 前主线程经历了什么。以下是四种典型模式：
 
@@ -218,7 +213,6 @@ traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个�
 
 ## 常见 ANR 根因分类与排查思路
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Android-ANR-03-ANR-Case-Share.md]
 
 分析 ANR 的核心思路是区分"应用的问题"还是"系统的问题"。这个判断会直接决定后续的优化方向。
 
@@ -234,11 +228,9 @@ ANR 的根因可以归为三类：主线程被阻塞（等着拿不到的东西�
 3. 检查持锁线程是否也在等待其他线程持有的锁
 4. 如果形成环路 → 死锁；如果没有环路 → 锁竞争（持锁线程在执行耗时操作）
 
-[来源：Personal-Knowlodge/source/Android-ANR-03-ANR-Case-Share.md]
 
 ### 主线程 I/O
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 主线程做 I/O 是最常见的 ANR 原因之一。在 trace 中，主线程堆栈会显示 `FileOutputStream.write`、`FileInputStream.read`、`SharedPreferencesImpl.writeToDisk` 等文件操作。
 
@@ -246,7 +238,6 @@ SharedPreferences 容易踩一个坑：`apply()` 看起来是异步的，但在 
 
 ### Binder 调用超时
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 主线程通过 Binder 与 system_server 或其他进程通信时，如果对端处理慢或线程池满了，主线程就会被阻塞。在 trace 中，堆栈通常包含 `Binder.proxyXXX`、或 native 层的 `IPCThreadState::waitForResponse`。
 
@@ -262,7 +253,6 @@ binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.
 
 ### CPU 饥饿
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 有些 ANR 场景下，主线程代码本身没有耗时操作，但拿不到 CPU 时间。在 Perfetto 中表现为：主线程处于 Runnable 状态（已经准备好运行了），但长时间没有被调度到 CPU 上执行。
 
@@ -280,7 +270,6 @@ CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图�
 
 ## CPU 使用率信息的解读
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 ANR 日志中搜索 `ANR in` 可以找到系统在 ANR 前后收集的 CPU 使用率快照。这部分信息是区分应用侧问题和系统侧问题的依据——它回答两个问题：ANR 发生时 CPU 被谁占了？内存压力有多大？
 
@@ -311,7 +300,6 @@ CPU usage from 246ms to 1271ms later:
 
 ### Memory 压力信息
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 较新的 Android 版本还会输出 `/proc/pressure/memory` 的内容：
 
@@ -330,7 +318,6 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 ## 线上 ANR 的分析流程与工具链
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Personal-Knowlodge/source/2026-03-06_wechat_ANR-分类以及分析流程.md]
 
 ### 标准分析流程
 
@@ -356,7 +343,6 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 ### 线上监控工具链
 
-[来源：Personal-Knowlodge/source/2026-03-06_wechat_ANR-分类以及分析流程.md]
 
 **ANR Watchdog 方案**：开启独立线程，定期向主线程 post 消息并检测是否被执行。实现简单（几十行代码），但有误报率，主线程 GC 或系统调度抖动都可能触发假阳性。
 
@@ -405,9 +391,8 @@ if (Build.VERSION.SDK_INT >= 36) {
 
 [已验证：developer.android.com/reference/android/app/ApplicationExitInfo, developer.android.com/reference/android/os/ProfilingManager, developer.android.com/reference/android/os/ProfilingTrigger]
 
-## [自动发现] 系统关键日志信号速查
+## 系统关键日志信号速查
 
-[来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
 | 日志关键词 | 含义 | 分析价值 |
 |---|---|---|

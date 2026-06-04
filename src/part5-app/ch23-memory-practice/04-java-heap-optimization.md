@@ -53,6 +53,8 @@ last_task9_at: "2026-05-14T01:41:44+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-01-deep-review.md
 task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。"
 task2b_result: fixed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # Java Heap 优化策略
@@ -88,17 +90,12 @@ Android Developers 的内存文档给了两个判断口径：Android 会给每�
 
 ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。本节把这些机制转成应用侧可执行动作：少分配、晚分配、按预算缓存、在生命周期边界清理。
 
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
 [已验证: 官方文档, developer.android.com/topic/performance/memory-overview]
 
 ## Java Heap 空间组成与分配策略
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.h]
 [已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.cc]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 
 应用代码里 `new` 出来的对象不会均匀落在一整块抽象堆里。ART 会按对象性质和回收器配置把对象放到不同空间中，应用侧最需要关心的是 Main Space 和 Large Object Space：普通对象通常进入 Main Space，满足大对象条件的基本类型数组或 `String` 会走 Large Object Space。
 
@@ -143,10 +140,7 @@ object JavaHeapPressure {
 
 ## 大对象与集合优化
 
-[已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
 [已验证: 官方文档, developer.android.com/studio/profile/capture-heap-dump]
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 
 大对象优化先从“减少一次性装入”开始。服务端返回几 MB JSON、一次性读完整文件、把长日志拼成一个 `String`、把列表全量映射成 ViewModel，都会把 Java Heap 压力集中到一个短窗口里。GC 能回收不可达对象，但它不能替业务决定哪些对象不该一次性加载。
 
@@ -182,9 +176,7 @@ fun buildVisibleItems(
 
 ## 对象池与缓存策略
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
 [已验证: 官方文档, developer.android.com/topic/performance/memory-management]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 对象池和缓存都在用空间换时间，区别在于目标不同。对象池减少重复分配，缓存减少重复计算或重复 I/O。两者都要有上限、失效条件和生命周期归属，否则优化很快会变成常驻内存。
@@ -215,13 +207,11 @@ class StringPayloadCache(
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 data class、生命周期复杂的对象、持有 `Context` / View / callback 的对象，不建议放进池。池化后的对象一旦忘记清字段，泄漏和脏数据会比原来的分配成本更贵。
 
-[自动发现] 对象池还要跟 ART 分代 GC 分开评估。短命小对象在现代 ART 上可能很便宜，强行池化会把短命对象变成长命对象，增加老年代压力。和 4.8 节里的分代 GC 逻辑对照看，池化的判断标准应该是“分配热点是否导致可观测 GC 或 CPU 压力”，不是“看到 new 就消灭”。[已验证: 官方文档, developer.android.com/topic/performance/memory-overview]
+对象池还要跟 ART 分代 GC 分开评估：短命小对象在现代 ART 上可能很便宜，强行池化会把短命对象变成长命对象，增加老年代压力。和 4.8 节里的分代 GC 逻辑对照看，池化的判断标准应该是“分配热点是否导致可观测 GC 或 CPU 压力”，不是“看到 new 就消灭”。[已验证: 官方文档, developer.android.com/topic/performance/memory-overview]
 
 ## GC 友好的编码实践
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
 [已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
 GC 友好的代码要让分配符合场景节奏：启动、首帧、滑动、动画、输入响应期间少制造短时间高峰；页面退出、后台切换、系统 trim 时能释放；后台任务和低优先级计算不要跟前台帧争资源。
 
@@ -259,9 +249,7 @@ class GoodsAdapter(
 
 ## ART GC 调优参数
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.h]
 [已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
 应用侧不应把 ART 私有参数当常规调优手段。`growth_limit_`、`target_footprint_`、`concurrent_start_bytes_`、`large_object_threshold_` 这些变量解释了 ART 何时扩堆、何时触发并发 GC、哪些对象走大对象路径，但它们不是面向普通应用开放的配置接口。
 
@@ -282,7 +270,6 @@ class GoodsAdapter(
 
 ## 排查路径：从堆曲线到代码改动
 
-[已验证: 官方文档, developer.android.com/studio/profile/capture-heap-dump]
 [已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
 
 Java Heap 优化可以按四步推进：

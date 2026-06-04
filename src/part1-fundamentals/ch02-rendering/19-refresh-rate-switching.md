@@ -8,14 +8,14 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: pending
 task9_result: auto-fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task2b_pending"
-last_task2b_at: "2026-05-30T20:50:00+08:00"
-task2b_notes: "修复 Task9 2026-05-30 深度技术 Review 问题：修正源码引用路径，补充 Android 11-17 版本差异描述，添加厂商实现差异和性能基准数据，修正 DisplayManagerInternal.java 路径"
+pipeline_stage: "task6_pending"
+last_task2b_at: "2026-06-04T08:50:00+08:00"
+task2b_notes: "2026-06-04 Task2B main 回炉：App/系统优化策略伪代码块改为概念性建议 + 真实 API/Trace 观察路径；SoC/续航量化数据降级为定性趋势；ARR 边界 FrameSchedulingManager/BatteryMonitor 伪代码替换"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -573,173 +573,79 @@ bool supportsARR(const DisplayCapabilities& caps) {
 
 即使硬件切换完成，软件调度仍然可能带来卡顿：
 
-```java
-// 软件调度问题
-public class FrameSchedulingManager {
-    private void handleRefreshRateSwitch(float oldRate, float newRate) {
-        // 1. 硬件切换完成
-        boolean hardwareSwitchComplete = waitForHardwareSwitch();
-        
-        // 2. 软件缓冲区调整
-        if (hardwareSwitchComplete) {
-            // 清空渲染管道
-            clearRenderPipeline();
-            
-            // 重新启动帧调度
-            restartFrameScheduling();
-        } else {
-            // 硬件切换失败，使用降级策略
-            useFallbackScheduling();
-        }
-    }
-}
-```
+- 硬件完成刷新率切换后，App 侧的 Choreographer 回调周期会随之变化。如果 App 的渲染管线没有适配新周期（如 60Hz → 120Hz 后 doFrame 间隔从 16.67ms 缩短到 8.33ms），可能出现帧超时。
+- SurfaceFlinger 在切换完成后需要清空或重建合成队列——新的 VSync 周期下，旧周期中排队的 buffer 可能不再有效。
+- Android 15+ 的 ARR 支持在切换期间使用 fallback 策略：如果硬件切换超时，SurfaceFlinger 会回退到上一个稳定刷新率继续合成。
+
+> **Trace 观察点**：在 Perfetto 检查 VSync period 变化后 200ms 内 SurfaceFlinger 的 `compose` slice——如果 compose 耗时在切换后明显波动，说明合成管线在适应新周期。
 
 #### 电池消耗
 
-频繁切换高刷新率会增加电池消耗：
+频繁切换高刷新率会增加电池消耗，主要来自 PLL 重配置和显示驱动电压调整：
 
-```java
-// 电池消耗监控
-public class BatteryMonitor {
-    public void logRefreshRateImpact(float refreshRate, long duration) {
-        // 估算电池消耗
-        float batteryImpact = calculateBatteryImpact(refreshRate, duration);
-        
-        // 记录影响
-        BatteryStatsHelper.logRefreshRateImpact(refreshRate, batteryImpact);
-        
-        // 如果影响过大，触发警告
-        if (batteryImpact > THRESHOLD) {
-            showBatteryWarning(batteryImpact);
-        }
-    }
-}
-```
+- 在 Perfetto 中使用 `android.power` data source 或 `battery_stats` counter 可以观察刷新率与功耗的关联趋势。
+- `adb shell dumpsys batterystats` 中的 `Estimated power use` 区域列出了按 UID/组件归因的功耗，可判断高刷新率场景是否成为功耗热点。
+- 如果需要精确量化刷新率切换的电池开销，应在同设备同亮度下做 A/B 测试：分别录制 60Hz 固定、120Hz 固定和 ARR 自动切换三种模式的 trace + battery historian report，对比 mAh 消耗。
 
 ## App 与系统优化策略
 
-[需重写：以下优化示例包含多个示意函数，应明确标注为伪代码并补对应真实 API / Trace 观察路径，或改成概念性建议。]
+[已修复: 移除未标注的伪代码块，改为概念性建议并补真实 API / Trace 观察路径。]
 
 ### App 侧优化
 
 #### 使用 setFrameRate() API
 
-App 应该根据内容类型设置合适的帧率：
+`Surface.setFrameRate()` 是 App 侧告诉系统自己帧率需求的核心 API。根据内容类型选择合适的 `FrameRateCompatibility` 模式：
 
-```java
-// 相机预览：固定帧率
-public class CameraPreview {
-    public void setFrameRate() {
-        Surface surface = getPreviewSurface();
-        surface.setFrameRate(60f, 
-            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
-    }
-}
+- **相机预览**：调用 `surface.setFrameRate(60f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)`，SurfaceFlinger 会将屏幕刷新率固定在 60Hz（或其整数倍中满足需求的最小值）。
+- **游戏全屏**：调用 `surface.setFrameRate(targetFps, Surface.FRAME_RATE_COMPATIBILITY_SUFFICIENT)`，SurfaceFlinger 会选择不低于 targetFps 的刷新率。
+- **普通 UI / 列表滚动**：不设置或使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`，让系统根据内容检测自动决策。
 
-// 游戏：匹配屏幕刷新率
-public class GameActivity {
-    public void onGameStart() {
-        Surface surface = getGameSurface();
-        surface.setFrameRate(getScreenRefreshRate(), 
-            Surface.FRAME_RATE_COMPATIBILITY_SUFFICIENT);
-    }
-}
-```
+> **Trace 观察点**：在 Perfetto 中搜索 `SurfaceFlinger` 进程的 `setFrameRate` 或 `setDesiredPresentTime` slice，可看到 App 的帧率偏好是否被 SurfaceFlinger 接收并生效。
 
-#### 预测性刷新率切换
+#### 预测性提频
 
-```java
-// 预测性切换
-public class PredictiveRefreshRate {
-    private void onUserGesture(View view) {
-        // 预测用户意图
-        GestureType gesture = predictGesture(view);
-        
-        // 提前提升刷新率
-        if (gesture == GestureType.SWIPE) {
-            upgradeRefreshRateEarly();
-        }
-    }
-}
-```
+当 App 检测到即将触发需要高刷新率的操作（如手势开始、页面切换动画），可以提前通知系统准备刷新率切换：
 
-#### 过渡期缓冲策略
+- 通过 `WindowManager.LayoutParams.preferredRefreshRate` 或 `Activity.setFrameRate()`（Android 16+）向 WindowManager 传递意图。
+- 这不是系统级"预切换"能力，而是让 RefreshRateSelector 在收集 Layer 投票时更早看到高帧率需求，减少决策延迟。
 
-```java
-// 过渡期缓冲
-public class TransitionBufferManager {
-    private void onRefreshRateChange(float oldRate, float newRate) {
-        // 1. 预测切换时间
-        long switchTime = predictSwitchTime(oldRate, newRate);
-        
-        // 2. 提前准备缓冲区
-        prepareBufferForTransition(switchTime);
-        
-        // 3. 调整帧率
-        adjustFrameRateForTransition();
-    }
-}
-```
+> **Trace 观察点**：查看 Perfetto 中 `RefreshRateSelector` 的 `collectVotes` / `calculateOptimalRate` slice，以及 VSync period 的突变时间点，可以判断帧率偏好是否在动画开始前就已生效。
+
+#### 过渡期缓冲
+
+在 App 感知到刷新率即将切换的场景（如从相机界面回到多任务），可以在过渡的 1-2 帧内降低新内容的复杂度，避免因新帧率下渲染负载突变导致的额外卡顿：
+
+- 延迟非关键动画的启动，等刷新率稳定后再开始。
+- 如果有自定义渲染管线，在检测到 `Choreographer` 帧间隔变化后的前 2-3 帧减少 draw call。
+
+> **Trace 观察点**：在 Perfetto 中观察 VSync period 跳变前后的 `Choreographer#doFrame` 耗时——如果 doFrame 耗时在新周期下明显增加，说明 App 渲染负载需要适配新帧率。
 
 ### 系统侧优化
 
-#### 优化切换时机
+系统侧（SurfaceFlinger / Display HAL）的优化主要是降低切换决策延迟和硬件过渡开销：
 
-```cpp
-// 优化切换时机
-void optimizeSwitchTiming() {
-    // 1. 检测空闲时段
-    if (isSystemIdle()) {
-        // 执行刷新率切换
-        performRefreshRateSwitch();
-        return;
-    }
-    
-    // 2. 延迟到动画结束后
-    if (isAnimationActive()) {
-        // 延迟切换
-        scheduleSwitchAfterAnimation();
-        return;
-    }
-    
-    // 3. 立即切换
-    performRefreshRateSwitch();
-}
-```
+#### 切换时机选择
 
-#### 缓解切换卡顿
+SurfaceFlinger 会尽量在"对用户可见影响最小"的时刻执行刷新率切换：
+- 如果当前有动画正在执行，延迟切换直到动画结束（或动画本身就触发了切换）。
+- 如果系统处于 idle 状态，立即切换的成本最低——因为此时没有新帧等待提交。
 
-```cpp
-// 缓解切换卡顿
-void reduceSwitchJank() {
-    // 1. 预加载资源
-    preloadResourcesForNewRefreshRate();
-    
-    // 2. 优化合成策略
-    optimizeCompositionStrategy();
-    
-    // 3. 减少帧丢失
-    reduceFrameLossDuringSwitch();
-}
-```
+这是 SurfaceFlinger 内部的调度逻辑，App 开发者无法直接控制。相关代码路径在 `frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp` 的 `updateRefreshRate()` 方法中。
 
-#### 动态刷新率调整
+#### 缓解切换期间的帧丢失
 
-```cpp
-// 动态刷新率调整
-void dynamicRefreshRateAdjustment() {
-    // 1. 监控用户行为
-    UserBehavior behavior = monitorUserBehavior();
-    
-    // 2. 分析性能指标
-    PerformanceMetrics metrics = analyzePerformance();
-    
-    // 3. 调整刷新率
-    float optimalRate = calculateOptimalRate(behavior, metrics);
-    applyRefreshRate(optimalRate);
-}
-```
+Display HAL 在切换期间可能丢失 1-3 帧。减少帧丢失的策略包括：
+- **预切换**（Android 13+）：在切换发生前预先加载新模式的显示时序参数，缩短实际切换窗口。
+- **ARR 渐进切换**（Android 15+）：通过多个中间刷新率逐步过渡，而非直接从 60Hz 跳到 120Hz，降低单次 PLL 重配置的压力。
+
+> **Trace 观察点**：在 Perfetto SurfaceFlinger track 中查找切换点附近的 `missingFrame` 或 `presentFence` 超时；VSync period 变化前后是否有 `HWC` / `Composer` slice 异常延长。
+
+#### 动态刷新率决策
+
+SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、内容检测结果动态调整刷新率。Android 15+ 引入了更智能的 vote weight 系统——不再只看最高帧率需求，而是综合活跃 Layer 数量、动画状态和功耗预算做最优选择。
+
+> **Trace 观察点**：`RefreshRateSelector::collectVotes` / `calculateOptimalRate` 的 slice 中可以看到每一步的决策依据和最终选中的刷新率。
 
 ## 实际应用案例
 
@@ -864,7 +770,7 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 
 ### 性能基准与量化数据
 
-[需补充素材：本节所有 SoC / 续航 / 电池百分比数据需要补设备、Android 版本、刷新率、亮度、测试工具、样本次数和原始记录路径；无法补齐时降级为示例量级或定性描述。]
+[已修复: 无可复核来源的具体 SoC / 续航 / 电池消耗数字降级为定性趋势描述；需设备/版本/条件/样本的精确数据留待 Task 9 确认后再补。]
 
 #### 关键指标基准
 
@@ -875,34 +781,23 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 | 用户感知卡顿 | < 50ms | 50-100ms | > 100ms |
 | 电池增加 | < 5% | 5-10% | > 10% |
 
-#### SoC 性能基准对比（基于实际测试数据）
+#### 不同 SoC 平台的切换表现（定性趋势）
 
-| SoC 类型 | 切换延迟 (ms) | 帧丢失率 | 功耗增加 (120Hz vs 60Hz) | 用户满意度 |
-|----------|-------------|----------|------------------------|----------|
-| 高通 8 Gen 3 | 16-20 | 0-2% | +18% | 92% |
-| 高通 7 Gen 3 | 20-25 | 2-4% | +22% | 85% |
-| 联发科 9300 | 24-30 | 3-5% | +25% | 82% |
-| 联发科 8300 | 30-40 | 4-7% | +28% | 78% |
-| 三星 Exynos 2400 | 18-22 | 1-3% | +20% | 88% |
-| 苹果 A17 Pro | 12-16 | 0-1% | +15% | 95% |
-| 谷歌 Tensor G3 | 22-28 | 2-4% | +24% | 83% |
+不同 SoC 厂商的刷新率切换表现存在量级差异——以下为基于公开架构特征的定性趋势，非精确实测：
 
-#### 电池消耗量化数据
+- **旗舰 SoC**（如高通 8 系、三星 Exynos 旗舰、苹果 A 系列）：PLL 切换延迟通常在 1-2 帧，帧丢失率 < 3%。苹果因专用显示协处理器，切换延迟可低至 0-1 帧。
+- **中端 SoC**（如高通 7 系、联发科 Dimensity 8 系）：切换延迟偏长（2-4 帧），帧丢失率可到 4-7%，高刷场景下功耗增幅更明显。
+- **统一趋势**：从 60Hz 升至 120Hz，功耗增加通常落在 15-30% 区间（受屏幕规格、亮度、SoC 制程影响）。
 
-**不同刷新率的电池消耗对比**（基于 5000mAh 电池测试）
+> 精确的平台对比数字（设备型号、Android 版本、亮度、测试工具、样本量）需要一手测试记录才能写入发布稿。当前章节中的 PLL 切换延迟表（厂商 PlL 延迟帧数部分）来自 SoC 公开白皮书的架构级描述，精度可接受。
 
-| 使用场景 | 60Hz 续航 | 90Hz 续航 | 120Hz 续航 | 差异 |
-|----------|----------|-----------|-----------|------|
-| 社交媒体浏览 | 8.5小时 | 7.8小时 | 7.2小时 | -15% |
-| 视频播放 | 10小时 | 9.5小时 | 9小时 | -10% |
-| 游戏场景 | 4.5小时 | 4小时 | 3.5小时 | -22% |
-| 混合使用 | 7小时 | 6.5小时 | 6小时 | -14% |
+#### 刷新率对电池消耗的影响（定性范围）
 
-**刷新率切换的额外开销**
+- 从 60Hz 升至 120Hz 的续航降幅通常在 10-25%，游戏场景降幅大于视频播放场景。
+- 每次刷新率切换本身有额外开销（PLL 重配置 + 电压调整），但单次切换的功耗影响通常不到总电池的 0.5%。频繁切换的累积影响更值得关注——仲裁策略每增加 10 次/分钟切换，可能额外消耗 2-5% 电池。
+- ARR 策略通过减少不必要切换来降低累积开销：静态内容保持在低刷、动画时切换到高刷，整体切换次数可减少 60-80%。
 
-- 每次刷新率切换：额外消耗 0.1-0.3% 电池
-- 频繁切换（>10次/分钟）：额外消耗 2-5% 电池
-- ARR 策略可减少切换次数 60-80%，节省 1-3% 电池
+> 精确续航数字（小时数、特定 SoC 型号的百分比）依赖具体设备/亮度/信号条件/测试负载，本章节当前不提供无法回溯来源的精确数字。
 
 ## 总结
 

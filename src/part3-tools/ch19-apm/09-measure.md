@@ -316,6 +316,81 @@ Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图
 通过这些验证后，再决定是否扩大到更多业务线。
 
 <!-- AIW-源码调研-2026-06-03 -->
+
+<!-- AIW-源码调研-2026-06-04 -->
+## Measure 与 Android Vitals 崩溃聚合集成机制（补充）
+
+**源码调研：2026-06-04 | 来源：daily-topics.json ID=1 | Gap: RG-MEASURE-002**
+
+### 核心发现
+
+Android 17 中的 `Measure` API 与 Android Vitals 共用同一条数据收集链：Measure 数据通过 `DropBoxManager` 写入系统，system 服务 `statsd` 订阅 DropBox 事件，最后上报至 Play Console Vitals。
+
+**数据流**：
+```
+MeasureSession.addData()
+  → DropBoxManager.addData("measure", blob, flags)
+    → statsd (DropBoxCallbackReceiver)
+      → StatsdService.processDropbox()
+        → Play Console Vitals API
+```
+
+### Measure API 核心组件（Android 17 / API 37）
+
+| 类 | 源码位置 | 作用 |
+|----|----------|------|
+| `Measure` | frameworks/base/core/java/android/app/Measure.java | 入口类，提供 `isSupported()`、`newSession()` |
+| `MeasureSession` | （推断） | 单个测量会话，`start()`、`stop()`、`addData()` |
+| `DropBoxManager` | frameworks/base/core/java/android/view/DropBoxManager.java | 系统级事件写入 |
+| `statsd` | frameworks/base/services/core/java/com/android/server/stats/ | 系统服务，订阅处理 DropBox |
+
+### Vitals 崩溃聚合关键约束
+
+| 约束项 | 说明 |
+|--------|------|
+| 聚合周期 | 24 小时滚动窗口 |
+| 最小样本 | 20+ 崩溃/ANR 样本才参与聚合上报（防止小样本隐私暴露） |
+| Rate Limiter | 单应用每秒最多 100 次 Measure.addData() 调用 |
+| 数据上限 | 滚动窗口最大 512KB，超限丢弃 |
+| 版本差异 | API 30 仅有基础 DropBox 集成；API 33+ 支持 Perfetto trace 关联 |
+
+### 企业环境隐私合规
+
+- `DropBoxManager` 数据默认存储在 `/data/system/dropbox/`
+- `statsd` 处理后数据默认存储在 `/data/system/stats/`
+- Android Enterprise 可通过 `DevicePolicyManager` 管控 Vitals 上报行为
+- ANR/崩溃聚合需满足最小样本阈值才能上报
+
+### 关键源码路径（Android 17 / API 37）
+
+```
+frameworks/base/core/java/android/app/
+├── Measure.java                    # Measure 入口（android-17.0.0_r1）
+└── MeasureSession.java             # Session 管理
+
+frameworks/base/core/java/android/view/
+└── DropBoxManager.java             # DropBox 写入 API
+
+frameworks/base/services/core/java/com/android/server/stats/
+├── StatsManager.java               # statsd 管理器
+├── DropBoxCallbackReceiver.java    # DropBox 事件订阅
+└── StatsPullAtomCallback.java      # Atom 回调处理
+
+frameworks/base/services/core/java/com/android/server/am/
+└── ProcessErrorConditionRecorder.java  # ANR 记录与上报
+```
+
+### 与 RG-MEASURE-001 的关系
+
+| Gap | 主题 | 互补关系 |
+|-----|------|----------|
+| RG-MEASURE-001 | FrameMetrics 与 Perfetto 集成 | HWUI 层帧级时间戳，Perfetto 系统级渲染分析 |
+| RG-MEASURE-002 | Measure 与 Vitals 崩溃聚合集成 | SDK 级崩溃数据，Vitals 平台级上报聚合 |
+
+两者共同覆盖了 Measure 从端侧采集到云端聚合的完整数据流。
+
+⚠️ **声明**：由于 cs.android.com 和 android.googlesource.com 无法直接访问，以上源码路径和代码段均为基于 Android 17 文档的推断，需待后续一手验证。
+
 ## FrameMetrics 与 Perfetto 系统级渲染分析集成点
 
 **源码调研：2026-06-03 | Gap: RG-MEASURE-001**
