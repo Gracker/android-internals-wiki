@@ -207,3 +207,78 @@
   1-3. Task 9 核实后改为概念性叙述 + 真实 API 引用，或明确标注为伪代码
   4. 展开为 2-3 段叙述，说明误区来源和正确理解
 - **review 日志**：logs/review/2026-06-04-11-review.md
+
+
+## Task 2A 缺口挖掘记录 — 2026-06-04 12:10
+
+### 已检查方向（本轮无 ≥ 14 分候选）
+
+1. **source-index.json 高质量未映射素材**：仅有 1 条记录，无未映射高质量素材。
+2. **research-feeds 最近 5 条**（2026-03-29 ~ 2026-04-14）：
+   - ch04-memory 素材索引 → 已映射到 ch04/ch01/ch05
+   - Perfetto v53 Rust SDK / pprof / Simpleperf → 已映射到 ch13/ch14
+   - Perfetto v54 Data Explorer / Jank CUJ → 已有 13.14 覆盖
+   - Frame Timeline API 33 → 已映射到 ch02.04
+   - Compose Pausable Composition → 已映射到 ch02.04 / ch22.03
+3. **daily-info 最近 3 天**（2026-06-02 ~ 2026-06-04）：
+   - 掘金文章多为应用锁/Gemini API/NIA 架构/AI 工具等，与性能优化核心相关性低
+   - DeepResearch 增量扫描涵盖 ProfilingManager/ANR Ftrace/TextureView Metal-Vulkan/CachedAppFreezer-GC/Compose 1.10 Strong Skipping/ViewTreeObserver，均为现有章节补充素材
+   - Energy Limiter / Power Check → 标记为未核实研究线索，不可作为新章节依据
+4. **Clippings 三本参考书对比**：
+   - 《Android 应用稳定性剖析与优化》15 篇 → 全部主题已映射到 ch20/ch26/ch14
+   - 《Android 性能优化》16 篇 → 全部主题已映射到 ch05/ch23/ch24/ch25
+   - 《线上疑难问题》59 篇 → 全部主题已映射到 ch26/ch13/ch14/ch19
+5. **AOSP 结构对照**：
+   - frameworks/base/ 核心服务（AMS/PMS/WMS/SF/InputManager/PowerManager）均已覆盖
+   - system/ 核心组件（vold/netd/lmkd/installd）已在 ch04/ch06 覆盖
+   - packages/modules/ 性能相关模块（ADPF/Thermal/Battery）已在 ch05/ch11 覆盖
+6. **官方文档对照**：
+   - Android 17 API 37 性能行为变更 → 已有 16.5 专项章节
+   - Android 16/17 后台执行限制 → 已有 ch05.08 / ch25.12 / ch25.13 覆盖
+   - Android 17 图形/渲染变更 → 已有 ch02.24 / ch18.x 多章节覆盖
+
+### 管线现状
+
+- 已有 **15 个 draft 章节**（内容 85-157 行），卡在 draft 状态
+- TASK2B_BACKLOG = 20（等于阈值，未超出）
+- 全书 130+ 节，覆盖率已极高
+- 建议优先消化现有 draft 管线，而非继续新增章节
+
+### 结论
+
+本轮未发现评分 ≥ 14 的知识缺口，跳过。
+
+---
+
+## Task2B 回炉修复报告 · 2026-06-04 14:50 (main lane, frontmatter backlog fallback)
+
+### 本轮处理章节
+
+- `src/part2-performance/ch07-smoothness/13-systemui-performance.md` (7.13 SystemUI 性能分析)
+- `src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md` (5.12 Thermal 管控深度)
+
+### 来源：frontmatter backlog fallback
+
+Queue 中无 task6/task9/external-review pending 条目。通过 frontmatter fallback 扫描命中 16 个候选。按 severity 95 选取 7.13 和 5.12，反查问题来源：
+- 7.13 → `logs/deep-review/2026-05-21-17-audit.md`（4 P0 + 2 P1）
+- 5.12 → `logs/deep-review/2026-05-22-05-audit.md`（2 P1）
+
+### 7.13 SystemUI 修复摘要
+
+- **P0 源码锚点**：`NavigationBarController.java` / `NavigationBarControllerImpl.java` 路径从 `statusbar/phone` 修正为 `navigationbar`；数据结构从 `HashMap<Int, NavigationBarView>` 修正为 `SparseArray<NavigationBar>`
+- **P0 源码锚点**：`DisplayContent.supportsSystemDecorations()` → `isSystemDecorationsSupported()`；`setShouldShowSystemDecorsLocked()` → `shouldShowSystemDecorsLocked(DisplayContent)`
+- **P0 源码锚点**：`CentralSurfacesImpl.onWallpaperVisibilityChanged(displayId, visible)` 未命中，修正为 `TaskbarDelegate.updateWallpaperVisibility(boolean visible, int displayId)`
+- **P0 源码锚点**：WM Shell `DesktopModeController` 未命中，修正为 `DesktopTasksController.kt`、`DesktopDisplayEventHandler.kt`、`DesktopRepository.kt`、`DesktopMode.java`
+- **P1 版本覆盖**：二级显示器限制从"Android 10+ 仅 NavigationBar/Wallpaper"修正为 Android 10-11 / 12-14 / 15-16 三级口径
+- **P1 证据缺口**：桌面模式下 CPU/显存增长从"阶跃增长"降级为缺少 Perfetto trace/设备基线的待验证范围
+- **自发现**：移除 Foldable 节 `HashMap<Int, NavigationBarView>` 残留描述
+
+### 5.12 Thermal 修复摘要
+
+- **P1 内核分支混用**：`last_verified_against` 从 `Linux kernel 6.1` 修正为 `android16-6.12`；critical trip 路径移除 `thermal_zone_device_halt()` / `__hw_protection_trigger()`，改为分支明确的 `do_orderly_poweroff()` / `do_orderly_reboot()`
+- **P1 step_wise 参数遗漏**：`get_target_state()` 添加 `bool throttle` 参数及其控制逻辑
+- **P1 HAL 版本链**：版本演进表从"API 34 = AIDL、35 = headroom thresholds、36 = SystemHealthManager"扩充为 Android 14 AIDL 基础接口 / Android 15 cooling callback / Android 16 forecastSkinTemperature + Framework 回退三档
+
+### 状态更新
+
+两个章节已更新 frontmatter：`task2b_result=fixed`、`task2b_state=fixed`、`task6_state=revisiting`、`task9_state=pending`、`pipeline_stage=task6_pending`。重新进入 Task6 → Task9 流水线。

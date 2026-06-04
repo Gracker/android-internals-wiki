@@ -1,4 +1,6 @@
 ---
+
+
 last_task9_at: "2026-05-22T05:34:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
@@ -10,7 +12,7 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.1"
+last_verified_against: "AOSP android-16.0.0_r1, Linux kernel android16-6.12"
 confidence: medium
 sources:
   - type: aosp
@@ -43,21 +45,24 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_date: "2026-04-20"
 last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-22-05-audit.md"
 task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P1：Thermal HAL AIDL/headroom API 版本边界与 Linux thermal kernel 源码分支混用，写入 queue 条目 task9-audit-20260522-5.12-thermal-hal-kernel-version-boundary。"
+last_task2b_by: openclaw-task2b-main
+task2b_fix_summary: "2026-06-04 Task2B main: P1 Linux thermal kernel source branch disambiguated from generic 6.1 to android16-6.12; critical trip handler symbols corrected for branch consistency; step_wise get_target_state() added bool throttle parameter; Thermal HAL version table split into AIDL basics (14), cooling callback (15), forecastSkinTemperature + Framework fallback (16)."
+last_task2b_at: "2026-06-04T14:54:52+08:00"
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
@@ -176,7 +181,9 @@ cpu_thermal: cpu-thermal {
 
 **Hot trip point** 表示温度已经进入危险区间，但它还不是“立刻关机”的同义词。`thermal_core.c` 在温度向上跨过 `THERMAL_TRIP_HOT` 或 `THERMAL_TRIP_CRITICAL` 时，都会先走 `handle_critical_trips()`。如果 trip 类型是 `THERMAL_TRIP_HOT`，并且该 thermal zone 实现了 `tz->ops.hot()`，内核只会调用 hot 回调，让平台记录告警或触发更激进的缓解动作；是否继续限频、通知用户空间，要看 zone 的实现。
 
-**Critical trip point** 才是硬件保护真正开始执行的那一层。`handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`，而平台通常把这个回调绑定到 `thermal_zone_device_critical()`、`thermal_zone_device_critical_shutdown()` 或 `thermal_zone_device_critical_reboot()`。这几个包装函数最终都会落到 `thermal_zone_device_halt()`，再由 `__hw_protection_trigger()` 执行 shutdown 或 reboot。强制保护动作绑定在 `thermal_zone_device_critical*()` 这一层，不是直接写死成 `ordered_poweroff()`。
+**Critical trip point** 才是硬件保护真正开始执行的那一层。`handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`，而平台通常把这个回调绑定到 `thermal_zone_device_critical()`、`thermal_zone_device_critical_shutdown()` 和 `thermal_zone_device_critical_reboot()`。这三个包装函数最终触发 shutdown 或 reboot，通过各自调用 `do_orderly_poweroff()` / `do_orderly_reboot()` 完成。强制保护动作绑定在 `thermal_zone_device_critical*()` 这一层。
+
+不同 linux-stable 分支的热关机符号存在差异——`android14-6.1` 使用 `thermal_zone_device_critical()` 和 `do_orderly_poweroff()`，`android-mainline` 中 `handle_critical_trips()` 新增了 `tz->ops.critical(tz)` 回调路径。本章的源码锚点以 `android16-6.12` 为主，与 `android14-6.1` 或 `android-mainline` 的符号直接对比前请先确认对应分支。
 
 [已验证: Linux kernel drivers/thermal/thermal_core.c (handle_critical_trips(), thermal_zone_device_critical*()), include/linux/thermal.h]
 
@@ -206,10 +213,15 @@ Thermal zone 定义了"什么时候该降温"，governor 决定"降多少、怎�
 // drivers/thermal/gov_step_wise.c（简化）
 // step_wise 的核心逻辑
 static unsigned long get_target_state(struct thermal_instance *instance,
-                                       enum thermal_trend trend)
+                                       enum thermal_trend trend,
+                                       bool throttle)
 {
     struct thermal_cooling_device *cdev = instance->cdev;
     unsigned long cur_state = instance->target;
+
+    // android16-6.12: throttle 控制是否允许增加 cooling state
+    if (!throttle && trend == THERMAL_TREND_RAISING)
+        return cur_state;
 
     switch (trend) {
     case THERMAL_TREND_RAISING:
@@ -635,9 +647,9 @@ OEM 在散热设计和软件策略之间需要找到平衡：
 | Android 10 (API 29) | Thermal HAL 2.0（HIDL）+ thermal status callback | Framework 开始常驻监控 severity，App 可监听 thermal status |
 | Android 11 (API 30) | `PowerManager.getThermalHeadroom(int)` | App 可以做预测式预降载 |
 | Android 12 (API 31) | ADPF Performance Hint API | App 可以把 workload 目标时长告诉系统 |
-| Android 14 (API 34) | `IThermal` 从 HIDL 迁到 AIDL | HAL 契约统一到数组、threshold、callback 结构 |
-| Android 15 (API 35) | `PowerManager.getThermalHeadroomThresholds()` | App 可以读取 OEM 返回的 headroom threshold，不必硬编码阈值 |
-| Android 16 (API 36) | `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()`，NDK thermal headroom listener | 可以区分 CPU/GPU capacity 余量，并在 native 层订阅 headroom 变化 |
+| Android 14 (API 34) | `IThermal` 从 HIDL 迁到 AIDL，基础 AIDL 接口包含 `getTemperatures()`、`getCoolingDevices()`、`getTemperatureThresholds()`、`registerThermalChangedCallback()` | HAL 契约统一到 AIDL，Framework 通过 AIDL 获取温度、cooling device 和 threshold 数组 |
+| Android 15 (API 35) | AIDL Thermal HAL 增加 cooling device changed callback；`PowerManager.getThermalHeadroomThresholds()` 开放给 App | HAL 侧可感知 cooling device 的动态变化；App 可以读取 OEM 返回的 headroom threshold，不必硬编码阈值 |
+| Android 16 (API 36) | AIDL Thermal HAL 新增 `forecastSkinTemperature(int forecastSeconds)`；Framework `TemperatureWatcher#getForecast()` 在 HAL 支持 skin forecast 且仅有一路 skin threshold 时优先走 HAL 预测，否则回落到本地 ring buffer + 线性回归；`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()`，NDK thermal headroom listener | HAL 侧可返回未来 skin 温度预测值，Framework 不再只依赖本地采样回归；App 可区分 CPU/GPU capacity 余量，并在 native 层订阅 headroom 变化 |
 
 ## 常见问题与误区
 

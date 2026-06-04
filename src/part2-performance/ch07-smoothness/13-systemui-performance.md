@@ -1,4 +1,5 @@
 ---
+
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
@@ -71,14 +72,14 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-26"
 last_task6_audit: "2026-05-21"
@@ -86,12 +87,14 @@ task6_result: "pass-light-edit"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_at: "2026-05-21T17:28:40+08:00"
-last_task2b_at: "2026-04-26T21:49:23+08:00"
+last_task2b_at: "2026-06-04T14:54:52+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T17:28:40+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-21-17-audit.md"
 task9_review_notes: "2026-05-21 Task9 idle audit: P0 SystemUI 多 Display / desktop mode 源码锚点错误，写入 queue 条目 task9-audit-20260521-7.13-systemui-multidisplay-source-anchors。"
+last_task2b_by: openclaw-task2b-main
+task2b_fix_summary: "2026-06-04 Task2B main: P0 SystemUI multi-display source anchors corrected (NavigationBarController path/SparseArray, DisplayContent.isSystemDecorationsSupported, TaskbarDelegate wallpaper visibility, DesktopTasksController et al.); P1 version coverage updated for Android 12-16 desktop windowing branch; unverified CPU/Mem growth claims downgraded."
 ---
 
 # 7.13 SystemUI 性能分析
@@ -213,12 +216,12 @@ SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemU
 
 Android 16 引入了原生桌面窗口管理（Desktop Windowing）。在此模式下，SystemUI 不再只负责手机端单一的状态栏和通知——它需要同时渲染外部显示器的任务栏（Taskbar）、多桌面视图以及通用光标（Universal Cursor）。
 
-WM Shell 中的 `DesktopModeController` 与 SystemUI 频繁交互。连接外部显示器时，SystemUI 进程会出现 CPU 和显存的阶跃增长。在做性能基线和 Trace 分析时，需要区分两个场景：
+WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksController.kt`、`DesktopDisplayEventHandler.kt`、`DesktopRepository.kt`、`DesktopMode.java`）与 SystemUI 频繁交互。连接外部显示器时，SystemUI 进程可能出现 CPU 和显存增长——具体幅度取决于设备、分辨率和同时渲染的桌面节点数量，缺少 Perfetto trace 或设备基线时不写成固定阶跃数据。在做性能基线和 Trace 分析时，需要区分两个场景：
 
 - **手机单屏模式**：SystemUI 的角色与传统 Android 一致，承担状态栏、通知、导航栏
 - **桌面模式**：SystemUI 额外承担 Taskbar 渲染、桌面切换动画、光标绘制，与 WM Shell 的交互频率大幅上升
 
-排查 SystemUI 性能问题时，如果设备处于桌面模式，Perfetto 中 SystemUI 进程的 CPU 和内存基线应单独建基，不能直接与单屏模式的数据对比。
+排查 SystemUI 性能问题时，如果设备处于桌面模式，Perfetto 中 SystemUI 进程的 CPU 和内存基线应单独建基，不能直接与单屏模式的数据对比。桌面模式下 CPU 和显存的增长量属于待验证范围——目前没有公开的 Perfetto trace 或设备基线能支撑具体数值，建议在目标设备上单独采集后再写入结论。
 
 ## 窗口拓扑不要先入为主
 
@@ -404,11 +407,11 @@ Foldable 设备上的 SystemUI 多 Display 渲染模型建立在 `DisplayId` 分
 
 #### 1. NavigationBarController - 多 Display 导航栏实例管理
 
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/NavigationBarController.java`
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarController.java`
 - **关键方法**：`getNavigationBarView(int displayId)`
-- **数据结构**：`mNavigationBarViews: HashMap<Int, NavigationBarView>`
+- **数据结构**：`NavigationBarControllerImpl` 使用 `SparseArray<NavigationBar> mNavigationBars`
 
-`NavigationBarController` 维护一个 `HashMap<Int, NavigationBarView>`，键为 `displayId`，值为该 Display 上的 `NavigationBarView` 实例。`getNavigationBarView(displayId)` 是多 Display 路由的核心方法，可实现不同物理 Display 的独立导航栏管理。
+`NavigationBarControllerImpl` 维护一个 `SparseArray<NavigationBar>`，键为 `displayId`，值为该 Display 上的 `NavigationBar` 实例。`getNavigationBarView(displayId)` 是多 Display 路由的核心方法，可实现不同物理 Display 的独立导航栏管理。
 
 调用链：
 ```
@@ -418,33 +421,34 @@ NavigationBarController.getNavigationBarView(displayId) → NavigationBarView
 
 #### 2. NavigationBarControllerImpl - Foldable 形态标志
 
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/NavigationBarControllerImpl.java`
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java`
 - **关键字段**：
   - `mIsLargeScreen: Boolean` — 包含 Foldable 展开态的大屏判定
   - `mIsPhone: Boolean` — 区分标准手机与其他形态
+- **数据结构**：`SparseArray<NavigationBar> mNavigationBars`
 
 `NavigationBarControllerImpl` 在构造时根据 Display 属性初始化这两个标志，共同决定导航栏的布局策略。
 
 #### 3. DisplayContent - WindowManager 中的 Display 层级
 
 - **源码位置**：`services/core/java/com/android/server/wm/DisplayContent.java`
-- **关键方法**：`supportsSystemDecorations()`
-- **配置方法**：`DisplayWindowSettings.setShouldShowSystemDecorsLocked()`
+- **关键方法**：`isSystemDecorationsSupported()`
+- **配置读取**：`DisplayWindowSettings.shouldShowSystemDecorsLocked(DisplayContent)`
 
-`DisplayContent` 代表 Display 的核心类，`supportsSystemDecorations()` 判断系统装饰支持。Secondary Display 在 Android 10 不支持 StatusBar（通知侧），仅支持 NavigationBar 和 Wallpaper。
+`DisplayContent` 是代表 Display 的核心类，`isSystemDecorationsSupported()` 判断系统装饰支持。Android 16 desktop windowing 引入了 force desktop 和 trusted display 分支，仅在满足条件时才返回 true；单一口径"Android 10+ 仅支持 NavigationBar/Wallpaper"不覆盖 Android 12-16 的 desktop mode 分支。
 
-#### 4. CentralSurfacesImpl - Display 感知的核心 Surface 管理
+#### 4. TaskbarDelegate - Foldable 设备的 Wallpaper 可见性
 
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/CentralSurfacesImpl.java`
-- **关键方法**：`onWallpaperVisibilityChanged(displayId, visible)`
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/TaskbarDelegate.java`
+- **关键方法**：`updateWallpaperVisibility(boolean visible, int displayId)`
 
-`CentralSurfacesImpl` 是 T+ 的核心 SystemUI 组件，持有 `displayId` 参数并据此区分不同 Display 上下文。
+`TaskbarDelegate` 在 Foldable / 多 Display 场景下根据 displayId 更新 wallpaper 的可见性状态。`CentralSurfacesImpl` 中未命中带 `displayId` 的 `onWallpaperVisibilityChanged`；当前可核对的 displayId 感知 wallpaper visibility 入口是 `TaskbarDelegate`。
 
-#### 5. Android 10+ 多 Display 限制
+#### 5. 多 Display 限制的版本演进
 
-- **StatusBar**：始终仅显示在主 Display（Primary Display），不 Secondary Display
-- **NavigationBar**：支持 Secondary Display，由 `NavigationBarController.getNavigationBarView(displayId)` 管理
-- **Wallpaper**：支持 Secondary Display，由 `DisplayContent.shouldShowSystemDecors()` 控制
+- **Android 10-11**：Secondary Display 不支持 StatusBar（通知侧），仅支持 NavigationBar 和 Wallpaper
+- **Android 12-14**：NavigationBar 和 Wallpaper 在 Secondary Display 上的支持延续，但仍无通知侧多实例
+- **Android 15-16**：Desktop Windowing (Android 16) 引入了 `isSystemDecorationsSupported()` 的 force desktop / trusted display 分支，在多 Display 场景下的系统装饰策略比 Android 10-11 的口径更复杂，不能只按"仅 NavigationBar/Wallpaper"概括
 
 #### 6. Android 15+ 增强特性
 
