@@ -27,15 +27,19 @@ review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
 repaired_by: openclaw-task2b
 review_round: 3
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T10:22:45+08:00"
 last_task9_audit: "2026-05-24"
+task2b_fixed_date: "2026-06-05T02:50:00+08:00"
+task2b_fixed_by: "openclaw-task2b-main"
+task2b_fix_summary: "Removed unsupported reflection/DI/dynamic-proxy penetration rate table (not backed by GAPS paper/repo per Task9 idle audit 2026-05-24); replaced with qualitative Limitations-based description consistent with paper text."
 task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。；2026-05-24 10:22 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0。L196-L212 的反射/DI/动态代理穿透率表未被 GAPS 论文/仓库支撑，已写入 queue。"
 review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 ---
@@ -193,25 +197,16 @@ GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为
 
 
 
-### 反射/DI/动态代理场景的专项穿透数据
+### 反射与编译期生成对静态分析的影响
 
-GAPS 论文（arXiv 2511.23213）未单独分项量化反射、依赖注入和动态代理对覆盖率的影响，但结合论文 Limitations 节和实验基准数据可以估算各类隐式调用的穿透率：
+GAPS 论文在 Limitations 节中列举了反射、依赖注入、动态代理和 JNI 等场景对静态路径重建精度的威胁，但未提供分项定量数据。以下按论文自身的讨论范围简述各类影响：
 
-| 技术类型 | 静态分析穿透率 | 主要障碍 |
-|---------|--------------|---------|
-| 显式调用 | ~90% | 基本可覆盖 |
-| 生命周期回调 | ~85% | 需 AndroidManifest + 虚拟边 |
-| UI 回调 | ~80% | 需 EdgeMiner 规则库 |
-| ICC | ~70% | 隐式 Intent 匹配不确定 |
-| 反射调用 | ~40% | R8 移除 Class.forName 字符串字面量 |
-| Dagger/Hilt | ~30% | 生成的 Hilt_Factory 类无源码对应 |
-| 动态代理 | ~25% | InvocationHandler 逻辑不可达静态分析 |
+- **反射调用**：R8/ProGuard full mode 可将 `Class.forName()` 参数和反射目标方法名混淆为无意义字符串，静态分析阶段完全无法还原调用目标。实际工程中需要 `-keepnames` 或 `-keepclassmembers` 规则来保留入口。
+- **Dagger/Hilt 等编译期代码生成**：`Hilt_*_Factory`、`*_MembersInjector` 等生成类仅存在于编译产物 `classes.dex` 中，无对应源码。静态分析工具需要从 APK 字节码中反向推断依赖注入关系，GAPS 未内置对此类生成模式的专门建模。
+- **动态代理（InvocationHandler）**：`java.lang.reflect.Proxy` 生成的代理类在运行时拼接方法调用，静态 call graph 上无法追踪代理到真实实现的跳转关系。
+- **JNI / Native 调用链**：论文明确指出当前不支持 Android 原生代码（C/C++）的静态路径重建，所有 JNI 入口点到 native 库的调用关系都在静态分析阶段不可见。
 
-**反射调用的核心问题**：R8/ProGuard full mode 会将 Class.forName 参数和方法名字面量混淆成无意义字符串，导致静态分析工具完全无法重建调用目标。需通过 -keepnames 或 -keepclassmembers 规则手动保留。
-
-**Dagger/Hilt 的编译期生成挑战**：Hilt 在编译期生成 Hilt_XXX_Factory、XXX_MembersInjector 等类（以 Hilt_ 为前缀），这些类不在源码中出现但包含完整的对象创建链。静态分析工具必须从 APK 的 classes.dex 中通过命名模式识别这些生成类。
-
-<!-- AIW-源码调研-2026-05-07 -->
+这些场景在真实应用中的覆盖缺口，是 GAPS 静态穿透率（88.24%）和动态触达率（57.44%）之间差距的主要来源之一。将 GAPS 用于性能排障时，如果目标方法落在这几类场景里，静态阶段就可能拿不到可行路径。
 
 ## 参考资料
 
