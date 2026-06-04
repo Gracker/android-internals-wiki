@@ -43,9 +43,9 @@ sources:
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 reviewed_date: '2026-06-04'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -65,7 +65,6 @@ task2b_fixed_at: '2026-06-03T10:53:52'
 last_task2b_at: '2026-06-03T10:53:52'
 last_task9_autofix_at: '2026-06-04'
 task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; writing quality clean on re-check. L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
-
 ---
 
 # 千万级 DAU 的 APM 端侧架构

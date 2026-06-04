@@ -28,7 +28,7 @@ sources:
   - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
-task6_state: reviewed
+task6_state: revisiting
 pipeline_stage: task6_pending
 task9_state: pending
 task2b_state: fixed

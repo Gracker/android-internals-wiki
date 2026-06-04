@@ -23,12 +23,12 @@ sources:
     path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
 
 last_task2b_at: "2026-04-26T08:55:00+08:00"
@@ -46,7 +46,6 @@ last_task9_autofix_at: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 last_task6_at: '2026-06-04T18:15:00+08:00'
 task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; sources frontmatter fixed (empty entries replaced with actual URLs). L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
-
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
