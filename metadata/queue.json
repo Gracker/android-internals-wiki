@@ -1089,8 +1089,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-04T20:24:00+08:00",
-      "status": "pending",
-      "review_type": "task9-deep-tech-review"
+      "status": "completed",
+      "review_type": "task9-deep-tech-review",
+      "completed_at": "2026-06-04T21:41:00+08:00",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "fixed-lite: replaced two [待验证] markers with proper version boundary annotations (io_uring FUSE, cgroup v2 io controller)"
     },
     {
       "section": "2.26",
