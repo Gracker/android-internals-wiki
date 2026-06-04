@@ -30,18 +30,18 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_at: "2026-05-21T08:24:53+08:00"
-last_task2b_at: "2026-04-25T21:43:45+08:00"
+last_task2b_at: "2026-06-04T12:57:00+08:00"
 last_task6_audit: "2026-05-20"
 last_task9_audit: "2026-05-21"
 ---
@@ -135,9 +135,9 @@ public final View createView(Context viewContext, String name,
 
 这里省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。
 
-版本差异：Android 14 及以下，`sConstructorMap` 是 `LayoutInflater` 的静态变量（`private static final HashMap`），进程内所有 `LayoutInflater` 实例共享同一份缓存。Android 15 起（AOSP android-15.0.0_r1），`sConstructorMap` 改为实例变量，每个 `LayoutInflater` 持有独立缓存。`verifyClassLoader()` 会在复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被缓存延长存活时间。
+版本差异：AOSP android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 中 `sConstructorMap` 均为 `LayoutInflater` 的 `private static final HashMap`，进程内所有 `LayoutInflater` 实例共享同一份静态缓存。核心保护机制是 `verifyClassLoader()`——复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被缓存延长存活时间。
 
-[已验证: AOSP `frameworks/base/core/java/android/view/LayoutInflater.java`, `sConstructorMap` 与 `verifyClassLoader()`]
+[已验证: AOSP `frameworks/base/core/java/android/view/LayoutInflater.java` android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 均声明 `private static final HashMap<String, Constructor<? extends View>> sConstructorMap`，`verifyClassLoader()` 复用校验逻辑一致]
 
 **第三步：递归 inflate 子 View 并设置属性。** 创建完父 View 后，`LayoutInflater` 遍历 XML 中的子标签，递归调用 `rInflateChildren()` 创建子 View，然后调用 `ViewGroup.addView()` 将子 View 添加到父容器中。每一层嵌套都会增加一轮递归。
 
@@ -203,7 +203,7 @@ public View createView(View parent, String name, Context context, AttributeSet a
 
 在 120Hz 设备上，帧预算只有 8.33ms。布局层级本身不是唯一问题，重复 measure、深层嵌套和不必要的 `requestLayout()` 更容易把预算挤空。
 
-Android 15 对 View 树遍历做了底层优化：引入了更智能的渲染意图感知，减少了 OverScroll（边缘回弹）效果触发时的额外 measure pass。在 120Hz 设备上，这项优化让回弹动画的帧率稳定性有可感知的提升。如果排查 OverScroll 场景时发现 Android 14 及以下有明显的 measure 尖峰，可以预期在 Android 15+ 上同一场景的开销会降低。
+> ⚠️ [待验证] 本节曾描述 Android 15 引入"渲染意图感知"以减少 OverScroll 的额外 measure pass。经过 AOSP android-15.0.0_r1 / android-16.0.0_r1 源码搜索与 release note 交叉检索，未找到可核验的 commit、类/方法路径或 release note 支撑该说法。在获得一手依据之前，不能将此项作为已验证的版本差异发布。排查 OverScroll 场景的 measure 开销时，建议直接以 Perfetto trace 中的 `performMeasure()` / `performLayout()` slice 为准，不必预设 Android 15+ 有自动优化。
 
 ### RelativeLayout 的二次 measure 问题
 
