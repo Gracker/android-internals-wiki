@@ -23,29 +23,30 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-05-18"
+reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-06-03T21:33:00+08:00"
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: pending
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T15:25:00+08:00"
 review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。；2026-05-18 task6 revisiting: L1/L2 小修完成；GPU + NPU 扩展仍为占位，已合并写入 queue/suggestions，等待 Task2B 补素材或裁剪。"
 task6_reviewed_date: "2026-05-18"
-last_task6_at: "2026-05-18T16:05:00+08:00"
+last_task6_at: "2026-06-05T05:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-16-review.md"
 task6_review_notes: "2026-05-18 Task6：修正口语化迁移描述和结构性过渡语；GPU + NPU 协同调度扩展仍缺素材，已投递 Task2B 回炉。"
 last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；android16-6.12 sugov_get_util() 代码块与实际源码不一致，需 Task2B 修正；骁龙 8 Elite capacity 数值需补一手锚点。"
+last_task6_audit: "2026-06-05"
 ---
 
 # 大小核架构

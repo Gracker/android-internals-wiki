@@ -5,7 +5,7 @@ chapter: '8.6'
 section: '8.6'
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 reworked_date: '2026-04-06'
 reworked_by: openclaw-task2b
@@ -38,8 +38,8 @@ related_chapters:
 - '7.7'
 - '8.1'
 - '8.2'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -50,6 +50,7 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-05"
 task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
+last_task6_at: "2026-06-05T05:12:00+08:00"
 ---
 
 
@@ -236,7 +237,7 @@ ADPF 接入还要先确认几个边界：
 
 ### 两种"切换"，完全不同的量级
 
-先厘清概念。当我们说"线程切换"时，指的是操作系统级别的 context switch——内核介入，保存当前线程的寄存器/栈指针/程序计数器，加载另一个线程的状态，然后做 TLB flush 等缓存操作。这个过程通常在 **1-10 微秒** 量级。
+先厘清概念。当我们说"线程切换"时，指的是操作系统级别的上下文切换（context switch）——内核介入，保存当前线程的寄存器/栈指针/程序计数器，加载另一个线程的状态，然后做 TLB flush 等缓存操作。这个过程通常在 **1-10 微秒** 量级。
 
 而"coroutine 切换"（suspend + resume）是在用户空间完成的。它保存的是协程的 continuation（一个状态机对象），然后通过 Dispatcher 把后续执行投递到目标线程。这个过程的调度部分（dispatching）大约在 **几十到几百纳秒** 量级，而实际执行取决于目标线程的负载。
 
@@ -262,7 +263,7 @@ coroutine 的"切换"并不总是意味着线程切换。如果两个 coroutine 
 
 ## 结构化并发对资源泄漏的防护
 
-理解了 coroutine 调度与切换的开销之后，还需要关注另一个维度：资源生命周期。一个调度开销为零的 coroutine，如果在不该运行的时候还在运行，对性能的损害远大于几十次多余的 context switch。
+理解了 coroutine 调度与切换的开销之后，还需要关注另一个维度：资源生命周期。一个调度开销为零的 coroutine，如果在不该运行的时候还在运行，对性能的损害远大于几十次多余的上下文切换。
 
 结构化并发（Structured Concurrency）不是一个性能优化技巧，它是 Kotlin coroutine 设计的基础原则。但从性能角度看，它是最重要的"防止性能劣化"机制——因为一个泄漏的 coroutine 不仅浪费 CPU，还可能持有对 Activity/Fragment 的引用，导致整个对象图无法被 GC 回收。
 

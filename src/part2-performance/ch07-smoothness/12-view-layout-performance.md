@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "AOSP android-16.0.0_r1 ViewRootImpl / ViewDebug / ViewHierarchyEncoder"
-reviewed_date: '2026-06-04'
+reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: high
@@ -30,10 +30,10 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pending
 task2b_state: fixed
@@ -43,9 +43,10 @@ task9_reviewed_date: "2026-06-04"
 last_task9_at: "2026-06-04T22:20:00+08:00"
 last_task2b_lite_at: "2026-06-04"
 last_task2b_at: "2026-06-04T12:57:00+08:00"
-last_task6_audit: "2026-06-04"
+last_task6_audit: "2026-06-05"
 last_task9_audit: "2026-05-21"
 task9_review_notes: "2026-06-04 Task9 deep-review: needs-rework。P0 2 / P1 1；ViewTreeObserver Android 17 附录源码锚点与机制描述需回炉。"
+last_task6_at: "2026-06-05T05:12:00+08:00"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -193,7 +194,7 @@ public View createView(View parent, String name, Context context, AttributeSet a
 
 [已验证: AOSP frameworks/base/core/java/android/view/ViewRootImpl.java, `performTraversals()` 对 `mLayoutRequested` 的判断]
 
-这里要看清一点：View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），一旦进入 Measure 阶段，就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
+View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），一旦进入 Measure 阶段，就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
 
 ### 量化关系：层级深度与帧耗时
 
