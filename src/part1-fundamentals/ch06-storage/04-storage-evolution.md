@@ -47,8 +47,8 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -59,6 +59,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T22:20:00+08:00"
 task9_review_notes: "2026-06-04 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；FUSE over io_uring 与 16KB page size 版本口径需回炉。"
 last_task6_audit: 2026-06-04
+last_task6_at: "2026-06-04T23:14:00+08:00"
 ---
 
 
