@@ -13619,5 +13619,23 @@
     "queue_priority": 80,
     "task6_state": "pending",
     "task9_state": "pending"
-  }
+  },
+  "verifier_runs": [
+    {
+      "timestamp": "2026-06-05T07:39:29",
+      "checked": 6,
+      "fixed": 3,
+      "blocked": 3,
+      "chapters_fixed": [
+        "20.8",
+        "26.12",
+        "24.4"
+      ],
+      "chapters_blocked": [
+        "8.1",
+        "8.8",
+        "2.19"
+      ]
+    }
+  ]
 }

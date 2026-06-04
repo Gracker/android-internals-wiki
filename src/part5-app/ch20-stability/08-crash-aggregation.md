@@ -1,4 +1,5 @@
 ---
+
 title: "崩溃聚合与归因分析"
 chapter: "20.8"
 section: "20.8"
@@ -31,7 +32,7 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
@@ -50,8 +51,8 @@ last_task6_at: "2026-06-03T03:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 last_task9_autofix_at: "2026-06-03"
 last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 auto-fix：修正 kMaxSavedFrames=256 为 ART 首轮栈帧缓存阈值而非 Java 堆栈硬上限，回到 Task6 复审。"
----
+task9_review_notes: "2026-06-03 Task9 auto-fix：修正 kMaxSavedFrames=256 为 ART 首轮栈帧缓存阈值而非 Java 堆栈硬上限，回到 Task6 复审。"---
+
 
 # 崩溃聚合与归因分析
 

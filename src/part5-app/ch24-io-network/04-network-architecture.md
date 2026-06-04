@@ -1,4 +1,5 @@
 ---
+
 title: "网络架构与连接管理"
 chapter: "24.4"
 section: "24.4"
@@ -66,7 +67,7 @@ task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 �
 task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: "2026-06-03"
 last_task2a_at: "2026-05-14T09:21:00+08:00"
 task9_result: auto-fixed
@@ -75,8 +76,8 @@ task9_reviewed_date: "2026-06-03"
 last_task9_at: "2026-06-03T09:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
 task9_review_notes: "2026-06-03 Task9 auto-fix:移除未一手验证的 Wi-Fi 固定评分阈值,改为系统选网边界与 24.9 交叉引用,回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-03"
----
+last_task9_autofix_at: "2026-06-03"---
+
 
 # 网络架构与连接管理
 
