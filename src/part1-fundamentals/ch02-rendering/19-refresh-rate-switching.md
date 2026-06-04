@@ -5,15 +5,15 @@ chapter: "2.19"
 section: "2.19"
 status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-06-02"
+reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
-task2b_state: fixed
+task2b_state: "pending"
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-05-30T20:50:00+08:00"
 task2b_notes: "修复 Task9 2026-05-30 深度技术 Review 问题：修正源码引用路径，补充 Android 11-17 版本差异描述，添加厂商实现差异和性能基准数据，修正 DisplayManagerInternal.java 路径"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -28,7 +28,7 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: 2026-05-30T20:30:32.504625
-last_task6_at: "2026-06-02T16:05:00+08:00"
+last_task6_at: "2026-06-04T08:10:00+08:00"
 task6_review_notes: "2026-06-02 16: Task6 revisiting review: needs-rework；L1/L2 小修 6 处；新增 3 个 L3/L4 回炉项：ARR 版本口径、示意代码边界、SoC/续航量化数据来源。"
 last_task6_review_log: "logs/review/2026-06-02-16-review.md"
 task6_reviewed_date: "2026-06-02"

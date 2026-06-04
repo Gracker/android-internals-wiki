@@ -58,12 +58,13 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
-task6_state: revisiting
-task6_result: needs-rework
-reviewed_date: "2026-05-16"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 last_task2b_lite_at: '2026-06-04'
 task2b_result: fixed-lite
+last_task6_at: "2026-06-04T08:10:00+08:00"
 ---
 
 
