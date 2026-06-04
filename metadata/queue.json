@@ -1227,6 +1227,14 @@
       "status": "completed",
       "completed_at": "2026-06-04T21:00:53",
       "completed_by": "openclaw-task2b"
+    },
+    {
+      "chapter": "1.24",
+      "file": "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md",
+      "priority": 80,
+      "status": "processed",
+      "processed_date": "2026-06-04",
+      "source": "task2a-gap-mining"
     }
   ]
 }
