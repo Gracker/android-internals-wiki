@@ -19,29 +19,31 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: "2026-05-20"
+task9_reviewed_date: 2026-06-04
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-20T21:20:00+08:00"
+last_task9_at: "2026-06-04T21:20:00+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 1 / P1 1 / P2 0 / P3 0. P0: OutputConfiguration.setStreamUseCase() 源码片段与 android14-release 不一致；P1: STREAM_USE_CASE mandatory combinations 与 concurrent combinations 口径混淆，且缺 Android 14+ CROPPED_RAW/vendor range。"
+task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P0 源码错误：OutputConfiguration.setStreamUseCase() 的 maxUseCaseValue 是平台公开枚举上限，不是设备 CameraCharacteristics 动态值；已按 android-13/android-14+/android-16 AOSP 源码修正；P0 1 / P1 0 / P2 0。"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
 last_task6_audit: "2026-05-21"
 last_task6_audit_result: l1-frontmatter-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
 last_task6_at: "2026-06-04T19:15:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
+last_task9_autofix_at: 2026-06-04
 ---
 
 <!-- outline-start -->
@@ -127,7 +129,7 @@ Android 12+ 的 Extensions 是这一步的一个变体。App 通过 `CameraDevic
 
 ```java
 // android14-release, setStreamUseCase() 方法
-// maxUseCaseValue 取自 CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES
+// maxUseCaseValue 是平台公开枚举上限
 // Android 13 max 到 VIDEO_CALL (0x5)，Android 14+ 到 CROPPED_RAW (0x6)
 public void setStreamUseCase(@StreamUseCase long streamUseCase) {
     // 公开范围校验：超过 maxUseCaseValue 且小于 VENDOR_START 则抛异常
@@ -139,7 +141,7 @@ public void setStreamUseCase(@StreamUseCase long streamUseCase) {
 }
 ```
 
-**调用约束**：必须在 `createCaptureSession()` 之前调用；Session 创建后调用无效；未调用时默认返回 `DEFAULT (0x0)`。非法的公开范围内值（大于设备支持的最大公开 use case 且小于 `VENDOR_START`）会直接抛 `IllegalArgumentException`，不会被静默忽略。`VENDOR_START = 0x10000`，vendor 可在此之上定义设备专有 use case。
+**调用约束**：必须在 `createCaptureSession()` 之前调用；Session 创建后调用无效；未调用时默认返回 `DEFAULT (0x0)`。非法的公开枚举值（大于当前平台公开上限且小于 `VENDOR_START`）会直接抛 `IllegalArgumentException`，不会被静默忽略；设备是否实际支持某个公开 use case，要通过 `CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES` 和 mandatory combination 再核对。`VENDOR_START = 0x10000`，vendor 可在此之上定义设备专有 use case。
 
 **Guaranteed Stream Combination**（`SCALER_MANDATORY_USE_CASE_STREAM_COMBINATIONS`，`MandatoryStreamCombination.java` 中的 `sStreamUseCaseCombinations`）：
 

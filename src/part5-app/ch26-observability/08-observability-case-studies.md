@@ -1,5 +1,4 @@
 ---
-
 title: "可观测性案例集"
 chapter: "26.8"
 section: "26.8"
@@ -43,9 +42,9 @@ sources:
     path: "https://developer.android.com/ndk/guides/debug"
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
@@ -57,12 +56,13 @@ last_task6_review_log: logs/review/2026-06-04-21-review.md
 review_type: task6-writing-quality-review
 task6_review_notes_r5: "2026-06-04 Task6 (round 5, revisiting): pass-light-edit. Fixed 7x 中英文空格 (Android XX(API) → Android XX (API)). L1 clean post-fix. No new L3/L4 issues. task9_result=needs-rework, routing to task9."
 task6_review_notes_orig: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
-task9_result: needs-rework
-last_task9_at: "2026-05-15T08:32:31+08:00"
-last_task9_review_log: logs/deep-review/2026-05-15-08-deep-review.md
-task9_review_notes: 2026-05-15 Task9：needs-rework。P1：ApplicationExitInfo native tombstone trace 需拆 API 30/API 31+ 边界；另有 CI 门禁阈值与 APM/profile 数据治理 P2 建议。
+task9_result: auto-fixed
+last_task9_at: "2026-06-04T21:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
+task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 版本边界：Runbook/诊断能力表中的 Android 16+ 改为 Android 16，避免越过 AIW Android 17/API 37 上限；P0 0 / P1 1 / P2 0。"
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-06-04
+last_task9_autofix_at: 2026-06-04
 ---
 
 # 可观测性案例集
@@ -319,7 +319,7 @@ Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发
 | Android 11 (API 30)+ | `ApplicationExitInfo` 历史退出原因 | Crash、ANR、LMK 退出原因分类 | 历史记录可能被循环缓冲区覆盖 |
 | Android 12 (API 31)+ | `ApplicationExitInfo.getTraceInputStream()` | Native crash tombstone protobuf 补偿证据 | 仅 `REASON_CRASH_NATIVE` 可用；tombstone 可能因全局 circular buffer 覆盖返回 null |
 | Android 15 (API 35)+ | `ProfilingManager.requestProfiling()` | 目标用户或目标场景的系统 trace / heap / stack 采集 | 有 rate limiter，不适合全量常驻采集 |
-| Android 16 (API 36)+ | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
+| Android 16 (API 36) | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
 
 [已验证: 官方文档, developer.android.com/ndk/guides/debug]
 [已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture]
@@ -339,7 +339,7 @@ Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发
 | 触发条件 | 指标阈值、告警窗口、分组口径、是否需要人工确认 |
 | 影响面判断 | 版本、机型、系统、渠道、地区、网络、实验组 |
 | 必带证据 | Metrics、日志、Trace、Crash / ANR report、服务端日志、发布记录 |
-| 版本能力 | Android 10-14、15、16+ 分别能采哪些证据 |
+| 版本能力 | Android 10-14、15、16 分别能采哪些证据 |
 | 处置动作 | 暂停灰度、关闭配置、降级功能、切备用域名、发修复包 |
 | 验证方式 | 哪些指标恢复、观察多长时间、是否需要对照组 |
 | 防复发 | CI 门禁、静态检查、APM 字段补充、告警规则调整 |

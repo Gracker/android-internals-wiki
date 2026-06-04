@@ -1,5 +1,4 @@
 ---
-
 title: "Notification 性能与 ANR"
 chapter: "9.6"
 section: "9.6"
@@ -35,28 +34,28 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "needs-rework"
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_result: "fixed-lite"
 task2b_state: fixed
-task9_reviewed_date: "2026-05-25"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-25T16:22:00+08:00"
+task9_reviewed_date: 2026-06-04
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-04T21:20:00+08:00"
 last_task2b_at: "2026-06-04T05:36:00+08:00"
 last_task6_at: 2026-06-04T12:11:00+08:00
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 1 处（RemoteViews 边界句去掉修正腔）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-05-25-16-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。 | 2026-05-06 18:45 Task9：needs-rework。P0 1 / P1 0 / P2 0。L504 “标准模板不需要 RemoteViews inflate” 与 android-16 Notification.Builder/NotificationContentInflater 源码矛盾。 | 2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。 | 2026-05-25 16:22 Task9 deep-review：needs-rework。P0 0 / P1 1 / P2 1。P1：NLS 回调阻塞不能直接写成 Input ANR，需补输入事件/主线程超时前提；P2：Android 17 MetricStyle 已入正文但 frontmatter/sources 仍停 Android 16。"
+last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
+task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 原理链：NLS 回调阻塞到 Input ANR 必须补输入事件派发与主线程超时前提，已按 NotificationListenerService main looper 边界修正；P0 0 / P1 1 / P2 0。"
 review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
 last_task9_audit: "2026-05-25"
-task9_state: pending
+last_task9_autofix_at: 2026-06-04
 ---
 
 # 9.6 Notification 性能与 ANR
@@ -144,7 +143,7 @@ backgroundExecutor.execute(() -> {
 ```
 
 **场景二:`NotificationListenerService` 回调把监听器进程主线程拖住。**
-`NotificationListenerService` 在 `attachBaseContext()` 里把 `MyHandler` 绑到 `getMainLooper()`,`onNotificationPosted()` 也是 `@UiThread`。数据库 I/O、网络请求、复杂解析如果直接放在回调里,触发的是监听器进程自己的 Input ANR,不是发布方 `notify()` 一定同步变慢。
+`NotificationListenerService` 在 `attachBaseContext()` 里把 `MyHandler` 绑到 `getMainLooper()`,`onNotificationPosted()` 也是 `@UiThread`。数据库 I/O、网络请求、复杂解析如果直接放在回调里,会占住监听器进程主线程；只有输入事件在该进程排队并超过输入分发超时,才会表现为监听器进程自己的 Input ANR,不是发布方 `notify()` 一定同步变慢。
 
 **场景三:高频 update 命中 NMS 的更新速率限制。**
 android-16 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不是通知渠道限流。命中条件是 `isUpdate && !hasCompletedProgress() && !isAutogroup`,速率来自 `mUsageStats.getAppEnqueueRate(pkg)`,默认阈值是 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`。下载进度、歌词、导航剩余距离这类场景如果几百毫秒就 `notify()` 一次,很容易被 shed。
@@ -267,7 +266,7 @@ public class MyNotificationListener extends NotificationListenerService {
 }
 ```
 
-在 Perfetto 中,这类 ANR 的表现是主线程出现一段长时间 Running 或 Sleeping(如果等待数据库锁),stack trace 指向 `onNotificationPosted()` 内部的代码。如果 ANR 发生时主线程没有处理 UI 交互,`InputDispatcher` 的超时倒计时就会启动,5 秒后触发 ANR。
+在 Perfetto 中,这类问题的表现是主线程出现一段长时间 Running 或 Sleeping(如果等待数据库锁),stack trace 指向 `onNotificationPosted()` 内部的代码。如果这段阻塞期间有输入事件派发到该进程,主线程无法及时处理,`InputDispatcher` 的超时窗口才会触发 Input ANR；没有输入事件时,只能把它记为回调耗时或主线程长任务。
 
 ### 推荐做法:回调转发到后台线程
 

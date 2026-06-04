@@ -1,7 +1,7 @@
 ---
 title: "Android View 软件渲染路径"
 chapter: "18.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 section: "18.3"
 last_verified: "2026-05-05"
@@ -20,24 +20,24 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-26"
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-06-04
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: "fixed"
-last_task9_at: "2026-05-26T08:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-26-08-audit.md"
+last_task9_at: "2026-06-04T21:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 last_task6_at: "2026-06-04T19:15:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-06-review.md"
 review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。 | 2026-05-07 task6 review 05:05：压缩流程段落的结构性元叙述，清理主观强化句；L1/L2 通过，无新增回炉项，转 Task9 复审。 | 2026-05-07 task6 review 06:10：复核 Task2B 回炉后文稿，未发现新增 L1/L2 问题；保持技术边界标注，转 Task9 复审。"
-task9_review_notes: "2026-05-26 Task9 idle audit: needs-rework。P0 1 / P1 0 / P2 0；LAYER_TYPE_SOFTWARE 与 buildDrawingCache / RenderNode 软件层口径需按 AOSP android-16.0.0_r1 修正。"
+task9_review_notes: "2026-06-04 Task9 deep-review: pass-tech-review. P0 0 / P1 0 / P2 0；LAYER_TYPE_SOFTWARE / drawing cache / lockCanvas fence 边界已复核，无新增阻塞问题；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T08:23:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-08-audit.md"

@@ -2416,8 +2416,8 @@
     }
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-06-04T21:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-06-04T21:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2446,7 +2446,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-05-28 05:30",
+  "task9_last_review": "2026-06-04T21:20:00+08:00",
   "ready_to_publish": 190,
   "rework_history": [
     {
@@ -4454,17 +4454,20 @@
       "title": "可观测性案例集",
       "file": "src/part5-app/ch26-observability/08-observability-case-studies.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
       "last_task2a_at": "2026-05-15T07:17:00+08:00",
       "task2a_result": "drafted",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-15",
       "last_task6_at": "2026-05-15T08:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-08-review.md"
+      "last_task6_review_log": "logs/review/2026-05-15-08-review.md",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-06-04T21:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
     },
     "13.11": {
       "title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
@@ -7390,6 +7393,41 @@
       "task6_reviewed": "2026-06-04",
       "task6_result": "pass-light-edit",
       "task6_round": 4
+    },
+    "9.6": {
+      "title": "Notification 性能与 ANR",
+      "file": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-06-04T21:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
+    },
+    "18.3": {
+      "title": "Android View 软件渲染路径",
+      "file": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-04T21:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
+    },
+    "18.14": {
+      "title": "Camera 渲染管线",
+      "file": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-06-04T21:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -7502,10 +7540,12 @@
     ],
     "needs_rework": []
   },
-  "last_task9_review": "2026-05-29T07:21:00+08:00",
+  "last_task9_review": "2026-06-04T21:20:00+08:00",
   "last_task9_sections": [
-    "16.5",
-    "17.4"
+    "26.8",
+    "9.6",
+    "18.3",
+    "18.14"
   ],
   "last_task9_review_detail": {
     "date": "2026-05-29",
@@ -7538,8 +7578,10 @@
     "needs_rework": []
   },
   "task9_last_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part5-app/ch26-observability/08-observability-case-studies.md",
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
   ],
   "total_review_files": 132,
   "last_task2a_at": "2026-05-26T17:19:00+08:00",
@@ -7586,10 +7628,12 @@
     "new_rework": false
   },
   "last_task9_reviewed_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part5-app/ch26-observability/08-observability-case-studies.md",
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
   ],
-  "last_task9_at": "2026-05-29T07:21:00+08:00",
+  "last_task9_at": "2026-06-04T21:20:00+08:00",
   "last_task2a_result": "ready-for-review",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "20.15",
@@ -9781,15 +9825,19 @@
     "reason": "Clippings 参考书《Android 性能优化》有 GC 抑制专篇 + AOSP art/runtime/gc/ 源码可交叉验证 + 多个现有章节提及 GC抑制但无独立覆盖 + 启动性能核心优化手段"
   },
   "task9_last_sections": [
-    "16.5",
-    "17.4"
+    "26.8",
+    "9.6",
+    "18.3",
+    "18.14"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part5-app/ch26-observability/08-observability-case-studies.md",
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-05-29-07-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-06-04-21-deep-review.md",
   "task9_last_files": [
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
@@ -9841,36 +9889,7 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "last_task2a_date": "2026-05-19",
-  "task9_last_review_summary": {
-    "date": "2026-05-29",
-    "time": "07:21",
-    "reviewed_at": "2026-05-29T07:21:00+08:00",
-    "mode": "deep-review",
-    "sections": [
-      "16.5",
-      "17.4"
-    ],
-    "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
-    ],
-    "log": "logs/deep-review/2026-05-29-07-deep-review.md",
-    "p0": 1,
-    "p1": 2,
-    "p2": 1,
-    "p3": 0,
-    "result": "auto-fixed/pass-tech-review",
-    "auto_promoted": [
-      "17.4"
-    ],
-    "auto_finalized": [
-      "17.4"
-    ],
-    "auto_fixed": [
-      "16.5"
-    ],
-    "needs_rework": []
-  },
+  "task9_last_review_summary": "Task9 deep review: 26.8/9.6/18.14 auto-fixed; 18.3 pass-tech-review and auto-promoted finalized.",
   "task2b_history": [
     {
       "date": "2026-05-18T00:17:19.407328",
@@ -10522,7 +10541,7 @@
       "summary": "修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-05-29-07-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md",
   "last_task6_review_log": "logs/review/2026-06-04-02-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -12615,12 +12634,16 @@
     "log": "logs/rework/2026-06-03-04-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
-    "16.5",
-    "17.4"
+    "26.8",
+    "9.6",
+    "18.3",
+    "18.14"
   ],
   "task9_last_reviewed_sections": [
-    "16.5",
-    "17.4"
+    "26.8",
+    "9.6",
+    "18.3",
+    "18.14"
   ],
   "section_10_3": {
     "section": "10.3",
