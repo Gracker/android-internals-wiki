@@ -30,7 +30,7 @@ gap_source: "素材驱动/章节深挖"
 pipeline_stage: "task6_pending"
 task2b_result: "fixed"
 task2b_state: "fixed"
-task6_state: "reviewed"
+task6_state: revisiting
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
 last_task6_at: "2026-05-26T05:09:00+08:00"
 reviewed_date: "2026-05-26"
@@ -42,7 +42,7 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-26T03:20:00+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review: needs-rework。P0：延伸阅读摘要仍保留 Cleaner 旧错误路径，与正文和 AOSP android-16 口径冲突。"
 last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
-task9_result: "needs-rework"
+task9_result: pending
 task9_p0_issues: 1
 task9_p1_issues: 0
 task9_p2_issues: 0

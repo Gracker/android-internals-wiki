@@ -35,7 +35,7 @@ finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: revisiting
 task9_state: pending
-task9_result: needs-rework
+task9_result: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 task9_reviewed_by: openclaw-task9

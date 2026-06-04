@@ -47,7 +47,7 @@ created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 reviewed_date: 2026-06-04
 last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
@@ -55,7 +55,7 @@ task6_result: "pass-light-edit"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: pending
 last_task9_audit: "2026-05-22"
 last_task9_audit_at: "2026-05-22T05:34:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
