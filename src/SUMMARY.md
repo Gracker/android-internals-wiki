@@ -42,6 +42,7 @@ tags:
   - [1.21 Android Developer Verification 与安装链路边界](part1-fundamentals/ch01-architecture/21-developer-verification-install-boundary.md)
   - [1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界](part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md)
   - [1.23 Android Staged Install 与安装原子性性能](part1-fundamentals/ch01-architecture/23-staged-install-performance.md)
+  - [1.24 ResourcesManager 与 Configuration 变更性能](part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -355,6 +356,7 @@ tags:
   - [20.14 线程与 FD 资源监控治理](part5-app/ch20-stability/14-thread-fd-resource-monitoring.md)
   - [20.15 Android 17 Native DCL 只读约束与动态库加载稳定性](part5-app/ch20-stability/15-android17-native-dcl-stability.md)
   - [20.16 Android 17 Keystore 配额与登录故障治理](part5-app/ch20-stability/16-keystore-quota-login-stability.md)
+  - [20.17 Binder 异常体系与 IPC 故障性能边界](part5-app/ch20-stability/17-binder-exception-ipc-fault-performance.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
