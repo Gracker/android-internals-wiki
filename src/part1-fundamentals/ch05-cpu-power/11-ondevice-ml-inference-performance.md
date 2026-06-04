@@ -4,7 +4,7 @@ title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -14,12 +14,12 @@ last_task6_at: "2026-06-04T13:12:00+08:00"
 task6_reviewed_date: "2026-06-04"
 review_round: 3
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词 0 / 元叙述 0 / 否定-纠正 0)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-24T19:30:00+08:00
-task2b_state: fixed
+last_task9_at: "2026-06-04T18:15:00+08:00"
+task2b_state: pending
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
@@ -53,9 +53,12 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-08'
 task2b_result: fixed
 last_task2b_at: 2026-05-24T19:29:26+08:00
-last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
-task9_review_notes: "2026-05-24 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。LiteRT/NPU 源码索引、API 37 边界和 AOT 数据口径需回炉。"
+last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
+task9_review_notes: "2026-06-04 Task9 18: needs-rework。P0 2:NPU feature 常量值/API/targetSdk 边界错误;LiteRT/AICore 源码索引含无法验证或错归属路径。P1 1:章节前后同时保留旧待验证和新确定结论,发布边界冲突。P2 1:QNN/FastVLM benchmark 数字缺一手来源绑定。已写入 queue 和 research-gaps。"
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
+p0: 2
+p1: 1
+p2: 1
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线

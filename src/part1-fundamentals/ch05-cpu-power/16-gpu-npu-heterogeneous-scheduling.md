@@ -33,31 +33,36 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-freq"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/battery-counters"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/release-notes"
   - type: material
     path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
   - type: material
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task6_at: "2026-06-04T16:14:33+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
 review_notes: "2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-22"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T01:31:51+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-01-deep-review.md"
+last_task9_at: "2026-06-04T18:15:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed-lite
-p0: 0
-p1: 1
-p2: 1
-task9_review_notes: "2026-05-22 Task9 01: needs-rework。P1 1:ADPF Android 15/16 GPU duration 与 workload hint 版本边界需补齐;P2 1:交叉引用元数据需同步。"
+p0: 1
+p1: 0
+p2: 0
+task9_review_notes: "2026-06-04 Task9 18: auto-fixed。P0 1:Android 17 NPU feature 边界由旧 `android.hardware.neural_processing_unit`/未公开改为 API 37 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`、常量值 `android.hardware.npu`;同时保留 delegate/AICore/配额外推边界。回到 Task6 复审。"
 last_task2b_lite_at: 2026-06-04
+last_task9_autofix_at: "2026-06-04"
 ---
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因
@@ -81,7 +86,7 @@ last_task2b_lite_at: 2026-06-04
 覆盖相机预览、实时翻译、AI 修图、游戏 AI 辅助等场景中,NPU/GPU 持续工作如何影响帧预算、温控和后台任务,交叉引用 5.13、22.10、25.11。
 
 ### 🔹 Android 17 NPU feature 与 LiteRT 迁移后的新边界
-把 `android.hardware.neural_processing_unit`、LiteRT `CompiledModel`、NNAPI deprecated、厂商 delegate 与 AICore 生态能力拆开,形成可发布事实表。
+把 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` / `android.hardware.npu`、LiteRT `CompiledModel`、NNAPI deprecated、厂商 delegate 与 AICore 生态能力拆开,形成可发布事实表。
 
 ## 扩展
 
@@ -189,21 +194,23 @@ Perfetto 的 power rails 数据来自设备暴露的 power rail 读数,适合比
 
 ## Android 17 NPU feature 与 LiteRT 迁移边界
 
-当前公开资料不能支撑一个通用结论:Android 17 存在 `android.hardware.neural_processing_unit` 这类标准 `PackageManager` feature,或所有应用访问 NPU 都必须声明某个系统 feature。AOSP `PackageManager` 公开 feature 和 Android Developers 搜索结果没有给出这个名称;NNAPI device discovery 文档给出的公开路径仍是 NN HAL 设备发现与 `DeviceType` 区分。涉及 NPU feature、意图防火墙、电量配额这类说法,发布稿只能写成待验证素材,不能写成平台事实。
+Android 17 已公开 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`(API 37),常量值是 `android.hardware.npu`。Release notes 同时要求 target Android 17 且需要直接访问 NPU 的应用在 manifest 声明这个 hardware feature。旧材料里的 `android.hardware.neural_processing_unit` 不是公开常量,不能写进发布稿或示例。
+
+这个 feature 只能说明设备暴露了 NPU 或类似 AI 加速硬件,不能推出所有设备都有同等 NPU 能力,也不能替代 LiteRT delegate、NN HAL device discovery、厂商 SDK 或 AICore 的路径判断。涉及意图防火墙、电量配额审计、间接通过 AICore 使用 NPU 是否受同一声明约束,仍需源码或官方文档补证。
 
 能确认的边界如下:
 
 | 主题 | 可发布事实 | 不能外推的结论 |
 |---|---|---|
 | NNAPI | Android 15 起 NNAPI NDK API 被标记 deprecated,迁移文档建议使用 LiteRT / AICore 等路径 | NN HAL 或厂商 NPU 驱动从系统里消失 |
-| NPU 发现 | NN HAL 文档把 `ACCELERATOR` 定义为专用 NPU,能力由 HAL / driver 暴露 | 标准 Android feature 名称统一代表 NPU 可用 |
+| NPU feature | API 37 新增 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`,常量值 `android.hardware.npu`;target Android 17 且直接访问 NPU 的 App 需要声明 uses-feature | feature 只说明设备暴露 NPU / 类似 AI 加速硬件,不代表 delegate 可用性或性能一致 |
 | LiteRT | LiteRT 文档提供 CPU / GPU / NPU 相关路径,NPU 依赖主要芯片厂商 delegate | 所有 Android 17 设备都有同等 NPU 能力 |
 | AICore | AICore 是 Google AI on Android 路径的一部分,适合讨论 GMS 设备能力 | AICore 行为可以代表 AOSP 或所有国内设备 |
 | CompiledModel | 文档展示 CompiledModel API 和硬件加速选择能力 | 未给设备、模型、delegate 版本时写固定收益数字 |
 
 这张表的目的是把发布边界写清楚。5.11 节已有相关技术回炉项,那里会处理具体 API、AICore 内存归属和 CompiledModel 细节;本节只保留异构调度和功耗归因所需的边界。
 
-[已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide][已验证: 官方文档, source.android.com/docs/core/interaction/neural-networks/device-discovery][来源: DeepResearch/2026-05-15-android-17-npu-litert-aicore.md]
+[已验证: 官方文档, developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT][已验证: 官方文档, developer.android.com/about/versions/17/release-notes][已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide][已验证: 官方文档, source.android.com/docs/core/interaction/neural-networks/device-discovery][来源: DeepResearch/2026-05-15-android-17-npu-litert-aicore.md]
 
 ## GPU/NPU 与 EAS、devfreq cooling 的交互
 
