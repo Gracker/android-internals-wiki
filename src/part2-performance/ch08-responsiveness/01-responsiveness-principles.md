@@ -29,17 +29,17 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
-task6_reviewed_date: "2026-05-01"
+task6_reviewed_date: "2026-06-04"
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: needs-rework
 task9_state: pending
 task9_reviewed_by: openclaw-task9
@@ -48,6 +48,7 @@ last_task9_at: "2026-05-23T09:31:49+08:00"
 task9_review_notes: "2026-05-23 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 1；TTID/TTFD Android 12 归因需修正，RAIL Load 大纲阈值需同步。详见 logs/deep-review/2026-05-23-09-audit.md。"
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-09-audit.md"
+last_task6_at: "2026-06-04T19:15:00+08:00"
 ---
 
 # 响应速度原理
