@@ -1,6 +1,6 @@
 {
   "total": 380,
-  "draft": 2,
+  "draft": 1,
   "ready-for-review": 163,
   "finalized": 185,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -2415,7 +2415,7 @@
       "reason": "仍为 ready-for-review / task6_state revisiting，但本日已 review 过一次，优先级低于 26.12"
     }
   ],
-  "ready_for_review": 157,
+  "ready_for_review": 158,
   "last_updated": "2026-06-04",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
