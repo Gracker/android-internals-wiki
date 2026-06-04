@@ -21,11 +21,12 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
@@ -131,7 +132,7 @@ APMPlus 是火山引擎的应用性能监控产品，覆盖 Android、iOS、鸿�
 
 Bugly 普通版更偏 crash、ANR、符号表和版本稳定性看板。它在国内 Android 团队里常被用作崩溃和 ANR 上报基础设施，接入成本通常较低。
 
-Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示，Pro 版增加了 ANR 预抓取主线程堆栈（例如 `BuglyBuilder.setEnableRecordAnrMainStack(true)`）、启动 Span 测量、页面回放（Page Replay）等 APM 能力。评审 Bugly 时要写清使用的是普通版还是 Pro 版，并按套餐确认慢帧、启动、页面回放、ANR 预分析、数据留存和私有化范围。
+Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示，Pro 版增加了 ANR 全线程堆栈抓取（`builder.enableAllThreadStackAnr = true`）、启动 Span 测量等 APM 能力。ANR 诊断时主线程调用栈由周期性采样生成，疑似 ANR 时自动抓取全线程堆栈辅助定位。评审 Bugly 时要写清使用的是普通版还是 Pro 版，并按套餐确认慢帧、启动、ANR 诊断、数据留存和私有化范围。
 
 ## 选型表
 
@@ -140,7 +141,7 @@ Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示�
 | Sentry | 海外业务、跨端错误监控、tracing / profiling / replay 统一 | 移动 profiling 和 replay 必须低采样；国内访问、数据地域和 PII 规则要单独核验 | SaaS 为主，也可评估自托管成本 | 按事件量、seat、保留周期、附件和 replay 用量估算；退出时要导出 issue、release、event、trace、alert |
 | APMPlus | 国内业务、移动端性能和稳定性一体化平台 | 启动、卡顿、ANR、OOM、网络、内存、日志回捞、单点查询、报警和看板较全 | SaaS、专有云、私有化都要核验；私有化要看存储、流处理和运维责任 | 费用与事件量、留存、日志回捞、私有化资源、值班支持相关；退出时要迁移指标口径和 dashboard |
 | Bugly Regular | 国内稳定性治理、崩溃 / ANR / 符号表 | 偏稳定性入口，性能能力按套餐确认 | SaaS 为主，和腾讯生态流程结合较深 | 接入成本低；退出时要处理 crash issue、mapping、symbol、Webhook 和版本趋势 |
-| Bugly Pro | 需要 ANR 预分析、页面回放、启动 Span 等增强 APM 能力 | Pro 能力覆盖面更大，但要按合同确认采样、留存、隐私和性能开销 | 关注页面回放数据、用户路径数据和私有化选项 | 费用和数据量、回放采样、保留周期相关；退出时要迁移回放索引和诊断字段 |
+| Bugly Pro | 需要 ANR 全线程堆栈、启动 Span 等增强 APM 能力 | Pro 能力覆盖面更大，但要按合同确认采样、留存、隐私和性能开销 | 关注 ANR 诊断字段、Span 数据和私有化选项 | 费用和数据量、采样、保留周期相关；退出时要迁移诊断字段和 Span 数据 |
 
 选型结论不要只看功能列表。商业平台越深入 App 运行路径，越要确认数据归属、字段合规、留存周期、费用模型、16KB Page Size 适配和退出成本。
 
@@ -206,7 +207,7 @@ Bugly 普通版常见价值在：
 - mapping / symbol 管理。
 - Webhook 对接内部流程。
 
-Bugly Pro 的评审口径要扩到 APM：ANR 预抓取主线程堆栈能把 5 秒超时前的主线程状态留下来，页面回放能把崩溃前的用户路径与页面快照关联，启动 Span 可以把启动过程拆成可查询阶段。启用这些能力前，要确认回放脱敏、采样率、低端机开销、数据留存和 Android 15 16KB 适配版本。
+Bugly Pro 的评审口径要扩到 APM：ANR 全线程堆栈抓取能把疑似 ANR 时各线程状态留下来（主线程调用栈由周期性采样提供），启动 Span 可以把启动过程拆成可查询阶段。启用这些能力前，要确认采样率、低端机开销、数据留存和 Android 15 16KB 适配版本。
 
 如果团队只需要 crash / ANR 基础设施，普通版可能足够。如果要把 Bugly 当完整性能平台，要按 Pro 能力做 PoC，不要用普通版经验推断 Pro 版边界。
 
@@ -214,10 +215,9 @@ Bugly Pro 各增强能力存在 SDK 版本门槛，PoC 前要确认当前集成�
 
 | 能力 | 最低 SDK 版本 | PoC 验证动作 |
 |---|---|---|
-| 页面回放（Page Replay） | Android SDK 4.4.7.3+ | 接入后触发崩溃/ANR，检查控制台是否生成回放数据 |
 | Android 15 16KB Page Size 支持 | Android SDK 4.4.6.2+ | 在 16KB page size 模拟器/真机启动 App，检查 `.so` alignment 和采集是否正常 |
 | 页面启动耗时 / Span | Android SDK 4.4.3+ | 冷启动后在控制台检查 Span 数据是否拆分到各阶段 |
-| ANR 主线程预抓取 | BuglyBuilder 配置项 `setEnableRecordAnrMainStack(true)` | 触发 ANR 后检查上报中是否包含 5s 超时前主线程堆栈 |
+| ANR 全线程堆栈抓取 | `builder.enableAllThreadStackAnr = true` | 触发 ANR 后检查上报中是否包含全线程堆栈；主线程调用栈由周期性采样提供，不依赖独立 API |
 
 frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能力页。以上门槛数据来自 Bugly Android SDK 官方文档，非 AOSP 源码——Bugly 是腾讯商业 SDK，版本阈值由其官方 changelog 控制。如果当前集成版本低于上述最低版本，先升级 SDK 再做 PoC，否则会误判能力缺失。
 
@@ -339,5 +339,5 @@ interface AppMonitor {
 
 - Sentry Android docs：error、tracing、profiling、session replay、logs、user feedback。
 - Android 15 16KB Page Size 官方文档：原生库需要 16KB page size 兼容，APM SDK 内置 `.so` 必须随之验证。
-- Bugly / Bugly Pro 文档与更新记录：ANR 预抓取主线程堆栈、页面回放、启动 Span 等能力按套餐确认。
+- Bugly / Bugly Pro 文档与更新记录：ANR 全线程堆栈抓取（`enableAllThreadStackAnr`）、启动 Span 等能力按套餐确认；Pro 能力以官方 Android SDK 文档与 changelog 为准，不在公开文档中的能力不做正文承诺。
 - APMPlus / 火山引擎文档：移动端崩溃、卡顿、启动、网络、内存、日志回捞、报警、看板和私有化部署资料。
