@@ -1,35 +1,49 @@
-# Task2B Verifier · 回流复查 · 2026-06-05 03:28
+# Task2B Verifier · 回流复查 · 2026-06-05 03:35
 
-## 复查章节
+## 复查范围
 
-| 章节 | 标题 | 状态修正 | 说明 |
-|------|------|----------|------|
-| 7.18 | HWC Overlay Plane 与合成降级排查 | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
-| 2.22 | SurfaceFlinger FrontEnd 与 RequestedLayerState | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
-| 4.11 | Cached App Freezer 与 GC 触发边界 | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
-| 25.19 | Android Vitals 过度 WakeLock 指标与治理 | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
-| 25.14 | JobScheduler 调试：Pending Reasons 与 JobDebugInfo | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
-| 21.12 | Startup Profile 与 DEX Layout 启动优化 | ✅ 已修正 | 补充 task6_state: pending, task9_state: pending |
+本轮扫描 24 个 task2b_state=fixed + pipeline_stage=task6_pending 的章节，选取 6 个进行复查。
 
-## 问题类型
+## 复查结果
 
-6 个章节均为 task2a 直接产出后标记为 ready-for-review + task6_pending，但缺少 task6_state / task9_state 字段。
-Task6 扫描要求 task6_state: pending 才能命中，导致这些章节长期停留在 task6_pending 但无法被 Task6 拾取。
+### 1. src/part2-performance/ch07-smoothness/12-view-layout-performance.md (7.12)
+- **状态**：task6_state=revisiting ✓, task9_state=pending ✓, pipeline_stage=task6_pending ✓
+- **问题**：task9_result=needs-rework（task2b 修复后的残留值）
+- **修正**：task9_result → pending
+- **结论**：✅ 已回流 Task6
 
-## 修正内容
+### 2. src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md (5.12)
+- **状态**：task6_state=reviewed ✗, task9_state=pending ✓, pipeline_stage=task6_pending ✓
+- **问题**：task6_state 应为 revisiting（正在回炉重审）；task9_result=needs-rework 残留
+- **修正**：task6_state → revisiting, task9_result → pending
+- **结论**：✅ 已回流 Task6
 
-为每个章节的 frontmatter 补充：
-- `task6_state: pending`
-- `task9_state: pending`
+### 3. src/part1-fundamentals/ch05-cpu-power/03-big-little.md (5.3)
+- **状态**：task6_state=reviewed ✗, task9_state=reviewed ✗, pipeline_stage=task6_pending ✓
+- **问题**：task6_state 应为 revisiting；task9_state 应为 pending（task2b 修复后需重新 task9 审）；task9_result=needs-rework 残留
+- **修正**：task6_state → revisiting, task9_state → pending, task9_result → pending
+- **结论**：✅ 已回流 Task6
 
-## 跳过章节
+### 4. src/part1-fundamentals/ch04-memory/09-finalizer-referencequeue.md (4.9)
+- **状态**：task6_state=reviewed ✗, task9_state=pending ✓, pipeline_stage=task6_pending ✓
+- **问题**：task6_state 应为 revisiting；task9_result=needs-rework 残留
+- **修正**：task6_state → revisiting, task9_result → pending
+- **结论**：✅ 已回流 Task6
 
-- 7.13 SystemUI 性能分析：queue 中仍有 pending（task6-review, pri=50），等待主修复处理
-- 2.6 SurfaceFlinger 与合成：queue 中仍有 pending（task-deepresearch-injector, pri=80），等待素材注入
-- 19 商业 APM 平台：queue 中仍有 pending（task-deepresearch-injector, pri=80），等待素材注入
+### 5. src/part2-performance/ch07-smoothness/13-systemui-performance.md (7.13)
+- **状态**：queue.json 存在 pending 条目（task6-review, priority 50, Foldable 多 Display 附录风格问题）
+- **结论**：⏸️ 阻塞 — queue 仍有 pending，等待主修复处理
+
+### 6. src/part3-tools/ch19-apm/06-blockcanary.md (19/BlockCanary)
+- **状态**：queue.json 存在 section=19 的 pending 条目（DeepResearch 注入, priority 80）
+- **结论**：⏸️ 阻塞 — queue 仍有 pending，等待主修复处理
 
 ## 统计
 
-- 本轮复查：6 章
-- 状态修正：6
-- 阻塞：0（3 章因 queue pending 跳过，不算阻塞）
+- 状态修正：4 个章节，共 8 处 frontmatter 修正
+- 阻塞：2 个章节（queue pending 未清）
+- 结果：4 ready-for-task6 / 2 blocked
+
+## 常见模式
+
+task2b 修复后未清理 task9_result=needs-rework 残留值。task2b 主修复 lane 应在 Step 6 更新 frontmatter 时将 task9_result 重置为 pending。本次 verifier 已手动清理。
