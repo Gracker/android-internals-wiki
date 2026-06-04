@@ -14,7 +14,7 @@ last_task6_audit_log: logs/review/2026-05-22-19-audit.md
 last_task2b_at: '2026-06-04T05:36:00+08:00'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: auto-fixed
 polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
@@ -55,22 +55,23 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-20'
-last_task9_at: "2026-05-20T02:20:00+08:00"
+task9_reviewed_date: '2026-06-04'
+last_task9_at: "2026-06-04T20:24:00+08:00"
+last_task9_autofix_at: '2026-06-04'
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-05-04"
 last_task9_audit: '2026-05-20'
 last_task9_audit_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-05-20-02-audit.md
-task9_review_notes: "2026-05-20 02:20 闲时抽检：发现 Pausable Composition Android 16 平台门槛/范围错误，以及 RecyclerView 中 ComposeView 独立 WindowRecomposer 与 onViewRecycled dispose 建议不符合 AndroidX 1.10 官方文档/源码；已写入 queue.json，转 Task2B 修正。"
+task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 PausableComposition Android API level 绑定、延迟状态读取示例、RecyclerView ComposeView Recomposer/Dispose 策略；P2 数据缺口写入 suggestions。"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 ---
 
@@ -123,7 +124,7 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 
 主要区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的“Recomposition”（重组）。
 
-Compose 1.10+（Android 16）引入了 Pausable Composition（断点组合）机制。在 VRR / 120Hz 场景下，如果 Composition 阶段在单帧预算内没有执行完，系统可以自动暂停当前 Composition，保留 SlotTable 现场，在下一帧从断点继续执行。这避免了复杂页面首帧因 Composition 超时导致的 jank。该特性需要 Compose Runtime 1.10+ 并运行在 Android 16+ 上，旧版本仍会在单帧内同步完成整个 Composition。
+`PausableComposition` 属于 AndroidX Compose Runtime 的可暂停子组合能力，源码说明它用于把子组合拆到多个帧间隙执行，例如 lazy list 预组合即将出现的 item。它的版本边界落在具体 Compose Runtime / UI 版本和调用方是否使用 pausable sub-composition 上，不能按 Android API level 判断。也不要把它理解成系统会自动把任意 Composition 跨帧续跑。
 
 [图:Compose 渲染管线三阶段示意--Composition 更新 SlotTable 并维护 LayoutNode 树 → Layout 沿 LayoutNode 测量定位 → Drawing 绘制到 Canvas,与传统 View 体系 measure → layout → draw 对比]
 
@@ -353,14 +354,15 @@ private fun Title(snack: Snack, scroll: Int) {
 
 当 scroll 值在每次滑动事件中变化时,Title 和它的父级 SnackDetail 都会重组--因为状态读取发生在它们的 Scope 里。
 
-优化方式是把参数改为 Lambda:
+优化方式是把参数改为 Lambda，并把读取放进支持延迟读取的 modifier lambda:
 
 ```kotlin
 // 优化代码:用 Lambda 延迟读取
 @Composable
 private fun Title(snack: Snack, scrollProvider: () -> Int) {
-    val offset = with(LocalDensity.current) { scrollProvider().toDp() }
-    Column(modifier = Modifier.offset(y = offset)) {
+    Column(
+        modifier = Modifier.offset { IntOffset(x = 0, y = scrollProvider()) }
+    ) {
         // ...
     }
 }
@@ -369,7 +371,7 @@ private fun Title(snack: Snack, scrollProvider: () -> Int) {
 Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 ```
 
-这样一来,`scroll.value` 的读取不在 Composition 阶段发生,而是延迟到了 Layout 或 Draw 阶段。当 scroll 变化时,Compose 可以跳过重组,直接进入 Layout + Draw。这在频繁变化的场景(如滑动偏移、动画进度)中性能提升非常显著。
+`Modifier.offset { ... }` 的 lambda 在布局/放置阶段执行，AndroidX 源码也标注这个重载用于频繁变化的 offset，可避免 offset 变化时触发重组。若像 `val offset = scrollProvider().toDp()` 这样在 Composable 函数体中立即调用，读取仍发生在 Composition 阶段，无法达到延迟读取效果。
 
 ## Compose 中的性能陷阱
 
@@ -522,9 +524,9 @@ Baseline Profiles 用来解决这个问题。它把关键用户路径上的方�
     android:layout_height="wrap_content" />
 ```
 
-它的性能开销主要在首次创建时--需要初始化 Compose 运行时。之后的重组开销和普通 Compose 页面没有区别。但需要注意在 RecyclerView 中使用 `ComposeView` 的情况:每个 item 都会创建一个独立的 Compose 容器,持有独立的渲染上下文和 `WindowRecomposer`。如果 item 复杂或列表快速滑动,可能导致帧延迟和显存压力累积。
+`ComposeView` 的首次创建需要初始化 Composition 和 Compose UI 运行时；后续 item 复用时，成本主要来自内容更新、重组和布局/绘制。AndroidX 源码里 `AbstractComposeView` 会优先查找 View 树上的 `CompositionContext`，找不到时才使用 window-scoped Recomposer，并缓存可用上下文。因此，RecyclerView 中的多个 `ComposeView` 并不等于每个 item 都持有独立 `WindowRecomposer`。
 
-缓解方式是使用 `ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool`(默认策略),确保 item 被回收池清理时释放 Composition 资源。在 RecyclerView 的 `onViewRecycled()` 中也可以主动调用 `composeView.disposeComposition()` 释放不再需要的渲染上下文。不要在 ViewHolder 复用时创建新的 `ComposeView`,而是复用已有的实例并通过 `setContent` 更新内容。
+缓解方式是复用 ViewHolder 里的 `ComposeView`，通过 `setContent` 更新内容，并保留默认的 `ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool`。该默认策略会在非 pooling container detach 时释放 Composition，在 RecyclerView 这类 pooling container 中等到释放出池时 dispose。只有明确要放弃复用缓存或 View 不会再回到窗口时，才手动调用 `disposeComposition()`。
 
 [待验证: Compose 1.10 中 ReuseComposeView API 的稳定性]
 
