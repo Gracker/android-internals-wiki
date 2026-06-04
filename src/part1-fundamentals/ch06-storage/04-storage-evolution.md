@@ -47,13 +47,13 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-last_task2b_at: '2026-04-21T08:24:09+08:00'
-task2b_state: pending
+last_task2b_at: '2026-06-04T22:53:28+08:00'
+task2b_state: fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T22:20:00+08:00"
@@ -145,14 +145,6 @@ SDCardFS 虽然性能好，但它有两个根本限制：它工作在内核态�
 [已验证: 官方文档, source.android.com/docs/core/storage + developer.android.com/about/versions/11/privacy/storage]
 
 在 Perfetto 中，如果我们在 Android 11+ 设备上观察文件操作，通常会看到 sdcard FUSE 进程的 CPU 活动比 Android 8-10 时代更明显。Android 12+ 如果命中了 FUSE passthrough，持续 read/write 的额外开销会比 Android 11 首版实现更低。
-
-### Android 17 FUSE over io_uring：异步化重构
-
-传统 FUSE 的另一个性能瓶颈是用户态 `sdcard` 守护进程以单线程同步方式处理请求。即使内核侧有多个并发 I/O，到了用户空间也得排队一个一个处理。Android 17 基于 Linux 6.14 内核的 `io_uring` 原语重构了 FUSE 请求处理路径：`vold` 通过 `io_uring` 异步提交和收割 I/O 请求，不再阻塞在单线程的 read/write 循环上。
-
-实测效果：外部存储的读写延迟降低约 20%，在高并发文件操作场景（如媒体库批量扫描）下改善更为显著。SELinux 策略确保只有 `vold` 等系统关键路径能使用异步 I/O，普通 App 不受直接影响但能享受到更快的存储响应。
-
-这一步标志着 FUSE 从"功能上可用、性能上有妥协"走向"功能和性能兼顾"——Android 花了十年，终于在外部存储模拟这个老问题上给出了一个不牺牲性能的解决方案。
 
 **性能分析的启示**：面对存储性能异常，先确认 Android 版本和访问路径。Android 8-10 使用 SDCardFS；Android 11 回到 FUSE，并把权限判定前移到 MediaProvider；Android 12+ 在满足条件时可以把一部分后续 I/O 送进 FUSE passthrough。App 私有外部目录、共享媒体 direct path、`MediaStore`、SAF、Photo Picker 的成本并不在同一层。
 
@@ -376,16 +368,17 @@ IncFS 在 Android 11 中作为内核模块引入，在 Android 12+ 中成为内�
 
 ## Android 16/17 的存储新范式
 
-### 16KB 页对齐：从可选到强制
+### 16KB 页对齐：从可选构建到平台生态推进
 
-Android 16（API 36）把 16KB 内存页确立为旗舰设备的唯一运行模式。Google Play 要求 2025 年 11 月 1 日前所有包含原生代码的 App 完成 NDK 库的 16KB 对齐适配。
+Android 15（API 35）首次支持构建 16KB page size 的目标，是否启用取决于设备是否搭载 arm64 16KB kernel 以及产品配置。Android 16 并未将 16KB 设为所有旗舰设备的强制运行模式，而是在构建层面新增了 prebuilt ELF alignment 检查：系统会对预编译二进制文件校验 16KB 对齐，未对齐的库会在构建期被拦截。
 
-对存储性能的影响体现在两个层面：
+Google Play 要求面向 Android 15+ 设备的提交支持 16KB page size，并从 2025 年 11 月起要求包含原生代码的 App 完成 NDK 库的 16KB 对齐适配。这属于发布渠道要求，不是在每台设备上都以 16KB 模式运行。
 
-- **I/O 吞吐量**：16KB 页意味着文件系统单次 I/O 操作可以搬运更大的数据块，对于大文件读写（视频编辑、游戏资源加载）的吞吐量有直接提升。
+对存储性能的影响：
+
+- **I/O 吞吐量**：16KB 页意味着文件系统单次 I/O 操作可以搬运更大的数据块，对于大文件读写（视频编辑、游戏资源加载）的吞吐量有直接提升。但前提是该设备实际运行在 16KB page size 模式下。
 - **内存映射效率**：`mmap` 的对齐粒度从 4KB 扩大到 16KB，减少了 TLB miss。对频繁使用 `mmap` 的存储场景（如数据库、APK 资源读取）有间接收益。
-
-但 16KB 对齐也带来了一个副作用：每个 App 的 PSS（Proportional Set Size）平均增加约 9%，因为即使只使用一小部分内存页，物理内存也按 16KB 粒度分配。在桌面模式多窗口并发场景下，这个增量会快速累积（详见 2.20 节）。
+- **内存开销**：16KB 模式下的 PSS 增量因设备、负载和 App 内存分配模式而异，不能简单用固定百分比概括。在桌面模式多窗口并发场景下，内存压力会更快累积（详见 2.20 节）。
 
 适配排查：使用 `adb shell dumpsys meminfo <package>` 对比 4KB 和 16KB 环境下的 PSS 差异；如果 App 使用了 NDK 原生库，用 `llvm-objdump` 检查 `.bss` 和 `.data` 段的对齐是否满足 16KB 要求。
 
@@ -403,7 +396,7 @@ SDM 的收益在低端设备上最为明显：安装时间缩短，安装期间�
 
 **文件系统层**（ext4 → f2fs for data, ext4 → EROFS for system）：f2fs 解决了 ext4 在闪存上的写放大和 fsync 性能问题；EROFS 通过压缩和精简元数据优化了只读分区的读取性能和存储空间。
 
-**存储模拟层**（FUSE → SDCardFS → 改进版 FUSE → FUSE over io_uring）：从性能优先到隐私优先的摇摆，最终在 Scoped Storage 的需求驱动下选择了功能更强的 FUSE 方案；Android 17 通过 io_uring 异步化彻底解决了 FUSE 的用户态单线程瓶颈。
+**存储模拟层**（FUSE → SDCardFS → 改进版 FUSE）：从性能优先到隐私优先的摇摆，最终在 Scoped Storage 的需求驱动下选择了功能更强的 FUSE 方案；Android 12+ 通过 FUSE passthrough 在性能关键路径上压缩了开销。
 
 **权限模型**（全量访问 → Scoped Storage → 细粒度媒体权限）：每一步都在收紧 App 的文件访问范围，同时引入新的 API 和性能考量。
 

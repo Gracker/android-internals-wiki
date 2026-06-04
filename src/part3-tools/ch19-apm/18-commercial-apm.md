@@ -20,11 +20,11 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_state: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: needs-rework
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
@@ -37,7 +37,7 @@ reviewed_date: "2026-06-04"
 
 review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task2b_result: "fixed"
-last_task2b_at: "2026-04-25T05:47:52+08:00"
+last_task2b_at: "2026-06-04T22:53:28+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
@@ -115,7 +115,7 @@ Sentry Android 各能力存在 SDK/API 版本门槛，接入前要按版本表�
 | Transaction-based profiling | Sentry Android SDK 6.16.0+、API 22+ | 单次最长 30 秒；Sentry 文档建议迁移到 UI Profiling |
 | App start profiling | Sentry Android SDK 7.3.0+ | 需在 SentryOptions 配置中启用 |
 
-正文示例优先用 span / UI Profiling 口径，transaction-based profiling 保留为兼容旧 SDK 的术语。接入评审时在灰度配置里按 SDK 版本和 Android 版本分桶验证。
+以上门槛数据来自 Sentry Android SDK 官方文档（docs.sentry.io），非 AOSP 源码。接入前用 Sentry 官方 changelog 复核最新版本要求。正文示例优先用 span / UI Profiling 口径，transaction-based profiling 保留为兼容旧 SDK 的术语。接入评审时在灰度配置里按 SDK 版本和 Android 版本分桶验证。
 
 ### APMPlus：国内移动 APM 平台型方案
 
@@ -148,7 +148,7 @@ Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示�
 |---|---|---|
 | SDK 覆盖 | Android 版本、targetSdk、ABI、主流网络库、Flutter / RN / WebView 是否支持 | 用试点 App 接入，覆盖 release、debug、混淆、multi-ABI 包 |
 | 稳定性 | SDK 自身 crash、ANR、启动开销、线程数、包体积 | 灰度 1% 用户，跟踪 SDK crash、启动 P95、主线程耗时、包体积增量 |
-| Android 15 16KB Page Size | SDK 内置 `.so` 是否 16KB ELF alignment，是否说明支持 Android 15 16KB 设备 | 用 16KB page size 模拟器或真机启动 App；对 Native SDK 检查 `readelf -l` 的 LOAD alignment；关注 `SIGSEGV`、`SIGBUS`、`UnsatisfiedLinkError` |
+| 16KB Page Size 兼容（Android 15+） | SDK 内置 `.so` 是否 16KB ELF alignment，是否说明支持 16KB page size 设备（Android 15 起支持构建 16KB，Android 16 增加 prebuilt alignment 检查，Google Play 要求面向 Android 15+ 提交支持 16KB） | 用 16KB page size 模拟器或真机启动 App；对 Native SDK 检查 `readelf -l` 的 LOAD alignment；关注 `SIGSEGV`、`SIGBUS`、`UnsatisfiedLinkError` |
 | 性能数据 | 启动、慢帧、卡顿、ANR、OOM、网络、磁盘、功耗是否有清晰口径 | 用已知慢帧、弱网、OOM、ANR 样本回放，核对平台展示与本地 trace / log 是否一致 |
 | 现场能力 | 堆栈、日志回捞、trace、截图、session replay、用户路径 | 检查是否有授权流程、脱敏规则、采样上限和故障时的人工取证路径 |
 | 符号化 | ProGuard mapping、native symbol、版本和 build id 绑定 | 用一个已知混淆 crash 和一个 Native crash 验证还原率 |
@@ -217,7 +217,7 @@ Bugly Pro 各增强能力存在 SDK 版本门槛，PoC 前要确认当前集成�
 | 页面启动耗时 / Span | Android SDK 4.4.3+ | 冷启动后在控制台检查 Span 数据是否拆分到各阶段 |
 | ANR 主线程预抓取 | BuglyBuilder 配置项 `setEnableRecordAnrMainStack(true)` | 触发 ANR 后检查上报中是否包含 5s 超时前主线程堆栈 |
 
-frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能力页。如果当前集成版本低于上述最低版本，先升级 SDK 再做 PoC，否则会误判能力缺失。
+frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能力页。以上门槛数据来自 Bugly Android SDK 官方文档，非 AOSP 源码——Bugly 是腾讯商业 SDK，版本阈值由其官方 changelog 控制。如果当前集成版本低于上述最低版本，先升级 SDK 再做 PoC，否则会误判能力缺失。
 
 ## PoC 验收表
 
@@ -234,7 +234,7 @@ frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能
 | OOM / 内存 | 构造 Java heap 压力和 native 内存压力 | 能拿到内存趋势、设备水位、进程存活信息；不把 LMK 误写成 Java OOM |
 | 告警噪声 | 构造一次低量级异常和一次集中异常 | 告警阈值可控；不会因采样波动反复报警 |
 | 低端机开销 | 低端设备跑 30 分钟常用场景 | SDK 线程数、CPU、内存、流量、包体积增量在接入预算内 |
-| 16KB Page Size | Android 15 16KB 环境启动并触发 crash / ANR / profiling | App 不因 SDK `.so` alignment 问题崩溃；Native 采集能力正常 |
+| 16KB Page Size | Android 15+ 16KB 环境启动并触发 crash / ANR / profiling | App 不因 SDK `.so` alignment 问题崩溃；Native 采集能力正常 |
 
 ## 成本模型与 ROI 估算
 
