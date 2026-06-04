@@ -1,9 +1,10 @@
 ---
+
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: ready-to-publish
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -32,7 +33,7 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-26T04:07:00+08:00"
@@ -40,8 +41,8 @@ last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
-task2b_result: "repaired"
-task2b_state: "repaired"
+task2b_result: fixed
+task2b_state: fixed
 task2b_repaired_date: "2026-05-31"
 task2b_repaired_by: "openclaw-task2b"
 task9_result: pass-tech-review
@@ -59,8 +60,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
 last_task9_audit_result: "p0-source-error"
 task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
----
+last_deepseek_cn_review_at: 2026-05-31---
+
 # 案例集
 
 ## 本节要点大纲

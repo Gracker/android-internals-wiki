@@ -1,8 +1,9 @@
 ---
+
 title: 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
 chapter: '19'
 section: '19.10'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -41,7 +42,7 @@ sources:
 pipeline_stage: task6_pending
 task6_state: revisiting
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
@@ -54,8 +55,8 @@ task9_result: pending
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
-last_task9_audit: '2026-05-20'
----
+last_task9_audit: '2026-05-20'---
+
 
 # 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
 

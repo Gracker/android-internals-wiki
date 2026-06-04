@@ -1,4 +1,5 @@
 ---
+
 title: "Camera 渲染管线"
 chapter: "18.14"
 section: "18.14"
@@ -19,8 +20,8 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: reviewed
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -43,8 +44,8 @@ last_task6_audit_result: l1-frontmatter-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
 last_task6_at: '2026-06-04T22:12:00+08:00'
 last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
-last_task9_autofix_at: 2026-06-04
----
+last_task9_autofix_at: 2026-06-04---
+
 
 <!-- outline-start -->
 
