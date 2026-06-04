@@ -56,15 +56,15 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task9_state: pending
 task2b_state: "fixed"
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
 section: '9.7'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
 task9_result: "needs-rework"
 task2b_result: rework-fixed
@@ -76,7 +76,7 @@ last_task9_at: "2026-05-18T21:20:00+08:00"
 review_notes: "2026-05-18 task9 idle audit: needs-rework。P1 2(ContentProvider timeout/source semantics;Android 15+ 16KB page-size version boundary),P2 1(InputDispatcher Android 8-10 path note);已写入 queue/suggestions,等待 Task2B 回炉。 | 2026-05-23 task6 idle audit: queue 中仍有 pending 回炉项,撤销 finalized 状态,保持 task2b_pending。"
 auto_promoted: false
 last_task9_audit: "2026-05-18"
-last_task6_audit: "2026-05-23"
+last_task6_audit: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-05-18-21-audit.md"
 task9_review_notes: "2026-05-18 Task9 闲时抽检:needs-rework。P1 2:ContentProvider timeout 表混写 publish/call 预算;Android 15+/API35+ 16KB 页大小与 VMA 锁诊断建议缺少设备/内核前提。P2 1:InputDispatcher 旧版本路径需补注。"
 ---
@@ -227,7 +227,7 @@ Bugreport 里搜系统侧卡顿,AOSP 基线关键词是 `Slow Looper` 和 `Slow 
 
 主线程同步发起 Binder 调用时,只要远端线程池空不出来,或者远端线程拿到请求后又被锁、I/O、CPU 饥饿卡住,调用方就会一起等。ContentProvider、媒体服务、定位、厂商服务都可能落进这条链。
 
-这类问题的识别方式很朴素:
+识别方式：
 
 - App 主线程卡在 Binder wait。
 - 远端进程没有空闲 Binder 线程,或者 Binder 线程都在做长事务。
@@ -256,7 +256,7 @@ ContentProvider 这条线最容易被写错。Provider 的 CRUD 工作通常跑�
 
 ## Android 8-17 的工具边界
 
-原稿把 `systrace.py`、`atrace`、`/proc/binder/stats`、`watch -n 1` 混成一套,读者照抄很容易跑不通。更实用的边界如下:
+原稿把 `systrace.py`、`atrace`、`/proc/binder/stats`、`watch -n 1` 混成一套,读者照抄很容易跑不通。排查边界如下：
 
 | Android 版本 | 主抓取手段 | 适合做什么 | 不要默认假设 |
 |---|---|---|---|
@@ -308,7 +308,7 @@ Wait queue length: 27. Wait queue head age: 5504.1ms.
 - `[引用: https://android-review.googlesource.com/c/platform/frameworks/native/+/172237/4/libs/input/InputTransport.cpp]`
 - `[引用: https://android-review.googlesource.com/c/platform/frameworks/native/+/396876]`
 
-这份材料留下的结论很直接:ANR 的表象落在游戏 App,根因却在输入传输层的历史 bug。读者该记住的是下面这套证据顺序:
+这份材料的结论：ANR 的表象落在游戏 App,根因却在输入传输层的历史 bug。读者该记住的是下面这套证据顺序:
 
 - Input ANR 的 reason 明确写着 wait queue 积压。
 - App looper 没有对应的长消息。
