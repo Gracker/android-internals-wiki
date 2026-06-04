@@ -275,4 +275,19 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 
 > **Android 17 验证** [已验证: AOSP `frameworks/base/core/java/android/os/Looper.java` android-17.0.0_r1 源码路径连续性]：截至 Android 17 (API 37)，`Looper.Observer` 接口保持存在，`Observer#messageDispatchStarting()` 和 `Observer#messageDispatched()` 签名未变，仍为 `@hide`。`sObserver` 仍是 static 单槽位，不提供多观察者支持。自研方案在处理 `Looper.Observer` 时仍要和 `Printer` / `setMessageLogging()` 走相同的冲突治理策略，不能假定 Observer 可以"多个组件各挂一个"。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。评估现代 APM 方案时，可以把 Observer 作为系统演进方向和兼容性风险一起记录。
 
+<!-- AIW-源码调研-2026-06-05 (BlockCanary Looper.Observer Android 17 验证) -->
+**Android 16 源码逐行验证补充**（2026-06-05，基于 `aosp-mirror/platform_frameworks_base` android-16.0.0_r3 实际直读 `frameworks/base/core/java/android/os/Looper.java` 631 行）：
+
+- `Looper.Observer` 接口位置：`Looper.java:598-628`（API 36 行号；android-10.0.0_r1 引入时在 `:433-466`），三方法 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` / `dispatchingThrewException(Object token, Message msg, Exception exception)` 签名、Javadoc、`@hide` 标记从 API 29 → API 33/34/35/36 **零变更**。
+- `sObserver` 字段在 `Looper.java:86`（API 36），`private static Observer sObserver`，注释上 `@UnsupportedAppUsage`，单进程单槽位。`setObserver(@Nullable Observer observer)` 在 `Looper.java:182-187`，赋值前无锁（JMM 依赖 final/synchronized block，注释明示 "The observer won't change while processing a transaction"，由调用方在 `loopOnce` 入口拍快照到 final local 变量保证一致性）。
+- `loopOnce` 调用模式（API 36 `Looper.java:246-260`）：dispatch 入口 `observer.messageDispatchStarting()` 拿 token；`try` 块成功后 `observer.messageDispatched(token, msg)`；`catch` 块 `observer.dispatchingThrewException(token, msg, exception)` 再 `throw`。三者互斥且每个 token 必须恰好回调一次，无重试容错。
+- **android-16.0.0_r3 新增**（API 36，2024 引入）：`Looper.loopOnce()` 在 `MessageQueue.next()` 返回 msg 后立即 emit Perfetto slice `message_queue_receive`（`Looper.java:203-213`），用 `mEventId` 做跨线程 terminating flow id，发送方线程名作为 proto 字段；类别 `PerfettoTrace.MQ_CATEGORY = new Category("mq")` 定义在 `core/java/android/os/PerfettoTrace.java:54`（该文件在 android-15 之前不存在，404 命中）。这条系统级 Perfetto trace 与 `Looper.Observer` 正交，Java 端 Observer 仍是"语义语义回调"语义，Perfetto 是"trace 端延迟打点"。两者可同时启用。
+- **BlockCanary 当前 main 分支（2026-06-05 拉取 `markzhai/AndroidPerformanceMonitor/master`）**：实现仍是 `class LooperMonitor implements Printer`（`blockcanary-analyzer/.../LooperMonitor.java` 103 行），通过 `Looper.getMainLooper().setMessageLogging(new LooperMonitor(...))` 挂载，**未切到 `Looper.Observer`**。原因主要是 Observer 仍 `@hide`（灰名单 / max-target-o），且 `Printer.println` 的 `>>>>> Dispatching to / <<<<< Finished to` 双行模式足够做 block 阈值判定，迁移收益不抵反射与 token 协议改造成本。
+- **Android 17 边界声明**：`android-17.0.0_r1` tag 在 aosp-mirror / GitHub 镜像**尚不存在**（最新 release tag 为 `android-16.0.0_r3`）。上述结论对 Android 17 (API 37) 的外推基于 API 29-36 源码零变更趋势，**未在 Android 17 真实源码上直接验证**。如需 100% 权威，应在 cs.android.com 出现 android-17.0.0_r1 tag 后重读 `Looper.java` 与 `PerfettoTrace.java` 复核。
+
+> **结论性提醒**：
+> 1. BlockCanary 在 Android 17 没有"必须切到 Observer 才能用"的版本门槛，它走的是公开 `setMessageLogging` 路径，不依赖 `@hide` API。
+> 2. 如果团队基于 BlockCanary 思路自研且希望走 Observer 路径，**API 29 起所有 Android 版本都支持**（API 29-36 源码零变更），但要面对：单槽位冲突治理（`sObserver` 是 static，与 `setMessageLogging` 同样的多组件痛点）、`@hide` 黑名单（max-target-o）、token 三方法互斥协议。
+> 3. Android 16 起 Perfetto 已经接管 MessageQueue dispatch 端到端可观测性，**主线程卡顿诊断优先用 Perfetto `MQ_CATEGORY` + 5s ANR + FrameTimeline `JANK_TYPE`**；BlockCanary 类 Java 端工具的定位应聚焦"堆栈 dump + 签名聚合 + block 阈值告警"，trace 端不要再自己造轮子。
+
 BlockCanary 的价值在于简单。现代线上体系要在简单之上补上下文、冲突治理和采样控制。

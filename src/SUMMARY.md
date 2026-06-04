@@ -84,6 +84,7 @@ tags:
   - [3.8 InputFlinger Rust 组件与自适应刷新率协同](part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md)
   - [3.9 端到端输入延迟预算与感知阈值](part1-fundamentals/ch03-input/09-input-latency-budget-perception.md)
   - [3.10 InputDispatcher stale event 判定与事件丢弃](part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md)
+  - [3.11 InputMethodManager 与软键盘性能](part1-fundamentals/ch03-input/11-input-method-manager-performance.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
@@ -150,6 +151,7 @@ tags:
   - [7.16 耗电/发热伴随卡顿排障入口](part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md)
   - [7.17 FragmentTransaction 提交时序与主线程卡顿](part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md)
   - [7.18 HWC Overlay Plane 与合成降级排查](part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md)
+  - [7.19 AccessibilityManagerService 与无障碍服务性能影响](part2-performance/ch07-smoothness/19-accessibility-manager-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
