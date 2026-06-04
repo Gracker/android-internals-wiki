@@ -1,7 +1,7 @@
 ---
 title: ANR 非技术故障诊断
 chapter: '9.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - anr
@@ -56,29 +56,31 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task2b_state: "fixed"
+task9_state: reviewed
+task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
 section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task9_result: "needs-rework"
+task9_result: pass-tech-review
 task2b_result: rework-fixed
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-16.0.0_r1
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-18"
-last_task9_at: "2026-05-18T21:20:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-04"
+last_task9_at: "2026-06-04T22:20:00+08:00"
 review_notes: "2026-05-18 task9 idle audit: needs-rework。P1 2(ContentProvider timeout/source semantics;Android 15+ 16KB page-size version boundary),P2 1(InputDispatcher Android 8-10 path note);已写入 queue/suggestions,等待 Task2B 回炉。 | 2026-05-23 task6 idle audit: queue 中仍有 pending 回炉项,撤销 finalized 状态,保持 task2b_pending。"
-auto_promoted: false
+auto_promoted: true
 last_task9_audit: "2026-05-18"
 last_task6_audit: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-05-18-21-audit.md"
-task9_review_notes: "2026-05-18 Task9 闲时抽检:needs-rework。P1 2:ContentProvider timeout 表混写 publish/call 预算;Android 15+/API35+ 16KB 页大小与 VMA 锁诊断建议缺少设备/内核前提。P2 1:InputDispatcher 旧版本路径需补注。"
+task9_review_notes: "2026-06-04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Provider timeout 源码锚点建议已写入 suggestions。自动晋升 finalized。"
+finalized_date: "2026-06-04"
+finalized_by: openclaw-task9-auto-promote
 ---
 
 # ANR 非技术故障诊断

@@ -47,17 +47,17 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_result: fixed
 last_task2b_at: '2026-04-21T08:24:09+08:00'
-task2b_state: fixed
-task9_reviewed_date: '2026-05-12'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-12T19:58:00+08:00'
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 17 FUSE over io_uring、Android 16 SDM/云端编译、16KB 页数据需补官方/源码证据。'
+task2b_state: pending
+task9_reviewed_date: "2026-06-04"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-04T22:20:00+08:00"
+task9_review_notes: "2026-06-04 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；FUSE over io_uring 与 16KB page size 版本口径需回炉。"
 last_task6_audit: 2026-06-04
 ---
 

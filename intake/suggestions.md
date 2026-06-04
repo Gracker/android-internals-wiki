@@ -407,3 +407,9 @@ Queue 中无 task6/task9/external-review pending 条目。通过 frontmatter fal
 - **位置**：L221-L223
 - **问题**：ANR 阈值写成 Input 5s、Service 20s、BroadcastReceiver 10s，适合作为入门口径，但缺少前后台 Service、前后台 BroadcastReceiver、content provider 等不同触发条件的边界说明。
 - **建议**：后续补一段“ANR 阈值按组件和前后台状态变化”的版本边界，并交叉引用 9.1/9.x ANR 章节。
+
+## [Task9 Deep Review] 9.7 ANR 非技术故障诊断 — 2026-06-04
+- **类型**：源码准确性
+- **位置**：ContentProvider timeout 表格与源码说明
+- **问题**：publish timeout 常量 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 定义在 `ContentResolver`，AMS 通过 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 调度；provider call 超时由 `ContentProviderClient.setDetectNotResponding()` 触发并进入 `appNotRespondingViaProvider()`。正文把排查入口概括为 `ContentProviderHelper`，方向可用但源码锚点不够精确。
+- **建议**：补充 `frameworks/base/core/java/android/content/ContentResolver.java`、`ContentProviderClient.java`、`ActivityManagerService.java` 与 `ContentProviderHelper.java` 的分工，区分 provider publish 和 provider call timeout。
