@@ -913,8 +913,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-04T10:06:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-04-10-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-04-10-review.md",
+      "completed_at": "2026-06-04T11:39:16+08:00",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "P0 already fixed by prior Task2B: L87 correctly describes buildDrawingCache/getDrawingCache/Bitmap path and RenderProperties.h Software layer boundary. Queue entry was stale."
     },
     {
       "section": "18.12",
