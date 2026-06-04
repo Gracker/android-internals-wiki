@@ -836,30 +836,62 @@
       "section": "2.19",
       "section_title": "刷新率切换与帧率适配性能",
       "priority": 90,
-      "reason": "[review回炉] App与系统优化策略一节含多个未标注伪代码的示意函数(如FrameSchedulingManager/BatteryMonitor/PredictiveRefreshRate/TransitionBufferManager)，需改为概念性建议或标注伪代码并补真实API；SoC/续航量化数据缺来源标注；ARR版本口径需Task9复核",
+      "reason": "[review回炉] 机制节伪代码块未标注/案例代码编造API/误区条目过薄；ARR版本口径待Task9复核",
       "material_paths": [],
       "review_issues": [
         {
           "type": "需重写",
           "location": "App 与系统优化策略 → App 侧优化 + 系统侧优化",
           "detail": "6 个示意代码块(预测性刷新率切换/过渡期缓冲/切换时机优化/缓解切换卡顿/动态刷新率调整)使用不存在的类名和方法，未标注为伪代码",
-          "suggestion": "改为概念性建议叙述，或标注为伪代码并补充对应真实 API（setFrameRate/WindowManager/PowerManager）/Trace 观察路径"
+          "suggestion": "改为概念性建议叙述，或标注为伪代码并补充对应真实 API（setFrameRate/WindowManager/PowerManager）/Trace 观察路径",
+          "status": "fixed-by-task2b",
+          "fixed_at": "2026-06-04T08:50:00+08:00"
         },
         {
           "type": "需补充素材",
           "location": "性能基准与量化数据 → SoC 性能基准对比 + 电池消耗量化数据",
           "detail": "SoC 延迟/帧丢失/功耗数据和续航对比数据缺设备、版本、测试条件、样本次数",
-          "suggestion": "补来源标注或降级为定性描述"
+          "suggestion": "补来源标注或降级为定性描述",
+          "status": "fixed-by-task2b",
+          "fixed_at": "2026-06-04T08:50:00+08:00"
         },
         {
           "type": "需确认",
           "location": "ARR 的版本演进 → Android 15-17 行",
           "detail": "ARR HAL 版本、ML 驱动识别、连续范围控制等版本口径需 Task9 对照 API 37 复核",
           "suggestion": "Task 9 复核后更新或删除未确认行"
+        },
+        {
+          "type": "需重写",
+          "location": "SurfaceFlinger 仲裁机制 / 硬件切换代价 / ARR 原理节",
+          "detail": "5 个代码块（VsyncConfiguration::updateContent / Scheduler::updateRefreshRate / Display.h class / VsyncController::setRefreshRate / DisplayManagerInternal.handleAdaptiveRefreshRate）含疑似编造的 AOSP 类名和方法签名，有版本演进注释但未标注为伪代码或示意。writing-guide.md 要求'不能编造不存在的 API/类名/方法名'。",
+          "suggestion": "Task 9 逐一核实 AOSP 源码。确认存在的标注路径；不存在的替换为概念性叙述 + 真实 AOSP 引用，或明确标注为'示意伪代码'。",
+          "added_by": "task6-review-2026-06-04-11"
+        },
+        {
+          "type": "需重写",
+          "location": "实际应用案例（案例 1-3）",
+          "detail": "3 个案例代码块使用编造 API（notifyPendingRefreshRateChange / smoothRefreshRateTransition / adjustRenderStrategyForScene / predictUserSwipe / preemptiveRefreshRateUpgrade / smoothAnimationTimeline）。WindowCallback / GameActivity 等类名也不是真实 Android API。",
+          "suggestion": "案例代码改为概念性步骤说明 + 真实 API（setFrameRate / preferredRefreshRate）+ Trace 观察路径；或标注为'示意伪代码，非可运行代码'。",
+          "added_by": "task6-review-2026-06-04-11"
+        },
+        {
+          "type": "需重写",
+          "location": "Perfetto 识别 → 监控 FrameTimeline 切换异常",
+          "detail": "monitorFrameTimeline() 代码块使用 wasRefreshRateSwitch() 编造方法，Choreographer 回调中无法直接检测刷新率切换。",
+          "suggestion": "替换为 Perfetto trace 中的观察方法（VSync period 变化、SurfaceFlinger refresh rate slice），或标注为伪代码。",
+          "added_by": "task6-review-2026-06-04-11"
+        },
+        {
+          "type": "需补充素材",
+          "location": "常见误区与陷阱",
+          "detail": "4 个误区条目各只有 1 句事实和 1 句解决方案，信息密度极低，接近'正确的废话'。writing-guide.md 要求叙述为主、列表为辅，每个列表项必须自带信息增量。",
+          "suggestion": "每个误区展开为 2-3 段叙述：说明误区的来源、为什么这样想不对、正确理解是什么、在实际分析中如何区分。或合并到正文相关节中。",
+          "added_by": "task6-review-2026-06-04-11"
         }
       ],
       "added_by": "task6-review",
-      "added_at": "2026-06-04T08:10:00+08:00",
+      "added_at": "2026-06-04T11:05:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-06-04-08-review.md"
     },
