@@ -49,3 +49,19 @@
 **Description**: Missing TextureView behavior on foldable/irregular screen displays
 **Evidence**: No considerations for foldable screens, notched displays, or other form factors
 **Action Required**: Research and document TextureView behavior and optimization on modern display form factors
+
+## [2026-06-04] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 知识盲区
+
+### 盲区描述
+Android 17 的 NPU feature、LiteRT NPU delegate / CompiledModel、AICore、NNAPI/NN HAL 和厂商 QNN/Neuron 路径在章节中混成一条源码链,且部分源码路径无法在 Android 17/AOSP 或官方仓库中闭环。当前需要把“平台 API 可发布事实”和“厂商 runtime / Google AI Edge 生态能力”拆开验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 以 Android 17 API reference / release notes 为准,确认 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`、常量值 `android.hardware.npu`、targetSdkVersion 37 直接访问 NPU 的 manifest 要求。
+- 分别核对 LiteRT upstream source、AOSP android-17.0.0_r1、Google AI Edge 文档和 AICore 文档,标出哪些路径是 AOSP、哪些是 Google/AndroidX/upstream、哪些只是厂商 SDK 日志。
+- 复核 QNN / FastVLM / CompiledModel benchmark 数字的设备、模型、delegate/runtime 版本、测试条件和官方来源;无法闭环的数字不要写入发布稿。
+
+### 关联章节
+5.11, 5.16, 5.13, 25.11

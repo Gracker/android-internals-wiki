@@ -56,16 +56,16 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: "pending"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 task2b_result: "fixed"
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
+task9_result: auto-fixed
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-04'
-last_task9_at: "2026-05-17T11:28:00+08:00"
-task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 2:WorkManager 调度器源码锚点仍是示意方法,未 pin AndroidX 版本;Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2:周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
+last_task9_at: "2026-06-04T18:15:00+08:00"
+task9_review_notes: "2026-06-04 Task9 18: auto-fixed。P0 1:PENDING_JOB_REASON_DEVICE_STATE 版本线由 API 37 修正为 API 34 常量/API 37 stats 方法;P2 1:TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物口径从 Method Trace/Heapprofd 改为 running system trace snapshot/call stack sample 边界。回到 Task6 复审。"
 last_task2b_at: '2026-06-04T12:57:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
@@ -74,10 +74,11 @@ task6_result: pass-light-edit
 last_task6_at: '2026-06-04T13:12:00+08:00'
 last_task6_review_log: "logs/review/2026-05-17-11-review.md"
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 小修 2 处 (IO→I/O 一致性); 禁用词/高频词/元叙述全部零命中; 否定-纠正结构 2 处(技术对比,上限内)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
-p0: 0
-p1: 2
-p2: 2
+last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
+p0: 1
+p1: 0
+p2: 1
+last_task9_autofix_at: "2026-06-04"
 ---
 
 
@@ -573,7 +574,7 @@ App 进入 Rare 或 Restricted Bucket 后,后台任务几乎无法执行。应�
 
 **ProfilingManager 新增 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE**
 
-Android 17 的 `ProfilingManager` 新增了 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 常量(API 37),用于在系统检测到应用进程的 CPU 使用超过内部阈值时,采集一份 profiling trace(如 Method Trace / Heapprofd snapshot)作为 kill 前的取证。
+Android 17 的 `ProfilingManager` 新增了 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 常量(API 37),用于在系统检测到应用进程的 CPU 使用超过内部阈值时触发取证。按 `ProfilingTrigger` API reference,该 trigger 返回运行中的 system trace snapshot;feature 页将它概括为 call stack sample。发布稿不要固定写成 Method Trace 或 Heapprofd 产物。
 
 [待验证: 触发阈值、检查周期、与 JobScheduler quota / App Standby Bucket 的联动逻辑尚未获得 AOSP android-17.0.0_r1 源码或 Android 17 release notes 确认。此前版本中出现的 "Power Check" 分级熔断、"5 分钟检查周期"、"25%/10%/2% 阶梯阈值"等具体数值无法可靠溯源,已在本文中删除。]
 
@@ -581,7 +582,7 @@ Android 17 的 `ProfilingManager` 新增了 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USA
 
 API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中,除了前文提到的 `PENDING_JOB_REASON_QUOTA`(配额耗尽),还有和能效、设备状态相关的挂起原因。
 
-`PENDING_JOB_REASON_DEVICE_STATE` 是 API 37 的聚合常量,覆盖了 Doze、省电模式、内存压力、热限流等多种设备状态。API 返回的 map 中以 `DEVICE_STATE` 作为 key,值是累计 pending 时长,不是按 `THERMAL`/`BATTERY_SAVER` 等细分原因拆开的独立数组。
+`PENDING_JOB_REASON_DEVICE_STATE` 不是 API 37 新增常量;它在 API 34 已加入。API 37 新增的是 `getPendingJobReasonStats()` 聚合统计,可以把 `DEVICE_STATE` 映射到累计 pending 时长。Android 17 范围内,发布稿按 `DEVICE_STATE` 聚合看 Doze、省电模式、内存压力、热限流等设备状态,不要写成 `THERMAL` / `BATTERY_SAVER` 等细分 reason 数组。
 
 在诊断"job 为什么一直不跑"时,如果 DEVICE_STATE 相关 reason 对应的 Duration 很长,瓶颈不在 job 自身的约束设置,而是系统级的能效策略。应对方向是降低后台任务的总 CPU 和网络开销,或等待设备状态恢复。
 

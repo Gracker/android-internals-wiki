@@ -1026,6 +1026,46 @@
         "AOSP: frameworks/native/libs/binder/IPCThreadState.cpp",
         "source-index: 多个 Binder 相关研究素材"
       ]
+    },
+    {
+      "section": "5.11",
+      "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 NPU feature/API 边界与 LiteRT/AICore 源码索引需回炉",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-06-04-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误/版本边界",
+          "location": "“源码索引与验证边界”/“FEATURE_NEURAL_PROCESSING_UNIT”",
+          "detail": "正文把 NPU manifest feature 写成 `android.hardware.neural_processing_unit`,并写成 API 36+、targetSdk>=17。官方 PackageManager API 37 的 `FEATURE_NEURAL_PROCESSING_UNIT` 常量值是 `android.hardware.npu`;release notes 的门槛是 target Android 17/API 37 且直接访问 NPU。",
+          "suggestion": "统一改为 API 37 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` / `android.hardware.npu`;`targetSdkVersion >= 37`;删除 `android.hardware.neural_processing_unit` 示例。"
+        },
+        {
+          "type": "P0 源码错误/源码锚点",
+          "location": "“源码索引与验证边界”表格",
+          "detail": "表格把 `external/litert/runtime/...`、`external/litert/aot/`、`frameworks/ml/nn/runtime/` 等写成 AOSP 源码锚点,其中 LiteRT 路径更接近 upstream TensorFlow/LiteRT source tree,`frameworks/ml/nn/runtime` 是 NNAPI runtime,不能作为 AICore System Service 锚点。",
+          "suggestion": "重审所有 LiteRT / AICore / QNN / CompiledModel 源码路径:无法在 Android 17/AOSP 或官方仓库定位的移出“源码索引”,改为官方文档或 upstream source 边界说明。"
+        },
+        {
+          "type": "P1 版本差异/原理断裂",
+          "location": "“Android 17 NPU 硬件特性声明 [待验证]”与后文“端侧 AI 推理栈验证边界”",
+          "detail": "前文仍写“公开资料未找到 feature,只能待验证”,后文又写 release notes 明确要求声明 feature,同一章内部结论冲突。",
+          "suggestion": "按 2026-06-04 官方 API/reference 合并成一处确定边界:feature/API/manifest 要求可发布;意图防火墙、电量配额、AICore 间接访问是否受同一门槛约束继续待验证。"
+        },
+        {
+          "type": "P2 数据缺失",
+          "location": "“LiteRT QNN Accelerator 关键数据”",
+          "detail": "90+ op、64/72 benchmark、100x/10x、FastVLM TTFT 等数字没有绑定可复查的一手链接、设备、模型、delegate/runtime 版本和测试条件。",
+          "suggestion": "补齐官方 blog/benchmark 原文链接和测试条件;补不齐则移入待验证素材或删除固定收益数字。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T18:15:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
     }
   ]
 }
