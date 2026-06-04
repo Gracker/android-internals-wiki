@@ -1,6 +1,6 @@
 {
-  "total": 380,
-  "draft": 1,
+  "total": 381,
+  "draft": 2,
   "ready-for-review": 163,
   "finalized": 185,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -7358,6 +7358,24 @@
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-06-04T02:13:44+08:00",
       "task9_state": "pending"
+    },
+    "21.13": {
+      "title": "ART GC 抑制与启动性能优化",
+      "file": "src/part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-04",
+      "gap_score": {
+        "素材丰富度": 4,
+        "与全书目标相关性": 4,
+        "读者需求度": 5,
+        "时效性": 3,
+        "total": 16
+      },
+      "queue_priority": 80,
+      "material_count": 6,
+      "gap_source": "Clippings结构参考/素材驱动/AOSP源码"
     }
   },
   "task2b_rounds": [
@@ -9737,16 +9755,16 @@
     "at": "2026-05-25T09:21:00+08:00"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-05-19",
-    "time": "19:04",
+    "date": "2026-06-04",
+    "time": "17:11",
     "mode": "gap-mining",
     "created_sections": [
-      "4.11"
+      "21.13"
     ],
     "created_files": [
-      "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md"
+      "src/part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md"
     ],
-    "reason": "DeepResearch 与官方文档显示 Cached App Freezer、ART GC、LMKD、16KB Page Size 的边界仍未独立覆盖；现有 1.18 偏 Binder freezer，4.3/4.4 偏 GC/LMK 机制。"
+    "reason": "Clippings 参考书《Android 性能优化》有 GC 抑制专篇 + AOSP art/runtime/gc/ 源码可交叉验证 + 多个现有章节提及 GC抑制但无独立覆盖 + 启动性能核心优化手段"
   },
   "task9_last_sections": [
     "16.5",

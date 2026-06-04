@@ -988,6 +988,13 @@
       "added_at": "2026-06-04T15:13:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-06-04-15-review.md"
+    },
+    {
+      "section": "21.13",
+      "section_title": "ART GC 抑制与启动性能优化",
+      "priority": 80,
+      "reason": "task2a gap-mining: Score 16/20, 素材丰富度 4 + Clippings GC 抑制专篇 + AOSP art/runtime/gc 源码",
+      "added_date": "2026-06-04"
     }
   ]
 }
