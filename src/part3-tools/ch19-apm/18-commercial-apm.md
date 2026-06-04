@@ -21,8 +21,8 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -35,7 +35,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-05"
 last_task9_at: "2026-06-05T00:20:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
+reviewed_date: "2026-06-05"
 
 review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task2b_result: "fixed"
@@ -43,9 +43,10 @@ last_task2b_at: "2026-06-04T22:53:28+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
-last_task6_at: "2026-06-04T20:15:00+08:00"
+last_task6_at: "2026-06-05T06:13:36+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-05-00-deep-review.md"
----
+
+last_task6_review_log: "logs/review/2026-06-05-06-review.md"---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
 

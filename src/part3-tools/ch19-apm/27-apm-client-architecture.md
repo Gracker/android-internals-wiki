@@ -43,14 +43,14 @@ sources:
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
-reviewed_date: '2026-06-04'
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: '2026-06-04T18:15:00+08:00'
-last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
+last_task6_at: "2026-06-05T06:13:36+08:00"
+last_task6_review_log: "logs/review/2026-06-05-06-review.md"
 task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; fixed AppenderMode typo. No new rework items.'
 task9_result: 'auto-fixed'
 last_task9_at: '2026-06-04T00:20:00+08:00'
