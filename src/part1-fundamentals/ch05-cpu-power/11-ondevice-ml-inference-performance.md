@@ -1,21 +1,22 @@
 ---
+
 title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-24"
+reviewed_date: "2026-06-04"
 reviewed_at: "2026-05-24T20:14:35+08:00"
-last_task6_at: "2026-05-24T20:14:35+08:00"
-task6_reviewed_date: "2026-05-24"
+last_task6_at: "2026-06-04T13:12:00+08:00"
+task6_reviewed_date: "2026-06-04"
 review_round: 3
-task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 22 处；无新增 Task6 回炉项；既有 Task6 技术证据条目与 Task9 LiteRT/NPU 源码索引、API 37 边界问题仍在 queue.json pending。"
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词 0 / 元叙述 0 / 否定-纠正 0)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-24"
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-24T19:30:00+08:00
 task2b_state: fixed

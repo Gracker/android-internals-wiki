@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: JobScheduler/WorkManager 调度与后台任务性能
 chapter: '5.10'
@@ -9,7 +10,7 @@ polish_date: '2026-04-09'
 polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-27'
-reviewed_date: '2026-05-17'
+reviewed_date: '2026-06-04'
 reviewed_by: openclaw-task6
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
   stdlib docs, Android Vitals docs
@@ -55,14 +56,14 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: '2026-06-04'
 last_task9_at: "2026-05-17T11:28:00+08:00"
 task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 2:WorkManager 调度器源码锚点仍是示意方法,未 pin AndroidX 版本;Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2:周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。"
 last_task2b_at: '2026-06-04T12:57:00+08:00'
@@ -70,9 +71,9 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复(Task9 问题单)
 task6_result: pass-light-edit
-last_task6_at: '2026-05-17T11:14:00+08:00'
+last_task6_at: '2026-06-04T13:12:00+08:00'
 last_task6_review_log: "logs/review/2026-05-17-11-review.md"
-task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审;修复 frontmatter 注释残留与 L1/L2 文风问题 14 处,未新增 L3/L4 回炉项,送 Task9 技术复审。"
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 小修 2 处 (IO→I/O 一致性); 禁用词/高频词/元叙述全部零命中; 否定-纠正结构 2 处(技术对比,上限内)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-17-11-deep-review.md"
 p0: 0
 p1: 2
@@ -279,7 +280,7 @@ WorkManager 有两种 WorkRequest:
 
 **PeriodicWorkRequest** 用于周期性任务。最小周期是 15 分钟(与 JobScheduler 的最小周期一致),有一个 flex interval 参数控制"在周期末尾的哪个时间窗口内可以执行"。例如 `PeriodicWorkRequest.Builder(workerClass, 30, TimeUnit.MINUTES, 15, TimeUnit.MINUTES)` 表示每 30 分钟执行一次,但实际执行时间会在第 15-30 分钟之间。
 
-PeriodicWorkRequest 的成本主要来自重新调度:它底层不是一个永远运行的 Job,而是在每个周期结束时重新 schedule 一个新的 Job。所以每次周期执行后,WorkManager 需要写入 Room 数据库记录下次执行时间,然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销取决于 WorkManager 版本、设备 IO 性能和 Room DB 大小,多数场景下对业务无感知,但如果 PeriodicWorkRequest 的周期非常短(接近 15 分钟下限)且 Worker 执行本身也很快(秒级),调度开销的占比就会上升,此时更适合合并为定时长任务或使用 WorkManager 的 expedited 路径。
+PeriodicWorkRequest 的成本主要来自重新调度:它底层不是一个永远运行的 Job,而是在每个周期结束时重新 schedule 一个新的 Job。所以每次周期执行后,WorkManager 需要写入 Room 数据库记录下次执行时间,然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销取决于 WorkManager 版本、设备 I/O 性能和 Room DB 大小,多数场景下对业务无感知,但如果 PeriodicWorkRequest 的周期非常短(接近 15 分钟下限)且 Worker 执行本身也很快(秒级),调度开销的占比就会上升,此时更适合合并为定时长任务或使用 WorkManager 的 expedited 路径。
 
 ### 链式任务(Chained Work)的调度开销
 
@@ -297,7 +298,7 @@ WorkManager.getInstance(context)
 
 链式任务的性能开销主要来自三个方面:
 
-1. **数据库操作**:每完成一个节点,需要读写一次 Room 数据库(WorkManager 内部使用 Room 存储任务状态),具体耗时受 WorkManager 版本和设备 IO 性能影响
+1. **数据库操作**:每完成一个节点,需要读写一次 Room 数据库(WorkManager 内部使用 Room 存储任务状态),具体耗时受 WorkManager 版本和设备 I/O 性能影响
 2. **调度延迟**：每个后续节点需要重新经过一次调度器，可能引入额外延迟，延迟量取决于是否已持有 WakeLock、是否在 Doze/Idle 窗口、JobScheduler quota 余量等
 3. **进程间通信**:如果任务跨进程(通过 RemoteWorkManager),还有额外的 Binder IPC 开销
 
