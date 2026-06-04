@@ -5,11 +5,11 @@ chapter: "2.22"
 section: "2.22"
 status: ready-for-review
 drafted_date: "2026-05-18"
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
+applicable_versions: "Android 15 (API 35) - Android 16 (API 36); Android 17 待公开 tag 复核"
 last_verified: "2026-05-18"
-last_verified_against: "AOSP android15-release / android16-release / main, frameworks/native/services/surfaceflinger/FrontEnd + source.android.com graphics docs"
+last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/native/services/surfaceflinger/FrontEnd + source.android.com graphics docs; Android 17 tag 未公开"
 confidence: medium
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 tags: [rendering, surfaceflinger, frontend, requestedlayerstate, transaction]
 related_chapters: ["2.6", "2.12", "2.13", "2.16", "18.10", "13.3"]
 created_by: "task2a-knowledge-gap"
@@ -34,12 +34,16 @@ sources:
     path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: research
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
+task9_result: auto-fixed
+task2b_state: fixed
+last_task9_autofix_at: "2026-06-05"
+last_task9_at: "2026-06-05T05:28:04+08:00"
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState
@@ -87,7 +91,7 @@ last_task6_at: "2026-06-05"
 
 FrontEnd 补上的就是这段状态处理路径。AOSP `FrontEnd/readme.md` 对它的定位是：接收描述 buffer 合成方式的客户端 API，消费 transaction，维护 layer 生命周期，并在每一帧给 CompositionEngine 提供一份 snapshot。换成排查语言，FrontEnd 负责把 App / WMS / Shell 提交的请求，整理成后续合成阶段能直接使用的层级和快照。
 
-[已验证: AOSP main, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
+[已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
 
 ```mermaid
 flowchart TD
@@ -110,7 +114,7 @@ FrontEnd 的设计把两类状态拆开：`RequestedLayerState` 保存客户端�
 
 这层拆分能减少不必要的重复计算。若一笔 transaction 只更新 buffer，系统可以走更短的 snapshot 更新路径；若层级、父子关系或 mirror 状态变化，LayerHierarchy 和 z-order 列表才需要更大范围刷新。AOSP `LayerSnapshotBuilder.h` 明确写着，它会根据 `RequestedLayerState` 的 change flags 与 `LayerLifecycleManager` 的变化信息更新已有 snapshot，并为纯 buffer 更新保留 fast path。
 
-[已验证: AOSP android16-release, `LayerSnapshotBuilder.h`]
+[已验证: AOSP android-16.0.0_r1, `LayerSnapshotBuilder.h`]
 
 | 状态类型 | 代表结构 | 主要内容 | 典型消费者 |
 | --- | --- | --- | --- |
@@ -126,7 +130,7 @@ FrontEnd 的设计把两类状态拆开：`RequestedLayerState` 保存客户端�
 
 AOSP 代码注释里还有一个容易忽略的设计点：与其他 layer 的关系用 layer id 表示，而不是继续持有 layer handle。这样做可以避免状态对象无意中延长 handle 生命周期，销毁逻辑交给 `LayerLifecycleManager` 管理。
 
-[已验证: AOSP android15-release / android16-release, `RequestedLayerState.h`]
+[已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1, `RequestedLayerState.h`]
 
 `Changes` bitmask 是这套结构的工作索引。它把一次 merge 后的变化分成 `Hierarchy`、`Geometry`、`Content`、`Input`、`Z`、`Mirror`、`Parent`、`RelativeParent`、`Metadata`、`Visibility`、`FrameRate`、`Buffer`、`SidebandStream`、`Animation`、`BufferSize`、`GameMode`、`BufferUsageFlags` 等类型。后续组件不需要把所有字段重新扫一遍，而是根据 change flags 判断要不要重建层级、更新 snapshot、触发 composition 相关工作。
 
@@ -144,7 +148,7 @@ AOSP 代码注释里还有一个容易忽略的设计点：与其他 layer 的�
 
 `LayerLifecycleManager` 拥有一组 `RequestedLayerState`，并维护 id 到状态对象的映射。它的公开接口按调用顺序排列：`addLayers()` 接收新建 layer，`applyTransactions()` 把 transaction merge 进已有状态，`onHandlesDestroyed()` 处理 handle 释放，`commitChanges()` 提交生命周期变化并清空上一轮 change flags。
 
-[已验证: AOSP android16-release, `LayerLifecycleManager.h` / `LayerLifecycleManager.cpp`]
+[已验证: AOSP android-16.0.0_r1, `LayerLifecycleManager.h` / `LayerLifecycleManager.cpp`]
 
 `addLayers()` 做的工作不只是把对象放进数组。它会建立 parent、relative parent、mirror、touch crop 等引用关系；若 layer 是 display mirror，还会把对应 layer stack 上已有 root layer 纳入 mirror 列表；若 layer 是 root，也会更新 display mirror layer。层级变化会写入 `mGlobalChanges`，新增 layer 也会放进 `mChangedLayers`。
 
@@ -171,7 +175,7 @@ SurfaceFlinger 的 layer 关系不能简单当作一棵树。普通父子关系�
 | `Mirror` | 从另一 layer 镜像而来 | 截图、转场、投屏、display mirror |
 | `Detached_Mirror` | mirror 路径忽略本地 transform | 需要区分镜像源状态和镜像路径状态 |
 
-[已验证: AOSP android16-release, `LayerHierarchy.h`]
+[已验证: AOSP android-16.0.0_r1, `LayerHierarchy.h`]
 
 `TraversalPath` 是理解 mirror 和 relative 的关键。一个 layer 可以通过多条路径被访问，路径里会记录 `mirrorRootIds`、`relativeRootIds` 和是否 detached。这样，系统不需要复制 `RequestedLayerState`，也能表达“同一个 layer 状态在不同 mirror 路径下拥有不同几何关系”的情况。
 
@@ -181,7 +185,7 @@ SurfaceFlinger 的 layer 关系不能简单当作一棵树。普通父子关系�
 
 `TransactionHandler` 负责两件事：接收 transaction，筛出本帧可以应用的 transaction。入口 `queueTransaction()` 把 `TransactionState` 推进 `LocklessQueue`，并用 `SFTRACE_INT("TransactionQueue", ...)` 更新 Perfetto counter；`collectTransactions()` 再把 lockless queue 里的内容转移到按 `applyToken` 分组的 pending queue。
 
-[已验证: AOSP main, `TransactionHandler.h` / `TransactionHandler.cpp`]
+[已验证: AOSP android-16.0.0_r1, `TransactionHandler.h` / `TransactionHandler.cpp`]
 
 `applyToken` 是事务顺序的边界。FrontEnd readme 说明，SurfaceFlinger 只保证同一 applyToken 下的 transaction 顺序；默认情况下，不同进程和不同 buffer producer 会有不同 applyToken。这能避免一个客户端的 transaction 队列长期阻塞另一个客户端。
 
@@ -202,7 +206,7 @@ unsignaled buffer 的处理也有边界。代码只在当前没有其他 ready t
 
 FrontEnd 的输出不是 HWC 命令，也不是 RenderEngine draw call。它输出的是 `LayerSnapshot` 列表和相关遍历结果。`LayerSnapshot` 继承 `compositionengine::LayerFECompositionState`，内部包含 CompositionEngine / RenderEngine 需要读取的 layer 状态：全局 z-order、变换后的 bounds、可见性、input info、metadata、buffer size、external texture、frame rate、圆角、阴影、mirror path 等。
 
-[已验证: AOSP android16-release, `LayerSnapshot.h`]
+[已验证: AOSP android-16.0.0_r1, `LayerSnapshot.h`]
 
 `LayerSnapshotBuilder` 会沿 `LayerHierarchy` 遍历，生成扁平的 z-ordered snapshot 列表。它也会维护 `mPathToSnapshot` 和 `mIdToSnapshots`，因为 mirror 场景下同一个 layer id 可能对应多个 traversal path。对 composition 来说，唯一的不是 layer id，而是“这个 layer 通过哪条路径来到当前位置”。
 
@@ -242,7 +246,7 @@ FrontEnd 之后，更适合按这条路径看：transaction 先进入队列并�
 
 这里不宜把 FrontEnd 写成“所有状态都在后台线程完成”。`LayerLifecycleManager` 注释明确说它不是线程安全类，需要外部同步；典型用法是后台收集输入状态，在 composition 开始时传给 manager 更新 layer 生命周期和状态。准确的表述是：FrontEnd 把队列、过滤、状态 merge、层级构建和 snapshot 生成拆成更清楚的阶段，减少无关客户端互相拖慢，也让后续组件更容易按变化范围更新。
 
-[已验证: AOSP android16-release, `LayerLifecycleManager.h`; AOSP main, `FrontEnd/readme.md`]
+[已验证: AOSP android-16.0.0_r1, `LayerLifecycleManager.h`; AOSP android-16.0.0_r1, `FrontEnd/readme.md`]
 
 ## 怎么验证 FrontEnd 是否影响事务延迟
 
@@ -278,11 +282,11 @@ SurfaceFlinger FrontEnd 解决的是 transaction 到 composition 输入之间的
 
 ## 参考资料
 
-- [已验证: AOSP main, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
-- [已验证: AOSP android15-release / android16-release, `frameworks/native/services/surfaceflinger/FrontEnd/RequestedLayerState.h`]
-- [已验证: AOSP android16-release, `frameworks/native/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h` / `.cpp`]
-- [已验证: AOSP android16-release, `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h`]
-- [已验证: AOSP android16-release, `frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshot.h` / `LayerSnapshotBuilder.h`]
-- [已验证: AOSP main, `frameworks/native/services/surfaceflinger/FrontEnd/TransactionHandler.h` / `.cpp`]
+- [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
+- [已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/RequestedLayerState.h`]
+- [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h` / `.cpp`]
+- [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchy.h`]
+- [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshot.h` / `LayerSnapshotBuilder.h`]
+- [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/TransactionHandler.h` / `.cpp`]
 - [已验证: 官方文档, `https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager`]
 - [来源: `DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md`]
