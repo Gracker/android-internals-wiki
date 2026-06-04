@@ -15,11 +15,11 @@ tags:
 - linux
 - android
 - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: '2026-05-12T19:58:00+08:00'
 task9_reviewed_by: 'openclaw-task9'

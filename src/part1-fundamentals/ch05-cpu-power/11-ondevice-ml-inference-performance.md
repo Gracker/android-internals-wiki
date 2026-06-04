@@ -3,8 +3,8 @@ title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-24"
@@ -13,12 +13,12 @@ last_task6_at: "2026-05-24T20:14:35+08:00"
 task6_reviewed_date: "2026-05-24"
 review_round: 3
 task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 22 处；无新增 Task6 回炉项；既有 Task6 技术证据条目与 Task9 LiteRT/NPU 源码索引、API 37 边界问题仍在 queue.json pending。"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-24T19:30:00+08:00
-task2b_state: pending
+task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
