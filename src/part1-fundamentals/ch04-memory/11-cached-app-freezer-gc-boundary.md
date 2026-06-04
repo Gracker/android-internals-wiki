@@ -1,4 +1,5 @@
 ---
+
 title: "Cached App Freezer 与 GC 触发边界"
 chapter: "4.11"
 section: "4.11"
@@ -39,6 +40,8 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
+task6_state: pending
+task9_state: pending
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界

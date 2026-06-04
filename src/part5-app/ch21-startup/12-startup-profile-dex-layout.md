@@ -1,4 +1,5 @@
 ---
+
 title: "Startup Profile 与 DEX Layout 启动优化"
 chapter: "21.12"
 section: "21.12"
@@ -51,6 +52,8 @@ pipeline_stage: task6_pending
 task2a_state: processed
 task2a_result: processed-draft
 last_task2a_at: "2026-05-25T23:10:00+08:00"
+task6_state: pending
+task9_state: pending
 ---
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化

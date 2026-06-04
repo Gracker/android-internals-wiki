@@ -1,4 +1,5 @@
 ---
+
 title: "HWC Overlay Plane 与合成降级排查"
 chapter: "7.18"
 status: ready-for-review
@@ -35,6 +36,8 @@ pipeline_stage: "task6_pending"
 task2a_state: "processed"
 task2a_result: "ready-for-review"
 last_task2a_at: "2026-05-23T01:04:00+08:00"
+task6_state: pending
+task9_state: pending
 ---
 
 # 7.18 HWC Overlay Plane 与合成降级排查
