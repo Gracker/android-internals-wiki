@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-18"
-last_verified_against: "AOSP main ApplicationStartInfo / ActivityManager, Android Developers ApplicationStartInfo / ProfilingTrigger docs, Clippings structure references"
+last_verified_against: "AOSP android-16.0.0_r1 ApplicationStartInfo / ActivityManager, Android Developers ApplicationStartInfo / ProfilingTrigger docs"
 confidence: medium
 sources:
   - type: clipping
@@ -48,9 +48,14 @@ source_refs:
   - "intake/research-gaps.md#2026-05-17-26-12"
   - "developer.android.com/reference/android/app/ApplicationStartInfo"
   - "developer.android.com/about/versions/17/features"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-18T04:14:00+08:00"
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: "2026-06-05"
+task6_state: pending
+task9_state: pending
 ---
 
 # 26.13 ApplicationStartInfo 与启动归因上报
