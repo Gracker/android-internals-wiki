@@ -39,11 +39,11 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task6_pending
-last_task6_at: "2026-05-22T01:16:12+08:00"
+pipeline_stage: task9_pending
+last_task6_at: "2026-06-04T16:14:33+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
 review_notes: "2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"
 task9_result: needs-rework
@@ -177,7 +177,7 @@ Perfetto 的 power rails 数据来自设备暴露的 power rail 读数,适合比
 
 ## 持续推理会和前台交互抢预算
 
-相机预览、实时翻译、AI 修图和游戏 AI 辅助都有一个共同点:推理不是单次任务,而是跟前台交互并行。它会持续占用计算资源、内存带宽和散热空间,进而影响 UI 帧、Camera pipeline、SurfaceFlinger 合成或后台任务。
+相机预览、实时翻译、AI 修图和游戏 AI 辅助都有一个共同点:推理是持续任务，跟前台交互并行运行。它会持续占用计算资源、内存带宽和散热空间,进而影响 UI 帧、Camera pipeline、SurfaceFlinger 合成或后台任务。
 
 相机实时翻译可以按三条路径拆:Camera HAL 输出 buffer,推理 runtime 取帧做 OCR / 翻译,UI 层叠加结果。这里的关键不是 NPU 单次推理是否足够快,而是 buffer 交接、图像格式转换、结果回到 UI 的节奏是否稳定。若每帧都做全量推理,GPU/NPU 即使能吃下模型,也可能把整机推到 thermal 降级,几分钟后帧率和延迟一起变差。
 
@@ -201,7 +201,7 @@ Perfetto 的 power rails 数据来自设备暴露的 power rail 读数,适合比
 | AICore | AICore 是 Google AI on Android 路径的一部分,适合讨论 GMS 设备能力 | AICore 行为可以代表 AOSP 或所有国内设备 |
 | CompiledModel | 文档展示 CompiledModel API 和硬件加速选择能力 | 未给设备、模型、delegate 版本时写固定收益数字 |
 
-这张表的目的不是降低 LiteRT 或 AICore 的价值,而是把发布边界写清楚。5.11 节已有相关技术回炉项,那里会处理具体 API、AICore 内存归属和 CompiledModel 细节;本节只保留异构调度和功耗归因所需的边界。
+这张表的目的是把发布边界写清楚。5.11 节已有相关技术回炉项,那里会处理具体 API、AICore 内存归属和 CompiledModel 细节;本节只保留异构调度和功耗归因所需的边界。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide][已验证: 官方文档, source.android.com/docs/core/interaction/neural-networks/device-discovery][来源: DeepResearch/2026-05-15-android-17-npu-litert-aicore.md]
 
