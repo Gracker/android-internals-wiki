@@ -193,3 +193,43 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 连续推理要按时间窗看，而不是只取前 20 个 token。建议把 0-1 分钟、1-5 分钟、5-15 分钟、15 分钟以后分开统计 TPOT P50 / P90、energy-per-token、thermal status、表面温度和前台帧率干扰。这样能区分“短时响应快”和“长时间稳定”。
 
 用户感知还会受 UI 干扰影响。LLM 输出如果和 Compose / RecyclerView 流式渲染、语音播报、网络请求并发，CPU 与 GPU 的频率预算会被共享。可观测性方案应把 token 日志和 FrameTimeline、主线程、RenderThread、推理线程放进同一个 trace，避免把 UI 卡顿误判成模型推理慢，或把推理降速误判成渲染问题。
+
+## 扩展：Agent 长期记忆系统在 Android 端侧 AI 应用的适配
+
+<!-- AIW-源码调研-2026-06-04 -->
+
+本节补充 Mem0、M3-Agent 等 Agent 长期记忆系统在 Android 端侧 AI 应用中的工程映射。详细源码分析见 [DeepResearch/2026-06-04-agent-longterm-memory-on-android.md](../../../../../DeepResearch/2026-06-04-agent-longterm-memory-on-android.md)。
+
+### 两个代表系统的核心差异
+
+| 维度 | Mem0 v3 (April 2026) | M3-Agent (ICLR 2026, arXiv 2508.09736) |
+| --- | --- | --- |
+| 记忆粒度 | 离散 fact（LLM ADD-only 抽取） | 实体节点 + 边权（episodic / semantic） |
+| 存储抽象 | 24 种 vector store + SQLite 缓存 | 单个 `VideoGraph` (`pickle.dump`) |
+| 默认 LLM | `gpt-5-mini`（云） | Qwen2.5-Omni-7B（GPU 服务）+ `text-embedding-3-large`（云） |
+| 输入模态 | 文本 / vision | 视频 + 音频 + 声纹 + 人脸 |
+| Android SDK | 无 | 无 |
+
+### Android 端侧适配的四层拆解
+
+1. **Embedding 层**：`mem0/embeddings/fastembed.py` 的 `FastEmbedEmbedding` 用 `thenlper/gte-large`（1024 维 ONNX 模型），可经 `onnxruntime-android` + NNAPI 跑在 Android 8.1+（API 27）；量化后 ~250 MB。
+2. **LLM 层**：替换云端 GPT/Qwen 为 `MediaPipe LLM Inference`（Android 14+/API 34+）或 `LiteRT-LM`；M3-Agent 的 7B 模型量化为 4-bit 约 4 GB，端侧只能跑量化蒸馏版。
+3. **存储层**：`mem0/memory/storage.py` 的 `SQLiteManager`（history + messages 双表）可直接映射为 `SQLiteOpenHelper`；`mmagent/videograph.py:30-65` 的 `VideoGraph` 用 `androidx.room` 关系表（nodes / edges / embeddings 分表）落地，**避免用 `pickle`**（ndarray 体积大且 NDK 不可控）。
+4. **触发层**：`android.app.Application.OnProvideAssistDataListener`（AOSP `Application.java`，自 API 23 引入）允许 App 在系统 `ACTION_ASSIST` 时把当前 Session 的 Mem0 摘要塞进 `EXTRA_ASSIST_CONTEXT`，作为「App 暴露给系统级 Assistant 的官方通道」。
+
+### 资源消耗边界（与 5.13 节 DVFS/能效模型的关系）
+
+- Mem0 v3 单次检索 p50 0.88–1.09 s（云端，6.8K–7.0K token）；端侧 LLM（3B 量化）decode 2–5 s。
+- M3-Agent Memorization 单 30s 视频片段在云端 Qwen2.5-Omni-7B 上需 4× A100（80GB）；端侧只能离线批处理，单片段 10–30 s。
+- `VideoGraph` 单节点 120 KB（10 img + 20 audio embeddings，FP32）；1 小时视频约 120 clip，量化 + FlatBuffers 后可压至 ~20 MB。
+- 端侧 7B LLM decode 一小时约 1500–2500 mAh（@3.8V），加上 embedding / storage I/O 估 +5–10%，与 5.13 节的能效模型区间一致。
+
+### 端侧化的具体工程判断
+
+- 24 种 vector store 里 `faiss` 是 Android 端可行选项（faiss-cpu 在 NDK 编译可行），其余均要远端访问。
+- `mem0/vector_stores/configs.py:VectorStoreConfig` 的 `_provider_configs` 字典列出全部适配，**新增「本地 SQLite + HNSW」 provider 即可满足端侧最小化部署**。
+- M3-Agent 的 `mmagent/retrieve.py:back_translate` 在端侧要砍掉笛卡尔积（用一次 top-k 反向翻译替代全展开），把 100 query 限制改成 10。
+- `pickle` 不可用，推荐用 LiteRT 自带的 `TensorBuffer` 序列化 embedding，或用 FlatBuffers（参见 MediaPipe Tasks 现有 `.task` 文件格式）。
+
+[已验证: Mem0 仓库 `mem0/memory/storage.py`、`mem0/embeddings/fastembed.py`、`mem0/vector_stores/configs.py`][已验证: M3-Agent 仓库 `m3_agent/memorization_memory_graphs.py`、`mmagent/videograph.py`、`mmagent/retrieve.py`][已验证: AOSP main `Application.OnProvideAssistDataListener`]
+[待验证: AOSP `android-17.0.0_r1` 标签下 `ApplicationAiContext.java` 的 API 形态（cs.android.com 渲染被重定向到 main，未直接抓到目标文件）][待验证: Mem0 v3 `ADDITIVE_EXTRACTION_PROMPT` 完整 prompt 内容]
