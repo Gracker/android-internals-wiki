@@ -1118,6 +1118,94 @@
       "added_at": "2026-06-04T20:15:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-06-04-20-review.md"
+    },
+    {
+      "section": "19.18",
+      "section_title": "商业 APM 平台",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 版本边界与 SDK/API 门槛问题",
+      "material_paths": [
+        "logs/deep-review/2026-06-04-20-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 版本边界错误",
+          "location": "适用版本范围",
+          "detail": "章节提到 Android 15 16KB Page Size，但适用版本标注为 Android 8-17，缺少 Android 16/17 关键差异说明",
+          "suggestion": "更新适用版本到 Android 17/API 37，补充 Android 16/17 的关键差异，明确 16KB Page Size 在 Android 17 中的适用性"
+        },
+        {
+          "type": "P1 源码验证缺失",
+          "location": "Sentry profiling/UI Profiling/transaction-based profiling SDK/API 门槛",
+          "detail": "章节提到商业 APM 平台存在 SDK/API 版本门槛，但缺少 android-17.0.0_r1 源码验证",
+          "suggestion": "使用 android-17.0.0_r1 源码验证具体门槛，明确哪些能力在 Android 17 中可用"
+        },
+        {
+          "type": "P1 源码验证缺失",
+          "location": "Bugly Pro 页面回放/启动 Span/16KB Page Size SDK 版本门槛",
+          "detail": "章节提到 Bugly Pro 增强能力存在 SDK 版本门槛，但缺少 android-17.0.0_r1 源码验证",
+          "suggestion": "使用 android-17.0.0_r1 源码验证具体门槛，明确哪些能力在 Android 17 中可用"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T20:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.06",
+      "section_title": "BlockCanary",
+      "priority": 90,
+      "reason": "[Deep Tech Review] LoObserver 接口稳定性与 Android 17 兼容性问题",
+      "material_paths": [
+        "logs/deep-review/2026-06-04-20-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P1 版本验证缺失",
+          "location": "Looper.Observer 接口稳定性",
+          "detail": "章节提到 Android 10（API 29）起，`Looper` 内部存在 `@hide` 的 `Looper.Observer`，但未在 Android 17 中验证接口稳定性",
+          "suggestion": "使用 android-17.0.0_r1 源码验证 Looper.Observer 接口在 Android 17 中的状态和可用性"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T20:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-04T21:00:53",
+      "completed_by": "openclaw-task2b"
+    },
+    {
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 版本边界错误与源码验证缺失",
+      "material_paths": [
+        "logs/deep-review/2026-06-04-20-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 版本边界错误",
+          "location": "适用版本范围",
+          "detail": "applicable_versions 写为 Android 10 (API 29) - Android 16 (API 36)，违反 Android 17/API 37 边界规则",
+          "suggestion": "必须更新到 Android 17/API 37，并补充 Android 16/17 的关键差异说明"
+        },
+        {
+          "type": "P1 源码验证缺失",
+          "location": "linux.perf 数据源状态",
+          "detail": "章节提到 linux.perf 数据源从 Android 13 (API 33) 起，但未在 Android 17 中验证当前状态",
+          "suggestion": "使用 android-17.0.0_r1 源码验证 linux.perf 数据源在 Android 17 中的状态"
+        },
+        {
+          "type": "P1 源码验证缺失",
+          "location": "android.surfaceflinger.frametimeline 适用性",
+          "detail": "章节提到 Android 12+ 才引入的 `android.surfaceflinger.frametimeline`，但未在 Android 17 中验证是否仍适用",
+          "suggestion": "使用 android-17.0.0_r1 源码验证 FrameTimeline 在 Android 17 中的状态"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T20:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-04T21:00:53",
+      "completed_by": "openclaw-task2b"
     }
   ]
 }
