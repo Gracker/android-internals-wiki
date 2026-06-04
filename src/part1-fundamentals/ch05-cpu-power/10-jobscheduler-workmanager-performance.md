@@ -80,7 +80,7 @@ p1: 0
 p2: 1
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 
@@ -313,11 +313,11 @@ WorkManager.getInstance(context)
 
 Android 17 引入的 DeliQueue(无锁消息队列)消除了 `MessageQueue` 的 `mLock` 锁竞争,对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进,但 WorkManager 2.10 与 DeliQueue 的协同收益目前只能写成待验证的优化方向:如果后续官方材料确认这条路径,大规模任务入队时有机会减少主线程对消息队列锁的等待。[待验证: WorkManager 2.10 与 DeliQueue 的具体协同收益需要补充官方发布说明、benchmark 条件或实测记录,当前无可靠量化数据支撑"掉帧率下降约 4%"的结论,已删除该数值。]
 
-验证方式也要按实测来写:在 `enqueue` 密集调用场景下,对比升级前后主线程的 `MessageQueue` lock 等待时间;没有官方发布说明或 benchmark 前,不写确定收益。
-
-任务提交后为什么没执行?这是后台任务调试中最常见的问题。Android 16 / 17 提供了新的调试接口来回答这个问题。
+验证思路也很直接:在 `enqueue` 密集调用场景下,对比升级前后主线程 `MessageQueue` lock 的等待时间;没有官方发布说明或 benchmark 支撑之前,不写确定收益。
 
 ## Android 16 / 17 的调试能力补强
+
+前面的内容讲的是调度机制本身,但工程师最常面对的实际问题是:任务已经提交了,为什么没执行?Android 16 和 17 为此补了一组调试接口。
 
 ### API 36 / 37 的 pending 原因调试接口
 
@@ -455,7 +455,7 @@ Android Studio 提供了 **WorkManager Inspector**(View → Tool Windows → App
 
 [来源: 实战经验总结]
 
-技术层面的优化之外,还要考虑一个现实因素:Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。如果 App 的后台 WakeLock 使用超标,不只是系统会限制执行,应用市场的分发也会受到影响。
+技术优化做到位之后,还有一层约束来自应用分发侧:Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。App 的后台 WakeLock 使用超标,不仅系统侧会被限制执行,Play Store 的搜索和推荐权重也会下降。
 
 ## Play Store 后台行为政策
 
@@ -651,15 +651,11 @@ Expedited Job 有独立配额,但配额有限。大约每天几十分钟的量�
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-jobscheduler-profilingtrigger-version-boundary.md
 - 类型:DeepResearch 调研结果
 - 摘要:Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 作为 ProfilingTrigger 新类型,对应系统对后台缓存态应用持续消耗 CPU 的强制干预。分析了 ProfilingManager API 从 API 35 到 37 的完整版本边界、ApplicationStartInfo 与 Cold Start Trigger 的关系、JobScheduler quota 与 excessive CPU 检测的独立性。
-- 注入时间:2026-05-20
-- 价值:为 §5.10 提供 Android 17 Power Check 机制的源码级证据,厘清 ProfilingTrigger 与 JobScheduler quota 的边界关系
 
 
-<!-- AIW-源码调研-2026-05-26 -->
-<!-- AIW-源码调研-2026-06-03 -->
 ## 验证记录
 
-本节涉及的 Android 17 特性经多轮 DeepResearch 交叉确认，以下结论已验证或标为待验证：
+本节涉及的 Android 17 特性经多轮交叉确认，以下结论已验证或标为待验证：
 
 - **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE**（API 37）：Android 17 新增的 ProfilingTrigger 类型，在系统因 excessive CPU 终止进程后生成事后 trace snapshot。**SUBREASON_EXCESSIVE_CPU**（值 7）与 **REASON_EXCESSIVE_RESOURCE_USAGE**（值 9）在 android-16.0.0_r3 中已验证存在，AMS 自 API 30 起即可因 excessive CPU kill 进程。这条 AMS kill 路径与 JobScheduler quota 互不依赖——quota 阻止新任务调度，kill 终止已运行进程。触发阈值、检查周期、与厂商 Rate limiter 的交互仍待 AOSP android-17.0.0_r1 源码验证。
 - **ProfilingManager** 采集数据仅含采样指标（CPU 时间片、堆栈采样、Binder 统计），不含内存内容或网络 payload；在 device owner / profile owner 场景下受 MDM 策略控制。

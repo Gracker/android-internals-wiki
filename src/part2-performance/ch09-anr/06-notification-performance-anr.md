@@ -56,6 +56,8 @@ task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 原理链：NL
 review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
 last_task9_audit: "2026-05-25"
 last_task9_autofix_at: 2026-06-04
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 9.6 Notification 性能与 ANR
@@ -75,11 +77,11 @@ last_task9_autofix_at: 2026-06-04
 
 ## 为什么 Notification 会引发 ANR
 
-做 Android 稳定性优化时,经常会遇到两类栈:一类停在 `NotificationManager.notify()`,另一类停在 `NotificationListenerService.onNotificationPosted()`。它们看起来都和"通知"有关,阻塞位置却不一样。
+在做 Android 稳定性优化时,有两类栈经常出现:一类停在 `NotificationManager.notify()`,另一类停在 `NotificationListenerService.onNotificationPosted()`。它们都和“通知”有关,但阻塞位置不同。
 
 `notify()` 侧的问题,通常落在应用构造通知对象、Binder 过进程,或 NotificationManagerService(NMS)入口校验和入队这段同步路径上。`onNotificationPosted()` 侧的问题,通常落在监听器进程自己的主线程。SystemUI 渲染慢会拖迟通知实际显示出来,但默认不会让调用方一直等到界面画完。
 
-把这三段边界拆开,排查方向就清楚了:调用方卡住,先看应用线程与 Binder;监听器卡住,先看 NLS 主线程;通知晚到或下拉卡顿,再看 SystemUI 和 system_server 的调度状态。
+把这三段边界拆开,排查思路就清晰了:调用方卡住,先看应用线程与 Binder;监听器卡住,先看 NLS 主线程;通知晚到或下拉卡顿,再看 SystemUI 和 system_server 的调度状态。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -114,7 +116,7 @@ return true;
 - Binder 过进程和 NMS 入口的权限校验、建档、入队
 - system_server 入口处的锁竞争或 Binder 线程繁忙
 
-这些环节默认不在 `notify()` 的同步返回时间里:
+以下几件事不在 `notify()` 的同步返回时间里:
 
 - `EnqueueNotificationRunnable` 之后的排序、记录更新、listener fan-out
 - `INotificationListener` 回调
@@ -125,7 +127,7 @@ return true;
 ### ANR 的三种核心触发场景
 
 **场景一:`startForegroundService()` 到 `Service.startForeground()` 的预算被通知构造吃掉。**
-官方故障文案是 `Context.startForegroundService() did not then call Service.startForeground()`。超时窗口发生在启动前台服务之后、服务调用 `startForeground()` 之前。复杂通知构造、图片解码、磁盘读图如果都放在这段路径里,预算会很快耗尽。
+系统给出的错误信息是 `Context.startForegroundService() did not then call Service.startForeground()`。这个超时窗口卡在启动前台服务之后、服务调用 `startForeground()` 之前。复杂通知构造、图片解码、磁盘读图如果都放在这段路径里,预算会很快耗尽。
 
 更稳妥的写法,是先发一个简单通知满足时限,再异步补全完整版:
 
@@ -317,7 +319,7 @@ public class MyNotificationListener extends NotificationListenerService {
 1. 应用自己频繁构造通知对象,主线程先被拖慢
 2. NMS 对同一条通知的 update path 触发包级速率限制,更新被 shed 或明显排队
 
-经验上,进度型通知不应该跟随每个字节、每句歌词或每个定位点都 `notify()` 一次,应该按用户能感知的粒度压频。
+实践中的建议是:进度型通知不要跟随每个字节、每句歌词或每个定位点都 `notify()` 一次,应该按用户能感知的粒度压频。
 
 ### 模式四:通知渠道创建和首次发通知挤在一起
 
@@ -351,7 +353,7 @@ Live Update 扩展到新的模板类型：从 Android 16 的 `ProgressStyle` 扩
 
 从性能角度，`MetricStyle` 与 `ProgressStyle` 一样走系统模板渲染，减少自定义 `RemoteViews` 的 inflate 和绘制开销。Live Update 通知通过 promoted ongoing 机制保持展示优先级，对通知 ANR 的影响在于：高频更新指标值时仍受 NMS 包级速率限制约束。
 
-> **边界说明**：后台 NLS 回调限频（per-package rate limiting）目前缺少足够一手公开材料，不写成固定版本结论。
+> 后台 NLS 回调限频（per-package rate limiting）目前缺少足够一手公开材料，不写成固定版本结论。
 
 ## 在 Perfetto 中诊断通知 ANR
 
@@ -489,13 +491,13 @@ adb shell dumpsys notification
 | Android 16 (API 36) | `Notification.ProgressStyle` 新增,promoted ongoing / Live Update 文档可用 | 进度型通知更适合走系统模板,减少自定义 `RemoteViews` 的必要性 |
 | Android 17 (API 37) | `Notification.MetricStyle` 新增,Semantic Coloring API 与 Live Update 扩展到 MetricStyle | 指标型通知走系统模板渲染,语义颜色减少自定义 RemoteViews；高频更新仍受 NMS 速率限制 |
 
-Android 14 / 15 的分发、排序和后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
+Android 14 和 15 的分发、排序及后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
 
 ## 常见问题与误区
 
 ### 「通知 ANR 只发生在使用 NotificationListenerService 的 App」
 
-不对。`NotificationListenerService` 回调阻塞只是通知 ANR 的一种模式。即使应用完全不使用 NLS,只要前台服务启动路径里的通知构造过重,`startForegroundService()` 到 `Service.startForeground()` 这段预算也可能被耗尽。
+不准确。`NotificationListenerService` 回调阻塞只是通知 ANR 的一种模式。即使应用完全不使用 NLS,只要前台服务启动路径里的通知构造过重,`startForegroundService()` 到 `Service.startForeground()` 之间这段预算同样可能耗尽。
 
 ### 「notify() 是异步的,不会阻塞主线程」
 
