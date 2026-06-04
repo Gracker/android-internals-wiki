@@ -25,7 +25,7 @@ related_chapters: ["3.1", "3.4", "13.3", "13.5"]
 pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
