@@ -19,8 +19,8 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -41,6 +41,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
 last_task6_audit: "2026-05-21"
 last_task6_audit_result: l1-frontmatter-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
+last_task6_at: "2026-06-04T19:15:00+08:00"
 ---
 
 <!-- outline-start -->
