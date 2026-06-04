@@ -1,7 +1,7 @@
 ---
 
 
-status: ready-for-review
+status: finalized
 title: App 内存优化
 section: '4.5'
 chapter: '4.5'
@@ -54,8 +54,8 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: reworked
@@ -66,7 +66,7 @@ task9_reviewed_date: "2026-06-04"
 last_task9_at: "2026-06-04T08:20:00+08:00"
 task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 onTrimMemory 在 Android 16 的 ApplicationThread→主线程分发链、Debug.getPss API level、heapprofd 开销边界和 System.gc 使用边界；已回到 Task6 复审。"
 task6_result: pass-light-edit
-last_task6_at: '2026-06-04T07:05:00+08:00'
+last_task6_at: "2026-06-04T16:14:53+08:00"
 last_task6_review_log: "logs/review/2026-05-22-08-review.md"
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
@@ -864,7 +864,7 @@ long page_size = sysconf(_SC_PAGESIZE);
 
 ### 对 Bitmap 的影响
 
-Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 的内存页浪费可能增加（如果一个 Bitmap 的像素数据不是 16KB 的整数倍，最后一页会有更多浪费）。Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，分配对齐从 4KB 提升到 16KB，可能影响 native allocation、GraphicBuffer/allocator 分配路径。具体影响需用 heapprofd、dumpsys meminfo 和特定图像库版本实测确认。Glide/Coil 等图片加载库在构造 Bitmap 时依赖平台 API，其对齐行为由平台 allocator 和 GraphicBuffer 决定，未必在库层面做了显式 16KB 对齐优化。
+Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，分配对齐从 4KB 提升到 16KB，可能影响 native allocation、GraphicBuffer/allocator 分配路径。具体影响需用 heapprofd、dumpsys meminfo 和特定图像库版本实测确认。Glide/Coil 等图片加载库在构造 Bitmap 时依赖平台 API，其对齐行为由平台 allocator 和 GraphicBuffer 决定，未必在库层面做了显式 16KB 对齐优化。
 
 ## 扩展：大型 App 的内存预算管理
 

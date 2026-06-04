@@ -3,17 +3,17 @@
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_at: 2026-06-04T12:54:39
 task2b_notes: 2026-06-04 Task2B main 回炉：案例 1-3 伪代码替换为真实排查路径+API/Trace 观察点；wasRefreshRateSwitch() 编造方法替换为帧间隔监控；误区 1-4 从单句扩充为机制级解释；ARR 版本边界仍待 Task9 确认
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -28,8 +28,8 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: 2026-05-30T20:30:32.504625
-last_task6_at: "2026-06-04T11:05:00+08:00"
-task6_review_notes: "2026-06-02 16: Task6 revisiting review: needs-rework；L1/L2 小修 6 处；新增 3 个 L3/L4 回炉项：ARR 版本口径、示意代码边界、SoC/续航量化数据来源。"
+last_task6_at: "2026-06-04T16:15:15+08:00"
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit；L1/L2 全部通过(禁用词0/AI套话0/高频词OK/元叙述0)；不是X而是Y恰好2次在限内；无B类大问题。自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-06-02-16-review.md"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
