@@ -1,8 +1,8 @@
 {
-  "total": 385,
+  "total": 405,
   "draft": 5,
-  "ready-for-review": 164,
-  "finalized": 185,
+  "ready-for-review": 110,
+  "finalized": 258,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
   "task9_reviewed_by": "openclaw-task9",
@@ -2416,7 +2416,7 @@
     }
   ],
   "ready_for_review": 158,
-  "last_updated": "2026-06-04",
+  "last_updated": "2026-06-04T21:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
