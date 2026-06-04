@@ -1,7 +1,8 @@
 ---
+
 title: "线上网络质量监控与接入层协同"
 chapter: "26.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-22"
@@ -36,20 +37,20 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "参考书素材/知识盲区/官方文档/AOSP结构"
 last_task2a_at: "2026-05-22T15:04:00+08:00"
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 last_task6_at: "2026-06-04T03:10:02+08:00"
 last_task6_review_log: "logs/review/2026-05-22-15-review.md"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T15:42:52+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: needs-rework。P1 1：Cronet 指标段引用 Android 34 hidden/prototype `android.net.http.RequestFinishedInfo.Metrics`，但 android-35 SDK source 已无该类；需改为 public Cronet `org.chromium.net.RequestFinishedInfo` 或明确 Android HttpEngine/hidden API 边界。"
+task9_reviewed_date: "2026-06-04"
+last_task9_at: "2026-06-04T09:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
+task9_review_notes: "2026-06-04 Task9 deep review: pass-tech-review。P0/P1 0；HTTP/3/Cronet Android 17 指标字段保留为 P3 follow-up，不阻塞发布。"
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-06-03T14:50:00+08:00"
@@ -57,10 +58,12 @@ task2b_fixed_by: "openclaw-task2b"
 task2b_fixed_date: "2026-06-03"
 last_task2b_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
 updated_by: "openclaw-task9"
-updated_date: "2026-05-22"
+updated_date: "2026-06-04"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
+section: "26.17"
+
 ---
 
 # 26.17 线上网络质量监控与接入层协同

@@ -1,10 +1,11 @@
 ---
 
+
 title: "线上问题排查方法论"
 chapter: "26.5"
 section: "26.5"
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 16 (API 36 / 36.1)"
 last_verified: "2026-05-15"
 last_verified_against: "Android Developers / AOSP docs / Firebase docs / Play Console docs / Clippings structure references"
 confidence: medium
@@ -37,9 +38,9 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 4 处（outline 扩展占位 1、措辞精修 3）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
 task6_reviewed_by: openclaw-task6
@@ -49,12 +50,15 @@ last_task6_at: 2026-06-04T02:12:55+08:00
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-05-15T03:25:00+08:00"
-last_task9_review_log: logs/deep-review/2026-05-15-03-deep-review.md
+task9_reviewed_date: "2026-06-04"
+last_task9_at: "2026-06-04T09:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
 task2b_result: fixed
+last_task9_autofix_at: "2026-06-04"
+task9_review_notes: "2026-06-04 Task9 auto-fix: clarified ProfilingTrigger API 36 vs version 36.1 boundary for APP_REQUEST_RUNNING_TRACE."
+
 ---
 
 # 线上问题排查方法论
@@ -138,19 +142,19 @@ Trace 适合回答“时间花在哪里”和“线程为什么没跑”。线�
 
 **Android 线上诊断能力按版本分层**：
 
-| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36) |
+| 能力 | Android 10-14 (API 29-34) | Android 15 (API 35) | Android 16+ (API 36 / 36.1) |
 |------|---------------------------|---------------------|----------------------|
 | 系统 Trace 获取 | 需 adb/用户协助/系统权限 | `ProfilingManager.requestProfiling()` App 程序化请求 | `ProfilingManager` + `ProfilingTrigger` 事件触发 |
 | 退出原因查询 | `getHistoricalProcessExitReasons()` ✅ | ✅ | ✅ |
 | ANR Trace | `getTraceInputStream()` ✅ | ✅ | ✅ |
 | Native Tombstone | ✅ (API 31+) | ✅ | ✅ |
-| 事件触发 Profiling | ❌ | ❌ | `ProfilingTrigger`（ANR/fully drawn/主动请求） |
+| 事件触发 Profiling | ❌ | ❌ | API 36：`ProfilingTrigger`（ANR / `APP_FULLY_DRAWN`）；36.1：`APP_REQUEST_RUNNING_TRACE` |
 
 **Android 10-14**：完整系统 Trace 依赖 adb、bugreport 或用户协助。只能在问题影响面大、复现路径清楚且用户或测试设备可配合时抓取。线上方案更多依赖 App 内埋点（`Trace.beginSection()`、自有耗时埋点）和服务端聚合。
 
 **Android 15+**：`ProfilingManager.requestProfiling()` 可由 App 程序化请求 system trace、heap dump 或 stack profiling，结果写入 App 数据目录。有 rate limiter 保护（结果去重、频率控制），不影响用户数据。推荐在连续 profiling 场景提前开始、及时取消。详细 API 签名见 §26.2 附录 A.2。
 
-**Android 16+**：`ProfilingTrigger` 可注册 ANR、`APP_FULLY_DRAWN`、App 主动请求等事件触发追踪，自动在事件发生时采集 system trace，配合 rate limiter 控制频次。详细触发类型和注册方法见 §26.2 附录 A.3。
+**Android 16+**：API 36 的 `ProfilingTrigger` 可注册 ANR、`APP_FULLY_DRAWN` 等系统事件；version 36.1 额外提供 `requestRunningSystemTrace()`，通过 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 请求正在运行的后台 trace 快照。系统只在触发命中且结果可用时投递 profiling data，仍受 rate limiter 控制。详细触发类型和注册方法见 §26.2 附录 A.3。
 
 线上方案仍然要把能力分成三个等级：
 
