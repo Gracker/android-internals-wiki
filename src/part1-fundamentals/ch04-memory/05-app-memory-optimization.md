@@ -72,6 +72,8 @@ task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 last_task9_autofix_at: "2026-06-04"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 
@@ -109,9 +111,9 @@ last_task9_autofix_at: "2026-06-04"
 
 但这并不意味着 App 层面无能为力。恰恰相反，**App 的内存使用方式直接决定了系统级机制的触发频率**。一个内存管理良好的 App，不容易触发 GC 暂停导致卡顿，不容易被 LMK 杀死导致冷启动，也不容易因为内存抖动让整个系统的内存压力增大。
 
-很多开发者对"内存优化"的理解是碎片化的——知道 Bitmap 要 recycle，知道 Activity 泄漏要用 WeakReference，知道 onTrimMemory 要处理——但缺少一个系统性的框架把这些点串起来。
+很多开发者对"内存优化"的理解是碎片化的：知道 Bitmap 要 recycle，知道 Activity 泄漏要用 WeakReference，知道 onTrimMemory 要处理，但缺少一个框架把这些点串起来。
 
-本节的目标就是建立这个框架。
+本节要做的就是建立这个框架。
 
 ## 内存优化的分层思路
 
@@ -121,7 +123,7 @@ last_task9_autofix_at: "2026-06-04"
 
 最有效的优化，是避免不必要的内存分配。
 
-这听起来是常识，但在实际项目中，大量内存问题来自"分配了不需要的东西"。几个典型例子：
+这个道理不复杂，但在实际项目中，大量内存问题恰恰来自"分配了不需要的东西"。几个典型例子：
 
 - 在 `onDraw()` 中创建 `Paint`、`Path` 对象。`onDraw()` 在一帧中可能被调用多次，每帧创建新对象意味着大量短命对象，触发频繁 GC。正确做法是将 `Paint` 作为成员变量，在构造函数中初始化一次。
 - 在循环中使用字符串拼接 `"" + value`。每次拼接都创建一个 `StringBuilder` 和一个新的 `String` 对象。使用 `StringBuilder` 的 `append()` 方法可以复用同一个实例。
@@ -159,18 +161,18 @@ last_task9_autofix_at: "2026-06-04"
 
 即使代码质量再高，也难免有遗漏。特别是大型项目，几十个开发者的代码合在一起，泄漏和过度分配几乎是不可避免的。
 
-所以需要监控兜底：
+所以需要监控兜底。工程上通常分三个阶段布防：
 
 - **开发期**：LeakCanary 自动检测 Activity/Fragment 泄漏
 - **测试期**：Android Studio Memory Profiler 检查内存分配热点
 - **线上**：通过 `Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()` 监控可用堆空间，接近上限时主动释放缓存
 
-**Perfetto 中的内存观察 Track**。在 Perfetto 中，内存相关的主要观察入口有：
+在工具层面，Perfetto 提供了几个直接面向内存的观察 Track：
 
-- **Java Heap counter**：Android 8+ 的 `meminfo` 定期上报 Java 堆大小。在 Perfetto 中通过 `process_counter_track` 查看目标进程的 `java_heap` / `total_heap` / `native_heap` 等指标。正常状态下 Java Heap 呈锯齿形（分配→GC 回收→再分配），如果下限持续上移，是泄漏的信号
-- **GC Event Track**：在 `HeapTaskDaemon` 线程 track 上观察 GC slice（如 `ConcurrentCopying GC`、`MarkCompact GC`）。频繁的 Young GC（每秒多次）指向对象抖动，偶发的长时间 Full GC 指向老年代压力或内存泄漏
-- **Native Heap (`heapprofd`)**：通过 Perfetto 的 Native Heap Profiler 采集 Native 分配。可以按调用栈聚合，找出哪些代码路径分配了最多内存。注意 heapprofd 本身有性能开销，不建议在 Release 构建体中长期开启
-- **dmabuf/GPU memory Track**：在 `gfx` 相关的 counter track 中观察 GPU 纹理和 GraphicBuffer 占用。如果 `dmabuf` 持续增长但 Java Heap 稳定，通常是 Hardware Bitmap 或 Surface 相关资源未释放
+- **Java Heap counter**：通过 `process_counter_track` 查看目标进程的 `java_heap` / `total_heap` / `native_heap`。正常状态下 Java Heap 呈锯齿形（分配→GC 回收→再分配），如果下限持续上移，是泄漏的信号
+- **GC Event Track**：在 `HeapTaskDaemon` 线程上观察 GC slice（`ConcurrentCopying GC`、`MarkCompact GC`）。频繁的 Young GC（每秒多次）指向对象抖动，偶发的长时间 Full GC 指向老年代压力或泄漏
+- **Native Heap（heapprofd）**：按调用栈聚合 Native 分配，找到哪些代码路径分配了最多内存。heapprofd 本身有性能开销，不建议在 Release 构建中长期开启
+- **dmabuf / GPU memory Track**：在 `gfx` 相关 counter track 中观察 GPU 纹理和 GraphicBuffer 占用。`dmabuf` 持续增长但 Java Heap 稳定，通常是 Hardware Bitmap 或 Surface 相关资源未释放
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]
 
@@ -899,9 +901,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 当这些指标接近阈值时，触发降级策略（释放缓存、降低图片质量、关闭预加载）。
 
-### Android 17：历史峰值追溯
-
-`ApplicationStartInfo` 在 Android 17（API 37）中可能与 MemoryLimiter 诊断产生关联。[待验证：本轮检索官方 API 未确认 `ApplicationStartInfo` 新增的峰值内存相关方法，以下保留为研究思路。]
+### 线上诊断路径
 
 当前已公开的诊断路径：
 

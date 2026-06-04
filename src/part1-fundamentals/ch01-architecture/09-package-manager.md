@@ -90,6 +90,8 @@ task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编�
 task9_reviewed_at: "2026-05-28T17:29:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -111,11 +113,11 @@ updated_date: "2026-05-28"
 
 ## 为什么要了解 Package Manager Service
 
-当我们在 Perfetto 里分析冷启动时，经常会看到 `bindApplication`、类加载、page fault、`dlopen` 这些运行期事件。它们的耗时表现，往往受安装期已经做过的工作影响，比如 APK 扫描、签名校验、DEX 布局、dexopt 编译产物是否可用。`bindApplication` 负责进程绑定和应用运行时初始化；APK 签名校验、包扫描、安装期 dexopt 发生在更早的安装或开机扫描阶段。
+在 Perfetto 里分析冷启动时，经常会看到 `bindApplication`、类加载、page fault、`dlopen` 这些运行期事件。它们的耗时表现，往往受安装期已经做过的工作影响：APK 扫描、签名校验、DEX 布局、dexopt 编译产物是否可用。`bindApplication` 负责进程绑定和应用运行时初始化；APK 签名校验、包扫描、安装期 dexopt 则发生在更早的安装或开机扫描阶段。
 
 另一个更直接的场景是安装和更新。用户看到下载完成，不等于应用已经可以流畅启动。设备端还要继续做 session 提交、包扫描、签名校验、数据目录准备、dexopt、状态发布等步骤。大型 APK、split 安装、低端闪存、首次 dexopt，都可能把这段时间拉长。
 
-了解 PMS 和安装流程，我们就能回答这些问题：
+了解 PMS 和安装流程，就能回答下面这些问题：
 
 - 安装耗时长，瓶颈在文件写入、签名校验，还是 dexopt？
 - 首次冷启动慢，是否和安装期的编译策略、Baseline Profiles、DEX 布局有关？
@@ -429,7 +431,7 @@ if (isArchivingEnabled()) {
 
 应用更新时，PMS 需要处理版本升级和编译产物的更新。编译策略取决于更新前后的变化：
 
-**增量更新（Delta Update）**：Google Play 支持增量更新，只下载 APK 中变化的部分。但编译方面仍然是全量重新编译——因为 DEX 文件可能整体变化（R8 混淆导致类名和方法索引变化）。增量编译在 ART 中有探索（如 dex2oat 的 incremental compilation），但尚未成为标准流程。
+**增量更新（Delta Update）**：Google Play 支持增量更新，只下载 APK 中变化的部分。但编译方面仍然是全量重新编译——DEX 文件可能因 R8 混淆导致类名和方法索引整体变化，ART 侧尚未将增量编译作为标准流程。
 
 **全量更新**：删除旧版本的编译产物，重新运行 dex2oat。编译级别遵循与首次安装相同的策略（有 Profile 用 speed-profile，没有用 verify）。
 
@@ -567,39 +569,3 @@ Package Manager Service 与全书多个章节有交叉：
 - **§4.3 ART 虚拟机内存管理**：dex2oat 编译过程的内存占用和 JIT 代码缓存在 ART 的内存预算中
 
 ## 版本演进
-
-| 版本 | 包管理与编译变化 | 性能影响 |
-|------|----------------|------
-
-<!-- AIW-源码调研-2026-05-31 -->
-
-### 源码调研补注：Android 17 Staged Install 与 Package Manager 安装优化
-
-**调研时间**：2026-05-31 | **源码锚点**：android-17.0.0_r1
-
-**核心发现**：
-
-1. **安装流程调用链**：
-   - `PackageInstaller.Session.commit()` → `PackageInstallerService.openSession()` → `PackageInstallerSession.commit()` → `PackageManagerService.installPackage()` → `InstallPackageHelper.installPackageLI()`
-   - 源码路径：`frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`（android-17.0.0_r1）
-   - `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`（android-17.0.0_r1）
-   - `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java`（android-17.0.0_r1）
-
-2. **Staged Install 机制（API 31+/Android 12）**：
-   - Session 创建时设置 `SessionParams.stagedMode = true`
-   - APK 先 staged 到 `/data/app/staged/` 再 commit
-   - 安装原子性提升，避免 partial state
-   - Android 13 (API 33) 支持 multi-package session
-
-3. **性能瓶颈**：
-   - ART 编译（dex2oat）是最耗时步骤，首次安装可达 5~30s
-   - Staged Install 增加约 2x storage I/O
-   - 厂商优化（预制 oat）可绕过编译耗时
-
-4. **厂商优化（未一手验证）**：
-   - vivo Turbo / 小米 HyperOS 在 AOSP 之上通过 overlay 或 Vendor HAL 拦截实现
-   - 源码层面无直接对应实现；Perfetto 数据需关注 `binder.transaction` traces
-
-**注**：本节已通过 Task9 tech-review（2026-05-28），上述调研补充作为并行调研记录，不替代 Task9 结论。
-
----

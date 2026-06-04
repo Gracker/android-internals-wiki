@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "AOSP android-16.0.0_r1 ViewRootImpl / ViewDebug / ViewHierarchyEncoder"
-reviewed_date: '2026-04-25'
+reviewed_date: '2026-06-04'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: high
@@ -30,10 +30,10 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -42,7 +42,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-21"
 last_task9_at: "2026-05-21T08:24:53+08:00"
 last_task2b_at: "2026-06-04T12:57:00+08:00"
-last_task6_audit: "2026-05-20"
+last_task6_audit: "2026-06-04"
 last_task9_audit: "2026-05-21"
 ---
 
@@ -73,7 +73,7 @@ last_task9_audit: "2026-05-21"
 
 我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节把镜头拉近到 Android View 体系本身。每个 Activity 的界面都对应一棵 View 树，首帧创建和发生布局请求的那几帧，inflate、measure、layout 往往就是主线程最重的工作；如果这里只要多跑几轮，后面的 draw 和 GPU 渲染再快也补不回来。
 
-这一节从三个维度拆解 View 体系的开销：布局层级深度对帧耗时的影响、`LayoutInflater.inflate()` 的完整流程与耗时来源、`measure/layout` 的递归遍历机制，以及 `requestLayout()` 和 `invalidate()` 的边界。每个部分都配有在 Perfetto 中的定位方法。
+这一节从三个维度分析 View 体系的开销：布局层级深度对帧耗时的影响、`LayoutInflater.inflate()` 的完整流程与耗时来源、`measure/layout` 的递归遍历机制，以及 `requestLayout()` 和 `invalidate()` 的边界。每个部分都配有在 Perfetto 中的定位方法。
 
 ## 为什么要关注 View 体系的性能
 

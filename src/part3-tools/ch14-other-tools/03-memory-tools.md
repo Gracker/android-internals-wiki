@@ -48,6 +48,8 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 
@@ -80,7 +82,7 @@ review_type: "task6-writing-quality-review"
 
 ## 为什么需要这么多种内存分析工具
 
-做过 Android 内存优化的工程师大概都有这样的体会：内存问题的排查路径特别长，而且每种问题的"入口"不一样。有时候用户反馈"应用越用越卡"，打开 Perfetto 一看，GC 事件密集得像心电图——这可能是 Java 堆泄漏。有时候 Crashlytics 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界访问。还有时候系统日志里 LMK 频繁杀后台，但我们不清楚是哪个进程吃掉了内存。
+做过 Android 内存优化的工程师大概都有一个感受：内存问题排查路径特别长，而且每种问题的"入口"不一样。用户反馈"应用越用越卡"，打开 Perfetto 一看 GC 事件密得像心电图——这可能是 Java 堆泄漏。Crashlytics 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界。系统日志里 LMK 频繁杀后台，但不知道是哪个进程吃掉了内存。
 
 没有哪一个工具能覆盖所有场景。`LeakCanary` 擅长自动发现 Activity/Fragment 级别的 Java 泄漏，但它对 Native 堆和系统级内存占用无能为力。`MAT` 可以深入分析 hprof 文件中的引用链，找出"谁持有了不该持有的引用"，但它需要你先抓到堆转储，而且是离线分析。`heapprofd` 能实时采样 Native 堆的分配行为，但它给出的不是"谁泄漏了"，而是"谁在分配"。`dumpsys meminfo` 则是全局视角的入口——告诉你这个进程总共占了多少内存、各分多少，但它不会告诉你为什么。
 
@@ -163,9 +165,9 @@ LeakCanary 2.x 还增强了对 Kotlin Coroutines 和 Jetpack Compose 的支持�
 
 ### MAT 解决什么问题
 
-MAT（Memory Analyzer Tool）解决的是一个更深入的问题：你已经知道内存有问题了（可能通过 LeakCanary 发现了泄漏，可能通过 `dumpsys meminfo` 看到 Java Heap 持续增长，也可能应用刚发生了 OOM），现在需要搞清楚"到底是谁在占用内存、为什么没有被释放"。
+MAT（Memory Analyzer Tool）解决的是更深入一层的问题：你已经知道内存有问题了——可能是 LeakCanary 报了泄漏，可能是 `dumpsys meminfo` 看到 Java Heap 持续增长，也可能应用刚发生了 OOM——现在需要搞清楚"谁在占内存、为什么没释放"。
 
-如果说 LeakCanary 是自动化的哨兵，那 MAT 就是手动的解剖刀。它不自动运行，不给你发通知，但当我们把一个 hprof 文件交给它时，它能精确地展示堆中每个对象的持有关系、占用大小、引用路径。高爷有一篇 MAT 三部曲系列文章（入门、进阶、打开 Bitmap 原图），详细介绍了 MAT 的实战用法。
+如果说 LeakCanary 是自动化的哨兵，那 MAT 就是手动的解剖刀。它不自动运行，不给你发通知，但把一个 hprof 文件交给它时，它能精确地展示堆中每个对象的持有关系、占用大小、引用路径。
 
 ### 抓取 hprof 文件
 
@@ -419,7 +421,7 @@ libmeminfo 提供了以下能力：
 
 `dumpsys meminfo` 和 `procrank` 底层都调用了 libmeminfo 的接口。Java 层的 `android.os.Debug.MemoryInfo` 和 `ActivityManager.MemoryInfo` 也通过 JNI 调用 libmeminfo 获取数据。
 
-对于性能优化工程师来说，了解 libmeminfo 的意义在于：当我们需要自定义内存采集逻辑（比如写一个自动化测试脚本，定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写你自己的采集工具，而不是反复调用 `dumpsys` 命令再解析文本输出。
+了解 libmeminfo 的意义在于：当你需要自定义内存采集逻辑（比如定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写采集工具，而不是反复调用 `dumpsys` 再解析文本输出。
 
 [已验证: AOSP, system/memory/libmeminfo (Android 11-16); 旧版路径 system/core/libmeminfo 已弃用]
 **Android 17 支持：** libmeminfo 接口在 Android 17 中保持稳定，可通过 AOSP android-17.0.0_r1 源码确认具体实现细节。

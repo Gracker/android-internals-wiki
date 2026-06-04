@@ -44,11 +44,11 @@ related_chapters:
 - '1.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-21
+reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -58,6 +58,7 @@ task9_reviewed_date: '2026-05-12'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-05-12T19:58:00+08:00'
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 17 FUSE over io_uring、Android 16 SDM/云端编译、16KB 页数据需补官方/源码证据。'
+last_task6_audit: 2026-06-04
 ---
 
 
@@ -106,7 +107,7 @@ Android 的外部存储（/sdcard 或 /storage/emulated/0）对应的是一个�
 
 FUSE 当年会成为 emulated storage 的基础方案，是因为 Android 需要在 Linux 的 ext4/f2fs 文件系统之上，对外暴露一个符合传统 FAT32 行为的接口，支持不区分大小写的文件名、兼容 Windows 文件操作习惯，同时还能在底层实现基于 UID 的文件权限控制。
 
-但 FUSE 的架构决定了它的性能上限。每次文件操作（open、read、write、stat）都需要从内核态切换到用户态的 FUSE 守护进程（sdcard 进程），处理完再切回内核。代价也很直接：
+但 FUSE 的架构决定了它的性能上限。每次文件操作（open、read、write、stat）都需要从内核态切换到用户态的 FUSE 守护进程（sdcard 进程），处理完再切回内核。代价包括：
 
 - 一次简单的 `ls` 操作可能触发几十次内核态 ↔ 用户态切换
 - 文件数据被缓存了两次（内核 page cache + FUSE 用户空间缓存），浪费内存
