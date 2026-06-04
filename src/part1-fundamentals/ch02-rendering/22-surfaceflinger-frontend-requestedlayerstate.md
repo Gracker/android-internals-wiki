@@ -9,7 +9,7 @@ applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-18"
 last_verified_against: "AOSP android15-release / android16-release / main, frameworks/native/services/surfaceflinger/FrontEnd + source.android.com graphics docs"
 confidence: medium
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 tags: [rendering, surfaceflinger, frontend, requestedlayerstate, transaction]
 related_chapters: ["2.6", "2.12", "2.13", "2.16", "18.10", "13.3"]
 created_by: "task2a-knowledge-gap"
@@ -34,8 +34,12 @@ sources:
     path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: research
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-05"
+last_task6_at: "2026-06-05"
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState
@@ -138,7 +142,7 @@ AOSP 代码注释里还有一个容易忽略的设计点：与其他 layer 的�
 
 ## `LayerLifecycleManager`：把创建、事务和销毁批量化
 
-`LayerLifecycleManager` 拥有一组 `RequestedLayerState`，并维护 id 到状态对象的映射。它的公开接口顺序很清楚：`addLayers()` 接收新建 layer，`applyTransactions()` 把 transaction merge 进已有状态，`onHandlesDestroyed()` 处理 handle 释放，`commitChanges()` 提交生命周期变化并清空上一轮 change flags。
+`LayerLifecycleManager` 拥有一组 `RequestedLayerState`，并维护 id 到状态对象的映射。它的公开接口按调用顺序排列：`addLayers()` 接收新建 layer，`applyTransactions()` 把 transaction merge 进已有状态，`onHandlesDestroyed()` 处理 handle 释放，`commitChanges()` 提交生命周期变化并清空上一轮 change flags。
 
 [已验证: AOSP android16-release, `LayerLifecycleManager.h` / `LayerLifecycleManager.cpp`]
 

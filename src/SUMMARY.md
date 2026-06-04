@@ -98,6 +98,7 @@ tags:
   - [4.10 内存规整与直接回收性能边界](part1-fundamentals/ch04-memory/10-memory-compaction-direct-reclaim.md)
   - [4.11 Cached App Freezer 与 GC 触发边界](part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md)
   - [4.12 ZRAM 压缩交换与应用重启延迟](part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md)
+  - [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -397,6 +398,7 @@ tags:
   - [22.18 Adaptive Refresh Rate 与帧率策略实战](part5-app/ch22-rendering-practice/18-adaptive-refresh-rate-practice.md)
   - [22.19 RuntimeColorFilter 与 RuntimeXfermode 性能实践](part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md)
   - [22.20 Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping](part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md)
+  - [22.21 Jetpack Compose 动画性能深度优化](part5-app/ch22-rendering-practice/21-compose-animation-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
