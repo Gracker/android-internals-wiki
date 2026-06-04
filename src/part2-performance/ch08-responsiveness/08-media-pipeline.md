@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
@@ -13,7 +14,7 @@ last_task2b_at: '2026-05-14T19:19:00+08:00'
 last_task9_at: '2026-05-14T19:29:00+08:00'
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -47,16 +48,16 @@ tags:
 - 视频性能
 - 音频延迟
 - ExoPlayer
-task2b_result: pending
-task2b_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-14'
-task9_state: reviewed
+task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
 last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
@@ -64,6 +65,7 @@ last_task6_at: "2026-05-14T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。"
 
+last_task2b_lite_at: 2026-06-05
 ---
 
 
