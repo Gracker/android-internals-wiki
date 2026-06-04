@@ -42,7 +42,7 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
