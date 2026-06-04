@@ -11927,7 +11927,18 @@
       "last_section": "19.16"
     }
   },
-  "task2b_last_run": "2026-06-04T21:01:05",
+  "task2b_last_run": {
+    "timestamp": "2026-06-04T22:54:14+08:00",
+    "sections_fixed": [
+      "6.4",
+      "19.18"
+    ],
+    "sources": [
+      "task9-deep-tech-review"
+    ],
+    "remaining_p95": 1,
+    "remaining_p90": 1
+  },
   "task2b_pending_counts": {
     "p95": 0,
     "p90": 0,
