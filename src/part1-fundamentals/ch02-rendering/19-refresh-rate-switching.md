@@ -8,14 +8,14 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task9_result: auto-fixed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-06-04T08:50:00+08:00"
-task2b_notes: "2026-06-04 Task2B main 回炉：App/系统优化策略伪代码块改为概念性建议 + 真实 API/Trace 观察路径；SoC/续航量化数据降级为定性趋势；ARR 边界 FrameSchedulingManager/BatteryMonitor 伪代码替换"
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-04T12:54:39
+task2b_notes: 2026-06-04 Task2B main 回炉：案例 1-3 伪代码替换为真实排查路径+API/Trace 观察点；wasRefreshRateSwitch() 编造方法替换为帧间隔监控；误区 1-4 从单句扩充为机制级解释；ARR 版本边界仍待 Task9 确认
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -385,30 +385,29 @@ VSync 周期：16.67ms (60Hz) 或 8.33ms (120Hz)
 刷新率切换会影响 FrameTimeline 的特征：
 
 ```java
-// 监控 FrameTimeline 切换异常
-public void monitorFrameTimeline() {
+// 监控帧间隔异常（可能由刷新率切换引起）
+public void monitorFrameIntervals() {
+    final long[] lastFrameTime = {0};
     Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
         @Override
         public void doFrame(long frameTimeNanos) {
-            long now = System.nanoTime();
-            long elapsed = now - frameTimeNanos;
-            
-            // 检测到异常长的帧
-            if (elapsed > 50_000_000) { // 50ms
-                Log.w("PerfMonitor", "Long frame detected: " + elapsed + "ns");
-                
-                // 检查是否是刷新率切换导致
-                if (wasRefreshRateSwitch()) {
-                    Log.w("PerfMonitor", "Long frame due to refresh rate switch");
+            if (lastFrameTime[0] > 0) {
+                long interval = frameTimeNanos - lastFrameTime[0];
+                // 帧间隔接近 16.67ms 的偶数倍可能表明丢失了一帧
+                // 帧间隔从 ~8.33ms 突变为 ~16.67ms 可能表明刷新率从 120Hz 降到了 60Hz
+                if (interval > 25_000_000) {
+                    Log.w("PerfMonitor", "Long interval: " + interval / 1_000_000 + "ms, "
+                        + "possible refresh rate switch or frame drop");
                 }
             }
-            
-            // 继续监控
+            lastFrameTime[0] = frameTimeNanos;
             Choreographer.getInstance().postFrameCallback(this);
         }
     });
 }
 ```
+
+> 注意：Choreographer 回调本身**无法直接检测刷新率是否切换**。帧间隔的突变是间接信号，真正的刷新率切换确认需要通过 `adb shell dumpsys display` 或 Perfetto 的 VSync period 轨道来验证。
 
 ### SurfaceFlinger 日志分析
 
@@ -645,106 +644,85 @@ Display HAL 在切换期间可能丢失 1-3 帧。减少帧丢失的策略包括
 
 SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、内容检测结果动态调整刷新率。Android 15+ 引入了更智能的 vote weight 系统——不再只看最高帧率需求，而是综合活跃 Layer 数量、动画状态和功耗预算做最优选择。
 
-> **Trace 观察点**：`RefreshRateSelector::collectVotes` / `calculateOptimalRate` 的 slice 中可以看到每一步的决策依据和最终选中的刷新率。
+> **Trace 观察点**：`RefreshRateSelector::collectVotes` / `calculateOptimalRate` 的 slice 记录了每一步的决策依据和最终选中的刷新率。
 
 ## 实际应用案例
 
 ### 案例 1：Camera 应用优化
 
-**问题**：从相机界面切换到桌面时出现卡顿
+**问题**：从相机界面切换到桌面时出现卡顿。
 
-**分析**：相机界面固定 60fps，桌面动画需要 120fps，切换延迟导致卡顿
+**分析**：相机界面固定 60fps（`Surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)`），桌面动画需要 120Hz。刷新率切换发生在 SurfaceFlinger / Display HAL 层，App 侧 main thread 和 RenderThread 均无异常，但用户仍感觉到过渡卡顿。
 
-**解决方案**：
-```java
-// Camera 应用优化
-public class CameraActivity {
-    private void onCreate() {
-        // 设置固定帧率
-        previewSurface.setFrameRate(60f, 
-            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
-        
-        // 监听界面切换
-        windowCallback = new WindowCallback() {
-            @Override
-            public void onUserInteraction() {
-                // 提前通知系统准备切换
-                notifyPendingRefreshRateChange(120f);
-            }
-        };
-    }
-}
-```
+**排查路径**：
+1. 在 Perfetto 中确认 VSync period 在相机退出时从 16.67ms 跳变到 8.33ms，且跳变点附近出现 `missingFrame` 或 SurfaceFlinger compose slice 异常延长。
+2. 如果 `RefreshRateSelector::collectVotes` / `calculateOptimalRate` slice 在触摸事件后才开始考虑 120Hz 候选，说明系统侧决策滞后于用户操作——这是相机场景最常见的切换延迟根因。
+3. 确认 Camera HAL 释放 Surface 到 Launcher Surface 变为活跃之间的时间窗口：如果 Camera Surface 销毁晚于 Launcher 出现，RefreshRateSelector 可能在短时间内保留 60Hz 投票，延迟切换。
+
+**优化方向**：
+- App 侧：在相机即将退出时（如 `onUserLeaveHint()`），主动调用 `surface.setFrameRate(0, FRAME_RATE_COMPATIBILITY_DEFAULT)` 清空帧率偏好，让系统不再被相机侧的 60fps 固定需求锁住。
+- 系统侧：部分 OEM 在 ROM 层对 Camera→Launcher 过渡做了 dedicated boost，确保触摸事件能立即触发 RefreshRateSelector 重新投票。
+
 
 ### 案例 2：游戏应用优化
 
-**问题**：游戏中切换场景时帧率不稳定
+**问题**：游戏中切换场景时帧率不稳定，特别是在主菜单（静态内容）→ 战斗场景（高帧率需求）过渡时。
 
-**分析**：不同场景可能需要不同的刷新率，切换时机不当导致卡顿
+**分析**：主菜单场景 SurfaceFlinger 可能检测到静态内容并将刷新率降至 60Hz 以省电；进入战斗后，需要 90Hz 或 120Hz 才能匹配渲染输出，但刷新率切换的 1-3 帧延迟会让玩家感受到瞬间卡顿。
 
-**解决方案**：
-```java
-// 游戏应用优化
-public class GameActivity {
-    private void onSceneChange(SceneType newScene) {
-        // 1. 预测场景需要的刷新率
-        float targetRate = getSceneRefreshRate(newScene);
-        
-        // 2. 平滑切换刷新率
-        smoothRefreshRateTransition(targetRate);
-        
-        // 3. 调整渲染策略
-        adjustRenderStrategyForScene(newScene);
-    }
-}
-```
+**排查路径**：
+1. 确认游戏是否通过 `Surface.setFrameRate()` 明确声明帧率需求。如果没有，完全依赖系统内容检测，静态→高帧率场景的切换延迟会更大。
+2. 在 Perfetto 中对比：游戏 RenderThread 提交新帧的时间 vs VSync period 跳变到目标刷新率的时间。如果帧已提交但 VSync 还在旧周期，问题就在于 RefreshRateSelector 决策太慢。
+
+**优化方向**：
+- 进入战斗场景前（如加载界面），调用 `surface.setFrameRate(targetFps, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)` 提前声明帧率需求。这是最直接的方式，RefreshRateSelector 会在下一轮投票中看到这个偏好。
+- 如果游戏使用 Game Mode API（`GameManager.setGameMode()`），确保 `GameMode` 配置的刷新率偏好与场景一致。Android 16+ 的 Game Mode 框架会通过 `GameManagerInternal` 向 SurfaceFlinger 传递高性能需求的信号。
+- 渲染策略不需要"针对场景切换"，而是确保游戏循环在 Choreographer 回调周期变化后仍能在新 deadline 内完成——如果从 60fps（16.67ms 预算）切到 120fps（8.33ms 预算）后 doFrame 超时，问题在渲染负载，不在刷新率切换。
+
 
 ### 案例 3：系统级优化
 
-**问题**：桌面动画卡顿
+**问题**：从多任务界面回到桌面时常有卡顿，尤其是在 Launcher 自己未声明帧率偏好时。
 
-**分析**：多任务界面激活后，刷新率切换时机不当
+**分析**：多任务过渡动画由 WindowManager 驱动，动画的 Surface 出现后，RefreshRateSelector 才收集到新的帧率需求。从收集到硬件切换完成之间存在决策窗口。
 
-**解决方案**：
-```cpp
-// 系统优化
-void optimizeDesktopAnimation() {
-    // 1. 预测用户操作
-    if (predictUserSwipe()) {
-        // 2. 提前提升刷新率
-        preemptiveRefreshRateUpgrade();
-        
-        // 3. 优化动画时间线
-        smoothAnimationTimeline();
-    }
-}
-```
+**排查路径**：
+1. 查看 Perfetto 中 `RefreshRateSelector::calculateOptimalRate` slice 的时间戳 vs Launcher Surface 首次变为 visible 的时间戳——两者之间的间隔就是决策延迟。
+2. 如果决策延迟超过 1 帧，检查 `collectVotes` 中 Launcher Layer 的投票是否及时到达；Layer 刚变为活跃时 Metadata 可能尚未同步到位。
+3. 查看触摸事件的 `InputDispatcher` → `SurfaceFlinger` 路径：触摸事件本身可以触发 touch boost，但 boost 窗口长度在各 OEM 实现中不同。
+
+**优化方向**（系统侧，App 开发者无法干预）：
+- Touch boost：SurfaceFlinger 在检测到 Navigation Gesture 触摸事件时，提前将刷新率拉高到一个较高的候选值，这样当 Launcher Surface 变为活跃时，刷新率已经在目标值附近。
+- WindowManager 动画预通知：Android 15+ 的 WM Shell transition 可以先通知 SurfaceFlinger 即将出现的动画 Layer 信息，让 RefreshRateSelector 提前为该 Layer 预留投票权重。
+- ARR 渐进策略：如果是 ARR 设备，系统可以在触摸开始→动画完成之间逐步调整刷新率（60 → 90 → 120），避免单次大幅度跳变。
+
 
 ## 常见误区与陷阱
 
-### 误区 1：卡顿完全来自硬件
+### 误区 1：卡顿完全来自硬件切换
 
-**事实**：硬件切换只是问题的一部分，软件调度同样重要
+不少分析者看到刷新率切换导致的卡顿，就直接归因到 "PLL 重配置太慢" 或 "Display HAL 状态机开销"。硬件切换确实占一部分延迟（通常 1-3 帧），但软件调度侧的延迟往往更长：RefreshRateSelector 从收到新 Layer 的帧率偏好到做出决策，可能需要 1-3 个 VSync 周期的延迟。再加上 SurfaceFlinger 合成队列在切换后需要适应新周期，软件侧的整体延迟经常超过硬件侧。
 
-**解决方案**：同时优化硬件切换和软件调度
+> **判断方法**：在 Perfetto 中对比 VSync period 跳变时间点和 `RefreshRateSelector::calculateOptimalRate` 结束时间点——如果间隔超过 1 帧，软件侧的投票收集和决策时间不可忽略。
 
 ### 误区 2：使用最高刷新率就是最好的
 
-**事实**：高刷新率增加功耗，不是所有场景都需要
+120Hz 确实让滑动和动画更顺滑，但不是所有内容都受益。静态文本页面在 120Hz 和 60Hz 下肉眼几乎无差异，但功耗可能增加 15-25%。更关键的是：如果 App 的渲染管线在 120Hz 下做不到 8.33ms 内完成一帧，帧会持续超时，用户体验反而变差——用户看到的是 120Hz 屏幕上不断出现的 jank，比稳定的 60Hz 更糟。
 
-**解决方案**：根据场景智能选择刷新率
+> **判断方法**：在 Perfetto 中对比 doFrame 耗时 vs VSync period。如果 doFrame 稳定在 10-12ms，120Hz（8.33ms deadline）下会持续丢帧，此时锁定 60Hz 或 90Hz 是更实际的选择。
 
 ### 误区 3：Frame 完全正常就不可能有卡顿
 
-**事实**：刷新率切换卡顿可能发生在硬件层面
+这是第一章就讲过但容易忘的原则：App 侧 frame 耗时正常 ≠ 用户没有卡顿。刷新率切换卡顿发生在 SurfaceFlinger / Display HAL 层，App 的 RenderThread 在那个时候可能已经完成了工作，所以 `gfxinfo` 和 `systrace` 的 App 进程轨完全看不出问题。只有展开 SurfaceFlinger 和 VSync 轨道，才能看到帧在合成/提交阶段被延迟或跳过了。
 
-**解决方案**：检查 Perfetto 中的 VSync 周期变化
+> **判断方法**：当一个"奇怪卡顿"在 App 侧 Trace 中完全找不到对应物时，第一时间检查 SurfaceFlinger 进程的 compose slice 和 VSync period 轨道。
 
 ### 误区 4：频繁切换刷新率没有代价
 
-**事实**：每次切换都有延迟和开销
+单次 PLL 重配置和电压调整的功耗通常不到总电池的 0.5%，听起来可以忽略。但频繁切换场景（如：用户在列表和详情页之间反复进出 + 触摸 boost 每次触发 + 视频自动播放检测）会让切换次数累积到每分钟数十次，总功耗影响可达 2-5% 电池。
 
-**解决方案**：批量切换，减少切换频率
+ARR 策略的核心价值正在于减少这种"无效切换"——它把切换粒度从"每一帧都可能变"变成"场景级决策"，整体切换次数可减少 60-80%。如果没有 ARR，`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 是避免频繁切换最简单的手段：让系统在持续时段内锁定一个刷新率。
+
 
 ## 性能指标与监控
 

@@ -892,8 +892,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-04T11:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-04-08-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-04-08-review.md",
+      "completed_at": "2026-06-04T12:55:28+08:00",
+      "completed_by": "openclaw-task2b"
     },
     {
       "section": "18.3",
@@ -943,8 +945,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-04T10:06:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-04-10-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-04-10-review.md",
+      "completed_at": "2026-06-04T12:55:28+08:00",
+      "completed_by": "openclaw-task2b"
     }
   ]
 }
