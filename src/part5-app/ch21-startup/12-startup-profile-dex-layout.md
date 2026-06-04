@@ -48,12 +48,16 @@ sources:
     path: "art/dex2oat/dex2oat.cc"
   - type: source
     path: "r8/src/main/java/com/android/tools/r8/profile/startup/StartupOptions.java"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2a_state: processed
 task2a_result: processed-draft
 last_task2a_at: "2026-05-25T23:10:00+08:00"
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-05"
+last_task6_at: "2026-06-05"
 ---
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化

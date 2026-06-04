@@ -9,7 +9,7 @@ applicable_versions: "Android 11 (API 30) - Android 17 (API 37); 16KB Page Size 
 last_verified: "2026-05-19"
 last_verified_against: "AOSP main frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList + ART heap.cc; Android Source/Developers docs 2026-05"
 confidence: medium
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
 related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.9"]
 created_by: "task2a-knowledge-gap"
@@ -40,8 +40,12 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-05"
+last_task6_at: "2026-06-05"
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界
