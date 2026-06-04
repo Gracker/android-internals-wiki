@@ -1069,6 +1069,28 @@
       "completed_at": "2026-06-04T19:39:01+08:00",
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "P0 NPU feature name + source path table + conclusion conflict already fixed by prior Task2B (2026-06-04T18:54:38); queue status was stale — updated to completed."
+    },
+    {
+      "section": "6.3",
+      "section_title": "I/O 调度与性能",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 16/17 I/O 栈加速小节存在版本结论与一手源码锚点缺口",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P1 版本差异/源码证据缺口",
+          "location": "L370-L398 Android 16/17 的 I/O 栈加速",
+          "detail": "正文保留 io_uring FUSE、dm-verity multi-buffer hashing、Android 17 cgroup v2 io controller / 1000:10 权重等版本结论；其中两处仍标注 [待验证]，且本轮只能确认 AOSP 有 android-16.0.0_r* 标签，未找到 android-17.0.0_r1 可作为 Android 17 正文锚点。按 AIW 版本边界，只有 main/master 资料不得作为 Android 17 正文结论。",
+          "suggestion": "Task2B 应删除或降级该小节中无法锚定到 Android 16/17 一手资料的结论；能保留的内容必须给出 android-16.0.0_r1/r4、android-17.0.0_r1 或官方文档锚点，并明确默认启用状态、模块路径与设备/内核配置边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T20:24:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
     }
   ],
   "items": [

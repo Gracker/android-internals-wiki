@@ -16,19 +16,19 @@ tags:
 - linux
 - android
 - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-last_task9_at: '2026-05-12T19:58:00+08:00'
+last_task9_at: '2026-06-04T20:24:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-06-04'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-04'
 task6_result: pass-light-edit
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 16/17 io_uring/FUSE、dm-verity、cgroup v2 io 权重需补一手版本与源码证据。'
+task9_review_notes: '2026-06-04 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 16/17 I/O 栈加速缺少可写入正文的一手版本锚点，已写入 queue.json 与 research-gaps；scheduler 默认口径和阈值数据写入 suggestions。'
 last_task6_at: '2026-06-04T13:12:00+08:00'
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词: 真正 1 处(有对照对象) / 彻底 1 处(事实描述) / 元叙述 0)。否定-纠正 1 处(技术事实)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
 ---

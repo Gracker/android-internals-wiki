@@ -65,3 +65,19 @@ Android 17 的 NPU feature、LiteRT NPU delegate / CompiledModel、AICore、NNAP
 
 ### 关联章节
 5.11, 5.16, 5.13, 25.11
+
+## [2026-06-04] 6.3 I/O 调度与性能 — Android 16/17 I/O 栈版本证据
+
+### 盲区描述
+`Android 16/17 的 I/O 栈加速` 小节把 io_uring FUSE、dm-verity multi-buffer hashing、Android 17 cgroup v2 io controller / 1000:10 权重写成正文结论，但当前正文仍有 `[待验证]` 标记，且本轮未找到可用于 Android 17 正文锚定的 `android-17.0.0_r1` 标签。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 用 AOSP `android-16.0.0_r1`/`android-16.0.0_r4` 复核 storage / vold / FUSE 路径中是否存在 io_uring 集成、默认启用条件和 Perfetto 可观察点。
+- 用 Android common kernel 6.12 或 Android 16 GKI tag 复核 dm-verity multi-buffer hashing 的实际 commit、配置条件和 Android 平台版本映射，避免把 generic kernel 优化写成 Android 16 平台保证。
+- 等 `android-17.0.0_r1` 或官方 Android 17 文档可用后，再确认 task_profiles / cgroups 配置是否移除 blkio v1、是否存在 1000:10 io.weight 默认值；只有 main/master 资料时保持待验证或删除正文结论。
+
+### 关联章节
+6.3, 6.4, 25.6

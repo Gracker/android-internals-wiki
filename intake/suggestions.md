@@ -389,3 +389,21 @@ Queue 中无 task6/task9/external-review pending 条目。通过 frontmatter fal
   2. 或从 Clippings 素材和 AOSP 源码路径重新加工完整正文。
   3. 清理 frontmatter 孤立 YAML 片段，合并为单个正确的 frontmatter 块。
 - **review 日志**：logs/review/2026-06-04-20-review.md
+
+## [Task9 Deep Review] 6.3 I/O 调度与性能 — 2026-06-04
+- **类型**：版本口径/数据缺失
+- **位置**：L124、L132-L140、L218、L298-L307
+- **问题**：正文一边强调不同 SoC、存储介质和 vendor kernel config 会影响实际 scheduler，一边又写“Android 上一般不使用 none”“BFQ 成为主流选择”；Perfetto 正常/异常阈值也给出 UFS 4.0 随机读、fsync、iowait 等硬数值，但没有测试设备、内核、存储介质和样本条件。
+- **建议**：把 scheduler 默认值统一收敛为“以实机 `/sys/block/<device>/queue/scheduler` 为准”；阈值类数据补设备基线和 trace 样本，或改成排查起点而非通用正常范围。
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-06-04
+- **类型**：数据缺失
+- **位置**：L160-L166、L577
+- **问题**：Compose vs View 滚动对比和动画优化建议仍依赖外部观察或占位图，缺少本书可复查的 Macrobenchmark / Perfetto trace 截图、刷新率、Compose 版本、设备型号和样本条件。
+- **建议**：补一组 `FrameTimingMetric` / Perfetto 证据；无法补齐时，把数值结论保留为特定样本观察，不作为通用性能结论。
+
+## [Task9 Deep Review] 8.1 响应速度原理 — 2026-06-04
+- **类型**：版本差异/指标口径
+- **位置**：L221-L223
+- **问题**：ANR 阈值写成 Input 5s、Service 20s、BroadcastReceiver 10s，适合作为入门口径，但缺少前后台 Service、前后台 BroadcastReceiver、content provider 等不同触发条件的边界说明。
+- **建议**：后续补一段“ANR 阈值按组件和前后台状态变化”的版本边界，并交叉引用 9.1/9.x ANR 章节。
