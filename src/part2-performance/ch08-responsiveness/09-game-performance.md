@@ -46,13 +46,13 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
-reviewed_by: "openclaw-task6"
-reviewed_date: 2026-05-11
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-05
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
@@ -60,8 +60,9 @@ task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T12:37:27+08:00"
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
-last_task6_at: "2026-05-11T13:05:00+08:00"
+last_task6_at: "2026-06-05T02:06:00+08:00"
 last_task2b_lite_at: 2026-06-05
+task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1 修正 1 处（删除否定-纠正冗余句）；无新增 B 类问题。task9_result 仍为 needs-rework，等待 Task9 复检。"
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
@@ -95,7 +96,7 @@ last_task2b_lite_at: 2026-06-05
 
 一个普通 App 的大部分时间在等待用户交互，只在用户点击或滑动时才触发一帧渲染。游戏则从启动的那一刻起就持续以固定帧率推进渲染循环——60fps 意味着每 16.66ms 必须完成一帧，120fps 意味着预算只有 8.33ms，而且不能掉。这种持续满负载的运行模式，使得游戏对 CPU 调度延迟、热降频、GPU 吞吐量的敏感度远超普通应用。
 
-一个典型的例子：某款游戏在冷启动后前 30 秒稳定 60fps，之后帧率开始波动，45 秒后跌到 40fps。从 Perfetto 中看到的不是某一帧特别慢，而是 CPU 频率在 1.8GHz 和 0.9GHz 之间反复跳变——系统检测到温度上升后开始降频，帧率随之崩塌。这不是代码写得不好，是系统没有给游戏正确的性能资源。
+一个典型的例子：某款游戏在冷启动后前 30 秒稳定 60fps，之后帧率开始波动，45 秒后跌到 40fps。从 Perfetto 中看到的不是某一帧特别慢，而是 CPU 频率在 1.8GHz 和 0.9GHz 之间反复跳变——系统检测到温度上升后开始降频，帧率随之崩塌。
 
 Android 从 Android 12 开始逐步构建了一套面向游戏的系统级性能框架：Game Mode API 让用户表达性能偏好，Game State API 让游戏告知系统当前运行状态，ADPF（已在 §5.9 详细讨论）提供 CPU 调度提示和热管理，Frame Pacing Library（已在 §2.17 详细讨论）解决渲染同步问题。这些 API 的共同设计理念是：**让游戏和系统之间建立双向的信息通道**，系统不再是"黑盒式"地根据历史负载猜测需求，而是拿到明确的信号后精准调配资源。
 
