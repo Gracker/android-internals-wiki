@@ -1314,6 +1314,32 @@
       "priority": 80,
       "source": "task2a-knowledge-gap",
       "created_date": "2026-06-04"
+    },
+    {
+      "section": "19.18",
+      "section_title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Bugly Pro 页面回放/ANR API 官方证据不闭环",
+      "material_paths": [
+        "logs/deep-review/2026-06-05-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码/API 名称错误",
+          "location": "Bugly Pro 各增强能力表 / ANR 主线程预抓取",
+          "detail": "正文写 `BuglyBuilder.setEnableRecordAnrMainStack(true)`。本轮复核 Bugly Pro Android SDK 接入文档与 changelog，未找到该 API；官方初始化示例使用 `builder.enableAllThreadStackAnr = true` 控制 ANR 时是否抓取全部线程堆栈，ANR 诊断页说明主线程调用栈由周期性采样生成。",
+          "suggestion": "删除不存在的 setEnableRecordAnrMainStack API；改为 `builder.enableAllThreadStackAnr = true` + “主线程周期采样、疑似 ANR 时全线程堆栈”两层描述，并标注来源为 Bugly Pro Android SDK/ANR 文档。"
+        },
+        {
+          "type": "P1 产品能力/版本门槛待验证",
+          "location": "Bugly Pro 定位、选型表、版本门槛表、核验来源",
+          "detail": "正文多处声明 Bugly Pro 支持页面回放（Page Replay），并给出 Android SDK 4.4.7.3+ 门槛。本轮在 Bugly Pro Android SDK 接入文档、Android SDK changelog、ANR/启动教程中未找到“页面回放/Page Replay”或 4.4.7.3+ 对应门槛；公开 changelog 当前列出 4.4.7.8、4.4.5.6、4.4.3.x 等能力。",
+          "suggestion": "若有合同/控制台/私有文档证据，补一手材料路径和核对日期；否则移除 Page Replay 作为确定能力的表述，改为“页面/启动 Span、操作路径、ANR 诊断”等公开文档可验证能力，并删除 4.4.7.3+ 门槛。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-05T00:20:00+08:00",
+      "status": "pending"
     }
   ]
 }
