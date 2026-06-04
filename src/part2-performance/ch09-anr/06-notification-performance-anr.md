@@ -35,15 +35,15 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-25"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "needs-rework"
 task2b_result: "fixed-lite"
-task2b_state: "pending"
+task2b_state: fixed
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-25T16:22:00+08:00"
