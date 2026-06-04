@@ -1,4 +1,5 @@
 ---
+
 title: "可观测性案例集"
 chapter: "26.8"
 section: "26.8"
@@ -42,10 +43,10 @@ sources:
     path: "https://developer.android.com/ndk/guides/debug"
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
 task6_result: pass-light-edit
@@ -59,6 +60,8 @@ task9_result: needs-rework
 last_task9_at: "2026-05-15T08:32:31+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-08-deep-review.md
 task9_review_notes: 2026-05-15 Task9：needs-rework。P1：ApplicationExitInfo native tombstone trace 需拆 API 30/API 31+ 边界；另有 CI 门禁阈值与 APM/profile 数据治理 P2 建议。
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-06-04
 ---
 
 # 可观测性案例集
@@ -116,7 +119,7 @@ APM 平台先收敛字段，再接入模块。每个事件至少带这组公共�
 
 第一批事件只接低频、高价值、强行动性的信号：Java Crash、Native Crash、ANR、启动耗时、关键页面慢帧、网络请求错误、上报 SDK 自监控。它们有几个共同点：事件数量可控，事故优先级高，服务端能用它们触发告警。
 
-Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃线程堆栈、进程名、前后台状态、最近场景、最近 20 条关键操作、内存摘要、线程数、fd 数、磁盘剩余空间。Native Crash 不要在 signal handler 里做复杂 I/O；更稳妥的方案是用成熟 crash handler 生成 minidump，再在下次启动补充业务上下文。Android 11 以后还可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取系统记录的退出原因；Native tombstone 可通过 `ApplicationExitInfo.getTraceInputStream()` 作为补偿证据。[已验证: 官方文档, developer.android.com/ndk/guides/debug]
+Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃线程堆栈、进程名、前后台状态、最近场景、最近 20 条关键操作、内存摘要、线程数、fd 数、磁盘剩余空间。Native Crash 不要在 signal handler 里做复杂 I/O；更稳妥的方案是用成熟 crash handler 生成 minidump，再在下次启动补充业务上下文。Android 11 (API 30) 起可通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取系统记录的退出原因（CRASH、ANR、LMK 等）。Android 12 (API 31) 起，native crash 对应的 `ApplicationExitInfo.getTraceInputStream()` 可返回 tombstone protobuf，作为 native crash 堆栈的补偿证据；API 30 虽然有 `ApplicationExitInfo`，但 `getTraceInputStream()` 对 `REASON_CRASH_NATIVE` 返回 null。[已验证: 官方文档, developer.android.com/ndk/guides/debug]
 
 启动、卡顿和网络事件只存阶段耗时，不存完整日志。启动事件拆成 process start、Application、首个 Activity、首帧、首页 ready、TTFD。卡顿事件记录页面、帧时间分位、主线程长任务、GC、Binder 等待摘要。网络事件记录 DNS、connect、TLS、TTFB、总耗时、HTTP 状态码、错误类型、网络类型和运营商维度。
 
@@ -312,7 +315,8 @@ Android 15(API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 
 | Android 版本 | 可用能力 | 适用案例 | 边界 |
 | --- | --- | --- | --- |
 | Android 10(API 29)+ | Perfetto / on-device tracing 工具链 | 本地复现、测试设备、人工协助 trace | 发布版用户设备上通常不能随意抓完整系统 Trace |
-| Android 11(API 30)+ | `ApplicationExitInfo` 历史退出原因 | Crash、ANR、LMK、Native Crash 补偿证据 | 历史记录可能被覆盖，`getTraceInputStream()` 可能为空 |
+| Android 11(API 30)+ | `ApplicationExitInfo` 历史退出原因 | Crash、ANR、LMK 退出原因分类 | 历史记录可能被循环缓冲区覆盖 |
+| Android 12(API 31)+ | `ApplicationExitInfo.getTraceInputStream()` | Native crash tombstone protobuf 补偿证据 | 仅 `REASON_CRASH_NATIVE` 可用；tombstone 可能因全局 circular buffer 覆盖返回 null |
 | Android 15(API 35)+ | `ProfilingManager.requestProfiling()` | 目标用户或目标场景的系统 trace / heap / stack 采集 | 有 rate limiter，不适合全量常驻采集 |
 | Android 16(API 36)+ | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
 
