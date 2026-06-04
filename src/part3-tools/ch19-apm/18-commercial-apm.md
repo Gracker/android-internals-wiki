@@ -20,11 +20,11 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task9_result: needs-rework
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
