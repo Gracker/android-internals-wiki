@@ -192,3 +192,18 @@
 **本轮处理**：已添加过渡句连接这两段，但本质问题是 Freezer 源码分析是否应该独立成节或收入附录。本轮不做跨节重构，留给后续编辑决策。
 
 **严重度**：低-中。过渡句缓解了跳跃感，但长线看结构可能需要调整。
+
+
+## [Task6 Review] 2.19 刷新率切换与帧率适配性能 — 2026-06-04
+
+- **类型**：需重写 / 需补充素材
+- **位置**：机制解释节伪代码块 + 案例代码 + 误区条目
+- **问题**：
+  1. VsyncConfiguration/Scheduler/Display.h/VsyncController/DisplayManagerInternal 等 5 个代码块含疑似编造的 AOSP 类名和方法签名，未标注为伪代码
+  2. 案例 1-3 代码块使用编造 API（notifyPendingRefreshRateChange / smoothRefreshRateTransition 等）
+  3. FrameTimeline 监控代码含 wasRefreshRateSwitch() 编造方法
+  4. 误区 1-4 各仅 1 句，信息密度极低
+- **建议**：
+  1-3. Task 9 核实后改为概念性叙述 + 真实 API 引用，或明确标注为伪代码
+  4. 展开为 2-3 段叙述，说明误区来源和正确理解
+- **review 日志**：logs/review/2026-06-04-11-review.md
