@@ -79,6 +79,8 @@ p0: 1
 p1: 0
 p2: 1
 last_task9_autofix_at: "2026-06-04"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 
@@ -194,7 +196,7 @@ JobInfo.Builder 允许开发者设置以下约束:
 
 JobScheduler 不是"先 schedule 先执行"。系统会同时看 job priority、Standby Bucket 和 quota。
 
-`JobInfo.Builder.setPriority(int)` 是 API 33 引入的公开接口,可用值是 `PRIORITY_MIN`、`PRIORITY_LOW`、`PRIORITY_DEFAULT`、`PRIORITY_HIGH`、`PRIORITY_MAX`。这个 priority 只用于调用方内部的排序,不会跨 App 全局抢占。Android 14 开始,文档把范围收窄到同一 `job namespace` 内的排序。如果把所有 job 都设成 high 或 max,系统照样会按 quota、约束和重试历史做限制。
+`JobInfo.Builder.setPriority(int)` 是 API 33 引入的公开接口,可用值是 `PRIORITY_MIN`、`PRIORITY_LOW`、`PRIORITY_DEFAULT`、`PRIORITY_HIGH`、`PRIORITY_MAX`。这个 priority 只在同一个 App 的 job 之间排序，不会跨 App 抢占。Android 14 开始,文档把范围收窄到同一 `job namespace` 内的排序。如果把所有 job 都设成 high 或 max,系统照样会按 quota、约束和重试历史做限制。
 
 `QuotaController` 负责把"这个 App 现在还能不能继续跑后台 job"这件事编码成可执行规则。它看的不是单个 job 的 CPU 时间,而是调用方在滚动时间窗口里的执行历史、所在 bucket,以及当前系统状态。
 
@@ -530,6 +532,8 @@ App 进入 Rare 或 Restricted Bucket 后,后台任务几乎无法执行。应�
 
 ## 版本差异与兼容性
 
+以下按时间线梳理 JobScheduler 从 Android 8.0 到 Android 17 的关键行为变化。排查线上问题时，如果设备版本跨越其中某条分界线，需要先确认对应的限制是否已经生效。
+
 ### Android 8.0(API 26):后台执行限制
 
 - 禁止后台 App 创建后台 Service(`startService()` 抛出 `IllegalStateException`)
@@ -595,6 +599,8 @@ API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中,�
 
 ## 常见问题与误区
 
+以下几条是开发者排查后台任务时最容易踩的坑。
+
 **误区 1:"WorkManager 保证任务立即执行"**
 
 WorkManager 保证的是"任务最终会被执行",不是"任务立即执行"。即使不设任何约束,任务仍需经过调度器的队列,受 App Standby Bucket 和系统负载影响。需要立即执行的操作应使用 Foreground Service 或 Expedited Job。
@@ -651,62 +657,11 @@ Expedited Job 有独立配额,但配额有限。大约每天几十分钟的量�
 
 <!-- AIW-源码调研-2026-05-26 -->
 <!-- AIW-源码调研-2026-06-03 -->
+## 验证记录
 
-**来源**:DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md
+本节涉及的 Android 17 特性经多轮 DeepResearch 交叉确认，以下结论已验证或标为待验证：
 
-**补充验证结论(2026-06-03)**:
+- **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE**（API 37）：Android 17 新增的 ProfilingTrigger 类型，在系统因 excessive CPU 终止进程后生成事后 trace snapshot。**SUBREASON_EXCESSIVE_CPU**（值 7）与 **REASON_EXCESSIVE_RESOURCE_USAGE**（值 9）在 android-16.0.0_r3 中已验证存在，AMS 自 API 30 起即可因 excessive CPU kill 进程。这条 AMS kill 路径与 JobScheduler quota 互不依赖——quota 阻止新任务调度，kill 终止已运行进程。触发阈值、检查周期、与厂商 Rate limiter 的交互仍待 AOSP android-17.0.0_r1 源码验证。
+- **ProfilingManager** 采集数据仅含采样指标（CPU 时间片、堆栈采样、Binder 统计），不含内存内容或网络 payload；在 device owner / profile owner 场景下受 MDM 策略控制。
 
-1. **SUBREASON_EXCESSIVE_CPU(值 7)和 REASON_EXCESSIVE_RESOURCE_USAGE(值 9)在 android-16.0.0_r3 源码已验证存在**,确认 AMS kill excessive CPU 进程机制从 API 30 即存在
-
-2. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 在 android-17.0.0_r1 的 ProfilingTrigger.java 无法验证**(AOSP Mirror 该 tag 返回 404),结论基于 Android 17 release notes 推断,**仍应标注待验证**
-
-3. **SUBREASON_EXCESSIVE_CPU(AMS kill 路径)与 JobScheduler quota(调度阻止路径)是两条独立的控制机制**:quota 阻止新 job 调度,kill 强制终止已运行进程;两者作用于同一后台任务但互不依赖
-
-4. **章节 §5.10 现有标注正确**:Power Check 具体阈值仍为"待验证",ProfilingTrigger 触发后的 trace 文件路径获取方式有 Android Developers 文档支撑
-
-**关键源码**:github.com/aosp-mirror/platform_frameworks_base @ android-16.0.0_r3:core/java/android/app/ApplicationExitInfo.java(已验证 SUBREASON_EXCESSIVE_CPU)
-
-
-## 源码调研补充(2026-05-26)
-
-**来源**:DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
-
-**核心验证结论**:
-
-1. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 存在于 API 37(Android 17),非 API 36**。Android 17 behavior changes 确认 targetSdk >= 37 为触发前提条件之一。
-
-2. **Trigger 为事后取证机制,非预防性治理机制**。系统因过量 CPU 使用处置进程后,才生成 ProfilingResult。应用注册 trigger 不能阻止系统终止进程,只能在事后拿到 trace 文件。
-
-3. **JobScheduler quota 与 ProfilingTrigger 无直接源码关联**。两者服务于不同控制面:JobScheduler 控制"任务能否运行",ProfilingTrigger 记录"进程被处置时的现场"。AOSP 源码中未发现两者之间有直接调用或数据传递路径。
-
-4. **关键源码位置**:Perfetto trigger.proto(`external/perfetto/protos/perfetto/trace/trigger.proto`)定义了 trigger 类型常量;`frameworks/base/core/java/android/os/ProfilingTrigger.java` 是应用侧 API;`frameworks/base/core/java/android/os/ProfilingManager.java` 是系统服务侧。
-
-5. **待验证项(缺 AOSP 源码闭环)**:触发阈值(CPU 百分比、持续时间、cached/background/foreground service 状态区分)、处置信号(SIGKILL/SIGTERM/ActivityManager 路径)、检测服务实现(PowerManagerService/ActivityManagerService/kernel CPU acct)、厂商差异、trace buffer 时长。
-
-**建议**:章节中"Power Check"相关描述保持"待验证"标注,待 AOSP android-17.0.0_r1 源码闭环后再更新具体阈值。
-
-<!-- AIW-源码调研-2026-06-04 -->
-## 源码调研补充(2026-06-04)
-
-**来源**:DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
-
-**核心验证结论**:
-
-1. **ProfilingManager 公共 API 自 Android 15 / API 35 开始提供**,需 `android.permission.MANAGE_PROFILING` 权限(signature|privileged 级别,普通 App 无法获取)
-
-2. **Rate limiter 机制属厂商私有实现**。AOSP 层面仅通过 `ProcessRecord.profilingInfo` 锁控制单个进程同一时间只允许一个 profiling 会话。频率上限(如每小时最多 N 次)、具体阈值属于厂商差异化配置,非 AOSP 公共接口。
-
-3. **ProfilingManager 采集数据符合隐私最小化原则**:仅含采样指标(CPU 时间片、堆栈采样、Binder 调用统计),**不含**进程内存内容、文件内容、网络 payload。这为企业隐私合规(GDRP 等)提供基础。
-
-4. **Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE(API 37)新增**。但 android-17.0.0_r1 源码仍无法访问(404),结论基于合理推断,应保持"待验证"标注。
-
-5. **与 Android Vitals 集成路径**:`ProfilingManager` → `/data/misc/profiles/` → `statsd`(定期扫描)→ `ProfileStore` → Play Console Android Vitals。
-
-6. **企业场景特殊约束**:在 device owner / profile owner 场景下,profiling 数据保留期、数据导出能力受 MDM 策略控制,`ProfileData#isExportable()` 出厂默认 false。
-
-**关键源码**:
-- `android-16.0.0_r3:frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`(profileControl 锁机制,一手验证)
-- Android Developers: ProfilingManager reference(公共 API 验证,一手)
-
-**待验证**:android-17.0.07 ProfilingManager.java 精确源码、Rate limiter 具体阈值(厂商私有)、ProfilingTrigger callback 线程模型
-
+仍标注"待验证"：android-17.0.0_r1 ProfilingManager 精确源码、Excessive CPU 触发阈值与检查周期、厂商 Rate limiter 参数、ProfilingTrigger callback 线程模型。

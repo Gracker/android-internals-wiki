@@ -43,11 +43,13 @@ task2b_result: fixed
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
 
-> **版本边界说明**：本章主线按 AOSP android-16.0.0_r1 的 InputDispatcher 实现描述，涉及 `mAnrTracker`、`processAnrsLocked()`、`processConnectionResponsiveLocked()`、`shouldPruneInboundQueueLocked()`、`canReceiveForegroundTouches()` 等机制。这些能力并非在同一版本全部引入：Android 11 起出现 `mAnrTracker` 和 `shouldPruneInboundQueueLocked`，Android 12 起有 `processConnectionResponsiveLocked`，Android 13 起可见 `canReceiveForegroundTouches`。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（非 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文描述的主线机制差异较大。Android 17 AOSP tag 截至当前未发布，未经验证。排查旧版本时应优先确认源码路径和 ANR 等待模型。
+> **版本边界说明**：本章主线以 AOSP android-16.0.0_r1 为准。涉及的关键机制不在同一版本引入——`mAnrTracker` 和 `shouldPruneInboundQueueLocked` 始于 Android 11，`processConnectionResponsiveLocked` 始于 Android 12，`canReceiveForegroundTouches` 始于 Android 13。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（未迁入 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文主线差异较大。Android 17 的 AOSP tag 截至当前未发布，未经验证。排查旧版本时优先确认源码路径和 ANR 等待模型。
 
 <!-- outline-start -->
 ## 要点
@@ -167,7 +169,11 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 这能避免两个误判：把所有 Input ANR 都归到 App 主线程；把所有主线程卡顿都写成 InputDispatcher 问题。InputDispatcher 负责检测和隔离无响应连接，根因通常还要在 App、system_server、Binder 对端或内核调度里落点。
 
-## 扩展：游戏/高频触控场景下的反压放大
+## 扩展场景
+
+以下两个场景是 InputDispatcher 反压在实际问题中最常遇到的延伸话题——游戏高频触控和厂商定制行为。它们不在 AOSP 主线机制内，但排查时经常被问到。
+
+### 游戏/高频触控场景下的反压放大
 
 高频触控会放大队列现象。240Hz / 480Hz 报点下，单位时间进入系统的 MOVE 更多；如果 App 主线程一段时间不读 channel，`waitQueue` 的增长更快，`WOULD_BLOCK` 更容易出现。反过来，只要 App 侧能按帧批量消费，InputDispatcher 侧未必成为瓶颈，延迟瓶颈可能出现在 `InputConsumer` batching、`Choreographer`、渲染线程或 GPU 队列。
 
@@ -176,7 +182,7 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 > [来源: intake/daily-info/2026-05-16.md]
 > [待验证: 不同厂商游戏模式对 InputDispatcher 线程优先级、触控报点和事件过滤策略的实机差异]
 
-## 扩展：厂商输入调度策略与可验证边界
+### 厂商输入调度策略与可验证边界
 
 厂商定制最容易混进不可验证结论。本节能确认的 AOSP 边界是：InputDispatcher 使用 `responsive` 隔离无响应连接，用 `mAnrTracker` 管理超时，用 `iq/oq/wq` counter 暴露队列长度，用 `dumpsys input` 暴露连接状态。超出这些边界的说法，需要实机证据支撑。
 

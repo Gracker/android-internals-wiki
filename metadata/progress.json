@@ -4394,7 +4394,9 @@
       "queue_priority": 85,
       "task2b_result": "fixed",
       "last_task2b_at": "2026-06-03T20:59:49",
-      "last_task2b_by": "openclaw-task2b"
+      "last_task2b_by": "openclaw-task2b",
+      "task6_flagged": "2026-06-04",
+      "task6_issue": "main_body_missing"
     },
     "26.5": {
       "status": "ready-for-review",
@@ -4407,7 +4409,9 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-06-03T20:59:49",
-      "last_task2b_by": "openclaw-task2b"
+      "last_task2b_by": "openclaw-task2b",
+      "task6_reviewed": "2026-06-04",
+      "task6_round": 2
     },
     "26.6": {
       "title": "A/B Test 与性能回归防护",
@@ -7376,6 +7380,16 @@
       "queue_priority": 80,
       "material_count": 6,
       "gap_source": "Clippings结构参考/素材驱动/AOSP源码"
+    },
+    "19.18": {
+      "task6_reviewed": "2026-06-04",
+      "task6_result": "pass-light-edit",
+      "task6_round": 3
+    },
+    "19.06": {
+      "task6_reviewed": "2026-06-04",
+      "task6_result": "pass-light-edit",
+      "task6_round": 4
     }
   },
   "task2b_rounds": [

@@ -375,3 +375,17 @@ Queue 中无 task6/task9/external-review pending 条目。通过 frontmatter fal
 1. Task 2B backlog（10 个 pending 章节）的内容打磨
 2. 4 个 draft 章节（1.24, 20.17, 21.13, 22.20）的内容完善
 3. 109 个 ready-for-review 章节的 review 推进
+
+
+## [Task6 Review] 26.2 Crash 上报体系搭建 — 2026-06-04
+
+- **类型**：需重写 + 需修复
+- **位置**：全文 + frontmatter
+- **问题**：
+  1. 正文主体完全缺失。文件只包含「附录:源码调研补充」和后续补充段落，outline 块不存在，核心 Crash 上报内容（Java Crash 监控、Native Crash 信号处理、符号化、脱敏、上报链路、告警聚合）全部丢失。此前多次 task6/task9 审查记录显示正文曾经存在，疑似在 task2b 或 task9 auto-fix 过程中丢失。
+  2. Frontmatter 结构异常：第一个 frontmatter 块结束后存在孤立行 `last_task9_autofix_at: "2026-06-03"` 和多余的 `---`，导致 YAML 解析异常。
+- **建议**：
+  1. 从 git 历史找到正文主体丢失前的版本（review_notes_2 显示 2026-04-25 时正文尚在），恢复正文。
+  2. 或从 Clippings 素材和 AOSP 源码路径重新加工完整正文。
+  3. 清理 frontmatter 孤立 YAML 片段，合并为单个正确的 frontmatter 块。
+- **review 日志**：logs/review/2026-06-04-20-review.md

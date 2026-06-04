@@ -1070,5 +1070,32 @@
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "P0 NPU feature name + source path table + conclusion conflict already fixed by prior Task2B (2026-06-04T18:54:38); queue status was stale — updated to completed."
     }
+  ],
+  "items": [
+    {
+      "section": "26.2",
+      "section_title": "Crash 上报体系搭建",
+      "priority": 90,
+      "reason": "[review回炉] 正文主体内容完全缺失，文件仅包含附录/源码调研补充材料。无 outline 块，无任何正文段落。frontmatter 存在孤立 YAML 片段。",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文",
+          "detail": "正文主体完全缺失（Crash 上报体系的核心内容：Java Crash 监控、Native Crash 监控、符号化、脱敏、上报链路等均不存在），文件只保留了附录和源码调研补充段落",
+          "suggestion": "Task2B 需要从素材（Clippings/极客时间 + official docs）重新生成完整正文，或从 git 历史恢复已丢失的正文内容"
+        },
+        {
+          "type": "需修复",
+          "location": "frontmatter",
+          "detail": "文件结构异常：frontmatter 结束后存在孤立行 last_task9_autofix_at 和多余的 --- 分隔符",
+          "suggestion": "清理孤立 YAML 片段，确保只有一个正确的 frontmatter 块"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-04T20:15:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-04-20-review.md"
+    }
   ]
 }
