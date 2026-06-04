@@ -1235,6 +1235,70 @@
       "status": "processed",
       "processed_date": "2026-06-04",
       "source": "task2a-gap-mining"
+    },
+    {
+      "section": "6.4",
+      "section_title": "存储相关的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 FUSE over io_uring 与 Android 16 16KB 页表述缺少 Android 17/API37 一手依据",
+      "material_paths": [
+        "logs/deep-review/2026-06-04-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码/版本事实错误",
+          "location": "“Android 17 FUSE over io_uring：异步化重构”小节与版本总结",
+          "detail": "正文把 FUSE over io_uring 写成 Android 17 基于 Linux 6.14 的已落地存储路径，并给出 20% 延迟收益、vold/SELinux 细节。官方 Android storage/FUSE passthrough 文档只确认 Android 12 FUSE passthrough；未找到 Android 17/API37 进入 AIW 范围的一手源码或官方文档支撑该结论。",
+          "suggestion": "删除或改写为待验证材料。正文只保留 Android 11 回归 FUSE 与 Android 12 FUSE passthrough；如后续补充 io_uring，必须提供 android-17.0.0_r1 或更低版本源码锚点。"
+        },
+        {
+          "type": "P1 版本差异错误",
+          "location": "“16KB 页对齐：从可选到强制”",
+          "detail": "正文称 Android 16/API36 把 16KB 内存页确立为旗舰设备唯一运行模式。AOSP 官方 16KB page size 文档表述为 Android 15 起支持构建 16KB page size，Android 16 增加 prebuilt ELF alignment 构建检查；Google Play 要求面向 Android 15+ 设备的提交支持 16KB page size。该段把平台可选能力、构建检查和 Play 发布要求混成系统强制运行模式。",
+          "suggestion": "按官方口径重写：Android 15+ 支持 16KB page size，是否启用取决于 arm64 16KB kernel 与产品配置；Android 16 的变化应限定为构建/校验能力，不写成所有旗舰设备唯一模式。"
+        },
+        {
+          "type": "P2 数据支撑不足",
+          "location": "FUSE over io_uring 20% 延迟收益、16KB PSS 9% 增量、UFS/EROFS多处百分比结论",
+          "detail": "章节含多个百分比性能结论，但只有部分来自 EROFS LPC/官方材料；FUSE over io_uring 与 16KB PSS 影响缺少测试条件、设备、样本和原始资料。",
+          "suggestion": "把无一手来源的数据移除，或补充测试设备、版本、trace/benchmark 路径和原始链接。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T22:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.12",
+      "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ViewTreeObserver Android 17 附录存在源码锚点与机制描述错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-04-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "7.12.x “关键成员”",
+          "detail": "正文声称 AOSP android-17.0.0_r1 源码级验证，但 android.googlesource 本轮无法打开该 tag；按 android-16.0.0_r1 验证，ViewTreeObserver 使用 CopyOnWriteArray 字段 mOnGlobalLayoutListeners / mOnScrollChangedListeners，而不是单数 mOnGlobalLayoutListener / mOnScrollChangedListener。",
+          "suggestion": "移除“android-17.0.0_r1 已验证”标记，按可验证源码修正字段名；若保留 Android 17 结论，必须补实际可访问的一手源码锚点。"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "7.12.x “ViewGroup layoutMode 快速路径”",
+          "detail": "正文代码片段 if (mLayoutMode != LAYOUT_MODE_UNDEFINED) { 跳过 measure，直接 layout 定位 } 未在 android-16.0.0_r1 ViewGroup.java 中找到对应语义。ViewGroup layoutMode 相关代码主要用于 optical/clip bounds 布局模式继承和缓存，不是通用跳过 measure 的快速路径。",
+          "suggestion": "删除该快速路径结论，或改为 layoutMode 只影响布局边界计算语义，不能作为 measure/layout 性能优化结论。"
+        },
+        {
+          "type": "P1 原理断裂/版本差异",
+          "location": "7.12.x “PFLAG_FORCE_LAYOUT 精确传播”",
+          "detail": "正文把 PFLAG_FORCE_LAYOUT 描述成 Android 17 性能优化，并称只有 requestLayout 的 View 分支执行完整 measure/layout。android-16.0.0_r1 中 PFLAG_FORCE_LAYOUT、ViewRootImpl.requestLayoutDuringLayout()、getValidLayoutRequesters() 已是既有机制；requestLayout 沿父链到 ViewRootImpl，并不能简单概括为只测一个分支。",
+          "suggestion": "回到正文已有 requestLayout 链路表述，避免把长期存在的 View traversal 机制写成 Android 17 新优化；需要补充时按 ViewRootImpl.performTraversals()/getValidLayoutRequesters() 源码解释。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-04T22:20:00+08:00",
+      "status": "pending"
     }
   ]
 }
