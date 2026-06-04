@@ -61,6 +61,8 @@ finalized_date: "2026-05-28"
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # 动画性能优化
@@ -180,8 +182,6 @@ RenderEffect 的优化要点是缩小输入内容，而不是只盯着 API 调�
 - 对低端机或省电模式提供降级：关闭 blur、降低半径、改用半透明色块。
 - Perfetto 中同时看 UI Thread、RenderThread 和 GPU 相关 slice；如果 UI Thread 很短但 RenderThread `DrawFrame` 拉长，问题多半在 GPU 绘制或离屏合成。
 
-[来源: Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md]
-
 下面的封装把 RenderEffect 限制在 API 31+，并集中处理降级：
 
 ```kotlin
@@ -249,9 +249,7 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 
 [详见 22.4 节]
 
-后台动画也要纳入功耗治理。页面 `onStop()` 后还在播放的属性动画、Lottie、定时器刷新，会在用户不可见时继续占用 CPU/GPU。页面不可见时暂停，回到前台再按业务状态恢复；这类问题更适合通过生命周期钩子和页面级动画管理器统一兜底。
-
-[来源: intake/external-resources/blog-gracker-series.md, Android 后台动画优化]
+后台动画也要纳入功耗治理。页面 `onStop()` 后还在播放的属性动画、Lottie、定时器刷新，会在用户不可见时继续占用 CPU/GPU。页面不可见时暂停，回到前台再按业务状态恢复；这类问题适合通过生命周期钩子和页面级动画管理器统一兜底。
 
 ## 转场动画优化
 

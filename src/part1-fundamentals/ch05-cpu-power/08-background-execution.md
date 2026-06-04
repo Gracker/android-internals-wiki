@@ -91,8 +91,9 @@ reviewed_date: "2026-06-04"
 last_task6_at: "2026-06-04T04:12:07+08:00"
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
 last_task9_autofix_at: "2026-06-04"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
-
 
 
 # 5.8 后台执行限制与优化
@@ -358,8 +359,6 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 - **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
 - **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
 
-- **AVF pVM 任务配额豁免**：[待验证] 通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，可能不消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。该豁免口径当前未在 Android Developers power-details、Android 17 changes 或 AOSP AVF 文档中核验到，补齐官方来源前不应作为选型决策依据。
-
 因此，看到“受限状态下任务还是执行了”，先核对它是不是走了这些例外入口。
 
 ### 选型决策
@@ -373,6 +372,8 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 5. 需要 JobScheduler 的底层能力或细粒度调试接口，再直接用 JobScheduler
 6. 任务需要持续运行且必须让用户清楚知道它在干什么，才用 FGS
 
+以上是任务调度层面的限制。下面从另一个角度看后台管控：系统对缓存进程的冻结机制。当 App 退到 cached 状态后，CachedAppOptimizer 会决定何时暂停其执行，这和 Doze、Standby bucket 是两条并行的管控线。
+
 ## Android 16 的进程冻结流程：CachedAppOptimizer 与 Binder 协同
 
 后台限制不只体现在 job、alarm 和 FGS 门禁上。应用退到 cached 之后，系统还会通过 CachedAppOptimizer 决定它何时进入 freezer。这套机制处理的是缓存进程何时暂停执行，Doze 和 Standby bucket 处理的是后台任务何时允许运行。
@@ -380,8 +381,6 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 Android 16 在这里补了一层约 10 秒的 debounce。进程刚进入 cached 状态时，系统不会立刻冻结，而是先留出一个短窗口，避开用户来回切任务时的频繁 freeze / unfreeze。对体验的影响很直接：最近刚离开前台的应用，回切时更少撞上“刚被冻结又马上解冻”的额外开销。
 
 Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
-
-
 
 ### BINDER_FREEZE ioctl 与竞态处理
 
@@ -500,7 +499,6 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 
 **源码路径**：`frameworks/base/core/java/android/os/RemoteCallbackList.java`
 
-
 ## 后台执行对前台性能的影响
 
 性能分析里，很多时候只盯前台 App 的渲染和响应，却漏掉了后台行为带来的间接代价。不合理的后台工作，经常和前台卡顿、发热、续航变短一起出现。
@@ -612,7 +610,6 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [Perfetto trace 配置与数据源说明](https://perfetto.dev/docs/concepts/config)
 
 ### Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析.md
 - 类型：源码级调研资料
 - 摘要：这篇源码级调研聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。
 - 价值：直接补到 5.8 的系统实现层，避免后台限制章节只停留在策略说明。

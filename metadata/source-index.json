@@ -1901,53 +1901,177 @@
       "score": 11,
       "timestamp": "2026-06-03T05:00:00Z",
       "scored_at": "2026-06-03T05:46:19.503650"
-    }
-  ],
-  "entries": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md",
-      "title": "Android Input/Touch/Scroll 性能与延迟深度调研",
-      "summary": "系统梳理 Android input 全链路：从硬件中断→内核 evdev→InputReader/InputDispatcher(socketpair 非 Binder)→App InputChannel→ViewRootImpl InputStage 责任链→Choreographer CALLBACK_INPUT 批量消费。量化三种延迟口径(end-to-end/InputDispatcher 分段/jank 归因)，给出 MotionPredictor(TFLite 模型)、触摸 resampling 精确常量、FrameTimeline jank_type 归因方案。是 SmartPerfetto 输入分析的高价值参考。",
-      "chapter": "ch03",
-      "processed_at": "2026-06-02T22:16:25.663725+00:00",
-      "action": "direct",
-      "tags": "#Android #Input #触摸延迟 #Perfetto #Choreographer #MotionPredictor"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md",
-      "title": "Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码分析",
-      "summary": "完整梳理 Binder IPC 三层架构：Java 层 Binder/BinderProxy → JNI(android_util_Binder.cpp) → Native BpBinder/BBinder → IPCThreadState.talkWithDriver() → ioctl(BINDER_WRITE_READ)。详解 BC_/BR_ 命令协议、flat_binder_object 类型编码、Parcel 序列化、死亡通知机制、线程池管理。源码锚点 android-17.0.0_r1，可作为 Binder 全链路阅读导航。",
-      "chapter": "ch16",
-      "processed_at": "2026-06-02T22:16:25.663725+00:00",
-      "action": "direct",
-      "tags": "#Android #Binder #IPC #AOSP #源码分析"
+      "title": "Android 17 ProfilingManager Excessive CPU 版本边界验证",
+      "path": "DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md",
+      "directory": "DeepResearch",
+      "filename": "2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 20,
+      "chapter_mapping": "ch05",
+      "indexed_at": "2026-06-04 05:45",
+      "file_size": 0,
+      "estimated_read_time": 0,
+      "source_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#Framework",
+        "#Perfetto",
+        "#ProfilingManager"
+      ],
+      "scored_at": "2026-06-04T05:46:09.895340"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md",
-      "title": "字节跳动 Android 性能·功耗·稳定性全栈技术方案",
-      "summary": "系统梳理字节跳动开源工具链(btrace 3.0 同步抓栈、ByteHook/ShadowHook hook 三件套、Raphael Native 泄漏、Tailor 等)及闭源 APM 平台(Slardar/MDAP→APMPlus)。详述流畅度/稳定性方法论：卡顿≈500ms 调度采样、ANR 5-10s 消息历史还原、三级防劣化体系。涵盖 Native crash 信号捕获、OOM 分类(pthread_create/FD/Java heap)、功耗治理模型。包含豆包手机助手端云协同 GUI Agent 架构分析。",
-      "chapter": "ch19",
-      "processed_at": "2026-06-02T22:16:25.663725+00:00",
-      "action": "queue",
-      "tags": "#Android #APM #btrace #字节跳动 #稳定性 #功耗 #GUIAgent"
+      "title": "Android 17 ANR监控与Ftrace集成优化方案",
+      "path": "DeepResearch/2026-06-03-anr-monitoring-ftrace.md",
+      "directory": "DeepResearch",
+      "filename": "2026-06-03-anr-monitoring-ftrace.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 20,
+      "chapter_mapping": "ch09",
+      "indexed_at": "2026-06-04 05:45",
+      "file_size": 0,
+      "estimated_read_time": 0,
+      "source_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#ANR",
+        "#Ftrace",
+        "#性能监控"
+      ],
+      "scored_at": "2026-06-04T05:46:17.080363"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md",
-      "title": "荣耀 MUSCHED VIP 调度与 Binder 优先级传递深度调研",
-      "summary": "深度分析荣耀 OSDI'26 论文 MUSCHED 调度器：论证 VIP 调度类基于 sched_ext full-switch 而非新增 sched_class，在 sched_ext 内部划分 VIP>普通两层实现 RT>VIP>普通 效果。详述 AOSP Binder 优先级继承只传播 sched_policy+prio，不传播厂商 VIP 标签，需 vendor hook 或 eBPF 扩展。涉及 RenderThread user-aware property、rtmutex vendor hooks 等实现路径。对理解 OEM 调度策略有重要参考价值。",
-      "chapter": "ch17",
-      "processed_at": "2026-06-02T22:16:25.663725+00:00",
-      "action": "queue",
-      "tags": "#Android #OEM #荣耀 #sched_ext #Binder #VIP调度 #优先级传递"
+      "title": "Android 17 TextureView Metal/Vulkan Backend 性能对比",
+      "path": "DeepResearch/2026-06-03-textureview-metal-vulkan-backend.md",
+      "directory": "DeepResearch",
+      "filename": "2026-06-03-textureview-metal-vulkan-backend.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 20,
+      "chapter_mapping": "ch02",
+      "indexed_at": "2026-06-04 05:45",
+      "file_size": 0,
+      "estimated_read_time": 0,
+      "source_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#TextureView",
+        "#Metal",
+        "#Vulkan",
+        "#渲染"
+      ],
+      "scored_at": "2026-06-04T05:46:24.425992"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-02-android-compose-110-strong-skipping-optimization-gaps.md",
-      "title": "Compose 1.10+ Strong Skipping 盲区与 produceState 内存机制",
-      "summary": "深度分析 Strong Skipping Mode(Compose Compiler 1.5.4+实验→Kotlin 2.0.20 全面启用)的设计规范：所有 restartable Composable 均可跳过、unstable 参数用实例相等(===)比较、lambda 自动 memoize。详解 @NonRestartableComposable(不可跳过/重启)与 @NonSkippableComposable(可重启不可跳过)的区别，produceState 的 key 语义陷阱(单 key 用 Unit 永不变)，以及 @DontMemoize 注解使用场景。源码锚点 androidx-main。",
-      "chapter": "ch22",
-      "processed_at": "2026-06-02T22:16:25.663725+00:00",
-      "action": "queue",
-      "tags": "#Android #Compose #StrongSkipping #性能优化 #Jetpack"
+      "title": "ProfilingManager企业级隐私机制研究",
+      "path": "DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md",
+      "directory": "DeepResearch",
+      "filename": "2026-06-04-profilingmanager-enterprise-privacy.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 20,
+      "chapter_mapping": "ch05",
+      "indexed_at": "2026-06-04 05:45",
+      "file_size": 0,
+      "estimated_read_time": 0,
+      "source_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#ProfilingManager",
+        "#隐私",
+        "#企业级"
+      ],
+      "scored_at": "2026-06-04T05:46:32.110614"
+    },
+    {
+      "title": "TextureView游戏引擎集成优化",
+      "path": "DeepResearch/2026-06-04-textureview-game-engine-integration.md",
+      "directory": "DeepResearch",
+      "filename": "2026-06-04-textureview-game-engine-integration.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 20,
+      "chapter_mapping": "ch02",
+      "indexed_at": "2026-06-04 05:45",
+      "file_size": 0,
+      "estimated_read_time": 0,
+      "source_type": "deep_research",
+      "tags": [
+        "#Android",
+        "#TextureView",
+        "#游戏引擎",
+        "#渲染优化"
+      ],
+      "scored_at": "2026-06-04T05:46:44.073886"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-textureview-foldable-irregular-screen-adaptation.md",
+      "title": "TextureView 折叠屏/异形屏行为适配优化",
+      "summary": "分析 TextureView 在折叠屏、异形屏下的行为机制，核心依赖 WindowInsets + DisplayCutout + Choreographer 帧同步。SurfaceTexture buffer size 由 onSizeChanged → setDefaultBufferSize 驱动，折叠/配置变更时自动适应。源码基于 android-16.0.0_r1 验证，涵盖 Multi-Window 隔离和纹理矩阵变换机制。",
+      "section": "18.7",
+      "section_title": "TextureView 合成链路",
+      "processed_at": "2026-06-04T06:14:49.229183+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md",
+      "title": "ProfilingManager 企业环境隐私合规策略",
+      "summary": "ProfilingManager API 35+ 的 rate limiter 机制和企业 MDM 合规分析。需 MANAGE_PROFILING（signature|privileged）权限，采集数据仅含 CPU 时间片和堆栈采样，不含内存内容。企业场景下存在并发数限制、时长限制和数据导出控制，与 Android Vitals 通过 statsd 集成。",
+      "section": "25.12",
+      "section_title": "Android 17 Excessive CPU Kill 与后台任务功耗治理",
+      "processed_at": "2026-06-04T06:14:49.229183+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-textureview-game-engine-integration.md",
+      "title": "TextureView 游戏引擎集成机制（Unity/Unreal）",
+      "summary": "游戏引擎主渲染不使用 TextureView（走 SurfaceView 或 Native Surface），TextureView 仅用于游戏内视频纹理、AR 相机预览等 UI 叠加场景。详细对比 SurfaceView 游戏主渲染与 TextureView 视频纹理的延迟、GPU 开销和帧率绑定差异。",
+      "section": "18.16",
+      "section_title": "游戏引擎渲染链路",
+      "processed_at": "2026-06-04T06:14:49.229183+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md",
+      "title": "ProfilingManager Excessive CPU Trigger 版本边界验证",
+      "summary": "TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 在 AOSP android-17.0.0_r1 中无公开稳定锚点，应降级为待验证。SUBREASON_EXCESSIVE_CPU=7 从 API 30 已存在。JobScheduler quota 与 AMS excessive CPU kill 属不同路径，可同时作用。版本边界清晰区分了已验证和未验证项。",
+      "section": "25.12",
+      "section_title": "Android 17 Excessive CPU Kill 与后台任务功耗治理",
+      "processed_at": "2026-06-04T06:14:49.229183+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md",
+      "title": "Measure + Perfetto/FrameMetrics 系统级渲染分析集成点",
+      "summary": "FrameMetrics API 底层通过 FrameInfo 结构体（24个索引）收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 present time（公共 API）和等待 present time（Perfetto 系统级分析）。集成关键在于 FrameMetrics 是 Perfetto 数据的上层包装。",
+      "section": "13.02",
+      "section_title": "Trace 抓取",
+      "processed_at": "2026-06-04T06:14:49.229183+08:00",
+      "processor": "task-deepresearch-injector"
     }
   ]
 }

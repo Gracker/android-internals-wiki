@@ -85,9 +85,9 @@ task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。补 Android 17 J
 last_task2b_lite_at: "2026-06-04"
 last_task9_autofix_at: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
-
-
 
 
 # CPU 相关的版本演进
@@ -250,6 +250,8 @@ Android 10 还做了两件和功耗直接相关的改动:
 
 [已验证: 官方文档, developer.android.com/about/versions/10/privacy/changes]
 
+以上是应用层约束的演进。在硬件层面，ARM 架构版本的迭代也给 Android App 带来了新的能力分化，主要体现在向量指令和内存标记两方面。
+
 ## [自动发现] ARMv8.5 / ARMv9:SVE2 与 MTE 对 App 的影响
 
 ARMv9 进入手机后,Android App 主要受到两类硬件能力分化影响:向量指令和内存标记。
@@ -261,6 +263,8 @@ MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设
 这条演进和调度策略不是同一层。Perfetto 能帮助观察 MTE 开启后的线程时序、崩溃前后 CPU 状态和启动耗时变化;tag mismatch 的直接证据仍然来自 tombstone / logcat / crash report。SVE2 的收益则要通过 native benchmark、simpleperf 热点和硬件能力检测一起确认。
 
 [已验证: developer.android.com/ndk/guides/arm-mte;source.android.com/docs/security/test/memory-safety/arm-mte;Arm Architecture Reference Manual]
+
+讲完调度器选核策略（EAS）和硬件能力（ARM 扩展），中间还缺一层：线程的性能意图怎么传给调度器。下面这个 [自动发现] 段落补的就是这条链路。
 
 ## [自动发现] Android 11-15:schedtune 退场,uclamp 与 task profiles 进入主线
 
@@ -322,6 +326,8 @@ Android 15 还让设备更快进入 Doze。官方行为变更页强调了这个�
 
 [已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-all]
 
+Android 15 把后台网络、Doze 加速这些基调和 GKI 基线定了下来，Android 16 没有再做大框架变更，转而对 JobScheduler 配额做精细化管控。
+
 ### [自动发现：来源 web search - Android developer docs] Android 16：JobScheduler 配额优化
 
 Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job 的执行时间配额(runtime quota)现在不仅取决于 App 的 Standby Bucket,还取决于:
@@ -334,6 +340,8 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 [已验证: developer.android.com/about/versions/16/behavior-changes-all;developer.android.com/reference/android/app/job/JobScheduler]
 
+Android 17 延续了精细化管控的方向，下面列出已通过官方文档确认的功耗行为变更。
+
 ### [自动发现] Android 17：已确认的功耗行为变更
 
 Android 17 (API 37) 在功耗管理方面的已确认变化(本轮按官方 behavior changes、features 与 API reference 复核):
@@ -345,12 +353,9 @@ Android 17 (API 37) 在功耗管理方面的已确认变化(本轮按官方 beha
 
 这些变化延续了前面版本的演进方向：逐步减少 App 对 CPU 的自主使用权，同时提供更好的可观测性。
 
-> ⚠️ **未核实研究线索**:有 external review 提到 Android 17 可能引入基于 ODPM/μJ 计量的"Energy Limiter"机制(按 App 统计后台能量消耗,超配额强杀)。该机制未在官方 behavior changes 页面中找到对应条目,目前不能作为确定平台特性。如果后续被官方确认,可在此处补充。
-
 [已验证: Android 17 behavior changes / features / JobScheduler API reference; source.android.com/docs/core/power]
 
 ## GKI 对内核调度模块定制化的影响
-
 
 GKI(Generic Kernel Image)把 Android 通用内核和厂商定制拆开了。Android 11 引入 GKI 1.0,Android 12 起要求搭配 5.10+ 内核的新设备采用这套模型。它的目标不是让所有设备"长得一样",而是把可复用的通用内核和厂商自带模块分开,减少长期堆补丁造成的碎片化。Android 15 这一代常见的 GKI 基线已经来到 6.6,同时 16KB page size 兼容也开始影响 App 和 SoC 适配节奏。
 
@@ -363,6 +368,8 @@ GKI 对 CPU 调度的影响,主要体现在厂商还能在哪里放自己的策�
 2. **Vendor Hook 仍然是厂商插策略的常用位置**。在 android15-6.6 的调度 hook 里,可以直接看到 `android_rvh_cpu_overutilized`、`android_rvh_sched_balance_rt`、`android_rvh_uclamp_eff_get` 这类入口。它们比文档式的伪名字更重要,因为你在设备差异分析里实际会碰到的就是这些符号。
 
 3. **`sched_ext` 还不是 Android 15 GKI 6.6 的现成能力**。它在 upstream Linux 6.12 才合入,更适合写成后续可能进入 Android common kernel 的实验方向。今天在 Android 15 设备上谈调度定制,主角仍然是 vendor hooks、uclamp、cpuset 和 task profiles,不是 `sched_ext`。
+
+GKI 讲的是厂商还能在哪插策略，下面这个 [自动发现] 方向则代表了调度器更根本的变化可能：运行时可插拔。
 
 ### [自动发现] sched_ext:BPF 可编程调度的演进蓝图
 

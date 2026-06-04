@@ -519,6 +519,135 @@ public final class TextureLayer implements AutoCloseable {
 ---
 
 
+
+## 折叠屏/异形屏适配（AIW-源码调研-2026-06-04）
+
+### 核心结论
+
+**TextureView 的折叠屏/异形屏适配不依赖专用 API，核心依赖三件套：WindowInsets + DisplayCutout + Choreographer 帧同步。**
+
+折叠屏适配本质是 WindowManager 将 DisplayCutout、安全区边界、Multi-Window bounds 通过 WindowInsets 传递给 View 层级。TextureView 作为普通 View，直接参与 View 树的 `onApplyWindowInsets` 流程，无需专门适配。
+
+### 源码级适配机制
+
+#### 1. 尺寸自动适应：setDefaultBufferSize
+
+**关键函数路径**：
+```
+TextureView.onSizeChanged(w, h)
+  → mSurface.setDefaultBufferSize(getWidth(), getHeight())
+  → updateLayer()
+```
+
+**源码**：`TextureView.java` (android-16.0.0_r1) 第 385-400 行
+```java
+@Override
+protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    super.onSizeChanged(w, h, oldw, oldh);
+    if (mSurface != null) {
+        mSurface.setDefaultBufferSize(getWidth(), getHeight());
+        updateLayer();
+        if (mListener != null) {
+            mListener.onSurfaceTextureSizeChanged(mSurface, getWidth(), getHeight());
+        }
+    }
+}
+```
+
+TextureView 的 SurfaceTexture buffer size 绑定到 View 自身尺寸。折叠/配置变更导致 View layout 变化时，SurfaceTexture buffer 自动 resize，无需额外 API 调用。
+
+#### 2. WindowInsets 传递路径
+
+**源码**：`View.java` (android-16.0.0_r1) `onApplyWindowInsets` 默认实现
+```java
+public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+    if ((mPrivateFlags4 & PFLAG4_FRAMEWORK_OPTIONAL_FITS_SYSTEM_WINDOWS) != 0
+            && (mViewFlags & FITS_SYSTEM_WINDOWS) != 0) {
+        return onApplyFrameworkOptionalFitSystemWindows(insets);
+    }
+    if ((mPrivateFlags3 & PFLAG3_FITTING_SYSTEM_WINDOWS) == 0) {
+        if (fitSystemWindows(insets.getSystemWindowInsetsAsRect())) {
+            return insets.consumeSystemWindowInsets();
+        }
+    }
+    return insets;
+}
+```
+
+TextureView 继承 View 默认的 `onApplyWindowInsets` 行为。WindowInsets 携带 DisplayCutout（异形屏挖孔）、system bars inset、IME inset 等信息。可通过 `setOnApplyWindowInsetsListener` 自定义处理。
+
+#### 3. DisplayCutout 异形屏适配
+
+**源码**：`DisplayCutout.java` (android-16.0.0_r1)
+```java
+public final class DisplayCutout {
+    private final Rect mSafeInsets;
+    @NonNull
+    private final Insets mWaterfallInsets;
+
+    public static final int BOUNDS_POSITION_LEFT = 0;
+    public static final int BOUNDS_POSITION_TOP = 1;
+    public static final int BOUNDS_POSITION_RIGHT = 2;
+    public static final int BOUNDS_POSITION_BOTTOM = 3;
+}
+```
+
+DisplayCutout 描述屏幕物理挖孔区域的安全区边界。通过 `WindowInsets.getDisplayCutout()` 获取。TextureView 所在窗口若置于挖孔区域，可通过 WindowInsets 判断 safe insets 并做 padding。
+
+#### 4. Multi-Window 中的 TextureLayer 隔离
+
+**源码**：`TextureView.java` (android-16.0.0_r1) `getTextureLayer()`
+```java
+TextureLayer getTextureLayer() {
+    if (mLayer == null) {
+        if (mAttachInfo == null || mAttachInfo.mThreadedRenderer == null) {
+            return null;
+        }
+
+        mLayer = mAttachInfo.mThreadedRenderer.createTextureLayer();
+        boolean createNewSurface = (mSurface == null);
+        if (createNewSurface) {
+            mSurface = new SurfaceTexture(false);
+            nCreateNativeWindow(mSurface);
+        }
+        mLayer.setSurfaceTexture(mSurface);
+        mSurface.setDefaultBufferSize(getWidth(), getHeight());
+        mSurface.setOnFrameAvailableListener(mUpdateListener, mAttachInfo.mHandler);
+        mLayer.setLayerPaint(mLayerPaint);
+    }
+    // ...
+}
+```
+
+Multi-Window / PiP / Freeform 模式下，每个窗口实例各自创建 TextureLayer 和 SurfaceTexture。`mLayer` 和 `mSurface` 按窗口隔离。WindowContainerTransaction 改变窗口 bounds 时，View layout 触发 `onSizeChanged`，SurfaceTexture buffer size 随之更新。
+
+### 版本差异
+
+| 版本 | TextureView 折叠屏支持 | 说明 |
+|:---|:---|:---|
+| Android 8.0 (API 26) | 基础 Multi-Window 支持 | TextureView 可用于分屏，无专用 foldable API |
+| Android 12 (API 31) | Jetpack WindowManager | `WindowManager.fold()` API（折叠状态监听） |
+| Android 15 (API 35) | DisplayShape API | 更完整的异形屏支持 |
+| Android 17 (API 37) | 无 TextureView 专用变化 | 适配机制同 Android 16 |
+
+### 性能影响
+
+1. **配置变更触发完整重绘**：折叠状态切换触发 `onConfigurationChanged()`，View 树重新 measure/layout/draw
+2. **SurfaceTexture buffer reallocation**：`onSizeChanged` → `setDefaultBufferSize` 可能触发 BufferQueue re-allocation，产生 1-2 帧的 buffer 重建开销
+3. **帧率绑定在 Multi-Window 中更明显**：多窗口场景下主线程竞争更激烈，TextureView 的帧率绑定劣势被放大
+
+### 实战建议
+
+| 场景 | 建议 |
+|:---|:---|
+| 折叠切换时黑帧 | 在 `onSurfaceTextureAvailable` 前显示占位符 |
+| 频繁折叠/展开 | 避免在 `onSizeChanged` 内做重量级操作 |
+| 低端折叠屏 | 考虑降级到 SurfaceView，减少 App 侧纹理采样开销 |
+| 视频纹理在折叠屏 | 检查是否需要独立帧率，不需要则 TextureView 可用 |
+
+> **研究局限**：`android-17.0.0_r1 TextureView.java` 在 aosp-mirror 仓库 404，使用 `android-16.0.0_r1` 替代。Hinge angle sensor 与 TextureView 的联动需进一步研究 Jetpack WindowManager。
+
+
 ---
 
 > **交叉引用**：
