@@ -46,7 +46,7 @@ last_task9_at: "2026-05-14T16:30:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 task9_result: pass-tech-review
-task2b_state: pending
+task2b_state: done
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
