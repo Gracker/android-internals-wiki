@@ -54,23 +54,24 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: reworked
 last_task2b_at: "2026-06-04T04:55:01"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T07:43:01+08:00"
-task9_review_notes: "2026-05-22 Task9 07: needs-rework。P0 3：Coil BitmapPool 版本错误、static Worker 示例不可编译、onTrimMemory API34+ BACKGROUND/UI_HIDDEN 口径错误；P1 1：16KB Play/Bitmap 断言缺边界和证据。已写入 logs/deep-review/2026-05-22-07-deep-review.md。"
+task9_reviewed_date: "2026-06-04"
+last_task9_at: "2026-06-04T08:20:00+08:00"
+task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 onTrimMemory 在 Android 16 的 ApplicationThread→主线程分发链、Debug.getPss API level、heapprofd 开销边界和 System.gc 使用边界；已回到 Task6 复审。"
 task6_result: pass-light-edit
 last_task6_at: '2026-06-04T07:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-22-08-review.md"
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
-last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
+last_task9_autofix_at: "2026-06-04"
 ---
 
 
@@ -663,7 +664,7 @@ data_sources {
 
 在 Perfetto UI 中，`heapprofd` 的数据出现在 "Heap Profiles" 面板中。按分配大小排序可以找到分配最多的调用栈——这就是内存热点。
 
-`heapprofd` 的开销很小（通常 < 5%），可以在线上环境中采样使用。Perfetto 的配置中可以设置采样间隔，比如每 4096 字节采样一次，这样既不会影响性能，又能获得有代表性的分配热点。
+`heapprofd` 的开销取决于采样间隔、分配频率和设备负载，可以在内测、灰度或高价值样本中按需采样。Perfetto 的配置中可以设置采样间隔，比如每 4096 字节采样一次，用更低的采样密度换取更低的运行时扰动。
 
 ## onTrimMemory 与 ComponentCallbacks2
 
@@ -726,18 +727,18 @@ API 34+ 仍会实际投递的回调为：
 了解回调级别之后，还要看 `onTrimMemory` 是怎么从系统到达 App 的。沿着 AOSP 源码追踪，完整分发链路可以拆成三步。
 
 1. **System Server**：`ActivityManagerService` 检测到内存压力变化后，通过 Binder 向目标进程发送 `scheduleTrimMemory(level)`。
-2. **App 侧 Binder 线程**：`ActivityThread.handleTrimMemory(int level)` 接收调用，先分发给 `Application.onTrimMemory(level)`，再通过 `ContextImpl` 遍历所有已注册的 `ComponentCallbacks2` 逐一回调。
+2. **App 侧 ApplicationThread**：Binder 入口是 `ApplicationThread.scheduleTrimMemory(level)`，它不会直接在 Binder 线程执行 `handleTrimMemory()`；Android 16 源码会把 `handleTrimMemory()` 投递到主线程的 `Choreographer.CALLBACK_COMMIT`，没有 Choreographer 时才退回 `mH.post(r)`。
+3. **主线程分发**：`handleTrimMemory(int level)` 调用 `collectComponentCallbacks(true)` 收集 `Application`、未结束的 `Activity`、`Service` 和本地 `ContentProvider`，再逐个调用 `onTrimMemory(level)`。通过 `Application.registerComponentCallbacks()` 注册的回调会在 `Application.onTrimMemory()` 内部分发。
 
 ```java
 // frameworks/base/core/java/android/app/ActivityThread.java
 // handleTrimMemory 的核心分发（简化）
 public final void handleTrimMemory(int level) {
-    // 1. 分发给 Application
-    if (mInitialApplication != null) {
-        mInitialApplication.onTrimMemory(level);
+    final ArrayList<ComponentCallbacks2> callbacks =
+            collectComponentCallbacks(true /* includeUiContexts */);
+    for (int i = 0; i < callbacks.size(); i++) {
+        callbacks.get(i).onTrimMemory(level);
     }
-    // 2. 分发给所有已注册的 ComponentCallbacks2
-    // 实际通过 ContextImpl.getComponentCallbacks() 遍历
 }
 ```
 
@@ -745,7 +746,7 @@ public final void handleTrimMemory(int level) {
 
 两个排查边界：
 
-- **回调顺序不确定**：`handleTrimMemory` 会分发给所有已注册的 `ComponentCallbacks2`，但分发顺序没有严格保证。不要假设某个回调一定在另一个之前执行。
+- **回调顺序不应假设**：`handleTrimMemory` 会按 `collectComponentCallbacks(true)` 收集到的组件列表分发；通过 `Application.registerComponentCallbacks()` 注册的回调再由 `Application.onTrimMemory()` 分发。业务代码不要假设某个回调一定在另一个之前执行。
 - **API 34+ 收窄发生在 System Server 侧**：前文提到的 `RUNNING_*`、`MODERATE`(60)、`COMPLETE`(80) 等旧 level 在 API 34+ 不再投递——`ActivityManagerService` 直接跳过这些 level，App 侧的 `handleTrimMemory` 不会收到。
 
 ### 正确的响应策略
@@ -892,7 +893,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 线上内存监控的关键指标：
 
 - **Java 堆使用率**：`Runtime.getRuntime().totalMemory() / Runtime.getRuntime().maxMemory()`
-- **PSS 总量**：通过 `Debug.getPss()` 获取（API 23+ 可用）
+- **PSS 总量**：通过 `Debug.getPss()` 获取（API 14+ 可用）
 - **FD 数量**：通过 `/proc/self/fd` 的文件数量
 - **Bitmap 数量**：通过 `Debug.getMemoryInfo()` 中的 `nativePss` 间接推算
 
@@ -921,7 +922,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 第二层原因是 **它掩盖了问题本身**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"内存不足的症状（GC 可能回收一些刚变为不可达的对象（比如清空缓存后，原先被缓存强引用持有的对象断开了引用链）），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
 
-有一种极少数情况下 `System.gc()` 是有意义的：当刚执行完一次大批量的内存释放操作（比如清空了一个大型缓存 Map），想让系统尽快回收这些对象以降低内存水位。但即使在这种场景下，也可以通过调用 `System.runFinalization()` 配合使用，或者直接信赖 ART 的 GC 会在下次自然周期中处理。
+极少数受控压测场景下，刚执行完一次大批量内存释放操作（比如清空大型缓存 Map）后，可以用 `System.gc()` 辅助观察“引用是否已经断开”。这不应进入用户路径，也不应作为 `onTrimMemory` 响应策略；线上治理仍应依赖减少分配、断开引用、释放缓存和观察内存水位。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory — 避免手动触发 GC]
 
