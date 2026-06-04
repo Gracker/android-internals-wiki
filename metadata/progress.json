@@ -13604,5 +13604,20 @@
       ],
       "log": "logs/review/2026-06-04-23-review.md"
     }
-  ]
+  ],
+  "21.13": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "title": "ART GC 抑制与启动性能优化",
+    "file": "src/part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-04",
+    "task2a_result": "drafted",
+    "last_task2a_at": "2026-06-05T05:12:00+08:00",
+    "drafted_by": "openclaw-task2a",
+    "drafted_date": "2026-06-05",
+    "queue_priority": 80,
+    "task6_state": "pending",
+    "task9_state": "pending"
+  }
 }
