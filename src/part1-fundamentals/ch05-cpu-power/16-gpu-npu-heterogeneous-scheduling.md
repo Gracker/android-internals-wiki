@@ -63,6 +63,8 @@ p2: 0
 task9_review_notes: "2026-06-04 Task9 18: auto-fixed。P0 1:Android 17 NPU feature 边界由旧 `android.hardware.neural_processing_unit`/未公开改为 API 37 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`、常量值 `android.hardware.npu`;同时保留 delegate/AICore/配额外推边界。回到 Task6 复审。"
 last_task2b_lite_at: 2026-06-04
 last_task9_autofix_at: "2026-06-04"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-04
 ---
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因
@@ -101,7 +103,7 @@ last_task9_autofix_at: "2026-06-04"
 
 <!-- outline-end -->
 
-端侧 AI、相机实时处理、游戏画面增强和大模型推理,都会把一次用户操作拆到 CPU、GPU、NPU、内存带宽和温控策略之间。GPU 或 NPU 接走一段计算,并不表示 CPU 退出了性能路径;CPU 还要准备输入、提交命令、处理回调、做结果合成,并承担失败回退。读完本节,应该能把"加速器跑得快不快"改成"端到端路径哪里在等、谁在耗电、哪个信号可验证"。
+把推理任务交给 GPU 或 NPU 之后，CPU 就闲下来了吗？实际并非如此——CPU 仍然要准备输入数据、提交加速器命令、等结果回来、做后处理，最后把结果合进 UI。把关注点从"加速器跑得快不快"转向"端到端路径哪里在等、谁在耗电、哪个信号可验证"，是本节要建立的视角。
 
 5.3、5.9、5.11、5.12 和 5.13 已经分别讲过大小核、ADPF、端侧 AI、Thermal 和 LLM 推理。这里只补异构负载的归因方法:同一个 trace 里同时出现 CPU 等待、GPU 频率抬升、NPU delegate 日志和 thermal 降级时,怎么把它们放进同一个判断框架。
 
@@ -143,7 +145,7 @@ NPU 路径适合被厂商 delegate 覆盖的模型子图,尤其是卷积、张�
 
 ## ADPF 线程工作量与 GPU workload hint 版本边界
 
-ADPF 的公开抽象是 `PerformanceHintManager.Session`：应用把一组线程 ID 和目标工作时长交给系统，再报告实际工作时长。系统侧再通过 power hint 服务和厂商 Power HAL 影响调度与频率策略。这个接口表达的是"这些线程接下来需要怎样的 CPU / 调度预算"，不是应用侧调 GPU 频、绑大核或指定 NPU 的控制面。
+先厘清 ADPF 的能力边界。它的公开抽象是 `PerformanceHintManager.Session`：应用把一组线程 ID 和目标工作时长交给系统，再报告实际工作时长。系统侧再通过 power hint 服务和厂商 Power HAL 影响调度与频率策略。这个接口表达的是"这些线程接下来需要怎样的 CPU / 调度预算"，不是应用侧调 GPU 频、绑大核或指定 NPU 的控制面。
 
 API 31/33 的原始 `reportActualWorkDuration()` 只接受 total duration。API 35 新增 `reportActualWorkDuration2()`，要求至少填入 actual CPU duration 或 actual GPU duration 其中一项大于 0（`AWorkDuration` setter），系统侧可以据此区分 CPU/GPU 工作组成。API 36 新增 `notifyWorkloadIncrease/Reset/Spike(session, bool cpu, bool gpu, ...)` ，应用可以声明 CPU 或 GPU workload 变化。这两组扩展让 ADPF 从"只能表达线程 CPU 工作量"演进到"可表达 GPU workload 组成和变化"，但仍不能直接控制 GPU/NPU 频率或调度策略。[已验证: AOSP android-16.0.0_r1 performance_hint.h L96-L102, L312-L338, L362-L420]
 
@@ -255,7 +257,7 @@ Qualcomm、MediaTek、Google Tensor、Samsung 的 AI 加速路径、GPU driver�
 - 版本边界可迁移:NNAPI deprecated、LiteRT 迁移、ADPF session 语义来自公开文档,能作为章节基线。
 - 收益数字不可迁移:latency、功耗、温升、NPU 覆盖率必须绑定设备、模型和 runtime。
 
-GPU/NPU 异构调度不能只看"任务是否交给加速器",还要把 CPU 准备、硬件执行、同步等待、热预算和功耗证据放到同一条时间轴上。能被 trace 和实验复核的结论,才适合写进发布稿。
+归结起来，GPU/NPU 异构调度的归因不能停在"任务跑了哪个加速器"。CPU 准备阶段的成本、硬件执行期间的温度变化、同步等待与回读延迟、整机热预算的余量，每一项都影响最终结论。能在 trace 和对照实验中复现的判断，才值得写进发布稿。
 
 ## References
 

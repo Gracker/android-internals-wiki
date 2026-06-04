@@ -1,6 +1,4 @@
 ---
-
-
 title: "线上问题排查方法论"
 chapter: "26.5"
 section: "26.5"
@@ -38,16 +36,16 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 4 处（outline 扩展占位 1、措辞精修 3）；无新增 L3/L4 回炉项，等待 Task9 技术复审。'
+task6_review_notes: '2026-06-04 task6 re-review (round 2): pass-light-edit. L1/L2 clean. Fixed frontmatter formatting (leading blank lines). All 4 anchors + 1 extension covered. task9_result=auto-fixed. Score: structure 4/5, wording 4/5, consistency 4/5, verification 4/5, metadata 4/5.'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-15T03:11:00+08:00"
-last_task6_review_log: logs/review/2026-05-15-03-review.md
-last_task6_at: 2026-06-04T02:12:55+08:00
-reviewed_date: 2026-06-04
+last_task6_review_log: logs/review/2026-06-04-20-review.md
+last_task6_at: "2026-06-04T20:15:00+08:00"
+reviewed_date: "2026-06-04"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: auto-fixed
@@ -58,7 +56,6 @@ last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
 task2b_result: fixed
 last_task9_autofix_at: "2026-06-04"
 task9_review_notes: "2026-06-04 Task9 auto-fix: clarified ProfilingTrigger API 36 vs version 36.1 boundary for APP_REQUEST_RUNNING_TRACE."
-
 ---
 
 # 线上问题排查方法论

@@ -15,11 +15,11 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-06-04"
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
@@ -27,12 +27,14 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:26:14+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
-review_round: 3
+review_round: 4
 last_task2b_at: "2026-04-25T02:09:22+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-12-audit.md"
+last_task6_at: "2026-06-04T20:15:00+08:00"
+review_notes_3: "2026-06-04 task6 re-review (round 4): pass-light-edit. L1 clean (真正 x2, both functional). Not-X-but-Y x2 (within limit). All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 5/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 ---
 
 # BlockCanary
