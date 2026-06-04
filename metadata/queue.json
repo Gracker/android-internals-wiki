@@ -995,6 +995,37 @@
       "priority": 80,
       "reason": "task2a gap-mining: Score 16/20, 素材丰富度 4 + Clippings GC 抑制专篇 + AOSP art/runtime/gc 源码",
       "added_date": "2026-06-04"
+    },
+    {
+      "section": "1.24",
+      "section_title": "ResourcesManager 与 Configuration 变更性能",
+      "priority": 80,
+      "reason": "[task2a-gap-mining] 素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5 = 16分",
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-06-04T18:14:00.155808",
+      "gap_score": 16,
+      "material_sources": [
+        "source-index: Android 17 ResourcesManager 与 Configuration 变更分发机制",
+        "AOSP: frameworks/base/core/java/android/app/ResourcesManager.java",
+        "AOSP: frameworks/base/core/java/android/content/res/Configuration.java"
+      ]
+    },
+    {
+      "section": "20.17",
+      "section_title": "Binder 异常体系与 IPC 故障性能边界",
+      "priority": 80,
+      "reason": "[task2a-gap-mining] 素材丰富度 4 | 相关性 4 | 读者需求度 4 | 时效性 3 = 15分",
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-06-04T18:14:00.155815",
+      "gap_score": 15,
+      "material_sources": [
+        "Clippings: Android 应用稳定性剖析与优化 - Binder 异常",
+        "AOSP: frameworks/base/core/java/android/os/Binder.java",
+        "AOSP: frameworks/native/libs/binder/IPCThreadState.cpp",
+        "source-index: 多个 Binder 相关研究素材"
+      ]
     }
   ]
 }
