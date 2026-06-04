@@ -2953,7 +2953,7 @@
     "5.11": {
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "last_task6_at": "2026-05-24T20:14:35+08:00",
+      "last_task6_at": "2026-06-04T13:12:00+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 95,
       "last_task6_review_log": "logs/review/2026-05-24-20-review.md",
@@ -2963,7 +2963,7 @@
       "section": "5.11",
       "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
       "file": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-24",
       "task2b_state": "fixed"
@@ -3205,7 +3205,7 @@
     "5.10": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-17T11:14:00+08:00",
+      "last_task6_at": "2026-06-04T13:12:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-05-17-11-review.md",
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
