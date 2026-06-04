@@ -30,17 +30,18 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-04"
 last_task9_at: "2026-06-04T22:20:00+08:00"
+last_task2b_lite_at: "2026-06-04"
 last_task2b_at: "2026-06-04T12:57:00+08:00"
 last_task6_audit: "2026-06-04"
 last_task9_audit: "2026-05-21"
@@ -721,7 +722,7 @@ ORDER BY slice.dur DESC;
 ### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 17 API 37）
 
 **来源**：每日源码调研（cron:d78cfef0，id=6，关联 §6.1 View系统优化）
-**时间**：2026-06-03 | 源码级一手验证（AOSP android-17.0.0_r1）
+**时间**：2026-06-03 | 源码级验证（AOSP android-16.0.0_r1；android-17.0.0_r1 tag 未发布）
 
 #### ViewTreeObserver 核心机制
 
@@ -733,8 +734,8 @@ ViewTreeObserver（VTO）是 View 框架中连接 View 树生命周期与外部�
 **关键成员**：
 
 ```java
-private OnGlobalLayoutListener mOnGlobalLayoutListener;
-private OnScrollChangedListener mOnScrollChangedListener;
+private CopyOnWriteArray<OnGlobalLayoutListener> mOnGlobalLayoutListeners;
+private CopyOnWriteArray<OnScrollChangedListener> mOnScrollChangedListeners;
 private boolean mAlive = true;  // View 从窗口剥离后设为 false，丢弃所有待处理回调
 ```
 
@@ -751,25 +752,15 @@ View.requestLayout()
               -> onGlobalLayoutChanged()
 ```
 
-#### Android 17 性能优化
+#### requestLayout 传播机制
 
-**PFLAG_FORCE_LAYOUT 精确传播**（View.java）：
+**PFLAG_FORCE_LAYOUT 传播**（View.java，长期既有机制）：
 
-```java
-if ((mPrivateFlags & PFLAG_FORCE_LAYOUT) == 0 && !layoutRequested) {
-    return;  // 跳过不必要的 measure/layout pass
-}
-```
+`requestLayout()` 在 View 上设置 `PFLAG_FORCE_LAYOUT` 标记并沿父链传播到 `ViewRootImpl`；`performTraversals()` 通过 `getValidLayoutRequesters()` 收集需要重新布局的 View 集合。这一机制从早期 Android 就已存在，并非 Android 17 新增优化。
 
-只有真正调用了 requestLayout() 的 View 分支才会执行完整 measure/layout，而非整棵 View 树。
+**ViewGroup layoutMode 用途**（ViewGroup.java）：
 
-**ViewGroup layoutMode 快速路径**（ViewGroup.java）：
-
-```java
-if (mLayoutMode != LAYOUT_MODE_UNDEFINED) {
-    // 跳过 measure，直接 layout 定位
-}
-```
+`mLayoutMode` 用于 optical/clip bounds 布局模式继承和缓存，不影响 measure 阶段的跳过或执行。不存在基于 layoutMode 跳过 measure 的快速路径。
 
 #### 常见性能陷阱
 
@@ -778,8 +769,8 @@ if (mLayoutMode != LAYOUT_MODE_UNDEFINED) {
 
 #### 参考源码文件
 
-- `frameworks/base/core/java/android/view/ViewTreeObserver.java`（AOSP android-17.0.0_r1）
-- `frameworks/base/core/java/android/view/ViewRootImpl.java`（AOSP android-17.0.0_r1）
-- `frameworks/base/core/java/android/view/View.java`（AOSP android-17.0.0_r1）
-- `frameworks/base/core/java/android/view/ViewGroup.java`（AOSP android-17.0.0_r1）
+- `frameworks/base/core/java/android/view/ViewTreeObserver.java`（AOSP android-16.0.0_r1）
+- `frameworks/base/core/java/android/view/ViewRootImpl.java`（AOSP android-16.0.0_r1）
+- `frameworks/base/core/java/android/view/View.java`（AOSP android-16.0.0_r1）
+- `frameworks/base/core/java/android/view/ViewGroup.java`（AOSP android-16.0.0_r1）
 <!-- AIW-源码调研-2026-06-03 -->
