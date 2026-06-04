@@ -70,8 +70,8 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
@@ -81,18 +81,20 @@ last_task9_at: "2026-06-04T06:48:42+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
 task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
-last_task6_at: "2026-06-04T04:12:07+08:00"
+reviewed_date: 2026-06-04
+last_task6_at: 2026-06-04T12:11:00+08:00
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
 ---
 
 
