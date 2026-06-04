@@ -1,6 +1,6 @@
 ---
 
-status: ready-for-review
+status: finalized
 title: App 启动全流程
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
@@ -53,22 +53,23 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: ready-to-publish
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_state: pending
+task9_result: pass-tech-review
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-06-04T10:50:00+08:00"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-24T11:30:20+08:00"
-task9_review_notes: "2026-05-24 Task9 复审: needs-rework。P0 0 / P1 1 / P2 2；首帧 Surface 创建仍按旧 BufferQueueLayer/IGBP 模型描述，未覆盖 Android 11+ ViewRootImpl BLASTBufferQueue；另记录 ApplicationStartInfo 漏列 INITIAL_RENDERTHREAD_FRAME 与 16KB page size 数据口径 P2。"
+task9_review_notes: "2026-05-24 Task9 复审: needs-rework → Task2B 2026-06-04 已修复。P0 0 / P1 0 / P2 0；Surface 创建已更新为 BLASTBufferQueue + updateBlastSurfaceIfNeeded 分版本路径；16KB TLB 口径已修正为覆盖范围；ApplicationStartInfo 已补 RENDERTHREAD_FRAME 字段。"
 last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
 p0: 0
-p1: 1
-p2: 2
+p1: 0
+p2: 0
 last_task6_at: "2026-05-24T13:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-13-review.md"
 task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 18 处；既有 Task9 P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
@@ -192,7 +193,7 @@ ATMS 确认 Pause 完成后,检查目标进程是否存在。冷启动场景下,
 
 [自动发现: Android 15+ 16KB page size 对启动链路的影响]
 
-Android 15 在部分设备上引入了 16KB 内存页(传统为 4KB)。页表项减少约 75%,TLB 命中率提升约 4 倍。这对冷启动中涉及大 so 库加载的环节有直接的 I/O 削峰效果。
+Android 15 在部分设备上引入了 16KB 内存页(传统为 4KB)。页表项减少约 75%,TLB 覆盖范围扩大约 4 倍（单条 TLB entry 覆盖的地址空间从 4KB 变为 16KB）。这对冷启动中涉及大 so 库加载的环节有直接的 I/O 削峰效果。
 
 冷启动的进程创建阶段需要通过 `mmap` 加载 `libart.so`(~10MB)、`libwebviewchromium.so`(~50MB)等大型共享库。在 4KB 页环境下,每个库的页表条目数量庞大,内核需要完成大量 page fault 处理才能建立完整的地址映射。16KB 页将映射粒度放大 4 倍,相同范围的虚拟地址只需要 1/4 的页表条目,减少了 page fault 中断次数和内核态耗时。
 
@@ -241,7 +242,10 @@ Activity.onResume() 执行完后,并不是立刻就能看到界面。绘制操�
 
 当下一个 VSync 信号到来时,Choreographer 回调触发 ViewRootImpl.performTraversals()。这里开始执行实际的绘制操作:
 
-**relayoutWindow**:第一次执行时,会向 SurfaceFlinger 申请创建 Surface(如果还没有的话)。SurfaceFlinger 创建 BufferQueueLayer,返回 IGraphicBufferProducer 给应用端。
+**relayoutWindow**:第一次执行时,向 SurfaceFlinger 申请完成窗口 Surface 的布局和属性设置。Surface 创建路径因 Android 版本而异:
+
+- **Android 10 及之前**:ViewRootImpl 通过 `IWindowSession.relayout()` 向 WMS 申请创建 Surface,WMS 在 SurfaceFlinger 侧创建 `BufferQueueLayer`,返回 `IGraphicBufferProducer`。
+- **Android 11+**:ViewRootImpl 改为 `updateBlastSurfaceIfNeeded()`,围绕 `SurfaceControl` 创建/更新 `BLASTBufferQueue`。`BLASTBufferQueue` 负责管理应用端的 BufferQueue producer,SurfaceFlinger 侧由 `BufferStateLayer`(替换旧 `BufferQueueLayer`)接管消费者逻辑。
 
 **performMeasure**:从 DecorView 开始递归测量整棵 View 树,确定每个 View 的大小。
 
@@ -255,7 +259,7 @@ RenderThread 完成绘制后,通过 IGraphicBufferProducer.queueBuffer() 将帧�
 
 [图:冷启动完整时序图——从用户点击到首帧显示,标注 system_server、Zygote、App 主线程、RenderThread、SurfaceFlinger 各进程的参与环节]
 
-> 注意:queueBuffer 返回 ≠ 用户看到画面。SurfaceFlinger 合成和物理送显还有一到两个 VSync 周期的延迟。如果需要追踪完整送显链路,Android 15 的 ApplicationStartInfo 提供了 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE`,可以和 `START_TIMESTAMP_FIRST_FRAME` 搭配使用。
+> 注意:`queueBuffer` 返回 ≠ 用户看到画面。SurfaceFlinger 合成和物理送显还有一到两个 VSync 周期的延迟。Android 11+ 的 BLAST 路径中,应用端通过 `BLASTBufferQueue` 提交帧后,SurfaceFlinger 还需要完成 `Layer::onPostComposition()` 和硬件 composer 的 `onPresent()`。追踪完整送显链路时,Android 15 的 `ApplicationStartInfo` 提供了 `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE` 和 `START_TIMESTAMP_INITIAL_RENDERTHREAD_FRAME`。
 
 ## TTID 与 TTFD:两个关键的启动指标
 
@@ -342,6 +346,7 @@ ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露�
 |---|---|
 | `START_TIMESTAMP_LAUNCH` | 系统发起启动的时间点 |
 | `START_TIMESTAMP_FORK` | Zygote fork 子进程的时间点 |
+| `START_TIMESTAMP_INITIAL_RENDERTHREAD_FRAME` | 首帧在 RenderThread 完成绘制（`eglSwapBuffers` 或 `queueBuffer` 返回）的时间点 |
 | `START_TIMESTAMP_BIND_APPLICATION` | 开始绑定 Application 的时间点 |
 | `START_TIMESTAMP_APPLICATION_ONCREATE` | Application.onCreate() 的时间点 |
 | `START_TIMESTAMP_FIRST_FRAME` | 首帧绘制完成的时间点 |

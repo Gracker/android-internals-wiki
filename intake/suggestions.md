@@ -159,3 +159,36 @@
 - P0: sugov_get_util() 代码块修正 — 重写为与实际 android16-6.12 源码一致的实现（scx_cpuperf_target 初值 → CFS util 条件叠加 → effective_cpu_util → boost 后置 → sugov_effective_cpu_perf 映射）
 - P2: 骁龙 8 Elite capacity 数据锚点 — 添加容量数值外推估算标注和设备级验证路径说明
 - 状态：fixed → task6_pending
+
+
+---
+
+## DeepSeek 中文读者终审建议 — 2026-06-04
+
+### 1. ch05.7 (07-cpu-evolution.md) — Android 14 精确闹钟段落错位
+
+**问题**：Android 12 小节名为 "Android 12：精确闹钟进入特殊访问控制"，但其中包含一整段 Android 14 的精确闹钟默认拒绝描述（"Android 14 起，精确闹钟权限默认更严格：SCHEDULE_EXACT_ALARM 权限对大多数新安装且 targetSdkVersion >= 33 的 App 默认拒绝..."）。读者在 Android 12 小节内突然读到 Android 14 的行为，会困惑。
+
+**建议**：将 Android 14 精确闹钟段落移到 Android 14 小节（"Android 14：前台服务类型化 + 后台 Activity 启动需显式 opt-in"），或在 Android 12 小节末尾加一句"Android 14 进一步将默认授予改为默认拒绝，详见下文 Android 14 小节"作为指引。当前写法会让读者在同一节内先看到"需要声明 SCHEDULE_EXACT_ALARM"再看到"默认拒绝"，但中间隔了 Android 13 的内容。
+
+**严重度**：中。不影响技术准确性，但打乱了读者的时间线理解。
+
+### 2. ch05.7 (07-cpu-evolution.md) — 已移除的 Energy Limiter 未核实线索
+
+**原内容**：Android 17 小节末尾有一块 "> ⚠️ 未核实研究线索" 引用，提到 "ODPM/μJ 计量的 Energy Limiter 机制"。本轮终审已从正文移除，因为它是编辑过程笔记，不应出现在读者面前。
+
+**建议**：如果后续官方确认该机制存在，可以作为正式特性补充到 Android 17 小节。目前这条线索可以保留在 DeepResearch 或素材库中跟踪。
+
+### 3. ch05.8 (08-background-execution.md) — 已移除的 AVF pVM 待验证豁免
+
+**原内容**：例外与豁免小节有一条 "AVF pVM 任务配额豁免：[待验证]" 条目。本轮终审已从正文移除——[待验证] 标记和"未在官方文档中核验到"的自述说明这条内容尚未达到发布标准。
+
+**建议**：AVF pVM 任务配额豁免如果后续被 AOSP 或 Android Developers 文档确认成立，可以作为正式豁免条目补回。目前只适合留在素材跟踪清单中。
+
+### 4. ch05.8 (08-background-execution.md) — Freezer/Binder 源码注入的阅读体验
+
+**问题**：Freezer/Binder 协同冻结的两个小节（CachedAppOptimizer 流程 + Binder Freezer Driver 补充）来自 DeepResearch 源码级调研，包含大量 C 结构体定义、ioctl 返回码表和内核 commit hash。这部分内容的深度和密度明显高于本章其他段落，读者从"选 WorkManager 还是 JobScheduler"突然跳到"binder_freeze_info 结构体定义"，认知跳跃大。
+
+**本轮处理**：已添加过渡句连接这两段，但本质问题是 Freezer 源码分析是否应该独立成节或收入附录。本轮不做跨节重构，留给后续编辑决策。
+
+**严重度**：低-中。过渡句缓解了跳跃感，但长线看结构可能需要调整。
