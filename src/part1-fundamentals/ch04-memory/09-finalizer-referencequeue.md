@@ -27,18 +27,18 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2b_result: "fixed"
 task2b_state: "fixed"
-task6_state: revisiting
+task6_state: reviewed
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
-last_task6_at: "2026-05-26T05:09:00+08:00"
-reviewed_date: "2026-05-26"
+last_task6_at: "2026-06-05"
+reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_reviewed_date: "2026-05-26"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-05"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-05-26T03:20:00+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review: needs-rework。P0：延伸阅读摘要仍保留 Cleaner 旧错误路径，与正文和 AOSP android-16 口径冲突。"
 last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
@@ -51,7 +51,7 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处（延伸阅读中抽象黑话改为「版本对照表」）；outline 锚点覆盖 6/6；无新增 Task6 回炉。既有 Task9 P0 Cleaner 延伸阅读摘要问题仍在 queue pending，保持 task2b_pending。"
-task6_reviewed_date: "2026-05-26"
+task6_reviewed_date: "2026-06-05"
 ---# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
 <!-- outline-start -->

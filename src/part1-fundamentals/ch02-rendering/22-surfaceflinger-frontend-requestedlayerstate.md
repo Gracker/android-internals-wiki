@@ -34,7 +34,7 @@ sources:
     path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: research
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
