@@ -19,14 +19,14 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: reviewed
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
-review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
+reviewed_date: '2026-06-04'
+P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_date: 2026-06-04
@@ -41,7 +41,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
 last_task6_audit: "2026-05-21"
 last_task6_audit_result: l1-frontmatter-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
-last_task6_at: "2026-06-04T19:15:00+08:00"
+last_task6_at: '2026-06-04T22:12:00+08:00'
 last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
 last_task9_autofix_at: 2026-06-04
 ---
