@@ -71,6 +71,7 @@ tags:
   - [2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略](part1-fundamentals/ch02-rendering/23-vsync-scheduler-displayframerate.md)
   - [2.24 Android 16/17 图形内存分配边界：DMA-BUF、Gralloc 与 16KB Page](part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md)
   - [2.25 Choreographer Buffer Stuffing Recovery 与帧节拍修正](part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md)
+  - [2.26 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -115,6 +116,7 @@ tags:
   - [5.14 Android 17 ML Runtime 与 NPU 访问边界](part1-fundamentals/ch05-cpu-power/14-android17-ml-runtime-npu-boundary.md)
   - [5.15 SensorService 与传感器批处理功耗模型](part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md)
   - [5.16 GPU/NPU 异构负载调度与功耗归因](part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md)
+  - [5.17 Android 17 FGS 类型声明与后台执行性能边界](part1-fundamentals/ch05-cpu-power/17-fgs-type-declaration-background-performance.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)

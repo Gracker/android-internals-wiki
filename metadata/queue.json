@@ -1091,6 +1091,24 @@
       "added_at": "2026-06-04T20:24:00+08:00",
       "status": "pending",
       "review_type": "task9-deep-tech-review"
+    },
+    {
+      "section": "2.26",
+      "section_title": "Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能",
+      "priority": 80,
+      "reason": "[task2a gap-mining] 新建知识缺口，Score 19/20",
+      "material_paths": [],
+      "created_date": "2026-06-04",
+      "source": "task2a-gap-mining"
+    },
+    {
+      "section": "5.17",
+      "section_title": "Android 17 FGS 类型声明与后台执行性能边界",
+      "priority": 80,
+      "reason": "[task2a gap-mining] 新建知识缺口，Score 15/20",
+      "material_paths": [],
+      "created_date": "2026-06-04",
+      "source": "task2a-gap-mining"
     }
   ],
   "items": [

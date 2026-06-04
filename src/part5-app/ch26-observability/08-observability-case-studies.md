@@ -43,19 +43,20 @@ sources:
     path: "https://developer.android.com/ndk/guides/debug"
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-last_task6_at: "2026-05-15T08:10:00+08:00"
-last_task6_review_log: logs/review/2026-05-15-08-review.md
+reviewed_date: "2026-06-04"
+last_task6_at: "2026-06-04T21:10:00+08:00"
+last_task6_review_log: logs/review/2026-06-04-21-review.md
 review_type: task6-writing-quality-review
-task6_review_notes: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
+task6_review_notes_r5: "2026-06-04 Task6 (round 5, revisiting): pass-light-edit. Fixed 7x 中英文空格 (Android XX(API) → Android XX (API)). L1 clean post-fix. No new L3/L4 issues. task9_result=needs-rework, routing to task9."
+task6_review_notes_orig: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
 task9_result: needs-rework
 last_task9_at: "2026-05-15T08:32:31+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-08-deep-review.md
@@ -171,7 +172,7 @@ Android Vitals 可作为外部基线。Play 质量页覆盖 user-perceived crash
 
 CI 门禁只测少量固定场景，目标是判断“这次改动是否让基线变差”。适合纳入门禁的场景：冷启动、首页首屏、核心列表滚动、搜索结果页、支付或播放入口、数据库迁移、图片密集页面。
 
-Macrobenchmark 适合承担这类任务。官方 `StartupTimingMetric` 会采集启动时间，包括 time to initial display；`FrameTimingMetric` 会输出帧耗时分位，Android 12(API 31)+ 还会提供 frame overrun，正数表示超过帧期限的时间。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+Macrobenchmark 适合承担这类任务。官方 `StartupTimingMetric` 会采集启动时间，包括 time to initial display；`FrameTimingMetric` 会输出帧耗时分位，Android 12 (API 31)+ 还会提供 frame overrun，正数表示超过帧期限的时间。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
 门禁不要只看一次运行结果。建议每个场景至少保留最近 N 次绿色构建的基线，比较当前构建和基线分布。启动类指标看 P50/P90/P95，渲染类指标看 frameDuration / frameOverrun 的 P90/P95/P99 和慢帧比例，I/O 类指标看主线程 I/O 次数、总时长和最大单次时长。
 
@@ -286,7 +287,7 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 
 这个案例重点是“补现场”。如果只保留发生卡顿时的一个堆栈，容易把采样点当根因。更稳的做法是保留卡顿窗口前后的时间线：用户点击、网络请求、数据库访问、主线程消息、GC、I/O 和帧信息。能抓 Perfetto 就用 Perfetto；不能抓系统 Trace 时，端侧至少保留同一时间窗的轻量事件。
 
-Android 15(API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 profiling session，官方文档列出 system trace、Java heap dump、heap profile、stack sampling 等类型；采集可能受 rate limiter 限制。Android 16 引入 system-triggered profiling，应用可注册 cold start fully drawn、ANR 等触发器，由系统管理采集并把结果交给 App。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture；developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
+Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 profiling session，官方文档列出 system trace、Java heap dump、heap profile、stack sampling 等类型；采集可能受 rate limiter 限制。Android 16 引入 system-triggered profiling，应用可注册 cold start fully drawn、ANR 等触发器，由系统管理采集并把结果交给 App。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture；developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
 
 这些新能力适合补齐“线上 Trace 难采”的缺口，但不能替代日常轻量埋点。APM 要先用 Metrics 发现受影响分组，再对目标用户或目标触发器采集 profile，避免把系统级采集当全量监控。
 
@@ -314,11 +315,11 @@ Android 15(API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 
 
 | Android 版本 | 可用能力 | 适用案例 | 边界 |
 | --- | --- | --- | --- |
-| Android 10(API 29)+ | Perfetto / on-device tracing 工具链 | 本地复现、测试设备、人工协助 trace | 发布版用户设备上通常不能随意抓完整系统 Trace |
-| Android 11(API 30)+ | `ApplicationExitInfo` 历史退出原因 | Crash、ANR、LMK 退出原因分类 | 历史记录可能被循环缓冲区覆盖 |
-| Android 12(API 31)+ | `ApplicationExitInfo.getTraceInputStream()` | Native crash tombstone protobuf 补偿证据 | 仅 `REASON_CRASH_NATIVE` 可用；tombstone 可能因全局 circular buffer 覆盖返回 null |
-| Android 15(API 35)+ | `ProfilingManager.requestProfiling()` | 目标用户或目标场景的系统 trace / heap / stack 采集 | 有 rate limiter，不适合全量常驻采集 |
-| Android 16(API 36)+ | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
+| Android 10 (API 29)+ | Perfetto / on-device tracing 工具链 | 本地复现、测试设备、人工协助 trace | 发布版用户设备上通常不能随意抓完整系统 Trace |
+| Android 11 (API 30)+ | `ApplicationExitInfo` 历史退出原因 | Crash、ANR、LMK 退出原因分类 | 历史记录可能被循环缓冲区覆盖 |
+| Android 12 (API 31)+ | `ApplicationExitInfo.getTraceInputStream()` | Native crash tombstone protobuf 补偿证据 | 仅 `REASON_CRASH_NATIVE` 可用；tombstone 可能因全局 circular buffer 覆盖返回 null |
+| Android 15 (API 35)+ | `ProfilingManager.requestProfiling()` | 目标用户或目标场景的系统 trace / heap / stack 采集 | 有 rate limiter，不适合全量常驻采集 |
+| Android 16 (API 36)+ | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
 
 [已验证: 官方文档, developer.android.com/ndk/guides/debug]
 [已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture]
