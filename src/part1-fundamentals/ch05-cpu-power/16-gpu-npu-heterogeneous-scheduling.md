@@ -41,15 +41,15 @@ sources:
     path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
   - type: material
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
-reviewed_date: "2026-05-22"
+reviewed_date: '2026-06-04'
 reviewed_by: "openclaw-task6"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: task6_pending
-last_task6_at: "2026-06-04T16:14:33+08:00"
+pipeline_stage: reviewed
+last_task6_at: '2026-06-04T22:12:00+08:00'
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
-review_notes: "2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"
+P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
