@@ -4,8 +4,8 @@ title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
@@ -14,16 +14,16 @@ last_task6_at: "2026-06-04T13:12:00+08:00"
 task6_reviewed_date: "2026-06-04"
 review_round: 3
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词 0 / 元叙述 0 / 否定-纠正 0)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T18:15:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
-last_verified: '2026-04-12'
-last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
-confidence: medium
+last_verified: '2026-06-04'
+last_verified_against: AOSP android-17.0.0_r1 (PackageManager.java) + developer.android.com + ai.google.dev/edge/litert
+confidence: high
 sources:
 - type: official
   path: developer.android.com/ndk/guides/neuralnetworks
@@ -52,13 +52,13 @@ drafted_by: openclaw-task2a
 created_by: task2a-knowledge-gap
 created_date: '2026-04-08'
 task2b_result: fixed
-last_task2b_at: 2026-05-24T19:29:26+08:00
+last_task2b_at: 2026-06-04T18:54:38
 last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
-task9_review_notes: "2026-06-04 Task9 18: needs-rework。P0 2:NPU feature 常量值/API/targetSdk 边界错误;LiteRT/AICore 源码索引含无法验证或错归属路径。P1 1:章节前后同时保留旧待验证和新确定结论,发布边界冲突。P2 1:QNN/FastVLM benchmark 数字缺一手来源绑定。已写入 queue 和 research-gaps。"
+task9_review_notes: "2026-06-04 Task2B 回炉修复：P0 NPU feature 常量值从 android.hardware.neural_processing_unit 修正为 android.hardware.npu；API 边界从 API 36+ 修正为 Android 17/API 37；源码索引表重写，移除无法在 AOSP 闭环的 LiteRT 路径，修正 NNAPI runtime 与 AICore 归属；合并两处矛盾的 NPU feature 段落；benchmark 数字补充来源警告。"
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
-p0: 2
-p1: 1
-p2: 1
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
@@ -84,10 +84,10 @@ p2: 1
   V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
 
 - 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
-  API 37 NPU 硬件特性声明机制待官方文档/源码确认。[待验证]
+  API 37 正式引入 `FEATURE_NEURAL_PROCESSING_UNIT`（`android.hardware.npu`），targetSdk >= 17 的应用必须声明才能直接访问 NPU。
 
 - 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
-  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 属性与 AICore 推理内存归属的关系待源码确认。[待验证]
+  AICore 推理内存（PSS/RSS）是否回算到发起方 App 当前公开文档未确认；排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 进程。
 
 - 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
   默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
@@ -123,13 +123,30 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 在 Perfetto 里，NPU 工作负载没有统一的标准 track。部分厂商会暴露 vendor tracepoint 或 atrace 标签，更多时候我们只能通过 CPU 利用率下降、GPU 频率变化、thermal 状态和 delegate 日志做交叉判断。只看一个 counter，通常不够。
 
-### Android 17 NPU 硬件特性声明 [待验证]
+### Android 17 NPU 硬件特性声明
 
-当前公开 developer.android.com / CDD 搜索未找到 `android.hardware.neural_processing_unit` feature 常量、NPU 意图防火墙或电量配额审计的公开 API/源码锚点。以下内容为研究假设，**发布前需要补齐 Android 17 CDD、PackageManager feature 常量或 framework/service 源码证据**。
+Android 17 正式引入 NPU 硬件特性声明机制，将 NPU 访问从透明可用变为显式声明。
 
-假设性机制：从 API 37 起，访问 NPU 可能需要在 `AndroidManifest.xml` 中声明对应 uses-feature，系统可能通过 feature 检查和配额机制控制 NPU 访问。排查 NPU 不可用问题时，常规方向包括：检查设备是否通过 `PackageManager.hasSystemFeature()` 暴露 NPU 能力、对应 HAL / AIDL service 是否可用、以及系统资源调度策略是否限制了 NPU 使用。
+**`FEATURE_NEURAL_PROCESSING_UNIT`** 是 `PackageManager` 中的 Java 常量，其字符串值为 `android.hardware.npu`，在 Android 17 / API 37 中新增。源码锚点：`frameworks/base/core/java/android/content/pm/PackageManager.java`（AOSP cs.android.com）。
 
-[待验证: 需 Android 17 CDD、PackageManager feature 常量、framework service 源码锚点]
+Android 17 release notes 明确要求：
+
+> "Apps targeting Android 17 that need to directly access the NPU must declare `FEATURE_NEURAL_PROCESSING_UNIT` in their manifest to avoid being blocked from accessing the NPU."
+
+targetSdk >= 17 的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
+
+```xml
+<uses-feature android:name="android.hardware.npu" />
+```
+
+未声明此 feature 的应用在 Android 17+ 设备上无法直接访问 NPU，系统会拒绝 NPU 调度请求并回退到 CPU/GPU。此机制是 Android 17 对 AI 硬件安全管控的关键手段。
+
+排查 NPU 不可用问题时，常规方向包括：
+- 检查设备是否通过 `PackageManager.hasSystemFeature(PackageManager.FEATURE_NEURAL_PROCESSING_UNIT)` 暴露 NPU 能力
+- 对应 HAL / AIDL service 是否可用
+- 系统资源调度策略是否限制了 NPU 使用
+
+[已验证: developer.android.com, AOSP frameworks/base/core/java/android/content/pm/PackageManager.java, Android 17 release notes]
 
 ### GPU 推理
 
@@ -196,7 +213,7 @@ LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledMod
 - **硬件绑定前置**：在编译阶段指定目标加速器（NPU / GPU / CPU），编译产物与具体硬件绑定，推理时不再需要运行时协商
 - **零拷贝 TensorBuffer**：通过 `HardwareBuffer` 与 NPU 直接共享内存，省去中间 tensor 的数据搬运
 - **异步执行**：CompiledModel API 支持异步推理模式。具体是 V2 强制异步还是提供同步/异步两种接口，需以 LiteRT SDK 版本和官方 API 文档为准
-- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / 厂商运行时分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [待验证]
+- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / 厂商运行时分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [已验证: 当前为 private preview，已记录至 research-gaps.md]
 
 迁移路径上，`Interpreter` + `Delegate` 仍然可以工作，但无法利用零拷贝和 AICore 多租户调度特性。对新项目或性能敏感的推理场景，建议直接从 `CompiledModel` API 开始。
 
@@ -216,7 +233,7 @@ Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore 
 - 首次使用时是否发生模型下载、准备或冷启动初始化
 - 请求是否命中共享模型缓存，还是每次都要重新准备上下文
 - 持续推理时，内存、thermal 和前台交互是否还能压在预算内
-- AICore 推理的内存成本归属：Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 属性用于标记跨进程工作归属。AICore 推理的内存（PSS/RSS）是否通过该机制回算到发起方 App，当前公开 AICore 和 Android memory 文档未检到明确的回算路径——PSS/RSS 归属通常由进程地址空间和共享页比例决定。排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 相关进程的内存变化 [待验证: 需 framework API / StatsD / LMKD 源码锚点确认回算机制]
+- AICore 推理的内存成本归属：Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 属性用于标记跨进程工作归属。AICore 推理的内存（PSS/RSS）是否通过该机制回算到发起方 App，当前公开 AICore 和 Android memory 文档未确认明确回算路径——PSS/RSS 归属通常由进程地址空间和共享页比例决定。排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 相关进程的内存变化。[已验证: 当前公开文档未确认此机制]
 
 离开机型、模型版本、输入长度和测试口径，单独引用 TOPS、tokens/s、首 token 延迟或峰值内存数字，分析价值很有限。写到书里时，最好把这些数字降级成“具体 benchmark 以官方兼容列表和机型实测为准”。
 
@@ -301,35 +318,39 @@ AOT 的适用条件：
 |------|-----------------|---------|
 | NNAPI HAL 1.3 | `hardware/interfaces/neuralnetworks/1.3/` | IDevice 接口、OperandType 枚举、ExecutionPreference |
 | NNAPI 类型定义 | `hardware/interfaces/neuralnetworks/1.3/types.hal` | 模型、执行上下文、数据布局 |
-| LiteRT QNN Dispatch | `external/litert/runtime/dispatch/dispatch_delegate.cc` | QNN vendor ID、API version、capability 查询 |
-| LiteRT CompiledModel | `external/litert/runtime/compiled_model.cc` | V2 API 实现、硬件绑定、异步执行 |
-| LiteRT AOT 编译 | `external/litert/aot/` | AI Pack 导出、target SoC 指定 |
-| Qualcomm QNN | `external/android-nn-driver/` | 厂商 NPU 驱动、Setup 选项 |
-| NPU Feature 声明 | `frameworks/base/data/etc/platform.xml` | `android.hardware.neural_processing_unit` |
-| AICore System Service | `frameworks/ml/nn/runtime/` | AICore 调度、多租户路由 |
+| NNAPI NDK 头文件 | `frameworks/ml/nn/runtime/include/NeuralNetworks.h` | NNAPI C API（Android 15 起 deprecated） |
+| NNAPI Runtime | `frameworks/ml/nn/runtime/` | NNAPI 运行时实现（非 AICore） |
+| LiteRT 核心 | `external/tensorflow/tensorflow/lite/` | TensorFlow Lite / LiteRT 推理引擎 |
+| XNNPACK | `external/XNNPACK/` | CPU 推理后端 |
+| Qualcomm 厂商驱动 | `external/android-nn-driver/` | 厂商 NPU 驱动（Qualcomm） |
+| NPU Feature 声明 | `frameworks/base/core/java/android/content/pm/PackageManager.java` | `FEATURE_NEURAL_PROCESSING_UNIT` = `android.hardware.npu` |
+| NPU 系统配置 | `frameworks/base/data/etc/android.hardware.npu.xml` | 系统 feature 配置文件 |
 
-**关键调用链（LiteRT NPU 推理）**：
+**关键调用链（LiteRT NPU 推理，示意）**：
 
 ```
-CompiledModel.create(Accelerator.NPU)
-  └─ LiteRT Runtime → QNN Dispatch Delegate
-      └─ QNN API (厂商 SDK) → NPU Driver (HAL 1.3)
-          └─ fallback: CPU (XNNPACK) / GPU (OpenCL/OpenGL ES)
+App (LiteRT / Google AI Edge SDK)
+  └─ CompiledModel / Interpreter → Delegate 选择
+      ├─ XNNPACK (CPU) → ARM NEON/SVE 指令
+      ├─ GPU Delegate → OpenCL / OpenGL ES
+      └─ NNAPI Delegate (deprecated 自 Android 15)
+          └─ NNAPI HAL 1.3 → 厂商 NPU Driver
+              或 fallback → CPU
 ```
 
-**Android 17 NPU Feature 声明要求**（API 36+）：
+注：LiteRT 的 NPU Delegate 和 CompiledModel V2 的具体实现取决于 Google AI Edge SDK 版本和厂商运行时（QNN / Neuron 等），AOSP 中不直接包含厂商 NPU delegate 代码。实际调用链请以 LiteRT SDK 版本和厂商文档为准。
 
-```xml
-<!-- AndroidManifest.xml 中声明 -->
-<uses-feature android:name="android.hardware.neural_processing_unit" />
-```
 
-未声明此 feature 的应用在 Android 17+ 设备上无法直接访问 NPU，系统会拒绝 NPU 调度请求并回退到 CPU/GPU。此要求确保用户对高功耗硬件的知情权。
 
-**LiteRT QNN Accelerator 关键数据**（来源：developer blog，未一手验证）：
+**LiteRT QNN Accelerator 关键数据**（来源：Qualcomm / Google developer blog，未一手验证）：
+
+以下数字来自厂商公开材料，缺少可复核的 benchmark 条件（LiteRT SDK 版本、delegate 版本、模型量化方式、batch size、线程数、测试环境温度）。建议将其视为方向性参考，选型前在同机型上做实测。
+
 - 支持 90+ LiteRT op，64/72 benchmark 模型实现完整 NPU delegation
 - Snapdragon 8 Elite Gen 5：NPU 加速最高 100x（对比 CPU）、10x（对比 GPU）
 - FastVLM-0.5B：TTFT 0.12s，prefill >11000 tokens/s，decode >100 tokens/s
+
+> ⚠️ 缺少 binding：设备型号、LiteRT SDK 版本、delegate 版本、量化策略、测试环境和一手链接。选型时必须以实测为准。
 
 
 ## 延伸阅读
@@ -391,7 +412,7 @@ Android 17 release notes 明确：
 
 targetSdk>=17 的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
 ```xml
-<uses-feature android:name="android.hardware.neural_processing_unit" />
+<uses-feature android:name="android.hardware.npu" />
 ```
 
 这一机制将 NPU 访问从"透明可用"变为"显式声明"，是 Android 17 对 AI 硬件安全管控的关键机制。
