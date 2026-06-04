@@ -1,6 +1,7 @@
 ---
 
 
+
 last_task9_at: "2026-05-22T05:34:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
@@ -46,11 +47,11 @@ created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
 pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_date: "2026-04-20"
+task6_state: reviewed
+reviewed_date: 2026-06-04
 last_task6_audit: "2026-05-18"
 reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -63,6 +64,12 @@ task9_review_notes: "2026-05-22 Task9 idle audit: needs-rework。P1：Thermal HA
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P1 Linux thermal kernel source branch disambiguated from generic 6.1 to android16-6.12; critical trip handler symbols corrected for branch consistency; step_wise get_target_state() added bool throttle parameter; Thermal HAL version table split into AIDL basics (14), cooling callback (15), forecastSkinTemperature + Framework fallback (16)."
 last_task2b_at: "2026-06-04T14:54:52+08:00"
+last_task6_at: "2026-06-04T15:21:59.742576+08:00"
+task6_reviewed_date: 2026-06-04
+task6_reviewed_by: "openclaw-task6"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 2 处（形容词+冒号起手式 1、「很关键」填充 1）。无新增 L3/L4 回炉项。"
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
@@ -102,7 +109,7 @@ last_task2b_at: "2026-06-04T14:54:52+08:00"
 
 5.5 中我们看到了温控对性能的影响——30 分钟游戏测试中帧率从 120fps 降到 30fps 的场景。但那篇是面向"识别问题"的：知道温控在介入就够了。本文面向的是"解决问题"：理解内核 thermal governor 的决策逻辑，才能在 Perfetto 中准确判断"为什么这一刻开始降频了"，才能在系统调优时知道该动哪个参数。
 
-这个区分在实际工作中很关键。有些性能问题是可以通过 App 层优化解决的（减少不必要的计算、使用 ADPF 主动降载）。但有些问题的根因在系统层——OEM 的 thermal 策略过于保守、kernel governor 的响应曲线不合理、或者 devfreq cooling 对 GPU 的限制过早介入。解决后者需要对 thermal 子系统有更深的理解。
+这个区分决定了后续排查方向。有些性能问题是可以通过 App 层优化解决的（减少不必要的计算、使用 ADPF 主动降载）。但有些问题的根因在系统层——OEM 的 thermal 策略过于保守、kernel governor 的响应曲线不合理、或者 devfreq cooling 对 GPU 的限制过早介入。解决后者需要对 thermal 子系统有更深的理解。
 
 [图：Thermal 问题分析的三个层次——App 层（ADPF Thermal API）→ Framework 层（ThermalManagerService）→ Kernel 层（thermal governor + cooling device），标注每层能做什么、不能做什么]
 
@@ -384,7 +391,7 @@ interface IThermal {
 
 `TemperatureThreshold` 也不是一个单值阈值。它按 `ThrottlingSeverity` 提供 `hotThrottlingThresholds[]` 和 `coldThrottlingThresholds[]` 两组数组，Framework 可以据此知道同一个 skin、battery、cpu 传感器在 LIGHT、MODERATE、SEVERE 直到 SHUTDOWN 各档对应的静态温度线。`forecastSkinTemperature()` 则是 HAL 直接给出的 skin 温度预测值，单位仍是摄氏度。
 
-对 Framework 来说，这一层的职责很明确：`getTemperatures*()` 读当前状态，`registerThermalChangedCallback*()` 订阅 severity 变化，`getTemperatureThresholds*()` 提供静态阈值基线，`forecastSkinTemperature()` 提供 HAL 侧预测能力。真正的 throttling status 还是要看 HAL 当前上报的 severity，不能只拿 threshold 数组硬推。
+对 Framework 来说，这一层做四件事：`getTemperatures*()` 读当前状态，`registerThermalChangedCallback*()` 订阅 severity 变化，`getTemperatureThresholds*()` 提供静态阈值基线，`forecastSkinTemperature()` 提供 HAL 侧预测能力。真正的 throttling status 还是要看 HAL 当前上报的 severity，不能只拿 threshold 数组硬推。
 
 [已验证: hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl, TemperatureThreshold.aidl, source.android.com/docs/core/power/thermal-mitigation]
 

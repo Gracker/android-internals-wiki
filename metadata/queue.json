@@ -970,6 +970,24 @@
       "priority": 80,
       "reason": "task2a gap-mining: Score 15/20, Q:20 素材 + DeepResearch",
       "created_date": "2026-06-04"
+    },
+    {
+      "section": "7.13",
+      "section_title": "SystemUI 性能分析",
+      "priority": 50,
+      "reason": "[Task6 L3 观察] Foldable 多 Display 附录以源码调研笔记体呈现，与正文叙述风格不一致",
+      "review_issues": [
+        {
+          "type": "建议整合",
+          "location": "末尾 §Foldable 设备多 Display 渲染模型源码分析",
+          "detail": "该部分以源码调研笔记体（逐条列源码路径+方法名）呈现，与正文叙述风格不一致，缺少上下文衔接",
+          "suggestion": "提取核心结论融入 §Android 16 桌面模式段落，保留源码索引作参考附录"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-04T15:13:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-04-15-review.md"
     }
   ]
 }
