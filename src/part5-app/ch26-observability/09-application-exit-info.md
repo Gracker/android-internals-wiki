@@ -2,7 +2,7 @@
 title: "ApplicationExitInfo 与进程退出归因"
 chapter: "26.9"
 section: "26.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-05-15"
@@ -12,16 +12,16 @@ polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-15"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-15T17:28:33+08:00"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-04"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-04T08:20:00+08:00"
 task2b_state: fixed
 sources:
   - type: research
@@ -57,6 +57,8 @@ related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
 last_task6_at: "2026-06-04T04:12:07+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
+task9_review_notes: "2026-06-04 Task9 deep review: pass-tech-review。无 P0/P1；ApplicationExitInfo API 30+/31+ traceInputStream、reason 常量、低版本替代路径和交叉引用抽查通过；queue 无 pending 且 Task6 已通过，自动晋升 finalized。"
 ---
 
 # 26.9 ApplicationExitInfo 与进程退出归因

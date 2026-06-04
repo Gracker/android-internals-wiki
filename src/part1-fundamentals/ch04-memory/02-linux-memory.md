@@ -2,9 +2,9 @@
 
 
 status: ready-for-review
-task9_reviewed_date: "2026-05-21"
+task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-21T11:31:10+08:00"
+last_task9_at: "2026-06-04T08:20:00+08:00"
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
@@ -54,21 +54,22 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-21"
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: reworked
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
-last_task9_review_log: "logs/deep-review/2026-05-21-11-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 last_task6_at: '2026-06-04T07:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
-task9_review_notes: "2026-05-21 Task9 deep review: P1 Android 17 ART→MADV_COLD 仍以确定语气描述，源码锚点与内核语义未完成校验，写入 queue 条目 task9-20260521-4.2-art-madv-cold-still-assertive。"
+task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 MGLRU 主线版本边界、图形 buffer 物理连续表述、DMA-BUF 统计入口和 Google Play 16KB 要求范围；已回到 Task6 复审。"
 last_task2b_at: "2026-06-04T04:55:01"
+last_task9_autofix_at: "2026-06-04"
 ---
 
 
@@ -374,7 +375,7 @@ Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在
 
 这条路径的具体工作方式是：GC 对识别为冷对象所在的匿名页调用 `madvise(MADV_COLD)`。内核处理 `MADV_COLD` 的实际路径取决于内核版本和 LRU 实现：
 
-- **`mm/madvise.c` 中的 MADV_COLD 处理**：对目标 `vma` 范围内的页面调用 `folio_deactivate()`，清掉 `referenced` flag 并将 folio 移到 inactive LRU 链表的尾部。在 MGLRU（Multi-Gen LRU，Linux 5.18+）中，等效操作是清除 generation 计数的 `PG_referenced` 标记，使页面在下一次老化（aging）扫描时更容易被降代。
+- **`mm/madvise.c` 中的 MADV_COLD 处理**：对目标 `vma` 范围内的页面调用 `folio_deactivate()`，清掉 `referenced` flag 并将 folio 移到 inactive LRU 链表的尾部。在 MGLRU（Multi-Gen LRU，主线 Linux 6.1+；Android common 5.10/5.15 需看 backport 与 CONFIG）中，等效操作是清除 generation 计数的 `PG_referenced` 标记，使页面在下一次老化（aging）扫描时更容易被降代。
 - **实际效果**：这些页面不再因为 GC 扫描时的访问而被错误标记为"活跃"（前面提到的 pseudo-hot 问题），从而在内存压力下优先被回收，减少不必要的 swap-in。
 
 **版本边界**：AOSP `platform/art`（截至 android-16.0.0_r1）与主线（main）均未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
@@ -389,7 +390,7 @@ Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在
 
 在 Android 上，这个问题尤其突出：
 
-- **图形内存**：GPU、相机、视频编解码器等硬件模块通常需要物理连续的大块内存（GPU buffer、camera buffer）。碎片化严重时，这些硬件模块的内存分配会变慢甚至失败。
+- **图形内存**：GPU、相机、视频编解码器等硬件模块通常需要可被设备 DMA 访问的大块 buffer；在缺少 IOMMU 或使用 CMA heap 的路径上，才更依赖物理连续内存。碎片化严重时，这些硬件模块的内存分配会变慢甚至失败。
 - **大页面支持**：Transparent Huge Pages（THP）需要 2MB 连续物理内存（512 个连续的 4KB 页），碎片化使得 THP 难以生效。
 
 OPPO 曾经详细分析过这个问题，并提出了两种反碎片化机制：
@@ -450,7 +451,7 @@ DMA-BUF 是 Linux 内核中用于跨设备、跨进程共享大块内存的框�
 
 这个 fd 传递机制减少了数据副本。各组件共享的是同一个 dma-buf 对象，但 CPU 访问方式、GPU/HWC 的导入方式、是否要求物理连续，取决于 heap 类型和硬件内存映射能力，不能压成“始终共享同一块物理连续内存”。
 
-在 `/proc/meminfo` 中，`DMA-BUF` 相关的字段（如 `DmaBufTotal`、`DmaBufMapped`、`DmaBufUnmapped`）反映了图形缓冲区的内存使用情况。在 Perfetto 的内存分析视图中，DMA-BUF 通常占据了设备总内存的相当大比例（在高端设备上可能达到数百 MB 甚至超过 1GB）。
+Android 12+ 的 DMA-BUF 统计主要通过 `/sys/kernel/dmabuf/buffers/`、`libdmabufinfo`、`dmabuf_dump` 和 memtrack 汇总；不同内核也可能在 `/proc/meminfo` 暴露 `Dmabuf` 一类汇总字段，但不能写成固定存在的 `DmaBufTotal` / `DmaBufMapped` / `DmaBufUnmapped`。在 Perfetto 的内存分析视图中，DMA-BUF 通常占据了设备总内存的相当大比例（在高端设备上可能达到数百 MB 甚至超过 1GB）。
 
 [已验证: 官方文档, source.android.com — Graphics buffer 管理与 DMA-BUF 框架]
 
@@ -503,7 +504,7 @@ Google 的实测数据（来自 developer.android.com）：
 
 Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索，包括"Simple Shift"方案和"memfd 双映射"方案。其中最棘手的挑战来自亚洲市场的应用——重度混淆的 ELF 和自定义 loader 使得自动化适配非常困难。
 
-从 2025 年 11 月 1 日起，Google Play 要求所有新应用和更新必须支持 16KB 页面大小。
+从 2025 年 11 月 1 日起，提交到 Google Play 且面向 Android 15（API 35）及以上设备的新应用和既有应用更新必须支持 16KB 页面大小。
 
 [来源: Cubox/LPC2025-Android MC主题-2026-01-10.md]
 [已验证: 官方文档, developer.android.com — 16KB page size 要求]
