@@ -3,7 +3,7 @@
 title: "Startup Profile 与 DEX Layout 启动优化"
 chapter: "21.12"
 section: "21.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
@@ -48,16 +48,18 @@ sources:
     path: "art/dex2oat/dex2oat.cc"
   - type: source
     path: "r8/src/main/java/com/android/tools/r8/profile/startup/StartupOptions.java"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2a_state: processed
 task2a_result: processed-draft
 last_task2a_at: "2026-05-25T23:10:00+08:00"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task6_result: pass-light-edit
+task9_result: pass-tech-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
+last_task9_at: "2026-06-05T05:28:04+08:00"
 ---
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化

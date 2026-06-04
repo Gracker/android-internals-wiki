@@ -5,11 +5,11 @@ chapter: "4.11"
 section: "4.11"
 status: ready-for-review
 drafted_date: "2026-05-19"
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37); 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
+applicable_versions: "Android 11 (API 30) - Android 16 (API 36); Android 17 待公开 tag 复核; 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
 last_verified: "2026-05-19"
-last_verified_against: "AOSP main frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList + ART heap.cc; Android Source/Developers docs 2026-05"
+last_verified_against: "AOSP android-16.0.0_r1 frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList/ActivityManagerConstants + ART heap.cc; Android Source/Developers docs 2026-05; Android 17 tag 未公开"
 confidence: medium
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
 related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.9"]
 created_by: "task2a-knowledge-gap"
@@ -33,6 +33,8 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
@@ -40,12 +42,16 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
+task9_result: auto-fixed
+task2b_state: fixed
+last_task9_autofix_at: "2026-06-05"
+last_task9_at: "2026-06-05T05:28:04+08:00"
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界
@@ -76,7 +82,7 @@ last_task6_at: "2026-06-05"
 
 ## 扩展
 
-### 🔸 Android 11 QPR3 到 Android 17 的版本演进
+### 🔸 Android 11 QPR3 到 Android 16 的版本演进
 整理 cached app freezer、binder freezer callback、DeviceConfig throttle、16KB Page Size 支持之间的时间线。
 
 ### 🔸 厂商 freezer 策略差异
@@ -108,18 +114,18 @@ Android Developers 的进程生命周期文档也给了同一层语义：cached 
 
 Freezer 和 LMK 都会参考进程重要性，但两者的动作不同。Freezer 暂停执行，LMK/lmkd 杀进程释放内存。把这两条路径合成“低内存处理”会让线上归因跑偏。
 
-`ProcessList.java` 里与本节相关的值很少：
+`ProcessList.java` 与 `ActivityManagerConstants.java` 里与本节相关的值很少：
 
-| 常量 | 当前 AOSP main 值 | 用途 |
+| 常量 | AOSP android-16.0.0_r1 值 | 用途 |
 | --- | ---: | --- |
 | `CACHED_APP_MIN_ADJ` | `900` | cached 进程区间起点 |
 | `CACHED_APP_MAX_ADJ` | `999` | cached 进程区间末端 |
 | `CACHED_APP_LMK_FIRST_ADJ` | `950` | LMK 候选中更早被回收的 cached 进程起点 |
-| `FREEZER_CUTOFF_ADJ` | `CACHED_APP_MIN_ADJ` | freezer 判断可冻结进程的 adj 阈值 |
+| `FREEZER_CUTOFF_ADJ` | 默认 `CACHED_APP_MIN_ADJ`；`prototypeAggressiveFreezing` 打开时为 `HOME_APP_ADJ` | freezer 判断可冻结进程的 adj 阈值 |
 
-[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
+[已验证: AOSP android-16.0.0_r1, `ProcessList.java` / `ActivityManagerConstants.java`]
 
-`OomAdjuster.getFreezePolicy()` 才是冻结资格判断所在位置。它先排除带有 CPU capability、`shouldNotFreeze()` 或 `isFreezeExempt()` 的进程；通过这些排除项后，`curAdj >= FREEZER_CUTOFF_ADJ` 的进程才会进入冻结候选。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
+`OomAdjuster.getFreezePolicy()` 才是冻结资格判断所在位置。它先排除带有 CPU capability、`shouldNotFreeze()` 或 `isFreezeExempt()` 的进程；通过这些排除项后，`curAdj >= FREEZER_CUTOFF_ADJ` 的进程才会进入冻结候选。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
 
 这段设计有两个排障含义：
 
@@ -128,7 +134,7 @@ Freezer 和 LMK 都会参考进程重要性，但两者的动作不同。Freezer
 
 ## 冻结路径：OomAdjuster 判断，CachedAppOptimizer 执行
 
-冻结动作由 `CachedAppOptimizer` 在 system_server 内异步处理。`OomAdjuster.applyOomAdjLSP()` 完成本轮 adj、proc state、sched group 等状态更新后，会调用 `updateAppFreezeStateLSP()`；后者根据 `getFreezePolicy()` 的结果选择冻结或解冻。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
+冻结动作由 `CachedAppOptimizer` 在 system_server 内异步处理。`OomAdjuster.applyOomAdjLSP()` 完成本轮 adj、proc state、sched group 等状态更新后，会调用 `updateAppFreezeStateLSP()`；后者根据 `getFreezePolicy()` 的结果选择冻结或解冻。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
 
 源码路径可以压缩成下面这条：
 
@@ -146,7 +152,7 @@ OomAdjuster.applyOomAdjLSP(app)
               -> mFrozenProcesses.put(pid, proc)
 ```
 
-`freezeAppAsyncLSP()` 在投递冻结消息前会调用 `scheduleTrimMemory(TRIM_MEMORY_BACKGROUND)`，并把进程标记为 pending freeze。执行冻结的是 `FreezeHandler` 线程中的 `freezeProcess()`。它先冻结 Binder 接口，再通过 `mFreezer.setProcessFrozen(pid, uid, true)` 设置进程冻结状态，然后记录 `mFrozenProcesses`。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+`freezeAppAsyncLSP()` 在投递冻结消息前会调用 `scheduleTrimMemory(TRIM_MEMORY_BACKGROUND)`，并把进程标记为 pending freeze。执行冻结的是 `FreezeHandler` 线程中的 `freezeProcess()`。它先冻结 Binder 接口，再通过 `mFreezer.setProcessFrozen(pid, uid, true)` 设置进程冻结状态，然后记录 `mFrozenProcesses`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 这套顺序解释了几个线上现象：
 
@@ -154,7 +160,7 @@ OomAdjuster.applyOomAdjLSP(app)
 - Binder 在进程冻结前先被处理。`freezeProcess()` 调用 `freezeBinder()` 后才设置进程 frozen，避免未完成事务在冻结点留下不一致状态。
 - 进程清理时必须删除 frozen 状态。`onCleanupApplicationRecordLocked()` 会移除 pending freeze 消息并从 `mFrozenProcesses` 删除 pid，防止 system_server 继续把已经退出的进程当成 frozen 目标。
 
-解冻走同一套状态表。`unfreezeAppInternalLSP()` 会先检查 frozen 期间是否收到同步 Binder 事务；命中后用 `ApplicationExitInfo.REASON_FREEZER` 杀掉服务端进程。通过检查后，它再调用 `freezeBinder(pid, false, ...)` 和 `setProcessFrozen(pid, uid, false)`，清理 `mFrozenProcesses` 并分发 unfrozen 事件。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+解冻走同一套状态表。`unfreezeAppInternalLSP()` 会先检查 frozen 期间是否收到同步 Binder 事务；命中后用 `ApplicationExitInfo.REASON_FREEZER` 杀掉服务端进程。通过检查后，它再调用 `freezeBinder(pid, false, ...)` 和 `setProcessFrozen(pid, uid, false)`，清理 `mFrozenProcesses` 并分发 unfrozen 事件。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 ## 冻结期间不能把 GC 当成正在运行的后台任务
 
@@ -179,7 +185,7 @@ ART 的触发条件仍在 `art/runtime/gc/heap.cc`。源码里能看到三类常
 - 并发 GC 由 `RequestConcurrentGC()` 投递，触发原因可以是 `kGcCauseBackground` 或 native allocation 压力。
 - `target_footprint_` 和 `concurrent_start_bytes_` 决定下一次 GC 的启动水位，`GrowForUtilization()` 会在 GC 后重新计算这些阈值。
 
-[已验证: AOSP main, art/runtime/gc/heap.cc]
+[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.cc]
 
 这和 §4.3「ART 虚拟机内存管理」的解释一致：GC 是 runtime 根据堆占用、分配速度、collector 策略和进程状态做出的内存管理动作。Freezer 只改变线程能不能运行，不改写 ART heap 的阈值公式。
 
@@ -205,7 +211,7 @@ Binder Freezer 是 cached app freezer 最容易在业务侧显形的部分。应
 
 这类变化影响的是页表、TLB 覆盖范围、ELF segment 对齐、native allocation 对齐和 page fault 计数。它会改变 `dumpsys meminfo`、RSS/PSS、匿名页、zRAM 回收这类指标的观察粒度，但不会把 freezer 变成 GC 触发器。
 
-截至本轮核对，AOSP main 的 `CachedAppOptimizer.java`、`OomAdjuster.java`、`ProcessList.java` 中没有看到“16KB page size 专门改变冻结策略”的判断分支。ART `heap.cc` 中能看到堆水位、native allocation 水位、后台 GC 请求等逻辑，但没有证据表明 frozen cgroup 状态会重写这些阈值。[待验证: Android 16/17 release 分支中是否存在设备侧或 vendor 侧 freezer 专属 16KB 调整]
+截至本轮核对，AOSP android-16.0.0_r1 的 `CachedAppOptimizer.java`、`OomAdjuster.java`、`ProcessList.java`、`ActivityManagerConstants.java` 中没有看到“16KB page size 专门改变冻结策略”的判断分支。ART `heap.cc` 中能看到堆水位、native allocation 水位、后台 GC 请求等逻辑，但没有证据表明 frozen cgroup 状态会重写这些阈值。[待验证: Android 17 release tag 公开后复核是否存在设备侧或 vendor 侧 freezer 专属 16KB 调整]
 
 工程上可以这样拆：
 
