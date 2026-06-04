@@ -1246,6 +1246,46 @@
       "priority": 80,
       "reason": "[task2a gap-mining] 知识缺口挖掘，评分 14/20",
       "created_date": "2026-06-05"
+    },
+    {
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料（Android 17 Measure 与 Vitals 崩溃聚合集成），章节已 finalized 建议补充到参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-android-measure-vitals-integration.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Measure 与 Android Vitals 崩溃聚合集成机制 — Measure API 通过 DropBoxManager 与 Vitals 建立间接集成通道，statsd 订阅 DropBox 事件处理后上报 Play Console",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-05T06:12:28.406315",
+      "status": "pending"
+    },
+    {
+      "section": "05.13-ext",
+      "section_title": "端侧 AI 应用框架扩展（AIW 尚无对应章节）",
+      "priority": 75,
+      "reason": "[DeepResearch 注入] 新增 Agent 长期记忆系统（Mem0 / M3-Agent）端侧 AI 适配调研，AIW 无直接对应章节，建议评估是否新增章节或作为移动端 LLM 推理的延伸参考",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-agent-longterm-memory-on-android.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "待定章节",
+          "detail": "Agent 长期记忆系统（Mem0 / M3-Agent）在 Android 端侧 AI 应用的适配方案 — 分析 Mem0 中心化 Python/TS 框架与 M3-Agent 端云协同多模态图架构在 Android 端侧的适配路径",
+          "suggestion": "评估是否需要新增端侧 AI Agent 记忆系统章节，或作为 ch05/13 移动端 LLM 推理的延伸阅读"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-05T06:12:28.406315",
+      "status": "pending"
     }
   ],
   "items": [
@@ -1497,6 +1537,44 @@
       "status": "pending",
       "created": "2026-06-05",
       "source": "task2a-gap-mining"
+    },
+    {
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 源码锚点与 Codec2/Media3 附录源码错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-05-06-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 版本边界错误",
+          "location": "frontmatter last_verified_against",
+          "detail": "章节写明 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release，但本轮 git ls-remote 验证 frameworks/av 与 frameworks/base 只有 android-16.0.0_r1 返回，android-17.0.0_r1 无返回。按 AIW Android 17 边界规则，不能把未公开 tag 或 main 资料当成 Android 17 正文结论。",
+          "suggestion": "将源码锚点回退到 android-16.0.0_r1，或明确标注 Android 17 tag 未公开、待复核；正文/附录中所有 Android 17 已验证表述同步修正。"
+        },
+        {
+          "type": "P0 源码符号错误",
+          "location": "源码调研补充：Tunneled Playback 差异",
+          "detail": "附录写 OMX 侧配置 OMX_IndexParamVideoAvcTunesMode。本轮在 android-16.0.0_r1 frameworks/av/media/libstagefright/ACodec.cpp 与 frameworks/native headers 中未找到该符号；AOSP 路径实际通过 ACodec::configureTunneledVideoPlayback() 调用 IOMXNode::configureVideoTunnelMode() 并设置 sideband stream，tunnel peek 相关配置为 OMX_IndexConfigAndroidTunnelPeek / LegacyMode。",
+          "suggestion": "删除或重写该符号说明，改用 ACodec.cpp 与 CCodec.cpp 中已验证的 configureTunneledVideoPlayback / native_window_set_sideband_stream / C2PortTunneledModeTuning 路径。"
+        },
+        {
+          "type": "P0 版本矩阵错误",
+          "location": "源码调研补充：Codec2 演进路径源码锚点",
+          "detail": "附录写 Android 5.0(API 21) 引入 Codec2、API 28+ 成为默认，与正文 Android 10+ Codec2 路径互相矛盾，也与当前 AOSP frameworks/av Codec2 目录和 CCodec.cpp 演进边界不一致。",
+          "suggestion": "以 Android 10+ 作为 Codec2 替代 OMX 的正文边界，补充“设备实际是否走 Codec2 取决于 vendor component 和配置”；删除 API21/API28 默认这组未经验证的矩阵。"
+        },
+        {
+          "type": "P1 交叉引用/源码路径错误",
+          "location": "Media3 ABR 源码路径与调研附录",
+          "detail": "附录把 ABR 源码指向 external/exoplayer/library/common/.../DefaultLoadControl.java 和 androidx/media ... DefaultTrackSelector.java；正文已有 AdaptiveTrackSelection + DefaultBandwidthMeter 说法。当前 androidx/media release 中 DefaultLoadControl 位于 libraries/exoplayer/...，ABR 决策核心应锚到 trackselection/AdaptiveTrackSelection.java 与 upstream DefaultBandwidthMeter。",
+          "suggestion": "统一正文与附录的 Media3 源码路径，删除 legacy external/exoplayer 路径或标注为旧 ExoPlayer 路径，不要作为 Media3 1.10 的一手锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-05T06:20:00+08:00",
+      "status": "pending"
     },
     {
       "section": "2.19",
