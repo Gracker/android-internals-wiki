@@ -1345,6 +1345,24 @@
       "completed_at": "2026-06-05T00:53:40.101273",
       "completed_by": "openclaw-task2b-main",
       "completed_reason": "P0: setEnableRecordAnrMainStack→enableAllThreadStackAnr; P1: removed unverifiable Page Replay/4.4.7.3+ claims, replaced with public-doc-verifiable capabilities"
+    },
+    {
+      "chapter": "22.21",
+      "title": "Jetpack Compose 动画性能深度优化",
+      "path": "src/part5-app/ch22-rendering-practice/21-compose-animation-performance.md",
+      "priority": 80,
+      "status": "pending",
+      "created": "2026-06-05",
+      "source": "task2a-gap-mining"
+    },
+    {
+      "chapter": "4.13",
+      "title": "Linux ANON_VMA_LAZY 优化与 Android 内存性能",
+      "path": "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md",
+      "priority": 80,
+      "status": "pending",
+      "created": "2026-06-05",
+      "source": "task2a-gap-mining"
     }
   ],
   "2.26": {
