@@ -1,6 +1,6 @@
 {
-  "total": 405,
-  "draft": 4,
+  "total": 406,
+  "draft": 5,
   "ready-for-review": 110,
   "finalized": 258,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -13560,5 +13560,22 @@
   "task2b_last_chapters": [
     "13.2",
     "19.06"
-  ]
+  ],
+  "9.8": {
+    "title": "ANR Kernel Trace 联合诊断与系统事件关联",
+    "file": "src/part2-performance/ch09-anr/08-anr-kernel-trace-joint-diagnosis.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_gap_created",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-04",
+    "queue_priority": 80,
+    "gap_source": "研究素材/每日信息/AOSP结构",
+    "gap_score": {
+      "素材丰富度": 3,
+      "与全书目标相关性": 5,
+      "读者需求度": 5,
+      "时效性": 4,
+      "total": 17
+    }
+  }
 }

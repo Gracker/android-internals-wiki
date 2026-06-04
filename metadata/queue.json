@@ -1303,6 +1303,14 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-04T22:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "chapter": "9.8",
+      "title": "ANR Kernel Trace 联合诊断与系统事件关联",
+      "file": "src/part2-performance/ch09-anr/08-anr-kernel-trace-joint-diagnosis.md",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-06-04"
     }
   ]
 }
