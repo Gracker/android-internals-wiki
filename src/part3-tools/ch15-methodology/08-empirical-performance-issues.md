@@ -26,11 +26,11 @@ tags:
   - code-review
   - performance-patterns
   - empirical-study
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-22"
@@ -41,7 +41,7 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T14:32:13+08:00"
 
-last_task2b_at: "2026-04-27T09:42:00+08:00"
+last_task2b_at: "2026-06-05T04:53:50+08:00"
 ---
 
 
@@ -50,6 +50,19 @@ last_task2b_at: "2026-04-27T09:42:00+08:00"
 前面 15.3 讲的是怎么度量性能，15.5 讲的是怎么发现性能问题。本节换一个角度，看真实世界里的 Android 性能问题到底集中在哪些地方，用户、开发者和研究者各自在盯什么。
 
 只靠直觉排优先级，时间很容易花在次要问题上。实证数据更适合拿来做校准。
+
+<!-- outline-start -->
+
+- 用户、开发者、研究者：三个完全不同的关注点（Google Play / SO / GitHub / 论文四视角对比）
+- 七类性能后果与 63/82 因素 taxonomy（性能后果分类、观测入口与版本边界）
+- 六类论文代码模式与一类现代工程补充（API 误用、未释放引用、冗余对象、大规模数据、UI 操作、其他模式）
+- 现代补充：主线程同步 Binder 调用（Binder 等待链、Perfetto 确认方法、服务端归因）
+- 现代版本补充：cached-app freezer 与解冻毛刺（进程冻结/解冻、CPU 抢占、误判分析）
+- 从数据看排查优先级（用户面响应性、工程面内存、研究面能耗）
+- 构建 Code Review 性能检查清单（API 误用、引用释放、冗余对象、布局、数据 I/O）
+- 对本书读者的实践指导
+
+<!-- outline-end -->
 
 ## 用户、开发者、研究者：三个完全不同的关注点
 
