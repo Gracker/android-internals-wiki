@@ -1,4 +1,5 @@
 ---
+
 title: "SurfaceFlinger FrontEnd 与 RequestedLayerState"
 chapter: "2.22"
 section: "2.22"
@@ -33,6 +34,8 @@ sources:
     path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: research
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
+task6_state: pending
+task9_state: pending
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState

@@ -1,4 +1,5 @@
 ---
+
 title: "JobScheduler 调试：Pending Reasons 与 JobDebugInfo"
 chapter: "25.14"
 status: ready-for-review
@@ -38,6 +39,8 @@ gap_source: "官方文档/每日信息/章节深挖"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-22T05:19:00+08:00"
 pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
 ---
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo
