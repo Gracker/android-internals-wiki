@@ -24,17 +24,11 @@ sources:
 - type: blog
   path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
 - type: blog
-  path: Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md
 - type: blog
-  path: Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md
 - type: blog
-  path: Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md
 - type: blog
-  path: Personal-Knowlodge/source/2026-03-08_wechat_Compose_与原生启动性能对比.md
 - type: blog
-  path: Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md
 - type: official
-  path: developer.android.com/develop/ui/compose/performance
 tags:
 - compose
 - jank
@@ -55,8 +49,8 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -70,11 +64,7 @@ last_task9_audit: '2026-05-20'
 last_task9_audit_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-05-20-02-audit.md
 task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 PausableComposition Android API level 绑定、延迟状态读取示例、RecyclerView ComposeView Recomposer/Dispose 策略；P2 数据缺口写入 suggestions。"
-task6_result: pass-light-edit
-task9_state: reviewed
-reviewed_by: openclaw-task6
 ---
-
 # Jetpack Compose 性能优化
 
 <!-- outline-start -->
