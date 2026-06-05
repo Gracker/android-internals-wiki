@@ -9,11 +9,11 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
-last_task2b_at: 2026-06-05T13:35:00
+last_task2b_at: 2026-06-06T02:57:42+08:00
 last_task9_at: "2026-06-06T01:20:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -47,16 +47,16 @@ tags:
 - 视频性能
 - 音频延迟
 - ExoPlayer
-task2b_result: fixed-lite
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-06"
-task9_state: reviewed
+task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: "2026-06-06 Task9 deep review: needs-rework。P0：Media3 ABR 源码方法/算法描述错误，旧源码调研附录仍含 Codec2/tunneled/ABR 已被后文否定的结论。P1：Android 16 Codec2/Gralloc additionalOptions 与 16KB 性能结论缺少一手源码/benchmark。"
 last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
@@ -66,7 +66,9 @@ task6_review_notes_r7: "2026-06-05 Task6 revisiting-review #4: L1/L2 no new writ
     task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
 
 last_task2b_lite_at: 2026-06-05T13:35
----
+last_task2b_by: openclaw-task2b-main
+task2b_notes: "2026-06-06 Task2B main 回炉 #3：P0 Media3 ABR 源码方法修正（AdaptiveTrackSelection+DefaultBandwidthMeter 实际API），删除2026-05-12/21旧附录（含不可溯源伪代码和已被后文否定结论），清理CCodec::initialize伪代码和ABR错误调用链，P1 16KB页面声明降级为待验证。"
+----
 
 
 # 8.8 Android 多媒体管线性能
@@ -257,11 +259,12 @@ ABR 的性能影响体现在两个极端：
 - **切换太慢**：带宽已经下降但还在请求高质量流，导致 buffer 耗尽和 rebuffering
 - **切换太频繁**：带宽波动时频繁切换码率，每次切换都可能导致短暂的视频质量跳变
 
-[待验证] Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实现。带宽估算使用指数平滑窗口，每次 chunk 下载完成后更新；决策触发在检测到带宽下降时立即执行回调。决策延迟（采样时延 + 评估计算 + 切换触发）通常在 50-200ms 量级，具体取决于 chunk 大小和网络抖动。
+Media3 的 ABR 决策由 `AdaptiveTrackSelection` 配合 `DefaultBandwidthMeter` 实现。`DefaultBandwidthMeter` 通过 `SlidingPercentile` 维护带宽估计，`AdaptiveTrackSelection` 通过 `updateSelectedTrack()` / `determineIdealSelectedIndex()` 结合带宽估计和 buffer 时长做出轨道切换决策。这两个方法在 androidx/media 公开源码中可直接溯源。
 
-"主动预测模型"和"亚 100ms adaptation decision"未能在 Media3 release notes / DefaultLoadControl / AdaptiveTrackSelection 公开资料中找到对应版本和测试条件。读者可以参考 `DefaultBandwidthMeter` 和 `AdaptiveTrackSelection` 源码了解决策链路，但不要把固定数值当作通用结论。
+决策窗口不是固定值——它取决于当前 chunk 下载完成时间、带宽滑动窗口和 buffer 水位，不同网络条件下的实际延迟差异很大。不要把一个具体的 "50-200ms" 或 "亚 100ms" 当作平台保证。
 
-[来源: androidx/media3/exoplayer/.../AdaptiveTrackSelection.java + DefaultBandwidthMeter.java]
+[已验证: androidx/media3, AdaptiveTrackSelection.java + DefaultBandwidthMeter.java]
+
 
 ### LoadControl 缓冲策略
 
@@ -521,112 +524,12 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
 - **Media3 1.9.0 (2025-11)**：`media3-ui-compose` 提供 `ContentFrame` 和 `PlayerSurface`
 - **Android 15 (2025)**：dav1d 成为默认 AV1 软解引擎，解码效率提升约 3 倍；引入 Spatial Audio over BLE Audio
-- **Android 16 (Baklava, 2026)**：16KB 页面减少编解码大分辨率视频时的 TLB 抖动和内核态切换，提升 Codec2 处理 4K/8K 视频的吞吐量；Gralloc AIDL V2 的 additionalOptions 支持显式传递 16KB 协调约束
+- **Android 16 (Baklava, 2026)**：引入 16KB 页面支持；Gralloc AIDL V2（`Gralloc5.cpp`）包含 `additionalOptions` 字段传递，但其与 16KB 页面协调约束的具体语义和编解码吞吐量收益需独立 benchmark 确认
 - **Media3 1.10.0 (2026-03)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
 
 
-
----
-
-<!-- AIW-源码调研-2026-05-12 -->
-
-## 源码调研补充：Codec2 / Tunneled Playback / Media3 ABR 演进（2026-05-12）
-
-### OMX → Codec2 演进
-
-OMX（Open Max IL）是 Android 早期多媒体栈的底层接口，采用 C 风格回调驱动模型：
-- **关键文件**：`frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` — OMX 组件实例管理
-- **适配层**：`frameworks/av/media/libstagefright/ACodec.cpp` — OMX 与 MediaCodec 的命令转换
-
-Codec2（Android 10+）是 OMX 的现代化替代，使用 C++17 队列驱动模型：
-- **关键文件**：`frameworks/av/media/codec2/core/C2.cpp` — Codec2 库主入口
-- **类型定义**：`frameworks/av/media/codec2/core/include/C2.h` — `C2Component`、`C2Work` 定义
-
-OMX 路径通过 `ACodec` 适配，Codec2 路径通过 `CCodec` (`media/codec2/sfplugin/CCodec.cpp`) 适配。两条路径在 `MediaCodec` 层面统一 API，但底层实现各自独立。
-
-### Tunneled Playback 实现差异
-
-| 路径 | 数据流 | App 参与 | HWC 直接取帧 |
-|------|--------|----------|--------------|
-| BufferQueue | `MediaCodec → BufferQueue → SurfaceFlinger → HWC` | SurfaceView 配置 | 否 |
-| TextureView | `MediaCodec → BufferQueue → SurfaceTexture → App RenderThread → SurfaceFlinger` | GPU 纹理采样 | 否 |
-| Tunneled sideband | `Decoder → sideband handle → SurfaceView layer → HWC` | 无像素接触 | 是 |
-
-OMX 下通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点；Codec2 下通过 `CCodec::configureTunneledVideoPlayback()` 封装相同语义。Tunneled 的本质是 decoder 输出通过 sideband stream 绑定到 video layer，HWC 在音频时钟驱动下直接从 decoder 取帧渲染。
-
-### Media3 ABR 决策机制
-
-Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实现：
-- **带宽估算**：`DefaultBandwidthMeter` 使用指数平滑窗口，每次 chunk 下载完成后更新
-- **决策触发**：`AdaptiveTrackSelection` 在检测到带宽下降时立即触发回调，不需要等待下一轮缓冲区检查周期
-
-"亚 100ms 决策"不是某个单独 commit 的特定功能，而是决策延迟 = 采样时延（当前 chunk 下载完成）+ 评估计算（<1ms）+ 切换触发（immediate），通常在 50-200ms 量级。
-
-### 版本边界
-
-- **Android 4.1+ (API 16)**：Surface 作为 MediaCodec output surface
-- **Android 4.3+ (API 18)**：encoder input Surface (createInputSurface)，零拷贝编码路径
-- **Android 5.0+**：async callback mode 减少主线程阻塞
-- **Android 10 (API 29)+**：Codec2 框架引入，开始作为 OMX 的替代路径；设备是否使用 Codec2 取决于 vendor component 实现与配置
-- **Android 11 (API 30)+**：low-latency decoding 模式；Codec2 路径逐步补齐 tunneled playback 支持（具体可用性依赖设备 vendor component）
-- **Android 15 (API 35)+**：dav1d 默认软解引擎，AV1 软解效率提升约 3x
-
-### 源码文件索引
-
-| 文件路径 | 关键内容 |
-|----------|---------|
-| `frameworks/av/media/libstagefright/ACodec.cpp` | OMX 适配层（Codec2 走独立 CCodec 路径） |
-| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | Codec2 适配层，tunneled 配置 |
-| `frameworks/av/media/codec2/core/C2.cpp` | Codec2 核心接口实现 |
-| `frameworks/av/media/codec2/core/include/C2.h` | C2Component, C2Work 类型定义 |
-| `androidx/media3/exoplayer/.../DefaultBandwidthMeter.java` | 带宽估算逻辑 |
-
-
-## 参考资料
-
-- AOSP MediaCodec 源码：`frameworks/av/media/libstagefright/`
-- AOSP AudioFlinger 源码：`frameworks/av/services/audioflinger/`
-- 官方文档 MediaCodec：https://developer.android.com/reference/android/media/MediaCodec
-- 官方文档 AAudio Low Latency：https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio
-- Media3 官方文档：https://developer.android.com/media/media3
-- AndroidX Media3 release notes：https://developer.android.com/jetpack/androidx/releases/media3
-- Google Android Developers Blog, Media3 1.10 Release, 2026-03-30
-- Perfetto SQL Reference：https://ui.perfetto.dev
-
----
-
-<!-- AIW-源码调研-2026-05-21: Codec2 / Tunneled Playback / Media3 ABR -->
-**§8.8 补充调研（2026-05-21）**：
-
-**Codec2 演进要点**：
-- Codec2 通过 AIDL/HIDL 解耦组件生命周期，支持异步 callback；对比 OMX 的同步命令行模式
-- 关键路径：`frameworks/av/media/codec2/` → `sfplugin/CCodec.cpp`（SurfaceCodec 桥接）、`codec2/hidl/client/client.cpp`
-- API 31+ Codec2 成为默认，OMX 仅作兼容；API 33+ V4L2 Codec2 官方支持（`external/v4l2_codec2/`）
-
-**Tunneled Playback 差异**：
-- OMX 侧：通过 `OMXCallbackProxy` 实现，配置 `OMX_IndexConfigAndroidTunnelingStatus`
-- Codec2 侧：通过 `Codec2Client::createComponent()` 返回 `Component::Node`，配置 `C2PortMediaTypeSetting`
-- 性能收益：减少解码到渲染的拷贝延迟，实测降低 15-30ms 首帧
-
-**Media3 ABR**：
-- 预测模型基于带宽（2000ms 滑动窗口）、缓冲趋势和码率梯度联合评估
-- 决策窗口目标亚 100ms，ABR 决策在 player 内线程执行，不阻塞 UI 线程
-- 源码（Legacy ExoPlayer）：`external/exoplayer/library/common/src/main/java/com/google/android/exoplayer2/DefaultLoadControl.java`
-
-<!-- AIW-源码调研-2026-05-21 -->
-
-
-
-### Android 多媒体管线性能演进 — Codec2 / Tunneled Playback / Media3 ABR
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android-media-codec2-abr-pipeline.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级梳理 OMX → Codec2 架构演进：从 OMXNodeInstance 同步命令行到 Codec2 AIDL/HIDL 异步 callback 解耦。对比 Tunneled Playback 在 OMX 和 Codec2 的实现差异（buffer 回调 vs Component::Node），分析 Media3 DefaultLoadControl ABR 算法的带宽预测和亚 100ms 决策窗口。
-- 注入时间：2026-05-21
-- 价值：源码级深度调研，包含 AOSP 路径、调用链和版本矩阵，可作为章节扩展参考或正文补充素材
-
----
 
 <!-- AIW-源码调研-2026-05-24 -->
 
@@ -645,27 +548,9 @@ Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实�
 | `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | Codec2-SurfaceFlinger 桥接，配置 tunneled playback |
 | `frameworks/av/media/codec2/sfplugin/CCodecBuffers.cpp` | Buffer 管理，含 BufferPool 机制 |
 
-**调用链**（Codec2 编解码初始化）：
-```
-MediaCodec.java (Java API)
-  → MediaCodec.cpp (native)
-    → CCodec.cpp::initialize()
-      → C2Component::create()
-        → HwCodec2Bridge (HAL层)
-```
+Codec2 编解码初始化的典型路径：`MediaCodec.java` API → `MediaCodec.cpp` native 层 → `CCodec` 组件创建与配置方法（位于 `CCodec.cpp`）→ HAL 层。`CCodec` 的方法入口和内部状态机因 Android 版本和编解码器类型而异，公开 tag 中不提供固定伪代码。
 
-**关键代码段**（CCodec.cpp 桥接逻辑）：
-```cpp
-// frameworks/av/media/codec2/sfplugin/CCodec.cpp
-status_t CCodec::initialize() {
-    // 1. 创建 Codec2 组件
-    std::shared_ptr<C2Component> component = ...
-    // 2. 配置编解码参数
-    mCodec->configure(*mDomain);
-    // 3. 启动输入/输出队列
-    mLooper->start();
-}
-```
+CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包含组件创建、参数配置和队列管理。具体初始化路径随编解码器类型和配置参数变化，不在此给出伪代码。已验证的 tunneled 入口是 `configureTunneledVideoPlayback()`，涉及 `C2PortTunneledModeTuning`。
 
 **版本矩阵**：
 
@@ -721,14 +606,12 @@ status_t CCodec::initialize() {
 | `minDurationToRetainAfterDiscardMs` | 15000 | 升质量时保留至少 15s 低质量 buffer |
 | `maxWidthToDiscard` / `maxHeightToDiscard` | 1080p | 超出此分辨率的 buffer 可丢弃 |
 
-**调用链**（质量切换决策）：
-```
-DefaultTrackSelector.selectTracks()
-  → AdaptiveTrackSelection.evaluateBandwidth()
-    → BandwidthMeter.getBandwidth()
-      → ExoPlayer.getPlaybackParameters()
-        → abrAlgorithm.update()
-```
+ABR 质量切换的核心链路：
+- `DefaultTrackSelector.selectTracks()` 调用 `AdaptiveTrackSelection.updateSelectedTrack()`
+- `updateSelectedTrack()` 结合 `DefaultBandwidthMeter` 的带宽估计（`SlidingPercentile`）和当前 buffer 时长
+- 通过 `determineIdealSelectedIndex()` 确定目标轨道索引，实现升/降质量
+
+以上方法在 androidx/media release 公开源码中可直接溯源。
 
 **关键代码段**（Factory 构造）：
 ```java

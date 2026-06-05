@@ -10,14 +10,14 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed-lite
-pipeline_stage: task2b_pending
-last_task2b_at: 2026-06-06T01:35:00
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-06T02:57:42+08:00
 last_task2b_lite_at: 2026-06-06
-task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。2026-06-06 Task2B Lite：FRAME_RATE_COMPATIBILITY 常量值修正（EXACT=100/MIN=102 为 @hide，新增 AT_LEAST=2 公开常量）；6 处 collectVotes/calculateOptimalRate→getRankedFrameRates。
+task2b_notes: "2026-06-06 Task2B main 回炉 #3：P1 ARR版本表重写（拆分MRR/ARR边界 Android 15-QPR1+），ARR原理和场景描述修正，厂商功耗/延迟/百分比声明全部去量化为定性描述，移除60-80%切换减少和无法回溯的设备条件声明。"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档
@@ -44,7 +44,8 @@ last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
 last_task9_review_log: logs/deep-review/2026-06-06-02-deep-review.md
 task9_review_notes: "2026-06-06 Task9 复审：partial auto-fix 后仍 needs-rework。AUTO-FIX：修正普通游戏误用 @hide FRAME_RATE_COMPATIBILITY_EXACT、GameManager#setGameMode 权限边界、Perfetto frametimeline data source、RefreshRateSelector/Scheduler trace 入口、HWComposer 无缝切换源码路径。剩余 P1：ARR 版本演进表仍把 Android 11-14 多刷新率与 Android 15-QPR1+ ARR 混写，厂商 PLL/功耗/60-80% 减少等量化数据仍缺一手条件。"
 task9_result: needs-rework
----
+last_task2b_by: openclaw-task2b-main
+----
 
 
 # 2.19 刷新率切换与帧率适配性能
@@ -103,7 +104,7 @@ task9_result: needs-rework
 
 **非无缝切换（Non-seamless Switch）**：涉及分辨率变化或跨 Config Group 的切换（比如 1440p/120Hz → 1080p/60Hz）。这种切换可能导致短暂的黑屏或画面冻结，延迟可达数帧。在日常使用中较少出现。
 
-**ARR（Adaptive Refresh Rate）离散步进**：Android 13 引入的智能刷新率切换，根据场景需求在固定的刷新率之间切换。ARR 在 Camera 场景锁定 60Hz，在游戏场景锁定 90Hz，在桌面动画切换到 120Hz。这种切换避免了频繁的小幅调整，降低了切换代价。
+**ARR（Adaptive Refresh Rate）过渡**：Android 15 引入的刷新率平滑过渡机制，Android 15-QPR1+ 起在支持的设备上可用。ARR 通过硬件支持的中间刷新率过渡，降低从低刷到高刷的单次跳变代价——例如从 60Hz 到 120Hz 不再是一次大幅度 PLL 重配置，而是通过可变的中间步进逐步完成。这与更早版本的固定模式切换（MRR）是不同代际的能力。Android 16 开始可通过 `Display.hasArrSupport()` 查询支持状态。
 
 ## SurfaceFlinger 如何仲裁多个 Layer 的帧率需求
 
@@ -299,31 +300,33 @@ ARR 在不同 Android 版本中的实现方式不同：
 
 > [待验证] Android 16-17 的 ARR 能力（机器学习驱动识别、连续范围控制、Composer HAL 版本要求）均属于 Android 17 tag 未公开前的推断，不作为正文结论发布。Android 16.0.0_r1 tag 中 ARR 决策逻辑位于 `RefreshRateSelector::getRankedFrameRates()`。
 
-### 不同 Android 版本的 ARR 实现差异
+### 多刷新率（MRR）与 ARR 的版本边界
 
-**Android 11-12**: 传统刷新率切换
-- 只支持固定刷新率之间的切换（如 60Hz ↔ 120Hz）
-- 切换延迟较长，通常需要 2-3 帧
-- 无法根据内容类型动态调整
+ARR（Adaptive Refresh Rate）是 Android 15 引入的刷新率平滑过渡机制，Android 15-QPR1+ 起在支持的设备上可用。Android 15 之前的多刷新率切换（MRR）属于不同代际的能力，不应混写为 ARR。
 
-**Android 13**: 场景识别 ARR
-- 引入内容检测机制，识别游戏、视频、静态内容
-- 根据场景自动选择合适的刷新率
-- 切换延迟优化至 1-2 帧
+**Android 11-12**: 多刷新率（MRR）基础
+- 支持固定刷新率之间的切换（如 60Hz ↔ 120Hz），要求 Composer HAL 多 Display Mode
+- 切换延迟取决于设备实现，无统一保证值
+- 没有内容自适应决策——切换主要由 App 通过 `Surface.setFrameRate()` 声明
 
-**Android 14-15**: 高级 ARR
-- 支持预切换模式，准备工作和实际切换并行
-- Android 15 支持动态刷新率调整
-- 新增 ARR 专用 HAL 接口
+**Android 13-14**: MRR 增强
+- 内容检测机制（`contentType` 字段）开始影响 RefreshRateSelector 的投票权重，但这不属于 ARR——只是 MRR 的决策优化
+- 切换延迟受 Display HAL 实现和设备能力约束，无统一量级
 
-**Android 16-17**: 智能 ARR
-- 支持机器学习驱动的场景识别
-- 预测用户行为，提前调整刷新率
-- 支持更精细的刷新率范围控制（如 48-120Hz 连续调整）
+**Android 15**: ARR 引入
+- ARR 在 Android 15 首次引入，Android 15-QPR1+ 起在支持的设备上可用
+- `Display.hasArrSupport()`（Android 16 公开）可用于查询支持状态
+- ARR 的核心机制是通过硬件支持的中间刷新率过渡，减少单次大幅度跳变的代价
+
+**Android 16**: ARR 查询 API 公开
+- `Display.hasArrSupport()` 和 `getSuggestedFrameRate()` 成为公开查询接口
+- ARR 的过渡策略由 HAL 设备能力和 Composer HAL 实现共同决定，无统一的"连续范围控制"标准
+
+**Android 17+**：待 Android 17 tag 公开后确认，不得将 main/master 资料中的描述作为 ARR 发布结论
 
 ### ARR 的工作原理
 
-ARR 是 Android 13 引入的智能刷新率切换机制，它通过场景识别来智能选择刷新率：
+ARR 是 Android 15 引入的刷新率平滑过渡机制，Android 15-QPR1+ 起在支持的设备上可用。它的核心思路是通过硬件支持的中间刷新率过渡，降低大幅度切换的单次代价：
 
 > [已验证范围：android-16.0.0_r1] `DisplayManagerInternal` 中并未定义 `handleAdaptiveRefreshRate()` 方法。ARR 的决策逻辑在 `RefreshRateSelector` 中完成，而非 `DisplayManagerInternal`。以下原理描述基于公开行为推断。
 
@@ -333,39 +336,39 @@ ARR 是 Android 13 引入的智能刷新率切换机制，它通过场景识别�
 
 不同 SoC 厂商的刷新率切换实现存在显著差异：
 
-> [待验证] 以下厂商特征来自各厂商公开白皮书和部分技术文档的定性描述。PLL 切换延迟、特殊优化名称和限制条件在不同设备型号上存在差异，不应作为跨设备通用结论。具体设备应以实测 Perfetto 数据为准。
+> [待验证] 以下厂商特征来自各厂商公开白皮书和部分技术文档的定性描述。所有数值（PLL 延迟帧数、功耗百分比、续航降幅）均缺少设备型号、Android 版本、屏幕亮度、测试条件和样本量，不能作为发布稿量化结论。不同设备型号上实现差异显著，应以实测 Perfetto 数据为准。
 
-> 从公开架构资料中可提取的定性趋势：旗舰 SoC（高通 8 系、三星 Exynos 旗舰、苹果 A 系列）PLL 切换延迟通常较低（1-2 帧或更短），中端 SoC 偏高（2-4 帧）。精确数字受 SoC 制程、显示驱动版本、屏幕面板规格共同影响。
+> 从公开架构资料中可提取的定性趋势：旗舰 SoC 通常支持更短的 PLL 切换延迟，中端 SoC 偏长。不同 SoC 制程、显示驱动版本和屏幕面板规格下的精确数字需独立验证，不在此给出固定帧数。
 
 #### 各厂商实现特点
 
 **高通 Snapdragon 系列**
 - 支持 Smart Refresh Rate 技术
 - 实现 30Hz-120Hz 的渐变调整
-- 切换延迟：旗舰芯片 < 1 帧，中端芯片 1-2 帧
-- 电池消耗增加：高刷新率下 +15-25%
+- 切换延迟：旗舰芯片通常低于中端芯片（精确帧数依赖具体型号和固件版本）
+- 电池消耗增加：高刷新率下功耗增幅需按设备/亮度/负载独立测试
 
 **联发科 Dimensity 系列**
 - 游戏场景优化：自动提升至 90/120Hz
 - 节能模式：静态内容降至 48Hz
-- 切换延迟：中端芯片 2-3 帧，旗舰芯片 1-2 帧
-- 电池消耗增加：高刷新率下 +20-30%
+- 切换延迟：中端芯片偏长，旗舰芯片偏短（精确帧数依赖具体型号和固件版本）
+- 电池消耗增加：高刷新率下功耗增幅需按设备/亮度/负载独立测试
 
 **三星 Exynos 系列**
 - Display Co-processor 硬件加速
 - 支持多屏协同刷新率调整
-- 切换延迟：1-2 帧，稳定可靠
-- 电池消耗增加：高刷新率下 +18-22%
+- 切换延迟：依赖 Display Co-processor 硬件加速（精确帧数依赖具体型号和固件版本）
+- 电池消耗增加：高刷新率下功耗增幅需按设备/亮度/负载独立测试
 
 ### ARR 的场景识别
 
-| 场景类型 | 刷新率策略 | 典型延迟优化 | 电池消耗影响 |
-|---------|------------|-------------|-------------|
-| 相机预览 | 固定 60Hz | 避免频繁切换 | +0-5% |
-| 游戏场景 | 固定 90/120Hz | 稳定帧率体验 | +15-25% |
-| 阅读界面 | 48/60Hz | 省电模式 | -10-15% |
-| 视频播放 | 视频同步帧率 | 避免撕裂 | +5-10% |
-| 桌面动画 | 最高刷新率 | 流畅体验 | +10-20% |
+| 场景类型 | 刷新率策略 | 典型行为 | 说明 |
+|---------|------------|---------|------|
+| 相机预览 | 固定 60Hz | 避免因内容检测触发频繁切换 | 功耗与屏幕亮度正相关 |
+| 游戏场景 | 固定 90/120Hz | 稳定帧率体验优先于省电 | 功耗增量因设备 SoC 和渲染负载而异 |
+| 阅读界面 | 48/60Hz | 静态内容可降刷新率省电 | 具体降幅由设备策略决定 |
+| 视频播放 | 视频同步帧率 | 降低 judder | 功耗取决于解码+渲染路径 |
+| 桌面动画 | 最高刷新率 | 保障动画流畅度 | 桌面停留后通常降刷 |
 
 ### ARR 的边界条件
 
@@ -520,7 +523,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 ### 误区 2：使用最高刷新率就是最好的
 
-120Hz 确实让滑动和动画更顺滑，但不是所有内容都受益。静态文本页面在 120Hz 和 60Hz 下肉眼几乎无差异，但功耗可能增加 15-25%。更关键的是：如果 App 的渲染管线在 120Hz 下做不到 8.33ms 内完成一帧，帧会持续超时，用户体验反而变差——用户看到的是 120Hz 屏幕上不断出现的 jank，比稳定的 60Hz 更糟。
+120Hz 确实让滑动和动画更顺滑，但不是所有内容都受益。静态文本页面在 120Hz 和 60Hz 下肉眼几乎无差异，但功耗会明显增加。更关键的是：如果 App 的渲染管线在 120Hz 下做不到 8.33ms 内完成一帧，帧会持续超时，用户体验反而变差——用户看到的是 120Hz 屏幕上不断出现的 jank，比稳定的 60Hz 更糟。
 
 > **判断方法**：在 Perfetto 中对比 doFrame 耗时 vs VSync period。如果 doFrame 稳定在 10-12ms，120Hz（8.33ms deadline）下会持续丢帧，此时锁定 60Hz 或 90Hz 是更实际的选择。
 
@@ -532,9 +535,9 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 ### 误区 4：频繁切换刷新率没有代价
 
-单次 PLL 重配置和电压调整的功耗通常不到总电池的 0.5%，听起来可以忽略。但频繁切换场景（如：用户在列表和详情页之间反复进出 + 触摸 boost 每次触发 + 视频自动播放检测）会让切换次数累积到每分钟数十次，总功耗影响可达 2-5% 电池。
+单次 PLL 重配置和电压调整的瞬时功耗有限，但频繁切换场景（如：用户在列表和详情页之间反复进出 + 触摸 boost 每次触发 + 视频自动播放检测）会让切换次数累积到每分钟数十次，总功耗影响不可忽略。具体百分比依赖设备实现和场景频率，不在此给出固定数字。
 
-ARR 策略的核心价值正在于减少这种"无效切换"——它把切换粒度从"每一帧都可能变"变成"场景级决策"，整体切换次数可减少 60-80%。如果没有 ARR，`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 是避免频繁切换最简单的手段：让系统在持续时段内锁定一个刷新率。
+ARR 策略的核心价值在于减少无效切换——它把切换粒度从"每一帧都可能变"变成"场景级决策"。如果没有 ARR，`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 是避免频繁切换最简单的手段：让系统在持续时段内锁定一个刷新率。具体的切换次数减少比例依赖设备实现和场景，不在此给出无法回溯的固定百分比。
 
 
 ## 性能指标与监控
@@ -578,15 +581,15 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 
 - **旗舰 SoC**（如高通 8 系、三星 Exynos 旗舰、苹果 A 系列）：PLL 切换延迟通常在 1-2 帧，帧丢失率 < 3%。苹果因专用显示协处理器，切换延迟可低至 0-1 帧。
 - **中端 SoC**（如高通 7 系、联发科 Dimensity 8 系）：切换延迟偏长（2-4 帧），帧丢失率可到 4-7%，高刷场景下功耗增幅更明显。
-- **统一趋势**：从 60Hz 升至 120Hz，功耗增加通常落在 15-30% 区间（受屏幕规格、亮度、SoC 制程影响）。
+- **统一趋势**：从 60Hz 升至 120Hz，功耗增幅因屏幕规格、亮度、SoC 制程差异显著，不同设备间无可统一量级。
 
 > 精确的平台对比数字（设备型号、Android 版本、亮度、测试工具、样本量）需要一手测试记录才能写入发布稿。当前章节中的 PLL 切换延迟表（厂商 PlL 延迟帧数部分）来自 SoC 公开白皮书的架构级描述，精度可接受。
 
 #### 刷新率对电池消耗的影响（定性范围）
 
-- 从 60Hz 升至 120Hz 的续航降幅通常在 10-25%，游戏场景降幅大于视频播放场景。
-- 每次刷新率切换本身有额外开销（PLL 重配置 + 电压调整），但单次切换的功耗影响通常不到总电池的 0.5%。频繁切换的累积影响更值得关注——仲裁策略每增加 10 次/分钟切换，可能额外消耗 2-5% 电池。
-- ARR 策略通过减少不必要切换来降低累积开销：静态内容保持在低刷、动画时切换到高刷，整体切换次数可减少 60-80%。
+- 从 60Hz 升至 120Hz 的续航会下降，游戏场景降幅通常大于视频播放场景（具体百分比依赖设备、亮度、SoC 和测试条件）。
+- 每次刷新率切换本身有额外开销（PLL 重配置 + 电压调整）。频繁切换的累积影响更值得关注——但具体功耗百分比依赖设备实现和切换频率，不在此给出无法溯源的固定数字。
+- ARR 策略通过减少不必要切换来降低累积开销：静态内容保持在低刷、动画时切换到高刷。切换次数减少比例依赖设备实现和场景类型，不在此给出固定百分比。
 
 > 精确续航数字（小时数、特定 SoC 型号的百分比）依赖具体设备/亮度/信号条件/测试负载，本章节当前不提供无法回溯来源的精确数字。
 
