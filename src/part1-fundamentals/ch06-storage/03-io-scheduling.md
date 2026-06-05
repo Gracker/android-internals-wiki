@@ -17,22 +17,25 @@ tags:
 - android
 - research
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
-last_task9_at: '2026-06-04T20:24:00+08:00'
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-06-04'
+last_task9_at: "2026-06-05T20:33:28+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-06-05
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
-task9_review_notes: '2026-06-04 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 16/17 I/O 栈加速缺少可写入正文的一手版本锚点，已写入 queue.json 与 research-gaps；scheduler 默认口径和阈值数据写入 suggestions。'
+task9_review_notes: "2026-06-05 Task9 auto-fixed: Android 16/17 I/O acceleration claims downgraded to pending-verification boundaries until AOSP/device anchors exist."
 last_task6_at: 2026-06-05T01:15:01+08:00
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词: 真正 1 处(有对照对象) / 彻底 1 处(事实描述) / 元叙述 0)。否定-纠正 1 处(技术事实)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
+last_task9_autofix_at: 2026-06-05
+last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
 ---
+
 
 
 
@@ -368,35 +371,25 @@ Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频
 | writeback ownership / io pressure | `io.stat`、`io.pressure` + `writeback:*` | 前台窗口内 background cgroup 写回平稳 | 背景 cgroup 的 `wbytes` / `wios` 暴涨，前台窗口同步出现 fsync 拉长 |
 
 
-## Android 16/17 的 I/O 栈加速
+## Android 16/17 I/O 栈加速：待验证材料边界
 
-### io_uring 进入 Android 存储 APEX
+下面三类材料来自 Kernel 6.12、公开邮件列表或设备侧经验，不能直接写成 Android 16/17 平台默认行为。进入正文结论前，必须补齐 AOSP tag、GKI 分支、设备内核配置或官方文档中的一手锚点。
 
-Android 16 的存储 APEX 开始集成基于 io_uring 的异步 FUSE 实现。传统 FUSE 使用同步系统调用处理外部存储请求，每次读写都要在内核和 FUSE 守护进程之间来回切换。io_uring 把这个模型改成了异步提交-完成模型：
+### io_uring / FUSE
 
-- **Registered Buffers 零拷贝读取**：应用预注册内存缓冲区，内核直接在已注册的缓冲区上完成 I/O，省去一次内核态到用户态的拷贝
-- **外部存储扫描提速**：媒体扫描等批量操作从同步阻塞变为异步流水线，外部存储扫描速度提升约 40%
+io_uring 可用于降低异步 I/O 提交和完成路径开销，但本轮未在 `android-16.0.0_r1` 中确认“存储 APEX 默认集成基于 io_uring 的异步 FUSE”这一结论。外部存储扫描提速约 40% 也只能作为待验证线索，不能当作 Android 16/17 的通用性能收益。
 
-对性能分析来说，io_uring 的引入意味着在 Perfetto 中看到的 FUSE 相关延迟模式会发生变化。异步模型下，单次 FUSE 请求的阻塞时间更短，但总的吞吐量更高。排查外部存储性能问题时，要区分"FUSE 同步阻塞"和"io_uring 提交队列积压"两种不同的延迟来源。
-
-> ⚠️ io_uring FUSE 集成的 AOSP 路径和默认启用状态尚未在 android-16.0.0_r1 标签中确认；上述百分比基于公开资料的趋势性分析，实际行为以设备 GKI 内核配置为准。
+排查外部存储性能问题时，可以把 io_uring/FUSE 作为核验方向：先确认设备 FUSE 守护进程、内核 io_uring 支持和对应 trace 事件，再比较同步 FUSE 阻塞与异步提交队列积压。
 
 ### dm-verity 多缓冲区并行哈希
 
-Android 16 的 dm-verity 引入了 Multi-buffer Hashing 优化。系统分区验证（dm-verity）需要在读取时对每个哈希块做 SHA256 校验，传统实现是逐块串行计算。Multi-buffer Hashing 利用 ARM64 的 NEON 指令同时处理多个哈希块，将系统分区冷读取吞吐提升了约 35%。
+dm-verity multi-buffer hashing 与 ARM64 crypto/NEON 优化可能影响系统分区冷读，但“Android 16 引入”“系统分区冷读取吞吐提升约 35%”需要绑定具体 GKI 分支、dm-verity 实现和 benchmark 环境。没有这些锚点时，只能作为冷启动或 OTA 后首次读取问题的研究方向。
 
-这个优化对系统 OTA 后的首次启动、应用安装后首次加载 DEX 文件等冷读场景影响最大。如果 Trace 里看到 dm-verity 相关延迟在 Android 16 设备上明显缩短，这可能是原因之一。
+### cgroup v2 io 控制器
 
-### cgroup v2 io 控制器的演进
+Android 17 的 cgroup v2 迁移、blkio v1 移除，以及前台/后台 `io.weight` 是否采用 1000:10，均需要以 `android-17.0.0_r1` 或实机 `/proc/cgroups`、`/sys/fs/cgroup`、`cgroups.json`、`task_profiles.json` 为准。当前章节不把这些比例写成平台结论。
 
-Android 17（Baklava）继续推进 cgroup v2 迁移，彻底移除了 cgroup v1 的 blkio 子系统。cgroup v2 的 io 控制器成为唯一的 I/O 带宽管理接口：
-
-- **权重比 1000:10**：前台应用 cgroup 的 io 权重为 1000，后台为 10，等效于 100:1 的 I/O 带宽比。这个比例比 cgroup v1 时代更激进，确保前台交互在 I/O 争抢中占据绝对优势。
-- **io.max 替代固定权重**：除权重外，`io.max` 接口可以按设备设置具体的 IOPS 和带宽上限，实现更精确的后台限流。
-
-cgroup v2 io 控制器的完善意味着 Android 的前后台 I/O 隔离不再只依赖调度器选择（BFQ vs mq-deadline），cgroup 层面就有了更强的保障。排查 I/O 问题时，检查线程所在的 cgroup 和 `io.stat`/`io.pressure` 变得更重要。
-
-> ⚠️ cgroup v2 io 控制器的 1000:10 权重比例尚未在 AOSP android-17.0.0_r1 中确认；上述为基于公开资料的趋势性分析，实际权重以设备内核 `io.bfq.weight` / `io.weight` 配置为准。
+排查前后台 I/O 隔离时，仍按实机证据走：确认线程所在 task profile，确认 io/memory controller 是否启用，再读取 `io.stat`、`io.pressure`、`io.weight` 或 BFQ 权重。
 
 ## 本章小结
 
