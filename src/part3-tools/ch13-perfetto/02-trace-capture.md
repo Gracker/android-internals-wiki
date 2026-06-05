@@ -3,7 +3,7 @@
 title: Trace 抓取
 chapter: '13.2'
 section: '13.2'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
@@ -46,8 +46,8 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -60,7 +60,8 @@ repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
 last_task2b_at: 2026-06-05T16:53:39
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 0，P1 2，P2 1；问题已写入 queue/suggestions，等待 Task2B 回炉。'
-last_task6_at: "2026-06-05T17:22:30"
+last_task6_at: "2026-06-05T20:08:00+08:00"
+task6_review_notes_r7: "2026-06-05 Task6 revisit-review #4: L1/L2 pass (禁用词 0, 确实 x1 functional). All 6 anchors covered. task9 auto-fixed resolved queue 13.2 contradiction. Auto-promoted to finalized."
 last_task6_review_log: logs/review/2026-05-09-07-review.md
 task6_review_notes_r6: "2026-06-05 Task6 revisit-review #3: L1/L2 pass (确实 x3 all functional). B-type: two contradictory source research appendices on linux.perf/frametimeline — flagged for task9/task2b cleanup. Routes to task9."
     task6_review_notes: "2026-06-05 Task6 revisit-review: L1/L2 pass (轻修 0 处，前序已修 27 处)。task9 needs re-review (task9_result=pending)。送 Task9 复审。"
