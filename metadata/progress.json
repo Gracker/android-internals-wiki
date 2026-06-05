@@ -13750,5 +13750,31 @@
   "finalized_sections": [
     "19.6",
     "13.2"
+  ],
+  "reviews": [
+    {
+      "section": "6.3",
+      "date": "2026-06-05",
+      "task6_result": "pass-light-edit",
+      "pipeline": "ready-to-publish",
+      "note": "task6 re-review pass, pending manual finalization",
+      "log": "logs/review/2026-06-05-21-review.md"
+    },
+    {
+      "section": "4.2",
+      "date": "2026-06-05",
+      "task6_result": "pass-light-edit",
+      "pipeline": "task9_pending",
+      "note": "task6 re-review pass, task9 needs re-review",
+      "log": "logs/review/2026-06-05-21-review.md"
+    },
+    {
+      "section": "26.2",
+      "date": "2026-06-05",
+      "task6_result": "pass-light-edit",
+      "pipeline": "ready-to-publish",
+      "note": "task6 re-review pass, pending manual finalization",
+      "log": "logs/review/2026-06-05-21-review.md"
+    }
   ]
 }

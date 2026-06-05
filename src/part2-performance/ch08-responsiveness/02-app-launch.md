@@ -76,6 +76,8 @@ task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
 task6_reviewed_date: "2026-05-24"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 
@@ -169,8 +171,6 @@ Android 把应用的启动分为三种状态:冷启动(Cold Start)、温启动(W
 - **温启动**:没有 "BindApplication",但有 "activityStart" 或 "launching" 标记
 - **热启动**:只有 "activityResume" 或 "activityRestart" 标记,注意,logcat 中的 "Displayed" 信息在热启动时不会打印。
 
-[待补充:三种启动类型在 Perfetto 中的 Trace 对比截图]
-
 ## 冷启动完整流程详解
 
 以冷启动为线索,把从用户点击到首帧绘制的完整路径走一遍。这里关注工程化理解:每一步在干什么、为什么需要这一步、耗时大头在哪里;源码级堆栈追踪交给 Debug 工具。
@@ -190,8 +190,6 @@ ATMS 确认 Pause 完成后,检查目标进程是否存在。冷启动场景下,
 这一阶段的开销主要是:Binder IPC(2 次跨进程调用)、Zygote fork(创建新进程)、以及 system_server 内部的调度逻辑。在 Perfetto 中,可以在 system_server 进程中看到 "launching: xxx" 的 slice,在 app 进程中看到 "BindApplication" 的开始。
 
 #### 16KB Page Size 对启动 I/O 的削峰作用
-
-[自动发现: Android 15+ 16KB page size 对启动链路的影响]
 
 Android 15 在部分设备上引入了 16KB 内存页(传统为 4KB)。页表项减少约 75%,TLB 覆盖范围扩大约 4 倍（单条 TLB entry 覆盖的地址空间从 4KB 变为 16KB）。这对冷启动中涉及大 so 库加载的环节有直接的 I/O 削峰效果。
 
@@ -508,7 +506,7 @@ system_server 和应用进程的采集条件要分开看。`atrace_categories: "
 - **Perfetto `launching: xxx` / `launchingActivity#...`**:复用同一份 `LaunchingState`,起点同样是 `notifyActivityLaunching()`;`notifyActivityLaunched()` 负责把已解析的目标 Activity 挂到这次启动记录上,不是计时起点
 - **`reportFullyDrawn()`**:起点和 TTID 一样,结束时间由应用主动声明
 
-因此三者的差别主要在可观测粒度和结束点,而不是 `notifyActivityLaunched()` 是否参与计时。想拆分 system_server、App 主线程、RenderThread 各段耗时,用 Perfetto;想做批量回归或自动化门禁,用 `am start -W` 和 `Displayed` 更直接。
+三者的差别主要在可观测粒度和结束点:`notifyActivityLaunched()` 负责把已解析的目标 Activity 挂到启动记录上,不是计时起点。想拆分 system_server、App 主线程、RenderThread 各段耗时,用 Perfetto;想做批量回归或自动化门禁,用 `am start -W` 和 `Displayed` 更直接。
 
 [来源: obsidian/Cubox/Activity 启动速度分析方法(启动流程分析) - Light.Moon-2022-04-11.md]
 
@@ -546,7 +544,7 @@ Android 5.0+ 使用 ART 运行时,原生支持多 DEX,这个问题基本消失�
 
 ### ContentProvider 初始化的隐藏陷阱
 
-[自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化,而 ContentProvider 的初始化发生在 Application.onCreate 之前(在 installContentProviders 中)。即使应用没有在 Application.onCreate 中显式初始化某个 SDK,它也可能已经通过 ContentProvider 悄悄初始化。来源: Android Developers Blog]
+许多第三方 SDK 通过 ContentProvider 实现自动初始化,而 ContentProvider 的初始化发生在 Application.onCreate 之前(在 `installContentProviders` 中)。即使应用没有在 Application.onCreate 中显式初始化某个 SDK,它也可能已经通过 ContentProvider 悄悄初始化。
 
 这个问题可以通过 AndroidX App Startup(`startup-runtime`,支持 API 14+)来统一管理(见扩展小节)。App Startup 是 Jetpack 库,不是 Android 11 的平台能力,在 Android 11 之前同样可以使用。但它基于单个 `InitializationProvider`,无法自动接管未适配的三方 ContentProvider,未适配的 SDK 仍然需要手动排查 Manifest。
 
