@@ -3,7 +3,7 @@
 title: "Android Vitals 过度 WakeLock 指标与治理"
 chapter: "25.19"
 section: "25.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Google Play Android vitals wake lock metric updated 2026-05"
@@ -40,15 +40,21 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
 last_task6_at: "2026-06-05T10:17:00+08:00"
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T11:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
+task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理

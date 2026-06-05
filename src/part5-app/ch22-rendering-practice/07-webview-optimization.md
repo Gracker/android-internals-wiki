@@ -2,7 +2,7 @@
 title: "WebView 性能优化实战"
 chapter: "22.7"
 section: "22.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
@@ -46,9 +46,9 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -57,12 +57,12 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 auto-fix：修正 onRenderProcessGone 多 WebView / 共享 renderer 处理边界，回到 Task6 复审。"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T11:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
+task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"

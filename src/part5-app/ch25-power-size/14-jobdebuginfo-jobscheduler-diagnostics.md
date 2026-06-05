@@ -38,13 +38,21 @@ created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/章节深挖"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-22T05:19:00+08:00"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
 last_task6_at: "2026-06-05T10:17:00+08:00"
+task9_result: auto-fixed
+task2b_state: fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T11:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
+task9_review_notes: "2026-06-05 Task9 auto-fix：移除 JobScheduler pending reason 示例中错误的 PACKAGE_USAGE_STATS 权限注解；官方 API reference 与 AOSP android-16.0.0_r1 均未要求该权限。回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-05"
 ---
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo
@@ -106,7 +114,6 @@ Android Developers 的 `JobScheduler` reference 给出四个入口：
 这段代码展示 dogfood 构建里可用的最小采集方式。重点是只在调试或灰度开关下启用，并把 API 版本分支写清楚。
 
 ```kotlin
-@RequiresPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
 fun JobScheduler.debugPendingState(jobId: Int): JobPendingSnapshot {
     val now = System.currentTimeMillis()
 
