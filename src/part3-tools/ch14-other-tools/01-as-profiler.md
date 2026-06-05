@@ -41,6 +41,7 @@ task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-28T12:26:35+08:00"
 last_task6_at: "2026-05-28T12:10:00+08:00"
+last_task6_audit: "2026-06-05"
 task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。2026-05-28 Task2B Lite 已做局部修复，回流 Task6。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-05-28-12-review.md"
