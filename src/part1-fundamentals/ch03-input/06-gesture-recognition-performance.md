@@ -5,10 +5,10 @@ chapter: '3.6'
 section: '3.6'
 status: ready-for-review
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: reviewed
 task9_state: pending
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
   note: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
@@ -54,6 +54,7 @@ review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatte
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
   3/5·元数据 4/5。'
 last_task9_audit: "2026-05-18"
+last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-06-03T21:33:00+08:00"
 ---
 
