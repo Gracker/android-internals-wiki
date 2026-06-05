@@ -38,7 +38,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 review_type: draft-review

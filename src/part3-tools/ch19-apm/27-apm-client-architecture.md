@@ -44,7 +44,7 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 task9_state: reviewed
 reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
