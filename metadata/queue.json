@@ -1313,9 +1313,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-05T16:08:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "review_type": "task6-writing-quality",
-      "original_review_log": "logs/review/2026-06-05-16-review.md"
+      "original_review_log": "logs/review/2026-06-05-16-review.md",
+      "completed_at": "2026-06-05T16:53:39"
     }
   ],
   "items": [
