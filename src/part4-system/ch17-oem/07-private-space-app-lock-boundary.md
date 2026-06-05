@@ -196,3 +196,5 @@ Private Space 和应用锁相关问题不应该只进 crash 或 ANR 指标。更
 - [已验证: 官方文档, LauncherApps API reference](https://developer.android.com/reference/android/content/pm/LauncherApps)
 - [已验证: 官方文档, LauncherUserInfo API reference](https://developer.android.com/reference/android/content/pm/LauncherUserInfo)
 - [来源: intake/daily-info/2026-05-25.md]
+
+- [Android 17 原生应用锁：系统级通知隐藏与 OEM 对比，黄林晴，掘金，2026-02-10](https://juejin.cn/post/7604694326518104115) — Android 17 Canary 2601 代码中曝光 `app_locked_new_notification` 等字段，揭示原生应用锁的通知分类屏蔽策略；与小米 HyperOS 的对比参考有助于理解 OEM 差异化落点。

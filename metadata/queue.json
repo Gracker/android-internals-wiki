@@ -533,7 +533,7 @@
       "section": "ch17-oem",
       "section_title": "章节ch17-oem",
       "priority": 13,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "素材注入：已追加到 17.7 参考资料",
       "material_paths": [
         "https://juejin.cn/post/7604694326518104115"
       ],
@@ -547,7 +547,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-02T05:31:52.010011",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T12:53:24",
+      "completed_by": "openclaw-task2b"
     },
     {
       "section": "17.4",
@@ -716,7 +718,7 @@
       "section": "ch17-oem",
       "section_title": "Chapter ch17-oem",
       "priority": 75,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "素材注入：已追加到 17.7 参考资料",
       "material_paths": [
         "https://juejin.cn/post/7604694326518104115"
       ],
@@ -730,13 +732,15 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-03T21:44:25.416680+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T12:53:24",
+      "completed_by": "openclaw-task2b"
     },
     {
       "section": "ch17-oem",
       "section_title": "Chapter ch17-oem",
       "priority": 75,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "与 ch17-oem OEM 性能主题无关，Gemini API 接入为通用开发教程，跳过",
       "material_paths": [
         "https://juejin.cn/post/7613282719573229618"
       ],
@@ -750,13 +754,15 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-03T21:44:25.418503+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T12:53:24",
+      "completed_by": "openclaw-task2b"
     },
     {
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 75,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "与 ch01-architecture 系统架构主题无关，NIA 为应用层架构模式，跳过",
       "material_paths": [
         "https://juejin.cn/post/7605451617286553627"
       ],
@@ -770,7 +776,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-03T21:44:25.419585+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T12:53:24",
+      "completed_by": "openclaw-task2b"
     },
     {
       "section": "ch17-oem",
