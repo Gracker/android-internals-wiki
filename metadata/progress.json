@@ -7486,6 +7486,23 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
+    },
+    "6.7": {
+      "title": "Linux 6.12 FUSE Passthrough 内核机制与 Android Scoped Storage I/O",
+      "file": "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-05",
+      "drafted_date": "2026-06-05",
+      "last_verified": "2026-06-05",
+      "last_verified_against": "Linux v6.12 fs/fuse/passthrough.c, fs/fuse/iomode.c; AOSP android-16.0.0_r1 FuseDaemon.cpp",
+      "confidence": "medium",
+      "rewrite_note": "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.12 FUSE passthrough 重写",
+      "task2a_state": "processed",
+      "task2a_result": "rewrite-completed",
+      "last_task2a_at": "2026-06-05T21:18:53",
+      "task6_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -9889,13 +9906,14 @@
     }
   },
   "task2a_last_processed": {
-    "section": "22.20",
-    "title": "Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping",
-    "file": "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md",
+    "section": "6.7",
+    "title": "Linux 6.12 FUSE Passthrough 内核机制与 Android Scoped Storage I/O",
+    "file": "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-06-05T18:05:00+08:00",
-    "status": "ready-for-review"
+    "processed_at": "2026-06-05T21:18:53",
+    "status": "ready-for-review",
+    "note": "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.12 实际 FUSE passthrough 重写"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-05",
