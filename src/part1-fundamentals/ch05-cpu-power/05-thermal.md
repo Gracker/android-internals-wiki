@@ -5,8 +5,8 @@ section: "5.5"
 status: "finalized"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
-last_verified: "2026-04-24"
-last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs"
+last_verified: "2026-06-06"
+last_verified_against: "PowerManager#getThermalHeadroom + #getThermalHeadroomThresholds docs + SystemHealthManager headroom docs + source.android.com thermal mitigation docs"
 confidence: medium
 sources:
   - type: "official"
@@ -24,7 +24,7 @@ polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T06:05:00+08:00"
@@ -32,21 +32,24 @@ last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-06-audit.md"
 last_task6_review_log: "logs/review/2026-05-08-06-review.md"
 task9_state: reviewed
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T06:28:09+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-08-06-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: '2026-05-08T05:42:56+08:00'
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-05-26 Task6 06:09：闲时抽检。L1 小修 2 处：删去冗余强调词，改写否定纠正式句式；frontmatter 完整，锚点覆盖完整。"
-task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-05-26 Task6 06:09：闲时抽检。L1 小修 2 处：删去冗余强调词，改写否定纠正式句式；frontmatter 完整，锚点覆盖完整。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。"
+task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
+last_task9_autofix_at: "2026-06-06"
+last_task9_audit: "2026-06-06"
+last_task9_audit_log: "logs/deep-review/2026-06-06-07-audit.md"
 ---
 # Thermal 管控
 
@@ -301,7 +304,9 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 - `NaN` 主要表示设备不支持，或者采样过密；不要把“首次调用返回 `NaN`”当成固定行为。
 - 预测值需要系统先积累多个温度样本。在最初几秒里，即使 `forecastSeconds` 大于 0，返回的通常仍是当前 headroom，而不是未来预测值。
 
-[已验证: 官方文档 developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
+Android 15（API 35）增加了配套 API：`getThermalHeadroomThresholds()`。它返回 `THERMAL_STATUS_*` 到 headroom 阈值的映射，只有厂商为某个状态定义了阈值时才会出现在结果里。这个映射适合把 `getThermalHeadroom(10)` 这类预测值转换为“可能进入 LIGHT / MODERATE / SEVERE”的预警，但它不保证当前 `getThermalHeadroom(0)` 超过某个阈值时，`getCurrentThermalStatus()` 已经同步切到对应状态。
+
+[已验证: 官方文档 developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int), #getThermalHeadroomThresholds()]
 
 ### Android 16：CPU/GPU 算力余量（SystemHealthManager）
 
@@ -634,7 +639,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 | 10 (API 29) | Thermal HAL 2.0（事件驱动）+ PowerManager Thermal API | App 可感知温控状态 |
 | 11 (API 30) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
 | 14 (API 34) | Thermal HAL 从 HIDL 迁移至 AIDL | 接口现代化，无功能变化 |
-| 15 (API 35) | ADPF thermal headroom hint 精度提升 [待验证] | 游戏场景热管理更精细 |
+| 15 (API 35) | `PowerManager#getThermalHeadroomThresholds()` | App 可读取各 thermal status 对应的 headroom 阈值，更早做降载预警 |
 | 16 (API 36) | ADPF Game Mode API 扩展，与温控协同增强 [待验证] | 更多性能-温控协调能力 |
 
 这些版本节点的共同趋势是：从被动响应走向主动感知，从系统独占走向应用参与。Android 希望应用能主动配合降载，成为温控的合作方。
