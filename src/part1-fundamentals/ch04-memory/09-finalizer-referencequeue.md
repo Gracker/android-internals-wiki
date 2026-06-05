@@ -1,4 +1,5 @@
 ---
+
 title: "ART FinalizerDaemon 与 ReferenceQueue 性能边界"
 chapter: "4.9"
 section: "4.9"
@@ -36,7 +37,7 @@ last_task6_at: "2026-06-05"
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: pending  # updated by task2b-verifier 2026-06-05
 task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-05-26T03:20:00+08:00"

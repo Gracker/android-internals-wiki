@@ -1007,7 +1007,9 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task2b_fixed_at": "2026-05-30T00:50:00+08:00",
-      "task2b_note": "Task2B 主修复完成，回流 Task6。"
+      "task2b_note": "Task2B 主修复完成，回流 Task6。",
+      "pipeline_stage": "task9_pending",
+      "last_verified": "2026-06-05T19:31"
     },
     "23.2": {
       "p0": 0,
@@ -1155,7 +1157,10 @@
       "p2": 2,
       "reviewed_at": "2026-05-17T11:28:00+08:00",
       "log": "logs/deep-review/2026-05-17-11-deep-review.md",
-      "summary": "P1 2：WorkManager 调度器源码锚点仍是示意方法，未 pin AndroidX 版本；Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2：周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。"
+      "summary": "P1 2：WorkManager 调度器源码锚点仍是示意方法，未 pin AndroidX 版本；Android 17 Power Check/ProfilingTrace 机制仍缺官方或源码闭环。P2 2：周期/链式 Work 开销与 WakeLock policy 来源需补数据/精确定义。",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "last_verified": "2026-06-05T19:31"
     },
     "24.2": {
       "p0": 0,
@@ -1409,7 +1414,9 @@
       "task6_reviewed_at": "2026-05-21T20:11:00+08:00",
       "task6_log": "logs/review/2026-05-21-20-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审仅做格式小修；Task9 已标记 Cleaner 执行路径/源码锚点 P0/P1，合并确认到 queue，继续 Task2B。"
+      "task6_note": "复审仅做格式小修；Task9 已标记 Cleaner 执行路径/源码锚点 P0/P1，合并确认到 queue，继续 Task2B。",
+      "pipeline_stage": "task9_pending",
+      "last_verified": "2026-06-05T19:31"
     },
     "13.12": {
       "p0": 1,
@@ -5732,7 +5739,7 @@
     },
     "4.11": {
       "status": "draft",
-      "pipeline_stage": "task2a_gap_created",
+      "pipeline_stage": "task6_pending",
       "queue_priority": 80,
       "title": "Cached App Freezer 与 GC 触发边界",
       "file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
@@ -5740,7 +5747,9 @@
       "created_date": "2026-05-19",
       "gap_source": "每日信息/DeepResearch/AOSP结构/官方文档",
       "gap_score": 16,
-      "material_count": 5
+      "material_count": 5,
+      "task6_state": "revisiting",
+      "last_verified": "2026-06-05T19:31"
     },
     "12.3": {
       "title": "网络性能深入：连接池、TLS 与传输优化",
@@ -9891,15 +9900,11 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-05",
-    "time": "12:05",
+    "time": "19:04",
     "mode": "gap-mining",
-    "created_sections": [
-      "5.18"
-    ],
-    "created_files": [
-      "src/part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md"
-    ],
-    "reason": "Clippings参考书《Android 性能优化》缓存优化专篇 + AOSP/ARM cache line 文档 + Redex DEX重排序工具链 + false sharing 面试高频考点 + 多个现有章节提及 cache line 但无独立覆盖"
+    "created_sections": [],
+    "created_files": [],
+    "reason": "第 4 轮 gap mining：daily-info 无新未映射素材；Clippings 全覆盖；6.7 FUSE-BPF 需 Task2B 重写；无 ≥14 分候选"
   },
   "task9_last_sections": [
     "26.8",
