@@ -77,7 +77,7 @@ pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -88,20 +88,20 @@ task6_result: "pass-light-edit"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-05"
 last_task9_at: "2026-06-05T18:32:25+08:00"
-last_task2b_at: "2026-06-04T14:54:52+08:00"
+last_task2b_at: "2026-06-05T18:50:00+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T17:28:40+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
 task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 将 Flexiglass/SceneContainer 旧主线锚点收敛到 android-16.0.0_r1；移除未量化的默认视觉特效与内存增幅结论；Foldable 多 Display 性能影响改为需设备基线验证。回到 Task6 复审。"
 last_task2b_by: openclaw-task2b-main
-task2b_fix_summary: "2026-06-04 Task2B main: P0 SystemUI multi-display source anchors corrected (NavigationBarController path/SparseArray, DisplayContent.isSystemDecorationsSupported, TaskbarDelegate wallpaper visibility, DesktopTasksController et al.); P1 version coverage updated for Android 12-16 desktop windowing branch; unverified CPU/Mem growth claims downgraded."
+task2b_fix_summary: "2026-06-05 Task2B main: L3 问题单修复 — Foldable 多 Display 核心结论融入 §Android 16 桌面模式段（NavigationBar 多实例/SparseArray、StatusBar 无多实例、DisplayContent 版本敏感性、TaskbarDelegate wallpaper 分控、双 Display 功耗）；原源码调研块转为 §参考附录并添加上下文衔接。L1 禁用词修复 '这意味着' 1 处。"
 last_task6_at: "2026-06-04T15:21:59.742576+08:00"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 1
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 1 处（形容词+冒号起手式 1）。L3 问题单 1 条（Foldable 多 Display 附录未融入主叙述）。"
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 1 处（形容词+冒号起手式 1）。L3 问题单 1 条（Foldable 多 Display 附录未融入主叙述）— 2026-06-05 Task2B 已修复。"
 last_task9_autofix_at: "2026-06-05"
 p0: 0
 p1: 1
@@ -223,7 +223,7 @@ SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemU
 
 这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更靠近根因。把问题一股脑归到 SystemUI，后面的 Trace 会很难读。
 
-### Android 16 桌面模式：SystemUI 的双重角色
+### Android 16 桌面模式与 Foldable 多 Display：SystemUI 的双重角色
 
 Android 16 引入了原生桌面窗口管理（Desktop Windowing）。在此模式下，SystemUI 不再只负责手机端单一的状态栏和通知——它需要同时渲染外部显示器的任务栏（Taskbar）、多桌面视图以及通用光标（Universal Cursor）。
 
@@ -233,6 +233,16 @@ WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksControl
 - **桌面模式**：SystemUI 额外承担 Taskbar 渲染、桌面切换动画、光标绘制，与 WM Shell 的交互频率大幅上升
 
 排查 SystemUI 性能问题时，如果设备处于桌面模式，Perfetto 中 SystemUI 进程的 CPU 和内存基线应单独建基，不能直接与单屏模式的数据对比。桌面模式下 CPU 和显存的增长量属于待验证范围——目前没有公开的 Perfetto trace 或设备基线能支撑具体数值，建议在目标设备上单独采集后再写入结论。
+
+**Foldable 多 Display 的叠加影响**：桌面模式接入外部显示器时，多个物理 Display 会同时存活。此时 SystemUI 的多 Display 渲染模型与桌面模式的 Taskbar/任务管理逻辑叠加。几个要点影响 Perfetto 的解读方式：
+
+- **NavigationBar 多实例**：`NavigationBarController` 使用 `SparseArray<NavigationBar>` 按 `displayId` 维护独立实例。每增加一个 Display，SystemUI 都要管理该 Display 上的导航栏 View、Surface 和状态对象。外接一块 4K 屏和一整排桌面节点时，导航栏相关的实例数和 traversal 次数会同步增加。
+- **StatusBar 无多实例**：通知侧（StatusBar / Notification Shade）仅存在于主 Display，外接显示器上不会出现第二套通知系统。通知洪峰的压力不会因为多 Display 而翻倍——反过来，主 Display 上任何 SystemUI 阻塞也会影响所有 Display 的用户感知。
+- **`DisplayContent.isSystemDecorationsSupported()` 的版本敏感性**：Android 16 desktop windowing 在 `DisplayContent` 中引入了 force desktop 和 trusted display 分支。版本升级后，系统装饰（NavigationBar / StatusBar 容器）在辅助 Display 上的行为可能与 Android 10-14 的口径不同，不能直接用"仅支持 NavigationBar/Wallpaper"概括。
+- **Wallpaper 可见性已按 Display 分控**：`TaskbarDelegate.updateWallpaperVisibility(visible, displayId)` 是当前可核对的 displayId 感知入口，`CentralSurfacesImpl` 中未命中带 displayId 的 `onWallpaperVisibilityChanged`。排查 wallpaper 相关绘制问题时，以 `TaskbarDelegate` 为入口比搜索泛化的 `onWallpaperVisibilityChanged` 更准确。
+- **双 Display 亮屏场景**：功耗需单独计入两个显示电源轨和合成负载，不能只用单屏基线外推。
+
+详细的源码路径和 Perfetto 观测点见末尾 §参考附录：Foldable 多 Display 源码索引。
 
 ## 窗口拓扑不要先入为主
 
@@ -408,11 +418,13 @@ adb shell setprop debug.hwui.disable_blur_visual_feedback 1
 - Android Developers：Notification 设计与性能相关文档 `https://developer.android.com/develop/ui/views/notifications`
 - Android Developers：Splash Screen API `https://developer.android.com/guide/topics/ui/splash-screen`
 
-## Foldable 设备多 Display 渲染模型源码分析 <!-- AIW-源码调研-2026-04-29 -->
+## 参考附录：Foldable 多 Display 源码索引 <!-- AIW-源码调研-2026-04-29 -->
 
-### 概述
+> 本节保留详细的源码路径、方法签名、版本演进表和 Perfetto 观测点，供实战中使用 Perfetto 或阅读 AOSP 源码时逐项核对。核心结论已在上文 §Android 16 桌面模式与 Foldable 多 Display 段中交代，此处不再复述。
 
-Foldable 设备上的 SystemUI 多 Display 渲染模型建立在 `DisplayId` 分片管理 + `NavigationBarController` 双映射架构之上。 StatusBar（通知侧）在 Foldable 场景下无多实例实现，仅支持 NavigationBar 和 Wallpaper 在 Secondary Display 上显示。
+### 架构概述
+
+Foldable 设备上的 SystemUI 多 Display 渲染模型建立在 `DisplayId` 分片管理 + `NavigationBarController` 双映射架构之上。StatusBar（通知侧）在 Foldable 场景下无多实例实现，仅 NavigationBar 和 Wallpaper 可在 Secondary Display 上显示。
 
 ### 核心源码架构
 

@@ -994,8 +994,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-04T15:13:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-04-15-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-04-15-review.md",
+      "completed_at": "2026-06-05T18:54:23",
+      "completed_by": "openclaw-task2b-main"
     },
     {
       "section": "21.13",
