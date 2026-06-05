@@ -73,11 +73,11 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: "reviewed"
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed

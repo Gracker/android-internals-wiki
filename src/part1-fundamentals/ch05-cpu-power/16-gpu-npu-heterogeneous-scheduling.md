@@ -3,7 +3,7 @@
 title: "GPU/NPU 异构负载调度与功耗归因"
 chapter: "5.16"
 section: "5.16"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-22"
@@ -46,7 +46,7 @@ reviewed_by: "openclaw-task6"
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: reviewed
+pipeline_stage: ready-to-publish
 last_task6_at: '2026-06-04T22:12:00+08:00'
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
 P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"

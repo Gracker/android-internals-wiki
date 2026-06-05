@@ -3,8 +3,8 @@
 title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
 section: '5.11'
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
