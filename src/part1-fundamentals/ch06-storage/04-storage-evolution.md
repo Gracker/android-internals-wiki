@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: "finalized"
 title: 存储相关的版本演进
 chapter: '6.4'
 section: '6.4'
@@ -44,11 +44,11 @@ related_chapters:
 - '1.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: 2026-06-04
+reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_result: fixed
@@ -59,9 +59,11 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-05T16:21:00+08:00"
 task9_review_notes: "2026-06-05 Task9 auto-fix: 修正 eMMC 5.1 Command Queuing、EROFS Android 13 口径，并将 Android 16 SDM 云端编译段降级为待验证边界。"
 last_task6_audit: 2026-06-04
-last_task6_at: "2026-06-04T23:14:00+08:00"
+last_task6_at: "2026-06-05T17:22:30"
 last_task9_autofix_at: 2026-06-05
 
+finalized_date: "2026-06-05"
+finalized_by: "openclaw-task6-auto-promote"
 ---
 
 
