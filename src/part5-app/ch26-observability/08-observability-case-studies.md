@@ -43,7 +43,7 @@ sources:
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
 pipeline_stage: task6_pending
-task6_state: "reviewed"
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-15T07:17:00+08:00"

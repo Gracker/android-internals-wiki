@@ -30,7 +30,7 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: reviewed
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
@@ -40,7 +40,7 @@ task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending  # updated by task2b-verifier 2026-06-06
 task9_result: auto-fixed
 task9_state: reviewed
 task9_reviewed_by: openclaw-task9
