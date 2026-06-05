@@ -37,9 +37,9 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: "task6_reviewed"
+pipeline_stage: task9_pending
 task6_state: "reviewed"
-task9_state: reviewed
+task9_state: pending
 last_task9_autofix_at: "2026-06-03"
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
