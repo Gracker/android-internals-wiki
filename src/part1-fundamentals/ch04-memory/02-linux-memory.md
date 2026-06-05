@@ -3,9 +3,9 @@
 
 
 status: ready-for-review
-task9_reviewed_date: "2026-06-05"
+task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-05T19:28:13+08:00"
+last_task9_at: "2026-06-06T01:20:00+08:00"
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
@@ -55,22 +55,22 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: 2026-06-04
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
-last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
 last_task6_at: "2026-06-05T21:09:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
 task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task2b 修复 ANON_VMA_LAZY(移入4.13)后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9 needs-rework + task2b fixed, 返回 task9 待复审。"
-task9_review_notes: "2026-06-05 Task9 deep-review: needs-rework。ANON_VMA_LAZY 注入块重复且包含未公开 Android 17 结论/伪源码，需要 Task2B 删除或移入 4.13 专节并补一手公开源码边界。"
+task9_review_notes: "2026-06-06 Task9 deep review: auto-fixed。AOSP tag 检查仅到 android-16.0.0_r1，修正 MADV_COLD/ANON_VMA_LAZY 段落的 Android 17 公开源码边界；无 P0/P1 pending，回 Task6 复审。"
 last_task2b_at: 2026-06-05T20:51:54
-last_task9_autofix_at: "2026-06-04"
+last_task9_autofix_at: "2026-06-06"
 task6_reviewed_by: openclaw-task6
 ---
 
@@ -371,7 +371,7 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 
 #### 待验证方向：madvise(MADV_COLD) 作为 GC-内核协同路径
 
-[状态: 截至 Android 17（API 37）公开 AOSP 源码，ART runtime/gc 中未找到对 `MADV_COLD` 的直接调用；以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的 Android 17 实现。]
+[状态: 截至 android-16.0.0_r1，ART runtime/gc 中未找到对 `MADV_COLD` 的直接调用；android-17.0.0_r1 尚未公开，不能作为正文源码锚点。以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的实现。]
 
 Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在 GC 标记阶段识别出对象冷热信息后，由 GC 向内核传达哪些页面近期不会再被访问，从而帮助内核更准确地回收冷页。
 
@@ -380,7 +380,7 @@ Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在
 - **`mm/madvise.c` 中的 MADV_COLD 处理**：对目标 `vma` 范围内的页面调用 `folio_deactivate()`，清掉 `referenced` flag 并将 folio 移到 inactive LRU 链表的尾部。在 MGLRU（Multi-Gen LRU，主线 Linux 6.1+；Android common 5.10/5.15 需看 backport 与 CONFIG）中，等效操作是清除 generation 计数的 `PG_referenced` 标记，使页面在下一次老化（aging）扫描时更容易被降代。
 - **实际效果**：这些页面不再因为 GC 扫描时的访问而被错误标记为"活跃"（前面提到的 pseudo-hot 问题），从而在内存压力下优先被回收，减少不必要的 swap-in。
 
-**版本边界**：AOSP `platform/art`（截至 android-16.0.0_r1）与主线（main）均未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
+**版本边界**：AOSP `platform/art`（android-16.0.0_r1）未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点；主线（main）资料未进入 Android 17 tag，不能作为 Android 17 正文结论。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
 
 [来源: external-review 2026-04-28-ch04-02-linux-memory 与 Silk 论文（TACO '25）概念参考]
 
@@ -472,7 +472,7 @@ Google 在 LPC 2025 上介绍了使用 eBPF 替代 sysfs 来统计 DMA-BUF 使�
 
 了解了图形内存的底层机制后，我们再来看一个影响整个内存管理架构的系统性变更：16KB 页面大小。前面讨论的 Buddy 分配器、TLB、Page Fault 等机制，在页面大小从 4KB 增大到 16KB 后，行为都会发生变化。
 
-> **ANON_VMA_LAZY 优化**：该专题已交由 4.13 节独立加工。ANON_VMA_LAZY 是华为团队提出的匿名 vma 延迟分配优化，当前以 LKML patch / 社区讨论形式存在，公开 Android 17 源码中尚未发现合入。性能数字（anon_vma 节省 92-97%、24 个应用节省约 45MB、fork 性能提升 5-10%）来自厂商内部测试，缺少设备、内核版本、patch 版本和公开可复核出处，不作为 AIW 正文结论。详见 [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](13-anon-vma-lazy-memory-optimization.md)。
+> **ANON_VMA_LAZY 优化**：该专题已交由 4.13 节独立加工。ANON_VMA_LAZY 是华为团队提出的匿名 vma 延迟分配优化，当前以 LKML patch / 社区讨论形式存在，android-16.0.0_r1 中尚未发现合入；android-17.0.0_r1 尚未公开，不能写成 Android 17 结论。性能数字（anon_vma 节省 92-97%、24 个应用节省约 45MB、fork 性能提升 5-10%）来自厂商内部测试，缺少设备、内核版本、patch 版本和公开可复核出处，不作为 AIW 正文结论。详见 [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](13-anon-vma-lazy-memory-optimization.md)。
 
 
 ## 16K Page Size 对内存和性能的影响

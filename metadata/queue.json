@@ -1347,6 +1347,72 @@
       "completed_at": "2026-06-05T20:52:13",
       "completed_by": "openclaw-task2b-main",
       "completion_reason": "P0: 删除两个重复的 ANON_VMA_LAZY 注入块；替换为指向 4.13 的边界说明，标注性能数据为厂商内部测试暂不可复核。P1: 解决章节边界冲突，4.2 不再承载 4.13 专题内容。"
+    },
+    {
+      "section": "2.19",
+      "section_title": "刷新率切换与帧率适配性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 刷新率章节仍有 Surface setFrameRate 常量/API 边界、RefreshRateSelector 源码锚点和 ARR 版本/数据证据错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "L116-L154, L408-L410, L487-L488",
+          "detail": "android-16.0.0_r1 Surface.java 中 FRAME_RATE_COMPATIBILITY_AT_LEAST=2；EXACT=100、MIN=102 且为 @hide/internal。正文把 EXACT 写成 2、MIN 写成 3，并建议游戏用 EXACT，容易误导 App 侧 API 使用。GameManager#setGameMode(String,int) 存在但为 @SystemApi/@hide，需要改成系统/OEM 侧能力而非普通游戏 App API。",
+          "suggestion": "按 Surface.java L218-L269 修正表格与示例：App 侧保留 DEFAULT/FIXED_SOURCE，Android 16+ 可补 AT_LEAST；EXACT/MIN 只作为内部常量说明或删除。GameManager 段改为系统/OEM 配置入口。"
+        },
+        {
+          "type": "P0 源码错误/Trace 锚点错误",
+          "location": "L421, L456, L468, L499-L515",
+          "detail": "android-16.0.0_r1 RefreshRateSelector.cpp 只确认 getRankedFrameRates()/getRankedFrameRatesLocked()，未找到 collectVotes()/calculateOptimalRate()/supportsARR()。正文后半段仍把 collectVotes/calculateOptimalRate 写成可搜索的 Perfetto slice 或源码方法。",
+          "suggestion": "改为真实源码锚点 getRankedFrameRates()/Scheduler active mode update；无法确认 trace slice 名称时写成 SurfaceFlinger/Scheduler 相关 slice 或日志，不写精确伪方法名。"
+        },
+        {
+          "type": "P1 版本差异/数据缺失",
+          "location": "L288-L365, L543-L583",
+          "detail": "AOSP tags 检查仅公开 android-16.0.0_r1，未见 android-17.0.0_r1。ARR 版本表、Android 16-17 智能 ARR、厂商 PLL/电池数值和 60-80% 切换次数减少缺少 Android 17/API37 内一手源码、官方文档或统一测试条件。",
+          "suggestion": "删除或降级未验证版本/厂商数字；只保留 android-16.0.0_r1 可证的 RefreshRateSelector/Composer HAL 边界，精确性能数字需补设备、版本、亮度、trace/benchmark。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T01:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
+    },
+    {
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Media3 ABR 与 Codec2/tunneled 源码调研附录仍含错误源码锚点和未证版本结论",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "L260-L264, L561-L563, L709-L740",
+          "detail": "AndroidX Media release 源码显示 DefaultBandwidthMeter 使用 SlidingPercentile，AdaptiveTrackSelection 通过 updateSelectedTrack()/determineIdealSelectedIndex() 结合带宽估计和 buffer 时长决策；未找到 evaluateBandwidth()/getBandwidth()/abrAlgorithm，也不能把算法写成指数平滑窗口或“带宽下降立即回调”。",
+          "suggestion": "按 AdaptiveTrackSelection.java 与 DefaultBandwidthMeter.java 改写 ABR 段；删除 50-200ms/亚 100ms 固定决策窗口，除非补独立 benchmark。"
+        },
+        {
+          "type": "P0 源码错误/附录冲突",
+          "location": "L603-L625, L648-L667, L704-L729",
+          "detail": "旧源码调研补充仍保留 Codec2 AIDL/HIDL 异步 callback、C2PortMediaTypeSetting、Component::Node、CCodec::initialize() 伪代码和 DefaultLoadControl ABR 调用链等不可溯源或已被后文否定的结论。android-16.0.0_r1 CCodec.cpp 确认可用的是 configureTunneledVideoPlayback() 与 C2PortTunneledModeTuning。",
+          "suggestion": "删除或归档旧调研补充，只保留 2026-05-24 已验证块；CCodec 初始化与 tunneled 段只写真实方法/结构名，不放伪代码。"
+        },
+        {
+          "type": "P1 版本差异/数据缺失",
+          "location": "L524",
+          "detail": "“Android 16 16KB 页面提升 Codec2 4K/8K 吞吐量、Gralloc AIDL V2 additionalOptions 支持显式 16KB 协调约束”缺少对应 AOSP android-16.0.0_r1 源码解释和 benchmark。Gralloc5.cpp 确有 additionalOptions 字段传递，但未能证明其语义就是 16KB 协调约束。",
+          "suggestion": "将该版本演进项改成待验证或删除性能结论；若保留 additionalOptions，需补 BufferDescriptorInfo/Gralloc5.cpp 具体字段语义及 16KB 约束来源。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T01:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
     }
   ],
   "items": [
@@ -1688,6 +1754,72 @@
       "status": "pending",
       "created_date": "2026-06-05",
       "source": "task2a-knowledge-gap"
+    },
+    {
+      "section": "2.19",
+      "section_title": "刷新率切换与帧率适配性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 刷新率章节仍有 Surface setFrameRate 常量/API 边界、RefreshRateSelector 源码锚点和 ARR 版本/数据证据错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "L116-L154, L408-L410, L487-L488",
+          "detail": "android-16.0.0_r1 Surface.java 中 FRAME_RATE_COMPATIBILITY_AT_LEAST=2；EXACT=100、MIN=102 且为 @hide/internal。正文把 EXACT 写成 2、MIN 写成 3，并建议游戏用 EXACT，容易误导 App 侧 API 使用。GameManager#setGameMode(String,int) 存在但为 @SystemApi/@hide，需要改成系统/OEM 侧能力而非普通游戏 App API。",
+          "suggestion": "按 Surface.java L218-L269 修正表格与示例：App 侧保留 DEFAULT/FIXED_SOURCE，Android 16+ 可补 AT_LEAST；EXACT/MIN 只作为内部常量说明或删除。GameManager 段改为系统/OEM 配置入口。"
+        },
+        {
+          "type": "P0 源码错误/Trace 锚点错误",
+          "location": "L421, L456, L468, L499-L515",
+          "detail": "android-16.0.0_r1 RefreshRateSelector.cpp 只确认 getRankedFrameRates()/getRankedFrameRatesLocked()，未找到 collectVotes()/calculateOptimalRate()/supportsARR()。正文后半段仍把 collectVotes/calculateOptimalRate 写成可搜索的 Perfetto slice 或源码方法。",
+          "suggestion": "改为真实源码锚点 getRankedFrameRates()/Scheduler active mode update；无法确认 trace slice 名称时写成 SurfaceFlinger/Scheduler 相关 slice 或日志，不写精确伪方法名。"
+        },
+        {
+          "type": "P1 版本差异/数据缺失",
+          "location": "L288-L365, L543-L583",
+          "detail": "AOSP tags 检查仅公开 android-16.0.0_r1，未见 android-17.0.0_r1。ARR 版本表、Android 16-17 智能 ARR、厂商 PLL/电池数值和 60-80% 切换次数减少缺少 Android 17/API37 内一手源码、官方文档或统一测试条件。",
+          "suggestion": "删除或降级未验证版本/厂商数字；只保留 android-16.0.0_r1 可证的 RefreshRateSelector/Composer HAL 边界，精确性能数字需补设备、版本、亮度、trace/benchmark。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T01:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
+    },
+    {
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Media3 ABR 与 Codec2/tunneled 源码调研附录仍含错误源码锚点和未证版本结论",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "L260-L264, L561-L563, L709-L740",
+          "detail": "AndroidX Media release 源码显示 DefaultBandwidthMeter 使用 SlidingPercentile，AdaptiveTrackSelection 通过 updateSelectedTrack()/determineIdealSelectedIndex() 结合带宽估计和 buffer 时长决策；未找到 evaluateBandwidth()/getBandwidth()/abrAlgorithm，也不能把算法写成指数平滑窗口或“带宽下降立即回调”。",
+          "suggestion": "按 AdaptiveTrackSelection.java 与 DefaultBandwidthMeter.java 改写 ABR 段；删除 50-200ms/亚 100ms 固定决策窗口，除非补独立 benchmark。"
+        },
+        {
+          "type": "P0 源码错误/附录冲突",
+          "location": "L603-L625, L648-L667, L704-L729",
+          "detail": "旧源码调研补充仍保留 Codec2 AIDL/HIDL 异步 callback、C2PortMediaTypeSetting、Component::Node、CCodec::initialize() 伪代码和 DefaultLoadControl ABR 调用链等不可溯源或已被后文否定的结论。android-16.0.0_r1 CCodec.cpp 确认可用的是 configureTunneledVideoPlayback() 与 C2PortTunneledModeTuning。",
+          "suggestion": "删除或归档旧调研补充，只保留 2026-05-24 已验证块；CCodec 初始化与 tunneled 段只写真实方法/结构名，不放伪代码。"
+        },
+        {
+          "type": "P1 版本差异/数据缺失",
+          "location": "L524",
+          "detail": "“Android 16 16KB 页面提升 Codec2 4K/8K 吞吐量、Gralloc AIDL V2 additionalOptions 支持显式 16KB 协调约束”缺少对应 AOSP android-16.0.0_r1 源码解释和 benchmark。Gralloc5.cpp 确有 additionalOptions 字段传递，但未能证明其语义就是 16KB 协调约束。",
+          "suggestion": "将该版本演进项改成待验证或删除性能结论；若保留 additionalOptions，需补 BufferDescriptorInfo/Gralloc5.cpp 具体字段语义及 16KB 约束来源。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T01:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-deep-tech-review"
     }
   ],
   "5.18": {

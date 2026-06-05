@@ -10,11 +10,11 @@ reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-task9_result: pending
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: task9_pending  # updated by task2b-verifier 2026-06-05
+pipeline_stage: task2b_pending
 last_task2b_at: 2026-06-05T14:50:00
 task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -26,9 +26,9 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-task9_reviewed_date: "2026-06-05"
+task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-05T07:20:00+08:00"
+last_task9_at: "2026-06-06T01:20:00+08:00"
 last_task6_at: "2026-06-05T10:17:00+08:00"
 task6_review_notes: "2026-06-05 Task6 revisiting review #2: pass-light-edit; L1/L2 全部通过(禁用词0/高频词在限内/元叙述0)；B类: FRAME_RATE_COMPATIBILITY_SUFFICIENT 仍存在于App侧优化代码块(L142),需Task9复核; Task9 queue仍有pending P0条目。"
 last_task6_review_log: "logs/review/2026-06-02-16-review.md"
@@ -40,8 +40,8 @@ task6_new_rework: true
 review_type: "task6-writing-quality-review"
 last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
-last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
-task9_review_notes: "2026-06-05 Task9 deep review: needs-rework。P0：Surface.setFrameRate API/常量、GameManager.setGameMode、Activity.setFrameRate、SurfaceFlinger/Display HAL/ARR 伪源码与 Android 16 tag 不符；P1：ARR 版本表与厂商量化数据缺少 Android 17/API37 以内一手证据。"
+last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
+task9_review_notes: "2026-06-06 Task9 deep review: needs-rework。P0：Surface FRAME_RATE_COMPATIBILITY_EXACT/MIN 常量值和 @hide 边界错误，遗漏 AT_LEAST；RefreshRateSelector collectVotes/calculateOptimalRate 作为源码/Trace 名称不可溯源；GameManager#setGameMode(String,int) 是 @SystemApi/@hide。P1：ARR 版本表和厂商延迟/功耗数字缺少 Android 17/API37 内一手证据。"
 ---
 
 
