@@ -48,14 +48,19 @@ source_refs:
   - "intake/research-gaps.md#2026-05-17-26-12"
   - "developer.android.com/reference/android/app/ApplicationStartInfo"
   - "developer.android.com/about/versions/17/features"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-18T04:14:00+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-05"
-task6_state: pending
-task9_state: pending
+task6_state: "reviewed"
+task9_state: "pending"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-05"
+last_task6_at: "2026-06-05T11:24:00+08:00"
+last_task6_review_log: "logs/review/2026-06-05-11-review.md"
 ---
 
 # 26.13 ApplicationStartInfo 与启动归因上报
@@ -76,7 +81,7 @@ task9_state: pending
 定义 SDK envelope：系统时间戳、业务首屏时间、`reportFullyDrawn()`、页面 ready、广告/引导扣除、trace id 和版本字段，避免只依赖单一耗时指标。
 
 ### 🔹 Android 17 `ProfilingTrigger` 的冷启动触发关系
-对齐 `TRIGGER_TYPE_COLD_START` 与 `ApplicationStartInfo.getStartType() == START_TYPE_COLD` 的前提，说明触发式 profiling 与常规启动上报的分工。
+对应 `TRIGGER_TYPE_COLD_START` 与 `ApplicationStartInfo.getStartType() == START_TYPE_COLD` 的前提，说明触发式 profiling 与常规启动上报的分工。
 
 ### 🔹 数据保留、采样率与隐私边界
 覆盖历史记录条数、回调时机、采样率、端侧缓存、脱敏字段、用户同意和结果文件上传策略，避免启动诊断能力演变成无限制日志采集。
