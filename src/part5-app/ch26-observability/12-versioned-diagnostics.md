@@ -237,7 +237,73 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 
 `TRIGGER_TYPE_OOM` 处理的是 Java `OutOfMemoryError`，返回 Java heap dump。它不覆盖系统内存压力下的 LMK，也不等同于 `ApplicationExitInfo.REASON_LOW_MEMORY`。OOM 治理策略详见 20.5；这里的重点是把 heap dump 文件归档到同一份 case 里，和异常时间、版本、设备、前后台状态关联。[已验证: 官方文档, developer.android.com/about/versions/17/features]
 
-`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[待验证: Android 17 最终 API 37 SDK 发布后复核 trigger 常量和结果产物细节]
+`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[待验证: AOSP android-17.0.0_r1 tag 不可访问；当前已用 AOSP main + android-16.0.0_r3 反证 API 37 trigger 常量在源码中不可见，详见下方"源码层验证"小节]
+<!-- AIW-源码调研-2026-06-05 -->
+### 源码层验证：AOSP main 与 android-16.0.0_r3 公开分支的 ProfilingTrigger 实际可见性
+
+| 维度 | Android Developers 公开文档 | AOSP main / android-16.0.0_r3 源码 |
+|---|---|---|
+| `TRIGGER_TYPE_NONE` / `APP_FULLY_DRAWN` / `ANR` 常量 | API 36 标注 | 三者均存在于 `ProfilingTrigger.java` |
+| `TRIGGER_TYPE_COLD_START` / `OOM` / `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` / `APP_COMPAT` | "Added in API level 37" | **5 个常量均不在源码中** |
+| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` / `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | Extension 36.1 | **4 个常量均不在源码中** |
+| `isValidRequestTriggerType()` 放行范围 | – | 只放行 `APP_FULLY_DRAWN` 与 `ANR`，新增 trigger 即使按 API 37 文档调用 `Builder(...)` 也会抛 `IllegalArgumentException("Invalid trigger type.")` |
+| Memory Advice API 库 | "The Memory Advice API beta is now deprecated" | AOSP `frameworks/opt/gamesdk/games-memory-advice/` 完整保留 v2.2.0，`build.gradle` `versionName "1.1"`，`targetSdkVersion 35`；未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
+
+AOSP 关键源码（android16-release / main 一致，2026-06-05 抓取）：
+
+```java
+// platform/packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java
+@FlaggedApi(Flags.FLAG_SYSTEM_TRIGGERED_PROFILING_NEW)
+public final class ProfilingTrigger {
+    public static final int TRIGGER_TYPE_NONE = 0;
+    public static final int TRIGGER_TYPE_APP_FULLY_DRAWN = 1;
+    public static final int TRIGGER_TYPE_ANR = 2;
+
+    @IntDef(value = { TRIGGER_TYPE_NONE, TRIGGER_TYPE_APP_FULLY_DRAWN, TRIGGER_TYPE_ANR })
+    @interface TriggerType {}
+
+    public static boolean isValidRequestTriggerType(int triggerType) {
+        return triggerType == TRIGGER_TYPE_APP_FULLY_DRAWN
+                || triggerType == TRIGGER_TYPE_ANR;
+    }
+}
+```
+
+```cpp
+// platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h
+#define MEMORY_ADVICE_MAJOR_VERSION 2
+#define MEMORY_ADVICE_MINOR_VERSION 2
+#define MEMORY_ADVICE_BUGFIX_VERSION 0
+```
+
+`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。android-17.0.0_r1 tag 在 AOSP 不存在（404），所有 API 37 trigger 结论需注明"基于 Android Developers docs，AOSP 公开源码不可见"。
+
+### 源码层验证：`TRIGGER_TYPE_OOM` 的应用侧硬约束
+
+`TRIGGER_TYPE_OOM` 文档原文（developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM）：
+
+> Use of this trigger requires that any custom `Thread.UncaughtExceptionHandler` call through to the default uncaught exception handler (`Thread.getDefaultUncaughtExceptionHandler()`). If the default uncaught exception handler is not called, then this trigger cannot be used. The app can still obtain a Java heap dump in this case, but will have to request the profiling itself using `ProfilingManager.requestProfiling`.
+
+含义：
+
+- 自定义 `UncaughtExceptionHandler` 必须 `chain.uncaughtException(t, e)`，否则 OOM trigger 不会触发；
+- 兜底路径是 `ProfilingManager.requestProfiling(PROFILING_TYPE_JAVA_HEAP_DUMP, ...)`，需要 App 自己识别 OOM 异常并主动请求；
+- 这与 Memory Advice `MEMORYADVICE_STATE_CRITICAL` 的"基于 TFLite 预测 + 启发式规则的连续状态信号"完全不同：OOM trigger 是一次性事件，依赖 `OutOfMemoryError` 异常被默认 handler 处理的瞬间。
+
+### 源码层验证：`TRIGGER_TYPE_OOM` 与 `TRIGGER_TYPE_ANOMALY` 的正交关系
+
+| 维度 | `TRIGGER_TYPE_OOM` | `TRIGGER_TYPE_ANOMALY` |
+|---|---|---|
+| 触发条件 | Java OOM 异常 | 系统检测到异常行为（OS-defined memory limits、binder spam 等） |
+| 产物 | Java heap dump | heap dump（内存）/ stack sampling（binder） |
+| 是否覆盖 `MemoryLimiter:AnonSwap` 退出 | 不直接覆盖 | **覆盖**（OS-defined memory limits 临界点） |
+| 对应 `ApplicationExitInfo.REASON_*` | OOM 异常前 | `REASON_EXCESSIVE_RESOURCE_USAGE`（与 KILL 配套） |
+
+AOSP `frameworks/base/core/java/android/app/ApplicationExitInfo.java` 中 `REASON_EXCESSIVE_RESOURCE_USAGE` 在 API 36 已可见，可与 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 配对；但 `TRIGGER_TYPE_ANOMALY` 的 "OS-defined memory limits" 阈值官方未公开。
+
+23.9 节"线上告警与隐私合规"层提到"诊断层：灰度或内部用户开启 `TRIGGER_TYPE_ANOMALY`"——按 Android 17 features 文档描述，这个 trigger 实际能捕到的是 OS-defined memory limits 临界点，对应 `REASON_OTHER + MemoryLimiter:AnonSwap` 退出的事前窗口；OOM trigger 捕的是 Java OOM 异常的当场 heap dump，不直接覆盖 `REASON_LOW_MEMORY`。
+<!-- /AIW-源码调研-2026-06-05 -->
+
 
 ## 证据归档与去重字段
 

@@ -2,7 +2,7 @@
 
 title: "JobScheduler 调试：Pending Reasons 与 JobDebugInfo"
 chapter: "25.14"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-05-22"
@@ -38,13 +38,13 @@ created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/章节深挖"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-22T05:19:00+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
-reviewed_by: "openclaw-task6"
+reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
-last_task6_at: "2026-06-05T10:17:00+08:00"
+last_task6_at: "2026-06-05T13:11:00+08:00"
 task9_result: auto-fixed
 task2b_state: fixed
 task9_reviewed_by: openclaw-task9
@@ -53,6 +53,7 @@ last_task9_at: "2026-06-05T11:24:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
 task9_review_notes: "2026-06-05 Task9 auto-fix：移除 JobScheduler pending reason 示例中错误的 PACKAGE_USAGE_STATS 权限注解；官方 API reference 与 AOSP android-16.0.0_r1 均未要求该权限。回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-05"
+last_task6_review_log: "logs/review/2026-06-05-13-review.md"
 ---
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo

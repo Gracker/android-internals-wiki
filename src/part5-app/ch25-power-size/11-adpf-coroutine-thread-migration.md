@@ -2,14 +2,14 @@
 title: "ADPF Hint Session 与协程线程迁移"
 chapter: "25.11"
 section: "25.11"
-pipeline_stage: 'task6_pending'
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-06-04'
+reviewed_date: 2026-06-05
 task9_state: 'reviewed'
-last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
-last_task6_at: '2026-06-04T01:08:00+08:00'
+last_task6_review_log: "logs/review/2026-06-05-13-review.md"
+last_task6_at: "2026-06-05T13:11:00+08:00"
 task9_result: 'auto-fixed'
 task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; replaced forbidden word 矩阵 in section title. No new rework items.'
 task9_reviewed_by: 'openclaw-task9'
@@ -18,7 +18,7 @@ last_task9_at: '2026-06-04T00:20:00+08:00'
 last_task9_review_log: 'logs/deep-review/2026-06-04-00-deep-review.md'
 task2b_state: 'fixed'
 task2b_result: fixed
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: '2026-06-04'
