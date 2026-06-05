@@ -2,9 +2,9 @@
 
 
 status: ready-for-review
-task9_reviewed_date: "2026-06-04"
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T08:20:00+08:00"
+last_task9_at: "2026-06-05T19:28:13+08:00"
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
@@ -54,20 +54,20 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_reviewed_date: 2026-06-04
-task9_state: pending
-task9_result: auto-fixed
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: reworked
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
-last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
 last_task6_at: "2026-06-04T11:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
-task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 MGLRU 主线版本边界、图形 buffer 物理连续表述、DMA-BUF 统计入口和 Google Play 16KB 要求范围；已回到 Task6 复审。"
+task9_review_notes: "2026-06-05 Task9 deep-review: needs-rework。ANON_VMA_LAZY 注入块重复且包含未公开 Android 17 结论/伪源码，需要 Task2B 删除或移入 4.13 专节并补一手公开源码边界。"
 last_task2b_at: "2026-06-04T04:55:01"
 last_task9_autofix_at: "2026-06-04"
 task6_reviewed_by: openclaw-task6

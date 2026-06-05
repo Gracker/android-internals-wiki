@@ -15,17 +15,17 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: "task6_pending"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
-task9_state: "pending"
-task9_result: pending
-task9_reviewed_date: "2026-06-04"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T20:24:00+08:00"
-task2b_state: "fixed"
+last_task9_at: "2026-06-05T19:28:13+08:00"
+task2b_state: fixed
 task2b_result: "fixed"
 review_round: 5
 last_task2b_at: '2026-06-04T20:56:00+08:00'
@@ -37,6 +37,9 @@ last_task6_at: "2026-06-05T16:08:00+08:00"
 review_notes_5: "2026-06-05 task6 re-review (round 6): pass-light-edit. Fixed 禁用词 痛点→冲突. task9_result=pending, routes to task9."
 review_notes_4: "2026-06-04 task6 re-review (round 5): pass-light-edit. Task2b fix at 20:56 reviewed; no new writing quality issues. L1 clean (真正 x2 functional). Routing to task9 for pending tech review."
 review_notes_3_orig: "2026-06-04 task6 re-review (round 4): pass-light-edit. L1 clean (真正 x2, both functional). Not-X-but-Y x2 (within limit). All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 5/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
+last_task9_autofix_at: "2026-06-05"
+last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
+task9_review_notes: "2026-06-05 Task9 deep-review: auto-fixed。将 Looper.Observer 的直接源码验证边界从不存在的 android-17.0.0_r1 回退到 android-16.0.0_r3，并保留 Android 17 待 tag 公开复核。"
 ---
 
 # BlockCanary
@@ -274,9 +277,9 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 7. 调试器连接、GC 高压、Binder 长等待这三类场景单独打标，避免它们直接冲进“业务卡顿”榜单。
 8. Android 10（API 29）起，`Looper` 内部存在 `@hide` 的 `Looper.Observer`，回调 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` 不依赖字符串日志。AOSP `android-9.0.0_r1` 的 `Looper.java` 尚未定义 Observer；`android-10.0.0_r1` 才出现 `private static Observer sObserver`、`setObserver()` 和对应回调。
 
-> **Android 17 验证** [已验证: AOSP `frameworks/base/core/java/android/os/Looper.java` android-17.0.0_r1 源码路径连续性]：截至 Android 17 (API 37)，`Looper.Observer` 接口保持存在，`Observer#messageDispatchStarting()` 和 `Observer#messageDispatched()` 签名未变，仍为 `@hide`。`sObserver` 仍是 static 单槽位，不提供多观察者支持。自研方案在处理 `Looper.Observer` 时仍要和 `Printer` / `setMessageLogging()` 走相同的冲突治理策略，不能假定 Observer 可以"多个组件各挂一个"。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。评估现代 APM 方案时，可以把 Observer 作为系统演进方向和兼容性风险一起记录。
+> **Android 16 源码验证与 Android 17 边界** [已验证: AOSP `frameworks/base/core/java/android/os/Looper.java` android-16.0.0_r3]：截至公开 Android 16 源码，`Looper.Observer` 接口保持存在，`Observer#messageDispatchStarting()` 和 `Observer#messageDispatched()` 签名未变，仍为 `@hide`。`sObserver` 仍是 static 单槽位，不提供多观察者支持。`android-17.0.0_r1` tag 当前未公开，不能写成 Android 17 已源码验证；Android 17 仅保留为待 tag 公开后的复核边界。自研方案在处理 `Looper.Observer` 时仍要和 `Printer` / `setMessageLogging()` 走相同的冲突治理策略，不能假定 Observer 可以"多个组件各挂一个"。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。
 
-<!-- AIW-源码调研-2026-06-05 (BlockCanary Looper.Observer Android 17 验证) -->
+<!-- AIW-源码调研-2026-06-05 (BlockCanary Looper.Observer Android 16 验证与 Android 17 边界) -->
 **Android 16 源码逐行验证补充**（2026-06-05，基于 `aosp-mirror/platform_frameworks_base` android-16.0.0_r3 实际直读 `frameworks/base/core/java/android/os/Looper.java` 631 行）：
 
 - `Looper.Observer` 接口位置：`Looper.java:598-628`（API 36 行号；android-10.0.0_r1 引入时在 `:433-466`），三方法 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` / `dispatchingThrewException(Object token, Message msg, Exception exception)` 签名、Javadoc、`@hide` 标记从 API 29 → API 33/34/35/36 **零变更**。
@@ -287,7 +290,7 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 - **Android 17 边界声明**：`android-17.0.0_r1` tag 在 aosp-mirror / GitHub 镜像**尚不存在**（最新 release tag 为 `android-16.0.0_r3`）。上述结论对 Android 17 (API 37) 的外推基于 API 29-36 源码零变更趋势，**未在 Android 17 真实源码上直接验证**。如需 100% 权威，应在 cs.android.com 出现 android-17.0.0_r1 tag 后重读 `Looper.java` 与 `PerfettoTrace.java` 复核。
 
 > **结论性提醒**：
-> 1. BlockCanary 在 Android 17 没有"必须切到 Observer 才能用"的版本门槛，它走的是公开 `setMessageLogging` 路径，不依赖 `@hide` API。
+> 1. 截至公开 Android 16 源码，BlockCanary 没有"必须切到 Observer 才能用"的版本门槛，它走的是公开 `setMessageLogging` 路径，不依赖 `@hide` API；Android 17 需等公开 tag 后复核。
 > 2. 如果团队基于 BlockCanary 思路自研且希望走 Observer 路径，**API 29 起所有 Android 版本都支持**（API 29-36 源码零变更），但要面对：单槽位冲突治理（`sObserver` 是 static，与 `setMessageLogging` 同样的多组件冲突）、`@hide` 黑名单（max-target-o）、token 三方法互斥协议。
 > 3. Android 16 起 Perfetto 已经接管 MessageQueue dispatch 端到端可观测性，**主线程卡顿诊断优先用 Perfetto `MQ_CATEGORY` + 5s ANR + FrameTimeline `JANK_TYPE`**；BlockCanary 类 Java 端工具的定位应聚焦"堆栈 dump + 签名聚合 + block 阈值告警"，trace 端不要再自己造轮子。
 

@@ -1319,6 +1319,33 @@
       "review_type": "task6-writing-quality",
       "original_review_log": "logs/review/2026-06-05-16-review.md",
       "completed_at": "2026-06-05T16:53:39"
+    },
+    {
+      "section": "4.2",
+      "section_title": "Linux 内核内存管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ANON_VMA_LAZY 注入块重复且含未公开 Android 17 结论",
+      "material_paths": [
+        "logs/deep-review/2026-06-05-19-deep-review.md",
+        "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 版本边界/源码结论错误",
+          "location": "L475-L570 ANON_VMA_LAZY 两个重复注入块",
+          "detail": "正文两次插入 Linux ANON_VMA_LAZY 小节，并写成“Android 17 下的性能数据”“完全兼容 ART GC”等结论；本轮一手 tag 检查显示 frameworks/base、external/perfetto 均无 android-17.0.0_r1，kernel/common 也无 android-17.0.0_r1，不能把未公开 Android 17 或厂商内部测试数据作为 AIW 正文结论。代码片段 should_use_anon_vma_lazy()/anon_vma_fork_lazy() 未给出公开 Android 17 源码路径。",
+          "suggestion": "从 4.2 删除重复 ANON_VMA_LAZY 注入块，或压缩为“另见 4.13，公开源码待验证”的一两句边界说明；Android 17 性能数字和伪源码不得保留为正文结论。"
+        },
+        {
+          "type": "P1 交叉引用/章节边界",
+          "location": "L475-L570 与 4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能",
+          "detail": "metadata/queue.json 已存在 4.13 专节待加工，4.2 作为 Linux 内存管理总览不应完整重复一节未验证专题内容。",
+          "suggestion": "将专题内容交给 4.13；4.2 只保留一条清晰交叉引用，并说明 ANON_VMA_LAZY 当前是一手公开源码待确认方向。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-05T19:28:13+08:00",
+      "status": "pending"
     }
   ],
   "items": [
