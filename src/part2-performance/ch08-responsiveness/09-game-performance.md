@@ -3,7 +3,7 @@
 title: "Android 游戏性能与 Game Mode/State API"
 chapter: "8.9"
 section: "8.9"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
@@ -46,8 +46,8 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -60,9 +60,9 @@ task9_reviewed_date: "2026-06-05"
 last_task9_at: "2026-06-05T07:20:00+08:00"
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
-last_task6_at: "2026-06-05T02:06:00+08:00"
+last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task2b_lite_at: 2026-06-05
-task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1 修正 1 处（删除否定-纠正冗余句）；无新增 B 类问题。task9_result 仍为 needs-rework，等待 Task9 复检。"
+task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1 修正 2 处否定-纠正结构（黑盒式句式、Game Mode 万能开关句式）；无新增 B 类问题。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-05"
 last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
 task9_review_notes: "2026-06-05 Task9 deep review: auto-fixed。修复 GameManagerService AOSP tag、ADPF codelab/AOSP 源码路径混写；回到 Task6 复审。"
@@ -200,7 +200,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 
 ### Game Mode 对系统行为的影响
 
-Game Mode 给游戏的第一手信息是用户偏好，不是一个直接控制 CPU 亲和性或调度优先级的万能开关。当前 AOSP 和官方文档可以拆成三层。
+Game Mode 给游戏的第一手信息是用户偏好，不直接控制 CPU 亲和性或调度优先级。当前 AOSP 和官方文档可以拆成三层。
 
 第一层是游戏自己的策略。只要游戏在 XML 里声明了 Performance 或 Battery 模式，平台就把模式选择交回给游戏处理。官方文档也写得很直接：平台会清掉 OEM 之前下发的 Game Mode interventions，避免系统和游戏同时改同一组参数。
 
