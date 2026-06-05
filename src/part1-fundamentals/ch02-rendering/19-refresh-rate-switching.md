@@ -2,19 +2,20 @@
 
 
 
+
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 reviewed_date: "2026-06-06"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task6_state: revisiting
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 last_task2b_at: 2026-06-06T02:57:42+08:00
 last_task2b_lite_at: 2026-06-06
 task2b_notes: "2026-06-06 Task2B main 回炉 #3：P1 ARR版本表重写（拆分MRR/ARR边界 Android 15-QPR1+），ARR原理和场景描述修正，厂商功耗/延迟/百分比声明全部去量化为定性描述，移除60-80%切换减少和无法回溯的设备条件声明。"
@@ -30,9 +31,9 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-06T04:21:00+08:00"
-last_task6_at: "2026-06-06T03:06:00+08:00"
-task6_review_notes: "2026-06-06 Task6 revisiting #4: pass-light-edit. L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). No new B-class issues. task9 needs-rework, queue has pending P0/P1 items, no auto-promote."
-last_task6_review_log: logs/review/2026-06-06-02-review.md
+last_task6_at: "2026-06-06T05:12:48+08:00"
+task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用词0/高频词:真正1+确实2均功能性/否定纠正2/元叙述0/物理动词0). L3/L4 pass (ARR/MRR版本边界清晰/厂商差异定性合理/Trace观察点实用/误区分析到位). No B-class issues. task6=pass-light-edit + task9=auto-fixed + queue empty → promote finalized."
+last_task6_review_log: "logs/review/2026-06-06-05-review.md"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
 task6_l1_l2_fixes: 6
