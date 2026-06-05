@@ -53,6 +53,8 @@ task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0/P1 技术�
 last_task6_at: "2026-06-05T08:10:00+08:00"
 last_task9_autofix_at: "2026-06-05"
 last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 
@@ -626,7 +628,7 @@ Coroutine 的性能与本书其他章节有紧密联系：
 
 ## ADPF Session 线程绑定的工程化边界 [自动发现]
 
-本节补充自每日源码调研（2026-05-14），聚焦 `PerformanceHintManager.Session` 与协程调度器协同的工程化边界。
+以下聚焦 `PerformanceHintManager.Session` 与协程调度器协同的工程化边界。
 
 ### Session 线程绑定的核心约束
 
@@ -695,7 +697,5 @@ hintSession?.setPreferPowerEfficiency(true)
 
 详见：[DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md](DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md)
 
-<!-- AIW-源码调研-2026-05-14 -->
 
-<!-- AIW-源码调研-2026-05-27: ADPF API 版本边界修正 -->
-> **源码调研修正**：Session.setThreads() 为 API 34 公开方法（非 flagged API）。setPreferPowerEfficiency() 和 WorkDuration 分离上报为 flagged API，需运行时 flag 判断。详见 [DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md](DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md)
+> **版本说明**：Session.setThreads() 为 API 34 公开方法（非 flagged API）。setPreferPowerEfficiency() 和 WorkDuration 分离上报为 flagged API，需运行时 flag 判断。详见 [DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md](DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md)

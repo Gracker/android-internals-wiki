@@ -54,6 +54,8 @@ last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
 task9_review_notes: "2026-06-05 Task9 auto-fix：移除 JobScheduler pending reason 示例中错误的 PACKAGE_USAGE_STATS 权限注解；官方 API reference 与 AOSP android-16.0.0_r1 均未要求该权限。回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-05"
 last_task6_review_log: "logs/review/2026-06-05-13-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo
@@ -312,6 +314,6 @@ JobScheduler pending reason 把后台任务排障从“猜系统为什么没调�
 - [JobScheduler reference](https://developer.android.com/reference/android/app/job/JobScheduler)
 - [Debug WorkManager](https://developer.android.com/develop/background-work/background-tasks/testing/persistent/debug)
 - [Data transfer background task options](https://developer.android.com/develop/background-work/background-tasks/data-transfer-options)
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-- [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- 结构参考：Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率
+- 结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率
+- 结构参考：Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级
