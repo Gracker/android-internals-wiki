@@ -1414,8 +1414,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T01:20:00+08:00",
-      "status": "pending",
-      "review_type": "task9-deep-tech-review"
+      "status": "completed",
+      "review_type": "task9-deep-tech-review",
+      "completed_at": "2026-06-06T02:57:42+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "fix_summary": "P0: ABR源码方法修正(AdaptiveTrackSelection+DefaultBandwidthMeter), 删除2026-05-12/21旧附录, 清理伪代码; P1: 16KB页面声明降级"
     }
   ],
   "items": [
@@ -1796,10 +1799,13 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T01:20:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "review_type": "task9-deep-tech-review",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-06-06T02:20:00+08:00"
+      "updated_at": "2026-06-06T02:20:00+08:00",
+      "completed_at": "2026-06-06T02:57:42+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "fix_summary": "P1: ARR版本表重写(MRR/ARR边界), ARR原理修正, 厂商量化声明降级为定性, 移除无法回溯的百分比"
     },
     {
       "section": "8.8",
@@ -1831,8 +1837,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T01:20:00+08:00",
-      "status": "pending",
-      "review_type": "task9-deep-tech-review"
+      "status": "completed",
+      "review_type": "task9-deep-tech-review",
+      "completed_at": "2026-06-06T02:57:42+08:00",
+      "completed_by": "openclaw-task2b-main"
     }
   ],
   "5.18": {
