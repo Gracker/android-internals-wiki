@@ -43,16 +43,16 @@ sources:
 tags: [case-study, observability, apm-setup, regression-guardrail]
 related_chapters: ["26.1", "26.5"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-15T07:17:00+08:00"
 task2a_result: drafted
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
-last_task6_at: "2026-06-04T21:10:00+08:00"
-last_task6_review_log: logs/review/2026-06-04-21-review.md
+reviewed_date: "2026-06-05"
+last_task6_at: "2026-06-05T11:24:00+08:00"
+last_task6_review_log: "logs/review/2026-06-05-11-review.md"
 review_type: task6-writing-quality-review
 task6_review_notes_r5: "2026-06-04 Task6 (round 5, revisiting): pass-light-edit. Fixed 7x 中英文空格 (Android XX(API) → Android XX (API)). L1 clean post-fix. No new L3/L4 issues. task9_result=needs-rework, routing to task9."
 task6_review_notes_orig: "2026-05-15 Task6：pass-light-edit。修复结构性元叙述与 1 处否定-纠正句式；无新增 L3/L4 回炉问题，待 Task9 技术审查。"
