@@ -2,6 +2,7 @@
 
 
 
+
 status: ready-for-review
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
@@ -15,7 +16,7 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-03-31'
-reviewed_date: "2026-06-05"
+reviewed_date: "2026-06-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
@@ -55,8 +56,8 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_reviewed_date: 2026-06-04
 task9_state: reviewed
 task9_result: auto-fixed
@@ -65,9 +66,9 @@ task2b_result: fixed
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
-last_task6_at: "2026-06-05T21:09:00+08:00"
-last_task6_review_log: "logs/review/2026-05-21-12-review.md"
-task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task2b 修复 ANON_VMA_LAZY(移入4.13)后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9 needs-rework + task2b fixed, 返回 task9 待复审。"
+last_task6_at: "2026-06-06T02:08:00+08:00"
+last_task6_review_log: logs/review/2026-06-06-02-review.md
+task6_review_notes: "2026-06-06 Task6 revisiting #2: pass-light-edit. L1/L2 clean (禁用词0/高频词0/元叙述0/物理动词0). Task 9 auto-fixed ANON_VMA_LAZY段落,无P0/P1 pending,queue已清。"
 task9_review_notes: "2026-06-06 Task9 deep review: auto-fixed。AOSP tag 检查仅到 android-16.0.0_r1，修正 MADV_COLD/ANON_VMA_LAZY 段落的 Android 17 公开源码边界；无 P0/P1 pending，回 Task6 复审。"
 last_task2b_at: 2026-06-05T20:51:54
 last_task9_autofix_at: "2026-06-06"
