@@ -1,3 +1,14 @@
+
+## [Task2A 知识加工] 2026-06-05 11:04 知识加工 — 加工 7.19
+
+**Phase 0 修正**：修正 outline-only 内容行计数逻辑，发现 3 个空 draft（7.19、22.20、22.21），前 3 轮扫描（01:04/07:07/09:06）的 outline 行被误计为正文行。
+
+**加工章节**：7.19 AccessibilityManagerService 与无障碍服务性能影响
+**素材来源**：AOSP android-16.0.0_r1 源码 + Android 17 官方行为变更文档 + Clippings/线上疑难问题 34 + 已有 AIW 章节（9.7、3.5）
+**锚点覆盖**：6/6 锚点 + 2/2 扩展（部分待补充）
+**验证结果**：AOSP L1 ✓ 4 处 | 官方文档 L2 ✓ 3 处 | 待验证 1 处（TalkBack 实测数据）
+**产出**：src/part2-performance/ch07-smoothness/19-accessibility-manager-performance.md（status → ready-for-review）
+**下一待写章节**：22.20 Compose 性能优化盲区（draft）
 # Suggestions
 
 [2026-06-04] 19.18 商业 APM 平台 — 补充自建方案权衡矩阵和 ROI 案例
@@ -129,3 +140,59 @@
 **锚点覆盖**：6/6 锚点 + 2/2 扩展（部分待补充）
 **产出**：src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md（status → ready-for-review）
 **下一待写章节**：7.19 AccessibilityManagerService（draft）
+
+## [Task2A Gap Mining] 2026-06-05 13:04 知识缺口挖掘 — 已检查方向
+
+本轮已检查以下方向，未发现评分 ≥ 14 的候选缺口：
+
+### 已检查方向
+
+1. **source-index.json 高质量未映射素材**：6 条 score≥16 但 mapped_chapters 为空的条目。
+   - "Android 高级工程师面试参考答案"→ Q&A 格式，不适合独立成节
+   - "Android 17 电池统计与 Tare 经济模型源码闭环"→ 已映射 11.8
+   - "ltrace 工作原理分析"→ 工具向，可补充至 ch14 但不足以独立成节（素材丰富度 2）
+   - "荣耀 MUSCHED VIP 与 Binder 优先级传递"→ 已映射 ch05/ch17
+   - "Android Package Manager 安装优化"→ 已映射 1.9/1.23
+   - "Jetpack Compose 性能优化盲区"→ 已有 draft 章节 22.20
+
+2. **AOSP 核心服务覆盖检查**：
+   - AMS/PMS/WMS/SF/InputDispatcher/SensorService/ConnectivityService/netd/vold/Zygote/ART/Binder/LMK/AudioFlinger 全部已覆盖
+   - NotificationManagerService → 9.6 | BatteryService → ch11 | ThermalService → 5.5/5.12
+   - DisplayManagerService → ch02 | AlarmManagerService → 25.3/25.20
+   - JobScheduler → 5.10/25.4/25.13/25.14 | Keystore → 8.12 | Biometric → 8.13
+   - MediaCodec/Codec2 → 18.23/18.24 | Camera → 14.9/18.14 | statsd → 14.17
+
+3. **官方文档 topic 页面**：Android 17 性能行为变更（16.5）、16KB Page Size（4.7）、ADPF（5.9/25.11/25.16）、App Memory Limits（23.9）、Edge-to-Edge（2.26）、DCL（20.15）、Excessive CPU Kill（25.12）等均已覆盖。
+
+4. **daily-info 近 7 天热点**：
+   - Android 17 原生应用锁 → 17.7
+   - Gemini API / AI 接入 → 超出 AIW 范围（非性能优化主题）
+   - Now in Android 架构 → 超出 AIW 范围
+   - UI 卡顿量化 → 7.9 / ch26 已覆盖
+   - Remote Compose → 太新，素材不足（丰富度 2）
+   - App Functions / MCP → 太新，素材不足（丰富度 1-2）
+
+5. **潜在候选评估**：
+   - App Widget / Glance Performance → 评分 ~11（素材 3 + 相关 3 + 需求 3 + 时效 2），不足 14
+   - Remote Compose Performance → 评分 ~9（素材 2 + 相关 3 + 需求 2 + 时效 4），不足 14
+   - App Functions API Performance → 评分 ~10（素材 1 + 相关 3 + 需求 2 + 时效 5），不足 14
+   - Android Automotive Performance → 评分 ~8，太偏门
+   - Gradle Build Performance → 超出 AIW 范围（非运行时性能）
+
+6. **已有章节扩展点检查**：Part 5 各章节的 🔸 扩展点均为现有章节的深化方向，不足以独立成节。
+
+### 结论
+全书 411 节、26 章覆盖面已趋于完整。本轮未发现评分 ≥ 14 的知识缺口。
+建议下一轮探索方向：
+- Android 17 final SDK 发布后的新 API 性能影响
+- OEM 厂商 Android 17 定制化对性能的影响（华为/小米/OPPO/Vivo）
+- App Widget / Glance 渲染性能（待社区素材积累后重新评估）
+
+## [Task2A 知识加工] 2026-06-05 17:04 知识加工 — 加工 22.21
+
+**加工章节**：22.21 Jetpack Compose 动画性能深度优化
+**素材来源**：DeepResearch/2026-06-01-android-compose-animation-performance-bottlenecks.md + DeepResearch/2026-06-02-android-compose-110-strong-skipping-mechanism.md + DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md
+**锚点覆盖**：8/8 锚点 + 3/3 扩展（部分待补充）
+**验证结果**：AndroidX 源码 L1 ✓ 5 处 | Compose BOM 版本边界 ✓ | 待验证 1 处（Macrobenchmark 具体配置）
+**产出**：src/part5-app/ch22-rendering-practice/21-compose-animation-performance.md（status → ready-for-review）
+**下一待写章节**：6.7 FUSE-BPF（draft）或 22.20 Compose 盲区（draft）
