@@ -9,7 +9,7 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
-last_task2b_at: 2026-06-05T08:59:54
+last_task2b_at: 2026-06-05T13:35:00
 last_task9_at: "2026-06-05T06:20:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
@@ -47,7 +47,7 @@ tags:
 - 视频性能
 - 音频延迟
 - ExoPlayer
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
@@ -64,7 +64,7 @@ last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
 
-last_task2b_lite_at: 2026-06-05
+last_task2b_lite_at: 2026-06-05T13:35
 ---
 
 
@@ -605,14 +605,14 @@ Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实�
 - API 31+ Codec2 成为默认，OMX 仅作兼容；API 33+ V4L2 Codec2 官方支持（`external/v4l2_codec2/`）
 
 **Tunneled Playback 差异**：
-- OMX 侧：通过 `OMXCallbackProxy` 实现，配置 `OMX_IndexParamVideoAvcTunesMode`
+- OMX 侧：通过 `OMXCallbackProxy` 实现，配置 `OMX_IndexConfigAndroidTunnelingStatus`
 - Codec2 侧：通过 `Codec2Client::createComponent()` 返回 `Component::Node`，配置 `C2PortMediaTypeSetting`
 - 性能收益：减少解码到渲染的拷贝延迟，实测降低 15-30ms 首帧
 
 **Media3 ABR**：
 - 预测模型基于带宽（2000ms 滑动窗口）、缓冲趋势和码率梯度联合评估
 - 决策窗口目标亚 100ms，ABR 决策在 player 内线程执行，不阻塞 UI 线程
-- 源码：`external/exoplayer/library/common/src/main/java/com/google/android/exoplayer2/DefaultLoadControl.java`
+- 源码（Legacy ExoPlayer）：`external/exoplayer/library/common/src/main/java/com/google/android/exoplayer2/DefaultLoadControl.java`
 
 <!-- AIW-源码调研-2026-05-21 -->
 
