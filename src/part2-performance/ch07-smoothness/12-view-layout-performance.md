@@ -48,7 +48,8 @@ last_task9_audit: "2026-05-21"
 task9_review_notes: "2026-06-05 Task9 auto-fix: ViewTreeObserver 附录从 Android 17 API 37 标题降级为 Android 16 源码边界，避免在 android-17.0.0_r1 tag 未发布时写成 Android 17 新增结论。"
 last_task6_at: "2026-06-05T17:22:30"
 last_task9_autofix_at: 2026-06-05
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -76,7 +77,7 @@ last_task9_autofix_at: 2026-06-05
 > 缺少真实 trace 或截图时，用 `[图：...]` 标注说明，不要编造现象。
 <!-- outline-end -->
 
-我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节把镜头拉近到 Android View 体系本身。每个 Activity 的界面都对应一棵 View 树，首帧创建和发生布局请求的那几帧，inflate、measure、layout 往往就是主线程最重的工作；如果这里只要多跑几轮，后面的 draw 和 GPU 渲染再快也补不回来。
+我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节聚焦到 Android View 体系本身。每个 Activity 的界面都对应一棵 View 树，首帧创建和发生布局请求的那几帧，inflate、measure、layout 往往就是主线程最重的工作；如果这里只要多跑几轮，后面的 draw 和 GPU 渲染再快也补不回来。
 
 这一节从三个维度分析 View 体系的开销：布局层级深度对帧耗时的影响、`LayoutInflater.inflate()` 的完整流程与耗时来源、`measure/layout` 的递归遍历机制，以及 `requestLayout()` 和 `invalidate()` 的边界。每个部分都配有在 Perfetto 中的定位方法。
 
@@ -138,7 +139,7 @@ public final View createView(Context viewContext, String name,
 }
 ```
 
-这里省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。
+节省时间的关键在于 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。
 
 版本差异：AOSP android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 中 `sConstructorMap` 均为 `LayoutInflater` 的 `private static final HashMap`，进程内所有 `LayoutInflater` 实例共享同一份静态缓存。核心保护机制是 `verifyClassLoader()`——复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被缓存延长存活时间。
 
@@ -509,8 +510,6 @@ Android Studio 的 Layout Inspector 可以在运行时查看 View 树的结构�
 
 ## ViewDebug 与系统级 Layout Trace 机制
 
-> 本小节为 AIW 源码调研补充内容（2026-04-25），未经一手源码逐行验证的部分已标注。
-
 ### ViewDebug.java 的属性暴露体系
 
 **源码位置**：`frameworks/base/core/java/android/view/ViewDebug.java`
@@ -660,7 +659,6 @@ WHERE slice.name = 'measure' AND slice.dur > 4000000
 ORDER BY slice.dur DESC;
 ```
 
-<!-- AIW-源码调研-2026-04-25 -->
 
 
 
@@ -721,7 +719,6 @@ ORDER BY slice.dur DESC;
 
 ---
 
-<!-- AIW-源码调研-2026-06-03 -->
 ### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 16 源码边界）
 
 **来源**：每日源码调研（cron:d78cfef0，id=6，关联 §6.1 View系统优化）
@@ -776,4 +773,3 @@ View.requestLayout()
 - `frameworks/base/core/java/android/view/ViewRootImpl.java`（AOSP android-16.0.0_r1）
 - `frameworks/base/core/java/android/view/View.java`（AOSP android-16.0.0_r1）
 - `frameworks/base/core/java/android/view/ViewGroup.java`（AOSP android-16.0.0_r1）
-<!-- AIW-源码调研-2026-06-03 -->

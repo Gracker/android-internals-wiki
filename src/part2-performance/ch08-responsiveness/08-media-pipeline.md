@@ -52,7 +52,7 @@ task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-06"
@@ -60,10 +60,9 @@ task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: "2026-06-06 Task9 deep review: needs-rework。P0：Media3 ABR 源码方法/算法描述错误，旧源码调研附录仍含 Codec2/tunneled/ABR 已被后文否定的结论。P1：Android 16 Codec2/Gralloc additionalOptions 与 16KB 性能结论缺少一手源码/benchmark。"
 last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
-last_task6_at: "2026-06-05T16:08:00+08:00"
+last_task6_at: "2026-06-06T03:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes_r7: "2026-06-05 Task6 revisiting-review #4: L1/L2 no new writing issues. task9 needs-rework (P0 3 / P1 1) with queue priority 95. Routes to task9."
-    task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
+task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). Fix: 三种根因→几类根因 (heading count mismatch). task9 needs-rework, queue has pending items, no auto-promote."
 
 last_task2b_lite_at: 2026-06-05T13:35
 last_task2b_by: openclaw-task2b-main
@@ -471,9 +470,9 @@ atrace audio,video,camera,gfx,view,sched,freq
 
 创建一个 MediaCodec 实例并完成配置/启动，通常需要 30-80ms（硬件解码器）到 100-200ms（软件解码器）。如果每次播放都创建新实例，这个开销无法避免。解决方案是**解码器池化**：维护一个预热好的 MediaCodec 实例池，新播放请求直接从池中取出已初始化的实例。Media3 的 Player 池化模式就是基于这个思路。
 
-### 视频播放卡顿的三种根因
+### 视频播放卡顿的几类根因
 
-视频播放出现卡顿时，需要区分三种不同的根因：
+视频播放出现卡顿时，需要区分几类不同的根因：
 
 **Buffer 耗尽（rebuffering）**：网络带宽不足以支撑当前码率，缓冲区被耗尽。表现为播放器进入 buffering 状态，用户看到加载指示器。通过降低目标码率或增加预缓冲时长可以缓解。
 

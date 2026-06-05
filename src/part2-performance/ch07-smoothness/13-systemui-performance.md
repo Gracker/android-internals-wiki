@@ -106,6 +106,8 @@ last_task9_autofix_at: "2026-06-05"
 p0: 0
 p1: 1
 p2: 3
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 7.13 SystemUI 性能分析
@@ -214,14 +216,13 @@ AOSP android-16.0.0_r1 当前可核对的相邻实现是 `scene/reveal/Container
 
 5. **窗口层边界**：Flexiglass 改的是 SystemUI 内部 UI 组织方式，SurfaceFlinger 侧通常仍落在 `NotificationShade` 对应的大窗口上。做窗口数量、Layer 顺序或 fence 分析时，先定位 `NotificationShade` surface，再回到 SystemUI 主线程关联 Compose / Scene 相关 slice。
 
-<!-- AIW-源码调研-2026-04-24 -->
 
 
 ## 先分清谁负责什么
 
 SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemUI 更接近一组常驻窗口和控制器：状态栏、通知抽屉、锁屏相关视图、导航栏，以及围绕这些窗口的动画、输入、通知绑定过程。Overview / Recents 已经在 Launcher3 Quickstep 侧实现，本章分析 App 启动或最近任务切换时，至少要同时观察 `com.android.systemui`、`com.android.launcher3`、目标 App、SurfaceFlinger，有时还要把 WM Shell 单独拎出来看。
 
-这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更靠近根因。把问题一股脑归到 SystemUI，后面的 Trace 会很难读。
+这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更接近问题根源。把问题一股脑归到 SystemUI，后面的 Trace 会很难读。
 
 ### Android 16 桌面模式与 Foldable 多 Display：SystemUI 的双重角色
 
@@ -246,7 +247,7 @@ WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksControl
 
 ## 窗口拓扑不要先入为主
 
-旧资料常把 StatusBar、NavigationBar、Notification Shade 写成三个彼此独立的 Surface。这种写法放到 Android 12-17 已经不稳。`super_notification_shade.xml` 里，`status_bar_expanded` 就在 `NotificationShadeWindowView` 下面，状态栏展开态和 Shade 本来就在同一个大窗口里；稳定独立的窗口主要是 NavigationBar。
+旧资料常把 StatusBar、NavigationBar、Notification Shade 写成三个彼此独立的 Surface。这种写法放到 Android 12-17 已经不准确。`super_notification_shade.xml` 里，`status_bar_expanded` 就在 `NotificationShadeWindowView` 下面，状态栏展开态和 Shade 本来就在同一个大窗口里；稳定独立的窗口主要是 NavigationBar。
 
 因此，Perfetto 里更可靠的理解框架是两层：
 
@@ -284,7 +285,7 @@ WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksControl
 
 Android 14+ / 16 当前主线里，`NotificationContentInflater` 通过构造函数接收 `@NotifInflation Executor`，`AsyncInflationTask` 统一走这个 executor，避免每条通知各自开散乱线程。通知洪峰到来时，并发 inflate 会被集中调度；这能避免 I/O、图片预加载和 RemoteViews 解析同时把 CPU 撑满。
 
-这段差异决定了 Perfetto 的观察方式。排查通知更新卡顿时，不要只盯主线程是否直接卡在 `RemoteViews.apply()`；更常见的情况是异步绑定已经启动，但主线程仍要承担 View 树重新挂接、测量、布局、动画回调，结果首帧或展开帧超预算。可观察的 slice 包括 `NotificationContentInflater.AsyncInflationTask#doInBackground`、主线程 `applyAsync` 回调以及后续 traversal。
+这段差异决定了 Perfetto 的观察方式。排查通知更新卡顿时，不要只盯主线程是否直接卡在 `RemoteViews.apply()`；更常见的情况是异步绑定已经启动，但主线程仍要承担 View 树重新挂接、测量、布局、动画回调，结果首帧或展开帧超出预算。可观察的 slice 包括 `NotificationContentInflater.AsyncInflationTask#doInBackground`、主线程 `applyAsync` 回调以及后续 traversal。
 
 大图通知也别写成固定数字。`BigPictureStyle` 的图片解码、像素拷贝、上传 GPU 是否会拖慢一帧，取决于图片尺寸、压缩格式、Hardware Bitmap 策略、热路径还是冷路径。这里给定值很容易误导，工程上应该把它写成条件化结论。
 
@@ -418,7 +419,7 @@ adb shell setprop debug.hwui.disable_blur_visual_feedback 1
 - Android Developers：Notification 设计与性能相关文档 `https://developer.android.com/develop/ui/views/notifications`
 - Android Developers：Splash Screen API `https://developer.android.com/guide/topics/ui/splash-screen`
 
-## 参考附录：Foldable 多 Display 源码索引 <!-- AIW-源码调研-2026-04-29 -->
+## 参考附录：Foldable 多 Display 源码索引
 
 > 本节保留详细的源码路径、方法签名、版本演进表和 Perfetto 观测点，供实战中使用 Perfetto 或阅读 AOSP 源码时逐项核对。核心结论已在上文 §Android 16 桌面模式与 Foldable 多 Display 段中交代，此处不再复述。
 

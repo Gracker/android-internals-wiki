@@ -64,6 +64,8 @@ last_task9_autofix_at: 2026-06-05
 
 finalized_date: "2026-06-05"
 finalized_by: "openclaw-task6-auto-promote"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 
@@ -124,7 +126,7 @@ FUSE 当年会成为 emulated storage 的基础方案，是因为 Android 需要
 
 为了解决 FUSE 的性能问题，Android 8.0（Oreo）引入了 SDCardFS。SDCardFS 最初由三星开发，是一个内核态的可堆叠文件系统（in-kernel stackable filesystem）。与 FUSE 不同，SDCardFS 直接在内核中完成 FAT32 语义的模拟，不需要切换到用户空间。
 
-这个变化在多个维度带来了可量化的改善：
+这个变化在多个维度带来了可测量的提升：
 
 - 文件操作不再有内核态 ↔ 用户态切换的开销
 - 消除了双重缓存问题，内存利用率更高
@@ -280,7 +282,7 @@ UFS（Universal Flash Storage）是 JEDEC 制定的移动设备存储标准，�
 
 **全双工通信**：UFS 采用差分串行传输（LVDS），支持读和写同时进行。App 因此可以在写入数据的同时，继续读取另一个文件，不会互相阻塞。
 
-**命令队列**：UFS 从协议设计上支持命令队列，存储控制器可以并行准备和调度多个请求。eMMC 5.1 也引入了 Command Queuing，但能力、主机控制器实现和生态采用范围都不能等同于 UFS 的全双工 + 队列化路径。对 Android 中常见的随机 I/O 场景，UFS 的并发处理能力更容易转化成稳定收益。
+**命令队列**：UFS 从协议设计上支持命令队列，存储控制器可以并行准备和调度多个请求。eMMC 5.1 也引入了 Command Queuing，但能力、主机控制器实现和生态采用范围都不能等同于 UFS 的全双工 + 队列化路径。对 Android 中常见的随机 I/O 场景，UFS 的并发处理能力更容易转化为稳定的性能提升。
 
 **多通道**：UFS 支持两个数据通道（lane），可以并行传输数据，带宽翻倍。
 

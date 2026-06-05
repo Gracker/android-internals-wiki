@@ -9916,12 +9916,12 @@
     "note": "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.12 实际 FUSE passthrough 重写"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-05",
-    "time": "23:05",
+    "date": "2026-06-06",
+    "time": "00:09",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 5 轮 gap mining：372 节（282 finalized + 90 rfr + 0 draft），TASK2B_BACKLOG=0；daily-info 无新未映射素材；research-gaps 3 条均已有章节或已完成；无 ≥14 分候选；无空 draft 可加工"
+    "reason": "第 6 轮 gap mining：372 节（285 finalized + 87 rfr + 0 draft），TASK2B_BACKLOG=0；daily-info 无新数据（最新 2026-06-05）；research-gaps 3 条均已处理；Clippings 全覆盖；无 ≥14 分候选；无空 draft 可加工"
   },
   "task9_last_sections": [
     "26.8",
@@ -12991,15 +12991,15 @@
     "title": "刷新率切换与帧率适配性能",
     "file": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
     "status": "finalized",
-    "pipeline_stage": "ready-to-publish",
+    "pipeline_stage": "task9_pending",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-29",
-    "last_task6_at": "2026-06-04T16:15:51.905086",
-    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+    "reviewed_date": "2026-06-06",
+    "last_task6_at": "2026-06-06T03:06:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-06-03-review.md",
     "task2b_state": "fixed",
-    "task6_l1_l2_fixes": 2,
+    "task6_l1_l2_fixes": 5,
     "task6_l3_l4_issues": 0,
     "task6_new_rework": false,
     "task6_note": "Task2B/Task9 auto-fix 后 queue 已无 pending；Verifier 对齐回流状态，等待 Task6 复审。",
@@ -13629,7 +13629,7 @@
     "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-06-04",
-    "last_task6_at": "2026-06-04T07:05:00+08:00",
+    "last_task6_at": "2026-06-06T02:08:00+08:00",
     "last_task6_review_log": "logs/review/2026-06-04-07-review.md",
     "task9_state": "pending",
     "task6_note": "2026-06-04 Task6 revisiting: pass-light-edit. L1/L2 all pass."
