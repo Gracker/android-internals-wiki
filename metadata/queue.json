@@ -830,7 +830,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-04T06:14:49.229183+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T06:53:20+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：TextureView 折叠屏/异形屏行为适配优化（DeepResearch）"
     },
     {
       "section": "18.16",
@@ -850,7 +853,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-04T06:14:49.229183+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T06:53:20+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：TextureView 游戏引擎集成机制 Unity/Unreal（DeepResearch）"
     },
     {
       "section": "2.19",
@@ -1305,7 +1311,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-05T06:12:28.406315",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T06:53:20+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：Measure + Android Vitals 崩溃聚合集成机制（DeepResearch）"
     },
     {
       "section": "05.13-ext",
@@ -1428,6 +1437,86 @@
       "completed_at": "2026-06-06T02:57:42+08:00",
       "completed_by": "openclaw-task2b-main",
       "fix_summary": "P0: ABR源码方法修正(AdaptiveTrackSelection+DefaultBandwidthMeter), 删除2026-05-12/21旧附录, 清理伪代码; P1: 16KB页面声明降级"
+    },
+    {
+      "section": "14.1",
+      "section_title": "其他工具",
+      "priority": 74,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://github.com/microsoft/pg_durable"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Microsoft开源pg_durable实现数据库内持久化执行 — Microsoft开源的pg_durable实现了数据库内持久化执行，允许在PostgreSQL中直接执行复杂业务逻辑。这个工具通过扩展PostgreSQL的功能，让数据库承担更多业务处理，减少应用层...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-06T05:38:43",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM厂商相关",
+      "priority": 73,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/innovation-and-ai/technology/developers-tools/quantization-aware-training-gemma-4/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Gemma 4 QAT模型专注移动设备压缩优化 — Gemma 4 QAT模型专注于移动和笔记本设备的压缩优化，通过量化感知训练提升效率。这表明模型优化正从单纯追求性能向更注重设备端实际部署和能效的方向发展。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-06T05:38:43",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM厂商相关",
+      "priority": 73,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://blog.google/innovation-and-ai/technology/developers-tools/quantization-aware-training-gemma-4/"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Gemma 4 QAT models: Optimizing compression for mobile and laptop efficiency — Gemma 4 QAT模型专注于移动和笔记本设备的压缩优化，通过量化感知训练提升效率。这表明模型优化正从注重设备端实际部署和能效的方向发展。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-06T05:38:43",
+      "status": "pending"
+    },
+    {
+      "section": "4.8",
+      "section_title": "ART Generational GC",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Generational CMC 与 ART 虚拟机内存管理 — Android 17 正式将 Generational GC 引入 CMC 收集器，新增年轻代收集路径，双模式收集机制（Young+Full-heap），通过 Google Play System Updates 向 Android 12+ 设备下发",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料。章节当前为 finalized 状态，需评估是否值得回炉补充"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-06T06:11:00+08:00",
+      "status": "pending"
     }
   ],
   "items": [

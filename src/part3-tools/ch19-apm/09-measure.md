@@ -463,3 +463,18 @@ window.addOnFrameMetricsAvailableListener(new Window.OnFrameMetricsAvailableList
 
 **源码验证**：
 - `platform_frameworks_base @ android-16.0.0_r1:libs/hwui/FrameInfo.cpp` — `static_assert(static_cast<int>(FrameInfoIndex::NumIndexes) == 24)`
+
+## 参考资料
+
+### Measure + Perfetto/FrameMetrics 系统级渲染分析集成点
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md
+- 类型：DeepResearch 调研结果
+- 摘要：FrameMetrics API 提供帧级timing数据，底层通过 HWUI FrameInfo 结构体（24个索引）收集渲染管线各阶段时间戳。Perfetto trace 基于相同数据源，FrameMetrics 是 Perfetto 数据的上层包装。集成关键在于 Window.addOnFrameMetricsAvailableListener() 到 HWUI FrameMetricsReporter 的完整调用链。
+- 注入时间：2026-06-06
+- 价值：提供了 FrameMetrics → HWUI FrameInfo → Perfetto 三者数据同源的源码级证据，对 APM 工具开发者理解 Measure 与系统 trace 的关联具有直接参考价值
+### Measure + Android Vitals 崩溃聚合集成机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-android-measure-vitals-integration.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 Measure API 通过 DropBoxManager 与 Android Vitals 建立间接集成通道。statsd 订阅 DropBoxManager 事件后上报 Play Console Vitals。关键约束包括：企业环境数据驻留限制（需 SDK_INT > 30）、ANR/崩溃聚合周期为 24h 滚动窗口、开发者需主动配置才能将 Measure 数据上报 Play Console。分析 Measure.java / MeasureSession.java 源码（android-17.0.0_r1 tag）。
+- 注入时间：2026-06-06
+- 价值：明确了 Measure → DropBoxManager → statsd → Vitals 的数据流向，澄清 Measure 不直接上报 Vitals 的机制边界，对 APM 工具开发者理解崩溃聚合数据源具有直接参考价值

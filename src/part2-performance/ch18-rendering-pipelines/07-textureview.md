@@ -401,6 +401,8 @@ Vulkan 引入对 TextureView 的**间接**影响（Android 13+）：
 
 - AOSP `frameworks/base/core/java/android/view/TextureView.java`
 - AOSP `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java`
+- **TextureView 折叠屏/异形屏行为适配优化**（2026-06-04 DeepResearch）
+  - 源码级分析 TextureView 在折叠屏/异形屏下的行为机制，核心依赖 WindowInsets + DisplayCutout + Choreographer 帧同步。TextureView 通过 `onSizeChanged` → `setDefaultBufferSize` 自动适应窗口形态变化，不依赖专用 API。SurfaceTexture buffer size 跟着 WindowMetrics 走，折叠/配置变更时自动调整。基于 android-16.0.0_r1 TextureView.java 源码验证。
 - Android 官方文档：TextureView
 - Android 性能优化指南：SurfaceView vs TextureView
 
