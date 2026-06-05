@@ -42,6 +42,7 @@ sources:
 tags: [memory-leak, leakcanary, activity-leak, reference-chain, java-heap]
 related_chapters: ["23.4", "10.2", "4.3", "19.5"]
 last_task6_at: "2026-05-13T22:12:00+08:00"
+last_task6_audit: "2026-06-06"
 task6_review_notes: "2026-05-13 task6 review: 替换正文中的编辑标签式“用途句”，L1/L2 通过，无新增 L3/L4 回炉项。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-13'
