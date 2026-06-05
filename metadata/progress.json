@@ -1,5 +1,5 @@
 {
-  "total": 375,
+  "total": 411,
   "draft": 5,
   "ready-for-review": 109,
   "finalized": 261,
@@ -9841,16 +9841,16 @@
     "status": "ready-for-review"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-04",
-    "time": "17:11",
+    "date": "2026-06-05",
+    "time": "12:05",
     "mode": "gap-mining",
     "created_sections": [
-      "21.13"
+      "5.18"
     ],
     "created_files": [
-      "src/part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md"
+      "src/part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md"
     ],
-    "reason": "Clippings 参考书《Android 性能优化》有 GC 抑制专篇 + AOSP art/runtime/gc/ 源码可交叉验证 + 多个现有章节提及 GC抑制但无独立覆盖 + 启动性能核心优化手段"
+    "reason": "Clippings参考书《Android 性能优化》缓存优化专篇 + AOSP/ARM cache line 文档 + Redex DEX重排序工具链 + false sharing 面试高频考点 + 多个现有章节提及 cache line 但无独立覆盖"
   },
   "task9_last_sections": [
     "26.8",
@@ -13665,5 +13665,18 @@
         "2.19"
       ]
     }
-  ]
+  ],
+  "5.18": {
+    "section": "5.18",
+    "title": "CPU Cache 友好代码与数据布局优化",
+    "file": "src/part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md",
+    "status": "draft",
+    "pipeline_stage": "task2a_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-05",
+    "gap_source": "Clippings结构参考/AOSP结构/章节深挖",
+    "gap_score": 16,
+    "material_count": 5,
+    "queue_priority": 80
+  }
 }

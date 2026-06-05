@@ -1614,5 +1614,14 @@
       "added_at": "2026-06-05T07:20:00+08:00",
       "status": "pending"
     }
-  ]
+  ],
+  "5.18": {
+    "section": "5.18",
+    "title": "CPU Cache 友好代码与数据布局优化",
+    "file": "src/part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-06-05",
+    "source": "task2a-gap-mining"
+  }
 }

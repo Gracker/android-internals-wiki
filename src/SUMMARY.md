@@ -119,6 +119,7 @@ tags:
   - [5.15 SensorService 与传感器批处理功耗模型](part1-fundamentals/ch05-cpu-power/15-sensorservice-batching-power.md)
   - [5.16 GPU/NPU 异构负载调度与功耗归因](part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md)
   - [5.17 Android 17 FGS 类型声明与后台执行性能边界](part1-fundamentals/ch05-cpu-power/17-fgs-type-declaration-background-performance.md)
+  - [5.18 CPU Cache 友好代码与数据布局优化](part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
