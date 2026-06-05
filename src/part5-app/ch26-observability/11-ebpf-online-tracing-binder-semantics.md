@@ -45,11 +45,11 @@ source_refs:
   - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T01:12:00+08:00"
 task9_result: fixed
