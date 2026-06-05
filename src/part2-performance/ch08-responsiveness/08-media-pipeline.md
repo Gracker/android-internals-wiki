@@ -52,7 +52,7 @@ task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-05"
@@ -60,9 +60,10 @@ task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。；2026-06-05 task9 deep-review: needs-rework。P0 3 / P1 1；Android 17 tag 未公开但 frontmatter 声称已验证，源码调研附录存在 Codec2 版本矩阵、tunneled playback 符号与 Media3 ABR 路径错误。"
 last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
-last_task6_at: "2026-06-05T09:06:00+08:00"
+last_task6_at: "2026-06-05T16:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
+task6_review_notes_r7: "2026-06-05 Task6 revisiting-review #4: L1/L2 no new writing issues. task9 needs-rework (P0 3 / P1 1) with queue priority 95. Routes to task9."
+    task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
 
 last_task2b_lite_at: 2026-06-05T13:35
 ---

@@ -44,14 +44,15 @@ sources:
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: "2026-06-05T06:13:36+08:00"
+last_task6_at: "2026-06-05T16:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"
-task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; fixed AppenderMode typo. No new rework items.'
+task6_review_notes_r6: '2026-06-05 Task6 16:08: pass-light-edit(revisit#3). L1/L2 clean on re-check. task9_result=auto-fixed, routes to task9 for confirmation.'
+    task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix writing quality OK; fixed AppenderMode typo. No new rework items.'
 task9_result: 'auto-fixed'
 last_task9_at: '2026-06-04T00:20:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
