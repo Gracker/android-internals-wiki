@@ -16,8 +16,8 @@ created_date: "2026-05-24"
 gap_source: "研究素材/官方文档/AOSP结构/Clippings结构参考"
 gap_score: 16
 material_count: 6
-pipeline_stage: task6_complete
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed

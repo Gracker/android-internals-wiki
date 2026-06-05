@@ -37,7 +37,7 @@ sources:
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
 pipeline_stage: task6_pending
-task6_state: 'reviewed'
+task6_state: revisiting
 task9_state: reviewed
 last_task9_autofix_at: "2026-06-03"
 task2b_state: fixed
