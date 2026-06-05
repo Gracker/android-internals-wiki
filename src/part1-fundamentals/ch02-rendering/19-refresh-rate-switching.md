@@ -8,12 +8,12 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: 2026-06-05T08:59:54
 task2b_notes: 2026-06-05T08:59:54 Task2B main 回炉：P0修复 setFrameRate API签名(void)+常量(SUFFICIENT→EXACT)；移除GameManager.setGameMode()/Activity.setFrameRate()错误引用；5处伪源码块替换为android-16.0.0_r1已验证路径说明；ARR版本表Android 16-17→待确认；Perfetto XML配置→已验证方法；删除无法验证厂商PLL/功耗表格
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -28,8 +28,8 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-05T07:20:00+08:00"
-last_task6_at: "2026-06-04T16:15:15+08:00"
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit；L1/L2 全部通过(禁用词0/AI套话0/高频词OK/元叙述0)；不是X而是Y恰好2次在限内；无B类大问题。自动晋升 finalized。"
+last_task6_at: "2026-06-05T10:17:00+08:00"
+task6_review_notes: "2026-06-05 Task6 revisiting review #2: pass-light-edit; L1/L2 全部通过(禁用词0/高频词在限内/元叙述0)；B类: FRAME_RATE_COMPATIBILITY_SUFFICIENT 仍存在于App侧优化代码块(L142),需Task9复核; Task9 queue仍有pending P0条目。"
 last_task6_review_log: "logs/review/2026-06-02-16-review.md"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
