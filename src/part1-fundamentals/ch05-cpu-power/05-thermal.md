@@ -2,7 +2,7 @@
 title: "Thermal 管控"
 chapter: "5.5"
 section: "5.5"
-status: "finalized"
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-06-06"

@@ -44,9 +44,9 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: "task6_reviewed"
+pipeline_stage: task9_pending
 task6_state: "reviewed"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-05"
