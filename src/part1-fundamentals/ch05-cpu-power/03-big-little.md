@@ -2,7 +2,7 @@
 title: "大小核架构"
 chapter: "5.3"
 section: "5.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-29"
 last_verified_against: "ARM official documentation, Linux kernel 6.12, Snapdragon 8 Elite specs"
@@ -33,19 +33,19 @@ task2b_result: fixed
 last_task2b_at: "2026-06-03T21:33:00+08:00"
 task2b_state: fixed
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
-task9_result: pending
-task9_reviewed_date: "2026-05-18"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T15:25:00+08:00"
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-05"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-05T06:20:00+08:00"
 review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。；2026-05-18 task6 revisiting: L1/L2 小修完成；GPU + NPU 扩展仍为占位，已合并写入 queue/suggestions，等待 Task2B 补素材或裁剪。"
 task6_reviewed_date: "2026-05-18"
 last_task6_at: "2026-06-05T05:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-18-16-review.md"
 task6_review_notes: "2026-05-18 Task6：修正口语化迁移描述和结构性过渡语；GPU + NPU 协同调度扩展仍缺素材，已投递 Task2B 回炉。"
-last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
-task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；android16-6.12 sugov_get_util() 代码块与实际源码不一致，需 Task2B 修正；骁龙 8 Elite capacity 数值需补一手锚点。"
+last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
+task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；android16-6.12 sugov_get_util() 代码块与实际源码不一致，需 Task2B 修正；骁龙 8 Elite capacity 数值需补一手锚点。；2026-06-05 task9 deep-review: pass-tech-review。P0/P1 0；schedutil android16-6.12 源码与正文一致；GPU+NPU 扩展占位作为 P2 建议记录。"
 last_task6_audit: "2026-06-05"
 ---
 

@@ -5,7 +5,7 @@
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
@@ -23,11 +23,11 @@ sources:
     path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: reviewed
 task9_result: auto-fixed
 
@@ -37,14 +37,14 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T06:48:42+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-finalized_date: "2026-04-27"
-finalized_by: openclaw-task9
+finalized_date: "2026-06-05"
+finalized_by: "openclaw-task6"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-18-audit.md"
 task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 outline 中旧 Perfetto android.input 表名与指标名。"
 last_task9_autofix_at: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
-last_task6_at: '2026-06-04T18:15:00+08:00'
+last_task6_at: "2026-06-05T08:10:00+08:00"
 task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; sources frontmatter fixed (empty entries replaced with actual URLs). L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
 ---
 

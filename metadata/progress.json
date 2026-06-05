@@ -1,8 +1,8 @@
 {
   "total": 375,
   "draft": 6,
-  "ready-for-review": 110,
-  "finalized": 259,
+  "ready-for-review": 108,
+  "finalized": 261,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
   "task9_reviewed_by": "openclaw-task9",
@@ -2402,18 +2402,8 @@
   },
   "total_review_sections": 286,
   "next_review_candidates": [
-    {
-      "section": "26.12",
-      "title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
-      "file": "src/part5-app/ch26-observability/12-versioned-diagnostics.md",
-      "reason": "仍为 ready-for-review / task6_state revisiting"
-    },
-    {
-      "section": "22.12",
-      "title": "FragmentTransaction 提交链路与页面切换性能",
-      "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-      "reason": "仍为 ready-for-review / task6_state revisiting，但本日已 review 过一次，优先级低于 26.12"
-    }
+    "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 108,
   "last_updated": "2026-06-04",
@@ -2447,7 +2437,7 @@
     "new_rework": false
   },
   "task9_last_review": "2026-06-04T21:20:00+08:00",
-  "ready_to_publish": 190,
+  "ready_to_publish": 192,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -7587,18 +7577,18 @@
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-06-04",
+  "last_task6_review": "2026-06-05",
   "last_task6_sections": [
     "26.5",
     "26.6",
     "26.7"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/05-online-troubleshooting.md",
-    "src/part5-app/ch26-observability/06-ab-testing-regression.md",
-    "src/part5-app/ch26-observability/07-release-quality-gate.md"
+    "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
+    "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+    "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md"
   ],
-  "last_task6_at": "2026-06-04T02:13:44+08:00",
+  "last_task6_at": "2026-06-05T08:10:00+08:00",
   "last_task6_review_detail": {
     "reviewed_at": "2026-06-03T04:08:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -10542,7 +10532,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-04-02-review.md",
+  "last_task6_review_log": "logs/review/2026-06-05-08-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -13304,9 +13294,9 @@
     "last_task2b_lite_at": "2026-06-01"
   },
   "last_task6_review_sections": [
-    "2.10",
-    "22.12",
-    "24.4"
+    "13.8",
+    "13.2",
+    "8.6"
   ],
   "last_task2b_section": "24.8",
   "last_task2b_file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
