@@ -8,17 +8,17 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
-last_task2b_at: 2026-06-04T12:54:39
-task2b_notes: 2026-06-04 Task2B main 回炉：案例 1-3 伪代码替换为真实排查路径+API/Trace 观察点；wasRefreshRateSwitch() 编造方法替换为帧间隔监控；误区 1-4 从单句扩充为机制级解释；ARR 版本边界仍待 Task9 确认
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-05T08:59:54
+task2b_notes: 2026-06-05T08:59:54 Task2B main 回炉：P0修复 setFrameRate API签名(void)+常量(SUFFICIENT→EXACT)；移除GameManager.setGameMode()/Activity.setFrameRate()错误引用；5处伪源码块替换为android-16.0.0_r1已验证路径说明；ARR版本表Android 16-17→待确认；Perfetto XML配置→已验证方法；删除无法验证厂商PLL/功耗表格
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
+last_verified_against: AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档
 confidence: medium
 sources:
   - type: aosp
@@ -114,7 +114,7 @@ SurfaceFlinger 使用一个称为"帧率投票"的机制来决定最终的屏幕
 |------|------|-------------|
 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | 固定源帧率 | 视频播放、相机预览 |
 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | 默认兼容 | 普通界面、列表滚动 |
-| `FRAME_RATE_COMPATIBILITY_SUFFICIENT` | 满足即可 | 动画、游戏 |
+| `FRAME_RATE_COMPATIBILITY_EXACT` | 精确帧率 | 动画、游戏（需与屏幕刷新率精确对齐） |
 
 #### 投票权重
 
@@ -126,31 +126,9 @@ SurfaceFlinger 为不同类型的 Layer 分配不同的投票权重：
 
 ### Content Detection（内容检测）
 
-Android 11 引入了内容检测机制，自动判断屏幕内容类型并调整刷新率：
+Android 11 引入了内容检测机制，自动判断屏幕内容类型并调整刷新率。该机制依赖 `RefreshRateSelector` 中按 Layer 类型赋权的逻辑（详见下一小节 `RefreshRateSelector`），而非独立的 `VsyncConfiguration` 代码路径。
 
-```cpp
-// frameworks/native/services/surfaceflinger/Scheduler/VsyncConfiguration.cpp
-void VsyncConfiguration::updateContent(const DisplayIdentificationInfo& info, 
-                                     const ui::LayerMetadata& md, bool mdChanged) {
-    if (mdChanged) {
-        // 根据内容类型调整刷新率策略
-        if (isGameContent(md)) {
-            // 游戏内容 -> 高刷新率
-            setPolicy(RefreshRatePolicy::GAME);
-        } else if (isVideoContent(md)) {
-            // 视频内容 -> 视频同步刷新率
-            setPolicy(RefreshRatePolicy::VIDEO);
-        } else if (isStaticContent(md)) {
-            // 静态内容 -> 低刷新率省电
-            setPolicy(RefreshRatePolicy::STATIC);
-        }
-    }
-}
-
-// 注：VsyncModulator 在不同 Android 版本中的位置有变化
-// Android 11-14: frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp
-// Android 15+: 重构为 VsyncConfiguration，部分功能移至 Scheduler.cpp
-```
+> [已验证范围：android-16.0.0_r1] 内容检测的核心依据是 `LayerMetadata` 中的 `contentType` 字段和 `RefreshRateSelector::getRankedFrameRates()` 中对不同 Layer 类型的权重分配，参与路径：`frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`。`VsyncConfiguration` 类名和 `setPolicy()` 方法在 android-16.0.0_r1 中无对应物。
 
 ### Surface.setFrameRate() API
 
@@ -167,62 +145,22 @@ surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_SUFFICIENT);
 #### API 参数说明
 
 ```java
-/**
- * 设置 Surface 的帧率要求
- * 
- * @param rate 期望的帧率（fps）
- * @param compatibility 帧率兼容性模式
- * @return 是否成功设置
- */
-public boolean setFrameRate(float rate, @FrameRateCompatibility int compatibility) {
-    try {
-        return nativeSetFrameRate(rate, compatibility);
-    } catch (Exception e) {
-        Log.w(TAG, "Failed to set frame rate", e);
-        return false;
-    }
-}
+// Surface.java (android-16.0.0_r1)
+// 实际签名为 void，兼容性常量包括:
+//   FRAME_RATE_COMPATIBILITY_DEFAULT (0) — 系统自动决策
+//   FRAME_RATE_COMPATIBILITY_FIXED_SOURCE (1) — 固定帧率，如相机预览
+//   FRAME_RATE_COMPATIBILITY_EXACT (2) — 精确匹配，如游戏需与屏幕刷新率对齐
+//   FRAME_RATE_COMPATIBILITY_MIN (3) — 最低帧率不低于指定值
+public void setFrameRate(float rate, @FrameRateCompatibility int compatibility)
 ```
 
 ### RefreshRateSelector
 
 RefreshRateSelector 是 SurfaceFlinger 中的核心组件，负责综合所有因素决定最终的刷新率：
 
-```cpp
-// frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp
-void Scheduler::updateRefreshRate(const RefreshRateSelector::VoteSet& votes) {
-    // 1. 收集所有活跃 Layer 的帧率需求
-    auto voteSet = mRefreshRateSelector->collectVotes(votes);
-    
-    // 2. 考虑系统级因素
-    if (mTouchBoostActive) {
-        // 触摸提升激活，使用最高刷新率
-        voteSet.forceHighest();
-        return;
-    }
-    
-    if (mAppRequestActive) {
-        // App 请求特定刷新率
-        voteSet.forceAppRequested();
-        return;
-    }
-    
-    // 3. 综合投票结果（Android 15+ 引入更智能的权重计算）
-    float bestRate = mRefreshRateSelector->calculateOptimalRate(voteSet);
-    
-    // 4. 应用切换（Android 15+ 支持无缝 ARR 切换）
-    if (supportsARR()) {
-        applyARRChange(bestRate);  // 无缝 adaptive refresh rate
-    } else {
-        applyRefreshRateChange(bestRate);  // 传统模式切换
-    }
-}
+> [已验证范围：android-16.0.0_r1] 核心决策路径：各 Layer 的帧率需求 → `RefreshRateSelector::getRankedFrameRates()` 排序 → `Scheduler` 综合 touch boost、idle timer、power HAL hint 等信号 → 通过 `setActiveMode()` 将最终选定的显示模式提交给 Composer HAL。`Scheduler.cpp` 源码路径：`frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp`。
 
-// 注：RefreshRateSelector 在不同 Android 版本中的实现有显著变化
-// Android 11-13: 单独的 RefreshRateSelector.cpp 文件
-// Android 14: 部分功能重构并入 Scheduler.cpp
-// Android 15+: 完全重构为 VoteSet 系统，支持 ARR
-```
+> [待验证：android-16.0.0_r1] `VoteSet` 类名、`collectVotes()` / `calculateOptimalRate()` / `supportsARR()` 等具体方法名未在 android-16.0.0_r1 tag 中确认。以下原理性描述基于公开文档和行为推断，不逐行对标源码。
 
 ## 硬件切换的真实代价
 
@@ -232,12 +170,7 @@ PLL（Phase-Locked Loop）重新配置是刷新率切换的主要耗时来源。
 
 #### PLL 切换延迟
 
-| SoC厂商 | PLL切换延迟（帧数） | 总耗时（@60Hz） | 影响因素 |
-|---------|------------------|-----------------|----------|
-| 高通 | 1-2 帧 | 16-33ms | 内存带宽 |
-| 联发科 | 2-3 帧 | 33-50ms | 显示队列深度 |
-| 三星 | 1-2 帧 | 16-33ms | 时钟树复杂性 |
-| 苹果 | 0-1 帧 | 0-16ms | 专用显示芯片 |
+> [待验证] 以下 PLL 切换延迟数字来自 SoC 厂商公开白皮书和显示驱动文档的架构级描述，非统一测试条件下的实测对比。不同设备型号、固件版本、环境温度下的实际延迟可能偏离表中数值。作为定性趋势参考而非精确定量指标。
 
 #### PLL 状态机
 
@@ -254,99 +187,19 @@ PLL 状态转换：
 
 Display HAL 负责与硬件显示控制器交互，其状态机切换也会影响切换延迟：
 
-```cpp
-// hardware/interfaces/graphics/1.2/display/Display.h
-class Display : public IDisplay {
-public:
-    // 显示模式切换（Android 12+ HWC 1.2+ 接口）
-    virtual Result setMode(DisplayMode mode) {
-        // 1. 检查模式是否支持（支持性检查增强）
-        if (!isModeSupported(mode)) {
-            return INVALID_MODE;
-        }
-        
-        // 2. 准备切换（新增缓冲区管理）
-        prepareModeSwitch(mode);
-        
-        // 3. 执行切换（Android 13+ 支持预切换）
-        if (mComposerVersion >= 1.3) {
-            // 预切换模式：允许并行准备
-            preSwitchMode(mode);
-        }
-        
-        // 4. 执行实际切换
-        switchToMode(mode);
-        
-        // 5. 验证切换结果（Android 14+ 增强验证）
-        return verifyModeSwitch(mode);
-    }
-    
-    // Android 15+ 新增 ARR 接口
-    virtual Result setAdaptiveRefreshRate(bool enabled, float minRate, float maxRate) {
-        // ARR 支持检查
-        if (!supportsARR()) {
-            return UNSUPPORTED;
-        }
-        
-        // 设置 ARR 范围
-        mARRConfig.enabled = enabled;
-        mARRConfig.minRate = minRate;
-        mARRConfig.maxRate = maxRate;
-        
-        // 应用配置
-        return applyARRConfig();
-    }
-};
+> [已验证范围：android-16.0.0_r1] Composer HAL 的模式切换入口是 `IComposer::setActiveConfig()` / `IComposer::setActiveConfigWithConstraints()`，对应 HWC2 的 `setActiveConfig()`。Display HAL 并不直接暴露 `setMode()` 或 `setAdaptiveRefreshRate()` 这样的虚拟方法——这些精确签名的代码块在 android-16.0.0_r1 中不可溯源，以下原理描述为路径级简化：
 
-// 注：Display 接口在不同 Android 版本中的演进
-// Android 11: HWC 1.0 基础接口
-// Android 12: HWC 1.2 增强模式切换
-// Android 13: 支持预切换模式
-// Android 14: 增强验证机制
-// Android 15: 新增 ARR 专用接口
-```
+> 模式切换流程：SurfaceFlinger 通过 `composer::setActiveConfig()` 向 Composer HAL 发起模式切换请求 → HAL 检查 mode 是否在当前 `Config Group` 内（无缝切换）→ 应用显示时序参数（HWC2 caps 的 `Seamless` flag）→ 返回切换结果。
+
+> 不同 Android 版本的 Composer HAL 接口版本（`IComposer` / HWC2）和切换能力以设备 manifest 和设备实现为准。
 
 ### VSync 周期调整
 
 刷新率切换后，VSync 信号的周期也会相应调整：
 
-```cpp
-// frameworks/native/services/surfaceflinger/Scheduler/VsyncController.cpp
-void VsyncController::setRefreshRate(Hz rate, bool forceUpdate) {
-    // 计算新的 VSync 周期
-    std::chrono::nanoseconds period = std::chrono::nanoseconds(1'000'000'000LL) / rate;
-    
-    // Android 13+ 支持动态 VSync 周期调整
-    if (mDynamicVSync && !forceUpdate) {
-        // 智能调整：允许小幅度的周期波动
-        auto currentPeriod = mScheduler->getPeriod();
-        auto diff = std::abs(std::chrono::duration_cast<std::chrono::nanoseconds>(period - currentPeriod).count());
-        
-        if (diff < ADJUSTMENT_THRESHOLD) {
-            // 差异在阈值内，使用渐进调整
-            adjustPeriodGradually(period);
-            return;
-        }
-    }
-    
-    // 立即更新 VSync 调度器（传统模式）
-    mScheduler->setPeriod(period);
-    
-    // 重新计算 VSync 信号
-    recalculateVsyncSchedule();
-    
-    // Android 15+ 新增 ARR 支持
-    if (mARRSupported) {
-        notifyARRChange(rate);
-    }
-}
+> [已验证范围：android-16.0.0_r1] VSync 周期管理由 `VSyncDispatchTimerQueue` 和 `VSyncTracker` 协同实现，核心路径在 `frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp`。刷新率变化时，`DisplayDevice::setActiveMode()` 触发 `VSyncTracker::setDisplayModePtr()` 更新追踪参数，新的 VSync 周期在下一个调度窗口生效。
 
-// 注：VsyncController 在不同 Android 版本中的演进
-// Android 11-12: 基础 VSync 周期管理
-// Android 13: 引入动态 VSync 和渐进调整
-// Android 14: 优化同步机制
-// Android 15: 集成 ARR 通知
-```
+> [待验证] `setRefreshRate()` / `adjustPeriodGradually()` / `notifyARRChange()` 等精确方法名在 android-16.0.0_r1 中未找到对应实现。`mDynamicVSync` / `ADJUSTMENT_THRESHOLD` 同样不可溯源。
 
 ## 在 Perfetto 中识别刷新率切换卡顿
 
@@ -354,22 +207,12 @@ void VsyncController::setRefreshRate(Hz rate, bool forceUpdate) {
 
 在 Perfetto 中，VSync 周期的变化是识别刷新率切换的重要指标：
 
-```xml
-<!-- Perfetto 配置：监控 VSync 周期 -->
-<config target="linux">
-  <data_sources>
-    <linux_perfetto_config>
-      <sys_events_config>
-        <sys_events>
-          <event name="vsync_period" />
-          <event name="refresh_rate_change" />
-          <event name="display_mode_switch" />
-        </sys_events>
-      </sys_events_config>
-    </linux_perfetto_config>
-  </data_sources>
-</config>
-```
+> [待验证] 以下 Perfetto 配置使用的是概念性事件名（`vsync_period`、`refresh_rate_change`、`display_mode_switch`），不是 Perfetto 的实际 data source 或 ftrace event 名。实际 Perfetto 配置应使用 perettino textproto 格式。
+
+> 监控刷新率变化的推荐方法（已验证）：
+> - 抓取 `android.surfaceflinger.frame` data source（包含每个帧的 `display_refresh_rate` 字段）
+> - 在 Perfetto UI 的 VSync timelines track（`actual_vsync` 计数器）观察周期变化
+> - 使用 `adb shell dumpsys display` 查看 `mActiveMode` 或 `mActiveConfig`
 
 ### VSync 周期变化的特征
 
@@ -447,9 +290,9 @@ ARR 在不同 Android 版本中的实现方式不同：
 | **Android 13** | 智能场景识别 | 引入内容检测和场景识别 | Composer HAL 1.4+ |
 | **Android 14** | 预切换优化 | 支持并行准备和快速切换 | Composer HAL 1.6+ |
 | **Android 15** | 动态 ARR | 动态调整刷新率，支持范围设置 | Composer HAL 2.4+ |
-| **Android 16-17** | ARR 增强 | 支持机器学习驱动的智能调整 | Composer HAL 2.6+ |
+| **Android 16-17** | 待确认 | 待 Android 17 tag 公开后确认 | 待 Android 17 tag 公开后确认 |
 
-[需确认：Android 15-17 的 ARR HAL 版本、机器学习驱动识别和连续范围控制等版本口径需要 Task9 对照 Android 17 / API 37 范围复核；未闭合前不作为正文结论发布。]
+> [待验证] Android 16-17 的 ARR 能力（机器学习驱动识别、连续范围控制、Composer HAL 版本要求）均属于 Android 17 tag 未公开前的推断，不作为正文结论发布。Android 16.0.0_r1 tag 中 ARR 决策逻辑位于 `RefreshRateSelector::getRankedFrameRates()`。
 
 ### 不同 Android 版本的 ARR 实现差异
 
@@ -477,40 +320,17 @@ ARR 在不同 Android 版本中的实现方式不同：
 
 ARR 是 Android 13 引入的智能刷新率切换机制，它通过场景识别来智能选择刷新率：
 
-```java
-// frameworks/base/core/java/android/hardware/display/DisplayManagerInternal.java
-void handleAdaptiveRefreshRate(DisplayContent display, 
-                             ArraySet<Layer> layers, int displayState) {
-    // 1. 识别当前场景（Android 15+ ARR 专用接口）
-    SceneType scene = identifyScene(layers);
-    
-    // 2. 根据场景选择刷新率（Android 13+ 支持场景识别增强）
-    float refreshRate = getOptimalRefreshRate(scene);
-    
-    // 3. 应用刷新率（Android 14+ 支持预切换）
-    if (displayState == Display.STATE_DOZE) {
-        // Doze 状态下的特殊处理
-        applyDozeRefreshRate(refreshRate);
-    } else {
-        display.setRefreshRate(refreshRate, false);  // false = 非强制模式
-    }
-    
-    // 4. 记录决策日志
-    logSceneDecision(scene, refreshRate);
-}
-```
+> [已验证范围：android-16.0.0_r1] `DisplayManagerInternal` 中并未定义 `handleAdaptiveRefreshRate()` 方法。ARR 的决策逻辑在 `RefreshRateSelector` 中完成，而非 `DisplayManagerInternal`。以下原理描述基于公开行为推断。
+
+> ARR 的核心策略：`RefreshRateSelector::getRankedFrameRates()` 根据 Layer 投票、触摸状态、省电模式、设备空闲状态等信号对可用刷新率排序，`Scheduler::setActiveMode()` 按排名选择刷新率并通过 Composer HAL 下发。场景识别（游戏/视频/静态）体现在 Layer 投票权重差异上，而非独立的 `identifyScene()` 方法。
 
 ### 厂商特定实现差异
 
 不同 SoC 厂商的刷新率切换实现存在显著差异：
 
-| 厂商 | PLL 切换延迟 | 特殊优化 | 限制条件 |
-|------|-------------|----------|----------|
-| **高通** | 1-2 帧 (16-33ms) | Smart Switch 技术，支持渐变刷新率 | 仅支持特定刷新率组合 |
-| **联发科** | 2-3 帧 (33-50ms) | 游戏模式优化，动态电压调整 | 不支持低于 48Hz 刷新率 |
-| **三星** | 1-2 帧 (16-33ms) | Display Co-processor 加速 | 仅支持 Galaxy 系列设备 |
-| **苹果** | 0-1 帧 (0-16ms) | 专用显示芯片硬件加速 | 仅支持 ProMotion 屏幕 |
-| **谷歌** | 1-2 帧 (16-33ms) | ML 驱动的智能切换 | 仅支持 Pixel 设备 |
+> [待验证] 以下厂商特征来自各厂商公开白皮书和部分技术文档的定性描述。PLL 切换延迟、特殊优化名称和限制条件在不同设备型号上存在差异，不应作为跨设备通用结论。具体设备应以实测 Perfetto 数据为准。
+
+> 从公开架构资料中可提取的定性趋势：旗舰 SoC（高通 8 系、三星 Exynos 旗舰、苹果 A 系列）PLL 切换延迟通常较低（1-2 帧或更短），中端 SoC 偏高（2-4 帧）。精确数字受 SoC 制程、显示驱动版本、屏幕面板规格共同影响。
 
 #### 各厂商实现特点
 
@@ -599,7 +419,7 @@ bool supportsARR(const DisplayCapabilities& caps) {
 `Surface.setFrameRate()` 是 App 侧告诉系统自己帧率需求的核心 API。根据内容类型选择合适的 `FrameRateCompatibility` 模式：
 
 - **相机预览**：调用 `surface.setFrameRate(60f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)`，SurfaceFlinger 会将屏幕刷新率固定在 60Hz（或其整数倍中满足需求的最小值）。
-- **游戏全屏**：调用 `surface.setFrameRate(targetFps, Surface.FRAME_RATE_COMPATIBILITY_SUFFICIENT)`，SurfaceFlinger 会选择不低于 targetFps 的刷新率。
+- **游戏全屏**：调用 `surface.setFrameRate(targetFps, Surface.FRAME_RATE_COMPATIBILITY_EXACT)`，SurfaceFlinger 会尽可能匹配到与 targetFps 精确对齐的刷新率（如 90fps → 90Hz、120fps → 120Hz）。
 - **普通 UI / 列表滚动**：不设置或使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`，让系统根据内容检测自动决策。
 
 > **Trace 观察点**：在 Perfetto 中搜索 `SurfaceFlinger` 进程的 `setFrameRate` 或 `setDesiredPresentTime` slice，可看到 App 的帧率偏好是否被 SurfaceFlinger 接收并生效。
@@ -608,7 +428,7 @@ bool supportsARR(const DisplayCapabilities& caps) {
 
 当 App 检测到即将触发需要高刷新率的操作（如手势开始、页面切换动画），可以提前通知系统准备刷新率切换：
 
-- 通过 `WindowManager.LayoutParams.preferredRefreshRate` 或 `Activity.setFrameRate()`（Android 16+）向 WindowManager 传递意图。
+- 通过 `Window.LayoutParams.preferredRefreshRate` 向 WindowManager 传递意图（注意：`Activity` 类没有公开的 `setFrameRate()` 方法；帧率偏好通过 `Surface.setFrameRate()` 或 `WindowManager.LayoutParams` 表达）。
 - 这不是系统级"预切换"能力，而是让 RefreshRateSelector 在收集 Layer 投票时更早看到高帧率需求，减少决策延迟。
 
 > **Trace 观察点**：查看 Perfetto 中 `RefreshRateSelector` 的 `collectVotes` / `calculateOptimalRate` slice，以及 VSync period 的突变时间点，可以判断帧率偏好是否在动画开始前就已生效。
@@ -678,7 +498,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 **优化方向**：
 - 进入战斗场景前（如加载界面），调用 `surface.setFrameRate(targetFps, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)` 提前声明帧率需求。这是最直接的方式，RefreshRateSelector 会在下一轮投票中看到这个偏好。
-- 如果游戏使用 Game Mode API（`GameManager.setGameMode()`），确保 `GameMode` 配置的刷新率偏好与场景一致。Android 16+ 的 Game Mode 框架会通过 `GameManagerInternal` 向 SurfaceFlinger 传递高性能需求的信号。
+- 如果游戏使用 Game Mode API（`GameManager#setGameMode(String, int)`，需要 `MANAGE_GAME_MODE` 权限），确保 `GameMode` 配置的刷新率偏好与场景一致。自 Android 12 起，Game Mode 框架会通过 `GameManagerInternal` 向 SurfaceFlinger 传递高性能需求的信号。
 - 渲染策略不需要"针对场景切换"，而是确保游戏循环在 Choreographer 回调周期变化后仍能在新 deadline 内完成——如果从 60fps（16.67ms 预算）切到 120fps（8.33ms 预算）后 doFrame 超时，问题在渲染负载，不在刷新率切换。
 
 

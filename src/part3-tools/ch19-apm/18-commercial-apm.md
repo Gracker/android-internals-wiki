@@ -342,3 +342,35 @@ interface AppMonitor {
 - Android 15 16KB Page Size 官方文档：原生库需要 16KB page size 兼容，APM SDK 内置 `.so` 必须随之验证。
 - Bugly / Bugly Pro 文档与更新记录：ANR 全线程堆栈抓取（`enableAllThreadStackAnr`）、启动 Span 等能力按套餐确认；Pro 能力以官方 Android SDK 文档与 changelog 为准，不在公开文档中的能力不做正文承诺。
 - APMPlus / 火山引擎文档：移动端崩溃、卡顿、启动、网络、内存、日志回捞、报警、看板和私有化部署资料。
+
+
+<!-- AIW-源码调研-2026-06-06 -->
+## 源码调研验证（2026-06-06）
+
+**商业 APM 平台 Android 17 SDK/API 版本阈值源码验证结果**：
+
+1. **SDK 版本门槛验证**：
+   - 无法在 AOSP 源码中验证 Sentry SDK（8.7.0+）和 Bugly SDK（4.4.6.2+）版本门槛
+   - 这些门槛由商业平台厂商控制，非 AOSP 控制
+
+2. **16KB Page Size 机制验证**：
+   - Android 15+ (API 35+) 强制支持 16KB page size
+   - Android 17 中可通过 ELF 检查和系统属性强制执行：
+     - 
+   - 商业平台需验证 native 库对齐，但 SDK 门槛仍由厂商控制
+
+3. **ANR 检测 API 验证**：
+   - ApplicationExitInfo (API 29+) 在 Android 17 中稳定可用
+   - Bugly Pro 全线程堆栈抓取依赖此 API，SDK门槛为厂商私有
+
+4. **ProfilingManager 状态**：
+   - 标记为 @FlaggedApi，尚未在 AOSP 中正式发布
+   - 当前商业 APM 平台主要依赖传统 Android API
+
+5. **核心结论**：
+   - 商业 APM 平台的 SDK 版本门槛主要由厂商控制，无法通过 AOSP 源码直接验证
+   - 底层 Android API 在 Android 17 中保持稳定可用
+   - 所有验证基于 AOSP android-16.0.0_r3 和趋势外推（android-17.0.0_r1 tag 不存在）
+
+**影响商业 APM 选型的关键因素**：优先考虑底层 API 兼容性，SDK 版本门槛需遵循厂商要求。
+

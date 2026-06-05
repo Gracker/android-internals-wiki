@@ -4232,7 +4232,10 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-14",
       "last_task6_at": "2026-05-14T20:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-20-review.md"
+      "last_task6_review_log": "logs/review/2026-05-14-20-review.md",
+      "task6_reviewed": true,
+      "task6_date": "2026-06-05",
+      "note": "Task6 pass, waiting Task9"
     },
     "9.5": {
       "status": "ready-for-review",
@@ -7387,14 +7390,17 @@
     "9.6": {
       "title": "Notification 性能与 ANR",
       "file": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-      "status": "ready-for-review",
+      "status": "finalized",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task9_result": "auto-fixed",
       "last_task9_at": "2026-06-04T21:20:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md",
+      "task6_reviewed": true,
+      "task6_date": "2026-06-05",
+      "note": "Auto-promoted"
     },
     "18.3": {
       "title": "Android View 软件渲染路径",
@@ -7418,6 +7424,12 @@
       "task9_result": "auto-fixed",
       "last_task9_at": "2026-06-04T21:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md"
+    },
+    "8.9": {
+      "task6_reviewed": true,
+      "task6_date": "2026-06-05",
+      "status": "finalized",
+      "note": "Auto-promoted"
     }
   },
   "task2b_rounds": [

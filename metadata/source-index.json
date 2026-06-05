@@ -2231,6 +2231,939 @@
       ],
       "scored_at": "2026-06-05T06:13:57.857632",
       "action": "already-incorporated"
+    },
+    {
+      "title": "Android Framework | 一种新型的应用启动机制:USAP",
+      "path": "AndroidWeekly/#15/Android Framework | 一种新型的应用启动机制:USAP",
+      "source_url": "https://juejin.cn/post/6922704248195153927",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch10-Framework原理",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Framework | 一种新型的应用启动机制:USAP",
+      "scored_at": "2026-06-05T09:12:21.848527"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/workmanager-2-5-0-stable-released-701b668cd064",
+      "path": "AndroidWeekly/#15/https:__medium.com_androiddevelopers_workmanager-2",
+      "source_url": "https://medium.com/androiddevelopers/workmanager-2-5-0-stable-released-701b668cd064",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:39.958908"
+    },
+    {
+      "title": "Kotlin Vocabulary | Kotlin 默认参数",
+      "path": "AndroidWeekly/#15/Kotlin Vocabulary | Kotlin 默认参数",
+      "source_url": "https://mp.weixin.qq.com/s/EfHcIJzeQ2Crx2rDDfi0Tg",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin Vocabulary | Kotlin 默认参数",
+      "scored_at": "2026-06-05T09:12:39.958917"
+    },
+    {
+      "title": "如何实时监控Android 性能相关？推荐一个开源库",
+      "path": "AndroidWeekly/#15/如何实时监控Android 性能相关？推荐一个开源库",
+      "source_url": "https://mp.weixin.qq.com/s/ity4H63vU1cZSGs-Vy8Gjw",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "如何实时监控Android 性能相关？推荐一个开源库",
+      "scored_at": "2026-06-05T09:12:39.958920"
+    },
+    {
+      "title": "机器学习在 APP 启动耗时统计的应用",
+      "path": "AndroidWeekly/#15/机器学习在 APP 启动耗时统计的应用",
+      "source_url": "https://mp.weixin.qq.com/s/Di_Jeuh5RWbVOsco5Shd6A",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "机器学习在 APP 启动耗时统计的应用",
+      "scored_at": "2026-06-05T09:12:39.958922"
+    },
+    {
+      "title": "“吹Kotlin协程的，可能吹错了！” 带你真正理解一波!",
+      "path": "AndroidWeekly/#15/“吹Kotlin协程的，可能吹错了！” 带你真正理解一波!",
+      "source_url": "https://mp.weixin.qq.com/s/mjEVuR7KbRtFs3HTV27wOQ",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "“吹Kotlin协程的，可能吹错了！” 带你真正理解一波!",
+      "scored_at": "2026-06-05T09:12:39.958923"
+    },
+    {
+      "title": "【译】Kotlin 协程，JVM 线程以及并发问题",
+      "path": "AndroidWeekly/#15/【译】Kotlin 协程，JVM 线程以及并发问题",
+      "source_url": "https://juejin.cn/post/6925324806896713735",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【译】Kotlin 协程，JVM 线程以及并发问题",
+      "scored_at": "2026-06-05T09:12:39.958925"
+    },
+    {
+      "title": "安卓指纹启动流程",
+      "path": "AndroidWeekly/#15/安卓指纹启动流程",
+      "source_url": "https://mp.weixin.qq.com/s/xCkIpHk-yNr95wuYBkABjQ",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "安卓指纹启动流程",
+      "scored_at": "2026-06-05T09:12:39.958926"
+    },
+    {
+      "title": "宋宝华：谈一谈Linux让实时/高性能任务独占CPU的事",
+      "path": "AndroidWeekly/#15/宋宝华：谈一谈Linux让实时_高性能任务独占CPU的事",
+      "source_url": "https://mp.weixin.qq.com/s/_NwWD5CM1tda6lJXYFjnSQ",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-综合技术",
+          "confidence": "low"
+        }
+      ],
+      "summary": "宋宝华：谈一谈Linux让实时/高性能任务独占CPU的事",
+      "scored_at": "2026-06-05T09:12:39.958928"
+    },
+    {
+      "title": "native memory和native heap及GC heap有什么关系？",
+      "path": "AndroidWeekly/#15/native memory和native heap及GC heap有什么关系？",
+      "source_url": "https://www.zhihu.com/question/438698030/answer/1670533755",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存管理",
+          "confidence": "high"
+        }
+      ],
+      "summary": "native memory和native heap及GC heap有什么关系？",
+      "scored_at": "2026-06-05T09:12:39.958929"
+    },
+    {
+      "title": "记一次 Kotlin Ktor 库的 PR 提交记录（TCP 自连接）",
+      "path": "AndroidWeekly/#15/记一次 Kotlin Ktor 库的 PR 提交记录（TCP 自连接）",
+      "source_url": "https://mp.weixin.qq.com/s/o0cfv6kiy_H054svjRbnbQ",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "记一次 Kotlin Ktor 库的 PR 提交记录（TCP 自连接）",
+      "scored_at": "2026-06-05T09:12:40.004129"
+    },
+    {
+      "title": "分析 AGI 纹理数据并提升 GPU 性能",
+      "path": "AndroidWeekly/#15/分析 AGI 纹理数据并提升 GPU 性能",
+      "source_url": "https://mp.weixin.qq.com/s/uxggNtHlMb5yEMMr2IaM9g",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-综合技术",
+          "confidence": "low"
+        }
+      ],
+      "summary": "分析 AGI 纹理数据并提升 GPU 性能",
+      "scored_at": "2026-06-05T09:12:40.004136"
+    },
+    {
+      "title": "全民K歌内存篇1——线上监控与综合治理",
+      "path": "AndroidWeekly/#15/全民K歌内存篇1——线上监控与综合治理",
+      "source_url": "https://mp.weixin.qq.com/s/KWaueLMZwwLSjGGJya6qFA",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存管理",
+          "confidence": "high"
+        }
+      ],
+      "summary": "全民K歌内存篇1——线上监控与综合治理",
+      "scored_at": "2026-06-05T09:12:40.004138"
+    },
+    {
+      "title": "【Android渲染】为什么alpha渲染性能低？",
+      "path": "AndroidWeekly/#15/【Android渲染】为什么alpha渲染性能低？",
+      "source_url": "https://mp.weixin.qq.com/s/LlRrMPq78dAbA7t5oofeYA",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【Android渲染】为什么alpha渲染性能低？",
+      "scored_at": "2026-06-05T09:12:40.004139"
+    },
+    {
+      "title": "【Android渲染】图像是怎样显示到屏幕上的？",
+      "path": "AndroidWeekly/#15/【Android渲染】图像是怎样显示到屏幕上的？",
+      "source_url": "https://mp.weixin.qq.com/s/EWEJ3cNONhIWdu4dadngPA",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【Android渲染】图像是怎样显示到屏幕上的？",
+      "scored_at": "2026-06-05T09:12:40.004141"
+    },
+    {
+      "title": "【Android渲染】在onDraw()中创建对象的隐形成本",
+      "path": "AndroidWeekly/#15/【Android渲染】在onDraw()中创建对象的隐形成本",
+      "source_url": "https://mp.weixin.qq.com/s/XPP61ZahTJpDYe2bc4ZVrw",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【Android渲染】在onDraw()中创建对象的隐形成本",
+      "scored_at": "2026-06-05T09:12:40.004142"
+    },
+    {
+      "title": "Android Framework 如何学习，如何从应用深入到Framework?｜牛气冲天新年征文",
+      "path": "AndroidWeekly/#15/Android Framework 如何学习，如何从应用深入到Framework?｜牛气冲天新年征文",
+      "source_url": "https://juejin.cn/post/6927462903692525575",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch10-Framework原理",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Framework 如何学习，如何从应用深入到Framework?｜牛气冲天新年征文",
+      "scored_at": "2026-06-05T09:12:40.004143"
+    },
+    {
+      "title": "这一次，带你彻底弄懂 Android 事件分发机制",
+      "path": "AndroidWeekly/#15/这一次，带你彻底弄懂 Android 事件分发机制",
+      "source_url": "https://mp.weixin.qq.com/s/6KVICFR_r4cwwi6v9PC8vA",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这一次，带你彻底弄懂 Android 事件分发机制",
+      "scored_at": "2026-06-05T09:12:40.004145"
+    },
+    {
+      "title": "一次解决Linux内核内存泄漏实战全过程",
+      "path": "AndroidWeekly/#15/一次解决Linux内核内存泄漏实战全过程",
+      "source_url": "https://mp.weixin.qq.com/s/1jv_D5Iq253fOE1xYOrEiw",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存管理",
+          "confidence": "high"
+        }
+      ],
+      "summary": "一次解决Linux内核内存泄漏实战全过程",
+      "scored_at": "2026-06-05T09:12:40.004146"
+    },
+    {
+      "title": "赵俊民：​Android性能优化机制-优先级反转问题",
+      "path": "AndroidWeekly/#15/赵俊民：​Android性能优化机制-优先级反转问题",
+      "source_url": "https://zhuanlan.zhihu.com/p/348548041",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "赵俊民：​Android性能优化机制-优先级反转问题",
+      "scored_at": "2026-06-05T09:12:40.004147"
+    },
+    {
+      "title": "成为 Android App Bundle 专家 | MAD Skills",
+      "path": "AndroidWeekly/#15/成为 Android App Bundle 专家 | MAD Skills",
+      "source_url": "https://mp.weixin.qq.com/s/tWAlgIUSboi09mW1ooRkFg",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "成为 Android App Bundle 专家 | MAD Skills",
+      "scored_at": "2026-06-05T09:12:40.049530"
+    },
+    {
+      "title": "Android 启动优化（一） - 有向无环图",
+      "path": "AndroidWeekly/#15/Android 启动优化（一） - 有向无环图",
+      "source_url": "https://juejin.cn/post/6926794003794903048",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 启动优化（一） - 有向无环图",
+      "scored_at": "2026-06-05T09:12:40.049538"
+    },
+    {
+      "title": "Android 启动优化（二） - 拓扑排序的原理以及解题思路",
+      "path": "AndroidWeekly/#15/Android 启动优化（二） - 拓扑排序的原理以及解题思路",
+      "source_url": "https://juejin.cn/post/6930805971673415694",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 启动优化（二） - 拓扑排序的原理以及解题思路",
+      "scored_at": "2026-06-05T09:12:40.049540"
+    },
+    {
+      "title": "Android 启动优化（三） - AnchorTask 使用说明",
+      "path": "AndroidWeekly/#15/Android 启动优化（三） - AnchorTask 使用说明",
+      "source_url": "https://juejin.cn/post/6931903136256753672",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 启动优化（三） - AnchorTask 使用说明",
+      "scored_at": "2026-06-05T09:12:40.049542"
+    },
+    {
+      "title": "https://medium.com/android-bits/android-app-modularization-tips-d1509e1dea5c",
+      "path": "AndroidWeekly/#15/https:__medium.com_android-bits_android-app-modula",
+      "source_url": "https://medium.com/android-bits/android-app-modularization-tips-d1509e1dea5c",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049543"
+    },
+    {
+      "title": "https://proandroiddev.com/improving-ci-cd-pipeline-for-android-via-fastlane-and-github-actions-a635162d2c53",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_improving-ci-cd-pipeline",
+      "source_url": "https://proandroiddev.com/improving-ci-cd-pipeline-for-android-via-fastlane-and-github-actions-a635162d2c53",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049544"
+    },
+    {
+      "title": "https://proandroiddev.com/how-dagger-hilt-and-koin-differ-under-the-hood-c3be1a2959d7",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_how-dagger-hilt-and-koin",
+      "source_url": "https://proandroiddev.com/how-dagger-hilt-and-koin-differ-under-the-hood-c3be1a2959d7",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049546"
+    },
+    {
+      "title": "https://proandroiddev.com/getting-ready-for-declarative-uis-8eedb5f8ed0d",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_getting-ready-for-declar",
+      "source_url": "https://proandroiddev.com/getting-ready-for-declarative-uis-8eedb5f8ed0d",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049547"
+    },
+    {
+      "title": "https://proandroiddev.com/modularization-of-android-applications-with-explicit-initialization-90efdb79db4a",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_modularization-of-androi",
+      "source_url": "https://proandroiddev.com/modularization-of-android-applications-with-explicit-initialization-90efdb79db4a",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049548"
+    },
+    {
+      "title": "https://proandroiddev.com/modularization-of-android-applications-with-lazy-initialization-a091eaaa284a",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_modularization-of-androi",
+      "source_url": "https://proandroiddev.com/modularization-of-android-applications-with-lazy-initialization-a091eaaa284a",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.049549"
+    },
+    {
+      "title": "https://proandroiddev.com/modularization-of-android-applications-in-2021-a79a590d5e5b",
+      "path": "AndroidWeekly/#15/https:__proandroiddev.com_modularization-of-androi",
+      "source_url": "https://proandroiddev.com/modularization-of-android-applications-in-2021-a79a590d5e5b",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "",
+      "scored_at": "2026-06-05T09:12:40.095486"
+    },
+    {
+      "title": "Jetpack 最新成员 AndroidX App Startup 实践以及原理分析",
+      "path": "AndroidWeekly/#15/Jetpack 最新成员 AndroidX App Startup 实践以及原理分析",
+      "source_url": "https://juejin.cn/post/6844904190440013837",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Jetpack 最新成员 AndroidX App Startup 实践以及原理分析",
+      "scored_at": "2026-06-05T09:12:40.095497"
+    },
+    {
+      "title": "Android图片的压缩与缓存策略",
+      "path": "AndroidWeekly/#15/Android图片的压缩与缓存策略",
+      "source_url": "https://juejin.cn/post/6861256928237092872",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android图片的压缩与缓存策略",
+      "scored_at": "2026-06-05T09:12:40.095499"
+    },
+    {
+      "title": "【Java】HashMap原理及常见问题",
+      "path": "AndroidWeekly/#15/【Java】HashMap原理及常见问题",
+      "source_url": "https://juejin.cn/post/6926022643875479559",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "【Java】HashMap原理及常见问题",
+      "scored_at": "2026-06-05T09:12:40.095501"
+    },
+    {
+      "title": "Android系统启动流程（三）--SystemServer的启动流程",
+      "path": "AndroidWeekly/#15/Android系统启动流程（三）--SystemServer的启动流程",
+      "source_url": "https://juejin.cn/post/6925680574510153741",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch10-Framework原理",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统启动流程（三）--SystemServer的启动流程",
+      "scored_at": "2026-06-05T09:12:40.095502"
+    },
+    {
+      "title": "《Android AOP探密系列》一步一步跟我ASM实战",
+      "path": "AndroidWeekly/#15/《Android AOP探密系列》一步一步跟我ASM实战",
+      "source_url": "https://juejin.cn/post/6925668048172564493",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "《Android AOP探密系列》一步一步跟我ASM实战",
+      "scored_at": "2026-06-05T09:12:40.095504"
+    },
+    {
+      "title": "【译】如何优雅的处理协程的取消？",
+      "path": "AndroidWeekly/#15/【译】如何优雅的处理协程的取消？",
+      "source_url": "https://juejin.cn/post/6844904144734535694",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-综合技术",
+          "confidence": "low"
+        }
+      ],
+      "summary": "【译】如何优雅的处理协程的取消？",
+      "scored_at": "2026-06-05T09:12:40.095505"
+    },
+    {
+      "title": "ART视角 | 如何让GC同步回收native内存",
+      "path": "AndroidWeekly/#15/ART视角 | 如何让GC同步回收native内存",
+      "source_url": "https://juejin.cn/post/6894153239907237902",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存管理",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ART视角 | 如何让GC同步回收native内存",
+      "scored_at": "2026-06-05T09:12:40.095507"
+    },
+    {
+      "title": "Java | 引用类型 & Finalizer 机制",
+      "path": "AndroidWeekly/#15/Java | 引用类型 & Finalizer 机制",
+      "source_url": "https://www.jianshu.com/p/ba0cf8485f22",
+      "weekly_issue": "#15",
+      "weekly_date": "2021-02-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Java | 引用类型 & Finalizer 机制",
+      "scored_at": "2026-06-05T09:12:40.095508"
     }
   ]
 }

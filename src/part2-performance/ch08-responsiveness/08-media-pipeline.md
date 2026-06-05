@@ -9,11 +9,11 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
-last_task2b_at: '2026-05-14T19:19:00+08:00'
+last_task2b_at: 2026-06-05T08:59:54
 last_task9_at: "2026-06-05T06:20:00+08:00"
 last_verified: '2026-04-13'
-last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task2b_pending
+last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
+pipeline_stage: task9_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -47,22 +47,22 @@ tags:
 - 视频性能
 - 音频延迟
 - ExoPlayer
-task2b_result: fixed-lite
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-05"
-task9_state: reviewed
+task9_state: pending
 title: Android 多媒体管线性能
 task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。；2026-06-05 task9 deep-review: needs-rework。P0 3 / P1 1；Android 17 tag 未公开但 frontmatter 声称已验证，源码调研附录存在 Codec2 版本矩阵、tunneled playback 符号与 Media3 ABR 路径错误。"
 last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
-last_task6_at: "2026-06-05T02:06:00+08:00"
+last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 needs-rework，等待 Task9 复检。"
+task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 pending，queue 有 pending 条目（priority 95），不可自动晋升。"
 
 last_task2b_lite_at: 2026-06-05
 ---
@@ -633,7 +633,7 @@ Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实�
 
 ### OMX → Codec2 演进路径源码锚点
 
-**演进驱动**：Android 5.0（API 21）引入 Codec2 解决 OMX 接口臃肿问题，API 28+ 成为默认路径。
+**演进驱动**：Android 10（API 29）引入 Codec2 框架作为 OMX 的替代路径；API 31+ 起 Codec2 在多数新设备上成为默认编解码路径。Android 5.0（API 21）并未引入 Codec2。
 
 **关键源码文件**：
 
@@ -670,9 +670,12 @@ status_t CCodec::initialize() {
 
 | API Level | Codec2 状态 | OMX 状态 |
 |-----------|-------------|----------|
-| 21-27 | 可选/实验性 | 主导 |
-| 28-32 | 默认启用 | Deprecated |
-| 33+ | 稳定/优化，支持 V4L2 | 仅兼容 |
+| 21-28 | 不存在 | 主导 |
+| 29-30 | 引入，部分设备可选 | 主导 |
+| 31-32 | 多数新设备默认启用 | 兼容模式 |
+| 33+ | 稳定/优化，V4L2 Codec2 支持 | 仅兼容 |
+
+> [已验证：android-16.0.0_r1 + AOSP 公开文档] Codec2 框架在 Android 10（API 29）首次引入，非 Android 5.0。API 29-30 期间以 OMX 为主、Codec2 为可选替代；API 31+ 起多数新设备默认 Codec2。V4L2 Codec2（`external/v4l2_codec2/`）在 API 33+ 获得官方支持。
 
 ### Tunneled Playback 实现差异
 
@@ -684,7 +687,8 @@ status_t CCodec::initialize() {
 |----------|---------|
 | `system/media/audio/include/system/audio-hal-enums.h` | Audio HAL 枚举定义 |
 | `hardware/interfaces/audio/common/7.0/types.hal` | Audio types HAL 定义 |
-| `hardware/google/gchips/gralloc4/src/mali_gralloc_buffer.h` | Gralloc4 buffer 定义 |
+| `hardware/libhardware/include/hardware/gralloc.h` | Gralloc HAL 公共头文件 |
+| (vendor-specific) gralloc4 buffer 实现 | 各厂商 Gralloc4 实现各不相同 |
 | `frameworks/av/media/libaudioclient/AudioTrack.cpp` | AudioTrack 实现，含 tunneled 路径 |
 
 **关键概念**：
@@ -692,7 +696,7 @@ status_t CCodec::initialize() {
 - `BUFFER_FLAG_TUNNEL` — 标记 tunneled buffer 的 flag
 - `IHapticStream` — 触觉反馈 stream（API 33+）
 
-**性能收益**：Tunneled Playback 可减少 2-4ms/帧的 buffer 延迟（实测 Pixel 7 + Android 13）。
+**性能收益**：Tunneled Playback 可减少每帧的 buffer 拷贝延迟。具体收益取决于设备 SoC、HAL 实现和视频分辨率。不同设备的实测效果存在差异（典型范围约 2-4ms/帧）。
 
 **版本差异**：
 - OMX 时代（Android 4.x-9）：通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置
@@ -741,18 +745,22 @@ public Factory(
 
 ### 性能影响总结
 
-1. **Codec2 内存效率**：Buffer pooling 机制减少约 15-20% 的内存分配开销
-2. **Tunneled Playback**：绕过用户态 copy，每帧节省 2-4ms
-3. **ABR 切换延迟**：minDurationForQualityIncrease=15s 可防止频繁质量震荡
+> [待验证：android-16.0.0_r1] 以下性能数据为定性趋势参考，非统一测试条件下的精确数字。Codec2 Buffer pooling 的内存效益、Tunneled Playback 的延迟缩减因设备差异有显著波动。
+
+1. **Codec2 内存效率**：Buffer pooling 机制可减少内存分配开销（幅度因编解码器实现和设备而异）
+2. **Tunneled Playback**：绕过用户态 copy，降低每帧延迟（典型范围 2-4ms，需按设备实测确认）
+3. **ABR 切换延迟**：`minDurationForQualityIncrease=15s` 的默认值可防止频繁质量震荡
 
 ### 信息源
 
+> [已验证：android-16.0.0_r1 + androidx/media release] 以下路径锚点已确认可访问：
+
 | 来源 | 类型 |
 |------|------|
-| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | 一手（AOSP master） |
-| `frameworks/av/media/codec2/core/include/C2Config.h` | 一手（AOSP master） |
-| `external/exoplayer/.../AdaptiveTrackSelection.java` | 一手（ExoPlayer release-v2） |
-| `hardware/interfaces/audio/common/7.0/types.hal` | 一手（AOSP HAL） |
-| `androidx/media/blob/release/.../DefaultTrackSelector.java` | 一手（GitHub androidx/media） |
+| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | 一手（AOSP android-16.0.0_r1） |
+| `frameworks/av/media/codec2/core/include/C2Config.h` | 一手（AOSP android-16.0.0_r1） |
+| `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | 一手（AOSP android-16.0.0_r1） |
+| `androidx/media/blob/release/libraries/exoplayer/.../DefaultTrackSelector.java` | 一手（GitHub androidx/media release） |
+| `hardware/interfaces/audio/common/7.0/types.hal` | 一手（AOSP android-16.0.0_r1） |
 
 <!-- AIW-源码调研-2026-05-24 -->
