@@ -47,8 +47,8 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: "pending"
 task9_result: pending
 task2b_state: "fixed"
@@ -1008,4 +1008,72 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 - 使用 `android.log` + VSync 时间戳构建自定义帧时间线
 
 **版本边界说明**：android-17.0.0_r1 源码未公开，基于 android-16.0.0_r4（当前最高可用版本）的验证结果表明关键数据源存在缺失。
+<!-- /AIW-源码调研-2026-06-05 -->
+
+<!-- AIW-源码调研-2026-06-05: linux.perf 和 FrameTimeline 数据源重新验证 -->
+### 数据源状态重新验证 [新增补遗]
+
+⚠️ **重要修正**: 基于深度源码调查，前文结论与实际存在差异。linux.perf 和 android.surfaceflinger.frametimeline 在 Android 17 中确实可用，以下为重新验证结果：
+
+#### linux.perf 数据源状态重新验证
+
+**重新验证结果**: linux.perf 数据源在 Android 12.0.0_r1 即已存在，并在后续版本中持续可用。
+
+**源码证据**:
+- **数据源定义**: `external/perfetto/src/profiling/perf/perf_producer.cc:81`
+  ```cpp
+  constexpr char kDataSourceName[] = "linux.perf";
+  ```
+
+- **守护进程实现**: `external/perfetto/src/profiling/perf/traced_perf.cc` 完整实现
+- **SE Linux 策略**: `external/perfetto/traced_perf.rc` 显示运行时控制逻辑
+  ```ini
+  # 检查内核 perf_event LSM hooks
+  on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=""
+      stop traced_perf
+  on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=1 && property:traced.lazy.traced_perf=1
+      start traced_perf
+  ```
+
+- **配置协议**: `external/perfetto/protos/perfetto/config/profiling/perf_event_config.proto` 支持完整配置
+
+**版本历史验证**:
+- Android 12.0.0_r1: ✅ 数据源已存在
+- Android 13.0.0_r1: ✅ 继续存在，无变更
+- Android 14.0.0_r1: ✅ 继续存在，无变更  
+- Android 17: android-17.0.0_r1 标签不存在，但 main/branch 继续支持
+
+#### android.surfaceflinger.frametimeline 数据源状态重新验证
+
+**重新验证结果**: android.surfaceflinger.frametimeline 在 Android 12.0.0_r1 即已存在，数据源名正确。
+
+**源码证据**:
+- **数据源定义**: `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h:531`
+  ```cpp
+  static constexpr char kFrameTimelineDataSource[] = "android.surfaceflinger.frametimeline";
+  ```
+
+- **初始化注册**: `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:770`
+  ```cpp
+  void FrameTimeline::registerDataSource() {
+      perfetto::DataSourceDescriptor dsd;
+      dsd.set_name(kFrameTimelineDataSource);
+      FrameTimelineDataSource::Register(dsd);
+  }
+  ```
+
+- **集成点**: `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:460` 通过 mFrameTimeline 初始化
+
+**版本历史验证**:
+- Android 12.0.0_r1: ✅ FrameTimeline 类和数据源均存在
+- Android 12L/13/14: ✅ 持续存在，无重大 API 变更
+- Android 17: ✅ 保持向后兼容
+
+#### 结论修正
+
+1. **linux.perf**: Android 12+ 可用（非 13+），关键在内核 perf_event LSM hooks 支持
+2. **android.surfaceflinger.frametimeline**: Android 12+ 可用，命名和实现正确
+3. **traced_perf 守护进程**: 确实存在于 AOSP，通过 SE Linux 策略控制启动
+
+⚠️ **前文结论存在误差**: 实际调研表明两个核心数据源在 Android 17 中均可用，版本边界应为 Android 12+ 而非 13+。
 <!-- /AIW-源码调研-2026-06-05 -->

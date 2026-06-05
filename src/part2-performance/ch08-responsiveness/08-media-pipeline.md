@@ -13,7 +13,7 @@ last_task2b_at: 2026-06-05T13:35:00
 last_task9_at: "2026-06-05T06:20:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -52,7 +52,7 @@ task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-05"
