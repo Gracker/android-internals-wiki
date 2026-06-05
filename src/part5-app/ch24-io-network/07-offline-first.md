@@ -43,6 +43,7 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-14
 last_task9_at: "2026-05-14T12:37:27+08:00"
 last_task6_at: "2026-05-14T13:06:00+08:00"
+last_task6_audit: "2026-06-06"
 last_task6_review_log: logs/review/2026-05-14-13-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；吸收 Task9 P2 的示例代码接入边界，轻修术语和无数据基线的批量窗口表述。满足 Task6/Task9 通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-05-26"
@@ -77,7 +78,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-09-audit.md"
 
 ## 为什么要了解离线优先架构
 
-离线优先处理数据层约束：读取路径必须有不依赖网络的数据源，写路径必须能在网络不可用时保住用户操作，并在恢复连接后完成同步。Android 官方架构文档把离线优先放在数据层讨论，原因很直接：UI 不需要关心数据来自网络、数据库还是同步队列，它只消费 Repository 暴露出来的状态。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
+离线优先处理数据层约束：读取路径必须有不依赖网络的数据源，写路径必须能在网络不可用时保住用户操作，并在恢复连接后完成同步。Android 官方架构文档把离线优先放在数据层讨论。UI 不需要关心数据来自网络、数据库还是同步队列，它只消费 Repository 暴露出来的状态。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
 
 24.6 已经讲过 HTTP 缓存、磁盘缓存和业务缓存的边界。24.7 往前走一步：把缓存从“加速读取”升级成“支撑产品流程”。如果用户在地铁、电梯、海外漫游、弱网切换时仍要浏览、收藏、提交、撤销，缓存层就不能只保存接口响应快照，还要保存操作日志、同步状态、冲突元数据和错误恢复入口。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
