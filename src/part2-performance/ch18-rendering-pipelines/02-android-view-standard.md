@@ -39,7 +39,7 @@ created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
@@ -48,14 +48,14 @@ reviewed_date: "2026-06-04"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-26"
 last_task6_at: "2026-06-04T03:10:02+08:00"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-26"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-26T03:20:00+08:00"
-task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。无 P0/P1；P2：Trace 表的 Choreographer#doFrame 判定仍需改成 FrameTimeline/app deadline 口径。"
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-06-05
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-05T20:33:28+08:00"
+task9_review_notes: "2026-06-05 Task9 deep-review: pass-tech-review. No P0/P1; existing P2 FrameTimeline wording remains non-blocking and already logged."
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1/L2 禁用词/高频词/AI填充词零命中。清除 1 处 [已修正] 编辑痕迹。无 B 类问题。自动晋升 finalized（task9 pass-tech-review + queue 无 pending + 无 B 类问题）。"
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
@@ -64,6 +64,7 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 ---
+
 
 # Android View 标准管线（BLAST 深入）
 

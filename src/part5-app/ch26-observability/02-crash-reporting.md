@@ -45,8 +45,8 @@ sources:
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
 related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
 pipeline_stage: task6_pending
-task6_state: "reviewed"
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -56,15 +56,18 @@ last_task6_review_log: "logs/review/2026-06-05-11-review.md"
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 3 处(结构性元叙述 1、抽象词风险 2);无新增 L3/L4 回炉项,等待 Task9 技术复审。'
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T21:54:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
+task9_reviewed_date: 2026-06-05
+last_task9_at: "2026-06-05T20:33:28+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
 task9_result: auto-fixed
-task9_review_notes: "2026-05-15 Task9:needs-rework。Native signal-safe 持久化边界与 ApplicationExitInfo 补偿链路缺失,需 Task2B 回炉。"
+task9_review_notes: "2026-06-05 Task9 auto-fixed: corrected ProfilingManager/ProfilingTrigger API, ApplicationExitInfo public API wording, and downgraded unverified Breakpad/Crashpad paths."
 task2b_result: fixed
 last_task2b_lite_at: 2026-06-04
 task2b_recovery_note: "2026-06-05: body recovered from git 49794e89 (initial draft); orphaned YAML lines removed."
+last_task9_autofix_at: 2026-06-05
+task9_reviewed_by: openclaw-task9
 ---
+
 
 # Crash 上报体系搭建
 
@@ -315,18 +318,18 @@ Android 15 `ProfilingManager.requestProfiling()` 支持 App-driven system trace 
 ```java
 public void requestProfiling(
     int profilingType,        // PROFILING_TYPE_SYSTEM_TRACE | HEAP_DUMP | HEAP_PROFILE | STACK_TRACE
-    Bundle options,
-    String packageName,
-    CancellationSignal signal,
+    Bundle parameters,
+    String tag,
+    CancellationSignal cancellationSignal,
     Executor executor,
-    Consumer<ProfilingResult> resultCallback
+    Consumer<ProfilingResult> listener
 )
 ```
 
 **Result 回调**:
 ```java
 ProfilingResult#getResultFilePath()  // trace 文件路径(系统管理,应用只读)
-ProfilingResult#getResultStatus()    // 状态码
+ProfilingResult#getErrorCode()       // ERROR_NONE / rate limit / 执行失败等错误码
 ```
 
 **限制**:Rate limiter 存在(结果去重、频率控制);连续 profiling 类型建议提前开始、及时取消
@@ -336,16 +339,17 @@ ProfilingResult#getResultStatus()    // 状态码
 Android 16 事件触发采集:
 
 **Trigger 类型**:
-- `TRIGGER_TYPE_APP_FULLY_DRAWN`:app 报告首帧完成并可交互
-- `TRIGGER_TYPE_APP_REQUESTED`:app 主动请求
-- `TRIGGER_TYPE_ANR`:ANR 发生时(推测)
-- `TRIGGER_TYPE_CRASH`:crash 发生时(推测)
+- `TRIGGER_TYPE_APP_FULLY_DRAWN`:app 报告首帧完成并可交互后触发
+- `TRIGGER_TYPE_ANR`:系统识别到 ANR 后触发；它不等价于进程一定因 ANR 被杀
+
+Android 16 `ProfilingTrigger` 源码中没有 `TRIGGER_TYPE_CRASH`；App 主动采集走 `ProfilingManager.requestProfiling()`，不属于 trigger 类型。
 
 **使用模式**:
 ```java
 val triggerBuilder = ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
     .setRateLimitingPeriodHours(1)
-profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
+profilingManager.registerForAllProfilingResults(executor, callback)
+profilingManager.addProfilingTriggers(listOf(triggerBuilder.build()))
 ```
 
 ### A.4 Android 线上诊断能力版本表
@@ -378,8 +382,7 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 |------|----------|
 | ApplicationExitInfo Java API | `frameworks/base/core/java/android/app/ApplicationExitInfo.java` |
 | AMS 历史退出原因服务 | `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` |
-| Google Breakpad crash 客户端 | `external/google-breakpad/client/crashpad_client.cc` |
-| Crashpad (后续版本) | `external/crashpad/client/crashpad_client.cc` |
+| Breakpad / Crashpad 客户端 | AOSP `android-16.0.0_r1` 未确认 `external/google-breakpad/client/crashpad_client.cc` 或 `external/crashpad/client/crashpad_client.cc`，发布前不要作为源码锚点 |
 
 ### 退出原因常量(API 30+)
 
@@ -389,11 +392,10 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 
 ### Native Crash 信号捕获链路
 
-1. **信号注册**:crashpad_client 在进程启动时注册 `SIGSEGV`、`SIGABRT` 等信号处理器
-2. **minidump 生成**:崩溃时 `CrashpadHandler` 生成 minidump 到 `/data/data/<package>/databases/crashpad/`
-3. **进程退出**:通过 `Process.exit(code)` 退出
-4. **AMS 感知**:Zygote 通知 AMS,AMS 通过 `appDiedLocked()` 记录退出原因
-5. **补偿读取**:下次启动通过 `getHistoricalProcessExitReasons()` 拉取 `REASON_CRASH_NATIVE`
+1. **信号注册**:第三方 Breakpad / Crashpad SDK 通常注册 `SIGSEGV`、`SIGABRT` 等信号处理器
+2. **minidump 生成**:minidump 文件路径、handler 进程模型和退出方式取决于具体 SDK 实现，不能用未确认的 AOSP 路径当作平台结论
+3. **AMS 感知**:Zygote 通知 AMS,AMS 记录进程退出原因
+4. **补偿读取**:下次启动通过 `getHistoricalProcessExitReasons()` 拉取 `REASON_CRASH_NATIVE`
 
 ### 版本差异
 
@@ -431,14 +433,14 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
 
 **ApplicationExitInfo 补偿入口**(API 30+):
 - `REASON_CRASH_NATIVE` = 5,对应 tombstone 文件
-- `getTraceFile()` 返回 `/data/tombstones/tombstone_XX` 的 FileInputStream
+- 公开 API 使用 `getTraceInputStream()` 读取 trace/tombstone；`getTraceFile()` 是 `@hide` 内部接口
 - 服务端追踪:`ActivityManagerService.java l.5213`
 - 系统记录:`AppExitInfoTracker.java`
 
 **版本边界**:
 - Android 9 以下:无 ApplicationExitInfo,需自建 Signal Handler
-- Android 11+:完整支持 getTraceFile()
-- Android 14+:proto 格式 tombstone
+- Android 11+:引入 `ApplicationExitInfo` 与 `getTraceInputStream()`；ANR trace 是主要公开读取对象
+- Android 12+:`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 tombstone protobuf
 
 <!-- AIW-源码调研-2026-05-25 -->
 ### 源码调研补充(2026-05-25)
@@ -452,7 +454,7 @@ profilingManager.registerTrigger(triggerBuilder.build(), executor, callback)
    - 禁止:`malloc()`, `free()`, `printf()`, `std::string`,任何堆操作
    - 源码:`system/core/debuggerd/crash_dump.cpp l.303, l.497`
 
-2. **Crashpad Out-of-Process Handler 模型**(未经一手 AOSP 源码验证,建议读 `external/google-breakpad/client/crashpad_client_linux.cc`)
+2. **Crashpad Out-of-Process Handler 模型**(未经一手 AOSP 源码验证,建议读 对应 SDK/upstream Breakpad 或 Crashpad 仓库)
    - signal handler 必须是 async-signal-safe
    - minidump 写入由独立 handler 进程完成,不阻塞应用主线程
    - 双策略:RequestCrashDumpHandler(与已运行 handler 通信)/ LaunchAtCrashHandler(crash 时启动)
