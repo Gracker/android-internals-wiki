@@ -240,7 +240,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-30T22:12:26.099775+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T04:54:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：SurfaceFlinger 事务与缓冲区生命周期源码分析，包含双缓冲状态模型和 BufferQueue 状态机"
     },
     {
       "section": "17.4",
@@ -274,7 +277,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-30T22:12:26.099775+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T04:54:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：F2FS Adaptive Logging 机制与 I/O 调度性能分析，基于 Linux main/master"
     },
     {
       "section": "22.3",
@@ -569,7 +575,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-02T06:15:23.038257",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T04:54:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已注入参考资料：荣耀 MUSCHED VIP 调度与 Binder 优先级传递（OSDI '26 论文级分析），直接关联 sched_ext OEM 调度器章节主题"
     },
     {
       "section": "22.3",
