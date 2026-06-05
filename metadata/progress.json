@@ -7430,6 +7430,20 @@
       "task6_date": "2026-06-05",
       "status": "finalized",
       "note": "Auto-promoted"
+    },
+    "4.13": {
+      "title": "Linux ANON_VMA_LAZY 优化与 Android 内存性能",
+      "file": "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-05",
+      "gap_source": "研究素材",
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-06-05",
+      "last_verified": "2026-06-05",
+      "confidence": "medium",
+      "task6_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -9805,14 +9819,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "20.15",
-    "title": "Android 17 DeliQueue 与 RecyclerView 预取时序优化",
-    "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
+    "section": "4.13",
+    "title": "Linux ANON_VMA_LAZY 优化与 Android 内存性能",
+    "file": "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-05-24T17:04:00+08:00",
-    "status": "ready-for-review",
-    "at": "2026-05-25T09:21:00+08:00"
+    "processed_at": "2026-06-05T10:15:00+08:00",
+    "status": "ready-for-review"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-04",
@@ -9890,7 +9903,7 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
-  "last_task2a_date": "2026-06-04",
+  "last_task2a_date": "2026-06-05",
   "task9_last_review_summary": "Task9 deep review: 26.8/9.6/18.14 auto-fixed; 18.3 pass-tech-review and auto-promoted finalized.",
   "task2b_history": [
     {
