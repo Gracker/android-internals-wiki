@@ -66,7 +66,7 @@ last_task9_at: '2026-05-13T02:51:35+08:00'
 last_task9_audit: '2026-05-25'
 task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
 last_task6_at: '2026-05-05T11:05:00+08:00'
-last_task6_audit: '2026-05-23'
+last_task6_audit: '2026-06-06'
 review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
 ---
 
@@ -340,7 +340,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 ### FrameMetrics 的工作原理
 
-FrameMetrics 的使用方式很简单：向 Window 注册一个 `OnFrameMetricsAvailableListener`，系统就会在每一帧渲染完成后触发回调，提供这一帧各个环节的耗时数据。
+向 Window 注册一个 `OnFrameMetricsAvailableListener`，系统就会在每一帧渲染完成后触发回调，提供这一帧各个环节的耗时数据。
 
 ```java
 // [已验证: 官方文档 developer.android.com, android.view.Window#addOnFrameMetricsAvailableListener]
