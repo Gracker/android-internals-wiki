@@ -9,14 +9,14 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-pipeline_stage: task2b_pending
-last_task2b_at: 2026-06-05T14:50:00
-task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-06T01:35:00
+last_task2b_lite_at: 2026-06-06
+task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。2026-06-06 Task2B Lite：FRAME_RATE_COMPATIBILITY 常量值修正（EXACT=100/MIN=102 为 @hide，新增 AT_LEAST=2 公开常量）；6 处 collectVotes/calculateOptimalRate→getRankedFrameRates。
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档
@@ -115,7 +115,8 @@ SurfaceFlinger 使用一个称为"帧率投票"的机制来决定最终的屏幕
 |------|------|-------------|
 | `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` | 固定源帧率 | 视频播放、相机预览 |
 | `FRAME_RATE_COMPATIBILITY_DEFAULT` | 默认兼容 | 普通界面、列表滚动 |
-| `FRAME_RATE_COMPATIBILITY_EXACT` | 精确帧率 | 动画、游戏（需与屏幕刷新率精确对齐） |
+| `FRAME_RATE_COMPATIBILITY_AT_LEAST` | 最低帧率 | 希望刷新率不低于指定值（如游戏至少 60fps） |
+| `FRAME_RATE_COMPATIBILITY_EXACT` | 精确帧率 | 动画、游戏（需与屏幕刷新率精确对齐）— `@hide`，非公开 API |
 
 #### 投票权重
 
@@ -150,8 +151,9 @@ surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_DEFAULT);
 // 实际签名为 void，兼容性常量包括:
 //   FRAME_RATE_COMPATIBILITY_DEFAULT (0) — 系统自动决策
 //   FRAME_RATE_COMPATIBILITY_FIXED_SOURCE (1) — 固定帧率，如相机预览
-//   FRAME_RATE_COMPATIBILITY_EXACT (2) — 精确匹配，如游戏需与屏幕刷新率对齐
-//   FRAME_RATE_COMPATIBILITY_MIN (3) — 最低帧率不低于指定值
+//   FRAME_RATE_COMPATIBILITY_AT_LEAST (2) — 最低帧率约束，公开常量
+//   FRAME_RATE_COMPATIBILITY_EXACT (100) — 精确匹配，@hide，非公开 API
+//   FRAME_RATE_COMPATIBILITY_MIN (102) — 最低帧率，@hide，非公开 API
 public void setFrameRate(float rate, @FrameRateCompatibility int compatibility)
 ```
 
@@ -161,7 +163,7 @@ RefreshRateSelector 是 SurfaceFlinger 中的核心组件，负责综合所有�
 
 > [已验证范围：android-16.0.0_r1] 核心决策路径：各 Layer 的帧率需求 → `RefreshRateSelector::getRankedFrameRates()` 排序 → `Scheduler` 综合 touch boost、idle timer、power HAL hint 等信号 → 通过 `setActiveMode()` 将最终选定的显示模式提交给 Composer HAL。`Scheduler.cpp` 源码路径：`frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp`。
 
-> [待验证：android-16.0.0_r1] `VoteSet` 类名、`collectVotes()` / `calculateOptimalRate()` / `supportsARR()` 等具体方法名未在 android-16.0.0_r1 tag 中确认。以下原理性描述基于公开文档和行为推断，不逐行对标源码。
+> [已确认：android-16.0.0_r1] `VoteSet` 类名、`collectVotes()` / `calculateOptimalRate()` / `supportsARR()` 在 android-16.0.0_r1 tag 中不存在。实际决策入口为 `RefreshRateSelector::getRankedFrameRates()`。以下原理性描述基于公开文档和行为推断，不逐行对标源码。
 
 ## 硬件切换的真实代价
 
@@ -418,7 +420,7 @@ ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 - 通过 `Window.LayoutParams.preferredRefreshRate` 向 WindowManager 传递意图（注意：`Activity` 类没有公开的 `setFrameRate()` 方法；帧率偏好通过 `Surface.setFrameRate()` 或 `WindowManager.LayoutParams` 表达）。
 - 这不是系统级"预切换"能力，而是让 RefreshRateSelector 在收集 Layer 投票时更早看到高帧率需求，减少决策延迟。
 
-> **Trace 观察点**：查看 Perfetto 中 `RefreshRateSelector` 的 `collectVotes` / `calculateOptimalRate` slice，以及 VSync period 的突变时间点，可以判断帧率偏好是否在动画开始前就已生效。
+> **Trace 观察点**：查看 Perfetto 中 `RefreshRateSelector` 的 `getRankedFrameRates` slice，以及 VSync period 的突变时间点，可以判断帧率偏好是否在动画开始前就已生效。
 
 #### 过渡期缓冲
 
@@ -453,7 +455,7 @@ Display HAL 在切换期间可能丢失 1-3 帧。减少帧丢失的策略包括
 
 SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、内容检测结果动态调整刷新率。Android 15+ 引入了更智能的 vote weight 系统——不再只看最高帧率需求，而是综合活跃 Layer 数量、动画状态和功耗预算做最优选择。
 
-> **Trace 观察点**：`RefreshRateSelector::collectVotes` / `calculateOptimalRate` 的 slice 记录了每一步的决策依据和最终选中的刷新率。
+> **Trace 观察点**：`RefreshRateSelector::getRankedFrameRates` 的 slice 记录了决策依据和最终选中的刷新率。
 
 ## 实际应用案例
 
@@ -465,7 +467,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 **排查路径**：
 1. 在 Perfetto 中确认 VSync period 在相机退出时从 16.67ms 跳变到 8.33ms，且跳变点附近出现 `missingFrame` 或 SurfaceFlinger compose slice 异常延长。
-2. 如果 `RefreshRateSelector::collectVotes` / `calculateOptimalRate` slice 在触摸事件后才开始考虑 120Hz 候选，说明系统侧决策滞后于用户操作——这是相机场景最常见的切换延迟根因。
+2. 如果 `RefreshRateSelector::getRankedFrameRates` slice 在触摸事件后才开始考虑 120Hz 候选，说明系统侧决策滞后于用户操作——这是相机场景最常见的切换延迟根因。
 3. 确认 Camera HAL 释放 Surface 到 Launcher Surface 变为活跃之间的时间窗口：如果 Camera Surface 销毁晚于 Launcher 出现，RefreshRateSelector 可能在短时间内保留 60Hz 投票，延迟切换。
 
 **优化方向**：
@@ -496,8 +498,8 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 **分析**：多任务过渡动画由 WindowManager 驱动，动画的 Surface 出现后，RefreshRateSelector 才收集到新的帧率需求。从收集到硬件切换完成之间存在决策窗口。
 
 **排查路径**：
-1. 查看 Perfetto 中 `RefreshRateSelector::calculateOptimalRate` slice 的时间戳 vs Launcher Surface 首次变为 visible 的时间戳——两者之间的间隔就是决策延迟。
-2. 如果决策延迟超过 1 帧，检查 `collectVotes` 中 Launcher Layer 的投票是否及时到达；Layer 刚变为活跃时 Metadata 可能尚未同步到位。
+1. 查看 Perfetto 中 `RefreshRateSelector::getRankedFrameRates` slice 的时间戳 vs Launcher Surface 首次变为 visible 的时间戳——两者之间的间隔就是决策延迟。
+2. 如果决策延迟超过 1 帧，检查 `getRankedFrameRates` 结果中 Launcher Layer 的投票是否及时到达；Layer 刚变为活跃时 Metadata 可能尚未同步到位。
 3. 查看触摸事件的 `InputDispatcher` → `SurfaceFlinger` 路径：触摸事件本身可以触发 touch boost，但 boost 窗口长度在各 OEM 实现中不同。
 
 **优化方向**（系统侧，App 开发者无法干预）：
@@ -512,7 +514,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 不少分析者看到刷新率切换导致的卡顿，就直接归因到 "PLL 重配置太慢" 或 "Display HAL 状态机开销"。硬件切换确实占一部分延迟（通常 1-3 帧），但软件调度侧的延迟往往更长：RefreshRateSelector 从收到新 Layer 的帧率偏好到做出决策，可能需要 1-3 个 VSync 周期的延迟。再加上 SurfaceFlinger 合成队列在切换后需要适应新周期，软件侧的整体延迟经常超过硬件侧。
 
-> **判断方法**：在 Perfetto 中对比 VSync period 跳变时间点和 `RefreshRateSelector::calculateOptimalRate` 结束时间点——如果间隔超过 1 帧，软件侧的投票收集和决策时间不可忽略。
+> **判断方法**：在 Perfetto 中对比 VSync period 跳变时间点和 `RefreshRateSelector::getRankedFrameRates` 结束时间点——如果间隔超过 1 帧，软件侧的投票收集和决策时间不可忽略。
 
 ### 误区 2：使用最高刷新率就是最好的
 
