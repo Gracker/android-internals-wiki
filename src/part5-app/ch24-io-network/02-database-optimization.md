@@ -53,6 +53,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_reviewed_date: "2026-05-14"
 last_task6_at: "2026-05-14T08:11:00+08:00"
+last_task6_audit: "2026-06-06"
 last_task6_review_log: logs/review/2026-05-14-08-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；L1/L2 无需正文改动。满足 task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending，自动晋升 finalized。"
 
