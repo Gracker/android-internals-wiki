@@ -1,5 +1,6 @@
 ---
 
+
 status: ready-for-review
 title: JobScheduler/WorkManager 调度与后台任务性能
 chapter: '5.10'
@@ -57,7 +58,7 @@ related_chapters:
 - '11.2'
 - '15.5'
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting  # updated by task2b-verifier 2026-06-05
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: "fixed"

@@ -1,5 +1,6 @@
 ---
 
+
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
@@ -13,7 +14,7 @@ task9_state: pending
 task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending  # updated by task2b-verifier 2026-06-05
 last_task2b_at: 2026-06-05T14:50:00
 task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"

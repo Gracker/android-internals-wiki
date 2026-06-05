@@ -1,13 +1,14 @@
 ---
+
 title: 手势识别算法与性能优化
 chapter: '3.6'
 section: '3.6'
 status: ready-for-review
 task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
+task2b_state: pending  # updated by task2b-verifier 2026-06-05
+task6_state: reviewed  # updated by task2b-verifier 2026-06-05
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-05
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
   note: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
