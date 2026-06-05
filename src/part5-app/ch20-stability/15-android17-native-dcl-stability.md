@@ -55,7 +55,8 @@ updated_by: "openclaw-task9"
 updated_date: "2026-06-01"
 task9_p0_issues: 0
 task9_p1_issues: 0
-task9_p2_issues: 0
+task9_p2_issues: 0last_task6_audit: "2026-06-05"
+
 ---
 
 # 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性
@@ -153,7 +154,7 @@ fun publishNativeLibrary(bytes: ByteArray, tmp: File, finalFile: File, expectedS
 - 插件库：加载失败只影响插件进程，主进程记录失败状态并禁止重复重试；连续重试会把同一个文件权限问题放大成启动崩溃率。
 - SDK 内置库：SDK 要把加载错误透出为明确状态码，宿主只能拿到泛化异常时，无法判断是否应回滚版本。
 
-这里不要把 `chmod 777`、复制到外部存储、换随机路径重试写成方案。Android 的 DCL 风险文档已经把远程代码加载列为安全风险，稳定性治理应该减少动态加载面，而不是用路径变化绕过平台保护。[已验证: 官方文档, developer.android.com/privacy-and-security/risks/dynamic-code-loading]
+这里不要把 `chmod 777`、复制到外部存储、换随机路径重试写成方案。Android 的 DCL 风险文档已经把远程代码加载列为安全风险，稳定性治理应该减少动态加载面，不要指望用路径变化绕过平台保护。[已验证: 官方文档, developer.android.com/privacy-and-security/risks/dynamic-code-loading]
 
 ### 🔹 Native 热修复与插件化框架的兼容改造
 
