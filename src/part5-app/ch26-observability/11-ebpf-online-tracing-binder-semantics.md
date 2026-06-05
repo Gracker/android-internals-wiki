@@ -2,7 +2,7 @@
 title: "eBPF 在线追踪与 Binder 语义重建"
 chapter: "26.11"
 section: "26.11"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
@@ -44,20 +44,21 @@ source_refs:
   - https://arxiv.org/abs/2604.27830
   - src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
   - src/part1-fundamentals/ch01-architecture/04-binder.md
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-17"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T01:12:00+08:00"
-task9_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_at: "2026-05-17T01:36:14+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-17-01-deep-review.md"
+task9_result: pass-tech-review
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_at: "2026-06-05T12:27:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed
+last_task9_at: "2026-06-05T12:27:00+08:00"
 ---
 
 # 26.11 eBPF 在线追踪与 Binder 语义重建

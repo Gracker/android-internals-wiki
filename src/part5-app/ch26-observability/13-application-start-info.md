@@ -1,12 +1,19 @@
 ---
 title: "ApplicationStartInfo 与启动归因上报"
 chapter: "26.13"
+section: "26.13"
 status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-05-18"
-last_verified_against: "AOSP android-16.0.0_r1 ApplicationStartInfo / ActivityManager, Android Developers ApplicationStartInfo / ProfilingTrigger docs"
+last_verified: "2026-06-05"
+last_verified_against: "Android Developers ApplicationStartInfo / ActivityManager / ProfilingTrigger docs; AOSP android-16.0.0_r1 ApplicationStartInfo / ProfilingManager / ProfilingTrigger"
 confidence: medium
+last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
+last_task9_autofix_at: "2026-06-05"
+last_task9_at: "2026-06-05T12:27:00+08:00"
+task9_reviewed_at: "2026-06-05T12:27:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_result: auto-fixed
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md"
@@ -48,14 +55,14 @@ source_refs:
   - "intake/research-gaps.md#2026-05-17-26-12"
   - "developer.android.com/reference/android/app/ApplicationStartInfo"
   - "developer.android.com/about/versions/17/features"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-18T04:14:00+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-05"
-task6_state: "reviewed"
-task9_state: "pending"
+task6_state: revisiting
+task9_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-05"
@@ -92,7 +99,7 @@ last_task6_review_log: "logs/review/2026-06-05-11-review.md"
 ## 扩展
 
 ### 🔸 Android 15/16/17 版本能力表
-补一张 API 35 `ApplicationStartInfo`、API 36 `ProfilingManager`、API 37 `ProfilingTrigger` 的能力边界表。
+补一张 API 35 `ApplicationStartInfo`、API 35 `ProfilingManager`、API 37 `ProfilingTrigger` 的能力边界表。
 
 ### 🔸 CI 与灰度监控接入
 给出 Macrobenchmark、线上 P90/P99、trace 抽样和灰度回滚门禁之间的字段映射。
@@ -129,7 +136,7 @@ Android 15 / API 35 起，应用可以通过 `ActivityManager#getHistoricalProce
 | `getStartComponent()` | 组件类别 | API 36 起补充 Activity / Service / Broadcast / ContentProvider / Other 这类粗分类 |
 | `getIntent()` | 启动 Intent | 只建议端侧辅助判断，默认不上传完整 URI、extras 或 referrer |
 
-AOSP `ApplicationStartInfo.java` 里，`START_TYPE_COLD = 1`、`START_TYPE_WARM = 2`、`START_TYPE_HOT = 3`；时间戳常量覆盖 `LAUNCH`、`FORK`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME`、`FULLY_DRAWN`、`SURFACEFLINGER_COMPOSITION_COMPLETE` 等阶段。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationStartInfo.java]
+AOSP `ApplicationStartInfo.java` 里，`START_TYPE_COLD = 1`、`START_TYPE_WARM = 2`、`START_TYPE_HOT = 3`；时间戳常量覆盖 `LAUNCH`、`FORK`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME`、`FULLY_DRAWN`、`INITIAL_RENDERTHREAD_FRAME`、`SURFACEFLINGER_COMPOSITION_COMPLETE` 等阶段。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationStartInfo.java]
 
 `getStartupTimestamps()` 的返回值不是 `Bundle`。线上 SDK 读取时必须按 `Map<Integer, Long>` 处理，并把缺失 key 当作正常边界，而不是异常数据。
 
