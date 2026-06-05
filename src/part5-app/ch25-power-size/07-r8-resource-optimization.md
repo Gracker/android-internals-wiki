@@ -1,4 +1,5 @@
 ---
+
 title: "R8 与资源优化"
 chapter: "25.7"
 section: "25.7"
@@ -36,19 +37,19 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task6_reviewed"
+task6_state: "reviewed"
 task9_state: reviewed
 last_task9_autofix_at: "2026-06-03"
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-04'
-task6_result: pass-light-edit
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-05"
+task6_result: "pass-light-edit"
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: '2026-06-04T01:08:00+08:00'
+last_task6_at: "2026-06-05T12:11:44+08:00"
 last_task6_review_log: 'logs/review/2026-06-04-01-review.md'
-task6_review_notes: '2026-06-04 Task6 01:08: pass-light-edit(revisit). Task9 auto-fix + Task2B fix writing quality OK; 确实 1 occurrence (functional, below threshold). No new rework items.'
+task6_review_notes: "2026-06-05 Task6 revisit-review: L1/L2 无新增写作问题。task9_result=auto-fixed（非 pass-tech-review，不满足自动晋升条件 ②），同 25.6 待确认。"
 
 task2b_result: fixed
 last_task2b_at: "2026-06-03T14:54:49+08:00"

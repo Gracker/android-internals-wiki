@@ -2,6 +2,7 @@
 
 
 
+
 title: "APK 体积分析与瘦身"
 chapter: "25.6"
 section: "25.6"
@@ -43,16 +44,16 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task6_reviewed"
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-05
-task6_result: pass-light-edit
-last_task6_at: "2026-06-05T02:06:00+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-05"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-06-05T12:11:44+08:00"
 last_task6_review_log: logs/review/2026-05-18-16-review.md
-task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题。task9_result=auto-fixed（复核通过），queue 无 pending，建议晋升 finalized（task9_result 值为 auto-fixed 非 pass-tech-review，需确认是否等价）。"
+task6_review_notes: "2026-06-05 Task6 revisit-review #4: L1/L2 无新增写作问题。task9_result=auto-fixed（非 pass-tech-review，不满足自动晋升条件 ②），需确认 auto-fixed 是否等价于 pass-tech-review 后再决定晋升。"
 task2b_result: fixed-lite
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
