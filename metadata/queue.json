@@ -1624,6 +1624,15 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-05T07:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "chapter": "6.7",
+      "title": "Android 17 FUSE-BPF 与 Scoped Storage I/O 性能",
+      "file": "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md",
+      "priority": 80,
+      "status": "pending",
+      "created_date": "2026-06-05",
+      "source": "task2a-knowledge-gap"
     }
   ],
   "5.18": {

@@ -1,6 +1,6 @@
 {
-  "total": 411,
-  "draft": 5,
+  "total": 412,
+  "draft": 6,
   "ready-for-review": 109,
   "finalized": 261,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -7637,7 +7637,7 @@
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-06-05",
+  "last_task6_review": "2026-06-05T13:11:00+08:00",
   "last_task6_sections": [
     "26.5",
     "26.6",
@@ -10619,7 +10619,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-05-08-review.md",
+  "last_task6_review_log": "logs/review/2026-06-05-13-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -13735,5 +13735,11 @@
     "gap_score": 16,
     "material_count": 5,
     "queue_priority": 80
-  }
+  },
+  "task6_finalized": [
+    "25.18",
+    "25.14",
+    "25.11",
+    "26.13"
+  ]
 }

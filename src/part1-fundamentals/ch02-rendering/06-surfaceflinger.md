@@ -43,6 +43,8 @@ last_task6_review_log: "logs/review/2026-05-31-15-review.md"
 task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # SurfaceFlinger 与合成
@@ -78,15 +80,15 @@ last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
 
 打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12 常见 `INVALIDATE`、`REFRESH`，Android 13+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
 
-这就是 SurfaceFlinger——Android 图形系统的合成器。它接受来自多个来源的数据缓冲区，按 z-order 叠加后输出到显示设备。
+这就是 SurfaceFlinger——Android 图形系统的合成器。它接收各应用提交的图形缓冲区，按 z-order 叠加后输出到显示设备。
 
 理解 SurfaceFlinger 的意义在于，它能将性能分析的视角从"应用画得慢不慢"提升到"整条图形管线的哪个环节出了问题"。很多时候 App 渲染没问题，但用户还是觉得卡——这种问题的根因往往在 SurfaceFlinger 这一层。可能是合成耗时过长，可能是 VSync 信号分发有延迟，也可能是 BufferQueue 的 Buffer 周转不过来。
 
-在 Perfetto 中，SurfaceFlinger 的相关 Track 包括：SurfaceFlinger 主线程（展示合成各阶段耗时）、VSYNC-sf（触发合成的信号）、VSYNC-app（触发渲染的信号）、以及 BufferQueue 系列操作（dequeueBuffer、queueBuffer、acquireBuffer、releaseBuffer）。我们会在后文逐一拆解这些 Track 的含义，下面先从 SurfaceFlinger 本身的工作机制说起。
+在 Perfetto 中，SurfaceFlinger 的相关 Track 包括：SurfaceFlinger 主线程（展示合成各阶段耗时）、VSYNC-sf（触发合成的信号）、VSYNC-app（触发渲染的信号）、以及 BufferQueue 系列操作（dequeueBuffer、queueBuffer、acquireBuffer、releaseBuffer）。下面先从 SurfaceFlinger 本身的工作机制说起，这些 Track 的含义会在后续 Perfetto 部分逐一说明。
 
 ## 核心机制：Layer 合成、VSync 分发与 Buffer 管理
 
-SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核心服务，运行在独立的系统进程中。它的核心职责可以归纳为三件事：管理 Layer 并将它们合成为最终画面、分发 VSync 信号驱动渲染管线、以及通过 BufferQueue 协调数据的流转。
+SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核心服务，运行在独立的系统进程中。它的核心职责可以归纳为三件事：管理 Layer 并将它们合成为最终画面、分发 VSync 信号驱动渲染管线、以及通过 BufferQueue 管理数据流转。
 
 ### Layer 合成：多源汇聚为一帧
 
@@ -241,7 +243,7 @@ Pacesetter Display 调度在 Android 14 已出现（`android-14.0.0_r1`），`Fr
 
 ### VSYNC-sf Track
 
-这个 Track 显示触发 SurfaceFlinger 合成的 VSync 信号时间点。在 Perfetto 中它表现为一系列等间距的竖线（60Hz 设备间距约 16.67ms，120Hz 设备约 8.33ms）。每次 VSYNC-sf 到来，SurfaceFlinger 主线程的 Track 上就应该紧跟着出现对应的合成工作。
+这个 Track 显示触发 SurfaceFlinger 合成的 VSync 信号时间点。在 Perfetto 中它表现为一系列等间距的竖线（60Hz 设备间距约 16.67ms，120Hz 设备约 8.33ms）。每次 VSYNC-sf 到来后，SurfaceFlinger 主线程 Track 上应紧跟着出现对应的合成工作。
 
 **正常表现**：VSYNC-sf 信号均匀分布，SurfaceFlinger 在每个信号后立即开始工作。
 
@@ -402,7 +404,6 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 
 
-<!-- AIW-源码调研-2026-05-22 -->
 ## HWC Overlay Plane Capability 与合成降级（补充）
 
 ### HWC2 Overlay Capability 查询机制
@@ -498,22 +499,13 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 - [高爷 Android Performance 博客](https://www.androidperformance.com/) — SurfaceFlinger、BufferQueue、Systrace/Perfetto 分析系列
 
 ### BufferQueue 内部锁竞争机制（源码级调研）
-- 来源：DeepResearch 调研结果（2026-05-08）
-- 类型：AIW 每日源码调研
+- 来源：DeepResearch 调研（2026-05-08）
 - 摘要：详述 BufferQueue 单一 mutex + 多 condition variable 锁架构，分析 dequeueBuffer 等待、ActiveBuffer O(n) 扫描、Allocation 期间锁释放三个关键竞争路径，以及 Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化。
-- 注入时间：2026-05-10
-- 价值：补充 BufferQueue 锁竞争机制源码级分析，对理解 SurfaceFlinger 合成链路中 Producer-Consumer 锁瓶颈极具价值
 ### SurfaceFlinger FrontEnd 架构与 RequestedLayerState（源码级调研）
-- 来源：DeepResearch 调研结果（2026-05-09）
-- 类型：AIW 每日源码调研
+- 来源：DeepResearch 调研（2026-05-09）
 - 摘要：Android 15 引入 FrontEnd 模块，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleManager 生命周期管理和 LayerHierarchyBuilder 层级构建解耦，主合成线程只在需要合成计算时持有 mStateLock，大幅降低锁竞争。包含 Changes bitmask 枚举、TransactionHandler 事务批处理、以及 FrontEnd 目录结构。
-- 注入时间：2026-05-10
-- 价值：补充 Android 15 SurfaceFlinger FrontEnd 架构的源码级分析，对理解 SurfaceFlinger 锁优化和 Layer 状态管理机制极具价值
 
 ### Android 17 SurfaceFlinger 事务与缓冲区生命周期（源码级调研）
-- 来源：DeepResearch 调研结果（2026-05-22）
-- 类型：AIW 每日源码调研
-- 摘要：Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲 mCurrentState/mDrawingState 原子更新机制、INVALIDATE/REFRESH 双消息分离、BufferQueue 状态机循环、Android 17 DeliQueue 无锁重构 MessageQueue 优化。详述事务批处理、Buffer 获取时机、Layer 状态同步等关键路径源码实现。
-- 注入时间：2026-05-22
-- 价值：补充 Android 17 SurfaceFlinger 事务处理机制和缓冲区生命周期的最新源码分析，对理解 SurfaceFlinger 高版本优化和核心算法演进极具价值
+- 来源：DeepResearch 调研（2026-05-22）
+- 摘要：Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲 mCurrentState/mDrawingState 原子更新机制、INVALIDATE/REFRESH 双消息分离、BufferQueue 状态机循环、Deliqueue 无锁重构 MessageQueue 优化。详述事务批处理、Buffer 获取时机、Layer 状态同步等关键路径源码实现。
 
