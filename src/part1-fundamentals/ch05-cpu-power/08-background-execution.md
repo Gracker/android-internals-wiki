@@ -1,7 +1,8 @@
 ---
 
 
-status: "ready-for-review"
+
+status: finalized
 title: 后台执行限制与优化
 chapter: '5.8'
 section: '5.8'
@@ -70,22 +71,22 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
-task9_reviewed_date: "2026-06-04"
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T06:48:42+08:00"
+last_task9_at: "2026-06-05T17:24:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
-task9_state: pending
-task9_result: auto-fixed
-last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
-task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。"
+task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；Doze/App Standby、FGS 超时、Android 17 后台音频硬化、JobScheduler pending reason stats 与 Binder freezer 版本边界复核通过，满足自动晋升 finalized 条件。"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 last_task6_at: 2026-06-04T12:11:00+08:00

@@ -1,8 +1,9 @@
 ---
+
 title: "FragmentTransaction 提交链路与页面切换性能"
 chapter: "22.12"
 section: "22.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
 last_verified: "2026-06-03"
@@ -34,13 +35,13 @@ related_chapters: ["7.17", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
-task9_state: pending
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T05:27:37+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-05-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T17:24:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
+task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；AndroidX Fragment commit f39ca351 提交链路、runOnCommit/reordering 边界、FrameTimeline 观察点和 related_chapters 复核通过，满足自动晋升 finalized 条件。"
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -52,7 +53,7 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 last_task9_autofix_at: "2026-06-03"
 last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"

@@ -2,17 +2,18 @@
 
 
 
+
 title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task2b_state: fixed
-last_task9_at: "2026-06-04T09:20:00+08:00"
+last_task9_at: "2026-06-05T17:24:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-task9_result: auto-fixed
-task9_state: pending
+task9_reviewed_date: "2026-06-05"
+task9_result: pass-tech-review
+task9_state: reviewed
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
 applicable_versions: "Android 15-QPR1 (API 35) - Android 16 (API 36)"
@@ -68,8 +69,8 @@ task2b_result: fixed-lite
 last_task6_at: "2026-06-04T11:05:00+08:00"
 version_boundary_note: "Android 17/API 37 未核到公开 android-17.0.0_r1，本节不写 Android 17-only 结论"
 last_task9_autofix_at: "2026-06-04"
-last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
-task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim."
+last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
+task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过，满足自动晋升 finalized 条件。"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-06-04 Task6 revisiting-review: pass-light-edit。L1/L2 全部通过（禁用词0/AI套话0/高频词0/元叙述0/结构性元叙述0）。无B类大问题。代码路径和验证标注完整，[已验证] tags与AOSP锚点一一对应。task9 auto-fix后回到task6复审，写作质量无回退。"
