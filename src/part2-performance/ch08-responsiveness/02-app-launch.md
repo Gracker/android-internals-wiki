@@ -56,17 +56,17 @@ polish_by: task2b-polish
 pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T10:50:00+08:00"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
-task9_reviewed_date: "2026-05-24"
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T11:30:20+08:00"
-task9_review_notes: "2026-05-24 Task9 复审: needs-rework → Task2B 2026-06-04 已修复。P0 0 / P1 0 / P2 0；Surface 创建已更新为 BLASTBufferQueue + updateBlastSurfaceIfNeeded 分版本路径；16KB TLB 口径已修正为覆盖范围；ApplicationStartInfo 已补 RENDERTHREAD_FRAME 字段。"
-last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
+last_task9_at: "2026-06-05T18:32:25+08:00"
+task9_review_notes: "2026-06-05 Task9 深度复审: pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo 常量、16KB page size 数据、Perfetto/TTID 口径核对通过；无 queue pending。"
+last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
 p0: 0
 p1: 0
 p2: 0
