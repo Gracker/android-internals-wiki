@@ -5,7 +5,7 @@ chapter: '5.11'
 section: '5.11'
 status: ready-for-review
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
@@ -14,15 +14,15 @@ last_task6_at: 2026-06-05T01:15:01+08:00
 task6_reviewed_date: "2026-06-04"
 review_round: 3
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词 0 / 元叙述 0 / 否定-纠正 0)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-06-04"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T18:15:00+08:00"
+last_task9_at: "2026-06-05T16:21:00+08:00"
 task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-06-04'
-last_verified_against: AOSP android-17.0.0_r1 (PackageManager.java) + developer.android.com + ai.google.dev/edge/litert
+last_verified_against: Android API reference API 37 preview + developer.android.com + ai.google.dev/edge/litert; AOSP android-17.0.0_r1 tag not published
 confidence: high
 sources:
 - type: official
@@ -54,11 +54,13 @@ created_date: '2026-04-08'
 task2b_result: fixed
 last_task2b_at: 2026-06-04T18:54:38
 last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
-task9_review_notes: "2026-06-04 Task2B 回炉修复：P0 NPU feature 常量值从 android.hardware.neural_processing_unit 修正为 android.hardware.npu；API 边界从 API 36+ 修正为 Android 17/API 37；源码索引表重写，移除无法在 AOSP 闭环的 LiteRT 路径，修正 NNAPI runtime 与 AICore 归属；合并两处矛盾的 NPU feature 段落；benchmark 数字补充来源警告。"
+task9_review_notes: "2026-06-05 Task9 auto-fix: 修正 Android 17 NPU feature 的 AOSP tag 边界、targetSdkVersion 37 口径和 NPU fallback 描述。"
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
 p0: 0
 p1: 0
 p2: 0
+last_task9_autofix_at: 2026-06-05
+
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
@@ -84,7 +86,7 @@ p2: 0
   V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
 
 - 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
-  API 37 正式引入 `FEATURE_NEURAL_PROCESSING_UNIT`（`android.hardware.npu`），targetSdk >= 17 的应用必须声明才能直接访问 NPU。
+  API 37 正式引入 `FEATURE_NEURAL_PROCESSING_UNIT`（`android.hardware.npu`）；targetSdkVersion 37（Android 17）及以上的应用如需直接访问 NPU，需要声明该 feature。
 
 - 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
   AICore 推理内存（PSS/RSS）是否回算到发起方 App 当前公开文档未确认；排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 进程。
@@ -127,26 +129,26 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 Android 17 正式引入 NPU 硬件特性声明机制，将 NPU 访问从透明可用变为显式声明。
 
-**`FEATURE_NEURAL_PROCESSING_UNIT`** 是 `PackageManager` 中的 Java 常量，其字符串值为 `android.hardware.npu`，在 Android 17 / API 37 中新增。源码锚点：`frameworks/base/core/java/android/content/pm/PackageManager.java`（AOSP cs.android.com）。
+**`FEATURE_NEURAL_PROCESSING_UNIT`** 是 `PackageManager` 中的 Java 常量，其字符串值为 `android.hardware.npu`，Android API reference 标记为 Android 17 / API 37 新增。源码锚点应等 `android-17.0.0_r1` tag 发布后再固定；本轮 `android-16.0.0_r1` 中尚不存在该常量。
 
-Android 17 release notes 明确要求：
+Android 17 Beta 2 官方博客明确要求：
 
 > "Apps targeting Android 17 that need to directly access the NPU must declare `FEATURE_NEURAL_PROCESSING_UNIT` in their manifest to avoid being blocked from accessing the NPU."
 
-targetSdk >= 17 的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
+targetSdkVersion 37（Android 17）及以上的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
 
 ```xml
 <uses-feature android:name="android.hardware.npu" />
 ```
 
-未声明此 feature 的应用在 Android 17+ 设备上无法直接访问 NPU，系统会拒绝 NPU 调度请求并回退到 CPU/GPU。此机制是 Android 17 对 AI 硬件安全管控的关键手段。
+未声明此 feature 的应用在 Android 17+ 设备上可能被阻止直接访问 NPU；实际是否回退到 CPU/GPU 取决于 LiteRT delegate、厂商 SDK 或 NNAPI 路径自己的 fallback 处理。此机制是 Android 17 对 AI 硬件访问显式化的关键手段。
 
 排查 NPU 不可用问题时，常规方向包括：
 - 检查设备是否通过 `PackageManager.hasSystemFeature(PackageManager.FEATURE_NEURAL_PROCESSING_UNIT)` 暴露 NPU 能力
 - 对应 HAL / AIDL service 是否可用
 - 系统资源调度策略是否限制了 NPU 使用
 
-[已验证: developer.android.com, AOSP frameworks/base/core/java/android/content/pm/PackageManager.java, Android 17 release notes]
+[已验证: developer.android.com API reference / Android 17 Beta 2 blog；AOSP android-16.0.0_r1 未包含该常量，android-17.0.0_r1 tag 未发布]
 
 ### GPU 推理
 
@@ -405,12 +407,12 @@ Android 15 正式将 NNAPI 标记为 deprecated。官方 NNAPI Migration Guide �
 
 #### FEATURE_NEURAL_PROCESSING_UNIT（Android 17 新增）
 
-**源码锚点**：`frameworks/base/core/java/android/content/pm/PackageManager.java`（AOSP cs.android.com）
+**源码锚点边界**：Android API reference 已标记 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 为 API 37；AOSP `android-17.0.0_r1` tag 未发布，当前只能把 `frameworks/base/core/java/android/content/pm/PackageManager.java` 作为待固定源码路径，不能写成已锚定 tag。
 
-Android 17 release notes 明确：
+Android 17 Beta 2 官方博客明确：
 > "Apps targeting Android 17 that need to directly access the NPU must declare `FEATURE_NEURAL_PROCESSING_UNIT` in their manifest to avoid being blocked from accessing the NPU."
 
-targetSdk>=17 的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
+targetSdkVersion 37（Android 17）及以上的应用如需直接访问 NPU，必须在 `AndroidManifest.xml` 中声明：
 ```xml
 <uses-feature android:name="android.hardware.npu" />
 ```
