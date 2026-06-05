@@ -13,9 +13,9 @@ task9_state: pending
 task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task9_pending
-last_task2b_at: 2026-06-05T08:59:54
-task2b_notes: 2026-06-05T08:59:54 Task2B main 回炉：P0修复 setFrameRate API签名(void)+常量(SUFFICIENT→EXACT)；移除GameManager.setGameMode()/Activity.setFrameRate()错误引用；5处伪源码块替换为android-16.0.0_r1已验证路径说明；ARR版本表Android 16-17→待确认；Perfetto XML配置→已验证方法；删除无法验证厂商PLL/功耗表格
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-05T14:50:00
+task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档
@@ -138,8 +138,8 @@ App 可以通过 Surface.setFrameRate() 来指定自己的帧率需求：
 // 设置固定 60fps 帧率
 surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 
-// 设置动态匹配刷新率
-surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_SUFFICIENT);
+// 不指定偏好，让系统根据内容检测自动选择刷新率
+surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_DEFAULT);
 ```
 
 #### API 参数说明
@@ -368,27 +368,13 @@ ARR 虽然能缓解刷新率切换卡顿，但存在以下边界：
 
 #### 硬件限制
 
-```cpp
-// 检查硬件是否支持 ARR
-bool supportsARR(const DisplayCapabilities& caps) {
-    // 检查 Composer HAL 版本
-    if (caps.composerVersion < 2.4) {
-        return false;
-    }
-    
-    // 检查显示模式数量
-    if (caps.displayModes.size() < 2) {
-        return false;
-    }
-    
-    // 检查是否支持无缝切换
-    if (!caps.supportsSeamlessSwitch) {
-        return false;
-    }
-    
-    return true;
-}
-```
+ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
+
+- Composer HAL 需支持多 Display Mode 和无缝切换（`Seamless` capability flag）；对应 HWC2 `getHwComposer()` 返回的 `HWComposer` 中 `mSeamlessCapability` 字段。
+- 显示面板需提供至少 2 个 Display Mode（如 60Hz 与 120Hz），且这些模式在同一 Config Group 内。
+- 如果设备只有一个 Display Mode 或不支持无缝切换，ARR 无法生效——切换只能是 Non-seamless，用户体验代价太高，SurfaceFlinger 在此条件下不会执行自动切换。
+
+> [已验证范围：android-16.0.0_r1] `DisplayCapabilities`、`composerVersion`、`displayModes`、`supportsSeamlessSwitch` 等类/成员名在 android-16.0.0_r1 中无精确对应。以上为基于公开行为的概念描述。
 
 #### 软件调度边界
 
