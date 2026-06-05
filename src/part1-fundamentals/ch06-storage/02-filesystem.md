@@ -614,6 +614,12 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 - Android 13 CDD 存储相关要求：<https://source.android.com/docs/compatibility/13/android-13-cdd>
 - esper.io Android 文件系统分析系列
 
+
+### F2FS Adaptive Logging 机制与 I/O 调度性能（源码级调研）
+- 来源：DeepResearch 调研（2026-05-29）
+- 摘要：分析 F2FS 6 持久化日志温度分类（HOT_DATA/WARM_DATA/COLD_DATA/HOT_NODE/WARM_NODE/COLD_NODE）、active_logs 配置（2-6）、adaptive logging 策略切换（低利用率 copy-and-compaction ↔ 高利用率 threaded log）、LFS/SSR/AT_SSR 三种 segment 分配模式，以及 f2fs_balance_fs 前台 GC 触发条件。直接解释了"存储满时变卡"的内核层原因。
+- 注意：基于 Linux main/master 分支，部分特性可能未进入 Android Common Kernel 正式版本
+
 ## 小结：文件系统选择对性能的影响
 
 回到我们开头提到的 `fsync` 卡顿问题。当我们看到主线程在 `fsync` 上阻塞时，分析路径应该是：

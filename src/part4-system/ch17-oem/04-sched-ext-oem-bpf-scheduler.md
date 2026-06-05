@@ -379,6 +379,11 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 
 > 以下内容为 2026-05-30 每日源码调研补充，对正文中以下两处进行勘误或确认：
 
+
+### 荣耀 MUSCHED VIP 调度与 Binder 优先级传递（OSDI '26 论文级分析）
+- 来源：DeepResearch 调研（2026-06-02）
+- 摘要：基于 USENIX OSDI '26 论文《Surviving the Impossible Trinity: Revisiting CPU Scheduling Problem on Modern COTS Mobile Devices》，分析 MUSCHED 在 sched_ext full-switch 模式下的 VIP 内部分层 DSQ 体系、Binder 优先级继承只传播 sched_policy+prio 的上游限制，以及 eBPF tracepoint sideband 与 rtmutex vendor hooks 两条跨进程 VIP 传播实现路径。包含完整的场景打标、本地调度加速、同步 Binder 跨进程传播、锁链传播的端到端流程复原。
+- 价值：为 sched_ext OEM 调度器的产品级 VIP 实现提供论文级技术参考和工程推断
 ### 1. SCX_DSQ_BYPASS / SCX_SLICE_BYPASS Android 16 不可用（勘误）
 
 **正文位置**：DSQ 决定任务从 BPF 调度器回到 CPU 的方式

@@ -498,6 +498,13 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 
 - [高爷 Android Performance 博客](https://www.androidperformance.com/) — SurfaceFlinger、BufferQueue、Systrace/Perfetto 分析系列
 
+
+
+### SurfaceFlinger 事务与缓冲区生命周期（源码级调研）
+- 来源：DeepResearch 调研（2026-05-29）
+- 摘要：分析 SurfaceFlinger 双缓冲状态模型（mCurrentState/mDrawingState 原子更新）、MessageQueue INVALIDATE/REFRESH 双消息机制、BufferQueue 状态机完整循环（FREE→QUEUED→DEQUEUED→ACQUIRED→FREE），以及 Android 13 mScheduler 替代和 Android 17 DeliQueue 无锁 MessageQueue 重构。
+- 注意：部分 android-17.0.0_r1 源码锚点待 AOSP 公开 tag 确认
+
 ### BufferQueue 内部锁竞争机制（源码级调研）
 - 来源：DeepResearch 调研（2026-05-08）
 - 摘要：详述 BufferQueue 单一 mutex + 多 condition variable 锁架构，分析 dequeueBuffer 等待、ActiveBuffer O(n) 扫描、Allocation 期间锁释放三个关键竞争路径，以及 Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化。
