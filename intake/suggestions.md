@@ -196,3 +196,18 @@
 **验证结果**：AndroidX 源码 L1 ✓ 5 处 | Compose BOM 版本边界 ✓ | 待验证 1 处（Macrobenchmark 具体配置）
 **产出**：src/part5-app/ch22-rendering-practice/21-compose-animation-performance.md（status → ready-for-review）
 **下一待写章节**：6.7 FUSE-BPF（draft）或 22.20 Compose 盲区（draft）
+
+
+## [Task2A Gap Mining] 2026-06-05 19:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**已检查方向**（本轮增量 vs 上轮 07:07 / 12:05）：
+1. **daily-info 2026-06-05 16:38 新增**（1 条）：Android Debug MCP 工具 → 开源调试工具，非核心性能话题，评分 8/20
+2. **Clippings 参考书全量交叉**：稳定性 20 篇、性能优化 20 篇、线上疑难 58 篇 → 全部已有对应章节
+3. **6.7 FUSE-BPF 源码验证结论**：FUSE-BPF 在 Linux 6.12 主线内核不存在，章节需 Task 2B 全面重写
+4. **research-feeds / DeepResearch**：无新增未映射素材
+5. **AOSP / 官方文档**：406 节已覆盖 frameworks/base 核心服务、system/ 核心组件、packages/modules/ 主要模块
+
+**结论**：全书 406+ 节，覆盖率极高。本轮无合格缺口，不创建新章节。
+
+**⚠️ 需关注**：
+- **6.7 FUSE-BPF**（draft，16 行）：源码验证已确认 FUSE-BPF 不存在，章节全部断言失效。建议进入 Task 2B 管线重写，标题改为「Android 17 FUSE 与 Scoped Storage I/O 性能」，聚焦实际 FUSE 优化路径（iomode.c、sdcard 守护进程改进、FUSE DAX）。

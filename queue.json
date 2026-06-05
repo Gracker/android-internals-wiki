@@ -1,5 +1,15 @@
 {
-  "generated_at": "2026-05-10T06:05:00+08:00",
+  "generated_at": "2026-06-05T02:00:00+08:00",
+  "freshness_check": {
+    "check_date": "2026-06-05",
+    "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+    "scope": "src/ 全量 365 篇含 last_verified 元数据章节",
+    "android_version_cap": "Android 17 / API 37（不包含 Android 18/API 38+）",
+    "outdated_total": 5,
+    "high_risk": 4,
+    "medium_risk": 1,
+    "low_risk": 0
+  },
   "task6_review": {
     "sections_reviewed": [
       "16.5"
