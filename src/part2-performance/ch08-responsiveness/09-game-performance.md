@@ -66,6 +66,8 @@ task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1 修正 1 处（�
 last_task9_autofix_at: "2026-06-05"
 last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
 task9_review_notes: "2026-06-05 Task9 deep review: auto-fixed。修复 GameManagerService AOSP tag、ADPF codelab/AOSP 源码路径混写；回到 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
@@ -119,9 +121,7 @@ Android 从 Android 12 开始逐步构建了一套面向游戏的系统级性能
 
 3. **帧时间波动比平均帧率更影响体验**。平均 55fps 看起来只差 5fps，但如果这 55fps 中有 50 帧是 16ms、10 帧是 33ms（掉帧），用户感知到的是明显卡顿。§7.9 我们讨论了"感知流畅性"和步幅波动的概念，这在游戏场景中表现得更极端——游戏的用户对帧时间一致性极为敏感。
 
-公开材料提到，ADPF 与 MediaTek MAGT 联合使用的个别案例出现过更高帧率和更低功耗。但公开页面没有同时给出设备型号、场景负载、温度约束和基线配置，所以这里不把“57%”当成通用收益。
-
-ADPF 提供的是调度与热反馈回路，收益取决于游戏引擎、SoC、目标帧率和画质档位。
+ADPF 与 MediaTek MAGT 联合使用在部分公开案例中出现过更高帧率和更低功耗，但公开页面没有给出设备型号、场景负载、温度约束和基线配置，不能把特定百分比当成通用收益。ADPF 提供的是调度与热反馈回路，实际收益取决于游戏引擎、SoC、目标帧率和画质档位。
 
 [来源: intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md]
 
@@ -548,10 +548,9 @@ OEM 的游戏面板通常会把多种动作绑在一起，例如画质降档、F
 
 
 
-<!-- AIW-源码调研-2026-05-17: Kotlin Coroutine 与 ADPF Hint 工程化边界 -->
-## ADPF Hint Session 与 Kotlin Coroutine 线程迁移（2026-05-17 补充）
+## ADPF Hint Session 与 Kotlin Coroutine 线程迁移
 
-> 本节基于 Android Developers adaptability codelab、NDK Performance Hint API 文档和 AOSP android-16.0.0_r1 `PerformanceHintManager` 复核，补充 §5.9 ADPF 在 Kotlin 协程场景下的工程化约束。
+> 这一节把 §5.9 ADPF 的讨论延伸到 Kotlin 协程场景。基于 Android Developers adaptability codelab、NDK Performance Hint API 文档和 AOSP android-16.0.0_r1 `PerformanceHintManager` 复核。
 
 ### 核心约束：Hint Session 基于线程 TID，而非协程
 
@@ -636,7 +635,6 @@ GitHub `Kotlin/kotlinx.coroutines` Issue #1617 讨论了协程优先级 hint：
 - AOSP ADPF API: `frameworks/base/core/java/android/os/PerformanceHintManager.java` 与 NDK `performance_hint` 接口
 - Kotlin coroutine 线程迁移需结合项目实际调度器验证，不把 `external/kotlinx.coroutines` 写成 ADPF 示例源码路径
 
-<!-- AIW-源码调研-2026-05-17 END -->
 
 - AOSP GameManager: `frameworks/base/core/java/android/app/GameManager.java`
 - AOSP GameState: `frameworks/base/core/java/android/app/GameState.java`

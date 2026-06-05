@@ -2192,6 +2192,45 @@
         "#DisplayCutout"
       ],
       "scored_at": "2026-06-05T05:47:35.433984"
+    },
+    {
+      "title": "BlockCanary 与 Looper.Observer 在 Android 17 的接口稳定性与门槛验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-05-blockcanary-looper-observer-android17-verify.md",
+      "category": "source-code-research",
+      "relevance": 9,
+      "technical_depth": 9,
+      "timeliness": 10,
+      "verifiability": 9,
+      "total_score": 37,
+      "mapping_chapter": "ch19",
+      "tags": [
+        "APM",
+        "BlockCanary",
+        "Looper",
+        "Android17",
+        "Perfetto"
+      ],
+      "scored_at": "2026-06-05T06:13:57.857632",
+      "action": "already-incorporated"
+    },
+    {
+      "title": "Android 17 linux.perf 和 FrameTimeline 数据源验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-05-trace-capture-linux-perf-frametimeline.md",
+      "category": "source-code-research",
+      "relevance": 9,
+      "technical_depth": 8,
+      "timeliness": 10,
+      "verifiability": 9,
+      "total_score": 36,
+      "mapping_chapter": "ch13",
+      "tags": [
+        "Perfetto",
+        "TraceCapture",
+        "SurfaceFlinger",
+        "FrameTimeline"
+      ],
+      "scored_at": "2026-06-05T06:13:57.857632",
+      "action": "already-incorporated"
     }
   ]
 }

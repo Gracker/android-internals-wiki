@@ -64,3 +64,13 @@ sources:
 <!-- outline-end -->
 
 > 本节内容待加工。
+
+
+## 参考资料
+
+### Linux ANON_VMA_LAZY 优化机制及其对 Android 内存管理的影响
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-anon_vma_lazy_memory_optimization.md
+- 类型：DeepResearch 调研结果
+- 摘要：荣耀提交的 ANON_VMA_LAZY 内核 patch 通过推迟匿名虚拟内存区域(anon_vma)结构创建时机，将 anon_vma 相关内存使用减少约 92-97%，anon_vma_chain 减少 50-57%，Android 典型工作负载下可节省约 45MB 内存。新增 anon_vma_tree_t 数据结构管理延迟分配的 anon_vma，通过 CONFIG_ANON_VMA_LAZY 编译开关控制。
+- 注入时间：2026-06-05
+- 价值：源码级解析 ANON_VMA_LAZY 延迟分配策略与新增数据结构，含性能测试数据和 Android 适配路径，对理解 Android 17 内核 6.12 内存优化有直接参考价值

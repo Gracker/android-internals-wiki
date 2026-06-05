@@ -1,5 +1,4 @@
 ---
-
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
@@ -11,10 +10,10 @@ drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
 last_task2b_at: '2026-05-14T19:19:00+08:00'
-last_task9_at: '2026-05-14T19:29:00+08:00'
+last_task9_at: "2026-06-05T06:20:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -49,18 +48,18 @@ tags:
 - 音频延迟
 - ExoPlayer
 task2b_result: fixed-lite
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-14'
-task9_state: pending
+task9_reviewed_date: "2026-06-05"
+task9_state: reviewed
 title: Android 多媒体管线性能
-task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
-last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
+task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 4 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。；2026-06-05 task9 deep-review: needs-rework。P0 3 / P1 1；Android 17 tag 未公开但 frontmatter 声称已验证，源码调研附录存在 Codec2 版本矩阵、tunneled playback 符号与 Media3 ABR 路径错误。"
+last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
 last_task6_at: "2026-06-05T02:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-06-05 Task6 revisiting-review #2：L1/L2 无新增写作问题，内容清洁。task9_result 仍为 needs-rework，等待 Task9 复检。"

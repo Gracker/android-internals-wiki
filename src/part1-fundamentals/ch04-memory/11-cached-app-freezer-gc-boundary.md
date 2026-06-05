@@ -52,6 +52,8 @@ task9_result: auto-fixed
 task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界
@@ -275,11 +277,11 @@ AOSP 文档给出的公开版本边界如下：Android 11（API 30）及以上�
 
 ## 小结
 
-Cached App Freezer、ART GC、LMK/lmkd 和 16KB Page Size 处理的是四个不同层面：
+Cached App Freezer、ART GC、LMK/lmkd 和 16KB Page Size 分别管四件事：
 
-- Freezer 暂停 cached 进程的线程调度，目标是 CPU 与功耗。
-- ART GC 根据堆水位、分配压力和 runtime 状态运行，目标是管理 Java/Native 侧可回收对象与堆增长。
-- LMK/lmkd 在低内存场景杀进程，目标是释放内存并保护前台体验。
-- 16KB Page Size 改变页粒度和地址翻译效率，目标是降低页表/TLB/page fault 开销。
+- Freezer 管 CPU 调度：冻结 cached 进程的线程，降功耗。
+- ART GC 管堆内存：根据水位和分配压力回收对象。
+- LMK/lmkd 管进程生死：低内存时杀进程保前台。
+- 16KB Page Size 管页粒度：影响页表、TLB 和 page fault 开销，但不改变 freezer 语义。
 
-排障时把这四类事件放到同一条时间轴：先确认 freeze/unfreeze，再看退出原因，再看 GC 和内存回收，再判断用户感知慢恢复来自解冻、冷启动还是普通资源加载。这个顺序能避免把“退后台后出现 GC”“回前台像冷启动”“内存下降”混成一条没有证据的因果链。
+排障时把这四类事件放到同一条时间轴上：先确认 freeze/unfreeze，再看退出原因，再看 GC 和内存回收，最后判断用户感知的“回前台慢”来自解冻延迟、冷启动还是普通资源加载。这个顺序能避免把“退后台后出现 GC”“回前台像冷启动”“内存下降”混成一条没有证据的因果链。

@@ -45,6 +45,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 7.18 HWC Overlay Plane 与合成降级排查
@@ -85,7 +87,7 @@ last_task9_at: "2026-06-05T05:28:04+08:00"
 
 ## 这类问题的边界
 
-HWC Overlay Plane 排查解决的是一种很容易误判的卡顿：App 的主线程、RenderThread、GPU command 提交看起来都在预算内，但屏幕端仍然出现掉帧、延迟或功耗异常。此时问题不一定在 App 绘制阶段，可能出在 SurfaceFlinger 与 HWC 协商之后的合成路径。
+有一类卡顿很容易误判：App 的主线程、RenderThread、GPU command 提交看起来都在预算内，屏幕端却仍然掉帧、延迟或功耗异常。HWC Overlay Plane 排查针对的就是这类问题。此时问题不一定在 App 绘制阶段，可能出在 SurfaceFlinger 与 HWC 协商之后的合成路径。
 
 典型现场有三种信号：
 
@@ -234,7 +236,7 @@ order by ts;
 - **场景标签**：视频播放、相机预览、PIP、多窗口、字幕/弹幕/浮层开关。
 - **实验 trace 样本**：灰度期间对代表机型抓 Perfetto + dumpsys，建立“线上指标异常 → 实验室 trace 复核”的映射。
 
-线上指标只能做分群和预警，不能单独证明 HWC 合成降级。最终结论仍要回到同机 trace、Layer 状态和 SurfaceFlinger/HWC 证据。
+线上指标能做分群和预警，但单靠指标不能证明 HWC 合成降级。最终结论仍要回到同机 trace、Layer 状态和 SurfaceFlinger/HWC 证据。
 
 ## References
 
@@ -253,12 +255,8 @@ order by ts;
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
 - 类型：DeepResearch 调研结果
 - 摘要：从 AOSP HWC2/HWC2.4 Composer HAL 源码出发，梳理 Overlay Plane capability 查询路径、合成降级（DEVICE→CLIENT）7 条触发条件、高通/MTK 厂商行为差异、dumpsys SurfaceFlinger 与 Perfetto frametimeline 证据收集方法，建立设备级合成降级判断基准，含中端 vs 高端 SoC Overlay 能力对比表。
-- 注入时间：2026-05-23
-- 价值：首次从源码级完整梳理 HWC 合成降级触发链路和厂商差异，提供可直接操作的 dumpsys/Perfetto 验证步骤
 
 ### HWC Overlay Plane 与 SurfaceFlinger 合成降级机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-hwc-overlay-plane-sf-composition-degradation.md
 - 类型：DeepResearch 调研结果
 - 摘要：从HWC HAL/Composer AIDL源码梳理Overlay Plane典型4个、presentOrValidate回调序列、Layer compositionType分类、RenderEngine GPU fallback路径，以及dumpsys/Winscope/Perfetto frametimeline设备级证据采集方法。
-- 注入时间：2026-05-26
-- 价值：补充HWC合成降级的完整调用链和设备级证据采集闭环，可直接用于卡顿排查

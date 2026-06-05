@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: "finalized"
 title: Kotlin Coroutine 性能实践
 chapter: '8.6'
 section: '8.6'
@@ -38,19 +38,21 @@ related_chapters:
 - '7.7'
 - '8.1'
 - '8.2'
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: '2026-05-13'
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T04:11:19+08:00'
+last_task9_at: "2026-06-05T06:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-05"
-task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
-last_task6_at: "2026-06-05T05:12:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-06-05 task9 deep-review: auto-fixed。修正 ADPF API 版本边界、reportActualWorkDuration 调用语义、结构化并发并发度描述与 Kotlin 2.2 性能百分比。"
+last_task6_at: "2026-06-05T08:10:00+08:00"
+last_task9_autofix_at: "2026-06-05"
+last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
 ---
 
 
@@ -167,7 +169,7 @@ Dispatcher 的选择逻辑如下：
 
 ### ADPF 与协程调度器的联动
 
-协程运行在用户态，内核的调度器看到的是线程，不知道哪个线程上跑着高优先级的协程任务。Android 15 的 `PerformanceHintManager` 通过 `createHintSession(int[] tids, long targetDurationNanos)` 建立 hint session，再用 `reportActualWorkDuration(long durationNanos)` 向系统反馈实际负载。这套机制可以弥补协程"用户态调度"和"内核态调频"之间的信息断层。
+协程运行在用户态，内核的调度器看到的是线程，不知道哪个线程上跑着高优先级的协程任务。Android 12（API 31）引入 `PerformanceHintManager.createHintSession(int[] tids, long initialTargetWorkDurationNanos)` 和 `reportActualWorkDuration(long actualDurationNanos)`，可以把一组 TID 的实际 work cycle 时长反馈给系统；Android 14（API 34）补充 `Session.setThreads(int[])`，Android 15（API 35）再加入 `setPreferPowerEfficiency(boolean)` 与 `WorkDuration` 分离上报。这套机制可以弥补协程"用户态调度"和"内核态调频"之间的信息断层。
 
 对于在 `Dispatchers.Default` 上运行的重型计算协程，如果不主动报告负载，内核调度器可能按保守策略降频，导致计算任务完成时间拉长。一种可行的模式是通过协程拦截器（Interceptor）自动绑定 TID 并报告工作时长：
 
@@ -183,17 +185,17 @@ class AdpfHintInterceptor(
 
 // 在协程启动时获取当前线程 TID，注册到 ADPF session
 // 在协程挂起/完成时报告实际工作时长
-// 注意：ADPF hint session 的 reportActualWorkDuration 是一个 Binder 调用，
-// 单次开销在 1ms 以内，不适合在每帧都调用的路径上高频使用
+// 注意：hint session 绑定的是 TID，不是 coroutine ID。
+// 协程跨 worker 恢复后，需要用 setThreads() 同步当前线程集合。
 ```
 
-关键限制：`reportActualWorkDuration` 底层是 Binder 调用，在高频路径（如 120Hz 渲染循环）上使用会引入不必要的 IPC 开销。推荐的做法是将 ADPF 反馈控制在每秒 1-2 次的频率，或者在明确感知到 CPU 频率不足（帧耗时突然增大）时才触发。
+关键限制是线程绑定而不是调用频率。官方 API 期望客户端按 work cycle 调用 `reportActualWorkDuration(...)`，系统据此调整线程组的核心放置和频率；协程落在 `Dispatchers.Default` 这类可迁移线程池上时，需要在任务入口或恢复点重新确认 TID 列表，避免 session 仍绑定旧 worker。不要把每个短小 `suspend` / `resume` 都包装成一次独立 ADPF work cycle，只有持续、可度量的计算或渲染阶段才适合接入。
 
 [已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager]
 
 ### 后台协程任务的能效管理
 
-Android 15 在 `PerformanceHintManager.Session` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统会倾向于将相关线程调度到效率核（E-core）上运行，或者允许更激进的休眠策略。
+Android 15（API 35）在 `PerformanceHintManager.Session` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统知道这组线程可以优先考虑能效而不是峰值性能；它是调度偏好，不是强制绑到某类核心的保证。
 
 对于使用 `CoroutineWorker`（WorkManager）或后台轮询协程的场景，如果任务不要求低延迟（如日志上传、数据同步、统计上报），建议显式开启能效模式：
 
@@ -216,7 +218,7 @@ class UploadWorker(
 }
 ```
 
-这样做的好处是：在多窗口或高刷环境下，后台协程不会无效唤醒大核（P-core），减少对前台应用的资源争抢。系统在收到 `setPreferPowerEfficiency(true)` 后，可以在 E-core 上完成这些低优先级任务，整机功耗显著降低。
+这样做的好处是：在多窗口或高刷环境下，后台协程不会无效争抢高性能核心，减少对前台应用的资源干扰。系统在收到 `setPreferPowerEfficiency(true)` 后，可以按能效优先策略安排这些低优先级任务，但具体核心选择仍取决于设备的调度器、Power HAL 和 SoC 拓扑。
 
 [已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager.Session.setPreferPowerEfficiency]
 
@@ -257,7 +259,7 @@ coroutine 的"切换"并不总是意味着线程切换。如果两个 coroutine 
 
 ### withContext 的实际开销
 
-`withContext` 在 Kotlin 协程库中经过了高度优化。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
+`withContext` 在 Kotlin 协程库中经过了高度优化。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生线程切换。Kotlin 2.x 编译器和 kotlinx.coroutines 运行时仍在持续优化状态机与调度路径，但具体收益高度依赖 JVM/ART、设备和任务粒度，不应把社区 benchmark 的单一百分比当作通用结论。
 
 [已验证: 官方博客, Kotlin 2.2 release notes / kotlinx.coroutines changelog]
 
@@ -326,7 +328,7 @@ viewModelScope.launch {
 
 在结构化并发的框架下，即使是"忘记 await"也不会泄漏，因为父 scope 仍然持有子 Job 的引用。真正的泄漏发生在打破结构化并发的时候——比如用 `GlobalScope.async` 或者手动管理 Job。
 
-结构化并发还有一个性能收益：它天然限制了并发度。因为父 coroutine 等待子 coroutine，不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
+结构化并发限制的是生命周期，不是并发度。父 coroutine 会等待子 coroutine，但代码仍然可以在同一个 scope 里一次性 `launch` 上千个子任务，造成线程池排队、内存增长和取消风暴。需要限制并发时，应使用 `Semaphore`、`limitedParallelism()` 或业务队列，而不是只依赖 `viewModelScope` / `lifecycleScope`。
 
 ## Flow 的背压与性能
 
@@ -475,7 +477,7 @@ scope.launch {
 
 ### RxJava 的优势领域
 
-**复杂流转换更成熟。** 在涉及大量操作符链、复杂的数据流变换场景（如多源合并、窗口聚合、去重、错误重试策略），RxJava 经过多年优化的操作符实现（包括操作符 fusion、复杂的 backpressure 策略）在吞吐量和延迟稳定性上通常表现更好。这部分是 RxJava 作为"专职响应式框架"的积淀，不是 coroutine + Flow 短期能完全对齐的。
+**复杂流转换更成熟。** 在涉及大量操作符链、复杂的数据流变换场景（如多源合并、窗口聚合、去重、错误重试策略），RxJava 经过多年优化的操作符实现（包括操作符 fusion、复杂的 backpressure 策略）在吞吐量和延迟稳定性上通常表现更好。这部分是 RxJava 作为"专职响应式框架"的积淀，不是 coroutine + Flow 短期能完全追上的。
 
 **调试工具链更完善。** RxJava 有更成熟的调试和可视化工具（如 RxJavaExtensions 的 lifecycle tracking、marble diagram 可视化），而 coroutine 的调试工具（kotlinx-coroutines-debug）在生产环境中有不可忽视的性能开销。
 
@@ -588,7 +590,7 @@ Coroutine 的性能与本书其他章节有紧密联系：
 
 ### 误区 3："withContext 的切换开销很大，应该尽量少用"
 
-在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，实际开销远比直觉上小。Kotlin 2.2 进一步优化了这个路径。合理的做法是：确保每个代码块运行在正确的 Dispatcher 上，而不是为了"省切换"而在错误的 Dispatcher 上运行代码。
+在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，实际开销远比直觉上小。合理的做法是：确保每个代码块运行在正确的 Dispatcher 上，而不是为了"省切换"而在错误的 Dispatcher 上运行代码。
 
 ### 误区 4："launch 和 async 的性能一样"
 
@@ -604,11 +606,11 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - **Kotlin 1.4**：引入 `kotlinx-coroutines-debug` 模块。
 - **Kotlin 1.6**：`Dispatchers.Default` 和 `Dispatchers.IO` 共享线程池的实现优化，减少不必要的线程切换。
 - **Kotlin 2.0**：新编译器后端对 coroutine 状态机生成进行了优化，减少了 suspend 函数的代码体积和运行时对象分配。
-- **Kotlin 2.2**：进一步优化 coroutine 调度，减少上下文切换成本。多并发请求场景性能提升约 15%。
-- **Android 15 (API 35)**：`PerformanceHintManager` 支持 `setPreferPowerEfficiency`，协程后台任务可显式声明能效偏好。
-- **Android 16 (API 36)**：Jetpack 库继续深化 coroutine 集成，包括新的 `repeatOnLifecycle` 行为优化。
-
-[待验证: Kotlin 2.2 具体优化细节的官方 benchmark 数据]
+- **Kotlin 2.2**：继续优化 Kotlin 编译器与 coroutine 运行时配合；具体调度收益需要以 release notes 和项目 benchmark 验证，不能套用单一百分比。
+- **Android 12 (API 31)**：`PerformanceHintManager` 提供 hint session 与 `reportActualWorkDuration(long)`。
+- **Android 14 (API 34)**：`PerformanceHintManager.Session.setThreads(int[])` 可动态替换 session 绑定的 TID 列表。
+- **Android 15 (API 35)**：`setPreferPowerEfficiency(boolean)` 与 `reportActualWorkDuration(WorkDuration)` 可表达能效偏好和 CPU/GPU 分离时长。
+- **Android 16 (API 36)**：NDK `getPreferredUpdateRateNanos` 标为 deprecated，客户端不应再用固定频率自行限流。
 
 ## 参考资料
 
@@ -683,12 +685,12 @@ public void reportActualWorkDuration(@NonNull WorkDuration workDuration) {
 
 ### 电源效率模式的协程集成
 
-`setPreferPowerEfficiency(boolean)` 是 `FLAG_ADPF_PREFER_POWER_EFFICIENCY` FlaggedApi，Android 15+ 可用。启用后系统将线程调度到能效核（E-core）或允许更激进的休眠策略。
+`setPreferPowerEfficiency(boolean)` 是 `FLAG_ADPF_PREFER_POWER_EFFICIENCY` FlaggedApi，Android 15（API 35）+ 可用。启用后系统知道这组线程可优先考虑能效；具体是否运行在 E-core / efficiency cluster 取决于设备调度策略。
 
 对于 `CoroutineWorker`（WorkManager）和后台轮询协程，建议显式开启：
 ```kotlin
 hintSession?.setPreferPowerEfficiency(true)
-// 系统在 E-core 上完成低优先级任务，减少对前台大核的资源争抢
+// 系统可按能效优先策略处理低优先级任务，减少对前台高性能核心的资源争抢
 ```
 
 详见：[DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md](DeepResearch/2026-05-14-android-adpf-performance-hint-session-coroutine-engineering.md)
