@@ -16,7 +16,7 @@ sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
 pipeline_stage: "task6_pending"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
@@ -33,7 +33,8 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-12-audit.md"
-last_task6_at: "2026-06-04T20:15:00+08:00"
+last_task6_at: "2026-06-05T16:08:00+08:00"
+review_notes_5: "2026-06-05 task6 re-review (round 6): pass-light-edit. Fixed 禁用词 痛点→冲突. task9_result=pending, routes to task9."
 review_notes_4: "2026-06-04 task6 re-review (round 5): pass-light-edit. Task2b fix at 20:56 reviewed; no new writing quality issues. L1 clean (真正 x2 functional). Routing to task9 for pending tech review."
 review_notes_3_orig: "2026-06-04 task6 re-review (round 4): pass-light-edit. L1 clean (真正 x2, both functional). Not-X-but-Y x2 (within limit). All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 5/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 ---
@@ -287,7 +288,7 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 
 > **结论性提醒**：
 > 1. BlockCanary 在 Android 17 没有"必须切到 Observer 才能用"的版本门槛，它走的是公开 `setMessageLogging` 路径，不依赖 `@hide` API。
-> 2. 如果团队基于 BlockCanary 思路自研且希望走 Observer 路径，**API 29 起所有 Android 版本都支持**（API 29-36 源码零变更），但要面对：单槽位冲突治理（`sObserver` 是 static，与 `setMessageLogging` 同样的多组件痛点）、`@hide` 黑名单（max-target-o）、token 三方法互斥协议。
+> 2. 如果团队基于 BlockCanary 思路自研且希望走 Observer 路径，**API 29 起所有 Android 版本都支持**（API 29-36 源码零变更），但要面对：单槽位冲突治理（`sObserver` 是 static，与 `setMessageLogging` 同样的多组件冲突）、`@hide` 黑名单（max-target-o）、token 三方法互斥协议。
 > 3. Android 16 起 Perfetto 已经接管 MessageQueue dispatch 端到端可观测性，**主线程卡顿诊断优先用 Perfetto `MQ_CATEGORY` + 5s ANR + FrameTimeline `JANK_TYPE`**；BlockCanary 类 Java 端工具的定位应聚焦"堆栈 dump + 签名聚合 + block 阈值告警"，trace 端不要再自己造轮子。
 
 BlockCanary 的价值在于简单。现代线上体系要在简单之上补上下文、冲突治理和采样控制。
