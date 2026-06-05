@@ -10,7 +10,7 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-06-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -30,8 +30,8 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-06T02:20:00+08:00"
-last_task6_at: "2026-06-06T02:08:00+08:00"
-task6_review_notes: "2026-06-06 Task6 revisiting #3: pass-light-edit. L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). No new B-class issues. Task 9 queue仍有pending P0条目(常量/API边界/源码溯源),需Task2B修复后回Task9复审。"
+last_task6_at: "2026-06-06T03:06:00+08:00"
+task6_review_notes: "2026-06-06 Task6 revisiting #4: pass-light-edit. L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). No new B-class issues. task9 needs-rework, queue has pending P0/P1 items, no auto-promote."
 last_task6_review_log: logs/review/2026-06-06-02-review.md
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
