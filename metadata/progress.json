@@ -9881,12 +9881,12 @@
     }
   },
   "task2a_last_processed": {
-    "section": "22.21",
-    "title": "Jetpack Compose 动画性能深度优化",
-    "file": "src/part5-app/ch22-rendering-practice/21-compose-animation-performance.md",
+    "section": "22.20",
+    "title": "Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping",
+    "file": "src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-06-05T17:16:59+08:00",
+    "processed_at": "2026-06-05T18:05:00+08:00",
     "status": "ready-for-review"
   },
   "task2a_last_gap_mining": {
