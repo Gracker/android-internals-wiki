@@ -8,8 +8,7 @@ drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-06-05
-last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto,
-  Android Trace API
+last_verified_against: AOSP external/perfetto android-12.0.0_r1 + android-16.0.0_r3, perfetto.dev docs, Android Trace API
 confidence: high
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
@@ -48,14 +47,14 @@ related_chapters:
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
 pipeline_stage: task6_pending
-task6_state: "reviewed"
-task9_state: pending
-task9_result: pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: '2026-06-04'
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: '2026-06-04T20:24:00+08:00'
+last_task9_at: "2026-06-05T19:28:13+08:00"
 repaired_date: 2026-06-05
 repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
@@ -66,8 +65,10 @@ last_task6_review_log: logs/review/2026-05-09-07-review.md
 task6_review_notes_r6: "2026-06-05 Task6 revisit-review #3: L1/L2 pass (确实 x3 all functional). B-type: two contradictory source research appendices on linux.perf/frametimeline — flagged for task9/task2b cleanup. Routes to task9."
     task6_review_notes: "2026-06-05 Task6 revisit-review: L1/L2 pass (轻修 0 处，前序已修 27 处)。task9 needs re-review (task9_result=pending)。送 Task9 复审。"
   通过；无新增 L3/L4 回炉项，送 Task9 复审。
-last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
+last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
 
+last_task9_autofix_at: "2026-06-05"
+task9_review_notes: "2026-06-05 Task9 deep-review: auto-fixed。将 Perfetto/linux.perf/FrameTimeline 的直接源码验证边界从不存在的 android-17.0.0_r1 回退到 android-12.0.0_r1 与 android-16.0.0_r3；Android 17 保留为待公开 tag 复核。"
 ---
 
 
@@ -112,13 +113,13 @@ last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
 
 最基础的抓取方式是直接在设备上运行 `perfetto` 命令。Perfetto 从 Android 10（API 29）开始作为系统级追踪工具内置在设备中，我们只需要通过 `adb shell` 就可以调用它。
 
-> **Android 16/17 补充说明** [已验证: 基于 Perfetto 官方文档持续兼容性声明 & android-17.0.0_r1 AOSP Perfetto 源码路径连续性]：截至 Android 17 (API 37)，Perfetto 的命令行接口、TraceConfig 格式、以及以下数据源均保持向后兼容：
+> **Android 16 源码验证与 Android 17 边界** [已验证: Perfetto 官方文档 + AOSP `external/perfetto` android-16.0.0_r3]：截至公开 Android 16 源码，Perfetto 的命令行接口、TraceConfig 格式、以及以下数据源保持向后兼容；`android-17.0.0_r1` tag 当前未公开，不能写成 Android 17 已源码验证：
 > - `linux.ftrace`、`linux.process_stats`、`linux.sys_stats`：Android 10+ 可用
 > - `android.heapprofd`：Android 10+ 可用
 > - `android.java_hprof`：Android 11+ 可用
 > - `android.surfaceflinger.frametimeline`：Android 12+ 可用
 > - `linux.perf`：Android 12+ 可用
-> Android 16/17 未引入新的通用 Perfetto 数据源，也未废弃上述数据源。抓取方法和配置示例在本节中均适用于 Android 10–17 范围。
+> 公开 Android 16 源码未引入新的通用 Perfetto 数据源，也未废弃上述数据源。Android 17 仅保留为适用范围上限，需等公开 tag 后复核源码连续性；抓取方法和配置示例在本节中按 Android 10–16 源码与官方兼容性文档校验。
 
 ### 最简命令
 
@@ -757,7 +758,7 @@ duration_ms: 10000
 
 Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
 
-**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 12 (API 31) 起可用。源码证据：`external/perfetto/src/profiling/perf/perf_producer.cc:81` 定义 `kDataSourceName = "linux.perf"`，`traced_perf.cc` 完整实现。经 android-17.0.0_r1 源码路径验证，`external/perfetto/protos/perfetto/config/data_source_config.proto` 中 `linux.perf` 数据源配置入口保持不变，`traced_perf` 守护进程在 Android 17 (API 37) 中持续可用。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
+**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 12 (API 31) 起可用。源码证据：`external/perfetto/src/profiling/perf/perf_producer.cc:81` 定义 `kDataSourceName = "linux.perf"`，`traced_perf.cc` 完整实现；`external/perfetto/protos/perfetto/config/data_source_config.proto` 在 android-12.0.0_r1 与 android-16.0.0_r3 中都有 `linux.perf` 配置入口。`android-17.0.0_r1` tag 当前未公开，不能写成 Android 17 已源码验证；Android 17 需等公开 tag 后复核。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
 ```textproto
 data_sources {
@@ -952,7 +953,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 <!-- AIW-源码调研-2026-06-05: linux.perf 和 FrameTimeline 数据源源码锚点确认 -->
 ### 数据源源码锚点确认
 
-基于 android-12.0.0_r1 至 android-17.0.0_r1 源码验证，以下为两个核心数据源的关键源码锚点：
+基于 android-12.0.0_r1 与 android-16.0.0_r3 源码验证，以下为两个核心数据源的关键源码锚点；Android 17 tag 当前未公开，不能作为已验证源码结论：
 
 **linux.perf**（Android 12+）：
 - 数据源名定义：`external/perfetto/src/profiling/perf/perf_producer.cc:81` — `kDataSourceName = "linux.perf"`
@@ -965,5 +966,5 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 - 注册入口：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:770` — `FrameTimeline::registerDataSource()`
 - SF 集成点：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:460` — 通过 `mFrameTimeline` 初始化
 
-两个数据源在 Android 12.0.0_r1 至 Android 17 (API 37) 范围内持续可用，无重大 API 变更。
+两个数据源在已公开的 Android 12.0.0_r1 与 Android 16.0.0_r3 源码中持续可用；Android 17 (API 37) 需等公开 tag 后复核，不能写成已完成源码验证。
 <!-- /AIW-源码调研-2026-06-05 -->
