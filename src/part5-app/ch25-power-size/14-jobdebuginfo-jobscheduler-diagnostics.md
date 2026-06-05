@@ -38,9 +38,13 @@ created_date: "2026-05-22"
 gap_source: "官方文档/每日信息/章节深挖"
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-22T05:19:00+08:00"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: 2026-06-05
+task6_result: pass-light-edit
+last_task6_at: "2026-06-05T10:17:00+08:00"
 ---
 
 # 25.14 JobScheduler 调试：Pending Reasons 与 JobDebugInfo

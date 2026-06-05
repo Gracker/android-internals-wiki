@@ -40,11 +40,15 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: 2026-06-05
+task6_result: pass-light-edit
+last_task6_at: "2026-06-05T10:17:00+08:00"
 ---
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理
