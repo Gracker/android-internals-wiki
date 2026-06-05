@@ -294,3 +294,5 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
   https://docs.unity3d.com/Manual/class-PlayerSettingsAndroid.html
 - Unreal Engine 文档：Frame Pacing for Mobile Devices（Swappy 集成与 CVars 配置）  
   https://dev.epicgames.com/documentation/en-us/unreal-engine/frame-pacing-for-mobile-devices-in-unreal-engine
+- **TextureView 游戏引擎集成机制（Unity/Unreal）**（2026-06-04 DeepResearch）
+  - 游戏引擎主渲染不走 TextureView（走 SurfaceView 或 Native Surface），TextureView 仅用于游戏内视频纹理、AR 相机预览等 UI 叠加场景。Unity 使用 IAndroidPlayerSurface 通过 ANativeWindow 直接绑定 GL context；Unreal Engine 通过 AndroidCanvas/OpenGL ES 直接绑定 Surface。TextureView 在游戏引擎场景的核心价值是 VideoTexture 和 AR 相机预览，非主渲染路径。
