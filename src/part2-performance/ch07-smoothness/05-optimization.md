@@ -50,7 +50,7 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 last_task6_audit: "2026-05-22"
 task9_state: reviewed

@@ -1,7 +1,7 @@
 ---
 
 
-status: ready-for-review
+status: finalized
 title: I/O 调度与性能
 chapter: '6.3'
 section: '6.3'

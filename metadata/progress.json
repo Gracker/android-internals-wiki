@@ -9917,11 +9917,11 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-05",
-    "time": "19:04",
+    "time": "23:05",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 4 轮 gap mining：daily-info 无新未映射素材；Clippings 全覆盖；6.7 FUSE-BPF 需 Task2B 重写；无 ≥14 分候选"
+    "reason": "第 5 轮 gap mining：372 节（282 finalized + 90 rfr + 0 draft），TASK2B_BACKLOG=0；daily-info 无新未映射素材；research-gaps 3 条均已有章节或已完成；无 ≥14 分候选；无空 draft 可加工"
   },
   "task9_last_sections": [
     "26.8",
