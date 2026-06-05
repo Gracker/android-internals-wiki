@@ -5247,8 +5247,8 @@
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
       "file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "gap_source": "研究素材/素材驱动",
@@ -5264,12 +5264,11 @@
       "queue_priority": 95,
       "last_task2a_at": "2026-05-17T01:12:00+08:00",
       "task2a_result": "draft-ready-for-review",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-17T01:36:14+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-17-01-deep-review.md",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "queue_entry": "task9-2026-05-17-26-11-ebpf-binder-version-reply"
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "13.15": {
       "title": "BufferQueue 阻塞的 Perfetto 识别",
@@ -5527,14 +5526,22 @@
     "26.13": {
       "title": "ApplicationStartInfo 与启动归因上报",
       "file": "src/part5-app/ch26-observability/13-application-start-info.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-18",
       "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
       "gap_score": 19,
       "queue_priority": 80,
-      "material_count": 4
+      "material_count": 4,
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
     },
     "20.13": {
       "title": "16KB Page Size 兼容性与 Native 崩溃治理",
@@ -7457,6 +7464,20 @@
       "last_verified": "2026-06-05",
       "confidence": "medium-high",
       "task6_state": "pending"
+    },
+    "26.19": {
+      "title": "端侧高可用日志与诊断命令通道",
+      "file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -8245,8 +8266,8 @@
     "26.11": {
       "title": "eBPF 在线追踪与 Binder 语义重建",
       "file": "src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -8257,8 +8278,14 @@
       "drafted_date": "2026-05-17",
       "last_verified": "2026-05-17",
       "confidence": "medium",
-      "task6_state": "pending",
-      "task9_state": "pending"
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
     },
     "1.20": {
       "title": "App Archiving 机制与恢复性能",
@@ -8458,14 +8485,22 @@
     "26.13": {
       "title": "ApplicationStartInfo 与启动归因上报",
       "file": "src/part5-app/ch26-observability/13-application-start-info.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-18",
       "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
       "gap_score": 19,
       "queue_priority": 80,
-      "material_count": 4
+      "material_count": 4,
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
     },
     "9.5": {
       "title": "案例集",
@@ -9829,6 +9864,20 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-22T07:21:00+08:00"
+    },
+    "26.19": {
+      "title": "端侧高可用日志与诊断命令通道",
+      "file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-05T12:27:00+08:00",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
     }
   },
   "task2a_last_processed": {
@@ -11857,8 +11906,8 @@
     "section": "26.19",
     "title": "端侧高可用日志与诊断命令通道",
     "file": "src/part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-26",
     "gap_source": "参考书结构/章节深挖/官方文档",
@@ -11871,7 +11920,15 @@
       "https://developer.android.com/reference/android/os/ProfilingManager",
       "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture",
       "src/part5-app/ch26-observability/05-online-troubleshooting.md"
-    ]
+    ],
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-06-05T12:27:00+08:00",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task9_review_log": "logs/deep-review/2026-06-05-12-deep-review.md"
   },
   "section_16_4": {
     "section": "16.4",
