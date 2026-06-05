@@ -1378,8 +1378,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T01:20:00+08:00",
-      "status": "pending",
-      "review_type": "task9-deep-tech-review"
+      "status": "completed",
+      "review_type": "task9-deep-tech-review",
+      "completed_at": "2026-06-06T01:41:32",
+      "completed_by": "openclaw-task2b-lite",
+      "completion_reason": "fixed-lite: FRAME_RATE_COMPATIBILITY 常量值修正（EXACT=100/MIN=102 @hide，新增 AT_LEAST=2）；6 处 collectVotes/calculateOptimalRate→getRankedFrameRates；L164 待验证改为已确认"
     },
     {
       "section": "8.8",
