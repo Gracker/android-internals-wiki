@@ -1761,35 +1761,45 @@
     {
       "section": "2.19",
       "section_title": "刷新率切换与帧率适配性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 刷新率章节仍有 Surface setFrameRate 常量/API 边界、RefreshRateSelector 源码锚点和 ARR 版本/数据证据错误",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 刷新率章节剩余 ARR 版本边界与厂商/功耗量化数据证据不足；P0 API/Trace/源码路径残留已由 Task9 小范围修复",
       "material_paths": [
-        "logs/deep-review/2026-06-06-01-deep-review.md"
+        "logs/deep-review/2026-06-06-01-deep-review.md",
+        "logs/deep-review/2026-06-06-02-deep-review.md"
       ],
       "review_issues": [
         {
           "type": "P0 源码错误",
           "location": "L116-L154, L408-L410, L487-L488",
           "detail": "android-16.0.0_r1 Surface.java 中 FRAME_RATE_COMPATIBILITY_AT_LEAST=2；EXACT=100、MIN=102 且为 @hide/internal。正文把 EXACT 写成 2、MIN 写成 3，并建议游戏用 EXACT，容易误导 App 侧 API 使用。GameManager#setGameMode(String,int) 存在但为 @SystemApi/@hide，需要改成系统/OEM 侧能力而非普通游戏 App API。",
-          "suggestion": "按 Surface.java L218-L269 修正表格与示例：App 侧保留 DEFAULT/FIXED_SOURCE，Android 16+ 可补 AT_LEAST；EXACT/MIN 只作为内部常量说明或删除。GameManager 段改为系统/OEM 配置入口。"
+          "suggestion": "按 Surface.java L218-L269 修正表格与示例：App 侧保留 DEFAULT/FIXED_SOURCE，Android 16+ 可补 AT_LEAST；EXACT/MIN 只作为内部常量说明或删除。GameManager 段改为系统/OEM 配置入口。",
+          "status": "auto-fixed-by-task9",
+          "fixed_at": "2026-06-06T02:20:00+08:00",
+          "fix_summary": "修正普通游戏使用 DEFAULT/AT_LEAST 而非 @hide EXACT；修正 GameManager#setGameMode 权限边界；修正 Perfetto frametimeline data source；修正 RefreshRateSelector/Scheduler trace 入口与 HWComposer 无缝切换路径。"
         },
         {
           "type": "P0 源码错误/Trace 锚点错误",
           "location": "L421, L456, L468, L499-L515",
           "detail": "android-16.0.0_r1 RefreshRateSelector.cpp 只确认 getRankedFrameRates()/getRankedFrameRatesLocked()，未找到 collectVotes()/calculateOptimalRate()/supportsARR()。正文后半段仍把 collectVotes/calculateOptimalRate 写成可搜索的 Perfetto slice 或源码方法。",
-          "suggestion": "改为真实源码锚点 getRankedFrameRates()/Scheduler active mode update；无法确认 trace slice 名称时写成 SurfaceFlinger/Scheduler 相关 slice 或日志，不写精确伪方法名。"
+          "suggestion": "改为真实源码锚点 getRankedFrameRates()/Scheduler active mode update；无法确认 trace slice 名称时写成 SurfaceFlinger/Scheduler 相关 slice 或日志，不写精确伪方法名。",
+          "status": "auto-fixed-by-task9",
+          "fixed_at": "2026-06-06T02:20:00+08:00",
+          "fix_summary": "修正普通游戏使用 DEFAULT/AT_LEAST 而非 @hide EXACT；修正 GameManager#setGameMode 权限边界；修正 Perfetto frametimeline data source；修正 RefreshRateSelector/Scheduler trace 入口与 HWComposer 无缝切换路径。"
         },
         {
           "type": "P1 版本差异/数据缺失",
-          "location": "L288-L365, L543-L583",
-          "detail": "AOSP tags 检查仅公开 android-16.0.0_r1，未见 android-17.0.0_r1。ARR 版本表、Android 16-17 智能 ARR、厂商 PLL/电池数值和 60-80% 切换次数减少缺少 Android 17/API37 内一手源码、官方文档或统一测试条件。",
-          "suggestion": "删除或降级未验证版本/厂商数字；只保留 android-16.0.0_r1 可证的 RefreshRateSelector/Composer HAL 边界，精确性能数字需补设备、版本、亮度、trace/benchmark。"
+          "location": "ARR 版本演进 L286-L323；厂商实现/场景识别/指标基准 L332-L365、L532-L590",
+          "detail": "正文仍把 Android 11-14 多刷新率切换、Android 15-QPR1+ ARR、Android 16 App 可见查询 API 混在一张 ARR 版本表里；Android 16-17 机器学习识别/连续范围控制、厂商 PLL/功耗百分比、切换次数减少 60-80% 等仍缺 Android 17/API37 范围内一手源码、官方文档或统一测试条件。",
+          "suggestion": "按 2.18 和官方 ARR 文档重写版本边界：Android 11-14 只作为 MRR 背景，ARR 主体从 Android 15-QPR1+ 开始，Android 16 补 Display.hasArrSupport()/getSuggestedFrameRate() 等查询 API；删除无设备/亮度/版本/trace 条件的厂商和功耗百分比。",
+          "status": "pending"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T01:20:00+08:00",
       "status": "pending",
-      "review_type": "task9-deep-tech-review"
+      "review_type": "task9-deep-tech-review",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-06-06T02:20:00+08:00"
     },
     {
       "section": "8.8",

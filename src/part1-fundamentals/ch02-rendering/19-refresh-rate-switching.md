@@ -11,7 +11,7 @@ reviewed_date: "2026-06-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed-lite
 pipeline_stage: task2b_pending
@@ -29,7 +29,7 @@ tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rend
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-06T01:20:00+08:00"
+last_task9_at: "2026-06-06T02:20:00+08:00"
 last_task6_at: "2026-06-06T02:08:00+08:00"
 task6_review_notes: "2026-06-06 Task6 revisiting #3: pass-light-edit. L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). No new B-class issues. Task 9 queue仍有pending P0条目(常量/API边界/源码溯源),需Task2B修复后回Task9复审。"
 last_task6_review_log: logs/review/2026-06-06-02-review.md
@@ -41,8 +41,9 @@ task6_new_rework: true
 review_type: "task6-writing-quality-review"
 last_task2b_verifier_at: "2026-06-02T15:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-15-task2b-verifier.md"
-last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
-task9_review_notes: "2026-06-06 Task9 deep review: needs-rework。P0：Surface FRAME_RATE_COMPATIBILITY_EXACT/MIN 常量值和 @hide 边界错误，遗漏 AT_LEAST；RefreshRateSelector collectVotes/calculateOptimalRate 作为源码/Trace 名称不可溯源；GameManager#setGameMode(String,int) 是 @SystemApi/@hide。P1：ARR 版本表和厂商延迟/功耗数字缺少 Android 17/API37 内一手证据。"
+last_task9_review_log: logs/deep-review/2026-06-06-02-deep-review.md
+task9_review_notes: "2026-06-06 Task9 复审：partial auto-fix 后仍 needs-rework。AUTO-FIX：修正普通游戏误用 @hide FRAME_RATE_COMPATIBILITY_EXACT、GameManager#setGameMode 权限边界、Perfetto frametimeline data source、RefreshRateSelector/Scheduler trace 入口、HWComposer 无缝切换源码路径。剩余 P1：ARR 版本演进表仍把 Android 11-14 多刷新率与 Android 15-QPR1+ ARR 混写，厂商 PLL/功耗/60-80% 减少等量化数据仍缺一手条件。"
+task9_result: needs-rework
 ---
 
 
@@ -211,10 +212,10 @@ Display HAL 负责与硬件显示控制器交互，其状态机切换也会影�
 
 在 Perfetto 中，VSync 周期的变化是识别刷新率切换的重要指标：
 
-> [待验证] 以下 Perfetto 配置使用的是概念性事件名（`vsync_period`、`refresh_rate_change`、`display_mode_switch`），不是 Perfetto 的实际 data source 或 ftrace event 名。实际 Perfetto 配置应使用 perettino textproto 格式。
+> [待验证] 以下 Perfetto 配置使用的是概念性事件名（`vsync_period`、`refresh_rate_change`、`display_mode_switch`），不是 Perfetto 的实际 data source 或 ftrace event 名。实际 Perfetto 配置应使用 Perfetto textproto 格式。
 
 > 监控刷新率变化的推荐方法（已验证）：
-> - 抓取 `android.surfaceflinger.frame` data source（包含每个帧的 `display_refresh_rate` 字段）
+> - 抓取 `android.surfaceflinger.frametimeline` data source，并在 Trace Processor 中查看 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`
 > - 在 Perfetto UI 的 VSync timelines track（`actual_vsync` 计数器）观察周期变化
 > - 使用 `adb shell dumpsys display` 查看 `mActiveMode` 或 `mActiveConfig`
 
@@ -374,7 +375,7 @@ ARR 虽然能缓解刷新率切换卡顿，但存在以下边界：
 
 ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 
-- Composer HAL 需支持多 Display Mode 和无缝切换（`Seamless` capability flag）；对应 HWC2 `getHwComposer()` 返回的 `HWComposer` 中 `mSeamlessCapability` 字段。
+- Composer HAL 需支持多 Display Mode 和无缝切换能力；AOSP 可验证的提交路径是 `HWComposer::setActiveModeWithConstraints()`，设备侧是否无缝切换取决于 HAL 配置和显示面板能力。
 - 显示面板需提供至少 2 个 Display Mode（如 60Hz 与 120Hz），且这些模式在同一 Config Group 内。
 - 如果设备只有一个 Display Mode 或不支持无缝切换，ARR 无法生效——切换只能是 Non-seamless，用户体验代价太高，SurfaceFlinger 在此条件下不会执行自动切换。
 
@@ -409,7 +410,7 @@ ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 `Surface.setFrameRate()` 是 App 侧告诉系统自己帧率需求的核心 API。根据内容类型选择合适的 `FrameRateCompatibility` 模式：
 
 - **相机预览**：调用 `surface.setFrameRate(60f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)`，SurfaceFlinger 会将屏幕刷新率固定在 60Hz（或其整数倍中满足需求的最小值）。
-- **游戏全屏**：调用 `surface.setFrameRate(targetFps, Surface.FRAME_RATE_COMPATIBILITY_EXACT)`，SurfaceFlinger 会尽可能匹配到与 targetFps 精确对齐的刷新率（如 90fps → 90Hz、120fps → 120Hz）。
+- **游戏全屏**：调用 `surface.setFrameRate(targetFps, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)` 表达目标帧率；Android 16+ 如需表达最低刷新率约束，可使用公开的 `FRAME_RATE_COMPATIBILITY_AT_LEAST`。普通 App 不应使用 `@hide` 的 `FRAME_RATE_COMPATIBILITY_EXACT`。
 - **普通 UI / 列表滚动**：不设置或使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`，让系统根据内容检测自动决策。
 
 > **Trace 观察点**：在 Perfetto 中搜索 `SurfaceFlinger` 进程的 `setFrameRate` 或 `setDesiredPresentTime` slice，可看到 App 的帧率偏好是否被 SurfaceFlinger 接收并生效。
@@ -421,7 +422,7 @@ ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 - 通过 `Window.LayoutParams.preferredRefreshRate` 向 WindowManager 传递意图（注意：`Activity` 类没有公开的 `setFrameRate()` 方法；帧率偏好通过 `Surface.setFrameRate()` 或 `WindowManager.LayoutParams` 表达）。
 - 这不是系统级"预切换"能力，而是让 RefreshRateSelector 在收集 Layer 投票时更早看到高帧率需求，减少决策延迟。
 
-> **Trace 观察点**：查看 Perfetto 中 `RefreshRateSelector` 的 `getRankedFrameRates` slice，以及 VSync period 的突变时间点，可以判断帧率偏好是否在动画开始前就已生效。
+> **Trace 观察点**：查看 SurfaceFlinger 中 `Scheduler::chooseRefreshRateForContent()` / `RefreshRateSelector::getRankedFrameRatesLocked()` 相关 slice（不同 build 可能只显示函数名），再对照 VSync period 的突变时间点，判断帧率偏好是否在动画开始前生效。
 
 #### 过渡期缓冲
 
@@ -442,7 +443,7 @@ SurfaceFlinger 会尽量在"对用户可见影响最小"的时刻执行刷新率
 - 如果当前有动画正在执行，延迟切换直到动画结束（或动画本身就触发了切换）。
 - 如果系统处于 idle 状态，立即切换的成本最低——因为此时没有新帧等待提交。
 
-这是 SurfaceFlinger 内部的调度逻辑，App 开发者无法直接控制。相关代码路径在 `frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp` 的 `updateRefreshRate()` 方法中。
+这是 SurfaceFlinger 内部的调度逻辑，App 开发者无法直接控制。android-16.0.0_r1 中可验证的代码路径是 `frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp` 的 `chooseRefreshRateForContent()`，它汇总 LayerHistory 后更新刷新率策略。
 
 #### 缓解切换期间的帧丢失
 
@@ -456,7 +457,7 @@ Display HAL 在切换期间可能丢失 1-3 帧。减少帧丢失的策略包括
 
 SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、内容检测结果动态调整刷新率。Android 15+ 引入了更智能的 vote weight 系统——不再只看最高帧率需求，而是综合活跃 Layer 数量、动画状态和功耗预算做最优选择。
 
-> **Trace 观察点**：`RefreshRateSelector::getRankedFrameRates` 的 slice 记录了决策依据和最终选中的刷新率。
+> **Trace 观察点**：`RefreshRateSelector::getRankedFrameRatesLocked()` 相关 trace 记录可辅助定位排序窗口；最终模式切换还需要结合 SurfaceFlinger active mode 日志、VSync period 和 FrameTimeline 结果判断。
 
 ## 实际应用案例
 
@@ -468,7 +469,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 **排查路径**：
 1. 在 Perfetto 中确认 VSync period 在相机退出时从 16.67ms 跳变到 8.33ms，且跳变点附近出现 `missingFrame` 或 SurfaceFlinger compose slice 异常延长。
-2. 如果 `RefreshRateSelector::getRankedFrameRates` slice 在触摸事件后才开始考虑 120Hz 候选，说明系统侧决策滞后于用户操作——这是相机场景最常见的切换延迟根因。
+2. 如果 `chooseRefreshRateForContent()` / `getRankedFrameRatesLocked()` 相关 trace 晚于触摸事件才开始考虑 120Hz 候选，说明系统侧决策滞后于用户操作——这是相机场景常见的切换延迟根因。
 3. 确认 Camera HAL 释放 Surface 到 Launcher Surface 变为活跃之间的时间窗口：如果 Camera Surface 销毁晚于 Launcher 出现，RefreshRateSelector 可能在短时间内保留 60Hz 投票，延迟切换。
 
 **优化方向**：
@@ -488,7 +489,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 **优化方向**：
 - 进入战斗场景前（如加载界面），调用 `surface.setFrameRate(targetFps, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)` 提前声明帧率需求。这是最直接的方式，RefreshRateSelector 会在下一轮投票中看到这个偏好。
-- 如果游戏使用 Game Mode API（`GameManager#setGameMode(String, int)`，需要 `MANAGE_GAME_MODE` 权限），确保 `GameMode` 配置的刷新率偏好与场景一致。自 Android 12 起，Game Mode 框架会通过 `GameManagerInternal` 向 SurfaceFlinger 传递高性能需求的信号。
+- 普通游戏可以读取 `GameManager.getGameMode()` 并按用户选择调整渲染策略；`GameManager#setGameMode(String, int)` 需要 `MANAGE_GAME_MODE` 权限，属于系统/OEM 管理入口，不应写成普通 App 可调用的优化手段。
 - 渲染策略不需要"针对场景切换"，而是确保游戏循环在 Choreographer 回调周期变化后仍能在新 deadline 内完成——如果从 60fps（16.67ms 预算）切到 120fps（8.33ms 预算）后 doFrame 超时，问题在渲染负载，不在刷新率切换。
 
 
@@ -499,7 +500,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 **分析**：多任务过渡动画由 WindowManager 驱动，动画的 Surface 出现后，RefreshRateSelector 才收集到新的帧率需求。从收集到硬件切换完成之间存在决策窗口。
 
 **排查路径**：
-1. 查看 Perfetto 中 `RefreshRateSelector::getRankedFrameRates` slice 的时间戳 vs Launcher Surface 首次变为 visible 的时间戳——两者之间的间隔就是决策延迟。
+1. 查看 SurfaceFlinger 中 `chooseRefreshRateForContent()` / `getRankedFrameRatesLocked()` 相关 trace 的时间戳 vs Launcher Surface 首次变为 visible 的时间戳——两者之间的间隔就是决策延迟。
 2. 如果决策延迟超过 1 帧，检查 `getRankedFrameRates` 结果中 Launcher Layer 的投票是否及时到达；Layer 刚变为活跃时 Metadata 可能尚未同步到位。
 3. 查看触摸事件的 `InputDispatcher` → `SurfaceFlinger` 路径：触摸事件本身可以触发 touch boost，但 boost 窗口长度在各 OEM 实现中不同。
 
@@ -515,7 +516,7 @@ SurfaceFlinger 的 `RefreshRateSelector` 根据 Layer 投票、触摸事件、�
 
 不少分析者看到刷新率切换导致的卡顿，就直接归因到 "PLL 重配置太慢" 或 "Display HAL 状态机开销"。硬件切换确实占一部分延迟（通常 1-3 帧），但软件调度侧的延迟往往更长：RefreshRateSelector 从收到新 Layer 的帧率偏好到做出决策，可能需要 1-3 个 VSync 周期的延迟。再加上 SurfaceFlinger 合成队列在切换后需要适应新周期，软件侧的整体延迟经常超过硬件侧。
 
-> **判断方法**：在 Perfetto 中对比 VSync period 跳变时间点和 `RefreshRateSelector::getRankedFrameRates` 结束时间点——如果间隔超过 1 帧，软件侧的投票收集和决策时间不可忽略。
+> **判断方法**：在 Perfetto 中对比 VSync period 跳变时间点和 `chooseRefreshRateForContent()` / `getRankedFrameRatesLocked()` 相关 trace 结束时间点——如果间隔超过 1 帧，软件侧的投票收集和决策时间不可忽略。
 
 ### 误区 2：使用最高刷新率就是最好的
 
