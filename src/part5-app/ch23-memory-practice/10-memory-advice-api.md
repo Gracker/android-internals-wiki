@@ -117,6 +117,50 @@ Memory Advice API 是 AGDK / Jetpack games-memory-advice 库能力，不是 Andr
 
 接入前要先做一次取舍：历史项目可继续维护；新项目优先使用 `onTrimMemory()`、引擎内存预算、Android Vitals LMK、`ApplicationExitInfo`、Perfetto / Android Studio Profiler 组成的组合方案。官方已经把 Memory Advice API 标为 deprecated 后，把它作为新增依赖会引入维护风险。
 
+
+<!-- AIW-源码调研-2026-06-05 -->
+### 源码层验证：Memory Advice 库在 AOSP 公开分支的实际状态
+
+| 维度 | Android Developers 文档 | AOSP main / android-16.0.0_r3 源码 |
+|---|---|---|
+| 库可用性 | 顶部 banner "The Memory Advice API beta is now deprecated, and no longer recommended for use" | 完整保留 v2.2.0，未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
+| `versionName` / `versionCode` | – | `1.1` / `1`（build.gradle） |
+| `targetSdkVersion` / `compileSdk` | – | `35` / `31`（build.gradle） |
+| `namespace` | – | `com.google.androidgamesdk.memory_advice`（build.gradle） |
+| 状态机实现 | – | `MemoryAdviceImpl::GetMemoryState()` 走 `available.tflite` + `available_features.json` 预测 `predictedAvailable`；按 `heuristics.formulas` 输出 `MEMORYADVICE_STATE_OK/APPROACHING_LIMIT/CRITICAL` |
+
+AOSP 关键源码（main，2026-06-05 抓取）：
+
+```cpp
+// platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h
+typedef enum MemoryAdvice_MemoryState : int32_t {
+  MEMORYADVICE_STATE_UNKNOWN = 0,
+  MEMORYADVICE_STATE_OK = 1,
+  MEMORYADVICE_STATE_APPROACHING_LIMIT = 2,
+  MEMORYADVICE_STATE_CRITICAL = 3,
+} MemoryAdvice_MemoryState;
+```
+
+```cpp
+// platform/frameworks/opt/gamesdk/games-memory-advice/core/memory_advice_impl.cpp
+MemoryAdvice_MemoryState MemoryAdviceImpl::GetMemoryState() {
+    Json::object advice = GetAdvice();
+    if (advice.find("warnings") != advice.end()) {
+        Json::array warnings = advice["warnings"].array_items();
+        for (auto& it : warnings) {
+            if (it.object_items().at("level").string_value() == "red") {
+                return MEMORYADVICE_STATE_CRITICAL;
+            }
+        }
+        return MEMORYADVICE_STATE_APPROACHING_LIMIT;
+    }
+    return MEMORYADVICE_STATE_OK;
+}
+```
+
+工程含义：源码 v2.2.0 与 `targetSdkVersion 35` 表明 AOSP 内部仍在维护，但文档已挂 deprecation banner。新项目接入建议遵循 23.10 节"接入前要先做一次取舍"——把 Memory Advice 包成可替换的"信号源"层，未来切到 `TRIGGER_TYPE_OOM` / `TRIGGER_TYPE_ANOMALY` 时业务侧不用改。`TRIGGER_TYPE_OOM` 与 Memory Advice 的关键差异：前者是 Java OOM 异常的当场 heap dump（一次性事件），后者是 TFLite 预测的连续状态信号。两者在产物类型（heap dump vs JSON 状态）上完全不同，**不能视为等价替代**。
+<!-- /AIW-源码调研-2026-06-05 -->
+
 ## MemoryState、可用内存与 watcher 回调
 
 AOSP 头文件 `include/memory_advice/memory_advice.h` 定义了 C API 的状态和接口。状态枚举包括 `UNKNOWN`、`OK`、`APPROACHING_LIMIT`、`CRITICAL`；查询接口包括 `MemoryAdvice_getMemoryState()`、`MemoryAdvice_getAvailableMemory()`、`MemoryAdvice_getPercentageAvailableMemory()`、`MemoryAdvice_getTotalMemory()`；watcher 通过 `MemoryAdvice_registerWatcher(intervalMillis, callback, user_data)` 注册。[已验证: AOSP master, frameworks/opt/gamesdk/include/memory_advice/memory_advice.h]

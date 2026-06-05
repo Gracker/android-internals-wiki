@@ -2,7 +2,7 @@
 title: "ApplicationStartInfo 与启动归因上报"
 chapter: "26.13"
 section: "26.13"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-05"
@@ -55,19 +55,19 @@ source_refs:
   - "intake/research-gaps.md#2026-05-17-26-12"
   - "developer.android.com/reference/android/app/ApplicationStartInfo"
   - "developer.android.com/about/versions/17/features"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-18T04:14:00+08:00"
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-05"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05T11:24:00+08:00"
-last_task6_review_log: "logs/review/2026-06-05-11-review.md"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-05
+last_task6_at: "2026-06-05T13:11:00+08:00"
+last_task6_review_log: "logs/review/2026-06-05-13-review.md"
 ---
 
 # 26.13 ApplicationStartInfo 与启动归因上报
