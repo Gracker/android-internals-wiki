@@ -10,7 +10,7 @@ drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
 last_task2b_at: 2026-06-06T02:57:42+08:00
-last_task9_at: "2026-06-06T01:20:00+08:00"
+last_task9_at: "2026-06-06T04:21:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
 pipeline_stage: task6_pending
@@ -52,14 +52,14 @@ task2b_state: fixed
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
+task6_state: revisiting
+task9_result: auto-fixed
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-06"
-task9_state: pending
+task9_state: reviewed
 title: Android 多媒体管线性能
-task9_review_notes: "2026-06-06 Task9 deep review: needs-rework。P0：Media3 ABR 源码方法/算法描述错误，旧源码调研附录仍含 Codec2/tunneled/ABR 已被后文否定的结论。P1：Android 16 Codec2/Gralloc additionalOptions 与 16KB 性能结论缺少一手源码/benchmark。"
-last_task9_review_log: "logs/deep-review/2026-06-06-01-deep-review.md"
+task9_review_notes: "2026-06-06 Task9 04 auto-fix: 修正 tunneled playback 核心 API/sideband 路径、移除 AudioPresentation/BUFFER_FLAG_TUNNEL/IHapticStream 误锚点，修正 AV1 dav1d 默认路径表述、Media3 日期和未证数值；回到 Task6 复审。"
+last_task9_review_log: logs/deep-review/2026-06-06-04-deep-review.md
 last_task6_at: "2026-06-06T03:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-14-20-review.md"
 task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). Fix: 三种根因→几类根因 (heading count mismatch). task9 needs-rework, queue has pending items, no auto-promote."
@@ -67,6 +67,7 @@ task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用�
 last_task2b_lite_at: 2026-06-05T13:35
 last_task2b_by: openclaw-task2b-main
 task2b_notes: "2026-06-06 Task2B main 回炉 #3：P0 Media3 ABR 源码方法修正（AdaptiveTrackSelection+DefaultBandwidthMeter 实际API），删除2026-05-12/21旧附录（含不可溯源伪代码和已被后文否定结论），清理CCodec::initialize伪代码和ABR错误调用链，P1 16KB页面声明降级为待验证。"
+last_task9_autofix_at: 2026-06-06
 ----
 
 
@@ -468,7 +469,7 @@ atrace audio,video,camera,gfx,view,sched,freq
 
 视频播放启动时，用户感知到的"首帧时间"由以下环节构成：网络请求（如果是流媒体）→ 解复用 → 编解码器初始化 → 首帧解码 → 渲染。其中编解码器初始化是主要耗时来源。
 
-创建一个 MediaCodec 实例并完成配置/启动，通常需要 30-80ms（硬件解码器）到 100-200ms（软件解码器）。如果每次播放都创建新实例，这个开销无法避免。解决方案是**解码器池化**：维护一个预热好的 MediaCodec 实例池，新播放请求直接从池中取出已初始化的实例。Media3 的 Player 池化模式就是基于这个思路。
+创建一个 MediaCodec 实例并完成配置/启动的耗时受 codec 类型、分辨率、DRM / 安全解码、SoC 负载和厂商实现影响。同一设备上如果每次播放都创建新实例，这个开销会反复出现。解决方案是**解码器池化**：维护一个预热好的 MediaCodec 实例池，新播放请求直接从池中取出已初始化的实例；具体池化规模要用同机 trace 和内存水位确定。
 
 ### 视频播放卡顿的几类根因
 
@@ -478,7 +479,7 @@ atrace audio,video,camera,gfx,view,sched,freq
 
 **解码慢**：硬件解码器处理某些复杂帧（如高运动场景的 B 帧）耗时过长，超过了一个 VSync 周期。在 Perfetto 中表现为 decode slice 的 duration 出现异常峰值。解决方案包括降低分辨率/码率、或者切换到更高效的编码格式（如从 AVC 切换到 HEVC）。
 
-**AV1 软解不再是低效路径**：Android 15 将 dav1d 设为默认 AV1 软解引擎，解码效率比之前提升了约 3 倍。在中低端设备没有 AV1 硬件解码支持时，dav1d 软解仍能维持 1080p/60fps 的流畅度。排查 AV1 播放卡顿时，先确认设备是否有 AV1 硬解（`MediaCodecList` 搜索 `c2.android.av1.decoder`），再评估是否需要降分辨率，不要默认认为软解一定卡。
+**AV1 软解不应直接判死刑**：Android 15 Beta 2 起提供 dav1d AV1 software decoder，官方说明其性能最高可比旧 AV1 软解提升约 3 倍；当时 App 需要按名称 `c2.android.av1-dav1d.decoder` opt-in，后续是否成为设备默认路径取决于平台更新和设备配置。排查 AV1 播放卡顿时，先确认设备是否有 AV1 硬解和实际选中的 codec name，再评估是否需要降分辨率，不要默认认为软解一定卡。
 
 **渲染慢**：解码完成了，但 GPU 合成耗时过长。这种情况在 HDR 内容或存在复杂的 Surface 叠加（如字幕 + 弹幕 + 视频）时容易出现。在 Perfetto 中，常见表现是 SurfaceFlinger 的合成耗时异常。
 
@@ -492,14 +493,14 @@ Audio underrun 是指 AudioFlinger 的 buffer 被耗尽，导致输出端没有�
 
 ### 多实例编解码器的资源限制
 
-硬件编解码器（VPU）的数量是有限的。大多数中端设备的 VPU 最多同时支持 2-4 路硬件编解码。超出限制后，多余的实例会被降级为软件解码，性能急剧下降。
+硬件编解码器（VPU）的并发能力是有限的，具体上限由 SoC、codec 类型、分辨率、secure / non-secure 路径和厂商配置决定。超出设备可承载范围后，多余实例可能创建失败、排队等待，或被降级为软件解码。
 
 这个限制在以下场景容易触发：
 - 短视频 Feed 中同时有多个播放器处于 prepared 状态
 - 视频通话应用同时做编码和解码
 - 后台有其他应用在使用编解码器（如视频录制）
 
-在 Perfetto 中，如果发现 MediaCodec 创建耗时异常高（>200ms）或者 `onError` 回调被触发，需要排查是否碰到了硬件编解码器的并发上限。
+在 Perfetto 中，如果发现 MediaCodec 创建耗时明显高于同机基线，或者 `onError` 回调被触发，需要排查是否碰到了硬件编解码器的并发上限。
 
 ### Camera → MediaCodec 编码管线
 
@@ -520,11 +521,11 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持）；Codec2 框架路径补齐 tunneled playback 支持（OMX 时代已支持 tunneled，Android 10+ 起 Codec2 作为 OMX 的替代路径逐步补齐对应能力）
 - **Android 10+**：媒体模块（`com.android.media`）通过 APEX 格式可独立更新，不再依赖系统 OTA
 - **Media3 1.6.0 (2025-03)**：引入 `MediaCodecVideoRenderer` 预热支持，减少连续媒体项切换延迟
-- **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
-- **Media3 1.9.0 (2025-11)**：`media3-ui-compose` 提供 `ContentFrame` 和 `PlayerSurface`
-- **Android 15 (2025)**：dav1d 成为默认 AV1 软解引擎，解码效率提升约 3 倍；引入 Spatial Audio over BLE Audio
-- **Android 16 (Baklava, 2026)**：引入 16KB 页面支持；Gralloc AIDL V2（`Gralloc5.cpp`）包含 `additionalOptions` 字段传递，但其与 16KB 页面协调约束的具体语义和编解码吞吐量收益需独立 benchmark 确认
-- **Media3 1.10.0 (2026-03)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
+- **Media3 1.8.0 (2025-07-30)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
+- **Media3 1.9.0 (2025-12-17)**：`media3-ui-compose` / `media3-ui-compose-material3` 提供 `ContentFrame`、`PlayerSurface` 和 Material3 播放 UI 组件
+- **Android 15 (2024)**：Android 15 Beta 2 起提供 dav1d AV1 software decoder，官方称相对旧 AV1 软解最高约 3 倍性能；当时需 opt-in，默认路径取决于后续平台更新和设备配置
+- **Android 16 (Baklava)**：引入 16KB 页面支持；Gralloc AIDL V2（`Gralloc5.cpp`）包含 `additionalOptions` 字段传递，但其与 16KB 页面协调约束的具体语义和编解码吞吐量收益需独立 benchmark 确认
+- **Media3 1.10.0 (2026-03-26)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
 
@@ -564,34 +565,31 @@ CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包
 
 ### Tunneled Playback 实现差异
 
-**Tunneled Playback 机制**：解码任务下沉到 HAL 层，配合 AudioPresentation 实现零拷贝播放，跳过 MediaCodec 的用户态 buffer 拷贝。
+**Tunneled Playback 机制**：官方文档定义为压缩视频数据经硬件 video decoder 直接进入显示路径，不再由 App 代码或 Android framework 逐帧处理。on-demand 场景（Android 5+）使用与音频 presentation timestamp 同步的 `AudioTrack` clock；直播场景（Android 11+）可使用 Tuner 提供的 PCR / STC。App 侧关键入口是 `SurfaceView`、`audioSessionId`、带同一 session 的 `AudioTrack` 与 `MediaCodec`。
 
-**关键源码文件**：
+**关键源码 / 配置锚点**：
 
-| 文件路径 | 关键内容 |
-|----------|---------|
-| `system/media/audio/include/system/audio-hal-enums.h` | Audio HAL 枚举定义 |
-| `hardware/interfaces/audio/common/7.0/types.hal` | Audio types HAL 定义 |
-| `hardware/libhardware/include/hardware/gralloc.h` | Gralloc HAL 公共头文件 |
-| (vendor-specific) gralloc4 buffer 实现 | 各厂商 Gralloc4 实现各不相同 |
-| `frameworks/av/media/libaudioclient/AudioTrack.cpp` | AudioTrack 实现，含 tunneled 路径 |
+| 路径 / 符号 | 关键内容 |
+|-------------|----------|
+| `MediaFormat.KEY_AUDIO_SESSION_ID` | on-demand tunneled playback 将 `MediaCodec` 与 `AudioTrack` 关联到同一音频 session |
+| `AudioAttributes.FLAG_HW_AV_SYNC` / `AUDIO_PARAMETER_HW_AV_SYNC` | AudioFlinger / Audio HAL 侧用于获取和下发硬件 A/V sync id |
+| `native_window_set_sideband_stream()` | 将 codec 返回的 sideband handle 绑定到对应 native window |
+| `HWC_SIDEBAND` / `sidebandStream` | HWC 侧的 sideband layer 表示，HWC 按音频或 tuner 时钟显示视频帧 |
+| `CCodec::configureTunneledVideoPlayback()` / `C2PortTunneledModeTuning` | Android 10+ Codec2 路径中的 tunneled 配置入口 |
 
-**关键概念**：
-- `AudioPresentation` — HAL 层音频呈现描述符（含声道映射、编码格式），API 33+
-- `BUFFER_FLAG_TUNNEL` — 标记 tunneled buffer 的 flag
-- `IHapticStream` — 触觉反馈 stream（API 33+）
+**关键边界**：不要把 `AudioPresentation`、`BUFFER_FLAG_TUNNEL` 或 `IHapticStream` 写成 tunneled playback 的核心 API。官方路径围绕 `KEY_AUDIO_SESSION_ID` / `KEY_HARDWARE_AV_SYNC_ID`、HW_AV_SYNC、sideband handle 和 HWC sideband layer 展开。
 
-**性能收益**：Tunneled Playback 可减少每帧的 buffer 拷贝延迟。具体收益取决于设备 SoC、HAL 实现和视频分辨率。不同设备的实测效果存在差异（典型范围约 2-4ms/帧）。
+**性能收益**：Tunneled playback 的收益来自减少 App / Framework 逐帧参与，并由 HWC 按硬件同步时钟呈现视频帧。具体收益取决于设备 SoC、HAL 实现、内容格式和输出分辨率，不给固定 ms/帧结论。
 
 **版本差异**：
-- OMX 时代（Android 4.x-9）：通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置
-- Android 10+ Codec2 路径：通过 `CCodec::configureTunneledVideoPlayback()` 封装相同语义
+- OMX 路径：通过 `OMX.google.android.index.configureVideoTunnelMode` 扩展参数配置 tunnel mode，并用 `OMX_IndexConfigAndroidTunnelPeek` 控制首帧 peek 行为。
+- Android 10+ Codec2 路径：通过 `CCodec::configureTunneledVideoPlayback()` 封装相同语义。
 
 ### Media3 ExoPlayer ABR 算法源码
 
 **源码路径**：
 - Legacy ExoPlayer：`external/exoplayer/library/core/src/main/java/com/google/android/exoplayer2/trackselection/AdaptiveTrackSelection.java`
-- Media3：`androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/DefaultTrackSelector.java`
+- Media3：`androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java` + `.../upstream/DefaultBandwidthMeter.java`
 
 **算法核心**：带宽自适应选择，通过 Factory 配置参数控制质量切换。
 
@@ -631,7 +629,7 @@ public Factory(
 > [待验证：android-16.0.0_r1] 以下性能数据为定性趋势参考，非统一测试条件下的精确数字。Codec2 Buffer pooling 的内存效益、Tunneled Playback 的延迟缩减因设备差异有显著波动。
 
 1. **Codec2 内存效率**：Buffer pooling 机制可减少内存分配开销（幅度因编解码器实现和设备而异）
-2. **Tunneled Playback**：绕过用户态 copy，降低每帧延迟（典型范围 2-4ms，需按设备实测确认）
+2. **Tunneled Playback**：减少 App / Framework 逐帧参与，由 HWC 按硬件同步时钟呈现视频帧；收益需按设备实测确认
 3. **ABR 切换延迟**：`minDurationForQualityIncrease=15s` 的默认值可防止频繁质量震荡
 
 ### 信息源
@@ -643,7 +641,7 @@ public Factory(
 | `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | 一手（AOSP android-16.0.0_r1） |
 | `frameworks/av/media/codec2/core/include/C2Config.h` | 一手（AOSP android-16.0.0_r1） |
 | `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | 一手（AOSP android-16.0.0_r1） |
-| `androidx/media/blob/release/libraries/exoplayer/.../DefaultTrackSelector.java` | 一手（GitHub androidx/media release） |
+| `androidx/media/blob/release/libraries/exoplayer/.../AdaptiveTrackSelection.java` / `DefaultBandwidthMeter.java` | 一手（GitHub androidx/media release） |
 | `hardware/interfaces/audio/common/7.0/types.hal` | 一手（AOSP android-16.0.0_r1） |
 
 <!-- AIW-源码调研-2026-05-24 -->
