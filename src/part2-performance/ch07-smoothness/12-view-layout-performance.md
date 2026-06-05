@@ -2,7 +2,7 @@
 title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开销"
 chapter: "7.12"
 section: "7.12"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
@@ -30,10 +30,10 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-finalized_date: '2026-04-29'
-finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+finalized_date: "2026-06-05"
+finalized_by: "openclaw-task6-auto-promote"
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -46,7 +46,7 @@ last_task2b_at: "2026-06-04T12:57:00+08:00"
 last_task6_audit: "2026-06-05"
 last_task9_audit: "2026-05-21"
 task9_review_notes: "2026-06-05 Task9 auto-fix: ViewTreeObserver 附录从 Android 17 API 37 标题降级为 Android 16 源码边界，避免在 android-17.0.0_r1 tag 未发布时写成 Android 17 新增结论。"
-last_task6_at: "2026-06-05T05:12:00+08:00"
+last_task6_at: "2026-06-05T17:22:30"
 last_task9_autofix_at: 2026-06-05
 
 ---
