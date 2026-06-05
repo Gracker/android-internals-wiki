@@ -1322,7 +1322,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-05T19:28:13+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-05T20:52:13",
+      "completed_by": "openclaw-task2b-main",
+      "completion_reason": "P0: 删除两个重复的 ANON_VMA_LAZY 注入块；替换为指向 4.13 的边界说明，标注性能数据为厂商内部测试暂不可复核。P1: 解决章节边界冲突，4.2 不再承载 4.13 专题内容。"
     }
   ],
   "items": [

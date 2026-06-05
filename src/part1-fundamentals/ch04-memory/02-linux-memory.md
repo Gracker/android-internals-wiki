@@ -54,13 +54,13 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: 2026-06-04
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: reworked
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"
 last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
@@ -68,7 +68,7 @@ last_task6_at: "2026-06-04T11:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-21-12-review.md"
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
 task9_review_notes: "2026-06-05 Task9 deep-review: needs-rework。ANON_VMA_LAZY 注入块重复且包含未公开 Android 17 结论/伪源码，需要 Task2B 删除或移入 4.13 专节并补一手公开源码边界。"
-last_task2b_at: "2026-06-04T04:55:01"
+last_task2b_at: 2026-06-05T20:51:54
 last_task9_autofix_at: "2026-06-04"
 task6_reviewed_by: openclaw-task6
 ---
@@ -471,105 +471,7 @@ Google 在 LPC 2025 上介绍了使用 eBPF 替代 sysfs 来统计 DMA-BUF 使�
 
 了解了图形内存的底层机制后，我们再来看一个影响整个内存管理架构的系统性变更：16KB 页面大小。前面讨论的 Buddy 分配器、TLB、Page Fault 等机制，在页面大小从 4KB 增大到 16KB 后，行为都会发生变化。
 
-
-<!-- AIW-源码调研-2026-06-04 -->
-## Linux ANON_VMA_LAZY 延迟分配优化
-
-### 新增小节：匿名内存区域优化
-
-#### 传统模式的内存开销问题
-在当前 Linux 内核中，匿名内存区域（anon_vma）结构在 VMA（虚拟内存区域）初始化时就立即创建，导致大量不必要的内存分配。许多 VMA 从不参与 fork 或 rmap 操作，创建的 anon_vma 和 anon_vma_chain 对象往往被浪费。
-
-#### ANON_VMA_LAZY 机制原理
-华为团队提交的 ANON_VMA_LAZY patch 引入了延迟分配策略，只在真正需要时才创建 anon_vma 结构：
-
-- **延迟创建**：在 VMA 初始化时仅做标记，不立即分配内存
-- **按需激活**：在 fork 或需要 rmap 操作时才真正创建 anon_vma
-- **无锁优化**：对于未激活的 ANON_VMA_LAZY VMAs，rmap 操作直接使用 VMA 信息，无需 anon_vma 锁
-- **内存节约**：anon_vma 使用减少 92-97%，anon_vma_chain 减少 50-57%
-
-#### Android 17 下的性能数据
-基于华为内部测试的内存使用对比：
-
-| 内存对象 | 传统模式 (KB) | ANON_VMA_LAZY (KB) | 内存节省 |
-|----------|---------------|-------------------|----------|
-| anon_vma | 20426.4       | 613.75            | -97.0%   |
-| anon_vma_chain | 18865.8       | 8112.06           | -57.0%   |
-| 24个应用后总节省 | - | - | 约 45MB |
-
-#### 核心实现代码
-
-
-#### 对 Android 的影响
-- **内存节省**：在 8GB 设备上节省约 45MB 内存
-- **性能提升**：频繁 fork 的应用性能提升 5-10%
-- **碎片化减少**：anon_vma 延迟创建有助于减少内存碎片
-- **兼容性**：完全兼容现有的 ART GC 机制和内存管理策略
-
-该优化特别适合 Android 的多进程架构，能显著提升内存受限设备的用户体验。
-<!-- AIW-源码调研-2026-06-04 结束 -->
-
-
-
-
-
-<!-- AIW-源码调研-2026-06-04 -->
-## Linux ANON_VMA_LAZY 延迟分配优化
-
-### 新增小节：匿名内存区域优化
-
-#### 传统模式的内存开销问题
-在当前 Linux 内核中，匿名内存区域（anon_vma）结构在 VMA（虚拟内存区域）初始化时就立即创建，导致大量不必要的内存分配。许多 VMA 从不参与 fork 或 rmap 操作，创建的 anon_vma 和 anon_vma_chain 对象往往被浪费。
-
-#### ANON_VMA_LAZY 机制原理
-华为团队提交的 ANON_VMA_LAZY patch 引入了延迟分配策略，只在真正需要时才创建 anon_vma 结构：
-
-- **延迟创建**：在 VMA 初始化时仅做标记，不立即分配内存
-- **按需激活**：在 fork 或需要 rmap 操作时才真正创建 anon_vma
-- **无锁优化**：对于未激活的 ANON_VMA_LAZY VMAs，rmap 操作直接使用 VMA 信息，无需 anon_vma 锁
-- **内存节约**：anon_vma 使用减少 92-97%，anon_vma_chain 减少 50-57%
-
-#### Android 17 下的性能数据
-基于华为内部测试的内存使用对比：
-
-| 内存对象 | 传统模式 (KB) | ANON_VMA_LAZY (KB) | 内存节省 |
-|----------|---------------|-------------------|----------|
-| anon_vma | 20426.4       | 613.75            | -97.0%   |
-| anon_vma_chain | 18865.8       | 8112.06           | -57.0%   |
-| 24个应用后总节省 | - | - | 约 45MB |
-
-#### 核心实现代码
-```c
-// mm/rmap.c - 延迟分配检查
-static inline bool should_use_anon_vma_lazy(struct vm_area_struct *vma)
-{
-    // 检查是否需要参与 fork 或 rmap 操作
-    return !vma_need_fork_operations(vma) && 
-           !vma_need_rmap_operations(vma);
-}
-
-// fork 时才真正创建
-int anon_vma_fork_lazy(struct vm_area_struct *vma, 
-                      struct vm_area_struct *pvma)
-{
-    if (!pvma->anon_vma && is_anon_vma_lazy(vma)) {
-        // 在 fork 时才创建 anon_vma
-        return anon_vma_fork_deferred(vma, pvma);
-    }
-    return anon_vma_fork(vma, pvma);
-}
-```
-
-#### 对 Android 的影响
-- **内存节省**：在 8GB 设备上节省约 45MB 内存
-- **性能提升**：频繁 fork 的应用性能提升 5-10%
-- **碎片化减少**：anon_vma 延迟创建有助于减少内存碎片
-- **兼容性**：完全兼容现有的 ART GC 机制和内存管理策略
-
-该优化特别适合 Android 的多进程架构，能显著提升内存受限设备的用户体验。
-<!-- AIW-源码调研-2026-06-04 结束 -->
-
-
+> **ANON_VMA_LAZY 优化**：该专题已交由 4.13 节独立加工。ANON_VMA_LAZY 是华为团队提出的匿名 vma 延迟分配优化，当前以 LKML patch / 社区讨论形式存在，公开 Android 17 源码中尚未发现合入。性能数字（anon_vma 节省 92-97%、24 个应用节省约 45MB、fork 性能提升 5-10%）来自厂商内部测试，缺少设备、内核版本、patch 版本和公开可复核出处，不作为 AIW 正文结论。详见 [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](13-anon-vma-lazy-memory-optimization.md)。
 
 
 ## 16K Page Size 对内存和性能的影响
