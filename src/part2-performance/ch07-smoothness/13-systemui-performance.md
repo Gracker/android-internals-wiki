@@ -29,7 +29,7 @@ gap_source: AOSP结构+读者需求+素材驱动
 gap_score: 18
 confidence: medium
 last_verified: "2026-04-26"
-last_verified_against: "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 AOSP mainline 锚点"
+last_verified_against: "AOSP android-16.0.0_r1 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 android-16.0.0_r1 锚点"
 sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
@@ -76,24 +76,24 @@ sources:
 pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-04
 last_task6_audit: "2026-05-21"
 task6_result: "pass-light-edit"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-21"
-last_task9_at: "2026-05-21T17:28:40+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T18:32:25+08:00"
 last_task2b_at: "2026-06-04T14:54:52+08:00"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T17:28:40+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-17-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-21-17-audit.md"
-task9_review_notes: "2026-05-21 Task9 idle audit: P0 SystemUI 多 Display / desktop mode 源码锚点错误，写入 queue 条目 task9-audit-20260521-7.13-systemui-multidisplay-source-anchors。"
+last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
+task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 将 Flexiglass/SceneContainer 旧主线锚点收敛到 android-16.0.0_r1；移除未量化的默认视觉特效与内存增幅结论；Foldable 多 Display 性能影响改为需设备基线验证。回到 Task6 复审。"
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P0 SystemUI multi-display source anchors corrected (NavigationBarController path/SparseArray, DisplayContent.isSystemDecorationsSupported, TaskbarDelegate wallpaper visibility, DesktopTasksController et al.); P1 version coverage updated for Android 12-16 desktop windowing branch; unverified CPU/Mem growth claims downgraded."
 last_task6_at: "2026-06-04T15:21:59.742576+08:00"
@@ -102,6 +102,10 @@ task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 1
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 1 处（形容词+冒号起手式 1）。L3 问题单 1 条（Foldable 多 Display 附录未融入主叙述）。"
+last_task9_autofix_at: "2026-06-05"
+p0: 0
+p1: 1
+p2: 3
 ---
 
 # 7.13 SystemUI 性能分析
@@ -132,7 +136,7 @@ task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 �
 
 ## Android 15+ SceneContainer (Flexiglass)：通知栏架构的 Compose 化重构
 
-> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。不同分支可能通过 aconfig、device_config override 或工程编译开关打开；验证时以目标构建上的 flag dump 和对应 AOSP 分支为准，不要只按一个 `device_config.get_boolean(...)` 判断。以下内容基于 AOSP mainline 源码，适用于已启用该框架的设备。
+> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。不同分支可能通过 aconfig、device_config override 或工程编译开关打开；验证时以目标构建上的 flag dump 和对应 AOSP 分支为准，不要只按一个 `device_config.get_boolean(...)` 判断。以下内容已按 AOSP android-16.0.0_r1 源码核对，适用于已启用该框架的 Android 15/16 设备；Android 17 需要按目标分支重新核对 flag 和路径。
 
 ### 核心变化：从重叠 View 层级到 Scene Graph
 
@@ -152,7 +156,7 @@ Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bou
 
 ### 源码文件索引
 
-| 文件路径（AOSP mainline） | 职责 |
+| 文件路径（AOSP android-16.0.0_r1） | 职责 |
 |---------------------------|------|
 | `packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt` | Scene Graph 根 Composable，接收 scene / overlay / transition / data source 等配置 |
 | `packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt` | 框架总开关，封装 aconfig 主开关与 secondary flags 依赖 |
@@ -160,12 +164,12 @@ Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bou
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt` | 底层 Compose 过渡组件，封装 Scene Graph 和 Transition |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayoutState.kt` | 管理当前 Scene（`currentScene: SceneKey`）、`transitions`、`transitionState` |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitions.kt` | 集中声明每对 Scene 之间的过渡动画（如 `lockscreenToShadeTransition`） |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt` | 当前 AOSP main 可核对的 reveal 相关实现入口，用于容器揭示类过渡效果 |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/` | 现有基础变换集合，例如 anchored、translate、fade、scale 等；不要把不存在的 `PunchHole.kt` 写成 mainline 锚点 |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt` | AOSP android-16.0.0_r1 可核对的 reveal 相关实现入口，用于容器揭示类过渡效果 |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/` | 现有基础变换集合，例如 anchored、translate、fade、scale 等；不要把不存在的 `PunchHole.kt` 写成 android-16.0.0_r1 锚点 |
 
 ### 源码入口与开关依赖
 
-`SceneContainer` 是 Scene Graph 的 Compose 根节点。AOSP main 的参数级签名仍在变化，正文只保留可核对的入参分组，避免把某个开发分支的签名写成稳定 API：
+`SceneContainer` 是 Scene Graph 的 Compose 根节点。AOSP android-16.0.0_r1 的参数级签名仍在变化，正文只保留可核对的入参分组，避免把某个开发分支的签名写成稳定 API：
 
 | 入参分组 | 用途 |
 | --- | --- |
@@ -176,7 +180,7 @@ Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bou
 | `dataSourceDelegator` / `qsSceneAdapter` | 连接 SystemUI 现有状态源与 QS 适配层 |
 | `modifier` 等 Compose 参数 | 控制布局、绘制和外部修饰 |
 
-`SceneContainerFlag.kt` 不直接读取单个 `device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)`。AOSP main 使用 aconfig 生成的 `Flags.sceneContainer()` 作为主开关，并要求一组 secondary flags 同时满足，例如 Keyguard bottom area refactor、Keyguard WM state refactor、migrate clocks to blueprint、notification throttle HUN、predictive back SystemUI flag。读源码时应把它看成“主开关 + 依赖开关”的组合；单个布尔值不足以判断该框架生效。
+`SceneContainerFlag.kt` 不直接读取单个 `device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)`。AOSP android-16.0.0_r1 使用 aconfig 生成的 `Flags.sceneContainer()` 作为主开关，并要求一组 secondary flags 同时满足，例如 Keyguard bottom area refactor、Keyguard WM state refactor、migrate clocks to blueprint、notification throttle HUN、predictive back SystemUI flag。读源码时应把它看成“主开关 + 依赖开关”的组合；单个布尔值不足以判断该框架生效。
 
 引用这个开关的组件包括 Scrim、QS、Keyguard、Overview latency tracking、锁屏滚动手势等分支。定位 Flexiglass 是否生效时，先核对这些依赖开关，再看对应组件是否切到了 SceneContainer 路径。
 
@@ -196,7 +200,7 @@ val lockscreenToShadeTransition = transitionBuilder(
 }
 ```
 
-AOSP main 当前可核对的相邻实现是 `scene/reveal/ContainerReveal.kt` 和 `transformation/` 目录下的 anchored、translate、fade、scale 等基础变换。正文不能再把 `PunchHole.kt` 或 `SceneTransitions.kt` 里的 punchHole 符号写成 mainline 已验证路径；如果目标厂商分支或历史分支存在类似 punch-hole 效果，需要在引用处标出具体分支或 commit。
+AOSP android-16.0.0_r1 当前可核对的相邻实现是 `scene/reveal/ContainerReveal.kt` 和 `transformation/` 目录下的 anchored、translate、fade、scale 等基础变换。正文不能再把 `PunchHole.kt` 或 `SceneTransitions.kt` 里的 punchHole 符号写成 android-16.0.0_r1 已验证路径；如果目标厂商分支或历史分支存在类似 punch-hole 效果，需要在引用处标出具体分支或 commit。
 
 ### Flexiglass 对性能分析的影响
 
@@ -362,9 +366,9 @@ App 启动、Overview 切换、返回桌面都可能碰到这个形态。Launche
 
 把输入路径和 UI 路径拆开。Input monitor 已经收到了事件，问题多半不在“手势没识别到”，而在识别后的主线程处理、back animation 回调、窗口转场调度。这个时候继续盯 `NavigationBarView` 反而会浪费时间。
 
-### M3 Expressive 特效过载
+### 模糊与弹簧动画特效过载
 
-Flexiglass 默认集成了大量 Material 3 Expressive 效果（实时模糊、弹簧动画）。在 120Hz 下，大面积实时模糊会导致 RenderThread 的 `DrawFrame` 耗时显著增加，尤其是在折叠屏展开态（屏幕面积更大）下。
+如果目标构建在 Flexiglass / SceneContainer 路径上启用了实时模糊、弹簧动画等视觉效果，120Hz 下的大面积模糊可能把 RenderThread 的 `DrawFrame` 拉长；折叠屏展开态因绘制面积更大，需要用目标设备 trace 验证，不能直接写成默认瓶颈。
 
 排查方法：
 
@@ -373,11 +377,11 @@ Flexiglass 默认集成了大量 Material 3 Expressive 效果（实时模糊、�
 adb shell setprop debug.hwui.disable_blur_visual_feedback 1
 ```
 
-如果在禁用模糊后掉帧消失或明显减少，说明实时模糊是瓶颈源。优化方向包括：缩小模糊区域、降低模糊半径、用预渲染的静态模糊图替代实时计算。
+如果在禁用模糊后掉帧消失或明显减少，实时模糊就是候选瓶颈。优化方向包括：缩小模糊区域、降低模糊半径、用预渲染的静态模糊图替代实时计算。
 
 ### Compose 化后的内存基线偏移
 
-Android 15+ 的 SystemUI 切换到 Compose 和 Flexiglass 架构后，基础 RSS 占用比旧版 View 体系提升了约 30%。做内存分析时需要注意：这不是泄露，而是“架构换灵活性”的正常代价。Compose 的 SlotTable、Recomposition 记录和 Compose Node 树本身有内存开销；SceneContainer 状态管理也有额外代价。
+启用 Compose / Flexiglass 路径后，SystemUI 的内存基线可能相对传统 View 路径上移。做内存分析时需要注意：这不一定是泄露，也可能来自 SlotTable、Recomposition 记录、Compose Node 树和 SceneContainer 状态管理。当前章节没有公开 trace / PSS 基线支撑固定百分比，不能写成固定增幅。
 
 排查 SystemUI 内存问题时，先确认设备版本和 Flexiglass 是否启用，再建立对应版本的基线。直接用 Android 14 及以下的 SystemUI PSS 数据作为对比基线，会把架构差异误判为泄露。
 
@@ -465,9 +469,9 @@ NavigationBarController.getNavigationBarView(displayId) → NavigationBarView
 
 ### 性能影响与观测点
 
-1. **多 NavigationBarView 实例内存占用**：每增加一个 Display，内存占用增加数百 KB 到数 MB
+1. **多 NavigationBarView / Taskbar 实例内存占用**：每增加一个 Display，都会增加对应 View、Surface 和状态管理对象，实际幅度取决于分辨率、导航模式和 OEM 定制，需要用 `dumpsys meminfo` 或 Perfetto 建基线
 2. **Display 切换时 View 重建**：Foldable 展开/折叠切换时，触发 `onMeasure`/`onLayout`
-3. **双 Display 同时亮屏**：总功耗显著增加，PowerManager 需管理两个显示电源轨
+3. **双 Display 同时亮屏**：功耗需要单独计入两个显示电源轨和合成负载，不能只按单屏基线外推
 
 ### Perfetto 观测点
 

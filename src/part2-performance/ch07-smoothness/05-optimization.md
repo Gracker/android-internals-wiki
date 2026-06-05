@@ -50,29 +50,30 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: revisiting
 last_task6_audit: "2026-05-22"
-task9_state: pending
-task9_result: pass-tech-review
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T10:50:00+08:00"
 last_task2b_at: "2026-05-24T11:16:52+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-24"
-last_task9_at: "2026-05-24T11:33:19+08:00"
-task9_review_notes: "2026-05-24 Task9 复审: needs-rework → Task2B 2026-06-04 已修复。P0 0 / P1 0 / P2 0；RenderEffect 冲突已合并为统一结论（promotedToLayer/offscreen buffer 路径）；RecyclerView API / Hardware Layer 示例 / PRIORITY_DISPLAY / AGSL / Binder 口径 / Compose 版本边界 / GapWorker deadline 均已修正。"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T18:32:25+08:00"
+task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 修复 2.x/1.4 跨章 Markdown 链接；RenderThread PRIORITY_DISPLAY 锚点改为 AOSP android-16.0.0_r1 frameworks/base/libs/hwui/renderthread/RenderThread.cpp:394-396。回到 Task6 复审。"
 last_task9_audit: "2026-05-23"
 last_task9_audit_log: "logs/deep-review/2026-05-23-06-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-24-11-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
 last_task6_at: "2026-05-24T13:10:00+08:00"
 task6_reviewed_date: "2026-05-24"
 last_task6_review_log: "logs/review/2026-05-24-13-review.md"
 task6_review_notes: "2026-05-24 13:10 Task6 复审：pass-light-edit。L1/L2 小修 9 处，清理夸张标题/网络化表达并将参考资料移至末尾；既有 Task9 P0/P1/P2 pending 队列继续由 Task2B 处理，Task6 未新增回炉。"
-p0: 0
+p0: 1
 p1: 0
-p2: 0
+p2: 4
+last_task9_autofix_at: "2026-06-05"
 ---
 
 # 优化策略
@@ -108,7 +109,7 @@ p2: 0
 
 ### 为什么布局层级会影响性能
 
-Android 的渲染管线在每一帧都需要执行 measure → layout → draw 三个阶段（参见 [2.4 Choreographer 与渲染流水线](04-choreographer.md)）。measure 和 layout 阶段的耗时与 View 树的深度直接相关——measure 是递归的，父 ViewGroup 需要先遍历所有子 View 确定尺寸，然后才能确定自己的尺寸。布局嵌套越深，递归层数越多。
+Android 的渲染管线在每一帧都需要执行 measure → layout → draw 三个阶段（参见 [2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md)）。measure 和 layout 阶段的耗时与 View 树的深度直接相关——measure 是递归的，父 ViewGroup 需要先遍历所有子 View 确定尺寸，然后才能确定自己的尺寸。布局嵌套越深，递归层数越多。
 
 某些 ViewGroup 还需要**多次测量**。`RelativeLayout` 需要先做一遍测量确定各子 View 之间的依赖关系，然后再做一遍确定最终位置。`LinearLayout` 使用 `layout_weight` 时也有类似问题。
 
@@ -211,7 +212,7 @@ RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。An
 
 常见优化：移除不透明 Activity 的 Window 背景、使用 clipPath 裁剪、`View.setWillNotDraw(true)` 跳过不需要绘制的 ViewGroup。
 
-详见 [2.8 过度绘制](08-overdraw.md)。
+详见 [2.8 过度绘制](../../part1-fundamentals/ch02-rendering/08-overdraw.md)。
 
 ### Hardware Layer：属性动画缓存
 
@@ -232,7 +233,7 @@ anim.addListener(new AnimatorListenerAdapter() {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java — LAYER_TYPE_HARDWARE 在硬件加速开启时生效]
 
-**三个注意点：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](07-hardware-layer.md)。
+**三个注意点：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](../../part1-fundamentals/ch02-rendering/07-hardware-layer.md)。
 
 ### Canvas 操作简化
 
@@ -305,11 +306,11 @@ view.setRenderEffect(effect);
 
 ### RenderThread CPU 亲和性：Android AOSP 标准实现不包含 cgroup 大核绑定 🔸
 
-外部 review 指出的一个盲区是"Android 15+ 是否通过进程组（cgroup）对 RenderThread 进行了更激进的 CPU 大核绑定"。通过查阅 AOSP mainline 源码（android-14-release libs/hwui/renderthread/RenderThread.cpp:441），答案是否定的——AOSP 标准实现中 RenderThread 仅通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 设置调度优先级，不使用 `sched_setaffinity()` 或 cgroup 接口绑定 CPU 核心。
+外部 review 指出的一个盲区是"Android 15+ 是否通过进程组（cgroup）对 RenderThread 进行了更激进的 CPU 大核绑定"。通过查阅 AOSP android-16.0.0_r1 源码（frameworks/base/libs/hwui/renderthread/RenderThread.cpp:394），答案是否定的——AOSP 标准实现中 RenderThread 仅通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 设置调度优先级，不使用 `sched_setaffinity()` 或 cgroup 接口绑定 CPU 核心。
 
 `PRIORITY_DISPLAY` 是 bionic libc 定义的常量（值为 -4），使 RenderThread 在系统调度器中获得比普通进程更高的优先级，但不能保证其始终在特定 CPU 核心（尤其是大核）上执行。
 
-**源码锚点**：`platform_frameworks_base/android14-release/libs/hwui/renderthread/RenderThread.cpp:441-443`
+**源码锚点**：`frameworks/base/libs/hwui/renderthread/RenderThread.cpp:394-396`（AOSP android-16.0.0_r1）
 ```cpp
 bool RenderThread::threadLoop() {
     setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY);
@@ -318,7 +319,7 @@ bool RenderThread::threadLoop() {
 }
 ```
 
-**结论**：Android AOSP mainline 不包含 cgroup 级 CPU 亲和性配置。OEM 厂商（如高通、MTK）在 device-specific kernel/vendor branch 中实现的 RenderThread 大核绑定属于厂商定制优化，未合入 AOSP mainline，对 Perfetto 不可见，不属于 AOSP 标准可配置接口。
+**结论**：AOSP android-16.0.0_r1 标准实现不包含 cgroup 级 CPU 亲和性配置。OEM 厂商（如高通、MTK）在 device-specific kernel/vendor branch 中实现的 RenderThread 大核绑定属于厂商定制优化，未合入 AOSP 标准实现，对 Perfetto 不可见，不属于 AOSP 标准可配置接口。
 
 [AIW-源码调研-2026-05-06]
 
@@ -339,7 +340,7 @@ bool RenderThread::threadLoop() {
 
 ### Binder 调用优化
 
-Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-binder.md)），但它的耗时极度不可控。系统空闲时一次 Binder 调用可能只要 0.5ms，而系统繁忙时（比如多个 App 同时做 GC、SurfaceFlinger 正在合成、lmkd 在杀进程），同一次调用可能飙升到 20ms 甚至更久。在 120Hz 设备上，20ms 等于两个半 VSync 周期——一次 Binder 调用就能制造一个肉眼可见的卡顿。
+Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)），但它的耗时极度不可控。系统空闲时一次 Binder 调用可能只要 0.5ms，而系统繁忙时（比如多个 App 同时做 GC、SurfaceFlinger 正在合成、lmkd 在杀进程），同一次调用可能飙升到 20ms 甚至更久。在 120Hz 设备上，20ms 等于两个半 VSync 周期——一次 Binder 调用就能制造一个肉眼可见的卡顿。
 
 针对 Binder 调用，有几条实践证明有效的优化策略。
 
@@ -574,7 +575,7 @@ Android 14/15 的 GPU 内存管理优化和软件回退智能选择机制，当�
 - [ConstraintLayout 性能优化](https://developer.android.com/develop/ui/views/layout/constraint-layout)
 - [ViewStub 文档](https://developer.android.com/reference/android/view/ViewStub)
 - [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
-- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](07-hardware-layer.md)
+- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](../../part1-fundamentals/ch02-rendering/07-hardware-layer.md)
 - AOSP：`ViewStub.java`、`View.java`、`Choreographer.java`
 - 腾讯 WeSing：[Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)
 - [Compose BOM 2025.12.00](https://developer.android.com/develop/ui/compose/bom)
