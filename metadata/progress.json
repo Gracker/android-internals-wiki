@@ -7444,6 +7444,19 @@
       "last_verified": "2026-06-05",
       "confidence": "medium",
       "task6_state": "pending"
+    },
+    "7.19": {
+      "section": "7.19",
+      "title": "AccessibilityManagerService 与无障碍服务性能影响",
+      "file": "src/part2-performance/ch07-smoothness/19-accessibility-manager-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-05",
+      "drafted_date": "2026-06-05",
+      "last_verified": "2026-06-05",
+      "confidence": "medium-high",
+      "task6_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -9819,12 +9832,12 @@
     }
   },
   "task2a_last_processed": {
-    "section": "4.13",
-    "title": "Linux ANON_VMA_LAZY 优化与 Android 内存性能",
-    "file": "src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md",
+    "section": "7.19",
+    "title": "AccessibilityManagerService 与无障碍服务性能影响",
+    "file": "src/part2-performance/ch07-smoothness/19-accessibility-manager-performance.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-06-05T10:15:00+08:00",
+    "processed_at": "2026-06-05T11:23:11+08:00",
     "status": "ready-for-review"
   },
   "task2a_last_gap_mining": {
