@@ -47,19 +47,21 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_result: fixed
 last_task2b_at: '2026-06-04T22:53:28+08:00'
 task2b_state: fixed
-task9_reviewed_date: "2026-06-04"
+task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T22:20:00+08:00"
-task9_review_notes: "2026-06-04 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；FUSE over io_uring 与 16KB page size 版本口径需回炉。"
+last_task9_at: "2026-06-05T16:21:00+08:00"
+task9_review_notes: "2026-06-05 Task9 auto-fix: 修正 eMMC 5.1 Command Queuing、EROFS Android 13 口径，并将 Android 16 SDM 云端编译段降级为待验证边界。"
 last_task6_audit: 2026-06-04
 last_task6_at: "2026-06-04T23:14:00+08:00"
+last_task9_autofix_at: 2026-06-05
+
 ---
 
 
@@ -212,7 +214,7 @@ Android 的 system 分区包含整个操作系统——系统框架、预装 App
 
 ext4 的问题在于：它是为读写场景设计的通用文件系统，携带了大量对只读分区毫无意义的元数据（日志区域、空闲块位图、inode 分配表等）。这些元数据不仅浪费了存储空间，还在启动和运行时产生了不必要的读取开销。
 
-EROFS（Enhanced Read-Only File System）最初由华为开发，在 EMUI 9.1 中首次大规模商用。Google 从 Android 12 开始将其引入 AOSP，并在 Android 13 中将其作为新设备只读分区的强制要求。
+EROFS（Enhanced Read-Only File System）最初由华为开发，在 EMUI 9.1 中首次大规模商用。Google 从 Android 12 开始将其引入 AOSP；AOSP 官方文档确认 Android 13 起 EROFS 与 Virtual A/B 完整兼容。至于是否作为某类新设备或 GMS 发布要求，需要按当年的兼容性和厂商配置单独确认，不能只根据 AOSP EROFS 页面写成平台强制项。
 
 [已验证: 官方文档, source.android.com + kernel.org]
 
@@ -238,7 +240,7 @@ EROFS 默认使用 LZ4（LZ4HC 变体）压缩算法。它的关键创新是原�
 
 Android 13 起的 EROFS 完整支持 Virtual A/B 更新。OTA 生成器会智能地解压 LZ4 数据流来创建增量包，确保 EROFS 分区的 OTA 包大小与 ext4 分区相当。
 
-[已验证: 官方文档, source.android.com/docs/core/storage/erofs + LPC 2019 EROFS presentation]
+[已验证: 官方文档, source.android.com/docs/core/architecture/kernel/erofs + LPC 2019 EROFS presentation]
 
 ### 对性能分析的影响
 
@@ -263,7 +265,7 @@ adb shell mount | grep -E "ext4|f2fs|erofs|fuse"
 
 ### 为什么 eMMC 无法满足现代 Android
 
-eMMC（embedded MultiMediaCard）是 Android 手机在 2015 年之前的主流存储方案。它使用并行数据传输接口，半双工工作模式（读和写不能同时进行），不支持命令队列（一次只能处理一个命令）。在 Android 早期阶段，这些限制不是问题——App 不大、系统不复杂、多任务需求有限。
+eMMC（embedded MultiMediaCard）是 Android 手机在 2015 年之前的主流存储方案。它使用并行数据传输接口，半双工工作模式（读和写不能同时进行）。早期 eMMC 以单线程命令协议为主；eMMC 5.1 才引入 Command Queuing，可让设备内部维护任务队列，但它仍无法改变半双工链路和移动 SoC 早期控制器实现的限制。在 Android 早期阶段，这些限制不是问题——App 不大、系统不复杂、多任务需求有限。
 
 但随着手机使用场景的复杂化（4K 录像、大型游戏、多任务切换），eMMC 的瓶颈越来越明显。特别是 SQLite 数据库的 fsync 操作——Android 系统中大量的设置、App 状态、消息记录都通过 SQLite 存储，每次事务提交都需要 fsync 确保数据落盘。eMMC 的同步处理模式导致 fsync 排队等待，直接造成 UI 卡顿。
 
@@ -276,7 +278,7 @@ UFS（Universal Flash Storage）是 JEDEC 制定的移动设备存储标准，�
 
 **全双工通信**：UFS 采用差分串行传输（LVDS），支持读和写同时进行。App 因此可以在写入数据的同时，继续读取另一个文件，不会互相阻塞。
 
-**命令队列**：UFS 支持多个命令并发执行，存储控制器可以优化命令的执行顺序，减少磁头寻道（在闪存中等价于减少逻辑块寻址跳转）。这对 Android 中常见的随机 I/O 场景很有帮助。
+**命令队列**：UFS 从协议设计上支持命令队列，存储控制器可以并行准备和调度多个请求。eMMC 5.1 也引入了 Command Queuing，但能力、主机控制器实现和生态采用范围都不能等同于 UFS 的全双工 + 队列化路径。对 Android 中常见的随机 I/O 场景，UFS 的并发处理能力更容易转化成稳定收益。
 
 **多通道**：UFS 支持两个数据通道（lane），可以并行传输数据，带宽翻倍。
 
@@ -313,7 +315,7 @@ UFS 4.0 还引入了多循环队列（Multi-Circular Queue，MCQ），可以类�
 
 | 规格 | 接口 | 顺序读 (MB/s) | 顺序写 (MB/s) | 随机读 IOPS | 关键特性 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| eMMC 5.1 | 并行/半双工 | ~330 | ~200 | ~12000 | 无命令队列 |
+| eMMC 5.1 | 并行/半双工 | ~330 | ~200 | ~12000 | 引入 Command Queuing，但受半双工链路和实现差异限制 |
 | UFS 2.1 | 串行/全双工 | ~880 | ~250 | ~40000 | 命令队列 |
 | UFS 3.1 | 串行/全双工 | ~2100 | ~1200 | ~68000 | Write Booster, HPB |
 | UFS 4.0 | 串行/全双工 | ~4200 | ~2800 | ~100000+ | MCQ 多循环队列 |
@@ -383,11 +385,11 @@ Google Play 要求面向 Android 15+ 设备的提交支持 16KB page size，并�
 
 适配排查：使用 `adb shell dumpsys meminfo <package>` 对比 4KB 和 16KB 环境下的 PSS 差异；如果 App 使用了 NDK 原生库，用 `llvm-objdump` 检查 `.bss` 和 `.data` 段的对齐是否满足 16KB 要求。
 
-### 云端编译（SDM）：安装期 I/O 负载的结构性减负
+### 云端编译 / 安装期 I/O：待验证边界
 
-Android 16 引入了 Streaming Data Mapping（SDM）模式：应用的编译产物（`.odex` / `.art` 文件）不再在安装时本地编译，而是从云端预编译后直接下载并链接。这消除了安装瞬间的高强度本地编译 I/O——过去一个大型 App 安装时，`dex2oat` 编译可能产生数秒的密集随机写，和前台 App 的 I/O 争抢存储带宽。
+[待验证] 本节曾把 Android 16 的安装期优化写成 Streaming Data Mapping（SDM）：`.odex` / `.art` 由云端预编译后下载，安装时不再本地编译。本轮复核 Android 16 官方功能列表、ART 变更说明与 AOSP 文档，未找到名为 SDM 的公开一手资料或可复核源码锚点。该说法在获得官方文档或源码证据前不能作为正文结论。
 
-SDM 的收益在低端设备上最为明显：安装时间缩短，安装期间的系统响应性也不会因为 I/O 争抢而劣化。对开发者来说，这个变化是透明的——编译产物的格式和加载接口不变，只是来源从"本地编译"变成了"云端下载"。
+安装期 I/O 仍应按可观测事实排查：`dex2oat` / ART compilation 是否发生、PackageManager 安装阶段是否有密集写入、前台 App 是否同时出现 I/O wait 或调度延迟。
 
 ## 版本演进总结与存储性能分析的关系
 

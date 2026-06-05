@@ -30,23 +30,25 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: reviewed
-task9_state: pending
-task9_result: pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-last_task9_at: "2026-06-04T22:20:00+08:00"
+task9_reviewed_date: "2026-06-05"
+last_task9_at: "2026-06-05T16:21:00+08:00"
 last_task2b_lite_at: "2026-06-04"
 last_task2b_at: "2026-06-04T12:57:00+08:00"
 last_task6_audit: "2026-06-05"
 last_task9_audit: "2026-05-21"
-task9_review_notes: "2026-06-04 Task9 deep-review: needs-rework。P0 2 / P1 1；ViewTreeObserver Android 17 附录源码锚点与机制描述需回炉。"
+task9_review_notes: "2026-06-05 Task9 auto-fix: ViewTreeObserver 附录从 Android 17 API 37 标题降级为 Android 16 源码边界，避免在 android-17.0.0_r1 tag 未发布时写成 Android 17 新增结论。"
 last_task6_at: "2026-06-05T05:12:00+08:00"
+last_task9_autofix_at: 2026-06-05
+
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -720,10 +722,10 @@ ORDER BY slice.dur DESC;
 ---
 
 <!-- AIW-源码调研-2026-06-03 -->
-### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 17 API 37）
+### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 16 源码边界）
 
 **来源**：每日源码调研（cron:d78cfef0，id=6，关联 §6.1 View系统优化）
-**时间**：2026-06-03 | 源码级验证（AOSP android-16.0.0_r1；android-17.0.0_r1 tag 未发布）
+**时间**：2026-06-03 | 源码级验证（AOSP android-16.0.0_r1；android-17.0.0_r1 tag 未发布，本附录不把 VTO 机制作为 Android 17 新增结论）
 
 #### ViewTreeObserver 核心机制
 
