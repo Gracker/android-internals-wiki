@@ -74,6 +74,8 @@ p0: 1
 p1: 0
 p2: 4
 last_task9_autofix_at: "2026-06-05"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 # 优化策略
@@ -143,7 +145,7 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 
 对于子 View 数量在运行时才能确定的场景（如动态标签组、筛选条件列表），动态添加 View 比在 XML 中预定义一堆 `visibility="GONE"` 的 View 要高效得多。`GONE` 状态的 View 虽然不参与 draw，但在 measure 阶段仍然会被遍历；而且它们在 inflate 时就被创建了，白白占用了内存。动态添加则按需创建，数量和时机完全可控。
 
-另外，`layout_weight` 是一个常被忽视的性能陷阱。LinearLayout 在使用 weight 时需要做两次 measure：第一次确定剩余空间，第二次按 weight 比例分配。ConstraintLayout 的 `match_constraint`（0dp + 约束）在效果上等同于 weight，但只需要一次 measure。如果项目中还有使用 weight 的布局，优先用 ConstraintLayout 替代。
+`layout_weight` 也是一个常见的性能陷阱。LinearLayout 在使用 weight 时需要做两次 measure：第一次确定剩余空间，第二次按 weight 比例分配。ConstraintLayout 的 `match_constraint`（0dp + 约束）在效果上等同于 weight，但只需要一次 measure。如果项目中还有使用 weight 的布局，优先用 ConstraintLayout 替代。
 
 在 Perfetto 中，布局层级过深通常表现为 `performTraversals()` 或 measure/layout 相关 slice 耗时突增。打开 Trace 后，先在主线程的 `doFrame` 中确认 measure、layout、draw 哪一段拉长，再回到 Layout Inspector、ViewCapture/Winscope 或 `adb shell dumpsys gfxinfo <package>` 查看实际的 View 树层级和重绘统计。Perfetto 负责告诉我们哪一帧慢、慢在 measure 还是 layout；层级本身要靠布局检查工具确认。如果同一段交互里 `performTraversals()` 经常超过 2-3ms，且 Layout Inspector 显示树深已经到 10 层以上，这一组证据就足够支持先做布局扁平化。[图：Layout Inspector 显示 View 树层级 12 层，同时 Perfetto 中同一帧的 `performTraversals()` / measure slice 拉长]
 
@@ -302,9 +304,11 @@ view.setRenderEffect(effect);
 
 [已验证: Android Developers reference，`RenderEffect#createBlurEffect(...)` Added in API level 31; `RuntimeShader` Added in API level 33]
 [已验证: AOSP `frameworks/base/graphics/java/android/graphics/RenderEffect.java`; `frameworks/base/libs/hwui/jni/RenderEffect.cpp`; `frameworks/base/graphics/java/android/graphics/RenderNode.java`; RenderNode `imageFilter` 属性写入路径]
-[AIW-源码调研-2026-04-27]
 
 ### RenderThread CPU 亲和性：Android AOSP 标准实现不包含 cgroup 大核绑定 🔸
+
+上面讲的是渲染管线中的特效开销。另一个和渲染性能相关的边界问题是 RenderThread 的 CPU 调度——外部常有猜测认为 Android 15+ 通过 cgroup 对 RenderThread 做了大核绑定，这里用源码验证一下实际行为。
+
 
 外部 review 指出的一个盲区是"Android 15+ 是否通过进程组（cgroup）对 RenderThread 进行了更激进的 CPU 大核绑定"。通过查阅 AOSP android-16.0.0_r1 源码（frameworks/base/libs/hwui/renderthread/RenderThread.cpp:394），答案是否定的——AOSP 标准实现中 RenderThread 仅通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 设置调度优先级，不使用 `sched_setaffinity()` 或 cgroup 接口绑定 CPU 核心。
 
@@ -321,7 +325,6 @@ bool RenderThread::threadLoop() {
 
 **结论**：AOSP android-16.0.0_r1 标准实现不包含 cgroup 级 CPU 亲和性配置。OEM 厂商（如高通、MTK）在 device-specific kernel/vendor branch 中实现的 RenderThread 大核绑定属于厂商定制优化，未合入 AOSP 标准实现，对 Perfetto 不可见，不属于 AOSP 标准可配置接口。
 
-[AIW-源码调研-2026-05-06]
 
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
@@ -485,7 +488,7 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 
 ### 案例三：ConstraintLayout 替代嵌套布局
 
-某电商 App 的商品详情页使用多层 RelativeLayout + LinearLayout 嵌套，View 树深度达到 15 层。滑动到商品详情区域时，measure 阶段耗时 6-8ms（120Hz 设备一个 VSync 周期仅 8.33ms）。优化方案：将整个页面重构为两层 ConstraintLayout（头部区域 + 滚动内容区域），View 树深度降至 5 层。measure 阶段耗时降至 2-3ms，详情页滑动帧率从 45fps 提升到 110fps。这里按案例数据保留，复跑时仍要补设备、刷新率、系统版本和测试轮次。
+某电商 App 的商品详情页使用多层 RelativeLayout + LinearLayout 嵌套，View 树深度达到 15 层。滑动到商品详情区域时，measure 阶段耗时 6-8ms（120Hz 设备一个 VSync 周期仅 8.33ms）。优化方案：将整个页面重构为两层 ConstraintLayout（头部区域 + 滚动内容区域），View 树深度降至 5 层。measure 阶段耗时降至 2-3ms，详情页滑动帧率从 45fps 提升到 110fps。这组数据来自特定设备和场景，在不同条件下的收益会有差异。
 
 [已验证: 来源案例数据见 Google Developers Blog ConstraintLayout 性能基准测试]
 
@@ -497,13 +500,6 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 4. **"onBindViewHolder 调用越少越好"**：应关注单次调用的耗时，不是次数
 5. **"子线程不影响主线程"**：大量子线程抢 CPU 时间片、增内存压力、导致更频繁 GC
 6. **"预取越多越好"**：GapWorker 预取和图片预加载都占用帧间空闲时间，过度预取反而会挤占主线程的渲染预算；`setInitialPrefetchCount` 应根据实际 item 复杂度调优，不是越大越好
-
-<!-- AIW-源码调研-2026-05-02 -->
-
-<!-- AIW-源码调研-2026-05-09 -->
-## RenderEffect GPU 渲染管线实现细节
-
-RenderEffect 触发 `promotedToLayer` → offscreen buffer 分配 → `updateSnapshotIfRequired` → `SkImages::MakeWithFilter` 这一整条路径的源码级细节，已在下文的"已验证的调用链与版本边界"一节中给出完整经过验证的描述。本节不再保留之前与下游验证结论不一致的高层归纳。
 
 ## RenderEffect GPU 渲染管线：已验证的调用链与版本边界
 

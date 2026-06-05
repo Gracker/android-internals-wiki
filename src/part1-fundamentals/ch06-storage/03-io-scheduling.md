@@ -1,5 +1,6 @@
 ---
 
+
 status: ready-for-review
 title: I/O 调度与性能
 chapter: '6.3'
@@ -16,8 +17,8 @@ tags:
 - linux
 - android
 - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -27,11 +28,11 @@ last_task9_at: "2026-06-05T20:33:28+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-05
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-05
+reviewed_date: "2026-06-05"
 task6_result: pass-light-edit
 task9_review_notes: "2026-06-05 Task9 auto-fixed: Android 16/17 I/O acceleration claims downgraded to pending-verification boundaries until AOSP/device anchors exist."
-last_task6_at: 2026-06-05T01:15:01+08:00
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词: 真正 1 处(有对照对象) / 彻底 1 处(事实描述) / 元叙述 0)。否定-纠正 1 处(技术事实)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
+last_task6_at: "2026-06-05T21:09:00+08:00"
+task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task9 auto-fixed 后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9_result=auto-fixed, 不等于 pass-tech-review, 不触发自动晋升。pipeline_stage→ready-to-publish, status 保持 ready-for-review。"
 last_task9_autofix_at: 2026-06-05
 last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
 ---

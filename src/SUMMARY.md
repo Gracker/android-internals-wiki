@@ -128,7 +128,7 @@ tags:
   - [6.4 存储相关的版本演进](part1-fundamentals/ch06-storage/04-storage-evolution.md)
   - [6.5 SharedPreferences/DataStore 性能与 ANR 优化](part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md)
   - [6.6 vold、FUSE 与 Scoped Storage I/O 性能边界](part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md)
-  - [6.7 Android 17 FUSE-BPF 与 Scoped Storage I/O 性能](part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md)
+  - [6.7 Linux 6.12 FUSE Passthrough 内核机制与 Android Scoped Storage I/O](part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md)
 
 ---
 

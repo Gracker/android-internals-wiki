@@ -74,6 +74,8 @@ task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anch
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-06-04 Task6 revisiting-review: pass-light-edit。L1/L2 全部通过（禁用词0/AI套话0/高频词0/元叙述0/结构性元叙述0）。无B类大问题。代码路径和验证标注完整，[已验证] tags与AOSP锚点一一对应。task9 auto-fix后回到task6复审，写作质量无回退。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-05
 ---
 
 
@@ -208,7 +210,7 @@ AOSP ARR 文档还给出硬件条件：Android 15 引入 ARR，OEM 需要支持 
 - **触摸后刷新率未提升**：看 PowerManager 的 `userActivity` trace、SurfaceFlinger 是否收到 `Boost.INTERACTION`，以及 Scheduler touch timer / refresh-rate selector 是否有高刷候选。
 - **ARR 正常降频被误判成掉帧**：看 VSYNC 间隔、FrameTimeline、SurfaceFlinger refresh rate 变化。ARR 下 VSYNC 周期变化不等同于 jank，详见 2.18、2.19 节。
 
-[自动发现] 当前 Rust InputFilter 主要是键盘辅助功能过滤器，不应作为触摸滑动卡顿的默认嫌疑点。触摸场景如果没有 KeyEvent 或实体键盘参与，排查顺序应从 InputDispatcher、PowerManager interaction boost、SurfaceFlinger Scheduler、App 渲染预算开始。
+排查触摸滑动卡顿时，不应把 Rust InputFilter 当作默认嫌疑点——它当前只处理键盘辅助功能过滤。触摸场景如果没有 KeyEvent 或实体键盘参与，排查顺序应从 InputDispatcher、PowerManager interaction boost、SurfaceFlinger Scheduler、App 渲染预算开始。
 
 ## 版本边界
 

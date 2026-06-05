@@ -1,4 +1,5 @@
 ---
+
 title: "Crash 上报体系搭建"
 chapter: "26.2"
 section: "26.2"
@@ -44,18 +45,18 @@ sources:
     path: "system/core/debuggerd/crash_dump.cpp"
 tags: [crash-reporting, symbolication, deobfuscation, alerting]
 related_chapters: ["26.1", "20.2", "20.3", "19.24", "20.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05T11:24:00+08:00"
+last_task6_at: "2026-06-05T21:09:00+08:00"
 last_task6_review_log: "logs/review/2026-06-05-11-review.md"
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 3 处(结构性元叙述 1、抽象词风险 2);无新增 L3/L4 回炉项,等待 Task9 技术复审。'
+task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task9 auto-fixed(API/源码路径修正)后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9_result=auto-fixed, 不触发自动晋升。pipeline_stage→ready-to-publish。"
 task9_reviewed_date: 2026-06-05
 last_task9_at: "2026-06-05T20:33:28+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
