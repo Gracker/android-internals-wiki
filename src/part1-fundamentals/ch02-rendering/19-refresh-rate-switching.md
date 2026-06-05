@@ -1,19 +1,20 @@
 ---
 
 
+
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
 status: ready-for-review
 drafted_date: "2026-04-07"
-reviewed_date: "2026-06-04"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-06"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 last_task2b_at: 2026-06-06T01:35:00
 last_task2b_lite_at: 2026-06-06
 task2b_notes: 2026-06-05T14:50:00 Task2B main 回炉 #2：P0 修复残余 SUFFICIENT→DEFAULT；supportsARR 伪源码替换为基于 android-16.0.0_r1 的概念描述+HWC2 Seamless flag 引用。前次 08:59 已修 setFrameRate API(void)+常量、GameManager/Activity 引用、5处伪源码、ARR版本表、Perfetto配置、厂商数据。2026-06-06 Task2B Lite：FRAME_RATE_COMPATIBILITY 常量值修正（EXACT=100/MIN=102 为 @hide，新增 AT_LEAST=2 公开常量）；6 处 collectVotes/calculateOptimalRate→getRankedFrameRates。
@@ -29,9 +30,9 @@ related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-06T01:20:00+08:00"
-last_task6_at: "2026-06-05T10:17:00+08:00"
-task6_review_notes: "2026-06-05 Task6 revisiting review #2: pass-light-edit; L1/L2 全部通过(禁用词0/高频词在限内/元叙述0)；B类: FRAME_RATE_COMPATIBILITY_SUFFICIENT 仍存在于App侧优化代码块(L142),需Task9复核; Task9 queue仍有pending P0条目。"
-last_task6_review_log: "logs/review/2026-06-02-16-review.md"
+last_task6_at: "2026-06-06T02:08:00+08:00"
+task6_review_notes: "2026-06-06 Task6 revisiting #3: pass-light-edit. L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). No new B-class issues. Task 9 queue仍有pending P0条目(常量/API边界/源码溯源),需Task2B修复后回Task9复审。"
+last_task6_review_log: logs/review/2026-06-06-02-review.md
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
 task6_l1_l2_fixes: 6
