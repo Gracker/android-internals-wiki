@@ -3,7 +3,7 @@
 title: "BlockCanary"
 chapter: "19"
 section: "19.06"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "历史项目（公开基线：compileSdk 23 / targetSdk 22 / AGP 2.2.2）；现代 Android 版本需单独验证"
@@ -15,8 +15,8 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
@@ -33,7 +33,8 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-12-audit.md"
-last_task6_at: "2026-06-05T16:08:00+08:00"
+last_task6_at: "2026-06-05T20:08:00+08:00"
+review_notes_6: "2026-06-05 task6 revisit-review (round 7): pass-light-edit. L1 clean (真正 x2 functional, Not-X-but-Y x2 within limit). All 10 anchors covered. task9_result=auto-fixed, queue clean. Auto-promoted to finalized."
 review_notes_5: "2026-06-05 task6 re-review (round 6): pass-light-edit. Fixed 禁用词 痛点→冲突. task9_result=pending, routes to task9."
 review_notes_4: "2026-06-04 task6 re-review (round 5): pass-light-edit. Task2b fix at 20:56 reviewed; no new writing quality issues. L1 clean (真正 x2 functional). Routing to task9 for pending tech review."
 review_notes_3_orig: "2026-06-04 task6 re-review (round 4): pass-light-edit. L1 clean (真正 x2, both functional). Not-X-but-Y x2 (within limit). All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 5/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."

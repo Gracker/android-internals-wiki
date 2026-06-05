@@ -1298,29 +1298,6 @@
       "status": "pending"
     },
     {
-      "section": "13.2",
-      "section_title": "Trace 抓取",
-      "priority": 90,
-      "reason": "[Task6 Review] 源码调研附录自相矛盾：第一段 (AIW-源码调研-2026-06-05) 声称 linux.perf 未注册、frametimeline 数据源名不匹配；第二段 (重新验证补遗) 完全推翻前者。两段同时保留会造成读者混乱，需 task2b 清理第一段并合并到正文。",
-      "material_paths": [
-        "src/part3-tools/ch13-perfetto/02-trace-capture.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需清理",
-          "location": "文件末尾两个 AIW-源码调研-2026-06-05 块",
-          "detail": "第一段（约 L970-L1010）声称 linux.perf Proto 存在但未注册、frametimeline 名称不匹配。第二段（约 L1015-L1085）用 android-12.0.0_r1 源码证明两者都正确可用，完全推翻第一段。两段应合并：删除第一段的错误结论，保留第二段的验证结果，并修正正文中 linux.perf '从 Android 13 起可用' 为 'Android 12+ 可用'。",
-          "suggestion": "1) 删除第一段 (数据源实际状态深度验证) 整节; 2) 将第二段 (数据源状态重新验证) 结论整合到正文对应位置; 3) 修正正文 '从 Android 13 (API 33) 起可用' → '从 Android 12 起可用'"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-06-05T16:08:00+08:00",
-      "status": "completed",
-      "review_type": "task6-writing-quality",
-      "original_review_log": "logs/review/2026-06-05-16-review.md",
-      "completed_at": "2026-06-05T16:53:39"
-    },
-    {
       "section": "4.2",
       "section_title": "Linux 内核内存管理",
       "priority": 95,
