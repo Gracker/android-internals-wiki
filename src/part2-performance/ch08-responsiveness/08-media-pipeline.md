@@ -1,5 +1,6 @@
 ---
-status: ready-for-review
+
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
 confidence: medium
@@ -13,7 +14,7 @@ last_task2b_at: 2026-06-06T02:57:42+08:00
 last_task9_at: "2026-06-06T04:21:00+08:00"
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-16.0.0_r1 + androidx/media release
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 related_chapters:
 - '2.6'
 - '2.13'
@@ -21,8 +22,8 @@ related_chapters:
 - '2.16'
 - '8.4'
 - '14.9'
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-05
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-06"
 section: '8.8'
 sources:
 - path: https://developer.android.com/reference/android/media/MediaCodec
@@ -49,10 +50,10 @@ tags:
 - ExoPlayer
 task2b_result: fixed
 task2b_state: fixed
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task6_reviewed_at: "2026-05-14T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-06"
@@ -60,9 +61,9 @@ task9_state: reviewed
 title: Android 多媒体管线性能
 task9_review_notes: "2026-06-06 Task9 04 auto-fix: 修正 tunneled playback 核心 API/sideband 路径、移除 AudioPresentation/BUFFER_FLAG_TUNNEL/IHapticStream 误锚点，修正 AV1 dav1d 默认路径表述、Media3 日期和未证数值；回到 Task6 复审。"
 last_task9_review_log: logs/deep-review/2026-06-06-04-deep-review.md
-last_task6_at: "2026-06-06T03:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-14-20-review.md"
-task6_review_notes: "2026-06-06 Task6 revisiting-review #5: L1/L2 clean (禁用词0/高频词within limits/元叙述0/物理动词0). Fix: 三种根因→几类根因 (heading count mismatch). task9 needs-rework, queue has pending items, no auto-promote."
+last_task6_at: "2026-06-06T05:12:48+08:00"
+last_task6_review_log: "logs/review/2026-06-06-05-review.md"
+task6_review_notes: "2026-06-06 Task6 revisiting-review #6: L1/L2 clean (禁用词0/高频词0-2功能性/元叙述0/物理动词0). L3/L4 pass (论据有验证标注/知识输出有深度/实战案例完整/工程师对话口吻). No B-class issues. task6=pass-light-edit + task9=auto-fixed + queue empty → promote finalized."
 
 last_task2b_lite_at: 2026-06-05T13:35
 last_task2b_by: openclaw-task2b-main
