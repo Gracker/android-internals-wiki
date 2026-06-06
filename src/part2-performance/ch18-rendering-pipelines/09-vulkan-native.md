@@ -6,10 +6,10 @@ section: "18.9"
 last_verified: "2026-06-06"
 last_verified_against: "Android 16.0.0_r4 AOSP frameworks/native/vulkan/libvulkan/swapchain.cpp, Android Vulkan docs, Android Game SDK Swappy API reference, Khronos Vulkan-Profiles"
 confidence: medium
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-06"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-06T22:20:00+08:00"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-07"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-07T05:31:04+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
@@ -36,9 +36,9 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-06-06-22-audit.md"
-task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 Task9 闲时抽检：AUTO-FIX P1 1 / P2 1；Android native WSI present modes 在 AOSP android-16.0.0_r4 中只返回 FIFO、条件返回 MAILBOX/shared，不返回 IMMEDIATE/FIFO_RELAXED；已局部修正文档，并把 Swappy source 从未固定版本的 AOSP main header 改为 Android Game SDK 官方 API reference，送 Task6 复审。"
-status: "ready-for-review"
+last_task9_review_log: logs/deep-review/2026-06-07-05-deep-review.md
+task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 Task9 闲时抽检：AUTO-FIX P1 1 / P2 1；Android native WSI present modes 在 AOSP android-16.0.0_r4 中只返回 FIFO、条件返回 MAILBOX/shared，不返回 IMMEDIATE/FIFO_RELAXED；已局部修正文档，并把 Swappy source 从未固定版本的 AOSP main header 改为 Android Game SDK 官方 API reference，送 Task6 复审。 | 2026-06-07 Task9 05: pass-tech-review。P0/P1 0；前次 Android native WSI present mode 与 Swappy API auto-fix 已复核通过；记录 P2 1（Validation Layer 启用命令建议按官方 GPU debug layer 流程收敛），Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+status: finalized
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-07T05:18:00+08:00"
@@ -47,10 +47,10 @@ last_task6_audit_log: "logs/review/2026-05-26-15-audit.md"
 last_task6_review_log: "logs/review/2026-06-07-05-review.md"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: reviewed
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-09 Task6 02:08：revisiting 写作复审；轻修 L1/L2 文风 4 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 task9 audit auto-fix：收敛 Android native WSI Presentation Mode 边界，并将 Swappy source 改为官方 API reference；AOSP android-16.0.0_r4 `swapchain.cpp` 不把 IMMEDIATE/FIFO_RELAXED 作为普通 Surface 返回模式，改回 Task6 复审。 | 2026-06-07 Task6 05:18：revisiting 复审 Task9 auto-fix 后文稿；L1/L2 全部通过，无禁用词命中，无 B 类回炉问题。auto-fix 涉及的源码锚点和口径修正写作质量合格。task9_result=auto-fixed，需 Task9 正式 pass-tech-review 后再晋升。"
 last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-06"
