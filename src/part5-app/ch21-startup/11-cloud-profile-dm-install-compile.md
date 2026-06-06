@@ -37,19 +37,19 @@ related_chapters: ["1.7", "8.2", "21.4", "21.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-06
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 review_type: draft-review
 review_round: 1
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task6_at: "2026-05-21T01:15:21+08:00"
 last_task6_review_log: logs/review/2026-05-21-01-review.md
 task6_review_notes: "2026-05-21 Task6 01: L1/L2 无需正文修改；结构、锚点、验证标注通过，转 Task9 pending。"
-task2b_state: pending  # task9-needs-rework
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-21'
@@ -57,6 +57,7 @@ last_task9_at: '2026-05-21T01:38:56+08:00'
 last_task9_review_log: logs/deep-review/2026-05-21-01-deep-review.md
 last_task2b_lite_at: "2026-06-06"
 task9_review_notes: '2026-05-21 Task9 01: needs-rework。P0 1：ART Service dump 命令；P1 1：无 profile 基线命令/API34+ 口径。已写入 logs/deep-review/2026-05-21-01-deep-review.md。'
+task2b_fixed_date: "2026-06-06"
 ---
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
