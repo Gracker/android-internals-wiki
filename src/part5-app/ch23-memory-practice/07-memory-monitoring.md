@@ -59,6 +59,7 @@ task6_reviewed_by: "openclaw-task6"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 3 处（第二人称收束、API 35+ 边界标注、结尾措辞）；四层质检通过，无新增 L3/L4 回炉项。Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-05-14-05-review.md"
 last_task6_at: "2026-05-14T05:17:39+08:00"
+last_task6_audit: "2026-06-06"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-14"
 ---
