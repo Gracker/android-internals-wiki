@@ -3,7 +3,7 @@ title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
 status: "finalized"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
 confidence: medium-high
@@ -36,6 +36,8 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+  - type: deepresearch
+    path: "DeepResearch/2026-06-03-anr-monitoring-ftrace.md"
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
 pipeline_stage: "ready-to-publish"
@@ -52,6 +54,7 @@ task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-15T01:36:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-01-deep-review.md"
+last_task6_audit: "2026-06-07"
 task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_result: "fixed"
 ---
