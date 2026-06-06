@@ -7,7 +7,7 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
-last_verified: '2026-05-30'
+last_verified: '2026-06-07'
 last_verified_against: 'AOSP android-16.0.0_r4, Android 16/17 官方文档'
 confidence: medium
 sources:
@@ -50,10 +50,10 @@ related_chapters:
 - '4.6'
 - '5.6'
 - '8.7'
-task9_result: 'needs-rework'
+task9_result: 'auto-fixed'
 task9_reviewed_date: '2026-06-07'
 task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-06-07T01:20:00+08:00'
+last_task9_at: '2026-06-07T02:20:00+08:00'
 status: 'finalized'
 reviewed_date: '2026-05-09'
 reviewed_by: openclaw-task6
@@ -62,7 +62,7 @@ last_task6_audit: '2026-05-23'
 last_task6_review_log: logs/review/2026-05-09-02-review.md
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: 'fixed'
 task2b_result: fixed-lite
 pipeline_stage: 'task6_pending'
@@ -73,10 +73,11 @@ review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
   写作复审；清理 frontmatter 重复键，修复 L1/L2 文风词与元叙述 8 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09
   Task9 02:30：needs-rework。P1 1：Perfetto 表格提示把 ART Mainline 写成 Android 11+，需改为 Android
   12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。'
-last_task9_review_log: 'logs/deep-review/2026-06-07-01-audit.md'
+last_task9_review_log: 'logs/deep-review/2026-06-07-02-deep-review.md'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 last_task9_audit: '2026-06-07'
+last_task9_autofix_at: '2026-06-07'
 ---
 
 
@@ -203,11 +204,11 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **Android 17 / API 37 延续的变化。** Android 17 在 API 36 基础上补充了多项与性能分析直接相关的能力。[来源: Android 17 官方 Features 与 behavior-changes 页面]
 
-**MessageQueue lock-free 实现。** `android.os.MessageQueue` 切换到 lock-free 数据结构，主线程 Looper 的消息分发路径不再依赖传统互斥锁。对 UI 线程高频消息场景（触控事件、VSync 回调）的尾部延迟有直接影响——在 Perfetto 中观察 `Looper.loop()` wall duration 时，API 37 设备上锁竞争导致的尾部延迟应有所减少。[来源: Android 17 behavior changes for target 37]
+**MessageQueue lock-free 实现。** 对 targetSdkVersion 37+ 的 App，Android 17 会启用新的 lock-free `android.os.MessageQueue`；低 target App 仍受 compat change 控制，可用 `USE_NEW_MESSAGEQUEUE` 开关测试。新实现让主线程 Looper 的消息分发路径不再依赖传统互斥锁。观察 `Looper.loop()` wall duration 时，Android 17 且已启用该变更的进程中，锁竞争导致的尾部延迟应有所减少。[来源: Android 17 behavior changes for target 37]
 
 **ProfilingManager 自动触发条件扩展。** API 37 新增 `ProfilingTrigger` 类型：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量使用被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。这些 trigger 让系统在关键性能事件发生时自动捕获 Trace，无需 App 侧主动请求。[来源: android.os.ProfilingTrigger API 37 参考]
 
-**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 的执行状态、停止原因和运行时统计信息。排查后台任务性能问题时，可以结合 `JobParameters.getStopReason()` 和 standby bucket 判断 Job 被中断的具体原因。[来源: Android 17 Features]
+**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。[来源: Android 17 Features]
 
 **16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。[来源: Android 16KB page sizes 文档]
 
@@ -334,8 +335,8 @@ Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 - **Android 10**：后台位置权限需要单独授权（`ACCESS_BACKGROUND_LOCATION`）
 - **Android 11**：一次性权限授权、权限自动撤销（长期未使用的 App 的权限被自动回收）
 - **Android 12**：精确闹钟需要 `SCHEDULE_EXACT_ALARM` 权限（进一步限制后台定时任务）
-- **Android 13**：通知权限（`POST_NOTIFICATIONS`）需要运行时授权；`SCHEDULE_EXACT_ALARM` 默认拒绝
-- **Android 14**：前台服务必须声明类型并申请对应权限（如 `FOREGROUND_SERVICE_CAMERA`）
+- **Android 13**：通知权限（`POST_NOTIFICATIONS`）需要运行时授权；闹钟、日历等核心场景可以通过 `USE_EXACT_ALARM` 获得精确闹钟能力
+- **Android 14**：前台服务必须声明类型并申请对应权限（如 `FOREGROUND_SERVICE_CAMERA`）；多数新安装且 target Android 13+ 的 App 不再默认获得 `SCHEDULE_EXACT_ALARM`
 - **Android 15**：`dataSync` 和 `mediaProcessing` 类型的前台服务有 6 小时/24 小时的配额限制；处于停止态或特定后台生命周期的 App 网络请求受到约束（WorkManager / 前台服务场景不受影响）
 
 [适用版本: Android 10 (API 29) 起，隐私限制逐版本收紧]
@@ -352,9 +353,9 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 **Android 12（2021）——前台服务启动限制。** App 在后台时，一般情况下不能再启动前台服务，否则抛出 `ForegroundServiceStartNotAllowedException`。同时引入了 "Phantom Process Killer"——限制 App 的子进程总数（全局 32 个）和后台 CPU 使用。精确闹钟需要声明 `SCHEDULE_EXACT_ALARM` 权限。
 
-**Android 13（2022）——精确闹钟收紧。** `SCHEDULE_EXACT_ALARM` 对新安装的 App 默认拒绝，只有闹钟、日历等核心场景可以通过 `USE_EXACT_ALARM` 获得权限。
+**Android 13（2022）——精确闹钟权限分流。** Android 13 增加 `USE_EXACT_ALARM` 常规权限，给闹钟、日历等符合政策的核心场景使用；普通 App 继续走 Android 12 引入的 `SCHEDULE_EXACT_ALARM` 特殊权限口径。
 
-**Android 14（2023）——前台服务类型强制声明。** 所有前台服务必须在 Manifest 中声明具体类型（mediaPlayback、location、connectedDevice 等），并申请对应权限。`BOOT_COMPLETED` 广播对某些前台服务类型的启动也做了限制。
+**Android 14（2023）——前台服务类型强制声明，精确闹钟默认收紧。** 所有前台服务必须在 Manifest 中声明具体类型（mediaPlayback、location、connectedDevice 等），并申请对应权限。`BOOT_COMPLETED` 广播对某些前台服务类型的启动也做了限制。同时，`SCHEDULE_EXACT_ALARM` 不再预授予多数新安装且 target Android 13+ 的 App，默认处于拒绝状态。
 
 **Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求约束有具体触发条件：App 处于停止态（force-stopped）、不在前台服务或 WorkManager 调度上下文中时，网络访问可能失败（`UnknownHostException`）。使用前台服务、WorkManager 或用户可见交互触发的网络请求不在约束范围内。[来源: Android 15 behavior changes, developer.android.com]
 
@@ -444,6 +445,9 @@ Cloud Profiles 和 Baseline Profiles 大幅缓解了这个问题。大多数通�
   - [Background Execution Limits](https://developer.android.com/about/versions/oreo/background)
   - [16KB Page Size](https://developer.android.com/guide/practices/page-sizes)
   - [Android 16 Features](https://developer.android.com/about/versions/16)
+  - [Android 17 Features](https://developer.android.com/about/versions/17/features)
+  - [Android 17 MessageQueue](https://developer.android.com/about/versions/17/changes/messagequeue)
+  - [Android 14 Exact Alarm Changes](https://developer.android.com/about/versions/14/changes/schedule-exact-alarms)
 - AOSP 源码路径：
   - `art/dex2oat/dex2oat.cc` — dex2oat 编译器入口
   - `system/apex/` — APEX 模块定义
