@@ -537,6 +537,30 @@
       "completed_at": "2026-06-06T21:40:20",
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "fixed-lite: P1 版本锚点全部替换为 android-16.0.0_r1；P0 libtracing_perfetto 双路径重写仍待主 Task2B 处理"
+    },
+    {
+      "section": "1.6",
+      "section_title": "Android 版本演进中的架构变化",
+      "priority": 85,
+      "reason": "[Deep Tech Review][闲时抽检] Android 17/API 37 版本差异缺失，章节仍以 Android 16 作为“今天”并错误标注 AOSP android-17.0.0_r1 验证。",
+      "material_paths": [
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://android.googlesource.com/platform/frameworks/base refs/tags/android-16.0.0_r4; android-17.0.0_r1 not found"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "frontmatter applicable_versions / L110 / L184-L200 / L394-L405",
+          "detail": "章节声明适用范围到 Android 17 (API 37)，frontmatter 还曾标注已按 AOSP android-17.0.0_r1 验证；但当前正文主线停在 Android 16，且 L110 写“到今天的 Android 16”。Android 17 官方文档已经给出与本章主题直接相关的版本差异，包括 MessageQueue lock-free 实现、ProfilingManager API 37 新 trigger、JobDebugInfo、ECH / local network permission 等。AOSP frameworks/base 未检出 android-17.0.0_r1 tag，本轮已把 frontmatter 源码锚点降回 android-16.0.0_r4 + Android 17 官方文档。",
+          "suggestion": "补一段 Android 17 / API 37 里程碑：至少覆盖 MessageQueue lock-free 对 UI/反射监控的影响、ProfilingManager 的 OOM/ANOMALY/KILL_EXCESSIVE_CPU_USAGE/COLD_START trigger、JobDebugInfo 对后台任务诊断的影响，并同步更新 Perfetto 版本差异表；不要引入超出 AIW 范围的后续版本资料。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-07T01:20:00+08:00",
+      "status": "pending"
     }
   ],
   "items": [
