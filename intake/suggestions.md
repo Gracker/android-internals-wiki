@@ -51,3 +51,16 @@
 - 连续 10+ 轮空跑
 - 重申建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
 - 当前首要瓶颈：Task 6 审核 81 节 ready-for-review
+
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-06-07
+- **类型**：数据缺失/示例准确性
+- **位置**：4.2 EXPLAIN QUERY PLAN 的使用
+- **问题**：示例 SQL 对 `conversation_id = 42 ORDER BY date` 且存在 `(conversation_id, date)` 复合索引时，实际输出更接近 `SEARCH messages USING INDEX idx_msg_conv_date (conversation_id=?)`；正文示例写成 `SCAN messages USING INDEX idx_msg_conv_date`，会弱化等值条件命中索引的判断。
+- **建议**：把示例输出和解读区分为 `SEARCH ...` 精确查找、`SCAN ... USING INDEX` 索引顺序扫描、无索引全表扫描三类，并标注 SQLite 版本输出文本可能略有差异。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-06-07
+- **类型**：源码准确性/官方命令
+- **位置**：Trace 视角 / 调试工具 / Validation Layers 示例命令
+- **问题**：示例仍包含 `adb shell setprop debug.vulkan.enable 1`，官方 Android Vulkan validation layer 文档的稳定流程是 per-app GPU debug layer settings，或全局 `debug.vulkan.layers` 到下次重启；未使用 `debug.vulkan.enable` 作为稳定入口。
+- **建议**：后续修文时改为 `settings put global enable_gpu_debug_layers 1`、`gpu_debug_app`、`gpu_debug_layers`、`gpu_debug_layer_app`，并保留 `setprop debug.vulkan.layers` 作为全局临时方案。
