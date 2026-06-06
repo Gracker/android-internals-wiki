@@ -64,6 +64,8 @@ review_round: 9
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T18:40:56+08:00"
+last_task9_audit: "2026-06-06"
+last_task9_audit_log: "logs/deep-review/2026-06-06-12-audit.md"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 1 / P2 0；Perfetto FrameTimeline `jank_type` 等值与 UI 线程定位仍需回炉。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1/P2 0；前轮 Binder SQL P0 已按 Perfetto android.frames.timeline / android.binder 源码复核通过，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
 reviewed_date: "2026-05-08"
