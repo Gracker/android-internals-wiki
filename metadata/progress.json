@@ -4189,9 +4189,9 @@
     },
     "25.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T18:30:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-14-18-deep-review.md",
@@ -4204,7 +4204,8 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-14",
       "last_task6_at": "2026-05-14T19:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-14-19-review.md"
+      "last_task6_review_log": "logs/review/2026-05-14-19-review.md",
+      "last_task6_review": "2026-06-06"
     },
     "25.6": {
       "status": "ready-for-review",
@@ -6009,7 +6010,8 @@
       "reviewed_date": "2026-05-28",
       "last_task6_at": "2026-05-28T19:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-28-19-review.md",
-      "last_task2b_at": "2026-05-28T18:50:00+08:00"
+      "last_task2b_at": "2026-05-28T18:50:00+08:00",
+      "last_task6_review": "2026-06-06"
     },
     "19.01": {
       "status": "ready-for-review",
@@ -9922,11 +9924,11 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-06",
-    "time": "00:09",
+    "time": "06:11",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 6 轮 gap mining：372 节（285 finalized + 87 rfr + 0 draft），TASK2B_BACKLOG=0；daily-info 无新数据（最新 2026-06-05）；research-gaps 3 条均已处理；Clippings 全覆盖；无 ≥14 分候选；无空 draft 可加工"
+    "reason": "第 7 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；daily-info 2026-06-06 无新性能话题（ClawFeed 4 条均非核心性能、增量扫描 5 条均已有章节映射）；新 DeepResearch 1 篇（SurfaceTexture 双缓冲→ch18.07 已覆盖）；source-index 212 条全映射；research-gaps 3 条已处理；Clippings 全覆盖；无 ≥14 分候选；全书 372 节（287 finalized + 85 ready-for-review + 0 draft）"
   },
   "task9_last_sections": [
     "26.8",
