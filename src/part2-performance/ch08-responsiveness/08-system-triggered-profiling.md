@@ -50,6 +50,7 @@ sources:
   path: https://developer.android.com/reference/android/os/ext/SdkExtensions
   title: SdkExtensions API Reference
   date: '2026'
+last_task9_audit: "2026-06-06"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -64,7 +65,7 @@ task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-25T22:29:14+08:00'
+last_task9_at: '2026-06-06T14:25:00+08:00'
 last_task6_audit: '2026-05-19'
 ---
 
