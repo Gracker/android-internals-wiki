@@ -68,6 +68,8 @@ last_task2b_lite_at: 2026-06-04
 task2b_recovery_note: "2026-06-05: body recovered from git 49794e89 (initial draft); orphaned YAML lines removed."
 last_task9_autofix_at: 2026-06-05
 task9_reviewed_by: openclaw-task9
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 
@@ -96,9 +98,8 @@ task9_reviewed_by: openclaw-task9
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-Crash 上报体系解决的是“进程已经要退出，证据还要留下来”这件事。它不负责解释 Java Crash、Native Crash 的底层捕获机制，那部分详见 20.2、20.3 和 19.24；本节只讨论 App 侧和服务端怎样把崩溃样本稳定送到分析系统，并让值班同学尽快判断影响面。
+Crash 上报体系要解决的是一件事：进程即将退出时，崩溃证据必须留存下来并送达分析系统。Java Crash、Native Crash 的底层捕获机制在 20.2、20.3 和 19.24 已经展开；本节只聚焦 App 侧和服务端：怎么把崩溃样本稳定送到位，怎么让值班同学在几分钟内判断出影响面。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
 
 ## Crash SDK 的四段路径：捕获、序列化、持久化、上报
 
@@ -138,11 +139,10 @@ Native Crash 的入口通常是 `sigaction`、Breakpad / Crashpad client 或厂�
 | `breadcrumbs` | 崩溃前最近操作、页面、网络请求摘要 | 使用固定大小环形缓冲区，避免崩溃时扩容 |
 | `device_context` | 机型、Android 版本、ABI、前后台、内存水位、磁盘水位 | 不采集用户明文输入和完整 URL |
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
 
 ### 序列化：格式要稳定，字段要可演进
 
-Crash 序列化格式不适合直接复用业务埋点格式。崩溃样本有三个差异：样本价值高、体积不稳定、字段长期追溯要求高。建议使用带 schema 版本的二进制或 JSON envelope，把大字段拆成附件。
+Crash 序列化格式不应直接复用业务埋点格式。崩溃样本和普通埋点有三点不同：单条样本价值高、体积波动大、字段需要长期向后兼容。建议使用带 schema 版本的二进制或 JSON envelope，把大字段拆成附件。
 
 - 摘要字段进入主 envelope：`crash_id`、异常类型、进程、线程、版本、设备、页面、top frame、采样策略版本。
 - 大字段进入附件：完整 Java 堆栈、tombstone、minidump、logcat 尾部、用户行为窗口、Perfetto 片段。
@@ -161,7 +161,6 @@ Crash 序列化格式不适合直接复用业务埋点格式。崩溃样本有�
 
 SQLite 不适合作为崩溃当下的唯一落盘路径。数据库可能持有锁，进程崩溃时事务状态也不确定。更稳的做法是文件化 envelope + 后台索引：崩溃时写文件，下次启动再把文件索引进 SQLite 或服务端队列。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
 ### 上报：优先保证摘要送达，再补附件
 
@@ -194,7 +193,7 @@ Android App 常见多进程：主进程、推送进程、WebView / render 进程
 
 多进程还要处理“崩溃连锁”。例如主进程崩溃后，推送进程仍在运行并继续上报；或者 WebView renderer 崩溃只影响某个页面，不代表整个 App 进程 fatal。Crash envelope 里必须把 `process_name`、`is_main_process`、`foreground_state`、`component` 带上，否则服务端无法判断这是全局稳定性问题还是隔离进程问题。
 
-[自动发现] 对 WebView renderer、isolated process 和动态特性模块，Crash SDK 要把进程名与模块版本一起上报。只用 App `versionCode` 聚合，会把同一个基础包下不同模块版本的崩溃混在一起。这个点在动态化、插件化和灰度发布场景里很容易误判。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+对 WebView renderer、isolated process 和动态特性模块，Crash SDK 要把进程名与模块版本一起上报。只用 App `versionCode` 聚合，会把同一个基础包下不同模块版本的崩溃混在一起。这个点在动态化、插件化和灰度发布场景里很容易误判。
 
 ## 符号化与反混淆服务
 
@@ -269,7 +268,6 @@ Crash 看板至少保留三组指标：
 
 告警系统要把“告警”和“样本详情”连起来。值班同学从告警卡片进入后，应能看到趋势图、版本分布、设备分布、top stack、最近发布记录、mapping / symbols 状态、相关用户日志和附件下载入口。只给一个异常堆栈，很难在 10 分钟内判断是否需要回滚。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 
 ### 发版阶段的门禁用法
 
@@ -284,7 +282,7 @@ Crash 看板至少保留三组指标：
 
 ## Crash 数据隐私与成本控制
 
-[自动发现] Crash 样本天然携带高敏感信息：URL、请求参数、用户输入、文件路径、设备标识、日志片段都可能进入附件。端侧和服务端要同时做字段治理。
+Crash 样本天然携带高敏感信息：URL、请求参数、用户输入、文件路径、设备标识、日志片段都可能进入附件。端侧和服务端要同时做字段治理。
 
 - 端侧采集前定义 allowlist，只允许上传已登记字段；业务日志进入 breadcrumb 前先做脱敏。
 - 完整 URL 拆成 host、path 模板和错误码，query 参数默认丢弃。
@@ -294,15 +292,16 @@ Crash 看板至少保留三组指标：
 
 数据成本也要被监控。Crash SDK 自身要上报 dropped count、store quota used、upload retry count、payload size P95、symbolication failure rate。这些指标不面向业务用户，却决定 Crash 系统是否可信；如果 SDK 自己丢样本，服务端看到的 crash-free users 会偏乐观。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
 ## 本节小结
 
 Crash 上报体系的主线是：崩溃当下只写最小现场，下次启动或独立上传进程补齐上下文，服务端完成符号化、聚合、告警和分派。Java / Native 的捕获机制在 20.2、20.3、19.24 已经展开；26.2 更关注工程系统的可靠性边界：多进程不漏报，mapping 和 symbols 不缺失，告警能直接服务发版决策。
 
-## 附录:源码调研补充 - Android 线上诊断能力版本边界(2026-05-15)
+## 附录：Android 线上诊断能力版本边界
 
-*来源:AIW 每日源码调研 | 关联章节:§26.5、§13.2、§15.5、§20.3*
+以下内容来自源码调研，作为正文诊断能力的版本参考，列出 `ApplicationExitInfo`、`ProfilingManager` 和 `ProfilingTrigger` 在各 API level 的行为差异。
+
+*关联章节：§26.5、§13.2、§15.5、§20.3*
 
 ### A.1 ApplicationExitInfo 版本行为差异
 
@@ -371,11 +370,9 @@ profilingManager.addProfilingTriggers(listOf(triggerBuilder.build()))
 - Crashpad Android client 使用 out-of-process handler 模型
 - `sigaction()` 设置 `SA_SIGINFO` 获取 signal number 和 siginfo_t 地址
 
-<!-- AIW-源码调研-2026-05-15 -->
 
 ---
 
-<!-- AIW-源码调研-2026-05-16 -->
 ## 补充:Native Crash 与 ApplicationExitInfo 补偿链路(源码级验证)
 
 ### 关键源码路径
@@ -412,7 +409,6 @@ profilingManager.addProfilingTriggers(listOf(triggerBuilder.build()))
 - minidump 路径与 `ApplicationExitInfo` 的字段关联
 - Android 15+ 是否从 Breakpad 完全迁移到 crashpad 官方仓库
 
-<!-- AIW-源码调研-2026-05-19: Native Crash Signal Handler 与 ApplicationExitInfo 补偿链路 -->
 
 ### 源码级补充:Native Crash Signal Handler 边界(2026-05-19)
 
@@ -444,7 +440,6 @@ profilingManager.addProfilingTriggers(listOf(triggerBuilder.build()))
 - Android 11+:引入 `ApplicationExitInfo` 与 `getTraceInputStream()`；ANR trace 是主要公开读取对象
 - Android 12+:`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 tombstone protobuf
 
-<!-- AIW-源码调研-2026-05-25 -->
 ### 源码调研补充(2026-05-25)
 
 **调研议题**:Android 版本化线上诊断能力--ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger

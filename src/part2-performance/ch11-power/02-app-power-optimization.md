@@ -74,7 +74,7 @@ last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
 last_task9_audit: "2026-06-06"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-06
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
 ---
 
@@ -165,7 +165,7 @@ Android Vitals 会把 excessive partial wake locks 单独统计出来。局部�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
-在 Battery Historian 中，WakeLock 持有期会以条形图显示在 `Partial Wakelock` 行。如果 trace 配置打开了 power data source，Perfetto 里可能看到 `power/wakelock` 轨道；标准 user build 上这条轨道并不保证存在，所以排查时通常先看 bugreport、Battery Historian 和 `dumpsys batterystats --history`，再决定是否补抓 Perfetto。
+在 Battery Historian 中，WakeLock 持有期会以条形图显示在 `Partial Wakelock` 行。Perfetto 在打开 power data source 时可能包含 `power/wakelock` 轨道，但标准 user build 不保证这条轨道一定存在。排查时先从 bugreport、Battery Historian 和 `dumpsys batterystats --history` 入手，确认问题后再决定是否需要补抓 Perfetto。
 
 ## 后台任务省电策略：WorkManager 与 JobScheduler
 
@@ -286,7 +286,7 @@ Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连
 
 ### 在 Perfetto 中的表现
 
-位置相关问题先从 bugreport、`dumpsys location` 和 Battery Historian 入手。标准 user build 不保证公开 `Location Manager` 或 `GPS` 轨道；有些设备会提供 vendor-specific location data source，有些不会。排查时先确认谁在请求定位、请求是否已经跨到后台，再决定要不要补抓 Perfetto。
+位置相关问题先从 bugreport、`dumpsys location` 和 Battery Historian 入手。标准 user build 不一定有公开的 `Location Manager` 或 `GPS` 轨道——部分设备会提供厂商特定的 location data source，部分不会。排查时先确认谁在请求定位、请求是否已进入后台，再决定是否补抓 Perfetto。
 
 [待补充: `dumpsys location`、Battery Historian 与 vendor trace 的对照图]
 
@@ -424,7 +424,7 @@ Android 16 起，前台服务期间并发运行的 JobScheduler、WorkManager �
 
 ### FGS 的功耗分析方法
 
-分析 App 的功耗时，先分清楚问题落在哪个对象上。WakeLock、定位、FGS 和 Camera 的证据入口并不相同，标准 user build 也不保证每一类都有稳定的 Perfetto 轨道。
+分析 App 的功耗时，先分清楚问题落在哪个对象上。WakeLock、定位、FGS 和 Camera 的证据入口各不相同，标准 user build 也不保证每类都有稳定的 Perfetto 轨道。
 
 | 问题类型 | 推荐抓取方式 | 主要观察面(轨道/表) | 适用版本 / 前提 |
 | --- | --- | --- | --- |
@@ -459,7 +459,7 @@ Audio 的功耗优化主要关注两个方面：
 
 **后台音频要分开看 FGS 启动限制和类型声明**。后台音频如果需要长时间播放，应使用前台服务向用户展示持续通知。Android 12 的变化是限制后台直接启动 FGS：App 退到后台后，只有满足豁免条件才能启动前台服务。Android 14（targetSdk 34+）才强制要求在 manifest 中声明 `foregroundServiceType="mediaPlayback"`，并声明 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限。不要把 Android 12 的启动限制写成 Android 14 的类型强制。
 
-**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。当前本节 Audio 段覆盖到 Android 16 (API 36)，Android 17 的 background audio hardening 作为版本边界记录在此。排查 Android 17 后台音频失败时，应同时检查 `AudioHardening` 日志和 FGS 类型声明。
+**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。本节 Audio 部分覆盖到 Android 16（API 36）。Android 17 的 background audio hardening 详见上方记录。排查 Android 17 设备上后台音频失败时，需同时检查 `AudioHardening` 日志和 FGS 类型声明。
 
 ## 与其他章节的关系
 

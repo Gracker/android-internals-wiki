@@ -46,6 +46,8 @@ task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 task2b_result: auto-fixed  # added by task2b-verifier 2026-06-05
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState
@@ -91,7 +93,7 @@ task2b_result: auto-fixed  # added by task2b-verifier 2026-06-05
 
 旧版 SurfaceFlinger 资料通常从 `Layer`、BufferQueue、HWC 协商开始讲。这个视角适合解释“画面怎么合成”，但不够解释 Android 15 之后越来越常见的另一个问题：大量 `SurfaceControl.Transaction` 到达 SurfaceFlinger 之后，系统怎样判断哪些事务能进本帧、哪些 Layer 状态需要重新计算、哪些信息可以直接交给合成引擎。
 
-FrontEnd 补上的就是这段状态处理路径。AOSP `FrontEnd/readme.md` 对它的定位是：接收描述 buffer 合成方式的客户端 API，消费 transaction，维护 layer 生命周期，并在每一帧给 CompositionEngine 提供一份 snapshot。换成排查语言，FrontEnd 负责把 App / WMS / Shell 提交的请求，整理成后续合成阶段能直接使用的层级和快照。
+FrontEnd 补上的就是这段状态处理路径。AOSP `FrontEnd/readme.md` 对它的定位是：接收描述 buffer 合成方式的客户端 API，消费 transaction，维护 layer 生命周期，并在每一帧给 CompositionEngine 提供一份 snapshot。换成排查语言：FrontEnd 把 App、WMS、Shell 提交的请求整理成层级和快照，供后续合成阶段直接使用。
 
 [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
 
@@ -200,7 +202,7 @@ SurfaceFlinger 的 layer 关系不能简单当作一棵树。普通父子关系�
 | `NotReadyBarrier` | 被另一个 buffer 的 latch 顺序挡住 | BLAST / sync transaction 依赖前序 frame number |
 | `NotReadyUnsignaled` | fence 未 signal，但在特定策略下可单独应用 | `LatchUnsignaledConfig::AutoSingleLayer` 这类单 layer 场景 |
 
-barrier 处理有一个细节：`flushTransactions()` 会循环扫描，直到 pending barrier 的数量不再变化。这样做是为了解开跨 applyToken 的 barrier 依赖链，避免某个本可在本帧满足的依赖因为扫描顺序被推迟。
+barrier 处理有一个细节：`flushTransactions()` 会循环扫描，直到 pending barrier 数量不再变化。这是为了解开跨 applyToken 的 barrier 依赖链——否则某个本可在本帧满足的依赖可能因为扫描顺序被推迟到下一帧。
 
 unsignaled buffer 的处理也有边界。代码只在当前没有其他 ready transaction 时，才把 `queueWithUnsignaledBuffer` 对应的 transaction 单独取出；如果已有 ready transaction，代码会打出 `fence unsignaled` trace 并跳过。这能避免把多个未完成 buffer 一起推进合成阶段。
 
@@ -230,7 +232,7 @@ FrontEnd 的状态不一定都有显式 UI 面板，但可以用三类工具交�
 - **层级结果**：z-order、mirror path、detached / relative 关系，由 FrontEnd 层级构建和遍历产生。
 - **合成结果**：CLIENT / DEVICE composition、present fence、release fence、HWC validate / present 耗时，属于 CompositionEngine、RenderEngine、HWC 和显示硬件路径。
 
-一个实用排查顺序是：先看 `TransactionQueue` 是否持续升高；再看 SurfaceFlinger 主线程是否卡在 `commit` 相关 slice；接着用 Winscope / dumpsys 核对是不是短时间创建、销毁、mirror、relative Z 或窗口转场 transaction 过多；若队列不长但 `present` 或 fence wait 异常，再转向 §2.16 和 §2.6 的同步与 HWC 路径。
+实用排查顺序：先看 `TransactionQueue` 是否持续升高；再看 SurfaceFlinger 主线程是否卡在 `commit` 相关 slice；接着用 Winscope 或 dumpsys 检查是否短时间内 create、destroy、mirror、relative Z 或窗口转场 transaction 过多。如果队列不长但 `present` 或 fence wait 异常，转向 §2.16 和 §2.6 的同步与 HWC 路径。
 
 ## Android 15 前后的状态管理差异
 

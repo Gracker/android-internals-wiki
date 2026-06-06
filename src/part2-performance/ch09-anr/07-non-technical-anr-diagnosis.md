@@ -114,6 +114,21 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 
 [已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
 
+<!-- AIW-源码调研-2026-06-06 -->
+**⚠️ 重要源码锚点修正**：ContentProvider 实际存在两条正交的超时路径，当前表格表述不够精确：
+
+- **路径 1：Provider 进程 publish 超时（10s）**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（10s × HW_TIMEOUT_MULTIPLIER）在 `attachApplicationLocked` 中发送 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57`，超时后调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked` → `removeProcessLocked` + `REASON_INITIALIZATION_FAILURE`（杀进程，**不弹 ANR 对话框**，Perfetto 中只见 `am_proc_died` 无 `am_anr`）。
+- **路径 2：Provider call hang 检测**：仅当系统服务调用 `ContentProviderClient.setDetectNotResponding()` 时开启，实际入口是 `ContentProviderHelper.appNotRespondingViaProvider` → `AnrHelper.appNotResponding` → `AppNotRespondingDialog`（**真 ANR**，会弹框，Perfetto 标记 `am_anr`）。
+
+**常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（l.786-806），非 `ContentProviderHelper`。两条路径的消息码分别为 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 和 `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73`（`ActivityManagerService.java:1551,1561`）。
+
+**排查入口区分**：若遇到 "Unable to launch app ... for provider ... launching app became null" 或 `REASON_INITIALIZATION_FAILURE`，应查路径 1；若遇到 ANR 对话框且 subject 包含 "ContentProvider not responding"，应查路径 2 + `setDetectNotResponding` 的调用方。
+<!-- AIW-源码调研-2026-06-06 -->
+
+[已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
+
+[已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
+
 原稿把这些超时都写成 AMS 内部状态错乱、`Message.timeout`、电池异常之类的伪机制,这会把读者直接带偏。真实入口在 timeout record 和等待队列里,不在虚构的 framework API 里。
 
 ### Input ANR 的真实入口在 inputflinger

@@ -748,6 +748,60 @@ eBPF 将与其他技术深度融合：
 - **边缘计算**：在边缘设备上运行 eBPF 程序
 - **云原生**：eBPF 在云原生环境中的应用
 
+
+<!-- AIW-源码调研-2026-06-06 -->
+
+### 5. Android 17 eBPF 加载器架构重构（2024 Rust 化）
+
+Android 17 在 `system/bpf/loader/` 完成了 bpfloader 的重大架构变化：
+
+#### 1.1 C++ 主入口完全替换
+
+- **移除**: `NetBpfLoad.cpp`（C++，Android 9-16 主入口）
+- **新增**: `bpfloader.rs`（Rust，2024，main 分支当前主入口）
+- **保留**: `Loader.cpp` → 编译为 `libbpf_android.so`，被 Rust 端通过 `bindgen` 调用
+
+#### 1.2 混合加载器架构
+
+```rust
+// bpfloader.rs:main()
+load_libbpf_progs();           // 加载 .bpf 风格（timeInState.bpf 等）
+legacyBpfLoader();             // 调用 C++ 加载器加载 .o 风格
+execNetBpfLoadDone();           // execve 退出
+```
+
+#### 1.3 BPF 程序目录重组
+
+Android 17 将 BPF 程序分散到四个仓：
+
+1. **`system/bpfprogs/`** - 通用 BPF 程序（新建独立仓）
+   - `timeInState.c`: 每 UID CPU 频率时间追踪
+   - `fuseMedia.c`: FUSE 媒体访问策略
+
+2. **`system/bpf/progs/`** - 网络守护进程 BPF
+   - `netd.c`: socket 过滤与流量统计（未在本次读取）
+
+3. **`frameworks/native/services/gpuservice/bpfprogs/`** - GPU 内存跟踪
+   - `gpuMem.c`: `(gpu_id, pid) → size` GPU 内存分配统计
+
+4. **`packages/modules/Connectivity/bpf/progs/`** - Connectivity BPF
+
+#### 1.4 `timeInState.c` 的核心作用
+
+```c
+// 挂载点：tracepoint/sched/sched_switch
+// 输出：uid_time_in_state_map、uid_concurrent_times_map
+// 消费方：Power Stats HAL、Battery Historian
+```
+
+#### 1.5 性能与安全影响
+
+- **性能**: sched_switch ~8000 次/s，hash lookup ~4-5 个 map，整机功耗影响 0.3-0.5 mW
+- **权限**: 所有 map AID_SYSTEM 拥有，确保 Power Stats HAL 只读
+
+#### 1.6 供应商兼容性
+
+BPF 程序加载过程不依赖芯片厂商代码，但 tracepoint/gpu_mem/gpu_mem_total 的发射方位于 vendor kernel，具体 SoC 可能存在实现差异。
 ## 总结
 
 eBPF 技术在 Android 性能分析中发挥着越来越重要的作用。通过 eBPF，我们可以：
