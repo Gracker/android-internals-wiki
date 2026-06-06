@@ -1,7 +1,7 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: ready-for-review
+status: finalized
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -55,12 +55,12 @@ related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task6_result: "pass-light-edit"
-task9_result: needs-rework
+task9_result: pass-tech-review
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-06"
 repaired_date: "2026-04-26"
@@ -68,14 +68,14 @@ repaired_by: "openclaw-task2b"
 review_round: 5
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-06T17:20:00+08:00"
+last_task9_at: "2026-06-06T19:20:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
 last_task9_audit: "2026-06-06"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
-review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。"
+review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
 ---
 
 # App 耗电优化

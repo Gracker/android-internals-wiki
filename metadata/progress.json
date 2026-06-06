@@ -2447,7 +2447,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-06T17:20:00+08:00",
+  "task9_last_review": "2026-06-06T19:20:00+08:00",
   "ready_to_publish": 192,
   "rework_history": [
     {
@@ -7522,17 +7522,21 @@
       "task6_state": "pending"
     },
     "11.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task2b_lite_at": "2026-06-06",
       "file": "src/part2-performance/ch11-power/02-app-power-optimization.md",
       "task6_result": "pass-light-edit",
       "reviewed_date": "2026-06-06",
-      "review_round": 5
+      "review_round": 5,
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-06-06T19:20:00+08:00",
+      "task9_reviewed_date": "2026-06-06",
+      "task9_reviewed_by": "openclaw-task9"
     }
   },
   "task2b_rounds": [
@@ -7617,53 +7621,58 @@
   "last_task2a_processed_date": "2026-06-04",
   "task9_last_review_detail": {
     "date": "2026-06-06",
-    "time": "17:20",
-    "reviewed_at": "2026-06-06T17:20:00+08:00",
-    "mode": "idle-audit",
+    "time": "19:20",
+    "reviewed_at": "2026-06-06T19:20:00+08:00",
+    "mode": "deep-review",
     "sections": [
       "11.2"
     ],
     "files": [
       "src/part2-performance/ch11-power/02-app-power-optimization.md"
     ],
-    "log": "logs/deep-review/2026-06-06-17-audit.md",
+    "log": "logs/deep-review/2026-06-06-19-deep-review.md",
     "p0": 0,
-    "p1": 2,
+    "p1": 0,
     "p2": 0,
     "p3": 1,
-    "queue_added": 1,
-    "result": "needs-rework",
-    "notes": "Android 16 JobScheduler quota optimizations and Android 17 background audio hardening missing from 11.2."
+    "queue_added": 0,
+    "suggestions_added": 0,
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "11.2"
+    ],
+    "notes": "Android 16 JobScheduler quota 与 Android 17 background audio hardening 已在正文补齐；未发现 Android 18/API 38+ 越界内容。"
   },
-  "last_task9_review": "2026-06-06T17:20:00+08:00",
+  "last_task9_review": "2026-06-06T19:20:00+08:00",
   "last_task9_sections": [
     "11.2"
   ],
   "last_task9_review_detail": {
     "date": "2026-06-06",
-    "time": "17:20",
-    "reviewed_at": "2026-06-06T17:20:00+08:00",
-    "mode": "idle-audit",
+    "time": "19:20",
+    "reviewed_at": "2026-06-06T19:20:00+08:00",
+    "mode": "deep-review",
     "sections": [
       "11.2"
     ],
     "files": [
       "src/part2-performance/ch11-power/02-app-power-optimization.md"
     ],
-    "log": "logs/deep-review/2026-06-06-17-audit.md",
+    "log": "logs/deep-review/2026-06-06-19-deep-review.md",
     "p0": 0,
-    "p1": 2,
+    "p1": 0,
     "p2": 0,
     "p3": 1,
-    "queue_added": 1,
-    "result": "needs-rework",
-    "notes": "Android 16 JobScheduler quota optimizations and Android 17 background audio hardening missing from 11.2."
+    "queue_added": 0,
+    "suggestions_added": 0,
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "11.2"
+    ],
+    "notes": "Android 16 JobScheduler quota 与 Android 17 background audio hardening 已在正文补齐；未发现 Android 18/API 38+ 越界内容。"
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch26-observability/08-observability-case-studies.md",
-    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
-    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
+    "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
   "total_review_files": 132,
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
@@ -7706,12 +7715,9 @@
     "new_rework": false
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch26-observability/08-observability-case-studies.md",
-    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
-    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
+    "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
-  "last_task9_at": "2026-06-06T17:20:00+08:00",
+  "last_task9_at": "2026-06-06T19:20:00+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.24",
@@ -9933,7 +9939,7 @@
   "last_task9_files": [
     "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-06-06-17-audit.md",
+  "last_task9_log": "logs/deep-review/2026-06-06-19-deep-review.md",
   "task9_last_files": [
     "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
@@ -9972,7 +9978,7 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "last_task2a_date": "2026-06-05",
-  "task9_last_review_summary": "Task9 deep review: 26.8/9.6/18.14 auto-fixed; 18.3 pass-tech-review and auto-promoted finalized.",
+  "task9_last_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "task2b_history": [
     {
       "date": "2026-05-18T00:17:19.407328",
@@ -10387,7 +10393,7 @@
     "reviewed_date": "2026-06-01",
     "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
   },
-  "last_task9_review_summary": "P0 1 / P1 2 / P2 1；16.5 已 auto-fix 回 Task6，17.4 pass-tech-review 并自动晋升 finalized。",
+  "last_task9_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
     "date": "2026-05-26",
     "time": "06:16",
