@@ -1,8 +1,8 @@
 {
-  "total": 372,
+  "total": 349,
   "draft": 0,
   "ready-for-review": 79,
-  "finalized": 293,
+  "finalized": 269,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
   "task9_reviewed_by": "openclaw-task9",
@@ -2416,7 +2416,7 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 108,
+  "ready_for_review": 79,
   "last_updated": "2026-06-04",
   "last_updated_by": "task2a",
   "task6_last_review": {
@@ -2711,8 +2711,8 @@
       "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
     },
     "3.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-06-01T16:05:00+08:00",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
@@ -2731,8 +2731,8 @@
       "task6_review_notes": "厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突，已写入 queue。"
     },
     "4.3": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-17T11:14:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -2749,8 +2749,8 @@
       "last_task6_review_log": "logs/review/2026-05-17-11-review.md"
     },
     "4.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-22T08:20:00+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 95,
@@ -2775,8 +2775,8 @@
       "task2b_state": "fixed"
     },
     "5.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-24T06:27:54+08:00",
       "task9_result": "needs-rework",
       "auto_promoted": false,
@@ -2798,8 +2798,8 @@
       "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；既有 Task9 needs-rework 技术项继续流转 task9_pending。"
     },
     "5.7": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-16T11:31:00+08:00",
       "task9_result": "needs-rework",
       "queue_priority": 90,
@@ -2826,8 +2826,8 @@
       "task6_reviewed_date": "2026-06-03"
     },
     "7.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-25T11:41:00+08:00",
       "task9_result": "needs-rework",
       "task9_state": "pending",
@@ -2857,8 +2857,8 @@
       "task9_review_notes": "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。"
     },
     "20.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "auto-fixed",
       "task9_state": "pending",
@@ -2880,8 +2880,8 @@
       "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
     },
     "20.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-28T02:11:48+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 95,
@@ -2904,8 +2904,8 @@
       "task6_review_notes": "2026-05-28 Task6：Task9 auto-fix 后写作复审通过；修复 frontmatter 禁用词和结尾否定-纠正式表达 2 处；无 L3/L4 回炉项，送 Task9 复核。"
     },
     "21.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-22T04:07:00+08:00",
       "task6_result": "needs-rework",
       "task9_state": "pending",
@@ -2952,8 +2952,8 @@
       "last_task9_review_log": "logs/deep-review/2026-05-18-00-deep-review.md"
     },
     "5.11": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-06-04T13:12:00+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 95,
@@ -2973,8 +2973,8 @@
       "section": "1.5",
       "title": "线程模型",
       "file": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -2986,8 +2986,8 @@
       "task2b_state": "fixed"
     },
     "20.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-23T08:18:48+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -3014,8 +3014,8 @@
       "last_task6_at": "2026-05-12T21:56:00+08:00"
     },
     "1.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-28T17:18:00+08:00",
       "task6_result": "pass-light-edit",
       "section": "1.9",
@@ -3039,8 +3039,8 @@
       "last_task9_review_log": "logs/deep-review/2026-05-28-16-deep-review.md"
     },
     "2.10": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-06-03T04:08:00+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 90,
@@ -3090,8 +3090,8 @@
       "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；自动晋升 finalized。"
     },
     "16.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-29T08:16:26+08:00",
       "task6_result": "pass-light-edit",
       "last_task9_at": "2026-05-29T07:21:00+08:00",
@@ -3145,8 +3145,8 @@
       "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
     },
     "2.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-27T12:06:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -3166,8 +3166,8 @@
       "task6_review_summary": "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "2.18": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-25T08:15:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -3181,8 +3181,8 @@
       "task2b_state": "pending"
     },
     "22.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
@@ -3222,8 +3222,8 @@
       "last_task9_review_log": "logs/deep-review/2026-05-17-11-deep-review.md"
     },
     "20.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task9_result": "auto-fixed",
       "queue_priority": 95,
@@ -3297,8 +3297,8 @@
       "source_file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md"
     },
     "21.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-06-03T03:06:00+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
@@ -3341,8 +3341,8 @@
     "14.9": {
       "title": "Android Camera 性能与 Perfetto 分析",
       "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-28T18:20:12+08:00",
@@ -3366,8 +3366,8 @@
       "task6_review_notes": "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
     },
     "18.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-26T03:20:00+08:00",
       "task9_result": "pass-tech-review",
       "task9_state": "reviewed",
@@ -3439,8 +3439,8 @@
       "title": "布局优化策略"
     },
     "22.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2a_at": "2026-05-13T07:20:00+08:00",
@@ -3459,8 +3459,8 @@
       "task6_log": "logs/review/2026-05-28-10-review.md"
     },
     "8.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -3473,8 +3473,8 @@
       "title": "Kotlin Coroutine 性能实践"
     },
     "14.3": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -3503,8 +3503,8 @@
       "task9_state": "pending"
     },
     "22.7": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-06-03T07:08:52+08:00",
       "task6_result": "pass-light-edit",
       "last_task6_review_log": "logs/review/2026-06-03-07-review.md",
@@ -3519,8 +3519,8 @@
       "task2b_state": "fixed"
     },
     "22.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -3593,8 +3593,8 @@
       "task6_review_notes": "2026-05-28 Task6 16:06 revisiting review: pass-light-edit。清理 frontmatter 重复字段；正文 L1/L2 通过；Task9 result 为 auto-fixed，不满足自动晋升条件，送 Task9 复审。"
     },
     "2.0": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -3646,8 +3646,8 @@
       "auto_finalized_by_task9": "2026-05-13T18:28:00+08:00"
     },
     "18.10": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-27T09:40:09+08:00",
       "task9_result": "needs-rework",
       "task9_state": "pending",
@@ -3692,8 +3692,8 @@
       "task2b_result": "fixed"
     },
     "19.26": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task9_at": "2026-05-13T17:55:27+08:00",
       "task9_result": "pending",
       "task9_state": "pending",
@@ -3728,8 +3728,8 @@
     "2.3": {
       "title": "VSync 机制",
       "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-13T18:28:00+08:00",
@@ -3737,8 +3737,8 @@
       "task2b_state": "pending"
     },
     "3.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -3758,8 +3758,8 @@
       "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
     },
     "2.15": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task9_state": "pending",
@@ -3839,8 +3839,8 @@
       "task6_state": "reviewed"
     },
     "5.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
       "task2b_state": "fixed",
@@ -3886,8 +3886,8 @@
       "auto_finalized_by": "openclaw-task6"
     },
     "23.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task2b_state": "fixed",
@@ -3970,8 +3970,8 @@
       "task2b_result": "fixed"
     },
     "24.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-14T10:11:00+08:00",
@@ -3982,8 +3982,8 @@
       "title": "网络协议优化（HTTP/2、HTTP/3、gRPC）"
     },
     "24.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-05-14T11:13:00+08:00",
@@ -4030,8 +4030,8 @@
       "task6_review_notes": "L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
     },
     "20.9": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-28T02:31:47+08:00",
@@ -4058,8 +4058,8 @@
       "task6_review_notes": "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
     },
     "24.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-14T13:30:11+08:00",
@@ -4079,8 +4079,8 @@
       "task6_review_notes": "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
     },
     "25.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-15T07:35:58+08:00",
@@ -4116,8 +4116,8 @@
       "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
     },
     "25.3": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
@@ -4129,8 +4129,8 @@
       "last_task6_review_log": "logs/review/2026-05-14-16-review.md"
     },
     "21.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -4155,8 +4155,8 @@
       "last_task2b_lite_at": "2026-06-01"
     },
     "25.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -4208,8 +4208,8 @@
       "last_task6_review": "2026-06-06"
     },
     "25.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -4250,8 +4250,8 @@
       "note": "Task6 pass, waiting Task9"
     },
     "9.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -4269,8 +4269,8 @@
       "last_task6_review_log": "logs/review/2026-05-14-20-review.md"
     },
     "25.7": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -4283,8 +4283,8 @@
       "last_task6_review_log": "logs/review/2026-05-14-20-review.md"
     },
     "25.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
@@ -4323,8 +4323,8 @@
       "auto_finalized_at": "2026-06-02T07:07:00+08:00"
     },
     "26.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task2a_at": "2026-05-14T23:08:00+08:00",
       "task2a_result": "drafted",
       "task6_state": "reviewed",
@@ -4421,8 +4421,8 @@
     "26.6": {
       "title": "A/B Test 与性能回归防护",
       "file": "src/part5-app/ch26-observability/06-ab-testing-regression.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -4520,8 +4520,8 @@
     "20.10": {
       "title": "WebView Renderer OOM 与白屏恢复",
       "file": "src/part5-app/ch20-stability/10-webview-renderer-oom-recovery.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
@@ -4537,8 +4537,8 @@
     "22.10": {
       "title": "RenderEffect 与 RuntimeShader 性能实践",
       "file": "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
@@ -4566,8 +4566,8 @@
     "26.9": {
       "title": "ApplicationExitInfo 与进程退出归因",
       "file": "src/part5-app/ch26-observability/09-application-exit-info.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 85,
@@ -4635,8 +4635,8 @@
     "13.12": {
       "title": "Perfetto Profile 导入与 Flamegraph 分析",
       "file": "src/part3-tools/ch13-perfetto/12-perfetto-profiles-flamegraph.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "last_task2a_at": "2026-05-15T14:04:00+08:00",
@@ -4689,8 +4689,8 @@
       "task9_review_notes": "2026-05-15 Task9：needs-rework。P0 0 / P1 1 / P2 2；需拆分 Android 10/11 legacy integer score 与 Android 12+ NetworkRanker/NetworkScore flags，NetworkCallback 示例与 OEM external scorer 口径需补。"
     },
     "25.10": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task2a_at": "2026-05-15T19:04:00+08:00",
       "task2a_result": "drafted",
       "task6_state": "reviewed",
@@ -4786,8 +4786,8 @@
     "8.2": {
       "title": "App 启动全流程",
       "file": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-24T13:10:00+08:00",
@@ -4834,8 +4834,8 @@
     "25.11": {
       "title": "ADPF Hint Session 与协程线程迁移",
       "file": "src/part5-app/ch25-power-size/11-adpf-coroutine-thread-migration.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-15",
       "queue_priority": 80,
@@ -4909,8 +4909,8 @@
     "1.10": {
       "title": "ContentProvider 性能与优化",
       "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -4936,8 +4936,8 @@
     "2.21": {
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -4957,8 +4957,8 @@
       "last_task9_at": "2026-05-28T00:33:51+08:00"
     },
     "22.12": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "file": "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
       "title": "FragmentTransaction 提交链路与页面切换性能",
       "task6_state": "revisiting",
@@ -4988,8 +4988,8 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5013,8 +5013,8 @@
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
       "file": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5039,8 +5039,8 @@
     "3.9": {
       "title": "端到端输入延迟预算与感知阈值",
       "file": "src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 85,
@@ -5063,8 +5063,8 @@
     "13.14": {
       "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5125,8 +5125,8 @@
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
       "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5149,8 +5149,8 @@
       "task6_review_notes": "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
     },
     "13.13": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-28T04:13:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -5169,8 +5169,8 @@
       "task6_review_notes": "2026-05-28 Task6：Task2B fixed-lite 后复审通过；L1/L2 小修 1 处，禁用词与高频词扫描无命中；outline 10/10 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，未自动晋升。"
     },
     "5.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-16T15:38:55+08:00",
       "task9_state": "reviewed",
@@ -5186,8 +5186,8 @@
     "11.5": {
       "title": "Wakelock 机制与功耗分析",
       "file": "src/part2-performance/ch11-power/05-wakelock.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -5208,8 +5208,8 @@
     "5.13": {
       "title": "移动端 LLM 推理的 DVFS 与能效边界",
       "file": "src/part1-fundamentals/ch05-cpu-power/13-mobile-llm-dvfs-energy.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5228,8 +5228,8 @@
       "task6_review_notes": "2026-05-16 Task6：首次写作 review 通过；补齐 section/task6 元数据，修复 2 处否定-纠正式表达；未新增 L3/L4 回炉项，送 Task9 技术复核。"
     },
     "5.14": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -5376,8 +5376,8 @@
       "last_task6_review_log": "logs/review/2026-05-17-06-review.md"
     },
     "13.16": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-28T08:10:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -5413,8 +5413,8 @@
     "13.17": {
       "title": "Perfetto SDK 与应用内 Trace 数据源",
       "file": "src/part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "gap_source": "素材驱动/官方文档",
@@ -5443,8 +5443,8 @@
     "12.5": {
       "title": "ConnectivityService 与网络状态监听性能",
       "file": "src/part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-17T12:11:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
@@ -5454,18 +5454,19 @@
     "16.7": {
       "title": "Android 系统启动耗时优化与 bootanalyze",
       "file": "src/part4-system/ch16-aosp/07-system-boot-time-optimization.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "gap_source": "官方文档/AOSP结构",
       "gap_score": 14,
       "queue_priority": 80,
-      "material_count": 3
+      "material_count": 3,
+      "task6_state": "pending"
     },
     "14.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task9_state": "pending",
@@ -5503,8 +5504,8 @@
       "gap_source": "章节深挖/研究素材/官方文档"
     },
     "1.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-27T05:14:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
@@ -5522,8 +5523,8 @@
       "task6_review_notes": "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
     },
     "20.2": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-18T01:08:00+08:00",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
@@ -5538,8 +5539,8 @@
     "26.13": {
       "title": "ApplicationStartInfo 与启动归因上报",
       "file": "src/part5-app/ch26-observability/13-application-start-info.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-18",
       "gap_source": "研究素材/官方文档/章节深挖/Clippings结构参考",
@@ -5558,20 +5559,21 @@
     "20.13": {
       "title": "16KB Page Size 兼容性与 Native 崩溃治理",
       "file": "src/part5-app/ch20-stability/13-16kb-page-size-native-compatibility.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-18",
       "gap_source": "素材驱动/官方文档/AOSP结构/Clippings结构参考",
       "gap_score": 18,
       "queue_priority": 80,
-      "material_count": 6
+      "material_count": 6,
+      "task6_state": "pending"
     },
     "2.6": {
       "file": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "title": "SurfaceFlinger 与合成",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -5585,8 +5587,8 @@
     "5.3": {
       "file": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
       "title": "大小核架构",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "needs-rework",
       "reviewed_by": "openclaw-task6",
@@ -5598,13 +5600,14 @@
       "task2b_state": "pending"
     },
     "17.6": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "queue_priority": 80,
       "title": "Media Performance Class 与设备能力分级",
       "file": "src/part4-system/ch17-oem/06-media-performance-class-device-capability.md",
       "created_by": "task2a-knowledge-gap",
-      "created_date": "2026-05-18"
+      "created_date": "2026-05-18",
+      "task6_state": "pending"
     },
     "2.23": {
       "status": "ready-for-review",
@@ -5627,8 +5630,8 @@
       "task6_review_summary": "2026-05-27 10:05 Task6：pass-light-edit。复扫 Scheduler/VSyncPredictor/ARR 文稿；L1 禁用词、高频词和结构性元叙述 0 命中；outline 8/8 覆盖；无新增 L3/L4 回炉项。Task9 result 仍非 pass-tech-review，送 Task9 复审。"
     },
     "13.18": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "queue_priority": 80,
       "title": "SmartPerfetto 与可复用 Trace 分析平台",
       "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
@@ -5719,7 +5722,7 @@
       "queue_priority": 80
     },
     "23.9": {
-      "status": "draft",
+      "status": "ready-for-review",
       "pipeline_stage": "task2a_gap_created",
       "queue_priority": 80,
       "title": "Android 17 App Memory Limits 与内存泄漏治理",
@@ -5743,7 +5746,7 @@
       "task2b_result": "fixed"
     },
     "4.11": {
-      "status": "draft",
+      "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "queue_priority": 80,
       "title": "Cached App Freezer 与 GC 触发边界",
@@ -5794,8 +5797,8 @@
     "20.3": {
       "title": "Native Crash 分析与治理",
       "file": "src/part5-app/ch20-stability/03-native-crash-governance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-06-01T18:10:00+08:00",
@@ -5824,29 +5827,31 @@
     "7.17": {
       "title": "FragmentTransaction 提交时序与主线程卡顿",
       "file": "src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-20",
       "queue_priority": 80,
       "gap_score": 17,
-      "gap_source": "素材驱动/官方文档/AOSP结构"
+      "gap_source": "素材驱动/官方文档/AOSP结构",
+      "task6_state": "pending"
     },
     "14.17": {
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "file": "src/part3-tools/ch14-other-tools/17-statsd-system-metrics.md",
       "title": "statsd 与系统级指标采集",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-20",
       "queue_priority": 80,
-      "gap_score": 16
+      "gap_score": 16,
+      "task6_state": "pending"
     },
     "4.12": {
       "title": "ZRAM 压缩交换与应用重启延迟",
       "file": "src/part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-20",
       "queue_priority": 80,
@@ -5859,13 +5864,14 @@
         "total": 17
       },
       "last_task2a_at": "2026-05-20T07:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "pending"
     },
     "19.16": {
       "title": "ProfilingManager",
       "file": "src/part3-tools/ch19-apm/16-profiling-manager.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -5891,8 +5897,8 @@
       "section": "19.09",
       "title": "Measure",
       "file": "src/part3-tools/ch19-apm/09-measure.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -5934,8 +5940,8 @@
       "confidence": "medium"
     },
     "21.11": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -5973,8 +5979,8 @@
     "26.15": {
       "title": "Android Vitals 与 Play Console 质量指标归因",
       "file": "src/part5-app/ch26-observability/15-android-vitals-play-console-quality.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-21",
       "queue_priority": 80,
@@ -5982,7 +5988,8 @@
       "gap_score": 18,
       "material_count": 13,
       "last_task2a_at": "2026-05-21T06:09:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "pending"
     },
     "22.15": {
       "title": "Compose First 与 View/Compose 混合迁移性能边界",
@@ -5998,8 +6005,8 @@
     "15.5": {
       "title": "线上性能监控",
       "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6062,8 +6069,8 @@
     "14.6": {
       "title": "自动化测试工具",
       "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6081,8 +6088,8 @@
       "section": "11.7",
       "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
       "file": "src/part2-performance/ch11-power/07-user-settings-energy-impact.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-22",
       "queue_priority": 80,
@@ -6096,14 +6103,15 @@
       },
       "material_count": 3,
       "last_task2a_at": "2026-05-22T08:45:48+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "pending"
     },
     "8.12": {
       "section": "8.12",
       "title": "Keystore/KeyMint 调用延迟与登录链路性能",
       "file": "src/part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-22",
       "queue_priority": 80,
@@ -6117,14 +6125,15 @@
       },
       "material_count": 6,
       "last_task2a_at": "2026-05-22T11:04:00+08:00",
-      "task2a_result": "gap-created"
+      "task2a_result": "gap-created",
+      "task6_state": "pending"
     },
     "26.17": {
       "section": "26.17",
       "title": "线上网络质量监控与接入层协同",
       "file": "src/part5-app/ch26-observability/17-online-network-quality-observability.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6170,8 +6179,8 @@
     "7.18": {
       "title": "HWC Overlay Plane 与合成降级排查",
       "file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2a_state": "processed",
       "task2a_result": "ready-for-review",
       "last_task2a_at": "2026-05-23T01:04:00+08:00",
@@ -6183,8 +6192,8 @@
       "material_count": 4
     },
     "19.14": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
       "file": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
       "reviewed_by": "openclaw-task6",
@@ -6202,8 +6211,8 @@
       "task2b_result": "pending"
     },
     "18.17": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "title": "Hardware Buffer Renderer",
       "file": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "reviewed_by": "openclaw-task6",
@@ -6225,8 +6234,8 @@
       "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00"
     },
     "20.14": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "title": "线程与 FD 资源监控治理",
       "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
       "reviewed_by": "openclaw-task6",
@@ -6240,8 +6249,8 @@
       "task6_note": "Task6 04:05 首审 pass-light-edit；补 section/chapter 与禁用词小修，进入 Task9 pending。"
     },
     "7.15": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-23T08:18:48+08:00",
       "task6_result": "needs-rework",
       "task6_state": "reviewed",
@@ -6257,8 +6266,8 @@
     "7.5": {
       "title": "优化策略",
       "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-24T13:10:00+08:00",
@@ -6296,8 +6305,8 @@
       "task2b_result": "fixed"
     },
     "25.16": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
       "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
       "last_task2a_at": "2026-05-24T00:04:00+08:00",
@@ -6309,8 +6318,8 @@
       "section": "25.17",
       "title": "Android 17 后台音频硬化与播放功耗治理",
       "file": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "drafted_by": "openclaw-task2a",
@@ -6336,8 +6345,8 @@
     "25.18": {
       "title": "音频 Offload 与 AudioTrack 精确控制功耗实践",
       "file": "src/part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "gap_source": "研究素材/官方文档/AOSP结构/Clippings结构参考",
@@ -6350,8 +6359,8 @@
     "18.6": {
       "title": "SurfaceView 直出路径",
       "file": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-28T20:05:00+08:00",
@@ -6374,8 +6383,8 @@
     "24.16": {
       "title": "Android 17 流媒体网络预算与本地网络权限适配",
       "file": "src/part5-app/ch24-io-network/16-android17-streaming-local-network.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-24",
       "queue_priority": 80,
@@ -6417,8 +6426,8 @@
       "section": "5.6",
       "title": "Android 功耗管理",
       "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6442,8 +6451,8 @@
       "section": "7.2",
       "title": "卡顿原因体系",
       "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6457,8 +6466,8 @@
     "24.17": {
       "title": "Room 3.0 与 SQLiteDriver 迁移性能边界",
       "file": "src/part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6483,8 +6492,8 @@
     "1.16": {
       "title": "Audio Pipeline 延迟与性能",
       "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6512,8 +6521,8 @@
     "25.19": {
       "title": "Android Vitals 过度 WakeLock 指标与治理",
       "file": "src/part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-25",
       "gap_source": "官方文档/Clippings结构参考/已有队列缺口",
@@ -6588,8 +6597,8 @@
       "section": "20.15",
       "title": "Android 17 Native DCL 只读约束与动态库加载稳定性",
       "file": "src/part5-app/ch20-stability/15-android17-native-dcl-stability.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-25",
       "gap_source": "官方文档/AOSP结构/每日信息",
@@ -6616,8 +6625,8 @@
     "25.20": {
       "title": "Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理",
       "file": "src/part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-25",
       "gap_source": "官方文档/Android 17 API 变更/Clippings结构参考",
@@ -6649,8 +6658,8 @@
       "section": "16.4",
       "title": "Android 17 + Kernel 6.12 系统级性能优化",
       "file": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6665,8 +6674,8 @@
       "section": "11.1",
       "title": "Android 功耗模型",
       "file": "src/part2-performance/ch11-power/01-power-model.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6708,8 +6717,8 @@
       "section": "11.4",
       "title": "案例集",
       "file": "src/part2-performance/ch11-power/04-case-studies.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6756,8 +6765,8 @@
     "4.8": {
       "file": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
       "title": "ART 分代垃圾回收与 GC 暂停优化",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "revisiting",
@@ -6768,8 +6777,8 @@
     "10.5": {
       "file": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
       "title": "案例集",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "reviewed",
@@ -6797,8 +6806,8 @@
     "8.7": {
       "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
       "title": "Baseline Profiles 与编译优化实践",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "revisiting",
@@ -6810,8 +6819,8 @@
       "section": "1.2",
       "title": "系统启动全流程",
       "file": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6881,8 +6890,8 @@
     "1.8": {
       "title": "Activity Manager Service 与性能分析",
       "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6935,8 +6944,8 @@
       "section": "12.4",
       "title": "Android 网络安全与 TLS 性能优化",
       "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6972,8 +6981,8 @@
     "13.10": {
       "title": "Perfetto SQL 性能分析实战手册",
       "file": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7007,8 +7016,8 @@
       "section": "13.3",
       "title": "Perfetto View 解读",
       "file": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 4,
@@ -7024,8 +7033,8 @@
       "section": "14.12",
       "title": "APM / 可观测性平台与 SDK 选型",
       "file": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "reviewed",
@@ -7050,8 +7059,8 @@
       "section": "14.4",
       "title": "dumpsys 系列命令",
       "file": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -7068,8 +7077,8 @@
       "section": "15.2",
       "title": "如何区分系统问题和 App 问题",
       "file": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7089,8 +7098,8 @@
     "14.5": {
       "title": "三方性能库",
       "file": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7129,8 +7138,8 @@
       "section": "19.12",
       "title": "FrameMetrics",
       "file": "src/part3-tools/ch19-apm/12-framemetrics.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -7173,8 +7182,8 @@
       "title": "崩溃与 ANR 捕获机制",
       "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "source_file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "review_type": "task6-writing-quality-review",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-02",
@@ -7206,8 +7215,8 @@
       "section": "2.1",
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7235,8 +7244,8 @@
       "section": "2.5",
       "title": "MainThread 与 RenderThread 协作",
       "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7264,8 +7273,8 @@
       "section": "18.15",
       "title": "视频叠加与 HWC",
       "file": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task2b_state": "fixed",
@@ -7291,8 +7300,8 @@
       "section": "18.13",
       "title": "WebView 渲染管线",
       "file": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-06-02T10:05:00+08:00",
@@ -7322,8 +7331,8 @@
       "section": "18.7",
       "title": "TextureView 合成链路",
       "file": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7347,8 +7356,8 @@
       "title": "Android 存储架构",
       "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "source_file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "review_type": "task6-writing-quality-review",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-02",
@@ -7384,8 +7393,8 @@
     "21.13": {
       "title": "ART GC 抑制与启动性能优化",
       "file": "src/part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-06-04",
       "gap_score": {
@@ -7397,7 +7406,8 @@
       },
       "queue_priority": 80,
       "material_count": 6,
-      "gap_source": "Clippings结构参考/素材驱动/AOSP源码"
+      "gap_source": "Clippings结构参考/素材驱动/AOSP源码",
+      "task6_state": "pending"
     },
     "19.18": {
       "task6_reviewed": "2026-06-04",
