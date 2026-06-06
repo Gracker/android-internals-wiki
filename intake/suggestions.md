@@ -1,3 +1,43 @@
+## [Task2A Gap Mining] 2026-06-06 14:17 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**Phase 0/0.5 状态**：
+- 空 draft 章节：0（Phase 0 修正后再次确认：80 ready-for-review + 292 finalized + 40 无 status 字段文件均为支持文件/章节 README，无 outline-only 残留）
+- TASK2B_BACKLOG：0（≤20，允许进入 Phase 1）
+- 实际扫描：26 个 Chapter 共 399 个小节文件，全部 status=finalized/ready-for-review
+
+**已检查方向**（本轮增量 vs 上轮 2026-06-06 10:04）：
+1. **daily-info 2026-06-06 06:00~06:30**（8 条新素材）：
+   - SurfaceTexture 双缓冲机制（DeepResearch 2026-06-06）→ 已映射 ch18 (18.07 TextureView)
+   - Media3 ABR + Tunneled Playback Codec2（DeepResearch 2026-05-30 注入）→ 已映射 ch18 (18.23)
+   - Measure + Perfetto/FrameMetrics 集成点（DeepResearch 2026-06-03 注入）→ 已映射 ch19 (19.09)
+   - 商业 APM Android 17 SDK 阈值（DeepResearch 2026-06-06）→ 已映射 ch19 (19.18)
+   - ProfilingTrigger 新增类型 + Memory Advice（DeepResearch 2026-06-05）→ 已映射 ch26 (26.12)
+   - FUSE-BPF 实际状态（DeepResearch 2026-06-05 myth-busting）→ 已映射 ch06 (6.7)
+   - Trace 抓取 linux.perf + FrameTimeline（DeepResearch 2026-06-05）→ 已映射 ch13 (13.2)
+   - FinalizerDaemon MAX_ITERS=100（DeepResearch 2026-06-05）→ 已映射 ch04 (4.9)
+2. **ClawFeed 2026-06-06 04:08**（5 条）：
+   - Microsoft pg_durable → 通用数据库，非 Android 性能核心
+   - Gemma 4 QAT 移动端量化 → 偏 ML/AI，不属于 AIW 性能主线
+   - LLM 工具使用讨论 → 开发者话题，无性能信息
+   - Mouseless 键盘控制 → 桌面工具，无关
+3. **增量扫描 2026-06-06 05:49~06:10**（10 条）：
+   - 为何手机厂商都要优化内核调度 → 已映射 ch05
+   - Android Debug MCP 开源 → 已映射 ch17 (工具链 + AI 协同)
+   - 其余 8 条全部已映射
+4. **每日论文精读 2026-06-06 06:30**：
+   - 两阶段方法提升 Android 恶意软件检测器性能 → 安全领域，非性能优化
+5. **research-feeds 目录**：最后更新 2026-04-14，2 个月内无新增
+6. **AOSP/官方文档**：全书 26 章 412 节已覆盖 frameworks/base、system/、packages/modules/ 核心模块与 Android 17 全部 15+ 项性能行为变更
+7. **Clippings 三本参考书**：《稳定性》15 篇、《性能优化》20+ 篇、《线上疑难》59 篇均已交叉比对并入对应章节
+
+**结论**：全书 412 节覆盖度饱和，本轮无 ≥ 14 分合格缺口。连续 4 轮（2026-06-05 01:04 / 07:07 / 2026-06-06 10:04 / 14:17）报告无合格缺口。
+
+**下次探索方向建议**：
+1. 跨章节横向主题（如：设备分级 / Performance Class 实战落地 / OEM 优化 ROI）
+2. Android 17 之后已正式合入 main 但未明确进入 Android 17 的边缘特性（如某些 GPU/NPU vendor 扩展）
+3. Clippings 三本参考书的纵向对比（如：《性能优化》vs《线上疑难》在同一问题上的不同方法学）
+4. 当前 ready-for-review 80 节中是否有 outline 结构不完整、值得回炉重做的章节
+
 
 ## [Task2A Gap Mining] 2026-06-06 10:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
 
@@ -338,3 +378,21 @@
 - **位置**：L64 大纲 `Load < 5s`；L138 表头 `Load——加载（首次 < 5s，后续 < 2s）`
 - **问题**：web.dev RAIL 官方文档给出 Load 阶段目标为 < 1s（"RAIL's load target is 1 second."）。当前正文使用的 5s/2s 实际是 Android Vitals 冷启 / 温启告警阈值（>5s / >2s / >1.5s，同节 L209-L211 已列），并非 RAIL Load 阶段官方建议。把 RAIL 框架与 Android 启动阈值并列放在 RAIL 四阶段表里、又不在脚注里点明"5s 是 Android 启动指标的容差"这一前提，读者容易把 5s 误读为 RAIL 官方建议。
 - **建议**：在大纲或 Load 段落里明确写"5s/2s 是 Android 启动的容差，RAIL 原始建议是 < 1s；此处按移动端应用启动的实际情况放宽"。也可在 RAIL 表格下方补一句版本/场景限定，避免和后续启动指标表重复。
+
+[Task2A Gap Mining] 2026-06-06 15:41 — 本轮无 ≥ 14 分候选，已检查方向记录
+- **Phase 0**：0 个空 draft
+- **Phase 0.5**：TASK2B_BACKLOG = 0（≤ 20）
+- **已扫描**（vs 上轮 2026-06-06 14:17）：
+  - daily-info/2026-06-06.md：最晚时间戳 06:30，无 14:17 之后增量
+  - intake/suggestions.md：最新条目仍为 2026-06-04（19.18/19.06/13.2 系列）
+  - intake/research-gaps.md：最新条目 2026-06-05（6.7 FUSE-BPF 已完成）
+  - intake/research-feeds/：最后更新 2026-04-14，2 个月无新增
+  - intake/external-outlines/、external-resources/：空目录
+  - intake/suggestions-new.md：仅 1 条 2026-04-10 历史 Task6 review
+  - intake/待补充素材清单.md：4 月初旧内容，已被多轮覆盖
+- **结论**：本轮未发现评分 ≥ 14 的知识缺口，跳过。
+- **下次探索方向建议**（避免重复）：
+  1. 跨章节横向主题（如 Performance Class 实战落地 / OEM 优化 ROI / 厂商 Tare 经济模型差异）
+  2. Android 17 之后已合入 main 但未明确进入 Android 17 的边缘 vendor 扩展
+  3. Clippings 三本参考书纵向方法学对比（如《性能优化》vs《线上疑难》同一问题的不同方法）
+  4. 当前 ready-for-review 80 节中 outline 结构不完整、值得回炉重做的章节排查
