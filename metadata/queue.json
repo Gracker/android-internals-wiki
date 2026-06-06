@@ -1542,6 +1542,36 @@
       "added_at": "2026-06-05T06:12:28.406315",
       "status": "completed",
       "completed_by": "openclaw-task2b"
+    },
+    {
+      "section": "11.2",
+      "section_title": "App 耗电优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 16/17 功耗相关版本差异缺失",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-17-audit.md",
+        "https://developer.android.com/about/versions/16/behavior-changes-all",
+        "https://developer.android.com/develop/background-work/services/fgs/changes",
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "review_issues": [
+        {
+          "type": "P1 版本差异",
+          "location": "L399-L413 / L421-L425 / L480-L482",
+          "detail": "章节覆盖到 Android 16，但 FGS / WorkManager / DownloadManager 建议未补 Android 16 的 JobScheduler quota optimizations：在 Android 16 上，前台服务期间并发执行的 JobScheduler、WorkManager、DownloadManager job 会遵守运行时配额；从 top state 启动后继续运行的 job 也会计入 quota。现文只写 Android 15 的 dataSync/mediaProcessing 6h/24h budget，容易让读者把 WorkManager/DownloadManager 当成无条件替代路径。",
+          "suggestion": "补一小段“Android 16 JobScheduler quota optimizations”：说明 FGS 并发 job 与 top-started job 的配额边界；用户触发的大文件传输优先使用 user-initiated data transfer job；排查时记录 WorkInfo.getStopReason() 或 JobParameters.getStopReason()，并结合 standby bucket 判断。"
+        },
+        {
+          "type": "P1 版本差异",
+          "location": "L446-L452 Audio 后台音频段",
+          "detail": "Audio 段只覆盖 Android 12 后台启动 FGS 限制和 Android 14 mediaPlayback FGS 类型声明。Android 17 / API 37 官方已新增 background audio hardening：Android 17 上后台音频播放、音频焦点、音量变更需要可见 Activity 或非 shortService 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或 exact alarm 权限 + USAGE_ALARM 场景。当前章节未标注这一版本边界。",
+          "suggestion": "若章节更新到 Android 17，补充 background audio hardening 规则、失败信号（静默失败 / AUDIOFOCUS_REQUEST_FAILED / AudioHardening 日志）和测试命令；若暂不扩展到 17，应在 Audio 段显式标注当前只覆盖到 Android 16。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T17:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-idle-audit"
     }
   ],
   "items": [
