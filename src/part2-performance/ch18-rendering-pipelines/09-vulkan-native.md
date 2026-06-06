@@ -3,13 +3,13 @@ title: "Vulkan 原生渲染管线"
 chapter: "18.9"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 section: "18.9"
-last_verified: "2026-05-04"
-last_verified_against: "Android Vulkan NDK docs, Game SDK Frame Pacing docs, Vulkan spec, AOSP frameworks/native/vulkan"
+last_verified: "2026-06-06"
+last_verified_against: "Android 16.0.0_r4 AOSP frameworks/native/vulkan/libvulkan/swapchain.cpp, Android Vulkan docs, Android Game SDK Swappy API reference, Khronos Vulkan-Profiles"
 confidence: medium
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-09"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T02:30:12+08:00"
+last_task9_at: "2026-06-06T22:20:00+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
@@ -23,8 +23,8 @@ sources:
     path: "developer.android.com/about/versions/15/features#vulkan"
   - type: aosp
     path: "frameworks/native/vulkan"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
+  - type: official
+    path: "developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk"
   - type: official
     path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_15_minimums.json"
   - type: official
@@ -36,8 +36,8 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-09-02-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。"
+last_task9_review_log: "logs/deep-review/2026-06-06-22-audit.md"
+task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 Task9 闲时抽检：AUTO-FIX P1 1 / P2 1；Android native WSI present modes 在 AOSP android-16.0.0_r4 中只返回 FIFO、条件返回 MAILBOX/shared，不返回 IMMEDIATE/FIFO_RELAXED；已局部修正文档，并把 Swappy source 从未固定版本的 AOSP main header 改为 Android Game SDK 官方 API reference，送 Task6 复审。"
 status: "finalized"
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
@@ -45,13 +45,16 @@ last_task6_at: "2026-05-09T02:08:33+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-15-audit.md"
 last_task6_review_log: "logs/review/2026-05-09-02-review.md"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "ready-to-publish"
-review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-09 Task6 02:08：revisiting 写作复审；轻修 L1/L2 文风 4 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。"
+pipeline_stage: "task6_pending"
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-09 Task6 02:08：revisiting 写作复审；轻修 L1/L2 文风 4 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 task9 audit auto-fix：收敛 Android native WSI Presentation Mode 边界，并将 Swappy source 改为官方 API reference；AOSP android-16.0.0_r4 `swapchain.cpp` 不把 IMMEDIATE/FIFO_RELAXED 作为普通 Surface 返回模式，改回 Task6 复审。"
+last_task9_audit: "2026-06-06"
+last_task9_autofix_at: "2026-06-06"
+last_task9_audit_log: "logs/deep-review/2026-06-06-22-audit.md"
 ---
 
 # 18.9 Vulkan 原生渲染管线
@@ -63,7 +66,7 @@ review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名�
 - [18.9.2 Android Vulkan Profile (AVP)](#android-vulkan-profile-avp) — 碎片化问题的标准化方案
 - [18.9.3 渲染流程详解](#渲染流程详解) — Acquire → Submit → Present 的完整流程
 - [18.9.4 Pipeline Barrier 与 Image Layout](#pipeline-barrier-与-image-layout) — 显式同步的关键
-- [18.9.5 Presentation Mode](#presentation-mode) — FIFO / MAILBOX / IMMEDIATE 的取舍
+- [18.9.5 Presentation Mode](#presentation-mode) — Android native WSI 的支持边界
 - [18.9.6 Swappy Frame Pacing](#swappy-frame-pacing) — Android 官方的帧节奏库
 - [18.9.7 Trace 视角](#trace-视角) — Vulkan 调用路径的识别特征
 
@@ -177,7 +180,7 @@ VkResult result = vkAcquireNextImageKHR(
 
 - `vkAcquireNextImageKHR` 内部调用 `ANativeWindow::dequeueBuffer` 拿到一个 buffer 和对应的 fence fd，随后将这个 fd 交给 GPU 驱动的 `AcquireImageANDROID` 钩子（`libvulkan` swapchain 内部实现，不是公开 API）。驱动负责在 buffer 可写时 signal App 传入的 `VkSemaphore` / `VkFence`。这个 fence fd 的来源是 BufferQueue 里上一个消费者释放此 buffer 时返回的 release fence——显示路径里通常来自 HWC 在 `presentDisplay` 后通过 `getReleaseFences()` 返回、再经 SF / BufferQueue 回传的 **release fence**（per-layer，回答"上一帧 buffer 什么时候能被 Producer 安全复用"）。
 - Android 上 swapchain image 数量由 driver 和 surface capability 协商，一般落在 2-3（double / triple buffering）。BufferQueue 的 `maxDequeueBufferCount` 和 `VkSwapchainCreateInfoKHR::minImageCount` 共同决定实际可用 image 数，没有哪一个参数单独定死。
-- App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 VSync 同步）；Android 上 `MAILBOX` 和 `IMMEDIATE` 是否可用取决于设备驱动，部分设备会在驱动 / SurfaceFlinger / vendor policy 中把请求的 mode 降级为 FIFO。
+- App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 VSync 同步）。AOSP Android 16.0.0_r4 的 native WSI 路径返回 FIFO、条件返回 MAILBOX，并在 shared presentation 支持时返回 `VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR` / `VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR`；`IMMEDIATE` / `FIFO_RELAXED` 不应按 Android native Surface 的常规可用模式写。
 - **如果在 `vkAcquireNextImageKHR` 上看到长时间等待**，通常是前面某个 image 的 release fence 还没回来（BufferQueue 消费端没跟上）——和 GLES 路径上 `eglSwapBuffers` 长 slice 的成因等价：内部在等空闲 buffer，并不是 GPU 绘制仍未完成。
 
 [已验证: AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp` `AcquireNextImageKHR` → `AcquireImageANDROID` 驱动钩子路径 + `frameworks/native/libs/gui/Surface.cpp` `dequeueBuffer`]
@@ -318,14 +321,14 @@ vkCmdPipelineBarrier(
 
 ## Presentation Mode
 
-Vulkan Swapchain 支持多种 Presentation Mode，直接影响帧率稳定性和输入延迟。理解这些模式对游戏和视频应用的帧率控制有直接影响。
+Vulkan 规范定义多种 Presentation Mode，但 Android native WSI 暴露给 `ANativeWindow` surface 的集合更窄。本节按 Android native WSI 的实际返回集合理解这些 mode。
 
-| Mode | 行为 | 延迟 | 撕裂风险 | 适用场景 |
-|:---|:---|:---|:---|:---|
-| **FIFO** | 严格 VSync，帧队列先进先出 | 较高（1-2帧） | 无 | 电影播放、省电 |
-| **FIFO_RELAXED** | 与 FIFO 类似，但若帧迟到则立即展示 | 中等 | 可能 | 游戏（偶尔掉帧可接受） |
-| **MAILBOX** | 新帧覆盖旧帧，下一个 VSync 展示最新 | 较低 | 无 | 竞技游戏、输入敏感 |
-| **IMMEDIATE** | 无 VSync，立即 Present | 极低 | 常见 | 基准测试 |
+| Mode | 行为 | Android native WSI 边界 | 适用判断 |
+|:---|:---|:---|:---|
+| **FIFO** | 严格 VSync，帧队列先进先出 | 必选 / 最常见 | 稳定帧节奏、省电 |
+| **MAILBOX** | 新帧覆盖旧帧，下一个 VSync 展示最新 | 条件支持，取决于 BufferQueue 可用 buffer 数和实现 | 输入敏感场景，必须实测 |
+| **FIFO_RELAXED** | 若帧迟到则立即展示 | AOSP native WSI 不作为 Android Surface 常规返回模式 | 不应作为 Android native 目标模式 |
+| **IMMEDIATE** | 无 VSync，立即 Present | AOSP native WSI 不作为 Android Surface 常规返回模式 | 不应作为 Android native 目标模式 |
 
 ### 检测支持的 Mode
 
@@ -338,8 +341,9 @@ vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes
 
 ### Android 注意事项
 
-- **FIFO 最常见**：Android 上 FIFO 往往是最普遍、最保守的选择，具体可用 mode 与默认策略取决于驱动和设备
-- **MAILBOX / IMMEDIATE 不要只看枚举值**：部分设备会在驱动、SurfaceFlinger 或 vendor policy 中把请求的 mode 降级为 FIFO。是否实际拿到低延迟模式，最好把 `vkGetPhysicalDeviceSurfacePresentModesKHR` 的返回值和 Trace 中的帧节奏表现一起核对
+- **FIFO 是 Android native WSI 基线**：Android `libvulkan` 对普通 surface 至少返回 FIFO；应用不要把 `IMMEDIATE` 当成 Android Surface 的低延迟通用选项
+- **MAILBOX 必须枚举确认**：AOSP 在 `min_undequeued_buffers + 1 < max_buffer_count` 时返回 MAILBOX，并在创建 swapchain 时把 MAILBOX 映射为 `swap_interval = 0`；是否真正改善延迟还要结合 Trace 中的帧节奏表现核对
+- **shared presentation 是独立分支**：设备报告 `VkPhysicalDevicePresentationPropertiesANDROID.sharedImage` 时，Android 还可能返回 `VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR` / `VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR`
 - **VRR（可变刷新率）**：需要搭配 Display 的 VRR 能力
 
 ## Swappy Frame Pacing
