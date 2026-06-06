@@ -47,6 +47,7 @@ task6_reviewed_date: "2026-05-14"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式、填充表达、维护成本表述）；四层质检通过，无新增 L3/L4 回炉项，送 Task9 技术复审。"
 last_task6_review_log: "logs/review/2026-05-14-04-review.md"
 last_task6_at: "2026-05-14T04:08:00+08:00"
+last_task6_audit: "2026-06-07"
 task9_result: pass-tech-review
 last_task9_at: "2026-05-14T04:36:12+08:00"
 task9_reviewed_date: "2026-05-14"
