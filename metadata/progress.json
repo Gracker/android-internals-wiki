@@ -7523,13 +7523,16 @@
     },
     "11.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task2b_lite_at": "2026-06-06",
-      "file": "src/part2-performance/ch11-power/02-app-power-optimization.md"
+      "file": "src/part2-performance/ch11-power/02-app-power-optimization.md",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-06-06",
+      "review_round": 5
     }
   },
   "task2b_rounds": [
@@ -7668,14 +7671,10 @@
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
   "last_task6_review": "2026-06-05T13:11:00+08:00",
   "last_task6_sections": [
-    "26.5",
-    "26.6",
-    "26.7"
+    "11.2"
   ],
   "last_task6_reviewed_files": [
-    "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
-    "src/part3-tools/ch13-perfetto/02-trace-capture.md",
-    "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md"
+    "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
   "last_task6_at": "2026-06-05T08:10:00+08:00",
   "last_task6_review_detail": {
@@ -9947,32 +9946,20 @@
     "19.24"
   ],
   "task6_last_review_detail": {
-    "reviewed_at": "2026-06-03T04:08:00+08:00",
+    "reviewed_at": "2026-06-06T19:08:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "2.10",
-      "22.12",
-      "24.4"
+      "11.2"
     ],
     "files": [
-      "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-      "src/part5-app/ch24-io-network/04-network-architecture.md"
+      "src/part2-performance/ch11-power/02-app-power-optimization.md"
     ],
-    "log": "logs/review/2026-06-03-04-review.md",
-    "review_log": "logs/review/2026-06-03-04-review.md",
-    "pass_light_edit": [
-      "2.10",
-      "22.12",
-      "24.4"
-    ],
-    "needs_rework": [],
-    "auto_promoted": [],
-    "auto_finalized": [],
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 8,
-    "l3_l4_issues": 0,
-    "new_rework": false
+    "log": "logs/review/2026-06-06-19-review.md",
+    "review_log": "logs/review/2026-06-06-19-review.md",
+    "pass_light_edit": 1,
+    "needs_rework": 0,
+    "auto_promoted": false,
+    "auto_finalized": false
   },
   "task6_last_review_files": [
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
