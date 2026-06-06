@@ -57,12 +57,12 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-06
-task6_state: reviewed
+pipeline_stage: task6_pending  # updated by task2b-verifier 2026-06-06
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 task6_reviewed_date: 2026-06-04
 task9_state: reviewed
 task9_result: auto-fixed
-task2b_state: pending  # updated by task2b-verifier 2026-06-06
+task2b_state: fixed  # updated by task2b-verifier 2026-06-06
 task2b_result: fixed
 last_task2b_rework_at: "2026-05-21T11:13:00+08:00"
 review_notes: "2026-05-21 task9 deep-review: needs-rework。P1 1，Android 17 ART→MADV_COLD 实现链缺少 AOSP 源码锚点，已写入 queue/research-gaps。"

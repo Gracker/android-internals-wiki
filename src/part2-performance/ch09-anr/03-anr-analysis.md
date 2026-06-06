@@ -45,10 +45,10 @@ reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-06
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish  # updated by task2b-verifier 2026-06-06
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T20:05:00+08:00"
 last_task6_audit: "2026-05-26"
