@@ -313,3 +313,28 @@
 - **位置**：预测温控余量（getThermalHeadroom）
 - **问题**：章节已覆盖 API 35 `getThermalHeadroomThresholds()`，但 Android 16 / API 36 还新增 `addThermalHeadroomListener(...)`。官方 `PowerManager` 文档说明 API 36 起 thresholds map 可能在调用间变化，listener 可接收 headroom / threshold 变化。
 - **建议**：后续扩写 Thermal API 小节时补充 API 36 listener；若正文继续保留轮询方案，应明确它是兼容路径。
+
+## [Task2A Gap Mining] 2026-06-06 12:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**已检查方向**（本轮增量 vs 上轮 2026-06-06 07:08）：
+1. **DeepResearch 新增素材**（2 篇，07:08 后产生）：
+   - Thermal Headroom Listener API（Android 16）验证 → 已映射 ch05 (5.5/5.12)
+   - linux.perf + FrameTimeline 源码验证 → 已映射 ch13 (13.2)
+   - 两篇均为现有章节的补充验证素材，非新话题
+2. **daily-info 2026-06-06**：已在 07:08 轮检查，无增量
+3. **source-index 未映射项**（204 条）：已在上轮全面扫描，本轮复查确认无新增高价值未映射素材
+4. **Clippings 三本参考书**：已在多轮 mining 中全覆盖
+5. **全书章节覆盖率**：
+   - 372 节（290 finalized + 82 ready-for-review + 0 draft），finalized 率 78.0%
+   - 未 finalized 集中在 ch04 (62% ready)、ch14 (52% ready)、ch17 (50% ready)、ch24 (42% ready)
+   - 这些均为已有章节等待 Task 6/9 review pipeline 处理，非性能话题缺口
+6. **AOSP 核心服务**：8 轮 mining 后 frameworks/base、system/、packages/modules/ 核心性能相关组件均已覆盖
+7. **Android 17 性能行为变更**：15+ 项变更均已有对应章节
+
+**结论**：第 9 轮 gap mining，距上轮 5 小时，无新内容增量。全书覆盖率已达高位，新缺口只会随 Android 18+ 发布或重大新特性出现而产生（受 AIW 版本上限限制）。建议下一轮 mining 间隔延长至 24 小时以减少空跑。
+
+## [Task9 Deep Review] 8.1 响应速度原理 — 2026-06-06
+- **类型**：版本差异/口径不一致
+- **位置**：L64 大纲 `Load < 5s`；L138 表头 `Load——加载（首次 < 5s，后续 < 2s）`
+- **问题**：web.dev RAIL 官方文档给出 Load 阶段目标为 < 1s（"RAIL's load target is 1 second."）。当前正文使用的 5s/2s 实际是 Android Vitals 冷启 / 温启告警阈值（>5s / >2s / >1.5s，同节 L209-L211 已列），并非 RAIL Load 阶段官方建议。把 RAIL 框架与 Android 启动阈值并列放在 RAIL 四阶段表里、又不在脚注里点明"5s 是 Android 启动指标的容差"这一前提，读者容易把 5s 误读为 RAIL 官方建议。
+- **建议**：在大纲或 Load 段落里明确写"5s/2s 是 Android 启动的容差，RAIL 原始建议是 < 1s；此处按移动端应用启动的实际情况放宽"。也可在 RAIL 表格下方补一句版本/场景限定，避免和后续启动指标表重复。
