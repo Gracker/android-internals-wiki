@@ -54,7 +54,7 @@ task9_result: 'auto-fixed'
 task9_reviewed_date: '2026-06-07'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-06-07T02:20:00+08:00'
-status: 'finalized'
+status: 'ready-for-review'
 reviewed_date: '2026-05-09'
 reviewed_by: openclaw-task6
 last_task6_at: '2026-05-09T02:08:33+08:00'
