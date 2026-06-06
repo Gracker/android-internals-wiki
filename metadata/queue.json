@@ -1294,29 +1294,6 @@
       "created_date": "2026-06-05"
     },
     {
-      "section": "19.09",
-      "section_title": "Measure",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料（Android 17 Measure 与 Vitals 崩溃聚合集成），章节已 finalized 建议补充到参考资料",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-android-measure-vitals-integration.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 Measure 与 Android Vitals 崩溃聚合集成机制 — Measure API 通过 DropBoxManager 与 Vitals 建立间接集成通道，statsd 订阅 DropBox 事件处理后上报 Play Console",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-06-05T06:12:28.406315",
-      "status": "completed",
-      "completed_at": "2026-06-06T06:53:20+08:00",
-      "completed_by": "openclaw-task2b",
-      "completed_reason": "已注入参考资料：Measure + Android Vitals 崩溃聚合集成机制（DeepResearch）"
-    },
-    {
       "section": "05.13-ext",
       "section_title": "端侧 AI 应用框架扩展（AIW 尚无对应章节）",
       "priority": 75,
@@ -1456,7 +1433,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-06T05:38:43",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T08:55:15.288577+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "与章节内容无关，跳过：pg_durable 是 PostgreSQL 持久化执行工具，与 Android Studio Profiler 无任何关联"
     },
     {
       "section": "17.1",
@@ -1476,7 +1456,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-06T05:38:43",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T08:55:15.288577+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "与章节内容无关，跳过：Gemma 4 QAT 是 ML 模型量化优化内容，17.1 OEM 性能优化聚焦系统级策略（freezer/调度/后台管理），不涉及 ML 模型部署"
     },
     {
       "section": "17.1",
@@ -1496,7 +1479,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-06T05:38:43",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T08:55:15.288577+08:00",
+      "completed_by": "openclaw-task2b",
+      "completion_reason": "与章节内容无关，跳过：Gemma 4 QAT 是 ML 模型量化优化内容，17.1 OEM 性能优化聚焦系统级策略（freezer/调度/后台管理），不涉及 ML 模型部署"
     },
     {
       "section": "4.8",
@@ -1517,6 +1503,27 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-06T06:11:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "19.09",
+      "section_title": "Measure",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料（Android 17 Measure 与 Vitals 崩溃聚合集成），章节已 finalized 建议补充到参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-android-measure-vitals-integration.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Measure 与 Android Vitals 崩溃聚合集成机制 — Measure API 通过 DropBoxManager 与 Vitals 建立间接集成通道，statsd 订阅 DropBox 事件处理后上报 Play Console",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-05T06:12:28.406315",
+      "status": "completed",
+      "completed_by": "openclaw-task2b"
     }
   ],
   "items": [
@@ -1957,5 +1964,6 @@
     "created_sections": [],
     "created_files": [],
     "reason": "第 8 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；全书 372 节（287 finalized + 85 ready-for-review + 0 draft），覆盖率 77.2% finalized。daily-info 2026-06-06 已在 05:08 轮检查过（ClawFeed 4 条均非核心性能、增量扫描 7 条均已有章节映射或非性能话题）；DeepResearch 4 篇新素材均已有章节映射（SurfaceTexture→ch18.07, Measure+Perfetto→ch19.09, Media3 ABR→ch18.23, Compose 盲区→ch22.20, 诊断 API→ch26.12, Generational CMC→ch04.08）；source-index 215 条中 200 条未映射项均为 RSS 空条目/内部文档/已通过其他路径映射的素材；research-gaps 3 条均已有章节处理；Clippings 3 本全覆盖；AOSP frameworks/base 核心服务 + system/ 核心组件 + packages/modules/ 主要模块均已有对应章节；Android 17 全部 15+ 性能行为变更均已有章节覆盖；无 ≥14 分候选。"
-  }
+  },
+  "completed": []
 }
