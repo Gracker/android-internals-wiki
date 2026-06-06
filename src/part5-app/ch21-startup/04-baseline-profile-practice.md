@@ -4,8 +4,8 @@ chapter: "21.4"
 section: "21.4"
 status: finalized
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
-last_verified: "2026-05-12"
-last_verified_against: "Android Developers Baseline Profiles docs, AOSP art/profman + art/dex2oat, AIW 8.7 / 19.15, Clippings Android 性能优化"
+last_verified: "2026-06-07"
+last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.15"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
@@ -30,10 +30,10 @@ sources:
     path: "src/part3-tools/ch19-apm/15-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
 related_chapters: ["21.1", "8.7", "1.7", "19.15"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-12"
 task6_result: pass-light-edit
@@ -41,10 +41,13 @@ last_task6_at: "2026-05-12T21:56:00+08:00"
 task6_reviewed_date: "2026-05-12"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-17-audit.md"
-task9_result: pass-tech-review
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T01:43:00+08:00"
+last_task9_audit: "2026-06-07"
+last_task9_autofix_at: "2026-06-07"
+task6_autofix_trigger: true
 ---
 
 # Baseline Profile 实战
@@ -113,7 +116,7 @@ flowchart LR
 
 生成脚本应该模拟真实用户路径，而不是只把启动 Activity 跑起来。冷启动到首页首屏是最低覆盖，首页滚动、主导航切换、搜索、详情页、支付等高频 CUJ 要按业务优先级加入。路径太少会漏掉热点，路径太多会增加编译范围和维护成本。
 
-下面这段示例只保留生成脚本的骨架，重点看 `collectBaselineProfile` 里驱动的用户路径。
+下面这段示例只保留生成脚本的骨架，重点看 `collect` 里驱动的用户路径。
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -122,7 +125,7 @@ class BaselineProfileGenerator {
     val rule = BaselineProfileRule()
 
     @Test
-    fun generate() = rule.collectBaselineProfile(
+    fun generate() = rule.collect(
         packageName = "com.example.app"
     ) {
         pressHome()
