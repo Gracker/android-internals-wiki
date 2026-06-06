@@ -60,12 +60,13 @@ reviewed_by: openclaw-task6
 last_task6_at: '2026-05-09T02:08:33+08:00'
 last_task6_audit: '2026-05-23'
 last_task6_review_log: logs/review/2026-05-09-02-review.md
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: 'reviewed'
-task2b_state: 'pending'
-task2b_result: fixed
-pipeline_stage: 'task2b_pending'
+task9_state: pending
+task2b_state: 'fixed'
+task2b_result: fixed-lite
+pipeline_stage: 'task6_pending'
+last_task2b_lite_at: '2026-06-07'
 review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6
   轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01
   task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。 | 2026-05-09 Task6 02:08：revisiting
@@ -87,7 +88,7 @@ last_task9_audit: '2026-06-07'
 ### 锚点（必须覆盖）
 
 - 🔹 关键版本的架构里程碑：4.4 ART / 5.0 Lollipop 64-bit / 8.0 Treble / 10 Mainline / 12 Material You
-- 🔹 Android 16 (Baklava) 最新架构变化与性能相关特性
+- 🔹 Android 16-17 (API 36-37) 最新架构变化与性能相关特性
 - 🔹 Project Treble → VINTF → GSI → GKI 对系统碎片化的改善
 - 🔹 从 Dalvik 到 ART 的演进：JIT → AOT → Profile-Guided Compilation
 - 🔹 Privacy 变更对性能监控工具的影响（如 Android 11+ 包可见性限制）
@@ -108,7 +109,7 @@ last_task9_audit: '2026-06-07'
 
 ## 为什么要了解 Android 版本演进
 
-打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
+打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 17，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
 Android 的版本演进围绕一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断一个现象属于系统层还是厂商层。这会直接影响 OEM 和 App 开发者的日常判断。
 
@@ -182,7 +183,7 @@ GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设�
 
 对性能分析的影响：GKI 意味着内核行为更加标准化。在做跨设备的性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
 
-### Android 16 Baklava（API 36）：最新架构变化
+### Android 16-17 Baklava（API 36-37）：最新架构变化
 
 Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能优化的趋势。[已验证: 官方文档 developer.android.com/about/versions/16]
 
@@ -199,6 +200,16 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 **性能监控 API 增强。** `ProfilingManager`（Android 15 / API 35 引入，Android 16 增强）支持应用主动请求和系统自动触发两种性能分析模式。应用侧通过 `ProfilingManager.requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)` 请求系统转储 Trace（参数包括分析类型、可选配置 Bundle、取消信号和结果回调）；系统侧可通过 `addProfilingTriggers(List<ProfilingTrigger>)` 注册自动触发条件，`registerForAllProfilingResults(Executor, Consumer)` 接收系统级 Profiling 结果。Android 16 进一步强化了其在 App Startup 阶段的自动化能力，系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace 数据。`ApplicationStartInfo` 新增的组件启动信息（可通过 `getStartComponent()` 精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发）也为启动性能归因提供了更精细的维度。[来源: AOSP android.os.ProfilingManager API 35/36, android-16.0.0_r1]
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
+
+**Android 17 / API 37 延续的变化。** Android 17 在 API 36 基础上补充了多项与性能分析直接相关的能力。[来源: Android 17 官方 Features 与 behavior-changes 页面]
+
+**MessageQueue lock-free 实现。** `android.os.MessageQueue` 切换到 lock-free 数据结构，主线程 Looper 的消息分发路径不再依赖传统互斥锁。对 UI 线程高频消息场景（触控事件、VSync 回调）的尾部延迟有直接影响——在 Perfetto 中观察 `Looper.loop()` wall duration 时，API 37 设备上锁竞争导致的尾部延迟应有所减少。[来源: Android 17 behavior changes for target 37]
+
+**ProfilingManager 自动触发条件扩展。** API 37 新增 `ProfilingTrigger` 类型：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量使用被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。这些 trigger 让系统在关键性能事件发生时自动捕获 Trace，无需 App 侧主动请求。[来源: android.os.ProfilingTrigger API 37 参考]
+
+**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 的执行状态、停止原因和运行时统计信息。排查后台任务性能问题时，可以结合 `JobParameters.getStopReason()` 和 standby bucket 判断 Job 被中断的具体原因。[来源: Android 17 Features]
+
+**16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。[来源: Android 16KB page sizes 文档]
 
 ## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
