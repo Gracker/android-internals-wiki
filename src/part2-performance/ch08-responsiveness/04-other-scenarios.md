@@ -31,8 +31,8 @@ sources:
     path: "https://developer.android.com/blog/posts/the-first-beta-of-android-17"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish  # updated by task2b-verifier 2026-06-06
+task6_state: reviewed  # updated by task2b-verifier 2026-06-06
 task6_result: "pass-light-edit"
 task9_result: auto-fixed
 task9_state: reviewed
