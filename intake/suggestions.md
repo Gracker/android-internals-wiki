@@ -1,4 +1,39 @@
 
+## [Task2A Gap Mining] 2026-06-06 10:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**已检查方向**（本轮增量 vs 上轮 2026-06-05 07:07）：
+1. **daily-info 2026-06-05~06**（30+ 条新素材）：
+   - Linux 调度器优化导致 20% 功耗增加（传音工程师）→ 已映射 ch05
+   - Cached Apps Freezer 官方文档 → 已映射 ch04 (4.11)
+   - Android 17 App Functions / AI 原生 → 非 AIW 核心性能话题
+   - Remote Compose (AndroidX) → 新特性但素材不足，非核心性能话题
+   - Android 17 Measure + Vitals 集成 → 已映射 ch19
+   - Android Debug MCP → 已映射 ch17（工具链+AI协同）
+   - Android UI 卡顿量化 → 已映射 ch07/ch19
+   - 其余掘金/RSS 文章均为泛 Android 开发话题，非性能优化核心
+2. **DeepResearch 2026-06-05~06**（11 篇新调研）：
+   - SurfaceTexture 双缓冲机制 → 已映射 ch02 (2.13) + ch18 (18.07)
+   - linux.perf + FrameTimeline 验证 → 已映射 ch13 (13.2)
+   - 商业 APM SDK 版本阈值 → 已映射 ch19 (19.18)
+   - FinalizerDaemon enqueuePending → 已映射 ch04 (4.9)
+   - FUSE-BPF 实际状态验证 → 已映射 ch06 (6.7)
+   - BlockCanary Looper.Observer → 已映射 ch19 (19.06)
+   - ProfilingTrigger + Memory Advice → 已映射 ch26 (26.12)
+   - Agent 长期记忆 → 非 AIW 核心性能话题
+   - ANON_VMA_LAZY → 已映射 ch04 (4.13)
+   - TextureView 折叠屏适配 → 已映射 ch18 (18.07)
+   - Measure + Vitals 集成 → 已映射 ch19
+3. **AOSP/官方文档**：全书 26 章 377+ 节已覆盖 frameworks/base 核心服务、system/ 核心组件、packages/modules/ 主要模块
+4. **Clippings 参考书**：三本参考书主题全覆盖（前轮已确认）
+5. **Android 17 性能行为变更**：全部 15+ 项已有对应章节
+
+**结论**：全书 377 节（291 finalized + 86 ready-for-review），覆盖率极高。新素材全部映射到现有章节，本轮无合格缺口。
+
+**Phase 0 状态**：
+- 空 draft 章节：0
+- TASK2B_BACKLOG：0（≤20，允许进入 Phase 1）
+- progress.json 需更新：draft 计数应为 0（当前记录为 6，需下轮校正）
+
 ## [Task2A 知识加工] 2026-06-05 11:04 知识加工 — 加工 7.19
 
 **Phase 0 修正**：修正 outline-only 内容行计数逻辑，发现 3 个空 draft（7.19、22.20、22.21），前 3 轮扫描（01:04/07:07/09:06）的 outline 行被误计为正文行。
@@ -212,6 +247,55 @@
 **⚠️ 需关注**：
 - **6.7 FUSE-BPF**（draft，16 行）：源码验证已确认 FUSE-BPF 不存在，章节全部断言失效。建议进入 Task 2B 管线重写，标题改为「Android 17 FUSE 与 Scoped Storage I/O 性能」，聚焦实际 FUSE 优化路径（iomode.c、sdcard 守护进程改进、FUSE DAX）。
 
+## [Task2A Gap Mining] 2026-06-06 01:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**已检查方向**（本轮增量 vs 上轮 2026-06-05 07:07）：
+1. **source-index.json 高质量未映射素材**（10 项）：RSS feed 条目(无内容)、DeepResearch 已映射(ch01/1.20, ch05, ch17)、选题池/日报/周报等内部文档(非章节素材)
+2. **DeepResearch 2026-06-05~06**（6 篇新素材）：
+   - FinalizerDaemon MAX_ITERS 验证 → 已映射 ch04/4.9
+   - FUSE-BPF 实际状态验证 → 已映射 ch06/6.7（确认 FUSE-BPF 不存在）
+   - linux.perf + FrameTimeline 验证 → 已映射 ch13/13.2
+   - ProfilingTrigger + Memory Advice 源码验证 → 已映射 ch14/19
+   - 商业 APM SDK 门槛验证 → 已映射 ch19/19.18
+   - BlockCanary Looper.Observer 验证 → 已映射 ch19/19.06
+3. **daily-info 2026-06-05**（22 条新素材）：
+   - Linux 调度器优化导致 20% 功耗增加（传音） → 已映射 ch05
+   - Cached Apps Freezer 官方文档 → 已映射 ch04 (4.11)
+   - Android 17 App Functions / AI 原生 → 非 AIW 核心性能话题
+   - Android UI 卡顿量化 → 已映射 ch07
+   - Remote Compose (AndroidX) → 新特性但素材不足（1 篇），非核心性能
+   - Android Debug MCP → 开源工具，非 AIW 核心话题
+   - 其余 AI/Gemini/Flutter 文章均无新性能话题
+4. **research-feeds**：最新 5 篇（4 月），全部已映射
+5. **AOSP/官方文档**：406 节已覆盖 frameworks/base 核心服务、system/ 核心组件、packages/modules/ 主要模块
+6. **Clippings 参考书**：全部 3 本（稳定性 15 篇 + 性能优化 20+ 篇 + 线上疑难 59 篇）主题均有对应章节
+7. **Android 17 性能行为变更**（15+ 项）：Edge-to-Edge、FGS 类型、Excessive CPU Kill、后台音频硬化、Tare 经济模型、Keystore 配额、Native DCL、ECH、ML Runtime 等均已覆盖
+
+**评分**：所有候选缺口 < 14 分（素材丰富度不足或已有章节覆盖）。
+
+**结论**：全书 372 节（285 finalized + 87 ready-for-review + 0 draft），覆盖率极高。本轮无合格缺口，不创建新章节。
+
+
+## [Task2A Gap Mining] 2026-06-06 05:08 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**已检查方向**（本轮增量 vs 上轮 2026-06-06 01:04）：
+1. **source-index.json 高质量未映射素材**（189 项无映射）：RSS feed 条目(无正文内容)、DeepResearch 已映射(ch01/1.20, ch04, ch05, ch13, ch19)、选题池/日报/周报等内部文档(非章节素材)。评分均 < 14。
+2. **DeepResearch 最新**（2026-06-05~06，6 篇）：全部已映射至已有章节（ch04/4.9, ch06/6.7, ch13/13.2, ch14/19, ch19/19.18, ch19/19.06）。
+3. **daily-info 2026-06-06**（5 条）：pg_durable (PostgreSQL, 非 Android)、Gemma 4 QAT (移动端模型压缩, 已有 ch05/11 覆盖)、LLM 工具讨论 (非性能话题)、Mouseless (非 Android)。均无新缺口。
+4. **daily-info 2026-06-05 未消费项**：Remote Compose (上轮已评 8/20)、Android Debug MCP (上轮已评 8/20)、Agent 长期记忆 (非 AIW 核心性能)、ANON_VMA_LAZY (已映射 ch04/4.13)、Measure+Vitals (已映射 ch09+ch19)、TextureView 折叠屏 (已映射 ch02+ch18)。
+5. **research-feeds**：最新 5 篇 (4 月)，全部已映射至已有章节。
+6. **Clippings 参考书**：3 本 (稳定性 15 篇 + 性能优化 20+ 篇 + 线上疑难 59 篇) 主题均有对应章节覆盖。
+7. **AOSP / 官方文档**：412 节已覆盖 frameworks/base 核心服务、system/ 核心组件、packages/modules/ 主要模块。
+8. **Android 17 性能行为变更**（15+ 项）：全部已有对应章节。
+9. **queue.json**：57 条 pending，绝大多数为 Task 6/9 review 回炉项，无新章节需求。
+
+**评分**：所有候选缺口 < 14 分（素材丰富度不足或已有章节覆盖）。
+
+**结论**：全书 412 节（263 finalized + 107 ready-for-review + 6 draft + 36 其他），覆盖率极高。本轮无合格缺口，不创建新章节。
+
+**⚠️ 需关注**：
+- **queue.json 积压 57 条**：以 Task 6/9 review 回炉项为主（priority 85-95），Task 2B 压力较大。
+- **6.7 FUSE-BPF**（draft，16 行）：源码验证已确认 FUSE-BPF 不存在，需 Task 2B 全面重写。
 ## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-06-06
 - **类型**：数据缺失
 - **位置**：VelocityTracker Perfetto 视角（约 L184-L194）
@@ -223,3 +307,4 @@
 - **位置**：NestedScroll / requestDisallowInterceptTouchEvent / 厂商手势扩展（约 L326-L328、L381、L507-L523）
 - **问题**：嵌套层级开销、20+ 层递归开销、边缘 2-3mm 和游戏模式 TouchSlop 4-5dp 等判断没有对应 trace、OEM 文档或设备实验记录。
 - **建议**：补一个可复现实验或设备来源；如果只是工程经验，应标为经验性边界，避免读者当成 AOSP 标准行为。
+
