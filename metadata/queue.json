@@ -1600,8 +1600,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-06T21:20:00+08:00",
-      "status": "pending",
-      "review_type": "task9-idle-audit"
+      "status": "completed",
+      "review_type": "task9-idle-audit",
+      "completed_at": "2026-06-06T21:40:20",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "fixed-lite: P1 版本锚点全部替换为 android-16.0.0_r1；P0 libtracing_perfetto 双路径重写仍待主 Task2B 处理"
     }
   ],
   "items": [

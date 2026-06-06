@@ -6,7 +6,7 @@ drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-30"
-last_verified_against: "AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
+last_verified_against: "AOSP android-16.0.0_r1, frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
 confidence: medium
 sources:
   - type: aosp
@@ -21,7 +21,7 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-task2b_state: pending
+task2b_state: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 task9_result: needs-rework
 task2b_result: fixed
@@ -37,7 +37,7 @@ repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
 last_task9_review_log: logs/deep-review/2026-06-06-21-audit.md
-status: finalized
+status: ready-for-review
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: reviewed
@@ -111,7 +111,7 @@ Perfetto Trace 中的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binde
 - `buffer_size_kb`：设置 per-CPU ring buffer 的大小
 - `tracing_on`：控制追踪的启停（写入 0/1）
 
-[已验证: AOSP android-17-beta3, kernel/trace/trace.c]
+[已验证: AOSP android-16.0.0_r1, kernel/trace/trace.c]
 
 用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
 
@@ -128,7 +128,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 | net | `netif_receive_skb`, `net_dev_xmit`, `napi_gro_receive_entry` | 网络传输分析 |
 | drm | `drm_vblank_event`, `drm_sched_job`, `drm_run_job` | 显示管线 VSync 追踪、GPU 任务调度（§2.3） |
 
-[已验证: AOSP android-17-beta3, available_events]
+[已验证: AOSP android-16.0.0_r1, available_events]
 
 Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_event` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。
 
@@ -167,7 +167,7 @@ App 和 Framework 中常用的 `Trace.beginSection("myTag")` / `Trace.endSection
 
 `trace_marker` 常见写入格式包括 `B|<pid>|<name>`（begin）、`E|<pid>`（end）和 `C|<pid>|<name>|<value>`（counter）。Counter 用于记录随时间变化的数值，例如队列长度、缓存大小或业务侧自定义计数。Perfetto 解析 Trace 时，会把这些用户空间 tag 转成对应进程的 slice 或 counter Track。
 
-[已验证: AOSP android-17-beta3, frameworks/base/core/jni/android_os_Trace.cpp, system/core/libcutils/trace-dev.cpp / trace-dev.inc, kernel/trace/trace.c trace_marker_write()]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, system/core/libcutils/trace-dev.cpp / trace-dev.inc, kernel/trace/trace.c trace_marker_write()]
 
 这就是为什么 Perfetto 中的用户空间追踪事件能和内核的 `sched_switch` 等事件出现在同一根时间线上——它们共用同一个 ring buffer。
 
@@ -180,7 +180,7 @@ App 和 Framework 中常用的 `Trace.beginSection("myTag")` / `Trace.endSection
 
 两条路径都依赖 init 属性触发，但落盘方式不同。atrace 负责先把 trace 挂到 ring buffer 上，Perfetto 则在启动期直接按配置生成可分析的 `.perfetto-trace` 文件。
 
-[已验证: AOSP main, frameworks/native/cmds/atrace/atrace.rc, external/perfetto/perfetto.rc]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/atrace/atrace.rc, external/perfetto/perfetto.rc]
 
 ## Perfetto traced 守护进程与数据流
 
@@ -206,7 +206,7 @@ ftrace tracepoints ──┐
 
 [图：ftrace tracepoint、trace_marker、traced_probes、traced service 到 Trace 文件的数据流示意图]
 
-[已验证: AOSP android-17-beta3, external/perfetto/src/traced/]
+[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/]
 
 ### traced 如何采集 ftrace 数据
 
@@ -226,7 +226,7 @@ traced_probes 采集 ftrace 数据的核心步骤：
 - `ftrace_config.buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出。32KB 是一个容易溢出的反例值，不是默认值；Perfetto v43+ 多数配置不显式设置该字段，默认值 / `buffer_size_lower_bound` 通常远大于 32KB
 - `ftrace_config.ftrace_events`：要启用的 tracepoint 列表。这是 `FtraceConfig` 消息内的字段，通过 `TraceConfig.ftrace_config` 设置
 
-traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
+traced_probes 读取 ftrace 数据的源码路径：
 
 - `FtraceController`（`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`）负责读取 `TraceConfig`、启停 ftrace，并按 `FtraceConfig.drain_period_ms` 触发采集循环
 - `CpuReader`（`external/perfetto/src/traced/probes/ftrace/cpu_reader.cc`）负责解析单个 CPU 的原始 ftrace page
@@ -234,7 +234,7 @@ traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
 - 原始二进制事件通过 ftrace parser / event filter 处理后，写入 Perfetto protobuf 流并交给 traced service
 - `trace_pipe_raw` 与 `trace`（文本格式）的区别：前者输出二进制 ftrace event 结构体，由 traced_probes 直接解析，避免一次文本序列化和反序列化
 
-[已验证: AOSP main, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,ftrace_procfs.cc}]
+[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,ftrace_procfs.cc}]
 
 ### 用户空间 Data Source 注册
 
@@ -320,7 +320,7 @@ ATRACE_END();
 
 这些宏定义在 `libcutils/Trace.h` 中，底层调用 `atrace_begin()` / `atrace_end()`，最终写入 `trace_marker`。
 
-[已验证: AOSP android-17-beta3, system/core/libcutils/include/cutils/trace.h]
+[已验证: AOSP android-16.0.0_r1, system/core/libcutils/include/cutils/trace.h]
 
 ### 内核层：添加自定义 tracepoint
 
