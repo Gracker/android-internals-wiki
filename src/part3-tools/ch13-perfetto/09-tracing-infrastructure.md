@@ -23,13 +23,13 @@ tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 task2b_state: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
-task9_result: needs-rework
+task9_result: auto-fixed
 task2b_result: fixed
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
-last_task9_at: "2026-06-06T21:20:00+08:00"
+last_task9_at: "2026-06-07T00:24:39+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-06
+task9_reviewed_date: 2026-06-07
 task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1:Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events;正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20:needs-rework。P0 0 / P1 1 / P2 0;ftrace_event 表名已修正,但 UprobeStats "任意用户态函数 <1%"与 Perfetto/StatsD 数据出口口径仍缺一手证据。 | 2026-05-08 Task9 17:38:needs-rework。P0 2 / P1 0 / P2 1;13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误,需回炉修正。 | 2026-05-08 Task9 18:39:needs-rework。P0 1 / P1 0 / P2 1;FtraceConfig.drain_period_ms 默认值误写 250ms,AOSP android-16.0.0_r1 实际 historical default 100ms、poll-backed 可到 1000ms,已写入 queue。 | 2026-05-08 Task9 20:30:pass-tech-review。P0 0 / P1 0 / P2 0;FtraceConfig 字段、drain_period_ms 默认值、trace_marker 路径和 atrace category 口径已按源码闭合;tracing 开销数字仍按待验证处理,仅作为 P3 日志项。 自动晋升 finalized。 | 2026-06-06 Task9 idle audit 21:20:needs-rework。P0 1 / P1 1 / P2 0;Android 15+ android.os.Trace 已接入 libtracing_perfetto 双路径,正文仍写成全部经 trace_marker/ftrace ring buffer;且 android-17-beta3 / AOSP main 锚点不可作为 Android 17 正文结论,已写入 queue。"
 last_task2b_at: 2026-06-06T22:50:00+08:00
 repaired_by: openclaw-task2b
@@ -37,12 +37,12 @@ repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-06-06"
 task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_marker 单路径→双路径(libtracing_perfetto TrackEvent 分支),移除 AOSP main 锚点引用,更新数据流图;C/C++ ATRACE 仍走 trace_marker 路径单独说明。"
-last_task9_review_log: logs/deep-review/2026-06-06-21-audit.md
+last_task9_review_log: logs/deep-review/2026-06-07-00-deep-review.md
 status: ready-for-review
 task6_result: "pass-light-edit"
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-06"
 task6_reviewed_date: "2026-05-08"
@@ -53,6 +53,7 @@ review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复�
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task9_audit: "2026-06-06"
+last_task9_autofix_at: "2026-06-07"
 ---
 
 # 13.9 Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理
@@ -166,11 +167,11 @@ App 和 Framework 中常用的 `Trace.beginSection("myTag")` / `Trace.endSection
 1. `Trace.beginSection()` → `nativeTraceBegin()` JNI 入口 `frameworks/base/core/jni/android_os_Trace.cpp`
 2. 老路径通过 `libcutils/trace-dev.cpp` 中的 `atrace_begin()` 写入 `/sys/kernel/tracing/trace_marker`
 
-Android 15+ 的实际路径变了:`android_os_Trace.cpp` 转而调用 `tracing_perfetto::traceBegin()`(位于 `frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp`),由 `shouldPreferAtrace()` 判断走哪条分支:
-- 当 Perfetto category 匹配且 SDK 数据源已注册时,走 **Perfetto TrackEvent** 路径,数据由 Perfetto producer 直接汇入 Trace 文件,不经过 ftrace ring buffer
-- 其他情况仍然走 `atrace_begin()` → `trace_marker` 路径
+Android 15+ 的实际路径变了:`android_os_Trace.cpp` 转而调用 `tracing_perfetto::traceBegin()`(位于 `frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp`)。Android 15.0.0_r1 先用 `toPerfettoCategory()` 判断是否有可用 Perfetto category;Android 16.0.0_r1 起再通过 `shouldPreferAtrace()` 处理 atrace 与 Perfetto 同时启用时的优先级:
+- Perfetto category 已启用,且当前配置不要求兼容同一 category 的 atrace 会话时,走 **Perfetto TrackEvent** 路径,数据由 Perfetto producer 直接汇入 Trace 文件,不经过 ftrace ring buffer
+- Perfetto category 未启用、tag 仍由 atrace 会话采集,或 Android 16+ 并发 atrace 兼容规则要求保留 atrace 输出时,走 `atrace_begin()` → `trace_marker` 路径
 
-Android 15+ 中用户空间的 trace section 不再只有 ftrace ring buffer 一条通道：Perfetto TrackEvent 路径让数据可以绕开 ftrace ring buffer 直接进入 traced。分析 Android 15+ 设备的 Trace 时，用户空间 slices 可能同时来自 ftrace_event 表和 Perfetto SDK track。
+Android 15+ 中用户空间的 trace section 不再只有 ftrace ring buffer 一条通道:Perfetto TrackEvent 路径让数据可以绕开 ftrace ring buffer 直接进入 traced。分析 Android 15+ 设备的 Trace 时,Java 侧用户空间 slices 可能同时来自 trace_marker 解析出的 slice / `ftrace_event` 原始事件和 Perfetto SDK track;是否走 TrackEvent 取决于 Perfetto category 是否启用以及并发 atrace 兼容规则。
 
 #### C/C++ ATRACE 宏
 
@@ -214,7 +215,9 @@ ftrace tracepoints ──┐
                       │
 用户空间 tag ─────────┤
   ├── C/C++ ATRACE: trace_marker ──→ ftrace ring buffer ──→ traced_probes
-  └── Java Trace (Android 15+): Perfetto TrackEvent ──→ traced service (直连)
+  └── Java Trace (Android 15+)
+      ├── atrace fallback ──→ trace_marker ──→ ftrace ring buffer ──→ traced_probes
+      └── Perfetto TrackEvent ──→ traced service (直连)
 ```
 
 [图:ftrace tracepoint、trace_marker、traced_probes、traced service 到 Trace 文件的数据流示意图,标注 Android 15+ TrackEvent 分流]
@@ -253,7 +256,7 @@ traced_probes 读取 ftrace 数据的源码路径:
 
 除了 ftrace,Perfetto 还支持用户空间自定义 Data Source。这里需要区分两条路径:
 
-**路径一:App 层时间片(最常用)。** 通过 `android.os.Trace` / `androidx.tracing` 写入 `trace_marker`,traced 会自动采集。适合绝大多数场景,不需要引入额外依赖。
+**路径一:App 层时间片(最常用)。** 通过 `android.os.Trace` / `androidx.tracing` 写 section:Android 14 及更早版本经 `trace_marker` 进入 ftrace;Android 15+ 按前文的 TrackEvent / atrace fallback 双路径进入 Perfetto。适合绝大多数场景,不需要引入额外依赖。
 
 **路径二:Perfetto C++ SDK 自定义 Data Source。** 如果需要发射结构化的自定义数据(不是简单的时间片),可以使用 Perfetto C++ SDK 注册自定义数据源。这是纯 C++ API,Java/Kotlin 应用需要通过 JNI 调用:
 
@@ -331,7 +334,7 @@ computeLayerBounds();
 ATRACE_END();
 ```
 
-这些宏定义在 `libcutils/Trace.h` 中,底层调用 `atrace_begin()` / `atrace_end()`,最终写入 `trace_marker`。
+这些宏定义在 `system/core/libcutils/include/cutils/trace.h` 中,底层调用 `atrace_begin()` / `atrace_end()`,最终写入 `trace_marker`。
 
 [已验证: AOSP android-16.0.0_r1, system/core/libcutils/include/cutils/trace.h]
 
@@ -471,7 +474,9 @@ Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工�
 ```text
 内核 tracepoint ──→ ftrace ring buffer ──→ traced_probes ──→ traced ──→ Trace 文件 ──→ Perfetto UI/SQL
 C/C++ ATRACE ──→ trace_marker ──→ ftrace ring buffer ──↗
-Java android.os.Trace (Android 15+) ──→ Perfetto TrackEvent ──→ traced ──↗ (不经过 ftrace ring buffer)
+Java android.os.Trace (Android 14 及更早) ──→ trace_marker ──→ ftrace ring buffer ──↗
+Java android.os.Trace (Android 15+) ──┬── Perfetto TrackEvent ──→ traced ──↗
+                                      └── atrace fallback ──→ trace_marker ──→ ftrace ring buffer ──↗
 ```
 
 理解这个链条后:
