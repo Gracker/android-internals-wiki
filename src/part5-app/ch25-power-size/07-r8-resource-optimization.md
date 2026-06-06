@@ -3,7 +3,7 @@
 title: "R8 与资源优化"
 chapter: "25.7"
 section: "25.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-03/2026-05, R8 full mode docs, AOSP ResourceTypes.h"
@@ -37,9 +37,9 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-task9_state: pending
+task9_state: reviewed
 last_task9_autofix_at: "2026-06-06"
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
@@ -55,12 +55,12 @@ task2b_result: fixed
 last_task2b_at: "2026-06-03T14:54:49+08:00"
 task2b_fixed_by: "openclaw-task2b"
 task2b_fixed_date: "2026-06-03"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
+task9_result: pass-tech-review
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-06"
-last_task9_at: "2026-06-06T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
-task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSON 字段 keep-rule 示例中的 allowobfuscation 误用；证据为 Android Developers R8 full-mode / keep rules 文档。回 Task6 复审。"
+last_task9_at: "2026-06-06T10:21:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-06-10-deep-review.md"
+task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSON 字段 keep-rule 示例中的 allowobfuscation 误用；证据为 Android Developers R8 full-mode / keep rules 文档。回 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # R8 与资源优化
