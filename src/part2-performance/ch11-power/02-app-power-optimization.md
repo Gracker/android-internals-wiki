@@ -11,12 +11,6 @@ polish_by: "task2b-polish"
 rework_count: 5
 rework_date: "2026-05-08"
 rework_by: "task2b-rework"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
-last_task2b_lite_at: "2026-06-06"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-06-06"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service / WorkManager docs"
@@ -59,28 +53,29 @@ sources:
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: "2026-06-06"
+last_task2b_at: "2026-05-04T01:40:00+08:00"
+task6_result: "pass-light-edit"
+task9_result: needs-rework
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-08"
-task6_result: "pass-light-edit"
-task6_state: "reviewed"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
-last_task2b_at: "2026-05-04T01:40:00+08:00"
-task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T17:20:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
-review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。"
+last_task9_audit: "2026-06-06"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
-last_task9_audit: "2026-06-06"
+review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。"
 ---
 
 # App 耗电优化
@@ -221,6 +216,8 @@ WorkManager 的几个关键省电配置：
 如果项目没有使用 Jetpack，或者需要直接与系统服务交互，JobScheduler 仍然是有效的选择。它的核心机制与 WorkManager 底层相同：通过 `JobInfo.Builder` 设置约束条件，系统在合适的时机调度执行。
 
 WorkManager 和 JobScheduler 的选择不需要纠结：新项目用 WorkManager，已有项目迁移到 WorkManager。不需要两者混用。
+
+Android 16 起，前台服务期间启动的 JobScheduler / WorkManager / DownloadManager job 会受运行时配额限制，排查细节见下文「Android 16 的 JobScheduler 配额优化」。
 
 ### 在 Battery Historian 中的表现
 
@@ -507,8 +504,8 @@ WorkManager 比手动调度更省电，但它不是银弹。如果 App 注册了
 - [Android 官方:Foreground service types are required](https://developer.android.com/about/versions/14/changes/fgs-types-required)
 - [Android 官方:Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
 - [Android 官方:CameraDevice API](https://developer.android.com/reference/android/hardware/camera2/CameraDevice)
-- [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/os/PowerManager.java)
-- [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
+- [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java)
+- [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
 - [Android 官方:位置服务 Geofencing](https://developer.android.com/training/location/geofencing)
 - [Firebase 官方:Set and manage Android message priority](https://firebase.google.com/docs/cloud-messaging/android/message-priority)
 - [Android 官方:Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
