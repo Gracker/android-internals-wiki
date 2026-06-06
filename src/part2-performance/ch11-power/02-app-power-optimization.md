@@ -1,7 +1,7 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: finalized
+status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -11,8 +11,14 @@ polish_by: "task2b-polish"
 rework_count: 5
 rework_date: "2026-05-08"
 rework_by: "task2b-rework"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-05-04"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
+last_task2b_lite_at: "2026-06-06"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+last_verified: "2026-06-06"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service / WorkManager docs"
 confidence: medium-high
 sources:
@@ -415,6 +421,12 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 
 [已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/timeout]
 
+### Android 16 的 JobScheduler 配额优化
+
+Android 16 起，前台服务期间并发运行的 JobScheduler、WorkManager 和 DownloadManager job 会遵守各自的运行时配额。从 top state 启动后继续运行的 job 也会计入配额。这意味着把 WorkManager 或 DownloadManager 当成 FGS 的"免费"替代路径不再成立——它们和 FGS 共享后台预算。
+
+排查时关注 `WorkInfo.getStopReason()` 或 `JobParameters.getStopReason()`，结合 standby bucket 判断 job 是否因配额耗尽被系统终止。用户触发的大文件传输优先使用 user-initiated data transfer job，这类 job 有独立的配额窗口，不受 FGS 并发配额约束。
+
 ### FGS 的功耗分析方法
 
 分析 App 的功耗时，先分清楚问题落在哪个对象上。WakeLock、定位、FGS 和 Camera 的证据入口并不相同，标准 user build 也不保证每一类都有稳定的 Perfetto 轨道。
@@ -451,6 +463,8 @@ Audio 的功耗优化主要关注两个方面：
 **避免使用不必要的高采样率**。多数普通媒体播放和语音业务用 44.1kHz 或 48kHz 就够了。96kHz 更常见于专业采集、低延迟监听或外接音频接口场景，是否值得开启要看 codec、输出路径和设备是否真的支持高采样率直通。若最终仍在 AudioFlinger / HAL 里被重采样，处理开销会上去，听感收益不一定能保留下来。
 
 **后台音频要分开看 FGS 启动限制和类型声明**。后台音频如果需要长时间播放，应使用前台服务向用户展示持续通知。Android 12 的变化是限制后台直接启动 FGS：App 退到后台后，只有满足豁免条件才能启动前台服务。Android 14（targetSdk 34+）才强制要求在 manifest 中声明 `foregroundServiceType="mediaPlayback"`，并声明 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限。不要把 Android 12 的启动限制写成 Android 14 的类型强制。
+
+**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。当前本节 Audio 段覆盖到 Android 16 (API 36)，Android 17 的 background audio hardening 作为版本边界记录在此。排查 Android 17 后台音频失败时，应同时检查 `AudioHardening` 日志和 FGS 类型声明。
 
 ## 与其他章节的关系
 
