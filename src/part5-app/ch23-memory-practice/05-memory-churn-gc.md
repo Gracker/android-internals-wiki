@@ -52,6 +52,7 @@ last_task9_at: "2026-05-14T02:37:00+08:00"
 task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞技术问题。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+last_task6_audit: "2026-06-06"
 ---
 
 # 内存抖动与 GC 治理
@@ -241,7 +242,7 @@ Android Studio Memory Profiler 可以查看 heap dump、对象数量、GC 事件
 
 ### 分配归因：按调用频率排序，不按代码体量排序
 
-找到分配栈后，先按调用频率分层：每帧调用、每个 item 调用、每次页面打开调用、后台批处理调用。每帧调用的 64 B 临时对象，优先级可能高于页面打开时的一次 64 KB 对象。内存抖动看的不是单次大小，而是单位时间内的分配总量。
+找到分配栈后，先按调用频率分层：每帧调用、每个 item 调用、每次页面打开调用、后台批处理调用。每帧调用的 64 B 临时对象，优先级可能高于页面打开时的一次 64 KB 对象。内存抖动关注的是单位时间内的分配总量。
 
 常用修复动作有四类：
 
