@@ -1,4 +1,5 @@
 ---
+
 title: "Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理"
 chapter: "13.9"
 section: "13.9"
@@ -40,21 +41,22 @@ task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_mar
 last_task9_review_log: logs/deep-review/2026-06-07-00-deep-review.md
 status: ready-for-review
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-06"
+reviewed_date: 2026-06-07
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-06-06T23:08:00+08:00"
+last_task6_at: "2026-06-07T01:10:00+08:00"
 last_task6_audit: "2026-05-26"
-last_task6_review_log: "logs/review/2026-06-06-23-review.md"
-review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审;清理 frontmatter 重复字段,收紧 tracing 开销表述的验证边界;未发现新增 B 类回炉项;转入 Task9 复审。"
+last_task6_review_log: logs/review/2026-06-07-01-review.md
+review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审;清理 frontmatter 重复字段,收紧 tracing 开销表述的验证边界;未发现新增 B 类回炉项;转入 Task9 复审。 | 2026-06-07 task6 revisit-2: pass-light-edit。Task2B 已修复 Task9 idle audit P0（Android 15+ 双路径、AOSP main 锚点移除）;四层质检全部通过，无 B 类回炉项;auto-promotion 未触发（task9_result=auto-fixed 非 pass-tech-review，queue.json 有 pending 13.9 条目）。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-07"
 ---
+
 
 # 13.9 Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理
 
