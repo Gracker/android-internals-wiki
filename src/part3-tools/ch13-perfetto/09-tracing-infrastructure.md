@@ -30,7 +30,7 @@ rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 last_task9_at: "2026-06-07T00:24:39+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-07
+task9_reviewed_date: "2026-06-07"
 task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1:Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events;正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20:needs-rework。P0 0 / P1 1 / P2 0;ftrace_event 表名已修正,但 UprobeStats "任意用户态函数 <1%"与 Perfetto/StatsD 数据出口口径仍缺一手证据。 | 2026-05-08 Task9 17:38:needs-rework。P0 2 / P1 0 / P2 1;13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误,需回炉修正。 | 2026-05-08 Task9 18:39:needs-rework。P0 1 / P1 0 / P2 1;FtraceConfig.drain_period_ms 默认值误写 250ms,AOSP android-16.0.0_r1 实际 historical default 100ms、poll-backed 可到 1000ms,已写入 queue。 | 2026-05-08 Task9 20:30:pass-tech-review。P0 0 / P1 0 / P2 0;FtraceConfig 字段、drain_period_ms 默认值、trace_marker 路径和 atrace category 口径已按源码闭合;tracing 开销数字仍按待验证处理,仅作为 P3 日志项。 自动晋升 finalized。 | 2026-06-06 Task9 idle audit 21:20:needs-rework。P0 1 / P1 1 / P2 0;Android 15+ android.os.Trace 已接入 libtracing_perfetto 双路径,正文仍写成全部经 trace_marker/ftrace ring buffer;且 android-17-beta3 / AOSP main 锚点不可作为 Android 17 正文结论,已写入 queue。"
 last_task2b_at: 2026-06-06T22:50:00+08:00
 repaired_by: openclaw-task2b
@@ -41,15 +41,15 @@ task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_mar
 last_task9_review_log: logs/deep-review/2026-06-07-00-deep-review.md
 status: ready-for-review
 task6_result: "pass-light-edit"
-task6_state: revisiting
-task9_state: reviewed
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-07
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-06-07T01:10:00+08:00"
+last_task6_at: "2026-06-07T04:12:51+08:00"
 last_task6_audit: "2026-05-26"
-last_task6_review_log: logs/review/2026-06-07-01-review.md
+last_task6_review_log: logs/review/2026-06-07-04-review.md
 review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审;清理 frontmatter 重复字段,收紧 tracing 开销表述的验证边界;未发现新增 B 类回炉项;转入 Task9 复审。 | 2026-06-07 task6 revisit-2: pass-light-edit。Task2B 已修复 Task9 idle audit P0（Android 15+ 双路径、AOSP main 锚点移除）;四层质检全部通过，无 B 类回炉项;auto-promotion 未触发（task9_result=auto-fixed 非 pass-tech-review，queue.json 有 pending 13.9 条目）。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
@@ -95,13 +95,13 @@ Perfetto Trace 中大部分内核事件的数据源头都是 ftrace。它是 Lin
 
 ftrace 提供了三种工作模式,各有适用场景:
 
-**function tracer**--在内核编译时通过 `-mfentry`(x86)或 `-pg`(ARM)GCC 选项,在几乎每个内核函数入口插入一条 `fentry_call` 指令。默认情况下这条指令是 `nop`,开销为零。当启用 function tracer 时,运行时动态将 `nop` 替换为对追踪回调函数的调用。
+**function tracer**——在内核编译时通过 `-mfentry`(x86)或 `-pg`(ARM)GCC 选项,在几乎每个内核函数入口插入一条 `fentry_call` 指令。默认情况下这条指令是 `nop`,开销为零。当启用 function tracer 时,运行时动态将 `nop` 替换为对追踪回调函数的调用。
 
 function tracer 因而可以记录内核中**所有被追踪函数的调用序列**,粒度极细,但开销也最大。在 ARM64 上,function tracer 的典型开销约为 10-15% 的系统性能下降,因此不适合在性能测试中使用,主要用于调试和代码理解。
 
-**function_graph tracer**--在 function tracer 的基础上进一步记录函数的调用和返回,可以输出类似代码缩进的调用图。开销比 function tracer 还要高一些,因为它需要在函数入口和出口都插入钩子。
+**function_graph tracer**——在 function tracer 的基础上进一步记录函数的调用和返回,可以输出类似代码缩进的调用图。开销比 function tracer 还要高一些,因为它需要在函数入口和出口都插入钩子。
 
-**tracepoint**--这是 Android 性能分析中最常用的 ftrace 模式。与 function tracer 不同,tracepoint 不是"追踪所有函数",而是在内核源码中**预定义的探测点**。内核开发者在关键位置使用 `TRACE_EVENT` 宏声明一个 tracepoint,编译后它在未被启用时是一条分支预测为 not-taken 的 `if` 判断(使用 `static_key` 机制),开销接近零。当启用时,它执行对应的 probe 回调函数,将事件数据写入 per-CPU ring buffer。
+**tracepoint**——这是 Android 性能分析中最常用的 ftrace 模式。与 function tracer 不同,tracepoint 不是"追踪所有函数",而是在内核源码中**预定义的探测点**。内核开发者在关键位置使用 `TRACE_EVENT` 宏声明一个 tracepoint,编译后它在未被启用时是一条分支预测为 not-taken 的 `if` 判断(使用 `static_key` 机制),开销接近零。当启用时,它执行对应的 probe 回调函数,将事件数据写入 per-CPU ring buffer。
 
 Perfetto Trace 中的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binder_transaction`、`block_rq_issue` 等内核事件,全部来自 tracepoint。它们是 ftrace 中开销最低、最稳定的数据源。
 
@@ -136,7 +136,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 
 Perfetto 对 ftrace 事件做了两层处理:**原始 ftrace 事件**存放在 `ftrace_event` 表中(可按 `name` 列过滤事件类型),**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图,`cpu_frequency` 进入 `cpu_frequency_counters` 表。
 
-不是每个 tracepoint 都有独立的派生表--部分事件只在 `ftrace_event` 原始表中体现,查询时需要按 `name` 过滤。`ftrace_event` 表主要用于调试和验证采集是否生效;生产分析应优先使用 Perfetto 提供的派生表(`sched`、`cpu_frequency_counters` 等),字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系,有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_event` 原始表中体现,查询时需要按 `name` 过滤。`ftrace_event` 表主要用于调试和验证采集是否生效;生产分析应优先使用 Perfetto 提供的派生表(`sched`、`cpu_frequency_counters` 等),字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系,有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
 
 ## atrace 用户空间追踪框架
 
