@@ -21,6 +21,7 @@ task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
 last_task6_at: "2026-05-16T19:11:00+08:00"
+last_task6_audit: "2026-06-06"
 task9_result: pass-tech-review
 last_task9_at: "2026-05-16T19:31:25+08:00"
 task9_reviewed_by: openclaw-task9
@@ -210,11 +211,11 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 | 输入模态 | 文本 / vision | 视频 + 音频 + 声纹 + 人脸 |
 | Android SDK | 无 | 无 |
 
-### Android 端侧适配的四层拆解
+### Android 端侧适配分四个层面
 
 1. **Embedding 层**：`mem0/embeddings/fastembed.py` 的 `FastEmbedEmbedding` 用 `thenlper/gte-large`（1024 维 ONNX 模型），可经 `onnxruntime-android` + NNAPI 跑在 Android 8.1+（API 27）；量化后 ~250 MB。
 2. **LLM 层**：替换云端 GPT/Qwen 为 `MediaPipe LLM Inference`（Android 14+/API 34+）或 `LiteRT-LM`；M3-Agent 的 7B 模型量化为 4-bit 约 4 GB，端侧只能跑量化蒸馏版。
-3. **存储层**：`mem0/memory/storage.py` 的 `SQLiteManager`（history + messages 双表）可直接映射为 `SQLiteOpenHelper`；`mmagent/videograph.py:30-65` 的 `VideoGraph` 用 `androidx.room` 关系表（nodes / edges / embeddings 分表）落地，**避免用 `pickle`**（ndarray 体积大且 NDK 不可控）。
+3. **存储层**：`mem0/memory/storage.py` 的 `SQLiteManager`（history + messages 双表）可直接映射为 `SQLiteOpenHelper`；`mmagent/videograph.py:30-65` 的 `VideoGraph` 用 `androidx.room` 关系表（nodes / edges / embeddings 分表）实现，**避免用 `pickle`**（ndarray 体积大且 NDK 不可控）。
 4. **触发层**：`android.app.Application.OnProvideAssistDataListener`（AOSP `Application.java`，自 API 23 引入）允许 App 在系统 `ACTION_ASSIST` 时把当前 Session 的 Mem0 摘要塞进 `EXTRA_ASSIST_CONTEXT`，作为「App 暴露给系统级 Assistant 的官方通道」。
 
 ### 资源消耗边界（与 5.13 节 DVFS/能效模型的关系）
