@@ -9947,12 +9947,12 @@
     "note": "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.12 实际 FUSE passthrough 重写"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-06",
-    "time": "23:08",
+    "date": "2026-06-07",
+    "time": "05:20",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 11 轮 gap mining：0 空 draft（progress.json 标记的 draft 章节实际已全部 ready-for-review/finalized），TASK2B_BACKLOG=0；daily-info 最后修改 06:37 无增量；research-feeds 无新增（最后更新 4 月）；source-index 高质未映射仅 6 条且均为单素材/已映射章节；Clippings 全覆盖；无 ≥14 分候选；全书 372 节（292 finalized + 80 ready-for-review）覆盖率饱和。连续 7 轮空跑。"
+    "reason": "第 14 轮 gap mining：0 空 draft；TASK2B_BACKLOG=0；research-feeds 无更新（最后 4 月）、daily-info 06-07 无新性能素材、source-index 高质未映射均已映射；全书 372 节（291 finalized + 81 ready-for-review），覆盖率饱和。连续 10+ 轮空跑。"
   },
   "task9_last_sections": [
     "11.2"
