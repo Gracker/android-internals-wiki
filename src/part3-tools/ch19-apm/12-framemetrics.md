@@ -265,3 +265,10 @@ FrameMetrics 不直接告诉你 Compose 哪个 Composable 慢，也不告诉你 
 - Compose 场景要看 recomposition、布局层级、lazy list item 复杂度和状态更新范围。
 
 FrameMetrics 适合做线上分流：先判断慢在布局、绘制、sync 还是 GPU 提交，再选择对应线下工具。
+## 延伸阅读
+
+### Measure + Perfetto/FrameMetrics 系统级渲染分析集成点
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md
+- 类型：DeepResearch 源码调研
+- 摘要：分析 FrameMetrics API 与 HWUI 层 FrameInfo 结构体（24 个时间戳索引）的对应关系，梳理 Window.addOnFrameMetricsAvailableListener() → FrameMetricsReporter → FrameInfoBuffer 的调用链，以及 Perfetto 通过 systrace 收集相同数据源实现系统级分析的过程。FrameMetrics 是 Perfetto 数据的上层包装。
+- 注入时间：2026-06-07

@@ -564,6 +564,52 @@
       "completed_at": "2026-06-07T01:35:00+08:00",
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "fixed-lite: Android 17/API 37 milestones added (MessageQueue lock-free, ProfilingManager triggers, JobDebugInfo, 16KB backcompat), version references updated"
+    },
+    {
+      "section": "19.12",
+      "section_title": "FrameMetrics",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Measure + Perfetto/FrameMetrics 系统级渲染分析集成点 — 分析 FrameMetrics API 与 HWUI 层 FrameInfo 结构体的对应关系。FrameMetrics 定义 8 个 metric ID，而底层 FrameInfo 有 24 个时间",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-07T06:14:33.441211",
+      "status": "completed",
+      "completed_at": "2026-06-07T06:51:58.870113+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已注入：参考资料追加到章节pending延伸阅读"
+    },
+    {
+      "section": "16",
+      "section_title": "AOSP 源码与调试工具",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-ltrace-0.7.3-source-code-work原理.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "ltrace 0.7.3 源码级工作原理与 Linux 动态链接器集成机制 — 深入分析 ltrace 四阶段工作原理：ptrace 附加、ELF 解析、PLT 断点注入、r_debug 动态库加载感知。通过 struct r_debug 接口感知库加载/卸载事件，跨架构 ABI",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-07T06:14:33.441211",
+      "status": "completed",
+      "completed_at": "2026-06-07T06:51:58.870113+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已注入：参考资料追加到章节pending延伸阅读"
     }
   ],
   "items": [
@@ -2072,12 +2118,12 @@
     "source": "task2a-gap-mining"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-06",
-    "time": "12:04",
+    "date": "2026-06-07",
+    "time": "02:09",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 9 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；全书 372 节（290 finalized + 82 ready-for-review + 0 draft），finalized 率 78.0%。DeepResearch 2 篇新素材（07:08 后）均为现有章节验证补充（Thermal Headroom Listener→ch05.12, linux.perf FrameTimeline→ch13.2），非新话题。source-index 204 条未映射项已在上轮全面扫描。无 ≥14 分候选。"
+    "reason": "第 13 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；全书 349 节（269 finalized + 79 ready-for-review + 0 draft + 1 misc），finalized 率 77.1%。DeepResearch 06-06 新增 7 篇全部映射已有章节（eBPF→14.10, AppLock→17.7, CP ANR→9.7, HPROF→4.x/19.x, Thermal→5.12, FrameTimeline→13.2, SurfaceTexture→2.x）。source-index 204 条未映射项已在上轮全面扫描。Clippings 三本参考书全覆盖。AOSP/官方文档/研究素材无新话题。连续 9+ 轮空跑。"
   },
   "completed": []
 }

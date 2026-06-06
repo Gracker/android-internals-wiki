@@ -46,3 +46,9 @@
 - 摘要：完整梳理 Binder IPC 三层架构：Java 层 Binder/BinderProxy → JNI(android_util_Binder.cpp) → Native BpBinder/BBinder → IPCThreadState.talkWithDriver() → ioctl(BINDER_WRITE_READ)。详解 BC_/BR_ 命令协议、flat_binder_object 类型编码、Parcel 序列化、死亡通知机制、线程池管理。源码锚点 android-17.0.0_r1，可作为 Binder 全链路阅读导航。
 - 注入时间：2026-06-03
 - 价值：为AOSP 性能优化章节提供端到端链路梳理和 Perfetto 可观测性方案参考
+### ltrace 0.7.3 源码级工作原理与 Linux 动态链接器集成机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-ltrace-0.7.3-source-code-work原理.md
+- 类型：DeepResearch 源码调研
+- 摘要：深入分析 ltrace 四阶段工作原理：ptrace 附加、ELF 解析（.dynsym/.dynstr/.plt 挖掘）、PLT 断点注入（INT 3 或对应架构指令）、r_debug 动态库加载感知（通过 struct r_debug 接口跟踪库加载/卸载）。涵盖 tracesysgood 信号标记和跨架构 ABI 参数提取机制。
+- 注入时间：2026-06-07
+- 价值：可作为 AOSP 动态库调用追踪工具的原理参考，理解 ptrace 级别调试工具的底层机制。
