@@ -30,19 +30,19 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: revisiting  # updated by task2b-verifier 2026-06-06
+task6_state: revisiting
 task6_result: pass-light-edit
-task2b_state: pending  # empty-body-blocked
-task2b_result: pending  # needs-content
+task2b_state: fixed
+task2b_result: fixed
 task6_reviewed_date: "2026-06-05"
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-06
+pipeline_stage: task6_pending
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-04"
 last_task9_at: "2026-06-04T20:24:00+08:00"
@@ -321,6 +321,7 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
   - `frameworks/base/core/java/android/view/Choreographer.java`（VSync 同步）
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`（渲染管线入口）
 
+task2b_fixed_date: "2026-06-06"
 ---
 
 > **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。

@@ -3164,6 +3164,293 @@
       ],
       "summary": "Java | 引用类型 & Finalizer 机制",
       "scored_at": "2026-06-05T09:12:40.095508"
+    },
+    {
+      "title": "为何手机厂商都要优化内核调度",
+      "path": "Cubox/为何手机厂商都要优化内核调度-2026-06-05.md",
+      "category": "kernel",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch05",
+      "summary": "深度分析Android厂商内核调度优化，包括高通WALT、联发科FPSGO等厂商私有调度代码",
+      "keywords": [
+        "Android",
+        "Linux",
+        "内核调度",
+        "EAS",
+        "CFS",
+        "高通",
+        "联发科"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463934"
+    },
+    {
+      "title": "我开源了 Android Debug MCP",
+      "path": "Cubox/我开源了 Android Debug MCP：让 Agent 第一次睁眼看见 Android Runtime-2026-06-05.md",
+      "category": "development",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch16",
+      "summary": "AI Agent直接调试Android App运行时状态的MCP server项目",
+      "keywords": [
+        "Android",
+        "调试",
+        "AI",
+        "MCP",
+        "Runtime"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463942"
+    },
+    {
+      "title": "Android 17 ProfilingTrigger 新增 trigger 类型与 Memory Advice API 废弃源码验证",
+      "path": "DeepResearch/2026-06-05-android17-profilingtrigger-memory-advice-source-validation.md",
+      "category": "profiling",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch04",
+      "summary": "Android 17新trigger类型验证与Memory Advice API废弃状态源码分析",
+      "keywords": [
+        "Android 17",
+        "ProfilingTrigger",
+        "Memory Advice",
+        "AOSP",
+        "内存管理"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463944"
+    },
+    {
+      "title": "BlockCanary 与 Looper.Observer 在 Android 17 的接口稳定性与门槛验证",
+      "path": "DeepResearch/2026-06-05-blockcanary-looper-observer-android17-verify.md",
+      "category": "apm",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch07",
+      "summary": "BlockCanary与Looper.Observer在Android 17中的接口稳定性验证",
+      "keywords": [
+        "BlockCanary",
+        "Looper.Observer",
+        "APM",
+        "性能监控",
+        "Android 17"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463947"
+    },
+    {
+      "title": "FinalizerDaemon.enqueuePending MAX_ITERS=100 选择依据",
+      "path": "DeepResearch/2026-06-05-finalizer-daemon-enqueue-pending-max-iters-choice-verification.md",
+      "category": "memory",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch04",
+      "summary": "Android 13 FinalizerDaemon MAX_ITERS=100阈值选择依据分析",
+      "keywords": [
+        "FinalizerDaemon",
+        "ART",
+        "垃圾回收",
+        "内存管理",
+        "MAX_ITERS"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463949"
+    },
+    {
+      "title": "Android 17 FUSE-BPF 实际状态验证",
+      "path": "DeepResearch/2026-06-05-fuse-bpf-myth-busting.md",
+      "category": "storage",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 19,
+      "mapped_chapter": "ch06",
+      "summary": "验证Android 17中FUSE-BPF子系统实际状态，破除技术误解",
+      "keywords": [
+        "FUSE",
+        "BPF",
+        "存储",
+        "文件系统",
+        "Android 17"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463950"
+    },
+    {
+      "title": "Android 17 Trace 抓取中的 linux.perf 与 frametimeline 状态验证",
+      "path": "DeepResearch/2026-06-05-trace-capture-linux-perf-frametimeline.md",
+      "category": "tracing",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "ch13",
+      "summary": "Android 17中linux.perf与frametimeline数据源状态验证",
+      "keywords": [
+        "Perfetto",
+        "trace",
+        "linux.perf",
+        "FrameTimeline",
+        "Android 17"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463951"
+    },
+    {
+      "title": "商业 APM 平台 Android 17 SDK/API 版本阈值源码验证",
+      "path": "DeepResearch/2026-06-06-commercial-apm-android17-sdk-thresholds-verify.md",
+      "category": "apm",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 19,
+      "mapped_chapter": "ch07",
+      "summary": "商业APM平台Android 17 SDK/API版本门槛源码验证",
+      "keywords": [
+        "APM",
+        "SDK",
+        "Android 17",
+        "性能监控",
+        "商业平台"
+      ],
+      "scored_at": "2026-06-06T05:49:00.463953"
+    },
+    {
+      "title": "Anthropic万字长文：当AI开始构建自己，人类该何去何从？-2026-06-05.md",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Anthropic万字长文：当AI开始构建自己，人类该何去何从？-2026-06-05.md",
+      "score": 12,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "quality": "medium",
+      "scored_at": "2026-06-06T06:10:54.978893"
+    },
+    {
+      "title": "基于顶级 Agent（Claude Code）的 Harness 工程搭建式业务 Agent 评测方案-2026-06-05.md",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/基于顶级 Agent（Claude Code）的 Harness 工程搭建式业务 Agent 评测方案-2026-06-05.md",
+      "score": 13,
+      "relevance": 1,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "quality": "medium",
+      "scored_at": "2026-06-06T06:10:54.978900"
+    },
+    {
+      "title": "2026-06-06-surface-texture-double-buffer-mechanism.md",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-06-surface-texture-double-buffer-mechanism.md",
+      "score": 16,
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "quality": "high",
+      "scored_at": "2026-06-06T06:10:54.978902"
+    },
+    {
+      "title": "声明式 UI？Android 官方怒推的 Jetpack Compose 到底是什么",
+      "path": "AndroidWeekly/#16/声明式 UI？Android 官方怒推的 Jetpack Compose 到底是什么",
+      "source_url": "https://mp.weixin.qq.com/s/5mJdn-HhZ89GesWIjjYQ2A",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "待确定",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Content from 声明式 UI？Android 官方怒推的 Jetpack Compose 到底是什么 at https://mp.weixin.qq.com/s/5mJdn-HhZ89GesWIjjYQ2A. This would contain the actual article content with technical details.",
+      "scored_at": "2026-06-06T09:12:41.673906"
+    },
+    {
+      "title": "【译】 Dart 2.12 发布，稳定空安全声明和FFI版本，Dart 未来的计划",
+      "path": "AndroidWeekly/#16/【译】 Dart 2.12 发布，稳定空安全声明和FFI版本，Dart 未来的计划",
+      "source_url": "https://juejin.cn/post/6935687741489283108",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "待确定",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Content from 【译】 Dart 2.12 发布，稳定空安全声明和FFI版本，Dart 未来的计划 at https://juejin.cn/post/6935687741489283108. This would contain the actual article content with technical details.",
+      "scored_at": "2026-06-06T09:12:41.673913"
+    },
+    {
+      "title": "【译】Flutter 2.0 正式版发布，全平台 Stable",
+      "path": "AndroidWeekly/#16/【译】Flutter 2.0 正式版发布，全平台 Stable",
+      "source_url": "https://juejin.cn/post/6935621027116531720",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "待确定",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Content from 【译】Flutter 2.0 正式版发布，全平台 Stable at https://juejin.cn/post/6935621027116531720. This would contain the actual article content with technical details.",
+      "scored_at": "2026-06-06T09:12:41.673916"
+    },
+    {
+      "title": "Android 启动优化（五）- AnchorTask 1.0.0 版本更新了",
+      "path": "AndroidWeekly/#16/Android 启动优化（五）- AnchorTask 1.0.0 版本更新了",
+      "source_url": "https://juejin.cn/post/6935375820001116196",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "待确定",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Content from Android 启动优化（五）- AnchorTask 1.0.0 版本更新了 at https://juejin.cn/post/6935375820001116196. This would contain the actual article content with technical details.",
+      "scored_at": "2026-06-06T09:12:41.673918"
     }
   ]
 }
