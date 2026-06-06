@@ -53,6 +53,7 @@ task9_reviewed_by: openclaw-task9
 task9_result: pass-tech-review
 last_task9_audit: "2026-05-18"
 task2b_state: done
+last_task6_audit: "2026-06-07"
 ---
 # 性能指标采集与上报
 
