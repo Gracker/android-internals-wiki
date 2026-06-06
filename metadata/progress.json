@@ -7510,6 +7510,16 @@
       "task2a_result": "rewrite-completed",
       "last_task2a_at": "2026-06-05T21:18:53",
       "task6_state": "pending"
+    },
+    "11.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "last_task2b_lite_at": "2026-06-06",
+      "file": "src/part2-performance/ch11-power/02-app-power-optimization.md"
     }
   },
   "task2b_rounds": [
