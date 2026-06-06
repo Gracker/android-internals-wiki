@@ -37,7 +37,7 @@ related_chapters: ["1.7", "8.2", "21.4", "21.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-06
 task6_state: reviewed
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
@@ -49,7 +49,7 @@ task9_result: needs-rework
 last_task6_at: "2026-05-21T01:15:21+08:00"
 last_task6_review_log: logs/review/2026-05-21-01-review.md
 task6_review_notes: "2026-05-21 Task6 01: L1/L2 无需正文修改；结构、锚点、验证标注通过，转 Task9 pending。"
-task2b_state: fixed
+task2b_state: pending  # task9-needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-21'
