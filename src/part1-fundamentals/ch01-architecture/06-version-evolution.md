@@ -1,5 +1,4 @@
 ---
-
 title: Android 版本演进中的架构变化
 chapter: '1.6'
 section: '1.6'
@@ -50,11 +49,11 @@ related_chapters:
 - '4.6'
 - '5.6'
 - '8.7'
-task9_result: 'auto-fixed'
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-07"
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-06-07T02:20:00+08:00'
-status: 'ready-for-review'
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-07T04:33:40+08:00"
+status: finalized
 reviewed_date: '2026-05-09'
 reviewed_by: openclaw-task6
 last_task6_at: "2026-06-07T04:12:51+08:00"
@@ -62,18 +61,18 @@ last_task6_audit: '2026-05-23'
 last_task6_review_log: logs/review/2026-06-07-04-review.md
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: 'fixed'
 task2b_result: fixed-lite
-pipeline_stage: 'task6_pending'
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: '2026-06-07'
-review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6
+review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 | 2026-06-07 Task9 04: deep-review pass-tech-review。P0/P1 0；Android 17 官方版本差异补充已闭合，AOSP 源码锚点保持 android-16.0.0_r4/更低，自动晋升 finalized。
   轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01
   task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。 | 2026-05-09 Task6 02:08：revisiting
   写作复审；清理 frontmatter 重复键，修复 L1/L2 文风词与元叙述 8 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09
   Task9 02:30：needs-rework。P1 1：Perfetto 表格提示把 ART Mainline 写成 Android 11+，需改为 Android
   12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。'
-last_task9_review_log: 'logs/deep-review/2026-06-07-02-deep-review.md'
+last_task9_review_log: logs/deep-review/2026-06-07-04-deep-review.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 last_task9_audit: '2026-06-07'

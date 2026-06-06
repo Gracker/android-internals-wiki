@@ -5,8 +5,8 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-08"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-06-07"
+last_verified_against: "AOSP android-16.0.0_r1, AndroidX Room 2.8.4 sources"
 confidence: medium
 sources:
   - type: aosp
@@ -49,28 +49,28 @@ tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
 task9_result: auto-fixed
-last_task9_at: "2026-06-06T20:33:19+08:00"
+last_task9_at: "2026-06-07T04:33:40+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-07"
-task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；WAL autocheckpoint 默认值与 Room transaction executor 口径需回炉。 | 2026-05-08 Task9 14:32：needs-rework。P0 0 / P1 2 / P2 1；WAL checkpoint 线程口径与 Room transaction executor 口径仍需回炉。 | 2026-05-08 Task9 20:30：pass-tech-review。P0 0 / P1 0 / P2 0；WAL autocheckpoint、WAL sync mode、Room transaction executor 三处前轮回炉点已闭合；剩余 benchmark 待补充均已标为待验证，不构成发布阻塞。 自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P0 0 / P1 0 / P2 0；将 CursorWindow 默认大小的源码锚点从 AOSP main 改为 android-16.0.0_r1，符合 Android 17/API 37 以内边界，回到 Task6 复审。"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；WAL autocheckpoint 默认值与 Room transaction executor 口径需回炉。 | 2026-05-08 Task9 14:32：needs-rework。P0 0 / P1 2 / P2 1；WAL checkpoint 线程口径与 Room transaction executor 口径仍需回炉。 | 2026-05-08 Task9 20:30：pass-tech-review。P0 0 / P1 0 / P2 0；WAL autocheckpoint、WAL sync mode、Room transaction executor 三处前轮回炉点已闭合；剩余 benchmark 待补充均已标为待验证，不构成发布阻塞。 自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P0 0 / P1 0 / P2 0；将 CursorWindow 默认大小的源码锚点从 AOSP main 改为 android-16.0.0_r1，符合 Android 17/API 37 以内边界，回到 Task6 复审。 | 2026-06-07 Task9 04: auto-fixed。P0/P1 0；将 AOSP 锚点从不可见 android-17-beta3 降为 android-16.0.0_r1，并修正 WAL autocheckpoint 页大小口径为 SQLite PRAGMA page_size / /data block size，回到 Task6 复审。"
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task2b_at: "2026-05-08T19:44:22"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-06-07T04:12:51+08:00"
 last_task6_review_log: logs/review/2026-06-07-04-review.md
 last_task6_audit: "2026-05-26"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
-last_task9_review_log: logs/deep-review/2026-06-06-20-audit.md
+last_task9_review_log: logs/deep-review/2026-06-07-04-deep-review.md
 last_task9_audit: "2026-06-06"
-last_task9_autofix_at: "2026-06-06"
+last_task9_autofix_at: "2026-06-07"
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
@@ -347,7 +347,7 @@ CREATE TABLE user_prefs (
 | `busy_timeout` | `3000` | 写冲突时等待 3 秒而非立即返回 `SQLITE_BUSY` |
 | `cache_size` | `-8000` | 页缓存 8MB（默认约 2MB），减少磁盘读取 |
 
-**16KB Page Size 下的 checkpoint 调优**：SQLite 上游默认 `wal_autocheckpoint` 为 1000 页，但 Android 通过 `frameworks/base/core/res/res/values/config.xml` 中的 `db_wal_autocheckpoint` 资源覆盖为 **100 页**（可通过 `SQLiteGlobal.getWALAutoCheckpoint()` 读取）。因此在 4KB 页设备上，一次 checkpoint 写回约 400KB；在 16KB 页设备上约 1.6MB。如果应用或 SDK 通过 `PRAGMA wal_autocheckpoint` 修改了这个值，需要按实际页大小重算 checkpoint 规模。建议按设备 I/O 能力和事务模式实测后调整，而不是直接套用固定数值。
+**16KB Page Size 下的 checkpoint 调优**：SQLite 上游默认 `wal_autocheckpoint` 为 1000 页，但 Android 通过 `frameworks/base/core/res/res/values/config.xml` 中的 `db_wal_autocheckpoint` 资源覆盖为 **100 页**（可通过 `SQLiteGlobal.getWALAutoCheckpoint()` 读取）。这里的页数指 SQLite 数据库页，不是直接等同于 Linux 内存页；Android 默认数据库页大小来自 `SQLiteGlobal.getDefaultPageSize()`，也就是 `/data` 文件系统的 block size（可被 `debug.sqlite.pagesize` 覆盖）。因此 checkpoint 写回规模应按 `PRAGMA page_size` 实测值计算：4KB 数据库页约 400KB，16KB 数据库页约 1.6MB。如果应用或 SDK 通过 `PRAGMA wal_autocheckpoint` 修改了这个值，需要按实际页大小重算 checkpoint 规模。建议按设备 I/O 能力和事务模式实测后调整，而不是直接套用固定数值。
 
 `synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
