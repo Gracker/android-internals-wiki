@@ -6,8 +6,8 @@ polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-27"
-last_verified_against: "Android Developers Baseline Profiles/ProfileInstaller docs + Android Developers Blog AutoFDO kernel post + Task9 deep review 2026-04-27"
+last_verified: "2026-06-06"
+last_verified_against: "Android Developers launch-time/SplashScreen/Baseline Profiles/App Startup docs + Android 17 behavior changes + AOSP android-16.0.0_r1 ActivityThread/ViewStub"
 confidence: medium
 sources:
   - type: blog
@@ -26,6 +26,14 @@ sources:
     path: "developer.android.com/guide/topics/ui/splash-screen"
   - type: official
     path: "developer.android.com/topic/performance/baselineprofiles"
+  - type: official
+    path: "developer.android.com/topic/libraries/app-startup"
+  - type: official
+    path: "developer.android.com/about/versions/17/behavior-changes-17"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/ActivityThread.java"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewStub.java"
 tags: ['startup-optimization', 'lazy-init', 'splash-screen', 'baseline-profile', 'app-startup', 'content-provider', 'async-inflate', 'task-scheduler']
 related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
@@ -34,28 +42,30 @@ drafted_date: "2026-04-01"
 task9_state: reviewed
 task2b_state: "fixed"
 task2b_result: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-09"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T06:20:00+08:00"
+last_task9_at: "2026-06-06T16:20:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 review_round: 4
 last_task6_at: "2026-05-09T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-06-review.md"
 task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 8 处（结构性元叙述、主观标题、模糊/口号化表达、无条件量化表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
-task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。05:30 P0/P1 已修复；本轮仅复核到既有 P2：SplashScreen 调用文字、Baseline Profile 效果量化均已在 suggestions.md 记录。不新增阻塞项，自动晋升 finalized/ready-to-publish。"
+last_task9_review_log: "logs/deep-review/2026-06-06-16-audit.md"
+task9_review_notes: "2026-06-06 Task9 闲时抽检 auto-fix：Android 17 行为变更已公开 MessageQueue lock-free 实现；补齐版本差异并将 master AOSP 参考锚点降到 android-16.0.0_r1，回到 Task6 复审。"
 last_task6_audit: "2026-05-26"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
+last_task9_autofix_at: "2026-06-06"
+last_task9_audit: "2026-06-06"
 ---
 
 # 启动优化策略
@@ -793,6 +803,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 - **Android 12-13**：Baseline Profile 机制进入稳定使用期。Jetpack `benchmark-macro-junit4` 1.2.0 引入 `includeInStartupProfile`，1.3.0 支持 DSL 配置。
 - **Android 14-15**：ART 继续通过 Mainline 模块更新运行时和 dexopt 能力，但公开资料没有把 Cloud Profile 写成由 ART Mainline 直接分发。Cloud Profile 仍按 Google Play 的聚合与分发模型理解。
 - **Android 16（API 36）**：AutoFDO（Auto Feedback-Directed Optimization）覆盖到 Android 内核优化，[Google 公开材料](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)提到 Pixel 上冷启动提升约 4%、boot time 降低约 1%。AutoFDO 与 Baseline Profile 互补：Baseline Profile 决定哪些 Java/Kotlin 方法进入 ART `speed-profile` 编译，AutoFDO 改善内核和 native binary 的机器码布局、分支预测和内联效果。详细机制见 1.12 节。
+- **Android 17（API 37）**：官方行为变更已公开 `android.os.MessageQueue` 的 lock-free 实现，适用于 targetSdk 37+ 的应用。它的目标是减少 missed frames，但依赖反射访问 `MessageQueue` 私有字段/方法的启动监控、消息队列 hook 或性能 SDK 可能失效。启动优化场景下，应优先使用 Perfetto、Macrobenchmark、`reportFullyDrawn()` 等公开观测接口，不把 Looper/MessageQueue 私有实现当成稳定锚点。
 
 ### profileable 要求变化
 
@@ -813,8 +824,7 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 | Android 13（API 33） | Per-app language 对启动流程的影响 |
 | Android 15（API 35） | ART Mainline / dexopt 持续演进，Cloud Profile 仍按 Play 聚合分发理解 |
 | Android 16（API 36） | 内核 AutoFDO、profileable benchmark 支持增强 |
-
-[待验证：Android 17（API 37）对启动流程的进一步变更——beta 阶段尚未完全公开]
+| Android 17（API 37） | targetSdk 37+ 使用 lock-free `MessageQueue`，私有字段/方法 hook 需迁移到公开观测接口 |
 
 ## 总结：启动优化的优先级
 
@@ -856,7 +866,7 @@ Cloud Profile 是 Google Play 的云端聚合分发能力。没有 Play Store �
 - [Android 官方：Splash Screen](https://developer.android.com/guide/topics/ui/splash-screen)
 - [Android 官方：Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles)
 - [Android 官方：App Startup Library](https://developer.android.com/topic/libraries/app-startup)
-- [AOSP: ActivityThread.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/app/ActivityThread.java)（进程启动入口）
-- [AOSP: ViewStub.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewStub.java)
+- [AOSP: ActivityThread.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/ActivityThread.java)（进程启动入口）
+- [AOSP: ViewStub.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewStub.java)
 - [Google I/O 2022: Improve app startup with Baseline Profiles](https://www.youtube.com/watch?v=NfbYyENDfgo)
 - [Android Developers Blog：Boosting Android Performance: Introducing AutoFDO for the Kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
