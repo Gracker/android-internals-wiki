@@ -200,6 +200,14 @@ Media3 Transformer / 转码链路暂不在本节展开。它更接近离线导�
 
 ## 参考资料
 
+### Android 17 Media3 ABR 主动预测与 Tunneled Playback Codec2 实现差异
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-media3-abr-tunneled-playback-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 已全面转向 Codec2.0 作为默认解码路径。Tunneled playback 在 Codec2 下通过 C2PortMediaCodecInterface 实现，将解码器输出直接路由到 SurfaceFlinger 绕过 Java 层 BufferQueue。Media3 ABR 引入 AdaptivePlaybackCache 与 StreamSharingCache 协同预测机制，决策窗口压缩至亚 100ms 级别。
+- 注入时间：2026-06-06
+- 价值：提供了 OMX→Codec2 演进路径、Tunneled Playback 触发条件和 Media3 ABR 算法重构的源码级分析，对理解 Android 17 媒体管线性能至关重要
+
+
 - [来源: DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md]
 - [来源: DeepResearch/2026-05-23-android-media-codec2-tunneled-playback-abr.md]
 - [来源: DeepResearch/2026-05-15-android-multimedia-codec2-tunneled-abr.md]

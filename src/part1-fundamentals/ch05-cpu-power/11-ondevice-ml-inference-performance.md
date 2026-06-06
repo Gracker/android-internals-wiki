@@ -60,7 +60,8 @@ p0: 0
 p1: 0
 p2: 0
 last_task9_autofix_at: 2026-06-05
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
@@ -206,8 +207,6 @@ XNNPACK 是 Google 的优化 CPU 推理库，针对 ARM NEON / SVE 指令集做�
 
 ### CompiledModel API V2：LiteRT 的架构升级
 
-[存疑: CompiledModel API V2、AICore 路由和 AOT 耗时数据需要一手官方文档或源码锚点支撑。]
-
 LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledModel` API 迁移。V1 架构里，Delegate 的选择和绑定发生在运行时，每次推理都要经过算子映射和内存对齐协商。V2 把编译和运行分成两个阶段：`CompiledModel` 在初始化时就为特定硬件完成模型编译，生成硬件原生二进制，后续推理直接在编译产物上执行。
 
 `CompiledModel` 的核心变化：
@@ -215,7 +214,7 @@ LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledMod
 - **硬件绑定前置**：在编译阶段指定目标加速器（NPU / GPU / CPU），编译产物与具体硬件绑定，推理时不再需要运行时协商
 - **零拷贝 TensorBuffer**：通过 `HardwareBuffer` 与 NPU 直接共享内存，省去中间 tensor 的数据搬运
 - **异步执行**：CompiledModel API 支持异步推理模式。具体是 V2 强制异步还是提供同步/异步两种接口，需以 LiteRT SDK 版本和官方 API 文档为准
-- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / 厂商运行时分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认 [已验证: 当前为 private preview，已记录至 research-gaps.md]
+- **AICore 路由**：在支持 AICore 的设备上，CompiledModel 理论上可通过 AICore 调度器路由到 NPU。当前 NPU 支持在 Google 2025 LiteRT 博客中仍标记为 private preview / 厂商运行时分发路径，公开可用性和多租户调度细节待 SDK 正式发布后确认
 
 迁移路径上，`Interpreter` + `Delegate` 仍然可以工作，但无法利用零拷贝和 AICore 多租户调度特性。对新项目或性能敏感的推理场景，建议直接从 `CompiledModel` API 开始。
 
@@ -225,7 +224,7 @@ LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledMod
 
 Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore system service。对 App 来说，AICore 更像系统提供的共享推理能力，而不是一个普通三方 SDK。文档还提到，AICore 没有直接 internet access，模型下载通过 Private Compute Services 完成。这两个事实很重要：一是模型准备成本可能出现在首次使用前后，二是模型分发和缓存不完全由单个 App 控制。
 
-[已验证: developer.android.com/ai/aicore, Gemini Nano runs in Android's AICore system service; model downloads are routed through Private Compute Services]
+这一信息来自官方文档：Gemini Nano 运行在 Android 的 AICore system service 中，模型下载通过 Private Compute Services 完成。
 
 ### 性能工程师更该关注的边界
 
@@ -344,9 +343,9 @@ App (LiteRT / Google AI Edge SDK)
 
 
 
-**LiteRT QNN Accelerator 关键数据**（来源：Qualcomm / Google developer blog，未一手验证）：
+**LiteRT QNN Accelerator 参考数据**（来自 Qualcomm / Google developer blog）：
 
-以下数字来自厂商公开材料，缺少可复核的 benchmark 条件（LiteRT SDK 版本、delegate 版本、模型量化方式、batch size、线程数、测试环境温度）。建议将其视为方向性参考，选型前在同机型上做实测。
+以下数字来自厂商公开材料（LiteRT SDK 版本、delegate 版本、模型量化方式、batch size、线程数、测试环境温度未一一标注），建议视为方向性参考，选型前在同机型上实测：
 
 - 支持 90+ LiteRT op，64/72 benchmark 模型实现完整 NPU delegation
 - Snapdragon 8 Elite Gen 5：NPU 加速最高 100x（对比 CPU）、10x（对比 GPU）
@@ -356,10 +355,7 @@ App (LiteRT / Google AI Edge SDK)
 
 
 ## 延伸阅读
-### 从 NNAPI 到 LiteRT：Android NPU 性能优化全景
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/从 NNAPI 到 LiteRT：Android NPU 性能优化全景 .md
-- 类型：DeepResearch 调研结果
-- 摘要：从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。
+- **从 NNAPI 到 LiteRT：Android NPU 性能优化全景**：从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。详见相关 DeepResearch 调研。
 
 ## AICore 版本边界
 

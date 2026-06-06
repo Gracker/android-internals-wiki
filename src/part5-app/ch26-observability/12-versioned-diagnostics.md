@@ -422,6 +422,14 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 ## 参考资料
 
+### Android 15-17 线上诊断能力版本矩阵验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-diagnostic-apis-version-matrix.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 15-17 线上诊断能力由 ApplicationExitInfo（API 30+，13种死亡原因+22种子原因）和 ProfilingManager（API 35+，4种剖析类型）构成。版本矩阵覆盖 API 30-37，含完整源码锚点和获取方式。子原因如 SUBREASON_FREEZER_BINDER_IOCTL、SUBREASON_EXCESSIVE_CPU 等对线上稳定性治理有直接诊断价值。
+- 注入时间：2026-06-06
+- 价值：提供了 Android 15-17 诊断 API 的完整版本矩阵和源码锚点，是线上问题排查方法论章节的最佳补充参考
+
+
 ### Android 版本化线上诊断能力完整边界研究
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
 - 类型：DeepResearch 调研结果

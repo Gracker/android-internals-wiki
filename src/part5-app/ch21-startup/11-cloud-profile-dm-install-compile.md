@@ -60,7 +60,8 @@ task9_review_notes: '2026-05-21 Task9 01: needs-rework。P0 1：ART Service dump
 task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
 finalized_by: openclaw-task9-auto-promote
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
@@ -102,12 +103,11 @@ finalized_by: openclaw-task9-auto-promote
 
 启动优化里最容易混在一起的有三类成本：代码解释执行 / JIT 预热、启动任务本身耗时、类加载和 DEX 布局 I/O。Profile 只影响其中一部分。若主线程卡在数据库升级、网络同步、锁等待或 SDK 初始化，Cloud Profile 和 Baseline Profile 都不会把这些任务变短。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 
 ## 云端 Profile 在启动优化里的位置
 
-ART 从 Android 7 起采用解释执行、JIT 和 Profile-Guided AOT 混合模式。首次安装后，如果没有可用 profile，代码路径可能先走解释执行和 JIT；设备运行一段时间后，本地 profile 会记录热点方法，再由后台 dexopt 在空闲窗口按 profile 编译。Cloud Profile 和 Baseline Profile 都是在这个机制里提前提供热点信息。
+从 Android 7 开始，ART 同时使用三种执行模式：解释执行、JIT 和 Profile-Guided AOT。首次安装后，如果没有可用 profile，代码路径可能先走解释执行和 JIT；设备运行一段时间后，本地 profile 会记录热点方法，再由后台 dexopt 在空闲窗口按 profile 编译。Cloud Profile 和 Baseline Profile 都是在这个机制里提前提供热点信息。
 
 | Profile 类型 | 生产者 | 到达设备的时机 | 主要影响 | 验证入口 |
 |---|---|---|---|---|
@@ -116,9 +116,9 @@ ART 从 Android 7 起采用解释执行、JIT 和 Profile-Guided AOT 混合模�
 | 本地 JIT Profile | 单台设备运行时 | 用户实际使用后写入 `/data/misc/profiles/cur/.../primary.prof` | 后续启动和后台编译逐步收敛 | `profman --dump-profile-file`、后台 dexopt 日志 |
 | Startup Profile | App 团队、构建系统 | 构建期交给 D8 / R8 做 DEX layout | 启动路径类和方法的物理布局 | APK DEX 布局、Macrobenchmark 对比 |
 
-Cloud Profile 的价值不是替代应用侧 Baseline Profile。Google 官方文档明确建议随包提供 Baseline Profile，因为它比单靠 Cloud Profile 更早可用；Cloud Profile 更适合作为发布后的补充资料，帮助真实用户路径继续收敛。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
+Cloud Profile 的价值不在于替代应用自己的 Baseline Profile。Google 官方文档明确建议随包提供 Baseline Profile，因为它比单靠 Cloud Profile 更早可用；Cloud Profile 更适合作为发布后的补充资料，帮助真实用户路径继续收敛。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 
-这里要把收益拆清。Baseline / Cloud Profile 主要减少解释执行和 JIT 预热，把命中的方法提前编译。Startup Profile 主要调整 DEX 布局，减少启动时类加载的 I/O 和 page fault。两者可以同时使用，但验证时要分开看，避免把 DEX 布局收益和 AOT 编译收益合成一个数字。
+这里要把收益拆开看。Baseline / Cloud Profile 主要减少解释执行和 JIT 预热，把命中的方法提前编译。Startup Profile 主要调整 DEX 布局，减少启动时类加载的 I/O 和 page fault。两者可以同时使用，但验证时要分开看，避免把 DEX 布局收益和 AOT 编译收益合成一个数字。
 
 ## DM 文件与 ART 编译模式
 
@@ -127,7 +127,7 @@ Cloud Profile 的价值不是替代应用侧 Baseline Profile。Google 官方文
 [已验证: AOSP `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java`]
 [已验证: AOSP `frameworks/base/core/java/android/content/pm/PackageManager.java`]
 
-设备端消费 `.dm` 的关键点在 `installd`。`dexopt.cpp` 会检查 dex metadata 里是否存在 `primary.prof`；存在时，`prepare_app_profile()` 打开 APK、`.dm` 和 reference profile，再通过 `profman` 的 copy-and-update 流程把 profile 合并到 reference profile。后续 `dex2oat` 才能按 `speed-profile` 这类 profile-guided filter 编译命中的方法。
+设备侧处理 `.dm` 的关键逻辑在 `installd`。`dexopt.cpp` 会检查 dex metadata 里是否存在 `primary.prof`；存在时，`prepare_app_profile()` 打开 APK、`.dm` 和 reference profile，再通过 `profman` 的 copy-and-update 流程把 profile 合并到 reference profile。后续 `dex2oat` 才能按 `speed-profile` 这类 profile-guided filter 编译命中的方法。
 
 [已验证: AOSP `frameworks/native/cmds/installd/dexopt.cpp`, `check_profile_exists_in_dexmetadata()` / `prepare_app_profile()`]
 

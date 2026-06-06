@@ -52,7 +52,7 @@ last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 last_task9_review_log: logs/deep-review/2026-06-06-11-audit.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-06-06
 last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-06"
 task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / P2 0；补 Android 17 targetSdk 37 配置变更默认不重启 Activity 与 android:recreateOnConfigChanges 边界，回到 Task6 复审。"
@@ -105,7 +105,7 @@ task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / 
 
 版本差异要留意：Android 10（API 29）起，调用入口从 `ActivityManager.getService()` 切到了 `ActivityTaskManager.getService()`；Android 9（API 28）起，跨进程传输从旧版 `scheduleLaunchActivity()` 改成了 `ClientTransaction` 模型（事务内携带 `LaunchActivityItem`）；Android 8.x 仍走 `scheduleLaunchActivity()` 直接传参。
 
-Android 17（API 37）把部分配置变更的默认策略改成“不重启 Activity”：targetSdk 37 的 App 遇到 keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及仅 `UI_MODE_TYPE_DESK` 切换的 uiMode 时，系统默认向运行中的 Activity 分发 `onConfigurationChanged()`，不再走销毁重建。App 如果依赖完整重建来重新加载资源，需要用 `android:recreateOnConfigChanges` 显式声明。排查“页面突然重建”或配置变化后的响应延迟时，targetSdk 37 是新的分界。
+另一项影响页面跳转的版本变化是配置变更策略。Android 17（API 37）把部分配置变更的默认策略改成“不重启 Activity”：targetSdk 37 的 App 遇到 keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及仅 `UI_MODE_TYPE_DESK` 切换的 uiMode 时，系统默认向运行中的 Activity 分发 `onConfigurationChanged()`，不再走销毁重建。App 如果依赖完整重建来重新加载资源，需要用 `android:recreateOnConfigChanges` 显式声明。排查“页面突然重建”或配置变化后的响应延迟时，targetSdk 37 是新的分界。
 
 这条路径上的耗时主要分布在四个环节：
 
@@ -137,7 +137,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调——布局要重新 inflate。
 
-AndroidX Fragment 源码（FragmentManager / BackStackRecord / FragmentStateManager / SpecialEffectsController）中没有 `Trace.beginSection` 调用，Perfetto 不会自动生成 `FragmentManager:*` slice。排查 Fragment 切换性能时，需要业务代码自行插桩：在导航入口外层加 `Trace.beginSection("FragmentTransaction")`，配合主线程 slice（inflate、RecyclerView layout/prefetch）和 FrameTimeline 观察帧耗时。
+AndroidX Fragment 的几个核心类（FragmentManager、BackStackRecord、FragmentStateManager、SpecialEffectsController）都没有调用 `Trace.beginSection`，因此 Perfetto 不会自动生成 `FragmentManager:*` 这类 slice。排查 Fragment 切换性能时，需要业务代码自行插桩：在导航入口外层加 `Trace.beginSection("FragmentTransaction")`，配合主线程 slice（inflate、RecyclerView layout/prefetch）和 FrameTimeline 观察帧耗时。
 
 ### 页面跳转优化策略
 
@@ -296,7 +296,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 ### Ripple 效果与感知优化
 
-Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
+Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的设计优势在于**不需要等 onClick 回调执行完就能显示**。 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
 
 即使 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——Ripple 在 16ms 内就已经开始扩散了。
 
