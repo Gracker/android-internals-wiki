@@ -54,18 +54,18 @@ tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', '
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-08"
+reviewed_date: "2026-06-06"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-review_round: 4
+review_round: 5
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T17:20:00+08:00"
@@ -279,8 +279,6 @@ val geofence = Geofence.Builder()
 Geofencing 省电的关键，在于围栏判断由 FLP、Play services 和系统位置栈统一调度，而不是 App 每隔几秒自己请求一次定位。
 
 **GNSS 硬件围栏卸载**。支持硬件围栏的 GNSS 芯片可以把 Geofencing 判定卸载到硬件执行，CPU 不需要保持唤醒即可维持围栏检测。设备进入 Doze 或 CPU 深度休眠后，GNSS 芯片仍然能独立判断进出围栏事件，再通过中断唤醒系统通知 App。硬件卸载是否可用取决于设备能力：通过 `GnssCapabilities.hasGeofencing()`（API 34+）或 `dumpsys location` 查看 Geofence 的实现路径（software / hardware）。如果设备只支持软件模式，Geofencing 的功耗优势仍然存在但幅度更小。
-
-硬件卸载是否生效取决于 GNSS 芯片能力和 vendor HAL 实现。支持硬件卸载的设备可以在 Doze 和 CPU 深度休眠期间独立维持围栏检测；只支持软件模式的设备，功耗优势仍然存在但幅度更小。
 
 Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连续轨迹，就该回到显式定位请求，并单独评估功耗。
 
