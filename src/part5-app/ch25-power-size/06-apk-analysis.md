@@ -44,9 +44,9 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task9_pending
-task6_state: "reviewed"
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-05"
@@ -57,12 +57,12 @@ task6_review_notes: "2026-06-05 Task6 revisit-review #4: L1/L2 无新增写作�
 task2b_result: fixed-lite
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T00:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-00-deep-review.md"
-task9_review_notes: "2026-06-05 00:20 Task9 deep-review: auto-fixed。AOSP master 锚点已替换为可访问的 android-16.0.0_r1；Play Asset Delivery 代码分发边界复核通过，回 Task6 复审。"
+task9_reviewed_date: "2026-06-06"
+last_task9_at: "2026-06-06T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
+task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 apkanalyzer --human-readable 全局参数位置；证据为 Android Developers apkanalyzer 语法。回 Task6 复审。"
 last_task2b_lite_at: 2026-06-03
-last_task9_autofix_at: "2026-06-05"
+last_task9_autofix_at: "2026-06-06"
 ---
 
 
@@ -116,8 +116,8 @@ APK Analyzer 适合做包体积排查的基线工具。Android Studio 文档确�
 
 ```bash
 # APK 总大小与估算下载大小
-apkanalyzer apk file-size -h app-release.apk
-apkanalyzer apk download-size -h app-release.apk
+apkanalyzer -h apk file-size app-release.apk
+apkanalyzer -h apk download-size app-release.apk
 
 # AAB 生成 APK set 后估算下载大小
 bundletool build-apks --bundle=app-release.aab --output=app-release.apks
