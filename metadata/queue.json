@@ -1575,6 +1575,33 @@
       "completed_at": "2026-06-06T17:42:05",
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "fixed-lite: Android 16 JobScheduler quota optimizations added; Android 17 background audio hardening boundary noted"
+    },
+    {
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 15+ Trace 数据路径与源码锚点需回炉",
+      "material_paths": [
+        "logs/deep-review/2026-06-06-21-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误/版本差异",
+          "location": "L158-L171、L198-L204",
+          "detail": "正文把 android.os.Trace / 用户空间 tag 统一写成 trace_marker -> ftrace ring buffer 路径。AOSP android-16.0.0_r1 中 Trace.beginSection() 调用 nativeTraceBegin，JNI 位于 frameworks/base/core/jni/android_os_Trace.cpp，并转入 tracing_perfetto::traceBegin；frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp 会按 shouldPreferAtrace()/Perfetto category 在 atrace_begin(trace_marker) 与 Perfetto TrackEvent 之间选择。Android 14 仍直接 atrace_begin，Android 15+ 已不是单一路径。",
+          "suggestion": "按版本拆开 Android 14 及更早的 trace_marker 路径、Android 15+ 的 libtracing_perfetto 双路径；把 C/C++ ATRACE 宏与 Java android.os.Trace 分开说明，并在数据流图中加入 TrackEvent/Perfetto Producer 分支。"
+        },
+        {
+          "type": "P1 版本锚点/源码引用",
+          "location": "frontmatter last_verified_against；L113、L130、L169、L182、L208、L228-L236、L322",
+          "detail": "正文多处使用 [已验证: AOSP android-17-beta3] 或 AOSP main。git ls-remote 对 frameworks/base、frameworks/native、system/core、external/perfetto 均未找到 android-17* refs；Task9 规则要求不能把 main/master 或不可验证的 Android 17 beta 标签作为正文结论。",
+          "suggestion": "统一改为可验证的 android-16.0.0_r1 或更低 tag；Android 17 只保留“待 android-17.0.0_r1 公开后复核/未进入 Android 17”的边界说明，移除依赖 main 的正文结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-06T21:20:00+08:00",
+      "status": "pending",
+      "review_type": "task9-idle-audit"
     }
   ],
   "items": [
