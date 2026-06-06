@@ -7,9 +7,9 @@ drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-27"
-last_verified_against: "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+last_verified: "2026-06-06"
+last_verified_against: "AOSP android-16.0.0_r1 Activity/InputDispatcher/View/ViewRootImpl + AndroidX ViewPager2 1.1.0 / Fragment 1.8.9 sources + Android 17 Beta config-change docs"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-07"
@@ -27,17 +27,19 @@ sources:
     path: "https://developer.android.com/guide/fragments"
   - type: blog
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
+  - type: official
+    path: "https://developer.android.com/blog/posts/the-first-beta-of-android-17"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
-task9_reviewed_date: 2026-05-08
+task9_reviewed_date: 2026-06-06
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-08T09:27:37+08:00"
+last_task9_at: "2026-06-06T11:20:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
@@ -48,9 +50,12 @@ task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T09:08:46+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-09-review.md"
-last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
+last_task9_review_log: logs/deep-review/2026-06-06-11-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task9_audit: "2026-06-06"
+last_task9_autofix_at: "2026-06-06"
+task9_review_notes_r2: "2026-06-06 Task9 idle-audit: auto-fixed。P0 0 / P1 1 / P2 0；补 Android 17 targetSdk 37 配置变更默认不重启 Activity 与 android:recreateOnConfigChanges 边界，回到 Task6 复审。"
 ---
 # 其他响应速度场景
 
@@ -99,6 +104,8 @@ last_deepseek_cn_review_at: 2026-06-01
 **调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` 向 **system_server** 发起 Binder 请求。system_server 中的 `ActivityStarter` 做完权限检查、Intent 解析、Task 栈计算后，通过 Binder 向**目标进程**发送启动事务，目标进程依次完成：创建 Activity 实例 → `attach()` → `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
 
 版本差异要留意：Android 10（API 29）起，调用入口从 `ActivityManager.getService()` 切到了 `ActivityTaskManager.getService()`；Android 9（API 28）起，跨进程传输从旧版 `scheduleLaunchActivity()` 改成了 `ClientTransaction` 模型（事务内携带 `LaunchActivityItem`）；Android 8.x 仍走 `scheduleLaunchActivity()` 直接传参。
+
+Android 17（API 37）把部分配置变更的默认策略改成“不重启 Activity”：targetSdk 37 的 App 遇到 keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及仅 `UI_MODE_TYPE_DESK` 切换的 uiMode 时，系统默认向运行中的 Activity 分发 `onConfigurationChanged()`，不再走销毁重建。App 如果依赖完整重建来重新加载资源，需要用 `android:recreateOnConfigChanges` 显式声明。排查“页面突然重建”或配置变化后的响应延迟时，targetSdk 37 是新的分界。
 
 这条路径上的耗时主要分布在四个环节：
 
@@ -453,6 +460,7 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
 - **AndroidX Fragment 1.1.0（2019）**：`FragmentFactory` 与 `setMaxLifecycle()` 进入稳定版本，Fragment 懒加载开始从 `setUserVisibleHint()` 迁移到 Lifecycle 约束。
 - **AndroidX ViewPager2 1.0.0（2019）**：独立 `androidx.viewpager2:viewpager2` artifact 发布，基于 RecyclerView 实现，不绑定 Android 9 / API 28 平台版本。
 - **Android 16（API 36）**：ARR（Adaptive Refresh Rate）继续演进；它对点击响应尾延迟的量化影响需要按设备刷新率策略和 Perfetto trace 复核。
+- **Android 17（API 37）**：targetSdk 37 的 App 在 keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分桌面模式 uiMode 变化下默认不再重启 Activity；需要完整重建的场景改用 `android:recreateOnConfigChanges` opt-in。
 
 ---
 
@@ -470,6 +478,7 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
   - [Fragment 生命周期](https://developer.android.com/guide/fragments/lifecycle)
   - [RAIL 性能模型](https://developer.android.com/topic/performance/vitals)
   - [Kotlin Flow](https://developer.android.com/kotlin/flow)
+  - [Android 17 Beta：Activity 配置变更默认重启策略更新](https://developer.android.com/blog/posts/the-first-beta-of-android-17)
 - 微信技术文章：「一文读懂 Fragment 的方方面面」（2026-03，Obsidian 素材库）
 - 微信技术文章：「从 input 响应性能差的 issue 演示 Perfetto trace 用法」（2026-03，Obsidian 素材库）
 - 微信技术文章：「Android 针对 App 的 View Input 优化」（2026-03，Obsidian 素材库）
