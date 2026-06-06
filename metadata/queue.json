@@ -260,7 +260,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-30T22:12:26.099775+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "sched_ext EEVDF 版本边界内容已通过 2026-05-30 源码调研附录覆盖（17.4 文件末尾），且 17.4 已 finalized/ready-to-publish，无需额外注入"
     },
     {
       "section": "6.2",
@@ -629,7 +632,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-02T22:16:25.663725+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:21+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已注入至 19.01（APM 全景图）延伸阅读（2026-06-02 注入），queue 未同步更新"
     },
     {
       "section": "17",
@@ -649,7 +655,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-02T22:16:25.663725+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:21+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已注入至 ch17-oem.md 参考资料（荣耀 MUSCHED VIP 调度深度调研），与已注入 17.4 的内容互补"
     },
     {
       "section": "22.3",
@@ -669,7 +678,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-02T22:16:25.663725+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:21+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "Compose Strong Skipping 素材已在前序 task2b 回炉中整合到 22.3 正文和相关 research-gaps"
     },
     {
       "section": "19.09",
@@ -1311,7 +1323,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-05T06:12:28.406315",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "AIW 无对应章节（端侧 AI Agent 记忆系统），素材可作为 ch05 ML Runtime 延伸阅读但无需新建章节；已评估跳过"
     },
     {
       "section": "4.2",
@@ -1502,7 +1517,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-06T06:11:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-06T16:53:21+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已由前序任务注入到 4.8 ART GC 章节参考资料"
     },
     {
       "section": "19.09",
