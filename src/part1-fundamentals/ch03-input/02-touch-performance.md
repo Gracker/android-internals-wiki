@@ -34,29 +34,31 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T14:32:28+08:00"
-task9_result: pass-tech-review
+last_task9_at: "2026-06-06T15:45:10+08:00"
+task9_result: auto-fixed
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T15:05:00+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-15-review.md"
 review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
-last_task9_review_log: "logs/deep-review/2026-05-08-14-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。"
+last_task9_review_log: "logs/deep-review/2026-06-06-15-audit.md"
+task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。 | 2026-06-06 Task9 15:45 闲时抽检：auto-fixed。P0 版本/源码锚点 1 组；16KB page size 起点从 Android 16+ 修正为 Android 15+ AOSP 支持，并把 Resampler.cpp 锚点从 AOSP mainline 改为 android-16.0.0_r1；本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。"
 finalized_date: "2026-05-08"
 finalized_by: openclaw-task6-auto-promote
 task6_review_notes: "2026-05-08 Task6 15:05：未做重复正文 review；自动晋升检查通过（task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending）。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task9_autofix_at: "2026-06-06"
+last_task9_audit: "2026-06-06"
 ---
 
 # 触摸响应的性能分析
@@ -127,7 +129,7 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 
 #### 16KB 页面大小的潜在影响
 
-Android 16+ 支持将内核页面大小从 4KB 切换到 16KB。更大的页面尺寸提升了 TLB 命中率、减少了缺页异常处理开销，在 app 启动、系统启动、摄像头延迟等宏观指标上有可量化的改善（参见 Android 官方 16KB page size 文档）。
+Android 15+ AOSP 支持配置 16KB 页面大小的设备。更大的页面尺寸提升了 TLB 命中率、减少了缺页异常处理开销，在 app 启动、系统启动、摄像头延迟等宏观指标上有可量化的改善（参见 Android 官方 16KB page size 文档）。
 
 对输入分发包路径的影响，目前公开资料没有给出独立的 benchmark 数据。理论上的收益方向是减少 socketpair mmap 相关的缺页中断、降低 micro-timing jitter，但具体到 InputDispatcher → App 这条路径的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
 
@@ -545,7 +547,7 @@ Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/
 - 正面：消除频率差带来的抖动，使触摸轨迹贴近 VSync 边界
 - 负面：5ms 人为延迟，外推在速度突变时可能预测错误
 
-源码：`frameworks/native/libs/input/Resampler.cpp`（AOSP mainline）
+源码：`frameworks/native/libs/input/Resampler.cpp`（android-16.0.0_r1）
 
 ## 参考资料
 
