@@ -40,15 +40,15 @@ task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_mar
 last_task9_review_log: logs/deep-review/2026-06-06-21-audit.md
 status: ready-for-review
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-08"
+reviewed_date: "2026-06-06"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T19:05:00+08:00"
+last_task6_at: "2026-06-06T23:08:00+08:00"
 last_task6_audit: "2026-05-26"
-last_task6_review_log: "logs/review/2026-05-08-19-review.md"
+last_task6_review_log: "logs/review/2026-06-06-23-review.md"
 review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审;清理 frontmatter 重复字段,收紧 tracing 开销表述的验证边界;未发现新增 B 类回炉项;转入 Task9 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
