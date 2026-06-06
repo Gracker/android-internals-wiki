@@ -37,10 +37,10 @@ sources:
     path: "Clippings/Android 性能优化 - dex 文件的体积优化实战.md"
 tags: [r8, proguard, webp, vector-drawable, font-subsetting]
 related_chapters: ["25.6", "12.1", "25.8"]
-pipeline_stage: task9_pending
-task6_state: "reviewed"
-task9_state: pending
-last_task9_autofix_at: "2026-06-03"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: reviewed
+last_task9_autofix_at: "2026-06-06"
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-05"
@@ -57,10 +57,10 @@ task2b_fixed_by: "openclaw-task2b"
 task2b_fixed_date: "2026-06-03"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-14
-last_task9_at: '2026-05-14T20:31:00+08:00'
-last_task9_review_log: 'logs/deep-review/2026-05-14-20-deep-review.md'
-task9_review_notes: '2026-05-14 20:31 Task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
+task9_reviewed_date: "2026-06-06"
+last_task9_at: "2026-06-06T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
+task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSON 字段 keep-rule 示例中的 allowobfuscation 误用；证据为 Android Developers R8 full-mode / keep rules 文档。回 Task6 复审。"
 ---
 
 # R8 与资源优化
@@ -159,15 +159,14 @@ R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Pr
     native <methods>;
 }
 
-# 反射/序列化模型类：字段名参与 JSON/Gson/Jackson/Moshi 协议不可混淆。
-# ⚠️ 绝不能加 allowshrinking：序列化字段从 R8 静态分析视角不可达，
-# allowshrinking 会把这些字段直接删除，release 包反序列化缺字段。
--keepclassmembers,allowobfuscation class com.example.api.** {
+# 反射/序列化模型类：字段名参与 JSON/Gson/Jackson/Moshi 协议时不能混淆。
+# ⚠️ 绝不能加 allowshrinking，也不要加 allowobfuscation；否则 release 包可能反序列化缺字段或字段名不匹配。
+-keepclassmembers class com.example.api.** {
     <fields>;
 }
 ```
 
-第一组规则解决泛型签名读取问题；第二组规则用 `includedescriptorclasses` 保留 JNI 方法名和 descriptor class，避免 native 注册失败；第三组规则保留字段但允许改名（`allowobfuscation`），字段名保持可读的前提下不把整个包固定。上线前要用混淆后的 release 包跑序列化、登录、支付、推送、深链、插件加载和 JNI smoke test。debug 包不经过同一套 R8 路径，不能替代 release 验证。
+第一组规则解决泛型签名读取问题；第二组规则用 `includedescriptorclasses` 保留 JNI 方法名和 descriptor class，避免 native 注册失败；第三组规则保留字段名，不把整个模型类固定；如果所有序列化字段都有稳定注解（如 `@SerializedName`），才可以再评估 `allowobfuscation`。上线前要用混淆后的 release 包跑序列化、登录、支付、推送、深链、插件加载和 JNI smoke test。debug 包不经过同一套 R8 路径，不能替代 release 验证。
 
 consumer rules 也要纳入体积排查。AAR 里的 `consumer-proguard-rules.pro` 会传递到 App，三方 SDK 为了降低接入失败率，常把规则写得很保守。遇到 dex 增长异常时，先从 `build/outputs/mapping/release/configuration.txt` 查看最终合并后的规则，再决定是升级 SDK、覆盖规则，还是向 SDK 方反馈更细的 consumer rules。
 

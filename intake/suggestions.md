@@ -211,3 +211,15 @@
 
 **⚠️ 需关注**：
 - **6.7 FUSE-BPF**（draft，16 行）：源码验证已确认 FUSE-BPF 不存在，章节全部断言失效。建议进入 Task 2B 管线重写，标题改为「Android 17 FUSE 与 Scoped Storage I/O 性能」，聚焦实际 FUSE 优化路径（iomode.c、sdcard 守护进程改进、FUSE DAX）。
+
+## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-06-06
+- **类型**：数据缺失
+- **位置**：VelocityTracker Perfetto 视角（约 L184-L194）
+- **问题**：`addMovement()` 1-5μs、`computeCurrentVelocity()` 5-20μs、正常路径零分配属于量化断言，本轮只复核到 AOSP 调用链和官方源码注释，未看到章节内绑定具体设备、采样点数量、构建类型和 trace/benchmark 证据。
+- **建议**：补一组 release 构建下的 Perfetto/benchmark 记录；如果没有数据，把固定微秒范围改成“通常不是主耗时，需以 trace 验证”。
+
+## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-06-06
+- **类型**：数据缺失
+- **位置**：NestedScroll / requestDisallowInterceptTouchEvent / 厂商手势扩展（约 L326-L328、L381、L507-L523）
+- **问题**：嵌套层级开销、20+ 层递归开销、边缘 2-3mm 和游戏模式 TouchSlop 4-5dp 等判断没有对应 trace、OEM 文档或设备实验记录。
+- **建议**：补一个可复现实验或设备来源；如果只是工程经验，应标为经验性边界，避免读者当成 AOSP 标准行为。
