@@ -13618,7 +13618,8 @@
     "status": "ready-for-review",
     "pipeline_stage": "task9_pending",
     "last_task6_at": "2026-06-04T03:05:00+08:00",
-    "task6_result": "pass-light-edit"
+    "task6_result": "pass-light-edit",
+    "verifier_note": "pipeline advanced to task6_pending 2026-06-06"
   },
   "26.17": {
     "status": "ready-for-review",
@@ -13801,5 +13802,20 @@
       "note": "task6 re-review pass, pending manual finalization",
       "log": "logs/review/2026-06-05-21-review.md"
     }
-  ]
+  ],
+  "3.2": {
+    "verifier_note": "pipeline corrected to ready-to-publish 2026-06-06"
+  },
+  "4.2": {
+    "verifier_note": "reverted to task2b_pending, queue has P95 pending 2026-06-06"
+  },
+  "7.13": {
+    "verifier_note": "reverted to task2b_pending, queue has P50 pending 2026-06-06"
+  },
+  "26.2": {
+    "verifier_note": "status advanced to finalized 2026-06-06"
+  },
+  "26.5": {
+    "verifier_note": "pipeline advanced to task6_pending 2026-06-06"
+  }
 }
