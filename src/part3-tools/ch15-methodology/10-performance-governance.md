@@ -32,7 +32,7 @@ task9_result: fixed
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-19T21:04:13+08:00"
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-06-06"
 task2b_result: fixed
 task2b_state: fixed
 last_task9_audit: "2026-05-19"
@@ -276,7 +276,7 @@ Android 的现实世界太复杂：机型、SoC、ROM、后台环境、网络条
 - `15.9` 解释怎样让问题进入持续跟踪和验收流程
 - 本节回答的是：团队如何长期把这件事做对
 
-所以这章不是“管理附录”，它是整条性能治理主线的收束点。
+所以这章是整条性能治理主线的收束点。
 
 ## 结尾
 
