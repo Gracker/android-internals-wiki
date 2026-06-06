@@ -30,31 +30,34 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-08
-last_task9_at: "2026-05-08T20:30:08+08:00"
+task9_reviewed_date: 2026-06-06
+last_task9_at: "2026-06-06T18:20:00+08:00"
 review_round: 3
 last_task2b_at: "2026-05-08T19:44:22"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External P95 问题单：SIGQUIT诊断可信度/android.anr track/frontmatter版本号）"
-task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；ANR trace 非主进程 dump 范围需按 AOSP firstPids/lastPids/nativePids 修正。 | 2026-05-08 Task9 14:32：needs-rework。P0 0 / P1 1 / P2 0；AnrLatencyTracker 版本边界与作用描述仍需回炉。 | 2026-05-08 Task9 20:30：pass-tech-review。P0 0 / P1 0 / P2 1；ProfilingTrigger ANOMALY 触发器的 Android 17 表述仍有公开文档语义边界问题，已在 suggestions.md 既有条目记录，本轮不重复追加；无 P0/P1。 自动晋升 finalized。"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；ANR trace 非主进程 dump 范围需按 AOSP firstPids/lastPids/nativePids 修正。 | 2026-05-08 Task9 14:32：needs-rework。P0 0 / P1 1 / P2 0；AnrLatencyTracker 版本边界与作用描述仍需回炉。 | 2026-05-08 Task9 20:30：pass-tech-review。P0 0 / P1 0 / P2 1；ProfilingTrigger ANOMALY 触发器的 Android 17 表述仍有公开文档语义边界问题，已在 suggestions.md 既有条目记录，本轮不重复追加；无 P0/P1。 自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检 auto-fix：修正 ProfilingManager/ProfilingTrigger AOSP 源码路径，公开 API 位于 Mainline Profiling 模块 packages/modules/Profiling/framework/java/android/os/，非 frameworks/base/core/java/android/os/；P0 1 / P1 0 / P2 0，回到 Task6 复审。"
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T20:05:00+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-20-review.md"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
-last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
+last_task9_review_log: logs/deep-review/2026-06-06-18-audit.md
+last_task9_audit: "2026-06-06"
+last_task9_audit_log: "logs/deep-review/2026-06-06-18-audit.md"
+last_task9_autofix_at: "2026-06-06"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
 ---
@@ -446,8 +449,8 @@ if (Build.VERSION.SDK_INT >= 36) {
 - AOSP 源码路径：
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
   - `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
-  - `frameworks/base/core/java/android/os/ProfilingManager.java`
-  - `frameworks/base/core/java/android/os/ProfilingTrigger.java`
+  - `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
+  - `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`
   - `art/runtime/thread_state.h`
   - `art/runtime/signal_catcher.cc`
 - 高爷原创系列：
