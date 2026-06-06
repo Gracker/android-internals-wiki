@@ -2447,7 +2447,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-04T21:20:00+08:00",
+  "task9_last_review": "2026-06-06T17:20:00+08:00",
   "ready_to_publish": 192,
   "rework_history": [
     {
@@ -7593,71 +7593,48 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md",
   "last_task2a_processed_date": "2026-06-04",
   "task9_last_review_detail": {
-    "date": "2026-05-29",
-    "time": "07:21",
-    "reviewed_at": "2026-05-29T07:21:00+08:00",
-    "mode": "deep-review",
+    "date": "2026-06-06",
+    "time": "17:20",
+    "reviewed_at": "2026-06-06T17:20:00+08:00",
+    "mode": "idle-audit",
     "sections": [
-      "16.5",
-      "17.4"
+      "11.2"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      "src/part2-performance/ch11-power/02-app-power-optimization.md"
     ],
-    "log": "logs/deep-review/2026-05-29-07-deep-review.md",
-    "p0": 1,
+    "log": "logs/deep-review/2026-06-06-17-audit.md",
+    "p0": 0,
     "p1": 2,
-    "p2": 1,
-    "p3": 0,
-    "result": "auto-fixed/pass-tech-review",
-    "auto_promoted": [
-      "17.4"
-    ],
-    "auto_finalized": [
-      "17.4"
-    ],
-    "auto_fixed": [
-      "16.5"
-    ],
-    "needs_rework": []
+    "p2": 0,
+    "p3": 1,
+    "queue_added": 1,
+    "result": "needs-rework",
+    "notes": "Android 16 JobScheduler quota optimizations and Android 17 background audio hardening missing from 11.2."
   },
-  "last_task9_review": "2026-06-04T21:20:00+08:00",
+  "last_task9_review": "2026-06-06T17:20:00+08:00",
   "last_task9_sections": [
-    "26.8",
-    "9.6",
-    "18.3",
-    "18.14"
+    "11.2"
   ],
   "last_task9_review_detail": {
-    "date": "2026-05-29",
-    "time": "07:21",
-    "reviewed_at": "2026-05-29T07:21:00+08:00",
-    "mode": "deep-review",
+    "date": "2026-06-06",
+    "time": "17:20",
+    "reviewed_at": "2026-06-06T17:20:00+08:00",
+    "mode": "idle-audit",
     "sections": [
-      "16.5",
-      "17.4"
+      "11.2"
     ],
     "files": [
-      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+      "src/part2-performance/ch11-power/02-app-power-optimization.md"
     ],
-    "log": "logs/deep-review/2026-05-29-07-deep-review.md",
-    "p0": 1,
+    "log": "logs/deep-review/2026-06-06-17-audit.md",
+    "p0": 0,
     "p1": 2,
-    "p2": 1,
-    "p3": 0,
-    "result": "auto-fixed/pass-tech-review",
-    "auto_promoted": [
-      "17.4"
-    ],
-    "auto_finalized": [
-      "17.4"
-    ],
-    "auto_fixed": [
-      "16.5"
-    ],
-    "needs_rework": []
+    "p2": 0,
+    "p3": 1,
+    "queue_added": 1,
+    "result": "needs-rework",
+    "notes": "Android 16 JobScheduler quota optimizations and Android 17 background audio hardening missing from 11.2."
   },
   "task9_last_reviewed_files": [
     "src/part5-app/ch26-observability/08-observability-case-studies.md",
@@ -7715,7 +7692,7 @@
     "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
   ],
-  "last_task9_at": "2026-06-04T21:20:00+08:00",
+  "last_task9_at": "2026-06-06T17:20:00+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.24",
@@ -9931,22 +9908,15 @@
     "reason": "第 8 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；daily-info 2026-06-06 已消费（无新性能话题）；新 DeepResearch 1 篇（linux.perf/FrameTimeline 验证→ch13.02 已映射）；source-index 全映射；research-gaps 3 条已处理；Clippings 全覆盖；无 ≥14 分候选；全书 372 节覆盖率极高"
   },
   "task9_last_sections": [
-    "26.8",
-    "9.6",
-    "18.3",
-    "18.14"
+    "11.2"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part5-app/ch26-observability/08-observability-case-studies.md",
-    "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
-    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md"
+    "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-06-04-21-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-06-06-17-audit.md",
   "task9_last_files": [
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "src/part4-system/ch17-oem/04-sched-ext-oem-bpf-scheduler.md"
+    "src/part2-performance/ch11-power/02-app-power-optimization.md"
   ],
   "last_task2b_run": "2026-06-03T04:50:00+08:00",
   "task2b_sections_fixed": [

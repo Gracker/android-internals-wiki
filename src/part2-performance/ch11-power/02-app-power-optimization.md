@@ -61,19 +61,20 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
 last_task2b_at: "2026-05-04T01:40:00+08:00"
-task9_result: pass-tech-review
-task9_state: "reviewed"
-task2b_state: fixed
-pipeline_stage: "ready-to-publish"
-task9_reviewed_date: "2026-05-08"
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-08T10:29:04+08:00"
+last_task9_at: "2026-06-06T17:20:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-05-19"
-review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
+review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+last_task9_audit: "2026-06-06"
 ---
 
 # App 耗电优化
