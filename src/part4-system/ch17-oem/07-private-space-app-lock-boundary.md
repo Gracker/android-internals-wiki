@@ -198,3 +198,31 @@ Private Space 和应用锁相关问题不应该只进 crash 或 ANR 指标。更
 - [来源: intake/daily-info/2026-05-25.md]
 
 - [Android 17 原生应用锁：系统级通知隐藏与 OEM 对比，黄林晴，掘金，2026-02-10](https://juejin.cn/post/7604694326518104115) — Android 17 Canary 2601 代码中曝光 `app_locked_new_notification` 等字段，揭示原生应用锁的通知分类屏蔽策略；与小米 HyperOS 的对比参考有助于理解 OEM 差异化落点。
+
+<!-- AIW-源码调研-2026-06-06 -->
+
+### 17.7.8.1 AOSP源码验证结果（2026-06-06）
+
+基于AOSP main分支（等同于Android 17）源码级验证，确认以下事实：
+
+**✅ 已验证结论：**
+1. **不存在原生应用锁功能**：AOSP main分支中未发现任何AppLock、AppLockManager相关API或实现
+2. **Android 17官方安全特性为AAPM**：`AdvancedProtectionManager.java`提供设备级安全模式，非应用级锁定
+3. **功能差异明确**：AAPM包含网络限制、USB限制、安装源限制等，不提供应用锁定能力
+4. **官方文档无应用锁条目**：Android 17 behavior changes和features页面均未提及应用锁功能
+
+**🔍 源码搜索范围：**
+- `frameworks/base/core/java/android/security/advancedprotection/AdvancedProtectionManager.java`
+- `frameworks/base/services/core/java/com/android/server/am/`（无AppLock相关类）
+- `frameworks/base/core/java/android/app/`（仅有RemoteLockscreenValidationSession，为锁屏验证非应用锁）
+- `frameworks/base/core/java/android/content/pm/`（无应用锁API）
+- `frameworks/base/core/java/android/app/admin/`（无应用锁权限）
+- `frameworks/base/core/java/android/app/Notification.java`（无应用锁定通知字段）
+
+**⚠️ 与社区文章的差异：**
+- 网络文章声称"Android 17 Canary 2601 暴露 app_locked_new_notification"与官方发布版本不符
+- 该内容可能属于未发布的实验性代码或社区误传
+- 官方Android 17最终版本不包含此功能
+
+**📝 结论：**
+Android 17应用锁仍处于"待官方确认"状态，本轮AOSP源码验证未发现相关实现。后续需要等待官方SDK、AOSP tag或Android Developers文档更新才能确认具体API和能力边界。

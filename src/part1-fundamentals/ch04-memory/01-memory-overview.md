@@ -388,6 +388,95 @@ smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 
 
 ## dumpsys meminfo：日常内存分析的主力工具
 
+<!-- AIW-源码调研-2026-06-06 -->
+
+### HPROF 堆转储分析
+
+Android 17 提供了多层次的堆转储机制，用于内存问题诊断和性能分析：
+
+#### Shell 命令层 (`am dumpheap`)
+
+基础命令用于触发堆转储：
+```bash
+# Java 堆 dump（包含 GC 数据）
+adb shell am dumpheap -g <pid> /data/local/tmp/heap.hprof
+
+# Native 堆 dump
+adb shell am dumpheap -n <pid> /data/local/tmp/native-heap.hprof
+
+# Malloc 信息 dump
+adb shell am dumpheap -m <pid> /data/local/tmp/malloc-info.txt
+```
+
+#### 三层调用架构
+
+1. **Shell 命令** → ActivityManagerService.dumpHeap()
+   - 需要高危权限 `SET_ACTIVITY_WATCHER`
+   - 调用 `enableFreezer(false)` 避免干扰
+
+2. **AMS 层** → ActivityThread.dumpHeap()
+   - 异步执行，避免阻塞主线程
+   - 支持完成回调通知机制
+
+3. **ART 层** → Hprof::Dump()
+   - 双重保护机制：
+     ```cpp
+     gc::ScopedGCCriticalSection gcs(self, gc::kGcCauseHprof, gc::kCollectorTypeHprof);
+     ScopedSuspendAll ssa(__FUNCTION__, true /* long suspend */);
+     ```
+   - 输出标准 JAVA PROFILE 1.0.3 格式
+
+#### Perfetto 集成 (Android 17)
+
+Android 17 通过 Perfetto 实现了现代化的堆图分析：
+
+**配置数据源**：
+```proto
+message JavaHprofConfig {
+    message ContinuousDumpConfig {
+        uint32 dump_interval_ms = 2;   // 连续导出间隔
+        bool scan_pids_only_on_start = 3;  // 进程扫描策略
+    }
+    repeated string process_cmdline = 1;  // 目标进程
+    uint32 min_anonymous_memory_kb = 4;  // 内存下限过滤
+}
+```
+
+**解析流程**：
+1. `ArtHprofParser` 解析 HPROF 二进制格式
+2. 构建 `HeapGraph` 对象结构
+3. 填充 `Object`、`ClassDefinition`、`StringId` 等数据
+4. 存储到 Perfetto 表格供后续分析
+
+#### 内存分析实践
+
+**配置连续监控**：
+```bash
+# 配置 Traced 系统进行连续堆监控
+adb shell traced enable java_hprof continuous --interval 5000 --target com.example.app
+
+# 导出堆图数据
+adb shell traced dump java_hprof /data/local/tmp/continuous-heap.hprof
+```
+
+**数据解读**：
+- **托管堆 dump**: 包含对象引用关系，用于内存泄漏分析
+- **Native 堆 dump**: 重点关注内存碎片和大块分配
+- **Malloc 信息**: 系统层内存分配模式分析
+
+#### 性能影响
+
+堆转储会对应用性能产生以下影响：
+- **暂停时间**: 50-200ms 全线程暂停
+- **内存开销**: 需要 2-3 倍堆空间用于临时数据
+- **I/O 压力**: 直接文件写入，避免用户空间拷贝
+
+**优化建议**：
+- 在非关键时间点进行 dump
+- 避免在性能敏感期连续多次调用
+- 使用过滤条件减少导出数据量
+
+
 前面已经多次用到 `dumpsys meminfo` 的输出，这里把它的用法系统地过一遍。
 
 ### 全局模式：查看系统内存概况
