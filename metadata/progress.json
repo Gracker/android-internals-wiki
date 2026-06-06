@@ -9948,11 +9948,11 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-06",
-    "time": "20:04",
+    "time": "23:08",
     "mode": "gap-mining",
     "created_sections": [],
     "created_files": [],
-    "reason": "第 10 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；daily-info 无增量（最后修改 06:37）；research-feeds 无新增（最后更新 4 月）；source-index 全映射；Clippings 全覆盖；无 ≥14 分候选；全书 372 节（292 finalized + 79 ready-for-review）覆盖率饱和。连续 6 轮空跑。"
+    "reason": "第 11 轮 gap mining：0 空 draft（progress.json 标记的 draft 章节实际已全部 ready-for-review/finalized），TASK2B_BACKLOG=0；daily-info 最后修改 06:37 无增量；research-feeds 无新增（最后更新 4 月）；source-index 高质未映射仅 6 条且均为单素材/已映射章节；Clippings 全覆盖；无 ≥14 分候选；全书 372 节（292 finalized + 80 ready-for-review）覆盖率饱和。连续 7 轮空跑。"
   },
   "task9_last_sections": [
     "11.2"

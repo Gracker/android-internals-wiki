@@ -1,3 +1,23 @@
+## [Task2A Gap Mining] 2026-06-06 22:09 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**Phase 0/0.5 状态**：
+- 空 draft 章节：0（412 节全部 finalized/ready-for-review）
+- TASK2B_BACKLOG：1（≤20，允许进入 Phase 1）
+
+**已检查方向**（本轮增量 vs 上轮 20:04）：
+- daily-info 2026-06-06：最后修改 06:37，无 20:04 后增量
+- research-feeds/：最后更新 2026-04-14，2 个月无新增
+- research-gaps.md：所有条目已完成或为验证型（非新章节缺口）
+- source-index.json：无高质未映射素材
+- Clippings 三本参考书：全覆盖
+- AOSP/官方文档：412 节已覆盖核心性能组件
+- Android 17 性能行为变更：15+ 项全覆盖
+- SUMMARY.md 结构完整性：420 引用 vs 412 文件（差异为 README 占位和附录/前言文件）
+
+**结论**：连续第 7 轮无合格缺口。全书 412 节（269 finalized + 79 ready-for-review + 64 其他状态），知识体系高度完整。
+
+---
+
 
 ## [Task2A Gap Mining] 2026-06-06 20:04 知识缺口挖掘 — 本轮未发现 ≥14 分候选
 
@@ -448,3 +468,114 @@
 - Clippings 三本参考书已交叉比对完毕
 **结论**：连续第 5 轮无合格缺口。全书 412 节覆盖度饱和。
 **元数据修正**：progress.json 已更新（total 372, draft 0, ready-for-review 79, finalized 293）。
+
+## [Task2A Gap Mining] 2026-06-06 21:08 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**Phase 0/0.5 状态**：
+- 空 draft 章节：0（349 节：269 finalized + 79 ready-for-review + 0 draft，另有 36 章其他状态）
+- TASK2B_BACKLOG：0（≤20，允许进入 Phase 1）
+- queue.json 真正 pending：10 条（全部 status=ready-for-review，priority=80，body 135-276 行）—— 全部属于 Task 2B review pipeline，**Task 2A 铁律不碰**（非空 draft 不写，非 draft 不碰）
+
+**已扫描方向**（增量 vs 上轮 16:06）：
+1. **source-index.json 高质量未注入素材 (q≥16)**：17 条
+   - 5 条 DeepResearch 调研已 mapping 到具体章节（ch02/06/07/11/22/26），需由 Task 8 标记 action=injected 后注入到对应章节
+   - 4 条内部产物（周报/日报/选题池/流水线提案）→ 流程产物，非章节素材
+   - 3 条 RSS feed 摘要 / 内部日报 → 无章节素材价值
+   - 5 条 DeepResearch 调研无 mapping 但主题已对应：
+     - ltrace 工作原理（ch05 调度/工具方向）
+     - Android 高级工程师面试参考答案：性能优化（ch07/15 方法论方向）
+     - App Archiving 版本边界验证（已对应 ch01/1.20）
+     - Game Scheduling cpufreq 机制（已对应 ch05/5.2 EAS / ch17/4 sched_ext）
+     - eBPF 功耗分析（已对应 ch14/10 eBPF 性能分析）
+     - SurfaceTexture 双缓冲（已对应 ch18/7 TextureView）
+
+2. **daily-info 2026-06-06 16:00-21:00 增量**：无新增（最晚时间戳 06:30）
+
+3. **DeepResearch 2026-06-05~06**（7 篇）：全部已映射到现有章节
+
+4. **daily-info 2026-06-05 未消费项**（上一轮已评估）：
+   - Linux 调度器优化导致 20% 功耗增加（传音）→ 已映射 ch05
+   - Cached Apps Freezer 官方文档 → 已映射 ch04/4.11
+   - Android 17 App Functions / AI 原生 → 1 篇素材，AIW 核心性能话题外
+   - Remote Compose (AndroidX) → 1 篇素材，不足
+   - Android Debug MCP → 开源工具，AIW 核心话题外
+   - Agent 长期记忆 → 端侧 AI 话题，已有 ch05/11 覆盖
+
+5. **research-feeds/**：最后更新 2026-04-14，2 个月无新增
+6. **Clippings 三本参考书**：已在多轮 mining 中全覆盖（稳定性 20 + 性能优化 21 + 线上疑难 58 = 99 篇）
+7. **AOSP / 官方文档**：349 节已覆盖 frameworks/base、system/、packages/modules/ 核心性能组件
+8. **Android 17 性能行为变更**（15+ 项）：全部已有对应章节
+
+**候选缺口评分**（本轮新增 vs 上轮）：
+
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 决策 |
+|------|-----------|--------|----------|--------|------|------|
+| ltrace 工作原理 (ch05) | 3 | 4 | 3 | 3 | 13 | <14 跳过 |
+| Android 高级工程师面试参考答案：性能优化 (ch07) | 3 | 3 | 4 | 3 | 13 | <14 跳过 |
+| App Archiving 版本边界验证 (ch01/1.20 补充) | 3 | 2 | 2 | 3 | 10 | 已有对应章节 |
+| Game Scheduling cpufreq (ch05/17 补充) | 3 | 4 | 3 | 4 | 14 | 已有对应章节 |
+| eBPF 功耗分析 (ch14/10 补充) | 3 | 4 | 3 | 4 | 14 | 已有对应章节 |
+| SurfaceTexture 双缓冲 (ch18/7 补充) | 3 | 4 | 3 | 3 | 13 | 已有对应章节 |
+| Android Debug MCP (ch17 OEM 工具链) | 2 | 2 | 2 | 4 | 10 | AIW 核心话题外 |
+
+**结论**：本轮未发现评分 ≥ 14 的独立知识缺口。最高分候选（ltrace / 面试参考答案）评分 13，且为单篇素材，不足以支撑独立小节。
+
+**重要观察**：
+- 17 条 q≥16 未注入素材中，5 条 DeepResearch 调研 mapping 明确但 action 未标 injected，应由 Task 8 修正注入状态
+- queue.json 仍有 10 条 status=pending 章节（均为 ready-for-review，body ≥ 135 行），属 Task 2B review pipeline 工作
+- 6.7 FUSE-BPF（draft 16 行）已确认 FUSE-BPF 不存在，需 Task 2B 全面重写
+
+**全书状态**（progress.json）：
+- 349 节，0 draft，79 ready-for-review，269 finalized
+- finalized 率 77.1%
+- 缺口挖掘已 8 轮无新候选，AIW 知识体系已饱和
+
+**下次探索方向建议**（避免重复）：
+1. Task 8 修正 5 条 DeepResearch 注入状态（ch02/06/07/11/22/26）
+2. 跨章节横向主题（如 Performance Class 实战落地 / OEM 优化 ROI / 厂商 Tare 经济模型差异）
+3. Android 17 已合入 main 但未明确进入 Android 17 的边缘 vendor 扩展
+4. Clippings 三本参考书纵向方法学对比（如《性能优化》vs《线上疑难》同一问题的不同方法）
+5. ready-for-review 80 节中 outline 结构不完整、值得回炉重做的章节排查
+
+
+## [Task2A Gap Mining] 2026-06-06 23:08 知识缺口挖掘 — 本轮未发现 ≥14 分候选
+
+**Phase 0/0.5 状态**：
+- 空 draft 章节：0（372 节：292 finalized + 80 ready-for-review + 0 draft）
+  - progress.json 标记为 draft 的章节（26.15/18.23/11.7/22.16/25.20）实际文件 status 已为 ready-for-review 或 finalized
+- TASK2B_BACKLOG：0（≤20，允许进入 Phase 1）
+
+**已扫描方向**（增量 vs 上轮 21:08）：
+1. **daily-info 2026-06-06**：最后修改 06:37，无 21:08 之后增量
+2. **source-index.json 高质未映射 (q≥16)**：6 条
+   - Android 高级工程师面试参考答案（单素材，Q=19，评 13 分）
+   - ltrace 工作原理分析（单素材，Q=19，评 13 分）
+   - 荣耀 MUSCHED VIP/Binder 优先级（已有 ch17/4 sched_ext 对应）
+   - Android Package Manager 安装优化（已有 ch01/1.9+1.23 对应）
+   - Jetpack Compose 性能优化盲区（已有 ch22/20 对应）
+   - Android 17 电池统计与 Tare 经济模型（已有 ch11/8 对应）
+3. **research-feeds/**：最后更新 2026-04-14，2 个月无新增
+4. **research-gaps.md**：所有条目已完成
+5. **Clippings 三本参考书**：已在多轮 mining 中全覆盖（99 篇）
+6. **AOSP / 官方文档**：372 节已覆盖核心性能组件
+
+**候选缺口评分**：
+
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 决策 |
+|------|-----------|--------|----------|--------|------|------|
+| ltrace 工作原理 (ch05) | 3 | 4 | 3 | 3 | 13 | <14 跳过 |
+| Android 面试参考答案：性能优化 (ch07/15) | 3 | 3 | 4 | 3 | 13 | <14 跳过 |
+
+**结论**：本轮未发现评分 ≥ 14 的独立知识缺口。连续第 7 轮空跑，AIW 知识体系已饱和。
+
+**全书状态**：
+- 372 节，0 draft，80 ready-for-review，292 finalized
+- finalized 率 78.5%
+- ready-for-review 80 节全部进入 Task 6/9/2B 管线
+
+**下次探索方向建议**（避免重复）：
+1. 跨章节横向主题（Performance Class 实战落地 / OEM 优化 ROI / 厂商 Tare 经济模型差异）
+2. Android 17 已合入 main 但未明确进入 Android 17 的边缘 vendor 扩展
+3. Clippings 三本参考书纵向方法学对比
+4. ready-for-review 80 节中 outline 结构不完整、值得回炉重做的章节排查
+5. progress.json 中 draft 标记与实际文件 status 不同步的元数据修正
