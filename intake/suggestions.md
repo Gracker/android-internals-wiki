@@ -308,3 +308,8 @@
 - **问题**：嵌套层级开销、20+ 层递归开销、边缘 2-3mm 和游戏模式 TouchSlop 4-5dp 等判断没有对应 trace、OEM 文档或设备实验记录。
 - **建议**：补一个可复现实验或设备来源；如果只是工程经验，应标为经验性边界，避免读者当成 AOSP 标准行为。
 
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-06-06
+- **类型**：版本差异
+- **位置**：预测温控余量（getThermalHeadroom）
+- **问题**：章节已覆盖 API 35 `getThermalHeadroomThresholds()`，但 Android 16 / API 36 还新增 `addThermalHeadroomListener(...)`。官方 `PowerManager` 文档说明 API 36 起 thresholds map 可能在调用间变化，listener 可接收 headroom / threshold 变化。
+- **建议**：后续扩写 Thermal API 小节时补充 API 36 listener；若正文继续保留轮询方案，应明确它是兼容路径。
